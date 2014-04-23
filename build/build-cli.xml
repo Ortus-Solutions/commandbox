@@ -51,23 +51,23 @@
 
  	<target name="build.cli.jre" depends="build.cli">
  		<echo message="bundling ${mvn.jre.version} jre" />
-		<zip destfile="${dist.dir}/cli/cli-jre-win32.zip">
+		<zip destfile="${dist.dir}/cli/box-jre-win32.zip">
 			<zipgroupfileset file="${maven.repo.local}/oracle/jre/${mvn.jre.version}/jre-${mvn.jre.version}-win32.zip"/>
 	        <fileset file="${dist.dir}/cli/box.exe" />
 		</zip>
-		<zip destfile="${dist.dir}/cli/cli-jre-win64.zip">
+		<zip destfile="${dist.dir}/cli/box-jre-win64.zip">
 			<zipgroupfileset file="${maven.repo.local}/oracle/jre/${mvn.jre.version}/jre-${mvn.jre.version}-win64.zip"/>
 	        <fileset file="${dist.dir}/cli/box.exe" />
 		</zip>
-		<zip destfile="${dist.dir}/cli/cli-jre-linux32.zip">
+		<zip destfile="${dist.dir}/cli/box-jre-linux32.zip">
 			<zipgroupfileset file="${maven.repo.local}/oracle/jre/${mvn.jre.version}/jre-${mvn.jre.version}-linux32.zip"/>
 	        <fileset file="${dist.dir}/cli/box" />
 		</zip>
-		<zip destfile="${dist.dir}/cli/cli-jre-linux64.zip">
+		<zip destfile="${dist.dir}/cli/box-jre-linux64.zip">
 			<zipgroupfileset file="${maven.repo.local}/oracle/jre/${mvn.jre.version}/jre-${mvn.jre.version}-linux64.zip"/>
 	        <fileset file="${dist.dir}/cli/box" />
 		</zip>
-		<zip destfile="${dist.dir}/cli/cli-jre-darwin64.zip">
+		<zip destfile="${dist.dir}/cli/box-jre-darwin64.zip">
 			<zipgroupfileset file="${maven.repo.local}/oracle/jre/${mvn.jre.version}/jre-${mvn.jre.version}-darwin64.zip"/>
 	        <fileset file="${dist.dir}/cli/box" />
 		</zip>
