@@ -28,5 +28,8 @@
 			runner="http://${runwar.host}:${runwar.port}/tests/tboxrunner.cfm?"/>
                 </server-run>
         </target>
+
+        <target name="build.test.all" depends="build.test,build.cli.all">
+        </target>
 	
 </project>
