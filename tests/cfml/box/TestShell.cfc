@@ -48,7 +48,7 @@ component name="TestShell" extends="mxunit.framework.TestCase" {
 
 		shell.run("hel#t#");
 		wee = replace(baos.toString(),chr(0027),"","all");
-		request.debug(wee);
+		//request.debug(wee);
 		assertTrue(find("help",wee));
 		baos.reset();
 

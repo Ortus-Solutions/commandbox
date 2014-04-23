@@ -11,7 +11,7 @@ component {
 	keepRunning = true;
     reloadshell = false;
 	script = "";
-	initialDirectory = createObject("java","java.lang.System").getProperty("user.dir");
+	initialDirectory = System.getProperty("user.dir");
 	pwd = initialDirectory;
 	cr = System.getProperty("line.separator");
 
@@ -168,6 +168,28 @@ component {
 	}
 
 	/**
+	 * returns the shell home directory
+  	 **/
+	function getHomeDir() {
+    	return env("user.home") & "/.box";
+	}
+
+	/**
+	 * returns the shell temp directory
+  	 **/
+	function getTempDir() {
+    	return getHomeDir() & "/temp";
+	}
+
+	/**
+	 * returns the enviroment property
+  	 **/
+	function env(required name) {
+		var value = System.getProperty(name);
+    	return isNull(value) ? "" : value;
+	}
+
+	/**
 	 * changes the current directory
 	 * @directory.hint directory to CD to
   	 **/
@@ -258,6 +280,14 @@ component {
 	        var line ="";
 	        keepRunning = true;
 			reader.setDefaultPrompt(shellPrompt);
+	        lock name="clearTempLock" timeout="3" {
+	        	try {
+			        var clearTemp = directoryExists(getTempDir()) ? directoryDelete(getTempDir(),true) : "";
+			        directoryCreate( getTempDir() );
+	        	} catch (any e) {
+	        		printError(e);
+	        	}
+	        }
 
 	        while (keepRunning) {
 				if(input != "") {
@@ -297,6 +327,9 @@ component {
 	        if(structKeyExists(variables,"ansiOut")) {
 	        	variables.ansiOut.close();
 	        }
+		}
+		if(!reloadshell) {
+
 		}
 		return reloadshell;
     }

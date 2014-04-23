@@ -9,5 +9,9 @@ component name="TestShell" extends="mxunit.framework.TestCase" {
 		box.init();
 	}
 
+	public void function testUpdate()  {
+		box.update();
+	}
+
 
 }

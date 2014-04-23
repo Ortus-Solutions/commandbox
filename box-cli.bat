@@ -1,7 +1,7 @@
 @echo off
 set CFDISTRO_HOME=%userprofile%\cfdistro
 set FILE_URL="http://cfmlprojects.org/artifacts/cfdistro/latest/cfdistro.zip"
-set FILE_DEST="%CFDISTRO_HOME%\cfdistro.zip"
+set FILE_DEST=%CFDISTRO_HOME%\cfdistro.zip
 set buildfile=build/build.xml
 set ANT_HOME=%CFDISTRO_HOME%\ant
 set ANT_CMD=%CFDISTRO_HOME%\ant\bin\ant.bat
@@ -97,7 +97,7 @@ goto MENU
 :runTarget
 set target=
 set /p target=      Enter target name:
-if not "%target%"=="" call "%0" %target%
+if not "%target%"=="" call %0 %target%
 echo       press any key ...
 pause > nul
 goto MENU

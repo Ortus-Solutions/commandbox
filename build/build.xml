@@ -13,5 +13,20 @@
 		<mapping virtual="/cfml" physical="@src.dir@/cfml" />
 		<mapping virtual="/tests" physical="@src.dir@/../tests" />
 	</target>
+
+        <target name="test">
+                <server-run>
+                    <testbox-rundirs basePath="${tests.dir}/cfml/box" componentPath="tests.cfml.box" outputdir="${dist.dir}/testresults/"  
+			runner="http://${runwar.host}:${runwar.port}/tests/tboxrunner.cfm?"/>
+                </server-run>
+   
+        </target>
+
+        <target name="build.test" depends="build.testwar">
+                <server-run>
+                    <testbox-rundirs basePath="${tests.dir}/cfml/box" componentPath="tests.cfml.box" outputdir="${dist.dir}/testresults/"
+			runner="http://${runwar.host}:${runwar.port}/tests/tboxrunner.cfm?"/>
+                </server-run>
+        </target>
 	
 </project>

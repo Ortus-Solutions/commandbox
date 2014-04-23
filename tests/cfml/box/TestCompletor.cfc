@@ -31,7 +31,6 @@ component name="TestShell" extends="mxunit.framework.TestCase" {
 		cursor = completor.complete(cmdline,len(cmdline),candidates);
 		assertTrue(candidates.contains("command="));
 		assertFalse(candidates.contains("help"));
-		request.debug(cursor);
 		assertEquals(5,cursor);
 		candidates.clear();
 

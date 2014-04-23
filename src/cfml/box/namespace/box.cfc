@@ -18,6 +18,24 @@ component output="false" persistent="false" trigger="" {
 		return this;
 	}
 
+	/**
+	 * run server
+	 * @command.name run
+	 **/
+	function runServer() {
+		var cfdistro = new namespace.cfdistro.cfdistro();
+		cfdistro.serverStart();
+	}
+
+	/**
+	 * stop server
+	 * @command.name stop
+	 **/
+	function stopServer() {
+		var cfdistro = new namespace.cfdistro.cfdistro();
+		cfdistro.serverStop();
+	}
+
 
 	/**
 	 * information
@@ -29,11 +47,23 @@ component output="false" persistent="false" trigger="" {
 	}
 
 	/**
-	 * upgrades the shell
+	 * upgrades the shell libraries
 	 * @command.aliases update
 	 **/
 	function upgrade() {
 		return "faux-upgraded!"
+	}
+
+	/**
+	 * updates the shell
+	 * @command.aliases update
+	 **/
+	function update() {
+		var temp = shell.getTempDir();
+		http url="http://cfmlprojects.org/artifacts/org.coldbox/box.cli/maven-metadata.xml" file="#temp#/maven-metadata.xml";
+		return "mavened";
+		zip action="unzip" file="#thisdir#/cfdistro.zip" destination="#home#";
+		return "installed";
 	}
 
 	/**

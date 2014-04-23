@@ -1,5 +1,8 @@
 /**
- * This is the MAIN CLI
+ * General CLI commands (in the default namespace)
+ * You can specify the command name to use with: @command.name
+ * and you can specify any aliases (not shown in command list)
+ * via: @command.aliases list,of,aliases
  **/
 component output="false" persistent="false" trigger="" {
 
@@ -11,8 +14,11 @@ component output="false" persistent="false" trigger="" {
 	}
 
 	/**
-	 * Display help information
-	 **/
+	 * display help information
+	 * @namespace.hint namespace (or namespaceless command) to get help for
+ 	 * @command.hint command to get help for
+ 	 * @command.aliases h,?
+  	 **/
 	function help(String namespace="", String command="")  {
 		return shell.help(namespace,command);
 	}
@@ -20,7 +26,9 @@ component output="false" persistent="false" trigger="" {
 	/**
 	 * List directories
 	 * 	ex: dir /my/path
-	 *  @command.aliases ls, directory
+	 * @directory.hint directory
+	 * @recurse.hint recursively list
+ 	 * @command.aliases ls, directory
 	 **/
 	function dir(String directory="", Boolean recurse=false)  {
 		var result = "";
@@ -62,7 +70,8 @@ component output="false" persistent="false" trigger="" {
 
 	/**
 	 * change directory
-	 **/
+	 * @directory.hint directory to CD to
+* 	 **/
 	function cd(directory="")  {
 		return shell.cd(directory);
 	}
@@ -70,7 +79,8 @@ component output="false" persistent="false" trigger="" {
 	/**
 	 * display file contents
 	 * @command.aliases type
-	 **/
+	 * @file.hint file to view contents of
+ 	 **/
 	function cat(file="")  {
 		if(left(file,1) != "/"){
 			file = shell.pwd() & "/" & file;
@@ -115,7 +125,8 @@ component output="false" persistent="false" trigger="" {
 
 	/**
 	 * Reload CLI
-	 **/
+	 * @clearScreen.hint clears the screen after reload
+  	 **/
 	function reload(Boolean clearScreen=true)  {
 		shell.reload(clearScreen);
 	}

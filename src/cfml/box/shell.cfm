@@ -1,14 +1,15 @@
 <cfsilent>
 <cfset _shellprops = { version:'0.1' } >
 <cfsetting requesttimeout="9999" />
-<cfsavecontent variable="_shellprops.help">Live evaluation (with GNU Readline-ish input control)
-	Empty line displays and evaluates current buffer.  'version' lists version, 'clear' clears buffer, 'ls' and 'dir' list files, 'exit', 'quit', 'q' exits.  There is tab-completion, hit tab to see all.
-	Examples:
-		wee=3+4+5
-		foo="bar"
-		"re" & foo
-		server.railo.version
-		serialize(server.coldfusion)
+<cfsavecontent variable="_shellprops.help">Welcome to Box!
+Type "help" for help, or "help [namespace|command] [command]" to be more specific.
+  ______      ____     __     __
+ (_   _ \    / __ \   (_ \   / _)
+   ) (_) )  / /  \ \    \ \_/ /
+   \   _/  ( ()  () )    \   /
+   /  _ \  ( ()  () )    / _ \
+  _) (_) )  \ \__/ /   _/ / \ \_
+ (______/    \____/   (__/   \__)
 </cfsavecontent>
 <cfscript>
 	systemOutput(_shellprops.help);
@@ -19,5 +20,8 @@
 		shell = javacast("null","");
 		shell = new Shell();
 	}
+	system = createObject("java","java.lang.System");
+        system.runFinalization();
+        system.gc();
 </cfscript>
 </cfsilent>

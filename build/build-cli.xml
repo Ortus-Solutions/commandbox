@@ -19,11 +19,11 @@
 		<mkdir dir="${dist.dir}/cli" />
 		<move file="${dist.dir}/railo.cli-${railo.cli.version}.jar" tofile="${dist.dir}/cli/box.jar" />
 		<!--  create the cfml zip -->
-		<zip destfile="${temp.dir}/cfml.zip">
+		<zip destfile="${dist.dir}/cli/cfml.zip" update="false">
 	        <fileset dir="${src.dir}/cfml"/>
 		</zip>
         <zip destfile="${dist.dir}/cli/box.jar" update="true" level="9">
-        	<zipfileset file="${temp.dir}/cfml.zip" fullpath="cfml.zip" />
+        	<zipfileset file="${dist.dir}/cli/cfml.zip" fullpath="cfml.zip" />
         	<zipfileset file="${src.dir}/resources/cli.properties" fullpath="cliloader/cli.properties" />
         </zip>
  	</target>
@@ -72,23 +72,24 @@
 	        <fileset file="${dist.dir}/cli/box" />
 		</zip>
 		<pom-and-deploy pomid="cli-jre.pom" packaging="pom" buildtype="${mvn.type}"
-		 groupId="org.getrailo" artifactId="box.cli.jre" version="${cli.version}" name="box.cli.jre">
+		 groupId="org.coldbox" artifactId="box.cli.jre" version="${cli.version}" name="box.cli.jre">
 			<attachments>
-        		<attach file="${dist.dir}/cli/cli-jre-win32.zip" type="zip" classifier="win32"/>
-        		<attach file="${dist.dir}/cli/cli-jre-win64.zip" type="zip" classifier="win64"/>
-        		<attach file="${dist.dir}/cli/cli-jre-linux32.zip" type="zip" classifier="linux32"/>
-        		<attach file="${dist.dir}/cli/cli-jre-linux64.zip" type="zip" classifier="linux64"/>
-        		<attach file="${dist.dir}/cli/cli-jre-darwin64.zip" type="zip" classifier="darwin64"/>
+        		<attach file="${dist.dir}/cli/box-jre-win32.zip" type="zip" classifier="win32"/>
+        		<attach file="${dist.dir}/cli/box-jre-win64.zip" type="zip" classifier="win64"/>
+        		<attach file="${dist.dir}/cli/box-jre-linux32.zip" type="zip" classifier="linux32"/>
+        		<attach file="${dist.dir}/cli/box-jre-linux64.zip" type="zip" classifier="linux64"/>
+        		<attach file="${dist.dir}/cli/box-jre-darwin64.zip" type="zip" classifier="darwin64"/>
 			</attachments>
 		</pom-and-deploy>
  	</target>
 	
  	<target name="build.cli.mvn" depends="build.cli.rpm,build.cli.deb,build.cli.exe">
 		<pom-and-deploy pomid="cli.pom" packaging="pom" buildtype="${mvn.type}"
-			groupId="org.getrailo" artifactId="box.cli" version="${cli.version}"
+			groupId="org.coldbox" artifactId="box.cli" version="${cli.version}"
 			name="box.cli">
 			<attachments>
 				<attach file="${dist.dir}/cli/box.jar" type="jar" />
+				<attach file="${dist.dir}/cli/cfml.zip" type="zip" classifier="cfml" />
 				<attach file="${dist.dir}/cli/box.bin.zip" type="zip" classifier="bin" />
 				<attach file="${dist.dir}/cli/box.win32.zip" type="zip" classifier="win32" />
 				<attach file="${dist.dir}/box-cli_${cli.version}-1_all.deb" type="deb" />
@@ -107,7 +108,7 @@
 		<redline:rpm destination="${rpm.repo}" release="1"
 			group="org.getrailo" name="box-cli" version="${cli.version}"
 			packager="${cli.packager.name} ${cli.packager.email}"
-			url="http://getrailo.org">
+			url="http://cfmlprojects.org">
 			<depends name="java" version=""/>
 			<tarfileset file="${dist.dir}/cli/box" prefix="/usr/bin"
 				 filemode="744" username="root" group="root"/>
@@ -128,7 +129,7 @@
 	        depends="java-common">
 	        <version upstream="${cli.version}"/>
 	        <maintainer name="${cli.packager.name}" email="${cli.packager.email}"/>
-	        <description synopsis="Railo CFML Engine">Railo is a high performance CFML engine.  Version: ${railo.version.long}.</description>
+	        <description synopsis="Box CFML CLI">Box Version: ${cli.version}.</description>
 	   		<tarfileset file="${dist.dir}/cli/box" prefix="usr/local/bin" filemode="755"/>
 	   	</deb>
 	   	<echo message="Updating apt (deb) repo in ${deb.repo}"/>
