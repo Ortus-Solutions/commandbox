@@ -60,7 +60,10 @@ component output="false" persistent="false" trigger="" {
 	 **/
 	function update() {
 		var temp = shell.getTempDir();
-		http url="http://cfmlprojects.org/artifacts/org.coldbox/box.cli/maven-metadata.xml" file="#temp#/maven-metadata.xml";
+		http url="http://cfmlprojects.org/artifacts/org/coldbox/box.cli/maven-metadata.xml" file="#temp#/maven-metadata.xml";
+		var mavenData = xmlParse("#temp#/maven-metadata.xml");
+		var latest = xmlSearch(mavendata,"//version[last()]/text()");
+		throw(latest[2]);
 		return "mavened";
 		zip action="unzip" file="#thisdir#/cfdistro.zip" destination="#home#";
 		return "installed";
@@ -98,6 +101,9 @@ component output="false" persistent="false" trigger="" {
 			} else {
 				return "cancelled";
 			}
+		} else {
+			fileWrite(boxfile,serializeJSON(box.json));
+			return "wrote #boxfile#";
 		}
 	}
 

@@ -43,8 +43,10 @@ component {
 			}
 	    	reader = createObject("java","jline.ConsoleReader").init(inStream,printWriter);
 		}
-		variables.commandHandler = new CommandHandler(this);
+    	variables.homedir = env("user.home") & "/.box";
+    	variables.tempdir = variables.homedir & "/temp";
 		variables.shellPrompt = ansi("cyan","box> ");
+		variables.commandHandler = new CommandHandler(this);
     	return this;
 	}
 
@@ -168,17 +170,44 @@ component {
 	}
 
 	/**
+	 * sets the shell home directory
+	 * @directory.hint directory to use
+  	 **/
+	function setHomeDir(required directory) {
+		variables.homedir = directory;
+		setTempDir(variables.homedir & "/temp");
+		return variables.homedir;
+	}
+
+	/**
 	 * returns the shell home directory
   	 **/
 	function getHomeDir() {
-    	return env("user.home") & "/.box";
+		return variables.homedir;
+	}
+
+	/**
+	 * sets and renews temp directory
+	 * @directory.hint directory to use
+  	 **/
+	function setTempDir(required directory) {
+        lock name="clearTempLock" timeout="3" {
+        	try {
+		        var clearTemp = directoryExists(directory) ? directoryDelete(directory,true) : "";
+		        directoryCreate( directory );
+		        variables.tempdir = directory;
+        	} catch (any e) {
+        		printError(e);
+        	}
+        }
+    	return variables.tempdir;
 	}
 
 	/**
 	 * returns the shell temp directory
   	 **/
 	function getTempDir() {
-    	return getHomeDir() & "/temp";
+		return variables.tempdir;
 	}
 
 	/**
@@ -280,14 +309,8 @@ component {
 	        var line ="";
 	        keepRunning = true;
 			reader.setDefaultPrompt(shellPrompt);
-	        lock name="clearTempLock" timeout="3" {
-	        	try {
-			        var clearTemp = directoryExists(getTempDir()) ? directoryDelete(getTempDir(),true) : "";
-			        directoryCreate( getTempDir() );
-	        	} catch (any e) {
-	        		printError(e);
-	        	}
-	        }
+			// set and recreate temp dir
+			setTempDir(variables.tempdir);
 
 	        while (keepRunning) {
 				if(input != "") {
