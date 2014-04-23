@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<src>
+	<project>
+	<!-- project sources
+		<src dest="@src.dir@/../" type="svn" 
+		uri="http://subversion.assembla.com/svn/cfdistro/trunk/cfdistro" 
+		user="" password="" />
+	-->
+	</project>
+	<sources>
+<!-- 	MXUnit 2.1
+		<src dest="@src.dir@/mxunit" type="svn" 
+		uri="http://mxunit.googlecode.com/svn/mxunit/tags/2.0.1"
+		user="" password="" />
+ -->
+<!--	MXUnit trunk
+		<src dest="@src.dir@/mxunit" type="svn" 
+		uri="http://mxunit.googlecode.com/svn/mxunit/trunk"
+		user="" password="" />
+-->
+<!--	CFWheels
+		<src dest="@src.dir@/cfwheels" type="svn" 
+		uri="http://cfwheels.googlecode.com/svn/trunk/" 
+		user="" password="" />
+ -->				
+<!--	Model-Glue
+		<src dest="@src.dir@/ModelGlue" type="svn" 
+		uri="http://svn.model-glue.com/trunk/ModelGlue/" 
+		user="" password="" />
+ -->
+<!--	Mach-II
+		<src dest="@src.dir@/MachII" type="svn" 
+		uri="http://svn.mach-ii.com/machii/framework/1-8-1/trunk/" 
+		user="" password="" />
+ -->
+<!--	Mach-II skeleton
+		<src dest="@src.dir@/MachIIapp" type="svn" 
+		uri="http://svn.mach-ii.com/machii/skeleton/1-8-0/trunk/" 
+		user="" password="" />
+ -->
+<!--	FW/1  (to src/${distro.name}/org)
+		<src dest="@src.dir@/box-cli/org" type="git" 
+		uri="https://github.com/seancorfield/fw1.git"
+		path="/org" 
+		user="" password="" />
+ -->
+<!--	FW/1  skeleton for use with the above
+		<src dest="@src.dir@/box-cli" type="git" 
+		uri="https://github.com/seancorfield/fw1.git"
+		path="/skeleton" 
+		user="" password="" />
+ -->
+<!--	ColdBox
+		<src dest="@src.dir@/coldbox" type="git" 
+		uri="http://github.com/ColdBox/coldbox-platform.git" 
+		user="" password="" />
+ -->
+<!--	ColdBox sample app
+		<src dest="@src.dir@/coldbox/samples" type="git" 
+		uri="https://github.com/ColdBox/coldbox-samples" 
+		user="" password="" />
+ -->
+<!--	ColdSpring 1.2
+		<src dest="@src.dir@/coldspring" type="git"
+		uri="git://github.com/boomfish/coldspring1.git" tag="coldspring-1-2"
+		user="" password="" />
+ -->
+<!--	ColdSpring 2.0
+		<src dest="@src.dir@/coldspring" type="git" 
+		uri="git://coldspring.git.sourceforge.net/gitroot/coldspring/coldspring" 
+		user="" password="" />
+ -->
+	</sources>
+</src>

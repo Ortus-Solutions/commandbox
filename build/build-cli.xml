@@ -1,0 +1,139 @@
+<project name="build-cli" default="build.cli" xmlns:antcontrib="antlib:net.sf.antcontrib" basedir=".">
+
+	<property name="cli.version" value="0.1.2" />
+	<property name="cli.packager.name" value="cfmlprojects.org" />
+	<property name="cli.packager.email" value="cfml@cfmlprojects.org" />
+	<property name="cli.use.pack200" value="true" />
+	<property name="railo.cli.version" value="0.4.2-4.1.2.005" />
+	<property name="mvn.repo.id" value="cfdistro.repo.local" />
+	<property name="mvn.jre.7.version" value="1.7.0_51" />
+	<property name="mvn.jre.6.version" value="1.6.0_41" />
+	<property name="mvn.jre.version" value="${mvn.jre.7.version}" />
+    <property name="maven.repo.local" location="${cfdistro.basedir}/artifacts" />
+	<property name="rpm.repo" value="${maven.repo.local}/RPMS/noarch" />
+
+	<target name="build.cli" description="builds cli jar">
+		<antcontrib:var name="cli.version" value="${cli.version}" />
+		<dependency groupId="org.getrailo" artifactId="railo.cli" version="${railo.cli.version}" dest="${dist.dir}" type="jar" unzip="false"/>
+		<delete dir="${dist.dir}/cli" />
+		<mkdir dir="${dist.dir}/cli" />
+		<move file="${dist.dir}/railo.cli-${railo.cli.version}.jar" tofile="${dist.dir}/cli/box.jar" />
+		<!--  create the cfml zip -->
+		<zip destfile="${temp.dir}/cfml.zip">
+	        <fileset dir="${src.dir}/cfml"/>
+		</zip>
+        <zip destfile="${dist.dir}/cli/box.jar" update="true" level="9">
+        	<zipfileset file="${temp.dir}/cfml.zip" fullpath="cfml.zip" />
+        	<zipfileset file="${src.dir}/resources/cli.properties" fullpath="cliloader/cli.properties" />
+        </zip>
+ 	</target>
+
+	<target name="build.cli.bin" description="create bin wrapper" depends="build.cli">
+        <concat destfile="${dist.dir}/cli/box" force="yes" binary="true">
+          <fileset file="${src.dir}/bin/box.sh" />
+          <fileset file="${dist.dir}/cli/box.jar" />
+        </concat>
+        <chmod file="${dist.dir}/cli/box" perm="a+x"/>
+		<zip destfile="${dist.dir}/cli/box.bin.zip">
+	        <zipfileset file="${dist.dir}/cli/box" filemode="711" prefix="" />
+		</zip>
+ 	</target>
+
+	<target name="build.cli.exe" description="create exe wrapper" depends="build.cli">
+        <jar2exe
+        	jar="${dist.dir}/cli/box.jar" exe="${dist.dir}/cli/box.exe"  
+        	icon="${src.dir}/resources/box.ico" mutexName="box.cli.Console" 
+        	headerType="console" customProcName="false" stayAlive="true"/>
+		<zip destfile="${dist.dir}/cli/box.win32.zip">
+	        <zipfileset file="${dist.dir}/cli/box.exe" prefix="" />
+		</zip>
+	</target>
+
+ 	<target name="build.cli.jre" depends="build.cli">
+ 		<echo message="bundling ${mvn.jre.version} jre" />
+		<zip destfile="${dist.dir}/cli/cli-jre-win32.zip">
+			<zipgroupfileset file="${maven.repo.local}/oracle/jre/${mvn.jre.version}/jre-${mvn.jre.version}-win32.zip"/>
+	        <fileset file="${dist.dir}/cli/box.exe" />
+		</zip>
+		<zip destfile="${dist.dir}/cli/cli-jre-win64.zip">
+			<zipgroupfileset file="${maven.repo.local}/oracle/jre/${mvn.jre.version}/jre-${mvn.jre.version}-win64.zip"/>
+	        <fileset file="${dist.dir}/cli/box.exe" />
+		</zip>
+		<zip destfile="${dist.dir}/cli/cli-jre-linux32.zip">
+			<zipgroupfileset file="${maven.repo.local}/oracle/jre/${mvn.jre.version}/jre-${mvn.jre.version}-linux32.zip"/>
+	        <fileset file="${dist.dir}/cli/box" />
+		</zip>
+		<zip destfile="${dist.dir}/cli/cli-jre-linux64.zip">
+			<zipgroupfileset file="${maven.repo.local}/oracle/jre/${mvn.jre.version}/jre-${mvn.jre.version}-linux64.zip"/>
+	        <fileset file="${dist.dir}/cli/box" />
+		</zip>
+		<zip destfile="${dist.dir}/cli/cli-jre-darwin64.zip">
+			<zipgroupfileset file="${maven.repo.local}/oracle/jre/${mvn.jre.version}/jre-${mvn.jre.version}-darwin64.zip"/>
+	        <fileset file="${dist.dir}/cli/box" />
+		</zip>
+		<pom-and-deploy pomid="cli-jre.pom" packaging="pom" buildtype="${mvn.type}"
+		 groupId="org.getrailo" artifactId="box.cli.jre" version="${cli.version}" name="box.cli.jre">
+			<attachments>
+        		<attach file="${dist.dir}/cli/cli-jre-win32.zip" type="zip" classifier="win32"/>
+        		<attach file="${dist.dir}/cli/cli-jre-win64.zip" type="zip" classifier="win64"/>
+        		<attach file="${dist.dir}/cli/cli-jre-linux32.zip" type="zip" classifier="linux32"/>
+        		<attach file="${dist.dir}/cli/cli-jre-linux64.zip" type="zip" classifier="linux64"/>
+        		<attach file="${dist.dir}/cli/cli-jre-darwin64.zip" type="zip" classifier="darwin64"/>
+			</attachments>
+		</pom-and-deploy>
+ 	</target>
+	
+ 	<target name="build.cli.mvn" depends="build.cli.rpm,build.cli.deb,build.cli.exe">
+		<pom-and-deploy pomid="cli.pom" packaging="pom" buildtype="${mvn.type}"
+			groupId="org.getrailo" artifactId="box.cli" version="${cli.version}"
+			name="box.cli">
+			<attachments>
+				<attach file="${dist.dir}/cli/box.jar" type="jar" />
+				<attach file="${dist.dir}/cli/box.bin.zip" type="zip" classifier="bin" />
+				<attach file="${dist.dir}/cli/box.win32.zip" type="zip" classifier="win32" />
+				<attach file="${dist.dir}/box-cli_${cli.version}-1_all.deb" type="deb" />
+				<attach file="${rpm.repo}/box-cli-${cli.version}-1.noarch.rpm" type="rpm" />
+			</attachments>
+		</pom-and-deploy>
+	</target>
+
+ 	<target name="build.cli.all" depends="build.cli.mvn,build.cli.jre">
+	</target>
+
+	<target name="build.cli.rpm" depends="build.cli.bin" xmlns:redline="antlib:org.redline_rpm">
+		<mkdir dir="${rpm.repo}" />
+		<echo message="Making rpm in ${rpm.repo} Packager:${cli.packager.name} ${cli.packager.email} Version: ${cli.version}" />
+        <taskdef resource="org/redline_rpm/antlib.xml" uri="antlib:org.redline_rpm" classpathref="build.lib.path"/>
+		<redline:rpm destination="${rpm.repo}" release="1"
+			group="org.getrailo" name="box-cli" version="${cli.version}"
+			packager="${cli.packager.name} ${cli.packager.email}"
+			url="http://getrailo.org">
+			<depends name="java" version=""/>
+			<tarfileset file="${dist.dir}/cli/box" prefix="/usr/bin"
+				 filemode="744" username="root" group="root"/>
+		</redline:rpm>
+		<rpm-repo dir="${rpm.repo}" />
+	</target>
+
+	<target name="build.cli.deb" depends="build.cli.bin" description="builds a .deb file for debian-based systems">
+	    <taskdef name="deb" classname="com.googlecode.ant_deb_task.Deb" classpathref="build.lib.path"/>
+	   	<echo message="Creating debian .deb file from: ${dist.dir}"/>
+		<property name="deb.repo" value="${cfdistro.basedir}/artifacts/debs/noarch" />
+		<mkdir dir="${deb.repo}"/>
+	   	<delete file="${dist.dir}/box-cli_${cli.version}-1_all.deb" />
+	   	<deb
+	        todir="${dist.dir}"
+	        package="box-cli"
+	        section="web"
+	        depends="java-common">
+	        <version upstream="${cli.version}"/>
+	        <maintainer name="${cli.packager.name}" email="${cli.packager.email}"/>
+	        <description synopsis="Railo CFML Engine">Railo is a high performance CFML engine.  Version: ${railo.version.long}.</description>
+	   		<tarfileset file="${dist.dir}/cli/box" prefix="usr/local/bin" filemode="755"/>
+	   	</deb>
+	   	<echo message="Updating apt (deb) repo in ${deb.repo}"/>
+		<copy file="${dist.dir}/box-cli_${cli.version}-1_all.deb" todir="${deb.repo}" />
+		<deb-repo dir="${deb.repo}" />
+	</target>
+		
+</project>

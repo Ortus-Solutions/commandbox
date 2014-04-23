@@ -1,0 +1,17 @@
+<project name="distro.build" default="build" basedir="./" xmlns:antcontrib="antlib:net.sf.antcontrib">
+
+	<loadproperties srcfile="build.properties"/>
+	<import file="${cfdistro.build.file}"/>
+	<import file="build-cli.xml"/>
+
+	<target name="build" depends="build.cli">
+	</target>
+	
+	<target name="build.testwar" depends="cfdistro.build">
+                <dependency artifactId="testbox" groupId="org.coldbox" version="1.1.0" mapping="/testbox" />
+                <mapping physical="@ext.mappings.dir@/org.coldbox/testbox/1.1.0/system/testing/compat" virtual="/mxunit"/>
+		<mapping virtual="/cfml" physical="@src.dir@/cfml" />
+		<mapping virtual="/tests" physical="@src.dir@/../tests" />
+	</target>
+	
+</project>
