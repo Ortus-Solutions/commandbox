@@ -1,6 +1,6 @@
 <project name="build-cli" default="build.cli" xmlns:antcontrib="antlib:net.sf.antcontrib" basedir=".">
 
-	<property name="cli.version" value="0.1.3" />
+	<property name="cli.version" value="0.1.4" />
 	<property name="cli.packager.name" value="cfmlprojects.org" />
 	<property name="cli.packager.email" value="cfml@cfmlprojects.org" />
 	<property name="cli.use.pack200" value="true" />
@@ -18,9 +18,11 @@
 		<delete dir="${dist.dir}/cli" />
 		<mkdir dir="${dist.dir}/cli" />
 		<move file="${dist.dir}/railo.cli-${railo.cli.version}.jar" tofile="${dist.dir}/cli/box.jar" />
+		<echo file="${temp.dir}/version" message="${cli.version}" />
 		<!--  create the cfml zip -->
 		<zip destfile="${dist.dir}/cli/cfml.zip" update="false">
-	        <fileset dir="${src.dir}/cfml"/>
+	        <fileset dir="${src.dir}/cfml" excludes="**/cfdistro/home/**, **/cfdistro.zip"/>
+	        <zipfileset file="${temp.dir}/version" fullpath="box/version"/>
 		</zip>
         <zip destfile="${dist.dir}/cli/box.jar" update="true" level="9">
         	<zipfileset file="${dist.dir}/cli/cfml.zip" fullpath="cfml.zip" />

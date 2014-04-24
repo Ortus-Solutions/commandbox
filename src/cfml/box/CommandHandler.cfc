@@ -48,7 +48,7 @@ component output="false" persistent="false" {
 		var cfc = createObject(cfc).init(shell);
 		var cfcMeta = getMetadata(cfc);
 		for(var fun in cfcMeta.functions) {
-			if(fun.name != "init") {
+			if(fun.name != "init" && fun.access != "private") {
 				var commandname = isNull(fun["command.name"]) ? fun.name : fun["command.name"];
 				var aliases = isNull(fun["command.aliases"]) ? [] : listToArray(fun["command.aliases"]);
 				for(var alias in aliases) {
@@ -188,8 +188,6 @@ component output="false" persistent="false" {
 				return;
 			}
 		}
-		var functionName = commands[namespace][command].functionName;
-		var runCFC = commands[namespace][command].cfc;
 		args = isNull(args) ? [] : args;
 		var namedArgs = {};
 		var requiredParams = [];
@@ -211,9 +209,23 @@ component output="false" persistent="false" {
            	}
 		}
 		if(len(StructKeyList(namedArgs))) {
-			return runCFC[functionName](argumentCollection=namedArgs);
+			return callCommand(namespace,command,namedArgs);
 		}
-		return runCFC[functionName](argumentCollection=args);
+		return callCommand(namespace,command,args);
+	}
+
+	/**
+	 * call a command
+ 	 **/
+	function callCommand(namespace, command, args) {
+		var functionName = commands[namespace][command].functionName;
+		var runCFC = commands[namespace][command].cfc;
+		args = isNull(args) ? [] : args;
+		if(args.size()) {
+			return runCFC[functionName](argumentCollection=args);
+		} else {
+			return runCFC[functionName]();
+		}
 	}
 
 	/**

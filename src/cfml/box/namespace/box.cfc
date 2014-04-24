@@ -58,15 +58,18 @@ component output="false" persistent="false" trigger="" {
 	 * updates the shell
 	 * @command.aliases update
 	 **/
-	function update() {
+	function update(Boolean force=false) {
 		var temp = shell.getTempDir();
 		http url="http://cfmlprojects.org/artifacts/org/coldbox/box.cli/maven-metadata.xml" file="#temp#/maven-metadata.xml";
 		var mavenData = xmlParse("#temp#/maven-metadata.xml");
-		var latest = xmlSearch(mavendata,"//version[last()]/text()");
-		throw(latest[2]);
-		return "mavened";
-		zip action="unzip" file="#thisdir#/cfdistro.zip" destination="#home#";
-		return "installed";
+		var latest = xmlSearch(mavendata,"/metadata/versioning/versions/version[last()]/text()");
+		latest = latest[1].xmlValue;
+		if(latest!=shell.version() || force) {
+			var result = shell.callCommand("cfdistro","dependency",{artifactId:"box.cli",groupId:"org.coldbox",version=latest,classifier="cfml"});
+		}
+		zip action="unzip" file="#shell.getArtifactsDir()#/org/coldbox/box.cli/#latest#/box.cli-#latest#-cfml.zip"
+		 destination="#shell.getHomeDir()#/cfml";
+		return "installed #latest# (#result#)";
 	}
 
 	/**

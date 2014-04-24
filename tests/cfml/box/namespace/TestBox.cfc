@@ -22,7 +22,8 @@ component name="TestShell" extends="mxunit.framework.TestCase" {
 
 	public void function testUpdate()  {
 		box.update();
+		assertTrue(directoryExists(homedir & "/artifacts/org/coldbox"));
+		assertTrue(directoryExists(homedir & "/cfml"));
 	}
-
 
 }

@@ -66,6 +66,18 @@ component {
 	}
 
 	/**
+	 * shell version
+	 **/
+	function version() {
+		var versionFile = getDirectoryFromPath(getMetadata(this).path)&"/version";
+		var version = "0.0.0";
+		if(fileExists(versionFile)) {
+			version = fileRead(versionFile);
+		}
+		return version;
+	}
+
+	/**
 	 * sets reload flag, relaoded from shell.cfm
 	 * @clear.hint clears the screen after reload
  	 **/
@@ -184,6 +196,13 @@ component {
   	 **/
 	function getHomeDir() {
 		return variables.homedir;
+	}
+
+	/**
+	 * returns the shell artifacts directory
+  	 **/
+	function getArtifactsDir() {
+		return getHomeDir() & "/artifacts";
 	}
 
 	/**
@@ -367,11 +386,22 @@ component {
 	}
 
 	/**
+	 * call a namespace command
+	 * @namespace.hint namespace (empty string for default)
+ 	 * @command.hint command name
+ 	 * @args.hint arguments
+ 	 **/
+	function callCommand(String namespace="", String command="", args)  {
+		return commandHandler.callCommand(namespace,command,args);
+	}
+
+	/**
 	 * print an error to the console
 	 * @err.hint Error object to print (only message is required)
   	 **/
 	function printError(required err) {
 		reader.printString(ansi("red","ERROR: ") & HTML2ANSI(err.message));
+		reader.printNewLine();
 		if (structKeyExists( err, 'tagcontext' )) {
 			var lines=arrayLen( err.tagcontext );
 			if (lines != 0) {

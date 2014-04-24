@@ -40,10 +40,10 @@ component output="false" persistent="false" trigger="" {
 	}
 
 	/**
-	 * Get version
+	 * returns shell version
 	 **/
 	function version()  {
-		return "1.0.0";
+		return shell.version();
 	}
 
 
