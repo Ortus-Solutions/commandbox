@@ -4,7 +4,7 @@
 	<property name="cli.packager.name" value="cfmlprojects.org" />
 	<property name="cli.packager.email" value="cfml@cfmlprojects.org" />
 	<property name="cli.use.pack200" value="true" />
-	<property name="railo.cli.version" value="0.4.2-4.1.2.005" />
+	<property name="railo.cli.version" value="0.4.3-4.1.2.005" />
 	<property name="mvn.repo.id" value="cfdistro.repo.local" />
 	<property name="mvn.jre.7.version" value="1.7.0_51" />
 	<property name="mvn.jre.6.version" value="1.6.0_41" />
@@ -103,7 +103,7 @@
  	<target name="build.cli.all" depends="build.cli.mvn,build.cli.jre">
 	</target>
 
-	<target name="build.cli.rpm" depends="build.cli.bin" xmlns:redline="antlib:org.redline_rpm">
+	<target name="build.cli.rpm" depends="bootstrap_redline,build.cli.bin" xmlns:redline="antlib:org.redline_rpm">
 		<mkdir dir="${rpm.repo}" />
 		<echo message="Making rpm in ${rpm.repo} Packager:${cli.packager.name} ${cli.packager.email} Version: ${cli.version}" />
         <taskdef resource="org/redline_rpm/antlib.xml" uri="antlib:org.redline_rpm" classpathref="build.lib.path"/>
