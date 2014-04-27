@@ -1,3 +1,5 @@
 /dist
 /build/temp
 /build/requires.txt
+settings.xml
+.project

@@ -4,7 +4,10 @@
 	<comment></comment>
 	<projects>
 	</projects>
+	<buildSpec>
+	</buildSpec>
 	<natures>
+		<nature>com.adobe.ide.coldfusion.projectNature</nature>
 		<nature>org.eclipse.jdt.core.javanature</nature>
 	</natures>
 </projectDescription>
