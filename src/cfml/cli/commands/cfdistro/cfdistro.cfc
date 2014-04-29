@@ -1,9 +1,9 @@
 /**
  * build utility
  **/
-component output="false" persistent="false" trigger="" {
+component persistent="false" extends="cli.BaseCommand" {
 
-	function init(shell) {
+/*	function init(shell) {
 		variables.shell = shell;
 		reader = shell.getReader();
 		thisdir = getDirectoryFromPath(getMetadata(this).path);
@@ -16,7 +16,7 @@ component output="false" persistent="false" trigger="" {
 		}
 		return this;
 	}
-
+*/
 	/**
 	 * download and install cfdistro
 	 **/

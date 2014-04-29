@@ -1,11 +1,12 @@
 /**
- * Box commands (in the default namespace)
+ * Box commands (in the default commands)
  * You can specify the command name to use with: @command.name
  * and you can specify any aliases (not shown in command list)
  * via: @command.aliases list,of,aliases
  * The function comments in here will show up in the CLI help
  **/
-component output="false" persistent="false" trigger="" {
+component persistent="false" extends="cli.BaseCommand" {
+
 
 	/**
 	 * constructor
@@ -23,7 +24,7 @@ component output="false" persistent="false" trigger="" {
 	 * @command.name run
 	 **/
 	function runServer() {
-		var cfdistro = new namespace.cfdistro.cfdistro();
+		var cfdistro = new commands.cfdistro.cfdistro();
 		cfdistro.serverStart();
 	}
 
@@ -32,7 +33,7 @@ component output="false" persistent="false" trigger="" {
 	 * @command.name stop
 	 **/
 	function stopServer() {
-		var cfdistro = new namespace.cfdistro.cfdistro();
+		var cfdistro = new commands.cfdistro.cfdistro();
 		cfdistro.serverStop();
 	}
 
@@ -43,7 +44,7 @@ component output="false" persistent="false" trigger="" {
 	 **/
 	function info() {
 		// stub
-		return "Version 1.0.0#cr# Artifacts:#cr# org.coldbox:coldbox:*#cr# org.coldbox:testbox:1.0.0"
+		return "Version 1.0.0#cr# Artifacts:#cr# org.coldbox:coldbox:*#cr# org.coldbox:testbox:1.0.0";
 	}
 
 	/**
@@ -51,7 +52,7 @@ component output="false" persistent="false" trigger="" {
 	 * @command.aliases update
 	 **/
 	function upgrade() {
-		return "faux-upgraded!"
+		return "faux-upgraded!";
 	}
 
 	/**
@@ -79,7 +80,7 @@ component output="false" persistent="false" trigger="" {
 	 * @interval.hint task interval
 	 **/
 	function taskAdd(required String name, required numeric interval) {
-		return "faux-task-add! Task:#name# Interval:#interval#"
+		return "faux-task-add! Task:#name# Interval:#interval#";
 	}
 
 	/**

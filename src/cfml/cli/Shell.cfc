@@ -1,5 +1,5 @@
 /**
- * Box Shell
+ * CommandBox Shell
  * @author Denny Valliant
  **/
 component {
@@ -17,9 +17,9 @@ component {
 
 	/**
 	 * constructor
-	 * @inStram.hint input stream if running externally
+	 * @inStream.hint input stream if running externally
 	 * @printWriter.hint output if running externally
-	 **/
+ 	**/	
 	function init(inStream, printWriter) {
 		if(isNull(printWriter)) {
 			if(findNoCase("windows",server.os.name)) {
@@ -45,7 +45,7 @@ component {
 		}
     	variables.homedir = env("user.home") & "/.box";
     	variables.tempdir = variables.homedir & "/temp";
-		variables.shellPrompt = ansi("cyan","box> ");
+		variables.shellPrompt = ansi("cyan","CommandBox> ");
 		variables.commandHandler = new CommandHandler(this);
     	return this;
 	}
@@ -284,8 +284,8 @@ component {
 		 "blue_back":44,
 		 "magenta_back":45,
 		 "cyan_back":46,
-		 "white_back":47,
-		}
+		 "white_back":47
+		};
 		var ansiString = "";
 		for(var attrib in listToArray(attribute)) {
 			ansiString &= ANSICodes.attrib(textAttributes[attrib]);

@@ -1,8 +1,8 @@
 <cfsilent>
 <cfset _shellprops = { version:'0.1' } >
 <cfsetting requesttimeout="9999" />
-<cfsavecontent variable="_shellprops.help">Welcome to Box!
-Type "help" for help, or "help [namespace|command] [command]" to be more specific.
+<cfsavecontent variable="_shellprops.help">Welcome to CommandBox!
+Type "help" for help, or "[command] help" to be more specific.
   ______      ____     __     __
  (_   _ \    / __ \   (_ \   / _)
    ) (_) )  / /  \ \    \ \_/ /

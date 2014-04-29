@@ -4,7 +4,7 @@
  * and you can specify any aliases (not shown in command list)
  * via: @command.aliases list,of,aliases
  **/
-component output="false" persistent="false" trigger="" {
+component persistent="false" extends="cli.BaseCommand" {
 
 	function init(shell) {
 		variables.shell = shell;
