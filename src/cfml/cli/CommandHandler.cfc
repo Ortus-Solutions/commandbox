@@ -27,6 +27,7 @@ component output='false' persistent='false' {
 		instance.shell = shell;
 		reader = instance.shell.getReader();
         var completors = createObject('java','java.util.LinkedList');
+        instance.parser = new parser();
 		initCommands( instance.rootCommandDirectory, '' );
 				
 		var completor = createDynamicProxy(new Completor(this), ['jline.Completor']);
@@ -82,6 +83,11 @@ component output='false' persistent='false' {
 		
 		// Add it to the command dictionary
 		registerCommand( command, commandPath & '.' & CFCName );
+		
+		// Register the aliases
+		for( var alias in command.$CommandBox.aliases ) {
+			registerCommand( command, commandPath & '.' & alias );
+		}
 	}
 	
 	function decorateCommand( required command ) {
@@ -93,7 +99,8 @@ component output='false' persistent='false' {
 			aliases = listToArray( CFCMD.aliases ?: '' ),
 			parameters = [],
 			hasHelp = false,
-			hint = CFCMD.hint ?: ''
+			hint = CFCMD.hint ?: '',
+			originalName = CFCMD.name
 		};
 		
 		// Check for help() method
@@ -192,19 +199,12 @@ component output='false' persistent='false' {
 	}
 
 	/**
-	 * return the shell
- 	 **/
-	function getShell() {
-		return instance.shell;
-	}
-
-	/**
 	 * run a command line
 	 * @line.hint line to run
  	 **/
 	function runCommandline(line) {
 		// Turn the users input into an array of tokens
-		var tokens = tokenizeInput( line );
+		var tokens = instance.parser.tokenizeInput( line );
 		// Resolve the command they are wanting to run
 		var commandInfo = resolveCommand( tokens );
 		
@@ -214,7 +214,7 @@ component output='false' persistent='false' {
 			return;
 		}
 		
-		var parameterInfo = parseParameters( commandInfo.parameters );
+		var parameterInfo = instance.parser.parseParameters( commandInfo.parameters );
 				
 		// Parameters need to be ALL positional or ALL named
 		if( arrayLen( parameterInfo.positionalParameters ) && structCount( parameterInfo.namedParameters ) ) {
@@ -236,110 +236,6 @@ component output='false' persistent='false' {
 		return commandInfo.commandReference[ 'run' ]( argumentCollection = parameterInfo.namedParameters );
 		
 	}
-
-	/**
-	 * Tokenizes the command line entered by the user.  Returns array with command statements and arguments
-	 *
-	 * Consider making a dedicated CFC for this since some of the logic could benifit from 
-	 * little helper methods to increase readability and reduce duplicate code.
- 	 **/
-	function tokenizeInput( string line ) {
-		
-		// Holds token
-		var tokens = [];
-		// Used to build up each token
-		var token = '';
-		// Are we currently inside a quoted string
-		var inQuotes = false;
-		// What quote character is around our current quoted string (' or ")
-		var quoteChar = '';
-		// Is the current character escaped
-		var isEscaped = false;
-		// Are we waiting for the "value" portion of a name/value pair. (In case there is whitespace we're wading through)
-		var isWaitingOnValue = false;
-		// The previous character to handle escape chars.
-		var prevChar = '';
-		// Pointer to the current character
-		var i = 0;
-		
-		// Loop over each character in the line
-		while( ++i <= len( line ) ) {
-			// Current character
-			char = mid( line, i, 1 );
-			// All the remaining characters
-			remainingChars = mid( line, i, len( line ) );
-			// Reset this every time
-			isEscaped = false;
-			
-			// This character might be escaped
-			if( prevChar == '\' ) {
-				isEscaped = true;
-			}
-			
-			// If we're in the middle of a quoted string, just keep appending
-			if( inQuotes ) {
-				token &= char;
-				// We just reached the end of our quoted string
-				if( char == quoteChar && !isEscaped ) {
-					inQuotes = false;
-					tokens.append( token);
-					token = '';
-				}
-				prevChar = char;
-				continue;
-			}
-			
-			// Whitespace demarcates tokens outside of quotes
-			// Whitespace outside of a quoted string is dumped and not added to the token
-			if( trim(char) == '' ) {
-				
-				// Don't break if an = is next ...
-				if( left( trim( remainingChars ), 1 ) == '=' ) {
-					isWaitingOnValue = true;
-					prevChar = char;
-					continue;
-				// ... or if we just processed one and we're waiting on the value.
-				} else if( isWaitingOnValue ) {
-					prevChar = char;
-					continue;
-				// Append what we have and start anew
-				} else {
-					if( len( token ) ) {
-						tokens.append( token);
-						token = '';					
-					}
-					prevChar = char;
-					continue;
-				}
-			}
-			
-			// We're starting a quoted string
-			if( ( char == '"' || char == "'" ) && !isEscaped ) {
-				inQuotes = true;
-				quoteChar = char;
-			}
-			
-			// Keep appending
-			token &= char;
-			
-			// If we're waiting for a value in a name/value pair and just hit something OTHER than an =
-			if( isWaitingOnValue && char != '=' ) {
-				// Then the wait is over
-				isWaitingOnValue = false;
-			}
-			
-			prevChar = char;
-			
-		} // end while
-		
-		// Anything left after the loop is our last token
-		if( len( token ) ) {
-			tokens.append( token);					
-		}
-		
-		return tokens;
-	}
-
 
 
 	/**
@@ -405,73 +301,7 @@ component output='false' persistent='false' {
 				
 	}
 
-
-	/**
-	 * Parse an array of parameter tokens. unescape values and determine if named or positional params are being used.
- 	 **/
-	function parseParameters( required array parameters ) {
-		
-		var results = {
-			positionalParameters = [],
-			namedParameters = {}
-		};
-		
-		if( !arrayLen( parameters ) ) {
-			return results;			
-		}
-		
-		for( var param in parameters ) {
-			
-			// Remove escaped characters
-			param = removeEscapedChars( param );
-			
-			// named params
-			if( listLen( param, '=' ) > 1 ) {
-				// Extract the name and value pair
-				var name = listFirst( param, '=' );
-				var value = listRest( param, '=' );
-				
-				// Unwrap quotes from value if used
-				value = unwrapQuotes( value );
-				
-				name = replaceEscapedChars( name );
-				value = replaceEscapedChars( value );
-								
-				results.namedParameters[ name ] = value;
-				
-			// Positional params
-			} else {
-				// Unwrap quotes from value if used
-				param = unwrapQuotes( param );
-				results.positionalParameters.append( param );				
-			}
-						
-		}
-		
-		return results;
-		
-	}
 	
-	
-	private function unwrapQuotes( theString ) {
-		if( left( theString, 1 ) == '"' or left( theString, 1 ) == "'") {
-			return mid( theString, 2, len( theString ) - 2 );
-		}
-		return theString;
-	}
-	
-	private function removeEscapedChars( theString ) {
-		theString = replaceNoCase( theString, "\'", '__singleQuote__', "all" );
-		theString = replaceNoCase( theString, '\"', '__doubleQuote__', "all" );
-		return		replaceNoCase( theString, '\=', '__equalSign__', "all" );
-	}
-	
-	private function replaceEscapedChars( theString ) {
-		theString = replaceNoCase( theString, '__singleQuote__', "\'", "all" );
-		theString = replaceNoCase( theString, '__doubleQuote__', '\"', "all" );
-		return		replaceNoCase( theString, '__equalSign__', '\=', "all" );
-	}
-
 	/**
 	 * Match positional parameters up with their names 
  	 **/
@@ -493,7 +323,6 @@ component output='false' persistent='false' {
 		
 		return results;		
 	}
-
 
 
 	/**
@@ -534,4 +363,11 @@ component output='false' persistent='false' {
 		return instance.commands;
 	}
 
+
+	/**
+	 * return the shell
+ 	 **/
+	function getShell() {
+		return instance.shell;
+	}
 }

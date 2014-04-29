@@ -332,6 +332,7 @@ component {
 			setTempDir(variables.tempdir);
 
 	        while (keepRunning) {
+	        	
 				if(input != "") {
 					keepRunning = false;
 				}
@@ -347,23 +348,30 @@ component {
 					reload();
 					continue;
 				}
-	            //reader.printString("======>" & line);
-	            // If we input the special word then we will mask
-	            // the next line.
+	            // If we input the special word then we will mask the next line.
 	            if ((!isNull(trigger)) && (line.compareTo(trigger) == 0)) {
 	                line = reader.readLine("password> ", javacast("char",mask));
 	            }
-				var args = rematch("'.*?'|"".*?""|\S+",line);
-				if(args.size() == 0 || len(trim(line))==0) continue;
-				try{
-					var result = commandHandler.runCommandLine(line);
-					result = isNull(result) ? "" : print(result);
-				} catch (any e) { printError(e); }
-	        }
+	            
+	            // If there's input, try to run it.
+				if( len(trim(line)) ) {
+					
+					try{
+						
+						var result = commandHandler.runCommandLine(line);
+						result = isNull(result) ? "" : print(result);
+						
+					} catch (any e) {
+						printError(e);
+					}
+				}
+				
+	        } // end while keep running
+	        
 	        if(structKeyExists(variables,"ansiOut")) {
 	        	variables.ansiOut.close();
 	        }
-	        //out.close();
+	        
 		} catch (any e) {
 			printError(e);
 	        if(structKeyExists(variables,"ansiOut")) {
@@ -375,15 +383,6 @@ component {
 		}
 		return reloadshell;
     }
-
-	/**
-	 * display help information
-	 * @namespace.hint namespace (or namespaceless command) to get help for
- 	 * @command.hint command to get help for
- 	 **/
-	function help(String namespace="", String command="")  {
-		return commandHandler.help(namespace,command);
-	}
 
 	/**
 	 * call a namespace command

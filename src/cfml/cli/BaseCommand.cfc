@@ -11,7 +11,7 @@ component {
 	}
 	
 	function run() {
-		return 'Command not implemented.';
+		return 'This command CFC has not implemented a run() method.';
 	}
 	
 	

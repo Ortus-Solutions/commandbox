@@ -14,16 +14,6 @@ component persistent="false" extends="cli.BaseCommand" {
 	}
 
 	/**
-	 * display help information
-	 * @namespace.hint namespace (or namespaceless command) to get help for
- 	 * @command.hint command to get help for
- 	 * @command.aliases h,?
-  	 **/
-	function help(String namespace="", String command="")  {
-		return shell.help(namespace,command);
-	}
-
-	/**
 	 * List directories
 	 * 	ex: dir /my/path
 	 * @directory.hint directory
