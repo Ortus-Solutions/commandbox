@@ -13,7 +13,7 @@ component persistent="false" extends="cli.BaseCommand" aliases="ls,directory" {
 		var result = "";
 		directory = trim(directory) == "" ? shell.pwd() : directory;
 		for(var d in directoryList(directory,recurse)) {
-			result &= shell.ansi("cyan",d) & cr;
+			result &= print.cyanLine( d );
 		}
 		return result;
 	}

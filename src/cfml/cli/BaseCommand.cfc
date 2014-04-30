@@ -8,6 +8,7 @@ component {
 		reader = shell.getReader();
 		cr = chr(10);
 		result = '';
+		print = new Print();
 		return this;
 	}
 	
