@@ -259,7 +259,7 @@ component {
 	 * prints string to console
 	 * @string.hint string to print (handles complex objects)
   	 **/
-	function print(required string) {
+	function printString(required string) {
 		if(!isSimpleValue(string)) {
 			systemOutput("[COMPLEX VALUE]\n");
 			writedump(var=string, output="console");
@@ -320,7 +320,7 @@ component {
 					try{
 						
 						var result = commandHandler.runCommandLine(line);
-						result = isNull(result) ? "" : print(result);
+						result = isNull(result) ? "" : printString(result);
 						
 					} catch (any e) {
 						printError(e);
