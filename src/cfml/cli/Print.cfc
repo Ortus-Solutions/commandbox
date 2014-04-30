@@ -75,10 +75,17 @@ component {
 	 *
   	 **/
 	function onMissingMethod( missingMethodName, missingMethodArguments ) {
+		
+		// Flag for if this is a line or not
 		var newLine = false;
-		var attributes = [];
+		
+		// Name of the method to chop up
 		var methodName = missingMethodName;
+		
+		// TODO: Actually use a string buffer
 		var ANSIString = "";
+		
+		// Text needing formatting
 		var text = missingMethodArguments[ 1 ] ?: '';
 		
 		// Carve it up until it's gone
