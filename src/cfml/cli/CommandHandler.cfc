@@ -5,11 +5,19 @@
 component output='false' persistent='false' {
 
 	instance = {
+		// Refernce to the shell instance
 		shell = '',
+		
+		// A nested struct of the registered commands
 		commands = {},
-		commandAliases = {},
-		namespaceHelp = {},
+		
+		// The same command data, but more useful for help and such
+		flattenedCommands = {},
+		
+		// The directory the CommandHandler lives in
 		thisdir = getDirectoryFromPath(getMetadata(this).path),
+		
+		// Java system reference
 		System = createObject('java', 'java.lang.System')
 	};
 	
@@ -28,8 +36,7 @@ component output='false' persistent='false' {
 		reader = instance.shell.getReader();
         var completors = createObject('java','java.util.LinkedList');
         instance.parser = new parser();
-		initCommands( instance.rootCommandDirectory, '' );
-				
+		initCommands();				
 		var completor = createDynamicProxy(new Completor(this), ['jline.Completor']);
         reader.addCompletor(completor);
 		return this;
@@ -38,7 +45,7 @@ component output='false' persistent='false' {
 	/**
 	 * initialize the commands. This will recursively call itself for subdirectories.
 	 **/
-	function initCommands( required commandDirectory, required commandPath ) {
+	function initCommands( commandDirectory = instance.rootCommandDirectory, commandPath='' ) {
 		var varDirs = DirectoryList( path=commandDirectory, recurse=false, listInfo='query', sort='type desc, name asc' );
 		for(var dir in varDirs){
 			
@@ -60,7 +67,7 @@ component output='false' persistent='false' {
 	 * @cfc.hint CFC name that represents the command
 	 * @commandPath.hint The relative dot-delimted path to the CFC starting in the commands dir
 	 **/
-	function loadCommand( CFC, commandPath ) {
+	private function loadCommand( CFC, commandPath ) {
 		
 		// Strip cfc extension from filename
 		var CFCName = mid( CFC, 1, len( CFC ) - 4 );
@@ -98,16 +105,10 @@ component output='false' persistent='false' {
 		var commandMD = {
 			aliases = listToArray( CFCMD.aliases ?: '' ),
 			parameters = [],
-			hasHelp = false,
 			hint = CFCMD.hint ?: '',
 			originalName = CFCMD.name
 		};
-		
-		// Check for help() method
-		if( structKeyExists( command, 'help' ) ) {
-			commandMD.hasHelp = true;
-		}
-		
+				
 		// Capture the command's parameters
 		commandMD.parameters = getMetaData(command.run).parameters;
 		
@@ -119,83 +120,17 @@ component output='false' persistent='false' {
 	function registerCommand( required command, required commandPath ) {
 		// Build bracketed string of command path to allow special characters
 		var commandPathBracket = '';
+		var commandName = '';
 		for( var item in listToArray( commandPath, '.' ) ) {
-			commandPathBracket &= '["#item#"]';
+			commandPathBracket &= '[ "#item#" ]';
+			commandName &= "#item# ";
 		}
 				
 		// Register the command in our command dictionary
 		evaluate( "instance.commands#commandPathBracket# = command" );
-	}
-
-	/**
-	 * get help information
-	 * @namespace.hint namespace (or namespaceless command) to get help for
- 	 * @command.hint command to get help for
- 	 **/
-	function help(String namespace='', String command='')  {
-		if(namespace != '' && command == '') {
-			if(!isNull(commands[''][namespace])) {
-				command = namespace;
-				namespace = '';
-			} else if(!isNull(commandAliases[''][namespace])) {
-				command = commandAliases[''][namespace];
-				namespace = '';
-			} else if (isNull(commands[namespace])) {
-				instance.shell.printError({message:'No help found for #namespace#'});
-				return '';
-			}
-		}
-		var result = instance.shell.ansi('green','HELP #namespace# [command]') & cr;
-		if(namespace == '' && command == '') {
-			for(var commandName in commands['']) {
-				var helpText = commands[''][commandName].hint;
-				result &= chr(9) & instance.shell.ansi('cyan',commandName) & ' : ' & helpText & cr;
-			}
-			for(var ns in namespaceHelp) {
-				var helpText = namespaceHelp[ns];
-				result &= chr(9) & instance.shell.ansi('black,cyan_back',ns) & ' : ' & helpText & cr;
-			}
-		} else {
-			if(!isNull(commands[namespace][command])) {
-				result &= getCommandHelp(namespace,command);
-			} else if (!isNull(commands[namespace])){
-				var helpText = namespaceHelp[namespace];
-				result &= chr(9) & instance.shell.ansi('cyan',namespace) & ' : ' & helpText & cr;
-				for(var commandName in commands[namespace]) {
-					var helpText = commands[namespace][commandName].hint;
-					result &= chr(9) & instance.shell.ansi('cyan',commandName) & ' : ' & helpText & cr;
-				}
-			} else {
-				instance.shell.printError({message:'No help found for #namespace# #command#'});
-				return '';
-			}
-		}
-		return result;
-	}
-
-	/**
-	 * get command help information
-	 * @namespace.hint namespace (or namespaceless command) to get help for
- 	 * @command.hint command to get help for
- 	 **/
-	private function getCommandHelp(String namespace='', String command='')  {
-		var result ='';
-		var metadata = commands[namespace][command];
-		result &= chr(9) & instance.shell.ansi('cyan',command) & ' : ' & metadata.hint & cr;
-		result &= chr(9) & instance.shell.ansi('magenta','Arguments') & cr;
-		for(var param in metadata.parameters) {
-			result &= chr(9);
-			if(param.required)
-				result &= instance.shell.ansi('red','required ');
-			result &= param.type & ' ';
-			result &= instance.shell.ansi('magenta',param.name);
-			if(!isNull(param.default))
-				result &= '=' & param.default & ' ';
-			if(!isNull(param.hint))
-				result &= ' (#param.hint#)';
-		 	result &= cr;
-		}
-		return result;
+		
+		// And again here in this flat collection for help usage
+		instance.flattenedCommands[ trim(commandName) ] = command;
 	}
 
 	/**
@@ -203,10 +138,9 @@ component output='false' persistent='false' {
 	 * @line.hint line to run
  	 **/
 	function runCommandline(line) {
-		// Turn the users input into an array of tokens
-		var tokens = instance.parser.tokenizeInput( line );
+		
 		// Resolve the command they are wanting to run
-		var commandInfo = resolveCommand( tokens );
+		var commandInfo = resolveCommand( line );
 		
 		// If nothing was found, bail out here.
 		if( !commandInfo.found ) {
@@ -240,8 +174,13 @@ component output='false' persistent='false' {
 
 	/**
 	 * Figure out what command to run based on the tokenized user input
+	 * @line.hint A string containing the command and parameters that the user entered
+	 * @substituteHelp.hint If the command cannot be found, switch it out for the closest help 
  	 **/
-	function resolveCommand( tokens ) {
+	function resolveCommand( required string line, substituteHelp = true ) {
+		
+		// Turn the users input into an array of tokens
+		var tokens = instance.parser.tokenizeInput( line );
 		
 		var cmds = instance.commands;
 		
@@ -255,7 +194,7 @@ component output='false' persistent='false' {
 		var lastHelpReference = '';
 					
 		// Check for a root help command
-		if( structKeyExists( results.commandReference, 'help' ) && isObject( results.commandReference.help ) ) {
+		if( substituteHelp &&  structKeyExists( results.commandReference, 'help' ) && isObject( results.commandReference.help ) ) {
 			lastHelpReference = results.commandReference.help;
 		}
 		
@@ -276,7 +215,7 @@ component output='false' persistent='false' {
 				break;
 			// If this is a folder, check and see if it has a "help" command
 			} else {	
-				if( structKeyExists( results.commandReference, 'help' ) && isObject( results.commandReference.help ) ) {
+				if( substituteHelp && structKeyExists( results.commandReference, 'help' ) && isObject( results.commandReference.help ) ) {
 					lastHelpReference = results.commandReference.help;
 				}
 			}
@@ -350,17 +289,17 @@ component output='false' persistent='false' {
 
 
 	/**
-	 * return a list of base commands (includes namespaces)
+	 * return a list of base commands
  	 **/
 	function listCommands() {
-		return structKeyList( instance.commands );
+		return structKeyList( instance.flattenedCommands );
 	}
 
 	/**
 	 * return the command structure
  	 **/
 	function getCommands() {
-		return instance.commands;
+		return instance.flattenedCommands;
 	}
 
 

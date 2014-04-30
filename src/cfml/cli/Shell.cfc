@@ -5,8 +5,7 @@
 component {
 
 	System = createObject("java", "java.lang.System");
-	ANSIBuffer = createObject("java", "jline.ANSIBuffer");
-	ANSICodes = createObject("java", "jline.ANSIBuffer$ANSICodes");
+	//ANSIBuffer = createObject("java", "jline.ANSIBuffer");
     StringEscapeUtils = createObject("java","org.apache.commons.lang.StringEscapeUtils");
 	keepRunning = true;
     reloadshell = false;
@@ -14,6 +13,7 @@ component {
 	initialDirectory = System.getProperty("user.dir");
 	pwd = initialDirectory;
 	cr = System.getProperty("line.separator");
+	print = new Print();
 
 	/**
 	 * constructor
@@ -45,7 +45,7 @@ component {
 		}
     	variables.homedir = env("user.home") & "/.box";
     	variables.tempdir = variables.homedir & "/temp";
-		variables.shellPrompt = ansi("cyan","CommandBox> ");
+		variables.shellPrompt = print.cyanText( "CommandBox> ");
 		variables.commandHandler = new CommandHandler(this);
     	return this;
 	}
@@ -168,7 +168,7 @@ component {
     	var t=tag;
     	var matches = REMatch('(?i)<#t#[^>]*>(.+?)</#t#>', text);
     	for(var match in matches) {
-    		var boldtext = ansi(ansiCode,reReplaceNoCase(match,"<#t#[^>]*>(.+?)</#t#>","\1"));
+    		var boldtext = print[ ansiCode ]( reReplaceNoCase(match,"<#t#[^>]*>(.+?)</#t#>","\1") );
     		text = replace(text,match,boldtext,"one");
     	}
     	return text;
@@ -253,45 +253,6 @@ component {
 			return "cd: #directory#: No such file or directory";
 		}
 		return pwd;
-	}
-
-	/**
-	 * Adds ANSI attributes to string
-	 * @attribute.hint list of ANSI codes to apply
-	 * @string.hint string to apply ANSI to
-  	 **/
-	function ansi(required attribute, required string) {
-		var textAttributes =
-		{"off":0,
-		 "none":0,
-		 "bold":1,
-		 "underscore":4,
-		 "blink":5,
-		 "reverse":7,
-		 "concealed":8,
-		 "black":30,
-		 "red":31,
-		 "green":32,
-		 "yellow":33,
-		 "blue":34,
-		 "magenta":35,
-		 "cyan":36,
-		 "white":37,
-		 "black_back":40,
-		 "red_back":41,
-		 "green_back":42,
-		 "yellow_back":43,
-		 "blue_back":44,
-		 "magenta_back":45,
-		 "cyan_back":46,
-		 "white_back":47
-		};
-		var ansiString = "";
-		for(var attrib in listToArray(attribute)) {
-			ansiString &= ANSICodes.attrib(textAttributes[attrib]);
-		}
-		ansiString &= string & ANSICodes.attrib(textAttributes["off"]);
-    	return ansiString;
 	}
 
 	/**
@@ -393,11 +354,18 @@ component {
 	}
 
 	/**
+	 * Get CommandHandler
+ 	 **/
+	function getCommandHandler()  {
+		return variables.commandHandler;
+	}
+
+	/**
 	 * print an error to the console
 	 * @err.hint Error object to print (only message is required)
   	 **/
 	function printError(required err) {
-		reader.printString(ansi("red","ERROR: ") & HTML2ANSI(err.message));
+		reader.printString(print.redText( "ERROR: ") & HTML2ANSI(err.message));
 		reader.printNewLine();
 		if (structKeyExists( err, 'tagcontext' )) {
 			var lines=arrayLen( err.tagcontext );
@@ -406,9 +374,9 @@ component {
 					tc = err.tagcontext[ idx ];
 					if (len( tc.codeprinthtml )) {
 						isFirst = ( idx == 1 );
-						isFirst ? reader.printString(ansi("red","#tc.template#: line #tc.line#")) : reader.printString(ansi("magenta","#ansi('bold','called from ')# #tc.template#: line #tc.line#"));
+						isFirst ? reader.printString(print.redText( "#tc.template#: line #tc.line#") ) : reader.printString(print.magentaText( "#print.boldText( 'called from ' )# #tc.template#: line #tc.line#" ));
 						reader.printNewLine();
-						reader.printString(ansi("blue",HTML2ANSI(tc.codeprinthtml)));
+						reader.printString( print.blueText( HTML2ANSI( tc.codeprinthtml ) ) );
 					}
 				}
 			}
