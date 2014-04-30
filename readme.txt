@@ -1,10 +1,12 @@
-  ______      ____     __     __  
- (_   _ \    / __ \   (_ \   / _) 
-   ) (_) )  / /  \ \    \ \_/ /   
-   \   _/  ( ()  () )    \   /    
-   /  _ \  ( ()  () )    / _ \    
-  _) (_) )  \ \__/ /   _/ / \ \_  
- (______/    \____/   (__/   \__) 
+   ____     ____       __    __       __    __       ____        __      _   ______     ______      ____     __     __  
+  / ___)   / __ \      \ \  / /       \ \  / /      (    )      /  \    / ) (_  __ \   (_   _ \    / __ \   (_ \   / _) 
+ / /      / /  \ \     () \/ ()       () \/ ()      / /\ \     / /\ \  / /    ) ) \ \    ) (_) )  / /  \ \    \ \_/ /   
+( (      ( ()  () )    / _  _ \       / _  _ \     ( (__) )    ) ) ) ) ) )   ( (   ) )   \   _/  ( ()  () )    \   /    
+( (      ( ()  () )   / / \/ \ \     / / \/ \ \     )    (    ( ( ( ( ( (     ) )  ) )   /  _ \  ( ()  () )    / _ \    
+ \ \___   \ \__/ /   /_/      \_\   /_/      \_\   /  /\  \   / /  \ \/ /    / /__/ /   _) (_) )  \ \__/ /   _/ / \ \_  
+  \____)   \____/   (/          \) (/          \) /__(  )__\ (_/    \__/    (______/   (______/    \____/   (__/   \__) 
+                                                                                                                        
+
      
 ********************************************************************************
 Copyright Since 2005 ColdBox Framework by Luis Majano and Ortus Solutions, Corp
@@ -12,13 +14,13 @@ www.coldbox.org | www.luismajano.com | www.ortussolutions.com
 ********************************************************************************
 HONOR GOES TO GOD ABOVE ALL
 ********************************************************************************
-WELCOME TO BOX
+WELCOME TO COMMANDBOX
 ********************************************************************************
-Welcome To The Box CLI!
-Box created & copyright by Luis Majano (Ortus Solutions, Corp)
+Welcome To The CommandBox CLI!
+CommandBox created & copyright by Luis Majano (Ortus Solutions, Corp)
 www.ortussolutions.com
 ********************************************************************************
-BOX INSTALLATION
+COMMANDBOX INSTALLATION
 ********************************************************************************
 IVY/Maven/cfdistro package managers or direct download (jar, bin, win33):
 
@@ -47,51 +49,62 @@ deb http://cfmlprojects.org/artifacts/debs/ ./
 Then run "sudo apt-get update; sudo apt-get install box-cli"
 
 ********************************************************************************
-BOX USAGE
+COMMANDBOX USAGE
 ********************************************************************************
-Box is either an EXE, a binary, or a JAR file, depending on preference.  They
+CommandBox is either an EXE, a binary, or a JAR file, depending on preference.  They
 all work the same, expanding the needed resources by default into your user home
 directory under .box/ (if not there already).
 
-You can run Box in interactive CLI mode, or server mode.  To run in ineractive
+You can run CommandBox in interactive CLI mode, or server mode.  To run in interactive
 mode, simply type "box -shell".  To run the server, type "box -server".
 
-Type "help" at the box> prompt to get a list of available commands and namespaces.  
-Type "help [command|namespace] [command]" for in-depth descriptions.
+Type "help" at the CommandBox> prompt to get a list of available commands.  
+Type "help [command]" for in-depth descriptions.
 
 ********************************************************************************
-BOX NAMESPACES
+COMMANDBOX COMMANDS
 ********************************************************************************
-Box is extensible via command "namespaces".  Any CFC in the 
-${box.home}/cfml/box/namespace directory will be added to the default namespace,
-otherwise they should be in their namespace directory, named the same, ex:
-${box.home}/cfml/box/namespace/cfdistro/cfdistro.cfc
+CommandBox is extensible via command CFCs.  Any CFC in the 
+${box.home}/cfml/cli/commands directory will be added registered as a command as 
+long as it extends cli.BaseCommand and has a run() method.
+CFCs that are nested in subfolders, will create multi-part command names Ex:
+${box.home}/cfml/cli/coldbox/init.cfc.
+That would create a two-part command called "command init"
+Everything after the command is considered parameters.
 
 These extension CFCs have the Shell object passed to their init().
 
 Tab completion and help are powered by metadata on these CFCs.  If you would like
-to use a friendlier name for your command, add @command.name my-neat-name, or add
-command aliases (not listed in help) or help text, via comment annotations, ex:
+to use a friendlier name for your command, add the attribute "aliases" to the component
+which is a comma-delimited list of names
 
-	/**
-	 * List directories
-	 * 	ex: dir /my/path
+dir.cfc
+/**
+ * List directories
+ * 	ex: dir /my/path
+ **/	 
+component extends="cli.BaseCommand" aliases="ls,directory" {
+
+	/**	
 	 * @directory.hint directory
 	 * @recurse.hint recursively list
- 	 * @command.aliases ls, directory
 	 **/
-	function dir(String directory="", Boolean recurse=false)  {...}
+	function run( String directory="", Boolean recurse=false )  {
+		...
+	}
+
+}
  
 
 ********************************************************************************
-BOX DEVELOPMENT
+COMMANDBOX DEVELOPMENT
 ********************************************************************************
 To hack on the sources, there are two main approaches.
 
-The easiest is to install box, and then CD to the ./src/cfml/box directory and
+The easiest is to install CommandBox, and then CD to the ./src/cfml/cli directory and
 type "box shell.cfm".  This will load the source version of the shell, instead
 of the included one.  Make any changes you want to the sources, and then at the
-box> prompt run "reload", which will load your changes.
+CommandBox> prompt run "reload", which will load your changes.
 
 The second way is to build the test server and run the tests through the IDE or
 the TestBox facade (see the ./build/build.xml file for the URL).
@@ -99,7 +112,7 @@ the TestBox facade (see the ./build/build.xml file for the URL).
 ********************************************************************************
 VERSIONING
 ********************************************************************************
-Box is maintained under the Semantic Versioning guidelines as much as possible.
+CommandBox is maintained under the Semantic Versioning guidelines as much as possible.
 
 Releases will be numbered with the following format:
 
@@ -112,9 +125,9 @@ And constructed with the following guidelines:
 * Bug fixes and misc changes bumps the patch
 
 ********************************************************************************
-BOX BUILD
+COMMANDBOX BUILD
 ********************************************************************************
-Box is built with cfdistro, which is a bunch of CFML specific Ant scripts.  Running 
+CommandBox is built with cfdistro, which is a bunch of CFML specific Ant scripts.  Running 
 the box-cli or box-cli.bat file should automatically download cfdistro to your
 home directory (./cfdistro ~5M) from:
 
@@ -151,9 +164,9 @@ box-cli runwar.start.fg
 which will start a server on port 8088 and wait for a ctrl-c to terminate.
 
 ********************************************************************************
-BOX LICENSE
+COMMANDBOX LICENSE
 ********************************************************************************
-Box is open source and bound to the Apache License, Version 2.0. 
+CommandBox is open source and bound to the Apache License, Version 2.0. 
 
 Please Read The Official License Agreement:
 http://www.coldbox.org/about/license
@@ -171,7 +184,7 @@ GOD
 	I THANK GOD FOR HIS WISDOM FOR THIS PROJECT
 
 ********************************************************************************
-BOX IMPORTANT LINKS
+COMMANDBOX IMPORTANT LINKS
 ********************************************************************************
 Source Code
 - https://github.com/Ortus-Solutions/box-cli

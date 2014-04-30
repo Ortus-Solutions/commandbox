@@ -86,7 +86,7 @@ component output='false' persistent='false' {
 		
 		// Register the aliases
 		for( var alias in command.$CommandBox.aliases ) {
-			registerCommand( command, commandPath & '.' & alias );
+			registerCommand( command, commandPath & '.' & trim(alias) );
 		}
 	}
 	
@@ -357,7 +357,7 @@ component output='false' persistent='false' {
 	}
 
 	/**
-	 * return the namespaced command structure
+	 * return the command structure
  	 **/
 	function getCommands() {
 		return instance.commands;

@@ -4,13 +4,13 @@ component name="TestShell" extends="mxunit.framework.TestCase" {
 	homedir = workdir & "/home";
 
 	public void function beforeTests()  {
-		shell = new cfml.box.Shell();
+		shell = new cfml.cli.Shell();
 		directoryExists(workdir) ? directoryDelete(workdir,true) : "";
 		directoryCreate(workdir);
 		directoryCreate(homedir);
 		shell.cd(workdir);
 		shell.setHomeDir(homedir);
-		variables.cfdistro = new cfml.box.namespace.cfdistro.cfdistro(shell);
+		variables.cfdistro = new cfml.cli.commands.cfdistro.cfdistro(shell);
 	}
 
 	public void function testInstall()  {

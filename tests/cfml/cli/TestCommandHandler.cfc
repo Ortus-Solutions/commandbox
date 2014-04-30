@@ -4,8 +4,8 @@ component extends="mxunit.framework.TestCase" {
 	candidates = createObject("java","java.util.TreeSet");
 
 	public void function setUp()  {
-		var shell = new cfml.box.Shell();
-		commandHandler = new cfml.box.CommandHandler(shell);
+		var shell = new cfml.cli.Shell();
+		commandHandler = new cfml.cli.CommandHandler(shell);
 	}
 
 	public void function testInitCommands()  {

@@ -1,5 +1,5 @@
 /**
- * General CLI commands (in the default namespace)
+ * General CLI commands 
  * You can specify the command name to use with: @command.name
  * and you can specify any aliases (not shown in command list)
  * via: @command.aliases list,of,aliases

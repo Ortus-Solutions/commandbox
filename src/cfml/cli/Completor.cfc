@@ -4,7 +4,7 @@
  **/
 component output="false" persistent="false" {
 
-	// command list, containing namespaceless commands and available namespaces
+	// command list
 	commandlist = createObject("java","java.util.TreeSet");
 
 	/**

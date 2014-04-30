@@ -385,13 +385,12 @@ component {
     }
 
 	/**
-	 * call a namespace command
-	 * @namespace.hint namespace (empty string for default)
+	 * call a command
  	 * @command.hint command name
  	 * @args.hint arguments
  	 **/
-	function callCommand(String namespace="", String command="", args)  {
-		return commandHandler.callCommand(namespace,command,args);
+	function callCommand( String command="" )  {
+		return commandHandler.runCommandline( command );
 	}
 
 	/**
