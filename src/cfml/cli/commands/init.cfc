@@ -1,101 +1,12 @@
 /**
- * Box commands (in the default commands)
- * You can specify the command name to use with: @command.name
- * and you can specify any aliases (not shown in command list)
- * via: @command.aliases list,of,aliases
- * The function comments in here will show up in the CLI help
+ * create box.json if not exists.
  **/
-component persistent="false" extends="cli.BaseCommand" {
-
-
-	/**
-	 * constructor
-	 * @shell.hint shell
-	 **/
-	function init(shell) {
-		variables.shell = shell;
-		reader = shell.getReader();
-		cr = chr(10);
-		return this;
-	}
+component persistent="false" extends="cli.BaseCommand" aliases="" {
 
 	/**
-	 * run server
-	 * @command.name run
-	 **/
-	function runServer() {
-		var cfdistro = new commands.cfdistro.cfdistro();
-		cfdistro.serverStart();
-	}
-
-	/**
-	 * stop server
-	 * @command.name stop
-	 **/
-	function stopServer() {
-		var cfdistro = new commands.cfdistro.cfdistro();
-		cfdistro.serverStop();
-	}
-
-
-	/**
-	 * information
-	 * @shell.hint shell
-	 **/
-	function info() {
-		// stub
-		return "Version 1.0.0#cr# Artifacts:#cr# org.coldbox:coldbox:*#cr# org.coldbox:testbox:1.0.0";
-	}
-
-	/**
-	 * upgrades the shell libraries
-	 * @command.aliases update
-	 **/
-	function upgrade() {
-		return "faux-upgraded!";
-	}
-
-	/**
-	 * updates the shell
-	 * @command.aliases update
-	 **/
-	function update(Boolean force=false) {
-		var temp = shell.getTempDir();
-		http url="http://cfmlprojects.org/artifacts/org/coldbox/box.cli/maven-metadata.xml" file="#temp#/maven-metadata.xml";
-		var mavenData = xmlParse("#temp#/maven-metadata.xml");
-		var latest = xmlSearch(mavendata,"/metadata/versioning/versions/version[last()]/text()");
-		latest = latest[1].xmlValue;
-		if(latest!=shell.version() || force) {
-			var result = shell.callCommand( "cfdistro dependency artifactId=box.cli groupId=org.coldbox version=#latest# classifier=cfml" );
-		}
-		var filePath = "#shell.getArtifactsDir()#/org/coldbox/box.cli/#latest#/box.cli-#latest#-cfml.zip";
-		if( fileExists( filePath ) ) {
-			
-			zip
-				action="unzip"
-				file="#filePath#"
-				destination="#shell.getHomeDir()#/cfml";
-		}
-					 
-		return "installed #latest# (#result#)";
-	}
-
-	/**
-	 * Adds a task
-	 * @command.name task-add
-	 * @name.hint task name
-	 * @interval.hint task interval
-	 **/
-	function taskAdd(required String name, required numeric interval) {
-		return "faux-task-add! Task:#name# Interval:#interval#";
-	}
-
-	/**
-	 * create box.json if not exists.
-	 * @command.name init
 	 * @force.hint do not prompt, overwrite if exists
 	 **/
-	function initializeBoxApp(Boolean force=false)  {
+	function run( Boolean force=false ) {
 		var pwd = shell.pwd();
 		var boxfile = pwd & "/box.json";
 		var ask = "";
@@ -209,5 +120,7 @@ component persistent="false" extends="cli.BaseCommand" {
 			}
 		}
 	}
+
+
 
 }
