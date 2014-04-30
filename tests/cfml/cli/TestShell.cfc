@@ -6,7 +6,6 @@ component name="TestShell" extends="mxunit.framework.TestCase" {
     	var printWriter = createObject("java","java.io.PrintWriter").init(baos);
 		var shell = new cfml.cli.Shell(bain,printWriter);
 		commandHandler = new cfml.cli.CommandHandler(shell);
-		commandHandler.initCommands();
 		commandHandler.runCommandline("ls");
 		debug(baos.toString());
 
@@ -24,10 +23,6 @@ component name="TestShell" extends="mxunit.framework.TestCase" {
 
 	}
 
-	public void function testHelp()  {
-		var shell = new cfml.cli.Shell();
-		var result = shell.help();
-	}
 
 	public void function testHTML2ANSI()  {
 		var shell = new cfml.cli.Shell();

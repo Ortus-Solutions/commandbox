@@ -38,7 +38,7 @@ component output='false' persistent='false' {
 	/**
 	 * initialize the commands. This will recursively call itself for subdirectories.
 	 **/
-	function initCommands( commandDirectory, commandPath ) {
+	function initCommands( required commandDirectory, required commandPath ) {
 		var varDirs = DirectoryList( path=commandDirectory, recurse=false, listInfo='query', sort='type desc, name asc' );
 		for(var dir in varDirs){
 			

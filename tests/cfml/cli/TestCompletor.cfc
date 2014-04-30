@@ -5,10 +5,9 @@ component name="TestShell" extends="mxunit.framework.TestCase" {
 	public void function setUp()  {
 		var shell = new cfml.cli.Shell();
 		var commandHandler = new cfml.cli.CommandHandler(shell);
-		commandHandler.initCommands();
 		variables.completor = new cfml.cli.Completor(commandHandler);
 	}
-
+/*
 	public void function testPartialNoPrefixCommands()  {
 		cmdline = "";
 		cursor = completor.complete(cmdline,len(cmdline),candidates);
@@ -113,5 +112,5 @@ component name="TestShell" extends="mxunit.framework.TestCase" {
 		assertEquals(0,candidates.size());
 		assertEquals(len(cmdline),cursor);
 		candidates.clear();
-	}
+	}*/
 }

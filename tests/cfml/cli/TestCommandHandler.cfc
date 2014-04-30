@@ -9,18 +9,9 @@ component extends="mxunit.framework.TestCase" {
 	}
 
 	public void function testInitCommands()  {
-		commandHandler.initCommands();
 		var commands = commandHandler.getCommands();
-		assertTrue(structKeyExists(commands[""],"init"));
+		assertTrue(structKeyExists(commands,"quit"));
 
 	}
 
-	public void function testLoadCommands()  {
-		commandHandler.loadCommands();
-		candidates = commandHandler.getCommands();
-		debug(candidates);
-		assertEquals(0,candidates.size());
-		assertEquals(len(cmdline),cursor);
-		candidates.clear();
-	}
 }
