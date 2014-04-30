@@ -68,7 +68,7 @@ component persistent="false" extends="cli.BaseCommand" {
 		if(latest!=shell.version() || force) {
 			var result = shell.callCommand( "cfdistro dependency artifactId=box.cli groupId=org.coldbox version=#latest# classifier=cfml" );
 		}
-		var filePath = "#shell.getArtifactsDir()#/org/coldbox/box/cli/#latest#/box.cli-#latest#-cfml.zip";
+		var filePath = "#shell.getArtifactsDir()#/org/coldbox/box.cli/#latest#/box.cli-#latest#-cfml.zip";
 		if( fileExists( filePath ) ) {
 			
 			zip
