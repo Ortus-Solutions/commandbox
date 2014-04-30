@@ -7,6 +7,7 @@
 component extends="Print" {
 
 	print = new Print();
+	// TODO-- actually use a String Buffer
 	result = '';
 		
 	// Reset the result
