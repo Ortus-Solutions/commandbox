@@ -387,7 +387,6 @@ component {
 	/**
 	 * call a command
  	 * @command.hint command name
- 	 * @args.hint arguments
  	 **/
 	function callCommand( String command="" )  {
 		return commandHandler.runCommandline( command );
