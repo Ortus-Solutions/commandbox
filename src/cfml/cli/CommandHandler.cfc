@@ -166,8 +166,17 @@ component output='false' persistent='false' {
 		
 		// Make sure we have all required params. 
 		parameterInfo.namedParameters = ensureRequiredParams( parameterInfo.namedParameters, commandParams );
-				
-		return commandInfo.commandReference[ 'run' ]( argumentCollection = parameterInfo.namedParameters );
+		
+		// Reset the printBuffer
+		commandInfo.commandReference.reset();
+		var result = commandInfo.commandReference.run( argumentCollection = parameterInfo.namedParameters );
+		
+		// If the command didn't return anything, grab its print buffer value 
+		if( isNull( result ) ) {
+			result = commandInfo.commandReference.getResult();
+		}
+		
+		return result;
 		
 	}
 

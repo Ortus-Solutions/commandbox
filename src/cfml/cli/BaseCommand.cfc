@@ -3,12 +3,12 @@
 **/
 component {
 	
+	cr = chr(10);
+	print = new PrintBuffer();
+	
 	function init(shell) {
 		variables.shell = shell;
 		reader = shell.getReader();
-		cr = chr(10);
-		result = '';
-		print = new Print();
 		return this;
 	}
 	
@@ -18,12 +18,12 @@ component {
 	
 	// Called prior to each execution to reset any state stored in the CFC
 	function reset() {
-		result = '';
+		print.clear();
 	}
 		
 	// Get the result.  This will be called if the run() method doesn't return anything
 	function getResult() {
-		return result;
+		return print.getResult();
 	}
 	
 	
