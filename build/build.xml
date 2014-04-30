@@ -16,7 +16,7 @@
 
         <target name="test">
                 <server-run>
-                    <testbox-rundirs basePath="${tests.dir}/cfml/box" componentPath="tests.cfml.box" outputdir="${dist.dir}/testresults/"  
+                    <testbox-rundirs basePath="${tests.dir}/cfml/box" componentPath="tests.cfml.cli" outputdir="${dist.dir}/testresults/"  
 			runner="http://${runwar.host}:${runwar.port}/tests/tboxrunner.cfm?"/>
                 </server-run>
    
@@ -24,7 +24,7 @@
 
         <target name="build.test" depends="build.testwar">
                 <server-run>
-                    <testbox-rundirs basePath="${tests.dir}/cfml/box" componentPath="tests.cfml.box" outputdir="${dist.dir}/testresults/"
+                    <testbox-rundirs basePath="${tests.dir}/cfml/box" componentPath="tests.cfml.cli" outputdir="${dist.dir}/testresults/"
 			runner="http://${runwar.host}:${runwar.port}/tests/tboxrunner.cfm?"/>
                 </server-run>
         </target>

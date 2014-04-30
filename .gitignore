@@ -4,4 +4,6 @@
 settings.xml
 .project
 WEB-INF
+tests/results
+tests/work
 Icon?

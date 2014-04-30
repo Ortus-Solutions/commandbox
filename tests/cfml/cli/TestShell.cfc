@@ -4,9 +4,8 @@ component name="TestShell" extends="mxunit.framework.TestCase" {
     	var baos = createObject("java","java.io.ByteArrayOutputStream").init();
     	var bain = createObject("java","java.io.ByteArrayInputStream").init("ls#chr(10)#".getBytes());
     	var printWriter = createObject("java","java.io.PrintWriter").init(baos);
-		var shell = new cfml.box.Shell(bain,printWriter);
-		commandHandler = new cfml.box.CommandHandler(shell);
-		commandHandler.initCommands();
+		var shell = new cfml.cli.Shell(bain,printWriter);
+		commandHandler = new cfml.cli.CommandHandler(shell);
 		commandHandler.runCommandline("ls");
 		debug(baos.toString());
 
@@ -18,19 +17,15 @@ component name="TestShell" extends="mxunit.framework.TestCase" {
     	var n = chr(10);
     	var line = "ls" &n& "q" & n;
     	var inStream = createObject("java","java.io.ByteArrayInputStream").init(line.getBytes());
-		var shell = new cfml.box.Shell(inStream,printWriter);
+		var shell = new cfml.cli.Shell(inStream,printWriter);
 		shell.run();
 		//debug(baos.toString());
 
 	}
 
-	public void function testHelp()  {
-		var shell = new cfml.box.Shell();
-		var result = shell.help();
-	}
 
 	public void function testHTML2ANSI()  {
-		var shell = new cfml.box.Shell();
+		var shell = new cfml.cli.Shell();
 		var result = shell.HTML2ANSI("
 		<b>some bold text</b>
 		some non-bold text
@@ -43,7 +38,7 @@ component name="TestShell" extends="mxunit.framework.TestCase" {
     	var printWriter = createObject("java","java.io.PrintWriter").init(baos);
     	var t = chr(9);
     	var n = chr(10);
-		var shell = new cfml.box.Shell(printWriter=printWriter);
+		var shell = new cfml.cli.Shell(printWriter=printWriter);
 
 
 		shell.run("hel#t#");
@@ -93,7 +88,7 @@ component name="TestShell" extends="mxunit.framework.TestCase" {
         			System.getProperty("jline.WindowsTerminal.output.encoding", "Cp850")));
     	var t = chr(9);
     	var n = chr(10);
-		var shell = new cfml.box.Shell(printWriter=printWriter);
+		var shell = new cfml.cli.Shell(printWriter=printWriter);
 
 		shell.run("hel#t#");
 		ansiOut.close();
