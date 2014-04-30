@@ -7,7 +7,7 @@ component extends="cli.BaseCommand" {
 	function run( string command='' )  {
 		var commandHandler = shell.getCommandHandler(); 
 		var allCommands = commandHandler.getCommands();
-		var result = shell.ansi('green','HELP #command#') & cr;
+		print.greenLine( 'HELP #command#' );
 		
 		// If we're getting help for a specific command
 		if( len( command ) ) {
@@ -29,9 +29,9 @@ component extends="cli.BaseCommand" {
 		} else {
 			
 		}
-		
+		return;
 		writeDump( allCommands );abort;
-		
+		/*
 		var result = shell.ansi('green','HELP #namespace# [command]') & cr;
 		if(namespace == '' && command == '') {
 			for(var commandName in commands['']) {
@@ -57,7 +57,7 @@ component extends="cli.BaseCommand" {
 				return '';
 			}
 		}
-		return result;
+		return result;*/
 	}
 
 	/**
@@ -65,7 +65,7 @@ component extends="cli.BaseCommand" {
 	 * @namespace.hint namespace (or namespaceless command) to get help for
  	 * @command.hint command to get help for
  	 **/
-	private function getCommandHelp(String namespace='', String command='')  {
+/*	private function getCommandHelp(String namespace='', String command='')  {
 		var result ='';
 		var metadata = commands[namespace][command];
 		result &= chr(9) & shell.ansi('cyan',command) & ' : ' & metadata.hint & cr;
@@ -83,7 +83,7 @@ component extends="cli.BaseCommand" {
 		 	result &= cr;
 		}
 		return result;
-	}
+	}*/
 
 	
 }

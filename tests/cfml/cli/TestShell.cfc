@@ -2,7 +2,8 @@ component name="TestShell" extends="mxunit.framework.TestCase" {
 
 	public void function testCommandHandler()  {
     	var baos = createObject("java","java.io.ByteArrayOutputStream").init();
-    	var bain = createObject("java","java.io.ByteArrayInputStream").init("ls#chr(10)#".getBytes());
+    	var testString = "ls#chr(10)#";
+    	var bain = createObject("java","java.io.ByteArrayInputStream").init(testString.getBytes());
     	var printWriter = createObject("java","java.io.PrintWriter").init(baos);
 		var shell = new cfml.cli.Shell(bain,printWriter);
 		commandHandler = new cfml.cli.CommandHandler(shell);
@@ -47,7 +48,7 @@ component name="TestShell" extends="mxunit.framework.TestCase" {
 		assertTrue(find("help",wee));
 		baos.reset();
 
-		shell.run("cfdistro #t#");
+		shell.run("cfdistro#t#");
 		wee = replace(baos.toString(),chr(0027),"","all");
 		assertTrue(find("war",wee));
 		baos.reset();
