@@ -3,7 +3,7 @@
  **/
 component persistent="false" extends="cli.BaseCommand" {
 
-/*	function init(shell) {
+	function init(shell) {
 		variables.shell = shell;
 		reader = shell.getReader();
 		thisdir = getDirectoryFromPath(getMetadata(this).path);
@@ -16,7 +16,7 @@ component persistent="false" extends="cli.BaseCommand" {
 		}
 		return this;
 	}
-*/
+
 	/**
 	 * download and install cfdistro
 	 **/

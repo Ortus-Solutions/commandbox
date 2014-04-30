@@ -40,14 +40,14 @@ component output='false' persistent='false' {
 	 **/
 	function initCommands( commandDirectory, commandPath ) {
 		var varDirs = DirectoryList( path=commandDirectory, recurse=false, listInfo='query', sort='type desc, name asc' );
-		
 		for(var dir in varDirs){
 			
 			// For CFC files, process them as a command
 			if( dir.type  == 'File' && listLast( dir.name, '.' ) == 'cfc' ) {
 				loadCommand( dir.name, commandPath );
 			// For folders, search them for commands
-			} else {
+			// Temporary exclusion for 'home' dir in cfdistro
+			} else if( dir.name != 'home' ) {
 				initCommands( dir.directory & '\' & dir.name, listAppend( commandPath, dir.name, '.' ) );
 			}
 			
