@@ -1,7 +1,7 @@
 /**
  * Reload CLI
  **/
-component persistent="false" extends="cli.BaseCommand" aliases="" {
+component persistent="false" extends="cli.BaseCommand" aliases="r" {
 
 	/**
 	 * @clearScreen.hint clears the screen after reload

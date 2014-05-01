@@ -71,8 +71,9 @@ component output='false' persistent='false' {
 		
 		// Strip cfc extension from filename
 		var CFCName = mid( CFC, 1, len( CFC ) - 4 );
+		var commandName = iif( len( commandPath ), de( commandPath & '.' ), '' ) & CFCName;
 		// Build CFC's path
-		var fullCFCPath = 'commands.' & iif( len( commandPath ), de( commandPath & '.' ), '' ) & CFCName;
+		var fullCFCPath = 'commands.' & commandName;
 		 		
 		// Create this command CFC
 		var command = createObject( fullCFCPath );
@@ -86,7 +87,7 @@ component output='false' persistent='false' {
 		command.init( instance.shell );
 	
 		// Mix in some metadata
-		decorateCommand( command );
+		decorateCommand( command, commandName );
 		
 		// Add it to the command dictionary
 		registerCommand( command, commandPath & '.' & CFCName );
@@ -97,7 +98,7 @@ component output='false' persistent='false' {
 		}
 	}
 	
-	function decorateCommand( required command ) {
+	function decorateCommand( required command, required commandName ) {
 		// Grab its metadata
 		var CFCMD = getMetadata( command );
 		
@@ -106,9 +107,9 @@ component output='false' persistent='false' {
 			aliases = listToArray( CFCMD.aliases ?: '' ),
 			parameters = [],
 			hint = CFCMD.hint ?: '',
-			originalName = CFCMD.name
+			originalName = commandName
 		};
-				
+						
 		// Capture the command's parameters
 		commandMD.parameters = getMetaData(command.run).parameters;
 		
@@ -148,7 +149,16 @@ component output='false' persistent='false' {
 			return;
 		}
 		
-		var parameterInfo = instance.parser.parseParameters( commandInfo.parameters );
+		// For help commands squish all the parameters together into one be one exactly as typed
+		if( listLast( commandInfo.commandReference.$CommandBox.originalName, '.' ) == 'help' ) {
+			var parameterInfo = {
+				positionalParameters = [ arrayToList( commandInfo.parameters, ' ' ) ],
+				namedParameters = {}
+			};
+		// For normal commands, parse them out propery
+		} else {
+			var parameterInfo = instance.parser.parseParameters( commandInfo.parameters );
+		}
 				
 		// Parameters need to be ALL positional or ALL named
 		if( arrayLen( parameterInfo.positionalParameters ) && structCount( parameterInfo.namedParameters ) ) {
@@ -236,12 +246,14 @@ component output='false' persistent='false' {
 		var commandLength = listLen( results.commandString, '.' );
 		var tokensLength = arrayLen( tokens );
 		if( results.found && commandLength < tokensLength ) {
-			results.parameters = tokens.slice( commandLength+1 );			
+			results.parameters = tokens.slice( commandLength+1 );
 		}
 		
 		// If we failed to match a command, but we did encounter a help command along the way, make that the new command
 		if( !results.found && isObject( lastHelpReference ) ) {
 			results.commandReference = lastHelpReference;
+			// Dump app the tokens in a parameters
+			results.parameters = tokens;
 			results.found = true;
 		}
 		

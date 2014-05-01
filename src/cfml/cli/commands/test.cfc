@@ -1,3 +1,8 @@
+/**
+* This is a test component to showcase all the cool stuff you can 
+* do while printing out text to an ANSI console.  It doesn't really serve
+* any other purpose than to make your screen look like a rainbow puked on it.
+**/
 component persistent="false" extends="cli.BaseCommand" aliases="" {
 
 
