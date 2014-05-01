@@ -323,6 +323,8 @@ component output='false' persistent='false' {
 				}
 				message &= ' : ';
            		var value = instance.shell.ask( message );
+           		// TODO: Add validation here to make sure the 
+           		// value entered matches the type!
            		userNamedParams[ param.name ] = value;				
 			}
 		} // end for loop
@@ -343,6 +345,13 @@ component output='false' persistent='false' {
  	 **/
 	function getCommands() {
 		return instance.flattenedCommands;
+	}
+
+	/**
+	 * return the nested command structure
+ 	 **/
+	function getCommandHierarchy() {
+		return instance.Commands;
 	}
 
 
