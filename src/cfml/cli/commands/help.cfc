@@ -58,7 +58,7 @@ component extends="cli.BaseCommand" {
 				// Only grab original commands to filter out aliases
 				// Also don't include if the command is flagged to hide from help UNLESS the user was
 				// searching specifically for this command
-				if( originalCommandName == command && ( !excludeFromHelp || autoHelpRoot == command ) ) {
+				if( ( originalCommandName == command &&  !excludeFromHelp ) || autoHelpRoot == command ) {
 					commandsForAutoHelp.append( command );
 				}
 			}
