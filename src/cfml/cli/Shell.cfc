@@ -19,7 +19,7 @@ component {
 	 * constructor
 	 * @inStream.hint input stream if running externally
 	 * @printWriter.hint output if running externally
- 	**/	
+ 	**/
 	function init(inStream, printWriter) {
 		if(isNull(printWriter)) {
 			if(findNoCase("windows",server.os.name)) {
@@ -288,13 +288,13 @@ component {
 
 	        var line ="";
 	        keepRunning = true;
-			reader.setDefaultPrompt(shellPrompt);		
-					
+			reader.setDefaultPrompt(shellPrompt);
+
 			// set and recreate temp dir
 			setTempDir(variables.tempdir);
 
-	        while (keepRunning) {	        	
-					
+	        while (keepRunning) {
+
 				if(input != "") {
 					keepRunning = false;
 				}
@@ -306,35 +306,26 @@ component {
 					printError(er);
 					continue;
 				}
-									
+
 	            // If we input the special word then we will mask the next line.
 	            if ((!isNull(trigger)) && (line.compareTo(trigger) == 0)) {
 	                line = reader.readLine("password> ", javacast("char",mask));
 	            }
-	            
+
 	            // If there's input, try to run it.
 				if( len(trim(line)) ) {
-					
+
 					try{
 						callCommand(line);
 					} catch (any e) {
 						printError(e);
 					}
 				}
-							
+
 	        } // end while keep running
-			
-	        if(structKeyExists(variables,"ansiOut")) {
-	        	// This is causing the shell to hang for me	        	
-	        	//variables.ansiOut.close();
-	        }
-	        
+
 		} catch (any e) {
 			printError(e);
-	        if(structKeyExists(variables,"ansiOut")) {
-        	// This is causing the shell to hang for me
-	        //	variables.ansiOut.close();
-	        }
 		}
 		return reloadshell;
     }
