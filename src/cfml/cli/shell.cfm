@@ -15,7 +15,6 @@ Type "help" for help, or "[command] help" to be more specific.
 	systemOutput(_shellprops.help);
 	shell = new Shell();
 	while (shell.run()) {
-		systemOutput("Reloading shell.");
 		SystemCacheClear("all");
 		shell = javacast("null","");
 		shell = new Shell();

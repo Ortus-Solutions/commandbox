@@ -265,7 +265,8 @@ component {
 			writedump(var=string, output="console");
 			string = "";
 		}
-    	return reader.printString(string);
+    	reader.printString(string);
+    	reader.flushConsole();
 	}
 
 	/**
@@ -284,31 +285,28 @@ component {
 	        	reader.setInput(inStream);
 	        }
 	        reader.setBellEnabled(false);
-	        //reader.setDebug(new PrintWriter(new FileWriter("writer.debug", true)));
 
 	        var line ="";
 	        keepRunning = true;
-			reader.setDefaultPrompt(shellPrompt);
+			reader.setDefaultPrompt(shellPrompt);		
+					
 			// set and recreate temp dir
 			setTempDir(variables.tempdir);
 
-	        while (keepRunning) {
-	        	
+	        while (keepRunning) {	        	
+					
 				if(input != "") {
 					keepRunning = false;
 				}
 				reader.printNewLine();
 				try {
+					// Shell stops on this line while waiting for user input
 		        	line = reader.readLine();
 				} catch (any er) {
 					printError(er);
-					// reload();
 					continue;
 				}
-				if(trim(line) == "reload") {
-					reload();
-					continue;
-				}
+									
 	            // If we input the special word then we will mask the next line.
 	            if ((!isNull(trigger)) && (line.compareTo(trigger) == 0)) {
 	                line = reader.readLine("password> ", javacast("char",mask));
@@ -326,21 +324,18 @@ component {
 						printError(e);
 					}
 				}
-				
+							
 	        } // end while keep running
-	        
-	        if(structKeyExists(variables,"ansiOut")) {
-	        	variables.ansiOut.close();
+			
+	        if(structKeyExists(variables,"ansiOut")) {	        	
+	        	//variables.ansiOut.close();
 	        }
 	        
 		} catch (any e) {
 			printError(e);
 	        if(structKeyExists(variables,"ansiOut")) {
-	        	variables.ansiOut.close();
+	        //	variables.ansiOut.close();
 	        }
-		}
-		if(!reloadshell) {
-
 		}
 		return reloadshell;
     }
