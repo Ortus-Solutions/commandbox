@@ -4,11 +4,11 @@
 component {
 	
 	cr = chr(10);
-	print = new PrintBuffer();
 	
 	function init(shell) {
 		variables.shell = shell;
 		reader = shell.getReader();
+		print = new PrintBuffer( shell );
 		return this;
 	}
 	

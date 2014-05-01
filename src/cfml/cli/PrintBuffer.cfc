@@ -6,10 +6,20 @@
 **/
 component extends="Print" {
 
-	print = new Print();
 	// TODO-- actually use a String Buffer
 	result = '';
 		
+	function init( shell ) {
+		variables.shell = arguments.shell;		
+	}
+	
+	// Force a flush
+	function toConsole(  ) {
+		shell.printString( getResult() );
+		shell.getReader().flushConsole();
+		clear();
+	}
+	
 	// Reset the result
 	function clear(  ) {
 		result = '';		

@@ -125,6 +125,26 @@ component {
 		return input;
 	}
 
+
+	/**
+	 * Wait until the user's next keystroke
+	 * @message.message An optional message to display to the user such as "Press any key to continue."
+ 	 **/
+	function waitForKey( message='' ) {
+		var key = '';
+		if( len( message ) ) {
+			printString( message );
+    		reader.flushConsole();
+		}
+		try {
+			key = getReader().readVirtualKey();
+		} catch (any e) {
+			printError(e);
+		}
+		reader.setDefaultPrompt(variables.shellPrompt);
+		return key;
+	}
+
 	/**
 	 * clears the console
  	 **/
@@ -268,7 +288,7 @@ component {
     	reader.printString(string);
     	reader.flushConsole();
 	}
-
+	
 	/**
 	 * runs the shell thread until exit flag is set
 	 * @input.hint command line to run if running externally
