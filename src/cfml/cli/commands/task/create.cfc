@@ -1,7 +1,7 @@
 /**
  * Adds a task to be executed on the given interval
  **/
-component persistent="false" extends="cli.BaseCommand" aliases="task-add" excludeFromHelp=false {
+component persistent="false" extends="cli.BaseCommand" aliases="" excludeFromHelp=false {
 
 	/** 
 	 * @name.hint The Task name

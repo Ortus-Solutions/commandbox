@@ -4,7 +4,7 @@
  * upgrade
  * 
  **/
-component persistent="false" extends="cli.BaseCommand" aliases="update" excludeFromHelp=false {
+component persistent="false" extends="cli.BaseCommand" aliases="" excludeFromHelp=false {
 
 	function run(Boolean force=false) {
 		var temp = shell.getTempDir();
