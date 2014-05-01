@@ -18,7 +18,10 @@ component output='false' persistent='false' {
 		thisdir = getDirectoryFromPath(getMetadata(this).path),
 		
 		// Java system reference
-		System = createObject('java', 'java.lang.System')
+		System = createObject('java', 'java.lang.System'),
+		
+		// A stack of running commands in case one command calls another from within
+		callStack = []
 	};
 	
 	
@@ -107,7 +110,8 @@ component output='false' persistent='false' {
 			aliases = listToArray( CFCMD.aliases ?: '' ),
 			parameters = [],
 			hint = CFCMD.hint ?: '',
-			originalName = commandName
+			originalName = commandName,
+			excludeFromHelp = CFCMD.excludeFromHelp ?: false
 		};
 						
 		// Capture the command's parameters
@@ -179,7 +183,25 @@ component output='false' persistent='false' {
 		
 		// Reset the printBuffer
 		commandInfo.commandReference.reset();
+		
+		// If there are currently executing commands, flush out the print buffer from the last one
+		// This will preven the output from showing up out of order if one command nests a call to another.
+		if( instance.callStack.len() ) {
+			// Print anything in the buffer
+			instance.shell.printString( instance.callStack[1].commandReference.getResult() );
+			// And reset it now that it's been printed.  
+			// This command can add more to the buffer once it's executing again.
+			instance.callStack[1].commandReference.reset();
+		}
+		
+		// Add command to the top of the stack
+		instance.callStack.prepend( commandInfo );
+		
+		// Run the command
 		var result = commandInfo.commandReference.run( argumentCollection = parameterInfo.namedParameters );
+		
+		// Remove it from the stack
+		instance.callStack.deleteAt( 1 );
 		
 		// If the command didn't return anything, grab its print buffer value 
 		if( isNull( result ) ) {

@@ -54,8 +54,11 @@ component extends="cli.BaseCommand" {
 			// Name of command starts with what the user typed
 			if( !len(autoHelpRoot) || left( command, len(autoHelpRoot) ) == autoHelpRoot ) {
 				var originalCommandName = listChangeDelims( allCommands[ command ].$CommandBox.originalName, ' ', '.');
+				var excludeFromHelp = allCommands[ command ].$CommandBox.excludeFromHelp;
 				// Only grab original commands to filter out aliases
-				if( originalCommandName == command ) {
+				// Also don't include if the command is flagged to hide from help UNLESS the user was
+				// searching specifically for this command
+				if( originalCommandName == command && ( !excludeFromHelp || autoHelpRoot == command ) ) {
 					commandsForAutoHelp.append( command );
 				}
 			}

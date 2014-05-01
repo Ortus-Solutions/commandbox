@@ -2,7 +2,7 @@
 <cfset _shellprops = { version:'0.1' } >
 <cfsetting requesttimeout="9999" />
 <cfsavecontent variable="_shellprops.help">Welcome to CommandBox!
-Type "help" for help, or "[command] help" to be more specific.
+Type "help" for help, or "help [command]" to be more specific.
    ____     ____       __    __       __    __       ____        __      _   ______     ______      ____     __     __  
   / ___)   / __ \      \ \  / /       \ \  / /      (    )      /  \    / ) (_  __ \   (_   _ \    / __ \   (_ \   / _) 
  / /      / /  \ \     () \/ ()       () \/ ()      / /\ \     / /\ \  / /    ) ) \ \    ) (_) )  / /  \ \    \ \_/ /   

@@ -10,7 +10,7 @@ component persistent="false" extends="cli.BaseCommand" aliases="update" {
 		var latest = xmlSearch(mavendata,"/metadata/versioning/versions/version[last()]/text()");
 		latest = latest[1].xmlValue;
 		if(latest!=shell.version() || force) {
-			var result = shell.callCommand( "cfdistro dependency artifactId=box.cli groupId=org.coldbox version=#latest# classifier=cfml" );
+			shell.callCommand( "cfdistro dependency artifactId=box.cli groupId=org.coldbox version=#latest# classifier=cfml" );
 		}
 		var filePath = "#shell.getArtifactsDir()#/org/coldbox/box.cli/#latest#/box.cli-#latest#-cfml.zip";
 		if( fileExists( filePath ) ) {
@@ -21,7 +21,7 @@ component persistent="false" extends="cli.BaseCommand" aliases="update" {
 				destination="#shell.getHomeDir()#/cfml";
 		}
 					 
-		return "installed #latest# (#result#)";
+		print.line( "installed #latest#" );
 	}
 
 }

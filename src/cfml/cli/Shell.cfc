@@ -316,10 +316,7 @@ component {
 				if( len(trim(line)) ) {
 					
 					try{
-						
-						var result = commandHandler.runCommandLine(line);
-						result = isNull(result) ? "" : printString(result);
-						
+						callCommand(line);
 					} catch (any e) {
 						printError(e);
 					}
@@ -347,7 +344,10 @@ component {
  	 * @command.hint command name
  	 **/
 	function callCommand( String command="" )  {
-		return commandHandler.runCommandline( command );
+		var result = commandHandler.runCommandLine( command );
+		if( !isNull( result ) ) {
+			printString(result);
+		}
 	}
 
 	/**
