@@ -84,12 +84,22 @@ component extends="cli.BaseCommand" {
 		// Now that we have a sorted list of commands to display help for,
 		// Loop over them
 		for( var command in commandsForAutoHelp ) {
+			// Original command name, to tell if "command" is an alias
+			var originalCommandName = listChangeDelims( allCommands[ command ].$CommandBox.originalName, ' ', '.');
 			// Command CFC object
 			var commandReference = allCommands[ command ];
 			// CFC hint
 			var commandHint = commandReference.$CommandBox.hint;
 			// run() method's parameters
 			var commandParameters = commandReference.$CommandBox.parameters;
+			// A command by any other name...
+			var aliases = duplicate( commandReference.$CommandBox.aliases );
+			// We are viewing help for an alias
+			if( originalCommandName != command ) {
+				// Swap out the original name into the alias list
+				aliases.delete( command );
+				aliases.prepend( originalCommandName );
+			}
 			
 			// Only do divider if there is more than one command
 			if( commandsForAutoHelp.len() > 1 ) {
@@ -99,6 +109,14 @@ component extends="cli.BaseCommand" {
 			print.line();
 			print.blackOnWhiteLine( ' #command# ' );
 			print.line();
+			
+			// Aliases
+			if( aliases.len() ) {
+				print.line();
+				print.line( 'Aliases: #arrayToList( aliases, ', ' )#' );
+				print.line();				
+			}
+			
 			// Output the hint if it exists
 			if( len( commandHint ) ) {
 				print.yellowText( "#commandHint#");
