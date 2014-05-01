@@ -1,11 +1,13 @@
 /**
- * List directories
- * 	ex: dir /my/path
+ * Lists the files and folders in a given directory.  Defaults to current working directory
+ *
+ * dir /samples
+ * 
  **/
 component persistent="false" extends="cli.BaseCommand" aliases="ls,directory" {
 
 	/**
-	 * @directory.hint directory
+	 * @directory.hint The directory to list the contents of
 	 * @recurse.hint recursively list
 	 **/
 	function run( String directory="", Boolean recurse=false )  {

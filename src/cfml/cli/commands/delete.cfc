@@ -1,6 +1,9 @@
 /**
- * delete a file or directory
-  **/	
+ * Delete a file or directory from the filesystem
+ *
+ * delete sample.html
+ *
+ **/	
 component persistent="false" extends="cli.BaseCommand" aliases="rm,del" {
 
 	/**

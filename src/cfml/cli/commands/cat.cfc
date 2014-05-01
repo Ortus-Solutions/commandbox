@@ -1,10 +1,13 @@
 /**
- * display file contents
+ * This command will read a file and display its contents to the console
+ * 
+ * cat box.json
+ * 
  **/
 component persistent="false" extends="cli.BaseCommand" aliases="type" {
 
 	/**
-	 * @file.hint file to view contents of
+	 * @file.hint File to view contents of
  	 **/
 	function run(file="")  {
 		if(left(file,1) != "/"){
