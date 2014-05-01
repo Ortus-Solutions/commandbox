@@ -1,7 +1,7 @@
 /**
- * stop server
+ * Stop the embedded CFML server
  **/
-component persistent="false" extends="cli.BaseCommand" aliases="stop" {
+component persistent="false" extends="cli.BaseCommand" aliases="stop" excludeFromHelp=false {
 
 	function run() {
 		shell.callCommand( "cfdistro serverStop" );

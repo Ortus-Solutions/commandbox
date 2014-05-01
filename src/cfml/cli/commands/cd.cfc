@@ -4,7 +4,7 @@
  * cd /tests
  *
  **/
-component persistent="false" extends="cli.BaseCommand" aliases="" {
+component persistent="false" extends="cli.BaseCommand" aliases="" excludeFromHelp=false {
 
 	/**
 	 * @directory.hint The directory to change to

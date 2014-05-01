@@ -1,7 +1,10 @@
 /**
- * upgrades the shell libraries
+ * Upgrades the shell libraries to the latest version
+ * 
+ * upgrade
+ * 
  **/
-component persistent="false" extends="cli.BaseCommand" aliases="update" {
+component persistent="false" extends="cli.BaseCommand" aliases="update" excludeFromHelp=false {
 
 	function run(Boolean force=false) {
 		var temp = shell.getTempDir();

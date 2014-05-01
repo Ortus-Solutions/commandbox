@@ -4,7 +4,7 @@
  * delete sample.html
  *
  **/	
-component persistent="false" extends="cli.BaseCommand" aliases="rm,del" {
+component persistent="false" extends="cli.BaseCommand" aliases="rm,del" excludeFromHelp=false {
 
 	/**
 	 * @file.hint file or directory to delete

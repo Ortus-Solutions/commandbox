@@ -1,7 +1,11 @@
 /**
- * create box.json if not exists.
+ * Initialize a ColdBox site in the current directory based on the box.json site descriptor.
+ * A default box.json will be created if one doesn't exist.
+ * 
+ * init
+ * 
  **/
-component persistent="false" extends="cli.BaseCommand" aliases="" {
+component persistent="false" extends="cli.BaseCommand" aliases="" excludeFromHelp=false {
 
 	/**
 	 * @force.hint do not prompt, overwrite if exists

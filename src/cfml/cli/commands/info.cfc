@@ -1,5 +1,10 @@
-
-component persistent="false" extends="cli.BaseCommand" aliases="" {
+/**
+ * Displays basic information about the shell
+ *
+ * info
+ *
+ **/
+component persistent="false" extends="cli.BaseCommand" aliases="" excludeFromHelp=false {
 
 	function run() {
 		// stub

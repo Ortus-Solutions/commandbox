@@ -4,7 +4,7 @@
  * execute myFile.cfm
  * 
  **/
-component persistent="false" extends="cli.BaseCommand" aliases="" {
+component persistent="false" extends="cli.BaseCommand" aliases="" excludeFromHelp=false {
 
 	/**
 	 * 

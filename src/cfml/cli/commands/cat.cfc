@@ -4,7 +4,7 @@
  * cat box.json
  * 
  **/
-component persistent="false" extends="cli.BaseCommand" aliases="type" {
+component persistent="false" extends="cli.BaseCommand" aliases="type" excludeFromHelp=false {
 
 	/**
 	 * @file.hint File to view contents of

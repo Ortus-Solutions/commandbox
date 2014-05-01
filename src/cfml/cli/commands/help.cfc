@@ -1,9 +1,11 @@
 /**
  * get help information
  **/
-component extends="cli.BaseCommand" {
+component  persistent="false" extends="cli.BaseCommand" aliases="h,/?,?,--help,-help" excludeFromHelp=false {
 
-
+	/**
+	 * @command.hint The command to get help for.  If blank, displays help for all commands
+	 **/
 	function run( command='' )  {
 		var commandHandler = shell.getCommandHandler();
 		// Auto-help will display help for all commands at this

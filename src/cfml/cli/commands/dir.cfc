@@ -4,7 +4,7 @@
  * dir /samples
  * 
  **/
-component persistent="false" extends="cli.BaseCommand" aliases="ls,directory" {
+component persistent="false" extends="cli.BaseCommand" aliases="ls,directory" excludeFromHelp=false {
 
 	/**
 	 * @directory.hint The directory to list the contents of
