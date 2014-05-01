@@ -327,13 +327,15 @@ component {
 							
 	        } // end while keep running
 			
-	        if(structKeyExists(variables,"ansiOut")) {	        	
+	        if(structKeyExists(variables,"ansiOut")) {
+	        	// This is causing the shell to hang for me	        	
 	        	//variables.ansiOut.close();
 	        }
 	        
 		} catch (any e) {
 			printError(e);
 	        if(structKeyExists(variables,"ansiOut")) {
+        	// This is causing the shell to hang for me
 	        //	variables.ansiOut.close();
 	        }
 		}
