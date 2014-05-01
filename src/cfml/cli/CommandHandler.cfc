@@ -98,7 +98,7 @@ component output='false' persistent='false' {
 		// Register the aliases
 		for( var alias in command.$CommandBox.aliases ) {
 			// Alias is allowed to be anything.  This means it may even overwrite another command already loaded.
-			registerCommand( trim(alias) );
+			registerCommand( command, trim(alias) );
 		}
 	}
 	
