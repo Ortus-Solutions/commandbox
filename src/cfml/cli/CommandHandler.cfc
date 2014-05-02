@@ -146,68 +146,87 @@ component output='false' persistent='false' {
 	function runCommandline(line) {
 		
 		// Resolve the command they are wanting to run
-		var commandInfo = resolveCommand( line );
+		var commandChain = resolveCommand( line );
 		
-		// If nothing was found, bail out here.
-		if( !commandInfo.found ) {
-			instance.shell.printError({message:'Command "#line#" cannot be resolved.  Please type "help" for assitance.'});
-			return;
-		}
+		var i = 0;
+		for( var commandInfo in commandChain ) {
+			i++;
+			
+			// If nothing was found, bail out here.
+			if( !commandInfo.found ) {
+				instance.shell.printError({message:'Command "#line#" cannot be resolved.  Please type "help" for assitance.'});
+				return;
+			}
+			
+			// For help commands squish all the parameters together into one be one exactly as typed
+			if( listLast( commandInfo.commandReference.$CommandBox.originalName, '.' ) == 'help' ) {
+				var parameterInfo = {
+					positionalParameters = [ arrayToList( commandInfo.parameters, ' ' ) ],
+					namedParameters = {}
+				};
+			// For normal commands, parse them out propery
+			} else {
+				var parameterInfo = instance.parser.parseParameters( commandInfo.parameters );
+			}
+			
+			// Parameters need to be ALL positional or ALL named
+			if( arrayLen( parameterInfo.positionalParameters ) && structCount( parameterInfo.namedParameters ) ) {
+				instance.shell.printError({message:"Please don't mix named and positional parameters, it makes me dizzy."});
+				return;
+			}
+			
+			// These are the parameters declared by the command CFC
+			var commandParams = commandInfo.commandReference.$CommandBox.parameters;
+						
+			// If this is not the first command in the chain, 
+			// set its first parameter with the output from the last command
+			if( i > 1 ) {
+				// If we're using named parameters and this command has at least one param defined
+				if( structCount( parameterInfo.namedParameters ) ) {
+					// Insert/overwrite the first param as our last result
+					parameterInfo.namedParameters[ commandParams[1].name ?: '1' ] = result;
+				} else {
+					parameterInfo.positionalParameters.prepend( result );					
+				}
+			}
+			
+			// If we're using postitional params, convert them to named
+			if( arrayLen( parameterInfo.positionalParameters ) ) {
+				parameterInfo.namedParameters = convertToNamedParameters( parameterInfo.positionalParameters, commandParams );
+			}
+			
+			// Make sure we have all required params. 
+			parameterInfo.namedParameters = ensureRequiredParams( parameterInfo.namedParameters, commandParams );
+						
+			// Reset the printBuffer
+			commandInfo.commandReference.reset();
+			
+			// If there are currently executing commands, flush out the print buffer from the last one
+			// This will prevent the output from showing up out of order if one command nests a call to another.
+			if( instance.callStack.len() ) {
+				// Print anything in the buffer
+				instance.shell.printString( instance.callStack[1].commandReference.getResult() );
+				// And reset it now that it's been printed.  
+				// This command can add more to the buffer once it's executing again.
+				instance.callStack[1].commandReference.reset();
+			}
+			
+			// Add command to the top of the stack
+			instance.callStack.prepend( commandInfo );
+			
+			// Run the command
+			var result = commandInfo.commandReference.run( argumentCollection = parameterInfo.namedParameters );
+			
+			// Remove it from the stack
+			instance.callStack.deleteAt( 1 );
+			
+			// If the command didn't return anything, grab its print buffer value 
+			if( isNull( result ) ) {
+				result = commandInfo.commandReference.getResult();
+			}
+						
 		
-		// For help commands squish all the parameters together into one be one exactly as typed
-		if( listLast( commandInfo.commandReference.$CommandBox.originalName, '.' ) == 'help' ) {
-			var parameterInfo = {
-				positionalParameters = [ arrayToList( commandInfo.parameters, ' ' ) ],
-				namedParameters = {}
-			};
-		// For normal commands, parse them out propery
-		} else {
-			var parameterInfo = instance.parser.parseParameters( commandInfo.parameters );
-		}
-				
-		// Parameters need to be ALL positional or ALL named
-		if( arrayLen( parameterInfo.positionalParameters ) && structCount( parameterInfo.namedParameters ) ) {
-			instance.shell.printError({message:"Please don't mix named and positional parameters, it makes me dizzy."});
-			return;
-		}
-		
-		// These are the parameters declared by the command CFC
-		var commandParams = commandInfo.commandReference.$CommandBox.parameters;
-		
-		// If we're using postitional params, convert them to named
-		if( arrayLen( parameterInfo.positionalParameters ) ) {
-			parameterInfo.namedParameters = convertToNamedParameters( parameterInfo.positionalParameters, commandParams );
-		}
-		
-		// Make sure we have all required params. 
-		parameterInfo.namedParameters = ensureRequiredParams( parameterInfo.namedParameters, commandParams );
-		
-		// Reset the printBuffer
-		commandInfo.commandReference.reset();
-		
-		// If there are currently executing commands, flush out the print buffer from the last one
-		// This will preven the output from showing up out of order if one command nests a call to another.
-		if( instance.callStack.len() ) {
-			// Print anything in the buffer
-			instance.shell.printString( instance.callStack[1].commandReference.getResult() );
-			// And reset it now that it's been printed.  
-			// This command can add more to the buffer once it's executing again.
-			instance.callStack[1].commandReference.reset();
-		}
-		
-		// Add command to the top of the stack
-		instance.callStack.prepend( commandInfo );
-		
-		// Run the command
-		var result = commandInfo.commandReference.run( argumentCollection = parameterInfo.namedParameters );
-		
-		// Remove it from the stack
-		instance.callStack.deleteAt( 1 );
-		
-		// If the command didn't return anything, grab its print buffer value 
-		if( isNull( result ) ) {
-			result = commandInfo.commandReference.getResult();
-		}
+		} // End loop over command chain
 		
 		return result;
 		
@@ -223,64 +242,98 @@ component output='false' persistent='false' {
 		
 		// Turn the users input into an array of tokens
 		var tokens = instance.parser.tokenizeInput( line );
+		// This will hold the command chain. Usually just a single command,
+		// but a pipe ("|") will chain together commands and pass the output of one along as the input to the next		
+		var commandsToResolve = [[]];
+		var commandChain = [];
 		
-		var cmds = instance.commands;
-		
-		var results = {
-			commandString = '',
-			commandReference = cmds,
-			parameters = [],
-			found = false
-		};
-		
-		var lastHelpReference = '';
-					
-		// Check for a root help command
-		if( substituteHelp &&  structKeyExists( results.commandReference, 'help' ) && isObject( results.commandReference.help ) ) {
-			lastHelpReference = results.commandReference.help;
-		}
-		
-		for( var token in tokens ) {
-			
-			// If we hit a dead end, then quit looking
-			if( !structKeyExists( results.commandReference, token ) ) {
-				break;
-			}
-			
-			// Move the pointer
-			results.commandString = listAppend( results.commandString, token, '.' );
-			results.commandReference = results.commandReference[ token ];
-			
-			// If we've reached a CFC, we're done
-			if( isObject( results.commandReference ) ) {
-				results.found = true;
-				break;
-			// If this is a folder, check and see if it has a "help" command
-			} else {	
-				if( substituteHelp && structKeyExists( results.commandReference, 'help' ) && isObject( results.commandReference.help ) ) {
-					lastHelpReference = results.commandReference.help;
+		// If this command has a pipe, we need to chain multiple commands
+		if( tokens.find( '|' ) ) {
+			var i = 0;
+			for( var token in tokens ) {
+				i++;
+				if( token != '|' ) {
+					//Append this token to the last command
+					commandsToResolve[ commandsToResolve.len() ].append( token );					
+				} else if( commandsToResolve[ commandsToResolve.len() ].len() && i < tokens.len() ) {
+					// Add a new command
+					commandsToResolve.append( [] );
 				}
 			}
-			
-			
-		} // end for loop
-		
-		// If we found a command, carve the parameters off the end
-		var commandLength = listLen( results.commandString, '.' );
-		var tokensLength = arrayLen( tokens );
-		if( results.found && commandLength < tokensLength ) {
-			results.parameters = tokens.slice( commandLength+1 );
+		// If there's no pipe, then there is only 1 command to resolve
+		} else {
+			commandsToResolve[ 1 ] = tokens;
 		}
 		
-		// If we failed to match a command, but we did encounter a help command along the way, make that the new command
-		if( !results.found && isObject( lastHelpReference ) ) {
-			results.commandReference = lastHelpReference;
-			// Dump app the tokens in a parameters
-			results.parameters = tokens;
-			results.found = true;
-		}
 		
-		return results;
+		
+		// command hierarchy
+		var cmds = getCommandHierarchy();
+		
+		for( var commandTokens in commandsToResolve ) {
+				
+			tokens = commandTokens;
+			
+			var results = {
+				commandString = '',
+				commandReference = cmds,
+				parameters = [],
+				found = false
+			};
+			
+			var lastHelpReference = '';
+						
+			// Check for a root help command
+			if( substituteHelp &&  structKeyExists( results.commandReference, 'help' ) && isObject( results.commandReference.help ) ) {
+				lastHelpReference = results.commandReference.help;
+			}
+			
+			for( var token in tokens ) {
+				
+				// If we hit a dead end, then quit looking
+				if( !structKeyExists( results.commandReference, token ) ) {
+					break;
+				}
+				
+				// Move the pointer
+				results.commandString = listAppend( results.commandString, token, '.' );
+				results.commandReference = results.commandReference[ token ];
+				
+				// If we've reached a CFC, we're done
+				if( isObject( results.commandReference ) ) {
+					results.found = true;
+					break;
+				// If this is a folder, check and see if it has a "help" command
+				} else {	
+					if( substituteHelp && structKeyExists( results.commandReference, 'help' ) && isObject( results.commandReference.help ) ) {
+						lastHelpReference = results.commandReference.help;
+					}
+				}
+				
+				
+			} // end for loop
+			
+			// If we found a command, carve the parameters off the end
+			var commandLength = listLen( results.commandString, '.' );
+			var tokensLength = arrayLen( tokens );
+			if( results.found && commandLength < tokensLength ) {
+				results.parameters = tokens.slice( commandLength+1 );
+			}
+			
+			// If we failed to match a command, but we did encounter a help command along the way, make that the new command
+			if( !results.found && isObject( lastHelpReference ) ) {
+				results.commandReference = lastHelpReference;
+				// Dump app the tokens in a parameters
+				results.parameters = tokens;
+				results.found = true;
+			}
+
+			commandChain.append( results );
+
+		} // end loop over commands to resolve
+		
+		// Return command chain			
+		return commandChain;
 				
 	}
 

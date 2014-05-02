@@ -13,5 +13,14 @@ component extends="mxunit.framework.TestCase" {
 		assertTrue(structKeyExists(commands,"quit"));
 
 	}
+	
+	public void function testResolveCommand()  {
+		commandChain = commandHandler.resolveCommand( "dir" );
+		assertTrue(commandChain.len() == 2);
+	}
+		
+	public void function testRunCommandLine()  {
+		result = commandHandler.runCommandLine( "help | more" );
+	}
 
 }

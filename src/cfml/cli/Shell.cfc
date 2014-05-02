@@ -163,6 +163,20 @@ component {
 	}
 
 	/**
+	 * Get's terminal width
+  	 **/
+	function getTermWidth() {
+       	return getReader().getTermwidth();
+	}
+
+	/**
+	 * Get's terminal height
+  	 **/
+	function getTermHeight() {
+       	return getReader().getTermheight();
+	}
+
+	/**
 	 * Converts HTML into plain text
 	 * @html.hint HTML to convert
   	 **/
