@@ -55,20 +55,6 @@ component {
 	};
 
 	/**
-	 * Adds ANSI attributes to string
-	 * @attribute.hint list of ANSI codes to apply
-	 * @string.hint string to apply ANSI to
-  	 **/
-	function ansi(required attribute, required string) {
-		var ansiString = "";
-		for(var attrib in listToArray(attribute)) {
-			ansiString &= ANSICodes.attrib(ANSIAttributes[attrib]);
-		}
-		ansiString &= string & ANSICodes.attrib(ANSIAttributes["off"]);
-    	return ansiString;
-	}
-
-	/**
 	 * Removes ANSI attributes from string
 	 * @string.hint string to remove ANSI from
   	 **/
