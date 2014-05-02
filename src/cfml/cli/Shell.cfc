@@ -47,6 +47,9 @@ component {
     	variables.tempdir = variables.homedir & "/temp";
 		variables.shellPrompt = print.cyanText( "CommandBox> ");
 		variables.commandHandler = new CommandHandler(this);
+		var historyFile = createObject("java", "java.io.File").init(homedir&"/.history");
+		var history = createObject("java", "jline.History").init(historyFile);
+		reader.setHistory(history);
     	return this;
 	}
 
@@ -288,7 +291,7 @@ component {
     	reader.printString(string);
     	reader.flushConsole();
 	}
-	
+
 	/**
 	 * runs the shell thread until exit flag is set
 	 * @input.hint command line to run if running externally
