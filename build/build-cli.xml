@@ -22,7 +22,7 @@
 		<!--  create the cfml zip -->
 		<zip destfile="${dist.dir}/cli/cfml.zip" update="false">
 	        <fileset dir="${src.dir}/cfml" excludes="**/cfdistro/home/**, **/cfdistro.zip"/>
-	        <zipfileset file="${temp.dir}/version" fullpath="box/version"/>
+	        <zipfileset file="${temp.dir}/version" fullpath="cli/version"/>
 		</zip>
         <zip destfile="${dist.dir}/cli/box.jar" update="true" level="9">
         	<zipfileset file="${dist.dir}/cli/cfml.zip" fullpath="cfml.zip" />
