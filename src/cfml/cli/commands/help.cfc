@@ -1,7 +1,7 @@
 /**
  * get help information
  **/
-component  persistent="false" extends="cli.BaseCommand" aliases="h,/?,?,--help,-help" excludeFromHelp=false {
+component extends="cli.BaseCommand" aliases="h,/?,?,--help,-help" excludeFromHelp=false {
 
 	/**
 	 * @command.hint The command to get help for.  If blank, displays help for all commands

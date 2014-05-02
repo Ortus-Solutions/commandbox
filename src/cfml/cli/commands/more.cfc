@@ -22,12 +22,11 @@ component persistent="false" extends="cli.BaseCommand" aliases="" excludeFromHel
 				print.toConsole();
 				// pause for user input
 				key = shell.waitForKey();
-				
 				// If space, advance one line
 				if( key == 32 ) {
 					StopAtLine++;
-				// If Ctrl+c, abort
-				} else if( key == 3 ){
+				// If Ctrl+c, abort, ESC and q
+				} else if( key == 3 || key == 27 || key == 113 ){
 					print.redLine( 'Cancelled...' );
 					return;
 				// Everything else is one page
