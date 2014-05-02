@@ -1,9 +1,9 @@
 component {
-	
+
 	this.name="cli";
 	this.sessionmanagement="false";
-	
-	// Set the cfml directory as the root
-	this.mappings[ '/' ] = getDirectoryFromPath( getCurrentTemplatePath() );
-	
+
+	this.mappings[ '/cfml' ] = getDirectoryFromPath(getMetadata(this).path);
+	this.mappings[ '/cli' ] = this.mappings[ '/cfml' ] & '/cli';
+
 }
