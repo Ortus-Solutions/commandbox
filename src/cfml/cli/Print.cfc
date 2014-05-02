@@ -95,7 +95,7 @@ component {
 		var ANSIString = "";
 
 		// Text needing formatting
-		var text = missingMethodArguments[ 1 ] ?: '';
+		var text = arrayLen(missingMethodArguments) ? missingMethodArguments[ 1 ] : '';
 
 		// Carve it up until it's gone
 		while( len( methodName ) ) {
