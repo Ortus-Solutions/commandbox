@@ -4,6 +4,7 @@
 component persistent="false" extends="cli.BaseCommand" {
 
 	function init(shell) {
+		super.init(shell);
 		variables.shell = shell;
 		reader = shell.getReader();
 		thisdir = getDirectoryFromPath(getMetadata(this).path);

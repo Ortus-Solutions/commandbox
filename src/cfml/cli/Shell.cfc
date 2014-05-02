@@ -153,6 +153,13 @@ component {
  	 **/
 	function clearScreen() {
 		reader.clearScreen();
+		/*
+		// Almost works on Windows, but doesn't 
+		// clear text backgroun
+    	reader.printString( '[2J' );
+    	reader.printString( '[1;1H' );
+    	reader.flushConsole();
+		*/
 	}
 
 	/**
