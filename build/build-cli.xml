@@ -53,6 +53,12 @@
 
  	<target name="build.cli.jre" depends="build.cli">
  		<echo message="bundling ${mvn.jre.version} jre" />
+		<dependency groupId="oracle" artifactId="jre" version="${mvn.jre.version}" type="zip" classifier="win32" />
+		<dependency groupId="oracle" artifactId="jre" version="${mvn.jre.version}" type="zip" classifier="win64" />
+		<dependency groupId="oracle" artifactId="jre" version="${mvn.jre.version}" type="zip" classifier="linux32" />
+		<dependency groupId="oracle" artifactId="jre" version="${mvn.jre.version}" type="zip" classifier="linux64" />
+		<dependency groupId="oracle" artifactId="jre" version="${mvn.jre.version}" type="zip" classifier="darwin64" />
+
 		<zip destfile="${dist.dir}/cli/box-jre-win32.zip">
 			<zipgroupfileset file="${maven.repo.local}/oracle/jre/${mvn.jre.version}/jre-${mvn.jre.version}-win32.zip"/>
 	        <fileset file="${dist.dir}/cli/box.exe" />
