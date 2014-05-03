@@ -15,7 +15,7 @@ component extends="mxunit.framework.TestCase" {
 	}
 	
 	public void function testResolveCommand()  {
-		commandChain = commandHandler.resolveCommand( "dir" );
+		commandChain = commandHandler.resolveCommand( "help | more" );
 		assertTrue(commandChain.len() == 2);
 	}
 		
