@@ -154,7 +154,7 @@ component output='false' persistent='false' {
 			
 			// If nothing was found, bail out here.
 			if( !commandInfo.found ) {
-				instance.shell.printError({message:'Command "#line#" cannot be resolved.  Please type "help" for assitance.'});
+				instance.shell.printError({message:'Command "#line#" cannot be resolved.  Please type "#trim( "help #listChangeDelims( commandInfo.commandString, ' ', '.' )#" )#" for assitance.'});
 				return;
 			}
 			
@@ -166,7 +166,7 @@ component output='false' persistent='false' {
 				};
 			// For normal commands, parse them out propery
 			} else {
-				var parameterInfo = instance.parser.parseParameters( commandInfo.parameters );
+				var parameterInfo = parseParameters( commandInfo.parameters );
 			}
 			
 			// Parameters need to be ALL positional or ALL named
@@ -232,6 +232,13 @@ component output='false' persistent='false' {
 		
 	}
 
+	/**
+	 * Take an array of parameters and parse them out as named or positional
+	 * @parameters.hint The array of params to parse. 
+ 	 **/
+	function parseParameters( parameters ) {
+		return instance.parser.parseParameters( parameters );
+	}
 
 	/**
 	 * Figure out what command to run based on the tokenized user input
@@ -239,6 +246,8 @@ component output='false' persistent='false' {
 	 * @substituteHelp.hint If the command cannot be found, switch it out for the closest help 
  	 **/
 	function resolveCommand( required string line, substituteHelp = true ) {
+		// Turning this off for now since it's too confusing and too much information.
+		substituteHelp = false;
 		
 		// Turn the users input into an array of tokens
 		var tokens = instance.parser.tokenizeInput( line );
