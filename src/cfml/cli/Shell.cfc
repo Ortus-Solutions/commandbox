@@ -72,10 +72,10 @@ component accessors="true"{
 			var historyFile = createObject("java", "java.io.File").init(homedir&"/.history");
 			var history = createObject("java", "jline.History").init(historyFile);
 			reader.setHistory(history);
+			reader.setHistory(history);
 		} catch (any e) {
 // doesn't matter this is about to change with the other console
 		}
-		reader.setHistory(history);
     	return this;
 	}
 
