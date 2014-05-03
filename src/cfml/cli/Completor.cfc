@@ -23,7 +23,84 @@ component output="false" persistent="false" {
 	 * @cursor.hint cursor position
 	 * @candidates.hint tree to populate with completion candidates
  	 **/
-	function complete(String buffer, numeric cursor, candidates)  {
+	function complete( String buffer, numeric cursor, candidates )  {
+		var buffer = buffer ?: "";
+		// Try to resolve the command.
+		var commandChain = commandHandler.resolveCommand( buffer );
+		// If there are multiple commands like "help | more", we only care about the last one
+		var commandInfo = commandChain[ commandChain.len() ];
+									
+		// Positive match up to this cursor position
+		var matchedToHere = len( commandInfo.commandString );
+		// Partial text that didn't match anything
+		var leftOver = '';
+		
+		// If stuff was typed and it's an exact match to a command part
+		if( matchedToHere == len( buffer ) && len( buffer ) ) {
+			// Suggest a trailing space
+			candidates.add( buffer & ' ' );
+			return 0;
+		// Everything else in the buffer is a partial, unmached command
+		} else if( len( buffer ) ) {
+			// This is the unmatched stuff
+			leftOver = right( buffer, len( buffer ) - matchedToHere );
+			// If there was space, then account for that 
+			if( left( leftOver, 1 ) == ' ' ) {
+				leftOver = trim( leftOver );
+				matchedToHere++;
+			}
+		}
+										
+		// Didn't match an exact command, but might have matched part of one.
+		if( !commandInfo.found ) {
+						
+			// Loop over all the possibilities at this level
+			for( var command in commandInfo.commandReference ) {
+				// Match the partial bit if it exists
+				if( !len( leftOver ) || command.startsWith( leftOver ) ) {
+					// Add extra space so they don't have to
+					candidates.add( command & ' ' );	
+				}	
+			}
+			return matchedToHere;
+			
+			
+		// If we DID find a command and it's followed by a space, then suggest parameters
+		} else {
+			// This is all the possible params for the command
+			var definedParameters = commandInfo.commandReference.$CommandBox.parameters;
+			// This is the params the user has entered so far.
+			var passedParameters = commandHandler.parseParameters( commandInfo.parameters );
+			
+			// Is the user using positional params
+			if( arrayLen( passedParameters.positionalParameters ) ) {
+				
+				// If there are more param than what the user has typed so far
+				if( definedParameters.len() > passedParameters.positionalParameters.len() ) {
+					// Add the name next one in the list. The user will have to backspace and 
+					// replace this with their actual param so this may not be that useful.
+					candidates.add( definedParameters[ passedParameters.positionalParameters.len()+1 ].name & ' ' );
+				}
+				return len( buffer );
+				
+			// Using named params (default)
+			} else {
+				// Loop over all possible params and add the ones not already there
+				for( var param in definedParameters ) {
+					if( !structKeyExists( passedParameters.namedParameters, param.name ) ) {
+						candidates.add( param.name & '=' );	
+					}
+				}
+				return len( buffer );
+			} // End are we using positional params
+			
+			
+		} // End was the command found
+		
+		
+		
+		
+		return len( buffer );
 		var start = isNull(buffer) ? "" : buffer;
 		var args = rematch("'.*?'|"".*?""|\S+",start);
 		var prefix = args.size() > 0 && structKeyExists(commands,args[1]) ? args[1] : "";
@@ -31,6 +108,7 @@ component output="false" persistent="false" {
 		var isArgument = false;
 		var lastArg = args.size() > 0 ? args[args.size()] : "";
 		variables.partialCompletion = false;
+		
 		if(prefix eq "") {
 			command = args.size() > 0 ? args[1] : "";
 		} else {
