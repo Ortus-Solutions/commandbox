@@ -1,10 +1,10 @@
 <project name="build-cli" default="build.cli" xmlns:antcontrib="antlib:net.sf.antcontrib" basedir=".">
 
-	<property name="cli.version" value="0.1.4" />
+	<property name="cli.version" value="1.0.0" />
 	<property name="cli.packager.name" value="cfmlprojects.org" />
 	<property name="cli.packager.email" value="cfml@cfmlprojects.org" />
 	<property name="cli.use.pack200" value="true" />
-	<property name="railo.cli.version" value="0.4.3-4.1.2.005" />
+	<property name="railo.cli.version" value="0.4.3-4.2.0.007" />
 	<property name="mvn.repo.id" value="cfdistro.repo.local" />
 	<property name="mvn.jre.7.version" value="1.7.0_51" />
 	<property name="mvn.jre.6.version" value="1.6.0_41" />
