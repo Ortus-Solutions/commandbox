@@ -11,6 +11,8 @@
 	<property name="mvn.jre.version" value="${mvn.jre.7.version}" />
     <property name="maven.repo.local" location="${cfdistro.basedir}/artifacts" />
 	<property name="rpm.repo" value="${dist.dir}/RPMS/noarch" />
+	<property name="deb.repo" value="${dist.dir}/debs/noarch" />
+		
 
 	<target name="build.cli" description="builds cli jar">
 		<antcontrib:var name="cli.version" value="${cli.version}" />
@@ -121,7 +123,6 @@
 	<target name="build.cli.deb" depends="build.cli.bin" description="builds a .deb file for debian-based systems">
 	    <taskdef name="deb" classname="com.googlecode.ant_deb_task.Deb" classpathref="build.lib.path"/>
 	   	<echo message="Creating debian .deb file from: ${dist.dir}"/>
-		<property name="deb.repo" value="${cfdistro.basedir}/artifacts/debs/noarch" />
 		<mkdir dir="${deb.repo}"/>
 	   	<delete file="${dist.dir}/box-cli_${cli.version}-1_all.deb" />
 	   	<deb
