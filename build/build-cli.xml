@@ -1,16 +1,16 @@
 <project name="build-cli" default="build.cli" xmlns:antcontrib="antlib:net.sf.antcontrib" basedir=".">
 
-	<property name="cli.version" value="0.1.4" />
+	<property name="cli.version" value="1.0.0" />
 	<property name="cli.packager.name" value="cfmlprojects.org" />
 	<property name="cli.packager.email" value="cfml@cfmlprojects.org" />
 	<property name="cli.use.pack200" value="true" />
-	<property name="railo.cli.version" value="0.4.3-4.1.2.005" />
+	<property name="railo.cli.version" value="0.4.3-4.2.0.007" />
 	<property name="mvn.repo.id" value="cfdistro.repo.local" />
-	<property name="mvn.jre.7.version" value="1.7.0_51" />
-	<property name="mvn.jre.6.version" value="1.6.0_41" />
+	<property name="mvn.jre.7.version" value="1.7.0_55" />
 	<property name="mvn.jre.version" value="${mvn.jre.7.version}" />
     <property name="maven.repo.local" location="${cfdistro.basedir}/artifacts" />
-	<property name="rpm.repo" value="${maven.repo.local}/RPMS/noarch" />
+	<property name="rpm.repo" value="${dist.dir}/RPMS/noarch" />
+	<property name="deb.repo" value="${dist.dir}/debs/noarch" />
 
 	<target name="build.cli" description="builds cli jar">
 		<antcontrib:var name="cli.version" value="${cli.version}" />
@@ -80,7 +80,7 @@
 	        <fileset file="${dist.dir}/cli/box" />
 		</zip>
 		<pom-and-deploy pomid="cli-jre.pom" packaging="pom" buildtype="${mvn.type}"
-		 groupId="org.coldbox" artifactId="box.cli.jre" version="${cli.version}" name="box.cli.jre">
+		 groupId="com.ortussolutions" artifactId="box.cli.jre" version="${cli.version}" name="box.cli.jre">
 			<attachments>
         		<attach file="${dist.dir}/cli/box-jre-win32.zip" type="zip" classifier="win32"/>
         		<attach file="${dist.dir}/cli/box-jre-win64.zip" type="zip" classifier="win64"/>
@@ -93,7 +93,7 @@
 	
  	<target name="build.cli.mvn" depends="build.cli.rpm,build.cli.deb,build.cli.exe">
 		<pom-and-deploy pomid="cli.pom" packaging="pom" buildtype="${mvn.type}"
-			groupId="org.coldbox" artifactId="box.cli" version="${cli.version}"
+			groupId="com.ortussolutions" artifactId="box.cli" version="${cli.version}"
 			name="box.cli">
 			<attachments>
 				<attach file="${dist.dir}/cli/box.jar" type="jar" />
@@ -114,7 +114,7 @@
 		<echo message="Making rpm in ${rpm.repo} Packager:${cli.packager.name} ${cli.packager.email} Version: ${cli.version}" />
         <taskdef resource="org/redline_rpm/antlib.xml" uri="antlib:org.redline_rpm" classpathref="build.lib.path"/>
 		<redline:rpm destination="${rpm.repo}" release="1"
-			group="org.getrailo" name="box-cli" version="${cli.version}"
+			group="com.ortussolutions" name="box-cli" version="${cli.version}"
 			packager="${cli.packager.name} ${cli.packager.email}"
 			url="http://cfmlprojects.org">
 			<depends name="java" version=""/>
@@ -127,7 +127,6 @@
 	<target name="build.cli.deb" depends="build.cli.bin" description="builds a .deb file for debian-based systems">
 	    <taskdef name="deb" classname="com.googlecode.ant_deb_task.Deb" classpathref="build.lib.path"/>
 	   	<echo message="Creating debian .deb file from: ${dist.dir}"/>
-		<property name="deb.repo" value="${cfdistro.basedir}/artifacts/debs/noarch" />
 		<mkdir dir="${deb.repo}"/>
 	   	<delete file="${dist.dir}/box-cli_${cli.version}-1_all.deb" />
 	   	<deb

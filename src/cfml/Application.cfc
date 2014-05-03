@@ -1,9 +1,17 @@
-component {
+/**
+*********************************************************************************
+* Copyright Since 2005 ColdBox Platform by Ortus Solutions, Corp
+* www.coldbox.org | www.ortussolutions.com
+********************************************************************************
+* @author Brad Wood, Luis Majano, Denny Valliant
+* Main Application Bootstrap
+*/
+component{
 
-	this.name="cli";
-	this.sessionmanagement="false";
+	this.name = "CommandBox CLI";
+	this.sessionmanagement = "false";
 
-	this.mappings[ '/cfml' ] = getDirectoryFromPath(getMetadata(this).path);
-	this.mappings[ '/cli' ] = this.mappings[ '/cfml' ] & '/cli';
+	this.mappings[ '/cfml' ] = getDirectoryFromPath( getMetadata( this ).path );
+	this.mappings[ '/cli' ]  = this.mappings[ '/cfml' ] & '/cli';
 
 }

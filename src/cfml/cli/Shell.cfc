@@ -1,19 +1,25 @@
 /**
- * CommandBox Shell
- * @author Denny Valliant
- **/
-component {
+*********************************************************************************
+* Copyright Since 2005 ColdBox Platform by Ortus Solutions, Corp
+* www.coldbox.org | www.ortussolutions.com
+********************************************************************************
+* @author Brad Wood, Luis Majano, Denny Valliant
+* The CommandBox Shell Object that controls the shell
+*/
+component accessors="true"{
 
-	System = createObject("java", "java.lang.System");
-	//ANSIBuffer = createObject("java", "jline.ANSIBuffer");
-    StringEscapeUtils = createObject("java","org.apache.commons.lang.StringEscapeUtils");
-	keepRunning = true;
-    reloadshell = false;
-	script = "";
-	initialDirectory = System.getProperty("user.dir");
-	pwd = initialDirectory;
-	cr = System.getProperty("line.separator");
-	print = new Print();
+	/**	
+	* The java system class.
+	*/
+	property name="system";
+	/**
+	* The apache commons string utils
+	*/
+	property name="stringEscapeUtils";
+	/**	
+	* The shell version number
+	*/
+	property name="version";
 
 	/**
 	 * constructor
@@ -21,6 +27,21 @@ component {
 	 * @printWriter.hint output if running externally
  	**/
 	function init(inStream, printWriter) {
+		
+		variables.version = "1.0.0.@build.number@";
+
+		variables.system = createObject( "java", "java.lang.System" );
+		//variables.ANSIBuffer = createObject("java", "jline.ANSIBuffer");
+		variables.stringEscapeUtils = createObject("java","org.apache.commons.lang.StringEscapeUtils");
+		variables.keepRunning = true;
+		variables.reloadshell = false;
+		variables.script = "";
+		variables.initialDirectory = System.getProperty("user.dir");
+		variables.pwd = initialDirectory;
+		variables.cr = System.getProperty("line.separator");
+		variables.print = new Print();
+
+
 		if(isNull(printWriter)) {
 			if(findNoCase("windows",server.os.name)) {
 				variables.ansiOut = createObject("java","org.fusesource.jansi.AnsiConsole").out;
@@ -77,12 +98,13 @@ component {
 	 * shell version
 	 **/
 	function version() {
-		var versionFile = getDirectoryFromPath(getMetadata(this).path)&"/version";
-		var version = "0.0.0";
-		if(fileExists(versionFile)) {
-			version = fileRead(versionFile);
+		var versionFile = getDirectoryFromPath( getMetadata( this ).path ) & "/version";
+		
+		if( fileExists( versionFile ) ){
+			return fileRead( versionFile );
 		}
-		return version;
+		
+		return variables.version;
 	}
 
 	/**
@@ -165,6 +187,20 @@ component {
     	reader.printString( '[1;1H' );
     	reader.flushConsole();
 		*/
+	}
+
+	/**
+	 * Get's terminal width
+  	 **/
+	function getTermWidth() {
+       	return getReader().getTermwidth();
+	}
+
+	/**
+	 * Get's terminal height
+  	 **/
+	function getTermHeight() {
+       	return getReader().getTermheight();
 	}
 
 	/**

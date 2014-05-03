@@ -1,7 +1,7 @@
 /**
  * get help information
  **/
-component  persistent="false" extends="cli.BaseCommand" aliases="h,/?,?,--help,-help" excludeFromHelp=false {
+component extends="cli.BaseCommand" aliases="h,/?,?,--help,-help" excludeFromHelp=false {
 
 	/**
 	 * @command.hint The command to get help for.  If blank, displays help for all commands
@@ -25,8 +25,8 @@ component  persistent="false" extends="cli.BaseCommand" aliases="h,/?,?,--help,-
 		
 		// If we're getting help for a specific command
 		if( len( command ) ) {
-			// Resolve the string to the command
-			var commandInfo = commandHandler.resolveCommand( line=command, substituteHelp=false );
+			// Resolve the string to the first command (help | more will just be "help")
+			var commandInfo = commandHandler.resolveCommand( line=command, substituteHelp=false )[1];
 			
 			// Display auto help for however far we made it in the command hierarchy
 			autoHelpRoot = commandInfo.commandString;
