@@ -10,7 +10,7 @@
 	<property name="mvn.jre.6.version" value="1.6.0_41" />
 	<property name="mvn.jre.version" value="${mvn.jre.7.version}" />
     <property name="maven.repo.local" location="${cfdistro.basedir}/artifacts" />
-	<property name="rpm.repo" value="${maven.repo.local}/RPMS/noarch" />
+	<property name="rpm.repo" value="${dist.dir}/RPMS/noarch" />
 
 	<target name="build.cli" description="builds cli jar">
 		<antcontrib:var name="cli.version" value="${cli.version}" />
