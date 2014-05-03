@@ -47,8 +47,13 @@ component {
     	variables.tempdir = variables.homedir & "/temp";
 		variables.shellPrompt = print.cyanText( "CommandBox> ");
 		variables.commandHandler = new CommandHandler(this);
-		var historyFile = createObject("java", "java.io.File").init(homedir&"/.history");
-		var history = createObject("java", "jline.History").init(historyFile);
+		try {
+			var historyFile = createObject("java", "java.io.File").init(homedir&"/.history");
+			var history = createObject("java", "jline.History").init(historyFile);
+			reader.setHistory(history);
+		} catch (any e) {
+// doesn't matter this is about to change with the other console
+		}
 		reader.setHistory(history);
     	return this;
 	}
