@@ -62,7 +62,13 @@ component output="false" persistent="false" {
 					candidates.add( command & ' ' );	
 				}	
 			}
-			return matchedToHere;
+			
+			// Did we find ANYTHING?
+			if( candidates.size() ) {
+				return matchedToHere;				
+			} else {
+				return len( buffer );
+			}
 			
 			
 		// If we DID find a command and it's followed by a space, then suggest parameters
@@ -71,9 +77,9 @@ component output="false" persistent="false" {
 			var definedParameters = commandInfo.commandReference.$CommandBox.parameters;
 			// This is the params the user has entered so far.
 			var passedParameters = commandHandler.parseParameters( commandInfo.parameters );
-			
+										
 			// Is the user using positional params
-			if( arrayLen( passedParameters.positionalParameters ) ) {
+			if( arrayLen( passedParameters.positionalParameters ) > 1  ) {
 				
 				// If there are more param than what the user has typed so far
 				if( definedParameters.len() > passedParameters.positionalParameters.len() ) {
@@ -85,102 +91,58 @@ component output="false" persistent="false" {
 				
 			// Using named params (default)
 			} else {
+								
+				var leftOver = '';
+				// This is probably just partial param name
+				if( arrayLen( passedParameters.positionalParameters ) ) {
+					leftOver = passedParameters.positionalParameters[ passedParameters.positionalParameters.len() ];
+				// If there's at least one named param, and we don't end with a space, assume we're still typing it
+				} else if( structCount( passedParameters.namedParameters ) && !buffer.endsWith( ' ' ) ) {
+					// If param= is typed, but no value
+					if( buffer.endsWith( '=' ) ) {
+						// Nothign here
+						var paramSoFar = '';
+						// Strip = sign, and grab preceeding param name
+						var paramName = listLast( trim( left( buffer, len( buffer ) - 1 ) ), ' ' );
+						var startHere = len( buffer );						
+					} else {
+						// param so far is everything after the last =
+						var paramSoFar = listLast( buffer, '=' );
+						// Delete that off, and take the preceeding param name
+						var paramName = listLast( trim( listDeleteAt( buffer, listLen( buffer, '=' ), '=' ) ), ' ' );						
+					}
+					var paramType = '';
+					// Now that we have the name, see if we can look up the type
+					for( var param in definedParameters ) {
+						if( param.name == paramName ) {
+							paramType = param.type;
+							break;							
+						}
+					}
+					// Fill in possible param values based on the type and contents so far.
+					paramValueCompletion( paramName, paramType, paramSoFar, candidates );
+					return len( buffer ) - len( paramSoFar );
+					
+				}
+				
 				// Loop over all possible params and add the ones not already there
 				for( var param in definedParameters ) {
 					if( !structKeyExists( passedParameters.namedParameters, param.name ) ) {
-						candidates.add( param.name & '=' );	
+						if( !len( leftOver ) || param.name.startsWith( leftOver ) ) {
+							candidates.add( ' ' & param.name & '=' );
+						}	
 					}
 				}
-				return len( buffer );
+				
+				// Back up a bit to the beginning of the left over text we're replacing
+				return len( buffer ) - len( leftOver ) - iif( !len( leftOver ) && !buffer.endsWith( ' ' ), 0, 1 );
+				
 			} // End are we using positional params
 			
 			
 		} // End was the command found
 		
-		
-		
-		
 		return len( buffer );
-		var start = isNull(buffer) ? "" : buffer;
-		var args = rematch("'.*?'|"".*?""|\S+",start);
-		var prefix = args.size() > 0 && structKeyExists(commands,args[1]) ? args[1] : "";
-		var startIndex = 0;
-		var isArgument = false;
-		var lastArg = args.size() > 0 ? args[args.size()] : "";
-		variables.partialCompletion = false;
-		
-		if(prefix eq "") {
-			command = args.size() > 0 ? args[1] : "";
-		} else {
-			if(arrayLen(args) >= 2) {
-				command = args[2];
-			} else if(!StructKeyExists(commands,prefix)) {
-				return len(start);
-			}
-		}
-
-		if(args.size() == 0 || arrayLen(args) == 1 && !start.endsWith(" ")) {
-			// starting to type the prefix or command
-        	candidates.clear();
-	        for (var i = commandlist.iterator(); i.hasNext();) {
-	            var can = i.next();
-	            if (can.startsWith(start)) {
-		            candidates.add(can);
-	            }
-	        }
-		} else if (arrayLen(args) == 1 && start.endsWith(" ")) {
-			// add prefix command list or command parameters
-			if(len(prefix) > 0) {
-				for(var param in commands[prefix]) {
-	            	candidates.add(param);
-				}
-			} else {
-				if(!StructKeyExists(commands,prefix) || !StructKeyExists(commands[prefix],command)) {
-					return len(start);
-				}
-				for(var param in commands[prefix][command].parameters) {
-	            	candidates.add(param.name);
-				}
-				isArgument = true;
-			}
-			startIndex = len(start);
-		} else if(len(prefix) && arrayLen(args) == 2 && !start.endsWith(" ")) {
-			// prefix command list
-			for(var param in commands[prefix]) {
-	            if (param.startsWith(lastArg)) {
-            		candidates.add(param);
-	            }
-			}
-			startIndex = len(start) - len(lastArg);
-		} else if(arrayLen(args) > 1) {
-			var parameters = "";
-			var lastArg = args[arrayLen(args)];
-			isArgument = true;
-			parameters = commands[prefix][command].parameters;
-			for(var param in parameters) {
-				if(!start.endsWith(" ") && lastArg.startsWith("#param.name#=")) {
-					var paramType = param.type;
-					var paramSoFar = listRest(lastArg,"=");
-					paramValueCompletion(param.name, paramType, paramSoFar, candidates);
-					startIndex = len(start) - len(paramSoFar);
-					isArgument = false;
-				} else {
-		            if (param.name.startsWith(lastArg) || start.endsWith(" ")) {
-		            	if(!findNoCase(param.name&"=", start)) {
-		            		candidates.add(param.name);
-		            	}
-		            }
-					startIndex = start.endsWith(" ") || findNoCase("=",lastArg) ? len(start) : len(start) - len(lastArg);
-					isArgument = true;
-				}
-			}
-		}
-        if (candidates.size() == 1 && !partialCompletion) {
-        	can = isArgument ? candidates.first() & "=" : candidates.first() & " ";
-        	candidates.clear();
-        	candidates.add(can);
-        }
-        return (candidates.size() == 0) ? (-1) : startIndex;
 	}
 
 	/**
@@ -193,8 +155,8 @@ component output="false" persistent="false" {
 	private function paramValueCompletion(String paramName, String paramType, String paramSoFar, required candidates) {
 		switch(paramType) {
 			case "Boolean" :
-           		addCandidateIfMatch("true",paramSoFar,candidates);
-           		addCandidateIfMatch("false",paramSoFar,candidates);
+           		addCandidateIfMatch("true ",paramSoFar,candidates);
+           		addCandidateIfMatch("false ",paramSoFar,candidates);
 				break;
 		}
 		switch(paramName) {
@@ -222,7 +184,7 @@ component output="false" persistent="false" {
 		for(file in files) {
 			if(file.startsWith(startsWith)) {
 				if(directoryExists(file))
-					candidates.add(file&"/");
+					candidates.add(file&"/" & ' ');
 			}
 		}
 		variables.partialCompletion = true;
@@ -243,7 +205,7 @@ component output="false" persistent="false" {
 		for(file in files) {
 			if(file.startsWith(startsWith)) {
 				if(fileExists(file))
-					candidates.add(file);
+					candidates.add(file & ' ');
 			}
 		}
 	}

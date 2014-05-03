@@ -7,15 +7,15 @@ component name="TestShell" extends="mxunit.framework.TestCase" {
 		var commandHandler = new cfml.cli.CommandHandler(shell);
 		variables.completor = new cfml.cli.Completor(commandHandler);
 	}
-/*
-	public void function testPartialNoPrefixCommands()  {
+
+	public void function testPartialNoPrefixCommands()  {		
 		cmdline = "";
 		cursor = completor.complete(cmdline,len(cmdline),candidates);
 		assertTrue(candidates.size() > 4);
-		assertTrue(candidates.contains("help"));
-		assertTrue(candidates.contains("dir"));
-		assertTrue(candidates.contains("ls"));
-		assertTrue(candidates.contains("cfdistro"));
+		assertTrue(candidates.contains("help "));
+		assertTrue(candidates.contains("dir "));
+		assertTrue(candidates.contains("ls "));
+		assertTrue(candidates.contains("reload "));
 		assertEquals(0,cursor);
 		candidates.clear();
 
@@ -26,39 +26,40 @@ component name="TestShell" extends="mxunit.framework.TestCase" {
 		assertEquals(0,cursor);
 		candidates.clear();
 
+		
 		cmdline = "help ";
 		cursor = completor.complete(cmdline,len(cmdline),candidates);
-		assertTrue(candidates.contains("command="));
+		assertTrue(candidates.contains(" command="));
 		assertFalse(candidates.contains("help"));
-		assertEquals(5,cursor);
+		assertEquals(4,cursor);
 		candidates.clear();
 
 		cmdline = "help com";
 		cursor = completor.complete(cmdline,len(cmdline),candidates);
-		assertTrue(candidates.contains("command="));
+		assertTrue(candidates.contains(" command="));
 		assertFalse(candidates.contains("help"));
-		assertEquals(5,cursor);
+		assertEquals(4,cursor);
 		candidates.clear();
 
 		cmdline = "dir ";
 		cursor = completor.complete(cmdline,len(cmdline),candidates);
-		assertTrue(candidates.contains("directory"));
-		assertTrue(candidates.contains("recurse"));
-		assertEquals(4,cursor);
+		assertTrue(candidates.contains(" directory="));
+		assertTrue(candidates.contains(" recurse="));
+		assertEquals(3,cursor);
 		candidates.clear();
 
 		cmdline = "dir directory=blah ";
 		cursor = completor.complete(cmdline,len(cmdline),candidates);
 		assertFalse(candidates.contains("directory"));
 		assertFalse(candidates.contains("directory="));
-		assertTrue(candidates.contains("recurse="));
-		assertEquals(19,cursor);
+		assertTrue(candidates.contains(" recurse="));
+		assertEquals(18,cursor);
 		candidates.clear();
 
 		cmdline = "dir directory=blah recurse=";
 		cursor = completor.complete(cmdline,len(cmdline),candidates);
-		assertTrue(candidates.contains("true"));
-		assertTrue(candidates.contains("false"));
+		assertTrue(candidates.contains("true "));
+		assertTrue(candidates.contains("false "));
 		assertEquals(27,cursor);
 		candidates.clear();
 
@@ -72,16 +73,16 @@ component name="TestShell" extends="mxunit.framework.TestCase" {
 
 		cmdline = "cfdistro ";
 		cursor = completor.complete(cmdline,len(cmdline),candidates);
-		assertTrue(candidates.contains("war"));
-		assertTrue(candidates.contains("dependency"));
+		assertTrue(candidates.contains("war "));
+		assertTrue(candidates.contains("dependency "));
 		assertEquals(len(cmdline),cursor);
 		candidates.clear();
 
 		cmdline = "cfdistro war";
 		cursor = completor.complete(cmdline,len(cmdline),candidates);
-		assertTrue(candidates.contains("war "));
-		assertFalse(candidates.contains("dependency "));
-		assertEquals(9,cursor);
+		assertTrue(candidates.contains("cfdistro war "));
+		assertFalse(candidates.contains("cfdistro dependency "));
+		assertEquals(0,cursor);
 		candidates.clear();
 
 		cmdline = "cfdistro d";
@@ -94,16 +95,16 @@ component name="TestShell" extends="mxunit.framework.TestCase" {
 		cmdline = "cfdistro dependency ";
 		cursor = completor.complete(cmdline,len(cmdline),candidates);
 		debug(candidates);
-		assertTrue(candidates.contains("artifactId"));
-		assertTrue(candidates.contains("exclusions"));
-		assertEquals(len(cmdline),cursor);
+		assertTrue(candidates.contains(" artifactId="));
+		assertTrue(candidates.contains(" exclusions="));
+		assertEquals(len(cmdline)-1,cursor);
 		candidates.clear();
 
 		cmdline = "init";
 		cursor = completor.complete(cmdline,len(cmdline),candidates);
 		debug(candidates);
-		assertTrue(candidates.contains("init"));
-		assertEquals(len(cmdline),cursor);
+		assertTrue(candidates.contains("init "));
+		assertEquals(0,cursor);
 		candidates.clear();
 
 		cmdline = "iDoNotExist ";
@@ -112,5 +113,5 @@ component name="TestShell" extends="mxunit.framework.TestCase" {
 		assertEquals(0,candidates.size());
 		assertEquals(len(cmdline),cursor);
 		candidates.clear();
-	}*/
+	}
 }

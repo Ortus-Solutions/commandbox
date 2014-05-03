@@ -136,7 +136,8 @@ component {
 			param = removeEscapedChars( param );
 			
 			// named params
-			if( listLen( param, '=' ) > 1 ) {
+			hasEq = find( '=', param, 2 );
+			if( hasEq ) {
 				// Extract the name and value pair
 				var name = listFirst( param, '=' );
 				var value = listRest( param, '=' );
