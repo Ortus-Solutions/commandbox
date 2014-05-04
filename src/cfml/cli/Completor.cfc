@@ -81,10 +81,13 @@ component output="false" persistent="false" {
 			// Is the user using positional params
 			if( arrayLen( passedParameters.positionalParameters ) > 1  ) {
 				
-				// If there are more param than what the user has typed so far
+				// If there are more params than what the user has typed so far
 				if( definedParameters.len() > passedParameters.positionalParameters.len() ) {
-					// Add the name next one in the list. The user will have to backspace and 
-					// replace this with their actual param so this may not be that useful.
+					// Add the name of the next one in the list. The user will have to backspace and 
+					// replace this with their actual param so this may not be that useful. 
+					// TODO: This is useful because if the user is using positional parameters it reminds them 
+					// of what comes next, however, I'm not sure I like it because it means we can't do type-based
+					// auto-complete for directories and such.  Figure out which one we want more and do that.
 					candidates.add( definedParameters[ passedParameters.positionalParameters.len()+1 ].name & ' ' );
 				}
 				return len( buffer );
@@ -125,7 +128,7 @@ component output="false" persistent="false" {
 					
 				}
 				
-				// Loop over all possible params and add the ones not already there
+				// Loop over all possible params and suggest the ones not already there
 				for( var param in definedParameters ) {
 					if( !structKeyExists( passedParameters.namedParameters, param.name ) ) {
 						if( !len( leftOver ) || param.name.startsWith( leftOver ) ) {

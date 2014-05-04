@@ -4,7 +4,7 @@
 component persistent="false" extends="cli.BaseCommand" aliases="" excludeFromHelp=false {
 
 	function run()  {
-		return shell.version();
+		print.line( 'CommandBox #shell.version()#' );
 	}
 
 }
