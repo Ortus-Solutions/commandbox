@@ -3,7 +3,7 @@
 <cfparam name="url.email" default="false">
 <cfparam name="url.recipients" default="????@????.com">
 <!--- change this! --->
-<cfset dir = expandPath(".") />
+<cfset dir = expandPath(".\cfml") />
 <cfoutput><h1>
 		#dir# 
 	</h1></cfoutput>
@@ -15,7 +15,7 @@
 	recurse="true" 
 	excludes="#excludes#"
 	returnvariable="Results"
-	componentpath="tests">
+	componentpath="tests.cfml">
 <!---  [WEE]<-- Fill this in! This is the root component path for your tests. if your tests are at {webroot}/app1/test, then your componentpath will be app1.test   --->
 <cfsetting showdebugoutput="true">
 <cfoutput>
