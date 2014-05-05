@@ -12,11 +12,19 @@ component persistent="false" extends="cli.BaseCommand" aliases="rm,del" excludeF
 	 * @recurse.hint recursive deletion of files
 	 **/
 	function run( required file="", Boolean force=false, Boolean recurse=false )  {
-		if(!fileExists(file)) {
+		
+		// If files does't, maybe they meant a relative file
+		if( !fileExists( file ) ) {
+			file = shell.pwd() & '/' & file;
+		}
+		
+		
+		if( !fileExists( file ) ) {
 			shell.printError({message="file does not exist: #file#"});
 		} else {
 			var isConfirmed = shell.ask("delete #file#? [y/n] : ");
-			if(left(isConfirmed,1) == "y" || isBoolean(isConfirmed) && isConfirmed) {
+			if(left(isConfirmed,1) == "y" 
+				|| ( isBoolean(isConfirmed) && isConfirmed ) ) {
 				fileDelete(file);
 				return "deleted #file#";
 			}

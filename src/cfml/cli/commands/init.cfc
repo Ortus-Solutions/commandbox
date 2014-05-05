@@ -1,6 +1,5 @@
 /**
- * Initialize a ColdBox site in the current directory based on the box.json site descriptor.
- * A default box.json will be created if one doesn't exist.
+ * Initialize a package in the current directory by creating a default box.json file.
  * 
  * init
  * 
@@ -8,39 +7,73 @@
 component persistent="false" extends="cli.BaseCommand" aliases="" excludeFromHelp=false {
 
 	/**
-	 * @force.hint do not prompt, overwrite if exists
+	 * @applicationName.hint The humnan-readable name for this package 
+	 * @slug.hint The ForgeBox slug for this package (no spaces or special chars)
+	 * @directory.hint The location to initialize the project.  Defaults to the current working directory.
+	 * @force.hint Do not prompt, overwrite if exists
 	 **/
-	function run( Boolean force=false ) {
-		var pwd = shell.pwd();
-		var boxfile = pwd & "/box.json";
-		var ask = "";
-		if(!fileExists(boxfile) && force) {
-			fileWrite(boxfile,serializeJSON(box.json));
-		} if(fileExists(boxfile)) {
-			ask &= "over";
+	function run( packagename='myApplication', slug='mySlug', directory='', Boolean force=false ) {
+		if( !len( directory ) ) {
+			directory = shell.pwd();
 		}
-		if(!force) {
-			var isWrite = shell.ask(ask&"write file #boxfile#? [y/n] : ");
-			if(left(isWrite,1) == "y" || isBoolean(isWrite) && isWrite) {
-				fileWrite(boxfile,serializeJSON(box.json));
-				return "wrote #boxfile#";
-			} else {
-				return "cancelled";
-			}
+		
+		// Validate directory
+		if( !directoryExists( directory ) ) {
+			print.redLine( 'Directory #directory# does not exist.' );
+			return;
+		}
+		
+		// TODO: Get author info from default CommandBox config
+		
+		// Read the default JSON file.  
+		// TODO: Externalize the default file and read it in
+		var boxJSON = variables.boxJSON;
+		// Replace things passed via parameters
+		boxJSON = replaceNoCase( boxJSON, '@@packageName@@', packagename );
+		boxJSON = replaceNoCase( boxJSON, '@@slug@@', slug );
+		
+		// Clean up directory
+		if( listFind( '\,/', right( directory, 1 ) ) ) {
+			directory = mid( directory, 1, len( directory )-1  );
+		}
+		
+		// This is where we will write the box.json file
+		var boxfile = directory & "/box.json";
+	
+		// If the file doesn't exist, or we are forcing, just do it!
+		if( !fileExists( boxfile ) || force ) {
+			fileWrite( boxfile, boxJSON );
+			
+			print.greenLine( 'Package Initialized!' );
+			print.line( boxfile );
+			
+		// File exists, better check first
 		} else {
-			fileWrite(boxfile,serializeJSON(box.json));
-			return "wrote #boxfile#";
+			// Ask the user what they want to do
+			var isWrite = ask( '#boxfile# already exists, overwrite? [y/n] : ');
+			// If they responsed with 'y' or some other boolean true, then do it.
+			if( left( isWrite, 1 ) == 'y' 
+					|| ( isBoolean( isWrite ) && isWrite ) ) {
+				fileWrite( boxfile, boxJSON );
+				
+				print.greenLine( 'Package Initialized!' );
+				print.line( boxfile );
+			} else {
+				print.redLine( 'cancelled' );		
+			}
+			
 		}
+		
 	}
 
-
-	box.json = {
+	variables.boxJSON = '
+	{
 		// packagename
-		name : "string",
+		name : "@@packageName@@",
 		// semantic version of your package
 		version :"1.0.0.buildID",
-		// authorof this package
-		author : "Luis Majano <lmajano@mail.com>",
+		// author of this package
+		author : "Your Name <your.email@mail.com>",
 		// location of where to download the package, overrides ForgeBox location
 		location :"URL,Git/svn endpoint,etc",
 		// installdirectory where this package should beplaced once installed, if not
@@ -55,20 +88,20 @@ component persistent="false" extends="cli.BaseCommand" aliases="" excludeFromHel
 		// bug issue management URL
 		Bugs : "URL",
 		// ForgeBox unique slug
-		slug : "",
+		slug : "@@slug@@",
 		// ForgeBox short description
 		shortDescription : "short description",
-		// ForgeBox big description,if not set it looksfor a Readme.md, Readme, Readme.txt
+		// ForgeBox big description,if not set it looksfor a Readme.md, Readme, or Readme.txt
 		description : "",
-		// Installinstructions, if not set it looks fora instructions.md,instructions,instructions.txt
+		// Installinstructions, if not set it looks for a instructions.md, instructions, or instructions.txt
 		instructions : "",
-		// Changelog, if not set, itlooks for a changelog.md, changelog orchangelog.txt
+		// Changelog, if not set, it looks for a changelog.md, changelog, or changelog.txt
 		changelog: "",
 		// ForgeBox contribution type
 		type : "from forgebox available types",
 		// ForgeBox keywords, array of strings
 		keywords :[ "groovy", "module" ],
-		// Bit that if set to true, will not allow ForgeBox posting if usingcommands
+		// Bit that if set to true, will not allow ForgeBox posting if using commands
 		private :"Boolean",
 		// cfml engines it supports,type and version
 		engines :[
@@ -77,10 +110,10 @@ component persistent="false" extends="cli.BaseCommand" aliases="" excludeFromHel
 		],
 		// defaultengine to use using our run embedded server command
 		// Available engines are railo, cf9, cf10, cf11
-		defaultEngine : "cf9, railo,cf11",
+		defaultEngine : "cf9, railo, cf11",
 		// defaultengine port usingour run embedded server command
 		defaultPort : 8080,
-		// defaultproject URL if notusing our start server commands
+		// defaultproject URL if not using our start server commands
 		ProjectURL: "http://railopresso.local/myApp",
 		// licensearray of licensesit can have
 		License :[
@@ -97,13 +130,13 @@ component persistent="false" extends="cli.BaseCommand" aliases="" excludeFromHel
 			"Name" : "Git/svn endpoint"
 		},
 		// only needed on development
-		// Same asabove, but not installed in production
+		// Same as above, but not installed in production
 		DevDependencies : {},
 		// array of strings of filesto ignore when installing the package similar to .gitignore pattern spec
 		ignore : ["logs*", "readme.md" ],
 		// testboxintegration
 		testbox :{
-		// the urilocation of the test runner for is appor several with slug names
+		// The uri location of the test runners with slug names
 			runner : [
 				{ "cf9": "http://cf9cboxdev.jfetmac/coldbox/testing/runner.cfm"},
 				{ "railo": "http://railocboxdev.jfetmac/coldbox/testing/runner.cfm"}
@@ -119,12 +152,12 @@ component persistent="false" extends="cli.BaseCommand" aliases="" excludeFromHel
 			Notify : {
 				Emails : [],
 				Growl : "address",
-				// URL tohit with test report
+				// URL to hit with test report
 				URL : ""
 			}
 		}
 	}
 
-
+	';
 
 }

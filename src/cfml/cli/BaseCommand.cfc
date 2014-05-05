@@ -25,7 +25,22 @@ component {
 	function getResult() {
 		return print.getResult();
 	}
-	
+			
+	/**
+	 * Ask the user a question and wait for response
+	 * @message.hint message to prompt the user with
+ 	 **/
+	function ask( required message ) {
+		return shell.ask( message );
+	}
+		
+	/**
+	 * Wait until the user's next keystroke
+	 * @message.message An optional message to display to the user such as "Press any key to continue."
+ 	 **/
+	function waitForKey( required message ) {
+		return shell.waitForKey( message );
+	}
 	
 	
 }

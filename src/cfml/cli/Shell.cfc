@@ -136,7 +136,7 @@ component accessors="true"{
 		} else {
 			variables.shellPrompt = text;
 		}
-		reader.setDefaultPrompt(variables.shellPrompt);
+		reader.setDefaultPrompt( variables.shellPrompt );
 		return "set prompt";
 	}
 
@@ -144,14 +144,14 @@ component accessors="true"{
 	 * ask the user a question and wait for response
 	 * @message.hint message to prompt the user with
  	 **/
-	function ask(message) {
+	function ask( message ) {
 		var input = "";
 		try {
-			input = reader.readLine(message);
+			input = reader.readLine( message );
 		} catch (any e) {
-			printError(e);
+			printError( e );
 		}
-		reader.setDefaultPrompt(variables.shellPrompt);
+		reader.setDefaultPrompt( variables.shellPrompt);
 		return input;
 	}
 
@@ -169,9 +169,9 @@ component accessors="true"{
 		try {
 			key = getReader().readVirtualKey();
 		} catch (any e) {
-			printError(e);
+			printError( e );
 		}
-		reader.setDefaultPrompt(variables.shellPrompt);
+		reader.setDefaultPrompt( variables.shellPrompt );
 		return key;
 	}
 
