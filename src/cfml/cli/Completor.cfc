@@ -156,6 +156,7 @@ component output="false" persistent="false" {
 	 * @candidates.hint tree to populate with completion candidates
  	 **/
 	private function paramValueCompletion(String paramName, String paramType, String paramSoFar, required candidates) {
+		
 		switch(paramType) {
 			case "Boolean" :
            		addCandidateIfMatch("true ",paramSoFar,candidates);
@@ -190,7 +191,6 @@ component output="false" persistent="false" {
 					candidates.add(file&"/" & ' ');
 			}
 		}
-		variables.partialCompletion = true;
 	}
 
 
@@ -200,12 +200,16 @@ component output="false" persistent="false" {
 	 * @candidates.hint tree to populate with completion candidates
  	 **/
 	private function fileCompletion(String startsWith, required candidates) {
-		startsWith = replace(startsWith,"\","/","all");
-		if(startsWith == "") {
-			startsWith = commandHandler.getShell().pwd();
+		
+		if( startsWith == "" ) {
+			startsWith = commandHandler.getShell().pwd() & '/';
 		}
-		var files = directoryList(getDirectoryFromPath(startsWith));
+				
+		startsWith = replace( startsWith, "\", "/", "all" );		
+		var files = directoryList( getDirectoryFromPath( startsWith &  '/' ) );
 		for(file in files) {
+			file = replace( file, "\", "/", "all" );
+			
 			if(file.startsWith(startsWith)) {
 				if(fileExists(file))
 					candidates.add(file & ' ');
