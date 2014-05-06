@@ -6,8 +6,6 @@ component extends="cli.BaseCommand" excludeFromHelp=true {
 		print.yellowLine( 'General help and description of how to use namespaces' );
 		print.line();
 		print.line();
-		
-		shell.callCommand( "help namespace" );
 
 	}
 }

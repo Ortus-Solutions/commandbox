@@ -17,7 +17,8 @@ component extends="cli.BaseCommand" aliases="h,/?,?,--help,-help" excludeFromHel
 		print.greenLine( repeatString( '*', 50 ) );
 		print.greenText( '* CommandBox Help' );
 		if( len( command ) ) {
-			print.greenText( ' for "#command#"' );	
+			print.greenText( ' for ' );	
+			print.boldGreenText( '#command#' );	
 		}
 		print.line();
 		print.greenLine( repeatString( '*', 50 ) );
@@ -31,7 +32,7 @@ component extends="cli.BaseCommand" aliases="h,/?,?,--help,-help" excludeFromHel
 		// If we're getting help for a specific command
 		if( len( command ) ) {
 			// Resolve the string to the first command (help | more will just be "help")
-			var commandInfo = commandHandler.resolveCommand( line=command, substituteHelp=false )[1];
+			var commandInfo = commandHandler.resolveCommand( line=command )[1];
 			
 			// Display auto help for however far we made it in the command hierarchy
 			commandHierarchy = commandInfo.commandReference;
@@ -44,6 +45,15 @@ component extends="cli.BaseCommand" aliases="h,/?,?,--help,-help" excludeFromHel
 				print.redLine( 'Command [#command#] not found.' );	
 				print.line();	
 			}
+			
+			// If no command was found but there is an applicable help command for the namespace
+			// other than the main help that we're in now...
+			if( !foundCommand && commandInfo.closestHelpCommand != 'help' ) {
+				// Run it to output some context-specific help for this namespace
+				runCommand( commandInfo.closestHelpCommand );
+				
+			}
+			
 		}
 		
 		// Help for a single command
@@ -79,7 +89,7 @@ component extends="cli.BaseCommand" aliases="h,/?,?,--help,-help" excludeFromHel
 		
 			// If there are commands
 			if( commands.len() ) {
-				print.yellowline( 'Here is a list of commands in this namespace:' );
+				print.blackOnYellowline( 'Here is a list of commands in this namespace:' );
 				print.line();
 				
 				// Show them
@@ -95,7 +105,7 @@ component extends="cli.BaseCommand" aliases="h,/?,?,--help,-help" excludeFromHel
 			if( namespaces.len() ) {
 				print.line();
 			
-				print.yellowline( 'Here is a list of nested namespaces:' );
+				print.blackOnYellowline( 'Here is a list of nested namespaces:' );
 				print.line();
 				
 				// Show them
@@ -107,7 +117,9 @@ component extends="cli.BaseCommand" aliases="h,/?,?,--help,-help" excludeFromHel
 				
 			}
 			print.line();
-			print.yellowline( 'To get help on any of the items above, type "help command name".' );
+			print.yellowText( 'To get further help on any of the items above, type ' );
+			print.boldYellowText( '"help command name"' );
+			print.YellowLine( '.' );
 			
 		}
 		

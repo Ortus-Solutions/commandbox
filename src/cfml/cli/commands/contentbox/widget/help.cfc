@@ -7,7 +7,6 @@ component extends="cli.BaseCommand" excludeFromHelp=true {
 		print.line();
 		print.line();
 		
-		shell.callCommand( "help contentbox widget" );
 
 	}
 }

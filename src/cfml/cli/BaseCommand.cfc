@@ -36,10 +36,18 @@ component {
 		
 	/**
 	 * Wait until the user's next keystroke
-	 * @message.message An optional message to display to the user such as "Press any key to continue."
+	 * @message.hint An optional message to display to the user such as "Press any key to continue."
  	 **/
 	function waitForKey( required message ) {
 		return shell.waitForKey( message );
+	}
+		
+	/**
+	 * Run another command by name. 
+	 * @command.hint The command to run. Pass the same string a user would type at the shell.
+ 	 **/
+	function runCommand( required command ) {
+		return shell.callCommand( command );
 	}
 	
 	

@@ -243,11 +243,8 @@ component output='false' persistent='false' {
 	/**
 	 * Figure out what command to run based on the tokenized user input
 	 * @line.hint A string containing the command and parameters that the user entered
-	 * @substituteHelp.hint If the command cannot be found, switch it out for the closest help 
  	 **/
-	function resolveCommand( required string line, substituteHelp = true ) {
-		// Turning this off for now since it's too confusing and too much information.
-		substituteHelp = false;
+	function resolveCommand( required string line ) {
 		
 		// Turn the users input into an array of tokens
 		var tokens = instance.parser.tokenizeInput( line );
@@ -284,7 +281,8 @@ component output='false' persistent='false' {
 			
 			// If command ends with "help", switch it around to call the root help command
 			// Ex. "coldbox help" becomes "help coldbox"
-			if( tokens.len() > 1 && tokens.last() == 'help' ) {
+			// Don't do this if we're already in a help command or endless recursion will ensue.
+			if( tokens.len() > 1 && tokens.last() == 'help' && !inCommand( 'help' ) ) {
 				// Move help to the beginning
 				tokens.deleteAt( tokens.len() );
 				tokens.prepend( 'help' );
@@ -294,16 +292,10 @@ component output='false' persistent='false' {
 				commandString = '',
 				commandReference = cmds,
 				parameters = [],
-				found = false
+				found = false,
+				closestHelpCommand = 'help'
 			};
-			
-			var lastHelpReference = '';
 						
-			// Check for a root help command
-			if( substituteHelp &&  structKeyExists( results.commandReference, 'help' ) && isObject( results.commandReference.help ) ) {
-				lastHelpReference = results.commandReference.help;
-			}
-			
 			for( var token in tokens ) {
 				
 				// If we hit a dead end, then quit looking
@@ -321,8 +313,8 @@ component output='false' persistent='false' {
 					break;
 				// If this is a folder, check and see if it has a "help" command
 				} else {	
-					if( substituteHelp && structKeyExists( results.commandReference, 'help' ) && isObject( results.commandReference.help ) ) {
-						lastHelpReference = results.commandReference.help;
+					if( structKeyExists( results.commandReference, 'help' ) && isObject( results.commandReference.help ) ) {
+						results.closestHelpCommand = listChangeDelims( results.commandString, ' ', '.' ) & ' help';
 					}
 				}
 				
@@ -336,14 +328,6 @@ component output='false' persistent='false' {
 				results.parameters = tokens.slice( commandLength+1 );
 			}
 			
-			// If we failed to match a command, but we did encounter a help command along the way, make that the new command
-			if( !results.found && isObject( lastHelpReference ) ) {
-				results.commandReference = lastHelpReference;
-				// Dump app the tokens in a parameters
-				results.parameters = tokens;
-				results.found = true;
-			}
-
 			commandChain.append( results );
 
 		} // end loop over commands to resolve
@@ -353,7 +337,32 @@ component output='false' persistent='false' {
 				
 	}
 
+		
+	/**
+	 * Looks at the call stack to determine if we're currently "inside" a command.
+	 * Useful to prevent endless recursion. 
+	 * @command.hint Name of the command to look for as typed from the shell.  If empty, returns true for any command
+ 	 **/
+	function inCommand( command='' ) {
+			
+		// If a command is provided, look for it in the call stack..
+		if( len( command ) ) {
+			for( var call in instance.callStack ) {
+				// CommandString is a dot-delimted path
+				if( call.commandString == listChangeDelims( command, ' ', '.' ) ) {
+					return true;
+				}					
+			}
+			// Nope, not found
+			return false;			
+		} else {
+			// If no specific command given, just look for any thing in the stack
+			return instance.callStack.len() ? true : false;
+		}
+			
+	}
 	
+		
 	/**
 	 * Match positional parameters up with their names 
  	 **/
