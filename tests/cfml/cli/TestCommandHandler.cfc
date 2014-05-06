@@ -11,7 +11,11 @@ component extends="mxunit.framework.TestCase" {
 	public void function testInitCommands()  {
 		var commands = commandHandler.getCommands();
 		assertTrue(structKeyExists(commands,"quit"));
+	}
 
+	public void function testHelpCommands()  {
+		commandChain = commandHandler.resolveCommand( "coldbox help" );
+		assertTrue(commandChain[1].commandString == 'help');
 	}
 	
 	public void function testResolveCommand()  {

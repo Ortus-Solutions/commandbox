@@ -275,13 +275,20 @@ component output='false' persistent='false' {
 		}
 		
 		
-		
 		// command hierarchy
 		var cmds = getCommandHierarchy();
 		
 		for( var commandTokens in commandsToResolve ) {
 				
 			tokens = commandTokens;
+			
+			// If command ends with "help", switch it around to call the root help command
+			// Ex. "coldbox help" becomes "help coldbox"
+			if( tokens.len() > 1 && tokens.last() == 'help' ) {
+				// Move help to the beginning
+				tokens.deleteAt( tokens.len() );
+				tokens.prepend( 'help' );
+			}
 			
 			var results = {
 				commandString = '',
