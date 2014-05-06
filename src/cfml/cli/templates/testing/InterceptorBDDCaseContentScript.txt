@@ -1,0 +1,11 @@
+			it( "should execute |point|", function(){
+				// mocks
+				var mockEvent = getMockRequestContext();
+				var mockData  = {};
+				
+				// execute |point|
+				interceptor.|point|(mockEvent,mockData);
+				
+				// expectations here
+				
+			});

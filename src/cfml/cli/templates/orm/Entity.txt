@@ -1,0 +1,23 @@
+<cfcomponent persistent="true" table="|table|" output="false" hint="A cool |entity|"|activeEntity|>
+
+	<!--- Primary Key --->
+	<cfproperty name="|primaryKey|" fieldtype="id" column="|primaryKeyColumn|" generator="|generator|">
+	
+	<!--- Properties --->
+	|properties|
+	
+	<!--- Validation --->
+	<cfset this.constraints = {
+		<!--- Example: age = { required=true, min="18", type="numeric" --->
+	}>
+	
+	<!--- init --->
+    <cffunction name="init" output="false" access="public" returntype="any">
+    	<cfscript>
+    		|activeEntityInit|
+    		return this;
+    	</cfscript>
+    </cffunction>
+
+	
+</cfcomponent>

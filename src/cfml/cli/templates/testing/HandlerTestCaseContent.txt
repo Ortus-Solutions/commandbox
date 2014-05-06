@@ -1,0 +1,14 @@
+	<cffunction name="test|action|">
+		<cfscript>
+		var event = "";
+		
+		//Place any variables on the form or URL scope to test the handler.
+		//URL.name = "luis"
+		
+		// Execute the event
+		event = execute("|event|");
+		
+		//Do your asserts below
+			
+		</cfscript>
+	</cffunction>

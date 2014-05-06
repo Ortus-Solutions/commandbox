@@ -1,0 +1,15 @@
+<cfcomponent hint="|modelDescription|" output="false" |modelPersistence|>
+
+<!------------------------------------------- CONSTRUCTOR ------------------------------------------->
+
+	<cffunction name="init" access="public" returntype="|modelName|" output="false" hint="constructor">
+		<cfscript>
+			return this;
+		</cfscript>
+	</cffunction>
+
+<!------------------------------------------- PUBLIC ------------------------------------------->
+
+	
+
+</cfcomponent>	

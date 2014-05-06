@@ -1,0 +1,11 @@
+	function test|point|(){
+		// mocks
+		var mockEvent = getMockRequestContext();
+		var mockData  = {};
+		
+		// execute |point|
+		interceptor.|point|(mockEvent,mockData);
+		
+		//Do your asserts below
+		
+	}

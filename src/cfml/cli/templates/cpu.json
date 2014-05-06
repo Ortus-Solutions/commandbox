@@ -1,0 +1,7 @@
+{
+	"projectURL" : "http://localhost",
+	"testbox" : {
+		"runnerURL" 	: "http://localhost",
+		"browserURL" 	: "http://localhost" 	
+	}
+}

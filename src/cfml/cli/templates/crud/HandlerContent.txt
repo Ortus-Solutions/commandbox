@@ -1,0 +1,142 @@
+/**
+* Manage |entityPlural|
+* It will be your responsibility to fine tune this template, add validations, try/catch blocks, logging, etc.
+*/
+component{
+	
+	// DI Virtual Entity Service
+	property name="ormService" inject="entityService:|entity|";
+	
+	// HTTP Method Security
+	this.allowedMethods = {
+		index = "GET", new = "GET", edit = "GET", delete = "POST,DELETE", save = "POST,PUT"
+	};
+	
+	/**
+	* preHandler()
+	*/
+	function preHandler(event,rc,prc){
+		event.paramValue("format","html");
+	}
+		
+	/**
+	* Listing
+	*/
+	function index(event,rc,prc){
+		// Get all |entityPlural|
+		rc.|entityPlural| = ormService.getAll();
+		
+		// RESTful Switch
+		switch(rc.format){
+			// xml,json,jsont,wddx are by default.  Add your own or remove
+			case "xml" : case "json" : case "jsont" : case "wddx" :{
+				event.renderData(data=rc.|entityPlural|,type=rc.format);
+				break;
+			}
+			// HTML
+			default:{
+				event.setView("|entityPlural|/index");
+			}
+		}
+	}	
+	
+	/**
+	* New Form
+	*/
+	function new(event,rc,prc){
+		
+		// get new |entity|
+		rc.|entity| = ormService.new();
+		
+		event.setView("|entityPlural|/new");
+	}	
+
+	/**
+	* Edit Form
+	*/
+	function edit(event,rc,prc){
+		
+		// get persisted |entity|
+		rc.|entity| = ormService.get( rc.|pk| );
+		
+		event.setView("|entityPlural|/edit");
+	}	
+	
+	/**
+	* View |entity| mostly used for RESTful services only.
+	*/
+	function show(event,rc,prc){
+		
+		// Get requested entity by id
+		rc.|entity| = ormService.get( rc.|pk| );
+		
+		switch(rc.format){
+			// xml,json,jsont,wddx are by default.  Add your own or remove
+			case "xml" : case "json" : case "jsont" : case "wddx" :{
+				event.renderData(data=rc.|entity|,type=rc.format);
+				break;
+			}
+			// HTML
+			default:{
+				setNextEvent('|entityPlural|');
+			}
+		}
+	}
+
+	/**
+	* Save and Update
+	*/
+	function save(event,rc,prc){
+		
+		// get |entity| to persist or update and populate it with incoming form
+		rc.|entity| = populateModel(model=ormService.get( rc.|pk| ), exclude="|pk|", composeRelationships=true);
+		
+		// Do your validations here
+		
+		// Save it
+		ormService.save( rc.|entity| );
+		
+		// RESTful Handler
+		switch(rc.format){
+			// xml,json,jsont,wddx are by default.  Add your own or remove
+			case "xml" : case "json" : case "jsont" : case "wddx" :{
+				event.renderData(data=rc.|entity|,type=rc.format,location="/|entityPlural|/show/#rc.|entity|.get|pk|()#");
+				break;
+			}
+			// HTML
+			default:{
+				// Show a nice messagebox
+				getplugin("MessageBox").info("|entity| Created!");
+				// Redirect to listing
+				setNextEvent('|entityPlural|');
+			}
+		}
+	}	
+
+	/**
+	* Delete
+	*/
+	function delete(event,rc,prc){
+		
+		// Delete record by ID
+		var removed = ormService.deleteById( rc.|pk| );
+		
+		// RESTful Handler
+		switch(rc.format){
+			// xml,json,jsont,wddx are by default.  Add your own or remove
+			case "xml" : case "json" : case "jsont" : case "wddx" :{
+				var restData = {deleted=removed};
+				event.renderData(data=restData,type=rc.format);
+				break;
+			}
+			// HTML
+			default:{
+				// Show a nice messagebox
+				getplugin("MessageBox").warn("|entity| Poofed!");
+				// Redirect to listing
+				setNextEvent('|entityPlural|');
+			}
+		}
+	}	
+	
+}

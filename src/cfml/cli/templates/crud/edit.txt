@@ -1,0 +1,1 @@
+<cfoutput>#renderView(view="|entityPlural|/editor",args={title="Update |entity|"})#</cfoutput>

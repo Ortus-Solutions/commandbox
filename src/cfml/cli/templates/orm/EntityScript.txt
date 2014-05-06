@@ -1,0 +1,22 @@
+/**
+* A cool |entityName| entity
+*/
+component persistent="true" table="|table|"|activeEntity|{
+
+	// Primary Key
+	property name="|primaryKey|" fieldtype="id" column="|primaryKeyColumn|" generator="|generator|";
+	
+	// Properties
+	|properties|
+	
+	// Validation
+	this.constraints = {
+		// Example: age = { required=true, min="18", type="numeric" }
+	};
+	
+	// Constructor
+	function init(){
+		|activeEntityInit|
+		return this;
+	}
+}

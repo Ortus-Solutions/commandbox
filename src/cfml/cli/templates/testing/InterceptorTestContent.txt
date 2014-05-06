@@ -1,0 +1,30 @@
+<!---
+* The base interceptor test case will use the 'interceptor' annotation as the instantiation path to the interceptor
+* and then create it, prepare it for mocking, and then place it in the variables scope as 'interceptor'. It is your
+* responsibility to update the interceptor annotation instantiation path.
+--->
+<cfcomponent extends="coldbox.system.testing.BaseInterceptorTest" interceptor="|name|">
+	
+	<cffunction name="setUp" returntype="void" output="false" hint="Remove if not needed.">
+		<cfscript>
+			// interceptor configuration properties, if any
+			configProperties = {};
+			// init and configure interceptor
+			super.setup();
+			// we are now ready to test this interceptor
+	  
+	  </cfscript>
+	</cffunction>
+	
+	<cffunction name="testConfigure">
+		<cfscript>
+			// mocking here
+		
+			// test configure
+			interceptor.configure();
+	  </cfscript>
+	</cffunction>
+	
+|TestCases|
+	
+</cfcomponent>

@@ -1,0 +1,14 @@
+/*
+A custom security object
+*/
+component{
+	
+	any function init(){
+		return this;
+	}
+	
+	boolean function userValidator(struct rule,messagebox,controller){
+		
+	}
+	
+}
