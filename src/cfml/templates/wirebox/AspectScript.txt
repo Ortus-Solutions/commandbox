@@ -1,0 +1,22 @@
+/**
+* @hint |description|
+**/
+component implements="coldbox.system.aop.MethodInterceptor" accessors="true"|matchers|{
+	
+	/**
+	* Constructor
+	*/
+	function init(){
+		return this;		
+	}
+	
+	/**
+	* The AOP method invocation
+	*/
+	any function invokeMethod(required invocation) output=false{
+		
+		// proceed invocation
+		return arguments.invocation.proceed();
+	}
+    	
+}

@@ -1,0 +1,11 @@
+/**
+* |modelDescription|
+*/
+component |modelPersistence|{
+	
+	|modelName| function init(){
+		
+		return this;
+	}
+	
+}

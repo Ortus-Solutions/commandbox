@@ -1,0 +1,12 @@
+/**
+* |Description|
+*/
+component {
+	
+	void function configure(){
+	
+	}
+	
+|interceptionPoints|
+	
+}

@@ -1,0 +1,19 @@
+<cfcomponent output="false" implements="coldbox.system.aop.MethodInterceptor" hint="|Description|"|matchers|>
+	
+	<!--- init --->
+	<cffunction name="init" output="false" access="public" returntype="any" hint="Constructor">
+		<cfscript>	
+			return this;
+		</cfscript>
+	</cffunction>	
+	
+	<!--- invokeMethod --->    
+    <cffunction name="invokeMethod" output="false" access="public" returntype="any" hint="Invoke an AOP method invocation">    
+    	<cfargument name="invocation" required="true" hint="The method invocation object: coldbox.system.aop.MethodInvocation">
+		<cfscript>
+			// proceed execution
+			return arguments.invocation.proceed();
+		</cfscript>
+    </cffunction>
+	
+</cfcomponent>

@@ -10,13 +10,14 @@
 	<target name="build.testwar" depends="cfdistro.build">
                 <dependency artifactId="testbox" groupId="org.coldbox" version="1.1.0" mapping="/testbox" />
                 <mapping physical="@ext.mappings.dir@/org.coldbox/testbox/1.1.0/system/testing/compat" virtual="/mxunit"/>
+		<mapping virtual="/commandbox" physical="@src.dir@/cfml" />
 		<mapping virtual="/cfml" physical="@src.dir@/cfml" />
 		<mapping virtual="/tests" physical="@src.dir@/../tests" />
 	</target>
 
         <target name="test">
                 <server-run>
-                    <testbox-rundirs basePath="${tests.dir}/cfml/cli" componentPath="tests.cfml.cli" outputdir="${dist.dir}/testresults/"  
+                    <testbox-rundirs basePath="${tests.dir}/cfml" componentPath="tests.cfml" outputdir="${dist.dir}/testresults/"  
 			runner="http://${runwar.host}:${runwar.port}/tests/tboxrunner.cfm?"/>
                 </server-run>
    
@@ -24,7 +25,7 @@
 
         <target name="build.test" depends="build.testwar">
                 <server-run>
-                    <testbox-rundirs basePath="${tests.dir}/cfml/cli" componentPath="tests.cfml.cli" outputdir="${dist.dir}/testresults/"
+                    <testbox-rundirs basePath="${tests.dir}/cfml" componentPath="tests.cfml" outputdir="${dist.dir}/testresults/"
 			runner="http://${runwar.host}:${runwar.port}/tests/tboxrunner.cfm?"/>
                 </server-run>
         </target>

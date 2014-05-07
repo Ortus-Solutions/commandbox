@@ -18,11 +18,45 @@
 		<delete dir="${dist.dir}/cli" />
 		<mkdir dir="${dist.dir}/cli" />
 		<move file="${dist.dir}/railo.cli-${railo.cli.version}.jar" tofile="${dist.dir}/cli/box.jar" />
-		<echo file="${temp.dir}/version" message="${cli.version}" />
+				
+		<!-- Init temp dir to build CFML code -->
+		<delete dir="${dir.build}" />
+		<mkdir dir="${dir.build}"/>
+		<chmod file="${dir.build}/**" perm="g+wxrs" type="both" />
+		
+		<!-- Copy CFML code -->
+      	<copy todir="${dir.build}">
+        	<fileset dir="${src.dir}/cfml" />
+        </copy>
+				
+		<!-- Increment Build Number -->
+		<propertyfile file="build.number" comment="Build Number for ANT. Edit not!">
+			<entry key="build.number" 
+					type="int" 
+			     	operation="+"
+					pattern="00000"
+			     	default="1" />
+		</propertyfile>
+		<!-- Retrieve Build Number -->
+		<property file="build.number"/>
+		
+		<!-- Replace Version Numbers -->
+		<replaceregexp match='@build.version@' replace="${cli.version}" flags="ig" byline="true">
+		  <fileset dir="${dir.build}">
+		  </fileset>
+		</replaceregexp>
+		
+		<!-- Replace Build Numbers -->
+		<replaceregexp match='@build.number@' replace="${build.number}" flags="ig" byline="true">
+		  <fileset dir="${dir.build}">
+		  </fileset>
+		</replaceregexp>
+				
+		<!-- <echo file="${temp.dir}/version" message="${cli.version}" /> -->
 		<!--  create the cfml zip -->
 		<zip destfile="${dist.dir}/cli/cfml.zip" update="false">
-	        <fileset dir="${src.dir}/cfml" excludes="**/cfdistro/home/**, **/cfdistro.zip"/>
-	        <zipfileset file="${temp.dir}/version" fullpath="cli/version"/>
+	        <fileset dir="${dir.build}" excludes="**/cfdistro/home/**, **/cfdistro.zip"/>
+	        <!--<zipfileset file="${temp.dir}/version" fullpath="cli/version"/> -->
 		</zip>
         <zip destfile="${dist.dir}/cli/box.jar" update="true" level="9">
         	<zipfileset file="${dist.dir}/cli/cfml.zip" fullpath="cfml.zip" />

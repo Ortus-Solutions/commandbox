@@ -1,0 +1,13 @@
+<cfoutput>
+<h1>|entityPlural|</h1>
+
+<!--- MessageBox --->
+#getPlugin("MessageBox").renderIt()#
+
+<!--- Create Button --->
+#html.href(href="|entityPlural|.new", text="Create |entity|", class="btn btn-primary")#
+#html.br(2)#
+
+<!--- Listing --->
+|tableListing|
+</cfoutput>

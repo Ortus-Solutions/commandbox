@@ -15,7 +15,7 @@ component{
 	this.mappings[ '/commandbox' ] = getDirectoryFromPath( getMetadata( this ).path );
 	
 	// Deprecate these mappings in favor of the top one.
-	this.mappings[ '/cfml' ] = getDirectoryFromPath( getMetadata( this ).path );
-	this.mappings[ '/cli' ]  = this.mappings[ '/cfml' ] & '/cli';
+	//this.mappings[ '/cfml' ] = getDirectoryFromPath( getMetadata( this ).path );
+	//this.mappings[ '/cli' ]  = this.mappings[ '/cfml' ] & '/cli';
 
 }
