@@ -20,9 +20,11 @@ component output='false' persistent='false' {
 		// A stack of running commands in case one command calls another from within
 		callStack = []
 	};
-	
-	
-	instance.rootCommandDirectory = '/commandbox/commands';
+		
+	// This is where system commands are stored
+	instance.systemCommandDirectory = '/commandbox/system/commands';
+	// This is where user commands are stored
+	instance.userCommandDirectory = '/commandbox/commands';
 	
 	// Convenience value
 	cr = instance.System.getProperty('line.separator');
@@ -34,24 +36,28 @@ component output='false' persistent='false' {
 	function init(required shell) {
 		instance.shell = shell;
         instance.parser = new commandbox.system.util.parser();
-		initCommands();
+        
+        // Load system commands
+		initCommands( instance.systemCommandDirectory, instance.systemCommandDirectory );
+        // Load user commands
+		initCommands( instance.userCommandDirectory, instance.userCommandDirectory );
 		return this;
-	}
+	} 
 
 	/**
 	 * initialize the commands. This will recursively call itself for subdirectories.
 	 **/
-	function initCommands( commandDirectory = instance.rootCommandDirectory, commandPath='' ) {
+	function initCommands( baseCommandDirectory, commandDirectory, commandPath='' ) {
 		var varDirs = DirectoryList( path=commandDirectory, recurse=false, listInfo='query', sort='type desc, name asc' );
 		for(var dir in varDirs){
 			
 			// For CFC files, process them as a command
 			if( dir.type  == 'File' && listLast( dir.name, '.' ) == 'cfc' ) {
-				loadCommand( dir.name, commandPath );
+				loadCommand( baseCommandDirectory, dir.name, commandPath );
 			// For folders, search them for commands
 			// Temporary exclusion for 'home' dir in cfdistro
 			} else if( dir.name != 'home' ) {
-				initCommands( dir.directory & '\' & dir.name, listAppend( commandPath, dir.name, '.' ) );
+				initCommands( baseCommandDirectory, dir.directory & '\' & dir.name, listAppend( commandPath, dir.name, '.' ) );
 			}
 			
 		}
@@ -60,16 +66,17 @@ component output='false' persistent='false' {
 
 	/**
 	 * load command CFC
+	 * @baseCommandDirectory.hint The base directory for this command
 	 * @cfc.hint CFC name that represents the command
 	 * @commandPath.hint The relative dot-delimted path to the CFC starting in the commands dir
 	 **/
-	private function loadCommand( CFC, commandPath ) {
+	private function loadCommand( baseCommandDirectory, CFC, commandPath ) {
 		
 		// Strip cfc extension from filename
 		var CFCName = mid( CFC, 1, len( CFC ) - 4 );
 		var commandName = iif( len( commandPath ), de( commandPath & '.' ), '' ) & CFCName;
 		// Build CFC's path
-		var fullCFCPath = 'commandbox.commands.' & commandName;
+		var fullCFCPath = baseCommandDirectory & '.' & commandName;
 		 		
 		// Create this command CFC
 		var command = createObject( fullCFCPath );

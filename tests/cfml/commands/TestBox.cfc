@@ -11,7 +11,7 @@ component name="TestShell" extends="mxunit.framework.TestCase" {
 		shell.cd(workdir);
 		shell.setHomeDir(homedir);
 		variables.boxInit = new commandbox.commands.init(shell);
-		variables.boxUpgrade = new commandbox.commands.upgrade(shell);
+		variables.boxUpgrade = new commandbox.system.commands.upgrade(shell);
 	}
 
 	public void function testInit()  {
