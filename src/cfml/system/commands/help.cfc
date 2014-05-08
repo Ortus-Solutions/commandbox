@@ -181,10 +181,12 @@ component extends="commandbox.system.BaseCommand" aliases="h,/?,?,--help,-help" 
 					print.redText( 'required ' );						
 				}
 				// Param type
-				print.text( '#param.type# ' );
+				if( param.type != 'any' ) {
+					print.text( '#param.type# ' );	
+				}
 				print.magentaText( '#param.name# ' );
 				// Default value
-				if( !isNull(param.default))  {
+				if( !isNull(param.default) && param.default!= '[runtime expression]' )  {
 					print.text( '= "#param.default#" ' );		
 				}
 				// param Hint
