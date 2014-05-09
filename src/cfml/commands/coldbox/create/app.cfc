@@ -20,6 +20,9 @@ component persistent="false" extends="commandbox.system.BaseCommand" aliases="" 
 	 * @directory.hint The directory to create the app in.  Defaults to your current working directory.
 	 **/
 	function run( required name, skeleton='AdvancedScript', directory=shell.pwd() ) {
+		// This will make the directory canonical and absolute		
+		directory = fileSystemUtil.resolveDirectory( directory );
+		
 		var skeletonZip = skeletonLocation & skeleton & '.zip';
 		
 		// Validate directory
