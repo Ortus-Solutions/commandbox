@@ -5,7 +5,7 @@
 		//URL.name = "luis"
 		
 		// Execute Event
-		event = execute("|event|");
+		event = execute( "|event|" );
 		
 		//Do your asserts below
 		

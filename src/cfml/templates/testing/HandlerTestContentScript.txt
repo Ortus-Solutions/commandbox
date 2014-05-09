@@ -1,4 +1,4 @@
-component extends="coldbox.system.testing.BaseTestCase" appMapping="|appMapping|"{
+component extends="coldbox.system.testing.BaseTestCase" appMapping="|appMapping|" {
 	
 	/**
 	* You can remove this setup method if you do not have anything to setup
