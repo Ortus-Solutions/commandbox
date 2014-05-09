@@ -4,7 +4,7 @@
 *  new handler at the same time.  By default, your new controller will be created in /handlers but you can override that with the location param.    
 *  
 **/
-component persistent="false" extends="commandbox.system.BaseCommand" aliases="handler" excludeFromHelp=false {
+component persistent="false" extends="commandbox.system.BaseCommand" aliases="coldbox create handler" excludeFromHelp=false {
 	
 	/**
 	* @name.hint Name of the controller to create without the .cfc. For packages, specify name as "myPackage/myController"
@@ -22,7 +22,7 @@ component persistent="false" extends="commandbox.system.BaseCommand" aliases="ha
 					viewsDirectory='views',
 					boolean integrationTest=true,
 					appMapping='/',
-					testsDirectory='/test/specs/integration',
+					testsDirectory='/tests/specs/integration',
 					directory='handlers' ) {
 		// This will make each directory canonical and absolute		
 		directory = fileSystemUtil.resolveDirectory( directory );
