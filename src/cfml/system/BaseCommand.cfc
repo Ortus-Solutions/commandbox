@@ -8,6 +8,7 @@ component {
 	
 	function init(shell) {
 		variables.shell = shell;
+		variables.fileSystemUtil = new commandbox.system.util.FileSystem( shell );
 		print = new commandbox.system.util.PrintBuffer( shell );
 		return this;
 	}
