@@ -19,10 +19,7 @@ component persistent='false' extends='commandbox.system.BaseCommand' aliases='' 
 					points='',
 					boolean tests=true,
 					testsDirectory='/tests/specs/unit',
-					directory='interceptors' ) {
-						
-		runCommand( 'cd C:\test' );
-						
+					directory='interceptors' ) {						
 		// This will make each directory canonical and absolute		
 		directory = fileSystemUtil.resolveDirectory( directory );
 		testsDirectory = fileSystemUtil.resolveDirectory( testsDirectory );
