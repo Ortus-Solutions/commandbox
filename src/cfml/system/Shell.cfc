@@ -397,11 +397,7 @@ component accessors="true"{
 					} catch (any e) {
 						printError(e);
 					}
-				}
-
-				// Debugging
-//				reload();
-				
+				}				
 
 	        } // end while keep running
 

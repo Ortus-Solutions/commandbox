@@ -21,10 +21,7 @@ component persistent='false' extends='commandbox.system.BaseCommand' aliases='' 
 					persistence='transient',
 					boolean tests=true,
 					testsDirectory='/tests/specs/unit',
-					directory='model' ) {
-		
-	//	runCommand( 'cd C:\test' );
-						
+					directory='model' ) {						
 		// This will make each directory canonical and absolute		
 		directory = fileSystemUtil.resolveDirectory( directory );
 		testsDirectory = fileSystemUtil.resolveDirectory( testsDirectory );
@@ -59,8 +56,10 @@ component persistent='false' extends='commandbox.system.BaseCommand' aliases='' 
 				
 		// Read in Template
 		var modelContent = fileRead( '/commandbox/templates/ModelContent#scriptPrefix#.txt' );
+		var modelTestContent = fileRead( '/commandbox/templates/testing/ModelBDDContent#scriptPrefix#.txt' );
 		
 		modelContent = replaceNoCase( modelContent, '|modelName|', listLast( name, '/\' ), 'all' );
+		modelTestContent = replaceNoCase( modelTestContent, '|modelName|', listChangeDelims( name, '.', '/\' ), 'all' );
 		
 		// Placeholder in case we add this in
 		Description = '';
@@ -84,7 +83,15 @@ component persistent='false' extends='commandbox.system.BaseCommand' aliases='' 
 		directorycreate( getDirectoryFromPath( modelPath ), true, true );
 		file action='write' file='#modelPath#' mode ='777' output='#modelContent#';
 		print.greenLine( 'Created #modelPath#' );
-
+	
+		if( tests ) {
+			var testPath = '#TestsDirectory#/#name#Test.cfc';
+			// Create dir if it doesn't exist
+			directorycreate( getDirectoryFromPath( testPath ), true, true );
+			// Create the tests
+			file action='write' file='#testPath#' mode ='777' output='#modelTestContent#';
+			print.greenLine( 'Created #testPath#' );			
+		}
 								
 	}
 
