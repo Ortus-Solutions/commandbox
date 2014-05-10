@@ -79,7 +79,15 @@ component output='false' persistent='false' {
 		var fullCFCPath = baseCommandDirectory & '.' & commandName;
 		 		
 		// Create this command CFC
-		var command = createObject( fullCFCPath );
+		try {
+			var command = createObject( fullCFCPath );
+		// This will catch nasty parse errors so the shell can keep loading
+		} catch( any e ) {
+			instance.shell.printString( 'Error loading command [#fullCFCPath#]#CR##CR#' );
+			// pretty print the exception
+			instance.shell.printError( e );
+			return;
+		}
 		
 		// Check and see if this CFC instance is a command and has a run() method
 		if( !isInstanceOf( command, 'BaseCommand' ) || !structKeyExists( command, 'run' ) ) {
