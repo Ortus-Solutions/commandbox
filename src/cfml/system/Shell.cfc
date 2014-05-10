@@ -399,6 +399,10 @@ component accessors="true"{
 					}
 				}
 
+				// Debugging
+				reload();
+				
+
 	        } // end while keep running
 
 		} catch (any e) {
@@ -430,7 +434,7 @@ component accessors="true"{
 	 * @err.hint Error object to print (only message is required)
   	 **/
 	function printError(required err) {
-		reader.printString(print.redText( "ERROR: ") & HTML2ANSI(err.message));
+		reader.printString(print.boldRedText( "ERROR: " & HTML2ANSI(err.message) ) );
 		reader.printNewLine();
 		if (structKeyExists( err, 'tagcontext' )) {
 			var lines=arrayLen( err.tagcontext );
@@ -438,10 +442,11 @@ component accessors="true"{
 				for(idx=1; idx<=lines; idx++) {
 					tc = err.tagcontext[ idx ];
 					if (len( tc.codeprinthtml )) {
-						isFirst = ( idx == 1 );
-						isFirst ? reader.printString(print.redText( "#tc.template#: line #tc.line#") ) : reader.printString(print.magentaText( "#print.boldText( 'called from ' )# #tc.template#: line #tc.line#" ));
-						reader.printNewLine();
-						reader.printString( print.blueText( HTML2ANSI( tc.codeprinthtml ) ) );
+						if( idx > 1 ) {
+							reader.printString( print.boldCyanText( "called from " ) );							
+						}  
+						reader.printString(print.boldCyanText( "#tc.template#: line #tc.line##CR#" ));
+						reader.printString( print.text( HTML2ANSI( tc.codeprinthtml ) ) );
 					}
 				}
 			}
