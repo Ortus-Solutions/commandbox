@@ -51,13 +51,14 @@ component persistent="false" extends="commandbox.system.BaseCommand" aliases="co
 		// Read in Templates
 		var handlerContent = fileRead( '/commandbox/templates/HandlerContent#scriptPrefix#.txt' );
 		var actionContent = fileRead( '/commandbox/templates/ActionContent#scriptPrefix#.txt' );
-		var handlerTestContent = fileRead( '/commandbox/templates/testing/HandlerTestContent#scriptPrefix#.txt' );
-		var handlerTestCaseContent = fileRead( '/commandbox/templates/testing/HandlerTestCaseContent#scriptPrefix#.txt' );
+		var handlerTestContent = fileRead( '/commandbox/templates/testing/HandlerBDDContent#scriptPrefix#.txt' );
+		var handlerTestCaseContent = fileRead( '/commandbox/templates/testing/HandlerBDDCaseContent#scriptPrefix#.txt' );
 		
 		
 		// Start text replacements
-		handlerContent = replaceNoCase( handlerContent, "|Name|", name, "all" );
+		handlerContent = replaceNoCase( handlerContent, "|handlerName|", name, "all" );
 		handlerTestContent = replaceNoCase( handlerTestContent, "|appMapping|", appMapping, "all" );
+		handlerTestContent = replaceNoCase( handlerTestContent, "|handlerName|", name, "all" );
 		
 		// Placeholder in case we add this in
 		Description = '';
@@ -91,7 +92,7 @@ component persistent="false" extends="commandbox.system.BaseCommand" aliases="co
 				// Are we creating tests cases on actions
 				if( integrationTests ) {
 					thisTestCase = replaceNoCase( handlerTestCaseContent, "|action|", thisAction, "all" );
-					thisTestCase = replaceNoCase( thisTestCase, "|event|", Name & "." & thisAction, "all" );
+					thisTestCase = replaceNoCase( thisTestCase, "|event|", listChangeDelims( name, '.', '/\' ) & "." & thisAction, "all" );
 					allTestsCases = allTestsCases & thisTestCase & CR & CR;
 				}
 				
