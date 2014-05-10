@@ -400,7 +400,7 @@ component accessors="true"{
 				}
 
 				// Debugging
-				reload();
+//				reload();
 				
 
 	        } // end while keep running
