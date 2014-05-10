@@ -22,6 +22,9 @@ component persistent="false" extends="commandbox.system.BaseCommand" aliases="" 
 			return error( 'The directory [#directory#] doesn''t exist.' );			
 		}
 		
+		// This help readability so the success messages aren't up against the previous command line
+		print.line();
+		
 		var layoutContent = '<h1>#name# Layout</h1>#CR#<cfoutput>##renderView()##</cfoutput>';
 		var layoutHelperContent = '<!--- #name# Layout Helper --->';
 		
