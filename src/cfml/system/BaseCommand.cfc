@@ -10,6 +10,7 @@ component {
 		variables.shell = shell;
 		variables.fileSystemUtil = new commandbox.system.util.FileSystem( shell );
 		print = new commandbox.system.util.PrintBuffer( shell );
+		hasErrored = false;
 		return this;
 	}
 	
@@ -21,6 +22,7 @@ component {
 	// Called prior to each execution to reset any state stored in the CFC
 	function reset() {
 		print.clear();
+		hasErrored = false;
 	}
 		
 	// Get the result.  This will be called if the run() method doesn't return anything
@@ -64,6 +66,7 @@ component {
 	 * @message.hint The error message to display
  	 **/
 	function error( required message, clearPrintBuffer=false ) {
+		hasErrored = true;
 		if( clearPrintBuffer ) {
 			// Wipe 
 			print.clear();
@@ -79,5 +82,13 @@ component {
 		
 	}
 	
-	
+	/**
+	 * Tells you if the error() method has been called on this command.  Useful if you have several validation checks, and then want
+	 * to return at the end if one of them failed.
+ 	 **/
+	function hasError() {
+		return hasErrored;
+	}
+
+			
 }
