@@ -47,11 +47,15 @@ component persistent='false' extends='commandbox.system.BaseCommand' aliases='' 
 		// Read in Template
 		var interceptorContent = fileRead( '/commandbox/templates/InterceptorContent#scriptPrefix#.txt' );
 		var interceptorMethod = fileRead( '/commandbox/templates/InterceptorMethod#scriptPrefix#.txt' );
+		var interceptorTestContent = fileRead( '/commandbox/templates/testing/InterceptorBDDContentScript.txt' );
+		var interceptorTestCase = fileRead( '/commandbox/templates/testing/InterceptorBDDCaseContentScript.txt' );
 		
 		// Start Replacings
-		var interceptorContent = replaceNoCase( interceptorContent, '|Name|', name, 'all' );
+		interceptorContent = replaceNoCase( interceptorContent, '|Name|', name, 'all' );
+		interceptorTestContent = replaceNoCase( interceptorTestContent, "|name|", name, "all" );
 		
-		// Description
+		// Placeholder in case we add this in
+		Description = '';
 		if( len(description) ) {
 			interceptorContent = replaceNoCase( interceptorContent, '|Description|', description, 'all' );
 		} else {
@@ -61,19 +65,38 @@ component persistent='false' extends='commandbox.system.BaseCommand' aliases='' 
 		// Interception Points
 		if( len( points ) ) {
 			var methodContent = '';
+			allTestsCases = '';
+			thisTestCase = '';
 			for( var thisPoint in listToArray( points ) ) {
 				methodContent = methodContent & replaceNoCase( interceptorMethod, '|interceptionPoint|', thisPoint, 'all' ) & CR & CR;
+								
+				// Are we creating tests cases
+				if( tests ) {
+					thisTestCase = replaceNoCase( interceptorTestCase, '|point|', thisPoint, 'all' );
+					allTestsCases &= thisTestCase & CR & CR;
+				}
+								
 			}
 			interceptorContent = replaceNoCase( interceptorContent, '|interceptionPoints|', methodContent, 'all' );	
+			interceptorTestContent = replaceNoCase( interceptorTestContent, '|TestCases|', allTestsCases, 'all');	
 		} else {
 			interceptorContent = replaceNoCase( interceptorContent, '|interceptionPoints|', '', 'all' );
+			interceptorTestContent = replaceNoCase( interceptorTestContent, '|TestCases|', '', 'all');	
 		}
 		
 		// Write it out.
-		var interceptorPath = '#directory#/#interceptorName#.cfc';
+		var interceptorPath = '#directory#/#name#.cfc';
 		file action='write' file='#interceptorPath#' mode ='777' output='#interceptorContent#';
 		print.greenLine( '#interceptorPath#' );
-		
+				
+		if( tests ) {
+			var testPath = '#TestsDirectory#/#name#Test.cfc';
+			// Create dir if it doesn't exist
+			directorycreate( getDirectoryFromPath( testPath ), true, true );
+			// Create the tests
+			file action='write' file='#testPath#' mode ='777' output='#interceptorTestContent#';
+			print.greenLine( 'Created #testPath#' );			
+		}
 	}
 
 }

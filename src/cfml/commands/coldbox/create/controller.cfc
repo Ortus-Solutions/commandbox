@@ -4,10 +4,10 @@
 *  new handler at the same time.  By default, your new controller will be created in /handlers but you can override that with the directory param.    
 *  
 **/
-component persistent="false" extends="commandbox.system.BaseCommand" aliases="coldbox create handler" excludeFromHelp=false {
+component persistent='false' extends='commandbox.system.BaseCommand' aliases='coldbox create handler' excludeFromHelp=false {
 	
 	/**
-	* @name.hint Name of the controller to create without the .cfc. For packages, specify name as "myPackage/myController"
+	* @name.hint Name of the controller to create without the .cfc. For packages, specify name as 'myPackage/myController'
 	* @actions.hint A comma-delimited list of actions to generate
 	* @views.hint Generate a view for each action
 	* @viewsDirectory.hint The directory where your views are stored. Only used if views is set to true.
@@ -56,28 +56,28 @@ component persistent="false" extends="commandbox.system.BaseCommand" aliases="co
 		
 		
 		// Start text replacements
-		handlerContent = replaceNoCase( handlerContent, "|handlerName|", name, "all" );
-		handlerTestContent = replaceNoCase( handlerTestContent, "|appMapping|", appMapping, "all" );
-		handlerTestContent = replaceNoCase( handlerTestContent, "|handlerName|", name, "all" );
+		handlerContent = replaceNoCase( handlerContent, '|handlerName|', name, 'all' );
+		handlerTestContent = replaceNoCase( handlerTestContent, '|appMapping|', appMapping, 'all' );
+		handlerTestContent = replaceNoCase( handlerTestContent, '|handlerName|', name, 'all' );
 		
 		// Placeholder in case we add this in
 		Description = '';
 		if( len(Description) ) {
-			handlerContent = replaceNoCase( handlerContent, "|Description|", Description,"all");			
+			handlerContent = replaceNoCase( handlerContent, '|Description|', Description,'all');			
 		} else {
-			handlerContent = replaceNoCase( handlerContent, "|Description|", defaultDescription, "all" );			
+			handlerContent = replaceNoCase( handlerContent, '|Description|', defaultDescription, 'all' );			
 		}
 		
 		// Handle Actions if passed
 		if( len( actions ) ) {
-			allActions = "";
-			allTestsCases = "";
-			thisTestCase = "";
+			allActions = '';
+			allTestsCases = '';
+			thisTestCase = '';
 			
 			// Loop Over actions generating their functions
 			for( var thisAction in listToArray( actions ) ) {
 				thisAction = trim( thisAction );
-				allActions = allActions & replaceNoCase( actionContent, "|action|", thisAction, "all" ) & cr & cr;
+				allActions = allActions & replaceNoCase( actionContent, '|action|', thisAction, 'all' ) & cr & cr;
 				
 				// Are we creating views?
 				if( views ) {
@@ -91,20 +91,20 @@ component persistent="false" extends="commandbox.system.BaseCommand" aliases="co
 				
 				// Are we creating tests cases on actions
 				if( integrationTests ) {
-					thisTestCase = replaceNoCase( handlerTestCaseContent, "|action|", thisAction, "all" );
-					thisTestCase = replaceNoCase( thisTestCase, "|event|", listChangeDelims( name, '.', '/\' ) & "." & thisAction, "all" );
-					allTestsCases = allTestsCases & thisTestCase & CR & CR;
+					thisTestCase = replaceNoCase( handlerTestCaseContent, '|action|', thisAction, 'all' );
+					thisTestCase = replaceNoCase( thisTestCase, '|event|', listChangeDelims( name, '.', '/\' ) & '.' & thisAction, 'all' );
+					allTestsCases &= thisTestCase & CR & CR;
 				}
 				
 			}
 			
 			
-			allActions = replaceNoCase( allActions, "|name|", Name, "all");
-			handlerContent = replaceNoCase( handlerContent, "|EventActions|", allActions, "all");	
-			handlerTestContent = replaceNoCase( handlerTestContent, "|TestCases|", allTestsCases, "all");	
+			allActions = replaceNoCase( allActions, '|name|', Name, 'all');
+			handlerContent = replaceNoCase( handlerContent, '|EventActions|', allActions, 'all');	
+			handlerTestContent = replaceNoCase( handlerTestContent, '|TestCases|', allTestsCases, 'all');	
 		} else {
-			handlerContent = replaceNoCase( handlerContent, "|EventActions|", '', "all" );
-			handlerTestContent = replaceNoCase( handlerTestContent, "|TestCases|", '', "all" );	
+			handlerContent = replaceNoCase( handlerContent, '|EventActions|', '', 'all' );
+			handlerTestContent = replaceNoCase( handlerTestContent, '|TestCases|', '', 'all' );	
 		}
 		
 		var handlerPath = '#directory#/#name#.cfc';
