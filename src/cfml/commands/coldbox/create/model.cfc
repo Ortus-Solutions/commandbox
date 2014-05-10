@@ -28,11 +28,11 @@ component persistent='false' extends='commandbox.system.BaseCommand' aliases='' 
 		
 		// Validate directory
 		if( !directoryExists( directory ) ) {
-			return error( 'The directory [#directory#] doesn''t exist.' );			
+			error( 'The directory [#directory#] doesn''t exist.' );			
 		}
 		// Validate persistence
 		if( !listFindNoCase( validPersistences, persistence ) ) {
-			return error( "The persistence value [#persistence#] is invalid. Valid values are [#listChangeDelims( validPersistences, ', ', ',' )#]" );			
+			error( "The persistence value [#persistence#] is invalid. Valid values are [#listChangeDelims( validPersistences, ', ', ',' )#]" );			
 		}
 		// Exit the command if something above failed
 		if( hasError() ) {
