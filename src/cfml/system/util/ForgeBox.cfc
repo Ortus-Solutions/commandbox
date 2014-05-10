@@ -63,7 +63,7 @@ Settings:
 		
 		// error 
 		if( results.error ){
-			$throw("Error making ForgeBox REST Call",results.message);
+			throw("Error making ForgeBox REST Call", 'forgebox', results.message);
 		}
 		
 		return results.response.data;				
@@ -75,7 +75,7 @@ Settings:
 		<cfargument name="orderBy"  type="string"  required="false" default="#this.ORDER.POPULAR#" hint="The type to order by, look at this.ORDERBY"/>
 		<cfargument name="maxrows"  type="numeric" required="false" default="0" hint="Max rows to return"/>
 		<cfargument name="startRow" type="numeric" required="false" default="1" hint="StartRow"/>
-		<cfargument name="typeSlug" type="string" required="false" default="" hint="The tye slug to filter on"/>
+		<cfargument name="typeSlug" type="string" required="false" default="" hint="The type slug to filter on"/>
 		<cfscript>
 			var results = "";
 			var params = {
@@ -90,7 +90,7 @@ Settings:
 			
 			// error 
 			if( results.error ){
-				$throw("Error making ForgeBox REST Call",results.message);
+				throw( "Error making ForgeBox REST Call", 'forgebox', results.message );
 			}
 			
 			return results.response.data;				
@@ -108,7 +108,7 @@ Settings:
 			
 			// error 
 			if( results.error ){
-				$throw("Error making ForgeBox REST Call",results.message);
+				throw( "Error making ForgeBox REST Call", 'forgebox', results.message );
 			}
 			
 			return results.response.data;				
@@ -165,7 +165,7 @@ Settings:
 	
 <!------------------------------------------- PRIVATE ------------------------------------------>
 
-	<!--- S3Request --->
+	<!--- makeRequest --->
     <cffunction name="makeRequest" output="false" access="private" returntype="struct" hint="Invoke a ForgeBox REST Call">
     	<cfargument name="method" 			type="string" 	required="false" default="GET" hint="The HTTP method to invoke"/>
 		<cfargument name="resource" 		type="string" 	required="false" default="" hint="The resource to hit in the forgebox service."/>
@@ -225,28 +225,6 @@ Settings:
 			return results;
 		</cfscript>	
 	</cffunction>
-	
-	<!--- Throw Facade --->
-	<cffunction name="$throw" access="public" hint="Facade for cfthrow" output="false">
-		<!--- ************************************************************* --->
-		<cfargument name="message" 	type="string" 	required="yes">
-		<cfargument name="detail" 	type="string" 	required="no" default="">
-		<cfargument name="type"  	type="string" 	required="no" default="Framework">
-		<!--- ************************************************************* --->
-		<cfthrow type="#arguments.type#" message="#arguments.message#"  detail="#arguments.detail#">
-	</cffunction>
-	
-	<!--- Dump facade --->
-	<cffunction name="$dump" access="public" hint="Facade for cfmx dump" returntype="void">
-		<cfargument name="var" required="yes" type="any">
-		<cfargument name="isAbort" type="boolean" default="false" required="false" hint="Abort also"/>
-		<cfdump var="#var#">
-		<cfif arguments.isAbort><cfabort></cfif>
-	</cffunction>
-	
-	<!--- Abort Facade --->
-	<cffunction name="$abort" access="public" hint="Facade for cfabort" returntype="void" output="false">
-		<cfabort>
-	</cffunction>
+		
 	
 </cfcomponent>

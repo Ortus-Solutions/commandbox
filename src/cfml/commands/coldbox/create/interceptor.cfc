@@ -18,7 +18,7 @@ component persistent='false' extends='commandbox.system.BaseCommand' aliases='' 
 	function run( required name,
 					points='',
 					boolean tests=true,
-					testsDirectory='/tests/specs/unit',
+					testsDirectory='/tests/specs/interceptors',
 					directory='interceptors' ) {						
 		// This will make each directory canonical and absolute		
 		directory = fileSystemUtil.resolveDirectory( directory );
