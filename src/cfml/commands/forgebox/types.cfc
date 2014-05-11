@@ -13,7 +13,7 @@ component persistent="false" extends="commandbox.system.BaseCommand" aliases="" 
 	 **/
 	function run(  ) {
 		
-		//TYPETOTAL,TYPENAME,TYPEID,TYPESLUG
+		// typetotal,typename,typeid,typeslug
 		
 		print.line();
 		print.blackOnWhiteLine( 'Name (slug)' );

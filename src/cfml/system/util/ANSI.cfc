@@ -1,6 +1,11 @@
 component{
 
 	function init(){
+		
+		variables.stringEscapeUtils = createObject("java","org.apache.commons.lang.StringEscapeUtils");
+		variables.system = createObject( "java", "java.lang.System" );
+		variables.cr = System.getProperty("line.separator");
+		variables.print = new commandbox.system.util.Print();
 		return this;
 	}
 
@@ -9,8 +14,8 @@ component{
 	 * @html.hint HTML to convert
   	 **/
 	function unescapeHTML(required html) {
-    	var text = StringEscapeUtils.unescapeHTML(html);
-    	text = replace(text,"<" & "br" & ">","","all");
+    	var text = StringEscapeUtils.unescapeHTML( html );
+    	//text = replace(text,"<" & "br" & ">","","all");
        	return text;
 	}
 
@@ -18,15 +23,29 @@ component{
 	 * Converts HTML into ANSI text
 	 * @html.hint HTML to convert
   	 **/
-	function HTML2ANSI(required html) {
-    	var text = replace(unescapeHTML(html),"<" & "br" & ">","","all");
-    	var t="b";
-    	if(len(trim(text)) == 0) {
+	function HTML2ANSI( required html ) {
+    	var text = html;
+    	
+    	if( len( trim( text ) ) == 0 ) {
     		return "";
     	}
-    	var matches = REMatch('(?i)<#t#[^>]*>(.+?)</#t#>', text);
-    	text = ansifyHTML(text,"b","bold");
-    	text = ansifyHTML(text,"em","underline");
+    	text = ansifyHTML( text, "b", "bold" );
+    	text = ansifyHTML( text, "em", "underline" );
+  	 	text = reReplaceNoCase( text , "<br[^>]*>", CR, 'all' );
+    	    	
+    	var t='div';
+    	var matches = REMatch('(?i)<#t#[^>]*>(.*?)</#t#>', text);
+    	for(var match in matches) {
+    		var blockText = reReplaceNoCase(match,"<#t#[^>]*>(.*?)</#t#>","\1") & CR;
+    		text = replace(text,match,blockText,"one");
+    	}
+    	
+    	// Remove remaining HTML
+    	// If you have any < characters in your string that aren't HTML, this will truncate the text 
+    	text = reReplaceNoCase(text, "<.*?>","","all");
+    	
+    	// Turn any escaped HTML entities into their true form
+    	text = unescapeHTML( text );
        	return text;
 	}
 
@@ -40,6 +59,8 @@ component{
     	var t=tag;
     	var matches = REMatch('(?i)<#t#[^>]*>(.+?)</#t#>', text);
     	for(var match in matches) {
+    		// This doesn't really work inside of a larger string that you are applying formatting to
+    		// The end of the boldText clears all formatting, and the rest of the string is just plain.
     		var boldtext = print[ ansiCode ]( reReplaceNoCase(match,"<#t#[^>]*>(.+?)</#t#>","\1") );
     		text = replace(text,match,boldtext,"one");
     	}

@@ -414,7 +414,7 @@ component accessors="true"{
 	function callCommand( String command="" )  {
 		var result = commandHandler.runCommandLine( command );
 		if( !isNull( result ) ) {
-			printString(result & cr );
+			printString( result & cr );
 		}
 	}
 

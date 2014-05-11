@@ -9,6 +9,7 @@ component {
 	function init(shell) {
 		variables.shell = shell;
 		variables.fileSystemUtil = new commandbox.system.util.FileSystem( shell );
+		variables.ANSIUtil = new commandbox.system.util.ANSI();
 		print = new commandbox.system.util.PrintBuffer( shell );
 		hasErrored = false;
 		return this;
