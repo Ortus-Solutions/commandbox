@@ -63,7 +63,7 @@ Settings:
 		
 		// error 
 		if( results.error ){
-			throw("Error making ForgeBox REST Call", 'forgebox', results.message);
+			throw("Error making ForgeBox REST Call", 'forgebox', results.response.messages);
 		}
 		
 		return results.response.data;				
@@ -87,13 +87,12 @@ Settings:
 			
 			// Invoke call
 			results = makeRequest(resource="entries",parameters=params);
-			
 			// error 
 			if( results.error ){
-				throw( "Error making ForgeBox REST Call", 'forgebox', results.message );
+				throw( "Error making ForgeBox REST Call", 'forgebox', results.response.messages );
 			}
 			
-			return results.response.data;				
+			return results.response.data;
 		</cfscript>	
 	</cffunction>
 	
@@ -108,7 +107,7 @@ Settings:
 			
 			// error 
 			if( results.error ){
-				throw( "Error making ForgeBox REST Call", 'forgebox', results.message );
+				throw( "Error making ForgeBox REST Call", 'forgebox', results.response.messages );
 			}
 			
 			return results.response.data;				
@@ -191,7 +190,7 @@ Settings:
 				charset="utf-8" 
 				result="HTTPResults" 
 				timeout="#arguments.timeout#">
-			
+							
 			<!--- Headers --->
 			<cfloop collection="#arguments.headers#" item="param">
 				<cfhttpparam type="header" name="#param#" value="#arguments.headers[param]#" >
