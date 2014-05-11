@@ -10,7 +10,7 @@
  * forgebox show plugins
  * forgebox show i18n 
  **/
-component persistent="false" extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
+component persistent="false" extends="commandbox.system.BaseCommand" aliases="show" excludeFromHelp=false {
 	
 	// Create our ForgeBox helper
 	variables.forgebox = new commandbox.system.util.ForgeBox();
