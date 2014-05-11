@@ -2,7 +2,13 @@
  * This command will allow you to search for ForgeBox entires.  You can sort entires by most popular, recently updated, and newest.  
  * You can also filter for specific entry types such as cachebox, interceptors, modules, logbox, etc.
  * There are parameters to paginate results or you can pipe the output of this command into the "more" command like so:
+ * -
  * forgebox show popular | more
+ * -
+ * Pro Tip: The first parameter will also accept a type or a slug to allow for convenient, short commands like:
+ * -
+ * forgebox show plugins
+ * forgebox show i18n 
  **/
 component persistent="false" extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
 	
@@ -32,26 +38,40 @@ component persistent="false" extends="commandbox.system.BaseCommand" aliases="" 
 		startRow = startRow ?: 1;
 		maxRows = maxRows ?: 0;
 		entry = entry ?: '';
+		var typeLookup = '';
 		
 		// Validate orderBy
 		var orderLookup = forgeboxOrders.findKey( orderBy ); 
 		if( !orderLookup.len() ) {
-			error( 'orderBy value of [#orderBy#] is invalid.  Valid options are [ #lcase( listChangeDelims( forgeboxOrders.keyList(), ', ' ) )# ]' );
+			// If there is a type supplied, quit here
+			if( len( type ) ){
+				error( 'orderBy value of [#orderBy#] is invalid.  Valid options are [#lcase( listChangeDelims( forgeboxOrders.keyList(), ', ' ) )#]' );
+			// Maybe they entered a type as the first param
+			} else {
+				// See if it's a type
+				typeLookup = lookupType( orderBy );
+				// Nope, keep searching
+				if( !len( typeLookup ) ) {
+					// If there's not an entry supplied, see if that works
+					if( !len( entry ) ) {
+						try {
+							var entryData = forgebox.getEntry( orderBy );
+							entry = orderBy;		
+						} catch( any e ) {
+							error( 'Parameter [#orderBy#] isn''t a valid orderBy, type, or slug.  Valid orderBys are [#lcase( listChangeDelims( forgeboxOrders.keyList(), ', ' ) )#] See possible types with "forgebox types".' );
+						}
+					} 
+				}		
+			}
 		}
 		
 		// Validate Type if we got one
-		var typeLookup = '';
 		if( len( type ) ) {
-			// See if they entered a type name or slug
-			for( var thistype in forgeboxTypes ) {
-				if( thisType.typeName == type || thisType.typeSlug == type ) {
-					typeLookup = thisType.typeSlug;
-					break;
-				}
-			}
+			typeLookup = lookupType( type );
+			
 			// Were we able to resolve what they typed in?
 			if( !len( typeLookup ) ) {
-				error( 'Type value of [#type#] is invalid. See possible types with "forgebox types command".' );
+				error( 'Type value of [#type#] is invalid. See possible types with "forgebox types".' );
 			}
 		}
 		if( hasError() ){
@@ -63,7 +83,8 @@ component persistent="false" extends="commandbox.system.BaseCommand" aliases="" 
 			// We're displaying a single entry	
 			if( len( entry ) ) {
 	
-				var entryData = forgebox.getEntry( entry );
+				// We might have gotten this above
+				var entryData = entryData ?: forgebox.getEntry( entry );
 				
 				// entrylink,createdate,lname,isactive,installinstructions,typename,version,hits,coldboxversion,sourceurl,slug,homeurl,typeslug,
 				// downloads,entryid,fname,changelog,updatedate,downloadurl,title,entryrating,summary,username,description,email
@@ -126,6 +147,22 @@ component persistent="false" extends="commandbox.system.BaseCommand" aliases="" 
 			// This can include "expected" errors such as "slug not found"
 			return error( '#e.message##CR##e.detail#' );
 		}
+		
+	}
+
+	private function lookupType( type ) {
+		var typeLookup = '';
+		
+		// See if they entered a type name or slug
+		for( var thistype in forgeboxTypes ) {
+			if( thisType.typeName == type || thisType.typeSlug == type ) {
+				typeLookup = thisType.typeSlug;
+				break;
+			}
+		}
+		
+		// This will be empty if not found
+		return typeLookup;
 		
 	}
 
