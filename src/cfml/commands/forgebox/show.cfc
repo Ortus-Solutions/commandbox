@@ -31,6 +31,7 @@ component persistent="false" extends="commandbox.system.BaseCommand" aliases="" 
 		type = type ?: '';
 		startRow = startRow ?: 1;
 		maxRows = maxRows ?: 0;
+		entry = entry ?: '';
 		
 		// Validate orderBy
 		var orderLookup = forgeboxOrders.findKey( orderBy ); 
@@ -56,30 +57,76 @@ component persistent="false" extends="commandbox.system.BaseCommand" aliases="" 
 		if( hasError() ){
 			return;
 		}
+		
+		try {
+			
+			// We're displaying a single entry	
+			if( len( entry ) ) {
+	
+				var entryData = forgebox.getEntry( entry );
 				
-		// ENTRYLINK,CREATEDATE,LNAME,ISACTIVE,INSTALLINSTRUCTIONS,TYPENAME,VERSION,HITS,COLDBOXVERSION,SOURCEURL,SLUG,HOMEURL,TYPESLUG,
-		// DOWNLOADS,ENTRYID,FNAME,CHANGELOG,UPDATEDATE,DOWNLOADURL,TITLE,ENTRYRATING,SUMMARY,USERNAME,DESCRIPTION
-		
-		var entries = forgebox.getEntries( orderBy, maxRows, startRow, typeLookup );
-		
-		print.line();
-		var activeCount = 0;
-		for( var entry in entries ) {
-			if( val( entry.isactive ) ) {
-				activeCount++;
-				print.blackOnWhite( '#entry.title#' ); 
-					print.boldText( '   ( #entry.fname# #entry.lname# )' );
-					print.boldGreenLine( '   #repeatString( '*', val( entry.entryRating ) )#' );
-				print.line( 'Type: #entry.typeName#' );
-				print.line( 'Slug: "#entry.slug#"' );
-				print.Yellowline( '#left( entry.SUMMARY, 200 )#' );
+				// entrylink,createdate,lname,isactive,installinstructions,typename,version,hits,coldboxversion,sourceurl,slug,homeurl,typeslug,
+				// downloads,entryid,fname,changelog,updatedate,downloadurl,title,entryrating,summary,username,description,email
+								
+				if( !val( entryData.isActive ) ) {
+					error( 'Thr ForgeBox entry [#entry#] is inactive.' );
+				}
+				
+				
 				print.line();
+				print.blackOnWhite( ' #entryData.title# ' ); 
+					print.boldText( '   ( #entryData.fname# #entryData.lname#, #entryData.email# )' );
+					print.boldGreenLine( '   #repeatString( '*', val( entryData.entryRating ) )#' );
 				print.line();
-			}
+				print.line( 'Type: #entryData.typeName#' );
+				print.line( 'Slug: "#entryData.slug#"' );
+				print.line( 'Summary: #entryData.summary#' );
+				print.line( 'Created On: #entryData.createdate#' );
+				print.line( 'Updated On: #entryData.updateDate#' );
+				print.line( 'Version: #entryData.version#' );
+				print.line( 'Home URL: #entryData.homeURL#' );
+				print.line( 'Hits: #entryData.hits#' );
+				print.line( 'Downloads: #entryData.downloads#' );
+				print.line();
+				
+				print.yellowLine( #ANSIUtil.HTML2ANSI( entryData.description )# );
+				
+				
+			// List of entries
+			} else {
+				
+				// Get the entries
+				var entries = forgebox.getEntries( orderBy, maxRows, startRow, typeLookup );
+				
+				// entrylink,createdate,lname,isactive,installinstructions,typename,version,hits,coldboxversion,sourceurl,slug,homeurl,typeslug,
+				// downloads,entryid,fname,changelog,updatedate,downloadurl,title,entryrating,summary,username,description
+				
+				print.line();
+				var activeCount = 0;
+				for( var entry in entries ) {
+					if( val( entry.isactive ) ) {
+						activeCount++;
+						print.blackOnWhite( ' #entry.title# ' ); 
+							print.boldText( '   ( #entry.fname# #entry.lname# )' );
+							print.boldGreenLine( '   #repeatString( '*', val( entry.entryRating ) )#' );
+						print.line( 'Type: #entry.typeName#' );
+						print.line( 'Slug: "#entry.slug#"' );
+						print.Yellowline( '#left( entry.summary, 200 )#' );
+						print.line();
+						print.line();
+					}
+				}
+						
+				print.line();
+				print.boldCyanline( '  Found #activeCount# record#(activeCount == 1 ? '': 's')#.' );
+				
+			} // end single entry check
+				
+		} catch( forgebox var e ) {
+			// This can include "expected" errors such as "slug not found"
+			return error( '#e.message##CR##e.detail#' );
 		}
-				
-		print.line();
-		print.boldCyanline( '  Found #activeCount# record#(activeCount == 1 ? '': 's')#.' );
+		
 	}
 
-}
+} 
