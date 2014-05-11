@@ -30,6 +30,7 @@ component{
     		return "";
     	}
     	text = ansifyHTML( text, "b", "bold" );
+    	text = ansifyHTML( text, "strong", "bold" );
     	text = ansifyHTML( text, "em", "underline" );
   	 	text = reReplaceNoCase( text , "<br[^>]*>", CR, 'all' );
     	    	

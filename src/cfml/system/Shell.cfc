@@ -432,8 +432,10 @@ component accessors="true"{
 	function printError(required err) {
 		reader.printString(print.boldRedText( "ERROR: " & HTML2ANSI(err.message) ) );
 		reader.printNewLine();
-		reader.printString(print.boldRedText( HTML2ANSI(err.detail) ) );
-		reader.printNewLine();
+		if( structKeyExists( err, 'detail' ) ) {
+			reader.printString(print.boldRedText( HTML2ANSI(err.detail) ) );
+			reader.printNewLine();			
+		}
 		if (structKeyExists( err, 'tagcontext' )) {
 			var lines=arrayLen( err.tagcontext );
 			if (lines != 0) {

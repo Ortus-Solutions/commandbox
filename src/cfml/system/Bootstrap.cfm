@@ -48,7 +48,9 @@ Type "help" for help, or "help [command]" to be more specific.
     	systemOutput( '', true );
     	systemOutput( '#err.message#', true );
     	systemOutput( '', true );
-    	systemOutput( '#err.detail#', true );
+		if( structKeyExists( err, 'detail' ) ) {
+    		systemOutput( '#err.detail#', true );			
+		}
     	systemOutput( '#err.stacktrace#', true );
     	return;
 	}
