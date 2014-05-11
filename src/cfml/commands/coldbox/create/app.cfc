@@ -19,7 +19,11 @@ component persistent="false" extends="commandbox.system.BaseCommand" aliases="" 
 	 * @skeleton.hint The name of the app skeleton to generate 
 	 * @directory.hint The directory to create the app in.  Defaults to your current working directory.
 	 **/
-	function run( required name, skeleton='AdvancedScript', directory=shell.pwd() ) {
+	function run(
+				required name,
+				skeleton='AdvancedScript',
+				directory=shell.pwd() ) {
+					
 		// This will make the directory canonical and absolute		
 		directory = fileSystemUtil.resolveDirectory( directory );
 		

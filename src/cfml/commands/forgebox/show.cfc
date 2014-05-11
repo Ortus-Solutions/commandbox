@@ -23,7 +23,7 @@ component persistent="false" extends="commandbox.system.BaseCommand" aliases="" 
 	* @type.hint Name or slug of type to filter by. See possible types with "forgebox types command"
 	* @startRow.hint Row to start returning records on
 	* @maxRows.hint Number of records to return
-	* @entry.hint Name of a specific ForgeBox entry slug to show.
+	* @slug.hint Slug of a specific ForgeBox entry to show.
 	* 
 	**/
 	function run( 
@@ -31,13 +31,13 @@ component persistent="false" extends="commandbox.system.BaseCommand" aliases="" 
 				type,
 				number startRow,
 				number maxRows,
-				entry ) {
+				slug ) {
 					
 		// Default parameters
 		type = type ?: '';
 		startRow = startRow ?: 1;
 		maxRows = maxRows ?: 0;
-		entry = entry ?: '';
+		slug = slug ?: '';
 		var typeLookup = '';
 		
 		// Validate orderBy
@@ -52,11 +52,11 @@ component persistent="false" extends="commandbox.system.BaseCommand" aliases="" 
 				typeLookup = lookupType( orderBy );
 				// Nope, keep searching
 				if( !len( typeLookup ) ) {
-					// If there's not an entry supplied, see if that works
-					if( !len( entry ) ) {
+					// If there's not a slug supplied, see if that works
+					if( !len( slug ) ) {
 						try {
 							var entryData = forgebox.getEntry( orderBy );
-							entry = orderBy;		
+							slug = orderBy;		
 						} catch( any e ) {
 							error( 'Parameter [#orderBy#] isn''t a valid orderBy, type, or slug.  Valid orderBys are [#lcase( listChangeDelims( forgeboxOrders.keyList(), ', ' ) )#] See possible types with "forgebox types".' );
 						}
@@ -81,16 +81,16 @@ component persistent="false" extends="commandbox.system.BaseCommand" aliases="" 
 		try {
 			
 			// We're displaying a single entry	
-			if( len( entry ) ) {
+			if( len( slug ) ) {
 	
 				// We might have gotten this above
-				var entryData = entryData ?: forgebox.getEntry( entry );
+				var entryData = entryData ?: forgebox.getEntry( slug );
 				
 				// entrylink,createdate,lname,isactive,installinstructions,typename,version,hits,coldboxversion,sourceurl,slug,homeurl,typeslug,
 				// downloads,entryid,fname,changelog,updatedate,downloadurl,title,entryrating,summary,username,description,email
 								
 				if( !val( entryData.isActive ) ) {
-					error( 'Thr ForgeBox entry [#entry#] is inactive.' );
+					error( 'The ForgeBox entry [#entryData.title#] is inactive.' );
 				}
 				
 				

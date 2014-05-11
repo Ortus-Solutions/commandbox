@@ -9,11 +9,11 @@
 component persistent='false' extends='commandbox.system.BaseCommand' aliases='' excludeFromHelp=false {
 	
 	/**
-	* @name.hint Name of the interceptor to create without the .cfc. 
+	* @name.hint Name of the interceptor to create without the .cfc
 	* @points.hint A comma-delimited list of interception points to generate
 	* @tests.hint Generate the unit test component
 	* @testsDirectory.hint Your unit tests directory. Only used if tests is true
-	* @directory.hint The base directory to create your interceptor in.
+	* @directory.hint The base directory to create your interceptor in
 	 **/
 	function run( required name,
 					points='',
