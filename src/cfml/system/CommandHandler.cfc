@@ -223,7 +223,19 @@ component output='false' persistent='false' {
 			instance.callStack.prepend( commandInfo );
 			
 			// Run the command
-			var result = commandInfo.commandReference.run( argumentCollection = parameterInfo.namedParameters );
+			try {
+				var result = commandInfo.commandReference.run( argumentCollection = parameterInfo.namedParameters );
+			} catch( any e ) {
+				// Dump out anything the command had printed so far
+				var result = commandInfo.commandReference.getResult();
+				if( len( result ) ) {
+					instance.shell.printString( result & cr );
+				}
+				// Clean up a bit
+				instance.callStack.clear();
+				// Now, where were we?
+				rethrow;
+			}
 			
 			// Remove it from the stack
 			instance.callStack.deleteAt( 1 );
