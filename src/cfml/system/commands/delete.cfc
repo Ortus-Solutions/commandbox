@@ -20,7 +20,17 @@ component persistent="false" extends="commandbox.system.BaseCommand" aliases="rm
 		
 		
 		if( !fileExists( file ) ) {
-			shell.printError({message="file does not exist: #file#"});
+			if( directoryExists( file ) ){
+				
+				var isConfirmed = shell.ask("delete #file#? [y/n] : ");
+				if(left(isConfirmed,1) == "y" 
+					|| ( isBoolean(isConfirmed) && isConfirmed ) ) {
+					directoryDelete(file);
+					return "deleted #file#";
+				}
+				return 'Cancelled.';
+			}
+			shell.printError({message="file/directory does not exist: #file#"});
 		} else {
 			var isConfirmed = shell.ask("delete #file#? [y/n] : ");
 			if(left(isConfirmed,1) == "y" 
@@ -28,6 +38,7 @@ component persistent="false" extends="commandbox.system.BaseCommand" aliases="rm
 				fileDelete(file);
 				return "deleted #file#";
 			}
+			return 'Cancelled.';
 		}
 		return "";
 	}

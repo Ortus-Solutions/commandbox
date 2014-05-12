@@ -90,7 +90,7 @@ component persistent='false' extends='commandbox.system.BaseCommand' aliases='' 
 			directorycreate( getDirectoryFromPath( testPath ), true, true );
 			// Create the tests
 			file action='write' file='#testPath#' mode ='777' output='#modelTestContent#';
-			print.greenLine( 'Created #testPath#' );			
+			print.greenLine( 'Created #testPath#' );
 		}
 								
 	}
