@@ -66,7 +66,7 @@ component accessors="true"{
 			}
 	    	reader = createObject("java","jline.ConsoleReader").init(inStream,printWriter);
 		}
-    	variables.homedir = env("user.home") & "/.box";
+    	variables.homedir = env("user.home") & "/.CommandBox";
     	variables.tempdir = variables.homedir & "/temp";
 		variables.shellPrompt = print.cyanText( "CommandBox> ");
 		variables.commandHandler = new commandbox.system.CommandHandler(this);
