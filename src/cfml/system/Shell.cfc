@@ -35,6 +35,7 @@ component accessors="true"{
 		variables.system = createObject( "java", "java.lang.System" );
 		//variables.ANSIBuffer = createObject("java", "jline.ANSIBuffer");
 		variables.stringEscapeUtils = createObject("java","org.apache.commons.lang.StringEscapeUtils");
+		variables.atomicInteger = createObject( "java", "java.util.concurrent.atomic.AtomicInteger" ).init();
 		variables.keepRunning = true;
 		variables.reloadshell = false;
 		variables.script = "";
@@ -81,6 +82,7 @@ component accessors="true"{
 		} catch (any e) {
 // doesn't matter this is about to change with the other console
 		}
+		// counter for threads and stuff
     	return this;
 	}
 
@@ -90,7 +92,6 @@ component accessors="true"{
 	function getReader() {
     	return reader;
 	}
-
 
 	/**
 	 * sets exit flag
@@ -413,7 +414,13 @@ component accessors="true"{
  	 **/
 	function callCommand( String command="" )  {
 		var result = commandHandler.runCommandLine( command );
-		if( !isNull( result ) ) {
+		if(!isNull( result ) && !isSimpleValue( result )) {
+			if(isArray( result )) {
+				return reader.printColumns(result);
+			}
+			result = formatJson(serializeJSON(result));
+			printString( result & cr );
+		} else if( !isNull( result ) ) {
 			printString( result & cr );
 		}
 	}
@@ -424,6 +431,49 @@ component accessors="true"{
 	function getCommandHandler()  {
 		return variables.commandHandler;
 	}
+
+	/**
+	 * Get unique index (for thread naming and whatnot)
+ 	 **/
+	public function getUniqueIndex() {
+		return variables.atomicInteger.incrementAndGet();
+	}
+
+	/**
+	 * Pretty JSON
+ 	 **/
+	public function formatJson(json) {
+		var retval = '';
+		var str = json;
+	    var pos = 0;
+	    var strLen = str.length();
+		var indentStr = '    ';
+	    var newLine = cr;
+		var char = '';
+
+		for (var i=0; i<strLen; i++) {
+			char = str.substring(i,i+1);
+			if (char == '}' || char == ']') {
+				retval &= newLine;
+				pos = pos - 1;
+				for (var j=0; j<pos; j++) {
+					retval &= indentStr;
+				}
+			}
+			retval &= char;
+			if (char == '{' || char == '[' || char == ',') {
+				retval &= newLine;
+				if (char == '{' || char == '[') {
+					pos = pos + 1;
+				}
+				for (var k=0; k<pos; k++) {
+					retval &= indentStr;
+				}
+			}
+		}
+		return retval;
+	}
+
 
 	/**
 	 * print an error to the console
