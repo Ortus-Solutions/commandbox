@@ -4,7 +4,7 @@
 	<property name="cli.packager.name" value="cfmlprojects.org" />
 	<property name="cli.packager.email" value="cfml@cfmlprojects.org" />
 	<property name="cli.use.pack200" value="true" />
-	<property name="railo.cli.version" value="0.4.3-4.2.0.007" />
+	<property name="railo.cli.version" value="0.4.3-4.2.0.008" />
 	<property name="mvn.repo.id" value="cfdistro.repo.local" />
 	<property name="mvn.jre.7.version" value="1.7.0_55" />
 	<property name="mvn.jre.version" value="${mvn.jre.7.version}" />
@@ -13,11 +13,11 @@
 	<property name="deb.repo" value="${dist.dir}/debs/noarch" />
 
 	<target name="build.cli" description="builds cli jar">
-		<antcontrib:var name="cli.version" value="${cli.version}" />
-		<dependency groupId="org.getrailo" artifactId="railo.cli" version="${railo.cli.version}" dest="${dist.dir}" type="jar" unzip="false"/>
 		<delete dir="${dist.dir}/cli" />
+		<delete dir="${temp.dir}/rcli" />
 		<mkdir dir="${dist.dir}/cli" />
-		<move file="${dist.dir}/railo.cli-${railo.cli.version}.jar" tofile="${dist.dir}/cli/box.jar" />
+		<antcontrib:var name="cli.version" value="${cli.version}" />
+		<dependency groupId="org.getrailo" artifactId="railo.cli" version="${railo.cli.version}" dest="${temp.dir}/rcli" type="jar" unzip="true"/>
 				
 		<!-- Init temp dir to build CFML code -->
 		<delete dir="${dir.build}" />
@@ -26,7 +26,7 @@
 		
 		<!-- Copy CFML code -->
       	<copy todir="${dir.build}">
-        	<fileset dir="${src.dir}/cfml" />
+        	<fileset dir="${src.dir}/cfml" excludes="**/cfdistro/home/**, **/cfdistro.zip"/>
         </copy>
 				
 		<!-- Increment Build Number -->
@@ -58,10 +58,17 @@
 	        <fileset dir="${dir.build}" excludes="**/cfdistro/home/**, **/cfdistro.zip"/>
 	        <!--<zipfileset file="${temp.dir}/version" fullpath="cli/version"/> -->
 		</zip>
-        <zip destfile="${dist.dir}/cli/box.jar" update="true" level="9">
-        	<zipfileset file="${dist.dir}/cli/cfml.zip" fullpath="cfml.zip" />
-        	<zipfileset file="${src.dir}/resources/cli.properties" fullpath="cliloader/cli.properties" />
+      	<copy todir="${temp.dir}/rcli" overwrite="true">
+        	<fileset file="${dist.dir}/cli/cfml.zip" />
+        </copy>
+      	<copy todir="${temp.dir}/rcli/resource" overwrite="true">
+        	<fileset dir="${src.dir}/resources" />
+        </copy>
+		<copy file="${src.dir}/resources/cli.properties" todir="${temp.dir}/rcli/cliloader" overwrite="true"/>
+        <zip destfile="${dist.dir}/cli/box.jar" update="false" level="9">
+        	<zipfileset dir="${temp.dir}/rcli" />
         </zip>
+		<delete dir="${temp.dir}/rcli"/>
  	</target>
 
 	<target name="build.cli.bin" description="create bin wrapper" depends="build.cli">

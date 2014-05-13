@@ -1,6 +1,7 @@
 /dist
 /build/temp
 /build/requires.txt
+/src/cfml/system/config/servers.json
 settings.xml
 .project
 WEB-INF
