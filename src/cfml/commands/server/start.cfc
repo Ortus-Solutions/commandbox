@@ -17,10 +17,13 @@ component persistent="false" extends="commandbox.system.BaseCommand" aliases="st
 		var webroot = directory is "" ? shell.pwd() : directory;
 		webroot = fileSystemUtil.resolveDirectory( webroot );
 		var serverInfo = manager.getServerInfo(webroot);
-		serverInfo.name = name is "" ? listLast(webroot,"\/") : name;
-		serverInfo.port = serverInfo.port is "" ? val(port) : serverInfo.port;
+		// we don't want to changes the ports if we're doing stuff already
+		if(serverInfo.status is "stopped" || force) {
+			serverInfo.name = name;
+			serverInfo.port = port;
+			serverInfo.stopsocket = stopsocket;
+		}
 		serverInfo.webroot = webroot;
-		serverInfo.stopsocket = serverInfo.stopsocket is "" ? val(stopsocket) : serverInfo.stopsocket;
 		serverInfo.debug = debug;
 		return manager.start(serverInfo, openbrowser, force, debug);
 	}
