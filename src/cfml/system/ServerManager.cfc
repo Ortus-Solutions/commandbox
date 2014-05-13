@@ -5,6 +5,7 @@ component {
 
 	java = {
 		ServerSocket : createObject("java","java.net.ServerSocket")
+		, File : createObject("java","java.io.File")
 		, Socket : createObject("java","java.net.Socket")
 		, InetAddress : createObject("java","java.net.InetAddress")
 		, LaunchUtil : createObject("java","runwar.LaunchUtil")
@@ -34,16 +35,21 @@ component {
 		var webroot = serverInfo.webroot;
 		var webhash = hash(serverInfo.webroot);
 		var name = serverInfo.name is "" ? listLast(webroot,"\/") : serverInfo.name;
-		var portNumber = serverInfo.port is 0 ? getRandomPort() : serverInfo.port;
-		var socket = serverInfo.stopsocket is 0 ? getRandomPort() : serverInfo.stopsocket;
-		var command = launchUtil.getJreExecutable();
-		var cliPath = cliClass.class.getProtectionDomain().getCodeSource().getLocation().getPath();
+		var portNumber = serverInfo.port == 0 ? getRandomPort() : serverInfo.port;
+		var socket = serverInfo.stopsocket == 0 ? getRandomPort() : serverInfo.stopsocket;
+		var cliPath = java.File.init(cliClass.class.getProtectionDomain().getCodeSource()
+				.getLocation().toURI().getSchemeSpecificPart()).getAbsolutePath();
 		var logdir = shell.getHomeDir() & "/server/log/" & name;
 		var processName = name is "" ? "CommandBox" : name;
-		var args = "-jar #cliPath# -server --port #portNumber# --background true --debug #debug#"
+		var command = cliPath;
+		var args = "-server --port #portNumber# --background true --debug #debug#"
 				& " --stop-port #socket# --processname ""#processName#"" --log-dir #logdir#"
 				& " --open-browser #openbrowser# --open-url http://127.0.0.1:#portNumber#"
 				& " --libdir ""#variables.libdir#"" #webroot#";
+		if(cliPath.endsWith(".jar")) {
+			command = launchUtil.getJreExecutable();
+			args = "-jar #cliPath# " & args;
+		}
 		serverInfo.port = portNumber;
 		serverInfo.stopsocket = socket;
 		serverInfo.logdir = logdir;
