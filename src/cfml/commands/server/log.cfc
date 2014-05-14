@@ -3,6 +3,12 @@
  **/
 component persistent="false" extends="commandbox.system.BaseCommand" excludeFromHelp=false {
 
+	/**
+	 * Show log
+	 *
+	 * @directory.hint web root for the server
+	 * @name.hint short name for the server
+	 **/
 	function run(String directory="", String name="")  {
 		var manager = new commandbox.system.ServerManager(shell);
 		var webroot = directory is "" ? shell.pwd() : directory;
