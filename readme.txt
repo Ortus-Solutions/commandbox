@@ -62,11 +62,11 @@ Type "help [command]" for in-depth descriptions.
 COMMANDBOX COMMANDS
 ********************************************************************************
 CommandBox is extensible via command CFCs.  Any CFC in the 
-${box.home}/cfml/cli/commands directory will be added registered as a command as 
-long as it extends cli.BaseCommand and has a run() method.
+${box.home}/commands directory will be added registered as a command as 
+long as it extends commandbox.system.BaseCommand and has a run() method.
 CFCs that are nested in subfolders, will create multi-part command names Ex:
-${box.home}/cfml/cli/coldbox/init.cfc.
-That would create a two-part command called "command init"
+${box.home}/commands/testbox/run.cfc.
+That would create a two-part command called "testbox run"
 Everything after the command is considered parameters.
 
 These extension CFCs have the Shell object passed to their init().
