@@ -67,11 +67,8 @@ component {
 					serverInfo.status="running";
 					setServerInfo(serverInfo);
 				} catch (any e) {
-					try{
-						stop(serverInfo);
-					} catch (any ex) {}
 					serverInfo.statusInfo = {command:command,arguments:args,result:executeResult};
-					serverInfo.status="stopped";
+					serverInfo.status="unknown";
 					setServerInfo(serverInfo);
 				}
 			}
