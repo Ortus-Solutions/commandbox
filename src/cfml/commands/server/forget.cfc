@@ -11,7 +11,7 @@ component persistent="false" extends="commandbox.system.BaseCommand" excludeFrom
 	 * @all.hint forget all servers
 	 * @force.hint force
 	 **/
-	function run(String directory="", Boolean all=false, Boolean force=false)  {
+	function run(String directory="", String name="", Boolean all=false, Boolean force=false)  {
 		var manager = new commandbox.system.ServerManager(shell);
 		var webroot = directory is "" ? shell.pwd() : directory;
 		var serverInfo = manager.getServerInfo(fileSystemUtil.resolveDirectory( webroot ));

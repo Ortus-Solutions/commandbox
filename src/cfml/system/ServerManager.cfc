@@ -88,10 +88,15 @@ component {
 	function stop(Struct serverInfo)  {
 		var launchUtil = java.LaunchUtil;
 		var cliClass = java.LoaderCLIMain;
-		var command = launchUtil.getJreExecutable();
-		var cliPath = cliClass.class.getProtectionDomain().getCodeSource().getLocation().getPath();
+		var cliPath = java.File.init(cliClass.class.getProtectionDomain().getCodeSource()
+				.getLocation().toURI().getSchemeSpecificPart()).getAbsolutePath();
+		var command = cliPath;
 		var stopsocket = serverInfo.stopsocket;
-		var args = "-jar #cliPath# -stop --stop-port #val(stopsocket)# --background false";
+		var args = "-stop --stop-port #val(stopsocket)# --background false";
+		if(cliPath.endsWith(".jar")) {
+			command = launchUtil.getJreExecutable();
+			args = "-jar #cliPath# " & args;
+		}
 		try{
 			execute name=command arguments=args timeout="50" variable="executeResult";
 			serverInfo.status = "stopped";
