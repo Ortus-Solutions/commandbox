@@ -4,7 +4,7 @@
 	<property name="cli.packager.name" value="cfmlprojects.org" />
 	<property name="cli.packager.email" value="cfml@cfmlprojects.org" />
 	<property name="cli.use.pack200" value="true" />
-	<property name="railo.cli.version" value="0.4.4-4.2.0.008" />
+	<property name="railo.cli.version" value="0.4.5-4.2.0.008" />
 	<property name="mvn.repo.id" value="cfdistro.repo.local" />
 	<property name="mvn.jre.7.version" value="1.7.0_55" />
 	<property name="mvn.jre.version" value="${mvn.jre.7.version}" />
