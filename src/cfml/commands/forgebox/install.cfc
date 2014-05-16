@@ -9,8 +9,13 @@
  **/
 component persistent="false" extends="commandbox.system.BaseCommand" aliases="install" excludeFromHelp=false {
 	
-	// Create our ForgeBox helper
-	variables.forgebox = new commandbox.system.util.ForgeBox();
+	function init() {
+				
+		// Create our ForgeBox helper
+		variables.forgebox = new commandbox.system.util.ForgeBox();
+		
+		return super.init( argumentCollection = arguments );
+	}
 	
 	/**
 	* @slug.hint Slug of the ForgeBox entry to install

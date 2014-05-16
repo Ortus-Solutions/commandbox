@@ -12,11 +12,24 @@
  **/
 component persistent="false" extends="commandbox.system.BaseCommand" aliases="show" excludeFromHelp=false {
 	
-	// Create our ForgeBox helper
-	variables.forgebox = new commandbox.system.util.ForgeBox();
-	// Get and cache a list of valid ForgeBox types
-	variables.forgeboxTypes = forgebox.getTypes();
-	variables.forgeboxOrders =  forgebox.ORDER;
+	function init() {
+		
+		// Create our ForgeBox helper
+		variables.forgebox = new commandbox.system.util.ForgeBox();
+		variables.forgeboxOrders =  forgebox.ORDER;
+		
+		return super.init( argumentCollection = arguments );
+	}
+	
+	// Lazy ForgeBox types.
+	function getForgeboxTypes() {
+		
+		// Get and cache a list of valid ForgeBox types
+		if( !structKeyExists( variables, 'forgeboxTypes' ) ) {
+			variables.forgeboxTypes = forgebox.getTypes();			
+		}
+		return variables.forgeboxTypes;
+	}
 	
 	/**
 	* @orderBy.hint How to order results. Possible values are popular, new, and recent 
@@ -154,7 +167,7 @@ component persistent="false" extends="commandbox.system.BaseCommand" aliases="sh
 		var typeLookup = '';
 		
 		// See if they entered a type name or slug
-		for( var thistype in forgeboxTypes ) {
+		for( var thistype in getForgeboxTypes() ) {
 			if( thisType.typeName == type || thisType.typeSlug == type ) {
 				typeLookup = thisType.typeSlug;
 				break;
