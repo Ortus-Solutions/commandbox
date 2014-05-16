@@ -122,7 +122,7 @@ Settings:
 		<!--- Start Log --->
 		<cfset var log 			= createObject("java","java.lang.StringBuffer").init("Starting Download...<br />")>
 		<cfset var destination  = arguments.destinationDir>
-		<cfset var fileName		= getFileFromPath(arguments.downloadURL)>
+		<cfset var fileName		= 'temp.zip'> <!---getFileFromPath(arguments.downloadURL)>--->
 		<cfset var results 		= {error=true,logInfo=""}>
 		
 		<cftry>
@@ -130,7 +130,7 @@ Settings:
 			<cfhttp url="#arguments.downloadURL#"
 					method="GET"
 					file="#fileName#"
-					path="#destination#">
+					path="#destination#" >
 		
 			<cfcatch type="any">
 				<cfset log.append("<strong>Error downloading file: #cfcatch.message# #cfcatch.detail#</strong><br />")>
