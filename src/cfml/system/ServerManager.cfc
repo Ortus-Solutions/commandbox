@@ -42,10 +42,10 @@ component {
 		var logdir = shell.getHomeDir() & "/server/log/" & name;
 		var processName = name is "" ? "CommandBox" : name;
 		var command = cliPath;
-		var args = "-server --port #portNumber# --background true --debug #debug#"
+		var args = "-server -webroot=""#webroot#"" --port #portNumber# --background true --debug #debug#"
 				& " --stop-port #socket# --processname ""#processName#"" --log-dir #logdir#"
 				& " --open-browser #openbrowser# --open-url http://127.0.0.1:#portNumber#"
-				& " --libdir ""#variables.libdir#"" #webroot#";
+				& " --libdir ""#variables.libdir#""";
 		if(cliPath.endsWith(".jar")) {
 			command = launchUtil.getJreExecutable();
 			args = "-jar #cliPath# " & args;
