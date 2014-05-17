@@ -15,6 +15,7 @@ component persistent="false" extends="commandbox.system.BaseCommand" aliases="st
 	function run(Boolean openbrowser=false, String directory="", String name="", Numeric port=0, Numeric stopsocket=0, Boolean force=false, Boolean debug=false)  {
 		var manager = new commandbox.system.ServerManager(shell);
 		var webroot = directory is "" ? shell.pwd() : directory;
+		var name = name is "" ? listLast(webroot,"\/") : name;
 		webroot = fileSystemUtil.resolveDirectory( webroot );
 		var serverInfo = manager.getServerInfo(webroot);
 		// we don't want to changes the ports if we're doing stuff already

@@ -9,12 +9,15 @@ component {
 		, Socket : createObject("java","java.net.Socket")
 		, InetAddress : createObject("java","java.net.InetAddress")
 		, LaunchUtil : createObject("java","runwar.LaunchUtil")
-		, LoaderCLIMain : createObject("java","cliloader.LoaderCLIMain")
 	}
 
 	function init(shell) {
 		variables.shell = shell;
 		variables.libdir = shell.getHomeDir() & "/lib";
+		variables.serverConfig = "config/servers.json";
+		if(!fileExists(serverConfig)) {
+			fileWrite(serverConfig,"{}");
+		}
 		return this;
 	}
 
@@ -31,25 +34,21 @@ component {
 	 **/
 	function start(Struct serverInfo, Boolean openBrowser, Boolean force=false, Boolean debug=false)  {
 		var launchUtil = java.LaunchUtil;
-		var cliClass = java.LoaderCLIMain;
 		var webroot = serverInfo.webroot;
 		var webhash = hash(serverInfo.webroot);
 		var name = serverInfo.name is "" ? listLast(webroot,"\/") : serverInfo.name;
 		var portNumber = serverInfo.port == 0 ? getRandomPort() : serverInfo.port;
 		var socket = serverInfo.stopsocket == 0 ? getRandomPort() : serverInfo.stopsocket;
-		var cliPath = java.File.init(cliClass.class.getProtectionDomain().getCodeSource()
+		var jarPath = java.File.init(launchUtil.class.getProtectionDomain().getCodeSource()
 				.getLocation().toURI().getSchemeSpecificPart()).getAbsolutePath();
 		var logdir = shell.getHomeDir() & "/server/log/" & name;
-		var processName = name is "" ? "CommandBox" : name;
-		var command = cliPath;
-		var args = "-server -webroot=""#webroot#"" --port #portNumber# --background true --debug #debug#"
-				& " --stop-port #socket# --processname ""#processName#"" --log-dir #logdir#"
+		var processName = name is "" ? "cfml" : name;
+		var command = launchUtil.getJreExecutable();
+		var args = "-javaagent:""#libdir#/railo-inst.jar"" -jar ""#jarPath#"""
+				& " -war ""#webroot#"" --background=true --port #portNumber# --debug #debug#"
+				& " --stop-port #socket# --processname ""#processName#"" --log-dir ""#logdir#"""
 				& " --open-browser #openbrowser# --open-url http://127.0.0.1:#portNumber#"
-				& " --libdir ""#variables.libdir#""";
-		if(cliPath.endsWith(".jar")) {
-			command = launchUtil.getJreExecutable();
-			args = "-jar #cliPath# " & args;
-		}
+				& " --libdir ""#variables.libdir#"" --iconpath ""#variables.libdir#/trayicon.png""";
 		serverInfo.port = portNumber;
 		serverInfo.stopsocket = socket;
 		serverInfo.logdir = logdir;
@@ -67,14 +66,14 @@ component {
 					serverInfo.status="running";
 					setServerInfo(serverInfo);
 				} catch (any e) {
-					serverInfo.statusInfo = {command:command,arguments:args,result:executeResult};
+					serverInfo.statusInfo.result &= executeResult;
 					serverInfo.status="unknown";
 					setServerInfo(serverInfo);
 				}
 			}
 			return "The server for #webroot# is starting on port #portNumber#... type 'server status' to see result";
 		} else {
-			return "Cannot start!  The server is currently in the #serverInfo.status# state!";
+			return "Cannot start!  The server is currently in the #serverInfo.status# state!#chr(10)#Use force=true or the 'server forget' command ";
 		}
 	}
 
@@ -84,16 +83,11 @@ component {
  	 **/
 	function stop(Struct serverInfo)  {
 		var launchUtil = java.LaunchUtil;
-		var cliClass = java.LoaderCLIMain;
-		var cliPath = java.File.init(cliClass.class.getProtectionDomain().getCodeSource()
+		var jarPath = java.File.init(launchUtil.class.getProtectionDomain().getCodeSource()
 				.getLocation().toURI().getSchemeSpecificPart()).getAbsolutePath();
-		var command = cliPath;
+		var command = launchUtil.getJreExecutable();
 		var stopsocket = serverInfo.stopsocket;
-		var args = "-stop --stop-port #val(stopsocket)# --background false";
-		if(cliPath.endsWith(".jar")) {
-			command = launchUtil.getJreExecutable();
-			args = "-jar #cliPath# " & args;
-		}
+		var args = "-jar ""#jarPath#"" -stop --stop-port #val(stopsocket)# --background false";
 		try{
 			execute name=command arguments=args timeout="50" variable="executeResult";
 			serverInfo.status = "stopped";
@@ -112,21 +106,14 @@ component {
 	 * Forget server
 	 * @serverInfo.hint struct of server info (ports, etc.)
 	 * @all.hint remove ALL servers
-	 * @force.hint force
  	 **/
-	function forget(Struct serverInfo, Boolean all=false, Boolean force=false)  {
-		var shell = new Shell();
+	function forget(Struct serverInfo, Boolean all=false)  {
 		if(!all) {
-			if(shell.ask("Are you sure you wish to forget: "
-					& serverInfo.name &":" & serverInfo.webroot & "? (Y/N) :") == "y") {
-				servers = getServers();
-				structDelete(servers,hash(serverInfo.webroot));
-				setServers(servers);
-			}
+			servers = getServers();
+			structDelete(servers,hash(serverInfo.webroot));
+			setServers(servers);
 		} else {
-			if(shell.ask("Are you sure you wish to forget ALL servers? (Y/N) :") == "y") {
-				setServers({});
-			}
+			setServers({});
 		}
 	}
 
@@ -162,7 +149,6 @@ component {
  	 **/
 	function setServers(Struct servers) {
 		// TODO: prevent race conditions  :)
-		var serverConfig = "config/servers.json";
 		fileWrite(serverConfig,shell.formatJson(serializeJSON(servers)));
 	}
 
@@ -170,7 +156,6 @@ component {
 	 * get servers struct
  	 **/
 	function getServers() {
-		var serverConfig = "config/servers.json";
 		if(fileExists(serverConfig)) {
 			return deserializeJSON(fileRead(serverConfig));
 		} else {
