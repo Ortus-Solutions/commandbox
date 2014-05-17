@@ -9,7 +9,13 @@ component persistent="false" extends="commandbox.system.BaseCommand" aliases="ty
 	/**
 	 * @file.hint File to view contents of
  	 **/
-	function run(file="")  {
+	function run( file="" )  {
+		
+		// Validate directory
+		if( !len( file ) ) {
+			return error( 'Please provide a file name.' );			
+		}
+		
 		if(left(file,1) != "/"){
 			file = shell.pwd() & "/" & file;
 		}

@@ -22,10 +22,10 @@ component persistent="false" extends="commandbox.system.BaseCommand" aliases="rm
 		if( !fileExists( file ) ) {
 			if( directoryExists( file ) ){
 				
-				var isConfirmed = shell.ask("delete #file#? [y/n] : ");
+				var isConfirmed = shell.ask("delete #file#? and all its subdirectories? [y/n] : ");
 				if(left(isConfirmed,1) == "y" 
 					|| ( isBoolean(isConfirmed) && isConfirmed ) ) {
-					directoryDelete(file);
+					directoryDelete( file, true );
 					return "deleted #file#";
 				}
 				return 'Cancelled.';

@@ -19,8 +19,7 @@ component persistent="false" extends="commandbox.system.BaseCommand" aliases="" 
 		
 		// Validate directory
 		if( !directoryExists( directory ) ) {
-			print.redLine( 'Directory #directory# does not exist.' );
-			return;
+			return error( 'Directory #directory# does not exist.' );
 		}
 		
 		// TODO: Get author info from default CommandBox config
