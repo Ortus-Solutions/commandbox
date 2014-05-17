@@ -162,7 +162,7 @@ component output='false' persistent='false' {
 			
 			// If nothing was found, bail out here.
 			if( !commandInfo.found ) {
-				instance.shell.printError({message:'Command "#line#" cannot be resolved.  Please type "#trim( "help #listChangeDelims( commandInfo.commandString, ' ', '.' )#" )#" for assitance.'});
+				instance.shell.printError({message:'Command "#line#" cannot be resolved.  Please type "#trim( "help #listChangeDelims( commandInfo.commandString, ' ', '.' )#" )#" for assistance.'});
 				return;
 			}
 			
