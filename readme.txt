@@ -19,9 +19,9 @@ www.ortussolutions.com
 ********************************************************************************
 COMMANDBOX INSTALLATION
 ********************************************************************************
-IVY/Maven/cfdistro package managers or direct download (jar, bin, win33):
+IVY/Maven/cfdistro package managers or direct download (jar, bin, win32):
 
-http://cfmlprojects.org/artifacts/org/coldbox/box
+http://cfmlprojects.org/artifacts/com/ortussolutions/box.cli
 
 
 Package repository for REDHAT based Linux:
@@ -50,12 +50,12 @@ COMMANDBOX USAGE
 ********************************************************************************
 CommandBox is either an EXE, a binary, or a JAR file, depending on preference.  They
 all work the same, expanding the needed resources by default into your user home
-directory under .box/ (if not there already).
+directory under .CommandBox/ (if not there already).
 
 You can run CommandBox in interactive CLI mode, or server mode.  To run in interactive
-mode, simply type "box -shell".  To run the server, type "box -server".
+mode, simply type "box".  To run the server, type "box -server".
 
-Type "help" at the CommandBox> prompt to get a list of available commands.  
+Type "box help", or "help" at the CommandBox> prompt to get a list of available commands.  
 Type "help [command]" for in-depth descriptions.
 
 ********************************************************************************
@@ -98,13 +98,23 @@ COMMANDBOX DEVELOPMENT
 ********************************************************************************
 To hack on the sources, there are two main approaches.
 
-The easiest is to install CommandBox, and then CD to the ./src/cfml/cli directory and
-type "box shell.cfm".  This will load the source version of the shell, instead
-of the included one.  Make any changes you want to the sources, and then at the
-CommandBox> prompt run "reload", which will load your changes.
+The easiest is to install CommandBox, CD into the project root, and then run:
+
+"box execute ./src/cfml/system/Bootstrap.cfm" (without quotes)
+
+This will load the source version of the shell, instead of the included one.  
+Make any changes you want to the sources, and then at the CommandBox> prompt 
+run "reload", which will load your changes.
 
 The second way is to build the test server and run the tests through the IDE or
-the TestBox facade (see the ./build/build.xml file for the URL).
+the TestBox facade:
+
+"box-cli build.testwar" (builds the test war)
+"box-cli runwar.start.fg" (starts the test server)
+
+Browse to:
+
+"http://127.0.0.1:8088/tests/{path/to/test/cfc/to/run}"
 
 ********************************************************************************
 VERSIONING
