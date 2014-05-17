@@ -6,31 +6,30 @@
 
 	<target name="build" depends="build.cli">
 	</target>
-	
-	<target name="build.testwar" depends="cfdistro.build">
-                <dependency artifactId="testbox" groupId="org.coldbox" version="1.1.0" mapping="/testbox" />
-                <mapping physical="@ext.mappings.dir@/org.coldbox/testbox/1.1.0/system/testing/compat" virtual="/mxunit"/>
+
+	<target name="build.testwar" depends="cfdistro.build" description="creates test war">
+		<!-- creates a war for testing in dist/, use 'box-cli runwar.start.fg' to run -->
+		<dependency artifactId="testbox" groupId="org.coldbox" version="1.1.0" mapping="/testbox" />
+		<!-- set mapping for MXUnit compat -->
+		<mapping physical="@ext.mappings.dir@/org.coldbox/testbox/1.1.0/system/testing/compat" virtual="/mxunit"/>
+		<!-- set mappings for sources, tests -->
 		<mapping virtual="/commandbox" physical="@src.dir@/cfml" />
 		<mapping virtual="/cfml" physical="@src.dir@/cfml" />
 		<mapping virtual="/tests" physical="@src.dir@/../tests" />
 	</target>
 
-        <target name="test">
-                <server-run>
-                    <testbox-rundirs basePath="${tests.dir}/cfml" componentPath="tests.cfml" outputdir="${dist.dir}/testresults/"  
+	<target name="test" description="starts test server, runs tests, then stops test server">
+		<server-run>
+			<testbox-rundirs basePath="${tests.dir}/cfml" componentPath="tests.cfml" outputdir="${dist.dir}/testresults/"  
 			runner="http://${runwar.host}:${runwar.port}/tests/tboxrunner.cfm?"/>
-                </server-run>
-   
-        </target>
+		</server-run>
+	</target>
 
-        <target name="build.test" depends="build.testwar">
-                <server-run>
-                    <testbox-rundirs basePath="${tests.dir}/cfml" componentPath="tests.cfml" outputdir="${dist.dir}/testresults/"
-			runner="http://${runwar.host}:${runwar.port}/tests/tboxrunner.cfm?"/>
-                </server-run>
-        </target>
+	<target name="build.test" depends="build.testwar,test" description="build test war, run tests">
+		<!-- mostly for automated builds- you really only need to build the testwar once -->
+	</target>
 
-        <target name="build.test.all" depends="build.test,build.cli.all">
-        </target>
-	
+	<target name="build.test.all" depends="build.test,build.cli.all">
+	</target>
+
 </project>

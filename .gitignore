@@ -1,4 +1,5 @@
 /dist
+/build/build.number
 /build/temp
 /build/requires.txt
 /src/cfml/system/config/servers.json

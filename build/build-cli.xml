@@ -1,28 +1,19 @@
 <project name="build-cli" default="build.cli" xmlns:antcontrib="antlib:net.sf.antcontrib" basedir=".">
 
-	<property name="cli.version" value="1.0.0" />
-	<property name="cli.packager.name" value="cfmlprojects.org" />
-	<property name="cli.packager.email" value="cfml@cfmlprojects.org" />
-	<property name="cli.use.pack200" value="true" />
-	<property name="railo.cli.version" value="0.4.7-4.2.0.008" />
-	<property name="mvn.repo.id" value="cfdistro.repo.local" />
-	<property name="mvn.jre.7.version" value="1.7.0_55" />
-	<property name="mvn.jre.version" value="${mvn.jre.7.version}" />
-    <property name="maven.repo.local" location="${cfdistro.basedir}/artifacts" />
-	<property name="rpm.repo" value="${dist.dir}/RPMS/noarch" />
-	<property name="deb.repo" value="${dist.dir}/debs/noarch" />
+	<target name="build.cli" description="builds box.jar">
 
-	<target name="build.cli" description="builds cli jar">
+		<!-- Init dist.dir and temp dirs -->
 		<delete dir="${dist.dir}/cli" />
 		<delete dir="${temp.dir}/rcli" />
 		<mkdir dir="${dist.dir}/cli" />
-		<antcontrib:var name="cli.version" value="${cli.version}" />
-		<dependency groupId="org.getrailo" artifactId="railo.cli" version="${railo.cli.version}" dest="${temp.dir}/rcli" type="jar" unzip="true"/>
-				
+
 		<!-- Init temp dir to build CFML code -->
 		<delete dir="${dir.build}" />
 		<mkdir dir="${dir.build}"/>
 		<chmod file="${dir.build}/**" perm="g+wxrs" type="both" />
+
+		<!-- get dependency -->
+		<dependency groupId="org.getrailo" artifactId="railo.cli" version="${railo.cli.version}" dest="${temp.dir}/rcli" type="jar" unzip="true"/>
 		
 		<!-- Copy CFML code -->
       	<copy todir="${dir.build}">
@@ -58,6 +49,8 @@
 	        <fileset dir="${dir.build}" excludes="**/cfdistro/home/**, **/cfdistro.zip"/>
 	        <!--<zipfileset file="${temp.dir}/version" fullpath="cli/version"/> -->
 		</zip>
+
+		<!-- create cli jar with the resources -->
       	<copy todir="${temp.dir}/rcli" overwrite="true">
         	<fileset file="${dist.dir}/cli/cfml.zip" />
         </copy>
@@ -72,6 +65,7 @@
  	</target>
 
 	<target name="build.cli.bin" description="create bin wrapper" depends="build.cli">
+		<!--  this bundles the jar into the executable wrapper, which is a bash script -->
         <concat destfile="${dist.dir}/cli/box" force="yes" binary="true">
           <fileset file="${src.dir}/bin/box.sh" />
           <fileset file="${dist.dir}/cli/box.jar" />
@@ -162,6 +156,7 @@
 			<tarfileset file="${dist.dir}/cli/box" prefix="/usr/bin"
 				 filemode="744" username="root" group="root"/>
 		</redline:rpm>
+		<!-- updates/creates the RPM repository, requires 'createrepo' on build server -->
 		<rpm-repo dir="${rpm.repo}" />
 	</target>
 
