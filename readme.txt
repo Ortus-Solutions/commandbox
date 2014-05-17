@@ -186,7 +186,7 @@ COMMANDBOX IMPORTANT LINKS
 Source Code
 - https://github.com/Ortus-Solutions/box-cli
 Tracker Site (Bug Tracking, Issues)
-- https://ortussolutions.atlassian.net/browse/BOX-CLI
+- https://ortussolutions.atlassian.net/browse/BOXCLI
 Documentation
 - http://wiki.coldbox.org
 Blog
