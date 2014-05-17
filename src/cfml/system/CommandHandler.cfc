@@ -157,6 +157,9 @@ component output='false' persistent='false' {
 		var commandChain = resolveCommand( line );
 		
 		var i = 0;
+		// If piping commands, each one will be an item in the chain.
+		// i.e. forgebox show | grep | more 
+		// Would result in three separate, chained commands.
 		for( var commandInfo in commandChain ) {
 			i++;
 			
@@ -166,13 +169,13 @@ component output='false' persistent='false' {
 				return;
 			}
 			
-			// For help commands squish all the parameters together into one be one exactly as typed
+			// For help commands squish all the parameters together into one exactly as typed
 			if( listLast( commandInfo.commandReference.$CommandBox.originalName, '.' ) == 'help' ) {
 				var parameterInfo = {
 					positionalParameters = [ arrayToList( commandInfo.parameters, ' ' ) ],
 					namedParameters = {}
 				};
-			// For normal commands, parse them out propery
+			// For normal commands, parse them out properly
 			} else {
 				var parameterInfo = parseParameters( commandInfo.parameters );
 			}
