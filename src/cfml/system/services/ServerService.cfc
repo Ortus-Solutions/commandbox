@@ -43,7 +43,7 @@ component {
 				.getLocation().toURI().getSchemeSpecificPart()).getAbsolutePath();
 		var logdir = shell.getHomeDir() & "/server/log/" & name;
 		var processName = name is "" ? "cfml" : name;
-		var command = launchUtil.getJreExecutable();
+		var command = launchUtil.getJreExecutable().getCanonicalPath();
 		var args = "-javaagent:""#libdir#/railo-inst.jar"" -jar ""#jarPath#"""
 				& " -war ""#webroot#"" --background=true --port #portNumber# --debug #debug#"
 				& " --stop-port #socket# --processname ""#processName#"" --log-dir ""#logdir#"""
@@ -59,8 +59,6 @@ component {
 		if(serverInfo.status == "stopped" || force) {
 			serverInfo.status = "starting";
 			setServerInfo(serverInfo);
-			systemOutput( command, true );
-			systemOutput( args, true );
 			thread name="server#webhash##createUUID()#" serverInfo=serverInfo command=command args=args {
 				try{
 					execute name=command arguments=args timeout="50" variable="executeResult";
@@ -87,7 +85,7 @@ component {
 		var launchUtil = java.LaunchUtil;
 		var jarPath = java.File.init(launchUtil.class.getProtectionDomain().getCodeSource()
 				.getLocation().toURI().getSchemeSpecificPart()).getAbsolutePath();
-		var command = launchUtil.getJreExecutable();
+		var command = launchUtil.getJreExecutable().getCanonicalPath();
 		var stopsocket = serverInfo.stopsocket;
 		var args = "-jar ""#jarPath#"" -stop --stop-port #val(stopsocket)# --background false";
 		try{
