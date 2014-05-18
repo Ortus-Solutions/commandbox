@@ -70,8 +70,8 @@ component accessors="true"{
     	variables.homedir = env("user.home") & "/.CommandBox";
     	variables.tempdir = variables.homedir & "/temp";
 		variables.shellPrompt = print.cyanText( "CommandBox> ");
-		variables.commandHandler = new commandbox.system.CommandHandler(this);
-		var completor = createDynamicProxy(new commandbox.system.Completor( commandHandler ), ['jline.Completor']);
+		variables.commandService = new commandbox.system.services.CommandService(this);
+		var completor = createDynamicProxy(new commandbox.system.Completor( commandService ), ['jline.Completor']);
         reader.addCompletor( completor );
 
 		try {
@@ -413,7 +413,7 @@ component accessors="true"{
  	 * @command.hint command name
  	 **/
 	function callCommand( String command="" )  {
-		var result = commandHandler.runCommandLine( command );
+		var result = commandService.runCommandLine( command );
 		if(!isNull( result ) && !isSimpleValue( result )) {
 			if(isArray( result )) {
 				return reader.printColumns(result);
@@ -426,10 +426,10 @@ component accessors="true"{
 	}
 
 	/**
-	 * Get CommandHandler
+	 * Get CommandService
  	 **/
-	function getCommandHandler()  {
-		return variables.commandHandler;
+	function getCommandService()  {
+		return variables.commandService;
 	}
 
 	/**

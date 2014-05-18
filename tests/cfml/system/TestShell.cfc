@@ -1,13 +1,13 @@
 component name="TestShell" extends="mxunit.framework.TestCase" {
 
-	public void function testCommandHandler()  {
+	public void function testCommandService()  {
     	var baos = createObject("java","java.io.ByteArrayOutputStream").init();
     	var testString = "ls#chr(10)#";
     	var bain = createObject("java","java.io.ByteArrayInputStream").init(testString.getBytes());
     	var printWriter = createObject("java","java.io.PrintWriter").init(baos);
 		var shell = new commandbox.system.Shell(bain,printWriter);
-		commandHandler = new commandbox.system.CommandHandler(shell);
-		commandHandler.runCommandline("ls");
+		commandService = new commandbox.system.services.CommandService(shell);
+		commandService.runCommandline("ls");
 		debug(baos.toString());
 
 	}

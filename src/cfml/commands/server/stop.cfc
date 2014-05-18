@@ -11,7 +11,7 @@ component persistent="false" extends="commandbox.system.BaseCommand" aliases="st
 	 * @force.hint force start if status != stopped
 	 **/
 	function run(String directory="", String name="", Boolean force=false)  {
-		var manager = new commandbox.system.ServerManager(shell);
+		var manager = new commandbox.system.services.ServerService(shell);
 		var webroot = directory is "" ? shell.pwd() : directory;
 		var serverInfo = manager.getServerInfo(fileSystemUtil.resolveDirectory( webroot ));
 		manager.stop(serverInfo);

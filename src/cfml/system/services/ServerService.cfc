@@ -9,12 +9,12 @@ component {
 		, Socket : createObject("java","java.net.Socket")
 		, InetAddress : createObject("java","java.net.InetAddress")
 		, LaunchUtil : createObject("java","runwar.LaunchUtil")
-	}
+	};
 
 	function init(shell) {
 		variables.shell = shell;
 		variables.libdir = shell.getHomeDir() & "/lib";
-		variables.serverConfig = "config/servers.json";
+		variables.serverConfig = "/commandbox/system/config/servers.json";
 		if(!fileExists(serverConfig)) {
 			fileWrite(serverConfig,"{}");
 		}
@@ -59,6 +59,8 @@ component {
 		if(serverInfo.status == "stopped" || force) {
 			serverInfo.status = "starting";
 			setServerInfo(serverInfo);
+			systemOutput( command, true );
+			systemOutput( args, true );
 			thread name="server#webhash##createUUID()#" serverInfo=serverInfo command=command args=args {
 				try{
 					execute name=command arguments=args timeout="50" variable="executeResult";

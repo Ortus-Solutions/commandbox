@@ -5,26 +5,26 @@ component extends="mxunit.framework.TestCase" {
 
 	public void function setUp()  {
 		var shell = new commandbox.system.Shell();
-		commandHandler = new commandbox.system.CommandHandler(shell);
+		commandService = new commandbox.system.services.CommandService(shell);
 	}
 
 	public void function testInitCommands()  {
-		var commands = commandHandler.getCommands();
+		var commands = commandService.getCommands();
 		assertTrue(structKeyExists(commands,"quit"));
 	}
 
 	public void function testHelpCommands()  {
-		commandChain = commandHandler.resolveCommand( "coldbox help" );
+		commandChain = commandService.resolveCommand( "coldbox help" );
 		assertTrue(commandChain[1].commandString == 'help');
 	}
 	
 	public void function testResolveCommand()  {
-		commandChain = commandHandler.resolveCommand( "help | more" );
+		commandChain = commandService.resolveCommand( "help | more" );
 		assertTrue(commandChain.len() == 2);
 	}
 		
 	public void function testRunCommandLine()  {
-		result = commandHandler.runCommandLine( "help | more" );
+		result = commandService.runCommandLine( "help | more" );
 	}
 
 	/*

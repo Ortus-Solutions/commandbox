@@ -4,8 +4,8 @@ component name="TestShell" extends="mxunit.framework.TestCase" {
 
 	public void function setUp()  {
 		var shell = new commandbox.system.Shell();
-		var commandHandler = new commandbox.system.CommandHandler(shell);
-		variables.completor = new commandbox.system.Completor(commandHandler);
+		var commandService = new commandbox.system.services.CommandService(shell);
+		variables.completor = new commandbox.system.Completor(commandService);
 	}
 
 	public void function testPartialNoPrefixCommands()  {		

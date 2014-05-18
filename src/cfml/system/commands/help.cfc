@@ -7,7 +7,7 @@ component extends="commandbox.system.BaseCommand" aliases="h,/?,?,--help,-help" 
 	 * @command.hint The command to get help for.  If blank, displays help for all commands
 	 **/
 	function run( command='' )  {
-		var commandHandler = shell.getCommandHandler();
+		var commandService = shell.getCommandService();
 		// Auto-help will display help for all commands at this
 		// level in the command structure and below.  Default to all
 		var autoHelpRoot = '';
@@ -24,7 +24,7 @@ component extends="commandbox.system.BaseCommand" aliases="h,/?,?,--help,-help" 
 		print.greenLine( repeatString( '*', 50 ) );
 		print.line();
 		
-		var commandHierarchy = commandHandler.getCommandHierarchy();
+		var commandHierarchy = commandService.getCommandHierarchy();
 		var foundCommand = false;
 		var commandRoot = '';
 		var commandRootSpaces = ''; 
@@ -32,7 +32,7 @@ component extends="commandbox.system.BaseCommand" aliases="h,/?,?,--help,-help" 
 		// If we're getting help for a specific command
 		if( len( command ) ) {
 			// Resolve the string to the first command (help | more will just be "help")
-			var commandInfo = commandHandler.resolveCommand( line=command )[1];
+			var commandInfo = commandService.resolveCommand( line=command )[1];
 			
 			// Display auto help for however far we made it in the command hierarchy
 			commandHierarchy = commandInfo.commandReference;

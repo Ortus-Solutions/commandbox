@@ -10,7 +10,7 @@ component persistent="false" extends="commandbox.system.BaseCommand" excludeFrom
 	 * @name.hint short name for the server
 	 **/
 	function run(String directory="", String name="")  {
-		var manager = new commandbox.system.ServerManager(shell);
+		var manager = new commandbox.system.services.ServerService(shell);
 		var webroot = directory is "" ? shell.pwd() : directory;
 		var serverInfo = manager.getServerInfo(fileSystemUtil.resolveDirectory( webroot ));
 		var logfile = serverInfo.logdir & "/server.out.txt";

@@ -10,7 +10,7 @@ component persistent="false" extends="commandbox.system.BaseCommand" aliases="st
 	 * @name.hint short name for the server
 	 **/
 	function run(String directory="", String name="")  {
-		var manager = new commandbox.system.ServerManager(shell);
+		var manager = new commandbox.system.services.ServerService(shell);
 		var servers = manager.getServers();
 		directory = fileSystemUtil.resolveDirectory( directory );
 		for(serverKey in servers) {

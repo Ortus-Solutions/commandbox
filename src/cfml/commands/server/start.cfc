@@ -13,7 +13,7 @@ component persistent="false" extends="commandbox.system.BaseCommand" aliases="st
 	 * @debug.hint sets debug log level
 	 **/
 	function run(Boolean openbrowser=false, String directory="", String name="", Numeric port=0, Numeric stopsocket=0, Boolean force=false, Boolean debug=false)  {
-		var manager = new commandbox.system.ServerManager(shell);
+		var manager = new commandbox.system.services.ServerService(shell);
 		var webroot = directory is "" ? shell.pwd() : directory;
 		var name = name is "" ? listLast(webroot,"\/") : name;
 		webroot = fileSystemUtil.resolveDirectory( webroot );

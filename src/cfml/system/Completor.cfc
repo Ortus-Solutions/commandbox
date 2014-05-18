@@ -9,12 +9,12 @@ component output="false" persistent="false" {
 
 	/**
 	 * constructor
-	 * @commandHandler.hint CommandHandler this completor is attached to
+	 * @commandService.hint CommandService this completor is attached to
 	 **/
-	function init(commandHandler) {
-		variables.commandHandler = arguments.commandHandler;
-		variables.commandlist.addAll(commandHandler.listCommands().split(','));
-		variables.commands = commandHandler.getCommands();
+	function init(commandService) {
+		variables.commandService = arguments.commandService;
+		variables.commandlist.addAll(commandService.listCommands().split(','));
+		variables.commands = commandService.getCommands();
 	}
 
 	/**
@@ -26,7 +26,7 @@ component output="false" persistent="false" {
 	function complete( String buffer, numeric cursor, candidates )  {
 		var buffer = buffer ?: "";
 		// Try to resolve the command.
-		var commandChain = commandHandler.resolveCommand( buffer );
+		var commandChain = commandService.resolveCommand( buffer );
 		// If there are multiple commands like "help | more", we only care about the last one
 		var commandInfo = commandChain[ commandChain.len() ];
 									
@@ -76,7 +76,7 @@ component output="false" persistent="false" {
 			// This is all the possible params for the command
 			var definedParameters = commandInfo.commandReference.$CommandBox.parameters;
 			// This is the params the user has entered so far.
-			var passedParameters = commandHandler.parseParameters( commandInfo.parameters );
+			var passedParameters = commandService.parseParameters( commandInfo.parameters );
 										
 			// Is the user using positional params
 			if( arrayLen( passedParameters.positionalParameters ) > 1  ) {
@@ -182,7 +182,7 @@ component output="false" persistent="false" {
 	private function directoryCompletion(String startsWith, required candidates) {
 		startsWith = replace(startsWith,"\","/","all");
 		if(startsWith == "") {
-			startsWith = commandHandler.getShell().pwd();
+			startsWith = commandService.getShell().pwd();
 		}
 		var files = directoryList(getDirectoryFromPath(startsWith));
 		for(file in files) {
@@ -202,7 +202,7 @@ component output="false" persistent="false" {
 	private function fileCompletion(String startsWith, required candidates) {
 		
 		if( startsWith == "" ) {
-			startsWith = commandHandler.getShell().pwd() & '/';
+			startsWith = commandService.getShell().pwd() & '/';
 		}
 				
 		startsWith = replace( startsWith, "\", "/", "all" );		

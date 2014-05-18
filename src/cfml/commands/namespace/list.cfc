@@ -4,8 +4,8 @@
 component  persistent="false" extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
 
 	function run(  )  {
-		var commandHandler = shell.getCommandHandler();
-		var commands = commandHandler.getCommandHierarchy();
+		var commandService = shell.getCommandService();
+		var commands = commandService.getCommandHierarchy();
 		
 		print.line();
 		for( var command in commands ) {
