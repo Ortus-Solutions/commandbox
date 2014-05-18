@@ -32,7 +32,7 @@
 		<property file="build.number"/>
 		
 		<!-- Replace Version Numbers -->
-		<replaceregexp match='@build.version@' replace="${cli.version}" flags="ig" byline="true">
+		<replaceregexp match='@build.version@' replace="${commandbox.version}" flags="ig" byline="true">
 		  <fileset dir="${dir.build}">
 		  </fileset>
 		</replaceregexp>
@@ -43,7 +43,7 @@
 		  </fileset>
 		</replaceregexp>
 				
-		<!-- <echo file="${temp.dir}/version" message="${cli.version}" /> -->
+		<!-- <echo file="${temp.dir}/version" message="${commandbox.version}" /> -->
 		<!--  create the cfml zip -->
 		<zip destfile="${dist.dir}/cli/cfml.zip" update="false">
 	        <fileset dir="${dir.build}" excludes="**/cfdistro/home/**, **/cfdistro.zip"/>
@@ -115,7 +115,7 @@
 	        <fileset file="${dist.dir}/cli/box" />
 		</zip>
 		<pom-and-deploy pomid="cli-jre.pom" packaging="pom" buildtype="${mvn.type}"
-		 groupId="com.ortussolutions" artifactId="box.cli.jre" version="${cli.version}" name="box.cli.jre">
+		 groupId="com.ortussolutions" artifactId="box.cli.jre" version="${commandbox.version}" name="box.cli.jre">
 			<attachments>
         		<attach file="${dist.dir}/cli/box-jre-win32.zip" type="zip" classifier="win32"/>
         		<attach file="${dist.dir}/cli/box-jre-win64.zip" type="zip" classifier="win64"/>
@@ -128,15 +128,15 @@
 	
  	<target name="build.cli.mvn" depends="build.cli.rpm,build.cli.deb,build.cli.exe">
 		<pom-and-deploy pomid="cli.pom" packaging="pom" buildtype="${mvn.type}"
-			groupId="com.ortussolutions" artifactId="box.cli" version="${cli.version}"
+			groupId="com.ortussolutions" artifactId="box.cli" version="${commandbox.version}"
 			name="box.cli">
 			<attachments>
 				<attach file="${dist.dir}/cli/box.jar" type="jar" />
 				<attach file="${dist.dir}/cli/cfml.zip" type="zip" classifier="cfml" />
 				<attach file="${dist.dir}/cli/box.bin.zip" type="zip" classifier="bin" />
 				<attach file="${dist.dir}/cli/box.win32.zip" type="zip" classifier="win32" />
-				<attach file="${dist.dir}/box-cli_${cli.version}-1_all.deb" type="deb" />
-				<attach file="${rpm.repo}/box-cli-${cli.version}-1.noarch.rpm" type="rpm" />
+				<attach file="${dist.dir}/box-cli_${commandbox.version}-1_all.deb" type="deb" />
+				<attach file="${rpm.repo}/box-cli-${commandbox.version}-1.noarch.rpm" type="rpm" />
 			</attachments>
 		</pom-and-deploy>
 	</target>
@@ -146,11 +146,11 @@
 
 	<target name="build.cli.rpm" depends="bootstrap_redline,build.cli.bin" xmlns:redline="antlib:org.redline_rpm">
 		<mkdir dir="${rpm.repo}" />
-		<echo message="Making rpm in ${rpm.repo} Packager:${cli.packager.name} ${cli.packager.email} Version: ${cli.version}" />
+		<echo message="Making rpm in ${rpm.repo} Packager:${commandbox.packager.name} ${commandbox.packager.email} Version: ${commandbox.version}" />
         <taskdef resource="org/redline_rpm/antlib.xml" uri="antlib:org.redline_rpm" classpathref="build.lib.path"/>
 		<redline:rpm destination="${rpm.repo}" release="1"
-			group="com.ortussolutions" name="box-cli" version="${cli.version}"
-			packager="${cli.packager.name} ${cli.packager.email}"
+			group="com.ortussolutions" name="box-cli" version="${commandbox.version}"
+			packager="${commandbox.packager.name} ${commandbox.packager.email}"
 			url="http://cfmlprojects.org">
 			<depends name="java" version=""/>
 			<tarfileset file="${dist.dir}/cli/box" prefix="/usr/bin"
@@ -164,19 +164,19 @@
 	    <taskdef name="deb" classname="com.googlecode.ant_deb_task.Deb" classpathref="build.lib.path"/>
 	   	<echo message="Creating debian .deb file from: ${dist.dir}"/>
 		<mkdir dir="${deb.repo}"/>
-	   	<delete file="${dist.dir}/box-cli_${cli.version}-1_all.deb" />
+	   	<delete file="${dist.dir}/box-cli_${commandbox.version}-1_all.deb" />
 	   	<deb
 	        todir="${dist.dir}"
 	        package="box-cli"
 	        section="web"
 	        depends="java-common">
-	        <version upstream="${cli.version}"/>
-	        <maintainer name="${cli.packager.name}" email="${cli.packager.email}"/>
-	        <description synopsis="Box CFML CLI">Box Version: ${cli.version}.</description>
+	        <version upstream="${commandbox.version}"/>
+	        <maintainer name="${commandbox.packager.name}" email="${commandbox.packager.email}"/>
+	        <description synopsis="Box CFML CLI">Box Version: ${commandbox.version}.</description>
 	   		<tarfileset file="${dist.dir}/cli/box" prefix="usr/local/bin" filemode="755"/>
 	   	</deb>
 	   	<echo message="Updating apt (deb) repo in ${deb.repo}"/>
-		<copy file="${dist.dir}/box-cli_${cli.version}-1_all.deb" todir="${deb.repo}" />
+		<copy file="${dist.dir}/box-cli_${commandbox.version}-1_all.deb" todir="${deb.repo}" />
 		<deb-repo dir="${deb.repo}" />
 	</target>
 		
