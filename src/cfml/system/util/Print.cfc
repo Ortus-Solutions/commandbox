@@ -16,11 +16,12 @@
 **/
 component {
 
-	ANSICodes = createObject("java", "jline.ANSIBuffer$ANSICodes");
-	cr = chr(10);
+	this.ANSICodes  = createObject("java", "jline.ANSIBuffer$ANSICodes");
+	this.cr 		= chr( 10 );
+	this.tab 		= chr( 9 );
 
 	// These are the valid ANSI attributes
-	ANSIAttributes = {
+	this.ANSIAttributes = {
 
 		// Remove all formatting
 		"off":0,
@@ -88,14 +89,14 @@ component {
 			foundANSI = false;
 
 			// Look for each attrib
-			for( var attrib in ANSIAttributes ) {
+			for( var attrib in this.ANSIAttributes ) {
 
 				// Check for an attribute match
 				var attribLen = len( attrib );
 				if( left( methodName, attribLen ) == attrib ) {
 
 					// Add that attribute to the string
-					ANSIString &= ANSICodes.attrib( ANSIAttributes[ attrib ] );
+					ANSIString &= this.ANSICodes.attrib( this.ANSIAttributes[ attrib ] );
 					// Slice this bit off the method name
 					methodName  = mid( methodName, attribLen+1, len( methodName ) );
 					foundANSI = true;
@@ -136,11 +137,11 @@ component {
 
 		} // End While loop
 
-		ANSIString &= text & ANSICodes.attrib(ANSIAttributes["off"]);
+		ANSIString &= text & this.ANSICodes.attrib( this.ANSIAttributes["off"] );
 
 		// Add a CR if this was supposed to be a line
 		if( newLine ) {
-			ANSIString &= cr;
+			ANSIString &= this.cr;
 		}
 
 		return ANSIString;
