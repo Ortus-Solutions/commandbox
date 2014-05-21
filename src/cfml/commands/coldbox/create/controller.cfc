@@ -4,7 +4,7 @@
 *  new handler at the same time.  By default, your new controller will be created in /handlers but you can override that with the directory param.
 *
 **/
-component persistent='false' extends='commandbox.system.BaseCommand' aliases='coldbox create handler' excludeFromHelp=false {
+component extends='commandbox.system.BaseCommand' aliases='coldbox create handler' excludeFromHelp=false {
 
 	/**
 	* @name.hint Name of the controller to create without the .cfc. For packages, specify name as 'myPackage/myController'

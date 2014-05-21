@@ -6,7 +6,7 @@
 * just reference it with getModel( 'modelName' ).
 *
  **/
-component persistent='false' extends='commandbox.system.BaseCommand' aliases='' excludeFromHelp=false {
+component extends='commandbox.system.BaseCommand' aliases='' excludeFromHelp=false {
 
 	variables.validPersistences = 'Transient,Singleton';
 

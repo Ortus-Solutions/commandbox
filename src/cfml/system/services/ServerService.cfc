@@ -1,7 +1,14 @@
 /**
+*********************************************************************************
+* Copyright Since 2005 ColdBox Platform by Ortus Solutions, Corp
+* www.coldbox.org | www.ortussolutions.com
+********************************************************************************
+* @author Brad Wood, Luis Majano, Denny Valliant
+*
 * I manage servers
-**/
-component {
+*
+*/
+component singleton {
 
 	java = {
 		ServerSocket : createObject("java","java.net.ServerSocket")

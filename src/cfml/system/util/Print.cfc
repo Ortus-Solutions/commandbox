@@ -1,4 +1,10 @@
 /**
+*********************************************************************************
+* Copyright Since 2005 ColdBox Platform by Ortus Solutions, Corp
+* www.coldbox.org | www.ortussolutions.com
+********************************************************************************
+* @author Brad Wood, Luis Majano, Denny Valliant
+*
 * I am a helper object for creating pretty ANSI-formmatted
 * text in the shell.  I use onMissingMethod to allow for nice,
 * readable methods that contain combinations of text and background
@@ -13,8 +19,8 @@
 * print.redOnWhiteBold( 'Hello World' );
 * print.boldBlinkingUnderscoredBlueTextOnRedBackground( 'Test' )
 *
-**/
-component {
+*/
+component singleton {
 
 	this.ANSICodes  = createObject("java", "jline.ANSIBuffer$ANSICodes");
 	this.cr 		= chr( 10 );

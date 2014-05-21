@@ -1,8 +1,14 @@
 /**
- * completion handler
- * @author Denny Valliant
- **/
-component output="false" persistent="false" {
+*********************************************************************************
+* Copyright Since 2005 ColdBox Platform by Ortus Solutions, Corp
+* www.coldbox.org | www.ortussolutions.com
+********************************************************************************
+* @author Brad Wood, Luis Majano, Denny Valliant
+*
+* I handle tab completion in the shell
+*
+*/
+component singleton {
 
 	// command list
 	commandlist = createObject("java","java.util.TreeSet");

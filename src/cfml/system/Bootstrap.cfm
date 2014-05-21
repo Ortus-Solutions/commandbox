@@ -1,7 +1,17 @@
+<!---
+*********************************************************************************
+ Copyright Since 2005 ColdBox Platform by Ortus Solutions, Corp
+ www.coldbox.org | www.ortussolutions.com
+********************************************************************************
+@author Brad Wood, Luis Majano, Denny Valliant
+
+I bootstrap CommandBox up, create the shell and get it running.
+I am a CFC because the Railo CLI seems to need a .cfm file to call
+This file will stay running the entire time the shell is open
+
+--->
 <cfsilent>
-<!--- I bootstrap CommandBox up, create the shell and get it running.
-I am a CFC because the Railo CLI seems to need a .cfm file to call --->
-<!---This file will stay running the entire time the shell is open --->
+<cfset variables.wireBox = application.wireBox>
 <cfsetting requesttimeout="999999" />
 <!---Display this banner to users--->
 <cfsavecontent variable="banner">Welcome to CommandBox!
@@ -21,13 +31,13 @@ Type "help" for help, or "help [command]" to be more specific.
 		outputStream = createObject("java","java.io.ByteArrayOutputStream").init();
 		bain = createObject("java","java.io.ByteArrayInputStream").init("#args##chr(10)#".getBytes());
     	printWriter = createObject("java","java.io.PrintWriter").init(outputStream);
-		shell = new commandbox.system.Shell(bain,printWriter);
+		shell = WireBox.getInstance( name='Shell', initArguments={ bain, printWriter } );
 		shell.callCommand(args);
 		system.out.print(outputStream);
 		system.out.flush();
 	} else {
 		// Create the shell
-		shell = new commandbox.system.Shell();
+		shell = WireBox.getInstance( 'Shell' );
 		// Output the welcome banner
 		banner = replace( banner, '@@version@@', shell.getVersion() );
 		systemOutput( banner );
@@ -36,7 +46,8 @@ Type "help" for help, or "help [command]" to be more specific.
 		while( shell.run() ){
 			SystemCacheClear( "all" );
 			shell = javacast( "null", "" );
-			shell = new commandbox.system.Shell();
+			wirebox.clearSingletons();
+			shell = WireBox.getInstance( 'Shell' );
 		}
 	}
 

@@ -1,11 +1,17 @@
 /**
- * Command handler
- * @author Denny Valliant
- **/
-component output='false' persistent='false' {
+*********************************************************************************
+* Copyright Since 2005 ColdBox Platform by Ortus Solutions, Corp
+* www.coldbox.org | www.ortussolutions.com
+********************************************************************************
+* @author Brad Wood, Luis Majano, Denny Valliant
+*
+* I handle initializing, reading, and running commands
+*
+*/
+component singleton {
 
 	instance = {
-		// Refernce to the shell instance
+		// Reference to the shell instance
 		shell = '',
 		
 		// A nested struct of the registered commands
@@ -31,7 +37,7 @@ component output='false' persistent='false' {
 
 	/**
 	 * constructor
-	 * @shell.hint shell this command handler is attached to
+	 * @shell.hint shell this command service is attached to
 	 **/
 	function init(required shell) {
 		instance.shell = shell;

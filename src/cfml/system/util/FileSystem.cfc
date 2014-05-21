@@ -1,7 +1,14 @@
 /**
+*********************************************************************************
+* Copyright Since 2005 ColdBox Platform by Ortus Solutions, Corp
+* www.coldbox.org | www.ortussolutions.com
+********************************************************************************
+* @author Brad Wood, Luis Majano, Denny Valliant
+*
 * I contain helpful methods for dealing with file and directory paths
-**/
-component {
+*
+*/
+component singleton {
 
 	function init( shell ) {
 		variables.shell = arguments.shell;
@@ -22,5 +29,7 @@ component {
 		// This will standardize the name and calculate stuff like ../../
 		return oDirectory.getCanonicalPath();
 	}
+
+	// TODO: Add resolve file
 
 }

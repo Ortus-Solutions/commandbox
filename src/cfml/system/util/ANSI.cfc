@@ -1,4 +1,14 @@
-component{
+/**
+*********************************************************************************
+* Copyright Since 2005 ColdBox Platform by Ortus Solutions, Corp
+* www.coldbox.org | www.ortussolutions.com
+********************************************************************************
+* @author Brad Wood, Luis Majano, Denny Valliant
+*
+* Utilities for dealing with ANSI output
+*
+*/
+component singleton {
 
 	function init(){
 		

@@ -1,10 +1,15 @@
 /**
-* 
-* I am a helper object that wraps the print helper.  Instead of returning
-* text, I accumulate it in a variable that can be retreived at the end.	 
+*********************************************************************************
+* Copyright Since 2005 ColdBox Platform by Ortus Solutions, Corp
+* www.coldbox.org | www.ortussolutions.com
+********************************************************************************
+* @author Brad Wood, Luis Majano, Denny Valliant
 *
-**/
-component extends="Print" {
+* I am a helper object that wraps the print helper.  Instead of returning
+* text, I accumulate it in a variable that can be retreived at the end.
+*
+*/
+component extends="Print" singleton {
 
 	variables.result = '';
 		

@@ -1,7 +1,13 @@
 /**
- * CommandBox Command Line Parser and Tokenizer
- * @author Denny Valliant, Brad Wood
- **/
+*********************************************************************************
+* Copyright Since 2005 ColdBox Platform by Ortus Solutions, Corp
+* www.coldbox.org | www.ortussolutions.com
+********************************************************************************
+* @author Brad Wood, Luis Majano, Denny Valliant
+*
+* CommandBox Command Line Parser and Tokenizer
+*
+*/
 component {
 
 	/**

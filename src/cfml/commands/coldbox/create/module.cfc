@@ -3,7 +3,7 @@
 * of your app for it to find the correct folder.  
 *  
  **/
-component persistent='false' extends='commandbox.system.BaseCommand' aliases='' excludeFromHelp=false {
+component extends='commandbox.system.BaseCommand' aliases='' excludeFromHelp=false {
 		
 	/**
 	* @name.hint Name of the module to create.

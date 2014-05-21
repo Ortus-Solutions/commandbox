@@ -1,7 +1,14 @@
 /**
+*********************************************************************************
+* Copyright Since 2005 ColdBox Platform by Ortus Solutions, Corp
+* www.coldbox.org | www.ortussolutions.com
+********************************************************************************
+* @author Brad Wood, Luis Majano, Denny Valliant
+*
 * I am the base command implementation.  An abstract class if you will.
-**/
-component {
+*
+*/
+component singleton {
 	
 	// Carriadge return
 	cr = chr(10);

@@ -3,6 +3,7 @@
 Copyright 2005-2007 ColdBox Framework by Luis Majano and Ortus Solutions, Corp
 www.coldboxframework.com | www.luismajano.com | www.ortussolutions.com
 ********************************************************************************
+@author Brad Wood, Luis Majano, Denny Valliant
 
 ForgeBox API REST Wrapper
 
@@ -16,10 +17,8 @@ or just add DEBUG to the root logger
 <Root levelMax="DEBUG" />
 
 
-Settings:
-
 ----------------------------------------------------------------------->
-<cfcomponent hint="ForgeBox API REST Wrapper" output="false">
+<cfcomponent hint="ForgeBox API REST Wrapper" output="false" singleton>
 
 <!------------------------------------------- CONSTRUCTOR ------------------------------------------>
 	
