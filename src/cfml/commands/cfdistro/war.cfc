@@ -2,7 +2,7 @@
  * Generate war
  * ex: war destination=/directory/to/store/in
  **/
-component persistent="false" extends="commandbox.system.BaseCommand" {
+component extends="commandbox.system.BaseCommand" {
 
 	function init(shell) {
 		variables.shell = shell;

@@ -1,7 +1,7 @@
 /**
  * Remove a new top-level command namespace
  **/
-component  persistent="false" extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
+component  extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
 
 	/**
 	 * @name.hint The name of the command to remove

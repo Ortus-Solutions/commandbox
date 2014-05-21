@@ -1,7 +1,7 @@
 /**
  * Description of command
  **/
-component persistent="false" extends="cli.BaseCommand" aliases="" excludeFromHelp=false {
+component extends="cli.BaseCommand" aliases="" excludeFromHelp=false {
 	
 	/**
 	 * 

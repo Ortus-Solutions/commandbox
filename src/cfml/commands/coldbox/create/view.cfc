@@ -4,7 +4,7 @@
 * override that with the directory param.    
 *  
 **/
-component persistent="false" extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
+component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
 	
 	/**
 	* @name.hint Name of the view to create without the .cfm.

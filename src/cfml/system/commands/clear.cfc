@@ -4,7 +4,7 @@
  * clear
  *
  **/
-component persistent="false" extends="commandbox.system.BaseCommand" aliases="cls" excludeFromHelp=false {
+component extends="commandbox.system.BaseCommand" aliases="cls" excludeFromHelp=false {
 
 	function run()  {
 		shell.clearScreen();

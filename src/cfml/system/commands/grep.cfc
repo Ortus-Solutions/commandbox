@@ -3,7 +3,7 @@
  * 
  * forgebox show | grep Brad
  **/
-component persistent="false" extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=true {
+component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=true {
 	
 	/**
 	 * @input.hint The piped input to be checked.

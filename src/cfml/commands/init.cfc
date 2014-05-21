@@ -4,7 +4,7 @@
  * init
  * 
  **/
-component persistent="false" extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
+component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
 
 	/**
 	 * @applicationName.hint The humnan-readable name for this package 

@@ -10,7 +10,7 @@
  * forgebox show plugins
  * forgebox show i18n 
  **/
-component persistent="false" extends="commandbox.system.BaseCommand" aliases="show" excludeFromHelp=false {
+component extends="commandbox.system.BaseCommand" aliases="show" excludeFromHelp=false {
 	
 	function init() {
 		

@@ -1,7 +1,7 @@
 /**
  * Description of command
  **/
-component persistent="false" extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
+component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
 	
 	/**
 	 * 

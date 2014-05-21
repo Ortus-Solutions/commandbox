@@ -1,7 +1,7 @@
 /**
  * Remove 1 or more packages from the cache
  **/
-component persistent="false" extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
+component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
 
 	/**
 	 * @packages.hint comma-delimited list of packages to remove

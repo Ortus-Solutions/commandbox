@@ -4,7 +4,7 @@
  * info
  *
  **/
-component persistent="false" extends="commandbox.system.BaseCommand" aliases="about" excludeFromHelp=false {
+component extends="commandbox.system.BaseCommand" aliases="about" excludeFromHelp=false {
 
 	function run() {
 		

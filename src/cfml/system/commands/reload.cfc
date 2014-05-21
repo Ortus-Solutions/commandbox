@@ -3,7 +3,7 @@
  * This is a maintenance operation to recreate the shell and reload all commands in the command folder.
  * Use this if developing commands to quickly reload your changes after modifying the command's CFC file.
  **/
-component persistent="false" extends="commandbox.system.BaseCommand" aliases="r" excludeFromHelp=true {
+component extends="commandbox.system.BaseCommand" aliases="r" excludeFromHelp=true {
 
 	/**
 	 * @clearScreen.hint Clears the screen after reload

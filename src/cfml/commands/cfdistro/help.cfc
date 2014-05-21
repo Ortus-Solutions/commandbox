@@ -1,7 +1,7 @@
 /**
  * cfdistro help
  **/
-component persistent="false" extends="commandbox.system.BaseCommand" {
+component extends="commandbox.system.BaseCommand" {
 
 	function init(shell) {
 		variables.shell = shell;

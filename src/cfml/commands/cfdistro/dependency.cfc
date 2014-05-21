@@ -1,7 +1,7 @@
 /**
  * Get dependency
  **/
-component persistent="false" extends="commandbox.system.BaseCommand" {
+component extends="commandbox.system.BaseCommand" {
 
 	function init(shell) {
 		super.init(shell);

@@ -7,7 +7,7 @@
  *  forgebox install feeds
  *  
  **/
-component persistent="false" extends="commandbox.system.BaseCommand" aliases="install" excludeFromHelp=false {
+component extends="commandbox.system.BaseCommand" aliases="install" excludeFromHelp=false {
 	
 	function init() {
 				

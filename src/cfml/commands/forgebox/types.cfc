@@ -1,7 +1,7 @@
 /**
  * This command shows you all of the valid forgebox types you can use when filtering records using the "forgebox show" command.
  **/
-component persistent="false" extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
+component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
 	
 	
 	function init() {

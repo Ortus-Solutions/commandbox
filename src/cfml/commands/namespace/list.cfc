@@ -1,7 +1,7 @@
 /**
  * List all top-level command namespaces
  **/
-component  persistent="false" extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
+component  extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
 
 	function run(  )  {
 		var commandService = shell.getCommandService();

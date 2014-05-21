@@ -4,7 +4,7 @@
 * override that with the directory param.    
 *  
 **/
-component persistent="false" extends="commandbox.system.BaseCommand" aliases="coldbox create bdd" excludeFromHelp=false {
+component extends="commandbox.system.BaseCommand" aliases="coldbox create bdd" excludeFromHelp=false {
 	
 	/**
 	* @name.hint Name of the BDD spec to create without the .cfc. For packages, specify name as 'myPackage/myBDDSpec'

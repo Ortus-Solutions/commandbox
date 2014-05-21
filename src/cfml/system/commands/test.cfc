@@ -3,7 +3,7 @@
 * do while printing out text to an ANSI console.  It doesn't really serve
 * any other purpose than to make your screen look like a rainbow puked on it.
 **/
-component persistent="false" extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=true {
+component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=true {
 
 
 	function run(  )  {

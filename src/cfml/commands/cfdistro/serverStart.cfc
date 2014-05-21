@@ -2,7 +2,7 @@
  * start server
  * ex: cfdistro war destination=/directory/to/store/in
  **/
-component persistent="false" extends="commandbox.system.BaseCommand" aliases="" {
+component extends="commandbox.system.BaseCommand" aliases="" {
 
 	function init(shell) {
 		variables.shell = shell;

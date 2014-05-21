@@ -2,7 +2,7 @@
  * This is the more command.  Pipe the output of another command into me and I will break it up for you.
  * Press space to advance one line at a time, Crl-c to abort and any other key to advance one page at a time.
  **/
-component persistent="false" extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=true {
+component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=true {
 	
 	/**
 	 * @input.hint The piped input to be displayed.
