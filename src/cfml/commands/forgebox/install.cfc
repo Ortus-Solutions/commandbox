@@ -34,6 +34,8 @@ component extends="commandbox.system.BaseCommand" aliases="install" excludeFromH
 		
 		try {
 			
+			print.yellowLine( "Contacting ForgeBox, please wait..." ).toConsole();
+
 			// We might have gotten this above
 			var entryData = forgebox.getEntry( slug );
 			
@@ -41,12 +43,15 @@ component extends="commandbox.system.BaseCommand" aliases="install" excludeFromH
 			// downloads,entryid,fname,changelog,updatedate,downloadurl,title,entryrating,summary,username,description,email
 							
 			if( !val( entryData.isActive ) ) {
-				error( 'The ForgeBox entry [#entryData.title#] is inactive.' );
+				return error( 'The ForgeBox entry [#entryData.title#] is inactive.' );
 			}
 			
 			if( !len( entryData.downloadurl ) ) {
-				error( 'No download URL provided.  Manual install only.' );
+				return error( 'No download URL provided.  Manual install only.' );
 			}
+
+			// Advice we found it and about to install
+			print.boldGreenLine( "Found entry: '#arguments.slug#', starting download from: '#entryData.downloadURL#'..." ).toConsole();
 			
 			// TODO: create ArtifactsService, etc. to handle this
 			// Also check box.json for "directory".
@@ -67,9 +72,9 @@ component extends="commandbox.system.BaseCommand" aliases="install" excludeFromH
 			print.line( log );
 			
 			if( results.error ) {
-				print.boldRedLine( 'Error Installing!' );
+				print.boldRedLine( "Error Installing '#arguments.slug#', please see the log above!" );
 			} else {
-				print.boldGreenLine( 'Success!' );
+				print.boldGreenLine( "Eureka, '#arguments.slug#' has been installed!" );
 			}
 			
 			

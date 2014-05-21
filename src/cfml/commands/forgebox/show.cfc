@@ -45,7 +45,9 @@ component extends="commandbox.system.BaseCommand" aliases="show" excludeFromHelp
 				number startRow,
 				number maxRows,
 				slug ) {
-					
+		
+		print.yellowLine( "Contacting ForgeBox, please wait..." ).toConsole();
+				
 		// Default parameters
 		type = type ?: '';
 		startRow = startRow ?: 1;

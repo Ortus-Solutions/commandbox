@@ -8,8 +8,6 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 		
 		// Create our ForgeBox helper
 		variables.forgebox = new commandbox.system.util.ForgeBox();
-		// Get and cache a list of valid ForgeBox types
-		variables.forgeboxTypes = forgebox.getTypes();
 		
 		return super.init( argumentCollection = arguments );
 	}
@@ -21,6 +19,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 		if( !structKeyExists( variables, 'forgeboxTypes' ) ) {
 			variables.forgeboxTypes = forgebox.getTypes();			
 		}
+		
 		return variables.forgeboxTypes;
 	}
 	
@@ -30,13 +29,13 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 	function run(  ) {
 		
 		// typetotal,typename,typeid,typeslug
-		
-		print.line();
-		print.blackOnWhiteLine( 'Name (slug)' );
-		print.line();
-		for( var type in forgeboxTypes ) {
-			print.boldText( type.typeName );
-			print.line( '  (#type.typeSlug#)' );
+		print.line()
+			.blackOnWhiteLine( 'Name (slug)' )
+			.line();
+
+		for( var type in getForgeBoxTypes() ) {
+			print.boldText( type.typeName )
+				.line( '  (#type.typeSlug#)' );
 				
 		}
 		
