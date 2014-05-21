@@ -44,6 +44,10 @@ component {
 		var logdir = shell.getHomeDir() & "/server/log/" & name;
 		var processName = name is "" ? "cfml" : name;
 		var command = launchUtil.getJreExecutable().getCanonicalPath();
+		// Windows spaces crap
+		if( command contains " " ){
+			command = """#command#""";
+		}
 		var args = "-javaagent:""#libdir#/railo-inst.jar"" -jar ""#jarPath#"""
 				& " -war ""#webroot#"" --background=true --port #portNumber# --debug #debug#"
 				& " --stop-port #socket# --processname ""#processName#"" --log-dir ""#logdir#"""
@@ -86,6 +90,10 @@ component {
 		var jarPath = java.File.init(launchUtil.class.getProtectionDomain().getCodeSource()
 				.getLocation().toURI().getSchemeSpecificPart()).getAbsolutePath();
 		var command = launchUtil.getJreExecutable().getCanonicalPath();
+		// Windows spaces crap
+		if( command contains " " ){
+			command = """#command#""";
+		}
 		var stopsocket = serverInfo.stopsocket;
 		var args = "-jar ""#jarPath#"" -stop --stop-port #val(stopsocket)# --background false";
 		try{
