@@ -1,7 +1,7 @@
 /**
  * Show server log
  **/
-component persistent="false" extends="commandbox.system.BaseCommand" excludeFromHelp=false {
+component extends="commandbox.system.BaseCommand" excludeFromHelp=false {
 
 	/**
 	 * Show log
@@ -9,15 +9,16 @@ component persistent="false" extends="commandbox.system.BaseCommand" excludeFrom
 	 * @directory.hint web root for the server
 	 * @name.hint short name for the server
 	 **/
-	function run(String directory="", String name="")  {
-		var manager = new commandbox.system.services.ServerService(shell);
-		var webroot = directory is "" ? shell.pwd() : directory;
-		var serverInfo = manager.getServerInfo(fileSystemUtil.resolveDirectory( webroot ));
-		var logfile = serverInfo.logdir & "/server.out.txt";
-		if(fileExists(logfile)) {
-			return fileRead(logfile);
+	function run( String directory="", String name="" ){
+		var manager 	= new commandbox.system.services.ServerService( shell );
+		var webroot 	= arguments.directory is "" ? shell.pwd() : arguments.directory;
+		var serverInfo 	= manager.getServerInfo( fileSystemUtil.resolveDirectory( webroot ) );
+		var logfile 	= serverInfo.logdir & "/server.out.txt";
+
+		if( fileExists( logfile) ){
+			return fileRead( logfile );
 		} else {
-			return "No log found";
+			printRed( "No log file found!" );
 		}
 	}
 
