@@ -28,13 +28,13 @@ Type "help" for help, or "help [command]" to be more specific.
 	args = system.getProperty("cfml.cli.arguments");
 
 	if(!isNull(args) && trim(args) != "") {
-		outputStream = createObject("java","java.io.ByteArrayOutputStream").init();
-		bain = createObject("java","java.io.ByteArrayInputStream").init("#args##chr(10)#".getBytes());
-    	printWriter = createObject("java","java.io.PrintWriter").init(outputStream);
-		shell = WireBox.getInstance( name='Shell', initArguments={ bain, printWriter } );
+		//outputStream = createObject("java","java.io.ByteArrayOutputStream").init();
+		//bain = createObject("java","java.io.ByteArrayInputStream").init("#args##chr(10)#".getBytes());
+    	//printWriter = createObject("java","java.io.PrintWriter").init(outputStream);
+		shell = WireBox.getInstance( 'Shell' );
 		shell.callCommand(args);
-		system.out.print(outputStream);
-		system.out.flush();
+		//system.out.print(outputStream);
+		//system.out.flush();
 	} else {
 		// Create the shell
 		shell = WireBox.getInstance( 'Shell' );
