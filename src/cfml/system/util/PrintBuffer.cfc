@@ -6,8 +6,7 @@
 **/
 component extends="Print" {
 
-	// TODO-- actually use a String Buffer
-	result = '';
+	variables.result = '';
 		
 	function init( shell ) {
 		variables.shell = arguments.shell;		
@@ -15,23 +14,24 @@ component extends="Print" {
 	
 	// Force a flush
 	function toConsole(  ) {
-		shell.printString( getResult() );
+		variables.shell.printString( getResult() );
 		clear();
 	}
 	
 	// Reset the result
 	function clear() {
-		result = '';		
+		variables.result = '';		
 	}
 	
 	// Retrieve the current text that has been accumulated
 	function getResult() {
-		return result;
+		return variables.result;
 	}
 		
 	// Proxy through any methods to the actual print helper
 	function onMissingMethod( missingMethodName, missingMethodArguments ) {
-		result &= super.onMissingMethod( missingMethodName, missingMethodArguments );
+		variables.result &= super.onMissingMethod( missingMethodName, missingMethodArguments );
+		return this;
 	}
 	
 }
