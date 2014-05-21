@@ -419,9 +419,9 @@ component accessors="true"{
 				return reader.printColumns(result);
 			}
 			result = formatJson(serializeJSON(result));
-			printString( result & cr );
+			printString( result );
 		} else if( !isNull( result ) ) {
-			printString( result & cr );
+			printString( result );
 		}
 	}
 
