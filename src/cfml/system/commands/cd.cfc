@@ -4,16 +4,16 @@
  * cd /tests
  *
  **/
-component persistent="false" extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
+component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
 
 	/**
 	 * @directory.hint The directory to change to
 	 **/
 	function run( directory="" )  {
 		// This will make each directory canonical and absolute		
-		directory = fileSystemUtil.resolveDirectory( directory );
+		arguments.directory = fileSystemUtil.resolveDirectory( arguments.directory );
 		
-		return shell.cd( directory );
+		return shell.cd( arguments.directory );
 	}
 
 
