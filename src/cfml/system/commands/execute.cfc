@@ -18,8 +18,15 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 		if( left( arguments.file, 1 ) != "/" ){
 			arguments.file = shell.pwd() & "/" & arguments.file;
 		}
-		// we use the executor to capture output thread safely
-		return wirebox.getInstance( "Executor" ).run( arguments.file );
+		try{
+			// we use the executor to capture output thread safely
+			var out = wirebox.getInstance( "Executor" ).run( arguments.file );
+		} catch( any e ){
+			print.boldGreen( "Error executing #arguments.file#: " );
+			return error( '#e.message##CR##e.detail##CR##e.stackTrace#' );
+		}
+
+		return ( out ?: "The file '#arguments.file#' executed succesfully!" );
 	}
 
 }
