@@ -10,14 +10,13 @@
 */
 component singleton {
 	
-	// Carriadge return
-	cr = chr(10);
-	
-	function init(shell) {
-		variables.shell = shell;
-		variables.fileSystemUtil = new commandbox.system.util.FileSystem( shell );
-		variables.ANSIUtil = new commandbox.system.util.ANSI();
-		print = new commandbox.system.util.PrintBuffer( shell );
+	property name="CR" inject="CR";
+	property name="formatterUtil" inject="Formatter";
+	property name="fileSystemUtil" inject="FileSystem";
+	property name="shell" inject="shell";
+	property name="print" inject="PrintBuffer";
+		
+	function init() {
 		hasErrored = false;
 		return this;
 	}

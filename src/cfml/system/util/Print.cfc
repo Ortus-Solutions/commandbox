@@ -20,7 +20,7 @@
 * print.boldBlinkingUnderscoredBlueTextOnRedBackground( 'Test' )
 *
 */
-component singleton {
+component {
 
 	this.ANSICodes  = createObject("java", "jline.ANSIBuffer$ANSICodes");
 	this.cr 		= chr( 10 );

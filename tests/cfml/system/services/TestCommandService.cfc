@@ -4,8 +4,8 @@ component extends="mxunit.framework.TestCase" {
 	candidates = createObject("java","java.util.TreeSet");
 
 	public void function setUp()  {
-		var shell = new commandbox.system.Shell();
-		commandService = new commandbox.system.services.CommandService(shell);
+		shell = application.wirebox.getInstance( 'Shell' );
+		commandService = application.wirebox.getInstance( 'CommandService' );
 	}
 
 	public void function testInitCommands()  {

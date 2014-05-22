@@ -9,11 +9,9 @@
  **/
 component extends="commandbox.system.BaseCommand" aliases="install" excludeFromHelp=false {
 	
-	function init() {
-				
-		// Create our ForgeBox helper
-		variables.forgebox = new commandbox.system.util.ForgeBox();
-		
+	property name="forgeBox" inject="ForgeBox";
+	
+	function init() {		
 		return super.init( argumentCollection = arguments );
 	}
 	
@@ -61,7 +59,7 @@ component extends="commandbox.system.BaseCommand" aliases="install" excludeFromH
 			results = forgebox.install( entryData.downloadurl, directory );
 			
 			var log = results.logInfo;
-			log = ANSIUtil.HTML2ANSI( log );
+			log = formatterUtil.HTML2ANSI( log );
 		
 			print.line();
 			print.boldLine( 'Install log...' );

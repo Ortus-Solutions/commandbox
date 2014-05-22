@@ -5,8 +5,11 @@ component {
 	
 	
 	this.mappings[ '/commandbox' ] = '../src/cfml';
+	this.mappings[ '/wirebox' ] = '../src/cfml/system/wirebox';
 	
-	//this.mappings[ '/cfml' ] = '../src/cfml';
-	//this.mappings[ '/cli' ] = '../src/cfml/cli';
-	
+	function onApplicationStart() {		
+		new wirebox.system.ioc.Injector( 'commandbox.system.config.WireBox' );
+		return true;
+	}
+		
 }

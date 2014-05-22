@@ -3,6 +3,8 @@
  **/
 component extends="commandbox.system.BaseCommand" excludeFromHelp=false {
 
+	property name="serverService" inject="ServerService";
+	
 	/**
 	 * Forgets one or all servers
 	 *
@@ -17,11 +19,10 @@ component extends="commandbox.system.BaseCommand" excludeFromHelp=false {
 		Boolean all=false,
 		Boolean force=false
 	){
-		var manager 	= new commandbox.system.services.ServerService( shell );
 		var webroot 	= arguments.directory is "" ? shell.pwd() : arguments.directory;
-		var serverInfo 	= manager.getServerInfo( fileSystemUtil.resolveDirectory( webroot ) );
+		var serverInfo 	= serverService.getServerInfo( fileSystemUtil.resolveDirectory( webroot ) );
 
-		manager.forget( serverInfo, arguments.all, arguments.force);
+		serverService.forget( serverInfo, arguments.all, arguments.force);
 	}
 
 }

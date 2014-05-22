@@ -3,11 +3,12 @@
  **/
 component extends="commandbox.system.BaseCommand" aliases="h,/?,?,--help,-help" excludeFromHelp=false {
 
+	property name="commandService" inject="CommandService";
+	
 	/**
 	 * @command.hint The command to get help for.  If blank, displays help for all commands
 	 **/
 	function run( command='' )  {
-		var commandService = shell.getCommandService();
 		// Auto-help will display help for all commands at this
 		// level in the command structure and below.  Default to all
 		var autoHelpRoot = '';

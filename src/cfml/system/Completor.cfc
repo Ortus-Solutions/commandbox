@@ -10,15 +10,19 @@
 */
 component singleton {
 
+	property name="commandService" inject="CommandService";
+
 	// command list
 	commandlist = createObject("java","java.util.TreeSet");
 
 	/**
-	 * constructor
-	 * @commandService.hint CommandService this completor is attached to
+	 * Constructor
 	 **/
-	function init(commandService) {
-		variables.commandService = arguments.commandService;
+	function init() {
+		return this;
+	}
+
+	function onDIComplete() {
 		variables.commandlist.addAll(commandService.listCommands().split(','));
 		variables.commands = commandService.getCommands();
 	}

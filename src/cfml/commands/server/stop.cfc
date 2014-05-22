@@ -3,6 +3,8 @@
  **/
 component extends="commandbox.system.BaseCommand" aliases="stop" excludeFromHelp=false {
 
+	property name="serverService" inject="ServerService";
+	
 	/**
 	 * Stop a server instance
 	 *
@@ -15,11 +17,10 @@ component extends="commandbox.system.BaseCommand" aliases="stop" excludeFromHelp
 		String name="",
 		Boolean force=false
 	){
-		var manager 	= new commandbox.system.services.ServerService( shell );
 		var webroot 	= arguments.directory is "" ? shell.pwd() : arguments.directory;
-		var serverInfo 	= manager.getServerInfo( fileSystemUtil.resolveDirectory( webroot ) );
+		var serverInfo 	= serverService.getServerInfo( fileSystemUtil.resolveDirectory( webroot ) );
 		
-		manager.stop( serverInfo );
+		serverService.stop( serverInfo );
 	}
 
 }

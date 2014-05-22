@@ -3,6 +3,8 @@
  **/
 component extends="commandbox.system.BaseCommand" aliases="status" excludeFromHelp=false {
 
+	property name="serverService" inject="ServerService";
+	
 	/**
 	 * Show server status
 	 *
@@ -10,8 +12,7 @@ component extends="commandbox.system.BaseCommand" aliases="status" excludeFromHe
 	 * @name.hint short name for the server
 	 **/
 	function run( String directory="", String name="" ){
-		var manager = new commandbox.system.services.ServerService( shell );
-		var servers = manager.getServers();
+		var servers = serverService.getServers();
 
 		arguments.directory = fileSystemUtil.resolveDirectory( arguments.directory );
 

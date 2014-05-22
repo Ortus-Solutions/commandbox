@@ -5,8 +5,8 @@ component name="TestShell" extends="mxunit.framework.TestCase" {
     	var testString = "ls#chr(10)#";
     	var bain = createObject("java","java.io.ByteArrayInputStream").init(testString.getBytes());
     	var printWriter = createObject("java","java.io.PrintWriter").init(baos);
-		var shell = new commandbox.system.Shell(bain,printWriter);
-		commandService = new commandbox.system.services.CommandService(shell);
+		shell = application.wirebox.getInstance( name='Shell', initArguments={ inStream=bain, printWriter=printWriter } );
+		commandService = application.wirebox.getInstance( 'CommandService' );
 		commandService.runCommandline("ls");
 		debug(baos.toString());
 
@@ -18,7 +18,7 @@ component name="TestShell" extends="mxunit.framework.TestCase" {
     	var n = chr(10);
     	var line = "ls" &n& "q" & n;
     	var inStream = createObject("java","java.io.ByteArrayInputStream").init(line.getBytes());
-		var shell = new commandbox.system.Shell(inStream,printWriter);
+		shell = application.wirebox.getInstance( name='Shell', initArguments={ inStream=inStream, printWriter=printWriter } ); 	
 		shell.run();
 		//debug(baos.toString());
 
@@ -26,8 +26,8 @@ component name="TestShell" extends="mxunit.framework.TestCase" {
 
 
 	public void function testHTML2ANSI()  {
-		var shell = new commandbox.system.Shell();
-		var result = shell.HTML2ANSI("
+		formatter = application.wirebox.getInstance( 'formatter' );
+		var result = formatter.HTML2ANSI("
 		<b>some bold text</b>
 		some non-bold text
 		<b>some bold text</b>
@@ -39,7 +39,8 @@ component name="TestShell" extends="mxunit.framework.TestCase" {
     	var printWriter = createObject("java","java.io.PrintWriter").init(baos);
     	var t = chr(9);
     	var n = chr(10);
-		var shell = new commandbox.system.Shell(printWriter=printWriter);
+    	application.wirebox.clearSingletons();
+		shell = application.wirebox.getInstance( name='Shell', initArguments={ printWriter=printWriter } );
 
 
 		shell.run("hel#t#");
@@ -89,7 +90,8 @@ component name="TestShell" extends="mxunit.framework.TestCase" {
         			System.getProperty("jline.WindowsTerminal.output.encoding", "Cp850")));
     	var t = chr(9);
     	var n = chr(10);
-		var shell = new commandbox.system.Shell(printWriter=printWriter);
+    	application.wirebox.clearSingletons();
+		shell = application.wirebox.getInstance( name='Shell', initArguments={ printWriter=printWriter } );
 
 		shell.run("hel#t#");
 		ansiOut.close();

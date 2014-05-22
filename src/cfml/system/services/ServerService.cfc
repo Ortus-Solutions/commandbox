@@ -9,6 +9,9 @@
 *
 */
 component singleton {
+	
+	property name="shell" inject="shell";
+	property name="formatterUtil" inject="Formatter";
 
 	java = {
 		ServerSocket : createObject("java","java.net.ServerSocket")
@@ -18,8 +21,7 @@ component singleton {
 		, LaunchUtil : createObject("java","runwar.LaunchUtil")
 	};
 
-	function init(shell) {
-		variables.shell = shell;
+	function onDIComplete() {
 		variables.libdir = shell.getHomeDir() & "/lib";
 		variables.serverConfig = "/commandbox/system/config/servers.json";
 		if(!fileExists(serverConfig)) {
@@ -164,7 +166,7 @@ component singleton {
  	 **/
 	function setServers(Struct servers) {
 		// TODO: prevent race conditions  :)
-		fileWrite(serverConfig,shell.formatJson(serializeJSON(servers)));
+		fileWrite( serverConfig, formatterUtil.formatJson( serializeJSON( servers ) ) );
 	}
 
 	/**

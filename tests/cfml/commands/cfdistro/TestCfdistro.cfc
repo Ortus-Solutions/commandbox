@@ -4,14 +4,15 @@ component name="TestShell" extends="mxunit.framework.TestCase" {
 	homedir = workdir & "/home";
 
 	public void function beforeTests()  {
-		shell = new commandbox.system.Shell();
+		
+		shell = application.wirebox.getInstance( 'Shell' );
 		directoryExists(workdir) ? directoryDelete(workdir,true) : "";
 		directoryCreate(workdir);
 		directoryCreate(homedir);
 		shell.cd(workdir);
 		shell.setHomeDir(homedir);
-		variables.cfdistroInstall = new commandbox.commands.cfdistro.install(shell);
-		variables.cfdistroDependency = new commandbox.commands.cfdistro.dependency(shell);
+		variables.cfdistroInstall = application.wirebox.getInstance( 'commandbox.commands.cfdistro.install' );
+		variables.cfdistroDependency = application.wirebox.getInstance( 'commandbox.commands.cfdistro.dependency' );
 	}
 
 	public void function testInstall()  {

@@ -9,9 +9,10 @@
 *
 */
 component singleton {
+	
+	property name="shell" inject="shell";
 
-	function init( shell ) {
-		variables.shell = arguments.shell;
+	function init() {
 		return this;
 	}
 

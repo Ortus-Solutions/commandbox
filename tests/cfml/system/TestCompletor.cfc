@@ -3,9 +3,7 @@ component name="TestShell" extends="mxunit.framework.TestCase" {
 	candidates = createObject("java","java.util.TreeSet");
 
 	public void function setUp()  {
-		var shell = new commandbox.system.Shell();
-		var commandService = new commandbox.system.services.CommandService(shell);
-		variables.completor = new commandbox.system.Completor(commandService);
+		completor = application.wirebox.getInstance( 'completor' );
 	}
 
 	public void function testPartialNoPrefixCommands()  {		

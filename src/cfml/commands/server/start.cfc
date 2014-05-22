@@ -3,6 +3,8 @@
  **/
 component extends="commandbox.system.BaseCommand" aliases="start" excludeFromHelp=false {
 
+	property name="serverService" inject="ServerService";
+	
 	/**
 	 * @port.hint port number
 	 * @openbrowser.hint open a browser after starting
@@ -21,11 +23,10 @@ component extends="commandbox.system.BaseCommand" aliases="start" excludeFromHel
 		Boolean force=false,
 		Boolean debug=false
 	){
-		var manager = new commandbox.system.services.ServerService( shell );
 		var webroot = arguments.directory is "" ? shell.pwd() : arguments.directory;
 		var name = arguments.name is "" ? listLast( webroot, "\/" ) : arguments.name;
 		webroot = fileSystemUtil.resolveDirectory( webroot );
-		var serverInfo = manager.getServerInfo( webroot );
+		var serverInfo = serverService.getServerInfo( webroot );
 		// we don't want to changes the ports if we're doing stuff already
 		if( serverInfo.status is "stopped" || arguments.force ){
 			serverInfo.name = name;
@@ -34,7 +35,7 @@ component extends="commandbox.system.BaseCommand" aliases="start" excludeFromHel
 		}
 		serverInfo.webroot = webroot;
 		serverInfo.debug = arguments.debug;
-		return manager.start( serverInfo, arguments.openbrowser, arguments.force, arguments.debug );
+		return serverService.start( serverInfo, arguments.openbrowser, arguments.force, arguments.debug );
 	}
 
 }

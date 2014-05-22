@@ -3,6 +3,8 @@
  **/
 component extends="commandbox.system.BaseCommand" excludeFromHelp=false {
 
+	property name="serverService" inject="ServerService";
+
 	/**
 	 * Show log
 	 *
@@ -10,9 +12,8 @@ component extends="commandbox.system.BaseCommand" excludeFromHelp=false {
 	 * @name.hint short name for the server
 	 **/
 	function run( String directory="", String name="" ){
-		var manager 	= new commandbox.system.services.ServerService( shell );
 		var webroot 	= arguments.directory is "" ? shell.pwd() : arguments.directory;
-		var serverInfo 	= manager.getServerInfo( fileSystemUtil.resolveDirectory( webroot ) );
+		var serverInfo 	= serverService.getServerInfo( fileSystemUtil.resolveDirectory( webroot ) );
 		var logfile 	= serverInfo.logdir & "/server.out.txt";
 
 		if( fileExists( logfile) ){

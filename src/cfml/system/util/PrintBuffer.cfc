@@ -9,12 +9,14 @@
 * text, I accumulate it in a variable that can be retreived at the end.
 *
 */
-component extends="Print" singleton {
+component extends="Print" {
 
+	property name="shell" inject="shell";
+	
 	variables.result = '';
 		
-	function init( shell ) {
-		variables.shell = arguments.shell;		
+	function init() {
+		return this;
 	}
 	
 	// Force a flush

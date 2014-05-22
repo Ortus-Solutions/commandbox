@@ -3,9 +3,7 @@
  **/
 component extends="commandbox.system.BaseCommand" {
 
-	function init(shell) {
-		super.init(shell);
-		variables.shell = shell;
+	function onDIComplete() {
 		reader = shell.getReader();
 		thisdir = getDirectoryFromPath(getMetadata(this).path);
 		home = thisdir & "/home";

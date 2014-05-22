@@ -12,15 +12,16 @@
  **/
 component extends="commandbox.system.BaseCommand" aliases="show" excludeFromHelp=false {
 	
-	function init() {
-		
-		// Create our ForgeBox helper
-		variables.forgebox = new commandbox.system.util.ForgeBox();
-		variables.forgeboxOrders =  forgebox.ORDER;
-		
+	property name="forgeBox" inject="ForgeBox";
+	
+	function init() {		
 		return super.init( argumentCollection = arguments );
 	}
 	
+	function onDIComplete() {
+		variables.forgeboxOrders =  forgebox.ORDER;
+	}
+
 	// Lazy ForgeBox types.
 	function getForgeboxTypes() {
 		
@@ -125,7 +126,7 @@ component extends="commandbox.system.BaseCommand" aliases="show" excludeFromHelp
 				print.line( 'Downloads: #entryData.downloads#' );
 				print.line();
 				
-				print.yellowLine( #ANSIUtil.HTML2ANSI( entryData.description )# );
+				print.yellowLine( #formatterUtil.HTML2ANSI( entryData.description )# );
 				
 				
 			// List of entries

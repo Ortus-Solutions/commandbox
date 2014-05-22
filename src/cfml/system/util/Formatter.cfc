@@ -5,17 +5,17 @@
 ********************************************************************************
 * @author Brad Wood, Luis Majano, Denny Valliant
 *
-* Utilities for dealing with ANSI output
+* Utilities for dealing with formmating HTML and ANSI output
 *
 */
 component singleton {
 
+	property name="print" inject="print";
+	property name="CR" inject="CR";
+	
 	function init(){
 		
 		variables.stringEscapeUtils = createObject("java","org.apache.commons.lang.StringEscapeUtils");
-		variables.system = createObject( "java", "java.lang.System" );
-		variables.cr = System.getProperty("line.separator");
-		variables.print = new commandbox.system.util.Print();
 		return this;
 	}
 
@@ -76,5 +76,39 @@ component singleton {
     		text = replace(text,match,boldtext,"one");
     	}
     	return text;
+	}
+	/**
+	 * Pretty JSON
+ 	 **/
+	public function formatJson(json) {
+		var retval = '';
+		var str = json;
+	    var pos = 0;
+	    var strLen = str.length();
+		var indentStr = '    ';
+	    var newLine = cr;
+		var char = '';
+
+		for (var i=0; i<strLen; i++) {
+			char = str.substring(i,i+1);
+			if (char == '}' || char == ']') {
+				retval &= newLine;
+				pos = pos - 1;
+				for (var j=0; j<pos; j++) {
+					retval &= indentStr;
+				}
+			}
+			retval &= char;
+			if (char == '{' || char == '[' || char == ',') {
+				retval &= newLine;
+				if (char == '{' || char == '[') {
+					pos = pos + 1;
+				}
+				for (var k=0; k<pos; k++) {
+					retval &= indentStr;
+				}
+			}
+		}
+		return retval;
 	}
 }

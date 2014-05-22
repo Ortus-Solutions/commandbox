@@ -4,14 +4,14 @@ component name="TestShell" extends="mxunit.framework.TestCase" {
 	homedir = workdir & "/home";
 
 	public void function beforeTests()  {
-		shell = new commandbox.system.Shell();
+		shell = application.wirebox.getInstance( 'Shell' );
 		directoryExists(workdir) ? directoryDelete(workdir,true) : "";
 		directoryCreate(workdir);
 		directoryCreate(homedir);
 		shell.cd(workdir);
 		shell.setHomeDir(homedir);
-		variables.boxInit = new commandbox.commands.init(shell);
-		variables.boxUpgrade = new commandbox.system.commands.upgrade(shell);
+		variables.boxInit = application.wirebox.getInstance( 'commandbox.commands.init' );
+		variables.boxUpgrade = application.wirebox.getInstance( 'commandbox.system.commands.upgrade' );
 	}
 
 	public void function testInit()  {

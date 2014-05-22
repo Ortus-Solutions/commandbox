@@ -11,51 +11,45 @@ This file will stay running the entire time the shell is open
 
 --->
 <cfsilent>
-<cfset variables.wireBox = application.wireBox>
-<cfsetting requesttimeout="999999" />
-<!---Display this banner to users--->
-<cfsavecontent variable="banner">Welcome to CommandBox!
-Type "help" for help, or "help [command]" to be more specific.
-  _____                                          _ ____
- / ____|                                        | |  _ \
-| |     ___  _ __ ___  _ __ ___   __ _ _ __   __| | |_) | _____  __
-| |    / _ \| '_ ` _ \| '_ ` _ \ / _` | '_ \ / _` |  _ < / _ \ \/ /
-| |___| (_) | | | | | | | | | | | (_| | | | | (_| | |_) | (_) >  <
- \_____\___/|_| |_| |_|_| |_| |_|\__,_|_| |_|\__,_|____/ \___/_/\_\ v@@version@@
-</cfsavecontent>
-<cfscript>
-	system = createObject("java","java.lang.System");
-	args = system.getProperty("cfml.cli.arguments");
-
-	if(!isNull(args) && trim(args) != "") {
-		//outputStream = createObject("java","java.io.ByteArrayOutputStream").init();
-		//bain = createObject("java","java.io.ByteArrayInputStream").init("#args##chr(10)#".getBytes());
-    	//printWriter = createObject("java","java.io.PrintWriter").init(outputStream);
-		shell = WireBox.getInstance( 'Shell' );
-		shell.callCommand(args);
-		//system.out.print(outputStream);
-		//system.out.flush();
-	} else {
-		// Create the shell
-		shell = WireBox.getInstance( 'Shell' );
-		// Output the welcome banner
-		banner = replace( banner, '@@version@@', shell.getVersion() );
-		systemOutput( banner );
-
-		// Running the "reload" command will enter this while loop once
-		while( shell.run() ){
-			SystemCacheClear( "all" );
-			shell = javacast( "null", "" );
-			wirebox.clearSingletons();
-			shell = WireBox.getInstance( 'Shell' );
+	<cfset variables.wireBox = application.wireBox>
+	<cfsetting requesttimeout="999999" />
+	
+	<!---Display this banner to users--->
+	<cfsavecontent variable="banner">Welcome to CommandBox!
+	Type "help" for help, or "help [command]" to be more specific.
+	  _____                                          _ ____
+	 / ____|                                        | |  _ \
+	| |     ___  _ __ ___  _ __ ___   __ _ _ __   __| | |_) | _____  __
+	| |    / _ \| '_ ` _ \| '_ ` _ \ / _` | '_ \ / _` |  _ < / _ \ \/ /
+	| |___| (_) | | | | | | | | | | | (_| | | | | (_| | |_) | (_) >  <
+	 \_____\___/|_| |_| |_|_| |_| |_|\__,_|_| |_|\__,_|____/ \___/_/\_\ v@@version@@
+	</cfsavecontent>
+	
+	<cfscript>
+		system = createObject("java","java.lang.System");
+		args = system.getProperty("cfml.cli.arguments");
+	
+		if(!isNull(args) && trim(args) != "") {
+			 wireBox.getInstance( 'Shell' ).callCommand( args );
+		} else {
+			
+			//systemOutput( 'Loading...', true );
+			// Create the shell
+			shell = wireBox.getInstance( 'Shell' );
+			// Output the welcome banner
+			systemOutput( replace( banner, '@@version@@', shell.getVersion() ) );
+	
+			// Running the "reload" command will enter this while loop once
+			while( shell.run() ){
+				SystemCacheClear( "all" );
+				shell = javacast( "null", "" );
+				wireBox.clearSingletons();
+				shell = wireBox.getInstance( 'Shell' );
+			}
 		}
-	}
-
-	system = createObject( "java", "java.lang.System" );
-    system.runFinalization();
-    system.gc();
-
-
-
-</cfscript>
+	
+	    system.runFinalization();
+	    system.gc();
+	
+	</cfscript>
 </cfsilent>

@@ -3,12 +3,9 @@
  **/
 component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
 	
+	property name="forgeBox" inject="ForgeBox";
 	
 	function init() {
-		
-		// Create our ForgeBox helper
-		variables.forgebox = new commandbox.system.util.ForgeBox();
-		
 		return super.init( argumentCollection = arguments );
 	}
 	

@@ -10,6 +10,10 @@
 */
 component singleton {
 
+	property name='shell' inject='Shell';
+	property name='parser' inject='Parser'; 
+
+	// TODO: Convert these to properties
 	instance = {
 		// Reference to the shell instance
 		shell = '',
@@ -36,18 +40,22 @@ component singleton {
 	cr = instance.System.getProperty('line.separator');
 
 	/**
-	 * constructor
-	 * @shell.hint shell this command service is attached to
+	 * Constructor
 	 **/
-	function init(required shell) {
-		instance.shell = shell;
-        instance.parser = new commandbox.system.util.parser();
+	function init() {
+		return this;
+	} 
+	
+	function configure() {
         
+	//	systemOutput( 'System commands...', true );
         // Load system commands
 		initCommands( instance.systemCommandDirectory, instance.systemCommandDirectory );
+	//	systemOutput( 'User commands...', true );
         // Load user commands
 		initCommands( instance.userCommandDirectory, instance.userCommandDirectory );
-		return this;
+	//	systemOutput( 'Done...', true );
+		
 	} 
 
 	/**
@@ -86,12 +94,12 @@ component singleton {
 		 		
 		// Create this command CFC
 		try {
-			var command = createObject( fullCFCPath );
+			var command = application.wireBox.getInstance( fullCFCPath );
 		// This will catch nasty parse errors so the shell can keep loading
 		} catch( any e ) {
-			instance.shell.printString( 'Error loading command [#fullCFCPath#]#CR##CR#' );
+			systemOutput( 'Error loading command [#fullCFCPath#]#CR##CR#' );
 			// pretty print the exception
-			instance.shell.printError( e );
+			shell.printError( e );
 			return;
 		}
 		
@@ -101,7 +109,7 @@ component singleton {
 		}
 	
 		// Initialize the command
-		command.init( instance.shell );
+		command.init( shell );
 	
 		// Mix in some metadata
 		decorateCommand( command, commandName );
@@ -171,7 +179,7 @@ component singleton {
 			
 			// If nothing was found, bail out here.
 			if( !commandInfo.found ) {
-				instance.shell.printError({message:'Command "#line#" cannot be resolved.  Please type "#trim( "help #listChangeDelims( commandInfo.commandString, ' ', '.' )#" )#" for assistance.'});
+				shell.printError({message:'Command "#line#" cannot be resolved.  Please type "#trim( "help #listChangeDelims( commandInfo.commandString, ' ', '.' )#" )#" for assistance.'});
 				return;
 			}
 			
@@ -188,7 +196,7 @@ component singleton {
 			
 			// Parameters need to be ALL positional or ALL named
 			if( arrayLen( parameterInfo.positionalParameters ) && structCount( parameterInfo.namedParameters ) ) {
-				instance.shell.printError({message:"Please don't mix named and positional parameters, it makes me dizzy."});
+				shell.printError({message:"Please don't mix named and positional parameters, it makes me dizzy."});
 				return;
 			}
 			
@@ -222,7 +230,7 @@ component singleton {
 			// This will prevent the output from showing up out of order if one command nests a call to another.
 			if( instance.callStack.len() ) {
 				// Print anything in the buffer
-				instance.shell.printString( instance.callStack[1].commandReference.getResult() );
+				shell.printString( instance.callStack[1].commandReference.getResult() );
 				// And reset it now that it's been printed.  
 				// This command can add more to the buffer once it's executing again.
 				instance.callStack[1].commandReference.reset();
@@ -238,7 +246,7 @@ component singleton {
 				// Dump out anything the command had printed so far
 				var result = commandInfo.commandReference.getResult();
 				if( len( result ) ) {
-					instance.shell.printString( result & cr );
+					shell.printString( result & cr );
 				}
 				// Clean up a bit
 				instance.callStack.clear();
@@ -266,7 +274,7 @@ component singleton {
 	 * @parameters.hint The array of params to parse. 
  	 **/
 	function parseParameters( parameters ) {
-		return instance.parser.parseParameters( parameters );
+		return parser.parseParameters( parameters );
 	}
 
 	/**
@@ -276,7 +284,7 @@ component singleton {
 	function resolveCommand( required string line ) {
 		
 		// Turn the users input into an array of tokens
-		var tokens = instance.parser.tokenizeInput( line );
+		var tokens = parser.tokenizeInput( line );
 		// This will hold the command chain. Usually just a single command,
 		// but a pipe ("|") will chain together commands and pass the output of one along as the input to the next		
 		var commandsToResolve = [[]];
@@ -430,7 +438,7 @@ component singleton {
 					message &= ' (#param.hint#)';	
 				}
 				message &= ' : ';
-           		var value = instance.shell.ask( message );
+           		var value = shell.ask( message );
            		// TODO: Add validation here to make sure the 
            		// value entered matches the type!
            		userNamedParams[ param.name ] = value;				
@@ -467,6 +475,6 @@ component singleton {
 	 * return the shell
  	 **/
 	function getShell() {
-		return instance.shell;
+		return shell;
 	}
 }

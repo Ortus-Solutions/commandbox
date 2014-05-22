@@ -3,8 +3,9 @@
  **/
 component  extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
 
+	property name="commandService" inject="CommandService";
+	
 	function run(  )  {
-		var commandService = shell.getCommandService();
 		var commands = commandService.getCommandHierarchy();
 		
 		print.line();
