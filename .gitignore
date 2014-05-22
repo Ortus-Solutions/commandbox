@@ -9,3 +9,4 @@ WEB-INF
 tests/results
 tests/work
 Icon?
+src/cfml/logs
