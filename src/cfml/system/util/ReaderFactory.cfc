@@ -10,8 +10,8 @@
 */
 component singleton {
 
-	property name="completor" inject="Completor";
-	property name="homedir" inject="homedir";
+	property name="completor" 	inject="Completor";
+	property name="homedir" 	inject="homedir";
 	
 	function getInstance( inStream, printWriter ) {
 		var reader = '';

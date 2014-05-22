@@ -8,14 +8,14 @@
 * I am the base command implementation.  An abstract class if you will.
 *
 */
-component singleton {
+component accessors="true" singleton{
 	
-	property name="CR" inject="CR";
-	property name="formatterUtil" inject="Formatter";
-	property name="fileSystemUtil" inject="FileSystem";
-	property name="shell" inject="shell";
-	property name="print" inject="PrintBuffer";
-		
+	property name="CR" 				inject="CR";
+	property name="formatterUtil" 	inject="Formatter";
+	property name="fileSystemUtil" 	inject="FileSystem";
+	property name="shell" 			inject="shell";
+	property name="print" 			inject="PrintBuffer";
+
 	function init() {
 		hasErrored = false;
 		return this;
