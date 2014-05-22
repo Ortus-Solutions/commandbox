@@ -13,17 +13,21 @@ component{
 
 	// Move everything over to this mapping which is the "root" of our app
 	commandBoxRoot = getDirectoryFromPath( getMetadata( this ).path );
-	this.mappings[ '/commandbox' ] = commandBoxRoot;
-	this.mappings[ '/wirebox' ] = commandBoxRoot & '/system/wirebox';
+	this.mappings[ '/commandbox' ] 	= commandBoxRoot;
+	this.mappings[ '/wirebox' ] 	= commandBoxRoot & '/system/wirebox';
 	
 	function onApplicationStart() {		
 		new wirebox.system.ioc.Injector( 'commandbox.system.config.WireBox' );
 		return true;
 	}
+
+	function onApplicationStop(){
+		application.wirebox.shutdown();
+	}
 	
-	function onError( any Exception, string EventName ) {
+	function onError( any exception, string eventName ) {
 		// Give nicer message to user
-		var err = Exception;
+		var err = arguments.exception;
     	var CR = chr( 13 );
     	systemOutput( 'BOOM GOES THE DYNAMITE!!', true );
     	systemOutput( 'We''re truly sorry, but something horrible has gone wrong when starting up CommandBox.', true );
@@ -34,7 +38,9 @@ component{
 		if( structKeyExists( err, 'detail' ) ) {
     		systemOutput( '#err.detail#', true );
 		}
-    	systemOutput( '#err.stacktrace#', true );    	
+    	systemOutput( '#err.stacktrace#', true );
+
+    	//writeDump(var=arguments.exception, output="console"); 	
     	
 		// Give them a chance to read it
 		sleep( 30000 );
