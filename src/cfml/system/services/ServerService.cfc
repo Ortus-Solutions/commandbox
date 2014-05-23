@@ -10,23 +10,39 @@
 */
 component singleton {
 	
-	property name="shell" inject="shell";
-	property name="formatterUtil" inject="Formatter";
+	// DI
+	property name="shell" 			inject="shell";
+	property name="formatterUtil" 	inject="Formatter";
+	property name="fileSystemUtil" 	inject="FileSystem";
 
-	java = {
-		ServerSocket : createObject("java","java.net.ServerSocket")
-		, File : createObject("java","java.io.File")
-		, Socket : createObject("java","java.net.Socket")
-		, InetAddress : createObject("java","java.net.InetAddress")
-		, LaunchUtil : createObject("java","runwar.LaunchUtil")
-	};
+	/**
+	* Where we store server information
+	*/
+	property name="serverConfig";
+
+	function init(){
+		// the lib dir location, populated from shell later.
+		variables.libDir = "";
+		// Where server configs are stored
+		variables.serverConfig 	= "/commandbox/system/config/servers.json";
+		// if not exists, init with empty struct
+		if( !fileExists( serverConfig ) ){
+			setServers( {} );
+		}
+		// java helpers
+		java = {
+			ServerSocket : createObject("java","java.net.ServerSocket")
+			, File : createObject("java","java.io.File")
+			, Socket : createObject("java","java.net.Socket")
+			, InetAddress : createObject("java","java.net.InetAddress")
+			, LaunchUtil : createObject("java","runwar.LaunchUtil")
+		};
+
+		return this;
+	}
 
 	function onDIComplete() {
 		variables.libdir = shell.getHomeDir() & "/lib";
-		variables.serverConfig = "/commandbox/system/config/servers.json";
-		if(!fileExists(serverConfig)) {
-			fileWrite(serverConfig,"{}");
-		}
 		return this;
 	}
 
@@ -52,11 +68,7 @@ component singleton {
 				.getLocation().toURI().getSchemeSpecificPart()).getAbsolutePath();
 		var logdir = shell.getHomeDir() & "/server/log/" & name;
 		var processName = name is "" ? "cfml" : name;
-		var command = launchUtil.getJreExecutable().getCanonicalPath();
-		// Windows spaces crap
-		if( command contains " " ){
-			command = """#command#""";
-		}
+		var command = fileSystemUtil.getJREExecutable();
 		var args = "-javaagent:""#libdir#/railo-inst.jar"" -jar ""#jarPath#"""
 				& " -war ""#webroot#"" --background=true --port #portNumber# --debug #debug#"
 				& " --stop-port #socket# --processname ""#processName#"" --log-dir ""#logdir#"""
@@ -98,11 +110,7 @@ component singleton {
 		var launchUtil = java.LaunchUtil;
 		var jarPath = java.File.init(launchUtil.class.getProtectionDomain().getCodeSource()
 				.getLocation().toURI().getSchemeSpecificPart()).getAbsolutePath();
-		var command = launchUtil.getJreExecutable().getCanonicalPath();
-		// Windows spaces crap
-		if( command contains " " ){
-			command = """#command#""";
-		}
+		var command = fileSystemUtil.getJREExecutable();
 		var stopsocket = serverInfo.stopsocket;
 		var args = "-jar ""#jarPath#"" -stop --stop-port #val(stopsocket)# --background false";
 		try{
@@ -120,17 +128,17 @@ component singleton {
 	}
 
 	/**
-	 * Forget server
+	 * Forget server from the configurations
 	 * @serverInfo.hint struct of server info (ports, etc.)
 	 * @all.hint remove ALL servers
  	 **/
-	function forget(Struct serverInfo, Boolean all=false)  {
-		if(!all) {
-			servers = getServers();
-			structDelete(servers,hash(serverInfo.webroot));
-			setServers(servers);
+	function forget( required Struct serverInfo, Boolean all=false ){
+		if( !all ){
+			var servers = getServers();
+			structDelete( servers, hash( arguments.serverInfo.webroot ) );
+			setServers( servers );
 		} else {
-			setServers({});
+			setServers( {} );
 		}
 	}
 
@@ -138,8 +146,10 @@ component singleton {
 	 * Get a random port for the specified host
 	 * @host.hint host to get port on, defaults 127.0.0.1
  	 **/
-	function getRandomPort(host="127.0.0.1") {
-		var nextAvail = java.ServerSocket.init(0, 1, java.InetAddress.getByName(host));
+	function getRandomPort( host="127.0.0.1" ){
+		var nextAvail  = java.ServerSocket.init( javaCast( "int", 0 ), 
+												 javaCast( "int", 1 ), 
+												 java.InetAddress.getByName( arguments.host ) );
 		var portNumber = nextAvail.getLocalPort();
 		nextAvail.close();
 		return portNumber;
@@ -149,32 +159,37 @@ component singleton {
 	 * persist server info
 	 * @serverInfo.hint struct of server info (ports, etc.)
  	 **/
-	function setServerInfo(Struct serverInfo) {
-		// TODO: prevent race conditions  :)
-		var servers = getServers();
-		var webrootHash = hash(serverInfo.webroot);
-		if(serverInfo.webroot == "") {
-			throw("The webroot cannot be empty!");
+	function setServerInfo( required Struct serverInfo ){
+		var servers 	= getServers();
+		var webrootHash = hash( arguments.serverInfo.webroot );
+		
+		if( arguments.serverInfo.webroot == "" ){
+			throw( "The webroot cannot be empty!" );
 		}
-		servers[webrootHash] = serverInfo;
-		setServers(servers);
+		servers[ webrootHash ] = serverInfo;
+		// persist back safely
+		setServers( servers );
 	}
 
 	/**
 	 * persist servers
 	 * @servers.hint struct of serverInfos
  	 **/
-	function setServers(Struct servers) {
+	function setServers( required Struct servers ){
 		// TODO: prevent race conditions  :)
-		fileWrite( serverConfig, formatterUtil.formatJson( serializeJSON( servers ) ) );
+		lock name="serverservice.serverconfig" type="exclusive" throwOnTimeout="true" timeout="10"{
+			fileWrite( serverConfig, formatterUtil.formatJson( serializeJSON( servers ) ) );
+		}
 	}
 
 	/**
-	 * get servers struct
+	 * get servers struct from config file
  	 **/
 	function getServers() {
-		if(fileExists(serverConfig)) {
-			return deserializeJSON(fileRead(serverConfig));
+		if( fileExists( variables.serverConfig ) ){
+			lock name="serverservice.serverconfig" type="readOnly" throwOnTimeout="true" timeout="10"{
+				return deserializeJSON( fileRead( variables.serverConfig ) );
+			}
 		} else {
 			return {};
 		}
@@ -184,26 +199,27 @@ component singleton {
 	 * Get server info for webroot
 	 * @webroot.hint root directory for served content
  	 **/
-	function getServerInfo(webroot) {
-		var servers = getServers();
-		var webrootHash = hash(webroot);
-		var statusInfo = {};
-		if(!directoryExists(webroot)) {
-			statusInfo = {result:"Webroot does not exist, cannot start :" & webroot };
+	function getServerInfo( required webroot ){
+		var servers 	= getServers();
+		var webrootHash = hash( arguments.webroot );
+		var statusInfo 	= {};
+
+		if( !directoryExists( arguments.webroot ) ){
+			statusInfo = { result:"Webroot does not exist, cannot start :" & arguments.webroot };
 		}
-		if(isNull(servers[webrootHash])) {
-			servers[webrootHash] = {
-				webroot:webroot,
-				port:"",
-				stopsocket:"",
-				debug:false,
-				status:"stopped",
-				statusInfo:{result:""},
-				name:listLast(webroot,"\/")
+		if( isNull( servers[ webrootHash ] ) ){
+			servers[ webrootHash ] = {
+				webroot		: arguments.webroot,
+				port		: "",
+				stopsocket	: "",
+				debug		: false,
+				status		: "stopped",
+				statusInfo	: { result : "" },
+				name		: listLast( arguments.webroot, "\/" )
 			}
-			setServers(servers);
+			setServers( servers );
 		}
-		return servers[webrootHash];
+		return servers[ webrootHash ];
 	}
 
 }
