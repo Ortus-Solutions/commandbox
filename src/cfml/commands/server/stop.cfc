@@ -3,6 +3,7 @@
  **/
 component extends="commandbox.system.BaseCommand" aliases="stop" excludeFromHelp=false {
 
+	// DI
 	property name="serverService" inject="ServerService";
 	
 	/**
