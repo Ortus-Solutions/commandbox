@@ -19,9 +19,9 @@ component accessors="true" singleton{
 	*/
 	property name="serverConfig";
 	/**
-	* Where the server logs go
+	* Where custom servers are stored
 	*/
-	property name="serverLogsDirectory";
+	property name="serverDirectory";
 	/**
 	* Where the Java Command Executable is
 	*/
@@ -29,7 +29,7 @@ component accessors="true" singleton{
 	/**
 	* Where the Run War jar path is
 	*/
-	property name="javaCommand";
+	property name="jarPath";
 
 	/**
 	* Constructor
@@ -45,19 +45,19 @@ component accessors="true" singleton{
 
 		// java helpers
 		java = {
-			ServerSocket : createObject("java","java.net.ServerSocket")
-			, File : createObject("java","java.io.File")
-			, Socket : createObject("java","java.net.Socket")
-			, InetAddress : createObject("java","java.net.InetAddress")
-			, LaunchUtil : createObject("java","runwar.LaunchUtil")
+			ServerSocket 	: createObject( "java", "java.net.ServerSocket" )
+			, File 			: createObject( "java", "java.io.File" )
+			, Socket 		: createObject( "java", "java.net.Socket" )
+			, InetAddress 	: createObject( "java", "java.net.InetAddress" )
+			, LaunchUtil 	: createObject( "java", "runwar.LaunchUtil" )
 		};
 
 		// the lib dir location, populated from shell later.
 		variables.libDir = arguments.shell.getHomeDir() & "/lib";
-		// Where server configs are stored
+		// Where custom server configs are stored
 		variables.serverConfig = "/commandbox/system/config/servers.json";
-		// Where server logs are stored
-		variables.serverLogsDirectory = arguments.shell.getHomeDir() & "/server/log/";
+		// Where custom servers are stored
+		variables.serverDirectory = arguments.shell.getHomeDir() & "/server/custom/";
 		// The JRE executable command
 		variables.javaCommand = arguments.fileSystem.getJREExecutable();
 		// The runwar jar path
@@ -65,8 +65,12 @@ component accessors="true" singleton{
 				.getLocation().toURI().getSchemeSpecificPart() ).getAbsolutePath();
 
 		// Init server config if not found
-		if( !fileExists( serverConfig ) ){
+		if( !fileExists( variables.serverConfig ) ){
 			setServers( {} );
+		}
+		// Init custom server location if not exists
+		if( !directoryExists( variables.serverDirectory ) ){
+			directoryCreate( variables.serverDirectory );
 		}
 
 		return this;
@@ -96,14 +100,14 @@ component accessors="true" singleton{
 		var stopPort 	= arguments.serverInfo.stopsocket == 0 ? getRandomPort() : arguments.serverInfo.stopsocket;
 
 		// config directory location
-		var configdir = shell.getHomeDir() & "/server/" & name;
+		var configdir 	= variables.serverDirectory & name;
 		// log directory location
-		var logdir = configdir & "/log";
-		var command = fileSystemUtil.getJREExecutable();
+		var logdir 		= configdir & "/log";
+		if( !directoryExists( logDir ) ){ directoryCreate( logDir ); }
 		// The process native name
 		var processName = name is "" ? "CommandBox" : name;
-		// The java arguments to execute
-		var args = "-Drailo.server.config.dir=""#configdir#/railo/server"" -Drailo.web.config.dir=""#configdir#/railo/web"" "
+		// The java arguments to execute: -Drailo.server.config.dir=""#configdir#/server""  Shared server, custom web configs
+		var args = "-Drailo.web.config.dir=""#configdir#/web"" "
 				& "-javaagent:""#libdir#/railo-inst.jar"" -jar ""#variables.jarPath#"""
 				& " -war ""#webroot#"" --background=true --port #portNumber# --debug #debug#"
 				& " --stop-port #stopPort# --processname ""#processName#"" --log-dir ""#logdir#"""
@@ -146,23 +150,27 @@ component accessors="true" singleton{
 	/**
 	 * Stop server
 	 * @serverInfo.hint The server information struct: [ webroot, name, port, stopSocket, logDir, status, statusInfo ]
+	 * 
+	 * @returns struct of [ error, messages ]
  	 **/
-	function stop( required Struct serverInfo ){
+	struct function stop( required Struct serverInfo ){
 		var launchUtil = java.LaunchUtil;
 		var stopsocket = arguments.serverInfo.stopsocket;
 		var args = "-jar ""#variables.jarPath#"" -stop --stop-port #val( stopsocket )# --background false";
+		var results = { error = false, messages = "" };
+
 		try{
 			// Try to stop and set status back
-			execute name=variables.javaCommand arguments=args timeout="50" variable="executeResult";
+			execute name=variables.javaCommand arguments=args timeout="50" variable="results.messages";
 			serverInfo.status 		= "stopped";
-			serverInfo.statusInfo 	= { command:variables.javaCommand, arguments:args, result:executeResult };
+			serverInfo.statusInfo 	= { command:variables.javaCommand, arguments:args, result:results.messages };
 			setServerInfo( serverInfo );
-			return executeResult;
+			return results;
 		} catch (any e) {
 			serverInfo.status 		= "unknown";
-			serverInfo.statusInfo 	= { command:variables.javaCommand, arguments:args, result:executeResult & e.message };
+			serverInfo.statusInfo 	= { command:variables.javaCommand, arguments:args, result:results.messages };
 			setServerInfo( serverInfo );
-			return e.message & e.detail;
+			return { error=true, messages=e.message & e.detail };
 		}
 	}
 
@@ -243,7 +251,7 @@ component accessors="true" singleton{
 	}
 
 	/**
-	 * Get server info for webroot
+	 * Get server info for webroot, if not created, it will init a new server info entry
 	 * @webroot.hint root directory for served content
  	 **/
 	function getServerInfo( required webroot ){
@@ -258,7 +266,7 @@ component accessors="true" singleton{
 			servers[ webrootHash ] = {
 				webroot		: arguments.webroot,
 				port		: "",
-				stopsocket	: "",
+				stopsocket	: 0,
 				debug		: false,
 				status		: "stopped",
 				statusInfo	: { result : "" },

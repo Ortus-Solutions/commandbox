@@ -6,7 +6,7 @@ component extends="commandbox.system.BaseCommand" excludeFromHelp=false {
 	property name="serverService" inject="ServerService";
 
 	/**
-	 * Show log
+	 * Show server log
 	 *
 	 * @directory.hint web root for the server
 	 * @name.hint short name for the server

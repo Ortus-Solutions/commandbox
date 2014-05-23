@@ -23,9 +23,12 @@ component extends="commandbox.system.BaseCommand" aliases="start" excludeFromHel
 		Boolean force=false,
 		Boolean debug=false
 	){
+		// prepare webroot and short name
 		var webroot = arguments.directory is "" ? shell.pwd() : arguments.directory;
-		var name = arguments.name is "" ? listLast( webroot, "\/" ) : arguments.name;
+		var name 	= arguments.name is "" ? listLast( webroot, "\/" ) : arguments.name;
 		webroot = fileSystemUtil.resolveDirectory( webroot );
+		
+		// get server info record, create one if this is the first time.
 		var serverInfo = serverService.getServerInfo( webroot );
 		// we don't want to changes the ports if we're doing stuff already
 		if( serverInfo.status is "stopped" || arguments.force ){
@@ -33,8 +36,10 @@ component extends="commandbox.system.BaseCommand" aliases="start" excludeFromHel
 			serverInfo.port = arguments.port;
 			serverInfo.stopsocket = arguments.stopPort;
 		}
-		serverInfo.webroot = webroot;
-		serverInfo.debug = arguments.debug;
+		serverInfo.webroot 	= webroot;
+		serverInfo.debug 	= arguments.debug;
+
+		// startup the service using server info struct
 		return serverService.start( serverInfo, arguments.openbrowser, arguments.force, arguments.debug );
 	}
 
