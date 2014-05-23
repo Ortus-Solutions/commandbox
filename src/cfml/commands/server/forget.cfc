@@ -22,7 +22,7 @@ component extends="commandbox.system.BaseCommand" excludeFromHelp=false {
 		var webroot 	= arguments.directory is "" ? shell.pwd() : arguments.directory;
 		var serverInfo 	= serverService.getServerInfo( fileSystemUtil.resolveDirectory( webroot ) );
 
-		serverService.forget( serverInfo, arguments.all, arguments.force);
+		serverService.forget( serverInfo, arguments.all, arguments.force );
 	}
 
 }

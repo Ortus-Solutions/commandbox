@@ -8,27 +8,41 @@
 * I manage servers
 *
 */
-component singleton {
+component accessors="true" singleton{
 	
-	// DI
-	property name="shell" 			inject="shell";
-	property name="formatterUtil" 	inject="Formatter";
-	property name="fileSystemUtil" 	inject="FileSystem";
-
 	/**
-	* Where we store server information
+	* Where the server libs are located
+	*/
+	property name="libDir";
+	/**
+	* Where the server configuration file is
 	*/
 	property name="serverConfig";
+	/**
+	* Where the server logs go
+	*/
+	property name="serverLogsDirectory";
+	/**
+	* Where the Java Command Executable is
+	*/
+	property name="javaCommand";
+	/**
+	* Where the Run War jar path is
+	*/
+	property name="javaCommand";
 
-	function init(){
-		// the lib dir location, populated from shell later.
-		variables.libDir = "";
-		// Where server configs are stored
-		variables.serverConfig 	= "/commandbox/system/config/servers.json";
-		// if not exists, init with empty struct
-		if( !fileExists( serverConfig ) ){
-			setServers( {} );
-		}
+	/**
+	* Constructor
+	* @shell.inject shell
+	* @formatter.inject Formatter
+	* @fileSystem.inject FileSystem
+	*/
+	function init( required shell, required formatter, required fileSystem ){
+		// DI
+		variables.shell 			= arguments.shell;
+		variables.formatterUtil 	= arguments.formatter;
+		variables.fileSystemUtil 	= arguments.fileSystem;
+
 		// java helpers
 		java = {
 			ServerSocket : createObject("java","java.net.ServerSocket")
@@ -38,92 +52,115 @@ component singleton {
 			, LaunchUtil : createObject("java","runwar.LaunchUtil")
 		};
 
-		return this;
-	}
+		// the lib dir location, populated from shell later.
+		variables.libDir = arguments.shell.getHomeDir() & "/lib";
+		// Where server configs are stored
+		variables.serverConfig = "/commandbox/system/config/servers.json";
+		// Where server logs are stored
+		variables.serverLogsDirectory = arguments.shell.getHomeDir() & "/server/log/";
+		// The JRE executable command
+		variables.javaCommand = arguments.fileSystem.getJREExecutable();
+		// The runwar jar path
+		variables.jarPath = java.File.init( java.launchUtil.class.getProtectionDomain().getCodeSource()
+				.getLocation().toURI().getSchemeSpecificPart() ).getAbsolutePath();
+		
+		// Init server config if not found
+		if( !fileExists( serverConfig ) ){
+			setServers( {} );
+		}
 
-	function onDIComplete() {
-		variables.libdir = shell.getHomeDir() & "/lib";
 		return this;
 	}
 
 	/**
 	 * Start a server instance
 	 *
-	 * @openbrowser.hint open a browser after starting
-	 * @directory.hint web root for this server
-	 * @name.hint short name for this server
-	 * @port.hint port number
-	 * @stopsocket.hint stop socket listener port number
+	 * @serverInfo.hint The server information struct: [ webroot, name, port, stopSocket, logDir, status, statusInfo ]
+	 * @openBrowser.hint Open a web browser or not
 	 * @force.hint force start if status is not stopped
 	 * @debug.hint sets debug log level
 	 **/
-	function start(Struct serverInfo, Boolean openBrowser, Boolean force=false, Boolean debug=false)  {
-		var launchUtil = java.LaunchUtil;
-		var webroot = serverInfo.webroot;
-		var webhash = hash(serverInfo.webroot);
-		var name = serverInfo.name is "" ? listLast(webroot,"\/") : serverInfo.name;
-		var portNumber = serverInfo.port == 0 ? getRandomPort() : serverInfo.port;
-		var socket = serverInfo.stopsocket == 0 ? getRandomPort() : serverInfo.stopsocket;
-		var jarPath = java.File.init(launchUtil.class.getProtectionDomain().getCodeSource()
-				.getLocation().toURI().getSchemeSpecificPart()).getAbsolutePath();
-		var logdir = shell.getHomeDir() & "/server/log/" & name;
+	function start( 
+		Struct serverInfo,
+		Boolean openBrowser,
+		Boolean force=false,
+		Boolean debug=false
+	){
+		var launchUtil 	= java.LaunchUtil;
+		// get webroot info
+		var webroot 	= arguments.serverInfo.webroot;
+		var webhash 	= hash( arguments.serverInfo.webroot );
+		// default server name, and ports
+		var name 		= arguments.serverInfo.name is "" ? listLast( webroot, "\/" ) : arguments.serverInfo.name;
+		var portNumber  = arguments.serverInfo.port == 0 ? getRandomPort() : arguments.serverInfo.port;
+		var stopPort 	= arguments.serverInfo.stopsocket == 0 ? getRandomPort() : arguments.serverInfo.stopsocket;
+		// log directory location
+		var logdir 		= variables.serverLogsDirectory & name;
+		if( !directoryExists( logdir ) ){
+			directoryCreate( logdir, true );
+		}
+		// The process native name
 		var processName = name is "" ? "cfml" : name;
-		var command = fileSystemUtil.getJREExecutable();
-		var args = "-javaagent:""#libdir#/railo-inst.jar"" -jar ""#jarPath#"""
+		// The java arguments to execute
+		var args = "-javaagent:""#libdir#/railo-inst.jar"" -jar ""#variables.jarPath#"""
 				& " -war ""#webroot#"" --background=true --port #portNumber# --debug #debug#"
-				& " --stop-port #socket# --processname ""#processName#"" --log-dir ""#logdir#"""
+				& " --stop-port #stopPort# --processname ""#processName#"" --log-dir ""#logdir#"""
 				& " --open-browser #openbrowser# --open-url http://127.0.0.1:#portNumber#"
 				& " --libdir ""#variables.libdir#"" --iconpath ""#variables.libdir#/trayicon.png""";
-		serverInfo.port = portNumber;
-		serverInfo.stopsocket = socket;
-		serverInfo.logdir = logdir;
-		if(!directoryExists(logdir)) {
-			directoryCreate(logdir,true);
-		}
-		setServerInfo(serverInfo);
-		if(serverInfo.status == "stopped" || force) {
-			serverInfo.status = "starting";
-			setServerInfo(serverInfo);
-			thread name="server#webhash##createUUID()#" serverInfo=serverInfo command=command args=args {
+		
+		// add back port and log information and persist
+		arguments.serverInfo.port 		= portNumber;
+		arguments.serverInfo.stopsocket = stopPort;
+		arguments.serverInfo.logdir 	= logdir;
+		setServerInfo( arguments.serverInfo );
+
+		// If server is stoped or forced, start it
+		if( arguments.serverInfo.status == "stopped" || force) {
+			// change status to starting + persist
+			arguments.serverInfo.status = "starting";
+			setServerInfo( serverInfo );
+			// thread the execution
+			thread name="server#webhash##createUUID()#" serverInfo=arguments.serverInfo args=args {
 				try{
-					execute name=command arguments=args timeout="50" variable="executeResult";
-					serverInfo.statusInfo = {command:command,arguments:args,result:executeResult};
-					serverInfo.status="running";
-					setServerInfo(serverInfo);
+					// execute the server command
+					execute name=variables.javaCommand arguments=attributes.args timeout="50" variable="executeResult";
+					// save server info and persiste
+					arguments.serverInfo.statusInfo = { command:variables.javaCommand, arguments:attributes.args, result:executeResult };
+					arguments.serverInfo.status="running";
+					setServerInfo( serverInfo );
 				} catch (any e) {
-					serverInfo.statusInfo.result &= executeResult;
-					serverInfo.status="unknown";
-					setServerInfo(serverInfo);
+					logger.error( "Error starting server: #e.message# #e.detail#", arguments );
+					arguments.serverInfo.statusInfo.result &= executeResult;
+					arguments.serverInfo.status="unknown";
+					setServerInfo( arguments.serverInfo );
 				}
 			}
 			return "The server for #webroot# is starting on port #portNumber#... type 'server status' to see result";
 		} else {
-			return "Cannot start!  The server is currently in the #serverInfo.status# state!#chr(10)#Use force=true or the 'server forget' command ";
+			return "Cannot start!  The server is currently in the #arguments.serverInfo.status# state!#chr(10)#Use force=true or the 'server forget' command ";
 		}
 	}
 
 	/**
 	 * Stop server
-	 * @serverInfo.hint struct of server info (ports, etc.)
+	 * @serverInfo.hint The server information struct: [ webroot, name, port, stopSocket, logDir, status, statusInfo ]
  	 **/
-	function stop(Struct serverInfo)  {
+	function stop( required Struct serverInfo ){
 		var launchUtil = java.LaunchUtil;
-		var jarPath = java.File.init(launchUtil.class.getProtectionDomain().getCodeSource()
-				.getLocation().toURI().getSchemeSpecificPart()).getAbsolutePath();
-		var command = fileSystemUtil.getJREExecutable();
-		var stopsocket = serverInfo.stopsocket;
-		var args = "-jar ""#jarPath#"" -stop --stop-port #val(stopsocket)# --background false";
+		var stopsocket = arguments.serverInfo.stopsocket;
+		var args = "-jar ""#variables.jarPath#"" -stop --stop-port #val( stopsocket )# --background false";
 		try{
-			execute name=command arguments=args timeout="50" variable="executeResult";
-			serverInfo.status = "stopped";
-			serverInfo.statusInfo = {command:command,arguments:args,result:executeResult};
-			setServerInfo(serverInfo);
+			// Try to stop and set status back
+			execute name=variables.javaCommand arguments=args timeout="50" variable="executeResult";
+			serverInfo.status 		= "stopped";
+			serverInfo.statusInfo 	= { command:variables.javaCommand, arguments:args, result:executeResult };
+			setServerInfo( serverInfo );
 			return executeResult;
 		} catch (any e) {
-			serverInfo.status = "unknown";
-			serverInfo.statusInfo = {command:command,arguments:args,result:executeResult & e.message};
-			setServerInfo(serverInfo);
-			return e.message;
+			serverInfo.status 		= "unknown";
+			serverInfo.statusInfo 	= { command:variables.javaCommand, arguments:args, result:executeResult & e.message };
+			setServerInfo( serverInfo );
+			return e.message & e.detail;
 		}
 	}
 
@@ -215,7 +252,8 @@ component singleton {
 				debug		: false,
 				status		: "stopped",
 				statusInfo	: { result : "" },
-				name		: listLast( arguments.webroot, "\/" )
+				name		: listLast( arguments.webroot, "\/" ),
+				logDir 		: ""
 			}
 			setServers( servers );
 		}

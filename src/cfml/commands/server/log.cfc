@@ -19,7 +19,8 @@ component extends="commandbox.system.BaseCommand" excludeFromHelp=false {
 		if( fileExists( logfile) ){
 			return fileRead( logfile );
 		} else {
-			printRed( "No log file found!" );
+			print.boldRedLine( "No log file found for '#webroot#'!" )
+				.line( "#logFile#" );
 		}
 	}
 

@@ -25,6 +25,7 @@ Type "help" for help, or "help [command]" to be more specific.
  \_____\___/|_| |_| |_|_| |_| |_|\__,_|_| |_|\__,_|____/ \___/_/\_\ v@@version@@
 </cfsavecontent>
 <cfscript>
+
 	system 	= createObject( "java", "java.lang.System" );
 	args 	= system.getProperty( "cfml.cli.arguments" );
 

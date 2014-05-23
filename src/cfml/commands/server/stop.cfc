@@ -20,7 +20,7 @@ component extends="commandbox.system.BaseCommand" aliases="stop" excludeFromHelp
 		var webroot 	= arguments.directory is "" ? shell.pwd() : arguments.directory;
 		var serverInfo 	= serverService.getServerInfo( fileSystemUtil.resolveDirectory( webroot ) );
 		
-		serverService.stop( serverInfo );
+		return serverService.stop( serverInfo );
 	}
 
 }
