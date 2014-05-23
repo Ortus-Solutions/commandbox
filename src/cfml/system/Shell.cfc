@@ -69,7 +69,7 @@ component accessors="true" singleton {
 		
 		variables.reader = readerFactory.getInstance( argumentCollection = variables.initArgs  );
 		
-		variables.shellPrompt = print.cyanText( "CommandBox> ");
+		variables.shellPrompt = print.green( "CommandBox> ");
 		
 		commandService.configure();
 	}
