@@ -47,8 +47,11 @@ component extends="commandbox.system.BaseCommand" aliases="status" excludeFromHe
 			}
 
 			print.line( "  webroot: " & serv.webroot )
+				.line( "  context: " & serverService.getserverDirectory() & serv.name )
+				.line( "  logdir: " & serv.logDir )
 				.line( "  port: " & serv.port )
 				.line( "  stopsocket: " & serv.stopsocket )
+				.line( "  debug: " & serv.debug );
 		}
 	}
 
