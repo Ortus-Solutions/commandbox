@@ -255,6 +255,22 @@ component accessors="true" singleton{
 		}
 	}
 
+
+	/**
+	* Get a server information struct by name or directory
+	* @directory.hint the directory to find
+	* @name.hint The name to find
+	*/
+	struct function getServerInfoByDiscovery( required directory="", required name="" ){
+		// Discover by shortname or webroot
+		if( len( arguments.name ) ){
+			return getServerInfoByName( arguments.name );
+		} 
+		
+		var webroot = arguments.directory is "" ? shell.pwd() : arguments.directory;
+		return getServerInfoByWebroot( fileSystemUtil.resolveDirectory( webroot ) );
+	}
+
 	/**
 	* Get a server information struct by name, if not found it returns an empty struct
 	* @name.hint The name to find

@@ -21,12 +21,7 @@ component extends="commandbox.system.BaseCommand" excludeFromHelp=false {
 		Boolean force=false
 	){
 		// Discover by shortname or webroot
-		if( len( arguments.name ) ){
-			var serverInfo 	= serverService.getServerInfoByName( arguments.name );
-		} else {
-			var webroot 	= arguments.directory is "" ? shell.pwd() : arguments.directory;
-			var serverInfo 	= serverService.getServerInfoByWebroot( fileSystemUtil.resolveDirectory( webroot ) );
-		}
+		var serverInfo = serverService.getServerInfoByDiscovery( arguments.directory, arguments.name );
 
 		// Verify server info
 		if( structIsEmpty( serverInfo ) AND arguments.all eq false ){

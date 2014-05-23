@@ -12,10 +12,18 @@ component extends="commandbox.system.BaseCommand" excludeFromHelp=false {
 	 * @name.hint short name for the server
 	 **/
 	function run( String directory="", String name="" ){
-		var webroot 	= arguments.directory is "" ? shell.pwd() : arguments.directory;
-		var serverInfo 	= serverService.getServerInfo( fileSystemUtil.resolveDirectory( webroot ) );
-		var logfile 	= serverInfo.logdir & "/server.out.txt";
 
+		// Discover by shortname or webroot
+		var serverInfo = serverService.getServerInfoByDiscovery( arguments.directory, arguments.name );
+
+		// Verify server info
+		if( structIsEmpty( serverInfo ) ){
+			error( "The server you requested to log was not found (webroot=#arguments.directory#, name=#arguments.name#)." );
+			print.line( "You can use the 'server status showAll=true' command to get all the available servers." );
+			return;
+		}
+
+		var logfile = serverInfo.logdir & "/server.out.txt";
 		if( fileExists( logfile) ){
 			return fileRead( logfile );
 		} else {
