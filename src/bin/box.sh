@@ -37,10 +37,10 @@ Darwin)
 	then
 		java_args='
 			-client
-			-Dcom.apple.mrj.application.apple.menu.about.name=Box
+			-Dcom.apple.mrj.application.apple.menu.about.name=CommandBox
 			-Dcom.apple.mrj.application.growbox.intrudes=false
 			-Dapple.laf.useScreenMenuBar=true
-			-Xdock:name=Box
+			-Xdock:name=CommandBox
 			-Dfile.encoding=UTF-8
 		'
 	fi
