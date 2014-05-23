@@ -181,19 +181,24 @@ component accessors="true" singleton{
  	 **/
 	function forget( required Struct serverInfo, Boolean all=false ){
 		if( !all ){
-			var servers = getServers();
-			var serverdir = shell.getHomeDir() & "/server/" & serverInfo.name;
+			var servers 	= getServers();
+			var serverdir 	= variables.serverDirectory & serverInfo.name;
+			
+			// try to delete from config first
 			structDelete( servers, hash( arguments.serverInfo.webroot ) );
 			setServers( servers );
-			try {
+			// try to delete server
+			if( directoryExists( serverDir ) ){
 				directoryDelete( serverdir, true );
-			} catch ( any e ) {
-				return "could not delete " & serverdir;
 			}
-			return "forgot " & serverInfo.name;
+			// return message
+			return "Poof! Wiped out server" & serverInfo.name;
 		} else {
+			var serverNames = getServerNames();
 			setServers( {} );
-			return "forgot all servers";
+			directoryDelete( variables.serverDirectory, true );
+			directoryCreate( variables.serverDirectory );
+			return "Poof! All servers (#arrayToList( serverNames )#) have been wiped.";
 		}
 	}
 
@@ -248,6 +253,46 @@ component accessors="true" singleton{
 		} else {
 			return {};
 		}
+	}
+
+	/**
+	* Get a server information struct by name, if not found it returns an empty struct
+	* @name.hint The name to find
+	*/
+	struct function getServerInfoByName( required name ){
+		var servers = getServers();
+		for( var thisServer in servers ){
+			if( servers[ thisServer ].name == arguments.name ){
+				return servers[ thisServer ];
+			}
+		}
+
+		return {};
+	}
+
+	/**
+	* Get all servers registered as an array of names
+	*/
+	array function getServerNames(){
+		var servers = getServers();
+		var results = [];
+
+		for( var thisServer in servers ){
+			arrayAppend( results, servers[ thisServer ].name );
+		}
+
+		return results;
+	}
+
+	/**
+	* Get a server information struct by webrot, if not found it returns an empty struct
+	* @webroot.hint The webroot to find
+	*/
+	struct function getServerInfoByWebroot( required webroot ){
+		var webrootHash = hash( arguments.webroot );
+		var servers 	= getServers();
+
+		return structKeyExists( servers, webrootHash ) ? servers[ webrootHash ] : {}
 	}
 
 	/**
