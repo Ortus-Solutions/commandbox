@@ -8,12 +8,23 @@
 * I contain helpful methods for dealing with file and directory paths
 *
 */
-component singleton {
+component accessors="true" singleton {
+
+	/**
+	* The os
+	*/
+	property name="os";
+	/**
+	* The java runtime
+	*/
+	property name="runtime";
 	
 	// DI
 	property name="shell" inject="shell";
 
 	function init() {
+		variables.os 		= createObject( "java", "java.lang.System" ).getProperty( "os.name" ).toLowerCase();
+		variables.runtime 	= createObject( "java", "java.lang.Runtime" );
 		return this;
 	}
 
@@ -60,5 +71,30 @@ component singleton {
 		
 		return javaCommand;
 	}
+
+	// OS detector
+	boolean function isWindows(){ return variables.os.contains( "win" ); }
+    boolean function isLinux(){ return variables.os.contains( "linux" ); }
+    boolean function isMac(){ return variables.os.contains( "mac" ); };
+
+    /**
+    * Operating system file opener
+    */
+    boolean function openFile( required file ){
+    	var desktop = createObject( "java", "java.awt.Desktop" );
+
+    	if( isWindows() ){
+    		variables.runtime.getRuntime().exec( [ "rundll32", "url.dll,FileProtocolHandler", arguments.file ] );
+            return true;
+    	} else if( isMac() OR isLinux() ){
+    		variables.runtime.getRuntime().exec( [ "/usr/bin/open", arguments.file ] );
+    		return true;
+    	} else if( desktop.isDesktopSupported() ){
+    		desktop.getDesktop().open( arguments.file );
+    		return true;
+    	}
+
+    	return false;
+    }
 
 }
