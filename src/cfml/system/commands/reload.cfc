@@ -9,7 +9,7 @@ component extends="commandbox.system.BaseCommand" aliases="r" excludeFromHelp=tr
 	 * @clearScreen.hint Clears the screen after reload
   	 **/
 	function run( Boolean clearScreen=true )  {
-		print.text( 'Reloading shell...' );
+		print.boldLine( 'Reloading shell...' );
 		shell.reload(clearScreen);
 	}
 
