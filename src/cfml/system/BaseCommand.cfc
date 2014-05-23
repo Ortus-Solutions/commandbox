@@ -10,12 +10,18 @@
 */
 component accessors="true" singleton{
 	
+	// DI
 	property name="CR" 				inject="CR";
 	property name="formatterUtil" 	inject="Formatter";
 	property name="fileSystemUtil" 	inject="FileSystem";
 	property name="shell" 			inject="shell";
 	property name="print" 			inject="PrintBuffer";
+	property name="wirebox" 		inject="wirebox";
+	property name="logger" 			inject="logbox:logger:{this}";
 
+	/**
+	* Constructor
+	*/
 	function init() {
 		hasErrored = false;
 		return this;
@@ -61,7 +67,6 @@ component accessors="true" singleton{
 		return shell.callCommand( command );
 	}
 
-		
 	/**
 	 * Use if if your command wants to give contorlled feedback to the user without raising
 	 * an actual exception which comes with a messy stack trace.  "return" this command to stop execution of your command
@@ -71,6 +76,7 @@ component accessors="true" singleton{
 	 * return error( "We're sorry, but happy hour ended 20 minutes ago." );
 	 *	 
 	 * @message.hint The error message to display
+	 * @clearPrintBuffer.hint Wipe out the print buffer or not, it does not by default
  	 **/
 	function error( required message, clearPrintBuffer=false ) {
 		hasErrored = true;
@@ -79,13 +85,12 @@ component accessors="true" singleton{
 			print.clear();
 		} else {
 			// Distance ourselves from whatever other output the command may have given so far.
-			print.line();
-			print.line();
+			print.line().line();
 		}
-		print.whiteOnRedLine( 'ERROR' );
-		print.line();
-		print.redLine( message );
-		print.line();
+		print.whiteOnRedLine( 'ERROR' )
+			.line()
+			.redLine( message )
+			.line();
 		
 	}
 	
@@ -96,6 +101,5 @@ component accessors="true" singleton{
 	function hasError() {
 		return hasErrored;
 	}
-
 			
 }
