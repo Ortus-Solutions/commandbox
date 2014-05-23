@@ -4,7 +4,7 @@
 component extends="commandbox.system.BaseCommand" excludeFromHelp=false {
 
 	property name="serverService" inject="ServerService";
-	
+
 	/**
 	 * Forgets one or all servers
 	 *
@@ -22,7 +22,7 @@ component extends="commandbox.system.BaseCommand" excludeFromHelp=false {
 		var webroot 	= arguments.directory is "" ? shell.pwd() : arguments.directory;
 		var serverInfo 	= serverService.getServerInfo( fileSystemUtil.resolveDirectory( webroot ) );
 
-		serverService.forget( serverInfo, arguments.all, arguments.force );
+		print.line(serverService.forget( serverInfo, arguments.all, arguments.force ));
 	}
 
 }

@@ -9,7 +9,7 @@
 *
 */
 component accessors="true" singleton{
-	
+
 	/**
 	* Where the server libs are located
 	*/
@@ -63,7 +63,7 @@ component accessors="true" singleton{
 		// The runwar jar path
 		variables.jarPath = java.File.init( java.launchUtil.class.getProtectionDomain().getCodeSource()
 				.getLocation().toURI().getSchemeSpecificPart() ).getAbsolutePath();
-		
+
 		// Init server config if not found
 		if( !fileExists( serverConfig ) ){
 			setServers( {} );
@@ -80,7 +80,7 @@ component accessors="true" singleton{
 	 * @force.hint force start if status is not stopped
 	 * @debug.hint sets debug log level
 	 **/
-	function start( 
+	function start(
 		Struct serverInfo,
 		Boolean openBrowser,
 		Boolean force=false,
@@ -94,20 +94,22 @@ component accessors="true" singleton{
 		var name 		= arguments.serverInfo.name is "" ? listLast( webroot, "\/" ) : arguments.serverInfo.name;
 		var portNumber  = arguments.serverInfo.port == 0 ? getRandomPort() : arguments.serverInfo.port;
 		var stopPort 	= arguments.serverInfo.stopsocket == 0 ? getRandomPort() : arguments.serverInfo.stopsocket;
+
+		// config directory location
+		var configdir = shell.getHomeDir() & "/server/" & name;
 		// log directory location
-		var logdir 		= variables.serverLogsDirectory & name;
-		if( !directoryExists( logdir ) ){
-			directoryCreate( logdir, true );
-		}
+		var logdir = configdir & "/log";
+		var command = fileSystemUtil.getJREExecutable();
 		// The process native name
-		var processName = name is "" ? "cfml" : name;
+		var processName = name is "" ? "CommandBox" : name;
 		// The java arguments to execute
-		var args = "-javaagent:""#libdir#/railo-inst.jar"" -jar ""#variables.jarPath#"""
+		var args = "-Drailo.server.config.dir=""#configdir#/railo/server"" -Drailo.web.config.dir=""#configdir#/railo/web"" "
+				& "-javaagent:""#libdir#/railo-inst.jar"" -jar ""#variables.jarPath#"""
 				& " -war ""#webroot#"" --background=true --port #portNumber# --debug #debug#"
 				& " --stop-port #stopPort# --processname ""#processName#"" --log-dir ""#logdir#"""
 				& " --open-browser #openbrowser# --open-url http://127.0.0.1:#portNumber#"
 				& " --libdir ""#variables.libdir#"" --iconpath ""#variables.libdir#/trayicon.png""";
-		
+
 		// add back port and log information and persist
 		arguments.serverInfo.port 		= portNumber;
 		arguments.serverInfo.stopsocket = stopPort;
@@ -172,10 +174,18 @@ component accessors="true" singleton{
 	function forget( required Struct serverInfo, Boolean all=false ){
 		if( !all ){
 			var servers = getServers();
+			var serverdir = shell.getHomeDir() & "/server/" & serverInfo.name;
 			structDelete( servers, hash( arguments.serverInfo.webroot ) );
 			setServers( servers );
+			try {
+				directoryDelete( serverdir, true );
+			} catch ( any e ) {
+				return "could not delete " & serverdir;
+			}
+			return "forgot " & serverInfo.name;
 		} else {
 			setServers( {} );
+			return "forgot all servers";
 		}
 	}
 
@@ -184,8 +194,8 @@ component accessors="true" singleton{
 	 * @host.hint host to get port on, defaults 127.0.0.1
  	 **/
 	function getRandomPort( host="127.0.0.1" ){
-		var nextAvail  = java.ServerSocket.init( javaCast( "int", 0 ), 
-												 javaCast( "int", 1 ), 
+		var nextAvail  = java.ServerSocket.init( javaCast( "int", 0 ),
+												 javaCast( "int", 1 ),
 												 java.InetAddress.getByName( arguments.host ) );
 		var portNumber = nextAvail.getLocalPort();
 		nextAvail.close();
@@ -199,7 +209,7 @@ component accessors="true" singleton{
 	function setServerInfo( required Struct serverInfo ){
 		var servers 	= getServers();
 		var webrootHash = hash( arguments.serverInfo.webroot );
-		
+
 		if( arguments.serverInfo.webroot == "" ){
 			throw( "The webroot cannot be empty!" );
 		}
