@@ -1,13 +1,13 @@
 /**
- * This command will try to open the file in the native OS application for it.
+ * This command will try to open the file in the native OS application in order to edit
  * 
- * open index.cfm
+ * edit index.cfm
  * 
  **/
 component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
 
 	/**
-	 * @file.hint File to open
+	 * @file.hint File to edit
  	 **/
 	function run( required file )  {
 		
@@ -16,10 +16,10 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 		}
 
 		if( !fileExists( arguments.file ) ){
-			return error( "File: #arguments.file# does not exist, cannot open it!" );
+			return error( "File: #arguments.file# does not exist, cannot edit it!" );
 		}
 
-		if( fileSystemUtil.openFile( file ) ){
+		if( fileSystemUtil.editFile( file ) ){
 			return "File opened!";
 		} else {
 			error( "Unsopported OS" );

@@ -14,17 +14,12 @@ component accessors="true" singleton {
 	* The os
 	*/
 	property name="os";
-	/**
-	* The java runtime
-	*/
-	property name="runtime";
 	
 	// DI
 	property name="shell" inject="shell";
 
 	function init() {
-		variables.os 		= createObject( "java", "java.lang.System" ).getProperty( "os.name" ).toLowerCase();
-		variables.runtime 	= createObject( "java", "java.lang.Runtime" );
+		variables.os = createObject( "java", "java.lang.System" ).getProperty( "os.name" ).toLowerCase();
 		return this;
 	}
 
@@ -78,19 +73,55 @@ component accessors="true" singleton {
     boolean function isMac(){ return variables.os.contains( "mac" ); };
 
     /**
+    * Get a native java.io.File object
+    */
+    function getJavaFile( required file ){
+    	return createObject( "java", "java.io.File" ).init( arguments.file );
+    }
+
+    /**
     * Operating system file opener
+    * @file.hint the file to open
     */
     boolean function openFile( required file ){
     	var desktop = createObject( "java", "java.awt.Desktop" );
 
-    	if( isWindows() ){
-    		variables.runtime.getRuntime().exec( [ "rundll32", "url.dll,FileProtocolHandler", arguments.file ] );
-            return true;
-    	} else if( isMac() OR isLinux() ){
-    		variables.runtime.getRuntime().exec( [ "/usr/bin/open", arguments.file ] );
-    		return true;
-    	} else if( desktop.isDesktopSupported() ){
+    	if( desktop.isDesktopSupported() ){
     		desktop.getDesktop().open( arguments.file );
+    		return true;
+    	}
+
+    	return false;
+    }
+
+    /**
+    * Operating system file editor
+    * @file.hint the file to edit
+    */
+    boolean function editFile( required file ){
+    	var desktop = createObject( "java", "java.awt.Desktop" );
+
+    	if( desktop.isDesktopSupported() ){
+    		desktop.getDesktop().edit( arguments.file );
+    		return true;
+    	}
+
+    	return false;
+    }
+
+    /**
+    * Operating system browser opener
+    * @uri.hint the URI to open
+    */
+    boolean function openBrowser( required URI ){
+    	var desktop = createObject( "java", "java.awt.Desktop" );
+
+    	if( !findNoCase( "http", arguments.URI ) ){
+    		arguments.URI = "http://#arguments.uri#";
+    	}
+
+    	if( desktop.isDesktopSupported() ){
+    		desktop.getDesktop().browse( createObject( "java", "java.net.URI" ).init( arguments.URI ) );
     		return true;
     	}
 
