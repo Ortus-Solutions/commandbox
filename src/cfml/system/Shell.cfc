@@ -71,7 +71,10 @@ component accessors="true" singleton {
 		
 		variables.shellPrompt = print.green( "CommandBox> ");
 		
-		commandService.configure();
+		// load commnands Async
+		thread name="initCommands-#createUUID()#"{
+			variables.commandService.configure();
+		}
 	}
 
 	/**

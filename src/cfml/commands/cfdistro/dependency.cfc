@@ -31,7 +31,6 @@ component extends="commandbox.system.BaseCommand" {
 		}
 		params.antfile = "";
 		params.properties = buildprops;
-		//params.outputstream = createObject("java","java.lang.System").out;
 		params.generatedContent = '<dependency groupId="#groupId#" artifactId="#artifactId#" version="#version#" classifier="#classifier#" mapping="#mapping#" type="#type#" />';
 		var antresults = new home.tag.cfc.Ant().run(argumentCollection=params);
 		return antresults.outText.toString();

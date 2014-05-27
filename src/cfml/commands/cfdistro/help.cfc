@@ -19,7 +19,6 @@ component extends="commandbox.system.BaseCommand" {
 		var params = {};
 		params.antfile = "";
 		params.properties = buildprops;
-//		params.outputstream = createObject("java","java.lang.System").out;
 		params.antfile = getDirectoryFromPath(getMetadata(this).path) & "/home/build.xml";
 		params.target = "help";
 		var antresults = new home.tag.cfc.Ant().run(argumentCollection=params);

@@ -55,7 +55,7 @@ component accessors="true" singleton{
 		// the lib dir location, populated from shell later.
 		variables.libDir = arguments.shell.getHomeDir() & "/lib";
 		// Where custom server configs are stored
-		variables.serverConfig = "/commandbox/system/config/servers.json";
+		variables.serverConfig = arguments.shell.getHomeDir() & "/servers.json";
 		// Where custom servers are stored
 		variables.serverDirectory = arguments.shell.getHomeDir() & "/server/custom/";
 		// The JRE executable command

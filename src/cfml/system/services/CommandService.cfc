@@ -6,43 +6,34 @@
 * @author Brad Wood, Luis Majano, Denny Valliant
 *
 * I handle initializing, reading, and running commands
-*
 */
-component singleton {
+component accessors="true" singleton {
 
-	property name='shell' inject='Shell';
-	property name='parser' inject='Parser'; 
+	// DI Properties
+	property name='shell' 	inject='Shell';
+	property name='parser' 	inject='Parser';
+	property name='system' 	inject='System';
+	property name='cr' 		inject='cr';
 
 	// TODO: Convert these to properties
 	instance = {
-		// Reference to the shell instance
-		shell = '',
-		
 		// A nested struct of the registered commands
 		commands = {},
-		
 		// The same command data, but more useful for help and such
 		flattenedCommands = {},
-				
-		// Java system reference
-		System = createObject('java', 'java.lang.System'),
-		
 		// A stack of running commands in case one command calls another from within
 		callStack = []
 	};
 		
-	// This is where system commands are stored
-	instance.systemCommandDirectory = '/commandbox/system/commands';
-	// This is where user commands are stored
-	instance.userCommandDirectory = '/commandbox/commands';
-	
-	// Convenience value
-	cr = instance.System.getProperty('line.separator');
-
 	/**
 	 * Constructor
 	 **/
 	function init() {
+		// This is where system commands are stored
+		instance.systemCommandDirectory = '/commandbox/system/commands';
+		// This is where user commands are stored
+		instance.userCommandDirectory = '/commandbox/commands';
+		
 		return this;
 	} 
 	
@@ -78,52 +69,6 @@ component singleton {
 		
 	}
 
-	/**
-	 * load command CFC
-	 * @baseCommandDirectory.hint The base directory for this command
-	 * @cfc.hint CFC name that represents the command
-	 * @commandPath.hint The relative dot-delimted path to the CFC starting in the commands dir
-	 **/
-	private function loadCommand( baseCommandDirectory, CFC, commandPath ) {
-		
-		// Strip cfc extension from filename
-		var CFCName = mid( CFC, 1, len( CFC ) - 4 );
-		var commandName = iif( len( commandPath ), de( commandPath & '.' ), '' ) & CFCName;
-		// Build CFC's path
-		var fullCFCPath = baseCommandDirectory & '.' & commandName;
-		 		
-		// Create this command CFC
-		try {
-			var command = application.wireBox.getInstance( fullCFCPath );
-		// This will catch nasty parse errors so the shell can keep loading
-		} catch( any e ) {
-			systemOutput( 'Error loading command [#fullCFCPath#]#CR##CR#' );
-			// pretty print the exception
-			shell.printError( e );
-			return;
-		}
-		
-		// Check and see if this CFC instance is a command and has a run() method
-		if( !isInstanceOf( command, 'BaseCommand' ) || !structKeyExists( command, 'run' ) ) {
-			return;
-		}
-	
-		// Initialize the command
-		command.init( shell );
-	
-		// Mix in some metadata
-		decorateCommand( command, commandName );
-		
-		// Add it to the command dictionary
-		registerCommand( command, commandPath & '.' & CFCName );
-		
-		// Register the aliases
-		for( var alias in command.$CommandBox.aliases ) {
-			// Alias is allowed to be anything.  This means it may even overwrite another command already loaded.
-			registerCommand( command, listChangeDelims( trim( alias ), '.', ' ' ) );
-		}
-	}
-	
 	function decorateCommand( required command, required commandName ) {
 		// Grab its metadata
 		var CFCMD = getMetadata( command );
@@ -398,31 +343,76 @@ component singleton {
 		}
 			
 	}
-	
 		
 	/**
-	 * Match positional parameters up with their names 
+	 * return a list of base commands
  	 **/
-	private function convertToNamedParameters( userPositionalParams, commandParams ) {
-		var results = {};
-		
-		var i = 0;
-		// For each param the user typed in
-		for( var param in userPositionalParams ) {
-			i++;
-			// Figure out its name
-			if( arrayLen( commandParams ) >= i ){
-				results[ commandParams[i].name ] = param;
-			// Extra user params just get assigned a name
-			} else {
-				results[ i ] = param;
-			}
-		}
-		
-		return results;		
+	function listCommands() {
+		return structKeyList( instance.flattenedCommands );
 	}
 
+	/**
+	 * return the command structure
+ 	 **/
+	function getCommands() {
+		return instance.flattenedCommands;
+	}
 
+	/**
+	 * return the nested command structure
+ 	 **/
+	function getCommandHierarchy() {
+		return instance.Commands;
+	}
+
+	/******************************************* PRIVATE ***************************************/
+
+	/**
+	 * load command CFC
+	 * @baseCommandDirectory.hint The base directory for this command
+	 * @cfc.hint CFC name that represents the command
+	 * @commandPath.hint The relative dot-delimted path to the CFC starting in the commands dir
+	 **/
+	private function loadCommand( baseCommandDirectory, CFC, commandPath ) {
+		
+		// Strip cfc extension from filename
+		var CFCName = mid( CFC, 1, len( CFC ) - 4 );
+		var commandName = iif( len( commandPath ), de( commandPath & '.' ), '' ) & CFCName;
+		// Build CFC's path
+		var fullCFCPath = baseCommandDirectory & '.' & commandName;
+		 		
+		// Create this command CFC
+		try {
+			var command = application.wireBox.getInstance( fullCFCPath );
+		// This will catch nasty parse errors so the shell can keep loading
+		} catch( any e ) {
+			systemOutput( 'Error loading command [#fullCFCPath#]#CR##CR#' );
+			// pretty print the exception
+			shell.printError( e );
+			return;
+		}
+		
+		// Check and see if this CFC instance is a command and has a run() method
+		if( !isInstanceOf( command, 'BaseCommand' ) || !structKeyExists( command, 'run' ) ) {
+			return;
+		}
+	
+		// Initialize the command
+		command.init( shell );
+	
+		// Mix in some metadata
+		decorateCommand( command, commandName );
+		
+		// Add it to the command dictionary
+		registerCommand( command, commandPath & '.' & CFCName );
+		
+		// Register the aliases
+		for( var alias in command.$CommandBox.aliases ) {
+			// Alias is allowed to be anything.  This means it may even overwrite another command already loaded.
+			registerCommand( command, listChangeDelims( trim( alias ), '.', ' ' ) );
+		}
+	}
+	
 	/**
 	 * Make sure we have all required params
  	 **/
@@ -448,33 +438,25 @@ component singleton {
 		return userNamedParams;
 	}
 
-
 	/**
-	 * return a list of base commands
+	 * Match positional parameters up with their names 
  	 **/
-	function listCommands() {
-		return structKeyList( instance.flattenedCommands );
-	}
-
-	/**
-	 * return the command structure
- 	 **/
-	function getCommands() {
-		return instance.flattenedCommands;
-	}
-
-	/**
-	 * return the nested command structure
- 	 **/
-	function getCommandHierarchy() {
-		return instance.Commands;
-	}
-
-
-	/**
-	 * return the shell
- 	 **/
-	function getShell() {
-		return shell;
+	private function convertToNamedParameters( userPositionalParams, commandParams ) {
+		var results = {};
+		
+		var i = 0;
+		// For each param the user typed in
+		for( var param in userPositionalParams ) {
+			i++;
+			// Figure out its name
+			if( arrayLen( commandParams ) >= i ){
+				results[ commandParams[i].name ] = param;
+			// Extra user params just get assigned a name
+			} else {
+				results[ i ] = param;
+			}
+		}
+		
+		return results;		
 	}
 }
