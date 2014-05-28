@@ -11,15 +11,15 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
  	 **/
 	function run( required file )  {
 		
-		if( left( file, 1 ) != "/" ){
-			file = shell.pwd() & "/" & file;
+		if( left( arguments.file, 1 ) != "/" ){
+			arguments.file = shell.pwd() & "/" & arguments.file;
 		}
 
 		if( !fileExists( arguments.file ) ){
 			return error( "File: #arguments.file# does not exist, cannot open it!" );
 		}
 
-		if( fileSystemUtil.openFile( file ) ){
+		if( fileSystemUtil.openFile( arguments.file ) ){
 			return "File opened!";
 		} else {
 			error( "Unsopported OS" );
