@@ -16,7 +16,7 @@ component{
 	this.mappings[ '/commandbox' ] 	= commandBoxRoot;
 	this.mappings[ '/wirebox' ] 	= commandBoxRoot & '/system/wirebox';
 	
-	function onApplicationStart() {		
+	function onApplicationStart(){
 		new wirebox.system.ioc.Injector( 'commandbox.system.config.WireBox' );
 		return true;
 	}
