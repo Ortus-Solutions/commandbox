@@ -87,7 +87,7 @@ component accessors="true" singleton {
     	var desktop = createObject( "java", "java.awt.Desktop" );
 
     	if( desktop.isDesktopSupported() ){
-    		desktop.getDesktop().open( arguments.file );
+    		desktop.getDesktop().open( createObject( "java", "java.io.File" ).init( arguments.file ) );
     		return true;
     	}
 
@@ -102,7 +102,7 @@ component accessors="true" singleton {
     	var desktop = createObject( "java", "java.awt.Desktop" );
 
     	if( desktop.isDesktopSupported() ){
-    		desktop.getDesktop().edit( arguments.file );
+    		desktop.getDesktop().edit( createObject( "java", "java.io.File" ).init( arguments.file ) );
     		return true;
     	}
 
