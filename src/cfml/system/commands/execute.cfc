@@ -6,14 +6,13 @@
  **/
 component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false{
 
+	// DI
 	property name="wirebox" inject="wirebox";
 
 	/**
-	 * 
-	 * @file.hint The file to execute.
-	 * 
+	 * @file.hint The file to execute
 	 **/
-	function run( file="" ){
+	function run( required file ){
 		// discover file
 		if( left( arguments.file, 1 ) != "/" ){
 			arguments.file = shell.pwd() & "/" & arguments.file;

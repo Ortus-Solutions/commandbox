@@ -48,7 +48,7 @@ component accessors="true" singleton{
 	 * @message.hint message to prompt the user with
  	 **/
 	function ask( required message ) {
-		return shell.ask( message );
+		return shell.ask( arguments.message );
 	}
 		
 	/**
@@ -56,7 +56,7 @@ component accessors="true" singleton{
 	 * @message.hint An optional message to display to the user such as "Press any key to continue."
  	 **/
 	function waitForKey( required message ) {
-		return shell.waitForKey( message );
+		return shell.waitForKey( arguments.message );
 	}
 		
 	/**
@@ -64,7 +64,7 @@ component accessors="true" singleton{
 	 * @command.hint The command to run. Pass the same string a user would type at the shell.
  	 **/
 	function runCommand( required command ) {
-		return shell.callCommand( command );
+		return shell.callCommand( arguments.command );
 	}
 
 	/**
@@ -80,7 +80,7 @@ component accessors="true" singleton{
  	 **/
 	function error( required message, clearPrintBuffer=false ) {
 		hasErrored = true;
-		if( clearPrintBuffer ) {
+		if( arguments.clearPrintBuffer ) {
 			// Wipe 
 			print.clear();
 		} else {
@@ -89,7 +89,7 @@ component accessors="true" singleton{
 		}
 		print.whiteOnRedLine( 'ERROR' )
 			.line()
-			.redLine( message )
+			.redLine( arguments.message )
 			.line();
 		
 	}

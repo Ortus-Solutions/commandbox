@@ -1,7 +1,7 @@
 /**
  * This command will try to open a browser to the passed URI
  * 
- * browse localhost
+ * Example: browse localhost:8116
  * 
  **/
 component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {

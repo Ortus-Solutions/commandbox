@@ -41,5 +41,4 @@ component extends="commandbox.system.BaseCommand" aliases="ls,ll,directory" excl
 		return ( len( prefix ) ? reReplace( prefix, "^(/|\\)", "" ) & "/" : "" );
 	}
 
-
 }

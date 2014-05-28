@@ -1,5 +1,5 @@
 /**
- * Returns shell version
+ * Returns CommandBox version
  **/
 component extends="commandbox.system.BaseCommand" aliases="ver" excludeFromHelp=false {
 

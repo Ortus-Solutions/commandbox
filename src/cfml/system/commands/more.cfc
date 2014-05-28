@@ -11,7 +11,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=tru
 		// Get terminal height
 		var termHeight = shell.getTermHeight()-2;
 		// Turn output into an array, breaking on carriage returns
-		var content = listToArray( input, CR ); 
+		var content = listToArray( arguments.input, CR ); 
 		var key= '';
 		var i = 0;
 		var StopAtLine = termHeight;

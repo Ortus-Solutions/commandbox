@@ -6,8 +6,8 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 	/**
 	* @prompt.hist The new text to use as the shell prompt
 	**/
-	function run( String prompt="" )  {
-		shell.setPrompt(prompt);
+	function run( required prompt )  {
+		shell.setPrompt( arguments.prompt );
 	}
 
 }

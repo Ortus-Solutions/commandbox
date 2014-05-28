@@ -10,5 +10,4 @@ component extends="commandbox.system.BaseCommand" aliases="cls" excludeFromHelp=
 		shell.clearScreen();
 	}
 
-
 }

@@ -22,7 +22,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 		if( fileSystemUtil.editFile( arguments.file ) ){
 			return "File opened!";
 		} else {
-			error( "Unsopported OS" );
+			error( "Unsupported OS, cannot edit file" );
 		};
 	}
 

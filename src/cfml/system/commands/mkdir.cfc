@@ -12,17 +12,17 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 	function run( required String directory )  {
 				
 		// Validate directory
-		if( !len( directory ) ) {
+		if( !len( arguments.directory ) ) {
 			return error( 'Please provide a directory name.' );			
 		}
 		
 		// This will make each directory canonical and absolute		
-		directory = fileSystemUtil.resolveDirectory( directory );
+		arguments.directory = fileSystemUtil.resolveDirectory( arguments.directory );
 			
 		// Create dir.  Ignore if it exists and also create parent folders if missing
-		directorycreate( directory, true, true );
+		directorycreate( arguments.directory, true, true );
 			
-		print.greenLine( 'Created #directory#' );
+		print.greenLine( 'Created #arguments.directory#' );
 	}
 
 

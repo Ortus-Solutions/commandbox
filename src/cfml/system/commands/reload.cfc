@@ -10,7 +10,7 @@ component extends="commandbox.system.BaseCommand" aliases="r" excludeFromHelp=tr
   	 **/
 	function run( Boolean clearScreen=true )  {
 		print.boldLine( 'Reloading shell...' );
-		shell.reload(clearScreen);
+		shell.reload( arguments.clearScreen );
 	}
 
 }

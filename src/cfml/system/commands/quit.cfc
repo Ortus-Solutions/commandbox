@@ -9,6 +9,5 @@ component extends="commandbox.system.BaseCommand" aliases="exit,q,e" excludeFrom
 	function run()  {
 		shell.exit();
 	}
-
 	
 }

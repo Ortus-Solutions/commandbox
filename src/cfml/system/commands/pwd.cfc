@@ -10,6 +10,4 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 		return shell.pwd();
 	}
 
-
-
 }

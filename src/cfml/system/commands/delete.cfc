@@ -18,7 +18,6 @@ component extends="commandbox.system.BaseCommand" aliases="rm,del" excludeFromHe
 			arguments.file = shell.pwd() & '/' & arguments.file;
 		}
 		
-		
 		if( !fileExists( arguments.file ) ) {
 			if( directoryExists( arguments.file ) ){
 				

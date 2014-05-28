@@ -11,13 +11,13 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=tru
 	 **/
 	function run( input='', expression='' ) {
 		// Turn output into an array, breaking on carriage returns
-		var content = listToArray( input, CR ); 
+		var content = listToArray( arguments.input, CR ); 
 								
 		// Loop over content
 		for( var line in content ) {
 			
 			// Does it match
-			if( reFindNoCase( expression, line ) ) {
+			if( reFindNoCase( arguments.expression, line ) ) {
 				// print it out
 				print.line( line );				
 			}
