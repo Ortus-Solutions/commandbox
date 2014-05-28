@@ -16,6 +16,8 @@ LogBox instance is reconfigured with the user settings, if used at all.
 	* Configure LogBox, that's it!
 	*/
 	function configure(){
+		var system 	= createObject( "java", "java.lang.System" );
+		
 		logBox = {};
 		
 		// Define Appenders
@@ -23,7 +25,9 @@ LogBox instance is reconfigured with the user settings, if used at all.
 			fileAppender = { 
 				class="wirebox.system.logging.appenders.AsyncRollingFileAppender",
 				properties = {
-					fileMaxArchives = 5, filename = "commandbox.log", filepath = "/commandbox/logs"
+					fileMaxArchives = 5, 
+					filename = "commandbox", 
+					filepath = system.getProperty( 'user.home' ) & "/.CommandBox/logs"
 				}
 			}
 		};
