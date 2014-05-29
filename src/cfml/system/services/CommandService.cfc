@@ -61,8 +61,7 @@ component accessors="true" singleton {
 			if( dir.type  == 'File' && listLast( dir.name, '.' ) == 'cfc' ) {
 				loadCommand( baseCommandDirectory, dir.name, commandPath );
 			// For folders, search them for commands
-			// Temporary exclusion for 'home' dir in cfdistro
-			} else if( dir.name != 'home' ) {
+			} else {
 				initCommands( baseCommandDirectory, dir.directory & '\' & dir.name, listAppend( commandPath, dir.name, '.' ) );
 			}
 			
