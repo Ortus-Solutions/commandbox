@@ -10,20 +10,22 @@
 */
 component singleton {
 
+	//DI
 	property name="commandService" inject="CommandService";
 
-	// command list
-	commandlist = createObject("java","java.util.TreeSet");
-
+	
 	/**
 	 * Constructor
 	 **/
 	function init() {
+		// command list
+		variables.commandlist 	= createObject( "java", "java.util.TreeSet" );
+		variables.commands 		= "";
 		return this;
 	}
 
 	function onDIComplete() {
-		variables.commandlist.addAll(commandService.listCommands().split(','));
+		variables.commandlist.addAll( variables.commandService.listCommands().split(',') );
 		variables.commands = commandService.getCommands();
 	}
 
@@ -33,7 +35,7 @@ component singleton {
 	 * @cursor.hint cursor position
 	 * @candidates.hint tree to populate with completion candidates
  	 **/
-	function complete( String buffer, numeric cursor, candidates )  {
+	numeric function complete( String buffer, numeric cursor, candidates )  {
 		var buffer = buffer ?: "";
 		// Try to resolve the command.
 		var commandChain = commandService.resolveCommand( buffer );

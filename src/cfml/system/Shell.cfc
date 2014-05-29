@@ -310,8 +310,6 @@ component accessors="true" singleton {
 				}
 				reader.println();
 				try {
-					// Announce we are ready
-					reader.beep();
 					// Shell stops on this line while waiting for user input
 		        	line = reader.readLine();
 				} catch( any er ) {

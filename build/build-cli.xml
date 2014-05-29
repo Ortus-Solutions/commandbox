@@ -58,13 +58,16 @@
         	<fileset dir="${src.dir}/resources" />
         </copy>
 		<copy file="${src.dir}/resources/cli.properties" todir="${temp.dir}/rcli/cliloader" overwrite="true"/>
-        <!-- Remove old jansi and jline from original cli -->
+        <!-- Remove old jansi and jline from original cli 
         <delete>
         	<fileset dir="${temp.dir}/rcli">
         		<include name="jline-1.0.jar" />
         		<include name="jansi-1.11.jar" />
         	</filset>
         </delete>
+        <copy todir="${temp.dir}/rcli" overwrite="true">
+        	<fileset file="${dist.dir}/cli/cfml.zip" />
+        </copy>-->
         <!-- jar up the cli again -->
         <zip destfile="${dist.dir}/cli/box.jar" update="false" level="9">
         	<zipfileset dir="${temp.dir}/rcli" />

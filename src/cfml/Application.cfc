@@ -11,14 +11,11 @@ component{
 	this.name = "CommandBox CLI";
 	this.sessionmanagement = "false";
 
-	// Load java libraries CommandBox leverages
-	this.javaSettings = { loadPaths = [ "lib" ], reloadOnChange = false };
-
 	// Move everything over to this mapping which is the "root" of our app
 	commandBoxRoot = getDirectoryFromPath( getMetadata( this ).path );
 	this.mappings[ '/commandbox' ] 	= commandBoxRoot;
 	this.mappings[ '/wirebox' ] 	= commandBoxRoot & '/system/wirebox';
-	
+
 	function onApplicationStart(){
 		new wirebox.system.ioc.Injector( 'commandbox.system.config.WireBox' );
 		return true;
