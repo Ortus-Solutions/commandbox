@@ -14,6 +14,7 @@ component accessors="true" singleton {
 	property name='parser' 	inject='Parser';
 	property name='system' 	inject='System';
 	property name='cr' 		inject='cr';
+	property name="logger" 	inject="logbox:logger:{this}";
 
 	// TODO: Convert these to properties
 	instance = {
@@ -387,6 +388,7 @@ component accessors="true" singleton {
 		// This will catch nasty parse errors so the shell can keep loading
 		} catch( any e ) {
 			systemOutput( 'Error loading command [#fullCFCPath#]#CR##CR#' );
+			logger.error( 'Error loading command [#fullCFCPath#]. #e.message# #e.detail ?: ''#', e.stackTrace );
 			// pretty print the exception
 			shell.printError( e );
 			return;
