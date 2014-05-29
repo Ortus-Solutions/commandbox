@@ -363,7 +363,7 @@ component accessors="true" singleton {
 	 * @err.hint Error object to print (only message is required)
   	 **/
 	function printError(required err) {
-		logger.error( '#err.message# #err.detail#', err.stackTrace );
+		logger.error( '#err.message# #err.detail ?: ''#', err.stackTrace ?: '' );
 		reader.printString(print.boldRedText( "ERROR: " & formatterUtil.HTML2ANSI(err.message) ) );
 		reader.printNewLine();
 		if( structKeyExists( err, 'detail' ) ) {

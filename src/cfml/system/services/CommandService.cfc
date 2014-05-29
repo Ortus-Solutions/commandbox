@@ -388,7 +388,7 @@ component accessors="true" singleton {
 		// This will catch nasty parse errors so the shell can keep loading
 		} catch( any e ) {
 			systemOutput( 'Error loading command [#fullCFCPath#]#CR##CR#' );
-			logger.error( 'Error loading command [#fullCFCPath#]. #e.message# #e.detail#', e.stackTrace );
+			logger.error( 'Error loading command [#fullCFCPath#]. #e.message# #e.detail ?: ''#', e.stackTrace );
 			// pretty print the exception
 			shell.printError( e );
 			return;
