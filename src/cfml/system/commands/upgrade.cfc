@@ -22,7 +22,8 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 			zip
 				action="unzip"
 				file="#filePath#"
-				destination="#shell.getHomeDir()#/cfml";
+				destination="#shell.getHomeDir()#/cfml"
+				overwrite=true;
 		}
 					 
 		print.greenLine( "Installed #latest#" );
