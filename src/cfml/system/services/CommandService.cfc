@@ -397,9 +397,6 @@ component accessors="true" singleton {
 			return;
 		}
 	
-		// Initialize the command
-		command.init( shell );
-	
 		// Mix in some metadata
 		decorateCommand( command, commandName );
 		

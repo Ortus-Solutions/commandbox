@@ -39,6 +39,7 @@ component accessors="true" singleton {
 	property name="tempDir" inject="tempDir";
 	property name="CR" inject="CR";
 	property name="formatterUtil" inject="Formatter";
+	property name="logger" 	inject="logbox:logger:{this}";
 
 
 	/**
@@ -71,10 +72,14 @@ component accessors="true" singleton {
 		
 		variables.shellPrompt = print.green( "CommandBox> ");
 		
+		// set and recreate temp dir
+		setTempDir( variables.tempdir );
+		
 		// load commnands Async
-		thread name="initCommands-#createUUID()#"{
+		//thread name="initCommands-#createUUID()#"{
 			variables.commandService.configure();
-		}
+		//}
+		
 	}
 
 	/**
@@ -115,7 +120,7 @@ component accessors="true" singleton {
 		} else {
 			variables.shellPrompt = text;
 		}
-		reader.setDefaultPrompt( variables.shellPrompt );
+		reader.setPrompt( variables.shellPrompt );
 		return "set prompt";
 	}
 
@@ -125,12 +130,8 @@ component accessors="true" singleton {
  	 **/
 	function ask( message ) {
 		var input = "";
-		try {
-			input = reader.readLine( message );
-		} catch (any e) {
-			printError( e );
-		}
-		reader.setDefaultPrompt( variables.shellPrompt);
+		input = reader.readLine( message );
+		reader.setPrompt( variables.shellPrompt);
 		return input;
 	}
 
@@ -143,14 +144,10 @@ component accessors="true" singleton {
 		var key = '';
 		if( len( message ) ) {
 			printString( message );
-    		reader.flushConsole();
+    		reader.flush();
 		}
-		try {
-			key = getReader().readVirtualKey();
-		} catch (any e) {
-			printError( e );
-		}
-		reader.setDefaultPrompt( variables.shellPrompt );
+		key = getReader().readVirtualKey();
+		reader.setPrompt( variables.shellPrompt );
 		return key;
 	}
 
@@ -162,9 +159,9 @@ component accessors="true" singleton {
 		/*
 		// Almost works on Windows, but doesn't
 		// clear text backgroun
-    	reader.printString( '[2J' );
-    	reader.printString( '[1;1H' );
-    	reader.flushConsole();
+    	reader.print( '[2J' );
+    	reader.print( '[1;1H' );
+    	reader.flush();
 		*/
 	}
 
@@ -219,12 +216,26 @@ component accessors="true" singleton {
   	 **/
 	function setTempDir(required directory) {
         lock name="clearTempLock" timeout="3" {
+		    variables.tempdir = directory;
+		        
+        	// Delete temp dir
+	        var clearTemp = directoryExists(directory) ? directoryDelete(directory,true) : "";
+	        
+	        // Re-create it. Try 3 times.
+	        var tries = 0;
         	try {
-		        var clearTemp = directoryExists(directory) ? directoryDelete(directory,true) : "";
+        		tries++;
 		        directoryCreate( directory );
-		        variables.tempdir = directory;
         	} catch (any e) {
-        		printError(e);
+        		if( tries <= 3 ) {
+					logger.info( 'Error creating temp directory [#directory#]. Trying again in 500ms.', 'Number of tries: #tries#' );
+        			// Wait 500 ms and try again.  OS could be locking the dir
+        			sleep( 500 );
+        			retry;
+        		} else {
+					logger.info( 'Error creating temp directory [#directory#]. Giving up now.', 'Tried #tries# times.' );
+        			printError(e);        			
+        		}
         	}
         }
     	return variables.tempdir;
@@ -265,8 +276,8 @@ component accessors="true" singleton {
 			writedump(var=string, output="console");
 			string = "";
 		}
-    	reader.printString(string);
-    	reader.flushConsole();
+    	reader.print(string);
+    	reader.flush();
 	}
 
 	/**
@@ -286,25 +297,25 @@ component accessors="true" singleton {
 	        	var inStream = createObject( "java", "java.io.ByteArrayInputStream" ).init( arguments.input.getBytes() );
 	        	reader.setInput( inStream );
 	        }
-	        reader.setBellEnabled( false );
+	        reader.setBellEnabled( true );
 
 	        var line ="";
 	        variables.keepRunning = true;
-			reader.setDefaultPrompt( variables.shellPrompt );
-
-			// set and recreate temp dir
-			setTempDir( variables.tempdir );
+			reader.setPrompt( variables.shellPrompt );
 
 	        while( variables.keepRunning ){
 
 				if( input != "" ){
 					variables.keepRunning = false;
 				}
-				reader.printNewLine();
+				reader.println();
 				try {
+					// Announce we are ready
+					reader.beep();
 					// Shell stops on this line while waiting for user input
 		        	line = reader.readLine();
 				} catch( any er ) {
+
 					printError( er );
 					continue;
 				}
@@ -327,6 +338,7 @@ component accessors="true" singleton {
 	        } // end while keep running
 
 		} catch( any e ){
+			SystemOUtput( e.message & e.detail );
 			printError( e );
 		}
 		return variables.reloadshell;
@@ -355,11 +367,12 @@ component accessors="true" singleton {
 	 * @err.hint Error object to print (only message is required)
   	 **/
 	function printError(required err) {
-		reader.printString(print.boldRedText( "ERROR: " & formatterUtil.HTML2ANSI(err.message) ) );
-		reader.printNewLine();
+		logger.error( '#err.message# #err.detail ?: ''#', err.stackTrace ?: '' );
+		reader.print(print.boldRedText( "ERROR: " & formatterUtil.HTML2ANSI(err.message) ) );
+		reader.println();
 		if( structKeyExists( err, 'detail' ) ) {
-			reader.printString(print.boldRedText( formatterUtil.HTML2ANSI(err.detail) ) );
-			reader.printNewLine();
+			reader.print(print.boldRedText( formatterUtil.HTML2ANSI(err.detail) ) );
+			reader.println();
 		}
 		if (structKeyExists( err, 'tagcontext' )) {
 			var lines=arrayLen( err.tagcontext );
@@ -368,18 +381,18 @@ component accessors="true" singleton {
 					tc = err.tagcontext[ idx ];
 					if (len( tc.codeprinthtml )) {
 						if( idx > 1 ) {
-							reader.printString( print.boldCyanText( "called from " ) );
+							reader.print( print.boldCyanText( "called from " ) );
 						}
-						reader.printString(print.boldCyanText( "#tc.template#: line #tc.line##CR#" ));
-						reader.printString( print.text( formatterUtil.HTML2ANSI( tc.codeprinthtml ) ) );
+						reader.print(print.boldCyanText( "#tc.template#: line #tc.line##CR#" ));
+						reader.print( print.text( formatterUtil.HTML2ANSI( tc.codeprinthtml ) ) );
 					}
 				}
 			}
 		}
 		if( structKeyExists( err, 'stacktrace' ) ) {
-			reader.printString( err.stacktrace );
+			reader.print( err.stacktrace );
 		}
-		reader.printNewLine();
+		reader.println();
 	}
 
 }

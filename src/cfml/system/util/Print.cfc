@@ -22,43 +22,42 @@
 */
 component {
 
-	this.ANSICodes  = createObject("java", "jline.ANSIBuffer$ANSICodes");
 	this.cr 		= chr( 10 );
 	this.tab 		= chr( 9 );
+	this.esc 		= chr( 27 );
 
 	// These are the valid ANSI attributes
 	this.ANSIAttributes = {
-
 		// Remove all formatting
-		"off":0,
-		"none":0,
+		"off" : 0,
+		"none" : 0,
 
 		// Text decoration
-		"bold":1,
-		"underscored":4,
-		"blinking":5,
-		"reversed":7,
-		"concealed":8,
+		"bold" : 1,
+		"underscored" : 4,
+		"blinking" : 5,
+		"reversed" : 7,
+		"concealed" : 8,
 
 		// Text Color
-		"black":30,
-		"red":31,
-		"green":32,
-		"yellow":33,
-		"blue":34,
-		"magenta":35,
-		"cyan":36,
-		"white":37,
+		"black" : 30,
+		"red" : 31,
+		"green" : 32,
+		"yellow" : 33,
+		"blue" : 34,
+		"magenta" : 35,
+		"cyan" : 36,
+		"white" : 37,
 
 		// Background
-		"onBlack":40,
-		"onRed":41,
-		"onGreen":42,
-		"onYellow":43,
-		"onBlue":44,
-		"onMagenta":45,
-		"onCyan":46,
-		"onWhite":47
+		"onBlack" : 40,
+		"onRed" : 41,
+		"onGreen" : 42,
+		"onYellow" : 43,
+		"onBlue" : 44,
+		"onMagenta" : 45,
+		"onCyan" : 46,
+		"onWhite" : 47
 	};
 
 	/**
@@ -102,7 +101,7 @@ component {
 				if( left( methodName, attribLen ) == attrib ) {
 
 					// Add that attribute to the string
-					ANSIString &= this.ANSICodes.attrib( this.ANSIAttributes[ attrib ] );
+					ANSIString &= getANSIAttribute( this.ANSIAttributes[ attrib ] );
 					// Slice this bit off the method name
 					methodName  = mid( methodName, attribLen+1, len( methodName ) );
 					foundANSI = true;
@@ -143,7 +142,7 @@ component {
 
 		} // End While loop
 
-		ANSIString &= text & this.ANSICodes.attrib( this.ANSIAttributes["off"] );
+		ANSIString &= text & getANSIAttribute( this.ANSIAttributes["off"] );
 
 		// Add a CR if this was supposed to be a line
 		if( newLine ) {
@@ -153,5 +152,12 @@ component {
 		return ANSIString;
 
 	}
+
+	/**
+	* Get an ANSI Attribute
+	*/
+	private String function getANSIAttribute( required attribute ) {
+		return this.ESC & "[" & arguments.attribute & "m";
+    }
 
 }

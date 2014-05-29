@@ -29,7 +29,7 @@ Type "help" for help, or "help [command]" to be more specific.
 
 	// Check if we are called with an inline command
 	if( !isNull( args ) && trim( args ) != "" ){
-		 wireBox.getInstance( 'Shell' ).callCommand( args );
+		wireBox.getInstance( 'Shell' ).callCommand( args );
 	} else {
 		// Create the shell
 		shell = wireBox.getInstance( 'Shell' );
