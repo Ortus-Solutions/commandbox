@@ -11,6 +11,9 @@ component{
 	this.name = "CommandBox CLI";
 	this.sessionmanagement = "false";
 
+	// Load java libraries CommandBox leverages
+	this.javaSettings = { loadPaths = [ "lib" ], reloadOnChange = false };
+
 	// Move everything over to this mapping which is the "root" of our app
 	commandBoxRoot = getDirectoryFromPath( getMetadata( this ).path );
 	this.mappings[ '/commandbox' ] 	= commandBoxRoot;
