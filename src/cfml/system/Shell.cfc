@@ -39,6 +39,7 @@ component accessors="true" singleton {
 	property name="tempDir" inject="tempDir";
 	property name="CR" inject="CR";
 	property name="formatterUtil" inject="Formatter";
+	property name="logger" 	inject="logbox:logger:{this}";
 
 
 	/**
@@ -71,10 +72,14 @@ component accessors="true" singleton {
 		
 		variables.shellPrompt = print.green( "CommandBox> ");
 		
+		// set and recreate temp dir
+		setTempDir( variables.tempdir );
+		
 		// load commnands Async
 		thread name="initCommands-#createUUID()#"{
 			variables.commandService.configure();
 		}
+		
 	}
 
 	/**
@@ -125,11 +130,7 @@ component accessors="true" singleton {
  	 **/
 	function ask( message ) {
 		var input = "";
-		try {
-			input = reader.readLine( message );
-		} catch (any e) {
-			printError( e );
-		}
+		input = reader.readLine( message );
 		reader.setDefaultPrompt( variables.shellPrompt);
 		return input;
 	}
@@ -145,11 +146,7 @@ component accessors="true" singleton {
 			printString( message );
     		reader.flushConsole();
 		}
-		try {
-			key = getReader().readVirtualKey();
-		} catch (any e) {
-			printError( e );
-		}
+		key = getReader().readVirtualKey();
 		reader.setDefaultPrompt( variables.shellPrompt );
 		return key;
 	}
@@ -219,12 +216,26 @@ component accessors="true" singleton {
   	 **/
 	function setTempDir(required directory) {
         lock name="clearTempLock" timeout="3" {
+		    variables.tempdir = directory;
+		        
+        	// Delete temp dir
+	        var clearTemp = directoryExists(directory) ? directoryDelete(directory,true) : "";
+	        
+	        // Re-create it. Try 3 times.
+	        var tries = 0;
         	try {
-		        var clearTemp = directoryExists(directory) ? directoryDelete(directory,true) : "";
+        		tries++;
 		        directoryCreate( directory );
-		        variables.tempdir = directory;
         	} catch (any e) {
-        		printError(e);
+        		if( tries <= 3 ) {
+					logger.info( 'Error creating temp directory [#directory#]. Trying again in 500ms.', 'Number of tries: #tries#' );
+        			// Wait 500 ms and try again.  OS could be locking the dir
+        			sleep( 500 );
+        			retry;
+        		} else {
+					logger.info( 'Error creating temp directory [#directory#]. Giving up now.', 'Tried #tries# times.' );
+        			printError(e);        			
+        		}
         	}
         }
     	return variables.tempdir;
@@ -292,9 +303,6 @@ component accessors="true" singleton {
 	        variables.keepRunning = true;
 			reader.setDefaultPrompt( variables.shellPrompt );
 
-			// set and recreate temp dir
-			setTempDir( variables.tempdir );
-
 	        while( variables.keepRunning ){
 
 				if( input != "" ){
@@ -355,6 +363,7 @@ component accessors="true" singleton {
 	 * @err.hint Error object to print (only message is required)
   	 **/
 	function printError(required err) {
+		logger.error( '#err.message# #err.detail#', err.stackTrace );
 		reader.printString(print.boldRedText( "ERROR: " & formatterUtil.HTML2ANSI(err.message) ) );
 		reader.printNewLine();
 		if( structKeyExists( err, 'detail' ) ) {

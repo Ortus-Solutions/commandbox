@@ -21,6 +21,7 @@ component extends="wirebox.system.ioc.config.Binder" {
 		var system		= createObject( "java", "java.lang.System" );
 		var homeDir		= system.getProperty( 'user.home' ) & "/.CommandBox";
 		var tempDir		= homedir & "/temp";
+		var artifactDir	= homedir & "/artifacts";
 		var userDir		= system.getProperty( "user.dir" );
 		var historyFile	= homedir & "/.history";
 		var cr			= system.getProperty( "line.separator" );
@@ -29,6 +30,7 @@ component extends="wirebox.system.ioc.config.Binder" {
 		map( 'homeDir' ).toValue( homeDir );
 		map( 'tempDir' ).toValue( tempDir );
 		map( 'userDir' ).toValue( userDir );
+		map( 'artifactDir' ).toValue( artifactDir );
 		map( 'historyFile' ).toValue( historyFile );
 		map( 'cr' ).toValue( cr );
 		
