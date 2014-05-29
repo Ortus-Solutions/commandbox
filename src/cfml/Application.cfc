@@ -26,6 +26,13 @@ component{
 	}
 	
 	function onError( any exception, string eventName ) {
+		
+		// Try to log this to LogBox
+		try {
+    		application.wireBox.getLogBox().getRootLogger().error( '#exception.message# #exception.detail ?: ''#', exception.stackTrace );
+    	// If it fails no worries, LogBox just probably isn't loaded yet.
+		} catch ( Any e ) {}
+		
 		// Give nicer message to user
 		var err = arguments.exception;
     	var CR = chr( 13 );

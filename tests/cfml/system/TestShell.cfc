@@ -42,6 +42,9 @@ component name="TestShell" extends="mxunit.framework.TestCase" {
     	application.wirebox.clearSingletons();
 		shell = application.wirebox.getInstance( name='Shell', initArguments={ printWriter=printWriter } );
 
+		// TODO: Create a way to force the shell to load command synchronously, or set a flag when its finished.
+		// This sleep is just giving the shell time to finish loading all the commands async
+		sleep( 2000 );
 
 		shell.run("hel#t#");
 		wee = replace(baos.toString(),chr(0027),"","all");

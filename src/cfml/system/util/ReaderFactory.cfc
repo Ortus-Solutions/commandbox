@@ -12,6 +12,7 @@ component singleton {
 
 	property name="completor" 	inject="Completor";
 	property name="homedir" 	inject="homedir";
+	property name="historyFile"	inject="historyFile";	
 	
 	function getInstance( inStream, printWriter ) {
 		var reader = '';
@@ -61,8 +62,8 @@ component singleton {
         reader.addCompletor( jCompletor );
 
 		// Create our history file and set it
-		var historyFile = createObject( "java", "java.io.File" ).init( homedir & "/.history" );
-		var history = createObject( "java", "jline.History" ).init (historyFile );
+		var oHistoryFile = createObject( "java", "java.io.File" ).init( historyFile );
+		var history = createObject( "java", "jline.History" ).init ( oHistoryFile );
 		reader.setHistory( history );
 		
 		return reader;

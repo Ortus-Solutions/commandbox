@@ -36,7 +36,7 @@ component accessors="true" extends="Print"{
 		
 	// Proxy through any methods to the actual print helper
 	function onMissingMethod( missingMethodName, missingMethodArguments ){
-		variables.result &= super.onMissingMethod( missingMethodName, missingMethodArguments );
+		variables.result &= super.onMissingMethod( arguments.missingMethodName, arguments.missingMethodArguments );
 		return this;
 	}
 	
