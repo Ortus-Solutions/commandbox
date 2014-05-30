@@ -142,11 +142,11 @@ component accessors="true" singleton {
  	 **/
 	function waitForKey( message='' ) {
 		var key = '';
-		if( len( message ) ) {
-			printString( message );
+		if( len( arguments.message ) ) {
+			printString( arguments.message );
     		reader.flush();
 		}
-		key = getReader().readVirtualKey();
+		key = reader.readCharacter();
 		reader.setPrompt( variables.shellPrompt );
 		return key;
 	}
