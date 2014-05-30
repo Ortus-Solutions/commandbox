@@ -69,35 +69,6 @@ component name="TestShell" extends="mxunit.framework.TestCase" {
 		assertEquals(27,cursor);
 		candidates.clear();
 
-		cmdline = "cfdistro ";
-		cursor = completor.complete(cmdline,len(cmdline),candidates);
-		assertTrue(candidates.contains("war "));
-		assertTrue(candidates.contains("dependency "));
-		assertEquals(len(cmdline),cursor);
-		candidates.clear();
-
-		cmdline = "cfdistro war";
-		cursor = completor.complete(cmdline,len(cmdline),candidates);
-		assertTrue(candidates.contains("cfdistro war "));
-		assertFalse(candidates.contains("cfdistro dependency "));
-		assertEquals(0,cursor);
-		candidates.clear();
-
-		cmdline = "cfdistro d";
-		cursor = completor.complete(cmdline,len(cmdline),candidates);
-		assertTrue(candidates.contains("dependency "));
-		assertFalse(candidates.contains("build "));
-		assertEquals(9,cursor);
-		candidates.clear();
-
-		cmdline = "cfdistro dependency ";
-		cursor = completor.complete(cmdline,len(cmdline),candidates);
-		debug(candidates);
-		assertTrue(candidates.contains(" artifactId="));
-		assertTrue(candidates.contains(" exclusions="));
-		assertEquals(len(cmdline)-1,cursor);
-		candidates.clear();
-
 		cmdline = "init";
 		cursor = completor.complete(cmdline,len(cmdline),candidates);
 		debug(candidates);

@@ -49,16 +49,6 @@ component name="TestShell" extends="mxunit.framework.TestCase" {
 		assertTrue(find("help",wee));
 		baos.reset();
 
-		shell.run("cfdistro #t#");
-		wee = replace(baos.toString(),chr(0027),"","all");
-		assertTrue(find("war",wee));
-		baos.reset();
-
-		shell.run("cfdistro dep#t#");
-		wee = replace(baos.toString(),chr(0027),"","all");
-		assertTrue(find("dependency",wee));
-		baos.reset();
-
 		shell.run("ls #t#");
 		wee = replace(baos.toString(),chr(0027),"","all");
 		baos.reset();
