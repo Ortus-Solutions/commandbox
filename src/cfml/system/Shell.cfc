@@ -131,7 +131,8 @@ component accessors="true" singleton {
 	function ask( message ) {
 		var input = "";
 		input = reader.readLine( message );
-		reader.setPrompt( variables.shellPrompt);
+		// Reset back to default prompt
+		setPrompt();
 		return input;
 	}
 
@@ -147,22 +148,24 @@ component accessors="true" singleton {
     		reader.flush();
 		}
 		key = reader.readCharacter();
-		reader.setPrompt( variables.shellPrompt );
+		// Reset back to default prompt
+		setPrompt();
 		return key;
 	}
 
 	/**
 	 * clears the console
+	 *
+	 * Almost works on Windows, but doesn't clear text background
+	 * 
  	 **/
 	function clearScreen() {
-		reader.clearScreen();
-		/*
-		// Almost works on Windows, but doesn't
-		// clear text backgroun
-    	reader.print( '[2J' );
-    	reader.print( '[1;1H' );
-    	reader.flush();
-		*/
+	// This outputs a double prompt due to the redrawLine() call
+	//	reader.clearScreen();
+		
+	reader.print( '[2J' );
+	reader.print( '[1;1H' );
+		
 	}
 
 	/**
@@ -301,14 +304,14 @@ component accessors="true" singleton {
 
 	        var line ="";
 	        variables.keepRunning = true;
-			reader.setPrompt( variables.shellPrompt );
+			// Set default prompt
+			setPrompt();
 
 	        while( variables.keepRunning ){
 
 				if( input != "" ){
 					variables.keepRunning = false;
 				}
-				reader.println();
 				try {
 					// Shell stops on this line while waiting for user input
 		        	line = reader.readLine();
