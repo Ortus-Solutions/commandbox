@@ -9,10 +9,10 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 	property name='artifactService' inject='artifactService'; 
 
 	/**
-	 * @slug.hint An optional slug to filter the results by
+	 * @package.hint An optional package to filter the results by
 	 **/
-	function run( slug='' ) {
-		var results = artifactService.listArtifacts( arguments.slug );
+	function run( package='' ) {
+		var results = artifactService.listArtifacts( arguments.package );
 		
 		if( !results.count() ) {
 			print.yellowLine( 'No artifacts found in cache.' );
@@ -20,9 +20,9 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 		}
 		
 		print.line();
-		for( var slug in results ) {
-			for( var ver in results[ slug ] ) {
-				print.line( slug & ' ' & ver );				
+		for( var package in results ) {
+			for( var ver in results[ package ] ) {
+				print.line( package & ' ' & ver );				
 			}
 			print.line();
 		}
