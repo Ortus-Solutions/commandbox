@@ -13,7 +13,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 		// Get the Java JLine.History object
 		history = shell.getReader().getHistory();
 		// Flush out anything in the buffer
-		history.flushBuffer();
+		history.flush();
 
 		// Clear the history?		
 		if( arguments.clear ) {
@@ -24,9 +24,9 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 		// Default behavior is just to display history
 		} else {
 			
-			var historyIterator = history.getHistoryList().iterator();
+			var historyIterator = history.iterator();
 			while( historyIterator.hasNext() ) {
-				print.line( historyIterator.next() );
+				print.line( listLast( historyIterator.next(), ':' ) );
 			}
 			
 		} // end clear?

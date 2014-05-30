@@ -169,14 +169,14 @@ component accessors="true" singleton {
 	 * Get's terminal width
   	 **/
 	function getTermWidth() {
-       	return getReader().getTermwidth();
+       	return getReader().getTerminal().getWidth();
 	}
 
 	/**
 	 * Get's terminal height
   	 **/
 	function getTermHeight() {
-       	return getReader().getTermheight();
+       	return getReader().getTerminal().getHeight();
 	}
 
 	/**
