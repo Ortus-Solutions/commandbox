@@ -25,7 +25,10 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 				destination="#shell.getHomeDir()#/cfml"
 				overwrite=true;
 		}
-					 
+		
+		// Reload the shell			 
+		runCommand( 'reload' );
+		
 		print.greenLine( "Installed #latest#" );
 	}
 	
