@@ -1,12 +1,35 @@
+<?xml version="1.0"?>
+<!-- ====================================================================== 
+Build a new distribution of Ortus CommandBox
+====================================================================== -->
 <project name="distro.build" default="build" basedir="./" xmlns:antcontrib="antlib:net.sf.antcontrib">
+	 <description>
+    	Build a new distribution of Ortus CommandBox
+    </description>
 
-	<loadproperties srcfile="build.properties"/>
+    <!-- Build Labels -->
+	<tstamp prefix="start"/>
+	<!-- Default environment check, if not passed via -Denvironment -->
+	<condition property="environment" value="local">
+		<not><isset property="environment" /></not>
+	</condition>
+	<echo>Loading Properties from environment: ${environment}</echo>
+	<!-- Load env properties -->
+	<loadproperties srcFile="build-${environment}.properties"/>
+
+	<!-- import cfdistro -->
 	<import file="${cfdistro.build.file}"/>
+	<!-- import cli -->
 	<import file="build-cli.xml"/>
 	<property name="maven.repo.local" value="${cfdistro.basedir}/artifacts"/>
 
+	<!-- Default Target -->
 	<target name="build" depends="build.cli">
 	</target>
+
+	<!-- ********************************************************************************************-->
+	<!--						TEST TARGETS 														 -->
+	<!-- ********************************************************************************************-->
 
 	<target name="build.testwar" depends="cfdistro.build" description="creates test war">
 		<!-- creates a war for testing in dist/, use 'box-cli runwar.start.fg' to run -->
