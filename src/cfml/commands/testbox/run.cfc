@@ -1,5 +1,5 @@
 /**
- * Description of command
+ * This command executes TestBox runners via HTTP/S
  **/
 component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
 	
@@ -7,7 +7,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 	 * 
 	 **/
 	function run(  ) {
-		print.line( "Command not implemented!" );
+		
 	}
 
 }

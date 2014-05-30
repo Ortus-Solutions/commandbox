@@ -4,8 +4,7 @@ component name="TestShell" extends="mxunit.framework.TestCase" {
     	var baos = createObject("java","java.io.ByteArrayOutputStream").init();
     	var testString = "ls#chr(10)#";
     	var bain = createObject("java","java.io.ByteArrayInputStream").init(testString.getBytes());
-    	var printWriter = createObject("java","java.io.PrintWriter").init(baos);
-		shell = application.wirebox.getInstance( name='Shell', initArguments={ inStream=bain, printWriter=printWriter } );
+		shell = application.wirebox.getInstance( name='Shell', initArguments={ inStream=bain, outputStream=baos } );
 		commandService = application.wirebox.getInstance( 'CommandService' );
 		commandService.runCommandline("ls");
 		debug(baos.toString());
@@ -14,11 +13,10 @@ component name="TestShell" extends="mxunit.framework.TestCase" {
 
 	public void function testShell()  {
     	var baos = createObject("java","java.io.ByteArrayOutputStream").init();
-    	var printWriter = createObject("java","java.io.PrintWriter").init(baos);
     	var n = chr(10);
     	var line = "ls" &n& "q" & n;
     	var inStream = createObject("java","java.io.ByteArrayInputStream").init(line.getBytes());
-		shell = application.wirebox.getInstance( name='Shell', initArguments={ inStream=inStream, printWriter=printWriter } ); 	
+		shell = application.wirebox.getInstance( name='Shell', initArguments={ inStream=inStream, outputStream=baos } ); 	
 		shell.run();
 		//debug(baos.toString());
 
@@ -36,11 +34,10 @@ component name="TestShell" extends="mxunit.framework.TestCase" {
 
 	public void function testShellComplete()  {
     	var baos = createObject("java","java.io.ByteArrayOutputStream").init();
-    	var printWriter = createObject("java","java.io.PrintWriter").init(baos);
     	var t = chr(9);
     	var n = chr(10);
     	application.wirebox.clearSingletons();
-		shell = application.wirebox.getInstance( name='Shell', initArguments={ printWriter=printWriter } );
+		shell = application.wirebox.getInstance( name='Shell', initArguments={ outputStream=baos } );
 
 		// TODO: Create a way to force the shell to load command synchronously, or set a flag when its finished.
 		// This sleep is just giving the shell time to finish loading all the commands async
@@ -87,14 +84,13 @@ component name="TestShell" extends="mxunit.framework.TestCase" {
 	public void function testWindowsANSI()  {
 		System = createObject("java", "java.lang.System");
 		var ansiOut = createObject("java","org.fusesource.jansi.AnsiConsole").out;
-        var printWriter = createObject("java","java.io.PrintWriter").init(
-        		createObject("java","java.io.OutputStreamWriter").init(ansiOut,
-        			// default to Cp850 encoding for Windows console output (ROO-439)
-        			System.getProperty("jline.WindowsTerminal.output.encoding", "Cp850")));
+        var baos 	= createObject("java","java.io.OutputStreamWriter").init( ansiOut,
+        				// default to Cp850 encoding for Windows console output (ROO-439)
+        				System.getProperty("jline.WindowsTerminal.output.encoding", "Cp850") );
     	var t = chr(9);
     	var n = chr(10);
     	application.wirebox.clearSingletons();
-		shell = application.wirebox.getInstance( name='Shell', initArguments={ printWriter=printWriter } );
+		shell = application.wirebox.getInstance( name='Shell', initArguments={ outputStream=printWriter } );
 
 		shell.run("hel#t#");
 		ansiOut.close();

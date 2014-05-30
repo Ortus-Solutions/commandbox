@@ -17,12 +17,14 @@ component singleton {
 	
 	/**
 	* Build a jline console reader instance
+	* @inStream.hint input stream if running externally
+	* @outputStream.hint output stream if running externally
 	*/
-	function getInstance( inStream, printWriter ) {
+	function getInstance( inStream, outputStream ) {
 		var reader = "";
 		
 		// If no print writer was passed in, create one
-		if( isNull( arguments.printWriter ) ) {
+		if( isNull( arguments.outputStream ) ) {
 			// create the jline console reader
 			reader = createObject( "java", "jline.console.ConsoleReader" ).init();
 		// We were given a print writer to use
@@ -33,15 +35,14 @@ component singleton {
 		    	arguments.inStream = createObject( "java", "java.io.FileInputStream" ).init( FileDescriptor.in );
 			}
 			
-	    	reader = createObject( "java", "jline.console.ConsoleReader" ).init( arguments.inStream, arguments.printWriter );
-	    	
+	    	reader = createObject( "java", "jline.console.ConsoleReader" ).init( arguments.inStream, arguments.outputStream );
 		}
 		
-		// Create our completer and set it
+		// Create our completer and set it in the console reader
 		var jCompletor = createDynamicProxy( completor , [ 'jline.console.completer.Completer' ] );
         reader.addCompleter( jCompletor );
 
-		// Create our history file and set it
+		// Create our history file and set it in the console reader
 		var oHistoryFile = createObject( "java", "java.io.File" ).init( historyFile );
 		var history = createObject( "java", "jline.console.history.FileHistory" ).init ( oHistoryFile );
 		reader.setHistory( history );
