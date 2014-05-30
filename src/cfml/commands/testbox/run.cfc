@@ -3,6 +3,10 @@
  **/
 component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
 	
+	// DI
+	property name="cr" 			inject="cr";
+	property name="boxService" 	inject="boxService";
+
 	/**
 	* Ability to execute TestBox tests
 	* @runner.hint The URL or shortname of the runner to use, if it uses a short name we look in your box.json
@@ -16,6 +20,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 	* @testBundles.hint A list or array of bundle names that are the ones that will be executed ONLY!
 	* @testSuites.hint A list of suite names that are the ones that will be executed ONLY!
 	* @testSpecs.hint A list of test names that are the ones that will be executed ONLY!
+	* @outputFile.hint We will store the results in this output file as well as presenting it to you.
 	**/
 	function run(
 		string runner="",
@@ -23,19 +28,20 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 		string directory,
 		boolean recurse=true,
 		string reporter="text",
-		string reporterOptions="{}",
-		string labels="",
+		string reporterOptions,
+		string labels,
 		string options,
-		string testBundles="",
-		string testSuites="",
-		string testSpecs=""
+		string testBundles,
+		string testSuites,
+		string testSpecs,
+		string outputFile
 	){
 		
 		// get the box.json from the project, else empty if not found.
 		var boxData = boxService.getBoxData( shell.pwd() );
 		
 		// if we have boxdata then try to discover runner from it.
-		if( structCount( boxData ) ){
+		if( !structIsEmpty( boxData ) ){
 			// check for testbox data and runner key
 			if( structKeyExists( boxData, "testbox" ) and structKeyExists( boxData.testbox, "runner" ) ){
 				// if we have an empty runner, discover runner from box data 
@@ -58,17 +64,54 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 				else if ( len( arguments.runner ) ){
 					// only check if we have an array of struct definitions, else ignore.
 					if( isArray( boxData.testbox.runner ) ){
-						for( var thisRunner in boxData.testbox.runner )
+						for( var thisRunner in boxData.testbox.runner ){
+
+						}
 					}
 					arguments.runner = boxdata.testbox.runner[ arguments.runner ];
 				}
 				// else just use the passed runner as a URL
 
 			}
+
+			// We know need to build the params according to box.json
 		}
 
+		var testboxURL = arguments.runner & "?recurse=#arguments.recurse#&reporter=#arguments.reporter#";
+		// Do we have bundles
+		if( !isNull( arguments.bundles ) ){ testboxURL &= "&bundles=#arguments.bundles#"; }
+		// Do we have directory
+		if( !isNull( arguments.bundles ) ){ testboxURL &= "&directory=#arguments.directory#"; }
+		// Do we have labels
+		if( !isNull( arguments.labels ) ){ testboxURL &= "&labels=#arguments.labels#"; }
+		// Do we have testBundles
+		if( !isNull( arguments.testBundles ) ){ testboxURL &= "&testBundles=#arguments.testBundles#"; }
+		// Do we have testSuites
+		if( !isNull( arguments.testSuites ) ){ testboxURL &= "&labels=#arguments.testSuites#"; }
+		// Do we have testSpecs
+		if( !isNull( arguments.testSpecs ) ){ testboxURL &= "&labels=#arguments.testSpecs#"; }
+	
+		// run it now baby!
+		try{
+			var results = new Http( url=testBoxURL ).send().getPrefix();
+		} catch( any e ){
+			log.error( "Error executing tests: #e.message# #e.detail#", e );
+			return error( 'Error executing tests: #CR# #e.message##CR##e.detail#' );
+		}
 
-		
+		// Do we have an output file
+		if( !isNull( arguments.outputFile ) ){
+			// Attach pwd location
+			if( left( arguments.outputFile, 1 ) != "/" ){
+				arguments.outputFile = shell.pwd() & "/" & arguments.outputFile;
+			}
+			// write it
+			fileWrite( arguments.outputFile, results.fileContent );
+			print.boldGreenLine( "Report written to #arguments.outputFile#!" );
+		}
+
+		// print report out
+		print.yellow( " " & results.filecontent );
 	}
 
 }

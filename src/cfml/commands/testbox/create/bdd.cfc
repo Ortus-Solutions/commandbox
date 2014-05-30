@@ -4,28 +4,27 @@
 * override that with the directory param.    
 *  
 **/
-component extends="commandbox.system.BaseCommand" aliases="coldbox create bdd" excludeFromHelp=false {
+component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
 	
 	/**
 	* @name.hint Name of the BDD spec to create without the .cfc. For packages, specify name as 'myPackage/myBDDSpec'
+	* @open.hint Open the file once it is created
 	* @directory.hint The base directory to create your BDD spec in
 	 **/
-	function run( 	required name,
-					directory='tests/specs' ) {
+	function run( required name, boolean open=false, directory=shell.pwd() ){
 		// This will make each directory canonical and absolute		
-		directory = fileSystemUtil.resolveDirectory( directory );
+		arguments.directory = fileSystemUtil.resolveDirectory( arguments.directory );
 						
 		// Validate directory
-		if( !directoryExists( directory ) ) {
-			return error( 'The directory [#directory#] doesn''t exist.' );			
+		if( !directoryExists( arguments.directory ) ) {
+			return error( 'The directory [#arguments.directory#] doesn''t exist.' );			
 		}
 		
 		// Allow dot-delimited paths
-		name = replace( name, '.', '/', 'all' );
+		arguments.name = replace( arguments.name, '.', '/', 'all' );
 		
 		// This help readability so the success messages aren't up against the previous command line
 		print.line();
-		
 		
 		// Read in Templates
 		var BDDContent = fileRead( '/commandbox/templates/testbox/bdd.txt' );
@@ -33,9 +32,10 @@ component extends="commandbox.system.BaseCommand" aliases="coldbox create bdd" e
 		// Write out BDD Spec
 		var BDDPath = '#directory#/#name#.cfc'; 
 		file action='write' file='#BDDPath#' mode ='777' output='#BDDContent#';
-		print.greenLine( 'Created #BDDPath#' );				
-	
-	
+		print.greenLine( 'Created #BDDPath#' );
+
+		// Open file?
+		if( arguments.open ){ runCommand( "edit #bddPath#" ); }			
 	}
 
 }
