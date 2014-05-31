@@ -12,6 +12,13 @@ component extends="commandbox.system.BaseCommand" aliases="snake" excludeFromHel
 
 	function run()  {
 		
+		variables.directionOpposites = {
+			'up' = 'down',
+			'down' = 'up',
+			'left' = 'right',
+			'right' = 'left'
+		};
+		
 		variables.height = 17;
 		variables.width = 53;
 		//variables.height = shell.getTermHeight()-13;
@@ -80,7 +87,7 @@ component extends="commandbox.system.BaseCommand" aliases="snake" excludeFromHel
 					while( variables.snakeRun ) {
 						// Move and re-draw if not in an invalid state
 						if( !variables.collision ) {
-							variables.collision = !move( variables.direction );			
+							variables.collision = !move( getNextDirection() );			
 							printGame();
 						}
 						// Decrease this to speed up the game
@@ -98,18 +105,16 @@ component extends="commandbox.system.BaseCommand" aliases="snake" excludeFromHel
 				// Detect user input
 				key = shell.waitForKey();
 				
-				// Prevent the snake from doubling back on itself once it's longer
-				// than one part because it's annoying and a little unexpected
 				if( isQuit( key ) ) {
 					break;
-				} else if( isLeft( key ) && ( variables.direction != 'right' || variables.body.len() == 1 ) ) {
-					variables.direction = 'left';
-				} else if( isRight( key ) && ( variables.direction != 'left' || variables.body.len() == 1 ) ) {
-					variables.direction = 'right';
-				} else if( isUp( key ) && ( variables.direction != 'down' || variables.body.len() == 1 ) ) {
-					variables.direction = 'up';
-				} else if( isDown( key ) && ( variables.direction != 'up' || variables.body.len() == 1 ) ) {
-					variables.direction = 'down';
+				} else if( isLeft( key ) ) {
+					go( 'left' );
+				} else if( isRight( key ) ) {
+					go( 'right' );
+				} else if( isUp( key ) ) {
+					go( 'up' );
+				} else if( isDown( key ) ) {
+					go( 'down' );
 				} else if( isRetry( key ) ) {
 					resetGame();
 				}
@@ -188,12 +193,56 @@ component extends="commandbox.system.BaseCommand" aliases="snake" excludeFromHel
 			
 			print.line( variables.gameFooter );
 			
-			shell.clearScreen();
+			shell.clearScreen( false );
 			print.toConsole();
 			
 	}
 
 
+
+	// This needs to be synchronized with getNextDirection()
+	private function go( newDirection ) {
+		lock name='snake_direction' type='exclusive' timeout=2 {
+			
+			// Figure out where we'll be going right before this direction is used
+			if( variables.direction.len() ) {
+				var preceedingDirection = variables.direction.first();
+			} else {
+				var preceedingDirection = variables.lastDirection;				
+			}
+			
+			// Firstly, don't add additional directions that are the same as where we're already headed
+			// so we don't stack up redundant junk in the queue that makes the snake appear unresponsive.
+			// Secondly, only obey if the new direction isn't in the opposite (since that's an annoying instant "game over") 
+			// UNLESS the snake is stil a baby-- then it can go anywhere it wants 
+			if( arguments.newDirection != preceedingDirection &&
+				( arguments.newDirection != variables.directionOpposites[ preceedingDirection ] || isBaby() )
+			) {
+				variables.direction.prepend( newDirection );				
+			}
+		}
+	}
+	
+	// This needs to be synchronized with go()
+	private function getNextDirection() {
+		lock name='snake_direction' type='exclusive' timeout=2 {
+			// Has the user told us to go somewhere?
+			if( variables.direction.len() ) {
+				// What's next in the queue of directions?
+				var nextDirection = variables.direction.last();
+				// Then remove it
+				variables.direction.deleteAt( variables.direction.len() );
+			} else {
+				// Otherwise, just go the last place we went for lack of something better
+				nextDirection = variables.lastDirection;
+			}
+			
+			// Remember where we are going
+			variables.lastDirection = nextDirection;
+			return nextDirection;
+		}
+	}
+	
 	private function move( required direction ) {
 		var head = variables.body[1];
 		var newHead = duplicate( head );
@@ -233,6 +282,12 @@ component extends="commandbox.system.BaseCommand" aliases="snake" excludeFromHel
 		return true;
 	}
 
+	// This is a baby snake? i.e. Only 1 body segment.
+	private function isBaby() {
+		return variables.body.len() == 1; 
+	}
+
+
 	private function resetGame() {
 		
 		// An array of coordinates that represent where the snake is
@@ -245,7 +300,7 @@ component extends="commandbox.system.BaseCommand" aliases="snake" excludeFromHel
 		];
 		
 		// Number of apples to start the game with
-		variables.appleCount = 900;
+		variables.appleCount = 6;
 		variables.biteCount = 0;
 		
 		// An array of apples
@@ -253,7 +308,11 @@ component extends="commandbox.system.BaseCommand" aliases="snake" excludeFromHel
 		
 		seedApples();
 			
-		variables.direction = 'up';
+		// Direction is an array to capture multiple key strokes that are
+		// pressed between screen refreshes
+		variables.direction = [ 'up' ];
+		// This is the last direction we went in case the user is just coasting
+		variables.lastDirection = 'up';
 		variables.collision = false;
 	}
 	

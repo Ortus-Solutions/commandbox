@@ -12,14 +12,14 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 	function run( Boolean clear=false ) {
 		// Get the Java JLine.History object
 		history = shell.getReader().getHistory();
-		// Flush out anything in the buffer
-		history.flush();
 
 		// Clear the history?		
 		if( arguments.clear ) {
 		
 			history.clear();
 			print.greenLine( 'History cleared.' );
+			// Flush out anything in the buffer
+			history.flush();
 			
 		// Default behavior is just to display history
 		} else {

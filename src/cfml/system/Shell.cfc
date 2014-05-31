@@ -159,12 +159,21 @@ component accessors="true" singleton {
 	 * Almost works on Windows, but doesn't clear text background
 	 * 
  	 **/
-	function clearScreen() {
+	function clearScreen( addLines = true ) {
 	// This outputs a double prompt due to the redrawLine() call
 	//	reader.clearScreen();
+	
+		// A temporary workaround for windows. Since background colors aren't cleared
+		// this will force them off the screen with blank lines before clearing.
+		if( server.os.name contains 'Windows' && addLines ) {
+			var i = 0;
+			while( ++i <= getTermHeight() + 5 ) {
+				reader.println();	
+			}
+		}
 		
-	reader.print( '[2J' );
-	reader.print( '[1;1H' );
+		reader.print( '[2J' );
+		reader.print( '[1;1H' );
 		
 	}
 
@@ -334,8 +343,12 @@ component accessors="true" singleton {
 					} catch (any e) {
 						printError(e);
 					}
-				}    	 
-
+				}
+				
+				// Flush history buffer to disk. I could do this in the quit command
+				// but then I would lose everything if the user just closes the window
+				getReader().getHistory().flush();
+				
 	        } // end while keep running
 
 		} catch( any e ){
