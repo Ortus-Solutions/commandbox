@@ -6,6 +6,8 @@
 * @author Brad Wood, Luis Majano, Denny Valliant
 *
 * I handle artifacts, which are basically just a cache of downloaded packages.
+* Artifacts are stored in this format:
+* <artifactdir>/packageName/version/packageName.zip
 *
 */
 component singleton {
@@ -66,9 +68,26 @@ component singleton {
 	
 	// remove artifacts (by package, or by package and version?)
 	
-	// artifact exists? (any version, specific version)
+	/**
+	* Returns true if a package exists in the artifact cache, false if not.
+	* @package.hint The package name to look for
+	* @version.hint The version of the package to look for
+	*/ 
+	function artifactExists( required package, required version='' ) {		
+		return filesExists( artifactDir & '/' & arguments.package & '/' & arguments.version );				
+	}
 	
 	// get artifact location (package, version)
+	
+	/**
+	* Returns the filesystem path of the artifact
+	* @package.hint The package name to look for
+	* @version.hint The version of the package to look for
+	*/ 
+	function getArtifactLocation( required package, version='' ) {
+		
+
+	}
 	
 	// create artifact (Should this take care of downloading, or be passed a temp directory of an already downloaded item?)
 	

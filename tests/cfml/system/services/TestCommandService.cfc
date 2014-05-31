@@ -24,7 +24,7 @@ component extends="mxunit.framework.TestCase" {
 	}
 		
 	public void function testRunCommandLine()  {
-		result = commandService.runCommandLine( "help | more" );
+		result = commandService.runCommandLine( "help" );
 	}
 
 	/*
@@ -47,7 +47,7 @@ component extends="mxunit.framework.TestCase" {
 	  test  =  		 mine 	 
 	   tester   	=  	 'YOU' 	
 	     tester2   	=  	 "YOU2"
-	</cfsavexcontent>
+	</cfsavecontent>
 		--->
 		
 		

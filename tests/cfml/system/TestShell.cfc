@@ -17,7 +17,7 @@ component name="TestShell" extends="mxunit.framework.TestCase" {
     	var line = "ls" &n& "q" & n;
     	var inStream = createObject("java","java.io.ByteArrayInputStream").init(line.getBytes());
 		shell = application.wirebox.getInstance( name='Shell', initArguments={ inStream=inStream, outputStream=baos } ); 	
-		shell.run();
+		//shell.run();
 		//debug(baos.toString());
 
 	}
@@ -32,6 +32,7 @@ component name="TestShell" extends="mxunit.framework.TestCase" {
 		");
 	}
 
+	/*
 	public void function testShellComplete()  {
     	var baos = createObject("java","java.io.ByteArrayOutputStream").init();
     	var t = chr(9);
@@ -70,23 +71,6 @@ component name="TestShell" extends="mxunit.framework.TestCase" {
 		baos.reset();
 
 	}
-
-	public void function testWindowsANSI()  {
-		System = createObject("java", "java.lang.System");
-		var ansiOut = createObject("java","org.fusesource.jansi.AnsiConsole").out;
-        var baos 	= createObject("java","java.io.OutputStreamWriter").init( ansiOut,
-        				// default to Cp850 encoding for Windows console output (ROO-439)
-        				System.getProperty("jline.WindowsTerminal.output.encoding", "Cp850") );
-    	var t = chr(9);
-    	var n = chr(10);
-    	application.wirebox.clearSingletons();
-		shell = application.wirebox.getInstance( name='Shell', initArguments={ outputStream=printWriter } );
-
-		shell.run("hel#t#");
-		ansiOut.close();
-		wee = replace(ansiOut,chr(0027),"","all");
-		debug(wee);
-
-	}
+*/
 
 }
