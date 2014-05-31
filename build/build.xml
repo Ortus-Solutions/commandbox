@@ -38,6 +38,7 @@ Build a new distribution of Ortus CommandBox
 		<mapping physical="@ext.mappings.dir@/org.coldbox/testbox/1.1.0/system/testing/compat" virtual="/mxunit"/>
 		<!-- set mappings for sources, tests -->
 		<mapping virtual="/commandbox" physical="@src.dir@/cfml" />
+		<mapping virtual="/wirebox" physical="@src.dir@/cfml/system/wirebox" />
 		<mapping virtual="/cfml" physical="@src.dir@/cfml" />
 		<mapping virtual="/tests" physical="@src.dir@/../tests" />
 	</target>
