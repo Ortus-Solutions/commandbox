@@ -3,6 +3,7 @@
 /build/temp
 /build/requires.txt
 /src/cfml/system/config/servers.json
+/lib
 settings.xml
 .project
 WEB-INF

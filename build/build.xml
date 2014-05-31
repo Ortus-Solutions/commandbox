@@ -14,8 +14,10 @@ Build a new distribution of Ortus CommandBox
 		<not><isset property="environment" /></not>
 	</condition>
 	<echo>Loading Properties from environment: ${environment}</echo>
-	<!-- Load env properties -->
+	<!-- Load env properties, to override any default properties -->
 	<loadproperties srcFile="build-${environment}.properties"/>
+	<!-- Load properties -->
+	<loadproperties srcFile="build.properties"/>
 
 	<!-- import cfdistro -->
 	<import file="${cfdistro.build.file}"/>
