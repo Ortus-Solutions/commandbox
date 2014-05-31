@@ -17,57 +17,57 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=tru
 		print.line();
 		
 		// Basic text output
-		print.text( 'line : ' ); print.line( 'CommandBox Rox off your sox!' );
+		print.text( 'line : ' ).line( 'CommandBox Rox off your sox!' );
 		
 		print.line();
 		
 		// Line decoration
-		print.text( 'bold : ' ); print.boldLine( 'CommandBox Rox off your sox!' );
-		print.text( 'underscored : ' ); print.underscoredLine( 'CommandBox Rox off your sox!' );
-		print.text( 'blinking : ' ); print.blinkingLine( 'CommandBox Rox off your sox!' );
-		print.text( 'reversed : ' ); print.reversedLine( 'CommandBox Rox off your sox!' );
-		print.text( 'concealed : ' ); print.concealedLine( 'CommandBox Rox off your sox!' );
+		print.text( 'bold : ' ).boldLine( 'CommandBox Rox off your sox!' );
+		print.text( 'underscored : ' ).underscoredLine( 'CommandBox Rox off your sox!' );
+		print.text( 'blinking : ' ).blinkingLine( 'CommandBox Rox off your sox!' );
+		print.text( 'reversed : ' ).reversedLine( 'CommandBox Rox off your sox!' );
+		print.text( 'concealed : ' ).concealedLine( 'CommandBox Rox off your sox!' );
 		
 		print.line();
 		
 		// Line colors
-		print.text( 'blackOnWhite : ' ); print.blackOnWhiteLine( 'CommandBox Rox off your sox!' );
-		print.text( 'red : ' ); print.redLine( 'CommandBox Rox off your sox!' ) ;
-		print.text( 'green : ' ); print.greenLine( 'CommandBox Rox off your sox!' ) ;
-		print.text( 'yellow : ' ); print.yellowLine( 'CommandBox Rox off your sox!' );
-		print.text( 'blue : ' ); print.blueLine( 'CommandBox Rox off your sox!' ) ;
-		print.text( 'magenta : ' ); print.magentaLine( 'CommandBox Rox off your sox!' );
-		print.text( 'cyan : ' ); print.cyanLine( 'CommandBox Rox off your sox!' ) ;
-		print.text( 'white : ' ); print.whiteLine( 'CommandBox Rox off your sox!' ) ;
+		print.text( 'blackOnWhite : ' ).blackOnWhiteLine( 'CommandBox Rox off your sox!' );
+		print.text( 'red : ' ).redLine( 'CommandBox Rox off your sox!' ) ;
+		print.text( 'green : ' ).greenLine( 'CommandBox Rox off your sox!' ) ;
+		print.text( 'yellow : ' ).yellowLine( 'CommandBox Rox off your sox!' );
+		print.text( 'blue : ' ).blueLine( 'CommandBox Rox off your sox!' ) ;
+		print.text( 'magenta : ' ).magentaLine( 'CommandBox Rox off your sox!' );
+		print.text( 'cyan : ' ).cyanLine( 'CommandBox Rox off your sox!' ) ;
+		print.text( 'white : ' ).whiteLine( 'CommandBox Rox off your sox!' ) ;
 		
 		print.line();
 		
 		// Background colors
-		print.text( 'OnBlack : ' ); print.textOnBlackLine( 'CommandBox Rox off your sox!' );
-		print.text( 'OnRed : ' ); print.textOnRedLine( 'CommandBox Rox off your sox!' ) ;
-		print.text( 'OnGreen : ' ); print.textOnGreenLine( 'CommandBox Rox off your sox!' ) ;
-		print.text( 'OnYellow : ' ); print.textOnYelloLine( 'CommandBox Rox off your sox!' );
-		print.text( 'OnBlue : ' ); print.textOnBlueLine( 'CommandBox Rox off your sox!' ) ;
-		print.text( 'OnMagenta : ' ); print.textOnMagentaLine( 'CommandBox Rox off your sox!' );
-		print.text( 'OnCyan : ' ); print.textOnCyanLine( 'CommandBox Rox off your sox!' ) ;
-		print.text( 'BlackOnWhite : ' ); print.BlackTextOnWhiteLine( 'CommandBox Rox off your sox!' );
+		print.text( 'OnBlack : ' ).textOnBlackLine( 'CommandBox Rox off your sox!' );
+		print.text( 'OnRed : ' ).textOnRedLine( 'CommandBox Rox off your sox!' ) ;
+		print.text( 'OnGreen : ' ).textOnGreenLine( 'CommandBox Rox off your sox!' ) ;
+		print.text( 'OnYellow : ' ).textOnYelloLine( 'CommandBox Rox off your sox!' );
+		print.text( 'OnBlue : ' ).textOnBlueLine( 'CommandBox Rox off your sox!' ) ;
+		print.text( 'OnMagenta : ' ).textOnMagentaLine( 'CommandBox Rox off your sox!' );
+		print.text( 'OnCyan : ' ).textOnCyanLine( 'CommandBox Rox off your sox!' ) ;
+		print.text( 'BlackOnWhite : ' ).BlackTextOnWhiteLine( 'CommandBox Rox off your sox!' );
 		
 		print.line();
 		// Combinations
-		print.text( 'redOnWhite : ' ); print.redOnWhiteLine( 'CommandBox Rox off your sox!' );
-		print.text( 'blueOnGreen : ' ); print.blueOnGreenLine( 'CommandBox Rox off your sox!' );
-		print.text( 'blueOnRed : ' ); print.blueOnRedLine( 'CommandBox Rox off your sox!' );
-		print.text( 'redOnCyan : ' ); print.redOnCyanLine( 'CommandBox Rox off your sox!' );
+		print.text( 'redOnWhite : ' ).redOnWhiteLine( 'CommandBox Rox off your sox!' );
+		print.text( 'blueOnGreen : ' ).blueOnGreenLine( 'CommandBox Rox off your sox!' );
+		print.text( 'blueOnRed : ' ).blueOnRedLine( 'CommandBox Rox off your sox!' );
+		print.text( 'redOnCyan : ' ).redOnCyanLine( 'CommandBox Rox off your sox!' );
 		
 		print.line();
 		
 		// Get funky! ("Background" is just extranious text that will be ignored)
-		print.text( 'boldBlinkingUnderscoredBlueLineOnRedBackground : ' ); print.boldBlinkingUnderscoredBlueLineOnRedBackground( 'CommandBox Rox off your sox!' );
+		print.text( 'boldBlinkingUnderscoredBlueLineOnRedBackground : ' ).boldBlinkingUnderscoredBlueLineOnRedBackground( 'CommandBox Rox off your sox!' );
 		
 		print.line();
 		
 		// "green" is the only thing used in this one
-		print.text( 'dumpUglygreenCrapToStreen : ' ); print.dumpUglygreenCrapToStreenLine( 'CommandBox Rox off your sox!' );
+		print.text( 'dumpUglygreenCrapToStreen : ' ).dumpUglygreenCrapToStreenLine( 'CommandBox Rox off your sox!' );
 		
 	}
 
