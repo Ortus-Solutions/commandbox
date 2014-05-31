@@ -1,7 +1,12 @@
 /**
-* This is am experiment with interactive ANSI stuff
+* This is a fun retro-style snake game.  The "snake" is on the loose and you need to gobble up as many juicy apples as you can. 
+* Use the S, F, E, and C keys on your keyboard to move left, right, up and down respectively.  If you have a 10-key pad, you can also use 4, 6, 8, and 2.
+* But be careful- if you run into a wall or into your own tail, the game is over!  The snake will grow every time he eats and apple, and once you 
+* clear all the apples, more will appear for your chomping pleasure.
+* Press Q to quit the game at any time.
+* Press R to restart the game after it's over
 **/
-component extends="commandbox.system.BaseCommand" aliases="snake" excludeFromHelp=true {
+component extends="commandbox.system.BaseCommand" aliases="snake" excludeFromHelp=false {
 
 	property name='p' inject='print';
 
@@ -37,10 +42,10 @@ component extends="commandbox.system.BaseCommand" aliases="snake" excludeFromHel
 		
 		variables.gameFooter =
 		'*******************************************************' & cr &
-		'*                   ' & p.bold( 'S' ) & ' moves left                      *' & cr &
-		'*                   ' & p.bold( 'F' ) & ' moves right                     *' & cr &
-		'*                   ' & p.bold( 'E' ) & ' moves up                        *' & cr &
-		'*                   ' & p.bold( 'C' ) & ' moves down                      *' & cr &
+		'*                 ' & p.bold( 'S' ) & ' or ' & p.bold( '4' ) & ' moves left                   *' & cr &
+		'*                 ' & p.bold( 'F' ) & ' or ' & p.bold( '6' ) & ' moves right                  *' & cr &
+		'*                 ' & p.bold( 'E' ) & ' or ' & p.bold( '8' ) & ' moves up                     *' & cr &
+		'*                 ' & p.bold( 'C' ) & ' or ' & p.bold( '2' ) & ' moves down                   *' & cr &
 		'*                                                     *' & cr &
 		'*                   Press ' & p.bold( 'Q' ) & ' to quit                   *' &	cr &
 		'*******************************************************';
@@ -48,6 +53,7 @@ component extends="commandbox.system.BaseCommand" aliases="snake" excludeFromHel
 		var a = p.bold( '*' );
 		var s = ' ';
 
+		// These characters much be formatted individually since they are output one at a time.
 		variables.gameOverMessage =  [
 			[ a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a ],
 			[ a, s, s, s, s, s, s, s,  p.boldRed( 'G' ), p.boldRed( 'A' ), p.boldRed( 'M' ), p.boldRed( 'E' ), s, p.boldRed( 'O' ), p.boldRed( 'V' ), p.boldRed( 'E' ), p.boldRed( 'R' ), p.boldRed( '!' ), s, s, s, s, s, s, s, a ],
@@ -78,7 +84,7 @@ component extends="commandbox.system.BaseCommand" aliases="snake" excludeFromHel
 							printGame();
 						}
 						// Decrease this to speed up the game
-						sleep( 200 );
+						sleep( 300 );
 					}	
 				} catch( any e ) {
 					logger.error( e.message & ' ' & e.detail, e.stacktrace );
@@ -92,15 +98,17 @@ component extends="commandbox.system.BaseCommand" aliases="snake" excludeFromHel
 				// Detect user input
 				key = shell.waitForKey();
 				
+				// Prevent the snake from doubling back on itself once it's longer
+				// than one part because it's annoying and a little unexpected
 				if( isQuit( key ) ) {
 					break;
-				} else if( isLeft( key ) ) {
+				} else if( isLeft( key ) && ( variables.direction != 'right' || variables.body.len() == 1 ) ) {
 					variables.direction = 'left';
-				} else if( isRight( key ) ) {
+				} else if( isRight( key ) && ( variables.direction != 'left' || variables.body.len() == 1 ) ) {
 					variables.direction = 'right';
-				} else if( isUp( key ) ) {
+				} else if( isUp( key ) && ( variables.direction != 'down' || variables.body.len() == 1 ) ) {
 					variables.direction = 'up';
-				} else if( isDown( key ) ) {
+				} else if( isDown( key ) && ( variables.direction != 'up' || variables.body.len() == 1 ) ) {
 					variables.direction = 'down';
 				} else if( isRetry( key ) ) {
 					resetGame();
@@ -228,16 +236,16 @@ component extends="commandbox.system.BaseCommand" aliases="snake" excludeFromHel
 	private function resetGame() {
 		
 		// An array of coordinates that represent where the snake is
-		// He starts in the center with a lenth of "1"
+		// He starts in the bottom center with a lenth of "1"
 		variables.body = [
 			{
 				x : variables.centerX,
-				y : variables.centerY
+				y : variables.height-1
 			}
 		];
 		
-		// Start with 3 apples
-		variables.appleCount = 3;
+		// Number of apples to start the game with
+		variables.appleCount = 900;
 		variables.biteCount = 0;
 		
 		// An array of apples
@@ -307,7 +315,7 @@ component extends="commandbox.system.BaseCommand" aliases="snake" excludeFromHel
 				// If that was the last apple
 				if( !variables.apples.len() ) {
 					// Add some more!
-					variables.appleCount += 3;
+					variables.appleCount += 6;
 					seedApples();	
 				}
 				
@@ -344,22 +352,22 @@ component extends="commandbox.system.BaseCommand" aliases="snake" excludeFromHel
 		
 	private function isUp( key ) {
 		// e or E 
-		return ( key == 101 || key == 69 );
+		return ( key == 101 || key == 69 || key == 56 );
 	}
 		
 	private function isDown( key ) {
 		// c or C 
-		return ( key == 99 || key == 67 );
+		return ( key == 99 || key == 67 || key == 50 );
 	}
 		
 	private function isLeft( key ) {
 		// s or S 
-		return ( key == 115 || key == 83 );
+		return ( key == 115 || key == 83 || key == 52 );
 	}
 		
 	private function isRight( key ) {
 		// f or F 
-		return ( key == 102 || key == 70 );
+		return ( key == 102 || key == 70 || key == 54 );
 	}
 
 
