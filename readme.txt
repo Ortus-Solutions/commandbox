@@ -6,23 +6,22 @@
   \_____\___/|_| |_| |_|_| |_| |_|\__,_|_| |_|\__,_|____/ \___/_/\_\ v1.0.0.@build.number@
      
 ********************************************************************************
-Copyright Since 2005 ColdBox Framework by Luis Majano and Ortus Solutions, Corp
-www.coldbox.org | www.luismajano.com | www.ortussolutions.com
+Trademark + Copyright since 2014 by Ortus Solutions, Corp
+www.ortussolutions.com
 ********************************************************************************
 HONOR GOES TO GOD ABOVE ALL
 ********************************************************************************
 WELCOME TO COMMANDBOX
 ********************************************************************************
-Welcome To The CommandBox CLI!
-CommandBox created & copyright by Luis Majano (Ortus Solutions, Corp)
-www.ortussolutions.com
+Welcome To The CommandBox CLI, Package Manager, REPL and much more!
+CommandBox created & copyright & trademark by Ortus Solutions, Corp
+www.ortussolutions.com/products/commandbox
 ********************************************************************************
 COMMANDBOX INSTALLATION
 ********************************************************************************
 IVY/Maven/cfdistro package managers or direct download (jar, bin, win32):
 
 http://cfmlprojects.org/artifacts/com/ortussolutions/box.cli
-
 
 Package repository for REDHAT based Linux:
 
@@ -61,26 +60,28 @@ Type "help [command]" for in-depth descriptions.
 ********************************************************************************
 COMMANDBOX COMMANDS
 ********************************************************************************
-CommandBox is extensible via command CFCs.  Any CFC in the 
-${box.home}/commands directory will be added registered as a command as 
-long as it extends commandbox.system.BaseCommand and has a run() method.
+CommandBox is extensible via CFML by creating command CFCs.  Any CFC in the 
+'${box.home}/commands' directory will be added registered as a command as 
+long as it extends 'commandbox.system.BaseCommand' and has a 'run()' method.
 CFCs that are nested in subfolders, will create multi-part command names Ex:
-${box.home}/commands/testbox/run.cfc.
+
+${box.home}/commands/testbox/run.cfc
+
 That would create a two-part command called "testbox run"
 Everything after the command is considered parameters.
 
-These extension CFCs have the Shell object passed to their init().
+All CFC's are wired via WireBox, so dependency injection is available to them.
 
 Tab completion and help are powered by metadata on these CFCs.  If you would like
 to use a friendlier name for your command, add the attribute "aliases" to the component
-which is a comma-delimited list of names
+which is a comma-delimited list of names:
 
 dir.cfc
 /**
  * List directories
  * 	ex: dir /my/path
  **/	 
-component extends="cli.BaseCommand" aliases="ls,directory" {
+component extends="commandbox.system.BaseCommand" aliases="ls,directory" {
 
 	/**	
 	 * @directory.hint directory
@@ -173,12 +174,18 @@ which will start a server on port 8088 and wait for a ctrl-c to terminate.
 ********************************************************************************
 COMMANDBOX LICENSE
 ********************************************************************************
-CommandBox is open source and bound to the Apache License, Version 2.0. 
+CommandBox is open source and bound to the GNU GENERAL PUBLIC LICENSE v3
+Copyright (C) TradeMark (TD) <since 2014> <Ortus Solutions, Corp>
 
-Please Read The Official License Agreement:
-http://www.coldbox.org/about/license
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
 
-The ColdBox Websites, logo and content have a separate license and they are a separate entity.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
 ********************************************************************************
 CREDITS & CONTRIBUTIONS
@@ -190,31 +197,6 @@ to name someone, please send me an email about it.
 GOD	
 	I THANK GOD FOR HIS WISDOM FOR THIS PROJECT
 
-********************************************************************************
-COMMANDBOX IMPORTANT LINKS
-********************************************************************************
-Source Code
-- https://github.com/Ortus-Solutions/box-cli
-Tracker Site (Bug Tracking, Issues)
-- https://ortussolutions.atlassian.net/browse/BOXCLI
-Documentation
-- http://wiki.coldbox.org
-Blog
-- http://blog.coldbox.org
-Official Site
-- http://www.coldbox.org
-Official Bug Email
-- bugs@coldbox.org
-Official Info Email
-- info@coldbox.org
-
-********************************************************************************
-SYSTEM REQUIREMENTS
-********************************************************************************
-- Windows XP or above, Linux, and OS X
-
-AS ALWAYS, VISIT THE WIKI FOR THE LATEST DOCUMENTATION
- 
 ********************************************************************************
 THE DAILY BREAD
 ********************************************************************************
