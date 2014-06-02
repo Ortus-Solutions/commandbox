@@ -23,6 +23,10 @@ component accessors="true" singleton{
 	*/
 	property name="serverDirectory";
 	/**
+	* Where core railo server files are stored
+	*/
+	property name="railoServerDirectory";
+	/**
 	* Where the Java Command Executable is
 	*/
 	property name="javaCommand";
@@ -58,6 +62,8 @@ component accessors="true" singleton{
 		variables.serverConfig = arguments.shell.getHomeDir() & "/servers.json";
 		// Where custom servers are stored
 		variables.serverDirectory = arguments.shell.getHomeDir() & "/server/custom/";
+		// Where core railo server files are stored
+		variables.railoServerDirectory = arguments.shell.getHomeDir() & "/server/";
 		// The JRE executable command
 		variables.javaCommand = arguments.fileSystem.getJREExecutable();
 		// The runwar jar path
@@ -98,21 +104,33 @@ component accessors="true" singleton{
 		var name 		= arguments.serverInfo.name is "" ? listLast( webroot, "\/" ) : arguments.serverInfo.name;
 		var portNumber  = arguments.serverInfo.port == 0 ? getRandomPort() : arguments.serverInfo.port;
 		var stopPort 	= arguments.serverInfo.stopsocket == 0 ? getRandomPort() : arguments.serverInfo.stopsocket;
+		var trayIcon    = arguments.serverInfo.trayIcon ?: "#variables.libdir#/trayicon.png";
+		var libDirs     = variables.libDir;
+
+		if ( Len( Trim( arguments.serverInfo.libDirs ?: "" ) ) ) {
+			libDirs = ListAppend( libDirs, arguments.serverInfo.libDirs );
+		}
 
 		// config directory location
-		var configdir 	= variables.serverDirectory & name;
+		var configDir       = arguments.serverInfo.webConfigDir    ?: variables.serverDirectory & name;
+		var serverConfigDir = arguments.serverInfo.serverConfigDir ?: variables.railoServerDirectory;
+
 		// log directory location
 		var logdir 		= configdir & "/log";
 		if( !directoryExists( logDir ) ){ directoryCreate( logDir ); }
 		// The process native name
 		var processName = name is "" ? "CommandBox" : name;
 		// The java arguments to execute: -Drailo.server.config.dir=""#configdir#/server""  Shared server, custom web configs
-		var args = "-Drailo.web.config.dir=""#configdir#/web"" "
+		var args = "-Drailo.web.config.dir=""#configdir#"" -Drailo.server.config.dir=""#serverConfigDir#"" "
 				& "-javaagent:""#libdir#/railo-inst.jar"" -jar ""#variables.jarPath#"""
 				& " -war ""#webroot#"" --background=true --port #portNumber# --debug #debug#"
 				& " --stop-port #stopPort# --processname ""#processName#"" --log-dir ""#logdir#"""
 				& " --open-browser #openbrowser# --open-url http://127.0.0.1:#portNumber#"
-				& " --libdir ""#variables.libdir#"" --iconpath ""#variables.libdir#/trayicon.png""";
+				& " --libdir ""#libDirs#"" --iconpath ""#trayIcon#""";
+
+		if ( Len( Trim( arguments.serverInfo.webXml ?: "" ) ) ) {
+			args &= " --webxmlpath #arguments.serverInfo.webXml#";
+		}
 
 		// add back port and log information and persist
 		arguments.serverInfo.port 		= portNumber;
