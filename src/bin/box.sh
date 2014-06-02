@@ -18,7 +18,8 @@ esac
 this_script=`which "$0" 2>/dev/null`
 [ $? -gt 0 -a -f "$0" ] && this_script="$0"
 cp=$this_script
-JRE=$(dirname $this_script)/jre
+#updated location to use embedded JRE
+JRE=$(dirname $this_script)/bin
 if [ -n "$BOX_CLASSPATH" ]
 then
 	cp="$cp:$BOX_CLASSPATH"
