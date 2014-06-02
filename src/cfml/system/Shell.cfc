@@ -8,39 +8,43 @@
 */
 component accessors="true" singleton {
 
+	// DI
+	property name="print" 				inject="print";
+	property name="commandService" 		inject="CommandService";
+	property name="readerFactory" 		inject="ReaderFactory";
+	property name="system" 				inject="system";
+	property name="initialDirectory" 	inject="userDir";
+	property name="homeDir" 			inject="homeDir";
+	property name="tempDir" 			inject="tempDir";
+	property name="CR" 					inject="CR";
+	property name="formatterUtil" 		inject="Formatter";
+	property name="logger" 				inject="logbox:logger:{this}";
+	property name="fileSystem"			inject="fileSystem";
+
 	/**
-	* The java reader class.
+	* The java jline reader class.
 	*/
 	property name="reader";
 	/**
 	* The shell version number
 	*/
 	property name="version";
-	
 	/**
-	* Print utility for outputting ANSI-formatted text
+	* Bit that tells the shell to keep running
 	*/
-	property name="print" inject="print";
+	property name="keepRunning" default="true" type="Boolean";
 	/**
-	* This helps actually process the commands
+	* Bit that is used to reload the shell
 	*/
-	property name="commandService" inject="CommandService";
+	property name="reloadShell" default="false" type="Boolean";
 	/**
-	* Creating the reader is messy, so I abstracted it
+	* The Current Working Directory
 	*/
-	property name="readerFactory" inject="ReaderFactory";
+	property name="pwd";
 	/**
-	* The java system class.
+	* The default shell prompt
 	*/
-	property name="system" inject="system";
-	
-	property name="initialDirectory" inject="userDir";
-	property name="homeDir" inject="homeDir";
-	property name="tempDir" inject="tempDir";
-	property name="CR" inject="CR";
-	property name="formatterUtil" inject="Formatter";
-	property name="logger" 	inject="logbox:logger:{this}";
-
+	property name="shellPrompt";
 
 	/**
 	 * constructor
@@ -53,8 +57,11 @@ component accessors="true" singleton {
 		// Both are replaced when CommandBox is built.
 		variables.version = "@build.version@.@build.number@";
 		// Init variables.
-		variables.keepRunning = true;
-		variables.reloadshell = false;
+		variables.keepRunning 	= true;
+		variables.reloadshell 	= false;
+		variables.pwd 			= "";
+		variables.reader 		= "";
+		variables.shellPrompt 	= "";
 		
 		// Save these for onDIComplete()
 		variables.initArgs = arguments;
@@ -66,20 +73,15 @@ component accessors="true" singleton {
 	 * Finish configuring the shell
 	 **/
 	function onDIComplete() {
-		variables.pwd = initialDirectory;
-		
-		variables.reader = readerFactory.getInstance( argumentCollection = variables.initArgs  );
-		
-		variables.shellPrompt = print.green( "CommandBox> ");
+		variables.pwd 	 		= initialDirectory;
+		variables.reader 		= readerFactory.getInstance( argumentCollection = variables.initArgs  );
+		variables.shellPrompt 	= print.green( "CommandBox> ");
 		
 		// set and recreate temp dir
 		setTempDir( variables.tempdir );
 		
-		// load commnands Async
-		//thread name="initCommands-#createUUID()#"{
-			variables.commandService.configure();
-		//}
-		
+		// load commands
+		variables.commandService.configure();
 	}
 
 	/**
@@ -165,7 +167,7 @@ component accessors="true" singleton {
 	
 		// A temporary workaround for windows. Since background colors aren't cleared
 		// this will force them off the screen with blank lines before clearing.
-		if( server.os.name contains 'Windows' && addLines ) {
+		if( variables.fileSystem.isWindows() && addLines ) {
 			var i = 0;
 			while( ++i <= getTermHeight() + 5 ) {
 				reader.println();	
@@ -297,51 +299,54 @@ component accessors="true" singleton {
 	 * @input.hint command line to run if running externally
   	 **/
     function run( input="" ) {
-        var mask = "*";
+        var mask 	= "*";
         var trigger = "su";
         
 		// init reload to false, just in case
         variables.reloadshell = false;
 
 		try{
+	        // Get input stream
 	        if( arguments.input != "" ){
 	        	 arguments.input &= chr(10);
 	        	var inStream = createObject( "java", "java.io.ByteArrayInputStream" ).init( arguments.input.getBytes() );
 	        	reader.setInput( inStream );
 	        }
+
+	        // setup bell enabled + keep running flags
 	        reader.setBellEnabled( true );
+	        variables.keepRunning = true;
 
 	        var line ="";
-	        variables.keepRunning = true;
 			// Set default prompt
 			setPrompt();
 
+			// while keep running
 	        while( variables.keepRunning ){
-
+	        	// check if running externally
 				if( input != "" ){
 					variables.keepRunning = false;
 				}
+
 				try {
 					// Shell stops on this line while waiting for user input
 		        	line = reader.readLine();
 				} catch( any er ) {
-
 					printError( er );
 					continue;
 				}
 
 	            // If we input the special word then we will mask the next line.
-	            if ((!isNull(trigger)) && (line.compareTo(trigger) == 0)) {
-	                line = reader.readLine("password> ", javacast("char",mask));
+	            if( ( !isNull( trigger ) ) && ( line.compareTo( trigger ) == 0 ) ){
+	                line = reader.readLine( "password> ", javacast( "char", mask ) );
 	            }
 
 	            // If there's input, try to run it.
-				if( len(trim(line)) ) {
-
+				if( len( trim( line ) ) ) {
 					try{
-						callCommand(line);
+						callCommand( line );
 					} catch (any e) {
-						printError(e);
+						printError( e );
 					}
 				}
 				
