@@ -2,32 +2,317 @@
 <!-- ====================================================================== 
 Build a new distribution of Ortus CommandBox
 ====================================================================== -->
-<project name="distro.build" default="build" basedir="./" xmlns:antcontrib="antlib:net.sf.antcontrib">
+<project name="distro.build" default="build.cli" basedir="./" xmlns:antcontrib="antlib:net.sf.antcontrib">
 	 <description>
     	Build a new distribution of Ortus CommandBox
     </description>
 
-    <!-- Build Labels -->
+    <!-- Time Label -->
 	<tstamp prefix="start"/>
 	<!-- Default environment check, if not passed via -Denvironment -->
 	<condition property="environment" value="local">
 		<not><isset property="environment" /></not>
 	</condition>
 	<echo>Loading Properties from environment: ${environment}</echo>
-	<!-- Load env properties, to override any default properties -->
+	<!-- Load environment properties -->
 	<loadproperties srcFile="build-${environment}.properties"/>
-	<!-- Load properties -->
-	<loadproperties srcFile="build.properties"/>
+
+	<!-- Load build lib tasks -->
+	<path id="build.antcontrib.libpath">
+		<fileset dir="${basedir}/lib">
+			<include name="**/*.jar" />
+		</fileset>
+	</path>
 
 	<!-- import cfdistro -->
 	<import file="${cfdistro.build.file}"/>
-	<!-- import cli -->
-	<import file="build-cli.xml"/>
 	<property name="maven.repo.local" value="${cfdistro.basedir}/artifacts"/>
 
-	<!-- Default Target -->
-	<target name="build" depends="build.cli">
+	<!-- Init Build -->
+	<target name="init" description="Init build">
+		<!-- cleanup -->
+		<delete dir="${temp.dir}" />
+		<delete dir="${build.dir}" />
+		<delete dir="${lib.dir}"/>
+
+		<!-- init dirs -->
+		<mkdir dir="${dist.dir}" />
+		<mkdir dir="${build.dir}"/>
+		<chmod file="${build.dir}/**" perm="g+wxrs" type="both" />
+
+		<!-- Increment Build Number -->
+		<propertyfile file="build.number" comment="Build Number for ANT. Edit not!">
+			<entry key="build.number" 
+					type="int" 
+			     	operation="+"
+					pattern="00000"
+			     	default="1" />
+		</propertyfile>
+		<!-- Retrieve Build Number -->
+		<property file="build.number"/>
+
+		<!-- get commandbox dependencies -->
+		<dependency groupId="jline" artifactId="jline" version="2.12-SNAPSHOT" dest="${lib.dir}" type="jar" unzip="false"/>
+		<dependency groupId="org.getrailo" artifactId="railo.cli" version="${railo.cli.version}" dest="${temp.dir}/rcli" type="jar" unzip="true"/>
 	</target>
+
+	<!-- Build everything -->
+	<target name="build.cli.all" depends="build.cli.mvn">
+	</target>
+
+	<!-- Build CLI -->
+	<target name="build.cli" description="builds box.jar" depends="init">
+		<!-- Copy CommandBox code -->
+      	<copy todir="${build.dir}">
+        	<fileset dir="${src.dir}/cfml"/>
+        	<fileset file="../license.txt"/>
+        	<fileset file="../readme.txt"/>
+        </copy>
+        
+		<!-- Replace Version Numbers -->
+		<replaceregexp match='@build.version@' replace="${commandbox.version}" flags="ig" byline="true">
+		  <fileset dir="${build.dir}" />
+		</replaceregexp>
+		<!-- Replace Build Numbers -->
+		<replaceregexp match='@build.number@' replace="${build.number}" flags="ig" byline="true">
+		  <fileset dir="${build.dir}" />
+		</replaceregexp>
+		
+		<!--  create the cfml distro zip -->
+		<zip destfile="${dist.dir}/cfml-${commandbox.version}.zip" update="false" level="9">
+	        <fileset dir="${build.dir}"/>
+		</zip>
+		<!-- Build Checksum for cfml.zip -->
+		<checksum file="${dist.dir}/cfml-${commandbox.version}.zip" forceoverwrite="true" fileext=".md5" />
+		
+		<!-- update railo cli project with our version stuff -->
+      	<copy tofile="${temp.dir}/rcli/cfml.zip" overwrite="true">
+        	<fileset file="${dist.dir}/cfml-${commandbox.version}.zip" />
+        </copy>
+      	<copy todir="${temp.dir}/rcli/resource" overwrite="true">
+        	<fileset dir="${src.dir}/resources" />
+        </copy>
+		<copy file="${src.dir}/resources/cli.properties" todir="${temp.dir}/rcli/cliloader" overwrite="true"/>
+        
+        <!-- jar up the cli again -->
+        <zip destfile="${dist.dir}/box.jar" update="false" level="9">
+        	<zipfileset dir="${temp.dir}/rcli" />
+        </zip>
+
+        <!-- cleanup -->
+		<delete dir="${temp.dir}/rcli"/>
+ 	</target>
+
+	<!-- Build linux/mac bin -->
+	<target name="build.cli.bin" description="create bin wrapper" depends="build.cli">
+		<!--  this bundles the jar into the executable wrapper, which is a bash script -->
+        <concat destfile="${dist.dir}/box" force="yes" binary="true">
+          <fileset file="${src.dir}/bin/box.sh" />
+          <fileset file="${dist.dir}/box.jar" />
+        </concat>
+        <!-- Change execute perm -->
+        <chmod file="${dist.dir}/box" perm="a+x"/>
+        <!-- Create distro zip -->
+		<zip destfile="${dist.dir}/${distro.name}-${commandbox.version}.bin.zip" level="9" update="false">
+	        <zipfileset file="${dist.dir}/box" filemode="711" prefix="" />
+		</zip>
+		<!-- Build Checksum -->
+		<checksum file="${dist.dir}/${distro.name}-${commandbox.version}.bin.zip" forceoverwrite="true" fileext=".md5" />
+ 	</target>
+
+	<!-- Build windows executable -->
+	<target name="build.cli.exe" description="create exe wrapper" depends="build.cli" >
+        <!-- Build executable 
+        <jar2exe
+        	jar="${dist.dir}/box.jar" exe="${dist.dir}/box.exe"  
+        	icon="${src.dir}/resources/box.ico" mutexName="CommandBox.cli.Console" 
+        	headerType="console" stayAlive="true"/>-->
+        
+        <!-- Get OS version of lanuch4j, check if already downloaded it or not -->
+        <antcall target="getlaunch4j" />
+        <!-- Build Executable Now -->
+        <taskdef name="launch4j" 
+        		 classname="net.sf.launch4j.ant.Launch4jTask" 
+        		 classpath="./launch4j/launch4j.jar:./launch4j/lib/xstream.jar" />
+        <launch4j>
+			<config headerType="console" 
+					outfile="${dist.dir}/box.exe" 
+					jarPath="${dist.dir}/box.jar" 
+					errTitle="Error running CommandBox"
+					supportURL="${commandbox.supportURL}"
+					chdir="."
+					icon="${src.dir}/resources/box.ico"
+					stayAlive="true">
+					<jre path="./jre/" minVersion="1.6.0" />
+					<versionInfo fileVersion="${commandbox.version}.${build.number}"
+								 txtFileVersion="${commandbox.version}.${build.number}"
+								 fileDescription="${commandbox.description}"
+								 copyright="Copyright since 2013 Ortus Solutions, Corp"
+								 productVersion="${commandbox.version}.${build.number}"
+								 txtProductVersion="${commandbox.version}.${build.number}"
+								 productName="CommandBox"
+								 companyName="Ortus Solutions, Corp"
+								 internalName="CommandBox"
+								 originalFilename="box.exe" />
+			</config>
+		</launch4j>
+		
+		<!-- Zip it -->
+		<zip destfile="${dist.dir}/${distro.name}-${commandbox.version}.win.zip" level="9" update="false">
+	        <zipfileset file="${dist.dir}/box.exe" prefix="" />
+		</zip>
+		<!-- Build Checksum -->
+		<checksum file="${dist.dir}/${distro.name}-${commandbox.version}.win.zip" forceoverwrite="true" fileext=".md5" />
+		
+	</target>
+
+	<!-- Get launch4j -->
+	<target name="getlaunch4j" description="Get an OS dependent launch4j into the build directory">
+		<!-- do a check -->
+		<antcontrib:if>
+	        <available file="launch4j/launch4j.jar" />
+	        <then><echo>Launch4j Binary found!</echo></then>
+	        <else>
+	            <echo>Launch4j not found, getting artifact</echo>
+	            <!-- Determine OS type -->
+				<antcontrib:if>
+					<os family="windows" />
+					<then><property name="launch4j.filename" value="launch4j-${launch4j.version}-win32.zip"/></then>
+					<elseif>
+						<os family="mac" />
+						<then><property name="launch4j.filename" value="launch4j-${launch4j.version}-macosx.tgz"/></then>
+					</elseif>
+					<elseif>
+						<os family="unix" />
+						<then><property name="launch4j.filename" value="launch4j-${launch4j.version}-linux.tgz"/></then>
+					</elseif>
+				</antcontrib:if>
+				<echo>Downloading ${launch4j.filename} from ${ortus.repoURL}...</echo>
+				<get src="${ortus.repoURL}/launch4j/${launch4j.version}/${launch4j.filename}" 
+					 dest="."
+					 verbose="true" />
+				<untar src="${launch4j.filename}" dest="." compression="gzip"/>
+				<chmod dir="./launch4j/bin/" perm="ugo+rx" includes="*"/>
+	        </else>
+	    </antcontrib:if>
+	</target>
+
+	<!-- Build including JREs -->
+ 	<target name="build.cli.jre" description="Build with JRE included" depends="build.cli">
+ 		<echo message="Bundling ${jre.version} JRE" />
+		
+		<!-- Get JRE Dependencies -->
+		<dependency groupId="oracle" artifactId="jre" version="${jre.version}" type="zip" classifier="win32" />
+		<dependency groupId="oracle" artifactId="jre" version="${jre.version}" type="zip" classifier="win64" />
+		<dependency groupId="oracle" artifactId="jre" version="${jre.version}" type="zip" classifier="linux32" />
+		<dependency groupId="oracle" artifactId="jre" version="${jre.version}" type="zip" classifier="linux64" />
+		<dependency groupId="oracle" artifactId="jre" version="${jre.version}" type="zip" classifier="darwin64" />
+
+		<!-- cleanup just in case -->
+		<delete>
+			<fileset dir="${dist.dir}">
+				<include name="${distro.name}_*.jre-*.zip" />
+				<include name="${distro.name}_*.jre-*.md5" />
+			</fileset>
+		</delete>
+
+		<!--Zip Box Binary With JRE -->
+		<zip destfile="${dist.dir}/${distro.name}-${commandbox.version}.jre-win32.zip" level="9" update="false">
+			<zipgroupfileset file="${maven.repo.local}/oracle/jre/${jre.version}/jre-${jre.version}-win32.zip"/>
+	        <fileset file="${dist.dir}/box.exe" />
+		</zip>
+		<zip destfile="${dist.dir}/${distro.name}-${commandbox.version}.jre-win64.zip" level="9" update="false">
+			<zipgroupfileset file="${maven.repo.local}/oracle/jre/${jre.version}/jre-${jre.version}-win64.zip"/>
+	        <fileset file="${dist.dir}/box.exe" />
+		</zip>
+		<zip destfile="${dist.dir}/${distro.name}-${commandbox.version}.jre-linux32.zip" level="9" update="false">
+			<zipgroupfileset file="${maven.repo.local}/oracle/jre/${jre.version}/jre-${jre.version}-linux32.zip"/>
+	        <fileset file="${dist.dir}/box" />
+		</zip>
+		<zip destfile="${dist.dir}/${distro.name}-${commandbox.version}.jre-linux64.zip" level="9" update="false">
+			<zipgroupfileset file="${maven.repo.local}/oracle/jre/${jre.version}/jre-${jre.version}-linux64.zip"/>
+	        <fileset file="${dist.dir}/box" />
+		</zip>
+		<zip destfile="${dist.dir}/${distro.name}-${commandbox.version}.jre-darwin64.zip" level="9" update="false">
+			<zipgroupfileset file="${maven.repo.local}/oracle/jre/${jre.version}/jre-${jre.version}-darwin64.zip"/>
+	        <fileset file="${dist.dir}/box" />
+		</zip>
+
+		<!-- Build Checksum -->
+		<checksum forceoverwrite="true" fileext=".md5">
+			<fileset dir="${dist.dir}">
+				<include name="*.jre-*.zip" />
+			</fileset>
+		</checksum>
+		
+ 	</target>
+	
+	<!-- Build local maven repository build.cli.deb,build.cli.exe,build.cli.rpm-->
+ 	<target name="build.cli.mvn" depends="build.cli.deb,build.cli.exe,build.cli.jre">
+		<pom-and-deploy pomid="commandbox.pom" packaging="pom" buildtype="${mvn.type}"
+			groupId="com.ortussolutions" artifactId="commandbox" version="${commandbox.version}"
+			name="commandbox">
+			<attachments>
+				<attach file="${dist.dir}/box.jar" type="jar" />
+				<attach file="${dist.dir}/cfml-${commandbox.version}.zip" type="zip" classifier="cfml" />
+				<attach file="${dist.dir}/${distro.name}-${commandbox.version}-1_all.deb" type="deb" />
+				<attach file="${dist.dir}/${distro.name}-${commandbox.version}.bin.zip" type="zip" classifier="bin" />
+				<attach file="${dist.dir}/${distro.name}-${commandbox.version}.jre-darwin64.zip" type="zip" classifier="jre-darwin64" />
+				<attach file="${dist.dir}/${distro.name}-${commandbox.version}.jre-linux32.zip" type="zip" classifier="jre-linux32" />
+				<attach file="${dist.dir}/${distro.name}-${commandbox.version}.jre-linux64.zip" type="zip" classifier="jre-linux64" />
+				<attach file="${dist.dir}/${distro.name}-${commandbox.version}.jre-win32.zip" type="zip" classifier="jre-win32" />
+				<attach file="${dist.dir}/${distro.name}-${commandbox.version}.jre-win64.zip" type="zip" classifier="jre-win64" />
+				<attach file="${dist.dir}/${distro.name}-${commandbox.version}.win.zip" type="zip" classifier="win32" />
+				<!--<attach file="${rpm.repo}/${distro.name}-${commandbox.version}-1.noarch.rpm" type="rpm" /> -->
+			</attachments>
+		</pom-and-deploy>
+	</target>
+
+	<!-- Debian Repo: Leverages deb task -->
+	<target name="build.cli.deb" depends="build.cli.bin" description="builds a .deb file for debian-based systems">
+	    <!-- Load deb task -->
+		<taskdef name="deb" classname="com.googlecode.ant_deb_task.Deb" classpathref="build.antcontrib.libpath"/>
+	   	<echo message="Creating debian repository from: ${dist.dir}"/>
+		<mkdir dir="${deb.repo}"/>
+		<!-- replace file -->
+	   	<delete file="${dist.dir}/${distro.name}-${commandbox.version}-1_all.deb" />
+	   	<!-- create debian repo -->
+	   	<deb
+	        todir="${dist.dir}"
+	        package="commandbox"
+	        section="web"
+	        depends="java-common">
+	        <version upstream="${commandbox.version}"/>
+	        <maintainer name="${commandbox.packager.name}" email="${commandbox.packager.email}"/>
+	        <description synopsis="${commandbox.description}">CommandBox Version: ${commandbox.version}.</description>
+	   		<tarfileset file="${dist.dir}/box" prefix="usr/local/bin" filemode="755"/>
+	   	</deb>
+	   	<!-- Copy deb to repo -->
+		<copy file="${dist.dir}/${distro.name}-${commandbox.version}-1_all.deb" todir="${deb.repo}" />
+		<!-- Build Checksum -->
+		<checksum file="${dist.dir}/${distro.name}-${commandbox.version}-1_all.deb" forceoverwrite="true" fileext=".md5" />
+		<!-- Update Repo -->
+		<echo message="Updating apt (deb) repo in ${deb.repo}"/>
+	   	<deb-repo dir="${deb.repo}" />
+	</target>
+
+	<target name="build.cli.rpm" depends="bootstrap_redline,build.cli.bin" xmlns:redline="antlib:org.redline_rpm">
+		<mkdir dir="${rpm.repo}" />
+		<echo message="Making rpm in ${rpm.repo} Packager:${commandbox.packager.name} ${commandbox.packager.email} Version: ${commandbox.version}" />
+        <taskdef resource="org/redline_rpm/antlib.xml" uri="antlib:org.redline_rpm" classpathref="build.lib.path"/>
+		<redline:rpm destination="${rpm.repo}" release="1"
+			group="com.ortussolutions" name="commandbox" version="${commandbox.version}"
+			packager="${commandbox.packager.name} ${commandbox.packager.email}"
+			url="http://cfmlprojects.org">
+			<depends name="java" version=""/>
+			<tarfileset file="${dist.dir}/cli/box" prefix="/usr/bin" filemode="744" username="root" group="root"/>
+		</redline:rpm>
+		<!-- updates/creates the RPM repository, requires 'createrepo' on build server -->
+		<rpm-repo dir="${rpm.repo}" />
+	</target>
+
+
+
 
 	<!-- ********************************************************************************************-->
 	<!--						TEST TARGETS 														 -->
