@@ -12,7 +12,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 	function run( required URI )  {
 
 		if( fileSystemUtil.openBrowser( arguments.URI ) ){
-			return "Browser opened!";
+			print.line( "Browser opened!" );
 		} else {
 			error( "Unsopported OS" );
 		};

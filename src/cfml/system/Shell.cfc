@@ -373,10 +373,14 @@ component accessors="true" singleton {
 			if(isArray( result )) {
 				return reader.printColumns(result);
 			}
-			result = formatterUtil.formatJson(serializeJSON(result));
+			result = formatterUtil.formatJson( serializeJSON( result ) );
 			printString( result );
-		} else if( !isNull( result ) ) {
+		} else if( !isNull( result ) && len( result ) ) {
 			printString( result );
+			// If the command output text that didn't end with a line break one, add one
+			if( mid( result, len( result ), 1 ) != CR ) {
+				getReader().println();
+			}
 		}
 	}
 
