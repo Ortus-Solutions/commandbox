@@ -174,7 +174,8 @@ which will start a server on port 8088 and wait for a ctrl-c to terminate.
 ********************************************************************************
 COMMANDBOX LICENSE
 ********************************************************************************
-CommandBox is open source and bound to the GNU GENERAL PUBLIC LICENSE v3
+CommandBox is open source and bound to the LGPL v3
+GNU LESSER GENERAL PUBLIC LICENSE
 Copyright (C) TradeMark (TD) <since 2014> <Ortus Solutions, Corp>
 
 This program is free software: you can redistribute it and/or modify
