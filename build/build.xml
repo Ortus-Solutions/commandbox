@@ -163,7 +163,6 @@ Build a new distribution of Ortus CommandBox
 		</zip>
 		<!-- Build Checksum -->
 		<checksum file="${dist.dir}/${distro.name}-${commandbox.version}.win.zip" forceoverwrite="true" fileext=".md5" />
-		
 	</target>
 
 	<!-- Get launch4j -->
@@ -192,6 +191,7 @@ Build a new distribution of Ortus CommandBox
 					 dest="."
 					 verbose="true" />
 				<untar src="${launch4j.filename}" dest="." compression="gzip"/>
+				<delete file="${launch4j.filename}" />
 				<chmod dir="./launch4j/bin/" perm="ugo+rx" includes="*"/>
 	        </else>
 	    </antcontrib:if>
@@ -310,9 +310,6 @@ Build a new distribution of Ortus CommandBox
 		<!-- updates/creates the RPM repository, requires 'createrepo' on build server -->
 		<rpm-repo dir="${rpm.repo}" />
 	</target>
-
-
-
 
 	<!-- ********************************************************************************************-->
 	<!--						TEST TARGETS 														 -->
