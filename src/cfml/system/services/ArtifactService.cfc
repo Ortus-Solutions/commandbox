@@ -16,6 +16,8 @@
 component singleton {
 	
 	property name='artifactDir' inject='artifactDir';
+	property name='packageUtil' inject='package';
+	property name='shell' inject='shell';
 	
 	function onDIComplete() {
 		
@@ -77,7 +79,7 @@ component singleton {
 	* @version.hint The version of the package to look for
 	*/ 
 	function artifactExists( required packageName, required version ) {
-		return filesExists( getArtifactLocation( argumentCollection = arguments ) );				
+		return fileExists( getArtifactPath( argumentCollection = arguments ) );				
 	}
 	
 	/**
@@ -130,8 +132,34 @@ component singleton {
 	* @packageName.hint The package name to look for
 	* @version.hint The version of the package to look for
 	*/
-	public struct function getArtifactDescriptor() {
-		return {};
+	public struct function getArtifactDescriptor( required packageName, required version ) {
+		// TODO: Look for a box.json and merge its properties into the a default object
+		return packageUtil.newPackageDescriptor();
+	}	
+	
+	/**
+	* Installs a package, obeying ignors in the box.json file
+	* @packageName.hint The package name to look for
+	* @version.hint The version of the package to look for
+	*/
+	public function installArtifact( required packageName, required version, installDirectory ) {
+
+		var artifactPath = getArtifactPath( arguments.packageName, arguments.version );
+		
+		// Has file size?
+		if( getFileInfo( artifactPath ).size <= 0 ) {
+			throw( 'Cannot install file as it has a file size of 0.', artifactPath );
+		}
+		
+		var artifactDescriptor = getArtifactDescriptor( arguments.packageName, arguments.version );
+		
+		if( !structKeyExists( arguments, 'installDirectory' ) ) {
+			arguments.installDirectory = shell.pwd() & '/' & artifactDescriptor.directory;  
+		}
+		
+		// TODO: actually obey artifactDescriptor.ignore
+		zip action="unzip" file="#artifactPath#" destination="#installDirectory#" overwrite="true";
+		
 	}
 		
 }

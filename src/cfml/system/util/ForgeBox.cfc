@@ -113,53 +113,27 @@ or just add DEBUG to the root logger
 		</cfscript>	
 	</cffunction>
 	
-	<!--- install --->
-	<cffunction name="install" output="false" access="public" returntype="struct" hint="Install Code Entry">
+	<!---
+		Install 
+		This simply downloads the file from ForgeBox and stores it locally 
+	--->
+	<cffunction name="install" output="false" access="public" returntype="string" hint="Install Code Entry">
 		<cfargument name="downloadURL"    type="string" required="true" />
 		<cfargument name="destinationDir" type="string" required="true" />
 		
 		<!--- Start Log --->
-		<cfset var log 			= createObject("java","java.lang.StringBuffer").init("Starting Download...<br />")>
 		<cfset var destination  = arguments.destinationDir>
-		<cfset var fileName		= 'temp#randRange( 1, 1000 )#.zip'> <!---getFileFromPath(arguments.downloadURL)>--->
-		<cfset var results 		= {error=true,logInfo=""}>
+		<!---Don't trust the URL to have a file name --->
+		<cfset var fileName		= 'temp#randRange( 1, 1000 )#.zip'>
 		
-		<cftry>
-			<!--- Download File --->
-			<cfhttp url="#arguments.downloadURL#"
-					method="GET"
-					file="#fileName#"
-					path="#destination#"
-					getasbinary="yes">
-		
-			<cfcatch type="any">
-				<cfset log.append("<strong>Error downloading file: #cfcatch.message# #cfcatch.detail#</strong><br />")>
-				<cfset results.logInfo = log.toString()>
-				<cfreturn results>
-			</cfcatch>
-		</cftry>	
-		
-		<!--- has file size? --->
-		<cfif getFileInfo(destination & "/" & fileName).size LTE 0>	
-			<cfset log.append("<strong>Cannot install file as it has a file size of 0.</strong>")>
-			<cfset results.logInfo = log.toString()>
-			<cfreturn results>
-		</cfif>
-		
-		<cfset log.append("File #fileName# downloaded succesfully at #destination#, checking type for extraction.<br />")>
-		
-		<!--- Unzip File? --->
-		<cfif listLast(filename,".") eq "zip">
-			<cfset log.append("Zip archive detected, beginning to uncompress.<br />")>
-			<cfzip action="unzip" file="#destination#/#filename#" destination="#destination#" overwrite="true">
-			<cfset log.append("Archive uncompressed and installed at #destination#. Performing cleanup.<br />")>
-			<cfset fileDelete(destination & "/" & filename)>
-		</cfif>
-		
-		<cfset log.append("Entry: #filename# sucessfully installed at #destination#.<br />")>
-		<cfset results = {error=false,logInfo=log.toString()}>
-		
-		<cfreturn results>		
+		<!--- Download File --->
+		<cfhttp url="#arguments.downloadURL#"
+				method="GET"
+				file="#fileName#"
+				path="#destination#"
+				getasbinary="yes">
+			
+		<cfreturn destination & '/' & fileName >		
 	</cffunction>	
 	
 <!------------------------------------------- PRIVATE ------------------------------------------>
