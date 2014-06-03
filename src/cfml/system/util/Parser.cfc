@@ -160,6 +160,7 @@ component {
 			} else {
 				// Unwrap quotes from value if used
 				param = unwrapQuotes( param );
+				param = replaceEscapedChars( param );
 				results.positionalParameters.append( param );				
 			}
 						
@@ -183,9 +184,9 @@ component {
 	}
 	
 	private function replaceEscapedChars( theString ) {
-		theString = replaceNoCase( theString, '__singleQuote__', "\'", "all" );
-		theString = replaceNoCase( theString, '__doubleQuote__', '\"', "all" );
-		return		replaceNoCase( theString, '__equalSign__', '\=', "all" );
+		theString = replaceNoCase( theString, '__singleQuote__', "'", "all" );
+		theString = replaceNoCase( theString, '__doubleQuote__', '"', "all" );
+		return		replaceNoCase( theString, '__equalSign__', '=', "all" );
 	}
 	
 	
