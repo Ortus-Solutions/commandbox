@@ -12,7 +12,7 @@ component extends="commandbox.system.BaseCommand" aliases="ls,ll,directory" excl
 	 **/
 	function run( String directory="", Boolean recurse=false )  {
 		// This will make each directory canonical and absolute		
-		arguments.directory = fileSystemUtil.resolveDirectory( arguments.directory );
+		arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
 		
 		var results = directoryList( arguments.directory, arguments.recurse, "query" );
 		for( var x=1; x lte results.recordcount; x++ ) {

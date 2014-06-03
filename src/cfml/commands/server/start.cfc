@@ -26,7 +26,7 @@ component extends="commandbox.system.BaseCommand" aliases="start" excludeFromHel
 		// prepare webroot and short name
 		var webroot = arguments.directory is "" ? shell.pwd() : arguments.directory;
 		var name 	= arguments.name is "" ? listLast( webroot, "\/" ) : arguments.name;
-		webroot = fileSystemUtil.resolveDirectory( webroot );
+		webroot = fileSystemUtil.resolvePath( webroot );
 		
 		// get server info record, create one if this is the first time.
 		var serverInfo = serverService.getServerInfo( webroot );

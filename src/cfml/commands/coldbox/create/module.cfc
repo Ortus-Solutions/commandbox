@@ -22,7 +22,7 @@ component extends='commandbox.system.BaseCommand' aliases='' excludeFromHelp=fal
 					modelNamespace='',
 					directory='modules' ) {						
 		// This will make each directory canonical and absolute		
-		directory = fileSystemUtil.resolveDirectory( directory );
+		directory = fileSystemUtil.resolvePath( directory );
 		
 		// Validate directory
 		if( !directoryExists( directory ) ) {

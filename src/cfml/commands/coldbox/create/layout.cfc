@@ -15,7 +15,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 					boolean helper=false,
 					directory='layouts' ) {
 		// This will make each directory canonical and absolute		
-		directory = fileSystemUtil.resolveDirectory( directory );
+		directory = fileSystemUtil.resolvePath( directory );
 						
 		// Validate directory
 		if( !directoryExists( directory ) ) {
