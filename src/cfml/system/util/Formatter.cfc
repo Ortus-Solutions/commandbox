@@ -79,8 +79,15 @@ component singleton {
 	}
 	/**
 	 * Pretty JSON
+	 * @json.hint A string containing JSON, or a complex value that can be serialized to JSON
  	 **/
-	public function formatJson(json) {
+	public function formatJson( json ) {
+		
+		// Overload this method to accept a struct or array
+		if( !isSimpleValue( arguments.json ) ) {
+			arguments.json = serializeJSON( arguments.json );
+		}
+		
 		var retval = '';
 		var str = json;
 	    var pos = 0;

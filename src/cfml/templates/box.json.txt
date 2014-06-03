@@ -1,0 +1,50 @@
+{
+	name : "",
+	version :"1.0.0.0000",
+	author : "",
+	location :"",
+	directory: "",
+	Homepage :"",
+	Documentation : "",
+	Repository: { type:"", URL:"" },
+	Bugs : "",
+	slug : "",
+	shortDescription : "",
+	description : "",
+	instructions : "",
+	changelog: "",
+	type : "",
+	keywords :[],
+	private :"Boolean",
+	engines :[
+		{ type : "railo", version : ">=4.1.x" },
+		{ type : "adobe", version : ">=10.0.0" }
+	],
+	defaultEngine : "railo",
+	defaultPort : 80,
+	ProjectURL: "",
+	License :[
+		{ type:"", URL: "" }
+	],
+	Contributors : [],
+	Dependencies : {
+	},
+	DevDependencies : {},
+	ignore : ["logs*", "readme.md" ],
+	testbox :{
+		runner : [
+			{ "default": "http://localhost/testbox/testing/runner.cfm"}
+		],
+		Labels : [],
+		Reporter :"",
+		ReporterResults : "/test/results",
+		Bundles :[ "test.specs" ],
+		Directory: { mapping : "test.specs", recurse: true },
+		Watchers :[],
+		Notify : {
+			Emails : [],
+			Growl : "",
+			URL : ""
+		}
+	}
+}
