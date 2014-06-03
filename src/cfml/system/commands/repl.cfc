@@ -1,7 +1,9 @@
 /**
- * Executes a CFML file and outputs whatever the template outputs using cfoutput or the buffer.
+ * The REPL (Read-Eval-Print-Loop) command allows you to write and execute a-la-carte CFML code right in 
+ * your console.  By default we surround your code in a 'cfscript' tag, but you can also use the 'script=false'
+ * argument to use the REPL console in tag mode.
  * 
- * execute myFile.cfm
+ * Usage: repl
  * 
  **/
 component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false{
