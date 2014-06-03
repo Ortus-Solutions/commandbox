@@ -88,34 +88,8 @@ component singleton {
 				// This is the params the user has entered so far.
 				var passedParameters = commandService.parseParameters( commandInfo.parameters );
 								
-				// Too soon to tell - suggest first param name and first param value
-				// For sure named- suggest name or value as necceessary 
-				// For sure positional - suggest next param name and value
-											
-				// Is the user using positional params
-				if( arrayLen( passedParameters.positionalParameters ) > 1  ) {
-					
-					// If there are more params than what the user has typed so far
-					if( definedParameters.len() > passedParameters.positionalParameters.len() ) {
-						// Add the name of the next one in the list. The user will have to backspace and 
-						// replace this with their actual param so this may not be that useful. 
-						// TODO: This is useful because if the user is using positional parameters it reminds them 
-						// of what comes next, however, I'm not sure I like it because it means we can't do type-based
-						// auto-complete for directories and such.  Figure out which one we want more and do that.
-						
-						var nextParam = definedParameters[ passedParameters.positionalParameters.len()+1 ];
-						
-						candidates.add( nextParam.name & ' ' );
-						
-						
-						// Fill in possible param values based on the type and contents so far.
-						paramValueCompletion( nextParam.type, nextParam.type, paramSoFar, candidates );
-						
-					}
-					return len( buffer );
-					
-				// Using named params (default)
-				} else {
+				// For sure we are using named- suggest name or value as necceessary
+				if( structCount( passedParameters.namedParameters ) ) {
 									
 					var leftOver = '';
 					// This is probably just partial param name
@@ -162,7 +136,76 @@ component singleton {
 					// Back up a bit to the beginning of the left over text we're replacing
 					return len( buffer ) - len( leftOver ) - iif( !len( leftOver ) && !buffer.endsWith( ' ' ), 0, 1 );
 					
-				} // End are we using positional params
+				// For sure positional - suggest next param name and value
+				// Either there's more than one positional param supplied, or a single one with a space after it
+				} else if( 
+							passedParameters.positionalParameters.len() > 1
+							|| ( passedParameters.positionalParameters.len() == 1 && buffer.endsWith( ' ' ) )  
+						) { 
+					
+					// If the buffer ends with a space, they were done typing the last param
+					if( buffer.endsWith( ' ' ) ) {
+							
+						// If there are more params than what the user has typed so far
+						if( definedParameters.len() > passedParameters.positionalParameters.len() ) {
+							// Add the name of the next one in the list. The user will have to backspace and 
+							// replace this with their actual param so this may not be that useful.
+							var nextParam = definedParameters[ passedParameters.positionalParameters.len()+1 ];
+							candidates.add( nextParam.name & ' ' );							
+							
+							paramValueCompletion( nextParam.type, nextParam.type, '', candidates );
+							
+							return len( buffer );
+						
+						} // End are there more params
+						
+					// They were in the middle of typing
+					} else {
+						
+						// Make sure defined params actually exist for this
+						if( definedParameters.len() >= passedParameters.positionalParameters.len() ) {
+							
+							var partialMatch = passedParameters.positionalParameters.last();			
+							var thisParam = definedParameters[ passedParameters.positionalParameters.len() ];
+							paramValueCompletion( thisParam.name, thisParam.type, partialMatch, candidates );
+							
+							return len( buffer ) - len( partialMatch );							
+						}						
+					}
+					
+				// Too soon to tell - suggest first param name and first param value
+				// There might me partially typed text, but there's no space at the end yet.
+				} else {
+					
+					// Make sure defined params actually exist
+					if( definedParameters.len() ) {
+						
+						var partialMatch = '';
+						// If there is a passed positional param
+						if( passedParameters.positionalParameters.len() ) {
+							// grab the last one as the partial match
+							partialMatch = passedParameters.positionalParameters.last();	
+						}
+												
+						// Loop over all possible params and suggest them
+						for( var param in definedParameters ) {
+							if( !len( partialMatch ) || param.name.startsWith( partialMatch ) ) {
+								candidates.add( param.name & '=' );
+							}
+						}
+						
+						// Grab first param
+						var thisParam = definedParameters[ 1 ];
+												
+						// Suggest its value
+						paramValueCompletion( thisParam.name, thisParam.type, partialMatch, candidates );
+						
+						return len( buffer ) - len( partialMatch );
+													
+					}  // End are there params defined
+					
+					
+				} // End what kind of params are we dealing with
 				
 				
 			} // End was the command found
@@ -243,8 +286,6 @@ component singleton {
 			}
 		}
 		
-		logger.info( 'search in: #searchIn#' );
-		
 		// Don't even bother if search location doesn't exist
 		if( directoryExists( searchIn ) ) {
 			// Pull a list of paths in there
@@ -254,7 +295,6 @@ component singleton {
 							
 				// Leave original case in path, we'll lowercase it on Windows
 				var thisName = path.name;
-				logger.info( thisName );
 				if( server.os.name contains 'Windows' ) {
 					partialMatch = lcase( partialMatch );
 					thisName = lcase( path.name );
