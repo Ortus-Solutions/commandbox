@@ -1,8 +1,6 @@
 component extends="mxunit.framework.TestCase" {
 //component extends="testbox.system.testing.TestBox" {
 
-	candidates = createObject("java","java.util.TreeSet");
-
 	public void function setUp()  {
 		shell = application.wirebox.getInstance( 'Shell' );
 		commandService = application.wirebox.getInstance( 'CommandService' );

@@ -4,9 +4,11 @@ component name="TestShell" extends="mxunit.framework.TestCase" {
 
 	public void function setUp()  {
 		completor = application.wirebox.getInstance( 'completor' );
+		candidates.clear();
 	}
 
-	public void function testPartialNoPrefixCommands()  {		
+
+	public void function testNoCommand() {
 		cmdline = "";
 		cursor = completor.complete(cmdline,len(cmdline),candidates);
 		assertTrue(candidates.size() > 4);
@@ -14,73 +16,82 @@ component name="TestShell" extends="mxunit.framework.TestCase" {
 		assertTrue(candidates.contains("dir "));
 		assertTrue(candidates.contains("ls "));
 		assertTrue(candidates.contains("reload "));
-		assertEquals(0,cursor);
-		candidates.clear();
+		assertEquals(0,cursor);		
+	}
 
+	public void function testPartialCommand() {
+		cmdline = "hel";
+		cursor = completor.complete(cmdline,len(cmdline),candidates);
+		assertTrue(candidates.contains("help "));
+		assertTrue(candidates.size() == 1);
+		assertEquals(0,cursor);		
+	}
+
+	public void function testCommandNoSpace() {
 		cmdline = "help";
 		cursor = completor.complete(cmdline,len(cmdline),candidates);
 		assertTrue(candidates.contains("help "));
 		assertTrue(candidates.size() == 1);
-		assertEquals(0,cursor);
-		candidates.clear();
+		assertEquals(0,cursor);		
+	}
 
-		
+	public void function testCommandSpace() {
 		cmdline = "help ";
 		cursor = completor.complete(cmdline,len(cmdline),candidates);
-		assertTrue(candidates.contains(" command="));
+		assertTrue(candidates.contains("command="));
 		assertFalse(candidates.contains("help"));
-		assertEquals(4,cursor);
-		candidates.clear();
+		assertEquals(5,cursor);		
+	}
 
-		cmdline = "help com";
-		cursor = completor.complete(cmdline,len(cmdline),candidates);
-		assertTrue(candidates.contains(" command="));
-		assertFalse(candidates.contains("help"));
-		assertEquals(4,cursor);
-		candidates.clear();
-
+	public void function testCommandSpaceMultipleParams() {
 		cmdline = "dir ";
 		cursor = completor.complete(cmdline,len(cmdline),candidates);
-		assertTrue(candidates.contains(" directory="));
-		assertTrue(candidates.contains(" recurse="));
-		assertEquals(3,cursor);
-		candidates.clear();
+		assertTrue(candidates.contains("directory="));
+		assertTrue(candidates.contains("recurse="));
+		assertEquals(4,cursor);		
+	}
 
+
+	public void function testPartialParamName() {
+		cmdline = "help com";
+		cursor = completor.complete(cmdline,len(cmdline),candidates);
+		assertTrue(candidates.contains("command="));
+		assertFalse(candidates.contains("help"));
+		assertEquals(5,cursor);		
+	}
+
+
+	public void function testPartialParamNameSecondParam() {
+		cmdline = "dir directory=blah re";
+		cursor = completor.complete(cmdline,len(cmdline),candidates);
+		assertTrue(candidates.contains(" recurse="));
+		assertEquals(18,cursor);
+	}
+	
+	public void function testParamAndValue() {
 		cmdline = "dir directory=blah ";
 		cursor = completor.complete(cmdline,len(cmdline),candidates);
 		assertFalse(candidates.contains("directory"));
 		assertFalse(candidates.contains("directory="));
 		assertTrue(candidates.contains(" recurse="));
-		assertEquals(18,cursor);
-		candidates.clear();
+		assertEquals(18,cursor);		
+	}
 
+	public void function testBooleanParam() {
 		cmdline = "dir directory=blah recurse=";
 		cursor = completor.complete(cmdline,len(cmdline),candidates);
 		assertTrue(candidates.contains("true "));
 		assertTrue(candidates.contains("false "));
-		assertEquals(27,cursor);
-		candidates.clear();
+		assertEquals(27,cursor);		
+	}
 
+	public void function testParitialBooleanParam() {
 		cmdline = "dir directory=blah recurse=tr";
 		cursor = completor.complete(cmdline,len(cmdline),candidates);
 		debug(candidates);
 		assertTrue(candidates.contains("true "));
 		assertFalse(candidates.contains("false "));
 		assertEquals(27,cursor);
-		candidates.clear();
-
-		cmdline = "init";
-		cursor = completor.complete(cmdline,len(cmdline),candidates);
-		debug(candidates);
-		assertTrue(candidates.contains("init "));
-		assertEquals(0,cursor);
-		candidates.clear();
-
-		cmdline = "iDoNotExist ";
-		cursor = completor.complete(cmdline,len(cmdline),candidates);
-		debug(candidates);
-		assertEquals(0,candidates.size());
-		assertEquals(len(cmdline),cursor);
-		candidates.clear();
 	}
+
 }
