@@ -12,7 +12,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 	function run( directory="" )  {
 		
 		// This will make each directory canonical and absolute		
-		arguments.directory = fileSystemUtil.resolveDirectory( arguments.directory );
+		arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
 		
 		return shell.cd( arguments.directory );
 	}

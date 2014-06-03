@@ -21,8 +21,8 @@ component extends='commandbox.system.BaseCommand' aliases='' excludeFromHelp=fal
 					testsDirectory='tests/specs/interceptors',
 					directory='interceptors' ) {
 		// This will make each directory canonical and absolute
-		directory = fileSystemUtil.resolveDirectory( directory );
-		testsDirectory = fileSystemUtil.resolveDirectory( testsDirectory );
+		directory = fileSystemUtil.resolvePath( directory );
+		testsDirectory = fileSystemUtil.resolvePath( testsDirectory );
 
 		// Validate directory
 		if( !directoryExists( directory ) ) {

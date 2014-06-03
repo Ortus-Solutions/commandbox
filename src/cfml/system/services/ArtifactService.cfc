@@ -18,6 +18,7 @@ component singleton {
 	property name='artifactDir' inject='artifactDir';
 	property name='packageUtil' inject='package';
 	property name='shell' inject='shell';
+	property name='logger' inject='logbox:logger:{this}';
 	
 	function onDIComplete() {
 		
@@ -133,8 +134,27 @@ component singleton {
 	* @version.hint The version of the package to look for
 	*/
 	public struct function getArtifactDescriptor( required packageName, required version ) {
-		// TODO: Look for a box.json and merge its properties into the a default object
-		return packageUtil.newPackageDescriptor();
+			
+		var artifactPath = getArtifactPath( arguments.packageName, arguments.version );
+		var boxJSONPath = 'zip://' & artifactPath & '!box.json';
+		
+		// If the packge has a box.json in the root...
+		if( fileExists( boxJSONPath ) ) {
+			
+			// ...Read it.
+			boxJSON = fileRead( boxJSONPath );
+			
+			// Validate the file is valid JSOn
+			if( isJSON( boxJSON ) ) {
+				// Merge this JSON with defaults
+				return packageUtil.newPackageDescriptor( deserializeJSON( boxJSON ) );
+			}
+			
+		}
+		
+		// Just return defaults
+		return packageUtil.newPackageDescriptor();			
+	
 	}	
 	
 	/**
@@ -159,6 +179,7 @@ component singleton {
 		
 		// TODO: actually obey artifactDescriptor.ignore
 		zip action="unzip" file="#artifactPath#" destination="#installDirectory#" overwrite="true";
+		
 		
 	}
 		

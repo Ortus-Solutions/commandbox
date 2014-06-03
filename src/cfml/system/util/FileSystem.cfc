@@ -24,25 +24,31 @@ component accessors="true" singleton {
 	}
 
 	/**
-	* Resolve the incoming directory from the file system
+	* Resolve the incoming path from the file system
 	* @directory.hint The directory to resolve
 	*/
-	function resolveDirectory( required string directory ) {
-		// Load our path into a Java file object so we can use some of its nice utility methods
-		var oDirectory = createObject( 'java', 'java.io.File' ).init( directory );
-
-		// This tells us if it's a relative path
-		// Note, at this point we don't actually know if it actually even exists yet
-		if( !oDirectory.isAbsolute() ) {
-			// If it's relative, we assume it's relative to the current working directory and make it absolute
-			oDirectory = createObject( 'java', 'java.io.File' ).init( shell.pwd() & '/' & directory );
+	function resolvePath( required string path ) {
+		
+		try {
+			
+			// Load our path into a Java file object so we can use some of its nice utility methods
+			var oPath = createObject( 'java', 'java.io.File' ).init( path );
+	
+			// This tells us if it's a relative path
+			// Note, at this point we don't actually know if it actually even exists yet
+			if( !oPath.isAbsolute() ) {
+				// If it's relative, we assume it's relative to the current working directory and make it absolute
+				oPath = createObject( 'java', 'java.io.File' ).init( shell.pwd() & '/' & path );
+			}
+	
+			// This will standardize the name and calculate stuff like ../../
+			return oPath.getCanonicalPath();
+			
+		} catch ( any e ) {
+			return shell.pwd() & '/' & path;
 		}
-
-		// This will standardize the name and calculate stuff like ../../
-		return oDirectory.getCanonicalPath();
+		
 	}
-
-	// TODO: Add resolve file
 
 	/**
 	* Get the JRE Executable from the File System

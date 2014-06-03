@@ -102,4 +102,17 @@ component accessors="true" singleton{
 		return hasErrored;
 	}
 			
+	
+	/**
+	 * A convenience method to handle the different inputs we allow to mean "true" when polling the user
+	 * Accepts any boolean value, or "y".
+	 * @input.hint user-entered value
+ 	 **/
+	function isAffirmative( required input ) {
+		if( trim( input ) == "y" || ( isBoolean( input ) && input ) ) {
+			return true;
+		}
+		return false;
+	}
+			
 }

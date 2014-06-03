@@ -25,7 +25,7 @@ component extends="commandbox.system.BaseCommand" aliases="install" excludeFromH
 		// specifically typed in a param or not since it overrides the package's box.json install dir.
 		if( structKeyExists( arguments, 'directory' ) ) {
 			
-			arguments.directory = fileSystemUtil.resolveDirectory( arguments.directory );
+			arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
 			
 			// Validate directory
 			if( !directoryExists( arguments.directory ) ) {

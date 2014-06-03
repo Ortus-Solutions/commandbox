@@ -15,7 +15,7 @@ component extends="commandbox.system.BaseCommand" aliases="status" excludeFromHe
 	function run( String directory="", String name="", boolean showAll=false ){
 		var servers = serverService.getServers();
 
-		arguments.directory = fileSystemUtil.resolveDirectory( arguments.directory );
+		arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
 
 		for( var serverKey in servers ){
 			var serv = servers[ serverKey ];

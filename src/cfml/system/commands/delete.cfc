@@ -1,5 +1,6 @@
 /**
- * Delete a file or directory from the filesystem
+ * Delete a file or directory from the filesystem.  This command will not delete non-empty directories
+ * unless you use the "recurse" param. Use the "force" param to supress the confirmation.
  *
  * delete sample.html
  *
@@ -7,41 +8,47 @@
 component extends="commandbox.system.BaseCommand" aliases="rm,del" excludeFromHelp=false {
 
 	/**
-	 * @file.hint file or directory to delete
-	 * @force.hint force deletion
-	 * @recurse.hint recursive deletion of files
+	 * @path.hint file or directory to delete
+	 * @force.hint Force deletion without asking
+	 * @recurse.hint Delete sub directories
 	 **/
-	function run( required file="", Boolean force=false, Boolean recurse=false )  {
+	function run( required path, Boolean force=false, Boolean recurse=false )  {
 		
-		// If files does't, maybe they meant a relative file
-		if( !fileExists( arguments.file ) ) {
-			arguments.file = shell.pwd() & '/' & arguments.file;
-		}
-		
-		if( !fileExists( arguments.file ) ) {
-			if( directoryExists( arguments.file ) ){
+		// Make path canonical and absolute
+		arguments.path = fileSystemUtil.resolvePath( arguments.path );
+			
+		// It's a directory
+		if( directoryExists( arguments.path ) ) {
+								
+				var subMessage = arguments.recurse ? ' and all its subdirectories' : '';
 				
-				var isConfirmed = shell.ask( "delete #file#? and all its subdirectories? [y/n] : " );
-				if( left( isConfirmed, 1 ) == "y" 
-					|| ( isBoolean( isConfirmed ) && isConfirmed ) ) {
-					directoryDelete( arguments.file, true );
-					return "deleted #arguments.file#";
+				if( arguments.force || isAffirmative( shell.ask( "Delete #path##subMessage#? [y/n] : " ) ) ) {
+					
+					if( directoryList( arguments.path ).len() && !arguments.recurse ) {
+						return error( 'Directory [#arguments.path#] is not empty! Use the "recurse" parameter to override' );
+					}
+					
+					directoryDelete( arguments.path, recurse );
+					print.greenLine( "Deleted #arguments.path#" );
+				} else {
+					print.redLine( "Cancelled!" );					
 				}
-				return 'Cancelled.';
+				
+			
+		// It's a file
+		} else if( fileExists( arguments.path ) ){
+						
+			if( arguments.force || isAffirmative( shell.ask( "Delete #path#? [y/n] : " ) ) ) {
+				
+				fileDelete( arguments.path );
+				print.greenLine( "Deleted #arguments.path#" );
+			} else {
+				print.redLine( "Cancelled!" );					
 			}
-			shell.printError( {message="file/directory does not exist: #arguments.file#"} );
-		} else {
-			var isConfirmed = shell.ask("delete #arguments.file#? [y/n] : ");
-			if( left( isConfirmed, 1 ) == "y" 
-				|| ( isBoolean( isConfirmed ) && isConfirmed ) ) {
-				fileDelete( arguments.file );
-				return "deleted #arguments.file#";
-			}
-			return 'Cancelled.';
+			
+		} else {	
+			return error( "File/directory does not exist: #arguments.path#" );
 		}
-		return "";
 	}
-
-
-
+	
 }
