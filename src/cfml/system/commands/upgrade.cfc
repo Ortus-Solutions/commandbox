@@ -1,14 +1,14 @@
 /**
  * Upgrades the shell libraries to the latest version
- * 
+ *
  * upgrade
- * 
+ *
  **/
 component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
 
 	// DI
-	property name="artifactsDir" inject="artifactsDir";
-
+	property name="artifactDir" inject="artifactDir";
+	property name="homedir" 	inject="homedir";
 
 	function run(Boolean force=false) {
 		var temp = shell.getTempDir();
@@ -19,35 +19,35 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 		if(latest!=shell.getVersion() || force) {
 			dependency( artifactId='box.cli', groupId='com.ortussolutions', version=latest, classifier='cfml' );
 		}
-		var filePath = "#variables.artifactsDir#/com/ortussolutions/box.cli/#latest#/box.cli-#latest#-cfml.zip";
+		var filePath = "#variables.artifactDir#/com/ortussolutions/box.cli/#latest#/box.cli-#latest#-cfml.zip";
 		if( fileExists( filePath ) ) {
-			
+
 			print.greenLine( "Unzipping #filePath#..." );
 			zip
 				action="unzip"
 				file="#filePath#"
-				destination="#shell.getHomeDir()#/cfml"
+				destination="#variables.homedir#/cfml"
 				overwrite=true;
 		}
-		
-		// Reload the shell			 
+
+		// Reload the shell
 		runCommand( 'reload' );
-		
+
 		print.greenLine( "Installed #latest#" );
 	}
-	
+
 	private function dependency(required artifactId, required groupId, required version, type="zip", classifier="", mapping="", exclusions="")  {
 		var params = {};
-		
+
 		var slashGroupId = replace( groupId, ".", "/", "all" );
 		var artifactPath = "/#slashGroupId#/#artifactId#/#version#/#artifactId#-#version#-#classifier#.#type#";
 		var mavenMetaPath = "/#slashGroupId#/#artifactId#/maven-metadata.xml";
 		var remoteRepo = "http://cfmlprojects.org/artifacts";
 		var remoteURL = remoteRepo & artifactPath;
-		directoryCreate( "#variables.artifactsDir#/#slashGroupId#/#artifactId#/#version#/", true, true );
-		getHTTPFileVerified( "#remoteRepo##mavenMetaPath#","#variables.artifactsDir##mavenMetaPath#" );
-		getHTTPFileVerified( "#remoteRepo##artifactPath#","#variables.artifactsDir##artifactPath#" );
-		
+		directoryCreate( "#variables.artifactDir#/#slashGroupId#/#artifactId#/#version#/", true, true );
+		getHTTPFileVerified( "#remoteRepo##mavenMetaPath#","#variables.artifactDir##mavenMetaPath#" );
+		getHTTPFileVerified( "#remoteRepo##artifactPath#","#variables.artifactDir##artifactPath#" );
+
 		print.greenLine( "Resolved dependency #groupId#:#artifactId#:#version#:#classifier#:#type#..." );
 	}
 
@@ -59,7 +59,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 				return filePath;
 			}
 		}
-		
+
 		print.greenLine( "Downloading #fileUrl#..." );
 		http url="#fileUrl#.md5" file="#filePath#.md5";
 		http url="#fileUrl#.sha1" file="#filePath#.sha1";

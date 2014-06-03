@@ -402,7 +402,7 @@ component accessors="true" singleton {
 	 * @err.hint Error object to print (only message is required)
   	 **/
 	Shell function printError( required err ){
-		variables.logger.error( '#err.message# #err.detail ?: ''#', arguments.err.stackTrace ?: '' );
+		variables.logger.error( '#arguments.err.message# #arguments.err.detail ?: ''#', arguments.err.stackTrace ?: '' );
 
 		variables.reader.print( variables.print.boldRedText( "ERROR: " & variables.formatterUtil.HTML2ANSI( arguments.err.message ) ) );
 		variables.reader.println();
