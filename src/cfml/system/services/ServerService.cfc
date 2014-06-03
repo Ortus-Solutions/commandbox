@@ -36,8 +36,14 @@ component accessors="true" singleton{
 	* @shell.inject shell
 	* @formatter.inject Formatter
 	* @fileSystem.inject FileSystem
+	* @homeDir.inject HomeDir
 	*/
-	function init( required shell, required formatter, required fileSystem ){
+	function init(
+		required shell,
+		required formatter,
+		required fileSystem,
+		required homeDir
+	){
 		// DI
 		variables.shell 			= arguments.shell;
 		variables.formatterUtil 	= arguments.formatter;
@@ -53,11 +59,11 @@ component accessors="true" singleton{
 		};
 
 		// the lib dir location, populated from shell later.
-		variables.libDir = arguments.shell.getHomeDir() & "/lib";
+		variables.libDir = arguments.homeDir & "/lib";
 		// Where custom server configs are stored
-		variables.serverConfig = arguments.shell.getHomeDir() & "/servers.json";
+		variables.serverConfig = arguments.homeDir & "/servers.json";
 		// Where custom servers are stored
-		variables.serverDirectory = arguments.shell.getHomeDir() & "/server/custom/";
+		variables.serverDirectory = arguments.homeDir & "/server/custom/";
 		// The JRE executable command
 		variables.javaCommand = arguments.fileSystem.getJREExecutable();
 		// The runwar jar path
@@ -150,7 +156,7 @@ component accessors="true" singleton{
 	/**
 	 * Stop server
 	 * @serverInfo.hint The server information struct: [ webroot, name, port, stopSocket, logDir, status, statusInfo ]
-	 * 
+	 *
 	 * @returns struct of [ error, messages ]
  	 **/
 	struct function stop( required Struct serverInfo ){
@@ -183,7 +189,7 @@ component accessors="true" singleton{
 		if( !all ){
 			var servers 	= getServers();
 			var serverdir 	= variables.serverDirectory & serverInfo.name;
-			
+
 			// try to delete from config first
 			structDelete( servers, hash( arguments.serverInfo.webroot ) );
 			setServers( servers );
@@ -265,8 +271,8 @@ component accessors="true" singleton{
 		// Discover by shortname or webroot
 		if( len( arguments.name ) ){
 			return getServerInfoByName( arguments.name );
-		} 
-		
+		}
+
 		var webroot = arguments.directory is "" ? shell.pwd() : arguments.directory;
 		return getServerInfoByWebroot( fileSystemUtil.resolvePath( webroot ) );
 	}
