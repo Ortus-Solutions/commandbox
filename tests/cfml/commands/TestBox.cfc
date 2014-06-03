@@ -8,14 +8,12 @@ component name="TestShell" extends="mxunit.framework.TestCase" {
 		directoryExists(workdir) ? directoryDelete(workdir,true) : "";
 		directoryCreate(workdir);
 		directoryCreate(homedir);
-		shell.cd(workdir);
-		shell.setHomeDir(homedir);
+		shell.cd( workdir );
 		variables.boxInit = application.wirebox.getInstance( 'commandbox.commands.init' );
 		variables.boxUpgrade = application.wirebox.getInstance( 'commandbox.system.commands.upgrade' );
 	}
 
 	public void function testInit()  {
-		assertTrue(shell.getHomeDir() == homedir);
 		assertTrue(shell.getTempDir() == homedir & "/temp");
 		var result = boxInit.run( force=true );
 		assertTrue(fileExists(workdir & "/box.json"));
