@@ -46,10 +46,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 		// File exists, better check first
 		} else {
 			// Ask the user what they want to do
-			var isWrite = ask( '#boxfile# already exists, overwrite? [y/n] : ');
-			// If they responsed with 'y' or some other boolean true, then do it.
-			if( left( isWrite, 1 ) == 'y' 
-					|| ( isBoolean( isWrite ) && isWrite ) ) {
+			if( confirm( '#boxfile# already exists, overwrite? [y/n]') ) {
 				fileWrite( boxfile, formatterUtil.formatJson( boxJSON ) );
 				
 				print.greenLine( 'Package Initialized!' );

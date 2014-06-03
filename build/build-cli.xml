@@ -2,7 +2,6 @@
 
 	<target name="resolve.libs" description="resolves libs to ${lib.dir}">
 		<delete dir="${lib.dir}"/>
-		<dependency groupId="org.fusesource.jansi" artifactId="jansi" unzip="false" version="1.11" type="jar" dest="${lib.dir}" />
 		<dependency groupId="jline" artifactId="jline" version="2.12-SNAPSHOT" dest="${lib.dir}" type="jar" unzip="false"/>
 	</target>
 
