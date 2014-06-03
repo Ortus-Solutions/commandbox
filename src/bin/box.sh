@@ -1,4 +1,11 @@
 #!/bin/sh
+
+##############################################################################
+##                                                                          ##
+##  CommandBox JVM Bootstrap for UN*X                                       ##
+##                                                                          ##
+##############################################################################
+
 cmd=
 for a in "$@"
 do
@@ -25,7 +32,7 @@ then
 	cp="$cp:$BOX_CLASSPATH"
 fi
 
-java_args='-client'
+java_args='-client -Djava.awt.headless=true'
 
 # Cleanup paths for Cygwin.
 #
@@ -43,6 +50,7 @@ Darwin)
 			-Dapple.laf.useScreenMenuBar=true
 			-Xdock:name=CommandBox
 			-Dfile.encoding=UTF-8
+			-Djava.awt.headless=true
 		'
 	fi
 	;;
@@ -76,6 +84,6 @@ then
 	"$java" $java_args cliloader.LoaderCLIMain "$@" | $use_pager
 	exit
 else
-  exec "$java" $java_args cliloader.LoaderCLIMain "$@"
-  exit 1
+  	exec "$java" $java_args cliloader.LoaderCLIMain "$@"
+  	exit 1
 fi
