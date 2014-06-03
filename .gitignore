@@ -11,3 +11,4 @@ tests/work
 Icon?
 src/cfml/logs
 build/launch4j
+tests/testbox

@@ -1,15 +1,24 @@
 component {
 	
-	this.name="mxu";
+	this.name="CommandBox Testing Harness - " & hash( getCurrentTemplatePath() );
+	this.applicationTimeout = createTimeSpan( 0, 0, 5, 0 );
+	this.sessionTimeout = createTimeSpan( 0, 0, 5, 0 );
 	this.sessionmanagement="true";
 	
-	
-	this.mappings[ '/commandbox' ] = '../src/cfml';
-	this.mappings[ '/wirebox' ] = '../src/cfml/system/wirebox';
-	
-	function onApplicationStart() {		
-		new wirebox.system.ioc.Injector( 'commandbox.system.config.WireBox' );
+	// mappings	
+	this.mappings[ "/tests" ] 		= getDirectoryFromPath( getCurrentTemplatePath() );
+	this.mappings[ '/testbox' ] 	= 'testbox';
+	this.mappings[ '/commandbox' ] 	= '../src/cfml';
+	this.mappings[ '/wirebox' ] 	= '../src/cfml/system/wirebox';
+	this.mappings[ '/mxunit' ] 		= 'testbox/system/testing/compat';
+
+	boolean function onRequestStart( required targetPage ){
+		new wirebox.system.ioc.Injector( 'tests.cfml.config.WireBox' );
 		return true;
+	}
+
+	function onRequestEnd( required targetPage ){
+		structDelete( application, "wirebox" );
 	}
 		
 }
