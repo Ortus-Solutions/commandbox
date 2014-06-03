@@ -7,8 +7,7 @@
 component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
 
 	// DI
-	property name="artifactsDir" inject="artifactsDir";
-
+	property name="artifactDir" inject="artifactDir";
 
 	function run(Boolean force=false) {
 		var temp = shell.getTempDir();
@@ -19,7 +18,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 		if(latest!=shell.getVersion() || force) {
 			dependency( artifactId='box.cli', groupId='com.ortussolutions', version=latest, classifier='cfml' );
 		}
-		var filePath = "#variables.artifactsDir#/com/ortussolutions/box.cli/#latest#/box.cli-#latest#-cfml.zip";
+		var filePath = "#variables.artifactDir#/com/ortussolutions/box.cli/#latest#/box.cli-#latest#-cfml.zip";
 		if( fileExists( filePath ) ) {
 			
 			print.greenLine( "Unzipping #filePath#..." );
@@ -44,9 +43,9 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 		var mavenMetaPath = "/#slashGroupId#/#artifactId#/maven-metadata.xml";
 		var remoteRepo = "http://cfmlprojects.org/artifacts";
 		var remoteURL = remoteRepo & artifactPath;
-		directoryCreate( "#variables.artifactsDir#/#slashGroupId#/#artifactId#/#version#/", true, true );
-		getHTTPFileVerified( "#remoteRepo##mavenMetaPath#","#variables.artifactsDir##mavenMetaPath#" );
-		getHTTPFileVerified( "#remoteRepo##artifactPath#","#variables.artifactsDir##artifactPath#" );
+		directoryCreate( "#variables.artifactDir#/#slashGroupId#/#artifactId#/#version#/", true, true );
+		getHTTPFileVerified( "#remoteRepo##mavenMetaPath#","#variables.artifactDir##mavenMetaPath#" );
+		getHTTPFileVerified( "#remoteRepo##artifactPath#","#variables.artifactDir##artifactPath#" );
 		
 		print.greenLine( "Resolved dependency #groupId#:#artifactId#:#version#:#classifier#:#type#..." );
 	}
