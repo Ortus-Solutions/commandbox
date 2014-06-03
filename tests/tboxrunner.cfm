@@ -1,9 +1,9 @@
 <cfsilent>
-<cfparam name="url.target" 		default="">
-<cfparam name="url.railoversion" default="4.2">
-<cfparam name="url.recurse" default="true">
-<cfparam name="url.labels"		default="">
-<cfparam name="url.reporter"	default="ANTJunit">
+<cfparam name="url.target" 			default="tests.cfml">
+<cfparam name="url.railoversion" 	default="4.2">
+<cfparam name="url.recurse" 		default="true">
+<cfparam name="url.labels"			default="">
+<cfparam name="url.reporter"		default="ANTJunit">
 <cfscript>
 request.webadminpassword="testtest";
 // create testbox
@@ -35,4 +35,4 @@ if( len( url.target ) ){
 } else {
 	results = 'No tests selected for running!';
 }
-</cfscript></cfsilent><cfcontent type="text/xml" reset="true"><cfset writeOutput(results) />
+</cfscript></cfsilent><cfset writeOutput(results) />
