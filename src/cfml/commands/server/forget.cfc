@@ -32,8 +32,8 @@ component extends="commandbox.system.BaseCommand" excludeFromHelp=false {
 		// Confirm deletion
 		var askMessage = arguments.all ? "Really forget & delete all servers (servers=#arrayToList( serverService.getServerNames() )#) forever [y/n]?" :
 									     "Really forget & delete server '#serverinfo.name#' forever [y/n]?";
-		var reallyForget = ask( askMessage );
-		if( left( reallyForget, 1 ) == "y" ){
+									     
+		if( confirm( askMessage ) ){
 			print.line( serverService.forget( serverInfo, arguments.all, arguments.force ) );
 		} else {
 			print.orangeLine( "Cancelling forget command" );

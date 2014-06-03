@@ -60,6 +60,20 @@ component accessors="true" singleton{
 	}
 		
 	/**
+	 * Ask the user a question looking for a yes/no response
+	 * Accepts any boolean value, or "y".
+	 * @message.hint The message to display to the user such as "Press any key to continue."
+ 	 **/
+	function confirm( required message ) {
+		var answer = shell.ask( "#message# : " );
+		if( trim( answer ) == "y" || ( isBoolean( answer ) && answer ) ) {
+			return true;
+		}
+		return false;
+		
+	}
+		
+	/**
 	 * Run another command by name. 
 	 * @command.hint The command to run. Pass the same string a user would type at the shell.
  	 **/
@@ -101,18 +115,5 @@ component accessors="true" singleton{
 	function hasError() {
 		return hasErrored;
 	}
-			
-	
-	/**
-	 * A convenience method to handle the different inputs we allow to mean "true" when polling the user
-	 * Accepts any boolean value, or "y".
-	 * @input.hint user-entered value
- 	 **/
-	function isAffirmative( required input ) {
-		if( trim( input ) == "y" || ( isBoolean( input ) && input ) ) {
-			return true;
-		}
-		return false;
-	}
-			
+				
 }

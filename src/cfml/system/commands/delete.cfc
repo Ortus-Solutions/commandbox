@@ -22,7 +22,7 @@ component extends="commandbox.system.BaseCommand" aliases="rm,del" excludeFromHe
 								
 				var subMessage = arguments.recurse ? ' and all its subdirectories' : '';
 				
-				if( arguments.force || isAffirmative( shell.ask( "Delete #path##subMessage#? [y/n] : " ) ) ) {
+				if( arguments.force || confirm( "Delete #path##subMessage#? [y/n]" ) ) {
 					
 					if( directoryList( arguments.path ).len() && !arguments.recurse ) {
 						return error( 'Directory [#arguments.path#] is not empty! Use the "recurse" parameter to override' );
@@ -38,7 +38,7 @@ component extends="commandbox.system.BaseCommand" aliases="rm,del" excludeFromHe
 		// It's a file
 		} else if( fileExists( arguments.path ) ){
 						
-			if( arguments.force || isAffirmative( shell.ask( "Delete #path#? [y/n] : " ) ) ) {
+			if( arguments.force || confirm( "Delete #path#? [y/n]" ) ) {
 				
 				fileDelete( arguments.path );
 				print.greenLine( "Deleted #arguments.path#" );
