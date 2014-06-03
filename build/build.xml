@@ -1,6 +1,11 @@
 <?xml version="1.0"?>
 <!-- ====================================================================== 
-Build a new distribution of Ortus CommandBox
+Build a new distribution of Ortus CommandBox:
+This build downloads required libs depending on the target.
+
+External Dependencies:
+- railo-cli
+- launch4j
 ====================================================================== -->
 <project name="distro.build" default="build.cli" basedir="./" xmlns:antcontrib="antlib:net.sf.antcontrib">
 	 <description>
@@ -122,13 +127,7 @@ Build a new distribution of Ortus CommandBox
 
 	<!-- Build windows executable -->
 	<target name="build.cli.exe" description="create exe wrapper" depends="build.cli" >
-        <!-- Build executable 
-        <jar2exe
-        	jar="${dist.dir}/box.jar" exe="${dist.dir}/box.exe"  
-        	icon="${src.dir}/resources/box.ico" mutexName="CommandBox.cli.Console" 
-        	headerType="console" stayAlive="true"/>-->
-        
-        <!-- Get OS version of lanuch4j, check if already downloaded it or not -->
+        <!-- Get OS version of lanuch4j -->
         <antcall target="getlaunch4j" />
         <!-- Build Executable Now -->
         <taskdef name="launch4j" 
@@ -144,11 +143,11 @@ Build a new distribution of Ortus CommandBox
 					icon="${src.dir}/resources/box.ico"
 					stayAlive="true">
 					<jre path="./jre/" minVersion="1.6.0" />
-					<versionInfo fileVersion="${commandbox.version}.${build.number}"
+					<versionInfo fileVersion="${commandbox.version}.0"
 								 txtFileVersion="${commandbox.version}.${build.number}"
 								 fileDescription="${commandbox.description}"
 								 copyright="Copyright since 2013 Ortus Solutions, Corp"
-								 productVersion="${commandbox.version}.${build.number}"
+								 productVersion="${commandbox.version}.0"
 								 txtProductVersion="${commandbox.version}.${build.number}"
 								 productName="CommandBox"
 								 companyName="Ortus Solutions, Corp"
@@ -163,38 +162,6 @@ Build a new distribution of Ortus CommandBox
 		</zip>
 		<!-- Build Checksum -->
 		<checksum file="${dist.dir}/${distro.name}-${commandbox.version}.win.zip" forceoverwrite="true" fileext=".md5" />
-	</target>
-
-	<!-- Get launch4j -->
-	<target name="getlaunch4j" description="Get an OS dependent launch4j into the build directory">
-		<!-- do a check -->
-		<antcontrib:if>
-	        <available file="launch4j/launch4j.jar" />
-	        <then><echo>Launch4j Binary found!</echo></then>
-	        <else>
-	            <echo>Launch4j not found, getting artifact</echo>
-	            <!-- Determine OS type -->
-				<antcontrib:if>
-					<os family="windows" />
-					<then><property name="launch4j.filename" value="launch4j-${launch4j.version}-win32.zip"/></then>
-					<elseif>
-						<os family="mac" />
-						<then><property name="launch4j.filename" value="launch4j-${launch4j.version}-macosx.tgz"/></then>
-					</elseif>
-					<elseif>
-						<os family="unix" />
-						<then><property name="launch4j.filename" value="launch4j-${launch4j.version}-linux.tgz"/></then>
-					</elseif>
-				</antcontrib:if>
-				<echo>Downloading ${launch4j.filename} from ${ortus.repoURL}...</echo>
-				<get src="${ortus.repoURL}/launch4j/${launch4j.version}/${launch4j.filename}" 
-					 dest="."
-					 verbose="true" />
-				<untar src="${launch4j.filename}" dest="." compression="gzip"/>
-				<delete file="${launch4j.filename}" />
-				<chmod dir="./launch4j/bin/" perm="ugo+rx" includes="*"/>
-	        </else>
-	    </antcontrib:if>
 	</target>
 
 	<!-- Build including JREs -->
@@ -309,6 +276,43 @@ Build a new distribution of Ortus CommandBox
 		</redline:rpm>
 		<!-- updates/creates the RPM repository, requires 'createrepo' on build server -->
 		<rpm-repo dir="${rpm.repo}" />
+	</target>
+
+	<!-- ********************************************************************************************-->
+	<!--						DEPENDENCY TARGETS 													 -->
+	<!-- ********************************************************************************************-->
+
+	<!-- Get launch4j -->
+	<target name="getlaunch4j" description="Get an OS dependent launch4j into the build directory">
+		<!-- do a check -->
+		<antcontrib:if>
+	        <available file="launch4j/launch4j.jar" />
+	        <then><echo>Launch4j Binary found!</echo></then>
+	        <else>
+	            <echo>Launch4j not found, getting artifact from ${ortus.repoURL}</echo>
+	            <!-- Determine OS type -->
+				<antcontrib:if>
+					<os family="windows" />
+					<then><property name="launch4j.filename" value="launch4j-${launch4j.version}-win32.zip"/></then>
+					<elseif>
+						<os family="mac" />
+						<then><property name="launch4j.filename" value="launch4j-${launch4j.version}-macosx.tgz"/></then>
+					</elseif>
+					<elseif>
+						<os family="unix" />
+						<then><property name="launch4j.filename" value="launch4j-${launch4j.version}-linux.tgz"/></then>
+					</elseif>
+				</antcontrib:if>
+				<echo>Downloading ${launch4j.filename} from ${ortus.repoURL}...</echo>
+				<get src="${ortus.repoURL}/launch4j/${launch4j.version}/${launch4j.filename}" 
+					 dest="."
+					 verbose="true" />
+				<untar src="${launch4j.filename}" dest="." compression="gzip"/>
+				<delete file="${launch4j.filename}" />
+	        </else>
+	    </antcontrib:if>
+	    <!-- Add execution perms every time just in case -->
+	    <chmod dir="./launch4j/bin/" perm="ugo+rx" includes="*"/>
 	</target>
 
 	<!-- ********************************************************************************************-->
