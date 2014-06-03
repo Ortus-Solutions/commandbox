@@ -25,7 +25,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 				directory=shell.pwd() ) {
 					
 		// This will make the directory canonical and absolute		
-		directory = fileSystemUtil.resolveDirectory( directory );
+		directory = fileSystemUtil.resolvePath( directory );
 		
 		var skeletonZip = skeletonLocation & skeleton & '.zip';
 		

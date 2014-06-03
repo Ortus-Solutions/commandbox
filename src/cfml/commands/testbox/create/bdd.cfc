@@ -13,7 +13,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 	 **/
 	function run( required name, boolean open=false, directory=shell.pwd() ){
 		// This will make each directory canonical and absolute		
-		arguments.directory = fileSystemUtil.resolveDirectory( arguments.directory );
+		arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
 						
 		// Validate directory
 		if( !directoryExists( arguments.directory ) ) {

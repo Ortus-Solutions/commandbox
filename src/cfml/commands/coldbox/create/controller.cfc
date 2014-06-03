@@ -25,9 +25,9 @@ component extends='commandbox.system.BaseCommand' aliases='coldbox create handle
 					testsDirectory='tests/specs/integration',
 					directory='handlers' ) {
 		// This will make each directory canonical and absolute
-		directory = fileSystemUtil.resolveDirectory( directory );
-		viewsDirectory = fileSystemUtil.resolveDirectory( viewsDirectory );
-		testsDirectory = fileSystemUtil.resolveDirectory( testsDirectory );
+		directory = fileSystemUtil.resolvePath( directory );
+		viewsDirectory = fileSystemUtil.resolvePath( viewsDirectory );
+		testsDirectory = fileSystemUtil.resolvePath( testsDirectory );
 
 		// Validate directory
 		if( !directoryExists( directory ) ) {

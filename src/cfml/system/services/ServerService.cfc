@@ -268,7 +268,7 @@ component accessors="true" singleton{
 		} 
 		
 		var webroot = arguments.directory is "" ? shell.pwd() : arguments.directory;
-		return getServerInfoByWebroot( fileSystemUtil.resolveDirectory( webroot ) );
+		return getServerInfoByWebroot( fileSystemUtil.resolvePath( webroot ) );
 	}
 
 	/**

@@ -12,21 +12,15 @@ component singleton {
 
 	//DI
 	property name="commandService" inject="CommandService";
+	property name="fileSystemUtil" inject="fileSystem";
+	property name='logger' inject='logbox:logger:{this}';
 
 	
 	/**
 	 * Constructor
 	 **/
 	function init() {
-		// command list
-		variables.commandlist 	= createObject( "java", "java.util.TreeSet" );
-		variables.commands 		= "";
 		return this;
-	}
-
-	function onDIComplete() {
-		variables.commandlist.addAll( variables.commandService.listCommands().split(',') );
-		variables.commands = commandService.getCommands();
 	}
 
 	/**
@@ -183,6 +177,10 @@ component singleton {
 			case "file" :
            		fileCompletion(paramSoFar,candidates);
 				break;
+			case "path" :
+           		directoryCompletion(paramSoFar,candidates);
+           		fileCompletion(paramSoFar,candidates);
+				break;
 		}
 	}
 
@@ -192,16 +190,33 @@ component singleton {
 	 * @candidates.hint tree to populate with completion candidates
  	 **/
 	private function directoryCompletion(String startsWith, required candidates) {
-		startsWith = replace(startsWith,"\","/","all");
-		if(startsWith == "") {
-			startsWith = commandService.getShell().pwd();
+		
+		arguments.startsWith = fileSystemUtil.resolvePath( arguments.startsWith );
+		
+		startsWith = replace( startsWith, "\", "/", "all" );
+		var searchIn = startsWith;
+		
+		if( !directoryExists( searchIn ) ) {
+			searchIn = getDirectoryFromPath( searchIn );
 		}
-		var files = directoryList(getDirectoryFromPath(startsWith));
-		for(file in files) {
-			if(file.startsWith(startsWith)) {
-				if(directoryExists(file))
-					candidates.add(file&"/" & ' ');
-			}
+		
+		
+		if( directoryExists( searchIn ) ) {
+			var files = directoryList( searchIn );
+			for( var file in files ) {
+				file = replace( file, "\", "/", "all" );
+							
+				thisFile = file;
+				if( server.os.name contains 'Windows' ) {
+					thisFile = lcase( file );
+					startsWith = lcase( startsWith );
+				}
+				
+				if( thisFile.startsWith( startsWith ) ) {
+					if( directoryExists( file ) )
+						candidates.add( file & "/" );
+				}
+			} // End file loop
 		}
 	}
 
