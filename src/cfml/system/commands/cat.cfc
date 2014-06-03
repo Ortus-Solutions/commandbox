@@ -11,9 +11,8 @@ component extends="commandbox.system.BaseCommand" aliases="type" excludeFromHelp
  	 **/
 	function run( required file )  {
 		
-		if( left( arguments.file, 1 ) != "/" ){
-			arguments.file = shell.pwd() & "/" & arguments.file;
-		}
+		// Make file canonical and absolute
+		arguments.file = fileSystemUtil.resolvePath( arguments.file );
 
 		return fileRead( arguments.file );
 	}

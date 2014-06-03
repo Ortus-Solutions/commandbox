@@ -13,10 +13,10 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 	 * @file.hint The file to execute
 	 **/
 	function run( required file ){
-		// discover file
-		if( left( arguments.file, 1 ) != "/" ){
-			arguments.file = shell.pwd() & "/" & arguments.file;
-		}
+		
+		// Make file canonical and absolute
+		arguments.file = fileSystemUtil.resolvePath( arguments.file );
+		
 		try{
 			// we use the executor to capture output thread safely
 			var out = wirebox.getInstance( "Executor" ).run( arguments.file );

@@ -11,10 +11,8 @@ component extends="commandbox.system.BaseCommand" aliases="new" excludeFromHelp=
 	 * @force.hint If forced, then file will be recreated even if it exists
  	 **/
 	function run( required file, boolean force=false )  {
-		// discover file
-		if( left( arguments.file, 1 ) != "/" ){
-			arguments.file = shell.pwd() & "/" & arguments.file;
-		}
+		
+		arguments.file = fileSystemUtil.resolvePath( arguments.file );
 
 		var oFile = createObject( "java", "java.io.File" ).init( arguments.file );
 		var fileName = listLast( arguments.file, "/" );
