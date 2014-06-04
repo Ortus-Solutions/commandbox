@@ -234,17 +234,12 @@ component singleton {
            		addCandidateIfMatch("false ",paramSoFar,candidates);
 				break;
 		}
-		switch(paramName) {
-			case "directory" :
-			case "destination" :
-           		pathCompletion( paramSoFar, candidates, false );
-				break;
-			case "file" :
-           		pathCompletion( paramSoFar, candidates, true );
-				break;
-			case "path" :
-           		pathCompletion( paramSoFar, candidates, true );
-				break;
+		
+		paramName = lcase( paramName );
+		if( paramName.startsWith( 'directory' ) || paramName.startsWith( 'destination' ) ) {
+			pathCompletion( paramSoFar, candidates, false );			
+		} else if( paramName.startsWith( 'file' ) || paramName.startsWith( 'path' )  ) {
+			pathCompletion( paramSoFar, candidates, true );
 		}
 	}
 
