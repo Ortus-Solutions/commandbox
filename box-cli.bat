@@ -18,7 +18,7 @@ if not exist "%CFDISTRO_HOME%\build.xml" (
 	REM using file existance check as errorlevel does not get reset properly
     if not exist "%FILE_DEST%" (
       echo Powershell download failed. Trying with ActiveXObject
-  	  cscript /nologo scripts/wget.js %FILE_URL% %FILE_DEST%
+  	  cscript /nologo build/resource/wget.js %FILE_URL% %FILE_DEST%
       if not exist "%FILE_DEST%" (
           echo 2nd Download attempt failed.
           echo Try to manually download from %FILE_URL%
