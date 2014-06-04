@@ -4,8 +4,8 @@
 component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
 	
 	// DI
-	property name="cr" 			inject="cr";
-	property name="boxService" 	inject="boxService";
+	property name="cr" 				inject="cr";
+	property name="packageService" 	inject="PackageService";
 
 	/**
 	* Ability to execute TestBox tests
@@ -38,8 +38,8 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 	){
 		
 		// get the box.json from the project, else empty if not found.
-		var boxData = boxService.getBoxData( shell.pwd() );
-		
+		var boxData = packageService.readPackageDescriptor( shell.pwd() );
+
 		// if we have boxdata then try to discover runner from it.
 		if( !structIsEmpty( boxData ) ){
 			// check for testbox data and runner key
@@ -90,7 +90,13 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 		if( !isNull( arguments.testSuites ) ){ testboxURL &= "&labels=#arguments.testSuites#"; }
 		// Do we have testSpecs
 		if( !isNull( arguments.testSpecs ) ){ testboxURL &= "&labels=#arguments.testSpecs#"; }
-	
+		
+		// Advice we are running
+		print.boldCyanLine( "Executing tests via #testBoxURL#, please wait..." )
+			.blinkingRed( "Please wait...")
+			.printLine()
+			.toConsole();
+
 		// run it now baby!
 		try{
 			var results = new Http( url=testBoxURL ).send().getPrefix();
@@ -110,8 +116,19 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 			print.boldGreenLine( "Report written to #arguments.outputFile#!" );
 		}
 
-		// print report out
-		print.yellow( " " & results.filecontent );
+		// Print accordingly
+		if( ( results.responseheader[ "x-testbox-totalFail" ]  ?: 0 ) eq 0 AND
+			( results.responseheader[ "x-testbox-totalError" ] ?: 0 ) eq 0 ){
+			// print OK report
+			print.green( " " & results.filecontent );
+		} else if( results.responseheader[ "x-testbox-totalFail" ] gt 0 ){
+			// print Failure report
+			print.yellow( " " & results.filecontent );
+		} else if( results.responseheader[ "x-testbox-totalError" ] gt 0 ){
+			// print Failure report
+			print.boldRed( " " & results.filecontent );
+		}
+		
 	}
 
 }

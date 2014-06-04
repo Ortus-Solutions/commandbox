@@ -12,10 +12,10 @@ component accessors="true" singleton {
 	property name="commandService" 		inject="CommandService";
 	property name="readerFactory" 		inject="ReaderFactory";
 	property name="print" 				inject="print";
-	property name="CR" 					inject="CR";
+	property name="cr" 					inject="cr";
 	property name="formatterUtil" 		inject="Formatter";
 	property name="logger" 				inject="logbox:logger:{this}";
-	property name="fileSystem"			inject="fileSystem";
+	property name="fileSystem"			inject="FileSystem";
 
 	/**
 	* The java jline reader class.
@@ -51,9 +51,9 @@ component accessors="true" singleton {
 	 * @tempDir.hint The temp directory
 	 * @tempDir.inject tempDir
  	**/
-	function init( 
-		any inStream, 
-		any outputStream, 
+	function init(
+		any inStream,
+		any outputStream,
 		required string userDir,
 		required string tempDir,
 		boolean asyncLoad=true
@@ -70,12 +70,12 @@ component accessors="true" singleton {
 		variables.shellPrompt 	= "";
 		variables.userDir 	 	= arguments.userDir;
 		variables.tempDir 		= arguments.tempDir;
-		
+
 		// Save these for onDIComplete()
 		variables.initArgs = arguments;
 		// Store incoming current directory
 		variables.pwd 	 		= variables.userDir;
-						
+
     	return this;
 	}
 
@@ -86,10 +86,10 @@ component accessors="true" singleton {
 		// Create reader console and setup the default shell Prompt
 		variables.reader 		= readerFactory.getInstance( argumentCollection = variables.initArgs  );
 		variables.shellPrompt 	= print.green( "CommandBox> ");
-		
+
 		// Create temp dir & set
 		setTempDir( variables.tempdir );
-		
+
 		// load commands
 		if( variables.initArgs.asyncLoad ){
 			thread name="commandbox.loadcommands"{
@@ -105,7 +105,7 @@ component accessors="true" singleton {
 	 **/
 	Shell function exit() {
     	variables.keepRunning = false;
-		
+
 		return this;
 	}
 
@@ -148,7 +148,7 @@ component accessors="true" singleton {
 	/**
 	 * ask the user a question and wait for response
 	 * @message.hint message to prompt the user with
-	 * 
+	 *
 	 * @return the response from the user
  	 **/
 	string function ask( message ) {
@@ -164,7 +164,7 @@ component accessors="true" singleton {
 	/**
 	 * Wait until the user's next keystroke, returns the key pressed
 	 * @message.message An optional message to display to the user such as "Press any key to continue."
-	 * 
+	 *
 	 * @return code of key pressed
  	 **/
 	string function waitForKey( message='' ) {
@@ -183,21 +183,21 @@ component accessors="true" singleton {
 	 * clears the console
 	 *
 	 * @note Almost works on Windows, but doesn't clear text background
-	 * 
+	 *
  	 **/
 	Shell function clearScreen( addLines = true ) {
 		// This outputs a double prompt due to the redrawLine() call
 		//	reader.clearScreen();
-	
+
 		// A temporary workaround for windows. Since background colors aren't cleared
 		// this will force them off the screen with blank lines before clearing.
 		if( variables.fileSystem.isWindows() && arguments.addLines ) {
 			var i = 0;
 			while( ++i <= getTermHeight() + 5 ) {
-				variables.reader.println();	
+				variables.reader.println();
 			}
 		}
-		
+
 		variables.reader.print( '[2J' );
 		variables.reader.print( '[1;1H' );
 
@@ -243,7 +243,7 @@ component accessors="true" singleton {
 
         	// Delete temp dir
 	        var clearTemp = directoryExists( arguments.directory ) ? directoryDelete( arguments.directory, true ) : "";
-	        
+
 	        // Re-create it. Try 3 times.
 	        var tries = 0;
         	try {
@@ -257,7 +257,7 @@ component accessors="true" singleton {
         			retry;
         		} else {
 					variables.logger.info( 'Error creating temp directory [#arguments.directory#]. Giving up now.', 'Tried #tries# times.' );
-        			printError( e );        			
+        			printError( e );
         		}
         	}
 
@@ -311,7 +311,7 @@ component accessors="true" singleton {
     Boolean function run( input="" ) {
         var mask 	= "*";
         var trigger = "su";
-        
+
 		// init reload to false, just in case
         variables.reloadshell = false;
 
@@ -359,11 +359,11 @@ component accessors="true" singleton {
 						printError( e );
 					}
 				}
-				
+
 				// Flush history buffer to disk. I could do this in the quit command
 				// but then I would lose everything if the user just closes the window
 				variables.reader.getHistory().flush();
-				
+
 	        } // end while keep running
 
 		} catch( any e ){
@@ -389,7 +389,7 @@ component accessors="true" singleton {
 		} else if( !isNull( result ) && len( result ) ) {
 			printString( result );
 			// If the command output text that didn't end with a line break one, add one
-			if( mid( result, len( result ), 1 ) != variables.CR ) {
+			if( mid( result, len( result ), 1 ) != variables.cr ) {
 				variables.reader.println();
 			}
 		}
@@ -420,7 +420,7 @@ component accessors="true" singleton {
 						if( idx > 1 ) {
 							variables.reader.print( print.boldCyanText( "called from " ) );
 						}
-						variables.reader.print( variables.print.boldCyanText( "#tc.template#: line #tc.line##variables.CR#" ));
+						variables.reader.print( variables.print.boldCyanText( "#tc.template#: line #tc.line##variables.cr#" ));
 						variables.reader.print( variables.print.text( variables.formatterUtil.HTML2ANSI( tc.codeprinthtml ) ) );
 					}
 				}

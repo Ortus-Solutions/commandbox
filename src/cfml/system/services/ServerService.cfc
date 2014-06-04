@@ -19,9 +19,13 @@ component accessors="true" singleton{
 	*/
 	property name="serverConfig";
 	/**
+ 	* Where core and custom servers are stored
+ 	*/
+	property name="serverHomeDirectory";
+	/**
 	* Where custom servers are stored
 	*/
-	property name="serverDirectory";
+	property name="customServerDirectory";
 	/**
 	* Where the Java Command Executable is
 	*/
@@ -62,8 +66,10 @@ component accessors="true" singleton{
 		variables.libDir = arguments.homeDir & "/lib";
 		// Where custom server configs are stored
 		variables.serverConfig = arguments.homeDir & "/servers.json";
+		// Where core and custom servers are stored
+		variables.serverHomeDirectory = arguments.homeDir & "/server/";
 		// Where custom servers are stored
-		variables.serverDirectory = arguments.homeDir & "/server/custom/";
+		variables.customServerDirectory = variables.serverHomeDirectory & "/custom/";
 		// The JRE executable command
 		variables.javaCommand = arguments.fileSystem.getJREExecutable();
 		// The runwar jar path
@@ -75,8 +81,8 @@ component accessors="true" singleton{
 			setServers( {} );
 		}
 		// Init custom server location if not exists
-		if( !directoryExists( variables.serverDirectory ) ){
-			directoryCreate( variables.serverDirectory );
+		if( !directoryExists( variables.customServerDirectory ) ){
+			directoryCreate( variables.customServerDirectory );
 		}
 
 		return this;
@@ -104,21 +110,35 @@ component accessors="true" singleton{
 		var name 		= arguments.serverInfo.name is "" ? listLast( webroot, "\/" ) : arguments.serverInfo.name;
 		var portNumber  = arguments.serverInfo.port == 0 ? getRandomPort() : arguments.serverInfo.port;
 		var stopPort 	= arguments.serverInfo.stopsocket == 0 ? getRandomPort() : arguments.serverInfo.stopsocket;
+		// setup default tray icon if empty
+		var trayIcon    = len( arguments.serverInfo.trayIcon ) ? arguments.serverInfo.trayIcon : "#variables.libdir#/trayicon.png";
+		// Setup lib directory, add more if defined by server info
+		var libDirs     = variables.libDir;
+		if ( Len( Trim( arguments.serverInfo.libDirs ?: "" ) ) ) {
+			libDirs = ListAppend( libDirs, arguments.serverInfo.libDirs );
+		}
 
-		// config directory location
-		var configdir 	= variables.serverDirectory & name;
+		// config directory locations
+		var configDir       = len( arguments.serverInfo.webConfigDir ) ? arguments.serverInfo.webConfigDir : variables.customServerDirectory & name;
+		var serverConfigDir = len( arguments.serverInfo.serverConfigDir ) ? arguments.serverInfo.serverConfigDir : variables.serverHomeDirectory;
+
 		// log directory location
-		var logdir 		= configdir & "/log";
+		var logdir = configdir & "/log";
 		if( !directoryExists( logDir ) ){ directoryCreate( logDir ); }
+		
 		// The process native name
 		var processName = name is "" ? "CommandBox" : name;
 		// The java arguments to execute: -Drailo.server.config.dir=""#configdir#/server""  Shared server, custom web configs
-		var args = "-Drailo.web.config.dir=""#configdir#/web"" "
+		var args = "-Drailo.web.config.dir=""#configdir#"" -Drailo.server.config.dir=""#serverConfigDir#"" "
 				& "-javaagent:""#libdir#/railo-inst.jar"" -jar ""#variables.jarPath#"""
 				& " -war ""#webroot#"" --background=true --port #portNumber# --debug #debug#"
 				& " --stop-port #stopPort# --processname ""#processName#"" --log-dir ""#logdir#"""
 				& " --open-browser #openbrowser# --open-url http://127.0.0.1:#portNumber#"
-				& " --libdir ""#variables.libdir#"" --iconpath ""#variables.libdir#/trayicon.png""";
+				& " --libdir ""#libDirs#"" --iconpath ""#trayIcon#""";
+
+		if ( Len( Trim( arguments.serverInfo.webXml ?: "" ) ) ) {
+			args &= " --webxmlpath #arguments.serverInfo.webXml#";
+		}
 
 		// add back port and log information and persist
 		arguments.serverInfo.port 		= portNumber;
@@ -188,7 +208,7 @@ component accessors="true" singleton{
 	function forget( required Struct serverInfo, Boolean all=false ){
 		if( !all ){
 			var servers 	= getServers();
-			var serverdir 	= variables.serverDirectory & serverInfo.name;
+			var serverdir 	= variables.customServerDirectory & serverInfo.name;
 
 			// try to delete from config first
 			structDelete( servers, hash( arguments.serverInfo.webroot ) );
@@ -202,8 +222,8 @@ component accessors="true" singleton{
 		} else {
 			var serverNames = getServerNames();
 			setServers( {} );
-			directoryDelete( variables.serverDirectory, true );
-			directoryCreate( variables.serverDirectory );
+			directoryDelete( variables.customServerDirectory, true );
+			directoryCreate( variables.customServerDirectory );
 			return "Poof! All servers (#arrayToList( serverNames )#) have been wiped.";
 		}
 	}
@@ -331,14 +351,19 @@ component accessors="true" singleton{
 		}
 		if( isNull( servers[ webrootHash ] ) ){
 			servers[ webrootHash ] = {
-				webroot		: arguments.webroot,
-				port		: "",
-				stopsocket	: 0,
-				debug		: false,
-				status		: "stopped",
-				statusInfo	: { result : "" },
-				name		: listLast( arguments.webroot, "\/" ),
-				logDir 		: ""
+				webroot			: arguments.webroot,
+				port			: "",
+				stopsocket		: 0,
+				debug			: false,
+				status			: "stopped",
+				statusInfo		: { result : "" },
+				name			: listLast( arguments.webroot, "\/" ),
+				logDir 			: "",
+				trayicon 		: "",
+				libDirs 		: "",
+				webConfigDir 	: "",
+				serverConfigDir : "",
+				webXML 			: ""
 			}
 			setServers( servers );
 		}

@@ -4,10 +4,10 @@
 	author : "",
 	location :"",
 	directory: "",
-	Homepage :"",
-	Documentation : "",
-	Repository: { type:"", URL:"" },
-	Bugs : "",
+	homepage :"",
+	documentation : "",
+	repository: { type:"", URL:"" },
+	bugs : "",
 	slug : "",
 	shortDescription : "",
 	description : "",
@@ -15,35 +15,35 @@
 	changelog: "",
 	type : "",
 	keywords :[],
-	private :"Boolean",
+	private :false,
 	engines :[
 		{ type : "railo", version : ">=4.1.x" },
 		{ type : "adobe", version : ">=10.0.0" }
 	],
-	defaultEngine : "railo",
-	defaultPort : 80,
-	ProjectURL: "",
-	License :[
+	defaultEngine : "",
+	defaultPort : 0,
+	projectURL: "",
+	license :[
 		{ type:"", URL: "" }
 	],
-	Contributors : [],
-	Dependencies : {
+	contributors : [],
+	dependencies : {
 	},
-	DevDependencies : {},
-	ignore : ["logs*", "readme.md" ],
+	devDependencies : {},
+	ignore : [],
 	testbox :{
 		runner : [
-			{ "default": "http://localhost/testbox/testing/runner.cfm"}
+			{ "default": "" }
 		],
-		Labels : [],
-		Reporter :"",
-		ReporterResults : "/test/results",
-		Bundles :[ "test.specs" ],
-		Directory: { mapping : "test.specs", recurse: true },
-		Watchers :[],
-		Notify : {
-			Emails : [],
-			Growl : "",
+		labels : [],
+		reporter :"",
+		reporterResults : "",
+		bundles :[ "" ],
+		directory: { mapping : "", recurse: true },
+		watchers :[],
+		notify : {
+			emails : [],
+			growl : "",
 			URL : ""
 		}
 	}

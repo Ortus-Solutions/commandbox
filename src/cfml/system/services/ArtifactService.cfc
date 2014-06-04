@@ -16,7 +16,7 @@
 component singleton {
 	
 	property name='artifactDir' inject='artifactDir';
-	property name='packageUtil' inject='package';
+	property name='PackageService' inject='PackageService';
 	property name='shell' inject='shell';
 	property name='logger' inject='logbox:logger:{this}';
 	
@@ -147,13 +147,13 @@ component singleton {
 			// Validate the file is valid JSOn
 			if( isJSON( boxJSON ) ) {
 				// Merge this JSON with defaults
-				return packageUtil.newPackageDescriptor( deserializeJSON( boxJSON ) );
+				return PackageService.newPackageDescriptor( deserializeJSON( boxJSON ) );
 			}
 			
 		}
 		
 		// Just return defaults
-		return packageUtil.newPackageDescriptor();			
+		return PackageService.newPackageDescriptor();			
 	
 	}	
 	

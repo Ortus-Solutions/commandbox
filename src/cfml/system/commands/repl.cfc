@@ -26,7 +26,8 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 			if( cfml == "quit" or cfml == "q" ){
 				quit = false;
 			} else {
-				var tempFile = shell.getTempDir() & "/" & createUUID() & ".cfm";
+				// Temp file to evaluate
+				var tempFile = shell.pwd() & "/" & createUUID() & ".cfm";
 				// evaluate it
 				try{
 
