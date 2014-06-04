@@ -32,7 +32,7 @@ then
 	cp="$cp:$BOX_CLASSPATH"
 fi
 
-java_args='-client -Djava.awt.headless=true'
+java_args='-client'
 
 # Cleanup paths for Cygwin.
 #
@@ -50,7 +50,7 @@ Darwin)
 			-Dapple.laf.useScreenMenuBar=true
 			-Xdock:name=CommandBox
 			-Dfile.encoding=UTF-8
-			-Djava.awt.headless=true
+			-Djava.awt.headless=false
 		'
 	fi
 	;;
