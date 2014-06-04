@@ -11,7 +11,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 	* @open.hint Open the file once it is created
 	* @directory.hint The base directory to create your BDD spec in, defaults to 'tests/specs'
 	**/
-	function run( required name, boolean open=false, directory=shell.pwd() ){
+	function run( required name, boolean open=false, directory="tests/specs" ){
 		// proxy to testbox
 		shell.callCommand( "testbox create bdd name=#arguments.name# directory=#arguments.directory# open=#arguments.open#" );
 	}
