@@ -117,8 +117,8 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 		}
 
 		// Print accordingly
-		if( results.responseheader[ "x-testbox-totalFail" ] eq 0 AND
-			results.responseheader[ "x-testbox-totalError" ] eq 0 ){
+		if( ( results.responseheader[ "x-testbox-totalFail" ]  ?: 0 ) eq 0 AND
+			( results.responseheader[ "x-testbox-totalError" ] ?: 0 ) eq 0 ){
 			// print OK report
 			print.green( " " & results.filecontent );
 		} else if( results.responseheader[ "x-testbox-totalFail" ] gt 0 ){
