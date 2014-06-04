@@ -278,7 +278,7 @@ External Dependencies:
 			<tarfileset file="${dist.dir}/box" prefix="/usr/bin" filemode="744" username="root" group="root"/>
 		</redline:rpm>
 		<!-- Copy rpm to repo -->
-		<copy file="${rpm.repo}/${distro.name}-${commandbox.version}-1.noarch.rpm" toFile="${dist.dir}" />
+		<copy file="${rpm.repo}/${distro.name}-${commandbox.version}-1.noarch.rpm" toDir="${dist.dir}" />
 		<!-- Build Checksum -->
 		<checksum file="${dist.dir}/${distro.name}-${commandbox.version}-1.noarch.rpm" forceoverwrite="true" fileext=".md5" />
 		<!-- updates/creates the RPM repository, requires 'createrepo' on build server -->
