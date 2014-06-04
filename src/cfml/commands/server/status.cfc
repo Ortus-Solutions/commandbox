@@ -47,11 +47,20 @@ component extends="commandbox.system.BaseCommand" aliases="status" excludeFromHe
 			}
 
 			print.line( "  webroot: " & serv.webroot )
-				.line( "  context: " & serverService.getserverDirectory() & serv.name )
+				.line( "  context: " & serverService.getServerHomeDirectory() & serv.name )
 				.line( "  logdir: " & serv.logDir )
+				.line( "  libDirs: " & serv.libDirs )
+				.line( "  webConfigDir: " & serv.webConfigDir )
+				.line( "  serverConfigDir: " & serv.serverConfigDir )
+				.line( "  webXML: " & serv.webXML )
+				.line( "  trayicon: " & serv.trayicon )
 				.line( "  port: " & serv.port )
 				.line( "  stopsocket: " & serv.stopsocket )
 				.line( "  debug: " & serv.debug );
+		}
+
+		if( structCount( servers ) eq 0 ){
+			print.boldRedLine( "No server configurations found!" );
 		}
 	}
 

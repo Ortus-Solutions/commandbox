@@ -110,21 +110,22 @@ component accessors="true" singleton{
 		var name 		= arguments.serverInfo.name is "" ? listLast( webroot, "\/" ) : arguments.serverInfo.name;
 		var portNumber  = arguments.serverInfo.port == 0 ? getRandomPort() : arguments.serverInfo.port;
 		var stopPort 	= arguments.serverInfo.stopsocket == 0 ? getRandomPort() : arguments.serverInfo.stopsocket;
-		var trayIcon    = arguments.serverInfo.trayIcon ?: "#variables.libdir#/trayicon.png";
+		// setup default tray icon if empty
+		var trayIcon    = len( arguments.serverInfo.trayIcon ) ? arguments.serverInfo.trayIcon : "#variables.libdir#/trayicon.png";
+		// Setup lib directory, add more if defined by server info
 		var libDirs     = variables.libDir;
- 
 		if ( Len( Trim( arguments.serverInfo.libDirs ?: "" ) ) ) {
 			libDirs = ListAppend( libDirs, arguments.serverInfo.libDirs );
 		}
 
-
-		// config directory location
-		var configDir       = arguments.serverInfo.webConfigDir    ?: variables.customServerDirectory & name;
-		var serverConfigDir = arguments.serverInfo.serverConfigDir ?: variables.serverHomeDirectory;
+		// config directory locations
+		var configDir       = len( arguments.serverInfo.webConfigDir ) ? arguments.serverInfo.webConfigDir : variables.customServerDirectory & name;
+		var serverConfigDir = len( arguments.serverInfo.serverConfigDir ) ? arguments.serverInfo.serverConfigDir : variables.serverHomeDirectory;
 
 		// log directory location
-		var logdir 		= configdir & "/log";
+		var logdir = configdir & "/log";
 		if( !directoryExists( logDir ) ){ directoryCreate( logDir ); }
+		
 		// The process native name
 		var processName = name is "" ? "CommandBox" : name;
 		// The java arguments to execute: -Drailo.server.config.dir=""#configdir#/server""  Shared server, custom web configs
@@ -350,14 +351,19 @@ component accessors="true" singleton{
 		}
 		if( isNull( servers[ webrootHash ] ) ){
 			servers[ webrootHash ] = {
-				webroot		: arguments.webroot,
-				port		: "",
-				stopsocket	: 0,
-				debug		: false,
-				status		: "stopped",
-				statusInfo	: { result : "" },
-				name		: listLast( arguments.webroot, "\/" ),
-				logDir 		: ""
+				webroot			: arguments.webroot,
+				port			: "",
+				stopsocket		: 0,
+				debug			: false,
+				status			: "stopped",
+				statusInfo		: { result : "" },
+				name			: listLast( arguments.webroot, "\/" ),
+				logDir 			: "",
+				trayicon 		: "",
+				libDirs 		: "",
+				webConfigDir 	: "",
+				serverConfigDir : "",
+				webXML 			: ""
 			}
 			setServers( servers );
 		}
