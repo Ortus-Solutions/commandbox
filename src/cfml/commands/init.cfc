@@ -6,7 +6,7 @@
  **/
 component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
 
-	property name="packageUtil" inject="package";
+	property name="PackageService" inject="PackageService";
 	property name="formatterUtil" inject="formatter";
 
 	/**
@@ -26,7 +26,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 		}
 		
 		// Spin up a new box.json with our defaults
-		var boxJSON = packageUtil.newPackageDescriptor( { packageName:arguments.packagename, slug:arguments.slug } );
+		var boxJSON = PackageService.newPackageDescriptor( { packageName:arguments.packagename, slug:arguments.slug } );
 		
 		// Clean up directory
 		if( listFind( '\,/', right( directory, 1 ) ) ) {

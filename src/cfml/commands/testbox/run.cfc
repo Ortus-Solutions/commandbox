@@ -5,7 +5,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 	
 	// DI
 	property name="cr" 			inject="cr";
-	property name="boxService" 	inject="boxService";
+	property name="PackageService" 	inject="PackageService";
 
 	/**
 	* Ability to execute TestBox tests
@@ -38,7 +38,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 	){
 		
 		// get the box.json from the project, else empty if not found.
-		var boxData = boxService.getBoxData( shell.pwd() );
+		var boxData = PackageService.readPackageDescriptor( shell.pwd() );
 		
 		// if we have boxdata then try to discover runner from it.
 		if( !structIsEmpty( boxData ) ){
