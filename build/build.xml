@@ -263,6 +263,7 @@ External Dependencies:
 	   	<deb-repo dir="${deb.repo}" />
 	</target>
 
+	<!-- Build RPM: Leverages redline task -->
 	<target name="build.cli.rpm" depends="bootstrap_redline,build.cli.bin" xmlns:redline="antlib:org.redline_rpm">
 		<mkdir dir="${rpm.repo}" />
 		<echo message="Making rpm in ${rpm.repo} Packager:${commandbox.packager.name} ${commandbox.packager.email} Version: ${commandbox.version}" />
@@ -276,6 +277,10 @@ External Dependencies:
 			<depends name="java" version=""/>
 			<tarfileset file="${dist.dir}/box" prefix="/usr/bin" filemode="744" username="root" group="root"/>
 		</redline:rpm>
+		<!-- Copy deb to repo -->
+		<copy file="${rpm.repo}/${distro.name}-${commandbox.version}-1.noarch.rpm" todir="${dist.dir}/${distro.name}/${commandbox.version}" />
+		<!-- Build Checksum -->
+		<checksum file="${dist.dir}/${distro.name}-${commandbox.version}-1.noarch.rpm" forceoverwrite="true" fileext=".md5" />
 		<!-- updates/creates the RPM repository, requires 'createrepo' on build server -->
 		<rpm-repo dir="${rpm.repo}" />
 	</target>
