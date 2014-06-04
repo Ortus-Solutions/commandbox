@@ -105,6 +105,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 			return error( 'Error executing tests: #CR# #e.message##CR##e.detail#' );
 		}
 
+
 		// Do we have an output file
 		if( !isNull( arguments.outputFile ) ){
 			// Attach pwd location
@@ -115,7 +116,9 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 			fileWrite( arguments.outputFile, results.fileContent );
 			print.boldGreenLine( "Report written to #arguments.outputFile#!" );
 		}
-
+		
+		results.fileContent = reReplace( trim( results.fileContent ), '[\r\n]+', CR, 'all' );
+		
 		// Print accordingly to results
 		if( ( results.responseheader[ "x-testbox-totalFail" ]  ?: 0 ) eq 0 AND
 			( results.responseheader[ "x-testbox-totalError" ] ?: 0 ) eq 0 ){
