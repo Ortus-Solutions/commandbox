@@ -119,8 +119,8 @@ component accessors="true" singleton{
 
 
 		// config directory location
-		var configDir       = arguments.serverInfo.webConfigDir    ?: variables.serverDirectory & name;
-		var serverConfigDir = arguments.serverInfo.serverConfigDir ?: variables.railoServerDirectory;
+		var configDir       = arguments.serverInfo.webConfigDir    ?: variables.customServerDirectory & name;
+		var serverConfigDir = arguments.serverInfo.serverConfigDir ?: variables.serverHomeDirectory;
 
 		// log directory location
 		var logdir 		= configdir & "/log";
