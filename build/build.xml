@@ -222,7 +222,7 @@ External Dependencies:
 			<attachments>
 				<attach file="${dist.dir}/box.jar" type="jar" />
 				<attach file="${dist.dir}/cfml-${commandbox.version}.zip" type="zip" classifier="cfml" />
-				<attach file="${dist.dir}/${distro.name}-${commandbox.version}-1_all.deb" type="deb" />
+				<attach file="${dist.dir}/${distro.name}_${commandbox.version}-1_all.deb" type="deb" />
 				<attach file="${dist.dir}/${distro.name}-${commandbox.version}.bin.zip" type="zip" classifier="bin" />
 				<attach file="${dist.dir}/${distro.name}-${commandbox.version}.jre-darwin64.zip" type="zip" classifier="jre-darwin64" />
 				<attach file="${dist.dir}/${distro.name}-${commandbox.version}.jre-linux32.zip" type="zip" classifier="jre-linux32" />
