@@ -277,8 +277,8 @@ External Dependencies:
 			<depends name="java" version=""/>
 			<tarfileset file="${dist.dir}/box" prefix="/usr/bin" filemode="744" username="root" group="root"/>
 		</redline:rpm>
-		<!-- Copy deb to repo -->
-		<copy file="${rpm.repo}/${distro.name}-${commandbox.version}-1.noarch.rpm" todir="${dist.dir}/${distro.name}/${commandbox.version}" />
+		<!-- Copy rpm to repo -->
+		<copy file="${rpm.repo}/${distro.name}-${commandbox.version}-1.noarch.rpm" toFile="${dist.dir}" />
 		<!-- Build Checksum -->
 		<checksum file="${dist.dir}/${distro.name}-${commandbox.version}-1.noarch.rpm" forceoverwrite="true" fileext=".md5" />
 		<!-- updates/creates the RPM repository, requires 'createrepo' on build server -->
