@@ -255,9 +255,9 @@ External Dependencies:
 	   		<tarfileset file="${dist.dir}/box" prefix="usr/local/bin" filemode="755"/>
 	   	</deb>
 	   	<!-- Copy deb to repo -->
-		<copy file="${dist.dir}/${distro.name}-${commandbox.version}-1_all.deb" todir="${deb.repo}" />
+		<copy file="${dist.dir}/${distro.name}_${commandbox.version}-1_all.deb" todir="${deb.repo}" />
 		<!-- Build Checksum -->
-		<checksum file="${dist.dir}/${distro.name}-${commandbox.version}-1_all.deb" forceoverwrite="true" fileext=".md5" />
+		<checksum file="${dist.dir}/${distro.name}_${commandbox.version}-1_all.deb" forceoverwrite="true" fileext=".md5" />
 		<!-- Update Repo -->
 		<echo message="Updating apt (deb) repo in ${deb.repo}"/>
 	   	<deb-repo dir="${deb.repo}" />
