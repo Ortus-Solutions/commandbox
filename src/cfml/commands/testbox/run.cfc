@@ -116,7 +116,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 			print.boldGreenLine( "Report written to #arguments.outputFile#!" );
 		}
 
-		// Print accordingly
+		// Print accordingly to results
 		if( ( results.responseheader[ "x-testbox-totalFail" ]  ?: 0 ) eq 0 AND
 			( results.responseheader[ "x-testbox-totalError" ] ?: 0 ) eq 0 ){
 			// print OK report

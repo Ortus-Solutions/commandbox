@@ -23,7 +23,7 @@ component extends="testbox.system.BaseSpec"{
 
 /*********************************** TEST CASES BELOW ***********************************/
 	
-	// Remember that test cases MUST have the keyword 'test' in them
+	// Remember that test cases MUST start or end with the keyword 'test'
 	function myMethodTest(){
 
 	}
