@@ -39,9 +39,12 @@ External Dependencies:
 		<delete dir="${temp.dir}" />
 		<delete dir="${build.dir}" />
 		<delete dir="${lib.dir}"/>
+		<delete>
+			<fileset dir="${dist.dir}" />
+		</delete>
 
-		<!-- init dirs -->
-		<mkdir dir="${dist.dir}" />
+		<!-- init dirs 
+		<mkdir dir="${dist.dir}" />-->
 		<mkdir dir="${build.dir}"/>
 		<chmod file="${build.dir}/**" perm="g+wxrs" type="both" />
 
