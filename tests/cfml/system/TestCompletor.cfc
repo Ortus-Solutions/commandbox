@@ -3,7 +3,7 @@ component name="TestShell" extends="mxunit.framework.TestCase" {
 	candidates = createObject("java","java.util.TreeSet");
 
 	public void function setUp()  {
-		completor = application.wirebox.getInstance( 'completor' );
+		completor = application.wirebox.getInstance( 'Completor' );
 		candidates.clear();
 	}
 
@@ -16,7 +16,7 @@ component name="TestShell" extends="mxunit.framework.TestCase" {
 		assertTrue(candidates.contains("dir "));
 		assertTrue(candidates.contains("ls "));
 		assertTrue(candidates.contains("reload "));
-		assertEquals(0,cursor);		
+		assertEquals(0,cursor);
 	}
 
 	public void function testPartialCommand() {
@@ -24,7 +24,7 @@ component name="TestShell" extends="mxunit.framework.TestCase" {
 		cursor = completor.complete(cmdline,len(cmdline),candidates);
 		assertTrue(candidates.contains("help "));
 		assertTrue(candidates.size() == 1);
-		assertEquals(0,cursor);		
+		assertEquals(0,cursor);
 	}
 
 	public void function testCommandNoSpace() {
@@ -32,7 +32,7 @@ component name="TestShell" extends="mxunit.framework.TestCase" {
 		cursor = completor.complete(cmdline,len(cmdline),candidates);
 		assertTrue(candidates.contains("help "));
 		assertTrue(candidates.size() == 1);
-		assertEquals(0,cursor);		
+		assertEquals(0,cursor);
 	}
 
 	public void function testCommandSpace() {
@@ -40,7 +40,7 @@ component name="TestShell" extends="mxunit.framework.TestCase" {
 		cursor = completor.complete(cmdline,len(cmdline),candidates);
 		assertTrue(candidates.contains("command="));
 		assertFalse(candidates.contains("help"));
-		assertEquals(5,cursor);		
+		assertEquals(5,cursor);
 	}
 
 	public void function testCommandSpaceMultipleParams() {
@@ -48,7 +48,7 @@ component name="TestShell" extends="mxunit.framework.TestCase" {
 		cursor = completor.complete(cmdline,len(cmdline),candidates);
 		assertTrue(candidates.contains("directory="));
 		assertTrue(candidates.contains("recurse="));
-		assertEquals(4,cursor);		
+		assertEquals(4,cursor);
 	}
 
 
@@ -57,7 +57,7 @@ component name="TestShell" extends="mxunit.framework.TestCase" {
 		cursor = completor.complete(cmdline,len(cmdline),candidates);
 		assertTrue(candidates.contains("command="));
 		assertFalse(candidates.contains("help"));
-		assertEquals(5,cursor);		
+		assertEquals(5,cursor);
 	}
 
 
@@ -67,14 +67,14 @@ component name="TestShell" extends="mxunit.framework.TestCase" {
 		assertTrue(candidates.contains(" recurse="));
 		assertEquals(18,cursor);
 	}
-	
+
 	public void function testParamAndValue() {
 		cmdline = "dir directory=blah ";
 		cursor = completor.complete(cmdline,len(cmdline),candidates);
 		assertFalse(candidates.contains("directory"));
 		assertFalse(candidates.contains("directory="));
 		assertTrue(candidates.contains(" recurse="));
-		assertEquals(18,cursor);		
+		assertEquals(18,cursor);
 	}
 
 	public void function testBooleanParam() {
@@ -82,7 +82,7 @@ component name="TestShell" extends="mxunit.framework.TestCase" {
 		cursor = completor.complete(cmdline,len(cmdline),candidates);
 		assertTrue(candidates.contains("true "));
 		assertTrue(candidates.contains("false "));
-		assertEquals(27,cursor);		
+		assertEquals(27,cursor);
 	}
 
 	public void function testParitialBooleanParam() {

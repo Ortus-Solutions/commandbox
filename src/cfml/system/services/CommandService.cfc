@@ -25,7 +25,7 @@ component accessors="true" singleton {
 		// A stack of running commands in case one command calls another from within
 		callStack = []
 	};
-		
+
 	/**
 	 * Constructor
 	 **/
@@ -34,12 +34,12 @@ component accessors="true" singleton {
 		instance.systemCommandDirectory = '/commandbox/system/commands';
 		// This is where user commands are stored
 		instance.userCommandDirectory = '/commandbox/commands';
-		
+
 		return this;
-	} 
-	
+	}
+
 	function configure() {
-        
+
 	//	systemOutput( 'System commands...', true );
         // Load system commands
 		initCommands( instance.systemCommandDirectory, instance.systemCommandDirectory );
@@ -47,8 +47,8 @@ component accessors="true" singleton {
         // Load user commands
 		initCommands( instance.userCommandDirectory, instance.userCommandDirectory );
 	//	systemOutput( 'Done...', true );
-		
-	} 
+
+	}
 
 	/**
 	 * initialize the commands. This will recursively call itself for subdirectories.
@@ -56,7 +56,7 @@ component accessors="true" singleton {
 	function initCommands( baseCommandDirectory, commandDirectory, commandPath='' ) {
 		var varDirs = DirectoryList( path=commandDirectory, recurse=false, listInfo='query', sort='type desc, name asc' );
 		for(var dir in varDirs){
-			
+
 			// For CFC files, process them as a command
 			if( dir.type  == 'File' && listLast( dir.name, '.' ) == 'cfc' ) {
 				loadCommand( baseCommandDirectory, dir.name, commandPath );
@@ -64,15 +64,15 @@ component accessors="true" singleton {
 			} else {
 				initCommands( baseCommandDirectory, dir.directory & '\' & dir.name, listAppend( commandPath, dir.name, '.' ) );
 			}
-			
+
 		}
-		
+
 	}
 
 	function decorateCommand( required command, required commandName ) {
 		// Grab its metadata
 		var CFCMD = getMetadata( command );
-		
+
 		// Set up metadata struct
 		var commandMD = {
 			aliases = listToArray( CFCMD.aliases ?: '' ),
@@ -81,15 +81,15 @@ component accessors="true" singleton {
 			originalName = commandName,
 			excludeFromHelp = CFCMD.excludeFromHelp ?: false
 		};
-						
+
 		// Capture the command's parameters
 		commandMD.parameters = getMetaData(command.run).parameters;
-		
+
 		// Inject metadata into command CFC
 		command.$CommandBox = commandMD;
-		
+
 	}
-	
+
 	function registerCommand( required command, required commandPath ) {
 		// Build bracketed string of command path to allow special characters
 		var commandPathBracket = '';
@@ -98,10 +98,10 @@ component accessors="true" singleton {
 			commandPathBracket &= '[ "#item#" ]';
 			commandName &= "#item# ";
 		}
-				
+
 		// Register the command in our command dictionary
 		evaluate( "instance.commands#commandPathBracket# = command" );
-		
+
 		// And again here in this flat collection for help usage
 		instance.flattenedCommands[ trim(commandName) ] = command;
 	}
@@ -111,23 +111,23 @@ component accessors="true" singleton {
 	 * @line.hint line to run
  	 **/
 	function runCommandline(line) {
-		
+
 		// Resolve the command they are wanting to run
 		var commandChain = resolveCommand( line );
-		
+
 		var i = 0;
 		// If piping commands, each one will be an item in the chain.
-		// i.e. forgebox show | grep | more 
+		// i.e. forgebox show | grep | more
 		// Would result in three separate, chained commands.
 		for( var commandInfo in commandChain ) {
 			i++;
-			
+
 			// If nothing was found, bail out here.
 			if( !commandInfo.found ) {
 				shell.printError({message:'Command "#line#" cannot be resolved.  Please type "#trim( "help #listChangeDelims( commandInfo.commandString, ' ', '.' )#" )#" for assistance.'});
 				return;
 			}
-			
+
 			// For help commands squish all the parameters together into one exactly as typed
 			if( listLast( commandInfo.commandReference.$CommandBox.originalName, '.' ) == 'help' ) {
 				var parameterInfo = {
@@ -138,17 +138,17 @@ component accessors="true" singleton {
 			} else {
 				var parameterInfo = parseParameters( commandInfo.parameters );
 			}
-			
+
 			// Parameters need to be ALL positional or ALL named
 			if( arrayLen( parameterInfo.positionalParameters ) && structCount( parameterInfo.namedParameters ) ) {
 				shell.printError({message:"Please don't mix named and positional parameters, it makes me dizzy."});
 				return;
 			}
-			
+
 			// These are the parameters declared by the command CFC
 			var commandParams = commandInfo.commandReference.$CommandBox.parameters;
-						
-			// If this is not the first command in the chain, 
+
+			// If this is not the first command in the chain,
 			// set its first parameter with the output from the last command
 			if( i > 1 ) {
 				// If we're using named parameters and this command has at least one param defined
@@ -156,34 +156,34 @@ component accessors="true" singleton {
 					// Insert/overwrite the first param as our last result
 					parameterInfo.namedParameters[ commandParams[1].name ?: '1' ] = result;
 				} else {
-					parameterInfo.positionalParameters.prepend( result );					
+					parameterInfo.positionalParameters.prepend( result );
 				}
 			}
-			
+
 			// If we're using postitional params, convert them to named
 			if( arrayLen( parameterInfo.positionalParameters ) ) {
 				parameterInfo.namedParameters = convertToNamedParameters( parameterInfo.positionalParameters, commandParams );
 			}
-			
-			// Make sure we have all required params. 
+
+			// Make sure we have all required params.
 			parameterInfo.namedParameters = ensureRequiredParams( parameterInfo.namedParameters, commandParams );
-						
+
 			// Reset the printBuffer
 			commandInfo.commandReference.reset();
-			
+
 			// If there are currently executing commands, flush out the print buffer from the last one
 			// This will prevent the output from showing up out of order if one command nests a call to another.
 			if( instance.callStack.len() ) {
 				// Print anything in the buffer
 				shell.printString( instance.callStack[1].commandReference.getResult() );
-				// And reset it now that it's been printed.  
+				// And reset it now that it's been printed.
 				// This command can add more to the buffer once it's executing again.
 				instance.callStack[1].commandReference.reset();
 			}
-			
+
 			// Add command to the top of the stack
 			instance.callStack.prepend( commandInfo );
-			
+
 			// Run the command
 			try {
 				var result = commandInfo.commandReference.run( argumentCollection = parameterInfo.namedParameters );
@@ -198,25 +198,25 @@ component accessors="true" singleton {
 				// Now, where were we?
 				rethrow;
 			}
-			
+
 			// Remove it from the stack
 			instance.callStack.deleteAt( 1 );
-			
-			// If the command didn't return anything, grab its print buffer value 
+
+			// If the command didn't return anything, grab its print buffer value
 			if( isNull( result ) ) {
 				result = commandInfo.commandReference.getResult();
 			}
-						
-		
+
+
 		} // End loop over command chain
-		
+
 		return result;
-		
+
 	}
 
 	/**
 	 * Take an array of parameters and parse them out as named or positional
-	 * @parameters.hint The array of params to parse. 
+	 * @parameters.hint The array of params to parse.
  	 **/
 	function parseParameters( parameters ) {
 		return parser.parseParameters( parameters );
@@ -227,14 +227,14 @@ component accessors="true" singleton {
 	 * @line.hint A string containing the command and parameters that the user entered
  	 **/
 	function resolveCommand( required string line ) {
-		
+
 		// Turn the users input into an array of tokens
 		var tokens = parser.tokenizeInput( line );
 		// This will hold the command chain. Usually just a single command,
-		// but a pipe ("|") will chain together commands and pass the output of one along as the input to the next		
+		// but a pipe ("|") will chain together commands and pass the output of one along as the input to the next
 		var commandsToResolve = [[]];
 		var commandChain = [];
-		
+
 		// If this command has a pipe, we need to chain multiple commands
 		if( tokens.find( '|' ) ) {
 			var i = 0;
@@ -242,7 +242,7 @@ component accessors="true" singleton {
 				i++;
 				if( token != '|' ) {
 					//Append this token to the last command
-					commandsToResolve[ commandsToResolve.len() ].append( token );					
+					commandsToResolve[ commandsToResolve.len() ].append( token );
 				} else if( commandsToResolve[ commandsToResolve.len() ].len() && i < tokens.len() ) {
 					// Add a new command
 					commandsToResolve.append( [] );
@@ -252,15 +252,15 @@ component accessors="true" singleton {
 		} else {
 			commandsToResolve[ 1 ] = tokens;
 		}
-		
-		
+
+
 		// command hierarchy
 		var cmds = getCommandHierarchy();
-		
+
 		for( var commandTokens in commandsToResolve ) {
-				
+
 			tokens = commandTokens;
-			
+
 			// If command ends with "help", switch it around to call the root help command
 			// Ex. "coldbox help" becomes "help coldbox"
 			// Don't do this if we're already in a help command or endless recursion will ensue.
@@ -269,7 +269,7 @@ component accessors="true" singleton {
 				tokens.deleteAt( tokens.len() );
 				tokens.prepend( 'help' );
 			}
-			
+
 			var results = {
 				commandString = '',
 				commandReference = cmds,
@@ -277,73 +277,73 @@ component accessors="true" singleton {
 				found = false,
 				closestHelpCommand = 'help'
 			};
-						
+
 			for( var token in tokens ) {
-				
+
 				// If we hit a dead end, then quit looking
 				if( !structKeyExists( results.commandReference, token ) ) {
 					break;
 				}
-				
+
 				// Move the pointer
 				results.commandString = listAppend( results.commandString, token, '.' );
 				results.commandReference = results.commandReference[ token ];
-				
+
 				// If we've reached a CFC, we're done
 				if( isObject( results.commandReference ) ) {
 					results.found = true;
 					break;
 				// If this is a folder, check and see if it has a "help" command
-				} else {	
+				} else {
 					if( structKeyExists( results.commandReference, 'help' ) && isObject( results.commandReference.help ) ) {
 						results.closestHelpCommand = listChangeDelims( results.commandString, ' ', '.' ) & ' help';
 					}
 				}
-				
-				
+
+
 			} // end for loop
-			
+
 			// If we found a command, carve the parameters off the end
 			var commandLength = listLen( results.commandString, '.' );
 			var tokensLength = arrayLen( tokens );
 			if( results.found && commandLength < tokensLength ) {
 				results.parameters = tokens.slice( commandLength+1 );
 			}
-			
+
 			commandChain.append( results );
 
 		} // end loop over commands to resolve
-		
-		// Return command chain			
+
+		// Return command chain
 		return commandChain;
-				
+
 	}
 
-		
+
 	/**
 	 * Looks at the call stack to determine if we're currently "inside" a command.
-	 * Useful to prevent endless recursion. 
+	 * Useful to prevent endless recursion.
 	 * @command.hint Name of the command to look for as typed from the shell.  If empty, returns true for any command
  	 **/
 	function inCommand( command='' ) {
-			
+
 		// If a command is provided, look for it in the call stack..
 		if( len( command ) ) {
 			for( var call in instance.callStack ) {
 				// CommandString is a dot-delimted path
 				if( call.commandString == listChangeDelims( command, ' ', '.' ) ) {
 					return true;
-				}					
+				}
 			}
 			// Nope, not found
-			return false;			
+			return false;
 		} else {
 			// If no specific command given, just look for any thing in the stack
 			return instance.callStack.len() ? true : false;
 		}
-			
+
 	}
-		
+
 	/**
 	 * return a list of base commands
  	 **/
@@ -374,13 +374,18 @@ component accessors="true" singleton {
 	 * @commandPath.hint The relative dot-delimted path to the CFC starting in the commands dir
 	 **/
 	private function loadCommand( baseCommandDirectory, CFC, commandPath ) {
-		
+
 		// Strip cfc extension from filename
 		var CFCName = mid( CFC, 1, len( CFC ) - 4 );
 		var commandName = iif( len( commandPath ), de( commandPath & '.' ), '' ) & CFCName;
 		// Build CFC's path
 		var fullCFCPath = baseCommandDirectory & '.' & commandName;
-		 		
+
+		// must extend commandbox.system.BaseCommand, can't be Application.cfc
+		if( CFCName == 'Application' || !isCommandCFC(fullCFCPath) ) {
+			return;
+		}
+
 		// Create this command CFC
 		try {
 			var command = application.wireBox.getInstance( fullCFCPath );
@@ -392,30 +397,46 @@ component accessors="true" singleton {
 			shell.printError( e );
 			return;
 		}
-		
+
 		// Check and see if this CFC instance is a command and has a run() method
 		if( !isInstanceOf( command, 'BaseCommand' ) || !structKeyExists( command, 'run' ) ) {
 			return;
 		}
-	
+
 		// Mix in some metadata
 		decorateCommand( command, commandName );
-		
+
 		// Add it to the command dictionary
 		registerCommand( command, commandPath & '.' & CFCName );
-		
+
 		// Register the aliases
 		for( var alias in command.$CommandBox.aliases ) {
 			// Alias is allowed to be anything.  This means it may even overwrite another command already loaded.
 			registerCommand( command, listChangeDelims( trim( alias ), '.', ' ' ) );
 		}
 	}
-	
+
+	/**
+	* checks if given cfc name is a valid command component
+	*/
+	function isCommandCFC( string cfc ) localmode="true" {
+		try {
+			var meta = getComponentMetaData(cfc);
+			while(true) {
+				if(meta.fullname=='commandbox.system.BaseCommand') return true;
+				if(!structKeyExists(meta,'extends')) return false;
+				meta=meta.extends;
+			}
+		} catch(e){}
+		return false;
+	}
+
+
 	/**
 	 * Make sure we have all required params
  	 **/
 	private function ensureRequiredparams( userNamedParams, commandParams ) {
-		
+
 		// For each command param
 		for( var param in commandParams ) {
 			// If it's required and hasn't been supplied...
@@ -423,25 +444,25 @@ component accessors="true" singleton {
 				// ... Ask the user
 				var message = 'Enter #param.name#';
 				if( structKeyExists( param, 'hint' ) ) {
-					message &= ' (#param.hint#)';	
+					message &= ' (#param.hint#)';
 				}
 				message &= ' : ';
            		var value = shell.ask( message );
-           		// TODO: Add validation here to make sure the 
+           		// TODO: Add validation here to make sure the
            		// value entered matches the type!
-           		userNamedParams[ param.name ] = value;				
+           		userNamedParams[ param.name ] = value;
 			}
 		} // end for loop
-		
+
 		return userNamedParams;
 	}
 
 	/**
-	 * Match positional parameters up with their names 
+	 * Match positional parameters up with their names
  	 **/
 	private function convertToNamedParameters( userPositionalParams, commandParams ) {
 		var results = {};
-		
+
 		var i = 0;
 		// For each param the user typed in
 		for( var param in userPositionalParams ) {
@@ -454,7 +475,7 @@ component accessors="true" singleton {
 				results[ i ] = param;
 			}
 		}
-		
-		return results;		
+
+		return results;
 	}
 }
