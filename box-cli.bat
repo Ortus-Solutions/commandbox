@@ -8,13 +8,42 @@ set ANT_CMD=%CFDISTRO_HOME%\ant\bin\ant.bat
 if not exist "%CFDISTRO_HOME%" (
   mkdir "%CFDISTRO_HOME%"
 )
-if not exist "%FILE_DEST%" (
-  echo Downloading with powershell: %FILE_URL% to %FILE_DEST%
-  powershell.exe -command "$webclient = New-Object System.Net.WebClient; $url = \"%FILE_URL%\"; $file = \"%FILE_DEST%\"; $webclient.DownloadFile($url,$file);"
-  echo Expanding with powershell to: %CFDISTRO_HOME%
-  powershell -command "$shell_app=new-object -com shell.application; $zip_file = $shell_app.namespace(\"%FILE_DEST%\"); $destination = $shell_app.namespace(\"%CFDISTRO_HOME%\"); $destination.Copyhere($zip_file.items())"
-) else (
-  echo "cfdistro.zip already downloaded, delete to re-download"
+REM if build file does not exist
+if not exist "%CFDISTRO_HOME%\build.xml" (
+  REM Try to download cfdistro file
+  if not exist "%FILE_DEST%" (
+    echo Downloading with powershell: %FILE_URL% to %FILE_DEST%
+    powershell.exe -command "$webclient = New-Object System.Net.WebClient; $url = \"%FILE_URL%\"; $file = \"%FILE_DEST%\"; $webclient.DownloadFile($url,$file);"
+	REM if error encountered, try another method to download
+	REM using file existance check as errorlevel does not get reset properly
+    if not exist "%FILE_DEST%" (
+      echo Powershell download failed. Trying with ActiveXObject
+  	  cscript /nologo scripts/wget.js %FILE_URL% %FILE_DEST%
+      if not exist "%FILE_DEST%" (
+          echo 2nd Download attempt failed.
+          echo Try to manually download from %FILE_URL%
+          echo and expand in %FILE_DEST%
+          EXIT /B
+      ) else (
+        echo Download successful
+      )
+	)
+  )
+)
+REM if build file does not exist
+if not exist "%CFDISTRO_HOME%\build.xml" (
+  if exist "%FILE_DEST%" (
+    echo Expanding with powershell to: %CFDISTRO_HOME%
+    powershell -command "$shell_app=new-object -com shell.application; $zip_file = $shell_app.namespace(\"%FILE_DEST%\"); $destination = $shell_app.namespace(\"%CFDISTRO_HOME%\"); $destination.Copyhere($zip_file.items())"
+    REM remove zip file
+	del %FILE_DEST%
+  )
+)
+REM must have build file for remainder of file, so check it exists
+if not exist "%CFDISTRO_HOME%\build.xml" (
+  echo Build file does not exist at %CFDISTRO_HOME%\build.xml
+  echo Exiting.
+  EXIT /B
 )
 if "%1" == "" goto MENU
 set args=%1
