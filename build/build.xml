@@ -215,7 +215,7 @@ External Dependencies:
  	</target>
 	
 	<!-- Build local maven repository build.cli.deb,build.cli.exe,build.cli.rpm-->
- 	<target name="build.cli.mvn" depends="build.cli.deb,build.cli.exe,build.cli.jre">
+ 	<target name="build.cli.mvn" depends="build.cli.deb,build.cli.exe,build.cli.jre,build.cli.rpm">
 		<pom-and-deploy pomid="commandbox.pom" packaging="pom" buildtype="${mvn.type}"
 			groupId="com.ortussolutions" artifactId="commandbox" version="${commandbox.version}"
 			name="commandbox">
@@ -236,7 +236,7 @@ External Dependencies:
 	</target>
 
 	<!-- Debian Repo: Leverages deb task -->
-	<target name="build.cli.deb" depends="build.cli.bin" description="builds a .deb file for debian-based systems">
+	<target name="build.cli.deb" depends="build.cli.bin" description="builds a .deb file for debian-based systems ONLY!">
 	    <!-- Load deb task -->
 		<taskdef name="deb" classname="com.googlecode.ant_deb_task.Deb" classpathref="build.antcontrib.libpath"/>
 	   	<echo message="Creating debian repository from: ${dist.dir}"/>
@@ -266,13 +266,15 @@ External Dependencies:
 	<target name="build.cli.rpm" depends="bootstrap_redline,build.cli.bin" xmlns:redline="antlib:org.redline_rpm">
 		<mkdir dir="${rpm.repo}" />
 		<echo message="Making rpm in ${rpm.repo} Packager:${commandbox.packager.name} ${commandbox.packager.email} Version: ${commandbox.version}" />
+		<!-- Load redline task -->
         <taskdef resource="org/redline_rpm/antlib.xml" uri="antlib:org.redline_rpm" classpathref="build.lib.path"/>
+        <!-- execute rpm -->
 		<redline:rpm destination="${rpm.repo}" release="1"
-			group="com.ortussolutions" name="commandbox" version="${commandbox.version}"
+			group="com.ortussolutions" name="${distro.name}" version="${commandbox.version}"
 			packager="${commandbox.packager.name} ${commandbox.packager.email}"
-			url="http://cfmlprojects.org">
+			url="${commandbox.supportURL}">
 			<depends name="java" version=""/>
-			<tarfileset file="${dist.dir}/cli/box" prefix="/usr/bin" filemode="744" username="root" group="root"/>
+			<tarfileset file="${dist.dir}/box" prefix="/usr/bin" filemode="744" username="root" group="root"/>
 		</redline:rpm>
 		<!-- updates/creates the RPM repository, requires 'createrepo' on build server -->
 		<rpm-repo dir="${rpm.repo}" />
