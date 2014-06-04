@@ -6,7 +6,10 @@
  * Usage: repl
  * 
  **/
-component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false{
+component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
+
+	property name='tempDirRelative' inject='tempDirRelative';
+	property name='tempDir' inject='tempDir';
 
 	/**
 	* REPL Console
@@ -15,19 +18,23 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 		print.cyanLine( "Enter any valid CFML code in the following prompt in order to evaluate it and print out any results (if any)" );
 		print.line( "Type 'quit' or 'q' to exit!" ).toConsole();
 
-		var quit 	= true;
+		var quit 	= false;
 		var results = "";
+		var Executor = wirebox.getInstance( "Executor" );
 
-		// quit until exist
-		while( quit ){
+		// Loop until they choose to quit
+		while( !quit ){
 			// ask repl
 			var cfml = ask( ( arguments.script ? "CFSCRIPT" : "CFML" ) &  "-REPL: " );
 			// quitting
 			if( cfml == "quit" or cfml == "q" ){
-				quit = false;
+				quit = true;
 			} else {
 				// Temp file to evaluate
-				var tempFile = shell.pwd() & "/" & createUUID() & ".cfm";
+				var tempFileName = createUUID() & ".cfm";
+				var tempFileAbsolute = tempDir & "/" & tempFileName;
+				var tempFileRelative = tempDirRelative & "/" & tempFileName;
+				
 				// evaluate it
 				try{
 
@@ -36,9 +43,9 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 						cfml = "<cfscript>" & cfml & "</cfscript>";
 					}
 					// write it out
-					fileWrite( tempFile, cfml );
+					fileWrite( tempFileAbsolute, cfml );
 					// eval it
-					results = wirebox.getInstance( "Executor" ).run( tempFile );
+					results = Executor.run( tempFileRelative );
 					// print results
 					if( !isNull( results ) ){
 						print.redLine( results ).toConsole();
@@ -51,8 +58,8 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 					print.toConsole();
 				} finally {
 					// cleanup
-					if( fileExists( tempFile ) ){
-						fileDelete( tempFile );
+					if( fileExists( tempFileAbsolute ) ){
+						fileDelete( tempFileAbsolute );
 					}
 				}
 			}
