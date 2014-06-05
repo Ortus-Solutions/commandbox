@@ -66,6 +66,16 @@ External Dependencies:
 
 	<!-- Build everything -->
 	<target name="build.cli.all" depends="build.cli.mvn">
+		<!-- Remove Unecessary build files from repo, so to not confuse -->
+		<ancontrib:if>
+			<equals arg1="${build.type}" arg2="auto" />
+			<then>
+				<delete>
+					<fileset file="${dist.dir}/box" />
+					<fileset file="${dist.dir}/box.exe" />
+				</delete>
+			</then>
+		</antcontrib:if>
 	</target>
 
 	<!-- Build CLI -->
@@ -106,6 +116,8 @@ External Dependencies:
         <zip destfile="${dist.dir}/box.jar" update="false" level="9">
         	<zipfileset dir="${temp.dir}/rcli" />
         </zip>
+        <!-- Checksum on Jar -->
+        <checksum file="${dist.dir}/box.jar" forceoverwrite="true" fileext=".md5" />
 
         <!-- cleanup -->
 		<delete dir="${temp.dir}/rcli"/>
