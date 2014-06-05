@@ -6,9 +6,6 @@
  **/
 component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false{
 
-	// DI
-	property name="wirebox" inject="wirebox";
-
 	/**
 	 * @file.hint The file to execute
 	 **/
