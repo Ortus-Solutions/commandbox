@@ -75,7 +75,7 @@ External Dependencies:
 					<fileset file="${dist.dir}/box.exe" />
 				</delete>
 			</then>
-		<antcontrib:if>
+		</antcontrib:if>
 	</target>
 
 	<!-- Build CLI -->
