@@ -11,29 +11,32 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 	property name='artifactService' inject='artifactService'; 
 
 	/**
-	 * @packages.hint comma-delimited list of packages to remove
+	 * @packages.hint Comma-delimited list of packages to remove
+	 * @version.hint If passed, it will try to remove a specific package version
 	 * @force.hint Do not confirm, just delete
 	 **/
-	function run( required string package, boolean force=false ) {
+	function run( required string package, version="", boolean force=false ) {
 		// convert to array incoming package
 		arguments.package = listToArray( arguments.package );
+		// doc version string
+		var versionString = version.len() ? ":#arguments.version#" : "";
 
 		// iterate and remove
 		for( var thisPackage in arguments.package ){
 
 			// verify if package exists
-			if( !artifactService.packageExists( thisPackage ) ){
+			if( !artifactService.packageExists( thisPackage, arguments.version ) ){
 				print.redLine( "Package: #thisPackage# does not exist!" ).
 					redLine( "Try 'artifacts list' to see what packages are in the cache." );
 				continue;
 			}
 			// Confirm removal
-			if( arguments.force eq false && !confirm( "Really remove: #thisPackage#? [y/n]" ) ){
+			if( arguments.force eq false && !confirm( "Really remove: #thisPackage##versionString#? [y/n]" ) ){
 				continue;
 			}
 			// Remove Package
-			artifactService.removeArtifact( thisPackage );
-			print.greenLine( "Package: #thisPackage# removed!" );
+			artifactService.removeArtifact( thisPackage, arguments.version );
+			print.greenLine( "Package: #thisPackage##versionString# removed!" );
 		}
 
 	}

@@ -77,10 +77,12 @@ component accessors="true" singleton {
 	
 	/**
 	* Removes an artifact or an artifact package, true if removed
+	* @packageName.hint The package name to look for
+	* @version.hint The version to look for
 	*/ 
-	boolean function removeArtifact( required packageName ) {
-		if( packageExists( arguments.packageName ) ){
-			directoryDelete( getPackagePath( arguments.packageName ), true );
+	boolean function removeArtifact( required packageName, version="" ) {
+		if( packageExists( arguments.packageName, arguments.version ) ){
+			directoryDelete( getPackagePath( arguments.packageName, arguments.version ), true );
 			return true;
 		}
 
@@ -90,19 +92,26 @@ component accessors="true" singleton {
 	/**
 	* Returns true if a package exists in the artifact cache, false if not.
 	* @packageName.hint The package name to look for
+	* @version.hint The version to look for
 	*/ 
-	boolean function packageExists( required packageName ){
-		return directoryExists( getPackagePath( arguments.packageName ) );				
+	boolean function packageExists( required packageName, version="" ){
+		return directoryExists( getPackagePath( arguments.packageName, arguments.version ) );				
 	}
 
 	/**
 	* Returns the filesystem path of the package path
 	* @packageName.hint The package name to look for
+	* @version.hint The version to look for
 	*/ 
-	function getPackagePath( required packageName ){
+	function getPackagePath( required packageName, version="" ){
 		// This will likely change, so I'm only going to put the code here
 		// I'm using the package name as the zip file for lack of anything better even though it's redundant with the first folder
-		return variables.artifactDir & '/' & arguments.packageName;
+		var path = variables.artifactDir & '/' & arguments.packageName;
+		// do we have a version?
+		if( arguments.version.len() ){
+			path &= "/" & arguments.version;
+		}
+		return path;
 	}	
 	
 	/**

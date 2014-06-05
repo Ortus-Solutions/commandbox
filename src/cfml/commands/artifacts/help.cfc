@@ -2,11 +2,10 @@ component extends="commandbox.system.BaseCommand" excludeFromHelp=true {
 	
 	function run()  {
 		
-		print.line();
-		print.yellowLine( 'General help and description of how to use artifacts' );
-		print.line();
-		print.line();
-		
+		print.line()
+			.yellowLine( 'The artifacts command will allow you to control your artifacts cache.' )
+			.yellowLine( 'From Listing its content to removing and purging.' )
+			.line().line();
 
 	}
 }
