@@ -67,7 +67,7 @@ External Dependencies:
 	<!-- Build everything -->
 	<target name="build.cli.all" depends="build.cli.mvn">
 		<!-- Remove Unecessary build files from repo, so to not confuse -->
-		<ancontrib:if>
+		<antcontrib:if>
 			<equals arg1="${build.type}" arg2="auto" />
 			<then>
 				<delete>
@@ -75,7 +75,7 @@ External Dependencies:
 					<fileset file="${dist.dir}/box.exe" />
 				</delete>
 			</then>
-		</antcontrib:if>
+		<antcontrib:if>
 	</target>
 
 	<!-- Build CLI -->
