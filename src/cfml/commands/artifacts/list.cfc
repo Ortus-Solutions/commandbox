@@ -1,11 +1,12 @@
 /**
- * Lists all packages in the artifact cache
+ * Lists all packages in the CommandBox artifact cache
  *
  * artifacts list
  *
  **/
 component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
-
+	
+	// DI
 	property name='artifactService' inject='artifactService'; 
 
 	/**
@@ -19,12 +20,13 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 			return;
 		}
 		
-		print.line();
+		print.boldBlueLine( "Found #results.count()# artifact(s) (#artifactService.getArtifactDir()#)" );
+
 		for( var package in results ) {
+			print.boldCyanLine( package & " - #results[ package ].size()# version(s)" );
 			for( var ver in results[ package ] ) {
-				print.line( package & ' ' & ver );				
+				print.yellowLine( "  *#ver#" );				
 			}
-			print.line();
 		}
 			
 	}

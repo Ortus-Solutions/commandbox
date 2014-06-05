@@ -13,19 +13,23 @@
 * We are not currently using a group ID, but we may need to in the future
 *
 */
-component singleton {
+component accessors="true" singleton {
 	
+	// DI
 	property name='artifactDir' 	inject='artifactDir';
 	property name='tempDir' 		inject='tempDir';
-	property name='PackageService' 	inject='PackageService';
-	property name='shell' 			inject='shell';
+	property name='packageService' 	inject='PackageService';
+	property name='shell' 			inject='Shell';
 	property name='logger' 			inject='logbox:logger:{this}';
 	
+	/**
+	* DI complete
+	*/
 	function onDIComplete() {
 		
 		// Create the artifacts directory if it doesn't exist
-		if( !directoryExists( artifactDir ) ) {
-			directoryCreate( artifactDir );
+		if( !directoryExists( variables.artifactDir ) ) {
+			directoryCreate( variables.artifactDir );
 		}
 		
 	}
@@ -35,9 +39,9 @@ component singleton {
 	* @package.hint Supply a package to see only versions of this package
 	* @returns A struct of arrays where the struct key is the package package and the array contains the versions of that package in the cache.
 	*/
-	function listArtifacts( packageName='' ) {
+	struct function listArtifacts( packageName='' ) {
 		var result = {};
-		var dirList = directoryList( path=artifactDir, recurse=false, listInfo='query', sort='name asc' );
+		var dirList = directoryList( path=variables.artifactDir, recurse=false, listInfo='query', sort='name asc' );
 		
 		for( var dir in dirList ) {
 			if( dir.type == 'dir' && ( !arguments.packageName.len() || arguments.packageName == dir.name ) ) {
@@ -53,37 +57,63 @@ component singleton {
 				}
 			}
 		}
-		
+
 		return result;
-		
 	}
 	
 	
 	/**
-	* Removes all artifacts from the cache
+	* Removes all artifacts from the cache and returns the number of wiped out directories
 	*/ 
-	function cleanArtifacts() {
-		var dirList = directoryList( path=artifactDir, recurse=false );
+	numeric function cleanArtifacts() {
+		var dirList = directoryList( path=variables.artifactDir, recurse=false );
 		
 		for( var dir in dirList ) {
 			directoryDelete( dir, true );
 		}
 		
-		return 'Artifacts directory cleaned of #dirList.len()# items.';
-		
+		return dirList.len();
 	}
 	
-	// remove artifacts (by package, or by package and version?)
+	/**
+	* Removes an artifact or an artifact package, true if removed
+	*/ 
+	boolean function removeArtifact( required packageName ) {
+		if( packageExists( arguments.packageName ) ){
+			directoryDelete( getPackagePath( arguments.packageName ), true );
+			return true;
+		}
+
+		return false;
+	}
+
+	/**
+	* Returns true if a package exists in the artifact cache, false if not.
+	* @packageName.hint The package name to look for
+	*/ 
+	boolean function packageExists( required packageName ){
+		return directoryExists( getPackagePath( arguments.packageName ) );				
+	}
+
+	/**
+	* Returns the filesystem path of the package path
+	* @packageName.hint The package name to look for
+	*/ 
+	function getPackagePath( required packageName ){
+		// This will likely change, so I'm only going to put the code here
+		// I'm using the package name as the zip file for lack of anything better even though it's redundant with the first folder
+		return variables.artifactDir & '/' & arguments.packageName;
+	}	
 	
 	/**
 	* Returns true if a package exists in the artifact cache, false if not.
 	* @packageName.hint The package name to look for
 	* @version.hint The version of the package to look for
 	*/ 
-	function artifactExists( required packageName, required version ) {
+	boolean function artifactExists( required packageName, required version ){
 		return fileExists( getArtifactPath( argumentCollection = arguments ) );				
 	}
-	
+
 	/**
 	* Returns the filesystem path of the artifact zip file
 	* @packageName.hint The package name to look for
@@ -92,7 +122,7 @@ component singleton {
 	function getArtifactPath( required packageName, required version ) {
 		// This will likely change, so I'm only going to put the code here
 		// I'm using the package name as the zip file for lack of anything better even though it's redundant with the first folder
-		return artifactDir & '/' & arguments.packageName & '/' & arguments.version & '/' & arguments.packageName & '.zip';
+		return variables.artifactDir & '/' & arguments.packageName & '/' & arguments.version & '/' & arguments.packageName & '.zip';
 
 	}	
 	
@@ -105,26 +135,28 @@ component singleton {
 	* @version.hint The version of the package to look for
 	* @packageZip.hint A file path to a local zip file that contains the package
 	*/
-	function createArtifact( required packageName, required version, required packageZip ) {
+	ArtifactService function createArtifact( required packageName, required version, required packageZip ) {
 		
 		// Validate the package path
-		if( !fileExists( packageZip ) ) {
+		if( !fileExists( arguments.packageZip ) ) {
 			throw( 'Cannot create artifact [#arguments.packageName#], the file doesn''t exist', arguments.packageZip );
 		}
 		
 		// Validate the package is a zip
-		if( right( packageZip, 4 ) != '.zip' ) {
+		if( right( arguments.packageZip, 4 ) != '.zip' ) {
 			throw( 'Cannot create artifact [#arguments.packageName#], the file isn''t a zip', arguments.packageZip );
 		}
 		
 		//  Where will this artifact live?
-		var artifactPath = getArtifactPath( arguments.packageName, arguments.version );
+		var thisArtifactPath = getArtifactPath( arguments.packageName, arguments.version );
 		
 		// Create dir if it doesn't exist
-		directorycreate( getDirectoryFromPath( artifactPath ), true, true );
+		directorycreate( getDirectoryFromPath( thisArtifactPath ), true, true );
 		
 		// Here's your new home
-		fileCopy( packageZip, artifactPath );
+		fileCopy( arguments.packageZip, thisArtifactPath );
+
+		return this;
 	}	
 	
 	/**
@@ -135,9 +167,8 @@ component singleton {
 	* @version.hint The version of the package to look for
 	*/
 	public struct function getArtifactDescriptor( required packageName, required version ) {
-			
-		var artifactPath = getArtifactPath( arguments.packageName, arguments.version );
-		var boxJSONPath = 'zip://' & artifactPath & '!box.json';
+		var thisArtifactPath = getArtifactPath( arguments.packageName, arguments.version );
+		var boxJSONPath = 'zip://' & thisArtifactPath & '!box.json';
 		
 		// If the packge has a box.json in the root...
 		if( fileExists( boxJSONPath ) ) {
@@ -148,13 +179,13 @@ component singleton {
 			// Validate the file is valid JSOn
 			if( isJSON( boxJSON ) ) {
 				// Merge this JSON with defaults
-				return PackageService.newPackageDescriptor( deserializeJSON( boxJSON ) );
+				return packageService.newPackageDescriptor( deserializeJSON( boxJSON ) );
 			}
 			
 		}
 		
 		// Just return defaults
-		return PackageService.newPackageDescriptor();			
+		return packageService.newPackageDescriptor();			
 	
 	}	
 	
@@ -164,12 +195,11 @@ component singleton {
 	* @version.hint The version of the package to look for
 	*/
 	public function installArtifact( required packageName, required version, installDirectory ) {
-
-		var artifactPath = getArtifactPath( arguments.packageName, arguments.version );
+		var thisArtifactPath = getArtifactPath( arguments.packageName, arguments.version );
 		var tmpPath 	 = "#variables.tempDir#/#arguments.packageName#";
 		// Has file size?
-		if( getFileInfo( artifactPath ).size <= 0 ) {
-			throw( 'Cannot install file as it has a file size of 0.', artifactPath );
+		if( getFileInfo( thisArtifactPath ).size <= 0 ) {
+			throw( 'Cannot install file as it has a file size of 0.', thisArtifactPath );
 		}
 		
 		var artifactDescriptor = getArtifactDescriptor( arguments.packageName, arguments.version );
@@ -179,7 +209,7 @@ component singleton {
 		}
 		
 		// Unzip to temp directory
-		zip action="unzip" file="#artifactPath#" destination="#tmpPath#" overwrite="true";
+		zip action="unzip" file="#thisArtifactPath#" destination="#tmpPath#" overwrite="true";
 
 		// Copy with ignores from descriptor
 		directoryCopy( tmpPath, arguments.installDirectory, true, function( path ){
