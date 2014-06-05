@@ -15,6 +15,16 @@ component extends="commandbox.system.BaseCommand" aliases="ls,ll,directory" excl
 		arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
 		
 		var results = directoryList( arguments.directory, arguments.recurse, "query" );
+
+		// TODO: Add ability to re-sort this based on user input		
+	 	query name="local.results" dbtype="query" {
+	        echo("
+	        	SELECT *
+			   FROM results
+			   ORDER BY type, name
+			 ");
+	    }
+		
 		for( var x=1; x lte results.recordcount; x++ ) {
 			var printCommand = ( results.type[ x ] eq "File" ? "green" : "purple" );
 

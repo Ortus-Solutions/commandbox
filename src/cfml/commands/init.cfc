@@ -10,12 +10,12 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 	property name="formatterUtil" inject="formatter";
 
 	/**
-	 * @applicationName.hint The humnan-readable name for this package 
+	 * @packageName.hint The humnan-readable name for this package 
 	 * @slug.hint The ForgeBox slug for this package (no spaces or special chars)
 	 * @directory.hint The location to initialize the project.  Defaults to the current working directory.
 	 * @force.hint Do not prompt, overwrite if exists
 	 **/
-	function run( packagename='myApplication', slug='mySlug', directory='', Boolean force=false ) {
+	function run( packageName='myApplication', slug='mySlug', directory='', Boolean force=false ) {
 		if( !len( directory ) ) {
 			directory = shell.pwd();
 		}
@@ -26,7 +26,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 		}
 		
 		// Spin up a new box.json with our defaults
-		var boxJSON = PackageService.newPackageDescriptor( { "name" : arguments.packagename, "slug" : arguments.slug } );
+		var boxJSON = PackageService.newPackageDescriptor( { "name" : arguments.packageName, "slug" : arguments.slug } );
 		
 		// Clean up directory
 		if( listFind( '\,/', right( directory, 1 ) ) ) {

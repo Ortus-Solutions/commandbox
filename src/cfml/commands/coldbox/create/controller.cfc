@@ -85,7 +85,7 @@ component extends='commandbox.system.BaseCommand' aliases='coldbox create handle
 					// Create dir if it doesn't exist
 					directorycreate( getDirectoryFromPath( viewPath ), true, true );
 					// Create View Stub
-					fileWrite( viewPath, '<cfoutput>#chr(13)#<h1>#name#.#thisAction#</h1>#chr(13)#</cfoutput>' );
+					fileWrite( viewPath, '<cfoutput>#cr#<h1>#name#.#thisAction#</h1>#cr#</cfoutput>' );
 					print.greenLine( 'Created ' & ViewsDirectory & '/' & name & '/' & thisAction & '.cfm' );
 				}
 
