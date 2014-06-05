@@ -9,10 +9,16 @@
 */
 component {
 	
+	/**
+	* Constructor
+	*/
 	function init(){
 		return this;
 	}
 
+	/**
+	* Execute
+	*/
 	function run( required template ){
 		savecontent variable="local.out"{
 			include "#arguments.template#";

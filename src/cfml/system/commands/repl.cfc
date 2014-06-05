@@ -27,8 +27,9 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 		print.cyanLine( "Enter any valid CFML code in the following prompt in order to evaluate it and print out any results (if any)" );
 		print.line( "Type 'quit' or 'q' to exit!" ).toConsole();
 
-		var quit 	= false;
-		var results = "";
+		var quit 	 = false;
+		var results  = "";
+		var executor = wirebox.getInstance( "executor" );
 
 		// Loop until they choose to quit
 		while( !quit ){
@@ -53,7 +54,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 					// write it out
 					fileWrite( tmpFileAbsolute, cfml );
 					// eval it
-					results = getExecutor().run( tmpFileRelative );
+					results = executor.run( tmpFileRelative );
 					// print results
 					if( !isNull( results ) ){
 						print.redLine( results ).toConsole();
@@ -76,10 +77,5 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 		// exit
 		print.boldCyanLine( "Bye!" );
 	}
-
-	/**
-	* Transient dispenser
-	*/
-	function getExecutor() provider="Executor"{}
 
 }
