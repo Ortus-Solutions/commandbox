@@ -42,7 +42,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 				// Temp file to evaluate
 				var tmpFile = createUUID() & ".cfm";
 				var tmpFileAbsolute = variables.tmpDirAbsolute & "/" & tmpFile;
-				var tmpFileRelative = variables.tmpDirAbsolute & "/" & tmpFile;
+				var tmpFileRelative = variables.tmpDirRelative & "/" & tmpFile;
 				
 				// evaluate it
 				try{
