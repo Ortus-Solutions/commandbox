@@ -15,6 +15,7 @@ component accessors="true" singleton {
 	property name='system' 	inject='System';
 	property name='cr' 		inject='cr';
 	property name="logger" 	inject="logbox:logger:{this}";
+	property name="wirebox" 	inject="wirebox";
 
 	// TODO: Convert these to properties
 	instance = {
@@ -388,7 +389,7 @@ component accessors="true" singleton {
 
 		// Create this command CFC
 		try {
-			var command = application.wireBox.getInstance( fullCFCPath );
+			var command = wireBox.getInstance( fullCFCPath );
 		// This will catch nasty parse errors so the shell can keep loading
 		} catch( any e ) {
 			systemOutput( 'Error loading command [#fullCFCPath#]#CR##CR#' );

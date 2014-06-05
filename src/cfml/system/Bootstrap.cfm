@@ -45,8 +45,12 @@ Type "help" for help, or "help [command]" to be more specific.
 			// Clear all railo caches: template, ...
 			SystemCacheClear( "all" );
 			shell = javacast( "null", "" );
+			
 			// reload wirebox
+			wireBox.shutdown();
 			new wirebox.system.ioc.Injector( 'commandbox.system.config.WireBox' );
+			variables.wireBox = application.wireBox;
+			
 			// startup a new shell
 			shell = wireBox.getInstance( 'Shell' );
 		}

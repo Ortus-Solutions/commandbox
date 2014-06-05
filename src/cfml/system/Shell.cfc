@@ -92,7 +92,7 @@ component accessors="true" singleton {
 
 		// load commands
 		if( variables.initArgs.asyncLoad ){
-			thread name="commandbox.loadcommands"{
+			thread name="commandbox.loadcommands#getTickCount()#"{
 				variables.commandService.configure();
 			}
 		} else {
