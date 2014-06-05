@@ -15,10 +15,11 @@
 */
 component singleton {
 	
-	property name='artifactDir' inject='artifactDir';
-	property name='PackageService' inject='PackageService';
-	property name='shell' inject='shell';
-	property name='logger' inject='logbox:logger:{this}';
+	property name='artifactDir' 	inject='artifactDir';
+	property name='tempDir' 		inject='tempDir';
+	property name='PackageService' 	inject='PackageService';
+	property name='shell' 			inject='shell';
+	property name='logger' 			inject='logbox:logger:{this}';
 	
 	function onDIComplete() {
 		
@@ -165,7 +166,7 @@ component singleton {
 	public function installArtifact( required packageName, required version, installDirectory ) {
 
 		var artifactPath = getArtifactPath( arguments.packageName, arguments.version );
-		
+		var tmpPath 	 = "#variables.tempDir#/#arguments.packageName#";
 		// Has file size?
 		if( getFileInfo( artifactPath ).size <= 0 ) {
 			throw( 'Cannot install file as it has a file size of 0.', artifactPath );
@@ -177,10 +178,24 @@ component singleton {
 			arguments.installDirectory = shell.pwd() & '/' & artifactDescriptor.directory;  
 		}
 		
-		// TODO: actually obey artifactDescriptor.ignore
-		zip action="unzip" file="#artifactPath#" destination="#installDirectory#" overwrite="true";
-		
-		
+		// Unzip to temp directory
+		zip action="unzip" file="#artifactPath#" destination="#tmpPath#" overwrite="true";
+
+		// Copy with ignores from descriptor
+		directoryCopy( tmpPath, arguments.installDirectory, true, function( path ){
+			// cleanup path so we just get from the archive down
+			var thisPath = replacenocase( arguments.path, tmpPath & "/", "" );
+			
+			// skip root box.json
+			if( thisPath eq "box.json" ){
+				return false;
+			}
+			
+			return true;
+		});
+
+		// cleanup unzip
+		directoryDelete( tmpPath, true );
 	}
 		
 }
