@@ -22,6 +22,13 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 		var commands = listToArray( recipe, chr( 10 ) );
 		// iterate and execute.
 		for( var thisCommand in commands ){
+			thisCommand = trim( thisCommand );
+			
+			// Ignore blank lines and comments
+			if( !thisCommand.len() || thisCommand.startsWith( '##' ) ) {
+				continue;
+			}
+			
 			try{
 				runCommand( trim( thisCommand ) );
 			} catch( any e ){
