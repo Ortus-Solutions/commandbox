@@ -352,7 +352,7 @@ External Dependencies:
 		<!-- mostly for automated builds- you really only need to build the testwar once -->
 	</target>
 
-	<target name="build.test.all" depends="build.test,build.cli.all">
+	<target name="build.test.all" depends="build.cli.all, build.test">
 	</target>
 
 </project>
