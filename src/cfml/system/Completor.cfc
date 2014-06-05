@@ -236,9 +236,17 @@ component singleton {
 		}
 		
 		paramName = lcase( paramName );
-		if( paramName.startsWith( 'directory' ) || paramName.startsWith( 'destination' ) ) {
+		if( paramName.startsWith( 'directory' ) || 
+			paramName.startsWith( 'destination' ) ||
+			paramName.endsWith( 'directory' ) ||
+			paramName.endsWith( 'destination' ) 
+		){
 			pathCompletion( paramSoFar, candidates, false );			
-		} else if( paramName.startsWith( 'file' ) || paramName.startsWith( 'path' )  ) {
+		} else if( paramName.startsWith( 'file' ) || 
+				   paramName.endsWith( 'file' ) || 
+				   paramName.startsWith( 'path' ) ||
+				   paramName.endsWith( 'path' ) 
+		){
 			pathCompletion( paramSoFar, candidates, true );
 		}
 	}
