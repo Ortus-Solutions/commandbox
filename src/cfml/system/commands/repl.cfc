@@ -8,8 +8,17 @@
  **/
 component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
 
-	property name='tempDirRelative' inject='tempDirRelative';
-	property name='tempDir' inject='tempDir';
+	/**
+	* Constructor
+	*/
+	function init(){
+		super.init();
+
+		variables.tmpDirRelative = "/commandbox/system/tmp";
+		variables.tmpDirAbsolute = expandPath( "/commandbox/system/tmp" );
+
+		return this;
+	}
 
 	/**
 	* REPL Console
@@ -20,7 +29,6 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 
 		var quit 	= false;
 		var results = "";
-		var Executor = wirebox.getInstance( "Executor" );
 
 		// Loop until they choose to quit
 		while( !quit ){
@@ -31,9 +39,9 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 				quit = true;
 			} else {
 				// Temp file to evaluate
-				var tempFileName = createUUID() & ".cfm";
-				var tempFileAbsolute = tempDir & "/" & tempFileName;
-				var tempFileRelative = tempDirRelative & "/" & tempFileName;
+				var tmpFile = createUUID() & ".cfm";
+				var tmpFileAbsolute = variables.tmpDirAbsolute & "/" & tmpFile;
+				var tmpFileRelative = variables.tmpDirAbsolute & "/" & tmpFile;
 				
 				// evaluate it
 				try{
@@ -43,9 +51,9 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 						cfml = "<cfscript>" & cfml & "</cfscript>";
 					}
 					// write it out
-					fileWrite( tempFileAbsolute, cfml );
+					fileWrite( tmpFileAbsolute, cfml );
 					// eval it
-					results = Executor.run( tempFileRelative );
+					results = getExecutor().run( tmpFileRelative );
 					// print results
 					if( !isNull( results ) ){
 						print.redLine( results ).toConsole();
@@ -58,8 +66,8 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 					print.toConsole();
 				} finally {
 					// cleanup
-					if( fileExists( tempFileAbsolute ) ){
-						fileDelete( tempFileAbsolute );
+					if( fileExists( tmpFileAbsolute ) ){
+						fileDelete( tmpFileAbsolute );
 					}
 				}
 			}
@@ -68,5 +76,10 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 		// exit
 		print.boldCyanLine( "Bye!" );
 	}
+
+	/**
+	* Transient dispenser
+	*/
+	function getExecutor() provider="Executor"{}
 
 }
