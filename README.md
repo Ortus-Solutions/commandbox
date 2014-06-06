@@ -19,11 +19,12 @@ CommandBox CLI, Package Manager, REPL and much more!
 
 ## COMMANDBOX INSTALLATION
 
-More details will be coming soon regarding IVY/Maven/cfdistro package managers. Commands downloads and installs the needed resources by default into your user home directory under .CommandBox automatically.
+More details will be coming soon regarding IVY/Maven/cfdistro package managers. CommandBox downloads and installs the needed resources by default into your user home directory under .CommandBox automatically.
 
 **Direct download**
 
 Download executable from here [jar, bin, win32](http://cfmlprojects.org/artifacts/com/ortussolutions/box.cli/1.0.0/)
+
 Run executable
 
 **Package repository for REDHAT based Linux:**
@@ -54,7 +55,7 @@ Then run:
 sudo apt-get update; sudo apt-get install box-cli
 ```
 
-**Compile from github source**
+**Build from source**
 
 Clone into your preferred commands directory:
 ``` bash
@@ -64,10 +65,10 @@ Initial build:
 ``` bash
 cd box-cli
 ``` 
-or for windows:
 ``` bash
 sudo ./box-cli build
 ```
+or for windows:
 ``` bash
 box-cli.bat build
 ```
@@ -103,7 +104,7 @@ sudo ./box-cli build.test
 ```
 or for windows:
 ``` bash
-box-cli.bat build
+box-cli.bat build.test
 ```
 
 **Run a test server**
@@ -176,7 +177,9 @@ CommandBox is maintained under the Semantic Versioning guidelines as much as pos
 
 Releases will be numbered with the following format:
 
+``` bash
 <major>.<minor>.<patch>
+```
 
 And constructed with the following guidelines:
 
