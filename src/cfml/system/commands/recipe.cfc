@@ -57,9 +57,8 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 	private string function bindCommand( required command, required struct args ){
 		// iterate and bind.
 		for( var thisArg in arguments.args ){
-			arguments.command = replaceNoCase( arguments.command, "@thisArg@", arguments.args[ thisArg ], "all" );
+			arguments.command = replaceNoCase( arguments.command, "@#thisArg#@", arguments.args[ thisArg ], "all" );
 		}
-
 		return arguments.command;
 	}
 
