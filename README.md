@@ -3,29 +3,30 @@
  | |     ___  _ __ ___  _ __ ___   __ _ _ __   __| | |_) | _____  __
  | |    / _ \| '_ ` _ \| '_ ` _ \ / _` | '_ \ / _` |  _ < / _ \ \/ /
  | |___| (_) | | | | | | | | | | | (_| | | | | (_| | |_) | (_) >  < 
-  \_____\___/|_| |_| |_|_| |_| |_|\__,_|_| |_|\__,_|____/ \___/_/\_\ v1.0.0.@build.number@
-     
-********************************************************************************
-Trademark + Copyright since 2014 by Ortus Solutions, Corp
-www.ortussolutions.com
-********************************************************************************
-HONOR GOES TO GOD ABOVE ALL
-********************************************************************************
-WELCOME TO COMMANDBOX
-********************************************************************************
+  \_____\___/|_| |_| |_|_| |_| |_|\__,_|_| |_|\__,_|____/ \___/_/\_\ 
+  
+# WELCOME TO COMMANDBOX 
+
 Welcome To The CommandBox CLI, Package Manager, REPL and much more!
-CommandBox created & copyright & trademark by Ortus Solutions, Corp
-www.ortussolutions.com/products/commandbox
-********************************************************************************
-COMMANDBOX INSTALLATION
-********************************************************************************
-IVY/Maven/cfdistro package managers or direct download (jar, bin, win32):
 
-http://cfmlprojects.org/artifacts/com/ortussolutions/box.cli
+* v1.0.0.@build.number@
+* Trademark + Copyright since 2014 by Ortus Solutions, Corp
+* <http://www.ortussolutions.com>
+* [All products by Ortus Solutions](http://www.ortussolutions.com/products)
+* HONOR GOES TO GOD ABOVE ALL
 
-Package repository for REDHAT based Linux:
+## COMMANDBOX INSTALLATION
 
-Add the following to to: /etc/yum.repos.d/box.repo
+More details will be coming soon regarding IVY/Maven/cfdistro package managers.
+
+**Direct download**
+1. Download executable from here [jar, bin, win32](http://cfmlprojects.org/artifacts/com/ortussolutions/box.cli/1.0.0/)
+2. Run executable
+
+**Package repository for REDHAT based Linux:**
+
+1. Add the following to: /etc/yum.repos.d/box.repo
+``` bash
 [box]
 name=Box $releasever - $basearch
 failovermethod=priority
@@ -33,70 +34,96 @@ baseurl=http://cfmlprojects.org/artifacts/RPMS/noarch
 enabled=1
 metadata_expire=7d
 gpgcheck=0
+```
+2. Then run:
+``` bash
+sudo yum update; sudo yum install box-cli
+```
 
-Then run "sudo yum update; sudo yum install box-cli"
+**Install repository for DEBIAN based Linux**
 
-
-Install repository for DEBIAN based Linux
-
-Add the following to: /etc/apt/sources.list.d/box.list
+1. Add the following to: /etc/apt/sources.list.d/box.list
+``` bash
 deb http://cfmlprojects.org/artifacts/debs/ ./
+```
+2. Then run: 
+``` bash
+sudo apt-get update; sudo apt-get install box-cli
+```
 
-Then run "sudo apt-get update; sudo apt-get install box-cli"
+** Compile from github source
 
-********************************************************************************
-COMMANDBOX USAGE
-********************************************************************************
-CommandBox is either an EXE, a binary, or a JAR file, depending on preference.  They
-all work the same, expanding the needed resources by default into your user home
-directory under .CommandBox/ (if not there already).
+1. Clone into your preferred commands directory:
+``` bash
+git clone https://github.com/webmandman/box-cli.git
+```
+2. Initial build:
+``` bash
+cd box-cli
+``` 
+``` bash
+sudo ./box-cli build
+```
+Windows (cmd as administrator):
+``` bash
+box-cli.bat build
+```
+3. Build executable:
+``` bash
+sudo ./box-cli build.cli.bin
+```
+Windows (cmd as administrator):
+``` bash
+box-cli.bat build.cli.exe
+```
 
-You can run CommandBox in interactive CLI mode, or server mode.  To run in interactive
-mode, simply type "box".  To run the server, type "box -server".
+**Run tests**
 
-Type "box help", or "help" at the CommandBox> prompt to get a list of available commands.  
-Type "help [command]" for in-depth descriptions.
+If you'd like to run the tests for CI, etc., run:
+``` bash
+sudo ./
 
-********************************************************************************
-COMMANDBOX COMMANDS
-********************************************************************************
-CommandBox is extensible via CFML by creating command CFCs.  Any CFC in the 
-'${box.home}/commands' directory will be registered as a command as 
-long as it extends 'commandbox.system.BaseCommand' and has a 'run()' method.
-CFCs that are nested in subfolders, will create multi-part command names Ex:
+## COMMANDBOX USAGE
 
-${box.home}/commands/testbox/run.cfc
+CommandBox is either an EXE, a binary, or a JAR file, depending on preference.  They all work the same, expanding the needed resources by default into your user home directory under .CommandBox/ (if not there already).
 
-That would create a two-part command called "testbox run"
-Everything after the command is considered parameters.
+You can run CommandBox in interactive CLI mode, or server mode.  To run in interactive mode, simply type "box".  To run the server, type "box -server".
+
+Type "box help", or "help" at the CommandBox> prompt to get a list of available commands. Type "help [command]" for in-depth descriptions.
+
+## COMMANDBOX COMMANDS
+
+CommandBox is extensible via CFML by creating command CFCs.  Any CFC in the '${box.home}/commands' directory will be registered as a command as long as it extends 'commandbox.system.BaseCommand' and has a 'run()' method. 
+
+To create a two-part command called "testbox run" create CFCs that are nested in subfolders, for example: 
+${box.home}/commands/testbox/run.cfc. Everything after the command is considered parameters.
 
 All CFC's are wired via WireBox, so dependency injection is available to them.
 
-Tab completion and help are powered by metadata on these CFCs.  If you would like
-to use a friendlier name for your command, add the attribute "aliases" to the component
-which is a comma-delimited list of names:
+Tab completion and help are powered by metadata on these CFCs. If you would like to use a friendlier name for your command, add the attribute "aliases" to the component which is a comma-delimited list of names.
 
-dir.cfc
+Here is the command `dir` briefly explained:
+``` javascript
 /**
- * List directories
- * 	ex: dir /my/path
- **/	 
-component extends="commandbox.system.BaseCommand" aliases="ls,directory" {
+ * Lists the files and folders in a given directory.  Defaults to current working directory
+ *
+ * dir samples
+ * 
+ **/
+component extends="commandbox.system.BaseCommand" aliases="ls,ll,directory" excludeFromHelp=false {
 
-	/**	
-	 * @directory.hint directory
+	/**
+	 * @directory.hint The directory to list the contents of
 	 * @recurse.hint recursively list
 	 **/
 	function run( String directory="", Boolean recurse=false )  {
-		...
+		// command code goes here
 	}
-
 }
- 
+``` 
 
-********************************************************************************
-COMMANDBOX DEVELOPMENT
-********************************************************************************
+## COMMANDBOX DEVELOPMENT
+
 To hack on the sources, there are two main approaches.
 
 The easiest is to install CommandBox, CD into the project root, and then run:
