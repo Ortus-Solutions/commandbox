@@ -15,8 +15,8 @@ if [ "$HTTP_CLIENT" = "" ]; then
     fi
 fi
 if [ ! -d "$ANT_HOME" ]; then
-        export ANT_HOME=/opt/cfdistro/ant
-        ANTCMD="/bin/sh /opt/cfdistro/ant/bin/ant -nouserlib -f build.xml"
+        export ANT_HOME=$HOME/cfdistro/ant
+        ANTCMD="/bin/sh $HOME/cfdistro/ant/bin/ant -nouserlib -f build.xml"
 fi
 if [ ! -d "$ANT_HOME" ]; then
     if [ -r "$CFDISTRO_ZIP" ]; then
