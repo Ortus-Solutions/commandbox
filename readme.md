@@ -65,7 +65,7 @@ git clone https://github.com/Ortus-Solutions/commandbox
 ```
 Initial build:
 ``` bash
-cd box-cli
+cd commandbox
 ``` 
 ``` bash
 sudo ./box-cli build
