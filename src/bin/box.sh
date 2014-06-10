@@ -50,7 +50,7 @@ Darwin)
 			-Dapple.laf.useScreenMenuBar=true
 			-Xdock:name=CommandBox
 			-Dfile.encoding=UTF-8
-			-Djava.awt.headless=false
+			-Djava.awt.headless=true
 		'
 	fi
 	;;
