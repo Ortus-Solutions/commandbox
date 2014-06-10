@@ -159,7 +159,7 @@ To hack on the sources, there are two main approaches.
 
 The easiest is to install CommandBox, then cd into the {install-directory}/dist directory, and finally run:
 ``` bash
-./box execute ./src/cfml/system/Bootstrap.cfm
+./box execute ../src/cfml/system/Bootstrap.cfm
 ```
 This will load the source version of the shell, instead of the included one.  
 Make any changes you want to the commands in {install-directory}/src/cfml directory, and then at the CommandBox> prompt run "reload", which will load your changes.
