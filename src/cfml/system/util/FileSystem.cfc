@@ -86,33 +86,26 @@ component accessors="true" singleton {
     }
 
     /**
-    * Operating system file opener
-    * @file.hint the file to open
+    * Operating system open files or directories natively
+    * @file.hint the file/directory to open
     */
-    boolean function openFile( required file ){
+    boolean function openNatively( required file ){
     	var desktop = createObject( "java", "java.awt.Desktop" );
 
+    	// open using awt class, if it fails, we are in headless mode.
     	if( desktop.isDesktopSupported() ){
-    		desktop.getDesktop().open( createObject( "java", "java.io.File" ).init( arguments.file ) );
+    		desktop.getDesktop().edit( getJavaFile( arguments.file ) );
     		return true;
-    	}
+    	} 
 
-    	return false;
-    }
-
-    /**
-    * Operating system file editor
-    * @file.hint the file to edit
-    */
-    boolean function editFile( required file ){
-    	var desktop = createObject( "java", "java.awt.Desktop" );
-
-    	if( desktop.isDesktopSupported() ){
-    		desktop.getDesktop().edit( createObject( "java", "java.io.File" ).init( arguments.file ) );
-    		return true;
-    	}
-
-    	return false;
+    	// if we get here, then we don't support desktop awt class, most likely in headless mode.
+    	var runtime = createObject( "java", "java.lang.Runtime" ).getRuntime();
+    	if( isWindows() ){
+    		runtime.exec( [ "rundll32", "url.dll,FileProtocolHandler", getJavaFile( arguments.file ).getCanonicalPath() ] );
+		} else {
+			runtime.exec( [ "/usr/bin/open", getJavaFile( arguments.file ).getCanonicalPath() ] );
+		}
+		return true;
     }
 
     /**
@@ -126,12 +119,36 @@ component accessors="true" singleton {
     		arguments.URI = "http://#arguments.uri#";
     	}
 
+    	// open using awt class, if it fails, we are in headless mode.
     	if( desktop.isDesktopSupported() ){
     		desktop.getDesktop().browse( createObject( "java", "java.net.URI" ).init( arguments.URI ) );
     		return true;
     	}
 
-    	return false;
+    	// if we get here, then we don't support desktop awt class, most likely in headless mode.
+    	var runtime = createObject( "java", "java.lang.Runtime" ).getRuntime();
+    	if( isWindows() ){
+    		// Windows Approach
+    		runtime.exec( [ "rundll32", "url.dll,FileProtocolHandler", arguments.URI ] );
+		} else if ( isMac() ) {
+			// Mac Approach
+			runtime.exec( [ "open", arguments.URI ] );
+		} else {
+			// Default to Linux
+			var browsers = [ "mozilla", "firefox", "opera", "konqueror", "epiphany" ];
+			for( var thisBrowser in browsers ){
+				// try to open them
+				if( runtime.exec( "which #thisBrowser#" ).waitFor() == 0 ){
+					// found it, open
+					runtime.exec( "#thisBrowser# " & arguments.URI );
+					return true;
+				}
+			}
+			// if we get here we could not open it.
+			return false;
+		}
+
+		return true;
     }
 
 }
