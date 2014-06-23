@@ -329,7 +329,17 @@ External Dependencies:
 				<get src="${ortus.repoURL}/launch4j/${launch4j.version}/${launch4j.filename}" 
 					 dest="."
 					 verbose="true" />
-				<untar src="${launch4j.filename}" dest="." compression="gzip"/>
+				<!-- Unzip according to OS -->
+				<antcontrib:if>
+					<os family="windows" />
+					<then>
+						<unzip src="${launch4j.filename}" dest="." overwrite="true"/>
+					</then>
+					<else>
+						<untar src="${launch4j.filename}" dest="." compression="gzip"/>
+					</else>
+				</antcontrib:if>
+				<!-- Removal -->
 				<delete file="${launch4j.filename}" />
 	        </else>
 	    </antcontrib:if>
