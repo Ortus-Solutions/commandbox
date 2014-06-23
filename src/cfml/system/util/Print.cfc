@@ -22,7 +22,8 @@
 */
 component {
 
-	this.cr 		= chr( 10 );
+	property name='cr' inject='cr' scope='this';
+
 	this.tab 		= chr( 9 );
 	this.esc 		= chr( 27 );
 

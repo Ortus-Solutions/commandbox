@@ -389,7 +389,8 @@ component accessors="true" singleton {
 		} else if( !isNull( result ) && len( result ) ) {
 			printString( result );
 			// If the command output text that didn't end with a line break one, add one
-			if( mid( result, len( result ), 1 ) != variables.cr ) {
+			var lastChar = mid( result, len( result ), 1 );
+			if( ! ( lastChar == chr( 10 ) || lastChar == chr( 13 ) ) ) {
 				variables.reader.println();
 			}
 		}
