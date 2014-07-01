@@ -8,22 +8,25 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 	
 	/**
 	 * @clear.hint Erase your history.  
+	 * @repl.hint See the repl history or the command history
 	 **/
-	function run( Boolean clear=false ) {
+	function run( boolean clear=false, boolean repl=false ) {
 		// Get the Java JLine.History object
-		history = shell.getReader().getHistory();
+		var history = shell.getReader().getHistory();
+		// repl History?
+		if( arguments.repl ){
+			history = wirebox.getInstance( "REPLHistoryFile@java" );
+		}
+		
 
 		// Clear the history?		
 		if( arguments.clear ) {
-		
 			history.clear();
 			print.greenLine( 'History cleared.' );
 			// Flush out anything in the buffer
 			history.flush();
-			
 		// Default behavior is just to display history
 		} else {
-			
 			var historyIterator = history.iterator();
 			while( historyIterator.hasNext() ) {
 				print.line( listLast( historyIterator.next(), ':' ) );

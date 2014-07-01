@@ -8,12 +8,16 @@
  **/
 component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
 
+	// repl history file
+	property name="replHistoryFile"	inject="REPLHistoryFile@java";
+
 	/**
 	* Constructor
 	*/
 	function init(){
 		super.init();
 
+		// setup tmp include directories
 		variables.tmpDirRelative = "/commandbox/system/tmp";
 		variables.tmpDirAbsolute = expandPath( "/commandbox/system/tmp" );
 
@@ -30,7 +34,11 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 		var quit 	 = false;
 		var results  = "";
 		var executor = wirebox.getInstance( "executor" );
+		var originalHistory = shell.getReader().getHistory();
 
+		// Setup REPL history file
+		shell.getReader().setHistory( replHistoryFile );
+			
 		// Loop until they choose to quit
 		while( !quit ){
 			// ask repl
@@ -73,7 +81,10 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 				}
 			}
 		}
-
+		// flush history out
+		replHistoryFile.flush();
+		// set back original history
+		shell.getReader().setHistory( originalHistory );
 		// exit
 		print.boldCyanLine( "Bye!" );
 	}

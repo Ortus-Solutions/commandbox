@@ -24,6 +24,7 @@ component extends="wirebox.system.ioc.config.Binder" {
 		var artifactDir		= homedir & "/artifacts";
 		var userDir			= system.getProperty( "user.dir" );
 		var historyFile		= homedir & "/.history";
+		var REPLHistoryFile = homedir & "/.history-repl";
 		var cr				= system.getProperty( "line.separator" );
 		
 		map( 'system' ).toValue( system );
@@ -32,7 +33,14 @@ component extends="wirebox.system.ioc.config.Binder" {
 		map( 'userDir' ).toValue( userDir );
 		map( 'artifactDir' ).toValue( artifactDir );
 		map( 'historyFile' ).toValue( historyFile );
+		map( 'REPLHistoryFile' ).toValue( REPLHistoryFile );
 		map( 'cr' ).toValue( cr );
+
+		// Map Java Classes
+		map( 'historyFile@java' ).toJava( "jline.console.history.FileHistory" )
+			.initWith( createObject( "java", "java.io.File" ).init( historyFile ) );
+		map( 'REPLhistoryFile@java' ).toJava( "jline.console.history.FileHistory" )
+			.initWith( createObject( "java", "java.io.File" ).init( REPLHistoryFile ) );
 		
 		// Map Directories
 		mapDirectory( '/commandbox/system/services' );

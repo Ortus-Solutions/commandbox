@@ -8,12 +8,12 @@
 * The logic to create the console reader was hairy enough I've refactored it out into its own file.
 *
 */
-component singleton {
+component singleton{
 
 	// DI
 	property name="completor" 	inject="Completor";
 	property name="homedir" 	inject="homedir";
-	property name="historyFile"	inject="historyFile";	
+	property name="historyFile"	inject="historyFile@java";	
 	
 	/**
 	* Build a jline console reader instance
@@ -43,9 +43,7 @@ component singleton {
         reader.addCompleter( jCompletor );
 
 		// Create our history file and set it in the console reader
-		var oHistoryFile = createObject( "java", "java.io.File" ).init( historyFile );
-		var history = createObject( "java", "jline.console.history.FileHistory" ).init ( oHistoryFile );
-		reader.setHistory( history );
+		reader.setHistory( historyFile );
 		
 		return reader;
 
