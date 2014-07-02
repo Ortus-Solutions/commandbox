@@ -111,7 +111,7 @@ component accessors="true" singleton {
 	 * run a command line
 	 * @line.hint line to run
  	 **/
-	function runCommandline(line) {
+	function runCommandline( required string line ) {
 
 		// Resolve the command they are wanting to run
 		var commandChain = resolveCommand( line );
@@ -269,6 +269,18 @@ component accessors="true" singleton {
 				// Move help to the beginning
 				tokens.deleteAt( tokens.len() );
 				tokens.prepend( 'help' );
+			}
+			
+			// If the first token looks like a drive letter, then it's just a Windows user trying to "cd" to a different drive
+			// A drive letter for these purposes will be defined as up to 3 letters folowed by a colon and an optional slash.
+			if( tokens.len() && reFind( '^[a-z,A-Z]{1,3}:[\\,/]?$', tokens[1] ) ){
+				var drive = tokens[1];
+				// make sure the drive letter ends with a slash
+				if( !( drive.endsWith( '\' ) || drive.endsWith( '/' ) ) ) {
+					drive &= '\';
+				}
+				// This is the droid you're looking for
+				tokens = [ 'cd', drive ];
 			}
 
 			var results = {
