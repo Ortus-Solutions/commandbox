@@ -9,7 +9,8 @@
 component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
 
 	// repl history file
-	property name="REPLHistoryFile"		inject="REPLHistoryFile@java";
+	property name="commandHistoryFile"		inject="commandHistoryFile@java";
+	property name="REPLScriptHistoryFile"	inject="REPLScriptHistoryFile@java";
 	property name="REPLTagHistoryFile"	inject="REPLTagHistoryFile@java";
 
 	/**
@@ -35,8 +36,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 		var quit 	 		= false;
 		var results  		= "";
 		var executor 		= wirebox.getInstance( "executor" );
-		var originalHistory = shell.getReader().getHistory();
-		var newHistory 		= arguments.script ? variables.REPLHistoryFile : variables.REPLTagHistoryFile;
+		var newHistory 		= arguments.script ? variables.REPLScriptHistoryFile : variables.REPLTagHistoryFile;
 
 		// Setup REPL history file
 		shell.getReader().setHistory( newHistory );
@@ -86,7 +86,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 		// flush history out
 		newHistory.flush();
 		// set back original history
-		shell.getReader().setHistory( originalHistory );
+		shell.getReader().setHistory( commandHistoryFile );
 		// exit
 		print.boldCyanLine( "Bye!" );
 	}

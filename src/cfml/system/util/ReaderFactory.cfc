@@ -11,9 +11,9 @@
 component singleton{
 
 	// DI
-	property name="completor" 	inject="Completor";
-	property name="homedir" 	inject="homedir";
-	property name="historyFile"	inject="historyFile@java";	
+	property name="completor" 			inject="Completor";
+	property name="homedir"				inject="homedir";
+	property name="commandHistoryFile"	inject="commandHistoryFile@java";	
 	
 	/**
 	* Build a jline console reader instance
@@ -43,7 +43,7 @@ component singleton{
         reader.addCompleter( jCompletor );
 
 		// Create our history file and set it in the console reader
-		reader.setHistory( historyFile );
+		reader.setHistory( commandHistoryFile );
 		
 		return reader;
 
