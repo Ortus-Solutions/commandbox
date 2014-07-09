@@ -39,11 +39,14 @@ component extends="wirebox.system.ioc.config.Binder" {
 
 		// Map Java Classes
 		map( 'historyFile@java' ).toJava( "jline.console.history.FileHistory" )
-			.initWith( createObject( "java", "java.io.File" ).init( historyFile ) );
+			.initWith( createObject( "java", "java.io.File" ).init( historyFile ) )
+			.asSingleton();
 		map( 'REPLHistoryFile@java' ).toJava( "jline.console.history.FileHistory" )
-			.initWith( createObject( "java", "java.io.File" ).init( REPLHistoryFile ) );
+			.initWith( createObject( "java", "java.io.File" ).init( REPLHistoryFile ) )
+			.asSingleton();
 		map( 'REPLTagHistoryFile@java' ).toJava( "jline.console.history.FileHistory" )
-			.initWith( createObject( "java", "java.io.File" ).init( REPLTagHistoryFile ) );
+			.initWith( createObject( "java", "java.io.File" ).init( REPLTagHistoryFile ) )
+			.asSingleton();
 		
 		// Map Directories
 		mapDirectory( '/commandbox/system/services' );
