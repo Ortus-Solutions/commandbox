@@ -9,7 +9,8 @@
 component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
 
 	// repl history file
-	property name="replHistoryFile"	inject="REPLHistoryFile@java";
+	property name="REPLHistoryFile"		inject="REPLHistoryFile@java";
+	property name="REPLTagHistoryFile"	inject="REPLTagHistoryFile@java";
 
 	/**
 	* Constructor
@@ -31,13 +32,14 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 		print.cyanLine( "Enter any valid CFML code in the following prompt in order to evaluate it and print out any results (if any)" );
 		print.line( "Type 'quit' or 'q' to exit!" ).toConsole();
 
-		var quit 	 = false;
-		var results  = "";
-		var executor = wirebox.getInstance( "executor" );
+		var quit 	 		= false;
+		var results  		= "";
+		var executor 		= wirebox.getInstance( "executor" );
 		var originalHistory = shell.getReader().getHistory();
+		var newHistory 		= arguments.script ? variables.REPLHistoryFile : variables.REPLTagHistoryFile;
 
 		// Setup REPL history file
-		shell.getReader().setHistory( replHistoryFile );
+		shell.getReader().setHistory( newHistory );
 			
 		// Loop until they choose to quit
 		while( !quit ){
@@ -82,7 +84,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 			}
 		}
 		// flush history out
-		replHistoryFile.flush();
+		newHistory.flush();
 		// set back original history
 		shell.getReader().setHistory( originalHistory );
 		// exit

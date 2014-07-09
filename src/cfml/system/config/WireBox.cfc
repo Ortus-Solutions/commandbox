@@ -18,14 +18,15 @@ component extends="wirebox.system.ioc.config.Binder" {
 		wirebox.logBoxConfig = "commandbox.system.config.LogBox";
 		
 		// Map CONSTANTS
-		var system			= createObject( "java", "java.lang.System" );
-		var homeDir			= system.getProperty( 'user.home' ) & "/.CommandBox";
-		var tempDir			= homedir & "/temp";
-		var artifactDir		= homedir & "/artifacts";
-		var userDir			= system.getProperty( "user.dir" );
-		var historyFile		= homedir & "/.history";
-		var REPLHistoryFile = homedir & "/.history-repl";
-		var cr				= system.getProperty( "line.separator" );
+		var system				= createObject( "java", "java.lang.System" );
+		var homeDir				= system.getProperty( 'user.home' ) & "/.CommandBox";
+		var tempDir				= homedir & "/temp";
+		var artifactDir			= homedir & "/artifacts";
+		var userDir				= system.getProperty( "user.dir" );
+		var historyFile			= homedir & "/.history";
+		var REPLHistoryFile 	= homedir & "/.history-repl";
+		var REPLTagHistoryFile 	= homedir & "/.history-repl-tag";
+		var cr					= system.getProperty( "line.separator" );
 		
 		map( 'system' ).toValue( system );
 		map( 'homeDir' ).toValue( homeDir );
@@ -39,8 +40,10 @@ component extends="wirebox.system.ioc.config.Binder" {
 		// Map Java Classes
 		map( 'historyFile@java' ).toJava( "jline.console.history.FileHistory" )
 			.initWith( createObject( "java", "java.io.File" ).init( historyFile ) );
-		map( 'REPLhistoryFile@java' ).toJava( "jline.console.history.FileHistory" )
+		map( 'REPLHistoryFile@java' ).toJava( "jline.console.history.FileHistory" )
 			.initWith( createObject( "java", "java.io.File" ).init( REPLHistoryFile ) );
+		map( 'REPLTagHistoryFile@java' ).toJava( "jline.console.history.FileHistory" )
+			.initWith( createObject( "java", "java.io.File" ).init( REPLTagHistoryFile ) );
 		
 		// Map Directories
 		mapDirectory( '/commandbox/system/services' );
