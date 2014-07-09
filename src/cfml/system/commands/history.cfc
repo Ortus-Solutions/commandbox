@@ -9,16 +9,15 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 	/**
 	 * @clear.hint Erase your history.  
 	 * @repl.hint See the repl history or the command history
+	 * @tag.hint See the repl tag history or script history
 	 **/
-	function run( boolean clear=false, boolean repl=false ) {
+	function run( boolean clear=false, boolean repl=false, boolean tag=false ) {
 		// Get the Java JLine.History object
 		var history = shell.getReader().getHistory();
 		// repl History?
 		if( arguments.repl ){
-			history = wirebox.getInstance( "REPLHistoryFile@java" );
+			history = arguments.tag ? wirebox.getInstance( "REPLTagHistoryFile@java" ) : wirebox.getInstance( "REPLHistoryFile@java" );
 		}
-		
-
 		// Clear the history?		
 		if( arguments.clear ) {
 			history.clear();
@@ -31,10 +30,8 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 			while( historyIterator.hasNext() ) {
 				print.line( listLast( historyIterator.next(), ':' ) );
 			}
-			
 		} // end clear?
 		
 	}
-
 
 }
