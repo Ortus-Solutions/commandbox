@@ -40,19 +40,11 @@ component accessors="true" singleton {
 	}
 
 	function configure() {
-
-	//	request.start = gettickcount();
         // Load system commands
 		initCommands( instance.systemCommandDirectory, instance.systemCommandDirectory );
 		
-	//	systemOutput( 'System commands... #getTickCount() - request.start# ms', true );
-	//	request.start = gettickcount();
-		
         // Load user commands
-		initCommands( instance.userCommandDirectory, instance.userCommandDirectory );
-		
-	//	systemOutput( 'User commands... #getTickCount() - request.start# ms', true );
-		
+		initCommands( instance.userCommandDirectory, instance.userCommandDirectory );		
 	}
 
 	/**
@@ -84,7 +76,8 @@ component accessors="true" singleton {
 			parameters = [],
 			hint = commandMD.hint ?: '',
 			originalName = commandName,
-			excludeFromHelp = commandMD.excludeFromHelp ?: false
+			excludeFromHelp = commandMD.excludeFromHelp ?: false,
+			commandMD = commandMD
 		};
 
 		// Capture the command's parameters
@@ -420,19 +413,14 @@ component accessors="true" singleton {
 		var commandName = iif( len( commandPath ), de( commandPath & '.' ), '' ) & CFCName;
 		// Build CFC's path
 		var fullCFCPath = baseCommandDirectory & '.' & commandName;
-
-/*		// must extend commandbox.system.BaseCommand, can't be Application.cfc
-		if( CFCName == 'Application' || !isCommandCFC( fullCFCPath ) ) {
-			return;
-		}
-
-		// Check and see if this CFC instance is a command and has a run() method
-		if( !isInstanceOf( command, 'BaseCommand' ) || !structKeyExists( command, 'run' ) ) {
-			return;
-		}*/
 		
 		// Create a nice struct of command metadata
 		var commandData = createCommandData( fullCFCPath, commandName );
+
+		// must extend commandbox.system.BaseCommand, can't be Application.cfc
+		if( CFCName == 'Application' || !isCommandCFC( commandData ) ) {
+			return;
+		}
 
 		// Add it to the command dictionary
 		addToDictionary( commandData, commandPath & '.' & CFCName );
@@ -447,15 +435,33 @@ component accessors="true" singleton {
 	/**
 	* checks if given cfc name is a valid command component
 	*/
-	function isCommandCFC( string cfc ) localmode="true" {
-		try {
-			var meta = getComponentMetaData(cfc);
-			while(true) {
-				if(meta.fullname=='commandbox.system.BaseCommand') return true;
-				if(!structKeyExists(meta,'extends')) return false;
-				meta=meta.extends;
+	function isCommandCFC( commandData ) localmode="true" {
+		var meta = commandData.commandMD;
+		
+		// Make sure command extends BaseCommand
+		var thisMeta = meta;
+		while(true) {
+			// Once we find BaseCommand kick out of the loop
+			if(thisMeta.fullname=='commandbox.system.BaseCommand') {
+				break;
 			}
-		} catch( Any e ){}
+			// If we reach the end of the inheritance chain, we failed.
+			if( !structKeyExists( thisMeta, 'extends' ) ) {
+				return false;	
+			}
+			// Moving pointer
+			thisMeta = thisMeta.extends;
+		}
+					
+		// Make sure command has a run() method
+		for( var func in meta.functions ) {
+			// Loop to find the "run()" method
+			if( func.name == 'run' ) {
+				return true;
+			}
+		}
+		
+		// Didn't find run() method
 		return false;
 	}
 
