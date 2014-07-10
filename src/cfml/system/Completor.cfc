@@ -84,7 +84,7 @@ component singleton {
 			// If we DID find a command and it's followed by a space, then suggest parameters
 			} else {
 				// This is all the possible params for the command
-				var definedParameters = commandInfo.commandReference.$CommandBox.parameters;
+				var definedParameters = commandInfo.commandReference.parameters;
 				// This is the params the user has entered so far.
 				var passedParameters = commandService.parseParameters( commandInfo.parameters );
 
@@ -213,6 +213,7 @@ component singleton {
 			return len( buffer );
 
 		} catch ( any e ) {
+			rethrow;
 			// by default, errors thrown from proxied components are useless and don't have an actual stack trace.
 			shell.printError( e );
 			return 0;

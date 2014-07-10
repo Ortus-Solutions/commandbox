@@ -69,9 +69,9 @@ component extends="commandbox.system.BaseCommand" aliases="h,/?,?,--help,-help" 
 			for( var node in commandHierarchy ) {
 				var thisCommand = commandHierarchy[ node ];
 				// Is this node a command
-				if( isObject( thisCommand ) ) {
-					var originalCommandName = thisCommand.$CommandBox.originalName;
-					var excludeFromHelp = thisCommand.$CommandBox.excludeFromHelp;
+				if( structKeyExists( thisCommand, '$' ) ) {
+					var originalCommandName = thisCommand[ '$' ].originalName;
+					var excludeFromHelp = thisCommand[ '$' ].excludeFromHelp;
 					// Only grab original commands to filter out aliases
 					// Also don't include if the command is flagged to hide from help
 					if( originalCommandName == listAppend( commandRoot, node, '.' )  &&  !excludeFromHelp ) {
@@ -138,13 +138,13 @@ component extends="commandbox.system.BaseCommand" aliases="h,/?,?,--help,-help" 
 	private function printCommandHelp( required string command, required any commandInfo ) {
 		var commandRefernce = commandInfo.commandReference;
 		// Original command name, to tell if "command" is an alias
-		var originalCommandName = listChangeDelims( commandRefernce.$CommandBox.originalName, ' ', '.');
+		var originalCommandName = listChangeDelims( commandRefernce.originalName, ' ', '.');
 		// CFC hint
-		var commandHint = commandRefernce.$CommandBox.hint;
+		var commandHint = commandRefernce.hint;
 		// run() method's parameters
-		var commandParameters = commandRefernce.$CommandBox.parameters;
+		var commandParameters = commandRefernce.parameters;
 		// A command by any other name...
-		var aliases = duplicate( commandRefernce.$CommandBox.aliases );
+		var aliases = duplicate( commandRefernce.aliases );
 		// We are viewing help for an alias
 		if( originalCommandName != command ) {
 			// Swap out the original name into the alias list

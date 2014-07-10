@@ -1,8 +1,8 @@
 component name="TestPrint" extends="mxunit.framework.TestCase" {
 
 	public void function testPrint()  {
-		print = new commandbox.system.util.Print();
-		cr = chr(10);
+		print = application.wirebox.getInstance( 'Print' );
+		cr = print.cr;
 		
 		// Basic text output
 		assertTrue( print.text( '' ) == '[0m' );

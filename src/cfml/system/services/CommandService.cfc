@@ -41,14 +41,18 @@ component accessors="true" singleton {
 
 	function configure() {
 
-	//	systemOutput( 'System commands...', true );
+	//	request.start = gettickcount();
         // Load system commands
 		initCommands( instance.systemCommandDirectory, instance.systemCommandDirectory );
-	//	systemOutput( 'User commands...', true );
+		
+	//	systemOutput( 'System commands... #getTickCount() - request.start# ms', true );
+	//	request.start = gettickcount();
+		
         // Load user commands
 		initCommands( instance.userCommandDirectory, instance.userCommandDirectory );
-	//	systemOutput( 'Done...', true );
-
+		
+	//	systemOutput( 'User commands... #getTickCount() - request.start# ms', true );
+		
 	}
 
 	/**
@@ -56,11 +60,11 @@ component accessors="true" singleton {
 	 **/
 	function initCommands( baseCommandDirectory, commandDirectory, commandPath='' ) {
 		var varDirs = DirectoryList( path=commandDirectory, recurse=false, listInfo='query', sort='type desc, name asc' );
-		for(var dir in varDirs){
+		for( var dir in varDirs ){
 
 			// For CFC files, process them as a command
 			if( dir.type  == 'File' && listLast( dir.name, '.' ) == 'cfc' ) {
-				loadCommand( baseCommandDirectory, dir.name, commandPath );
+				registerCommand( baseCommandDirectory, dir.name, commandPath );
 			// For folders, search them for commands
 			} else {
 				initCommands( baseCommandDirectory, dir.directory & '\' & dir.name, listAppend( commandPath, dir.name, '.' ) );
@@ -70,28 +74,31 @@ component accessors="true" singleton {
 
 	}
 
-	function decorateCommand( required command, required commandName ) {
-		// Grab its metadata
-		var CFCMD = getMetadata( command );
-
-		// Set up metadata struct
-		var commandMD = {
-			aliases = listToArray( CFCMD.aliases ?: '' ),
+	private function createCommandData( required fullCFCPath, required commandName ) {
+		var commandMD = getComponentMetadata( fullCFCPath ); 
+		
+		// Set up of command data
+		var commandData = {
+			fullCFCPath = arguments.fullCFCPath,
+			aliases = listToArray( commandMD.aliases ?: '' ),
 			parameters = [],
-			hint = CFCMD.hint ?: '',
+			hint = commandMD.hint ?: '',
 			originalName = commandName,
-			excludeFromHelp = CFCMD.excludeFromHelp ?: false
+			excludeFromHelp = commandMD.excludeFromHelp ?: false
 		};
 
 		// Capture the command's parameters
-		commandMD.parameters = getMetaData(command.run).parameters;
-
-		// Inject metadata into command CFC
-		command.$CommandBox = commandMD;
-
+		for( var func in commandMD.functions ) {
+			// Loop to find the "run()" method
+			if( func.name == 'run' ) {
+				commandData.parameters = func.parameters;
+				break;				
+			}
+		}
+		return commandData;
 	}
 
-	function registerCommand( required command, required commandPath ) {
+	function addToDictionary( required command, required commandPath ) {
 		// Build bracketed string of command path to allow special characters
 		var commandPathBracket = '';
 		var commandName = '';
@@ -101,7 +108,7 @@ component accessors="true" singleton {
 		}
 
 		// Register the command in our command dictionary
-		evaluate( "instance.commands#commandPathBracket# = command" );
+		evaluate( "instance.commands#commandPathBracket#[ '$' ] = command" );
 
 		// And again here in this flat collection for help usage
 		instance.flattenedCommands[ trim(commandName) ] = command;
@@ -130,7 +137,7 @@ component accessors="true" singleton {
 			}
 
 			// For help commands squish all the parameters together into one exactly as typed
-			if( listLast( commandInfo.commandReference.$CommandBox.originalName, '.' ) == 'help' ) {
+			if( listLast( commandInfo.commandReference.originalName, '.' ) == 'help' ) {
 				var parameterInfo = {
 					positionalParameters = [ arrayToList( commandInfo.parameters, ' ' ) ],
 					namedParameters = {}
@@ -147,7 +154,7 @@ component accessors="true" singleton {
 			}
 
 			// These are the parameters declared by the command CFC
-			var commandParams = commandInfo.commandReference.$CommandBox.parameters;
+			var commandParams = commandInfo.commandReference.parameters;
 
 			// If this is not the first command in the chain,
 			// set its first parameter with the output from the last command
@@ -168,18 +175,34 @@ component accessors="true" singleton {
 
 			// Make sure we have all required params.
 			parameterInfo.namedParameters = ensureRequiredParams( parameterInfo.namedParameters, commandParams );
+	
+			// Check for actual CFC instance, and lazy load if neccessary
+			if( !structKeyExists( commandInfo.commandReference, 'CFC' ) ) {
+				// Create this command CFC
+				try {
+					commandInfo.commandReference.CFC = wireBox.getInstance( commandInfo.commandReference.fullCFCPath );
+				// This will catch nasty parse errors so the shell can keep loading
+				} catch( any e ) {
+					systemOutput( 'Error loading command [#commandInfo.commandReference.fullCFCPath#]#CR##CR#' );
+					logger.error( 'Error loading command [#commandInfo.commandReference.fullCFCPath#]. #e.message# #e.detail ?: ''#', e.stackTrace );
+					// pretty print the exception
+					shell.printError( e );
+					return '';
+				}
+			} // CFC exists check
+			
 
 			// Reset the printBuffer
-			commandInfo.commandReference.reset();
+			commandInfo.commandReference.CFC.reset();
 
 			// If there are currently executing commands, flush out the print buffer from the last one
 			// This will prevent the output from showing up out of order if one command nests a call to another.
 			if( instance.callStack.len() ) {
 				// Print anything in the buffer
-				shell.printString( instance.callStack[1].commandReference.getResult() );
+				shell.printString( instance.callStack[1].commandReference.CFC.getResult() );
 				// And reset it now that it's been printed.
 				// This command can add more to the buffer once it's executing again.
-				instance.callStack[1].commandReference.reset();
+				instance.callStack[1].commandReference.CFC.reset();
 			}
 
 			// Add command to the top of the stack
@@ -187,10 +210,10 @@ component accessors="true" singleton {
 
 			// Run the command
 			try {
-				var result = commandInfo.commandReference.run( argumentCollection = parameterInfo.namedParameters );
+				var result = commandInfo.commandReference.CFC.run( argumentCollection = parameterInfo.namedParameters );
 			} catch( any e ) {
 				// Dump out anything the command had printed so far
-				var result = commandInfo.commandReference.getResult();
+				var result = commandInfo.commandReference.CFC.getResult();
 				if( len( result ) ) {
 					shell.printString( result & cr );
 				}
@@ -205,7 +228,7 @@ component accessors="true" singleton {
 
 			// If the command didn't return anything, grab its print buffer value
 			if( isNull( result ) ) {
-				result = commandInfo.commandReference.getResult();
+				result = commandInfo.commandReference.CFC.getResult();
 			}
 
 
@@ -302,13 +325,17 @@ component accessors="true" singleton {
 				results.commandString = listAppend( results.commandString, token, '.' );
 				results.commandReference = results.commandReference[ token ];
 
-				// If we've reached a CFC, we're done
-				if( isObject( results.commandReference ) ) {
+				// If we've reached a command, we're done
+				if( structKeyExists( results.commandReference, '$' ) ) {
 					results.found = true;
+					
+					// Actual command data stored in a nested struct
+					results.commandReference = results.commandReference[ '$' ];
+					
 					break;
 				// If this is a folder, check and see if it has a "help" command
 				} else {
-					if( structKeyExists( results.commandReference, 'help' ) && isObject( results.commandReference.help ) ) {
+					if( structKeyExists( results.commandReference, 'help' ) && structKeyExists( results.commandReference.help, '$' ) ) {
 						results.closestHelpCommand = listChangeDelims( results.commandString, ' ', '.' ) & ' help';
 					}
 				}
@@ -322,7 +349,7 @@ component accessors="true" singleton {
 			if( results.found && commandLength < tokensLength ) {
 				results.parameters = tokens.slice( commandLength+1 );
 			}
-
+			
 			commandChain.append( results );
 
 		} // end loop over commands to resolve
@@ -386,7 +413,7 @@ component accessors="true" singleton {
 	 * @cfc.hint CFC name that represents the command
 	 * @commandPath.hint The relative dot-delimted path to the CFC starting in the commands dir
 	 **/
-	private function loadCommand( baseCommandDirectory, CFC, commandPath ) {
+	private function registerCommand( baseCommandDirectory, CFC, commandPath ) {
 
 		// Strip cfc extension from filename
 		var CFCName = mid( CFC, 1, len( CFC ) - 4 );
@@ -394,38 +421,26 @@ component accessors="true" singleton {
 		// Build CFC's path
 		var fullCFCPath = baseCommandDirectory & '.' & commandName;
 
-		// must extend commandbox.system.BaseCommand, can't be Application.cfc
-		if( CFCName == 'Application' || !isCommandCFC(fullCFCPath) ) {
-			return;
-		}
-
-		// Create this command CFC
-		try {
-			var command = wireBox.getInstance( fullCFCPath );
-		// This will catch nasty parse errors so the shell can keep loading
-		} catch( any e ) {
-			systemOutput( 'Error loading command [#fullCFCPath#]#CR##CR#' );
-			logger.error( 'Error loading command [#fullCFCPath#]. #e.message# #e.detail ?: ''#', e.stackTrace );
-			// pretty print the exception
-			shell.printError( e );
+/*		// must extend commandbox.system.BaseCommand, can't be Application.cfc
+		if( CFCName == 'Application' || !isCommandCFC( fullCFCPath ) ) {
 			return;
 		}
 
 		// Check and see if this CFC instance is a command and has a run() method
 		if( !isInstanceOf( command, 'BaseCommand' ) || !structKeyExists( command, 'run' ) ) {
 			return;
-		}
-
-		// Mix in some metadata
-		decorateCommand( command, commandName );
+		}*/
+		
+		// Create a nice struct of command metadata
+		var commandData = createCommandData( fullCFCPath, commandName );
 
 		// Add it to the command dictionary
-		registerCommand( command, commandPath & '.' & CFCName );
+		addToDictionary( commandData, commandPath & '.' & CFCName );
 
 		// Register the aliases
-		for( var alias in command.$CommandBox.aliases ) {
+		for( var alias in commandData.aliases ) {
 			// Alias is allowed to be anything.  This means it may even overwrite another command already loaded.
-			registerCommand( command, listChangeDelims( trim( alias ), '.', ' ' ) );
+			addToDictionary( commandData, listChangeDelims( trim( alias ), '.', ' ' ) );
 		}
 	}
 
@@ -440,7 +455,7 @@ component accessors="true" singleton {
 				if(!structKeyExists(meta,'extends')) return false;
 				meta=meta.extends;
 			}
-		} catch(e){}
+		} catch( Any e ){}
 		return false;
 	}
 
