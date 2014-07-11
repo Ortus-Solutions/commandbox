@@ -89,42 +89,8 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 
 	// Dynamic completion for property name based on contents of box.json
 	function completeProperty() {
-		arguments.directory = fileSystemUtil.resolvePath( '' );
-		var props = [];
-		
-		// Check and see if box.json exists
-		var boxJSONPath = arguments.directory & '/box.json';
-		if( fileExists( boxJSONPath ) ) {
-			boxJSON = packageService.readPackageDescriptor( arguments.directory );
-			props = addProp( props, '', boxJSON );			
-		}
-		return props;		
+		var directory = fileSystemUtil.resolvePath( '' );
+		return packageService.completeProperty( directory );				
 	}
 	
-	// Recursive function to crawl box.json and create a string that represents each property.
-	private function addProp( props, prop, boxJSON ) {
-		var propValue = ( len( prop ) ? evaluate( 'boxJSON.#prop#' ) : boxJSON );
-		
-		if( isStruct( propValue ) ) {
-			// Add all of this struct's keys
-			for( var thisProp in propValue ) {
-				var newProp = listAppend( prop, thisProp, '.' );
-				props.append( newProp );
-				props = addProp( props, newProp, boxJSON );
-			}			
-		}
-		
-		if( isArray( propValue ) ) {
-			// Add all of this array's indexes
-			var i = 0;
-			while( ++i <= propValue.len() ) {
-				var newProp = '#prop#[#i#]';
-				props.append( newProp );
-				props = addProp( props, newProp, boxJSON );
-			}
-		}
-		
-		return props;
-	}
-
 }
