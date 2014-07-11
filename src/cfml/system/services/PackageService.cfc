@@ -11,6 +11,7 @@ component accessors="true" singleton {
 
 	// DI 
 	property name="shell" inject="shell";
+	property name="formatterUtil" inject="formatter";
 
 	/**
 	* Constructor
@@ -62,6 +63,21 @@ component accessors="true" singleton {
 		
 		// Just return defaults
 		return newPackageDescriptor();	
+	}
+
+	/**
+	* Write the box.json data as a JSON file
+	* @JSONData.hint The JSON data to write to the file. Can be a struct, or the string JSON
+	* @directory.hint The directory to write the box.json
+	*/
+	function writePackageDescriptor( required any JSONData, required directory ){
+		
+		if( !isSimpleValue( JSONData ) ) {
+			JSONData = serializeJSON( JSONData );
+		}
+
+		var boxJSONPath = directory & '/box.json';
+		fileWrite( boxJSONPath, formatterUtil.formatJSON( JSONData ) );	
 	}
 
 }

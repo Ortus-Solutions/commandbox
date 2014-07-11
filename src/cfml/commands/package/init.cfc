@@ -7,7 +7,6 @@
 component extends="commandbox.system.BaseCommand" aliases="init" excludeFromHelp=false {
 
 	property name="PackageService" inject="PackageService";
-	property name="formatterUtil" inject="formatter";
 
 	/**
 	 * @packageName.hint The humnan-readable name for this package 
@@ -16,29 +15,24 @@ component extends="commandbox.system.BaseCommand" aliases="init" excludeFromHelp
 	 * @force.hint Do not prompt, overwrite if exists
 	 **/
 	function run( packageName='myApplication', slug='mySlug', directory='', Boolean force=false ) {
-		if( !len( directory ) ) {
-			directory = shell.pwd();
-		}
+		
+		// This will make each directory canonical and absolute		
+		arguments.directory = fileSystemUtil.resolvePath( '' );
 		
 		// Validate directory
-		if( !directoryExists( directory ) ) {
-			return error( 'Directory #directory# does not exist.' );
+		if( !directoryExists( arguments.directory ) ) {
+			return error( 'Directory #arguments.directory# does not exist.' );
 		}
 		
 		// Spin up a new box.json with our defaults
 		var boxJSON = PackageService.newPackageDescriptor( { "name" : arguments.packageName, "slug" : arguments.slug } );
 		
-		// Clean up directory
-		if( listFind( '\,/', right( directory, 1 ) ) ) {
-			directory = mid( directory, 1, len( directory )-1  );
-		}
-		
 		// This is where we will write the box.json file
-		var boxfile = directory & "/box.json";
+		var boxfile = arguments.directory & "/box.json";
 	
 		// If the file doesn't exist, or we are forcing, just do it!
 		if( !fileExists( boxfile ) || force ) {
-			fileWrite( boxfile, formatterUtil.formatJson( boxJSON ) );
+			PackageService.writePackageDescriptor( boxJSON, arguments.directory );
 			
 			print.greenLine( 'Package Initialized!' );
 			print.greenLine( 'Created ' & boxfile );
@@ -47,7 +41,7 @@ component extends="commandbox.system.BaseCommand" aliases="init" excludeFromHelp
 		} else {
 			// Ask the user what they want to do
 			if( confirm( '#boxfile# already exists, overwrite? [y/n]') ) {
-				fileWrite( boxfile, formatterUtil.formatJson( boxJSON ) );
+				PackageService.writePackageDescriptor( boxJSON, arguments.directory );
 				
 				print.greenLine( 'Package Initialized!' );
 				print.line( boxfile );
