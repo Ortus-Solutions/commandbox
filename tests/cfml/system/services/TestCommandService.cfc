@@ -25,14 +25,16 @@ component extends="mxunit.framework.TestCase" {
 	public void function testRunCommandLine()  {
 		result = commandService.runCommandLine( "help" );
 	}
-		
+	
 	public void function parsePositionalParams()  {
 		result = commandService.resolveCommand( "info test foobar 
 													""goo"" 
 													'doo' 
 													 ""this is a test"" 
 													 test\""er 
-													 12\=34" );
+													 12\=34
+													 '12\\\""34'
+													 'test\\'" );
 		params = result[ 1 ].parameters;
 		
 		assertEquals( params[ 1 ], 'test' );
@@ -42,15 +44,20 @@ component extends="mxunit.framework.TestCase" {
 		assertEquals( params[ 5 ], '"this is a test"' );
 		assertEquals( params[ 6 ], 'test\"er' );
 		assertEquals( params[ 7 ], '12\=34' );
+		assertEquals( params[ 8 ], "'12\\\""34'" );
+		assertEquals( params[ 9 ], "'test\\'" );
 	}
-		
+	
 	public void function escapePositionalParams()  {
 		result = commandService.resolveCommand( "info test foobar 
 													""goo"" 
 													'doo' 
 													 ""this is a test"" 
 													 test\""er 
-													 12\=34" );
+													 12\=34 
+													 '12\\\""34'
+													 'widget\\'
+													 r" );
 		params = result[ 1 ].parameters;
 		result = commandService.parseParameters( params );
 													 
@@ -63,11 +70,14 @@ component extends="mxunit.framework.TestCase" {
 		assertEquals( params[ 5 ], 'this is a test' );
 		assertEquals( params[ 6 ], 'test"er' );
 		assertEquals( params[ 7 ], '12=34' );
+		assertEquals( params[ 8 ], '12\"34' );
+		assertEquals( params[ 9 ], 'widget\' );
+		assertEquals( params[ 10 ], 'r' );
 								
 	}
 	
 		
-	public void function parsePositionalParams()  {
+	public void function parseNamedParams()  {
 		result = commandService.resolveCommand( "info 
 												param=1 
 												arg=""no""
@@ -89,7 +99,7 @@ component extends="mxunit.framework.TestCase" {
 		assertEquals( params[ 8 ], 'tester2="YOU2"' );
 	}
 		
-	public void function escapePositionalParams()  {
+	public void function escapeNamedParams()  {
 		result = commandService.resolveCommand( "info 
 												param=1 
 												arg=""no""

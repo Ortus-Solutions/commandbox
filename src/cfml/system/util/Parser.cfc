@@ -40,6 +40,8 @@ component {
 		var isWaitingOnValue = false;
 		// The previous character to handle escape chars.
 		var prevChar = '';
+		// The previous character was escaped
+		var prevEscaped = false;
 		// Pointer to the current character
 		var i = 0;
 		
@@ -53,7 +55,7 @@ component {
 			isEscaped = false;
 			
 			// This character might be escaped
-			if( prevChar == '\' ) {
+			if( prevChar == '\' && !prevEscaped ) {
 				isEscaped = true;
 			}
 			
@@ -66,6 +68,7 @@ component {
 					tokens.append( token);
 					token = '';
 				}
+				prevEscaped = isEscaped;
 				prevChar = char;
 				continue;
 			}
@@ -77,10 +80,12 @@ component {
 				// Don't break if an = is next ...
 				if( left( trim( remainingChars ), 1 ) == '=' ) {
 					isWaitingOnValue = true;
+					prevEscaped = isEscaped;
 					prevChar = char;
 					continue;
 				// ... or if we just processed one and we're waiting on the value.
 				} else if( isWaitingOnValue ) {
+					prevEscaped = isEscaped;
 					prevChar = char;
 					continue;
 				// Append what we have and start anew
@@ -89,6 +94,7 @@ component {
 						tokens.append( token);
 						token = '';					
 					}
+					prevEscaped = isEscaped;
 					prevChar = char;
 					continue;
 				}
@@ -109,6 +115,7 @@ component {
 				isWaitingOnValue = false;
 			}
 			
+			prevEscaped = isEscaped;
 			prevChar = char;
 			
 		} // end while
@@ -158,6 +165,9 @@ component {
 				
 			// Positional params
 			} else {
+				if(param contains 'widget'){
+					//writeDump(param);abort;
+				}
 				// Unwrap quotes from value if used
 				param = unwrapQuotes( param );
 				param = replaceEscapedChars( param );
@@ -178,12 +188,14 @@ component {
 	}
 	
 	private function removeEscapedChars( theString ) {
+		theString = replaceNoCase( theString, "\\", '__backSlash__', "all" );
 		theString = replaceNoCase( theString, "\'", '__singleQuote__', "all" );
 		theString = replaceNoCase( theString, '\"', '__doubleQuote__', "all" );
 		return		replaceNoCase( theString, '\=', '__equalSign__', "all" );
 	}
 	
 	private function replaceEscapedChars( theString ) {
+		theString = replaceNoCase( theString, '__backSlash__', "\", "all" );
 		theString = replaceNoCase( theString, '__singleQuote__', "'", "all" );
 		theString = replaceNoCase( theString, '__doubleQuote__', '"', "all" );
 		return		replaceNoCase( theString, '__equalSign__', '=', "all" );

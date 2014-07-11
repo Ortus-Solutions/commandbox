@@ -2,29 +2,45 @@
  * The recipe commands allows you to execute a collection of CommandBox commands
  * usually in a file.boxr recipe file.  CommandBox will iterate and execute each
  * of the commands for you in succession. You can also bind the recipe with arguments
- * that will be replaced inside of your recipe.  The arguments is a form of query string.
- * Ex: name:luis&action:create that will be used in side of your recipe using @name@ notation.
- * 
- * recipe buildSite.boxr name:luis&action:create
+ * that will be replaced inside of your recipe.  Pass any arguments as additional parameters 
+ * to the recipe command.  Named arguments will be accessable via $arg1Name, $artg2Name, etc. 
+ * Positional args will be avaialble as $1, $2, etc.
+ * Lines that start with a # will be ignored as comments.
+ * .
+ * # Recipe will receive $name and $action
+ * recipe buildSite.boxr name=luis action=create
+ * .
+ * # Recipe will receive $1 and $2
+ * recipe buildSite.boxr luis create
  * 
  **/
 component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false{
 
 	/**
-	 * @file.hint The recipe file to execute
-	 * @arguments.hint The arguments to bind to this recipe, in query string format. Ex: name:luis&action:create
+	 * @recipeFile.hint The name of the recipe file to execute including extension
 	 **/
-	function run( required file, arguments="" ){
+	function run( required recipeFile ){
 		// store original path
 		var originalPath = shell.pwd();
 		// Make file canonical and absolute
-		arguments.file = fileSystemUtil.resolvePath( arguments.file );
+		arguments.recipeFile = fileSystemUtil.resolvePath( arguments.recipeFile );
+		
+		// Validate the file
+		if( !fileExists( arguments.recipeFile ) ){
+			return error( "File: #arguments.recipeFile# does not exist!" );
+		}
+		
 		// read it
-		var recipe = fileRead( arguments.file );		
-		// split commands using carriage return
-		var commands = listToArray( recipe, chr( 10 ) );
-		// Parse Commands
-		var sArgs = parseArguments( arguments.arguments );
+		var recipe = fileRead( arguments.recipeFile );
+		
+		// Parse arguments
+		var sArgs = parseArguments( arguments );
+		
+		// bind commands with arguments
+		recipe = bindArgs( recipe, sArgs );
+		
+		// split commands using carriage returns and/or line feeds
+		var commands = listToArray( recipe, chr( 10 ) & chr( 13 ) );
 		
 		// iterate and execute.
 		for( var thisCommand in commands ){
@@ -36,13 +52,11 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 			}
 			
 			try{
-				// bind command with arguments
-				thisCommand = bindCommand( thisCommand, sArgs );
 				// run Command
-				runCommand( trim( thisCommand ) );
+				runCommand( thisCommand );
 
 			} catch( any e ){
-				print.boldGreen( "Error executing command #trim( thiscommand )#, exiting recipe." );
+				print.boldGreen( "Error executing command #thiscommand#, exiting recipe." );
 				return error( '#e.message##CR##e.detail##CR##e.stackTrace#' );
 			}
 		}
@@ -54,36 +68,41 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 	/**
 	* Bind arguments to commands
 	*/
-	private string function bindCommand( required command, required struct args ){
+	private string function bindArgs( required commands, required struct args ){
 		// iterate and bind.
 		for( var thisArg in arguments.args ){
-			arguments.command = replaceNoCase( arguments.command, "@#thisArg#@", arguments.args[ thisArg ], "all" );
+			argValue = escapeArg( arguments.args[ thisArg ] );
+			arguments.commands = replaceNoCase( arguments.commands, thisArg, argValue, "all" );
 		}
-		return arguments.command;
+		return arguments.commands;
 	}
 
 	/**
 	* Parse arguments and return a collection
 	*/
-	private struct function parseArguments( required string args ){
-		var results = {};
-		// cleanup
-		arguments.args = trim( arguments.args );
-		// verify length
-		if( !len( arguments.args ) ){ return {}; }
-		// get a list
-		var aArgs = listToArray( arguments.args, "&" );
-		// iterate and create
-		for( var thisArg in aArgs ){
-			// if we have a name value pair, then use it
-			if( listLen( thisArg, ":" ) ){
-				results[ listFirst( thisArg, ":" ) ] = getToken( thisArg, 2, ":" );
-			} else {
-				results[ listFirst( thisArg, ":" ) ] = "";
+	private struct function parseArguments( required args ){
+		var parsedArgs = {};
+		
+		for( var arg in args ) {
+			argName = arg;
+			if( !isNull( args[arg] ) && arg != 'recipeFile' ) {
+				// If positional args, decrement so they start at 1
+				if( isNumeric( argName ) ) {
+					argName--;
+				}
+				parsedArgs[ '$' & argName ] = args[arg];
 			}
 		}
-
-		return results;
+		return parsedArgs;
 	}
 
+	/**
+	* Escapes a value and wraps it in quotes for inclusion in a command
+	* Replaces " and ' with \" and \' 
+	*/
+	private string function escapeArg( argValue ) {
+		arguments.argValue = replace( arguments.argValue, '"', '\"', 'all' );
+		arguments.argValue = replace( arguments.argValue, "'", "\", "all" );
+		return '"#arguments.argValue#"';
+	}
 }
