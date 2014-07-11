@@ -213,8 +213,6 @@ component singleton {
 			return len( buffer );
 
 		} catch ( any e ) {
-			writeDump(e);abort;
-			rethrow;
 			// by default, errors thrown from proxied components are useless and don't have an actual stack trace.
 			shell.printError( e );
 			return 0;
@@ -235,15 +233,15 @@ component singleton {
 		
 		if( structKeyExists( completorData, paramName ) ) {
 			// Add static values
-			if( structKeyExists( completorData[ paramName ], 'values' ) ) {
-				addAll( candidates, completorData[ paramName ][ 'values' ] );
+			if( structKeyExists( completorData[ paramName ], 'options' ) ) {
+				addAllIfMatch( candidates, completorData[ paramName ][ 'options' ], paramSoFar );
 			}
 			// Call function to populate dynamic values
-			if( structKeyExists( completorData[ paramName ], 'function' ) ) {
-				var completorFunctionName = completorData[ paramName ][ 'function' ];
+			if( structKeyExists( completorData[ paramName ], 'optionsUDF' ) ) {
+				var completorFunctionName = completorData[ paramName ][ 'optionsUDF' ];
 				var additions = commandInfo.commandReference.CFC[ completorFunctionName ]();
 				if( isArray( additions ) ) {
-					addAll( candidates, additions );
+					addAllIfMatch( candidates, additions, paramSoFar );
 				}
 			}
 			// Completor annotations override default
@@ -252,8 +250,8 @@ component singleton {
 
 		switch(paramType) {
 			case "Boolean" :
-           		addCandidateIfMatch("true ",paramSoFar,candidates);
-           		addCandidateIfMatch("false ",paramSoFar,candidates);
+           		addCandidateIfMatch( "true", paramSoFar, candidates );
+           		addCandidateIfMatch( "false", paramSoFar, candidates );
 				break;
 		}
 		
@@ -279,9 +277,9 @@ component singleton {
 	 * @candidates.hint Java TreeSet object
 	 * @additions.hint array of values to add
  	 **/
-	private function addAll( candidates, array additions ) {
+	private function addAllIfMatch( candidates, array additions, paramSoFar ) {
 		for( var addition in additions ) {
-			candidates.add( javaCast( 'string', addition ) );
+       		addCandidateIfMatch( addition, arguments.paramSoFar, arguments.candidates );
 		}
 	}
 
@@ -365,11 +363,11 @@ component singleton {
 	 * @startsWith.hint text typed so far
 	 * @candidates.hint tree to populate with completion candidates
  	 **/
-	private function addCandidateIfMatch(required match, required startsWith, required candidates) {
-		match = lcase(match);
-		startsWith = lcase(startsWith);
-		if(match.startsWith(startsWith) || len(startsWith) == 0) {
-			candidates.add(match);
+	private function addCandidateIfMatch( required match, required startsWith, required candidates ) {
+		match = lcase( match );
+		startsWith = lcase( startsWith );
+		if( match.startsWith( startsWith ) || len( startsWith ) == 0 ) {
+			candidates.add( match & ' ' );
 		}
 	}
 

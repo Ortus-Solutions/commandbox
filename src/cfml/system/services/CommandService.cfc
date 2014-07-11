@@ -91,13 +91,13 @@ component accessors="true" singleton {
 					// Grab completor annotations if they exists while we're here
 					// We'll save these out in a struct indexed by param name for easy finding
 					for( var param in func.parameters ) {
-						if( structKeyExists( param, 'completorValues' ) ) {
+						if( structKeyExists( param, 'options' ) ) {
 							// Turn comma-delimited list of static values into an array
-							commandData.completor[ param.name ][ 'values' ] = listToArray( param.completorValues );
+							commandData.completor[ param.name ][ 'options' ] = listToArray( param.options );
 						}
-						if( structKeyExists( param, 'completorFunction' ) ) {
+						if( structKeyExists( param, 'optionsUDF' ) ) {
 							// Grab name of completor function for this param
-							commandData.completor[ param.name ][ 'function' ] = param.completorFunction;
+							commandData.completor[ param.name ][ 'optionsUDF' ] = param.optionsUDF;
 						}
 					}
 					

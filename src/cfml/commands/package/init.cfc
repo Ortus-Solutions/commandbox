@@ -4,7 +4,7 @@
  * init
  * 
  **/
-component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
+component extends="commandbox.system.BaseCommand" aliases="init" excludeFromHelp=false {
 
 	property name="PackageService" inject="PackageService";
 	property name="formatterUtil" inject="formatter";
