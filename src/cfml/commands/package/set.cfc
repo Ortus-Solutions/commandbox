@@ -1,20 +1,23 @@
 /**
- * Use this command to view values set in box.json for this package.  Command must be executed from the root
+ * Use this command to set values set in box.json for this package.  Command must be executed from the root
  * directory of the package where box.json lives.
- * Nested attributes may be accessed by specifying dot-delimited names or using array notation.
- * If the accessed property is a complex value, the JSON representation will be displayed
+ * Nested attributes may be set by specifying dot-delimited names or using array notation.
+ * If the set value is JSON, it will be stored as a complex value in the box.json.
  * .
- * # outputs package name
- * package show name
+ * # set package name
+ * package set name=myPackage
  * .
- * # outputs package keywords
- * package show keywords
+ * # set repo type
+ * package set repository.type=Git
  * .
- * # outputs testbox runner(s)
- * package show testbox.runner
+ * # set first testbox notify E-mail
+ * package set testbox.notify.email[1]="brad@bradwood.com"
  * .
- * # outputs the first testbox notify E-mail
- * package show testbox.notify.emails[1]
+ * # Set multiple params at once
+ * package set name=myPackage version="1.0.0.000" author="Brad Wood" slug="foo"
+ * .
+ * # Set complex value as JSON
+ * package set testbox.notify.emails="[ 'test@test.com', 'me@example.com' ]"
  * .
  **/
 component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
@@ -22,34 +25,40 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 	property name="packageService" inject="PackageService"; 
 	
 	/**
-	 * @property.hint The name of the property to show.  Can nested to get "deep" properties
-	 * @property.optionsUDF completeProperty
+	 * This param is a dummy param just to get the custom completor to work.
+	 * The actual parameter names will be whatever property name the user wants to set  
+	 * @_.hint Pass any number of property names in followed by the value to set 
+	 * @_.optionsUDF completeProperty
 	 **/
-	function run( required string property ) {
+	function run( _ ) {
+		// Remove dummy arg
+		structDelete( arguments, '_' );
 		
 		// This will make each directory canonical and absolute		
-		arguments.directory = fileSystemUtil.resolvePath( '' );
+		var directory = fileSystemUtil.resolvePath( '' );
 				
 		// Check and see if box.json exists
-		var boxJSONPath = arguments.directory & '/box.json';
+		var boxJSONPath = directory & '/box.json';
 		if( !fileExists( boxJSONPath ) ) {
 			return error( 'File [#boxJSONPath#] does not exist.  Use the "init" command to create it.' );
 		}
 		
-		boxJSON = packageService.readPackageDescriptor( arguments.directory );
+		boxJSON = packageService.readPackageDescriptor( directory );
 		
-		var fullPropertyName = 'boxJSON.#arguments.property#';
-		if( !isDefined( fullPropertyName ) ) {
-			return error( 'Property [#arguments.property#] doesn''t exist in this package''s box.json' );
+		for( var arg in arguments ) {
+			var fullPropertyName = 'boxJSON.#arg#';
+			var propertyValue = arguments[ arg ];
+			if( isJSON( propertyValue ) ) {
+				evaluate( '#fullPropertyName# = deserializeJSON( arguments[ arg ] )' );				
+			} else {
+				evaluate( '#fullPropertyName# = arguments[ arg ]' );				
+			}
+			print.greenLine( 'Set #arg# = #arguments[ arg ]#' );
 		}
 		
-		var propertyValue = evaluate( fullPropertyName );
-		
-		if( isSimpleValue( propertyValue ) ) {
-			print.line( propertyValue );
-		} else {
-			print.line( serializeJSON( propertyValue ) );			
-		}
+		// Write the file back out.
+		PackageService.writePackageDescriptor( boxJSON, directory );
+			
 	}
 
 	// Dynamic completion for property name based on contents of box.json
