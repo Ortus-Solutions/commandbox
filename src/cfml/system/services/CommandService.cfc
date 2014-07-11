@@ -74,19 +74,38 @@ component accessors="true" singleton {
 			fullCFCPath = arguments.fullCFCPath,
 			aliases = listToArray( commandMD.aliases ?: '' ),
 			parameters = [],
+			completor = {},
 			hint = commandMD.hint ?: '',
 			originalName = commandName,
 			excludeFromHelp = commandMD.excludeFromHelp ?: false,
 			commandMD = commandMD
 		};
 
-		// Capture the command's parameters
-		for( var func in commandMD.functions ) {
-			// Loop to find the "run()" method
-			if( func.name == 'run' ) {
-				commandData.parameters = func.parameters;
-				break;				
-			}
+		if( structKeyExists( commandMD, 'functions' ) ) {
+			// Capture the command's parameters
+			for( var func in commandMD.functions ) {
+				// Loop to find the "run()" method
+				if( func.name == 'run' ) {
+					commandData.parameters = func.parameters;
+					
+					// Grab completor annotations if they exists while we're here
+					// We'll save these out in a struct indexed by param name for easy finding
+					for( var param in func.parameters ) {
+						if( structKeyExists( param, 'completorValues' ) ) {
+							// Turn comma-delimited list of static values into an array
+							commandData.completor[ param.name ][ 'values' ] = listToArray( param.completorValues );
+						}
+						if( structKeyExists( param, 'completorFunction' ) ) {
+							// Grab name of completor function for this param
+							commandData.completor[ param.name ][ 'function' ] = param.completorFunction;
+						}
+					}
+					
+					break;
+				}
+			}			
+		} else {
+			commandData.parameters = [];
 		}
 		return commandData;
 	}
@@ -169,22 +188,6 @@ component accessors="true" singleton {
 			// Make sure we have all required params.
 			parameterInfo.namedParameters = ensureRequiredParams( parameterInfo.namedParameters, commandParams );
 	
-			// Check for actual CFC instance, and lazy load if neccessary
-			if( !structKeyExists( commandInfo.commandReference, 'CFC' ) ) {
-				// Create this command CFC
-				try {
-					commandInfo.commandReference.CFC = wireBox.getInstance( commandInfo.commandReference.fullCFCPath );
-				// This will catch nasty parse errors so the shell can keep loading
-				} catch( any e ) {
-					systemOutput( 'Error loading command [#commandInfo.commandReference.fullCFCPath#]#CR##CR#' );
-					logger.error( 'Error loading command [#commandInfo.commandReference.fullCFCPath#]. #e.message# #e.detail ?: ''#', e.stackTrace );
-					// pretty print the exception
-					shell.printError( e );
-					return '';
-				}
-			} // CFC exists check
-			
-
 			// Reset the printBuffer
 			commandInfo.commandReference.CFC.reset();
 
@@ -325,6 +328,14 @@ component accessors="true" singleton {
 					// Actual command data stored in a nested struct
 					results.commandReference = results.commandReference[ '$' ];
 					
+					// Create the command CFC instance if neccessary
+					var commandLoaded = lazyLoadCommandCFC( results.commandReference );
+					// If there was an error loading the command
+					if( !commandLoaded ) {
+						// Error has already been displayed, so just pretend we didn't find anything.
+						return [];
+					}
+					
 					break;
 				// If this is a folder, check and see if it has a "help" command
 				} else {
@@ -352,7 +363,29 @@ component accessors="true" singleton {
 
 	}
 
-
+	/**
+	 * Takes a struct of command data and lazy loads the actual CFC isntance if neccessary
+	 * @commandData.hint Struct created by registerCommand()
+ 	 **/
+	private function lazyLoadCommandCFC( commandData ) {
+		
+		// Check for actual CFC instance, and lazy load if neccessary
+		if( !structKeyExists( commandData, 'CFC' ) ) {
+			// Create this command CFC
+			try {
+				commandData.CFC = wireBox.getInstance( commandData.fullCFCPath );
+			// This will catch nasty parse errors so the shell can keep loading
+			} catch( any e ) {
+				systemOutput( 'Error creating command [#commandData.fullCFCPath#]#CR##CR#' );
+				logger.error( 'Error creating command [#commandData.fullCFCPath#]. #e.message# #e.detail ?: ''#', e.stackTrace );
+				// pretty print the exception
+				shell.printError( e );
+				return false;
+			}
+		} // CFC exists check
+		return true;		
+	}
+	
 	/**
 	 * Looks at the call stack to determine if we're currently "inside" a command.
 	 * Useful to prevent endless recursion.
@@ -414,8 +447,18 @@ component accessors="true" singleton {
 		// Build CFC's path
 		var fullCFCPath = baseCommandDirectory & '.' & commandName;
 		
-		// Create a nice struct of command metadata
-		var commandData = createCommandData( fullCFCPath, commandName );
+		
+		try {
+			// Create a nice struct of command metadata
+			var commandData = createCommandData( fullCFCPath, commandName );
+		// This will catch nasty parse errors so the shell can keep loading
+		} catch( any e ) {
+			systemOutput( 'Error registering command [#fullCFCPath#]#CR##CR#' );
+			logger.error( 'Error registering command [#fullCFCPath#]. #e.message# #e.detail ?: ''#', e.stackTrace );
+			// pretty print the exception
+			shell.printError( e );
+			return;
+		}
 
 		// must extend commandbox.system.BaseCommand, can't be Application.cfc
 		if( CFCName == 'Application' || !isCommandCFC( commandData ) ) {

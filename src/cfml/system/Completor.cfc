@@ -119,7 +119,7 @@ component singleton {
 							}
 						}
 						// Fill in possible param values based on the type and contents so far.
-						paramValueCompletion( paramName, paramType, paramSoFar, candidates );
+						paramValueCompletion( commandInfo, paramName, paramType, paramSoFar, candidates );
 						return len( buffer ) - len( paramSoFar );
 
 					}
@@ -153,7 +153,7 @@ component singleton {
 							var nextParam = definedParameters[ passedParameters.positionalParameters.len()+1 ];
 							candidates.add( nextParam.name & ' ' );
 
-							paramValueCompletion( nextParam.type, nextParam.type, '', candidates );
+							paramValueCompletion( commandInfo, nextParam.type, nextParam.type, '', candidates );
 
 							return len( buffer );
 
@@ -167,7 +167,7 @@ component singleton {
 
 							var partialMatch = passedParameters.positionalParameters.last();
 							var thisParam = definedParameters[ passedParameters.positionalParameters.len() ];
-							paramValueCompletion( thisParam.name, thisParam.type, partialMatch, candidates );
+							paramValueCompletion( commandInfo, thisParam.name, thisParam.type, partialMatch, candidates );
 
 							return len( buffer ) - len( partialMatch );
 						}
@@ -198,7 +198,7 @@ component singleton {
 						var thisParam = definedParameters[ 1 ];
 
 						// Suggest its value
-						paramValueCompletion( thisParam.name, thisParam.type, partialMatch, candidates );
+						paramValueCompletion( commandInfo, thisParam.name, thisParam.type, partialMatch, candidates );
 
 						return len( buffer ) - len( partialMatch );
 
@@ -213,6 +213,7 @@ component singleton {
 			return len( buffer );
 
 		} catch ( any e ) {
+			writeDump(e);abort;
 			rethrow;
 			// by default, errors thrown from proxied components are useless and don't have an actual stack trace.
 			shell.printError( e );
@@ -222,12 +223,32 @@ component singleton {
 
 	/**
 	 * populate completion candidates for parameter values
+	 * @commandInfo.hint struct representing the command being completed for
 	 * @paramName.hint param name
 	 * @paramType.hint type of parameter (boolean, etc.)
 	 * @paramSoFar.hint text typed so far
 	 * @candidates.hint tree to populate with completion candidates
  	 **/
-	private function paramValueCompletion(String paramName, String paramType, String paramSoFar, required candidates) {
+	private function paramValueCompletion( struct commandInfo, String paramName, String paramType, String paramSoFar, required candidates) {
+
+		var completorData = commandInfo.commandReference.completor;
+		
+		if( structKeyExists( completorData, paramName ) ) {
+			// Add static values
+			if( structKeyExists( completorData[ paramName ], 'values' ) ) {
+				addAll( candidates, completorData[ paramName ][ 'values' ] );
+			}
+			// Call function to populate dynamic values
+			if( structKeyExists( completorData[ paramName ], 'function' ) ) {
+				var completorFunctionName = completorData[ paramName ][ 'function' ];
+				var additions = commandInfo.commandReference.CFC[ completorFunctionName ]();
+				if( isArray( additions ) ) {
+					addAll( candidates, additions );
+				}
+			}
+			// Completor annotations override default
+			return;
+		}
 
 		switch(paramType) {
 			case "Boolean" :
@@ -249,6 +270,18 @@ component singleton {
 				   paramName.endsWith( 'path' ) 
 		){
 			pathCompletion( paramSoFar, candidates, true );
+		}
+	}
+
+	
+	/**
+	 * Convience method since calling addAll() directly errors if each value isn't a string
+	 * @candidates.hint Java TreeSet object
+	 * @additions.hint array of values to add
+ 	 **/
+	private function addAll( candidates, array additions ) {
+		for( var addition in additions ) {
+			candidates.add( javaCast( 'string', addition ) );
 		}
 	}
 
