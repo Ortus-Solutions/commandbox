@@ -256,21 +256,23 @@ component accessors="true" singleton {
 		var commandChain = [];
 
 		// If this command has a pipe, we need to chain multiple commands
-		if( tokens.find( '|' ) ) {
-			var i = 0;
-			for( var token in tokens ) {
-				i++;
-				if( token != '|' ) {
-					//Append this token to the last command
-					commandsToResolve[ commandsToResolve.len() ].append( token );
-				} else if( commandsToResolve[ commandsToResolve.len() ].len() && i < tokens.len() ) {
-					// Add a new command
-					commandsToResolve.append( [] );
-				}
+		var i = 0;
+		for( var token in tokens ) {
+			i++;
+			// We've reached a pipe and there is at least one command resolved already and there are more tokens left
+			if( token == '|' &&  commandsToResolve[ commandsToResolve.len() ].len() && i < tokens.len()  ) {
+				// Add a new command
+				commandsToResolve.append( [] );
+			} else if( token == '>' &&  commandsToResolve[ commandsToResolve.len() ].len() && i < tokens.len()  ) {
+				// Add a new command
+				commandsToResolve.append( [ 'fileWrite' ] );
+			} else if( token == '>>' &&  commandsToResolve[ commandsToResolve.len() ].len() && i < tokens.len()  ) {
+				// Add a new command
+				commandsToResolve.append( [ 'fileAppend' ] );
+			} else {
+				//Append this token to the last command
+				commandsToResolve[ commandsToResolve.len() ].append( token );
 			}
-		// If there's no pipe, then there is only 1 command to resolve
-		} else {
-			commandsToResolve[ 1 ] = tokens;
 		}
 
 
