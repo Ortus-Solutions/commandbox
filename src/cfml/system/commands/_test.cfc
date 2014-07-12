@@ -11,7 +11,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=tru
 		
 		print.line();
 		
-		var key = shell.waitForKey( 'Press any key to continue' );
+		var key = waitForKey( 'Press any key to continue' );
 		print.line( "You pressed ASCII code #key#" );
 		
 		print.line();
