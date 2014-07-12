@@ -11,12 +11,12 @@ component extends="commandbox.system.BaseCommand" aliases="ls,ll,directory" excl
 	 * @recurse.hint recursively list
 	 **/
 	function run( String directory="", Boolean recurse=false )  {
-		// This will make each directory canonical and absolute		
+		// This will make each directory canonical and absolute
 		arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
 		
 		var results = directoryList( arguments.directory, arguments.recurse, "query" );
 
-		// TODO: Add ability to re-sort this based on user input		
+		// TODO: Add ability to re-sort this based on user input
 	 	query name="local.results" dbtype="query" {
 	        echo("
 	        	SELECT *
