@@ -10,6 +10,9 @@
 */
 component {
 
+	// DI
+	property name="CR" 				inject="CR";
+	
 	/**
 	 * constructor
  	**/	
@@ -191,6 +194,7 @@ component {
 		theString = replaceNoCase( theString, "\\", '__backSlash__', "all" );
 		theString = replaceNoCase( theString, "\'", '__singleQuote__', "all" );
 		theString = replaceNoCase( theString, '\"', '__doubleQuote__', "all" );
+		theString = replaceNoCase( theString, '\n', '__newLine__', "all" );
 		return		replaceNoCase( theString, '\=', '__equalSign__', "all" );
 	}
 	
@@ -198,6 +202,7 @@ component {
 		theString = replaceNoCase( theString, '__backSlash__', "\", "all" );
 		theString = replaceNoCase( theString, '__singleQuote__', "'", "all" );
 		theString = replaceNoCase( theString, '__doubleQuote__', '"', "all" );
+		theString = replaceNoCase( theString, '__newLine__', CR, "all" );
 		return		replaceNoCase( theString, '__equalSign__', '=', "all" );
 	}
 	

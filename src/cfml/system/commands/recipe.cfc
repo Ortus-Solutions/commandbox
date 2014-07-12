@@ -30,6 +30,8 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 			return error( "File: #arguments.recipeFile# does not exist!" );
 		}
 		
+		var isEcho = true;
+		
 		// read it
 		var recipe = fileRead( arguments.recipeFile );
 		
@@ -50,8 +52,28 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 			if( !thisCommand.len() || thisCommand.startsWith( '##' ) ) {
 				continue;
 			}
+			// Turn echo on
+			if( reFindNoCase( 'echo\s+on', thisCommand ) ) {
+				isEcho = true;
+				continue;
+			}
+			// Turn echo off
+			if( reFindNoCase( 'echo\s+off', thisCommand ) ) {
+				isEcho = false;
+				print.line( thisCommand );
+				continue;
+			}
+			
+			// Ignore blank lines and comments
+			if( !thisCommand.len() || thisCommand.startsWith( '##' ) ) {
+				continue;
+			}
 			
 			try{
+				// If echo is on, display the command
+				if( isEcho ) {
+					print.line( thisCommand );	
+				}
 				// run Command
 				runCommand( thisCommand );
 
@@ -101,8 +123,11 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 	* Replaces " and ' with \" and \' 
 	*/
 	private string function escapeArg( argValue ) {
+		arguments.argValue = replace( arguments.argValue, '\', "\\", "all" );
 		arguments.argValue = replace( arguments.argValue, '"', '\"', 'all' );
-		arguments.argValue = replace( arguments.argValue, "'", "\", "all" );
+		arguments.argValue = replace( arguments.argValue, "'", "\'", "all" );
+		arguments.argValue = replace( arguments.argValue, "=", "\=", "all" );
+		arguments.argValue = replace( arguments.argValue, CR, "\n", "all" );
 		return '"#arguments.argValue#"';
 	}
 }
