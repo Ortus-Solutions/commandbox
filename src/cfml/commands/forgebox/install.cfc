@@ -15,6 +15,7 @@ component extends="commandbox.system.BaseCommand" aliases="install" excludeFromH
 			
 	/**
 	* @slug.hint Slug of the ForgeBox entry to install
+	* @slug.optionsUDF slugComplete
 	* @directory.hint The directory to install in. This will override the packages's box.json install dir if provided.
 	**/
 	function run( 
@@ -113,6 +114,24 @@ component extends="commandbox.system.BaseCommand" aliases="install" excludeFromH
 		print.boldGreenLine( "Eureka, '#arguments.slug#' has been installed!" );
 		
 		
+	}
+
+	// Auto-complete list of slugs
+	function slugComplete() {
+		var result = [];
+		// Cache in command
+		if( !structKeyExists( variables, 'entries' ) ) {
+			variables.entries = forgebox.getEntries();			
+		}
+		
+		// Loop over results and append all active ForgeBox entries
+		for( var entry in variables.entries ) {
+			if( val( entry.isactive ) ) {
+				result.append( entry.slug );
+			}
+		}
+		
+		return result;
 	}
 
 } 

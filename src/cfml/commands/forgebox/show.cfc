@@ -34,7 +34,9 @@ component extends="commandbox.system.BaseCommand" aliases="show" excludeFromHelp
 	
 	/**
 	* @orderBy.hint How to order results. Possible values are popular, new, and recent 
+	* @orderBy.optionsUDF orderByComplete
 	* @type.hint Name or slug of type to filter by. See possible types with "forgebox types command"
+	* @type.optionsUDF typeComplete
 	* @startRow.hint Row to start returning records on
 	* @maxRows.hint Number of records to return
 	* @slug.hint Slug of a specific ForgeBox entry to show.
@@ -180,6 +182,29 @@ component extends="commandbox.system.BaseCommand" aliases="show" excludeFromHelp
 		// This will be empty if not found
 		return typeLookup;
 		
+	}
+
+	// Auto-complete list of types
+	function typeComplete( result = [] ) {
+			
+		// Loop over types and append all active ForgeBox entries
+		for( var thistype in getForgeboxTypes() ) {
+			arguments.result.append( thisType.typeSlug );
+		}
+		
+		return arguments.result;
+	}
+
+	// Auto-complete list of orderBys (can also include types and slugs)
+	function orderByComplete() {
+		var result = [ 'popular','new','recent' ];
+			
+		// Add types
+		result = typeComplete( result );
+		
+		// For now, I'm not going to add slugs since it will always be too many to display without prompting the user
+		
+		return result;
 	}
 
 } 

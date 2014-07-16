@@ -153,7 +153,7 @@ component singleton {
 							var nextParam = definedParameters[ passedParameters.positionalParameters.len()+1 ];
 							candidates.add( nextParam.name & ' ' );
 
-							paramValueCompletion( commandInfo, nextParam.type, nextParam.type, '', candidates );
+							paramValueCompletion( commandInfo, nextParam.name, nextParam.type, '', candidates );
 
 							return len( buffer );
 
