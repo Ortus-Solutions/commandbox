@@ -21,6 +21,7 @@ component accessors="true" singleton {
 	property name='packageService' 	inject='PackageService';
 	property name='shell' 			inject='Shell';
 	property name='logger' 			inject='logbox:logger:{this}';
+	property name="fileSystemUtil" 	inject="FileSystem";
 	
 	/**
 	* DI complete
@@ -205,31 +206,39 @@ component accessors="true" singleton {
 	*/
 	public function installArtifact( required packageName, required version, installDirectory ) {
 		var thisArtifactPath = getArtifactPath( arguments.packageName, arguments.version );
-		var tmpPath 	 = "#variables.tempDir#/#arguments.packageName#";
+		
 		// Has file size?
 		if( getFileInfo( thisArtifactPath ).size <= 0 ) {
 			throw( 'Cannot install file as it has a file size of 0.', thisArtifactPath );
 		}
 		
 		var artifactDescriptor = getArtifactDescriptor( arguments.packageName, arguments.version );
+		var ignorePatterns = ( isArray( artifactDescriptor.ignore ) ? artifactDescriptor.ignore : [] );
+		// skip root box.json
+		ignorePatterns.append( box.json );
 		
 		if( !structKeyExists( arguments, 'installDirectory' ) ) {
 			arguments.installDirectory = shell.pwd() & '/' & artifactDescriptor.directory;  
 		}
+		
+		// Normalize slashes
+		tmpPath = fileSystemUtil.resolvePath( tmpPath );
 		
 		// Unzip to temp directory
 		zip action="unzip" file="#thisArtifactPath#" destination="#tmpPath#" overwrite="true";
 
 		// Copy with ignores from descriptor
 		directoryCopy( tmpPath, arguments.installDirectory, true, function( path ){
+			arguments.path = fileSystemUtil.resolvePath( arguments.path );
+			
 			// cleanup path so we just get from the archive down
-			var thisPath = replacenocase( arguments.path, tmpPath & "/", "" );
+			var thisPath = replacenocase( arguments.path, tmpPath, "" );
+			// Strip leading slash
+			thisPath = right( thisPath, len( thisPath ) - 1 );
 			
-			// skip root box.json
-			if( thisPath eq "box.json" ){
-				return false;
-			}
-			
+			systemOutput( thisPath & chr(10) );
+			//ignorePatterns
+						
 			return true;
 		});
 
