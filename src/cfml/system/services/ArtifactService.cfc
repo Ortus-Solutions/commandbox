@@ -16,12 +16,13 @@
 component accessors="true" singleton {
 	
 	// DI
-	property name='artifactDir' 	inject='artifactDir';
-	property name='tempDir' 		inject='tempDir';
-	property name='packageService' 	inject='PackageService';
-	property name='shell' 			inject='Shell';
-	property name='logger' 			inject='logbox:logger:{this}';
-	property name="fileSystemUtil" 	inject="FileSystem";
+	property name='artifactDir' 		inject='artifactDir';
+	property name='tempDir' 			inject='tempDir';
+	property name='packageService'	 	inject='PackageService';
+	property name='shell' 				inject='Shell';
+	property name='logger' 				inject='logbox:logger:{this}';
+	property name="fileSystemUtil"	 	inject="FileSystem";
+	property name="pathPatternMatcher" 	inject="pathPatternMatcher";
 	
 	/**
 	* DI complete
@@ -200,12 +201,14 @@ component accessors="true" singleton {
 	}	
 	
 	/**
-	* Installs a package, obeying ignors in the box.json file
+	* Installs a package, obeying ignors in the box.json file.  Returns a struct containing a "copied" array
+	* and an "ignored" array containing the relative paths inside the package that were copied and ignored.
 	* @packageName.hint The package name to look for
 	* @version.hint The version of the package to look for
 	*/
 	public function installArtifact( required packageName, required version, installDirectory ) {
 		var thisArtifactPath = getArtifactPath( arguments.packageName, arguments.version );
+		var tmpPath = "#variables.tempDir#/#arguments.packageName#";
 		
 		// Has file size?
 		if( getFileInfo( thisArtifactPath ).size <= 0 ) {
@@ -215,9 +218,13 @@ component accessors="true" singleton {
 		var artifactDescriptor = getArtifactDescriptor( arguments.packageName, arguments.version );
 		var ignorePatterns = ( isArray( artifactDescriptor.ignore ) ? artifactDescriptor.ignore : [] );
 		// skip root box.json
-		ignorePatterns.append( box.json );
+		ignorePatterns.append( '/box.json' );
 		
 		if( !structKeyExists( arguments, 'installDirectory' ) ) {
+			// Strip any leading slashes off of the install directory
+			if( artifactDescriptor.directory.startsWith( '/' ) || artifactDescriptor.directory.startsWith( '\' ) ) {
+				artifactDescriptor.directory = right( artifactDescriptor.directory, len( artifactDescriptor.directory ) - 1 );
+			}
 			arguments.installDirectory = shell.pwd() & '/' & artifactDescriptor.directory;  
 		}
 		
@@ -227,23 +234,41 @@ component accessors="true" singleton {
 		// Unzip to temp directory
 		zip action="unzip" file="#thisArtifactPath#" destination="#tmpPath#" overwrite="true";
 
+		var results = {
+			copied = [],
+			ignored = [],
+			installDirectory = arguments.installDirectory
+		};
+
 		// Copy with ignores from descriptor
 		directoryCopy( tmpPath, arguments.installDirectory, true, function( path ){
+			// This will normalize the slashes to match
 			arguments.path = fileSystemUtil.resolvePath( arguments.path );
+			if( directoryExists( arguments.path ) ) {
+				arguments.path &= server.separator.file;
+			}
 			
 			// cleanup path so we just get from the archive down
 			var thisPath = replacenocase( arguments.path, tmpPath, "" );
-			// Strip leading slash
-			thisPath = right( thisPath, len( thisPath ) - 1 );
-			
-			systemOutput( thisPath & chr(10) );
-			//ignorePatterns
 						
-			return true;
+			// Ignore paths that match one of our ignore patterns
+			var ignored = pathPatternMatcher.matchPatterns( ignorePatterns, thisPath );
+			
+			// What do we do with this file
+			if( ignored ) {
+				results.ignored.append( thisPath );
+				return false;
+			} else {
+				results.copied.append( thisPath );
+				return true;				
+			}
+						
 		});
 
 		// cleanup unzip
 		directoryDelete( tmpPath, true );
+		
+		return results;
 	}
 		
 }

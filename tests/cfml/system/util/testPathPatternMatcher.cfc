@@ -199,4 +199,26 @@ component name="TestPathPatternMatcher" extends="mxunit.framework.TestCase" {
 		assertTrue( PathPatternMatcher.matchPattern( '/a\b', 'a/b/c\d' ) );
 		assertFalse( PathPatternMatcher.matchPattern( '/d', 'a\b\c\d' ) );
 	}
+	
+	// Array of patterns
+	public void function testArrayOfPatterns() {
+		
+		assertTrue( PathPatternMatcher.matchPatterns(
+			[
+				'a/b/c/foo.txt',
+				'box.json',
+				'/logs'
+			],
+			'box.json'
+		) );
+		
+		assertFalse( PathPatternMatcher.matchPatterns(
+			[
+				'a/b/c/foo.txt',
+				'box.json',
+				'/logs'
+			],
+			'ColdBox.cfc'
+		) );
+	}
 }

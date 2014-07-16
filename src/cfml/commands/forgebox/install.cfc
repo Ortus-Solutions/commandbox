@@ -72,7 +72,7 @@ component extends="commandbox.system.BaseCommand" aliases="install" excludeFromH
 				// Clean up the temp file
 				fileDelete( packageTempPath );
 								
-				print.boldGreenLine( "Done." );	
+				print.boldGreenLine( "Done." );
 				
 			}
 			
@@ -97,7 +97,18 @@ component extends="commandbox.system.BaseCommand" aliases="install" excludeFromH
 		}
 		
 		// Install the package
-		artifactService.installArtifact( argumentCollection = installParams );
+		var results = artifactService.installArtifact( argumentCollection = installParams );
+		
+		print.boldGreenLine( "Installing to: #results.installDirectory#" );		
+								
+		print.boldGreenLine( "Files Installed" );
+		for( var file in results.copied ) {
+			print.greenLine( "    #file#" );					
+		}				
+		print.boldWhiteLine( "Files ignored" );
+		for( var file in results.ignored ) {
+			print.whiteLine( "    #file#" );					
+		}
 	
 		print.boldGreenLine( "Eureka, '#arguments.slug#' has been installed!" );
 		
