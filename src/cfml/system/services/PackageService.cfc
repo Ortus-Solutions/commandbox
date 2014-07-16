@@ -10,7 +10,6 @@
 component accessors="true" singleton {
 
 	// DI 
-	property name="shell" inject="shell";
 	property name="formatterUtil" inject="formatter";
 
 	/**
@@ -18,6 +17,41 @@ component accessors="true" singleton {
 	*/
 	function init(){
 		return this;
+	}
+	
+	/**
+	* Checks to see if a box.json exists in a given directory
+	* @directory.hint The directory to examine
+	*/	
+	public function isPackage( required string directory ) {
+		// If the packge has a box.json in the root...
+		return fileExists( getDescriptorPath( arguments.directory ) );
+	}
+	
+	/**
+	* Returns the path to the package descriptor
+	* @directory.hint The directory that is the root of the package
+	*/	
+	public function getDescriptorPath( required string directory ) {
+		return directory & '/box.json';
+	}
+	
+	/**
+	* Adds a dependency to a packge
+	* @directory.hint The directory that is the root of the package
+	* @dev.hint True if this is a development depenency, false if it is a production dependency
+	*/	
+	public function addDependency( required string directory, required string packageName, required string version,  boolean dev=false ) {
+		// Get box.json, create empty if it doesn't exist
+		var boxJSON = readPackageDescriptor( arguments.directory );
+		// Get reference to appropriate depenency struct
+		var dependencies = ( arguments.dev ? boxJSON.devDependencies : boxJSON.dependencies );
+		
+		// Add/overwrite this dependency
+		dependencies[ arguments.packageName ] = arguments.version;
+		
+		// Write the box.json back out
+		writePackageDescriptor( boxJSON, arguments.directory );		
 	}
 	
 	/**
@@ -44,14 +78,12 @@ component accessors="true" singleton {
 	* @directory.hint The directory to search for the box.json
 	*/
 	struct function readPackageDescriptor( required directory ){
-
-		var boxJSONPath = directory & '/box.json';
 		
 		// If the packge has a box.json in the root...
-		if( fileExists( boxJSONPath ) ) {
+		if( isPackage( arguments.directory ) ) {
 			
 			// ...Read it.
-			boxJSON = fileRead( boxJSONPath );
+			boxJSON = fileRead( getDescriptorPath( arguments.directory ) );
 			
 			// Validate the file is valid JSOn
 			if( isJSON( boxJSON ) ) {
@@ -76,8 +108,7 @@ component accessors="true" singleton {
 			JSONData = serializeJSON( JSONData );
 		}
 
-		var boxJSONPath = directory & '/box.json';
-		fileWrite( boxJSONPath, formatterUtil.formatJSON( JSONData ) );	
+		fileWrite( getDescriptorPath( arguments.directory ), formatterUtil.formatJSON( JSONData ) );	
 	}
 
 
@@ -86,8 +117,7 @@ component accessors="true" singleton {
 		var props = [];
 		
 		// Check and see if box.json exists
-		var boxJSONPath = arguments.directory & '/box.json';
-		if( fileExists( boxJSONPath ) ) {
+		if( isPackage( arguments.directory ) ) {
 			boxJSON = readPackageDescriptor( arguments.directory );
 			props = addProp( props, '', boxJSON );			
 		}

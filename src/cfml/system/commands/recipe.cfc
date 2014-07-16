@@ -21,7 +21,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 	 **/
 	function run( required recipeFile ){
 		// store original path
-		var originalPath = shell.pwd();
+		var originalPath = getCWD();
 		// Make file canonical and absolute
 		arguments.recipeFile = fileSystemUtil.resolvePath( arguments.recipeFile );
 		

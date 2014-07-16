@@ -22,7 +22,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 	function run(
 				required name,
 				skeleton='AdvancedScript',
-				directory=shell.pwd() ) {
+				directory=getCWD() ) {
 					
 		// This will make the directory canonical and absolute		
 		directory = fileSystemUtil.resolvePath( directory );

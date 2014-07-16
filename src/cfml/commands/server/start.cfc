@@ -34,7 +34,7 @@ component extends="commandbox.system.BaseCommand" aliases="start" excludeFromHel
 		String  webXml          = ""
 	){
 		// prepare webroot and short name
-		var webroot = arguments.directory is "" ? shell.pwd() : arguments.directory;
+		var webroot = arguments.directory is "" ? getCWD() : arguments.directory;
 		var name 	= arguments.name is "" ? listLast( webroot, "\/" ) : arguments.name;
 		webroot = fileSystemUtil.resolvePath( webroot );
 		

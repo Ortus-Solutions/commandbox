@@ -35,14 +35,12 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 		structDelete( arguments, '_' );
 		
 		// This will make each directory canonical and absolute		
-		var directory = fileSystemUtil.resolvePath( '' );
+		var directory = getCWD();
 				
 		// Check and see if box.json exists
-		var boxJSONPath = directory & '/box.json';
-		if( !fileExists( boxJSONPath ) ) {
-			return error( 'File [#boxJSONPath#] does not exist.  Use the "init" command to create it.' );
+		if( !packageService.isPackage( directory ) ) {
+			return error( 'File [#packageService.getDescriptorPath( directory )#] does not exist.  Use the "init" command to create it.' );
 		}
-		
 		boxJSON = packageService.readPackageDescriptor( directory );
 		
 		for( var arg in arguments ) {

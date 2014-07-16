@@ -28,15 +28,14 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 	function run( required string property ) {
 		
 		// This will make each directory canonical and absolute		
-		arguments.directory = fileSystemUtil.resolvePath( '' );
+		var directory = getCWD();
 				
 		// Check and see if box.json exists
-		var boxJSONPath = arguments.directory & '/box.json';
-		if( !fileExists( boxJSONPath ) ) {
-			return error( 'File [#boxJSONPath#] does not exist.  Use the "init" command to create it.' );
+		if( !packageService.isPackage( directory ) ) {
+			return error( 'File [#packageService.getDescriptorPath( directory )#] does not exist.  Use the "init" command to create it.' );
 		}
 		
-		boxJSON = packageService.readPackageDescriptor( arguments.directory );
+		boxJSON = packageService.readPackageDescriptor( directory );
 		
 		var fullPropertyName = 'boxJSON.#arguments.property#';
 		if( !isDefined( fullPropertyName ) ) {

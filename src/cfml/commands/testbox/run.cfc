@@ -38,7 +38,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 	){
 		
 		// get the box.json from the project, else empty if not found.
-		var boxData = packageService.readPackageDescriptor( shell.pwd() );
+		var boxData = packageService.readPackageDescriptor( getCWD() );
 
 		// if we have boxdata then try to discover runner from it.
 		if( !structIsEmpty( boxData ) ){
@@ -110,7 +110,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 		if( !isNull( arguments.outputFile ) ){
 			// Attach pwd location
 			if( left( arguments.outputFile, 1 ) != "/" ){
-				arguments.outputFile = shell.pwd() & "/" & arguments.outputFile;
+				arguments.outputFile = getCWD() & "/" & arguments.outputFile;
 			}
 			// write it
 			fileWrite( arguments.outputFile, results.fileContent );

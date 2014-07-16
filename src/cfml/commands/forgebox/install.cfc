@@ -2,25 +2,35 @@
  * This command will download and install an entry from ForgeBox into your application.  You must use the 
  *  exact slug for the item you want.  If the item being installed has a box.json descriptor, it's "directory"
  *  property will be used as the install location. In the absence of that setting, the current CommandBox working
- *  directory will be used.  Override the installation location by passing the "directory" parameter.
- *  
+ *  directory will be used.  Override the installation location by passing the "directory" parameter.  The save 
+ *  and saveDev parameters will save this package as a dependency or devDependency in your box.json if it exists.
+ *  .
  *  forgebox install feeds
+ *  .
+ *  forgebox install slug=feeds save=true
+ *  .
+ *  forgebox install slug=feeds saveDev=true
  *  
  **/
 component extends="commandbox.system.BaseCommand" aliases="install" excludeFromHelp=false {
 	
 	property name="forgeBox" inject="ForgeBox";
 	property name="artifactService" inject="ArtifactService";
+	property name="packageService" inject="PackageService";
 	property name="tempDir" inject="tempDir";
 			
 	/**
 	* @slug.hint Slug of the ForgeBox entry to install
 	* @slug.optionsUDF slugComplete
 	* @directory.hint The directory to install in. This will override the packages's box.json install dir if provided.
+	* @save.hint Save the installed package as a dependancy in box.json (if it exists)
+	* @saveDev.hint Save the installed package as a dev dependancy in box.json (if it exists)
 	**/
 	function run( 
-				required slug,
-				directory ) {
+				required string slug,
+				string directory,
+				boolean save=false,
+				boolean saveDev=false ) {
 		
 		// Don't default the dir param since we need to differentiate whether the user actually 
 		// specifically typed in a param or not since it overrides the package's box.json install dir.
@@ -109,6 +119,16 @@ component extends="commandbox.system.BaseCommand" aliases="install" excludeFromH
 		print.boldWhiteLine( "Files ignored" );
 		for( var file in results.ignored ) {
 			print.whiteLine( "    #file#" );					
+		}
+	
+		// Should we save this as a dependancy
+		// and is the current working directory a package?
+		if( ( arguments.save || arguments.saveDev )  
+			&& packageService.isPackage( getCWD() ) ) {
+			// Add it!
+			packageService.addDependency( getCWD(), installParams.packageName, installParams.version,  arguments.saveDev );
+			// Tell the user...
+			print.boldGreenLine( "box.json updated with #( arguments.saveDev ? 'dev ': '' )#dependency." );
 		}
 	
 		print.boldGreenLine( "Eureka, '#arguments.slug#' has been installed!" );

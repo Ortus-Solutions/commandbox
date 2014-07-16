@@ -10,7 +10,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 	* @open.hint Open the file once it is created
 	* @directory.hint The base directory to create your CFC
 	 **/
-	function run( required name, boolean open=false, directory=shell.pwd() ){
+	function run( required name, boolean open=false, directory=getCWD() ){
 		// This will make each directory canonical and absolute		
 		arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
 						

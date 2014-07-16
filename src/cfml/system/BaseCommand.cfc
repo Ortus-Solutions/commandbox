@@ -42,6 +42,11 @@ component accessors="true" singleton{
 	function getResult() {
 		return print.getResult();
 	}
+		
+	// Returns the current working directory of the shell
+	function getCWD() {
+		return shell.pwd();
+	}
 			
 	/**
 	 * Ask the user a question and wait for response

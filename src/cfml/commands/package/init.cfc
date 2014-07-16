@@ -17,7 +17,7 @@ component extends="commandbox.system.BaseCommand" aliases="init" excludeFromHelp
 	function run( name='myApplication', slug='mySlug' ) {
 		
 		// This will make each directory canonical and absolute
-		var directory = fileSystemUtil.resolvePath( '' );
+		var directory = getCWD();
 		
 		// Read current box.json if it exists, otherwise, get a new one
 		var boxJSON = PackageService.readPackageDescriptor( directory );
