@@ -139,7 +139,8 @@ component {
 		
 		var results = {
 			positionalParameters = [],
-			namedParameters = {}
+			namedParameters = {},
+			flags = {}
 		};
 		
 		if( !arrayLen( parameters ) ) {
@@ -151,9 +152,24 @@ component {
 			// Remove escaped characters
 			param = removeEscapedChars( param );
 			
+			// Flag --flagName
+			if( param.startsWith( '--' ) && len( param ) > 3 ) {
+				// Strip off --
+				var flagName = right( param, len( param ) - 2 );
+				
+				// Check for negation --!flagName
+				if( flagName.startsWith( '!' ) ) {
+					// Strip !
+					flagName = right( flagName, len( flagName ) - 1 );
+					// Flag is false
+					results.flags [ flagName ] = false;
+				} else {
+					// Flag is true
+					results.flags [ flagName ] = true;
+				}
+				
 			// named params
-			hasEq = find( '=', param, 2 );
-			if( hasEq ) {
+			} else if( find( '=', param, 2 ) ) {
 				// Extract the name and value pair
 				var name = listFirst( param, '=' );
 				var value = listRest( param, '=' );

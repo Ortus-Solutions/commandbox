@@ -38,6 +38,9 @@ component singleton{
 	    	reader = createObject( "java", "jline.console.ConsoleReader" ).init( arguments.inStream, arguments.outputStream );
 		}
 		
+    	// This turns off special stuff that JLine2 looks for related to exclamation marks
+    	reader.setExpandEvents( false );
+		
 		// Create our completer and set it in the console reader
 		var jCompletor = createDynamicProxy( completor , [ 'jline.console.completer.Completer' ] );
         reader.addCompleter( jCompletor );

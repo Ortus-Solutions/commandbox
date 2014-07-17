@@ -34,7 +34,9 @@ component extends="mxunit.framework.TestCase" {
 													 test\""er 
 													 12\=34
 													 '12\\\""34'
-													 'test\\'" );
+													 'test\\'
+													 --flag1
+													 --!flag2" );
 		params = result[ 1 ].parameters;
 		
 		assertEquals( params[ 1 ], 'test' );
@@ -46,6 +48,8 @@ component extends="mxunit.framework.TestCase" {
 		assertEquals( params[ 7 ], '12\=34' );
 		assertEquals( params[ 8 ], "'12\\\""34'" );
 		assertEquals( params[ 9 ], "'test\\'" );
+		assertEquals( params[ 10 ], "--flag1" );
+		assertEquals( params[ 11 ], "--!flag2" );
 	}
 	
 	public void function escapePositionalParams()  {
@@ -57,11 +61,14 @@ component extends="mxunit.framework.TestCase" {
 													 12\=34 
 													 '12\\\""34'
 													 'widget\\'
-													 r" );
+													 r
+													 --flag1
+													 --!flag2" );
 		params = result[ 1 ].parameters;
 		result = commandService.parseParameters( params );
 													 
-		params = result.positionalParameters;
+		params = result.positionalParameters;		 
+		flags = result.flags;
 													 
 		assertEquals( params[ 1 ], 'test' );
 		assertEquals( params[ 2 ], 'foobar' );
@@ -73,6 +80,12 @@ component extends="mxunit.framework.TestCase" {
 		assertEquals( params[ 8 ], '12\"34' );
 		assertEquals( params[ 9 ], 'widget\' );
 		assertEquals( params[ 10 ], 'r' );
+		
+		assertTrue( structKeyExists( flags, 'flag1' ) );
+		assertEquals( flags.flag1, true );
+		
+		assertTrue( structKeyExists( flags, 'flag2' ) );
+		assertEquals( flags.flag2, false );
 								
 	}
 	
@@ -86,7 +99,9 @@ component extends="mxunit.framework.TestCase" {
 												arg2=""Luis \""The Dev\"" Majano"" 
 												test  =  		 mine 	 
 												tester   	=  	 'YOU' 	
-												tester2   	=  	 ""YOU2""" );
+												tester2   	=  	 ""YOU2""
+												--flag1
+												--!flag2" );
 		params = result[ 1 ].parameters;
 						
 		assertEquals( params[ 1 ], 'param=1' );
@@ -96,7 +111,9 @@ component extends="mxunit.framework.TestCase" {
 		assertEquals( params[ 5 ], 'arg2="Luis \"The Dev\" Majano"' );
 		assertEquals( params[ 6 ], 'test=mine' );
 		assertEquals( params[ 7 ], "tester='YOU'" );
-		assertEquals( params[ 8 ], 'tester2="YOU2"' );
+		assertEquals( params[ 8 ], 'tester2="YOU2"' );		
+		assertEquals( params[ 9 ], '--flag1' );
+		assertEquals( params[ 10 ], '--!flag2' );
 	}
 		
 	public void function escapeNamedParams()  {
@@ -108,11 +125,14 @@ component extends="mxunit.framework.TestCase" {
 												arg2=""Luis \""The Dev\"" Majano"" 
 												test  =  		 mine 	 
 												tester   	=  	 'YOU' 	
-												tester2   	=  	 ""YOU2""" );
+												tester2   	=  	 ""YOU2""
+												--flag1
+												--!flag2" );
 		params = result[ 1 ].parameters;
 		result = commandService.parseParameters( params );
 													 
-		params = result.namedParameters;
+		params = result.namedParameters; 
+		flags = result.flags;
 
 		assertTrue( structKeyExists( params, 'param' ) );	 
 		assertEquals( params.param, '1' );
@@ -137,6 +157,12 @@ component extends="mxunit.framework.TestCase" {
 		
 		assertTrue( structKeyExists( params, 'tester2' ) );
 		assertEquals( params.tester2, 'YOU2' );
+		
+		assertTrue( structKeyExists( flags, 'flag1' ) );
+		assertEquals( flags.flag1, true );
+		
+		assertTrue( structKeyExists( flags, 'flag2' ) );
+		assertEquals( flags.flag2, false );
 								
 	}
 	

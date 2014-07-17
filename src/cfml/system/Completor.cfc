@@ -88,6 +88,27 @@ component singleton {
 				// This is the params the user has entered so far.
 				var passedParameters = commandService.parseParameters( commandInfo.parameters );
 
+				// Always suggest flags for boolean param as long as they haven't already been specified as a named or positional param
+/*				var i = 0;
+				for( var param in definedParameters ) {
+					i++;
+					// We only care about boolean params
+					if( param.type == 'boolean' ) {
+						
+						// Skip if this param has already be specified as a named param
+						if( structCount( passedParameters.namedParameters ) && structKeyExists( passedParameters.namedParameters, param.name )) {
+							continue;
+						}
+						
+						// Skip if this param has already be specified as a positional param
+						if( passedParameters.positionalParameters.len() && i <= passedParameters.positionalParameters.len() ) {							
+							continue;
+						}
+						
+						candidates.add( '--' & param.name & ' ' );
+					}					
+				}
+*/
 				// For sure we are using named- suggest name or value as necceessary
 				if( structCount( passedParameters.namedParameters ) ) {
 
@@ -97,13 +118,12 @@ component singleton {
 						leftOver = passedParameters.positionalParameters[ passedParameters.positionalParameters.len() ];
 					// If there's at least one named param, and we don't end with a space, assume we're still typing it
 					} else if( structCount( passedParameters.namedParameters ) && !buffer.endsWith( ' ' ) ) {
-						// If param= is typed, but no value
+						
 						if( buffer.endsWith( '=' ) ) {
-							// Nothign here
+							// Nothing here
 							var paramSoFar = '';
 							// Strip = sign, and grab preceeding param name
 							var paramName = listLast( trim( left( buffer, len( buffer ) - 1 ) ), ' ' );
-							var startHere = len( buffer );
 						} else {
 							// param so far is everything after the last =
 							var paramSoFar = listLast( buffer, '=' );
@@ -126,12 +146,19 @@ component singleton {
 
 					// Loop over all possible params and suggest the ones not already there
 					for( var param in definedParameters ) {
-						if( !structKeyExists( passedParameters.namedParameters, param.name ) ) {
+						if( !structKeyExists( passedParameters.namedParameters, param.name ) && !structKeyExists( passedParameters.flags, param.name ) ) {
 							if( !len( leftOver ) || param.name.startsWith( leftOver ) ) {
 								candidates.add( ' ' & param.name & '=' );
 							}
-						}
-					}
+							// If this is a boolean param, suggest the --flag version
+							if( param.type == 'boolean' ) {
+								var flagParamName = '--' & param.name;
+								if( !len( leftOver ) || flagParamName.startsWith( leftOver ) ) {
+									candidates.add( ' ' & flagParamName & ' ' );
+								}
+							}
+						} // Does it exist yet?
+					} // Loop over possible params
 
 					// Back up a bit to the beginning of the left over text we're replacing
 					return len( buffer ) - len( leftOver ) - iif( !len( leftOver ) && !buffer.endsWith( ' ' ), 0, 1 );
@@ -145,19 +172,34 @@ component singleton {
 
 					// If the buffer ends with a space, they were done typing the last param
 					if( buffer.endsWith( ' ' ) ) {
+						
+						// Loop over remaining possible params and suggest the boolean ones as flags
+						var i = 0;
+						for( var param in definedParameters ) {
+							i++;
+							// If this is a boolean param not already here, suggest the --flag version
+							if( i > passedParameters.positionalParameters.len() && param.type == 'boolean' && !structKeyExists( passedParameters.flags, param.name )  ) {
+								candidates.add( ' --' & param.name & ' ' );
+							}
+						}
 
-						// If there are more params than what the user has typed so far
-						if( definedParameters.len() > passedParameters.positionalParameters.len() ) {
-							// Add the name of the next one in the list. The user will have to backspace and
-							// replace this with their actual param so this may not be that useful.
-							var nextParam = definedParameters[ passedParameters.positionalParameters.len()+1 ];
-							candidates.add( nextParam.name & ' ' );
+						var i = 0;
+						for( var param in definedParameters ) {
+							i++;
+							// For every param we haven't reached that doesn't exist as a flag
+							if( i > passedParameters.positionalParameters.len() && !structKeyExists( passedParameters.flags, param.name )) {
+								// Add the name of the next one in the list. The user will have to backspace and
+								// replace this with their actual param so this may not be that useful.
+								
+								candidates.add( param.name & ' ' );
+								paramValueCompletion( commandInfo, param.name, param.type, '', candidates );
+								// Bail once we find one
+								break;
+							}
+						}
+														
+						return len( buffer );
 
-							paramValueCompletion( commandInfo, nextParam.name, nextParam.type, '', candidates );
-
-							return len( buffer );
-
-						} // End are there more params
 
 					// They were in the middle of typing
 					} else {
@@ -168,7 +210,20 @@ component singleton {
 							var partialMatch = passedParameters.positionalParameters.last();
 							var thisParam = definedParameters[ passedParameters.positionalParameters.len() ];
 							paramValueCompletion( commandInfo, thisParam.name, thisParam.type, partialMatch, candidates );
-
+							
+							// Loop over remaining possible params and suggest the boolean ones as flags
+							var i = 0;
+							for( var param in definedParameters ) {
+								i++;
+								// If this is a boolean param not already here, suggest the --flag version
+								if( i >= passedParameters.positionalParameters.len() && param.type == 'boolean' && !structKeyExists( passedParameters.flags, param.name ) ) {
+									var paramFlagname = '--' & param.name;
+									if( paramFlagname.startsWith( partialMatch ) ) {
+										candidates.add( paramFlagname & ' ' );										
+									}
+								}
+							}
+							
 							return len( buffer ) - len( partialMatch );
 						}
 					}
@@ -189,8 +244,15 @@ component singleton {
 
 						// Loop over all possible params and suggest them
 						for( var param in definedParameters ) {
-							if( !len( partialMatch ) || param.name.startsWith( partialMatch ) ) {
+							// If this param is not already a flag and it matches the partial text add it
+							if( !structKeyExists( passedParameters.flags, param.name )  && ( !len( partialMatch ) || param.name.startsWith( partialMatch ) ) ) {
 								candidates.add( param.name & '=' );
+							}
+							
+							// If this param is a boolean that isn't a flag yet, sugguest the --flag version
+							var paramFlagname = '--' & param.name;
+							if( param.type == 'boolean' && !structKeyExists( passedParameters.flags, param.name ) && paramFlagname.startsWith( partialMatch ) ) {
+								candidates.add( paramFlagname & ' ' );										
 							}
 						}
 

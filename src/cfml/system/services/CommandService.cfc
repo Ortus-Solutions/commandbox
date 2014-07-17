@@ -152,7 +152,8 @@ component accessors="true" singleton {
 			if( listLast( commandInfo.commandReference.originalName, '.' ) == 'help' ) {
 				var parameterInfo = {
 					positionalParameters = [ arrayToList( commandInfo.parameters, ' ' ) ],
-					namedParameters = {}
+					namedParameters = {},
+					flags = {}
 				};
 			// For normal commands, parse them out properly
 			} else {
@@ -184,6 +185,9 @@ component accessors="true" singleton {
 			if( arrayLen( parameterInfo.positionalParameters ) ) {
 				parameterInfo.namedParameters = convertToNamedParameters( parameterInfo.positionalParameters, commandParams );
 			}
+			
+			// Merge flags into named params
+			mergeFlagParameters( parameterInfo );
 
 			// Make sure we have all required params.
 			parameterInfo.namedParameters = ensureRequiredParams( parameterInfo.namedParameters, commandParams );
@@ -557,4 +561,12 @@ component accessors="true" singleton {
 
 		return results;
 	}
+	/**
+	 * Merge flags into named parameters
+ 	 **/
+	private function mergeFlagParameters( required struct parameterInfo ) {
+		// Add flags into named params
+		arguments.parameterInfo.namedParameters.append( arguments.parameterInfo.flags );
+	}
+		
 }

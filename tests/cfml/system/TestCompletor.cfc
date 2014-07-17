@@ -88,10 +88,33 @@ component name="TestShell" extends="mxunit.framework.TestCase" {
 	public void function testParitialBooleanParam() {
 		cmdline = "dir directory=blah recurse=tr";
 		cursor = completor.complete(cmdline,len(cmdline),candidates);
-		debug(candidates);
 		assertTrue(candidates.contains("true "));
 		assertFalse(candidates.contains("false "));
 		assertEquals(27,cursor);
+	}
+
+	public void function testFlags() {
+		cmdline = "rm ";
+		cursor = completor.complete(cmdline,len(cmdline),candidates);
+		assertTrue(candidates.contains("--force "));
+		assertTrue(candidates.contains("--recurse "));
+		assertEquals(3,cursor);
+	}
+
+	public void function testFlagsNotNamed() {
+		cmdline = "rm recurse=true ";
+		cursor = completor.complete(cmdline,len(cmdline),candidates);
+		assertTrue(candidates.contains(" --force "));
+		assertFalse(candidates.contains(" --recurse "));
+		assertEquals(15,cursor);
+	}
+
+	public void function testFlagsNotPositional() {
+		cmdline = "rm folder true ";
+		cursor = completor.complete(cmdline,len(cmdline),candidates);
+		assertFalse(candidates.contains(" --force "));
+		assertTrue(candidates.contains(" --recurse "));
+		assertEquals(15,cursor);
 	}
 
 }
