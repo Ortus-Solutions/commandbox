@@ -153,7 +153,7 @@ component {
 			param = removeEscapedChars( param );
 			
 			// Flag --flagName
-			if( param.startsWith( '--' ) && len( param ) > 3 ) {
+			if( param.startsWith( '--' ) && len( param ) >= 3 ) {
 				// Strip off --
 				var flagName = right( param, len( param ) - 2 );
 				
@@ -184,9 +184,6 @@ component {
 				
 			// Positional params
 			} else {
-				if(param contains 'widget'){
-					//writeDump(param);abort;
-				}
 				// Unwrap quotes from value if used
 				param = unwrapQuotes( param );
 				param = replaceEscapedChars( param );

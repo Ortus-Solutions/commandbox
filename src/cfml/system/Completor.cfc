@@ -87,62 +87,46 @@ component singleton {
 				var definedParameters = commandInfo.commandReference.parameters;
 				// This is the params the user has entered so far.
 				var passedParameters = commandService.parseParameters( commandInfo.parameters );
-
-				// Always suggest flags for boolean param as long as they haven't already been specified as a named or positional param
-/*				var i = 0;
-				for( var param in definedParameters ) {
-					i++;
-					// We only care about boolean params
-					if( param.type == 'boolean' ) {
-						
-						// Skip if this param has already be specified as a named param
-						if( structCount( passedParameters.namedParameters ) && structKeyExists( passedParameters.namedParameters, param.name )) {
-							continue;
-						}
-						
-						// Skip if this param has already be specified as a positional param
-						if( passedParameters.positionalParameters.len() && i <= passedParameters.positionalParameters.len() ) {							
-							continue;
-						}
-						
-						candidates.add( '--' & param.name & ' ' );
-					}					
-				}
-*/
+			
 				// For sure we are using named- suggest name or value as necceessary
 				if( structCount( passedParameters.namedParameters ) ) {
 
 					var leftOver = '';
-					// This is probably just partial param name
-					if( arrayLen( passedParameters.positionalParameters ) ) {
-						leftOver = passedParameters.positionalParameters[ passedParameters.positionalParameters.len() ];
-					// If there's at least one named param, and we don't end with a space, assume we're still typing it
-					} else if( structCount( passedParameters.namedParameters ) && !buffer.endsWith( ' ' ) ) {
+					
+					// Still typing
+					if( !buffer.endsWith( ' ' ) ) {
 						
-						if( buffer.endsWith( '=' ) ) {
-							// Nothing here
+						// grab the last chunk of text from the buffer
+						var leftOver = listLast( buffer, ' ' );
+						
+						// value completion only 
+						if( leftOver contains '=' ) {
+							
+							// Param name is bit before the =
+							var paramName = listFirst( leftOver, '=' );
+							// Everything else, is the value so far
 							var paramSoFar = '';
-							// Strip = sign, and grab preceeding param name
-							var paramName = listLast( trim( left( buffer, len( buffer ) - 1 ) ), ' ' );
-						} else {
-							// param so far is everything after the last =
-							var paramSoFar = listLast( buffer, '=' );
-							// Delete that off, and take the preceeding param name
-							var paramName = listLast( trim( listDeleteAt( buffer, listLen( buffer, '=' ), '=' ) ), ' ' );
-						}
-						var paramType = '';
-						// Now that we have the name, see if we can look up the type
-						for( var param in definedParameters ) {
-							if( param.name == paramName ) {
-								paramType = param.type;
-								break;
+							// There's only a value if somethign was typed after the =
+							if( !leftOver.endsWith( '=' ) ) {
+								paramSoFar = listLast( leftOver, '=' );	
 							}
-						}
-						// Fill in possible param values based on the type and contents so far.
-						paramValueCompletion( commandInfo, paramName, paramType, paramSoFar, candidates );
-						return len( buffer ) - len( paramSoFar );
+						
+							var paramType = '';
+							// Now that we have the name, see if we can look up the type
+							for( var param in definedParameters ) {
+								if( param.name == paramName ) {
+									paramType = param.type;
+									break;
+								}
+							}
+							// Fill in possible param values based on the type and contents so far.
+							paramValueCompletion( commandInfo, paramName, paramType, paramSoFar, candidates );
+							return len( buffer ) - len( paramSoFar );
 
-					}
+						}
+						
+
+					} // End still typing?
 
 					// Loop over all possible params and suggest the ones not already there
 					for( var param in definedParameters ) {
@@ -165,9 +149,11 @@ component singleton {
 
 				// For sure positional - suggest next param name and value
 				// Either there's more than one positional param supplied, or a single one with a space after it
+				// or a single one with flags present
 				} else if(
 							passedParameters.positionalParameters.len() > 1
-							|| ( passedParameters.positionalParameters.len() == 1 && buffer.endsWith( ' ' ) )
+							|| ( passedParameters.positionalParameters.len() == 1 
+								&& ( buffer.endsWith( ' ' ) || structCount( passedParameters.flags ) ) )
 						) {
 
 					// If the buffer ends with a space, they were done typing the last param
@@ -206,8 +192,13 @@ component singleton {
 
 						// Make sure defined params actually exist for this
 						if( definedParameters.len() >= passedParameters.positionalParameters.len() ) {
-
-							var partialMatch = passedParameters.positionalParameters.last();
+							
+							// If there is a passed positional param or flags
+							if( passedParameters.positionalParameters.len() || structCount( passedParameters.flags ) ) {
+								// grab the last chunk of text from the buffer
+								var partialMatch = listLast( buffer, ' ' );
+							}
+							
 							var thisParam = definedParameters[ passedParameters.positionalParameters.len() ];
 							paramValueCompletion( commandInfo, thisParam.name, thisParam.type, partialMatch, candidates );
 							
@@ -240,6 +231,10 @@ component singleton {
 						if( passedParameters.positionalParameters.len() ) {
 							// grab the last one as the partial match
 							partialMatch = passedParameters.positionalParameters.last();
+						// If there are flags and the buffer doesn't end with a space, then we must still be typing one
+						} else if( structCount( passedParameters.flags ) && !buffer.endsWith( ' ' ) ) {
+							// grab the last chunk of text from the buffer
+							partialMatch = listLast( buffer, ' ' );
 						}
 
 						// Loop over all possible params and suggest them
