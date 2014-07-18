@@ -1,20 +1,26 @@
 /**
  * The recipe commands allows you to execute a collection of CommandBox commands
  * usually in a file.boxr recipe file.  CommandBox will iterate and execute each
- * of the commands for you in succession. You can also bind the recipe with arguments
- * that will be replaced inside of your recipe.  Pass any arguments as additional parameters 
- * to the recipe command.  Named arguments will be accessable via $arg1Name, $artg2Name, etc. 
+ * of the commands for you in succession. Lines that start with a # will be ignored as comments.
+ * . 
+ * You can also bind the recipe with arguments that will be replaced inside of your recipe.  
+ * Pass any arguments as additional parameters to the recipe command.  
+ * Named arguments will be accessable inside the recipe as  $arg1Name, $arg2Name, etc. 
  * Positional args will be avaialble as $1, $2, etc.
- * Lines that start with a # will be ignored as comments.
  * .
  * # Recipe will receive $name and $action
  * recipe buildSite.boxr name=luis action=create
  * .
  * # Recipe will receive $1 and $2
  * recipe buildSite.boxr luis create
+ * .
+ * When using args inside a recipe, you will need to wrap the arg in quotes if it may contain a space
+ * .
+ * # $arg1 may contain spaces
+ * rm "$arg1" 
  * 
  **/
-component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false{
+component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
 
 	/**
 	 * @recipeFile.hint The name of the recipe file to execute including extension
@@ -119,8 +125,12 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 	}
 
 	/**
-	* Escapes a value and wraps it in quotes for inclusion in a command
-	* Replaces " and ' with \" and \' 
+	* Escapes a value and for inclusion in a command
+	* The following replacements are made:
+	* " 			--> \"
+	* ' 			--> \'
+	* = 			--> \=
+	* [line break]  --> \n
 	*/
 	private string function escapeArg( argValue ) {
 		arguments.argValue = replace( arguments.argValue, '\', "\\", "all" );
@@ -128,6 +138,6 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 		arguments.argValue = replace( arguments.argValue, "'", "\'", "all" );
 		arguments.argValue = replace( arguments.argValue, "=", "\=", "all" );
 		arguments.argValue = replace( arguments.argValue, CR, "\n", "all" );
-		return '"#arguments.argValue#"';
+		return arguments.argValue;
 	}
 }
