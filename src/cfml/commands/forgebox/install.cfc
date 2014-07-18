@@ -150,7 +150,8 @@ component extends="commandbox.system.BaseCommand" aliases="install" excludeFromH
 			var results = artifactService.installArtifact( argumentCollection = installParams );
 			
 			print.boldGreenLine( "Installing to: #results.installDirectory#" );		
-									
+			
+			// Turn this off or put it behind a --verbose flag if it gets annoying
 			print.boldGreenLine( "Files Installed" );
 			for( var file in results.copied ) {
 				print.greenLine( "    #file#" );					
