@@ -11,7 +11,7 @@
 component singleton {
 
 	property name="print" inject="print";
-	property name="CR" inject="CR";
+	property name="CR" inject="CR@constants";
 	
 	function init(){
 		

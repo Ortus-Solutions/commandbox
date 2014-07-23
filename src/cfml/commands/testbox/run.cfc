@@ -4,7 +4,7 @@
 component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
 	
 	// DI
-	property name="cr" 				inject="cr";
+	property name="cr" 				inject="cr@constants";
 	property name="packageService" 	inject="PackageService";
 
 	/**

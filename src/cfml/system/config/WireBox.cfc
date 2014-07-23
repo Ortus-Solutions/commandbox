@@ -28,15 +28,15 @@ component extends="wirebox.system.ioc.config.Binder" {
 		var REPLTagHistoryFile 		= homedir & "/.history-repl-tag";
 		var cr						= system.getProperty( "line.separator" );
 		
-		map( 'system' ).toValue( system );
-		map( 'homeDir' ).toValue( homeDir );
-		map( 'tempDir' ).toValue( tempDir );
-		map( 'userDir' ).toValue( userDir );
-		map( 'artifactDir' ).toValue( artifactDir );
-		map( 'commandHistoryFile' ).toValue( commandHistoryFile );
-		map( 'REPLScriptHistoryFile' ).toValue( REPLScriptHistoryFile );
-		map( 'REPLTagHistoryFile' ).toValue( REPLTagHistoryFile );
-		map( 'cr' ).toValue( cr );
+		map( 'system@constants' ).toValue( system );
+		map( 'homeDir@constants' ).toValue( homeDir );
+		map( 'tempDir@constants' ).toValue( tempDir );
+		map( 'userDir@constants' ).toValue( userDir );
+		map( 'artifactDir@constants' ).toValue( artifactDir );
+		map( 'commandHistoryFile@constants' ).toValue( commandHistoryFile );
+		map( 'REPLScriptHistoryFile@constants' ).toValue( REPLScriptHistoryFile );
+		map( 'REPLTagHistoryFile@constants' ).toValue( REPLTagHistoryFile );
+		map( 'cr@constants' ).toValue( cr );
 
 		// Map Java Classes
 		map( 'commandHistoryFile@java' ).toJava( "jline.console.history.FileHistory" )

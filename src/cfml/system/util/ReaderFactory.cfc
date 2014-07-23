@@ -12,7 +12,7 @@ component singleton{
 
 	// DI
 	property name="completor" 			inject="Completor";
-	property name="homedir"				inject="homedir";
+	property name="homedir"				inject="homedir@constants";
 	property name="commandHistoryFile"	inject="commandHistoryFile@java";	
 	
 	/**

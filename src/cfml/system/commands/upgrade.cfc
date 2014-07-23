@@ -7,8 +7,8 @@
 component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
 
 	// DI
-	property name="artifactDir" inject="artifactDir";
-	property name="homedir" 	inject="homedir";
+	property name="artifactDir" inject="artifactDir@constants";
+	property name="homedir" 	inject="homedir@constants";
 
 	function run(Boolean force=false) {
 		var temp = shell.getTempDir();

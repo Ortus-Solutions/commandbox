@@ -12,7 +12,7 @@ component accessors="true" singleton {
 	property name="commandService" 		inject="CommandService";
 	property name="readerFactory" 		inject="ReaderFactory";
 	property name="print" 				inject="print";
-	property name="cr" 					inject="cr";
+	property name="cr" 					inject="cr@constants";
 	property name="formatterUtil" 		inject="Formatter";
 	property name="logger" 				inject="logbox:logger:{this}";
 	property name="fileSystem"			inject="FileSystem";
@@ -47,9 +47,9 @@ component accessors="true" singleton {
 	 * @inStream.hint input stream if running externally
 	 * @outputStream.hint output stream if running externally
 	 * @userDir.hint The user directory
-	 * @userDir.inject userDir
+	 * @userDir.inject userDir@constants
 	 * @tempDir.hint The temp directory
-	 * @tempDir.inject tempDir
+	 * @tempDir.inject tempDir@constants
  	**/
 	function init(
 		any inStream,

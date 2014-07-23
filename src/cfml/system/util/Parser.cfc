@@ -11,7 +11,7 @@
 component {
 
 	// DI
-	property name="CR" 				inject="CR";
+	property name="CR" inject="CR@constants";
 	
 	/**
 	 * constructor

@@ -22,7 +22,7 @@
 */
 component {
 
-	property name='cr' inject='cr' scope='this';
+	property name='cr' inject='cr@constants' scope='this';
 
 	this.tab 		= chr( 9 );
 	this.esc 		= chr( 27 );

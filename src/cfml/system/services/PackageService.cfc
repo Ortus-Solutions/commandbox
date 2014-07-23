@@ -10,8 +10,8 @@
 component accessors="true" singleton {
 
 	// DI
-	property name="CR" 				inject="CR";
-	property name="tempDir" inject="tempDir";
+	property name="CR" 				inject="CR@constants";
+	property name="tempDir" inject="tempDir@constants";
 	property name="formatterUtil"	inject="formatter";
 	property name="artifactService" inject="ArtifactService";
 	property name="consoleLogger"	inject="logbox:logger:console";

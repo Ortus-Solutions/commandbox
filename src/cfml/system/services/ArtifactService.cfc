@@ -16,8 +16,8 @@
 component accessors="true" singleton {
 	
 	// DI
-	property name='artifactDir' 		inject='artifactDir';
-	property name='tempDir' 			inject='tempDir';
+	property name='artifactDir' 		inject='artifactDir@constants';
+	property name='tempDir' 			inject='tempDir@constants';
 	property name='packageService'	 	inject='PackageService';
 	property name='shell' 				inject='Shell';
 	property name='logger' 				inject='logbox:logger:{this}';

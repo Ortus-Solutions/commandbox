@@ -12,8 +12,8 @@ component accessors="true" singleton {
 	// DI Properties
 	property name='shell' 	inject='Shell';
 	property name='parser' 	inject='Parser';
-	property name='system' 	inject='System';
-	property name='cr' 		inject='cr';
+	property name='system' 	inject='System@constants';
+	property name='cr' 		inject='cr@constants';
 	property name="logger" 	inject="logbox:logger:{this}";
 	property name="wirebox" 	inject="wirebox";
 

@@ -11,7 +11,7 @@
 component accessors="true" singleton{
 	
 	// DI
-	property name="CR" 				inject="CR";
+	property name="CR" 				inject="CR@constants";
 	property name="formatterUtil" 	inject="Formatter";
 	property name="fileSystemUtil" 	inject="FileSystem";
 	property name="shell" 			inject="shell";
