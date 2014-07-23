@@ -26,6 +26,9 @@ component {
 					filename = "commandbox", 
 					filepath = system.getProperty( 'user.home' ) & "/.CommandBox/logs"
 				}
+			},
+			ANSIConsoleAppender = { 
+				class="commandbox.system.util.ANSIConsoleAppender"
 			}
 		};
 		
@@ -33,7 +36,12 @@ component {
 		logBox.root = {
 			levelmax="INFO",
 			levelMin="FATAL",
-			appenders="*"
+			appenders="fileAppender"
 		};
+		
+		logBox.categories = {
+			"console" = {appenders="ANSIConsoleAppender"}
+		};
+		
 	}
 }

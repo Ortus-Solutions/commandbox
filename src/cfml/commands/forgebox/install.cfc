@@ -30,7 +30,6 @@ component extends="commandbox.system.BaseCommand" aliases="install" excludeFromH
 	property name="forgeBox" inject="ForgeBox";
 	property name="artifactService" inject="ArtifactService";
 	property name="packageService" inject="PackageService";
-	property name="tempDir" inject="tempDir";
 			
 	/**
 	* @slug.hint Slug of the ForgeBox entry to install. If no slug is passed, all dependencies in box.json will be installed.
@@ -41,7 +40,7 @@ component extends="commandbox.system.BaseCommand" aliases="install" excludeFromH
 	* @production.hint When calling this command with no slug to install all dependencies, set this to true to ignore devDependencies.
 	**/
 	function run( 
-				string slug,
+				string slug='',
 				string directory,
 				boolean save=false,
 				boolean saveDev=false,
@@ -59,127 +58,22 @@ component extends="commandbox.system.BaseCommand" aliases="install" excludeFromH
 			}
 			
 		}
+				
+		arguments.ID = arguments.slug;
+		// TODO: climb tree to find root of the site by searching for box.json
+		arguments.currentWorkingDirectory = getCWD();
 		
-		// If the user gave us a slug, use it
-		if( structKeyExists( arguments, 'slug' ) ){
-			// TODO, the value should be some default version to install
-			var slugs[ arguments.slug ] = '';
-		// If there is a box.json...
-		} else if( packageService.isPackage( getCWD() ) ) {
-			// read it...
-			var boxJSON = packageService.readPackageDescriptor( getCWD() );
-			// and grab all the dependencies
-			var slugs = boxJSON.dependencies;
-			// If we're not in production mode...
-			if( !arguments.production ) {
-				// Add in the devDependencies
-				slugs.append( boxJSON.devDependencies );
-			}
-		// If those fail
-		} else {
-			// Whine about it
-			return error( "You didn't pass a slug and there isn't a box.json here so I'm not sure what to do." );
-		}
-		
-		for( var thisSlug in slugs ) {
+		// Install this package.
+		// Don't pass directory unless you intend to override the box.json of the package being installed 
+		packageService.installPackage( argumentCollection = arguments );
 			
-			try {
-				
-				print.yellowLine( "Contacting ForgeBox, please wait..." ).toConsole();
-	
-				// We might have gotten this above
-				var entryData = forgebox.getEntry( thisSlug );
-				
-				// entrylink,createdate,lname,isactive,installinstructions,typename,version,hits,coldboxversion,sourceurl,slug,homeurl,typeslug,
-				// downloads,entryid,fname,changelog,updatedate,downloadurl,title,entryrating,summary,username,description,email
-								
-				if( !val( entryData.isActive ) ) {
-					return error( 'The ForgeBox entry [#entryData.title#] is inactive.' );
-				}
-				
-				if( !len( entryData.downloadurl ) ) {
-					return error( 'No download URL provided.  Manual install only.' );
-				}
-	
-				// Advice we found it
-				print.boldGreenLine( "Found entry: '#thisSlug#'" ).toConsole();
-	
-				var packageName = thisSlug;
-				var version = entryData.version;
-				
-				// If the local artifact doesn't exist, download and create it
-				if( !artifactService.artifactExists( packageName, version ) ) {
-						
-					print.boldGreenLine( "Starting download from: '#entryData.downloadURL#'..." ).toConsole();
-						
-					// Grab from the project's download URL and store locally in the temp dir
-					var packageTempPath = forgebox.install( entryData.downloadurl, tempDir );
-					
-					// Store it locally in the artfact cache
-					artifactService.createArtifact( packageName, version, packageTempPath );
-					
-					// Clean up the temp file
-					fileDelete( packageTempPath );
-									
-					print.boldGreenLine( "Done." );
-					
-				}
-				
-				
-			} catch( forgebox var e ) {
-				// This can include "expected" errors such as "slug not found"
-				error( '#e.message##CR##e.detail#' );
-				continue;
-			}
-				
-			print.boldGreenLine( "Installing from local artifact cache..." ).toConsole();
-	
-			// Assert: at this point, the package is downloaded and exists in the local artifact cache
-	
-			var installParams = {
-				packageName : packageName,
-				version : version
-			};
-	
-			// If the user didn't specify this, don't pass it since it overrides the package's desired isntall location
-			if( structKeyExists( arguments, 'directory' ) ) {
-				installParams.installDirectory = arguments.directory;
-			}
-			
-			// Install the package
-			var results = artifactService.installArtifact( argumentCollection = installParams );
-			
-			print.boldGreenLine( "Installing to: #results.installDirectory#" );		
-			
-			// Turn this off or put it behind a --verbose flag if it gets annoying
-			print.boldGreenLine( "Files Installed" );
-			for( var file in results.copied ) {
-				print.greenLine( "    #file#" );					
-			}				
-			print.boldWhiteLine( "Files ignored" );
-			for( var file in results.ignored ) {
-				print.whiteLine( "    #file#" );					
-			}
-		
-			// Should we save this as a dependancy
-			// and is the current working directory a package?
-			if( ( arguments.save || arguments.saveDev )  
-				&& packageService.isPackage( getCWD() ) ) {
-				// Add it!
-				packageService.addDependency( getCWD(), installParams.packageName, installParams.version,  arguments.saveDev );
-				// Tell the user...
-				print.boldGreenLine( "box.json updated with #( arguments.saveDev ? 'dev ': '' )#dependency." );
-			}
-		
-			print.boldGreenLine( "Eureka, '#thisSlug#' has been installed!" );
-			
-		} // End slug loop
-	
-		if( slugs.isEmpty() ) {
-			print.boldGreenLine( "No dependencies found to install, but it's the thought that counts, right?" );
-		}
-		
 	}
+
+
+
+
+
+
 
 	// Auto-complete list of slugs
 	function slugComplete() {

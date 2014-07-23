@@ -9,8 +9,14 @@
 */
 component accessors="true" singleton {
 
-	// DI 
-	property name="formatterUtil" inject="formatter";
+	// DI
+	property name="CR" 				inject="CR";
+	property name="tempDir" inject="tempDir";
+	property name="formatterUtil"	inject="formatter";
+	property name="artifactService" inject="ArtifactService";
+	property name="consoleLogger"	inject="logbox:logger:console";
+	// This should be removed once the install command starts resolving registries automatically
+	property name="forgeBox" inject="ForgeBox";
 
 	/**
 	* Constructor
@@ -35,6 +41,188 @@ component accessors="true" singleton {
 	public function getDescriptorPath( required string directory ) {
 		return directory & '/box.json';
 	}
+		
+	/**
+	* Installs a package and its dependencies
+	* @slug.ID Identifier of the packge to install. If no ID is passed, all dependencies in the CDW  will be installed.
+	* @slug.optionsUDF slugComplete
+	* @directory.hint The directory to install in. This will override the packages's box.json install dir if provided. 
+	* @save.hint Save the installed package as a dependancy in box.json (if it exists)
+	* @saveDev.hint Save the installed package as a dev dependancy in box.json (if it exists)
+	* @production.hint When calling this command with no slug to install all dependencies, set this to true to ignore devDependencies.
+	**/
+	function installPackage(
+			required string ID,
+			string directory,
+			boolean save=false,
+			boolean saveDev=false,
+			boolean production=false,
+			string currentWorkingDirectory ) {
+					
+		///////////////////////////////////////////////////////////////////////
+		// TODO: Instead of assuming this is ForgeBox, look up the appropriate
+		//       regsitry to handle the package a deal with a dynamic registry 
+		//       object at runtime with generic methods
+		///////////////////////////////////////////////////////////////////////
+		
+		// If there is a packge to isntall,isntall it
+		if( len( arguments.ID ) ) {
+			
+			consoleLogger.info( '.');
+			consoleLogger.info( 'Installing package: #arguments.ID#');
+			
+			try {
+				
+				consoleLogger.warn( "Contacting ForgeBox, please wait..." );
+		
+				// We might have gotten this above
+				var entryData = forgebox.getEntry( arguments.ID );
+				
+				// entrylink,createdate,lname,isactive,installinstructions,typename,version,hits,coldboxversion,sourceurl,slug,homeurl,typeslug,
+				// downloads,entryid,fname,changelog,updatedate,downloadurl,title,entryrating,summary,username,description,email
+								
+				if( !val( entryData.isActive ) ) {
+					consoleLogger.error( 'The ForgeBox entry [#entryData.title#] is inactive.' );
+					return;
+				}
+				
+				if( !len( entryData.downloadurl ) ) {
+					consoleLogger.error( 'No download URL provided.  Manual install only.' );
+					return;
+				}
+		
+				// Advice we found it
+				consoleLogger.info( "Found entry: '#arguments.ID#'" );
+		
+				var packageName = arguments.ID;
+				var version = entryData.version;
+				
+				// If the local artifact doesn't exist, download and create it
+				if( !artifactService.artifactExists( packageName, version ) ) {
+						
+					consoleLogger.info( "Starting download from: '#entryData.downloadURL#'..." );
+						
+					// Grab from the project's download URL and store locally in the temp dir
+					var packageTempPath = forgebox.install( entryData.downloadurl, tempDir );
+					
+					// Store it locally in the artfact cache
+					artifactService.createArtifact( packageName, version, packageTempPath );
+					
+					// Clean up the temp file
+					fileDelete( packageTempPath );
+									
+					consoleLogger.info( "Done." );
+					
+				}
+				
+				
+			} catch( forgebox var e ) {
+				// This can include "expected" errors such as "slug not found"
+				consoleLogger.error( '#e.message##CR##e.detail#' );
+				return;
+			}
+			
+		
+			//////////////////////////////////////
+			// TODO: End of ForgeBox-specific code
+			//////////////////////////////////////
+					
+			// Assert: at this point, the package is downloaded and exists in the local artifact cache
+		
+			var installParams = {
+				packageName : packageName,
+				version : version
+			};
+		
+			// If the user didn't specify this, don't pass it since it overrides the package's desired install location
+			if( structKeyExists( arguments, 'directory' ) ) {
+				installParams.installDirectory = arguments.directory;
+			}
+			
+			// Install the package
+			var results = artifactService.installArtifact( argumentCollection = installParams );
+			
+			consoleLogger.info( "Installing to: #results.installDirectory#" );		
+			
+			// Turn this off or put it behind a --verbose flag if it gets annoying
+			consoleLogger.debug( "#results.copied.len()# File(s) Installed" );
+			// Too much noise-- perhaps add a --verbose option
+		/*	for( var file in results.copied ) {
+				consoleLogger.debug( ".    #file#" );					
+			}*/				
+			consoleLogger.debug( "#results.ignored.len()# File(s) ignored" );
+			// Too much noise-- perhaps add a --verbose option
+			/*for( var file in results.ignored ) {
+				consoleLogger.debug( ".    #file#" );					
+			}*/
+		
+			// Should we save this as a dependancy
+			// and is the current working directory a package?
+			if( ( arguments.save || arguments.saveDev )  
+				&& isPackage( arguments.currentWorkingDirectory ) ) {
+				// Add it!
+				addDependency( currentWorkingDirectory, installParams.packageName, installParams.version,  arguments.saveDev );
+				// Tell the user...
+				consoleLogger.info( "box.json updated with #( arguments.saveDev ? 'dev ': '' )#dependency." );
+			}
+		
+			consoleLogger.info( "Eureka, '#arguments.ID#' has been installed!" );
+	
+			// Get the dependencies of the package we just installed
+			var boxJSON = artifactService.getArtifactDescriptor( packageName, version );
+	
+		// If no package ID was specified, just get the dependencies for the current directory
+		} else {
+			
+			// If there is a box.json...
+			if( isPackage( arguments.currentWorkingDirectory ) ) {
+				// read it...
+				var boxJSON = readPackageDescriptor( arguments.currentWorkingDirectory );
+			}
+			
+		}
+
+		// and grab all the dependencies
+		var dependencies = boxJSON.dependencies;
+		
+		// If we're not in production mode...
+		if( !arguments.production ) {
+			// Add in the devDependencies
+			dependencies.append( boxJSON.devDependencies );
+		}
+
+		// Loop over this packages dependencies
+		for( var dependency in dependencies ) {
+			
+			// TODO: Logic here to determine if a satisfying version of this package
+			// is already installed here or at a higher level.  if so, skip it.
+			
+			params = {
+				ID = dependency,
+				// Only save the first level
+				save = false,
+				saveDev = false,
+				production = arguments.production,
+				// To allow nested modules, change this to the previous 
+				// install directory so the dependency is nested within
+				currentWorkingDirectory = arguments.currentWorkingDirectory
+			};
+						
+			// If the user didn't specify this, don't pass it since it overrides the package's desired install location
+			if( structKeyExists( arguments, 'directory' ) ) {
+				params.directory = arguments.directory;
+			}
+			
+			// Recursivley install them
+			installPackage( argumentCollection = params );	
+		}
+	
+		if( !len( arguments.ID ) && dependencies.isEmpty() ) {
+			print.boldGreenLine( "No dependencies found to install, but it's the thought that counts, right?" );
+		}
+		
+
+	}
 	
 	/**
 	* Adds a dependency to a packge
@@ -51,7 +239,7 @@ component accessors="true" singleton {
 		dependencies[ arguments.packageName ] = arguments.version;
 		
 		// Write the box.json back out
-		writePackageDescriptor( boxJSON, arguments.directory );		
+		writePackageDescriptor( boxJSON, arguments.directory );
 	}
 	
 	/**

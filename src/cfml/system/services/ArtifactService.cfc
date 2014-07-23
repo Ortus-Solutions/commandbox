@@ -23,6 +23,8 @@ component accessors="true" singleton {
 	property name='logger' 				inject='logbox:logger:{this}';
 	property name="fileSystemUtil"	 	inject="FileSystem";
 	property name="pathPatternMatcher" 	inject="pathPatternMatcher";
+	property name="consoleLogger"	 	inject="logbox:logger:console";
+	
 	
 	/**
 	* DI complete
@@ -196,7 +198,7 @@ component accessors="true" singleton {
 		}
 		
 		// Just return defaults
-		return packageService.newPackageDescriptor();			
+		return packageService.newPackageDescriptor();
 	
 	}	
 	
@@ -223,7 +225,12 @@ component accessors="true" singleton {
 		if( !structKeyExists( arguments, 'installDirectory' ) ) {
 			// Strip any leading slashes off of the install directory
 			if( artifactDescriptor.directory.startsWith( '/' ) || artifactDescriptor.directory.startsWith( '\' ) ) {
-				artifactDescriptor.directory = right( artifactDescriptor.directory, len( artifactDescriptor.directory ) - 1 );
+				// Make sure it's not just a single slash
+				if( artifactDescriptor.directory.len() > 2 ) {
+					artifactDescriptor.directory = right( artifactDescriptor.directory, len( artifactDescriptor.directory ) - 1 );					
+				} else {
+					artifactDescriptor.directory = '';
+				}
 			}
 			arguments.installDirectory = shell.pwd() & '/' & artifactDescriptor.directory;  
 		}
@@ -260,7 +267,7 @@ component accessors="true" singleton {
 				return false;
 			} else {
 				results.copied.append( thisPath );
-				return true;				
+				return true;
 			}
 						
 		});
