@@ -134,6 +134,11 @@ component accessors="true" singleton {
 
 		// Resolve the command they are wanting to run
 		var commandChain = resolveCommand( line );
+		
+		// If nothing is returned, something bad happened (like an error instatiating the CFC)
+		if( !commandChain.len() ) {
+			return 'Command not run.';
+		}
 
 		var i = 0;
 		// If piping commands, each one will be an item in the chain.
