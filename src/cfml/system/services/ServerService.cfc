@@ -40,7 +40,7 @@ component accessors="true" singleton{
 	* @shell.inject shell
 	* @formatter.inject Formatter
 	* @fileSystem.inject FileSystem
-	* @homeDir.inject HomeDir
+	* @homeDir.inject HomeDir@constants
 	*/
 	function init(
 		required shell,
