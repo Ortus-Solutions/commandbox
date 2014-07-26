@@ -73,8 +73,15 @@ component accessors="true" singleton {
 
 		// Save these for onDIComplete()
 		variables.initArgs = arguments;
-		// Store incoming current directory
-		variables.pwd 	 		= variables.userDir;
+		
+		// If reloading the shell
+		if( structKeyExists( request, 'lastCWD' ) ) {
+			// Go back where we were
+			variables.pwd= request.lastCWD;			
+		} else {
+			// Store incoming current directory
+			variables.pwd = variables.userDir;
+		}
 
     	return this;
 	}
@@ -269,22 +276,12 @@ component accessors="true" singleton {
 	}
 
 	/**
-	 * changes the current directory of the shell and returns the directory set.
-	 * @directory.hint directory to CD to
+	 * Changes the current directory of the shell and returns the directory set.
+	 * @directory.hint directory to CD to.  Please verify it exists before calling.
   	 **/
 	String function cd( directory="" ){
-		// cleanup
-		arguments.directory = replace( arguments.directory, "\", "/", "all" );
-		// determine and change.
-		if( !len( arguments.directory ) ){
-			variables.pwd = variables.userDir;
-		} else if( arguments.directory == "." || arguments.directory == "./" ){
-			// do nothing
-		} else if(directoryExists(directory)) {
-	    	variables.pwd = arguments.directory;
-		} else {
-			return "cd: #arguments.directory#: No such file or directory";
-		}
+		variables.pwd = arguments.directory;
+		request.lastCWD = arguments.directory;
 		return variables.pwd;
 	}
 

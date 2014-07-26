@@ -14,6 +14,10 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 		// This will make each directory canonical and absolute		
 		arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
 		
+		if( !directoryExists( arguments.directory ) ) {
+			return error( "#arguments.directory#: No such file or directory" );
+		}
+		
 		return shell.cd( arguments.directory );
 	}
 
