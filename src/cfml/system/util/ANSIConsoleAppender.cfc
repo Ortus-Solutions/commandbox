@@ -51,13 +51,13 @@ component extends="wirebox.system.logging.AbstractAppender" {
 				print().BoldRedLine( entry ).toConsole();
 		         break;
 		    case logLevels.WARN:
-				print().BoldYellowLine( entry ).toConsole();
+				print().yellowLine( entry ).toConsole();
 		         break;
 		    case logLevels.INFO:
-				print().BoldGreenLine( entry ).toConsole();
+				print().greenLine( entry ).toConsole();
 		         break;
 		    default: 
-				print().boldLine( entry ).toConsole();
+				print().line( entry ).toConsole();
 		}
 		
 			   

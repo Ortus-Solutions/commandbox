@@ -11,7 +11,7 @@ component extends="commandbox.system.BaseCommand" aliases="init" excludeFromHelp
 	property name="PackageService" inject="PackageService";
 
 	/**
-	 * @name.hint The humnan-readable name for this package 
+	 * @name.hint The human-readable name for this package 
 	 * @slug.hint The ForgeBox slug for this package (no spaces or special chars)
 	 **/
 	function run( name='myApplication', slug='mySlug' ) {

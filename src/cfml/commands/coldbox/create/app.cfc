@@ -8,9 +8,15 @@
 *  - AdvancedScript (default)
 *  - Simple
 *  - SuperSimple
+* .
+* coldbox create app myApp --installColdBox
 *
 **/
 component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
+	
+	// DI
+	property name="packageService" 	inject="PackageService";
+	property name='parser' 	inject='Parser';
 	
 	variables.skeletonLocation = expandPath( '\commandbox\skeletons\' );
 	
@@ -18,11 +24,15 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 	 * @name.hint The name of the app you want to create
 	 * @skeleton.hint The name of the app skeleton to generate 
 	 * @directory.hint The directory to create the app in.  Defaults to your current working directory.
+	 * @init.hint "init" the directory as a package if it isn't already
+	 * @installColdBox.hint Install the latest stable version of ColdBox from ForgeBox
 	 **/
 	function run(
 				required name,
 				skeleton='AdvancedScript',
-				directory=getCWD() ) {
+				directory=getCWD(),
+				boolean init=true,
+				boolean installColdBox=false ) {
 					
 		// This will make the directory canonical and absolute		
 		directory = fileSystemUtil.resolvePath( directory );
@@ -47,6 +57,31 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 	
 		print.line();
 		print.greenLine( '#skeleton# Application successfully created in [#directory#]' );
+		
+		// Init, if not a package
+		if( arguments.init && !packageService.isPackage( arguments.directory ) ) {
+			var originalPath = getCWD(); 
+			// init must be run from CWD
+			shell.cd( arguments.directory );
+			runCommand( 'init "#parser.escapeArg( arguments.name )#" "#parser.escapeArg( replace( arguments.name, ' ', '', 'all' ) )#"' ); 
+			shell.cd( originalPath );
+		}
+		
+		// Install the ColdBox platform
+		if( arguments.installColdBox ) {
+			
+			// Flush out stuff from above
+			print.toConsole();
+			
+			packageService.installPackage(
+				ID = 'coldbox-platform',
+				directory = arguments.directory,
+				save = true,
+				saveDev = false,
+				production = true,
+				currentWorkingDirectory = arguments.directory
+			);
+		}
 		
 	}
 

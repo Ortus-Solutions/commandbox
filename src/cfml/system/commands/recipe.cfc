@@ -21,7 +21,10 @@
  * 
  **/
 component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
-
+	
+	// DI Properties
+	property name='parser' 	inject='Parser';
+	
 	/**
 	 * @recipeFile.hint The name of the recipe file to execute including extension
 	 **/
@@ -99,7 +102,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 	private string function bindArgs( required commands, required struct args ){
 		// iterate and bind.
 		for( var thisArg in arguments.args ){
-			argValue = escapeArg( arguments.args[ thisArg ] );
+			argValue = parser.escapeArg( arguments.args[ thisArg ] );
 			arguments.commands = replaceNoCase( arguments.commands, thisArg, argValue, "all" );
 		}
 		return arguments.commands;
@@ -124,20 +127,5 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 		return parsedArgs;
 	}
 
-	/**
-	* Escapes a value and for inclusion in a command
-	* The following replacements are made:
-	* " 			--> \"
-	* ' 			--> \'
-	* = 			--> \=
-	* [line break]  --> \n
-	*/
-	private string function escapeArg( argValue ) {
-		arguments.argValue = replace( arguments.argValue, '\', "\\", "all" );
-		arguments.argValue = replace( arguments.argValue, '"', '\"', 'all' );
-		arguments.argValue = replace( arguments.argValue, "'", "\'", "all" );
-		arguments.argValue = replace( arguments.argValue, "=", "\=", "all" );
-		arguments.argValue = replace( arguments.argValue, CR, "\n", "all" );
-		return arguments.argValue;
-	}
+
 }

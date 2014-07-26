@@ -195,6 +195,25 @@ component {
 		return results;
 		
 	}
+	
+	/**
+	* Escapes a value and for inclusion in a command
+	* The following replacements are made:
+	* " 			--> \"
+	* ' 			--> \'
+	* = 			--> \=
+	* [line break]  --> \n
+	*/
+	string function escapeArg( argValue ) {
+		arguments.argValue = replace( arguments.argValue, '\', "\\", "all" );
+		arguments.argValue = replace( arguments.argValue, '"', '\"', 'all' );
+		arguments.argValue = replace( arguments.argValue, "'", "\'", "all" );
+		arguments.argValue = replace( arguments.argValue, "=", "\=", "all" );
+		arguments.argValue = replace( arguments.argValue, CR, "\n", "all" );
+		return arguments.argValue;
+	}
+	
+	// ----------------------------- Private ---------------------------------------------
 
 	private function unwrapQuotes( theString ) {
 		if( left( theString, 1 ) == '"' or left( theString, 1 ) == "'") {
@@ -218,7 +237,6 @@ component {
 		theString = replaceNoCase( theString, '__newLine__', CR, "all" );
 		return		replaceNoCase( theString, '__equalSign__', '=', "all" );
 	}
-	
 	
 	
 }
