@@ -4,7 +4,6 @@
 component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
 	
 	// DI
-	property name="cr" 				inject="cr@constants";
 	property name="packageService" 	inject="PackageService";
 
 	/**
@@ -40,41 +39,35 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 		// get the box.json from the project, else empty if not found.
 		var boxData = packageService.readPackageDescriptor( getCWD() );
 
-		// if we have boxdata then try to discover runner from it.
-		if( !structIsEmpty( boxData ) ){
-			// check for testbox data and runner key
-			if( structKeyExists( boxData, "testbox" ) and structKeyExists( boxData.testbox, "runner" ) ){
-				// if we have an empty runner, discover runner from box data 
-				if( !len( arguments.runner ) ){
-					// simple runner?
-					if( isSimpleValue( boxData.testbox.runner ) ){
-						arguments.runner = boxData.testbox.runner;
-					}
-					// array of runners
-					else {
-						// get the first definition in the list to use
-						var runnerDef = boxdata.testbox.runner[ 1 ];
-						for( var thisKey in runnerDef ){
-							arguments.runner = runnerDef[ thisKey ];
-							break;
-						}
-					}
-				} 
-				// else we do have a passed runner, let's see if it matches the runners defined.
-				else if ( len( arguments.runner ) ){
-					// only check if we have an array of struct definitions, else ignore.
-					if( isArray( boxData.testbox.runner ) ){
-						for( var thisRunner in boxData.testbox.runner ){
-
-						}
-					}
-					arguments.runner = boxdata.testbox.runner[ arguments.runner ];
+		// if we have an empty runner, discover runner from box data 
+		if( !len( arguments.runner ) ){
+			// simple runner?
+			if( isSimpleValue( boxData.testbox.runner ) ){			
+				arguments.runner = boxData.testbox.runner;
+			// array of runners
+			} else if( boxdata.testbox.runner.len() ) {
+				// get the first definition in the list to use
+				var runnerDef = boxdata.testbox.runner[ 1 ];
+				for( var thisKey in runnerDef ){
+					arguments.runner = runnerDef[ thisKey ];
+					break;
 				}
-				// else just use the passed runner as a URL
-
 			}
+		// else we do have a passed runner, let's see if it matches the runners defined.
+		} else if ( len( arguments.runner ) ){
+			// only check if we have an array of struct definitions, else ignore.
+			if( isArray( boxData.testbox.runner ) ){
+				for( var thisRunner in boxData.testbox.runner ){
+					// Does the string passed in match the slug of this runner?
+					if( structKeyExists( thisRunner, arguments.runner ) ) {
+						arguments.runner = thisRunner[ arguments.runner ];						
+					}
+				}
+			}
+		}
 
-			// We know need to build the params according to box.json
+		if( left( arguments.runner, 4 ) != 'http' ) {
+			return error( '[#arguments.runner#] it not a valid URL, or does not match a runner slug in your box.json.' );
 		}
 
 		var testboxURL = arguments.runner & "?recurse=#arguments.recurse#&reporter=#arguments.reporter#";
@@ -108,10 +101,8 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 
 		// Do we have an output file
 		if( !isNull( arguments.outputFile ) ){
-			// Attach pwd location
-			if( left( arguments.outputFile, 1 ) != "/" ){
-				arguments.outputFile = getCWD() & "/" & arguments.outputFile;
-			}
+			// This will make each directory canonical and absolute
+			arguments.outputFile = fileSystemUtil.resolvePath( arguments.outputFile );
 			// write it
 			fileWrite( arguments.outputFile, results.fileContent );
 			print.boldGreenLine( "Report written to #arguments.outputFile#!" );
