@@ -195,7 +195,7 @@ component accessors="true" singleton {
 		for( var dependency in dependencies ) {
 			
 			// TODO: Logic here to determine if a satisfying version of this package
-			// is already installed here or at a higher level.  if so, skip it.
+			//       is already installed here or at a higher level.  if so, skip it.
 			
 			params = {
 				ID = dependency,
@@ -203,8 +203,8 @@ component accessors="true" singleton {
 				save = false,
 				saveDev = false,
 				production = arguments.production,
-				// To allow nested modules, change this to the previous 
-				// install directory so the dependency is nested within
+				// TODO: To allow nested modules, change this to the previous 
+				//       install directory so the dependency is nested within
 				currentWorkingDirectory = arguments.currentWorkingDirectory
 			};
 						
@@ -227,6 +227,8 @@ component accessors="true" singleton {
 	/**
 	* Adds a dependency to a packge
 	* @directory.hint The directory that is the root of the package
+	* @packageName.hint Package to add a a dependency
+	* @version.hint Version of the dependency
 	* @dev.hint True if this is a development depenency, false if it is a production dependency
 	*/	
 	public function addDependency( required string directory, required string packageName, required string version,  boolean dev=false ) {
@@ -240,6 +242,52 @@ component accessors="true" singleton {
 		
 		// Write the box.json back out
 		writePackageDescriptor( boxJSON, arguments.directory );
+	}
+	
+	/**
+	* Gets a TestBox runner URL from box.json with an optional slug to look up.  If no slug is passed, the first runner will be used
+	* @directory.hint The directory that is the root of the package
+	* @slug.hint An optional runner slug to look for in the list of runners
+	*/	
+	public function getTestBoxRunner( required string directory, string slug='' ) {
+		// Get box.json, create empty if it doesn't exist
+		var boxJSON = readPackageDescriptor( arguments.directory );
+		// Get reference to appropriate depenency struct
+		var runners = boxJSON.testbox.runner;
+		var runnerURL = '';
+
+		// If there is a slug and runners is an array, look it up
+		if ( len( arguments.slug ) && isArray( runners ) ){
+			
+			for( var thisRunner in runners ){
+				// Does the string passed in match the slug of this runner?
+				if( structKeyExists( thisRunner, arguments.runner ) ) {
+					runnerURL = thisRunner[ arguments.runner ];
+					break;						
+				}
+			}
+			
+			return runnerURL;
+			
+		}
+
+		// Just get the first one we can find
+		 
+		// simple runner?
+		if( isSimpleValue( runners ) ){
+			return runners;
+		}
+		
+		// Array of runners?
+		if( isArray( runners ) ) {
+			// get the first definition in the list to use
+			var firstRunner = runners[ 1 ];
+			return firstRunner[ listFirst( structKeyList( firstRunner ) ) ];
+		}
+		
+		// We failed to find anything
+		return '';
+		
 	}
 	
 	/**

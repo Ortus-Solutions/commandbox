@@ -36,41 +36,21 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 		string outputFile
 	){
 		
-		// get the box.json from the project, else empty if not found.
-		var boxData = packageService.readPackageDescriptor( getCWD() );
-
-		// if we have an empty runner, discover runner from box data 
-		if( !len( arguments.runner ) ){
-			// simple runner?
-			if( isSimpleValue( boxData.testbox.runner ) ){			
-				arguments.runner = boxData.testbox.runner;
-			// array of runners
-			} else if( boxdata.testbox.runner.len() ) {
-				// get the first definition in the list to use
-				var runnerDef = boxdata.testbox.runner[ 1 ];
-				for( var thisKey in runnerDef ){
-					arguments.runner = runnerDef[ thisKey ];
-					break;
-				}
-			}
-		// else we do have a passed runner, let's see if it matches the runners defined.
-		} else if ( len( arguments.runner ) ){
-			// only check if we have an array of struct definitions, else ignore.
-			if( isArray( boxData.testbox.runner ) ){
-				for( var thisRunner in boxData.testbox.runner ){
-					// Does the string passed in match the slug of this runner?
-					if( structKeyExists( thisRunner, arguments.runner ) ) {
-						arguments.runner = thisRunner[ arguments.runner ];						
-					}
-				}
-			}
+		var runnerURL = '';
+		// If a URL is passed, used it
+		if( left( arguments.runner, 4 ) == 'http' ) {
+			runnerURL = arguments.runner;
+		// Otherwise, try to get one from box.json
+		} else {
+			runnerURL = packageService.getTestBoxRunner( arguments.runner );
+		}
+				
+		// If we failed to find a URL, throw an error
+		if( left( runnerURL, 4 ) != 'http' ) {
+			return error( '[#runnerURL#] it not a valid URL, or does not match a runner slug in your box.json.' );
 		}
 
-		if( left( arguments.runner, 4 ) != 'http' ) {
-			return error( '[#arguments.runner#] it not a valid URL, or does not match a runner slug in your box.json.' );
-		}
-
-		var testboxURL = arguments.runner & "?recurse=#arguments.recurse#&reporter=#arguments.reporter#";
+		var testboxURL = runnerURL & "?recurse=#arguments.recurse#&reporter=#arguments.reporter#";
 		// Do we have bundles
 		if( !isNull( arguments.bundles ) ){ testboxURL &= "&bundles=#arguments.bundles#"; }
 		// Do we have directory
