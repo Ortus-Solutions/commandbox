@@ -30,6 +30,11 @@ component accessors="true" singleton{
 	// This method needs to be overridden by the concrete class.
 	function run() {
 		return 'This command CFC has not implemented a run() method.';
+	}	
+	
+	// Convenience method for getting stuff from WireBox
+	function getModel( name, dsl, initArguments={}, targetObject='' ) {
+		return wirebox.getInstance( argumentCollection = arguments );
 	}
 	
 	// Called prior to each execution to reset any state stored in the CFC
