@@ -8,12 +8,18 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 
 	// DI
 	property name='artifactService' inject='artifactService';
-
-	function run() {
-		if( confirm( "Really wipe out the entire artifacts cache? [y/n]" ) ){
+	
+	/**
+	 * @force.hint Set to true to skip the prompt
+	 *
+	 **/
+	function run( boolean force=false ) {
+		
+		if( arguments.force || confirm( "Really wipe out the entire artifacts cache? [y/n]" ) ){
 			var results = artifactService.cleanArtifacts();
 			print.redLine( "Artifacts directory cleaned of '#results#' items." );
 		}
+		
 	}
 
 }
