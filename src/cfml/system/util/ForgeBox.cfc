@@ -19,7 +19,10 @@ or just add DEBUG to the root logger
 
 ----------------------------------------------------------------------->
 <cfcomponent hint="ForgeBox API REST Wrapper" output="false" singleton>
-
+	
+	<cfproperty name="progressableDownloader" inject="ProgressableDownloader">
+	<cfproperty name="progressBar" inject="ProgressBar">
+	
 <!------------------------------------------- CONSTRUCTOR ------------------------------------------>
 	
 	<cfscript>
@@ -125,15 +128,23 @@ or just add DEBUG to the root logger
 		<cfset var destination  = arguments.destinationDir>
 		<!---Don't trust the URL to have a file name --->
 		<cfset var fileName		= 'temp#randRange( 1, 1000 )#.zip'>
+		<cfset var fullPath = destination & '/' & fileName>
 		
 		<!--- Download File --->
-		<cfhttp url="#arguments.downloadURL#"
-				method="GET"
-				file="#fileName#"
-				path="#destination#"
-				getasbinary="yes">
+		<cfset progressableDownloader.download(
+			arguments.downloadURL,
+			fullPath,
+			function( status ) {
+				progressBar.update(
+					percent = status.percentage,
+					totalSizeKB = status.totalKB,
+					completeSizeKB = status.downloadedKB,
+					speedKBps = status.averageKBPS
+				);
+			}
+		)>
 			
-		<cfreturn destination & '/' & fileName >		
+		<cfreturn fullPath>		
 	</cffunction>	
 	
 <!------------------------------------------- PRIVATE ------------------------------------------>
