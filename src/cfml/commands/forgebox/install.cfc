@@ -27,9 +27,15 @@
  **/
 component extends="commandbox.system.BaseCommand" aliases="install" excludeFromHelp=false {
 	
-	property name="forgeBox" inject="ForgeBox";
+	/**
+	* The ForgeBox entries cache
+	*/
+	property name="entries";
+
+	// DI
+	property name="forgeBox" 		inject="ForgeBox";
 	property name="artifactService" inject="ArtifactService";
-	property name="packageService" inject="PackageService";
+	property name="packageService" 	inject="PackageService";
 			
 	/**
 	* @slug.hint Slug of the ForgeBox entry to install. If no slug is passed, all dependencies in box.json will be installed.
@@ -40,11 +46,12 @@ component extends="commandbox.system.BaseCommand" aliases="install" excludeFromH
 	* @production.hint When calling this command with no slug to install all dependencies, set this to true to ignore devDependencies.
 	**/
 	function run( 
-				string slug='',
-				string directory,
-				boolean save=false,
-				boolean saveDev=false,
-				boolean production=false ) {
+		string slug='',
+		string directory,
+		boolean save=false,
+		boolean saveDev=false,
+		boolean production=false 
+	){
 		
 		// Don't default the dir param since we need to differentiate whether the user actually 
 		// specifically typed in a param or not since it overrides the package's box.json install dir.
@@ -66,14 +73,7 @@ component extends="commandbox.system.BaseCommand" aliases="install" excludeFromH
 		// Install this package.
 		// Don't pass directory unless you intend to override the box.json of the package being installed 
 		packageService.installPackage( argumentCollection = arguments );
-			
 	}
-
-
-
-
-
-
 
 	// Auto-complete list of slugs
 	function slugComplete() {
