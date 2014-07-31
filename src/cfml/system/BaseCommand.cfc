@@ -33,7 +33,7 @@ component accessors="true" singleton{
 	}	
 	
 	// Convenience method for getting stuff from WireBox
-	function getModel( name, dsl, initArguments={}, targetObject='' ) {
+	function getInstance( name, dsl, initArguments={}, targetObject='' ) {
 		return wirebox.getInstance( argumentCollection = arguments );
 	}
 	
