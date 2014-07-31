@@ -36,9 +36,8 @@ component extends="wirebox.system.logging.AbstractAppender" {
 		var entry = "";
 		
 		if( hasCustomLayout() ){
-			entry = getCustomLayout().format(loge);
-		}
-		else{
+			entry = getCustomLayout().format( loge );
+		} else {
 			entry = loge.getmessage();
 			if( entry == '.' ) {
 				entry = '';
@@ -48,7 +47,7 @@ component extends="wirebox.system.logging.AbstractAppender" {
 		// Log message
 		switch( loge.getseverity() ) {
 		    case logLevels.FATAL: case logLevels.ERROR:
-				print().BoldRedLine( entry ).toConsole();
+				print().boldRedLine( entry ).toConsole();
 		         break;
 		    case logLevels.WARN:
 				print().yellowLine( entry ).toConsole();
@@ -59,19 +58,20 @@ component extends="wirebox.system.logging.AbstractAppender" {
 		    default: 
 				print().line( entry ).toConsole();
 		}
-		
-			   
+
+		// Log Extra Info as a string
+		var extraInfo = loge.getExtraInfoAsString();
+		if( len( extraInfo ) ){
+			print().line( loge.getExtraInfo().toString() );	
+		}
 	}
 	
 	function print() {
 		if( !structKeyExists( variables, 'printBuffer' ) ){
 			// Appenders are created by WireBox, so we can't DI.
-			variables.PrintBuffer = application.wireBox.getInstance( 'PrintBuffer' );
+			variables.printBuffer = application.wireBox.getInstance( 'PrintBuffer' );
 		} 
 		return variables.printBuffer;
 	}
-	
-
-	
 	
 }

@@ -20,8 +20,9 @@ or just add DEBUG to the root logger
 ----------------------------------------------------------------------->
 <cfcomponent hint="ForgeBox API REST Wrapper" output="false" singleton>
 	
-	<cfproperty name="progressableDownloader" inject="ProgressableDownloader">
-	<cfproperty name="progressBar" inject="ProgressBar">
+	<!--- DI --->
+	<cfproperty name="progressableDownloader" 	inject="ProgressableDownloader">
+	<cfproperty name="progressBar" 				inject="ProgressBar">
 	
 <!------------------------------------------- CONSTRUCTOR ------------------------------------------>
 	

@@ -11,12 +11,12 @@ component accessors="true" singleton {
 
 	// DI
 	property name="CR" 				inject="CR@constants";
-	property name="tempDir" inject="tempDir@constants";
+	property name="tempDir" 		inject="tempDir@constants";
 	property name="formatterUtil"	inject="formatter";
 	property name="artifactService" inject="ArtifactService";
 	property name="consoleLogger"	inject="logbox:logger:console";
 	// This should be removed once the install command starts resolving registries automatically
-	property name="forgeBox" inject="ForgeBox";
+	property name="forgeBox" 		inject="ForgeBox";
 
 	/**
 	* Constructor
@@ -50,6 +50,7 @@ component accessors="true" singleton {
 	* @save.hint Save the installed package as a dependancy in box.json (if it exists)
 	* @saveDev.hint Save the installed package as a dev dependancy in box.json (if it exists)
 	* @production.hint When calling this command with no slug to install all dependencies, set this to true to ignore devDependencies.
+	* @verbose.hint If set, it will produce much more verbose information about the package installation
 	**/
 	function installPackage(
 			required string ID,
@@ -57,7 +58,9 @@ component accessors="true" singleton {
 			boolean save=false,
 			boolean saveDev=false,
 			boolean production=false,
-			string currentWorkingDirectory ) {
+			string currentWorkingDirectory,
+			boolean verbose=false
+	){
 					
 		///////////////////////////////////////////////////////////////////////
 		// TODO: Instead of assuming this is ForgeBox, look up the appropriate
@@ -72,11 +75,14 @@ component accessors="true" singleton {
 			consoleLogger.info( 'Installing package: #arguments.ID#');
 			
 			try {
-				
-				consoleLogger.warn( "Contacting ForgeBox, please wait..." );
-		
+				// Info
+				consoleLogger.warn( "Verifying package '#arguments.ID#' in ForgeBox, please wait..." );
 				// We might have gotten this above
 				var entryData = forgebox.getEntry( arguments.ID );
+				// Verbose info
+				if( arguments.verbose ){
+					consoleLogger.debug( "Package data retrieved: ", entryData );
+				}
 				
 				// entrylink,createdate,lname,isactive,installinstructions,typename,version,hits,coldboxversion,sourceurl,slug,homeurl,typeslug,
 				// downloads,entryid,fname,changelog,updatedate,downloadurl,title,entryrating,summary,username,description,email
@@ -87,12 +93,12 @@ component accessors="true" singleton {
 				}
 				
 				if( !len( entryData.downloadurl ) ) {
-					consoleLogger.error( 'No download URL provided.  Manual install only.' );
+					consoleLogger.error( 'No download URL provided in ForgeBox.  Manual install only.' );
 					return;
 				}
 		
 				// Advice we found it
-				consoleLogger.info( "Found entry: '#arguments.ID#'" );
+				consoleLogger.info( "Verified entry in ForgeBox: '#arguments.ID#'" );
 		
 				var packageName = arguments.ID;
 				var version = entryData.version;
@@ -113,6 +119,8 @@ component accessors="true" singleton {
 									
 					consoleLogger.info( "Done." );
 					
+				} else {
+					consoleLogger.info( "Package found in local artifacts!");
 				}
 				
 				
@@ -142,19 +150,24 @@ component accessors="true" singleton {
 			// Install the package
 			var results = artifactService.installArtifact( argumentCollection = installParams );
 			
+			// Summary output
 			consoleLogger.info( "Installing to: #results.installDirectory#" );		
+			consoleLogger.debug( "-> #results.copied.len()# File(s) Installed" );
 			
-			// Turn this off or put it behind a --verbose flag if it gets annoying
-			consoleLogger.debug( "#results.copied.len()# File(s) Installed" );
-			// Too much noise-- perhaps add a --verbose option
-		/*	for( var file in results.copied ) {
-				consoleLogger.debug( ".    #file#" );					
-			}*/				
-			consoleLogger.debug( "#results.ignored.len()# File(s) ignored" );
-			// Too much noise-- perhaps add a --verbose option
-			/*for( var file in results.ignored ) {
-				consoleLogger.debug( ".    #file#" );					
-			}*/
+			// Verbose info
+			if( arguments.verbose ){
+				for( var file in results.copied ) {
+					consoleLogger.debug( ".    #file#" );				
+				}		
+			}	
+			
+			// Ignored Summary
+			consoleLogger.debug( "-> #results.ignored.len()# File(s) ignored" );
+			if( arguments.verbose ){
+				for( var file in results.ignored ) {
+					consoleLogger.debug( ".    #file#" );					
+				}
+			}
 		
 			// Should we save this as a dependancy
 			// and is the current working directory a package?
@@ -218,9 +231,8 @@ component accessors="true" singleton {
 		}
 	
 		if( !len( arguments.ID ) && dependencies.isEmpty() ) {
-			print.boldGreenLine( "No dependencies found to install, but it's the thought that counts, right?" );
+			consoleLogger.info( "No dependencies found to install, but it's the thought that counts, right?" );
 		}
-		
 
 	}
 	
