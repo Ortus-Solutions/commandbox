@@ -97,6 +97,12 @@ component accessors="true" singleton {
 					return;
 				}
 		
+				// If this is a CommandBox command and there is no directory
+				if( entryData.typeSlug == 'commandbox' && !structKeyExists( arguments, 'directory' ) ) {
+					// Put it in the user directory
+					arguments.directory = expandPath( '/root/commands' );
+				}
+		
 				// Advice we found it
 				consoleLogger.info( "Verified entry in ForgeBox: '#arguments.ID#'" );
 		
