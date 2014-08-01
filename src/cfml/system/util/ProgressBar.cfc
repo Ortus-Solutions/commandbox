@@ -30,6 +30,8 @@ component singleton {
 		) {
 					
 		var ansi = createObject( 'java', 'org.fusesource.jansi.Ansi' ).init();
+		var AnsiConsole = createObject( 'java', 'org.fusesource.jansi.AnsiConsole' );
+		AnsiConsole.systemInstall();
 		var ansiErase = createObject( 'java', 'org.fusesource.jansi.Ansi$Erase' );
 		// Total space availble to progress bar.  Subtract 5 for good measure since it will wrap if you get too close
 		var totalWidth = shell.getTermWidth()-5	;
@@ -72,6 +74,7 @@ component singleton {
  		// Add to console and flush
 	 	system.out.print(ansi);
         system.out.flush();
+		AnsiConsole.systemUninstall();
         
 			
 	}

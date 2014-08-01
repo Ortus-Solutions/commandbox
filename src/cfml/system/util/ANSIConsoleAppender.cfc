@@ -62,7 +62,7 @@ component extends="wirebox.system.logging.AbstractAppender" {
 		// Log Extra Info as a string
 		var extraInfo = loge.getExtraInfoAsString();
 		if( len( extraInfo ) ){
-			print().line( loge.getExtraInfo().toString() );	
+		//	print().line( loge.getExtraInfo().toString() ).toConsole();	
 		}
 	}
 	
