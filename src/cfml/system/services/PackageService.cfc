@@ -98,7 +98,7 @@ component accessors="true" singleton {
 				}
 		
 				// If this is a CommandBox command and there is no directory
-				if( entryData.typeSlug == 'commandbox' && !structKeyExists( arguments, 'directory' ) ) {
+				if( entryData.typeSlug == 'commandbox-commands' && !structKeyExists( arguments, 'directory' ) ) {
 					// Put it in the user directory
 					arguments.directory = expandPath( '/root/commands' );
 				}
