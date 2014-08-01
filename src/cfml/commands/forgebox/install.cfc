@@ -1,29 +1,30 @@
 /**
  * This command will download and install an entry from ForgeBox into your application.  You must use the 
- *  exact slug for the item you want.  If the item being installed has a box.json descriptor, it's "directory"
- *  property will be used as the install location. In the absence of that setting, the current CommandBox working
- *  directory will be used.  
- *  Override the installation location by passing the "directory" parameter.  The save 
- *  and saveDev parameters will save this package as a dependency or devDependency in your box.json if it exists.
- *  .
- *  # Install the feeds package
- *  forgebox install feeds
- *  .
- *  # Install feeds and save as a dependency
- *  forgebox install feeds --save
- *  .
- *  # Install feeds and save as a devDependency
- *  forgebox install feeds --saveDev
- *  .
- *  This command can also be called with no slug.  In that instance, it will search for a box.json in the current working
- *  directory and install all the dependencies.  Use the --production flag to ignore devDependencies.
- *  .
- *  # Install all dependencies in box.json
- *  forgebox install
- *  .
- *  # Install all dependencies except devDepenencies in box.json
- *  forgebox install --production
- *  
+ * exact slug for the item you want.  If the item being installed has a box.json descriptor, it's "directory"
+ * property will be used as the install location. In the absence of that setting, the current CommandBox working
+ * directory will be used.
+ * .  
+ * Override the installation location by passing the "directory" parameter.  The "save"
+ * and "saveDev" parameters will save this package as a dependency or devDependency in your box.json if it exists.
+ * .
+ * # Install the feeds package
+ * forgebox install feeds
+ * .
+ * # Install feeds and save as a dependency
+ * forgebox install feeds --save
+ * .
+ * # Install feeds and save as a devDependency
+ * forgebox install feeds --saveDev
+ * .
+ * This command can also be called with no slug.  In that instance, it will search for a box.json in the current working
+ * directory and install all the dependencies.  Use the --production flag to ignore devDependencies.
+ * .
+ * # Install all dependencies in box.json
+ * forgebox install
+ * .
+ * # Install all dependencies except devDepenencies in box.json
+ * forgebox install --production
+ * 
  **/
 component extends="commandbox.system.BaseCommand" aliases="install" excludeFromHelp=false {
 	

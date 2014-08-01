@@ -13,4 +13,3 @@ src/cfml/logs
 build/launch4j
 tests/testbox
 /mxunit
-/src/cfml/commands/preside
