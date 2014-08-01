@@ -136,12 +136,7 @@ or just add DEBUG to the root logger
 			arguments.downloadURL,
 			fullPath,
 			function( status ) {
-				progressBar.update(
-					percent = status.percentage,
-					totalSizeKB = status.totalKB,
-					completeSizeKB = status.downloadedKB,
-					speedKBps = status.averageKBPS
-				);
+				progressBar.update( argumentCollection = status );
 			}
 		)>
 			

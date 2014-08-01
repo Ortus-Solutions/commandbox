@@ -82,10 +82,10 @@ component singleton {
 						
 						// Build status data to pass to closure
 						var status = {
-							percentage = currentPercentage,
-							averageKBPS = kiloBytesPerSecond,
-							totalKB = lenghtOfFile/1000,
-							downloadedKB = total/1000
+							percent = currentPercentage,
+							speedKBps = kiloBytesPerSecond,
+							totalSizeKB = lenghtOfFile/1000,
+							completeSizeKB = total/1000
 						};
 						
 						// Call closure
