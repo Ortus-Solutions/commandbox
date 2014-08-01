@@ -12,9 +12,10 @@ component{
 	this.sessionmanagement = "false";
 
 	// Move everything over to this mapping which is the "root" of our app
-	commandBoxRoot = getDirectoryFromPath( getMetadata( this ).path );
-	this.mappings[ '/commandbox' ] 	= commandBoxRoot;
-	this.mappings[ '/wirebox' ] 	= commandBoxRoot & '/system/wirebox';
+	CFMLRoot = getDirectoryFromPath( getMetadata( this ).path );
+	this.mappings[ '/commandbox' ] 	= CFMLRoot;
+	this.mappings[ '/root' ] 	= expandPath( CFMLRoot & '/../' );
+	this.mappings[ '/wirebox' ] 	= CFMLRoot & '/system/wirebox';
 
 	function onApplicationStart(){
 		new wirebox.system.ioc.Injector( 'commandbox.system.config.WireBox' );

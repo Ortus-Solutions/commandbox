@@ -10,13 +10,14 @@
 component accessors="true" singleton {
 
 	// DI Properties
-	property name='shell' 	inject='Shell';
-	property name='parser' 	inject='Parser';
-	property name='system' 	inject='System@constants';
-	property name='cr' 		inject='cr@constants';
-	property name="logger" 	inject="logbox:logger:{this}";
-	property name="wirebox" 	inject="wirebox";
-
+	property name='shell' 				inject='Shell';
+	property name='parser' 				inject='Parser';
+	property name='system' 				inject='System@constants';
+	property name='cr' 					inject='cr@constants';
+	property name='logger' 				inject='logbox:logger:{this}';
+	property name='wirebox' 			inject='wirebox';
+	property name='commandLocations'	inject='commandLocations@constants';
+	
 	// TODO: Convert these to properties
 	instance = {
 		// A nested struct of the registered commands
@@ -31,24 +32,27 @@ component accessors="true" singleton {
 	 * Constructor
 	 **/
 	function init() {
-		// This is where system commands are stored
-		instance.systemCommandDirectory = '/commandbox/system/commands';
-		// This is where user commands are stored
-		instance.userCommandDirectory = '/commandbox/commands';
-
 		return this;
 	}
 
 	function configure() {
-        // Load system commands
-		initCommands( instance.systemCommandDirectory, instance.systemCommandDirectory );
-		
-        // Load user commands
-		initCommands( instance.userCommandDirectory, instance.userCommandDirectory );		
+		// map commands
+		for( var commandLocation in commandLocations ) {
+			
+			// Ensure location exists
+			if( !directoryExists( expandPath( commandLocation ) ) ) {
+				directoryCreate( expandPath( commandLocation ) );				
+			}
+			// Load up any commands
+			initCommands( commandLocation, commandLocation );
+		}
 	}
 
 	/**
-	 * initialize the commands. This will recursively call itself for subdirectories.
+	 * Initialize the commands. This will recursively call itself for subdirectories.
+	 * @baseCommandDirectory.hint The starting directory
+	 * @commandDirectory.hint The current directory we've recursed into
+	 * @commandPath.hint The dot-delimted path so far-- only used when recursing
 	 **/
 	function initCommands( baseCommandDirectory, commandDirectory, commandPath='' ) {
 		var varDirs = DirectoryList( path=commandDirectory, recurse=false, listInfo='query', sort='type desc, name asc' );
