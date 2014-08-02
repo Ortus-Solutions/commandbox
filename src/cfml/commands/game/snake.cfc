@@ -142,6 +142,9 @@ component extends="commandbox.system.BaseCommand" aliases="snake" excludeFromHel
 
 	private function printGame() {
 		
+			// Reset cursor to upper left hand corner
+			print.text( chr( 27 ) & '[H' ).toConsole();
+		
 			print.line( variables.gameHeader );
 			
 			var thisGameSurface = duplicate( variables.gameSurface );
@@ -192,8 +195,7 @@ component extends="commandbox.system.BaseCommand" aliases="snake" excludeFromHel
 			}
 			
 			print.line( variables.gameFooter );
-			
-			shell.clearScreen( false );
+						
 			print.toConsole();
 			
 	}
