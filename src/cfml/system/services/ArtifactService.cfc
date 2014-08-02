@@ -124,7 +124,7 @@ component accessors="true" singleton {
 	* @version.hint The version of the package to look for
 	*/ 
 	boolean function artifactExists( required packageName, required version ){
-		return fileExists( getArtifactPath( argumentCollection = arguments ) );				
+		return fileExists( getArtifactPath( argumentCollection = arguments ) );
 	}
 
 	/**
@@ -219,9 +219,7 @@ component accessors="true" singleton {
 		
 		var artifactDescriptor = getArtifactDescriptor( arguments.packageName, arguments.version );
 		var ignorePatterns = ( isArray( artifactDescriptor.ignore ) ? artifactDescriptor.ignore : [] );
-		// skip root box.json
-		ignorePatterns.append( '/box.json' );
-		
+				
 		if( !structKeyExists( arguments, 'installDirectory' ) ) {
 			// Strip any leading slashes off of the install directory
 			if( artifactDescriptor.directory.startsWith( '/' ) || artifactDescriptor.directory.startsWith( '\' ) ) {
@@ -240,6 +238,22 @@ component accessors="true" singleton {
 		
 		// Unzip to temp directory
 		zip action="unzip" file="#thisArtifactPath#" destination="#tmpPath#" overwrite="true";
+		
+		// If the zip file has a directory named after the package, that's our actual package root.
+		var innerTmpPath = '#tmpPath#/#arguments.packageName#';
+		if( directoryExists( innerTmpPath ) ) {
+			// Move the box.json if it exists into the inner folder
+			fromBoxJSONPath = '#tmpPath#/box.json';
+			toBoxJSONPath = '#innerTmpPath#/box.json'; 
+			if( fileExists( fromBoxJSONPath ) ) {
+				fileMove( fromBoxJSONPath, toBoxJSONPath );
+			}
+			// Repoint ourselves to the inner folder
+			tmpPath = innerTmpPath;
+		}
+
+		arguments.installDirectory &= '/#packageName#'; 
+		directoryCreate( arguments.installDirectory );
 
 		var results = {
 			copied = [],

@@ -15,6 +15,7 @@ component accessors="true" singleton {
 	property name="formatterUtil"	inject="formatter";
 	property name="artifactService" inject="ArtifactService";
 	property name="consoleLogger"	inject="logbox:logger:console";
+	property name="fileSystemUtil"	inject="FileSystem";
 	// This should be removed once the install command starts resolving registries automatically
 	property name="forgeBox" 		inject="ForgeBox";
 
@@ -50,6 +51,7 @@ component accessors="true" singleton {
 	* @save.hint Save the installed package as a dependancy in box.json (if it exists)
 	* @saveDev.hint Save the installed package as a dev dependancy in box.json (if it exists)
 	* @production.hint When calling this command with no slug to install all dependencies, set this to true to ignore devDependencies.
+	* @currentWorkingDirectory.hint Root of the application (used for finding box.json)
 	* @verbose.hint If set, it will produce much more verbose information about the package installation
 	**/
 	function installPackage(
@@ -241,6 +243,163 @@ component accessors="true" singleton {
 		}
 
 	}
+		
+	/**
+	* Uninstalls a package and its dependencies
+	* @slug.ID Identifier of the packge to uninstall.
+	* @slug.optionsUDF slugComplete
+	* @directory.hint The directory to install in. This will override the packages's box.json install dir if provided. 
+	* @save.hint Remove package as a dependancy in box.json (if it exists)
+	* @saveDev.hint Remove package as a dev dependancy in box.json (if it exists)
+	* @currentWorkingDirectory.hint Root of the application (used for finding box.json)
+	**/
+	function uninstallPackage(
+			required string ID,
+			string directory,
+			boolean save=false,
+			boolean saveDev=false,
+			required string currentWorkingDirectory
+	){
+					
+		///////////////////////////////////////////////////////////////////////
+		// TODO: Instead of assuming this is ForgeBox, look up the appropriate
+		//       regsitry to handle the package a deal with a dynamic registry 
+		//       object at runtime with generic methods
+		///////////////////////////////////////////////////////////////////////
+		
+		consoleLogger.info( '.');
+		consoleLogger.info( 'Uninstalling package: #arguments.ID#');
+		
+		var packageName = arguments.ID;
+		var version = '1.0.0.0';
+			
+		
+		try {
+			// Info
+			consoleLogger.warn( "Verifying package '#arguments.ID#' in ForgeBox, please wait..." );
+			// We might have gotten this above
+			var entryData = forgebox.getEntry( arguments.ID );
+			
+			// entrylink,createdate,lname,isactive,installinstructions,typename,version,hits,coldboxversion,sourceurl,slug,homeurl,typeslug,
+			// downloads,entryid,fname,changelog,updatedate,downloadurl,title,entryrating,summary,username,description,email
+							
+			// If this is a CommandBox command and there is no directory
+			if( entryData.typeSlug == 'commandbox-commands' && !structKeyExists( arguments, 'directory' ) ) {
+				// Put it in the user directory
+				arguments.directory = expandPath( '/root/commands' );
+			}
+	
+			// Advice we found it
+			consoleLogger.info( "Verified entry in ForgeBox: '#arguments.ID#'" );
+	
+			version = entryData.version;
+			
+			// If the local artifact doesn't exist, download and create it
+			if( !artifactService.artifactExists( packageName, version ) ) {
+					
+				consoleLogger.info( "Starting download from: '#entryData.downloadURL#'..." );
+					
+				// Grab from the project's download URL and store locally in the temp dir
+				var packageTempPath = forgebox.install( entryData.downloadurl, tempDir );
+				
+				// Store it locally in the artfact cache
+				artifactService.createArtifact( packageName, version, packageTempPath );
+				
+				// Clean up the temp file
+				fileDelete( packageTempPath );
+								
+				consoleLogger.info( "Done." );
+				
+			}
+			
+			
+		} catch( forgebox var e ) {
+			// This can include "expected" errors such as "slug not found"
+			consoleLogger.error( '#e.message##CR##e.detail#' );
+			// If something goes wrong here, keep going-- we can still  
+			// look for the package to install in the current directory
+		}
+		
+	
+		//////////////////////////////////////
+		// TODO: End of ForgeBox-specific code
+		//////////////////////////////////////
+				
+
+	
+		// If a directory is passed in, use it
+		if( structKeyExists( arguments, 'directory' ) ) {
+			var uninstallDirectory = arguments.directory
+		// Otherwise, if an artifact exists, look in its box.json.
+		} else if( artifactService.artifactExists( packageName, version ) ) {				
+			var boxJSON = artifactService.getArtifactDescriptor( packageName, version );
+			var uninstallDirectory = arguments.currentWorkingDirectory & '/' & boxJSON.directory;
+			uninstallDirectory = fileSystemUtil.resolvePath( uninstallDirectory );
+		// If all else fails, just use the current directory
+		} else {
+			var uninstallDirectory = arguments.currentWorkingDirectory			
+		}
+		
+		// This is where we *should* find the package
+		var packageLocation = uninstallDirectory & '/' & packageName;
+		
+		// See if the package exists here
+		if( !directoryExists( packageLocation ) ) {
+			consoleLogger.error( 'Package [#packageLocation#] not found.' );
+			return;
+		}
+
+		// Get the dependencies of the package we're about to uninstalled
+		var boxJSON = readPackageDescriptor( packageLocation );
+
+		// and grab all the dependencies
+		var dependencies = boxJSON.dependencies;
+		
+		// Add in the devDependencies
+		dependencies.append( boxJSON.devDependencies );
+
+		if( dependencies.count() ) {
+			consoleLogger.debug( "Uninstalling dependencies first..." );
+		}
+
+		// Loop over this packages dependencies
+		for( var dependency in dependencies ) {
+			
+			params = {
+				ID = dependency,
+				// Only save the first level
+				save = false,
+				saveDev = false,
+				// TODO: To allow nested modules, change this to the previous 
+				//       install directory so the dependency is nested within
+				currentWorkingDirectory = arguments.currentWorkingDirectory
+			};
+						
+			// If the user didn't specify this, don't pass it since it overrides the package's desired install location
+			if( structKeyExists( arguments, 'directory' ) ) {
+				params.directory = arguments.directory;
+			}
+			
+			// Recursivley install them
+			uninstallPackage( argumentCollection = params );	
+		}
+				
+		// uninstall the package
+		directoryDelete( packageLocation, true );
+		
+		// Should we save this as a dependancy
+		// and is the current working directory a package?
+		if( ( arguments.save || arguments.saveDev )  
+			&& isPackage( arguments.currentWorkingDirectory ) ) {
+			// Add it!
+			removeDependency( currentWorkingDirectory, packageName,  arguments.saveDev );
+			// Tell the user...
+			consoleLogger.info( "#( arguments.saveDev ? 'dev ': '' )#dependency removed from box.json." );
+		}
+	
+		consoleLogger.info( "'#arguments.ID#' has been uninstalled" );
+
+	}
 	
 	/**
 	* Adds a dependency to a packge
@@ -257,6 +416,29 @@ component accessors="true" singleton {
 		
 		// Add/overwrite this dependency
 		dependencies[ arguments.packageName ] = arguments.version;
+		
+		// Write the box.json back out
+		writePackageDescriptor( boxJSON, arguments.directory );
+	}
+	
+	/**
+	* Removes a dependency from a packge if it exists
+	* @directory.hint The directory that is the root of the package
+	* @packageName.hint Package to add a a dependency
+	* @dev.hint True if this is a development depenency, false if it is a production dependency
+	*/	
+	public function removeDependency( required string directory, required string packageName, boolean dev=false ) {
+		// Get box.json, create empty if it doesn't exist
+		var boxJSON = readPackageDescriptor( arguments.directory );
+		// Get reference to appropriate depenency struct
+		var dependencies = ( arguments.dev ? boxJSON.devDependencies : boxJSON.dependencies );
+		
+		// Bail if it doesn't exists
+		if( !structKeyExists( dependencies, arguments.packageName ) ) {
+			return;
+		}
+		
+		structDelete( dependencies, arguments.packageName );
 		
 		// Write the box.json back out
 		writePackageDescriptor( boxJSON, arguments.directory );

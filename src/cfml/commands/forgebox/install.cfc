@@ -35,7 +35,6 @@ component extends="commandbox.system.BaseCommand" aliases="install" excludeFromH
 
 	// DI
 	property name="forgeBox" 		inject="ForgeBox";
-	property name="artifactService" inject="ArtifactService";
 	property name="packageService" 	inject="PackageService";
 			
 	/**
