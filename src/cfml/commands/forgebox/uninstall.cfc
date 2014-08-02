@@ -1,6 +1,7 @@
 /**
  * This command will uninstall a package from your application.  The directory we look for the package in is follows the same
- * pattern that the install command uses.
+ * pattern that the install command uses.  If the package being uninstalled has a box.json, any dependencies and devDependencies 
+ * will also be uninstalled as well.
  * .
  * If a directory is supplied, the package will be looked for in that directory in a 
  * subfolder named after the slug.  Otherwise, the box.json for the packge will be read (which may require connecting to the 
