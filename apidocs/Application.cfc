@@ -9,7 +9,8 @@ component{
 
 	rootPath = REReplaceNoCase( this.mappings[ "/colddoc" ], "apidocs(\\|\/)$", "" );
 	this.mappings[ "/root" ] = rootPath;
-	this.mappings[ "/box" ] = rootPath & "src/cfml";
+	this.mappings[ "/commandbox" ] = rootPath & "src/cfml";
+	this.mappings[ '/wirebox' ] 	= rootPath & "src/cfml/system/wirebox";
 
 	// request start
 	public boolean function onRequestStart( String targetPage ){

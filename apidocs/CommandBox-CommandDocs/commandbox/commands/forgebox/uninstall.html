@@ -1,0 +1,248 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<title>forgebox uninstall</title>
+	<meta name="keywords" content="commandbox.commands.forgebox forgebox uninstall CommandBox Command CLI">
+	<!-- common assets -->
+	
+
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<link rel ="stylesheet" type="text/css" href="../../../bootstrap/css/bootstrap.min.css">
+<link rel ="stylesheet" type="text/css" href="../../../stylesheet.css">
+	
+<link href='https://fonts.googleapis.com/css?family=Ubuntu:400,300,300italic,400italic,700,700italic|Ubuntu+Mono' rel='stylesheet' type='text/css' />
+	
+<script src="../../../bootstrap/js/jquery-2.1.0.min.js" type="text/javascript"></script>
+<script src="../../../bootstrap/js/bootstrap.min.js" type="text/javascript"></script>
+
+<script>
+$(document).ready(function() {
+	// Global Tool Tip Settings
+	$( '[title]' ).tooltip({
+		 animation: 'slide',
+		 delay: { show: 250, hide: 250 }
+	});
+});
+</script>
+	<!-- syntax highlighter -->
+	<link type="text/css" rel="stylesheet" href="../../../highlighter/styles/shCoreDefault.css">
+	<script src="../../../highlighter/scripts/shCore.js"></script>
+	<script src="../../../highlighter/scripts/shBrushColdFusion.js"></script>
+	<script src="../../../highlighter/scripts/shBrushXml.js"></script>
+	<script src="../../../highlighter/scripts/shBrushSql.js"></script>
+	<script src="../../../highlighter/scripts/shBrushJScript.js"></script>
+	<script src="../../../highlighter/scripts/shBrushJava.js"></script>
+	<script src="../../../highlighter/scripts/shBrushCss.js"></script>
+	<script type="text/javascript">
+		SyntaxHighlighter.config.stripBrs = true;
+		SyntaxHighlighter.defaults.gutter = false;
+		SyntaxHighlighter.defaults.toolbar = false;
+		SyntaxHighlighter.all();
+	</script>
+</head>
+
+<body class="withNavbar">
+
+
+
+
+
+
+<!-- ========= START OF NAVBAR ======= -->
+<a name="navbar_top"></a>
+<a href="#skip-navbar_top" title="skip navigation links"></a>	
+
+<nav class="navbar navbar-default navbar-fixed-top" role="navigation">
+	<div class="container-fluid">
+    
+		<div class="navbar-header">
+			<button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#class-navigation">
+				<span class="sr-only">Toggle navigation</span>
+				<span class="icon-bar"></span>
+				<span class="icon-bar"></span>
+			</button>
+			<a class="navbar-brand" href="#"><strong>CommandBox v0</strong></a>
+		</div>
+
+	    <div class="collapse navbar-collapse" id="class-navigation">
+	    	<ul class="nav navbar-nav">
+				
+					
+					<li><a href="../../../overview-summary.html"><i class="glyphicon glyphicon-plane"></i> overview</a></li>
+					
+				
+
+				
+					<li><a href="package-summary.html"><i class="glyphicon glyphicon-folder-open"></i> &nbsp;package</a></li>
+				
+
+			  	
+					<li class="dropdown active">
+						<a href="#" class="dropdown-toggle" data-toggle="dropdown"><i class="glyphicon glyphicon-flash"></i> class <b class="caret"></b></a>
+
+						<ul class="dropdown-menu">
+							<li><a href="#class">Class Definition</a></li>
+							<li><a href="#constructor_summary">Constructor Summary</a></li>
+							<li><a href="#constructor_detail">Constructor Detail</a></li>
+							<li><a href="#inherited_methods">Inherited Methods</a></li>
+							<li><a href="#method_summary">Method Summary</a></li>
+							<li><a href="#method_detail">Method Detail</a></li>
+							<li><a href="#property_summary">Property Summary</a></li>
+							<li><a href="#property_detail">Property Detail</a></li>
+							
+						</ul>
+					</li>
+				
+	      	</ul>
+
+			<ul class="nav navbar-nav navbar-right">
+				<li><a href="../../../index.html?commandbox/commands/forgebox/uninstall.html" target="_top">
+					<i class="glyphicon glyphicon-fullscreen"></i> Frames
+					</a>
+				</li>
+			</ul>
+	    </div>
+
+	</div>
+</nav>	
+
+<a name="skip-navbar_top"></a>
+<!-- ========= END OF NAVBAR ========= -->
+
+<h1>forgebox uninstall</h1>
+
+
+	
+	<div class="panel panel-default">
+		<div class="panel-body">
+			<strong>Aliases:&nbsp;</strong>
+			
+				<li class="label label-danger label-annotations">
+					uninstall 
+				</li>
+				&nbsp;
+			
+		</div>
+	</div>
+
+
+
+
+
+	
+	
+					
+	
+		<div class="panel panel-default">
+			<div class="panel-heading"><strong>Parameters:</strong></div>
+				<table class="table table-bordered table-hover">
+					<tr>
+						<td width="1%"><strong>Name</strong></td>
+						<td width="1%"><strong>Type</strong></td>
+						<td width="1%"><strong>Required</strong></td>
+						<td width="1%"><strong>Default</strong></td>
+						<td><strong>Hint</strong></td>
+					</tr>
+					
+						<tr>
+							<td>slug</td>
+							<td>
+								
+									string
+								
+							</td>
+							<td>true</td>
+							<td>
+								
+									
+								
+							</td>
+							<td>
+								
+									Slug of the package to uninstall.
+								
+							</td>
+						</tr>
+					
+						<tr>
+							<td>directory</td>
+							<td>
+								
+									string
+								
+							</td>
+							<td>false</td>
+							<td>
+								
+							</td>
+							<td>
+								
+									The directory the package is currenlty installed in. Defaults to current dir or the packages's box.json install dir if provided.
+								
+							</td>
+						</tr>
+					
+						<tr>
+							<td>save</td>
+							<td>
+								
+									boolean
+								
+							</td>
+							<td>false</td>
+							<td>
+								
+									false
+								
+							</td>
+							<td>
+								
+									Remove package as a dependancy in box.json (if it exists)
+								
+							</td>
+						</tr>
+					
+						<tr>
+							<td>saveDev</td>
+							<td>
+								
+									boolean
+								
+							</td>
+							<td>false</td>
+							<td>
+								
+									false
+								
+							</td>
+							<td>
+								
+									Remove package as a dev dependancy in box.json (if it exists)
+								
+							</td>
+						</tr>
+					
+				</table>
+			</div>
+		</div>
+	
+	
+
+
+<hr>
+
+
+	<h3>Command Usage</h3>
+	<div id="class-hint">
+		<p>This command will uninstall a package from your application.  The directory we look for the package in is follows the same<br>pattern that the install command uses.  If the package being uninstalled has a box.json, any dependencies and devDependencies <br>will also be uninstalled as well.<br><br>If a directory is supplied, the package will be looked for in that directory in a <br>subfolder named after the slug.  Otherwise, the box.json for the packge will be read (which may require connecting to the <br>online registry if it isn't found in the local artifacts cache) and its directory property will be used.  If no box.json<br>can be found for the package, this command will look in the current working directory.<br><br>The "save" and "saveDev" parameters will remove this package as a dependency or devDependency in your root box.json if it exists.<br><br># Uninstall the feeds package<br>forgebox uninstall feeds<br><br># Uninstall feeds and remove it from the dependency list<br>forgebox install feeds --save<br><br># Uninstall feeds and remove it from the dev dependency list<br>forgebox install feeds --saveDev</p>
+	</div>
+
+
+</body>
+</html>
+

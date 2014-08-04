@@ -1,9 +1,22 @@
 /**
- * Delete a file or directory from the filesystem.  This command will not delete non-empty directories
- * unless you use the "recurse" param. Use the "force" param to supress the confirmation.
- *
+ * Delete a file or directory from the filesystem.  Path may be absolute or relative to the current working directory.
+ * .
+ * {code}
  * delete sample.html
- *
+ * {code} 
+ * .
+ * Use the "force" param to supress the confirmation dialog.
+ * .
+ * {code}
+ * delete sample.html --force
+ * {code} 
+ * .
+ * Use the "recurse" param to remove a directory which is not empty.  Trying to remove a non-empty
+ * directory will throw an error.  This a safetly check to make sure you know what you are getting into.
+ * .
+ * {code}
+ * delete myFolder/ --recurse
+ * {code}
  **/	
 component extends="commandbox.system.BaseCommand" aliases="rm,del" excludeFromHelp=false {
 

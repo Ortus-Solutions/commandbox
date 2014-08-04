@@ -1,0 +1,58 @@
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<title>	overview </title>
+	<meta name="keywords" content="overview">
+	
+
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<link rel ="stylesheet" type="text/css" href="bootstrap/css/bootstrap.min.css">
+<link rel ="stylesheet" type="text/css" href="stylesheet.css">
+	
+<link href='https://fonts.googleapis.com/css?family=Ubuntu:400,300,300italic,400italic,700,700italic|Ubuntu+Mono' rel='stylesheet' type='text/css' />
+	
+<script src="bootstrap/js/jquery-2.1.0.min.js" type="text/javascript"></script>
+<script src="bootstrap/js/bootstrap.min.js" type="text/javascript"></script>
+
+<script>
+$(document).ready(function() {
+	// Global Tool Tip Settings
+	$( '[title]' ).tooltip({
+		 animation: 'slide',
+		 delay: { show: 250, hide: 250 }
+	});
+});
+</script>
+	<link rel="stylesheet" href="jstree/themes/default/style.min.css" />
+</head>
+
+<body>
+	<h3><strong>CommandBox v0</strong></h3>
+
+	
+	<div id="commandTree">
+		<ul>
+			<li>artifacts<ul><li>remove</li><li>list</li><li>clean</li><li>help</li></ul></li><li>logbox<ul><li>create<ul><li>appender</li><li>help</li><li>config</li></ul></li><li>help</li></ul></li><li>cachebox<ul><li>create<ul><li>provider</li><li>help</li><li>config</li></ul></li><li>help</li></ul></li><li>server<ul><li>log</li><li>start</li><li>status</li><li>stop</li><li>forget</li></ul></li><li>docbox<ul><li>help</li></ul></li><li>wirebox<ul><li>create<ul><li>binder</li><li>help</li><li>dsl</li><li>scope</li><li>aspects</li></ul></li><li>help</li></ul></li><li>forgebox<ul><li>show</li><li>disable</li><li>help</li><li>status</li><li>update</li><li>install</li><li>types</li><li>credentials</li><li>uninstall</li><li>search</li><li>register</li><li>my-contributions</li><li>apikey</li><li>enable</li><li>slugcheck</li></ul></li><li>coldbox<ul><li>war</li><li>test-watch</li><li>notes</li><li>create<ul><li>view</li><li>integration-test</li><li>orm-service</li><li>model</li><li>module</li><li>help</li><li>app</li><li>layout</li><li>orm-virtual-service</li><li>interceptor-test</li><li>interceptor</li><li>model-test</li><li>unit</li><li>orm-entity</li><li>orm-event-handler</li><li>bdd</li><li>controller</li><li>all</li><li>orm-active-entity</li></ul></li><li>module<ul><li>remove</li><li>list</li><li>help</li><li>install</li></ul></li><li>compile</li><li>help</li><li>stats</li><li>test-directory</li><li>stop</li><li>run</li><li>interceptor<ul><li>remove</li><li>help</li><li>install</li></ul></li><li>test</li><li>report<ul><li>handlers</li><li>di</li><li>routes</li><li>help</li></ul></li><li>integrate<ul><li>eclipse</li><li>help</li><li>ant</li><li>grunt</li><li>cfuilder</li></ul></li></ul></li><li>package<ul><li>show</li><li>init</li><li>help</li><li>clear</li><li>set</li></ul></li><li>testbox<ul><li>watch</li><li>open<ul><li>directory</li><li>help</li><li>runner</li><li>bundle</li></ul></li><li>generate<ul><li>harness</li><li>help</li></ul></li><li>create<ul><li>help</li><li>unit</li><li>bdd</li></ul></li><li>help</li><li>run</li></ul></li><li>game<ul><li>snake</li></ul></li><li>contentbox<ul><li>module<ul><li>create</li><li>remove</li><li>list</li><li>help</li><li>install</li></ul></li><li>help</li><li>install</li><li>widget<ul><li>create</li><li>remove</li><li>list</li><li>help</li><li>install</li></ul></li><li>theme<ul><li>create</li><li>remove</li><li>list</li><li>help</li><li>install</li></ul></li></ul></li><li>task<ul><li>create</li><li>remove</li><li>list</li><li>kill-all</li><li>help</li></ul></li><li>namespace<ul><li>remove</li><li>list</li><li>help</li><li>install</li></ul></li>
+			<li>
+				System Comamnds
+				<ul>
+					<li>fileAppend</li><li>more</li><li>info</li><li>pwd</li><li>run</li><li>cp</li><li>dir</li><li>template</li><li>cat</li><li>execute</li><li>upgrade</li><li>quit</li><li>touch</li><li>mkdir</li><li>_test</li><li>version</li><li>reload</li><li>fileWrite</li><li>edit</li><li>help</li><li>echo</li><li>repl</li><li>recipe</li><li>grep</li><li>browse</li><li>pause</li><li>cd</li><li>clear</li><li>history</li><li>delete</li><li>prompt</li><li>mv</li>
+				</ul>
+			</li>
+		</ul>
+	</div>
+	
+	<script src="jstree/jstree.min.js"></script>
+	<script language="javascript">
+		$(function () { 
+			$('#commandTree').jstree();
+		 });
+	</script>
+</body>
+</html>
