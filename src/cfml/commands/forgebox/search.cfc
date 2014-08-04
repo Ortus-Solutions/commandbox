@@ -1,8 +1,11 @@
 /**
- * This command will allow you to search for ForgeBox entries by keyword.  Search is case-insensitive and will match text anywhere in the 
+ * Search for ForgeBox entries by keyword.  Search is case-insensitive and will match text anywhere in the 
  * title, summary, or author name.
- * -
- * forgebox search "blogCFC"
+ * .
+ * {code}
+ * forgebox search blogCFC
+ * {code}
+ * .
  **/
 component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
 	

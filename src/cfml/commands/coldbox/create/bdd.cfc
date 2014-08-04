@@ -1,7 +1,11 @@
 /**
-* This will create a new BDD spec in an existing ColdBox-enabled application.  Make sure you are running this command in the root
+* Create a new BDD spec in an existing ColdBox-enabled application.  Run this command in the root
 * of your app for it to find the correct folder.  By default, your new BDD spec will be created in /tests/specs but you can 
-* override that with the directory param.    
+* override that with the directory param.
+* .
+* {code}
+* coldbox create bdd mySpec
+* {code}
 *  
 **/
 component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {

@@ -1,5 +1,10 @@
 /**
- * Show server log
+ * Show log for embedded server.  Run command from the web root of the server, or use the short name.
+ * .
+ * {code}
+ * server log
+ * server log name=serverName
+ * {code}
  **/
 component extends="commandbox.system.BaseCommand" excludeFromHelp=false {
 

@@ -1,6 +1,10 @@
 /**
-* This will create a new xUnit test bundle in the requested folder but you can 
-* override that with the directory param as well.
+* Create a new xUnit test in an existing application.  By default, your new test will be created in the current working
+* directory but you can override that with the directory param.
+* .
+* {code}
+* testbox create unit myTest
+* {code}
 *  
 **/
 component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {

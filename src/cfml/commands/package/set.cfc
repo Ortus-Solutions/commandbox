@@ -1,28 +1,43 @@
 /**
- * Use this command to set values set in box.json for this package.  Command must be executed from the root
+ * Set values set in box.json for this package.  Command must be executed from the root
  * directory of the package where box.json lives.
+ * .
+ * set package name
+ * {code}
+ * package set name=myPackage
+ * {code}
+ * .
  * Nested attributes may be set by specifying dot-delimited names or using array notation.
  * If the set value is JSON, it will be stored as a complex value in the box.json.
  * .
- * # set package name
- * package set name=myPackage
- * .
- * # set repo type
+ * set repo type
+ * {code}
  * package set repository.type=Git
+ * {code}
  * .
- * # set first testbox notify E-mail
+ * set first testbox notify E-mail
+ * {code}
  * package set testbox.notify.email[1]="brad@bradwood.com"
+ * {code}
  * .
- * # Set multiple params at once
+ * Set multiple params at once
+ * {code}
  * package set name=myPackage version="1.0.0.000" author="Brad Wood" slug="foo"
+ * {code}
  * .
- * # Set complex value as JSON
+ * Set complex value as JSON
+ * {code}
  * package set testbox.notify.emails="[ 'test@test.com', 'me@example.com' ]"
+ * {code}
  * .
- * # Add an additional contributor to the existing list
- * # This only works if the property and incoming value are both of the same complex type.
+ * Structs and arrays can be appended to using the "append" parameter.
+ * .
+ * Add an additional contributor to the existing list
+ * This only works if the property and incoming value are both of the same complex type.
+ * {code}
  * package set contributors="[ 'brad@coldbox.org' ]" --append
- * .
+ * {code}
+ * 
  **/
 component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
 	

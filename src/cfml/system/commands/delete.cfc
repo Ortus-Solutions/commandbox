@@ -3,13 +3,13 @@
  * .
  * {code}
  * delete sample.html
- * {code} 
+ * {code}
  * .
  * Use the "force" param to supress the confirmation dialog.
  * .
  * {code}
  * delete sample.html --force
- * {code} 
+ * {code}
  * .
  * Use the "recurse" param to remove a directory which is not empty.  Trying to remove a non-empty
  * directory will throw an error.  This a safetly check to make sure you know what you are getting into.

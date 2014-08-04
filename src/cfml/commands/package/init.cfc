@@ -1,10 +1,16 @@
 /**
  * Initialize a package in the current directory by creating a default box.json file.
- * Pass in an arguments you want and a property in the box.json will be initialized with the 
- * same name as the argument name using the argument value. 
- * 
+ * .
+ * {code}
  * init
- * 
+ * {code}
+ * .
+ * Pass in an arguments you want and a property in the box.json will be initialized with the 
+ * same name as the argument name using the argument value.
+ * {code}
+ * init name="My App" slug=myApp version=1.0.0.0
+ * {code}
+ *
  **/
 component extends="commandbox.system.BaseCommand" aliases="init" excludeFromHelp=false {
 

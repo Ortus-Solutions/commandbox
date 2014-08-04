@@ -1,8 +1,15 @@
 /**
- * Lists all packages in the CommandBox artifact cache
- *
+ * List all packages in the CommandBox artifact cache.
+ * .
+ * {code}
  * artifacts list
- *
+ * {code}
+ * .
+ * Use the "package" parameter to show results for a specific package.
+ * {code}
+ * artifacts list coldbox-platform
+ * {code}
+ * 
  **/
 component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
 	

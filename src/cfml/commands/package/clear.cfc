@@ -1,9 +1,11 @@
 /**
- * Use this command to clear a property out of the box.json for this package.  Command must be executed from the root
+ * Remove a property out of the box.json for this package.  Command must be executed from the root
  * directory of the package where box.json lives.
  * Nested attributes may be set by specifying dot-delimited names or using array notation.
  * .
+ * {code}
  * package clear description
+ * {code}
  * .
  **/
 component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {

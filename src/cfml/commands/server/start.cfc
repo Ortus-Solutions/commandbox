@@ -1,5 +1,9 @@
 /**
- * Start a CFMLserver
+ * Start an embedded CFML server.  Run command from the web root of the server.
+ * .
+ * {code}
+ * server start
+ * {code}
  **/
 component extends="commandbox.system.BaseCommand" aliases="start" excludeFromHelp=false {
 

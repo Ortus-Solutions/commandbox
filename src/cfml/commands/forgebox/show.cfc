@@ -1,14 +1,35 @@
 /**
- * This command will allow you to search for ForgeBox entires.  You can sort entires by most popular, recently updated, and newest.  
+ * Show forgeBox entries by slug or type.  You can sort entires by most popular, recently updated, and newest.  
  * You can also filter for specific entry types such as cachebox, interceptors, modules, logbox, etc.
- * There are parameters to paginate results or you can pipe the output of this command into the "more" command like so:
- * -
- * forgebox show popular | more
- * -
- * Pro Tip: The first parameter will also accept a type or a slug to allow for convenient, short commands like:
- * -
+ * Pro Tip: The first parameter will accept a type or a slug.
+ * .
+ * Show details for a specifig entry
+ * {code}
+ * forgebox show coldbox-platform
+ * {code}
+ * .
+ * Show entries of a given type. Use the "forgebox types" command to see available options
+ * {code}
  * forgebox show plugins
- * forgebox show i18n 
+ * {code}
+ * .
+ * Sort 10 newest entries
+ * {code}
+ * forgebox show orderby=new maxRows=10
+ * {code}
+ * .
+ * Show sorted entries by type
+ * {code}
+ * forgebox show new plugins
+ * forgebox show popular modules
+ * forgebox show recent commandbox-commands
+ * {code}
+ * .
+ * There are parameters to paginate results or you can pipe the output of this command into the "more" command like so:
+ * {code}
+ * forgebox show popular | more
+ * {code}
+ *
  **/
 component extends="commandbox.system.BaseCommand" aliases="show" excludeFromHelp=false {
 	

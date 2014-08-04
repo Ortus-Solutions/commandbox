@@ -1,7 +1,11 @@
 /**
-* This will create a new view in an existing ColdBox application.  Make sure you are running this command in the root
+* Create a new view in an existing ColdBox application.  Run this command in the root
 * of your app for it to find the correct folder.  By default, your new view will be created in /views but you can 
-* override that with the directory param.    
+* override that with the directory param.
+* .
+* {code}
+* coldbox create view myView
+* {code}
 *  
 **/
 component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {

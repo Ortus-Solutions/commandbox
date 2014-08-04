@@ -1,7 +1,11 @@
 /**
-* This will create a new BDD spec in the requested folder but you can 
-* override that with the directory param as well.
-*  
+* Create a new BDD spec in an existing application.  By default, your new BDD spec will be created in the current working
+* directory but you can override that with the directory param.
+* .
+* {code}
+* testbox create bdd mySpec
+* {code}
+*
 **/
 component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
 	

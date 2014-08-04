@@ -1,5 +1,15 @@
 /**
- * This command executes TestBox runners via HTTP/S
+ * Executes TestBox runners via HTTP/S.  By default, the "testbox.runner" property will be read from your box.json.   
+* .
+* {code}
+* testbox run
+* {code}   
+* .
+* You can also specify the URL manually
+* {code}
+* testbox run "http://localhost:8080/tests/runner.cfm"
+* {code}
+*
  **/
 component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
 	

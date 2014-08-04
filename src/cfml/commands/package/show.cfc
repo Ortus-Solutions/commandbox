@@ -1,20 +1,29 @@
 /**
- * Use this command to view values set in box.json for this package.  Command must be executed from the root
+ * View values set in box.json for this package.  Command must be executed from the root
  * directory of the package where box.json lives.
+ * .
+ * Outputs package name
+ * {code}
+ * package show name
+ * {code}
+ * .
+ * Outputs package keywords
+ * {code}
+ * package show keywords
+ * {code}
+ * .
  * Nested attributes may be accessed by specifying dot-delimited names or using array notation.
  * If the accessed property is a complex value, the JSON representation will be displayed
  * .
- * # outputs package name
- * package show name
- * .
- * # outputs package keywords
- * package show keywords
- * .
- * # outputs testbox runner(s)
+ * Outputs testbox runner(s)
+ * {code}
  * package show testbox.runner
+ * {code}
  * .
- * # outputs the first testbox notify E-mail
+ * Outputs the first testbox notify E-mail
+ * {code}
  * package show testbox.notify.emails[1]
+ * {code}
  * .
  **/
 component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {

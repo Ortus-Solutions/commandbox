@@ -1,5 +1,11 @@
 /**
- * Stop the a CFML server
+ * Stop an embedded CFML server.  Run command from the web root of the server, or use the short name.
+ * .
+ * {code}
+ * server stop
+ * server stop name=serverName
+ * server stop name=serverName --forget
+ * {code}
  **/
 component extends="commandbox.system.BaseCommand" aliases="stop" excludeFromHelp=false {
 

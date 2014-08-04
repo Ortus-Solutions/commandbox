@@ -1,7 +1,16 @@
 /**
- * Clean out the artifacts cache.  Removes all stored packages.
- *
+ * Remove all packages from the artifacts cache.  Cached packages will be removed from the file system.
+ * Use this command to force the "install" command to re-download the files fresh.
+ * .
+ * {code}
  * artifacts clean
+ * {code}
+ * .
+ * Use the "force" parameter to skip the prompt.
+ * .
+ * {code}
+ * artifacts clean --force
+ * {code}
  *
  **/
 component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {

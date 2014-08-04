@@ -1,9 +1,27 @@
 /**
- * Remove 1 or more packages from the artifacts cache. This will remove
- * all versions for a specified package
- * 
+ * Remove 1 or more packages from the artifacts cache by package name.
+ * Use this command to force the "install" command to re-download the files fresh.
+ * .
+ * Remove all versions of the package
+ * {code}
  * artifacts remove package-name
+ * {code}
+ * .
+ * Remove a specific version of the package
+ * {code}
+ * artifacts remove package-name 1.2.0.0
+ * {code}
+ * .
+ * Remove a list of packge names
+ * {code}
  * artifacts remove package1,package2
+ * {code}
+ * .
+ * Skip the prompt with the "force" parameter
+ * {code}
+ * artifacts remove package-name --force
+ * {code}
+ * 
  **/
 component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
 

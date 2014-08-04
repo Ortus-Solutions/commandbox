@@ -15,7 +15,7 @@
 </cfscript>
 
 <cfoutput>
-<h1>Done!</h1>
+<h1>Command Help Done!</h1>
 <a href="#docName#/index.html">Go to Docs!</a>
 </cfoutput>
 

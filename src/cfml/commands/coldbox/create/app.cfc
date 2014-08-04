@@ -1,16 +1,24 @@
 /**
-*  This will create a blank ColdBox app from one of our app skeletons.  By default it will create
+*  Create a blank ColdBox app from one of our app skeletons.  By default it will create
 *  in your current directory.  Use the "pwd" command to find out what directory you're currently in.
+* .
 *  You can choose what app skeleton to use as well as override the directory it's created in.
-*  The built-in app skeletons are located in the .commandbox/cfml/skeltons directory and include:
+*  The built-in app skeletons are located in the .CommandBox/cfml/skeletons/ directory and include:
 *  .
 *  - Advanced
 *  - AdvancedScript (default)
 *  - Simple
 *  - SuperSimple
 * .
+* {code}
+* coldbox create app myApp
+* {code}
+* .
+* Use the "installColdBox" parameter to install the latest stable version of ColdBox from ForgeBox
+* {code}
 * coldbox create app myApp --installColdBox
-*
+* {code}
+* .
 **/
 component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
 	

@@ -1,5 +1,11 @@
 /**
- * Show server status
+ * Show status of embedded server.  Run command from the web root of the server, or use the short name.
+ * .
+ * {code}
+ * server status
+ * server status --showAll
+ * server status name=serverName
+ * {code}  
  **/
 component extends="commandbox.system.BaseCommand" aliases="status" excludeFromHelp=false {
 

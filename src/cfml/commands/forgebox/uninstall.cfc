@@ -1,5 +1,5 @@
 /**
- * This command will uninstall a package from your application.  The directory we look for the package in is follows the same
+ * Uninstall a package from your application.  The directory we look for the package in is follows the same
  * pattern that the install command uses.  If the package being uninstalled has a box.json, any dependencies and devDependencies 
  * will also be uninstalled as well.
  * .
@@ -10,14 +10,20 @@
  * .
  * The "save" and "saveDev" parameters will remove this package as a dependency or devDependency in your root box.json if it exists.
  * .
- * # Uninstall the feeds package
+ * Uninstall the feeds package
+ * {code}
  * forgebox uninstall feeds
+ * {code}
  * .
- * # Uninstall feeds and remove it from the dependency list
+ * Uninstall feeds and remove it from the dependency list
+ * {code}
  * forgebox install feeds --save
+ * {code}
  * .
- * # Uninstall feeds and remove it from the dev dependency list
+ * Uninstall feeds and remove it from the dev dependency list
+ * {code}
  * forgebox install feeds --saveDev
+ * {code}
  *
  **/
 component extends="commandbox.system.BaseCommand" aliases="uninstall" excludeFromHelp=false {

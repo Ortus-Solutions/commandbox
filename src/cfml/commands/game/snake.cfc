@@ -1,10 +1,16 @@
 /**
-* This is a fun retro-style snake game.  The "snake" is on the loose and you need to gobble up as many juicy apples as you can. 
+* Play a fun, retro-style snake game.  The "snake" is on the loose and you need to gobble up as many juicy apples as you can. 
 * Use the S, F, E, and C keys on your keyboard to move left, right, up and down respectively.  If you have a 10-key pad, you can also use 4, 6, 8, and 2.
 * But be careful- if you run into a wall or into your own tail, the game is over!  The snake will grow every time he eats and apple, and once you 
 * clear all the apples, more will appear for your chomping pleasure.
+* .
 * Press Q to quit the game at any time.
 * Press R to restart the game after it's over
+ * .
+ * {code}
+ * snake
+ * {code}
+
 **/
 component extends="commandbox.system.BaseCommand" aliases="snake" excludeFromHelp=false {
 

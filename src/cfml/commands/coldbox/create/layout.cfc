@@ -1,7 +1,11 @@
 /**
-* This will create a new layout in an existing ColdBox application.  Make sure you are running this command in the root
+* Create a new layout in an existing ColdBox application.  Run this command in the root
 * of your app for it to find the correct folder.  By default, your new layout will be created in /layouts but you can 
-* override that with the directory param.    
+* override that with the directory param.
+* .
+* {code}
+* coldbox create layout myLayout
+* {code}
 *  
 **/
 component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
