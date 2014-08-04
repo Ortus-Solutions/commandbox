@@ -20,12 +20,12 @@
 <table class="table table-hover table-striped">
 	<thead>
 		<tr class="info">
-			<th colspan="1"><strong>Package Overview</strong></th>
+			<th colspan="1"><strong>Namespace Overview</strong></th>
 		</tr>
 	</thead>
 	<cfloop query="arguments.qPackages">
 	<tr>
-		<td width="20%"><b><a href="#replace( arguments.qPackages.package, ".", "/", "all")#/package-summary.html">#arguments.qPackages.package#</a></b></td>
+		<td width="20%"><b><a href="#replace( arguments.qPackages.package, ".", "/", "all")#/package-summary.html">#arguments.qPackages.namespace#</a></b></td>
 	</tr>
 	</cfloop>
 </table>

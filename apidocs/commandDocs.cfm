@@ -1,4 +1,4 @@
-<cfparam name="url.version" default="0">
+<cfparam name="url.version" default="1.0">
 <cfparam name="url.path" 	default="#expandPath( "./CommandBox-CommandDocs" )#">
 <cfscript>
 	docName = "CommandBox-CommandDocs";
