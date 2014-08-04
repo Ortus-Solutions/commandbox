@@ -1,8 +1,15 @@
 /**
- * The command will change the current working directory
- *
- * cd /tests
- *
+ * Change the current working directory of the shell.
+ * .
+ * Create a copy of a directory
+ * {code}
+ * cd tests/
+ * {code}
+ * .
+ * As with any file and folder parameters, you can traverse "up" a directory.
+ * {code}
+ * cd ../../tests
+ * {code} 
  **/
 component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
 

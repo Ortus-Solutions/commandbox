@@ -1,14 +1,22 @@
 /**
- * Lists the files and folders in a given directory.  Defaults to current working directory
- *
- * dir samples
+ * List the files and folders in a directory.  Defaults to current working directory
+ * .
+ * {code}
+ * dir samples/
+ * {code}
+ * .
+ * Use the "recurse" paramater to show all nested files and folders.
+ * .
+ * {code}
+ * dir samples/ --recurse
+ * {code}
  * 
  **/
 component extends="commandbox.system.BaseCommand" aliases="ls,ll,directory" excludeFromHelp=false {
 
 	/**
 	 * @directory.hint The directory to list the contents of
-	 * @recurse.hint recursively list
+	 * @recurse.hint Include nested files and folders 
 	 **/
 	function run( String directory="", Boolean recurse=false )  {
 		// This will make each directory canonical and absolute

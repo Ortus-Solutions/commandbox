@@ -1,8 +1,20 @@
 /**
- * Copy a file or directory
- *
+ * Copy a file or directory.
+ * .
+ * Create a copy of sample.html in the current directory and call it test.html
+ * {code}
  * cp sample.html test.html
+ * {code}
+ * .
+ * Create a copy index.cfm in another directory with the same name
+ * {code}
  * cp index.cfm testing/index.cfm
+ * {code}
+ * .
+ * Create a copy of a directory
+ * {code}
+ * cp foo/ bar/
+ * {code}
  *
  **/	
 component extends="commandbox.system.BaseCommand" aliases="copy" excludeFromHelp=false {

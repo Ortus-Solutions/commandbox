@@ -1,8 +1,21 @@
 /**
- * This command will read any number of files and return their concatenated contents.  By default, the 
- * the output is displayed on the console, but it can also be piped into other commands.
- * 
- * cat box.json myFile.txt
+ * Read any number of files and return their concatenated contents.  By default, the 
+ * the output is displayed on the console, but it can also be piped or redirected.
+ * .
+ * Output a single file
+ * {code}
+ * cat box.json
+ * {code}
+ * .
+ * Concatenate two files and output them to the screen
+ * {code}
+ * cat file1.txt file2.txt
+ * {code}
+ * .
+ * Concatenate two files and write them to one new file
+ * {code}
+ * cat file1.txt file2.txt > combined.txt
+ * {code}
  * 
  **/
 component extends="commandbox.system.BaseCommand" aliases="type" excludeFromHelp=false {
