@@ -4,6 +4,10 @@
 	var topLevel = {};
 	// Loop over commands
 	for( var row in qMetaData ) {
+		// Skip our template CFC
+		if( row.name == 'CommandTemplate' ) {
+			continue;
+		}
 		var command = row.command;			
 		var bracketPath = '';
 		// Build bracket notation 
@@ -20,8 +24,10 @@
 		
 		var thisTree = ( listLen( command, ' ' ) == 1 ? "topLevel" : "namespaces" );
 		evaluate( '#thisTree##bracketPath#[ "$link" ] = packageLink' );
-		evaluate( '#thisTree##bracketPath#[ row.name ][ "$command"].link = link' );
-		evaluate( '#thisTree##bracketPath#[ row.name ][ "$command"].searchList = searchList' );
+		if( row.name != 'help') {
+			evaluate( '#thisTree##bracketPath#[ row.name ][ "$command"].link = link' );
+			evaluate( '#thisTree##bracketPath#[ row.name ][ "$command"].searchList = searchList' );
+		}
 	}
 	
 	// Recursive function to output data

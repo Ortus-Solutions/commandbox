@@ -89,6 +89,9 @@ component extends="commandbox.system.BaseCommand" aliases="h,/?,?,--help,-help" 
 				var thisCommand = commandHierarchy[ node ];
 				// Is this node a command
 				if( structKeyExists( thisCommand, '$' ) ) {
+					if( thisCommand.$.originalName == 'CommandTemplate' ) {
+						continue;
+					}
 					var originalCommandName = thisCommand[ '$' ].originalName;
 					var excludeFromHelp = thisCommand[ '$' ].excludeFromHelp;
 					// Only grab original commands to filter out aliases
