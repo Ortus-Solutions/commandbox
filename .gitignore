@@ -13,3 +13,4 @@ src/cfml/logs
 build/launch4j
 tests/testbox
 /mxunit
+/apidocs/CommandBox-CommandDocs/
