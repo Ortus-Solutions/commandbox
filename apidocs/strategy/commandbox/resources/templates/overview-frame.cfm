@@ -27,18 +27,21 @@
 	// Recursive function to output data
 	function writeItems( struct startingLevel ) {
 		for( var item in startingLevel ) {
+			// Skip this key as it isn't a command, just the link for the namespace.
 			if( item == '$link' ) { continue; }
 			var itemValue = startingLevel[ item ];
 			
+			//  If this is a command, output it
 			if( structKeyExists( itemValue, '$command' ) ) {
 				writeOutput( '<li data-jstree=''{ "type" : "command" }'' linkhref="#itemValue.$command.link#" searchlist="#itemValue.$command.searchList#" thissort="2">' );
 				writeOutput( item );
 				writeOutput( '</li>' );
-				
+			// If this is a namespace, output it and its children
 			} else {
 				writeOutput( '<li data-jstree=''{ "type" : "namespace" }'' linkhref="#itemValue.$link#" searchlist="#item#" thissort="1">' );
 				writeOutput( item );
 				writeOutput( '<ul>' );
+					// Recursive call
 					writeItems( itemValue );
 				writeOutput( '</ul>' );
 				writeOutput( '</li>' );
@@ -47,7 +50,6 @@
 		}
 	}
 </cfscript>
-<!---<cfdump var="#namespaces#"><cfabort>--->
 <cfoutput>
 <!DOCTYPE html>
 <html lang="en">
@@ -61,13 +63,17 @@
 <body>
 	<h3><strong>#arguments.projecttitle#</strong></h3>
 
+	<!--- Search box --->
 	<input type="text" id="commandSearch" placeholder="Search..."><br><br>
+	<!--- Container div for tree --->
 	<div id="commandTree">
 		<ul>
+			<!--- Output namespaces and their children --->
 			#writeItems( namespaces )#
 			<li data-jstree='{ "type" : "system" }' linkhref="#topLevel.$link#" searchlist="System" thissort="3">
 				System Commands
 				<ul>
+					<!--- These are all commands not in a namespace.--->
 					#writeItems( topLevel )#
 				</ul>
 			</li>
@@ -77,9 +83,10 @@
 	<script src="jstree/jstree.min.js"></script>
 	<script language="javascript">
 		$(function () { 
-			
+			// Initialize tree
 			$('##commandTree')
 				.jstree({
+					// Shortcut types to control icons
 				    "types" : {
 				      "namespace" : {
 				        "icon" : "glyphicon glyphicon-th-large"
@@ -91,6 +98,7 @@
 				        "icon" : "glyphicon glyphicon-cog"
 				      }
 				    },
+				    // Smart search callback to do lookups on full command name and aliases 
 				    "search" : {
 				    	"show_only_matches" : true,
 				    	"search_callback" : function( q, node ) {
@@ -99,6 +107,8 @@
 				    		var isCommand = node.li_attr.thissort != 1;
 				    		for( var i in searchArray ) {
 				    			var item = searchArray[ i ];
+				    			// Commands must be a super set of the serach string, but namespaces are reversed
+				    			// This is so "testbox" AND "run" highlight when you serach for "testbox run"
 				    			if( ( isCommand && item.toUpperCase().indexOf( q ) > -1 )
 				    				|| ( !isCommand && q.indexOf( item.toUpperCase() ) > -1 ) ) {
 				    				return true;
@@ -107,9 +117,11 @@
 				    		return false;
 				    	}
 				    },
+				    // Custom sorting to force namespaces to the top and system to the bottom
 				    "sort" : function( id1, id2 ) {
 				    			var node1 = this.get_node( id1 );
 				    			var node2 = this.get_node( id2 );
+				    			// Concat sort to name and use that
 					    		var node1String = node1.li_attr.thissort + node1.text;
 					    		var node2String = node2.li_attr.thissort + node2.text;
 					    		
@@ -124,14 +136,15 @@
 					}
 			});
 			
-			 var to = false;
-			  $('##commandSearch').keyup(function () {
-			    if(to) { clearTimeout(to); }
-			    to = setTimeout(function () {
-			      var v = $('##commandSearch').val();
-			      $('##commandTree').jstree(true).search(v);
-			    }, 250);
-			  });
+			// Bind search to text box
+			var to = false;
+			$('##commandSearch').keyup(function () {
+				if(to) { clearTimeout(to); }
+				to = setTimeout(function () {
+					var v = $('##commandSearch').val();
+					$('##commandTree').jstree(true).search(v);
+				}, 250);
+			});
 			
 		 });
 	</script>
