@@ -1,10 +1,21 @@
-	/**
- * This command will append to a file, creating it if doesn't exists. You can pipe content into it.
- * This comand is used for redirection when you type echo "text" >> file.txt
+/**
+ * Append to existing text in a file. Will add a newline automatically
  * .
+ * {code}
  * fileAppend "My new line" file.txt
+ * {code}
  * .
+ * You can pipe text into it.
+ * .
+ * {code}
  * echo "My new line" | fileAppend file.txt
+ * {code}
+ * .
+ * This command is also used internally for redirection when you use the >> symbol.
+ * .
+ * {code}
+ * echo "Step 3 complete" >> log.txt
+ * {code}
  * 
  **/
 component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=true {

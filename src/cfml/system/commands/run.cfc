@@ -1,7 +1,9 @@
 /**
- * Executes an operation system level command
- *
- * run
+ * Execute an operation system level command
+ * .
+ * {code}
+ * run "C:\Windows\System32\SoundRecorder.exe"
+ * {code}
  *
  **/
 component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false{

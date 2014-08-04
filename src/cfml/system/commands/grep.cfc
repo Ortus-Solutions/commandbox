@@ -1,7 +1,21 @@
 /**
- * This is the grep command. Pipe input into it and supply a regular expression to filter lines to output
- * 
+ * Search through string input and filter only matching lines.  Pipe input in and supply a regular expression.  
+ * .
+ * Find Brad's ForgeBox entries
+ * {code}
  * forgebox show | grep Brad
+ * {code}
+ * .
+ * Find recent install commands
+ * {code}
+ * history | grep isntall
+ * {code}
+ * .
+ * Search log file for certain errors
+ * {code}
+ * cat myLogFile.txt | grep "variable .* undefined"
+ * {code}
+ * 
  **/
 component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=true {
 	

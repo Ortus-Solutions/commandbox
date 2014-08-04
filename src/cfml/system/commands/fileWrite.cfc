@@ -1,10 +1,21 @@
 /**
- * This command will write a file, overwriting it if it exists. You can pipe content into it.
- * This comand is used for redirection when you type echo "text" > file.txt
+ * Write a file, overwriting it if it exists. 
  * .
+ * {code}
  * fileWrite "My file contents" file.txt
+ * {code}
  * .
+ * You can pipe text into it.
+ * .
+ * {code}
  * echo "My file contents" | fileWrite file.txt
+ * {code}
+ * .
+ * This command is also used internally for redirection when you use the > symbol.
+ * .
+ * {code}
+ * dir > fileList.txt
+ * {code}
  * 
  **/
 component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=true {

@@ -1,6 +1,10 @@
 /**
- * This is the more command.  Pipe the output of another command into me and I will break it up for you.
- * Press space to advance one line at a time, Crl-c to abort and any other key to advance one page at a time.
+ * Breaks long output up into lines or pages for easy reading.  Pipe the output of another command in and it will break it up for you.
+ * Press space to advance one line at a time, Ctrl-c, ESC, or "q" to abort and any other key to advance one page at a time.
+ * .
+ * {code}
+ * forgebox show | more 
+ * {code}
  **/
 component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=true {
 	

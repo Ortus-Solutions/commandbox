@@ -1,9 +1,20 @@
 /**
  * The REPL (Read-Eval-Print-Loop) command allows you to write and execute a-la-carte CFML code right in 
- * your console.  By default we surround your code in a 'cfscript' tag, but you can also use the 'script=false'
+ * your console. Variables set in will be available on subsequent lines.
+ * .
+ * {code}
+ * repl
+ * {code}
+ * .
+ * By default we surround your code in a 'cfscript' tag, but you can also use the 'script=false'
  * argument to use the REPL console in tag mode.
- * 
- * Usage: repl
+ * .
+ * {code}
+ * repl --!script
+ * {code}
+ * .
+ * The REPL has a separate command history for scripts and tags.  Use the up-arrow to look at previous 
+ * lines in the history.  The REPLs histories can be managed by the "history" command.
  * 
  **/
 component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {

@@ -1,8 +1,9 @@
 /**
- * Creates a new directory
- *
- * mkdir newDir
- * 
+ * Create a new directory.
+ * .
+ * {code}
+ * mkdir newDir 
+ * {code}
  **/
 component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
 

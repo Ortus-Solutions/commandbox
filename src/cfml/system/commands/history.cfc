@@ -1,9 +1,30 @@
 /**
- * Displays command history for the user.  Use the clear flag to clear the history.
- * There are separate histories for commands, script REPL and tag REPL.  
- * Use the "type" paramater to specifiy which history you want to see.
- *
+ * Display the history of all the commands that have been typed into the shell.
+ * .
+ * {code}
  * history
+ * {code}
+ * .
+ * Use the clear flag to clear the history.
+ * .
+ * {code}
+ * history --clear
+ * {code}
+ * .
+ * There are separate histories for commands, script REPL and tag REPL.  
+ * Use the "type" paramater to specifiy which history you want to view or clear.
+ * .
+ * {code}
+ * history type=command
+ * history type=scriptREPL
+ * history type=tagREPL
+ * {code}
+ * .
+ * Clear just the script REPL history
+ * .
+ * {code}
+ * history type=scriptREPL --clear
+ * {code}
  * 
  **/
 component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {

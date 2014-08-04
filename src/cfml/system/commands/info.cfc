@@ -1,7 +1,9 @@
 /**
- * Displays basic information about the shell
- *
- * info
+ * Display basic information about the shell and some cool ASCII art.
+ * .
+ * {code}
+ * info 
+ * {code}
  *
  **/
 component extends="commandbox.system.BaseCommand" aliases="about" excludeFromHelp=false {

@@ -1,7 +1,15 @@
 /**
- * This command will create a new file according to its name if it does not exist. If it exists, it will modify its last update date time
- * 
+ * Create a new file according to its name if it does not exist. If it exists, modify its last updated date and time to now.
+ * .
+ * {code}
  * touch file.txt
+ * {code}
+ * .
+ * Use the force parameter to overwrite the contents of the file to be empty even if it exists.
+ * .
+ * {code}
+ * touch file.txt --force
+ * {code}
  * 
  **/
 component extends="commandbox.system.BaseCommand" aliases="new" excludeFromHelp=false {

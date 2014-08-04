@@ -1,8 +1,15 @@
 /**
- * Upgrades the shell libraries to the latest version
- *
+ * Upgrades CommandBox to the latest version.
+ * .
+ * {code}
  * upgrade
- *
+ * {code}
+ * .
+ * Use the "force" parameter to re-install even if the version installed is the latest.
+ * .
+ * {code}
+ * version --force
+ * {code}
  **/
 component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
 
@@ -10,7 +17,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 	property name="artifactDir" inject="artifactDir@constants";
 	property name="homedir" 	inject="homedir@constants";
 
-	function run(Boolean force=false) {
+	function run( Boolean force=false ) {
 		var temp = shell.getTempDir();
 		http url="http://cfmlprojects.org/artifacts/com/ortussolutions/box.cli/maven-metadata.xml" file="#temp#/maven-metadata.xml";
 		var mavenData = xmlParse("#temp#/maven-metadata.xml");

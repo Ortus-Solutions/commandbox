@@ -1,6 +1,25 @@
 /**
- * get help information
- **/
+ * Display CommandBox help.  Call this command with no parameters to see general help for all commands.
+ * Help includes command aliases, paramters, and example syntax.
+ * .
+ * {code}
+ * help
+ * {code}
+ * .
+ * Pass in a command or namespace to get help on that item.
+ * .
+ * {code}
+ * help testbox
+ * help testbox run
+ * {code}
+ * .
+ * "help" can also be appended to the end of the command
+ * .
+ * {code}
+ * testbox help
+ * testbox run help
+ * {code}
+**/
 component extends="commandbox.system.BaseCommand" aliases="h,/?,?,--help,-help" excludeFromHelp=false {
 
 	property name="commandService" inject="CommandService";

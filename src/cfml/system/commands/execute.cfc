@@ -1,7 +1,9 @@
 /**
  * Executes a CFML file and outputs whatever the template outputs using cfoutput or the buffer.
- * 
+ * .
+ * {code}
  * execute myFile.cfm
+ * {code}
  * 
  **/
 component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false{

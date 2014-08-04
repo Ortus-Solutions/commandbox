@@ -1,10 +1,11 @@
 /**
- * This command will try to open the file in the native OS application in order to edit it. If you pass in a 
+ * Open a file in the native OS application in order to edit it. If you pass in a 
  * folder, it will try to open the folder in an explorer or finder window.
- * 
+ * .
+ * {code}
  * edit index.cfm
- * open index.cfm
- * open myapp
+ * open myApp/
+ * {code}
  * 
  **/
 component extends="commandbox.system.BaseCommand" aliases="open" excludeFromHelp=false {

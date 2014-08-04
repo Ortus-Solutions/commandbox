@@ -1,8 +1,25 @@
 /**
  * Rename/move a file or directory to a new name and path
- *
- * mv sample.html sample.htm
- * rename test.cf test.cfm
+ * .
+ * Rename a file
+ * {code}
+ * mv sample.html sample.htm 
+ * {code}
+ * .
+ * Move a file
+ * {code}
+ * mv sample.html /test/sample.htm
+ * {code}
+ * .
+ * Rename a directory
+ * {code}
+ * mv foo/ bar/ 
+ * {code}
+ * .
+ * Move a directory
+ * {code}
+ * mv foo/ bar/foo/ 
+ * {code}
  *
  **/	
 component extends="commandbox.system.BaseCommand" aliases="rename" excludeFromHelp=false {
