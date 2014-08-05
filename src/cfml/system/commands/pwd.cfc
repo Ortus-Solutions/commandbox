@@ -1,7 +1,7 @@
 /**
  * Output the current working directory of the shell.  This can be changed by using the "cd" command.
 * .
-* {code}
+* {code:bash}
 * pwd
 * {code}
  * 

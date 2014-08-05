@@ -3,7 +3,7 @@
 * of your app for it to find the correct folder.  By default, your new xUnit Bundle will be created in /tests/specs but you can 
 * override that with the directory param.
 * .
-* {code}
+* {code:bash}
 * coldbox create unit myUnit
 * {code}
 *  

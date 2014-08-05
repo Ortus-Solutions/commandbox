@@ -2,14 +2,14 @@
  * The REPL (Read-Eval-Print-Loop) command allows you to write and execute a-la-carte CFML code right in 
  * your console. Variables set in will be available on subsequent lines.
  * .
- * {code}
+ * {code:bash}
  * repl
  * {code}
  * .
  * By default we surround your code in a 'cfscript' tag, but you can also use the 'script=false'
  * argument to use the REPL console in tag mode.
  * .
- * {code}
+ * {code:bash}
  * repl --!script
  * {code}
  * .

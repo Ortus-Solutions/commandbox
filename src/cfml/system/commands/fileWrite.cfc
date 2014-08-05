@@ -1,19 +1,19 @@
 /**
  * Write a file, overwriting it if it exists. 
  * .
- * {code}
+ * {code:bash}
  * fileWrite "My file contents" file.txt
  * {code}
  * .
  * You can pipe text into it.
  * .
- * {code}
+ * {code:bash}
  * echo "My file contents" | fileWrite file.txt
  * {code}
  * .
  * This command is also used internally for redirection when you use the > symbol.
  * .
- * {code}
+ * {code:bash}
  * dir > fileList.txt
  * {code}
  * 

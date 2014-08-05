@@ -2,20 +2,20 @@
  * Display CommandBox help.  Call this command with no parameters to see general help for all commands.
  * Help includes command aliases, paramters, and example syntax.
  * .
- * {code}
+ * {code:bash}
  * help
  * {code}
  * .
  * Pass in a command or namespace to get help on that item.
  * .
- * {code}
+ * {code:bash}
  * help testbox
  * help testbox run
  * {code}
  * .
  * "help" can also be appended to the end of the command
  * .
- * {code}
+ * {code:bash}
  * testbox help
  * testbox run help
  * {code}

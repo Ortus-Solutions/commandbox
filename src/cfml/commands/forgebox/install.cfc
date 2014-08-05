@@ -8,17 +8,17 @@
  * and "saveDev" parameters will save this package as a dependency or devDependency in your box.json if it exists.
  * .
  * Install the feeds package
- * {code}
+ * {code:bash}
  * install feeds
  * {code}
  * .
  * Install feeds and save as a dependency
- * {code}
+ * {code:bash}
  * install feeds --save
  * {code}
  * .
  * Install feeds and save as a devDependency
- * {code}
+ * {code:bash}
  * install feeds --saveDev
  * {code}
  * .
@@ -26,12 +26,12 @@
  * directory and install all the dependencies.
  * .
  * Install all dependencies in box.json
- * {code}
+ * {code:bash}
  * install
  * {code}
  * .
  * Use the "production" parameter to ignore devDependencies.
- * {code}
+ * {code:bash}
  * install --production
  * {code}
  * 

@@ -7,7 +7,7 @@
 * Press Q to quit the game at any time.
 * Press R to restart the game after it's over
  * .
- * {code}
+ * {code:bash}
  * snake
  * {code}
 

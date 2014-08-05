@@ -1,7 +1,7 @@
 /**
  * Show status of embedded server.  Run command from the web root of the server, or use the short name.
  * .
- * {code}
+ * {code:bash}
  * server status
  * server status --showAll
  * server status name=serverName

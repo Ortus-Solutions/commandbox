@@ -3,22 +3,22 @@
  * Use this command to force the "install" command to re-download the files fresh.
  * .
  * Remove all versions of the package
- * {code}
+ * {code:bash}
  * artifacts remove package-name
  * {code}
  * .
  * Remove a specific version of the package
- * {code}
+ * {code:bash}
  * artifacts remove package-name 1.2.0.0
  * {code}
  * .
  * Remove a list of packge names
- * {code}
+ * {code:bash}
  * artifacts remove package1,package2
  * {code}
  * .
  * Skip the prompt with the "force" parameter
- * {code}
+ * {code:bash}
  * artifacts remove package-name --force
  * {code}
  * 

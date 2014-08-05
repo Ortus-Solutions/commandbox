@@ -1,12 +1,12 @@
 /**
  * Output information to the user.  Extra details here.
  * .
- * {code}
+ * {code:bash}
  * commandtemplate
  * {code}
  * .
  * Here's another way to call it
- * {code}
+ * {code:bash}
  * commandtemplate --arg2
  * {code}
  *

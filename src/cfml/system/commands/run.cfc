@@ -1,7 +1,7 @@
 /**
  * Execute an operation system level command
  * .
- * {code}
+ * {code:bash}
  * run "C:\Windows\System32\SoundRecorder.exe"
  * {code}
  *

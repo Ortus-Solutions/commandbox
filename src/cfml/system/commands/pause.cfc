@@ -3,7 +3,7 @@
 * to pause execution so you can see the previous commands' output before the windows closes if 
 * calling it from a shortcut to a native OS prompt that closes as soon as it's complete.
  * .
- * {code}
+ * {code:bash}
  * pause
  * {code}
 **/

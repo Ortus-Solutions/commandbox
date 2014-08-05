@@ -3,7 +3,7 @@
 * of your app for it to find the correct folder.  By default, your new view will be created in /views but you can 
 * override that with the directory param.
 * .
-* {code}
+* {code:bash}
 * coldbox create view myView
 * {code}
 *  

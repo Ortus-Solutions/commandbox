@@ -1,14 +1,14 @@
 /**
  * Upgrades CommandBox to the latest version.
  * .
- * {code}
+ * {code:bash}
  * upgrade
  * {code}
  * .
  * Use the "force" parameter to re-install even if the version installed is the latest.
  * .
- * {code}
- * version --force
+ * {code:bash}
+ * upgrade --force
  * {code}
  **/
 component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {

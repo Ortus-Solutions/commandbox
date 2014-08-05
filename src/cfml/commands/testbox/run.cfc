@@ -1,12 +1,12 @@
 /**
  * Executes TestBox runners via HTTP/S.  By default, the "testbox.runner" property will be read from your box.json.   
 * .
-* {code}
+* {code:bash}
 * testbox run
 * {code}   
 * .
 * You can also specify the URL manually
-* {code}
+* {code:bash}
 * testbox run "http://localhost:8080/tests/runner.cfm"
 * {code}
 *

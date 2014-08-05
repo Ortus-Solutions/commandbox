@@ -2,17 +2,17 @@
  * Copy a file or directory.
  * .
  * Create a copy of sample.html in the current directory and call it test.html
- * {code}
+ * {code:bash}
  * cp sample.html test.html
  * {code}
  * .
  * Create a copy index.cfm in another directory with the same name
- * {code}
+ * {code:bash}
  * cp index.cfm testing/index.cfm
  * {code}
  * .
  * Create a copy of a directory
- * {code}
+ * {code:bash}
  * cp foo/ bar/
  * {code}
  *

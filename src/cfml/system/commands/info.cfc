@@ -1,7 +1,7 @@
 /**
  * Display basic information about the shell and some cool ASCII art.
  * .
- * {code}
+ * {code:bash}
  * info 
  * {code}
  *

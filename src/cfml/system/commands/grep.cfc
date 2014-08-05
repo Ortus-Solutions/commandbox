@@ -2,17 +2,17 @@
  * Search through string input and filter only matching lines.  Pipe input in and supply a regular expression.  
  * .
  * Find Brad's ForgeBox entries
- * {code}
+ * {code:bash}
  * forgebox show | grep Brad
  * {code}
  * .
  * Find recent install commands
- * {code}
+ * {code:bash}
  * history | grep isntall
  * {code}
  * .
  * Search log file for certain errors
- * {code}
+ * {code:bash}
  * cat myLogFile.txt | grep "variable .* undefined"
  * {code}
  * 

@@ -3,7 +3,7 @@
  * the command folders.  Use this if developing commands to quickly reload your changes after modifying 
  * the command's CFC file.  All files will be recreated except /system/BootStrap.cfm.
  * .
- * {code}
+ * {code:bash}
  * reload
  * {code}
  **/

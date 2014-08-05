@@ -2,7 +2,7 @@
 * Exits out of the shell.  If the CommandBox binary was executed directly, the shell will close.  If the 
 * CommandBox binary was run from your OS's native shell, you will be returned there.
 * .
-* {code}
+* {code:bash}
 * exit
 * {code}
 * .

@@ -11,17 +11,17 @@
  * The "save" and "saveDev" parameters will remove this package as a dependency or devDependency in your root box.json if it exists.
  * .
  * Uninstall the feeds package
- * {code}
+ * {code:bash}
  * forgebox uninstall feeds
  * {code}
  * .
  * Uninstall feeds and remove it from the dependency list
- * {code}
+ * {code:bash}
  * forgebox install feeds --save
  * {code}
  * .
  * Uninstall feeds and remove it from the dev dependency list
- * {code}
+ * {code:bash}
  * forgebox install feeds --saveDev
  * {code}
  *

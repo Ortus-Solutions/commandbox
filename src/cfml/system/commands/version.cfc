@@ -1,7 +1,7 @@
 /**
  * Outputs CommandBox version currently installed
  * .
- * {code}
+ * {code:bash}
  * version
  * {code}
  **/

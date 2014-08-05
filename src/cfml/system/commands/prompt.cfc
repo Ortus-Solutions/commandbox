@@ -3,7 +3,7 @@
  * default prompt by using the "reload" command.  Don't forget to include a space at the end of the prompt
  * so it doesn't run up against your text.
  * .
- * {code}
+ * {code:bash}
  * prompt "My Cool Shell> "
  * {code}
  **/

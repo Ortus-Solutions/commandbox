@@ -1,7 +1,7 @@
 /**
  * Clear any output on the terminal.
  * .
- * {code}
+ * {code:bash}
  * clear
  * {code}
  *

@@ -2,7 +2,7 @@
  * Breaks long output up into lines or pages for easy reading.  Pipe the output of another command in and it will break it up for you.
  * Press space to advance one line at a time, Ctrl-c, ESC, or "q" to abort and any other key to advance one page at a time.
  * .
- * {code}
+ * {code:bash}
  * forgebox show | more 
  * {code}
  **/

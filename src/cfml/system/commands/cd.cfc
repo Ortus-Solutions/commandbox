@@ -2,12 +2,12 @@
  * Change the current working directory of the shell.
  * .
  * Create a copy of a directory
- * {code}
+ * {code:bash}
  * cd tests/
  * {code}
  * .
  * As with any file and folder parameters, you can traverse "up" a directory.
- * {code}
+ * {code:bash}
  * cd ../../tests
  * {code} 
  **/

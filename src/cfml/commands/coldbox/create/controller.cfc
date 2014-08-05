@@ -1,7 +1,11 @@
 /**
-*  This will create a new controller (handler) in an existing ColdBox application.  Make sure you are running this command in the root
+*  Create a new controller (handler) in an existing ColdBox application.  Make sure you are running this command in the root
 *  of your app for it to find the correct folder.  You can optionally create the views as well as the integration tests for your
 *  new handler at the same time.  By default, your new controller will be created in /handlers but you can override that with the directory param.
+* .
+* {code:bash}
+* coldbox create controller myController index,foo,bar
+* {code}
 *
 **/
 component extends='commandbox.system.BaseCommand' aliases='coldbox create handler' excludeFromHelp=false {

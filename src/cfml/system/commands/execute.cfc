@@ -1,7 +1,7 @@
 /**
  * Executes a CFML file and outputs whatever the template outputs using cfoutput or the buffer.
  * .
- * {code}
+ * {code:bash}
  * execute myFile.cfm
  * {code}
  * 

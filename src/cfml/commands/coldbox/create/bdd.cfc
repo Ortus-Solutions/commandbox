@@ -3,7 +3,7 @@
 * of your app for it to find the correct folder.  By default, your new BDD spec will be created in /tests/specs but you can 
 * override that with the directory param.
 * .
-* {code}
+* {code:bash}
 * coldbox create bdd mySpec
 * {code}
 *  

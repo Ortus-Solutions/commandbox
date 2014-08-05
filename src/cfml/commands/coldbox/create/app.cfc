@@ -10,12 +10,12 @@
 *  - Simple
 *  - SuperSimple
 * .
-* {code}
+* {code:bash}
 * coldbox create app myApp
 * {code}
 * .
 * Use the "installColdBox" parameter to install the latest stable version of ColdBox from ForgeBox
-* {code}
+* {code:bash}
 * coldbox create app myApp --installColdBox
 * {code}
 * .

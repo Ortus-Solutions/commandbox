@@ -1,7 +1,7 @@
 /**
  * Show log for embedded server.  Run command from the web root of the server, or use the short name.
  * .
- * {code}
+ * {code:bash}
  * server log
  * server log name=serverName
  * {code}

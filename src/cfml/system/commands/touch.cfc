@@ -1,13 +1,13 @@
 /**
  * Create a new file according to its name if it does not exist. If it exists, modify its last updated date and time to now.
  * .
- * {code}
+ * {code:bash}
  * touch file.txt
  * {code}
  * .
  * Use the force parameter to overwrite the contents of the file to be empty even if it exists.
  * .
- * {code}
+ * {code:bash}
  * touch file.txt --force
  * {code}
  * 

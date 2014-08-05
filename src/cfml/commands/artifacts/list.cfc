@@ -1,12 +1,12 @@
 /**
  * List all packages in the CommandBox artifact cache.
  * .
- * {code}
+ * {code:bash}
  * artifacts list
  * {code}
  * .
  * Use the "package" parameter to show results for a specific package.
- * {code}
+ * {code:bash}
  * artifacts list coldbox-platform
  * {code}
  * 

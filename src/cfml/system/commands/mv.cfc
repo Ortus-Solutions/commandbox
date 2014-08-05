@@ -2,22 +2,22 @@
  * Rename/move a file or directory to a new name and path
  * .
  * Rename a file
- * {code}
+ * {code:bash}
  * mv sample.html sample.htm 
  * {code}
  * .
  * Move a file
- * {code}
+ * {code:bash}
  * mv sample.html /test/sample.htm
  * {code}
  * .
  * Rename a directory
- * {code}
+ * {code:bash}
  * mv foo/ bar/ 
  * {code}
  * .
  * Move a directory
- * {code}
+ * {code:bash}
  * mv foo/ bar/foo/ 
  * {code}
  *

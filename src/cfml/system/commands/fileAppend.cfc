@@ -1,19 +1,19 @@
 /**
  * Append to existing text in a file. Will add a newline automatically
  * .
- * {code}
+ * {code:bash}
  * fileAppend "My new line" file.txt
  * {code}
  * .
  * You can pipe text into it.
  * .
- * {code}
+ * {code:bash}
  * echo "My new line" | fileAppend file.txt
  * {code}
  * .
  * This command is also used internally for redirection when you use the >> symbol.
  * .
- * {code}
+ * {code:bash}
  * echo "Step 3 complete" >> log.txt
  * {code}
  * 

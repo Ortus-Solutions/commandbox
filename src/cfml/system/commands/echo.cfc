@@ -1,13 +1,13 @@
 /**
  * Outputs the text entered.
  * .
- * {code}
+ * {code:bash}
  * echo "Hello World!"
  * {code}
  * .
  * This can be useful in CommandBox Recipies, or to pipe arbitrary text into another command.
  * .
- * {code}
+ * {code:bash}
  * echo "Step 3 complete" >> log.txt
  * {code}
  * 

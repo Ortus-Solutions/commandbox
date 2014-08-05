@@ -2,13 +2,13 @@
  * Remove all packages from the artifacts cache.  Cached packages will be removed from the file system.
  * Use this command to force the "install" command to re-download the files fresh.
  * .
- * {code}
+ * {code:bash}
  * artifacts clean
  * {code}
  * .
  * Use the "force" parameter to skip the prompt.
  * .
- * {code}
+ * {code:bash}
  * artifacts clean --force
  * {code}
  *

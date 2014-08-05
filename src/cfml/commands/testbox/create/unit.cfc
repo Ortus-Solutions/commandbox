@@ -2,7 +2,7 @@
 * Create a new xUnit test in an existing application.  By default, your new test will be created in the current working
 * directory but you can override that with the directory param.
 * .
-* {code}
+* {code:bash}
 * testbox create unit myTest
 * {code}
 *  

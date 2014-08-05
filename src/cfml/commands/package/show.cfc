@@ -3,12 +3,12 @@
  * directory of the package where box.json lives.
  * .
  * Outputs package name
- * {code}
+ * {code:bash}
  * package show name
  * {code}
  * .
  * Outputs package keywords
- * {code}
+ * {code:bash}
  * package show keywords
  * {code}
  * .
@@ -16,12 +16,12 @@
  * If the accessed property is a complex value, the JSON representation will be displayed
  * .
  * Outputs testbox runner(s)
- * {code}
+ * {code:bash}
  * package show testbox.runner
  * {code}
  * .
  * Outputs the first testbox notify E-mail
- * {code}
+ * {code:bash}
  * package show testbox.notify.emails[1]
  * {code}
  * .

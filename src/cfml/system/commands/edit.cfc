@@ -2,7 +2,7 @@
  * Open a file in the native OS application in order to edit it. If you pass in a 
  * folder, it will try to open the folder in an explorer or finder window.
  * .
- * {code}
+ * {code:bash}
  * edit index.cfm
  * open myApp/
  * {code}

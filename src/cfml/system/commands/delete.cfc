@@ -1,20 +1,20 @@
 /**
  * Delete a file or directory from the filesystem.  Path may be absolute or relative to the current working directory.
  * .
- * {code}
+ * {code:bash}
  * delete sample.html
  * {code}
  * .
  * Use the "force" param to supress the confirmation dialog.
  * .
- * {code}
+ * {code:bash}
  * delete sample.html --force
  * {code}
  * .
  * Use the "recurse" param to remove a directory which is not empty.  Trying to remove a non-empty
  * directory will throw an error.  This a safetly check to make sure you know what you are getting into.
  * .
- * {code}
+ * {code:bash}
  * delete myFolder/ --recurse
  * {code}
  **/	

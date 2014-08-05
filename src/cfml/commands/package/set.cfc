@@ -3,7 +3,7 @@
  * directory of the package where box.json lives.
  * .
  * set package name
- * {code}
+ * {code:bash}
  * package set name=myPackage
  * {code}
  * .
@@ -11,22 +11,22 @@
  * If the set value is JSON, it will be stored as a complex value in the box.json.
  * .
  * set repo type
- * {code}
+ * {code:bash}
  * package set repository.type=Git
  * {code}
  * .
  * set first testbox notify E-mail
- * {code}
+ * {code:bash}
  * package set testbox.notify.email[1]="brad@bradwood.com"
  * {code}
  * .
  * Set multiple params at once
- * {code}
+ * {code:bash}
  * package set name=myPackage version="1.0.0.000" author="Brad Wood" slug="foo"
  * {code}
  * .
  * Set complex value as JSON
- * {code}
+ * {code:bash}
  * package set testbox.notify.emails="[ 'test@test.com', 'me@example.com' ]"
  * {code}
  * .
@@ -34,7 +34,7 @@
  * .
  * Add an additional contributor to the existing list
  * This only works if the property and incoming value are both of the same complex type.
- * {code}
+ * {code:bash}
  * package set contributors="[ 'brad@coldbox.org' ]" --append
  * {code}
  * 

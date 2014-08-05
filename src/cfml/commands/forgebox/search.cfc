@@ -2,7 +2,7 @@
  * Search for ForgeBox entries by keyword.  Search is case-insensitive and will match text anywhere in the 
  * title, summary, or author name.
  * .
- * {code}
+ * {code:bash}
  * forgebox search blogCFC
  * {code}
  * .

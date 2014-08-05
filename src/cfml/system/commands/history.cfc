@@ -1,20 +1,20 @@
 /**
  * Display the history of all the commands that have been typed into the shell.
  * .
- * {code}
+ * {code:bash}
  * history
  * {code}
  * .
  * Use the clear flag to clear the history.
  * .
- * {code}
+ * {code:bash}
  * history --clear
  * {code}
  * .
  * There are separate histories for commands, script REPL and tag REPL.  
  * Use the "type" paramater to specifiy which history you want to view or clear.
  * .
- * {code}
+ * {code:bash}
  * history type=command
  * history type=scriptREPL
  * history type=tagREPL
@@ -22,7 +22,7 @@
  * .
  * Clear just the script REPL history
  * .
- * {code}
+ * {code:bash}
  * history type=scriptREPL --clear
  * {code}
  * 

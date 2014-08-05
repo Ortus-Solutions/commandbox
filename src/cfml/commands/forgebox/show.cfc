@@ -4,29 +4,29 @@
  * Pro Tip: The first parameter will accept a type or a slug.
  * .
  * Show details for a specifig entry
- * {code}
+ * {code:bash}
  * forgebox show coldbox-platform
  * {code}
  * .
  * Show entries of a given type. Use the "forgebox types" command to see available options
- * {code}
+ * {code:bash}
  * forgebox show plugins
  * {code}
  * .
  * Sort 10 newest entries
- * {code}
+ * {code:bash}
  * forgebox show orderby=new maxRows=10
  * {code}
  * .
  * Show sorted entries by type
- * {code}
+ * {code:bash}
  * forgebox show new plugins
  * forgebox show popular modules
  * forgebox show recent commandbox-commands
  * {code}
  * .
  * There are parameters to paginate results or you can pipe the output of this command into the "more" command like so:
- * {code}
+ * {code:bash}
  * forgebox show popular | more
  * {code}
  *

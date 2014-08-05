@@ -1,7 +1,7 @@
 /**
  * Stop an embedded CFML server.  Run command from the web root of the server, or use the short name.
  * .
- * {code}
+ * {code:bash}
  * server stop
  * server stop name=serverName
  * server stop name=serverName --forget

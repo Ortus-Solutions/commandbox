@@ -1,9 +1,13 @@
 /**
-* This will create a new model CFC in an existing ColdBox application.  Make sure you are running this command in the root
+* Create a new model CFC in an existing ColdBox application.  Make sure you are running this command in the root
 * of your app for it to find the correct folder.  You can optionally create unit tests for your new model at the same time.
 * By default, your new model will be created in /model but you can override that with the directory param.
 * Once you create a model you can add a mapping for it in your WireBox binder, or use ColdBox's default scan location and
 * just reference it with getModel( 'modelName' ).
+* .
+* {code:bash}
+* coldbox create model myModel
+* {code}
 *
  **/
 component extends='commandbox.system.BaseCommand' aliases='' excludeFromHelp=false {

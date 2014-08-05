@@ -1,9 +1,13 @@
 /**
-* This will create a new interceptor in an existing ColdBox application.  Make sure you are running this command in the root
+* Create a new interceptor in an existing ColdBox application.  Make sure you are running this command in the root
 * of your app for it to find the correct folder.  You can optionally create unit tests for your new interceptor at the same time.
 * By default, your new interceptor will be created in /interceptors but you can override that with the directory param.
 * Note, even though this command creates the interceptor CFC, you will still need to register it in the interceptors array
 * in your ColdBox.cfc config file.
+* .
+* {code:bash}
+* coldbox create interceptor myInterceptor preProcess,postEvent
+* {code}
 *
  **/
 component extends='commandbox.system.BaseCommand' aliases='' excludeFromHelp=false {

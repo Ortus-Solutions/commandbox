@@ -3,7 +3,7 @@
  * directory of the package where box.json lives.
  * Nested attributes may be set by specifying dot-delimited names or using array notation.
  * .
- * {code}
+ * {code:bash}
  * package clear description
  * {code}
  * .

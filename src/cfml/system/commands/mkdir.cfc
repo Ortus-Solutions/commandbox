@@ -1,7 +1,7 @@
 /**
  * Create a new directory.
  * .
- * {code}
+ * {code:bash}
  * mkdir newDir 
  * {code}
  **/

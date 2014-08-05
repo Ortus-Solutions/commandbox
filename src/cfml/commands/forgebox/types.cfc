@@ -1,7 +1,7 @@
 /**
  * Shows all of the valid forgebox types you can use when filtering records using the "forgebox show" command.
  * .
- * {code}
+ * {code:bash}
  * forgebox types
  * {code}
  * .

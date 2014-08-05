@@ -3,7 +3,7 @@
  * usually in a file.boxr recipe file.  CommandBox will iterate and execute each
  * of the commands for you in succession. Lines that start with a # will be ignored as comments.
  * .
- * {code}
+ * {code:bash}
  * recipe myRecipe.boxr
  * {code}
  * . 
@@ -12,18 +12,20 @@
  * Named arguments will be accessable inside the recipe as  $arg1Name, $arg2Name, etc. 
  * Positional args will be avaialble as $1, $2, etc.
  * .
- * {code}
- * # Recipe will receive $name and $action
+ * Recipe will receive $name and $action
+ * {code:bash}
  * recipe buildSite.boxr name=luis action=create
+ * {code}
  * .
- * # Recipe will receive $1 and $2
+ * Recipe will receive $1 and $2
+ * {code:bash}
  * recipe buildSite.boxr luis create
  * {code}
  * .
  * When using args inside a recipe, you will need to wrap the arg in quotes if it may contain a space
  * .
- * {code}
- * # $arg1 may contain spaces
+ * $arg1 may contain spaces
+ * {code:bash}
  * rm "$arg1"
  * {code} 
  * .

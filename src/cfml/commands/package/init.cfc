@@ -1,13 +1,13 @@
 /**
  * Initialize a package in the current directory by creating a default box.json file.
  * .
- * {code}
+ * {code:bash}
  * init
  * {code}
  * .
  * Pass in an arguments you want and a property in the box.json will be initialized with the 
  * same name as the argument name using the argument value.
- * {code}
+ * {code:bash}
  * init name="My App" slug=myApp version=1.0.0.0
  * {code}
  *

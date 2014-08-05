@@ -1,13 +1,13 @@
 /**
  * List the files and folders in a directory.  Defaults to current working directory
  * .
- * {code}
+ * {code:bash}
  * dir samples/
  * {code}
  * .
  * Use the "recurse" paramater to show all nested files and folders.
  * .
- * {code}
+ * {code:bash}
  * dir samples/ --recurse
  * {code}
  * 

@@ -2,7 +2,7 @@
 * Create a new BDD spec in an existing application.  By default, your new BDD spec will be created in the current working
 * directory but you can override that with the directory param.
 * .
-* {code}
+* {code:bash}
 * testbox create bdd mySpec
 * {code}
 *

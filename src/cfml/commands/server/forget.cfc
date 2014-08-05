@@ -1,7 +1,7 @@
 /**
  * Forget an embedded CFML server from persistent disk.  Run command from the web root of the server, or use the short name.
  * .
- * {code}
+ * {code:bash}
  * server forget
  * server forget name=serverName
  * server forget --all

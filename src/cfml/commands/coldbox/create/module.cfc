@@ -1,6 +1,10 @@
 /**
-* This will create a new module in an existing ColdBox application.  Make sure you are running this command in the root
-* of your app for it to find the correct folder.  
+* Create a new module in an existing ColdBox application.  Make sure you are running this command in the root
+* of your app for it to find the correct folder.
+* .
+* {code:bash}
+* coldbox create module myModule
+* {code}  
 *  
  **/
 component extends='commandbox.system.BaseCommand' aliases='' excludeFromHelp=false {

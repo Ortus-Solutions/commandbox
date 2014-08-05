@@ -1,7 +1,7 @@
 /**
  * Start an embedded CFML server.  Run command from the web root of the server.
  * .
- * {code}
+ * {code:bash}
  * server start
  * {code}
  **/

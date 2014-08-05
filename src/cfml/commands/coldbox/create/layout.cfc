@@ -3,7 +3,7 @@
 * of your app for it to find the correct folder.  By default, your new layout will be created in /layouts but you can 
 * override that with the directory param.
 * .
-* {code}
+* {code:bash}
 * coldbox create layout myLayout
 * {code}
 *  
