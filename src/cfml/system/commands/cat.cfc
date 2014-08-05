@@ -3,17 +3,17 @@
  * the output is displayed on the console, but it can also be piped or redirected.
  * .
  * Output a single file
- * {code}
+ * {code:bash}
  * cat box.json
  * {code}
  * .
  * Concatenate two files and output them to the screen
- * {code}
+ * {code:bash}
  * cat file1.txt file2.txt
  * {code}
  * .
  * Concatenate two files and write them to one new file
- * {code}
+ * {code:bash}
  * cat file1.txt file2.txt > combined.txt
  * {code}
  * 

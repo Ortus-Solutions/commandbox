@@ -8,20 +8,25 @@
 	<!-- common assets -->
 	<cfmodule template="inc/common.html" rootPath="#instance.class.root#">
 	<!-- syntax highlighter -->
-	<link type="text/css" rel="stylesheet" href="#instance.class.root#highlighter/styles/shCoreDefault.css">
+	<link type="text/css" rel="stylesheet" href="#instance.class.root#highlighter/styles/shCoreEmacs.css">
 	<script src="#instance.class.root#highlighter/scripts/shCore.js"></script>
+	<script src="#instance.class.root#highlighter/scripts/shBrushBash.js"></script>
 	<script src="#instance.class.root#highlighter/scripts/shBrushColdFusion.js"></script>
-	<script src="#instance.class.root#highlighter/scripts/shBrushXml.js"></script>
-	<script src="#instance.class.root#highlighter/scripts/shBrushSql.js"></script>
-	<script src="#instance.class.root#highlighter/scripts/shBrushJScript.js"></script>
-	<script src="#instance.class.root#highlighter/scripts/shBrushJava.js"></script>
 	<script src="#instance.class.root#highlighter/scripts/shBrushCss.js"></script>
+	<script src="#instance.class.root#highlighter/scripts/shBrushJava.js"></script>
+	<script src="#instance.class.root#highlighter/scripts/shBrushJScript.js"></script>
+	<script src="#instance.class.root#highlighter/scripts/shBrushPlain.js"></script>
+	<script src="#instance.class.root#highlighter/scripts/shBrushSql.js"></script>
+	<script src="#instance.class.root#highlighter/scripts/shBrushXml.js"></script>
 	<script type="text/javascript">
 		SyntaxHighlighter.config.stripBrs = true;
 		SyntaxHighlighter.defaults.gutter = false;
 		SyntaxHighlighter.defaults.toolbar = false;
 		SyntaxHighlighter.all();
 	</script>
+	<style>
+	.syntaxhighlighter table td.code { padding: 10px !important; }
+	</style>
 </head>
 
 <body class="withNavbar">
@@ -128,7 +133,7 @@
 		hint = reReplaceNoCase( hint, codeRegex, '<pre class="brush\2">\3</pre>', 'all' );
 		
 		// Fix line breaks
-		hint = reReplace( hint, '\n', '<br>', 'all' );
+		hint = reReplace( hint, '\n', '#chr(10)#<br>', 'all' );
 		
 		return hint;
 	}
