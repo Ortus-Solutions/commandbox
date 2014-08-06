@@ -253,7 +253,9 @@ component accessors="true" singleton {
 		}
 
 		arguments.installDirectory &= '/#packageName#'; 
-		directoryCreate( arguments.installDirectory );
+		if( !directoryExists( arguments.installDirectory ) ) {
+			directoryCreate( arguments.installDirectory );
+		}
 
 		var results = {
 			copied = [],
