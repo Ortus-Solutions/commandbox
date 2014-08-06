@@ -59,13 +59,6 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 	}
 
 	private function getHTTPFileVerified(required fileUrl, required filePath) {
-		if(fileExists("#filePath#.md5") && fileExists(filePath)) {
-			var fileHash = lcase(hash(fileReadBinary(filePath),"md5"));
-			var goodHash = lcase(fileRead(filePath & ".md5"));
-			if( fileHash == goodHash) {
-				return filePath;
-			}
-		}
 
 		print.greenLine( "Downloading #fileUrl#..." );
 		http url="#fileUrl#.md5" file="#filePath#.md5";
