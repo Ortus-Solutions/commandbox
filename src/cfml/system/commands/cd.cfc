@@ -1,7 +1,7 @@
 /**
  * Change the current working directory of the shell.
  * .
- * Create a copy of a directory
+ * Switch into a directory
  * {code:bash}
  * cd tests/
  * {code}
