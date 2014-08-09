@@ -82,7 +82,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 			print.toConsole();
 			
 			packageService.installPackage(
-				ID = 'coldbox-platform',
+				ID = 'coldbox',
 				directory = arguments.directory,
 				save = true,
 				saveDev = false,
