@@ -19,14 +19,31 @@
 * coldbox create app myApp --installColdBox
 * {code}
 * .
+* Use the "installTestBox" parameter to install the latest stable version of TestBox from ForgeBox
+* {code:bash}
+* coldbox create app myApp --installColdBox --installTestBox
+* {code}
+* .
 **/
 component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
 	
+	/**
+	* The location of our skeletons
+	*/
+	property name="skeletonLocation";
+
 	// DI
 	property name="packageService" 	inject="PackageService";
-	property name='parser' 	inject='Parser';
+	property name='parser' 			inject='Parser';
 	
-	variables.skeletonLocation = expandPath( '\commandbox\skeletons\' );
+	/**
+	* Constructor
+	*/
+	function init(){
+		super.init();
+		variables.skeletonLocation = expandPath( '/commandbox/skeletons/' );
+		return this;
+	}
 	
 	/**
 	 * @name.hint The name of the app you want to create
@@ -34,22 +51,25 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 	 * @directory.hint The directory to create the app in.  Defaults to your current working directory.
 	 * @init.hint "init" the directory as a package if it isn't already
 	 * @installColdBox.hint Install the latest stable version of ColdBox from ForgeBox
+	 * @installTestBox.hint Install the latest stable version of TestBox from ForgeBox
 	 **/
 	function run(
 				required name,
 				skeleton='AdvancedScript',
 				directory=getCWD(),
 				boolean init=true,
-				boolean installColdBox=false ) {
+				boolean installColdBox=false,
+				boolean installTestBox=false
+	) {
 					
 		// This will make the directory canonical and absolute		
-		directory = fileSystemUtil.resolvePath( directory );
-		
-		var skeletonZip = skeletonLocation & skeleton & '.zip';
+		arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
+		// get the right skeleton
+		var skeletonZip = skeletonLocation & arguments.skeleton & '.zip';
 		
 		// Validate directory
-		if( !directoryExists( directory ) ) {
-			return error( 'The directory [#directory#] doesn''t exist.' );			
+		if( !directoryExists( arguments.directory ) ) {
+			return error( 'The directory [#arguments.directory#] doesn''t exist.' );			
 		}
 		// Validate skeleton
 		if( !fileExists( skeletonZip ) ) {
@@ -60,13 +80,13 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 		// Unzip the skeleton!
 		zip
 			action="unzip"
-			destination="#directory#"
+			destination="#arguments.directory#"
 			file="#skeletonZip#";
 	
-		print.line();
-		print.greenLine( '#skeleton# Application successfully created in [#directory#]' );
+		print.line()
+			.greenLine( '#skeleton# Application successfully created in [#arguments.directory#]' );
 		
-		// Init, if not a package
+		// Init, if not a package as a Box Package
 		if( arguments.init && !packageService.isPackage( arguments.directory ) ) {
 			var originalPath = getCWD(); 
 			// init must be run from CWD
@@ -86,6 +106,22 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 				directory = arguments.directory,
 				save = true,
 				saveDev = false,
+				production = true,
+				currentWorkingDirectory = arguments.directory
+			);
+		}
+
+		// Install TestBox
+		if( arguments.installTestBox ) {
+			
+			// Flush out stuff from above
+			print.toConsole();
+			
+			packageService.installPackage(
+				ID = 'testbox',
+				directory = arguments.directory,
+				save = false,
+				saveDev = true,
 				production = true,
 				currentWorkingDirectory = arguments.directory
 			);
