@@ -54,12 +54,12 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 	 * @installTestBox.hint Install the latest stable version of TestBox from ForgeBox
 	 **/
 	function run(
-				required name,
-				skeleton='AdvancedScript',
-				directory=getCWD(),
-				boolean init=true,
-				boolean installColdBox=false,
-				boolean installTestBox=false
+		required name,
+		skeleton='AdvancedScript',
+		directory=getCWD(),
+		boolean init=true,
+		boolean installColdBox=false,
+		boolean installTestBox=false
 	) {
 					
 		// This will make the directory canonical and absolute		
@@ -86,6 +86,13 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 		print.line()
 			.greenLine( '#skeleton# Application successfully created in [#arguments.directory#]' );
 		
+		// Check for the @appname@ in .project files
+		if( fileExists( "#arguments.directory#/.project" ) ){
+			var sProject = fileRead( "#arguments.directory#/.project" );
+			sProject = replaceNoCase( sProject, "@appName@", arguments.name, "all" );
+			file action='write' file='#arguments.directory#/.project' mode ='755' output='#sProject#';
+		}
+
 		// Init, if not a package as a Box Package
 		if( arguments.init && !packageService.isPackage( arguments.directory ) ) {
 			var originalPath = getCWD(); 
