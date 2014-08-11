@@ -28,6 +28,12 @@ Type "help" for help, or "help [command]" to be more specific.
 	system 	= createObject( "java", "java.lang.System" );
 	args 	= system.getProperty( "cfml.cli.arguments" );
 
+	// Verify if we can run CommandBox Java v. 1.7+
+	if( findNoCase( "1.6", server.java.version ) ){
+		systemOutput( "The Java Version you have (#server.java.version#) is not supported by CommandBox. Please install a Java JRE/JDK 1.7+" );
+		abort;
+	}
+
 	// Check if we are called with an inline command
 	if( !isNull( args ) && trim( args ) != "" ){
 		// Create the shell
