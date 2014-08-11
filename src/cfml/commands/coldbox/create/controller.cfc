@@ -19,91 +19,87 @@ component extends='commandbox.system.BaseCommand' aliases='coldbox create handle
 	* @integrationTests.hint Generate the integration test component
 	* @testsDirectory.hint Your integration tests directory. Only used if integrationTests is true
 	* @directory.hint The base directory to create your handler in.
-	 **/
-	function run( 	required name,
-					actions='',
-					boolean views=true,
-					viewsDirectory='views',
-					boolean integrationTests=true,
-					appMapping='/',
-					testsDirectory='tests/specs/integration',
-					directory='handlers' ) {
+	* @script.hint Generate content in script markup or tag markup
+	* @description.hint The controller hint description
+	**/
+	function run( 	
+		required name,
+		actions='',
+		boolean views=true,
+		viewsDirectory='views',
+		boolean integrationTests=true,
+		appMapping='/',
+		testsDirectory='tests/specs/integration',
+		directory='handlers',
+		boolean script=true,
+		description="I am a new handler"
+	){
 		// This will make each directory canonical and absolute
-		directory = fileSystemUtil.resolvePath( directory );
-		viewsDirectory = fileSystemUtil.resolvePath( viewsDirectory );
-		testsDirectory = fileSystemUtil.resolvePath( testsDirectory );
+		arguments.directory 		= fileSystemUtil.resolvePath( arguments.directory );
+		arguments.viewsDirectory 	= fileSystemUtil.resolvePath( arguments.viewsDirectory );
+		arguments.testsDirectory 	= fileSystemUtil.resolvePath( arguments.testsDirectory );
 
 		// Validate directory
-		if( !directoryExists( directory ) ) {
-			return error( 'The directory [#directory#] doesn''t exist.' );
+		if( !directoryExists( arguments.directory ) ) {
+			return error( 'The directory [#arguments.directory#] doesn''t exist.' );
 		}
 
 		// Allow dot-delimited paths
-		name = replace( name, '.', '/', 'all' );
-		var defaultDescription 	= 'I am a new handler';
+		arguments.name = replace( arguments.name, '.', '/', 'all' );
 		// This help readability so the success messages aren't up against the previous command line
 		print.line();
 
 		// Script?
 		var scriptPrefix = '';
 		// TODO: Pull this from box.json
-		var script = true;
-		if( script ) {
+		if( arguments.script ) {
 			scriptPrefix = 'Script';
 		}
 
 		// Read in Templates
-		var handlerContent = fileRead( '/commandbox/templates/HandlerContent#scriptPrefix#.txt' );
-		var actionContent = fileRead( '/commandbox/templates/ActionContent#scriptPrefix#.txt' );
-		var handlerTestContent = fileRead( '/commandbox/templates/testing/HandlerBDDContent#scriptPrefix#.txt' );
-		var handlerTestCaseContent = fileRead( '/commandbox/templates/testing/HandlerBDDCaseContent#scriptPrefix#.txt' );
-
+		var handlerContent 			= fileRead( '/commandbox/templates/HandlerContent#scriptPrefix#.txt' );
+		var actionContent 			= fileRead( '/commandbox/templates/ActionContent#scriptPrefix#.txt' );
+		var handlerTestContent 		= fileRead( '/commandbox/templates/testing/HandlerBDDContent#scriptPrefix#.txt' );
+		var handlerTestCaseContent 	= fileRead( '/commandbox/templates/testing/HandlerBDDCaseContent#scriptPrefix#.txt' );
 
 		// Start text replacements
-		handlerContent = replaceNoCase( handlerContent, '|handlerName|', name, 'all' );
-		handlerTestContent = replaceNoCase( handlerTestContent, '|appMapping|', appMapping, 'all' );
-		handlerTestContent = replaceNoCase( handlerTestContent, '|handlerName|', name, 'all' );
-
-		// Placeholder in case we add this in
-		Description = '';
-		if( len(Description) ) {
-			handlerContent = replaceNoCase( handlerContent, '|Description|', Description,'all');
-		} else {
-			handlerContent = replaceNoCase( handlerContent, '|Description|', defaultDescription, 'all' );
-		}
-
+		handlerContent 		= replaceNoCase( handlerContent, '|handlerName|', arguments.name, 'all' );
+		handlerTestContent 	= replaceNoCase( handlerTestContent, '|appMapping|', arguments.appMapping, 'all' );
+		handlerTestContent 	= replaceNoCase( handlerTestContent, '|handlerName|', arguments.name, 'all' );
+		handlerContent 		= replaceNoCase( handlerContent, '|Description|', arguments.description, 'all');
+		
 		// Handle Actions if passed
-		if( len( actions ) ) {
-			allActions = '';
-			allTestsCases = '';
-			thisTestCase = '';
+		if( len( arguments.actions ) ) {
+			var allActions 		= '';
+			var allTestsCases 	= '';
+			var thisTestCase 	= '';
 
 			// Loop Over actions generating their functions
-			for( var thisAction in listToArray( actions ) ) {
+			for( var thisAction in listToArray( arguments.actions ) ) {
 				thisAction = trim( thisAction );
 				allActions = allActions & replaceNoCase( actionContent, '|action|', thisAction, 'all' ) & cr & cr;
 
 				// Are we creating views?
-				if( views ) {
-					var viewPath = ViewsDirectory & '/' & name & '/' & thisAction & '.cfm';
+				if( arguments.views ) {
+					var viewPath = arguments.viewsDirectory & '/' & arguments.name & '/' & thisAction & '.cfm';
 					// Create dir if it doesn't exist
 					directorycreate( getDirectoryFromPath( viewPath ), true, true );
 					// Create View Stub
-					fileWrite( viewPath, '<cfoutput>#cr#<h1>#name#.#thisAction#</h1>#cr#</cfoutput>' );
-					print.greenLine( 'Created ' & ViewsDirectory & '/' & name & '/' & thisAction & '.cfm' );
+					fileWrite( viewPath, '<cfoutput>#cr#<h1>#arguments.name#.#thisAction#</h1>#cr#</cfoutput>' );
+					print.greenLine( 'Created ' & arguments.viewsDirectory & '/' & arguments.name & '/' & thisAction & '.cfm' );
 				}
 
 				// Are we creating tests cases on actions
-				if( integrationTests ) {
+				if( arguments.integrationTests ) {
 					thisTestCase = replaceNoCase( handlerTestCaseContent, '|action|', thisAction, 'all' );
-					thisTestCase = replaceNoCase( thisTestCase, '|event|', listChangeDelims( name, '.', '/\' ) & '.' & thisAction, 'all' );
+					thisTestCase = replaceNoCase( thisTestCase, '|event|', listChangeDelims( arguments.name, '.', '/\' ) & '.' & thisAction, 'all' );
 					allTestsCases &= thisTestCase & CR & CR;
 				}
 
 			}
 
-
-			allActions = replaceNoCase( allActions, '|name|', Name, 'all');
+			// final replacements
+			allActions = replaceNoCase( allActions, '|name|', arguments.name, 'all');
 			handlerContent = replaceNoCase( handlerContent, '|EventActions|', allActions, 'all');
 			handlerTestContent = replaceNoCase( handlerTestContent, '|TestCases|', allTestsCases, 'all');
 		} else {
@@ -111,22 +107,21 @@ component extends='commandbox.system.BaseCommand' aliases='coldbox create handle
 			handlerTestContent = replaceNoCase( handlerTestContent, '|TestCases|', '', 'all' );
 		}
 
-		var handlerPath = '#directory#/#name#.cfc';
+		var handlerPath = '#arguments.directory#/#arguments.name#.cfc';
 		// Create dir if it doesn't exist
 		directorycreate( getDirectoryFromPath( handlerPath ), true, true );
 		// Write out the files
 		file action='write' file='#handlerPath#' mode ='777' output='#handlerContent#';
 		print.greenLine( 'Created #handlerPath#' );
 
-		if( integrationTests ) {
-			var testPath = '#TestsDirectory#/#name#Test.cfc';
+		if( arguments.integrationTests ) {
+			var testPath = '#arguments.testsDirectory#/#arguments.name#Test.cfc';
 			// Create dir if it doesn't exist
 			directorycreate( getDirectoryFromPath( testPath ), true, true );
 			// Create the tests
 			file action='write' file='#testPath#' mode ='777' output='#handlerTestContent#';
 			print.greenLine( 'Created #testPath#' );
 		}
-
 
 	}
 
