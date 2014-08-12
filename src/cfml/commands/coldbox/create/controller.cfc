@@ -4,7 +4,7 @@
 *  new handler at the same time.  By default, your new controller will be created in /handlers but you can override that with the directory param.
 * .
 * {code:bash}
-* coldbox create controller myController index,foo,bar
+* coldbox create controller myController index,foo,bar --open
 * {code}
 *
 **/
@@ -21,6 +21,7 @@ component extends='commandbox.system.BaseCommand' aliases='coldbox create handle
 	* @directory.hint The base directory to create your handler in.
 	* @script.hint Generate content in script markup or tag markup
 	* @description.hint The controller hint description
+	* @open.hint Open the controller once generated
 	**/
 	function run( 	
 		required name,
@@ -32,7 +33,8 @@ component extends='commandbox.system.BaseCommand' aliases='coldbox create handle
 		testsDirectory='tests/specs/integration',
 		directory='handlers',
 		boolean script=true,
-		description="I am a new handler"
+		description="I am a new handler",
+		boolean open=false
 	){
 		// This will make each directory canonical and absolute
 		arguments.directory 		= fileSystemUtil.resolvePath( arguments.directory );
@@ -121,8 +123,12 @@ component extends='commandbox.system.BaseCommand' aliases='coldbox create handle
 			// Create the tests
 			file action='write' file='#testPath#' mode ='777' output='#handlerTestContent#';
 			print.greenLine( 'Created #testPath#' );
+			// open file
+			if( arguments.open ){ runCommand( "edit #testPath#" ); }			
 		}
 
+		// open file
+		if( arguments.open ){ runCommand( "edit #handlerPath#" ); }			
 	}
 
 }

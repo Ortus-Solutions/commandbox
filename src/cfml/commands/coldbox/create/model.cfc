@@ -6,7 +6,7 @@
 * just reference it with getModel( 'modelName' ).
 * .
 * {code:bash}
-* coldbox create model myModel
+* coldbox create model myModel --open
 * {code}
 *
  **/
@@ -33,6 +33,7 @@ component extends='commandbox.system.BaseCommand' aliases='' excludeFromHelp=fal
 	* @directory.hint The base directory to create your model in.
 	* @script.hint Generate content in script markup or tag markup
 	* @description.hint The model hint description
+	* @open.hint Open the file once generated
 	**/
 	function run( 
 		required name,
@@ -42,7 +43,8 @@ component extends='commandbox.system.BaseCommand' aliases='' excludeFromHelp=fal
 		testsDirectory='tests/specs/unit',
 		directory='model',
 		boolean script=true,
-		description="I am a new Model Object"
+		description="I am a new Model Object",
+		boolean open=false
 	) {
 		// This will make each directory canonical and absolute
 		arguments.directory 		= fileSystemUtil.resolvePath( arguments.directory );
@@ -134,9 +136,13 @@ component extends='commandbox.system.BaseCommand' aliases='' excludeFromHelp=fal
 			directorycreate( getDirectoryFromPath( testPath ), true, true );
 			// Create the tests
 			file action='write' file='#testPath#' mode ='777' output='#modelTestContent#';
+			// open file
+			if( arguments.open ){ runCommand( "edit #testPath#" ); }			
 			print.greenLine( 'Created #testPath#' );
 		}
 
+		// Open file?
+		if( arguments.open ){ runCommand( "edit #modelPath#" ); }			
 	}
 
 }
