@@ -9,5 +9,4 @@
 	</cffunction>
 	
 |TestCases|
-	
 </cfcomponent>

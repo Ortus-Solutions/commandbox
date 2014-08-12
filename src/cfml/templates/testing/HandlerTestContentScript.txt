@@ -11,5 +11,4 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="|appMapping|
 	}
 
 |TestCases|
-
 }

@@ -12,73 +12,113 @@
  **/
 component extends='commandbox.system.BaseCommand' aliases='' excludeFromHelp=false {
 
-	variables.validPersistences = 'Transient,Singleton';
+	/**
+	* Constructor
+	*/
+	function init(){
+		super.init();
+		// valid persistences
+		variables.validPersistences = 'Transient,Singleton';
+
+		return this;
+	}
 
 	/**
 	* @name.hint Name of the model to create without the .cfc. For packages, specify name as 'myPackage/myModel'
+	* @methods.hint A comma-delimited list of method stubs to generate for you
 	* @persistence.hint Specify singleton to have only one instance of this model created
-	* @tests.hint Generate the unit test component
+	* @persistence.options Transient,Singleton
+	* @tests.hint Generate the unit test BDD component
 	* @testsDirectory.hint Your unit tests directory. Only used if tests is true
 	* @directory.hint The base directory to create your model in.
-	 **/
-	function run( 	required name,
-					persistence='transient',
-					boolean tests=true,
-					testsDirectory='tests/specs/unit',
-					directory='model' ) {
+	* @script.hint Generate content in script markup or tag markup
+	* @description.hint The model hint description
+	**/
+	function run( 
+		required name,
+		methods="",
+		persistence='transient',
+		boolean tests=true,
+		testsDirectory='tests/specs/unit',
+		directory='model',
+		boolean script=true,
+		description="I am a new Model Object"
+	) {
 		// This will make each directory canonical and absolute
-		directory = fileSystemUtil.resolvePath( directory );
-		testsDirectory = fileSystemUtil.resolvePath( testsDirectory );
+		arguments.directory 		= fileSystemUtil.resolvePath( arguments.directory );
+		arguments.testsDirectory 	= fileSystemUtil.resolvePath( arguments.testsDirectory );
 
 		// Validate directory
-		if( !directoryExists( directory ) ) {
+		if( !directoryExists( arguments.directory ) ) {
 			error( 'The directory [#directory#] doesn''t exist.' );
 		}
 		// Validate persistence
-		if( !listFindNoCase( validPersistences, persistence ) ) {
-			error( "The persistence value [#persistence#] is invalid. Valid values are [#listChangeDelims( validPersistences, ', ', ',' )#]" );
+		if( !listFindNoCase( variables.validPersistences, arguments.persistence ) ) {
+			error( "The persistence value [#arguments.persistence#] is invalid. Valid values are [#listChangeDelims( variables.validPersistences, ', ', ',' )#]" );
 		}
 		// Exit the command if something above failed
 		if( hasError() ) {
 			return;
 		}
 
-
 		// Allow dot-delimited paths
-		name = replace( name, '.', '/', 'all' );
-		defaultDescription = 'I am a new Model Object';
+		arguments.name = replace( arguments.name, '.', '/', 'all' );
 		// This help readability so the success messages aren't up against the previous command line
 		print.line();
 
 		// Script?
 		var scriptPrefix = '';
 		// TODO: Pull this from box.json
-		var script = true;
-		if( script ) {
+		if( arguments.script ) {
 			scriptPrefix = 'Script';
 		}
 
 		// Read in Template
-		var modelContent = fileRead( '/commandbox/templates/ModelContent#scriptPrefix#.txt' );
-		var modelTestContent = fileRead( '/commandbox/templates/testing/ModelBDDContent#scriptPrefix#.txt' );
+		var modelContent 	 		= fileRead( '/commandbox/templates/ModelContent#scriptPrefix#.txt' );
+		var modelMethodContent 		= fileRead( '/commandbox/templates/ModelMethodContent#scriptPrefix#.txt' );
+		var modelTestContent 		= fileRead( '/commandbox/templates/testing/ModelBDDContent#scriptPrefix#.txt' );
+		var modelTestMethodContent 	= fileRead( '/commandbox/templates/testing/ModelBDDMethodContent#scriptPrefix#.txt' );
 
-		modelContent = replaceNoCase( modelContent, '|modelName|', listLast( name, '/\' ), 'all' );
-		modelTestContent = replaceNoCase( modelTestContent, '|modelName|', listChangeDelims( name, '.', '/\' ), 'all' );
 
-		// Placeholder in case we add this in
-		Description = '';
-		if( len( description ) ) {
-			modelContent = replaceNoCase( modelContent, '|modelDescription|', Description, 'all' );
-		} else {
-			modelContent = replaceNoCase( modelContent, '|modelDescription|', defaultDescription, 'all' );
-		}
-
+		// Basic replacements
+		modelContent 	 = replaceNoCase( modelContent, '|modelName|', listLast( arguments.name, '/\' ), 'all' );
+		modelContent 	 = replaceNoCase( modelContent, '|modelDescription|', arguments.description, 'all' );
+		modelTestContent = replaceNoCase( modelTestContent, '|modelName|', listChangeDelims( arguments.name, '.', '/\' ), 'all' );
+		
+		// Persistence
 		switch ( Persistence ) {
 			case 'Transient' :
 				modelContent = replaceNoCase( modelContent, '|modelPersistence|', '', 'all' );
 				break;
 			case 'Singleton' :
-				modelContent = replaceNoCase( modelContent, '|modelPersistence|', 'singleton="true"', 'all');
+				modelContent = replaceNoCase( modelContent, '|modelPersistence|', 'singleton', 'all');
+		}
+
+		// Handle Methods
+		if( len( arguments.methods ) ){
+			var allMethods 		= "";
+			var allTestsCases   = "";
+			var methodContent 	= "";
+
+			// Loop Over methods to generate them
+			for( var thisMethod in listToArray( arguments.methods ) ) {
+				thisMethod = trim( thisMethod );
+				allMethods = allMethods & replaceNoCase( modelMethodContent, '|method|', thisMethod, 'all' ) & cr & cr;
+
+				print.yellowLine( "Generated method: #thisMethod#");
+
+				// Are we creating tests cases on methods
+				if( arguments.tests ) {
+					var thisTestCase = replaceNoCase( modelTestMethodContent, '|method|', thisMethod, 'all' );
+					allTestsCases &= thisTestCase & CR & CR;
+				}
+			}
+
+			// final replacement
+			modelContent 		= replaceNoCase( modelContent, '|methods|', allMethods, 'all');
+			modelTestContent 	= replaceNoCase( modelTestContent, '|TestCases|', allTestsCases, 'all');
+		} else {
+			modelContent = replaceNoCase( modelContent, '|methods|', '', 'all' );
 		}
 
 		// Write out the model
@@ -88,8 +128,8 @@ component extends='commandbox.system.BaseCommand' aliases='' excludeFromHelp=fal
 		file action='write' file='#modelPath#' mode ='777' output='#modelContent#';
 		print.greenLine( 'Created #modelPath#' );
 
-		if( tests ) {
-			var testPath = '#TestsDirectory#/#name#Test.cfc';
+		if( arguments.tests ) {
+			var testPath = '#arguments.TestsDirectory#/#arguments.name#Test.cfc';
 			// Create dir if it doesn't exist
 			directorycreate( getDirectoryFromPath( testPath ), true, true );
 			// Create the tests

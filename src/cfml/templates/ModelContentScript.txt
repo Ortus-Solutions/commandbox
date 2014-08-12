@@ -8,4 +8,5 @@ component |modelPersistence|{
 		return this;
 	}
 	
+|methods|
 }

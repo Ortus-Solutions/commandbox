@@ -14,5 +14,6 @@
 		
 		</cfscript>
 	</cffunction>
-	
+
+|TestCases|
 </cfcomponent>

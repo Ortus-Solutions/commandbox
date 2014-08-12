@@ -12,6 +12,5 @@ component extends="coldbox.system.testing.BaseModelTest" model="|modelName|"{
 		model.init();	
 		
 	}
-
-
+|TestCases|
 }

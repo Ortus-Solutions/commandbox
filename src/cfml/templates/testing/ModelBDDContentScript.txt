@@ -24,8 +24,7 @@ component extends="coldbox.system.testing.BaseModelTest" model="|modelName|"{
 
 		describe( "|modelName| Suite", function(){
 			
-			// Create your specs here
-			
+|TestCases|
 		});
 
 	}
