@@ -67,9 +67,9 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 		// get the right skeleton
 		var skeletonZip = skeletonLocation & arguments.skeleton & '.zip';
 		
-		// Validate directory
+		// Validate directory, if it doesn't exist, create it.
 		if( !directoryExists( arguments.directory ) ) {
-			return error( 'The directory [#arguments.directory#] doesn''t exist.' );			
+			directoryCreate( arguments.directory );
 		}
 		// Validate skeleton
 		if( !fileExists( skeletonZip ) ) {
