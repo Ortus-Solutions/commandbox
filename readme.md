@@ -21,7 +21,7 @@ CommandBox ColdFusion (CFML) CLI, Package Manager, REPL and much more!
 CommandBox downloads and installs the needed resources by default into your user home directory under a  **.CommandBox** automatically.
 
 **Official Releases**
-Official stable releases can be found at the [CommandBox Official Page](http://www.ortussolutions.com/#download)
+Official stable releases can be found at the [CommandBox Official Page](http://www.ortussolutions.com/products/commandbox#download)
 
 **Integration Releases**
 
