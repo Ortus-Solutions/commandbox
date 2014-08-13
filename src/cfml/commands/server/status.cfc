@@ -9,6 +9,7 @@
  **/
 component extends="commandbox.system.BaseCommand" aliases="status" excludeFromHelp=false {
 
+	// DI
 	property name="serverService" inject="ServerService";
 	
 	/**
