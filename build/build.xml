@@ -12,16 +12,14 @@ External Dependencies:
     	Build a new distribution of Ortus CommandBox
     </description>
 
+    <!-- Version: UPDATE ON EACH RELEASE AS NEEDED -->
+ 	<property name="distro.groupID"				value="ortussolutions" />
+ 	<property name="distro.name"				value="commandbox"/>
+ 	<property name="commandbox.version"			value="1.0.0"/>
+ 	<property name="commandbox.stableVersion"	value="1.0.0"/>
+
     <!-- Time Label -->
 	<tstamp prefix="start"/>
-	<!-- Default environment check, if not passed via -Denvironment -->
-	<condition property="environment" value="local">
-		<not><isset property="environment" /></not>
-	</condition>
-	<echo>Loading Properties from environment: ${environment}</echo>
-	<!-- Load environment properties -->
-	<loadproperties srcFile="build-${environment}.properties"/>
-
 	<!-- Load build lib tasks -->
 	<path id="build.antcontrib.libpath">
 		<fileset dir="${basedir}/lib">
@@ -34,12 +32,28 @@ External Dependencies:
 	<!-- Import Box-Repo Tasks -->
 	<import><url url="https://raw.githubusercontent.com/Ortus-Solutions/box-tasks/master/box-repo.xml"/></import>
 	
+	<!-- Default environment check, if not passed via -Denvironment -->
+	<condition property="environment" value="local">
+		<not><isset property="environment" /></not>
+	</condition>
+	<if>
+		<available file="build-${environment}.properties" />
+		<then>
+			<!-- Load env properties -->
+			<echo>Loading properties from environment: ${environment}</echo>
+			<loadproperties srcFile="build-${environment}.properties"/>
+		</then>
+	</if>
+	<!-- Load root properties -->
+	<echo>Loading base properties</echo>
+	<loadproperties srcFile="build.properties"/>
+
 	<!-- import cfdistro -->
 	<import file="${cfdistro.build.file}"/>
 	<property name="maven.repo.local" value="${cfdistro.basedir}/artifacts"/>
 
 	<!-- Init Build -->
-	<target name="init" description="Init build">
+	<target name="init" description="Init build" unless="src.isInit">
 		<!-- cleanup -->
 		<delete dir="${temp.dir}" />
 		<delete dir="${build.dir}" />
@@ -61,14 +75,31 @@ External Dependencies:
 		</propertyfile>
 		<!-- Retrieve Build Number -->
 		<property file="build.number"/>
+
+		<!-- Create version file -->
+		<echo file="${build.dir}/.version" append="false">${commandbox.version}.${build.number}</echo>
 		
+		<!-- If stg, change perms and owners -->
+		<if>
+			<equals arg1="${environment}" arg2="auto" />
+			<then>
+				<chmod file="${build.dir}/**" perm="o+wrs" type="both" verbose="true" />
+				<chown owner="stg-ortus" verbose="true">
+					<fileset dir="${build.dir}" />
+				</chown>
+			</then>
+		</if>
+
 		<!-- get commandbox dependencies -->
 		<dependency groupId="jline" artifactId="jline" version="2.12-SNAPSHOT" dest="${lib.dir}" type="jar" unzip="false"/>
 		<dependency groupId="org.getrailo" artifactId="railo.cli" version="${railo.cli.version}" dest="${temp.dir}/rcli" type="jar" unzip="true"/>
+
+		<!-- Mark as init -->
+		<property name="src.isInit" value="true" />
 	</target>
 
 	<!-- Build everything -->
-	<target name="build.cli.all" depends="build.cli.mvn">
+	<target name="build.cli.all" depends="build.cli.deb,build.cli.exe,build.cli.jre,build.cli.rpm">
 		<!-- Remove Unecessary build files from repo, so to not confuse -->
 		<antcontrib:if>
 			<equals arg1="${build.type}" arg2="auto" />
@@ -82,7 +113,7 @@ External Dependencies:
 	</target>
 
 	<!-- Build CLI -->
-	<target name="build.cli" description="builds box.jar" depends="init">
+	<target name="build.cli" description="builds box.jar" depends="init,build.apidocs">
 		<!-- Copy CommandBox code -->
       	<copy todir="${build.dir}">
         	<fileset dir="${src.dir}/cfml"/>
@@ -98,28 +129,17 @@ External Dependencies:
 		<replaceregexp match='@build.number@' replace="${build.number}" flags="ig" byline="true">
 		  <fileset dir="${build.dir}" />
 		</replaceregexp>
-		
-		<echo file="${build.dir}/.version" append="false">${commandbox.version}.${build.number}</echo>
-			
-		<!-- Create box-repo.json -->
-		<box-repo location="${artifact.dir}"
-				  artifactID="${distro.name}" 
-				  groupID="${distro.groupID}"
-				  buildID="${build.number}"
-				  latest="${commandbox.version}"
-				  stableVersion="${commandbox.stableVersion}"
-				  classifiers=""/>
-				
+
 		<!--  create the cfml distro zip -->
-		<zip destfile="${dist.dir}/cfml-${commandbox.version}.zip" update="false" level="9">
+		<zip destfile="${dist.dir}/${distro.name}-cfml-${commandbox.version}.zip" update="false" level="9">
 	        <fileset dir="${build.dir}"/>
 		</zip>
 		<!-- Build Checksum for cfml.zip -->
-		<checksum file="${dist.dir}/cfml-${commandbox.version}.zip" forceoverwrite="true" fileext=".md5" />
+		<checksum file="${dist.dir}/${distro.name}-cfml-${commandbox.version}.zip" forceoverwrite="true" fileext=".md5" />
 		
 		<!-- update railo cli project with our version stuff -->
       	<copy tofile="${temp.dir}/rcli/cfml.zip" overwrite="true">
-        	<fileset file="${dist.dir}/cfml-${commandbox.version}.zip" />
+        	<fileset file="${dist.dir}/${distro.name}-cfml-${commandbox.version}.zip" />
         </copy>
       	<copy todir="${temp.dir}/rcli/resource" overwrite="true">
         	<fileset dir="${src.dir}/resources" />
@@ -135,10 +155,30 @@ External Dependencies:
 
         <!-- cleanup -->
 		<delete dir="${temp.dir}/rcli"/>
+
+		<!-- Create box-repo.json -->
+		<box-repo location="${artifact.dir}"
+				  artifactID="${distro.name}" 
+				  groupID="${distro.groupID}"
+				  buildID="${build.number}"
+				  latest="${commandbox.version}"
+				  stableVersion="${commandbox.stableVersion}"
+				  classifiers="cfml,bin,win,deb,rpm,apidocs"/>
+ 	</target>
+
+ 	<!-- Build API Docs -->
+ 	<target name="build.apidocs" description="Builds the api docs" depends="init">
+ 		<!-- Execute DocBox -->
+		<get dest="${build.dir}/colddoc.html" src="${url.api}${commandbox.version}&amp;path=${api.dir}" verbose="true"/>
+		<delete file="${build.dir}/colddoc.html" />
+		<!-- Zip API Docs -->
+		<zip destfile="${dist.dir}/${distro.name}-apidocs-${commandbox.version}.zip" basedir="${api.dir}"></zip>
+ 		<!-- Build Checksum -->
+ 		<checksum forceoverwrite="true" fileext=".md5" file="${dist.dir}/${distro.name}-apidocs-${commandbox.version}.zip" />
  	</target>
 
 	<!-- Build linux/mac bin -->
-	<target name="build.cli.bin" description="create bin wrapper" depends="build.cli">
+	<target name="build.cli.bin" description="create linux/mac binary" depends="build.cli">
 		<!--  this bundles the jar into the executable wrapper, which is a bash script -->
         <concat destfile="${dist.dir}/box" force="yes" binary="true">
           <fileset file="${src.dir}/bin/box.sh" />
@@ -147,11 +187,11 @@ External Dependencies:
         <!-- Change execute perm -->
         <chmod file="${dist.dir}/box" perm="a+x"/>
         <!-- Create distro zip -->
-		<zip destfile="${dist.dir}/${distro.name}-${commandbox.version}.bin.zip" level="9" update="false">
+		<zip destfile="${dist.dir}/${distro.name}-bin-${commandbox.version}.zip" level="9" update="false">
 	        <zipfileset file="${dist.dir}/box" filemode="711" prefix="" />
 		</zip>
 		<!-- Build Checksum -->
-		<checksum file="${dist.dir}/${distro.name}-${commandbox.version}.bin.zip" forceoverwrite="true" fileext=".md5" />
+		<checksum file="${dist.dir}/${distro.name}-bin-${commandbox.version}.zip" forceoverwrite="true" fileext=".md5" />
  	</target>
 
 	<!-- Build windows executable -->
@@ -186,11 +226,11 @@ External Dependencies:
 		</launch4j>
 		
 		<!-- Zip it -->
-		<zip destfile="${dist.dir}/${distro.name}-${commandbox.version}.win.zip" level="9" update="false">
+		<zip destfile="${dist.dir}/${distro.name}-win-${commandbox.version}.zip" level="9" update="false">
 	        <zipfileset file="${dist.dir}/box.exe" prefix="" />
 		</zip>
 		<!-- Build Checksum -->
-		<checksum file="${dist.dir}/${distro.name}-${commandbox.version}.win.zip" forceoverwrite="true" fileext=".md5" />
+		<checksum file="${dist.dir}/${distro.name}-win-${commandbox.version}.zip" forceoverwrite="true" fileext=".md5" />
 	</target>
 
 	<!-- Build including JREs -->
@@ -204,32 +244,24 @@ External Dependencies:
 		<dependency groupId="oracle" artifactId="jre" version="${jre.version}" type="zip" classifier="linux64" />
 		<dependency groupId="oracle" artifactId="jre" version="${jre.version}" type="zip" classifier="darwin64" />
 
-		<!-- cleanup just in case -->
-		<delete>
-			<fileset dir="${dist.dir}">
-				<include name="${distro.name}_*.jre-*.zip" />
-				<include name="${distro.name}_*.jre-*.md5" />
-			</fileset>
-		</delete>
-
 		<!--Zip Box Binary With JRE -->
-		<zip destfile="${dist.dir}/${distro.name}-${commandbox.version}.jre-win32.zip" level="9" update="false">
+		<zip destfile="${dist.dir}/${distro.name}-jre-win32-${commandbox.version}.zip" level="9" update="false">
 			<zipgroupfileset file="${maven.repo.local}/oracle/jre/${jre.version}/jre-${jre.version}-win32.zip"/>
 	        <fileset file="${dist.dir}/box.exe" />
 		</zip>
-		<zip destfile="${dist.dir}/${distro.name}-${commandbox.version}.jre-win64.zip" level="9" update="false">
+		<zip destfile="${dist.dir}/${distro.name}-jre-win64-${commandbox.version}.zip" level="9" update="false">
 			<zipgroupfileset file="${maven.repo.local}/oracle/jre/${jre.version}/jre-${jre.version}-win64.zip"/>
 	        <fileset file="${dist.dir}/box.exe" />
 		</zip>
-		<zip destfile="${dist.dir}/${distro.name}-${commandbox.version}.jre-linux32.zip" level="9" update="false">
+		<zip destfile="${dist.dir}/${distro.name}-jre-linux32-${commandbox.version}.zip" level="9" update="false">
 			<zipgroupfileset file="${maven.repo.local}/oracle/jre/${jre.version}/jre-${jre.version}-linux32.zip"/>
 	        <fileset file="${dist.dir}/box" />
 		</zip>
-		<zip destfile="${dist.dir}/${distro.name}-${commandbox.version}.jre-linux64.zip" level="9" update="false">
+		<zip destfile="${dist.dir}/${distro.name}-jre-linux64-${commandbox.version}.zip" level="9" update="false">
 			<zipgroupfileset file="${maven.repo.local}/oracle/jre/${jre.version}/jre-${jre.version}-linux64.zip"/>
 	        <fileset file="${dist.dir}/box" />
 		</zip>
-		<zip destfile="${dist.dir}/${distro.name}-${commandbox.version}.jre-darwin64.zip" level="9" update="false">
+		<zip destfile="${dist.dir}/${distro.name}-jre-darwin64-${commandbox.version}.zip" level="9" update="false">
 			<zipgroupfileset file="${maven.repo.local}/oracle/jre/${jre.version}/jre-${jre.version}-darwin64.zip"/>
 	        <fileset file="${dist.dir}/box" />
 		</zip>
@@ -237,10 +269,9 @@ External Dependencies:
 		<!-- Build Checksum -->
 		<checksum forceoverwrite="true" fileext=".md5">
 			<fileset dir="${dist.dir}">
-				<include name="*.jre-*.zip" />
+				<include name="*-jre-*.zip" />
 			</fileset>
 		</checksum>
-		
  	</target>
 	
 	<!-- Build local maven repository build.cli.deb,build.cli.exe,build.cli.rpm-->
@@ -270,8 +301,6 @@ External Dependencies:
 		<taskdef name="deb" classname="com.googlecode.ant_deb_task.Deb" classpathref="build.antcontrib.libpath"/>
 	   	<echo message="Creating debian repository from: ${dist.dir}"/>
 		<mkdir dir="${deb.repo}"/>
-		<!-- replace file -->
-	   	<delete file="${dist.dir}/${distro.name}-${commandbox.version}-1_all.deb" />
 	   	<!-- create debian repo -->
 	   	<deb
 	        todir="${dist.dir}"
@@ -283,10 +312,12 @@ External Dependencies:
 	        <description synopsis="${commandbox.description}">CommandBox Version: ${commandbox.version}.</description>
 	   		<tarfileset file="${dist.dir}/box" prefix="usr/local/bin" filemode="755"/>
 	   	</deb>
-	   	<!-- Copy deb to repo -->
-		<copy file="${dist.dir}/${distro.name}_${commandbox.version}-1_all.deb" todir="${deb.repo}" />
+	   	<!-- Copy deb package to debian repo -->
+		<copy file="${dist.dir}/${distro.name}_${commandbox.version}-1_all.deb" tofile="${deb.repo}" />
+		<!-- Rename to standardized naming -->
+		<move file="${dist.dir}/${distro.name}_${commandbox.version}-1_all.deb" tofile="${dist.dir}/${distro.name}-debian-${commandbox.version}.deb" />
 		<!-- Build Checksum -->
-		<checksum file="${dist.dir}/${distro.name}_${commandbox.version}-1_all.deb" forceoverwrite="true" fileext=".md5" />
+		<checksum file="${dist.dir}/${distro.name}-debian-${commandbox.version}.deb" forceoverwrite="true" fileext=".md5" />
 		<!-- Update Repo -->
 		<echo message="Updating apt (deb) repo in ${deb.repo}"/>
 	   	<deb-repo dir="${deb.repo}" />
@@ -307,9 +338,9 @@ External Dependencies:
 			<tarfileset file="${dist.dir}/box" prefix="/usr/bin" filemode="744" username="root" group="root"/>
 		</redline:rpm>
 		<!-- Copy rpm to repo -->
-		<copy file="${rpm.repo}/${distro.name}-${commandbox.version}-1.noarch.rpm" toDir="${dist.dir}" />
+		<copy file="${rpm.repo}/${distro.name}-${commandbox.version}-1.noarch.rpm" tofile="${dist.dir}/${distro.name}-rpm-${commandbox.version}.rpm" />
 		<!-- Build Checksum -->
-		<checksum file="${dist.dir}/${distro.name}-${commandbox.version}-1.noarch.rpm" forceoverwrite="true" fileext=".md5" />
+		<checksum file="${dist.dir}/${distro.name}-rpm-${commandbox.version}.rpm" forceoverwrite="true" fileext=".md5" />
 		<!-- updates/creates the RPM repository, requires 'createrepo' on build server -->
 		<rpm-repo dir="${rpm.repo}" />
 	</target>
