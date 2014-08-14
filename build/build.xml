@@ -168,6 +168,8 @@ External Dependencies:
 
  	<!-- Build API Docs -->
  	<target name="build.apidocs" description="Builds the api docs" depends="init">
+		<!-- Create repo for docs -->
+ 		<mkdir dir="${api.dir}" />
  		<!-- Execute DocBox -->
 		<get dest="${build.dir}/colddoc.html" src="${url.api}${commandbox.version}&amp;path=${api.dir}" verbose="true"/>
 		<delete file="${build.dir}/colddoc.html" />
