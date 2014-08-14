@@ -29,6 +29,11 @@ External Dependencies:
 		</fileset>
 	</path>
 
+	<!-- Define Tasks -->
+	<taskdef resource="net/sf/antcontrib/antlib.xml" classpathref="build.antcontrib.libpath" />
+	<!-- Import Box-Repo Tasks -->
+	<import><url url="https://raw.githubusercontent.com/Ortus-Solutions/box-tasks/master/box-repo.xml"/></import>
+	
 	<!-- import cfdistro -->
 	<import file="${cfdistro.build.file}"/>
 	<property name="maven.repo.local" value="${cfdistro.basedir}/artifacts"/>
@@ -39,12 +44,10 @@ External Dependencies:
 		<delete dir="${temp.dir}" />
 		<delete dir="${build.dir}" />
 		<delete dir="${lib.dir}"/>
-		<delete>
-			<fileset dir="${dist.dir}" />
-		</delete>
+		<delete dir="${dist.dir}"/>
 
-		<!-- init dirs 
-		<mkdir dir="${dist.dir}" />-->
+		<!-- init dirs -->
+		<mkdir dir="${dist.dir}" />
 		<mkdir dir="${build.dir}"/>
 		<chmod file="${build.dir}/**" perm="g+wxrs" type="both" />
 
@@ -58,7 +61,7 @@ External Dependencies:
 		</propertyfile>
 		<!-- Retrieve Build Number -->
 		<property file="build.number"/>
-
+		
 		<!-- get commandbox dependencies -->
 		<dependency groupId="jline" artifactId="jline" version="2.12-SNAPSHOT" dest="${lib.dir}" type="jar" unzip="false"/>
 		<dependency groupId="org.getrailo" artifactId="railo.cli" version="${railo.cli.version}" dest="${temp.dir}/rcli" type="jar" unzip="true"/>
@@ -96,6 +99,17 @@ External Dependencies:
 		  <fileset dir="${build.dir}" />
 		</replaceregexp>
 		
+		<echo file="${build.dir}/.version" append="false">${commandbox.version}.${build.number}</echo>
+			
+		<!-- Create box-repo.json -->
+		<box-repo location="${artifact.dir}"
+				  artifactID="${distro.name}" 
+				  groupID="${distro.groupID}"
+				  buildID="${build.number}"
+				  latest="${commandbox.version}"
+				  stableVersion="${commandbox.stableVersion}"
+				  classifiers=""/>
+				
 		<!--  create the cfml distro zip -->
 		<zip destfile="${dist.dir}/cfml-${commandbox.version}.zip" update="false" level="9">
 	        <fileset dir="${build.dir}"/>
