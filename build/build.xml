@@ -80,15 +80,7 @@ External Dependencies:
 		<echo file="${build.dir}/.version" append="false">${commandbox.version}.${build.number}</echo>
 		
 		<!-- If stg, change perms and owners -->
-		<if>
-			<equals arg1="${environment}" arg2="auto" />
-			<then>
-				<chmod file="${build.dir}/**" perm="o+wrs" type="both" verbose="true" />
-				<chown owner="stg-ortus" verbose="true">
-					<fileset dir="${build.dir}" />
-				</chown>
-			</then>
-		</if>
+		<antcall target="update.permissions" />
 
 		<!-- get commandbox dependencies -->
 		<dependency groupId="jline" artifactId="jline" version="2.12-SNAPSHOT" dest="${lib.dir}" type="jar" unzip="false"/>
@@ -96,6 +88,22 @@ External Dependencies:
 
 		<!-- Mark as init -->
 		<property name="src.isInit" value="true" />
+	</target>
+
+	<!-- update permissions on reports -->
+	<target name="update.permissions" description="Update staging server permissions">
+		<!-- Integration permissions -->
+		<if>
+			<equals arg1="${environment}" arg2="auto" />
+			<then>
+				<chmod file="${temp.dir}/**" perm="go+wrs" type="both" verbose="true" />
+				<chown owner="stg-ortus" verbose="true">
+					<fileset dir="${temp.dir}" />
+				</chown>
+			</then>
+			<else>
+			</else>
+		</if>
 	</target>
 
 	<!-- Build everything -->
@@ -170,6 +178,7 @@ External Dependencies:
  	<target name="build.apidocs" description="Builds the api docs" depends="init">
 		<!-- Create repo for docs -->
  		<mkdir dir="${api.dir}" />
+ 		<antcall target="update.permissions" />
  		<!-- Execute DocBox -->
 		<get dest="${build.dir}/colddoc.html" src="${url.api}${commandbox.version}&amp;path=${api.dir}" verbose="true"/>
 		<delete file="${build.dir}/colddoc.html" />
