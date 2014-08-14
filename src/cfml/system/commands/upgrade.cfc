@@ -1,11 +1,17 @@
 /**
- * Upgrades CommandBox to the latest version.
+ * Upgrades CommandBox to the latest stable version.
  * .
  * {code:bash}
  * upgrade
  * {code}
  * .
- * Use the "force" parameter to re-install even if the version installed is the latest.
+ * Use the "latest" parameter to download the bleeding edge version
+ * .
+ * {code:bash}
+ * upgrade --latest
+ * {code}
+ * .
+ * Use the "force" parameter to re-install even if the version installed matches that on the server
  * .
  * {code:bash}
  * upgrade --force
@@ -14,62 +20,69 @@
 component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
 
 	// DI
-	property name="artifactDir" inject="artifactDir@constants";
-	property name="homedir" 	inject="homedir@constants";
-
-	function run( Boolean force=false ) {
+	property name="artifactDir" 			inject="artifactDir@constants";
+	property name="homedir" 				inject="homedir@constants";
+	property name="ortusArtifactsURL" 		inject="ortusArtifactsURL@constants";
+	property name="progressableDownloader"	inject="ProgressableDownloader";
+	property name="progressBar" 			inject="ProgressBar";
+	
+	/**
+	 * @latest.hint Will download bleeding edge if true, last stable version if false
+	 * @force.hint Force the update even if the version on the server is the same as locally
+	 **/
+	function run( boolean latest=false, boolean force=false ) {
 		var temp = shell.getTempDir();
-		http url="http://cfmlprojects.org/artifacts/com/ortussolutions/box.cli/maven-metadata.xml" file="#temp#/maven-metadata.xml";
-		var mavenData = xmlParse("#temp#/maven-metadata.xml");
-		var latest = xmlSearch(mavendata,"/metadata/versioning/versions/version[last()]/text()");
-		latest = latest[1].xmlValue;
-		if(latest!=shell.getVersion() || force) {
-			dependency( artifactId='box.cli', groupId='com.ortussolutions', version=latest, classifier='cfml' );
+		http url="#ortusArtifactsURL#ortussolutions/commandbox/box-repo.json" file="#temp#/box-repo.json";
+		var repoData = deserializeJSON( fileRead( '#temp#/box-repo.json' ) );
+		
+		// If latest, compare build number
+		if( arguments.latest ) {
+			var repoVersion = '#repoData.versioning.latestVersion#.#repoData.versioning.latestBuildID#';
+			var repoVersionShort = repoData.versioning.latestVersion;
+			var commandBoxVersion = shell.getVersion();
+		// Stable version just tracks major.minor.patch
+		} else {
+			var repoVersion = repoData.versioning.stableVersion;
+			var repoVersionShort = repoData.versioning.stableVersion;
+			var commandBoxVersion = listDeleteAt( shell.getVersion(), 4, '.' );			
 		}
-		var filePath = "#variables.artifactDir#/com/ortussolutions/box.cli/#latest#/box.cli-#latest#-cfml.zip";
-		if( fileExists( filePath ) ) {
-
-			print.greenLine( "Unzipping #filePath#..." );
+		
+		// If the local install is old, or we're forcing.
+		if( repoVersion != commandBoxVersion || force ) {
+			
+			var fileURL = '#ortusArtifactsURL#ortussolutions/commandbox/#repoVersionShort#/cfml-#repoVersionShort#.zip';
+			var filePath = '#temp#/cfml-#repoVersion#.zip';
+			print.greenLine( "Downloading #fileUrl#..." ).toConsole();
+			
+			// Download the update
+			progressableDownloader.download(
+				fileURL,
+				filePath,
+				function( status ) {
+					progressBar.update( argumentCollection = status );
+				}
+			);
+					
+			print.greenLine( "Unzipping #filePath#..." ).toConsole();
+			
 			zip
 				action="unzip"
 				file="#filePath#"
 				destination="#variables.homedir#/cfml"
 				overwrite=true;
+	
+			print.greenLine( "Installed #repoVersion#" );
+						
+			runCommand( 'pause' );
+			
+			// Reload the shell
+			runCommand( 'reload' );
+	
+				
+		} else {
+			print.greenLine( "Your version of CommandBox is already current (#repoVersion#)." );
 		}
-
-		// Reload the shell
-		runCommand( 'reload' );
-
-		print.greenLine( "Installed #latest#" );
 	}
 
-	private function dependency(required artifactId, required groupId, required version, type="zip", classifier="", mapping="", exclusions="")  {
-		var params = {};
-
-		var slashGroupId = replace( groupId, ".", "/", "all" );
-		var artifactPath = "/#slashGroupId#/#artifactId#/#version#/#artifactId#-#version#-#classifier#.#type#";
-		var mavenMetaPath = "/#slashGroupId#/#artifactId#/maven-metadata.xml";
-		var remoteRepo = "http://cfmlprojects.org/artifacts";
-		var remoteURL = remoteRepo & artifactPath;
-		directoryCreate( "#variables.artifactDir#/#slashGroupId#/#artifactId#/#version#/", true, true );
-		getHTTPFileVerified( "#remoteRepo##mavenMetaPath#","#variables.artifactDir##mavenMetaPath#" );
-		getHTTPFileVerified( "#remoteRepo##artifactPath#","#variables.artifactDir##artifactPath#" );
-
-		print.greenLine( "Resolved dependency #groupId#:#artifactId#:#version#:#classifier#:#type#..." );
-	}
-
-	private function getHTTPFileVerified(required fileUrl, required filePath) {
-
-		print.greenLine( "Downloading #fileUrl#..." );
-		http url="#fileUrl#.md5" file="#filePath#.md5";
-		http url="#fileUrl#.sha1" file="#filePath#.sha1";
-		http url="#fileUrl#" file="#filePath#";
-		var fileHash = lcase(hash(fileReadBinary(filePath),"md5"));
-		var goodHash = lcase(fileRead(filePath & ".md5"));
-		if( fileHash != goodHash) {
-			throw(message="incorrect hash for #filePath#! (#fileHash# != #goodHash#)");
-		}
-		return filePath;
-	}
 
 }

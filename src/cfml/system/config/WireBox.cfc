@@ -35,6 +35,7 @@ component extends="wirebox.system.ioc.config.Binder" {
 			// This is where user-installed commands are stored
 			'/root/commands'
 		];
+		var ortusArtifactsURL		= 'http://integration.staging.ortussolutions.com/artifacts/';
 		
 		
 		// map them
@@ -47,7 +48,8 @@ component extends="wirebox.system.ioc.config.Binder" {
 		map( 'REPLScriptHistoryFile@constants' ).toValue( REPLScriptHistoryFile );
 		map( 'REPLTagHistoryFile@constants' ).toValue( REPLTagHistoryFile );
 		map( 'cr@constants' ).toValue( cr );
-		map( 'commandLocations@constants' ).toValue( commandLocations );		
+		map( 'commandLocations@constants' ).toValue( commandLocations );	
+		map( 'ortusArtifactsURL@constants' ).toValue( ortusArtifactsURL );		
 		
 		// Map Java Classes
 		map( 'commandHistoryFile@java' ).toJava( "jline.console.history.FileHistory" )
