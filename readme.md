@@ -29,6 +29,10 @@ Download from the [Ortus Integration Repository](http://integration.staging.ortu
 
 *Just please note that this contains latest bleeding edge releases that might not be stable.*
 
+**Requirements**
+
+* JAVA Runtime Environment, atleast 1.6.0 (http://java.com/download)
+
 **Package repository for REDHAT based Linux:**
 
 Add the following to: /etc/yum.repos.d/commandbox.repo
@@ -82,7 +86,7 @@ or for windows:
 ``` bash
 box-cli.bat build.cli.exe
 ```
-After you build your preferred executable, cd into the newly created dist folder and execute the box command, which will look like this:
+After you build your preferred executable, cd into the newly created dist/{version} and execute the box command, which will look like this:
 ``` bash
 YourComputer:dist user$ ./box
 
