@@ -31,7 +31,7 @@ Download from the [Ortus Integration Repository](http://integration.staging.ortu
 
 **Requirements**
 
-* JAVA Runtime Environment, atleast 1.6.0 (http://java.com/download)
+* JAVA Runtime Environment, at least 1.7.0 (http://java.com/download) or you can download the CommandBox versions with JRE included.
 
 **Package repository for REDHAT based Linux:**
 
