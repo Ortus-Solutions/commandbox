@@ -324,7 +324,7 @@ External Dependencies:
 	   		<tarfileset file="${dist.dir}/box" prefix="usr/local/bin" filemode="755"/>
 	   	</deb>
 	   	<!-- Copy deb package to debian repo -->
-		<copy file="${dist.dir}/${distro.name}_${commandbox.version}-1_all.deb" tofile="${deb.repo}" />
+		<copy file="${dist.dir}/${distro.name}_${commandbox.version}-1_all.deb" toDir="${deb.repo}" />
 		<!-- Rename to standardized naming -->
 		<move file="${dist.dir}/${distro.name}_${commandbox.version}-1_all.deb" tofile="${dist.dir}/${distro.name}-debian-${commandbox.version}.deb" />
 		<!-- Build Checksum -->
