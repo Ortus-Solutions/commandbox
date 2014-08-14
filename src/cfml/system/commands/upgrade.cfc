@@ -50,8 +50,8 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 		// If the local install is old, or we're forcing.
 		if( repoVersion != commandBoxVersion || force ) {
 			
-			var fileURL = '#ortusArtifactsURL#ortussolutions/commandbox/#repoVersionShort#/cfml-#repoVersionShort#.zip';
-			var filePath = '#temp#/cfml-#repoVersion#.zip';
+			var fileURL = '#ortusArtifactsURL#ortussolutions/commandbox/#repoVersionShort#/commandbox-cfml-#repoVersionShort#.zip';
+			var filePath = '#temp#/commandbox-cfml-#repoVersion#.zip';
 			print.greenLine( "Downloading #fileUrl#..." ).toConsole();
 			
 			// Download the update
