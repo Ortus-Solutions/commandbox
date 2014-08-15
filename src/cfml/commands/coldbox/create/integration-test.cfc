@@ -44,7 +44,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 	* @xunit.hint You can alternatively use xUnit style
 	* @open.hint Open the file once it is created
 	* @script.hint Generate content in script markup or tag markup
-	* @directory.hint The base directory to create your test spec in, defaults to 'tests/specs/integration'
+	* @directory.hint The base directory to create your test spec in and creates the directory if it does not exist. Defaults to 'tests/specs/integration'
 	**/
 	function run( 
 		required handler,
@@ -62,7 +62,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 
 		// Validate directory
 		if( !directoryExists( arguments.directory ) ) {
-			error( 'The directory [#arguments.directory#] doesn''t exist.' );
+			directoryCreate( arguments.directory );
 		}
 		// Validate persistence
 		if( !listFindNoCase( variables.validStyles, arguments.style ) ) {

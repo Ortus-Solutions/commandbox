@@ -16,7 +16,7 @@ component extends='commandbox.system.BaseCommand' aliases='' excludeFromHelp=fal
 	* @version.hint The symantic version number: major.minior.patch
 	* @cfmapping.hint A CF app mapping to create that points to the root of this module
 	* @modelNamespace.hint The namespace to use when mapping the models in this module
-	* @directory.hint The base directory to create your model in. 
+	* @directory.hint The base directory to create your model in and creates the directory if it does not exist. 
 	 **/
 	function run( 	required name,
 					author='',
@@ -30,7 +30,7 @@ component extends='commandbox.system.BaseCommand' aliases='' excludeFromHelp=fal
 		
 		// Validate directory
 		if( !directoryExists( directory ) ) {
-			return error( 'The directory [#directory#] doesn''t exist.' );			
+			directoryCreate( directory );			
 		}
 		// This help readability so the success messages aren't up against the previous command line
 		print.line();

@@ -13,7 +13,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 	/**
 	* @name.hint Name of the view to create without the .cfm.
 	* @helper.hint Generate a helper file for this view
-	* @directory.hint The base directory to create your view in.
+	* @directory.hint The base directory to create your view in and creates the directory if it does not exist.
 	 **/
 	function run( 	required name,
 					boolean helper=false,
@@ -23,7 +23,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 						
 		// Validate directory
 		if( !directoryExists( directory ) ) {
-			return error( 'The directory [#directory#] doesn''t exist.' );			
+			directoryCreate( directory );			
 		}
 		
 		// This help readability so the success messages aren't up against the previous command line

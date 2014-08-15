@@ -30,7 +30,7 @@ component extends='commandbox.system.BaseCommand' aliases='' excludeFromHelp=fal
 	* @persistence.options Transient,Singleton
 	* @tests.hint Generate the unit test BDD component
 	* @testsDirectory.hint Your unit tests directory. Only used if tests is true
-	* @directory.hint The base directory to create your model in.
+	* @directory.hint The base directory to create your model in and creates the directory if it does not exist.
 	* @script.hint Generate content in script markup or tag markup
 	* @description.hint The model hint description
 	* @open.hint Open the file once generated
@@ -52,7 +52,7 @@ component extends='commandbox.system.BaseCommand' aliases='' excludeFromHelp=fal
 
 		// Validate directory
 		if( !directoryExists( arguments.directory ) ) {
-			error( 'The directory [#directory#] doesn''t exist.' );
+			directoryCreate( arguments.directory );
 		}
 		// Validate persistence
 		if( !listFindNoCase( variables.validPersistences, arguments.persistence ) ) {

@@ -18,7 +18,7 @@ component extends='commandbox.system.BaseCommand' aliases='coldbox create handle
 	* @appMapping.hint The root location of the application in the web root: ex: /MyApp or / if in the root
 	* @integrationTests.hint Generate the integration test component
 	* @testsDirectory.hint Your integration tests directory. Only used if integrationTests is true
-	* @directory.hint The base directory to create your handler in.
+	* @directory.hint The base directory to create your handler in and creates the directory if it does not exist. Defaults to 'handlers'.
 	* @script.hint Generate content in script markup or tag markup
 	* @description.hint The controller hint description
 	* @open.hint Open the controller once generated
@@ -43,7 +43,7 @@ component extends='commandbox.system.BaseCommand' aliases='coldbox create handle
 
 		// Validate directory
 		if( !directoryExists( arguments.directory ) ) {
-			return error( 'The directory [#arguments.directory#] doesn''t exist.' );
+			directoryCreate( arguments.directory );
 		}
 
 		// Allow dot-delimited paths
