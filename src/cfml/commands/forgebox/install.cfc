@@ -29,7 +29,8 @@ component extends="commandbox.system.BaseCommand" aliases="install" excludeFromH
 			
 			// Validate directory
 			if( !directoryExists( arguments.directory ) ) {
-				return error( 'The directory [#arguments.directory#] doesn''t exist.' );
+				// create the directory 
+				directoryCreate( arguments.directory );
 			}
 			
 		}

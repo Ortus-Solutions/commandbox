@@ -26,7 +26,8 @@ component extends='commandbox.system.BaseCommand' aliases='' excludeFromHelp=fal
 		
 		// Validate directory
 		if( !directoryExists( directory ) ) {
-			return error( 'The directory [#directory#] doesn''t exist.' );			
+			// create the directory 
+			directoryCreate( directory );			
 		}
 		// This help readability so the success messages aren't up against the previous command line
 		print.line();

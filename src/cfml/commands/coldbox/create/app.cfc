@@ -31,7 +31,8 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 		
 		// Validate directory
 		if( !directoryExists( directory ) ) {
-			return error( 'The directory [#directory#] doesn''t exist.' );			
+			// create the directory 
+			directoryCreate( directory );			
 		}
 		// Validate skeleton
 		if( !fileExists( skeletonZip ) ) {

@@ -28,7 +28,8 @@ component extends='commandbox.system.BaseCommand' aliases='' excludeFromHelp=fal
 
 		// Validate directory
 		if( !directoryExists( directory ) ) {
-			error( 'The directory [#directory#] doesn''t exist.' );
+			// create the directory 
+			directoryCreate( directory );
 		}
 		// Validate persistence
 		if( !listFindNoCase( validPersistences, persistence ) ) {

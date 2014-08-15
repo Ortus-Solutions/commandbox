@@ -22,7 +22,8 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 		
 		// Validate directory
 		if( !directoryExists( directory ) ) {
-			return error( 'Directory #directory# does not exist.' );
+			// create the directory 
+			directoryCreate( directory );
 		}
 		
 		// Spin up a new box.json with our defaults
