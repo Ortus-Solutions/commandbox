@@ -12,7 +12,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 	/**
 	* @name.hint Name of the xUnit bundle to create without the .cfc. For packages, specify name as 'myPackage/MyTest'
 	* @open.hint Open the file once it is created
-	* @directory.hint The base directory to create your CFC
+	* @directory.hint The base directory to create your CFC in and creates the directory if it does not exist.
 	 **/
 	function run( required name, boolean open=false, directory=getCWD() ){
 		// This will make each directory canonical and absolute		
@@ -20,7 +20,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 						
 		// Validate directory
 		if( !directoryExists( arguments.directory ) ) {
-			return error( 'The directory [#arguments.directory#] doesn''t exist.' );			
+			directoryCreate( arguments.directory );			
 		}
 		
 		// Allow dot-delimited paths

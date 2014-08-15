@@ -50,7 +50,7 @@ component extends="commandbox.system.BaseCommand" aliases="install" excludeFromH
 	/**
 	* @slug.hint Slug of the ForgeBox entry to install. If no slug is passed, all dependencies in box.json will be installed.
 	* @slug.optionsUDF slugComplete
-	* @directory.hint The directory to install in. This will override the packages's box.json install dir if provided. 
+	* @directory.hint The directory to install in and creates the directory if it does not exist. This will override the packages's box.json install dir if provided. 
 	* @save.hint Save the installed package as a dependancy in box.json (if it exists)
 	* @saveDev.hint Save the installed package as a dev dependancy in box.json (if it exists)
 	* @production.hint When calling this command with no slug to install all dependencies, set this to true to ignore devDependencies.
@@ -73,7 +73,7 @@ component extends="commandbox.system.BaseCommand" aliases="install" excludeFromH
 			
 			// Validate directory
 			if( !directoryExists( arguments.directory ) ) {
-				return error( 'The directory [#arguments.directory#] doesn''t exist.' );
+				directoryCreate( arguments.directory );
 			}
 			
 		}

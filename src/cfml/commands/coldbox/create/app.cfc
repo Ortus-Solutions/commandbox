@@ -48,7 +48,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 	/**
 	 * @name.hint The name of the app you want to create
 	 * @skeleton.hint The name of the app skeleton to generate 
-	 * @directory.hint The directory to create the app in.  Defaults to your current working directory.
+	 * @directory.hint The directory to create the app in and creates the directory if it does not exist.  Defaults to your current working directory.
 	 * @init.hint "init" the directory as a package if it isn't already
 	 * @installColdBox.hint Install the latest stable version of ColdBox from ForgeBox
 	 * @installTestBox.hint Install the latest stable version of TestBox from ForgeBox

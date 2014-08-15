@@ -17,7 +17,7 @@ component extends='commandbox.system.BaseCommand' aliases='' excludeFromHelp=fal
 	* @points.hint A comma-delimited list of interception points to generate
 	* @tests.hint Generate the unit test component
 	* @testsDirectory.hint Your unit tests directory. Only used if tests is true
-	* @directory.hint The base directory to create your interceptor in
+	* @directory.hint The base directory to create your interceptor in and creates the directory if it does not exist.
 	 **/
 	function run( required name,
 					points='',
@@ -30,7 +30,7 @@ component extends='commandbox.system.BaseCommand' aliases='' excludeFromHelp=fal
 
 		// Validate directory
 		if( !directoryExists( directory ) ) {
-			return error( 'The directory [#directory#] doesn''t exist.' );
+			directoryCreate( arguments.directory );
 		}
 
 		// This help readability so the success messages aren't up against the previous command line
