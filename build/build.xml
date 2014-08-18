@@ -107,7 +107,7 @@ External Dependencies:
 	</target>
 
 	<!-- Build everything -->
-	<target name="build.cli.all" depends="build.cli.deb,build.cli.exe,build.cli.jre,build.cli.rpm">
+	<target name="build.cli.all" depends="build.cli.deb,build.cli.exe,build.cli.jre,build.cli.rpm,build.apidocs">
 		<!-- Remove Unecessary build files from repo, so to not confuse -->
 		<antcontrib:if>
 			<equals arg1="${build.type}" arg2="auto" />
@@ -121,7 +121,7 @@ External Dependencies:
 	</target>
 
 	<!-- Build CLI -->
-	<target name="build.cli" description="builds box.jar" depends="init,build.apidocs">
+	<target name="build.cli" description="builds box.jar" depends="init">
 		<!-- Copy CommandBox code -->
       	<copy todir="${build.dir}">
         	<fileset dir="${src.dir}/cfml"/>
