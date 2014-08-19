@@ -13,7 +13,9 @@
 
 **/
 component extends="commandbox.system.BaseCommand" aliases="snake" excludeFromHelp=false {
-
+	
+	processingdirective pageEncoding='UTF-8';
+	
 	property name='p' inject='print';
 
 	function run()  {
@@ -24,7 +26,9 @@ component extends="commandbox.system.BaseCommand" aliases="snake" excludeFromHel
 			'left' = 'right',
 			'right' = 'left'
 		};
-		
+		//	╚ ╔ ╩ ╦ ╠ ═ ╬ ╣ ║ ╗  ╝ 
+	
+	
 		variables.height = 17;
 		variables.width = 53;
 		//variables.height = shell.getTermHeight()-13;
@@ -36,10 +40,10 @@ component extends="commandbox.system.BaseCommand" aliases="snake" excludeFromHel
 	
 		
 		variables.gameHeader = 
-		'*******************************************************' & cr & 
-		'*                   ' & p.boldGreen( 'CommandBox Snake' ) & '                  *' & cr &
-		'*                     by Brad Wood                    *' & cr &
-		'*******************************************************';
+		'╔═════════════════════════════════════════════════════╗' & cr & 
+		'║                   ' & p.boldGreen( 'CommandBox Snake' ) & '                  ║' & cr &
+		'║                     by Brad Wood                    ║░' & cr &
+		'╠═════════════════════════════════════════════════════╣░';
 		
 		// Initialize an array with an index for each row
 		variables.gameSurface = arrayNew( 2 );
@@ -54,25 +58,34 @@ component extends="commandbox.system.BaseCommand" aliases="snake" excludeFromHel
 		}
 		
 		variables.gameFooter =
-		'*******************************************************' & cr &
-		'*                 ' & p.bold( 'S' ) & ' or ' & p.bold( '4' ) & ' moves left                   *' & cr &
-		'*                 ' & p.bold( 'F' ) & ' or ' & p.bold( '6' ) & ' moves right                  *' & cr &
-		'*                 ' & p.bold( 'E' ) & ' or ' & p.bold( '8' ) & ' moves up                     *' & cr &
-		'*                 ' & p.bold( 'C' ) & ' or ' & p.bold( '2' ) & ' moves down                   *' & cr &
-		'*                                                     *' & cr &
-		'*                   Press ' & p.bold( 'Q' ) & ' to quit                   *' &	cr &
-		'*******************************************************';
+		'╠═════════════════════════════════════════════════════╣░' & cr &
+		'║                 ' & p.bold( 'S' ) & ' or ' & p.bold( '4' ) & ' moves left                   ║░' & cr &
+		'║                 ' & p.bold( 'F' ) & ' or ' & p.bold( '6' ) & ' moves right                  ║░' & cr &
+		'║                 ' & p.bold( 'E' ) & ' or ' & p.bold( '8' ) & ' moves up                     ║░' & cr &
+		'║                 ' & p.bold( 'C' ) & ' or ' & p.bold( '2' ) & ' moves down                   ║░' & cr &
+		'║                                                     ║░' & cr &
+		'║                   Press ' & p.bold( 'Q' ) & ' to quit                   ║░' & cr &
+		'╚═════════════════════════════════════════════════════╝░'  & cr &
+		' ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░';
 		
-		var a = p.bold( '*' );
+		
+		var h = p.bold( '═' );
+		var v = p.bold( '║' );
+		var ul = p.bold( '╔' );
+		var ur = p.bold( '╗' );
+		var bl = p.bold( '╚' );
+		var br = p.bold( '╝' );
+		var sh = p.bold( '░' );
 		var s = ' ';
 
 		// These characters much be formatted individually since they are output one at a time.
 		variables.gameOverMessage =  [
-			[ a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a ],
-			[ a, s, s, s, s, s, s, s,  p.boldRed( 'G' ), p.boldRed( 'A' ), p.boldRed( 'M' ), p.boldRed( 'E' ), s, p.boldRed( 'O' ), p.boldRed( 'V' ), p.boldRed( 'E' ), p.boldRed( 'R' ), p.boldRed( '!' ), s, s, s, s, s, s, s, a ],
-			[ a, s, s, s, p.bold( 'P' ), p.bold( 'r' ), p.bold( 'e' ), p.bold( 's' ), p.bold( 's' ), s, p.bold( '"' ), p.bold( 'R' ), p.bold( '"' ), s, p.bold( 't' ), p.bold( 'o' ), s, p.bold( 'r' ), p.bold( 'e' ), p.bold( 't' ), p.bold( 'r' ), p.bold( 'y' ), s, s, s, a ],
-			[ a, s, s, s, s, s, s, s, s, s, p.bold( 'S' ), p.bold( 'c' ), p.bold( 'o' ), p.bold( 'r' ), p.bold( 'e' ), p.bold( ':' ),  s, s, s, s, s, s, s, s, s, a ],
-			[ a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a ]
+			[ ul, h, h, h, h, h, h, h, h, h, h, h, h, h, h, h, h, h, h, h, h, h, h, h, h, ur, s ],
+			[ v, s, s, s, s, s, s, s,  p.boldRed( 'G' ), p.boldRed( 'A' ), p.boldRed( 'M' ), p.boldRed( 'E' ), s, p.boldRed( 'O' ), p.boldRed( 'V' ), p.boldRed( 'E' ), p.boldRed( 'R' ), p.boldRed( '!' ), s, s, s, s, s, s, s, v, sh ],
+			[ v, s, s, s, p.bold( 'P' ), p.bold( 'r' ), p.bold( 'e' ), p.bold( 's' ), p.bold( 's' ), s, p.bold( '"' ), p.bold( 'R' ), p.bold( '"' ), s, p.bold( 't' ), p.bold( 'o' ), s, p.bold( 'r' ), p.bold( 'e' ), p.bold( 't' ), p.bold( 'r' ), p.bold( 'y' ), s, s, s, v, sh ],
+			[ v, s, s, s, s, s, s, s, s, s, p.bold( 'S' ), p.bold( 'c' ), p.bold( 'o' ), p.bold( 'r' ), p.bold( 'e' ), p.bold( ':' ),  s, s, s, s, s, s, s, s, s, v, sh ],
+			[ bl, h, h, h, h, h, h, h, h, h, h, h, h, h, h, h, h, h, h, h, h, h, h, h, h, br, sh ],
+			[ s, sh, sh, sh, sh, sh, sh, sh, sh, sh, sh, sh, sh, sh, sh, sh, sh, sh, sh, sh, sh, sh, sh, sh, sh, sh, sh ]
 		];
 		
 		// Flush out anything stored up
@@ -192,11 +205,11 @@ component extends="commandbox.system.BaseCommand" aliases="snake" excludeFromHel
 			
 			// Now that we've build up the array of characters, spit them out to the console
 			for( var row in thisGameSurface ) {
-				print.text( '*' );
+				print.text( '║' );
 				for( var col in row ) {				
 					print.text( col );
 				}
-				print.line( '*' );
+				print.line( '║░' );
 				
 			}
 			
