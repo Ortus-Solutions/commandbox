@@ -1,20 +1,25 @@
 /**
- * Download and install an entry from ForgeBox into your application.  You must use the 
- * exact slug for the item you want.  If the item being installed has a box.json descriptor, it's "directory"
- * property will be used as the install location. In the absence of that setting, the current CommandBox working
- * directory will be used.
+ * Download and install an entry from ForgeBox into your application or read the box.json descriptor
+ * and install all product/development dependencies in your project if no slug is passed.  You must use the 
+ * exact slug for the item you want or no slug at all.  If the item being installed has a box.json descriptor, it's "directory"
+ * property will be used as the install container with a sub-directory name with the same name as the package name. 
+ * In the absence of that setting, the current CommandBox working directory will be used. You can also tell this 
+ * command via the box.json descriptor that no sub-directory should be created by using the "createPackageDirectory" property as false.
  * .  
  * Override the installation location by passing the "directory" parameter.  The "save"
  * and "saveDev" parameters will save this package as a dependency or devDependency in your box.json if it exists.
  * .
- * Install the feeds package
+ * The "production" argument is used in order to determine if we should install development dependencies or not.
+ * By default "production" is false, so all development dependencies will be installed.
+ * .
+ * Install the feeds package and saves as a dependency
  * {code:bash}
  * install feeds
  * {code}
  * .
- * Install feeds and save as a dependency
+ * Install feeds and does not save as a dependency
  * {code:bash}
- * install feeds --save
+ * install feeds --!save
  * {code}
  * .
  * Install feeds and save as a devDependency
@@ -51,7 +56,7 @@ component extends="commandbox.system.BaseCommand" aliases="install" excludeFromH
 	* @slug.hint Slug of the ForgeBox entry to install. If no slug is passed, all dependencies in box.json will be installed.
 	* @slug.optionsUDF slugComplete
 	* @directory.hint The directory to install in and creates the directory if it does not exist. This will override the packages's box.json install dir if provided. 
-	* @save.hint Save the installed package as a dependancy in box.json (if it exists)
+	* @save.hint Save the installed package as a dependancy in box.json (if it exists), defaults to true
 	* @saveDev.hint Save the installed package as a dev dependancy in box.json (if it exists)
 	* @production.hint When calling this command with no slug to install all dependencies, set this to true to ignore devDependencies.
 	* @verbose.hint If set, it will produce much more verbose information about the package installation
@@ -59,7 +64,7 @@ component extends="commandbox.system.BaseCommand" aliases="install" excludeFromH
 	function run( 
 		string slug='',
 		string directory,
-		boolean save=false,
+		boolean save=true,
 		boolean saveDev=false,
 		boolean production=false,
 		boolean verbose=false
