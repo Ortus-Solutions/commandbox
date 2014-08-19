@@ -90,20 +90,28 @@ component accessors="true" singleton {
     * @file.hint the file/directory to open
     */
     boolean function openNatively( required file ){
-    	var desktop = createObject( "java", "java.awt.Desktop" );
+    	var desktop 	= createObject( "java", "java.awt.Desktop" );
+    	var target 		= getJavaFile( arguments.file );
 
     	// open using awt class, if it fails, we are in headless mode.
-    	if( desktop.isDesktopSupported() ){
-    		desktop.getDesktop().edit( getJavaFile( arguments.file ) );
+    	if( desktop.isDesktopSupported() and target.isFile() ){
+    		desktop.getDesktop().edit( target );
     		return true;
     	} 
 
     	// if we get here, then we don't support desktop awt class, most likely in headless mode.
     	var runtime = createObject( "java", "java.lang.Runtime" ).getRuntime();
-    	if( isWindows() ){
-    		runtime.exec( [ "rundll32", "url.dll,FileProtocolHandler", getJavaFile( arguments.file ).getCanonicalPath() ] );
-		} else {
-			runtime.exec( [ "/usr/bin/open", getJavaFile( arguments.file ).getCanonicalPath() ] );
+    	if( isWindows() and target.isFile() ){
+    		runtime.exec( [ "rundll32", "FileProtocolHandler,url.dll", target.getCanonicalPath() ] );
+		} 
+		else if( isWindows() and target.isDirectory() ){
+			var processBuilder = createObject( "java", "java.lang.ProcessBuilder" )
+				.init( [ "explorer.exe", target.getCanonicalPath() ] )
+				.start();
+		}
+		// Linux based or mac
+		else {
+			runtime.exec( [ "/usr/bin/open", target.getCanonicalPath() ] );
 		}
 		return true;
     }
