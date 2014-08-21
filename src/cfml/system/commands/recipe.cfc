@@ -29,7 +29,19 @@
  * rm "$arg1"
  * {code} 
  * .
- * If an argument is not bound, no error will be thrown, and the name of the argument will be left int he command. 
+ * If an argument is not bound, no error will be thrown, and the name of the argument will be left in the command.
+ * .
+ * You can use "echo on" and "echo off" in recipes to control whether the commands output to the console as they are executed.
+ * This can be useful for debugging or confirming the success of commands with no output.  Echo is on by default.
+ * Note, "echo off" doesn't suppress the output of the commands, just the printing of the command and its arguments prior to execution.
+ * This does not use the actual "echo" command and is a feature that only applies during the execution of recipes.
+ * 
+ * {code:bash}
+ * echo on
+ * # Now you see me
+ * echo off
+ * # Now you don't 
+ * {code} 
  * 
  **/
 component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {

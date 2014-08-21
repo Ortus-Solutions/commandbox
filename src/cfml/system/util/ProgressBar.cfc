@@ -45,7 +45,7 @@ component singleton {
 		// Clear the line
 		ansi.eraseLine(ansiErase.ALL);
 		// Move cursor back to the far left
-		ansi.cursorLeft( totalWidth );		
+		ansi.cursorLeft( totalWidth );
 		
 		// Get the template
 		var progressRendered = progressBarTemplate;
