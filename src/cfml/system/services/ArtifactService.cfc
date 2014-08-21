@@ -19,11 +19,7 @@ component accessors="true" singleton {
 	property name='artifactDir' 		inject='artifactDir@constants';
 	property name='tempDir' 			inject='tempDir@constants';
 	property name='packageService'	 	inject='PackageService';
-	property name='shell' 				inject='Shell';
 	property name='logger' 				inject='logbox:logger:{this}';
-	property name="fileSystemUtil"	 	inject="FileSystem";
-	property name="pathPatternMatcher" 	inject="pathPatternMatcher";
-	property name="consoleLogger"	 	inject="logbox:logger:console";
 	
 	
 	/**
@@ -202,96 +198,5 @@ component accessors="true" singleton {
 	
 	}	
 	
-	/**
-	* Installs a package, obeying ignors in the box.json file.  Returns a struct containing a "copied" array
-	* and an "ignored" array containing the relative paths inside the package that were copied and ignored.
-	* @packageName.hint The package name to look for
-	* @version.hint The version of the package to look for
-	*/
-	public function installArtifact( required packageName, required version, installDirectory ) {
-		var thisArtifactPath = getArtifactPath( arguments.packageName, arguments.version );
-		var tmpPath = "#variables.tempDir#/#arguments.packageName#";
-		
-		// Has file size?
-		if( getFileInfo( thisArtifactPath ).size <= 0 ) {
-			throw( 'Cannot install file as it has a file size of 0.', thisArtifactPath );
-		}
-		
-		var artifactDescriptor = getArtifactDescriptor( arguments.packageName, arguments.version );
-		var ignorePatterns = ( isArray( artifactDescriptor.ignore ) ? artifactDescriptor.ignore : [] );
-				
-		if( !structKeyExists( arguments, 'installDirectory' ) ) {
-			// Strip any leading slashes off of the install directory
-			if( artifactDescriptor.directory.startsWith( '/' ) || artifactDescriptor.directory.startsWith( '\' ) ) {
-				// Make sure it's not just a single slash
-				if( artifactDescriptor.directory.len() > 2 ) {
-					artifactDescriptor.directory = right( artifactDescriptor.directory, len( artifactDescriptor.directory ) - 1 );					
-				} else {
-					artifactDescriptor.directory = '';
-				}
-			}
-			arguments.installDirectory = shell.pwd() & '/' & artifactDescriptor.directory;  
-		}
-		
-		// Normalize slashes
-		tmpPath = fileSystemUtil.resolvePath( tmpPath );
-		
-		// Unzip to temp directory
-		zip action="unzip" file="#thisArtifactPath#" destination="#tmpPath#" overwrite="true";
-		
-		// If the zip file has a directory named after the package, that's our actual package root.
-		var innerTmpPath = '#tmpPath#/#arguments.packageName#';
-		if( directoryExists( innerTmpPath ) ) {
-			// Move the box.json if it exists into the inner folder
-			fromBoxJSONPath = '#tmpPath#/box.json';
-			toBoxJSONPath = '#innerTmpPath#/box.json'; 
-			if( fileExists( fromBoxJSONPath ) ) {
-				fileMove( fromBoxJSONPath, toBoxJSONPath );
-			}
-			// Repoint ourselves to the inner folder
-			tmpPath = innerTmpPath;
-		}
-
-		arguments.installDirectory &= '/#packageName#'; 
-		if( !directoryExists( arguments.installDirectory ) ) {
-			directoryCreate( arguments.installDirectory );
-		}
-
-		var results = {
-			copied = [],
-			ignored = [],
-			installDirectory = arguments.installDirectory
-		};
-
-		// Copy with ignores from descriptor
-		directoryCopy( tmpPath, arguments.installDirectory, true, function( path ){
-			// This will normalize the slashes to match
-			arguments.path = fileSystemUtil.resolvePath( arguments.path );
-			if( directoryExists( arguments.path ) ) {
-				arguments.path &= server.separator.file;
-			}
-			
-			// cleanup path so we just get from the archive down
-			var thisPath = replacenocase( arguments.path, tmpPath, "" );
-						
-			// Ignore paths that match one of our ignore patterns
-			var ignored = pathPatternMatcher.matchPatterns( ignorePatterns, thisPath );
-			
-			// What do we do with this file
-			if( ignored ) {
-				results.ignored.append( thisPath );
-				return false;
-			} else {
-				results.copied.append( thisPath );
-				return true;
-			}
-						
-		});
-
-		// cleanup unzip
-		directoryDelete( tmpPath, true );
-		
-		return results;
-	}
 		
 }

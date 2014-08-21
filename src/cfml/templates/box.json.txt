@@ -4,6 +4,8 @@
 	author : "",
 	location :"",
 	directory: "",
+	createPackageDirectory: true,
+	packageDirectory: "",
 	homepage :"",
 	documentation : "",
 	repository: { type:"", URL:"" },

@@ -10,14 +10,16 @@
 component accessors="true" singleton {
 
 	// DI
-	property name="CR" 				inject="CR@constants";
-	property name="tempDir" 		inject="tempDir@constants";
-	property name="formatterUtil"	inject="formatter";
-	property name="artifactService" inject="ArtifactService";
-	property name="consoleLogger"	inject="logbox:logger:console";
-	property name="fileSystemUtil"	inject="FileSystem";
+	property name="CR" 					inject="CR@constants";
+	property name="tempDir" 			inject="tempDir@constants";
+	property name="formatterUtil"		inject="formatter";
+	property name="artifactService" 	inject="ArtifactService";
+	property name="consoleLogger"		inject="logbox:logger:console";
+	property name="fileSystemUtil"		inject="FileSystem";
+	property name="pathPatternMatcher" 	inject="pathPatternMatcher";
+	property name='shell' 				inject='Shell';
 	// This should be removed once the install command starts resolving registries automatically
-	property name="forgeBox" 		inject="ForgeBox";
+	property name="forgeBox" 			inject="ForgeBox";
 
 	/**
 	* Constructor
@@ -44,7 +46,9 @@ component accessors="true" singleton {
 	}
 		
 	/**
-	* Installs a package and its dependencies
+	* Installs a package and its dependencies,  obeying ignors in the box.json file.  Returns a struct containing a "copied" array
+	* and an "ignored" array containing the relative paths inside the package that were copied and ignored.
+	* 
 	* @slug.ID Identifier of the packge to install. If no ID is passed, all dependencies in the CDW  will be installed.
 	* @slug.optionsUDF slugComplete
 	* @directory.hint The directory to install in. This will override the packages's box.json install dir if provided. 
@@ -66,7 +70,7 @@ component accessors="true" singleton {
 					
 		///////////////////////////////////////////////////////////////////////
 		// TODO: Instead of assuming this is ForgeBox, look up the appropriate
-		//       regsitry to handle the package a deal with a dynamic registry 
+		//       regsitry to handle the package a deal with a dynamic adapter 
 		//       object at runtime with generic methods
 		///////////////////////////////////////////////////////////////////////
 		
@@ -99,12 +103,8 @@ component accessors="true" singleton {
 					return;
 				}
 		
-				// If this is a CommandBox command and there is no directory
-				if( entryData.typeSlug == 'commandbox-commands' && !structKeyExists( arguments, 'directory' ) ) {
-					// Put it in the user directory
-					arguments.directory = expandPath( '/root/commands' );
-				}
-		
+				var packageType = entryData.typeSlug;
+				
 				// Advice we found it
 				consoleLogger.info( "Verified entry in ForgeBox: '#arguments.ID#'" );
 		
@@ -145,21 +145,132 @@ component accessors="true" singleton {
 					
 			// Assert: at this point, the package is downloaded and exists in the local artifact cache
 		
-			var installParams = {
-				packageName : packageName,
-				version : version
-			};
-		
-			// If the user didn't specify this, don't pass it since it overrides the package's desired install location
-			if( structKeyExists( arguments, 'directory' ) ) {
-				installParams.installDirectory = arguments.directory;
+			// Install the package
+			var thisArtifactPath = artifactService.getArtifactPath( packageName, version );
+			
+			// Has file size?
+			if( getFileInfo( thisArtifactPath ).size <= 0 ) {
+				throw( 'Cannot install file as it has a file size of 0.', thisArtifactPath );
 			}
 			
-			// Install the package
-			var results = artifactService.installArtifact( argumentCollection = installParams );
+			var artifactDescriptor = artifactService.getArtifactDescriptor( packageName, version );
+			var ignorePatterns = ( isArray( artifactDescriptor.ignore ) ? artifactDescriptor.ignore : [] );
+			
+			// Use Forgebox type returned by API, if not exists, use box.json type if it exists
+			if( !len( packageType ) && len( artifactDescriptor.type ) ) {
+				packageType = artifactDescriptor.type;
+			}
+					
+			var installDirectory = '';
+			
+			// If the user gave us a directory, use it above all else
+			if( structKeyExists( arguments, 'directory' ) ) {
+				installDirectory = arguments.directory;
+			}
+			
+			// Else, use directory in box.json if it exists
+			if( !len( installDirectory ) && len( artifactDescriptor.directory ) ) {
+				// Strip any leading slashes off of the install directory
+				if( artifactDescriptor.directory.startsWith( '/' ) || artifactDescriptor.directory.startsWith( '\' ) ) {
+					// Make sure it's not just a single slash
+					if( artifactDescriptor.directory.len() > 2 ) {
+						artifactDescriptor.directory = right( artifactDescriptor.directory, len( artifactDescriptor.directory ) - 1 );					
+					} else {
+						artifactDescriptor.directory = '';
+					}
+				}
+				installDirectory = arguments.currentWorkingDirectory & '/' & artifactDescriptor.directory;  
+			}
+						
+			// Else, use package type convention
+			if( !len( installDirectory ) && len( packageType ) ) {
+				// If this is a CommandBox command
+				if( packageType == 'commandbox-commands' ) {
+					installDirectory = expandPath( '/root/commands' );
+				// If this is a module
+				} else if( packageType == 'modules' ) {
+					installDirectory = arguments.currentWorkingDirectory & '/modules';
+				}
+			}
+						
+			// I give up, just stick it in the CDW
+			if( !len( installDirectory ) ) {
+				installDirectory = arguments.currentWorkingDirectory;
+			}
+			
+			// Normalize slashes
+			var tmpPath = "#variables.tempDir#/#packageName#";
+			tmpPath = fileSystemUtil.resolvePath( tmpPath );
+			
+			// Unzip to temp directory
+			// TODO, this should eventaully be part of the zip file adapter
+			zip action="unzip" file="#thisArtifactPath#" destination="#tmpPath#" overwrite="true";
+			
+			// If the zip file has a directory named after the package, that's our actual package root.
+			var innerTmpPath = '#tmpPath#/#packageName#';
+			if( directoryExists( innerTmpPath ) ) {
+				// Move the box.json if it exists into the inner folder
+				fromBoxJSONPath = '#tmpPath#/box.json';
+				toBoxJSONPath = '#innerTmpPath#/box.json'; 
+				if( fileExists( fromBoxJSONPath ) ) {
+					fileMove( fromBoxJSONPath, toBoxJSONPath );
+				}
+				// Repoint ourselves to the inner folder
+				tmpPath = innerTmpPath;
+			}
+	
+			// Some packages may just want to be dumped in their destination without being contained in a subfolder
+			if( artifactDescriptor.createPackageDirectory ) {
+				// Override package directory?
+				if( len( artifactDescriptor.packageDirectory ) ) {
+					installDirectory &= '/#artifactDescriptor.packageDirectory#';
+				// Default convention is package name
+				} else {
+					installDirectory &= '/#packageName#';					
+				}
+			}
+			// Create installation directory if neccesary
+			if( !directoryExists( installDirectory ) ) {
+				directoryCreate( installDirectory );
+			}
+	
+			var results = {
+				copied = [],
+				ignored = []
+			};
+	
+			// Copy with ignores from descriptor
+			// TODO, this should eventaully be part of the folder adapter
+			directoryCopy( tmpPath, installDirectory, true, function( path ){
+				// This will normalize the slashes to match
+				arguments.path = fileSystemUtil.resolvePath( arguments.path );
+				if( directoryExists( arguments.path ) ) {
+					arguments.path &= server.separator.file;
+				}
+				
+				// cleanup path so we just get from the archive down
+				var thisPath = replacenocase( arguments.path, tmpPath, "" );
+							
+				// Ignore paths that match one of our ignore patterns
+				var ignored = pathPatternMatcher.matchPatterns( ignorePatterns, thisPath );
+				
+				// What do we do with this file
+				if( ignored ) {
+					results.ignored.append( thisPath );
+					return false;
+				} else {
+					results.copied.append( thisPath );
+					return true;
+				}
+							
+			});
+	
+			// cleanup unzip
+			directoryDelete( tmpPath, true );
+			
 			
 			// Summary output
-			consoleLogger.info( "Installing to: #results.installDirectory#" );		
+			consoleLogger.info( "Installing to: #installDirectory#" );		
 			consoleLogger.debug( "-> #results.copied.len()# File(s) Installed" );
 			
 			// Verbose info
@@ -178,11 +289,13 @@ component accessors="true" singleton {
 			}
 		
 			// Should we save this as a dependancy
-			// and is the current working directory a package?
+			// and is the current working directory a package
+			// and was the installed package put in a sub dir?
 			if( ( arguments.save || arguments.saveDev )  
-				&& isPackage( arguments.currentWorkingDirectory ) ) {
+				&& isPackage( arguments.currentWorkingDirectory ) 
+				&& artifactDescriptor.createPackageDirectory ) {
 				// Add it!
-				addDependency( currentWorkingDirectory, installParams.packageName, installParams.version,  arguments.saveDev );
+				addDependency( currentWorkingDirectory, packageName, version,  arguments.saveDev );
 				// Tell the user...
 				consoleLogger.info( "box.json updated with #( arguments.saveDev ? 'dev ': '' )#dependency." );
 			}
@@ -263,7 +376,7 @@ component accessors="true" singleton {
 					
 		///////////////////////////////////////////////////////////////////////
 		// TODO: Instead of assuming this is ForgeBox, look up the appropriate
-		//       regsitry to handle the package a deal with a dynamic registry 
+		//       regsitry to handle the package a deal with a dynamic adapter 
 		//       object at runtime with generic methods
 		///////////////////////////////////////////////////////////////////////
 		

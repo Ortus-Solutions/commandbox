@@ -37,7 +37,7 @@ component singleton {
 		var totalWidth = shell.getTermWidth()-5	;
 		
 		// TODO: ETA
-		var progressBarTemplate = '@@@% [=>] $$$$$$$ / ^^^^^^^  (&&&&&&&)';
+		var progressBarTemplate = '@@@% [=>] $$$$$$$ / ^^^^^^^  (&&&&&&&&)';
 		// Dynamically assign the remaining width to the moving progress bar
 		var nonProgressChars = len( progressBarTemplate ) - 1;
 		var progressChars = totalWidth - nonProgressChars; 
@@ -61,7 +61,7 @@ component singleton {
 		// Replace sizes and speed
 		progressRendered = replace( progressRendered, '^^^^^^^', formatSize( arguments.totalSizeKB, 7 ) );
 		progressRendered = replace( progressRendered, '$$$$$$$', formatSize( arguments.completeSizeKB, 7 ) );
-		progressRendered = replace( progressRendered, '&&&&&&&', formatSize( arguments.speedKBps, 5 ) & 'ps' );
+		progressRendered = replace( progressRendered, '&&&&&&&&', formatSize( min( arguments.speedKBps, 99000), 6 ) & 'ps' );
 				
 		// Add to buffer
  		ansi.a( progressRendered );
