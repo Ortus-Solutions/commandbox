@@ -195,11 +195,15 @@ component accessors="true" singleton {
 					installDirectory = arguments.currentWorkingDirectory & '/plugins';
 					// Plugins just get dumped in
 					artifactDescriptor.createPackageDirectory = false;
+					// Don't trash the plugins folder with this
+					ignorePatterns.append( '/box.json' );
 				// If this is an interceptor
 				} else if( packageType == 'interceptors' ) {
 					installDirectory = arguments.currentWorkingDirectory & '/interceptors';
 					// interceptors just get dumped in
 					artifactDescriptor.createPackageDirectory = false;
+					// Don't trash the plugins folder with this
+					ignorePatterns.append( '/box.json' );
 				}
 			}
 						
@@ -251,7 +255,7 @@ component accessors="true" singleton {
 				copied = [],
 				ignored = []
 			};
-	
+				
 			// Copy with ignores from descriptor
 			// TODO, this should eventaully be part of the folder adapter
 			directoryCopy( tmpPath, installDirectory, true, function( path ){
