@@ -41,11 +41,28 @@ component{
     	systemOutput( 'We''re truly sorry, but something horrible has gone wrong when starting up CommandBox.', true );
     	systemOutput( 'Here''s what we know:.', true );
     	systemOutput( '', true );
+    	systemOutput( 'Message:', true );
     	systemOutput( '#err.message#', true );
     	systemOutput( '', true );
 		if( structKeyExists( err, 'detail' ) ) {
     		systemOutput( '#err.detail#', true );
 		}
+		if( structKeyExists( err, 'tagcontext' ) ){
+			var lines = arrayLen( err.tagcontext );
+			if( lines != 0 ){
+				systemOutput( 'Tag Context:', true );
+				for( var idx=1; idx <= lines; idx++) {
+					var tc = err.tagcontext[ idx ];
+					if( len( tc.codeprinthtml ) ){
+						if( idx > 1 ) {
+    						systemOutput( 'called from ' );
+						}
+   						systemOutput( '#tc.template#: line #tc.line#', true );
+					}
+				}
+			}
+		}
+    	systemOutput( '', true );
     	systemOutput( '#err.stacktrace#', true );
 
     	//writeDump(var=arguments.exception, output="console"); 	
