@@ -29,9 +29,9 @@
 		{ type:"", URL: "" }
 	],
 	contributors : [],
-	dependencies : {
-	},
+	dependencies : {},
 	devDependencies : {},
+	installPaths : {},
 	ignore : [],
 	testbox :{
 		runner : [

@@ -195,6 +195,11 @@ component accessors="true" singleton {
 					installDirectory = arguments.currentWorkingDirectory & '/plugins';
 					// Plugins just get dumped in
 					artifactDescriptor.createPackageDirectory = false;
+				// If this is an interceptor
+				} else if( packageType == 'interceptors' ) {
+					installDirectory = arguments.currentWorkingDirectory & '/interceptors';
+					// interceptors just get dumped in
+					artifactDescriptor.createPackageDirectory = false;
 				}
 			}
 						
@@ -211,8 +216,15 @@ component accessors="true" singleton {
 			// TODO, this should eventaully be part of the zip file adapter
 			zip action="unzip" file="#thisArtifactPath#" destination="#tmpPath#" overwrite="true";
 			
+			var packageDirectory = packageName;
+			
+			// Override package directory?
+			if( len( artifactDescriptor.packageDirectory ) ) {
+				packageDirectory = artifactDescriptor.packageDirectory;					
+			}
+			
 			// If the zip file has a directory named after the package, that's our actual package root.
-			var innerTmpPath = '#tmpPath#/#packageName#';
+			var innerTmpPath = '#tmpPath#/#packageDirectory#';
 			if( directoryExists( innerTmpPath ) ) {
 				// Move the box.json if it exists into the inner folder
 				fromBoxJSONPath = '#tmpPath#/box.json';
@@ -226,13 +238,7 @@ component accessors="true" singleton {
 	
 			// Some packages may just want to be dumped in their destination without being contained in a subfolder
 			if( artifactDescriptor.createPackageDirectory ) {
-				// Override package directory?
-				if( len( artifactDescriptor.packageDirectory ) ) {
-					installDirectory &= '/#artifactDescriptor.packageDirectory#';
-				// Default convention is package name
-				} else {
-					installDirectory &= '/#packageName#';					
-				}
+				installDirectory &= '/#packageDirectory#';
 			}
 			// Create installation directory if neccesary
 			if( !directoryExists( installDirectory ) ) {
@@ -294,13 +300,11 @@ component accessors="true" singleton {
 			}
 		
 			// Should we save this as a dependancy
-			// and is the current working directory a package
 			// and was the installed package put in a sub dir?
-			if( ( arguments.save || arguments.saveDev )  
-				&& isPackage( arguments.currentWorkingDirectory ) 
+			if( ( arguments.save || arguments.saveDev )   
 				&& artifactDescriptor.createPackageDirectory ) {
 				// Add it!
-				addDependency( currentWorkingDirectory, packageName, version,  arguments.saveDev );
+				addDependency( currentWorkingDirectory, packageName, version, installDirectory,  arguments.saveDev );
 				// Tell the user...
 				consoleLogger.info( "box.json updated with #( arguments.saveDev ? 'dev ': '' )#dependency." );
 			}
@@ -379,96 +383,42 @@ component accessors="true" singleton {
 			required string currentWorkingDirectory
 	){
 					
-		///////////////////////////////////////////////////////////////////////
-		// TODO: Instead of assuming this is ForgeBox, look up the appropriate
-		//       regsitry to handle the package a deal with a dynamic adapter 
-		//       object at runtime with generic methods
-		///////////////////////////////////////////////////////////////////////
 		
 		consoleLogger.info( '.');
 		consoleLogger.info( 'Uninstalling package: #arguments.ID#');
 		
 		var packageName = arguments.ID;
-		var version = '1.0.0.0';
 			
-		
-		try {
-			// Info
-			consoleLogger.warn( "Verifying package '#arguments.ID#' in ForgeBox, please wait..." );
-			// We might have gotten this above
-			var entryData = forgebox.getEntry( arguments.ID );
-			
-			// entrylink,createdate,lname,isactive,installinstructions,typename,version,hits,coldboxversion,sourceurl,slug,homeurl,typeslug,
-			// downloads,entryid,fname,changelog,updatedate,downloadurl,title,entryrating,summary,username,description,email
-							
-			// If this is a CommandBox command and there is no directory
-			if( entryData.typeSlug == 'commandbox-commands' && !structKeyExists( arguments, 'directory' ) ) {
-				// Put it in the user directory
-				arguments.directory = expandPath( '/root/commands' );
-			}
-	
-			// Advice we found it
-			consoleLogger.info( "Verified entry in ForgeBox: '#arguments.ID#'" );
-	
-			version = entryData.version;
-			
-			// If the local artifact doesn't exist, download and create it
-			if( !artifactService.artifactExists( packageName, version ) ) {
-					
-				consoleLogger.info( "Starting download from: '#entryData.downloadURL#'..." );
-					
-				// Grab from the project's download URL and store locally in the temp dir
-				var packageTempPath = forgebox.install( entryData.downloadurl, tempDir );
-				
-				// Store it locally in the artfact cache
-				artifactService.createArtifact( packageName, version, packageTempPath );
-				
-				// Clean up the temp file
-				fileDelete( packageTempPath );
-								
-				consoleLogger.info( "Done." );
-				
-			}
-			
-			
-		} catch( forgebox var e ) {
-			// This can include "expected" errors such as "slug not found"
-			consoleLogger.error( '#e.message##CR##e.detail#' );
-			// If something goes wrong here, keep going-- we can still  
-			// look for the package to install in the current directory
-		}
-		
-	
-		//////////////////////////////////////
-		// TODO: End of ForgeBox-specific code
-		//////////////////////////////////////
-				
-
+		var uninstallDirectory = '';
 	
 		// If a directory is passed in, use it
 		if( structKeyExists( arguments, 'directory' ) ) {
 			var uninstallDirectory = arguments.directory
-		// Otherwise, if an artifact exists, look in its box.json.
-		} else if( artifactService.artifactExists( packageName, version ) ) {				
-			var boxJSON = artifactService.getArtifactDescriptor( packageName, version );
-			var uninstallDirectory = arguments.currentWorkingDirectory & '/' & boxJSON.directory;
-			uninstallDirectory = fileSystemUtil.resolvePath( uninstallDirectory );
-		// If all else fails, just use the current directory
-		} else {
-			var uninstallDirectory = arguments.currentWorkingDirectory			
+		// Otherwise, are we a package
+		} else if( isPackage( arguments.currentWorkingDirectory ) ) {
+			// Read the box.json
+			var boxJSON = readPackageDescriptor( arguments.currentWorkingDirectory );
+			var installPaths = boxJSON.installPaths;
+			
+			// Is there an install path for this?
+			if( structKeyExists( installPaths, packageName ) ) {
+				uninstallDirectory = fileSystemUtil.resolvePath( installPaths[ packageName ] );				
+			}			
 		}
 		
-		// This is where we *should* find the package
-		var packageLocation = uninstallDirectory & '/' & packageName;
-		
+		// If all else fails, just use the current directory
+		if( !len( uninstallDirectory ) ) {
+			uninstallDirectory = arguments.currentWorkingDirectory & '/' & packageName;
+		}
+				
 		// See if the package exists here
-		if( !directoryExists( packageLocation ) ) {
-			consoleLogger.error( 'Package [#packageLocation#] not found.' );
+		if( !directoryExists( uninstallDirectory ) ) {
+			consoleLogger.error( 'Package [#uninstallDirectory#] not found.' );
 			return;
 		}
 
 		// Get the dependencies of the package we're about to uninstalled
-		var boxJSON = readPackageDescriptor( packageLocation );
+		var boxJSON = readPackageDescriptor( uninstallDirectory );
 
 		// and grab all the dependencies
 		var dependencies = boxJSON.dependencies;
@@ -503,7 +453,7 @@ component accessors="true" singleton {
 		}
 				
 		// uninstall the package
-		directoryDelete( packageLocation, true );
+		directoryDelete( uninstallDirectory, true );
 		
 		// Should we save this as a dependancy
 		// and is the current working directory a package?
@@ -521,22 +471,42 @@ component accessors="true" singleton {
 	
 	/**
 	* Adds a dependency to a packge
-	* @directory.hint The directory that is the root of the package
+	* @currentWorkingDirectory.hint The directory that is the root of the package
 	* @packageName.hint Package to add a a dependency
 	* @version.hint Version of the dependency
+	* @installDirectory.hint The location that the package is installed to including the container folder.
 	* @dev.hint True if this is a development depenency, false if it is a production dependency
 	*/	
-	public function addDependency( required string directory, required string packageName, required string version,  boolean dev=false ) {
+	public function addDependency( required string currentWorkingDirectory, required string packageName, required string version, string installDirectory='', boolean dev=false ) {
 		// Get box.json, create empty if it doesn't exist
-		var boxJSON = readPackageDescriptor( arguments.directory );
+		var boxJSON = readPackageDescriptor( arguments.currentWorkingDirectory );
 		// Get reference to appropriate depenency struct
 		var dependencies = ( arguments.dev ? boxJSON.devDependencies : boxJSON.dependencies );
+		var installPaths = boxJSON.installPaths;
 		
+		// normalize slashes
+		arguments.currentWorkingDirectory = fileSystemUtil.resolvePath( arguments.currentWorkingDirectory );
+		arguments.installDirectory = fileSystemUtil.resolvePath( arguments.installDirectory );
+		
+		// If the install location is contained within the package root...
+		if( arguments.installDirectory contains arguments.currentWorkingDirectory ) {
+			// Make it relative
+			arguments.installDirectory = replaceNoCase( arguments.installDirectory, arguments.currentWorkingDirectory, '' );
+			// Strip any leading slashes so Unix-based OS's don't think it's the drive root
+			if( len( arguments.installDirectory ) && listFind( '\,/', left( arguments.installDirectory, 1 ) ) ) {
+				arguments.installDirectory = right( arguments.installDirectory, len( arguments.installDirectory ) - 1 );
+			}
+		}
+				
 		// Add/overwrite this dependency
 		dependencies[ arguments.packageName ] = arguments.version;
-		
+		// Just in case-- an empty install dir would be useless.
+		if( len( arguments.installDirectory ) ) {
+			installPaths[ arguments.packageName ] = arguments.installDirectory;			
+		}
+				
 		// Write the box.json back out
-		writePackageDescriptor( boxJSON, arguments.directory );
+		writePackageDescriptor( boxJSON, arguments.currentWorkingDirectory );
 	}
 	
 	/**
@@ -550,16 +520,24 @@ component accessors="true" singleton {
 		var boxJSON = readPackageDescriptor( arguments.directory );
 		// Get reference to appropriate depenency struct
 		var dependencies = ( arguments.dev ? boxJSON.devDependencies : boxJSON.dependencies );
+		var installPaths = boxJSON.installPaths;
+		var saveMe = false;
 		
-		// Bail if it doesn't exists
-		if( !structKeyExists( dependencies, arguments.packageName ) ) {
-			return;
+		if( structKeyExists( dependencies, arguments.packageName ) ) {
+			saveMe = true;
+			structDelete( dependencies, arguments.packageName );
+		}
+				
+		if( structKeyExists( installPaths, arguments.packageName ) ) {
+			saveMe = true;
+			structDelete( installPaths, arguments.packageName );
 		}
 		
-		structDelete( dependencies, arguments.packageName );
-		
-		// Write the box.json back out
-		writePackageDescriptor( boxJSON, arguments.directory );
+		// Only save if we modified the JSON
+		if( saveMe ) {
+			// Write the box.json back out
+			writePackageDescriptor( boxJSON, arguments.directory );			
+		}
 	}
 	
 	/**
@@ -673,21 +651,22 @@ component accessors="true" singleton {
 		// Check and see if box.json exists
 		if( isPackage( arguments.directory ) ) {
 			boxJSON = readPackageDescriptor( arguments.directory );
-			props = addProp( props, '', boxJSON );			
+			props = addProp( props, '', '', boxJSON );			
 		}
 		return props;		
 	}
 	
 	// Recursive function to crawl box.json and create a string that represents each property.
-	private function addProp( props, prop, boxJSON ) {
-		var propValue = ( len( prop ) ? evaluate( 'boxJSON.#prop#' ) : boxJSON );
+	private function addProp( props, prop, safeProp, boxJSON ) {
+		var propValue = ( len( prop ) ? evaluate( 'boxJSON#safeProp#' ) : boxJSON );
 		
 		if( isStruct( propValue ) ) {
 			// Add all of this struct's keys
 			for( var thisProp in propValue ) {
 				var newProp = listAppend( prop, thisProp, '.' );
+				var newSafeProp = "#safeProp#['#thisProp#']";
 				props.append( newProp );
-				props = addProp( props, newProp, boxJSON );
+				props = addProp( props, newProp, newSafeProp, boxJSON );
 			}			
 		}
 		
@@ -696,8 +675,10 @@ component accessors="true" singleton {
 			var i = 0;
 			while( ++i <= propValue.len() ) {
 				var newProp = '#prop#[#i#]';
+				var newProp = '#safeProp#[#i#]';
+				var newSafeProp = newProp;
 				props.append( newProp );
-				props = addProp( props, newProp, boxJSON );
+				props = addProp( props, newProp, newSafeProp, boxJSON );
 			}
 		}
 		

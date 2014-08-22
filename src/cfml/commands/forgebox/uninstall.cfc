@@ -1,12 +1,10 @@
 /**
- * Uninstall a package from your application.  The directory we look for the package in is follows the same
- * pattern that the install command uses.  If the package being uninstalled has a box.json, any dependencies and devDependencies 
+ * Uninstall a package from your application.  The installation path is pulled from box.json based on package name.
+ * If the package being uninstalled has a box.json, any dependencies and devDependencies 
  * will also be uninstalled as well.
  * .
- * If a directory is supplied, the package will be looked for in that directory in a 
- * subfolder named after the slug.  Otherwise, the box.json for the packge will be read (which may require connecting to the 
- * online registry if it isn't found in the local artifacts cache) and its directory property will be used.  If no box.json
- * can be found for the package, this command will look in the current working directory.
+ * If a directory is supplied, the package will be looked for in that directory.  Otherwise, the box.json for the packge will be 
+ * inspected for an install path for that package.  Lasty, the command will look in the current directory for a folder named after the package.
  * .
  * The "save" and "saveDev" parameters will remove this package as a dependency or devDependency in your root box.json if it exists.
  * .
@@ -40,14 +38,14 @@ component extends="commandbox.system.BaseCommand" aliases="uninstall" excludeFro
 	/**
 	* @slug.hint Slug of the package to uninstall. 
 	* @slug.optionsUDF slugComplete
-	* @directory.hint The directory the package is currenlty installed in. Defaults to current dir or the packages's box.json install dir if provided.  
+	* @directory.hint The directory the package is currently installed in including the container folder
 	* @save.hint Remove package as a dependancy in box.json (if it exists)
 	* @saveDev.hint Remove package as a dev dependancy in box.json (if it exists)
 	**/
 	function run( 
 		required string slug='',
 		string directory,
-		boolean save=false,
+		boolean save=true,
 		boolean saveDev=false
 	){
 		
