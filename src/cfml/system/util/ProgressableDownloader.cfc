@@ -14,12 +14,14 @@ component singleton {
 	* Call me to download a file with a status callback
 	* @downloadURL.hint The remote URL to download
 	* @destinationFile.hint The local file path to store the downloaded file
-	* @statusUDF.hint A closure that will be called once for each full percent of completion. Accepts a struct containing percentage, averageKBPS, totalKB, and downloadedKB 
+	* @statusUDF.hint A closure that will be called once for each full percent of completion. Accepts a struct containing percentage, averageKBPS, totalKB, and downloadedKB
+	* @redirectUDF.hint A closure that will be called once for every 30X redirect followed 
 	*/
 	public function download( 
 		required string downloadURL,
 		required string destinationFile,
-		any statusUDF ) {
+		any statusUDF,
+		any redirectUDF='' ) {
 				
 		var data = getByteArray( 1024 );
 		var total = 0;
@@ -27,22 +29,13 @@ component singleton {
 		var lastPercentage = 0;
 		var lastTotalDownloaded = 0;
 		
-		var netURL = createObject( 'java', 'java.net.URL' ).init( arguments.downloadURL );
-		var connection = netURL.openConnection();
-		
-		try {
-			connection.connect();
-		} catch( Any var e ) {
-			return 'Connection failure';
-		}
+		// Get connection object, following redirects.
+		var info = resolveConnection( arguments.downloadURL, arguments.redirectUDF );
+		var connection = info.connection;
+		var netURL = info.netURL;
 			
 		try {
-			var HTTPStatus = '#connection.responseCode# #connection.responseMessage#';
-			// If we didn't get a successful response, bail here
-			if( connection.responseCode < 200 || connection.responseCode > 299 ) {
-				return HTTPStatus;
-			}
-					
+			
 			var lenghtOfFile = connection.getContentLength();
 		
 			var inputStream = createObject( 'java', 'java.io.BufferedInputStream' ).init( netURL.openStream() );
@@ -111,7 +104,7 @@ component singleton {
 			outputStream.close();
 			inputStream.close();
 		
-			return HTTPStatus;
+			return '#connection.responseCode# #connection.responseMessage#';
 			
 		} catch( Any var e ) {
 			rethrow;
@@ -134,5 +127,38 @@ component singleton {
 		var byteArray = createObject("java","java.lang.reflect.Array").newInstance(byteClass, arguments.size);
 		return byteArray;
 	} 
+
+
+	// Get connection following redirects
+	private function resolveConnection( required string downloadURL, redirectUDF ) {
+		
+		var netURL = createObject( 'java', 'java.net.URL' ).init( arguments.downloadURL );
+		var connection = netURL.openConnection();
+		connection.setInstanceFollowRedirects( false );
+		
+		try {
+			connection.connect();
+		} catch( Any var e ) {
+			throw( message='Connection failure #arguments.downloadURL#', detail=e.message );
+		}
+						
+		// If we get a redirect, follow it
+		if( connection.responseCode >= 300 && connection.responseCode < 400 ) {
+			var newURL = connection.getHeaderField( "Location");
+			
+			if( !isSimpleValue( arguments.redirectUDF ) ) {
+				arguments.redirectUDF( newURL );
+			}
+			
+			return resolveConnection( newURL, arguments.redirectUDF );
+		}
+		
+		// If we didn't get a successful response, bail here
+		if( connection.responseCode < 200 || connection.responseCode > 299 ) {
+			throw( message='#connection.responseCode# #connection.responseMessage#', detail=arguments.downloadURL );
+		}
+		
+		return { connection = connection, netURL = netURL };
+	}
 	
 }

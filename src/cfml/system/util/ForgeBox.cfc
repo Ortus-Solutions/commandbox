@@ -23,6 +23,7 @@ or just add DEBUG to the root logger
 	<!--- DI --->
 	<cfproperty name="progressableDownloader" 	inject="ProgressableDownloader">
 	<cfproperty name="progressBar" 				inject="ProgressBar">
+	<cfproperty name="consoleLogger"			inject="logbox:logger:console">
 	
 <!------------------------------------------- CONSTRUCTOR ------------------------------------------>
 	
@@ -128,15 +129,18 @@ or just add DEBUG to the root logger
 		<!--- Start Log --->
 		<cfset var destination  = arguments.destinationDir>
 		<!---Don't trust the URL to have a file name --->
-		<cfset var fileName		= 'temp#randRange( 1, 1000 )#.zip'>
-		<cfset var fullPath = destination & '/' & fileName>
+		<cfset var fileName = 'temp#randRange( 1, 1000 )#.zip'>
+		<cfset var fullPath = destination & '/' & fileName>		
 		
 		<!--- Download File --->
-		<cfset progressableDownloader.download(
+		<cfset var result = progressableDownloader.download(
 			arguments.downloadURL,
 			fullPath,
 			function( status ) {
 				progressBar.update( argumentCollection = status );
+			},
+			function( newURL ) {
+				consoleLogger.info( "Redirecting to: '#arguments.newURL#'..." );
 			}
 		)>
 			
