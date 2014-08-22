@@ -212,6 +212,8 @@ component accessors="true" singleton {
 			var tmpPath = "#variables.tempDir#/#packageName#";
 			tmpPath = fileSystemUtil.resolvePath( tmpPath );
 			
+			consoleLogger.info( "Uncompressing...");
+			
 			// Unzip to temp directory
 			// TODO, this should eventaully be part of the zip file adapter
 			zip action="unzip" file="#thisArtifactPath#" destination="#tmpPath#" overwrite="true";
@@ -301,10 +303,9 @@ component accessors="true" singleton {
 		
 			// Should we save this as a dependancy
 			// and was the installed package put in a sub dir?
-			if( ( arguments.save || arguments.saveDev )   
-				&& artifactDescriptor.createPackageDirectory ) {
+			if( ( arguments.save || arguments.saveDev ) ) {
 				// Add it!
-				addDependency( currentWorkingDirectory, packageName, version, installDirectory,  arguments.saveDev );
+				addDependency( currentWorkingDirectory, packageName, version, installDirectory, artifactDescriptor.createPackageDirectory,  arguments.saveDev );
 				// Tell the user...
 				consoleLogger.info( "box.json updated with #( arguments.saveDev ? 'dev ': '' )#dependency." );
 			}
@@ -402,12 +403,13 @@ component accessors="true" singleton {
 			
 			// Is there an install path for this?
 			if( structKeyExists( installPaths, packageName ) ) {
-				uninstallDirectory = fileSystemUtil.resolvePath( installPaths[ packageName ] );				
+				uninstallDirectory = fileSystemUtil.resolvePath( installPaths[ packageName ] );
 			}			
 		}
 		
 		// If all else fails, just use the current directory
 		if( !len( uninstallDirectory ) ) {
+			consoleLogger.warn( "No install path found in box.json, looking in the current working directory.");
 			uninstallDirectory = arguments.currentWorkingDirectory & '/' & packageName;
 		}
 				
@@ -475,36 +477,53 @@ component accessors="true" singleton {
 	* @packageName.hint Package to add a a dependency
 	* @version.hint Version of the dependency
 	* @installDirectory.hint The location that the package is installed to including the container folder.
+	* @installDirectoryIsDedicated.hint True if the package was placed in a dedicated folder
 	* @dev.hint True if this is a development depenency, false if it is a production dependency
 	*/	
-	public function addDependency( required string currentWorkingDirectory, required string packageName, required string version, string installDirectory='', boolean dev=false ) {
+	public function addDependency(
+		required string currentWorkingDirectory,
+		required string packageName,
+		required string version,
+		string installDirectory='',
+		boolean installDirectoryIsDedicated = true,
+		boolean dev=false
+		) {
 		// Get box.json, create empty if it doesn't exist
 		var boxJSON = readPackageDescriptor( arguments.currentWorkingDirectory );
 		// Get reference to appropriate depenency struct
 		var dependencies = ( arguments.dev ? boxJSON.devDependencies : boxJSON.dependencies );
-		var installPaths = boxJSON.installPaths;
 		
-		// normalize slashes
-		arguments.currentWorkingDirectory = fileSystemUtil.resolvePath( arguments.currentWorkingDirectory );
-		arguments.installDirectory = fileSystemUtil.resolvePath( arguments.installDirectory );
 		
-		// If the install location is contained within the package root...
-		if( arguments.installDirectory contains arguments.currentWorkingDirectory ) {
-			// Make it relative
-			arguments.installDirectory = replaceNoCase( arguments.installDirectory, arguments.currentWorkingDirectory, '' );
-			// Strip any leading slashes so Unix-based OS's don't think it's the drive root
-			if( len( arguments.installDirectory ) && listFind( '\,/', left( arguments.installDirectory, 1 ) ) ) {
-				arguments.installDirectory = right( arguments.installDirectory, len( arguments.installDirectory ) - 1 );
-			}
-		}
-				
 		// Add/overwrite this dependency
 		dependencies[ arguments.packageName ] = arguments.version;
-		// Just in case-- an empty install dir would be useless.
-		if( len( arguments.installDirectory ) ) {
-			installPaths[ arguments.packageName ] = arguments.installDirectory;			
-		}
-				
+		
+		// Only packages installed in a dedicated directory of their own can be uninstalled
+		// so don't save this if they were just dumped somewhere like the packge root amongst
+		// other unrelated files and folders.
+		if( arguments.installDirectoryIsDedicated ) {
+			var installPaths = boxJSON.installPaths;
+					
+			// normalize slashes
+			arguments.currentWorkingDirectory = fileSystemUtil.resolvePath( arguments.currentWorkingDirectory );
+			arguments.installDirectory = fileSystemUtil.resolvePath( arguments.installDirectory );
+			
+			// If the install location is contained within the package root...
+			if( arguments.installDirectory contains arguments.currentWorkingDirectory ) {
+				// Make it relative
+				arguments.installDirectory = replaceNoCase( arguments.installDirectory, arguments.currentWorkingDirectory, '' );
+				// Strip any leading slashes so Unix-based OS's don't think it's the drive root
+				if( len( arguments.installDirectory ) && listFind( '\,/', left( arguments.installDirectory, 1 ) ) ) {
+					arguments.installDirectory = right( arguments.installDirectory, len( arguments.installDirectory ) - 1 );
+				}
+			}
+					
+			// Just in case-- an empty install dir would be useless.
+			if( len( arguments.installDirectory ) ) {
+				installPaths[ arguments.packageName ] = arguments.installDirectory;			
+			}
+			
+		} // end installDirectoryIsDedicated
+					
 		// Write the box.json back out
 		writePackageDescriptor( boxJSON, arguments.currentWorkingDirectory );
 	}
