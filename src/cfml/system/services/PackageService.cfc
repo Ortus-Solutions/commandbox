@@ -190,6 +190,11 @@ component accessors="true" singleton {
 				// If this is a module
 				} else if( packageType == 'modules' ) {
 					installDirectory = arguments.currentWorkingDirectory & '/modules';
+				// If this is a plugin
+				} else if( packageType == 'plugins' ) {
+					installDirectory = arguments.currentWorkingDirectory & '/plugins';
+					// Plugins just get dumped in
+					artifactDescriptor.createPackageDirectory = false;
 				}
 			}
 						
