@@ -114,10 +114,13 @@ component accessors="true" singleton {
 				// If the local artifact doesn't exist, download and create it
 				if( !artifactService.artifactExists( packageName, version ) ) {
 						
-					consoleLogger.info( "Starting download from: '#entryData.downloadURL#'..." );
-						
-					// Grab from the project's download URL and store locally in the temp dir
-					var packageTempPath = forgebox.install( entryData.downloadurl, tempDir );
+					// This URL will download the package.  TODO: This logic needs moved inside the ForgeBox util
+					var forgeBoxURL = 'http://www.coldbox.org/forgebox/install/#entryData.slug#';
+					
+					consoleLogger.info( "Starting download from: '#forgeBoxURL#'..." );
+					
+					// Store the package locally in the temp dir
+					var packageTempPath = forgebox.install( forgeBoxURL, tempDir );
 					
 					// Store it locally in the artfact cache
 					artifactService.createArtifact( packageName, version, packageTempPath );
@@ -190,6 +193,7 @@ component accessors="true" singleton {
 					artifactDescriptor.createPackageDirectory = false;
 					arguments.save = false;
 					arguments.saveDev = false;
+					ignorePatterns.append( '/box.json' );
 				// If this is a module
 				} else if( packageType == 'modules' ) {
 					installDirectory = arguments.currentWorkingDirectory & '/modules';
