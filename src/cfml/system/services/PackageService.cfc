@@ -187,6 +187,9 @@ component accessors="true" singleton {
 				// If this is a CommandBox command
 				if( packageType == 'commandbox-commands' ) {
 					installDirectory = expandPath( '/root/commands' );
+					artifactDescriptor.createPackageDirectory = false;
+					arguments.save = false;
+					arguments.saveDev = false;
 				// If this is a module
 				} else if( packageType == 'modules' ) {
 					installDirectory = arguments.currentWorkingDirectory & '/modules';
