@@ -36,6 +36,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 	/**
 	 * @clear.hint Erase your history.  
 	 * @type.hint The type of history to interact with. Values are "command", "scriptREPL", and "tagREPL"
+	 * @type.options command,scriptREPL,tagREPL
 	 **/
 	function run( boolean clear=false, string type='command' ) {
 		// Get the Java JLine.History object

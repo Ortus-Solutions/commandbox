@@ -39,6 +39,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 
 	/**
 	* REPL Console
+	* @script.hint Run REPL in script or tag mode
 	**/
 	function run( boolean script=true ){
 		print.cyanLine( "Enter any valid CFML code in the following prompt in order to evaluate it and print out any results (if any)" );
