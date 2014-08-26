@@ -47,16 +47,15 @@ component extends="commandbox.system.BaseCommand" aliases="start" excludeFromHel
 		
 		// get server info record, create one if this is the first time.
 		var serverInfo = serverService.getServerInfo( webroot );
+		serverInfo.webroot 	= webroot;
+		serverInfo.debug 	= arguments.debug;
 		// we don't want to changes the ports if we're doing stuff already
 		if( serverInfo.status is "unknown" || arguments.force ){
 			serverInfo.name = name;
 			serverInfo.port = arguments.port;
 			serverInfo.stopsocket = arguments.stopPort;
 		}
-		serverInfo.webroot 	= webroot;
-		serverInfo.debug 	= arguments.debug;
-		print.line(serverInfo.port);
-		print.line(boxJSON.defaultPort);
+		// If no port, check box descriptor for port.		
 		if( !serverInfo.port ) {
 			serverInfo.port = boxJSON.defaultPort;
 		}
