@@ -144,7 +144,7 @@ component accessors="true" singleton {
  	 **/
 	Shell function setPrompt( text="" ) {
 		if( !len( arguments.text ) ){
-			arguments.text = variables.shellPrompt;
+			variables.shellPrompt = print.green( "CommandBox:#listLast( getPWD(), "/\" )#> " );
 		} else {
 			variables.shellPrompt = arguments.text;
 		}
@@ -282,6 +282,8 @@ component accessors="true" singleton {
 	String function cd( directory="" ){
 		variables.pwd = arguments.directory;
 		request.lastCWD = arguments.directory;
+		// Update prompt to reflect directory change
+		setPrompt();
 		return variables.pwd;
 	}
 
