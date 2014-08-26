@@ -8,6 +8,7 @@
 component extends="commandbox.system.BaseCommand" aliases="start" excludeFromHelp=false {
 
 	property name="serverService" inject="ServerService";
+	property name="packageService" inject="packageService";
 	
 	/**
 	 * @port.hint            port number
@@ -38,9 +39,11 @@ component extends="commandbox.system.BaseCommand" aliases="start" excludeFromHel
 		String  webXml          = ""
 	){
 		// prepare webroot and short name
-		var webroot = arguments.directory is "" ? getCWD() : arguments.directory;
-		var name 	= arguments.name is "" ? listLast( webroot, "\/" ) : arguments.name;
+		var webroot = arguments.directory;
 		webroot = fileSystemUtil.resolvePath( webroot );
+		var name 	= arguments.name is "" ? listLast( webroot, "\/" ) : arguments.name;
+		
+		var boxJSON = packageService.readPackageDescriptor( webroot );
 		
 		// get server info record, create one if this is the first time.
 		var serverInfo = serverService.getServerInfo( webroot );
@@ -52,6 +55,11 @@ component extends="commandbox.system.BaseCommand" aliases="start" excludeFromHel
 		}
 		serverInfo.webroot 	= webroot;
 		serverInfo.debug 	= arguments.debug;
+		print.line(serverInfo.port);
+		print.line(boxJSON.defaultPort);
+		if( !serverInfo.port ) {
+			serverInfo.port = boxJSON.defaultPort;
+		}
 
 		// Setup serverinfo according to params
 		if ( Len( Trim( arguments.webConfigDir    ) ) ) { serverInfo.webConfigDir    = arguments.webConfigDir;    }

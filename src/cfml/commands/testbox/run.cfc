@@ -52,9 +52,9 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 			runnerURL = arguments.runner;
 		// Otherwise, try to get one from box.json
 		} else {
-			runnerURL = packageService.getTestBoxRunner( arguments.runner );
+			runnerURL = packageService.getTestBoxRunner( getCWD(), arguments.runner );
 		}
-				
+		
 		// If we failed to find a URL, throw an error
 		if( left( runnerURL, 4 ) != 'http' ) {
 			return error( '[#runnerURL#] it not a valid URL, or does not match a runner slug in your box.json.' );
