@@ -45,7 +45,7 @@ component extends="commandbox.system.BaseCommand" aliases="start" excludeFromHel
 		// get server info record, create one if this is the first time.
 		var serverInfo = serverService.getServerInfo( webroot );
 		// we don't want to changes the ports if we're doing stuff already
-		if( serverInfo.status is "stopped" || arguments.force ){
+		if( serverInfo.status is "unknown" || arguments.force ){
 			serverInfo.name = name;
 			serverInfo.port = arguments.port;
 			serverInfo.stopsocket = arguments.stopPort;
@@ -53,6 +53,7 @@ component extends="commandbox.system.BaseCommand" aliases="start" excludeFromHel
 		serverInfo.webroot 	= webroot;
 		serverInfo.debug 	= arguments.debug;
 
+		// Setup serverinfo according to params
 		if ( Len( Trim( arguments.webConfigDir    ) ) ) { serverInfo.webConfigDir    = arguments.webConfigDir;    }
 		if ( Len( Trim( arguments.serverConfigDir ) ) ) { serverInfo.serverConfigDir = arguments.serverConfigDir; }
 		if ( Len( Trim( arguments.libDirs         ) ) ) { serverInfo.libDirs         = arguments.libDirs;         }
