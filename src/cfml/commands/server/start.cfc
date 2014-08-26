@@ -50,7 +50,7 @@ component extends="commandbox.system.BaseCommand" aliases="start" excludeFromHel
 		serverInfo.webroot 	= webroot;
 		serverInfo.debug 	= arguments.debug;
 		// we don't want to changes the ports if we're doing stuff already
-		if( serverInfo.status is "unknown" || arguments.force ){
+		if( serverInfo.status is "stopped" || arguments.force ){
 			serverInfo.name = name;
 			serverInfo.port = arguments.port;
 			serverInfo.stopsocket = arguments.stopPort;
