@@ -18,20 +18,25 @@ or just add DEBUG to the root logger
 
 
 ----------------------------------------------------------------------->
-<cfcomponent hint="ForgeBox API REST Wrapper" output="false" singleton>
+<cfcomponent hint="ForgeBox API REST Wrapper" output="false" accessors="true" singleton>
 	
 	<!--- DI --->
 	<cfproperty name="progressableDownloader" 	inject="ProgressableDownloader">
 	<cfproperty name="progressBar" 				inject="ProgressBar">
 	<cfproperty name="consoleLogger"			inject="logbox:logger:console">
-	
+
+	<!--- Properties --->
+	<cfproperty name="apiURL">
+	<cfproperty name="installURL">
+
 <!------------------------------------------- CONSTRUCTOR ------------------------------------------>
 	
 	<cfscript>
 		this.ORDER = {
 			POPULAR = "popular",
 			NEW = "new",
-			RECENT = "recent"
+			RECENT = "recent",
+			INSTALLS = "installs"
 		};
 	</cfscript>
 
@@ -40,21 +45,14 @@ or just add DEBUG to the root logger
 		<cfscript>
 			
 			// Setup Properties
-			instance.APIURL = "http://www.coldbox.org/index.cfm/api/forgebox";
-			
+			variables.APIURL = "http://www.coldbox.org/api/forgebox";
+			variables.installURL = "http://www.coldbox.org/forgebox/install/";
+			variables.types = "";
+
 			return this;
 		</cfscript>
 	</cffunction>
-	
-	<!--- Get/set API URL --->
-	<cffunction name="getAPIURL" access="public" returntype="string" output="false" hint="Get the API URL endpoint">
-		<cfreturn instance.APIURL>
-	</cffunction>
-	<cffunction name="setAPIURL" access="public" returntype="void" output="false" hint="Set the API URL endpoint">
-		<cfargument name="APIURL" type="string" required="true">
-		<cfset instance.APIURL = arguments.APIURL>
-	</cffunction>
-	
+
 <!------------------------------------------- PUBLIC ------------------------------------------>
 	
 	<!--- getTypes --->
@@ -64,13 +62,25 @@ or just add DEBUG to the root logger
 		
 		// Invoke call
 		results = makeRequest(resource="types");
-		
+
 		// error 
 		if( results.error ){
 			throw("Error making ForgeBox REST Call", 'forgebox', results.response.messages);
 		}
 		
 		return results.response.data;				
+		</cfscript>	
+	</cffunction>
+
+	<!--- getTypes --->
+	<cffunction name="getCachedTypes" output="false" access="public" returntype="query" hint="Get an array of entry types, locally first else goes and retrieves them">
+		<cfargument name="force" type="boolean" default="false">
+		<cfscript>
+		if( isSimpleValue( variables.types ) OR arguments.force ){
+			variables.types = getTypes();
+		}
+		
+		return variables.types;
 		</cfscript>	
 	</cffunction>
 	
@@ -117,14 +127,32 @@ or just add DEBUG to the root logger
 			return results.response.data;				
 		</cfscript>	
 	</cffunction>
+
+	<!--- isSlugAvailable --->
+	<cffunction name="isSlugAvailable" output="false" access="public" returntype="boolean" hint="Verifies if a slug is available">
+		<cfargument name="slug" type="string" required="true" default="" hint="The entry slug to verify"/>
+		<cfscript>
+			var results = "";
+			
+			// Invoke call
+			results = makeRequest(resource="slugcheck/#arguments.slug#");
+			
+			// error 
+			if( results.error ){
+				throw( "Error making ForgeBox REST Call", 'forgebox', results.response.messages );
+			}
+			
+			return results.response.data;				
+		</cfscript>	
+	</cffunction>
 	
 	<!---
 		Install 
 		This simply downloads the file from ForgeBox and stores it locally 
 	--->
 	<cffunction name="install" output="false" access="public" returntype="string" hint="Install Code Entry">
-		<cfargument name="downloadURL"    type="string" required="true" />
-		<cfargument name="destinationDir" type="string" required="true" />
+		<cfargument name="slug"    			type="string" required="true" hint="The slug to install" />
+		<cfargument name="destinationDir" 	type="string" required="true" />
 		
 		<!--- Start Log --->
 		<cfset var destination  = arguments.destinationDir>
@@ -134,7 +162,7 @@ or just add DEBUG to the root logger
 		
 		<!--- Download File --->
 		<cfset var result = progressableDownloader.download(
-			arguments.downloadURL,
+			getInstallURL() & "/#arguments.slug#",
 			fullPath,
 			function( status ) {
 				progressBar.update( argumentCollection = status );
@@ -210,5 +238,4 @@ or just add DEBUG to the root logger
 		</cfscript>	
 	</cffunction>
 		
-	
 </cfcomponent>

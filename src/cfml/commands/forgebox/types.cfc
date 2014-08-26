@@ -9,39 +9,33 @@
  **/
 component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
 	
+	// DI
 	property name="forgeBox" inject="ForgeBox";
 	
-	function init() {
-		return super.init( argumentCollection = arguments );
-	}
-	
-	// Lazy ForgeBox types.
-	function getForgeboxTypes() {
-		
-		// Get and cache a list of valid ForgeBox types
-		if( !structKeyExists( variables, 'forgeboxTypes' ) ) {
-			variables.forgeboxTypes = forgebox.getTypes();			
-		}
-		
-		return variables.forgeboxTypes;
-	}
-	
 	/**
-	 * 
-	 **/
+	* Constructor
+	*/
+	function init(){
+		super.init();
+		return this;
+	}
+
+	/**
+	* Run Command
+	*/
 	function run(  ) {
 		
 		// typetotal,typename,typeid,typeslug
 		print.line()
-			.blackOnWhiteLine( 'Name (slug)' )
-			.line();
+			.line( "Here is a listing of the available types in ForgeBox" )
+			.line()
+			.blackOnWhiteLine( 'Name (slug)' );
 
-		for( var type in getForgeBoxTypes() ) {
+		for( var type in forgeBox.getCachedTypes() ) {
 			print.boldText( type.typeName )
 				.line( '  (#type.typeSlug#)' );
 				
 		}
-		
 		
 	}
 

@@ -9,8 +9,12 @@
  **/
 component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
 	
+	// DI
 	property name="forgeBox" inject="ForgeBox";
 	
+	/**
+	* Constructor
+	*/
 	function init() {
 		return super.init( argumentCollection = arguments );
 	}
@@ -21,7 +25,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 	function run( searchText ) {
 					
 		// Default parameter
-		searchText = searchText ?: '';
+		arguments.searchText = arguments.searchText ?: '';
 			
 		try {
 				
@@ -36,11 +40,11 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 				for( var entry in entries ) {
 					if( val( entry.isactive )
 					&& (
-						   entry.title contains searchText
-						|| entry.fname contains searchText
-						|| entry.lname contains searchText
-						|| entry.typeName contains searchText
-						|| entry.summary contains searchText
+						   entry.title contains arguments.searchText
+						|| entry.fname contains arguments.searchText
+						|| entry.lname contains arguments.searchText
+						|| entry.typeName contains arguments.searchText
+						|| entry.summary contains arguments.searchText
 					) ) {
 						activeCount++;
 						print.blackOnWhite( ' #entry.title# ' ); 

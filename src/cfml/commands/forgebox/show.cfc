@@ -33,8 +33,12 @@
  **/
 component extends="commandbox.system.BaseCommand" aliases="show" excludeFromHelp=false {
 	
+	// DI
 	property name="forgeBox" inject="ForgeBox";
 	
+	/**
+	* Constructor
+	*/
 	function init() {		
 		return super.init( argumentCollection = arguments );
 	}
@@ -42,19 +46,9 @@ component extends="commandbox.system.BaseCommand" aliases="show" excludeFromHelp
 	function onDIComplete() {
 		variables.forgeboxOrders =  forgebox.ORDER;
 	}
-
-	// Lazy ForgeBox types.
-	function getForgeboxTypes() {
-		
-		// Get and cache a list of valid ForgeBox types
-		if( !structKeyExists( variables, 'forgeboxTypes' ) ) {
-			variables.forgeboxTypes = forgebox.getTypes();			
-		}
-		return variables.forgeboxTypes;
-	}
 	
 	/**
-	* @orderBy.hint How to order results. Possible values are popular, new, and recent 
+	* @orderBy.hint How to order results. Possible values are popular, new, installs, recent or a specific ForgeBox type
 	* @orderBy.optionsUDF orderByComplete
 	* @type.hint Name or slug of type to filter by. See possible types with "forgebox types command"
 	* @type.optionsUDF typeComplete
@@ -64,19 +58,20 @@ component extends="commandbox.system.BaseCommand" aliases="show" excludeFromHelp
 	* 
 	**/
 	function run( 
-				orderBy='popular',
-				type,
-				number startRow,
-				number maxRows,
-				slug ) {
+		orderBy='popular',
+		type,
+		number startRow,
+		number maxRows,
+		slug 
+	){
 		
 		print.yellowLine( "Contacting ForgeBox, please wait..." ).toConsole();
 				
 		// Default parameters
-		type = type ?: '';
-		startRow = startRow ?: 1;
-		maxRows = maxRows ?: 0;
-		slug = slug ?: '';
+		arguments.type 		= arguments.type ?: '';
+		arguments.startRow 	= arguments.startRow ?: 1;
+		arguments.maxRows 	= arguments.maxRows ?: 0;
+		arguments.slug 		= arguments.slug ?: '';
 		var typeLookup = '';
 		
 		// Validate orderBy
@@ -113,6 +108,8 @@ component extends="commandbox.system.BaseCommand" aliases="show" excludeFromHelp
 				error( 'Type value of [#type#] is invalid. See possible types with "forgebox types".' );
 			}
 		}
+
+		// error check
 		if( hasError() ){
 			return;
 		}
@@ -129,32 +126,31 @@ component extends="commandbox.system.BaseCommand" aliases="show" excludeFromHelp
 				// downloads,entryid,fname,changelog,updatedate,downloadurl,title,entryrating,summary,username,description,email
 								
 				if( !val( entryData.isActive ) ) {
-					error( 'The ForgeBox entry [#entryData.title#] is inactive.' );
+					error( 'The ForgeBox entry [#entryData.title#] is inactive, we highly recommed NOT installing it or contact the author about it' );
 				}
 				
-				
 				print.line();
-				print.blackOnWhite( ' #entryData.title# ' ); 
-					print.boldText( '   ( #entryData.fname# #entryData.lname#, #entryData.email# )' );
-					print.boldGreenLine( '   #repeatString( '*', val( entryData.entryRating ) )#' );
-				print.line();
-				print.line( 'Type: #entryData.typeName#' );
-				print.line( 'Slug: "#entryData.slug#"' );
-				print.line( 'Summary: #entryData.summary#' );
-				print.line( 'Created On: #entryData.createdate#' );
-				print.line( 'Updated On: #entryData.updateDate#' );
-				print.line( 'Version: #entryData.version#' );
-				print.line( 'Home URL: #entryData.homeURL#' );
-				print.line( 'Hits: #entryData.hits#' );
-				print.line( 'Downloads: #entryData.downloads#' );
-				print.line();
-				
-				print.yellowLine( #formatterUtil.HTML2ANSI( entryData.description )# );
-				
+				print.blackOnWhite( ' #entryData.title# ' )
+					.boldText( '   ( #entryData.fname# #entryData.lname#, #entryData.email# )' )
+					.boldGreenLine( '   #repeatString( '*', val( entryData.entryRating ) )#' );
+				print.line()
+					.yellowLine( #formatterUtil.HTML2ANSI( entryData.description )# )
+					.line()
+					.line( 'Type: #entryData.typeName#' )
+					.line( 'Slug: "#entryData.slug#"' )
+					.line( 'Summary: #entryData.summary#' )
+					.line( 'Created On: #entryData.createdate#' )
+					.line( 'Updated On: #entryData.updateDate#' )
+					.line( 'Version: #entryData.version#' )
+					.line( 'ForgeBox Views: #entryData.hits#' )
+					.line( 'Downloads: #entryData.downloads#' )
+					.line( 'Installs: #entryData.installs#' )
+					.line( 'Home URL: #entryData.homeURL#' )
+					.line( 'Source URL: #entryData.sourceURL#' )
+					.line();
 				
 			// List of entries
 			} else {
-				
 				// Get the entries
 				var entries = forgebox.getEntries( orderBy, maxRows, startRow, typeLookup );
 				
@@ -189,11 +185,12 @@ component extends="commandbox.system.BaseCommand" aliases="show" excludeFromHelp
 		
 	}
 
-	private function lookupType( type ) {
+	// Auto-complete 
+	function lookupType( type ) {
 		var typeLookup = '';
 		
 		// See if they entered a type name or slug
-		for( var thistype in getForgeboxTypes() ) {
+		for( var thistype in forgebox.getCachedTypes() ) {
 			if( thisType.typeName == type || thisType.typeSlug == type ) {
 				typeLookup = thisType.typeSlug;
 				break;
@@ -209,7 +206,7 @@ component extends="commandbox.system.BaseCommand" aliases="show" excludeFromHelp
 	function typeComplete( result = [] ) {
 			
 		// Loop over types and append all active ForgeBox entries
-		for( var thistype in getForgeboxTypes() ) {
+		for( var thistype in forgebox.getCachedTypes() ) {
 			arguments.result.append( thisType.typeSlug );
 		}
 		
@@ -218,7 +215,7 @@ component extends="commandbox.system.BaseCommand" aliases="show" excludeFromHelp
 
 	// Auto-complete list of orderBys (can also include types and slugs)
 	function orderByComplete() {
-		var result = [ 'popular','new','recent' ];
+		var result = [ 'popular', 'new', 'recent', 'installs' ];
 			
 		// Add types
 		result = typeComplete( result );
