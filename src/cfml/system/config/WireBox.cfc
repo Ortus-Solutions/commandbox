@@ -33,7 +33,7 @@ component extends="wirebox.system.ioc.config.Binder" {
 			// This is where core namespace commands are stored
 			'/commandbox/commands',
 			// This is where user-installed commands are stored
-			'/root/commands'
+			'/commandbox-home/commands'
 		];
 		var ortusArtifactsURL		= 'http://integration.staging.ortussolutions.com/artifacts/';
 		
