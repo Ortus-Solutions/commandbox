@@ -14,7 +14,7 @@
  * .
  * Recipe will receive $name and $action
  * {code:bash}
- * recipe buildSite.boxr name=luis action=create
+ * recipe recipeFile=buildSite.boxr name=luis action=create
  * {code}
  * .
  * Recipe will receive $1 and $2
