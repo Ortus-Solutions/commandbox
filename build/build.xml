@@ -123,18 +123,18 @@ External Dependencies:
 	<!-- Build CLI -->
 	<target name="build.cli" description="builds box.jar" depends="init">
 		<!-- Copy CommandBox code -->
-      	<copy todir="${build.dir}">
+      	<copy todir="${build.dir}" encoding="UTF-8">
         	<fileset dir="${src.dir}/cfml"/>
         	<fileset file="../license.txt"/>
         	<fileset file="../readme.txt"/>
         </copy>
         
 		<!-- Replace Version Numbers -->
-		<replaceregexp match='@build.version@' replace="${commandbox.version}" flags="ig" byline="true">
+		<replaceregexp match='@build.version@' replace="${commandbox.version}" flags="ig" byline="true" encoding="UTF-8">
 		  <fileset dir="${build.dir}" />
 		</replaceregexp>
 		<!-- Replace Build Numbers -->
-		<replaceregexp match='@build.number@' replace="${build.number}" flags="ig" byline="true">
+		<replaceregexp match='@build.number@' replace="${build.number}" flags="ig" byline="true" encoding="UTF-8">
 		  <fileset dir="${build.dir}" />
 		</replaceregexp>
 
@@ -146,13 +146,13 @@ External Dependencies:
 		<checksum file="${dist.dir}/${distro.name}-cfml-${commandbox.version}.zip" forceoverwrite="true" fileext=".md5" />
 		
 		<!-- update railo cli project with our version stuff -->
-      	<copy tofile="${temp.dir}/rcli/cfml.zip" overwrite="true">
+      	<copy tofile="${temp.dir}/rcli/cfml.zip" overwrite="true" encoding="UTF-8">
         	<fileset file="${dist.dir}/${distro.name}-cfml-${commandbox.version}.zip" />
         </copy>
-      	<copy todir="${temp.dir}/rcli/resource" overwrite="true">
+      	<copy todir="${temp.dir}/rcli/resource" overwrite="true" encoding="UTF-8">
         	<fileset dir="${src.dir}/resources" />
         </copy>
-		<copy file="${src.dir}/resources/cli.properties" todir="${temp.dir}/rcli/cliloader" overwrite="true"/>
+		<copy file="${src.dir}/resources/cli.properties" todir="${temp.dir}/rcli/cliloader" overwrite="true" encoding="UTF-8"/>
         
         <!-- jar up the cli again -->
         <zip destfile="${dist.dir}/box.jar" update="false" level="9">
@@ -324,7 +324,7 @@ External Dependencies:
 	   		<tarfileset file="${dist.dir}/box" prefix="usr/local/bin" filemode="755"/>
 	   	</deb>
 	   	<!-- Copy deb package to debian repo -->
-		<copy file="${dist.dir}/${distro.name}_${commandbox.version}-1_all.deb" toDir="${deb.repo}" />
+		<copy file="${dist.dir}/${distro.name}_${commandbox.version}-1_all.deb" toDir="${deb.repo}"/>
 		<!-- Rename to standardized naming -->
 		<move file="${dist.dir}/${distro.name}_${commandbox.version}-1_all.deb" tofile="${dist.dir}/${distro.name}-debian-${commandbox.version}.deb" />
 		<!-- Build Checksum -->
