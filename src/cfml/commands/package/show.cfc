@@ -46,7 +46,19 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 		
 		boxJSON = packageService.readPackageDescriptor( directory );
 		
-		var fullPropertyName = 'boxJSON.#arguments.property#';
+		// Convert foo.bar-baz[1] to ['foo']['bar-baz'][1]
+		var tmpProperty = replace( arguments.property, '[', '.[', 'all' );
+		tmpProperty = replace( tmpProperty, ']', '].', 'all' );
+		var fullPropertyName = '';
+		for( var item in listToArray( tmpProperty, '.' ) ) {
+			if( item.startsWith( '[' ) ) {
+				fullPropertyName &= item;
+			} else {
+				fullPropertyName &= '[ "#item#" ]';	
+			}
+		}
+		fullPropertyName = 'boxJSON' & fullPropertyName;
+				
 		if( !isDefined( fullPropertyName ) ) {
 			return error( 'Property [#arguments.property#] doesn''t exist in this package''s box.json' );
 		}
