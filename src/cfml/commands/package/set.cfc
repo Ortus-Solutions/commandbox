@@ -67,7 +67,20 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 		boxJSON = packageService.readPackageDescriptor( directory );
 		
 		for( var arg in arguments ) {
-			var fullPropertyName = 'boxJSON.#arg#';
+			// Convert foo.bar-baz[1] to ['foo']['bar-baz'][1]
+			var tmpProperty = replace( arg, '[', '.[', 'all' );
+			tmpProperty = replace( tmpProperty, ']', '].', 'all' );
+			var fullPropertyName = '';
+			for( var item in listToArray( tmpProperty, '.' ) ) {
+				if( item.startsWith( '[' ) ) {
+					fullPropertyName &= item;
+				} else {
+					fullPropertyName &= '[ "#item#" ]';	
+				}
+			}
+			fullPropertyName = 'boxJSON' & fullPropertyName;
+			
+			
 			var propertyValue = arguments[ arg ];
 			if( isJSON( propertyValue ) ) {
 				// We're trying to append and the target property exists
