@@ -74,7 +74,7 @@ component accessors="true" singleton {
 		//       object at runtime with generic methods
 		///////////////////////////////////////////////////////////////////////
 		
-		// If there is a packge to isntall,isntall it
+		// If there is a package to install, isntall it
 		if( len( arguments.ID ) ) {
 			
 			consoleLogger.info( '.');
