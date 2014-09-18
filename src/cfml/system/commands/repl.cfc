@@ -69,6 +69,8 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 				// evaluate it
 				try{
 
+					var cfmlWithoutScript = reReplaceNoCase(cfml, ";", "", "once");
+
 					// script or not?
 					if( arguments.script ){
 						cfml = "<cfscript>" & cfml & "</cfscript>";
@@ -77,6 +79,15 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 					fileWrite( tmpFileAbsolute, cfml );
 					// eval it
 					results = executor.run( tmpFileRelative );
+
+ 					if ( trim( len( results ) ) == 0 ) {
+						try {
+							results = "=> " & evaluate(cfmlWithoutScript);
+						} catch (any var e) {
+							// Just move on if there was an error
+						}
+					}
+
 					// print results
 					if( !isNull( results ) ){
 						print.redLine( results ).toConsole();
