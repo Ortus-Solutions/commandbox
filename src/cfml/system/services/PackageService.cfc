@@ -252,15 +252,17 @@ component accessors="true" singleton {
 			// Some packages may just want to be dumped in their destination without being contained in a subfolder
 			if( artifactDescriptor.createPackageDirectory ) {
 				installDirectory &= '/#packageDirectory#';
+				
+				// Check to see if package has already been installed. Skip unless forced.
+				// This check can only be performed for packages that get installed in their own directory.
+				if ( directoryExists( installDirectory ) && !arguments.force ){
+					// cleanup tmp
+					directoryDelete( tmpPath, true );
+					consoleLogger.warn("The package #packageName# is already installed at #installDirectory#. Skipping installation. Use --force option to force install.");
+					return;
+				}
 			}
 			
-			// Check to see if package has already been installed. Skip unless forced.
-			if ( directoryExists( installDirectory ) && !arguments.force ){
-				// cleanup tmp
-				directoryDelete( tmpPath, true );
-				consoleLogger.warn("The package #packageName# is already installed at #installDirectory#. Skipping installation. Use --force option to force install.");
-				return;
-			}
 			
 			// Create installation directory if neccesary
 			if( !directoryExists( installDirectory ) ) {
