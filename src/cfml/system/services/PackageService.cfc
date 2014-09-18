@@ -219,39 +219,23 @@ component accessors="true" singleton {
 			}
 
 			// Normalize slashes
-			var tmpPath = "#variables.tempDir#/#packageName#";
-			tmpPath = fileSystemUtil.resolvePath( tmpPath );
-
-			var packageDirectory = packageName;
-
-			// Some packages may just want to be dumped in their destination without being contained in a subfolder
-			if( artifactDescriptor.createPackageDirectory ) {
-				installDirectory &= '/#packageDirectory#';
-			}
-
-			// Check to see if package has already been installed. Skip unless forced.
-			if ( directoryExists( installDirectory) && !arguments.force) {
-				consoleLogger.warn("The package #packageName# is already installed. Skipping installation. Use --force option to force install.");
-				return;
-			}
-
-			// Create installation directory if neccesary
-			if( !directoryExists( installDirectory ) ) {
-				directoryCreate( installDirectory );
-			}
-
-			consoleLogger.info( "Uncompressing...");
-
+			var tmpPath = fileSystemUtil.resolvePath( "#variables.tempDir#/#packageName#" );
 			// Unzip to temp directory
+			consoleLogger.info( "Uncompressing...");
 			// TODO, this should eventaully be part of the zip file adapter
 			zip action="unzip" file="#thisArtifactPath#" destination="#tmpPath#" overwrite="true";
-
-			// Override package directory?
+			
+			// Default directory to package name
+			var packageDirectory = packageName;
+			// Override package directory in descriptor?
 			if( len( artifactDescriptor.packageDirectory ) ) {
 				packageDirectory = artifactDescriptor.packageDirectory;					
 			}
 			
-			// If the zip file has a directory named after the package, that's our actual package root.
+			/******************************************************************************************************************/
+			// Old Modules Build Check: If the zip file has a directory named after the package, that's our actual package root.
+			// Remove once build process in ForgeBox and ContentBox are updated
+			/******************************************************************************************************************/
 			var innerTmpPath = '#tmpPath#/#packageDirectory#';
 			if( directoryExists( innerTmpPath ) ) {
 				// Move the box.json if it exists into the inner folder
@@ -263,13 +247,30 @@ component accessors="true" singleton {
 				// Repoint ourselves to the inner folder
 				tmpPath = innerTmpPath;
 			}
-
+			/******************************************************************************************************************/
 	
+			// Some packages may just want to be dumped in their destination without being contained in a subfolder
+			if( artifactDescriptor.createPackageDirectory ) {
+				installDirectory &= '/#packageDirectory#';
+			}
+			// Create installation directory if neccesary
+			if( !directoryExists( installDirectory ) ) {
+				directoryCreate( installDirectory );
+			}
+
+			// Check to see if package has already been installed. Skip unless forced.
+			if ( directoryExists( installDirectory ) && !arguments.force ){
+				// cleanup tmp
+				directoryDelete( tmpPath, true );
+				consoleLogger.warn("The package #packageName# is already installed at #installDirectory#. Skipping installation. Use --force option to force install.");
+				return;
+			}
+
 			var results = {
 				copied = [],
 				ignored = []
 			};
-				
+
 			// Copy with ignores from descriptor
 			// TODO, this should eventaully be part of the folder adapter
 			directoryCopy( tmpPath, installDirectory, true, function( path ){
@@ -298,7 +299,6 @@ component accessors="true" singleton {
 	
 			// cleanup unzip
 			directoryDelete( tmpPath, true );
-			
 			
 			// Summary output
 			consoleLogger.info( "Installing to: #installDirectory#" );		
