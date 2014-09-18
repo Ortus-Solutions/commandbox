@@ -343,6 +343,11 @@ component accessors="true" singleton {
 			
 		}
 
+		if ( !structKeyExists(variables, "boxJSON") ) {
+			consoleLogger.warn("Ouch! We can't find your box.json file. Try running box init to create a new box.json file.");
+			return;
+		}
+
 		// and grab all the dependencies
 		var dependencies = boxJSON.dependencies;
 		
