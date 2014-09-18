@@ -51,6 +51,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 	 * @directory.hint The directory to create the app in and creates the directory if it does not exist.  Defaults to your current working directory.
 	 * @init.hint "init" the directory as a package if it isn't already
 	 * @installColdBox.hint Install the latest stable version of ColdBox from ForgeBox
+	 * @installColdBoxBE.hint Install the bleeding edge version of ColdBox from ForgeBox
 	 * @installTestBox.hint Install the latest stable version of TestBox from ForgeBox
 	 **/
 	function run(
@@ -59,10 +60,11 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 		directory=getCWD(),
 		boolean init=true,
 		boolean installColdBox=false,
+		boolean installColdBoxBE=false,
 		boolean installTestBox=false
 	) {
 					
-		// This will make the directory canonical and absolute		
+		// This will make the directory canonical and absolute
 		arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
 		// get the right skeleton
 		var skeletonZip = skeletonLocation & arguments.skeleton & '.zip';
@@ -103,13 +105,13 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 		}
 		
 		// Install the ColdBox platform
-		if( arguments.installColdBox ) {
+		if( arguments.installColdBox || arguments.installColdBoxBE ) {
 			
 			// Flush out stuff from above
 			print.toConsole();
 			
 			packageService.installPackage(
-				ID = 'coldbox',
+				ID = 'coldbox#iif( arguments.installColdBoxBE, de( '-be' ), de( '' ) )#',
 				directory = arguments.directory,
 				save = true,
 				saveDev = false,
