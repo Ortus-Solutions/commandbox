@@ -65,7 +65,8 @@ component accessors="true" singleton {
 			boolean saveDev=false,
 			boolean production=false,
 			string currentWorkingDirectory,
-			boolean verbose=false
+			boolean verbose=false,
+			boolean force=false
 	){
 					
 		///////////////////////////////////////////////////////////////////////
@@ -147,7 +148,7 @@ component accessors="true" singleton {
 		
 			// Install the package
 			var thisArtifactPath = artifactService.getArtifactPath( packageName, version );
-			
+
 			// Has file size?
 			if( getFileInfo( thisArtifactPath ).size <= 0 ) {
 				throw( 'Cannot install file as it has a file size of 0.', thisArtifactPath );
@@ -211,23 +212,39 @@ component accessors="true" singleton {
 				}
 			}
 						
-			// I give up, just stick it in the CDW
+			// I give up, just stick it in the CWD
 			if( !len( installDirectory ) ) {
 				installDirectory = arguments.currentWorkingDirectory;
 			}
-			
+
 			// Normalize slashes
 			var tmpPath = "#variables.tempDir#/#packageName#";
 			tmpPath = fileSystemUtil.resolvePath( tmpPath );
-			
+
+			var packageDirectory = packageName;
+
+			// Some packages may just want to be dumped in their destination without being contained in a subfolder
+			if( artifactDescriptor.createPackageDirectory ) {
+				installDirectory &= '/#packageDirectory#';
+			}
+
+			// Check to see if package has already been installed. Skip unless forced.
+			if ( directoryExists( installDirectory) && !arguments.force) {
+				consoleLogger.warn("The package #packageName# is already installed. Skipping installation. Use --force option to force install.");
+				return;
+			}
+
+			// Create installation directory if neccesary
+			if( !directoryExists( installDirectory ) ) {
+				directoryCreate( installDirectory );
+			}
+
 			consoleLogger.info( "Uncompressing...");
-			
+
 			// Unzip to temp directory
 			// TODO, this should eventaully be part of the zip file adapter
 			zip action="unzip" file="#thisArtifactPath#" destination="#tmpPath#" overwrite="true";
-			
-			var packageDirectory = packageName;
-			
+
 			// Override package directory?
 			if( len( artifactDescriptor.packageDirectory ) ) {
 				packageDirectory = artifactDescriptor.packageDirectory;					
@@ -245,15 +262,7 @@ component accessors="true" singleton {
 				// Repoint ourselves to the inner folder
 				tmpPath = innerTmpPath;
 			}
-	
-			// Some packages may just want to be dumped in their destination without being contained in a subfolder
-			if( artifactDescriptor.createPackageDirectory ) {
-				installDirectory &= '/#packageDirectory#';
-			}
-			// Create installation directory if neccesary
-			if( !directoryExists( installDirectory ) ) {
-				directoryCreate( installDirectory );
-			}
+
 	
 			var results = {
 				copied = [],
@@ -332,6 +341,11 @@ component accessors="true" singleton {
 				var boxJSON = readPackageDescriptor( arguments.currentWorkingDirectory );
 			}
 			
+		}
+
+		if ( !structKeyExists(variables, "boxJSON") ) {
+			consoleLogger.warn("Ouch! We can't find your box.json file. Try running box init to create a new box.json file.");
+			return;
 		}
 
 		// and grab all the dependencies

@@ -60,6 +60,7 @@ component extends="commandbox.system.BaseCommand" aliases="install" excludeFromH
 	* @saveDev.hint Save the installed package as a dev dependancy in box.json (if it exists)
 	* @production.hint When calling this command with no slug to install all dependencies, set this to true to ignore devDependencies.
 	* @verbose.hint If set, it will produce much more verbose information about the package installation
+	* @force.hint When set to true, it will force dependencies to be installed whether they already exist or not
 	**/
 	function run( 
 		string slug='',
@@ -67,7 +68,8 @@ component extends="commandbox.system.BaseCommand" aliases="install" excludeFromH
 		boolean save=true,
 		boolean saveDev=false,
 		boolean production=false,
-		boolean verbose=false
+		boolean verbose=false,
+		boolean force=false
 	){
 		
 		// Don't default the dir param since we need to differentiate whether the user actually 

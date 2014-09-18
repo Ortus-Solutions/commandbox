@@ -219,12 +219,10 @@ External Dependencies:
 					jarPath="${dist.dir}/box.jar" 
 					errTitle="Error running CommandBox"
 					supportURL="${commandbox.supportURL}"
-					chdir="."
+					chdir="%OLDPWD%"
 					icon="${src.dir}/resources/box.ico"
 					stayAlive="true">
-					<jre path="./jre/" minVersion="1.6.0">
-						<opt>-Duser.dir="%OLDPWD%"</opt>
-					</jre>
+					<jre path="./jre/" minVersion="1.6.0" />
 					<versionInfo fileVersion="${commandbox.version}.0"
 								 txtFileVersion="${commandbox.version}.${build.number}"
 								 fileDescription="${commandbox.description}"
