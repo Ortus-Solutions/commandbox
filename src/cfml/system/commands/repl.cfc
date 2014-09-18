@@ -69,20 +69,35 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 				// evaluate it
 				try{
 
+					var cfmlWithoutScript = reReplaceNoCase( cfml, ";", "", "once");
+
 					// script or not?
 					if( arguments.script ){
 						cfml = "<cfscript>" & cfml & "</cfscript>";
 					}
+					
 					// write it out
 					fileWrite( tmpFileAbsolute, cfml );
+					
 					// eval it
-					results = executor.run( tmpFileRelative );
-					// print results
-					if( !isNull( results ) ){
-						print.redLine( results ).toConsole();
-					} else {
+					results = trim( executor.run( tmpFileRelative ) );
+
+					// eval null first
+					if( isNull( results ) ){
 						print.boldRedLine( "Null results received!" );
 					}
+					// eval no content
+					else if( !len( results ) ) {
+						try {
+							results = "=> " & evaluate( cfmlWithoutScript );
+						} catch (any e) {
+							systemoutput( e.message & e.detail );
+							// Just move on if there was an error
+						}
+					} 
+					
+					//Print content to show.
+					print.redLine( results ).toConsole();
 					// loop it
 				} catch( any e ){
 					error( '#e.message##CR##e.detail#' );
