@@ -222,7 +222,9 @@ External Dependencies:
 					chdir="."
 					icon="${src.dir}/resources/box.ico"
 					stayAlive="true">
-					<jre path="./jre/" minVersion="1.6.0" />
+					<jre path="./jre/" minVersion="1.6.0">
+						<opt>-Duser.dir="%OLDPWD%"</opt>
+					</jre>
 					<versionInfo fileVersion="${commandbox.version}.0"
 								 txtFileVersion="${commandbox.version}.${build.number}"
 								 fileDescription="${commandbox.description}"
