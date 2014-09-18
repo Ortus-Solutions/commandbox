@@ -57,6 +57,7 @@ component accessors="true" singleton {
 	* @production.hint When calling this command with no slug to install all dependencies, set this to true to ignore devDependencies.
 	* @currentWorkingDirectory.hint Root of the application (used for finding box.json)
 	* @verbose.hint If set, it will produce much more verbose information about the package installation
+	* @force.hint When set to true, it will force dependencies to be installed whether they already exist or not
 	**/
 	function installPackage(
 			required string ID,
@@ -334,18 +335,8 @@ component accessors="true" singleton {
 	
 		// If no package ID was specified, just get the dependencies for the current directory
 		} else {
-			
-			// If there is a box.json...
-			if( isPackage( arguments.currentWorkingDirectory ) ) {
-				// read it...
-				var boxJSON = readPackageDescriptor( arguments.currentWorkingDirectory );
-			}
-			
-		}
-
-		if ( !structKeyExists(variables, "boxJSON") ) {
-			consoleLogger.warn("Ouch! We can't find your box.json file. Try running box init to create a new box.json file.");
-			return;
+			// read it...
+			var boxJSON = readPackageDescriptor( arguments.currentWorkingDirectory );
 		}
 
 		// and grab all the dependencies
