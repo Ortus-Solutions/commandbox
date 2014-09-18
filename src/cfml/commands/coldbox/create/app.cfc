@@ -9,6 +9,12 @@
 *  - AdvancedScript (default)
 *  - Simple
 *  - SuperSimple
+*  .
+*  These templates are compatible with the bleeding edge version of ColdBox
+*  - AdvancedBE
+*  - AdvancedScriptBE
+*  - SimpleBE
+*  - SuperSimpleBE
 * .
 * {code:bash}
 * coldbox create app myApp
@@ -19,11 +25,17 @@
 * coldbox create app myApp --installColdBox
 * {code}
 * .
+* Use the "installColdBoxBE" parameter to install the bleeding edge version of ColdBox from ForgeBox.
+* Make sure you also install a bleeding edge skeleton.
+* {code:bash}
+* coldbox create app myApp AdvancedScriptBE --installColdBoxBE
+* {code}
+* .
 * Use the "installTestBox" parameter to install the latest stable version of TestBox from ForgeBox
 * {code:bash}
 * coldbox create app myApp --installColdBox --installTestBox
 * {code}
-* .
+* 
 **/
 component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
 	
@@ -47,7 +59,8 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 	
 	/**
 	 * @name.hint The name of the app you want to create
-	 * @skeleton.hint The name of the app skeleton to generate 
+	 * @skeleton.hint The name of the app skeleton to generate
+	 * @skeleton.options Advanced,AdvancedScript,Simple,SuperSimple,AdvancedBE,AdvancedScriptBE,SimpleBE,SuperSimpleBE
 	 * @directory.hint The directory to create the app in and creates the directory if it does not exist.  Defaults to your current working directory.
 	 * @init.hint "init" the directory as a package if it isn't already
 	 * @installColdBox.hint Install the latest stable version of ColdBox from ForgeBox
