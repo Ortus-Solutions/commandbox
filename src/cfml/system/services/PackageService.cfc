@@ -253,7 +253,7 @@ component accessors="true" singleton {
 			if( artifactDescriptor.createPackageDirectory ) {
 				installDirectory &= '/#packageDirectory#';
 			}
-
+			
 			// Check to see if package has already been installed. Skip unless forced.
 			if ( directoryExists( installDirectory ) && !arguments.force ){
 				// cleanup tmp
@@ -261,11 +261,12 @@ component accessors="true" singleton {
 				consoleLogger.warn("The package #packageName# is already installed at #installDirectory#. Skipping installation. Use --force option to force install.");
 				return;
 			}
-
+			
 			// Create installation directory if neccesary
 			if( !directoryExists( installDirectory ) ) {
 				directoryCreate( installDirectory );
 			}
+
 
 			var results = {
 				copied = [],
