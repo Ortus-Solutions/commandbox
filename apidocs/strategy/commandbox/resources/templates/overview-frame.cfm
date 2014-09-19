@@ -60,7 +60,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-	<title>	overview </title>
+	<title>	#arguments.projectTitle# overview </title>
 	<meta name="keywords" content="overview">
 	<cfmodule template="inc/common.html" rootPath="">
 	<link rel="stylesheet" href="jstree/themes/default/style.min.css" />

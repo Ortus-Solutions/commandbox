@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 	<link href='https://fonts.googleapis.com/css?family=Ubuntu:400,300,300italic,400italic,700,700italic|Ubuntu+Mono' rel='stylesheet' type='text/css' />
-	<title>	Generated Documentation (#arguments.projecttitle#) </title>
+	<title>	#arguments.projecttitle# Command API Documentation </title>
 	<script type="text/javascript">
 	    targetPage = "" + window.location.search;
 	    if (targetPage != "" && targetPage != "undefined")

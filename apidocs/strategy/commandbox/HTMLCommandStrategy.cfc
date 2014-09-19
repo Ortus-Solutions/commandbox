@@ -66,15 +66,16 @@
 		<cfscript>
 			currentDir = getOutputDir() & "/" & replace(package, ".", "/", "all");
 			ensureDirectory(currentDir);
-			qPackage = getMetaSubquery(arguments.qMetaData, "package = '#package#'", "name asc");
+			qPackage = getMetaSubquery(arguments.qMetaData, "package = '#package#' and name != 'help'", "name asc");
 			qClasses = getMetaSubquery(qPackage, "type='component'", "name asc");
-
+			
 			writeTemplate(path=currentDir & "/package-summary.html",
 						template="#instance.static.TEMPLATE_PATH#/package-summary.cfm",
 						projectTitle = getProjectTitle(),
 						package = package,
 						namespace = namespace,
-						qClasses = qClasses);
+						qClasses = qClasses,
+						qMetadata = qMetadata);
 
 			buildClassPages(qPackage,
 							arguments.qMetadata

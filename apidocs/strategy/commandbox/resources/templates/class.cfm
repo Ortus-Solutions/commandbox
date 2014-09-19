@@ -3,7 +3,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-	<title>#arguments.command#</title>
+	<title>#arguments.projectTitle# #arguments.command#</title>
 	<meta name="keywords" content="#arguments.package# #arguments.command# CommandBox Command CLI">
 	<!-- common assets -->
 	<cfmodule template="inc/common.html" rootPath="#instance.class.root#">

@@ -4,7 +4,7 @@
 	docName = "CommandBox-CommandDocs";
 
 	colddoc 	= new ColdDoc();
-	strategy 	= new colddoc.strategy.commandbox.HTMLCommandStrategy( url.path, "CommandBox v#url.version#" );
+	strategy 	= new colddoc.strategy.commandbox.HTMLCommandStrategy( url.path, "CommandBox #url.version#" );
 	colddoc.setStrategy( strategy );
 	source = [
 		{ inputDir=expandPath( "/commandbox/commands" ), inputMapping="commandbox.commands" },
