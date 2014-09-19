@@ -5,12 +5,13 @@
 *  You can choose what app skeleton to use as well as override the directory it's created in.
 *  The built-in app skeletons are located in the .CommandBox/cfml/skeletons/ directory and include:
 *  .
+*  These templates are compatible with the current stable version ColdBox (3.x)
 *  - Advanced
 *  - AdvancedScript (default)
 *  - Simple
 *  - SuperSimple
 *  .
-*  These templates are compatible with the bleeding edge version of ColdBox
+*  These templates are compatible with the bleeding edge version of ColdBox (4.x)
 *  - AdvancedBE
 *  - AdvancedScriptBE
 *  - SimpleBE
@@ -26,9 +27,10 @@
 * {code}
 * .
 * Use the "installColdBoxBE" parameter to install the bleeding edge version of ColdBox from ForgeBox.
-* Make sure you also install a bleeding edge skeleton.
+* When you use this flag, the BE equivilant skeleton will automatically be used for you.  
+* The example below would install the AdvancedScriptBE skeleton instead of the default AdvancedScript skeleton.
 * {code:bash}
-* coldbox create app myApp AdvancedScriptBE --installColdBoxBE
+* coldbox create app myApp --installColdBoxBE
 * {code}
 * .
 * Use the "installTestBox" parameter to install the latest stable version of TestBox from ForgeBox
@@ -79,6 +81,13 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 					
 		// This will make the directory canonical and absolute
 		arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
+		
+		// BE override. Since noone reads the docs, automatically switch to a BE skeleton if installing ColdBoxBE
+		if( arguments.installColdBoxBE && right( arguments.skeleton, 2 ) != 'BE' ) {
+			// Swith to the BE skeleton
+			arguments.skeleton &= 'BE';
+		}
+		
 		// get the right skeleton
 		var skeletonZip = skeletonLocation & arguments.skeleton & '.zip';
 		
@@ -86,6 +95,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 		if( !directoryExists( arguments.directory ) ) {
 			directoryCreate( arguments.directory );
 		}
+		
 		// Validate skeleton
 		if( !fileExists( skeletonZip ) ) {
 			var options = directoryList( path=skeletonLocation, listInfo='name', sort="name" );
