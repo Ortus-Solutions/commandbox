@@ -1,6 +1,6 @@
 /**
- * View values set in box.json for this package.  Command must be executed from the root
- * directory of the package where box.json lives.
+ * View proprties set in box.json for this package.  Command must be executed from the root
+ * directory of the package where box.json lives.  Call with no parameters to view the entire box.json
  * .
  * Outputs package name
  * {code:bash}
@@ -28,13 +28,14 @@
  **/
 component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
 	
-	property name="packageService" inject="PackageService"; 
+	property name="packageService" inject="PackageService";
+	property name="formatterUtil" inject="Formatter"; 
 	
 	/**
 	 * @property.hint The name of the property to show.  Can nested to get "deep" properties
 	 * @property.optionsUDF completeProperty
 	 **/
-	function run( required string property ) {
+	function run( string property ) {
 		
 		// This will make each directory canonical and absolute		
 		var directory = getCWD();
@@ -68,7 +69,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 		if( isSimpleValue( propertyValue ) ) {
 			print.line( propertyValue );
 		} else {
-			print.line( serializeJSON( propertyValue ) );			
+			print.line( formatterUtil.formatJson( propertyValue ) );			
 		}
 	}
 
