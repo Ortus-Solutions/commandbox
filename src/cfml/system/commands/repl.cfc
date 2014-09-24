@@ -24,6 +24,9 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 	property name="REPLScriptHistoryFile"	inject="REPLScriptHistoryFile@java";
 	property name="REPLTagHistoryFile"	inject="REPLTagHistoryFile@java";
 
+	// repl parser
+	property name="REPLParser"		inject="REPLParser";
+
 	/**
 	* Constructor
 	*/
@@ -55,8 +58,31 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 			
 		// Loop until they choose to quit
 		while( !quit ){
-			// ask repl
-			var cfml = ask( ( arguments.script ? "CFSCRIPT" : "CFML" ) &  "-REPL: " );
+
+			// start new command
+			REPLParser.startCommand();
+
+			do {
+				// ask repl
+				if ( arrayLen( REPLParser.getCommandLines() ) == 0 ) {
+					var command = ask( ( arguments.script ? "CFSCRIPT" : "CFML" ) &  "-REPL: " );
+				} else {
+					var command = ask( "..." );
+
+					// allow ability to break out of adding additional lines
+					if ( trim(command) == "exit" ) {
+						break;
+					}
+				}
+
+				// add command to our parser
+				REPLParser.addCommandLine( command );
+
+			} while ( !REPLParser.isCommandComplete() );
+
+			// REPL command is complete. get entire command as string
+			cfml = REPLParser.getCommandAsString();
+
 			// quitting
 			if( cfml == "quit" or cfml == "q" ){
 				quit = true;
@@ -67,37 +93,35 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 				var tmpFileRelative = variables.tmpDirRelative & "/" & tmpFile;
 				
 				// evaluate it
-				try{
+				try {
 
-					var cfmlWithoutScript = reReplaceNoCase( cfml, ";", "", "once");
+					// generate cfml command to write to file
+					var CFMLFileContents = ( arguments.script ? "<cfscript>" & cfml & "</cfscript>" : cfml );
 
-					// script or not?
-					if( arguments.script ){
-						cfml = "<cfscript>" & cfml & "</cfscript>";
+					// write out our cfml command
+					fileWrite( tmpFileAbsolute, CFMLFileContents );
+
+					// execute our command using temp file
+					var results = executor.run( tmpFileRelative );
+
+					// If we have no result contents, try evaluating and serializing
+					if ( trim( len( results ) ) == 0 ) {
+
+						try {
+							results = REPLParser.evaluateCommand();
+						} catch (any var e) {
+							// Ignore errors here
+						}
 					}
-					
-					// write it out
-					fileWrite( tmpFileAbsolute, cfml );
-					
-					// eval it
-					results = trim( executor.run( tmpFileRelative ) );
 
-					// eval null first
-					if( isNull( results ) ){
+					results = "=> " & results;
+
+					// print results
+					if( !isNull( results ) ){
+						print.redLine( results ).toConsole();
+					} else {
 						print.boldRedLine( "Null results received!" );
 					}
-					// eval no content
-					else if( !len( results ) ) {
-						try {
-							results = "=> " & evaluate( cfmlWithoutScript );
-						} catch (any e) {
-							systemoutput( e.message & e.detail );
-							// Just move on if there was an error
-						}
-					} 
-					
-					//Print content to show.
-					print.redLine( results ).toConsole();
 					// loop it
 				} catch( any e ){
 					error( '#e.message##CR##e.detail#' );
@@ -116,6 +140,27 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 		shell.getReader().setHistory( commandHistoryFile );
 		// exit
 		print.boldCyanLine( "Bye!" );
+	}
+
+
+	/**
+	* Returns variable type if it can be determined
+	**/
+	private function determineVariableType( any contents ) {
+
+		var variableType = "";
+
+		try {
+			variableType = getMetaData( evaluate( arguments.contents ) ).getName();
+		} catch ( any var e ) {
+			try {
+				variableType = getMetaData( evaluate( arguments.contents ) ).name;
+			} catch ( any var e ) {
+				// Keep going
+			}
+		}
+
+		return variableType;
 	}
 
 }
