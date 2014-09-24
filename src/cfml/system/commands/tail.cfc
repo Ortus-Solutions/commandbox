@@ -16,7 +16,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 
 	/**
 	 * @path.hint file or directory to tail
-	 * @lines.hint number of lines to display. Default is 15
+	 * @lines.hint number of lines to display.
 	 **/
 	function run( required path, numeric lines = 15 ){
 
@@ -26,33 +26,42 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 			return error( "The file does not exist: #arguments.path#" );
 		}
 
-		var lineCounter = 0;
-		var buffer = [];
-		var file = createObject( "java", "java.io.File" ).init( filePath );
-		var randomAccessFile = createObject( "java", "java.io.RandomAccessFile" ).init( file, "r" );
-		var position = file.length();
-
-		// move to the end of the file
-		randomAccessFile.seek( position );
-
-		while( true ){
-
-			// stop looping if we have met our line limit or if end of file
-			if ( position < 0 || lineCounter == arguments.lines ) {
-				break;
+		try {
+			
+			var lineCounter = 0;
+			var buffer = [];
+			var file = createObject( "java", "java.io.File" ).init( filePath );
+			var randomAccessFile = createObject( "java", "java.io.RandomAccessFile" ).init( file, "r" );
+			var position = file.length();
+	
+			// move to the end of the file
+			randomAccessFile.seek( position );
+	
+			while( true ){
+	
+				// stop looping if we have met our line limit or if end of file
+				if ( position < 0 || lineCounter == arguments.lines ) {
+					break;
+				}
+	
+				var char = randomAccessFile.read();
+				if ( char == 10 ) lineCounter += 1;
+				if ( char != -1 ) buffer.append( chr( char ) );
+	
+				// move to the preceding character
+				randomAccessFile.seek( position-- );
+	
 			}
-
-			var char = randomAccessFile.read();
-			if ( char == 10 ) lineCounter += 1;
-			if ( char != -1 ) buffer.append( chr( char ) );
-
-			// move to the preceding character
-			randomAccessFile.seek( position-- );
-
+	
+			// print our file to console 
+			print.line( buffer.reverse().toList( "" ) );
+			
 		}
-
-		// print our file to console 
-		print.line( buffer.reverse().toList( "" ) ).toConsole();
+		finally {
+			if( isDefined( 'randomAccessFile' ) ) {
+				randomAccessFile.close();
+			}
+		}
 	}
 	
 }
