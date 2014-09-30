@@ -155,7 +155,59 @@ component accessors="true" singleton {
 				throw( 'Cannot install file as it has a file size of 0.', thisArtifactPath );
 			}
 			
-			var artifactDescriptor = artifactService.getArtifactDescriptor( packageName, version );
+			// Normalize slashes
+			var tmpPath = fileSystemUtil.resolvePath( "#variables.tempDir#/#packageName#" );
+			// Unzip to temp directory
+			consoleLogger.info( "Uncompressing...");
+			// TODO, this should eventaully be part of the zip file adapter
+			zip action="unzip" file="#thisArtifactPath#" destination="#tmpPath#" overwrite="true";
+				
+			/******************************************************************************************************************/
+			// Old Modules Build Check: If the zip file has a directory named after the package, that's our actual package root.
+			// Remove once build process in ForgeBox and ContentBox are updated
+			/******************************************************************************************************************/
+			var innerTmpPath = '#tmpPath#/#packageName#';
+			if( directoryExists( innerTmpPath ) ) {
+				// Move the box.json if it exists into the inner folder
+				var fromBoxJSONPath = '#tmpPath#/box.json';
+				var toBoxJSONPath = '#innerTmpPath#/box.json'; 
+				if( fileExists( fromBoxJSONPath ) ) {
+					fileMove( fromBoxJSONPath, toBoxJSONPath );
+				}
+				// Repoint ourselves to the inner folder
+				tmpPath = innerTmpPath;
+			}
+			/******************************************************************************************************************/
+
+			
+			/******************************************************************************************************************/
+			// If the root of the current package doesn't have a box.json, check if there is a subdirectory that contains
+			// a box.json.  This would be the NPM-style standard where a zip contains a package in a sub folder.
+			/******************************************************************************************************************/
+			var JSONPath = '#tmpPath#/box.json';
+			if( !fileExists( JSONPath ) ) {
+				// Check for a packge in a sub folder
+				var list = directoryList( absolute_path=tmpPath, listInfo='query' );
+				// Look at each path inside
+				for( var row in list ) {
+					// Specifically directories...
+					if( row.type == 'dir' ) {
+						var thisDir = listLast( row.name, '/\' );
+						var subPath = '#tmpPath#/#thisDir#';
+						var subJSONPath = '#subPath#/box.json';
+						// If one of them has a box.json in it...
+						if( fileExists( subJSONPath ) ) {
+							// Repoint ourselves to the inner folder
+							tmpPath = subPath;
+							break;
+						}		
+					}
+				}
+			}
+			/******************************************************************************************************************/
+			
+			// Now that we have resolved the directory where our packge lives, read the box.json out of it.
+			var artifactDescriptor = readPackageDescriptor( tmpPath );
 			var ignorePatterns = ( isArray( artifactDescriptor.ignore ) ? artifactDescriptor.ignore : [] );
 			
 			// Use Forgebox type returned by API, if not exists, use box.json type if it exists
@@ -217,13 +269,6 @@ component accessors="true" singleton {
 			if( !len( installDirectory ) ) {
 				installDirectory = arguments.currentWorkingDirectory;
 			}
-
-			// Normalize slashes
-			var tmpPath = fileSystemUtil.resolvePath( "#variables.tempDir#/#packageName#" );
-			// Unzip to temp directory
-			consoleLogger.info( "Uncompressing...");
-			// TODO, this should eventaully be part of the zip file adapter
-			zip action="unzip" file="#thisArtifactPath#" destination="#tmpPath#" overwrite="true";
 			
 			// Default directory to package name
 			var packageDirectory = packageName;
@@ -231,24 +276,7 @@ component accessors="true" singleton {
 			if( len( artifactDescriptor.packageDirectory ) ) {
 				packageDirectory = artifactDescriptor.packageDirectory;					
 			}
-			
-			/******************************************************************************************************************/
-			// Old Modules Build Check: If the zip file has a directory named after the package, that's our actual package root.
-			// Remove once build process in ForgeBox and ContentBox are updated
-			/******************************************************************************************************************/
-			var innerTmpPath = '#tmpPath#/#packageDirectory#';
-			if( directoryExists( innerTmpPath ) ) {
-				// Move the box.json if it exists into the inner folder
-				fromBoxJSONPath = '#tmpPath#/box.json';
-				toBoxJSONPath = '#innerTmpPath#/box.json'; 
-				if( fileExists( fromBoxJSONPath ) ) {
-					fileMove( fromBoxJSONPath, toBoxJSONPath );
-				}
-				// Repoint ourselves to the inner folder
-				tmpPath = innerTmpPath;
-			}
-			/******************************************************************************************************************/
-	
+		
 			// Some packages may just want to be dumped in their destination without being contained in a subfolder
 			if( artifactDescriptor.createPackageDirectory ) {
 				installDirectory &= '/#packageDirectory#';
@@ -358,7 +386,7 @@ component accessors="true" singleton {
 			// TODO: Logic here to determine if a satisfying version of this package
 			//       is already installed here or at a higher level.  if so, skip it.
 			
-			params = {
+			var params = {
 				ID = dependency,
 				// Only save the first level
 				save = false,
@@ -431,19 +459,20 @@ component accessors="true" singleton {
 		}
 				
 		// See if the package exists here
-		if( !directoryExists( uninstallDirectory ) ) {
-			consoleLogger.error( 'Package [#uninstallDirectory#] not found.' );
-			return;
+		if( directoryExists( uninstallDirectory ) ) {
+			
+			// Get the dependencies of the package we're about to uninstalled
+			var boxJSON = readPackageDescriptor( uninstallDirectory );
+			// and grab all the dependencies
+			var dependencies = boxJSON.dependencies;
+			// Add in the devDependencies
+			dependencies.append( boxJSON.devDependencies );
+						
+		} else {
+			// If the package isn't on disk, no dependencies
+			var dependencies = {};
 		}
 
-		// Get the dependencies of the package we're about to uninstalled
-		var boxJSON = readPackageDescriptor( uninstallDirectory );
-
-		// and grab all the dependencies
-		var dependencies = boxJSON.dependencies;
-		
-		// Add in the devDependencies
-		dependencies.append( boxJSON.devDependencies );
 
 		if( dependencies.count() ) {
 			consoleLogger.debug( "Uninstalling dependencies first..." );
@@ -452,7 +481,7 @@ component accessors="true" singleton {
 		// Loop over this packages dependencies
 		for( var dependency in dependencies ) {
 			
-			params = {
+			var params = {
 				ID = dependency,
 				// Only save the first level
 				save = false,
@@ -472,7 +501,12 @@ component accessors="true" singleton {
 		}
 				
 		// uninstall the package
-		directoryDelete( uninstallDirectory, true );
+		if( directoryExists( uninstallDirectory ) ) {
+			directoryDelete( uninstallDirectory, true );
+		} else {
+			consoleLogger.error( 'Package [#uninstallDirectory#] not found.' );			
+		}
+
 		
 		// Should we save this as a dependancy
 		// and is the current working directory a package?
