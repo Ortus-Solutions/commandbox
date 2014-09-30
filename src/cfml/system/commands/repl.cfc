@@ -118,7 +118,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 
 					// print results
 					if( !isNull( results ) ){
-						print.redLine( results ).toConsole();
+						print.boldRedLine( results ).toConsole();
 					} else {
 						print.boldRedLine( "Null results received!" );
 					}
