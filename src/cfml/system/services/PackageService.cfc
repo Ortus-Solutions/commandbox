@@ -18,6 +18,8 @@ component accessors="true" singleton {
 	property name="fileSystemUtil"		inject="FileSystem";
 	property name="pathPatternMatcher" 	inject="pathPatternMatcher";
 	property name='shell' 				inject='Shell';
+	property name="logger"				inject="logbox:logger:{this}";
+	
 	// This should be removed once the install command starts resolving registries automatically
 	property name="forgeBox" 			inject="ForgeBox";
 
@@ -161,23 +163,6 @@ component accessors="true" singleton {
 			consoleLogger.info( "Uncompressing...");
 			// TODO, this should eventaully be part of the zip file adapter
 			zip action="unzip" file="#thisArtifactPath#" destination="#tmpPath#" overwrite="true";
-				
-			/******************************************************************************************************************/
-			// Old Modules Build Check: If the zip file has a directory named after the package, that's our actual package root.
-			// Remove once build process in ForgeBox and ContentBox are updated
-			/******************************************************************************************************************/
-			var innerTmpPath = '#tmpPath#/#packageName#';
-			if( directoryExists( innerTmpPath ) ) {
-				// Move the box.json if it exists into the inner folder
-				var fromBoxJSONPath = '#tmpPath#/box.json';
-				var toBoxJSONPath = '#innerTmpPath#/box.json'; 
-				if( fileExists( fromBoxJSONPath ) ) {
-					fileMove( fromBoxJSONPath, toBoxJSONPath );
-				}
-				// Repoint ourselves to the inner folder
-				tmpPath = innerTmpPath;
-			}
-			/******************************************************************************************************************/
 
 			
 			/******************************************************************************************************************/
@@ -203,6 +188,33 @@ component accessors="true" singleton {
 						}		
 					}
 				}
+			}
+			/******************************************************************************************************************/
+			
+			
+				
+			/******************************************************************************************************************/
+			// Old Modules Build Check: If the zip file has a directory named after the package, that's our actual package root.
+			// Remove once build process in ForgeBox and ContentBox are updated
+			/******************************************************************************************************************/
+			// If the root of the zip has a box.json, read the package name out first.
+			var tmpName = packageName;
+			if( isPackage( tmpPath ) ) {
+				var packageDirectory = readPackageDescriptor( tmpPath ).packageDirectory;
+				if( len( packageDirectory ) ) {
+					tmpName = packageDirectory;
+				}
+			}			
+			var innerTmpPath = '#tmpPath#/#tmpName#';
+			if( directoryExists( innerTmpPath ) ) {
+				// Move the box.json if it exists into the inner folder
+				var fromBoxJSONPath = '#tmpPath#/box.json';
+				var toBoxJSONPath = '#innerTmpPath#/box.json'; 
+				if( fileExists( fromBoxJSONPath ) ) {
+					fileMove( fromBoxJSONPath, toBoxJSONPath );
+				}
+				// Repoint ourselves to the inner folder
+				tmpPath = innerTmpPath;
 			}
 			/******************************************************************************************************************/
 			
@@ -502,7 +514,16 @@ component accessors="true" singleton {
 				
 		// uninstall the package
 		if( directoryExists( uninstallDirectory ) ) {
-			directoryDelete( uninstallDirectory, true );
+			
+			// Catch this to gracefully handle where the OS or another program 
+			// has the folder locked.
+			try {
+				directoryDelete( uninstallDirectory, true );				
+			} catch( any e ) {
+				consoleLogger.error( '#e.message##CR#The folder is possibly locked by another program.' );
+				logger.error( '#e.message# #e.detail#' , e.stackTrace );
+			}
+			
 		} else {
 			consoleLogger.error( 'Package [#uninstallDirectory#] not found.' );			
 		}
