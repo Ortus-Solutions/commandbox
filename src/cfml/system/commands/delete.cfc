@@ -40,9 +40,15 @@ component extends="commandbox.system.BaseCommand" aliases="rm,del" excludeFromHe
 					if( directoryList( arguments.path ).len() && !arguments.recurse ) {
 						return error( 'Directory [#arguments.path#] is not empty! Use the "recurse" parameter to override' );
 					}
-					
-					directoryDelete( arguments.path, recurse );
-					print.greenLine( "Deleted #arguments.path#" );
+					// Catch this to gracefully handle where the OS or another program 
+					// has the folder locked.
+					try {
+						directoryDelete( arguments.path, recurse );
+						print.greenLine( "Deleted #arguments.path#" );				
+					} catch( any e ) {
+						error( '#e.message##CR#The folder is possibly locked by another program.'  );
+						logger.error( '#e.message# #e.detail#' , e.stackTrace );
+					}
 				} else {
 					print.redLine( "Cancelled!" );					
 				}
@@ -53,8 +59,15 @@ component extends="commandbox.system.BaseCommand" aliases="rm,del" excludeFromHe
 						
 			if( arguments.force || confirm( "Delete #path#? [y/n]" ) ) {
 				
-				fileDelete( arguments.path );
-				print.greenLine( "Deleted #arguments.path#" );
+					// Catch this to gracefully handle where the OS or another program 
+					// has the file locked.
+					try {
+						fileDelete( arguments.path );
+						print.greenLine( "Deleted #arguments.path#" );				
+					} catch( any e ) {
+						error( '#e.message##CR#The file is possibly locked by another program.'  );
+						logger.error( '#e.message# #e.detail#' , e.stackTrace );
+					}
 			} else {
 				print.redLine( "Cancelled!" );					
 			}
