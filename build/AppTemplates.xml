@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<project name="build.appTemplates" default="copy" basedir="../">
+	<description>App Template Copies From ColdBox Core</description>
+	
+	<!-- Properties -->
+	<property name="target.dir" 		value="src/cfml/skeletons" />
+	<property name="src.dir" 			value="/Users/lmajano/Sites/cboxdev/core/coldbox/ApplicationTemplates" />
+		
+	<target name="copy">
+		
+		<zip basedir="${src.dir}/Advanced" 		 destfile="${target.dir}/AdvancedBE.zip" />
+		<zip basedir="${src.dir}/AdvancedScript" destfile="${target.dir}/AdvancedScriptBE.zip" />
+		<zip basedir="${src.dir}/Simple" 		 destfile="${target.dir}/SimpleBE.zip" />
+		<zip basedir="${src.dir}/SuperSimple" 	 destfile="${target.dir}/SuperSimpleBE.zip" />
+		
+	</target>
+	
+</project>

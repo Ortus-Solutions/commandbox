@@ -77,7 +77,7 @@ External Dependencies:
 		<property file="build.number"/>
 
 		<!-- Create version file -->
-		<echo file="${build.dir}/.version" append="false">${commandbox.version}.${build.number}</echo>
+		<echo file="${build.dir}/.version" append="false">${commandbox.version}+${build.number}</echo>
 		
 		<!-- If stg, change perms and owners -->
 		<antcall target="update.permissions" />
