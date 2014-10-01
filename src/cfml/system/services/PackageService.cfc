@@ -288,7 +288,7 @@ component accessors="true" singleton {
 			if( len( artifactDescriptor.packageDirectory ) ) {
 				packageDirectory = artifactDescriptor.packageDirectory;					
 			}
-		
+			
 			// Some packages may just want to be dumped in their destination without being contained in a subfolder
 			if( artifactDescriptor.createPackageDirectory ) {
 				installDirectory &= '/#packageDirectory#';
@@ -301,8 +301,13 @@ component accessors="true" singleton {
 					consoleLogger.warn("The package #packageName# is already installed at #installDirectory#. Skipping installation. Use --force option to force install.");
 					return;
 				}
+			// If we're dumping in the root and the install dir is alreay a package...
+			} else if( isPackage( installDirectory ) ) {
+				// ... then ignore box.json or it will overwrite the existing one
+				ignorePatterns.append( '/box.json' );
 			}
 			
+			consoleLogger.debug( serialize(ignorePatterns) );
 			
 			// Create installation directory if neccesary
 			if( !directoryExists( installDirectory ) ) {
@@ -315,11 +320,16 @@ component accessors="true" singleton {
 				ignored = []
 			};
 
+
+			// This will normalize the slashes to match
+			tmpPath = fileSystemUtil.resolvePath( tmpPath );
+				
 			// Copy with ignores from descriptor
 			// TODO, this should eventaully be part of the folder adapter
 			directoryCopy( tmpPath, installDirectory, true, function( path ){
 				// This will normalize the slashes to match
 				arguments.path = fileSystemUtil.resolvePath( arguments.path );
+				// Directories need to end in a trailing slash
 				if( directoryExists( arguments.path ) ) {
 					arguments.path &= server.separator.file;
 				}
