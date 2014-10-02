@@ -46,7 +46,7 @@ component singleton {
 			var kiloBytesPerSecondRunningAverage = [];
 			var lastKiloBytesPerSeconde = 0;
 			
-			while ( ( var count = inputStream.read( data ) ) != -1 ) {
+			while ( ( var count = inputStream.read( data ) ) != -1 ) {		
 				total += count;
 				currentPercentage = int( ( total * 100 ) / lenghtOfFile );
 				outputStream.write( data, 0, count );

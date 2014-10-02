@@ -286,7 +286,7 @@ component accessors="true" singleton {
 			var packageDirectory = packageName;
 			// Override package directory in descriptor?
 			if( len( artifactDescriptor.packageDirectory ) ) {
-				packageDirectory = artifactDescriptor.packageDirectory;					
+				packageDirectory = artifactDescriptor.packageDirectory;
 			}
 			
 			// Some packages may just want to be dumped in their destination without being contained in a subfolder
@@ -306,9 +306,7 @@ component accessors="true" singleton {
 				// ... then ignore box.json or it will overwrite the existing one
 				ignorePatterns.append( '/box.json' );
 			}
-			
-			consoleLogger.debug( serialize(ignorePatterns) );
-			
+						
 			// Create installation directory if neccesary
 			if( !directoryExists( installDirectory ) ) {
 				directoryCreate( installDirectory );
