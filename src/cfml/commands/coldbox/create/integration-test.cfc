@@ -1,6 +1,6 @@
 /**
 * Create a new integration spec in an existing ColdBox-enabled application.  Run this command in the root
-* of your app for it to find the correct folder.  By default, your new test spec will be created in /tests/specs/integration but you can 
+* of your app for it to find the correct folder.  By default, your new test spec will be created in /tests/specs/integration but you can
 * override that with the directory param as well.  You can also choose your testing style: BDD or xUnit.
 * .
 * {code:bash}
@@ -24,15 +24,12 @@
 * {code}
 **/
 component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
-	
+
 	/**
 	* Constructor
 	*/
 	function init(){
 		super.init();
-		// valid persistences
-		variables.validStyles = 'BDD,xUnit';
-
 		return this;
 	}
 
@@ -46,7 +43,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 	* @script.hint Generate content in script markup or tag markup
 	* @directory.hint The base directory to create your test spec in and creates the directory if it does not exist. Defaults to 'tests/specs/integration'
 	**/
-	function run( 
+	function run(
 		required handler,
 		actions="",
 		appMapping="/",
@@ -56,17 +53,13 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 		boolean script=true,
 		directory="tests/specs/integration"
 	){
-		
+
 		// This will make each directory canonical and absolute
 		arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
 
 		// Validate directory
 		if( !directoryExists( arguments.directory ) ) {
 			directoryCreate( arguments.directory );
-		}
-		// Validate persistence
-		if( !listFindNoCase( variables.validStyles, arguments.style ) ) {
-			error( "The persistence value [#arguments.validStyles#] is invalid. Valid values are [#listChangeDelims( variables.validStyles, ', ', ',' )#]" );
 		}
 		// Exit the command if something above failed
 		if( hasError() ) {
@@ -128,7 +121,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 		print.greenLine( 'Created #integrationTestPath#' );
 
 		// open file
-		if( arguments.open ){ runCommand( "edit #integrationTestPath#" ); }			
+		if( arguments.open ){ runCommand( "edit #integrationTestPath#" ); }
 	}
 
 }
