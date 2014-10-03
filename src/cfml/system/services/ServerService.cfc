@@ -41,17 +41,23 @@ component accessors="true" singleton{
 	* @formatter.inject Formatter
 	* @fileSystem.inject FileSystem
 	* @homeDir.inject HomeDir@constants
+	* @consoleLogger.inject logbox:logger:console
+	* @logger.inject logbox:logger:{this}
 	*/
 	function init(
 		required shell,
 		required formatter,
 		required fileSystem,
-		required homeDir
+		required homeDir,
+		required consoleLogger,
+		required logger		
 	){
 		// DI
 		variables.shell 			= arguments.shell;
 		variables.formatterUtil 	= arguments.formatter;
 		variables.fileSystemUtil 	= arguments.fileSystem;
+		variables.consoleLogger 	= arguments.consoleLogger;
+		variables.logger 			= arguments.logger;
 
 		// java helpers
 		java = {
@@ -215,15 +221,29 @@ component accessors="true" singleton{
 			setServers( servers );
 			// try to delete server
 			if( directoryExists( serverDir ) ){
-				directoryDelete( serverdir, true );
+				// Catch this to gracefully handle where the OS or another program 
+				// has the folder locked.
+				try {
+					directoryDelete( serverdir, true );				
+				} catch( any e ) {
+					consoleLogger.error( '#e.message##chr(10)#Did you leave the server running? ' );
+					logger.error( '#e.message# #e.detail#' , e.stackTrace );
+				}
 			}
 			// return message
 			return "Poof! Wiped out server" & serverInfo.name;
 		} else {
 			var serverNames = getServerNames();
 			setServers( {} );
-			directoryDelete( variables.customServerDirectory, true );
-			directoryCreate( variables.customServerDirectory );
+				// Catch this to gracefully handle where the OS or another program 
+				// has the folder locked.
+				try {
+					directoryDelete( variables.customServerDirectory, true );
+					directoryCreate( variables.customServerDirectory );
+				} catch( any e ) {
+					consoleLogger.error( '#e.message##chr(10)#Did you leave a server running? ' );
+					logger.error( '#e.message# #e.detail#' , e.stackTrace );
+				}
 			return "Poof! All servers (#arrayToList( serverNames )#) have been wiped.";
 		}
 	}
