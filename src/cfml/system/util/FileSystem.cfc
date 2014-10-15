@@ -17,6 +17,7 @@ component accessors="true" singleton {
 	
 	// DI
 	property name="shell" inject="shell";
+	property name="logger" inject="logbox:logger:{this}";
 
 	function init() {
 		variables.os = createObject( "java", "java.lang.System" ).getProperty( "os.name" ).toLowerCase();
@@ -94,15 +95,20 @@ component accessors="true" singleton {
     	var target 		= getJavaFile( arguments.file );
 
     	// open using awt class, if it fails, we are in headless mode.
-    	if( desktop.isDesktopSupported() and target.isFile() ){
-    		desktop.getDesktop().edit( target );
-    		return true;
-    	} 
+    	try {
+	    	if( desktop.isDesktopSupported() and target.isFile() ){
+	    		desktop.getDesktop().edit( target );
+	    		return true;
+	    	} 	
+    	} catch( any e ) {
+    		// Silently log this and we'll try a different method below
+			logger.error( '#e.message# #e.detail#' , e.stackTrace );
+    	}
 
     	// if we get here, then we don't support desktop awt class, most likely in headless mode.
     	var runtime = createObject( "java", "java.lang.Runtime" ).getRuntime();
     	if( isWindows() and target.isFile() ){
-    		runtime.exec( [ "rundll32", "FileProtocolHandler,url.dll", target.getCanonicalPath() ] );
+    		runtime.exec( [ "rundll32", "url.dll,FileProtocolHandler", target.getCanonicalPath() ] );
 		} 
 		else if( isWindows() and target.isDirectory() ){
 			var processBuilder = createObject( "java", "java.lang.ProcessBuilder" )
