@@ -11,7 +11,7 @@ component extends="commandbox.system.BaseCommand" aliases="stop" excludeFromHelp
 
 	// DI
 	property name="serverService" inject="ServerService";
-	
+
 	/**
 	 * Stop a server instance
 	 *
@@ -20,8 +20,14 @@ component extends="commandbox.system.BaseCommand" aliases="stop" excludeFromHelp
 	 * @forget.hint if passed, this will also remove the directory information from disk
 	 **/
 	function run( String directory="", String name="", boolean forget=false ){
-		// Discover by shortname or webroot
-		var serverInfo = serverService.getServerInfoByDiscovery( arguments.directory, arguments.name );
+		// resolve path
+		arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
+
+		// Discover by shortname or webroot and get server info
+		var serverInfo = serverService.getServerInfoByDiscovery(
+			directory 	= arguments.directory,
+			name		= arguments.name
+		);
 
 		// Verify server info
 		if( structIsEmpty( serverInfo ) ){
@@ -30,6 +36,7 @@ component extends="commandbox.system.BaseCommand" aliases="stop" excludeFromHelp
 			return;
 		}
 
+		// Stop the server
 		var results = serverService.stop( serverInfo );
 		if( results.error ){
 			error( results.messages );
