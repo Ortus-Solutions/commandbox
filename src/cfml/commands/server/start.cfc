@@ -7,9 +7,10 @@
  **/
 component extends="commandbox.system.BaseCommand" aliases="start" excludeFromHelp=false {
 
-	property name="serverService" inject="ServerService";
-	property name="packageService" inject="packageService";
-	
+	// DI
+	property name="serverService" 	inject="ServerService";
+	property name="packageService" 	inject="packageService";
+
 	/**
 	 * @port.hint            port number
 	 * @openbrowser.hint     open a browser after starting
@@ -24,7 +25,7 @@ component extends="commandbox.system.BaseCommand" aliases="start" excludeFromHel
 	 * @trayIcon.hint        path to .png file for tray icon
 	 * @webXml.hint          path to web.xml file used to configure the Railo server
 	 **/
-	function run( 
+	function run(
 		Numeric port            = 0,
 		Boolean openbrowser     = true,
 		String  directory       = "",
@@ -42,9 +43,9 @@ component extends="commandbox.system.BaseCommand" aliases="start" excludeFromHel
 		var webroot = arguments.directory;
 		webroot = fileSystemUtil.resolvePath( webroot );
 		var name 	= arguments.name is "" ? listLast( webroot, "\/" ) : arguments.name;
-		
+
 		var boxJSON = packageService.readPackageDescriptor( webroot );
-		
+
 		// get server info record, create one if this is the first time.
 		var serverInfo = serverService.getServerInfo( webroot );
 		serverInfo.webroot 	= webroot;
@@ -55,7 +56,7 @@ component extends="commandbox.system.BaseCommand" aliases="start" excludeFromHel
 			serverInfo.port = arguments.port;
 			serverInfo.stopsocket = arguments.stopPort;
 		}
-		// If no port, check box descriptor for port.		
+		// If no port, check box descriptor for port.
 		if( !serverInfo.port ) {
 			serverInfo.port = boxJSON.defaultPort;
 		}

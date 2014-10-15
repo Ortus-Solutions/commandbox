@@ -50,7 +50,7 @@ component accessors="true" singleton{
 		required fileSystem,
 		required homeDir,
 		required consoleLogger,
-		required logger		
+		required logger
 	){
 		// DI
 		variables.shell 			= arguments.shell;
@@ -131,7 +131,7 @@ component accessors="true" singleton{
 		// log directory location
 		var logdir = configdir & "/log";
 		if( !directoryExists( logDir ) ){ directoryCreate( logDir ); }
-		
+
 		// The process native name
 		var processName = name is "" ? "CommandBox" : name;
 		// The java arguments to execute: -Drailo.server.config.dir=""#configdir#/server""  Shared server, custom web configs
@@ -185,7 +185,7 @@ component accessors="true" singleton{
 	 *
 	 * @returns struct of [ error, messages ]
  	 **/
-	struct function stop( required Struct serverInfo ){
+	struct function stop( required struct serverInfo ){
 		var launchUtil = java.LaunchUtil;
 		var stopsocket = arguments.serverInfo.stopsocket;
 		var args = "-jar ""#variables.jarPath#"" -stop --stop-port #val( stopsocket )# --background false";
@@ -211,7 +211,7 @@ component accessors="true" singleton{
 	 * @serverInfo.hint struct of server info (ports, etc.)
 	 * @all.hint remove ALL servers
  	 **/
-	function forget( required Struct serverInfo, Boolean all=false ){
+	function forget( required struct serverInfo, boolean all=false ){
 		if( !all ){
 			var servers 	= getServers();
 			var serverdir 	= variables.customServerDirectory & serverInfo.name;
@@ -221,10 +221,10 @@ component accessors="true" singleton{
 			setServers( servers );
 			// try to delete server
 			if( directoryExists( serverDir ) ){
-				// Catch this to gracefully handle where the OS or another program 
+				// Catch this to gracefully handle where the OS or another program
 				// has the folder locked.
 				try {
-					directoryDelete( serverdir, true );				
+					directoryDelete( serverdir, true );
 				} catch( any e ) {
 					consoleLogger.error( '#e.message##chr(10)#Did you leave the server running? ' );
 					logger.error( '#e.message# #e.detail#' , e.stackTrace );
@@ -235,7 +235,7 @@ component accessors="true" singleton{
 		} else {
 			var serverNames = getServerNames();
 			setServers( {} );
-				// Catch this to gracefully handle where the OS or another program 
+				// Catch this to gracefully handle where the OS or another program
 				// has the folder locked.
 				try {
 					directoryDelete( variables.customServerDirectory, true );
