@@ -171,7 +171,7 @@ component accessors="true" singleton {
 
 			// Parameters need to be ALL positional or ALL named
 			if( arrayLen( parameterInfo.positionalParameters ) && structCount( parameterInfo.namedParameters ) ) {
-				shell.printError({message:"Please don't mix named and positional parameters, it makes me dizzy."});
+				shell.printError({message:"Please don't mix named and positional parameters, it makes me dizzy.#cr# #line#"});
 				return;
 			}
 
