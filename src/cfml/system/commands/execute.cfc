@@ -8,7 +8,7 @@
  * You can also pass variables to the template by passing any number of additional parameters to this
  * command.
  * .
- * If you're using named parameters, they will be available by name in the variables scope.
+ * If you're using named parameters, they will be available by ${name} in the variables scope.
  * variables.$foo, variables.$bum
  * .
   * {code:bash}
