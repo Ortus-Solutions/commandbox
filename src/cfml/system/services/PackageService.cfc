@@ -82,7 +82,12 @@ component accessors="true" singleton {
 		if( len( arguments.ID ) ) {
 			
 			consoleLogger.info( '.');
-			consoleLogger.info( 'Installing package: #arguments.ID#');
+			consoleLogger.info( 'Installing package: #arguments.ID#' );
+
+			// Verbose info
+			if( arguments.verbose ){
+				consoleLogger.debug( "Save:#arguments.save# SaveDev:#arguments.saveDev# Production:#arguments.production# Directory:#arguments.directory#" );
+			}
 			
 			try {
 				// Info
@@ -257,9 +262,6 @@ component accessors="true" singleton {
 					arguments.save = false;
 					arguments.saveDev = false;
 					ignorePatterns.append( '/box.json' );
-					// Flag the shell to reload after this command is finished.
-					consoleLogger.warn("Shell will be reloaded after installation.");
-					shell.reload( false );
 				// If this is a module
 				} else if( packageType == 'modules' ) {
 					installDirectory = arguments.currentWorkingDirectory & '/modules';
@@ -314,43 +316,46 @@ component accessors="true" singleton {
 			if( !directoryExists( installDirectory ) ) {
 				directoryCreate( installDirectory );
 			}
-
-
+			// Prepare results struct
 			var results = {
 				copied = [],
 				ignored = []
 			};
 
-
 			// This will normalize the slashes to match
 			tmpPath = fileSystemUtil.resolvePath( tmpPath );
-				
-			// Copy with ignores from descriptor
-			// TODO, this should eventaully be part of the folder adapter
-			directoryCopy( tmpPath, installDirectory, true, function( path ){
-				// This will normalize the slashes to match
-				arguments.path = fileSystemUtil.resolvePath( arguments.path );
-				// Directories need to end in a trailing slash
-				if( directoryExists( arguments.path ) ) {
-					arguments.path &= server.separator.file;
-				}
-				
-				// cleanup path so we just get from the archive down
-				var thisPath = replacenocase( arguments.path, tmpPath, "" );
-							
-				// Ignore paths that match one of our ignore patterns
-				var ignored = pathPatternMatcher.matchPatterns( ignorePatterns, thisPath );
-				
-				// What do we do with this file
-				if( ignored ) {
-					results.ignored.append( thisPath );
-					return false;
-				} else {
-					results.copied.append( thisPath );
+			
+			// Copy Assets now to destination
+			if( arguments.production ){
+				// TODO, this should eventaully be part of the folder adapter
+				directoryCopy( tmpPath, installDirectory, true, function( path ){
+					// This will normalize the slashes to match
+					arguments.path = fileSystemUtil.resolvePath( arguments.path );
+					// Directories need to end in a trailing slash
+					if( directoryExists( arguments.path ) ) {
+						arguments.path &= server.separator.file;
+					}
+					// cleanup path so we just get from the archive down
+					var thisPath = replacenocase( arguments.path, tmpPath, "" );
+					// Ignore paths that match one of our ignore patterns
+					var ignored = pathPatternMatcher.matchPatterns( ignorePatterns, thisPath );
+					// What do we do with this file/directory
+					if( ignored ) {
+						results.ignored.append( thisPath );
+						return false;
+					} else {
+						results.copied.append( thisPath );
+						return true;
+					}
+				});
+			} else {
+				// Copy all assets in non-production mode
+				directoryCopy( tmpPath, installDirectory, true, function( path ){
+					// This will normalize the slashes to match
+					results.copied.append( arguments.path );
 					return true;
-				}
-							
-			});
+				});
+			}
 	
 			// cleanup unzip
 			directoryDelete( tmpPath, true );
@@ -786,6 +791,5 @@ component accessors="true" singleton {
 		
 		return props;
 	}
-
 
 }
