@@ -239,7 +239,16 @@ component accessors="true" singleton {
 				installDirectory = arguments.directory;
 			}
 			
-			// Else, use directory in box.json if it exists
+			// Next, see if the containing project has an install path configured for this dependency already.
+			var containerBoxJSON = readPackageDescriptor( arguments.currentWorkingDirectory );
+			if( !len( installDirectory ) && structKeyExists( containerBoxJSON.installPaths, packageName ) ) {
+				// Get the resolved intallation path for this package
+				installDirectory = fileSystemUtil.resolvePath( containerBoxJSON.installPaths[ packageName ] );
+				// Back up to the "container" folder.  The packge directory will be added back below
+				installDirectory = listDeleteAt( installDirectory, listLen( installDirectory, '/\' ), '/\' );
+			}
+			
+			// Else, use directory in the target package's box.json if it exists
 			if( !len( installDirectory ) && len( artifactDescriptor.directory ) ) {
 				// Strip any leading slashes off of the install directory
 				if( artifactDescriptor.directory.startsWith( '/' ) || artifactDescriptor.directory.startsWith( '\' ) ) {
