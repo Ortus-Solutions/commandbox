@@ -425,6 +425,7 @@ component accessors="true" singleton {
 			
 			var params = {
 				ID = dependency,
+				force = arguments.force,
 				// Only save the first level
 				save = false,
 				saveDev = false,
