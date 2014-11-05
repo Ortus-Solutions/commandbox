@@ -266,11 +266,15 @@ component accessors="true" singleton {
 			if( !len( installDirectory ) && len( packageType ) ) {
 				// If this is a CommandBox command
 				if( packageType == 'commandbox-commands' ) {
+					// Setup installation directory and arguments as per type
 					installDirectory = expandPath( '/commandbox-home/commands' );
 					artifactDescriptor.createPackageDirectory = false;
 					arguments.save = false;
 					arguments.saveDev = false;
 					ignorePatterns.append( '/box.json' );
+					// Flag the shell to reload after this command is finished.
+					consoleLogger.warn( "Shell will be reloaded after installation." );
+					shell.reload( false );
 				// If this is a module
 				} else if( packageType == 'modules' ) {
 					installDirectory = arguments.currentWorkingDirectory & '/modules';
