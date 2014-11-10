@@ -323,6 +323,10 @@ component accessors="true" singleton {
 			} else if( isPackage( installDirectory ) ) {
 				// ... then ignore box.json or it will overwrite the existing one
 				ignorePatterns.append( '/box.json' );
+			// If the directory wasn't already a package, don't save since we'd just be saving in our own box.json
+			} else {
+				arguments.save = false;
+				arguments.saveDev = false;
 			}
 						
 			// Create installation directory if neccesary
@@ -402,23 +406,20 @@ component accessors="true" singleton {
 			}
 		
 			consoleLogger.info( "Eureka, '#arguments.ID#' has been installed!" );
-	
-			// Get the dependencies of the package we just installed
-			var boxJSON = artifactService.getArtifactDescriptor( packageName, version );
-	
+						
 		// If no package ID was specified, just get the dependencies for the current directory
 		} else {
 			// read it...
-			var boxJSON = readPackageDescriptor( arguments.currentWorkingDirectory );
+			var artifactDescriptor = readPackageDescriptor( arguments.currentWorkingDirectory );
 		}
 
 		// and grab all the dependencies
-		var dependencies = boxJSON.dependencies;
+		var dependencies = artifactDescriptor.dependencies;
 		
 		// If we're not in production mode...
 		if( !arguments.production ) {
 			// Add in the devDependencies
-			dependencies.append( boxJSON.devDependencies );
+			dependencies.append( artifactDescriptor.devDependencies );
 		}
 
 		// Loop over this packages dependencies
@@ -485,7 +486,7 @@ component accessors="true" singleton {
 		// Otherwise, are we a package
 		} else if( isPackage( arguments.currentWorkingDirectory ) ) {
 			// Read the box.json
-			var boxJSON = readPackageDescriptor( arguments.currentWorkingDirectory );
+			var boxjson = readPackageDescriptor( arguments.currentWorkingDirectory );
 			var installPaths = boxJSON.installPaths;
 			
 			// Is there an install path for this?
