@@ -301,22 +301,22 @@ External Dependencies:
  	</target>
 	
 	<!-- Build local maven repository build.cli.deb,build.cli.exe,build.cli.rpm-->
- 	<target name="build.cli.mvn" depends="build.cli.deb,build.cli.exe,build.cli.jre,build.cli.rpm">
+ 	<target name="build.cli.mvn" depends="build.test.all">
 		<pom-and-deploy pomid="commandbox.pom" packaging="pom" buildtype="${mvn.type}"
 			groupId="com.ortussolutions" artifactId="commandbox" version="${commandbox.version}"
 			name="commandbox">
 			<attachments>
 				<attach file="${dist.dir}/box.jar" type="jar" />
-				<attach file="${dist.dir}/cfml-${commandbox.version}.zip" type="zip" classifier="cfml" />
-				<attach file="${dist.dir}/${distro.name}_${commandbox.version}-1_all.deb" type="deb" />
-				<attach file="${dist.dir}/${distro.name}-${commandbox.version}.bin.zip" type="zip" classifier="bin" />
-				<attach file="${dist.dir}/${distro.name}-${commandbox.version}.jre-darwin64.zip" type="zip" classifier="jre-darwin64" />
-				<attach file="${dist.dir}/${distro.name}-${commandbox.version}.jre-linux32.zip" type="zip" classifier="jre-linux32" />
-				<attach file="${dist.dir}/${distro.name}-${commandbox.version}.jre-linux64.zip" type="zip" classifier="jre-linux64" />
-				<attach file="${dist.dir}/${distro.name}-${commandbox.version}.jre-win32.zip" type="zip" classifier="jre-win32" />
-				<attach file="${dist.dir}/${distro.name}-${commandbox.version}.jre-win64.zip" type="zip" classifier="jre-win64" />
-				<attach file="${dist.dir}/${distro.name}-${commandbox.version}.win.zip" type="zip" classifier="win32" />
-				<!--<attach file="${rpm.repo}/${distro.name}-${commandbox.version}-1.noarch.rpm" type="rpm" /> -->
+				<attach file="${dist.dir}/${distro.name}-cfml-${commandbox.version}.zip" type="zip" classifier="cfml" />
+				<attach file="${dist.dir}/${distro.name}-debian-${commandbox.version}.deb" type="deb" />
+				<attach file="${dist.dir}/${distro.name}-bin-${commandbox.version}.zip" type="zip" classifier="bin" />
+				<attach file="${dist.dir}/${distro.name}-jre-darwin64-${commandbox.version}.zip" type="zip" classifier="jre-darwin64" />
+				<attach file="${dist.dir}/${distro.name}-jre-linux32-${commandbox.version}.zip" type="zip" classifier="jre-linux32" />
+				<attach file="${dist.dir}/${distro.name}-jre-linux64-${commandbox.version}.zip" type="zip" classifier="jre-linux64" />
+				<attach file="${dist.dir}/${distro.name}-jre-win32-${commandbox.version}.zip" type="zip" classifier="jre-win32" />
+				<attach file="${dist.dir}/${distro.name}-jre-win64-${commandbox.version}.zip" type="zip" classifier="jre-win64" />
+				<attach file="${dist.dir}/${distro.name}-win-${commandbox.version}.zip" type="zip" classifier="win32" />
+				<attach file="${dist.dir}/${distro.name}-rpm-${commandbox.version}.rpm" type="rpm" />
 			</attachments>
 		</pom-and-deploy>
 	</target>
