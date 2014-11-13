@@ -83,7 +83,7 @@ External Dependencies:
 		<antcall target="update.permissions" />
 
 		<!-- get commandbox dependencies -->
-		<dependency groupId="jline" artifactId="jline" version="2.12-SNAPSHOT" dest="${lib.dir}" type="jar" unzip="false"/>
+		<dependency groupId="jline" artifactId="jline" version="2.12" dest="${lib.dir}" type="jar" unzip="false"/>
 		<dependency groupId="org.getrailo" artifactId="railo.cli" version="${railo.cli.version}" dest="${temp.dir}/rcli" type="jar" unzip="true"/>
 
 		<!-- Mark as init -->
