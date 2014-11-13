@@ -259,23 +259,23 @@ External Dependencies:
 
 		<!--Zip Box Binary With JRE -->
 		<zip destfile="${dist.dir}/${distro.name}-jre-win32-${commandbox.version}.zip" level="9" update="false">
-			<zipgroupfileset file="${maven.repo.local}/oracle/jre/${jre.version}/jre-${jre.version}-win32.zip"/>
+            <zipfileset prefix="jre" src="${maven.repo.local}/oracle/jre/${jre.version}/jre-${jre.version}-win32.zip"/>
 	        <fileset file="${dist.dir}/box.exe" />
 		</zip>
 		<zip destfile="${dist.dir}/${distro.name}-jre-win64-${commandbox.version}.zip" level="9" update="false">
-			<zipgroupfileset file="${maven.repo.local}/oracle/jre/${jre.version}/jre-${jre.version}-win64.zip"/>
+            <zipfileset prefix="jre" src="${maven.repo.local}/oracle/jre/${jre.version}/jre-${jre.version}-win64.zip"/>
 	        <fileset file="${dist.dir}/box.exe" />
 		</zip>
 		<zip destfile="${dist.dir}/${distro.name}-jre-linux32-${commandbox.version}.zip" level="9" update="false">
-			<zipgroupfileset file="${maven.repo.local}/oracle/jre/${jre.version}/jre-${jre.version}-linux32.zip"/>
+            <zipfileset prefix="jre" src="${maven.repo.local}/oracle/jre/${jre.version}/jre-${jre.version}-linux32.zip"/>
 	        <fileset file="${dist.dir}/box" />
 		</zip>
 		<zip destfile="${dist.dir}/${distro.name}-jre-linux64-${commandbox.version}.zip" level="9" update="false">
-			<zipgroupfileset file="${maven.repo.local}/oracle/jre/${jre.version}/jre-${jre.version}-linux64.zip"/>
+            <zipfileset prefix="jre" src="${maven.repo.local}/oracle/jre/${jre.version}/jre-${jre.version}-linux64.zip"/>
 	        <fileset file="${dist.dir}/box" />
 		</zip>
 		<zip destfile="${dist.dir}/${distro.name}-jre-darwin64-${commandbox.version}.zip" level="9" update="false">
-			<zipgroupfileset file="${maven.repo.local}/oracle/jre/${jre.version}/jre-${jre.version}-darwin64.zip"/>
+            <zipfileset prefix="jre" src="${maven.repo.local}/oracle/jre/${jre.version}/jre-${jre.version}-darwin64.zip"/>
 	        <fileset file="${dist.dir}/box" />
 		</zip>
 
