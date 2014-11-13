@@ -177,15 +177,28 @@ External Dependencies:
  	</target>
 
  	<!-- Build API Docs -->
- 	<target name="build.apidocs" description="Builds the api docs" depends="init">
+ 	<target name="build.apidocs" description="Builds the api docs" depends="init, build.testwar">
 		<!-- Create repo for docs -->
  		<mkdir dir="${api.dir}" />
  		<antcall target="update.permissions" />
  		<!-- Execute DocBox -->
-		<get dest="${build.dir}/colddoc.html" src="${url.api}${commandbox.version}&amp;path=${api.dir}" verbose="true"/>
-		<delete file="${build.dir}/colddoc.html" />
+        <!--
+        <colddoc packagenames="commandbox"
+            sourcepath="${src.dir}/cfml" destdir="${api.dir}"
+            title="CommandBox v${commandbox.version}">
+            { inputDir=expandPath( "/commandbox/commands" ), inputMapping="commandbox.commands" },
+            { inputDir=expandPath( "/commandbox/system/commands" ), inputMapping="commandbox.system.commands" }            
+        </colddoc>
+        -->
+        <property name="api.dir.abs" location="${api.dir}"/>
+        <server-run>
+            <delete file="${temp.dir}/colddoc.html"/>
+            <get dest="${temp.dir}/colddoc.html" src="http://${server.host}:${server.port.http}/apidocs/commandDocs.cfm?path=${api.dir.abs}" verbose="true"/>
+            <loadfile property="colddoc.return" srcfile="${temp.dir}/colddoc.html"><filterchain><trim/><ignoreblank/></filterchain></loadfile>
+            <echo message="apidoc result: ${colddoc.return}"></echo>
+        </server-run>
 		<!-- Zip API Docs -->
-		<zip destfile="${dist.dir}/${distro.name}-apidocs-${commandbox.version}.zip" basedir="${api.dir}"></zip>
+		<zip destfile="${dist.dir}/${distro.name}-apidocs-${commandbox.version}.zip" basedir="${api.dir.abs}"></zip>
  		<!-- Build Checksum -->
  		<checksum forceoverwrite="true" fileext=".md5" file="${dist.dir}/${distro.name}-apidocs-${commandbox.version}.zip" />
  	</target>
@@ -420,6 +433,7 @@ External Dependencies:
 		<mapping virtual="/wirebox" physical="@src.dir@/cfml/system/wirebox" />
 		<mapping virtual="/cfml" physical="@src.dir@/cfml" />
 		<mapping virtual="/tests" physical="@src.dir@/../tests" />
+		<mapping virtual="/apidocs" physical="@src.dir@/../apidocs" />
 	</target>
 
 	<target name="test" description="starts test server, runs tests, then stops test server">
