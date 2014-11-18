@@ -15,31 +15,30 @@ do
 	esac
 done
 
-use_pager=
-case "$cmd" in
-blame)    use_pager=1 ;;
-diff)     use_pager=1 ;;
-log)      use_pager=1 ;;
-esac
-
-this_script=`which "$0" 2>/dev/null`
-[ $? -gt 0 -a -f "$0" ] && this_script="$0"
+# Get the location of the running script
+this_script=`which "$0"`
+# Append to a class path
 cp=$this_script
-#updated location to use embedded JRE
-JRE=$(dirname $this_script)/bin
+
+# Append box_classpath if set to cp
 if [ -n "$BOX_CLASSPATH" ]
 then
 	cp="$cp:$BOX_CLASSPATH"
 fi
 
+# Prepare Java arguments
 java_args='-client'
 
+##############################################################################
+##  OS SPECIFIC CLEANUP + ARGS
+##############################################################################
+
 # Cleanup paths for Cygwin.
-#
 case "`uname`" in
 CYGWIN*)
 	cp=`cygpath --windows --mixed --path "$cp"`
 	;;
+# Add Java Arguments for Mac
 Darwin)
 	if [ -e /System/Library/Frameworks/JavaVM.framework ]
 	then
@@ -59,31 +58,30 @@ esac
 CLASSPATH="$cp"
 export CLASSPATH
 
+##############################################################################
+##  JAVA DETERMINATION					                                    ##
+##############################################################################
+
+# The Embedded JRE takes precedence over a JAVA_HOME environment variable.
+
+# Default the Java command to be global java call
 java=java
+# Check if JAVA_HOME is set, then use it
 if [ -n "$JAVA_HOME" ]
 then
 	java="$JAVA_HOME/bin/java"
 fi
 
+# Verify if we have an embedded version, if we do use that instead.
+JRE=$(dirname $this_script)/jre/bin
 if [ -d "$JRE" ]
 then
 	java="$JRE/bin/java"
 fi
 
-if [ -n "$use_pager" ]
-then
-	use_pager=${BOX_PAGER:-${PAGER:-less}}
-	[ cat = "$use_pager" ] && use_pager=
-fi
+##############################################################################
+##  EXECUTION
+##############################################################################
 
-if [ -n "$use_pager" ]
-then
-	LESS=${LESS:-FSRX}
-	export LESS
-
-	"$java" $java_args cliloader.LoaderCLIMain "$@" | $use_pager
-	exit
-else
-  	exec "$java" $java_args cliloader.LoaderCLIMain "$@"
-  	exit 1
-fi
+exec "$java" $java_args cliloader.LoaderCLIMain "$@"
+exit
