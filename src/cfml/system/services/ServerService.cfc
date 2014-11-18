@@ -71,7 +71,7 @@ component accessors="true" singleton{
 		// the lib dir location, populated from shell later.
 		variables.libDir = arguments.homeDir & "/lib";
 		// Where core server is installed
-		variables.serverHomeDirectory = arguments.homeDir & "/engine/railo";
+		variables.serverHomeDirectory = arguments.homeDir & "/engine/railo/";
 		// Where custom server configs are stored
 		variables.serverConfig = arguments.homeDir & "/servers.json";
 		// Where custom servers are stored
@@ -125,7 +125,7 @@ component accessors="true" singleton{
 		}
 
 		// config directory locations
-		var configDir       = len( arguments.serverInfo.webConfigDir ) ? arguments.serverInfo.webConfigDir : variables.customServerDirectory & name;
+		var configDir       = len( arguments.serverInfo.webConfigDir ) ? arguments.serverInfo.webConfigDir : getCustomServerFolder( arguments.serverInfo );
 		var serverConfigDir = len( arguments.serverInfo.serverConfigDir ) ? arguments.serverInfo.serverConfigDir : variables.serverHomeDirectory;
 
 		// log directory location
@@ -212,9 +212,9 @@ component accessors="true" singleton{
 	 * @all.hint remove ALL servers
  	 **/
 	function forget( required struct serverInfo, boolean all=false ){
-		if( !all ){
+		if( !arguments.all ){
 			var servers 	= getServers();
-			var serverdir 	= variables.customServerDirectory & serverInfo.name;
+			var serverdir 	= getCustomServerFolder( arguments.serverInfo );
 
 			// try to delete from config first
 			structDelete( servers, hash( arguments.serverInfo.webroot ) );
@@ -249,6 +249,14 @@ component accessors="true" singleton{
 	}
 
 	/**
+	* Get a custom server folder name according to our naming convention to avoid collisions with name
+	* @serverInfo The server information
+	*/
+	function getCustomServerFolder( required struct serverInfo ){
+		return variables.customServerDirectory & arguments.serverinfo.id & "-" & arguments.serverInfo.name;
+	}
+
+	/**
 	 * Get a random port for the specified host
 	 * @host.hint host to get port on, defaults 127.0.0.1
  	 **/
@@ -265,7 +273,7 @@ component accessors="true" singleton{
 	 * persist server info
 	 * @serverInfo.hint struct of server info (ports, etc.)
  	 **/
-	function setServerInfo( required Struct serverInfo ){
+	function setServerInfo( required struct serverInfo ){
 		var servers 	= getServers();
 		var webrootHash = hash( arguments.serverInfo.webroot );
 
@@ -282,7 +290,6 @@ component accessors="true" singleton{
 	 * @servers.hint struct of serverInfos
  	 **/
 	function setServers( required Struct servers ){
-		// TODO: prevent race conditions  :)
 		lock name="serverservice.serverconfig" type="exclusive" throwOnTimeout="true" timeout="10"{
 			fileWrite( serverConfig, formatterUtil.formatJson( serializeJSON( servers ) ) );
 		}
@@ -371,6 +378,7 @@ component accessors="true" singleton{
 		}
 		if( isNull( servers[ webrootHash ] ) ){
 			servers[ webrootHash ] = {
+				id 				: webrootHash,
 				webroot			: arguments.webroot,
 				port			: "",
 				stopsocket		: 0,
