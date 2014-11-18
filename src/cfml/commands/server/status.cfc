@@ -54,7 +54,6 @@ component extends="commandbox.system.BaseCommand" aliases="status" excludeFromHe
 			}
 
 			print.line( "  webroot: " & serv.webroot )
-				.line( "  context: " & serverService.getServerHomeDirectory() & serv.name )
 				.line( "  logdir: " & serv.logDir )
 				.line( "  libDirs: " & serv.libDirs )
 				.line( "  webConfigDir: " & serv.webConfigDir )
