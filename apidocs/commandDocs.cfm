@@ -1,6 +1,7 @@
 <cfparam name="url.version" default="1.0">
 <cfparam name="url.path" 	default="#expandPath( "./CommandBox-CommandDocs" )#">
 <cfscript>
+try{
 	docName = "CommandBox-CommandDocs";
 
 	colddoc 	= new ColdDoc();
@@ -12,6 +13,11 @@
 	];
 
 	colddoc.generate( source );
+} catch ( Any e ){
+	writeOutput( e.message & e.detail );
+	writeDump( "<hr>" & e.stacktrace );
+	abort;
+}
 </cfscript>
 
 <cfoutput>
