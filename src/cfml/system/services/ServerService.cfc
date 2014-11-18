@@ -70,12 +70,12 @@ component accessors="true" singleton{
 
 		// the lib dir location, populated from shell later.
 		variables.libDir = arguments.homeDir & "/lib";
+		// Where core server is installed
+		variables.serverHomeDirectory = arguments.homeDir & "/engine/railo";
 		// Where custom server configs are stored
 		variables.serverConfig = arguments.homeDir & "/servers.json";
-		// Where core and custom servers are stored
-		variables.serverHomeDirectory = arguments.homeDir & "/server/";
 		// Where custom servers are stored
-		variables.customServerDirectory = variables.serverHomeDirectory & "/custom/";
+		variables.customServerDirectory = arguments.homeDir & "/server/";
 		// The JRE executable command
 		variables.javaCommand = arguments.fileSystem.getJREExecutable();
 		// The runwar jar path
