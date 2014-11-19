@@ -7,7 +7,7 @@
  * server restart name="myapp"
  * {code}
  **/
-component extends="commandbox.system.BaseCommand" aliases="start" excludeFromHelp=false {
+component extends="commandbox.system.BaseCommand" aliases="restart" excludeFromHelp=false {
 
 	// DI
 	property name="serverService" 	inject="ServerService";
