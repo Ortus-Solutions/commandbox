@@ -39,23 +39,35 @@ component extends="commandbox.system.BaseCommand" aliases="start" excludeFromHel
 		String  trayIcon        = "",
 		String  webXml          = ""
 	){
-		// prepare webroot and short name
-		var webroot = arguments.directory;
-		webroot = fileSystemUtil.resolvePath( webroot );
-		var name 	= arguments.name is "" ? listLast( webroot, "\/" ) : arguments.name;
+		// Resolve path as used locally
+		var webroot = fileSystemUtil.resolvePath( arguments.directory );
 
+		// Discover by shortname or webroot and get server info
+		var serverInfo = serverService.getServerInfoByDiscovery(
+			directory 	= webroot,
+			name		= arguments.name
+		);
+
+		// Was it found, or new server?
+		if( structIsEmpty( serverInfo ) ){
+			// We need a new entry
+			serverInfo = serverService.getServerInfo( webroot );
+		}
+
+		// Get package descriptor for overrides 
 		var boxJSON = packageService.readPackageDescriptor( webroot );
 
-		// get server info record, create one if this is the first time.
-		var serverInfo = serverService.getServerInfo( webroot );
+		// Update data from arguments
 		serverInfo.webroot 	= webroot;
 		serverInfo.debug 	= arguments.debug;
+		serverInfo.name 	= arguments.name is "" ? listLast( webroot, "\/" ) : arguments.name;
+			
 		// we don't want to changes the ports if we're doing stuff already
 		if( serverInfo.status is "stopped" || arguments.force ){
-			serverInfo.name = name;
 			serverInfo.port = arguments.port;
 			serverInfo.stopsocket = arguments.stopPort;
 		}
+
 		// If no port, check box descriptor for port.
 		if( !serverInfo.port ) {
 			serverInfo.port = boxJSON.defaultPort;
@@ -68,8 +80,13 @@ component extends="commandbox.system.BaseCommand" aliases="start" excludeFromHel
 		if ( Len( Trim( arguments.trayIcon        ) ) ) { serverInfo.trayIcon        = arguments.trayIcon;        }
 		if ( Len( Trim( arguments.webXml          ) ) ) { serverInfo.webXml          = arguments.webXml;          }
 
-		// startup the service using server info struct
-		return serverService.start( serverInfo, arguments.openbrowser, arguments.force, arguments.debug );
+		// startup the service using server info struct, the start service takes care of persisting updated params
+		return serverService.start( 
+			serverInfo 	= serverInfo,
+			openBrowser = arguments.openbrowser,
+			force		= arguments.force,
+			debug 		= arguments.debug 
+		);
 	}
 
 }
