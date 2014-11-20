@@ -20,9 +20,6 @@ component extends="commandbox.system.BaseCommand" aliases="stop" excludeFromHelp
 	 * @forget.hint if passed, this will also remove the directory information from disk
 	 **/
 	function run( String directory="", String name="", boolean forget=false ){
-		// resolve path
-		arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
-
 		// Discover by shortname or webroot and get server info
 		var serverInfo = serverService.getServerInfoByDiscovery(
 			directory 	= arguments.directory,

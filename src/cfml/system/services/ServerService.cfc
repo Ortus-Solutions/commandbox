@@ -289,25 +289,36 @@ component accessors="true" singleton{
 	 * persist servers
 	 * @servers.hint struct of serverInfos
  	 **/
-	function setServers( required Struct servers ){
+	ServerService function setServers( required Struct servers ){
 		lock name="serverservice.serverconfig" type="exclusive" throwOnTimeout="true" timeout="10"{
 			fileWrite( serverConfig, formatterUtil.formatJson( serializeJSON( servers ) ) );
 		}
+		return this;
 	}
 
 	/**
-	 * get servers struct from config file
- 	 **/
-	function getServers() {
+	* get servers struct from config file on disk
+ 	**/
+	struct function getServers() {
 		if( fileExists( variables.serverConfig ) ){
 			lock name="serverservice.serverconfig" type="readOnly" throwOnTimeout="true" timeout="10"{
-				return deserializeJSON( fileRead( variables.serverConfig ) );
+				var results = deserializeJSON( fileRead( variables.serverConfig ) );
+				var updateRequired = false;
+				// ID Checks, this is needed.
+				for( var thisKey in results ){
+					if( isNull( results[ thisKey ].id ) ){
+						results[ thisKey ].id = hash( results[ thisKey ].webroot );
+						updateRequired = true;
+					}
+				}
 			}
+			// Check if an update is required
+			if( updateRequired ){ setServers( results ); }
+			return results;
 		} else {
 			return {};
 		}
 	}
-
 
 	/**
 	* Get a server information struct by name or directory
@@ -365,10 +376,10 @@ component accessors="true" singleton{
 	}
 
 	/**
-	 * Get server info for webroot, if not created, it will init a new server info entry
-	 * @webroot.hint root directory for served content
- 	 **/
-	function getServerInfo( required webroot ){
+	* Get server info for webroot, if not created, it will init a new server info entry
+	* @webroot.hint root directory for served content
+ 	**/
+	struct function getServerInfo( required webroot ){
 		var servers 	= getServers();
 		var webrootHash = hash( arguments.webroot );
 		var statusInfo 	= {};
@@ -376,26 +387,43 @@ component accessors="true" singleton{
 		if( !directoryExists( arguments.webroot ) ){
 			statusInfo = { result:"Webroot does not exist, cannot start :" & arguments.webroot };
 		}
+
 		if( isNull( servers[ webrootHash ] ) ){
-			servers[ webrootHash ] = {
-				id 				: webrootHash,
-				webroot			: arguments.webroot,
-				port			: "",
-				stopsocket		: 0,
-				debug			: false,
-				status			: "stopped",
-				statusInfo		: { result : "" },
-				name			: listLast( arguments.webroot, "\/" ),
-				logDir 			: "",
-				trayicon 		: "",
-				libDirs 		: "",
-				webConfigDir 	: "",
-				serverConfigDir : "",
-				webXML 			: ""
-			}
+			// prepare new server info
+			var serverInfo 		= newServerInfoStruct();
+			serverInfo.id 		= webrootHash;
+			serverInfo.webroot 	= arguments.webroot;
+			serverInfo.name 	= listLast( arguments.webroot, "\/" );
+			// Store it in server struct
+			servers[ webrootHash ] = serverInfo;
+			// persist it
 			setServers( servers );
 		}
+
+		// Return the new record
 		return servers[ webrootHash ];
+	}
+
+	/**
+	* Returns a new server info structure
+	*/
+	struct function newServerInfoStruct(){
+		return {
+			id 				: "",
+			webroot			: "",
+			port			: "",
+			stopsocket		: 0,
+			debug			: false,
+			status			: "stopped",
+			statusInfo		: { result : "" },
+			name			: "",
+			logDir 			: "",
+			trayicon 		: "",
+			libDirs 		: "",
+			webConfigDir 	: "",
+			serverConfigDir : "",
+			webXML 			: ""
+		};
 	}
 
 }

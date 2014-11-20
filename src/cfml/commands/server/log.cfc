@@ -17,7 +17,6 @@ component extends="commandbox.system.BaseCommand" excludeFromHelp=false {
 	 * @name.hint short name for the server
 	 **/
 	function run( String directory="", String name="" ){
-
 		// Discover by shortname or webroot
 		var serverInfo = serverService.getServerInfoByDiscovery( arguments.directory, arguments.name );
 
