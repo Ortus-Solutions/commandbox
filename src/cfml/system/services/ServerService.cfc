@@ -70,12 +70,12 @@ component accessors="true" singleton{
 
 		// the lib dir location, populated from shell later.
 		variables.libDir = arguments.homeDir & "/lib";
+		// Where core server is installed
+		variables.serverHomeDirectory = arguments.homeDir & "/engine/railo/";
 		// Where custom server configs are stored
 		variables.serverConfig = arguments.homeDir & "/servers.json";
-		// Where core and custom servers are stored
-		variables.serverHomeDirectory = arguments.homeDir & "/server/";
 		// Where custom servers are stored
-		variables.customServerDirectory = variables.serverHomeDirectory & "/custom/";
+		variables.customServerDirectory = arguments.homeDir & "/server/";
 		// The JRE executable command
 		variables.javaCommand = arguments.fileSystem.getJREExecutable();
 		// The runwar jar path
@@ -125,7 +125,7 @@ component accessors="true" singleton{
 		}
 
 		// config directory locations
-		var configDir       = len( arguments.serverInfo.webConfigDir ) ? arguments.serverInfo.webConfigDir : variables.customServerDirectory & name;
+		var configDir       = len( arguments.serverInfo.webConfigDir ) ? arguments.serverInfo.webConfigDir : getCustomServerFolder( arguments.serverInfo );
 		var serverConfigDir = len( arguments.serverInfo.serverConfigDir ) ? arguments.serverInfo.serverConfigDir : variables.serverHomeDirectory;
 
 		// log directory location
@@ -212,9 +212,9 @@ component accessors="true" singleton{
 	 * @all.hint remove ALL servers
  	 **/
 	function forget( required struct serverInfo, boolean all=false ){
-		if( !all ){
+		if( !arguments.all ){
 			var servers 	= getServers();
-			var serverdir 	= variables.customServerDirectory & serverInfo.name;
+			var serverdir 	= getCustomServerFolder( arguments.serverInfo );
 
 			// try to delete from config first
 			structDelete( servers, hash( arguments.serverInfo.webroot ) );
@@ -249,6 +249,14 @@ component accessors="true" singleton{
 	}
 
 	/**
+	* Get a custom server folder name according to our naming convention to avoid collisions with name
+	* @serverInfo The server information
+	*/
+	function getCustomServerFolder( required struct serverInfo ){
+		return variables.customServerDirectory & arguments.serverinfo.id & "-" & arguments.serverInfo.name;
+	}
+
+	/**
 	 * Get a random port for the specified host
 	 * @host.hint host to get port on, defaults 127.0.0.1
  	 **/
@@ -265,7 +273,7 @@ component accessors="true" singleton{
 	 * persist server info
 	 * @serverInfo.hint struct of server info (ports, etc.)
  	 **/
-	function setServerInfo( required Struct serverInfo ){
+	function setServerInfo( required struct serverInfo ){
 		var servers 	= getServers();
 		var webrootHash = hash( arguments.serverInfo.webroot );
 
@@ -281,26 +289,36 @@ component accessors="true" singleton{
 	 * persist servers
 	 * @servers.hint struct of serverInfos
  	 **/
-	function setServers( required Struct servers ){
-		// TODO: prevent race conditions  :)
+	ServerService function setServers( required Struct servers ){
 		lock name="serverservice.serverconfig" type="exclusive" throwOnTimeout="true" timeout="10"{
 			fileWrite( serverConfig, formatterUtil.formatJson( serializeJSON( servers ) ) );
 		}
+		return this;
 	}
 
 	/**
-	 * get servers struct from config file
- 	 **/
-	function getServers() {
+	* get servers struct from config file on disk
+ 	**/
+	struct function getServers() {
 		if( fileExists( variables.serverConfig ) ){
 			lock name="serverservice.serverconfig" type="readOnly" throwOnTimeout="true" timeout="10"{
-				return deserializeJSON( fileRead( variables.serverConfig ) );
+				var results = deserializeJSON( fileRead( variables.serverConfig ) );
+				var updateRequired = false;
+				// ID Checks, this is needed.
+				for( var thisKey in results ){
+					if( isNull( results[ thisKey ].id ) ){
+						results[ thisKey ].id = hash( results[ thisKey ].webroot );
+						updateRequired = true;
+					}
+				}
 			}
+			// Check if an update is required
+			if( updateRequired ){ setServers( results ); }
+			return results;
 		} else {
 			return {};
 		}
 	}
-
 
 	/**
 	* Get a server information struct by name or directory
@@ -358,10 +376,10 @@ component accessors="true" singleton{
 	}
 
 	/**
-	 * Get server info for webroot, if not created, it will init a new server info entry
-	 * @webroot.hint root directory for served content
- 	 **/
-	function getServerInfo( required webroot ){
+	* Get server info for webroot, if not created, it will init a new server info entry
+	* @webroot.hint root directory for served content
+ 	**/
+	struct function getServerInfo( required webroot ){
 		var servers 	= getServers();
 		var webrootHash = hash( arguments.webroot );
 		var statusInfo 	= {};
@@ -369,25 +387,43 @@ component accessors="true" singleton{
 		if( !directoryExists( arguments.webroot ) ){
 			statusInfo = { result:"Webroot does not exist, cannot start :" & arguments.webroot };
 		}
+
 		if( isNull( servers[ webrootHash ] ) ){
-			servers[ webrootHash ] = {
-				webroot			: arguments.webroot,
-				port			: "",
-				stopsocket		: 0,
-				debug			: false,
-				status			: "stopped",
-				statusInfo		: { result : "" },
-				name			: listLast( arguments.webroot, "\/" ),
-				logDir 			: "",
-				trayicon 		: "",
-				libDirs 		: "",
-				webConfigDir 	: "",
-				serverConfigDir : "",
-				webXML 			: ""
-			}
+			// prepare new server info
+			var serverInfo 		= newServerInfoStruct();
+			serverInfo.id 		= webrootHash;
+			serverInfo.webroot 	= arguments.webroot;
+			serverInfo.name 	= listLast( arguments.webroot, "\/" );
+			// Store it in server struct
+			servers[ webrootHash ] = serverInfo;
+			// persist it
 			setServers( servers );
 		}
+
+		// Return the new record
 		return servers[ webrootHash ];
+	}
+
+	/**
+	* Returns a new server info structure
+	*/
+	struct function newServerInfoStruct(){
+		return {
+			id 				: "",
+			webroot			: "",
+			port			: 0,
+			stopsocket		: 0,
+			debug			: false,
+			status			: "stopped",
+			statusInfo		: { result : "" },
+			name			: "",
+			logDir 			: "",
+			trayicon 		: "",
+			libDirs 		: "",
+			webConfigDir 	: "",
+			serverConfigDir : "",
+			webXML 			: ""
+		};
 	}
 
 }

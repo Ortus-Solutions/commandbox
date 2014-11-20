@@ -7,7 +7,7 @@
  * server restart name="myapp"
  * {code}
  **/
-component extends="commandbox.system.BaseCommand" aliases="start" excludeFromHelp=false {
+component extends="commandbox.system.BaseCommand" aliases="restart" excludeFromHelp=false {
 
 	// DI
 	property name="serverService" 	inject="ServerService";
@@ -27,9 +27,6 @@ component extends="commandbox.system.BaseCommand" aliases="start" excludeFromHel
 		boolean force=false,
 		boolean openBrowser=false
 	){
-		// resolve path
-		arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
-
 		// Discover by shortname or webroot and get server info
 		var serverInfo = serverService.getServerInfoByDiscovery(
 			directory 	= arguments.directory,

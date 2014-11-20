@@ -31,6 +31,7 @@ Type "help" for help, or "help [command]" to be more specific.
 	// Verify if we can run CommandBox Java v. 1.7+
 	if( findNoCase( "1.6", server.java.version ) ){
 		systemOutput( "The Java Version you have (#server.java.version#) is not supported by CommandBox. Please install a Java JRE/JDK 1.7+" );
+		sleep( 5000 );
 		abort;
 	}
 

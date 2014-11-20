@@ -13,12 +13,11 @@ try{
 	];
 
 	colddoc.generate( source );
-} catch (any e) {
-    writeOutput(e.message);
-    writeOutput(e.detail);
-    abort;
+} catch ( Any e ){
+	writeOutput( e.message & e.detail );
+	writeDump( "<hr>" & e.stacktrace );
+	abort;
 }
-
 </cfscript>
 
 <cfoutput>

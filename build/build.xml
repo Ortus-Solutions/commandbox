@@ -260,7 +260,7 @@ External Dependencies:
 	</target>
 
 	<!-- Build including JREs -->
- 	<target name="build.cli.jre" description="Build with JRE included" depends="build.cli">
+ 	<target name="build.cli.jre" description="Build with JRE included" depends="build.cli.bin,build.cli.exe">
  		<echo message="Bundling ${jre.version} JRE" />
 		
 		<!-- Get JRE Dependencies -->

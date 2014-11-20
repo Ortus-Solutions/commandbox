@@ -19,53 +19,54 @@ component extends="commandbox.system.BaseCommand" aliases="status" excludeFromHe
 	 * @name.hint short name for the server
 	 * @showAll.hint show all server statuses found
 	 **/
-	function run( String directory="", String name="", boolean showAll=false ){
+	function run( directory="", name="", boolean showAll=false ){
 		var servers = serverService.getServers();
 
 		arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
 
-		for( var serverKey in servers ){
-			var serv = servers[ serverKey ];
+		for( var thisKey in servers ){
+			var thisServerInfo = servers[ thisKey ];
+
 			// check if same as directory root
-			if( arguments.directory != "" && serv.webroot != arguments.directory && !arguments.showAll )
+			if( arguments.directory != "" && thisServerInfo.webroot != arguments.directory && !arguments.showAll )
 				continue;
 			// check if same as short name
-			if( arguments.name != "" && serv.name != arguments.name && !arguments.showAll )
+			if( arguments.name != "" && thisServerInfo.name != arguments.name && !arguments.showAll )
 				continue;
-			
-			if( isNull( serv.statusInfo.result ) ){
-				serv.statusInfo.result = "";
-			}
+			// Null Checks, to guarnatee correct struct.
+			structAppend( thisServerInfo, serverService.newServerInfoStruct(), false );
 
-			print.line().yellowLine( "name: " & serv.name )
+			// Print Information
+			print.line().yellowLine( "name: " & thisServerInfo.name )
 				.string("  status: " );
 
-			if(serv.status eq "running") {
+			if(thisServerInfo.status eq "running") {
 				print.greenLine( "running" )
-					.line( "  info: " & serv.statusInfo.result );
-			} else if (serv.status eq "starting") {
+					.line( "  info: " & thisServerInfo.statusInfo.result );
+			} else if (thisServerInfo.status eq "starting") {
 				print.yellowLine( "starting" )
-					.redLine( "  info: " & serv.statusInfo.result );
-			} else if (serv.status eq "unknown") {
+					.redLine( "  info: " & thisServerInfo.statusInfo.result );
+			} else if (thisServerInfo.status eq "unknown") {
 				print.redLine( "unknown" )
-					.redLine( "  info: " & serv.statusInfo.result );
+					.redLine( "  info: " & thisServerInfo.statusInfo.result );
 			} else {
-				print.line( serv.status );
+				print.line( thisServerInfo.status );
 			}
 
-			print.line( "  webroot: " & serv.webroot )
-				.line( "  context: " & serverService.getServerHomeDirectory() & serv.name )
-				.line( "  logdir: " & serv.logDir )
-				.line( "  libDirs: " & serv.libDirs )
-				.line( "  webConfigDir: " & serv.webConfigDir )
-				.line( "  serverConfigDir: " & serv.serverConfigDir )
-				.line( "  webXML: " & serv.webXML )
-				.line( "  trayicon: " & serv.trayicon )
-				.line( "  port: " & serv.port )
-				.line( "  stopsocket: " & serv.stopsocket )
-				.line( "  debug: " & serv.debug );
+			print.line( "  webroot: " & thisServerInfo.webroot )
+				.line( "  logdir: " & thisServerInfo.logDir )
+				.line( "  libDirs: " & thisServerInfo.libDirs )
+				.line( "  webConfigDir: " & thisServerInfo.webConfigDir )
+				.line( "  serverConfigDir: " & thisServerInfo.serverConfigDir )
+				.line( "  webXML: " & thisServerInfo.webXML )
+				.line( "  trayicon: " & thisServerInfo.trayicon )
+				.line( "  port: " & thisServerInfo.port )
+				.line( "  stopsocket: " & thisServerInfo.stopsocket )
+				.line( "  debug: " & thisServerInfo.debug )
+				.line( "  ID: " & thisServerInfo.id );
 		}
 
+		// No servers found, then do nothing
 		if( structCount( servers ) eq 0 ){
 			print.boldRedLine( "No server configurations found!" );
 		}
