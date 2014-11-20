@@ -411,7 +411,7 @@ component accessors="true" singleton{
 		return {
 			id 				: "",
 			webroot			: "",
-			port			: "",
+			port			: 0,
 			stopsocket		: 0,
 			debug			: false,
 			status			: "stopped",

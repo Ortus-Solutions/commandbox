@@ -64,8 +64,12 @@ component extends="commandbox.system.BaseCommand" aliases="start" excludeFromHel
 			
 		// we don't want to changes the ports if we're doing stuff already
 		if( serverInfo.status is "stopped" || arguments.force ){
-			serverInfo.port = arguments.port;
-			serverInfo.stopsocket = arguments.stopPort;
+			if( arguments.port != 0 ){
+				serverInfo.port = arguments.port;
+			}
+			if( arguments.stopPort != 0 ){
+				serverInfo.stopsocket = arguments.stopPort;
+			}
 		}
 
 		// If no port, check box descriptor for port.
