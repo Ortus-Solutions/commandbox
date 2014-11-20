@@ -64,17 +64,17 @@ component extends="commandbox.system.BaseCommand" aliases="start" excludeFromHel
 			
 		// we don't want to changes the ports if we're doing stuff already
 		if( serverInfo.status is "stopped" || arguments.force ){
+			// Box Desriptor check for port first.
+			if( boxJSON.defaultPort != 0 ) {
+				serverInfo.port = boxJSON.defaultPort;
+			}
+			// Check the arguments as the last overrides
 			if( arguments.port != 0 ){
 				serverInfo.port = arguments.port;
 			}
 			if( arguments.stopPort != 0 ){
 				serverInfo.stopsocket = arguments.stopPort;
 			}
-		}
-
-		// If no port, check box descriptor for port.
-		if( !serverInfo.port ) {
-			serverInfo.port = boxJSON.defaultPort;
 		}
 
 		// Setup serverinfo according to params
