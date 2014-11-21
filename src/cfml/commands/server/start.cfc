@@ -13,6 +13,7 @@ component extends="commandbox.system.BaseCommand" aliases="start" excludeFromHel
 
 	/**
 	 * @port.hint            port number
+	 * @host.hint            bind to a host/ip
 	 * @openbrowser.hint     open a browser after starting
 	 * @directory.hint       web root for this server
 	 * @name.hint            short name for this server
@@ -27,6 +28,7 @@ component extends="commandbox.system.BaseCommand" aliases="start" excludeFromHel
 	 **/
 	function run(
 		Numeric port            = 0,
+		String	host            = "127.0.0.1",
 		Boolean openbrowser     = true,
 		String  directory       = "",
 		String  name            = "",
@@ -61,6 +63,7 @@ component extends="commandbox.system.BaseCommand" aliases="start" excludeFromHel
 		serverInfo.webroot 	= webroot;
 		serverInfo.debug 	= arguments.debug;
 		serverInfo.name 	= arguments.name is "" ? listLast( webroot, "\/" ) : arguments.name;
+		serverInfo.host 	= arguments.host;
 			
 		// we don't want to changes the ports if we're doing stuff already
 		if( serverInfo.status is "stopped" || arguments.force ){
