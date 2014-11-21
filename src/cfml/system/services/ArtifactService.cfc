@@ -104,8 +104,7 @@ component accessors="true" singleton {
 	* @version.hint The version to look for
 	*/ 
 	function getPackagePath( required packageName, version="" ){
-		// This will likely change, so I'm only going to put the code here
-		// I'm using the package name as the zip file for lack of anything better even though it's redundant with the first folder
+		// This will likely change, so I'm only going to put the code here.
 		var path = variables.artifactDir & '/' & arguments.packageName;
 		// do we have a version?
 		if( arguments.version.len() ){
@@ -129,9 +128,8 @@ component accessors="true" singleton {
 	* @version.hint The version of the package to look for
 	*/ 
 	function getArtifactPath( required packageName, required version ) {
-		// This will likely change, so I'm only going to put the code here
 		// I'm using the package name as the zip file for lack of anything better even though it's redundant with the first folder
-		return variables.artifactDir & '/' & arguments.packageName & '/' & arguments.version & '/' & arguments.packageName & '.zip';
+		return getPackagePath( arguments.packageName, arguments.version ) & '/' & arguments.packageName & '.zip';
 
 	}	
 	
