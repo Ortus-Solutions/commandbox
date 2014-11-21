@@ -32,7 +32,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 		if( arguments.property == 'slug' ) {
 			return error( '[slug] is a required property and cannot be cleared.' );			
 		}
-		boxJSON = packageService.readPackageDescriptor( directory );
+		var boxJSON = packageService.readPackageDescriptor( directory );
 		
 		// See if this string ends with array brackets containing a number greater than 1. Ex: test[3]
 		var search = reFind( "\[\s*([1-9][0-9]*)\s*\]$", property, 1, true );
