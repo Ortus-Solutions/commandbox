@@ -242,10 +242,10 @@ component accessors="true" singleton {
 			}
 			
 			// Next, see if the containing project has an install path configured for this dependency already.
-			var containerBoxJSON = readPackageDescriptor( arguments.currentWorkingDirectory );
+			var containerBoxJSON = readPackageDescriptor( arguments.packagePathRequestingInstallation );
 			if( !len( installDirectory ) && structKeyExists( containerBoxJSON.installPaths, packageName ) ) {
 				// Get the resolved intallation path for this package
-				installDirectory = fileSystemUtil.resolvePath( containerBoxJSON.installPaths[ packageName ] );
+				installDirectory = fileSystemUtil.resolvePath( containerBoxJSON.installPaths[ packageName ], arguments.packagePathRequestingInstallation );
 				// Back up to the "container" folder.  The packge directory will be added back below
 				installDirectory = listDeleteAt( installDirectory, listLen( installDirectory, '/\' ), '/\' );
 			}
@@ -282,14 +282,14 @@ component accessors="true" singleton {
 					installDirectory = arguments.packagePathRequestingInstallation & '/modules';
 				// If this is a plugin
 				} else if( packageType == 'plugins' ) {
-					installDirectory = arguments.currentWorkingDirectory & '/plugins';
+					installDirectory = arguments.packagePathRequestingInstallation & '/plugins';
 					// Plugins just get dumped in
 					artifactDescriptor.createPackageDirectory = false;
 					// Don't trash the plugins folder with this
 					ignorePatterns.append( '/box.json' );
 				// If this is an interceptor
 				} else if( packageType == 'interceptors' ) {
-					installDirectory = arguments.currentWorkingDirectory & '/interceptors';
+					installDirectory = arguments.packagePathRequestingInstallation & '/interceptors';
 					// interceptors just get dumped in
 					artifactDescriptor.createPackageDirectory = false;
 					// Don't trash the plugins folder with this
@@ -329,7 +329,7 @@ component accessors="true" singleton {
 				// Add it!
 				addDependency( packagePathRequestingInstallation, packageName, version, installDirectory, artifactDescriptor.createPackageDirectory,  arguments.saveDev );
 				// Tell the user...
-				consoleLogger.info( "box.json updated with #( arguments.saveDev ? 'dev ': '' )#dependency." );
+				consoleLogger.info( "#packagePathRequestingInstallation#/box.json updated with #( arguments.saveDev ? 'dev ': '' )#dependency." );
 			}			
 						
 			// Check to see if package has already been installed. Skip unless forced.
@@ -386,8 +386,16 @@ component accessors="true" singleton {
 				});
 			}
 	
-			// cleanup unzip
-			directoryDelete( tmpPath, true );
+			// Catch this to gracefully handle where the OS or another program 
+			// has the folder locked.
+			try {
+				// cleanup unzip
+				directoryDelete( tmpPath, true );				
+			} catch( any e ) {
+				consoleLogger.error( '#e.message##CR#The folder is possibly locked by another program.' );
+				logger.error( '#e.message# #e.detail#' , e.stackTrace );
+			}
+	
 			
 			// Summary output
 			consoleLogger.info( "Installing to: #installDirectory#" );		
@@ -781,28 +789,41 @@ component accessors="true" singleton {
 		var boxJSON = readPackageDescriptor( arguments.directory );
 		var tree = {
 			'name' : boxJSON.name,
-			'version': boxJSON.version 
+			'slug' : boxJSON.slug,
+			'shortDescription' : boxJSON.shortDescription,
+			'version': boxJSON.version
 		};
-		buildChildren( boxJSON, tree );
+		buildChildren( boxJSON, tree, arguments.directory);
 		return tree;
 	}
 
-	private function buildChildren( required struct boxJSON, required struct parent ) {
-		parent[ 'dependencies' ] = processDependencies( boxJSON.dependencies, boxJSON.installPaths );
-		parent[ 'dependencies' ].append( processDependencies( boxJSON.devDependencies, boxJSON.installPaths, true ) );
+	private function buildChildren( required struct boxJSON, required struct parent, required string basePath ) {
+		parent[ 'dependencies' ] = processDependencies( boxJSON.dependencies, boxJSON.installPaths, false, arguments.basePath );
+		parent[ 'dependencies' ].append( processDependencies( boxJSON.devDependencies, boxJSON.installPaths, true, arguments.basePath ) );
 	}
 	
-	private function processDependencies( dependencies, installPaths, dev=false ) {
+	private function processDependencies( dependencies, installPaths, dev=false, basePath ) {
 		var thisDeps = {};
 		
 		for( var dependency in arguments.dependencies ) {
-			thisDeps[ dependency ] = { 'version' : arguments.dependencies[ dependency ], 'dev' : arguments.dev }
+			thisDeps[ dependency ] = {
+				'version' : arguments.dependencies[ dependency ],
+				'dev' : arguments.dev,
+				'name' : '',
+				'shortDescription' : '',
+			};
+			   
 			if( structKeyExists( arguments.installPaths, dependency ) ) {
-				var fullPackageInstallPath = fileSystemUtil.resolvePath( arguments.installPaths[ dependency ] );
+				
+				var fullPackageInstallPath = fileSystemUtil.resolvePath( arguments.installPaths[ dependency ], arguments.basePath );
 				var boxJSON = readPackageDescriptor( fullPackageInstallPath );
+				thisDeps[ dependency ][ 'name'  ] = boxJSON.name;
+				thisDeps[ dependency ][ 'shortDescription'  ] = boxJSON.shortDescription;
+				
 				// Down the rabbit hole
-				buildChildren( boxJSON, thisDeps[ dependency ] );				
+				buildChildren( boxJSON, thisDeps[ dependency ], fullPackageInstallPath );				
 			} else {
+				// If we don't have an install path for this package, we don't know about its dependencies
 				thisDeps[ dependency ][ 'dependencies' ] = {};
 			}
 		}

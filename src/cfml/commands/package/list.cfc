@@ -1,12 +1,23 @@
 /**
  * Lists all dependencies of a package recursivley.  Run this command from the root of the package.
  * This command lists the packages stored in each box.json even if they aren't installed.
- * Dev dependencies are shown in a lighter color
+ * Dev dependencies are shown in yellow
  * .
  * {code:bash}
- * package list description
+ * list
  * {code}
  * .
+ * Get additional details with the --verbose flag
+ * .
+ * {code:bash}
+ * list --verbose
+ * {code}
+ * .
+ * Get output in JSON format with the --JSON flag.  JSON output always includes verbose details
+ * .
+ * {code:bash}
+ * list --JSON
+ * {code}
  **/
 component extends="commandbox.system.BaseCommand" aliases="list" excludeFromHelp=false {
 	
@@ -32,28 +43,37 @@ component extends="commandbox.system.BaseCommand" aliases="list" excludeFromHelp
 		}
 		
 		print.boldLine( 'Dependency Hierarchy for #tree.name# (#tree.version#)' );
-		printDependencies( tree );
+		printDependencies( tree, '', arguments.verbose );
 		
 	}
 
-	private function printDependencies( required struct parent, prefix='' ) {
+	private function printDependencies( required struct parent, string prefix, boolean verbose ) {
 		var i = 0;
 		var depCount = structCount( arguments.parent.dependencies );
 		for( var dependencyName in arguments.parent.dependencies ) {
 			var dependency = arguments.parent.dependencies[ dependencyName ];
 			var childDepCount = structCount( dependency.dependencies );
 			i++;
-			var isLast = i == depCount;
+			var isLast = ( i == depCount );
 			var branch = ( isLast ? '└' : '├' ) & '─' & ( childDepCount ? '┬' : '─' );
-			print.text( prefix & branch & ' ' );
-			var text = '#dependencyName# (#dependency.version#)';
-			if( dependency.dev ) {
-				print.line( text );
-			} else {
-				print.boldLine( text );
-			}
+			var branchCont = ( isLast ? ' ' : '│' ) & ' ' & ( childDepCount ? '│' : ' ' );
 			
-			printDependencies( dependency, prefix & ( isLast ? '  ' : '│ ' ) );
+			print.text( prefix & branch & ' ' );
+			
+			print[ ( dependency.dev ? 'boldYellowline' : 'boldLine' ) ]( '#dependencyName# (#dependency.version#)' );
+						
+			if( arguments.verbose ) {
+				if( len( dependency.name ) ) {
+					print.text( prefix & branchCont & ' ' );
+					print[ ( dependency.dev ? 'yellowLine' : 'line' ) ]( dependency.name );	
+				}
+				if( len( dependency.shortDescription ) ) {
+					print.text( prefix & branchCont & ' ' );
+					print[ ( dependency.dev ? 'yellowLine' : 'line' ) ]( dependency.shortDescription );	
+				}
+			} // end verbose?
+			
+			printDependencies( dependency, prefix & ( isLast ? '  ' : '│ ' ), arguments.verbose );
 		}
 	}
 
