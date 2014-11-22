@@ -27,8 +27,9 @@ component accessors="true" singleton {
 	/**
 	* Resolve the incoming path from the file system
 	* @directory.hint The directory to resolve
+	* @basePath.hint An expanded base path to resolve the path against. Defaults to CWD.
 	*/
-	function resolvePath( required string path ) {
+	function resolvePath( required string path, basePath=shell.pwd() ) {
 		
 		try {
 			
@@ -39,14 +40,14 @@ component accessors="true" singleton {
 			// Note, at this point we don't actually know if it actually even exists yet
 			if( !oPath.isAbsolute() ) {
 				// If it's relative, we assume it's relative to the current working directory and make it absolute
-				oPath = createObject( 'java', 'java.io.File' ).init( shell.pwd() & '/' & path );
+				oPath = createObject( 'java', 'java.io.File' ).init( arguments.basePath & '/' & path );
 			}
 	
 			// This will standardize the name and calculate stuff like ../../
 			return oPath.getCanonicalPath();
 			
 		} catch ( any e ) {
-			return shell.pwd() & '/' & path;
+			return arguments.basePath & '/' & path;
 		}
 		
 	}
