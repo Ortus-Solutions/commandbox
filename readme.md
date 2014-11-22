@@ -11,12 +11,12 @@
 
 CommandBox ColdFusion (CFML) CLI, Package Manager, REPL and much more!
 
-* Trademark + Copyright since 2014 by Ortus Solutions, Corp
-* <http://www.ortussolutions.com>
+* Trademark + Copyright since 2014 by [Ortus Solutions, Corp](http://www.ortussolutions.com)
 * [All products by Ortus Solutions](http://www.ortussolutions.com/products)
 * HONOR GOES TO GOD ABOVE ALL FOR HIS WISDOM FOR THIS PROJECT
 
 **Official Releases**
+
 Official stable releases can be found at the [CommandBox Official Page](http://www.ortussolutions.com/products/commandbox#download)
 
 **Integration Releases**
@@ -24,6 +24,12 @@ Official stable releases can be found at the [CommandBox Official Page](http://w
 Download from the [Ortus Integration Repository](http://integration.staging.ortussolutions.com/artifacts/ortussolutions/commandbox/).  
 
 *Just please note that this contains latest bleeding edge releases that might not be stable.*
+
+**Homebrew Releases**
+
+You can install the latest stable CommandBox via [HomeBrew](http://brew.sh) very easily by using the following command in your terminal:
+
+`brew install https://github.com/Ortus-Solutions/commandbox/raw/master/build/commandbox.rb`
 
 ## DOCUMENTATION
 
