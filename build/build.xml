@@ -146,6 +146,7 @@ External Dependencies:
 		</zip>
 		<!-- Build Checksum for cfml.zip -->
 		<checksum file="${dist.dir}/${distro.name}-cfml-${commandbox.version}.zip" forceoverwrite="true" fileext=".md5" />
+		<checksum file="${dist.dir}/${distro.name}-cfml-${commandbox.version}.zip" forceoverwrite="true" algorithm="sha" />
 		
 		<!-- update railo cli project with our version stuff -->
       	<copy tofile="${temp.dir}/rcli/cfml.zip" overwrite="true" encoding="UTF-8">
@@ -162,6 +163,7 @@ External Dependencies:
         </zip>
         <!-- Checksum on Jar -->
         <checksum file="${dist.dir}/box.jar" forceoverwrite="true" fileext=".md5" />
+        <checksum file="${dist.dir}/box.jar" forceoverwrite="true" algorithm="sha" />
 
         <!-- cleanup -->
 		<delete dir="${temp.dir}/rcli"/>
@@ -205,6 +207,7 @@ External Dependencies:
 		</zip>
 		<!-- Build Checksum -->
 		<checksum file="${dist.dir}/${distro.name}-bin-${commandbox.version}.zip" forceoverwrite="true" fileext=".md5" />
+		<checksum file="${dist.dir}/${distro.name}-bin-${commandbox.version}.zip" forceoverwrite="true" algorithm="sha" />
  	</target>
 
 	<!-- Build windows executable -->
@@ -244,6 +247,7 @@ External Dependencies:
 		</zip>
 		<!-- Build Checksum -->
 		<checksum file="${dist.dir}/${distro.name}-win-${commandbox.version}.zip" forceoverwrite="true" fileext=".md5" />
+		<checksum file="${dist.dir}/${distro.name}-win-${commandbox.version}.zip" forceoverwrite="true" algorithm="sha" />
 	</target>
 
 	<!-- Build including JREs -->
@@ -281,6 +285,11 @@ External Dependencies:
 
 		<!-- Build Checksum -->
 		<checksum forceoverwrite="true" fileext=".md5">
+			<fileset dir="${dist.dir}">
+				<include name="*-jre-*.zip" />
+			</fileset>
+		</checksum>
+		<checksum forceoverwrite="true" algorithm="sha">
 			<fileset dir="${dist.dir}">
 				<include name="*-jre-*.zip" />
 			</fileset>
@@ -331,6 +340,7 @@ External Dependencies:
 		<move file="${dist.dir}/${distro.name}_${commandbox.version}-1_all.deb" tofile="${dist.dir}/${distro.name}-debian-${commandbox.version}.deb" />
 		<!-- Build Checksum -->
 		<checksum file="${dist.dir}/${distro.name}-debian-${commandbox.version}.deb" forceoverwrite="true" fileext=".md5" />
+		<checksum file="${dist.dir}/${distro.name}-debian-${commandbox.version}.deb" forceoverwrite="true" algorithm="sha" />
 		<!-- Update Repo -->
 		<echo message="Updating apt (deb) repo in ${deb.repo}"/>
 	   	<deb-repo dir="${deb.repo}" />
@@ -354,6 +364,7 @@ External Dependencies:
 		<copy file="${rpm.repo}/${distro.name}-${commandbox.version}-1.noarch.rpm" tofile="${dist.dir}/${distro.name}-rpm-${commandbox.version}.rpm" />
 		<!-- Build Checksum -->
 		<checksum file="${dist.dir}/${distro.name}-rpm-${commandbox.version}.rpm" forceoverwrite="true" fileext=".md5" />
+		<checksum file="${dist.dir}/${distro.name}-rpm-${commandbox.version}.rpm" forceoverwrite="true" algorithm="sha" />
 		<!-- updates/creates the RPM repository, requires 'createrepo' on build server -->
 		<rpm-repo dir="${rpm.repo}" />
 	</target>
