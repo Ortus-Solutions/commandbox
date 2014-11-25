@@ -116,6 +116,12 @@ component accessors="true" singleton{
 		var name 		= arguments.serverInfo.name is "" ? listLast( webroot, "\/" ) : arguments.serverInfo.name;
 		var portNumber  = arguments.serverInfo.port == 0 ? getRandomPort(arguments.serverInfo.host) : arguments.serverInfo.port;
 		var stopPort 	= arguments.serverInfo.stopsocket == 0 ? getRandomPort(arguments.serverInfo.host) : arguments.serverInfo.stopsocket;
+		var enableHTTP 	= isNull(arguments.serverInfo.enableHTTP) ? true : arguments.serverInfo.enableHTTP;
+		var enableSSL 	= isNull(arguments.serverInfo.enableSSL) ? false : arguments.serverInfo.enableSSL;
+		var SSLPort 	= isNull(arguments.serverInfo.sslPort) ? 1443 : arguments.serverInfo.sslPort;
+		var SSLCert 	= isNull(arguments.serverInfo.sslCert) ? "" : arguments.serverInfo.sslCert;
+		var SSLKey 		= isNull(arguments.serverInfo.sslKey) ? "" : arguments.serverInfo.sslKey;
+		var SSLKeyPass 	= isNull(arguments.serverInfo.sslKeyPass) ? "" : arguments.serverInfo.sslKeyPass;
 		// setup default tray icon if empty
 		var trayIcon    = len( arguments.serverInfo.trayIcon ) ? arguments.serverInfo.trayIcon : "#variables.libdir#/trayicon.png";
 		// Setup lib directory, add more if defined by server info
@@ -141,6 +147,12 @@ component accessors="true" singleton{
 				& " --stop-port #stopPort# --processname ""#processName#"" --log-dir ""#logdir#"""
 				& " --open-browser #openbrowser# --open-url http://#arguments.serverInfo.host#:#portNumber#"
 				& " --libdir ""#libDirs#"" --iconpath ""#trayIcon#""";
+		if(enableSSL) {
+			args &= " --enable-http #enableHTTP# --enable-ssl #enableSSL# --ssl-port #SSLPort#";
+		}
+		if(enableSSL && SSLCert != "") {
+			args &= " --ssl-cert ""#SSLCert#"" --ssl-key ""#SSLKey#"" --ssl-keypass ""#SSLKeyPass#""";
+		}
 
 		if ( Len( Trim( arguments.serverInfo.webXml ?: "" ) ) ) {
 			args &= " --webxmlpath #arguments.serverInfo.webXml#";
