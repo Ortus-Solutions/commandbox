@@ -43,7 +43,7 @@ component extends="commandbox.system.BaseCommand" aliases="start" excludeFromHel
 		String  serverConfigDir = "",
 		String  libDirs         = "",
 		String  trayIcon        = "",
-		String  webXml          = ""
+		String  webXml          = "",
 		Boolean enableHTTP 		= true,
 		Boolean enableSSL 		= false,
 		Numeric SSLPort 		= 1443,
