@@ -58,6 +58,8 @@ component {
 	this.modelNamespace		= "@modelNamespace@";
 	// CF Mapping
 	this.cfmapping			= "@cfmapping@";
+	// Module Dependencies
+	this.dependencies 		= [];
 
 	function configure(){
 
