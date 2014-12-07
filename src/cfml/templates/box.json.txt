@@ -1,16 +1,12 @@
 {
 	name : "",
-	version :"1.0.0+0000",
+	version : "0.0.0",
+	slug : "",
 	author : "",
-	location :"",
-	directory: "",
-	createPackageDirectory: true,
-	packageDirectory: "",
 	homepage :"",
 	documentation : "",
 	repository: { type:"", URL:"" },
 	bugs : "",
-	slug : "",
 	shortDescription : "",
 	description : "",
 	instructions : "",
@@ -41,12 +37,6 @@
 		reporter :"",
 		reporterResults : "",
 		bundles :[ "" ],
-		directory: { mapping : "", recurse: true },
-		watchers :[],
-		notify : {
-			emails : [],
-			growl : "",
-			URL : ""
-		}
+		directory: { mapping : "", recurse: true }
 	}
 }
