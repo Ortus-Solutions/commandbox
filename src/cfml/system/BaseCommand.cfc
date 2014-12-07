@@ -75,12 +75,7 @@ component accessors="true" singleton{
 	 * @message.hint The message to display to the user such as "Press any key to continue."
  	 **/
 	function confirm( required message ) {
-		var answer = ask( "#message# : " );
-		if( trim( answer ) == "y" || ( isBoolean( answer ) && answer ) ) {
-			return true;
-		}
-		return false;
-		
+		return shell.ask( arguments.message );
 	}
 		
 	/**

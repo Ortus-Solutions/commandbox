@@ -167,6 +167,20 @@ component accessors="true" singleton {
 		return input;
 	}
 
+	/**
+	 * Ask the user a question looking for a yes/no response
+	 * @message.hint message to prompt the user with
+	 *
+	 * @return the response from the user as a boolean value
+ 	 **/
+	boolean function confirm( required message ){
+		var answer = ask( "#message# : " );
+		if( isNull( answer ) ){ return false; }
+		if( trim( answer ) == "y" || ( isBoolean( answer ) && answer ) ) {
+			return true;
+		}
+		return false;
+	}
 
 	/**
 	 * Wait until the user's next keystroke, returns the key pressed
