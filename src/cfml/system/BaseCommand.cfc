@@ -75,7 +75,7 @@ component accessors="true" singleton{
 	 * @message.hint The message to display to the user such as "Press any key to continue."
  	 **/
 	function confirm( required message ) {
-		return shell.ask( arguments.message );
+		return shell.confirm( arguments.message );
 	}
 		
 	/**
