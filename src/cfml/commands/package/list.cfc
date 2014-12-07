@@ -30,23 +30,27 @@ component extends="commandbox.system.BaseCommand" aliases="list" excludeFromHelp
 	 * @json.hint Outputs results as JSON 
 	 **/
 	function run( boolean verbose=false, boolean JSON=false ) {
-		
+		// package check
 		if( !packageService.isPackage( getCWD() ) ) {
 			return error( '#getCWD()# is not a package!' );
 		}
-				
+		// build dependency tree
 		var tree = packageService.buildDependencyHierarchy( getCWD() );
-		
+
+		// JSON output
 		if( arguments.JSON ) {
 			print.line( formatterUtil.formatJson( serializeJSON( tree ) ) );
 			return;			
 		}
-		
+		// normal output
 		print.boldLine( 'Dependency Hierarchy for #tree.name# (#tree.version#)' );
 		printDependencies( tree, '', arguments.verbose );
 		
 	}
 
+	/**
+	* Pretty print dependencies
+	*/
 	private function printDependencies( required struct parent, string prefix, boolean verbose ) {
 		var i = 0;
 		var depCount = structCount( arguments.parent.dependencies );
