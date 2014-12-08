@@ -27,7 +27,7 @@ component{
 		**/
 
 		var current = parseVersion( clean( trim( arguments.current ) ) );
-		var target 	= parseVersion( clea( trim( arguments.target ) ) );
+		var target 	= parseVersion( clean( trim( arguments.target ) ) );
 
 		// Major check
 		if( target.major gt current.major ){
