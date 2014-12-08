@@ -45,7 +45,8 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 			return error( 'File [#packageService.getDescriptorPath( directory )#] does not exist.  Use the "init" command to create it.' );
 		}
 		
-		boxJSON = packageService.readPackageDescriptor( directory );
+		// Read without defaulted values
+		boxJSON = packageService.readPackageDescriptorRaw( directory );
 		
 		// Convert foo.bar-baz[1] to ['foo']['bar-baz'][1]
 		var tmpProperty = replace( arguments.property, '[', '.[', 'all' );

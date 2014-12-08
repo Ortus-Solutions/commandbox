@@ -6,23 +6,16 @@
  * If a directory is supplied, the package will be looked for in that directory.  Otherwise, the box.json for the packge will be 
  * inspected for an install path for that package.  Lasty, the command will look in the current directory for a folder named after the package.
  * .
- * The "save" and "saveDev" parameters will remove this package as a dependency or devDependency in your root box.json if it exists.
- * .
  * Uninstall the feeds package
  * {code:bash}
  * forgebox uninstall feeds
  * {code}
  * .
- * Uninstall feeds and remove it from the dependency list
+ * Uninstall feeds but don't remove it from the dependency list
  * {code:bash}
- * forgebox install feeds --save
+ * forgebox install feeds --!save
  * {code}
  * .
- * Uninstall feeds and remove it from the dev dependency list
- * {code:bash}
- * forgebox install feeds --saveDev
- * {code}
- *
  **/
 component extends="commandbox.system.BaseCommand" aliases="uninstall" excludeFromHelp=false {
 	
@@ -45,8 +38,7 @@ component extends="commandbox.system.BaseCommand" aliases="uninstall" excludeFro
 	function run( 
 		required string slug='',
 		string directory,
-		boolean save=true,
-		boolean saveDev=false
+		boolean save=true
 	){
 		
 		// Don't default the dir param since we need to differentiate whether the user actually 

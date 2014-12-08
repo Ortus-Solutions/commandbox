@@ -483,7 +483,6 @@ component accessors="true" singleton {
 			required string ID,
 			string directory,
 			boolean save=false,
-			boolean saveDev=false,
 			required string currentWorkingDirectory
 	){
 					
@@ -543,7 +542,6 @@ component accessors="true" singleton {
 				ID = dependency,
 				// Only save the first level
 				save = false,
-				saveDev = false,
 				// TODO: To allow nested modules, change this to the previous 
 				//       install directory so the dependency is nested within
 				currentWorkingDirectory = arguments.currentWorkingDirectory
@@ -577,12 +575,11 @@ component accessors="true" singleton {
 		
 		// Should we save this as a dependancy
 		// and is the current working directory a package?
-		if( ( arguments.save || arguments.saveDev )  
-			&& isPackage( arguments.currentWorkingDirectory ) ) {
+		if( arguments.save && isPackage( arguments.currentWorkingDirectory ) ) {
 			// Add it!
-			removeDependency( currentWorkingDirectory, packageName,  arguments.saveDev );
+			removeDependency( currentWorkingDirectory, packageName );
 			// Tell the user...
-			consoleLogger.info( "#( arguments.saveDev ? 'dev ': '' )#dependency removed from box.json." );
+			consoleLogger.info( "Dependency removed from box.json." );
 		}
 	
 		consoleLogger.info( "'#arguments.ID#' has been uninstalled" );
@@ -607,11 +604,17 @@ component accessors="true" singleton {
 		boolean dev=false
 		) {
 		// Get box.json, create empty if it doesn't exist
-		var boxJSON = readPackageDescriptor( arguments.currentWorkingDirectory );
-		// Get reference to appropriate depenency struct
-		var dependencies = ( arguments.dev ? boxJSON.devDependencies : boxJSON.dependencies );
+		var boxJSON = readPackageDescriptorRaw( arguments.currentWorkingDirectory );
 		
-		
+		// Get reference to appropriate dependency struct
+		if( arguments.dev ) {
+			param name='boxJSON.devDependencies' default='#{}#';
+			var dependencies = boxJSON.devDependencies;
+		} else {
+			param name='boxJSON.dependencies' default='#{}#';
+			var dependencies = boxJSON.dependencies;			
+		}
+				
 		// Add/overwrite this dependency
 		dependencies[ arguments.packageName ] = arguments.version;
 		
@@ -619,6 +622,7 @@ component accessors="true" singleton {
 		// so don't save this if they were just dumped somewhere like the packge root amongst
 		// other unrelated files and folders.
 		if( arguments.installDirectoryIsDedicated ) {
+			param name='boxJSON.installPaths' default='#{}#';
 			var installPaths = boxJSON.installPaths;
 					
 			// normalize slashes
@@ -652,22 +656,26 @@ component accessors="true" singleton {
 	* @packageName.hint Package to add a a dependency
 	* @dev.hint True if this is a development depenency, false if it is a production dependency
 	*/	
-	public function removeDependency( required string directory, required string packageName, boolean dev=false ) {
+	public function removeDependency( required string directory, required string packageName ) {
 		// Get box.json, create empty if it doesn't exist
-		var boxJSON = readPackageDescriptor( arguments.directory );
-		// Get reference to appropriate depenency struct
-		var dependencies = ( arguments.dev ? boxJSON.devDependencies : boxJSON.dependencies );
-		var installPaths = boxJSON.installPaths;
+		var boxJSON = readPackageDescriptorRaw( arguments.directory );
+		
+
 		var saveMe = false;
 		
-		if( structKeyExists( dependencies, arguments.packageName ) ) {
+		if( structKeyExists( boxJSON, 'dependencies' ) && structKeyExists( boxJSON.dependencies, arguments.packageName ) ) {
 			saveMe = true;
-			structDelete( dependencies, arguments.packageName );
+			structDelete( boxJSON.dependencies, arguments.packageName );
 		}
 				
-		if( structKeyExists( installPaths, arguments.packageName ) ) {
+		if( structKeyExists( boxJSON, 'devdependencies' ) && structKeyExists( boxJSON.devdependencies, arguments.packageName ) ) {
 			saveMe = true;
-			structDelete( installPaths, arguments.packageName );
+			structDelete( boxJSON.devdependencies, arguments.packageName );
+		}
+				
+		if( structKeyExists( boxJSON, 'installPaths' ) && structKeyExists( boxJSON.installPaths, arguments.packageName ) ) {
+			saveMe = true;
+			structDelete( boxJSON.installPaths, arguments.packageName );
 		}
 		
 		// Only save if we modified the JSON
@@ -742,11 +750,24 @@ component accessors="true" singleton {
 	}
 
 	/**
-	* Get the box.json as data from the passed directory location, if not found
-	* then we return an empty struct
+	* Get the box.json as data from the passed directory location.
+	* Any missing properties will be defaulted with our box.json template.
+	* If you plan on writing the box.json back out to disk, use readPackageDescriptorRaw() instead.
 	* @directory.hint The directory to search for the box.json
 	*/
 	struct function readPackageDescriptor( required directory ){
+		// Merge this JSON with defaults
+		return newPackageDescriptor( readPackageDescriptorRaw( arguments.directory ) );
+	}
+
+	/**
+	* Get the box.json as data from the passed directory location, if not found
+	* then we return an empty struct.  This method will NOT default box.json properties
+	* and will return JUST what was defined.  Make sure you use existence checks when 
+	* using the returned data structure
+	* @directory.hint The directory to search for the box.json
+	*/
+	struct function readPackageDescriptorRaw( required directory ){
 		
 		// If the packge has a box.json in the root...
 		if( isPackage( arguments.directory ) ) {
@@ -757,13 +778,13 @@ component accessors="true" singleton {
 			// Validate the file is valid JSOn
 			if( isJSON( boxJSON ) ) {
 				// Merge this JSON with defaults
-				return newPackageDescriptor( deserializeJSON( boxJSON ) );
+				return deserializeJSON( boxJSON );
 			}
 			
 		}
 		
 		// Just return defaults
-		return newPackageDescriptor();	
+		return {};	
 	}
 
 	/**
