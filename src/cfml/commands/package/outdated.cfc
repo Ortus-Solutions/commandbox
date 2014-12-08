@@ -83,7 +83,7 @@ component extends="commandbox.system.BaseCommand" aliases="outdated" excludeFrom
 		if( outdatedDependencies gt 0 ){
 			print.green( 'Found ' )
 				.boldGreen( '(#outdatedDependencies#)' )
-				.green( ' Outdated Dependencies for ' )
+				.green( ' Outdated Dependenc#( outdatedDependencies  == 1 ? 'y' : 'ies' )# for ' )
 				.boldCyanLine( "#tree.name# (#tree.version#)" )
 				.line();
 			printDependencies( parent=tree, verbose=arguments.verbose );
