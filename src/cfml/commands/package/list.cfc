@@ -43,7 +43,7 @@ component extends="commandbox.system.BaseCommand" aliases="list" excludeFromHelp
 			return;			
 		}
 		// normal output
-		print.boldLine( 'Dependency Hierarchy for #tree.name# (#tree.version#)' );
+		print.green( 'Dependency Hierarchy for ' ).boldCyanLine( "#tree.name# (#tree.version#)" );
 		printDependencies( tree, '', arguments.verbose );
 		
 	}
