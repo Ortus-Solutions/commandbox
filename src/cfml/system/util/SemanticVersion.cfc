@@ -26,8 +26,8 @@ component{
 		Semantic version: major.minor.revision-alpha.1+build
 		**/
 
-		var current = parseVersion( trim( arguments.current ) );
-		var target 	= parseVersion( trim( arguments.target ) );
+		var current = parseVersion( clean( trim( arguments.current ) ) );
+		var target 	= parseVersion( clea( trim( arguments.target ) ) );
 
 		// Major check
 		if( target.major gt current.major ){
@@ -55,6 +55,13 @@ component{
 		}
 
 		return false;
+	}
+
+	/**
+	* Clean a version string from leading = or v
+	*/
+	string function clean( required version ){
+		return reReplaceNoCase( arguments.version, "^(v|=)", "" );
 	}
 
 	/**
