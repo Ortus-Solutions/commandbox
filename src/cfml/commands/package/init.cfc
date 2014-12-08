@@ -85,10 +85,5 @@ component extends="commandbox.system.BaseCommand" aliases="init" excludeFromHelp
 		
 		// Info message
 		print.yellowLine( 'Package Initialized & Created ' & directory & '/box.json' ).toConsole();
-
-		if( confirm( "Would you like me to open it for you? (Yes/No)" ) ){
-			runCommand( "open " & directory & '/box.json' );
-		}
-			
 	}
 }
