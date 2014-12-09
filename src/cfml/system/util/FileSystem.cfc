@@ -26,7 +26,7 @@ component accessors="true" singleton {
 
 	/**
 	* Resolve the incoming path from the file system
-	* @directory.hint The directory to resolve
+	* @path.hint The directory to resolve
 	* @basePath.hint An expanded base path to resolve the path against. Defaults to CWD.
 	*/
 	function resolvePath( required string path, basePath=shell.pwd() ) {
@@ -50,6 +50,17 @@ component accessors="true" singleton {
 			return arguments.basePath & '/' & path;
 		}
 		
+	}
+
+	/**
+	* Tells you if a path is the drive root
+	* @path The path to look at
+	*/
+	boolean function isDriveRoot( required string path ) {
+		// Load our path into a Java file object so we can use some of its nice utility methods
+		var oPath = createObject( 'java', 'java.io.File' ).init( path );
+		// Drive roots don't have any name elements
+		return ( oPath.toPath().getNameCount()==0 );		
 	}
 
 	/**

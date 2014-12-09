@@ -19,6 +19,7 @@ component accessors="true" singleton {
 	property name="pathPatternMatcher" 	inject="pathPatternMatcher";
 	property name='shell' 				inject='Shell';
 	property name="logger"				inject="logbox:logger:{this}";
+	property name="semanticVersion"		inject="semanticVersion";
 	
 	// This should be removed once the install command starts resolving registries automatically
 	property name="forgeBox" 			inject="ForgeBox";
@@ -233,7 +234,56 @@ component accessors="true" singleton {
 			if( !len( packageType ) && len( artifactDescriptor.type ) ) {
 				packageType = artifactDescriptor.type;
 			}
+			
+			// Assert: At this point we know what we're installing and we've acquired it, but we don't know where it will install to yet.
+									
+			// Determine if a satisfying version of this package is already installed here or at a higher level.  if so, skip it.
+			// Modules are the only kind of packages that can be nested in a hierarchy, so the check only applies here. 
+			// We're also going to assume that they are in a "modules" folder.
+			// This check also only applies if we're at least one level deep into modules.
+			if( packageType == 'modules' && currentWorkingDirectory != packagePathRequestingInstallation) {
+				
+				// We'll update this variable as we climb back up the directory structure
+				var movingTarget = packagePathRequestingInstallation;
+				// match "/modules/{myPackage}" at the end of a path
+				var regex = '[/\\]modules[/\\][^/\\]*$';
+				
+				// Can we keep backing up?
+				while( reFindNoCase( regex, movingTarget ) ) {
 					
+					// Back out of this  folder
+					movingTarget = reReplaceNoCase( movingTarget, regex, '' );					
+					
+					// If we didn't reach a package, I'm not sure what happened, but we can't really continue
+					if( !isPackage( movingTarget ) ) {
+						break;
+					}
+					
+					// What does this package need installed?
+					targetBoxJSON = readPackageDescriptor( movingTarget );
+					
+					// This ancestor package has a candidate installed that might satisfy our dependency
+					if( structKeyExists( targetBoxJSON.installPaths, packageName ) ) {
+						var candidateInstallPath = fileSystemUtil.resolvePath( targetBoxJSON.installPaths[ packageName ], movingTarget );
+						if( isPackage( candidateInstallPath ) ) {
+							var candidateBoxJSON = readPackageDescriptor( candidateInstallPath );
+							// Does the package that we found satisfy what we need?
+							if( semanticVersion.satisfies( candidateBoxJSON.version, version ) ) {
+								consoleLogger.warn( '#packageName# (#version#) is already satisifed by #candidateInstallPath# (#candidateBoxJSON.version#).  Skipping installation.' );
+								return;
+							}
+						}
+					}
+										
+					// If we've reached the root dir, just quit
+					if( movingTarget == currentWorkingDirectory) {
+						break;
+					}
+					
+				}
+				
+			}
+			
 			var installDirectory = '';
 			
 			// If the user gave us a directory, use it above all else
@@ -323,7 +373,7 @@ component accessors="true" singleton {
 			}
 			
 			// Assert: At this point, all paths are finalized and we are ready to install.
-			
+						
 			// Should we save this as a dependency. Save the install even though the package may already be there
 			if( ( arguments.save || arguments.saveDev ) ) {
 				// Add it!
@@ -436,10 +486,6 @@ component accessors="true" singleton {
 
 		// Loop over this package's dependencies
 		for( var dependency in dependencies ) {
-			
-			// TODO: Logic here to determine if a satisfying version of this package
-			//       is already installed here or at a higher level.  if so, skip it.
-			
 			var isDev = structKeyExists( artifactDescriptor.devDependencies, dependency );
 			var isSaving = ( arguments.save || arguments.saveDev );
 			
@@ -451,7 +497,7 @@ component accessors="true" singleton {
 				save = ( isSaving && !isDev ),
 				saveDev = ( isSaving && isDev ),
 				production = arguments.production,
-				currentWorkingDirectory = arguments.currentWorkingDirectory, // Orginal dir
+				currentWorkingDirectory = arguments.currentWorkingDirectory, // Original dir
 				packagePathRequestingInstallation = installDirectory // directory for smart dependencies to use
 			};
 						
@@ -522,39 +568,44 @@ component accessors="true" singleton {
 			var boxJSON = readPackageDescriptor( uninstallDirectory );
 			// and grab all the dependencies
 			var dependencies = boxJSON.dependencies;
+			var type = boxJSON.type;
 			// Add in the devDependencies
 			dependencies.append( boxJSON.devDependencies );
-						
+			
 		} else {
 			// If the package isn't on disk, no dependencies
 			var dependencies = {};
+			var type = '';
 		}
 
-
-		if( dependencies.count() ) {
-			consoleLogger.debug( "Uninstalling dependencies first..." );
-		}
-
-		// Loop over this packages dependencies
-		for( var dependency in dependencies ) {
-			
-			var params = {
-				ID = dependency,
-				// Only save the first level
-				save = false,
-				// TODO: To allow nested modules, change this to the previous 
-				//       install directory so the dependency is nested within
-				currentWorkingDirectory = arguments.currentWorkingDirectory
-			};
-						
-			// If the user didn't specify this, don't pass it since it overrides the package's desired install location
-			if( structKeyExists( arguments, 'directory' ) ) {
-				params.directory = arguments.directory;
+		// ColdBox modules are stored in a hierachy so just removing the top one removes then all
+		// For all other packages, the depenencies are probably just in the root
+		if( type != 'modules' ) {
+	
+			if( dependencies.count() ) {
+				consoleLogger.debug( "Uninstalling dependencies first..." );
 			}
-			
-			// Recursivley install them
-			uninstallPackage( argumentCollection = params );	
-		}
+	
+			// Loop over this packages dependencies
+			for( var dependency in dependencies ) {
+				
+				var params = {
+					ID = dependency,
+					// Only save the first level
+					save = false,
+					currentWorkingDirectory = arguments.currentWorkingDirectory
+				};
+							
+				// If the user didn't specify this, don't pass it since it overrides the package's desired install location
+				if( structKeyExists( arguments, 'directory' ) ) {
+					params.directory = arguments.directory;
+				}
+				
+				// Recursivley install them
+				uninstallPackage( argumentCollection = params );	
+			}
+		
+		} // end is not module
 				
 		// uninstall the package
 		if( directoryExists( uninstallDirectory ) ) {

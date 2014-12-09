@@ -18,6 +18,7 @@ component{
 
 	/**
 	* Checks if target version is a newer semantic version than the passed current version
+	* Note: To confirm to semvar, I think this needs to defer to gt(). 
 	* current.hint The current version of the system
 	* target.hint The newer version received
 	*/
@@ -62,6 +63,33 @@ component{
 	*/
 	string function clean( required version ){
 		return reReplaceNoCase( arguments.version, "^(v|=)", "" );
+	}
+
+	/**
+	* Decides whether a version satisfies a range
+	* 
+	*/
+	boolean function satisfies( required string version, required string range ){
+		// TODO: This is just a quick fix.  The satisfies() method needs actually implemented to handle ranges 
+		return eq( arguments.version, arguments.range );
+	}
+
+	/**
+	* Decides whether two versions are equal
+	*/
+	boolean function eq( required string version, required string version2 ){
+		var version = parseVersion( clean( trim( arguments.version ) ) );
+		var version2 = parseVersion( clean( trim( arguments.version2 ) ) );
+		
+		// If all pieces are an exact match
+		if( version.major == version2.major
+			&& version.minor == version2.minor
+			&& version.revision == version2.revision
+			&& version.beID == version2.beID
+			&& version.buildID == version2.buildID ) {
+			return true;
+		}
+		return false;
 	}
 
 	/**
