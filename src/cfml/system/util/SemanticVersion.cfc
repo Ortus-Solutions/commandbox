@@ -75,24 +75,6 @@ component singleton{
 	}
 
 	/**
-	* Decides whether two versions are equal
-	*/
-	boolean function eq( required string version, required string version2 ){
-		var version = parseVersion( clean( trim( arguments.version ) ) );
-		var version2 = parseVersion( clean( trim( arguments.version2 ) ) );
-		
-		// If all pieces are an exact match
-		if( version.major == version2.major
-			&& version.minor == version2.minor
-			&& version.revision == version2.revision
-			&& version.beID == version2.beID
-			&& version.buildID == version2.buildID ) {
-			return true;
-		}
-		return false;
-	}
-
-	/**
 	* Parse the semantic version. If no minor found, then 0. If not revision found, then 0. 
 	* If not Bleeding Edge bit, then empty. If not buildID, then 0
 	* @return struct:{major,minor,revision,beid,buildid}
@@ -155,5 +137,6 @@ component singleton{
 
 		return ( current == target ); 
 	}
+
 
 }
