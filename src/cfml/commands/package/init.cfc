@@ -1,9 +1,14 @@
 /**
  * Initialize a package in the current directory by creating a default box.json file.
- * This command will interview you about your package
+ * If you pass a `--wizard` flag, then the command will give you a wizard to init a package
  * .
  * {code:bash}
  * init
+ * {code}
+ * .
+ * Init with a wizard
+ * {code:base}
+ * init --wizard
  * {code}
  * .
  * Pass in an arguments you want and a property in the box.json will be initialized with the 
@@ -24,22 +29,23 @@ component extends="commandbox.system.BaseCommand" aliases="init" excludeFromHelp
 	 * @version The version for this package, please use semantic versioning - 0.0.0
 	 * @private Would you like to mark your package as private, which prevents it to submit it to ForgeBox
 	 * @shortDescription A short description for the package
-	 * @author The author of the package, you!
-	 * @keywords A nice list of keywords that describe your package
-	 * @homepage Your package's homepage URL
-	 * @ignoreList add commonly ignored files to the package's ignore list
+	 * @ignoreList Add commonly ignored files to the package's ignore list
+	 * @wizard Run the init wizard, defaults to false
 	 **/
 	function run( 
-		required name, 
-		required slug,
-		required version,
-		required boolean private,
-		required shortDescription,
-		required author,
-		required keywords,
-		required homepage,
-		required boolean ignoreList
+		name="My Package", 
+		slug="my-package",
+		version="0.0.0",
+		boolean private=false,
+		shortDescription="A sweet package",
+		boolean ignoreList=true,
+		boolean wizard=false
 	){
+		// Check for wizard argument
+		if( arguments.wizard ){
+			runCommand( 'package init-wizard' );
+			return;
+		}
 		
 		// This will make each directory canonical and absolute
 		var directory = getCWD();
@@ -47,12 +53,6 @@ component extends="commandbox.system.BaseCommand" aliases="init" excludeFromHelp
 		// Read current box.json if it exists, otherwise, get a new one
 		var boxJSON = PackageService.readPackageDescriptor( directory );
 
-		// Defaults to arguments
-		if( !len( arguments.name ) ){ arguments.name = "My Package"; }
-		if( !len( arguments.slug ) ){ arguments.slug = "my-package"; }
-		if( !len( arguments.version ) ){ arguments.version = "0.0.0"; }
-		if( !len( arguments.shortDescription ) ){ arguments.shortDescription = "A nice package"; }
-		
 		// Don't use these defaults if the existing box.json already has something useful
 		if( len( boxJSON.name ) && arguments.name == 'My Package' ) {
 			structDelete( arguments, 'name' );
@@ -77,7 +77,7 @@ component extends="commandbox.system.BaseCommand" aliases="init" excludeFromHelp
 			} else {
 				evaluate( '#fullPropertyName# = arguments[ arg ]' );				
 			}
-			print.blueLine( 'Set #arg# = #arguments[ arg ]#' );
+			print.blueLine( '- Set #arg# = #arguments[ arg ]#' );
 		}
 			
 		// Write the file back out
