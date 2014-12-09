@@ -7,7 +7,7 @@ www.coldbox.org | www.luismajano.com | www.ortussolutions.com
 * Utility to parse and validate semantic versions
 * Semantic version: major.minor.revision-alpha.1+build
 */
-component{
+component singleton{
 	
 	/**
 	* Constructor
@@ -93,7 +93,8 @@ component{
 	}
 
 	/**
-	* Parse the semantic version
+	* Parse the semantic version. If no minor found, then 0. If not revision found, then 0. 
+	* If not Bleeding Edge bit, then empty. If not buildID, then 0
 	* @return struct:{major,minor,revision,beid,buildid}
 	*/
 	struct function parseVersion( required string version ){
@@ -101,7 +102,7 @@ component{
 
 		// Get build ID first
 		results.buildID		= find( "+", arguments.version ) ? listLast( arguments.version, "+" ) : '0';
-		// REmove build ID
+		// Remove build ID
 		arguments.version 	= reReplace( arguments.version, "\+([^\+]*).$", "" );
 		// Get BE ID Formalized Now we have major.minor.revision-alpha.1
 		results.beID		= find( "-", arguments.version ) ? listLast( arguments.version, "-" ) : '';
@@ -117,6 +118,42 @@ component{
 		results.major 		= getToken( arguments.version, 1, "." );
 
 		return results;
+	}
+
+	/**
+	* Parse the incoming version and conform it to semantic version.
+	* If bleeding edge is not found it is omitted.
+	* @return string:{major.minor.revision.[beid]+buildid}
+	*/
+	string function parseVersionAsString( required string version ){
+		var sVersion = parseVersion( clean( trim( arguments.version ) ) );
+
+		return ( "#sVersion.major#.#sVersion.minor#"  & ( len( sVersion.beID ) ? "." & sVersion.beID : '' ) & "+#sVersion.buildID#" );
+	}
+
+	/**
+	* Verifies if the passed version string is in a pre-release state
+	*/
+	boolean function isPreRelease( required string version ){
+		var pVersion = parseVersion( clean( trim( arguments.version ) ) );
+
+		return len( pVersion.beID ) ? true : false;
+	}
+
+	/**
+	* Checks if the versions are equal
+	* current.hint The current version of the system
+	* target.hint The target version to check
+	*/
+	boolean function isEQ( required string current, required string target ){
+		/**
+		Semantic version: major.minor.revision-alpha.1+build
+		**/
+
+		var current = parseVersionAsString( arguments.current );
+		var target 	= parseVersionAsString( arguments.target );
+
+		return ( current == target ); 
 	}
 
 }
