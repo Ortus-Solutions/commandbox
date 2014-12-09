@@ -77,7 +77,7 @@ component extends="commandbox.system.BaseCommand" aliases="init" excludeFromHelp
 			} else {
 				evaluate( '#fullPropertyName# = arguments[ arg ]' );				
 			}
-			print.blueLine( '- Set #arg# = #arguments[ arg ]#' );
+			print.magentaLine( '- Set #arg# = #arguments[ arg ]#' );
 		}
 			
 		// Write the file back out
