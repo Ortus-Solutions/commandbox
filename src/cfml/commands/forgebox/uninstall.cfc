@@ -54,13 +54,18 @@ component extends="commandbox.system.BaseCommand" aliases="uninstall" excludeFro
 			
 		}
 				
-		arguments.ID = arguments.slug;
 		// TODO: climb tree to find root of the site by searching for box.json
 		arguments.currentWorkingDirectory = getCWD();
 		
-		// Uninstall this package.
-		// Don't pass directory unless you intend to override the box.json of the package being uninstalled 
-		packageService.uninstallPackage( argumentCollection = arguments );
+		// Convert slug to array
+		arguments.slug = listToArray( arguments.slug );
+		// iterate and uninstall.
+		for( var thisSlug in arguments.slug ){
+			arguments.ID = thisSlug;
+			// Uninstall this package.
+			// Don't pass directory unless you intend to override the box.json of the package being uninstalled 
+			packageService.uninstallPackage( argumentCollection = arguments );
+		}
 	}
 
 	// Auto-complete list of slugs
