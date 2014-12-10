@@ -57,7 +57,7 @@ component extends="commandbox.system.BaseCommand" aliases="outdated" excludeFrom
 			printDependencies( data=aOutdatedDependencies, verbose=arguments.verbose );
 			print.line().cyanLine( "Run the 'update' command to update all the outdated dependencies to their latest version or use 'update {slug}' to update a specific dependency" );
 		} else {
-			print.green( 'There are no outdated dependencies!' );
+			print.boldYellowLine( 'There are no outdated dependencies!' );
 		}
 		
 	}
