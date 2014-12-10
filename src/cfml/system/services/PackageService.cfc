@@ -853,6 +853,53 @@ component accessors="true" singleton {
 	}
 
 	/**
+	* Builds a struct of structs that represents the outdated dependency hierarchy
+	* @directory.hint The directory of the package to start in
+	* @print.hint The print buffer used for command operation
+	* @verbose.hint Outputs additional information about each package as it is checked
+	* 
+	* @return A struct that contains { tree : dependecy tree, count : the outdated dependency count }
+	*/
+	struct function buildOutdatedDependencyHierarchy( required directory, required print, boolean verbose=false ){
+		// build dependency tree
+		var tree = buildDependencyHierarchy( arguments.directory );
+
+		// Global outdated check bit
+		var outdatedDependencies = 0;
+		// Outdated check closure
+		var fOutdatedCheck 	= function( slug, value ){
+			// Verify in ForgeBox
+			var fbData 		= forgebox.getEntry( arguments.slug );
+			// Verify if we are outdated, internally isNew() parses the incoming strings
+			if( semanticVersion.isNew( current=value.version, target=fbData.version ) ){
+				value.isOutdated 	= true;
+				value.newVersion 	= fbData.version;
+				outdatedDependencies++;
+			} else {
+				value.isOutdated = false;
+				value.newVersion = "";
+			}
+
+			// verbose output
+			if( verbose ){
+				print.yellowLine( "* #arguments.slug# (#value.version#) -> ForgeBox Version: (#fbdata.version#)" )
+					.boldRedLine( value.isOutdated ? " ** #arguments.slug# is Outdated" : "" )
+					.toConsole();
+			}
+
+			// Do we have more dependencies, go down the tree in parallel
+			if( structCount( value.dependencies ) ){
+				structEach( value.dependencies, fOutdatedCheck , true );
+			}
+		};
+
+		// Verify outdated dependency graph in parallel
+		structEach( tree.dependencies, fOutdatedCheck , true );
+
+		return { tree : tree, count = outdatedDependencies };
+	}
+
+	/**
 	* Builds a struct of structs that represents the dependency hierarchy
 	* @directory.hint The directory of the package to start in
 	*/
