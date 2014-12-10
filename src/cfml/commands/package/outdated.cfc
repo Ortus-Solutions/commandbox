@@ -40,25 +40,24 @@ component extends="commandbox.system.BaseCommand" aliases="outdated" excludeFrom
 		print.yellowLine( "Resolving Dependencies, please wait..." ).toConsole();
 
 		// build dependency tree
-		var sOutdatedData = packageService.buildOutdatedDependencyHierarchy( directory=getCWD(), print=print, verbose=arguments.verbose );
+		var aOutdatedDependencies = packageService.getOutdatedDependencies( directory=getCWD(), print=print, verbose=arguments.verbose );
 
 		// JSON output
 		if( arguments.JSON ) {
-			print.line( formatterUtil.formatJson( serializeJSON( sOutdatedData ) ) );
+			print.line( formatterUtil.formatJson( serializeJSON( aOutdatedDependencies ) ) );
 			return;			
 		}
 
 		// normal output
-		if( sOutdatedData.count gt 0 ){
+		if( aOutdatedDependencies.len() gt 0 ){
 			print.green( 'Found ' )
-				.boldGreen( '(#sOutdatedData.count#)' )
-				.green( ' Outdated Dependenc#( sOutdatedData.count  == 1 ? 'y' : 'ies' )# for ' )
-				.boldCyanLine( "#sOutdatedData.tree.name# (#sOutdatedData.tree.version#)" )
+				.boldGreen( '(#aOutdatedDependencies.len()#)' )
+				.green( ' Outdated Dependenc#( aOutdatedDependencies.len()  == 1 ? 'y' : 'ies' )# ' )
 				.line();
-			printDependencies( parent=sOutdatedData.tree, verbose=arguments.verbose );
+			printDependencies( data=aOutdatedDependencies, verbose=arguments.verbose );
 			print.line().cyanLine( "Run the 'update' command to update all the outdated dependencies to their latest version or use 'update {slug}' to update a specific dependency" );
 		} else {
-			print.green( 'There are no outdated dependencies for ' ).boldCyanLine( "#sOutdatedData.tree.name# (#sOutdatedData.tree.version#)" );
+			print.green( 'There are no outdated dependencies!' );
 		}
 		
 	}
@@ -66,22 +65,13 @@ component extends="commandbox.system.BaseCommand" aliases="outdated" excludeFrom
 	/**
 	* Pretty print dependencies
 	*/
-	private function printDependencies( required struct parent, boolean verbose ) {
-		var i = 0;
-		var depCount = structCount( arguments.parent.dependencies );
-		for( var dependencyName in arguments.parent.dependencies ) {
-			var dependency 		= arguments.parent.dependencies[ dependencyName ];
-			var childDepCount	= structCount( dependency.dependencies );
-			i++;
-			var isLast 		= ( i == depCount );
-			
-			// continue if not outdated
-			if( !dependency.isOutdated ){ continue; }
-
+	private function printDependencies( required array data, boolean verbose ) {
+		
+		for( var dependency in arguments.data ){
 			// print it out
-			print[ ( dependency.dev ? 'boldYellow' : 'bold' ) ]( '* #dependencyName# (#dependency.version#)' )
+			print[ ( dependency.dev ? 'boldYellow' : 'bold' ) ]( '* #dependency.slug# (#dependency.version#)' )
 				.boldRedLine( ' ─> new version: #dependency.newVersion#' );
-						
+			// verbose data			
 			if( arguments.verbose ) {
 				if( len( dependency.name ) ) {
 					print[ ( dependency.dev ? 'yellowLine' : 'line' ) ]( dependency.name );	
@@ -91,9 +81,7 @@ component extends="commandbox.system.BaseCommand" aliases="outdated" excludeFrom
 				}
 				print.line();
 			} // end verbose?
-			
-			printDependencies( dependency, arguments.verbose );
-		}
+		} // end for
 	}
 
 }
