@@ -42,15 +42,15 @@ component singleton{
 
 		// Revision Check
 		if( target.major eq current.major AND
-			target.minor gt current.minor AND
+			target.minor eq current.minor AND
 			target.revision gt current.revision ){
 			return true;
 		}
 
 		// BuildID Check
 		if( target.major eq current.major AND
-			target.minor gt current.minor AND
-			target.revision gt current.revision AND
+			target.minor eq current.minor AND
+			target.revision eq current.revision AND
 			target.buildID gt current.buildID ){
 			return true;
 		}
