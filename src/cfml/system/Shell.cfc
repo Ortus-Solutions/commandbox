@@ -390,9 +390,21 @@ component accessors="true" singleton {
 	/**
 	 * Call a command
  	 * @command.hint command name
+ 	 * @returnOutput.hint True will return the output of the command as a string, false will send the output to the console.  If command outputs nothing, an empty string will come back.
  	 **/
-	Shell function callCommand( String command="" )  {
+	function callCommand( String command="", returnOutput=false )  {
 		var result = variables.commandService.runCommandLine( arguments.command );
+		
+		// Return the output to the caller to deal with
+		if( arguments.returnOutput ) {
+			if( isNull( result ) ) {
+				return '';
+			} else {
+				return result;
+			}
+		}
+		
+		// We get to output the results ourselves
 		if( !isNull( result ) && !isSimpleValue( result ) ){
 			if( isArray( result ) ){
 				return variables.reader.printColumns( result );
@@ -408,7 +420,7 @@ component accessors="true" singleton {
 			}
 		}
 
-		return this;
+		return '';
 	}
 
 	/**

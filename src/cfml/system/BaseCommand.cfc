@@ -82,8 +82,8 @@ component accessors="true" singleton{
 	 * Run another command by name. 
 	 * @command.hint The command to run. Pass the same string a user would type at the shell.
  	 **/
-	function runCommand( required command ) {
-		return shell.callCommand( arguments.command );
+	function runCommand( required command, returnOutput=false ) {
+		return shell.callCommand( arguments.command, arguments.returnOutput );
 	}
 
 	/**
