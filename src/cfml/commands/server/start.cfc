@@ -30,7 +30,7 @@ component extends="commandbox.system.BaseCommand" aliases="start" excludeFromHel
 	 * @SSLPort.hint       	 SSL port number
 	 * @SSLCert.hint         SSL certificate
 	 * @SSLKey.hint          SSL key (required if SSLCert specified)
-	 * @SSLKeyPass.hint      SSL key passphrase (required if SSLCert specifier
+	 * @SSLKeyPass.hint      SSL key passphrase (required if SSLCert specified)
 	 **/
 	function run(
 		Numeric port            = 0,
