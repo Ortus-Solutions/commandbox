@@ -25,10 +25,10 @@ component extends="commandbox.system.BaseCommand" aliases="start" excludeFromHel
 	 * @libDirs.hint         comma separated list of extra lib directories for the Railo server
 	 * @trayIcon.hint        path to .png file for tray icon
 	 * @webXml.hint          path to web.xml file used to configure the Railo server
-	 * @enableSSL.hint       enable SSL, default false
-	 * @SSLCert.hint         SSL certificate (optional)
-	 * @SSLKey.hint          SSL key (optional unless ssl certificate specified)
-	 * @SSLKeyPass.hint      SSL key passphrase (optional unless ssl certificate specified)
+	 * @enableSSL.hint       enable SSL
+	 * @SSLCert.hint         SSL certificate
+	 * @SSLKey.hint          SSL key (required if SSLCert specified)
+	 * @SSLKeyPass.hint      SSL key passphrase (required if SSLCert specified)
 	 **/
 	function run(
 		Numeric port            = 0,

@@ -384,7 +384,7 @@ component accessors="true" singleton{
 		var webrootHash = hash( arguments.webroot );
 		var servers 	= getServers();
 
-		return structKeyExists( servers, webrootHash ) ? servers[ webrootHash ] : {}
+		return structKeyExists( servers, webrootHash ) ? servers[ webrootHash ] : {};
 	}
 
 	/**
