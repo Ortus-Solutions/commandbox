@@ -871,7 +871,8 @@ component accessors="true" singleton {
 			// Verify in ForgeBox
 			var fbData = forgebox.getEntry( arguments.slug );
 			// Verify if we are outdated, internally isNew() parses the incoming strings
-			if( semanticVersion.isNew( current=value.version, target=fbData.version ) ){
+			var isOutdated = semanticVersion.isNew( current=value.version, target=fbData.version );
+			if( isOutdated ){
 				aOutdatedDependencies.append({ 
 					slug 				: arguments.slug,
 					version 			: value.version,
@@ -884,7 +885,7 @@ component accessors="true" singleton {
 			// verbose output
 			if( verbose ){
 				print.yellowLine( "* #arguments.slug# (#value.version#) -> ForgeBox Version: (#fbdata.version#)" )
-					.boldRedLine( value.isOutdated ? " ** #arguments.slug# is Outdated" : "" )
+					.boldRedLine( isOutdated ? " ** #arguments.slug# is Outdated" : "" )
 					.toConsole();
 			}
 
