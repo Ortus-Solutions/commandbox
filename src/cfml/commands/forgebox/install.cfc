@@ -90,13 +90,22 @@ component extends="commandbox.system.BaseCommand" aliases="install" excludeFromH
 		// Make slug an array
 		arguments.slug = listToArray( arguments.slug );
 
-		for( var thisSlug in arguments.slug ){
-			arguments.ID = thisSlug;
-			// Install this package.
-			// Don't pass directory unless you intend to override the box.json of the package being installed 
-			packageService.installPackage( argumentCollection = arguments );
-		}
+
+		// Install this package(s).
+		// Don't pass directory unless you intend to override the box.json of the package being installed
 		
+		// One or more slugs
+		if( arguments.slug.len() ) {
+			for( var thisSlug in arguments.slug ){
+				arguments.ID = thisSlug; 
+				packageService.installPackage( argumentCollection = arguments );
+			}
+		// No slug, just install the dependencies in box.json
+		} else {
+			arguments.ID = ''; 
+			packageService.installPackage( argumentCollection = arguments );			
+		}
+				
 	}
 
 	// Auto-complete list of slugs
