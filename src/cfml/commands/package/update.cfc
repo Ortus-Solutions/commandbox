@@ -1,20 +1,28 @@
 /**
- * Verifies versions of all dependencies of a package recursivley.  Run this command from the root of the package.
+ * Updates all of the packages in your project that have new versions available.  Run this command from the root of the package.
  * .
  * {code:bash}
- * outdated
+ * update
+ * {code}
+ * .
+ * You can also pull a list of all outdated packages with the "outdated" command
+ * and update them one at a time by passing one or more slugs in a comma-delimted list.
+ * .
+ * {code:bash}
+ * update coldbox
+ * update cbstorages,cborm,cbvalidation
  * {code}
  * .
  * Get additional details with the --verbose flag
  * .
  * {code:bash}
- * outdated --verbose
+ * update --verbose
  * {code}
  * .
- * Get output in JSON format with the --JSON flag.  JSON output always includes verbose details
+ * If you are automating this command, use the "force" flag to skip the confirmation prompt.
  * .
  * {code:bash}
- * outdated --JSON
+ * update coldbox --force
  * {code}
  **/
 component extends="commandbox.system.BaseCommand" aliases="update" excludeFromHelp=false {
@@ -28,7 +36,7 @@ component extends="commandbox.system.BaseCommand" aliases="update" excludeFromHe
 	
 	/**  
 	* Update all or one outdated dependencies 
-	* @slug The slug(s) to update. This can be one or a comma-delimmited list.
+	* @slug A comma-delimmited list of slugs to update. Pass nothing to update all packages.
 	* @verbose Outputs additional information about each package
 	* @force Forces an update without confirmations
 	**/
