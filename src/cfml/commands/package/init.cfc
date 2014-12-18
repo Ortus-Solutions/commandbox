@@ -46,6 +46,9 @@ component extends="commandbox.system.BaseCommand" aliases="init" excludeFromHelp
 			runCommand( 'package init-wizard' );
 			return;
 		}
+				
+		// Clean this up so it doesn't get written as a property
+		structDelete( arguments, "wizard" );
 		
 		// This will make each directory canonical and absolute
 		var directory = getCWD();
