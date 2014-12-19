@@ -94,7 +94,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 		
 		// BE override. Since noone reads the docs, automatically switch to a BE skeleton if installing ColdBoxBE
 		if( arguments.installColdBoxBE && right( arguments.skeleton, 2 ) != 'BE' ) {
-			// Swith to the BE skeleton
+			// Switch to the BE skeleton
 			arguments.skeleton &= 'BE';
 		}
 		
