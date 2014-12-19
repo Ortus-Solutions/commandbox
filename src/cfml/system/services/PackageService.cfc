@@ -857,10 +857,11 @@ component accessors="true" singleton {
 	* @directory.hint The directory of the package to start in
 	* @print.hint The print buffer used for command operation
 	* @verbose.hint Outputs additional information about each package as it is checked
+	* @includeSlugs.hint A commit-delimited list of slugs to include.  Empty means include everything.
 	* 
 	* @return An array of structs of outdated dependencies
 	*/
-	array function getOutdatedDependencies( required directory, required print, boolean verbose=false ){
+	array function getOutdatedDependencies( required directory, required print, boolean verbose=false, includeSlugs='' ){
 		// build dependency tree
 		var tree = buildDependencyHierarchy( arguments.directory );
 
@@ -868,27 +869,33 @@ component accessors="true" singleton {
 		var aOutdatedDependencies = [];
 		// Outdated check closure
 		var fOutdatedCheck 	= function( slug, value ){
-			// Verify in ForgeBox
-			var fbData = forgebox.getEntry( arguments.slug );
-			// Verify if we are outdated, internally isNew() parses the incoming strings
-			var isOutdated = semanticVersion.isNew( current=value.version, target=fbData.version );
-			if( isOutdated ){
-				aOutdatedDependencies.append({ 
-					slug 				: arguments.slug,
-					version 			: value.version,
-					newVersion 			: fbData.version,
-					shortDescription 	: value.shortDescription,
-					name 				: value.name,
-					dev 				: value.dev
-				});
+			
+			// Only check slugs we're supposed to
+			if( !len( includeSlugs ) || listFindNoCase( includeSlugs, arguments.slug ) ) {
+				
+				// Verify in ForgeBox
+				var fbData = forgebox.getEntry( arguments.slug );
+				// Verify if we are outdated, internally isNew() parses the incoming strings
+				var isOutdated = semanticVersion.isNew( current=value.version, target=fbData.version );
+				if( isOutdated ){
+					aOutdatedDependencies.append({ 
+						slug 				: arguments.slug,
+						version 			: value.version,
+						newVersion 			: fbData.version,
+						shortDescription 	: value.shortDescription,
+						name 				: value.name,
+						dev 				: value.dev
+					});
+				}
+				// verbose output
+				if( verbose ){
+					print.yellowLine( "* #arguments.slug# (#value.version#) -> ForgeBox Version: (#fbdata.version#)" )
+						.boldRedLine( isOutdated ? " ** #arguments.slug# is Outdated" : "" )
+						.toConsole();
+				}
+				
 			}
-			// verbose output
-			if( verbose ){
-				print.yellowLine( "* #arguments.slug# (#value.version#) -> ForgeBox Version: (#fbdata.version#)" )
-					.boldRedLine( isOutdated ? " ** #arguments.slug# is Outdated" : "" )
-					.toConsole();
-			}
-
+			
 			// Do we have more dependencies, go down the tree in parallel
 			if( structCount( value.dependencies ) ){
 				structEach( value.dependencies, fOutdatedCheck , true );

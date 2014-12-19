@@ -51,21 +51,21 @@ component extends="commandbox.system.BaseCommand" aliases="update" excludeFromHe
 		print.yellowLine( "Resolving Dependencies, please wait..." ).toConsole();
 
 		// build dependency tree
-		var aOutdated = packageService.getOutdatedDependencies( directory=getCWD(), print=print, verbose=arguments.verbose );
-
-		// inflate slugs if found, else default to outdated found above
-		if( len( arguments.slug ) ){
-			aOutdated = listToArray( arguments.slug );
-		}
-
+		 var dependenciesToUpdate = packageService.getOutdatedDependencies(
+		 	directory=getCWD(),
+		 	print=print,
+		 	verbose=arguments.verbose,
+		 	includeSlugs=arguments.slug
+		 );
+		
 		// Advice initial notice
-		if( aOutdated.len() ){
+		if( dependenciesToUpdate.len() ){
 			print.green( 'Found ' )
-				.boldGreen( '(#aOutdated.len()#)' )
-				.green( ' Outdated Dependenc#( aOutdated.len()  == 1 ? 'y' : 'ies' )# ' )
+				.boldGreen( '(#dependenciesToUpdate.len()#)' )
+				.green( ' Outdated Dependenc#( dependenciesToUpdate.len()  == 1 ? 'y' : 'ies' )# ' )
 				.line()
 				.toConsole();
-			printDependencies( data=aOutdated, verbose=arguments.verbose );
+			printDependencies( data=dependenciesToUpdate, verbose=arguments.verbose );
 			if( !arguments.force && !confirm( "Would you like to update the dependencies? (yes/no)" ) ){
 				return;
 			}
@@ -75,10 +75,8 @@ component extends="commandbox.system.BaseCommand" aliases="update" excludeFromHe
 		}
 
 		// iterate and update
-		for( var dependency in aOutdated ){
+		for( var dependency in dependenciesToUpdate ){
 			print.magentaLine( "Starting update of #dependency.slug# ").toConsole();
-			// remove cache for package
-			runCommand( "artifacts remove package=#dependency.slug# --force" );
 			// install it
 			runCommand( "install slug=#dependency.slug# verbose=#arguments.verbose# --force" );
 		}
