@@ -71,7 +71,7 @@ component accessors="true" singleton{
 		// the lib dir location, populated from shell later.
 		variables.libDir = arguments.homeDir & "/lib";
 		// Where core server is installed
-		variables.serverHomeDirectory = arguments.homeDir & "/engine/railo/";
+		variables.serverHomeDirectory = arguments.homeDir & "/engine/railo/server/";
 		// Where custom server configs are stored
 		variables.serverConfig = arguments.homeDir & "/servers.json";
 		// Where custom servers are stored
