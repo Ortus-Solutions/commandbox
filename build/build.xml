@@ -162,6 +162,7 @@ External Dependencies:
         </zip>
         <!-- Checksum on Jar -->
         <checksum file="${dist.dir}/box.jar" forceoverwrite="true" fileext=".md5" />
+        <checksum file="${dist.dir}/box.jar" forceoverwrite="true" algorithm="sha" />
 
         <!-- cleanup -->
 		<delete dir="${temp.dir}/rcli"/>
@@ -218,6 +219,7 @@ External Dependencies:
 		</zip>
 		<!-- Build Checksum -->
 		<checksum file="${dist.dir}/${distro.name}-bin-${commandbox.version}.zip" forceoverwrite="true" fileext=".md5" />
+		<checksum file="${dist.dir}/${distro.name}-bin-${commandbox.version}.zip" forceoverwrite="true" algorithm="sha" />
  	</target>
 
 	<!-- Build windows executable -->
@@ -237,7 +239,7 @@ External Dependencies:
 					chdir="%OLDPWD%"
 					icon="${src.dir}/resources/box.ico"
 					stayAlive="true">
-					<jre path="./jre/" minVersion="1.6.0" />
+					<jre path="./jre/" minVersion="1.7.0" />
 					<versionInfo fileVersion="${commandbox.version}.0"
 								 txtFileVersion="${commandbox.version}.${build.number}"
 								 fileDescription="${commandbox.description}"
@@ -257,6 +259,7 @@ External Dependencies:
 		</zip>
 		<!-- Build Checksum -->
 		<checksum file="${dist.dir}/${distro.name}-win-${commandbox.version}.zip" forceoverwrite="true" fileext=".md5" />
+		<checksum file="${dist.dir}/${distro.name}-win-${commandbox.version}.zip" forceoverwrite="true" algorithm="sha" />
 	</target>
 
 	<!-- Build including JREs -->
@@ -294,6 +297,11 @@ External Dependencies:
 
 		<!-- Build Checksum -->
 		<checksum forceoverwrite="true" fileext=".md5">
+			<fileset dir="${dist.dir}">
+				<include name="*-jre-*.zip" />
+			</fileset>
+		</checksum>
+		<checksum forceoverwrite="true" algorithm="sha">
 			<fileset dir="${dist.dir}">
 				<include name="*-jre-*.zip" />
 			</fileset>
@@ -342,6 +350,7 @@ External Dependencies:
 		<copy file="${deb.repo}/${distro.name}_${commandbox.version}-1_all.deb" toFile="${dist.dir}/${distro.name}-debian-${commandbox.version}.deb"/>
 		<!-- Build Checksum -->
 		<checksum file="${dist.dir}/${distro.name}-debian-${commandbox.version}.deb" forceoverwrite="true" fileext=".md5" />
+		<checksum file="${dist.dir}/${distro.name}-debian-${commandbox.version}.deb" forceoverwrite="true" algorithm="sha" />
 	   	<echo message="Updating apt (deb) repo in ${deb.repo}"/>
 		<!-- Update Repo -->
         <deb-repo dir="${deb.repo}"

@@ -528,19 +528,37 @@ component accessors="true" singleton {
 	 * Make sure we have all required params
  	 **/
 	private function ensureRequiredparams( userNamedParams, commandParams ) {
-
 		// For each command param
 		for( var param in commandParams ) {
 			// If it's required and hasn't been supplied...
 			if( param.required && !structKeyExists( userNamedParams, param.name ) ) {
 				// ... Ask the user
 				var message = 'Enter #param.name#';
+				var value  	= "";
+				// Verify hint
 				if( structKeyExists( param, 'hint' ) ) {
-					message &= ' (#param.hint#)';
+					message &= ' (#param.hint#) :';
 				}
-				message &= ' : ';
-           		var value = shell.ask( message );
-           		// TODO: Add validation here to make sure the
+				// ask value logic
+				var askValue = function(){
+					// Is this a boolean value
+					if( structKeyExists( param, "type" ) and param.type == "boolean" ){
+						return shell.confirm( message & "(Yes/No)" );
+					} 
+					// Strings
+					else {
+						return shell.ask( message );
+					}
+				};
+
+				// Ask for value
+				value = askValue();
+				// Validate it
+				while( param.required && !len( value ) ){
+					shell.printString( "*Value is required* " );
+					value = askValue();
+				}
+           		
            		// value entered matches the type!
            		userNamedParams[ param.name ] = value;
 			}

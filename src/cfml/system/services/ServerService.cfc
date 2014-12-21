@@ -97,7 +97,7 @@ component accessors="true" singleton{
 	/**
 	 * Start a server instance
 	 *
-	 * @serverInfo.hint The server information struct: [ webroot, name, port, stopSocket, logDir, status, statusInfo ]
+	 * @serverInfo.hint The server information struct: [ webroot, name, port, host, stopSocket, logDir, status, statusInfo ]
 	 * @openBrowser.hint Open a web browser or not
 	 * @force.hint force start if status is not stopped
 	 * @debug.hint sets debug log level
@@ -114,8 +114,14 @@ component accessors="true" singleton{
 		var webhash 	= hash( arguments.serverInfo.webroot );
 		// default server name, and ports
 		var name 		= arguments.serverInfo.name is "" ? listLast( webroot, "\/" ) : arguments.serverInfo.name;
-		var portNumber  = arguments.serverInfo.port == 0 ? getRandomPort() : arguments.serverInfo.port;
-		var stopPort 	= arguments.serverInfo.stopsocket == 0 ? getRandomPort() : arguments.serverInfo.stopsocket;
+		var portNumber  = arguments.serverInfo.port == 0 ? getRandomPort(arguments.serverInfo.host) : arguments.serverInfo.port;
+		var stopPort 	= arguments.serverInfo.stopsocket == 0 ? getRandomPort(arguments.serverInfo.host) : arguments.serverInfo.stopsocket;
+		var enableHTTP 	= isNull(arguments.serverInfo.enableHTTP) ? true : arguments.serverInfo.enableHTTP;
+		var enableSSL 	= isNull(arguments.serverInfo.enableSSL) ? false : arguments.serverInfo.enableSSL;
+		var SSLPort 	= isNull(arguments.serverInfo.sslPort) ? 1443 : arguments.serverInfo.sslPort;
+		var SSLCert 	= isNull(arguments.serverInfo.sslCert) ? "" : arguments.serverInfo.sslCert;
+		var SSLKey 		= isNull(arguments.serverInfo.sslKey) ? "" : arguments.serverInfo.sslKey;
+		var SSLKeyPass 	= isNull(arguments.serverInfo.sslKeyPass) ? "" : arguments.serverInfo.sslKeyPass;
 		// setup default tray icon if empty
 		var trayIcon    = len( arguments.serverInfo.trayIcon ) ? arguments.serverInfo.trayIcon : "#variables.libdir#/trayicon.png";
 		// Setup lib directory, add more if defined by server info
@@ -137,10 +143,16 @@ component accessors="true" singleton{
 		// The java arguments to execute: -Drailo.server.config.dir=""#configdir#/server""  Shared server, custom web configs
 		var args = "-Drailo.web.config.dir=""#configdir#"" -Drailo.server.config.dir=""#serverConfigDir#"" "
 				& "-javaagent:""#libdir#/railo-inst.jar"" -jar ""#variables.jarPath#"""
-				& " -war ""#webroot#"" --background=true --port #portNumber# --debug #debug#"
+				& " -war ""#webroot#"" --background=true --port #portNumber# --host #arguments.serverInfo.host# --debug #debug#"
 				& " --stop-port #stopPort# --processname ""#processName#"" --log-dir ""#logdir#"""
-				& " --open-browser #openbrowser# --open-url http://127.0.0.1:#portNumber#"
+				& " --open-browser #openbrowser# --open-url http://#arguments.serverInfo.host#:#portNumber#"
 				& " --libdir ""#libDirs#"" --iconpath ""#trayIcon#""";
+		if(enableSSL) {
+			args &= " --enable-http #enableHTTP# --enable-ssl #enableSSL# --ssl-port #SSLPort#";
+		}
+		if(enableSSL && SSLCert != "") {
+			args &= " --ssl-cert ""#SSLCert#"" --ssl-key ""#SSLKey#"" --ssl-keypass ""#SSLKeyPass#""";
+		}
 
 		if ( Len( Trim( arguments.serverInfo.webXml ?: "" ) ) ) {
 			args &= " --webxmlpath #arguments.serverInfo.webXml#";
@@ -173,7 +185,7 @@ component accessors="true" singleton{
 					setServerInfo( arguments.serverInfo );
 				}
 			}
-			return "The server for #webroot# is starting on port #portNumber#... type 'server status' to see result";
+			return "The server for #webroot# is starting on #arguments.serverInfo.host#:#portNumber#... type 'server status' to see result";
 		} else {
 			return "Cannot start!  The server is currently in the #arguments.serverInfo.status# state!#chr(10)#Use force=true or the 'server forget' command ";
 		}
@@ -188,7 +200,7 @@ component accessors="true" singleton{
 	struct function stop( required struct serverInfo ){
 		var launchUtil = java.LaunchUtil;
 		var stopsocket = arguments.serverInfo.stopsocket;
-		var args = "-jar ""#variables.jarPath#"" -stop --stop-port #val( stopsocket )# --background false";
+		var args = "-jar ""#variables.jarPath#"" -stop --stop-port #val( stopsocket )# -host #arguments.serverInfo.host# --background false";
 		var results = { error = false, messages = "" };
 
 		try{
@@ -372,7 +384,7 @@ component accessors="true" singleton{
 		var webrootHash = hash( arguments.webroot );
 		var servers 	= getServers();
 
-		return structKeyExists( servers, webrootHash ) ? servers[ webrootHash ] : {}
+		return structKeyExists( servers, webrootHash ) ? servers[ webrootHash ] : {};
 	}
 
 	/**

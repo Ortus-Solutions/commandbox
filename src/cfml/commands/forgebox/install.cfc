@@ -85,13 +85,27 @@ component extends="commandbox.system.BaseCommand" aliases="install" excludeFromH
 			
 		}
 				
-		arguments.ID = arguments.slug;
 		// TODO: climb tree to find root of the site by searching for box.json
 		arguments.currentWorkingDirectory = getCWD();
+		// Make slug an array
+		arguments.slug = listToArray( arguments.slug );
+
+
+		// Install this package(s).
+		// Don't pass directory unless you intend to override the box.json of the package being installed
 		
-		// Install this package.
-		// Don't pass directory unless you intend to override the box.json of the package being installed 
-		packageService.installPackage( argumentCollection = arguments );
+		// One or more slugs
+		if( arguments.slug.len() ) {
+			for( var thisSlug in arguments.slug ){
+				arguments.ID = thisSlug; 
+				packageService.installPackage( argumentCollection = arguments );
+			}
+		// No slug, just install the dependencies in box.json
+		} else {
+			arguments.ID = ''; 
+			packageService.installPackage( argumentCollection = arguments );			
+		}
+				
 	}
 
 	// Auto-complete list of slugs

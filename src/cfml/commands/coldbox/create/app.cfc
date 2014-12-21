@@ -60,31 +60,41 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 	}
 	
 	/**
-	 * @name.hint The name of the app you want to create
-	 * @skeleton.hint The name of the app skeleton to generate
+	 * @name The name of the app you want to create
+	 * @skeleton The name of the app skeleton to generate
 	 * @skeleton.options Advanced,AdvancedScript,Simple,SuperSimple,AdvancedBE,AdvancedScriptBE,SimpleBE,SuperSimpleBE
-	 * @directory.hint The directory to create the app in and creates the directory if it does not exist.  Defaults to your current working directory.
-	 * @init.hint "init" the directory as a package if it isn't already
-	 * @installColdBox.hint Install the latest stable version of ColdBox from ForgeBox
-	 * @installColdBoxBE.hint Install the bleeding edge version of ColdBox from ForgeBox
-	 * @installTestBox.hint Install the latest stable version of TestBox from ForgeBox
+	 * @directory The directory to create the app in and creates the directory if it does not exist.  Defaults to your current working directory.
+	 * @init "init" the directory as a package if it isn't already
+	 * @installColdBox Install the latest stable version of ColdBox from ForgeBox
+	 * @installColdBoxBE Install the bleeding edge version of ColdBox from ForgeBox
+	 * @installTestBox Install the latest stable version of TestBox from ForgeBox
+	 * @wizard Run the ColdBox Creation wizard
+	 * @initWizard Run the init creation package wizard
 	 **/
 	function run(
-		required name,
+		name="My ColdBox App",
 		skeleton='AdvancedScript',
 		directory=getCWD(),
 		boolean init=true,
 		boolean installColdBox=false,
 		boolean installColdBoxBE=false,
-		boolean installTestBox=false
+		boolean installTestBox=false,
+		boolean wizard=false,
+		boolean initWizard=false
 	) {
-					
+		
+		// Check for wizard argument
+		if( arguments.wizard ){
+			runCommand( 'coldbox create app-wizard' );
+			return;
+		}
+
 		// This will make the directory canonical and absolute
 		arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
 		
 		// BE override. Since noone reads the docs, automatically switch to a BE skeleton if installing ColdBoxBE
 		if( arguments.installColdBoxBE && right( arguments.skeleton, 2 ) != 'BE' ) {
-			// Swith to the BE skeleton
+			// Switch to the BE skeleton
 			arguments.skeleton &= 'BE';
 		}
 		
@@ -123,7 +133,11 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 			var originalPath = getCWD(); 
 			// init must be run from CWD
 			shell.cd( arguments.directory );
-			runCommand( 'init "#parser.escapeArg( arguments.name )#" "#parser.escapeArg( replace( arguments.name, ' ', '', 'all' ) )#"' ); 
+			runCommand( 'init 
+				name="#parser.escapeArg( arguments.name )#" 
+				slug="#parser.escapeArg( replace( arguments.name, ' ', '', 'all' ) )#"
+				wizard=#arguments.initWizard#'
+			); 
 			shell.cd( originalPath );
 		}
 		

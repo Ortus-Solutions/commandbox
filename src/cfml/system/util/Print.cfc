@@ -17,7 +17,7 @@
 * print.redLine( 'Hello World' );
 * print.redOnWhiteLine( 'Hello World' );
 * print.redOnWhiteBold( 'Hello World' );
-* print.boldBlinkingUnderscoredBlueTextOnRedBackground( 'Test' )
+* print.boldBlinkingUnderscoredBlueTextOnRedBackground( 'Test' );
 *
 */
 component {

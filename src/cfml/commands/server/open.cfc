@@ -10,6 +10,7 @@ component extends="commandbox.system.BaseCommand" aliases="fwreinit" excludeFrom
 	
 	// DI
 	property name="serverService" inject="ServerService";
+	property name='parser' 	inject='Parser';
 	
 	/**
 	* @URI An additional URI to go to when opening the server browser, else it just opens localhost:port 
@@ -24,7 +25,9 @@ component extends="commandbox.system.BaseCommand" aliases="fwreinit" excludeFrom
 		} else {
 			var thisURL = "localhost:#serverInfo.port##arguments.URI#";
 			print.greenLine( "Opening...#thisURL#" );
-			runCommand( "browse #thisURL#" );
+			runCommand( "browse '#parser.escapeArg( thisURL )#'" );
+			
+			
 		}
 	}
 

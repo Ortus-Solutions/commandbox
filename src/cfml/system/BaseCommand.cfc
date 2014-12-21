@@ -63,7 +63,7 @@ component accessors="true" singleton{
 		
 	/**
 	 * Wait until the user's next keystroke
-	 * @message.hint An optional message to display to the user such as "Press any key to continue."
+	 * @message.hint Message to display to the user such as "Press any key to continue."
  	 **/
 	function waitForKey( required message ) {
 		return shell.waitForKey( arguments.message );
@@ -72,23 +72,18 @@ component accessors="true" singleton{
 	/**
 	 * Ask the user a question looking for a yes/no response
 	 * Accepts any boolean value, or "y".
-	 * @message.hint The message to display to the user such as "Press any key to continue."
+	 * @message.hint The message to display to the user such as "Would you like to continue?"
  	 **/
 	function confirm( required message ) {
-		var answer = ask( "#message# : " );
-		if( trim( answer ) == "y" || ( isBoolean( answer ) && answer ) ) {
-			return true;
-		}
-		return false;
-		
+		return shell.confirm( arguments.message );
 	}
 		
 	/**
 	 * Run another command by name. 
 	 * @command.hint The command to run. Pass the same string a user would type at the shell.
  	 **/
-	function runCommand( required command ) {
-		return shell.callCommand( arguments.command );
+	function runCommand( required command, returnOutput=false ) {
+		return shell.callCommand( arguments.command, arguments.returnOutput );
 	}
 
 	/**

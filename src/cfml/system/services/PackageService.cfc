@@ -19,6 +19,7 @@ component accessors="true" singleton {
 	property name="pathPatternMatcher" 	inject="pathPatternMatcher";
 	property name='shell' 				inject='Shell';
 	property name="logger"				inject="logbox:logger:{this}";
+	property name="semanticVersion"		inject="semanticVersion";
 	
 	// This should be removed once the install command starts resolving registries automatically
 	property name="forgeBox" 			inject="ForgeBox";
@@ -60,6 +61,7 @@ component accessors="true" singleton {
 	* @currentWorkingDirectory.hint Root of the application (used for finding box.json)
 	* @verbose.hint If set, it will produce much more verbose information about the package installation
 	* @force.hint When set to true, it will force dependencies to be installed whether they already exist or not
+	* @packagePathRequestingInstallation.hint If installing smart dependencies packages (like ColdBox modules) that are capable of being nested, this is our current level
 	**/
 	function installPackage(
 			required string ID,
@@ -69,16 +71,17 @@ component accessors="true" singleton {
 			boolean production=false,
 			string currentWorkingDirectory,
 			boolean verbose=false,
-			boolean force=false
+			boolean force=false,
+			string packagePathRequestingInstallation = arguments.currentWorkingDirectory
 	){
-					
+						
 		///////////////////////////////////////////////////////////////////////
 		// TODO: Instead of assuming this is ForgeBox, look up the appropriate
 		//       regsitry to handle the package a deal with a dynamic adapter 
 		//       object at runtime with generic methods
 		///////////////////////////////////////////////////////////////////////
 		
-		// If there is a package to install, isntall it
+		// If there is a package to install, install it
 		if( len( arguments.ID ) ) {
 			
 			consoleLogger.info( '.');
@@ -231,7 +234,56 @@ component accessors="true" singleton {
 			if( !len( packageType ) && len( artifactDescriptor.type ) ) {
 				packageType = artifactDescriptor.type;
 			}
+			
+			// Assert: At this point we know what we're installing and we've acquired it, but we don't know where it will install to yet.
+									
+			// Determine if a satisfying version of this package is already installed here or at a higher level.  if so, skip it.
+			// Modules are the only kind of packages that can be nested in a hierarchy, so the check only applies here. 
+			// We're also going to assume that they are in a "modules" folder.
+			// This check also only applies if we're at least one level deep into modules.
+			if( packageType == 'modules' && currentWorkingDirectory != packagePathRequestingInstallation) {
+				
+				// We'll update this variable as we climb back up the directory structure
+				var movingTarget = packagePathRequestingInstallation;
+				// match "/modules/{myPackage}" at the end of a path
+				var regex = '[/\\]modules[/\\][^/\\]*$';
+				
+				// Can we keep backing up?
+				while( reFindNoCase( regex, movingTarget ) ) {
 					
+					// Back out of this  folder
+					movingTarget = reReplaceNoCase( movingTarget, regex, '' );					
+					
+					// If we didn't reach a package, I'm not sure what happened, but we can't really continue
+					if( !isPackage( movingTarget ) ) {
+						break;
+					}
+					
+					// What does this package need installed?
+					targetBoxJSON = readPackageDescriptor( movingTarget );
+					
+					// This ancestor package has a candidate installed that might satisfy our dependency
+					if( structKeyExists( targetBoxJSON.installPaths, packageName ) ) {
+						var candidateInstallPath = fileSystemUtil.resolvePath( targetBoxJSON.installPaths[ packageName ], movingTarget );
+						if( isPackage( candidateInstallPath ) ) {
+							var candidateBoxJSON = readPackageDescriptor( candidateInstallPath );
+							// Does the package that we found satisfy what we need?
+							if( semanticVersion.satisfies( candidateBoxJSON.version, version ) ) {
+								consoleLogger.warn( '#packageName# (#version#) is already satisifed by #candidateInstallPath# (#candidateBoxJSON.version#).  Skipping installation.' );
+								return;
+							}
+						}
+					}
+										
+					// If we've reached the root dir, just quit
+					if( movingTarget == currentWorkingDirectory) {
+						break;
+					}
+					
+				}
+				
+			}
+			
 			var installDirectory = '';
 			
 			// If the user gave us a directory, use it above all else
@@ -240,10 +292,10 @@ component accessors="true" singleton {
 			}
 			
 			// Next, see if the containing project has an install path configured for this dependency already.
-			var containerBoxJSON = readPackageDescriptor( arguments.currentWorkingDirectory );
+			var containerBoxJSON = readPackageDescriptor( arguments.packagePathRequestingInstallation );
 			if( !len( installDirectory ) && structKeyExists( containerBoxJSON.installPaths, packageName ) ) {
 				// Get the resolved intallation path for this package
-				installDirectory = fileSystemUtil.resolvePath( containerBoxJSON.installPaths[ packageName ] );
+				installDirectory = fileSystemUtil.resolvePath( containerBoxJSON.installPaths[ packageName ], arguments.packagePathRequestingInstallation );
 				// Back up to the "container" folder.  The packge directory will be added back below
 				installDirectory = listDeleteAt( installDirectory, listLen( installDirectory, '/\' ), '/\' );
 			}
@@ -277,17 +329,17 @@ component accessors="true" singleton {
 					shell.reload( false );
 				// If this is a module
 				} else if( packageType == 'modules' ) {
-					installDirectory = arguments.currentWorkingDirectory & '/modules';
+					installDirectory = arguments.packagePathRequestingInstallation & '/modules';
 				// If this is a plugin
 				} else if( packageType == 'plugins' ) {
-					installDirectory = arguments.currentWorkingDirectory & '/plugins';
+					installDirectory = arguments.packagePathRequestingInstallation & '/plugins';
 					// Plugins just get dumped in
 					artifactDescriptor.createPackageDirectory = false;
 					// Don't trash the plugins folder with this
 					ignorePatterns.append( '/box.json' );
 				// If this is an interceptor
 				} else if( packageType == 'interceptors' ) {
-					installDirectory = arguments.currentWorkingDirectory & '/interceptors';
+					installDirectory = arguments.packagePathRequestingInstallation & '/interceptors';
 					// interceptors just get dumped in
 					artifactDescriptor.createPackageDirectory = false;
 					// Don't trash the plugins folder with this
@@ -310,16 +362,7 @@ component accessors="true" singleton {
 			// Some packages may just want to be dumped in their destination without being contained in a subfolder
 			if( artifactDescriptor.createPackageDirectory ) {
 				installDirectory &= '/#packageDirectory#';
-				
-				// Check to see if package has already been installed. Skip unless forced.
-				// This check can only be performed for packages that get installed in their own directory.
-				if ( directoryExists( installDirectory ) && !arguments.force ){
-					// cleanup tmp
-					directoryDelete( tmpPath, true );
-					consoleLogger.warn("The package #packageName# is already installed at #installDirectory#. Skipping installation. Use --force option to force install.");
-					return;
-				}
-			// If we're dumping in the root and the install dir is alreay a package...
+			// If we're dumping in the root and the install dir is already a package...
 			} else if( isPackage( installDirectory ) ) {
 				// ... then ignore box.json or it will overwrite the existing one
 				ignorePatterns.append( '/box.json' );
@@ -327,6 +370,25 @@ component accessors="true" singleton {
 			} else {
 				arguments.save = false;
 				arguments.saveDev = false;
+			}
+			
+			// Assert: At this point, all paths are finalized and we are ready to install.
+						
+			// Should we save this as a dependency. Save the install even though the package may already be there
+			if( ( arguments.save || arguments.saveDev ) ) {
+				// Add it!
+				addDependency( packagePathRequestingInstallation, packageName, version, installDirectory, artifactDescriptor.createPackageDirectory,  arguments.saveDev );
+				// Tell the user...
+				consoleLogger.info( "#packagePathRequestingInstallation#/box.json updated with #( arguments.saveDev ? 'dev ': '' )#dependency." );
+			}			
+						
+			// Check to see if package has already been installed. Skip unless forced.
+			// This check can only be performed for packages that get installed in their own directory.
+			if ( artifactDescriptor.createPackageDirectory && directoryExists( installDirectory ) && !arguments.force ){
+				// cleanup tmp
+				directoryDelete( tmpPath, true );
+				consoleLogger.warn("The package #packageName# is already installed at #installDirectory#. Skipping installation. Use --force option to force install.");
+				return;
 			}
 						
 			// Create installation directory if neccesary
@@ -344,7 +406,7 @@ component accessors="true" singleton {
 			
 			// Copy Assets now to destination
 			if( arguments.production ){
-				// TODO, this should eventaully be part of the folder adapter
+				// TODO, this should eventually be part of the folder adapter
 				directoryCopy( tmpPath, installDirectory, true, function( path ){
 					// This will normalize the slashes to match
 					arguments.path = fileSystemUtil.resolvePath( arguments.path );
@@ -374,8 +436,16 @@ component accessors="true" singleton {
 				});
 			}
 	
-			// cleanup unzip
-			directoryDelete( tmpPath, true );
+			// Catch this to gracefully handle where the OS or another program 
+			// has the folder locked.
+			try {
+				// cleanup unzip
+				directoryDelete( tmpPath, true );				
+			} catch( any e ) {
+				consoleLogger.error( '#e.message##CR#The folder is possibly locked by another program.' );
+				logger.error( '#e.message# #e.detail#' , e.stackTrace );
+			}
+	
 			
 			// Summary output
 			consoleLogger.info( "Installing to: #installDirectory#" );		
@@ -395,22 +465,14 @@ component accessors="true" singleton {
 					consoleLogger.debug( ".    #file#" );					
 				}
 			}
-		
-			// Should we save this as a dependancy
-			// and was the installed package put in a sub dir?
-			if( ( arguments.save || arguments.saveDev ) ) {
-				// Add it!
-				addDependency( currentWorkingDirectory, packageName, version, installDirectory, artifactDescriptor.createPackageDirectory,  arguments.saveDev );
-				// Tell the user...
-				consoleLogger.info( "box.json updated with #( arguments.saveDev ? 'dev ': '' )#dependency." );
-			}
-		
+				
 			consoleLogger.info( "Eureka, '#arguments.ID#' has been installed!" );
-						
+									
 		// If no package ID was specified, just get the dependencies for the current directory
 		} else {
 			// read it...
 			var artifactDescriptor = readPackageDescriptor( arguments.currentWorkingDirectory );
+			var installDirectory = arguments.currentWorkingDirectory;
 		}
 
 		// and grab all the dependencies
@@ -422,22 +484,21 @@ component accessors="true" singleton {
 			dependencies.append( artifactDescriptor.devDependencies );
 		}
 
-		// Loop over this packages dependencies
+		// Loop over this package's dependencies
 		for( var dependency in dependencies ) {
-			
-			// TODO: Logic here to determine if a satisfying version of this package
-			//       is already installed here or at a higher level.  if so, skip it.
+			var isDev = structKeyExists( artifactDescriptor.devDependencies, dependency );
+			var isSaving = ( arguments.save || arguments.saveDev );
 			
 			var params = {
 				ID = dependency,
 				force = arguments.force,
-				// Only save the first level
-				save = false,
-				saveDev = false,
+				verbose = arguments.verbose,
+				// Nested dependencies are already in the box.json, but the save will update the installPaths
+				save = ( isSaving && !isDev ),
+				saveDev = ( isSaving && isDev ),
 				production = arguments.production,
-				// TODO: To allow nested modules, change this to the previous 
-				//       install directory so the dependency is nested within
-				currentWorkingDirectory = arguments.currentWorkingDirectory
+				currentWorkingDirectory = arguments.currentWorkingDirectory, // Original dir
+				packagePathRequestingInstallation = installDirectory // directory for smart dependencies to use
 			};
 						
 			// If the user didn't specify this, don't pass it since it overrides the package's desired install location
@@ -448,7 +509,7 @@ component accessors="true" singleton {
 			// Recursivley install them
 			installPackage( argumentCollection = params );	
 		}
-	
+			
 		if( !len( arguments.ID ) && dependencies.isEmpty() ) {
 			consoleLogger.info( "No dependencies found to install, but it's the thought that counts, right?" );
 		}
@@ -468,7 +529,6 @@ component accessors="true" singleton {
 			required string ID,
 			string directory,
 			boolean save=false,
-			boolean saveDev=false,
 			required string currentWorkingDirectory
 	){
 					
@@ -508,40 +568,44 @@ component accessors="true" singleton {
 			var boxJSON = readPackageDescriptor( uninstallDirectory );
 			// and grab all the dependencies
 			var dependencies = boxJSON.dependencies;
+			var type = boxJSON.type;
 			// Add in the devDependencies
 			dependencies.append( boxJSON.devDependencies );
-						
+			
 		} else {
 			// If the package isn't on disk, no dependencies
 			var dependencies = {};
+			var type = '';
 		}
 
-
-		if( dependencies.count() ) {
-			consoleLogger.debug( "Uninstalling dependencies first..." );
-		}
-
-		// Loop over this packages dependencies
-		for( var dependency in dependencies ) {
-			
-			var params = {
-				ID = dependency,
-				// Only save the first level
-				save = false,
-				saveDev = false,
-				// TODO: To allow nested modules, change this to the previous 
-				//       install directory so the dependency is nested within
-				currentWorkingDirectory = arguments.currentWorkingDirectory
-			};
-						
-			// If the user didn't specify this, don't pass it since it overrides the package's desired install location
-			if( structKeyExists( arguments, 'directory' ) ) {
-				params.directory = arguments.directory;
+		// ColdBox modules are stored in a hierachy so just removing the top one removes then all
+		// For all other packages, the depenencies are probably just in the root
+		if( type != 'modules' ) {
+	
+			if( dependencies.count() ) {
+				consoleLogger.debug( "Uninstalling dependencies first..." );
 			}
-			
-			// Recursivley install them
-			uninstallPackage( argumentCollection = params );	
-		}
+	
+			// Loop over this packages dependencies
+			for( var dependency in dependencies ) {
+				
+				var params = {
+					ID = dependency,
+					// Only save the first level
+					save = false,
+					currentWorkingDirectory = arguments.currentWorkingDirectory
+				};
+							
+				// If the user didn't specify this, don't pass it since it overrides the package's desired install location
+				if( structKeyExists( arguments, 'directory' ) ) {
+					params.directory = arguments.directory;
+				}
+				
+				// Recursivley install them
+				uninstallPackage( argumentCollection = params );	
+			}
+		
+		} // end is not module
 				
 		// uninstall the package
 		if( directoryExists( uninstallDirectory ) ) {
@@ -562,12 +626,11 @@ component accessors="true" singleton {
 		
 		// Should we save this as a dependancy
 		// and is the current working directory a package?
-		if( ( arguments.save || arguments.saveDev )  
-			&& isPackage( arguments.currentWorkingDirectory ) ) {
+		if( arguments.save && isPackage( arguments.currentWorkingDirectory ) ) {
 			// Add it!
-			removeDependency( currentWorkingDirectory, packageName,  arguments.saveDev );
+			removeDependency( currentWorkingDirectory, packageName );
 			// Tell the user...
-			consoleLogger.info( "#( arguments.saveDev ? 'dev ': '' )#dependency removed from box.json." );
+			consoleLogger.info( "Dependency removed from box.json." );
 		}
 	
 		consoleLogger.info( "'#arguments.ID#' has been uninstalled" );
@@ -592,11 +655,17 @@ component accessors="true" singleton {
 		boolean dev=false
 		) {
 		// Get box.json, create empty if it doesn't exist
-		var boxJSON = readPackageDescriptor( arguments.currentWorkingDirectory );
-		// Get reference to appropriate depenency struct
-		var dependencies = ( arguments.dev ? boxJSON.devDependencies : boxJSON.dependencies );
+		var boxJSON = readPackageDescriptorRaw( arguments.currentWorkingDirectory );
 		
-		
+		// Get reference to appropriate dependency struct
+		if( arguments.dev ) {
+			param name='boxJSON.devDependencies' default='#{}#';
+			var dependencies = boxJSON.devDependencies;
+		} else {
+			param name='boxJSON.dependencies' default='#{}#';
+			var dependencies = boxJSON.dependencies;			
+		}
+				
 		// Add/overwrite this dependency
 		dependencies[ arguments.packageName ] = arguments.version;
 		
@@ -604,6 +673,7 @@ component accessors="true" singleton {
 		// so don't save this if they were just dumped somewhere like the packge root amongst
 		// other unrelated files and folders.
 		if( arguments.installDirectoryIsDedicated ) {
+			param name='boxJSON.installPaths' default='#{}#';
 			var installPaths = boxJSON.installPaths;
 					
 			// normalize slashes
@@ -637,22 +707,26 @@ component accessors="true" singleton {
 	* @packageName.hint Package to add a a dependency
 	* @dev.hint True if this is a development depenency, false if it is a production dependency
 	*/	
-	public function removeDependency( required string directory, required string packageName, boolean dev=false ) {
+	public function removeDependency( required string directory, required string packageName ) {
 		// Get box.json, create empty if it doesn't exist
-		var boxJSON = readPackageDescriptor( arguments.directory );
-		// Get reference to appropriate depenency struct
-		var dependencies = ( arguments.dev ? boxJSON.devDependencies : boxJSON.dependencies );
-		var installPaths = boxJSON.installPaths;
+		var boxJSON = readPackageDescriptorRaw( arguments.directory );
+		
+
 		var saveMe = false;
 		
-		if( structKeyExists( dependencies, arguments.packageName ) ) {
+		if( structKeyExists( boxJSON, 'dependencies' ) && structKeyExists( boxJSON.dependencies, arguments.packageName ) ) {
 			saveMe = true;
-			structDelete( dependencies, arguments.packageName );
+			structDelete( boxJSON.dependencies, arguments.packageName );
 		}
 				
-		if( structKeyExists( installPaths, arguments.packageName ) ) {
+		if( structKeyExists( boxJSON, 'devdependencies' ) && structKeyExists( boxJSON.devdependencies, arguments.packageName ) ) {
 			saveMe = true;
-			structDelete( installPaths, arguments.packageName );
+			structDelete( boxJSON.devdependencies, arguments.packageName );
+		}
+				
+		if( structKeyExists( boxJSON, 'installPaths' ) && structKeyExists( boxJSON.installPaths, arguments.packageName ) ) {
+			saveMe = true;
+			structDelete( boxJSON.installPaths, arguments.packageName );
 		}
 		
 		// Only save if we modified the JSON
@@ -727,11 +801,24 @@ component accessors="true" singleton {
 	}
 
 	/**
-	* Get the box.json as data from the passed directory location, if not found
-	* then we return an empty struct
+	* Get the box.json as data from the passed directory location.
+	* Any missing properties will be defaulted with our box.json template.
+	* If you plan on writing the box.json back out to disk, use readPackageDescriptorRaw() instead.
 	* @directory.hint The directory to search for the box.json
 	*/
 	struct function readPackageDescriptor( required directory ){
+		// Merge this JSON with defaults
+		return newPackageDescriptor( readPackageDescriptorRaw( arguments.directory ) );
+	}
+
+	/**
+	* Get the box.json as data from the passed directory location, if not found
+	* then we return an empty struct.  This method will NOT default box.json properties
+	* and will return JUST what was defined.  Make sure you use existence checks when 
+	* using the returned data structure
+	* @directory.hint The directory to search for the box.json
+	*/
+	struct function readPackageDescriptorRaw( required directory ){
 		
 		// If the packge has a box.json in the root...
 		if( isPackage( arguments.directory ) ) {
@@ -742,13 +829,13 @@ component accessors="true" singleton {
 			// Validate the file is valid JSOn
 			if( isJSON( boxJSON ) ) {
 				// Merge this JSON with defaults
-				return newPackageDescriptor( deserializeJSON( boxJSON ) );
+				return deserializeJSON( boxJSON );
 			}
 			
 		}
 		
 		// Just return defaults
-		return newPackageDescriptor();	
+		return {};	
 	}
 
 	/**
@@ -765,7 +852,113 @@ component accessors="true" singleton {
 		fileWrite( getDescriptorPath( arguments.directory ), formatterUtil.formatJSON( JSONData ) );	
 	}
 
+	/**
+	* Return an array of all outdated depdendencies in a project.
+	* @directory.hint The directory of the package to start in
+	* @print.hint The print buffer used for command operation
+	* @verbose.hint Outputs additional information about each package as it is checked
+	* @includeSlugs.hint A commit-delimited list of slugs to include.  Empty means include everything.
+	* 
+	* @return An array of structs of outdated dependencies
+	*/
+	array function getOutdatedDependencies( required directory, required print, boolean verbose=false, includeSlugs='' ){
+		// build dependency tree
+		var tree = buildDependencyHierarchy( arguments.directory );
 
+		// Global outdated check bit
+		var aOutdatedDependencies = [];
+		// Outdated check closure
+		var fOutdatedCheck 	= function( slug, value ){
+			
+			// Only check slugs we're supposed to
+			if( !len( includeSlugs ) || listFindNoCase( includeSlugs, arguments.slug ) ) {
+				
+				// Verify in ForgeBox
+				var fbData = forgebox.getEntry( arguments.slug );
+				// Verify if we are outdated, internally isNew() parses the incoming strings
+				var isOutdated = semanticVersion.isNew( current=value.version, target=fbData.version );
+				if( isOutdated ){
+					aOutdatedDependencies.append({ 
+						slug 				: arguments.slug,
+						version 			: value.version,
+						newVersion 			: fbData.version,
+						shortDescription 	: value.shortDescription,
+						name 				: value.name,
+						dev 				: value.dev
+					});
+				}
+				// verbose output
+				if( verbose ){
+					print.yellowLine( "* #arguments.slug# (#value.version#) -> ForgeBox Version: (#fbdata.version#)" )
+						.boldRedLine( isOutdated ? " ** #arguments.slug# is Outdated" : "" )
+						.toConsole();
+				}
+				
+			}
+			
+			// Do we have more dependencies, go down the tree in parallel
+			if( structCount( value.dependencies ) ){
+				structEach( value.dependencies, fOutdatedCheck , true );
+			}
+		};
+
+		// Verify outdated dependency graph in parallel
+		structEach( tree.dependencies, fOutdatedCheck , true );
+
+		return aOutdatedDependencies;
+	}
+
+	/**
+	* Builds a struct of structs that represents the dependency hierarchy
+	* @directory.hint The directory of the package to start in
+	*/
+	function buildDependencyHierarchy( required directory ){
+
+		var boxJSON = readPackageDescriptor( arguments.directory );
+		var tree = {
+			'name' : boxJSON.name,
+			'slug' : boxJSON.slug,
+			'shortDescription' : boxJSON.shortDescription,
+			'version': boxJSON.version
+		};
+		buildChildren( boxJSON, tree, arguments.directory);
+		return tree;
+	}
+
+	private function buildChildren( required struct boxJSON, required struct parent, required string basePath ) {
+		parent[ 'dependencies' ] = processDependencies( boxJSON.dependencies, boxJSON.installPaths, false, arguments.basePath );
+		parent[ 'dependencies' ].append( processDependencies( boxJSON.devDependencies, boxJSON.installPaths, true, arguments.basePath ) );
+	}
+	
+	private function processDependencies( dependencies, installPaths, dev=false, basePath ) {
+		var thisDeps = {};
+		
+		for( var dependency in arguments.dependencies ) {
+			thisDeps[ dependency ] = {
+				'version' : arguments.dependencies[ dependency ],
+				'dev' : arguments.dev,
+				'name' : '',
+				'shortDescription' : '',
+			};
+			   
+			if( structKeyExists( arguments.installPaths, dependency ) ) {
+				
+				var fullPackageInstallPath = fileSystemUtil.resolvePath( arguments.installPaths[ dependency ], arguments.basePath );
+				var boxJSON = readPackageDescriptor( fullPackageInstallPath );
+				thisDeps[ dependency ][ 'name'  ] = boxJSON.name;
+				thisDeps[ dependency ][ 'shortDescription'  ] = boxJSON.shortDescription;
+				
+				// Down the rabbit hole
+				buildChildren( boxJSON, thisDeps[ dependency ], fullPackageInstallPath );				
+			} else {
+				// If we don't have an install path for this package, we don't know about its dependencies
+				thisDeps[ dependency ][ 'dependencies' ] = {};
+			}
+		}
+		
+		return thisDeps;
+	}
+	
 	// Dynamic completion for property name based on contents of box.json
 	function completeProperty( required directory ) {
 		var props = [];

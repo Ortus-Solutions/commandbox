@@ -61,6 +61,7 @@ component extends="commandbox.system.BaseCommand" aliases="status" excludeFromHe
 				.line( "  webXML: " & thisServerInfo.webXML )
 				.line( "  trayicon: " & thisServerInfo.trayicon )
 				.line( "  port: " & thisServerInfo.port )
+				.line( "  host: " & thisServerInfo.host )
 				.line( "  stopsocket: " & thisServerInfo.stopsocket )
 				.line( "  debug: " & thisServerInfo.debug )
 				.line( "  ID: " & thisServerInfo.id );

@@ -13,6 +13,7 @@ component extends="commandbox.system.BaseCommand" aliases="start" excludeFromHel
 
 	/**
 	 * @port.hint            port number
+	 * @host.hint            bind to a host/ip
 	 * @openbrowser.hint     open a browser after starting
 	 * @directory.hint       web root for this server
 	 * @name.hint            short name for this server
@@ -24,9 +25,16 @@ component extends="commandbox.system.BaseCommand" aliases="start" excludeFromHel
 	 * @libDirs.hint         comma separated list of extra lib directories for the Railo server
 	 * @trayIcon.hint        path to .png file for tray icon
 	 * @webXml.hint          path to web.xml file used to configure the Railo server
+	 * @enableHTTP.hint      enable HTTP
+	 * @enableSSL.hint       enable SSL
+	 * @SSLPort.hint       	 SSL port number
+	 * @SSLCert.hint         SSL certificate
+	 * @SSLKey.hint          SSL key (required if SSLCert specified)
+	 * @SSLKeyPass.hint      SSL key passphrase (required if SSLCert specified)
 	 **/
 	function run(
 		Numeric port            = 0,
+		String	host            = "127.0.0.1",
 		Boolean openbrowser     = true,
 		String  directory       = "",
 		String  name            = "",
@@ -37,7 +45,13 @@ component extends="commandbox.system.BaseCommand" aliases="start" excludeFromHel
 		String  serverConfigDir = "",
 		String  libDirs         = "",
 		String  trayIcon        = "",
-		String  webXml          = ""
+		String  webXml          = "",
+		Boolean enableHTTP 		= true,
+		Boolean enableSSL 		= false,
+		Numeric SSLPort 		= 1443,
+		String  SSLCert 		= "",
+		String  SSLKey 			= "",
+		String  SSLKeyPass 		= ""
 	){
 		// Resolve path as used locally
 		var webroot = fileSystemUtil.resolvePath( arguments.directory );
@@ -61,7 +75,8 @@ component extends="commandbox.system.BaseCommand" aliases="start" excludeFromHel
 		serverInfo.webroot 	= webroot;
 		serverInfo.debug 	= arguments.debug;
 		serverInfo.name 	= arguments.name is "" ? listLast( webroot, "\/" ) : arguments.name;
-			
+		serverInfo.host 	= arguments.host;
+
 		// we don't want to changes the ports if we're doing stuff already
 		if( serverInfo.status is "stopped" || arguments.force ){
 			// Box Desriptor check for port first.
@@ -83,6 +98,12 @@ component extends="commandbox.system.BaseCommand" aliases="start" excludeFromHel
 		if ( Len( Trim( arguments.libDirs         ) ) ) { serverInfo.libDirs         = arguments.libDirs;         }
 		if ( Len( Trim( arguments.trayIcon        ) ) ) { serverInfo.trayIcon        = arguments.trayIcon;        }
 		if ( Len( Trim( arguments.webXml          ) ) ) { serverInfo.webXml          = arguments.webXml;          }
+		if ( Len( Trim( arguments.enableSSL       ) ) ) { serverInfo.enableSSL       = arguments.enableSSL;       }
+		if ( Len( Trim( arguments.enableHTTP      ) ) ) { serverInfo.enableHTTP      = arguments.enableHTTP;      }
+		if ( Len( Trim( arguments.SSLPort         ) ) ) { serverInfo.SSLPort         = arguments.SSLPort;         }
+		if ( Len( Trim( arguments.SSLCert         ) ) ) { serverInfo.SSLCert         = arguments.SSLCert;         }
+		if ( Len( Trim( arguments.SSLKey          ) ) ) { serverInfo.SSLKey          = arguments.SSLKey;          }
+		if ( Len( Trim( arguments.SSLKeyPass      ) ) ) { serverInfo.SSLKeyPass      = arguments.SSLKeyPass;      }
 
 		// startup the service using server info struct, the start service takes care of persisting updated params
 		return serverService.start( 

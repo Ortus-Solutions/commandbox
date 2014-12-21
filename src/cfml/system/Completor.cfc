@@ -67,7 +67,7 @@ component singleton {
 				// Loop over all the possibilities at this level
 				for( var command in commandInfo.commandReference ) {
 					// Match the partial bit if it exists
-					if( !len( leftOver ) || command.startsWith( leftOver ) ) {
+					if( !len( leftOver ) || lcase( command ).startsWith( lcase( leftOver ) ) ) {
 						// Add extra space so they don't have to
 						candidates.add( command & ' ' );
 					}
@@ -131,13 +131,13 @@ component singleton {
 					// Loop over all possible params and suggest the ones not already there
 					for( var param in definedParameters ) {
 						if( !structKeyExists( passedParameters.namedParameters, param.name ) && !structKeyExists( passedParameters.flags, param.name ) ) {
-							if( !len( leftOver ) || param.name.startsWith( leftOver ) ) {
+							if( !len( leftOver ) || lcase( param.name ).startsWith( lcase( leftOver ) ) ) {
 								candidates.add( ' ' & param.name & '=' );
 							}
 							// If this is a boolean param, suggest the --flag version
 							if( param.type == 'boolean' ) {
 								var flagParamName = '--' & param.name;
-								if( !len( leftOver ) || flagParamName.startsWith( leftOver ) ) {
+								if( !len( leftOver ) || lcase( flagParamName ).startsWith( lcase( leftOver ) ) ) {
 									candidates.add( ' ' & flagParamName & ' ' );
 								}
 							}
@@ -209,7 +209,7 @@ component singleton {
 								// If this is a boolean param not already here, suggest the --flag version
 								if( i >= passedParameters.positionalParameters.len() && param.type == 'boolean' && !structKeyExists( passedParameters.flags, param.name ) ) {
 									var paramFlagname = '--' & param.name;
-									if( paramFlagname.startsWith( partialMatch ) ) {
+									if( lcase( paramFlagname ).startsWith( lcase( partialMatch ) ) ) {
 										candidates.add( paramFlagname & ' ' );										
 									}
 								}
@@ -240,13 +240,13 @@ component singleton {
 						// Loop over all possible params and suggest them
 						for( var param in definedParameters ) {
 							// If this param is not already a flag and it matches the partial text add it
-							if( !structKeyExists( passedParameters.flags, param.name )  && ( !len( partialMatch ) || param.name.startsWith( partialMatch ) ) ) {
+							if( !structKeyExists( passedParameters.flags, param.name )  && ( !len( partialMatch ) || lcase( param.name ).startsWith( lcase( partialMatch ) ) ) ) {
 								candidates.add( param.name & '=' );
 							}
 							
 							// If this param is a boolean that isn't a flag yet, sugguest the --flag version
 							var paramFlagname = '--' & param.name;
-							if( param.type == 'boolean' && !structKeyExists( passedParameters.flags, param.name ) && paramFlagname.startsWith( partialMatch ) ) {
+							if( param.type == 'boolean' && !structKeyExists( passedParameters.flags, param.name ) && lcase( paramFlagname ).startsWith( lcase( partialMatch ) ) ) {
 								candidates.add( paramFlagname & ' ' );										
 							}
 						}
