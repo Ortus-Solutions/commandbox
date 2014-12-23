@@ -146,7 +146,6 @@ External Dependencies:
 		</zip>
 		<!-- Build Checksum for cfml.zip -->
 		<checksum file="${dist.dir}/${distro.name}-cfml-${commandbox.version}.zip" forceoverwrite="true" fileext=".md5" />
-		<checksum file="${dist.dir}/${distro.name}-cfml-${commandbox.version}.zip" forceoverwrite="true" algorithm="sha" />
 		
 		<!-- update railo cli project with our version stuff -->
       	<copy tofile="${temp.dir}/rcli/cfml.zip" overwrite="true" encoding="UTF-8">
@@ -179,15 +178,28 @@ External Dependencies:
  	</target>
 
  	<!-- Build API Docs -->
- 	<target name="build.apidocs" description="Builds the api docs" depends="init">
+ 	<target name="build.apidocs" description="Builds the api docs" depends="init, build.testwar">
 		<!-- Create repo for docs -->
  		<mkdir dir="${api.dir}" />
  		<antcall target="update.permissions" />
  		<!-- Execute DocBox -->
-		<get dest="${build.dir}/colddoc.html" src="${url.api}${commandbox.version}&amp;path=${api.dir}" verbose="true"/>
-		<delete file="${build.dir}/colddoc.html" />
+        <!--
+        <colddoc packagenames="commandbox"
+            sourcepath="${src.dir}/cfml" destdir="${api.dir}"
+            title="CommandBox v${commandbox.version}">
+            { inputDir=expandPath( "/commandbox/commands" ), inputMapping="commandbox.commands" },
+            { inputDir=expandPath( "/commandbox/system/commands" ), inputMapping="commandbox.system.commands" }            
+        </colddoc>
+        -->
+        <property name="api.dir.abs" location="${api.dir}"/>
+        <server-run>
+            <delete file="${temp.dir}/colddoc.html"/>
+            <get dest="${temp.dir}/colddoc.html" src="http://${server.host}:${server.port.http}/apidocs/commandDocs.cfm?path=${api.dir.abs}" verbose="true"/>
+            <loadfile property="colddoc.return" srcfile="${temp.dir}/colddoc.html"><filterchain><trim/><ignoreblank/></filterchain></loadfile>
+            <echo message="apidoc result: ${colddoc.return}"></echo>
+        </server-run>
 		<!-- Zip API Docs -->
-		<zip destfile="${dist.dir}/${distro.name}-apidocs-${commandbox.version}.zip" basedir="${api.dir}"></zip>
+		<zip destfile="${dist.dir}/${distro.name}-apidocs-${commandbox.version}.zip" basedir="${api.dir.abs}"></zip>
  		<!-- Build Checksum -->
  		<checksum forceoverwrite="true" fileext=".md5" file="${dist.dir}/${distro.name}-apidocs-${commandbox.version}.zip" />
  	</target>
@@ -263,23 +275,23 @@ External Dependencies:
 
 		<!--Zip Box Binary With JRE -->
 		<zip destfile="${dist.dir}/${distro.name}-jre-win32-${commandbox.version}.zip" level="9" update="false">
-			<zipfileset prefix="jre" src="${maven.repo.local}/oracle/jre/${jre.version}/jre-${jre.version}-win32.zip"/>
+            <zipfileset prefix="jre" src="${maven.repo.local}/oracle/jre/${jre.version}/jre-${jre.version}-win32.zip"/>
 	        <fileset file="${dist.dir}/box.exe" />
 		</zip>
 		<zip destfile="${dist.dir}/${distro.name}-jre-win64-${commandbox.version}.zip" level="9" update="false">
-			<zipfileset prefix="jre" src="${maven.repo.local}/oracle/jre/${jre.version}/jre-${jre.version}-win64.zip"/>
+            <zipfileset prefix="jre" src="${maven.repo.local}/oracle/jre/${jre.version}/jre-${jre.version}-win64.zip"/>
 	        <fileset file="${dist.dir}/box.exe" />
 		</zip>
 		<zip destfile="${dist.dir}/${distro.name}-jre-linux32-${commandbox.version}.zip" level="9" update="false">
-			<zipfileset prefix="jre" src="${maven.repo.local}/oracle/jre/${jre.version}/jre-${jre.version}-linux32.zip"/>
+            <zipfileset prefix="jre" src="${maven.repo.local}/oracle/jre/${jre.version}/jre-${jre.version}-linux32.zip"/>
 	        <fileset file="${dist.dir}/box" />
 		</zip>
 		<zip destfile="${dist.dir}/${distro.name}-jre-linux64-${commandbox.version}.zip" level="9" update="false">
-			<zipfileset prefix="jre" src="${maven.repo.local}/oracle/jre/${jre.version}/jre-${jre.version}-linux64.zip"/>
+            <zipfileset prefix="jre" src="${maven.repo.local}/oracle/jre/${jre.version}/jre-${jre.version}-linux64.zip"/>
 	        <fileset file="${dist.dir}/box" />
 		</zip>
 		<zip destfile="${dist.dir}/${distro.name}-jre-darwin64-${commandbox.version}.zip" level="9" update="false">
-			<zipfileset prefix="jre" src="${maven.repo.local}/oracle/jre/${jre.version}/jre-${jre.version}-darwin64.zip"/>
+            <zipfileset prefix="jre" src="${maven.repo.local}/oracle/jre/${jre.version}/jre-${jre.version}-darwin64.zip"/>
 	        <fileset file="${dist.dir}/box" />
 		</zip>
 
@@ -297,7 +309,7 @@ External Dependencies:
  	</target>
 	
 	<!-- Build local maven repository build.cli.deb,build.cli.exe,build.cli.rpm-->
- 	<target name="build.cli.mvn" depends="build.cli.deb,build.cli.exe,build.cli.jre,build.cli.rpm">
+ 	<target name="build.cli.mvn" depends="build.test.all">
 		<pom-and-deploy pomid="commandbox.pom" packaging="pom" buildtype="${mvn.type}"
 			groupId="com.ortussolutions" artifactId="commandbox" version="${commandbox.version}"
 			name="commandbox">
@@ -320,53 +332,53 @@ External Dependencies:
 	<!-- Debian Repo: Leverages deb task -->
 	<target name="build.cli.deb" depends="build.cli.bin" description="builds a .deb file for debian-based systems ONLY!">
 	    <!-- Load deb task -->
-		<taskdef name="deb" classname="com.googlecode.ant_deb_task.Deb" classpathref="build.antcontrib.libpath"/>
-	   	<echo message="Creating debian repository from: ${dist.dir}"/>
+		<taskdef-dependency name="debtask" classname="debrepo.ant.DebTask" artifactId="debrepo" groupId="org.cfmlprojects" version="1.0.0" />
 		<mkdir dir="${deb.repo}"/>
-	   	<!-- create debian repo -->
-	   	<deb
-	        todir="${dist.dir}"
+	   	<debtask
+	        todir="${deb.repo}"
 	        package="commandbox"
 	        section="web"
-	        depends="java-common">
+	        depends="java-common"
+            key="${ortus.sign.key.id}" passphrase="${ortus.sign.key.passphrase}"
+            keyring="${ortus.sign.keyring}">
 	        <version upstream="${commandbox.version}"/>
 	        <maintainer name="${commandbox.packager.name}" email="${commandbox.packager.email}"/>
 	        <description synopsis="${commandbox.description}">CommandBox Version: ${commandbox.version}.</description>
 	   		<tarfileset file="${dist.dir}/box" prefix="usr/local/bin" filemode="755"/>
-	   	</deb>
-	   	<!-- Copy deb package to debian repo -->
-		<copy file="${dist.dir}/${distro.name}_${commandbox.version}-1_all.deb" toDir="${deb.repo}"/>
-		<!-- Rename to standardized naming -->
-		<move file="${dist.dir}/${distro.name}_${commandbox.version}-1_all.deb" tofile="${dist.dir}/${distro.name}-debian-${commandbox.version}.deb" />
+	   	</debtask>
+	   	<!-- Copy deb package to dist dir too -->
+		<copy file="${deb.repo}/${distro.name}_${commandbox.version}-1_all.deb" toFile="${dist.dir}/${distro.name}-debian-${commandbox.version}.deb"/>
 		<!-- Build Checksum -->
 		<checksum file="${dist.dir}/${distro.name}-debian-${commandbox.version}.deb" forceoverwrite="true" fileext=".md5" />
 		<checksum file="${dist.dir}/${distro.name}-debian-${commandbox.version}.deb" forceoverwrite="true" algorithm="sha" />
+	   	<echo message="Updating apt (deb) repo in ${deb.repo}"/>
 		<!-- Update Repo -->
-		<echo message="Updating apt (deb) repo in ${deb.repo}"/>
-	   	<deb-repo dir="${deb.repo}" />
+        <deb-repo dir="${deb.repo}"
+            label="ortus" description="ortussolutions.com debian repository"
+            key="${ortus.sign.key.id}" passphrase="${ortus.sign.key.passphrase}"
+            keyring="${ortus.sign.keyring}" />
 	</target>
 
 	<!-- Build RPM: Leverages redline task -->
-	<target name="build.cli.rpm" depends="bootstrap_redline,build.cli.bin" xmlns:redline="antlib:org.redline_rpm">
+	<target name="build.cli.rpm" depends="build.cli.bin">
 		<mkdir dir="${rpm.repo}" />
 		<echo message="Making rpm in ${rpm.repo} Packager:${commandbox.packager.name} ${commandbox.packager.email} Version: ${commandbox.version}" />
-		<!-- Load redline task -->
-        <taskdef resource="org/redline_rpm/antlib.xml" uri="antlib:org.redline_rpm" classpathref="build.lib.path"/>
         <!-- execute rpm -->
-		<redline:rpm destination="${rpm.repo}" release="1"
-			group="com.ortussolutions" name="${distro.name}" version="${commandbox.version}"
-			packager="${commandbox.packager.name} ${commandbox.packager.email}"
-			url="${commandbox.supportURL}">
-			<depends name="java" version=""/>
+        <property name="commandbox.rpm.repourl" value="${ortus.repoURL}/RPMS/noarch" />
+        <echo message="RPM repository location: ${commandbox.rpm.repourl}"/>
+		<rpm-create rpm.repo="${rpm.repo}" rpm.release="1"
+			rpm.reponame="ortus" rpm.baseurl="${commandbox.rpm.repourl}"
+			rpm.group="com.ortussolutions" rpm.name="${distro.name}" rpm.version="${commandbox.version}"
+			rpm.packager="${commandbox.packager.name} ${commandbox.packager.email}"
+			rpm.url="${commandbox.supportURL}" failonerror="true"
+			rpm.keyring="${ortus.sign.keyring}" rpm.key="${ortus.sign.key.id}" 
+			rpm.passphrase="${ortus.sign.key.passphrase}">
 			<tarfileset file="${dist.dir}/box" prefix="/usr/bin" filemode="744" username="root" group="root"/>
-		</redline:rpm>
+		</rpm-create>
 		<!-- Copy rpm to repo -->
 		<copy file="${rpm.repo}/${distro.name}-${commandbox.version}-1.noarch.rpm" tofile="${dist.dir}/${distro.name}-rpm-${commandbox.version}.rpm" />
 		<!-- Build Checksum -->
 		<checksum file="${dist.dir}/${distro.name}-rpm-${commandbox.version}.rpm" forceoverwrite="true" fileext=".md5" />
-		<checksum file="${dist.dir}/${distro.name}-rpm-${commandbox.version}.rpm" forceoverwrite="true" algorithm="sha" />
-		<!-- updates/creates the RPM repository, requires 'createrepo' on build server -->
-		<rpm-repo dir="${rpm.repo}" />
 	</target>
 
 	<!-- ********************************************************************************************-->
@@ -430,6 +442,7 @@ External Dependencies:
 		<mapping virtual="/wirebox" physical="@src.dir@/cfml/system/wirebox" />
 		<mapping virtual="/cfml" physical="@src.dir@/cfml" />
 		<mapping virtual="/tests" physical="@src.dir@/../tests" />
+		<mapping virtual="/apidocs" physical="@src.dir@/../apidocs" />
 	</target>
 
 	<target name="test" description="starts test server, runs tests, then stops test server">

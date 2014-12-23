@@ -68,7 +68,7 @@ component extends="commandbox.system.BaseCommand" aliases="start" excludeFromHel
 			serverInfo = serverService.getServerInfo( webroot );
 		}
 
-		// Get package descriptor for overrides
+		// Get package descriptor for overrides 
 		var boxJSON = packageService.readPackageDescriptor( webroot );
 
 		// Update data from arguments
@@ -106,11 +106,11 @@ component extends="commandbox.system.BaseCommand" aliases="start" excludeFromHel
 		if ( Len( Trim( arguments.SSLKeyPass      ) ) ) { serverInfo.SSLKeyPass      = arguments.SSLKeyPass;      }
 
 		// startup the service using server info struct, the start service takes care of persisting updated params
-		return serverService.start(
+		return serverService.start( 
 			serverInfo 	= serverInfo,
 			openBrowser = arguments.openbrowser,
 			force		= arguments.force,
-			debug 		= arguments.debug
+			debug 		= arguments.debug 
 		);
 	}
 
