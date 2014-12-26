@@ -16,3 +16,4 @@ tests/testbox
 /apidocs/CommandBox-CommandDocs/
 build-local.properties
 build/resources
+/bin/
