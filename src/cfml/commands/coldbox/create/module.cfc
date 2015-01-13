@@ -22,8 +22,8 @@ component extends='commandbox.system.BaseCommand' aliases='' excludeFromHelp=fal
 					author='',
 					authorURL='',
 					version='1.0.0',
-					cfmapping='',
-					modelNamespace='',
+					cfmapping=arguments.name,
+					modelNamespace=arguments.name,
 					directory='modules' ) {						
 		// This will make each directory canonical and absolute		
 		directory = fileSystemUtil.resolvePath( directory );
