@@ -146,6 +146,8 @@ External Dependencies:
 		</zip>
 		<!-- Build Checksum for cfml.zip -->
 		<checksum file="${dist.dir}/${distro.name}-cfml-${commandbox.version}.zip" forceoverwrite="true" fileext=".md5" />
+                <checksum file="${dist.dir}/${distro.name}-cfml-${commandbox.version}.zip" forceoverwrite="true" algorithm="sha" />
+
 		
 		<!-- update railo cli project with our version stuff -->
       	<copy tofile="${temp.dir}/rcli/cfml.zip" overwrite="true" encoding="UTF-8">
