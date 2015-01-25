@@ -71,7 +71,7 @@ component singleton{
 	*/
 	boolean function satisfies( required string version, required string range ){
 		// TODO: This is just a quick fix.  The satisfies() method needs actually implemented to handle ranges 
-		return eq( arguments.version, arguments.range );
+		return isEQ( arguments.version, arguments.range );
 	}
 
 	/**

@@ -31,6 +31,8 @@ component extends="commandbox.system.BaseCommand" aliases="start" excludeFromHel
 	 * @SSLCert.hint         SSL certificate
 	 * @SSLKey.hint          SSL key (required if SSLCert specified)
 	 * @SSLKeyPass.hint      SSL key passphrase (required if SSLCert specified)
+	 * @rewrites.hint        enable URL rewriting (default true)
+	 * @rewritesConfig.hint  optional URL rewriting config file path
 	 **/
 	function run(
 		Numeric port            = 0,
@@ -51,7 +53,9 @@ component extends="commandbox.system.BaseCommand" aliases="start" excludeFromHel
 		Numeric SSLPort 		= 1443,
 		String  SSLCert 		= "",
 		String  SSLKey 			= "",
-		String  SSLKeyPass 		= ""
+		String  SSLKeyPass 		= "",
+		Boolean rewrites 		= true,
+		String  rewritesConfig  = ""
 	){
 		// Resolve path as used locally
 		var webroot = fileSystemUtil.resolvePath( arguments.directory );
@@ -68,7 +72,7 @@ component extends="commandbox.system.BaseCommand" aliases="start" excludeFromHel
 			serverInfo = serverService.getServerInfo( webroot );
 		}
 
-		// Get package descriptor for overrides 
+		// Get package descriptor for overrides
 		var boxJSON = packageService.readPackageDescriptor( webroot );
 
 		// Update data from arguments
@@ -104,13 +108,15 @@ component extends="commandbox.system.BaseCommand" aliases="start" excludeFromHel
 		if ( Len( Trim( arguments.SSLCert         ) ) ) { serverInfo.SSLCert         = arguments.SSLCert;         }
 		if ( Len( Trim( arguments.SSLKey          ) ) ) { serverInfo.SSLKey          = arguments.SSLKey;          }
 		if ( Len( Trim( arguments.SSLKeyPass      ) ) ) { serverInfo.SSLKeyPass      = arguments.SSLKeyPass;      }
+		if ( Len( Trim( arguments.rewrites        ) ) ) { serverInfo.rewrites        = arguments.rewrites;        }
+		if ( Len( Trim( arguments.rewritesConfig  ) ) ) { serverInfo.rewritesConfig  = arguments.rewritesConfig;  }
 
 		// startup the service using server info struct, the start service takes care of persisting updated params
-		return serverService.start( 
+		return serverService.start(
 			serverInfo 	= serverInfo,
 			openBrowser = arguments.openbrowser,
 			force		= arguments.force,
-			debug 		= arguments.debug 
+			debug 		= arguments.debug
 		);
 	}
 
