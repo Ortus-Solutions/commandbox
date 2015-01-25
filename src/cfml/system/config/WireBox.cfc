@@ -19,7 +19,8 @@ component extends="wirebox.system.ioc.config.Binder" {
 
 		// Setup constants
 		var system					= createObject( "java", "java.lang.System" );
-		var homeDir					= system.getProperty( 'cfml.cli.home' );
+		var homeDir					= isNull(system.getProperty('cfml.cli.home')) ?
+				system.getProperty('user.home') & "/.CommandBox/" : system.getProperty('cfml.cli.home');
 		var tempDir					= homedir & "/temp";
 		var artifactDir				= homedir & "/artifacts";
 		var userDir					= system.getProperty( "user.dir" );
