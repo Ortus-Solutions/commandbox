@@ -68,6 +68,8 @@ component accessors="true" singleton{
 			, LaunchUtil 	: createObject( "java", "runwar.LaunchUtil" )
 		};
 
+		// the home directory.
+		variables.homeDir = arguments.homeDir;
 		// the lib dir location, populated from shell later.
 		variables.libDir = arguments.homeDir & "/lib";
 		// Where core server is installed
@@ -129,6 +131,9 @@ component accessors="true" singleton{
 		if ( Len( Trim( arguments.serverInfo.libDirs ?: "" ) ) ) {
 			libDirs = ListAppend( libDirs, arguments.serverInfo.libDirs );
 		}
+		// URL rewriting
+		var rewrites        = isNull(arguments.serverInfo.rewrites) ? true : arguments.serverInfo.rewrites;
+		var rewritesConfig 	= isNull(arguments.serverInfo.rewritesConfig) ? "" : arguments.serverInfo.rewritesConfig;
 
 		// config directory locations
 		var configDir       = len( arguments.serverInfo.webConfigDir ) ? arguments.serverInfo.webConfigDir : getCustomServerFolder( arguments.serverInfo );
@@ -141,21 +146,34 @@ component accessors="true" singleton{
 		// The process native name
 		var processName = name is "" ? "CommandBox" : name;
 		// The java arguments to execute: -Drailo.server.config.dir=""#configdir#/server""  Shared server, custom web configs
-		var args = "-Drailo.web.config.dir=""#configdir#"" -Drailo.server.config.dir=""#serverConfigDir#"" "
-				& "-javaagent:""#libdir#/railo-inst.jar"" -jar ""#variables.jarPath#"""
+		var args = " -javaagent:""#libdir#/railo-inst.jar"" -jar ""#variables.jarPath#"""
 				& " -war ""#webroot#"" --background=true --port #portNumber# --host #arguments.serverInfo.host# --debug #debug#"
 				& " --stop-port #stopPort# --processname ""#processName#"" --log-dir ""#logdir#"""
 				& " --open-browser #openbrowser# --open-url http://#arguments.serverInfo.host#:#portNumber#"
-				& " --libdir ""#libDirs#"" --iconpath ""#trayIcon#""";
+				& " --server-name ""#name#"" --lib-dirs ""#libDirs#"" --tray-icon ""#trayIcon#"""
+				& " --server-name ""#name#"" --lib-dirs ""#libDirs#"" --tray-icon ""#trayIcon#"""
+				& " --railo-web-config ""#configdir#"" --railo-server-config ""#serverConfigDir#""";
 		if(enableSSL) {
-			args &= " --enable-http #enableHTTP# --enable-ssl #enableSSL# --ssl-port #SSLPort#";
+			args &= " --http-enable #enableHTTP# --ssl-enable #enableSSL# --ssl-port #SSLPort#";
 		}
 		if(enableSSL && SSLCert != "") {
 			args &= " --ssl-cert ""#SSLCert#"" --ssl-key ""#SSLKey#"" --ssl-keypass ""#SSLKeyPass#""";
 		}
 
 		if ( Len( Trim( arguments.serverInfo.webXml ?: "" ) ) ) {
-			args &= " --webxmlpath #arguments.serverInfo.webXml#";
+			args &= " --web-xml-path #arguments.serverInfo.webXml#";
+		}
+
+		args &= " --urlrewrite-enable #rewrites#";
+		if(rewritesConfig == "") {
+			rewritesConfig = "#variables.homeDir#/cfml/system/config/urlrewrite.xml";
+		}
+		if(rewrites) {
+			rewritesConfig = fileSystemUtil.resolvePath( rewritesConfig );
+			if(!fileExists(rewritesConfig)) {
+				return "URL rewrite config not found #rewritesConfig#";
+			}
+			args &= " --urlrewrite-file ""#rewritesConfig#""";
 		}
 
 		// add back port and log information and persist

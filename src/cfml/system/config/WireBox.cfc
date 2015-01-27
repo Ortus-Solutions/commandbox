@@ -1,5 +1,5 @@
 component extends="wirebox.system.ioc.config.Binder" {
-	
+
 	function configure() {
 
 		// auto scan locations
@@ -14,12 +14,13 @@ component extends="wirebox.system.ioc.config.Binder" {
 			key		= "wireBox"
 		};
 
-		// LogBox 
+		// LogBox
 		wirebox.logBoxConfig = "commandbox.system.config.LogBox";
-		
+
 		// Setup constants
 		var system					= createObject( "java", "java.lang.System" );
-		var homeDir					= system.getProperty( 'user.home' ) & "/.CommandBox";
+		var homeDir					= isNull(system.getProperty('cfml.cli.home')) ?
+				system.getProperty('user.home') & "/.CommandBox/" : system.getProperty('cfml.cli.home');
 		var tempDir					= homedir & "/temp";
 		var artifactDir				= homedir & "/artifacts";
 		var userDir					= system.getProperty( "user.dir" );
@@ -36,8 +37,8 @@ component extends="wirebox.system.ioc.config.Binder" {
 			'/commandbox-home/commands'
 		];
 		var ortusArtifactsURL		= 'http://integration.staging.ortussolutions.com/artifacts/';
-		
-		
+
+
 		// map them
 		map( 'system@constants' ).toValue( system );
 		map( 'homeDir@constants' ).toValue( homeDir );
@@ -48,26 +49,26 @@ component extends="wirebox.system.ioc.config.Binder" {
 		map( 'REPLScriptHistoryFile@constants' ).toValue( REPLScriptHistoryFile );
 		map( 'REPLTagHistoryFile@constants' ).toValue( REPLTagHistoryFile );
 		map( 'cr@constants' ).toValue( cr );
-		map( 'commandLocations@constants' ).toValue( commandLocations );	
-		map( 'ortusArtifactsURL@constants' ).toValue( ortusArtifactsURL );		
-		
+		map( 'commandLocations@constants' ).toValue( commandLocations );
+		map( 'ortusArtifactsURL@constants' ).toValue( ortusArtifactsURL );
+
 		// Map Java Classes
 		map( 'commandHistoryFile@java' ).toJava( "jline.console.history.FileHistory" )
 			.initWith( createObject( "java", "java.io.File" ).init( commandHistoryFile ) )
 			.asSingleton();
-			
+
 		map( 'REPLScriptHistoryFile@java' ).toJava( "jline.console.history.FileHistory" )
 			.initWith( createObject( "java", "java.io.File" ).init( REPLScriptHistoryFile ) )
 			.asSingleton();
-			
+
 		map( 'REPLTagHistoryFile@java' ).toJava( "jline.console.history.FileHistory" )
 			.initWith( createObject( "java", "java.io.File" ).init( REPLTagHistoryFile ) )
 			.asSingleton();
-		
+
 		// Map Directories
 		mapDirectory( '/commandbox/system/services' );
 		mapDirectory( '/commandbox/system/util' );
-		
+
 	}
-	
+
 }
