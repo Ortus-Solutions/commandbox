@@ -26,13 +26,6 @@
 * coldbox create app myApp --installColdBox
 * {code}
 * .
-* Use the "installColdBoxBE" parameter to install the bleeding edge version of ColdBox from ForgeBox.
-* When you use this flag, the BE equivilant skeleton will automatically be used for you.  
-* The example below would install the AdvancedScriptBE skeleton instead of the default AdvancedScript skeleton.
-* {code:bash}
-* coldbox create app myApp --installColdBoxBE
-* {code}
-* .
 * Use the "installTestBox" parameter to install the latest stable version of TestBox from ForgeBox
 * {code:bash}
 * coldbox create app myApp --installColdBox --installTestBox
@@ -62,7 +55,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 	/**
 	 * @name The name of the app you want to create
 	 * @skeleton The name of the app skeleton to generate
-	 * @skeleton.options Advanced,AdvancedScript,Simple,SuperSimple,AdvancedBE,AdvancedScriptBE,SimpleBE,SuperSimpleBE
+	 * @skeleton.options Advanced,AdvancedScript,Simple,SuperSimple,Advancedv3,AdvancedScriptv3,Simplev3,SuperSimplev3
 	 * @directory The directory to create the app in and creates the directory if it does not exist.  Defaults to your current working directory.
 	 * @init "init" the directory as a package if it isn't already
 	 * @installColdBox Install the latest stable version of ColdBox from ForgeBox
@@ -91,13 +84,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 
 		// This will make the directory canonical and absolute
 		arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
-		
-		// BE override. Since noone reads the docs, automatically switch to a BE skeleton if installing ColdBoxBE
-		if( arguments.installColdBoxBE && right( arguments.skeleton, 2 ) != 'BE' ) {
-			// Switch to the BE skeleton
-			arguments.skeleton &= 'BE';
-		}
-		
+				
 		// get the right skeleton
 		var skeletonZip = skeletonLocation & arguments.skeleton & '.zip';
 		
