@@ -5,17 +5,17 @@
 *  You can choose what app skeleton to use as well as override the directory it's created in.
 *  The built-in app skeletons are located in the .CommandBox/cfml/skeletons/ directory and include:
 *  .
-*  These templates are compatible with the current stable version ColdBox (3.x)
+*  By default, ColdBox 4.x compatible templates will be used
 *  - Advanced
 *  - AdvancedScript (default)
 *  - Simple
 *  - SuperSimple
 *  .
-*  These templates are compatible with the bleeding edge version of ColdBox (4.x)
-*  - AdvancedBE
-*  - AdvancedScriptBE
-*  - SimpleBE
-*  - SuperSimpleBE
+*  These templates are compatible with the previous version of ColdBox (3.x)
+*  - Advancedv3
+*  - AdvancedScriptv3
+*  - Simplev3
+*  - SuperSimplev3
 * .
 * {code:bash}
 * coldbox create app myApp
