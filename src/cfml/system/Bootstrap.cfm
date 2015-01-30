@@ -1,7 +1,7 @@
 <cfsilent>
 <!---
 *********************************************************************************
- Copyright Since 2005 ColdBox Platform by Ortus Solutions, Corp
+ Copyright Since 2014 CommandBox by Ortus Solutions, Corp
  www.coldbox.org | www.ortussolutions.com
 ********************************************************************************
 @author Brad Wood, Luis Majano, Denny Valliant
