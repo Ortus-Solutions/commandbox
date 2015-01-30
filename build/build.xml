@@ -183,7 +183,7 @@ External Dependencies:
 			"groupID" : "${distro.groupID}",
 			"versioning" : {
 				"latestVersion" : "${cfml.loader.version}",
-				"latestBuildID" : "${${build.number}}",
+				"latestBuildID" : "${build.number}",
 				"latestUpdated" : "${repo.timestamp.DSTAMP}${repo.timestamp.TSTAMP}",
 				"stableVersion" : "${cfml.loader.version}",
 				"versions" : [],
