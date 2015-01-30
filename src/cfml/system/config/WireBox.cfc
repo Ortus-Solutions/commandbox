@@ -44,6 +44,7 @@ component extends="wirebox.system.ioc.config.Binder" {
 			'/commandbox-home/commands'
 		];
 		var ortusArtifactsURL		= 'http://integration.staging.ortussolutions.com/artifacts/';
+		var ortusPRDArtifactsURL	= 'http://downloads.ortussolutions.com/';
 
 
 		// map them
@@ -58,6 +59,7 @@ component extends="wirebox.system.ioc.config.Binder" {
 		map( 'cr@constants' ).toValue( cr );
 		map( 'commandLocations@constants' ).toValue( commandLocations );
 		map( 'ortusArtifactsURL@constants' ).toValue( ortusArtifactsURL );
+		map( 'ortusPRDArtifactsURL@constants' ).toValue( ortusPRDArtifactsURL );
 
 		// Map Java Classes
 		map( 'commandHistoryFile@java' ).toJava( "jline.console.history.FileHistory" )

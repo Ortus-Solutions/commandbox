@@ -23,8 +23,10 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 	property name="artifactDir" 			inject="artifactDir@constants";
 	property name="homedir" 				inject="homedir@constants";
 	property name="ortusArtifactsURL" 		inject="ortusArtifactsURL@constants";
+	property name="ortusPRDArtifactsURL" 	inject="ortusPRDArtifactsURL@constants";
 	property name="progressableDownloader"	inject="ProgressableDownloader";
 	property name="progressBar" 			inject="ProgressBar";
+	property name="semanticVersion"			inject="semanticVersion";
 
 	/**
 	 * @latest.hint Will download bleeding edge if true, last stable version if false
@@ -33,31 +35,30 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 	function run( boolean latest=false, boolean force=false ) {
 		// tmp dir location
 		var temp = shell.getTempDir();
+		// Determine artifacts location used
+		var thisArtifactsURL = arguments.latest ? variables.ortusArtifactsURL : variables.ortusPRDArtifactsURL;
 
 		// download the box-repo from the artifacts URL
-		print.greenLine( "Getting versioning information from #ortusArtifactsURL#" ).toConsole();
-		http url="#ortusArtifactsURL#ortussolutions/commandbox/box-repo.json" file="#temp#/box-repo.json";
+		print.greenLine( "Getting #arguments.latest ? 'latest' : 'stable'# versioning information from #thisArtifactsURL#" ).toConsole();
+		http url="#thisArtifactsURL#ortussolutions/commandbox/box-repo.json" file="#temp#/box-repo.json";
 
 		// read and deserialize the repo
 		var repoData = deserializeJSON( fileRead( '#temp#/box-repo.json' ) );
 
-		// If latest, compare build number
+		// BE version tracks major.minor.patch+buildID
 		if( arguments.latest ) {
-			var repoVersion 		= '#repoData.versioning.latestVersion#+#repoData.versioning.latestBuildID#';
-			var repoVersionShort 	= repoData.versioning.latestVersion;
-			var commandBoxVersion 	= shell.getVersion();
+			var repoVersion 	= '#repoData.versioning.latestVersion#+#repoData.versioning.latestBuildID#';
+			var isNewVersion 	= semanticVersion.isNew( current=shell.getVersion(), target=repoVersion, checkBuildID=true );
 		// Stable version just tracks major.minor.patch
 		} else {
-			var repoVersion 		= repoData.versioning.stableVersion;
-			var repoVersionShort 	= repoData.versioning.stableVersion;
-			// Verion with no build ID
-			var commandBoxVersion 	= listFirst( shell.getVersion(), "+" );
+			var repoVersion 	= repoData.versioning.stableVersion;
+			var isNewVersion 	= semanticVersion.isNew( current=shell.getVersion(), target=repoVersion, checkBuildID=false );
 		}
 
 		// If the local install is old, or we're forcing.
-		if( repoVersion != commandBoxVersion || force ) {
+		if( isNewVersion || force ) {
 			// Inform User about update
-			print.boldCyanLine( "Ohh Goody Goody, an update has been found (#repoVersion#) for your installation (#commandBoxVersion#)!" )
+			print.boldCyanLine( "Ohh Goody Goody, an update has been found (#repoVersion#) for your installation (#shell.getVersion()#)!" )
 				.toConsole();
 
 			// Confirm installation
@@ -66,7 +67,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 			}
 
 			// prepare locations
-			var fileURL 	= '#ortusArtifactsURL#ortussolutions/commandbox/#repoVersionShort#/commandbox-cfml-#repoVersionShort#.zip';
+			var fileURL 	= '#thisArtifactsURL#ortussolutions/commandbox/#repoVersionShort#/commandbox-cfml-#repoVersionShort#.zip';
 			var filePath 	= '#temp#/commandbox-cfml-#repoVersion#.zip';
 
 			// Download the update
@@ -94,7 +95,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 			runCommand( 'reload' );
 
 		} else {
-			print.yellowLine( "Your version of CommandBox (#commandBoxVersion#) is already current (#repoVersion#)." );
+			print.yellowLine( "Your version of CommandBox (#shell.getVersion()#) is already current (#repoVersion#)." );
 		}
 	}
 

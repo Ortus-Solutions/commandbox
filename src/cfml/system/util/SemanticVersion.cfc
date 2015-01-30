@@ -19,10 +19,16 @@ component singleton{
 	/**
 	* Checks if target version is a newer semantic version than the passed current version
 	* Note: To confirm to semvar, I think this needs to defer to gt(). 
-	* current.hint The current version of the system
-	* target.hint The newer version received
+	* @current The current version of the system
+	* @target The newer version received
+	* @checkBuildID If true it will check build equality, else it will ignore it
+	* 
 	*/
-	boolean function isNew( required string current, required string target ){
+	boolean function isNew( 
+		required string current, 
+		required string target,
+		boolean checkBuildID=true
+	){
 		/**
 		Semantic version: major.minor.revision-alpha.1+build
 		**/
@@ -47,7 +53,10 @@ component singleton{
 			return true;
 		}
 
-		// BuildID Check
+		// BuildID verification is turned on?
+		if( !arguments.checkBuildID ){ return false; }
+
+		// Build Check
 		if( target.major eq current.major AND
 			target.minor eq current.minor AND
 			target.revision eq current.revision AND
