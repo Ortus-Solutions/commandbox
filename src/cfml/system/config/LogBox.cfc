@@ -1,21 +1,16 @@
 ﻿/**
+*********************************************************************************
+* Copyright Since 2005 ColdBox Platform by Ortus Solutions, Corp
+* www.coldbox.org | www.ortussolutions.com
 ********************************************************************************
-Copyright Since 2005 ColdBox Framework by Luis Majano and Ortus Solutions, Corp
-www.coldbox.org | www.luismajano.com | www.ortussolutions.com
-********************************************************************************
-
-Author     :	Luis Majano
-Description :
-This is the Default ColdBox LogBox Configuration for immediate operation
-of ColdBox once it loads.  Once the configuration file is read then the
-LogBox instance is reconfigured with the user settings, if used at all.
+* LogBox Configuration
 */
 component {
 
 	function configure(){
 		var system 	= createObject( "java", "java.lang.System" );
-		var homeDir	= isNull(system.getProperty('cfml.cli.home')) ?
-				system.getProperty('user.home') & "/.CommandBox/" : system.getProperty('cfml.cli.home');
+		var homeDir	= isNull( system.getProperty('cfml.cli.home') ) ?
+				system.getProperty( 'user.home' ) & "/.CommandBox/" : system.getProperty( 'cfml.cli.home' );
 
 		logBox = {};
 
@@ -43,7 +38,7 @@ component {
 		};
 
 		logBox.categories = {
-			"console" = {appenders="ANSIConsoleAppender"}
+			"console" = { appenders="ANSIConsoleAppender" }
 		};
 
 	}

@@ -1,3 +1,10 @@
+/**
+*********************************************************************************
+* Copyright Since 2005 ColdBox Platform by Ortus Solutions, Corp
+* www.coldbox.org | www.ortussolutions.com
+********************************************************************************
+* WireBox Configuration
+*/
 component extends="wirebox.system.ioc.config.Binder" {
 
 	function configure() {
@@ -19,8 +26,8 @@ component extends="wirebox.system.ioc.config.Binder" {
 
 		// Setup constants
 		var system					= createObject( "java", "java.lang.System" );
-		var homeDir					= isNull(system.getProperty('cfml.cli.home')) ?
-				system.getProperty('user.home') & "/.CommandBox/" : system.getProperty('cfml.cli.home');
+		var homeDir					= isNull( system.getProperty( 'cfml.cli.home' ) ) ?
+				system.getProperty( 'user.home' ) & "/.CommandBox/" : system.getProperty( 'cfml.cli.home' );
 		var tempDir					= homedir & "/temp";
 		var artifactDir				= homedir & "/artifacts";
 		var userDir					= system.getProperty( "user.dir" );
