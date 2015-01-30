@@ -107,7 +107,7 @@ External Dependencies:
 	</target>
 
 	<!-- Build everything -->
-	<target name="build.cli.all" depends="build.cli.deb,build.cli.exe,build.cli.jre,build.cli.rpm,build.apidocs">
+	<target name="build.cli.all" depends="build.cli.deb,build.cli.exe,build.cli.jre,build.cli.rpm,build.apidocs,build.homebrew">
 		<antcontrib:if>
 			<equals arg1="${build.type}" arg2="auto" />
 			<then>
@@ -190,6 +190,51 @@ External Dependencies:
 				"classifiers" : ""
 			}
 		}</concat>
+
+ 	</target>
+
+ 	<!-- Build Homebrew Recipe -->
+ 	<target name="build.homebrew" description="Builds the Homebrew Recipe" depends="">
+		
+		<!-- Check sum properties -->
+		<checksum file="${dist.dir}/${distro.name}-bin-${commandbox.version}.zip" property="commandbox.sha1" algorithm="SHA"/>
+		<checksum file="${dist.dir}/${distro.name}-apidocs-${commandbox.version}.zip" property="commandbox.apidocs.sha1" algorithm="SHA"/>
+		
+		<!-- copy over prd file -->
+		<copy file="brew-template.rb" 
+			  tofile="${artifact.dir}/commandbox.rb"
+			  encoding="UTF-8" />
+
+		<replace file="${artifact.dir}/commandbox.rb" value="${commandbox.version}" summary="yes" encoding="UTF-8">
+		  	<replacetoken>@version@</replacetoken>
+		</replace>
+		<replace file="${artifact.dir}/commandbox.rb" value="${ortus.repoPRDURL}" summary="yes" encoding="UTF-8">
+		  	<replacetoken>@repoURL@</replacetoken>
+		</replace>
+		<replace file="${artifact.dir}/commandbox.rb" value="${commandbox.sha1}" summary="yes" encoding="UTF-8">
+		  	<replacetoken>@sha1@</replacetoken>
+		</replace>
+		<replace file="${artifact.dir}/commandbox.rb" value="${commandbox.apidocs.sha1}" summary="yes" encoding="UTF-8">
+		  	<replacetoken>@apidocs.sha1@</replacetoken>
+		</replace>
+
+		<!-- copy over be file -->
+		<copy file="brew-template.rb" 
+			  tofile="${artifact.dir}/commandbox-be.rb"
+			  encoding="UTF-8" />
+
+ 		<replace file="${artifact.dir}/commandbox-be.rb" value="${commandbox.version}" summary="yes" encoding="UTF-8">
+		  	<replacetoken>@version@</replacetoken>
+		</replace>
+		<replace file="${artifact.dir}/commandbox-be.rb" value="${ortus.repoPRDURL}" summary="yes" encoding="UTF-8">
+		  	<replacetoken>@repoURL@</replacetoken>
+		</replace>
+		<replace file="${artifact.dir}/commandbox-be.rb" value="${commandbox.sha1}" summary="yes" encoding="UTF-8">
+		  	<replacetoken>@sha1@</replacetoken>
+		</replace>
+		<replace file="${artifact.dir}/commandbox-be.rb" value="${commandbox.apidocs.sha1}" summary="yes" encoding="UTF-8">
+		  	<replacetoken>@apidocs.sha1@</replacetoken>
+		</replace>
 
  	</target>
 
