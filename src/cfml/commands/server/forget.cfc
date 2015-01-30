@@ -16,14 +16,15 @@ component extends="commandbox.system.BaseCommand" excludeFromHelp=false {
 	/**
 	 * Forgets one or all servers from persistent disk, removing all logs, configs, etc.
 	 *
-	 * @directory.hint Web root for the server
 	 * @name.hint Short name for the server
+	 * @name.optionsUDF serverNameComplete
+	 * @directory.hint Web root for the server
 	 * @all.hint Forget all servers
 	 * @force.hint Skip the "are you sure" confirmation
 	 **/
 	function run(
-		String directory="",
 		String name="",
+		String directory="",
 		Boolean all=false,
 		Boolean force=false
 	){
@@ -33,7 +34,7 @@ component extends="commandbox.system.BaseCommand" excludeFromHelp=false {
 		// Verify server info
 		if( structIsEmpty( serverInfo ) AND arguments.all eq false ){
 			error( "The server you requested to forget was not found (webroot=#arguments.directory#, name=#arguments.name#)." );
-			print.line( "You can use the 'server status showAll=true' command to get all the available servers." );
+			print.line( "You can use the 'server list' command to get all the available servers." );
 			return;
 		}
 		// Confirm deletion
@@ -46,6 +47,10 @@ component extends="commandbox.system.BaseCommand" excludeFromHelp=false {
 			print.orangeLine( "Cancelling forget command" );
 		}
 
+	}
+	
+	function serverNameComplete() {
+		return serverService.getServerNames();
 	}
 
 }

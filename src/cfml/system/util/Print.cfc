@@ -19,6 +19,17 @@
 * print.redOnWhiteBold( 'Hello World' );
 * print.boldBlinkingUnderscoredBlueTextOnRedBackground( 'Test' );
 *
+* If you want to modify formatting at runtime, pass a second parameter of additional text
+* that will be appended to the method name upon processing.
+* 
+* print.text( 'Hello World', 'blue' );
+* print.text( 'Hello World', statusColor );
+* print.text( 'Hello World', ( status == 'running' ? 'green' : 'red' ) );
+* 
+* Indent each carridge return with two spaces like so:
+* 
+* print.indentedLine( 'Hello World' );
+*
 */
 component {
 
@@ -89,6 +100,8 @@ component {
 
 		// Text needing formatting
 		var text = arrayLen(missingMethodArguments) ? missingMethodArguments[ 1 ] : '';
+		// Additional formatting text
+		var methodName &= arrayLen(missingMethodArguments) > 1 ? missingMethodArguments[ 2 ] : '';
 
 		// Carve it up until it's gone
 		while( len( methodName ) ) {
@@ -117,6 +130,15 @@ component {
 				continue;
 			}
 
+			// Check for "indented"
+			if( left( methodName, 8 ) == 'indented' ) {
+				text = indent( text );
+				// Slice this bit off the method name
+				methodName  = mid( methodName, 9, len( methodName ) );
+				// Next!
+				continue;
+			}
+
 			// Check for "line"
 			if( left( methodName, 4 ) == 'line' ) {
 				newLine = true;
@@ -128,7 +150,7 @@ component {
 
 			// Check for "text"
 			if( left( methodName, 4 ) == 'text' ) {
-				// This is just placeholder text for readability, so don't do anythign with it
+				// This is just placeholder text for readability, so don't do anything with it
 
 				// Slice this bit off the method name
 				methodName  = mid( methodName, 5, len( methodName ) );
@@ -159,6 +181,13 @@ component {
 	*/
 	private String function getANSIAttribute( required attribute ) {
 		return this.ESC & "[" & arguments.attribute & "m";
+    }
+
+	/**
+	* Pad all lines with 2 spaces
+	*/
+	private String function indent( text ) {
+		return '  ' & replaceNoCase( arguments.text, this.cr, this.cr & '  ', 'all' );
     }
 
 }

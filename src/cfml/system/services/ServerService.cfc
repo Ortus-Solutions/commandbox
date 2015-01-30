@@ -261,7 +261,7 @@ component accessors="true" singleton{
 				}
 			}
 			// return message
-			return "Poof! Wiped out server" & serverInfo.name;
+			return "Poof! Wiped out server " & serverInfo.name;
 		} else {
 			var serverNames = getServerNames();
 			setServers( {} );
@@ -446,7 +446,11 @@ component accessors="true" singleton{
 			stopsocket		: 0,
 			debug			: false,
 			status			: "stopped",
-			statusInfo		: { result : "" },
+			statusInfo		: {
+				result : "",
+				arguments : "",
+				command : "" 
+			},
 			name			: "",
 			logDir 			: "",
 			trayicon 		: "",

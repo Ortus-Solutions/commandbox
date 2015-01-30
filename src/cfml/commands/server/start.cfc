@@ -17,6 +17,7 @@ component extends="commandbox.system.BaseCommand" aliases="start" excludeFromHel
 	 * @openbrowser.hint     open a browser after starting
 	 * @directory.hint       web root for this server
 	 * @name.hint            short name for this server
+	 * @name.optionsUDF		 serverNameComplete
 	 * @stopPort.hint        stop socket listener port number
 	 * @force.hint           force start if status is not stopped
 	 * @debug.hint           sets debug log level
@@ -60,7 +61,7 @@ component extends="commandbox.system.BaseCommand" aliases="start" excludeFromHel
 		// Resolve path as used locally
 		var webroot = fileSystemUtil.resolvePath( arguments.directory );
 
-		// Discover by shortname or webroot and get server info
+		// Discover by shortname or server and get server info
 		var serverInfo = serverService.getServerInfoByDiscovery(
 			directory 	= webroot,
 			name		= arguments.name
@@ -73,12 +74,11 @@ component extends="commandbox.system.BaseCommand" aliases="start" excludeFromHel
 		}
 
 		// Get package descriptor for overrides
-		var boxJSON = packageService.readPackageDescriptor( webroot );
+		var boxJSON = packageService.readPackageDescriptor( serverInfo.webroot );
 
 		// Update data from arguments
-		serverInfo.webroot 	= webroot;
 		serverInfo.debug 	= arguments.debug;
-		serverInfo.name 	= arguments.name is "" ? listLast( webroot, "\/" ) : arguments.name;
+		serverInfo.name 	= arguments.name is "" ? listLast( serverInfo.webroot, "\/" ) : arguments.name;
 		serverInfo.host 	= arguments.host;
 
 		// we don't want to changes the ports if we're doing stuff already
@@ -119,5 +119,9 @@ component extends="commandbox.system.BaseCommand" aliases="start" excludeFromHel
 			debug 		= arguments.debug
 		);
 	}
-
+	
+	function serverNameComplete() {
+		return serverService.getServerNames();
+	}
+	
 }

@@ -3,8 +3,9 @@
  * .
  * {code:bash}
  * server stop
- * server stop name=serverName
- * server stop name=serverName --forget
+ * server stop serverName
+ * server stop serverName --forget
+ * server stop --all
  * {code}
  **/
 component extends="commandbox.system.BaseCommand" aliases="stop" excludeFromHelp=false {
@@ -13,33 +14,63 @@ component extends="commandbox.system.BaseCommand" aliases="stop" excludeFromHelp
 	property name="serverService" inject="ServerService";
 
 	/**
-	 * Stop a server instance
-	 *
-	 * @directory.hint web root for the server
 	 * @name.hint the short name of the server to stop
+	 * @name.optionsUDF serverNameComplete
+	 * @directory.hint web root for the server
 	 * @forget.hint if passed, this will also remove the directory information from disk
+	 * @all.hint If true, stop ALL running servers
 	 **/
-	function run( String directory="", String name="", boolean forget=false ){
-		// Discover by shortname or webroot and get server info
-		var serverInfo = serverService.getServerInfoByDiscovery(
-			directory 	= arguments.directory,
-			name		= arguments.name
-		);
-
-		// Verify server info
-		if( structIsEmpty( serverInfo ) ){
-			error( "The server you requested to stop was not found (webroot=#arguments.directory#, name=#arguments.name#)." );
-			print.line( "You can use the 'server status showAll=true' command to get all the available servers." );
-			return;
-		}
-
-		// Stop the server
-		var results = serverService.stop( serverInfo );
-		if( results.error ){
-			error( results.messages );
+	function run(
+		string name="",
+		string directory="",
+		boolean forget=false,
+		boolean all=false ){
+			
+		if( arguments.all ) {
+			var servers = serverService.getServers();
 		} else {
-			return results.messages;
+			// Discover by shortname or webroot and get server info
+			var servers = { id: serverService.getServerInfoByDiscovery(
+				directory 	= arguments.directory,
+				name		= arguments.name
+			) };
+	
+			// Verify server info
+			if( structIsEmpty( servers.id ) ){
+				error( "The server you requested to stop was not found (webroot=#arguments.directory#, name=#arguments.name#)." );
+				print.line( "You can use the 'server list' command to get all the available servers." );
+				return;
+			}			
+		} // End "all" check
+
+		// Stop the server(s)
+		for( var id in servers ) {
+			var serverInfo = servers[ id ];
+			
+			if( serverInfo.status == 'stopped' ) {
+				continue;
+			}
+			
+			print.yellowLine( 'Stopping ' & serverInfo.name & '...' ).toConsole();
+			
+			var results = serverService.stop( serverInfo );
+			if( results.error ){
+				error( results.messages );
+			} else {
+				print.line( results.messages );
+			}
+			
+			if( arguments.forget ) {
+				print.yellowLine( 'forgetting ' & serverInfo.name & '...' ).toConsole();
+				print.line( serverService.forget( serverInfo ) );				
+			}
 		}
+		
+		
+	}
+	
+	function serverNameComplete() {
+		return serverService.getServerNames();
 	}
 
 }

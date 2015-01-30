@@ -13,17 +13,18 @@ component extends="commandbox.system.BaseCommand" excludeFromHelp=false {
 	/**
 	 * Show server log
 	 *
-	 * @directory.hint web root for the server
 	 * @name.hint short name for the server
+	 * @name.optionsUDF serverNameComplete
+	 * @directory.hint web root for the server
 	 **/
-	function run( String directory="", String name="" ){
+	function run( string name="", string directory="" ){
 		// Discover by shortname or webroot
 		var serverInfo = serverService.getServerInfoByDiscovery( arguments.directory, arguments.name );
 
 		// Verify server info
 		if( structIsEmpty( serverInfo ) ){
 			error( "The server you requested to log was not found (webroot=#arguments.directory#, name=#arguments.name#)." );
-			print.line( "You can use the 'server status showAll=true' command to get all the available servers." );
+			print.line( "You can use the 'server list' command to get all the available servers." );
 			return;
 		}
 
@@ -36,4 +37,9 @@ component extends="commandbox.system.BaseCommand" excludeFromHelp=false {
 		}
 	}
 
+	
+	function serverNameComplete() {
+		return serverService.getServerNames();
+	}
+	
 }
