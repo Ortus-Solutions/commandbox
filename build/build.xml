@@ -84,7 +84,7 @@ External Dependencies:
 
 		<!-- get commandbox dependencies -->
 		<dependency groupId="jline" artifactId="jline" version="2.12" dest="${lib.dir}" type="jar" unzip="false"/>
-		<dependency groupId="org.getrailo" artifactId="railo.cli" version="${railo.cli.version}" dest="${temp.dir}/rcli" type="jar" unzip="true"/>
+		<dependency groupId="org.getrailo" artifactId="railo.cli" version="${cfml.cli.version}" dest="${temp.dir}/rcli" type="jar" unzip="true"/>
 
 		<!-- Mark as init -->
 		<property name="src.isInit" value="true" />
@@ -176,6 +176,21 @@ External Dependencies:
 				  latest="${commandbox.version}"
 				  stableVersion="${commandbox.stableVersion}"
 				  classifiers="cfml,bin,win,deb,rpm,apidocs"/>
+		
+		<!-- Create box-loader.json -->
+		<concat destfile="${artifact.dir}/box-loader.json" overwrite="true">{
+			"artifactID" : "commandbox-loader",
+			"groupID" : "${distro.groupID}",
+			"versioning" : {
+				"latestVersion" : "${cfml.loader.version}",
+				"latestBuildID" : "${${build.number}}",
+				"latestUpdated" : "${repo.timestamp.DSTAMP}${repo.timestamp.TSTAMP}",
+				"stableVersion" : "${cfml.loader.version}",
+				"versions" : [],
+				"classifiers" : ""
+			}
+		}</concat>
+
  	</target>
 
  	<!-- Build API Docs -->
