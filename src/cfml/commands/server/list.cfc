@@ -89,7 +89,7 @@ component extends="commandbox.system.BaseCommand" aliases="status" excludeFromHe
 						.indentedLine( "port:            " & thisServerInfo.port )
 						.indentedLine( "enableSSL:       " & thisServerInfo.enableSSL )
 						.indentedLine( "SSLport:         " & thisServerInfo.SSLport )
-						.indentedLine( "Rewrites:        " & thisServerInfo.rewrites )
+						.indentedLine( "Rewrites:        " & ( thisServerInfo.rewrites ?: "false" ) )
 						.indentedLine( "stopsocket:      " & thisServerInfo.stopsocket )
 						.indentedLine( "logdir:          " & thisServerInfo.logDir )
 						.indentedLine( "debug:           " & thisServerInfo.debug )
