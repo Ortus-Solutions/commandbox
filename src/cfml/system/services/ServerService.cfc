@@ -34,6 +34,10 @@ component accessors="true" singleton{
 	* Where the Run War jar path is
 	*/
 	property name="jarPath";
+	/**
+	* The default rewrites configuration file
+	*/
+	property name="rewritesDefaultConfig" inject="rewritesDefaultConfig@constants";
 
 	/**
 	* Constructor
@@ -99,7 +103,7 @@ component accessors="true" singleton{
 	/**
 	 * Start a server instance
 	 *
-	 * @serverInfo.hint The server information struct: [ webroot, name, port, host, stopSocket, logDir, status, statusInfo ]
+	 * @serverInfo.hint The server information struct: [ webroot, name, port, host, stopSocket, logDir, status, statusInfo, HTTPEnable, SSLEnable, RewritesEnable, RewritesConfig ]
 	 * @openBrowser.hint Open a web browser or not
 	 * @force.hint force start if status is not stopped
 	 * @debug.hint sets debug log level
@@ -111,33 +115,38 @@ component accessors="true" singleton{
 		Boolean debug=false
 	){
 		var launchUtil 	= java.LaunchUtil;
+		
 		// get webroot info
 		var webroot 	= arguments.serverInfo.webroot;
 		var webhash 	= hash( arguments.serverInfo.webroot );
-		// default server name, and ports
+		
+		// default server name, ports, options
 		var name 		= arguments.serverInfo.name is "" ? listLast( webroot, "\/" ) : arguments.serverInfo.name;
-		var portNumber  = arguments.serverInfo.port == 0 ? getRandomPort(arguments.serverInfo.host) : arguments.serverInfo.port;
-		var stopPort 	= arguments.serverInfo.stopsocket == 0 ? getRandomPort(arguments.serverInfo.host) : arguments.serverInfo.stopsocket;
-		var enableHTTP 	= isNull(arguments.serverInfo.enableHTTP) ? true : arguments.serverInfo.enableHTTP;
-		var enableSSL 	= isNull(arguments.serverInfo.enableSSL) ? false : arguments.serverInfo.enableSSL;
-		var SSLPort 	= isNull(arguments.serverInfo.sslPort) ? 1443 : arguments.serverInfo.sslPort;
-		var SSLCert 	= isNull(arguments.serverInfo.sslCert) ? "" : arguments.serverInfo.sslCert;
-		var SSLKey 		= isNull(arguments.serverInfo.sslKey) ? "" : arguments.serverInfo.sslKey;
-		var SSLKeyPass 	= isNull(arguments.serverInfo.sslKeyPass) ? "" : arguments.serverInfo.sslKeyPass;
+		var portNumber  = arguments.serverInfo.port == 0 ? getRandomPort( arguments.serverInfo.host ) : arguments.serverInfo.port;
+		var stopPort 	= arguments.serverInfo.stopsocket == 0 ? getRandomPort( arguments.serverInfo.host ) : arguments.serverInfo.stopsocket;
+		var HTTPEnable 	= isNull( arguments.serverInfo.HTTPEnable ) ? true 	: arguments.serverInfo.HTTPEnable;
+		var SSLEnable 	= isNull( arguments.serverInfo.SSLEnable ) 	? false : arguments.serverInfo.SSLEnable;
+		var SSLPort 	= isNull( arguments.serverInfo.sslPort ) 	? 1443 	: arguments.serverInfo.sslPort;
+		var SSLCert 	= isNull( arguments.serverInfo.sslCert ) 	? "" 	: arguments.serverInfo.sslCert;
+		var SSLKey 		= isNull( arguments.serverInfo.sslKey ) 	? "" 	: arguments.serverInfo.sslKey;
+		var SSLKeyPass 	= isNull( arguments.serverInfo.sslKeyPass ) ? "" 	: arguments.serverInfo.sslKeyPass;
+		
 		// setup default tray icon if empty
 		var trayIcon    = len( arguments.serverInfo.trayIcon ) ? arguments.serverInfo.trayIcon : "#variables.libdir#/trayicon.png";
+		
 		// Setup lib directory, add more if defined by server info
 		var libDirs     = variables.libDir;
 		if ( Len( Trim( arguments.serverInfo.libDirs ?: "" ) ) ) {
 			libDirs = ListAppend( libDirs, arguments.serverInfo.libDirs );
 		}
+		
 		// URL rewriting
-		var rewrites        = isNull(arguments.serverInfo.rewrites) ? true : arguments.serverInfo.rewrites;
-		var rewritesConfig 	= isNull(arguments.serverInfo.rewritesConfig) ? "" : arguments.serverInfo.rewritesConfig;
+		var rewritesEnable  = isNull( arguments.serverInfo.rewritesEnable ) ? false : arguments.serverInfo.rewritesEnable;
+		var rewritesConfig 	= isNull( arguments.serverInfo.rewritesConfig ) ? "" 	: arguments.serverInfo.rewritesConfig;
 
 		// config directory locations
-		var configDir       = len( arguments.serverInfo.webConfigDir ) ? arguments.serverInfo.webConfigDir : getCustomServerFolder( arguments.serverInfo );
-		var serverConfigDir = len( arguments.serverInfo.serverConfigDir ) ? arguments.serverInfo.serverConfigDir : variables.serverHomeDirectory;
+		var configDir       = len( arguments.serverInfo.webConfigDir ) 		? arguments.serverInfo.webConfigDir 	: getCustomServerFolder( arguments.serverInfo );
+		var serverConfigDir = len( arguments.serverInfo.serverConfigDir ) 	? arguments.serverInfo.serverConfigDir 	: variables.serverHomeDirectory;
 
 		// log directory location
 		var logdir = configdir & "/log";
@@ -145,6 +154,7 @@ component accessors="true" singleton{
 
 		// The process native name
 		var processName = name is "" ? "CommandBox" : name;
+
 		// The java arguments to execute: -Drailo.server.config.dir=""#configdir#/server""  Shared server, custom web configs
 		var args = " -javaagent:""#libdir#/railo-inst.jar"" -jar ""#variables.jarPath#"""
 				& " -war ""#webroot#"" --background=true --port #portNumber# --host #arguments.serverInfo.host# --debug #debug#"
@@ -153,30 +163,31 @@ component accessors="true" singleton{
 				& " --server-name ""#name#"" --lib-dirs ""#libDirs#"" --tray-icon ""#trayIcon#"""
 				& " --server-name ""#name#"" --lib-dirs ""#libDirs#"" --tray-icon ""#trayIcon#"""
 				& " --railo-web-config ""#configdir#"" --railo-server-config ""#serverConfigDir#""";
-		if(enableSSL) {
-			args &= " --http-enable #enableHTTP# --ssl-enable #enableSSL# --ssl-port #SSLPort#";
+		// Incorporate SSL to command
+		if( SSLEnable ){
+			args &= " --http-enable #HTTPEnable# --ssl-enable #SSLEnable# --ssl-port #SSLPort#";
 		}
-		if(enableSSL && SSLCert != "") {
+		if( SSLEnable && SSLCert != "") {
 			args &= " --ssl-cert ""#SSLCert#"" --ssl-key ""#SSLKey#"" --ssl-keypass ""#SSLKeyPass#""";
 		}
-
+		// Incorporate web-xml to command
 		if ( Len( Trim( arguments.serverInfo.webXml ?: "" ) ) ) {
 			args &= " --web-xml-path #arguments.serverInfo.webXml#";
 		}
-
-		args &= " --urlrewrite-enable #rewrites#";
-		if(rewritesConfig == "") {
-			rewritesConfig = "#variables.homeDir#/cfml/system/config/urlrewrite.xml";
+		// Incorporate rewrites to command
+		args &= " --urlrewrite-enable #rewritesEnable#";
+		if( !len( rewritesConfig ) ){
+			rewritesConfig = variables.rewritesDefaultConfig;
 		}
-		if(rewrites) {
+		if( rewritesEnable ){
 			rewritesConfig = fileSystemUtil.resolvePath( rewritesConfig );
-			if(!fileExists(rewritesConfig)) {
+			if( !fileExists(rewritesConfig) ){
 				return "URL rewrite config not found #rewritesConfig#";
 			}
 			args &= " --urlrewrite-file ""#rewritesConfig#""";
 		}
 
-		// add back port and log information and persist
+		// add back port and log information and persist server information
 		arguments.serverInfo.port 		= portNumber;
 		arguments.serverInfo.stopsocket = stopPort;
 		arguments.serverInfo.logdir 	= logdir;
@@ -440,7 +451,6 @@ component accessors="true" singleton{
 	struct function newServerInfoStruct(){
 		return {
 			id 				: "",
-			webroot			: "",
 			port			: 0,
 			host			: "127.0.0.1",
 			stopsocket		: 0,
@@ -457,7 +467,16 @@ component accessors="true" singleton{
 			libDirs 		: "",
 			webConfigDir 	: "",
 			serverConfigDir : "",
-			webXML 			: ""
+			webroot			: "",
+			webXML 			: "",
+			HTTPEnable		: true,
+			SSLEnable		: false,
+			SSLPort			: 1443,
+			SSLCert 		: "",
+			SSLKey			: "",
+			SSLKeyPass		: "",
+			rewritesEnable  : false,
+			rewritesConfig	: ""
 		};
 	}
 

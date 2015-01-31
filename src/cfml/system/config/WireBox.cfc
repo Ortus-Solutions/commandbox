@@ -47,7 +47,7 @@ component extends="wirebox.system.ioc.config.Binder" {
 		var ortusPRDArtifactsURL	= 'http://downloads.ortussolutions.com/';
 
 
-		// map them
+		// map constants
 		map( 'system@constants' ).toValue( system );
 		map( 'homeDir@constants' ).toValue( homeDir );
 		map( 'tempDir@constants' ).toValue( tempDir );
@@ -60,6 +60,7 @@ component extends="wirebox.system.ioc.config.Binder" {
 		map( 'commandLocations@constants' ).toValue( commandLocations );
 		map( 'ortusArtifactsURL@constants' ).toValue( ortusArtifactsURL );
 		map( 'ortusPRDArtifactsURL@constants' ).toValue( ortusPRDArtifactsURL );
+		map( 'rewritesDefaultConfig@constants' ).toValue( "#homeDir#/cfml/system/config/urlrewrite.xml" );
 
 		// Map Java Classes
 		map( 'commandHistoryFile@java' ).toJava( "jline.console.history.FileHistory" )
