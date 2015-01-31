@@ -18,35 +18,35 @@ component extends="commandbox.system.BaseCommand" aliases="start" excludeFromHel
 	property name="packageService" 	inject="packageService";
 
 	/**
-	 * @port           port number
-	 * @host           bind to a host/ip
-	 * @openbrowser    open a browser after starting
-	 * @directory      web root for this server
-	 * @name           short name for this server
-	 * @name.optionsUDF		 serverNameComplete
-	 * @stopPort       stop socket listener port number
-	 * @force          force start if status is not stopped
-	 * @debug          sets debug log level
-	 * @webConfigDir   custom location for web context configuration
-	 * @serverConfigDircustom location for server configuration
-	 * @libDirs        comma separated list of extra lib directories for the server
-	 * @trayIcon       path to .png file for tray icon
-	 * @webXML         path to web.xml file used to configure the server
-	 * @HTTPEnable     enable HTTP
-	 * @SSLEnable      enable SSL
-	 * @SSLPort        SSL port number
-	 * @SSLCert        SSL certificate
-	 * @SSLKey         SSL key (required if SSLCert specified)
-	 * @SSLKeyPass     SSL key passphrase (required if SSLCert specified)
-	 * @rewritesEnable enable URL rewriting (default false)
-	 * @rewritesConfig optional URL rewriting config file path
+	 * @name           	short name for this server
+	 * @name.optionsUDF	serverNameComplete
+	 * @port           	port number
+	 * @host           	bind to a host/ip
+	 * @openbrowser    	open a browser after starting
+	 * @directory      	web root for this server
+	 * @stopPort       	stop socket listener port number
+	 * @force          	force start if status is not stopped
+	 * @debug          	sets debug log level
+	 * @webConfigDir   	custom location for web context configuration
+	 * @serverConfigDir	custom location for server configuration
+	 * @libDirs        	comma-separated list of extra lib directories for the server
+	 * @trayIcon       	path to .png file for tray icon
+	 * @webXML         	path to web.xml file used to configure the server
+	 * @HTTPEnable     	enable HTTP
+	 * @SSLEnable      	enable SSL
+	 * @SSLPort        	SSL port number
+	 * @SSLCert        	SSL certificate
+	 * @SSLKey         	SSL key (required if SSLCert specified)
+	 * @SSLKeyPass     	SSL key passphrase (required if SSLCert specified)
+	 * @rewritesEnable 	enable URL rewriting (default false)
+	 * @rewritesConfig 	optional URL rewriting config file path
 	 **/
 	function run(
+		String  name            = "",
 		Numeric port            = 0,
 		String	host            = "127.0.0.1",
 		Boolean openbrowser     = true,
 		String  directory       = "",
-		String  name            = "",
 		Numeric stopPort        = 0,
 		Boolean force           = false,
 		Boolean debug           = false,
