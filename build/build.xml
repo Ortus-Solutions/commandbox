@@ -377,58 +377,57 @@ External Dependencies:
 		</pom-and-deploy>
 	</target>
 
-	<!-- Debian Repo: Leverages deb task -->
-	<target name="build.cli.deb" depends="build.cli.bin" description="builds a .deb file for debian-based systems ONLY!">
-	    <!-- Load deb task -->
-		<taskdef name="deb" classname="com.googlecode.ant_deb_task.Deb" classpathref="build.antcontrib.libpath"/>
-	   	<echo message="Creating debian repository from: ${dist.dir}"/>
-		<mkdir dir="${deb.repo}"/>
-	   	<!-- create debian repo -->
-	   	<deb
-	        todir="${dist.dir}"
-	        package="commandbox"
-	        section="web"
-	        depends="java-common">
-	        <version upstream="${commandbox.version}"/>
-	        <maintainer name="${commandbox.packager.name}" email="${commandbox.packager.email}"/>
-	        <description synopsis="${commandbox.description}">CommandBox Version: ${commandbox.version}.</description>
-	   		<tarfileset file="${dist.dir}/box" prefix="usr/local/bin" filemode="755"/>
-	   	</deb>
-	   	<!-- Copy deb package to debian repo -->
-		<copy file="${dist.dir}/${distro.name}_${commandbox.version}-1_all.deb" toDir="${deb.repo}"/>
-		<!-- Rename to standardized naming -->
-		<move file="${dist.dir}/${distro.name}_${commandbox.version}-1_all.deb" tofile="${dist.dir}/${distro.name}-debian-${commandbox.version}.deb" />
-		<!-- Build Checksum -->
-		<checksum file="${dist.dir}/${distro.name}-debian-${commandbox.version}.deb" forceoverwrite="true" fileext=".md5" />
-		<checksum file="${dist.dir}/${distro.name}-debian-${commandbox.version}.deb" forceoverwrite="true" algorithm="sha" />
-		<!-- Update Repo -->
-		<echo message="Updating apt (deb) repo in ${deb.repo}"/>
-	   	<deb-repo dir="${deb.repo}" />
-	</target>
+  <target name="build.cli.deb" depends="build.cli.bin" description="builds a .deb file for debian-based systems ONLY!">
+    <!-- Load deb task -->
+    <taskdef-dependency name="debtask" classname="debrepo.ant.DebTask" artifactId="debrepo" groupId="org.cfmlprojects" version="1.0.0" />
+    <mkdir dir="${deb.repo}"/>
+    <debtask
+        todir="${deb.repo}"
+        package="commandbox"
+        section="web"
+        depends="java-common"
+        key="${ortus.sign.key.id}" passphrase="${ortus.sign.key.passphrase}"
+        keyring="${ortus.sign.keyring}">
+        <version upstream="${commandbox.version}"/>
+        <maintainer name="${commandbox.packager.name}" email="${commandbox.packager.email}"/>
+        <description synopsis="${commandbox.description}">CommandBox Version: ${commandbox.version}.</description>
+      <tarfileset file="${dist.dir}/box" prefix="usr/local/bin" filemode="755"/>
+    </debtask>
+    <!-- Copy deb package to dist dir too -->
+    <copy file="${deb.repo}/${distro.name}_${commandbox.version}-1_all.deb" toFile="${dist.dir}/${distro.name}-debian-${commandbox.version}.deb"/>
+    <!-- Build Checksum -->
+    <checksum file="${dist.dir}/${distro.name}-debian-${commandbox.version}.deb" forceoverwrite="true" fileext=".md5" />
+    <checksum file="${dist.dir}/${distro.name}-debian-${commandbox.version}.deb" forceoverwrite="true" algorithm="sha" />
+    <echo message="Updating apt (deb) repo in ${deb.repo}"/>
+    <!-- Update Repo -->
+    <deb-repo dir="${deb.repo}"
+        label="ortus" description="ortussolutions.com debian repository"
+        key="${ortus.sign.key.id}" passphrase="${ortus.sign.key.passphrase}"
+        keyring="${ortus.sign.keyring}" />
+  </target>
 
-	<!-- Build RPM: Leverages redline task -->
-	<target name="build.cli.rpm" depends="bootstrap_redline,build.cli.bin" xmlns:redline="antlib:org.redline_rpm">
-		<mkdir dir="${rpm.repo}" />
-		<echo message="Making rpm in ${rpm.repo} Packager:${commandbox.packager.name} ${commandbox.packager.email} Version: ${commandbox.version}" />
-		<!-- Load redline task -->
-        <taskdef resource="org/redline_rpm/antlib.xml" uri="antlib:org.redline_rpm" classpathref="build.lib.path"/>
-        <!-- execute rpm -->
-		<redline:rpm destination="${rpm.repo}" release="1"
-			group="com.ortussolutions" name="${distro.name}" version="${commandbox.version}"
-			packager="${commandbox.packager.name} ${commandbox.packager.email}"
-			url="${commandbox.supportURL}">
-			<depends name="java" version=""/>
-			<tarfileset file="${dist.dir}/box" prefix="/usr/bin" filemode="744" username="root" group="root"/>
-		</redline:rpm>
-		<!-- Copy rpm to repo -->
-		<copy file="${rpm.repo}/${distro.name}-${commandbox.version}-1.noarch.rpm" tofile="${dist.dir}/${distro.name}-rpm-${commandbox.version}.rpm" />
-		<!-- Build Checksum -->
-		<checksum file="${dist.dir}/${distro.name}-rpm-${commandbox.version}.rpm" forceoverwrite="true" fileext=".md5" />
-		<checksum file="${dist.dir}/${distro.name}-rpm-${commandbox.version}.rpm" forceoverwrite="true" algorithm="sha" />
-		<!-- updates/creates the RPM repository, requires 'createrepo' on build server -->
-		<rpm-repo dir="${rpm.repo}" />
-	</target>
-
+  <!-- Build RPM: Leverages redline task -->
+  <target name="build.cli.rpm" depends="build.cli.bin">
+    <mkdir dir="${rpm.repo}" />
+    <echo message="Making rpm in ${rpm.repo} Packager:${commandbox.packager.name} ${commandbox.packager.email} Version: ${commandbox.version}" />
+    <!-- execute rpm -->
+    <property name="commandbox.rpm.repourl" value="${ortus.repoURL}/RPMS/noarch" />
+    <echo message="RPM repository location: ${commandbox.rpm.repourl}"/>
+    <rpm-create rpm.repo="${rpm.repo}" rpm.release="1"
+      rpm.reponame="ortus" rpm.baseurl="${commandbox.rpm.repourl}"
+      rpm.group="com.ortussolutions" rpm.name="${distro.name}" rpm.version="${commandbox.version}"
+      rpm.packager="${commandbox.packager.name} ${commandbox.packager.email}"
+      rpm.url="${commandbox.supportURL}" failonerror="true"
+      rpm.keyring="${ortus.sign.keyring}" rpm.key="${ortus.sign.key.id}" 
+      rpm.passphrase="${ortus.sign.key.passphrase}">
+      <tarfileset file="${dist.dir}/box" prefix="/usr/bin" filemode="744" username="root" group="root"/>
+    </rpm-create>
+    <!-- Copy rpm to repo -->
+    <copy file="${rpm.repo}/${distro.name}-${commandbox.version}-1.noarch.rpm" tofile="${dist.dir}/${distro.name}-rpm-${commandbox.version}.rpm" />
+    <!-- Build Checksum -->
+    <checksum file="${dist.dir}/${distro.name}-rpm-${commandbox.version}.rpm" forceoverwrite="true" fileext=".md5" />
+  </target>
+  
 	<!-- ********************************************************************************************-->
 	<!--						DEPENDENCY TARGETS 													 -->
 	<!-- ********************************************************************************************-->
