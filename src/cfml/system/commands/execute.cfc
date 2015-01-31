@@ -40,7 +40,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 		// Only forward slashes match CF's mappings
 		arguments.file = replace( arguments.file, '\', '/' );
 		// For non-Unix paths, strip  drive letter so path is relative.
-		// This only works because Railo sees the drive root as the web root so / matches it
+		// This only works because CF sees the drive root as the web root so / matches it
 		// ONLY WORKS FOR FILES ON THE SAME DRIVE AS COMMANDBOX!! See COMMANDBOX-104
 		if( !arguments.file.startsWith( '/' ) ) {
 			// Strip drive letter
