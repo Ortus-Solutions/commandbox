@@ -7,7 +7,7 @@
 @author Brad Wood, Luis Majano, Denny Valliant
 
 I bootstrap CommandBox up, create the shell and get it running.
-I am a CFC because the Railo CLI seems to need a .cfm file to call
+I am a CFM because the CLI seems to need a .cfm file to call
 This file will stay running the entire time the shell is open
 --->
 <cfset variables.wireBox = application.wireBox>
@@ -50,7 +50,7 @@ Type "help" for help, or "help [command]" to be more specific.
 		systemOutput( replace( banner, '@@version@@', shell.getVersion() ) );
 		// Running the "reload" command will enter this while loop once
 		while( shell.run() ){
-			// Clear all railo caches: template, ...
+			// Clear all caches: template, ...
 			SystemCacheClear( "all" );
 			shell = javacast( "null", "" );
 			
