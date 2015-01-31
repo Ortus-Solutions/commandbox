@@ -27,11 +27,11 @@ component extends="commandbox.system.BaseCommand" aliases="start" excludeFromHel
 	 * @stopPort       stop socket listener port number
 	 * @force          force start if status is not stopped
 	 * @debug          sets debug log level
-	 * @webConfigDir   custom location for railo web context configuration
-	 * @serverConfigDircustom location for railo server configuration
-	 * @libDirs        comma separated list of extra lib directories for the Railo server
+	 * @webConfigDir   custom location for web context configuration
+	 * @serverConfigDircustom location for server configuration
+	 * @libDirs        comma separated list of extra lib directories for the server
 	 * @trayIcon       path to .png file for tray icon
-	 * @webXML         path to web.xml file used to configure the Railo server
+	 * @webXML         path to web.xml file used to configure the server
 	 * @HTTPEnable     enable HTTP
 	 * @SSLEnable      enable SSL
 	 * @SSLPort        SSL port number
