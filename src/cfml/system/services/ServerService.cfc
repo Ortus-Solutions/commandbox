@@ -77,7 +77,7 @@ component accessors="true" singleton{
 		// the lib dir location, populated from shell later.
 		variables.libDir = arguments.homeDir & "/lib";
 		// Where core server is installed
-		variables.serverHomeDirectory = arguments.homeDir & "/engine/railo/server/";
+		variables.serverHomeDirectory = arguments.homeDir & "/engine/cfml/server/";
 		// Where custom server configs are stored
 		variables.serverConfig = arguments.homeDir & "/servers.json";
 		// Where custom servers are stored
@@ -160,7 +160,6 @@ component accessors="true" singleton{
 				& " -war ""#webroot#"" --background=true --port #portNumber# --host #arguments.serverInfo.host# --debug #debug#"
 				& " --stop-port #stopPort# --processname ""#processName#"" --log-dir ""#logdir#"""
 				& " --open-browser #openbrowser# --open-url http://#arguments.serverInfo.host#:#portNumber#"
-				& " --server-name ""#name#"" --lib-dirs ""#libDirs#"" --tray-icon ""#trayIcon#"""
 				& " --server-name ""#name#"" --lib-dirs ""#libDirs#"" --tray-icon ""#trayIcon#"""
 				& " --railo-web-config ""#configdir#"" --railo-server-config ""#serverConfigDir#""";
 		// Incorporate SSL to command
