@@ -2,14 +2,8 @@
 <!DOCTYPE urlrewrite PUBLIC "-//tuckey.org//DTD UrlRewrite 3.2//EN" "http://tuckey.org/res/dtds/urlrewrite3.2.dtd">
 <urlrewrite>
 	<rule>
-        <note>Media URLs</note>
-        <condition type="request-uri" operator="equal">^/__media/.*$</condition>
-        <from>^/(.*)$</from>
-        <to type="passthrough">/index.cfm/$1</to>
-    </rule>
-	<rule>
-		<note>Generic Pretty URLs Pass-through</note>
-		<condition type="request-uri" operator="notequal">/(index.cfm|robots.txt|osd.xml|flex2gateway|cfide|cfformgateway|railo-context|admin-context|modules/contentbox-dsncreator|modules/contentbox-installer|modules/contentbox|files|images|js|javascripts|css|styles|config).*</condition>
+		<note>Generic Front-Controller URLs</note>
+		<condition type="request-uri" operator="notequal">/(index.cfm|robots.txt|osd.xml|flex2gateway|cfide|cfformgateway|railo-context|lucee|admin-context|modules/contentbox-dsncreator|modules/contentbox-installer|modules/contentbox|files|images|js|javascripts|css|styles|config).*</condition>
 		<condition type="request-uri" operator="notequal">\.(bmp|gif|jpe?g|png|css|js|txt|xls|ico|swf)$</condition>
 		<from>^/(.+)$</from>
 		<to type="passthrough">/index.cfm/$1</to>
