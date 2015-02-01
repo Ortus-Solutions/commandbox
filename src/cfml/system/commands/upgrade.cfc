@@ -81,9 +81,9 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 					.boldCyanLine( "Please download version of CommandBox and replace the binary on your OS." )
 					.boldCyanLine( "CommandBox will finish the upgrade for you the first time it is run." )
 					.toConsole();
+					return;
 			}
 
-/*
 			// Confirm installation
 			if( !confirm( "Do you wish to apply this update? [y/n]" ) ){
 				return;
@@ -116,7 +116,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 			runCommand( 'pause' );
 			// Reload the shell
 	 		runCommand( 'reload' );
-*/
+
 		} else {
 			print.yellowLine( "Your version of CommandBox (#shell.getVersion()#) is already current (#repoVersion#)." );
 		}
