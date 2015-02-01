@@ -2,14 +2,14 @@ require "formula"
 
 class Commandbox < Formula
   homepage "http://www.ortussolutions.com/products/commandbox"
-  url "http://integration.staging.ortussolutions.com/artifacts/ortussolutions/commandbox/1.0.0/commandbox-bin-1.0.0.zip"
+  url "http://integration.stg.ortussolutions.com/artifacts/ortussolutions/commandbox/1.0.0/commandbox-bin-1.0.0.zip"
   sha1 ""
   version "1.0.0"
   
   depends_on :arch => :x86_64
 
   resource 'apidocs' do
-    url "http://integration.staging.ortussolutions.com/artifacts/ortussolutions/commandbox/1.0.0/commandbox-apidocs-1.0.0.zip"
+    url "http://integration.stg.ortussolutions.com/artifacts/ortussolutions/commandbox/1.0.0/commandbox-apidocs-1.0.0.zip"
     sha1 ""
   end
 

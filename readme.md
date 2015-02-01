@@ -21,7 +21,7 @@ Official stable releases can be found at the [CommandBox Official Page](http://w
 
 **Integration Releases**
 
-Download from the [Ortus Integration Repository](http://integration.staging.ortussolutions.com/artifacts/ortussolutions/commandbox/).  
+Download from the [Ortus Integration Repository](http://integration.stg.ortussolutions.com/artifacts/ortussolutions/commandbox/).  
 
 *Just please note that this contains latest bleeding edge releases that might not be stable.*
 
