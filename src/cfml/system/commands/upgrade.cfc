@@ -61,7 +61,8 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 		var loaderData = deserializeJSON( loaderRepoJSON );
 
 		// Assemble the avaialble version numbers
-		var repoVersion 	= '#repoData.versioning.latestVersion#+#repoData.versioning.latestBuildID#';
+		var repoVersionShort= repoData.versioning.latestVersion;
+		var repoVersion 	= '#repoVersionShort#+#repoData.versioning.latestBuildID#';
 		var loaderVersion 	= '#loaderData.versioning.latestVersion#+#loaderData.versioning.latestBuildID#';
 				
 		// Is there a new version of CommandBox.  New builds consistute new BE verions.
@@ -74,12 +75,19 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 			// Inform User about update
 			print.boldCyanLine( "Ohh Goody Goody, an update has been found (#repoVersion#) for your installation (#shell.getVersion()#)!" )
 				.toConsole();
-
+				
 			if( isNewLoaderVersion ) {
 				// We can't handle this kind of update from CFML
-				print.boldCyanLine( "This update affects the core underpinnings of CommandBox so we can't automate it for you." )
-					.boldCyanLine( "Please download version of CommandBox and replace the binary on your OS." )
-					.boldCyanLine( "CommandBox will finish the upgrade for you the first time it is run." )
+				// so instruct the user to do a manual update with a new binary
+				print.line()
+					.boldYellowLine( "This update affects the core underpinnings of CommandBox so we can't automate it for you." )
+					.boldYellowLine( "Please download the latest version of CommandBox and replace the binary on your OS." )
+					.boldYellowLine( "CommandBox will finish the upgrade for you the first time it is run." )
+					.line()
+					.text( "Download URL: ").
+						boldLine( arguments.latest ? '#thisArtifactsURL#ortussolutions/commandbox/#repoVersionShort#/' : 'http://www.ortussolutions.com/products/commandbox/##download' )
+					.line()
+					.yellowLine( "(Your CLI Loader version is #shell.getLoaderVersion()# and the latest is #LoaderVersion#)" )
 					.toConsole();
 					return;
 			}
@@ -90,7 +98,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 			}
 
 			// prepare locations
-			var fileURL 	= '#thisArtifactsURL#ortussolutions/commandbox/#repoVersionShort#/commandbox-cfml-#repoVersionShort#.zip';
+			var fileURL 	= '#thisArtifactsURL#ortussolutions/commandbox/#repoversionshort#/commandbox-cfml-#repoVersionShort#.zip';
 			var filePath 	= '#temp#/commandbox-cfml-#repoVersion#.zip';
 
 			// Download the update
