@@ -156,6 +156,7 @@ External Dependencies:
       	<copy tofile="${temp.dir}/rcli/cfml.zip" overwrite="true" encoding="UTF-8">
         	<fileset file="${dist.dir}/${distro.name}-cfml-${commandbox.version}.zip" />
         </copy>
+      	<copy tofile="${temp.dir}/rcli/cliloader/cfml.version" file="${build.dir}/.version" overwrite="true" encoding="UTF-8" />
       	<copy todir="${temp.dir}/rcli/resource" overwrite="true" encoding="UTF-8">
         	<fileset dir="${src.dir}/resources" />
         </copy>
