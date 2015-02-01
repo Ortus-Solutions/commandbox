@@ -43,7 +43,7 @@ component extends="wirebox.system.ioc.config.Binder" {
 			// This is where user-installed commands are stored
 			'/commandbox-home/commands'
 		];
-		var ortusArtifactsURL		= 'http://integration.staging.ortussolutions.com/artifacts/';
+		var ortusArtifactsURL		= 'http://integration.stg.ortussolutions.com/artifacts/';
 		var ortusPRDArtifactsURL	= 'http://downloads.ortussolutions.com/';
 
 

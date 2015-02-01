@@ -135,6 +135,10 @@ External Dependencies:
 		<replaceregexp match='@build.version@' replace="${commandbox.version}" flags="ig" byline="true" encoding="UTF-8">
 		  <fileset dir="${build.dir}" />
 		</replaceregexp>
+		<!-- Replace Loader Version Numbers -->
+		<replaceregexp match='@build.LoaderVersion@' replace="${cfml.loader.version}" flags="ig" byline="true" encoding="UTF-8">
+		  <fileset dir="${build.dir}" />
+		</replaceregexp>
 		<!-- Replace Build Numbers -->
 		<replaceregexp match='@build.number@' replace="${build.number}" flags="ig" byline="true" encoding="UTF-8">
 		  <fileset dir="${build.dir}" />

@@ -40,20 +40,34 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 
 		// download the box-repo from the artifacts URL
 		print.greenLine( "Getting #arguments.latest ? 'latest' : 'stable'# versioning information from #thisArtifactsURL#" ).toConsole();
-		http url="#thisArtifactsURL#ortussolutions/commandbox/box-repo.json" file="#temp#/box-repo.json";
+		var boxRepoURL = '#thisArtifactsURL#ortussolutions/commandbox/box-repo.json';
+		var loaderRepoURL = '#thisArtifactsURL#ortussolutions/commandbox/box-loader.json';
+		
+		http url="#boxRepoURL#" file="#temp#/box-repo.json" throwOnError=false;
+		http url="#loaderRepoURL#" file="#temp#/box-loader.json" throwOnError=false;
+		
+		var boxRepoJSON = fileRead( '#temp#/box-repo.json' );
+		var loaderRepoJSON = fileRead( '#temp#/box-loader.json' );
+		
+		if( !isJSON( boxRepoJSON ) ) {
+			return error( "Oops, we expected [#boxRepoURL#] to be JSON, but it wasn't.  #cr#I'm afraid we can't upgrade right now." );
+		}
+		if( !isJSON( loaderRepoJSON ) ) {
+			return error( "Oops, we expected [#loaderRepoURL#] to be JSON, but it wasn't.  #cr#I'm afraid we can't upgrade right now." );
+		}
 
 		// read and deserialize the repo
-		var repoData = deserializeJSON( fileRead( '#temp#/box-repo.json' ) );
+		var repoData = deserializeJSON( boxRepoJSON );
+		var loaderData = deserializeJSON( loaderRepoJSON );
 
-		// BE version tracks major.minor.patch+buildID
-		if( arguments.latest ) {
-			var repoVersion 	= '#repoData.versioning.latestVersion#+#repoData.versioning.latestBuildID#';
-			var isNewVersion 	= semanticVersion.isNew( current=shell.getVersion(), target=repoVersion, checkBuildID=true );
-		// Stable version just tracks major.minor.patch
-		} else {
-			var repoVersion 	= repoData.versioning.stableVersion;
-			var isNewVersion 	= semanticVersion.isNew( current=shell.getVersion(), target=repoVersion, checkBuildID=false );
-		}
+		// Assemble the avaialble version numbers
+		var repoVersion 	= '#repoData.versioning.latestVersion#+#repoData.versioning.latestBuildID#';
+		var loaderVersion 	= '#loaderData.versioning.latestVersion#+#loaderData.versioning.latestBuildID#';
+				
+		// Is there a new version of CommandBox.  New builds consistute new BE verions.
+		var isNewVersion 	= semanticVersion.isNew( current=shell.getVersion(), target=repoVersion, checkBuildID=arguments.latest );
+		// Is there a new version of the CLI Loader. Ignore build number since it's sort of fake (Just a copy of the CommandBox build number)
+		var isNewLoaderVersion 	= semanticVersion.isNew( current=shell.getLoaderVersion(), target=LoaderVersion, checkBuildID=false );
 
 		// If the local install is old, or we're forcing.
 		if( isNewVersion || force ) {
@@ -61,6 +75,15 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 			print.boldCyanLine( "Ohh Goody Goody, an update has been found (#repoVersion#) for your installation (#shell.getVersion()#)!" )
 				.toConsole();
 
+			if( isNewLoaderVersion ) {
+				// We can't handle this kind of update from CFML
+				print.boldCyanLine( "This update affects the core underpinnings of CommandBox so we can't automate it for you." )
+					.boldCyanLine( "Please download version of CommandBox and replace the binary on your OS." )
+					.boldCyanLine( "CommandBox will finish the upgrade for you the first time it is run." )
+					.toConsole();
+			}
+
+/*
 			// Confirm installation
 			if( !confirm( "Do you wish to apply this update? [y/n]" ) ){
 				return;
@@ -92,8 +115,8 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 			// Wait for input
 			runCommand( 'pause' );
 			// Reload the shell
-			runCommand( 'reload' );
-
+	 		runCommand( 'reload' );
+*/
 		} else {
 			print.yellowLine( "Your version of CommandBox (#shell.getVersion()#) is already current (#repoVersion#)." );
 		}
