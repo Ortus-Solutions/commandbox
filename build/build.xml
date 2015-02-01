@@ -421,7 +421,7 @@ External Dependencies:
       rpm.reponame="ortus" rpm.baseurl="${commandbox.rpm.repourl}"
       rpm.group="com.ortussolutions" rpm.name="${distro.name}" rpm.version="${commandbox.version}"
       rpm.packager="${commandbox.packager.name} ${commandbox.packager.email}"
-      rpm.url="${commandbox.supportURL}" failonerror="true"
+      rpm.url="${commandbox.supportURL}" failonerror="false"
       rpm.keyring="${ortus.sign.keyring}" rpm.key="${ortus.sign.key.id}" 
       rpm.passphrase="${ortus.sign.key.passphrase}">
       <tarfileset file="${dist.dir}/box" prefix="/usr/bin" filemode="744" username="root" group="root"/>
