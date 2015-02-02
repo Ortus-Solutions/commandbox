@@ -1,18 +1,18 @@
 /**
  * Show brief details of all embedded servers that have been run.  Use this command to get a quick report on the servers you
- * are using or have used.  To get more detailed status on a server, use the "server status" command. 
+ * are using or have used.  To get more detailed status on a server, use the "server status" command.
  * .
  * {code:bash}
  * server list
  * {code}
  * .
- * Show additional server information with the verbose flag 
+ * Show additional server information with the verbose flag
  * .
  * {code:bash}
  * server list --verbose
  * {code}
  * .
- * You can filter the servers that show by status  
+ * You can filter the servers that show by status
  * .
  * {code:bash}
  * server list --running
@@ -21,7 +21,7 @@
  * server list --unknown
  * {code}
  * .
- * You can also supply a comma-delimited list of server short names to display  
+ * You can also supply a comma-delimited list of server short names to display
  * .
  * {code:bash}
  * server list myApp,contentbox,testSite
@@ -32,7 +32,7 @@ component extends="commandbox.system.BaseCommand" aliases="status" excludeFromHe
 
 	// DI
 	property name="serverService" inject="ServerService";
-	
+
 	/**
 	 * @name.hint Comma-delimited list of server names to show
 	 * @name.optionsUDF serverNameComplete
@@ -61,7 +61,7 @@ component extends="commandbox.system.BaseCommand" aliases="status" excludeFromHe
 		statusColors = {
 			running : 'green',
 			starting : 'yellow',
-			stopped : 'red'			
+			stopped : 'red'
 		};
 
 		for( var thisKey in servers ){
@@ -70,48 +70,48 @@ component extends="commandbox.system.BaseCommand" aliases="status" excludeFromHe
 			// Check name and status filters.  By default, everything shows
 			if( ( !len( arguments.name ) || listFindNoCase( arguments.name, thisServerInfo.name ) )
 				&& ( !len( statusList ) || listFindNoCase( statusList, thisServerInfo.status ) ) ) {
-			
+
 				// Null Checks, to guarnatee correct struct.
 				structAppend( thisServerInfo, serverService.newServerInfoStruct(), false );
-	
+
 				print.line().boldText( thisServerInfo.name );
-	
+
 				var status = thisServerInfo.status;
 				print.boldtext( ' (' )
 					.bold( status, statusColors.keyExists( status ) ? statusColors[ status ] : 'yellow' )
 					.bold( ')' )
 					.line();
-					
+
 				if( arguments.verbose ) {
-						
+
 					print.indentedLine( "host:            " & thisServerInfo.host )
-						.indentedLine( "enableHTTP:      " & thisServerInfo.enableHTTP )
+						.indentedLine( "HTTPEnable:      " & thisServerInfo.HTTPEnable )
 						.indentedLine( "port:            " & thisServerInfo.port )
-						.indentedLine( "enableSSL:       " & thisServerInfo.enableSSL )
+						.indentedLine( "SSLEnable:       " & thisServerInfo.SSLEnable )
 						.indentedLine( "SSLport:         " & thisServerInfo.SSLport )
-						.indentedLine( "Rewrites:        " & ( thisServerInfo.rewrites ?: "false" ) )
+						.indentedLine( "rewritesEnable:        " & ( thisServerInfo.rewritesEnable ?: "false" ) )
 						.indentedLine( "stopsocket:      " & thisServerInfo.stopsocket )
 						.indentedLine( "logdir:          " & thisServerInfo.logDir )
 						.indentedLine( "debug:           " & thisServerInfo.debug )
 						.indentedLine( "ID:              " & thisServerInfo.id );
-						
+
 					if( len( thisServerInfo.libDirs ) ) { print.indentedLine( "libDirs:         " & thisServerInfo.libDirs ); }
 					if( len( thisServerInfo.webConfigDir ) ) { print.indentedLine( "webConfigDir:    " & thisServerInfo.webConfigDir ); }
 					if( len( thisServerInfo.serverConfigDir ) ) { print.indentedLine( "serverConfigDir: " & thisServerInfo.serverConfigDir ); }
 					if( len( thisServerInfo.webXML ) ) { print.indentedLine( "webXML:          " & thisServerInfo.webXML ); }
 					if( len( thisServerInfo.trayicon ) ) { print.indentedLine( "trayicon:        " & thisServerInfo.trayicon ); }
-						
+
 				} else {
 					// Brief version
-					if( thisServerInfo.enableSSL ) {
+					if( thisServerInfo.SSLEnable ) {
 						print.indentedLine( 'http://' & thisServerInfo.host & ':' & thisServerInfo.port );
 					}
-					if( thisServerInfo.enableHTTP ) {
+					if( thisServerInfo.HTTPEnable ) {
 						print.indentedLine( 'https://' & thisServerInfo.host & ':' & thisServerInfo.SSLport );
 					}
 					print.indentedLine( thisServerInfo.webroot );
 				}// end verbose
-						
+
 			} // End "filter" if
 		}
 
@@ -120,10 +120,10 @@ component extends="commandbox.system.BaseCommand" aliases="status" excludeFromHe
 			print.boldRedLine( "No server configurations found!" );
 		}
 	}
-	
+
 	function serverNameComplete() {
 		return serverService.getServerNames();
 	}
-	
- 
+
+
 }
