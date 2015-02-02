@@ -5,7 +5,7 @@
  * server cd myServer
  * {code}
  **/
-component extends="commandbox.system.BaseCommand" aliases="stop" excludeFromHelp=false {
+component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
 
 	// DI
 	property name="serverService" inject="ServerService";
