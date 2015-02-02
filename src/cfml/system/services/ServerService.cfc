@@ -171,7 +171,7 @@ component accessors="true" singleton{
 		}
 		// Incorporate web-xml to command
 		if ( Len( Trim( arguments.serverInfo.webXml ?: "" ) ) ) {
-			args &= " --web-xml-path #arguments.serverInfo.webXml#";
+			args &= " --web-xml-path ""#arguments.serverInfo.webXml#""";
 		}
 		// Incorporate rewrites to command
 		args &= " --urlrewrite-enable #rewritesEnable#";
