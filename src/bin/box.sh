@@ -73,7 +73,7 @@ then
 fi
 
 # Verify if we have an embedded version, if we do use that instead.
-JRE=$(dirname $this_script)/jre/bin
+JRE=$(dirname $this_script)/jre
 if [ -d "$JRE" ]
 then
 	java="$JRE/bin/java"
