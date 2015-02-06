@@ -38,19 +38,26 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 	){
 
 		var executeResult 	= "";
+		var executeError 	= "";
 
 		try{
 			// execute the server command
-			execute name="#arguments.name#" arguments="#arguments.args#" timeout="#arguments.timeout#" variable="executeResult";
+			execute name="#arguments.name#" arguments="#arguments.args#" timeout="#arguments.timeout#" variable="executeResult" errorvariable="executeError";
 			// Output Results
-			print.cyanLine( executeResult );
+			if( len( executeResult ) ) {
+				print.cyanLine( executeResult );				
+			}
+			// Output error
+			if( len( executeError ) ) {
+				print.redLine( executeError );				
+			}
 			
+			print.greenLine( "Command completed succesfully!" );
+		
 		} catch (any e) {
-			error( '#e.message##CR##e.detail##CR##e.stackTrace#' );
+			error( '#e.message##CR##e.detail#' );
 		}
 
-		// end
-		print.greenLine( "Command completed succesfully!" );
 	}
 
 }
