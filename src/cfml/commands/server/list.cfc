@@ -89,7 +89,7 @@ component extends="commandbox.system.BaseCommand" aliases="status" excludeFromHe
 						.indentedLine( "port:            " & thisServerInfo.port )
 						.indentedLine( "SSLEnable:       " & thisServerInfo.SSLEnable )
 						.indentedLine( "SSLport:         " & thisServerInfo.SSLport )
-						.indentedLine( "rewritesEnable:        " & ( thisServerInfo.rewritesEnable ?: "false" ) )
+						.indentedLine( "rewritesEnable:  " & ( thisServerInfo.rewritesEnable ?: "false" ) )
 						.indentedLine( "stopsocket:      " & thisServerInfo.stopsocket )
 						.indentedLine( "logdir:          " & thisServerInfo.logDir )
 						.indentedLine( "debug:           " & thisServerInfo.debug )
@@ -103,10 +103,10 @@ component extends="commandbox.system.BaseCommand" aliases="status" excludeFromHe
 
 				} else {
 					// Brief version
-					if( thisServerInfo.SSLEnable ) {
+					if( thisServerInfo.HTTPEnable ) {
 						print.indentedLine( 'http://' & thisServerInfo.host & ':' & thisServerInfo.port );
 					}
-					if( thisServerInfo.HTTPEnable ) {
+					if( thisServerInfo.SSLEnable ) {
 						print.indentedLine( 'https://' & thisServerInfo.host & ':' & thisServerInfo.SSLport );
 					}
 					print.indentedLine( thisServerInfo.webroot );
