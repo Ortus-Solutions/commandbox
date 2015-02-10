@@ -181,6 +181,10 @@ component accessors="true" singleton {
 			// If this is not the first command in the chain,
 			// set its first parameter with the output from the last command
 			if( i > 1 ) {
+				// Clean off trailing any CR to help with piping one-liner outputs as inputs to another command
+				if( result.endsWith( chr( 10 ) ) && len( result ) > 1 ) {
+					result = left( result, len( result ) - 1 );
+				}
 				// If we're using named parameters and this command has at least one param defined
 				if( structCount( parameterInfo.namedParameters ) ) {
 					// Insert/overwrite the first param as our last result

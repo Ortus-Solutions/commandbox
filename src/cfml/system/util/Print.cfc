@@ -165,14 +165,17 @@ component {
 
 		} // End While loop
 
-		ANSIString &= text & getANSIAttribute( this.ANSIAttributes["off"] );
+		// Don't mess with the string if we didn't format it
+		if( len( ANSIString ) ) {
+			text = ANSIString & text & getANSIAttribute( this.ANSIAttributes["off"] );			
+		}
 
 		// Add a CR if this was supposed to be a line
 		if( newLine ) {
-			ANSIString &= this.cr;
+			text &= this.cr;
 		}
 
-		return ANSIString;
+		return text;
 
 	}
 

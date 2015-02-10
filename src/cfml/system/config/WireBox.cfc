@@ -34,7 +34,7 @@ component extends="wirebox.system.ioc.config.Binder" {
 		var commandHistoryFile		= homedir & "/.history-command";
 		var REPLScriptHistoryFile 	= homedir & "/.history-repl-script";
 		var REPLTagHistoryFile 		= homedir & "/.history-repl-tag";
-		var cr						= system.getProperty( "line.separator" );
+		var cr						= chr( 10 );
 		var commandLocations		= [
 			// This is where system commands are stored
 			'/commandbox/system/commands',
