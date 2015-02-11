@@ -10,6 +10,7 @@
 */
 component accessors="true" singleton {
 
+	property name="formatterUtil" inject="Formatter";
 	instance = {};
 
 	/**
@@ -88,7 +89,7 @@ component accessors="true" singleton {
 		try {
 			var cfml = getCommandPreparedForEvaluation();
 			var evaluated = evaluate( cfml );
-			return serializeJson( evaluated );
+			return formatterUtil.formatJson( serializeJson( evaluated ) );
 		} catch (any var e) {
 			return "";
 		}
