@@ -52,6 +52,14 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 	 **/
 	function run( _, boolean append=false ) {
 		var thisAppend = arguments.append;
+		
+		// Allow text to be piped into this command.  If _ has length and a named parameter has been specified,
+		// copy _'s value into the named param.  This allows for:
+		// cat myFile.txt | package set description=''
+		if( structKeyExists( arguments, '_' ) && len( arguments[ '_' ] ) && arrayLen( arguments ) > 2 ) {
+			arguments.setEL( 3, arguments[ '_' ] );
+		}
+		
 		// Remove dummy arg
 		structDelete( arguments, '_' );
 		structDelete( arguments, 'append' );
