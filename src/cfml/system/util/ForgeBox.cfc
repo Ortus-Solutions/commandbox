@@ -232,7 +232,11 @@ or just add DEBUG to the root logger
 			results.message = HTTPResults.errorDetail;
 			if( len(HTTPResults.errorDetail) ){ results.error = true; }
 			// Try to inflate JSON
-			results.response = deserializeJSON(results.rawResponse,false);
+            if (isJSON(results.rawResponse)) {
+                results.response = deserializeJSON(results.rawResponse,false);
+            } else {
+                results.response = { messages = "Site Unreachable - ForgeBox API failed to return a JSON payload " };
+            }
 			
 			return results;
 		</cfscript>	
