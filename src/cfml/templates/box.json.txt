@@ -1,6 +1,6 @@
 {
 	name : "",
-	version :"1.0.0+0000",
+	version :"1.0.0",
 	author : "",
 	location :"",
 	directory: "",

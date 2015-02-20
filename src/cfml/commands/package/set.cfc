@@ -22,7 +22,7 @@
  * .
  * Set multiple params at once
  * {code:bash}
- * package set name=myPackage version="1.0.0.000" author="Brad Wood" slug="foo"
+ * package set name=myPackage version="1.0.0" author="Brad Wood" slug="foo"
  * {code}
  * .
  * Set complex value as JSON
