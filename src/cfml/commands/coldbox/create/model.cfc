@@ -124,7 +124,7 @@ component extends='commandbox.system.BaseCommand' aliases='' excludeFromHelp=fal
 		}
 
 		// Write out the model
-		var modelPath = '#directory#/#name#.cfc';
+		var modelPath = '#directory#/#arguments.name#.cfc';
 		// Create dir if it doesn't exist
 		directorycreate( getDirectoryFromPath( modelPath ), true, true );
 		file action='write' file='#modelPath#' mode ='777' output='#modelContent#';
