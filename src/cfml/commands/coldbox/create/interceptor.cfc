@@ -20,6 +20,7 @@ component extends='commandbox.system.BaseCommand' aliases='' excludeFromHelp=fal
 	* @testsDirectory Your unit tests directory. Only used if tests is true
 	* @directory The base directory to create your interceptor in and creates the directory if it does not exist.
 	* @script Generate content in script markup or tag markup
+	* @open.hint Open the interceptor once generated
 	**/
 	function run( 
 		required name,
@@ -28,7 +29,8 @@ component extends='commandbox.system.BaseCommand' aliases='' excludeFromHelp=fal
 		boolean tests=true,
 		testsDirectory='tests/specs/interceptors',
 		directory='interceptors',
-		boolean script=true
+		boolean script=true,
+		boolean open=false
 	){
 		// This will make each directory canonical and absolute
 		arguments.directory 		= fileSystemUtil.resolvePath( arguments.directory );
@@ -97,7 +99,12 @@ component extends='commandbox.system.BaseCommand' aliases='' excludeFromHelp=fal
 			// Create the tests
 			file action='write' file='#testPath#' mode ='777' output='#interceptorTestContent#';
 			print.greenLine( 'Created #testPath#' );
+			// open file
+			if( arguments.open ){ runCommand( "edit #testPath#" ); }			
 		}
+
+		// open file
+		if( arguments.open ){ runCommand( "edit #interceptorPath#" ); }			
 	}
 
 }
