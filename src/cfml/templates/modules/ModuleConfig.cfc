@@ -13,6 +13,7 @@ this.entryPoint  		= "" (Optional) // If set, this is the default event (ex:forg
 									       will use to create an entry link to the module. Similar to a default event.
 this.cfmapping			= "The CF mapping to create";
 this.modelNamespace		= "The namespace to use for registered models, if blank it uses the name of the module."
+this.dependencies 		= "The array of dependencies for this module"
 
 structures to create for configuration
 - parentSettings : struct (will append and override parent)
@@ -60,7 +61,7 @@ Optional Methods
 	// CF Mapping
 	this.cfmapping			= "@cfmapping@";
 	// Module Dependencies
-	this.dependencies 		= [];
+	this.dependencies 		= @dependencies@;
 
 	function configure(){
 
