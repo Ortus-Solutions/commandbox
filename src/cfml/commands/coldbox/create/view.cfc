@@ -15,31 +15,33 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 	* @helper.hint Generate a helper file for this view
 	* @directory.hint The base directory to create your view in and creates the directory if it does not exist.
 	 **/
-	function run( 	required name,
-					boolean helper=false,
-					directory='views' ) {
+	function run( 	
+		required name,
+		boolean helper=false,
+		directory='views' 
+	){
 		// This will make each directory canonical and absolute		
-		directory = fileSystemUtil.resolvePath( directory );
+		arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
 						
 		// Validate directory
-		if( !directoryExists( directory ) ) {
-			directoryCreate( directory );			
+		if( !directoryExists( arguments.directory ) ) {
+			directoryCreate( arguments.directory );			
 		}
 		
 		// This help readability so the success messages aren't up against the previous command line
 		print.line();
 		
-		var viewContent = '<h1>#name# view</h1>';
-		var viewHelperContent = '<!--- #name# view Helper --->';
+		var viewContent = '<h1>#arguments.name# view</h1>';
+		var viewHelperContent = '<!--- #arguments.name# view Helper --->';
 		
 		// Write out view
-		var viewPath = '#directory#/#name#.cfm'; 
+		var viewPath = '#arguments.directory#/#arguments.name#.cfm'; 
 		file action='write' file='#viewPath#' mode ='777' output='#viewContent#';
 		print.greenLine( 'Created #viewPath#' );				
 		
-		if( helper ) {
+		if( arguments.helper ) {
 			// Write out view helper
-			var viewHelperPath = '#directory#/#name#Helper.cfm'; 
+			var viewHelperPath = '#arguments.directory#/#arguments.name#Helper.cfm'; 
 			file action='write' file='#viewHelperPath#' mode ='777' output='#viewHelperContent#';
 			print.greenLine( 'Created #viewHelperPath#' );
 			
