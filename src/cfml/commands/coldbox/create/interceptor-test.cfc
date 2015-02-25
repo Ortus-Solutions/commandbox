@@ -13,11 +13,13 @@ component extends='commandbox.system.BaseCommand' aliases='' excludeFromHelp=fal
 	* @path The instantiation path of the interceptor to create the test for
 	* @points A comma-delimited list of interception points to generate tests for
 	* @testsDirectory Your unit tests directory. Only used if tests is true
+	* @open.hint Open the test once generated
 	**/
 	function run( 
 		required path,
 		points='',
 		testsDirectory='tests/specs/interceptors',
+		boolean open=false
 	){
 		// This will make each directory canonical and absolute
 		arguments.testsDirectory = fileSystemUtil.resolvePath( arguments.testsDirectory );
@@ -35,7 +37,7 @@ component extends='commandbox.system.BaseCommand' aliases='' excludeFromHelp=fal
 		var interceptorTestCase 	= fileRead( '/commandbox/templates/testing/InterceptorBDDCaseContentScript.txt' );
 
 		// Start Replacings
-		interceptorTestContent = replaceNoCase( interceptorTestContent, "|name|", arguments.name, "all" );
+		interceptorTestContent = replaceNoCase( interceptorTestContent, "|name|", arguments.path, "all" );
 
 		// Interception Points
 		if( len( arguments.points ) ) {
@@ -52,12 +54,15 @@ component extends='commandbox.system.BaseCommand' aliases='' excludeFromHelp=fal
 		}
 
 		// Write it out.
-		var testPath = '#arguments.testsDirectory#/#arguments.name#Test.cfc';
+		var testPath = '#arguments.testsDirectory#/#listLast( arguments.path, "." )#Test.cfc';
 		// Create dir if it doesn't exist
 		directorycreate( getDirectoryFromPath( testPath ), true, true );
 		// Create the tests
 		file action='write' file='#testPath#' mode ='777' output='#interceptorTestContent#';
 		print.greenLine( 'Created #testPath#' );
+
+		// open file
+		if( arguments.open ){ runCommand( "edit #testPath#" ); }			
 	}
 
 }

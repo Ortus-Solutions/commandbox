@@ -4,7 +4,7 @@
 		var mockData  = {};
 		
 		// execute |point|
-		interceptor.|point|(mockEvent,mockData);
+		interceptor.|point|( mockEvent, mockData );
 		
 		//Do your asserts below
 		
