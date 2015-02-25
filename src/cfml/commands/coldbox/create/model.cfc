@@ -41,7 +41,7 @@ component extends='commandbox.system.BaseCommand' aliases='' excludeFromHelp=fal
 		persistence='transient',
 		boolean tests=true,
 		testsDirectory='tests/specs/unit',
-		directory='model',
+		directory='models',
 		boolean script=true,
 		description="I am a new Model Object",
 		boolean open=false
