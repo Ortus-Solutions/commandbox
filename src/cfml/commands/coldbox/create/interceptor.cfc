@@ -13,23 +13,29 @@
 component extends='commandbox.system.BaseCommand' aliases='' excludeFromHelp=false {
 
 	/**
-	* @name.hint Name of the interceptor to create without the .cfc
-	* @points.hint A comma-delimited list of interception points to generate
-	* @tests.hint Generate the unit test component
-	* @testsDirectory.hint Your unit tests directory. Only used if tests is true
-	* @directory.hint The base directory to create your interceptor in and creates the directory if it does not exist.
-	 **/
-	function run( required name,
-					points='',
-					boolean tests=true,
-					testsDirectory='tests/specs/interceptors',
-					directory='interceptors' ) {
+	* @name Name of the interceptor to create without the .cfc
+	* @points A comma-delimited list of interception points to generate
+	* @description A description for the interceptor hint
+	* @tests Generate the unit test component
+	* @testsDirectory Your unit tests directory. Only used if tests is true
+	* @directory The base directory to create your interceptor in and creates the directory if it does not exist.
+	* @script Generate content in script markup or tag markup
+	**/
+	function run( 
+		required name,
+		points='',
+		description="I am a new interceptor",
+		boolean tests=true,
+		testsDirectory='tests/specs/interceptors',
+		directory='interceptors',
+		boolean script=true
+	){
 		// This will make each directory canonical and absolute
-		directory = fileSystemUtil.resolvePath( directory );
-		testsDirectory = fileSystemUtil.resolvePath( testsDirectory );
+		arguments.directory 		= fileSystemUtil.resolvePath( arguments.directory );
+		arguments.testsDirectory	= fileSystemUtil.resolvePath( arguments.testsDirectory );
 
 		// Validate directory
-		if( !directoryExists( directory ) ) {
+		if( !directoryExists( arguments.directory ) ) {
 			directoryCreate( arguments.directory );
 		}
 
@@ -39,40 +45,34 @@ component extends='commandbox.system.BaseCommand' aliases='' excludeFromHelp=fal
 		// Script?
 		var scriptPrefix = '';
 		// TODO: Pull this from box.json
-		var script = true;
-		if( script ) {
+		if( arguments.script ) {
 			scriptPrefix = 'Script';
 		}
-		var defaultDescription 	= 'I am a new interceptor';
 
 		// Read in Template
-		var interceptorContent = fileRead( '/commandbox/templates/InterceptorContent#scriptPrefix#.txt' );
-		var interceptorMethod = fileRead( '/commandbox/templates/InterceptorMethod#scriptPrefix#.txt' );
-		var interceptorTestContent = fileRead( '/commandbox/templates/testing/InterceptorBDDContentScript.txt' );
-		var interceptorTestCase = fileRead( '/commandbox/templates/testing/InterceptorBDDCaseContentScript.txt' );
+		var interceptorContent 		= fileRead( '/commandbox/templates/InterceptorContent#scriptPrefix#.txt' );
+		var interceptorMethod 		= fileRead( '/commandbox/templates/InterceptorMethod#scriptPrefix#.txt' );
+		var interceptorTestContent 	= fileRead( '/commandbox/templates/testing/InterceptorBDDContentScript.txt' );
+		var interceptorTestCase 	= fileRead( '/commandbox/templates/testing/InterceptorBDDCaseContentScript.txt' );
 
 		// Start Replacings
-		interceptorContent = replaceNoCase( interceptorContent, '|Name|', name, 'all' );
-		interceptorTestContent = replaceNoCase( interceptorTestContent, "|name|", name, "all" );
+		interceptorContent = replaceNoCase( interceptorContent, '|Name|', arguments.name, 'all' );
+		interceptorTestContent = replaceNoCase( interceptorTestContent, "|name|", arguments.name, "all" );
 
 		// Placeholder in case we add this in
-		Description = '';
-		if( len(description) ) {
-			interceptorContent = replaceNoCase( interceptorContent, '|Description|', description, 'all' );
-		} else {
-			interceptorContent = replaceNoCase( interceptorContent, '|Description|', defaultDescription, 'all' );
-		}
+		interceptorContent = replaceNoCase( interceptorContent, '|Description|', arguments.description, 'all' );
 
 		// Interception Points
-		if( len( points ) ) {
+		if( len( arguments.points ) ) {
 			var methodContent = '';
-			allTestsCases = '';
-			thisTestCase = '';
-			for( var thisPoint in listToArray( points ) ) {
+			var allTestsCases = '';
+			var thisTestCase = '';
+			
+			for( var thisPoint in listToArray( arguments.points ) ) {
 				methodContent = methodContent & replaceNoCase( interceptorMethod, '|interceptionPoint|', thisPoint, 'all' ) & CR & CR;
 
 				// Are we creating tests cases
-				if( tests ) {
+				if( arguments.tests ) {
 					thisTestCase = replaceNoCase( interceptorTestCase, '|point|', thisPoint, 'all' );
 					allTestsCases &= thisTestCase & CR & CR;
 				}
@@ -86,12 +86,12 @@ component extends='commandbox.system.BaseCommand' aliases='' excludeFromHelp=fal
 		}
 
 		// Write it out.
-		var interceptorPath = '#directory#/#name#.cfc';
+		var interceptorPath = '#arguments.directory#/#arguments.name#.cfc';
 		file action='write' file='#interceptorPath#' mode ='777' output='#interceptorContent#';
 		print.greenLine( '#interceptorPath#' );
 
 		if( tests ) {
-			var testPath = '#TestsDirectory#/#name#Test.cfc';
+			var testPath = '#TestsDirectory#/#arguments.name#Test.cfc';
 			// Create dir if it doesn't exist
 			directorycreate( getDirectoryFromPath( testPath ), true, true );
 			// Create the tests
