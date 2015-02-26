@@ -1,12 +1,12 @@
 /**
-* A ColdBox Enabled Templated entity service
+* A nice ORM Service
 */
-component extends="coldbox.system.orm.hibernate.BaseORMService" singleton{
+component extends="cborm.models.BaseORMService" singleton{
 	
 	/**
 	* Constructor
 	*/
-	public |serviceName| function init(){
+	function init(){
 		
 		// init super class
 		super.init();
@@ -14,7 +14,7 @@ component extends="coldbox.system.orm.hibernate.BaseORMService" singleton{
 		// Use Query Caching
 	    setUseQueryCaching( |QueryCaching| );
 	    // Query Cache Region
-	    setQueryCacheRegion( '|cacheRegion|' );
+	    setQueryCacheRegion( "|cacheRegion|" );
 	    // EventHandling
 	    setEventHandling( |eventHandling| );
 	    
