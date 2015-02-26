@@ -24,16 +24,16 @@ component extends='commandbox.system.BaseCommand' aliases='' excludeFromHelp=fal
 	}
 
 	/**
-	* @name.hint Name of the model to create without the .cfc. For packages, specify name as 'myPackage/myModel'
-	* @methods.hint A comma-delimited list of method stubs to generate for you
-	* @persistence.hint Specify singleton to have only one instance of this model created
+	* @name Name of the model to create without the .cfc. For packages, specify name as 'myPackage/myModel'
+	* @methods A comma-delimited list of method stubs to generate for you
+	* @persistence Specify singleton to have only one instance of this model created
 	* @persistence.options Transient,Singleton
-	* @tests.hint Generate the unit test BDD component
-	* @testsDirectory.hint Your unit tests directory. Only used if tests is true
-	* @directory.hint The base directory to create your model in and creates the directory if it does not exist.
-	* @script.hint Generate content in script markup or tag markup
-	* @description.hint The model hint description
-	* @open.hint Open the file once generated
+	* @tests Generate the unit test BDD component
+	* @testsDirectory Your unit tests directory. Only used if tests is true
+	* @directory The base directory to create your model in and creates the directory if it does not exist.
+	* @script Generate content in script markup or tag markup
+	* @description The model hint description
+	* @open Open the file once generated
 	**/
 	function run( 
 		required name,

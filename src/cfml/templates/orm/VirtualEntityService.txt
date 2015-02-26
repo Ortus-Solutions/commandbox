@@ -1,20 +1,20 @@
 /**
 * A ColdBox Enabled virtual entity service
 */
-component extends="coldbox.system.orm.hibernate.VirtualEntityService" singleton{
+component extends="cborm.models.VirtualEntityService" singleton{
 	
 	/**
 	* Constructor
 	*/
-	public |serviceName| function init(){
+	function init(){
 		
 		// init super class
-		super.init(entityName="|entityName|");
+		super.init( entityName="|entityName|" );
 		
 		// Use Query Caching
 	    setUseQueryCaching( |QueryCaching| );
 	    // Query Cache Region
-	    setQueryCacheRegion( '|cacheRegion|' );
+	    setQueryCacheRegion( "|cacheRegion|" );
 	    // EventHandling
 	    setEventHandling( |eventHandling| );
 	    
