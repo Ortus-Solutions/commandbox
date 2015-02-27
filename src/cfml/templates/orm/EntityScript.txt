@@ -4,7 +4,7 @@
 component persistent="true" table="|table|"|activeEntity|{
 
 	// Primary Key
-	property name="|primaryKey|" fieldtype="id" column="|primaryKeyColumn|" generator="|generator|";
+	property name="|primaryKey|" fieldtype="id" column="|primaryKeyColumn|" generator="|generator|" setter="false";
 	
 	// Properties
 	|properties|
