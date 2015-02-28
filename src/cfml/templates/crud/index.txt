@@ -2,10 +2,14 @@
 <h1>|entityPlural|</h1>
 
 <!--- MessageBox --->
-#getPlugin("MessageBox").renderIt()#
+<cfif flash.exists( "notice" )>
+    <div class="alert alert-#flash.get( "notice" ).type#">
+        #flash.get( "notice" ).message#
+    </div>
+</cfif>
 
 <!--- Create Button --->
-#html.href(href="|entityPlural|.new", text="Create |entity|", class="btn btn-primary")#
+#html.href( href="|entityPlural|.new", text="Create |entity|", class="btn btn-primary")#
 #html.br(2)#
 
 <!--- Listing --->

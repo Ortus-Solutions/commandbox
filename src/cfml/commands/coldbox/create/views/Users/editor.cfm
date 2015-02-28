@@ -15,10 +15,10 @@
 <h1>#args.title#</h1>
 
 <!--- Submit Form --->
-#html.startForm( action='|entityPlural|.save' )#
+#html.startForm( action='Users.save' )#
 	
 	<!--- Convert Entity To Fields --->
-	#html.entityFields( entity=prc.|entity|,
+	#html.entityFields( entity=prc.User,
 						groupWrapper="div class='form-group'",
 					    class="form-control",
 					    fieldWrapper="",
@@ -31,7 +31,7 @@
 	
 	<!--- Submit --->
 	<div class="form-group">
-	#html.href( href="|entityPlural|", text="Cancel", class="btn btn-default" )#
+	#html.href( href="Users", text="Cancel", class="btn btn-default" )#
 	#html.submitButton(value="Save", class="btn btn-primary")#
 	</div>
 
