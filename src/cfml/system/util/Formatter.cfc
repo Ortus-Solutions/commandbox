@@ -95,9 +95,40 @@ component singleton {
 		var indentStr = '    ';
 	    var newLine = cr;
 		var char = '';
+		var inQuote = false;
+		var isEscaped = false;
 
 		for (var i=0; i<strLen; i++) {
 			char = str.substring(i,i+1);
+			
+			if( isEscaped ) {
+				isEscaped = false;
+				retval &= char;
+				continue;
+			}
+			
+			if( char == '\' ) {
+				isEscaped = true;
+				retval &= char;
+				continue;
+			}
+			
+			if( char == '"' ) {
+				if( inQuote ) {
+					inQuote = false;
+				} else {
+					inQuote = true;					
+				}
+				retval &= char;
+				continue;
+			}
+			
+			if( inQuote ) {
+				retval &= char;
+				continue;
+			}	
+			
+			
 			if (char == '}' || char == ']') {
 				retval &= newLine;
 				pos = pos - 1;
