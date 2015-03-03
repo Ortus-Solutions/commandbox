@@ -58,6 +58,7 @@ component accessors="true" singleton{
 	 * @message.hint message to prompt the user with
  	 **/
 	function ask( required message ) {
+		print.toConsole();
 		return shell.ask( arguments.message );
 	}
 		
@@ -65,7 +66,10 @@ component accessors="true" singleton{
 	 * Wait until the user's next keystroke
 	 * @message.hint Message to display to the user such as "Press any key to continue."
  	 **/
-	function waitForKey( required message ) {
+	function waitForKey( message='' ) {
+		if( len( arguments.message ) ) {
+			print.toConsole();		
+		}
 		return shell.waitForKey( arguments.message );
 	}
 		
@@ -75,6 +79,7 @@ component accessors="true" singleton{
 	 * @message.hint The message to display to the user such as "Would you like to continue?"
  	 **/
 	function confirm( required message ) {
+		print.toConsole();
 		return shell.confirm( arguments.message );
 	}
 		
