@@ -201,14 +201,16 @@ component accessors="true" singleton{
 			thread name="server#webhash##createUUID()#" serverInfo=arguments.serverInfo args=args {
 				try{
 					// execute the server command
-					execute name=variables.javaCommand arguments=attributes.args timeout="50" variable="executeResult";
-					// save server info and persiste
-					arguments.serverInfo.statusInfo = { command:variables.javaCommand, arguments:attributes.args, result:executeResult };
+					var  executeResult = '';
+					var  executeError = '';
+					execute name=variables.javaCommand arguments=attributes.args timeout="50" variable="executeResult" errorVariable="executeError"; 
+					// save server info and persist
+					arguments.serverInfo.statusInfo = { command:variables.javaCommand, arguments:attributes.args, result:executeResult & ' ' & executeError };
 					arguments.serverInfo.status="running";
 					setServerInfo( serverInfo );
 				} catch (any e) {
 					logger.error( "Error starting server: #e.message# #e.detail#", arguments );
-					arguments.serverInfo.statusInfo.result &= executeResult;
+					arguments.serverInfo.statusInfo.result &= executeResult & ' ' & executeError;
 					arguments.serverInfo.status="unknown";
 					setServerInfo( arguments.serverInfo );
 				}
@@ -344,15 +346,20 @@ component accessors="true" singleton{
 			lock name="serverservice.serverconfig" type="readOnly" throwOnTimeout="true" timeout="10"{
 				var results = deserializeJSON( fileRead( variables.serverConfig ) );
 				var updateRequired = false;
-				// ID Checks, this is needed.
+				
+				// Loop over each server for some housekeeping
 				for( var thisKey in results ){
+					// Backwards compat-- add in server id if it doesn't exist for older versions of CommandBox
 					if( isNull( results[ thisKey ].id ) ){
 						results[ thisKey ].id = hash( results[ thisKey ].webroot );
 						updateRequired = true;
 					}
+					// Future-proof server info by guaranteeing that all properties will exist in the 
+					// server object as long as they are defined in the newServerInfoStruct() method.
+					results[ thisKey ].append( newServerInfoStruct(), false );
 				}
 			}
-			// Check if an update is required
+			// If any server didn't have an ID, go ahead and save it now
 			if( updateRequired ){ setServers( results ); }
 			return results;
 		} else {
