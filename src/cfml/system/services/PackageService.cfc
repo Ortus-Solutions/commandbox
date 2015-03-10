@@ -959,13 +959,21 @@ component accessors="true" singleton {
 		return thisDeps;
 	}
 	
-	// Dynamic completion for property name based on contents of box.json
-	function completeProperty( required directory ) {
+	/**
+	* Dynamic completion for property name based on contents of box.json
+	* @directory.hint The package root
+	* @all.hint Pass false to ONLY suggest existing property names.  True will suggest all possible box.json properties.
+	*/ 	
+	function completeProperty( required directory, all=false ) {
 		var props = [];
 		
 		// Check and see if box.json exists
 		if( isPackage( arguments.directory ) ) {
-			boxJSON = readPackageDescriptor( arguments.directory );
+			if( arguments.all ) {
+				var boxJSON = readPackageDescriptor( arguments.directory );
+			} else {
+				var boxJSON = readPackageDescriptorRaw( arguments.directory );
+			}
 			props = addProp( props, '', '', boxJSON );			
 		}
 		return props;		
