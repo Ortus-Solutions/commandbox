@@ -56,12 +56,12 @@ component extends="commandbox.system.BaseCommand" aliases="start" excludeFromHel
 		String  trayIcon        = "",
 		String  webXML          = "",
 		Boolean HTTPEnable 		= true,
-		Boolean SSLEnable 		= false,
+		Boolean SSLEnable,
 		Numeric SSLPort 		= 1443,
 		String  SSLCert 		= "",
 		String  SSLKey 			= "",
 		String  SSLKeyPass 		= "",
-		Boolean rewritesEnable 	= false,
+		Boolean rewritesEnable,
 		String  rewritesConfig  = ""
 	){
 		// Resolve path as used locally
@@ -87,6 +87,9 @@ component extends="commandbox.system.BaseCommand" aliases="start" excludeFromHel
 		serverInfo.name 	= arguments.name is "" ? listLast( serverInfo.webroot, "\/" ) : arguments.name;
 		serverInfo.host 	= arguments.host;
 
+		// TODO: I think all these defaults should be consolodated into the ServerService.
+		// We're currently defaulting a lot of this stuff twice.
+
 		// we don't want to changes the ports if we're doing stuff already
 		if( serverInfo.status is "stopped" || arguments.force ){
 			// Box Desriptor check for port first.
@@ -108,13 +111,13 @@ component extends="commandbox.system.BaseCommand" aliases="start" excludeFromHel
 		if ( Len( Trim( arguments.libDirs         ) ) ) { serverInfo.libDirs         = arguments.libDirs;         }
 		if ( Len( Trim( arguments.trayIcon        ) ) ) { serverInfo.trayIcon        = arguments.trayIcon;        }
 		if ( Len( Trim( arguments.webXML          ) ) ) { serverInfo.webXML          = arguments.webXML;          }
-		if ( Len( Trim( arguments.SSLEnable       ) ) ) { serverInfo.SSLEnable       = arguments.SSLEnable;       }
+		if ( !isNull( arguments.SSLEnable 			) ) { serverInfo.SSLEnable 		 = arguments.SSLEnable;  	  }
 		if ( Len( Trim( arguments.HTTPEnable      ) ) ) { serverInfo.HTTPEnable      = arguments.HTTPEnable;      }
 		if ( Len( Trim( arguments.SSLPort         ) ) ) { serverInfo.SSLPort         = arguments.SSLPort;         }
 		if ( Len( Trim( arguments.SSLCert         ) ) ) { serverInfo.SSLCert         = arguments.SSLCert;         }
 		if ( Len( Trim( arguments.SSLKey          ) ) ) { serverInfo.SSLKey          = arguments.SSLKey;          }
 		if ( Len( Trim( arguments.SSLKeyPass      ) ) ) { serverInfo.SSLKeyPass      = arguments.SSLKeyPass;      }
-		if ( Len( Trim( arguments.rewritesEnable  ) ) ) { serverInfo.rewritesEnable  = arguments.rewritesEnable;  }
+		if ( !isNull( arguments.rewritesEnable 		) ) { serverInfo.rewritesEnable  = arguments.rewritesEnable;  }
 		if ( Len( Trim( arguments.rewritesConfig  ) ) ) { serverInfo.rewritesConfig  = arguments.rewritesConfig;  }
 
 		// startup the service using server info struct, the start service takes care of persisting updated params
