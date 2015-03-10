@@ -16,6 +16,10 @@ component singleton{
 		return this;
 	}
 
+	function getDefaultsVersion() {
+		return { major = 1, minor = 0, revision = 0, beID = "", buildID = 0 };
+	}
+
 	/**
 	* Checks if target version is a newer semantic version than the passed current version
 	* Note: To confirm to semvar, I think this needs to defer to gt(). 
@@ -89,7 +93,7 @@ component singleton{
 	* @return struct:{major,minor,revision,beid,buildid}
 	*/
 	struct function parseVersion( required string version ){
-		var results = { major = 1, minor = 0, revision = 0, beID = "", buildID = 0 };
+		var results = getDefaultsVersion();
 
 		// Get build ID first
 		results.buildID		= find( "+", arguments.version ) ? listLast( arguments.version, "+" ) : '0';
@@ -112,14 +116,24 @@ component singleton{
 	}
 
 	/**
-	* Parse the incoming version and conform it to semantic version.
+	* Parse the incoming version string and conform it to semantic version.
 	* If bleeding edge is not found it is omitted.
 	* @return string:{major.minor.revision.[beid]+buildid}
 	*/
 	string function parseVersionAsString( required string version ){
 		var sVersion = parseVersion( clean( trim( arguments.version ) ) );
+		return getVersionAsString( sVersion );
+	}
 
-		return ( "#sVersion.major#.#sVersion.minor#"  & ( len( sVersion.beID ) ? "." & sVersion.beID : '' ) & "+#sVersion.buildID#" );
+
+	/**
+	* Parse the incoming version struct and output it as a string
+	* @return string:{major.minor.revision.[beid]+buildid}
+	*/
+	string function getVersionAsString( required struct sVersion ){
+		var defaultsVersion = getDefaultsVersion();
+		arguments.sVersion = defaultsVersion.append( arguments.sVersion );
+		return ( "#sVersion.major#.#sVersion.minor#.#sVersion.revision#"  & ( len( sVersion.beID ) ? "." & sVersion.beID : '' ) & "+#sVersion.buildID#" );
 	}
 
 	/**
