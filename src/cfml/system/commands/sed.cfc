@@ -20,6 +20,17 @@
  * {code}
  * .
  * All other regex rules follow what is implemented in REReplace() CFML function.
+ * .
+ * The delimiter in the subsdtitute command does not have to be "/".  Whatever character
+ * that immediatley follows the "s" will be used.  This can be useful where the regex
+ * and/or replacement text contain a "/".  
+ * .
+ * This example uses a tilde (~) as the delimiter.  It reads a file, replaces all instances
+ * of a given file path, and writes the file back out.
+ * .
+ * {code:bash}
+ * sed --file config.cfm s~/var/www/~/sites/wwwroot/~i > config.cfm
+ * {code}
  **/
 component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
 
@@ -85,10 +96,11 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 
 	private function parseCommandParts( command ) {
 		var str = trim( arguments.command );
+		// The next char is the delimiter.  (doesn't have to be "/")
 		var delimiter = left( str, 1 );
 		str = right( str, len( str ) -1 );
+		
 	    var strLen = str.length();
-		// The next char is the delimiter.  (doesn't have to be "/")
 		var isEscaped = false;
 		var char = '';
 		var phase = 1;
@@ -141,7 +153,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 		}
 		
 		if( phase < 3 ) {
-			error( "Unterminated 's' command. We didn't find two delimiters of [#delimiter#]" );
+			error( "Unterminated 's' command. We didn't find three delimiters of [#delimiter#]" );
 		}
 		
 		return commandParts;
