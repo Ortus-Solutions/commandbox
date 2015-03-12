@@ -204,6 +204,11 @@ component accessors="true" singleton {
 
 			// Make sure we have all required params.
 			parameterInfo.namedParameters = ensureRequiredParams( parameterInfo.namedParameters, commandParams );
+
+			// Ensure supplied params match the correct type
+			if( !validateParams( parameterInfo.namedParameters, commandParams ) ) {
+				return;
+			}
 	
 			// Reset the printBuffer
 			commandInfo.commandReference.CFC.reset();
@@ -557,12 +562,7 @@ component accessors="true" singleton {
 
 				// Ask for value
 				value = askValue();
-				// Validate it
-				while( param.required && !len( value ) ){
-					shell.printString( "*Value is required* " );
-					value = askValue();
-				}
-           		
+				
            		// value entered matches the type!
            		userNamedParams[ param.name ] = value;
 			}
@@ -570,6 +570,27 @@ component accessors="true" singleton {
 
 		return userNamedParams;
 	}
+
+
+	/**
+	 * Make sure all params are the correct type
+ 	 **/
+	private function validateParams( userNamedParams, commandParams ) {
+		// For each command param
+		for( var param in commandParams ) {
+			// If it's required and hasn't been supplied...
+			if( userNamedParams.keyExists( param.name )
+				&& param.keyExists( "type" )
+				&& !isValid( param.type, userNamedParams[ param.name ] ) ) {
+
+				shell.printError({message:"Parameter [#param.name#] has a value of [#userNamedParams[ param.name ]#] which is not of type [#param.type#]."});
+				return false;
+			} 
+		} // end for loop
+
+		return true;
+	}
+
 
 	/**
 	 * Match positional parameters up with their names
