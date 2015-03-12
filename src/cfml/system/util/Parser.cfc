@@ -210,6 +210,7 @@ component {
 		arguments.argValue = replace( arguments.argValue, "'", "\'", "all" );
 		arguments.argValue = replace( arguments.argValue, "=", "\=", "all" );
 		arguments.argValue = replace( arguments.argValue, CR, "\n", "all" );
+		arguments.argValue = replace( arguments.argValue, chr( 9 ), "\t", "all" );
 		return arguments.argValue;
 	}
 	
@@ -227,6 +228,7 @@ component {
 		theString = replaceNoCase( theString, "\'", '__singleQuote__', "all" );
 		theString = replaceNoCase( theString, '\"', '__doubleQuote__', "all" );
 		theString = replaceNoCase( theString, '\n', '__newLine__', "all" );
+		theString = replaceNoCase( theString, '\t', '__tab__', "all" );
 		return		replaceNoCase( theString, '\=', '__equalSign__', "all" );
 	}
 	
@@ -235,6 +237,7 @@ component {
 		theString = replaceNoCase( theString, '__singleQuote__', "'", "all" );
 		theString = replaceNoCase( theString, '__doubleQuote__', '"', "all" );
 		theString = replaceNoCase( theString, '__newLine__', CR, "all" );
+		theString = replaceNoCase( theString, '__tab__', chr( 9 ), "all" );
 		return		replaceNoCase( theString, '__equalSign__', '=', "all" );
 	}
 	
