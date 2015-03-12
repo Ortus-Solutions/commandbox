@@ -203,6 +203,7 @@ component {
 	* ' 			--> \'
 	* = 			--> \=
 	* [line break]  --> \n
+	* [tab]			--> \t
 	*/
 	string function escapeArg( argValue ) {
 		arguments.argValue = replace( arguments.argValue, '\', "\\", "all" );
