@@ -7,7 +7,7 @@
  * {code}
  * .
  * Init with a wizard
- * {code:base}
+ * {code:bash}
  * init --wizard
  * {code}
  * .
