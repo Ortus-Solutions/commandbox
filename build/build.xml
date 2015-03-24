@@ -4,7 +4,7 @@ Build a new distribution of Ortus CommandBox:
 This build downloads required libs depending on the target.
 
 External Dependencies:
-- railo-cli
+- lucee-cli
 - launch4j
 ====================================================================== -->
 <project name="distro.build" default="build.cli" basedir="./" xmlns:antcontrib="antlib:net.sf.antcontrib">
@@ -84,7 +84,7 @@ External Dependencies:
 
 		<!-- get commandbox dependencies -->
 		<dependency groupId="jline" artifactId="jline" version="2.12" dest="${lib.dir}" type="jar" unzip="false"/>
-		<dependency groupId="org.getrailo" artifactId="railo.cli" version="${cfml.cli.version}" dest="${temp.dir}/rcli" type="jar" unzip="true"/>
+		<dependency groupId="org.lucee" artifactId="lucee.cli" version="${cfml.cli.version}" dest="${temp.dir}/rcli" type="jar" unzip="true"/>
 
 		<!-- Mark as init -->
 		<property name="src.isInit" value="true" />
@@ -160,7 +160,7 @@ External Dependencies:
       	<copy todir="${temp.dir}/rcli/resource" overwrite="true" encoding="UTF-8">
         	<fileset dir="${src.dir}/resources" />
         </copy>
-		<copy file="${src.dir}/resources/cli.properties" todir="${temp.dir}/rcli/cliloader" overwrite="true" encoding="UTF-8"/>
+        <copy file="${src.dir}/resources/cli.properties" todir="${temp.dir}/rcli/cliloader" overwrite="true" encoding="UTF-8"/>
         
         <!-- jar up the cli again -->
         <zip destfile="${dist.dir}/box.jar" update="false" level="9">

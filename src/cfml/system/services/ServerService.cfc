@@ -155,13 +155,14 @@ component accessors="true" singleton{
 		// The process native name
 		var processName = name is "" ? "CommandBox" : name;
 
-		// The java arguments to execute: -Drailo.server.config.dir=""#configdir#/server""  Shared server, custom web configs
-		var args = " -javaagent:""#libdir#/railo-inst.jar"" -jar ""#variables.jarPath#"""
+		// The java arguments to execute:  Shared server, custom web configs
+		var args = " -javaagent:""#libdir#/lucee-inst.jar"" -jar ""#variables.jarPath#"""
 				& " -war ""#webroot#"" --background=true --port #portNumber# --host #arguments.serverInfo.host# --debug #debug#"
 				& " --stop-port #stopPort# --processname ""#processName#"" --log-dir ""#logdir#"""
 				& " --open-browser #openbrowser# --open-url http://#arguments.serverInfo.host#:#portNumber#"
-				& " --server-name ""#name#"" --lib-dirs ""#libDirs#"" --tray-icon ""#trayIcon#"""
-				& " --railo-web-config ""#configdir#"" --railo-server-config ""#serverConfigDir#""";
+				& " --server-name ""#name#"" --lib-dirs ""#libDirs#"""
+				& " --tray-icon ""#trayIcon#"" --tray-config ""#libdir#/traymenu.json"""
+				& " --cfml-web-config ""#configdir#"" --cfml-server-config ""#serverConfigDir#""";
 		// Incorporate SSL to command
 		if( SSLEnable ){
 			args &= " --http-enable #HTTPEnable# --ssl-enable #SSLEnable# --ssl-port #SSLPort#";
