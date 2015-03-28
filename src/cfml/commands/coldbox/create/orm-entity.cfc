@@ -80,7 +80,7 @@ component extends='commandbox.system.BaseCommand' aliases='' excludeFromHelp=fal
 
 		// Read in Template
 		var modelContent 	 		= fileRead( '/commandbox/templates/orm/Entity#scriptPrefix#.txt' );
-		var modelTestContent 		= fileRead( '/commandbox/templates/testing/ModelBDDContent#scriptPrefix#.txt' );
+		var modelTestContent 		= fileRead( '/commandbox/templates/testing/ORMEntityBDDContent#scriptPrefix#.txt' );
 
 		// Basic replacements
 		modelContent 	= replaceNoCase( modelContent, '|entityName|', arguments.entityName, 'all' );
