@@ -2,4 +2,5 @@
 {"label":"Stop Server (${runwar.processName})", "action":"stopserver"}
 ,{"label":"Open Browser", "action":"openbrowser", "url":"http://${runwar.host}:${runwar.port}/"}
 ,{"label":"Open Server Admin", "action":"openbrowser", "url":"http://${runwar.host}:${runwar.port}/railo-context/admin/server.cfm"}
+,{"label":"Open Web Admin", "action":"openbrowser", "url":"http://${runwar.host}:${runwar.port}/railo-context/admin/web.cfm"}
 ]
