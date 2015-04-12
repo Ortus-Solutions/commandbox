@@ -34,5 +34,14 @@ component {
 		}
 		return local.out;
 	}
+	
+	/**
+	* eval
+	* @statement.hint A CFML statement to evaluate
+	*/
+	function eval( required string statement ){
+		return evaluate( arguments.statement );
+	}
+
 
 }

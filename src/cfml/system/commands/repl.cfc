@@ -95,26 +95,25 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 				// evaluate it
 				try {
 
-					// generate cfml command to write to file
-					var CFMLFileContents = ( arguments.script ? "<cfscript>" & cfml & "</cfscript>" : cfml );
+					results = '';
 
-					// write out our cfml command
-					fileWrite( tmpFileAbsolute, CFMLFileContents );
-
-					// execute our command using temp file
-					var results = executor.run( tmpFileRelative );
-
-					// If we have no result contents, try evaluating and serializing
-					if ( trim( len( results ) ) == 0 ) {
-
-						try {
-							results = REPLParser.evaluateCommand();
-						} catch (any var e) {
-							// Ignore errors here
-						}
+					try {
+						// Attempt evaluation
+						results = REPLParser.evaluateCommand( executor );
+					} catch (any var e) {
+						// generate cfml command to write to file
+						var CFMLFileContents = ( arguments.script ? "<cfscript>" & cfml & "</cfscript>" : cfml );
+	
+						// write out our cfml command
+						fileWrite( tmpFileAbsolute, CFMLFileContents );
+	
+						// execute our command using temp file
+						results = executor.run( tmpFileRelative );
 					}
 
-					results = "=> " & results;
+
+					// Make sure results is a string
+					results = REPLParser.serializeOutput( results );
 
 					// print results
 					if( !isNull( results ) ){
