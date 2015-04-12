@@ -111,15 +111,11 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 						results = executor.run( tmpFileRelative );
 					}
 
-
-					// Make sure results is a string
-					results = REPLParser.serializeOutput( results );
-
 					// print results
 					if( !isNull( results ) ){
+						// Make sure results is a string
+						results = REPLParser.serializeOutput( results );
 						print.boldRedLine( results ).toConsole();
-					} else {
-						print.boldRedLine( "Null results received!" );
 					}
 					// loop it
 				} catch( any e ){
