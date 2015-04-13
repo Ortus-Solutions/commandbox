@@ -119,11 +119,19 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 				destination="#variables.homedir#/cfml"
 				overwrite=true;
 
-			print.greenLine( "Update applied successfully, installed v#repoVersion#" );
-			// Wait for input
-			runCommand( 'pause' );
-			// Reload the shell
-	 		runCommand( 'reload' );
+			// Notify the user
+			print
+				.greenLine( "Update applied successfully, installed v#repoVersion#" )		
+				.redLine( "CommandBox needs to exit to complete the installation." )
+				.yellowLine( "This message will self-descruct in 10 seconds" )
+				.toConsole();
+			
+			// Give them a chance to read it.
+			sleep( 10000 );
+			
+			// Stop executing.  Since the unzipping possbily replaced .cfm files that were
+			// also cached in memory, there's no good way we've found to be able to reload and keep going.
+			abort;
 
 		} else {
 			print.yellowLine( "Your version of CommandBox (#shell.getVersion()#) is already current (#repoVersion#)." );
