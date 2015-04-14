@@ -16,6 +16,7 @@
 		
 		<zip basedir="${src.dir}/Advanced" 		 destfile="${target.dir}/Advanced.zip" />
 		<zip basedir="${src.dir}/AdvancedScript" destfile="${target.dir}/AdvancedScript.zip" />
+		<zip basedir="${src.dir}/rest" 		 	 destfile="${target.dir}/rest.zip" />
 		<zip basedir="${src.dir}/Simple" 		 destfile="${target.dir}/Simple.zip" />
 		<zip basedir="${src.dir}/SuperSimple" 	 destfile="${target.dir}/SuperSimple.zip" />
 		
