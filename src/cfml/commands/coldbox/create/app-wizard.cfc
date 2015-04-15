@@ -5,7 +5,7 @@ component extends="app" aliases="" excludeFromHelp=false {
 	
 	/**
 	 * @name The name of the app you want to create
-	 * @skeleton Application Skeleton to use (Advanced,AdvancedScript,Simple,SuperSimple,AdvancedBE,AdvancedScriptBE,SimpleBE,SuperSimpleBE)
+	 * @skeleton Application Skeleton to use (Advanced,AdvancedScript,rest,Simple,SuperSimple,AdvancedBE,AdvancedScriptBE,SimpleBE,SuperSimpleBE)
 	 * @init Would you like to init this as a CommandBox Package
 	 * @installColdBox Install the latest stable version of ColdBox from ForgeBox
 	 * @installColdBoxBE Install the bleeding edge version of ColdBox from ForgeBox
@@ -19,7 +19,7 @@ component extends="app" aliases="" excludeFromHelp=false {
 		required boolean installColdBoxBE,
 		required boolean installTestBox
 	) {
-		var skeletons = "(Advanced|AdvancedScript|Simple|SuperSimple|AdvancedBE|AdvancedScriptBE|SimpleBE|SuperSimpleBE)";
+		var skeletons = "(Advanced|AdvancedScript|rest|Simple|SuperSimple|AdvancedBE|AdvancedScriptBE|SimpleBE|SuperSimpleBE)";
 		// turn off wizard
 		arguments.wizard = false;
 		arguments.initWizard = true;

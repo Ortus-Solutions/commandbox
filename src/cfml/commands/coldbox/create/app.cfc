@@ -8,6 +8,7 @@
 *  By default, ColdBox 4.x compatible templates will be used
 *  - Advanced
 *  - AdvancedScript (default)
+*  - rest
 *  - Simple
 *  - SuperSimple
 *  .
@@ -55,7 +56,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 	/**
 	 * @name The name of the app you want to create
 	 * @skeleton The name of the app skeleton to generate
-	 * @skeleton.options Advanced,AdvancedScript,Simple,SuperSimple,Advancedv3,AdvancedScriptv3,Simplev3,SuperSimplev3
+	 * @skeleton.options Advanced,AdvancedScript,rest,Simple,SuperSimple,Advancedv3,AdvancedScriptv3,Simplev3,SuperSimplev3
 	 * @directory The directory to create the app in and creates the directory if it does not exist.  Defaults to your current working directory.
 	 * @init "init" the directory as a package if it isn't already
 	 * @installColdBox Install the latest stable version of ColdBox from ForgeBox
