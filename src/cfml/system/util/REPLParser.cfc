@@ -81,17 +81,32 @@ component accessors="true" singleton {
 
 	/**
 	* Returns serialized evaluation of command if possible.
+	* @executor.hint the executor context to attempt evaluation
 	**/
-	function evaluateCommand() {
-		if ( !isCommandComplete() ) {
-			throw ( type="CommandNotComplete", message = "The command is not complete." );
-		}
-		try {
+	function evaluateCommand( required executor ) {
 			var cfml = getCommandPreparedForEvaluation();
-			var evaluated = evaluate( cfml );
-			return formatterUtil.formatJson( serializeJson( evaluated ) );
-		} catch (any var e) {
-			return "";
+			return executor.eval( cfml );
+		}
+
+	/**
+	* Serializes output
+	**/
+	function serializeOutput( result ) {
+		// null
+		if( isNull( result ) ){
+			return;
+		// string
+		} else if( isSimpleValue( result ) ) {
+			return result;
+		// CFC, possibly Java object too (though I think that's a bug)
+		} else if( isObject( result ) ) {
+			return '[Object #getMetaData( result ).name#]';
+		// Serializable types
+		} else if( isArray( result ) || isStruct( result ) || isQuery( result ) ) {
+			return formatterUtil.formatJson( serializeJson( result ) );
+		// Yeah, I give up
+		} else {
+			return '[#result.getClass().getName()#]';
 		}
 	}
 

@@ -95,6 +95,12 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 				// evaluate it
 				try {
 
+					results = '';
+
+					try {
+						// Attempt evaluation
+						results = REPLParser.evaluateCommand( executor );
+					} catch (any var e) {
 					// generate cfml command to write to file
 					var CFMLFileContents = ( arguments.script ? "<cfscript>" & cfml & "</cfscript>" : cfml );
 
@@ -102,28 +108,19 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 					fileWrite( tmpFileAbsolute, CFMLFileContents );
 
 					// execute our command using temp file
-					var results = executor.run( tmpFileRelative );
-
-					// If we have no result contents, try evaluating and serializing
-					if ( trim( len( results ) ) == 0 ) {
-
-						try {
-							results = REPLParser.evaluateCommand();
-						} catch (any var e) {
-							// Ignore errors here
-						}
+						results = executor.run( tmpFileRelative );
 					}
-
-					results = "=> " & results;
 
 					// print results
 					if( !isNull( results ) ){
+						// Make sure results is a string
+						results = REPLParser.serializeOutput( results );
 						print.boldRedLine( results ).toConsole();
-					} else {
-						print.boldRedLine( "Null results received!" );
 					}
 					// loop it
 				} catch( any e ){
+					// Log it
+					logger.error( '#e.message# #e.detail#' , e.stackTrace );
 					error( '#e.message##CR##e.detail#' );
 					print.toConsole();
 				} finally {

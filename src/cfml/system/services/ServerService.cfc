@@ -160,7 +160,7 @@ component accessors="true" singleton{
 				& " -war ""#webroot#"" --background=true --port #portNumber# --host #arguments.serverInfo.host# --debug #debug#"
 				& " --stop-port #stopPort# --processname ""#processName#"" --log-dir ""#logdir#"""
 				& " --open-browser #openbrowser# --open-url http://#arguments.serverInfo.host#:#portNumber#"
-				& " --server-name ""#name#"" --lib-dirs ""#libDirs#"""
+				& " --cfengine-name lucee --server-name ""#name#"" --lib-dirs ""#libDirs#"""
 				& " --tray-icon ""#trayIcon#"" --tray-config ""#libdir#/traymenu.json"""
 				& " --cfml-web-config ""#configdir#"" --cfml-server-config ""#serverConfigDir#""";
 		// Incorporate SSL to command
