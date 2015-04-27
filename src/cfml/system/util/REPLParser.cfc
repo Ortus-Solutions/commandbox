@@ -55,7 +55,7 @@ component accessors="true" singleton {
 	**/
 	function isCommandComplete() {
 		var cfml = getCommandAsString();
-		cfml = reReplaceNoCase( cfml, "[""'].*[""']", """""", "all" );
+		//cfml = reReplaceNoCase( cfml, "[""'].*[""']", """""", "all" );
 		
 		var numberOfCurlyBrackets = reMatchNoCase( "[{}]", cfml ).len();
 		var numberOfParenthesis = reMatchNoCase( "[\(\)]", cfml ).len();
