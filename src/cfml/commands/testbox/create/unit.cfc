@@ -38,7 +38,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 		print.greenLine( 'Created #thisPath#' );
 
 		// Open file?
-		if( arguments.open ){ runCommand( "edit #thisPath#" ); }			
+		if( arguments.open ){ openPath( thisPath ); }			
 	}
 
 }

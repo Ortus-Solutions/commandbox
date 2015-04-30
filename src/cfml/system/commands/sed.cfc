@@ -34,6 +34,9 @@
  **/
 component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
 
+	// DI Properties
+	property name='parser' 	inject='Parser';
+	
 	/**
 	 * @inputOrFile.hint The text to process, or a file name to read with --file
 	 * @commands.hint The command to perform on the input text.  Ex: s/replaceMe/withMe/g
@@ -47,7 +50,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 		
 		// Treat input as a file path
 		if( arguments.file ) {
-			arguments.inputOrFile = runCommand( command="cat '#arguments.inputOrFile#'", returnOutput=true );			
+			arguments.inputOrFile = runCommand( command="cat '#parser.escapeArg( arguments.inputOrFile )#'", returnOutput=true );			
 		}
 		
 		// Turn output into an array, breaking on carriage returns

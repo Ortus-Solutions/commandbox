@@ -124,11 +124,11 @@ component extends='commandbox.system.BaseCommand' aliases='coldbox create handle
 			file action='write' file='#testPath#' mode ='777' output='#handlerTestContent#';
 			print.greenLine( 'Created #testPath#' );
 			// open file
-			if( arguments.open ){ runCommand( "edit #testPath#" ); }			
+			if( arguments.open ){ openPath( testPath ); }			
 		}
 
 		// open file
-		if( arguments.open ){ runCommand( "edit #handlerPath#" ); }			
+		if( arguments.open ){ openPath( handlerPath ); }			
 	}
 
 }

@@ -28,7 +28,7 @@ component extends="commandbox.system.BaseCommand" aliases="docs,documentation" e
 		
 		if( len( boxJSON.documentation ) and isValid( "URL", boxJSON.documentation ) ){
 			print.greenLine( "Opening: #boxJSON.documentation#" );
-			runCommand( "browse " & boxJSON.documentation );
+			openURL( boxJSON.documentation );
 		} else {
 			print.redLine( "The 'documentation' set in the descriptor is not valid: " & boxJSON.documentation );
 		}

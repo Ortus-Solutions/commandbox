@@ -121,7 +121,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 		print.greenLine( 'Created #integrationTestPath#' );
 
 		// open file
-		if( arguments.open ){ runCommand( "edit #integrationTestPath#" ); }
+		if( arguments.open ){ openPath( integrationTestPath ); }
 	}
 
 }

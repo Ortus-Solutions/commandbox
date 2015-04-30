@@ -18,6 +18,7 @@ component accessors="true" singleton{
 	property name="print" 			inject="PrintBuffer";
 	property name="wirebox" 		inject="wirebox";
 	property name="logger" 			inject="logbox:logger:{this}";
+	property name="parser"			inject="Parser";
 
 	/**
 	* Constructor
@@ -125,5 +126,21 @@ component accessors="true" singleton{
 	function hasError() {
 		return hasErrored;
 	}
-				
+	
+	
+	/**
+	 * This will open a file or folder externally in the default editor for the user.  
+	 * Useful for opening a new file for editing that was just created.
+ 	 **/
+	function openPath( path ) {
+		runCommand( "edit '#parser.escapeArg( arguments.path )#'" ); 		
+	}
+	
+	/**
+	 * This will open a URL in the user's browser  
+ 	 **/
+	function openURL( theURL ) {
+		runCommand( "browse '#parser.escapeArg( arguments.theURL)#'" ); 		
+	}
+	
 }

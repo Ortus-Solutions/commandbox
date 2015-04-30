@@ -100,11 +100,11 @@ component extends='commandbox.system.BaseCommand' aliases='' excludeFromHelp=fal
 			file action='write' file='#testPath#' mode ='777' output='#interceptorTestContent#';
 			print.greenLine( 'Created #testPath#' );
 			// open file
-			if( arguments.open ){ runCommand( "edit #testPath#" ); }			
+			if( arguments.open ){ openPath( testPath ); }			
 		}
 
 		// open file
-		if( arguments.open ){ runCommand( "edit #interceptorPath#" ); }			
+		if( arguments.open ){ openPath( interceptorPath ); }			
 	}
 
 }

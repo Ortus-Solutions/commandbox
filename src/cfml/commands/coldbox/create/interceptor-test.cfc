@@ -62,7 +62,7 @@ component extends='commandbox.system.BaseCommand' aliases='' excludeFromHelp=fal
 		print.greenLine( 'Created #testPath#' );
 
 		// open file
-		if( arguments.open ){ runCommand( "edit #testPath#" ); }			
+		if( arguments.open ){ openPath( testPath ); }			
 	}
 
 }

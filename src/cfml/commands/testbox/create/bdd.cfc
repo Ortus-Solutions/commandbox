@@ -38,7 +38,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 		print.greenLine( 'Created #BDDPath#' );
 
 		// Open file?
-		if( arguments.open ){ runCommand( "edit #bddPath#" ); }			
+		if( arguments.open ){ openPath( bddPath ); }			
 	}
 
 }

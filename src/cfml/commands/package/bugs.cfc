@@ -28,7 +28,7 @@ component extends="commandbox.system.BaseCommand" aliases="bugs" excludeFromHelp
 		
 		if( len( boxJSON.bugs ) and isValid( "URL", boxJSON.bugs ) ){
 			print.greenLine( "Opening: #boxJSON.bugs#" );
-			runCommand( "browse " & boxJSON.bugs );
+			openURL( boxJSON.bugs );
 		} else {
 			print.redLine( "The 'bugs' set in the descriptor is not valid: " & boxJSON.bugs );
 		}

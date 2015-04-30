@@ -28,7 +28,7 @@ component extends="commandbox.system.BaseCommand" aliases="homepage" excludeFrom
 		
 		if( len( boxJSON.homepage ) and isValid( "URL", boxJSON.homepage ) ){
 			print.greenLine( "Opening: #boxJSON.homepage#" );
-			runCommand( "browse " & boxJSON.homepage );
+			openURL( boxJSON.homepage );
 		} else {
 			print.redLine( "The 'homepage' set in the descriptor is not valid: " & boxJSON.homepage );
 		}

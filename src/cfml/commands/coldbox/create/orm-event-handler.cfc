@@ -43,7 +43,7 @@ component extends='commandbox.system.BaseCommand' aliases='' excludeFromHelp=fal
 		print.greenLine( 'Created #modelPath#' );
 
 		// Open file?
-		if( arguments.open ){ runCommand( "edit #modelPath#" ); }			
+		if( arguments.open ){ openPath( modelPath ); }			
 	}
 
 }
