@@ -12,6 +12,9 @@
  **/
 component extends='commandbox.system.BaseCommand' aliases='' excludeFromHelp=false {
 
+	// DI Properties
+	property name='parser' 	inject='Parser';
+
 	/**
 	* Constructor
 	*/
@@ -137,12 +140,12 @@ component extends='commandbox.system.BaseCommand' aliases='' excludeFromHelp=fal
 			// Create the tests
 			file action='write' file='#testPath#' mode ='777' output='#modelTestContent#';
 			// open file
-			if( arguments.open ){ runCommand( "edit #testPath#" ); }			
+			if( arguments.open ){ runCommand( "edit '#parser.escapeArg( testPath )#'" ); }			
 			print.greenLine( 'Created #testPath#' );
 		}
 
 		// Open file?
-		if( arguments.open ){ runCommand( "edit #modelPath#" ); }			
+		if( arguments.open ){ runCommand( "edit '#parser.escapeArg( modelPath )#'" ); }			
 	}
 
 }
