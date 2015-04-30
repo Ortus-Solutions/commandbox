@@ -124,6 +124,7 @@ component extends='commandbox.system.BaseCommand' aliases='' excludeFromHelp=fal
 			modelTestContent 	= replaceNoCase( modelTestContent, '|TestCases|', allTestsCases, 'all');
 		} else {
 			modelContent = replaceNoCase( modelContent, '|methods|', '', 'all' );
+			modelTestContent = replaceNoCase( modelTestContent, '|TestCases|', '', 'all' );
 		}
 
 		// Write out the model
