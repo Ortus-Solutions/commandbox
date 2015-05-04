@@ -44,11 +44,11 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 			// execute the server command
 			execute name="#arguments.name#" arguments="#arguments.args#" timeout="#arguments.timeout#" variable="executeResult" errorvariable="executeError";
 			// Output Results
-			if( len( executeResult ) ) {
+			if( !isNull( executeResult ) && len( executeResult ) ) {
 				print.cyanLine( executeResult );				
 			}
 			// Output error
-			if( len( executeError ) ) {
+			if( !isNull( executeError ) &&  len( executeError ) ) {
 				print.redLine( executeError );				
 			}
 			
