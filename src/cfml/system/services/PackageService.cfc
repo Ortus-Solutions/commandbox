@@ -290,7 +290,7 @@ component accessors="true" singleton {
 			// Should we save this as a dependency. Save the install even though the package may already be there
 			if( ( arguments.save || arguments.saveDev ) ) {
 				// Add it!
-				addDependency( packagePathRequestingInstallation, packageName, version, installDirectory, artifactDescriptor.createPackageDirectory,  arguments.saveDev );
+				addDependency( packagePathRequestingInstallation, packageName, version, installDirectory, artifactDescriptor.createPackageDirectory,  arguments.saveDev, endpointData );
 				// Tell the user...
 				consoleLogger.info( "#packagePathRequestingInstallation#/box.json updated with #( arguments.saveDev ? 'dev ': '' )#dependency." );
 			}			
@@ -406,8 +406,17 @@ component accessors="true" singleton {
 			var isDev = structKeyExists( artifactDescriptor.devDependencies, dependency );
 			var isSaving = ( arguments.save || arguments.saveDev );
 			
+			var detail = dependencies[ dependency ];
+			//  full ID with endpoint and package like file:/opt/files/foo.zip
+			if( detail contains ':' ) {
+				var ID = detail;
+			// Default ForgeBox endpoint of foo@1.0.0
+			} else {
+				var ID = dependency & '@' & detail;
+			}
+			
 			var params = {
-				ID = dependency,
+				ID = ID,
 				force = arguments.force,
 				verbose = arguments.verbose,
 				// Nested dependencies are already in the box.json, but the save will update the installPaths
@@ -598,7 +607,8 @@ component accessors="true" singleton {
 		required string version,
 		string installDirectory='',
 		boolean installDirectoryIsDedicated = true,
-		boolean dev=false
+		boolean dev=false,
+		struct endpointData
 		) {
 		// Get box.json, create empty if it doesn't exist
 		var boxJSON = readPackageDescriptorRaw( arguments.currentWorkingDirectory );
@@ -611,12 +621,16 @@ component accessors="true" singleton {
 			param name='boxJSON.dependencies' default='#{}#';
 			var dependencies = boxJSON.dependencies;			
 		}
-				
+		
 		// Add/overwrite this dependency
-		dependencies[ arguments.packageName ] = arguments.version;
+		if( endpointData.endpointName == 'forgebox' ) {
+			dependencies[ arguments.packageName ] = arguments.version;	
+		} else {
+			dependencies[ arguments.packageName ] = endpointData.ID;
+		}
 		
 		// Only packages installed in a dedicated directory of their own can be uninstalled
-		// so don't save this if they were just dumped somewhere like the packge root amongst
+		// so don't save this if they were just dumped somewhere like the package root amongst
 		// other unrelated files and folders.
 		if( arguments.installDirectoryIsDedicated ) {
 			param name='boxJSON.installPaths' default='#{}#';

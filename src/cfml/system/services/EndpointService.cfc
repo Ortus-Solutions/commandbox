@@ -10,9 +10,10 @@
 component accessors="true" singleton {
 
 	// DI
-	property name="logger"			inject="logbox:logger:{this}";
-	property name="wirebox"			inject="wirebox";	
-	property name="fileSystemUtil"	inject="FileSystem";
+	property name="logger"				inject="logbox:logger:{this}";
+	property name="wirebox"				inject="wirebox";	
+	property name="fileSystemUtil"		inject="FileSystem";
+		property name="consoleLogger"	inject="logbox:logger:console";
 	
 	// Properties
 	property name="endpointRegistry" type="struct";
@@ -89,6 +90,9 @@ component accessors="true" singleton {
 					ID : arguments.ID
 				};
 			} else {
+				if( listFindNoCase( 'C,D,E,F,G,H', endpointName ) ) {
+					consoleLogger.warn( "It appears you tried to type a file or folder path, but [#arguments.ID#] doesn't exist." );
+				}
 				throw( 'Endpoint [#endpointName#] not registered.', 'EndpointNotFound' );
 			}
 		// I give up, let's check ForgeBox (default endpoint)
