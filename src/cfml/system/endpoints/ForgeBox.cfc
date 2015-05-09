@@ -53,6 +53,7 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 		// Install the package
 		var thisArtifactPath = artifactService.getArtifactPath( slug, version );
 	
+		// Defer to file endpoint
 		packagePath = fileEndpoint.resolvePackage( thisArtifactPath, arguments.verbose );
 		
 		// Cheat for people who set a version, slug, or type in ForgeBox, but didn't put it in their box.json

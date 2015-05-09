@@ -11,10 +11,10 @@ component accessors="true" implements="IEndpoint" singleton {
 		
 	// DI
 	property name="consoleLogger"		inject="logbox:logger:console";
-	property name="tempDir" 			inject="tempDir@constants";
-	property name="artifactService" 	inject="ArtifactService";
-	property name="packageService" 	inject="packageService";
+	property name="tempDir"				inject="tempDir@constants";
+	property name="packageService"		inject="packageService";
 	property name="fileSystemUtil"		inject="FileSystem";
+	property name="folderEndpoint"		inject="endpoints.folder";
 	
 	// Properties
 	property name="namePrefixes" type="string";
@@ -40,10 +40,9 @@ component accessors="true" implements="IEndpoint" singleton {
 		
 		zip action="unzip" file="#package#" destination="#packagePath#" overwrite="true";
 		
-		packagePath = packageService.findPackageRoot( packagePath );
+		// Defer to folder endpoint
+		return folderEndpoint.resolvePackage( packagePath, arguments.verbose );
 		
-		return packagePath;
-
 	}
 
 }

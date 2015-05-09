@@ -61,8 +61,26 @@ component accessors="true" singleton {
 	* or folder.  Defaults to forgebox.
 	*/	
 	struct function resolveEndpointData( required string ID, required string currentWorkingDirectory ) {
+	
+		var path = fileSystemUtil.resolvePath( arguments.ID, arguments.currentWorkingDirectory );
+		// Is it a real zip file?
+		if( listLast( path, '.' ) == 'zip' && fileExists( path ) ) {
+			var endpointName = 'file';			
+			return {
+				endpointName : endpointName,
+				package : path,
+				ID : endpointName & ':' & path
+			};
+		// Is it a real folder?
+		} else if( directoryExists( path ) ) {
+			var endpointName = 'folder';			
+			return {
+				endpointName : endpointName,
+				package : path,
+				ID : endpointName & ':' & path
+			};
 		// Endpoint is specified as "endpoint:resource"
-		if( listLen( arguments.ID, ':' ) > 1 ) {
+		} else if( listLen( arguments.ID, ':' ) > 1 ) {
 			var endpointName = listFirst( arguments.ID, ':' );
 			if( structKeyExists( getEndpointRegistry(), endpointName ) ) {
 				return {
@@ -73,20 +91,9 @@ component accessors="true" singleton {
 			} else {
 				throw( 'Endpoint [#endpointName#] not registered.', 'EndpointNotFound' );
 			}
-		// Endpoint not specified, let's look for it
+		// I give up, let's check ForgeBox (default endpoint)
 		} else {
-			var path = fileSystemUtil.resolvePath( arguments.ID, arguments.currentWorkingDirectory );
-			// Is it a real zip file?
-			if( listLast( path, '.' ) == 'zip' && fileExists( path ) ) {
-				var endpointName = 'file';
-			// Is it a real folder?
-			} else if( directoryExists( path ) ) {
-				var endpointName = 'folder';
-			// I give up, let's check ForgeBox (default endpoint)
-			} else {
-				var endpointName = 'forgebox';				
-			}
-			
+			var endpointName = 'forgebox';				
 			return {
 				endpointName : endpointName,
 				package : arguments.ID,

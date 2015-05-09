@@ -113,7 +113,7 @@ component accessors="true" singleton {
 				consoleLogger.error( "box.json is missing so this isn't really a package! I'll install it anyway, but I'm not happy about it" );
 				consoleLogger.warn( "I'm just guessing what the package name, version and type are.  Please ask the package owner to add a box.json." );
 				var packageType = 'project';
-				var packageName = reReplaceNoCase( '[^a-zA-Z0-9]', arguments.ID, '', 'all' );
+				var packageName = reReplaceNoCase( arguments.ID, '[^a-zA-Z0-9]', '', 'all' );
 				var version = '1.0.0';
 			}
 					
@@ -299,7 +299,9 @@ component accessors="true" singleton {
 			// This check can only be performed for packages that get installed in their own directory.
 			if ( artifactDescriptor.createPackageDirectory && directoryExists( installDirectory ) && !arguments.force ){
 				// cleanup tmp
-				directoryDelete( tmpPath, true );
+				if( endpointData.endpointName != 'folder' ) {
+					directoryDelete( tmpPath, true );					
+				}
 				consoleLogger.warn("The package #packageName# is already installed at #installDirectory#. Skipping installation. Use --force option to force install.");
 				return;
 			}
@@ -353,7 +355,9 @@ component accessors="true" singleton {
 			// has the folder locked.
 			try {
 				// cleanup unzip
-				directoryDelete( tmpPath, true );				
+				if( endpointData.endpointName != 'folder' ) {
+					directoryDelete( tmpPath, true );					
+				}				
 			} catch( any e ) {
 				consoleLogger.error( '#e.message##CR#The folder is possibly locked by another program.' );
 				logger.error( '#e.message# #e.detail#' , e.stackTrace );
