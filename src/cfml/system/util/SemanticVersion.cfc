@@ -160,6 +160,14 @@ component singleton{
 
 		return ( current == target ); 
 	}
-
+	
+	/**
+	* UNIMPLEMENTED
+	* True if a specific version, false if a range that could match multiple versions
+	* version.hint A string that contains a version or a range
+	*/
+	boolean function isExactVersion( required string version ) {
+		return len( trim( version ) ) > 0;
+	}
 
 }

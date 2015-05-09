@@ -7,27 +7,140 @@
 *
 * I am the ForgeBox endpoint.  I wrap CFML's coolest package repository
 */
-component  implements="IEndpointInteractive" accessors="true" singleton {
-	property name="namePrefixs" type="string";
+component accessors="true" implements="IEndpointInteractive" singleton {
+		
+	// DI
+	property name="CR" 					inject="CR@constants";
+	property name="consoleLogger"		inject="logbox:logger:console";
+	property name="forgeBox" 			inject="ForgeBox";
+	property name="tempDir" 			inject="tempDir@constants";
+	property name="semanticVersion"		inject="semanticVersion";
+	property name="artifactService" 	inject="ArtifactService";
+	property name="packageService" 		inject="packageService";
+	property name="fileSystemUtil"		inject="FileSystem";
+	property name="fileEndpoint"		inject="endpoints.file";
+	
+	// Properties
+	property name="namePrefixes" type="string";
 	
 	function init() {
-		setNamePefixes( 'forgebox' );
+		setNamePrefixes( 'forgebox' );
+		return this;
 	}
+		
+	public string function resolvePackage( required string package, boolean verbose=false ) {
+		var entryData = {};
+		
+		var slug = listFirst( arguments.package, '@' );
+		var version = '';
+		// foo@1.0.0
+		if( arguments.package contains '@' ) {
+			// Note this can also be a semvar range like 1.2.x, >2.0.0, or 1.0.4-2.x
+			// For now I'm assuming it's a specific version
+			version = listRest( arguments.package, '@' );
+		}
+				
+		// If we have a specific version and it exists in artifacts, use it.  Otherwise, to ForgeBox!!
+		if( semanticVersion.isExactVersion( version ) && artifactService.artifactExists( slug, version ) ) {
+			consoleLogger.info( "Package found in local artifacts!");
+		} else {
+			entryData = getPackage( slug, version, arguments.verbose );
+			version = entryData.version;
+		}
+		
+		// Assert: at this point, the package is downloaded and exists in the local artifact cache
 	
-	public string function resolve(required string ID) {
+		// Install the package
+		var thisArtifactPath = artifactService.getArtifactPath( slug, version );
+	
+		packagePath = fileEndpoint.resolvePackage( thisArtifactPath, arguments.verbose );
+		
+		// Cheat for people who set a version, slug, or type in ForgeBox, but didn't put it in their box.json
+		// We can only do this if we talked to ForgeBox, but I'm trying hard not to use network IO if I can get the package from artifacts.
+		if( structCount( entryData ) ) {
+			var boxJSON = packageService.readPackageDescriptorRaw( packagePath );
+			if( !structKeyExists( boxJSON, 'type' ) || !len( boxJSON.type ) ) { boxJSON.type = entryData.typeslug; }
+			if( !structKeyExists( boxJSON, 'slug' ) || !len( boxJSON.slug ) ) { boxJSON.slug = entryData.slug; }
+			if( !structKeyExists( boxJSON, 'version' ) || !len( boxJSON.version ) ) { boxJSON.version = entryData.version; }
+			packageService.writePackageDescriptor( boxJSON, packagePath );
+		}
+		return packagePath;
 
+	}
+
+	private function getPackage( slug, version, verbose=false ) {		
+	
+		try {
+			// Info
+			consoleLogger.warn( "Verifying package '#slug#' in ForgeBox, please wait..." );
+			
+			// TODO: Check ForgeBox for highest version that satisfies what was requested.
+			
+			var entryData = forgebox.getEntry( slug );
+			// Verbose info
+			if( arguments.verbose ){
+				consoleLogger.debug( "Package data retrieved: ", entryData );
+			}
+			
+			// entrylink,createdate,lname,isactive,installinstructions,typename,version,hits,coldboxversion,sourceurl,slug,homeurl,typeslug,
+			// downloads,entryid,fname,changelog,updatedate,downloadurl,title,entryrating,summary,username,description,email
+							
+			if( !val( entryData.isActive ) ) {				
+				throw( 'The ForgeBox entry [#entryData.title#] is inactive.', 'endpointException' );
+			}
+			
+			if( !len( entryData.downloadurl ) ) {
+				throw( 'No download URL provided in ForgeBox.  Manual install only.', 'endpointException' );
+			}
+	
+			var packageType = entryData.typeSlug;
+			version = entryData.version;
+			
+			// Advice we found it
+			consoleLogger.info( "Verified entry in ForgeBox: '#slug#'" );
+	
+			arguments.version = entryData.version;
+			
+			// If the local artifact doesn't exist, download and create it
+			if( !artifactService.artifactExists( slug, version ) ) {
+					
+				consoleLogger.info( "Starting download of: '#slug#'..." );
+				
+				// Store the package locally in the temp dir
+				var packageTempPath = forgebox.install( slug, tempDir );
+				
+				// Store it locally in the artfact cache
+				artifactService.createArtifact( slug, version, packageTempPath );
+				
+				// Clean up the temp file
+				fileDelete( packageTempPath );
+								
+				consoleLogger.info( "Done." );
+				
+			} else {
+				consoleLogger.info( "Package found in local artifacts!");
+			}
+			
+			
+		} catch( forgebox var e ) {
+			// This can include "expected" errors such as "slug not found"
+			throw( '#e.message##CR##e.detail#', 'endpointException' );
+		}
+		
+		return entryData;
+		
 	}
 
 	public function createUser(required string userName,required string password) {
-
+		throw( 'Not implemented' );
 	}
 	
 	public string function login(required string userName,required string password) {
-
+		throw( 'Not implemented' );
 	}
 	
 	public function publish(required string path) {
-
+		throw( 'Not implemented' );
 	}
 
 }

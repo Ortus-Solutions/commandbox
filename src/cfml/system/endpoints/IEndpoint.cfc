@@ -7,9 +7,11 @@
 *
 * I am an endpoint.  I can retreive packages for you.
 */
-interface accessors="true" {
-	property name="namePrefixs" type="string";
+interface {
 	
-	public string function resolve( required string ID );
+	/**
+	* @throws endpointException
+	*/
+	public string function resolvePackage( required string package, boolean verbose=false );
 
 }

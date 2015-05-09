@@ -11,19 +11,16 @@ component accessors="true" singleton {
 
 	// DI
 	property name="CR" 					inject="CR@constants";
-	property name="tempDir" 			inject="tempDir@constants";
 	property name="formatterUtil"		inject="formatter";
 	property name="artifactService" 	inject="ArtifactService";
-	property name="consoleLogger"		inject="logbox:logger:console";
 	property name="fileSystemUtil"		inject="FileSystem";
 	property name="pathPatternMatcher" 	inject="pathPatternMatcher";
 	property name='shell' 				inject='Shell';
 	property name="logger"				inject="logbox:logger:{this}";
 	property name="semanticVersion"		inject="semanticVersion";
+	property name="endpointService"		inject="EndpointService";
+	property name="consoleLogger"		inject="logbox:logger:console";
 	
-	// This should be removed once the install command starts resolving registries automatically
-	property name="forgeBox" 			inject="ForgeBox";
-
 	/**
 	* Constructor
 	*/
@@ -74,132 +71,52 @@ component accessors="true" singleton {
 			boolean force=false,
 			string packagePathRequestingInstallation = arguments.currentWorkingDirectory
 	){
-						
-		///////////////////////////////////////////////////////////////////////
-		// TODO: Instead of assuming this is ForgeBox, look up the appropriate
-		//       regsitry to handle the package a deal with a dynamic adapter 
-		//       object at runtime with generic methods
-		///////////////////////////////////////////////////////////////////////
 		
 		// If there is a package to install, install it
 		if( len( arguments.ID ) ) {
 			
-			consoleLogger.info( '.');
-			consoleLogger.info( 'Installing package: #arguments.ID#' );
-
 			// Verbose info
 			if( arguments.verbose ){
 				consoleLogger.debug( "Save:#arguments.save# SaveDev:#arguments.saveDev# Production:#arguments.production# Directory:#arguments.directory#" );
 			}
 			
 			try {
-				// Info
-				consoleLogger.warn( "Verifying package '#arguments.ID#' in ForgeBox, please wait..." );
-				// We might have gotten this above
-				var entryData = forgebox.getEntry( arguments.ID );
-				// Verbose info
-				if( arguments.verbose ){
-					consoleLogger.debug( "Package data retrieved: ", entryData );
-				}
-				
-				// entrylink,createdate,lname,isactive,installinstructions,typename,version,hits,coldboxversion,sourceurl,slug,homeurl,typeslug,
-				// downloads,entryid,fname,changelog,updatedate,downloadurl,title,entryrating,summary,username,description,email
-								
-				if( !val( entryData.isActive ) ) {
-					consoleLogger.error( 'The ForgeBox entry [#entryData.title#] is inactive.' );
-					return;
-				}
-				
-				if( !len( entryData.downloadurl ) ) {
-					consoleLogger.error( 'No download URL provided in ForgeBox.  Manual install only.' );
-					return;
-				}
-		
-				var packageType = entryData.typeSlug;
-				
-				// Advice we found it
-				consoleLogger.info( "Verified entry in ForgeBox: '#arguments.ID#'" );
-		
-				var packageName = arguments.ID;
-				var version = entryData.version;
-				
-				// If the local artifact doesn't exist, download and create it
-				if( !artifactService.artifactExists( packageName, version ) ) {
-						
-					consoleLogger.info( "Starting download of: '#entryData.slug#'..." );
-					
-					// Store the package locally in the temp dir
-					var packageTempPath = forgebox.install( entryData.slug, tempDir );
-					
-					// Store it locally in the artfact cache
-					artifactService.createArtifact( packageName, version, packageTempPath );
-					
-					// Clean up the temp file
-					fileDelete( packageTempPath );
-									
-					consoleLogger.info( "Done." );
-					
-				} else {
-					consoleLogger.info( "Package found in local artifacts!");
-				}
-				
-				
-			} catch( forgebox var e ) {
-				// This can include "expected" errors such as "slug not found"
-				consoleLogger.error( '#e.message##CR##e.detail#' );
-				return;
+				var endpointData = endpointService.resolveEndpoint( arguments.ID, arguments.currentWorkingDirectory );
+			} catch( EndpointNotFound var e ) {
+				consoleLogger.error( e.message );
+				return;				
 			}
 			
-		
-			//////////////////////////////////////
-			// TODO: End of ForgeBox-specific code
-			//////////////////////////////////////
+			consoleLogger.info( '.');
+			consoleLogger.info( 'Installing package [#endpointData.ID#]' );
+			
+			try {
+				tmpPath = endpointData.endpoint.resolvePackage( endpointData.package, arguments.verbose );	
+				
+			// endpointException exception type is used when the endpoint has an issue that needs displayed, 
+			// but I don't want to "blow up" the console with a full error.	
+			} catch( endpointException var e ) {
+				consoleLogger.error( e.message & ' ' & e.detail );
+				return;				
+			}	
+			
+			// Support box.json in the root OR in a subfolder (NPM-style!)
+			tmpPath = findPackageRoot( tmpPath );
+			
+			// The code below expects these variables
+			if( isPackage( tmpPath ) ) {
+				var boxJSON = readPackageDescriptor( tmpPath );
+				var packageType = boxJSON.type;
+				var packageName = boxJSON.slug;
+				var version = boxJSON.version;
+			} else {
+				consoleLogger.error( "box.json is missing so this isn't really a package! I'll install it anyway, but I'm not happy about it" );
+				consoleLogger.warn( "I'm just guessing what the package name, version and type are.  Please ask the package owner to add a box.json." );
+				var packageType = 'project';
+				var packageName = reReplaceNoCase( '[^a-zA-Z0-9]', arguments.ID, '', 'all' );
+				var version = '1.0.0';
+			}
 					
-			// Assert: at this point, the package is downloaded and exists in the local artifact cache
-		
-			// Install the package
-			var thisArtifactPath = artifactService.getArtifactPath( packageName, version );
-
-			// Has file size?
-			if( getFileInfo( thisArtifactPath ).size <= 0 ) {
-				throw( 'Cannot install file as it has a file size of 0.', thisArtifactPath );
-			}
-			
-			// Normalize slashes
-			var tmpPath = fileSystemUtil.resolvePath( "#variables.tempDir#/#packageName#" );
-			// Unzip to temp directory
-			consoleLogger.info( "Uncompressing...");
-			// TODO, this should eventaully be part of the zip file adapter
-			zip action="unzip" file="#thisArtifactPath#" destination="#tmpPath#" overwrite="true";
-
-			
-			/******************************************************************************************************************/
-			// If the root of the current package doesn't have a box.json, check if there is a subdirectory that contains
-			// a box.json.  This would be the NPM-style standard where a zip contains a package in a sub folder.
-			/******************************************************************************************************************/
-			var JSONPath = '#tmpPath#/box.json';
-			if( !fileExists( JSONPath ) ) {
-				// Check for a packge in a sub folder
-				var list = directoryList( absolute_path=tmpPath, listInfo='query' );
-				// Look at each path inside
-				for( var row in list ) {
-					// Specifically directories...
-					if( row.type == 'dir' ) {
-						var thisDir = listLast( row.name, '/\' );
-						var subPath = '#tmpPath#/#thisDir#';
-						var subJSONPath = '#subPath#/box.json';
-						// If one of them has a box.json in it...
-						if( fileExists( subJSONPath ) ) {
-							// Repoint ourselves to the inner folder
-							tmpPath = subPath;
-							break;
-						}		
-					}
-				}
-			}
-			/******************************************************************************************************************/
-			
-			
 				
 			/******************************************************************************************************************/
 			// Old Modules Build Check: If the zip file has a directory named after the package, that's our actual package root.
@@ -230,10 +147,6 @@ component accessors="true" singleton {
 			var artifactDescriptor = readPackageDescriptor( tmpPath );
 			var ignorePatterns = ( isArray( artifactDescriptor.ignore ) ? artifactDescriptor.ignore : [] );
 			
-			// Use Forgebox type returned by API, if not exists, use box.json type if it exists
-			if( !len( packageType ) && len( artifactDescriptor.type ) ) {
-				packageType = artifactDescriptor.type;
-			}
 			
 			// Assert: At this point we know what we're installing and we've acquired it, but we don't know where it will install to yet.
 									
@@ -514,6 +427,35 @@ component accessors="true" singleton {
 			consoleLogger.info( "No dependencies found to install, but it's the thought that counts, right?" );
 		}
 
+	}
+	
+	
+	/******************************************************************************************************************/
+	// If the root of the current package doesn't have a box.json, check if there is a subdirectory that contains
+	// a box.json.  This would be the NPM-style standard where a zip contains a package in a sub folder.
+	/******************************************************************************************************************/
+	function findPackageRoot( packagePath ) {
+		var JSONPath = '#packagePath#/box.json';
+		if( !fileExists( JSONPath ) ) {
+			// Check for a packge in a sub folder
+			var list = directoryList( absolute_path=packagePath, listInfo='query' );
+			// Look at each path inside
+			for( var row in list ) {
+				// Specifically directories...
+				if( row.type == 'dir' ) {
+					var thisDir = listLast( row.name, '/\' );
+					var subPath = '#packagePath#/#thisDir#';
+					var subJSONPath = '#subPath#/box.json';
+					// If one of them has a box.json in it...
+					if( fileExists( subJSONPath ) ) {
+						// Repoint ourselves to the inner folder
+						packagePath = subPath;
+						break;
+					}		
+				}
+			}
+		}
+		return packagePath;
 	}
 		
 	/**

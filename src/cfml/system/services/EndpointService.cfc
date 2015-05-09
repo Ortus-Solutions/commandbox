@@ -15,7 +15,7 @@ component accessors="true" singleton {
 	property name="fileSystemUtil"	inject="FileSystem";
 	
 	// Properties
-	property name="endpointRegistry" type="struct" default="#{}#";
+	property name="endpointRegistry" type="struct";
 	property name="endpointRootPath" type="string" default="/commandbox/system/endpoints";
 
 
@@ -23,8 +23,12 @@ component accessors="true" singleton {
 	* Constructor
 	*/
 	function init(){
-		buildEndpointRegistry();
+		setEndpointRegistry( {} );
 		return this;
+	}
+	
+	function onDIComplete() {
+		buildEndpointRegistry();		
 	}
 	
 	/**
@@ -42,8 +46,8 @@ component accessors="true" singleton {
 			if( !listFindNoCase( 'IEndPoint,IEndPointInteractive', endpointName ) ) {
 				
 				var endpointPath = listChangeDelims( getEndpointRootPath(), '/\', '.' ) & '.' & endpointName;
-				var oEndPoint = wirebox.getInstnce( endpointPath );
-				var namePrefixs = listToArray( oEndPoint.getNamePrefixs() );
+				var oEndPoint = wirebox.getInstance( endpointPath );
+				var namePrefixs = listToArray( oEndPoint.getNamePrefixes() );
 				for( var prefix in namePrefixs ) {
 					endpointRegistry[ endpointName ] = oEndPoint;
 				}
@@ -56,31 +60,64 @@ component accessors="true" singleton {
 	* Inspects ID and returns name of endpoint.  If none is specified, tests for local file
 	* or folder.  Defaults to forgebox.
 	*/	
-	string function determinEndpoint( required string ID, required string currentWorkingDirectory ) {
+	struct function resolveEndpointData( required string ID, required string currentWorkingDirectory ) {
 		// Endpoint is specified as "endpoint:resource"
-		if( listLen( arguments.ID, ':' ) ) {
+		if( listLen( arguments.ID, ':' ) > 1 ) {
 			var endpointName = listFirst( arguments.ID, ':' );
 			if( structKeyExists( getEndpointRegistry(), endpointName ) ) {
-				return endpointName;
+				return {
+					endpointName : endpointName,
+					package : listRest( arguments.ID, ':' ),
+					ID : arguments.ID
+				};
 			} else {
-				throw( 'Endpoint [#endpointName#] not registered.');
+				throw( 'Endpoint [#endpointName#] not registered.', 'EndpointNotFound' );
 			}
 		// Endpoint not specified, let's look for it
 		} else {
 			var path = fileSystemUtil.resolvePath( arguments.ID, arguments.currentWorkingDirectory );
-			// Is it a file?
-			if( fileExists( path ) ) {
-				return 'file';
-			// Is it a folder
+			// Is it a real zip file?
+			if( listLast( path, '.' ) == 'zip' && fileExists( path ) ) {
+				var endpointName = 'file';
+			// Is it a real folder?
 			} else if( directoryExists( path ) ) {
-				return 'folder';
+				var endpointName = 'folder';
 			// I give up, let's check ForgeBox (default endpoint)
 			} else {
-				return 'forgebox';				
+				var endpointName = 'forgebox';				
 			}
+			
+			return {
+				endpointName : endpointName,
+				package : arguments.ID,
+				ID : endpointName & ':' & arguments.ID
+			};
 			
 		} // End detecting endpoint
 	}
 	
+	
+	
+	/**
+	* Returns the endpoint object.
+	*/	
+	IEndpoint function getEndpoint( required string endpointName ) {
+		var endpointRegistry = getEndpointRegistry();
+		if( structKeyExists( endpointRegistry, arguments.endpointName ) ) {
+			return endpointRegistry[ arguments.endpointName ];
+		}
+		
+		// Didn't find it
+		throw( 'Endpoint [#endpointName#] not registered.', 'EndpointNotFound' );
+	}
+	
+	/**
+	* Inspects ID and returns endpoint object, endpointName, and ID (with endpoint stripped).
+	*/	
+	struct function resolveEndpoint( required string ID, required string currentWorkingDirectory ) {
+		var endpointData = resolveEndpointData(  arguments.ID, arguments.currentWorkingDirectory  );
+		endpointData[ 'endpoint' ] = getEndpoint( endpointData.endpointName );
+		return endpointData;
+	}
 	
 }
