@@ -21,6 +21,9 @@ component accessors="true" singleton {
 	property name="endpointService"		inject="EndpointService";
 	property name="consoleLogger"		inject="logbox:logger:console";
 	
+	// Need to refactor update and outdated to use the endpoint
+	property name="forgeBox" 			inject="ForgeBox";
+	
 	/**
 	* Constructor
 	*/
