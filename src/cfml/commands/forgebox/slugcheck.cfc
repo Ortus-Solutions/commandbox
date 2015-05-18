@@ -25,6 +25,10 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 	*/
 	function run( required slug ) {
 		
+		if( !len( arguments.slug ) ) {
+			return error( "Slug cannot be an empty string" );
+		}
+		
 		var exists = forgebox.isSlugAvailable( arguments.slug );
 
 		if( exists ){
