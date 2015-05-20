@@ -32,5 +32,19 @@ component name="TestREPLParser" extends="mxunit.framework.TestCase" {
 		assertEquals( arrayToList( commands, chr( 10 ) ), REPLParser.getCommandAsString(), 'Getting command lines as a string is a simple concat' );
 	}
 
+	public void function testStripComments() {
+		var simpleCommand = 'writeOutput("Hello, World");';
+		assertEquals( simpleCommand, REPLParser.stripComments( simpleCommand ), 'Simple commands are exact.' );
+
+		var commandWithComment = 'writeOutput("Hello, World");// Comment';
+		assertEquals( simpleCommand, REPLParser.stripComments( commandWithComment ), 'Simple commands with comment is just simple command.' );
+
+		var commandWithURL = 'writeOutput("http://www.google.com");';
+		assertEquals( commandWithURL, REPLParser.stripComments( commandWithURL ), 'Forward slashes in strings should not be stripped.' );
+
+		var commandWithURLAndComment = 'writeOutput("http://www.google.com");// Comment';
+		assertEquals( commandWithURL, REPLParser.stripComments( commandWithURLAndComment ), 'Forward slashes in strings should not be stripped but comments should.' );
+	}
+
 }
 
