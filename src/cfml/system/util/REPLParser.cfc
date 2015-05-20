@@ -15,7 +15,7 @@ component accessors="true" singleton {
 
 	/**
 	 * Constructor
- 	**/	
+ 	**/
 	function init() {
 		return this;
 	}
@@ -56,7 +56,7 @@ component accessors="true" singleton {
 	function isCommandComplete() {
 		var cfml = getCommandAsString();
 		cfml = reReplaceNoCase( cfml, "[""'].*[""']", """""", "all" );
-		
+
 		var numberOfCurlyBrackets = reMatchNoCase( "[{}]", cfml ).len();
 		var numberOfParenthesis = reMatchNoCase( "[\(\)]", cfml ).len();
 		//var numberOfDoubleQuotations = reMatchNoCase( """", cfml ).len();
@@ -115,7 +115,7 @@ component accessors="true" singleton {
 	* Removes comments from command
 	**/
 	function stripComments( string command ) {
-		return reReplaceNoCase( arguments.command, "//.*$|/\*.*\*/", "", "all" );
+		return reReplaceNoCase( arguments.command, "//[^""']*$|/\*.*\*/", "", "all" );
 	}
 
 }
