@@ -98,7 +98,7 @@ component accessors="true" singleton {
 	* Removes comments from command
 	**/
 	function stripComments( string command ) {
-		return reReplaceNoCase( arguments.command, "//.*$|/\*.*\*/", "", "all" );
+		return reReplaceNoCase( arguments.command, "//[^""']*$|/\*.*\*/", "", "all" );
 	}
 
 }
