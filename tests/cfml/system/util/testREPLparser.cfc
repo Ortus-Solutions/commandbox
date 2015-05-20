@@ -20,5 +20,17 @@ component name="TestREPLParser" extends="mxunit.framework.TestCase" {
 		assertEquals( 2, arrayLen( REPLParser.getCommandLines() ), 'Added a second command' );
 	}
 
+	public void function testGetCommandAsString() {
+		var commands = [
+			'writeOutput("Hello, World");',
+			'writeOutput("Goodbye, World");'
+		];
+		REPLParser.addCommandLine( commands[ 1 ] );
+		REPLParser.addCommandLine( commands[ 2 ] );
+		assertEquals( 2, arrayLen( REPLParser.getCommandLines() ), 'Added two CommandLines' );
+
+		assertEquals( arrayToList( commands, chr( 10 ) ), REPLParser.getCommandAsString(), 'Getting command lines as a string is a simple concat' );
+	}
+
 }
 
