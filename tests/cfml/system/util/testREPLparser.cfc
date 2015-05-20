@@ -47,4 +47,3 @@ component name="TestREPLParser" extends="mxunit.framework.TestCase" {
 	}
 
 }
-
