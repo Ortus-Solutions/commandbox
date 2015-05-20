@@ -40,10 +40,14 @@ component name="TestREPLParser" extends="mxunit.framework.TestCase" {
 		assertEquals( simpleCommand, REPLParser.stripComments( commandWithComment ), 'Simple commands with comment is just simple command.' );
 
 		var commandWithURL = 'writeOutput("http://www.google.com");';
+		var commandWithURLSingle = 'writeOutput(''http://www.google.com'');';
 		assertEquals( commandWithURL, REPLParser.stripComments( commandWithURL ), 'Forward slashes in strings should not be stripped.' );
+		assertEquals( commandWithURLSingle, REPLParser.stripComments( commandWithURLSingle ), 'Forward slashes in strings should not be stripped.' );
 
 		var commandWithURLAndComment = 'writeOutput("http://www.google.com");// Comment';
+		var commandWithURLSingleAndComment = 'writeOutput(''http://www.google.com'');// Comment';
 		assertEquals( commandWithURL, REPLParser.stripComments( commandWithURLAndComment ), 'Forward slashes in strings should not be stripped but comments should.' );
+		assertEquals( commandWithURLSingle, REPLParser.stripComments( commandWithURLSingleAndComment ), 'Forward slashes in strings should not be stripped but comments should.' );
 	}
 
 }
