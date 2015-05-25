@@ -233,7 +233,7 @@ External Dependencies:
  		<replace file="${artifact.dir}/commandbox-be.rb" value="${commandbox.version}" summary="yes" encoding="UTF-8">
 		  	<replacetoken>@version@</replacetoken>
 		</replace>
-		<replace file="${artifact.dir}/commandbox-be.rb" value="${ortus.repoPRDURL}" summary="yes" encoding="UTF-8">
+		<replace file="${artifact.dir}/commandbox-be.rb" value="${ortus.repoURL}" summary="yes" encoding="UTF-8">
 		  	<replacetoken>@repoURL@</replacetoken>
 		</replace>
 		<replace file="${artifact.dir}/commandbox-be.rb" value="${commandbox.sha1}" summary="yes" encoding="UTF-8">
