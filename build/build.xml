@@ -208,6 +208,7 @@ External Dependencies:
 		<!-- copy over prd file -->
 		<copy file="brew-template.rb" 
 			  tofile="${artifact.dir}/commandbox.rb"
+			  overwrite="true"
 			  encoding="UTF-8" />
 
 		<replace file="${artifact.dir}/commandbox.rb" value="${commandbox.version}" summary="yes" encoding="UTF-8">
@@ -226,6 +227,7 @@ External Dependencies:
 		<!-- copy over be file -->
 		<copy file="brew-template.rb" 
 			  tofile="${artifact.dir}/commandbox-be.rb"
+			  overwrite="true"
 			  encoding="UTF-8" />
 
  		<replace file="${artifact.dir}/commandbox-be.rb" value="${commandbox.version}" summary="yes" encoding="UTF-8">
