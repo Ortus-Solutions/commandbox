@@ -61,7 +61,7 @@ component extends="commandbox.system.BaseCommand" aliases="start" excludeFromHel
 		String  SSLCert 		= "",
 		String  SSLKey 			= "",
 		String  SSLKeyPass 		= "",
-		Boolean rewritesEnable,
+		Boolean rewritesEnable	= false,
 		String  rewritesConfig  = ""
 	){
 		// Resolve path as used locally
