@@ -1,6 +1,6 @@
 require "formula"
 
-class Commandbox < Formula
+class Commandbox@be@ < Formula
   homepage "http://www.ortussolutions.com/products/commandbox"
   url "@repoURL@/ortussolutions/commandbox/@version@/commandbox-bin-@version@.zip"
   sha1 "@sha1@"

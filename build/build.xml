@@ -211,6 +211,9 @@ External Dependencies:
 			  overwrite="true"
 			  encoding="UTF-8" />
 
+		<replace file="${artifact.dir}/commandbox.rb" value="" summary="yes" encoding="UTF-8">
+		  	<replacetoken>@be@</replacetoken>
+		</replace>
 		<replace file="${artifact.dir}/commandbox.rb" value="${commandbox.version}" summary="yes" encoding="UTF-8">
 		  	<replacetoken>@version@</replacetoken>
 		</replace>
@@ -230,6 +233,9 @@ External Dependencies:
 			  overwrite="true"
 			  encoding="UTF-8" />
 
+		<replace file="${artifact.dir}/commandbox-be.rb" value="Be" summary="yes" encoding="UTF-8">
+		  	<replacetoken>@be@</replacetoken>
+		</replace>
  		<replace file="${artifact.dir}/commandbox-be.rb" value="${commandbox.version}" summary="yes" encoding="UTF-8">
 		  	<replacetoken>@version@</replacetoken>
 		</replace>
