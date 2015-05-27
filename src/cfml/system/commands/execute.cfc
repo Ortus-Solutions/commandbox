@@ -29,7 +29,9 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 	 * @file.hint The file to execute
 	 **/
 	function run( required file ){
-		
+
+		clearTemplateCache();
+
 		// Make file canonical and absolute
 		arguments.file = fileSystemUtil.resolvePath( arguments.file );
 
@@ -78,6 +80,10 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 			}
 		}
 		return parsedArgs;
+	}
+
+	private void function clearTemplateCache() {
+		pagePoolClear();
 	}
 	
 }
