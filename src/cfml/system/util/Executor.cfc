@@ -11,7 +11,7 @@
 * the "variables" scope is retained between calls to the "run()" method.
 */
 component {
-	
+
 	/**
 	* Constructor
 	*/
@@ -25,24 +25,15 @@ component {
 	* @vars.hint Struct of vars to set so the template can access them
 	*/
 	function run( required template, struct vars = {} ){
-		
+
 		// Mix the incoming vars into the "variables" scope.
 		structAppend( variables, vars );
-				
+
 		savecontent variable="local.out"{
 			include "#arguments.template#";
 		}
 		return local.out;
 	}
-	
-	/**
-	* eval
-	* @statement.hint A CFML statement to evaluate
-	*/
-	function eval( required string statement ){
-		return evaluate( arguments.statement );
-	}
-
 
 	/**
 	* eval
@@ -51,6 +42,5 @@ component {
 	function eval( required string statement ){
 		return evaluate( arguments.statement );
 	}
-
 
 }
