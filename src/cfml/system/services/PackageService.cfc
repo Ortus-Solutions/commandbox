@@ -323,37 +323,27 @@ component accessors="true" singleton {
 			tmpPath = fileSystemUtil.resolvePath( tmpPath );
 			
 			// Copy Assets now to destination
-			if( arguments.production ){
-				// TODO, this should eventually be part of the folder adapter
-				directoryCopy( tmpPath, installDirectory, true, function( path ){
-					// This will normalize the slashes to match
-					arguments.path = fileSystemUtil.resolvePath( arguments.path );
-					// Directories need to end in a trailing slash
-					if( directoryExists( arguments.path ) ) {
-						arguments.path &= server.separator.file;
-					}
-					// cleanup path so we just get from the archive down
-					var thisPath = replacenocase( arguments.path, tmpPath, "" );
-					// Ignore paths that match one of our ignore patterns
-					var ignored = pathPatternMatcher.matchPatterns( ignorePatterns, thisPath );
-					// What do we do with this file/directory
-					if( ignored ) {
-						results.ignored.append( thisPath );
-						return false;
-					} else {
-						results.copied.append( thisPath );
-						return true;
-					}
-				});
-			} else {
-				// Copy all assets in non-production mode
-				directoryCopy( tmpPath, installDirectory, true, function( path ){
-					// This will normalize the slashes to match
-					results.copied.append( arguments.path );
+			directoryCopy( tmpPath, installDirectory, true, function( path ){
+				// This will normalize the slashes to match
+				arguments.path = fileSystemUtil.resolvePath( arguments.path );
+				// Directories need to end in a trailing slash
+				if( directoryExists( arguments.path ) ) {
+					arguments.path &= server.separator.file;
+				}
+				// cleanup path so we just get from the archive down
+				var thisPath = replacenocase( arguments.path, tmpPath, "" );
+				// Ignore paths that match one of our ignore patterns
+				var ignored = pathPatternMatcher.matchPatterns( ignorePatterns, thisPath );
+				// What do we do with this file/directory
+				if( ignored ) {
+					results.ignored.append( thisPath );
+					return false;
+				} else {
+					results.copied.append( thisPath );
 					return true;
-				});
-			}
-	
+				}
+			});
+				
 			// Catch this to gracefully handle where the OS or another program 
 			// has the folder locked.
 			try {
