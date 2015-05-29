@@ -8,8 +8,9 @@
 */
 component{
 
-	this.name = "CommandBox CLI";
-	this.sessionmanagement = "false";
+	this.name 				= "CommandBox CLI";
+	this.sessionmanagement 	= "false";
+	this.applicationTimeout = createTimeSpan( 7, 0, 0, 0 );
 
 	// Move everything over to this mapping which is the "root" of our app
 	CFMLRoot = getDirectoryFromPath( getMetadata( this ).path );
@@ -24,6 +25,8 @@ component{
 
 	function onApplicationStop(){
 		application.wirebox.shutdown();
+		// kick in an abort to exit shell, application timeout controls wirebox.
+		abort;
 	}
 	
 	function onError( any exception, string eventName ) {
