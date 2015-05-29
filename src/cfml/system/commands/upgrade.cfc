@@ -60,10 +60,17 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 		var repoData = deserializeJSON( boxRepoJSON );
 		var loaderData = deserializeJSON( loaderRepoJSON );
 
-		// Assemble the avaialble version numbers
-		var repoVersionShort= repoData.versioning.latestVersion;
-		var repoVersion 	= '#repoVersionShort#+#repoData.versioning.latestBuildID#';
-		var loaderVersion 	= '#loaderData.versioning.latestVersion#+#loaderData.versioning.latestBuildID#';
+		// Assemble the available version numbers based on whether we're checking the bleeding edge or stable repo
+		if( arguments.latest ) {
+			var repoVersionShort= repoData.versioning.latestVersion;
+			var repoVersion 	= '#repoVersionShort#+#repoData.versioning.latestBuildID#';
+			var loaderVersion 	= '#loaderData.versioning.latestVersion#+#loaderData.versioning.latestBuildID#';
+		} else {
+			// We don't store build numbers for stable versions in box-repo.json
+			var repoVersionShort= repoData.versioning.stableVersion;
+			var repoVersion 	= repoVersionShort;
+			var loaderVersion 	= loaderData.versioning.stableVersion;			
+		}
 				
 		// Is there a new version of CommandBox.  New builds consistute new BE verions.
 		var isNewVersion 	= semanticVersion.isNew( current=shell.getVersion(), target=repoVersion, checkBuildID=arguments.latest );
