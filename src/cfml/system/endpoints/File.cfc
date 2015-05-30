@@ -14,7 +14,7 @@ component accessors="true" implements="IEndpoint" singleton {
 	property name="tempDir"				inject="tempDir@constants";
 	property name="packageService"		inject="packageService";
 	property name="fileSystemUtil"		inject="FileSystem";
-	property name="folderEndpoint"		inject="endpoints.folder";
+	property name="folderEndpoint"		inject="commandbox.system.endpoints.Folder";
 	
 	// Properties
 	property name="namePrefixes" type="string";
