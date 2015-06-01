@@ -257,7 +257,7 @@ External Dependencies:
  		<mkdir dir="${api.dir}" />
  		<antcall target="update.permissions" />
  		<!-- Execute DocBox -->
-		<get dest="${build.dir}/colddoc.html" src="${url.api}${commandbox.version}&amp;path=${api.dir}" verbose="true"/>
+		<get dest="${build.dir}/colddoc.html" src="${url.api}version=${commandbox.version}&amp;path=${api.dir}" verbose="true"/>
 		<delete file="${build.dir}/colddoc.html" />
 		<!-- Zip API Docs -->
 		<zip destfile="${dist.dir}/${distro.name}-apidocs-${commandbox.version}.zip" basedir="${api.dir}"></zip>
