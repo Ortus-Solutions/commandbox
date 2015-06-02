@@ -18,7 +18,7 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 	property name="artifactService" 	inject="ArtifactService";
 	property name="packageService" 		inject="packageService";
 	property name="fileSystemUtil"		inject="FileSystem";
-	property name="fileEndpoint"		inject="endpoints.file";
+	property name="fileEndpoint"		inject="commandbox.system.endpoints.File";
 	
 	// Properties
 	property name="namePrefixes" type="string";
