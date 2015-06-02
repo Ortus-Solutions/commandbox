@@ -56,7 +56,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 	/**
 	 * @name The name of the app you want to create
 	 * @skeleton The name of the app skeleton to generate
-	 * @skeleton.optionsUDF skeletonTypes
+	 * @skeleton.optionsUDF skeletonComplete
 	 * @directory The directory to create the app in and creates the directory if it does not exist.  Defaults to your current working directory.
 	 * @init "init" the directory as a package if it isn't already
 	 * @installColdBox Install the latest stable version of ColdBox from ForgeBox
@@ -164,9 +164,9 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 	}
 
 	/**
-	* Returns an array of coldbox skeleton types available
+	* Returns an array of coldbox skeletons available
 	*/
-	function skeletonTypes( ) {
+	function skeletonComplete( ) {
 		var skeletons = directoryList( path=expandPath("../skeletons"), listInfo="name", filter="*.zip" );
 		return skeletons.map( function( required string skeleton ) {
 			return skeleton.reReplaceNoCase( "\.zip$", "", "once" );

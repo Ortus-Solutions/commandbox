@@ -6,7 +6,7 @@ component extends="app" aliases="" excludeFromHelp=false {
 	/**
 	 * @name The name of the app you want to create
 	 * @skeleton The application skeleton you want to use
-	 * @skeleton.optionsUDF skeletonTypes
+	 * @skeleton.optionsUDF skeletonComplete
 	 * @init Would you like to init this as a CommandBox Package
 	 * @installColdBox Install the latest stable version of ColdBox from ForgeBox
 	 * @installColdBoxBE Install the bleeding edge version of ColdBox from ForgeBox
@@ -20,7 +20,7 @@ component extends="app" aliases="" excludeFromHelp=false {
 		required boolean installColdBoxBE,
 		required boolean installTestBox
 	) {
-		var skeletons = skeletonTypes();
+		var skeletons = skeletonComplete();
 		// turn off wizard
 		arguments.wizard = false;
 		arguments.initWizard = true;
