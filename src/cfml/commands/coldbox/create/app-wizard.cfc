@@ -5,7 +5,8 @@ component extends="app" aliases="" excludeFromHelp=false {
 	
 	/**
 	 * @name The name of the app you want to create
-	 * @skeleton Application Skeleton to use (Advanced,AdvancedScript,rest,Simple,SuperSimple,AdvancedBE,AdvancedScriptBE,SimpleBE,SuperSimpleBE)
+	 * @skeleton The application skeleton you want to use
+	 * @skeleton.optionsUDF skeletonTypes
 	 * @init Would you like to init this as a CommandBox Package
 	 * @installColdBox Install the latest stable version of ColdBox from ForgeBox
 	 * @installColdBoxBE Install the bleeding edge version of ColdBox from ForgeBox
@@ -19,16 +20,16 @@ component extends="app" aliases="" excludeFromHelp=false {
 		required boolean installColdBoxBE,
 		required boolean installTestBox
 	) {
-		var skeletons = "(Advanced|AdvancedScript|rest|Simple|SuperSimple|AdvancedBE|AdvancedScriptBE|SimpleBE|SuperSimpleBE)";
+		var skeletons = skeletonTypes();
 		// turn off wizard
 		arguments.wizard = false;
 		arguments.initWizard = true;
 		arguments.directory=getCWD();
 
 		// Validate skeletons
-		while( !reFindNoCase( skeletons, arguments.skeleton ) ){
+		while( !arrayFindNoCase( skeletons, arguments.skeleton ) ){
 			print.boldRedLine( "The skeleton you chose: '#arguments.skeleton#' is not valid." )
-				.boldRedLine( " Valid Choices are #replace( skeletons, '|', ',', 'all' )#" )
+				.boldRedLine( " Valid Choices are (#arrayToList( skeletons, ", " )#)" )
 				.toConsole();
 			arguments.skeleton = ask( "Choose Skeleton: " );
 		}
