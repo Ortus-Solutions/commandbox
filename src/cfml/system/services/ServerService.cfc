@@ -156,7 +156,8 @@ component accessors="true" singleton{
 		var processName = name is "" ? "CommandBox" : name;
 
 		// The java arguments to execute:  Shared server, custom web configs
-		var args = " -javaagent:""#libdir#/lucee-inst.jar"" -jar ""#variables.jarPath#"""
+		var args = " -Xmx#serverInfo.heapSize#m -Xms#serverInfo.heapSize#m"
+				& " -javaagent:""#libdir#/lucee-inst.jar"" -jar ""#variables.jarPath#"""
 				& " -war ""#webroot#"" --background=true --port #portNumber# --host #arguments.serverInfo.host# --debug #debug#"
 				& " --stop-port #stopPort# --processname ""#processName#"" --log-dir ""#logdir#"""
 				& " --open-browser #openbrowser# --open-url http://#arguments.serverInfo.host#:#portNumber#"
@@ -483,7 +484,8 @@ component accessors="true" singleton{
 			SSLKey			: "",
 			SSLKeyPass		: "",
 			rewritesEnable  : false,
-			rewritesConfig	: ""
+			rewritesConfig	: "",
+			heapSize		: 256
 		};
 	}
 

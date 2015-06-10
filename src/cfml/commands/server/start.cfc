@@ -10,6 +10,11 @@
  * {code:bash}
  * server start --rewritesEnable
  * {code}
+ * .
+ * Start with specifc heap size
+ * {code:bash}
+ * server start heapSize=768
+ * {code}
  **/
 component extends="commandbox.system.BaseCommand" aliases="start" excludeFromHelp=false {
 
@@ -40,6 +45,7 @@ component extends="commandbox.system.BaseCommand" aliases="start" excludeFromHel
 	 * @SSLKeyPass     	SSL key passphrase (required if SSLCert specified)
 	 * @rewritesEnable 	enable URL rewriting (default false)
 	 * @rewritesConfig 	optional URL rewriting config file path
+	 * @heapSize		The max heap size in megabytes you would like this server to start with, it defaults to 256mb
 	 **/
 	function run(
 		String  name            = "",
@@ -62,7 +68,8 @@ component extends="commandbox.system.BaseCommand" aliases="start" excludeFromHel
 		String  SSLKey 			= "",
 		String  SSLKeyPass 		= "",
 		Boolean rewritesEnable	= false,
-		String  rewritesConfig  = ""
+		String  rewritesConfig  = "",
+		Numeric heapSize		= 0
 	){
 		// Resolve path as used locally
 		var webroot = fileSystemUtil.resolvePath( arguments.directory );
@@ -106,19 +113,20 @@ component extends="commandbox.system.BaseCommand" aliases="start" excludeFromHel
 		}
 
 		// Setup serverinfo according to params
-		if ( Len( Trim( arguments.webConfigDir    ) ) ) { serverInfo.webConfigDir    = arguments.webConfigDir;    }
-		if ( Len( Trim( arguments.serverConfigDir ) ) ) { serverInfo.serverConfigDir = arguments.serverConfigDir; }
-		if ( Len( Trim( arguments.libDirs         ) ) ) { serverInfo.libDirs         = arguments.libDirs;         }
-		if ( Len( Trim( arguments.trayIcon        ) ) ) { serverInfo.trayIcon        = arguments.trayIcon;        }
-		if ( Len( Trim( arguments.webXML          ) ) ) { serverInfo.webXML          = arguments.webXML;          }
-		if ( !isNull( arguments.SSLEnable 			) ) { serverInfo.SSLEnable 		 = arguments.SSLEnable;  	  }
-		if ( Len( Trim( arguments.HTTPEnable      ) ) ) { serverInfo.HTTPEnable      = arguments.HTTPEnable;      }
-		if ( Len( Trim( arguments.SSLPort         ) ) ) { serverInfo.SSLPort         = arguments.SSLPort;         }
-		if ( Len( Trim( arguments.SSLCert         ) ) ) { serverInfo.SSLCert         = arguments.SSLCert;         }
-		if ( Len( Trim( arguments.SSLKey          ) ) ) { serverInfo.SSLKey          = arguments.SSLKey;          }
-		if ( Len( Trim( arguments.SSLKeyPass      ) ) ) { serverInfo.SSLKeyPass      = arguments.SSLKeyPass;      }
-		if ( !isNull( arguments.rewritesEnable 		) ) { serverInfo.rewritesEnable  = arguments.rewritesEnable;  }
-		if ( Len( Trim( arguments.rewritesConfig  ) ) ) { serverInfo.rewritesConfig  = arguments.rewritesConfig;  }
+		if( Len( Trim( arguments.webConfigDir    ) ) ) { serverInfo.webConfigDir    = arguments.webConfigDir;    }
+		if( Len( Trim( arguments.serverConfigDir ) ) ) { serverInfo.serverConfigDir = arguments.serverConfigDir; }
+		if( Len( Trim( arguments.libDirs         ) ) ) { serverInfo.libDirs         = arguments.libDirs;         }
+		if( Len( Trim( arguments.trayIcon        ) ) ) { serverInfo.trayIcon        = arguments.trayIcon;        }
+		if( Len( Trim( arguments.webXML          ) ) ) { serverInfo.webXML          = arguments.webXML;          }
+		if( !isNull( arguments.SSLEnable 			) ) { serverInfo.SSLEnable 		 = arguments.SSLEnable;  	  }
+		if( Len( Trim( arguments.HTTPEnable      ) ) ) { serverInfo.HTTPEnable      = arguments.HTTPEnable;      }
+		if( Len( Trim( arguments.SSLPort         ) ) ) { serverInfo.SSLPort         = arguments.SSLPort;         }
+		if( Len( Trim( arguments.SSLCert         ) ) ) { serverInfo.SSLCert         = arguments.SSLCert;         }
+		if( Len( Trim( arguments.SSLKey          ) ) ) { serverInfo.SSLKey          = arguments.SSLKey;          }
+		if( Len( Trim( arguments.SSLKeyPass      ) ) ) { serverInfo.SSLKeyPass      = arguments.SSLKeyPass;      }
+		if( !isNull( arguments.rewritesEnable 		) ) { serverInfo.rewritesEnable  = arguments.rewritesEnable;  }
+		if( Len( Trim( arguments.rewritesConfig  ) ) ) { serverInfo.rewritesConfig  = arguments.rewritesConfig;  }
+		if( arguments.heapSize != 0 ){ serverInfo.heapSize = arguments.heapSize; }
 
 		// startup the service using server info struct, the start service takes care of persisting updated params
 		return serverService.start(
