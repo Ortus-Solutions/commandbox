@@ -41,13 +41,11 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 	}
 
 	/**
-	* REPL Console
+	* @input.hint Optional CFML to execute. If provided, the command exits immediatley.
 	* @script.hint Run REPL in script or tag mode
 	**/
-	function run( boolean script=true ){
-		print.cyanLine( "Enter any valid CFML code in the following prompt in order to evaluate it and print out any results (if any)" );
-		print.line( "Type 'quit' or 'q' to exit!" ).toConsole();
-
+	function run( string input,  boolean script=true ){
+		
 		var quit 	 		= false;
 		var results  		= "";
 		var executor 		= wirebox.getInstance( "executor" );
@@ -55,36 +53,52 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 
 		// Setup REPL history file
 		shell.getReader().setHistory( newHistory );
+
+		if( !structKeyExists( arguments, 'input' ) ) {
+			print.cyanLine( "Enter any valid CFML code in the following prompt in order to evaluate it and print out any results (if any)" );
+			print.line( "Type 'quit' or 'q' to exit!" ).toConsole();
+		}
 			
 		// Loop until they choose to quit
 		while( !quit ){
 
-			// start new command
-			REPLParser.startCommand();
-
-			do {
-				// ask repl
-				if ( arrayLen( REPLParser.getCommandLines() ) == 0 ) {
-					var command = ask( ( arguments.script ? "CFSCRIPT" : "CFML" ) &  "-REPL: " );
-				} else {
-					var command = ask( "..." );
-
-					// allow ability to break out of adding additional lines
-					if ( trim(command) == "exit" ) {
-						break;
+			// code provided via standard input to process.  Exit after finishing.
+			if( structKeyExists( arguments, 'input' ) ) {
+				REPLParser.startCommand();
+				REPLParser.addCommandLines( arguments.input );
+				quit = true;
+				
+			// Else, collect the code via a prompt
+			} else {
+	
+				// start new command
+				REPLParser.startCommand();
+	
+				do {
+					// ask repl
+					if ( arrayLen( REPLParser.getCommandLines() ) == 0 ) {
+						var command = ask( ( arguments.script ? "CFSCRIPT" : "CFML" ) &  "-REPL: " );
+					} else {
+						var command = ask( "..." );
+	
+						// allow ability to break out of adding additional lines
+						if ( trim(command) == "exit" ) {
+							break;
+						}
 					}
-				}
-
-				// add command to our parser
-				REPLParser.addCommandLine( command );
-
-			} while ( !REPLParser.isCommandComplete() );
+	
+					// add command to our parser
+					REPLParser.addCommandLine( command );
+	
+				} while ( !REPLParser.isCommandComplete() );
+	
+			}
 
 			// REPL command is complete. get entire command as string
-			cfml = REPLParser.getCommandAsString();
-
+			var cfml = REPLParser.getCommandAsString();
+				
 			// quitting
-			if( cfml == "quit" or cfml == "q" ){
+			if( listFindNoCase( 'quit,q,exit', cfml ) ){
 				quit = true;
 			} else {
 				// Temp file to evaluate
@@ -133,10 +147,8 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 		}
 		// flush history out
 		newHistory.flush();
-		// set back original history
+		// set back original history 
 		shell.getReader().setHistory( commandHistoryFile );
-		// exit
-		print.boldCyanLine( "Bye!" );
 	}
 
 

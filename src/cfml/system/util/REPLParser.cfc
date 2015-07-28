@@ -50,6 +50,16 @@ component accessors="true" singleton {
 		instance.CFMLCommandLines.append( arguments.command );
 	}
 
+
+	/**
+	* Adds one or more lines at once
+	**/
+	function addCommandLines( string command ) {
+		for( var line in listToArray( command, chr(10)&chr(13) ) ) {
+			addCommandLine( line );
+		}
+	}
+
 	/**
 	* Returns true if the command is complete and is ready to be executed.
 	**/
