@@ -397,8 +397,17 @@ component accessors="true" singleton {
  	 * @command.hint command name
  	 * @returnOutput.hint True will return the output of the command as a string, false will send the output to the console.  If command outputs nothing, an empty string will come back.
  	 **/
-	function callCommand( String command="", returnOutput=false )  {
-		var result = variables.commandService.runCommandLine( arguments.command );
+	function callCommand( required any command, returnOutput=false, string piped )  {
+		
+		if( isArray( command ) ) {
+			if( structKeyExists( arguments, 'piped' ) ) {
+				var result = variables.commandService.runCommandTokens( arguments.command, piped );
+			} else {
+				var result = variables.commandService.runCommandTokens( arguments.command );
+			}
+		} else {
+			var result = variables.commandService.runCommandLine( arguments.command );
+		}
 		
 		// Return the output to the caller to deal with
 		if( arguments.returnOutput ) {

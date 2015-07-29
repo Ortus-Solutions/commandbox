@@ -27,7 +27,8 @@ Type "help" for help, or "help [command]" to be more specific.
 <cfscript>
 	system 	= createObject( "java", "java.lang.System" );
 	args 	= system.getProperty( "cfml.cli.arguments" );
-
+	argsArray = deserializeJSON( system.getProperty( "cfml.cli.argument.array" ) );
+		
 	// Verify if we can run CommandBox Java v. 1.7+
 	if( findNoCase( "1.6", server.java.version ) ){
 		systemOutput( "The Java Version you have (#server.java.version#) is not supported by CommandBox. Please install a Java JRE/JDK 1.7+" );
@@ -37,32 +38,30 @@ Type "help" for help, or "help [command]" to be more specific.
 
 	// Check if we are called with an inline command
 	if( !isNull( args ) && trim( args ) != "" ){
+		
+		// Create the shell
+		shell = wireBox.getInstance( name='Shell', initArguments={ asyncLoad=false } );
+		
 		inputStreamReader = createObject( 'java', 'java.io.InputStreamReader' ).init( system.in );
 		bufferedReader = createObject( 'java', 'java.io.BufferedReader' ).init( inputStreamReader );
 	 
  		piped = [];
+ 		hasPiped = false;
 	 	// If data is piped to CommandBox, it will be in this buffered reader
 	 	while ( bufferedReader.ready() ) {
 	 		piped.append( bufferedReader.readLine() );
+ 			hasPiped = true;
 	 	}
-	 	// Concat lines back together
-		piped = arrayToList( piped, chr( 10 ) );
-		parser = wirebox.getInstance( 'Parser' );
-		// If there is piped input...
-		if( len( trim( piped ) ) ) {
-			// Escape it and pass it in as argument.
-			// TODO: This assumes there are no other arguments.  Pass standar input
-			// to commandservice and let it insert it into the first argument.
-			 cmd = args & ' "' & parser.escapeArg( piped ) & '"';
+	 	
+	 	// If data was piped via standard input
+	 	if( hasPiped ) {
+		 	// Concat lines back together
+			piped = arrayToList( piped, chr( 10 ) );
+			shell.callCommand( command=argsArray, piped=piped );
 		} else {
-			// Otherwise, just execute the command
-			cmd = args;
+			shell.callCommand( command=argsArray );
 		}
-				
-		// Create the shell
-		shell = wireBox.getInstance( name='Shell', initArguments={ asyncLoad=false } );
-		// Call passed command
-		shell.callCommand( cmd );
+		
 		// flush console
 		shell.getReader().flush();
 	} else {

@@ -104,9 +104,36 @@ component accessors="true" singleton {
 	 * @line.hint line to run
  	 **/
 	function runCommandline( required string line ){
-
+		
 		// Resolve the command they are wanting to run
 		var commandChain = resolveCommand( line );
+		
+		return runCommand( commandChain, line );		
+	}
+
+	/**
+	 * run a command tokens
+	 * @tokens.hint tokens to run
+ 	 **/
+	function runCommandTokens( required array tokens, string piped ){
+		
+		// Resolve the command they are wanting to run
+		var commandChain = resolveCommandTokens( tokens );
+		
+		// If there was piped input
+		if( structKeyExists( arguments, 'piped' ) && commandChain.len() && commandChain[1].found ) {
+			// Overwrite the first parameter with it 
+			commandChain[1].parameters[ 1 ] = parser.escapeArg( piped );
+		}
+		
+		return runCommand( commandChain, tokens.toList( ' ' ) );		
+	}
+
+	/**
+	 * run a command
+	 * @commandChain.hint the chain of commands to run
+ 	 **/
+	function runCommand( required array commandChain, required string line ){
 		
 		// If nothing is returned, something bad happened (like an error instatiating the CFC)
 		if( !commandChain.len() ){
@@ -234,13 +261,22 @@ component accessors="true" singleton {
 	}
 
 	/**
-	 * Figure out what command to run based on the tokenized user input
+	 * Figure out what command to run based on the the user input string
 	 * @line.hint A string containing the command and parameters that the user entered
  	 **/
 	function resolveCommand( required string line ){
-
 		// Turn the users input into an array of tokens
 		var tokens = parser.tokenizeInput( line );
+		
+		return resolveCommandTokens( tokens );
+	}
+
+	/**
+	 * Figure out what command to run based on the tokenized user input
+	 * @tokens.hint An array containing the command and parameters that the user entered
+ 	 **/
+	function resolveCommandTokens( required array tokens ){
+
 		// This will hold the command chain. Usually just a single command,
 		// but a pipe ("|") will chain together commands and pass the output of one along as the input to the next
 		var commandsToResolve = [[]];

@@ -17,7 +17,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 	**/
 	function run( required name, boolean open=false, directory="tests/specs" ){
 		// proxy to testbox
-		shell.callCommand( "testbox create unit name=#arguments.name# directory=#arguments.directory# open=#arguments.open#" );
+		runCommand( "testbox create unit name=#arguments.name# directory=#arguments.directory# open=#arguments.open#" );
 	}
 
 }
