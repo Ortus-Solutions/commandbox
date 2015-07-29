@@ -42,6 +42,9 @@ Type "help" for help, or "help [command]" to be more specific.
 		// Create the shell
 		shell = wireBox.getInstance( name='Shell', initArguments={ asyncLoad=false } );
 		
+		// System.in is usually the keyboard input, but if the output of another command or a file
+		// was piped into CommandBox, System.in will represent that input.  Wrap System.in 
+		// in a buffered reader so we can check it.
 		inputStreamReader = createObject( 'java', 'java.io.InputStreamReader' ).init( system.in );
 		bufferedReader = createObject( 'java', 'java.io.BufferedReader' ).init( inputStreamReader );
 	 
@@ -49,6 +52,7 @@ Type "help" for help, or "help [command]" to be more specific.
  		hasPiped = false;
 	 	// If data is piped to CommandBox, it will be in this buffered reader
 	 	while ( bufferedReader.ready() ) {
+	 		// Read  all the lines and append them together.
 	 		piped.append( bufferedReader.readLine() );
  			hasPiped = true;
 	 	}
