@@ -162,7 +162,7 @@ or just add DEBUG to the root logger
 		
 		<!--- Download File --->
 		<cfset var result = progressableDownloader.download(
-			getInstallURL() & "/#arguments.slug#",
+			getInstallURL() & "#arguments.slug#",
 			fullPath,
 			function( status ) {
 				progressBar.update( argumentCollection = status );
