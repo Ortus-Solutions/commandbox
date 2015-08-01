@@ -16,5 +16,5 @@ component accessors="true" implements="IEndpoint" extends="commandbox.system.end
 		setNamePrefixes( 'git+http' );
 		return this;
 	}
-		
+	
 }

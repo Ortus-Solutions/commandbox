@@ -50,7 +50,7 @@ component accessors="true" implements="IEndpoint" singleton {
 		try { 
 			// Clone the repo locally into a temp folder
 			var local.result = Git.cloneRepository()
-			        .setURI( getNamePrefixes() & ':' & arguments.package )
+			        .setURI( getProtocol() & ':' & arguments.package )
 			        .setDirectory( localPath )
 			        .call();
 		} finally {
@@ -81,6 +81,19 @@ component accessors="true" implements="IEndpoint" singleton {
 			return listFirst( repoName, '.' );
 		}
 		return reReplaceNoCase( arguments.package, '[^a-zA-Z0-9]', '', 'all' );		
+	}
+
+	private function getProtocol() {
+		var prefix = getNamePrefixes();
+		if( listFindNoCase( 'github,git+https', prefix ) ) {
+			return "https";
+		} else if( prefix == 'git+http' ) {
+			return "http";
+		} else if( prefix == 'git+ssh' ) {
+			return "ssh";
+		}
+		return prefix;
+		
 	}
 
 }
