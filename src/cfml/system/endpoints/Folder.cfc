@@ -28,4 +28,11 @@ component accessors="true" implements="IEndpoint" singleton {
 
 	}
 
+	/**
+	* Determines the name of a package based on its ID if there is no box.json
+	*/
+	public function getDefaultName( required string package ) {
+		return listLast( arguments.package, '/\' );
+	}
+
 }

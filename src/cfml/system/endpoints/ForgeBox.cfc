@@ -144,4 +144,10 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 		throw( 'Not implemented' );
 	}
 
+	public function getDefaultName( required string package ) {
+		// if "foobar@2.0" just return "foobar"
+		return listFirst( arguments.package, '@' );
+	}
+
+
 }

@@ -116,7 +116,7 @@ component accessors="true" singleton {
 				consoleLogger.error( "box.json is missing so this isn't really a package! I'll install it anyway, but I'm not happy about it" );
 				consoleLogger.warn( "I'm just guessing what the package name, version and type are.  Please ask the package owner to add a box.json." );
 				var packageType = 'project';
-				var packageName = reReplaceNoCase( arguments.ID, '[^a-zA-Z0-9]', '', 'all' );
+				var packageName = endpointData.endpoint.getDefaultName( endpointData.package );
 				var version = '1.0.0';
 			}
 					

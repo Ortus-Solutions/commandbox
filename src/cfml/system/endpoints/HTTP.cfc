@@ -49,4 +49,30 @@ component accessors="true" implements="IEndpoint" singleton {
 		
 	}
 
+	public function getDefaultName( required string package ) {
+		
+		// strip query string
+		var baseURL = listFirst( arguments.package, '?' );
+		
+		// Github zip downloads tend to be called useless things like "master"
+		// https://github.com/Ortus-Solutions/commandbox-docs/archive/master.zip
+		if( baseURL contains 'github.com' ) { 
+			// Ortus-Solutions/commandbox-docs/archive/master.zip
+			var path = mid( baseURL, findNoCase( 'github.com', baseURL ) + 10, len( baseURL ) );
+			if( listLen( path, '/' ) >= 2 ) {
+				// commandbox-docs
+				return listGetAt( path, 2, '/' );				
+			}
+		}		
+		
+		// Find last segment of URL (may or may not be a file)
+		var fileName = listLast( baseURL, '/' );
+		
+		// Check for file extension in URL
+		if( listLast( fileName, '.' ) == 'zip' ) {
+			return listFirst( fileName, '.' );
+		}
+		return reReplaceNoCase( arguments.package, '[^a-zA-Z0-9]', '', 'all' );
+	}
+
 }

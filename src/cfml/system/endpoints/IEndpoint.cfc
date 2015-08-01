@@ -10,8 +10,15 @@
 interface {
 	
 	/**
+	* Accepts the name of a package, retrieves it, and returns a local folder path where the package is
+	* 
 	* @throws endpointException
 	*/
 	public string function resolvePackage( required string package, boolean verbose=false );
+
+	/**
+	* Determines the name of a package based on its ID if there is no box.json
+	*/
+	public function getDefaultName( required string package );
 
 }
