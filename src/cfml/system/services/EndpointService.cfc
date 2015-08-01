@@ -50,7 +50,7 @@ component accessors="true" singleton {
 				var oEndPoint = wirebox.getInstance( endpointPath );
 				var namePrefixs = listToArray( oEndPoint.getNamePrefixes() );
 				for( var prefix in namePrefixs ) {
-					endpointRegistry[ endpointName ] = oEndPoint;
+					endpointRegistry[ prefix ] = oEndPoint;
 				}
 			}
 		}
