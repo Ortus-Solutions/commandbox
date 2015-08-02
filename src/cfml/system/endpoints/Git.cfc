@@ -29,6 +29,8 @@ component accessors="true" implements="IEndpoint" singleton {
 	property name="folderEndpoint"			inject="commandbox.system.endpoints.Folder";
 	property name="progressableDownloader" 	inject="ProgressableDownloader";
 	property name="progressBar" 			inject="ProgressBar";
+	property name="system" 					inject="system@constants";
+	
 	
 	// Properties
 	property name="namePrefixes" type="string";
@@ -41,8 +43,23 @@ component accessors="true" implements="IEndpoint" singleton {
 	public string function resolvePackage( required string package, boolean verbose=false ) {
 		
 		// TODO: Add artifacts caching
+
+		var GitURL = getProtocol() & ':' & arguments.package;
+		var branch = 'master';
+		if( GitURL contains '##' ) {
+			branch = listLast( GitURL, '##' );
+			GitURL = listFirst( GitURL, '##' );
+			consoleLogger.debug( 'Using branch [#branch#]' );
+		}
+
+		consoleLogger.debug( 'Cloning Git URL [#GitURL#]' );
 		
+		// The main Git API
 		var Git = createObject( 'java', 'org.eclipse.jgit.api.Git' );
+		
+		// Wrap up system out in a PrintWriter and create a progress monitor to track our clone
+		var printWriter = createObject( 'java', 'java.io.PrintWriter' ).init( system.out, true )
+		var progressMonitor = createObject( 'java', 'org.eclipse.jgit.lib.TextProgressMonitor' ).init( printWriter );
 		
 		// Temporary location to place the repo
 		var localPath = createObject( 'java', 'java.io.File' ).init( "#tempDir#/git_#randRange( 1, 1000 )#" );
@@ -50,9 +67,14 @@ component accessors="true" implements="IEndpoint" singleton {
 		try { 
 			// Clone the repo locally into a temp folder
 			var local.result = Git.cloneRepository()
-			        .setURI( getProtocol() & ':' & arguments.package )
+			        .setURI( GitURL )
+			        .setBranch( branch )
 			        .setDirectory( localPath )
+			        .setProgressMonitor( progressMonitor )
 			        .call();
+		} catch( any var e ) {
+			rethrow;
+			//throw( message="Error Cloning Git repository", detail="#e.message#",  type="endpointException"); 
 		} finally {
 			// Release file system locks on the repo
 			if( structKeyExists( local, 'result' ) ) {

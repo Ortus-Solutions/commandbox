@@ -81,7 +81,7 @@ component accessors="true" singleton {
 				ID : endpointName & ':' & path
 			};
 		// Is it a GitHub user/repo?
-		} else if( !findNoCase( arguments.ID, ':' ) && listLen( arguments.ID, '/' ) == 2 ) {
+		} else if( !findNoCase( ':', arguments.ID ) && listLen( arguments.ID, '/' ) == 2 ) {
 			var endpointName =  'github';
 			return {
 				endpointName : endpointName,
