@@ -15,7 +15,7 @@
 *
 * If no <commit-ish> is specified, then master is used.
 *
-* Look into supporting this shortcut syntax for GitHub repos
+* Also supports this shortcut syntax for GitHub repos
 * install mygithubuser/myproject
 * install github:mygithubuser/myproject
 *
@@ -69,12 +69,12 @@ component accessors="true" implements="IEndpoint" singleton {
 			var local.result = Git.cloneRepository()
 			        .setURI( GitURL )
 			        .setBranch( branch )
+			        .setCloneSubmodules( true )
 			        .setDirectory( localPath )
 			        .setProgressMonitor( progressMonitor )
 			        .call();
 		} catch( any var e ) {
-			rethrow;
-			//throw( message="Error Cloning Git repository", detail="#e.message#",  type="endpointException"); 
+			throw( message="Error Cloning Git repository", detail="#e.message#",  type="endpointException"); 
 		} finally {
 			// Release file system locks on the repo
 			if( structKeyExists( local, 'result' ) ) {
