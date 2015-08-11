@@ -161,7 +161,15 @@ External Dependencies:
         	<fileset dir="${src.dir}/resources" />
         </copy>
         <copy file="${src.dir}/resources/cli.properties" todir="${temp.dir}/rcli/cliloader" overwrite="true" encoding="UTF-8"/>
-        
+        <!--  set default password -->
+        <unzip src="${temp.dir}/rcli/engine.zip" dest="${temp.dir}/engine" overwrite="true"/>
+        <lucee-password 
+          server-password="commandbox" config-server-file="${temp.dir}/engine/cfml/cli/cfml-server/context/lucee-server.xml"
+          web-password="commandbox" config-web-file="${temp.dir}/engine/cfml/cli/cfml-web/lucee-web.xml.cfm"
+        />
+        <zip destfile="${temp.dir}/rcli/engine.zip" update="false" level="9">
+          <zipfileset dir="${temp.dir}/engine" />
+        </zip>
         <!-- jar up the cli again -->
         <zip destfile="${dist.dir}/box.jar" update="false" level="9">
         	<zipfileset dir="${temp.dir}/rcli" />
