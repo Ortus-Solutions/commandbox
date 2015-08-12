@@ -362,11 +362,11 @@ External Dependencies:
  		<!-- Create APIDocs dir -->
  		<mkdir dir="${dir.apioutput}"/>
  		<!-- Install dependencies for docs -->
-		<exec executable="box" dir="${dir.apidocs}">
+		<exec executable="${binary.box}" dir="${dir.apidocs}">
 			<arg line="install" />
 		</exec>
 		<!-- Startup the apidocs server, wait for a few seconds for server to start -->
-		<exec executable="box" dir="${dir.apidocs}">
+		<exec executable="${binary.box}" dir="${dir.apidocs}">
 			<arg line="server start openbrowser=false --force port=${apidocs.port}" />
 		</exec>
 		<sleep seconds="5"/>
@@ -377,7 +377,7 @@ External Dependencies:
 			 retries="5"/>
 		<delete file="${dir.build}/docbox.html" />
  		<!-- stop server -->
-		<exec executable="box" dir="${dir.apidocs}">
+		<exec executable="${binary.box}" dir="${dir.apidocs}">
 			<arg line="server stop" />
 		</exec>
 		<!-- Zip API Docs -->
