@@ -1,15 +1,22 @@
+/**
+* CommandBox CLI
+* Copyright since 2012 by Ortus Solutions, Corp
+* www.ortussolutions.com/products/commandbox
+* ---
+* Application Bootstrap
+*/
 component{
 
-	this.name = "CommandBox-APIDocs" & hash(getCurrentTemplatePath());
-	this.sessionManagement = true;
-	this.sessionTimeout = createTimeSpan(0,0,1,0);
+	this.name 				= "CommandBox-APIDocs" & hash(getCurrentTemplatePath());
+	this.sessionManagement 	= true;
+	this.sessionTimeout 	= createTimeSpan(0,0,1,0);
 	this.setClientCookies 	= true;
 
 	// mappings
 	API_ROOT = getDirectoryFromPath( getCurrentTemplatePath() );
-	this.mappings[ "/colddoc" ] = API_ROOT;
+	this.mappings[ "/docbox" ] = API_ROOT & "/docbox";
 
-	rootPath = REReplaceNoCase( this.mappings[ "/colddoc" ], "apidocs(\\|\/)$", "" );
+	rootPath = REReplaceNoCase( API_ROOT, "apidocs(\\|\/)$", "" );
 	this.mappings[ "/root" ]		= rootPath;
 	this.mappings[ "/commandbox" ] 	= rootPath & "src/cfml";
 	this.mappings[ '/wirebox' ] 	= rootPath & "src/cfml/system/wirebox";
