@@ -1,0 +1,20 @@
+{
+    "name":"CommandBox API Docs",
+    "version":"1.0.0",
+    "slug":"commandbox-apidocs",
+    "private":true,
+    "defaultPort":8511,
+    "dependencies":{
+        "docbox":"https://github.com/Ortus-Solutions/DocBox/archive/v2.0.2.zip"
+    },
+    "devDependencies":{
+        
+    },
+    "installPaths":{
+        "docbox":"docbox"
+    },
+    "ignore":[
+        "**/.*",
+        "tests"
+    ]
+}

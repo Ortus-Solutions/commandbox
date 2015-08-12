@@ -1,27 +1,24 @@
-<cfparam name="url.version" default="1.0">
+<cfparam name="url.version" default="1.0.0">
 <cfparam name="url.path" 	default="#expandPath( "./CommandBox-CommandDocs" )#">
 <cfscript>
 try{
 	docName = "CommandBox-CommandDocs";
-
-	colddoc 	= new ColdDoc();
-	strategy 	= new colddoc.strategy.commandbox.HTMLCommandStrategy( url.path, "CommandBox #url.version#" );
-	colddoc.setStrategy( strategy );
+	docbox 	= new DocBox( properties = {
+		projectTitle 	= "CommandBox v#url.version#",
+		outputDir 		= url.path
+	} );
 	source = [
-		{ inputDir=expandPath( "/commandbox/commands" ), inputMapping="commandbox.commands" },
-		{ inputDir=expandPath( "/commandbox/system/commands" ), inputMapping="commandbox.system.commands" }
+		{ dir = expandPath( "/commandbox/commands" ), mapping = "commandbox.commands" },
+		{ dir = expandPath( "/commandbox/system/commands" ), mapping = "commandbox.system.commands" }
 	];
-
-	colddoc.generate( source );
+	docbox.generate( source );
 } catch ( Any e ){
 	writeOutput( e.message & e.detail );
 	writeDump( "<hr>" & e.stacktrace );
 	abort;
 }
 </cfscript>
-
 <cfoutput>
 <h1>Command Help Done!</h1>
 <a href="#docName#/index.html">Go to Docs!</a>
 </cfoutput>
-
