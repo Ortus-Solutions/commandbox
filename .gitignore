@@ -17,3 +17,4 @@ tests/testbox
 build-local.properties
 build/resources
 src/cfml/.version
+org.eclipse.jdt.ui.prefs
