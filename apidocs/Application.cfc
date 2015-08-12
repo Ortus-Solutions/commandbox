@@ -14,9 +14,9 @@ component{
 
 	// mappings
 	API_ROOT = getDirectoryFromPath( getCurrentTemplatePath() );
-	this.mappings[ "/docbox" ] = API_ROOT;
+	this.mappings[ "/docbox" ] = API_ROOT & "/docbox";
 
-	rootPath = REReplaceNoCase( this.mappings[ "/docbox" ], "apidocs(\\|\/)$", "" );
+	rootPath = REReplaceNoCase( API_ROOT, "apidocs(\\|\/)$", "" );
 	this.mappings[ "/root" ]		= rootPath;
 	this.mappings[ "/commandbox" ] 	= rootPath & "src/cfml";
 	this.mappings[ '/wirebox' ] 	= rootPath & "src/cfml/system/wirebox";

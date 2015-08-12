@@ -3,16 +3,20 @@
 <cfscript>
 try{
 	docName = "CommandBox-CommandDocs";
-	docbox 	= new DocBox( properties = {
-		projectTitle 	= "CommandBox v#url.version#",
-		outputDir 		= url.path
-	} );
+	docbox 	= new docBox.DocBox( 
+		strategy = "strategy.commandbox.CommandBoxStrategy",
+		properties = {
+			projectTitle 	= "CommandBox v#url.version#",
+			outputDir 		= url.path
+		} 
+	);
 	source = [
 		{ dir = expandPath( "/commandbox/commands" ), mapping = "commandbox.commands" },
 		{ dir = expandPath( "/commandbox/system/commands" ), mapping = "commandbox.system.commands" }
 	];
 	docbox.generate( source );
 } catch ( Any e ){
+	rethrow;
 	writeOutput( e.message & e.detail );
 	writeDump( "<hr>" & e.stacktrace );
 	abort;
