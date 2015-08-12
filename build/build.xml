@@ -171,6 +171,10 @@ External Dependencies:
         	<fileset dir="${src.dir}/resources"/>
     	</copy>
     	<copy file="${src.dir}/java/cliloader/cli.properties" todir="${temp.dir}/cli/bin/cliloader" />
+		<copy todir="${temp.dir}/cli/bin/cliloader" file="${src.dir}/java/cliloader/version.properties">
+	      <filterchain><expandproperties/><deletecharacters chars="\n"/><trim/><ignoreblank/></filterchain>
+	    </copy>
+		
 		<!-- Zip up the engine -->
 		<zip destfile="${temp.dir}/cli/engine.zip">
 	      <fileset dir="${temp.dir}/engine"/>
