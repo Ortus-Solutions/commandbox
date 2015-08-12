@@ -360,7 +360,7 @@ External Dependencies:
  	<!-- Build API Docs -->
  	<target name="build.apidocs" description="Builds the api docs" depends="build.cli.bin">
  		<!-- Create APIDocs dir -->
- 		<mkdir dir="${dir.apioutput}"/>
+ 		<mkdir dir="${temp.dir}/apidocs"/>
  		<!-- Install dependencies for docs -->
 		<exec executable="${dist.dir}/box" dir="${dir.apidocs}">
 			<arg line="install" />
@@ -372,7 +372,7 @@ External Dependencies:
 		<sleep seconds="5"/>
 		<!-- Get the apidocs now -->
 		<get dest="${temp.dir}/docbox.html" 
-			 src="${url.apidocs}?version=${commandbox.version}&amp;path=${dir.apioutput}" 
+			 src="${url.apidocs}?version=${commandbox.version}&amp;path=${temp.dir}/apidocs" 
 			 verbose="true"
 			 retries="5"/>
 		<delete file="${temp.dir}/docbox.html" />
@@ -381,7 +381,7 @@ External Dependencies:
 			<arg line="server stop" />
 		</exec>
 		<!-- Zip API Docs -->
-		<zip destfile="${dist.dir}/${distro.name}-apidocs-${commandbox.version}.zip" basedir="${dir.apioutput}"></zip>
+		<zip destfile="${dist.dir}/${distro.name}-apidocs-${commandbox.version}.zip" basedir="${temp.dir}/apidocs"></zip>
  		<!-- Build Checksum -->
  		<checksum forceoverwrite="true" fileext=".md5" file="${dist.dir}/${distro.name}-apidocs-${commandbox.version}.zip" />
  		<checksum forceoverwrite="true" algorithm="sha" file="${dist.dir}/${distro.name}-apidocs-${commandbox.version}.zip" />
