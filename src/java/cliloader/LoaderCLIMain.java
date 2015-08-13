@@ -337,7 +337,11 @@ public class LoaderCLIMain {
             run.invoke(null, webroot,getLuceeCLIConfigServerDir(),getLuceeCLIConfigWebDir(),uri,debug);
         } catch (Exception e) {
             exitCode = 1;
-            e.getCause().printStackTrace();
+            e.printStackTrace();
+            if( e.getCause() != null ) {
+                System.out.println( "Cause:" );
+            	e.getCause().printStackTrace();
+            }
         }
         cl.close();
         System.out.flush();
