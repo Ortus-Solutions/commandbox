@@ -16,7 +16,7 @@ External Dependencies:
  	<property name="distro.groupID"				value="ortussolutions" />
  	<property name="distro.name"				value="commandbox"/>
  	<property name="commandbox.version"			value="2.1.0"/>
- 	<property name="commandbox.stableVersion"	value="2.0.0"/>
+ 	<property name="commandbox.stableVersion"	value="2.1.0"/>
 
     <!-- Time Label -->
 	<tstamp prefix="start"/>
