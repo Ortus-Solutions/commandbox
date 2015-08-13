@@ -15,7 +15,7 @@ External Dependencies:
     <!-- Version: UPDATE ON EACH RELEASE AS NEEDED -->
  	<property name="distro.groupID"				value="ortussolutions" />
  	<property name="distro.name"				value="commandbox"/>
- 	<property name="commandbox.version"			value="2.1.0"/>
+ 	<property name="commandbox.version"			value="2.2.0"/>
  	<property name="commandbox.stableVersion"	value="2.1.0"/>
 
     <!-- Time Label -->
