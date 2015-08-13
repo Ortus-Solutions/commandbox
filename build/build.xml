@@ -595,8 +595,11 @@ External Dependencies:
 	    <dependency groupId="net.minidev" artifactId="json-smart-mini" version="1.0.8" unzip="false" type="jar" dest="${lib.dir}"/>
 	    <dependency groupId="org.cfmlprojects" artifactId="runwar" version="${runwar.version}" dest="${lucee.lib.dir}" unzip="false" type="jar" />
 	    <!-- engine libs -->
-	  	<dependency groupId="org.lucee" artifactId="lucee" version="${lucee.version}" 
-	      dest="${lucee.lib.dir}" unzip="false" type="jar" />
+	  	<dependency groupId="org.lucee" artifactId="lucee" version="${lucee.version}" dest="${lucee.lib.dir}" unzip="false" type="jar">
+			<exclusions>
+				<exclusion groupId="org.lucee.lib" artifactId="railo-slf4j" />
+			</exclusions>
+		</dependency>
 	    <dependency groupId="org.lucee" artifactId="lucee.optional" version="${lucee.version}" 
 	      dest="${lucee.lib.dir}" unzip="false" type="pom" />
 		  <move file="${lucee.lib.dir}/lucee-inst-${lucee.version}.jar" toFile="${lucee.lib.dir}/lucee-inst.jar"/>
