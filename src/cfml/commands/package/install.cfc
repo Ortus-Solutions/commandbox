@@ -1,45 +1,69 @@
 /**
- * Download and install an entry from ForgeBox into your application or read the box.json descriptor
- * and install all product/development dependencies in your project if no slug is passed.  You must use the 
- * exact slug for the item you want or no slug at all.  If the item being installed has a box.json descriptor, it's "directory"
- * property will be used as the install container with a sub-directory name with the same name as the package name. 
- * In the absence of that setting, the current CommandBox working directory will be used. You can also tell this 
- * command via the box.json descriptor that no sub-directory should be created by using the "createPackageDirectory" property as false.
- * .  
- * Override the installation location by passing the "directory" parameter.  The "save"
- * and "saveDev" parameters will save this package as a dependency or devDependency in your box.json if it exists.
+ * Download and install an entry from an endpoint (like ForgeBox) into your application or read the box.json descriptor
+ * and install all production/development dependencies in your project if no ID is passed.  
  * .
- * The "production" argument is used in order to determine if we should install development dependencies or not.
- * By default "production" is false, so all development dependencies will be installed.
- * .
- * Install the feeds package and saves as a dependency
+ * Install the feeds package from ForgeBox and save as a dependency
  * {code:bash}
  * install feeds
  * {code}
+ * .  
+ * Override the installation location by passing the "directory" parameter.
+ * {code:bash}
+ * install coldbox ../lib/frameworks/
+ * {code}
  * .
- * Install feeds and does not save as a dependency
+ * Install "feeds" and does not save as a dependency
  * {code:bash}
  * install feeds --!save
  * {code}
  * .
- * Install feeds and save as a devDependency
+ * Install cbdebugger and save as a devDependency
  * {code:bash}
- * install feeds --saveDev
+ * install cbdebugger --saveDev
  * {code}
  * .
- * This command can also be called with no slug.  In that instance, it will search for a box.json in the current working
+ * This command can also be called with no ID.  In that instance, it will search for a box.json in the current working
  * directory and install all the dependencies.
- * .
- * Install all dependencies in box.json
  * {code:bash}
  * install
  * {code}
  * .
- * Use the "production" parameter to ignore devDependencies.
+ * The "production" argument is used in order to determine if we should install development dependencies or not.
+ * By default "production" is false, so all development dependencies will be installed.
  * {code:bash}
  * install --production
  * {code}
- * 
+ * .
+ * You can also specify the version of a packge you want to install from Forgebox. Note, this only 
+ * curently works if the specified version of the package is in your local artifacts folder.  
+ * {code:bash}
+ * install coldbox@3.8.1
+ * {code}
+ * .
+ * Installation from endpoints other than ForgeBox is supported.  
+ * Additional endpoints include HTTP/HTTPS, local zip file or folder, and Git repos.
+ * .
+ * {code:bash}
+ * install C:/myZippedPackages/package.zip
+ * install C:/myUnzippedPackages/package/
+ * install http://site.com/package.zip
+ * install git://site.com/user/repo.git
+ * {code}
+ * . 
+ * Git repos are cloned and the "master" branch used by default.  No Git authentication is supported yet.  
+ * You can also use a committ-ish to target a branch, tag, or commit
+ * .
+ * {code:bash}
+ * install git://site.com/user/repo.git#development
+ * install git://site.com/user/repo.git#v2.1.0
+ * install git://site.com/user/repo.git#09d302b4fffa0b988d1edd8ea747dc0c0f2883ea
+ * {code}
+ * .
+ * A shortcut notation is also supported for GitHub repos specifically where you can only specify the GitHub user and repo name
+ * .
+ * {code:bash}
+ * install mygithubuser/myproject
+ * {code}
  **/
 component extends="commandbox.system.BaseCommand" aliases="install" excludeFromHelp=false {
 	
@@ -53,17 +77,17 @@ component extends="commandbox.system.BaseCommand" aliases="install" excludeFromH
 	property name="packageService" 	inject="PackageService";
 			
 	/**
-	* @slug.hint Slug of the ForgeBox entry to install. If no slug is passed, all dependencies in box.json will be installed.
-	* @slug.optionsUDF slugComplete
+	* @ID.hint ID of the ForgeBox entry to install. If no ID is passed, all dependencies in box.json will be installed.
+	* @ID.optionsUDF IDComplete
 	* @directory.hint The directory to install in and creates the directory if it does not exist. This will override the packages's box.json install dir if provided. 
 	* @save.hint Save the installed package as a dependancy in box.json (if it exists), defaults to true
 	* @saveDev.hint Save the installed package as a dev dependancy in box.json (if it exists)
-	* @production.hint When calling this command with no slug to install all dependencies, set this to true to ignore devDependencies.
+	* @production.hint When calling this command with no ID to install all dependencies, set this to true to ignore devDependencies.
 	* @verbose.hint If set, it will produce much more verbose information about the package installation
 	* @force.hint When set to true, it will force dependencies to be installed whether they already exist or not
 	**/
 	function run( 
-		string slug='',
+		string ID='',
 		string directory,
 		boolean save=true,
 		boolean saveDev=false,
@@ -87,20 +111,20 @@ component extends="commandbox.system.BaseCommand" aliases="install" excludeFromH
 				
 		// TODO: climb tree to find root of the site by searching for box.json
 		arguments.currentWorkingDirectory = getCWD();
-		// Make slug an array
-		arguments.slug = listToArray( arguments.slug );
+		// Make ID an array
+		arguments.IDArray = listToArray( arguments.ID );
 
 
 		// Install this package(s).
 		// Don't pass directory unless you intend to override the box.json of the package being installed
 		
-		// One or more slugs
-		if( arguments.slug.len() ) {
-			for( var thisSlug in arguments.slug ){
-				arguments.ID = thisSlug; 
+		// One or more IDs
+		if( arguments.IDArray.len() ) {
+			for( var thisID in arguments.IDArray ){
+				arguments.ID = thisID; 
 				packageService.installPackage( argumentCollection = arguments );
 			}
-		// No slug, just install the dependencies in box.json
+		// No ID, just install the dependencies in box.json
 		} else {
 			arguments.ID = ''; 
 			packageService.installPackage( argumentCollection = arguments );			
@@ -108,8 +132,8 @@ component extends="commandbox.system.BaseCommand" aliases="install" excludeFromH
 				
 	}
 
-	// Auto-complete list of slugs
-	function slugComplete() {
+	// Auto-complete list of IDs
+	function IDComplete() {
 		var result = [];
 		// Cache in command
 		if( !structKeyExists( variables, 'entries' ) ) {
