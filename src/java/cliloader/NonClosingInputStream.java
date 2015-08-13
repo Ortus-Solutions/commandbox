@@ -19,62 +19,65 @@ package cliloader;
 import java.io.IOException;
 import java.io.InputStream;
 
-public class NonClosingInputStream extends InputStream {
-	private final InputStream in;
-	private final boolean closeWrapped;
+public class NonClosingInputStream extends InputStream{
+	private final boolean		closeWrapped;
+	private final InputStream	in;
 
-	public NonClosingInputStream(final InputStream in, final boolean closeWrapped) {
+	public NonClosingInputStream( final InputStream in ){
+		this( in, false );
+	}
+
+	public NonClosingInputStream( final InputStream in,
+			final boolean closeWrapped ){
 		this.in = in;
 		this.closeWrapped = closeWrapped;
 	}
 
-	public NonClosingInputStream(final InputStream in) {
-		this(in, false);
+	@Override
+	public int available() throws IOException{
+		return this.in.available();
 	}
 
 	@Override
-	public int read() throws IOException {
-		return in.read();
+	public void close() throws IOException{
+		if( this.closeWrapped ) {
+			this.in.close();
+		}
 	}
 
 	@Override
-	public int read(final byte[] b) throws IOException {
-		return in.read(b);
+	public synchronized void mark( final int readlimit ){
+		this.in.mark( readlimit );
 	}
 
 	@Override
-	public int read(final byte[] b, final int off, final int len) throws IOException {
-		return in.read(b, off, len);
+	public boolean markSupported(){
+		return this.in.markSupported();
 	}
 
 	@Override
-	public long skip(final long n) throws IOException {
-		return in.skip(n);
+	public int read() throws IOException{
+		return this.in.read();
 	}
 
 	@Override
-	public int available() throws IOException {
-		return in.available();
+	public int read( final byte[] b ) throws IOException{
+		return this.in.read( b );
 	}
 
 	@Override
-	public void close() throws IOException {
-		if (closeWrapped)
-			in.close();
+	public int read( final byte[] b, final int off, final int len )
+			throws IOException{
+		return this.in.read( b, off, len );
 	}
 
 	@Override
-	public synchronized void mark(final int readlimit) {
-		in.mark(readlimit);
+	public synchronized void reset() throws IOException{
+		this.in.reset();
 	}
 
 	@Override
-	public synchronized void reset() throws IOException {
-		in.reset();
-	}
-
-	@Override
-	public boolean markSupported() {
-		return in.markSupported();
+	public long skip( final long n ) throws IOException{
+		return this.in.skip( n );
 	}
 }
