@@ -371,9 +371,9 @@ External Dependencies:
 		</exec>
 		<sleep seconds="5"/>
 		<!-- Get the apidocs now -->
-		<property name="temp.dir.absolute" location="${temp.dir}/apidocs"/>
+		<property name="temp.dir.absolute" location="${temp.dir}"/>
 		<get dest="${temp.dir}/docbox.html" 
-			 src="${url.apidocs}?version=${commandbox.version}&amp;path=${temp.dir.absolute}" 
+			 src="${url.apidocs}?version=${commandbox.version}&amp;path=${temp.dir.absolute}/apidocs" 
 			 verbose="true"
 			 retries="5"/>
 		<delete file="${temp.dir}/docbox.html" />
