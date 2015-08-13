@@ -583,7 +583,13 @@ External Dependencies:
 		<dependency groupId="org.fusesource.jansi" artifactId="jansi" unzip="false" version="1.11" type="jar" dest="${lib.dir}" />
 		 -->
 		<dependency groupId="jline" artifactId="jline" version="2.12" dest="${lib.dir}" type="jar" unzip="false"/>
-		<dependency groupId="org.eclipse.jgit" artifactId="org.eclipse.jgit" version="4.0.1.201506240215-r" dest="${lib.dir}" repoId="jgit-repository" unzip="false" type="jar" />
+		<dependency groupId="org.eclipse.jgit" artifactId="org.eclipse.jgit" version="4.0.1.201506240215-r" dest="${lib.dir}" repoId="jgit-repository" unzip="false" type="jar">
+			<exclusions>
+				<!-- Lucee already includes these jars --> 
+				<exclusion groupId="org.slf4j" artifactId="slf4j-api" />
+				<exclusion groupId="org.apache.httpcomponents" artifactId="httpclient" />
+			</exclusions>
+		</dependency>
 	    <dependency groupId="com.beust" artifactId="jcommander" version="1.47" dest="${lib.dir}" type="jar" unzip="false"/>
 	    <dependency groupId="net.minidev" artifactId="json-smart-mini" version="1.0.8" unzip="false" type="jar" dest="${lib.dir}"/>
 	    <dependency groupId="org.cfmlprojects" artifactId="runwar" version="${runwar.version}" dest="${lucee.lib.dir}" unzip="false" type="jar" />
