@@ -181,7 +181,7 @@ component accessors="true" singleton {
 		if( fileExists( boxJSONPath ) ) {
 			
 			// ...Read it.
-			boxJSON = fileRead( boxJSONPath );
+			var boxJSON = fileRead( boxJSONPath );
 			
 			// Validate the file is valid JSOn
 			if( isJSON( boxJSON ) ) {

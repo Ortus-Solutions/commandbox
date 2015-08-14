@@ -10,7 +10,8 @@
 component accessors="true" implements="IEndpoint" singleton {
 		
 	// DI
-	property name="packageService" 	inject="packageService";
+	property name="packageService"	inject="packageService";
+	property name="semanticVersion"	inject="semanticVersion";
 	
 	// Properties
 	property name="namePrefixes" type="string";
@@ -35,4 +36,19 @@ component accessors="true" implements="IEndpoint" singleton {
 		return listLast( arguments.package, '/\' );
 	}
 
+	public function getUpdate( required string package, required string version, boolean verbose=false ) {
+		var result = {
+			isOutdated = false,
+			version = 'unknown'
+		};
+		
+		if( directoryExists( arguments.package ) ) {
+			var boxJSON = packageService.readPackageDescriptor( arguments.package );
+			result.isOutdated = semanticVersion.isNew( current=arguments.version, target=boxJSON.version );
+			result.version = boxJSON.version;
+		}
+		
+		return result;
+	}
+	
 }

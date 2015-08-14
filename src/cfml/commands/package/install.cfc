@@ -34,8 +34,8 @@
  * install --production
  * {code}
  * .
- * You can also specify the version of a packge you want to install from Forgebox. Note, this only 
- * curently works if the specified version of the package is in your local artifacts folder.  
+ * You can also specify the version of a package you want to install from Forgebox. Note, this only 
+ * currently works if the specified version of the package is in your local artifacts folder.  
  * {code:bash}
  * install coldbox@3.8.1
  * {code}

@@ -30,9 +30,9 @@ component extends="commandbox.system.BaseCommand" aliases="update" excludeFromHe
 	processingdirective pageEncoding='UTF-8';
 	
 	// DI
-	property name="packageService" 	inject="PackageService";	
-	property name="forgeBox" 		inject="ForgeBox";
+	property name="packageService" 	inject="PackageService";
 	property name="semanticVersion" inject="semanticVersion";
+	property name='parser'			inject='Parser';
 	
 	/**  
 	* Update all or one outdated dependencies 
@@ -76,9 +76,17 @@ component extends="commandbox.system.BaseCommand" aliases="update" excludeFromHe
 
 		// iterate and update
 		for( var dependency in dependenciesToUpdate ){
-			print.magentaLine( "Starting update of #dependency.slug# ").toConsole();
+			
+			// Contains an enpoint
+			if( dependency.version contains ':' ) {
+				var ID = dependency.version;
+			} else {
+				var ID = dependency.slug & '@' & dependency.version;
+			}
+			
+			print.magentaLine( "Starting update of #ID# ").toConsole();
 			// install it
-			runCommand( "install slug=#dependency.slug# verbose=#arguments.verbose# --force" );
+			runCommand( "install ID='#parser.escapeArg( ID )#' verbose=#arguments.verbose# --force" );
 		}
 		
 	}

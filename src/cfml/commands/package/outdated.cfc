@@ -22,8 +22,7 @@ component extends="commandbox.system.BaseCommand" aliases="outdated" excludeFrom
 	processingdirective pageEncoding='UTF-8';
 	
 	// DI
-	property name="packageService" 	inject="PackageService";	
-	property name="forgeBox" 		inject="ForgeBox";
+	property name="packageService" 	inject="PackageService";
 	property name="semanticVersion" inject="semanticVersion";
 	
 	/**  
@@ -67,9 +66,9 @@ component extends="commandbox.system.BaseCommand" aliases="outdated" excludeFrom
 	*/
 	private function printDependencies( required array data, boolean verbose ) {
 		
-		for( var dependency in arguments.data ){
+		for( var dependency in arguments.data ){ 
 			// print it out
-			print[ ( dependency.dev ? 'boldYellow' : 'bold' ) ]( '* #dependency.slug# (#dependency.version#)' )
+			print[ ( dependency.dev ? 'boldYellow' : 'bold' ) ]( '* #dependency.slug# (#dependency.packageVersion#)' )
 				.boldRedLine( ' ─> new version: #dependency.newVersion#' );
 			// verbose data			
 			if( arguments.verbose ) {

@@ -15,6 +15,7 @@ component accessors="true" implements="IEndpoint" singleton {
 	property name="packageService"		inject="packageService";
 	property name="fileSystemUtil"		inject="FileSystem";
 	property name="folderEndpoint"		inject="commandbox.system.endpoints.Folder";
+	property name="semanticVersion"		inject="semanticVersion";
 	
 	// Properties
 	property name="namePrefixes" type="string";
@@ -51,6 +52,35 @@ component accessors="true" implements="IEndpoint" singleton {
 	public function getDefaultName( required string package ) {
 		var fileName = listLast( arguments.package, '/\' );
 		return listFirst( fileName, '.' );
+	}
+
+	public function getUpdate( required string package, required string version, boolean verbose=false ) {
+		var result = {
+			isOutdated = true,
+			version = 'unknown'
+		};
+		
+		if( fileExists( arguments.package ) ) {
+			
+			var boxJSONPath = 'zip://' & arguments.package & '!box.json';
+		
+			// If the packge has a box.json in the root...
+			if( fileExists( boxJSONPath ) ) {
+				
+				// ...Read it.
+				var boxJSON = fileRead( boxJSONPath );
+				
+				// Validate the file is valid JSOn
+				if( isJSON( boxJSON ) ) {
+					// Merge this JSON with defaults
+					boxJSON = packageService.newPackageDescriptor( deserializeJSON( boxJSON ) );
+					result.isOutdated = semanticVersion.isNew( current=arguments.version, target=boxJSON.version );
+					result.version = boxJSON.version;
+				} // isJSON				
+			} // box.json exists
+		} // zip exists
+		
+		return result;
 	}
 	
 }

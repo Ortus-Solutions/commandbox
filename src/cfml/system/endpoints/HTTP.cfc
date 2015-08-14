@@ -75,4 +75,13 @@ component accessors="true" implements="IEndpoint" singleton {
 		return reReplaceNoCase( arguments.package, '[^a-zA-Z0-9]', '', 'all' );
 	}
 
+	public function getUpdate( required string package, required string version, boolean verbose=false ) {
+		var result = {
+			isOutdated = true,
+			version = 'unknown'
+		};
+		
+		return result;
+	}
+
 }

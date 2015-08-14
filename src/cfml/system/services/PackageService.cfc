@@ -21,9 +21,6 @@ component accessors="true" singleton {
 	property name="endpointService"		inject="EndpointService";
 	property name="consoleLogger"		inject="logbox:logger:console";
 	
-	// Need to refactor update and outdated to use the endpoint
-	property name="forgeBox" 			inject="ForgeBox";
-	
 	/**
 	* Constructor
 	*/
@@ -94,14 +91,14 @@ component accessors="true" singleton {
 			consoleLogger.info( 'Installing package [#endpointData.ID#]' );
 			
 			try {
-				tmpPath = endpointData.endpoint.resolvePackage( endpointData.package, arguments.verbose );	
+				var tmpPath = endpointData.endpoint.resolvePackage( endpointData.package, arguments.verbose );	
 				
 			// endpointException exception type is used when the endpoint has an issue that needs displayed, 
 			// but I don't want to "blow up" the console with a full error.	
 			} catch( endpointException var e ) {
 				consoleLogger.error( e.message & ' ' & e.detail );
 				return;				
-			}	
+			}
 			
 			// Support box.json in the root OR in a subfolder (NPM-style!)
 			tmpPath = findPackageRoot( tmpPath );
@@ -817,6 +814,8 @@ component accessors="true" singleton {
 	array function getOutdatedDependencies( required directory, required print, boolean verbose=false, includeSlugs='' ){
 		// build dependency tree
 		var tree = buildDependencyHierarchy( arguments.directory );
+		var fakeDir = arguments.directory & '/fake';
+		var verbose = arguments.verbose;
 
 		// Global outdated check bit
 		var aOutdatedDependencies = [];
@@ -826,15 +825,35 @@ component accessors="true" singleton {
 			// Only check slugs we're supposed to
 			if( !len( includeSlugs ) || listFindNoCase( includeSlugs, arguments.slug ) ) {
 				
-				// Verify in ForgeBox
-				var fbData = forgebox.getEntry( arguments.slug );
-				// Verify if we are outdated, internally isNew() parses the incoming strings
-				var isOutdated = semanticVersion.isNew( current=value.version, target=fbData.version );
-				if( isOutdated ){
+				// Contains an enpoint
+				if( value.version contains ':' ) {
+					var ID = value.version;
+				} else {
+					var ID = arguments.slug & '@' & value.version;
+				}
+				
+				try {
+					var endpointData = endpointService.resolveEndpoint( ID, fakeDir );
+				} catch( EndpointNotFound var e ) {
+					consoleLogger.error( e.message );
+					return;				
+				}
+				
+				try {
+					var updateData = endpointData.endpoint.getUpdate( endpointData.package, value.packageVersion, verbose );
+				// endpointException exception type is used when the endpoint has an issue that needs displayed, 
+				// but I don't want to "blow up" the console with a full error.	
+				} catch( endpointException var e ) {
+					consoleLogger.error( e.message & ' ' & e.detail );
+					return;				
+				}
+								
+				if( updateData.isOutdated ){
 					aOutdatedDependencies.append({ 
 						slug 				: arguments.slug,
 						version 			: value.version,
-						newVersion 			: fbData.version,
+						packageVersion		: value.packageVersion,
+						newVersion 			: updateData.version,
 						shortDescription 	: value.shortDescription,
 						name 				: value.name,
 						dev 				: value.dev
@@ -842,8 +861,8 @@ component accessors="true" singleton {
 				}
 				// verbose output
 				if( verbose ){
-					print.yellowLine( "* #arguments.slug# (#value.version#) -> ForgeBox Version: (#fbdata.version#)" )
-						.boldRedLine( isOutdated ? " ** #arguments.slug# is Outdated" : "" )
+					print.yellowLine( "* #arguments.slug# (#value.packageVersion#) -> #endpointData.endpointName# version: (#updateData.version#)" )
+						.boldRedLine( updateData.isOutdated ? " ** #arguments.slug# is Outdated" : "" )
 						.toConsole();
 				}
 				
@@ -851,12 +870,12 @@ component accessors="true" singleton {
 			
 			// Do we have more dependencies, go down the tree in parallel
 			if( structCount( value.dependencies ) ){
-				structEach( value.dependencies, fOutdatedCheck , true );
+				structEach( value.dependencies, fOutdatedCheck );
 			}
 		};
 
 		// Verify outdated dependency graph in parallel
-		structEach( tree.dependencies, fOutdatedCheck , true );
+		structEach( tree.dependencies, fOutdatedCheck );
 
 		return aOutdatedDependencies;
 	}
@@ -872,7 +891,8 @@ component accessors="true" singleton {
 			'name' : boxJSON.name,
 			'slug' : boxJSON.slug,
 			'shortDescription' : boxJSON.shortDescription,
-			'version': boxJSON.version
+			'version': boxJSON.version,
+			'packageVersion': boxJSON.version
 		};
 		buildChildren( boxJSON, tree, arguments.directory);
 		return tree;
@@ -892,6 +912,7 @@ component accessors="true" singleton {
 				'dev' : arguments.dev,
 				'name' : '',
 				'shortDescription' : '',
+				'packageVersion' : ''
 			};
 			   
 			if( structKeyExists( arguments.installPaths, dependency ) ) {
@@ -900,6 +921,7 @@ component accessors="true" singleton {
 				var boxJSON = readPackageDescriptor( fullPackageInstallPath );
 				thisDeps[ dependency ][ 'name'  ] = boxJSON.name;
 				thisDeps[ dependency ][ 'shortDescription'  ] = boxJSON.shortDescription;
+				thisDeps[ dependency ][ 'packageVersion'  ] = boxJSON.version;
 				
 				// Down the rabbit hole
 				buildChildren( boxJSON, thisDeps[ dependency ], fullPackageInstallPath );				

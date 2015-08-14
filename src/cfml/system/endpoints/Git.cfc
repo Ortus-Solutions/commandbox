@@ -118,4 +118,13 @@ component accessors="true" implements="IEndpoint" singleton {
 		
 	}
 
+	public function getUpdate( required string package, required string version, boolean verbose=false ) {
+		var result = {
+			isOutdated = true,
+			version = 'unknown'
+		};
+		
+		return result;
+	}
+
 }

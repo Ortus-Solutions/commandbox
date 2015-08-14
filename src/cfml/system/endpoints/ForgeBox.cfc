@@ -30,15 +30,8 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 		
 	public string function resolvePackage( required string package, boolean verbose=false ) {
 		var entryData = {};
-		
-		var slug = listFirst( arguments.package, '@' );
-		var version = '';
-		// foo@1.0.0
-		if( arguments.package contains '@' ) {
-			// Note this can also be a semvar range like 1.2.x, >2.0.0, or 1.0.4-2.x
-			// For now I'm assuming it's a specific version
-			version = listRest( arguments.package, '@' );
-		}
+		var slug = parseSlug( arguments.package );
+		var version = parseVersion( arguments.package );
 				
 		// If we have a specific version and it exists in artifacts, use it.  Otherwise, to ForgeBox!!
 		if( semanticVersion.isExactVersion( version ) && artifactService.artifactExists( slug, version ) ) {
@@ -143,11 +136,42 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 	public function publish(required string path) {
 		throw( 'Not implemented' );
 	}
+		
+	private function parseSlug( required string package ) {
+		return listFirst( arguments.package, '@' );
+	}
+		
+	private function parseVersion( required string package ) {
+		var version = '';
+		// foo@1.0.0
+		if( arguments.package contains '@' ) {
+			// Note this can also be a semvar range like 1.2.x, >2.0.0, or 1.0.4-2.x
+			// For now I'm assuming it's a specific version
+			version = listRest( arguments.package, '@' );
+		}
+		return version;
+	}	
 
 	public function getDefaultName( required string package ) {
 		// if "foobar@2.0" just return "foobar"
 		return listFirst( arguments.package, '@' );
 	}
 
+	public function getUpdate( required string package, required string version, boolean verbose=false ) {
+		var slug = parseSlug( arguments.package );
+		var version = parseVersion( arguments.package );
+		var result = {
+			isOutdated = false,
+			version = ''
+		};
+		
+		// Verify in ForgeBox
+		var fbData = forgebox.getEntry( slug );
+		// Verify if we are outdated, internally isNew() parses the incoming strings
+		result.isOutdated = semanticVersion.isNew( current=version, target=fbData.version );
+		result.version = fbData.version;
+		
+		return result;		
+	}
 
 }

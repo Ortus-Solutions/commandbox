@@ -21,4 +21,19 @@ interface {
 	*/
 	public function getDefaultName( required string package );
 
+	/**
+	* Checks to see if there is an update to the package
+	* @returns a struct specifying if the currently installed version
+	* is outdated as well as the newly available version.
+	* The default return struct is this:
+	*
+	* {
+	* 	isOutdated = false,
+	* 	version = ''
+	* }
+	*	
+	* @throws endpointException
+	*/
+	public function getUpdate( required string package, required string version, boolean verbose=false );
+
 }
