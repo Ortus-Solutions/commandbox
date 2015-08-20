@@ -44,7 +44,8 @@ component accessors="true" implements="IEndpoint" singleton {
 		
 		// TODO: Add artifacts caching
 
-		var GitURL = getProtocol() & ':' & arguments.package;
+		var GitURL = replace( arguments.package, '//', '' );
+		GitURL = getProtocol() & GitURL;
 		var branch = 'master';
 		if( GitURL contains '##' ) {
 			branch = listLast( GitURL, '##' );
@@ -58,22 +59,27 @@ component accessors="true" implements="IEndpoint" singleton {
 		var Git = createObject( 'java', 'org.eclipse.jgit.api.Git' );
 		
 		// Wrap up system out in a PrintWriter and create a progress monitor to track our clone
-		var printWriter = createObject( 'java', 'java.io.PrintWriter' ).init( system.out, true )
+		var printWriter = createObject( 'java', 'java.io.PrintWriter' ).init( system.out, true );
 		var progressMonitor = createObject( 'java', 'org.eclipse.jgit.lib.TextProgressMonitor' ).init( printWriter );
 		
 		// Temporary location to place the repo
 		var localPath = createObject( 'java', 'java.io.File' ).init( "#tempDir#/git_#randRange( 1, 1000 )#" );
-		
+				
 		try { 
 			// Clone the repo locally into a temp folder
-			var local.result = Git.cloneRepository()
-			        .setURI( GitURL )
-			        .setBranch( branch )
-			        .setCloneSubmodules( true )
-			        .setDirectory( localPath )
-			        .setProgressMonitor( progressMonitor )
-			        .call();
+			var cloneCommand = Git.cloneRepository()
+				.setURI( GitURL )			        
+				.setBranch( branch )
+				.setCloneSubmodules( true )
+				.setDirectory( localPath )
+				.setProgressMonitor( progressMonitor );
+		        
+			// Conditionally apply security
+			local.result = secureCloneCommand( cloneCommand )
+		        .call();
+		        
 		} catch( any var e ) {
+			rethrow;
 			throw( message="Error Cloning Git repository", detail="#e.message#",  type="endpointException"); 
 		} finally {
 			// Release file system locks on the repo
@@ -107,14 +113,14 @@ component accessors="true" implements="IEndpoint" singleton {
 
 	private function getProtocol() {
 		var prefix = getNamePrefixes();
-		if( listFindNoCase( 'github,git+https', prefix ) ) {
-			return "https";
+		if( listFindNoCase( 'github,git+https,git', prefix ) ) {
+			return "https://";
 		} else if( prefix == 'git+http' ) {
-			return "http";
+			return "http://";
 		} else if( prefix == 'git+ssh' ) {
-			return "ssh";
+			return "";
 		}
-		return prefix;
+		return prefix & '://';
 		
 	}
 
@@ -125,6 +131,11 @@ component accessors="true" implements="IEndpoint" singleton {
 		};
 		
 		return result;
+	}
+
+	// Default is no auth
+	private function secureCloneCommand( required any cloneCommand ) {
+		return cloneCommand;
 	}
 
 }

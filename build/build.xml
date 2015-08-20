@@ -187,9 +187,18 @@ External Dependencies:
 			</manifest>
 			<fileset dir="${temp.dir}/cli/bin">
 				<exclude name="cliloader/*" />
+				<exclude name="com/*" />
 			</fileset>
 		</jar>
 		<delete dir="${temp.dir}/cli/bin/luceecli" />
+		
+		<!-- Custom Jgit libs -->
+		<jar destfile="${temp.dir}/cli/ortus-jgit.jar" filesetmanifest="mergewithoutmain" level="9">
+			<fileset dir="${temp.dir}/cli/bin">
+				<exclude name="cliloader/*" />
+			</fileset>
+		</jar>
+		<delete dir="${temp.dir}/cli/bin/com" />
 	
 		<!-- Copy CommandBox code -->
       	<copy todir="${build.dir}" encoding="UTF-8">
@@ -239,6 +248,7 @@ External Dependencies:
 	            <exclude name="**/org*mortbay*jetty.jar"/>
 	          </fileset>
 	          <fileset file="${temp.dir}/cli/luceecli.jar" />
+	          <fileset file="${temp.dir}/cli/ortus-jgit.jar" />
 	        </copy>
 	        <packjars dir="${temp.dir}/packlibs" packdir="${temp.dir}/packlibs/packed" excludes="ESAPI*"/>
 	        <zip destfile="${temp.dir}/cli/libs.zip">
@@ -255,10 +265,12 @@ External Dependencies:
 	          <exclude name="**/org*mortbay*jetty.jar"/>
 	          </fileset>
 	          <fileset file="${temp.dir}/cli/luceecli.jar" />
+	          <fileset file="${temp.dir}/cli/ortus-jgit.jar" />
 	        </zip>
 	      </else>
 	    </antcontrib:if>
 	    <delete file="${temp.dir}/cli/luceecli.jar" />
+	    <delete file="${temp.dir}/cli/ortus-jgit.jar" />
 		
 		<echo file="${temp.dir}/version" message="${cfml.loader.version}" />
 		
