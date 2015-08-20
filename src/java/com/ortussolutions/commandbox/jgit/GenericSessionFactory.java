@@ -1,3 +1,12 @@
+/**
+*********************************************************************************
+* Copyright Since 2014 CommandBox by Ortus Solutions, Corp
+* www.coldbox.org | www.ortussolutions.com
+********************************************************************************
+* @author Brad Wood, Luis Majano
+*
+* I extend the abstract session factory class for jGit.  
+*/
 package com.ortussolutions.commandbox.jgit;
 
 import org.eclipse.jgit.transport.JschConfigSessionFactory;
