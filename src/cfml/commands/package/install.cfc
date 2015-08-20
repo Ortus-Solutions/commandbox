@@ -49,11 +49,11 @@
  * install http://site.com/package.zip
  * install git://site.com/user/repo.git
  * install git+https://site.com/user/repo.git
- * install git+ssh://site.com/user/repo.git
+ * install git+ssh://site.com:user/repo.git
  * {code}
  * .
  * The git+ssh endpoint will look for an private SSH key in your ~/.ssh directory named "id_rsa", "id_dsa", or "identity".
- * That matching public key (id_rsa.pub) needs to be registerd in the Git server. 
+ * That matching public key needs to be registerd in the Git server. 
  * . 
  * Git repos are cloned and the "master" branch used by default.  
  * You can also use a committ-ish to target a branch, tag, or commit

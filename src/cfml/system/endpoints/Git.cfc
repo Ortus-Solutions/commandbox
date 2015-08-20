@@ -79,7 +79,6 @@ component accessors="true" implements="IEndpoint" singleton {
 		        .call();
 		        
 		} catch( any var e ) {
-			rethrow;
 			throw( message="Error Cloning Git repository", detail="#e.message#",  type="endpointException"); 
 		} finally {
 			// Release file system locks on the repo
