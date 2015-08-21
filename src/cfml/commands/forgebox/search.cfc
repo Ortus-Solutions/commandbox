@@ -50,6 +50,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 						print.blackOnWhite( ' #entry.title# ' ); 
 							print.boldText( '   ( #entry.fname# #entry.lname# )' );
 							print.boldGreenLine( '   #repeatString( '*', val( entry.entryRating ) )#' );
+						print.line( 'Version: #entry.version#' );
 						print.line( 'Type: #entry.typeName#' );
 						print.line( 'Slug: "#entry.slug#"' );
 						print.Yellowline( '#left( entry.summary, 200 )#' );
