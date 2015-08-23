@@ -30,13 +30,20 @@ component extends="commandbox.system.BaseCommand" aliases="outdated" excludeFrom
 	 * @json.hint Outputs results as JSON 
 	 **/
 	function run( boolean verbose=false, boolean JSON=false ) {
+				
+		if( arguments.JSON ) {
+			arguments.verbose = false;
+		}
+		
 		// package check
 		if( !packageService.isPackage( getCWD() ) ) {
 			return error( '#getCWD()# is not a package!' );
 		}
 		
 		// echo output
-		print.yellowLine( "Resolving Dependencies, please wait..." ).toConsole();
+		if( !arguments.JSON ) {
+			print.yellowLine( "Resolving Dependencies, please wait..." ).toConsole();
+		}
 
 		// build dependency tree
 		var aOutdatedDependencies = packageService.getOutdatedDependencies( directory=getCWD(), print=print, verbose=arguments.verbose );
