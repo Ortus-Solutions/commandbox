@@ -89,6 +89,16 @@ component extends="commandbox.system.BaseCommand" aliases="start" excludeFromHel
 		// Get package descriptor for overrides
 		var boxJSON = packageService.readPackageDescriptor( serverInfo.webroot );
 
+		// server config structure
+		if(structKeyExists(boxJSON,'server')){
+			var serverConfig = boxJSON.server;
+			for (var configKey in serverConfig){
+				if(structKeyExists(arguments,configKey)){
+					arguments[configKey]=serverConfig[configKey];
+				}
+			}
+		}
+
 		// Update data from arguments
 		serverInfo.debug 	= arguments.debug;
 		serverInfo.name 	= arguments.name is "" ? listLast( serverInfo.webroot, "\/" ) : arguments.name;
