@@ -1,5 +1,8 @@
 <cfcomponent hint="|modelDescription|" output="false" |modelPersistence||accessors|>
 
+    <!--- Properties --->
+    |properties|
+
 <!------------------------------------------- CONSTRUCTOR ------------------------------------------->
 
 	<cffunction name="init" access="public" returntype="|modelName|" output="false" hint="constructor">
