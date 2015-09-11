@@ -130,7 +130,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 			print
 				.greenLine( "Update applied successfully, installed v#repoVersion#" )		
 				.redLine( "CommandBox needs to exit to complete the installation." )
-				.yellowLine( "This message will self-descruct in 10 seconds" )
+				.yellowLine( "This message will self-destruct in 10 seconds" )
 				.toConsole();
 			
 			// Give them a chance to read it.
