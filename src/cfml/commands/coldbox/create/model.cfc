@@ -34,6 +34,7 @@ component extends='commandbox.system.BaseCommand' aliases='' excludeFromHelp=fal
 	* @script Generate content in script markup or tag markup
 	* @description The model hint description
 	* @open Open the file once generated
+	* @accessors Setup accessors to be true or not in the component
 	**/
 	function run( 
 		required name,
@@ -44,7 +45,8 @@ component extends='commandbox.system.BaseCommand' aliases='' excludeFromHelp=fal
 		directory='models',
 		boolean script=true,
 		description="I am a new Model Object",
-		boolean open=false
+		boolean open=false,
+		boolean accessors=true
 	) {
 		// This will make each directory canonical and absolute
 		arguments.directory 		= fileSystemUtil.resolvePath( arguments.directory );
@@ -93,7 +95,14 @@ component extends='commandbox.system.BaseCommand' aliases='' excludeFromHelp=fal
 				modelContent = replaceNoCase( modelContent, '|modelPersistence|', '', 'all' );
 				break;
 			case 'Singleton' :
-				modelContent = replaceNoCase( modelContent, '|modelPersistence|', 'singleton', 'all');
+				modelContent = replaceNoCase( modelContent, '|modelPersistence|', 'singleton ', 'all');
+		}
+
+		// Accessors
+		if( arguments.accessors ){
+			modelContent = replaceNoCase( modelContent, '|accessors|', 'accesors="true"', 'all');
+		} else {
+			modelContent = replaceNoCase( modelContent, '|accessors|', '', 'all');
 		}
 
 		// Handle Methods

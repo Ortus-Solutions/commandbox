@@ -1,7 +1,7 @@
 /**
 * |modelDescription|
 */
-component |modelPersistence|{
+component |modelPersistence||accessors|{
 	
 	|modelName| function init(){
 		
