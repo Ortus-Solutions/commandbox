@@ -106,7 +106,7 @@ component extends='commandbox.system.BaseCommand' aliases='' excludeFromHelp=fal
 
 		// Accessors
 		if( arguments.accessors ){
-			modelContent = replaceNoCase( modelContent, '|accessors|', 'accesors="true"', 'all');
+			modelContent = replaceNoCase( modelContent, '|accessors|', 'accessors="true"', 'all');
 		} else {
 			modelContent = replaceNoCase( modelContent, '|accessors|', '', 'all');
 		}
