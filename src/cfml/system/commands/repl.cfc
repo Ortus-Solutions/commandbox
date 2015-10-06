@@ -33,23 +33,24 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 	function init(){
 		super.init();
 
-		// setup tmp include directories
-		variables.tmpDirRelative = "/commandbox/system/tmp";
-		variables.tmpDirAbsolute = expandPath( "/commandbox/system/tmp" );
-
 		return this;
 	}
 
 	/**
 	* @input.hint Optional CFML to execute. If provided, the command exits immediatley.
 	* @script.hint Run REPL in script or tag mode
+	* @directory.hint Directory to start the REPL in (defaults to current working directory).
 	**/
-	function run( string input,  boolean script=true ){
+	function run( string input,  boolean script=true, string directory = getCWD() ){
 		
-		var quit 	 		= false;
+		var quit 	 	= false;
 		var results  		= "";
 		var executor 		= wirebox.getInstance( "executor" );
 		var newHistory 		= arguments.script ? variables.REPLScriptHistoryFile : variables.REPLTagHistoryFile;
+		
+		// setup tmp include directories
+		variables.tmpDirRelative = arguments.directory;
+		variables.tmpDirAbsolute = expandPath( arguments.directory );
 
 		// Setup REPL history file
 		shell.getReader().setHistory( newHistory );
