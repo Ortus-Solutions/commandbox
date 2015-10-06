@@ -39,10 +39,11 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 	/**
 	* @input.hint Optional CFML to execute. If provided, the command exits immediatley.
 	* @script.hint Run REPL in script or tag mode
+	* @directory.hint Directory to start the REPL in (defaults to current working directory).
 	**/
 	function run( string input,  boolean script=true, string directory = getCWD() ){
 		
-		var quit 	 		= false;
+		var quit 	 	= false;
 		var results  		= "";
 		var executor 		= wirebox.getInstance( "executor" );
 		var newHistory 		= arguments.script ? variables.REPLScriptHistoryFile : variables.REPLTagHistoryFile;
