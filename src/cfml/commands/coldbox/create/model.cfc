@@ -8,6 +8,10 @@
 * {code:bash}
 * coldbox create model myModel --open
 * {code}
+* .
+* {code:bash}
+* coldbox create model name=User properties=fname,lname,email --accessors --open
+* {code}
 *
  **/
 component extends='commandbox.system.BaseCommand' aliases='' excludeFromHelp=false {
@@ -34,6 +38,8 @@ component extends='commandbox.system.BaseCommand' aliases='' excludeFromHelp=fal
 	* @script Generate content in script markup or tag markup
 	* @description The model hint description
 	* @open Open the file once generated
+	* @accessors Setup accessors to be true or not in the component
+	* @properties Enter a list of properties to generate. You can add the type via semicolon separator. Ex: firstName,age:numeric,wheels:array
 	**/
 	function run( 
 		required name,
@@ -44,7 +50,9 @@ component extends='commandbox.system.BaseCommand' aliases='' excludeFromHelp=fal
 		directory='models',
 		boolean script=true,
 		description="I am a new Model Object",
-		boolean open=false
+		boolean open=false,
+		boolean accessors=true,
+		properties=""
 	) {
 		// This will make each directory canonical and absolute
 		arguments.directory 		= fileSystemUtil.resolvePath( arguments.directory );
@@ -93,8 +101,31 @@ component extends='commandbox.system.BaseCommand' aliases='' excludeFromHelp=fal
 				modelContent = replaceNoCase( modelContent, '|modelPersistence|', '', 'all' );
 				break;
 			case 'Singleton' :
-				modelContent = replaceNoCase( modelContent, '|modelPersistence|', 'singleton', 'all');
+				modelContent = replaceNoCase( modelContent, '|modelPersistence|', 'singleton ', 'all');
 		}
+
+		// Accessors
+		if( arguments.accessors ){
+			modelContent = replaceNoCase( modelContent, '|accessors|', 'accessors="true"', 'all');
+		} else {
+			modelContent = replaceNoCase( modelContent, '|accessors|', '', 'all');
+		}
+
+		// Properties
+		var properties 	= listToArray( arguments.properties );
+		var buffer 		= createObject( "java", "java.lang.StringBuffer" ).init();
+		for( var thisProperty in properties ){
+			var propName = getToken( trim( thisProperty ), 1, ":");
+			var propType = getToken( trim( thisProperty ), 2, ":");
+			if( NOT len( propType ) ){ propType = "string"; }
+
+			if( arguments.script ){
+				buffer.append( 'property name="#propName#" type="#propType#";#chr(13) & chr(9)#' );
+			} else {
+				buffer.append( chr( 60 ) & 'cfproperty name="#propName#" type="#propType#">#chr(13) & chr(9)#' );
+			}
+		}
+		modelContent = replaceNoCase( modelContent, "|properties|", buffer.toString() );
 
 		// Handle Methods
 		if( len( arguments.methods ) ){
@@ -128,7 +159,7 @@ component extends='commandbox.system.BaseCommand' aliases='' excludeFromHelp=fal
 		var modelPath = '#directory#/#arguments.name#.cfc';
 		// Create dir if it doesn't exist
 		directorycreate( getDirectoryFromPath( modelPath ), true, true );
-		file action='write' file='#modelPath#' mode ='777' output='#modelContent#';
+		file action='write' file='#modelPath#' mode ='777' output='#trim( modelContent )#';
 		print.greenLine( 'Created #modelPath#' );
 
 		if( arguments.tests ) {
