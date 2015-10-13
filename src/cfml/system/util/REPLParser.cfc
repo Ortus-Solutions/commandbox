@@ -93,9 +93,9 @@ component accessors="true" singleton {
 	* Returns serialized evaluation of command if possible.
 	* @executor.hint the executor context to attempt evaluation
 	**/
-	function evaluateCommand( required executor ) {
+	function evaluateCommand( required executor, required directory ) {
 			var cfml = getCommandPreparedForEvaluation();
-			return executor.eval( cfml );
+			return executor.eval( cfml, arguments.directory );
 	}
 
 	/**

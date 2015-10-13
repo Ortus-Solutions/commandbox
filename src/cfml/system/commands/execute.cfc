@@ -39,22 +39,12 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 			return error( "File: #arguments.file# does not exist!" );
 		}
 		
-		// Only forward slashes match CF's mappings
-		arguments.file = replace( arguments.file, '\', '/' );
-		// For non-Unix paths, strip  drive letter so path is relative.
-		// This only works because CF sees the drive root as the web root so / matches it
-		// ONLY WORKS FOR FILES ON THE SAME DRIVE AS COMMANDBOX!! See COMMANDBOX-104
-		if( !arguments.file.startsWith( '/' ) ) {
-			// Strip drive letter
-			arguments.file = mid( arguments.file, 3, len( arguments.file ) );			
-		}		
-		
 		// Parse arguments
 		var vars = parseArguments( arguments );
 		
 		try{
 			// we use the executor to capture output thread safely
-			var out = wirebox.getInstance( "Executor" ).run( arguments.file, vars );
+			var out = wirebox.getInstance( "Executor" ).runFile( arguments.file, vars );
 		} catch( any e ){
 			print.boldGreen( "Error executing #arguments.file#: " );
 			return error( '#e.message##CR##e.detail##CR##e.stackTrace#' );

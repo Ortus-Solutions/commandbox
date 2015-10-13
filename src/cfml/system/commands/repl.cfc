@@ -41,16 +41,14 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 	* @script.hint Run REPL in script or tag mode
 	* @directory.hint Directory to start the REPL in (defaults to current working directory).
 	**/
-	function run( string input,  boolean script=true, string directory = getCWD() ){
+	function run( string input,  boolean script=true, string directory='' ){
 		
 		var quit 	 	= false;
 		var results  		= "";
 		var executor 		= wirebox.getInstance( "executor" );
 		var newHistory 		= arguments.script ? variables.REPLScriptHistoryFile : variables.REPLTagHistoryFile;
 		
-		// setup tmp include directories
-		variables.tmpDirRelative = arguments.directory;
-		variables.tmpDirAbsolute = expandPath( arguments.directory );
+  	   arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
 
 		// Setup REPL history file
 		shell.getReader().setHistory( newHistory );
@@ -102,10 +100,6 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 			if( listFindNoCase( 'quit,q,exit', cfml ) ){
 				quit = true;
 			} else {
-				// Temp file to evaluate
-				var tmpFile = createUUID() & ".cfm";
-				var tmpFileAbsolute = variables.tmpDirAbsolute & "/" & tmpFile;
-				var tmpFileRelative = variables.tmpDirRelative & "/" & tmpFile;
 				
 				// evaluate it
 				try {
@@ -114,16 +108,10 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 
 					try {
 						// Attempt evaluation
-						results = REPLParser.evaluateCommand( executor );
+						results = REPLParser.evaluateCommand( executor, arguments.directory );
 					} catch (any var e) {
-						// generate cfml command to write to file
-						var CFMLFileContents = ( arguments.script ? "<cfscript>" & cfml & "</cfscript>" : cfml );
-	
-						// write out our cfml command
-						fileWrite( tmpFileAbsolute, CFMLFileContents );
-	
 						// execute our command using temp file
-						results = executor.run( tmpFileRelative );
+						results = executor.runCode( cfml, arguments.script, arguments.directory );
 					}
 
 					// print results
@@ -132,17 +120,12 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 						results = REPLParser.serializeOutput( results );
 						print.boldRedLine( results ).toConsole();
 					}
-					// loop it
+					
 				} catch( any e ){
 					// Log it
 					logger.error( '#e.message# #e.detail#' , e.stackTrace );
 					error( '#e.message##CR##e.detail#' );
 					print.toConsole();
-				} finally {
-					// cleanup
-					if( fileExists( tmpFileAbsolute ) ){
-						fileDelete( tmpFileAbsolute );
-					}
 				}
 			}
 		}
