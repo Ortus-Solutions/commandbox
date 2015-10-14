@@ -89,7 +89,7 @@ component accessors="true" implements="IEndpoint" singleton {
 		}
 		
 		// Defer to file endpoint
-		return folderEndpoint.resolvePackage( localPath, arguments.verbose );
+		return folderEndpoint.resolvePackage( localPath.getPath(), arguments.verbose );
 		
 	}
 
