@@ -27,8 +27,6 @@ component accessors="true" implements="IEndpoint" singleton {
 		
 	public string function resolvePackage( required string package, boolean verbose=false ) {
 		
-		// TODO: Add artifacts caching
-		
 		var fileName = 'temp#randRange( 1, 1000 )#.zip';
 		var fullPath = tempDir & '/' & fileName;		
 		
@@ -69,8 +67,9 @@ component accessors="true" implements="IEndpoint" singleton {
 		var fileName = listLast( baseURL, '/' );
 		
 		// Check for file extension in URL
-		if( listLast( fileName, '.' ) == 'zip' ) {
-			return listFirst( fileName, '.' );
+		var fileNameListLen = listLen( fileName, '.' );
+		if( fileNameListLen > 1 && listLast( fileName, '.' ) == 'zip' ) {
+			return listDeleteAt( fileName, fileNameListLen, '.' );
 		}
 		return reReplaceNoCase( arguments.package, '[^a-zA-Z0-9]', '', 'all' );
 	}
