@@ -233,7 +233,9 @@ component accessors="true" singleton {
 				if( packageType == 'commandbox-commands' ) {
 					// Setup installation directory and arguments as per type
 					installDirectory = expandPath( '/commandbox-home/commands' );
-					artifactDescriptor.createPackageDirectory = false;
+					// Default creation of package to false if not defined by command descriptor
+					artifactDescriptor.createPackageDirectory = artifactDescriptor.createPackageDirectory ?: false;
+					// Default saving options and patterns
 					arguments.save = false;
 					arguments.saveDev = false;
 					ignorePatterns.append( '/box.json' );
