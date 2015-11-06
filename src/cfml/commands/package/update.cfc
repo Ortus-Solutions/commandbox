@@ -78,16 +78,18 @@ component extends="commandbox.system.BaseCommand" aliases="update" excludeFromHe
 		// iterate and update
 		for( var dependency in dependenciesToUpdate ){
 			
-			// Contains an enpoint
+			// Contains an endpoint
 			if( dependency.version contains ':' ) {
-				var ID = dependency.version;
+				var oldID = dependency.version;
+				var newID = OldID;
 			} else {
-				var ID = dependency.slug & '@' & dependency.version;
+				var oldID = dependency.slug & '@' & dependency.Version;
+				var newID = dependency.slug & '@' & dependency.newVersion;
 			}
 			
-			print.magentaLine( "Starting update of #ID# ").toConsole();
+			print.magentaLine( "Starting update of #oldID# ").toConsole();
 			// install it
-			runCommand( "install ID='#parser.escapeArg( ID )#' verbose=#arguments.verbose# --force" );
+			runCommand( "install ID='#parser.escapeArg( newID )#' verbose=#arguments.verbose# --force" );
 		}
 		
 	}
