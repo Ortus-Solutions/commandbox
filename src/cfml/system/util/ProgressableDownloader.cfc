@@ -145,7 +145,11 @@ component singleton {
 		// If we get a redirect, follow it
 		if( connection.responseCode >= 300 && connection.responseCode < 400 ) {
 			var newURL = connection.getHeaderField( "Location");
-			
+			// Deal with relative URLs by creating a new URL using the old one as a base
+			// Sometimes the HTTP location header is a relative path.
+			var next = createObject( 'java', 'java.net.URL' ).init( netURL, newURL );
+          	newURL = next.toExternalForm();
+           
 			if( !isSimpleValue( arguments.redirectUDF ) ) {
 				arguments.redirectUDF( newURL );
 			}

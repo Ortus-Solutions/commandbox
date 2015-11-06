@@ -6,6 +6,7 @@
 * @author Brad Wood, Luis Majano, Denny Valliant
 *
 * I am the CFLIb endpoint.  I get packages from CFblib.org based on their slug.
+* install cflib:UDFName
 */
 component accessors="true" implements="IEndpoint" singleton {
 		
