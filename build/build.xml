@@ -251,7 +251,7 @@ External Dependencies:
 	          <fileset file="${temp.dir}/cli/luceecli.jar" />
 	          <fileset file="${temp.dir}/cli/ortus-jgit.jar" />
 	        </copy>
-	        <packjars dir="${temp.dir}/packlibs" packdir="${temp.dir}/packlibs/packed" excludes="ESAPI*"/>
+	        <packjars dir="${temp.dir}/packlibs" packdir="${temp.dir}/packlibs/packed" excludes="ESAPI*,microsoft-*"/>
 	        <zip destfile="${temp.dir}/cli/libs.zip">
 	          <fileset dir="${temp.dir}/packlibs/packed"/>
 	        </zip>
