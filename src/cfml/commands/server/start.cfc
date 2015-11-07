@@ -23,7 +23,7 @@ component extends="commandbox.system.BaseCommand" aliases="start" excludeFromHel
 	property name="packageService" 	inject="packageService";
 
 	/**
-	 * @name           	short name for this server
+	 * @name           	short name for this server`
 	 * @name.optionsUDF	serverNameComplete
 	 * @port           	port number
 	 * @host           	bind to a host/ip
@@ -45,7 +45,7 @@ component extends="commandbox.system.BaseCommand" aliases="start" excludeFromHel
 	 * @SSLKeyPass     	SSL key passphrase (required if SSLCert specified)
 	 * @rewritesEnable 	enable URL rewriting (default false)
 	 * @rewritesConfig 	optional URL rewriting config file path
-	 * @heapSize		The max heap size in megabytes you would like this server to start with, it defaults to 256mb
+	 * @heapSize		The max heap size in megabytes you would like this server to start with, it defaults to 512mb
 	 **/
 	function run(
 		String  name            = "",
