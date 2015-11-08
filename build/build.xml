@@ -528,7 +528,7 @@ External Dependencies:
 
   <target name="build.cli.deb" depends="build.cli.bin" description="builds a .deb file for debian-based systems ONLY!">
     <!-- Load deb task -->
-    <loadproperties srcFile="${user.home}/creds/secret.properties"/>
+    <loadproperties srcFile="/root/creds/secret.properties"/>
     <taskdef-dependency name="debtask" classname="debrepo.ant.DebTask" artifactId="debrepo" groupId="org.cfmlprojects" version="1.0.0" />
     <mkdir dir="${deb.repo}"/>
     <debtask
