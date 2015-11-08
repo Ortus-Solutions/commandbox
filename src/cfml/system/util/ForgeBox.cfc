@@ -24,6 +24,7 @@ or just add DEBUG to the root logger
 	<cfproperty name="progressableDownloader" 	inject="ProgressableDownloader">
 	<cfproperty name="progressBar" 				inject="ProgressBar">
 	<cfproperty name="consoleLogger"			inject="logbox:logger:console">
+	<cfproperty name="CommandBoxlogger" 		inject="logbox:logger:{this}">
 
 	<!--- Properties --->
 	<cfproperty name="apiURL">
@@ -235,7 +236,8 @@ or just add DEBUG to the root logger
             if (isJSON(results.rawResponse)) {
                 results.response = deserializeJSON(results.rawResponse,false);
             } else {
-                results.response = { messages = "Site Unreachable - ForgeBox API failed to return a JSON payload " };
+            	CommandBoxlogger.error( 'Something other than JSON returned', results.rawResponse );
+				throw( "Uh-oh, ForgeBox returned something other than JSON.  Check the logs.", 'forgebox' );
             }
 			
 			return results;
