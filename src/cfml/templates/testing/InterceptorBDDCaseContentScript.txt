@@ -7,5 +7,5 @@
 				interceptor.|point|( mockEvent, mockData );
 				
 				// expectations here
-				
+				expect( false ).toBeTrue();
 			});

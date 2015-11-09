@@ -15,8 +15,8 @@ External Dependencies:
     <!-- Version: UPDATE ON EACH RELEASE AS NEEDED -->
  	<property name="distro.groupID"				value="ortussolutions" />
  	<property name="distro.name"				value="commandbox"/>
- 	<property name="commandbox.version"			value="2.1.1"/>
- 	<property name="commandbox.stableVersion"	value="2.1.1"/>
+ 	<property name="commandbox.version"			value="2.2.0"/>
+ 	<property name="commandbox.stableVersion"	value="2.2.0"/>
 
     <!-- Time Label -->
 	<tstamp prefix="start"/>
@@ -251,7 +251,7 @@ External Dependencies:
 	          <fileset file="${temp.dir}/cli/luceecli.jar" />
 	          <fileset file="${temp.dir}/cli/ortus-jgit.jar" />
 	        </copy>
-	        <packjars dir="${temp.dir}/packlibs" packdir="${temp.dir}/packlibs/packed" excludes="ESAPI*"/>
+	        <packjars dir="${temp.dir}/packlibs" packdir="${temp.dir}/packlibs/packed" excludes="ESAPI*,microsoft-*"/>
 	        <zip destfile="${temp.dir}/cli/libs.zip">
 	          <fileset dir="${temp.dir}/packlibs/packed"/>
 	        </zip>
@@ -528,6 +528,7 @@ External Dependencies:
 
   <target name="build.cli.deb" depends="build.cli.bin" description="builds a .deb file for debian-based systems ONLY!">
     <!-- Load deb task -->
+    <loadproperties srcFile="/root/creds/secret.properties"/>
     <taskdef-dependency name="debtask" classname="debrepo.ant.DebTask" artifactId="debrepo" groupId="org.cfmlprojects" version="1.0.0" />
     <mkdir dir="${deb.repo}"/>
     <debtask
@@ -535,7 +536,8 @@ External Dependencies:
         package="commandbox"
         section="web"
         depends="java-common"
-        key="${ortus.sign.key.id}" passphrase="${ortus.sign.key.passphrase}"
+        key="${ortus.sign.key.id}"
+        passphrase="${ortus.sign.key.passphrase}"
         keyring="${ortus.sign.keyring}">
         <version upstream="${commandbox.version}"/>
         <maintainer name="${commandbox.packager.name}" email="${commandbox.packager.email}"/>
@@ -551,7 +553,8 @@ External Dependencies:
     <!-- Update Repo -->
     <deb-repo dir="${deb.repo}"
         label="ortus" description="ortussolutions.com debian repository"
-        key="${ortus.sign.key.id}" passphrase="${ortus.sign.key.passphrase}"
+        key="${ortus.sign.key.id}"
+        passphrase="${ortus.sign.key.passphrase}"
         keyring="${ortus.sign.keyring}" />
   </target>
 

@@ -176,5 +176,34 @@ component accessors="true" singleton {
 
 		return true;
     }
+    
+    /** 
+    * Accepts an absolute path and returns a relative path
+    * Does NOT apply any canonicalization 
+    */
+    string function makePathRelative( required string absolutePath ) {
+    	if( !isWindows() ) { 
+    		return arguments.absolutePath;
+    	}
+    	var driveLetter = listFirst( arguments.absolutePath, ':' );
+    	var path = listRest( arguments.absolutePath, ':' );
+    	var mapping = locateMapping( driveLetter );
+    	return mapping & path;
+    }
+    
+    /** 
+    * Accepts a Windows drive letter and returns a CF Mapping
+    * Creates the mapping if it doesn't exist
+    */
+    string function locateMapping( required string driveLetter  ) {
+    	var mappingName = '/' & arguments.driveLetter & '_drive';
+    	var mappingPath = arguments.driveLetter & ':/';
+    	var mappings = getApplicationSettings().mappings;
+    	if( !structKeyExists( mappings, mappingName ) ) {
+    		mappings[ mappingName ] = mappingPath;
+    		application action='update' mappings='#mappings#';
+   		}
+   		return mappingName;
+    }
 
 }

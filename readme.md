@@ -25,11 +25,10 @@ Download from the [Ortus Integration Repository](http://integration.stg.ortussol
 
 *Just please note that this contains latest bleeding edge releases that might not be stable.*
 
-**Homebrew Releases**
+**Getting Started Guide**
 
-You can install the latest stable CommandBox via [HomeBrew](http://brew.sh) very easily by using the following command in your terminal:
+Get going with CommandBox in a matter of minutes with our [Getting Started Guide](http://ortus.gitbooks.io/commandbox-documentation/content/getting_started_guide.html) 
 
-`brew install https://github.com/Ortus-Solutions/commandbox/raw/master/build/commandbox.rb`
 
 ## DOCUMENTATION
 

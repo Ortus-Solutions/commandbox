@@ -38,19 +38,30 @@ component extends='commandbox.system.BaseCommand' aliases='status' excludeFromHe
 	/**
 	 * Show server status
 	 *
-	 * @name.hint short name for the server
-	 * @name.optionsUDF serverNameComplete
-	 * @directory.hint web root for the server
-	 * @showAll.hint show all server statuses
-	 * @verbose.hint Show extra details
+	 * @name.hint 		Short name for the server
+	 * @name.optionsUDF ServerNameComplete
+	 * @directory.hint 	Web root for the server
+	 * @showAll.hint 	show all server statuses
+	 * @verbose.hint 	Show extra details
+	 * @json 			Output the server data as json
 	 **/
 	function run(
 		name='', 
 		directory='',
 		boolean showAll=false,
-		boolean verbose=false ){
-			
+		boolean verbose=false,
+		boolean JSON=false
+	){
+		// Get all server definitions
 		var servers = serverService.getServers();
+
+		// Display ALL as JSON?
+		if( arguments.showALL && arguments.json ){
+			print.line( 
+				formatterUtil.formatJson( serializeJSON( servers ) )
+			);
+			return;
+		}
 
 		// scissors beats paper
 		if( len( trim( arguments.name ) ) ) {
@@ -60,23 +71,32 @@ component extends='commandbox.system.BaseCommand' aliases='status' excludeFromHe
 		}
 
 		// Map the server statuses to a color
-		statusColors = {
-			running : 'green',
-			starting : 'yellow',
-			stopped : 'red'			
+		var statusColors = {
+			running 	: 'green',
+			starting 	: 'yellow',
+			stopped 	: 'red'			
 		};
 
 		for( var thisKey in servers ){
 			var thisServerInfo = servers[ thisKey ];
 
 			// If this is a directory or a name match OR are we just showing everything
-			if(  thisServerInfo.webroot == arguments.directory
+			if( thisServerInfo.webroot == arguments.directory
 				|| thisServerInfo.name == arguments.name
-				|| arguments.showAll ) {
+				|| arguments.showAll 
+			){
 				
 				// Null Checks, to guarnatee correct struct.
 				structAppend( thisServerInfo, serverService.newServerInfoStruct(), false );
-	
+				
+				// Are we doing JSON?
+				if( arguments.json ){
+					print.line( 
+						formatterUtil.formatJson( serializeJSON( thisServerInfo ) )
+					);
+					continue;
+				}
+
 				print.line().boldText( thisServerInfo.name );
 	
 				var status = thisServerInfo.status;
@@ -84,7 +104,7 @@ component extends='commandbox.system.BaseCommand' aliases='status' excludeFromHe
 					.bold( status, statusColors.keyExists( status ) ? statusColors[ status ] : 'yellow' )
 					.bold( ')' );
 	
-				print.indentedLine( thisServerInfo.host & ':' & thisServerInfo.port & '  -->  ' & thisServerInfo.webroot );
+				print.indentedLine( thisServerInfo.host & ':' & thisServerInfo.port & ' --> ' & thisServerInfo.webroot );
 					 
 				print.line();
 				print.indentedLine( thisServerInfo.statusInfo.result );
@@ -107,6 +127,9 @@ component extends='commandbox.system.BaseCommand' aliases='status' excludeFromHe
 		}
 	}
 	
+	/**
+	* AutoComplete server names
+	*/
 	function serverNameComplete() {
 		return serverService.getServerNames();
 	}

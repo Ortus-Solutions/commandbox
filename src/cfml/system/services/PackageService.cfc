@@ -233,7 +233,9 @@ component accessors="true" singleton {
 				if( packageType == 'commandbox-commands' ) {
 					// Setup installation directory and arguments as per type
 					installDirectory = expandPath( '/commandbox-home/commands' );
-					artifactDescriptor.createPackageDirectory = false;
+					// Default creation of package to false if not defined by command descriptor
+					artifactDescriptor.createPackageDirectory = artifactDescriptor.createPackageDirectory ?: false;
+					// Default saving options and patterns
 					arguments.save = false;
 					arguments.saveDev = false;
 					ignorePatterns.append( '/box.json' );
@@ -275,15 +277,11 @@ component accessors="true" singleton {
 			// Some packages may just want to be dumped in their destination without being contained in a subfolder
 			if( artifactDescriptor.createPackageDirectory ) {
 				installDirectory &= '/#packageDirectory#';
-			// If we're dumping in the root and the install dir is already a package...
+			// If we're dumping in the root and the install dir is already a package then ignore box.json or it will overwrite the existing one
+			// If the directory wasn't already a package, still save so our box.json gets install paths added
 			} else if( isPackage( installDirectory ) ) {
-				// ... then ignore box.json or it will overwrite the existing one
 				ignorePatterns.append( '/box.json' );
-			// If the directory wasn't already a package, don't save since we'd just be saving in our own box.json
-			} else {
-				arguments.save = false;
-				arguments.saveDev = false;
-			}
+			}			
 			
 			// Assert: At this point, all paths are finalized and we are ready to install.
 						

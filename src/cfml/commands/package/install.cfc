@@ -41,7 +41,7 @@
  * {code}
  * .
  * Installation from endpoints other than ForgeBox is supported.  
- * Additional endpoints include HTTP/HTTPS, local zip file or folder, and Git repos.
+ * Additional endpoints include HTTP/HTTPS, local zip file or folder, Git repos, CFlib.org, and RIAForge.org
  * .
  * {code:bash}
  * install C:/myZippedPackages/package.zip
@@ -69,6 +69,19 @@
  * {code:bash}
  * install mygithubuser/myproject
  * {code}
+ * .
+ * UDFs from CFLib.org can be installed via the cflib endpoint.  Install UDFs into a ColdBox app with the cflib-coldbox endpoint.
+ * .
+ * {code:bash}
+ * install cflib:AreaParallelogram
+ * install cflib-coldbox:AreaParallelogram
+ * {code}
+ * .
+ * Projects from RIAForge.org can be installed via the riaforge endpoint.
+ * .
+ * {code:bash}
+ * install riaforge:iwantmylastfm
+ * {code}
  **/
 component extends="commandbox.system.BaseCommand" aliases="install" excludeFromHelp=false {
 	
@@ -82,7 +95,7 @@ component extends="commandbox.system.BaseCommand" aliases="install" excludeFromH
 	property name="packageService" 	inject="PackageService";
 			
 	/**
-	* @ID.hint ID of the ForgeBox entry to install. If no ID is passed, all dependencies in box.json will be installed.
+	* @ID.hint "endpoint:package" to install. Default endpoint is "forgebox".  If no ID is passed, all dependencies in box.json will be installed.
 	* @ID.optionsUDF IDComplete
 	* @directory.hint The directory to install in and creates the directory if it does not exist. This will override the packages's box.json install dir if provided. 
 	* @save.hint Save the installed package as a dependancy in box.json (if it exists), defaults to true

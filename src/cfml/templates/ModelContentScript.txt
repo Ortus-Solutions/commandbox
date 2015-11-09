@@ -1,8 +1,14 @@
 /**
 * |modelDescription|
 */
-component |modelPersistence|{
+component |modelPersistence||accessors|{
 	
+    // Properties
+    |properties|
+
+    /**
+     * Constructor
+     */
 	|modelName| function init(){
 		
 		return this;

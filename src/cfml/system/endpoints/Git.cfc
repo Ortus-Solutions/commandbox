@@ -42,8 +42,6 @@ component accessors="true" implements="IEndpoint" singleton {
 		
 	public string function resolvePackage( required string package, boolean verbose=false ) {
 		
-		// TODO: Add artifacts caching
-
 		var GitURL = replace( arguments.package, '//', '' );
 		GitURL = getProtocol() & GitURL;
 		var branch = 'master';
@@ -89,7 +87,7 @@ component accessors="true" implements="IEndpoint" singleton {
 		}
 		
 		// Defer to file endpoint
-		return folderEndpoint.resolvePackage( localPath, arguments.verbose );
+		return folderEndpoint.resolvePackage( localPath.getPath(), arguments.verbose );
 		
 	}
 

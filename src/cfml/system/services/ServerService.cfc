@@ -485,7 +485,7 @@ component accessors="true" singleton{
 			SSLKeyPass		: "",
 			rewritesEnable  : false,
 			rewritesConfig	: "",
-			heapSize		: 256
+			heapSize		: 512
 		};
 	}
 

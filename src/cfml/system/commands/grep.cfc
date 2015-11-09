@@ -8,7 +8,7 @@
  * .
  * Find recent install commands
  * {code:bash}
- * history | grep isntall
+ * history | grep install
  * {code}
  * .
  * Search log file for certain errors
@@ -21,7 +21,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=tru
 	
 	/**
 	 * @input.hint The piped input to be checked.
-	 * @expression.hint A regular expression to match against each line of the input. Only matching line will be output.
+	 * @expression.hint A regular expression to match against each line of the input. Only matching lines will be output.
 	 **/
 	function run( input='', expression='' ) {
 		// Turn output into an array, breaking on carriage returns

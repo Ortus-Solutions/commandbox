@@ -15,6 +15,19 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 	* @directory.hint The base directory to create your BDD spec in and creates the directory if it does not exist.
 	 **/
 	function run( required name, boolean open=false, directory=getCWD() ){
+		// Allow dot-delimited paths
+		arguments.name = replace( arguments.name, '.', '/', 'all' );
+		
+		// Check if the name is actually a path
+		var nameArray = arguments.name.listToArray( '/' );
+		var nameArrayLength = nameArray.len();
+		if (nameArrayLength > 1) {
+			// If it is a path, split the path from the name
+			arguments.name = nameArray[nameArrayLength];
+			var extendedPath = nameArray.slice(1, nameArrayLength - 1).toList('/');
+			arguments.directory &= '/#extendedPath#';
+		}
+		
 		// This will make each directory canonical and absolute		
 		arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
 						
@@ -22,9 +35,6 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 		if( !directoryExists( arguments.directory ) ) {
 			directoryCreate( arguments.directory );			
 		}
-		
-		// Allow dot-delimited paths
-		arguments.name = replace( arguments.name, '.', '/', 'all' );
 		
 		// This help readability so the success messages aren't up against the previous command line
 		print.line();
