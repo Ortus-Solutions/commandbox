@@ -16,7 +16,7 @@ External Dependencies:
  	<property name="distro.groupID"				value="ortussolutions" />
  	<property name="distro.name"				value="commandbox"/>
  	<property name="commandbox.version"			value="2.2.0"/>
- 	<property name="commandbox.stableVersion"	value="2.1.1"/>
+ 	<property name="commandbox.stableVersion"	value="2.2.0"/>
 
     <!-- Time Label -->
 	<tstamp prefix="start"/>
@@ -553,7 +553,8 @@ External Dependencies:
     <!-- Update Repo -->
     <deb-repo dir="${deb.repo}"
         label="ortus" description="ortussolutions.com debian repository"
-        key="${ortus.sign.key.id}" passphrase="${ortus.sign.key.passphrase}"
+        key="${ortus.sign.key.id}"
+        passphrase="${ortus.sign.key.passphrase}"
         keyring="${ortus.sign.keyring}" />
   </target>
 
