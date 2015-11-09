@@ -531,8 +531,6 @@ External Dependencies:
     <loadproperties srcFile="/root/creds/secret.properties"/>
     <taskdef-dependency name="debtask" classname="debrepo.ant.DebTask" artifactId="debrepo" groupId="org.cfmlprojects" version="1.0.0" />
     <mkdir dir="${deb.repo}"/>
-    <echo message="ortus.sign.key.id --> ${ortus.sign.key.id}"/>
-    <echo message="ortus.sign.keyring --> ${ortus.sign.keyring}"/>
     <debtask
         todir="${deb.repo}"
         package="commandbox"
