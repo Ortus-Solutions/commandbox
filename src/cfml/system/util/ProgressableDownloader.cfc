@@ -104,7 +104,22 @@ component singleton {
 			outputStream.close();
 			inputStream.close();
 		
-			return '#connection.responseCode# #connection.responseMessage#';
+			var returnStruct = {
+				responseCode = connection.responseCode,
+				responseMessage = connection.responseMessage,
+				headers = {}
+			};
+			var headerMapSize = connection.getHeaderFields().size();
+			var i = 0; // Skipping the first index on purpose.  It's handled in responseCode and responseMessage
+			while( i++<headerMapSize  ) {
+				// Ignore empty keys
+				if( len( trim( connection.getHeaderFieldKey( i ) ) ) ) {
+					// Build up struct of header key/values
+					returnStruct.headers[ connection.getHeaderFieldKey( i ) ] =  connection.getHeaderField( i );
+				}
+			}
+					
+			return returnStruct;
 			
 		} catch( Any var e ) {
 			rethrow;
@@ -134,6 +149,8 @@ component singleton {
 		
 		var netURL = createObject( 'java', 'java.net.URL' ).init( arguments.downloadURL );
 		var connection = netURL.openConnection();
+		// The reason we're following redirects manually, is because the java class
+		// won't switch between HTTP and HTTPS without erroring
 		connection.setInstanceFollowRedirects( false );
 		
 		try {
