@@ -73,7 +73,7 @@ component accessors="true" singleton {
 			string packagePathRequestingInstallation = arguments.currentWorkingDirectory
 	){
 		
-		interceptorService.processState( 'preInstall', { installArgs=arguments } );
+		interceptorService.announceInterception( 'preInstall', { installArgs=arguments } );
 				
 		// If there is a package to install, install it
 		if( len( arguments.ID ) ) {
@@ -431,7 +431,7 @@ component accessors="true" singleton {
 			consoleLogger.info( "No dependencies found to install, but it's the thought that counts, right?" );
 		}
 		
-		interceptorService.processState( 'postInstall', { installArgs=arguments } );
+		interceptorService.announceInterception( 'postInstall', { installArgs=arguments } );
 
 	}
 	
@@ -480,7 +480,7 @@ component accessors="true" singleton {
 			required string currentWorkingDirectory
 	){
 					
-		interceptorService.processState( 'preUninstall', { uninstallArgs=arguments } );
+		interceptorService.announceInterception( 'preUninstall', { uninstallArgs=arguments } );
 		
 		consoleLogger.info( '.');
 		consoleLogger.info( 'Uninstalling package: #arguments.ID#');
@@ -584,7 +584,7 @@ component accessors="true" singleton {
 	
 		consoleLogger.info( "'#arguments.ID#' has been uninstalled" );
 
-		interceptorService.processState( 'postUninstall', { uninstallArgs=arguments } );
+		interceptorService.announceInterception( 'postUninstall', { uninstallArgs=arguments } );
 	}
 	
 	/**

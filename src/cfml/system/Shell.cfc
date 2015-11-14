@@ -16,6 +16,9 @@ component accessors="true" singleton {
 	property name="formatterUtil" 		inject="Formatter";
 	property name="logger" 				inject="logbox:logger:{this}";
 	property name="fileSystem"			inject="FileSystem";
+	property name="WireBox"				inject="wirebox";
+	property name="LogBox"				inject="logbox";
+	property name="InterceptorService"	inject="InterceptorService";
 
 	/**
 	* The java jline reader class.
@@ -101,10 +104,9 @@ component accessors="true" singleton {
 
 		// Create temp dir & set
 		setTempDir( variables.tempdir );
-
-		// Add CommmandBox standard interception points
-		getInterceptorService().appendInterceptionPoints( 'onCLIStart,onCLIExit,preCommand,postCommand,preModuleLoad,postModuleLoad,preModuleUnLoad,postModuleUnload,onServerStart,onServerStop,onException,preInstall,postInstall,preUninstall,postUninstall' );
-	
+		
+		getInterceptorService().configure();
+		
 		// load commands
 		if( variables.initArgs.asyncLoad ){
 			thread name="commandbox.loadcommands#getTickCount()#"{
@@ -113,14 +115,6 @@ component accessors="true" singleton {
 		} else {
 			variables.commandService.configure();
 		}
-	}
-
-	function geWireBox() {
-		return application.wirebox;
-	}
-
-	function getInterceptorService() {
-		return geWireBox().getEventManager();
 	}
 
 	/**
@@ -454,7 +448,7 @@ component accessors="true" singleton {
   	 **/
 	Shell function printError( required err ){
 		
-		getInterceptorService().processState( 'onException', { exception=err } );
+		getInterceptorService().announceInterception( 'onException', { exception=err } );
 		
 		variables.logger.error( '#arguments.err.message# #arguments.err.detail ?: ''#', arguments.err.stackTrace ?: '' );
 

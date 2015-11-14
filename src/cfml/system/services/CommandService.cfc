@@ -223,7 +223,7 @@ component accessors="true" singleton {
 			// Add command to the top of the stack
 			instance.callStack.prepend( commandInfo );
 
-			interceptorService.processState( 'preCommand', { commandInfo=commandInfo, parameterInfo=parameterInfo } );
+			interceptorService.announceInterception( 'preCommand', { commandInfo=commandInfo, parameterInfo=parameterInfo } );
 
 			// Run the command
 			try {
@@ -248,7 +248,7 @@ component accessors="true" singleton {
 				result = commandInfo.commandReference.CFC.getResult();
 			}
 
-			interceptorService.processState( 'postCommand', { commandInfo=commandInfo, parameterInfo=parameterInfo, resultresult=result } );
+			interceptorService.announceInterception( 'postCommand', { commandInfo=commandInfo, parameterInfo=parameterInfo, resultresult=result } );
 
 		} // End loop over command chain
 

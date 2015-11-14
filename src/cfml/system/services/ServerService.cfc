@@ -116,7 +116,7 @@ component accessors="true" singleton {
 		Boolean force=false,
 		Boolean debug=false
 	){
-		interceptorService.processState( 'onServerStart', { serverInfo=serverInfo } );
+		interceptorService.announceInterception( 'onServerStart', { serverInfo=serverInfo } );
 		
 		var launchUtil 	= java.LaunchUtil;
 		
@@ -235,7 +235,7 @@ component accessors="true" singleton {
  	 **/
 	struct function stop( required struct serverInfo ){
 		
-		interceptorService.processState( 'onServerStop', { serverInfo=serverInfo } );
+		interceptorService.announceInterception( 'onServerStop', { serverInfo=serverInfo } );
 		
 		var launchUtil = java.LaunchUtil;
 		var stopsocket = arguments.serverInfo.stopsocket;
