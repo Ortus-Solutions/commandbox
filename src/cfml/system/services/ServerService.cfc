@@ -8,7 +8,7 @@
 * I manage servers
 *
 */
-component accessors="true" singleton{
+component accessors="true" singleton {
 
 	/**
 	* Where the server libs are located
@@ -38,6 +38,8 @@ component accessors="true" singleton{
 	* The default rewrites configuration file
 	*/
 	property name="rewritesDefaultConfig" inject="rewritesDefaultConfig@constants";
+	
+	property name='interceptorService'	inject='interceptorService';
 
 	/**
 	* Constructor
@@ -114,6 +116,8 @@ component accessors="true" singleton{
 		Boolean force=false,
 		Boolean debug=false
 	){
+		interceptorService.processState( 'onServerStart', { serverInfo=serverInfo } );
+		
 		var launchUtil 	= java.LaunchUtil;
 		
 		// get webroot info
@@ -230,6 +234,9 @@ component accessors="true" singleton{
 	 * @returns struct of [ error, messages ]
  	 **/
 	struct function stop( required struct serverInfo ){
+		
+		interceptorService.processState( 'onServerStop', { serverInfo=serverInfo } );
+		
 		var launchUtil = java.LaunchUtil;
 		var stopsocket = arguments.serverInfo.stopsocket;
 		var args = "-jar ""#variables.jarPath#"" -stop --stop-port #val( stopsocket )# -host #arguments.serverInfo.host# --background false";

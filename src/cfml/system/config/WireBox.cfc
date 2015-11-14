@@ -21,6 +21,11 @@ component extends="wirebox.system.ioc.config.Binder" {
 			key		= "wireBox"
 		};
 
+		// Register all event listeners here, they are created in the specified order
+		wirebox.listeners = [
+			// { class="", name="", properties={} }
+		];
+			
 		// LogBox
 		wirebox.logBoxConfig = "commandbox.system.config.LogBox";
 
@@ -74,6 +79,10 @@ component extends="wirebox.system.ioc.config.Binder" {
 		map( 'REPLTagHistoryFile@java' ).toJava( "jline.console.history.FileHistory" )
 			.initWith( createObject( "java", "java.io.File" ).init( REPLTagHistoryFile ) )
 			.asSingleton();
+			
+		map( 'InterceptorService' ).toProvider( function() {
+			return application.wirebox.getEventManager();
+		} );
 
 		// Map Directories
 		mapDirectory( '/commandbox/system/services' );

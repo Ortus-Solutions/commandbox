@@ -102,6 +102,9 @@ component accessors="true" singleton {
 		// Create temp dir & set
 		setTempDir( variables.tempdir );
 
+		// Add CommmandBox standard interception points
+		getInterceptorService().appendInterceptionPoints( 'onCLIStart,onCLIExit,preCommand,postCommand,preModuleLoad,postModuleLoad,preModuleUnLoad,postModuleUnload,onServerStart,onServerStop,onException,preInstall,postInstall,preUninstall,postUninstall' );
+	
 		// load commands
 		if( variables.initArgs.asyncLoad ){
 			thread name="commandbox.loadcommands#getTickCount()#"{
@@ -110,6 +113,14 @@ component accessors="true" singleton {
 		} else {
 			variables.commandService.configure();
 		}
+	}
+
+	function geWireBox() {
+		return application.wirebox;
+	}
+
+	function getInterceptorService() {
+		return geWireBox().getEventManager();
 	}
 
 	/**
@@ -442,6 +453,9 @@ component accessors="true" singleton {
 	 * @err.hint Error object to print (only message is required)
   	 **/
 	Shell function printError( required err ){
+		
+		getInterceptorService().processState( 'onException', { exception=err } );
+		
 		variables.logger.error( '#arguments.err.message# #arguments.err.detail ?: ''#', arguments.err.stackTrace ?: '' );
 
 		variables.reader.print( variables.print.boldRedText( "ERROR: " & variables.formatterUtil.HTML2ANSI( arguments.err.message ) ) );

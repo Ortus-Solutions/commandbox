@@ -17,6 +17,7 @@ component accessors="true" singleton {
 	property name='logger' 				inject='logbox:logger:{this}';
 	property name='wirebox' 			inject='wirebox';
 	property name='commandLocations'	inject='commandLocations@constants';
+	property name='interceptorService'	inject='interceptorService';
 	
 	// TODO: Convert these to properties
 	instance = {
@@ -222,6 +223,8 @@ component accessors="true" singleton {
 			// Add command to the top of the stack
 			instance.callStack.prepend( commandInfo );
 
+			interceptorService.processState( 'preCommand', { commandInfo=commandInfo, parameterInfo=parameterInfo } );
+
 			// Run the command
 			try {
 				var result = commandInfo.commandReference.CFC.run( argumentCollection = parameterInfo.namedParameters );
@@ -245,6 +248,7 @@ component accessors="true" singleton {
 				result = commandInfo.commandReference.CFC.getResult();
 			}
 
+			interceptorService.processState( 'postCommand', { commandInfo=commandInfo, parameterInfo=parameterInfo, resultresult=result } );
 
 		} // End loop over command chain
 

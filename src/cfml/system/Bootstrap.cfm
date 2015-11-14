@@ -11,6 +11,7 @@ I am a CFM because the CLI seems to need a .cfm file to call
 This file will stay running the entire time the shell is open
 --->
 <cfset variables.wireBox = application.wireBox>
+<cfset interceptorService =  wirebox.getInstance( "InterceptorService" )>
 <cfsetting requesttimeout="999999" />
 <!---Display this banner to users--->
 <cfsavecontent variable="banner">
@@ -42,6 +43,8 @@ Type "help" for help, or "help [command]" to be more specific.
 		// Create the shell
 		shell = wireBox.getInstance( name='Shell', initArguments={ asyncLoad=false } );
 		
+		interceptorService.processState( 'onCLIStart', { shellType='command', args=argsArray } );
+		
 		// System.in is usually the keyboard input, but if the output of another command or a file
 		// was piped into CommandBox, System.in will represent that input.  Wrap System.in 
 		// in a buffered reader so we can check it.
@@ -71,10 +74,14 @@ Type "help" for help, or "help [command]" to be more specific.
 	} else {
 		// Create the shell
 		shell = wireBox.getInstance( 'Shell' );
+		
+		interceptorService.processState( 'onCLIStart', { shellType='interactive', args=argsArray } );
+		
 		// Output the welcome banner
 		systemOutput( replace( banner, '@@version@@', shell.getVersion() ) );
 		// Running the "reload" command will enter this while loop once
 		while( shell.run() ){
+			interceptorService.processState( 'onCLIExit' );
 			// Clear all caches: template, ...
 			SystemCacheClear( "all" );
 			shell = javacast( "null", "" );
@@ -86,8 +93,11 @@ Type "help" for help, or "help [command]" to be more specific.
 			
 			// startup a new shell
 			shell = wireBox.getInstance( 'Shell' );
+			interceptorService.processState( 'onCLIStart', { shellType='interactive', args=argsArray } );
 		}
 	}
+	
+	interceptorService.processState( 'onCLIExit' );
 
     system.runFinalization();
     system.gc();

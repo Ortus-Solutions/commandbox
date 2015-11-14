@@ -20,6 +20,7 @@ component accessors="true" singleton {
 	property name="semanticVersion"		inject="semanticVersion";
 	property name="endpointService"		inject="EndpointService";
 	property name="consoleLogger"		inject="logbox:logger:console";
+	property name='interceptorService'	inject='interceptorService';
 	
 	/**
 	* Constructor
@@ -72,6 +73,8 @@ component accessors="true" singleton {
 			string packagePathRequestingInstallation = arguments.currentWorkingDirectory
 	){
 		
+		interceptorService.processState( 'preInstall', { installArgs=arguments } );
+				
 		// If there is a package to install, install it
 		if( len( arguments.ID ) ) {
 			
@@ -427,6 +430,8 @@ component accessors="true" singleton {
 		if( !len( arguments.ID ) && dependencies.isEmpty() ) {
 			consoleLogger.info( "No dependencies found to install, but it's the thought that counts, right?" );
 		}
+		
+		interceptorService.processState( 'postInstall', { installArgs=arguments } );
 
 	}
 	
@@ -475,6 +480,7 @@ component accessors="true" singleton {
 			required string currentWorkingDirectory
 	){
 					
+		interceptorService.processState( 'preUninstall', { uninstallArgs=arguments } );
 		
 		consoleLogger.info( '.');
 		consoleLogger.info( 'Uninstalling package: #arguments.ID#');
@@ -578,6 +584,7 @@ component accessors="true" singleton {
 	
 		consoleLogger.info( "'#arguments.ID#' has been uninstalled" );
 
+		interceptorService.processState( 'postUninstall', { uninstallArgs=arguments } );
 	}
 	
 	/**
