@@ -247,8 +247,12 @@ component accessors="true" singleton {
 			if( isNull( result ) ){
 				result = commandInfo.commandReference.CFC.getResult();
 			}
-
-			interceptorService.announceInterception( 'postCommand', { commandInfo=commandInfo, parameterInfo=parameterInfo, resultresult=result } );
+			var interceptData = {
+				parameterInfo=parameterInfo,
+				result=result
+			};
+			interceptorService.announceInterception( 'postCommand', interceptData );
+			result = interceptData.result;
 
 		} // End loop over command chain
 
