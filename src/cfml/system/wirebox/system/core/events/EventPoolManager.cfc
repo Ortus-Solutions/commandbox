@@ -1,7 +1,7 @@
 ﻿<!-----------------------------------------------------------------------
 ********************************************************************************
 Copyright Since 2005 ColdBox Framework by Luis Majano and Ortus Solutions, Corp
-www.coldbox.org | www.luismajano.com | www.ortussolutions.com
+www.ortussolutions.com
 ********************************************************************************
 
 Author     :	Luis Majano
@@ -26,6 +26,8 @@ Description :
 			// Setup properties of the event manager
 			instance.eventStates 			= arrayToList( arguments.eventStates );
 			instance.stopRecursionClasses   = arguments.stopRecursionClasses;
+			// class id code
+			instance.classID = createObject("java", "java.lang.System").identityHashCode( this );
 
 			// Init event pool container
 			instance.eventPoolContainer 	= structnew();
@@ -76,7 +78,7 @@ Description :
 		</cfscript>
 
 		<!--- Lock this registration --->
-		<cflock name="EventPoolManager.RegisterObject.#objectName#" type="exclusive" throwontimeout="true" timeout="30">
+		<cflock name="EventPoolManager.#instance.classID#.RegisterObject.#objectName#" type="exclusive" throwontimeout="true" timeout="30">
 			<cfscript>
 				// Append Custom Statess
 				appendInterceptionPoints(arguments.customStates);
@@ -109,8 +111,8 @@ Description :
 			}
 
 			// Throw Exception
-			getUtil().throwit(message="Object: #arguments.name# not found in any event pool state: #structKeyList(poolContainer)#.",
-				  			  type="EventPoolManager.ObjectNotFound");
+			throw(message="Object: #arguments.name# not found in any event pool state: #structKeyList(poolContainer)#.",
+				  type="EventPoolManager.ObjectNotFound");
 		</cfscript>
 	</cffunction>
 

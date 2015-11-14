@@ -1,7 +1,7 @@
 ﻿<!-----------------------------------------------------------------------
 ********************************************************************************
 Copyright Since 2005 ColdBox Framework by Luis Majano and Ortus Solutions, Corp
-www.coldbox.org | www.luismajano.com | www.ortussolutions.com
+www.ortussolutions.com
 ********************************************************************************
 
 Author     :	Luis Majano
@@ -241,18 +241,19 @@ Description :
     <cffunction name="mapPath" output="false" access="public" returntype="any" hint="Directly map to a path by using the last part of the path as the alias. This is equivalent to map('MyService').to('model.MyService'). Only use if the name of the alias is the same as the last part of the path.">
     	<cfargument name="path" 		required="true" hint="The class path to the object to map"/>
 		<cfargument name="namespace"	required="false"	default=""		hint="Provide namespace to merge it in"/>
-    	<cfargument name="prepend"		required="false"	default="false" hint="Where to attach the namespace"/>	
+    	<cfargument name="prepend"		required="false"	default="false" hint="Where to attach the namespace"/>
+    	<cfargument name="force" 		required="false" 	default="false" hint="Forces the registration of the mapping in case it already exists"/>
 		<cfscript>
 			var cName = listlast( arguments.path, "." );
-			
+
 			if( arguments.prepend ){
 				cName = arguments.namespace & cName;
 			} else {
 				cName = cName & arguments.namespace;
 			}
-			
+
 			// directly map to a path
-			return map( cName ).to( arguments.path );
+			return map( cName, arguments.force ).to( arguments.path );
 		</cfscript>
     </cffunction>
 
@@ -264,7 +265,7 @@ Description :
 		<cfargument name="influence" 	required="false" 	hint="The influence closure or UDF that will receive the currently working mapping so you can influence it during the iterations"/>
 		<cfargument name="filter" 		required="false" 	hint="The filter closure or UDF that will receive the path of the CFC to process and returns TRUE to continue processing or FALSE to skip processing"/>
 		<cfargument name="namespace"	required="false"	default="" hint="Provide namespace to merge it in"/>
-    	<cfargument name="prepend"		required="false"	default="false" hint="where to attach the namespace"/>	
+    	<cfargument name="prepend"		required="false"	default="false" hint="where to attach the namespace"/>
 		<cfscript>
 			var directory 		= expandPath("/#replace(arguments.packagePath,".","/","all")#");
 			var qObjects		= "";
@@ -281,8 +282,14 @@ Description :
 
 		<!--- Loop and Register --->
 		<cfloop query="qObjects">
+
+			<!--- Skip hidden dirs (like .Appledouble) --->
+ 			<cfif left( qObjects.name ,1 ) eq ".">
+ 				<cfcontinue />
+ 			</cfif>
+
 			<!--- Remove .cfc and /\ with . notation--->
-			<cfset thisTargetPath = arguments.packagePath & "." & reReplace( replaceNoCase(qObjects.name,".cfc","") ,"(/|\\)",".","all")>
+			<cfset thisTargetPath = arguments.packagePath & "." & reReplace( replaceNoCase( qObjects.name, ".cfc", ""), "(/|\\)", ".", "all")>
 
 			<!--- Include/Exclude --->
 			<cfif ( len( arguments.include ) AND reFindNoCase( arguments.include, thisTargetPath ) )
@@ -292,7 +299,7 @@ Description :
 
 				<!--- Map the Path --->
 				<cfset mapPath( path=thisTargetPath, namespace=arguments.namespace, prepend=arguments.prepend )>
-				
+
 				<!--- Influence --->
 				<cfif structKeyExists( arguments, "influence" )>
 					<cfset arguments.influence( this, thisTargetPath )>
@@ -304,10 +311,11 @@ Description :
 
 		<cfreturn this>
     </cffunction>
-    
+
 	<!--- map --->
     <cffunction name="map" output="false" access="public" returntype="any" hint="Create a mapping to an object">
     	<cfargument name="alias" required="true" hint="A single alias or a list or an array of aliases for this mapping. Remember an object can be refered by many names"/>
+    	<cfargument name="force" required="false" default="false" hint="Forces the registration of the mapping in case it already exists"/>
 		<cfscript>
 			// generate mapping entry for this dude.
 			var name 	= "";
@@ -319,6 +327,12 @@ Description :
 
 			// first entry
 			name = arguments.alias[1];
+
+			// check if mapping exists, if so, just use and return.
+			if( structKeyExists( instance.mappings, name) and !arguments.force ){
+				currentMapping = instance.mappings[ name ];
+				return this;
+			}
 
 			// generate the mapping for the first name passed
 			instance.mappings[ name ] = createObject("component","wirebox.system.ioc.config.Mapping").init( name );
@@ -497,9 +511,9 @@ Description :
 				currentMapping = instance.mappings[arguments.alias];
 				return this;
 			}
-			this.utility.throwit(message="The mapping '#arguments.alias# has not been initialized yet.'",
-							detail="Please use the map('#arguments.alias#') first to start working with a mapping",
-							type="Binder.InvalidMappingStateException");
+			throw(message="The mapping '#arguments.alias# has not been initialized yet.'",
+				  detail="Please use the map('#arguments.alias#') first to start working with a mapping",
+				  type="Binder.InvalidMappingStateException");
 		</cfscript>
     </cffunction>
 
@@ -574,9 +588,9 @@ Description :
     	<cfscript>
     		// check if invalid scope
 			if( NOT this.SCOPES.isValidScope(arguments.scope) AND NOT structKeyExists(instance.customScopes,arguments.scope) ){
-				this.utility.throwit(message="Invalid WireBox Scope: '#arguments.scope#'",
-								detail="Please make sure you are using a valid scope, valid scopes are: #arrayToList(this.SCOPES.getValidScopes())# AND custom scopes: #structKeyList(instance.customScopes)#",
-								type="Binder.InvalidScopeMapping");
+				throw( message="Invalid WireBox Scope: '#arguments.scope#'",
+					   detail="Please make sure you are using a valid scope, valid scopes are: #arrayToList(this.SCOPES.getValidScopes())# AND custom scopes: #structKeyList(instance.customScopes)#",
+					   type="Binder.InvalidScopeMapping" );
 			}
 			currentMapping.setScope( arguments.scope );
 			return this;
@@ -602,6 +616,15 @@ Description :
     <cffunction name="notThreadSafe" output="false" access="public" returntype="any" hint="This is the default wiring of objects that allow circular dependencies.  By default all object's constructors are the only thread safe areas">
     	<cfscript>
 			currentMapping.setThreadSafe( false );
+    		return this;
+		</cfscript>
+    </cffunction>
+
+    <!--- withInfluence --->
+    <cffunction name="withInfluence" output="false" access="public" returntype="any" hint="This is a closure that will be able to influence the creation of the instance">
+    	<cfargument name="influenceClosure" type="any">
+    	<cfscript>
+			currentMapping.setInfluenceClosure( arguments.influenceClosure );
     		return this;
 		</cfscript>
     </cffunction>
@@ -815,7 +838,7 @@ Description :
 			if( structKeyExists( wireBoxDSL, "logBoxConfig") ){
 				logBoxConfig(wireBoxDSL.logBoxConfig);
 			}
-			
+
 			// Register Parent Injector
 			if( structKeyExists( wireBoxDSL, "parentInjector") ){
 				parentInjector( wireBoxDSL.parentInjector );
