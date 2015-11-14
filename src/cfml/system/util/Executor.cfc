@@ -45,7 +45,7 @@ component {
 		var tmpFileAbsolute = arguments.directory & "/" & tmpFile;
 		
 		// generate cfml command to write to file
-		var CFMLFileContents = ( arguments.script ? "<cfscript>" & arguments.code & "</cfscript>" : arguments.codearguments.directory );
+		var CFMLFileContents = ( arguments.script ? "<cfscript>" & arguments.code & "</cfscript>" : arguments.code );
 
 		// write out our cfml command
 		fileWrite( tmpFileAbsolute, CFMLFileContents );
