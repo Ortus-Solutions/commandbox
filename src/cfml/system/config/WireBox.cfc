@@ -41,8 +41,6 @@ component extends="wirebox.system.ioc.config.Binder" {
 		var REPLTagHistoryFile 		= homedir & "/.history-repl-tag";
 		var cr						= chr( 10 );
 		var commandLocations		= [
-			// This is where system commands are stored
-			'/commandbox/system/commands',
 			// This is where core namespace commands are stored
 			'/commandbox/commands',
 			// This is where user-installed commands are stored

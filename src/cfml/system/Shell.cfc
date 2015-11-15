@@ -98,7 +98,7 @@ component accessors="true" singleton {
 
 		setConfigSettings( {
 			modules : {},
-			ModulesLocation : '',
+			ModulesLocation : '/commandbox/system/modules',
 			ModulesExternalLocation : [],
 			modulesInclude : [],
 			ModulesExclude : []
