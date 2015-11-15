@@ -157,7 +157,7 @@ component accessors="true" singleton {
 			// Modules are the only kind of packages that can be nested in a hierarchy, so the check only applies here. 
 			// We're also going to assume that they are in a "modules" folder.
 			// This check also only applies if we're at least one level deep into modules.
-			if( packageType == 'modules' && currentWorkingDirectory != packagePathRequestingInstallation) {
+			if( isPackageModule( packageType ) && currentWorkingDirectory != packagePathRequestingInstallation) {
 				
 				// We'll update this variable as we climb back up the directory structure
 				var movingTarget = packagePathRequestingInstallation;
@@ -248,6 +248,16 @@ component accessors="true" singleton {
 				// If this is a module
 				} else if( packageType == 'modules' ) {
 					installDirectory = arguments.packagePathRequestingInstallation & '/modules';
+				} else if( packageType == 'contentbox-modules' ) {
+					installDirectory = arguments.packagePathRequestingInstallation & '/modules';
+				} else if( packageType == 'commandbox-modules' ) {
+					// Override the install directories to the CommandBox CFML root
+					arguments.currentWorkingDirectory = expandPath( '/commandbox' );
+					arguments.packagePathRequestingInstallation = expandPath( '/commandbox' )
+					installDirectory = expandPath( '/commandbox/modules' );
+					// Flag the shell to reload after this command is finished.
+					consoleLogger.warn( "Shell will be reloaded after installation." );
+					shell.reload( false );
 				// If this is a plugin
 				} else if( packageType == 'plugins' ) {
 					installDirectory = arguments.packagePathRequestingInstallation & '/plugins';
@@ -435,6 +445,12 @@ component accessors="true" singleton {
 
 	}
 	
+	// DRY
+	function isPackageModule( required string packageType ) {
+		// Is the package type that of a module?
+		return ( listFindNoCase( 'modules,contentbox-modules,commandbox-modules', arguments.packageType ) > 0) ;
+	}
+	
 	
 	/******************************************************************************************************************/
 	// If the root of the current package doesn't have a box.json, check if there is a subdirectory that contains
@@ -529,7 +545,7 @@ component accessors="true" singleton {
 
 		// ColdBox modules are stored in a hierachy so just removing the top one removes then all
 		// For all other packages, the depenencies are probably just in the root
-		if( type != 'modules' ) {
+		if( !isPackageModule( type ) ) {
 	
 			if( dependencies.count() ) {
 				consoleLogger.debug( "Uninstalling dependencies first..." );
