@@ -58,17 +58,20 @@ component extends="commandbox.system.BaseCommand" aliases="bump" excludeFromHelp
 			
 			// Bump major
 			versionObject.major = val( versionObject.major ) + 1;
+			versionObject.minor = 0;
+			versionObject.revision = 0;
 			setVersion( semanticVersion.getVersionAsString( versionObject ) );
 			
 		} else if( structKeyExists( arguments, 'minor' ) && arguments.minor ) {
 			
 			// Bump minor
 			versionObject.minor = val( versionObject.minor ) + 1;
+			versionObject.revision = 0;
 			setVersion( semanticVersion.getVersionAsString( versionObject ) );
 			
 		} else if( structKeyExists( arguments, 'patch' ) && arguments.patch ) {
 			
-			// Bump patc
+			// Bump patch  
 			versionObject.revision = val( versionObject.revision ) + 1;
 			setVersion( semanticVersion.getVersionAsString( versionObject ) );
 			
