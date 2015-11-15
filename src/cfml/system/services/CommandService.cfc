@@ -40,6 +40,15 @@ component accessors="true" singleton {
 	* Configure the service
 	*/
 	CommandService function configure(){
+
+		// Check if handler mapped?
+		if( NOT wirebox.getBinder().mappingExists( 'commandbox.system.BaseCommand' ) ){
+			// feed the base class
+			wirebox.registerNewInstance( name='commandbox.system.BaseCommand', instancePath='commandbox.system.BaseCommand' )
+				.addDIConstructorArgument(name="wirebox", dsl='wirebox')
+				.setAutowire( false );
+		}
+		
 		// map commands
 		for( var commandLocation in commandLocations ){
 			
@@ -410,7 +419,19 @@ component accessors="true" singleton {
 		if( !structKeyExists( commandData, 'CFC' ) ){
 			// Create this command CFC
 			try {
-				commandData.CFC = wireBox.getInstance( commandData.fullCFCPath );
+				
+				// Check if command mapped?
+				if( NOT wirebox.getBinder().mappingExists( "command-" & commandData.fullCFCPath ) ){
+					// feed this command to wirebox with virtual inheritance
+					wirebox.registerNewInstance( name="command-" & commandData.fullCFCPath, instancePath=commandData.fullCFCPath )
+						.setScope( wirebox.getBinder().SCOPES.SINGLETON )
+						.setThreadSafe( true )
+						.setVirtualInheritance( "commandbox.system.BaseCommand" )
+						.addDIConstructorArgument(name="wirebox", dsl='wirebox');
+				}
+				// retrieve, build and wire from wirebox
+				commandData.CFC = wireBox.getInstance( "command-" & commandData.fullCFCPath );
+				
 			// This will catch nasty parse errors so the shell can keep loading
 			} catch( any e ){
 				systemOutput( 'Error creating command [#commandData.fullCFCPath#]#CR##CR#' );
@@ -497,7 +518,7 @@ component accessors="true" singleton {
 			return;
 		}
 
-		// must extend commandbox.system.BaseCommand, can't be Application.cfc
+		// must be CommandBox CFC, can't be Application.cfc
 		if( CFCName == 'Application' || !isCommandCFC( commandData ) ){
 			return;
 		}
@@ -568,22 +589,7 @@ component accessors="true" singleton {
 	*/
 	function isCommandCFC( required struct commandData ){
 		var meta = arguments.commandData.commandMD;
-		
-		// Make sure command extends BaseCommand
-		var thisMeta = meta;
-		while( true ){
-			// Once we find BaseCommand kick out of the loop
-			if( thisMeta.fullname == 'commandbox.system.BaseCommand' ){
-				break;
-			}
-			// If we reach the end of the inheritance chain, we failed.
-			if( !structKeyExists( thisMeta, 'extends' ) ){
-				return false;	
-			}
-			// Moving pointer
-			thisMeta = thisMeta.extends;
-		}
-					
+							
 		// Make sure command has a run() method
 		for( var func in meta.functions ){
 			// Loop to find the "run()" method

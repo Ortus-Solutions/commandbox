@@ -8,22 +8,33 @@
 * I am the base command implementation.  An abstract class if you will.
 *
 */
-component accessors="true" singleton{
+component accessors="true" singleton {
 	
 	// DI
-	property name="CR" 				inject="CR@constants";
-	property name="formatterUtil" 	inject="Formatter";
-	property name="fileSystemUtil" 	inject="FileSystem";
-	property name="shell" 			inject="shell";
-	property name="print" 			inject="PrintBuffer";
-	property name="wirebox" 		inject="wirebox";
-	property name="logger" 			inject="logbox:logger:{this}";
-	property name="parser"			inject="Parser";
+	property name="CR";
+	property name="formatterUtil";
+	property name="fileSystemUtil";
+	property name="shell";
+	property name="print";
+	property name="wirebox";
+	property name="logger";
+	property name="parser";
 
 	/**
 	* Constructor
+	* @wirebox.inject wirebox
 	*/
-	function init() {
+	function init( required wirebox ) {
+		
+		variables.CR				= wirebox.getInstance( "CR@constants" );
+		variables.formatterUtil		= wirebox.getInstance( "Formatter" );
+		variables.fileSystemUtil	= wirebox.getInstance( "FileSystem" );
+		variables.shell				= wirebox.getInstance( "shell" );
+		variables.print				= wirebox.getInstance( "PrintBuffer" );
+		variables.wirebox			= wirebox;
+		variables.logger			= wirebox.getLogBox().getLogger( this );
+		variables.parser			= wirebox.getInstance( "Parser" );
+		
 		hasErrored = false;
 		return this;
 	}
