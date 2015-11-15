@@ -80,10 +80,6 @@ component extends="wirebox.system.ioc.config.Binder" {
 			.initWith( createObject( "java", "java.io.File" ).init( REPLTagHistoryFile ) )
 			.asSingleton();
 			
-		map( 'InterceptorService' ).toProvider( function() {
-			return application.wirebox.getEventManager();
-		} );
-
 		// Map Directories
 		mapDirectory( '/commandbox/system/services' );
 		mapDirectory( '/commandbox/system/util' );
