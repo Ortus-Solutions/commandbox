@@ -7,7 +7,8 @@
 * This service oversees all CommandBox Modules
 ----------------------------------------------------------------------->
 <cfcomponent output="false">
-
+	<cfproperty name="CommandService" inject="CommandService">
+	
 <!------------------------------------------- CONSTRUCTOR ------------------------------------------->
 
 	<cffunction name="init" access="public" output="false" returntype="ModuleService" hint="Constructor">
@@ -223,12 +224,15 @@
 					mapping 				= modulesLocation & "/" & modName,
 					modelsInvocationPath    = modulesInvocationPath & "." & modName,
 					modelsPhysicalPath		= modLocation,
+					commandsInvocationPath  = modulesInvocationPath & "." & modName,
+					commandsPhysicalPath	= modLocation,
 					parentSettings			= {},
 					settings 				= {},
 					interceptors 			= [],
 					interceptorSettings     = { customInterceptionPoints = "" },
 					conventions = {
-						modelsLocation      = "models"
+						modelsLocation      = "models",
+						commandsLocation    = "commands"
 					},
 					childModules			= [],
 					parent 					= arguments.parent
@@ -255,6 +259,10 @@
 				// Update the paths according to conventions
 				mConfig.modelsInvocationPath    &= ".#replace( mConfig.conventions.modelsLocation, "/", ".", "all" )#";
 				mConfig.modelsPhysicalPath		&= "/#mConfig.conventions.modelsLocation#";
+				
+				mConfig.commandsInvocationPath  &= ".#replace( mConfig.conventions.commandsLocation, "/", ".", "all" )#";
+				mConfig.commandsPhysicalPath	&= "/#mConfig.conventions.commandsLocation#";
+						
 				// Register CFML Mapping if it exists, for loading purposes
 				if( len( trim( mConfig.cfMapping ) ) ){
 					shell.getUtil().addMapping( name=mConfig.cfMapping, path=mConfig.path );
@@ -389,6 +397,12 @@
 						// just register with no namespace
 						wirebox.getBinder().mapDirectory( packagePath=packagePath );
 					}
+				}
+				
+				// Register commands if they exist
+				if( directoryExists( mconfig.commandsPhysicalPath ) ){
+					var commandPath = '/' & replace( mconfig.commandsInvocationPath, '.', '/', 'all' );					
+					CommandService.initCommands( commandPath, commandPath );
 				}
 
 				// Register Interceptors with Announcement service
