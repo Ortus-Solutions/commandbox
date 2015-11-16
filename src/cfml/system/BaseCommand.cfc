@@ -22,10 +22,9 @@ component accessors="true" singleton {
 
 	/**
 	* Constructor
-	* @wirebox.inject wirebox
 	*/
-	function init( required wirebox ) {
-		
+	function init() {
+		var wirebox = application.wirebox;
 		variables.CR				= wirebox.getInstance( "CR@constants" );
 		variables.formatterUtil		= wirebox.getInstance( "Formatter" );
 		variables.fileSystemUtil	= wirebox.getInstance( "FileSystem" );

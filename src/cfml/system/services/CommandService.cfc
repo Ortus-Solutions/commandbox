@@ -45,7 +45,6 @@ component accessors="true" singleton {
 		if( NOT wirebox.getBinder().mappingExists( 'commandbox.system.BaseCommand' ) ){
 			// feed the base class
 			wirebox.registerNewInstance( name='commandbox.system.BaseCommand', instancePath='commandbox.system.BaseCommand' )
-				.addDIConstructorArgument(name="wirebox", dsl='wirebox')
 				.setAutowire( false );
 		}
 		
@@ -426,8 +425,7 @@ component accessors="true" singleton {
 					wirebox.registerNewInstance( name="command-" & commandData.fullCFCPath, instancePath=commandData.fullCFCPath )
 						.setScope( wirebox.getBinder().SCOPES.SINGLETON )
 						.setThreadSafe( true )
-						.setVirtualInheritance( "commandbox.system.BaseCommand" )
-						.addDIConstructorArgument(name="wirebox", dsl='wirebox');
+						.setVirtualInheritance( "commandbox.system.BaseCommand" );
 				}
 				// retrieve, build and wire from wirebox
 				commandData.CFC = wireBox.getInstance( "command-" & commandData.fullCFCPath );
