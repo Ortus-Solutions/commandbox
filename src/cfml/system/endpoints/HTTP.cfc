@@ -7,7 +7,7 @@
 *
 * I am the HTTP endpoint.  I get packages from an HTTP URL.
 */
-component accessors="true" implements="IEndpoint" singleton {
+component accessors=true implements="IEndpoint" singleton {
 		
 	// DI
 	property name="consoleLogger"			inject="logbox:logger:console";
@@ -16,6 +16,7 @@ component accessors="true" implements="IEndpoint" singleton {
 	property name="fileEndpoint"			inject="commandbox.system.endpoints.File";
 	property name="progressableDownloader" 	inject="ProgressableDownloader";
 	property name="progressBar" 			inject="ProgressBar";
+	property name="CR" 						inject="CR@constants";
 	
 	// Properties
 	property name="namePrefixes" type="string";
@@ -30,18 +31,22 @@ component accessors="true" implements="IEndpoint" singleton {
 		var fileName = 'temp#randRange( 1, 1000 )#.zip';
 		var fullPath = tempDir & '/' & fileName;		
 		
-		// Download File
-		var result = progressableDownloader.download(
-			getNamePrefixes() & ':' & package, // URL to package
-			fullPath, // Place to store it locally
-			function( status ) {
-				progressBar.update( argumentCollection = status );
-			},
-			function( newURL ) {
-				consoleLogger.info( "Redirecting to: '#arguments.newURL#'..." );
-			}
-		);
-		
+		try {
+			// Download File
+			var result = progressableDownloader.download(
+				getNamePrefixes() & ':' & package, // URL to package
+				fullPath, // Place to store it locally
+				function( status ) {
+					progressBar.update( argumentCollection = status );
+				},
+				function( newURL ) {
+					consoleLogger.info( "Redirecting to: '#arguments.newURL#'..." );
+				}
+			);
+		} catch( Any var e ) {
+			throw( '#e.message##CR##e.detail#', 'endpointException' );
+		};
+
 		// Defer to file endpoint
 		return fileEndpoint.resolvePackage( fullPath, arguments.verbose );
 		
