@@ -7,12 +7,12 @@ try{
 		strategy = "strategy.commandbox.CommandBoxStrategy",
 		properties = {
 			projectTitle 	= "CommandBox v#url.version#",
-			outputDir 		= url.path
+			outputDir 		= url.path 
 		} 
 	);
 	source = [
 		{ dir = expandPath( "/commandbox/commands" ), mapping = "commandbox.commands" },
-		{ dir = expandPath( "/commandbox/system/commands" ), mapping = "commandbox.system.commands" }
+		{ dir = expandPath( "/commandbox/system/modules/system-commands/commands" ), mapping = "commandbox.system.modules.system-commands.commands" }
 	];
 	docbox.generate( source );
 } catch ( Any e ){
