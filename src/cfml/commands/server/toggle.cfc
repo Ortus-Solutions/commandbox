@@ -3,6 +3,7 @@
  * .
  * {code:bash}
  * server toggle
+ * server toggle --!open
  * server toggle serverName
  * {code}
  **/
@@ -15,8 +16,9 @@ component extends="commandbox.system.BaseCommand" aliases="toggle" excludeFromHe
 	 * @name.hint the short name of the server to stop
 	 * @name.optionsUDF serverNameComplete
 	 * @directory.hint web root for the server
+     * @open.hint    	open a browser after starting
 	 **/
-	function run(string name="", string directory="") {
+	function run(string name="", string directory="", boolean open=true) {
 
 		// Discover by shortname or webroot and get server info
 		var servers = { id: serverService.getServerInfoByDiscovery(
@@ -39,7 +41,7 @@ component extends="commandbox.system.BaseCommand" aliases="toggle" excludeFromHe
                 print.yellowLine( 'Starting ' & serverInfo.name & '...' ).toConsole();
                 return serverService.start(
         			serverInfo 	= serverInfo,
-        			openBrowser = false,
+        			openBrowser = arguments.open,
         			force		= false,
         			debug 		= false
         		);
