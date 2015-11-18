@@ -1,9 +1,9 @@
 /**
 *********************************************************************************
-* Copyright Since 2014 CommandBox by Ortus Solutions, Corp
+* Copyright Since 2015 CommandBox by Ortus Solutions, Corp
 * www.coldbox.org | www.ortussolutions.com
 ********************************************************************************
-* @author Brad Wood, Luis Majano, Denny Valliant
+* @author Brad Wood, Luis Majano, Denny Valliant, Ben Koshy
 *
 * I am the CFLIb endpoint.  I get packages from CFblib.org based on their slug.
 * install cflib:UDFName
@@ -15,6 +15,7 @@ component accessors="true" implements="IEndpoint" singleton {
 	property name="tempDir" 				inject="tempDir@constants";
 	property name="progressableDownloader" 	inject="ProgressableDownloader";
 	property name="progressBar" 			inject="ProgressBar";
+	property name="CR" 						inject="CR@constants";
 	
 	// Properties
 	property name="namePrefixes" type="string";
@@ -31,22 +32,25 @@ component accessors="true" implements="IEndpoint" singleton {
 		
 		directoryCreate( folderName, true, true );
 		
-		// Download File
-		var result = progressableDownloader.download(
-			'http://www.cflib.org/udfdownload/' & package,
-			fullPath,
-			function( status ) {
-				progressBar.update( argumentCollection = status );
-			},
-			function( newURL ) {
-				consoleLogger.info( "Redirecting to: '#arguments.newURL#'..." );
-			}
-		);
-		
+		try {
+			// Download File
+			var result = progressableDownloader.download(
+				'http://www.cflib.org/udfdownload/' & package,
+				fullPath,
+				function( status ) {
+					progressBar.update( argumentCollection = status );
+				},
+				function( newURL ) {
+					consoleLogger.info( "Redirecting to: '#arguments.newURL#'..." );
+				}
+			);
+		} catch( Any var e ) {
+			throw( '#e.message##CR##e.detail#', 'endpointException' );
+		};
+
 		fixTags( fullPath );
 		
-		return folderName;
-		
+		return folderName;	
 	}
 
 	public function getDefaultName( required string package ) {
