@@ -118,10 +118,12 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 					if( !isNull( results ) ){
 						// Make sure results is a string
 						results = REPLParser.serializeOutput( results );
-						print.boldRedLine( results ).toConsole();
+						print.line( results, structKeyExists( arguments, 'input' ) ? '' : 'boldRed' )
 					}
 					
 				} catch( any e ){
+					// flush out anything in buffer
+					print.toConsole();
 					// Log it
 					logger.error( '#e.message# #e.detail#' , e.stackTrace );
 					error( '#e.message##CR##e.detail#' );
