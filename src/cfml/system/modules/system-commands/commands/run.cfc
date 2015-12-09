@@ -2,7 +2,7 @@
  * Execute an operation system level command.  By default, "run" will wait 60 seconds for the command to complete
  * .
  * {code:bash}
- * run "C:\Windows\System32\SoundRecorder.exe"
+ * run myApp.exe
  * {code}
  * .
  * Wait a max of 10 seconds for the command to finish.
@@ -14,7 +14,7 @@
  * Kick off the command asyncronoysly and don't wait at all.  Also, discard any output.
  * .
  * {code:bash}
- * run myApp.exe 0
+ * run name="C:\Windows\System32\SoundRecorder.exe" timeout=0
  * {code}
  * .
  * Executing Java would look like this
