@@ -29,7 +29,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 	/**
 	* @name.hint The full pathname of the application to execute including extension
 	* @arguments.hint Command-line arguments passed to the application
-	* @timeout.hint Ho many seconds to wait. A timeout of 0 returns immediatley without waiting, ignoring any output from the command.
+	* @timeout.hint Number of seconds to wait. A timeout of 0 returns immediatley without waiting, ignoring any output from the command.
 	**/
 	function run(
 		required name,
