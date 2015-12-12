@@ -49,7 +49,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 	*/
 	function init(){
 		super.init();
-		variables.skeletonLocation = expandPath( '/commandbox/skeletons/' );
+		variables.skeletonLocation = expandPath( '/coldbox-commands/skeletons/' );
 		return this;
 	}
 	

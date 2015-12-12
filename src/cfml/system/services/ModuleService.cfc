@@ -191,7 +191,7 @@
 
 			// lock registration
 			lock name="module.registration.#arguments.modulename#" type="exclusive" throwontimeout="true" timeout="20"{
-
+				
 				// Setup Vanilla Config information for module
 				var mConfig = {
 					// Module MetaData and Directives
@@ -203,7 +203,7 @@
 					description			="",
 					version				="",
 					// ColdFusion mapping
-					cfmapping			= "",
+					cfmapping			= modName,
 					// Models namespsace
 					modelNamespace		= modName,
 					// Auto map models flag
@@ -238,6 +238,7 @@
 					parent 					= arguments.parent
 				};
 
+				
 				// Load Module configuration from cfc and store it in module Config Cache
 				var oConfig = loadModuleConfiguration( mConfig, arguments.moduleName );
 				// Verify if module has been disabled
@@ -625,8 +626,9 @@
 			if( !structKeyExists( oConfig, "version" ) ){ oConfig.version = ""; }
 			mConfig.version	= oConfig.version;
 			// cf mapping
-			if( !structKeyExists( oConfig, "cfmapping" ) ){ oConfig.cfmapping = ""; }
-			mConfig.cfmapping = oConfig.cfmapping;
+			if( structKeyExists( oConfig, "cfmapping" ) ){
+				mConfig.cfmapping = oConfig.cfmapping;
+			}
 			// model namespace override
 			if( structKeyExists( oConfig, "modelNamespace" ) ){
 				mConfig.modelNamespace = oConfig.modelNamespace;
