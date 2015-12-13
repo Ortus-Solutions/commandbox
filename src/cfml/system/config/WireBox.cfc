@@ -41,9 +41,8 @@ component extends="wirebox.system.ioc.config.Binder" {
 		var REPLTagHistoryFile 		= homedir & "/.history-repl-tag";
 		var cr						= chr( 10 );
 		var commandLocations		= [
-			// This is where core namespace commands are stored
-			'/commandbox/commands',
 			// This is where user-installed commands are stored
+			// This is deprecated in favor of modules, but leaving it so "old" style commands will still load.
 			'/commandbox-home/commands'
 		];
 		var ortusArtifactsURL		= 'http://integration.stg.ortussolutions.com/artifacts/';
