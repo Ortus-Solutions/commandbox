@@ -762,7 +762,7 @@ component accessors="true" singleton {
 		// TODO: Get author info from default CommandBox config
 		
 		// Read the default JSON file and deserialize it.  
-		var boxJSON = DeserializeJSON( fileRead( '/commandBox/templates/box.json.txt' ) );
+		var boxJSON = DeserializeJSON( fileRead( '/commandBox/system/config/box.json.txt' ) );
 		
 		// Replace things passed via parameters
 		boxJSON = boxJSON.append( arguments.defaults );

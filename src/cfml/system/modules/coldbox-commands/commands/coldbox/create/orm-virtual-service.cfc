@@ -41,8 +41,8 @@ component extends='commandbox.system.BaseCommand' aliases='' excludeFromHelp=fal
 		}
 
 		// Read in Template
-		var modelContent 	 		= fileRead( '/commandbox/templates/orm/VirtualEntityService.txt' );
-		var modelTestContent 		= fileRead( '/commandbox/templates/testing/ModelBDDContentScript.txt' );
+		var modelContent 	 		= fileRead( '/coldbox-commands/templates/orm/VirtualEntityService.txt' );
+		var modelTestContent 		= fileRead( '/coldbox-commands/templates/testing/ModelBDDContentScript.txt' );
 
 		// Query cache Region
 		if( !len( arguments.cacheRegion ) ){

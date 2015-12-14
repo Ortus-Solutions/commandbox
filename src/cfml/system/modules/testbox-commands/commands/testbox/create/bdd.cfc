@@ -40,7 +40,7 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 		print.line();
 		
 		// Read in Templates
-		var BDDContent = fileRead( '/commandbox/templates/testbox/bdd.txt' );
+		var BDDContent = fileRead( '/testbox-commands/templates/testbox/bdd.txt' );
 				
 		// Write out BDD Spec
 		var BDDPath = '#directory#/#name#.cfc'; 

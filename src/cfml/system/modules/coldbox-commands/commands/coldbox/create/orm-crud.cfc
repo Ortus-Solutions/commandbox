@@ -66,7 +66,7 @@ component extends='commandbox.system.BaseCommand' aliases='' excludeFromHelp=fal
 			//********************** generate handler ************************************//
 
 			// Read Handler Content
-			var hContent = fileRead( '/commandbox/templates/crud/HandlerContent.txt' );
+			var hContent = fileRead( '/coldbox-commands/templates/crud/HandlerContent.txt' );
 			// Token replacement
 			hContent = replacenocase( hContent, "|entity|", entityName, "all" );
 			hContent = replacenocase( hContent, "|entityPlural|", arguments.pluralName, "all" );
@@ -85,7 +85,7 @@ component extends='commandbox.system.BaseCommand' aliases='' excludeFromHelp=fal
 			directorycreate( arguments.viewsDirectory & "/#arguments.pluralName#", true, true );
 			var views = [ "edit", "editor", "new" ];
 			for( var thisView in views ){
-				var vContent = fileRead( '/commandbox/templates/crud/#thisView#.txt' );
+				var vContent = fileRead( '/coldbox-commands/templates/crud/#thisView#.txt' );
 				vContent = replacenocase( vContent, "|entity|", entityName, "all" );
 				vContent = replacenocase( vContent, "|entityPlural|", arguments.pluralName, "all" );
 				fileWrite( arguments.viewsDirectory & "/#arguments.pluralName#/#thisView#.cfm", vContent);
@@ -96,12 +96,12 @@ component extends='commandbox.system.BaseCommand' aliases='' excludeFromHelp=fal
 			
 			// Build table output for index
 			savecontent variable="local.tableData"{
-				include '/commandbox/templates/crud/table.cfm';	
+				include '/coldbox-commands/templates/crud/table.cfm';	
 			}
 			tableData = replaceNoCase( tableData, "%cf", "#chr(60)#cf", "all" );
 			tableData = replaceNoCase( tableData, "%/cf", "#chr(60)#/cf", "all" );
 			// index data
-			var vContent = fileRead( '/commandbox/templates/crud/index.txt' );
+			var vContent = fileRead( '/coldbox-commands/templates/crud/index.txt' );
 			vContent = replacenocase( vContent, "|entity|", entityName, "all" );
 			vContent = replacenocase( vContent, "|entityPlural|", arguments.pluralName, "all" );
 			vContent = replacenocase( vContent, "|tableListing|", tableData, "all" );

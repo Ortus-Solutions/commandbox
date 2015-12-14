@@ -84,10 +84,10 @@ component extends='commandbox.system.BaseCommand' aliases='' excludeFromHelp=fal
 		}
 
 		// Read in Template
-		var modelContent 	 		= fileRead( '/commandbox/templates/ModelContent#scriptPrefix#.txt' );
-		var modelMethodContent 		= fileRead( '/commandbox/templates/ModelMethodContent#scriptPrefix#.txt' );
-		var modelTestContent 		= fileRead( '/commandbox/templates/testing/ModelBDDContent#scriptPrefix#.txt' );
-		var modelTestMethodContent 	= fileRead( '/commandbox/templates/testing/ModelBDDMethodContent#scriptPrefix#.txt' );
+		var modelContent 	 		= fileRead( '/coldbox-commands/templates/ModelContent#scriptPrefix#.txt' );
+		var modelMethodContent 		= fileRead( '/coldbox-commands/templates/ModelMethodContent#scriptPrefix#.txt' );
+		var modelTestContent 		= fileRead( '/coldbox-commands/templates/testing/ModelBDDContent#scriptPrefix#.txt' );
+		var modelTestMethodContent 	= fileRead( '/coldbox-commands/templates/testing/ModelBDDMethodContent#scriptPrefix#.txt' );
 
 
 		// Basic replacements

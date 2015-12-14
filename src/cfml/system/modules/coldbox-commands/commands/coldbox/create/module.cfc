@@ -51,7 +51,7 @@ component extends='commandbox.system.BaseCommand' aliases='' excludeFromHelp=fal
 		}
 		
 		// Read in Module Config
-		var moduleConfig = fileRead( '/commandbox/templates/modules/ModuleConfig#scriptPrefix#.cfc' );
+		var moduleConfig = fileRead( '/coldbox-commands/templates/modules/ModuleConfig#scriptPrefix#.cfc' );
 		
 		// Start Generation Replacing
 		moduleConfig = replaceNoCase( moduleConfig, '@title@', arguments.name, 'all');
@@ -64,7 +64,7 @@ component extends='commandbox.system.BaseCommand' aliases='' excludeFromHelp=fal
 		moduleConfig = replaceNoCase( moduleConfig, '@dependencies@', serializeJSON( listToArray( arguments.dependencies ) ), 'all');
 		
 		// Copy module template
-		directoryCopy( '/commandbox/templates/modules/', arguments.directory & '/#arguments.name#', true );
+		directoryCopy( '/coldbox-commands/templates/modules/', arguments.directory & '/#arguments.name#', true );
 		
 		// Clean Files Out
 		if( script ) {

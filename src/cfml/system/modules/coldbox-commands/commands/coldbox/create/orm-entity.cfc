@@ -79,8 +79,8 @@ component extends='commandbox.system.BaseCommand' aliases='' excludeFromHelp=fal
 		if( !len( arguments.primaryKeyColumn ) ){ arguments.primaryKeyColumn = arguments.primaryKey; }
 
 		// Read in Template
-		var modelContent 	 		= fileRead( '/commandbox/templates/orm/Entity#scriptPrefix#.txt' );
-		var modelTestContent 		= fileRead( '/commandbox/templates/testing/ORMEntityBDDContent#scriptPrefix#.txt' );
+		var modelContent 	 		= fileRead( '/coldbox-commands/templates/orm/Entity#scriptPrefix#.txt' );
+		var modelTestContent 		= fileRead( '/coldbox-commands/templates/testing/ORMEntityBDDContent#scriptPrefix#.txt' );
 
 		// Basic replacements
 		modelContent 	= replaceNoCase( modelContent, '|entityName|', arguments.entityName, 'all' );

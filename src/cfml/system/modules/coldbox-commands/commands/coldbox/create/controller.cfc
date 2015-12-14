@@ -59,10 +59,10 @@ component extends='commandbox.system.BaseCommand' aliases='coldbox create handle
 		}
 
 		// Read in Templates
-		var handlerContent 			= fileRead( '/commandbox/templates/HandlerContent#scriptPrefix#.txt' );
-		var actionContent 			= fileRead( '/commandbox/templates/ActionContent#scriptPrefix#.txt' );
-		var handlerTestContent 		= fileRead( '/commandbox/templates/testing/HandlerBDDContent#scriptPrefix#.txt' );
-		var handlerTestCaseContent 	= fileRead( '/commandbox/templates/testing/HandlerBDDCaseContent#scriptPrefix#.txt' );
+		var handlerContent 			= fileRead( '/coldbox-commands/templates/HandlerContent#scriptPrefix#.txt' );
+		var actionContent 			= fileRead( '/coldbox-commands/templates/ActionContent#scriptPrefix#.txt' );
+		var handlerTestContent 		= fileRead( '/coldbox-commands/templates/testing/HandlerBDDContent#scriptPrefix#.txt' );
+		var handlerTestCaseContent 	= fileRead( '/coldbox-commands/templates/testing/HandlerBDDCaseContent#scriptPrefix#.txt' );
 
 		// Start text replacements
 		handlerContent 		= replaceNoCase( handlerContent, '|handlerName|', arguments.name, 'all' );

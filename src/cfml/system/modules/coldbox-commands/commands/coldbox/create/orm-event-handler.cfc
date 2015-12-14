@@ -33,7 +33,7 @@ component extends='commandbox.system.BaseCommand' aliases='' excludeFromHelp=fal
 		print.line();
 
 		// Read in Template
-		var modelContent = fileRead( '/commandbox/templates/orm/ORMEventHandler.txt' );
+		var modelContent = fileRead( '/coldbox-commands/templates/orm/ORMEventHandler.txt' );
 
 		// Write out the model
 		var modelPath = '#directory#/#arguments.name#.cfc';

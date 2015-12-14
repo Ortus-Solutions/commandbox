@@ -85,8 +85,8 @@ component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=fal
 		}
 
 		// Read in Templates
-		var handlerTestContent 		= fileRead( '/commandbox/templates/testing/Handler#stylePrefix#Content#scriptPrefix#.txt' );
-		var handlerTestCaseContent 	= fileRead( '/commandbox/templates/testing/Handler#stylePrefix#CaseContent#scriptPrefix#.txt' );
+		var handlerTestContent 		= fileRead( '/coldbox-commands/templates/testing/Handler#stylePrefix#Content#scriptPrefix#.txt' );
+		var handlerTestCaseContent 	= fileRead( '/coldbox-commands/templates/testing/Handler#stylePrefix#CaseContent#scriptPrefix#.txt' );
 
 		// Start text replacements
 		handlerTestContent 	= replaceNoCase( handlerTestContent, '|appMapping|', arguments.appMapping, 'all' );

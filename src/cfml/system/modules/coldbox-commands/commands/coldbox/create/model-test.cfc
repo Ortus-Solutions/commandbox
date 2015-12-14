@@ -44,8 +44,8 @@ component extends='commandbox.system.BaseCommand' aliases='' excludeFromHelp=fal
 		print.line();
 
 		// Read in Template
-		var modelTestContent 		= fileRead( '/commandbox/templates/testing/ModelBDDContentScript.txt' );
-		var modelTestMethodContent 	= fileRead( '/commandbox/templates/testing/ModelBDDMethodContentScript.txt' );
+		var modelTestContent 		= fileRead( '/coldbox-commands/templates/testing/ModelBDDContentScript.txt' );
+		var modelTestMethodContent 	= fileRead( '/coldbox-commands/templates/testing/ModelBDDMethodContentScript.txt' );
 
 		// Basic replacements
 		modelTestContent = replaceNoCase( modelTestContent, '|modelName|', arguments.path, 'all' );

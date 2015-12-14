@@ -33,8 +33,8 @@ component extends='commandbox.system.BaseCommand' aliases='' excludeFromHelp=fal
 		print.line();
 
 		// Read in Template
-		var interceptorTestContent 	= fileRead( '/commandbox/templates/testing/InterceptorBDDContentScript.txt' );
-		var interceptorTestCase 	= fileRead( '/commandbox/templates/testing/InterceptorBDDCaseContentScript.txt' );
+		var interceptorTestContent 	= fileRead( '/coldbox-commands/templates/testing/InterceptorBDDContentScript.txt' );
+		var interceptorTestCase 	= fileRead( '/coldbox-commands/templates/testing/InterceptorBDDCaseContentScript.txt' );
 
 		// Start Replacings
 		interceptorTestContent = replaceNoCase( interceptorTestContent, "|name|", arguments.path, "all" );

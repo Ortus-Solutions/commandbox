@@ -52,10 +52,10 @@ component extends='commandbox.system.BaseCommand' aliases='' excludeFromHelp=fal
 		}
 
 		// Read in Template
-		var interceptorContent 		= fileRead( '/commandbox/templates/InterceptorContent#scriptPrefix#.txt' );
-		var interceptorMethod 		= fileRead( '/commandbox/templates/InterceptorMethod#scriptPrefix#.txt' );
-		var interceptorTestContent 	= fileRead( '/commandbox/templates/testing/InterceptorBDDContentScript.txt' );
-		var interceptorTestCase 	= fileRead( '/commandbox/templates/testing/InterceptorBDDCaseContentScript.txt' );
+		var interceptorContent 		= fileRead( '/coldbox-commands/templates/InterceptorContent#scriptPrefix#.txt' );
+		var interceptorMethod 		= fileRead( '/coldbox-commands/templates/InterceptorMethod#scriptPrefix#.txt' );
+		var interceptorTestContent 	= fileRead( '/coldbox-commands/templates/testing/InterceptorBDDContentScript.txt' );
+		var interceptorTestCase 	= fileRead( '/coldbox-commands/templates/testing/InterceptorBDDCaseContentScript.txt' );
 
 		// Start Replacings
 		interceptorContent = replaceNoCase( interceptorContent, '|Name|', arguments.name, 'all' );
