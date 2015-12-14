@@ -19,7 +19,7 @@
  * list --JSON
  * {code}
  **/
-component extends="commandbox.system.BaseCommand" aliases="list" {
+component aliases="list" {
 	
 	processingdirective pageEncoding='UTF-8';
 	

@@ -17,7 +17,7 @@
  * {code}
  *
  **/	
-component extends="commandbox.system.BaseCommand" aliases="copy" {
+component aliases="copy" {
 
 	/**
 	 * @path.hint The file or directory source

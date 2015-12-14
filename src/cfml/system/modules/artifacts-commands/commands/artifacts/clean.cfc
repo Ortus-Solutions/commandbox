@@ -13,7 +13,7 @@
  * {code}
  *
  **/
-component extends="commandbox.system.BaseCommand" {
+component {
 
 	// DI
 	property name='artifactService' inject='artifactService';

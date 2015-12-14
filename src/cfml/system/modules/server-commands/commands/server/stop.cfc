@@ -8,7 +8,7 @@
  * server stop --all
  * {code}
  **/
-component extends="commandbox.system.BaseCommand" aliases="stop" {
+component aliases="stop" {
 
 	// DI
 	property name="serverService" inject="ServerService";

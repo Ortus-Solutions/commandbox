@@ -17,7 +17,7 @@
  * {code}
  * .
  **/
-component extends="commandbox.system.BaseCommand" aliases="uninstall" {
+component aliases="uninstall" {
 	
 	/**
 	* The ForgeBox entries cache

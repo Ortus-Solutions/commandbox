@@ -27,7 +27,7 @@
  * {code}
  * 
  **/
-component extends="commandbox.system.BaseCommand" {
+component {
 	
 	property name="commandHistoryFile"		inject="commandHistoryFile@java";
 	property name="REPLScriptHistoryFile"	inject="REPLScriptHistoryFile@java";

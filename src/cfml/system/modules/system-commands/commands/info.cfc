@@ -6,7 +6,7 @@
  * {code}
  *
  **/
-component extends="commandbox.system.BaseCommand" aliases="about" {
+component aliases="about" {
 
 	function run() {
 		

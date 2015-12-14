@@ -44,7 +44,7 @@
  * {code} 
  * 
  **/
-component extends="commandbox.system.BaseCommand" {
+component {
 	
 	// DI Properties
 	property name='parser' 	inject='Parser';

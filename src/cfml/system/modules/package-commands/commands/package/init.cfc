@@ -18,7 +18,7 @@
  * {code}
  *
  **/
-component extends="commandbox.system.BaseCommand" aliases="init" {
+component aliases="init" {
 
 	// DI
 	property name="PackageService" 	inject="PackageService";

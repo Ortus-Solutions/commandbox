@@ -10,7 +10,7 @@
  * coldbox reinit password="mypass"
  * {code}
  **/
-component extends="commandbox.system.BaseCommand" aliases="fwreinit" {
+component aliases="fwreinit" {
 	
 	// DI
 	property name="serverService" inject="ServerService";

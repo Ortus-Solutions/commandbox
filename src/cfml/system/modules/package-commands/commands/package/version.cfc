@@ -26,7 +26,7 @@
  * If multiple version parts are specified, the "larger" one will be used starting with major.  
  * If a version AND a flag are both supplied, the version will be used and the flag(s) ignored.
  **/
-component extends="commandbox.system.BaseCommand" aliases="bump" {
+component aliases="bump" {
 	
 	property name='packageService' inject='PackageService';
 	property name='semanticVersion'	inject='semanticVersion';

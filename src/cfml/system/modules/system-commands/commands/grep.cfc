@@ -17,7 +17,7 @@
  * {code}
  * 
  **/
-component extends="commandbox.system.BaseCommand" excludeFromHelp=true {
+component excludeFromHelp=true {
 	
 	/**
 	 * @input.hint The piped input to be checked.

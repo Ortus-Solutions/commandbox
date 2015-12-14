@@ -6,7 +6,7 @@
  * server log name=serverName
  * {code}
  **/
-component extends="commandbox.system.BaseCommand" {
+component {
 
 	property name="serverService" inject="ServerService";
 

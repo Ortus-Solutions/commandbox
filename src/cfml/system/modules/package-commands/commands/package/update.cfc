@@ -26,7 +26,7 @@
  * update coldbox --force
  * {code}
  **/
-component extends="commandbox.system.BaseCommand" aliases="update" {
+component aliases="update" {
 	
 	processingdirective pageEncoding='UTF-8';
 	

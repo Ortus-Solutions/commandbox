@@ -28,7 +28,7 @@
  * {code}
  * .
  **/
-component extends="commandbox.system.BaseCommand" {
+component {
 
 	// DI
 	property name="serverService" inject="ServerService";

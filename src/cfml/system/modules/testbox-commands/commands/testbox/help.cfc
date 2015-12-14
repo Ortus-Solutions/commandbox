@@ -1,4 +1,4 @@
-component extends="commandbox.system.BaseCommand" excludeFromHelp=true {
+component excludeFromHelp=true {
 	
 	function run()  {
 		

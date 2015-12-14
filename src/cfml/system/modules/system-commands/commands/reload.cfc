@@ -7,7 +7,7 @@
  * reload
  * {code}
  **/
-component extends="commandbox.system.BaseCommand" aliases="r" excludeFromHelp=true {
+component aliases="r" excludeFromHelp=true {
 
 	/**
 	 * @clearScreen.hint Clears the screen after reload

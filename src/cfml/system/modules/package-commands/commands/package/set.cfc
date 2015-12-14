@@ -39,7 +39,7 @@
  * {code}
  * 
  **/
-component extends="commandbox.system.BaseCommand" {
+component {
 	
 	property name="packageService" inject="PackageService"; 
 	

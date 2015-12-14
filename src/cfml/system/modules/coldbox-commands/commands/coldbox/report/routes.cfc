@@ -1,7 +1,7 @@
 /**
  * Description of command
  **/
-component extends="commandbox.system.BaseCommand" {
+component {
 	
 	/**
 	 * 

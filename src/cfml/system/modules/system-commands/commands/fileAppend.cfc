@@ -18,7 +18,7 @@
  * {code}
  * 
  **/
-component extends="commandbox.system.BaseCommand" excludeFromHelp=true {
+component excludeFromHelp=true {
 
 	/**
 	 * @contents.hint Contents to append to the file

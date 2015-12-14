@@ -26,7 +26,7 @@
  * {code}
  * .
  **/
-component extends="commandbox.system.BaseCommand" {
+component {
 	
 	property name="packageService" inject="PackageService";
 	property name="formatterUtil" inject="Formatter"; 

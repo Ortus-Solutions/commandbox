@@ -23,7 +23,7 @@
 * coldbox create integration-test contacts --xunit
 * {code}
 **/
-component extends="commandbox.system.BaseCommand" {
+component {
 
 	/**
 	* Constructor

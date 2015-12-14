@@ -6,7 +6,7 @@
  * {code}
  *
  **/
-component extends="commandbox.system.BaseCommand" aliases="cls" {
+component aliases="cls" {
 
 	function run()  {
 		shell.clearScreen();

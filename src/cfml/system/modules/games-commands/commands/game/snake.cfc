@@ -12,7 +12,7 @@
  * {code}
 
 **/
-component extends="commandbox.system.BaseCommand" aliases="snake" {
+component aliases="snake" {
 	
 	processingdirective pageEncoding='UTF-8';
 	

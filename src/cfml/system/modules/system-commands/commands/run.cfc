@@ -24,7 +24,7 @@
  * {code}
  *
  **/
-component extends="commandbox.system.BaseCommand"{
+component{
 
 	/**
 	* @name.hint The full pathname of the application to execute including extension

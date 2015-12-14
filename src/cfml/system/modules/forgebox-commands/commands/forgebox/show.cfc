@@ -31,7 +31,7 @@
  * {code}
  *
  **/
-component extends="commandbox.system.BaseCommand" aliases="show" {
+component aliases="show" {
 	
 	// DI
 	property name="forgeBox" inject="ForgeBox";

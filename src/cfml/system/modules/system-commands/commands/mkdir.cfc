@@ -5,7 +5,7 @@
  * mkdir newDir 
  * {code}
  **/
-component extends="commandbox.system.BaseCommand" {
+component {
 
 	/**
 	 * @directory.hint The directory to create

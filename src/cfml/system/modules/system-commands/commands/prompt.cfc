@@ -7,7 +7,7 @@
  * prompt "My Cool Shell> "
  * {code}
  **/
-component extends="commandbox.system.BaseCommand" {
+component {
 
 	/**
 	* @prompt.hist The new text to use as the shell prompt

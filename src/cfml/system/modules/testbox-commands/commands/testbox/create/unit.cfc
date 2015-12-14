@@ -7,7 +7,7 @@
 * {code}
 *  
 **/
-component extends="commandbox.system.BaseCommand" {
+component {
 	
 	/**
 	* @name.hint Name of the xUnit bundle to create without the .cfc. For packages, specify name as 'myPackage/MyTest'

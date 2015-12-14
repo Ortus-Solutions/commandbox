@@ -1,7 +1,7 @@
 /**
  * List all tasks
  **/
-component extends="commandbox.system.BaseCommand" {
+component {
 
 	function run(  ) {
 		print.line( "faux-list!" );

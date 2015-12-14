@@ -12,7 +12,7 @@
  * {code}
  * 
  **/
-component extends="commandbox.system.BaseCommand" {
+component {
 
 	/**
 	 * @text.hint The text to output

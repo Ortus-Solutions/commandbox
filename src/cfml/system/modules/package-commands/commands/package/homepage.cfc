@@ -10,7 +10,7 @@
  * homepage
  * {code}
  **/
-component extends="commandbox.system.BaseCommand" aliases="homepage" {
+component aliases="homepage" {
 	
 	property name="packageService" inject="PackageService";
 	

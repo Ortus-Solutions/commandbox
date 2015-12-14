@@ -8,7 +8,7 @@
 * {code}
 *  
 **/
-component extends="commandbox.system.BaseCommand" {
+component {
 	
 	/**
 	* @name.hint Name of the view to create without the .cfm.

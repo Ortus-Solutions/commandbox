@@ -18,7 +18,7 @@
  * delete myFolder/ --recurse
  * {code}
  **/	
-component extends="commandbox.system.BaseCommand" aliases="rm,del" {
+component aliases="rm,del" {
 
 	/**
 	 * @path.hint file or directory to delete

@@ -17,7 +17,7 @@
  * upgrade --force
  * {code}
  **/
-component extends="commandbox.system.BaseCommand" {
+component {
 
 	// DI
 	property name="artifactDir" 			inject="artifactDir@constants";
