@@ -32,7 +32,7 @@
  * sed --file config.cfm s~/var/www/~/sites/wwwroot/~i > config.cfm
  * {code}
  **/
-component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
+component extends="commandbox.system.BaseCommand" {
 
 	// DI Properties
 	property name='parser' 	inject='Parser';

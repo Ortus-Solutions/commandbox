@@ -23,7 +23,7 @@
  * {code}
  
  **/
-component extends="commandbox.system.BaseCommand" aliases="exec" excludeFromHelp=false{
+component extends="commandbox.system.BaseCommand" aliases="exec"{
 
 	/**
 	 * @file.hint The file to execute

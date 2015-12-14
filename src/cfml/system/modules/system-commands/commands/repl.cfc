@@ -17,7 +17,7 @@
  * lines in the history.  The REPLs histories can be managed by the "history" command.
  * 
  **/
-component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
+component extends="commandbox.system.BaseCommand" {
 
 	// repl history file
 	property name="commandHistoryFile"		inject="commandHistoryFile@java";

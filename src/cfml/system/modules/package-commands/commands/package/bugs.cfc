@@ -10,7 +10,7 @@
  * bugs
  * {code}
  **/
-component extends="commandbox.system.BaseCommand" aliases="bugs" excludeFromHelp=false {
+component extends="commandbox.system.BaseCommand" aliases="bugs" {
 	
 	property name="packageService" inject="PackageService";
 	

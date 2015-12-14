@@ -16,7 +16,7 @@
  * server start heapSize=768
  * {code}
  **/
-component extends="commandbox.system.BaseCommand" aliases="start" excludeFromHelp=false {
+component extends="commandbox.system.BaseCommand" aliases="start" {
 
 	// DI
 	property name="serverService" 	inject="ServerService";

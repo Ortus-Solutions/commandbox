@@ -7,7 +7,7 @@
 * {code}
 *
  **/
-component extends='commandbox.system.BaseCommand' aliases='' excludeFromHelp=false {
+component extends='commandbox.system.BaseCommand' aliases='' {
 
 	/**
 	* @name.hint Name of the event handler to create without the .cfc. For packages, specify name as 'myPackage/myModel'

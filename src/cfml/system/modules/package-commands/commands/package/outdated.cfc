@@ -18,7 +18,7 @@
  * outdated --JSON
  * {code}
  **/
-component extends="commandbox.system.BaseCommand" aliases="outdated" excludeFromHelp=false {
+component extends="commandbox.system.BaseCommand" aliases="outdated" {
 	
 	processingdirective pageEncoding='UTF-8';
 	

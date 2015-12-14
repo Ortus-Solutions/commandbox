@@ -12,7 +12,7 @@
  * tail file.txt 100
  * {code}
  **/	
-component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
+component extends="commandbox.system.BaseCommand" {
 
 	/**
 	 * @path.hint file or directory to tail

@@ -6,7 +6,7 @@
  * server open
  * {code}
  **/
-component extends="commandbox.system.BaseCommand" aliases="fwreinit" excludeFromHelp=false {
+component extends="commandbox.system.BaseCommand" aliases="fwreinit" {
 	
 	// DI
 	property name="serverService" inject="ServerService";

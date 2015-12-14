@@ -7,7 +7,7 @@
  * .
  
  **/
-component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
+component extends="commandbox.system.BaseCommand" {
 	
 	// DI
 	property name="forgeBox" inject="ForgeBox";

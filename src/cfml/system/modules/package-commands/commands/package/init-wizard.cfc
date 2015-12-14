@@ -1,7 +1,7 @@
 /**
  * Initialize a package in the current directory by creating a default box.json file using our lovely wizard
  **/
-component extends="init" aliases="" excludeFromHelp=false {
+component extends="init" {
 
 	/**
 	 * @name The human-readable name for this package 

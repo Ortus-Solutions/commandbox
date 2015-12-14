@@ -12,7 +12,7 @@
  * {code}
  * 
  **/
-component extends="commandbox.system.BaseCommand" aliases="new" excludeFromHelp=false {
+component extends="commandbox.system.BaseCommand" aliases="new" {
 
 	/**
 	 * @file.hint File to create

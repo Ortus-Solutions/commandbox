@@ -8,7 +8,7 @@
 * {code}
 *
  **/
-component extends='commandbox.system.BaseCommand' aliases='' excludeFromHelp=false {
+component extends='commandbox.system.BaseCommand' aliases='' {
 
 	/**
 	* @entity The name and dot location path of the entity to create the CRUD for, starting from the root of your application. For example: models.Contact, models.security.User

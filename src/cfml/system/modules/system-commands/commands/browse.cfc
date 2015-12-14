@@ -7,7 +7,7 @@
  * {code}
  * 
  **/
-component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
+component extends="commandbox.system.BaseCommand" {
 
 	/**
 	 * @URI.hint The URI to open as you would type it into your browser's address bar

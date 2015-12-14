@@ -33,7 +33,7 @@
 * {code}
 * 
 **/
-component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
+component extends="commandbox.system.BaseCommand" {
 	
 	/**
 	* The location of our skeletons

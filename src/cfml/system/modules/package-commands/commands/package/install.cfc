@@ -84,7 +84,7 @@
  * install riaforge:iwantmylastfm
  * {code}
  **/
-component extends="commandbox.system.BaseCommand" aliases="install" excludeFromHelp=false {
+component extends="commandbox.system.BaseCommand" aliases="install" {
 
 	/**
 	* The ForgeBox entries cache

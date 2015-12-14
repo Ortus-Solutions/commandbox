@@ -22,7 +22,7 @@
  * {code}
  *
  **/	
-component extends="commandbox.system.BaseCommand" aliases="rename" excludeFromHelp=false {
+component extends="commandbox.system.BaseCommand" aliases="rename" {
 
 	/**
 	 * @path.hint The file or directory source to rename

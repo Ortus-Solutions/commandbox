@@ -11,7 +11,7 @@
  * cd ../../tests
  * {code} 
  **/
-component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
+component extends="commandbox.system.BaseCommand" {
 
 	/**
 	 * @directory.hint The directory to change to

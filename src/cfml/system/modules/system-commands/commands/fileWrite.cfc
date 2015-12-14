@@ -18,7 +18,7 @@
  * {code}
  * 
  **/
-component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=true {
+component extends="commandbox.system.BaseCommand" excludeFromHelp=true {
 
 	/**
 	 * @contents.hint Contents to write to the file

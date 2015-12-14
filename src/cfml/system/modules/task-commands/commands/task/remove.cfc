@@ -1,7 +1,7 @@
 /**
  * Remvoe a task
  **/
-component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
+component extends="commandbox.system.BaseCommand" {
 
 	/** 
 	 * @name.hint The Task name

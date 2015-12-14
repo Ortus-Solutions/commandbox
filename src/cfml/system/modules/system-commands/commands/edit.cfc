@@ -9,7 +9,7 @@
  * {code}
  * 
  **/
-component extends="commandbox.system.BaseCommand" aliases="open" excludeFromHelp=false {
+component extends="commandbox.system.BaseCommand" aliases="open" {
 
 	/**
 	 * @path.hint Path to open natively.

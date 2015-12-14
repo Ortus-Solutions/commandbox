@@ -18,7 +18,7 @@
  * {code}
  * 
  **/
-component extends="commandbox.system.BaseCommand" aliases="type" excludeFromHelp=false {
+component extends="commandbox.system.BaseCommand" aliases="type" {
 
 	/**
 	 * You can have as many args as you want, but I'm including 4 just so 

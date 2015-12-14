@@ -8,7 +8,7 @@
  * server forget --all --force
  * {code}
  **/
-component extends="commandbox.system.BaseCommand" excludeFromHelp=false {
+component extends="commandbox.system.BaseCommand" {
 
 	// di
 	property name="serverService" inject="ServerService";

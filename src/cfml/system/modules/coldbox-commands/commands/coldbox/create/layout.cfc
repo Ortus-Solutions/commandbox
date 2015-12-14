@@ -8,7 +8,7 @@
 * {code}
 *  
 **/
-component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
+component extends="commandbox.system.BaseCommand" {
 	
 	/**
 	* @arguments.name.hint Name of the layout to create without the .cfm.

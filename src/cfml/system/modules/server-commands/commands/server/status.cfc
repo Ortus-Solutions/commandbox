@@ -30,7 +30,7 @@
  * {code}
  * .   
  **/
-component extends='commandbox.system.BaseCommand' aliases='status' excludeFromHelp=false {
+component extends='commandbox.system.BaseCommand' aliases='status' {
 
 	// DI
 	property name='serverService' inject='ServerService';

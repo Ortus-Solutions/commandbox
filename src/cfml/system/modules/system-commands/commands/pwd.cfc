@@ -6,7 +6,7 @@
 * {code}
  * 
  **/
-component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
+component extends="commandbox.system.BaseCommand" {
 
 	function run()  {
 		return getCWD();

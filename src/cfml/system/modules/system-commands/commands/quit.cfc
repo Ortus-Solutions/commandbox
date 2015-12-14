@@ -11,7 +11,7 @@
 * at a later time and "cd" to the root folder of the server.
 *
 **/
-component extends="commandbox.system.BaseCommand" aliases="exit,q,e" excludeFromHelp=false {
+component extends="commandbox.system.BaseCommand" aliases="exit,q,e" {
 
 	function run()  {
 		shell.exit();

@@ -12,7 +12,7 @@
  * {code}
  * .
  **/
-component extends="commandbox.system.BaseCommand" aliases="ver" excludeFromHelp=false {
+component extends="commandbox.system.BaseCommand" aliases="ver" {
 
 	/**
 	* @loader.hint Show the version of the CLI loader

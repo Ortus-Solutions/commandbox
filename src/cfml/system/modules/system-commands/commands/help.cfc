@@ -20,7 +20,7 @@
  * testbox run help
  * {code}
 **/
-component extends="commandbox.system.BaseCommand" aliases="h,/?,?,--help,-help" excludeFromHelp=false {
+component extends="commandbox.system.BaseCommand" aliases="h,/?,?,--help,-help" {
 
 	property name="commandService" inject="CommandService";
 	

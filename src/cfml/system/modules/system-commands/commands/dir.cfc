@@ -12,7 +12,7 @@
  * {code}
  * 
  **/
-component extends="commandbox.system.BaseCommand" aliases="ls,ll,directory" excludeFromHelp=false {
+component extends="commandbox.system.BaseCommand" aliases="ls,ll,directory" {
 
 	/**
 	 * @directory.hint The directory to list the contents of

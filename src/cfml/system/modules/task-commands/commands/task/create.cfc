@@ -1,7 +1,7 @@
 /**
  * Adds a task to be executed on the given interval
  **/
-component extends="commandbox.system.BaseCommand" aliases="" excludeFromHelp=false {
+component extends="commandbox.system.BaseCommand" {
 
 	/** 
 	 * @name.hint The Task name
