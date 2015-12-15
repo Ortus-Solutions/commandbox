@@ -48,7 +48,6 @@ component {
 	* Constructor
 	*/
 	function init(){
-		super.init();
 		variables.skeletonLocation = expandPath( '/coldbox-commands/skeletons/' );
 		return this;
 	}

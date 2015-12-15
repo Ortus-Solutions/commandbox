@@ -28,15 +28,6 @@ component {
 	property name="REPLParser"		inject="REPLParser";
 
 	/**
-	* Constructor
-	*/
-	function init(){
-		super.init();
-
-		return this;
-	}
-
-	/**
 	* @input.hint Optional CFML to execute. If provided, the command exits immediatley.
 	* @script.hint Run REPL in script or tag mode
 	* @directory.hint Directory to start the REPL in (defaults to current working directory).

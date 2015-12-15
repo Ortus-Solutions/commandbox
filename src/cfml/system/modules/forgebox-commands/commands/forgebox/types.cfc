@@ -13,14 +13,6 @@ component {
 	property name="forgeBox" inject="ForgeBox";
 	
 	/**
-	* Constructor
-	*/
-	function init(){
-		super.init();
-		return this;
-	}
-
-	/**
 	* Run Command
 	*/
 	function run(  ) {

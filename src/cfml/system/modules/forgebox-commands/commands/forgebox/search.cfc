@@ -13,13 +13,6 @@ component {
 	property name="forgeBox" inject="ForgeBox";
 	
 	/**
-	* Constructor
-	*/
-	function init() {
-		return super.init( argumentCollection = arguments );
-	}
-	
-	/**
 	* @searchText.hint Text to search on
 	**/
 	function run( searchText ) {

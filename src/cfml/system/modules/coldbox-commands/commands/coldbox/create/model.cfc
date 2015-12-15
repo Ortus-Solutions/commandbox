@@ -14,13 +14,12 @@
 * {code}
 *
  **/
-component extends='commandbox.system.BaseCommand' aliases='' {
+component {
 
 	/**
 	* Constructor
 	*/
 	function init(){
-		super.init();
 		// valid persistences
 		variables.validPersistences = 'Transient,Singleton';
 

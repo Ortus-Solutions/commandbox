@@ -7,7 +7,7 @@
 * {code}
 *
  **/
-component extends='commandbox.system.BaseCommand' aliases='' {
+component {
 
 	/**
 	* @entityName The name of the entity this virtual service will be bound to

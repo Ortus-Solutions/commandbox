@@ -13,14 +13,6 @@ component {
 	property name="forgeBox" inject="ForgeBox";
 	
 	/**
-	* Constructor
-	*/
-	function init(){
-		super.init();
-		return this;
-	}
-
-	/**
 	* @slug.hint The slug to verify in ForgeBox
 	*/
 	function run( required slug ) {

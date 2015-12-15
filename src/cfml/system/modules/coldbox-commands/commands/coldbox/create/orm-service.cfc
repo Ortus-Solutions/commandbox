@@ -7,7 +7,7 @@
 * {code}
 *
  **/
-component extends='commandbox.system.BaseCommand' aliases='' {
+component {
 
 	/**
 	* @serviceName The name of this Base ORM service to create

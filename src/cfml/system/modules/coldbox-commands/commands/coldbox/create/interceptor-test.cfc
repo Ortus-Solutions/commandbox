@@ -7,7 +7,7 @@
 * {code}
 *
  **/
-component extends='commandbox.system.BaseCommand' aliases='' {
+component {
 
 	/**
 	* @path The instantiation path of the interceptor to create the test for

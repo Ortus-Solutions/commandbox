@@ -26,14 +26,6 @@
 component {
 
 	/**
-	* Constructor
-	*/
-	function init(){
-		super.init();
-		return this;
-	}
-
-	/**
 	* @handler.hint Name of the handler to test
 	* @actions.hint A comma-delimited list of actions to generate
 	* @appMapping.hint The root location of the application in the web root: ex: /MyApp or / if in the root

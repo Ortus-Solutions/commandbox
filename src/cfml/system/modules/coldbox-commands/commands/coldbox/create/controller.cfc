@@ -8,7 +8,7 @@
 * {code}
 *
 **/
-component extends='commandbox.system.BaseCommand' aliases='coldbox create handler' {
+component aliases='coldbox create handler' {
 
 	/**
 	* @name.hint Name of the controller to create without the .cfc. For packages, specify name as 'myPackage/myController'

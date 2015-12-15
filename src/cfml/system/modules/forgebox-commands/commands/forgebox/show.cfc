@@ -36,13 +36,6 @@ component aliases="show" {
 	// DI
 	property name="forgeBox" inject="ForgeBox";
 	
-	/**
-	* Constructor
-	*/
-	function init() {		
-		return super.init( argumentCollection = arguments );
-	}
-	
 	function onDIComplete() {
 		variables.forgeboxOrders =  forgebox.ORDER;
 	}

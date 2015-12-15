@@ -10,7 +10,7 @@
 * {code}
 *
  **/
-component extends='commandbox.system.BaseCommand' aliases='' {
+component {
 
 	/**
 	* @name Name of the interceptor to create without the .cfc
