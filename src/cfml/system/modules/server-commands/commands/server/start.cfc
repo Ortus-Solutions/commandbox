@@ -46,6 +46,7 @@ component aliases="start" {
 	 * @rewritesEnable 	enable URL rewriting (default false)
 	 * @rewritesConfig 	optional URL rewriting config file path
 	 * @heapSize		The max heap size in megabytes you would like this server to start with, it defaults to 512mb
+	 * @directoryBrowsing Enable/Disabled directory browsing, defaults to true
 	 **/
 	function run(
 		String  name            = "",
@@ -69,7 +70,8 @@ component aliases="start" {
 		String  SSLKeyPass 		= "",
 		Boolean rewritesEnable	= false,
 		String  rewritesConfig  = "",
-		Numeric heapSize		= 0
+		Numeric heapSize		= 0,
+		boolean directoryBrowsing = true
 	){
 		// Resolve path as used locally
 		var webroot = fileSystemUtil.resolvePath( arguments.directory );
@@ -118,15 +120,16 @@ component aliases="start" {
 		if( Len( Trim( arguments.libDirs         ) ) ) { serverInfo.libDirs         = arguments.libDirs;         }
 		if( Len( Trim( arguments.trayIcon        ) ) ) { serverInfo.trayIcon        = arguments.trayIcon;        }
 		if( Len( Trim( arguments.webXML          ) ) ) { serverInfo.webXML          = arguments.webXML;          }
-		if( !isNull( arguments.SSLEnable 			) ) { serverInfo.SSLEnable 		 = arguments.SSLEnable;  	  }
+		if( !isNull( arguments.SSLEnable 		 ) ) { serverInfo.SSLEnable 		 = arguments.SSLEnable;  	  }
 		if( Len( Trim( arguments.HTTPEnable      ) ) ) { serverInfo.HTTPEnable      = arguments.HTTPEnable;      }
 		if( Len( Trim( arguments.SSLPort         ) ) ) { serverInfo.SSLPort         = arguments.SSLPort;         }
 		if( Len( Trim( arguments.SSLCert         ) ) ) { serverInfo.SSLCert         = arguments.SSLCert;         }
 		if( Len( Trim( arguments.SSLKey          ) ) ) { serverInfo.SSLKey          = arguments.SSLKey;          }
 		if( Len( Trim( arguments.SSLKeyPass      ) ) ) { serverInfo.SSLKeyPass      = arguments.SSLKeyPass;      }
-		if( !isNull( arguments.rewritesEnable 		) ) { serverInfo.rewritesEnable  = arguments.rewritesEnable;  }
+		if( !isNull( arguments.rewritesEnable 	 ) ) { serverInfo.rewritesEnable  = arguments.rewritesEnable;  }
 		if( Len( Trim( arguments.rewritesConfig  ) ) ) { serverInfo.rewritesConfig  = arguments.rewritesConfig;  }
 		if( arguments.heapSize != 0 ){ serverInfo.heapSize = arguments.heapSize; }
+		if( !isNull( arguments.directoryBrowsing ) ) { serverInfo.directoryBrowsing  = arguments.directoryBrowsing;  }
 
 		// startup the service using server info struct, the start service takes care of persisting updated params
 		return serverService.start(
