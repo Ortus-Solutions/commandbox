@@ -105,7 +105,7 @@ component accessors="true" singleton {
 	/**
 	 * Start a server instance
 	 *
-	 * @serverInfo.hint The server information struct: [ webroot, name, port, host, stopSocket, logDir, status, statusInfo, HTTPEnable, SSLEnable, RewritesEnable, RewritesConfig ]
+	 * @serverInfo.hint The server information struct: [ webroot, name, port, host, stopSocket, logDir, status, statusInfo, HTTPEnable, SSLEnable, RewritesEnable, RewritesConfig, heapsize, directoryBrowsing ]
 	 * @openBrowser.hint Open a web browser or not
 	 * @force.hint force start if status is not stopped
 	 * @debug.hint sets debug log level
@@ -148,6 +148,9 @@ component accessors="true" singleton {
 		var rewritesEnable  = isNull( arguments.serverInfo.rewritesEnable ) ? false : arguments.serverInfo.rewritesEnable;
 		var rewritesConfig 	= isNull( arguments.serverInfo.rewritesConfig ) ? "" 	: arguments.serverInfo.rewritesConfig;
 
+		// Directory Browsing
+		var directoryBrowsing = isNull( arguments.serverInfo.directoryBrowsing ) ? true : arguments.serverInfo.directoryBrowsing;
+
 		// config directory locations
 		var configDir       = len( arguments.serverInfo.webConfigDir ) 		? arguments.serverInfo.webConfigDir 	: getCustomServerFolder( arguments.serverInfo );
 		var serverConfigDir = len( arguments.serverInfo.serverConfigDir ) 	? arguments.serverInfo.serverConfigDir 	: variables.serverHomeDirectory;
@@ -167,7 +170,7 @@ component accessors="true" singleton {
 				& " --open-browser #openbrowser# --open-url http://#arguments.serverInfo.host#:#portNumber#"
 				& " --cfengine-name lucee --server-name ""#name#"" --lib-dirs ""#libDirs#"""
 				& " --tray-icon ""#trayIcon#"" --tray-config ""#libdir#/traymenu.json"""
-				& " --cfml-web-config ""#configdir#"" --cfml-server-config ""#serverConfigDir#""";
+				& " --directoryindex ""#directoryBrowsing#"" --cfml-web-config ""#configdir#"" --cfml-server-config ""#serverConfigDir#""";
 		// Incorporate SSL to command
 		if( SSLEnable ){
 			args &= " --http-enable #HTTPEnable# --ssl-enable #SSLEnable# --ssl-port #SSLPort#";
@@ -492,7 +495,8 @@ component accessors="true" singleton {
 			SSLKeyPass		: "",
 			rewritesEnable  : false,
 			rewritesConfig	: "",
-			heapSize		: 512
+			heapSize		: 512,
+			directoryBrowsing : true
 		};
 	}
 
