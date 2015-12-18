@@ -1,6 +1,6 @@
 /**
- * I am a shortcut to run CFML functions via the REPL. I take the parameters that are passed
- * into this command and pass them along to the CFML function. 
+ * I am a shortcut to run single CFML functions via the REPL. This example runs the now() function.  
+ * It is the equivalent to "repl now()". 
  * .
  * {code:bash}
  * cfml now
@@ -31,8 +31,8 @@
  * Since this command defers to the REPL for execution, complex return values such as arrays or structs will be 
  * serialized as JSON on output.  As a convenience, if the first input to an array or struct function looks like
  * JSON, it will be passed directly as a literal instead of a string.  
- * 
- * The first ex averages an array.  The second outputs an array of depdendency names in your app by manipulating 
+ * .
+ * The first example averages an array.  The second outputs an array of depdendency names in your app by manipulating 
  * the JSON object  that comes back from the "package list" command.
  *  
  * {code:bash}
@@ -40,7 +40,7 @@
  * package list --JSON | #structFind dependencies | #structKeyArray
  * {code}
  *
- * You must use postional parmaters if you are pipig data to a CFML function, but you do have the option to use
+ * You must use postional parmaters if you are piping data to a CFML function, but you do have the option to use
  * named parameters otherwise.  Those names will be passed along directly to the CFML function, so use the CF docs to make sure
  * you're using the correct parameter name.  
  * 
