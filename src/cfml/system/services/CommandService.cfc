@@ -193,10 +193,19 @@ component accessors="true" singleton {
 				}
 				// If we're using named parameters and this command has at least one param defined
 				if( structCount( parameterInfo.namedParameters ) ){
+					if( commandInfo.commandString == 'cfml' ) {
+						
+						shell.printString( shell.getPrint().redBoldLine( 'Sorry, you can''t pipe data into a CFML function using named parameters since I don''t know the name of the piped parameter.' ) );
+						return;
+					}
 					// Insert/overwrite the first param as our last result
 					parameterInfo.namedParameters[ commandParams[1].name ?: '1' ] = result;
 				} else {
-					parameterInfo.positionalParameters.prepend( result );
+					if( commandInfo.commandString == 'cfml' ) {
+						parameterInfo.positionalParameters.insertAt( 2, result );
+					} else {
+						parameterInfo.positionalParameters.prepend( result );
+					}
 				}
 			}
 
@@ -354,6 +363,20 @@ component accessors="true" singleton {
 				tokens[1] = right( tokens[1], len( tokens[1] ) - 1 );
 				// tack on "run"
 				tokens.prepend( 'run' );
+			}
+			
+			// Shortcut for "cfml" command if first token starts with #
+			if( tokens.len() && len( tokens[1] ) > 1 && tokens[1].startsWith( '##' ) ) {
+				// Trim the # off
+				tokens[1] = right( tokens[1], len( tokens[1] ) - 1 );
+				
+				// If it looks like we have named params, convert the "name" to be named
+				if( tokens.len() > 1 && tokens[2] contains '=' ) {
+					tokens[1] = 'name=' & tokens[1];
+				}
+				
+				// tack on "cfml"
+				tokens.prepend( 'cfml' );
 			}
 
 			var results = {
