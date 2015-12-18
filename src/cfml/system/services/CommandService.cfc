@@ -346,6 +346,14 @@ component accessors="true" singleton {
 				// This is the droid you're looking for
 				tokens = [ 'cd', drive ];
 			}
+			
+			// Shortcut for "run" command if first token starts with !
+			if( tokens.len() && len( tokens[1] ) > 1 && tokens[1].startsWith( '!' ) ) {
+				// Trim the ! off
+				tokens[1] = right( tokens[1], len( tokens[1] ) - 1 );
+				// tack on "run"
+				tokens.prepend( 'run' );
+			}
 
 			var results = {
 				commandString = '',

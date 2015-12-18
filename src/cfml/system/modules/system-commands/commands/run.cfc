@@ -5,6 +5,13 @@
  * run myApp.exe
  * {code}
  * .
+ * A shortcut for running OS binaries is to prefix the binary with "!".  In this mode, any other params need to be positional.
+  * .
+ * {code:bash}
+ * !myApp.exe
+ * !cmd "/c dir"
+ * {code}
+ * .
  * Wait a max of 10 seconds for the command to finish.
  * .
  * {code:bash}
