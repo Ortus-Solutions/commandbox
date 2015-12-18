@@ -123,6 +123,7 @@ component accessors="true" singleton {
 	/**
 	 * run a command tokens
 	 * @tokens.hint tokens to run
+	 * @piped.hint Data to pipe in to the first command
  	 **/
 	function runCommandTokens( required array tokens, string piped ){
 		

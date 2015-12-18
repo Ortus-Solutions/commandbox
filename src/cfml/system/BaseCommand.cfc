@@ -101,6 +101,14 @@ component accessors="true" singleton {
 	function runCommand( required command, returnOutput=false ) {
 		return shell.callCommand( arguments.command, arguments.returnOutput );
 	}
+		
+	/**
+	 * Run another command by DSL. 
+	 * @name.hint The name of the command to run.
+ 	 **/
+	function command( required name ) {
+		return getinstance( name='CommandDSL', initArguments={ name : arguments.name } );
+	}
 
 	/**
 	 * Use if if your command wants to give contorlled feedback to the user without raising
@@ -136,7 +144,6 @@ component accessors="true" singleton {
 	function hasError() {
 		return hasErrored;
 	}
-	
 	
 	/**
 	 * This will open a file or folder externally in the default editor for the user.  
