@@ -11,7 +11,7 @@ try{
 		} 
 	);
 	baseDir = expandPath( '/commandbox' );
-	commandDirs = directoryList(path='/commandbox/system/modules', recurse=true, filter=function(path){ return reFindNoCase( '.*\\commands$', arguments.path ); } );
+	commandDirs = directoryList(path='/commandbox/system/modules', recurse=true, filter=function(path){ return reFindNoCase( '.*[/\\]commands$', arguments.path ); } );
 	source = [
 	];
 	for( dir in commandDirs ) {
