@@ -118,7 +118,6 @@ component {
 					// Log it
 					logger.error( '#e.message# #e.detail#' , e.stackTrace );
 					error( '#e.message##CR##e.detail#' );
-					print.toConsole();
 				}
 			}
 		}
