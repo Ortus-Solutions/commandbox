@@ -430,7 +430,7 @@ component accessors="true" singleton {
 		        	
 		        	// This can happen if the standard input is unavailable
 		        	if( !isDefined( line ) ) {
-						printError( { message : 'Standard input not available.  Exiting', detail: 'You can only pipe into a specific command' } );
+						systemOutput( 'Standard input not available, Exiting.  You can only pipe into a specific command.', true );
 		        		return variables.reloadshell;
 		        	}
 		        	
