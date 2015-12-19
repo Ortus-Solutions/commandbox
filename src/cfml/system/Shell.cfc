@@ -427,6 +427,8 @@ component accessors="true" singleton {
 				try {
 					// Shell stops on this line while waiting for user input
 		        	line = variables.reader.readLine();
+		        	// Make sure it doesn't come back as null
+		        	line = line ?: '';
 				} catch( any er ) {
 					printError( er );
 					continue;
