@@ -224,6 +224,9 @@ component accessors="true" singleton {
 			if( !validateParams( parameterInfo.namedParameters, commandParams ) ){
 				return;
 			}
+			
+			// Evaluate parameter expressions
+			evaluateExpressions( parameterInfo );
 	
 			// Reset the printBuffer
 			commandInfo.commandReference.CFC.reset();
@@ -276,6 +279,39 @@ component accessors="true" singleton {
 
 		return result;
 
+	}
+
+	/**
+	* Evaluates any expressions as a command string and puts the output in its place.
+	*/
+	function evaluateExpressions( required parameterInfo ) {
+
+		// For each parameter being passed into this command
+		for( var paramName in parameterInfo.namedParameters ) {
+			
+			var paramValue = parameterInfo.namedParameters[ paramName ];
+			// Look for an expression "foo" flagged as "__expression__foo__expression__"
+			var search = reFindNoCase( '__expression__.*?__expression__', paramValue, 1, true );
+			
+			// As long as there are more expressions
+			while( search.pos[1] ) {
+				// Extract them
+				var expression = mid( paramValue, search.pos[1], search.len[1] );
+				// Evaluate them
+				var result = runCommandline( mid( expression, 15, len( expression )-28 ) ) ?: '';
+				
+				// Clean off trailing any CR to help with piping one-liner outputs as inputs to another command
+				if( result.endsWith( chr( 10 ) ) && len( result ) > 1 ){
+					result = left( result, len( result ) - 1 );
+				}
+				
+				// And stick their results in their place
+				parameterInfo.namedParameters[ paramName ] = replaceNoCase( paramValue, expression, result, 'one' );
+				paramValue = parameterInfo.namedParameters[ paramName ];
+				// Search again
+			var search = reFindNoCase( '__expression__.*?__expression__', paramValue, 1, true );
+			}
+		}
 	}
 
 	/**

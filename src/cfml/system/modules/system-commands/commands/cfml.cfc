@@ -51,8 +51,6 @@
  **/
 component{
 
-	property name="formatterUtil" inject="Formatter";
-
 	/**
 	* @name.hint The name of the CFML function to run
 	**/
