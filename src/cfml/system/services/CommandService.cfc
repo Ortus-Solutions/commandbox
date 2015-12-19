@@ -159,8 +159,7 @@ component accessors="true" singleton {
 
 			// If nothing was found, bail out here.
 			if( !commandInfo.found ){
-				shell.printError({message:'Command "#line#" cannot be resolved.  Please type "#trim( "help #listChangeDelims( commandInfo.commandString, ' ', '.' )#" )#" for assistance.'});
-				return;
+				throw( message='Command "#line#" cannot be resolved.', detail='Please type "#trim( "help #listChangeDelims( commandInfo.commandString, ' ', '.' )#" )#" for assistance.', type="commandException");
 			}
 
 			// For help commands squish all the parameters together into one exactly as typed
@@ -177,8 +176,7 @@ component accessors="true" singleton {
 
 			// Parameters need to be ALL positional or ALL named
 			if( arrayLen( parameterInfo.positionalParameters ) && structCount( parameterInfo.namedParameters ) ){
-				shell.printError({message:"Please don't mix named and positional parameters, it makes me dizzy.#cr# #line#"});
-				return;
+				throw( message='Please don''t mix named and positional parameters, it makes me dizzy.', detail=line, type="commandException");
 			}
 
 			// These are the parameters declared by the command CFC
@@ -194,9 +192,7 @@ component accessors="true" singleton {
 				// If we're using named parameters and this command has at least one param defined
 				if( structCount( parameterInfo.namedParameters ) ){
 					if( commandInfo.commandString == 'cfml' ) {
-						
-						shell.printString( shell.getPrint().redBoldLine( 'Sorry, you can''t pipe data into a CFML function using named parameters since I don''t know the name of the piped parameter.' ) );
-						return;
+						throw( message='Sorry, you can''t pipe data into a CFML function using named parameters since I don''t know the name of the piped parameter.', detail=line, type="commandException");
 					}
 					// Insert/overwrite the first param as our last result
 					parameterInfo.namedParameters[ commandParams[1].name ?: '1' ] = result;
@@ -221,9 +217,7 @@ component accessors="true" singleton {
 			parameterInfo.namedParameters = ensureRequiredParams( parameterInfo.namedParameters, commandParams );
 
 			// Ensure supplied params match the correct type
-			if( !validateParams( parameterInfo.namedParameters, commandParams ) ){
-				return;
-			}
+			validateParams( parameterInfo.namedParameters, commandParams );
 			
 			// Evaluate parameter expressions
 			evaluateExpressions( parameterInfo );
@@ -442,12 +436,7 @@ component accessors="true" singleton {
 					results.commandReference = results.commandReference[ '$' ];
 					
 					// Create the command CFC instance if neccessary
-					var commandLoaded = lazyLoadCommandCFC( results.commandReference );
-					// If there was an error loading the command
-					if( !commandLoaded ){
-						// Error has already been displayed, so just pretend we didn't find anything.
-						return [];
-					}
+					lazyLoadCommandCFC( results.commandReference );
 					
 					break;
 				// If this is a folder, check and see if it has a "help" command
@@ -500,11 +489,9 @@ component accessors="true" singleton {
 				
 			// This will catch nasty parse errors so the shell can keep loading
 			} catch( any e ){
-				systemOutput( 'Error creating command [#commandData.fullCFCPath#]#CR##CR#' );
+				// Log the full exception with stack trace
 				logger.error( 'Error creating command [#commandData.fullCFCPath#]. #e.message# #e.detail ?: ''#', e.stackTrace );
-				// pretty print the exception
-				shell.printError( e );
-				return false;
+				throw( message='Error creating command [#commandData.fullCFCPath#]', detail="#e.message# #CR# #e.detail ?: ''#", type="commandException");
 			}
 		} // CFC exists check
 		return true;		
@@ -718,8 +705,7 @@ component accessors="true" singleton {
 				&& param.keyExists( "type" )
 				&& !isValid( param.type, userNamedParams[ param.name ] ) ){
 
-				shell.printError({message:"Parameter [#param.name#] has a value of [#userNamedParams[ param.name ]#] which is not of type [#param.type#]."});
-				return false;
+				throw( message='Parameter [#param.name#] has a value of [#userNamedParams[ param.name ]#] which is not of type [#param.type#].', type="commandException");
 			} 
 		} // end for loop
 

@@ -95,7 +95,8 @@ component accessors="true" singleton {
 	}
 		
 	/**
-	 * Run another command by name. 
+	 * Run another command by name.
+	 * This is deprecated in favor of command(), which escapes parameters for you.
 	 * @command.hint The command to run. Pass the same string a user would type at the shell.
  	 **/
 	function runCommand( required command, returnOutput=false ) {
@@ -111,7 +112,7 @@ component accessors="true" singleton {
 	}
 
 	/**
-	 * Use if if your command wants to give contorlled feedback to the user without raising
+	 * Use if if your command wants to give controlled feedback to the user without raising
 	 * an actual exception which comes with a messy stack trace.  "return" this command to stop execution of your command
 	 * Alternativley, multuple errors can be printed by calling this method more than once prior to returning.
 	 * Use clearPrintBuffer to wipe out any output accrued in the print buffer. 
@@ -121,19 +122,16 @@ component accessors="true" singleton {
 	 * @message.hint The error message to display
 	 * @clearPrintBuffer.hint Wipe out the print buffer or not, it does not by default
  	 **/
-	function error( required message, clearPrintBuffer=false ) {
+	function error( required message, detail='', clearPrintBuffer=false ) {
 		hasErrored = true;
 		if( arguments.clearPrintBuffer ) {
 			// Wipe 
 			print.clear();
 		} else {
 			// Distance ourselves from whatever other output the command may have given so far.
-			print.line().line();
+			print.line();
 		}
-		print.whiteOnRedLine( 'ERROR' )
-			.line()
-			.redLine( arguments.message )
-			.line();
+		throw( message=arguments.message, detail=arguments.detail, type="commandException");
 		
 	}
 	

@@ -441,7 +441,10 @@ component accessors="true" singleton {
 				if( len( trim( line ) ) ) {
 					try{
 						callCommand( line );
+					} catch (commandException e) {
+						printError( { message : e.message, detail: e.detail } );
 					} catch (any e) {
+						
 						printError( e );
 					}
 				}
