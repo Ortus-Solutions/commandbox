@@ -427,8 +427,13 @@ component accessors="true" singleton {
 				try {
 					// Shell stops on this line while waiting for user input
 		        	line = variables.reader.readLine();
-		        	// Make sure it doesn't come back as null
-		        	line = line ?: '';
+		        	
+		        	// This can happen if the standard input is unavailable
+		        	if( !isDefined( line ) ) {
+						printError( { message : 'Standard input not available.  Exiting', detail: 'You can only pipe into a specific command' } );
+		        		return variables.reloadshell;
+		        	}
+		        	
 				} catch( any er ) {
 					printError( er );
 					continue;
