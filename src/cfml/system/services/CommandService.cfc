@@ -131,19 +131,23 @@ component accessors="true" singleton {
 		var commandChain = resolveCommandTokens( tokens );
 		
 		// If there was piped input
-		if( structKeyExists( arguments, 'piped' ) && commandChain.len() && commandChain[1].found ) {
-			// Overwrite the first parameter with it 
-			commandChain[1].parameters[ 1 ] = parser.escapeArg( piped );
+		if( structKeyExists( arguments, 'piped' ) ) {
+			return runCommand( commandChain, tokens.toList( ' ' ), arguments.piped );
 		}
 		
-		return runCommand( commandChain, tokens.toList( ' ' ) );		
+		return runCommand( commandChain, tokens.toList( ' ' ) );
+				
 	}
 
 	/**
 	 * run a command
 	 * @commandChain.hint the chain of commands to run
  	 **/
-	function runCommand( required array commandChain, required string line ){
+	function runCommand( required array commandChain, required string line, string piped ){
+				
+		if( structKeyExists( arguments, 'piped' ) ) {
+			var result = arguments.piped;
+		}
 		
 		// If nothing is returned, something bad happened (like an error instatiating the CFC)
 		if( !commandChain.len() ){
@@ -184,7 +188,7 @@ component accessors="true" singleton {
 
 			// If this is not the first command in the chain,
 			// set its first parameter with the output from the last command
-			if( i > 1 ){
+			if( structKeyExists( local, 'result' ) ){
 				// Clean off trailing any CR to help with piping one-liner outputs as inputs to another command
 				if( result.endsWith( chr( 10 ) ) && len( result ) > 1 ){
 					result = left( result, len( result ) - 1 );
