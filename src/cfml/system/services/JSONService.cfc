@@ -11,7 +11,6 @@ component accessors="true" singleton {
 
 	// DI
 	property name="logger" inject="logbox:logger:{this}";
-	property name="formatterUtil" inject="Formatter";
 	
 	/**
 	* Constructor
