@@ -41,7 +41,8 @@
  **/
 component {
 	
-	property name="packageService" inject="PackageService"; 
+	property name="packageService" inject="PackageService";
+	property name="JSONService" inject="JSONService"; 
 	
 	/**
 	 * This param is a dummy param just to get the custom completor to work.
@@ -52,83 +53,27 @@ component {
 	 **/
 	function run( _, boolean append=false ) {
 		var thisAppend = arguments.append;
+		var directory = getCWD();
 		
-		// Allow text to be piped into this command.  If _ has length and a named parameter has been specified,
-		// copy _'s value into the named param.  This allows for:
-		// cat myFile.txt | package set description=''
-		if( structKeyExists( arguments, '_' ) && len( arguments[ '_' ] ) && arrayLen( arguments ) > 2 ) {
-			arguments.setEL( 3, arguments[ '_' ] );
-		}
-		
-		// Remove dummy arg
+		// Remove dummy args
 		structDelete( arguments, '_' );
 		structDelete( arguments, 'append' );
-		
-		
-		// This will make each directory canonical and absolute		
-		var directory = getCWD();
-				
+
 		// Check and see if box.json exists
 		if( !packageService.isPackage( directory ) ) {
 			return error( 'File [#packageService.getDescriptorPath( directory )#] does not exist.  Use the "init" command to create it.' );
 		}
 		// Read without defaulted values
-		boxJSON = packageService.readPackageDescriptorRaw( directory );
-		
-		for( var arg in arguments ) {
-			// Convert foo.bar-baz[1] to ['foo']['bar-baz'][1]
-			var tmpProperty = replace( arg, '[', '.[', 'all' );
-			tmpProperty = replace( tmpProperty, ']', '].', 'all' );
-			var fullPropertyName = '';
-			for( var item in listToArray( tmpProperty, '.' ) ) {
-				if( item.startsWith( '[' ) ) {
-					fullPropertyName &= item;
-				} else {
-					fullPropertyName &= '[ "#item#" ]';	
-				}
-			}
-			fullPropertyName = 'boxJSON' & fullPropertyName;
-			
-			
-			var propertyValue = arguments[ arg ];
-			if( isJSON( propertyValue ) ) {
-				// We're trying to append and the target property exists
-				if( thisAppend && isDefined( fullPropertyName ) ) {
-					// The target property we're trying to append to
-					var targetProperty = evaluate( fullPropertyName );
-					// The value we want to append
-					var complexValue = deserializeJSON( arguments[ arg ] );
-					// The target property is not simple, and matches the same data type as the incoming data
-					if( !isSimpleValue( targetProperty ) && ( isArray( targetProperty ) == isArray( complexValue ) ) ) {
-						// Make this idempotent so arrays don't get duplicate values
-						if( isArray( complexValue ) ) {
-							// For each new value
-							for( var newValue in complexValue ) {
-								// Check to see if it's already in the array
-								if( !targetProperty.find( newValue ) ) {
-									// If not, add it.
-									targetProperty.append( newValue );
-								}
-							}
-						// structs
-						} else { 
-							targetProperty.append( complexValue, true );							
-						}
-						print.greenLine( '#arguments[ arg ]# appended to #arg#' );
-						continue;
-					}
-					
-				}
-				// If any of the ifs above fail, we'll fall back through to this
-				evaluate( '#fullPropertyName# = deserializeJSON( arguments[ arg ] )' );				
-			} else {
-				evaluate( '#fullPropertyName# = arguments[ arg ]' );				
-			}
-			print.greenLine( 'Set #arg# = #arguments[ arg ]#' );
-		}
-		
+		var boxJSON = packageService.readPackageDescriptorRaw( directory );
+
+		var results = JSONService.set( boxJSON, arguments, thisAppend ); 
+
 		// Write the file back out.
 		PackageService.writePackageDescriptor( boxJSON, directory );
+		
+		for( var message in results ) {
+			print.greeLine( message );
+		}
 			
 	}
 

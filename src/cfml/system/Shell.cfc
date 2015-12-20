@@ -1,4 +1,4 @@
-/**
+ /**
 *********************************************************************************
 * Copyright Since 2005 ColdBox Platform by Ortus Solutions, Corp
 * www.coldbox.org | www.ortussolutions.com
@@ -483,7 +483,7 @@ component accessors="true" singleton {
 			}
 		
 		// This type of error is recoverable-- like validation error or unresolved command, just a polite message please.
-		} catch (commandException e) {
+		} catch ( commandException var e) {
 			printError( { message : e.message, detail: e.detail } );
 		// Anything else is completely unexpected and means boom booms happened-- full stack please.
 		} catch (any e) {

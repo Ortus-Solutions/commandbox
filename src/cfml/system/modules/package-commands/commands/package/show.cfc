@@ -29,15 +29,13 @@
 component {
 	
 	property name="packageService" inject="PackageService";
-	property name="formatterUtil" inject="Formatter"; 
+	property name="JSONService" inject="JSONService"; 
 	
 	/**
 	 * @property.hint The name of the property to show.  Can nested to get "deep" properties
 	 * @property.optionsUDF completeProperty
 	 **/
-	function run( string property ) {
-		
-		// This will make each directory canonical and absolute		
+	function run( string property='' ) {		
 		var directory = getCWD();
 				
 		// Check and see if box.json exists
@@ -46,32 +44,16 @@ component {
 		}
 		
 		// Read without defaulted values
-		boxJSON = packageService.readPackageDescriptorRaw( directory );
-		
-		// Convert foo.bar-baz[1] to ['foo']['bar-baz'][1]
-		var tmpProperty = replace( arguments.property, '[', '.[', 'all' );
-		tmpProperty = replace( tmpProperty, ']', '].', 'all' );
-		var fullPropertyName = '';
-		for( var item in listToArray( tmpProperty, '.' ) ) {
-			if( item.startsWith( '[' ) ) {
-				fullPropertyName &= item;
-			} else {
-				fullPropertyName &= '[ "#item#" ]';	
-			}
+		var boxJSON = packageService.readPackageDescriptorRaw( directory );
+
+		try {
+			print.line( JSONService.show( boxJSON, arguments.property ) );
+		} catch( JSONException var e ) {
+			error( e.message );
+		} catch( any var e ) {
+			rethrow;
 		}
-		fullPropertyName = 'boxJSON' & fullPropertyName;
-				
-		if( !isDefined( fullPropertyName ) ) {
-			return error( 'Property [#arguments.property#] doesn''t exist in this package''s box.json' );
-		}
-		
-		var propertyValue = evaluate( fullPropertyName );
-		
-		if( isSimpleValue( propertyValue ) ) {
-			print.line( propertyValue );
-		} else {
-			print.line( formatterUtil.formatJson( propertyValue ) );			
-		}
+
 	}
 
 	// Dynamic completion for property name based on contents of box.json
