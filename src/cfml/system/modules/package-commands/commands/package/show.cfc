@@ -29,7 +29,7 @@
 component {
 	
 	property name="packageService" inject="PackageService";
-	property name="JSONService" inject="JSONService"; 
+	property name="JSONService" inject="JSONService";
 	
 	/**
 	 * @property.hint The name of the property to show.  Can nested to get "deep" properties

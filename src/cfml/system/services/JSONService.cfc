@@ -53,7 +53,7 @@ component accessors="true" singleton {
 
 
 	/**
-	* I set a propertyiesfrom a deserialized JSON object and returns an array of messages regarding the word that was done.
+	* I set a property from a deserialized JSON object and returns an array of messages regarding the word that was done.
 	*/
 	function set( required any JSON, required struct properties, required boolean thisAppend ){
 		var results = [];
@@ -112,5 +112,59 @@ component accessors="true" singleton {
 		return results;
 	}
 
+
+	/**
+	* I clear a property from a deserialized JSON object.
+	*/
+	function clear( required any JSON, required string property ){
+		
+		// See if this string ends with array brackets containing a number greater than 1. Ex: test[3]
+		var search = reFind( "\[\s*([1-9][0-9]*)\s*\]$", property, 1, true );
+		
+		// Deal with array index
+		if( search.pos[1] ) {
+			// Index to remove
+			var arrayIndex = mid( property, search.pos[2], search.len[2] );
+			// Path to the array
+			var theArray = left( property, search.pos[1]-1 );
+			
+			// Verify the full path exists (including the array index)
+			var fullPropertyName = 'JSON.#property#';
+			if( !isDefined( fullPropertyName ) ) {
+				throw( message='#arguments.property# does not exist.', type="JSONException");
+			}
+			// Get the array reference
+			var fullPropertyName = 'JSON.#theArray#';
+			var propertyValue = evaluate( fullPropertyName );
+			// Remove the index
+			propertyValue.deleteAt( arrayIndex );
+			
+		// Else see if it's a dot-delimted struct path. Ex foo.bar
+		} else if( listLen( property, '.' ) >= 2 ) {
+			// Name of last key to remove
+			var last = listLast( property, '.' );
+			// path to containing struct
+			var everythingBut = listDeleteAt( property, listLen( property, '.' ), '.' );
+			
+			// Confirm it exists
+			var fullPropertyName = 'JSON.#everythingBut#';
+			if( !isDefined( fullPropertyName ) ) {
+				throw( message='#arguments.property# does not exist.', type="JSONException");
+			}
+			// Get a refernce to the containing struct
+			var propertyValue = evaluate( fullPropertyName );
+			// Remove the key			
+			structDelete( propertyValue, last );
+		// Else just a simple propery name
+		} else {
+			// Make sure it exists
+			if( !structKeyExists( JSON, arguments.property ) ) {
+				throw( message='#arguments.property# does not exist.', type="JSONException");
+			}
+			// Remove it
+			structDelete( JSON, arguments.property );
+		}
+		
+	}
 	
 }

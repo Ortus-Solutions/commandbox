@@ -10,15 +10,14 @@
  **/
 component {
 	
-	property name="packageService" inject="PackageService"; 
+	property name="packageService" inject="PackageService";
+	property name="JSONService" inject="JSONService"; 
 	
 	/**  
 	 * @property.hint Name of the property to clear 
 	 * @property.optionsUDF completeProperty
 	 **/
 	function run( required string property ) {
-		
-		// This will make each directory canonical and absolute		
 		var directory = getCWD();
 				
 		// Check and see if box.json exists
@@ -33,53 +32,14 @@ component {
 			return error( '[slug] is a required property and cannot be cleared.' );			
 		}
 		var boxJSON = packageService.readPackageDescriptorRaw( directory );
-		
-		// See if this string ends with array brackets containing a number greater than 1. Ex: test[3]
-		var search = reFind( "\[\s*([1-9][0-9]*)\s*\]$", property, 1, true );
-		
-		// Deal with array index
-		if( search.pos[1] ) {
-			// Index to remove
-			var arrayIndex = mid( property, search.pos[2], search.len[2] );
-			// Path to the array
-			var theArray = left( property, search.pos[1]-1 );
-			
-			// Verify the full path exists (including the array index)
-			var fullPropertyName = 'boxJSON.#property#';
-			if( !isDefined( fullPropertyName ) ) {
-				return error( '#arguments.property# does not exist.' );
-			}
-			// Get the array reference
-			var fullPropertyName = 'boxJSON.#theArray#';
-			var propertyValue = evaluate( fullPropertyName );
-			// Remove the index
-			propertyValue.deleteAt( arrayIndex );
-			
-		// Else see if it's a dot-delimted struct path. Ex foo.bar
-		} else if( listLen( property, '.' ) >= 2 ) {
-			// Name of last key to remove
-			var last = listLast( property, '.' );
-			// path to containing struct
-			var everythingBut = listDeleteAt( property, listLen( property, '.' ), '.' );
-			
-			// Confirm it exists
-			var fullPropertyName = 'boxJSON.#everythingBut#';
-			if( !isDefined( fullPropertyName ) ) {
-				return error( '#arguments.property# does not exist.' );
-			}
-			// Get a refernce to the containing struct
-			var propertyValue = evaluate( fullPropertyName );
-			// Remove the key			
-			structDelete( propertyValue, last );
-		// Else just a simple propery name
-		} else {
-			// Make sure it exists
-			if( !structKeyExists( boxJSON, arguments.property ) ) {
-				return error( '#arguments.property# does not exist.' );
-			}
-			// Remove it
-			structDelete( boxJSON, arguments.property );
-		}
+				
+		try {
+			JSONService.clear( boxJSON, arguments.property );
+		} catch( JSONException var e ) {
+			error( e.message );
+		} catch( any var e ) {
+			rethrow;
+		}		
 		
 		print.greenLine( 'Removed #arguments.property#' );
 				
