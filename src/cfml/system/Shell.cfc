@@ -394,7 +394,7 @@ component accessors="true" singleton {
 	 * Runs the shell thread until exit flag is set
 	 * @input.hint command line to run if running externally
   	 **/
-    Boolean function run( input="" ) {
+    Boolean function run( input="", silent=false ) {
         var mask 	= "*";
         var trigger = "su";
 
@@ -414,8 +414,10 @@ component accessors="true" singleton {
 	        variables.keepRunning = true;
 
 	        var line ="";
-			// Set default prompt on reader
-			setPrompt();
+	        if( !arguments.silent ) {
+				// Set default prompt on reader
+				setPrompt();
+			}
 
 			// while keep running
 	        while( variables.keepRunning ){
@@ -423,21 +425,19 @@ component accessors="true" singleton {
 				if( arguments.input != "" ){
 					variables.keepRunning = false;
 				}
-
-				try {
-					// Shell stops on this line while waiting for user input
+								
+				// Shell stops on this line while waiting for user input
+		        if( arguments.silent ) {
+		        	line = variables.reader.readLine( javacast( "char", ' ' ) );
+				} else {
 		        	line = variables.reader.readLine();
-		        	
-		        	// This can happen if the standard input is unavailable
-		        	if( !isDefined( line ) ) {
-						systemOutput( 'Standard input not available, Exiting.  You can only pipe into a specific command.', true );
-		        		return variables.reloadshell;
-		        	}
-		        	
-				} catch( any er ) {
-					printError( er );
-					continue;
 				}
+	        		
+	        	// If the standard input isn't avilable, bail.  This happens
+	        	// when commands are piped in and we've reached the end of the piped stream
+	        	if( !isDefined( 'line' ) ) {
+	        		return false;
+	        	}
 
 	            // If we input the special word then we will mask the next line.
 	            if( ( !isNull( trigger ) ) && ( line.compareTo( trigger ) == 0 ) ){
@@ -445,15 +445,8 @@ component accessors="true" singleton {
 	            }
 
 	            // If there's input, try to run it.
-				if( len( trim( line ) ) ) {
-					try{
-						callCommand( line );
-					} catch (commandException e) {
-						printError( { message : e.message, detail: e.detail } );
-					} catch (any e) {
-						
-						printError( e );
-					}
+				if( len( trim( line ) ) ) { 
+					callCommand( line );
 				}
 
 				// Flush history buffer to disk. I could do this in the quit command
@@ -477,14 +470,24 @@ component accessors="true" singleton {
  	 **/
 	function callCommand( required any command, returnOutput=false, string piped )  {
 		
-		if( isArray( command ) ) {
-			if( structKeyExists( arguments, 'piped' ) ) {
-				var result = variables.commandService.runCommandTokens( arguments.command, piped );
+		try{
+			
+			if( isArray( command ) ) {
+				if( structKeyExists( arguments, 'piped' ) ) {
+					var result = variables.commandService.runCommandTokens( arguments.command, piped );
+				} else {
+					var result = variables.commandService.runCommandTokens( arguments.command );
+				}
 			} else {
-				var result = variables.commandService.runCommandTokens( arguments.command );
+				var result = variables.commandService.runCommandLine( arguments.command );
 			}
-		} else {
-			var result = variables.commandService.runCommandLine( arguments.command );
+		
+		// This type of error is recoverable-- like validation error or unresolved command, just a polite message please.
+		} catch (commandException e) {
+			printError( { message : e.message, detail: e.detail } );
+		// Anything else is completely unexpected and means boom booms happened-- full stack please.
+		} catch (any e) {
+			printError( e );
 		}
 		
 		// Return the output to the caller to deal with

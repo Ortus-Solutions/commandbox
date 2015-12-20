@@ -28,6 +28,12 @@ Type "help" for help, or "help [command]" to be more specific.
 	system 	= createObject( "java", "java.lang.System" );
 	args 	= system.getProperty( "cfml.cli.arguments" );
 	argsArray = deserializeJSON( system.getProperty( "cfml.cli.argument.array" ) );
+	
+	// System.in is usually the keyboard input, but if the output of another command or a file
+	// was piped into CommandBox, System.in will represent that input.  Wrap System.in 
+	// in a buffered reader so we can check it.
+	inputStreamReader = createObject( 'java', 'java.io.InputStreamReader' ).init( system.in );
+	bufferedReader = createObject( 'java', 'java.io.BufferedReader' ).init( inputStreamReader );
 		
 	// Verify if we can run CommandBox Java v. 1.7+
 	if( findNoCase( "1.6", server.java.version ) ){
@@ -45,11 +51,6 @@ Type "help" for help, or "help [command]" to be more specific.
 		
 		interceptorService.announceInterception( 'onCLIStart', { shellType='command', args=argsArray } );
 		
-		// System.in is usually the keyboard input, but if the output of another command or a file
-		// was piped into CommandBox, System.in will represent that input.  Wrap System.in 
-		// in a buffered reader so we can check it.
-		inputStreamReader = createObject( 'java', 'java.io.InputStreamReader' ).init( system.in );
-		bufferedReader = createObject( 'java', 'java.io.BufferedReader' ).init( inputStreamReader );
 	 
  		piped = [];
  		hasPiped = false;
@@ -72,16 +73,22 @@ Type "help" for help, or "help [command]" to be more specific.
 		// flush console
 		shell.getReader().flush();
 	} else {
+		// If the standard input has content waiting, cut the chit chat and just run the commands so we can exit.
+		silent = bufferedReader.ready();
+		
 		// Create the shell
-		shell = wireBox.getInstance( 'Shell' );
+		shell = wireBox.getInstance( name='Shell', initArguments={ asyncLoad=!silent } );
 		interceptorService =  shell.getInterceptorService();
 		
 		interceptorService.announceInterception( 'onCLIStart', { shellType='interactive', args=argsArray } );
 		
-		// Output the welcome banner
-		systemOutput( replace( banner, '@@version@@', shell.getVersion() ) );
+		if( !silent ) {
+			// Output the welcome banner
+			systemOutput( replace( banner, '@@version@@', shell.getVersion() ) );
+		}
+		
 		// Running the "reload" command will enter this while loop once
-		while( shell.run() ){
+		while( shell.run( silent=silent ) ){
 			interceptorService.announceInterception( 'onCLIExit' );
 			// Clear all caches: template, ...
 			SystemCacheClear( "all" );
