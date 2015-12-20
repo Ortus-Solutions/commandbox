@@ -44,11 +44,7 @@ component accessors="true" singleton {
 		
 		var propertyValue = evaluate( fullPropertyName );
 		
-		if( isSimpleValue( propertyValue ) ) {
-			return propertyValue;
-		} else {
-			return formatterUtil.formatJson( propertyValue );			
-		}
+		return propertyValue;
 	}
 
 

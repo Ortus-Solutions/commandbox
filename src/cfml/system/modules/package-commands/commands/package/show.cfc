@@ -47,7 +47,15 @@ component {
 		var boxJSON = packageService.readPackageDescriptorRaw( directory );
 
 		try {
-			print.line( JSONService.show( boxJSON, arguments.property ) );
+			
+			var propertyValue = JSONService.show( boxJSON, arguments.property );
+			
+			if( isSimpleValue( propertyValue ) ) {
+				print.line( propertyValue );
+			} else {
+				print.line( formatterUtil.formatJson( propertyValue ) );			
+			}
+		
 		} catch( JSONException var e ) {
 			error( e.message );
 		} catch( any var e ) {
