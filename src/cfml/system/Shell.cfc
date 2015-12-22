@@ -52,7 +52,6 @@ component accessors="true" singleton {
 	*/
 	property name="shellPrompt";
 	
-	property name="configSettings";
 
 	/**
 	 * constructor
@@ -96,14 +95,6 @@ component accessors="true" singleton {
 			variables.pwd = variables.userDir;
 		}
 
-		setConfigSettings( {
-			modules : {},
-			ModulesLocation : '/commandbox/system/modules',
-			ModulesExternalLocation : [],
-			modulesInclude : [],
-			ModulesExclude : []
-		} );
-
     	return this;
 	}
 
@@ -135,50 +126,6 @@ component accessors="true" singleton {
 
 
 
-	/**
-	* Get a setting from a configuration structure
-	* @name The name of the setting
-	* @fwSetting Switch to get the coldbox or config settings, defaults to config settings
-	* @defaultValue The default value to use if setting does not exist
-	*/
-	function getSetting( required name, defaultValue ){
-		var target = getConfigSettings();
-
-		if ( settingExists( arguments.name ) ){
-			return target[ arguments.name ];
-		}
-
-		// Default value
-		if( structKeyExists( arguments, "defaultValue" ) ){
-			return arguments.defaultValue;
-		}
-
-		throw( message="The setting #arguments.name# does not exist.",
-			   detail="",
-			   type="Shell.SettingNotFoundException");
-	}
-
-	/**
-	* Check if a value exists in a configuration structure
-	* @name The name of the setting
-	* @fwSetting Switch to get the coldbox or config settings, defaults to config settings
-	*/
-	boolean function settingExists( required name ){
-		return ( structKeyExists( getConfigSettings(), arguments.name ) );
-	}
-
-	/**
-	* Set a value in the application configuration settings
-	* @name The name of the setting
-	* @value The value to set
-	* 
-	* @return shell
-	*/
-	function setSetting( required name, required value ){
-		getConfigSettings()[ arguments.name ] = arguments.value;
-		return this;
-	}
-	
 
 	/**
 	 * Exists the shell

@@ -161,5 +161,34 @@ component accessors="true" singleton {
 		}
 		
 	}
-	
+
+	// Recursive function to crawl struct and create a string that represents each property.
+	function addProp( props, prop, safeProp, targetStruct ) {
+		var propValue = ( len( prop ) ? evaluate( 'targetStruct#safeProp#' ) : targetStruct );
+		
+		if( isStruct( propValue ) ) {
+			// Add all of this struct's keys
+			for( var thisProp in propValue ) {
+				var newProp = listAppend( prop, thisProp, '.' );
+				var newSafeProp = "#safeProp#['#thisProp#']";
+				props.append( newProp );
+				props = addProp( props, newProp, newSafeProp, targetStruct );
+			}			
+		}
+		
+		if( isArray( propValue ) ) {
+			// Add all of this array's indexes
+			var i = 0;
+			while( ++i <= propValue.len() ) {
+				var newProp = '#prop#[#i#]';
+				var newProp = '#safeProp#[#i#]';
+				var newSafeProp = newProp;
+				props.append( newProp );
+				props = addProp( props, newProp, newSafeProp, targetStruct );
+			}
+		}
+		
+		return props;
+	}
+		
 }

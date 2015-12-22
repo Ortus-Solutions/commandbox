@@ -6,8 +6,22 @@
 * @author Brad Wood, Luis Majano
 * This service oversees all CommandBox Modules
 ----------------------------------------------------------------------->
-<cfcomponent output="false">
+<cfcomponent output="false" accessors=true>
+	
+	<!---
+	Unlike ColdBox which stores all module config and settings in the framework setting struct,
+	CommandBox's ModuleService will internalize this data.  CommandBox "config" settings will
+	just mirror the CommandBox.json file and not include runtime metadata like this.  Any time
+	a config setting is updated programmatically for a module, CommandBox's ConfigService 
+	will attempt to keep this runtime data in sync.  Module's will ask the ModuleService for their
+	data which will come from here, overriden at load time by any config settings if they exist.
+	--->
+	<cfproperty name="moduleData">
+		
+	<!--- DI --->
 	<cfproperty name="CommandService" inject="CommandService">
+	<cfproperty name="ConfigService" inject="Configservice">
+	
 	
 <!------------------------------------------- CONSTRUCTOR ------------------------------------------->
 
@@ -21,6 +35,8 @@
 			instance.mConfigCache 		= {};
 			instance.moduleRegistry 	= createObject( "java", "java.util.LinkedHashMap" ).init();
 			instance.cfmappingRegistry 	= {};
+			 
+			setModuleData( {} );
 
 			return this;
 		</cfscript>
@@ -68,11 +84,9 @@
     <cffunction name="rebuildModuleRegistry" output="false" access="public" returntype="any" hint="Rescan the module locations directories and re-register all located modules, this method does NOT register or activate any modules, it just reloads the found registry">
     	<cfscript>
     		// Add the application's module's location and the system core modules
-    		var modLocations   = [ shell.getSetting( "ModulesLocation" ) ];
+    		var modLocations   = [ '/commandbox/system/modules', '/commandbox/modules' ];
 			// Add the application's external locations array.
-			modLocations.addAll( shell.getSetting( "ModulesExternalLocation" ) );
-			// Add the CommandBox Core Modules Location
-			arrayAppend( modLocations, "/commandbox/modules" );
+			modLocations.addAll( ConfigService.getSetting( "ModulesExternalLocation", [] ) );
 			// iterate through locations and build the module registry in order
 			buildRegistry( modLocations );
 		</cfscript>
@@ -82,10 +96,10 @@
 	<cffunction name="registerAllModules" output="false" access="public" returntype="ModuleService" hint="Register all modules for the application. Usually called by framework to load configuration data.">
 		<cfscript>
 			var foundModules   = "";
-			var includeModules = shell.getSetting( "modulesInclude" );
+			var includeModules = ConfigService.getSetting( "modulesInclude", [] );
 
 			// Register the initial empty module configuration holder structure
-			structClear( shell.getSetting( "modules" ) );
+			structClear( getModuleData() );
 			// clean the registry as we are registering all modules
 			instance.moduleRegistry = createObject( "java", "java.util.LinkedHashMap" ).init();
 			// Now rebuild it
@@ -133,8 +147,10 @@
 		<cfscript>
 			// Module To Load
 			var modName 				= arguments.moduleName;
-			var modulesConfiguration	= shell.getSetting( "modules" );
-			var appSettings 			= shell.getConfigSettings();
+			var modulesConfiguration	= getModuleData();
+			// CommandBox doesn't really have settings per se-- 
+			// at least not ones I'm comfortable with modules overriding.
+			//var appSettings 			= shell.getConfigSettings();
 
 
 			// Check if incoming invocation path is sent, if so, register as new module
@@ -272,7 +288,7 @@
 				// Register Custom Interception Points
 				shell.getInterceptorService().appendInterceptionPoints( mConfig.interceptorSettings.customInterceptionPoints );
 				// Register Parent Settings
-				structAppend( appSettings, mConfig.parentSettings, true );
+				//structAppend( appSettings, mConfig.parentSettings, true );
 				// Inception?
 				if( directoryExists( mConfig.path & "/modules" ) ){
 					// register the children
@@ -317,7 +333,7 @@
 	<!--- activateModules --->
 	<cffunction name="activateAllModules" output="false" access="public" returntype="void" hint="Go over all the loaded module configurations and activate them for usage within the application">
 		<cfscript>
-			var modules = shell.getSetting( "modules" );
+			var modules = getModuleData();
 			// Iterate through module configuration and activate each module
 			for( var moduleName in modules ){
 				// Verify the exception and inclusion lists
@@ -332,7 +348,7 @@
 	<cffunction name="activateModule" output="false" access="public" returntype="ModuleService" hint="Activate a module">
 		<cfargument name="moduleName" type="string" required="true" hint="The name of the module to load. It must exist and be valid. Else we ignore it by logging a warning and returning false."/>
 		<cfscript>
-			var modules 			= shell.getSetting( "modules" );
+			var modules 			= getModuleData();
 			var iData       		= {};
 			var y					= 1;
 			var key					= "";
@@ -417,9 +433,9 @@
 				}
 
 				// Register module routing entry point pre-pended to routes
-				if( shell.settingExists( 'sesBaseURL' ) AND len( mConfig.entryPoint ) AND NOT find( ":", mConfig.entryPoint ) ){
+				/*if( shell.settingExists( 'sesBaseURL' ) AND len( mConfig.entryPoint ) AND NOT find( ":", mConfig.entryPoint ) ){
 					interceptorService.getInterceptor( "SES", true ).addModuleRoutes( pattern=mConfig.entryPoint, module=arguments.moduleName, append=false );
-				}
+				}*/
 
 				// Call on module configuration object onLoad() if found
 				if( structKeyExists( instance.mConfigCache[ arguments.moduleName ], "onLoad" ) ){
@@ -471,7 +487,7 @@
 	<!--- getLoadedModules --->
 	<cffunction name="getLoadedModules" output="false" access="public" returntype="array" hint="Get a listing of all loaded modules">
 		<cfscript>
-			var modules = structKeyList(shell.getSetting( "modules" ));
+			var modules = structKeyList(getModuleData());
 
 			return listToArray(modules);
 		</cfscript>
@@ -481,14 +497,14 @@
 	<cffunction name="isModuleRegistered" output="false" access="public" returntype="boolean" hint="Check and see if a module has been registered">
 		<cfargument name="moduleName" required="true" type="string">
 		<!--- Verify it in the main settings --->
-		<cfreturn structKeyExists( shell.getSetting( "modules" ), arguments.moduleName )>
+		<cfreturn structKeyExists( getModuleData(), arguments.moduleName )>
 	</cffunction>
 
 	<!--- isModuleActive --->
 	<cffunction name="isModuleActive" output="false" access="public" returntype="boolean" hint="Check and see if a module has been activated">
 		<cfargument name="moduleName" required="true" type="string">
 		<cfscript>
-			var modules = shell.getSetting( "modules" );
+			var modules = getModuleData();
 			return ( isModuleRegistered( arguments.moduleName ) and modules[ arguments.moduleName ].activated ? true : false );
 		</cfscript>
 	</cffunction>
@@ -498,21 +514,20 @@
 		<cfargument name="moduleName" type="string" required="true" hint="The module name to unload"/>
 		<cfscript>
 			// This method basically unregisters the module configuration
-			var appConfig = shell.getConfigSettings();
 			var iData = {moduleName=arguments.moduleName};
 			var interceptorService = shell.getInterceptorService();
 			var x = 1;
 			var exceptionUnloading = "";
 
 			// Check if module is loaded?
-			if( NOT structKeyExists(appConfig.modules,arguments.moduleName) ){ return false; }
+			if( NOT structKeyExists(getModuleData(),arguments.moduleName) ){ return false; }
 
 		</cfscript>
 
 		<cflock name="module.unload.#arguments.moduleName#" type="exclusive" timeout="20" throwontimeout="true">
 		<cfscript>
 			// Check if module is loaded?
-			if( NOT structKeyExists(appConfig.modules,arguments.moduleName) ){ return false; }
+			if( NOT structKeyExists(getModuleData(),arguments.moduleName) ){ return false; }
 
 			// Before unloading a module interception
 			interceptorService.announceInterception( "preModuleUnload",iData);
@@ -528,19 +543,19 @@
 			}
 
 			// Unregister all interceptors
-			for(x=1; x lte arrayLen( appConfig.modules[ arguments.moduleName ].interceptors ); x++){
-				interceptorService.unregister( appConfig.modules[ arguments.moduleName ].interceptors[ x ].name);
+			for(x=1; x lte arrayLen( getModuleData()[ arguments.moduleName ].interceptors ); x++){
+				interceptorService.unregister( getModuleData()[ arguments.moduleName ].interceptors[ x ].name);
 			}
 			// Unregister Config object
 			interceptorService.unregister( "ModuleConfig:#arguments.moduleName#" );
 
 			// Remove SES if enabled.
-			if( shell.settingExists( "sesBaseURL" ) ){
+			/*if( shell.settingExists( "sesBaseURL" ) ){
 				interceptorService.getInterceptor( "SES", true ).removeModuleRoutes( arguments.moduleName );
-			}
+			}*/
 
 			// Remove configuration
-			structDelete( appConfig.modules, arguments.moduleName );
+			structDelete( getModuleData(), arguments.moduleName );
 
 			// Remove Configuration object from Cache
 			structDelete( instance.mConfigCache, arguments.moduleName );
@@ -567,7 +582,7 @@
 	<cffunction name="unloadAll" output="false" access="public" returntype="void" hint="Unload all registered modules">
 		<cfscript>
 			// This method basically unregisters the module configuration
-			var modules = shell.getSetting( "modules" );
+			var modules = getModuleData();
 			var key = "";
 
 			// Unload all modules
@@ -585,7 +600,6 @@
 			var mConfig 	= arguments.config;
 			var oConfig 	= createObject( "component", mConfig.invocationPath & ".ModuleConfig" );
 			var toLoad 		= "";
-			var appSettings = shell.getConfigSettings();
 			var mixerUtil	= shell.getUtil().getMixerUtil();
 
 			// Decorate It
@@ -730,7 +744,7 @@
     <cffunction name="canLoad" output="false" access="private" returntype="boolean" hint="Checks if the module can be loaded or registered">
   		<cfargument name="moduleName" type="string" required="true" hint="The module name"/>
   		<cfscript>
-    		var excludeModules = ArrayToList( shell.getSetting( "ModulesExclude" ) );
+    		var excludeModules = ArrayToList( ConfigService.getSetting( "ModulesExclude", [] ) );
 
 			// If we have excludes and in the excludes
 			if( len( excludeModules ) and listFindNoCase( excludeModules, arguments.moduleName ) ){

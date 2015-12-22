@@ -10,17 +10,18 @@
 component accessors="true" singleton {
 
 	// DI
-	property name="CR" 					inject="CR@constants";
-	property name="formatterUtil"		inject="formatter";
-	property name="artifactService" 	inject="ArtifactService";
-	property name="fileSystemUtil"		inject="FileSystem";
-	property name="pathPatternMatcher" 	inject="pathPatternMatcher";
+	property name='CR' 					inject='CR@constants';
+	property name='formatterUtil'		inject='formatter';
+	property name='artifactService' 	inject='ArtifactService';
+	property name='fileSystemUtil'		inject='FileSystem';
+	property name='pathPatternMatcher' 	inject='pathPatternMatcher';
 	property name='shell' 				inject='Shell';
-	property name="logger"				inject="logbox:logger:{this}";
-	property name="semanticVersion"		inject="semanticVersion";
-	property name="endpointService"		inject="EndpointService";
-	property name="consoleLogger"		inject="logbox:logger:console";
+	property name='logger'				inject='logbox:logger:{this}';
+	property name='semanticVersion'		inject='semanticVersion';
+	property name='endpointService'		inject='EndpointService';
+	property name='consoleLogger'		inject='logbox:logger:console';
 	property name='interceptorService'	inject='interceptorService';
+	property name='JSONService'			inject='JSONService';
 	
 	/**
 	* Constructor
@@ -970,38 +971,10 @@ component accessors="true" singleton {
 			} else {
 				var boxJSON = readPackageDescriptorRaw( arguments.directory );
 			}
-			props = addProp( props, '', '', boxJSON );			
+			props = JSONService.addProp( props, '', '', boxJSON );			
 		}
 		return props;		
 	}
 	
-	// Recursive function to crawl box.json and create a string that represents each property.
-	private function addProp( props, prop, safeProp, boxJSON ) {
-		var propValue = ( len( prop ) ? evaluate( 'boxJSON#safeProp#' ) : boxJSON );
-		
-		if( isStruct( propValue ) ) {
-			// Add all of this struct's keys
-			for( var thisProp in propValue ) {
-				var newProp = listAppend( prop, thisProp, '.' );
-				var newSafeProp = "#safeProp#['#thisProp#']";
-				props.append( newProp );
-				props = addProp( props, newProp, newSafeProp, boxJSON );
-			}			
-		}
-		
-		if( isArray( propValue ) ) {
-			// Add all of this array's indexes
-			var i = 0;
-			while( ++i <= propValue.len() ) {
-				var newProp = '#prop#[#i#]';
-				var newProp = '#safeProp#[#i#]';
-				var newSafeProp = newProp;
-				props.append( newProp );
-				props = addProp( props, newProp, newSafeProp, boxJSON );
-			}
-		}
-		
-		return props;
-	}
 
 }
