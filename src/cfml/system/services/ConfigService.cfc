@@ -35,7 +35,13 @@ component accessors="true" singleton {
 			'showBanner'			
 		]);
 		
-		setConfigFilePath( '/commandbox/userconfig/commandbox.json' );
+		setConfigFilePath( '/commandbox-home/CommandBox.json' );
+		
+		// Create the config file if neccessary
+		if( !fileExists( getConfigFilePath() ) ) {
+			fileWrite( getConfigFilePath(), '{}' );
+		}
+		
 		loadConfig();
 		
 		return this;
