@@ -29,6 +29,9 @@ component extends="wirebox.system.ioc.config.Binder" {
 		// LogBox
 		wirebox.logBoxConfig = "commandbox.system.config.LogBox";
 
+		// Register CommandBox DSL for special injection namespaces
+		mapDSL( "commandbox", "commandbox.system.config.CommandBoxDSL" );
+
 		// Setup constants
 		var system					= createObject( "java", "java.lang.System" );
 		var homeDir					= isNull( system.getProperty( 'cfml.cli.home' ) ) ?
