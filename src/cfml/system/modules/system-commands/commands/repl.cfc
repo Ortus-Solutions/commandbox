@@ -117,7 +117,19 @@ component {
 					print.toConsole();
 					// Log it
 					logger.error( '#e.message# #e.detail#' , e.stackTrace );
-					error( '#e.message##CR##e.detail#' );
+					if( quit ) {
+						// flush history out
+						newHistory.flush();
+						// set back original history
+						shell.getReader().setHistory( commandHistoryFile );
+						// This will exist the command
+						error( '#e.message##CR##e.detail#' );
+					} else {
+						print.whiteOnRedLine( 'ERROR' )
+							.line()
+							.boldRedLine( '#e.message##CR##e.detail#' )
+							.line();
+					}
 				}
 			}
 		}

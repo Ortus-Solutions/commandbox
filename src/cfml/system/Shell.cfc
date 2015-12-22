@@ -396,10 +396,6 @@ component accessors="true" singleton {
 					callCommand( line );
 				}
 
-				// Flush history buffer to disk. I could do this in the quit command
-				// but then I would lose everything if the user just closes the window
-				variables.reader.getHistory().flush();
-
 	        } // end while keep running
 
 		} catch( any e ){
@@ -435,6 +431,10 @@ component accessors="true" singleton {
 		// Anything else is completely unexpected and means boom booms happened-- full stack please.
 		} catch (any e) {
 			printError( e );
+		} finally {
+			// Flush history buffer to disk. I could do this in the quit command
+			// but then I would lose everything if the user just closes the window
+			variables.reader.getHistory().flush();
 		}
 		
 		// Return the output to the caller to deal with
@@ -475,7 +475,10 @@ component accessors="true" singleton {
 		
 		variables.logger.error( '#arguments.err.message# #arguments.err.detail ?: ''#', arguments.err.stackTrace ?: '' );
 
-		variables.reader.print( variables.print.boldRedText( "ERROR: " & variables.formatterUtil.HTML2ANSI( arguments.err.message ) ) );
+
+		variables.reader.print( variables.print.whiteOnRedLine( 'ERROR' ) );
+		variables.reader.println();
+		variables.reader.print( variables.print.boldRedText( variables.formatterUtil.HTML2ANSI( arguments.err.message ) ) );
 		variables.reader.println();
 
 		if( structKeyExists( arguments.err, 'detail' ) ) {
