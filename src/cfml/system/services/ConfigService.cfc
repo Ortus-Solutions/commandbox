@@ -111,6 +111,7 @@ component accessors="true" singleton {
 	function saveConfig(){
 				
 		// Update ModuleService
+		ModuleService.overrideAllConfigSettings();		
 				
 		fileWrite( getConfigFilePath(), formatterUtil.formatJSON( serializeJSON( getConfigSettings() ) ) );
 	}

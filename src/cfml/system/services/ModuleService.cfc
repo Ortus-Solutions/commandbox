@@ -6,7 +6,7 @@
 * @author Brad Wood, Luis Majano
 * This service oversees all CommandBox Modules
 ----------------------------------------------------------------------->
-<cfcomponent output="false" accessors=true>
+<cfcomponent output="false" accessors=true singleton>
 	
 	<!---
 	Unlike ColdBox which stores all module config and settings in the framework setting struct,
@@ -553,6 +553,15 @@
 			/*if( shell.settingExists( "sesBaseURL" ) ){
 				interceptorService.getInterceptor( "SES", true ).removeModuleRoutes( arguments.moduleName );
 			}*/
+			
+			// Remove the possible config names with the ConfigService for auto-completion
+			var possibleConfigSettings = [];
+			for( var settingName in ConfigService.getPossibleConfigSettings() ) {
+				if( !reFindNoCase( '^modules.#arguments.moduleName#.', settingName ) ) { 
+					possibleConfigSettings.append( settingName );
+				}
+			}
+			ConfigService.setPossibleConfigSettings( possibleConfigSettings );
 
 			// Remove configuration
 			structDelete( getModuleData(), arguments.moduleName );
@@ -671,6 +680,16 @@
 			mConfig.parentSettings = oConfig.getPropertyMixin( "parentSettings", "variables", {} );
 			//Get the module settings
 			mConfig.settings = oConfig.getPropertyMixin( "settings", "variables", {} );
+			// Override with CommandBox config settings
+			overrideConfigSettings( mConfig.settings, moduleName );
+			
+			// Register the possible config names with the ConfigService for auto-completion
+			var possibleConfigSettings = ConfigService.getPossibleConfigSettings();
+			for( var settingName in mConfig.settings ) {
+				possibleConfigSettings.append( 'modules.#moduleName#.#settingName#' );
+			}
+			ConfigService.setPossibleConfigSettings( possibleConfigSettings );
+			
 			//Get Interceptors
 			mConfig.interceptors = oConfig.getPropertyMixin( "interceptors", "variables", [] );
 			for(var x=1; x lte arrayLen( mConfig.interceptors ); x=x+1){
@@ -694,6 +713,27 @@
 			structAppend( mConfig.conventions, oConfig.getPropertyMixin( "conventions", "variables", {} ), true );
 
 			return oConfig;
+		</cfscript>
+	</cffunction>
+
+	<!--- overrideConfigSettings --->
+	<cffunction name="overrideConfigSettings" output="false" access="public">
+		<cfargument name="moduleSettings" 		type="struct" required="true" hint="The module setting structure">
+		<cfargument name="moduleName"	type="string" required="true" hint="The module name">
+		<cfscript>
+			configSettings = ConfigService.getConfigSettings();
+			if( structKeyExists( configSettings, 'modules' ) && structKeyExists( configSettings.modules, arguments.moduleName ) ) {
+				arguments.moduleSettings.append( configSettings.modules[ arguments.moduleName ] );
+			}
+		</cfscript>
+	</cffunction>
+
+	<!--- overrideAllConfigSettings --->
+	<cffunction name="overrideAllConfigSettings" output="false" access="public">
+		<cfscript>
+			for( var moduleName in getLoadedModules() ) {
+				overrideConfigSettings( getModuleData()[ moduleName ].settings, moduleName );
+			}
 		</cfscript>
 	</cffunction>
 
