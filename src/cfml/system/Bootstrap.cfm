@@ -49,9 +49,9 @@ Type "help" for help, or "help [command]" to be more specific.
 		shell = wireBox.getInstance( name='Shell', initArguments={ asyncLoad=false } );
 		interceptorService =  shell.getInterceptorService();
 		
-		interceptorService.announceInterception( 'onCLIStart', { shellType='command', args=argsArray } );
-		
-	 
+		interceptData = { shellType='command', args=argsArray, banner=banner };
+		interceptorService.announceInterception( 'onCLIStart', interceptData );
+			 
  		piped = [];
  		hasPiped = false;
 	 	// If data is piped to CommandBox, it will be in this buffered reader
@@ -80,11 +80,12 @@ Type "help" for help, or "help [command]" to be more specific.
 		shell = wireBox.getInstance( name='Shell', initArguments={ asyncLoad=!silent } );
 		interceptorService =  shell.getInterceptorService();
 		
-		interceptorService.announceInterception( 'onCLIStart', { shellType='interactive', args=argsArray } );
+		interceptData = { shellType='interactive', args=argsArray, banner=banner };
+		interceptorService.announceInterception( 'onCLIStart', interceptData );
 		
 		if( !silent ) {
 			// Output the welcome banner
-			systemOutput( replace( banner, '@@version@@', shell.getVersion() ) );
+			systemOutput( replace( interceptData.banner, '@@version@@', shell.getVersion() ) );
 		}
 		
 		// Running the "reload" command will enter this while loop once

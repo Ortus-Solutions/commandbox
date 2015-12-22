@@ -27,7 +27,6 @@ component accessors="true" singleton {
 	function init(){
 		// These aren't stored in the actual configSettings struct-- they're more for documentation
 		// and smart auto-completion to help people set new settings.
-		// TODO: add to this based on the registered modules and their setting names.
 		setPossibleConfigSettings([
 			'ModulesExternalLocation',
 			'modulesInclude',
