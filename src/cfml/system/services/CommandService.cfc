@@ -248,13 +248,14 @@ component accessors="true" singleton {
 			try {
 				var result = commandInfo.commandReference.CFC.run( argumentCollection = parameterInfo.namedParameters );
 			} catch( any e ){
+				// Clean up a bit
+				instance.callStack.clear();
+				
 				// Dump out anything the command had printed so far
 				var result = commandInfo.commandReference.CFC.getResult();
 				if( len( result ) ){
 					shell.printString( result & cr );
 				}
-				// Clean up a bit
-				instance.callStack.clear();
 				// Now, where were we?
 				rethrow;
 			}
