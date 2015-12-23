@@ -6,7 +6,7 @@
  * server open
  * {code}
  **/
-component aliases="fwreinit" {
+component {
 	
 	// DI
 	property name="serverService" inject="ServerService";
