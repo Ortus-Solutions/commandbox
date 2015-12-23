@@ -125,10 +125,25 @@ component accessors="true" singleton {
 			serverInfo = getServerInfo( serverProps.directory );
 		}
 
-		// Get package descriptor for overrides
+		// Get package descriptor
 		var boxJSON = packageService.readPackageDescriptor( serverInfo.webroot );
+		// Get server descriptor
 		var serverJSON = readServerJSON( serverInfo.webroot );
+		// Get defaults
 		var defaults = defaultServerJSON();
+								
+		// Backwards compat with boxJSON default port.  Remove in a future version
+		// The property in box.json is deprecated. 
+		if( boxJSON.defaultPort > 0 ) {
+			
+			// Remove defaultPort from box.json and pretend it was 
+			// manually typed which will cause server.json to save it.
+			serverProps.port = boxJSON.defaultPort;
+			
+			// Update box.json to remove defaultPort from disk
+			boxJSON.delete( 'defaultPort' );
+			packageService.writePackageDescriptor( boxJSON, serverInfo.webroot );
+		}
 		
 		// Save hand-entered properties in our server.json for next time
 		for( var prop in serverProps ) {
@@ -136,14 +151,11 @@ component accessors="true" singleton {
 				serverJSON[ prop ] = serverProps[ prop ];
 			}
 		}
+		
 		if( !serverJSON.isEmpty() ) {
 			saveServerJSON( serverInfo.webroot, serverJSON );
 		}
-		
-		// Ignore the default port value
-		if( boxJSON.defaultPort == 0 ) {
-			boxJSON.delete( 'defaultPort' );
-		}
+				 
 
 		// Setup serverinfo according to params
 		// Hand-entered values take precendence, then settings saved in server.json, and finally defaults.
@@ -152,7 +164,7 @@ component accessors="true" singleton {
 		serverInfo.openbrowser		= serverProps.openbrowser 		?: serverJSON.openbrowser		?: defaults.openbrowser;
 		serverInfo.name 			= serverProps.name 				?: listLast( serverInfo.webroot, "\/" );
 		serverInfo.host				= serverProps.host 				?: serverJSON.host 				?: defaults.host;
-		serverInfo.port 			= serverProps.port 				?: serverJSON.port 				?: boxJSON.defaultPort 					?: getRandomPort( serverInfo.host );
+		serverInfo.port 			= serverProps.port 				?: serverJSON.port 				?: getRandomPort( serverInfo.host );
 		serverInfo.stopsocket		= serverProps.stopsocket		?: serverJSON.stopsocket 		?: getRandomPort( serverInfo.host );		
 		serverInfo.webConfigDir 	= serverProps.webConfigDir 		?: serverJSON.webConfigDir 		?: getCustomServerFolder( serverInfo );
 		serverInfo.serverConfigDir 	= serverProps.serverConfigDir 	?: serverJSON.serverConfigDir 	?: defaults.serverConfigDir;
