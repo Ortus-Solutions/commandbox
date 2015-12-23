@@ -41,6 +41,7 @@ component accessors="true" singleton {
 	
 	property name='interceptorService'	inject='interceptorService';
 	property name='JSONService'			inject='JSONService';
+	property name="packageService"		inject="packageService";
 
 	/**
 	* Constructor
@@ -106,129 +107,143 @@ component accessors="true" singleton {
 	/**
 	 * Start a server instance
 	 *
-	 * @serverInfo.hint The server information struct: [ webroot, name, port, host, stopSocket, logDir, status, statusInfo, HTTPEnable, SSLEnable, RewritesEnable, RewritesConfig, heapsize, directoryBrowsing ]
-	 * @openBrowser.hint Open a web browser or not
-	 * @force.hint force start if status is not stopped
-	 * @debug.hint sets debug log level
+	 * @serverProps.hint A struct of settings to influence how to start the server
 	 **/
 	function start(
-		Struct serverInfo,
-		Boolean openBrowser,
-		Boolean force=false,
-		Boolean debug=false
+		Struct serverProps
 	){
+
+		// Discover by shortname or server and get server info
+		var serverInfo = getServerInfoByDiscovery(
+			directory 	= serverProps.directory,
+			name		= serverProps.name ?: ''
+		);
+
+		// Was it found, or new server?
+		if( structIsEmpty( serverInfo ) ){
+			// We need a new entry
+			serverInfo = getServerInfo( serverProps.directory );
+		}
+
+		// Get package descriptor for overrides
+		var boxJSON = packageService.readPackageDescriptor( serverInfo.webroot );
+		var serverJSON = readServerJSON( serverInfo.webroot );
+		var defaults = defaultServerJSON();
+		
+		// Save hand-entered properties in our server.json for next time
+		for( var prop in serverProps ) {
+			if( !isNull( serverProps[ prop ] ) && prop != 'directory' ) {
+				serverJSON[ prop ] = serverProps[ prop ];
+			}
+		}
+		if( !serverJSON.isEmpty() ) {
+			saveServerJSON( serverInfo.webroot, serverJSON );
+		}
+		
+		// Ignore the default port value
+		if( boxJSON.defaultPort == 0 ) {
+			boxJSON.delete( 'defaultPort' );
+		}
+
+		// Setup serverinfo according to params
+		// Hand-entered values take precendence, then settings saved in server.json, and finally defaults.
+		// The big servers.json is only used to keep a record of the last values the server was started with
+		serverInfo.debug 			= serverProps.debug 			?: serverJSON.debug 			?: defaults.debug;
+		serverInfo.openbrowser		= serverProps.openbrowser 		?: serverJSON.openbrowser		?: defaults.openbrowser;
+		serverInfo.name 			= serverProps.name 				?: listLast( serverInfo.webroot, "\/" );
+		serverInfo.host				= serverProps.host 				?: serverJSON.host 				?: defaults.host;
+		serverInfo.port 			= serverProps.port 				?: serverJSON.port 				?: boxJSON.defaultPort 					?: getRandomPort( serverInfo.host );
+		serverInfo.stopsocket		= serverProps.stopsocket		?: serverJSON.stopsocket 		?: getRandomPort( serverInfo.host );		
+		serverInfo.webConfigDir 	= serverProps.webConfigDir 		?: serverJSON.webConfigDir 		?: getCustomServerFolder( serverInfo );
+		serverInfo.serverConfigDir 	= serverProps.serverConfigDir 	?: serverJSON.serverConfigDir 	?: defaults.serverConfigDir;
+		serverInfo.libDirs			= serverProps.libDirs 			?: serverJSON.libDirs 			?: defaults.libDirs;
+		serverInfo.trayIcon			= serverProps.trayIcon 			?: serverJSON.trayIcon 			?: defaults.trayIcon;
+		serverInfo.webXML 			= serverProps.webXML 			?: serverJSON.webXML 			?: defaults.webXML;
+		serverInfo.SSLEnable 		= serverProps.SSLEnable 		?: serverJSON.SSLEnable 		?: defaults.SSLEnable;
+		serverInfo.HTTPEnable		= serverProps.HTTPEnable 		?: serverJSON.HTTPEnable 		?: defaults.HTTPEnable;
+		serverInfo.SSLPort			= serverProps.SSLPort 			?: serverJSON.SSLPort 			?: defaults.SSLPort;
+		serverInfo.SSLCert 			= serverProps.SSLCert 			?: serverJSON.SSLCert 			?: defaults.SSLCert;
+		serverInfo.SSLKey 			= serverProps.SSLKey 			?: serverJSON.SSLKey 			?: defaults.SSLKey;
+		serverInfo.SSLKeyPass 		= serverProps.SSLKeyPass 		?: serverJSON.SSLKeyPass 		?: defaults.SSLKeyPass;
+		serverInfo.rewritesEnable 	= serverProps.rewritesEnable	?: serverJSON.rewritesEnable 	?: defaults.rewritesEnable;
+		serverInfo.rewritesConfig 	= serverProps.rewritesConfig 	?: serverJSON.rewritesConfig 	?: defaults.rewritesConfig;
+		serverInfo.heapSize 		= serverProps.heapSize 			?: serverJSON.heapSize 			?: defaults.heapSize;
+		serverInfo.directoryBrowsing = serverProps.directoryBrowsing ?: serverJSON.directoryBrowsing ?: defaults.directoryBrowsing;
+		serverInfo.logdir			= serverInfo.webConfigDir & "/log";
+	
 		interceptorService.announceInterception( 'onServerStart', { serverInfo=serverInfo } );
 		
 		var launchUtil 	= java.LaunchUtil;
-		
-		// get webroot info
-		var webroot 	= arguments.serverInfo.webroot;
-		var webhash 	= hash( arguments.serverInfo.webroot );
-		
-		// default server name, ports, options
-		var name 		= arguments.serverInfo.name is "" ? listLast( webroot, "\/" ) : arguments.serverInfo.name;
-		var portNumber  = arguments.serverInfo.port == 0 ? getRandomPort( arguments.serverInfo.host ) : arguments.serverInfo.port;
-		var stopPort 	= arguments.serverInfo.stopsocket == 0 ? getRandomPort( arguments.serverInfo.host ) : arguments.serverInfo.stopsocket;
-		var HTTPEnable 	= isNull( arguments.serverInfo.HTTPEnable ) ? true 	: arguments.serverInfo.HTTPEnable;
-		var SSLEnable 	= isNull( arguments.serverInfo.SSLEnable ) 	? false : arguments.serverInfo.SSLEnable;
-		var SSLPort 	= isNull( arguments.serverInfo.sslPort ) 	? 1443 	: arguments.serverInfo.sslPort;
-		var SSLCert 	= isNull( arguments.serverInfo.sslCert ) 	? "" 	: arguments.serverInfo.sslCert;
-		var SSLKey 		= isNull( arguments.serverInfo.sslKey ) 	? "" 	: arguments.serverInfo.sslKey;
-		var SSLKeyPass 	= isNull( arguments.serverInfo.sslKeyPass ) ? "" 	: arguments.serverInfo.sslKeyPass;
-		
-		// setup default tray icon if empty
-		var trayIcon    = len( arguments.serverInfo.trayIcon ) ? arguments.serverInfo.trayIcon : "#variables.libdir#/trayicon.png";
-		
+				
 		// Setup lib directory, add more if defined by server info
 		var libDirs     = variables.libDir;
-		if ( Len( Trim( arguments.serverInfo.libDirs ?: "" ) ) ) {
-			libDirs = ListAppend( libDirs, arguments.serverInfo.libDirs );
+		if ( Len( Trim( serverInfo.libDirs ?: "" ) ) ) {
+			libDirs = ListAppend( libDirs, serverInfo.libDirs );
 		}
 		
-		// URL rewriting
-		var rewritesEnable  = isNull( arguments.serverInfo.rewritesEnable ) ? false : arguments.serverInfo.rewritesEnable;
-		var rewritesConfig 	= isNull( arguments.serverInfo.rewritesConfig ) ? "" 	: arguments.serverInfo.rewritesConfig;
-
-		// Directory Browsing
-		var directoryBrowsing = isNull( arguments.serverInfo.directoryBrowsing ) ? true : arguments.serverInfo.directoryBrowsing;
-
-		// config directory locations
-		var configDir       = len( arguments.serverInfo.webConfigDir ) 		? arguments.serverInfo.webConfigDir 	: getCustomServerFolder( arguments.serverInfo );
-		var serverConfigDir = len( arguments.serverInfo.serverConfigDir ) 	? arguments.serverInfo.serverConfigDir 	: variables.serverHomeDirectory;
-
 		// log directory location
-		var logdir = configdir & "/log";
-		if( !directoryExists( logDir ) ){ directoryCreate( logDir ); }
+		if( !directoryExists( serverInfo.logDir ) ){ directoryCreate( serverInfo.logDir ); }
 
 		// The process native name
-		var processName = name is "" ? "CommandBox" : name;
+		var processName = serverInfo.name is "" ? "CommandBox" : serverInfo.name;
 
 		// The java arguments to execute:  Shared server, custom web configs
 		var args = " -Xmx#serverInfo.heapSize#m -Xms#serverInfo.heapSize#m"
 				& " -javaagent:""#libdir#/lucee-inst.jar"" -jar ""#variables.jarPath#"""
-				& " -war ""#webroot#"" --background=true --port #portNumber# --host #arguments.serverInfo.host# --debug #debug#"
-				& " --stop-port #stopPort# --processname ""#processName#"" --log-dir ""#logdir#"""
-				& " --open-browser #openbrowser# --open-url http://#arguments.serverInfo.host#:#portNumber#"
-				& " --cfengine-name lucee --server-name ""#name#"" --lib-dirs ""#libDirs#"""
-				& " --tray-icon ""#trayIcon#"" --tray-config ""#libdir#/traymenu.json"""
-				& " --directoryindex ""#directoryBrowsing#"" --cfml-web-config ""#configdir#"" --cfml-server-config ""#serverConfigDir#""";
+				& " -war ""#serverInfo.webroot#"" --background=true --port #serverInfo.port# --host #serverInfo.host# --debug #serverInfo.debug#"
+				& " --stop-port #serverInfo.stopsocket# --processname ""#processName#"" --log-dir ""#serverInfo.logDir#"""
+				& " --open-browser #serverInfo.openbrowser# --open-url http://#serverInfo.host#:#serverInfo.port#"
+				& " --cfengine-name lucee --server-name ""#serverInfo.name#"" --lib-dirs ""#libDirs#"""
+				& " --tray-icon ""#serverInfo.trayIcon#"" --tray-config ""#libdir#/traymenu.json"""
+				& " --directoryindex ""#serverInfo.directoryBrowsing#"" --cfml-web-config ""#serverInfo.webConfigDir#"" --cfml-server-config ""#serverInfo.serverConfigDir#""";
 		// Incorporate SSL to command
-		if( SSLEnable ){
-			args &= " --http-enable #HTTPEnable# --ssl-enable #SSLEnable# --ssl-port #SSLPort#";
+		if( serverInfo.SSLEnable ){
+			args &= " --http-enable #serverInfo.HTTPEnable# --ssl-enable #serverInfo.SSLEnable# --ssl-port #serverInfo.SSLPort#";
 		}
-		if( SSLEnable && SSLCert != "") {
-			args &= " --ssl-cert ""#SSLCert#"" --ssl-key ""#SSLKey#"" --ssl-keypass ""#SSLKeyPass#""";
+		if( serverInfo.SSLEnable && serverInfo.SSLCert != "") {
+			args &= " --ssl-cert ""#serverInfo.SSLCert#"" --ssl-key ""#serverInfo.SSLKey#"" --ssl-keypass ""#serverInfo.SSLKeyPass#""";
 		}
 		// Incorporate web-xml to command
-		if ( Len( Trim( arguments.serverInfo.webXml ?: "" ) ) ) {
-			args &= " --web-xml-path ""#arguments.serverInfo.webXml#""";
+		if ( Len( Trim( serverInfo.webXml ?: "" ) ) ) {
+			args &= " --web-xml-path ""#serverInfo.webXml#""";
 		}
 		// Incorporate rewrites to command
-		args &= " --urlrewrite-enable #rewritesEnable#";
-		if( !len( rewritesConfig ) ){
-			rewritesConfig = variables.rewritesDefaultConfig;
-		}
-		if( rewritesEnable ){
-			rewritesConfig = fileSystemUtil.resolvePath( rewritesConfig );
-			if( !fileExists(rewritesConfig) ){
-				return "URL rewrite config not found #rewritesConfig#";
+		args &= " --urlrewrite-enable #serverInfo.rewritesEnable#";
+		
+		if( serverInfo.rewritesEnable ){
+			serverInfo.rewritesConfig = fileSystemUtil.resolvePath( serverInfo.rewritesConfig );
+			if( !fileExists(serverInfo.rewritesConfig) ){
+				return "URL rewrite config not found #serverInfo.rewritesConfig#";
 			}
-			args &= " --urlrewrite-file ""#rewritesConfig#""";
+			args &= " --urlrewrite-file ""#serverInfo.rewritesConfig#""";
 		}
+		
+		// Persist server information
+		setServerInfo( serverInfo );
 
-		// add back port and log information and persist server information
-		arguments.serverInfo.port 		= portNumber;
-		arguments.serverInfo.stopsocket = stopPort;
-		arguments.serverInfo.logdir 	= logdir;
-		setServerInfo( arguments.serverInfo );
-
-		// If server is stoped or forced, start it
-		if( arguments.serverInfo.status == "stopped" || force) {
-			// change status to starting + persist
-			arguments.serverInfo.status = "starting";
-			setServerInfo( serverInfo );
-			// thread the execution
-			thread name="server#webhash##createUUID()#" serverInfo=arguments.serverInfo args=args {
-				try{
-					// execute the server command
-					var  executeResult = '';
-					var  executeError = '';
-					execute name=variables.javaCommand arguments=attributes.args timeout="50" variable="executeResult" errorVariable="executeError"; 
-					// save server info and persist
-					arguments.serverInfo.statusInfo = { command:variables.javaCommand, arguments:attributes.args, result:executeResult & ' ' & executeError };
-					arguments.serverInfo.status="running";
-					setServerInfo( serverInfo );
-				} catch (any e) {
-					logger.error( "Error starting server: #e.message# #e.detail#", arguments );
-					arguments.serverInfo.statusInfo.result &= executeResult & ' ' & executeError;
-					arguments.serverInfo.status="unknown";
-					setServerInfo( arguments.serverInfo );
-				}
+		// change status to starting + persist
+		serverInfo.status = "starting";
+		setServerInfo( serverInfo );
+		// thread the execution
+		thread name="server#hash( serverInfo.webroot )##createUUID()#" serverInfo=serverInfo args=args {
+			try{
+				// execute the server command
+				var  executeResult = '';
+				var  executeError = '';
+				execute name=variables.javaCommand arguments=attributes.args timeout="50" variable="executeResult" errorVariable="executeError"; 
+				// save server info and persist
+				serverInfo.statusInfo = { command:variables.javaCommand, arguments:attributes.args, result:executeResult & ' ' & executeError };
+				serverInfo.status="running";
+				setServerInfo( serverInfo );
+			} catch (any e) {
+				logger.error( "Error starting server: #e.message# #e.detail#", arguments );
+				serverInfo.statusInfo.result &= executeResult & ' ' & executeError;
+				serverInfo.status="unknown";
+				setServerInfo( serverInfo );
 			}
-			return "The server for #webroot# is starting on #arguments.serverInfo.host#:#portNumber#... type 'server status' to see result";
-		} else {
-			return "Cannot start!  The server is currently in the #arguments.serverInfo.status# state!#chr(10)#Use force=true or the 'server forget' command ";
 		}
+		return "The server for #serverInfo.webroot# is starting on #serverInfo.host#:#serverInfo.port#... type 'server status' to see result";
+		
 	}
 
 	/**
@@ -270,6 +285,7 @@ component accessors="true" singleton {
 		if( !arguments.all ){
 			var servers 	= getServers();
 			var serverdir 	= getCustomServerFolder( arguments.serverInfo );
+			var serverJSONPath = arguments.serverInfo.webroot & '/server.json';
 
 			// try to delete from config first
 			structDelete( servers, hash( arguments.serverInfo.webroot ) );
@@ -284,6 +300,11 @@ component accessors="true" singleton {
 					consoleLogger.error( '#e.message##chr(10)#Did you leave the server running? ' );
 					logger.error( '#e.message# #e.detail#' , e.stackTrace );
 				}
+			}
+			
+			// Delete server.json if it exists
+			if( fileExists( serverJSONPath ) ) {
+				fileDelete( serverJSONPath );
 			}
 			// return message
 			return "Poof! Wiped out server " & serverInfo.name;
@@ -506,28 +527,30 @@ component accessors="true" singleton {
 	*/
 	struct function defaultServerJSON(){
 		return {
-			port			: 0,
-			host			: "127.0.0.1",
-			stopsocket		: 0,
-			debug			: false,
-			name			: "",
-			logDir 			: "",
-			trayicon 		: "",
-			libDirs 		: "",
-			webConfigDir 	: "",
-			serverConfigDir : "",
-			webroot			: "",
-			webXML 			: "",
-			HTTPEnable		: true,
-			SSLEnable		: false,
-			SSLPort			: 1443,
-			SSLCert 		: "",
-			SSLKey			: "",
-			SSLKeyPass		: "",
-			rewritesEnable  : false,
-			rewritesConfig	: "",
-			heapSize		: 512,
-			directoryBrowsing : true
+			port				: 0,
+			host				: "127.0.0.1",
+			stopsocket			: 0,
+			debug				: false,
+			name				: "",
+			logDir 				: "",
+			trayicon 			: "#variables.libdir#/trayicon.png",
+			libDirs 			: "",
+			webConfigDir 		: "",
+			serverConfigDir 	: variables.serverHomeDirectory,
+			webroot				: "",
+			webXML 				: "",
+			HTTPEnable			: true,
+			SSLEnable			: false,
+			SSLPort				: 1443,
+			SSLCert 			: "",
+			SSLKey				: "",
+			SSLKeyPass			: "",
+			rewritesEnable	 	: false,
+			rewritesConfig		: variables.rewritesDefaultConfig,
+			heapSize			: 512,
+			directoryBrowsing	: true,
+			openBrowser			: true,
+			debug				: false 
 		};
 	}
 
