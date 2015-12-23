@@ -40,6 +40,7 @@ component accessors="true" singleton {
 	property name="rewritesDefaultConfig" inject="rewritesDefaultConfig@constants";
 	
 	property name='interceptorService'	inject='interceptorService';
+	property name='JSONService'			inject='JSONService';
 
 	/**
 	* Constructor
@@ -500,4 +501,73 @@ component accessors="true" singleton {
 		};
 	}
 
+	/**
+	* Returns a server.json defaults
+	*/
+	struct function defaultServerJSON(){
+		return {
+			port			: 0,
+			host			: "127.0.0.1",
+			stopsocket		: 0,
+			debug			: false,
+			name			: "",
+			logDir 			: "",
+			trayicon 		: "",
+			libDirs 		: "",
+			webConfigDir 	: "",
+			serverConfigDir : "",
+			webroot			: "",
+			webXML 			: "",
+			HTTPEnable		: true,
+			SSLEnable		: false,
+			SSLPort			: 1443,
+			SSLCert 		: "",
+			SSLKey			: "",
+			SSLKeyPass		: "",
+			rewritesEnable  : false,
+			rewritesConfig	: "",
+			heapSize		: 512,
+			directoryBrowsing : true
+		};
+	}
+
+	/**
+	* Read a server.json file.  If it doesn't exist, returns an empty struct
+	* This only returns properties specifically set in the file.
+	*/
+	struct function readServerJSON( required string directory ) {
+		var filePath = arguments.directory & '/server.json';
+		if( fileExists( filePath ) ) {
+			return deserializeJSON( fileRead( filePath ) );
+		} else {
+			return {};
+		}
+	}
+
+	/**
+	* Save a server.json file.
+	*/
+	function saveServerJSON( required string directory, required struct data ) {
+		var filePath = arguments.directory & '/server.json';
+		fileWrite( filePath, formatterUtil.formatJSON( serializeJSON( arguments.data ) ) );
+	}
+
+	
+	/**
+	* Dynamic completion for property name based on contents of server.json
+	* @directory.hint web root
+	* @all.hint Pass false to ONLY suggest existing setting names.  True will suggest all possible settings.
+	*/ 	
+	function completeProperty( required directory,  all=false ) {
+		// Get all config settings currently set
+		var props = JSONService.addProp( [], '', '', readServerJSON( arguments.directory ) );
+		
+		// If we want all possible options...
+		if( arguments.all ) {
+			// ... Then add them in
+			props.append( defaultServerJSON().keyArray(), true );
+		}
+		
+		return props;		
+	}	
 }
