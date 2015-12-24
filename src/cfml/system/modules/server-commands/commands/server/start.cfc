@@ -46,6 +46,8 @@ component aliases="start" {
 	 * @rewritesConfig 	optional URL rewriting config file path
 	 * @heapSize		The max heap size in megabytes you would like this server to start with, it defaults to 512mb
 	 * @directoryBrowsing Enable/Disabled directory browsing, defaults to true
+	 * @JVMArgs 		Additional JVM args to use when starting the server. Use "server status --verbose" to debug
+	 * @runwarArgs 		Additional Runwar options to use when starting the server. Use "server status --verbose" to debug
 	 **/
 	function run(
 		String  name,
@@ -70,7 +72,9 @@ component aliases="start" {
 		Boolean rewritesEnable,
 		String  rewritesConfig,
 		Numeric heapSize,
-		boolean directoryBrowsing
+		boolean directoryBrowsing,
+		String  JVMArgs,
+		String  runwarArgs
 	){
 		// Resolve path as used locally
 		arguments.directory = fileSystemUtil.resolvePath( arguments.directory );

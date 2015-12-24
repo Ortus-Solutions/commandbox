@@ -181,6 +181,9 @@ component accessors="true" singleton {
 		serverInfo.rewritesConfig 	= serverProps.rewritesConfig 	?: serverJSON.rewritesConfig 	?: defaults.rewritesConfig;
 		serverInfo.heapSize 		= serverProps.heapSize 			?: serverJSON.heapSize 			?: defaults.heapSize;
 		serverInfo.directoryBrowsing = serverProps.directoryBrowsing ?: serverJSON.directoryBrowsing ?: defaults.directoryBrowsing;
+		serverInfo.JVMargs			= serverProps.JVMargs			?: serverJSON.JVMargs			?: defaults.JVMargs;
+		serverInfo.runwarArgs		= serverProps.runwarArgs		?: serverJSON.runwarArgs		?: defaults.runwarArgs;
+		
 		serverInfo.logdir			= serverInfo.webConfigDir & "/log";
 	
 		interceptorService.announceInterception( 'onServerStart', { serverInfo=serverInfo } );
@@ -200,14 +203,15 @@ component accessors="true" singleton {
 		var processName = serverInfo.name is "" ? "CommandBox" : serverInfo.name;
 
 		// The java arguments to execute:  Shared server, custom web configs
-		var args = " -Xmx#serverInfo.heapSize#m -Xms#serverInfo.heapSize#m"
+		var args = " #serverInfo.JVMargs# -Xmx#serverInfo.heapSize#m -Xms#serverInfo.heapSize#m"
 				& " -javaagent:""#libdir#/lucee-inst.jar"" -jar ""#variables.jarPath#"""
 				& " -war ""#serverInfo.webroot#"" --background=true --port #serverInfo.port# --host #serverInfo.host# --debug #serverInfo.debug#"
 				& " --stop-port #serverInfo.stopsocket# --processname ""#processName#"" --log-dir ""#serverInfo.logDir#"""
 				& " --open-browser #serverInfo.openbrowser# --open-url http://#serverInfo.host#:#serverInfo.port#"
 				& " --cfengine-name lucee --server-name ""#serverInfo.name#"" --lib-dirs ""#libDirs#"""
 				& " --tray-icon ""#serverInfo.trayIcon#"" --tray-config ""#libdir#/traymenu.json"""
-				& " --directoryindex ""#serverInfo.directoryBrowsing#"" --cfml-web-config ""#serverInfo.webConfigDir#"" --cfml-server-config ""#serverInfo.serverConfigDir#""";
+				& " --directoryindex ""#serverInfo.directoryBrowsing#"" --cfml-web-config ""#serverInfo.webConfigDir#"""
+				& "  --cfml-server-config ""#serverInfo.serverConfigDir#"" #serverInfo.runwarArgs# ";
 		// Incorporate SSL to command
 		if( serverInfo.SSLEnable ){
 			args &= " --http-enable #serverInfo.HTTPEnable# --ssl-enable #serverInfo.SSLEnable# --ssl-port #serverInfo.SSLPort#";
@@ -242,16 +246,18 @@ component accessors="true" singleton {
 				// execute the server command
 				var  executeResult = '';
 				var  executeError = '';
-				execute name=variables.javaCommand arguments=attributes.args timeout="50" variable="executeResult" errorVariable="executeError"; 
 				// save server info and persist
-				serverInfo.statusInfo = { command:variables.javaCommand, arguments:attributes.args, result:executeResult & ' ' & executeError };
-				serverInfo.status="running";
+				serverInfo.statusInfo = { command:variables.javaCommand, arguments:attributes.args, result:'' };
 				setServerInfo( serverInfo );
+				execute name=variables.javaCommand arguments=attributes.args timeout="50" variable="executeResult" errorVariable="executeError";
+				serverInfo.status="running";
 			} catch (any e) {
 				logger.error( "Error starting server: #e.message# #e.detail#", arguments );
-				serverInfo.statusInfo.result &= executeResult & ' ' & executeError;
+				serverInfo.statusInfo.result &= e.message & ' ' & e.detail;
 				serverInfo.status="unknown";
-				setServerInfo( serverInfo );
+			} finally {
+				serverInfo.statusInfo.result = serverInfo.statusInfo.result & executeResult & ' ' & executeError;
+				setServerInfo( serverInfo );				
 			}
 		}
 		return "The server for #serverInfo.webroot# is starting on #serverInfo.host#:#serverInfo.port#... type 'server status' to see result";
@@ -530,7 +536,9 @@ component accessors="true" singleton {
 			rewritesEnable  : false,
 			rewritesConfig	: "",
 			heapSize		: 512,
-			directoryBrowsing : true
+			directoryBrowsing : true,
+			JVMargs				: "",
+			runwarArgs			: ""
 		};
 	}
 
@@ -562,7 +570,9 @@ component accessors="true" singleton {
 			heapSize			: 512,
 			directoryBrowsing	: true,
 			openBrowser			: true,
-			debug				: false 
+			debug				: false,
+			JVMargs				: "",
+			runwarArgs			: ""
 		};
 	}
 
