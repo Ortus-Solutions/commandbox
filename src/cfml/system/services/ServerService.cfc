@@ -35,10 +35,11 @@ component accessors="true" singleton {
 	*/
 	property name="jarPath";
 	/**
-	* The default rewrites configuration file
+	* Default server settings
 	*/
-	property name="rewritesDefaultConfig" inject="rewritesDefaultConfig@constants";
+	property name="defaultServerJSON";	
 	
+	property name="rewritesDefaultConfig" inject="rewritesDefaultConfig@constants";	
 	property name='interceptorService'	inject='interceptorService';
 	property name='JSONService'			inject='JSONService';
 	property name="packageService"		inject="packageService";
@@ -100,8 +101,40 @@ component accessors="true" singleton {
 		if( !directoryExists( variables.customServerDirectory ) ){
 			directoryCreate( variables.customServerDirectory );
 		}
-
+		
 		return this;
+	}
+
+	function onDIComplete() {
+		
+		setDefaultServerJSON( {
+			port				: 0,
+			host				: "127.0.0.1",
+			stopsocket			: 0,
+			debug				: false,
+			name				: "",
+			logDir 				: "",
+			trayicon 			: "#variables.libdir#/trayicon.png",
+			libDirs 			: "",
+			webConfigDir 		: "",
+			serverConfigDir 	: variables.serverHomeDirectory,
+			webroot				: "",
+			webXML 				: "",
+			HTTPEnable			: true,
+			SSLEnable			: false,
+			SSLPort				: 1443,
+			SSLCert 			: "",
+			SSLKey				: "",
+			SSLKeyPass			: "",
+			rewritesEnable	 	: false,
+			rewritesConfig		: variables.rewritesDefaultConfig,
+			heapSize			: 512,
+			directoryBrowsing	: true,
+			openBrowser			: true,
+			debug				: false,
+			JVMargs				: "",
+			runwarArgs			: ""
+		} );
 	}
 
 	/**
@@ -130,7 +163,7 @@ component accessors="true" singleton {
 		// Get server descriptor
 		var serverJSON = readServerJSON( serverInfo.webroot );
 		// Get defaults
-		var defaults = defaultServerJSON();
+		var defaults = getDefaultServerJSON();
 								
 		// Backwards compat with boxJSON default port.  Remove in a future version
 		// The property in box.json is deprecated. 
@@ -543,40 +576,6 @@ component accessors="true" singleton {
 	}
 
 	/**
-	* Returns a server.json defaults
-	*/
-	struct function defaultServerJSON(){
-		return {
-			port				: 0,
-			host				: "127.0.0.1",
-			stopsocket			: 0,
-			debug				: false,
-			name				: "",
-			logDir 				: "",
-			trayicon 			: "#variables.libdir#/trayicon.png",
-			libDirs 			: "",
-			webConfigDir 		: "",
-			serverConfigDir 	: variables.serverHomeDirectory,
-			webroot				: "",
-			webXML 				: "",
-			HTTPEnable			: true,
-			SSLEnable			: false,
-			SSLPort				: 1443,
-			SSLCert 			: "",
-			SSLKey				: "",
-			SSLKeyPass			: "",
-			rewritesEnable	 	: false,
-			rewritesConfig		: variables.rewritesDefaultConfig,
-			heapSize			: 512,
-			directoryBrowsing	: true,
-			openBrowser			: true,
-			debug				: false,
-			JVMargs				: "",
-			runwarArgs			: ""
-		};
-	}
-
-	/**
 	* Read a server.json file.  If it doesn't exist, returns an empty struct
 	* This only returns properties specifically set in the file.
 	*/
@@ -610,7 +609,7 @@ component accessors="true" singleton {
 		// If we want all possible options...
 		if( arguments.all ) {
 			// ... Then add them in
-			props.append( defaultServerJSON().keyArray(), true );
+			props.append( getDefaultServerJSON().keyArray(), true );
 		}
 		
 		return props;		
