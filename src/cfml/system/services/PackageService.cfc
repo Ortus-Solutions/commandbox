@@ -211,10 +211,11 @@ component accessors="true" singleton {
 			// Next, see if the containing project has an install path configured for this dependency already.
 			var containerBoxJSON = readPackageDescriptor( arguments.packagePathRequestingInstallation );
 			if( !len( installDirectory ) && structKeyExists( containerBoxJSON.installPaths, packageName ) ) {
-				// Get the resolved intallation path for this package
+				// Get the resolved installation path for this package
 				installDirectory = fileSystemUtil.resolvePath( containerBoxJSON.installPaths[ packageName ], arguments.packagePathRequestingInstallation );
+				
 				// Back up to the "container" folder.  The packge directory will be added back below
-				installDirectory = listDeleteAt( installDirectory, listLen( installDirectory, '/\' ), '/\' );
+				installDirectory = listDeleteAt( installDirectory, listLen( installDirectory, '/\' ), '/\' );				
 			}
 			
 			// Else, use directory in the target package's box.json if it exists
