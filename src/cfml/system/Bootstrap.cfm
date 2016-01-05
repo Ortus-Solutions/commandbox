@@ -47,9 +47,10 @@ Type "help" for help, or "help [command]" to be more specific.
 		
 		// Create the shell
 		shell = wireBox.getInstance( name='Shell', initArguments={ asyncLoad=false } );
+		shell.setShellType( 'command' );
 		interceptorService =  shell.getInterceptorService();
 		
-		interceptData = { shellType='command', args=argsArray, banner=banner };
+		interceptData = { shellType=shell.getShellType(), args=argsArray, banner=banner };
 		interceptorService.announceInterception( 'onCLIStart', interceptData );
 			 
  		piped = [];
@@ -78,9 +79,10 @@ Type "help" for help, or "help [command]" to be more specific.
 		
 		// Create the shell
 		shell = wireBox.getInstance( name='Shell', initArguments={ asyncLoad=!silent } );
+		shell.setShellType( 'interactive' );
 		interceptorService =  shell.getInterceptorService();
 		
-		interceptData = { shellType='interactive', args=argsArray, banner=banner };
+		interceptData = { shellType=shell.getShellType(), args=argsArray, banner=banner };
 		interceptorService.announceInterception( 'onCLIStart', interceptData );
 		
 		if( !silent ) {
@@ -102,7 +104,8 @@ Type "help" for help, or "help [command]" to be more specific.
 			
 			// startup a new shell
 			shell = wireBox.getInstance( 'Shell' );
-			interceptorService.announceInterception( 'onCLIStart', { shellType='interactive', args=argsArray } );
+			shell.setShellType( 'interactive' );
+			interceptorService.announceInterception( 'onCLIStart', { shellType=shell.getShellType(), args=argsArray } );
 		}
 	}
 	

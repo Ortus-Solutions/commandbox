@@ -129,7 +129,8 @@ component accessors=true {
   	 **/
 	array function getTokens() {
 		var tokens = [];
-		tokens.append( getCommand() );
+		// Break the command name on the spaces
+		tokens.append( listToArray( getCommand(), ' ' ), true );
 		tokens.append( processParams(), true );		
 		tokens.append( getFlags(), true );
 		

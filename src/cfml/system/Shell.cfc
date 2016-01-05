@@ -51,6 +51,16 @@ component accessors="true" singleton {
 	* The default shell prompt
 	*/
 	property name="shellPrompt";
+	/**
+	* This value is either "interactive" meaning the shell stays open waiting for user input
+	* or "command" which means a single command will be run and then the shell will be exiting.
+	* This differentiation may be useful for commands who want to be careful not to leave threads running
+	* that they expect to finish since the JVM will terminiate immedatley after the command finishes.
+	* This could also be useful to reduce the amount of extra text that's output such as the CommandBox
+	* banner which isn't really needed for a one-off command, especially if the output of that command needs
+	* to be fed into another OS command.
+	*/
+	property name="shellType" default="interactive";
 	
 
 	/**
@@ -94,6 +104,8 @@ component accessors="true" singleton {
 			// Store incoming current directory
 			variables.pwd = variables.userDir;
 		}
+
+		setShellType( 'interactive' );
 
     	return this;
 	}

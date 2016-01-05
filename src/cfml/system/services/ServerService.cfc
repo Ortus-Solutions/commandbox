@@ -39,10 +39,12 @@ component accessors="true" singleton {
 	*/
 	property name="defaultServerJSON";	
 	
-	property name="rewritesDefaultConfig" inject="rewritesDefaultConfig@constants";	
-	property name='interceptorService'	inject='interceptorService';
-	property name='JSONService'			inject='JSONService';
-	property name="packageService"		inject="packageService";
+	property name='rewritesDefaultConfig'	inject='rewritesDefaultConfig@constants';	
+	property name='interceptorService'		inject='interceptorService';
+	property name='JSONService'				inject='JSONService';
+	property name='packageService'			inject='packageService';
+	property name='consoleLogger'			inject='logbox:logger:console';
+	property name='wirebox'					inject='wirebox';
 
 	/**
 	* Constructor
@@ -274,7 +276,8 @@ component accessors="true" singleton {
 		serverInfo.status = "starting";
 		setServerInfo( serverInfo );
 		// thread the execution
-		thread name="server#hash( serverInfo.webroot )##createUUID()#" serverInfo=serverInfo args=args {
+		var threadName = 'server#hash( serverInfo.webroot )##createUUID()#';
+		thread name="#threadName#" serverInfo=serverInfo args=args {
 			try{
 				// execute the server command
 				var  executeResult = '';
@@ -293,7 +296,22 @@ component accessors="true" singleton {
 				setServerInfo( serverInfo );				
 			}
 		}
-		return "The server for #serverInfo.webroot# is starting on #serverInfo.host#:#serverInfo.port#... type 'server status' to see result";
+		
+		// She'll be coming 'round the mountain when she comes...
+		consoleLogger.warn( "The server for #serverInfo.webroot# is starting on #serverInfo.host#:#serverInfo.port#... type 'server status' to see result" );
+		
+		// If this is a one off command, wait for the thread to finish, otherwise the JVM will shutdown before
+		// the server is started and the json files get updated.
+		if( shell.getShellType() == 'command' ) {
+			thread action="join" name="#threadName#";
+			
+			// Pull latest info that was saved in the thread and output it. Since we made the 
+			// user wait for the thread to finish, we might as well tell them what happened.
+			wirebox.getinstance( name='CommandDSL', initArguments={ name : 'server status' } )
+				.params( name = serverInfo.name )
+				.run();			
+		}
+			
 		
 	}
 
