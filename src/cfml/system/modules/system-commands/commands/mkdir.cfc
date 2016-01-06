@@ -18,7 +18,7 @@ component {
 	 * @directory.hint The directory to create
 	 * @cd.hint CD into the directory after creating
 	 **/
-	function run( required String directory, boolean cd )  {
+	function run( required String directory, boolean cd=false )  {
 				
 		// Validate directory
 		if( !len( arguments.directory ) ) {
@@ -33,9 +33,12 @@ component {
 			
 		print.greenLine( 'Created #arguments.directory#' );
 		
-		command( 'cd' )
-			.params( arguments.directory )
-			.run();
+		// Optionally change into the new dir
+		if( arguments.cd ) {
+			command( 'cd' )
+				.params( arguments.directory )
+				.run();
+		}
 		
 	}
 
