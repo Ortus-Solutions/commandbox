@@ -18,16 +18,6 @@ External Dependencies:
  	<property name="commandbox.version"			value="2.5.0"/>
  	<property name="commandbox.stableVersion"	value="2.2.0"/>
 
-	<if>
-	    <equals arg1="${commandbox.version}" arg2="${commandbox.stableVersion}"/>
-	    <then>
-		 	<property name="isStable"	value="true"/>
-	    </then>
-	    <else>
-		 	<property name="isStable"	value="false"/>
-	    </else>
-	</if>
-
     <!-- Time Label -->
 	<tstamp prefix="start"/>
 	<!-- Load build lib tasks -->
@@ -61,6 +51,16 @@ External Dependencies:
 	<!-- import cfdistro -->
 	<import file="${cfdistro.build.file}"/>
 	<property name="maven.repo.local" value="${cfdistro.basedir}/artifacts"/>
+	
+	<if>
+	    <equals arg1="${commandbox.version}" arg2="${commandbox.stableVersion}"/>
+	    <then>
+		 	<property name="isStable"	value="true"/>
+	    </then>
+	    <else>
+		 	<property name="isStable"	value="false"/>
+	    </else>
+	</if>
 	
 	<!-- Init Build -->
 	<target name="init" description="Init build" unless="src.isInit">
