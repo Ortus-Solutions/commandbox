@@ -578,7 +578,7 @@ External Dependencies:
 	        
   </target>
   
-	<target name="build.cli.deb.stablerepo" if="isStable">
+	<target name="build.cli.deb.stablerepo" if="${isStable}">
 		<echo>This is a stable build, let's update the stable Debian repo</echo>
 			
     	<mkdir dir="${deb.repo.stable}"/>
@@ -613,7 +613,7 @@ External Dependencies:
 	<antcall target="build.cli.rpm.stablerepo" />
   </target>
    
-	<target name="build.cli.rpm.stablerepo" if="isStable">
+	<target name="build.cli.rpm.stablerepo" if="${isStable}">
 		<echo message="This is a stable build, let's update the stable RPM repo" />
 	
 	    <mkdir dir="${rpm.repo.stable}" />
