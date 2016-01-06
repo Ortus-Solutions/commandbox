@@ -126,7 +126,9 @@ component{
 	}
 
 	private function escapeArg( required string arg ) {
-		return replaceNoCase( arguments.arg, '"', '""', 'all' );
+		arguments.arg = replaceNoCase( arguments.arg, '"', '""', 'all' );
+		arguments.arg = replaceNoCase( arguments.arg, '##', '####', 'all' );
+		return arguments.arg;
 	}
 
 }
