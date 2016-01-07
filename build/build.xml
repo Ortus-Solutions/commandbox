@@ -611,6 +611,8 @@ External Dependencies:
     <checksum file="${dist.dir}/${distro.name}-rpm-${commandbox.version}.rpm" forceoverwrite="true" fileext=".md5" />
         
 	<antcall target="build.cli.rpm.stablerepo" />
+	
+	<rpm-repo name="${distro.name}" baseurl="${commandbox.rpm.repourl.stable}" dir="${rpm.repo.stable}" failonerror="false"/>
   </target>
    
 	<target name="build.cli.rpm.stablerepo" if="${isStable}">
