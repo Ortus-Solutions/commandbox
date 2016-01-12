@@ -100,7 +100,7 @@ component {
 			}
 
 			// Confirm installation
-			if( !confirm( "Do you wish to apply this update? [y/n]" ) ){
+			if( !force && !confirm( "Do you wish to apply this update? [y/n]" ) ){
 				return;
 			}
 
