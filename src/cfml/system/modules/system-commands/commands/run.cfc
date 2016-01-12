@@ -18,7 +18,7 @@
  * run cmd "/c npm ll" 10
  * {code}
  * .
- * Kick off the command asyncronoysly and don't wait at all.  Also, discard any output.
+ * Kick off the command asynchronously and don't wait at all.  Also, discard any output.
  * .
  * {code:bash}
  * run name="C:\Windows\System32\SoundRecorder.exe" timeout=0

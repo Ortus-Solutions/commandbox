@@ -32,7 +32,7 @@
  * serialized as JSON on output.  As a convenience, if the first input to an array or struct function looks like
  * JSON, it will be passed directly as a literal instead of a string.  
  * .
- * The first example averages an array.  The second outputs an array of depdendency names in your app by manipulating 
+ * The first example averages an array.  The second outputs an array of dependency names in your app by manipulating 
  * the JSON object  that comes back from the "package list" command.
  *  
  * {code:bash}
@@ -40,7 +40,7 @@
  * package list --JSON | #structFind dependencies | #structKeyArray
  * {code}
  *
- * You must use postional parmaters if you are piping data to a CFML function, but you do have the option to use
+ * You must use positional parameters if you are piping data to a CFML function, but you do have the option to use
  * named parameters otherwise.  Those names will be passed along directly to the CFML function, so use the CF docs to make sure
  * you're using the correct parameter name.  
  * 
@@ -75,7 +75,7 @@ component{
 					// If this is a struct or array function, we have at least one param, and it's JSON, just pass it in as complex data.
 					if( ( left( arguments.name, 5 ) == 'array' || left( arguments.name, 6 ) == 'struct' )
 					    && i==2 && isJSON( arguments[ i ] ) ) {
-						functionText &= '#arguments[ i ]#';
+						functionText &= '#convertJSONEscapesToCFML( arguments[ i ] )#';
 					} else {
 						functionText &= '"#escapeArg( arguments[ i ] )#"';
 					}
@@ -128,6 +128,16 @@ component{
 	private function escapeArg( required string arg ) {
 		arguments.arg = replaceNoCase( arguments.arg, '"', '""', 'all' );
 		arguments.arg = replaceNoCase( arguments.arg, '##', '####', 'all' );
+		return arguments.arg;
+	}
+
+	// A complex value serialized as JSON differs from CFML struct literals in that 
+	// double quotes are \" instead of "".  Any escaped double quotes must be converted
+	// to the CFML version to work as an object literal.
+	private function convertJSONEscapesToCFML( required string arg ) {
+		arguments.arg = replaceNoCase( arguments.arg, '\\', '__DOUBLE_ESCAPE__', 'all' );
+		arguments.arg = replaceNoCase( arguments.arg, '\"', '""', 'all' );
+		arguments.arg = replaceNoCase( arguments.arg, '__DOUBLE_ESCAPE__', '\\', 'all' );
 		return arguments.arg;
 	}
 
