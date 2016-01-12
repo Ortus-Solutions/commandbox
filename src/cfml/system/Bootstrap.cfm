@@ -124,7 +124,7 @@ Type "help" for help, or "help [command]" to be more specific.
 			shell = wireBox.getInstance( 'Shell' );
 			interceptorService =  shell.getInterceptorService();
 			shell.setShellType( 'interactive' );
-			interceptorService.announceInterception( 'onCLIStart', { shellType=shell.getShellType(), args=argsArray } );
+			interceptorService.announceInterception( 'onCLIStart', { shellType=shell.getShellType(), args=[], banner='' } );
 		}
 	}
 	
