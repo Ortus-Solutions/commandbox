@@ -405,7 +405,7 @@ component accessors="true" singleton {
 
 	            // If there's input, try to run it.
 				if( len( trim( line ) ) ) { 
-					callCommand( line );
+					callCommand( command=line, initialCommand=true );
 				}
 
 	        } // end while keep running
@@ -420,10 +420,17 @@ component accessors="true" singleton {
 
 	/**
 	 * Call a command
- 	 * @command.hint command name
+ 	 * @command.hint Either a string containing a text command, or an array of tokens representing the command and parameters. 
  	 * @returnOutput.hint True will return the output of the command as a string, false will send the output to the console.  If command outputs nothing, an empty string will come back.
+ 	 * @piped.hint Any text being piped into the command.  This will overwrite the first parameter (pushing any positional params back)
+ 	 * @initialCommand.hint Since commands can recursivley call new commands via this method, this flags the first in the chain so exceptions can bubble all the way back to the beginning.
+ 	 * In other words, if "foo" calls "bar", which calls "baz" and baz errors, all three commands are scrapped and do not finish execution. 
  	 **/
-	function callCommand( required any command, returnOutput=false, string piped )  {
+	function callCommand( 
+		required any command,
+		returnOutput=false,
+		string piped,
+		boolean initialCommand=false )  {
 		
 		try{
 			
@@ -439,10 +446,20 @@ component accessors="true" singleton {
 		
 		// This type of error is recoverable-- like validation error or unresolved command, just a polite message please.
 		} catch ( commandException var e) {
-			printError( { message : e.message, detail: e.detail } );
+			// If this is a nested command, pass the exception along to unwind the entire stack.
+			if( !initialCommand ) {
+				rethrow;
+			} else {
+				printError( { message : e.message, detail: e.detail } );
+			}
 		// Anything else is completely unexpected and means boom booms happened-- full stack please.
 		} catch (any e) {
-			printError( e );
+			// If this is a nested command, pass the exception along to unwind the entire stack.
+			if( !initialCommand ) {
+				rethrow;
+			} else {
+				printError( e );
+			}
 		} finally {
 			// Flush history buffer to disk. I could do this in the quit command
 			// but then I would lose everything if the user just closes the window

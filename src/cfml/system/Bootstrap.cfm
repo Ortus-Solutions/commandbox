@@ -66,9 +66,9 @@ Type "help" for help, or "help [command]" to be more specific.
 	 	if( hasPiped ) {
 		 	// Concat lines back together
 			piped = arrayToList( piped, chr( 10 ) );
-			shell.callCommand( command=argsArray, piped=piped );
+			shell.callCommand( command=argsArray, piped=piped, initialCommand=true );
 		} else {
-			shell.callCommand( command=argsArray );
+			shell.callCommand( command=argsArray, initialCommand=true );
 		}
 		
 		// flush console
