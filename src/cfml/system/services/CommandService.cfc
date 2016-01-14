@@ -268,6 +268,7 @@ component accessors="true" singleton {
 				result = commandInfo.commandReference.CFC.getResult();
 			}
 			var interceptData = {
+				commandInfo=commandInfo,
 				parameterInfo=parameterInfo,
 				result=result
 			};
