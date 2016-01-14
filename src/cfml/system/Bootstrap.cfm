@@ -110,7 +110,14 @@ Type "help" for help, or "help [command]" to be more specific.
 		
 		// Running the "reload" command will enter this while loop once
 		while( shell.run( silent=silent ) ){
-			interceptorService.announceInterception( 'onCLIExit' );
+			clearScreen = shell.getDoClearScreen();
+			
+			interceptorService.announceInterception( 'onCLIExit' );			
+			
+			if( clearScreen ){
+				shell.getReader().clearScreen();
+			}
+			
 			// Clear all caches: template, ...
 			SystemCacheClear( "all" );
 			shell = javacast( "null", "" );
@@ -119,12 +126,20 @@ Type "help" for help, or "help [command]" to be more specific.
 			wireBox.shutdown();
 			new wirebox.system.ioc.Injector( 'commandbox.system.config.WireBox' );
 			variables.wireBox = application.wireBox;
+					
 			
 			// startup a new shell
 			shell = wireBox.getInstance( 'Shell' );
 			interceptorService =  shell.getInterceptorService();
 			shell.setShellType( 'interactive' );
-			interceptorService.announceInterception( 'onCLIStart', { shellType=shell.getShellType(), args=[], banner='' } );
+			interceptData = { shellType=shell.getShellType(), args=[], banner=banner };
+			interceptorService.announceInterception( 'onCLIStart', interceptData );
+					
+			if( clearScreen ){
+				// Output the welcome banner
+				systemOutput( replace( interceptData.banner, '@@version@@', shell.getVersion() ) );
+			}
+			
 		}
 	}
 	

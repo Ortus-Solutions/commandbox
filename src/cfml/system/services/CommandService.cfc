@@ -18,6 +18,8 @@ component accessors="true" singleton {
 	property name='wirebox' 			inject='wirebox';
 	property name='commandLocations'	inject='commandLocations@constants';
 	property name='interceptorService'	inject='interceptorService';
+		
+	property name='configured' default="false" type="boolean";
 	
 	// TODO: Convert these to properties
 	instance = {
@@ -33,6 +35,7 @@ component accessors="true" singleton {
 	 * Constructor
 	 **/
 	function init(){
+		setConfigured( false );
 		return this;
 	}
 
@@ -59,6 +62,7 @@ component accessors="true" singleton {
 			initCommands( commandLocation, commandLocation );
 		}
 
+		setConfigured( true );
 		return this;
 	}
 

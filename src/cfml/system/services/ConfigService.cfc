@@ -30,8 +30,7 @@ component accessors="true" singleton {
 		setPossibleConfigSettings([
 			'ModulesExternalLocation',
 			'modulesInclude',
-			'ModulesExclude',
-			'showBanner'			
+			'ModulesExclude'
 		]);
 		
 		setConfigFilePath( '/commandbox-home/CommandBox.json' );

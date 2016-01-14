@@ -44,6 +44,10 @@ component accessors="true" singleton {
 	*/
 	property name="reloadShell" default="false" type="Boolean";
 	/**
+	* Clear screen after reload
+	*/
+	property name="doClearScreen" default="false" type="Boolean";
+	/**
 	* The Current Working Directory
 	*/
 	property name="pwd";
@@ -154,11 +158,10 @@ component accessors="true" singleton {
 	 * @clear.hint clears the screen after reload
  	 **/
 	Shell function reload( Boolean clear=true ){
-		if( arguments.clear ){
-			variables.reader.clearScreen();
-		}
-		variables.reloadshell = true;
-    	variables.keepRunning = false;
+		
+		setDoClearScreen( arguments.clear );
+		setReloadshell( true );
+    	setKeepRunning( false );
 
     	return this;
 	}
@@ -431,6 +434,14 @@ component accessors="true" singleton {
 		returnOutput=false,
 		string piped,
 		boolean initialCommand=false )  {
+		
+		// Commands a loaded async in interactive mode, so this is a failsafe to ensure the CommandService
+		// is finished.  Especially useful for commands run onCLIStart.  Wait up to 5 seconds.
+		var i = 0;
+		while( !CommandService.getConfigured() && ++i<50 ) {
+			sleep( 100  );
+		}
+		
 		
 		try{
 			
