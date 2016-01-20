@@ -159,7 +159,7 @@ component singleton {
 
 		// Check if a proxy server is defined
 		if( len( proxyServer ) ) {
-			proxyType = createObject( 'java', 'java.net.Proxy$Type' );
+			var proxyType = createObject( 'java', 'java.net.Proxy$Type' );
 			var inetSocketAddress = createObject( 'java', 'java.net.InetSocketAddress' ).init( proxyServer, proxyPort );
 			var proxy = createObject( 'java', 'java.net.Proxy' ).init( proxyType.HTTP, inetSocketAddress );
 			
