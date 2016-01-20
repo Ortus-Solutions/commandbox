@@ -182,12 +182,12 @@ component accessors="true" singleton {
 		
 		// Save hand-entered properties in our server.json for next time
 		for( var prop in serverProps ) {
-			if( !isNull( serverProps[ prop ] ) && prop != 'directory' ) {
+			if( !isNull( serverProps[ prop ] ) && prop != 'directory'  && prop != 'saveSettings' ) {
 				serverJSON[ prop ] = serverProps[ prop ];
 			}
 		}
 		
-		if( !serverJSON.isEmpty() ) {
+		if( !serverJSON.isEmpty() && serverProps.saveSettings ) {
 			saveServerJSON( serverInfo.webroot, serverJSON );
 		}
 				 

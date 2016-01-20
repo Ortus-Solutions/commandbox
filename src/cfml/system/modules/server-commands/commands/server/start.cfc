@@ -48,6 +48,7 @@ component aliases="start" {
 	 * @directoryBrowsing Enable/Disabled directory browsing, defaults to true
 	 * @JVMArgs 		Additional JVM args to use when starting the server. Use "server status --verbose" to debug
 	 * @runwarArgs 		Additional Runwar options to use when starting the server. Use "server status --verbose" to debug
+	 * @saveSettings 	Save start settings in server.json
 	 **/
 	function run(
 		String  name,
@@ -74,7 +75,8 @@ component aliases="start" {
 		Numeric heapSize,
 		boolean directoryBrowsing,
 		String  JVMArgs,
-		String  runwarArgs
+		String  runwarArgs,
+		boolean	saveSettings=true
 	){
 		// Resolve path as used locally
 		arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
