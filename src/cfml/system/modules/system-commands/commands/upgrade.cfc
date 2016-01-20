@@ -27,7 +27,8 @@ component {
 	property name="progressableDownloader"	inject="ProgressableDownloader";
 	property name="progressBar" 			inject="ProgressBar";
 	property name="semanticVersion"			inject="semanticVersion";
-
+	property name="ConfigService"			inject="ConfigService";
+	
 	/**
 	 * @latest.hint Will download bleeding edge if true, last stable version if false
 	 * @force.hint Force the update even if the version on the server is the same as locally
@@ -43,8 +44,34 @@ component {
 		var boxRepoURL = '#thisArtifactsURL#ortussolutions/commandbox/box-repo.json';
 		var loaderRepoURL = '#thisArtifactsURL#ortussolutions/commandbox/box-loader.json';
 		
-		http url="#boxRepoURL#" file="#temp#/box-repo.json" throwOnError=false;
-		http url="#loaderRepoURL#" file="#temp#/box-loader.json" throwOnError=false;
+		http 
+			url="#boxRepoURL#"
+			file="#temp#/box-repo.json"
+			throwOnError=false
+			proxyServer="#ConfigService.getSetting( 'proxy.server', '' )#"
+			proxyPort="#ConfigService.getSetting( 'proxy.port', 80 )#"
+			proxyUser="#ConfigService.getSetting( 'proxy.user', '' )#"
+			proxyPassword="#ConfigService.getSetting( 'proxy.password', '' )#"
+			result="local.boxRepoResult";
+			
+		http
+			url="#loaderRepoURL#"
+			file="#temp#/box-loader.json"
+			throwOnError=false
+			proxyServer="#ConfigService.getSetting( 'proxy.server', '' )#"
+			proxyPort="#ConfigService.getSetting( 'proxy.port', 80 )#"
+			proxyUser="#ConfigService.getSetting( 'proxy.user', '' )#"
+			proxyPassword="#ConfigService.getSetting( 'proxy.password', '' )#"
+			result="local.loaderRepoResult";
+		
+		// Do some error checking
+		if( !local.boxRepoResult.statusCode contains "200" || !fileExists( '#temp#/box-repo.json' ) ||
+			!local.loaderRepoResult.statusCode contains "200" || !fileExists( '#temp#/box-loader.json' ) ) {
+			error(
+				"Sorry, we're having troubles accessing the interwebs now or the update site is down. Please try again later",
+				"Box Repo: [#local.boxRepoResult.statusCode#] Loader Repo: [#local.loaderRepoResult.statusCode#]"
+			);  
+		}
 		
 		var boxRepoJSON = fileRead( '#temp#/box-repo.json' );
 		var loaderRepoJSON = fileRead( '#temp#/box-loader.json' );

@@ -30,7 +30,11 @@ component accessors="true" singleton {
 		setPossibleConfigSettings([
 			'ModulesExternalLocation',
 			'modulesInclude',
-			'ModulesExclude'
+			'ModulesExclude',
+			'proxy.server',
+			'proxy.port',
+			'proxy.user',
+			'proxy.password'
 		]);
 		
 		setConfigFilePath( '/commandbox-home/CommandBox.json' );
