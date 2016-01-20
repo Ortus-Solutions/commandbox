@@ -48,19 +48,27 @@ component{
 		var executeError 	= "";
 
 		try{
+            // grab the current working directory
+            var pwd = fileSystemUtil.resolvePath( '.' );
+            var CWD = createObject( 'java', 'java.io.File' ).init( pwd );
+
 			// execute the server command
-			execute name="#arguments.name#" arguments="#arguments.args#" timeout="#arguments.timeout#" variable="executeResult" errorvariable="executeError";
+            var IOUtil = createObject( 'java', 'lucee.commons.io.IOUtil' );
+            var charset = createObject( 'java', 'lucee.commons.io.SystemUtil' ).getCharSet();
+            var process = createObject( 'java', 'java.lang.Runtime' ).getRuntime().exec( '#arguments.name# #arguments.args#', [], CWD );
+            var executeResult = IOUtil.toString( process.getInputStream(), charset );
+
 			// Output Results
 			if( !isNull( executeResult ) && len( executeResult ) ) {
-				print.cyanLine( executeResult );				
+				print.cyanLine( executeResult );
 			}
 			// Output error
 			if( !isNull( executeError ) &&  len( executeError ) ) {
-				print.redLine( executeError );				
+				print.redLine( executeError );
 			}
-			
+
 			print.greenLine( "Command completed succesfully!" );
-		
+
 		} catch (any e) {
 			error( '#e.message##CR##e.detail#' );
 		}
