@@ -49,7 +49,7 @@ component{
 
 		try{
             // grab the current working directory
-            var pwd = fileSystemUtil.resolvePath( '.' );
+            var pwd = fileSystemUtil.resolvePath( '' );
             var CWD = createObject( 'java', 'java.io.File' ).init( pwd );
 
             // execute the server command
@@ -69,8 +69,6 @@ component{
 			if( !isNull( executeError ) &&  len( executeError ) ) {
 				print.redLine( executeError );
 			}
-
-			print.greenLine( "Command completed succesfully!" );
 
 		} catch (any e) {
 			error( '#e.message##CR##e.detail#' );
