@@ -52,44 +52,55 @@ component accessors="true" singleton {
 	
 	/**
 	* Get a setting from a configuration structure
-	* @name The name of the setting
-	* @fwSetting Switch to get the coldbox or config settings, defaults to config settings
-	* @defaultValue The default value to use if setting does not exist
+	* @name.hint The name of the setting.  Allows for "deep" struct/array names.
+	* @defaultValue.hint The default value to use if setting does not exist
 	*/
 	function getSetting( required name, defaultValue ){
-
-		if ( settingExists( arguments.name ) ){
-			return getConfigSettings()[ arguments.name ];
-		}
-
-		// Default value
-		if( structKeyExists( arguments, "defaultValue" ) ){
-			return arguments.defaultValue;
-		}
-
-		throw( message="The setting #arguments.name# does not exist.",
-			   detail="",
-			   type="ConfigService.SettingNotFoundException");
+		
+		arguments.JSON = getConfigSettings();
+		arguments.property = arguments.name;
+		
+		return JSONService.show( argumentCollection = arguments ); 
 	}
 
 	/**
 	* Check if a value exists in a configuration structure
-	* @name The name of the setting
-	* @fwSetting Switch to get the coldbox or config settings, defaults to config settings
+	* @name.hint The name of the setting.  Allows for "deep" struct/array names.
 	*/
 	boolean function settingExists( required name ){
-		return ( structKeyExists( getConfigSettings(), arguments.name ) );
+		arguments.JSON = getConfigSettings();
+		arguments.property = arguments.name;
+		
+		return JSONService.check( argumentCollection = arguments );
 	}
 
 	/**
 	* Set a value in the application configuration settings
-	* @name The name of the setting
-	* @value The value to set
-	* 
-	* @return ConfigService
+	* @name.hint The name of the setting.  Allows for "deep" struct/array names.
+	* @value.hint The value to set
+	* @thisAppend.hint Append an array or struct to existing
 	*/
-	function setSetting( required name, required value ){
-		getConfigSettings()[ arguments.name ] = arguments.value;
+	function setSetting( required name, required value, boolean thisAppend=false ){
+		
+		arguments.JSON = getConfigSettings();
+		arguments.properties[ name ] = arguments.value;
+		
+		JSONService.set( argumentCollection = arguments );
+		
+		saveConfig();
+		return this;
+	}
+
+	/**
+	* Remove a value in the application configuration settings
+	* @name.hint The name of the setting.  Allows for "deep" struct/array names.
+	*/
+	function removeSetting( required name ){
+		
+		arguments.JSON = getConfigSettings();
+		arguments.property = arguments.name;
+		
+		JSONService.clear( argumentCollection = arguments );
 		
 		saveConfig();
 		return this;

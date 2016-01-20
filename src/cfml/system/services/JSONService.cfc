@@ -20,19 +20,31 @@ component accessors="true" singleton {
 	}
 	
 	/**
-	* I get a property from a deserialized JSON object and return a pretty verison of it
+	* I check for the existance of a property
 	*/
-	function show( required any JSON, required string property ){
+	boolean function check( required any JSON, required string property ){
+		
+		var fullPropertyName = 'arguments.JSON' & toBracketNotation( arguments.property );
+				
+		return isDefined( fullPropertyName );
+	}
+	
+	/**
+	* I get a property from a deserialized JSON object and return it
+	*/
+	function show( required any JSON, required string property, defaultValue ){
 		
 		var fullPropertyName = 'arguments.JSON' & toBracketNotation( arguments.property );
 				
 		if( !isDefined( fullPropertyName ) ) {
-			throw( message='Property [#arguments.property#] doesn''t exist.', type="JSONException");
+			if( structKeyExists( arguments, 'defaultValue' ) ) {
+				return arguments.defaultValue;
+			} else {
+				throw( message='Property [#arguments.property#] doesn''t exist.', type="JSONException");
+			}
 		}
 		
-		var propertyValue = evaluate( fullPropertyName );
-		
-		return propertyValue;
+		return evaluate( fullPropertyName );
 	}
 
 
