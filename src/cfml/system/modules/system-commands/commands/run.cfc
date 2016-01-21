@@ -1,5 +1,5 @@
 /**
- * Execute an operation system level command.  By default, "run" will wait 60 seconds for the command to complete
+ * Execute an operation system level command.  This command will wait for the OS exectuable to complete
  * .
  * {code:bash}
  * run myApp.exe
@@ -9,43 +9,37 @@
   * .
  * {code:bash}
  * !myApp.exe
- * !cmd "/c dir"
- * {code}
- * .
- * Wait a max of 10 seconds for the command to finish.
- * .
- * {code:bash}
- * run cmd "/c npm ll" 10
- * {code}
- * .
- * Kick off the command asynchronously and don't wait at all.  Also, discard any output.
- * .
- * {code:bash}
- * run name="C:\Windows\System32\SoundRecorder.exe" timeout=0
+ * !cmd /c dir
+ * !cmd /c npm ll 10
  * {code}
  * .
  * Executing Java would look like this
  * .
  * {code:bash}
- * run java "-jar myLib.jar"
+ * run java -jar myLib.jar
  * {code}
  *
  **/
 component{
 
 	/**
-	* @name.hint The full pathname of the application to execute including extension
-	* @arguments.hint Command-line arguments passed to the application
-	* @timeout.hint Number of seconds to wait. A timeout of 0 returns immediatley without waiting, ignoring any output from the command.
+	* @command.hint The full operating system command to execute including the binary and any parameters
 	**/
 	function run(
-		required name,
-		args="",
-		numeric timeout=60
+		required command
 	){
 
 		var executeResult 	= "";
 		var executeError 	= "";
+	/*	
+		// Prep the command to run in the OS-specific shell
+		if( fileSystemUtil.isWindows() ) {
+			arguments.command = 'cmd /a /c ' & arguments.command;
+		} else {
+			arguments.command = 'bash -i -c ' & arguments.command;
+		}*/
+		
+		print.boldYellowLine( arguments.command );
 
 		try{
             // grab the current working directory
@@ -55,7 +49,7 @@ component{
             // execute the server command
             var process = createObject( 'java', 'java.lang.Runtime' )
                 .getRuntime()
-                .exec( '#arguments.name# #arguments.args#', [], CWD );
+                .exec( '#arguments.command#', javaCast( "null", "" ), CWD );
             var commandResult = createObject( 'java', 'lucee.commons.cli.Command' )
                 .execute( process );
             var executeResult = commandResult.getOutput();
@@ -63,7 +57,7 @@ component{
 
 			// Output Results
 			if( !isNull( executeResult ) && len( executeResult ) ) {
-				print.cyanLine( executeResult );
+				print.line( executeResult );
 			}
 			// Output error
 			if( !isNull( executeError ) &&  len( executeError ) ) {

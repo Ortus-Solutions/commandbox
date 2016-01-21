@@ -405,6 +405,21 @@ component accessors="true" singleton {
 				tokens.prepend( 'run' );
 			}
 			
+			/* If command is "run", merge all remaining tokens into one string as long as parameters appear to be positional
+			*  	
+			* run command = "cmd /c dir"
+			* would be left untouched, but this
+			* run cmd /c dir
+			* would be turned into 
+			* run "cmd /c dir"
+			 */
+			 if( tokens.first() == 'run' && tokens.len() > 2 && left( reReplace( tokens[ 2 ], '/s', '', 'all'  ), 8 ) != 'command=' ) {
+			 	tokens = [
+			 		'run',
+			 		tokens.slice( 2, tokens.len()-1 ).toList( ' ' )
+			 	];
+			 }
+
 			// Shortcut for "cfml" command if first token starts with #
 			if( tokens.len() && len( tokens[1] ) > 1 && tokens[1].startsWith( '##' ) ) {
 				// Trim the # off
