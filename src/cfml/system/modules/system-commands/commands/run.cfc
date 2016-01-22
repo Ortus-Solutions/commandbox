@@ -21,6 +21,8 @@
  *
  **/
 component{
+	
+	property name="configService" inject="configService";
 
 	/**
 	* @command.hint The full operating system command to execute including the binary and any parameters
@@ -39,7 +41,8 @@ component{
 		} else {
 			// Pass through bash in interactive mode to expand aliases like "ll".
 			// -c runs input as a command, && exists cleanly from the shell as long as the original command ran successfully
-			arguments.command = [ 'bash','-i','-c', arguments.command & '&& exit'];
+			var nativeShell = configService.getSetting( 'nativeShell', '/bin/bash' );
+			arguments.command = [ nativeShell,'-i','-c', arguments.command & '&& exit'];
 		}
 		
 		try{

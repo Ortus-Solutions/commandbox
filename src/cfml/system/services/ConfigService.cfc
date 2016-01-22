@@ -28,13 +28,17 @@ component accessors="true" singleton {
 		// These aren't stored in the actual configSettings struct-- they're more for documentation
 		// and smart auto-completion to help people set new settings.
 		setPossibleConfigSettings([
+			// Used in ModuleService
 			'ModulesExternalLocation',
 			'modulesInclude',
 			'ModulesExclude',
+			// HTTP Proxy settings
 			'proxy.server',
 			'proxy.port',
 			'proxy.user',
-			'proxy.password'
+			'proxy.password',
+			// used in "run" command for a custom Unix shell
+			'nativeShell'
 		]);
 		
 		setConfigFilePath( '/commandbox-home/CommandBox.json' );
