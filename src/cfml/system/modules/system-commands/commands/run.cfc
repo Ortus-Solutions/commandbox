@@ -31,16 +31,14 @@ component{
 
 		var executeResult 	= "";
 		var executeError 	= "";
-	/*	
+		
 		// Prep the command to run in the OS-specific shell
 		if( fileSystemUtil.isWindows() ) {
-			arguments.command = 'cmd /a /c ' & arguments.command;
+			arguments.command = [ 'cmd','/a','/c', arguments.command ];
 		} else {
-			arguments.command = 'bash -i -c ' & arguments.command;
-		}*/
+			arguments.command = [ 'bash','-c', arguments.command ];
+		}
 		
-		print.boldYellowLine( arguments.command );
-
 		try{
             // grab the current working directory
             var pwd = fileSystemUtil.resolvePath( '' );
