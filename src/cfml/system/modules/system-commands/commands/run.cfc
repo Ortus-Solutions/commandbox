@@ -34,9 +34,12 @@ component{
 		
 		// Prep the command to run in the OS-specific shell
 		if( fileSystemUtil.isWindows() ) {
+			// Pass through Windows' command shell, /a outputs ANSI formatting, /c runs as a command
 			arguments.command = [ 'cmd','/a','/c', arguments.command ];
 		} else {
-			arguments.command = [ 'bash','-c', arguments.command ];
+			// Pass through bash in interactive mode to expand aliases like "ll".
+			// -c runs input as a command, && exists cleanly from the shell as long as the original command ran successfully
+			arguments.command = [ 'bash','-i','-c', arguments.command & '&& exit'];
 		}
 		
 		try{
@@ -59,6 +62,13 @@ component{
 			}
 			// Output error
 			if( !isNull( executeError ) &&  len( executeError ) ) {
+				
+				// Clean up standard error from Unix interactive shell workaround
+				if( !fileSystemUtil.isWindows() && right( trim( executeError ), 4 ) == 'exit' ) {
+				        executeError = trim( executeError );
+				        executeError = mid( executeError, 1, len( executeError )-4 );
+				}
+				
 				print.redLine( executeError );
 			}
 
