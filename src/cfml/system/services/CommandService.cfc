@@ -177,6 +177,13 @@ component accessors="true" singleton {
 					namedParameters = {},
 					flags = {}
 				};
+			// For run don't process the parameter, just pass it right along.
+			} else if( listLast( commandInfo.commandReference.originalName, '.' ) == 'run' ){
+				var parameterInfo = {
+					positionalParameters = [ commandInfo.parameters[ 1 ] ],
+					namedParameters = {},
+					flags = {}
+				};
 			// For normal commands, parse them out properly
 			} else {
 				var parameterInfo = parseParameters( commandInfo.parameters );
@@ -413,7 +420,7 @@ component accessors="true" singleton {
 			* would be turned into 
 			* run "cmd /c dir"
 			 */
-			 if( tokens.first() == 'run' && tokens.len() > 2 && left( reReplace( tokens[ 2 ], '/s', '', 'all'  ), 8 ) != 'command=' ) {
+			 if( tokens.first() == 'run' && tokens.len() > 2 ) {
 			 	tokens = [
 			 		'run',
 			 		tokens.slice( 2, tokens.len()-1 ).toList( ' ' )
