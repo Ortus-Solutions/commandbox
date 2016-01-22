@@ -412,12 +412,10 @@ component accessors="true" singleton {
 				tokens.prepend( 'run' );
 			}
 			
-			/* If command is "run", merge all remaining tokens into one string as long as parameters appear to be positional
-			*  	
-			* run command = "cmd /c dir"
-			* would be left untouched, but this
+			/* If command is "run", merge all remaining tokens into one string
+			* 
 			* run cmd /c dir
-			* would be turned into 
+			* would essentially be turned into 
 			* run "cmd /c dir"
 			 */
 			 if( tokens.first() == 'run' && tokens.len() > 2 ) {
