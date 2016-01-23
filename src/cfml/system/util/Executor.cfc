@@ -12,9 +12,9 @@
 */
 component {
 
-	property name="_fileSystemUtil"	inject="FileSystem";
-	property name="_shell"			inject="shell";
-	property name="_wirebox"		inject="wirebox";
+	property name="$fileSystemUtil"	inject="FileSystem";
+	property name="$shell"			inject="shell";
+	property name="$wirebox"		inject="wirebox";
 
 	/**
 	* Execute an existing file
@@ -22,7 +22,7 @@ component {
 	* @vars.hint Struct of vars to set so the template can access them
 	*/
 	function runFile( required template, struct vars = {} ){
-		arguments.template = _fileSystemUtil.makePathRelative( template );
+		arguments.template = $fileSystemUtil.makePathRelative( template );
 
 		// Mix the incoming vars into the "variables" scope.
 		structAppend( variables, vars );
@@ -82,7 +82,7 @@ component {
 	}
 
 	function getInstance(){
-		return _wirebox.getInstance( argumentCollection = arguments );
+		return $wirebox.getInstance( argumentCollection = arguments );
 	}
 
 }
