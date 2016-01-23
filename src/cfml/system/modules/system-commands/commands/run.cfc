@@ -9,13 +9,13 @@
  * {code}
  * .
  * A shortcut for running OS binaries is to prefix the binary with "!".  In this mode, any other params need to be positional.
- * There is no CommandBox parsing applied to the command's arguements.  They are passed straight to the native shell. 
+ * There is no CommandBox parsing applied to the command's arguments.  They are passed straight to the native shell. 
  * .
  * {code:bash}
  * !myApp.exe
  * !/path/to/myApp
  * !dir
- * !npm ll 10
+ * !npm ll
  * !ipconfig
  * !ping google.com -c 4
  * {code}
@@ -73,8 +73,8 @@ component{
                 .exec( '#arguments.command#', javaCast( "null", "" ), CWD );
             var commandResult = createObject( 'java', 'lucee.commons.cli.Command' )
                 .execute( process );
-            var executeResult = commandResult.getOutput();
-            var executeError = commandResult.getError();
+            var executeResult = trim( commandResult.getOutput() );
+            var executeError = trim( commandResult.getError() );
 
 			// Output Results
 			if( !isNull( executeResult ) && len( executeResult ) ) {
@@ -84,8 +84,7 @@ component{
 			if( !isNull( executeError ) &&  len( executeError ) ) {
 				
 				// Clean up standard error from Unix interactive shell workaround
-				if( !fileSystemUtil.isWindows() && right( trim( executeError ), 4 ) == 'exit' ) {
-				        executeError = trim( executeError );
+				if( !fileSystemUtil.isWindows() && right( executeError, 4 ) == 'exit' ) {
 				        executeError = mid( executeError, 1, len( executeError )-4 );
 				}
 				
