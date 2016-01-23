@@ -1,22 +1,39 @@
 /**
- * Execute an operation system level command.  This command will wait for the OS exectuable to complete
+ * Execute an operating system level command in the native shell.  The binary must be in the PATH, or you can specify the full 
+ * path to it.  This command will wait for the OS exectuable to complete.   This cannot be used for any commands that require 
+ * interactivity or don't exit automatically or the call will hang indefinitely.  
  * .
  * {code:bash}
  * run myApp.exe
+ * run /path/to/myApp
  * {code}
  * .
  * A shortcut for running OS binaries is to prefix the binary with "!".  In this mode, any other params need to be positional.
-  * .
+ * There is no CommandBox parsing applied to the command's arguements.  They are passed straight to the native shell. 
+ * .
  * {code:bash}
  * !myApp.exe
- * !cmd /c dir
- * !cmd /c npm ll 10
+ * !/path/to/myApp
+ * !dir
+ * !npm ll 10
+ * !ipconfig
+ * !ping google.com -c 4
  * {code}
  * .
  * Executing Java would look like this
  * .
  * {code:bash}
- * run java -jar myLib.jar
+ * !java -version
+ * !java -jar myLib.jar
+ * {code}
+ * .
+ * You can even call other CLIs
+ * .
+ * {code:bash}
+ * !git init
+ * touch index.cfm
+ * !git add .
+ * !git commit -m "Initial Commit"
  * {code}
  *
  **/
