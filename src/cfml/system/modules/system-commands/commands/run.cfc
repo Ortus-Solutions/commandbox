@@ -57,9 +57,9 @@ component{
 			arguments.command = [ 'cmd','/a','/c', arguments.command ];
 		} else {
 			// Pass through bash in interactive mode to expand aliases like "ll".
-			// -c runs input as a command, +m turns off job control so the process doesn't try to go to the background
+			// -c runs input as a command, && exists cleanly from the shell as long as the original command ran successfully
 			var nativeShell = configService.getSetting( 'nativeShell', '/bin/bash' );
-			arguments.command = [ nativeShell,'-i','-c', 'set +m; ' & arguments.command ];
+			arguments.command = [ nativeShell,'-i','-c', arguments.command & ' && exit'];
 		}
 		
 		try{
@@ -75,7 +75,7 @@ component{
                 .execute( process );
                 
             // I don't like the idea of potentially removing significant whitespace, but commands like pwd
-            // come with an extra line break that is a pain if you want to pipe into s
+            // come with an extra line break that is a pain if you want to pipe into another command
             var executeResult = trim( commandResult.getOutput() );
             var executeError = trim( commandResult.getError() );
 
@@ -84,7 +84,16 @@ component{
 				print.line( executeResult );
 			}
 			// Output error
-			if( !isNull( executeError ) &&  len( executeError ) ) {
+			if( !isNull( executeError ) &&  len( executeError ) ) {				
+				// Clean up standard error from Unix interactive shell workaround
+				if( !fileSystemUtil.isWindows() && right( executeError, 4 ) == 'exit' ) {
+				        executeError = mid( executeError, 1, len( executeError )-4 );
+				}
+				// Clean up annoying warnings abour job control in some shells.
+				if( !fileSystemUtil.isWindows() && findNoCase( 'bash: no job control in this shell', executeError ) ) {
+					executeError = replaceNoCase( executeError, 'bash: no job control in this shell', '' );
+					executeError = trim( executeError );					
+				}
 				print.redLine( executeError );
 			}
 
