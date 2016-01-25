@@ -418,7 +418,7 @@ component accessors="true" singleton {
 			* would essentially be turned into 
 			* run "cmd /c dir"
 			 */
-			 if( tokens.first() == 'run' && tokens.len() > 2 ) {
+			 if( tokens.len() > 2 && tokens.first() == 'run' ) {
 			 	tokens = [
 			 		'run',
 			 		tokens.slice( 2, tokens.len()-1 ).toList( ' ' )
