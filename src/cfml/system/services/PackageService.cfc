@@ -799,9 +799,8 @@ component accessors="true" singleton {
 			// ...Read it.
 			boxJSON = fileRead( getDescriptorPath( arguments.directory ) );
 			
-			// Validate the file is valid JSOn
+			// Validate the file is valid JSON
 			if( isJSON( boxJSON ) ) {
-				// Merge this JSON with defaults
 				return deserializeJSON( boxJSON );
 			} else {
 				consoleLogger.warn( 'Warning: package has an invalid box.json file. [#arguments.directory#]' );
