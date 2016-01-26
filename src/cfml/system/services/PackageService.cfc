@@ -803,10 +803,11 @@ component accessors="true" singleton {
 			if( isJSON( boxJSON ) ) {
 				// Merge this JSON with defaults
 				return deserializeJSON( boxJSON );
+			} else {
+				consoleLogger.warn( 'Warning: package has an invalid box.json file. [#arguments.directory#]' );
 			}
 			
 		}
-		
 		// Just return defaults
 		return {};	
 	}
