@@ -40,7 +40,7 @@ component aliases="restart" {
 		}
 
 		var stopCommand = "server stop '#serverInfo.name#'";
-		var startCommand = "server start name='#serverInfo.name#' openBrowser=#arguments.openBrowser# --!saveSettings";
+		var startCommand = "server start name='#serverInfo.name#' port=#serverInfo.port# openBrowser=#arguments.openBrowser# --!saveSettings";
 
 		// stop server
 		print.boldCyanLine( "Trying to stop server..." );
