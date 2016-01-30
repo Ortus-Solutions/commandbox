@@ -250,8 +250,16 @@ component accessors="true" singleton {
 				// If this is a module
 				} else if( packageType == 'modules' ) {
 					installDirectory = arguments.packagePathRequestingInstallation & '/modules';
+				// ContentBox Widget
+				} else if( packageType == 'contentbox-widgets' ) {
+					installDirectory = arguments.packagePathRequestingInstallation & '/modules/contentbox/widgets';
+				// ContentBox themes/layouts
+				} else if( packageType == 'contentbox-themes' || packageType == 'contentbox-layouts' ) {
+					installDirectory = arguments.packagePathRequestingInstallation & '/modules/contentbox/themes';
+				// ContentBox Modules
 				} else if( packageType == 'contentbox-modules' ) {
-					installDirectory = arguments.packagePathRequestingInstallation & '/modules';
+					installDirectory = arguments.packagePathRequestingInstallation & '/modules/contentbox/modules_user';	
+				// CommandBox Modules
 				} else if( packageType == 'commandbox-modules' ) {
 					// Override the install directories to the CommandBox CFML root
 					arguments.currentWorkingDirectory = expandPath( '/commandbox' );
