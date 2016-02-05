@@ -60,6 +60,8 @@ Optional Methods
 	this.modelNamespace		= "@modelNamespace@";
 	// CF Mapping
 	this.cfmapping			= "@cfmapping@";
+	// Auto-map models
+	this.autoMapModels		= true;
 	// Module Dependencies
 	this.dependencies 		= @dependencies@;
 
