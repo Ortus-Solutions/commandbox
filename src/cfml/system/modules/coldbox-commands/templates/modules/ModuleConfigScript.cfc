@@ -60,7 +60,7 @@ component {
 	// CF Mapping
 	this.cfmapping			= "@cfmapping@";
 	// Auto-map models
-	this.autoMapModels		= false;
+	this.autoMapModels		= true;
 	// Module Dependencies
 	this.dependencies 		= @dependencies@;
 
