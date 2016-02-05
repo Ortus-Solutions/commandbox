@@ -110,32 +110,45 @@ component accessors="true" singleton {
 	function onDIComplete() {
 		
 		setDefaultServerJSON( {
-			port				: 0,
-			host				: "127.0.0.1",
-			stopsocket			: 0,
-			debug				: false,
-			name				: "",
-			logDir 				: "",
-			trayicon 			: "#variables.libdir#/trayicon.png",
-			libDirs 			: "",
-			webConfigDir 		: "",
-			serverConfigDir 	: variables.serverHomeDirectory,
-			webroot				: "",
-			webXML 				: "",
-			HTTPEnable			: true,
-			SSLEnable			: false,
-			SSLPort				: 1443,
-			SSLCert 			: "",
-			SSLKey				: "",
-			SSLKeyPass			: "",
-			rewritesEnable	 	: false,
-			rewritesConfig		: variables.rewritesDefaultConfig,
-			heapSize			: 512,
-			directoryBrowsing	: true,
-			openBrowser			: true,
-			debug				: false,
-			JVMargs				: "",
-			runwarArgs			: ""
+			name : '',
+			openBrowser : true,
+			stopsocket : 0,
+			debug : false,
+			trayicon : '#variables.libdir#/trayicon.png',
+			jvm : {
+				heapSize : 512,
+				args : ''
+			},
+			web : {
+				host : '127.0.0.1',				
+				directoryBrowsing : true,
+				webroot : '',
+				http : {
+					port : 0,
+					enable : true
+				},
+				ssl : {
+					enable : false,
+					port : 1443,
+					cert : '',
+					key : '',
+					keyPass : ''
+				},
+				rewrites : {
+					enable : true,
+					config : variables.rewritesDefaultConfig
+				}
+			},
+			app : {
+				logDir : '',
+				libDirs : '',
+				webConfigDir : '',
+				serverConfigDir :variables.serverHomeDirectory,
+				webXML : ''
+			},
+			runwar : {
+				args : ''
+			}
 		} );
 	}
 
@@ -183,9 +196,66 @@ component accessors="true" singleton {
 		// Save hand-entered properties in our server.json for next time
 		for( var prop in serverProps ) {
 			if( !isNull( serverProps[ prop ] ) && prop != 'directory'  && prop != 'saveSettings' ) {
-				serverJSON[ prop ] = serverProps[ prop ];
-			}
-		}
+				switch(prop) {
+				    case "port":
+						serverJSON[ 'web' ][ 'http' ][ 'port' ] = serverProps[ prop ];
+				         break;
+				    case "host":
+						serverJSON[ 'web' ][ 'host' ] = serverProps[ prop ];
+				         break;
+				    case "stopPort":
+						serverJSON[ 'stopsocket' ] = serverProps[ prop ];
+				         break;
+				    case "webConfigDir":
+						serverJSON[ 'app' ][ 'webConfigDir' ] = serverProps[ prop ];
+				         break;
+				    case "serverConfigDir":
+						serverJSON[ 'app' ][ 'serverConfigDir' ] = serverProps[ prop ];
+				         break;
+				    case "libDirs":
+						serverJSON[ 'app' ][ 'libDirs' ] = serverProps[ prop ];
+				         break;
+				    case "webXML":
+						serverJSON[ 'app' ][ 'webXML' ] = serverProps[ prop ];
+				         break;
+				    case "HTTPEnable":
+						serverJSON[ 'web' ][ 'HTTP' ][ 'enable' ] = serverProps[ prop ];
+				         break;
+				    case "SSLEnable":
+						serverJSON[ 'web' ][ 'SSL' ][ 'enable' ] = serverProps[ prop ];
+				         break;
+				    case "SSLPort":
+						serverJSON[ 'web' ][ 'SSL' ][ 'port' ] = serverProps[ prop ];
+				         break;
+				    case "SSLCert":
+						serverJSON[ 'web' ][ 'SSL' ][ 'cert' ] = serverProps[ prop ];
+				         break;
+				    case "SSLKey":
+						serverJSON[ 'web' ][ 'SSL' ][ 'key' ] = serverProps[ prop ];
+				         break;
+				    case "SSLKeyPass":
+						serverJSON[ 'web' ][ 'SSL' ][ 'keyPass' ] = serverProps[ prop ];
+				         break;
+				    case "rewritesEnable":
+						serverJSON[ 'rewrites' ][ 'enabled' ] = serverProps[ prop ];
+				         break;
+				    case "rewritesConfig":
+						serverJSON[ 'rewrites' ][ 'config' ] = serverProps[ prop ];
+				         break;
+				    case "heapSize":
+						serverJSON[ 'JVM' ][ 'heapSize' ] = serverProps[ prop ];
+				         break;
+				    case "JVMArgs":
+						serverJSON[ 'JVM' ][ 'args' ] = serverProps[ prop ];
+				         break;
+				    case "runwarArgs":
+						serverJSON[ 'runwar' ][ 'args' ] = serverProps[ prop ];
+				         break;
+				    default: 
+					serverJSON[ prop ] = serverProps[ prop ];
+				} // end switch
+			} // end if
+		} // for loop
 		
 		if( !serverJSON.isEmpty() && serverProps.saveSettings ) {
 			saveServerJSON( serverInfo.webroot, serverJSON );
@@ -198,26 +268,26 @@ component accessors="true" singleton {
 		serverInfo.debug 			= serverProps.debug 			?: serverJSON.debug 			?: defaults.debug;
 		serverInfo.openbrowser		= serverProps.openbrowser 		?: serverJSON.openbrowser		?: defaults.openbrowser;
 		serverInfo.name 			= serverProps.name 				?: listLast( serverInfo.webroot, "\/" );
-		serverInfo.host				= serverProps.host 				?: serverJSON.host 				?: defaults.host;
+		serverInfo.host				= serverProps.host 				?: serverJSON.host 				?: defaults.web.host;
 		serverInfo.port 			= serverProps.port 				?: serverJSON.port 				?: getRandomPort( serverInfo.host );
 		serverInfo.stopsocket		= serverProps.stopsocket		?: serverJSON.stopsocket 		?: getRandomPort( serverInfo.host );		
 		serverInfo.webConfigDir 	= serverProps.webConfigDir 		?: serverJSON.webConfigDir 		?: getCustomServerFolder( serverInfo );
-		serverInfo.serverConfigDir 	= serverProps.serverConfigDir 	?: serverJSON.serverConfigDir 	?: defaults.serverConfigDir;
-		serverInfo.libDirs			= serverProps.libDirs 			?: serverJSON.libDirs 			?: defaults.libDirs;
+		serverInfo.serverConfigDir 	= serverProps.serverConfigDir 	?: serverJSON.serverConfigDir 	?: defaults.app.serverConfigDir;
+		serverInfo.libDirs			= serverProps.libDirs 			?: serverJSON.libDirs 			?: defaults.app.libDirs;
 		serverInfo.trayIcon			= serverProps.trayIcon 			?: serverJSON.trayIcon 			?: defaults.trayIcon;
-		serverInfo.webXML 			= serverProps.webXML 			?: serverJSON.webXML 			?: defaults.webXML;
-		serverInfo.SSLEnable 		= serverProps.SSLEnable 		?: serverJSON.SSLEnable 		?: defaults.SSLEnable;
-		serverInfo.HTTPEnable		= serverProps.HTTPEnable 		?: serverJSON.HTTPEnable 		?: defaults.HTTPEnable;
-		serverInfo.SSLPort			= serverProps.SSLPort 			?: serverJSON.SSLPort 			?: defaults.SSLPort;
-		serverInfo.SSLCert 			= serverProps.SSLCert 			?: serverJSON.SSLCert 			?: defaults.SSLCert;
-		serverInfo.SSLKey 			= serverProps.SSLKey 			?: serverJSON.SSLKey 			?: defaults.SSLKey;
-		serverInfo.SSLKeyPass 		= serverProps.SSLKeyPass 		?: serverJSON.SSLKeyPass 		?: defaults.SSLKeyPass;
-		serverInfo.rewritesEnable 	= serverProps.rewritesEnable	?: serverJSON.rewritesEnable 	?: defaults.rewritesEnable;
-		serverInfo.rewritesConfig 	= serverProps.rewritesConfig 	?: serverJSON.rewritesConfig 	?: defaults.rewritesConfig;
-		serverInfo.heapSize 		= serverProps.heapSize 			?: serverJSON.heapSize 			?: defaults.heapSize;
-		serverInfo.directoryBrowsing = serverProps.directoryBrowsing ?: serverJSON.directoryBrowsing ?: defaults.directoryBrowsing;
-		serverInfo.JVMargs			= serverProps.JVMargs			?: serverJSON.JVMargs			?: defaults.JVMargs;
-		serverInfo.runwarArgs		= serverProps.runwarArgs		?: serverJSON.runwarArgs		?: defaults.runwarArgs;
+		serverInfo.webXML 			= serverProps.webXML 			?: serverJSON.webXML 			?: defaults.app.webXML;
+		serverInfo.SSLEnable 		= serverProps.SSLEnable 		?: serverJSON.SSLEnable 		?: defaults.web.SSL.enable;
+		serverInfo.HTTPEnable		= serverProps.HTTPEnable 		?: serverJSON.HTTPEnable 		?: defaults.web.HTTP.enable;
+		serverInfo.SSLPort			= serverProps.SSLPort 			?: serverJSON.SSLPort 			?: defaults.web.SSL.port;
+		serverInfo.SSLCert 			= serverProps.SSLCert 			?: serverJSON.SSLCert 			?: defaults.web.SSL.cert;
+		serverInfo.SSLKey 			= serverProps.SSLKey 			?: serverJSON.SSLKey 			?: defaults.web.SSL.key;
+		serverInfo.SSLKeyPass 		= serverProps.SSLKeyPass 		?: serverJSON.SSLKeyPass 		?: defaults.web.SSL.keyPass;
+		serverInfo.rewritesEnable 	= serverProps.rewritesEnable	?: serverJSON.rewritesEnable 	?: defaults.web.rewrites.enable;
+		serverInfo.rewritesConfig 	= serverProps.rewritesConfig 	?: serverJSON.rewritesConfig 	?: defaults.web.rewrites.config;
+		serverInfo.heapSize 		= serverProps.heapSize 			?: serverJSON.heapSize 			?: defaults.JVM.heapSize;
+		serverInfo.directoryBrowsing = serverProps.directoryBrowsing ?: serverJSON.directoryBrowsing ?: defaults.web.directoryBrowsing;
+		serverInfo.JVMargs			= serverProps.JVMargs			?: serverJSON.JVMargs			?: defaults.JVM.args;
+		serverInfo.runwarArgs		= serverProps.runwarArgs		?: serverJSON.runwarArgs		?: defaults.runwar.args;
 		
 		serverInfo.logdir			= serverInfo.webConfigDir & "/log";
 	
@@ -626,8 +696,8 @@ component accessors="true" singleton {
 		
 		// If we want all possible options...
 		if( arguments.all ) {
-			// ... Then add them in
-			props.append( getDefaultServerJSON().keyArray(), true );
+			// ... Then add them in			
+			props = JSONService.addProp( props, '', '', getDefaultServerJSON() );
 		}
 		
 		return props;		
