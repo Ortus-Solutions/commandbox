@@ -237,10 +237,10 @@ component accessors="true" singleton {
 						serverJSON[ 'web' ][ 'SSL' ][ 'keyPass' ] = serverProps[ prop ];
 				         break;
 				    case "rewritesEnable":
-						serverJSON[ 'rewrites' ][ 'enabled' ] = serverProps[ prop ];
+						serverJSON[ 'web' ][ 'rewrites' ][ 'enabled' ] = serverProps[ prop ];
 				         break;
 				    case "rewritesConfig":
-						serverJSON[ 'rewrites' ][ 'config' ] = serverProps[ prop ];
+						serverJSON[ 'web' ][ 'rewrites' ][ 'config' ] = serverProps[ prop ];
 				         break;
 				    case "heapSize":
 						serverJSON[ 'JVM' ][ 'heapSize' ] = serverProps[ prop ];
