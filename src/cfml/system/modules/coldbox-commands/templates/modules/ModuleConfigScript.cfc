@@ -59,6 +59,8 @@ component {
 	this.modelNamespace		= "@modelNamespace@";
 	// CF Mapping
 	this.cfmapping			= "@cfmapping@";
+	// Auto-map models
+	this.autoMapModels		= false;
 	// Module Dependencies
 	this.dependencies 		= @dependencies@;
 
