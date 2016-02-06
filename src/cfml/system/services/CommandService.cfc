@@ -178,7 +178,7 @@ component accessors="true" singleton {
 					flags = {}
 				};
 			// For run don't process the parameter, just pass it right along.
-			} else if( listLast( commandInfo.commandReference.originalName, '.' ) == 'run' ){
+			} else if( commandInfo.commandReference.originalName == 'run' && commandInfo.parameters.len() ){
 				var parameterInfo = {
 					positionalParameters = [ commandInfo.parameters[ 1 ] ],
 					namedParameters = {},

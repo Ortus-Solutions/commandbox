@@ -189,8 +189,7 @@ component accessors="true" singleton {
 			var i = 0;
 			while( ++i <= propValue.len() ) {
 				var newProp = '#prop#[#i#]';
-				var newProp = '#safeProp#[#i#]';
-				var newSafeProp = newProp;
+				var newSafeProp = '#safeProp#[#i#]';
 				props.append( newProp );
 				props = addProp( props, newProp, newSafeProp, targetStruct );
 			}
