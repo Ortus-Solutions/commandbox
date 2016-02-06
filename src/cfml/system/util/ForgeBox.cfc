@@ -46,7 +46,7 @@ or just add DEBUG to the root logger
 		<cfscript>
 			
 			// Setup Properties
-			variables.APIURL = "http://www.coldbox.org/api/forgebox";
+			variables.APIURL = "http://forgebox.stg.ortussolutions.com/api/v1/";
 			variables.installURL = "http://www.coldbox.org/forgebox/install/";
 			variables.types = "";
 
@@ -175,7 +175,30 @@ or just add DEBUG to the root logger
 			
 		<cfreturn fullPath>		
 	</cffunction>	
+
+	<cfscript>
 	
+	/**
+	* Registers a new user in ForgeBox
+	*/
+	function register(
+		required string username,
+		required string password,
+		required string email,
+		required string fName,
+		required string lName ) {
+			
+		var results = makeRequest( resource="register", parameters=arguments );
+		
+		// error 
+		if( results.error ){
+			throw( "Sorry, the user could not be added.", 'forgebox', results.response.messages );
+		}
+		
+		return results.response.data;
+	}
+	
+	</cfscript>
 <!------------------------------------------- PRIVATE ------------------------------------------>
 
 	<!--- makeRequest --->
@@ -200,7 +223,7 @@ or just add DEBUG to the root logger
 		
 		<!--- REST CAll --->
 		<cfhttp method="#arguments.method#" 
-				url="#getAPIURL()#/json/#arguments.resource#" 
+				url="#getAPIURL()#/#arguments.resource#" 
 				charset="utf-8" 
 				result="HTTPResults" 
 				timeout="#arguments.timeout#">
