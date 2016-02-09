@@ -32,7 +32,7 @@ then
 	cp="$cp:$BOX_CLASSPATH"
 fi
 
-java_args='-client -Djava.awt.headless=true'
+java_args="$BOX_JAVA_ARGS -client -Djava.awt.headless=true"
 
 # Cleanup paths for Cygwin.
 #
@@ -43,7 +43,8 @@ CYGWIN*)
 Darwin)
 	if [ -e /System/Library/Frameworks/JavaVM.framework ]
 	then
-		java_args='
+		java_args="
+			$BOX_JAVA_ARGS
 			-client
 			-Dcom.apple.mrj.application.apple.menu.about.name=CommandBox
 			-Dcom.apple.mrj.application.growbox.intrudes=false
@@ -51,7 +52,7 @@ Darwin)
 			-Xdock:name=CommandBox
 			-Dfile.encoding=UTF-8
 			-Djava.awt.headless=true
-		'
+		"
 	fi
 	;;
 esac
