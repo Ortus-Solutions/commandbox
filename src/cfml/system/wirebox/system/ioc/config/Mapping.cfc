@@ -1,7 +1,7 @@
 ﻿<!-----------------------------------------------------------------------
 ********************************************************************************
 Copyright Since 2005 ColdBox Framework by Luis Majano and Ortus Solutions, Corp
-www.coldbox.org | www.luismajano.com | www.ortussolutions.com
+www.ortussolutions.com
 ********************************************************************************
 
 Author 	    :	Luis Majano
@@ -74,11 +74,13 @@ Description :
 				// Mixins
 				mixins = [],
 				// Thread safety on wiring
-				threadSafe = ""
+				threadSafe = "",
+				// A closure that can influence the creation of the instance
+				influenceClosure = ""
 			};
 
 			// DI definition structure
-			DIDefinition = {name="",value="",dsl="",scope="variables",javaCast="",ref="",required=false,argName=""};
+			DIDefinition = { name="", value="", dsl="", scope="variables", javaCast="", ref="", required=false, argName="", type="any" };
 
 			return this;
 		</cfscript>
@@ -196,6 +198,16 @@ Description :
     <cffunction name="setThreadSafe" access="public" returntype="any" output="false" hint="Set the thread safety for wiring bit">
     	<cfargument name="threadSafe" type="boolean" required="true">
     	<cfset instance.threadSafe = arguments.threadSafe>
+		<cfreturn this>
+    </cffunction>
+
+    <!--- Closure for influencing instance creation --->
+    <cffunction name="getInfluenceClosure" access="public" returntype="any" output="false" hint="Get the influence closure. Empty string if not exists">
+    	<cfreturn instance.influenceClosure>
+    </cffunction>
+    <cffunction name="setInfluenceClosure" access="public" returntype="any" output="false" hint="Set the influence closure.">
+    	<cfargument name="influenceClosure" type="any" required="true">
+    	<cfset instance.influenceClosure = arguments.influenceClosure>
 		<cfreturn this>
     </cffunction>
 
@@ -371,6 +383,7 @@ Description :
 		<cfargument name="value" 	required="false" hint="The explicit value of the constructor argument, if passed."/>
     	<cfargument name="javaCast" required="false" hint="The type of javaCast() to use on the value of the argument. Only used if using dsl or ref arguments"/>
     	<cfargument name="required" required="false" default="true" hint="If the argument is required or not, by default we assume required DI arguments."/>
+		<cfargument name="type"		required="false" default="any" hint="The type of the argument."/>
 		<cfscript>
     		var def = getDIDefinition();
 			var x   = 1;
@@ -395,6 +408,7 @@ Description :
 		<cfargument name="value" 	required="false" hint="The explicit value of the method argument, if passed."/>
     	<cfargument name="javaCast" required="false" hint="The type of javaCast() to use on the value of the argument. Only used if using dsl or ref arguments"/>
     	<cfargument name="required" required="false" default="true" hint="If the argument is required or not, by default we assume required DI arguments."/>
+    	<cfargument name="type"		required="false" default="any" hint="The type of the argument."/>
 		<cfscript>
     		var def = getDIDefinition();
 			var x	= 1;
@@ -428,6 +442,7 @@ Description :
     	<cfargument name="javaCast" required="false" hint="The type of javaCast() to use on the value of the property. Only used if using dsl or ref arguments"/>
     	<cfargument name="scope" 	required="false" default="variables" hint="The scope in the CFC to inject the property to. By default it will inject it to the variables scope"/>
     	<cfargument name="required" required="false" default="true" hint="If the property is required or not, by default we assume required DI properties."/>
+		<cfargument name="type"		required="false" default="any" hint="The type of the property."/>
 		<cfscript>
     		var def = getDIDefinition();
 			var x	= 1;
@@ -549,9 +564,14 @@ Description :
 		<cfset var iData	 	= "">
 		<cfset var eventManager	= arguments.injector.getEventManager()>
 		<cfset var cacheProperties = {}>
+		<cfif isSimpleValue( instance.path ) >
+			<cfset var lockToken  = instance.path>
+		<cfelse>
+			<cfset var lockToken = createUUID()>
+		</cfif>
 
 		<!--- Lock for discovery based on path location, only done once per instance of mapping. --->
-		<cflock name="Mapping.MetadataProcessing.#instance.path#" type="exclusive" timeout="20" throwOnTimeout="true">
+		<cflock name="Mapping.#arguments.injector.getInjectorID()#.MetadataProcessing.#lockToken#" type="exclusive" timeout="20" throwOnTimeout="true">
 		<cfscript>
 	    	if( NOT instance.discovered ){
 				// announce inspection
@@ -741,9 +761,9 @@ Description :
 				case "regex" : { classMatcher = arguments.binder.match().regex( getToken(arguments.metadata.classMatcher,2,":") ); break; }
 				default: {
 					// throw, no matching matchers
-					arguments.binder.utility.throwIt(message="Invalid Class Matcher: #classes#",
-													type="Mapping.InvalidAOPClassMatcher",
-													detail="Valid matchers are 'any,annotatedWith:annotation,annotatedWith:annotation:value,mappings:XXX,instanceOf:XXX,regex:XXX'");
+					throw(message="Invalid Class Matcher: #classes#",
+						  type="Mapping.InvalidAOPClassMatcher",
+						  detail="Valid matchers are 'any,annotatedWith:annotation,annotatedWith:annotation:value,mappings:XXX,instanceOf:XXX,regex:XXX'");
 				}
 			}
 
@@ -766,9 +786,9 @@ Description :
 				case "regex" : { methodMatcher = arguments.binder.match().regex( getToken(arguments.metadata.methodMatcher,2,":") ); break; }
 				default: {
 					// throw, no matching matchers
-					arguments.binder.utility.throwIt(message="Invalid Method Matcher: #classes#",
-													type="Mapping.InvalidAOPMethodMatcher",
-													detail="Valid matchers are 'any,annotatedWith:annotation,annotatedWith:annotation:value,methods:XXX,instanceOf:XXX,regex:XXX'");
+					throw(message="Invalid Method Matcher: #classes#",
+						  type="Mapping.InvalidAOPMethodMatcher",
+						  detail="Valid matchers are 'any,annotatedWith:annotation,annotatedWith:annotation:value,methods:XXX,instanceOf:XXX,regex:XXX'");
 				}
 			}
 
@@ -797,8 +817,12 @@ Description :
 					if( structKeyExists(md.properties[x],"inject") ){
 						// prepare default params, we do this so we do not alter the md as it is cached by cf
 						params = {
-							scope="variables", inject="model", name=md.properties[x].name, required=true
+							scope="variables", inject="model", name=md.properties[x].name, required=true, type="any"
 						};
+						// default property type
+						if( structKeyExists( md.properties[ x ], "type" ) ){
+							params.type = md.properties[ x ].type;
+						}
 						// default injection scope, if not found in object
 						if( structKeyExists(md.properties[x],"scope") ){
 							params.scope = md.properties[x].scope;
@@ -812,7 +836,7 @@ Description :
 							params.required = md.properties[ x ].required;
 						}
 						// Add to property to mappings
-						addDIProperty( name=params.name, dsl=params.inject, scope=params.scope, required=params.required );
+						addDIProperty( name=params.name, dsl=params.inject, scope=params.scope, required=params.required, type=params.type );
 					}
 
 				}
@@ -836,9 +860,12 @@ Description :
 
 							// prepare params as we do not alter md as cf caches it
 							params = {
-								required = false, inject="model",name=md.functions[x].parameters[y].name
+								required = false, inject="model", name=md.functions[x].parameters[y].name, type="any"
 							};
-
+							// check type annotation
+							if( structKeyExists( md.functions[ x ].parameters[ y ], "type" ) ){
+								params.type = md.functions[ x ].parameters[ y ].type;
+							}
 							// Check required annotation
 							if( structKeyExists(md.functions[x].parameters[y], "required") ){
 								params.required = md.functions[x].parameters[y].required;
@@ -854,7 +881,8 @@ Description :
 								// ADD Constructor argument
 								addDIConstructorArgument(name=params.name,
 														 dsl=params.inject,
-														 required=params.required);
+														 required=params.required,
+														 type=params.type);
 							}
 
 						}

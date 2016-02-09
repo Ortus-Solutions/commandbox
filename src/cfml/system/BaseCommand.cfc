@@ -8,22 +8,32 @@
 * I am the base command implementation.  An abstract class if you will.
 *
 */
-component accessors="true" singleton{
+component accessors="true" singleton {
 	
 	// DI
-	property name="CR" 				inject="CR@constants";
-	property name="formatterUtil" 	inject="Formatter";
-	property name="fileSystemUtil" 	inject="FileSystem";
-	property name="shell" 			inject="shell";
-	property name="print" 			inject="PrintBuffer";
-	property name="wirebox" 		inject="wirebox";
-	property name="logger" 			inject="logbox:logger:{this}";
-	property name="parser"			inject="Parser";
+	property name="CR";
+	property name="formatterUtil";
+	property name="fileSystemUtil";
+	property name="shell";
+	property name="print";
+	property name="wirebox";
+	property name="logger";
+	property name="parser";
 
 	/**
 	* Constructor
 	*/
 	function init() {
+		var wirebox = application.wirebox;
+		variables.CR				= wirebox.getInstance( "CR@constants" );
+		variables.formatterUtil		= wirebox.getInstance( "Formatter" );
+		variables.fileSystemUtil	= wirebox.getInstance( "FileSystem" );
+		variables.shell				= wirebox.getInstance( "shell" );
+		variables.print				= wirebox.getInstance( "PrintBuffer" );
+		variables.wirebox			= wirebox;
+		variables.logger			= wirebox.getLogBox().getLogger( this );
+		variables.parser			= wirebox.getInstance( "Parser" );
+		
 		hasErrored = false;
 		return this;
 	}
@@ -85,15 +95,24 @@ component accessors="true" singleton{
 	}
 		
 	/**
-	 * Run another command by name. 
+	 * Run another command by name.
+	 * This is deprecated in favor of command(), which escapes parameters for you.
 	 * @command.hint The command to run. Pass the same string a user would type at the shell.
  	 **/
 	function runCommand( required command, returnOutput=false ) {
 		return shell.callCommand( arguments.command, arguments.returnOutput );
 	}
+		
+	/**
+	 * Run another command by DSL. 
+	 * @name.hint The name of the command to run.
+ 	 **/
+	function command( required name ) {
+		return getinstance( name='CommandDSL', initArguments={ name : arguments.name } );
+	}
 
 	/**
-	 * Use if if your command wants to give contorlled feedback to the user without raising
+	 * Use if if your command wants to give controlled feedback to the user without raising
 	 * an actual exception which comes with a messy stack trace.  "return" this command to stop execution of your command
 	 * Alternativley, multuple errors can be printed by calling this method more than once prior to returning.
 	 * Use clearPrintBuffer to wipe out any output accrued in the print buffer. 
@@ -103,19 +122,16 @@ component accessors="true" singleton{
 	 * @message.hint The error message to display
 	 * @clearPrintBuffer.hint Wipe out the print buffer or not, it does not by default
  	 **/
-	function error( required message, clearPrintBuffer=false ) {
+	function error( required message, detail='', clearPrintBuffer=false ) {
 		hasErrored = true;
 		if( arguments.clearPrintBuffer ) {
 			// Wipe 
 			print.clear();
 		} else {
 			// Distance ourselves from whatever other output the command may have given so far.
-			print.line().line();
+			print.line();
 		}
-		print.whiteOnRedLine( 'ERROR' )
-			.line()
-			.redLine( arguments.message )
-			.line();
+		throw( message=arguments.message, detail=arguments.detail, type="commandException");
 		
 	}
 	
@@ -126,7 +142,6 @@ component accessors="true" singleton{
 	function hasError() {
 		return hasErrored;
 	}
-	
 	
 	/**
 	 * This will open a file or folder externally in the default editor for the user.  

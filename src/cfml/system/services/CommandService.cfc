@@ -17,6 +17,9 @@ component accessors="true" singleton {
 	property name='logger' 				inject='logbox:logger:{this}';
 	property name='wirebox' 			inject='wirebox';
 	property name='commandLocations'	inject='commandLocations@constants';
+	property name='interceptorService'	inject='interceptorService';
+		
+	property name='configured' default="false" type="boolean";
 	
 	// TODO: Convert these to properties
 	instance = {
@@ -32,6 +35,7 @@ component accessors="true" singleton {
 	 * Constructor
 	 **/
 	function init(){
+		setConfigured( false );
 		return this;
 	}
 
@@ -39,6 +43,14 @@ component accessors="true" singleton {
 	* Configure the service
 	*/
 	CommandService function configure(){
+
+		// Check if handler mapped?
+		if( NOT wirebox.getBinder().mappingExists( 'commandbox.system.BaseCommand' ) ){
+			// feed the base class
+			wirebox.registerNewInstance( name='commandbox.system.BaseCommand', instancePath='commandbox.system.BaseCommand' )
+				.setAutowire( false );
+		}
+		
 		// map commands
 		for( var commandLocation in commandLocations ){
 			
@@ -50,6 +62,7 @@ component accessors="true" singleton {
 			initCommands( commandLocation, commandLocation );
 		}
 
+		setConfigured( true );
 		return this;
 	}
 
@@ -114,6 +127,7 @@ component accessors="true" singleton {
 	/**
 	 * run a command tokens
 	 * @tokens.hint tokens to run
+	 * @piped.hint Data to pipe in to the first command
  	 **/
 	function runCommandTokens( required array tokens, string piped ){
 		
@@ -121,19 +135,23 @@ component accessors="true" singleton {
 		var commandChain = resolveCommandTokens( tokens );
 		
 		// If there was piped input
-		if( structKeyExists( arguments, 'piped' ) && commandChain.len() && commandChain[1].found ) {
-			// Overwrite the first parameter with it 
-			commandChain[1].parameters[ 1 ] = parser.escapeArg( piped );
+		if( structKeyExists( arguments, 'piped' ) ) {
+			return runCommand( commandChain, tokens.toList( ' ' ), arguments.piped );
 		}
 		
-		return runCommand( commandChain, tokens.toList( ' ' ) );		
+		return runCommand( commandChain, tokens.toList( ' ' ) );
+				
 	}
 
 	/**
 	 * run a command
 	 * @commandChain.hint the chain of commands to run
  	 **/
-	function runCommand( required array commandChain, required string line ){
+	function runCommand( required array commandChain, required string line, string piped ){
+				
+		if( structKeyExists( arguments, 'piped' ) ) {
+			var result = arguments.piped;
+		}
 		
 		// If nothing is returned, something bad happened (like an error instatiating the CFC)
 		if( !commandChain.len() ){
@@ -149,14 +167,20 @@ component accessors="true" singleton {
 
 			// If nothing was found, bail out here.
 			if( !commandInfo.found ){
-				shell.printError({message:'Command "#line#" cannot be resolved.  Please type "#trim( "help #listChangeDelims( commandInfo.commandString, ' ', '.' )#" )#" for assistance.'});
-				return;
+				throw( message='Command "#line#" cannot be resolved.', detail='Please type "#trim( "help #listChangeDelims( commandInfo.commandString, ' ', '.' )#" )#" for assistance.', type="commandException");
 			}
 
 			// For help commands squish all the parameters together into one exactly as typed
 			if( listLast( commandInfo.commandReference.originalName, '.' ) == 'help' ){
 				var parameterInfo = {
 					positionalParameters = [ arrayToList( commandInfo.parameters, ' ' ) ],
+					namedParameters = {},
+					flags = {}
+				};
+			// For run don't process the parameter, just pass it right along.
+			} else if( commandInfo.commandReference.originalName == 'run' && commandInfo.parameters.len() ){
+				var parameterInfo = {
+					positionalParameters = [ commandInfo.parameters[ 1 ] ],
 					namedParameters = {},
 					flags = {}
 				};
@@ -167,8 +191,7 @@ component accessors="true" singleton {
 
 			// Parameters need to be ALL positional or ALL named
 			if( arrayLen( parameterInfo.positionalParameters ) && structCount( parameterInfo.namedParameters ) ){
-				shell.printError({message:"Please don't mix named and positional parameters, it makes me dizzy.#cr# #line#"});
-				return;
+				throw( message='Please don''t mix named and positional parameters, it makes me dizzy.', detail=line, type="commandException");
 			}
 
 			// These are the parameters declared by the command CFC
@@ -176,17 +199,24 @@ component accessors="true" singleton {
 
 			// If this is not the first command in the chain,
 			// set its first parameter with the output from the last command
-			if( i > 1 ){
+			if( structKeyExists( local, 'result' ) ){
 				// Clean off trailing any CR to help with piping one-liner outputs as inputs to another command
 				if( result.endsWith( chr( 10 ) ) && len( result ) > 1 ){
 					result = left( result, len( result ) - 1 );
 				}
 				// If we're using named parameters and this command has at least one param defined
 				if( structCount( parameterInfo.namedParameters ) ){
+					if( commandInfo.commandString == 'cfml' ) {
+						throw( message='Sorry, you can''t pipe data into a CFML function using named parameters since I don''t know the name of the piped parameter.', detail=line, type="commandException");
+					}
 					// Insert/overwrite the first param as our last result
 					parameterInfo.namedParameters[ commandParams[1].name ?: '1' ] = result;
 				} else {
-					parameterInfo.positionalParameters.prepend( result );
+					if( commandInfo.commandString == 'cfml' ) {
+						parameterInfo.positionalParameters.insertAt( 2, result );
+					} else {
+						parameterInfo.positionalParameters.prepend( result );
+					}
 				}
 			}
 
@@ -202,9 +232,10 @@ component accessors="true" singleton {
 			parameterInfo.namedParameters = ensureRequiredParams( parameterInfo.namedParameters, commandParams );
 
 			// Ensure supplied params match the correct type
-			if( !validateParams( parameterInfo.namedParameters, commandParams ) ){
-				return;
-			}
+			validateParams( parameterInfo.namedParameters, commandParams );
+			
+			// Evaluate parameter expressions
+			evaluateExpressions( parameterInfo );
 	
 			// Reset the printBuffer
 			commandInfo.commandReference.CFC.reset();
@@ -222,17 +253,20 @@ component accessors="true" singleton {
 			// Add command to the top of the stack
 			instance.callStack.prepend( commandInfo );
 
+			interceptorService.announceInterception( 'preCommand', { commandInfo=commandInfo, parameterInfo=parameterInfo } );
+
 			// Run the command
 			try {
 				var result = commandInfo.commandReference.CFC.run( argumentCollection = parameterInfo.namedParameters );
 			} catch( any e ){
+				// Clean up a bit
+				instance.callStack.clear();
+				
 				// Dump out anything the command had printed so far
 				var result = commandInfo.commandReference.CFC.getResult();
 				if( len( result ) ){
 					shell.printString( result & cr );
 				}
-				// Clean up a bit
-				instance.callStack.clear();
 				// Now, where were we?
 				rethrow;
 			}
@@ -244,12 +278,51 @@ component accessors="true" singleton {
 			if( isNull( result ) ){
 				result = commandInfo.commandReference.CFC.getResult();
 			}
-
+			var interceptData = {
+				commandInfo=commandInfo,
+				parameterInfo=parameterInfo,
+				result=result
+			};
+			interceptorService.announceInterception( 'postCommand', interceptData );
+			result = interceptData.result;
 
 		} // End loop over command chain
 
 		return result;
 
+	}
+
+	/**
+	* Evaluates any expressions as a command string and puts the output in its place.
+	*/
+	function evaluateExpressions( required parameterInfo ) {
+
+		// For each parameter being passed into this command
+		for( var paramName in parameterInfo.namedParameters ) {
+			
+			var paramValue = parameterInfo.namedParameters[ paramName ];
+			// Look for an expression "foo" flagged as "__expression__foo__expression__"
+			var search = reFindNoCase( '__expression__.*?__expression__', paramValue, 1, true );
+			
+			// As long as there are more expressions
+			while( search.pos[1] ) {
+				// Extract them
+				var expression = mid( paramValue, search.pos[1], search.len[1] );
+				// Evaluate them
+				var result = runCommandline( mid( expression, 15, len( expression )-28 ) ) ?: '';
+				
+				// Clean off trailing any CR to help with piping one-liner outputs as inputs to another command
+				if( result.endsWith( chr( 10 ) ) && len( result ) > 1 ){
+					result = left( result, len( result ) - 1 );
+				}
+				
+				// And stick their results in their place
+				parameterInfo.namedParameters[ paramName ] = replaceNoCase( paramValue, expression, result, 'one' );
+				paramValue = parameterInfo.namedParameters[ paramName ];
+				// Search again
+			var search = reFindNoCase( '__expression__.*?__expression__', paramValue, 1, true );
+			}
+		}
 	}
 
 	/**
@@ -330,6 +403,41 @@ component accessors="true" singleton {
 				// This is the droid you're looking for
 				tokens = [ 'cd', drive ];
 			}
+			
+			// Shortcut for "run" command if first token starts with !
+			if( tokens.len() && len( tokens[1] ) > 1 && tokens[1].startsWith( '!' ) ) {
+				// Trim the ! off
+				tokens[1] = right( tokens[1], len( tokens[1] ) - 1 );
+				// tack on "run"
+				tokens.prepend( 'run' );
+			}
+			
+			/* If command is "run", merge all remaining tokens into one string
+			* 
+			* run cmd /c dir
+			* would essentially be turned into 
+			* run "cmd /c dir"
+			 */
+			 if( tokens.len() > 2 && tokens.first() == 'run' ) {
+			 	tokens = [
+			 		'run',
+			 		tokens.slice( 2, tokens.len()-1 ).toList( ' ' )
+			 	];
+			 }
+
+			// Shortcut for "cfml" command if first token starts with #
+			if( tokens.len() && len( tokens[1] ) > 1 && tokens[1].startsWith( '##' ) ) {
+				// Trim the # off
+				tokens[1] = right( tokens[1], len( tokens[1] ) - 1 );
+				
+				// If it looks like we have named params, convert the "name" to be named
+				if( tokens.len() > 1 && tokens[2] contains '=' ) {
+					tokens[1] = 'name=' & tokens[1];
+				}
+				
+				// tack on "cfml"
+				tokens.prepend( 'cfml' );
+			}
 
 			var results = {
 				commandString = '',
@@ -358,12 +466,7 @@ component accessors="true" singleton {
 					results.commandReference = results.commandReference[ '$' ];
 					
 					// Create the command CFC instance if neccessary
-					var commandLoaded = lazyLoadCommandCFC( results.commandReference );
-					// If there was an error loading the command
-					if( !commandLoaded ){
-						// Error has already been displayed, so just pretend we didn't find anything.
-						return [];
-					}
+					lazyLoadCommandCFC( results.commandReference );
 					
 					break;
 				// If this is a folder, check and see if it has a "help" command
@@ -402,14 +505,23 @@ component accessors="true" singleton {
 		if( !structKeyExists( commandData, 'CFC' ) ){
 			// Create this command CFC
 			try {
-				commandData.CFC = wireBox.getInstance( commandData.fullCFCPath );
+				
+				// Check if command mapped?
+				if( NOT wirebox.getBinder().mappingExists( "command-" & commandData.fullCFCPath ) ){
+					// feed this command to wirebox with virtual inheritance
+					wirebox.registerNewInstance( name="command-" & commandData.fullCFCPath, instancePath=commandData.fullCFCPath )
+						.setScope( wirebox.getBinder().SCOPES.SINGLETON )
+						.setThreadSafe( true )
+						.setVirtualInheritance( "commandbox.system.BaseCommand" );
+				}
+				// retrieve, build and wire from wirebox
+				commandData.CFC = wireBox.getInstance( "command-" & commandData.fullCFCPath );
+				
 			// This will catch nasty parse errors so the shell can keep loading
 			} catch( any e ){
-				systemOutput( 'Error creating command [#commandData.fullCFCPath#]#CR##CR#' );
+				// Log the full exception with stack trace
 				logger.error( 'Error creating command [#commandData.fullCFCPath#]. #e.message# #e.detail ?: ''#', e.stackTrace );
-				// pretty print the exception
-				shell.printError( e );
-				return false;
+				throw( message='Error creating command [#commandData.fullCFCPath#]', detail="#e.message# #CR# #e.detail ?: ''#", type="commandException");
 			}
 		} // CFC exists check
 		return true;		
@@ -489,7 +601,7 @@ component accessors="true" singleton {
 			return;
 		}
 
-		// must extend commandbox.system.BaseCommand, can't be Application.cfc
+		// must be CommandBox CFC, can't be Application.cfc
 		if( CFCName == 'Application' || !isCommandCFC( commandData ) ){
 			return;
 		}
@@ -560,22 +672,7 @@ component accessors="true" singleton {
 	*/
 	function isCommandCFC( required struct commandData ){
 		var meta = arguments.commandData.commandMD;
-		
-		// Make sure command extends BaseCommand
-		var thisMeta = meta;
-		while( true ){
-			// Once we find BaseCommand kick out of the loop
-			if( thisMeta.fullname == 'commandbox.system.BaseCommand' ){
-				break;
-			}
-			// If we reach the end of the inheritance chain, we failed.
-			if( !structKeyExists( thisMeta, 'extends' ) ){
-				return false;	
-			}
-			// Moving pointer
-			thisMeta = thisMeta.extends;
-		}
-					
+							
 		// Make sure command has a run() method
 		for( var func in meta.functions ){
 			// Loop to find the "run()" method
@@ -638,8 +735,7 @@ component accessors="true" singleton {
 				&& param.keyExists( "type" )
 				&& !isValid( param.type, userNamedParams[ param.name ] ) ){
 
-				shell.printError({message:"Parameter [#param.name#] has a value of [#userNamedParams[ param.name ]#] which is not of type [#param.type#]."});
-				return false;
+				throw( message='Parameter [#param.name#] has a value of [#userNamedParams[ param.name ]#] which is not of type [#param.type#].', type="commandException");
 			} 
 		} // end for loop
 

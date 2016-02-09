@@ -18,12 +18,13 @@ component {
 		// Define Appenders
 		logBox.appenders = {
 			fileAppender = {
-				class="wirebox.system.logging.appenders.AsyncRollingFileAppender",
+				class="wirebox.system.logging.appenders.RollingFileAppender",
 				properties = {
 					fileMaxArchives = 5,
 					filename = "commandbox",
 					filepath = homeDir & "/logs"
-				}
+				},
+				async=true
 			},
 			ANSIConsoleAppender = {
 				class="commandbox.system.util.ANSIConsoleAppender"

@@ -104,7 +104,7 @@ component {
 			}
 			
 			// We're starting a quoted string
-			if( ( char == '"' || char == "'" ) && !isEscaped ) {
+			if( ( char == '"' || char == "'"  || char == "`" ) && !isEscaped ) {
 				inQuotes = true;
 				quoteChar = char;
 			}
@@ -177,6 +177,9 @@ component {
 				// Unwrap quotes from value if used
 				value = unwrapQuotes( value );
 				
+				// Mark expressions now while escaped chars are removed
+				value = markExpressions( value );
+				
 				name = replaceEscapedChars( name );
 				value = replaceEscapedChars( value );
 								
@@ -186,6 +189,10 @@ component {
 			} else {
 				// Unwrap quotes from value if used
 				param = unwrapQuotes( param );
+				
+				// Mark expressions now while escaped chars are removed
+				param = markExpressions( param );
+				
 				param = replaceEscapedChars( param );
 				results.positionalParameters.append( param );				
 			}
@@ -197,10 +204,18 @@ component {
 	}
 	
 	/**
+	* Find any strings encased in backticks and flags them as a CommandBox expression
+	*/
+	function markExpressions( required argValue ) {
+		return reReplaceNoCase( argValue, '`(.*?)`', '__expression__\1__expression__', 'all' );
+	}
+	
+	/**
 	* Escapes a value and for inclusion in a command
 	* The following replacements are made:
 	* " 			--> \"
 	* ' 			--> \'
+	* ` 			--> \`
 	* = 			--> \=
 	* [line break]  --> \n
 	* [tab]			--> \t
@@ -209,6 +224,7 @@ component {
 		arguments.argValue = replace( arguments.argValue, '\', "\\", "all" );
 		arguments.argValue = replace( arguments.argValue, '"', '\"', 'all' );
 		arguments.argValue = replace( arguments.argValue, "'", "\'", "all" );
+		arguments.argValue = replace( arguments.argValue, "`", "\`", "all" );
 		arguments.argValue = replace( arguments.argValue, "=", "\=", "all" );
 		arguments.argValue = replace( arguments.argValue, CR, "\n", "all" );
 		arguments.argValue = replace( arguments.argValue, chr( 9 ), "\t", "all" );
@@ -218,7 +234,9 @@ component {
 	// ----------------------------- Private ---------------------------------------------
 
 	private function unwrapQuotes( theString ) {
-		if( left( theString, 1 ) == '"' or left( theString, 1 ) == "'") {
+		// If the value is wrapped with backticks, leave them be.  That is a signal to the CommandService 
+		// that the string is special and needs to be evaluated as an expression.
+		if( left( theString, 1 ) == '"' || left( theString, 1 ) == "'" ) {
 			return mid( theString, 2, len( theString ) - 2 );
 		}
 		return theString;
@@ -228,6 +246,7 @@ component {
 		theString = replaceNoCase( theString, "\\", '__backSlash__', "all" );
 		theString = replaceNoCase( theString, "\'", '__singleQuote__', "all" );
 		theString = replaceNoCase( theString, '\"', '__doubleQuote__', "all" );
+		theString = replaceNoCase( theString, '\`', '__backtick__', "all" );
 		theString = replaceNoCase( theString, '\n', '__newLine__', "all" );
 		theString = replaceNoCase( theString, '\t', '__tab__', "all" );
 		return		replaceNoCase( theString, '\=', '__equalSign__', "all" );
@@ -237,6 +256,7 @@ component {
 		theString = replaceNoCase( theString, '__backSlash__', "\", "all" );
 		theString = replaceNoCase( theString, '__singleQuote__', "'", "all" );
 		theString = replaceNoCase( theString, '__doubleQuote__', '"', "all" );
+		theString = replaceNoCase( theString, '__backtick__', '`', "all" );
 		theString = replaceNoCase( theString, '__newLine__', CR, "all" );
 		theString = replaceNoCase( theString, '__tab__', chr( 9 ), "all" );
 		return		replaceNoCase( theString, '__equalSign__', '=', "all" );

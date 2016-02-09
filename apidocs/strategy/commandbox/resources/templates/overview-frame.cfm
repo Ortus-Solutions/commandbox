@@ -138,7 +138,7 @@
 				.on("changed.jstree", function (e, data) {
 					var obj = data.instance.get_node(data.selected[0]).li_attr;
 					if( obj.linkhref ) {
-						window.parent.frames['classFrame'].location.assign( obj.linkhref );						
+						window.parent.frames['classFrame'].location.href = obj.linkhref;				
 					}
 			});
 			

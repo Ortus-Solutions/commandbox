@@ -7,13 +7,21 @@ try{
 		strategy = "strategy.commandbox.CommandBoxStrategy",
 		properties = {
 			projectTitle 	= "CommandBox v#url.version#",
-			outputDir 		= url.path
+			outputDir 		= url.path 
 		} 
 	);
+	baseDir = expandPath( '/commandbox' );
+	commandDirs = directoryList(path='/commandbox/system/modules', recurse=true, filter=function(path){ return reFindNoCase( '.*[/\\]commands$', arguments.path ); } );
 	source = [
-		{ dir = expandPath( "/commandbox/commands" ), mapping = "commandbox.commands" },
-		{ dir = expandPath( "/commandbox/system/commands" ), mapping = "commandbox.system.commands" }
 	];
+	for( dir in commandDirs ) {
+		source.append(
+			{
+				dir : dir,
+				mapping : listChangeDelims( replaceNoCase( dir, baseDir, 'commandbox' ), '.', '/\' )
+			}
+		);
+	}
 	docbox.generate( source );
 } catch ( Any e ){
 	rethrow;

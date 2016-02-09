@@ -34,6 +34,7 @@ component{
 		// Try to log this to LogBox
 		try {
     		application.wireBox.getLogBox().getRootLogger().error( '#exception.message# #exception.detail ?: ''#', exception.stackTrace );
+			application.wireBox.getInstance( 'interceptorService' ).announceInterception( 'onException', { exception=exception } );
     	// If it fails no worries, LogBox just probably isn't loaded yet.
 		} catch ( Any e ) {}
 		

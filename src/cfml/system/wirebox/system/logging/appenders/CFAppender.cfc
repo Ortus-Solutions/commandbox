@@ -1,7 +1,7 @@
 ﻿<!-----------------------------------------------------------------------
 ********************************************************************************
 Copyright Since 2005 ColdBox Framework by Luis Majano and Ortus Solutions, Corp
-www.coldbox.org | www.luismajano.com | www.ortussolutions.com
+www.ortussolutions.com
 ********************************************************************************
 
 Author     :	Luis Majano
@@ -38,7 +38,7 @@ Properties:
 			else{
 				// Check types
 				if( NOT reFindNoCase("^(file|application)$", getProperty("logType")) ){
-					$throw(message="Invalid logtype choosen #getProperty("logType")#",
+					throw(message="Invalid logtype choosen #getProperty("logType")#",
 						   detail="Valid types are file or application",
 						   type="CFAppender.InvalidLogTypeException");
 				}

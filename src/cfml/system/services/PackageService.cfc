@@ -10,16 +10,18 @@
 component accessors="true" singleton {
 
 	// DI
-	property name="CR" 					inject="CR@constants";
-	property name="formatterUtil"		inject="formatter";
-	property name="artifactService" 	inject="ArtifactService";
-	property name="fileSystemUtil"		inject="FileSystem";
-	property name="pathPatternMatcher" 	inject="pathPatternMatcher";
+	property name='CR' 					inject='CR@constants';
+	property name='formatterUtil'		inject='formatter';
+	property name='artifactService' 	inject='ArtifactService';
+	property name='fileSystemUtil'		inject='FileSystem';
+	property name='pathPatternMatcher' 	inject='pathPatternMatcher';
 	property name='shell' 				inject='Shell';
-	property name="logger"				inject="logbox:logger:{this}";
-	property name="semanticVersion"		inject="semanticVersion";
-	property name="endpointService"		inject="EndpointService";
-	property name="consoleLogger"		inject="logbox:logger:console";
+	property name='logger'				inject='logbox:logger:{this}';
+	property name='semanticVersion'		inject='semanticVersion';
+	property name='endpointService'		inject='EndpointService';
+	property name='consoleLogger'		inject='logbox:logger:console';
+	property name='interceptorService'	inject='interceptorService';
+	property name='JSONService'			inject='JSONService';
 	
 	/**
 	* Constructor
@@ -72,6 +74,8 @@ component accessors="true" singleton {
 			string packagePathRequestingInstallation = arguments.currentWorkingDirectory
 	){
 		
+		interceptorService.announceInterception( 'preInstall', { installArgs=arguments } );
+				
 		// If there is a package to install, install it
 		if( len( arguments.ID ) ) {
 			
@@ -154,7 +158,7 @@ component accessors="true" singleton {
 			// Modules are the only kind of packages that can be nested in a hierarchy, so the check only applies here. 
 			// We're also going to assume that they are in a "modules" folder.
 			// This check also only applies if we're at least one level deep into modules.
-			if( packageType == 'modules' && currentWorkingDirectory != packagePathRequestingInstallation) {
+			if( isPackageModule( packageType ) && currentWorkingDirectory != packagePathRequestingInstallation) {
 				
 				// We'll update this variable as we climb back up the directory structure
 				var movingTarget = packagePathRequestingInstallation;
@@ -207,10 +211,11 @@ component accessors="true" singleton {
 			// Next, see if the containing project has an install path configured for this dependency already.
 			var containerBoxJSON = readPackageDescriptor( arguments.packagePathRequestingInstallation );
 			if( !len( installDirectory ) && structKeyExists( containerBoxJSON.installPaths, packageName ) ) {
-				// Get the resolved intallation path for this package
+				// Get the resolved installation path for this package
 				installDirectory = fileSystemUtil.resolvePath( containerBoxJSON.installPaths[ packageName ], arguments.packagePathRequestingInstallation );
+				
 				// Back up to the "container" folder.  The packge directory will be added back below
-				installDirectory = listDeleteAt( installDirectory, listLen( installDirectory, '/\' ), '/\' );
+				installDirectory = listDeleteAt( installDirectory, listLen( installDirectory, '/\' ), '/\' );				
 			}
 			
 			// Else, use directory in the target package's box.json if it exists
@@ -245,6 +250,24 @@ component accessors="true" singleton {
 				// If this is a module
 				} else if( packageType == 'modules' ) {
 					installDirectory = arguments.packagePathRequestingInstallation & '/modules';
+				// ContentBox Widget
+				} else if( packageType == 'contentbox-widgets' ) {
+					installDirectory = arguments.packagePathRequestingInstallation & '/modules/contentbox/widgets';
+				// ContentBox themes/layouts
+				} else if( packageType == 'contentbox-themes' || packageType == 'contentbox-layouts' ) {
+					installDirectory = arguments.packagePathRequestingInstallation & '/modules/contentbox/themes';
+				// ContentBox Modules
+				} else if( packageType == 'contentbox-modules' ) {
+					installDirectory = arguments.packagePathRequestingInstallation & '/modules/contentbox/modules_user';	
+				// CommandBox Modules
+				} else if( packageType == 'commandbox-modules' ) {
+					// Override the install directories to the CommandBox CFML root
+					arguments.currentWorkingDirectory = expandPath( '/commandbox' );
+					arguments.packagePathRequestingInstallation = expandPath( '/commandbox' )
+					installDirectory = expandPath( '/commandbox/modules' );
+					// Flag the shell to reload after this command is finished.
+					consoleLogger.warn( "Shell will be reloaded after installation." );
+					shell.reload( false );
 				// If this is a plugin
 				} else if( packageType == 'plugins' ) {
 					installDirectory = arguments.packagePathRequestingInstallation & '/plugins';
@@ -427,7 +450,15 @@ component accessors="true" singleton {
 		if( !len( arguments.ID ) && dependencies.isEmpty() ) {
 			consoleLogger.info( "No dependencies found to install, but it's the thought that counts, right?" );
 		}
+		
+		interceptorService.announceInterception( 'postInstall', { installArgs=arguments } );
 
+	}
+	
+	// DRY
+	function isPackageModule( required string packageType ) {
+		// Is the package type that of a module?
+		return ( listFindNoCase( 'modules,contentbox-modules,commandbox-modules', arguments.packageType ) > 0) ;
 	}
 	
 	
@@ -475,6 +506,7 @@ component accessors="true" singleton {
 			required string currentWorkingDirectory
 	){
 					
+		interceptorService.announceInterception( 'preUninstall', { uninstallArgs=arguments } );
 		
 		consoleLogger.info( '.');
 		consoleLogger.info( 'Uninstalling package: #arguments.ID#');
@@ -523,7 +555,7 @@ component accessors="true" singleton {
 
 		// ColdBox modules are stored in a hierachy so just removing the top one removes then all
 		// For all other packages, the depenencies are probably just in the root
-		if( type != 'modules' ) {
+		if( !isPackageModule( type ) ) {
 	
 			if( dependencies.count() ) {
 				consoleLogger.debug( "Uninstalling dependencies first..." );
@@ -578,6 +610,7 @@ component accessors="true" singleton {
 	
 		consoleLogger.info( "'#arguments.ID#' has been uninstalled" );
 
+		interceptorService.announceInterception( 'postUninstall', { uninstallArgs=arguments } );
 	}
 	
 	/**
@@ -739,7 +772,7 @@ component accessors="true" singleton {
 		// TODO: Get author info from default CommandBox config
 		
 		// Read the default JSON file and deserialize it.  
-		var boxJSON = DeserializeJSON( fileRead( '/commandBox/templates/box.json.txt' ) );
+		var boxJSON = DeserializeJSON( fileRead( '/commandBox/system/config/box.json.txt' ) );
 		
 		// Replace things passed via parameters
 		boxJSON = boxJSON.append( arguments.defaults );
@@ -774,14 +807,14 @@ component accessors="true" singleton {
 			// ...Read it.
 			boxJSON = fileRead( getDescriptorPath( arguments.directory ) );
 			
-			// Validate the file is valid JSOn
+			// Validate the file is valid JSON
 			if( isJSON( boxJSON ) ) {
-				// Merge this JSON with defaults
 				return deserializeJSON( boxJSON );
+			} else {
+				consoleLogger.warn( 'Warning: package has an invalid box.json file. [#arguments.directory#]' );
 			}
 			
 		}
-		
 		// Just return defaults
 		return {};	
 	}
@@ -947,38 +980,10 @@ component accessors="true" singleton {
 			} else {
 				var boxJSON = readPackageDescriptorRaw( arguments.directory );
 			}
-			props = addProp( props, '', '', boxJSON );			
+			props = JSONService.addProp( props, '', '', boxJSON );			
 		}
 		return props;		
 	}
 	
-	// Recursive function to crawl box.json and create a string that represents each property.
-	private function addProp( props, prop, safeProp, boxJSON ) {
-		var propValue = ( len( prop ) ? evaluate( 'boxJSON#safeProp#' ) : boxJSON );
-		
-		if( isStruct( propValue ) ) {
-			// Add all of this struct's keys
-			for( var thisProp in propValue ) {
-				var newProp = listAppend( prop, thisProp, '.' );
-				var newSafeProp = "#safeProp#['#thisProp#']";
-				props.append( newProp );
-				props = addProp( props, newProp, newSafeProp, boxJSON );
-			}			
-		}
-		
-		if( isArray( propValue ) ) {
-			// Add all of this array's indexes
-			var i = 0;
-			while( ++i <= propValue.len() ) {
-				var newProp = '#prop#[#i#]';
-				var newProp = '#safeProp#[#i#]';
-				var newSafeProp = newProp;
-				props.append( newProp );
-				props = addProp( props, newProp, newSafeProp, boxJSON );
-			}
-		}
-		
-		return props;
-	}
 
 }

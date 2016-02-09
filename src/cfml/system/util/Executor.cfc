@@ -12,7 +12,9 @@
 */
 component {
 
-	property name="fileSystemUtil" 	inject="FileSystem";
+	property name="$fileSystemUtil"	inject="FileSystem";
+	property name="$shell"			inject="shell";
+	property name="$wirebox"		inject="wirebox";
 
 	/**
 	* Execute an existing file
@@ -20,7 +22,7 @@ component {
 	* @vars.hint Struct of vars to set so the template can access them
 	*/
 	function runFile( required template, struct vars = {} ){
-		arguments.template = fileSystemUtil.makePathRelative( template );
+		arguments.template = $fileSystemUtil.makePathRelative( template );
 
 		// Mix the incoming vars into the "variables" scope.
 		structAppend( variables, vars );
@@ -45,7 +47,7 @@ component {
 		var tmpFileAbsolute = arguments.directory & "/" & tmpFile;
 		
 		// generate cfml command to write to file
-		var CFMLFileContents = ( arguments.script ? "<cfscript>" & arguments.code & "</cfscript>" : arguments.codearguments.directory );
+		var CFMLFileContents = ( arguments.script ? "<cfscript>" & arguments.code & "</cfscript>" : arguments.code );
 
 		// write out our cfml command
 		fileWrite( tmpFileAbsolute, CFMLFileContents );
@@ -77,6 +79,10 @@ component {
 		} else {
 			return variables.__result ?: '';
 		}
+	}
+
+	function getInstance(){
+		return $wirebox.getInstance( argumentCollection = arguments );
 	}
 
 }
