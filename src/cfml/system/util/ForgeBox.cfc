@@ -46,7 +46,8 @@ or just add DEBUG to the root logger
 		<cfscript>
 			
 			// Setup Properties
-			variables.APIURL = "http://forgebox.stg.ortussolutions.com/api/v1/";
+			//variables.APIURL = "http://forgebox.stg.ortussolutions.com/api/v1/";
+			variables.APIURL = "http://www.coldbox.org/api/forgebox";
 			variables.installURL = "http://www.coldbox.org/forgebox/install/";
 			variables.types = "";
 
@@ -223,7 +224,7 @@ or just add DEBUG to the root logger
 		
 		<!--- REST CAll --->
 		<cfhttp method="#arguments.method#" 
-				url="#getAPIURL()#/#arguments.resource#" 
+				url="#getAPIURL()#/json/#arguments.resource#" 
 				charset="utf-8" 
 				result="HTTPResults" 
 				timeout="#arguments.timeout#">
