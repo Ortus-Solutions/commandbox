@@ -38,7 +38,13 @@ component accessors="true" singleton {
 			'proxy.user',
 			'proxy.password',
 			// used in "run" command for a custom Unix shell
-			'nativeShell'
+			'nativeShell',
+			// Endpoint data
+			'endpoints',
+			'endpoints.forgebox',
+			'endpoints.forgebox.APIToken',
+			'endpoints.forgebox.APIURL'
+			
 		]);
 		
 		setConfigFilePath( '/commandbox-home/CommandBox.json' );

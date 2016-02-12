@@ -84,18 +84,42 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 		return result;		
 	}
 
-
-	public function createUser(
+	public string function createUser(
 		required string username,
 		required string password,
 		required string email,
 		required string firstName,
 		required string lastName ) {
-		throw( 'Not implemented' );
+			
+		try {
+			
+			var results = forgebox.register(
+				username = arguments.username,
+				password = arguments.password,
+				email = arguments.email,
+				FName = arguments.firstName,
+				LName = arguments.lastName
+			);
+			return results.APIToken;
+					
+		} catch( forgebox var e ) {
+			// This can include "expected" errors such as "Email already in use"
+			throw( e.message, 'endpointException', e.detail );
+		}
 	}
 	
-	public string function login( required string userName,required string password ) {
-		throw( 'Not implemented' );
+	public string function login( required string userName, required string password ) {
+			
+		try {
+			
+			var results = forgebox.login( argumentCollection=arguments );
+			return results.APIToken;
+					
+		} catch( forgebox var e ) {
+			// This can include "expected" errors such as "Email already in use"
+			throw( e.message, 'endpointException', e.detail );
+		}
+		
 	}
 	
 	public function publish( required string path ) {

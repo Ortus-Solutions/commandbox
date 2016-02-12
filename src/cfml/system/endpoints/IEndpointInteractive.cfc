@@ -10,7 +10,8 @@
 */
 interface extends="IEndpoint" {
 		
-	public function createUser(
+	// Returns access token
+	public string function createUser(
 		required string username,
 		required string password,
 		required string email,
