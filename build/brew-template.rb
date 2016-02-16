@@ -4,14 +4,14 @@ class Commandbox < Formula
   desc "CFML embedded server, package manager, and app scaffolding tools"
   homepage "http://www.ortussolutions.com/products/commandbox"
   url "@repoURL@/ortussolutions/commandbox/@version@/commandbox-bin-@version@.zip"
-  sha1 "cb8d454b99d56c16e8501b4e1aa3c4eeb9b44451"
+  sha256 "@sha256@"
 
   depends_on :arch => :x86_64
   depends_on :java => "1.7+"
 
   resource "apidocs" do
     url "@repoURL@/ortussolutions/commandbox/@version@/commandbox-apidocs-@version@.zip"
-    sha1 "@apidocs.sha256@"
+    sha256 "@apidocs.sha256@"
   end
 
   def install
