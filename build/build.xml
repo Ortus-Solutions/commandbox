@@ -331,8 +331,8 @@ External Dependencies:
  	<target name="build.homebrew" description="Builds the Homebrew Recipe" depends="">
 		
 		<!-- Check sum properties -->
-		<checksum file="${dist.dir}/${distro.name}-bin-${commandbox.version}.zip" property="commandbox.sha1" algorithm="SHA"/>
-		<checksum file="${dist.dir}/${distro.name}-apidocs-${commandbox.version}.zip" property="commandbox.apidocs.sha1" algorithm="SHA"/>
+		<checksum file="${dist.dir}/${distro.name}-bin-${commandbox.version}.zip" property="commandbox.sha256" algorithm="SHA-256"/>
+		<checksum file="${dist.dir}/${distro.name}-apidocs-${commandbox.version}.zip" property="commandbox.apidocs.sha256" algorithm="SHA-256"/>
 		
 		<!-- copy over prd file -->
 		<copy file="brew-template.rb" 
@@ -349,11 +349,11 @@ External Dependencies:
 		<replace file="${dist.dir}/commandbox.rb" value="${ortus.repoPRDURL}" summary="yes" encoding="UTF-8">
 		  	<replacetoken>@repoURL@</replacetoken>
 		</replace>
-		<replace file="${dist.dir}/commandbox.rb" value="${commandbox.sha1}" summary="yes" encoding="UTF-8">
-		  	<replacetoken>@sha1@</replacetoken>
+		<replace file="${dist.dir}/commandbox.rb" value="${commandbox.sha256}" summary="yes" encoding="UTF-8">
+		  	<replacetoken>@sha256@</replacetoken>
 		</replace>
-		<replace file="${dist.dir}/commandbox.rb" value="${commandbox.apidocs.sha1}" summary="yes" encoding="UTF-8">
-		  	<replacetoken>@apidocs.sha1@</replacetoken>
+		<replace file="${dist.dir}/commandbox.rb" value="${commandbox.apidocs.sha256}" summary="yes" encoding="UTF-8">
+		  	<replacetoken>@apidocs.sha256@</replacetoken>
 		</replace>
 
 		<!-- copy over be file -->
@@ -371,11 +371,11 @@ External Dependencies:
 		<replace file="${artifact.dir}/commandbox-be.rb" value="${ortus.repoURL}" summary="yes" encoding="UTF-8">
 		  	<replacetoken>@repoURL@</replacetoken>
 		</replace>
-		<replace file="${artifact.dir}/commandbox-be.rb" value="${commandbox.sha1}" summary="yes" encoding="UTF-8">
-		  	<replacetoken>@sha1@</replacetoken>
+		<replace file="${artifact.dir}/commandbox-be.rb" value="${commandbox.sha256}" summary="yes" encoding="UTF-8">
+		  	<replacetoken>@sha256@</replacetoken>
 		</replace>
-		<replace file="${artifact.dir}/commandbox-be.rb" value="${commandbox.apidocs.sha1}" summary="yes" encoding="UTF-8">
-		  	<replacetoken>@apidocs.sha1@</replacetoken>
+		<replace file="${artifact.dir}/commandbox-be.rb" value="${commandbox.apidocs.sha256}" summary="yes" encoding="UTF-8">
+		  	<replacetoken>@apidocs.sha256@</replacetoken>
 		</replace>
 
  	</target>
