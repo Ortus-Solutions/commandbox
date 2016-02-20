@@ -7,7 +7,5 @@ branches:
   - development
 sudo: required
 dist: trusty
-install:
-- sudo apt-get update && sudo apt-get --assume-yes install commandbox
 script:
   - ant -f build/build.xml
