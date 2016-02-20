@@ -331,8 +331,8 @@ External Dependencies:
  	<!-- Build Homebrew Recipe -->
  	<target name="build.homebrew" description="Builds the Homebrew Recipe" depends="">
 		
- 		<copy file="${dist.dir}/${distro.name}-bin-${commandbox.version}.zip" tofile="${dist.dir}/${distro.name}-bin-${commandbox.version}+${build.number}.zip">
- 		<copy file="${dist.dir}/${distro.name}-apidocs-${commandbox.version}.zip" tofile="${dist.dir}/${distro.name}-apidocs-${commandbox.version}+${build.number}.zip">
+ 		<copy file="${dist.dir}/${distro.name}-bin-${commandbox.version}.zip" tofile="${dist.dir}/${distro.name}-bin-${commandbox.version}+${build.number}.zip" />
+ 		<copy file="${dist.dir}/${distro.name}-apidocs-${commandbox.version}.zip" tofile="${dist.dir}/${distro.name}-apidocs-${commandbox.version}+${build.number}.zip" />
 
 		<!-- Check sum properties -->
 		<checksum file="${dist.dir}/${distro.name}-bin-${commandbox.version}+${build.number}.zip" property="commandbox.sha256" algorithm="SHA-256"/>
@@ -379,7 +379,7 @@ External Dependencies:
 		<replace file="${dist.dir}/commandbox.rb" value="" summary="yes" encoding="UTF-8">
 		  	<replacetoken>@be@</replacetoken>
 		</replace>
-		
+
 		<!-- Homebrew Devel Versioning -->
 		<replace file="${dist.dir}/commandbox.rb" value="${commandbox.version}+${build.number}" summary="yes" encoding="UTF-8">
 		  	<replacetoken>@version@</replacetoken>
