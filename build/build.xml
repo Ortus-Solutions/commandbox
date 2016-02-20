@@ -394,28 +394,6 @@ External Dependencies:
 		  	<replacetoken>@apidocs.sha256@</replacetoken>
 		</replace>
 
-		<!-- copy over be file -->
-		<copy file="brew-template.rb" 
-			  tofile="${artifact.dir}/commandbox-be.rb"
-			  overwrite="true"
-			  encoding="UTF-8" />
-
-		<replace file="${artifact.dir}/commandbox-be.rb" value="Be" summary="yes" encoding="UTF-8">
-		  	<replacetoken>@be@</replacetoken>
-		</replace>
- 		<replace file="${artifact.dir}/commandbox-be.rb" value="${commandbox.version}+${build.number}" summary="yes" encoding="UTF-8">
-		  	<replacetoken>@version@</replacetoken>
-		</replace>
-		<replace file="${artifact.dir}/commandbox-be.rb" value="${ortus.repoURL}" summary="yes" encoding="UTF-8">
-		  	<replacetoken>@repoURL@</replacetoken>
-		</replace>
-		<replace file="${artifact.dir}/commandbox-be.rb" value="${commandbox.sha256}" summary="yes" encoding="UTF-8">
-		  	<replacetoken>@sha256@</replacetoken>
-		</replace>
-		<replace file="${artifact.dir}/commandbox-be.rb" value="${commandbox.apidocs.sha256}" summary="yes" encoding="UTF-8">
-		  	<replacetoken>@apidocs.sha256@</replacetoken>
-		</replace>
-
  	</target>
 
  	<!-- Build API Docs -->
