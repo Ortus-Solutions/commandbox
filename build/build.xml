@@ -17,6 +17,7 @@ External Dependencies:
  	<property name="distro.name"				value="commandbox"/>
  	<property name="commandbox.version"			value="3.0.1"/>
  	<property name="commandbox.stableVersion"	value="3.0.0"/>
+ 	<property name="commandbox.stableSHA256"	value="194738f683cbbbaa63f7a2ae5d1fe6c0d09ef8370c4ac0b6c9aa087f6013abc1" />
 
     <!-- Time Label -->
 	<tstamp prefix="start"/>
@@ -330,9 +331,12 @@ External Dependencies:
  	<!-- Build Homebrew Recipe -->
  	<target name="build.homebrew" description="Builds the Homebrew Recipe" depends="">
 		
+ 		<copy file="${dist.dir}/${distro.name}-bin-${commandbox.version}.zip" tofile="${dist.dir}/${distro.name}-bin-${commandbox.version}+${build.number}.zip">
+ 		<copy file="${dist.dir}/${distro.name}-apidocs-${commandbox.version}.zip" tofile="${dist.dir}/${distro.name}-apidocs-${commandbox.version}+${build.number}.zip">
+
 		<!-- Check sum properties -->
-		<checksum file="${dist.dir}/${distro.name}-bin-${commandbox.version}.zip" property="commandbox.sha256" algorithm="SHA-256"/>
-		<checksum file="${dist.dir}/${distro.name}-apidocs-${commandbox.version}.zip" property="commandbox.apidocs.sha256" algorithm="SHA-256"/>
+		<checksum file="${dist.dir}/${distro.name}-bin-${commandbox.version}+${build.number}.zip" property="commandbox.sha256" algorithm="SHA-256"/>
+		<checksum file="${dist.dir}/${distro.name}-bin-${commandbox.version}+${build.number}.zip" property="commandbox.apidocs.sha256" algorithm="SHA-256"/>
 		
 		<!-- copy over prd file -->
 		<copy file="brew-template.rb" 
@@ -340,10 +344,44 @@ External Dependencies:
 			  overwrite="true"
 			  encoding="UTF-8" />
 
+		<!-- Stable Versioning ensuring checksums remain inviolate -->
+		<if>
+		 <equals arg1="${isStable}" arg2="true" />
+		 <then>
+
+			<replace file="${dist.dir}/commandbox.rb" value="${commandbox.version}+${build.number}" summary="yes" encoding="UTF-8">
+			  	<replacetoken>@stable.version@</replacetoken>
+			</replace>
+			<replace file="${dist.dir}/commandbox.rb" value="${commandbox.sha256}" summary="yes" encoding="UTF-8">
+			  	<replacetoken>@stable.sha256@</replacetoken>
+			</replace>		   
+		 
+		 </then>
+		 <else>
+
+			<replace file="${dist.dir}/commandbox.rb" value="${commandbox.stableVersion}" summary="yes" encoding="UTF-8">
+			  	<replacetoken>@stable.version@</replacetoken>
+			</replace>
+			<replace file="${dist.dir}/commandbox.rb" value="${commandbox.stableSHA256}" summary="yes" encoding="UTF-8">
+			  	<replacetoken>@stable.sha256@</replacetoken>
+			</replace>
+		   
+		 </else>
+		</if>
+
+		<replace file="${dist.dir}/commandbox.rb" value="${commandbox.stableVersion}" summary="yes" encoding="UTF-8">
+		  	<replacetoken>@stable.version@</replacetoken>
+		</replace>
+		<replace file="${dist.dir}/commandbox.rb" value="${commandbox.stableSHA256}" summary="yes" encoding="UTF-8">
+		  	<replacetoken>@stable.sha256@</replacetoken>
+		</replace>
+
 		<replace file="${dist.dir}/commandbox.rb" value="" summary="yes" encoding="UTF-8">
 		  	<replacetoken>@be@</replacetoken>
 		</replace>
-		<replace file="${dist.dir}/commandbox.rb" value="${commandbox.version}" summary="yes" encoding="UTF-8">
+		
+		<!-- Homebrew Devel Versioning -->
+		<replace file="${dist.dir}/commandbox.rb" value="${commandbox.version}+${build.number}" summary="yes" encoding="UTF-8">
 		  	<replacetoken>@version@</replacetoken>
 		</replace>
 		<replace file="${dist.dir}/commandbox.rb" value="${ortus.repoPRDURL}" summary="yes" encoding="UTF-8">
@@ -365,7 +403,7 @@ External Dependencies:
 		<replace file="${artifact.dir}/commandbox-be.rb" value="Be" summary="yes" encoding="UTF-8">
 		  	<replacetoken>@be@</replacetoken>
 		</replace>
- 		<replace file="${artifact.dir}/commandbox-be.rb" value="${commandbox.version}" summary="yes" encoding="UTF-8">
+ 		<replace file="${artifact.dir}/commandbox-be.rb" value="${commandbox.version}+${build.number}" summary="yes" encoding="UTF-8">
 		  	<replacetoken>@version@</replacetoken>
 		</replace>
 		<replace file="${artifact.dir}/commandbox-be.rb" value="${ortus.repoURL}" summary="yes" encoding="UTF-8">

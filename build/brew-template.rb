@@ -3,10 +3,13 @@ require "formula"
 class Commandbox < Formula
   desc "CFML embedded server, package manager, and app scaffolding tools"
   homepage "http://www.ortussolutions.com/products/commandbox"
-  url "@repoURL@/ortussolutions/commandbox/@version@/commandbox-bin-@version@.zip"
-  sha256 "@sha256@"
+  url "@repoURL@/ortussolutions/commandbox/@version@/commandbox-bin-@stable.version@.zip"
+  sha256 "@stable.sha256@"
+  devel do
+    url "http://integration.stg.ortussolutions.com/artifacts/ortussolutions/commandbox/@version@/commandbox-bin-@version@.zip"
+    sha256 "@sha256@"
+  end
 
-  depends_on :arch => :x86_64
   depends_on :java => "1.7+"
 
   resource "apidocs" do
@@ -34,7 +37,7 @@ class Commandbox < Formula
   end
 
   test do
-    system "box", "install"
-    system "box", "--version"
+    system "box", "--commandbox_home=~/", "version"
+    system "box", "--commandbox_home=~/", "help"
   end
 end
