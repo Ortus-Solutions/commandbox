@@ -267,12 +267,12 @@ component accessors="true" singleton {
 		// The big servers.json is only used to keep a record of the last values the server was started with
 		serverInfo.debug 			= serverProps.debug 			?: serverJSON.debug 				?: defaults.debug;
 		serverInfo.openbrowser		= serverProps.openbrowser 		?: serverJSON.openbrowser			?: defaults.openbrowser;
-		serverInfo.name 			= serverProps.name 				?: listLast( serverInfo.webroot, "\/" );
-		serverInfo.host				= serverProps.host 				?: serverJSON.web.host				?: defaults.web.host;
-		serverInfo.port 			= serverProps.port 				?: serverJSON.web.http.port			?: getRandomPort( serverInfo.host );
-		serverInfo.stopsocket		= serverProps.stopsocket		?: serverJSON.stopsocket 			?: getRandomPort( serverInfo.host );		
-		serverInfo.webConfigDir 	= serverProps.webConfigDir 		?: serverJSON.app.webConfigDir		?: getCustomServerFolder( serverInfo );
-		serverInfo.serverConfigDir 	= serverProps.serverConfigDir 	?: serverJSON.app.serverConfigDir 	?: defaults.app.serverConfigDir;
+		//serverInfo.name 			= serverProps.name 				?: listLast( serverInfo.webroot, "\/" );
+		//serverInfo.host				= serverProps.host 				?: serverJSON.web.host				?: defaults.web.host;
+		//serverInfo.port 			= serverProps.port 				?: serverJSON.web.http.port			?: getRandomPort( serverInfo.host );
+		//serverInfo.stopsocket		= serverProps.stopsocket		?: serverJSON.stopsocket 			?: getRandomPort( serverInfo.host );		
+		//serverInfo.webConfigDir 	= serverProps.webConfigDir 		?: serverJSON.app.webConfigDir		?: getCustomServerFolder( serverInfo );
+		//serverInfo.serverConfigDir 	= serverProps.serverConfigDir 	?: serverJSON.app.serverConfigDir 	?: defaults.app.serverConfigDir;
 		serverInfo.libDirs			= serverProps.libDirs 			?: serverJSON.app.libDirs			?: defaults.app.libDirs;
 		serverInfo.trayIcon			= serverProps.trayIcon 			?: serverJSON.trayIcon 				?: defaults.trayIcon;
 		serverInfo.webXML 			= serverProps.webXML 			?: serverJSON.app.webXML 			?: defaults.app.webXML;
@@ -282,13 +282,56 @@ component accessors="true" singleton {
 		serverInfo.SSLCert 			= serverProps.SSLCert 			?: serverJSON.web.SSL.cert			?: defaults.web.SSL.cert;
 		serverInfo.SSLKey 			= serverProps.SSLKey 			?: serverJSON.web.SSL.key			?: defaults.web.SSL.key;
 		serverInfo.SSLKeyPass 		= serverProps.SSLKeyPass 		?: serverJSON.web.SSL.keyPass		?: defaults.web.SSL.keyPass;
-		serverInfo.rewritesEnable 	= serverProps.rewritesEnable	?: serverJSON.web.rewrites.enable	?: defaults.web.rewrites.enable;
-		serverInfo.rewritesConfig 	= serverProps.rewritesConfig 	?: serverJSON.web.rewrites.config 	?: defaults.web.rewrites.config;
+		//serverInfo.rewritesEnable 	= serverProps.rewritesEnable	?: serverJSON.web.rewrites.enable	?: defaults.web.rewrites.enable;
+		//serverInfo.rewritesConfig 	= serverProps.rewritesConfig 	?: serverJSON.web.rewrites.config 	?: defaults.web.rewrites.config;
 		serverInfo.heapSize 		= serverProps.heapSize 			?: serverJSON.JVM.heapSize			?: defaults.JVM.heapSize;
 		serverInfo.directoryBrowsing = serverProps.directoryBrowsing ?: serverJSON.web.directoryBrowsing ?: defaults.web.directoryBrowsing;
 		serverInfo.JVMargs			= serverProps.JVMargs			?: serverJSON.JVM.args				?: defaults.JVM.args;
 		serverInfo.runwarArgs		= serverProps.runwarArgs		?: serverJSON.runwar.args			?: defaults.runwar.args;
 		
+
+		// host	
+		if(!isNull(serverJSON.web.host) && len(serverJSON.web.host) > 0)
+			serverInfo.host				= serverProps.host ?: serverJSON.web.host;
+		else
+			serverInfo.host				= serverProps.host ?: defaults.web.host;	
+
+		// port
+		if(!isNull(serverJSON.web.http.port) && serverJSON.web.http.port > 0)
+			serverInfo.port 			= serverProps.port ?: serverJSON.web.http.port;
+		else	
+			serverInfo.port 			= serverProps.port ?: getRandomPort( serverInfo.host );
+
+		// stopsocket
+		if(!isNull(serverJSON.stopsocket) && serverJSON.stopsocket > 0)
+			serverInfo.stopsocket		= serverJSON.stopsocket;		
+		else	
+			serverInfo.stopsocket		= getRandomPort( serverInfo.host );
+
+		// webConfigDir
+		if(!isNull(serverJSON.app.webConfigDir) && len(serverJSON.app.webConfigDir) > 0)
+			serverInfo.webConfigDir 	= serverProps.webConfigDir ?: serverJSON.app.webConfigDir;
+		else	
+			serverInfo.webConfigDir 	= serverProps.webConfigDir ?: getCustomServerFolder( serverInfo );
+
+		// serverConfigDir
+		if(!isNull(serverJSON.app.serverConfigDir) && len(serverJSON.app.serverConfigDir) > 0)
+			serverInfo.serverConfigDir 	= serverProps.serverConfigDir ?: serverJSON.app.serverConfigDir;
+		else
+			serverInfo.serverConfigDir 	= serverProps.serverConfigDir ?: defaults.app.serverConfigDir;
+
+		//	rewritesEnable
+		if(!isNull(serverJSON.web.rewrites.enable) && len(serverJSON.web.rewrites.enable) > 0)
+			serverInfo.rewritesEnable 	= serverProps.rewritesEnable ?: serverJSON.web.rewrites.enable;
+		else
+			serverInfo.rewritesEnable 	= serverProps.rewritesEnable ?: defaults.web.rewrites.enable;	
+		
+		// rewritesConfig
+		if(!isNull(serverJSON.web.rewrites.config) && len(serverJSON.web.rewrites.config) > 0)
+			serverInfo.rewritesConfig 	= serverProps.rewritesConfig ?: serverJSON.web.rewrites.config;
+		else
+			serverInfo.rewritesConfig 	= serverProps.rewritesConfig ?: defaults.web.rewrites.config;
+				
 		serverInfo.logdir			= serverInfo.webConfigDir & "/log";
 	
 		interceptorService.announceInterception( 'onServerStart', { serverInfo=serverInfo } );
