@@ -135,7 +135,7 @@ component accessors="true" singleton {
 					keyPass : ''
 				},
 				rewrites : {
-					enable : true,
+					enable : false,
 					config : variables.rewritesDefaultConfig
 				}
 			},
@@ -237,7 +237,7 @@ component accessors="true" singleton {
 						serverJSON[ 'web' ][ 'SSL' ][ 'keyPass' ] = serverProps[ prop ];
 				         break;
 				    case "rewritesEnable":
-						serverJSON[ 'web' ][ 'rewrites' ][ 'enabled' ] = serverProps[ prop ];
+						serverJSON[ 'web' ][ 'rewrites' ][ 'enable' ] = serverProps[ prop ];
 				         break;
 				    case "rewritesConfig":
 						serverJSON[ 'web' ][ 'rewrites' ][ 'config' ] = serverProps[ prop ];
