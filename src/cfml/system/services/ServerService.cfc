@@ -265,141 +265,30 @@ component accessors="true" singleton {
 		// Setup serverinfo according to params
 		// Hand-entered values take precendence, then settings saved in server.json, and finally defaults.
 		// The big servers.json is only used to keep a record of the last values the server was started with
+		serverInfo.debug 			= serverProps.debug 			?: serverJSON.debug 				?: defaults.debug;
+		serverInfo.openbrowser		= serverProps.openbrowser 		?: serverJSON.openbrowser			?: defaults.openbrowser;
 		serverInfo.name 			= serverProps.name 				?: listLast( serverInfo.webroot, "\/" );
-
-		// debug
-		if(!isNull(serverJSON.debug) && len(serverJSON.debug) > 0)
-			serverInfo.debug 			= serverProps.debug ?: serverJSON.debug;
-		else
-			serverInfo.debug 			= serverProps.debug ?: defaults.debug;	
+		serverInfo.host				= serverProps.host 				?: serverJSON.web.host				?: defaults.web.host;
+		serverInfo.port 			= serverProps.port 				?: serverJSON.web.http.port			?: getRandomPort( serverInfo.host );
+		serverInfo.stopsocket		= serverProps.stopsocket		?: serverJSON.stopsocket 			?: getRandomPort( serverInfo.host );		
+		serverInfo.webConfigDir 	= serverProps.webConfigDir 		?: serverJSON.app.webConfigDir		?: getCustomServerFolder( serverInfo );
+		serverInfo.serverConfigDir 	= serverProps.serverConfigDir 	?: serverJSON.app.serverConfigDir 	?: defaults.app.serverConfigDir;
+		serverInfo.libDirs			= serverProps.libDirs 			?: serverJSON.app.libDirs			?: defaults.app.libDirs;
+		serverInfo.trayIcon			= serverProps.trayIcon 			?: serverJSON.trayIcon 				?: defaults.trayIcon;
+		serverInfo.webXML 			= serverProps.webXML 			?: serverJSON.app.webXML 			?: defaults.app.webXML;
+		serverInfo.SSLEnable 		= serverProps.SSLEnable 		?: serverJSON.web.SSL.enable		?: defaults.web.SSL.enable;
+		serverInfo.HTTPEnable		= serverProps.HTTPEnable 		?: serverJSON.web.HTTP.enable		?: defaults.web.HTTP.enable;
+		serverInfo.SSLPort			= serverProps.SSLPort 			?: serverJSON.web.SSL.port			?: defaults.web.SSL.port;
+		serverInfo.SSLCert 			= serverProps.SSLCert 			?: serverJSON.web.SSL.cert			?: defaults.web.SSL.cert;
+		serverInfo.SSLKey 			= serverProps.SSLKey 			?: serverJSON.web.SSL.key			?: defaults.web.SSL.key;
+		serverInfo.SSLKeyPass 		= serverProps.SSLKeyPass 		?: serverJSON.web.SSL.keyPass		?: defaults.web.SSL.keyPass;
+		serverInfo.rewritesEnable 	= serverProps.rewritesEnable	?: serverJSON.web.rewrites.enable	?: defaults.web.rewrites.enable;
+		serverInfo.rewritesConfig 	= serverProps.rewritesConfig 	?: serverJSON.web.rewrites.config 	?: defaults.web.rewrites.config;
+		serverInfo.heapSize 		= serverProps.heapSize 			?: serverJSON.JVM.heapSize			?: defaults.JVM.heapSize;
+		serverInfo.directoryBrowsing = serverProps.directoryBrowsing ?: serverJSON.web.directoryBrowsing ?: defaults.web.directoryBrowsing;
+		serverInfo.JVMargs			= serverProps.JVMargs			?: serverJSON.JVM.args				?: defaults.JVM.args;
+		serverInfo.runwarArgs		= serverProps.runwarArgs		?: serverJSON.runwar.args			?: defaults.runwar.args;
 		
-		// openbrowser
-		if(!isNull(serverJSON.openbrowser) && len(serverJSON.openbrowser) > 0)
-			serverInfo.openbrowser		= serverProps.openbrowser 		?: serverJSON.openbrowser;
-		else
-			serverInfo.openbrowser		= serverProps.openbrowser 		?: defaults.openbrowser;
-
-		// trayIcon
-		if(!isNull(serverJSON.trayIcon) && len(serverJSON.trayIcon) > 0)
-			serverInfo.trayIcon			= serverProps.trayIcon ?: serverJSON.trayIcon;
-		else	
-			serverInfo.trayIcon			= serverProps.trayIcon ?: defaults.trayIcon;
-
-		// host	
-		if(!isNull(serverJSON.web.host) && len(serverJSON.web.host) > 0)
-			serverInfo.host				= serverProps.host ?: serverJSON.web.host;
-		else
-			serverInfo.host				= serverProps.host ?: defaults.web.host;	
-
-		// port
-		if(!isNull(serverJSON.web.http.port) && serverJSON.web.http.port > 0)
-			serverInfo.port 			= serverProps.port ?: serverJSON.web.http.port;
-		else	
-			serverInfo.port 			= serverProps.port ?: getRandomPort( serverInfo.host );
-
-		// stopsocket
-		if(!isNull(serverJSON.stopsocket) && serverJSON.stopsocket > 0)
-			serverInfo.stopsocket		= serverJSON.stopsocket;		
-		else	
-			serverInfo.stopsocket		= getRandomPort( serverInfo.host );
-
-		// webConfigDir
-		if(!isNull(serverJSON.app.webConfigDir) && len(serverJSON.app.webConfigDir) > 0)
-			serverInfo.webConfigDir 	= serverProps.webConfigDir ?: serverJSON.app.webConfigDir;
-		else	
-			serverInfo.webConfigDir 	= serverProps.webConfigDir ?: getCustomServerFolder( serverInfo );
-
-		// serverConfigDir
-		if(!isNull(serverJSON.app.serverConfigDir) && len(serverJSON.app.serverConfigDir) > 0)
-			serverInfo.serverConfigDir 	= serverProps.serverConfigDir ?: serverJSON.app.serverConfigDir;
-		else
-			serverInfo.serverConfigDir 	= serverProps.serverConfigDir ?: defaults.app.serverConfigDir;
-
-		// libDirs	
-		if(!isNull(serverJSON.app.libDirs) && len(serverJSON.app.libDirs) > 0)
-			serverInfo.libDirs			= serverProps.libDirs ?: serverJSON.app.libDirs;
-		else
-			serverInfo.libDirs			= serverProps.libDirs ?: defaults.app.libDirs;
-		
-		// webXML
-		if(!isNull(serverJSON.app.webXML) && len(serverJSON.app.webXML) > 0)
-			serverInfo.webXML 			= serverProps.webXML ?: serverJSON.app.webXML;
-		else	
-			serverInfo.webXML 			= serverProps.webXML ?: defaults.app.webXML;
-		
-		// HTTPEnable
-		if(!isNull(serverJSON.web.HTTP.enable) && len(serverJSON.web.HTTP.enable) > 0)
-			serverInfo.HTTPEnable		= serverProps.HTTPEnable ?: serverJSON.web.HTTP.enable;
-		else	
-			serverInfo.HTTPEnable		= serverProps.HTTPEnable ?: defaults.web.HTTP.enable;
-
-		// SSLEnable
-		if(!isNull(serverJSON.web.SSL.enable) && len(serverJSON.web.SSL.enable) > 0)
-			serverInfo.SSLEnable 		= serverProps.SSLEnable ?: serverJSON.web.SSL.enable;
-		else
-			serverInfo.SSLEnable 		= serverProps.SSLEnable ?: defaults.web.SSL.enable;
-			
-		// SSLPort
-		if(!isNull(serverJSON.web.SSL.port) && len(serverJSON.web.SSL.port) > 0)
-			serverInfo.SSLPort			= serverProps.SSLPort ?: serverJSON.web.SSL.port;
-		else
-			serverInfo.SSLPort			= serverProps.SSLPort ?: defaults.web.SSL.port;
-		
-		// SSLCert
-		if(!isNull(serverJSON.web.SSL.cert) && len(serverJSON.web.SSL.cert) > 0)
-			serverInfo.SSLCert 			= serverProps.SSLCert ?: serverJSON.web.SSL.cert;
-		else
-			serverInfo.SSLCert 			= serverProps.SSLCert ?: defaults.web.SSL.cert;
-
-		// SSLKey
-		if(!isNull(serverJSON.web.SSL.SSLKey) && len(serverJSON.web.SSL.SSLKey) > 0)
-			serverInfo.SSLKey 			= serverProps.SSLKey ?: serverJSON.web.SSL.key;
-		else
-			serverInfo.SSLKey 			= serverProps.SSLKey ?: defaults.web.SSL.key;
-
-		// SSLKeyPass
-		if(!isNull(serverJSON.web.SSL.keyPass) && len(serverJSON.web.SSL.keyPass) > 0)
-			serverInfo.SSLKeyPass 		= serverProps.SSLKeyPass ?: serverJSON.web.SSL.keyPass;
-		else
-			serverInfo.SSLKeyPass 		= serverProps.SSLKeyPass ?: defaults.web.SSL.keyPass;
-		
-		//	rewritesEnable
-		if(!isNull(serverJSON.web.rewrites.enable) && len(serverJSON.web.rewrites.enable) > 0)
-			serverInfo.rewritesEnable 	= serverProps.rewritesEnable ?: serverJSON.web.rewrites.enable;
-		else
-			serverInfo.rewritesEnable 	= serverProps.rewritesEnable ?: defaults.web.rewrites.enable;	
-		
-		// rewritesConfig
-		if(!isNull(serverJSON.web.rewrites.config) && len(serverJSON.web.rewrites.config) > 0)
-			serverInfo.rewritesConfig 	= serverProps.rewritesConfig ?: serverJSON.web.rewrites.config;
-		else
-			serverInfo.rewritesConfig 	= serverProps.rewritesConfig ?: defaults.web.rewrites.config;	
-		
-		// directoryBrowsing
-		if(!isNull(serverJSON.web.directoryBrowsing) && len(serverJSON.web.directoryBrowsing) > 0)
-			serverInfo.directoryBrowsing = serverProps.directoryBrowsing ?: serverJSON.web.directoryBrowsing;
-		else	
-			serverInfo.directoryBrowsing = serverProps.directoryBrowsing ?: defaults.web.directoryBrowsing;	
-
-		// heapSize
-		if(!isNull(serverJSON.JVM.heapSize) && len(serverJSON.JVM.heapSize) > 0)	
-			serverInfo.heapSize 		= serverProps.heapSize ?: serverJSON.JVM.heapSize;
-		else
-			serverInfo.heapSize 		= serverProps.heapSize ?: defaults.JVM.heapSize;
-
-		// JVMargs	
-		if(!isNull(serverJSON.JVM.args) && len(serverJSON.JVM.args) > 0)	
-			serverInfo.JVMargs			= serverProps.JVMargs ?: serverJSON.JVM.args;
-		else
-			serverInfo.JVMargs			= serverProps.JVMargs ?: defaults.JVM.args;
-
-		// runwarArgs
-		if(!isNull(serverJSON.runwar.args) && len(serverJSON.runwar.args) > 0)	
-			serverInfo.runwarArgs		= serverProps.runwarArgs ?: serverJSON.runwar.args;
-		else
-			serverInfo.runwarArgs		= serverProps.runwarArgs ?: defaults.runwar.args;
-		
-		// logdir
 		serverInfo.logdir			= serverInfo.webConfigDir & "/log";
 	
 		interceptorService.announceInterception( 'onServerStart', { serverInfo=serverInfo } );
