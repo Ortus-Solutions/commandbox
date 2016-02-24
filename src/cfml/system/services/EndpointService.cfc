@@ -13,7 +13,8 @@ component accessors="true" singleton {
 	property name="logger"				inject="logbox:logger:{this}";
 	property name="wirebox"				inject="wirebox";	
 	property name="fileSystemUtil"		inject="FileSystem";
-		property name="consoleLogger"	inject="logbox:logger:console";
+	property name="consoleLogger"		inject="logbox:logger:console";
+	property name="configService"		inject="configService";
 	
 	// Properties
 	property name="endpointRegistry" type="struct";
@@ -132,11 +133,76 @@ component accessors="true" singleton {
 	
 	/**
 	* Inspects ID and returns endpoint object, endpointName, and ID (with endpoint stripped).
-	*/	
+	*/
 	struct function resolveEndpoint( required string ID, required string currentWorkingDirectory ) {
 		var endpointData = resolveEndpointData(  arguments.ID, arguments.currentWorkingDirectory  );
 		endpointData[ 'endpoint' ] = getEndpoint( endpointData.endpointName );
 		return endpointData;
+	}
+	
+	/**
+	* A facade to create a user with an interactive endpoint.  Keeping this logic here so I can standardize the storage
+	* of the APIToken and make it reusable outside of the command.
+	*/
+	function createEndpointUser(
+		required string endpointName,
+		required string username,
+		required string password,
+		required string email,
+		required string firstName,
+		required string lastName		
+	) {
+		// Get all endpoints that are registered
+		var endpointRegistry = getEndpointRegistry();
+		// Confirm endpoint name exists 
+		if( !endpointRegistry.keyExists( arguments.endpointName ) ) {
+			throw( "Sorry, the endpoint [#arguments.endpointName#] doesn't exist.  Valid names are [#endpointRegistry.keyList()#]", 'endpointException' );
+		}
+		
+		// Get endpoint object
+		var endpoint = getEndpoint( arguments.endpointName );
+		
+		// Confirm is interactive endpoint
+		if( !isInstanceOf( endpoint, 'IEndpointInteractive' ) ) {
+			throw( "Sorry, the endpoint [#arguments.endpointName#] does not support registering users.", 'endpointException' );		}
+		
+		// Create the user
+		var APIToken = endpoint.createUser( argumentCollection=arguments );
+		
+		// Store the APIToken
+		configService.setSetting( 'endpoints.#endpointName#.APIToken', APIToken );
+		
+	}
+	
+	/**
+	* A facade to login a user with an interactive endpoint.  Keeping this logic here so I can standardize the storage
+	* of the APIToken and make it reusable outside of the command.
+	*/
+	function loginEndpointUser(
+		required string endpointName,
+		required string username,
+		required string password		
+	) {
+		// Get all endpoints that are registered
+		var endpointRegistry = getEndpointRegistry();
+		// Confirm endpoint name exists 
+		if( !endpointRegistry.keyExists( arguments.endpointName ) ) {
+			throw( "Sorry, the endpoint [#arguments.endpointName#] doesn't exist.  Valid names are [#endpointRegistry.keyList()#]", 'endpointException' );
+		}
+		
+		// Get endpoint object
+		var endpoint = getEndpoint( arguments.endpointName );
+		
+		// Confirm is interactive endpoint
+		if( !isInstanceOf( endpoint, 'IEndpointInteractive' ) ) {
+			throw( "Sorry, the endpoint [#arguments.endpointName#] does not support registering users.", 'endpointException' );		}
+		
+		// Create the user
+		var APIToken = endpoint.login( argumentCollection=arguments );
+		
+		// Store the APIToken
+		configService.setSetting( 'endpoints.#endpointName#.APIToken', APIToken );
+		
 	}
 	
 }

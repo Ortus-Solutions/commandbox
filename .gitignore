@@ -3,6 +3,7 @@
 /build/temp
 /build/requires.txt
 /lib
+/src/cfml/box.json
 settings.xml
 .project
 WEB-INF
@@ -20,3 +21,4 @@ src/cfml/.version
 org.eclipse.jdt.ui.prefs
 apidocs/docbox
 commandbox.rb
+/testbox

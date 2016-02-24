@@ -10,6 +10,8 @@
 */
 component singleton {
 
+	property name='ConfigService' inject='ConfigService';
+
 	/**
 	* Call me to download a file with a status callback
 	* @downloadURL.hint The remote URL to download
@@ -104,7 +106,22 @@ component singleton {
 			outputStream.close();
 			inputStream.close();
 		
-			return '#connection.responseCode# #connection.responseMessage#';
+			var returnStruct = {
+				responseCode = connection.responseCode,
+				responseMessage = connection.responseMessage,
+				headers = {}
+			};
+			var headerMapSize = connection.getHeaderFields().size();
+			var i = 0; // Skipping the first index on purpose.  It's handled in responseCode and responseMessage
+			while( i++<headerMapSize  ) {
+				// Ignore empty keys
+				if( len( trim( connection.getHeaderFieldKey( i ) ) ) ) {
+					// Build up struct of header key/values
+					returnStruct.headers[ connection.getHeaderFieldKey( i ) ] =  connection.getHeaderField( i );
+				}
+			}
+					
+			return returnStruct;
 			
 		} catch( Any var e ) {
 			rethrow;
@@ -131,9 +148,39 @@ component singleton {
 
 	// Get connection following redirects
 	private function resolveConnection( required string downloadURL, redirectUDF ) {
-		
+
 		var netURL = createObject( 'java', 'java.net.URL' ).init( arguments.downloadURL );
-		var connection = netURL.openConnection();
+				
+		// Get proxy settings from the config
+		var proxyServer=ConfigService.getSetting( 'proxy.server', '' );
+		var proxyPort=ConfigService.getSetting( 'proxy.port', 80 );
+		var proxyUser=ConfigService.getSetting( 'proxy.user', '' );
+		var proxyPassword=ConfigService.getSetting( 'proxy.password', '' );
+
+		// Check if a proxy server is defined
+		if( len( proxyServer ) ) {
+			var proxyType = createObject( 'java', 'java.net.Proxy$Type' );
+			var inetSocketAddress = createObject( 'java', 'java.net.InetSocketAddress' ).init( proxyServer, proxyPort );
+			var proxy = createObject( 'java', 'java.net.Proxy' ).init( proxyType.HTTP, inetSocketAddress );
+			
+			// If there is a user defined, use our custom proxyAuthenticator
+			if( len( proxyUser ) ) {
+				var proxyAuthenticator = createObject( 'java', 'com.ortussolutions.commandbox.authentication.ProxyAuthenticator').init( proxyUser, proxyPassword )
+				createObject( 'java', 'java.net.Authenticator' ).setDefault( proxyAuthenticator );
+			} else { 
+				createObject( 'java', 'java.net.Authenticator' ).setDefault( JavaCast( 'null', '' ) );				
+			}
+			
+			// Open our connection using the proxy
+			var connection = netURL.openConnection( proxy );
+		} else {
+			// Open a "regular" connection
+			var connection = netURL.openConnection();
+		}		
+			
+		
+		// The reason we're following redirects manually, is because the java class
+		// won't switch between HTTP and HTTPS without erroring
 		connection.setInstanceFollowRedirects( false );
 		
 		try {

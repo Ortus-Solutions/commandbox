@@ -1,7 +1,7 @@
 ﻿<!-----------------------------------------------------------------------
 ********************************************************************************
 Copyright Since 2005 ColdBox Framework by Luis Majano and Ortus Solutions, Corp
-www.coldbox.org | www.luismajano.com | www.ortussolutions.com
+www.ortussolutions.com
 ********************************************************************************
 
 Author 	    :	Luis Majano
@@ -40,7 +40,7 @@ Description :
 		<!--- Verify it --->
 		<cfif NOT structKeyExists(refLocal, "target")>
 			<!--- Lock it --->
-			<cflock name="WireBox.CacheBoxScope.#arguments.mapping.getName()#" type="exclusive" timeout="30" throwontimeout="true">
+			<cflock name="WireBox.#instance.injector.getInjectorID()#.CacheBoxScope.#arguments.mapping.getName()#" type="exclusive" timeout="30" throwontimeout="true">
 			<cfscript>
 				// Double get just in case of race conditions
 				refLocal.target = cacheProvider.get( cacheKey );

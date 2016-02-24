@@ -61,6 +61,73 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 		return packagePath;
 
 	}
+	
+	public function getDefaultName( required string package ) {
+		// if "foobar@2.0" just return "foobar"
+		return listFirst( arguments.package, '@' );
+	}
+
+	public function getUpdate( required string package, required string version, boolean verbose=false ) {
+		var slug = parseSlug( arguments.package );
+		var version = parseVersion( arguments.package );
+		var result = {
+			isOutdated = false,
+			version = ''
+		};
+		
+		// Verify in ForgeBox
+		var fbData = forgebox.getEntry( slug );
+		// Verify if we are outdated, internally isNew() parses the incoming strings
+		result.isOutdated = semanticVersion.isNew( current=version, target=fbData.version );
+		result.version = fbData.version;
+		
+		return result;		
+	}
+
+	public string function createUser(
+		required string username,
+		required string password,
+		required string email,
+		required string firstName,
+		required string lastName ) {
+			
+		try {
+			
+			var results = forgebox.register(
+				username = arguments.username,
+				password = arguments.password,
+				email = arguments.email,
+				FName = arguments.firstName,
+				LName = arguments.lastName
+			);
+			return results.APIToken;
+					
+		} catch( forgebox var e ) {
+			// This can include "expected" errors such as "Email already in use"
+			throw( e.message, 'endpointException', e.detail );
+		}
+	}
+	
+	public string function login( required string userName, required string password ) {
+			
+		try {
+			
+			var results = forgebox.login( argumentCollection=arguments );
+			return results.APIToken;
+					
+		} catch( forgebox var e ) {
+			// This can include "expected" errors such as "Email already in use"
+			throw( e.message, 'endpointException', e.detail );
+		}
+		
+	}
+	
+	public function publish( required string path ) {
+		throw( 'Not implemented' );
+	}	
+
+	
+	// Private methods
 
 	private function getPackage( slug, version, verbose=false ) {		
 	
@@ -124,18 +191,6 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 		return entryData;
 		
 	}
-
-	public function createUser(required string userName,required string password) {
-		throw( 'Not implemented' );
-	}
-	
-	public string function login(required string userName,required string password) {
-		throw( 'Not implemented' );
-	}
-	
-	public function publish(required string path) {
-		throw( 'Not implemented' );
-	}
 		
 	private function parseSlug( required string package ) {
 		return listFirst( arguments.package, '@' );
@@ -150,28 +205,6 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 			version = listRest( arguments.package, '@' );
 		}
 		return version;
-	}	
-
-	public function getDefaultName( required string package ) {
-		// if "foobar@2.0" just return "foobar"
-		return listFirst( arguments.package, '@' );
 	}
-
-	public function getUpdate( required string package, required string version, boolean verbose=false ) {
-		var slug = parseSlug( arguments.package );
-		var version = parseVersion( arguments.package );
-		var result = {
-			isOutdated = false,
-			version = ''
-		};
-		
-		// Verify in ForgeBox
-		var fbData = forgebox.getEntry( slug );
-		// Verify if we are outdated, internally isNew() parses the incoming strings
-		result.isOutdated = semanticVersion.isNew( current=version, target=fbData.version );
-		result.version = fbData.version;
-		
-		return result;		
-	}
-
+	
 }

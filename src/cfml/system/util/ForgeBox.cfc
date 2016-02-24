@@ -25,6 +25,7 @@ or just add DEBUG to the root logger
 	<cfproperty name="progressBar" 				inject="ProgressBar">
 	<cfproperty name="consoleLogger"			inject="logbox:logger:console">
 	<cfproperty name="CommandBoxlogger" 		inject="logbox:logger:{this}">
+	<cfproperty name="configService" 			inject="configService">
 
 	<!--- Properties --->
 	<cfproperty name="apiURL">
@@ -33,7 +34,7 @@ or just add DEBUG to the root logger
 <!------------------------------------------- CONSTRUCTOR ------------------------------------------>
 	
 	<cfscript>
-		this.ORDER = {
+		this.ORDER = { 
 			POPULAR = "popular",
 			NEW = "new",
 			RECENT = "recent",
@@ -47,6 +48,7 @@ or just add DEBUG to the root logger
 			
 			// Setup Properties
 			variables.APIURL = "http://www.coldbox.org/api/forgebox";
+			//variables.APIURL = "http://forgebox.stg.ortussolutions.com/api/v1/";
 			variables.installURL = "http://www.coldbox.org/forgebox/install/";
 			variables.types = "";
 
@@ -62,7 +64,7 @@ or just add DEBUG to the root logger
 		var results = "";
 		
 		// Invoke call
-		results = makeRequest(resource="types");
+		results = makeRequest(resource="json/types");
 
 		// error 
 		if( results.error ){
@@ -101,7 +103,7 @@ or just add DEBUG to the root logger
 			};
 			
 			// Invoke call
-			results = makeRequest(resource="entries",parameters=params);
+			results = makeRequest(resource="json/entries",parameters=params);
 			// error 
 			if( results.error ){
 				throw( "Error making ForgeBox REST Call", 'forgebox', results.response.messages );
@@ -118,7 +120,7 @@ or just add DEBUG to the root logger
 			var results = "";
 			
 			// Invoke call
-			results = makeRequest(resource="entry/#arguments.slug#");
+			results = makeRequest(resource="json/entry/#arguments.slug#");
 			
 			// error 
 			if( results.error ){
@@ -136,7 +138,7 @@ or just add DEBUG to the root logger
 			var results = "";
 			
 			// Invoke call
-			results = makeRequest(resource="slugcheck/#arguments.slug#");
+			results = makeRequest(resource="json/slugcheck/#arguments.slug#");
 			
 			// error 
 			if( results.error ){
@@ -175,7 +177,47 @@ or just add DEBUG to the root logger
 			
 		<cfreturn fullPath>		
 	</cffunction>	
+
+	<cfscript>
 	
+	/**
+	* Registers a new user in ForgeBox
+	*/
+	function register(
+		required string username,
+		required string password,
+		required string email,
+		required string fName,
+		required string lName ) {
+			
+		var results = makeRequest( resource="register", parameters=arguments, method='post' );
+		
+		// error 
+		if( results.error ){
+			throw( "Sorry, the user could not be added.", 'forgebox', arrayToList( results.response.messages ) );
+		}
+		
+		return results.response.data;
+	}
+	
+	/**
+	* Authenticates a user in ForgeBox
+	*/
+	function login(
+		required string username,
+		required string password ) {
+			
+		var results = makeRequest( resource="authenticate", parameters=arguments, method='post' );
+		
+		// error 
+		if( results.error ){
+			throw( "Sorry, the user could not be logged in.", 'forgebox', arrayToList( results.response.messages ) );
+		}
+		
+		return results.response.data;
+	}
+	
+	</cfscript>
 <!------------------------------------------- PRIVATE ------------------------------------------>
 
 	<!--- makeRequest --->
@@ -191,6 +233,7 @@ or just add DEBUG to the root logger
 			var HTTPResults = "";
 			var param = "";
 			var jsonRegex = "^(\{|\[)(.)*(\}|\])$";
+			var APIURL = configService.getSetting( 'endpoints.forgebox.APIURL', getAPIURL() );
 			
 			// Default Content Type
 			if( NOT structKeyExists(arguments.headers,"content-type") ){
@@ -200,7 +243,7 @@ or just add DEBUG to the root logger
 		
 		<!--- REST CAll --->
 		<cfhttp method="#arguments.method#" 
-				url="#getAPIURL()#/json/#arguments.resource#" 
+				url="#APIURL#/#arguments.resource#" 
 				charset="utf-8" 
 				result="HTTPResults" 
 				timeout="#arguments.timeout#">

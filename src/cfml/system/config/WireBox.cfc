@@ -21,8 +21,16 @@ component extends="wirebox.system.ioc.config.Binder" {
 			key		= "wireBox"
 		};
 
+		// Register all event listeners here, they are created in the specified order
+		wirebox.listeners = [
+			// { class="", name="", properties={} }
+		];
+			
 		// LogBox
 		wirebox.logBoxConfig = "commandbox.system.config.LogBox";
+
+		// Register CommandBox DSL for special injection namespaces
+		mapDSL( "commandbox", "commandbox.system.config.CommandBoxDSL" );
 
 		// Setup constants
 		var system					= createObject( "java", "java.lang.System" );
@@ -36,11 +44,8 @@ component extends="wirebox.system.ioc.config.Binder" {
 		var REPLTagHistoryFile 		= homedir & "/.history-repl-tag";
 		var cr						= chr( 10 );
 		var commandLocations		= [
-			// This is where system commands are stored
-			'/commandbox/system/commands',
-			// This is where core namespace commands are stored
-			'/commandbox/commands',
 			// This is where user-installed commands are stored
+			// This is deprecated in favor of modules, but leaving it so "old" style commands will still load.
 			'/commandbox-home/commands'
 		];
 		var ortusArtifactsURL		= 'http://integration.stg.ortussolutions.com/artifacts/';
@@ -74,7 +79,7 @@ component extends="wirebox.system.ioc.config.Binder" {
 		map( 'REPLTagHistoryFile@java' ).toJava( "jline.console.history.FileHistory" )
 			.initWith( createObject( "java", "java.io.File" ).init( REPLTagHistoryFile ) )
 			.asSingleton();
-
+			
 		// Map Directories
 		mapDirectory( '/commandbox/system/services' );
 		mapDirectory( '/commandbox/system/util' );

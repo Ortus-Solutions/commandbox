@@ -1,7 +1,7 @@
 ﻿<!-----------------------------------------------------------------------
 ********************************************************************************
 Copyright Since 2005 ColdBox Framework by Luis Majano and Ortus Solutions, Corp
-www.coldbox.org | www.luismajano.com | www.ortussolutions.com
+www.ortussolutions.com
 ********************************************************************************
 
 Author 	    :	Luis Majano
@@ -48,7 +48,7 @@ Description :
 				// Scope Storages
 				scopeStorage = createObject("component","wirebox.system.core.collections.ScopeStorage").init(),
 				// Version
-				version  = "1.8.0.00056",
+				version  = "2.1.0+00002",
 				// The Configuration Binder object
 				binder   = "",
 				// ColdBox Application Link
@@ -232,7 +232,7 @@ Description :
 				// If Empty Throw Exception
 				if( NOT len(instancePath) ){
 					instance.log.error("Requested instance:#arguments.name# was not located in any declared scan location(s): #structKeyList(instance.binder.getScanLocations())# or full CFC path");
-					getUtil().throwit(message="Requested instance not found: '#arguments.name#'",
+					throw(message="Requested instance not found: '#arguments.name#'",
 									  detail="The instance could not be located in any declared scan location(s) (#structKeyList(instance.binder.getScanLocations())#) or full path location",
 									  type="Injector.InstanceNotFoundException");
 				}
@@ -252,7 +252,7 @@ Description :
 			// scope persistence check
 			if( NOT structKeyExists(instance.scopes, mapping.getScope()) ){
 				instance.log.error("The mapping scope: #mapping.getScope()# is invalid and not registered in the valid scopes: #structKeyList(instance.scopes)#");
-				getUtil().throwit(message="Requested mapping scope: #mapping.getScope()# is invalid for #mapping.getName()#",
+				throw(message="Requested mapping scope: #mapping.getScope()# is invalid for #mapping.getName()#",
 								  detail="The registered valid object scopes are #structKeyList(instance.scopes)#",
 								  type="Injector.InvalidScopeException");
 			}
@@ -308,20 +308,31 @@ Description :
 				case "provider" : {
 					// verify if it is a simple value or closure/UDF
 					if( isSimpleValue( thisMap.getPath() ) ){
-						oModel = getInstance( thisMap.getPath() ).get();	
+						oModel = getInstance( thisMap.getPath() ).get();
 					}
 					else{
 						closure = thisMap.getPath();
-						oModel = closure();
+						oModel = closure( injector = this );
 					}
 					break;
 				}
-				default: { getUtil().throwit(message="Invalid Construction Type: #thisMap.getType()#",type="Injector.InvalidConstructionType"); }
+				default: { throw(message="Invalid Construction Type: #thisMap.getType()#",type="Injector.InvalidConstructionType"); }
 			}
-
+			
+			// Check and see if this mapping as an influence closure
+			var influenceClosure = thisMap.getInfluenceClosure();
+			if( !isSimpleValue( influenceClosure ) ) {
+				// Influence the creation of the instance
+				local.result = influenceClosure( instance=oModel, injector=this );
+				// Allow the closure to override the entire instance if it wishes
+				if( structKeyExists( local, 'result' ) ) {
+					oModel = local.result;
+				}	
+			}
+			
 			// log data
 			if( instance.log.canDebug() ){
-				instance.log.debug("Instance object built: #arguments.mapping.getName()#:#arguments.mapping.getPath()#");
+				instance.log.debug("Instance object built: #arguments.mapping.getName()#:#arguments.mapping.getPath().toString()#");
 			}
 
 			// announce afterInstanceInitialized
@@ -340,7 +351,7 @@ Description :
 		<cfset var mapping = "">
 
     	<!--- Register new instance mapping --->
-    	<cflock name="Injector.RegisterNewInstance.#hash(arguments.instancePath)#" type="exclusive" timeout="20" throwontimeout="true">
+    	<cflock name="Injector.#getInjectorID()#.RegisterNewInstance.#hash(arguments.instancePath)#" type="exclusive" timeout="20" throwontimeout="true">
     		<cfscript>
 				if( NOT instance.binder.mappingExists( arguments.name ) ){
 					// create a new mapping to be registered within the binder
@@ -356,6 +367,15 @@ Description :
 			</cfscript>
 		</cflock>
 		<cfreturn instance.binder.getMapping( arguments.name )>
+    </cffunction>
+
+    <!--- registerDSL --->
+    <cffunction name="registerDSL" output="false" access="public" returntype="any" hint="A direct way of registering custom DSL namespaces">
+    	<cfargument name="namespace" 	required="true" hint="The namespace you would like to register"/>
+		<cfargument name="path" 		required="true" hint="The instantiation path to the CFC that implements this scope, it must have an init() method and implement: wirebox.system.ioc.dsl.IDSLBuilder"/>
+		<cfscript>
+			instance.builder.registerDSL( argumentCollection=arguments );
+		</cfscript>
     </cffunction>
 
 	<!--- containsInstance --->
@@ -597,7 +617,7 @@ Description :
 				else{
 					refLocal.dependency = getInstance( arguments.DIData[x].ref );
 				}
-				
+
 				// Check if dependency located, else log it and skip
 				if( structKeyExists(refLocal,"dependency") ){
 					// scope or setter determination
@@ -701,6 +721,11 @@ Description :
 		<cfreturn instance.binder>
 	</cffunction>
 
+	<!--- Get the builder object --->
+	<cffunction name="getBuilder" access="public" returntype="any" output="false" hint="Get the Injector's builder object" colddoc:generic="wirebox.system.ioc.Builder">
+		<cfreturn instance.builder>
+	</cffunction>
+
 	<!--- getInjectorID --->
     <cffunction name="getInjectorID" output="false" access="public" returntype="any" hint="Get the unique ID of this injector">
     	<cfreturn instance.injectorID>
@@ -763,7 +788,7 @@ Description :
 				return instance.scopeStorage.get(scopeInfo.key, scopeInfo.scope);
 			}
 
-			instance.utility.throwit(message="The injector has not be registered in any scope",detail="The scope info is: #scopeInfo.toString()#",type="Injector.InvalidScopeRegistration");
+			throw(message="The injector has not be registered in any scope",detail="The scope info is: #scopeInfo.toString()#",type="Injector.InvalidScopeRegistration");
 		</cfscript>
     </cffunction>
 
@@ -824,7 +849,7 @@ Description :
 				}
 				catch(Any e){
 					instance.log.error("Error creating listener: #listeners[x].toString()#", e);
-					getUtil().throwit(message="Error creating listener: #listeners[x].toString()#",
+					throw(message="Error creating listener: #listeners[x].toString()#",
 									  detail="#e.message# #e.detail# #e.stackTrace#",
 									  type="Injector.ListenerCreationException");
 				}
@@ -946,7 +971,7 @@ Description :
 				instance.eventManager.appendInterceptionPoints( arrayToList(instance.eventStates) );
 				return;
 			}
-    		
+
     		// create event manager
 			instance.eventManager = createObject("component","wirebox.system.core.events.EventPoolManager").init( instance.eventStates );
 			// Debugging
@@ -974,7 +999,7 @@ Description :
 			}
 
 			// Check if data CFC or binder family
-			if( NOT instance.utility.isInstanceCheck(arguments.binder, "wirebox.system.ioc.config.Binder") ){
+			if( NOT isInstanceOf( arguments.binder, "wirebox.system.ioc.config.Binder" ) ){
 				// simple data cfc, create native binder and decorate data CFC
 				nativeBinder = createObject("component","wirebox.system.ioc.config.Binder").init(injector=this,config=arguments.binder,properties=arguments.properties);
 			}

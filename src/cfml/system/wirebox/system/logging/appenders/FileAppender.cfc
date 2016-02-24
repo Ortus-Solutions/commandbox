@@ -1,7 +1,7 @@
 ﻿<!-----------------------------------------------------------------------
 ********************************************************************************
 Copyright Since 2005 ColdBox Framework by Luis Majano and Ortus Solutions, Corp
-www.coldbox.org | www.luismajano.com | www.ortussolutions.com
+www.ortussolutions.com
 ********************************************************************************
 
 Author     :	Luis Majano
@@ -37,7 +37,7 @@ Properties:
 
 			// Setup Properties
 			if( NOT propertyExists("filepath") ){
-				$throw(message="Filepath property not defined",type="FileAppender.PropertyNotFound");
+				throw(message="Filepath property not defined",type="FileAppender.PropertyNotFound");
 			}
 			if( NOT propertyExists("autoExpand") ){
 				setProperty("autoExpand",true);
@@ -64,7 +64,7 @@ Properties:
 			}
 
 			//lock information
-			instance.lockName = getname() & "logOperation";
+			instance.lockName = instance._hash & getname() & "logOperation";
 			instance.lockTimeout = 25;
 
 			return this;

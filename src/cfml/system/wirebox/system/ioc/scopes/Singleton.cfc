@@ -1,7 +1,7 @@
 ﻿<!-----------------------------------------------------------------------
 ********************************************************************************
 Copyright Since 2005 ColdBox Framework by Luis Majano and Ortus Solutions, Corp
-www.coldbox.org | www.luismajano.com | www.ortussolutions.com
+www.ortussolutions.com
 ********************************************************************************
 
 Author 	    :	Luis Majano
@@ -35,7 +35,7 @@ Description :
 		<!--- Verify in Singleton Cache --->
 		<cfif NOT structKeyExists(instance.singletons, cacheKey)>
 			<!--- Lock it --->
-			<cflock name="WireBox.Singleton.#cacheKey#" type="exclusive" timeout="30" throwontimeout="true">
+			<cflock name="WireBox.#instance.injector.getInjectorID()#.Singleton.#cacheKey#" type="exclusive" timeout="30" throwontimeout="true">
 			<cfscript>
 				// double lock it
 				if( NOT structKeyExists(instance.singletons, cacheKey) ){
