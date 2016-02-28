@@ -104,7 +104,7 @@ component {
 
 		// Properties
 		var properties 	= listToArray( arguments.properties );
-		var buffer 		= createObject( "java", "java.lang.StringBuffer" ).init();
+		var buffer 		= createObject( "java", "java.lang.StringBuilder" ).init();
 		for( var thisProperty in properties ){
 			var propName = getToken( trim( thisProperty ), 1, ":");
 			var propType = getToken( trim( thisProperty ), 2, ":");
