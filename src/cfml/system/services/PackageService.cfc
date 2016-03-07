@@ -32,7 +32,7 @@ component accessors="true" singleton {
 	
 	/**
 	* Checks to see if a box.json exists in a given directory
-	* @directory.hint The directory to examine
+	* @directory The directory to examine
 	*/	
 	public function isPackage( required string directory ) {
 		// If the packge has a box.json in the root...
@@ -41,7 +41,7 @@ component accessors="true" singleton {
 	
 	/**
 	* Returns the path to the package descriptor
-	* @directory.hint The directory that is the root of the package
+	* @directory The directory that is the root of the package
 	*/	
 	public function getDescriptorPath( required string directory ) {
 		return directory & '/box.json';
@@ -53,14 +53,14 @@ component accessors="true" singleton {
 	* 
 	* @slug.ID Identifier of the packge to install. If no ID is passed, all dependencies in the CDW  will be installed.
 	* @slug.optionsUDF slugComplete
-	* @directory.hint The directory to install in. This will override the packages's box.json install dir if provided. 
-	* @save.hint Save the installed package as a dependancy in box.json (if it exists)
-	* @saveDev.hint Save the installed package as a dev dependancy in box.json (if it exists)
-	* @production.hint When calling this command with no slug to install all dependencies, set this to true to ignore devDependencies.
-	* @currentWorkingDirectory.hint Root of the application (used for finding box.json)
-	* @verbose.hint If set, it will produce much more verbose information about the package installation
-	* @force.hint When set to true, it will force dependencies to be installed whether they already exist or not
-	* @packagePathRequestingInstallation.hint If installing smart dependencies packages (like ColdBox modules) that are capable of being nested, this is our current level
+	* @directory The directory to install in. This will override the packages's box.json install dir if provided. 
+	* @save Save the installed package as a dependancy in box.json (if it exists)
+	* @saveDev Save the installed package as a dev dependancy in box.json (if it exists)
+	* @production When calling this command with no slug to install all dependencies, set this to true to ignore devDependencies.
+	* @currentWorkingDirectory Root of the application (used for finding box.json)
+	* @verbose If set, it will produce much more verbose information about the package installation
+	* @force When set to true, it will force dependencies to be installed whether they already exist or not
+	* @packagePathRequestingInstallation If installing smart dependencies packages (like ColdBox modules) that are capable of being nested, this is our current level
 	**/
 	function installPackage(
 			required string ID,
@@ -494,10 +494,10 @@ component accessors="true" singleton {
 	* Uninstalls a package and its dependencies
 	* @slug.ID Identifier of the packge to uninstall.
 	* @slug.optionsUDF slugComplete
-	* @directory.hint The directory to install in. This will override the packages's box.json install dir if provided. 
-	* @save.hint Remove package as a dependancy in box.json (if it exists)
-	* @saveDev.hint Remove package as a dev dependancy in box.json (if it exists)
-	* @currentWorkingDirectory.hint Root of the application (used for finding box.json)
+	* @directory The directory to install in. This will override the packages's box.json install dir if provided. 
+	* @save Remove package as a dependancy in box.json (if it exists)
+	* @saveDev Remove package as a dev dependancy in box.json (if it exists)
+	* @currentWorkingDirectory Root of the application (used for finding box.json)
 	**/
 	function uninstallPackage(
 			required string ID,
@@ -615,12 +615,12 @@ component accessors="true" singleton {
 	
 	/**
 	* Adds a dependency to a packge
-	* @currentWorkingDirectory.hint The directory that is the root of the package
-	* @packageName.hint Package to add a a dependency
-	* @version.hint Version of the dependency
-	* @installDirectory.hint The location that the package is installed to including the container folder.
-	* @installDirectoryIsDedicated.hint True if the package was placed in a dedicated folder
-	* @dev.hint True if this is a development depenency, false if it is a production dependency
+	* @currentWorkingDirectory The directory that is the root of the package
+	* @packageName Package to add a a dependency
+	* @version Version of the dependency
+	* @installDirectory The location that the package is installed to including the container folder.
+	* @installDirectoryIsDedicated True if the package was placed in a dedicated folder
+	* @dev True if this is a development depenency, false if it is a production dependency
 	*/	
 	public function addDependency(
 		required string currentWorkingDirectory,
@@ -684,9 +684,9 @@ component accessors="true" singleton {
 	
 	/**
 	* Removes a dependency from a packge if it exists
-	* @directory.hint The directory that is the root of the package
-	* @packageName.hint Package to add a a dependency
-	* @dev.hint True if this is a development depenency, false if it is a production dependency
+	* @directory The directory that is the root of the package
+	* @packageName Package to add a a dependency
+	* @dev True if this is a development depenency, false if it is a production dependency
 	*/	
 	public function removeDependency( required string directory, required string packageName ) {
 		// Get box.json, create empty if it doesn't exist
@@ -719,8 +719,8 @@ component accessors="true" singleton {
 	
 	/**
 	* Gets a TestBox runner URL from box.json with an optional slug to look up.  If no slug is passed, the first runner will be used
-	* @directory.hint The directory that is the root of the package
-	* @slug.hint An optional runner slug to look for in the list of runners
+	* @directory The directory that is the root of the package
+	* @slug An optional runner slug to look for in the list of runners
 	*/	
 	public function getTestBoxRunner( required string directory, string slug='' ) {
 		// Get box.json, create empty if it doesn't exist
@@ -731,17 +731,14 @@ component accessors="true" singleton {
 
 		// If there is a slug and runners is an array, look it up
 		if ( len( arguments.slug ) && isArray( runners ) ){
-			
 			for( var thisRunner in runners ){
-				// Does the string passed in match the slug of this runner?
-				if( structKeyExists( thisRunner, arguments.runner ) ) {
-					runnerURL = thisRunner[ arguments.runner ];
-					break;						
+				// Does the string passed in match the slug of this runner? If so, return it
+				if( structKeyExists( thisRunner, arguments.slug ) ) {
+					return thisRunner[ arguments.slug ];
 				}
 			}
-			
-			return runnerURL;
-			
+			// If we got here, we could not find slug, advice back with an empty runner
+			return '';
 		}
 
 		// Just get the first one we can find
@@ -760,12 +757,11 @@ component accessors="true" singleton {
 		
 		// We failed to find anything
 		return '';
-		
 	}
 	
 	/**
 	* Get the default package description, AKA box.json
-	* @defaults.hint A struct of default values to be merged into the empty, default document
+	* @defaults A struct of default values to be merged into the empty, default document
 	*/	
 	public function newPackageDescriptor( struct defaults={} ) {
 		
@@ -785,7 +781,7 @@ component accessors="true" singleton {
 	* Get the box.json as data from the passed directory location.
 	* Any missing properties will be defaulted with our box.json template.
 	* If you plan on writing the box.json back out to disk, use readPackageDescriptorRaw() instead.
-	* @directory.hint The directory to search for the box.json
+	* @directory The directory to search for the box.json
 	*/
 	struct function readPackageDescriptor( required directory ){
 		// Merge this JSON with defaults
@@ -797,7 +793,7 @@ component accessors="true" singleton {
 	* then we return an empty struct.  This method will NOT default box.json properties
 	* and will return JUST what was defined.  Make sure you use existence checks when 
 	* using the returned data structure
-	* @directory.hint The directory to search for the box.json
+	* @directory The directory to search for the box.json
 	*/
 	struct function readPackageDescriptorRaw( required directory ){
 		
@@ -821,8 +817,8 @@ component accessors="true" singleton {
 
 	/**
 	* Write the box.json data as a JSON file
-	* @JSONData.hint The JSON data to write to the file. Can be a struct, or the string JSON
-	* @directory.hint The directory to write the box.json
+	* @JSONData The JSON data to write to the file. Can be a struct, or the string JSON
+	* @directory The directory to write the box.json
 	*/
 	function writePackageDescriptor( required any JSONData, required directory ){
 		
@@ -835,10 +831,10 @@ component accessors="true" singleton {
 
 	/**
 	* Return an array of all outdated depdendencies in a project.
-	* @directory.hint The directory of the package to start in
-	* @print.hint The print buffer used for command operation
-	* @verbose.hint Outputs additional information about each package as it is checked
-	* @includeSlugs.hint A commit-delimited list of slugs to include.  Empty means include everything.
+	* @directory The directory of the package to start in
+	* @print The print buffer used for command operation
+	* @verbose Outputs additional information about each package as it is checked
+	* @includeSlugs A commit-delimited list of slugs to include.  Empty means include everything.
 	* 
 	* @return An array of structs of outdated dependencies
 	*/
@@ -913,7 +909,7 @@ component accessors="true" singleton {
 
 	/**
 	* Builds a struct of structs that represents the dependency hierarchy
-	* @directory.hint The directory of the package to start in
+	* @directory The directory of the package to start in
 	*/
 	function buildDependencyHierarchy( required directory ){
 
@@ -967,8 +963,8 @@ component accessors="true" singleton {
 	
 	/**
 	* Dynamic completion for property name based on contents of box.json
-	* @directory.hint The package root
-	* @all.hint Pass false to ONLY suggest existing property names.  True will suggest all possible box.json properties.
+	* @directory The package root
+	* @all Pass false to ONLY suggest existing property names.  True will suggest all possible box.json properties.
 	*/ 	
 	function completeProperty( required directory, all=false ) {
 		var props = [];
