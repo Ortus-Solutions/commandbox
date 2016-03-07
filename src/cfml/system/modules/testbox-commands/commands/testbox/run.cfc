@@ -45,7 +45,6 @@ component {
 		string testSpecs,
 		string outputFile
 	){
-		
 		var runnerURL = '';
 		// If a URL is passed, used it
 		if( left( arguments.runner, 4 ) == 'http' ) {
@@ -53,8 +52,12 @@ component {
 		// Otherwise, try to get one from box.json
 		} else {
 			runnerURL = packageService.getTestBoxRunner( getCWD(), arguments.runner );
+			// Validate runner
+			if( !len( runnerURL ) ){
+				return error( '(#arguments.runner#) it not a valid runner in your box.json. Runners found are: #packageService.readPackageDescriptor( getCWD() ).testbox.runner.toString()#' );
+			}
 		}
-		
+
 		// If we failed to find a URL, throw an error
 		if( left( runnerURL, 4 ) != 'http' ) {
 			return error( '[#runnerURL#] it not a valid URL, or does not match a runner slug in your box.json.' );
@@ -87,7 +90,6 @@ component {
 			log.error( "Error executing tests: #e.message# #e.detail#", e );
 			return error( 'Error executing tests: #CR# #e.message##CR##e.detail#' );
 		}
-
 
 		// Do we have an output file
 		if( !isNull( arguments.outputFile ) ){
