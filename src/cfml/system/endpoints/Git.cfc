@@ -66,8 +66,7 @@ component accessors="true" implements="IEndpoint" singleton {
 		try { 
 			// Clone the repo locally into a temp folder
 			var cloneCommand = Git.cloneRepository()
-				.setURI( GitURL )			        
-				.setBranch( branch )
+				.setURI( GitURL )	
 				.setCloneSubmodules( true )
 				.setDirectory( localPath )
 				.setProgressMonitor( progressMonitor );
@@ -75,6 +74,9 @@ component accessors="true" implements="IEndpoint" singleton {
 			// Conditionally apply security
 			local.result = secureCloneCommand( cloneCommand )
 		        .call();
+		        
+		    // Checkout branch, tag, or commit hash.
+	        local.result.checkout().setName( branch ).call();		        
 		        
 		} catch( any var e ) {
 			throw( message="Error Cloning Git repository", detail="#e.message#",  type="endpointException"); 
