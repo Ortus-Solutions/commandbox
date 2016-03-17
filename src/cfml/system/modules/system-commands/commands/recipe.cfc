@@ -1,7 +1,7 @@
 /**
  * The recipe commands allows you to execute a collection of CommandBox commands
  * usually in a file.boxr recipe file.  CommandBox will iterate and execute each
- * of the commands for you in succession. Lines that start with a # will be ignored as comments.
+ * of the commands for you in succession. Lines that start with a # followed by whitespace will be ignored as comments.
  * .
  * {code:bash}
  * recipe myRecipe.boxr
@@ -81,8 +81,9 @@ component {
 		for( var thisCommand in commands ){
 			thisCommand = trim( thisCommand );
 			
-			// Ignore blank lines and comments
-			if( !thisCommand.len() || thisCommand.startsWith( '##' ) ) {
+			// Ignore blank lines and comments.
+			// Comments are any line that starts with a hash followed by some form of whitespace. 
+			if( !thisCommand.len() || reFindNoCase( '##\s', thisCommand ) ) {
 				continue;
 			}
 			// Turn echo on
@@ -96,12 +97,7 @@ component {
 				print.line( thisCommand );
 				continue;
 			}
-			
-			// Ignore blank lines and comments
-			if( !thisCommand.len() || thisCommand.startsWith( '##' ) ) {
-				continue;
-			}
-			
+					
 			try{
 				// If echo is on, display the command
 				if( isEcho ) {
