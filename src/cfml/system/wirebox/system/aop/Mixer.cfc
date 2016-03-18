@@ -231,7 +231,7 @@ Description :
 		<cfargument name="jointPointMD"	type="any" required="true" hint="The jointpoint metadata to proxy"/>
 		<cfargument name="aspects" 		type="any" required="true" hint="The aspects to weave into the jointpoint"/>
     	<cfscript>
-			var udfOut 			= createObject("java","java.lang.StringBuffer").init('');
+			var udfOut 			= createObject("java","java.lang.StringBuilder").init('');
 			var tmpFile 		= instance.properties.generationPath & "/" & instance.uuid.randomUUID().toString() & ".cfm";
 			var expandedFile 	= expandPath( tmpFile );
 			var lb				= "#chr(13)##chr(10)#";
