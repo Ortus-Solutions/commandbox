@@ -393,22 +393,40 @@ External Dependencies:
 			<arg line="server start openbrowser=false --force port=${apidocs.port}" />
 		</exec>
 		<sleep seconds="5"/>
+		
 		<!-- Get the apidocs now -->
 		<property name="temp.dir.absolute" location="${temp.dir}"/>
 		<get dest="${temp.dir}/docbox.html" 
-			 src="${url.apidocs}?version=${commandbox.version}&amp;path=${temp.dir.absolute}/apidocs" 
+			 src="${url.apidocs}/index.cfm?version=${commandbox.version}&amp;path=${temp.dir.absolute}/apidocs" 
 			 verbose="true"
 			 retries="5"/>
 		<delete file="${temp.dir}/docbox.html" />
- 		<!-- stop server -->
-		<exec executable="${dist.dir}/box" dir="${dir.apidocs}">
-			<arg line="server stop" />
-		</exec>
+ 		
 		<!-- Zip API Docs -->
 		<zip destfile="${dist.dir}/${distro.name}-apidocs-${commandbox.version}.zip" basedir="${temp.dir}/apidocs"></zip>
  		<!-- Build Checksum -->
  		<checksum forceoverwrite="true" fileext=".md5" file="${dist.dir}/${distro.name}-apidocs-${commandbox.version}.zip" />
  		<checksum forceoverwrite="true" algorithm="sha" file="${dist.dir}/${distro.name}-apidocs-${commandbox.version}.zip" />
+
+ 		<!-- Wipe & recreate for core API docs -->
+ 		<delete dir="${temp.dir}/apidocs" />
+ 		<mkdir dir="${temp.dir}/apidocs"/>
+ 		<get dest="${temp.dir}/docbox.html" 
+			 src="${url.apidocs}/internal.cfm?version=${commandbox.version}&amp;path=${temp.dir.absolute}/apidocs" 
+			 verbose="true"
+			 retries="5"/>
+		<delete file="${temp.dir}/docbox.html" />
+
+		<!-- Zip API Docs -->
+		<zip destfile="${dist.dir}/${distro.name}-core-apidocs-${commandbox.version}.zip" basedir="${temp.dir}/apidocs"></zip>
+ 		<!-- Build Checksum -->
+ 		<checksum forceoverwrite="true" fileext=".md5" file="${dist.dir}/${distro.name}-core-apidocs-${commandbox.version}.zip" />
+ 		<checksum forceoverwrite="true" algorithm="sha" file="${dist.dir}/${distro.name}-core-apidocs-${commandbox.version}.zip" />
+
+ 		<!-- stop server -->
+		<exec executable="${dist.dir}/box" dir="${dir.apidocs}">
+			<arg line="server stop" />
+		</exec>
  	</target>
 
 	<!-- Build linux/mac bin -->
