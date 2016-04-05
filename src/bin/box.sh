@@ -27,7 +27,7 @@ then
 fi
 
 # Prepare Java arguments
-java_args='-client'
+java_args=="$BOX_JAVA_ARGS -client"
 
 ##############################################################################
 ##  OS SPECIFIC CLEANUP + ARGS
@@ -42,7 +42,8 @@ CYGWIN*)
 Darwin)
 	if [ -e /System/Library/Frameworks/JavaVM.framework ]
 	then
-		java_args='
+		java_args="
+ 			$BOX_JAVA_ARGS
 			-client
 			-Dcom.apple.mrj.application.apple.menu.about.name=CommandBox
 			-Dcom.apple.mrj.application.growbox.intrudes=false
@@ -50,7 +51,7 @@ Darwin)
 			-Xdock:name=CommandBox
 			-Dfile.encoding=UTF-8
 			-Djava.awt.headless=true
-		'
+		"
 	fi
 	;;
 esac
