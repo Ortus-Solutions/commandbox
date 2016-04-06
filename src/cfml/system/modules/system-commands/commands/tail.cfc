@@ -36,16 +36,30 @@ component {
 	
 			// move to the end of the file
 			randomAccessFile.seek( position );
+			// Was the last character a line feed.  
+			// Remeber the CRLFs will be coming in reverse order
+			var lastLF = false;
 	
 			while( true ){
-	
+
 				// stop looping if we have met our line limit or if end of file
 				if ( position < 0 || lineCounter == arguments.lines ) {
 					break;
 				}
 	
 				var char = randomAccessFile.read();
-				if ( char == 10 ) lineCounter += 1;
+				
+				// Only increment CRs that were preceeded by a LF
+				if ( char == 13 && !lastLF ) {
+					lineCounter += 1;
+				}
+				// Check for LF
+				if ( char == 10 ) {
+					lastLF=true;
+					lineCounter += 1;
+				} else {	
+					lastLF=false;
+				}
 				if ( char != -1 ) buffer.append( chr( char ) );
 	
 				// move to the preceding character
