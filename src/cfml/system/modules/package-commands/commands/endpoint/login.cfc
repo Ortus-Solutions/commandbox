@@ -2,7 +2,7 @@
  * Authenticates a user with an endpoint.  The endpoint must be interactive.
  * .
  * {code:bash}
- * endpoint register 
+ * endpoint login
  * {code}
  **/
 component {
