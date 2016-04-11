@@ -5,7 +5,8 @@ www.coldbox.org | www.luismajano.com | www.ortussolutions.com
 ********************************************************************************
 * @author Luis Majano & Brad Wood
 * Utility to parse and validate semantic versions
-* Semantic version: major.minor.revision-alpha.1+build
+* Semantic version: major.minor.revision-preReleaseID+build
+* http://semver.org/
 */
 component singleton{
 	
@@ -17,7 +18,7 @@ component singleton{
 	}
 
 	function getDefaultsVersion() {
-		return { major = 1, minor = 0, revision = 0, beID = "", buildID = 0 };
+		return { major = 1, minor = 0, revision = 0, preReleaseID = "", buildID = 0 };
 	}
 
 	/**
@@ -90,7 +91,7 @@ component singleton{
 	/**
 	* Parse the semantic version. If no minor found, then 0. If not revision found, then 0. 
 	* If not Bleeding Edge bit, then empty. If not buildID, then 0
-	* @return struct:{major,minor,revision,beid,buildid}
+	* @return struct:{major,minor,revision,preReleaseID,buildid}
 	*/
 	struct function parseVersion( required string version ){
 		var results = getDefaultsVersion();
@@ -99,9 +100,9 @@ component singleton{
 		results.buildID		= find( "+", arguments.version ) ? listLast( arguments.version, "+" ) : '0';
 		// Remove build ID
 		arguments.version 	= reReplace( arguments.version, "\+([^\+]*).$", "" );
-		// Get BE ID Formalized Now we have major.minor.revision-alpha.1
-		results.beID		= find( "-", arguments.version ) ? listLast( arguments.version, "-" ) : '';
-		// Remove beID
+		// Get preReleaseID Formalized Now we have major.minor.revision-alpha.1
+		results.preReleaseID = find( "-", arguments.version ) ? listLast( arguments.version, "-" ) : '';
+		// Remove preReleaseID
 		arguments.version 	= reReplace( arguments.version, "\-([^\-]*).$", "" );
 		// Get Revision
 		results.revision	= getToken( arguments.version, 3, "." );
@@ -118,7 +119,7 @@ component singleton{
 	/**
 	* Parse the incoming version string and conform it to semantic version.
 	* If bleeding edge is not found it is omitted.
-	* @return string:{major.minor.revision.[beid]+buildid}
+	* @return string:{major.minor.revision[-preReleaseID]+buildid}
 	*/
 	string function parseVersionAsString( required string version ){
 		var sVersion = parseVersion( clean( trim( arguments.version ) ) );
@@ -128,21 +129,22 @@ component singleton{
 
 	/**
 	* Parse the incoming version struct and output it as a string
-	* @return string:{major.minor.revision.[beid]+buildid}
+	* @return string:{major.minor.revision[-preReleaseID]+buildid}
 	*/
 	string function getVersionAsString( required struct sVersion ){
 		var defaultsVersion = getDefaultsVersion();
 		arguments.sVersion = defaultsVersion.append( arguments.sVersion );
-		return ( "#sVersion.major#.#sVersion.minor#.#sVersion.revision#"  & ( len( sVersion.beID ) ? "." & sVersion.beID : '' ) & "+#sVersion.buildID#" );
+		return ( "#sVersion.major#.#sVersion.minor#.#sVersion.revision#"  & ( len( sVersion.preReleaseID ) ? "-" & sVersion.preReleaseID : '' ) & "+#sVersion.buildID#" );
 	}
 
 	/**
 	* Verifies if the passed version string is in a pre-release state
+	* Pre-release is defined by the existance of a preRelease ID or a "0" major version
 	*/
 	boolean function isPreRelease( required string version ){
 		var pVersion = parseVersion( clean( trim( arguments.version ) ) );
 
-		return len( pVersion.beID ) ? true : false;
+		return ( len( pVersion.preReleaseID ) || pVersion.major == 0 ) ? true : false;
 	}
 
 	/**
