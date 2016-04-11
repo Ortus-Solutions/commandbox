@@ -27,7 +27,7 @@ then
 fi
 
 # Prepare Java arguments
-java_args=="$BOX_JAVA_ARGS -client"
+java_args="$BOX_JAVA_ARGS -client"
 
 ##############################################################################
 ##  OS SPECIFIC CLEANUP + ARGS
