@@ -437,7 +437,7 @@ External Dependencies:
           <fileset file="${dist.dir}/box.jar" />
         </concat>
         <!-- Change execute perm -->
-        <chmod file="${dist.dir}/box" perm="a+x"/>
+        <chmod file="${dist.dir}/box" perm="755"/>
         <!-- Create distro zip -->
 		<zip destfile="${dist.dir}/${distro.name}-bin-${commandbox.version}.zip" level="9" update="false">
 	        <zipfileset file="${dist.dir}/box" filemode="711" prefix="" />
