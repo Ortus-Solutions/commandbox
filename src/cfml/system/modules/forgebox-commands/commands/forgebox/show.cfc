@@ -85,7 +85,11 @@ component aliases="show" {
 							var entryData = forgebox.getEntry( orderBy );
 							slug = orderBy;		
 						} catch( any e ) {
-							error( 'Parameter [#orderBy#] isn''t a valid orderBy, type, or slug.  Valid orderBys are [#lcase( listChangeDelims( forgeboxOrders.keyList(), ', ' ) )#] See possible types with "forgebox types".' );
+							if( e.detail contains 'The entry slug sent is invalid' ) {
+								error( 'Parameter [#orderBy#] isn''t a valid orderBy, type, or slug.  Valid orderBys are [#lcase( listChangeDelims( forgeboxOrders.keyList(), ', ' ) )#] See possible types with "forgebox types".' );								
+							} else {
+								rethrow;								
+							}
 						}
 					} 
 				}		
@@ -114,9 +118,8 @@ component aliases="show" {
 	
 				// We might have gotten this above
 				var entryData = entryData ?: forgebox.getEntry( slug );
-				
-				// entrylink,createdate,lname,isactive,installinstructions,typename,version,hits,coldboxversion,sourceurl,slug,homeurl,typeslug,
-				// downloads,entryid,fname,changelog,updatedate,downloadurl,title,entryrating,summary,username,description,email
+				// numberOfRatings,boxjson,isActive,typeName,version,hits,sourceURL,slug,createdDate,typeSlug,downloads,updatedDate,entryID,
+				// ratings,versions,avgRating,downloadURL,changelog,installs,title,user,description,summary,homeURL
 								
 				if( !val( entryData.isActive ) ) {
 					error( 'The ForgeBox entry [#entryData.title#] is inactive, we highly recommed NOT installing it or contact the author about it' );
@@ -124,16 +127,16 @@ component aliases="show" {
 				
 				print.line();
 				print.blackOnWhite( ' #entryData.title# ' )
-					.boldText( '   ( #entryData.fname# #entryData.lname#, #entryData.email# )' )
-					.boldGreenLine( '   #repeatString( '*', val( entryData.entryRating ) )#' );
+					.boldText( '   ( #entryData.user.fname# #entryData.user.lname#, #entryData.user.email# )' )
+					.boldGreenLine( '   #repeatString( '*', val( entryData.avgRating ) )#' );
 				print.line()
 					.yellowLine( #formatterUtil.HTML2ANSI( entryData.description )# )
 					.line()
 					.line( 'Type: #entryData.typeName#' )
 					.line( 'Slug: "#entryData.slug#"' )
 					.line( 'Summary: #entryData.summary#' )
-					.line( 'Created On: #entryData.createdate#' )
-					.line( 'Updated On: #entryData.updateDate#' )
+					.line( 'Created On: #dateFormat( entryData.createdDate )#' )
+					.line( 'Updated On: #dateFormat( entryData.updatedDate )#' )
 					.line( 'Version: #entryData.version#' )
 					.line( 'ForgeBox Views: #entryData.hits#' )
 					.line( 'Downloads: #entryData.downloads#' )
