@@ -282,7 +282,7 @@ or just add DEBUG to the root logger
             } else {
             	var errorDetail = ( HTTPResults.errorDetail ?: '' ) & chr( 10 ) &  ( HTTPResults.statuscode ?: HTTPResults.status_code ?: '' );
             	CommandBoxlogger.error( 'Something other than JSON returned. #errorDetail#', 'Actual HTTP Response: ' & results.rawResponse );            	
-				throw( 'Uh-oh, ForgeBox returned something other than JSON.  Run "system-log | open" to see the full reponse.', 'forgebox', errorDetail );
+				throw( 'Uh-oh, ForgeBox returned something other than JSON.  Run "system-log | open" to see the full response.', 'forgebox', errorDetail );
             }
 			
 			return results;
