@@ -30,19 +30,19 @@ component {
 				
 				print.line();
 				var activeCount = 0;
-				for( var entry in entries ) {
+				for( var entry in entries.results ) {
 					if( val( entry.isactive )
 					&& (
 						   entry.title contains arguments.searchText
-						|| entry.fname contains arguments.searchText
-						|| entry.lname contains arguments.searchText
+						|| entry.user.fname contains arguments.searchText
+						|| entry.user.lname contains arguments.searchText
 						|| entry.typeName contains arguments.searchText
 						|| entry.summary contains arguments.searchText
 					) ) {
 						activeCount++;
 						print.blackOnWhite( ' #entry.title# ' ); 
-							print.boldText( '   ( #entry.fname# #entry.lname# )' );
-							print.boldGreenLine( '   #repeatString( '*', val( entry.entryRating ) )#' );
+							print.boldText( '   ( #entry.user.fname# #entry.user.lname# )' );
+							print.boldGreenLine( '   #repeatString( '*', val( entry.avgRating ) )#' );
 						print.line( 'Version: #entry.version#' );
 						print.line( 'Type: #entry.typeName#' );
 						print.line( 'Slug: "#entry.slug#"' );
