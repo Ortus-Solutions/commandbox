@@ -17,6 +17,7 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 	property name="semanticVersion"		inject="semanticVersion";
 	property name="artifactService" 	inject="ArtifactService";
 	property name="packageService" 		inject="packageService";
+	property name="configService" 		inject="configService";
 	property name="fileSystemUtil"		inject="FileSystem";
 	property name="fileEndpoint"		inject="commandbox.system.endpoints.File";
 	
@@ -123,7 +124,30 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 	}
 	
 	public function publish( required string path ) {
-		throw( 'Not implemented' );
+		
+		if( !packageService.isPackage( arguments.path ) ) {
+			throw( 'Sorry but [#arguments.path#] isn''t a package.', 'endpointException', 'Please double check you''re in the correct directory or use "package init" to turn your directory into a package.' );			
+		}
+		
+		var boxJSON = packageService.readPackageDescriptor( arguments.path );
+		
+		var props = {}
+		props.slug = boxJSON.slug;
+		props.version = boxJSON.version;
+		props.boxJSON = serializeJSON( boxJSON );
+		props.isStable = !semanticVersion.isPreRelease( boxJSON.version );
+		props.description = boxJSON.description;
+		props.installInstructions = boxJSON.instructions;
+		props.changeLog = boxJSON.changeLog;
+		props.APIToken = configService.getSetting( 'endpoints.forgebox.APIToken', '' );
+			
+		try {			
+			forgebox.publish( argumentCollection=props );
+					
+		} catch( forgebox var e ) {
+			// This can include "expected" errors such as "User not authenticated"
+			throw( e.message, 'endpointException', e.detail );
+		}
 	}	
 
 	
