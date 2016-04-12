@@ -114,7 +114,11 @@ component accessors="true" singleton {
 	    	} 	
     	} catch( any e ) {
     		// Silently log this and we'll try a different method below
-			logger.error( '#e.message# #e.detail#' , e.stackTrace );
+    		if( e.message contains 'No application is associated with the specified file' ) {
+				logger.error( '#e.message# #e.detail#' );    			
+    		} else {
+				logger.error( '#e.message# #e.detail#' , e.stackTrace );
+    		}
     	}
 
     	// if we get here, then we don't support desktop awt class, most likely in headless mode.
