@@ -276,11 +276,13 @@ or just add DEBUG to the root logger
 			results.message = HTTPResults.errorDetail;
 			if( len(HTTPResults.errorDetail) ){ results.error = true; }
 			// Try to inflate JSON
+			
             if (isJSON(results.rawResponse)) {
                 results.response = deserializeJSON(results.rawResponse,false);
             } else {
-            	CommandBoxlogger.error( 'Something other than JSON returned', results.rawResponse );
-				throw( "Uh-oh, ForgeBox returned something other than JSON.  Check the logs.", 'forgebox' );
+            	var errorDetail = ( HTTPResults.errorDetail ?: '' ) & chr( 10 ) &  ( HTTPResults.statuscode ?: HTTPResults.status_code ?: '' );
+            	CommandBoxlogger.error( 'Something other than JSON returned. #errorDetail#', 'Actual HTTP Response: ' & results.rawResponse );            	
+				throw( 'Uh-oh, ForgeBox returned something other than JSON.  Run "system-log | open" to see the full reponse.', 'forgebox', errorDetail );
             }
 			
 			return results;
