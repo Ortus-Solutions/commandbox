@@ -21,6 +21,26 @@ component singleton{
 		return { major = 1, minor = 0, revision = 0, preReleaseID = "", buildID = 0 };
 	}
 
+	function compare(
+		required string current, 
+		required string target,
+		boolean checkBuildID=true ) {
+			
+		// versions are identical
+		if( isEQ( arguments.current, arguments.target ) ) {
+			return 0;
+		}
+			
+		// first is 'smaller' than the second
+		if( isNew( arguments.current, arguments.target ) ) {
+			return -1;
+		// first is 'larger' than the second
+		} else {
+			return 1;
+		}
+		
+	}
+
 	/**
 	* Checks if target version is a newer semantic version than the passed current version
 	* Note: To confirm to semvar, I think this needs to defer to gt(). 
@@ -58,13 +78,23 @@ component singleton{
 			return true;
 		}
 
+		// pre-release Check
+		if( target.major eq current.major AND
+			target.minor eq current.minor AND
+			target.revision eq current.revision AND
+			// preReleaseID is either alphabetically higher, or target has no prereleaes id and current does.
+			( target.preReleaseID gt current.preReleaseID  || ( !len( target.preReleaseID ) && len( current.preReleaseID ) ) ) ) {
+			return true;
+		}
+		
 		// BuildID verification is turned on?
 		if( !arguments.checkBuildID ){ return false; }
 
 		// Build Check
 		if( target.major eq current.major AND
 			target.minor eq current.minor AND
-			target.revision eq current.revision AND
+			target.revision eq current.revision AND			
+			target.preReleaseID eq current.preReleaseID AND
 			target.buildID gt current.buildID ){
 			return true;
 		}
@@ -84,7 +114,16 @@ component singleton{
 	* 
 	*/
 	boolean function satisfies( required string version, required string range ){
-		// TODO: This is just a quick fix.  The satisfies() method needs actually implemented to handle ranges 
+		// TODO: This is just a quick fix.  The satisfies() method needs actually implemented to handle ranges
+		
+		if( range == 'be' ) {
+			return true;
+		}
+				
+		if( range == 'stable' && !isPreRelease( version ) ) {
+			return true;
+		}
+		 
 		return isEQ( arguments.version, arguments.range );
 	}
 
