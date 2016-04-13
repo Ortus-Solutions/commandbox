@@ -18,6 +18,7 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 	property name="artifactService" 	inject="ArtifactService";
 	property name="packageService" 		inject="packageService";
 	property name="configService" 		inject="configService";
+	property name="endpointService"		inject="endpointService";
 	property name="fileSystemUtil"		inject="FileSystem";
 	property name="fileEndpoint"		inject="commandbox.system.endpoints.File";
 	
@@ -30,37 +31,19 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 	}
 		
 	public string function resolvePackage( required string package, boolean verbose=false ) {
-		var entryData = {};
 		var slug = parseSlug( arguments.package );
 		var version = parseVersion( arguments.package );
 				
 		// If we have a specific version and it exists in artifacts, use it.  Otherwise, to ForgeBox!!
 		if( semanticVersion.isExactVersion( version ) && artifactService.artifactExists( slug, version ) ) {
-			consoleLogger.info( "Package found in local artifacts!");
+			consoleLogger.info( "Package found in local artifacts!");	
+			// Install the package
+			var thisArtifactPath = artifactService.getArtifactPath( slug, version );		
+			// Defer to file endpoint
+			return fileEndpoint.resolvePackage( thisArtifactPath, arguments.verbose );
 		} else {
-			entryData = getPackage( slug, version, arguments.verbose );
-			version = entryData.version;
+			return getPackage( slug, version, arguments.verbose );
 		}
-		
-		// Assert: at this point, the package is downloaded and exists in the local artifact cache
-	
-		// Install the package
-		var thisArtifactPath = artifactService.getArtifactPath( slug, version );
-	
-		// Defer to file endpoint
-		packagePath = fileEndpoint.resolvePackage( thisArtifactPath, arguments.verbose );
-		
-		// Cheat for people who set a version, slug, or type in ForgeBox, but didn't put it in their box.json
-		// We can only do this if we talked to ForgeBox, but I'm trying hard not to use network IO if I can get the package from artifacts.
-		if( structCount( entryData ) ) {
-			var boxJSON = packageService.readPackageDescriptorRaw( packagePath );
-			if( !structKeyExists( boxJSON, 'type' ) || !len( boxJSON.type ) ) { boxJSON.type = entryData.typeslug; }
-			if( !structKeyExists( boxJSON, 'slug' ) || !len( boxJSON.slug ) ) { boxJSON.slug = entryData.slug; }
-			if( !structKeyExists( boxJSON, 'version' ) || !len( boxJSON.version ) ) { boxJSON.version = entryData.version; }
-			packageService.writePackageDescriptor( boxJSON, packagePath );
-		}
-		return packagePath;
-
 	}
 	
 	public function getDefaultName( required string package ) {
@@ -189,31 +172,41 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 			// If the local artifact doesn't exist, download and create it
 			if( !artifactService.artifactExists( slug, version ) ) {
 					
-				consoleLogger.info( "Starting download of: '#slug#'..." );
+				// Test package location to see what endpoint we can refer to.
+				var endpointData = endpointService.resolveEndpoint( entryData.downloadURL, 'fakePath' );
 				
-				// Store the package locally in the temp dir
-				var packageTempPath = forgebox.install( slug, tempDir );
+				consoleLogger.info( "Deferring to [#endpointData.endpointName#] endpoint for ForgeBox entry [#slug#]..." );
 				
-				// Store it locally in the artfact cache
-				artifactService.createArtifact( slug, version, packageTempPath );
-				
-				// Clean up the temp file
-				fileDelete( packageTempPath );
+				var packagePath = endpointData.endpoint.resolvePackage( endpointData.package, arguments.verbose );
 								
+				// Cheat for people who set a version, slug, or type in ForgeBox, but didn't put it in their box.json
+				var boxJSON = packageService.readPackageDescriptorRaw( packagePath );
+				if( !structKeyExists( boxJSON, 'type' ) || !len( boxJSON.type ) ) { boxJSON.type = entryData.typeslug; }
+				if( !structKeyExists( boxJSON, 'slug' ) || !len( boxJSON.slug ) ) { boxJSON.slug = entryData.slug; }
+				if( !structKeyExists( boxJSON, 'version' ) || !len( boxJSON.version ) ) { boxJSON.version = entryData.version; }
+				packageService.writePackageDescriptor( boxJSON, packagePath );
+				
+				consoleLogger.info( "Storing download in artifact cache..." );
+												
+				// Store it locally in the artfact cache
+				artifactService.createArtifact( slug, version, packagePath );
+													
 				consoleLogger.info( "Done." );
+				
+				return packagePath;
 				
 			} else {
 				consoleLogger.info( "Package found in local artifacts!");
+				var thisArtifactPath = artifactService.getArtifactPath( slug, version );		
+				// Defer to file endpoint
+				return fileEndpoint.resolvePackage( thisArtifactPath, arguments.verbose );
 			}
 			
 			
 		} catch( forgebox var e ) {
 			// This can include "expected" errors such as "slug not found"
 			throw( '#e.message##CR##e.detail#', 'endpointException' );
-		}
-		
-		return entryData;
-		
+		}		
 	}
 		
 	private function parseSlug( required string package ) {
