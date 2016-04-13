@@ -120,10 +120,31 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 		props.boxJSON = serializeJSON( boxJSON );
 		props.isStable = !semanticVersion.isPreRelease( boxJSON.version );
 		props.description = boxJSON.description;
+		props.descriptionFormat = 'text';
 		props.installInstructions = boxJSON.instructions;
+		props.installInstructionsFormat = 'text';
 		props.changeLog = boxJSON.changeLog;
+		props.changeLogFormat = 'text';
 		props.APIToken = configService.getSetting( 'endpoints.forgebox.APIToken', '' );
-			
+		
+		// Look for readme, instruction, and changelog files
+		for( var item in [
+			{ variable : 'description', file : 'readme' },
+			{ variable : 'installInstructions', file : 'instructions' },
+			{ variable : 'changelog', file : 'changelog' }
+		] ) {
+			// Check for no ext or .txt or .md in reverse precendence.
+			for( var ext in [ '', '.txt', '.md' ] ) {
+				// Case insensitive search for file name
+				var files = directoryList(path=arguments.path,filter=function( path ){ return path contains ( item.file & ext); } )
+				if( arrayLen( files ) ) {
+					// If found, read in the first one found.
+					props[ item.variable ] = fileRead( files[ 1 ] );
+					props[ item.variable & 'Format' ] = ( ext == '.md' ? 'md' : 'text' );
+				}
+			}
+		}
+		
 		try {			
 			forgebox.publish( argumentCollection=props );
 					

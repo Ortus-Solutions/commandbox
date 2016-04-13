@@ -226,8 +226,11 @@ or just add DEBUG to the root logger
 		required string boxJSON,
 		required string isStable=true,
 		string description='',
+		string descriptionFormat='text',
 		string installInstructions='',
+		string installInstructionsFormat='text',
 		string changeLog='',
+		string changeLogFormat='text',
 		required string APIToken ) {
 			
 		var body = {
@@ -236,8 +239,11 @@ or just add DEBUG to the root logger
 			boxJSON : arguments.boxJSON,
 			isStable : arguments.isStable,
 			description : arguments.description,
+			descriptionFormat : arguments.descriptionFormat,
 			installInstructions : arguments.installInstructions,
-			changeLog : arguments.changeLog
+			installInstructionsFormat : arguments.installInstructionsFormat,
+			changeLog : arguments.changeLog,
+			changeLogFormat : arguments.changeLogFormat
 		};
 		
 		var results = makeRequest( 
