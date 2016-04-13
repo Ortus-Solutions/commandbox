@@ -155,12 +155,12 @@ component aliases="show" {
 				
 				print.line();
 				var activeCount = 0;
-				for( var entry in entries ) {
+				for( var entry in entries.results ) {
 					if( val( entry.isactive ) ) {
 						activeCount++;
 						print.blackOnWhite( ' #entry.title# ' ); 
-							print.boldText( '   ( #entry.fname# #entry.lname# )' );
-							print.boldGreenLine( '   #repeatString( '*', val( entry.entryRating ) )#' );
+							print.boldText( '   ( #entry.user.fname# #entry.user.lname# )' );
+							print.boldGreenLine( '   #repeatString( '*', val( entry.avgRating ) )#' );
 						print.line( 'Type: #entry.typeName#' );
 						print.line( 'Slug: "#entry.slug#"' );
 						print.Yellowline( '#left( entry.summary, 200 )#' );
