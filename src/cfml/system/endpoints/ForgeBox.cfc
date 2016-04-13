@@ -162,10 +162,9 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 		try {
 			// Info
 			consoleLogger.warn( "Verifying package '#slug#' in ForgeBox, please wait..." );
-			
-			// TODO: Check ForgeBox for highest version that satisfies what was requested.
-			
+						
 			var entryData = forgebox.getEntry( slug );
+					
 			// Verbose info
 			if( arguments.verbose ){
 				consoleLogger.debug( "Package data retrieved: ", entryData );
@@ -182,14 +181,35 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 				throw( 'No download URL provided in ForgeBox.  Manual install only.', 'endpointException' );
 			}
 	
+			entryData.versions.sort( function( a, b ) { return 0-semanticVersion.compare( a.version, b.version ) } );
+			
+			var found = false;
+			for( var thisVersion in entryData.versions ) {
+				if( semanticVersion.satisfies( thisVersion.version, arguments.version ) ) {
+					arguments.version = thisVersion.version;
+					found = true;
+					break;
+				}
+			}
+			
+			if( !found ) {
+				// If we requsted stable and all releases are pre-release, just grab the latest
+				if( arguments.version == 'stable' && arrayLen( entryData.versions ) ) {
+					arguments.version = entryData.versions[ 1 ].version;
+				} else {
+					throw( 'Version [#arguments.version#] not found for package [#arguments.slug#].', 'endpointException' );					
+				}
+			}
+			
+			consoleLogger.info( "Installing version [#arguments.version#]." );
+				
+			// entryData.versions.each( function( i ) { systemOutput( i.version, true ); } );
+	
 			var packageType = entryData.typeSlug;
-			version = entryData.version;
 			
 			// Advice we found it
 			consoleLogger.info( "Verified entry in ForgeBox: '#slug#'" );
-	
-			arguments.version = entryData.version;
-			
+				
 			// If the local artifact doesn't exist, download and create it
 			if( !artifactService.artifactExists( slug, version ) ) {
 					
@@ -235,10 +255,10 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 	}
 		
 	private function parseVersion( required string package ) {
-		var version = '';
+		var version = 'stable';
 		// foo@1.0.0
 		if( arguments.package contains '@' ) {
-			// Note this can also be a semvar range like 1.2.x, >2.0.0, or 1.0.4-2.x
+			// Note this can also be a semver range like 1.2.x, >2.0.0, or 1.0.4-2.x
 			// For now I'm assuming it's a specific version
 			version = listRest( arguments.package, '@' );
 		}
