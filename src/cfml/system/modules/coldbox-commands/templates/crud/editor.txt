@@ -18,16 +18,18 @@
 #html.startForm( action='|entityPlural|.save' )#
 	
 	<!--- Convert Entity To Fields --->
-	#html.entityFields( entity=prc.|entity|,
-						groupWrapper="div class='form-group'",
-					    class="form-control",
-					    fieldWrapper="",
-					    labelWrapper="",
-					    textAreas="",
-					    booleanSelect=true,
-					    manyToOne={},
-					    manyToMany={},
-					    showRelations=true)#
+	#html.entityFields( 
+		entity=prc.|entity|,
+		groupWrapper="div class='form-group'",
+		class="form-control",
+		fieldWrapper="",
+		labelWrapper="",
+		textAreas="",
+		booleanSelect=true,
+		manyToOne={},
+		manyToMany={},
+		showRelations=true
+	)#
 	
 	<!--- Submit --->
 	<div class="form-group">
