@@ -2,5 +2,5 @@
 		<cfargument name="event">
 		<cfargument name="rc">
 		<cfargument name="prc">
-		<cfset event.setView("|Name|/|action|")>
+		<cfset event.setView( "|Name|/|action|" )>
 	</cffunction>

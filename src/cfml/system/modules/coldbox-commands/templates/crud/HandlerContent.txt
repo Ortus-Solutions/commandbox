@@ -2,14 +2,18 @@
 * Manage |entityPlural|
 * It will be your responsibility to fine tune this template, add validations, try/catch blocks, logging, etc.
 */
-component{
+component extends="coldbox.system.EventHandler"{
 	
 	// DI Virtual Entity Service
 	property name="ormService" inject="entityService:|entity|";
 	
 	// HTTP Method Security
 	this.allowedMethods = {
-		index = "GET", new = "GET", edit = "GET", delete = "POST,DELETE", save = "POST,PUT"
+		index = "GET", 
+		new = "GET", 
+		edit = "GET", 
+		delete = "POST,DELETE", 
+		save = "POST,PUT"
 	};
 	
 	/**
