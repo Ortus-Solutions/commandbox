@@ -89,7 +89,7 @@ component aliases="update" {
 			
 			print.magentaLine( "Starting update of #oldID# ").toConsole();
 			// install it
-			runCommand( "install ID='#parser.escapeArg( newID )#' verbose=#arguments.verbose# --force" );
+			runCommand( "install ID='#parser.escapeArg( newID )#' verbose=#arguments.verbose# --force --!save" );
 		}
 		
 	}

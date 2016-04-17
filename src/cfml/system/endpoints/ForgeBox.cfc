@@ -53,17 +53,44 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 
 	public function getUpdate( required string package, required string version, boolean verbose=false ) {
 		var slug = parseSlug( arguments.package );
-		var version = parseVersion( arguments.package );
+		var boxJSONversion = parseVersion( arguments.package );
 		var result = {
 			isOutdated = false,
 			version = ''
 		};
 		
+		// Only bother checking if we have a version range.  If an exact version is stored in 
+		// box.json, we're never going to update it anyway.
+		if( semanticVersion.isExactVersion( boxJSONversion ) ) {
+			return result;
+		}
+		
 		// Verify in ForgeBox
-		var fbData = forgebox.getEntry( slug );
-		// Verify if we are outdated, internally isNew() parses the incoming strings
-		result.isOutdated = semanticVersion.isNew( current=version, target=fbData.version );
-		result.version = fbData.version;
+		var entryData = forgebox.getEntry( slug );
+		
+		entryData.versions.sort( function( a, b ) { return semanticVersion.compare( b.version, a.version ) } );
+		
+		var found = false;
+		for( var thisVersion in entryData.versions ) {
+			// Look for a version on ForgeBox that satisfies our range
+			if( semanticVersion.satisfies( thisVersion.version, boxJSONversion ) ) {
+				result.version = thisVersion.version;
+				found = true;
+				// Only flag it as outdated if the matching version is newer.
+				if( semanticVersion.isNew( current=version, target=thisVersion.version, checkBuildID=false ) ) {
+					result.isOutdated = true;					
+				} 
+				break;
+			}
+		}
+		
+		if( !found ) {
+			// If we requsted stable and all releases are pre-release, just grab the latest
+			if( boxJSONversion == 'stable' && arrayLen( entryData.versions ) ) {
+				result.version = entryData.versions[ 1 ].version;
+				result.isOutdated = true;					
+			}
+		}
 		
 		return result;		
 	}
@@ -176,17 +203,14 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 			if( !val( entryData.isActive ) ) {				
 				throw( 'The ForgeBox entry [#entryData.title#] is inactive.', 'endpointException' );
 			}
-			
-			if( !len( entryData.downloadurl ) ) {
-				throw( 'No download URL provided in ForgeBox.  Manual install only.', 'endpointException' );
-			}
 	
-			entryData.versions.sort( function( a, b ) { return 0-semanticVersion.compare( a.version, b.version ) } );
+			entryData.versions.sort( function( a, b ) { return semanticVersion.compare( b.version, a.version ) } );
 			
 			var found = false;
 			for( var thisVersion in entryData.versions ) {
 				if( semanticVersion.satisfies( thisVersion.version, arguments.version ) ) {
 					arguments.version = thisVersion.version;
+					var downloadURL = thisVersion.downloadURL;
 					found = true;
 					break;
 				}
@@ -196,9 +220,14 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 				// If we requsted stable and all releases are pre-release, just grab the latest
 				if( arguments.version == 'stable' && arrayLen( entryData.versions ) ) {
 					arguments.version = entryData.versions[ 1 ].version;
+					var downloadURL = thisVersion.downloadURL; 
 				} else {
-					throw( 'Version [#arguments.version#] not found for package [#arguments.slug#].', 'endpointException' );					
+					throw( 'Version [#arguments.version#] not found for package [#arguments.slug#].', 'endpointException', 'Available versions are [#entryData.versions.map( function( i ){ return ' ' & i.version; } ).toList()#]' );					
 				}
+			}
+						
+			if( !len( downloadurl ) ) {
+				throw( 'No download URL provided in ForgeBox.  Manual install only.', 'endpointException' );
 			}
 			
 			consoleLogger.info( "Installing version [#arguments.version#]." );
@@ -214,7 +243,7 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 			if( !artifactService.artifactExists( slug, version ) ) {
 					
 				// Test package location to see what endpoint we can refer to.
-				var endpointData = endpointService.resolveEndpoint( entryData.downloadURL, 'fakePath' );
+				var endpointData = endpointService.resolveEndpoint( downloadURL, 'fakePath' );
 				
 				consoleLogger.info( "Deferring to [#endpointData.endpointName#] endpoint for ForgeBox entry [#slug#]..." );
 				
@@ -224,7 +253,7 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 				var boxJSON = packageService.readPackageDescriptorRaw( packagePath );
 				if( !structKeyExists( boxJSON, 'type' ) || !len( boxJSON.type ) ) { boxJSON.type = entryData.typeslug; }
 				if( !structKeyExists( boxJSON, 'slug' ) || !len( boxJSON.slug ) ) { boxJSON.slug = entryData.slug; }
-				if( !structKeyExists( boxJSON, 'version' ) || !len( boxJSON.version ) ) { boxJSON.version = entryData.version; }
+				if( !structKeyExists( boxJSON, 'version' ) || !len( boxJSON.version ) ) { boxJSON.version = version; }
 				packageService.writePackageDescriptor( boxJSON, packagePath );
 				
 				consoleLogger.info( "Storing download in artifact cache..." );

@@ -158,25 +158,25 @@ component singleton{
 		return false;
 		
 		
-		return isEQ( arguments.version, arguments.range );
+		return isEQ( arguments.version, arguments.range, false );
 	}
 		
 	private function evaluateComparator( required struct comparator, version ) {
 		switch( comparator.operator ) {
 		    case "<":
-		    	return isNew( arguments.version, comparator.version ); 
+		    	return isNew( arguments.version, comparator.version, false ); 
 		         break;
 		    case "<=":
-		    	return isNew( arguments.version, comparator.version ) || isEq( comparator.version, arguments.version ); 
+		    	return isNew( arguments.version, comparator.version, false ) || isEq( comparator.version, arguments.version, false ); 
 		         break;
 		    case ">":
-		    	return isNew( comparator.version, arguments.version );
+		    	return isNew( comparator.version, arguments.version, false );
 		         break;
 		    case ">=":
-		    	return isNew( comparator.version, arguments.version ) || isEq( comparator.version, arguments.version );
+		    	return isNew( comparator.version, arguments.version, false ) || isEq( comparator.version, arguments.version, false );
 		         break;
 		    case "=":
-		    	return isEq( comparator.version, arguments.version );
+		    	return isEq( comparator.version, arguments.version, false );
 		         break;
 		    default: 
 		         return false;
