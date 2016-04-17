@@ -35,6 +35,7 @@ component aliases="show" {
 	
 	// DI
 	property name="forgeBox" inject="ForgeBox";
+	property name="semanticVersion"		inject="semanticVersion";
 	
 	function onDIComplete() {
 		variables.forgeboxOrders =  forgebox.ORDER;
@@ -125,6 +126,7 @@ component aliases="show" {
 					error( 'The ForgeBox entry [#entryData.title#] is inactive, we highly recommed NOT installing it or contact the author about it' );
 				}
 				
+				entryData.versions.sort( function( a, b ) { return semanticVersion.compare( b.version, a.version ) } );
 				print.line();
 				print.blackOnWhite( ' #entryData.title# ' )
 					.boldText( '   ( #entryData.user.fname# #entryData.user.lname#, #entryData.user.email# )' )
@@ -135,6 +137,7 @@ component aliases="show" {
 					.line( 'Type: #entryData.typeName#' )
 					.line( 'Slug: "#entryData.slug#"' )
 					.line( 'Summary: #entryData.summary#' )
+					.line( 'Versions: #entryData.versions.map( function( i ){ return ' ' & i.version; } ).toList()#' )
 					.line( 'Created On: #dateFormat( entryData.createdDate )#' )
 					.line( 'Updated On: #dateFormat( entryData.updatedDate )#' )
 					.line( 'Version: #entryData.version#' )
