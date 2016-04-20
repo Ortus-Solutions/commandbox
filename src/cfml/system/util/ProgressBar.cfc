@@ -40,12 +40,14 @@ component singleton {
 		var progressBarTemplate = '@@@% [=>] $$$$$$$ / ^^^^^^^  (&&&&&&&&)';
 		// Dynamically assign the remaining width to the moving progress bar
 		var nonProgressChars = len( progressBarTemplate ) - 1;
-		var progressChars = totalWidth - nonProgressChars; 
+		// Minimum progressbar length is 5.  It will wrap if the user's console is super short, but I'm not sure I care.
+		var progressChars = max( totalWidth - nonProgressChars, 5 ); 
 		
 		// Clear the line
 		ansi.eraseLine(ansiErase.ALL);
-		// Move cursor back to the far left
-		ansi.cursorLeft( totalWidth );
+		// Windows DOS can have a window size larger than the reported terminal size.  Moving the cursor left
+		// a ridiculous amount seems to have no ill-affect so we're just going to make darn sure we're up against the left side.
+		ansi.cursorLeft( totalWidth+99999 );
 		
 		// Get the template
 		var progressRendered = progressBarTemplate;
@@ -55,7 +57,7 @@ component singleton {
 		
 		// Replace actual progress bar
 		var progressSize = int( progressChars * (arguments.percent/100) );
-		var barChars = repeatString( '=', progressSize ) & '>' & repeatString( ' ', progressChars-progressSize );
+		var barChars = repeatString( '=', progressSize ) & '>' & repeatString( ' ', max( progressChars-progressSize, 0 ) );
 		progressRendered = replace( progressRendered, '=>', barChars );
 		 
 		// Replace sizes and speed
