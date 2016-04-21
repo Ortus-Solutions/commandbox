@@ -442,9 +442,21 @@ External Dependencies:
 		<zip destfile="${dist.dir}/${distro.name}-bin-${commandbox.version}.zip" level="9" update="false">
 	        <zipfileset file="${dist.dir}/box" filemode="711" prefix="" />
 		</zip>
+		
+		<!-- Build SDK format. Same file/zip but with folders.] -->
+		<mkdir dir="${temp.dir}/sdk-bin/${distro.name}-${commandbox.version}/bin/"/>
+		<copy file="${dist.dir}/box" toDir="${temp.dir}/sdk-bin/${distro.name}-${commandbox.version}/bin/"/>
+		
+        <!-- Create SDK zip -->
+		<zip destfile="${dist.dir}/${distro.name}-sdk-bin-${commandbox.version}.zip" level="9" update="false">
+	        <zipfileset dir="${temp.dir}/sdk-bin/" filemode="711" />
+		</zip>		
+		
 		<!-- Build Checksum -->
 		<checksum file="${dist.dir}/${distro.name}-bin-${commandbox.version}.zip" forceoverwrite="true" fileext=".md5" />
 		<checksum file="${dist.dir}/${distro.name}-bin-${commandbox.version}.zip" forceoverwrite="true" algorithm="sha" />
+		<checksum file="${dist.dir}/${distro.name}-sdk-bin-${commandbox.version}.zip" forceoverwrite="true" fileext=".md5" />
+		<checksum file="${dist.dir}/${distro.name}-sdk-bin-${commandbox.version}.zip" forceoverwrite="true" algorithm="sha" />
  	</target>
 
 	<!-- Build windows executable -->
