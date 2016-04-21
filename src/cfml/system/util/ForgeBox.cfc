@@ -47,8 +47,8 @@ or just add DEBUG to the root logger
 		<cfscript>
 			
 			// Setup Properties
-			variables.APIURL = "http://www.coldbox.org/api/forgebox";
-			//variables.APIURL = "http://forgebox.stg.ortussolutions.com/api/v1/";
+			// variables.APIURL = "http://www.coldbox.org/api/forgebox";
+			variables.APIURL = "http://forgebox.stg.ortussolutions.com/api/v1/";
 			variables.installURL = "http://www.coldbox.org/forgebox/install/";
 			variables.types = "";
 
@@ -59,16 +59,16 @@ or just add DEBUG to the root logger
 <!------------------------------------------- PUBLIC ------------------------------------------>
 	
 	<!--- getTypes --->
-	<cffunction name="getTypes" output="false" access="public" returntype="query" hint="Get an array of entry types">
+	<cffunction name="getTypes" output="false" access="public" returntype="any" hint="Get an array of entry types">
 		<cfscript>
 		var results = "";
 		
 		// Invoke call
-		results = makeRequest(resource="json/types");
+		results = makeRequest(resource="types");
 
 		// error 
 		if( results.error ){
-			throw("Error making ForgeBox REST Call", 'forgebox', results.response.messages);
+			throw("Error making ForgeBox REST Call", 'forgebox', results.response.messages.toList() );
 		}
 		
 		return results.response.data;				
@@ -76,7 +76,7 @@ or just add DEBUG to the root logger
 	</cffunction>
 
 	<!--- getTypes --->
-	<cffunction name="getCachedTypes" output="false" access="public" returntype="query" hint="Get an array of entry types, locally first else goes and retrieves them">
+	<cffunction name="getCachedTypes" output="false" access="public" returntype="any" hint="Get an array of entry types, locally first else goes and retrieves them">
 		<cfargument name="force" type="boolean" default="false">
 		<cfscript>
 		if( isSimpleValue( variables.types ) OR arguments.force ){
@@ -88,7 +88,7 @@ or just add DEBUG to the root logger
 	</cffunction>
 	
 	<!--- getEntries --->
-	<cffunction name="getEntries" output="false" access="public" returntype="query" hint="Get entries">
+	<cffunction name="getEntries" output="false" access="public" returntype="any" hint="Get entries">
 		<cfargument name="orderBy"  type="string"  required="false" default="#this.ORDER.POPULAR#" hint="The type to order by, look at this.ORDERBY"/>
 		<cfargument name="maxrows"  type="numeric" required="false" default="0" hint="Max rows to return"/>
 		<cfargument name="startRow" type="numeric" required="false" default="1" hint="StartRow"/>
@@ -103,10 +103,10 @@ or just add DEBUG to the root logger
 			};
 			
 			// Invoke call
-			results = makeRequest(resource="json/entries",parameters=params);
+			results = makeRequest(resource="entries",parameters=params);
 			// error 
 			if( results.error ){
-				throw( "Error making ForgeBox REST Call", 'forgebox', results.response.messages );
+				throw( "Error making ForgeBox REST Call", 'forgebox', results.response.messages.toList() );
 			}
 			
 			return results.response.data;
@@ -120,11 +120,11 @@ or just add DEBUG to the root logger
 			var results = "";
 			
 			// Invoke call
-			results = makeRequest(resource="json/entry/#arguments.slug#");
+			results = makeRequest(resource="entry/#arguments.slug#");
 			
 			// error 
 			if( results.error ){
-				throw( "Error making ForgeBox REST Call", 'forgebox', results.response.messages );
+				throw( "Error making ForgeBox REST Call", 'forgebox', results.response.messages.toList() );
 			}
 			
 			return results.response.data;				
@@ -138,11 +138,11 @@ or just add DEBUG to the root logger
 			var results = "";
 			
 			// Invoke call
-			results = makeRequest(resource="json/slugcheck/#arguments.slug#");
+			results = makeRequest(resource="slug-check/#arguments.slug#");
 			
 			// error 
 			if( results.error ){
-				throw( "Error making ForgeBox REST Call", 'forgebox', results.response.messages );
+				throw( "Error making ForgeBox REST Call", 'forgebox', results.response.messages.toList() );
 			}
 			
 			return results.response.data;				
@@ -212,6 +212,52 @@ or just add DEBUG to the root logger
 		// error 
 		if( results.error ){
 			throw( "Sorry, the user could not be logged in.", 'forgebox', arrayToList( results.response.messages ) );
+		}
+		
+		return results.response.data;
+	}
+	
+	/**
+	* Publishes a package in ForgeBox
+	*/
+	function publish(
+		required string slug,
+		required string version,
+		required string boxJSON,
+		required string isStable=true,
+		string description='',
+		string descriptionFormat='text',
+		string installInstructions='',
+		string installInstructionsFormat='text',
+		string changeLog='',
+		string changeLogFormat='text',
+		required string APIToken ) {
+			
+		var body = {
+			slug : arguments.slug,
+			version : arguments.version,
+			boxJSON : arguments.boxJSON,
+			isStable : arguments.isStable,
+			description : arguments.description,
+			descriptionFormat : arguments.descriptionFormat,
+			installInstructions : arguments.installInstructions,
+			installInstructionsFormat : arguments.installInstructionsFormat,
+			changeLog : arguments.changeLog,
+			changeLogFormat : arguments.changeLogFormat
+		};
+		
+		var results = makeRequest( 
+				resource = "publish",
+				headers = {
+					'x-api-token' : arguments.APIToken,
+					'Content-Type' : 'application/json'
+				},
+				body = serializeJSON( body ),
+				method='post' );
+		
+		// error 
+		if( results.error ){
+			throw( "Sorry, the package could not be published.", 'forgebox', arrayToList( results.response.messages ) );
 		}
 		
 		return results.response.data;
