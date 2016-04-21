@@ -1,7 +1,7 @@
 <cfsetting showDebugOutput="false">
 <!--- Executes all tests in the 'specs' folder with simple reporter by default --->
 <cfparam name="url.reporter" 		default="simple">
-<cfparam name="url.directory" 		default="tests.specs">
+<cfparam name="url.directory" 		default="tests.cfml">
 <cfparam name="url.recurse" 		default="true" type="boolean">
 <cfparam name="url.bundles" 		default="">
 <cfparam name="url.labels" 			default="">

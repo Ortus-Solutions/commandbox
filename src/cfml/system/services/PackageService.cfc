@@ -507,11 +507,12 @@ component accessors="true" singleton {
 	){
 					
 		interceptorService.announceInterception( 'preUninstall', { uninstallArgs=arguments } );
+				
+		// In case someone types "uninstall coldbox@4.0.0"
+		var packageName = listFirst( arguments.ID, '@' );
 		
 		consoleLogger.info( '.');
-		consoleLogger.info( 'Uninstalling package: #arguments.ID#');
-		
-		var packageName = arguments.ID;
+		consoleLogger.info( 'Uninstalling package: #packageName#');
 			
 		var uninstallDirectory = '';
 	
@@ -608,7 +609,7 @@ component accessors="true" singleton {
 			consoleLogger.info( "Dependency removed from box.json." );
 		}
 	
-		consoleLogger.info( "'#arguments.ID#' has been uninstalled" );
+		consoleLogger.info( "'#packageName#' has been uninstalled" );
 
 		interceptorService.announceInterception( 'postUninstall', { uninstallArgs=arguments } );
 	}
@@ -644,8 +645,15 @@ component accessors="true" singleton {
 		}
 		
 		// Add/overwrite this dependency
+		
 		if( endpointData.endpointName == 'forgebox' ) {
-			dependencies[ arguments.packageName ] = arguments.version;	
+			
+			if( listLen( endpointData.package, '@' ) > 1 ) {
+				dependencies[ arguments.packageName ] = listLast( endpointData.package, '@' );
+			} else {
+				// caret version range (^1.2.3) allows updates that don't bump the major version.
+				dependencies[ arguments.packageName ] = '^' & arguments.version;
+			}
 		} else {
 			dependencies[ arguments.packageName ] = endpointData.ID;
 		}

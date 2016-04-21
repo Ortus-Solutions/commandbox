@@ -31,6 +31,8 @@ component accessors=true implements="IEndpoint" singleton {
 		var fileName = 'temp#randRange( 1, 1000 )#.zip';
 		var fullPath = tempDir & '/' & fileName;		
 		
+		consoleLogger.info( "Downloading [#getNamePrefixes() & ':' & package#]" );
+		
 		try {
 			// Download File
 			var result = progressableDownloader.download(

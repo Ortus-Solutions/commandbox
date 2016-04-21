@@ -140,18 +140,23 @@ component accessors="true" singleton {
 	*
 	* @packageName.hint The package name to look for
 	* @version.hint The version of the package to look for
-	* @packageZip.hint A file path to a local zip file that contains the package
+	* @packagePath.hint A file path to a local zip file that contains the package
 	*/
-	ArtifactService function createArtifact( required packageName, required version, required packageZip ) {
+	ArtifactService function createArtifact( required packageName, required version, required packagePath ) {
+		
+		// If we were given a folder, defer to another method
+		if( directoryExists( arguments.packagePath ) ) {
+			return createArtifactFromFolder( arguments.packageName, arguments.version, arguments.packagePath );
+		}
 		
 		// Validate the package path
-		if( !fileExists( arguments.packageZip ) ) {
-			throw( 'Cannot create artifact [#arguments.packageName#], the file doesn''t exist', arguments.packageZip );
+		if( !fileExists( arguments.packagePath ) ) {
+			throw( 'Cannot create artifact [#arguments.packageName#], the file doesn''t exist', arguments.packagePath );
 		}
 		
 		// Validate the package is a zip
-		if( right( arguments.packageZip, 4 ) != '.zip' ) {
-			throw( 'Cannot create artifact [#arguments.packageName#], the file isn''t a zip', arguments.packageZip );
+		if( right( arguments.packagePath, 4 ) != '.zip' ) {
+			throw( 'Cannot create artifact [#arguments.packageName#], the file isn''t a zip', arguments.packagePath );
 		}
 		
 		//  Where will this artifact live?
@@ -161,7 +166,28 @@ component accessors="true" singleton {
 		directorycreate( getDirectoryFromPath( thisArtifactPath ), true, true );
 		
 		// Here's your new home
-		fileCopy( arguments.packageZip, thisArtifactPath );
+		fileCopy( arguments.packagePath, thisArtifactPath );
+
+		return this;
+	}		
+	
+	/**
+	* Store a package in the artifact cache.
+	* This expects that the package is already downloaded and stored somewhere on the local filesystem.
+	*
+	* @packageName.hint The package name to look for
+	* @version.hint The version of the package to look for
+	* @packageFolder.hint A file path to a local folder that contains the package
+	*/
+	private function createArtifactFromFolder( required packageName, required version, required packageFolder ) {
+				
+		//  Where will this artifact live?
+		var thisArtifactPath = getArtifactPath( arguments.packageName, arguments.version );
+		
+		// Create dir if it doesn't exist
+		directorycreate( getDirectoryFromPath( thisArtifactPath ), true, true );
+		
+		zip action='zip' source=arguments.packageFolder file=thisArtifactPath;		
 
 		return this;
 	}	
