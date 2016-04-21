@@ -130,6 +130,8 @@ component singleton{
 				
 		if( range == 'stable' && !isPreRelease( version ) ) {
 			return true;
+		} else if( range == 'stable' ) {
+			return false;
 		}
 
 		// An array of comparator sets.  At least one of the comparator sets needs to 
