@@ -97,8 +97,8 @@ or just add DEBUG to the root logger
 			var results = "";
 			var params = {
 				orderBY = arguments.orderby,
-				maxrows = arguments.maxrows,
-				startrow = arguments.startrow,
+				max = arguments.maxrows,
+				offset = arguments.startrow-1,
 				typeSlug = arguments.typeSlug	
 			};
 			
