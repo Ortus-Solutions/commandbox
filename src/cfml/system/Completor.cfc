@@ -296,7 +296,7 @@ component singleton {
 			// Call function to populate dynamic values
 			if( structKeyExists( completorData[ paramName ], 'optionsUDF' ) ) {
 				var completorFunctionName = completorData[ paramName ][ 'optionsUDF' ];
-				var additions = commandInfo.commandReference.CFC[ completorFunctionName ]();
+				var additions = commandInfo.commandReference.CFC[ completorFunctionName ]( paramSoFar=arguments.paramSoFar );
 				if( isArray( additions ) ) {
 					addAllIfMatch( candidates, additions, paramSoFar );
 				}
