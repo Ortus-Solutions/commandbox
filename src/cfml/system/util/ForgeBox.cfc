@@ -48,7 +48,7 @@ or just add DEBUG to the root logger
 			
 			// Setup Properties
 			// variables.APIURL = "http://www.coldbox.org/api/forgebox";
-			variables.APIURL = "http://forgebox.stg.ortussolutions.com/api/v1/";
+			variables.APIURL = "https://forgebox.stg.ortussolutions.com/api/v1/";
 			variables.installURL = "http://www.coldbox.org/forgebox/install/";
 			variables.types = "";
 
