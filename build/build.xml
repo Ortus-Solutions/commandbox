@@ -685,7 +685,7 @@ External Dependencies:
 		<dependency groupId="org.fusesource.jansi" artifactId="jansi" unzip="false" version="1.11" type="jar" dest="${lib.dir}" />
 		 -->
 		<dependency groupId="jline" artifactId="jline" version="2.12" dest="${lib.dir}" type="jar" unzip="false"/>
-		<dependency groupId="org.eclipse.jgit" artifactId="org.eclipse.jgit" version="4.0.1.201506240215-r" dest="${lib.dir}" repoId="jgit-repository" unzip="false" type="jar">
+		<dependency groupId="org.eclipse.jgit" artifactId="org.eclipse.jgit" version="4.3.0.201604071810-r" dest="${lib.dir}" repoId="jgit-repository" unzip="false" type="jar">
 			<exclusions>
 				<!-- Lucee already includes these jars --> 
 				<exclusion groupId="org.slf4j" artifactId="slf4j-api" />
