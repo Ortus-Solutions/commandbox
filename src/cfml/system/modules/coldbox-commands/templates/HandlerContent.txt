@@ -1,4 +1,4 @@
-<cfcomponent output="false" hint="|Description|">
+<cfcomponent output="false" hint="|Description|" extends="coldbox.system.EventHandler">
 	
 	<cfscript>
 		this.prehandler_only 		= "";
