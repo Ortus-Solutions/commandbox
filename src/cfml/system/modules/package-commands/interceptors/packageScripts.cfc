@@ -44,8 +44,11 @@ component {
 			consoleLogger.warn( 'Running #interceptionPoint# package script.' );
 			consoleLogger.debug( '> ' & thisScript );
 			
-			// ... then run the script!
+			// ... then run the script! (in the context of the package's working directory)
+			var previousCWD = shell.pwd();
+			shell.cd( arguments.directory );
 			shell.callCommand( thisScript );
+			shell.cd( previousCWD );
 		}
 	}
 		
