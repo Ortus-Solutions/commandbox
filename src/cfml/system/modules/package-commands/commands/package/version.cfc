@@ -31,7 +31,7 @@ component aliases="bump" {
 	property name='packageService' inject='PackageService';
 	property name='configService' inject='ConfigService';
 	property name='semanticVersion'	inject='semanticVersion';
-	property name='parser' inject='Parser';
+	property name='interceptorService'	inject='interceptorService';
 	
 	/**  
 	 * @version The new version to set into this package
@@ -98,6 +98,8 @@ component aliases="bump" {
 
 	function setVersion( required string version, boolean tagVersion, string message, string directory, required boolean force ) {
 
+		interceptorService.announceInterception( 'preVersion', { versionArgs=arguments } );
+
 		command( 'package set'  )
 			.params( version=arguments.version )
 			.run();
@@ -152,7 +154,10 @@ component aliases="bump" {
 			} catch( any var e ) {
 				logger.error( 'Error tagging Git repository with new version.', e );
 				error( 'Error tagging Git repository with new version.', e.message & ' ' & e.detail );
-			}	
+			}
+			
+			interceptorService.announceInterception( 'postVersion', { versionArgs=arguments } );	
+		
 		}
 			
 						
