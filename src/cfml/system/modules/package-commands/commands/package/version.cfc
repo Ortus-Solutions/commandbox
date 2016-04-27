@@ -91,7 +91,8 @@ component aliases="bump" {
 		} else {
 			
 			// Output the version
-			runCommand( 'package show version' );
+			return command( 'package show version' )
+				.run( returnOutput=true );
 		}						
 			
 	}
@@ -150,7 +151,7 @@ component aliases="bump" {
 					.setMessage( arguments.message )
 					.call();
 			
-				print.yellowLine( 'Tag [v#arguments.version#] created.' );
+				print.yellowLine( 'Tag [v#arguments.version#] created.' ).toConsole();
 			} catch( any var e ) {
 				logger.error( 'Error tagging Git repository with new version.', e );
 				error( 'Error tagging Git repository with new version.', e.message & ' ' & e.detail );
