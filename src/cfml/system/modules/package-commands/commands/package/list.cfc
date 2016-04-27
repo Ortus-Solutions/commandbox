@@ -64,7 +64,7 @@ component aliases="list" {
 			
 			print.text( prefix & branch & ' ' );
 			
-			print[ ( dependency.dev ? 'boldYellowline' : 'boldLine' ) ]( '#dependencyName# (#dependency.version#)' );
+			print[ ( dependency.dev ? 'boldYellowline' : 'boldLine' ) ]( '#dependencyName# (#dependency.packageVersion#)' );
 						
 			if( arguments.verbose ) {
 				if( len( dependency.name ) ) {

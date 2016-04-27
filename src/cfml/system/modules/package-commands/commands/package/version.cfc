@@ -29,30 +29,40 @@
 component aliases="bump" {
 	
 	property name='packageService' inject='PackageService';
+	property name='configService' inject='ConfigService';
 	property name='semanticVersion'	inject='semanticVersion';
-	property name='parser' inject='Parser';
+	property name='interceptorService'	inject='interceptorService';
 	
 	/**  
-	 * @property.hint Name of the property to clear 
-	 * @property.optionsUDF completeProperty
+	 * @version The new version to set into this package
+	 * @message The message to use when commiting the new tag
+	 * @tagVersion Whether or not to tag the repo
+	 * @force Skip the check if to see if the Git repo is clean
+	 * @major Increment the major version number
+	 * @minor Increment the minor version number
+	 * @patch Increment the patch version number
 	 **/
 	function run(
 		string version='',
+		string message,
+		boolean tagVersion,
+		boolean force = false,
 		boolean major,
 		boolean minor,
 		boolean patch
 	) {
 		// the CWD is our "package"
-		var directory = getCWD();
+		arguments.directory = getCWD();
 		
 		// Read the box.json.  Missing values will NOT be defaulted.
-		var boxJSON = packageService.readPackageDescriptorRaw( directory );
-		var versionObject = semanticVersion.parseVersion( semanticVersion.clean( trim( boxJSON.version ?: '' ) ) );
+		var boxJSON = packageService.readPackageDescriptorRaw( arguments.directory );
+		var versionObject = semanticVersion.parseVersion( trim( boxJSON.version ?: '' ) );
 		 
 		if( len( arguments.version ) ) {
 			
 			// Set a specific version
-			setVersion( arguments.version );
+			arguments.version = semanticVersion.clean( arguments.version );
+			setVersion( argumentCollection=arguments );
 			
 		} else if( structKeyExists( arguments, 'major' ) && arguments.major ) {
 			
@@ -60,31 +70,98 @@ component aliases="bump" {
 			versionObject.major = val( versionObject.major ) + 1;
 			versionObject.minor = 0;
 			versionObject.revision = 0;
-			setVersion( semanticVersion.getVersionAsString( versionObject ) );
+			arguments.version =  semanticVersion.getVersionAsString( versionObject );
+			setVersion( argumentCollection=arguments );
 			
 		} else if( structKeyExists( arguments, 'minor' ) && arguments.minor ) {
 			
 			// Bump minor
 			versionObject.minor = val( versionObject.minor ) + 1;
 			versionObject.revision = 0;
-			setVersion( semanticVersion.getVersionAsString( versionObject ) );
+			arguments.version =  semanticVersion.getVersionAsString( versionObject );
+			setVersion( argumentCollection=arguments );
 			
 		} else if( structKeyExists( arguments, 'patch' ) && arguments.patch ) {
 			
 			// Bump patch  
 			versionObject.revision = val( versionObject.revision ) + 1;
-			setVersion( semanticVersion.getVersionAsString( versionObject ) );
+			arguments.version =  semanticVersion.getVersionAsString( versionObject );
+			setVersion( argumentCollection=arguments );
 			
 		} else {
 			
 			// Output the version
-			runCommand( 'package show version' );
+			return command( 'package show version' )
+				.run( returnOutput=true );
 		}						
 			
 	}
 
-	function setVersion( required string version ) {
-		runCommand( 'package set version="' & parser.escapeArg( arguments.version ) & '"' );				
+	function setVersion( required string version, boolean tagVersion, string message, string directory, required boolean force ) {
+
+		interceptorService.announceInterception( 'preVersion', { versionArgs=arguments } );
+
+		command( 'package set'  )
+			.params( version=arguments.version )
+			.run();
+			
+		// If this package is also a Git repository
+		var repoPath = '#arguments.directory#/.git';
+		arguments.tagVersion = arguments.tagVersion ?: ConfigService.getSetting( 'tagVersion', true );
+		if( directoryExists( repoPath ) && arguments.tagVersion ) {
+			print.yellowLine( 'Package is a Git repo.  Tagging...' );
+
+			try {
+				
+				// The main Git API
+				var GitAPI = createObject( 'java', 'org.eclipse.jgit.api.Git' );
+				
+				var git = GitAPI.open( createObject( 'java', 'java.io.File' ).init( repoPath ) );
+				var diffs = git.diff()
+					.setCached( true )
+					.setShowNameAndStatusOnly( true )
+					.call();
+				
+				// Make sure there aren't staged file ready to commit (clean working dir)
+				if( arrayLen( diffs ) && !arguments.force ) {
+					print.line()
+						.boldRedLine( 'The working directory is not clean.' );
+					for( var entryDiff in diffs ) {
+						print.yellowLine( entryDiff.getChangeType() & ' ' & entryDiff.getNewPath() );
+					}
+					error( 'Cannot tag Git repo. Please commit file, or use --force flag to skip this check' );
+				}
+						
+				arguments.message = arguments.message ?: ConfigService.getSetting( 'tagVersionMessage', '${version}' );
+				arguments.message = replaceNoCase( arguments.message, '${version}', arguments.version, 'all' );
+				
+				// Add the box.json
+				git.add()
+					.addFilepattern( 'box.json' )
+					.call();
+				
+				// Commit the box.json
+				git.commit()
+					.setMessage( arguments.message ) 
+					.call();
+				
+				// Tag this version
+				git.tag()
+					.setName( 'v#arguments.version#' )
+					.setMessage( arguments.message )
+					.call();
+			
+				print.yellowLine( 'Tag [v#arguments.version#] created.' ).toConsole();
+			} catch( any var e ) {
+				logger.error( 'Error tagging Git repository with new version.', e );
+				error( 'Error tagging Git repository with new version.', e.message & ' ' & e.detail );
+			}
+			
+			interceptorService.announceInterception( 'postVersion', { versionArgs=arguments } );	
+		
+		}
+			
+						
 	}
 	
 }

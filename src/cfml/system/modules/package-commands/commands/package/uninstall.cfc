@@ -73,7 +73,7 @@ component aliases="uninstall" {
 		var result = [];
 		// Cache in command
 		if( !structKeyExists( variables, 'entries' ) ) {
-			variables.entries = forgebox.getEntries();			
+			variables.entries = forgebox.getEntries().results;			
 		}
 		
 		// Loop over results and append all active ForgeBox entries
