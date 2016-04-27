@@ -31,6 +31,10 @@ component aliases="start" {
 	 * @stopPort       	stop socket listener port number
 	 * @force          	force start if status is not stopped
 	 * @debug          	sets debug log level
+	 * @cfengine        sets the cfml engine type
+	 * @cfengine.optionsUDF  cfengineNameComplete
+	 * @cfengineVersion sets the cfml engine version
+	 * @cfengineVersion.optionsUDF cfengineVersionComplete
 	 * @webConfigDir   	custom location for web context configuration
 	 * @serverConfigDir	custom location for server configuration
 	 * @libDirs        	comma-separated list of extra lib directories for the server
@@ -59,6 +63,8 @@ component aliases="start" {
 		Numeric stopPort,
 		Boolean force,
 		Boolean debug,
+		String  cfengine,
+		String  WARPath,
 		String  webConfigDir,
 		String  serverConfigDir,
 		String  libDirs,
@@ -92,4 +98,11 @@ component aliases="start" {
 		return serverService.getServerNames();
 	}
 	
+	/**
+	* Complete cfengine names
+	*/
+	function cfengineNameComplete() {
+		return serverService.getCFEngineNames();
+	}
+
 }

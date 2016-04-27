@@ -6,11 +6,6 @@ component {
 	this.sessionmanagement="true";
 
 	// mappings
-	this.mappings[ "/tests" ] 		= getDirectoryFromPath( getCurrentTemplatePath() );
-	this.mappings[ '/testbox' ] 	= 'testbox';
-	this.mappings[ '/commandbox' ] 	= '../src/cfml';
-	this.mappings[ '/wirebox' ] 	= '../src/cfml/system/wirebox';
-	this.mappings[ '/mxunit' ] 		= 'testbox/system/testing/compat';
 
 	boolean function onRequestStart( required targetPage ){
 		new wirebox.system.ioc.Injector( 'tests.config.WireBox' );
