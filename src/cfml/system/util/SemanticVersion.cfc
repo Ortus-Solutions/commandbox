@@ -541,7 +541,7 @@ component singleton{
 	string function getVersionAsString( required struct sVersion, boolean includeBuildID=true ){
 		var defaultsVersion = getDefaultsVersion();
 		arguments.sVersion = defaultsVersion.append( arguments.sVersion );
-		if( includeBuildID ) {
+		if( includeBuildID && sVersion.buildID != 0 ) {
 			return ( "#sVersion.major#.#sVersion.minor#.#sVersion.revision#"  & ( len( sVersion.preReleaseID ) ? "-" & sVersion.preReleaseID : '' ) & "+#sVersion.buildID#" );
 		} else {
 			return ( "#sVersion.major#.#sVersion.minor#.#sVersion.revision#"  & ( len( sVersion.preReleaseID ) ? "-" & sVersion.preReleaseID : '' ) );
