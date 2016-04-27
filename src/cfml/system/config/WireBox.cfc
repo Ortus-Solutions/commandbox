@@ -38,6 +38,7 @@ component extends="wirebox.system.ioc.config.Binder" {
 				system.getProperty( 'user.home' ) & "/.CommandBox/" : system.getProperty( 'cfml.cli.home' );
 		var tempDir					= homedir & "/temp";
 		var artifactDir				= homedir & "/artifacts";
+		var serverArtifactDir				= homedir & "/serverartifacts";
 		var userDir					= system.getProperty( "user.dir" );
 		var commandHistoryFile		= homedir & "/.history-command";
 		var REPLScriptHistoryFile 	= homedir & "/.history-repl-script";
@@ -50,7 +51,12 @@ component extends="wirebox.system.ioc.config.Binder" {
 		];
 		var ortusArtifactsURL		= 'http://integration.stg.ortussolutions.com/artifacts/';
 		var ortusPRDArtifactsURL	= 'http://downloads.ortussolutions.com/';
-
+		// engine versions, first is default - for lucee, first is internal version
+		var cfengineVersions = {
+			"lucee":["4.5.2.018","5.0.0.243-SNAPSHOT"]
+			,"adobe":["11.0.0.289974","2016.0.0.297996","10.0.12.286680","9.0.2.282541"]
+			,"railo":["4.2.1.008"]
+		};
 
 		// map constants
 		map( 'system@constants' ).toValue( system );
@@ -66,6 +72,8 @@ component extends="wirebox.system.ioc.config.Binder" {
 		map( 'ortusArtifactsURL@constants' ).toValue( ortusArtifactsURL );
 		map( 'ortusPRDArtifactsURL@constants' ).toValue( ortusPRDArtifactsURL );
 		map( 'rewritesDefaultConfig@constants' ).toValue( "#homeDir#/cfml/system/config/urlrewrite.xml" );
+		map( 'serverArtifactDir@constants' ).toValue( serverArtifactDir );
+		map( 'cfengineVersions@constants' ).toValue( cfengineVersions );
 
 		// Map Java Classes
 		map( 'commandHistoryFile@java' ).toJava( "jline.console.history.FileHistory" )
