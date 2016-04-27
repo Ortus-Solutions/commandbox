@@ -34,7 +34,7 @@ component accessors=true singleton {
 			// Error handling
 			'onException',
 			// Package lifecycle
-			'preInstall','postInstall','preUninstall','postUninstall'		
+			'preInstall','postInstall','preUninstall','postUninstall','preVersion','postVersion','prePublish','postPublish'		
 		] );
 				
 		return this;

@@ -7,7 +7,8 @@
  **/
 component {
 	
-	property name="EndpointService" inject="EndpointService";	
+	property name="EndpointService" inject="EndpointService";
+	property name='interceptorService'	inject='interceptorService';	
 	
 	/**  
 	* @endpointName.hint Name of the endpoint for which to publish the package
@@ -18,7 +19,9 @@ component {
 		string directory='' ) {			
 		// This will make each directory canonical and absolute
 		arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
-			
+		
+		interceptorService.announceInterception( 'prePublish', { publishArgs=arguments } );
+		
 		try {
 			
 			endpointService.publishEndpointPackage( argumentCollection=arguments );
@@ -27,6 +30,8 @@ component {
 			// This can include "expected" errors such as "Email already in use"
 			error( e.message, e.detail );
 		}
+		
+		interceptorService.announceInterception( 'postPublish', { publishArgs=arguments } );
 		
 		print.greenLine( 'Package published successfully in [#arguments.endpointName#]' );		
 	}
