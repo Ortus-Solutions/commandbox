@@ -278,18 +278,21 @@ or just add DEBUG to the root logger
 			var results = {error=false,response={},message="",responseheader={},rawResponse=""};
 			var HTTPResults = "";
 			var param = "";
-			var jsonRegex = "^(\{|\[)(.)*(\}|\])$";
 			var APIURL = configService.getSetting( 'endpoints.forgebox.APIURL', getAPIURL() );
+			if( APIURL.endsWith( '/' ) ) {
+				APIURL = left( APIURL, len( APIURL )-1 );
+			}
 			
 			// Default Content Type
 			if( NOT structKeyExists(arguments.headers,"content-type") ){
 				arguments.headers["content-type"] = "";
 			}
+			var thisURL = '#APIURL#/#arguments.resource#';
 		</cfscript>
 		
 		<!--- REST CAll --->
 		<cfhttp method="#arguments.method#" 
-				url="#APIURL#/#arguments.resource#" 
+				url="#thisURL#" 
 				charset="utf-8" 
 				result="HTTPResults" 
 				timeout="#arguments.timeout#">
@@ -326,7 +329,13 @@ or just add DEBUG to the root logger
             if (isJSON(results.rawResponse)) {
                 results.response = deserializeJSON(results.rawResponse,false);
             } else {
-            	var errorDetail = ( HTTPResults.errorDetail ?: '' ) & chr( 10 ) &  ( HTTPResults.statuscode ?: HTTPResults.status_code ?: '' );
+            	var errorDetail = ( HTTPResults.errorDetail ?: '' );
+            	var statusMessage = ( HTTPResults.statuscode ?: HTTPResults.status_code ?: '' );
+            	// Only append the status message if it's different than the errorDetail
+            	if( errorDetail != statusMessage ) {
+            		errorDetail &= chr( 10 ) & statusMessage;
+            	}
+            	errorDetail = ucase( arguments.method ) & ' ' &thisURL & chr( 10 ) & errorDetail;
             	CommandBoxlogger.error( 'Something other than JSON returned. #errorDetail#', 'Actual HTTP Response: ' & results.rawResponse );            	
 				throw( 'Uh-oh, ForgeBox returned something other than JSON.  Run "system-log | open" to see the full response.', 'forgebox', errorDetail );
             }
