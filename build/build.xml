@@ -26,6 +26,7 @@ External Dependencies:
 			<include name="**/*.jar" />
 		</fileset>
 	</path>
+	<property name="build.location"  location="${basedir}"/>
 
 	<!-- Define Tasks -->
 	<taskdef resource="net/sf/antcontrib/antlib.xml" classpathref="build.antcontrib.libpath" />
@@ -47,6 +48,12 @@ External Dependencies:
 	<!-- Load root properties -->
 	<echo>Loading base properties</echo>
 	<loadproperties srcFile="build.properties"/>
+
+	<!-- Load secret properties -->
+	<property file="/root/creds/secret.properties"/>
+	<property name="ortus.sign.keyring" value=""/>
+	<property name="ortus.sign.key.id" value=""/>
+	<property name="ortus.sign.key.passphrase" value=""/>
 
 	<!-- import cfdistro -->
 	<import file="${cfdistro.build.file}"/>
@@ -99,6 +106,17 @@ External Dependencies:
 		
 		<!-- Mark as init -->
 		<property name="src.isInit" value="true" />
+	</target>
+
+	<!-- create script to run built commandbox using sources (for core cfml development) -->
+	<target name="build.runsrc" description="script to run built commandbox using sources">
+    <property name="tmpHome" location="${temp.dir}/tmpcmdboxhome" />
+    <property name="bootstrap" location="${src.dir}/cfml/system/Bootstrap.cfm" />
+    <property name="cmd" value='java -jar box.jar -CommandBox_home="${tmpHome}" "${bootstrap}"' />
+    <delete dir="${tmpHome}" />
+    <echo file="${dist.dir}/runsrc.sh" message="${cmd}" />
+    <chmod file="${dist.dir}/runsrc.sh" perm="+x" />
+    <echo file="${dist.dir}/runsrc.bat" message="${cmd}" />
 	</target>
 
 	<!-- update permissions on reports -->
@@ -383,14 +401,15 @@ External Dependencies:
  	<!-- Build API Docs -->
  	<target name="build.apidocs" description="Builds the api docs" depends="build.cli.bin">
  		<!-- Create APIDocs dir -->
+ 		<property name="cmdboxhome.arg" value="-CommandBox_home=${build.location}/temp/CommandBoxHome" />
  		<mkdir dir="${temp.dir}/apidocs"/>
  		<!-- Install dependencies for docs -->
 		<exec executable="${dist.dir}/box" dir="${dir.apidocs}">
-			<arg line="install" />
+			<arg line="${cmdboxhome.arg} install" />
 		</exec>
 		<!-- Startup the apidocs server, wait for a few seconds for server to start -->
 		<exec executable="${dist.dir}/box" dir="${dir.apidocs}">
-			<arg line="server start openbrowser=false --force port=${apidocs.port}" />
+			<arg line="${cmdboxhome.arg} server start openbrowser=false --force port=${apidocs.port} --!saveSettings" />
 		</exec>
 		<sleep seconds="5"/>
 		
@@ -425,7 +444,7 @@ External Dependencies:
 
  		<!-- stop server -->
 		<exec executable="${dist.dir}/box" dir="${dir.apidocs}">
-			<arg line="server stop" />
+			<arg line="${cmdboxhome.arg} server stop" />
 		</exec>
  	</target>
 
@@ -568,7 +587,6 @@ External Dependencies:
 
   <target name="build.cli.deb" depends="build.cli.bin" description="builds a .deb file for debian-based systems ONLY!">
     <!-- Load deb task -->
-    <loadproperties srcFile="/root/creds/secret.properties"/>
     <taskdef-dependency name="debtask" classname="debrepo.ant.DebTask" artifactId="debrepo" groupId="org.cfmlprojects" version="1.0.0" />
     <mkdir dir="${deb.repo}"/>
     <debtask
@@ -855,10 +873,11 @@ External Dependencies:
 
 	<target name="build.testwar" depends="cfdistro.build" description="creates test war">
 		<!-- creates a war for testing in dist/, use 'box-cli runwar.start.fg' to run -->
-		<dependency artifactId="testbox" groupId="org.coldbox" version="1.1.0" mapping="/testbox" />
+		<dependency artifactId="testbox" groupId="com.ortussolutions" version="2.4.0-SNAPSHOT" mapping="/testbox" />
 		<!-- set mapping for MXUnit compat -->
-		<mapping physical="@ext.mappings.dir@/org.coldbox/testbox/1.1.0/system/testing/compat" virtual="/mxunit"/>
+		<mapping physical="@ext.mappings.dir@/com/ortussolutions/testbox/2.4.0-SNAPSHOT/system/compat" virtual="/mxunit"/>
 		<!-- set mappings for sources, tests -->
+		<mapping virtual="/commandbox-home" physical="@temp.dir@/cfml" />
 		<mapping virtual="/commandbox" physical="@src.dir@/cfml" />
 		<mapping virtual="/wirebox" physical="@src.dir@/cfml/system/wirebox" />
 		<mapping virtual="/cfml" physical="@src.dir@/cfml" />
