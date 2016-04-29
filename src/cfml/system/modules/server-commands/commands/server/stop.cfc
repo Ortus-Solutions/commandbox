@@ -26,9 +26,11 @@ component aliases="stop" {
 		boolean forget=false,
 		boolean all=false ){
 			
+			
 		if( arguments.all ) {
 			var servers = serverService.getServers();
 		} else {
+			arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
 			// Discover by shortname or webroot and get server info
 			var servers = { id: serverService.getServerInfoByDiscovery(
 				directory 	= arguments.directory,
