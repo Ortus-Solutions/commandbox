@@ -33,8 +33,7 @@ component aliases="start" {
 	 * @debug          	sets debug log level
 	 * @cfengine        sets the cfml engine type
 	 * @cfengine.optionsUDF  cfengineNameComplete
-	 * @cfengineVersion sets the cfml engine version
-	 * @cfengineVersion.optionsUDF cfengineVersionComplete
+	 * @WARPath		sets the path to an existing war to use
 	 * @webConfigDir   	custom location for web context configuration
 	 * @serverConfigDir	custom location for server configuration
 	 * @libDirs        	comma-separated list of extra lib directories for the server
