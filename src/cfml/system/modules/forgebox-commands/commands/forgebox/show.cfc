@@ -140,7 +140,6 @@ component aliases="show" {
 					.line( 'Versions: #entryData.versions.map( function( i ){ return ' ' & i.version; } ).toList()#' )
 					.line( 'Created On: #dateFormat( entryData.createdDate )#' )
 					.line( 'Updated On: #dateFormat( entryData.updatedDate )#' )
-					.line( 'Version: #entryData.version#' )
 					.line( 'ForgeBox Views: #entryData.hits#' )
 					.line( 'Downloads: #entryData.downloads#' )
 					.line( 'Installs: #entryData.installs#' )
