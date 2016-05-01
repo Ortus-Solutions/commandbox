@@ -336,10 +336,10 @@ component accessors="true" singleton {
         consoleLogger.error(e.detail.replaceAll(",","#chr(10)#"));
         return;
       }
-      if(serverInfo.cfengine == "lucee") {
+      if(serverInfo.cfengine contains "lucee") {
         javaagent = "-javaagent:""#installDir#/WEB-INF/lib/lucee-inst.jar""";
       }
-      if(serverInfo.cfengine == "railo") {
+      if(serverInfo.cfengine contains "railo") {
         javaagent = "-javaagent:""#installDir#/WEB-INF/lib/railo-inst.jar""";
       }
     }
