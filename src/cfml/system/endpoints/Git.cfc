@@ -62,7 +62,11 @@ component accessors="true" implements="IEndpoint" singleton {
 		
 		// Temporary location to place the repo
 		var localPath = createObject( 'java', 'java.io.File' ).init( "#tempDir#/git_#randRange( 1, 1000 )#" );
-				
+		
+		// This will trap the full java exceptions to work around this annoying behavior:
+		// https://luceeserver.atlassian.net/browse/LDEV-454
+		var CommandCaller = createObject( 'java', 'com.ortussolutions.commandbox.jgit.CommandCaller' ).init();
+		    
 		try { 
 			// Clone the repo locally into a temp folder
 			var cloneCommand = Git.cloneRepository()
@@ -70,16 +74,33 @@ component accessors="true" implements="IEndpoint" singleton {
 				.setCloneSubmodules( true )
 				.setDirectory( localPath )
 				.setProgressMonitor( progressMonitor );
-		        
+		        		         
 			// Conditionally apply security
-			local.result = secureCloneCommand( cloneCommand )
-		        .call();
+			var command = secureCloneCommand( cloneCommand );
+		    // call with our special java wrapper
+			local.result = CommandCaller.call( command );
 		        
 		    // Checkout branch, tag, or commit hash.
-	        local.result.checkout().setName( branch ).call();		        
+	        CommandCaller.call( local.result.checkout().setName( branch ) );		        
 		        
 		} catch( any var e ) {
-			throw( message="Error Cloning Git repository", detail="#e.message#",  type="endpointException"); 
+			// If the exception came from the Java call, this exception won't be null
+			var theRealJavaException = CommandCaller.getException();
+			
+			// If it's null, that just means some other CFML code must have blown chunks above.
+			if( isNull( theRealJavaException ) ) {
+				throw( message="Error Cloning Git repository", detail="#e.message#",  type="endpointException");
+			} else {
+				var deepMessage = '';
+				// Start at the top level and work around way down to the root cause.
+				do {
+					deepMessage &= '#theRealJavaException.toString()# #chr( 10 )#';
+					theRealJavaException = theRealJavaException.getCause()
+				} while( !isNull( theRealJavaException ) )
+				
+				throw( message="Error Cloning Git repository", detail="#deepMessage#",  type="endpointException");
+			}
+						 
 		} finally {
 			// Release file system locks on the repo
 			if( structKeyExists( local, 'result' ) ) {
