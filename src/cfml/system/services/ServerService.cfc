@@ -34,19 +34,16 @@ component accessors="true" singleton {
 	* Where the Run War jar path is
 	*/
 	property name="jarPath";
-	/**
-	* Default server settings
-	*/
-	property name="defaultServerJSON";	
 	
 	property name='rewritesDefaultConfig'	inject='rewritesDefaultConfig@constants';	
-	property name='interceptorService'		inject='interceptorService';
+	property name='interceptorService'		inject='interceptorService';	
+	property name='ConfigService'		inject='ConfigService';
 	property name='JSONService'				inject='JSONService';
 	property name='packageService'			inject='packageService';
-	property name='serverArtifactService'			inject='serverArtifactService';
+	property name='serverArtifactService'	inject='serverArtifactService';
 	property name='consoleLogger'			inject='logbox:logger:console';
 	property name='wirebox'					inject='wirebox';
-  property name="cfengineVersions"    inject="cfengineVersions@constants";
+	property name="cfengineVersions"		inject="cfengineVersions@constants";
 
 	/**
 	* Constructor
@@ -110,51 +107,57 @@ component accessors="true" singleton {
 	}
 
 	function onDIComplete() {
+	}
+
+	function getDefaultServerJSON() {
+		// pull default settings from config to mix in below.
+		// The structure of server.defaults in Config settings matches the default server.json layout here.
+		var d = ConfigService.getSetting( 'server.defaults', {} );
 		
-		setDefaultServerJSON( {
-			name : '',
-			openBrowser : true,
-			stopsocket : 0,
-			debug : false,
-			trayicon : '#variables.libdir#/trayicon.png',
+		return {
+			name : d.name ?: '',
+			openBrowser : d.openBrowser ?: true,
+			stopsocket : d.stopsocket ?: 0,
+			debug : d.debug ?: false,
+			trayicon : d.trayicon ?: '#variables.libdir#/trayicon.png',
 			jvm : {
-				heapSize : 512,
-				args : ''
+				heapSize : d.jvm.heapSize ?: 512,
+				args : d.jvm.args ?: ''
 			},
 			web : {
-				host : '127.0.0.1',				
-				directoryBrowsing : true,
-				webroot : '',
+				host : d.web.host ?: '127.0.0.1',				
+				directoryBrowsing : d.web.directoryBrowsing ?: true,
+				webroot : d.web.webroot ?: '',
 				http : {
-					port : 0,
-					enable : true
+					port : d.web.http.port ?: 0,
+					enable : d.web.http.enable ?: true
 				},
 				ssl : {
-					enable : false,
-					port : 1443,
-					cert : '',
-					key : '',
-					keyPass : ''
+					enable : d.web.ssl.enable ?: false,
+					port : d.web.ssl.port ?: 1443,
+					cert : d.web.ssl.cert ?: '',
+					key : d.web.ssl.key ?: '',
+					keyPass : d.web.ssl.keyPass ?: ''
 				},
 				rewrites : {
-					enable : false,
-					config : variables.rewritesDefaultConfig
+					enable : d.web.rewrites.enable ?: false,
+					config : d.web.rewrites.config ?: variables.rewritesDefaultConfig
 				}
 			},
 			app : {
-				logDir : '',
-				libDirs : '',
-				webConfigDir : '',
-				serverConfigDir :variables.serverHomeDirectory,
-				webXML : '',
-				standalone : false,
-				WARPath : "",
-				cfengine : "lucee"
+				logDir : d.app.logDir ?: '',
+				libDirs : d.app.libDirs ?: '',
+				webConfigDir : d.app.webConfigDir ?: '',
+				serverConfigDir : d.app.serverConfigDir ?: variables.serverHomeDirectory,
+				webXML : d.app.webXML ?: '',
+				standalone : d.app.standalone ?: false,
+				WARPath : d.app.WARPath ?: "",
+				cfengine : d.app.cfengine ?: "lucee"
 			},
 			runwar : {
-				args : ''
+				args : d.runwar.args ?: ''
 			}
-		} );
+		};
 	}
 
 	/**
@@ -294,8 +297,6 @@ component accessors="true" singleton {
 		serverInfo.libDirs			= serverProps.libDirs 			?: serverJSON.app.libDirs			?: defaults.app.libDirs;
 		serverInfo.trayIcon			= serverProps.trayIcon 			?: serverJSON.trayIcon 				?: defaults.trayIcon;
 		serverInfo.webXML 			= serverProps.webXML 			?: serverJSON.app.webXML 			?: defaults.app.webXML;
-		serverInfo.cfengine 	= serverProps.cfengine 		?: serverJSON.app.cfengine 	?: defaults.app.cfengine;
-		serverInfo.WARPath 	= serverProps.WARPath 		?: serverJSON.app.WARPath 	?: defaults.app.WARPath;
 		serverInfo.SSLEnable 		= serverProps.SSLEnable 		?: serverJSON.web.SSL.enable		?: defaults.web.SSL.enable;
 		serverInfo.HTTPEnable		= serverProps.HTTPEnable 		?: serverJSON.web.HTTP.enable		?: defaults.web.HTTP.enable;
 		serverInfo.SSLPort			= serverProps.SSLPort 			?: serverJSON.web.SSL.port			?: defaults.web.SSL.port;
@@ -308,6 +309,8 @@ component accessors="true" singleton {
 		serverInfo.directoryBrowsing = serverProps.directoryBrowsing ?: serverJSON.web.directoryBrowsing ?: defaults.web.directoryBrowsing;
 		serverInfo.JVMargs			= serverProps.JVMargs			?: serverJSON.JVM.args				?: defaults.JVM.args;
 		serverInfo.runwarArgs		= serverProps.runwarArgs		?: serverJSON.runwar.args			?: defaults.runwar.args;
+		serverInfo.cfengine			= serverProps.cfengine			?: serverJSON.app.cfengine			?: defaults.app.cfengine;
+		serverInfo.WARPath			= serverProps.WARPath			?: serverJSON.app.WARPath			?: defaults.app.WARPath;
 		
 		serverInfo.logdir			= serverInfo.webConfigDir & "/log";
 	
@@ -599,6 +602,7 @@ component accessors="true" singleton {
 	* @name.hint The name to find
 	*/
 	struct function getServerInfoByDiscovery( required directory="", required name="" ){
+		
 		// Discover by shortname or webroot
 		if( len( arguments.name ) ){
 			var foundServer = getServerInfoByName( arguments.name );
@@ -608,7 +612,7 @@ component accessors="true" singleton {
 		}
 
 		var webroot = arguments.directory is "" ? shell.pwd() : arguments.directory;
-		return getServerInfoByWebroot( fileSystemUtil.resolvePath( webroot ) );
+		return getServerInfoByWebroot( fileSystemUtil.resolvePath( webroot ), arguments.name );
 	}
 
 	/**
@@ -644,8 +648,13 @@ component accessors="true" singleton {
 	* Get a server information struct by webrot, if not found it returns an empty struct
 	* @webroot.hint The webroot to find
 	*/
-	struct function getServerInfoByWebroot( required webroot ){
-		var webrootHash = hash( arguments.webroot );
+	struct function getServerInfoByWebroot( required webroot, name='' ){
+		
+		if( arguments.name == '' ) {
+			arguments.name = listLast( arguments.webroot, "\/" );
+		}
+		
+		var webrootHash = hash( arguments.webroot & arguments.name );
 		var servers 	= getServers();
 
 		return structKeyExists( servers, webrootHash ) ? servers[ webrootHash ] : {};

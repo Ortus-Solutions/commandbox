@@ -31,9 +31,6 @@ component aliases="start" {
 	 * @stopPort       	stop socket listener port number
 	 * @force          	force start if status is not stopped
 	 * @debug          	sets debug log level
-	 * @cfengine        sets the cfml engine type
-	 * @cfengine.optionsUDF  cfengineNameComplete
-	 * @WARPath		sets the path to an existing war to use
 	 * @webConfigDir   	custom location for web context configuration
 	 * @serverConfigDir	custom location for server configuration
 	 * @libDirs        	comma-separated list of extra lib directories for the server
@@ -52,6 +49,9 @@ component aliases="start" {
 	 * @JVMArgs 		Additional JVM args to use when starting the server. Use "server status --verbose" to debug
 	 * @runwarArgs 		Additional Runwar options to use when starting the server. Use "server status --verbose" to debug
 	 * @saveSettings 	Save start settings in server.json
+	 * @cfengine        sets the cfml engine type
+	 * @cfengine.optionsUDF  cfengineNameComplete
+	 * @WARPath			sets the path to an existing war to use
 	 **/
 	function run(
 		String  name,
@@ -62,8 +62,6 @@ component aliases="start" {
 		Numeric stopPort,
 		Boolean force,
 		Boolean debug,
-		String  cfengine,
-		String  WARPath,
 		String  webConfigDir,
 		String  serverConfigDir,
 		String  libDirs,
@@ -81,7 +79,9 @@ component aliases="start" {
 		boolean directoryBrowsing,
 		String  JVMArgs,
 		String  runwarArgs,
-		boolean	saveSettings=true
+		boolean	saveSettings=true,
+		String  cfengine,
+		String  WARPath
 	){
 		// Resolve path as used locally
 		arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
