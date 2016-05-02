@@ -43,8 +43,10 @@ component accessors="true" singleton {
 	property name='interceptorService'		inject='interceptorService';
 	property name='JSONService'				inject='JSONService';
 	property name='packageService'			inject='packageService';
+	property name='serverArtifactService'			inject='serverArtifactService';
 	property name='consoleLogger'			inject='logbox:logger:console';
 	property name='wirebox'					inject='wirebox';
+  property name="cfengineVersions"    inject="cfengineVersions@constants";
 
 	/**
 	* Constructor
@@ -144,7 +146,10 @@ component accessors="true" singleton {
 				libDirs : '',
 				webConfigDir : '',
 				serverConfigDir :variables.serverHomeDirectory,
-				webXML : ''
+				webXML : '',
+				standalone : false,
+				WARPath : "",
+				cfengine : "lucee"
 			},
 			runwar : {
 				args : ''
@@ -161,22 +166,26 @@ component accessors="true" singleton {
 		Struct serverProps
 	){
 
+		if(isNull(serverProps.name)) {
+			serverProps.name = listLast( serverProps.directory, "\/" );
+		}
+
 		// Discover by shortname or server and get server info
 		var serverInfo = getServerInfoByDiscovery(
 			directory 	= serverProps.directory,
-			name		= serverProps.name ?: ''
+			name		= serverProps.name
 		);
 
 		// Was it found, or new server?
 		if( structIsEmpty( serverInfo ) ){
 			// We need a new entry
-			serverInfo = getServerInfo( serverProps.directory );
+			serverInfo = getServerInfo( serverProps.directory, serverProps.name );
 		}
 
 		// Get package descriptor
 		var boxJSON = packageService.readPackageDescriptor( serverInfo.webroot );
 		// Get server descriptor
-		var serverJSON = readServerJSON( serverInfo.webroot );
+		var serverJSON = readServerJSON( serverInfo.webroot , serverProps.name);
 		// Get defaults
 		var defaults = getDefaultServerJSON();
 								
@@ -197,6 +206,9 @@ component accessors="true" singleton {
 		for( var prop in serverProps ) {
 			if( !isNull( serverProps[ prop ] ) && prop != 'directory'  && prop != 'saveSettings' ) {
 				switch(prop) {
+				    case "name":
+						serverJSON[ 'name' ] = serverProps[ prop ];
+				         break;
 				    case "port":
 						serverJSON[ 'web' ][ 'http' ][ 'port' ] = serverProps[ prop ];
 				         break;
@@ -217,6 +229,12 @@ component accessors="true" singleton {
 				         break;
 				    case "webXML":
 						serverJSON[ 'app' ][ 'webXML' ] = serverProps[ prop ];
+				         break;
+				    case "cfengine":
+						serverJSON[ 'app' ][ 'cfengine' ] = serverProps[ prop ];
+				         break;
+				    case "WARPath":
+						serverJSON[ 'app' ][ 'WARPath' ] = serverProps[ prop ];
 				         break;
 				    case "HTTPEnable":
 						serverJSON[ 'web' ][ 'HTTP' ][ 'enable' ] = serverProps[ prop ];
@@ -265,9 +283,9 @@ component accessors="true" singleton {
 		// Setup serverinfo according to params
 		// Hand-entered values take precendence, then settings saved in server.json, and finally defaults.
 		// The big servers.json is only used to keep a record of the last values the server was started with
+		serverInfo.name 			= serverProps.name;
 		serverInfo.debug 			= serverProps.debug 			?: serverJSON.debug 				?: defaults.debug;
 		serverInfo.openbrowser		= serverProps.openbrowser 		?: serverJSON.openbrowser			?: defaults.openbrowser;
-		serverInfo.name 			= serverProps.name 				?: listLast( serverInfo.webroot, "\/" );
 		serverInfo.host				= serverProps.host 				?: serverJSON.web.host				?: defaults.web.host;
 		serverInfo.port 			= serverProps.port 				?: serverJSON.web.http.port			?: getRandomPort( serverInfo.host );
 		serverInfo.stopsocket		= serverProps.stopsocket		?: serverJSON.stopsocket 			?: getRandomPort( serverInfo.host );		
@@ -276,6 +294,8 @@ component accessors="true" singleton {
 		serverInfo.libDirs			= serverProps.libDirs 			?: serverJSON.app.libDirs			?: defaults.app.libDirs;
 		serverInfo.trayIcon			= serverProps.trayIcon 			?: serverJSON.trayIcon 				?: defaults.trayIcon;
 		serverInfo.webXML 			= serverProps.webXML 			?: serverJSON.app.webXML 			?: defaults.app.webXML;
+		serverInfo.cfengine 	= serverProps.cfengine 		?: serverJSON.app.cfengine 	?: defaults.app.cfengine;
+		serverInfo.WARPath 	= serverProps.WARPath 		?: serverJSON.app.WARPath 	?: defaults.app.WARPath;
 		serverInfo.SSLEnable 		= serverProps.SSLEnable 		?: serverJSON.web.SSL.enable		?: defaults.web.SSL.enable;
 		serverInfo.HTTPEnable		= serverProps.HTTPEnable 		?: serverJSON.web.HTTP.enable		?: defaults.web.HTTP.enable;
 		serverInfo.SSLPort			= serverProps.SSLPort 			?: serverJSON.web.SSL.port			?: defaults.web.SSL.port;
@@ -307,16 +327,41 @@ component accessors="true" singleton {
 		// The process native name
 		var processName = serverInfo.name is "" ? "CommandBox" : serverInfo.name;
 
+    var javaagent = serverinfo.cfengine == "lucee" ? "" : "-javaagent:""#libdir#/lucee-inst.jar""";
+    if( serverInfo.cfengine != "lucee" && serverInfo.cfengine != "lucee@" & cfengineVersions["lucee"][1]){
+      try {
+        installDir = serverArtifactService.install( cfengine=serverInfo.cfengine, basedirectory=serverInfo.webConfigDir );
+      } catch (any e) {
+        consoleLogger.error("Error installing server - " & e.message);
+        consoleLogger.error(e.detail.replaceAll(",","#chr(10)#"));
+        return;
+      }
+      if(serverInfo.cfengine == "lucee") {
+        javaagent = "-javaagent:""#installDir#/WEB-INF/lib/lucee-inst.jar""";
+      }
+      if(serverInfo.cfengine == "railo") {
+        javaagent = "-javaagent:""#installDir#/WEB-INF/lib/railo-inst.jar""";
+      }
+    }
+
 		// The java arguments to execute:  Shared server, custom web configs
 		var args = " #serverInfo.JVMargs# -Xmx#serverInfo.heapSize#m -Xms#serverInfo.heapSize#m"
-				& " -javaagent:""#libdir#/lucee-inst.jar"" -jar ""#variables.jarPath#"""
-				& " -war ""#serverInfo.webroot#"" --background=true --port #serverInfo.port# --host #serverInfo.host# --debug #serverInfo.debug#"
+				& " #javaagent# -jar ""#variables.jarPath#"""
+				& " --background=true --port #serverInfo.port# --host #serverInfo.host# --debug=#serverInfo.debug#"
 				& " --stop-port #serverInfo.stopsocket# --processname ""#processName#"" --log-dir ""#serverInfo.logDir#"""
 				& " --open-browser #serverInfo.openbrowser# --open-url http://#serverInfo.host#:#serverInfo.port#"
-				& " --cfengine-name lucee --server-name ""#serverInfo.name#"" --lib-dirs ""#libDirs#"""
+				& " --cfengine-name #serverInfo.cfengine# --server-name ""#serverInfo.name#"""
 				& " --tray-icon ""#serverInfo.trayIcon#"" --tray-config ""#libdir#/traymenu.json"""
 				& " --directoryindex ""#serverInfo.directoryBrowsing#"" --cfml-web-config ""#serverInfo.webConfigDir#"""
-				& "  --cfml-server-config ""#serverInfo.serverConfigDir#"" #serverInfo.runwarArgs# ";
+				& " --cfml-server-config ""#serverInfo.serverConfigDir#"" #serverInfo.runwarArgs# ";
+		// standalone or not
+		if( serverInfo.cfengine != "lucee" && serverInfo.cfengine != "lucee@" & cfengineVersions["lucee"][1]){
+			args &= " -war ""#serverInfo.webroot#"" --lib-dirs ""#installDir#/WEB-INF/lib"" --web-xml-path ""#installDir#/WEB-INF/web.xml""";
+		} else if (serverInfo.WARPath != "") {
+			args &= " -war ""#serverInfo.webroot#""";
+		} else {
+			args &= " -war ""#serverInfo.webroot#"" --lib-dirs ""#libDirs#""";
+		}
 		// Incorporate SSL to command
 		if( serverInfo.SSLEnable ){
 			args &= " --http-enable #serverInfo.HTTPEnable# --ssl-enable #serverInfo.SSLEnable# --ssl-port #serverInfo.SSLPort#";
@@ -345,6 +390,9 @@ component accessors="true" singleton {
 		// change status to starting + persist
 		serverInfo.status = "starting";
 		setServerInfo( serverInfo );
+    if(serverInfo.debug) {
+      consoleLogger.debug("Server start command: #javaCommand# #args#");
+    }
 		// thread the execution
 		var threadName = 'server#hash( serverInfo.webroot )##createUUID()#';
 		thread name="#threadName#" serverInfo=serverInfo args=args {
@@ -366,6 +414,7 @@ component accessors="true" singleton {
 				setServerInfo( serverInfo );				
 			}
 		}
+		
 		
 		// She'll be coming 'round the mountain when she comes...
 		consoleLogger.warn( "The server for #serverInfo.webroot# is starting on #serverInfo.host#:#serverInfo.port#... type 'server status' to see result" );
@@ -424,10 +473,11 @@ component accessors="true" singleton {
 		if( !arguments.all ){
 			var servers 	= getServers();
 			var serverdir 	= getCustomServerFolder( arguments.serverInfo );
-			var serverJSONPath = arguments.serverInfo.webroot & '/server.json';
+			var defaultServerJSONPath = arguments.serverInfo.webroot & '/server.json';
+			var serverJSONPath = arguments.serverInfo.webroot & '/server-#arguments.serverInfo.name#.json';
 
 			// try to delete from config first
-			structDelete( servers, hash( arguments.serverInfo.webroot ) );
+			structDelete( servers, hash( arguments.serverInfo.webroot & arguments.serverInfo.name ) );
 			setServers( servers );
 			// try to delete server
 			if( directoryExists( serverDir ) ){
@@ -444,6 +494,9 @@ component accessors="true" singleton {
 			// Delete server.json if it exists
 			if( fileExists( serverJSONPath ) ) {
 				fileDelete( serverJSONPath );
+			}
+			if( fileExists( defaultServerJSONPath ) ) {
+				fileDelete( defaultServerJSONPath );
 			}
 			// return message
 			return "Poof! Wiped out server " & serverInfo.name;
@@ -490,7 +543,7 @@ component accessors="true" singleton {
  	 **/
 	function setServerInfo( required struct serverInfo ){
 		var servers 	= getServers();
-		var webrootHash = hash( arguments.serverInfo.webroot );
+		var webrootHash = hash( arguments.serverInfo.webroot & arguments.serverInfo.name);
 
 		if( arguments.serverInfo.webroot == "" ){
 			throw( "The webroot cannot be empty!" );
@@ -524,7 +577,7 @@ component accessors="true" singleton {
 				for( var thisKey in results ){
 					// Backwards compat-- add in server id if it doesn't exist for older versions of CommandBox
 					if( isNull( results[ thisKey ].id ) ){
-						results[ thisKey ].id = hash( results[ thisKey ].webroot );
+						results[ thisKey ].id = hash( results[ thisKey ].webroot & results[ thisKey ].name );
 						updateRequired = true;
 					}
 					// Future-proof server info by guaranteeing that all properties will exist in the 
@@ -548,7 +601,10 @@ component accessors="true" singleton {
 	struct function getServerInfoByDiscovery( required directory="", required name="" ){
 		// Discover by shortname or webroot
 		if( len( arguments.name ) ){
-			return getServerInfoByName( arguments.name );
+			var foundServer = getServerInfoByName( arguments.name );
+			if(!isNull(foundServer)) {
+				return foundServer;
+			}
 		}
 
 		var webroot = arguments.directory is "" ? shell.pwd() : arguments.directory;
@@ -599,9 +655,9 @@ component accessors="true" singleton {
 	* Get server info for webroot, if not created, it will init a new server info entry
 	* @webroot.hint root directory for served content
  	**/
-	struct function getServerInfo( required webroot ){
+	struct function getServerInfo( required webroot , required name){
 		var servers 	= getServers();
-		var webrootHash = hash( arguments.webroot );
+		var webrootHash = hash( arguments.webroot & arguments.name);
 		var statusInfo 	= {};
 
 		if( !directoryExists( arguments.webroot ) ){
@@ -667,10 +723,13 @@ component accessors="true" singleton {
 	* Read a server.json file.  If it doesn't exist, returns an empty struct
 	* This only returns properties specifically set in the file.
 	*/
-	struct function readServerJSON( required string directory ) {
-		var filePath = arguments.directory & '/server.json';
-		if( fileExists( filePath ) ) {
-			return deserializeJSON( fileRead( filePath ) );
+	struct function readServerJSON( required string directory , string name="") {
+		var defaultServerJSON = arguments.directory & '/server.json';
+		var serverJSON = arguments.directory & '/server-#name#.json';
+		if( fileExists( serverJSON ) ) {
+			return deserializeJSON( fileRead( serverJSON ) );
+		} else if(fileExists( defaultServerJSON )) {
+			return deserializeJSON( fileRead( defaultServerJSON ) );
 		} else {
 			return {};
 		}
@@ -681,9 +740,21 @@ component accessors="true" singleton {
 	*/
 	function saveServerJSON( required string directory, required struct data ) {
 		var filePath = arguments.directory & '/server.json';
+		if(fileExists(filePath)) {
+		  var existingProps = readServerJSON(directory);
+		  if(!isNull(data.name) && (isNull(existingProps.name) || existingProps.name != data.name)) {
+		    filePath = arguments.directory & '/server-#data.name#.json';
+		  }
+		}
 		fileWrite( filePath, formatterUtil.formatJSON( serializeJSON( arguments.data ) ) );
 	}
 
+  /**
+  * Dynamic completion for cfengine
+  */  
+	function getCFEngineNames() {
+    return serverArtifactService.getCFEngineNames();
+	}
 	
 	/**
 	* Dynamic completion for property name based on contents of server.json
