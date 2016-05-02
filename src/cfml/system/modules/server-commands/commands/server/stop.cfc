@@ -50,6 +50,9 @@ component aliases="stop" {
 			var serverInfo = servers[ id ];
 			
 			if( serverInfo.status == 'stopped' ) {
+				if( structCount( servers ) == 1 ) {
+					print.yellowLine( serverInfo.name & ' already stopped..' ).toConsole();
+				}
 				continue;
 			}
 			
@@ -57,7 +60,8 @@ component aliases="stop" {
 			
 			var results = serverService.stop( serverInfo );
 			if( results.error ){
-				error( results.messages );
+				print.boldWhiteOnRedLine( 'ERROR' );
+				print.boldRedLine( results.messages );
 			} else {
 				print.line( results.messages );
 			}
