@@ -37,10 +37,10 @@ component accessors="true" singleton {
 	
 	property name='rewritesDefaultConfig'	inject='rewritesDefaultConfig@constants';	
 	property name='interceptorService'		inject='interceptorService';	
-	property name='ConfigService'		inject='ConfigService';
+	property name='ConfigService'			inject='ConfigService';
 	property name='JSONService'				inject='JSONService';
 	property name='packageService'			inject='packageService';
-	property name='serverArtifactService'	inject='serverArtifactService';
+	property name='serverEngineService'	inject='serverEngineService';
 	property name='consoleLogger'			inject='logbox:logger:console';
 	property name='wirebox'					inject='wirebox';
 	property name="cfengineVersions"		inject="cfengineVersions@constants";
@@ -331,7 +331,7 @@ component accessors="true" singleton {
     var javaagent = serverinfo.cfengine == "lucee" ? "" : "-javaagent:""#libdir#/lucee-inst.jar""";
     if( serverInfo.cfengine != "lucee" && serverInfo.cfengine != "lucee@" & cfengineVersions["lucee"][1]){
       try {
-        var installDir = serverArtifactService.install( cfengine=serverInfo.cfengine, basedirectory=serverInfo.webConfigDir );
+        var installDir = serverEngineService.install( cfengine=serverInfo.cfengine, basedirectory=serverInfo.webConfigDir );
         serverInfo.logdir = installDir & "/logs";
         
       } catch (any e) {
@@ -769,7 +769,7 @@ component accessors="true" singleton {
   * Dynamic completion for cfengine
   */  
 	function getCFEngineNames() {
-    return serverArtifactService.getCFEngineNames();
+    return serverEngineService.getCFEngineNames();
 	}
 	
 	/**
