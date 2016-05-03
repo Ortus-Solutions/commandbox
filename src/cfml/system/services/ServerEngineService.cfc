@@ -49,12 +49,7 @@ component accessors="true" singleton="true" {
   public function installAdobe( required destination, required version ) {
 	
 	var installDir = installEngineArchive( 'adobe-coldFusion-cf-engine@#version#', destination, 'adobe' );
-    
-    // Tomcat versions of Adobe CF require some extra jars
-    if( installDir contains 'adobe-10.' || installDir contains 'adobe-11.' || installDir contains 'adobe-2016.' ) {
-		installEngineArchive( 'adobe-coldFusion-cf-engine-tomcat-libs', destination, 'adobe',  installDir );
-	}
-	
+    	
     // set password to "commandbox"
     fileWrite( installDir & "/WEB-INF/cfusion/lib/password.properties", "rdspassword=#cr#password=commandbox#cr#encrypted=false");
     
