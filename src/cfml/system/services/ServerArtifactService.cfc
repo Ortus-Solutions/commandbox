@@ -5,46 +5,24 @@
 ********************************************************************************
 * @author Brad Wood, Luis Majano, Denny Valliant
 *
-* I handle artifacts, which are basically just a cache of downloaded packages.
-*
-* Artifacts are stored in this format:
-* <artifactdir>/packageName/version/packageName.zip
-*
-* We are not currently using a group ID, but we may need to in the future
 *
 */
 component accessors="true" singleton="true" {
 
   // DI
-  property name='artifactDir'     inject='serverArtifactDir@constants';
-  property name='tempDir'       inject='tempDir@constants';
-  property name='packageService'     inject='PackageService';
-  property name='logger'         inject='logbox:logger:{this}';
-  property name='consoleLogger'     inject='logbox:logger:console';
-  property name="cfdependency"    inject="cfdependency";
-  property name="cfengineVersions"    inject="cfengineVersions@constants";
-  property name='cr'          inject='cr@constants';
+  property name='tempDir'			inject='tempDir@constants';
+  property name='packageService'	inject='PackageService';
+  property name='logger'			inject='logbox:logger:{this}';
+  property name='consoleLogger'		inject='logbox:logger:console';
+  property name="cfengineVersions"	inject="cfengineVersions@constants";
+  property name='cr'				inject='cr@constants';
 
   /**
   * DI complete
   */
   function onDIComplete() {
-    // Create the artifacts directory if it doesn't exist
-    if( !directoryExists( variables.artifactDir ) ) {
-      directoryCreate( variables.artifactDir );
-    }
-    cfdependency.setLocalRepositoryPath(variables.artifactDir);
-    cfdependency.addRemoteRepository( "ortusstaging", "http://integration.staging.ortussolutions.com/artifacts/" );
   }
 
-  /**
-  * Gets the path for the local artifact
-  * @artifact    artifact coordinates to get path for`
-  **/
-  public function getPathForLocalArtifact( required artifact ) {
-    var artifactPath = cfdependency.getPathForLocalArtifact(artifact);
-    return artifactPath;
-  }
 
   /**
   * Checks engine and version, returning default version if version is empty
@@ -108,18 +86,15 @@ component accessors="true" singleton="true" {
   * @version         Version number or empty to use default
   **/
   public function installAdobe( required destination, required version ) {
-    var artifact = "com.adobe:coldfusion:war:#version#";
-    var compat = "com.adobe:coldfusion:zip:compat:#version#";
-    if(left(version,2) == 10 || left(version,2) == 11 || left(version,4) == 2016) {
-      var compat = "com.adobe:coldfusion:zip:compat:11.0.0.289974";
-      var artifactPath = cfdependency.get(dependencies=[artifact,compat], dest=destination, unzip=true);
-    } else {
-      var artifactPath = cfdependency.get(dependencies=[artifact], dest=destination, unzip=true);
-    }
+	
+	var versionInstalled = installEngineArchive( 'adobe-coldFusion-cf-engine@#version#', destination );
+    
+    if( left( versionInstalled, 2 ) == 10 || left( version, 2 ) == 11 || left( version, 4 ) == 2016 ) {
+		installEngineArchive( 'adobe-coldFusion-cf-engine-tomcat-libs', destination );
+	}
+	
     // set password to "commandbox"
-    fileWrite(destination & "/WEB-INF/cfusion/lib/password.properties",
-      "rdspassword=#cr#password=commandbox#cr#encrypted=false");
-    return artifactPath;
+    fileWrite(destination & "/WEB-INF/cfusion/lib/password.properties", "rdspassword=#cr#password=commandbox#cr#encrypted=false");
   }
 
   /**
@@ -128,10 +103,10 @@ component accessors="true" singleton="true" {
   * @version         Version number or empty to use default
   **/
   public function installLucee( required destination, required version ) {
-    var artifact = "org.lucee:lucee.war:war:#version#";
-    var artifactPath = cfdependency.get(dependencies=[artifact], dest=destination, unzip=true);
+    
+	installEngineArchive( 'lucee-cf-engine@#version#', destination );
+	
     configureWebXML(cfengine="lucee",source="#destination#/WEB-INF/web.xml",destination="#destination#/WEB-INF/web.xml");
-    return artifactPath;
   }
 
   /**
@@ -140,12 +115,51 @@ component accessors="true" singleton="true" {
   * @version         Version number or empty to use default
   **/
   public function installRailo( required destination, required version ) {
-    var artifact = "org.getrailo:railo.war:war:#version#";
-    var artifactPath = cfdependency.get(dependencies=[artifact], dest=destination, unzip=true);
+    
+	installEngineArchive( 'railo-cf-engine@#version#', destination );
+	
     configureWebXML(cfengine="railo",source="#destination#/WEB-INF/web.xml",destination="#destination#/WEB-INF/web.xml");
-    return artifactPath;
   }
 
+
+	/*
+	* Downloads a CF engine endpoint and unzips the "Engine.[WAR|zip] archive into the destination
+	*/
+	function installEngineArchive( required string ID, required string destination ) {
+    	var thisTempDir = tempDir & '/' & createUUID();
+    	var versionInstalled = '0';
+    	 
+		packageService.installPackage( ID=arguments.ID, directory=thisTempDir, save=false );
+				
+		if( packageService.isPackage( thisTempDir ) ) {
+			var boxJSON = packageService.readPackageDescriptor( thisTempDir );
+			versionInstalled =  boxJSON.version;			
+		}
+				
+		var theArchive = '';
+		for( var thisFile in directoryList( thisTempDir ) ) {
+			if( listFindNoCase( 'war,zip', listLast( thisFile, '.' ) ) ) {
+				theArchive = thisFile;
+			}
+		}
+		
+		if( thisFile == '' ) {
+			throw( "Package didn't contain a war or zip archive." );
+		}
+		
+		consoleLogger.info( "Exploding WAR/zip archive...");
+		zip action="unzip" file="#thisFile#" destination="#destination#" overwrite="true";
+				
+		// Catch this to gracefully handle where the OS or another program 
+		// has the folder locked.
+		try {
+			directoryDelete( thisTempDir, true );
+		} catch( any e ) {
+			consoleLogger.error( '#e.message##CR#The folder is possibly locked by another program.' );
+			logger.error( '#e.message# #e.detail#' , e.stackTrace );
+		}
+		return versionInstalled;
+	}
   /**
   * configure web.xml file for Lucee and Railo
   * @cfengine        lucee or railo

@@ -208,10 +208,8 @@ component accessors="true" singleton {
 		// Save hand-entered properties in our server.json for next time
 		for( var prop in serverProps ) {
 			if( !isNull( serverProps[ prop ] ) && prop != 'directory'  && prop != 'saveSettings' ) {
+				// Only need switch cases for properties that are nested or use different name
 				switch(prop) {
-				    case "name":
-						serverJSON[ 'name' ] = serverProps[ prop ];
-				         break;
 				    case "port":
 						serverJSON[ 'web' ][ 'http' ][ 'port' ] = serverProps[ prop ];
 				         break;
@@ -312,8 +310,8 @@ component accessors="true" singleton {
 		serverInfo.cfengine			= serverProps.cfengine			?: serverJSON.app.cfengine			?: defaults.app.cfengine;
 		serverInfo.WARPath			= serverProps.WARPath			?: serverJSON.app.WARPath			?: defaults.app.WARPath;
 		
-		serverInfo.logdir			= serverInfo.webConfigDir & "/log";
-	
+		serverInfo.logdir			= serverInfo.webConfigDir & "/logs";
+			
 		interceptorService.announceInterception( 'onServerStart', { serverInfo=serverInfo } );
 		
 		var launchUtil 	= java.LaunchUtil;
@@ -333,7 +331,9 @@ component accessors="true" singleton {
     var javaagent = serverinfo.cfengine == "lucee" ? "" : "-javaagent:""#libdir#/lucee-inst.jar""";
     if( serverInfo.cfengine != "lucee" && serverInfo.cfengine != "lucee@" & cfengineVersions["lucee"][1]){
       try {
-        installDir = serverArtifactService.install( cfengine=serverInfo.cfengine, basedirectory=serverInfo.webConfigDir );
+        var installDir = serverArtifactService.install( cfengine=serverInfo.cfengine, basedirectory=serverInfo.webConfigDir );
+        serverInfo.logdir = installDir & "/logs";
+        
       } catch (any e) {
         consoleLogger.error("Error installing server - " & e.message);
         consoleLogger.error(e.detail.replaceAll(",","#chr(10)#"));
@@ -345,8 +345,15 @@ component accessors="true" singleton {
       if(serverInfo.cfengine contains "railo") {
         javaagent = "-javaagent:""#installDir#/WEB-INF/lib/railo-inst.jar""";
       }
+    // Using built in server that hasn't been started before
+    } else if( !directoryExists( serverInfo.webConfigDir & '/WEB-INF' ) ) {
+		serverInfo.webConfigDir &= '/lucee-#cfengineVersions["lucee"][1]#';
+        serverInfo.logdir = serverInfo.webConfigDir & "/logs";
     }
-
+    
+    directoryCreate( serverInfo.logDir, true, true );
+    
+    
 		// The java arguments to execute:  Shared server, custom web configs
 		var args = " #serverInfo.JVMargs# -Xmx#serverInfo.heapSize#m -Xms#serverInfo.heapSize#m"
 				& " #javaagent# -jar ""#variables.jarPath#"""

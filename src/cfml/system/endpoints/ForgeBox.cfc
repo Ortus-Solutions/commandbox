@@ -220,7 +220,7 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 				// If we requsted stable and all releases are pre-release, just grab the latest
 				if( arguments.version == 'stable' && arrayLen( entryData.versions ) ) {
 					arguments.version = entryData.versions[ 1 ].version;
-					var downloadURL = thisVersion.downloadURL; 
+					var downloadURL = entryData.versions[ 1 ].downloadURL; 
 				} else {
 					throw( 'Version [#arguments.version#] not found for package [#arguments.slug#].', 'endpointException', 'Available versions are [#entryData.versions.map( function( i ){ return ' ' & i.version; } ).toList()#]' );					
 				}
@@ -231,9 +231,7 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 			}
 			
 			consoleLogger.info( "Installing version [#arguments.version#]." );
-				
-			// entryData.versions.each( function( i ) { systemOutput( i.version, true ); } );
-	
+					
 			var packageType = entryData.typeSlug;
 			
 			// Advice we found it
