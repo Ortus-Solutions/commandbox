@@ -68,7 +68,7 @@ component accessors="true" singleton {
 			boolean save=false,
 			boolean saveDev=false,
 			boolean production=false,
-			string currentWorkingDirectory,
+			string currentWorkingDirectory=shell.pwd(),
 			boolean verbose=false,
 			boolean force=false,
 			string packagePathRequestingInstallation = arguments.currentWorkingDirectory

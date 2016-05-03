@@ -14,7 +14,6 @@ component extends="mxunit.framework.TestCase" {
     setting requesttimeout="240";
     shell = application.wirebox.getInstance( 'Shell' );
     serverArtifactService = application.wirebox.getInstance( 'ServerArtifactService' );
-    artifactDir = application.wirebox.getInstance( 'serverArtifactDir@constants' );
     workDir = expandPath("/tests/work");
   }
 

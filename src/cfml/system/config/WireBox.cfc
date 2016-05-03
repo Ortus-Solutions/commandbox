@@ -38,7 +38,6 @@ component extends="wirebox.system.ioc.config.Binder" {
 				system.getProperty( 'user.home' ) & "/.CommandBox/" : system.getProperty( 'cfml.cli.home' );
 		var tempDir					= homedir & "/temp";
 		var artifactDir				= homedir & "/artifacts";
-		var serverArtifactDir				= homedir & "/serverartifacts";
 		var userDir					= system.getProperty( "user.dir" );
 		var commandHistoryFile		= homedir & "/.history-command";
 		var REPLScriptHistoryFile 	= homedir & "/.history-repl-script";
@@ -72,7 +71,6 @@ component extends="wirebox.system.ioc.config.Binder" {
 		map( 'ortusArtifactsURL@constants' ).toValue( ortusArtifactsURL );
 		map( 'ortusPRDArtifactsURL@constants' ).toValue( ortusPRDArtifactsURL );
 		map( 'rewritesDefaultConfig@constants' ).toValue( "#homeDir#/cfml/system/config/urlrewrite.xml" );
-		map( 'serverArtifactDir@constants' ).toValue( serverArtifactDir );
 		map( 'cfengineVersions@constants' ).toValue( cfengineVersions );
 
 		// Map Java Classes
