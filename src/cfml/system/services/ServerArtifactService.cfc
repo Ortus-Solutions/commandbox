@@ -16,40 +16,6 @@ component accessors="true" singleton="true" {
   property name='consoleLogger'		inject='logbox:logger:console';
   property name="cfengineVersions"	inject="cfengineVersions@constants";
   property name='cr'				inject='cr@constants';
-
-  /**
-  * DI complete
-  */
-  function onDIComplete() {
-  }
-
-
-  /**
-  * Checks engine and version, returning default version if version is empty
-  * @cfengine    CFML Engine name (lucee, adobe, railo)
-  * @version     Version number or empty to get default
-  **/
-  public function checkVersion( required cfengine, required version) {
-    if(isNull(cfengineVersions[cfengine])) {
-      throw( message="unknown cfengine type: " & cfengine );
-    }
-    if(version == "") {
-      version = cfengineVersions[cfengine][1];
-    } else {
-      var versions = cfengineVersions[cfengine];
-      var valid = false;
-      for(var ver in versions) {
-        if(ver.toLowerCase().startsWith(lcase(version))) {
-          version = ver;
-          valid = true;
-        }
-      }
-      if(!valid) {
-        throw( message="unknown #cfengine# version: " & version );
-      }
-    }
-    return version;
-  }
   
   /**
   * install the server if not already installed to the target directory
@@ -58,27 +24,22 @@ component accessors="true" singleton="true" {
   * @version         Version number or empty to use default
   **/
   public function install( required cfengine, required basedirectory, force=false) {
-    version = find("@",cfengine) ? listLast(cfengine,"@") : "";
-    cfengine = listFirst(cfengine,"@");
-    basedirectory = !basedirectory.endsWith("/") ? basedirectory & "/" : basedirectory;
-    var engineVersion = checkVersion(cfengine=cfengine,version=version);
-    var installDir = basedirectory & cfengine & "-" & engineVersion;
-    if(!fileExists(installDir & "/WEB-INF/web.xml") || force) {
-      consoleLogger.info("Installing #cfengine# #engineVersion# in #installDir#");
-      if( cfengine == "adobe" ) {
-        installAdobe( destination=installDir, version=engineVersion );
-      } else if (cfengine == "railo") {
-        installRailo( destination=installDir, version=engineVersion );
-      } else if (cfengine == "lucee") {
-        installLucee( destination=installDir, version=engineVersion );
-      } else {
-       throw( message="unknown engine type:" & cfengine );
-      }
-    } else {
-      consoleLogger.info("Using #cfengine# in #installDir#");
-    }
-    return installDir;
-  }
+		var version = find("@",cfengine) ? listLast(cfengine,"@") : "";
+		cfengine = listFirst(cfengine,"@");
+		basedirectory = !basedirectory.endsWith("/") ? basedirectory & "/" : basedirectory;
+		
+		consoleLogger.info("Installing #cfengine# #version# in #basedirectory#");
+		
+		if( cfengine == "adobe" ) {
+			return installAdobe( destination=basedirectory, version=version );
+		} else if (cfengine == "railo") {
+			return installRailo( destination=basedirectory, version=version );
+		} else if (cfengine == "lucee") {
+			return installLucee( destination=basedirectory, version=version );
+		} else {
+			throw( message="unknown engine type:" & cfengine );
+		}
+	}
 
   /**
   * install adobe
@@ -87,14 +48,17 @@ component accessors="true" singleton="true" {
   **/
   public function installAdobe( required destination, required version ) {
 	
-	var versionInstalled = installEngineArchive( 'adobe-coldFusion-cf-engine@#version#', destination );
+	var installDir = installEngineArchive( 'adobe-coldFusion-cf-engine@#version#', destination, 'adobe' );
     
-    if( left( versionInstalled, 2 ) == 10 || left( version, 2 ) == 11 || left( version, 4 ) == 2016 ) {
-		installEngineArchive( 'adobe-coldFusion-cf-engine-tomcat-libs', destination );
+    // Tomcat versions of Adobe CF require some extra jars
+    if( installDir contains 'adobe-10.' || installDir contains 'adobe-11.' || installDir contains 'adobe-2016.' ) {
+		installEngineArchive( 'adobe-coldFusion-cf-engine-tomcat-libs', destination, 'adobe',  installDir );
 	}
 	
     // set password to "commandbox"
-    fileWrite(destination & "/WEB-INF/cfusion/lib/password.properties", "rdspassword=#cr#password=commandbox#cr#encrypted=false");
+    fileWrite( installDir & "/WEB-INF/cfusion/lib/password.properties", "rdspassword=#cr#password=commandbox#cr#encrypted=false");
+    
+    return installDir;
   }
 
   /**
@@ -104,9 +68,10 @@ component accessors="true" singleton="true" {
   **/
   public function installLucee( required destination, required version ) {
     
-	installEngineArchive( 'lucee-cf-engine@#version#', destination );
+	var installDir = installEngineArchive( 'lucee-cf-engine@#version#', destination, 'lucee' );
 	
-    configureWebXML(cfengine="lucee",source="#destination#/WEB-INF/web.xml",destination="#destination#/WEB-INF/web.xml");
+    configureWebXML(cfengine="lucee",source="#installDir#/WEB-INF/web.xml",destination="#installDir#/WEB-INF/web.xml");
+    return installDir;
   }
 
   /**
@@ -116,16 +81,18 @@ component accessors="true" singleton="true" {
   **/
   public function installRailo( required destination, required version ) {
     
-	installEngineArchive( 'railo-cf-engine@#version#', destination );
+	var installDir = installEngineArchive( 'railo-cf-engine@#version#', destination, 'railo' );
 	
-    configureWebXML(cfengine="railo",source="#destination#/WEB-INF/web.xml",destination="#destination#/WEB-INF/web.xml");
+    configureWebXML(cfengine="railo",source="#installDir#/WEB-INF/web.xml",destination="#installDir#/WEB-INF/web.xml");
+    
+    return installDir;
   }
 
 
 	/*
 	* Downloads a CF engine endpoint and unzips the "Engine.[WAR|zip] archive into the destination
 	*/
-	function installEngineArchive( required string ID, required string destination ) {
+	function installEngineArchive( required string ID, required string destination, required string cfengine, string installDir ) {
     	var thisTempDir = tempDir & '/' & createUUID();
     	var versionInstalled = '0';
     	 
@@ -133,7 +100,7 @@ component accessors="true" singleton="true" {
 				
 		if( packageService.isPackage( thisTempDir ) ) {
 			var boxJSON = packageService.readPackageDescriptor( thisTempDir );
-			versionInstalled =  boxJSON.version;			
+			versionInstalled =  boxJSON.version;
 		}
 				
 		var theArchive = '';
@@ -143,12 +110,14 @@ component accessors="true" singleton="true" {
 			}
 		}
 		
-		if( thisFile == '' ) {
+		if( theArchive == '' ) {
 			throw( "Package didn't contain a war or zip archive." );
 		}
+				
+    	var installDir = arguments.installDir ?: destination & cfengine & "-" & replace( versionInstalled, '+', '.', 'all' );
 		
 		consoleLogger.info( "Exploding WAR/zip archive...");
-		zip action="unzip" file="#thisFile#" destination="#destination#" overwrite="true";
+		zip action="unzip" file="#thisFile#" destination="#installDir#" overwrite="true";
 				
 		// Catch this to gracefully handle where the OS or another program 
 		// has the folder locked.
@@ -158,7 +127,7 @@ component accessors="true" singleton="true" {
 			consoleLogger.error( '#e.message##CR#The folder is possibly locked by another program.' );
 			logger.error( '#e.message# #e.detail#' , e.stackTrace );
 		}
-		return versionInstalled;
+		return installDir;
 	}
   /**
   * configure web.xml file for Lucee and Railo
