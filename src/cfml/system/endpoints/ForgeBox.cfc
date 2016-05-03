@@ -181,6 +181,49 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 		}
 	}	
 
+	/*
+	* Figures out what version of a package would be installed with a given semver range without actually going through the installation.
+	* @slug Slug of package
+	* @version Version range to satisfy
+	* @entryData Optional struct of entryData which skips the ForgeBox call.
+	*/
+	function findSatisfyingVersion( required string slug, required string version, struct entryData ) {
+		
+			// Use passed in entrydata, or go get it from ForgeBox.
+			var entryData = arguments.entryData ?: forgebox.getEntry( arguments.slug );
+			
+			entryData.versions.sort( function( a, b ) { return semanticVersion.compare( b.version, a.version ) } );
+			
+			var found = false;
+			for( var thisVersion in entryData.versions ) {
+				if( semanticVersion.satisfies( thisVersion.version, arguments.version ) ) {
+					return thisVersion;
+				}
+			}
+			
+			// If we requsted stable and all releases are pre-release, just grab the latest
+			if( arguments.version == 'stable' && arrayLen( entryData.versions ) ) {
+				return entryData.versions[ 1 ]; 
+			} else {
+				throw( 'Version [#arguments.version#] not found for package [#arguments.slug#].', 'endpointException', 'Available versions are [#entryData.versions.map( function( i ){ return ' ' & i.version; } ).toList()#]' );					
+			}
+	}
+		
+	public function parseSlug( required string package ) {
+		return listFirst( arguments.package, '@' );
+	}
+		
+	public function parseVersion( required string package ) {
+		var version = 'stable';
+		// foo@1.0.0
+		if( arguments.package contains '@' ) {
+			// Note this can also be a semver range like 1.2.x, >2.0.0, or 1.0.4-2.x
+			// For now I'm assuming it's a specific version
+			version = listRest( arguments.package, '@' );
+		}
+		return version;
+	}
+
 	
 	// Private methods
 
@@ -204,27 +247,9 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 				throw( 'The ForgeBox entry [#entryData.title#] is inactive.', 'endpointException' );
 			}
 	
-			entryData.versions.sort( function( a, b ) { return semanticVersion.compare( b.version, a.version ) } );
-			
-			var found = false;
-			for( var thisVersion in entryData.versions ) {
-				if( semanticVersion.satisfies( thisVersion.version, arguments.version ) ) {
-					arguments.version = thisVersion.version;
-					var downloadURL = thisVersion.downloadURL;
-					found = true;
-					break;
-				}
-			}
-			
-			if( !found ) {
-				// If we requsted stable and all releases are pre-release, just grab the latest
-				if( arguments.version == 'stable' && arrayLen( entryData.versions ) ) {
-					arguments.version = entryData.versions[ 1 ].version;
-					var downloadURL = entryData.versions[ 1 ].downloadURL; 
-				} else {
-					throw( 'Version [#arguments.version#] not found for package [#arguments.slug#].', 'endpointException', 'Available versions are [#entryData.versions.map( function( i ){ return ' ' & i.version; } ).toList()#]' );					
-				}
-			}
+			var satisfyingVersion = findSatisfyingVersion( slug, version, entryData );
+			arguments.version = satisfyingVersion.version;
+			var downloadURL = satisfyingVersion.downloadURL;
 						
 			if( !len( downloadurl ) ) {
 				throw( 'No download URL provided in ForgeBox.  Manual install only.', 'endpointException' );
@@ -275,21 +300,6 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 			// This can include "expected" errors such as "slug not found"
 			throw( '#e.message##CR##e.detail#', 'endpointException' );
 		}		
-	}
-		
-	private function parseSlug( required string package ) {
-		return listFirst( arguments.package, '@' );
-	}
-		
-	private function parseVersion( required string package ) {
-		var version = 'stable';
-		// foo@1.0.0
-		if( arguments.package contains '@' ) {
-			// Note this can also be a semver range like 1.2.x, >2.0.0, or 1.0.4-2.x
-			// For now I'm assuming it's a specific version
-			version = listRest( arguments.package, '@' );
-		}
-		return version;
 	}
 	
 }
