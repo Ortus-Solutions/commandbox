@@ -25,19 +25,19 @@ component accessors="true" singleton="true" {
   **/
   public function install( required cfengine, required basedirectory, force=false) {
 		var version = find("@",cfengine) ? listLast(cfengine,"@") : "";
-		cfengine = listFirst(cfengine,"@");
+		engineName = listFirst(cfengine,"@");
 		basedirectory = !basedirectory.endsWith("/") ? basedirectory & "/" : basedirectory;
 		
-		consoleLogger.info("Installing #cfengine# #version# in #basedirectory#");
+		consoleLogger.info("Installing #engineName# #version# in #basedirectory#");
 		
-		if( cfengine == "adobe" ) {
+		if( engineName contains "adobe" ) {
 			return installAdobe( destination=basedirectory, version=version );
-		} else if (cfengine == "railo") {
+		} else if (engineName contains "railo") {
 			return installRailo( destination=basedirectory, version=version );
-		} else if (cfengine == "lucee") {
+		} else if (engineName contains "lucee") {
 			return installLucee( destination=basedirectory, version=version );
 		} else {
-			throw( message="unknown engine type:" & cfengine );
+			return installEngineArchive( cfengine, basedirectory, engineName );
 		}
 	}
 
