@@ -91,6 +91,12 @@ component accessors="true" singleton="true" {
 
 	/*
 	* Downloads a CF engine endpoint and unzips the "Engine.[WAR|zip] archive into the destination
+	* The WAR will be placed in a folder named {cfengine}-{version}/ unless an installDir is supplied.
+	*  
+	* @ID The endpoint ID to use for the CF Engine.
+	* @destination The folder where this site's servers are stored.
+	* @cfengine The name of this engine.  Used to created the final folder to store the WAR.
+	* @installDir If passed in, use this location to install the WAR instead of auto-calculating it.
 	*/
 	function installEngineArchive( required string ID, required string destination, required string cfengine, string installDir ) {
     	var thisTempDir = tempDir & '/' & createUUID();
