@@ -326,7 +326,7 @@ component accessors="true" singleton {
 		if( !directoryExists( serverInfo.logDir ) ){ directoryCreate( serverInfo.logDir ); }
 
 		// The process native name
-		var processName = serverInfo.name is "" ? "CommandBox" : serverInfo.name;
+		var processName = ( serverInfo.name is "" ? "CommandBox" : serverInfo.name ) & ' [' & serverinfo.cfengine & ']';
 
     var javaagent = serverinfo.cfengine == "lucee" ? "" : "-javaagent:""#libdir#/lucee-inst.jar""";
     if( serverInfo.cfengine != "lucee" && serverInfo.cfengine != "lucee@" & cfengineVersions["lucee"][1]){
@@ -351,55 +351,66 @@ component accessors="true" singleton {
         serverInfo.logdir = serverInfo.webConfigDir & "/logs";
     }
     
+    // This is due to a bug in RunWar not creating the right directory for the logs
     directoryCreate( serverInfo.logDir, true, true );
     
-    
-		// The java arguments to execute:  Shared server, custom web configs
-		var args = " #serverInfo.JVMargs# -Xmx#serverInfo.heapSize#m -Xms#serverInfo.heapSize#m"
-				& " #javaagent# -jar ""#variables.jarPath#"""
-				& " --background=true --port #serverInfo.port# --host #serverInfo.host# --debug=#serverInfo.debug#"
-				& " --stop-port #serverInfo.stopsocket# --processname ""#processName#"" --log-dir ""#serverInfo.logDir#"""
-				& " --open-browser #serverInfo.openbrowser# --open-url http://#serverInfo.host#:#serverInfo.port#"
-				& " --cfengine-name #serverInfo.cfengine# --server-name ""#serverInfo.name#"""
-				& " --tray-icon ""#serverInfo.trayIcon#"" --tray-config ""#libdir#/traymenu.json"""
-				& " --directoryindex ""#serverInfo.directoryBrowsing#"" --cfml-web-config ""#serverInfo.webConfigDir#"""
-				& " --cfml-server-config ""#serverInfo.serverConfigDir#"" #serverInfo.runwarArgs# ";
-		// standalone or not
-		if( serverInfo.cfengine != "lucee" && serverInfo.cfengine != "lucee@" & cfengineVersions["lucee"][1]){
-			args &= " -war ""#serverInfo.webroot#"" --lib-dirs ""#installDir#/WEB-INF/lib"" --web-xml-path ""#installDir#/WEB-INF/web.xml""";
-		} else if (serverInfo.WARPath != "") {
-			args &= " -war ""#serverInfo.webroot#""";
-		} else {
-			args &= " -war ""#serverInfo.webroot#"" --lib-dirs ""#libDirs#""";
-		}
-		// Incorporate SSL to command
-		if( serverInfo.SSLEnable ){
-			args &= " --http-enable #serverInfo.HTTPEnable# --ssl-enable #serverInfo.SSLEnable# --ssl-port #serverInfo.SSLPort#";
-		}
-		if( serverInfo.SSLEnable && serverInfo.SSLCert != "") {
-			args &= " --ssl-cert ""#serverInfo.SSLCert#"" --ssl-key ""#serverInfo.SSLKey#"" --ssl-keypass ""#serverInfo.SSLKeyPass#""";
-		}
-		// Incorporate web-xml to command
-		if ( Len( Trim( serverInfo.webXml ?: "" ) ) ) {
-			args &= " --web-xml-path ""#serverInfo.webXml#""";
-		}
-		// Incorporate rewrites to command
-		args &= " --urlrewrite-enable #serverInfo.rewritesEnable#";
-		
-		if( serverInfo.rewritesEnable ){
-			serverInfo.rewritesConfig = fileSystemUtil.resolvePath( serverInfo.rewritesConfig );
-			if( !fileExists(serverInfo.rewritesConfig) ){
-				return "URL rewrite config not found #serverInfo.rewritesConfig#";
-			}
-			args &= " --urlrewrite-file ""#serverInfo.rewritesConfig#""";
-		}
-		
-		// Persist server information
-		setServerInfo( serverInfo );
+    // Guess the proper set of tray icons based on the cfengine name. 
+	var trayConfigJSON = '#libdir#/traymenu-default.json';
+    if( serverInfo.cfengine contains "lucee" ) { 
+    	trayConfigJSON = '#libdir#/traymenu-lucee.json';
+	} else if( serverInfo.cfengine contains "railo" ) {
+    	trayConfigJSON = '#libdir#/traymenu-railo.json';
+	} else if( serverInfo.cfengine contains "adobe" ) {
+    	trayConfigJSON = '#libdir#/traymenu-adobe.json';
+	}    
 
-		// change status to starting + persist
-		serverInfo.status = "starting";
-		setServerInfo( serverInfo );
+	// The java arguments to execute:  Shared server, custom web configs
+	var args = " #serverInfo.JVMargs# -Xmx#serverInfo.heapSize#m -Xms#serverInfo.heapSize#m"
+			& " #javaagent# -jar ""#variables.jarPath#"""
+			& " --background=true --port #serverInfo.port# --host #serverInfo.host# --debug=#serverInfo.debug#"
+			& " --stop-port #serverInfo.stopsocket# --processname ""#processName#"" --log-dir ""#serverInfo.logDir#"""
+			& " --open-browser #serverInfo.openbrowser# --open-url http://#serverInfo.host#:#serverInfo.port#"
+			& " --cfengine-name #serverInfo.cfengine# --server-name ""#serverInfo.name#"""
+			& " --tray-icon ""#serverInfo.trayIcon#"" --tray-config ""#trayConfigJSON#"""
+			& " --directoryindex ""#serverInfo.directoryBrowsing#"" --cfml-web-config ""#serverInfo.webConfigDir#"""
+			& " --cfml-server-config ""#serverInfo.serverConfigDir#"" #serverInfo.runwarArgs# ";
+	// standalone or not
+	if( serverInfo.cfengine != "lucee" && serverInfo.cfengine != "lucee@" & cfengineVersions["lucee"][1]){
+		args &= " -war ""#serverInfo.webroot#"" --lib-dirs ""#installDir#/WEB-INF/lib"" --web-xml-path ""#installDir#/WEB-INF/web.xml""";
+	} else if (serverInfo.WARPath != "") {
+		args &= " -war ""#serverInfo.webroot#""";
+	} else {
+		args &= " -war ""#serverInfo.webroot#"" --lib-dirs ""#libDirs#""";
+	}
+	// Incorporate SSL to command
+	if( serverInfo.SSLEnable ){
+		args &= " --http-enable #serverInfo.HTTPEnable# --ssl-enable #serverInfo.SSLEnable# --ssl-port #serverInfo.SSLPort#";
+	}
+	if( serverInfo.SSLEnable && serverInfo.SSLCert != "") {
+		args &= " --ssl-cert ""#serverInfo.SSLCert#"" --ssl-key ""#serverInfo.SSLKey#"" --ssl-keypass ""#serverInfo.SSLKeyPass#""";
+	}
+	// Incorporate web-xml to command
+	if ( Len( Trim( serverInfo.webXml ?: "" ) ) ) {
+		args &= " --web-xml-path ""#serverInfo.webXml#""";
+	}
+	// Incorporate rewrites to command
+	args &= " --urlrewrite-enable #serverInfo.rewritesEnable#";
+	
+	if( serverInfo.rewritesEnable ){
+		serverInfo.rewritesConfig = fileSystemUtil.resolvePath( serverInfo.rewritesConfig );
+		if( !fileExists(serverInfo.rewritesConfig) ){
+			return "URL rewrite config not found #serverInfo.rewritesConfig#";
+		}
+		args &= " --urlrewrite-file ""#serverInfo.rewritesConfig#""";
+	}
+	
+	// Persist server information
+	setServerInfo( serverInfo );
+
+	// change status to starting + persist
+	serverInfo.status = "starting";
+	setServerInfo( serverInfo );
+		
     if(serverInfo.debug) {
       consoleLogger.debug("Server start command: #javaCommand# #args#");
     }

@@ -1,0 +1,4 @@
+[
+{"label":"Stop Server (${runwar.processName})", "action":"stopserver"}
+,{"label":"Open Browser", "action":"openbrowser", "url":"http://${runwar.host}:${runwar.port}/"}
+]
