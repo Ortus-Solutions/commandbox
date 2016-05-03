@@ -8,6 +8,8 @@
 *  By default, ColdBox 4.x compatible templates will be used
 *  - Advanced
 *  - AdvancedScript (default)
+*  - Elixir
+*  - ElixirVuejs
 *  - rest
 *  - Simple
 *  - SuperSimple
