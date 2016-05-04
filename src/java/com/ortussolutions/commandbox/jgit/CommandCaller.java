@@ -29,10 +29,18 @@ public class CommandCaller {
 	public Object call( GitCommand command ) throws Exception {
 
 		try { 
+			
+			// Try to run the command
 			return command.call();
+			
+		// if it errors
 		} catch( Throwable e ) {
+			
+			// Store the exception
 			this.exception = e;
+			// And rethrow.  Lucee 4.x will strip off the cause.
 			throw new Exception( "Error calling command.", e );
+			
 		}
 	}
 	
