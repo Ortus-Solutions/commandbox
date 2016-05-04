@@ -151,7 +151,7 @@ component accessors="true" singleton {
 				webXML : d.app.webXML ?: '',
 				standalone : d.app.standalone ?: false,
 				WARPath : d.app.WARPath ?: "",
-				cfengine : d.app.cfengine ?: "lucee"
+				cfengine : d.app.cfengine ?: ""
 			},
 			runwar : {
 				args : d.runwar.args ?: ''
@@ -310,7 +310,15 @@ component accessors="true" singleton {
 		serverInfo.WARPath			= serverProps.WARPath			?: serverJSON.app.WARPath			?: defaults.app.WARPath;
 		
 		serverInfo.logdir			= serverInfo.webConfigDir & "/logs";
-			
+		
+		if( !len( serverInfo.WARPath ) && !len( serverInfo.cfengine ) ) {
+			serverInfo.cfengine = 'lucee@' & server.lucee.version;
+		}
+		
+		if( serverInfo.cfengine.endsWith( '@' ) ) {
+			serverInfo.cfengine = left( serverInfo.cfengine, len( serverInfo.cfengine ) - 1 );
+		}
+		
 		interceptorService.announceInterception( 'onServerStart', { serverInfo=serverInfo } );
 		
 		var launchUtil 	= java.LaunchUtil;
@@ -327,7 +335,8 @@ component accessors="true" singleton {
 		// The process native name
 		var processName = ( serverInfo.name is "" ? "CommandBox" : serverInfo.name ) & ' [' & serverinfo.cfengine & ']';
 
-    var javaagent = serverinfo.cfengine == "lucee" ? "" : "-javaagent:""#libdir#/lucee-inst.jar""";
+    var javaagent = serverinfo.cfengine contains 'lucee' ? '-javaagent:"#libdir#/lucee-inst.jar"' : '';
+    var CFEngineName = serverinfo.cfengine contains 'lucee' ? 'lucee' : 'na';
     if( serverInfo.WARPath == '' ){
       try {
         var installDetails = serverEngineService.install( cfengine=serverInfo.cfengine, basedirectory=serverInfo.webConfigDir );
@@ -370,7 +379,7 @@ component accessors="true" singleton {
 			& " --background=true --port #serverInfo.port# --host #serverInfo.host# --debug=#serverInfo.debug#"
 			& " --stop-port #serverInfo.stopsocket# --processname ""#processName#"" --log-dir ""#serverInfo.logDir#"""
 			& " --open-browser #serverInfo.openbrowser# --open-url http://#serverInfo.host#:#serverInfo.port#"
-			& " --cfengine-name #serverInfo.cfengine# --server-name ""#serverInfo.name#"""
+			& " --cfengine-name ""#CFEngineName#"" --server-name ""#serverInfo.name#"""
 			& " --tray-icon ""#serverInfo.trayIcon#"" --tray-config ""#trayConfigJSON#"""
 			& " --directoryindex ""#serverInfo.directoryBrowsing#"" --cfml-web-config ""#serverInfo.webConfigDir#"""
 			& " --cfml-server-config ""#serverInfo.serverConfigDir#"" #serverInfo.runwarArgs# ";

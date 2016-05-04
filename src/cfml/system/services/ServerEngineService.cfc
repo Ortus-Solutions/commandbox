@@ -25,7 +25,7 @@ component accessors="true" singleton="true" {
 	* @baseDirectory base directory for server install
 	**/
 	public function install( required cfengine, required baseDirectory ) {
-		var version = find( "@", cfengine ) ? listLast( cfengine, "@" ) : "";
+		var version = listLen( cfengine, "@" )>1 ? listLast( cfengine, "@" ) : "";
 		var engineName = listFirst(cfengine,"@");
 		arguments.baseDirectory = !arguments.baseDirectory.endsWith( "/" ) ? arguments.baseDirectory & "/" : arguments.baseDirectory;
 				
@@ -68,6 +68,7 @@ component accessors="true" singleton="true" {
 	**/
 	public function installLucee( required destination, required version ) {
 	var installDetails = installEngineArchive( 'lucee-cf-engine@#version#', destination );
+		
 	if( !installDetails.internal ) {
 			configureWebXML( cfengine="lucee", source="#installDetails.installDir#/WEB-INF/web.xml", destination="#installDetails.installDir#/WEB-INF/web.xml" );	}	
 		return installDetails;
