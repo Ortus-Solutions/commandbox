@@ -51,6 +51,12 @@ component accessors="true" singleton="true" {
 		// set password to "commandbox"
 		// TODO: Just make this changes directly in the WAR files
 		fileWrite( installDetails.installDir & "/WEB-INF/cfusion/lib/password.properties", "rdspassword=#cr#password=commandbox#cr#encrypted=false" );
+		// set flex log dir to prevent WEB-INF/cfform being created in project dir
+		if (fileExists(installDetails.installDir & "/WEB-INF/cfform/flex-config.xml")) {
+			var flexConfig = fileRead(installDetails.installDir & "/WEB-INF/cfform/flex-config.xml");
+			flexConfig = replace(flexConfig, "/WEB-INF/", installDetails.installDir & "/WEB-INF","all");
+			fileWrite(installDetails.installDir & "/WEB-INF/cfform/flex-config.xml", flexConfig);
+		}
 		return installDetails;
 	}
 
