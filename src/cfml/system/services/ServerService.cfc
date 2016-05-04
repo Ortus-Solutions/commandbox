@@ -43,7 +43,6 @@ component accessors="true" singleton {
 	property name='serverEngineService'	inject='serverEngineService';
 	property name='consoleLogger'			inject='logbox:logger:console';
 	property name='wirebox'					inject='wirebox';
-	property name="cfengineVersions"		inject="cfengineVersions@constants";
 
 	/**
 	* Constructor
@@ -329,27 +328,28 @@ component accessors="true" singleton {
 		var processName = ( serverInfo.name is "" ? "CommandBox" : serverInfo.name ) & ' [' & serverinfo.cfengine & ']';
 
     var javaagent = serverinfo.cfengine == "lucee" ? "" : "-javaagent:""#libdir#/lucee-inst.jar""";
-    if( serverInfo.cfengine != "lucee" && serverInfo.cfengine != "lucee@" & cfengineVersions["lucee"][1]){
+    if( serverInfo.WARPath == '' ){
       try {
-        var installDir = serverEngineService.install( cfengine=serverInfo.cfengine, basedirectory=serverInfo.webConfigDir );
-        serverInfo.logdir = installDir & "/logs";
+        var installDetails = serverEngineService.install( cfengine=serverInfo.cfengine, basedirectory=serverInfo.webConfigDir );
+        serverInfo.logdir = installDetails.installDir & "/logs";
         
       } catch (any e) {
         consoleLogger.error("Error installing server - " & e.message);
         consoleLogger.error(e.detail.replaceAll(",","#chr(10)#"));
         return;
       }
-      if(serverInfo.cfengine contains "lucee") {
-        javaagent = "-javaagent:""#installDir#/WEB-INF/lib/lucee-inst.jar""";
+      if( !installDetails.internal && serverInfo.cfengine contains "lucee" ) {
+        javaagent = "-javaagent:""#installDetails.installDir#/WEB-INF/lib/lucee-inst.jar""";
       }
-      if(serverInfo.cfengine contains "railo") {
-        javaagent = "-javaagent:""#installDir#/WEB-INF/lib/railo-inst.jar""";
+      if( !installDetails.internal && serverInfo.cfengine contains "railo" ) {
+        javaagent = "-javaagent:""#installDetails.installDir#/WEB-INF/lib/railo-inst.jar""";
       }
-    // Using built in server that hasn't been started before
-    } else if( !directoryExists( serverInfo.webConfigDir & '/WEB-INF' ) ) {
-		serverInfo.webConfigDir &= '/lucee-#cfengineVersions["lucee"][1]#';
-        serverInfo.logdir = serverInfo.webConfigDir & "/logs";
-    }
+		// Using built in server that hasn't been started before
+		if( installDetails.internal && !directoryExists( serverInfo.webConfigDir & '/WEB-INF' ) ) {
+			serverInfo.webConfigDir = installDetails.installDir;
+			serverInfo.logdir = serverInfo.webConfigDir & "/logs";
+		}
+    } 
     
     // This is due to a bug in RunWar not creating the right directory for the logs
     directoryCreate( serverInfo.logDir, true, true );
@@ -374,11 +374,14 @@ component accessors="true" singleton {
 			& " --tray-icon ""#serverInfo.trayIcon#"" --tray-config ""#trayConfigJSON#"""
 			& " --directoryindex ""#serverInfo.directoryBrowsing#"" --cfml-web-config ""#serverInfo.webConfigDir#"""
 			& " --cfml-server-config ""#serverInfo.serverConfigDir#"" #serverInfo.runwarArgs# ";
-	// standalone or not
-	if( serverInfo.cfengine != "lucee" && serverInfo.cfengine != "lucee@" & cfengineVersions["lucee"][1]){
-		args &= " -war ""#serverInfo.webroot#"" --lib-dirs ""#installDir#/WEB-INF/lib"" --web-xml-path ""#installDir#/WEB-INF/web.xml""";
-	} else if (serverInfo.WARPath != "") {
+			
+	// Starting a WAR
+	if (serverInfo.WARPath != "" ) {
 		args &= " -war ""#serverInfo.webroot#""";
+	// Stand alone server
+	} else if( !installDetails.internal ){
+		args &= " -war ""#serverInfo.webroot#"" --lib-dirs ""#installDetails.installDir#/WEB-INF/lib"" --web-xml-path ""#installDetails.installDir#/WEB-INF/web.xml""";
+	// internal server
 	} else {
 		args &= " -war ""#serverInfo.webroot#"" --lib-dirs ""#libDirs#""";
 	}
