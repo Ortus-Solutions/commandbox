@@ -34,15 +34,13 @@ component accessors="true" singleton {
 	* Where the Run War jar path is
 	*/
 	property name="jarPath";
-	/**
-	* Default server settings
-	*/
-	property name="defaultServerJSON";	
 	
 	property name='rewritesDefaultConfig'	inject='rewritesDefaultConfig@constants';	
-	property name='interceptorService'		inject='interceptorService';
+	property name='interceptorService'		inject='interceptorService';	
+	property name='configService'			inject='ConfigService';
 	property name='JSONService'				inject='JSONService';
 	property name='packageService'			inject='packageService';
+	property name='serverEngineService'	inject='serverEngineService';
 	property name='consoleLogger'			inject='logbox:logger:console';
 	property name='wirebox'					inject='wirebox';
 
@@ -108,48 +106,57 @@ component accessors="true" singleton {
 	}
 
 	function onDIComplete() {
+	}
+
+	function getDefaultServerJSON() {
+		// pull default settings from config to mix in below.
+		// The structure of server.defaults in Config settings matches the default server.json layout here.
+		var d = ConfigService.getSetting( 'server.defaults', {} );
 		
-		setDefaultServerJSON( {
-			name : '',
-			openBrowser : true,
-			stopsocket : 0,
-			debug : false,
-			trayicon : '#variables.libdir#/trayicon.png',
+		return {
+			name : d.name ?: '',
+			openBrowser : d.openBrowser ?: true,
+			stopsocket : d.stopsocket ?: 0,
+			debug : d.debug ?: false,
+			trayicon : d.trayicon ?: '#variables.libdir#/trayicon.png',
 			jvm : {
-				heapSize : 512,
-				args : ''
+				heapSize : d.jvm.heapSize ?: 512,
+				args : d.jvm.args ?: ''
 			},
 			web : {
-				host : '127.0.0.1',				
-				directoryBrowsing : true,
-				webroot : '',
+				host : d.web.host ?: '127.0.0.1',				
+				directoryBrowsing : d.web.directoryBrowsing ?: true,
+				webroot : d.web.webroot ?: '',
 				http : {
-					port : 0,
-					enable : true
+					port : d.web.http.port ?: 0,
+					enable : d.web.http.enable ?: true
 				},
 				ssl : {
-					enable : false,
-					port : 1443,
-					cert : '',
-					key : '',
-					keyPass : ''
+					enable : d.web.ssl.enable ?: false,
+					port : d.web.ssl.port ?: 1443,
+					cert : d.web.ssl.cert ?: '',
+					key : d.web.ssl.key ?: '',
+					keyPass : d.web.ssl.keyPass ?: ''
 				},
 				rewrites : {
-					enable : false,
-					config : variables.rewritesDefaultConfig
+					enable : d.web.rewrites.enable ?: false,
+					config : d.web.rewrites.config ?: variables.rewritesDefaultConfig
 				}
 			},
 			app : {
-				logDir : '',
-				libDirs : '',
-				webConfigDir : '',
-				serverConfigDir :variables.serverHomeDirectory,
-				webXML : ''
+				logDir : d.app.logDir ?: '',
+				libDirs : d.app.libDirs ?: '',
+				webConfigDir : d.app.webConfigDir ?: '',
+				serverConfigDir : d.app.serverConfigDir ?: variables.serverHomeDirectory,
+				webXML : d.app.webXML ?: '',
+				standalone : d.app.standalone ?: false,
+				WARPath : d.app.WARPath ?: "",
+				cfengine : d.app.cfengine ?: "lucee"
 			},
 			runwar : {
-				args : ''
+				args : d.runwar.args ?: ''
 			}
-		} );
+		};
 	}
 
 	/**
@@ -161,22 +168,26 @@ component accessors="true" singleton {
 		Struct serverProps
 	){
 
+		if( isNull( serverProps.name ) ) {
+			serverProps.name = listLast( serverProps.directory, "\/" );
+		}
+
 		// Discover by shortname or server and get server info
 		var serverInfo = getServerInfoByDiscovery(
 			directory 	= serverProps.directory,
-			name		= serverProps.name ?: ''
+			name		= serverProps.name
 		);
 
 		// Was it found, or new server?
 		if( structIsEmpty( serverInfo ) ){
 			// We need a new entry
-			serverInfo = getServerInfo( serverProps.directory );
+			serverInfo = getServerInfo( serverProps.directory, serverProps.name );
 		}
 
 		// Get package descriptor
 		var boxJSON = packageService.readPackageDescriptor( serverInfo.webroot );
 		// Get server descriptor
-		var serverJSON = readServerJSON( serverInfo.webroot );
+		var serverJSON = readServerJSON( serverInfo.webroot , serverProps.name);
 		// Get defaults
 		var defaults = getDefaultServerJSON();
 								
@@ -196,6 +207,7 @@ component accessors="true" singleton {
 		// Save hand-entered properties in our server.json for next time
 		for( var prop in serverProps ) {
 			if( !isNull( serverProps[ prop ] ) && prop != 'directory'  && prop != 'saveSettings' ) {
+				// Only need switch cases for properties that are nested or use different name
 				switch(prop) {
 				    case "port":
 						serverJSON[ 'web' ][ 'http' ][ 'port' ] = serverProps[ prop ];
@@ -217,6 +229,12 @@ component accessors="true" singleton {
 				         break;
 				    case "webXML":
 						serverJSON[ 'app' ][ 'webXML' ] = serverProps[ prop ];
+				         break;
+				    case "cfengine":
+						serverJSON[ 'app' ][ 'cfengine' ] = serverProps[ prop ];
+				         break;
+				    case "WARPath":
+						serverJSON[ 'app' ][ 'WARPath' ] = serverProps[ prop ];
 				         break;
 				    case "HTTPEnable":
 						serverJSON[ 'web' ][ 'HTTP' ][ 'enable' ] = serverProps[ prop ];
@@ -265,9 +283,9 @@ component accessors="true" singleton {
 		// Setup serverinfo according to params
 		// Hand-entered values take precendence, then settings saved in server.json, and finally defaults.
 		// The big servers.json is only used to keep a record of the last values the server was started with
+		serverInfo.name 			= serverProps.name;
 		serverInfo.debug 			= serverProps.debug 			?: serverJSON.debug 				?: defaults.debug;
 		serverInfo.openbrowser		= serverProps.openbrowser 		?: serverJSON.openbrowser			?: defaults.openbrowser;
-		serverInfo.name 			= serverProps.name 				?: listLast( serverInfo.webroot, "\/" );
 		serverInfo.host				= serverProps.host 				?: serverJSON.web.host				?: defaults.web.host;
 		serverInfo.port 			= serverProps.port 				?: serverJSON.web.http.port			?: getRandomPort( serverInfo.host );
 		serverInfo.stopsocket		= serverProps.stopsocket		?: serverJSON.stopsocket 			?: getRandomPort( serverInfo.host );		
@@ -288,9 +306,11 @@ component accessors="true" singleton {
 		serverInfo.directoryBrowsing = serverProps.directoryBrowsing ?: serverJSON.web.directoryBrowsing ?: defaults.web.directoryBrowsing;
 		serverInfo.JVMargs			= serverProps.JVMargs			?: serverJSON.JVM.args				?: defaults.JVM.args;
 		serverInfo.runwarArgs		= serverProps.runwarArgs		?: serverJSON.runwar.args			?: defaults.runwar.args;
+		serverInfo.cfengine			= serverProps.cfengine			?: serverJSON.app.cfengine			?: defaults.app.cfengine;
+		serverInfo.WARPath			= serverProps.WARPath			?: serverJSON.app.WARPath			?: defaults.app.WARPath;
 		
-		serverInfo.logdir			= serverInfo.webConfigDir & "/log";
-	
+		serverInfo.logdir			= serverInfo.webConfigDir & "/logs";
+			
 		interceptorService.announceInterception( 'onServerStart', { serverInfo=serverInfo } );
 		
 		var launchUtil 	= java.LaunchUtil;
@@ -305,46 +325,98 @@ component accessors="true" singleton {
 		if( !directoryExists( serverInfo.logDir ) ){ directoryCreate( serverInfo.logDir ); }
 
 		// The process native name
-		var processName = serverInfo.name is "" ? "CommandBox" : serverInfo.name;
+		var processName = ( serverInfo.name is "" ? "CommandBox" : serverInfo.name ) & ' [' & serverinfo.cfengine & ']';
 
-		// The java arguments to execute:  Shared server, custom web configs
-		var args = " #serverInfo.JVMargs# -Xmx#serverInfo.heapSize#m -Xms#serverInfo.heapSize#m"
-				& " -javaagent:""#libdir#/lucee-inst.jar"" -jar ""#variables.jarPath#"""
-				& " -war ""#serverInfo.webroot#"" --background=true --port #serverInfo.port# --host #serverInfo.host# --debug #serverInfo.debug#"
-				& " --stop-port #serverInfo.stopsocket# --processname ""#processName#"" --log-dir ""#serverInfo.logDir#"""
-				& " --open-browser #serverInfo.openbrowser# --open-url http://#serverInfo.host#:#serverInfo.port#"
-				& " --cfengine-name lucee --server-name ""#serverInfo.name#"" --lib-dirs ""#libDirs#"""
-				& " --tray-icon ""#serverInfo.trayIcon#"" --tray-config ""#libdir#/traymenu.json"""
-				& " --directoryindex ""#serverInfo.directoryBrowsing#"" --cfml-web-config ""#serverInfo.webConfigDir#"""
-				& "  --cfml-server-config ""#serverInfo.serverConfigDir#"" #serverInfo.runwarArgs# ";
-		// Incorporate SSL to command
-		if( serverInfo.SSLEnable ){
-			args &= " --http-enable #serverInfo.HTTPEnable# --ssl-enable #serverInfo.SSLEnable# --ssl-port #serverInfo.SSLPort#";
+    var javaagent = serverinfo.cfengine == "lucee" ? "" : "-javaagent:""#libdir#/lucee-inst.jar""";
+    if( serverInfo.WARPath == '' ){
+      try {
+        var installDetails = serverEngineService.install( cfengine=serverInfo.cfengine, basedirectory=serverInfo.webConfigDir );
+        serverInfo.logdir = installDetails.installDir & "/logs";
+        
+      } catch (any e) {
+        consoleLogger.error("Error installing server - " & e.message);
+        consoleLogger.error(e.detail.replaceAll(",","#chr(10)#"));
+        return;
+      }
+      if( !installDetails.internal && serverInfo.cfengine contains "lucee" ) {
+        javaagent = "-javaagent:""#installDetails.installDir#/WEB-INF/lib/lucee-inst.jar""";
+      }
+      if( !installDetails.internal && serverInfo.cfengine contains "railo" ) {
+        javaagent = "-javaagent:""#installDetails.installDir#/WEB-INF/lib/railo-inst.jar""";
+      }
+		// Using built in server that hasn't been started before
+		if( installDetails.internal && !directoryExists( serverInfo.webConfigDir & '/WEB-INF' ) ) {
+			serverInfo.webConfigDir = installDetails.installDir;
+			serverInfo.logdir = serverInfo.webConfigDir & "/logs";
 		}
-		if( serverInfo.SSLEnable && serverInfo.SSLCert != "") {
-			args &= " --ssl-cert ""#serverInfo.SSLCert#"" --ssl-key ""#serverInfo.SSLKey#"" --ssl-keypass ""#serverInfo.SSLKeyPass#""";
-		}
-		// Incorporate web-xml to command
-		if ( Len( Trim( serverInfo.webXml ?: "" ) ) ) {
-			args &= " --web-xml-path ""#serverInfo.webXml#""";
-		}
-		// Incorporate rewrites to command
-		args &= " --urlrewrite-enable #serverInfo.rewritesEnable#";
-		
-		if( serverInfo.rewritesEnable ){
-			serverInfo.rewritesConfig = fileSystemUtil.resolvePath( serverInfo.rewritesConfig );
-			if( !fileExists(serverInfo.rewritesConfig) ){
-				return "URL rewrite config not found #serverInfo.rewritesConfig#";
-			}
-			args &= " --urlrewrite-file ""#serverInfo.rewritesConfig#""";
-		}
-		
-		// Persist server information
-		setServerInfo( serverInfo );
+    } 
+    
+    // This is due to a bug in RunWar not creating the right directory for the logs
+    directoryCreate( serverInfo.logDir, true, true );
+    
+    // Guess the proper set of tray icons based on the cfengine name. 
+	var trayConfigJSON = '#libdir#/traymenu-default.json';
+    if( serverInfo.cfengine contains "lucee" ) { 
+    	trayConfigJSON = '#libdir#/traymenu-lucee.json';
+	} else if( serverInfo.cfengine contains "railo" ) {
+    	trayConfigJSON = '#libdir#/traymenu-railo.json';
+	} else if( serverInfo.cfengine contains "adobe" ) {
+    	trayConfigJSON = '#libdir#/traymenu-adobe.json';
+	}    
 
-		// change status to starting + persist
-		serverInfo.status = "starting";
-		setServerInfo( serverInfo );
+	// The java arguments to execute:  Shared server, custom web configs
+	var args = " #serverInfo.JVMargs# -Xmx#serverInfo.heapSize#m -Xms#serverInfo.heapSize#m"
+			& " #javaagent# -jar ""#variables.jarPath#"""
+			& " --background=true --port #serverInfo.port# --host #serverInfo.host# --debug=#serverInfo.debug#"
+			& " --stop-port #serverInfo.stopsocket# --processname ""#processName#"" --log-dir ""#serverInfo.logDir#"""
+			& " --open-browser #serverInfo.openbrowser# --open-url http://#serverInfo.host#:#serverInfo.port#"
+			& " --cfengine-name #serverInfo.cfengine# --server-name ""#serverInfo.name#"""
+			& " --tray-icon ""#serverInfo.trayIcon#"" --tray-config ""#trayConfigJSON#"""
+			& " --directoryindex ""#serverInfo.directoryBrowsing#"" --cfml-web-config ""#serverInfo.webConfigDir#"""
+			& " --cfml-server-config ""#serverInfo.serverConfigDir#"" #serverInfo.runwarArgs# ";
+			
+	// Starting a WAR
+	if (serverInfo.WARPath != "" ) {
+		args &= " -war ""#serverInfo.webroot#""";
+	// Stand alone server
+	} else if( !installDetails.internal ){
+		args &= " -war ""#serverInfo.webroot#"" --lib-dirs ""#installDetails.installDir#/WEB-INF/lib"" --web-xml-path ""#installDetails.installDir#/WEB-INF/web.xml""";
+	// internal server
+	} else {
+		args &= " -war ""#serverInfo.webroot#"" --lib-dirs ""#libDirs#""";
+	}
+	// Incorporate SSL to command
+	if( serverInfo.SSLEnable ){
+		args &= " --http-enable #serverInfo.HTTPEnable# --ssl-enable #serverInfo.SSLEnable# --ssl-port #serverInfo.SSLPort#";
+	}
+	if( serverInfo.SSLEnable && serverInfo.SSLCert != "") {
+		args &= " --ssl-cert ""#serverInfo.SSLCert#"" --ssl-key ""#serverInfo.SSLKey#"" --ssl-keypass ""#serverInfo.SSLKeyPass#""";
+	}
+	// Incorporate web-xml to command
+	if ( Len( Trim( serverInfo.webXml ?: "" ) ) ) {
+		args &= " --web-xml-path ""#serverInfo.webXml#""";
+	}
+	// Incorporate rewrites to command
+	args &= " --urlrewrite-enable #serverInfo.rewritesEnable#";
+	
+	if( serverInfo.rewritesEnable ){
+		serverInfo.rewritesConfig = fileSystemUtil.resolvePath( serverInfo.rewritesConfig );
+		if( !fileExists(serverInfo.rewritesConfig) ){
+			return "URL rewrite config not found #serverInfo.rewritesConfig#";
+		}
+		args &= " --urlrewrite-file ""#serverInfo.rewritesConfig#""";
+	}
+	
+	// Persist server information
+	setServerInfo( serverInfo );
+
+	// change status to starting + persist
+	serverInfo.status = "starting";
+	setServerInfo( serverInfo );
+		
+    if(serverInfo.debug) {
+      consoleLogger.debug("Server start command: #javaCommand# #args#");
+    }
 		// thread the execution
 		var threadName = 'server#hash( serverInfo.webroot )##createUUID()#';
 		thread name="#threadName#" serverInfo=serverInfo args=args {
@@ -366,6 +438,7 @@ component accessors="true" singleton {
 				setServerInfo( serverInfo );				
 			}
 		}
+		
 		
 		// She'll be coming 'round the mountain when she comes...
 		consoleLogger.warn( "The server for #serverInfo.webroot# is starting on #serverInfo.host#:#serverInfo.port#... type 'server status' to see result" );
@@ -424,10 +497,11 @@ component accessors="true" singleton {
 		if( !arguments.all ){
 			var servers 	= getServers();
 			var serverdir 	= getCustomServerFolder( arguments.serverInfo );
-			var serverJSONPath = arguments.serverInfo.webroot & '/server.json';
+			var defaultServerJSONPath = arguments.serverInfo.webroot & '/server.json';
+			var serverJSONPath = arguments.serverInfo.webroot & '/server-#arguments.serverInfo.name#.json';
 
 			// try to delete from config first
-			structDelete( servers, hash( arguments.serverInfo.webroot ) );
+			structDelete( servers, hash( arguments.serverInfo.webroot & arguments.serverInfo.name ) );
 			setServers( servers );
 			// try to delete server
 			if( directoryExists( serverDir ) ){
@@ -444,6 +518,9 @@ component accessors="true" singleton {
 			// Delete server.json if it exists
 			if( fileExists( serverJSONPath ) ) {
 				fileDelete( serverJSONPath );
+			}
+			if( fileExists( defaultServerJSONPath ) ) {
+				fileDelete( defaultServerJSONPath );
 			}
 			// return message
 			return "Poof! Wiped out server " & serverInfo.name;
@@ -490,7 +567,7 @@ component accessors="true" singleton {
  	 **/
 	function setServerInfo( required struct serverInfo ){
 		var servers 	= getServers();
-		var webrootHash = hash( arguments.serverInfo.webroot );
+		var webrootHash = hash( arguments.serverInfo.webroot & arguments.serverInfo.name);
 
 		if( arguments.serverInfo.webroot == "" ){
 			throw( "The webroot cannot be empty!" );
@@ -524,7 +601,7 @@ component accessors="true" singleton {
 				for( var thisKey in results ){
 					// Backwards compat-- add in server id if it doesn't exist for older versions of CommandBox
 					if( isNull( results[ thisKey ].id ) ){
-						results[ thisKey ].id = hash( results[ thisKey ].webroot );
+						results[ thisKey ].id = hash( results[ thisKey ].webroot & results[ thisKey ].name );
 						updateRequired = true;
 					}
 					// Future-proof server info by guaranteeing that all properties will exist in the 
@@ -546,13 +623,17 @@ component accessors="true" singleton {
 	* @name.hint The name to find
 	*/
 	struct function getServerInfoByDiscovery( required directory="", required name="" ){
+		
 		// Discover by shortname or webroot
 		if( len( arguments.name ) ){
-			return getServerInfoByName( arguments.name );
+			var foundServer = getServerInfoByName( arguments.name );
+			if( !isNull( foundServer ) ) {
+				return foundServer;
+			}
 		}
 
 		var webroot = arguments.directory is "" ? shell.pwd() : arguments.directory;
-		return getServerInfoByWebroot( fileSystemUtil.resolvePath( webroot ) );
+		return getServerInfoByWebroot( fileSystemUtil.resolvePath( webroot ), arguments.name );
 	}
 
 	/**
@@ -588,8 +669,13 @@ component accessors="true" singleton {
 	* Get a server information struct by webrot, if not found it returns an empty struct
 	* @webroot.hint The webroot to find
 	*/
-	struct function getServerInfoByWebroot( required webroot ){
-		var webrootHash = hash( arguments.webroot );
+	struct function getServerInfoByWebroot( required webroot, name='' ){
+		
+		if( arguments.name == '' ) {
+			arguments.name = listLast( arguments.webroot, "\/" );
+		}
+		
+		var webrootHash = hash( arguments.webroot & arguments.name );
 		var servers 	= getServers();
 
 		return structKeyExists( servers, webrootHash ) ? servers[ webrootHash ] : {};
@@ -599,9 +685,9 @@ component accessors="true" singleton {
 	* Get server info for webroot, if not created, it will init a new server info entry
 	* @webroot.hint root directory for served content
  	**/
-	struct function getServerInfo( required webroot ){
+	struct function getServerInfo( required webroot , required name){
 		var servers 	= getServers();
-		var webrootHash = hash( arguments.webroot );
+		var webrootHash = hash( arguments.webroot & arguments.name);
 		var statusInfo 	= {};
 
 		if( !directoryExists( arguments.webroot ) ){
@@ -667,10 +753,13 @@ component accessors="true" singleton {
 	* Read a server.json file.  If it doesn't exist, returns an empty struct
 	* This only returns properties specifically set in the file.
 	*/
-	struct function readServerJSON( required string directory ) {
-		var filePath = arguments.directory & '/server.json';
-		if( fileExists( filePath ) ) {
-			return deserializeJSON( fileRead( filePath ) );
+	struct function readServerJSON( required string directory , string name="") {
+		var defaultServerJSON = arguments.directory & '/server.json';
+		var serverJSON = arguments.directory & '/server-#name#.json';
+		if( fileExists( serverJSON ) ) {
+			return deserializeJSON( fileRead( serverJSON ) );
+		} else if(fileExists( defaultServerJSON )) {
+			return deserializeJSON( fileRead( defaultServerJSON ) );
 		} else {
 			return {};
 		}
@@ -681,9 +770,21 @@ component accessors="true" singleton {
 	*/
 	function saveServerJSON( required string directory, required struct data ) {
 		var filePath = arguments.directory & '/server.json';
+		if(fileExists(filePath)) {
+		  var existingProps = readServerJSON(directory);
+		  if(!isNull(data.name) && (isNull(existingProps.name) || existingProps.name != data.name)) {
+		    filePath = arguments.directory & '/server-#data.name#.json';
+		  }
+		}
 		fileWrite( filePath, formatterUtil.formatJSON( serializeJSON( arguments.data ) ) );
 	}
 
+  /**
+  * Dynamic completion for cfengine
+  */  
+	function getCFEngineNames() {
+    return serverEngineService.getCFEngineNames();
+	}
 	
 	/**
 	* Dynamic completion for property name based on contents of server.json
