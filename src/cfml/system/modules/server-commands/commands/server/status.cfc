@@ -86,7 +86,7 @@ component aliases='status' {
 				|| arguments.showAll 
 			){
 				
-				// Null Checks, to guarnatee correct struct.
+				// Null Checks, to guarantee correct struct.
 				structAppend( thisServerInfo, serverService.newServerInfoStruct(), false );
 				
 				// Are we doing JSON?
