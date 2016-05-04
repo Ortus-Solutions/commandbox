@@ -22,21 +22,21 @@ component accessors="true" singleton="true" {
 	* install the server if not already installed to the target directory
 	* 
 	* @cfengine	CFML Engine name (lucee, adobe, railo)
-	* @basedirectory base directory for server install
+	* @baseDirectory base directory for server install
 	**/
-	public function install( required cfengine, required basedirectory ) {
+	public function install( required cfengine, required baseDirectory ) {
 		var version = find( "@", cfengine ) ? listLast( cfengine, "@" ) : "";
 		var engineName = listFirst(cfengine,"@");
-		arguments.basedirectory = !arguments.basedirectory.endsWith( "/" ) ? arguments.basedirectory & "/" : arguments.basedirectory;
+		arguments.baseDirectory = !arguments.baseDirectory.endsWith( "/" ) ? arguments.baseDirectory & "/" : arguments.baseDirectory;
 				
 		if( engineName == "adobe" ) {
-			return installAdobe( destination=arguments.basedirectory, version=version );
+			return installAdobe( destination=arguments.baseDirectory, version=version );
 		} else if (engineName == "railo") {
-			return installRailo( destination=arguments.basedirectory, version=version );
+			return installRailo( destination=arguments.baseDirectory, version=version );
 		} else if (engineName == "lucee") {
-			return installLucee( destination=arguments.basedirectory, version=version );
+			return installLucee( destination=arguments.baseDirectory, version=version );
 		} else {
-			return installEngineArchive( cfengine, arguments.basedirectory );
+			return installEngineArchive( cfengine, arguments.baseDirectory );
 		}
 	}
 
