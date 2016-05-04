@@ -15,7 +15,6 @@ component accessors="true" singleton="true" {
   property name='endpointService'	inject='EndpointService';
   property name='logger'			inject='logbox:logger:{this}';
   property name='consoleLogger'		inject='logbox:logger:console';
-  property name="cfengineVersions"	inject="cfengineVersions@constants";
   property name='cr'				inject='cr@constants';
   property name='shell'				inject='shell';
   
@@ -46,11 +45,11 @@ component accessors="true" singleton="true" {
   * @version         Version number or empty to use default
   **/
   public function installAdobe( required destination, required version ) {
-	var installDir = installEngineArchive( 'adobe-coldFusion-cf-engine@#version#', destination );    	
+	var installDetails = installEngineArchive( 'adobe-coldFusion-cf-engine@#version#', destination );    	
     // set password to "commandbox"
     // TODO: Just make this changes directly in the WAR files
-    fileWrite( installDir & "/WEB-INF/cfusion/lib/password.properties", "rdspassword=#cr#password=commandbox#cr#encrypted=false");
-    return installDir;
+    fileWrite( installDetails.installDir & "/WEB-INF/cfusion/lib/password.properties", "rdspassword=#cr#password=commandbox#cr#encrypted=false");
+    return installDetails;
   }
 
   /**
@@ -59,9 +58,11 @@ component accessors="true" singleton="true" {
   * @version         Version number or empty to use default
   **/
   public function installLucee( required destination, required version ) {
-	var installDir = installEngineArchive( 'lucee-cf-engine@#version#', destination );	
-    configureWebXML(cfengine="lucee",source="#installDir#/WEB-INF/web.xml",destination="#installDir#/WEB-INF/web.xml");
-    return installDir;
+	var installDetails = installEngineArchive( 'lucee-cf-engine@#version#', destination );
+	if( !installDetails.internal ) {
+    	configureWebXML(cfengine="lucee",source="#installDetails.installDir#/WEB-INF/web.xml",destination="#installDetails.installDir#/WEB-INF/web.xml");
+	}	
+    return installDetails;
   }
 
   /**
@@ -70,9 +71,9 @@ component accessors="true" singleton="true" {
   * @version         Version number or empty to use default
   **/
   public function installRailo( required destination, required version ) {
-	var installDir = installEngineArchive( 'railo-cf-engine@#version#', destination );	
-    configureWebXML(cfengine="railo",source="#installDir#/WEB-INF/web.xml",destination="#installDir#/WEB-INF/web.xml");    
-    return installDir;
+	var installDetails = installEngineArchive( 'railo-cf-engine@#version#', destination );	
+    configureWebXML(cfengine="railo",source="#installDetails.installDir#/WEB-INF/web.xml",destination="#installDetails.installDir#/WEB-INF/web.xml");    
+    return installDetails;
   }
 
 
@@ -87,35 +88,48 @@ component accessors="true" singleton="true" {
 		required string ID,
 		required string destination
 		) {
+			
+		var installDetails = {
+			internal : false,
+			version : '',
+			installDir : ''
+		};
+		
     	var thisTempDir = tempDir & '/' & createUUID();
     	
 		// Find out what endpoint will service them and ask the endpoint what their name is.
 		var endpointData = endpointService.resolveEndpoint( ID, shell.pwd() );
 		var endpoint = endpointData.endpoint;
-    	var engineName = endpoint.getDefaultName( ID );
+    	var engineName = endpoint.getDefaultName( arguments.ID );
     	
     	// In order to prevent uneccessary work, we're going to try REALLY hard to figure out exactly what engine will be installed 
     	// before it actually happens so we can skip this whole mess if it's already in place.
     	if( endpointData.endpointName == 'forgebox' ) {
     		
     		// if our endpoint is ForgeBox, figure out what version it is going to install.
-    		var satisfyingVersion = endpoint.findSatisfyingVersion( endpoint.parseSlug( ID ), endpoint.parseVersion( ID ) );
-    		var installDir = destination & engineName & "-" & replace( satisfyingVersion.version, '+', '.', 'all' );
+    		var satisfyingVersion = endpoint.findSatisfyingVersion( endpoint.parseSlug( arguments.ID ), endpoint.parseVersion( arguments.ID ) );
+    		installDetails.installDir = destination & engineName & "-" & replace( satisfyingVersion.version, '+', '.', 'all' );
+    		installDetails.version = satisfyingVersion.version;
     		
     	} else {
     		
     		// For all other endpoints, create a predictable folder based on the endpoint ID.
     		// If the file that the endpoint points to changes, you'll have to forget the server to pick up changes.
     		// The alternative is re-downloading the engine EVERY. SINGLE. TIME.
-    		var installDir = destination & engineName;
+    		installDetails.installDir = destination & engineName;
     		
     	}
     	
+    	if( listFirst( arguments.ID, '@' ) == 'lucee-cf-engine' && server.lucee.version == replace( installDetails.version, '+', '.', 'all' ) ) {
+    		installDetails.internal = true;
+    		return installDetails;
+    	}
+    	
     	// Check to see if this WAR has already been exploded
-    	if( fileExists( installDir & '/WEB-INF/web.xml' ) ) {
+    	if( fileExists( installDetails.installDir & '/WEB-INF/web.xml' ) ) {
     		consoleLogger.info( "WAR/zip archive already installed.");
-			return installDir;
-    	}    	
+			return installDetails;
+    	}
     	 
     	// Install the engine via our standard package service
 		packageService.installPackage( ID=arguments.ID, directory=thisTempDir, save=false );
@@ -134,7 +148,7 @@ component accessors="true" singleton="true" {
 		}
 		
 		consoleLogger.info( "Exploding WAR/zip archive...");
-		zip action="unzip" file="#thisFile#" destination="#installDir#" overwrite="true";
+		zip action="unzip" file="#thisFile#" destination="#installDetails.installDir#" overwrite="true";
 				
 		// Catch this to gracefully handle where the OS or another program 
 		// has the folder locked.
@@ -144,7 +158,7 @@ component accessors="true" singleton="true" {
 			consoleLogger.error( '#e.message##CR#The folder is possibly locked by another program.' );
 			logger.error( '#e.message# #e.detail#' , e.stackTrace );
 		}
-		return installDir;
+		return installDetails;
 	}
   /**
   * configure web.xml file for Lucee and Railo
@@ -176,21 +190,7 @@ component accessors="true" singleton="true" {
   * Dynamic completion for cfengine
   */  
   function getCFEngineNames() {
-    var engineNames = ["lucee","adobe","railo"];
-    var namesAndVersions = [];
-    for (var name in engineNames) {
-      for (var version in cfengineVersions[name]) {
-        arrayAppend(namesAndVersions,name & "@" & ucase(version));
-      }
-    }
-    return namesAndVersions;
+    return ["lucee","adobe","railo"];
   }
   
-  /**
-  * Dynamic completion for cfengine
-  */  
-  function getCFEngineVersions(required cfengine) {
-    return cfengineVersions[cfengine];
-  }
-
 }
