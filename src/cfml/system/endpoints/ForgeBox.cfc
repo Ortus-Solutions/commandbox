@@ -190,29 +190,37 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 	function findSatisfyingVersion( required string slug, required string version, struct entryData ) {
 		
 			// Use passed in entrydata, or go get it from ForgeBox.
-			var entryData = arguments.entryData ?: forgebox.getEntry( arguments.slug );
+			arguments.entryData = arguments.entryData ?: forgebox.getEntry( arguments.slug );
 			
-			entryData.versions.sort( function( a, b ) { return semanticVersion.compare( b.version, a.version ) } );
+			arguments.entryData.versions.sort( function( a, b ) { return semanticVersion.compare( b.version, a.version ) } );
 			
 			var found = false;
-			for( var thisVersion in entryData.versions ) {
+			for( var thisVersion in arguments.entryData.versions ) {
 				if( semanticVersion.satisfies( thisVersion.version, arguments.version ) ) {
 					return thisVersion;
 				}
 			}
 			
 			// If we requsted stable and all releases are pre-release, just grab the latest
-			if( arguments.version == 'stable' && arrayLen( entryData.versions ) ) {
-				return entryData.versions[ 1 ]; 
+			if( arguments.version == 'stable' && arrayLen( arguments.entryData.versions ) ) {
+				return arguments.entryData.versions[ 1 ]; 
 			} else {
-				throw( 'Version [#arguments.version#] not found for package [#arguments.slug#].', 'endpointException', 'Available versions are [#entryData.versions.map( function( i ){ return ' ' & i.version; } ).toList()#]' );					
+				throw( 'Version [#arguments.version#] not found for package [#arguments.slug#].', 'endpointException', 'Available versions are [#arguments.entryData.versions.map( function( i ){ return ' ' & i.version; } ).toList()#]' );					
 			}
 	}
 		
+	/*
+	* Parses just the slug portion out of an endpoint ID
+	* @package The full endpointID like foo@1.0.0 
+	*/
 	public function parseSlug( required string package ) {
 		return listFirst( arguments.package, '@' );
 	}
-		
+
+	/*
+	* Parses just the version portion out of an endpoint ID
+	* @package The full endpointID like foo@1.0.0 
+	*/
 	public function parseVersion( required string package ) {
 		var version = 'stable';
 		// foo@1.0.0
