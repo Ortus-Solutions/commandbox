@@ -85,7 +85,9 @@ component aliases="start" {
 	){
 		// Resolve path as used locally
 		arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
-		arguments.WARPath = fileSystemUtil.resolvePath( arguments.WARPath );
+		if( !isNull( WARPath ) ) {
+			arguments.WARPath = fileSystemUtil.resolvePath( arguments.WARPath );
+		}
 
 		// startup the server
 		return serverService.start( serverProps = arguments );
