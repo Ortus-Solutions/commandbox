@@ -50,7 +50,7 @@ component extends="wirebox.system.ioc.config.Binder" {
 		];
 		var ortusArtifactsURL		= 'http://integration.stg.ortussolutions.com/artifacts/';
 		var ortusPRDArtifactsURL	= 'http://downloads.ortussolutions.com/';
-
+		// engine versions, first is default - for lucee, first is internal version
 
 		// map constants
 		map( 'system@constants' ).toValue( system );
@@ -66,7 +66,7 @@ component extends="wirebox.system.ioc.config.Binder" {
 		map( 'ortusArtifactsURL@constants' ).toValue( ortusArtifactsURL );
 		map( 'ortusPRDArtifactsURL@constants' ).toValue( ortusPRDArtifactsURL );
 		map( 'rewritesDefaultConfig@constants' ).toValue( "#homeDir#/cfml/system/config/urlrewrite.xml" );
-
+		
 		// Map Java Classes
 		map( 'commandHistoryFile@java' ).toJava( "jline.console.history.FileHistory" )
 			.initWith( createObject( "java", "java.io.File" ).init( commandHistoryFile ) )

@@ -29,6 +29,7 @@ component {
 		Boolean force=false
 	){
 		// Discover by shortname or webroot
+		arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
 		var serverInfo = serverService.getServerInfoByDiscovery( arguments.directory, arguments.name );
 
 		// Verify server info

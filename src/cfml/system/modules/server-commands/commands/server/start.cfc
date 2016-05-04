@@ -49,6 +49,9 @@ component aliases="start" {
 	 * @JVMArgs 		Additional JVM args to use when starting the server. Use "server status --verbose" to debug
 	 * @runwarArgs 		Additional Runwar options to use when starting the server. Use "server status --verbose" to debug
 	 * @saveSettings 	Save start settings in server.json
+	 * @cfengine        sets the cfml engine type
+	 * @cfengine.optionsUDF  cfengineNameComplete
+	 * @WARPath			sets the path to an existing war to use
 	 **/
 	function run(
 		String  name,
@@ -76,7 +79,9 @@ component aliases="start" {
 		boolean directoryBrowsing,
 		String  JVMArgs,
 		String  runwarArgs,
-		boolean	saveSettings=true
+		boolean	saveSettings=true,
+		String  cfengine,
+		String  WARPath
 	){
 		// Resolve path as used locally
 		arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
@@ -92,4 +97,11 @@ component aliases="start" {
 		return serverService.getServerNames();
 	}
 	
+	/**
+	* Complete cfengine names
+	*/
+	function cfengineNameComplete() {
+		return serverService.getCFEngineNames();
+	}
+
 }
