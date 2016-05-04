@@ -168,25 +168,25 @@ component accessors="true" singleton="true" {
 	* configure web.xml file for Lucee and Railo
 	* TODO: Just make these changes directly in the WAR files
 	* 
-	* @cfengine				lucee or railo
-	* @source					source web.xml
-	* @destination		 target web.xml
+	* @cfengine lucee or railo
+	* @source source web.xml
+	* @destination target web.xml
 	**/
-	public function configureWebXML(required cfengine, required source, destination) {
-		var webXML = XMLParse(source);
-		var servlets = xmlSearch(webXML,"//:servlet-class[text()='#lcase(cfengine)#.loader.servlet.CFMLServlet']");
+	public function configureWebXML( required cfengine, required source, destination ) {
+		var webXML = XMLParse( source );
+		var servlets = xmlSearch(webXML,"//:servlet-class[text()='#lcase( cfengine )#.loader.servlet.CFMLServlet']");
 		var initParam = xmlElemnew(webXML,"http://java.sun.com/xml/ns/javaee","init-param");
 		initParam.XmlChildren[1] = xmlElemnew(webXML,"param-name");
-		initParam.XmlChildren[1].XmlText = "#lcase(cfengine)#-web-directory";
+		initParam.XmlChildren[1].XmlText = "#lcase( cfengine )#-web-directory";
 		initParam.XmlChildren[2] = xmlElemnew(webXML,"param-value");
-		initParam.XmlChildren[2].XmlText = "/WEB-INF/#lcase(cfengine)#/{web-context-label}";
+		initParam.XmlChildren[2].XmlText = "/WEB-INF/#lcase( cfengine )#/{web-context-label}";
 		arrayInsertAt(servlets[1].XmlParent.XmlChildren,4,initParam);
 		var xlt = '<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
 		<xsl:output method="xml" encoding="utf-8" indent="yes" xslt:indent-amount="2" xmlns:xslt="http://xml.apache.org/xslt" />
 		<xsl:strip-space elements="*"/>
 		<xsl:template match="node() | @*"><xsl:copy><xsl:apply-templates select="node() | @*" /></xsl:copy></xsl:template>
 		</xsl:stylesheet>';
-		fileWrite(destination,toString(XmlTransform(webXML,xlt)));
+		fileWrite( destination, toString( XmlTransform( webXML, xlt) ) );
 		return true;
 	}
 
@@ -194,7 +194,7 @@ component accessors="true" singleton="true" {
 	* Dynamic completion for cfengine
 	*/	
 	function getCFEngineNames() {
-		return ["lucee","adobe","railo"];
+		return [ "lucee","adobe","railo" ];
 	}
 	
 }
