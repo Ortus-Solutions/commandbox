@@ -37,7 +37,7 @@ component accessors="true" singleton {
 	
 	property name='rewritesDefaultConfig'	inject='rewritesDefaultConfig@constants';	
 	property name='interceptorService'		inject='interceptorService';	
-	property name='ConfigService'			inject='ConfigService';
+	property name='configService'			inject='ConfigService';
 	property name='JSONService'				inject='JSONService';
 	property name='packageService'			inject='packageService';
 	property name='serverEngineService'	inject='serverEngineService';
@@ -168,7 +168,7 @@ component accessors="true" singleton {
 		Struct serverProps
 	){
 
-		if(isNull(serverProps.name)) {
+		if( isNull( serverProps.name ) ) {
 			serverProps.name = listLast( serverProps.directory, "\/" );
 		}
 
@@ -627,7 +627,7 @@ component accessors="true" singleton {
 		// Discover by shortname or webroot
 		if( len( arguments.name ) ){
 			var foundServer = getServerInfoByName( arguments.name );
-			if(!isNull(foundServer)) {
+			if( !isNull( foundServer ) ) {
 				return foundServer;
 			}
 		}
