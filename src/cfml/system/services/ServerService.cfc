@@ -376,8 +376,9 @@ component accessors="true" singleton {
 			& " --cfml-server-config ""#serverInfo.serverConfigDir#"" #serverInfo.runwarArgs# ";
 			
 	// Starting a WAR
+	systemOutput( serverinfo.WARPath, true );
 	if (serverInfo.WARPath != "" ) {
-		args &= " -war ""#serverInfo.webroot#""";
+		args &= " -war ""#serverInfo.WARPath#""";
 	// Stand alone server
 	} else if( !installDetails.internal ){
 		args &= " -war ""#serverInfo.webroot#"" --lib-dirs ""#installDetails.installDir#/WEB-INF/lib"" --web-xml-path ""#installDetails.installDir#/WEB-INF/web.xml""";
