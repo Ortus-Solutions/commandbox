@@ -156,11 +156,10 @@ component aliases="bump" {
 				logger.error( 'Error tagging Git repository with new version.', e );
 				error( 'Error tagging Git repository with new version.', e.message & ' ' & e.detail );
 			}
-			
-			interceptorService.announceInterception( 'postVersion', { versionArgs=arguments } );	
 		
 		}
-			
+
+		interceptorService.announceInterception( 'postVersion', { versionArgs=arguments } );				
 						
 	}
 	
