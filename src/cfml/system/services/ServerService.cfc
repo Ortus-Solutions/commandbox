@@ -40,7 +40,7 @@ component accessors="true" singleton {
 	property name='configService'			inject='ConfigService';
 	property name='JSONService'				inject='JSONService';
 	property name='packageService'			inject='packageService';
-	property name='serverEngineService'	inject='serverEngineService';
+	property name='serverEngineService'		inject='serverEngineService';
 	property name='consoleLogger'			inject='logbox:logger:console';
 	property name='wirebox'					inject='wirebox';
 
@@ -343,6 +343,7 @@ component accessors="true" singleton {
         serverInfo.logdir = installDetails.installDir & "/logs";
         
       } catch (any e) {
+		logger.error( '#e.message# #e.detail#' , e.stackTrace );
         consoleLogger.error("Error installing server - " & e.message);
         consoleLogger.error(e.detail.replaceAll(",","#chr(10)#"));
         return;
