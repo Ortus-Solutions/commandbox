@@ -15,6 +15,29 @@
  * {code:bash}
  * server start heapSize=768
  * {code}
+ * .
+ * The default CF engine is the version of Lucee Server that the CLI is running on.
+ * You can also start Adobe ColdFusion engines as well as Railo Server using the "cfengine" parameter.
+ * Specify an engine version after an @ sign like you would on package installation.
+  * .
+ * {code:bash}
+ * server start cfengine=railo
+ * server start cfengine=adobe
+ * server start cfengine=adobe@11.0
+ * {code}
+ * .
+ * cfengine can also be any valid Endpoint ID that points to a ForgeBox entry, HTTP URL, etc.
+ * .
+ * {code:bash}
+ * server start cfengine=http://downloads.ortussolutions.com/adobe/coldfusion/9.0.2/cf-engine-9.0.2.zip
+ * {code}
+ * .
+ * You can also start up a local WAR file with the WARPath parmeter.
+  * .
+ * {code:bash}
+ * server start WARPath=/path/to/explodedWAR
+ * server start WARPath=/path/to/WARArchive.war
+ * {code}
  **/
 component aliases="start" {
 
