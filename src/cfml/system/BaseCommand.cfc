@@ -67,10 +67,11 @@ component accessors="true" singleton {
 	/**
 	 * Ask the user a question and wait for response
 	 * @message.hint message to prompt the user with
+	 * @mask.hint When not empty, keyboard input is masked as that character
  	 **/
-	function ask( required message ) {
+	function ask( required message, string mask='' ) {
 		print.toConsole();
-		return shell.ask( arguments.message );
+		return shell.ask( arguments.message, arguments.mask );
 	}
 		
 	/**

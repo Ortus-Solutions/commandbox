@@ -190,12 +190,18 @@ component accessors="true" singleton {
 	/**
 	 * ask the user a question and wait for response
 	 * @message.hint message to prompt the user with
+	 * @mask.hint When not empty, keyboard input is masked as that character
 	 *
 	 * @return the response from the user
  	 **/
-	string function ask( message ) {
-		// read reponse
-		var input = variables.reader.readLine( arguments.message );
+	string function ask( message, string mask='' ) {
+		if( len( arguments.mask ) ) {
+			// read reponse while masking input
+			var input = variables.reader.readLine( arguments.message, javacast( "char", left( arguments.mask, 1 ) ) );
+		} else {
+			// read reponse
+			var input = variables.reader.readLine( arguments.message );
+		}
 		// Reset back to default prompt
 		setPrompt();
 
@@ -357,8 +363,6 @@ component accessors="true" singleton {
 	 * @input.hint command line to run if running externally
   	 **/
     Boolean function run( input="", silent=false ) {
-        var mask 	= "*";
-        var trigger = "su";
 
 		// init reload to false, just in case
         variables.reloadshell = false;
@@ -400,11 +404,6 @@ component accessors="true" singleton {
 	        	if( !isDefined( 'line' ) ) {
 	        		return false;
 	        	}
-
-	            // If we input the special word then we will mask the next line.
-	            if( ( !isNull( trigger ) ) && ( line.compareTo( trigger ) == 0 ) ){
-	                line = variables.reader.readLine( "password> ", javacast( "char", mask ) );
-	            }
 
 	            // If there's input, try to run it.
 				if( len( trim( line ) ) ) { 
