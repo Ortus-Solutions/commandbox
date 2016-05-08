@@ -708,7 +708,8 @@ component accessors="true" singleton {
 					} 
 					// Strings
 					else {
-						return shell.ask( message );
+						// If the param name contains the word "password", then mask the input. 
+						return shell.ask( message, ( param.name contains 'password' ? '*' : '' ) );
 					}
 				};
 
