@@ -340,7 +340,7 @@ component accessors="true" singleton {
     var javaagent = serverinfo.cfengine contains 'lucee' ? '-javaagent:"#libdir#/lucee-inst.jar"' : '';
     
     // Not sure what Runwar does with this, but it wants to know what CFEngine we're starting (if we know)
-    var CFEngineName = 'lucee';
+    var CFEngineName = '';
     CFEngineName = serverinfo.cfengine contains 'lucee' ? 'lucee' : CFEngineName;
     CFEngineName = serverinfo.cfengine contains 'railo' ? 'railo' : CFEngineName;
     CFEngineName = serverinfo.cfengine contains 'adobe' ? 'adobe' : CFEngineName;
@@ -393,7 +393,8 @@ component accessors="true" singleton {
 			& " --background=true --port #serverInfo.port# --host #serverInfo.host# --debug=#serverInfo.debug#"
 			& " --stop-port #serverInfo.stopsocket# --processname ""#processName#"" --log-dir ""#serverInfo.logDir#"""
 			& " --open-browser #serverInfo.openbrowser# --open-url http://#serverInfo.host#:#serverInfo.port#"
-			& " --cfengine-name ""#CFEngineName#"" --server-name ""#serverInfo.name#"""
+			& ( len( CFEngineName ) ? " --cfengine-name ""#CFEngineName#""" : "" )
+			& " --server-name ""#serverInfo.name#"""
 			& " --tray-icon ""#serverInfo.trayIcon#"" --tray-config ""#trayConfigJSON#"""
 			& " --directoryindex ""#serverInfo.directoryBrowsing#"" --cfml-web-config ""#serverInfo.webConfigDir#"""
 			& " --cfml-server-config ""#serverInfo.serverConfigDir#"" #serverInfo.runwarArgs# ";
