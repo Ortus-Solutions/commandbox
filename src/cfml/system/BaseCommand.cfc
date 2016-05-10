@@ -123,6 +123,7 @@ component accessors="true" singleton {
 	 * @clearPrintBuffer.hint Wipe out the print buffer or not, it does not by default
  	 **/
 	function error( required message, detail='', clearPrintBuffer=false ) {
+		setExitCode( 1 );
 		hasErrored = true;
 		if( arguments.clearPrintBuffer ) {
 			// Wipe 
@@ -140,6 +141,13 @@ component accessors="true" singleton {
  	 **/
 	function hasError() {
 		return hasErrored;
+	}
+	
+	/**
+	 * Sets the OS exit code 
+ 	 **/
+	function setExitCode( required string exitCode ) {
+		return shell.setExitCode( arguments.exitCode );
 	}
 	
 	/**

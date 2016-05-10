@@ -31,6 +31,8 @@ component{
 	
 	function onError( any exception, string eventName ) {
 		
+		createObject( 'java', 'java.lang.System' ).setProperty( 'cfml.cli.exitCode', '1' );
+		
 		// Try to log this to LogBox
 		try {
     		application.wireBox.getLogBox().getRootLogger().error( '#exception.message# #exception.detail ?: ''#', exception.stackTrace );
