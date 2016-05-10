@@ -270,6 +270,9 @@ component accessors="true" singleton {
 				// Now, where were we?
 				rethrow;
 			}
+			
+			// Successful command execution resets exit code to 0
+			shell.setExitCode( 0 );
 
 			// Remove it from the stack
 			instance.callStack.deleteAt( 1 );

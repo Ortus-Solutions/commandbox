@@ -112,6 +112,7 @@ component {
 			print.yellow( " " & results.filecontent );
 		} else if( results.responseheader[ "x-testbox-totalError" ] gt 0 ){
 			// print Failure report
+			setExitCode( 1 );
 			print.boldRed( " " & results.filecontent );
 		}
 		

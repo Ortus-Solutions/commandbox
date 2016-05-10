@@ -1,3 +1,4 @@
+<cfset createObject( 'java', 'java.lang.System' ).setProperty( 'cfml.cli.exitCode', '1' )>
 <cfsavecontent variable="CLIErrorOutput">
 <cfsetting enableCFoutputOnly = "true"/>
 <cfparam name="addClosingHTMLTags" default="#true#" type="boolean">

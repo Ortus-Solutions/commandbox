@@ -141,14 +141,20 @@ component accessors="true" singleton {
 	}
 
 
-
-
 	/**
 	 * Exists the shell
 	 **/
 	Shell function exit() {
     	variables.keepRunning = false;
 
+		return this;
+	}
+
+	/**
+	 * Set's the OS Exit code to be used
+	 **/
+	Shell function setExitCode( required string exitCode ) {
+		createObject( 'java', 'java.lang.System' ).setProperty( 'cfml.cli.exitCode', arguments.exitCode );
 		return this;
 	}
 
@@ -513,6 +519,8 @@ component accessors="true" singleton {
 	 * @err.hint Error object to print (only message is required)
   	 **/
 	Shell function printError( required err ){
+		
+		setExitCode( 1 );
 		
 		getInterceptorService().announceInterception( 'onException', { exception=err } );
 		

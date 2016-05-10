@@ -212,6 +212,13 @@ public class LoaderCLIMain{
 				e.getCause().printStackTrace();
 			}
 		}
+		
+
+		if( debug ) {
+			System.out.println( "cfml.cli.exitCode: " + Integer.parseInt( System.getProperty("cfml.cli.exitCode","0") ) );
+		}
+		exitCode = Integer.parseInt( System.getProperty("cfml.cli.exitCode","0") );
+		
 		cl.close();
 		System.out.flush();
 		System.setOut( originalOut );
