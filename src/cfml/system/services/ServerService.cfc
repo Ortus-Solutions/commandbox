@@ -335,31 +335,44 @@ component accessors="true" singleton {
 		// The process native name
 		var processName = ( serverInfo.name is "" ? "CommandBox" : serverInfo.name ) & ' [' & serverinfo.cfengine & ']';
 
+    
+    // Default java agent for embedded Lucee engine
     var javaagent = serverinfo.cfengine contains 'lucee' ? '-javaagent:"#libdir#/lucee-inst.jar"' : '';
-    var CFEngineName = serverinfo.cfengine contains 'lucee' ? 'lucee' : 'na';
-    if( serverInfo.WARPath == '' ){
-      try {
-        var installDetails = serverEngineService.install( cfengine=serverInfo.cfengine, basedirectory=serverInfo.webConfigDir );
-        serverInfo.logdir = installDetails.installDir & "/logs";
-        
-      } catch (any e) {
-		logger.error( '#e.message# #e.detail#' , e.stackTrace );
-        consoleLogger.error("Error installing server - " & e.message);
-        consoleLogger.error(e.detail.replaceAll(",","#chr(10)#"));
-        return;
-      }
-      if( !installDetails.internal && serverInfo.cfengine contains "lucee" ) {
-        javaagent = "-javaagent:""#installDetails.installDir#/WEB-INF/lib/lucee-inst.jar""";
-      }
-      if( !installDetails.internal && serverInfo.cfengine contains "railo" ) {
-        javaagent = "-javaagent:""#installDetails.installDir#/WEB-INF/lib/railo-inst.jar""";
-      }
+    
+    // Not sure what Runwar does with this, but it wants to know what CFEngine we're starting (if we know)
+    var CFEngineName = 'lucee';
+    CFEngineName = serverinfo.cfengine contains 'lucee' ? 'lucee' : CFEngineName;
+    CFEngineName = serverinfo.cfengine contains 'railo' ? 'railo' : CFEngineName;
+    CFEngineName = serverinfo.cfengine contains 'adobe' ? 'adobe' : CFEngineName;
+    
+    // As long as there's no WAR Path, let's install the engine to use.
+	if( serverInfo.WARPath == '' ){
+		try {
+			// This will install the engine war to start, possibly downloading it first
+			var installDetails = serverEngineService.install( cfengine=serverInfo.cfengine, basedirectory=serverInfo.webConfigDir );
+			serverInfo.logdir = installDetails.installDir & "/logs";
+		    
+		// Not sure we need this ultimatley, but errors were really ugly when getting this up and running.
+		} catch (any e) {
+			logger.error( '#e.message# #e.detail#' , e.stackTrace );
+			consoleLogger.error("Error installing server - " & e.message);
+			consoleLogger.error(e.detail.replaceAll(",","#chr(10)#"));
+			return;
+		}
+		// If external Lucee server, set the java agent
+		if( !installDetails.internal && serverInfo.cfengine contains "lucee" ) {
+			javaagent = "-javaagent:""#installDetails.installDir#/WEB-INF/lib/lucee-inst.jar""";
+		}
+		// If external Railo server, set the java agent
+		if( !installDetails.internal && serverInfo.cfengine contains "railo" ) {
+			javaagent = "-javaagent:""#installDetails.installDir#/WEB-INF/lib/railo-inst.jar""";
+		}
 		// Using built in server that hasn't been started before
 		if( installDetails.internal && !directoryExists( serverInfo.webConfigDir & '/WEB-INF' ) ) {
 			serverInfo.webConfigDir = installDetails.installDir;
 			serverInfo.logdir = serverInfo.webConfigDir & "/logs";
 		}
-    } 
+	} 
     
     // This is due to a bug in RunWar not creating the right directory for the logs
     directoryCreate( serverInfo.logDir, true, true );
