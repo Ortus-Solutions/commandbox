@@ -392,7 +392,8 @@ component accessors="true" singleton {
 			& " #javaagent# -jar ""#variables.jarPath#"""
 			& " --background=true --port #serverInfo.port# --host #serverInfo.host# --debug=#serverInfo.debug#"
 			& " --stop-port #serverInfo.stopsocket# --processname ""#processName#"" --log-dir ""#serverInfo.logDir#"""
-			& " --open-browser #serverInfo.openbrowser# --open-url http://#serverInfo.host#:#serverInfo.port#"
+			& " --open-browser #serverInfo.openbrowser#"
+			& " --open-url " & ( serverInfo.SSLEnable ? 'https://#serverInfo.host#:#serverInfo.SSLPort#' : 'http://#serverInfo.host#:#serverInfo.port#' )
 			& ( len( CFEngineName ) ? " --cfengine-name ""#CFEngineName#""" : "" )
 			& " --server-name ""#serverInfo.name#"""
 			& " --tray-icon ""#serverInfo.trayIcon#"" --tray-config ""#trayConfigJSON#"""
