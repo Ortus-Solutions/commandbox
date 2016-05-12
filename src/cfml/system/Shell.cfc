@@ -270,8 +270,8 @@ component accessors="true" singleton {
 			}
 		}
 
-		variables.reader.getOutput().write( '[2J' );
-		variables.reader.getOutput().write( '[1;1H' );
+		variables.reader.print( '[2J' );
+		variables.reader.print( '[1;1H' );
 
 		return this;
 	}
@@ -362,7 +362,7 @@ component accessors="true" singleton {
 			writedump(var=arguments.string, output="console");
 			arguments.string = "";
 		}
-    	variables.reader.getOutput().write( arguments.string );
+    	variables.reader.print( arguments.string );
     	variables.reader.flush();
 
     	return this;
@@ -527,13 +527,13 @@ component accessors="true" singleton {
 		variables.logger.error( '#arguments.err.message# #arguments.err.detail ?: ''#', arguments.err.stackTrace ?: '' );
 
 
-		variables.reader.getOutput().write( variables.print.whiteOnRedLine( 'ERROR' ) );
+		variables.reader.print( variables.print.whiteOnRedLine( 'ERROR' ) );
 		variables.reader.println();
-		variables.reader.getOutput().write( variables.print.boldRedText( variables.formatterUtil.HTML2ANSI( arguments.err.message ) ) );
+		variables.reader.print( variables.print.boldRedText( variables.formatterUtil.HTML2ANSI( arguments.err.message ) ) );
 		variables.reader.println();
 
 		if( structKeyExists( arguments.err, 'detail' ) ) {
-			variables.reader.getOutput().write( variables.print.boldRedText( variables.formatterUtil.HTML2ANSI( arguments.err.detail ) ) );
+			variables.reader.print( variables.print.boldRedText( variables.formatterUtil.HTML2ANSI( arguments.err.detail ) ) );
 			variables.reader.println();
 		}
 		if( structKeyExists( arguments.err, 'tagcontext' ) ){
@@ -543,16 +543,16 @@ component accessors="true" singleton {
 					var tc = arguments.err.tagcontext[ idx ];
 					if( len( tc.codeprinthtml ) ){
 						if( idx > 1 ) {
-							variables.reader.getOutput().write( print.boldCyanText( "called from " ) );
+							variables.reader.print( print.boldCyanText( "called from " ) );
 						}
-						variables.reader.getOutput().write( variables.print.boldCyanText( "#tc.template#: line #tc.line##variables.cr#" ));
-						variables.reader.getOutput().write( variables.print.text( variables.formatterUtil.HTML2ANSI( tc.codeprinthtml ) ) );
+						variables.reader.print( variables.print.boldCyanText( "#tc.template#: line #tc.line##variables.cr#" ));
+						variables.reader.print( variables.print.text( variables.formatterUtil.HTML2ANSI( tc.codeprinthtml ) ) );
 					}
 				}
 			}
 		}
 		if( structKeyExists( arguments.err, 'stacktrace' ) ) {
-			variables.reader.getOutput().write( arguments.err.stacktrace );
+			variables.reader.print( arguments.err.stacktrace );
 		}
 
 		variables.reader.println();
