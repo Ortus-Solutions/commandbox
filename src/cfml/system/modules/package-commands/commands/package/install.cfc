@@ -110,7 +110,7 @@ component aliases="install" {
 		string directory,
 		boolean save=true,
 		boolean saveDev=false,
-		boolean production=false,
+		boolean production,
 		boolean verbose=false,
 		boolean force=false
 	){
