@@ -67,7 +67,7 @@ component accessors="true" singleton {
 			string directory,
 			boolean save=false,
 			boolean saveDev=false,
-			boolean production=false,
+			boolean production,
 			string currentWorkingDirectory=shell.pwd(),
 			boolean verbose=false,
 			boolean force=false,
@@ -78,6 +78,9 @@ component accessors="true" singleton {
 				
 		// If there is a package to install, install it
 		if( len( arguments.ID ) ) {
+			
+			// By default, a specific package install doesn't include dev dependencies
+			arguments.production = arguments.production ?: true;
 			
 			// Verbose info
 			if( arguments.verbose ){
@@ -284,7 +287,7 @@ component accessors="true" singleton {
 					ignorePatterns.append( '/box.json' );
 				}
 			}
-						
+			
 			// I give up, just stick it in the CWD
 			if( !len( installDirectory ) ) {
 				installDirectory = arguments.currentWorkingDirectory;
@@ -401,6 +404,10 @@ component accessors="true" singleton {
 			// read it...
 			var artifactDescriptor = readPackageDescriptor( arguments.currentWorkingDirectory );
 			var installDirectory = arguments.currentWorkingDirectory;
+			
+			// By default, a general package install includes dev dependencies
+			arguments.production = arguments.production ?: false;
+			
 		}
 
 		// and grab all the dependencies
@@ -433,7 +440,8 @@ component accessors="true" singleton {
 				// Nested dependencies are already in the box.json, but the save will update the installPaths
 				save = ( isSaving && !isDev ),
 				saveDev = ( isSaving && isDev ),
-				production = arguments.production,
+				// Nested packages never get dev dependencies
+				production = true,
 				currentWorkingDirectory = arguments.currentWorkingDirectory, // Original dir
 				packagePathRequestingInstallation = installDirectory // directory for smart dependencies to use
 			};
