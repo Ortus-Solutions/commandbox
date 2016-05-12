@@ -207,9 +207,10 @@ component accessors="true" singleton {
 			// Prompt for the user
 			arguments.message,
 			// Optionally mask their input
-			len( arguments.mask ) ? javacast( "char", left( arguments.mask, 1 ) ) : javacast( "null", '' ),
+			len( arguments.mask ) ? javacast( "char", left( arguments.mask, 1 ) ) : javacast( "null", '' )//,
+			// This won't work until we can upgrade to Jline 2.14
 			// Optionally pre-fill a default response for them
-			len( arguments.buffer ) ? javacast( "String", arguments.buffer ) : javacast( "null", '' )
+		//	len( arguments.buffer ) ? javacast( "String", arguments.buffer ) : javacast( "null", '' )
 		);
 		
 		// Reset back to default prompt
