@@ -112,6 +112,14 @@ component aliases="start" {
 			arguments.WARPath = fileSystemUtil.resolvePath( arguments.WARPath );
 		}
 
+		// This is a common mis spelling
+		if( structKeyExists( arguments, 'rewritesEnabled' ) ) {
+			print.yellowLine( 'Auto-correcting "rewritesEnabled" to "rewritesEnable".' );
+			// Let's fix that up for them.
+			arguments.rewritesEnable = arguments.rewritesEnabled;
+			structDelete( arguments, 'rewritesEnabled' );
+		}
+
 		// startup the server
 		return serverService.start( serverProps = arguments );
 	}
