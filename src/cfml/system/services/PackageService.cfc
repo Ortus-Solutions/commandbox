@@ -868,6 +868,15 @@ component accessors="true" singleton {
 			// Only check slugs we're supposed to
 			if( !len( includeSlugs ) || listFindNoCase( includeSlugs, arguments.slug ) ) {
 				
+				// If a package is not installed (possibly a dev dependency in production mode), then we skip it
+				if( !value.isInstalled ) {
+					if( verbose ){
+						print.yellowLine( "#arguments.slug# is not installed, skipping.." )
+							.toConsole();
+					}
+					return;					
+				}
+				
 				// Contains an enpoint
 				if( value.version contains ':' ) {
 					var ID = value.version;
@@ -935,7 +944,8 @@ component accessors="true" singleton {
 			'slug' : boxJSON.slug,
 			'shortDescription' : boxJSON.shortDescription,
 			'version': boxJSON.version,
-			'packageVersion': boxJSON.version
+			'packageVersion': boxJSON.version,
+			'isInstalled': true
 		};
 		buildChildren( boxJSON, tree, arguments.directory);
 		return tree;
@@ -955,7 +965,8 @@ component accessors="true" singleton {
 				'dev' : arguments.dev,
 				'name' : '',
 				'shortDescription' : '',
-				'packageVersion' : ''
+				'packageVersion' : '',
+				'isInstalled': false
 			};
 			   
 			if( structKeyExists( arguments.installPaths, dependency ) ) {
@@ -965,6 +976,7 @@ component accessors="true" singleton {
 				thisDeps[ dependency ][ 'name'  ] = boxJSON.name;
 				thisDeps[ dependency ][ 'shortDescription'  ] = boxJSON.shortDescription;
 				thisDeps[ dependency ][ 'packageVersion'  ] = boxJSON.version;
+				thisDeps[ dependency ][ 'isInstalled'  ] = true;
 				
 				// Down the rabbit hole
 				buildChildren( boxJSON, thisDeps[ dependency ], fullPackageInstallPath );				
