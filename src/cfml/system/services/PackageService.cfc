@@ -511,7 +511,8 @@ component accessors="true" singleton {
 			required string ID,
 			string directory,
 			boolean save=false,
-			required string currentWorkingDirectory
+			required string currentWorkingDirectory,
+			string packagePathRequestingUninstallation = arguments.currentWorkingDirectory
 	){
 					
 		interceptorService.announceInterception( 'preUninstall', { uninstallArgs=arguments } );
@@ -538,15 +539,9 @@ component accessors="true" singleton {
 				uninstallDirectory = fileSystemUtil.resolvePath( installPaths[ packageName ] );
 			}			
 		}
-		
-		// If all else fails, just use the current directory
-		if( !len( uninstallDirectory ) ) {
-			consoleLogger.warn( "No install path found in box.json, looking in the current working directory.");
-			uninstallDirectory = arguments.currentWorkingDirectory & '/' & packageName;
-		}
 				
 		// See if the package exists here
-		if( directoryExists( uninstallDirectory ) ) {
+		if( len( uninstallDirectory ) && directoryExists( uninstallDirectory ) ) {
 			
 			// Get the dependencies of the package we're about to uninstalled
 			var boxJSON = readPackageDescriptor( uninstallDirectory );
@@ -577,7 +572,8 @@ component accessors="true" singleton {
 					ID = dependency,
 					// Only save the first level
 					save = false,
-					currentWorkingDirectory = arguments.currentWorkingDirectory
+					currentWorkingDirectory = uninstallDirectory,
+					packagePathRequestingUninstallation=arguments.packagePathRequestingUninstallation
 				};
 							
 				// If the user didn't specify this, don't pass it since it overrides the package's desired install location
@@ -592,7 +588,7 @@ component accessors="true" singleton {
 		} // end is not module
 				
 		// uninstall the package
-		if( directoryExists( uninstallDirectory ) ) {
+		if( len( uninstallDirectory ) && directoryExists( uninstallDirectory ) ) {
 			
 			// Catch this to gracefully handle where the OS or another program 
 			// has the folder locked.
@@ -602,6 +598,11 @@ component accessors="true" singleton {
 				consoleLogger.error( '#e.message##CR#The folder is possibly locked by another program.' );
 				logger.error( '#e.message# #e.detail#' , e.stackTrace );
 			}
+			
+			consoleLogger.info( "'#packageName#' has been uninstalled" );
+			
+		} else if( !len( uninstallDirectory ) ) {
+			consoleLogger.debug( "Package [#packageName#] skipped, it doesn't appear to be installed." );		
 			
 		} else {
 			consoleLogger.error( 'Package [#uninstallDirectory#] not found.' );			
@@ -617,8 +618,6 @@ component accessors="true" singleton {
 			consoleLogger.info( "Dependency removed from box.json." );
 		}
 	
-		consoleLogger.info( "'#packageName#' has been uninstalled" );
-
 		interceptorService.announceInterception( 'postUninstall', { uninstallArgs=arguments } );
 	}
 	
