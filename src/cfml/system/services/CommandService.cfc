@@ -15,9 +15,11 @@ component accessors="true" singleton {
 	property name='system' 				inject='System@constants';
 	property name='cr' 					inject='cr@constants';
 	property name='logger' 				inject='logbox:logger:{this}';
+	property name='consoleLogger'		inject='logbox:logger:console';
 	property name='wirebox' 			inject='wirebox';
 	property name='commandLocations'	inject='commandLocations@constants';
 	property name='interceptorService'	inject='interceptorService';
+	property name='stringDistance'		inject='StringDistance';
 		
 	property name='configured' default="false" type="boolean";
 	
@@ -118,6 +120,11 @@ component accessors="true" singleton {
  	 **/
 	function runCommandline( required string line ){
 		
+		if( left( arguments.line, 4 ) == 'box ' && len( arguments.line ) > 4 ) {
+			consoleLogger.warn( "Removing extra text [box ] from start of command. You don't need that here." );
+			arguments.line = right( arguments.line, len( arguments.line ) - 4 );
+		}
+		
 		// Resolve the command they are wanting to run
 		var commandChain = resolveCommand( line );
 		
@@ -167,7 +174,8 @@ component accessors="true" singleton {
 
 			// If nothing was found, bail out here.
 			if( !commandInfo.found ){
-				throw( message='Command "#line#" cannot be resolved.', detail='Please type "#trim( "help #listChangeDelims( commandInfo.commandString, ' ', '.' )#" )#" for assistance.', type="commandException");
+				var detail = generateListOfSimilarCommands( commandInfo );
+				throw( message='Command "#line#" cannot be resolved.', detail=detail, type="commandException");
 			}
 
 			// For help commands squish all the parameters together into one exactly as typed
@@ -294,6 +302,45 @@ component accessors="true" singleton {
 		return result;
 
 	}
+
+	/**
+	* Generate a smart list of possible commands that the user meant to type
+	*/
+	function generateListOfSimilarCommands( required struct commandInfo ) {
+		var allCommands = getCommands().keyArray().map( function( i ) { return lcase( listChangeDelims( i, ' ', '.' ) ); } );
+		var matchedSoFar = lcase( listChangeDelims( arguments.commandInfo.commandString, ' ', '.' ) );
+		var originalLine = arguments.commandInfo.originalLine;
+		var candidates = [];
+		
+		for( var option in allCommands ) {
+			// If we matched a partial command, only consider commands starting with that match
+			if( len( matchedSoFar ) && !option.startsWith( matchedSoFar ) ) {
+				continue;
+			}
+			// Ignore help commands
+			if( listLast( option, ' ' ) == 'help' ) {
+				continue;
+			}
+			var thisOriginalLine = originalLine;
+			// Try to ignore params
+			if( listLen( option, ' ' ) < listLen( originalLine, ' ' ) ) {
+				thisOriginalLine = originalLine.listToArray( ' ' ).slice( 1, listLen( option, ' ' ) ).toList( ' ' );
+				
+			}
+			var comparison = stringDistance.stringSimilarity( option, thisOriginalLine, 2 );
+			if( comparison.similarity > .80 ) {
+				candidates.append( '     ' & option );			
+			}
+		}
+
+		var helpText = '';
+		if( arrayLen( candidates ) ) {
+			helpText &= '#chr( 10 )#Did you mean: #chr( 10 )##candidates.toList( chr( 10 ) )##chr( 10 )#';
+		}
+		helpText &= '#chr( 10 )#Please type "#trim( "help #matchedSoFar#" )#" for assistance.';
+		return helpText;
+	}
+				
 
 	/**
 	* Evaluates any expressions as a command string and puts the output in its place.
@@ -443,6 +490,7 @@ component accessors="true" singleton {
 			}
 
 			var results = {
+				originalLine = tokens.toList( ' ' ),
 				commandString = '',
 				commandReference = cmds,
 				parameters = [],
