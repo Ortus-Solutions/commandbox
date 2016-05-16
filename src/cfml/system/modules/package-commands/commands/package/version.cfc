@@ -76,6 +76,7 @@ component aliases="bump" {
 		} else if( structKeyExists( arguments, 'minor' ) && arguments.minor ) {
 			
 			// Bump minor
+			versionObject.major = val( versionObject.major );
 			versionObject.minor = val( versionObject.minor ) + 1;
 			versionObject.revision = 0;
 			arguments.version =  semanticVersion.getVersionAsString( versionObject );
@@ -84,6 +85,8 @@ component aliases="bump" {
 		} else if( structKeyExists( arguments, 'patch' ) && arguments.patch ) {
 			
 			// Bump patch  
+			versionObject.major = val( versionObject.major );
+			versionObject.minor = val( versionObject.minor );
 			versionObject.revision = val( versionObject.revision ) + 1;
 			arguments.version =  semanticVersion.getVersionAsString( versionObject );
 			setVersion( argumentCollection=arguments );
