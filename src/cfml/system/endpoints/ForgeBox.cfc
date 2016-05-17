@@ -42,7 +42,7 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 			// Defer to file endpoint
 			return fileEndpoint.resolvePackage( thisArtifactPath, arguments.verbose );
 		} else {
-			return getPackage( slug, version, arguments.verbose );
+			return getPackage( slug, version, arguments.verbose );			 
 		}
 	}
 	
@@ -264,6 +264,12 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 			}
 			
 			consoleLogger.info( "Installing version [#arguments.version#]." );
+			
+			try {
+				forgeBox.recordInstall( arguments.slug, arguments.version );
+			} catch( forgebox var e ) {
+				consoleLogger.warn( e.message & CR & e.detail );
+			}
 					
 			var packageType = entryData.typeSlug;
 			
