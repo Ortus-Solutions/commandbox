@@ -263,6 +263,50 @@ or just add DEBUG to the root logger
 		return results.response.data;
 	}
 	
+	/**
+	* Tracks an install
+	*/
+	function recordInstall(
+		required string slug,
+		string version='' ) {
+		
+		var thisResource = "install/#arguments.slug#";
+		if( len( arguments.version ) ) {
+			thisResource &= "/#arguments.version#";			
+		}
+		
+		var results = makeRequest( resource=thisResource, method='post' );
+		
+		// error 
+		if( results.error ){
+			throw( "Something went wrong tracking this installation.", 'forgebox', arrayToList( results.response.messages ) );
+		}
+		
+		return results.response.data;
+	}
+	
+	/**
+	* Tracks a download
+	*/
+	function recordDownload(
+		required string slug,
+		string version ) {
+			
+		var thisResource = "install/#arguments.slug#";
+		if( len( arguments.version ) ) {
+			thisResource &= "/#arguments.version#";			
+		}
+			
+		var results = makeRequest( resource=thisResource, parameters=arguments, method='post' );
+		
+		// error 
+		if( results.error ){
+			throw( "Something went wrong tracking this download.", 'forgebox', arrayToList( results.response.messages ) );
+		}
+		
+		return results.response.data;
+	}
+	
 	</cfscript>
 <!------------------------------------------- PRIVATE ------------------------------------------>
 
