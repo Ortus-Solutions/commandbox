@@ -93,13 +93,15 @@ or just add DEBUG to the root logger
 		<cfargument name="maxrows"  type="numeric" required="false" default="0" hint="Max rows to return"/>
 		<cfargument name="startRow" type="numeric" required="false" default="1" hint="StartRow"/>
 		<cfargument name="typeSlug" type="string" required="false" default="" hint="The type slug to filter on"/>
+		<cfargument name="searchTerm" type="string" required="false" default="" hint="String to search on"/>
 		<cfscript>
 			var results = "";
 			var params = {
 				orderBY = arguments.orderby,
 				max = arguments.maxrows,
 				offset = arguments.startrow-1,
-				typeSlug = arguments.typeSlug	
+				typeSlug = arguments.typeSlug,
+				searchTerm = arguments.searchTerm	
 			};
 			
 			// Invoke call

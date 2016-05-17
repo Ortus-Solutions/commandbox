@@ -10,7 +10,8 @@
 component {
 	
 	// DI
-	property name="forgeBox" inject="ForgeBox";
+	property name="forgeBox"		inject="ForgeBox";
+	property name="semanticVersion"	inject="semanticVersion";
 	
 	/**
 	* @searchText.hint Text to search on
@@ -23,37 +24,27 @@ component {
 		try {
 				
 				// Get the entries
-				var entries = forgebox.getEntries();
+				var entries = forgebox.getEntries( searchTerm = arguments.searchText );
 				
 				// entrylink,createdate,lname,isactive,installinstructions,typename,version,hits,coldboxversion,sourceurl,slug,homeurl,typeslug,
 				// downloads,entryid,fname,changelog,updatedate,downloadurl,title,entryrating,summary,username,description
 				
 				print.line();
-				var activeCount = 0;
 				for( var entry in entries.results ) {
-					if( val( entry.isactive )
-					&& (
-						   entry.title contains arguments.searchText
-						|| entry.user.fname contains arguments.searchText
-						|| entry.user.lname contains arguments.searchText
-						|| entry.typeName contains arguments.searchText
-						|| entry.summary contains arguments.searchText
-					) ) {
-						activeCount++;
-						print.blackOnWhite( ' #entry.title# ' ); 
-							print.boldText( '   ( #entry.user.fname# #entry.user.lname# )' );
-							print.boldGreenLine( '   #repeatString( '*', val( entry.avgRating ) )#' );
-						print.line( 'Version: #entry.version#' );
-						print.line( 'Type: #entry.typeName#' );
-						print.line( 'Slug: "#entry.slug#"' );
-						print.Yellowline( '#left( entry.summary, 200 )#' );
-						print.line();
-						print.line();
-					}
+					entry.versions.sort( function( a, b ) { return semanticVersion.compare( b.version, a.version ) } );
+					print.blackOnWhite( ' #entry.title# ' ) 
+						.boldText( '   ( #entry.user.fname# #entry.user.lname# )' )
+						.boldGreenLine( '   #repeatString( '*', val( entry.avgRating ) )#' )
+					.line( 'Versions: #entry.versions.map( function( i ){ return ' ' & i.version; } ).toList()#' )
+					.line( 'Type: #entry.typeName#' )
+					.line( 'Slug: "#entry.slug#"' )
+					.yellowline( '#left( entry.summary, 200 )#' )
+					.line()
+					.line();
 				}
 						
 				print.line();
-				print.boldCyanline( '  Found #activeCount# record#(activeCount == 1 ? '': 's')#.' );
+				print.boldCyanline( "  Showing #entries.count# of #entries.totalRecords# record#( entries.count == 1 ? '' : 's' )#." );
 						
 		} catch( forgebox var e ) {
 			// This can include "expected" errors such as "slug not found"
