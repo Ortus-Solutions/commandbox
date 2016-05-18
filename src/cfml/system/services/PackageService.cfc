@@ -1008,5 +1008,29 @@ component accessors="true" singleton {
 		return props;		
 	}
 	
-
-}
+	/**
+	* Nice wrapper to run a package script
+	* @scriptName Name of the package script to run
+	* @directory The package root
+	*/ 	
+	function runScript( required string scriptName, string directory=shell.pwd(), boolean ignoreMissing=true ) {
+	
+			// Read the box.json from this package (if it exists)
+			var boxJSON = readPackageDescriptor( arguments.directory );
+			// If there is a scripts object with a matching key for this interceptor....
+			if( boxJSON.keyExists( 'scripts' ) && isStruct( boxJSON.scripts ) && boxJSON.scripts.keyExists( arguments.scriptName ) ) {
+					
+				var thisScript = boxJSON.scripts[ arguments.scriptName ];
+				consoleLogger.warn( 'Running package script [#arguments.scriptName#].' );
+				consoleLogger.debug( '> ' & thisScript );
+				
+				// ... then run the script! (in the context of the package's working directory)
+				var previousCWD = shell.pwd();
+				shell.cd( arguments.directory );
+				shell.callCommand( thisScript );
+				shell.cd( previousCWD );
+			} else if( !arguments.ignoreMissing ) {
+				consoleLogger.error( 'The script [#arguments.scriptName#] does not exist in this package.' );
+			}
+	}
+} 

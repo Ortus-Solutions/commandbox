@@ -34,22 +34,8 @@ component {
 	function postPublish() { processScripts( 'postPublish' ); }
 	
 	function processScripts( required string interceptionPoint, string directory=shell.pwd() ) {
-		// Read the box.json from this package (if it exists)
-		var boxJSON = packageService.readPackageDescriptor( arguments.directory );
-		// If there is a scripts object with a matching key for this interceptor....
-		if( boxJSON.keyExists( 'scripts' ) && isStruct( boxJSON.scripts ) && boxJSON.scripts.keyExists( interceptionPoint ) ) {
-			var thisScript = boxJSON.scripts[ interceptionPoint ];
-			
-			consoleLogger.debug( "." );
-			consoleLogger.warn( 'Running #interceptionPoint# package script.' );
-			consoleLogger.debug( '> ' & thisScript );
-			
-			// ... then run the script! (in the context of the package's working directory)
-			var previousCWD = shell.pwd();
-			shell.cd( arguments.directory );
-			shell.callCommand( thisScript );
-			shell.cd( previousCWD );
-		}
+		consoleLogger.debug( "." );
+		packageService.runScript( arguments.interceptionPoint, arguments.directory );
 	}
 		
 }

@@ -31,6 +31,7 @@
 	dependencies : {},
 	devDependencies : {},
 	installPaths : {},
+	scripts : {},
 	ignore : [],
 	testbox :{
 		runner : [
