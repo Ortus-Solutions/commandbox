@@ -153,18 +153,23 @@ component aliases="install" {
 
 	// Auto-complete list of IDs
 	function IDComplete( string paramSoFar ) {
-		if( !len( trim( paramSoFar ) ) ) {
+		// Only hit forgebox if they've typed something.
+		if( !len( trim( arguments.paramSoFar ) ) ) {
 			return [];
 		}
 		try {
+			// Get auto-complete options
 			return forgebox.slugSearch( arguments.paramSoFar );				
 		} catch( forgebox var e ) {
+			// Gracefully handle ForgeBox issues
 			print
 				.line()
 				.yellowLine( e.message & chr( 10 ) & e.detail )
 				.toConsole();
+			// After outputting the message above on a new line, but the user back where they started.
 			getShell().getReader().redrawLine();
 		}
+		// In case of error, break glass.
 		return [];
 	}
 
