@@ -19,11 +19,6 @@
  **/
 component aliases="uninstall" {
 	
-	/**
-	* The ForgeBox entries cache
-	*/
-	property name="entries";
-
 	// DI
 	property name="forgeBox" 		inject="ForgeBox";
 	property name="packageService" 	inject="PackageService";
@@ -70,20 +65,15 @@ component aliases="uninstall" {
 
 	// Auto-complete list of slugs
 	function slugComplete() {
-		var result = [];
-		// Cache in command
-		if( !structKeyExists( variables, 'entries' ) ) {
-			variables.entries = forgebox.getEntries().results;			
-		}
+		var results = [];
+		var directory = getCWD();
 		
-		// Loop over results and append all active ForgeBox entries
-		for( var entry in variables.entries ) {
-			if( val( entry.isactive ) ) {
-				result.append( entry.slug );
-			}
+		if( packageService.isPackage( directory ) ) {
+			var BoxJSON = packageService.readPackageDescriptor( directory );
+			results.append( BoxJSON.installPaths.keyArray(), true );
 		}
-		
-		return result;
+			
+		return results;
 	}
 
 } 

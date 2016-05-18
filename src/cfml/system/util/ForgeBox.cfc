@@ -299,11 +299,29 @@ or just add DEBUG to the root logger
 			thisResource &= "/#arguments.version#";			
 		}
 			
-		var results = makeRequest( resource=thisResource, parameters=arguments, method='post' );
+		var results = makeRequest( resource=thisResource, method='post' );
 		
 		// error 
 		if( results.error ){
 			throw( "Something went wrong tracking this download.", 'forgebox', arrayToList( results.response.messages ) );
+		}
+		
+		return results.response.data;
+	}
+	
+	
+	/**
+	* Autocomplete for slugs
+	*/
+	function slugSearch( required string searchTerm ) {
+			
+		var thisResource = "slugs/#arguments.searchTerm#";
+			
+		var results = makeRequest( resource=thisResource, method='get' );
+		
+		// error 
+		if( results.error ){
+			throw( "Error searching for slugs", 'forgebox', arrayToList( results.response.messages ) );
 		}
 		
 		return results.response.data;
