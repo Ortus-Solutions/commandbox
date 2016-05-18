@@ -152,21 +152,20 @@ component aliases="install" {
 	}
 
 	// Auto-complete list of IDs
-	function IDComplete() {
-		var result = [];
-		// Cache in command
-		if( !structKeyExists( variables, 'entries' ) ) {
-			variables.entries = forgebox.getEntries().results;
+	function IDComplete( string paramSoFar ) {
+		if( !len( trim( paramSoFar ) ) ) {
+			return [];
 		}
-		
-		// Loop over results and append all active ForgeBox entries
-		for( var entry in variables.entries ) {
-			if( val( entry.isactive ) ) {
-				result.append( entry.slug );
-			}
+		try {
+			return forgebox.slugSearch( arguments.paramSoFar );				
+		} catch( forgebox var e ) {
+			print
+				.line()
+				.yellowLine( e.message & chr( 10 ) & e.detail )
+				.toConsole();
+			getShell().getReader().redrawLine();
 		}
-
-		return result;
+		return [];
 	}
 
 }
