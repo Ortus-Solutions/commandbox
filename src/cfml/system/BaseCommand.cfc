@@ -147,6 +147,9 @@ component accessors="true" singleton {
 	 * Sets the OS exit code 
  	 **/
 	function setExitCode( required string exitCode ) {
+		if( arguments.exitCode != 0 ) {
+			hasErrored = true;
+		}
 		return shell.setExitCode( arguments.exitCode );
 	}
 	

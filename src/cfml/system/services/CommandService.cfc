@@ -166,11 +166,29 @@ component accessors="true" singleton {
 		}
 
 		var i = 0;
+		// default behavior is to keep trucking
+		var previousCommandSeparator = ';';
+		var lastCommandErrored = false;
 		// If piping commands, each one will be an item in the chain.
 		// i.e. forgebox show | grep | more
 		// Would result in three separate, chained commands.
 		for( var commandInfo in commandChain ){
 			i++;
+			
+			// If we've reached a command separator like "foo | bar" or "baz && bum", make note of it and continue
+			if( listFindNoCase( ';,|,||,&&', commandInfo.originalLine ) ) {
+				previousCommandSeparator = commandInfo.originalLine;
+				continue;
+			}
+			
+			if( previousCommandSeparator == '&&' && lastCommandErrored ) {
+				return result ?: '';
+			}
+			
+			if( previousCommandSeparator == '||' && !lastCommandErrored ) {
+				return result ?: '';
+			}
+			
 
 			// If nothing was found, bail out here.
 			if( !commandInfo.found ){
@@ -207,7 +225,7 @@ component accessors="true" singleton {
 
 			// If this is not the first command in the chain,
 			// set its first parameter with the output from the last command
-			if( structKeyExists( local, 'result' ) ){
+			if( previousCommandSeparator == '|' && structKeyExists( local, 'result' ) ){
 				// Clean off trailing any CR to help with piping one-liner outputs as inputs to another command
 				if( result.endsWith( chr( 10 ) ) && len( result ) > 1 ){
 					result = left( result, len( result ) - 1 );
@@ -226,6 +244,12 @@ component accessors="true" singleton {
 						parameterInfo.positionalParameters.prepend( result );
 					}
 				}
+			// If we're not piping, output what we've got
+			} else {
+				if( structKeyExists( local, 'result' ) && len( result ) ){
+					shell.printString( result & cr );
+				}
+				structDelete( local, 'result', false );
 			}
 
 			// If we're using postitional params, convert them to named
@@ -266,9 +290,9 @@ component accessors="true" singleton {
 			// Run the command
 			try {
 				var result = commandInfo.commandReference.CFC.run( argumentCollection = parameterInfo.namedParameters );
+				lastCommandErrored = commandInfo.commandReference.CFC.hasError();
 			} catch( any e ){
-				// Clean up a bit
-				instance.callStack.clear();
+				lastCommandErrored = true;
 				
 				// Dump out anything the command had printed so far
 				var result = commandInfo.commandReference.CFC.getResult();
@@ -276,7 +300,17 @@ component accessors="true" singleton {
 					shell.printString( result & cr );
 				}
 				// Now, where were we?
-				rethrow;
+				if( arrayLen( commandChain ) > i && listFindNoCase( '||,;', commandChain[ i+1 ].originalLine ) ) {
+					if( e.type == 'commandException' ) {
+						shell.printError( { message : e.message, detail: e.detail } );
+					} else {
+						shell.printError( e );						
+					}
+				} else {
+					// Clean up a bit
+					instance.callStack.clear();
+					rethrow;					
+				}
 			}
 			
 			// Successful command execution resets exit code to 0
@@ -412,19 +446,33 @@ component accessors="true" singleton {
 			// We've reached a pipe and there is at least one command resolved already and there are more tokens left
 			if( token == '|' &&  commandsToResolve[ commandsToResolve.len() ].len() && i < tokens.len()  ){
 				// Add a new command
+				commandsToResolve.append( [ '|' ] );
+				commandsToResolve.append( [] );
+			} else if( token == ';' &&  commandsToResolve[ commandsToResolve.len() ].len() && i < tokens.len()  ){
+				// Add a new command
+				commandsToResolve.append( [ ';' ] );
+				commandsToResolve.append( [] );
+			} else if( token == '&&' &&  commandsToResolve[ commandsToResolve.len() ].len() && i < tokens.len()  ){
+				// Add a new command
+				commandsToResolve.append( [ '&&' ] );
+				commandsToResolve.append( [] );
+			} else if( token == '||' &&  commandsToResolve[ commandsToResolve.len() ].len() && i < tokens.len()  ){
+				// Add a new command
+				commandsToResolve.append( [ '||' ] );
 				commandsToResolve.append( [] );
 			} else if( token == '>' &&  commandsToResolve[ commandsToResolve.len() ].len() && i < tokens.len()  ){
 				// Add a new command
+				commandsToResolve.append( [ '|' ] );
 				commandsToResolve.append( [ 'fileWrite' ] );
 			} else if( token == '>>' &&  commandsToResolve[ commandsToResolve.len() ].len() && i < tokens.len()  ){
 				// Add a new command
+				commandsToResolve.append( [ '|' ] );
 				commandsToResolve.append( [ 'fileAppend' ] );
-			} else {
+			} else if( !listFindNoCase( '|,;,>,>>,&&', token ) ) {
 				//Append this token to the last command
 				commandsToResolve[ commandsToResolve.len() ].append( token );
 			}
 		}
-
 
 		// command hierarchy
 		var cmds = getCommandHierarchy();
