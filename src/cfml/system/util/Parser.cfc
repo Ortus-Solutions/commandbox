@@ -78,10 +78,20 @@ component {
 			
 			// Whitespace demarcates tokens outside of quotes
 			// Whitespace outside of a quoted string is dumped and not added to the token
-			if( trim(char) == '' ) {
+			if( trim(char) == '' || ( char == ';' && !isEscaped ) ) {
 				
+				// If this is an unquoted, unescaped semi colon (;)
+				if( char == ';' ) {					
+					if( len( token ) ) {
+						tokens.append( token);
+						token = '';					
+					}
+					tokens.append( char );
+					prevEscaped = isEscaped;
+					prevChar = char;
+					continue;
 				// Don't break if an = is next ...
-				if( left( trim( remainingChars ), 1 ) == '=' ) {
+				} else	if( left( trim( remainingChars ), 1 ) == '=' ) {
 					isWaitingOnValue = true;
 					prevEscaped = isEscaped;
 					prevChar = char;
@@ -217,6 +227,9 @@ component {
 	* ' 			--> \'
 	* ` 			--> \`
 	* = 			--> \=
+	* ; 			--> \;
+	* & 			--> \&
+	* | 			--> \|
 	* [line break]  --> \n
 	* [tab]			--> \t
 	*/
@@ -226,6 +239,9 @@ component {
 		arguments.argValue = replace( arguments.argValue, "'", "\'", "all" );
 		arguments.argValue = replace( arguments.argValue, "`", "\`", "all" );
 		arguments.argValue = replace( arguments.argValue, "=", "\=", "all" );
+		arguments.argValue = replace( arguments.argValue, ";", "\;", "all" );
+		arguments.argValue = replace( arguments.argValue, "&", "\&", "all" );
+		arguments.argValue = replace( arguments.argValue, "|", "\|", "all" );
 		arguments.argValue = replace( arguments.argValue, CR, "\n", "all" );
 		arguments.argValue = replace( arguments.argValue, chr( 9 ), "\t", "all" );
 		return arguments.argValue;
@@ -249,7 +265,10 @@ component {
 		theString = replaceNoCase( theString, '\`', '__backtick__', "all" );
 		theString = replaceNoCase( theString, '\n', '__newLine__', "all" );
 		theString = replaceNoCase( theString, '\t', '__tab__', "all" );
-		return		replaceNoCase( theString, '\=', '__equalSign__', "all" );
+		theString = replaceNoCase( theString, '\=', '__equalSign__', "all" );
+		theString = replaceNoCase( theString, '\;', '__semiColon__', "all" );
+		theString = replaceNoCase( theString, '\&', '__ampersand__', "all" );
+		return		replaceNoCase( theString, '\|', '__pipe__', "all" );
 	}
 	
 	private function replaceEscapedChars( theString ) {
@@ -259,7 +278,10 @@ component {
 		theString = replaceNoCase( theString, '__backtick__', '`', "all" );
 		theString = replaceNoCase( theString, '__newLine__', CR, "all" );
 		theString = replaceNoCase( theString, '__tab__', chr( 9 ), "all" );
-		return		replaceNoCase( theString, '__equalSign__', '=', "all" );
+		theString = replaceNoCase( theString, '__equalSign__', '=', "all" );
+		theString = replaceNoCase( theString, '__semiColon__', ';', "all" );
+		theString = replaceNoCase( theString, '__ampersand__', '&', "all" );
+		return		replaceNoCase( theString, '__pipe__', '|', "all" );
 	}
 	
 	
