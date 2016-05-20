@@ -299,13 +299,19 @@ component accessors="true" singleton {
 				if( len( result ) ){
 					shell.printString( result & cr );
 				}
-				// Now, where were we?
+				// This is a little hacky,  but basically if there are more commands in the chain that need to run,
+				// just print an exception and move on.  Otherwise, throw so we can unwrap the call stack all the way
+				// back up.  That is neccessary for command expressions that fail like "echo `cat noExists.txt`"
+				// since in that case I don't want to execute the "echo" command since the "cat" failed.
 				if( arrayLen( commandChain ) > i && listFindNoCase( '||,;', commandChain[ i+1 ].originalLine ) ) {
+					// These are "expected" exceptions like validation errors that can be "pretty"
 					if( e.type == 'commandException' ) {
 						shell.printError( { message : e.message, detail: e.detail } );
+					// These are catastrophic errors that warrant a full stack trace.
 					} else {
-						shell.printError( e );						
+						shell.printError( e );
 					}
+				// Unwind the stack and cancell all commands in the chain.
 				} else {
 					// Clean up a bit
 					instance.callStack.clear();

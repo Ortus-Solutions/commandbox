@@ -118,7 +118,7 @@ component accessors="true" singleton {
 			openBrowser : d.openBrowser ?: true,
 			stopsocket : d.stopsocket ?: 0,
 			debug : d.debug ?: false,
-			trayicon : d.trayicon ?: '#variables.libdir#/trayicon.png',
+			trayicon : d.trayicon ?: '',
 			jvm : {
 				heapSize : d.jvm.heapSize ?: 512,
 				args : d.jvm.args ?: ''
@@ -344,7 +344,7 @@ component accessors="true" singleton {
     CFEngineName = serverinfo.cfengine contains 'lucee' ? 'lucee' : CFEngineName;
     CFEngineName = serverinfo.cfengine contains 'railo' ? 'railo' : CFEngineName;
     CFEngineName = serverinfo.cfengine contains 'adobe' ? 'adobe' : CFEngineName;
-    
+    	  
     // As long as there's no WAR Path, let's install the engine to use.
 	if( serverInfo.WARPath == '' ){
 		try {
@@ -372,11 +372,36 @@ component accessors="true" singleton {
 			serverInfo.webConfigDir = installDetails.installDir;
 			serverInfo.logdir = serverInfo.webConfigDir & "/logs";
 		}
-	} 
-    
-    // This is due to a bug in RunWar not creating the right directory for the logs
-    directoryCreate( serverInfo.logDir, true, true );
-    
+		
+		// Find the correct tray icon for this server
+		if( !len( serverInfo.trayIcon ) ) {
+		    if( serverInfo.cfengine contains "lucee" ) { 
+		    	serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-lucee.png';
+			} else if( serverInfo.cfengine contains "railo" ) {
+		    	serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-railo.png';
+			} else if( serverInfo.cfengine contains "adobe" ) {
+				
+				if( listFirst( installDetails.version, '.' ) == 9 ) {
+					serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-cf09.png';
+				} else if( listFirst( installDetails.version, '.' ) == 10 ) {
+					serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-cf10.png';
+				} else if( listFirst( installDetails.version, '.' ) == 11 ) {
+					serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-cf11.png';
+				} else if( listFirst( installDetails.version, '.' ) == 2016 ) {
+					serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-cf2016.png';
+				} else {
+					serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-cf2016.png';					
+				}
+					
+			}
+		}	
+		
+	}
+		
+	// Default tray icon
+	serverInfo.trayIcon = ( len( serverInfo.trayIcon ) ? serverInfo.trayIcon : '#variables.libdir#/trayicon.png' ); 
+	serverInfo.trayIcon = expandPath( serverInfo.trayIcon );
+	
     // Guess the proper set of tray icons based on the cfengine name. 
 	var trayConfigJSON = '#libdir#/traymenu-default.json';
     if( serverInfo.cfengine contains "lucee" ) { 
@@ -385,7 +410,11 @@ component accessors="true" singleton {
     	trayConfigJSON = '#libdir#/traymenu-railo.json';
 	} else if( serverInfo.cfengine contains "adobe" ) {
     	trayConfigJSON = '#libdir#/traymenu-adobe.json';
-	}    
+	}
+	    
+    // This is due to a bug in RunWar not creating the right directory for the logs
+    directoryCreate( serverInfo.logDir, true, true );
+    	
 
 	// The java arguments to execute:  Shared server, custom web configs
 	var args = " #serverInfo.JVMargs# -Xmx#serverInfo.heapSize#m -Xms#serverInfo.heapSize#m"
