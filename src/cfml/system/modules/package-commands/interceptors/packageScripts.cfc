@@ -34,7 +34,6 @@ component {
 	function postPublish() { processScripts( 'postPublish' ); }
 	
 	function processScripts( required string interceptionPoint, string directory=shell.pwd() ) {
-		consoleLogger.debug( "." );
 		packageService.runScript( arguments.interceptionPoint, arguments.directory );
 	}
 		

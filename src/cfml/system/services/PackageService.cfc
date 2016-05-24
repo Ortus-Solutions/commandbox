@@ -1021,6 +1021,7 @@ component accessors="true" singleton {
 			if( boxJSON.keyExists( 'scripts' ) && isStruct( boxJSON.scripts ) && boxJSON.scripts.keyExists( arguments.scriptName ) ) {
 					
 				var thisScript = boxJSON.scripts[ arguments.scriptName ];
+				consoleLogger.debug( '.' );
 				consoleLogger.warn( 'Running package script [#arguments.scriptName#].' );
 				consoleLogger.debug( '> ' & thisScript );
 				
