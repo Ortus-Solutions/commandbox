@@ -375,22 +375,23 @@ component accessors="true" singleton {
 		
 		// Find the correct tray icon for this server
 		if( !len( serverInfo.trayIcon ) ) {
+			var iconSize = fileSystemUtil.isWindows() ? '-32px' : '';
 		    if( serverInfo.cfengine contains "lucee" ) { 
-		    	serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-lucee.png';
+		    	serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-lucee#iconSize#.png';
 			} else if( serverInfo.cfengine contains "railo" ) {
-		    	serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-railo.png';
+		    	serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-railo#iconSize#.png';
 			} else if( serverInfo.cfengine contains "adobe" ) {
 				
 				if( listFirst( installDetails.version, '.' ) == 9 ) {
-					serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-cf09.png';
+					serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-cf09#iconSize#.png';
 				} else if( listFirst( installDetails.version, '.' ) == 10 ) {
-					serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-cf10.png';
+					serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-cf10#iconSize#.png';
 				} else if( listFirst( installDetails.version, '.' ) == 11 ) {
-					serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-cf11.png';
+					serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-cf11#iconSize#.png';
 				} else if( listFirst( installDetails.version, '.' ) == 2016 ) {
-					serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-cf2016.png';
+					serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-cf2016#iconSize#.png';
 				} else {
-					serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-cf2016.png';					
+					serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-cf2016#iconSize#.png';
 				}
 					
 			}
