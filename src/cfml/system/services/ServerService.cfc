@@ -431,7 +431,7 @@ component accessors="true" singleton {
 			& " --server-name ""#serverInfo.name#"""
 			& " --tray-icon ""#serverInfo.trayIcon#"" --tray-config ""#trayConfigJSON#"""
 			& " --directoryindex ""#serverInfo.directoryBrowsing#"" --cfml-web-config ""#serverInfo.webConfigDir#"""
-			& " --cfml-server-config ""#serverInfo.serverConfigDir#"" #serverInfo.runwarArgs# ";
+			& " --cfml-server-config ""#serverInfo.serverConfigDir#"" #serverInfo.runwarArgs# --timeout 120";
 			
 	// Starting a WAR
 	systemOutput( serverinfo.WARPath, true );
@@ -486,7 +486,7 @@ component accessors="true" singleton {
 				// save server info and persist
 				serverInfo.statusInfo = { command:variables.javaCommand, arguments:attributes.args, result:'' };
 				setServerInfo( serverInfo );
-				execute name=variables.javaCommand arguments=attributes.args timeout="50" variable="executeResult" errorVariable="executeError";
+				execute name=variables.javaCommand arguments=attributes.args timeout="120" variable="executeResult" errorVariable="executeError";
 				serverInfo.status="running";
 			} catch (any e) {
 				logger.error( "Error starting server: #e.message# #e.detail#", arguments );
