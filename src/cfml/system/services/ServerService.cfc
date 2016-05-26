@@ -332,9 +332,6 @@ component accessors="true" singleton {
 		// log directory location
 		if( !directoryExists( serverInfo.logDir ) ){ directoryCreate( serverInfo.logDir ); }
 
-		// The process native name
-		var processName = ( serverInfo.name is "" ? "CommandBox" : serverInfo.name ) & ' [' & serverinfo.cfengine & ']';
-
     
     // Default java agent for embedded Lucee engine
     var javaagent = serverinfo.cfengine contains 'lucee' ? '-javaagent:"#libdir#/lucee-inst.jar"' : '';
@@ -344,12 +341,15 @@ component accessors="true" singleton {
     CFEngineName = serverinfo.cfengine contains 'lucee' ? 'lucee' : CFEngineName;
     CFEngineName = serverinfo.cfengine contains 'railo' ? 'railo' : CFEngineName;
     CFEngineName = serverinfo.cfengine contains 'adobe' ? 'adobe' : CFEngineName;
+    
+    var thisVersion = '';
     	  
     // As long as there's no WAR Path, let's install the engine to use.
 	if( serverInfo.WARPath == '' ){
 		try {
 			// This will install the engine war to start, possibly downloading it first
 			var installDetails = serverEngineService.install( cfengine=serverInfo.cfengine, basedirectory=serverInfo.webConfigDir );
+			thisVersion = ' ' & installDetails.version;
 			serverInfo.logdir = installDetails.installDir & "/logs";
 		    
 		// Not sure we need this ultimatley, but errors were really ugly when getting this up and running.
@@ -372,7 +372,10 @@ component accessors="true" singleton {
 			serverInfo.webConfigDir = installDetails.installDir;
 			serverInfo.logdir = serverInfo.webConfigDir & "/logs";
 		}
-		
+
+		// The process native name
+		var processName = ( serverInfo.name is "" ? "CommandBox" : serverInfo.name ) & ' [' & serverinfo.cfengine & thisVersion & ']';
+				
 		// Find the correct tray icon for this server
 		if( !len( serverInfo.trayIcon ) ) {
 			var iconSize = fileSystemUtil.isWindows() ? '-32px' : '';
