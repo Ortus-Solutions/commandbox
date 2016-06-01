@@ -134,6 +134,8 @@ component {
 
 			// Loop Over methods to generate them
 			for( var thisMethod in listToArray( arguments.methods ) ) {
+				if( thisMethod == 'init' ) { continue; }
+				
 				thisMethod = trim( thisMethod );
 				allMethods = allMethods & replaceNoCase( modelMethodContent, '|method|', thisMethod, 'all' ) & cr & cr;
 

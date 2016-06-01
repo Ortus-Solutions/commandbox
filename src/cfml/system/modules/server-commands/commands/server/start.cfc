@@ -43,6 +43,7 @@ component aliases="start" {
 
 	// DI
 	property name="serverService" 	inject="ServerService";
+	property name="forgeBox" 		inject="ForgeBox";
 
 	/**
 	 * @name           	short name for this server`
@@ -134,8 +135,22 @@ component aliases="start" {
 	/**
 	* Complete cfengine names
 	*/
-	function cfengineNameComplete() {
-		return serverService.getCFEngineNames();
+	function cfengineNameComplete( string paramSoFar ) {
+		
+		try {
+			// Get auto-complete options
+			return forgebox.slugSearch( arguments.paramSoFar, 'cf-engines' );	
+		} catch( forgebox var e ) {
+			// Gracefully handle ForgeBox issues
+			print
+				.line()
+				.yellowLine( e.message & chr( 10 ) & e.detail )
+				.toConsole();
+			// After outputting the message above on a new line, but the user back where they started.
+			getShell().getReader().redrawLine();
+		}
+		// In case of error, break glass.
+		return [];
 	}
 
 }
