@@ -313,11 +313,11 @@ or just add DEBUG to the root logger
 	/**
 	* Autocomplete for slugs
 	*/
-	function slugSearch( required string searchTerm ) {
+	function slugSearch( required string searchTerm, string typeSlug = '' ) {
 			
 		var thisResource = "slugs/#arguments.searchTerm#";
-			
-		var results = makeRequest( resource=thisResource, method='get' );
+		
+		var results = makeRequest( resource=thisResource, method='get', parameters={ typeSlug : arguments.typeSlug } );
 		
 		// error 
 		if( results.error ){

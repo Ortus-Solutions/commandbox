@@ -374,7 +374,7 @@ component accessors="true" singleton {
 		}
 
 		// The process native name
-		var processName = ( serverInfo.name is "" ? "CommandBox" : serverInfo.name ) & ' [' & serverinfo.cfengine & thisVersion & ']';
+		var processName = ( serverInfo.name is "" ? "CommandBox" : serverInfo.name ) & ' [' & listFirst( serverinfo.cfengine, '@' ) & thisVersion & ']';
 				
 		// Find the correct tray icon for this server
 		if( !len( serverInfo.trayIcon ) ) {
@@ -836,13 +836,6 @@ component accessors="true" singleton {
 		  }
 		}
 		fileWrite( filePath, formatterUtil.formatJSON( serializeJSON( arguments.data ) ) );
-	}
-
-  /**
-  * Dynamic completion for cfengine
-  */  
-	function getCFEngineNames() {
-    return serverEngineService.getCFEngineNames();
 	}
 	
 	/**
