@@ -209,11 +209,4 @@ component accessors="true" singleton="true" {
 		return true;
 	}
 
-	/**
-	* Dynamic completion for cfengine
-	*/	
-	function getCFEngineNames() {
-		return [ "lucee","adobe","railo" ];
-	}
-	
 }
