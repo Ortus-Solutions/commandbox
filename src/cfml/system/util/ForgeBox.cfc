@@ -126,7 +126,7 @@ or just add DEBUG to the root logger
 			
 			// error 
 			if( results.error ){
-				throw( "Error making ForgeBox REST Call", 'forgebox', results.response.messages.toList() );
+				throw( "Error getting ForgeBox entry [#arguments.slug#]", 'forgebox', results.response.messages.toList() );
 			}
 			
 			return results.response.data;				
