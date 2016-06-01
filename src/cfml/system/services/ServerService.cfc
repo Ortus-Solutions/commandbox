@@ -346,19 +346,12 @@ component accessors="true" singleton {
     	  
     // As long as there's no WAR Path, let's install the engine to use.
 	if( serverInfo.WARPath == '' ){
-		try {
-			// This will install the engine war to start, possibly downloading it first
-			var installDetails = serverEngineService.install( cfengine=serverInfo.cfengine, basedirectory=serverInfo.webConfigDir );
-			thisVersion = ' ' & installDetails.version;
-			serverInfo.logdir = installDetails.installDir & "/logs";
-		    
-		// Not sure we need this ultimatley, but errors were really ugly when getting this up and running.
-		} catch (any e) {
-			logger.error( '#e.message# #e.detail#' , e.stackTrace );
-			consoleLogger.error("Error installing server - " & e.message);
-			consoleLogger.error(e.detail.replaceAll(",","#chr(10)#"));
-			return;
-		}
+	
+		// This will install the engine war to start, possibly downloading it first
+		var installDetails = serverEngineService.install( cfengine=serverInfo.cfengine, basedirectory=serverInfo.webConfigDir );
+		thisVersion = ' ' & installDetails.version;
+		serverInfo.logdir = installDetails.installDir & "/logs";
+			
 		// If external Lucee server, set the java agent
 		if( !installDetails.internal && serverInfo.cfengine contains "lucee" ) {
 			javaagent = "-javaagent:""#installDetails.installDir#/WEB-INF/lib/lucee-inst.jar""";
@@ -486,7 +479,8 @@ component accessors="true" singleton {
 				// save server info and persist
 				serverInfo.statusInfo = { command:variables.javaCommand, arguments:attributes.args, result:'' };
 				setServerInfo( serverInfo );
-				execute name=variables.javaCommand arguments=attributes.args timeout="120" variable="executeResult" errorVariable="executeError";
+				// Note this timeout is purposefully longer than the Runwar timeout so if the server takes too long, we get to capture the console info
+				execute name=variables.javaCommand arguments=attributes.args timeout="150" variable="executeResult" errorVariable="executeError";
 				serverInfo.status="running";
 			} catch (any e) {
 				logger.error( "Error starting server: #e.message# #e.detail#", arguments );
