@@ -1,17 +1,17 @@
 /**
-*  Create a new controller (handler) in an existing ColdBox application.  Make sure you are running this command in the root
+*  Create a new handler (controller) in an existing ColdBox application.  Make sure you are running this command in the root
 *  of your app for it to find the correct folder.  You can optionally create the views as well as the integration tests for your
-*  new handler at the same time.  By default, your new controller will be created in /handlers but you can override that with the directory param.
+*  new handler at the same time.  By default, your new handler will be created in /handlers but you can override that with the directory param.
 * .
 * {code:bash}
-* coldbox create controller myController index,foo,bar --open
+* coldbox create handler myHandler index,foo,bar --open
 * {code}
 *
 **/
-component aliases='coldbox create handler' {
+component aliases='coldbox create controller' {
 
 	/**
-	* @name.hint Name of the controller to create without the .cfc. For packages, specify name as 'myPackage/myController'
+	* @name.hint Name of the handler to create without the .cfc. For packages, specify name as 'myPackage/myHandler'
 	* @actions.hint A comma-delimited list of actions to generate
 	* @views.hint Generate a view for each action
 	* @viewsDirectory.hint The directory where your views are stored. Only used if views is set to true.
@@ -20,10 +20,10 @@ component aliases='coldbox create handler' {
 	* @testsDirectory.hint Your integration tests directory. Only used if integrationTests is true
 	* @directory.hint The base directory to create your handler in and creates the directory if it does not exist. Defaults to 'handlers'.
 	* @script.hint Generate content in script markup or tag markup
-	* @description.hint The controller hint description
-	* @open.hint Open the controller once generated
+	* @description.hint The handler hint description
+	* @open.hint Open the handler once generated
 	**/
-	function run( 	
+	function run(
 		required name,
 		actions='',
 		boolean views=true,
@@ -69,7 +69,7 @@ component aliases='coldbox create handler' {
 		handlerTestContent 	= replaceNoCase( handlerTestContent, '|appMapping|', arguments.appMapping, 'all' );
 		handlerTestContent 	= replaceNoCase( handlerTestContent, '|handlerName|', arguments.name, 'all' );
 		handlerContent 		= replaceNoCase( handlerContent, '|Description|', arguments.description, 'all');
-		
+
 		// Handle Actions if passed
 		if( len( arguments.actions ) ) {
 			var allActions 		= '';
@@ -124,11 +124,11 @@ component aliases='coldbox create handler' {
 			file action='write' file='#testPath#' mode ='777' output='#handlerTestContent#';
 			print.greenLine( 'Created #testPath#' );
 			// open file
-			if( arguments.open ){ openPath( testPath ); }			
+			if( arguments.open ){ openPath( testPath ); }
 		}
 
 		// open file
-		if( arguments.open ){ openPath( handlerPath ); }			
+		if( arguments.open ){ openPath( handlerPath ); }
 	}
 
 }
