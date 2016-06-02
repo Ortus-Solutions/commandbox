@@ -359,12 +359,15 @@ component accessors="true" singleton {
     CFEngineName = serverinfo.cfengine contains 'adobe' ? 'adobe' : CFEngineName;
     
     var thisVersion = '';
+	var processName = ( serverInfo.name is "" ? "CommandBox" : serverInfo.name );
     	  
     // As long as there's no WAR Path, let's install the engine to use.
 	if( serverInfo.WARPath == '' ){
 	
 		// This will install the engine war to start, possibly downloading it first
 		var installDetails = serverEngineService.install( cfengine=serverInfo.cfengine, basedirectory=serverInfo.webConfigDir );
+		// This interception point can be used for additional configuration of the endine before it actually starts.
+		interceptorService.announceInterception( 'onServerInstall', { serverInfo=serverInfo, installDetails=installDetails } );
 		thisVersion = ' ' & installDetails.version;
 		serverInfo.logdir = installDetails.installDir & "/logs";
 			
