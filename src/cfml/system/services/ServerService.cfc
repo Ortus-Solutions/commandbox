@@ -168,29 +168,59 @@ component accessors="true" singleton {
 		Struct serverProps
 	){
 
-		if( isNull( serverProps.name ) ) {
-			serverProps.name = listLast( serverProps.directory, "\/" );
-		}
-
+		// TODO: The next big block is en excellent candiate to refactor into a method.
+		
+		var userProvidedServerConfigFile = true;
+		// If we have no config file path, assume it's called "server.json" in the web root.
 		if( !len( serverProps.serverConfigFile ) ) {
-			serverProps.serverConfigFile = serverProps.directory & "/server.json";
+			userProvidedServerConfigFile = false;
+			serverProps.serverConfigFile = fileSystemUtil.resolvePath( serverProps.directory ?: '' ) & "/server.json";
 		}
 
 		// Get server descriptor
+	    if( serverProps.debug ?: false ) {
+			consoleLogger.debug("Reading server JSON file:: #serverProps.serverConfigFile#");
+	    }
 		var serverJSON = readServerJSON( serverProps.serverConfigFile );
 		
+		// Get the web root out of the server.json, if specified and make it relative to the actual server.json file.
 		if( len( serverJSON.web.wwwroot ?: '' ) ) {
 			serverProps.directory = fileSystemUtil.resolvePath( serverJSON.web.wwwroot, getDirectoryFromPath( serverProps.serverConfigFile ) );
+		// Otherwise default to the directory the server's JSON file lives in (which defaults to the CWD)
+		} else {
+			serverProps.directory = getDirectoryFromPath( serverProps.serverConfigFile );
 		}
-		if( len( serverJSON.name ?: '' ) ) {
+
+		// If user types a name, use that above all else
+		if( len( serverProps.name ?: '' ) ) {
+			// Do nothing, server.json is updated below
+		} else if( len( serverJSON.name ?: '' ) ) {
+			// otherwise use the name in the server config file if it's specified
 			serverProps.name = serverJSON.name;
-		}
+		} else {
+			// otherwise default to the c urrent directory
+			// TODO: I don't care for this because it creates conflicts since many servers could have the name "wwwroot" on one machine.
+			serverProps.name = replace( listLast( serverProps.directory, "\/" ), ':', '');
+		}		
 		
 		// Discover by shortname or server and get server info
 		var serverInfo = getServerInfoByDiscovery(
 			directory 	= serverProps.directory,
 			name		= serverProps.name
 		);
+		// Keep this in sync in case we only came in with a directory
+		serverProps.name = serverInfo.name ?: serverProps.name;
+		// If the user didn't provide an explicit config file and it turns out last time we started a server by this name, we used a different
+		// config, let's re-read out that config JSON file to use instead of the default above.
+		if( !userProvidedServerConfigFile && len( serverInfo.serverConfigFile ?: '' ) && serverInfo.serverConfigFile != serverProps.serverConfigFile ) {
+			// Get server descriptor again
+		    if( serverProps.debug ?: false ) {
+				consoleLogger.debug("Switching to server JSON file:: #serverInfo.serverConfigFile#");
+		    }
+			serverJSON = readServerJSON( serverInfo.serverConfigFile );
+			serverProps.serverConfigFile = serverInfo.serverConfigFile;
+		}
+		
 
 		// Was it found, or new server?
 		if( structIsEmpty( serverInfo ) ){
@@ -218,7 +248,7 @@ component accessors="true" singleton {
 		
 		// Save hand-entered properties in our server.json for next time
 		for( var prop in serverProps ) {
-			if( !isNull( serverProps[ prop ] ) && prop != 'directory'  && prop != 'saveSettings' ) {
+			if( !isNull( serverProps[ prop ] ) && prop != 'directory'  && prop != 'saveSettings'  && prop != 'serverConfigFile' ) {
 				// Only need switch cases for properties that are nested or use different name
 				switch(prop) {
 				    case "port":
@@ -288,7 +318,7 @@ component accessors="true" singleton {
 		} // for loop
 		
 		if( !serverJSON.isEmpty() && serverProps.saveSettings ) {
-			saveServerJSON( serverInfo.webroot, serverJSON );
+			saveServerJSON( serverProps.serverConfigFile, serverJSON );
 		}
 				 
 
@@ -320,12 +350,15 @@ component accessors="true" singleton {
 		serverInfo.runwarArgs		= serverProps.runwarArgs		?: serverJSON.runwar.args			?: defaults.runwar.args;
 		serverInfo.cfengine			= serverProps.cfengine			?: serverJSON.app.cfengine			?: defaults.app.cfengine;
 		serverInfo.WARPath			= serverProps.WARPath			?: serverJSON.app.WARPath			?: defaults.app.WARPath;
+		serverInfo.serverConfigFile	= serverProps.serverConfigFile;
 		
 		serverInfo.logdir			= serverInfo.webConfigDir & "/logs";
 		
-		
-		consoleLogger.info( "start server in - " & serverInfo.webroot );
-		return;
+		if( serverInfo.debug ) {
+			consoleLogger.info( "start server in - " & serverInfo.webroot );
+			consoleLogger.info( "server name - " & serverInfo.name );
+			consoleLogger.info( "server config file - " & serverProps.serverConfigFile );	
+		}	
 		
 		if( !len( serverInfo.WARPath ) && !len( serverInfo.cfengine ) ) {
 			serverInfo.cfengine = 'lucee@' & server.lucee.version;
@@ -446,7 +479,6 @@ component accessors="true" singleton {
 			& " --cfml-server-config ""#serverInfo.serverConfigDir#"" #serverInfo.runwarArgs# --timeout 120";
 			
 	// Starting a WAR
-	systemOutput( serverinfo.WARPath, true );
 	if (serverInfo.WARPath != "" ) {
 		args &= " -war ""#serverInfo.WARPath#""";
 	// Stand alone server
@@ -486,7 +518,7 @@ component accessors="true" singleton {
 	setServerInfo( serverInfo );
 		
     if(serverInfo.debug) {
-      consoleLogger.debug("Server start command: #javaCommand# #args#");
+		consoleLogger.debug("Server start command: #javaCommand# #args#");
     }
 		// thread the execution
 		var threadName = 'server#hash( serverInfo.webroot )##createUUID()#';
@@ -573,7 +605,7 @@ component accessors="true" singleton {
 			var serverJSONPath = arguments.serverInfo.webroot & '/server-#arguments.serverInfo.name#.json';
 
 			// try to delete from config first
-			structDelete( servers, hash( arguments.serverInfo.webroot & arguments.serverInfo.name ) );
+			structDelete( servers, arguments.serverInfo.id );
 			setServers( servers );
 			// try to delete server
 			if( directoryExists( serverDir ) ){
@@ -690,7 +722,8 @@ component accessors="true" singleton {
 	}
 
 	/**
-	* Get a server information struct by name or directory
+	* Get a server information struct by name or directory.  
+	* Returns empty struct if not found.
 	* @directory.hint the directory to find
 	* @name.hint The name to find
 	*/
@@ -699,13 +732,13 @@ component accessors="true" singleton {
 		// Discover by shortname or webroot
 		if( len( arguments.name ) ){
 			var foundServer = getServerInfoByName( arguments.name );
-			if( !isNull( foundServer ) ) {
+			if( structCount( foundServer ) ) {
 				return foundServer;
 			}
 		}
 
 		var webroot = arguments.directory is "" ? shell.pwd() : arguments.directory;
-		return getServerInfoByWebroot( fileSystemUtil.resolvePath( webroot ), arguments.name );
+		return getServerInfoByWebroot( fileSystemUtil.resolvePath( webroot ) );
 	}
 
 	/**
@@ -741,16 +774,15 @@ component accessors="true" singleton {
 	* Get a server information struct by webrot, if not found it returns an empty struct
 	* @webroot.hint The webroot to find
 	*/
-	struct function getServerInfoByWebroot( required webroot, name='' ){
-		
-		if( arguments.name == '' ) {
-			arguments.name = listLast( arguments.webroot, "\/" );
+	struct function getServerInfoByWebroot( required webroot ){
+		var servers = getServers();
+		for( var thisServer in servers ){
+			if( servers[ thisServer ].webroot == arguments.webroot ){
+				return servers[ thisServer ];
+			}
 		}
-		
-		var webrootHash = hash( arguments.webroot & arguments.name );
-		var servers 	= getServers();
 
-		return structKeyExists( servers, webrootHash ) ? servers[ webrootHash ] : {};
+		return {};
 	}
 
 	/**
@@ -816,8 +848,9 @@ component accessors="true" singleton {
 			rewritesConfig	: "",
 			heapSize		: 512,
 			directoryBrowsing : true,
-			JVMargs				: "",
-			runwarArgs			: ""
+			JVMargs			: "",
+			runwarArgs		: "",
+			serverConfigFile : ""
 		};
 	}
 
@@ -836,9 +869,8 @@ component accessors="true" singleton {
 	/**
 	* Save a server.json file.
 	*/
-	function saveServerJSON( required string directory, required struct data ) {
-		var filePath = arguments.directory & '/server.json';
-		fileWrite( filePath, formatterUtil.formatJSON( serializeJSON( arguments.data ) ) );
+	function saveServerJSON( required string configFilePath, required struct data ) {
+		fileWrite( arguments.configFilePath, formatterUtil.formatJSON( serializeJSON( arguments.data ) ) );
 	}
 	
 	/**
