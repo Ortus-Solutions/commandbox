@@ -31,7 +31,7 @@ component {
 		// Discover by shortname or webroot
 		arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
 		var serverInfo = serverService.getServerInfoByDiscovery( arguments.directory, arguments.name );
-
+		
 		// Verify server info
 		if( structIsEmpty( serverInfo ) AND arguments.all eq false ){
 			error( "The server you requested to forget was not found (webroot=#arguments.directory#, name=#arguments.name#)." );

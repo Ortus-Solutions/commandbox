@@ -76,7 +76,7 @@ component aliases="start" {
 	 * @cfengine        	sets the cfml engine type
 	 * @cfengine.optionsUDF  cfengineNameComplete
 	 * @WARPath				sets the path to an existing war to use
-	 * @serverConfigFile 	The path to the server.json file.  Created if it doesn't exist.
+	 * @serverConfigFile 	The path to the server's JSON file.  Created if it doesn't exist.
 	 
 	 **/
 	function run(
@@ -84,7 +84,7 @@ component aliases="start" {
 		Numeric port,
 		String	host,
 		Boolean openbrowser,
-		String  directory = "",
+		String  directory,
 		Numeric stopPort,
 		Boolean force,
 		Boolean debug,
@@ -111,15 +111,14 @@ component aliases="start" {
 		String serverConfigFile=''
 	){
 		// Resolve path as used locally
-		arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
-		if( !isNull( WARPath ) ) {
-			arguments.WARPath = fileSystemUtil.resolvePath( arguments.WARPath );
+		if( !isNull( arguments.directory ) ) {
+			arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
 		}
-		if( len( serverConfigFile ) ) {
+		if( !isNull( arguments.WARPath ) ) {
+			arguments.WARPath = fileSystemUtil.resolvePath( arguments.WARPath );
+		} 
+		if( len( arguments.serverConfigFile ) ) {
 			arguments.serverConfigFile = fileSystemUtil.resolvePath( arguments.serverConfigFile );
-			if( !fileExists( arguments.serverConfigFile ) ) {
-				error( 'The serverConfigFile does not exist. [#arguments.serverConfigFile#]' );
-			}
 		}
 
 		// This is a common mis spelling
@@ -133,8 +132,11 @@ component aliases="start" {
 		// As a convenient shorcut, allow the serverConfigFile to be passed via the name parameter.
 		var tmpName = arguments.name ?: '';
 		var tmpNameResolved = fileSystemUtil.resolvePath( tmpName );
+		// Check if there was no config file specified, but the name was specified and happens to exist as a file on disk
 		if( !len( arguments.serverConfigFile ) && len( tmpName ) && fileExists( tmpNameResolved ) ) {
+			// If so, swap the name into the server config param.
 			arguments.serverConfigFile = tmpNameResolved;
+			structDelete( arguments, 'name' );
 		}
 
 		// startup the server

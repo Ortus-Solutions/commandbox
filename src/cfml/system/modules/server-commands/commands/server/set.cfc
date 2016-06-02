@@ -47,23 +47,33 @@ component {
 	 * This param is a dummy param just to get the custom completor to work.
 	 * The actual parameter names will be whatever property name the user wants to set  
 	 * @_.hint Pass any number of property names in followed by the value to set 
-	 * @_.optionsUDF completeProperty  
+	 * @_.optionsUDF completeProperty
+	 * @serverConfigFile The path to the server's JSON file.  
 	 * @append.hint If setting an array or struct, set to true to append instead of overwriting.
 	 **/
-	function run( _, boolean append=false ) {
+	function run( 
+		_,
+		String serverConfigFile='',
+		boolean append=false ) {
+			
 		var thisAppend = arguments.append;
-		var directory = getCWD();
+
+		if( len( arguments.serverConfigFile ) ) {
+			arguments.serverConfigFile = fileSystemUtil.resolvePath( arguments.serverConfigFile );
+		}
+		var thisServerConfigFile = ( len( arguments.serverConfigFile ) ? arguments.serverConfigFile : getCWD() & '/server.json' );
 		
 		// Remove dummy args
 		structDelete( arguments, '_' );
 		structDelete( arguments, 'append' );
+		structDelete( arguments, 'serverConfigFile' );		
 
-		var serverJSON = ServerService.readServerJSON( directory );
+		var serverJSON = ServerService.readServerJSON( thisServerConfigFile );
 
 		var results = JSONService.set( serverJSON, arguments, thisAppend ); 
 
 		// Write the file back out.
-		ServerService.saveServerJSON( directory, serverJSON );
+		ServerService.saveServerJSON( thisServerConfigFile, serverJSON );
 		
 		for( var message in results ) {
 			print.greeLine( message );
