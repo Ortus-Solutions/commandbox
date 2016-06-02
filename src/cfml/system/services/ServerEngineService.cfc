@@ -47,7 +47,7 @@ component accessors="true" singleton="true" {
 	* @version Version number or empty to use default
 	**/
 	public function installAdobe( required destination, required version ) {
-		var installDetails = installEngineArchive( 'adobe-coldFusion-cf-engine@#version#', destination );			
+		var installDetails = installEngineArchive( 'adobe@#version#', destination );			
 		// set password to "commandbox"
 		// TODO: Just make this changes directly in the WAR files
 		fileWrite( installDetails.installDir & "/WEB-INF/cfusion/lib/password.properties", "rdspassword=#cr#password=commandbox#cr#encrypted=false" );
@@ -67,7 +67,7 @@ component accessors="true" singleton="true" {
 	* @version Version number or empty to use default
 	**/
 	public function installLucee( required destination, required version ) {
-	var installDetails = installEngineArchive( 'lucee-cf-engine@#version#', destination );
+	var installDetails = installEngineArchive( 'lucee@#version#', destination );
 		
 	if( !installDetails.internal && installDetails.initialInstall ) {
 			configureWebXML( cfengine="lucee", version=installDetails.version, source="#installDetails.installDir#/WEB-INF/web.xml", destination="#installDetails.installDir#/WEB-INF/web.xml" );	}	
@@ -81,7 +81,7 @@ component accessors="true" singleton="true" {
 	* @version Version number or empty to use default
 	**/
 	public function installRailo( required destination, required version ) {
-	var installDetails = installEngineArchive( 'railo-cf-engine@#version#', destination );
+	var installDetails = installEngineArchive( 'railo@#version#', destination );
 		if(  installDetails.initialInstall  ) {
 			configureWebXML( cfengine="railo", version=installDetails.version, source="#installDetails.installDir#/WEB-INF/web.xml", destination="#installDetails.installDir#/WEB-INF/web.xml" );			
 		}		
@@ -133,7 +133,7 @@ component accessors="true" singleton="true" {
 		}
 		
 		// If we're starting a Lucee server whose version matches the CLI engine, then don't download anyting, we're using internal jars.
-		if( listFirst( arguments.ID, '@' ) == 'lucee-cf-engine' && server.lucee.version == replace( installDetails.version, '+', '.', 'all' ) ) {
+		if( listFirst( arguments.ID, '@' ) == 'lucee' && server.lucee.version == replace( installDetails.version, '+', '.', 'all' ) ) {
 			installDetails.internal = true;
 			return installDetails;
 		}
@@ -186,14 +186,12 @@ component accessors="true" singleton="true" {
 	public function configureWebXML( required cfengine, required version, required source, destination ) {
 		var webXML = XMLParse( source );
 		var servlets = xmlSearch(webXML,"//:servlet-class[text()='#lcase( cfengine )#.loader.servlet.CFMLServlet']");
-		systemoutput( servlets, true );
 		var initParam = xmlElemnew(webXML,"http://java.sun.com/xml/ns/javaee","init-param");
 		initParam.XmlChildren[1] = xmlElemnew(webXML,"param-name");
 		initParam.XmlChildren[1].XmlText = "#lcase( cfengine )#-web-directory";
 		initParam.XmlChildren[2] = xmlElemnew(webXML,"param-value");
 		initParam.XmlChildren[2].XmlText = "/WEB-INF/#lcase( cfengine )#/{web-context-label}";
 		arrayInsertAt(servlets[1].XmlParent.XmlChildren,4,initParam);
-		systemoutput( servlets[1].XmlParent.XmlChildren, true );
 		
 		// Lucee 5+ has a LuceeServlet as well as will create the WEB-INF by default in your web root
 		if( arguments.cfengine == 'lucee' && val( listFirst( arguments.version, '.' )) >= 5 ) {			
