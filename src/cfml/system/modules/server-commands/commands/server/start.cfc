@@ -46,36 +46,38 @@ component aliases="start" {
 	property name="forgeBox" 		inject="ForgeBox";
 
 	/**
-	 * @name           	short name for this server`
-	 * @name.optionsUDF	serverNameComplete
-	 * @port           	port number
-	 * @host           	bind to a host/ip
-	 * @openbrowser    	open a browser after starting
-	 * @directory      	web root for this server
-	 * @stopPort       	stop socket listener port number
-	 * @force          	force start if status is not stopped
-	 * @debug          	sets debug log level
-	 * @webConfigDir   	custom location for web context configuration
-	 * @serverConfigDir	custom location for server configuration
-	 * @libDirs        	comma-separated list of extra lib directories for the server
-	 * @trayIcon       	path to .png file for tray icon
-	 * @webXML         	path to web.xml file used to configure the server
-	 * @HTTPEnable     	enable HTTP
-	 * @SSLEnable      	enable SSL
-	 * @SSLPort        	SSL port number
-	 * @SSLCert        	SSL certificate
-	 * @SSLKey         	SSL key (required if SSLCert specified)
-	 * @SSLKeyPass     	SSL key passphrase (required if SSLCert specified)
-	 * @rewritesEnable 	enable URL rewriting (default false)
-	 * @rewritesConfig 	optional URL rewriting config file path
-	 * @heapSize		The max heap size in megabytes you would like this server to start with, it defaults to 512mb
-	 * @directoryBrowsing Enable/Disabled directory browsing, defaults to true
-	 * @JVMArgs 		Additional JVM args to use when starting the server. Use "server status --verbose" to debug
-	 * @runwarArgs 		Additional Runwar options to use when starting the server. Use "server status --verbose" to debug
-	 * @saveSettings 	Save start settings in server.json
-	 * @cfengine        sets the cfml engine type
+	 * @name           		short name for this server or a path to the server.json file.
+	 * @name.optionsUDF		serverNameComplete
+	 * @port           		port number
+	 * @host           		bind to a host/ip
+	 * @openbrowser    		open a browser after starting
+	 * @directory     	 	web root for this server
+	 * @stopPort       		stop socket listener port number
+	 * @force          		force start if status is not stopped
+	 * @debug          		sets debug log level
+	 * @webConfigDir  	 	custom location for web context configuration
+	 * @serverConfigDir		custom location for server configuration
+	 * @libDirs       	 	comma-separated list of extra lib directories for the server
+	 * @trayIcon       		path to .png file for tray icon
+	 * @webXML         		path to web.xml file used to configure the server
+	 * @HTTPEnable     		enable HTTP
+	 * @SSLEnable      		enable SSL
+	 * @SSLPort        		SSL port number
+	 * @SSLCert        		SSL certificate
+	 * @SSLKey         		SSL key (required if SSLCert specified)
+	 * @SSLKeyPass     		SSL key passphrase (required if SSLCert specified)
+	 * @rewritesEnable 		enable URL rewriting (default false)
+	 * @rewritesConfig 		optional URL rewriting config file path
+	 * @heapSize			The max heap size in megabytes you would like this server to start with, it defaults to 512mb
+	 * @directoryBrowsing 	Enable/Disabled directory browsing, defaults to true
+	 * @JVMArgs 			Additional JVM args to use when starting the server. Use "server status --verbose" to debug
+	 * @runwarArgs 			Additional Runwar options to use when starting the server. Use "server status --verbose" to debug
+	 * @saveSettings 		Save start settings in server.json
+	 * @cfengine        	sets the cfml engine type
 	 * @cfengine.optionsUDF  cfengineNameComplete
-	 * @WARPath			sets the path to an existing war to use
+	 * @WARPath				sets the path to an existing war to use
+	 * @serverConfigFile 	The path to the server.json file.  Created if it doesn't exist.
+	 
 	 **/
 	function run(
 		String  name,
@@ -105,12 +107,19 @@ component aliases="start" {
 		String  runwarArgs,
 		boolean	saveSettings=true,
 		String  cfengine,
-		String  WARPath
+		String  WARPath,
+		String serverConfigFile=''
 	){
 		// Resolve path as used locally
 		arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
 		if( !isNull( WARPath ) ) {
 			arguments.WARPath = fileSystemUtil.resolvePath( arguments.WARPath );
+		}
+		if( len( serverConfigFile ) ) {
+			arguments.serverConfigFile = fileSystemUtil.resolvePath( arguments.serverConfigFile );
+			if( !fileExists( arguments.serverConfigFile ) ) {
+				error( 'The serverConfigFile does not exist. [#arguments.serverConfigFile#]' );
+			}
 		}
 
 		// This is a common mis spelling
@@ -119,6 +128,13 @@ component aliases="start" {
 			// Let's fix that up for them.
 			arguments.rewritesEnable = arguments.rewritesEnabled;
 			structDelete( arguments, 'rewritesEnabled' );
+		}
+
+		// As a convenient shorcut, allow the serverConfigFile to be passed via the name parameter.
+		var tmpName = arguments.name ?: '';
+		var tmpNameResolved = fileSystemUtil.resolvePath( tmpName );
+		if( !len( arguments.serverConfigFile ) && len( tmpName ) && fileExists( tmpNameResolved ) ) {
+			arguments.serverConfigFile = tmpNameResolved;
 		}
 
 		// startup the server
