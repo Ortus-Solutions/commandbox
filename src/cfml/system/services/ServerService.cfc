@@ -172,6 +172,20 @@ component accessors="true" singleton {
 			serverProps.name = listLast( serverProps.directory, "\/" );
 		}
 
+		if( !len( serverProps.serverConfigFile ) ) {
+			serverProps.serverConfigFile = serverProps.directory & "/server.json";
+		}
+
+		// Get server descriptor
+		var serverJSON = readServerJSON( serverProps.serverConfigFile );
+		
+		if( len( serverJSON.web.wwwroot ?: '' ) ) {
+			serverProps.directory = fileSystemUtil.resolvePath( serverJSON.web.wwwroot, getDirectoryFromPath( serverProps.serverConfigFile ) );
+		}
+		if( len( serverJSON.name ?: '' ) ) {
+			serverProps.name = serverJSON.name;
+		}
+		
 		// Discover by shortname or server and get server info
 		var serverInfo = getServerInfoByDiscovery(
 			directory 	= serverProps.directory,
@@ -186,8 +200,6 @@ component accessors="true" singleton {
 
 		// Get package descriptor
 		var boxJSON = packageService.readPackageDescriptor( serverInfo.webroot );
-		// Get server descriptor
-		var serverJSON = readServerJSON( serverInfo.webroot , serverProps.name);
 		// Get defaults
 		var defaults = getDefaultServerJSON();
 								
@@ -310,6 +322,10 @@ component accessors="true" singleton {
 		serverInfo.WARPath			= serverProps.WARPath			?: serverJSON.app.WARPath			?: defaults.app.WARPath;
 		
 		serverInfo.logdir			= serverInfo.webConfigDir & "/logs";
+		
+		
+		consoleLogger.info( "start server in - " & serverInfo.webroot );
+		return;
 		
 		if( !len( serverInfo.WARPath ) && !len( serverInfo.cfengine ) ) {
 			serverInfo.cfengine = 'lucee@' & server.lucee.version;
@@ -812,13 +828,9 @@ component accessors="true" singleton {
 	* Read a server.json file.  If it doesn't exist, returns an empty struct
 	* This only returns properties specifically set in the file.
 	*/
-	struct function readServerJSON( required string directory , string name="") {
-		var defaultServerJSON = arguments.directory & '/server.json';
-		var serverJSON = arguments.directory & '/server-#name#.json';
-		if( fileExists( serverJSON ) ) {
-			return deserializeJSON( fileRead( serverJSON ) );
-		} else if(fileExists( defaultServerJSON )) {
-			return deserializeJSON( fileRead( defaultServerJSON ) );
+	struct function readServerJSON( required string path ) {
+		if( fileExists( path ) ) {
+			return deserializeJSON( fileRead( path ) );
 		} else {
 			return {};
 		}
@@ -829,12 +841,6 @@ component accessors="true" singleton {
 	*/
 	function saveServerJSON( required string directory, required struct data ) {
 		var filePath = arguments.directory & '/server.json';
-		if(fileExists(filePath)) {
-		  var existingProps = readServerJSON(directory);
-		  if(!isNull(data.name) && (isNull(existingProps.name) || existingProps.name != data.name)) {
-		    filePath = arguments.directory & '/server-#data.name#.json';
-		  }
-		}
 		fileWrite( filePath, formatterUtil.formatJSON( serializeJSON( arguments.data ) ) );
 	}
 
@@ -852,7 +858,7 @@ component accessors="true" singleton {
 	*/ 	
 	function completeProperty( required directory,  all=false ) {
 		// Get all config settings currently set
-		var props = JSONService.addProp( [], '', '', readServerJSON( arguments.directory ) );
+		var props = JSONService.addProp( [], '', '', readServerJSON( arguments.directory & '/server.json' ) );
 		
 		// If we want all possible options...
 		if( arguments.all ) {
