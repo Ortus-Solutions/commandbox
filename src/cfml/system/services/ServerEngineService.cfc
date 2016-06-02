@@ -54,7 +54,7 @@ component accessors="true" singleton="true" {
 		// set flex log dir to prevent WEB-INF/cfform being created in project dir
 		if (fileExists(installDetails.installDir & "/WEB-INF/cfform/flex-config.xml")) {
 			var flexConfig = fileRead(installDetails.installDir & "/WEB-INF/cfform/flex-config.xml");
-			flexConfig = replace(flexConfig, "/WEB-INF/", installDetails.installDir & "/WEB-INF","all");
+			flexConfig = replace(flexConfig, "/WEB-INF/", installDetails.installDir & "/WEB-INF/","all");
 			fileWrite(installDetails.installDir & "/WEB-INF/cfform/flex-config.xml", flexConfig);
 		}
 		return installDetails;
@@ -69,7 +69,7 @@ component accessors="true" singleton="true" {
 	public function installLucee( required destination, required version ) {
 	var installDetails = installEngineArchive( 'lucee-cf-engine@#version#', destination );
 		
-	if( !installDetails.internal ) {
+	if( !installDetails.internal && installDetails.initialInstall ) {
 			configureWebXML( cfengine="lucee", version=installDetails.version, source="#installDetails.installDir#/WEB-INF/web.xml", destination="#installDetails.installDir#/WEB-INF/web.xml" );	}	
 		return installDetails;
 	}
@@ -81,8 +81,10 @@ component accessors="true" singleton="true" {
 	* @version Version number or empty to use default
 	**/
 	public function installRailo( required destination, required version ) {
-	var installDetails = installEngineArchive( 'railo-cf-engine@#version#', destination );	
-		configureWebXML( cfengine="railo", version=installDetails.version, source="#installDetails.installDir#/WEB-INF/web.xml", destination="#installDetails.installDir#/WEB-INF/web.xml" );		
+	var installDetails = installEngineArchive( 'railo-cf-engine@#version#', destination );
+		if(  installDetails.initialInstall  ) {
+			configureWebXML( cfengine="railo", version=installDetails.version, source="#installDetails.installDir#/WEB-INF/web.xml", destination="#installDetails.installDir#/WEB-INF/web.xml" );			
+		}		
 		return installDetails;
 	}
 
@@ -101,7 +103,8 @@ component accessors="true" singleton="true" {
 		var installDetails = {
 			internal : false,
 			version : '',
-			installDir : ''
+			installDir : '',
+			initialInstall : false
 		};
 		
 		var thisTempDir = tempDir & '/' & createUUID();
@@ -138,10 +141,11 @@ component accessors="true" singleton="true" {
 		// Check to see if this WAR has already been exploded
 		if( fileExists( installDetails.installDir & '/WEB-INF/web.xml' ) ) {
 			consoleLogger.info( "WAR/zip archive already installed.");
-		return installDetails;
+			return installDetails;
 		}
 		 
 		// Install the engine via our standard package service
+		installDetails.initialInstall = true;
 		packageService.installPackage( ID=arguments.ID, directory=thisTempDir, save=false );
 				
 		// Look for a war or zip archive inside the package
@@ -182,12 +186,14 @@ component accessors="true" singleton="true" {
 	public function configureWebXML( required cfengine, required version, required source, destination ) {
 		var webXML = XMLParse( source );
 		var servlets = xmlSearch(webXML,"//:servlet-class[text()='#lcase( cfengine )#.loader.servlet.CFMLServlet']");
+		systemoutput( servlets, true );
 		var initParam = xmlElemnew(webXML,"http://java.sun.com/xml/ns/javaee","init-param");
 		initParam.XmlChildren[1] = xmlElemnew(webXML,"param-name");
 		initParam.XmlChildren[1].XmlText = "#lcase( cfengine )#-web-directory";
 		initParam.XmlChildren[2] = xmlElemnew(webXML,"param-value");
 		initParam.XmlChildren[2].XmlText = "/WEB-INF/#lcase( cfengine )#/{web-context-label}";
 		arrayInsertAt(servlets[1].XmlParent.XmlChildren,4,initParam);
+		systemoutput( servlets[1].XmlParent.XmlChildren, true );
 		
 		// Lucee 5+ has a LuceeServlet as well as will create the WEB-INF by default in your web root
 		if( arguments.cfengine == 'lucee' && val( listFirst( arguments.version, '.' )) >= 5 ) {			
