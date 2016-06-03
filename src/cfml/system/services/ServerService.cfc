@@ -162,7 +162,7 @@ component accessors="true" singleton {
 	/**
 	 * Start a server instance
 	 *
-	 * @serverProps.hint A struct of settings to influence how to start the server
+	 * @serverProps.hint A struct of settings to influence how to start the server. Params not provided by the user are null.
 	 **/
 	function start(
 		Struct serverProps
@@ -538,6 +538,8 @@ component accessors="true" singleton {
 	/**
 	* Unified logic to resolve a server given an optional name, directory, and server.json path.
 	* Returns resolved name, webroot, serverConfigFile, serverInfo from the last start and serverJSON
+	* Use this for all 'server' commands that let a user specify the server they want by convention (CWD),
+	* name, directory, or server.json path.  
 	* 
 	* @serverProps A struct that can contains name, directory, and/or serverConfigFile
 	*
@@ -551,6 +553,7 @@ component accessors="true" singleton {
 	function resolveServerDetails(
 		required struct serverProps
 	) {
+		var locDebug = serverProps.debug ?: false;
 		
 		// As a convenient shorcut, allow the serverConfigFile to be passed via the name parameter.
 		var tmpName = serverProps.name ?: '';
@@ -574,23 +577,18 @@ component accessors="true" singleton {
 		}
 
 		// Get server descriptor from default location.
-	    if( serverProps.debug ?: false ) {
-			consoleLogger.debug("Reading server JSON file:: #defaultServerConfigFile#");
-	    }
+		// If starting by name and we guessed the server.json file name, this serverJSON maybe replaced later by another saved file.
+	    if( locDebug ) { consoleLogger.debug("Reading server JSON file:: #defaultServerConfigFile#"); }
 		var serverJSON = readServerJSON( defaultServerConfigFile );
 		
 		// Get the web root out of the server.json, if specified and make it relative to the actual server.json file.
 		if( len( serverJSON.web.webroot ?: '' ) ) {
 			var defaultwebroot = fileSystemUtil.resolvePath( serverJSON.web.webroot, getDirectoryFromPath( defaultServerConfigFile ) );
-		    if( serverProps.debug ?: false ) {
-				consoleLogger.debug("webroot pulled from server's JSON: #defaultwebroot#");
-		    }
+		    if( locDebug ) { consoleLogger.debug("webroot pulled from server's JSON: #defaultwebroot#"); }
 		// Otherwise default to the directory the server's JSON file lives in (which defaults to the CWD)
 		} else {
 			var defaultwebroot = fileSystemUtil.resolvePath( getDirectoryFromPath( defaultServerConfigFile ) );
-		    if( serverProps.debug ?: false ) {
-				consoleLogger.debug("webroot defaulted to current server's JSON path: #defaultwebroot#");
-		    }
+		    if( locDebug ) { consoleLogger.debug("webroot defaulted to current server's JSON path: #defaultwebroot#"); }
 		}
 
 		// If user types a name, use that above all else
@@ -600,6 +598,7 @@ component accessors="true" singleton {
 			// otherwise use the name in the server config file if it's specified
 			var defaultName = serverJSON.name;
 		} else {
+			// Don't do a final guess at the name yet so we don't affect the server discovery below.
 			var defaultName = '';
 		}		
 		
@@ -610,6 +609,7 @@ component accessors="true" singleton {
 			serverConfigFile	= serverProps.serverConfigFile ?: '' //  Since this takes precendence, I only want to use it if it was actually specified
 		);
 		
+		// If we found a server, set our name.
 		if( len( serverInfo.name ?: '' ) ) {
 			defaultName = serverInfo.name;
 		}		
@@ -631,15 +631,19 @@ component accessors="true" singleton {
 				
 		// If the user didn't provide an explicit config file and it turns out last time we started a server by this name, we used a different
 		// config, let's re-read out that config JSON file to use instead of the default above.
-		if( !len( serverProps.serverConfigFile ?: '' ) && len( serverInfo.serverConfigFile ?: '' ) && serverInfo.serverConfigFile != defaultServerConfigFile ) {
+		if( !len( serverProps.serverConfigFile ?: '' ) 
+			&& len( serverInfo.serverConfigFile ?: '' ) 
+			&& serverInfo.serverConfigFile != defaultServerConfigFile ) {
+				
 			// Get server descriptor again
-		    if( serverProps.debug ?: false ) {
-				consoleLogger.debug("Switching to server JSON file:: #serverInfo.serverConfigFile#");
-		    }
+		    if( locDebug ) { consoleLogger.debug("Switching to server JSON file:: #serverInfo.serverConfigFile#"); }
 			serverJSON = readServerJSON( serverInfo.serverConfigFile );
 			defaultServerConfigFile = serverInfo.serverConfigFile;
 		}
 		
+		// By now we've figured out the name, webroot, and serverConfigFile for this server.
+		// Also return the serverInfo of the last values the server was started with (if ever)
+		// and the serverJSON setting for the server, if they exist.
 		return {
 			defaultName : defaultName,
 			defaultwebroot : defaultwebroot,
