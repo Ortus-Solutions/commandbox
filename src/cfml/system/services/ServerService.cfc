@@ -562,9 +562,13 @@ component accessors="true" singleton {
 			structDelete( serverProps, 'name' );
 		}
 		
-		// If we have no config file path, assume it's called "server.json" in the web root.
+		// If a specific server.json file path was passed, use it.
 		if( len( serverProps.serverConfigFile ?: '' ) ) {
 			var defaultServerConfigFile = serverProps.serverConfigFile;
+		// Otherwise, if there was a specific name passed, default a named server.json file for them
+		} else if( len( serverProps.name ?: '' ) ) {
+			var defaultServerConfigFile = fileSystemUtil.resolvePath( serverProps.directory ?: '' ) & "/server-#serverProps.name#.json";
+		// Otherwise, the default is called "server.json" in the web root.
 		} else {
 			var defaultServerConfigFile = fileSystemUtil.resolvePath( serverProps.directory ?: '' ) & "/server.json";
 		}
@@ -596,20 +600,30 @@ component accessors="true" singleton {
 			// otherwise use the name in the server config file if it's specified
 			var defaultName = serverJSON.name;
 		} else {
-			// otherwise default to the c urrent directory
-			// TODO: I don't care for this because it creates conflicts since many servers could have the name "webroot" on one machine.
-			var defaultName = replace( listLast( defaultwebroot, "\/" ), ':', '');
+			var defaultName = '';
 		}		
 		
 		// Discover by shortname or server and get server info
 		var serverInfo = getServerInfoByDiscovery(
-			directory 	= defaultwebroot,
-			name		= defaultName
+			directory			= defaultwebroot,
+			name				= defaultName,
+			serverConfigFile	= serverProps.serverConfigFile ?: '' //  Since this takes precendence, I only want to use it if it was actually specified
 		);
+		
+		if( len( serverInfo.name ?: '' ) ) {
+			defaultName = serverInfo.name;
+		}		
 
 		var serverIsNew = false;
 		//  If it wasn't found, create new server info using defaults
 		if( structIsEmpty( serverInfo ) ){
+			
+			if( !len( defaultName ) ) {
+				// If there is still no name, default to the current directory
+				// TODO: I don't care for this because it creates conflicts since many servers could have the name "webroot" on one machine.
+				defaultName = replace( listLast( defaultwebroot, "\/" ), ':', '');				
+			}
+			
 			// We need a new entry
 			serverIsNew = true;
 			serverInfo = getServerInfo( defaultwebroot, defaultName );
@@ -631,7 +645,7 @@ component accessors="true" singleton {
 			defaultwebroot : defaultwebroot,
 			defaultServerConfigFile : defaultServerConfigFile,
 			serverJSON : serverJSON,
-			serverInfo : serverinfo,
+			serverInfo : serverInfo,
 			serverIsNew : serverIsNew
 		};
 	}
@@ -761,8 +775,9 @@ component accessors="true" singleton {
  	 **/
 	function setServerInfo( required struct serverInfo ){
 		var servers 	= getServers();
-		var webrootHash = hash( arguments.serverInfo.webroot & arguments.serverInfo.name);
-
+		var webrootHash = hash( arguments.serverInfo.webroot & ucase( arguments.serverInfo.name ) );
+		arguments.serverInfo.id = webrootHash;
+		
 		if( arguments.serverInfo.webroot == "" ){
 			throw( "The webroot cannot be empty!" );
 		}
@@ -795,7 +810,7 @@ component accessors="true" singleton {
 				for( var thisKey in results ){
 					// Backwards compat-- add in server id if it doesn't exist for older versions of CommandBox
 					if( isNull( results[ thisKey ].id ) ){
-						results[ thisKey ].id = hash( results[ thisKey ].webroot & results[ thisKey ].name );
+						results[ thisKey ].id = hash( results[ thisKey ].webroot & ucase( results[ thisKey ].name ) );
 						updateRequired = true;
 					}
 					// Future-proof server info by guaranteeing that all properties will exist in the 
@@ -817,14 +832,22 @@ component accessors="true" singleton {
 	* @directory.hint the directory to find
 	* @name.hint The name to find
 	*/
-	struct function getServerInfoByDiscovery( required directory="", required name="" ){
+	struct function getServerInfoByDiscovery( required directory="", required name="", serverConfigFile="" ){
 		
-		// Discover by shortname or webroot
+		if( len( arguments.serverConfigFile ) ){
+			var foundServer = getServerInfoByServerConfigFile( arguments.serverConfigFile );
+			if( structCount( foundServer ) ) {
+				return foundServer;
+			}
+			return {};
+		}
+		
 		if( len( arguments.name ) ){
 			var foundServer = getServerInfoByName( arguments.name );
 			if( structCount( foundServer ) ) {
 				return foundServer;
 			}
+			return {};
 		}
 
 		var webroot = arguments.directory is "" ? shell.pwd() : arguments.directory;
@@ -839,6 +862,22 @@ component accessors="true" singleton {
 		var servers = getServers();
 		for( var thisServer in servers ){
 			if( servers[ thisServer ].name == arguments.name ){
+				return servers[ thisServer ];
+			}
+		}
+
+		return {};
+	}
+
+	/**
+	* Get a server information struct by serverConfigFile if not found it returns an empty struct
+	* @name.serverConfigFile The serverConfigFile to find
+	*/
+	struct function getServerInfoByServerConfigFile( required serverConfigFile ){
+		arguments.serverConfigFile = fileSystemUtil.resolvePath( arguments.serverConfigFile );
+		var servers = getServers();
+		for( var thisServer in servers ){
+			if( fileSystemUtil.resolvePath( servers[ thisServer ].serverConfigFile ) == arguments.serverConfigFile ){
 				return servers[ thisServer ];
 			}
 		}
@@ -882,7 +921,7 @@ component accessors="true" singleton {
  	**/
 	struct function getServerInfo( required webroot , required name){
 		var servers 	= getServers();
-		var webrootHash = hash( arguments.webroot & arguments.name);
+		var webrootHash = hash( arguments.webroot & ucase( arguments.name ) );
 		var statusInfo 	= {};
 
 		if( !directoryExists( arguments.webroot ) ){
@@ -941,6 +980,8 @@ component accessors="true" singleton {
 			directoryBrowsing : true,
 			JVMargs			: "",
 			runwarArgs		: "",
+			cfengine		: "",
+			WARPath			: "",
 			serverConfigFile : ""
 		};
 	}

@@ -96,6 +96,8 @@ component {
 						.indentedLine( "debug:            " & thisServerInfo.debug )
 						.indentedLine( "ID:               " & thisServerInfo.id );
 
+					if( len( thisServerInfo.cfengine ) ) { print.indentedLine( "cfengine:         " & thisServerInfo.cfengine ); }
+					if( len( thisServerInfo.WARPath ) ) { print.indentedLine( "WARPath:          " & thisServerInfo.WARPath ); }
 					if( len( thisServerInfo.libDirs ) ) { print.indentedLine( "libDirs:          " & thisServerInfo.libDirs ); }
 					if( len( thisServerInfo.webConfigDir ) ) { print.indentedLine( "webConfigDir:     " & thisServerInfo.webConfigDir ); }
 					if( len( thisServerInfo.serverConfigDir ) ) { print.indentedLine( "serverConfigDir:  " & thisServerInfo.serverConfigDir ); }
