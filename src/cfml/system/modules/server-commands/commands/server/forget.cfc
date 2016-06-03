@@ -16,28 +16,28 @@ component {
 	/**
 	 * Forgets one or all servers from persistent disk, removing all logs, configs, etc.
 	 *
-	 * @name.hint Short name for the server
+	 * @name.hint the short name of the server
 	 * @name.optionsUDF serverNameComplete
-	 * @directory.hint Web root for the server
+	 * @directory.hint web root for the server
+	 * @serverConfigFile The path to the server's JSON file.
 	 * @all.hint Forget all servers
 	 * @force.hint Skip the "are you sure" confirmation
 	 **/
 	function run(
-		String name="",
-		String directory="",
+		string name,
+		string directory,
+		String serverConfigFile,
 		Boolean all=false,
 		Boolean force=false
-	){
-		// Discover by shortname or webroot
-		arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
-		var serverInfo = serverService.getServerInfoByDiscovery( arguments.directory, arguments.name );
-		
-		// Verify server info
-		if( structIsEmpty( serverInfo ) AND arguments.all eq false ){
-			error( "The server you requested to forget was not found (webroot=#arguments.directory#, name=#arguments.name#)." );
-			print.line( "You can use the 'server list' command to get all the available servers." );
-			return;
-		}
+	){	
+		if( !isNull( arguments.directory ) ) {
+			arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
+		} 
+		if( !isNull( arguments.serverConfigFile ) ) {
+			arguments.serverConfigFile = fileSystemUtil.resolvePath( arguments.serverConfigFile );
+		}		
+		var serverInfo = serverService.resolveServerDetails( arguments ).serverinfo;
+
 		// Confirm deletion
 		var askMessage = arguments.all ? "Really forget & delete all servers (servers=#arrayToList( serverService.getServerNames() )#) forever [y/n]?" :
 									     "Really forget & delete server '#serverinfo.name#' forever [y/n]?";

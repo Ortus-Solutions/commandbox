@@ -168,168 +168,137 @@ component accessors="true" singleton {
 		Struct serverProps
 	){
 
-		// TODO: The next big block is en excellent candiate to refactor into a method.
-		
-		var userProvidedServerConfigFile = true;
-		// If we have no config file path, assume it's called "server.json" in the web root.
-		if( !len( serverProps.serverConfigFile ) ) {
-			userProvidedServerConfigFile = false;
-			serverProps.serverConfigFile = fileSystemUtil.resolvePath( serverProps.directory ?: '' ) & "/server.json";
-		}
+		// Look up the server that we're starting
+		var serverDetails = resolveServerDetails( arguments.serverProps );
+				
+		var defaultName = serverDetails.defaultName;
+		var defaultwebroot = serverDetails.defaultwebroot;
+		var defaultServerConfigFile = serverDetails.defaultServerConfigFile;
+		var serverJSON = serverDetails.serverJSON;
+		var serverInfo = serverDetails.serverinfo;
 
-		// Get server descriptor
-	    if( serverProps.debug ?: false ) {
-			consoleLogger.debug("Reading server JSON file:: #serverProps.serverConfigFile#");
-	    }
-		var serverJSON = readServerJSON( serverProps.serverConfigFile );
-		
-		// Get the web root out of the server.json, if specified and make it relative to the actual server.json file.
-		if( len( serverJSON.web.wwwroot ?: '' ) ) {
-			serverProps.directory = fileSystemUtil.resolvePath( serverJSON.web.wwwroot, getDirectoryFromPath( serverProps.serverConfigFile ) );
-		// Otherwise default to the directory the server's JSON file lives in (which defaults to the CWD)
-		} else {
-			serverProps.directory = getDirectoryFromPath( serverProps.serverConfigFile );
-		}
-
-		// If user types a name, use that above all else
-		if( len( serverProps.name ?: '' ) ) {
-			// Do nothing, server.json is updated below
-		} else if( len( serverJSON.name ?: '' ) ) {
-			// otherwise use the name in the server config file if it's specified
-			serverProps.name = serverJSON.name;
-		} else {
-			// otherwise default to the c urrent directory
-			// TODO: I don't care for this because it creates conflicts since many servers could have the name "wwwroot" on one machine.
-			serverProps.name = replace( listLast( serverProps.directory, "\/" ), ':', '');
-		}		
-		
-		// Discover by shortname or server and get server info
-		var serverInfo = getServerInfoByDiscovery(
-			directory 	= serverProps.directory,
-			name		= serverProps.name
-		);
-		// Keep this in sync in case we only came in with a directory
-		serverProps.name = serverInfo.name ?: serverProps.name;
-		// If the user didn't provide an explicit config file and it turns out last time we started a server by this name, we used a different
-		// config, let's re-read out that config JSON file to use instead of the default above.
-		if( !userProvidedServerConfigFile && len( serverInfo.serverConfigFile ?: '' ) && serverInfo.serverConfigFile != serverProps.serverConfigFile ) {
-			// Get server descriptor again
-		    if( serverProps.debug ?: false ) {
-				consoleLogger.debug("Switching to server JSON file:: #serverInfo.serverConfigFile#");
-		    }
-			serverJSON = readServerJSON( serverInfo.serverConfigFile );
-			serverProps.serverConfigFile = serverInfo.serverConfigFile;
-		}
-		
-
-		// Was it found, or new server?
-		if( structIsEmpty( serverInfo ) ){
-			// We need a new entry
-			serverInfo = getServerInfo( serverProps.directory, serverProps.name );
-		}
-
-		// Get package descriptor
-		var boxJSON = packageService.readPackageDescriptor( serverInfo.webroot );
-		// Get defaults
-		var defaults = getDefaultServerJSON();
-								
-		// Backwards compat with boxJSON default port.  Remove in a future version
-		// The property in box.json is deprecated. 
-		if( boxJSON.defaultPort > 0 ) {
-			
-			// Remove defaultPort from box.json and pretend it was 
-			// manually typed which will cause server.json to save it.
-			serverProps.port = boxJSON.defaultPort;
-			
-			// Update box.json to remove defaultPort from disk
-			boxJSON.delete( 'defaultPort' );
-			packageService.writePackageDescriptor( boxJSON, serverInfo.webroot );
-		}
+		// *************************************************************************************
+		// Backwards compat for default port in box.json. Remove this eventually...			// *
+																							// *
+		// Get package descriptor															// *
+		var boxJSON = packageService.readPackageDescriptor( serverInfo.webroot );			// *
+		// Get defaults																		// *
+		var defaults = getDefaultServerJSON();												// *
+																							// *
+		// Backwards compat with boxJSON default port.  Remove in a future version			// *
+		// The property in box.json is deprecated. 											// *
+		if( boxJSON.defaultPort > 0 ) {														// *
+																							// *
+			// Remove defaultPort from box.json and pretend it was 							// *
+			// manually typed which will cause server.json to save it.						// *
+			serverProps.port = boxJSON.defaultPort;											// *
+																							// *
+			// Update box.json to remove defaultPort from disk								// *
+			boxJSON.delete( 'defaultPort' );												// *
+			packageService.writePackageDescriptor( boxJSON, serverInfo.webroot );			// *
+		}																					// *
+																							// *
+		// End backwards compat for default port in box.json.								// *
+		// *************************************************************************************
 		
 		// Save hand-entered properties in our server.json for next time
 		for( var prop in serverProps ) {
-			if( !isNull( serverProps[ prop ] ) && prop != 'directory'  && prop != 'saveSettings'  && prop != 'serverConfigFile' ) {
-				// Only need switch cases for properties that are nested or use different name
-				switch(prop) {
-				    case "port":
-						serverJSON[ 'web' ][ 'http' ][ 'port' ] = serverProps[ prop ];
-				         break;
-				    case "host":
-						serverJSON[ 'web' ][ 'host' ] = serverProps[ prop ];
-				         break;
-				    case "stopPort":
-						serverJSON[ 'stopsocket' ] = serverProps[ prop ];
-				         break;
-				    case "webConfigDir":
-						serverJSON[ 'app' ][ 'webConfigDir' ] = serverProps[ prop ];
-				         break;
-				    case "serverConfigDir":
-						serverJSON[ 'app' ][ 'serverConfigDir' ] = serverProps[ prop ];
-				         break;
-				    case "libDirs":
-						serverJSON[ 'app' ][ 'libDirs' ] = serverProps[ prop ];
-				         break;
-				    case "webXML":
-						serverJSON[ 'app' ][ 'webXML' ] = serverProps[ prop ];
-				         break;
-				    case "cfengine":
-						serverJSON[ 'app' ][ 'cfengine' ] = serverProps[ prop ];
-				         break;
-				    case "WARPath":
-						serverJSON[ 'app' ][ 'WARPath' ] = serverProps[ prop ];
-				         break;
-				    case "HTTPEnable":
-						serverJSON[ 'web' ][ 'HTTP' ][ 'enable' ] = serverProps[ prop ];
-				         break;
-				    case "SSLEnable":
-						serverJSON[ 'web' ][ 'SSL' ][ 'enable' ] = serverProps[ prop ];
-				         break;
-				    case "SSLPort":
-						serverJSON[ 'web' ][ 'SSL' ][ 'port' ] = serverProps[ prop ];
-				         break;
-				    case "SSLCert":
-						serverJSON[ 'web' ][ 'SSL' ][ 'cert' ] = serverProps[ prop ];
-				         break;
-				    case "SSLKey":
-						serverJSON[ 'web' ][ 'SSL' ][ 'key' ] = serverProps[ prop ];
-				         break;
-				    case "SSLKeyPass":
-						serverJSON[ 'web' ][ 'SSL' ][ 'keyPass' ] = serverProps[ prop ];
-				         break;
-				    case "rewritesEnable":
-						serverJSON[ 'web' ][ 'rewrites' ][ 'enable' ] = serverProps[ prop ];
-				         break;
-				    case "rewritesConfig":
-						serverJSON[ 'web' ][ 'rewrites' ][ 'config' ] = serverProps[ prop ];
-				         break;
-				    case "heapSize":
-						serverJSON[ 'JVM' ][ 'heapSize' ] = serverProps[ prop ];
-				         break;
-				    case "JVMArgs":
-						serverJSON[ 'JVM' ][ 'args' ] = serverProps[ prop ];
-				         break;
-				    case "runwarArgs":
-						serverJSON[ 'runwar' ][ 'args' ] = serverProps[ prop ];
-				         break;
-				    default: 
-					serverJSON[ prop ] = serverProps[ prop ];
-				} // end switch
-			} // end if
+			// Ignore null props or ones that shouldn't be saved
+			if( isNull( serverProps[ prop ] ) || listFindNoCase( 'saveSettings,serverConfigFile,debug', prop ) ) {
+				continue;
+			}
+			// Only need switch cases for properties that are nested or use different name
+			switch(prop) {
+			    case "port":
+					serverJSON[ 'web' ][ 'http' ][ 'port' ] = serverProps[ prop ];
+			         break;
+			    case "host":
+					serverJSON[ 'web' ][ 'host' ] = serverProps[ prop ];
+			         break;
+			    case "directory":
+			    	// Both of these are canonical already.
+			    	var thisDirectory = replace( serverProps[ prop ], '\', '/', 'all' ) & '/';
+			    	var configPath = replace( fileSystemUtil.resolvePath( getDirectoryFromPath( defaultServerConfigFile ) ), '\', '/', 'all' ) & '/';
+			    	// If the web root is south of the server's JSON, make it relative for better portability.
+			    	if( thisDirectory contains configPath ) {
+			    		thisDirectory = replaceNoCase( thisDirectory, configPath, '' );
+			    	}
+					serverJSON[ 'web' ][ 'webroot' ] = thisDirectory;
+			         break;
+			    case "stopPort":
+					serverJSON[ 'stopsocket' ] = serverProps[ prop ];
+			         break;
+			    case "webConfigDir":
+					serverJSON[ 'app' ][ 'webConfigDir' ] = serverProps[ prop ];
+			         break;
+			    case "serverConfigDir":
+					serverJSON[ 'app' ][ 'serverConfigDir' ] = serverProps[ prop ];
+			         break;
+			    case "libDirs":
+					serverJSON[ 'app' ][ 'libDirs' ] = serverProps[ prop ];
+			         break;
+			    case "webXML":
+					serverJSON[ 'app' ][ 'webXML' ] = serverProps[ prop ];
+			         break;
+			    case "cfengine":
+					serverJSON[ 'app' ][ 'cfengine' ] = serverProps[ prop ];
+			         break;
+			    case "WARPath":
+					serverJSON[ 'app' ][ 'WARPath' ] = serverProps[ prop ];
+			         break;
+			    case "HTTPEnable":
+					serverJSON[ 'web' ][ 'HTTP' ][ 'enable' ] = serverProps[ prop ];
+			         break;
+			    case "SSLEnable":
+					serverJSON[ 'web' ][ 'SSL' ][ 'enable' ] = serverProps[ prop ];
+			         break;
+			    case "SSLPort":
+					serverJSON[ 'web' ][ 'SSL' ][ 'port' ] = serverProps[ prop ];
+			         break;
+			    case "SSLCert":
+					serverJSON[ 'web' ][ 'SSL' ][ 'cert' ] = serverProps[ prop ];
+			         break;
+			    case "SSLKey":
+					serverJSON[ 'web' ][ 'SSL' ][ 'key' ] = serverProps[ prop ];
+			         break;
+			    case "SSLKeyPass":
+					serverJSON[ 'web' ][ 'SSL' ][ 'keyPass' ] = serverProps[ prop ];
+			         break;
+			    case "rewritesEnable":
+					serverJSON[ 'web' ][ 'rewrites' ][ 'enable' ] = serverProps[ prop ];
+			         break;
+			    case "rewritesConfig":
+					serverJSON[ 'web' ][ 'rewrites' ][ 'config' ] = serverProps[ prop ];
+			         break;
+			    case "heapSize":
+					serverJSON[ 'JVM' ][ 'heapSize' ] = serverProps[ prop ];
+			         break;
+			    case "JVMArgs":
+					serverJSON[ 'JVM' ][ 'args' ] = serverProps[ prop ];
+			         break;
+			    case "runwarArgs":
+					serverJSON[ 'runwar' ][ 'args' ] = serverProps[ prop ];
+			         break;
+			    default: 
+				serverJSON[ prop ] = serverProps[ prop ];
+			} // end switch
 		} // for loop
 		
 		if( !serverJSON.isEmpty() && serverProps.saveSettings ) {
-			saveServerJSON( serverProps.serverConfigFile, serverJSON );
+			saveServerJSON( defaultServerConfigFile, serverJSON );
 		}
 				 
 
 		// Setup serverinfo according to params
 		// Hand-entered values take precendence, then settings saved in server.json, and finally defaults.
 		// The big servers.json is only used to keep a record of the last values the server was started with
-		serverInfo.name 			= serverProps.name;
 		serverInfo.debug 			= serverProps.debug 			?: serverJSON.debug 				?: defaults.debug;
 		serverInfo.openbrowser		= serverProps.openbrowser 		?: serverJSON.openbrowser			?: defaults.openbrowser;
 		serverInfo.host				= serverProps.host 				?: serverJSON.web.host				?: defaults.web.host;
-		serverInfo.port 			= serverProps.port 				?: serverJSON.web.http.port			?: getRandomPort( serverInfo.host );
+		// If the last port we used is taken, remove it from consideration.
+		if( serverInfo.port == 0 || !isPortAvailable( serverInfo.host, serverInfo.port ) ) { serverInfo.delete( 'port' ); }
+		// Port is the only setting that automatically carries over without being specified since it's random.
+		serverInfo.port 			= serverProps.port 				?: serverJSON.web.http.port			?: serverInfo.port 							?: getRandomPort( serverInfo.host );
 		serverInfo.stopsocket		= serverProps.stopsocket		?: serverJSON.stopsocket 			?: getRandomPort( serverInfo.host );		
 		serverInfo.webConfigDir 	= serverProps.webConfigDir 		?: serverJSON.app.webConfigDir		?: getCustomServerFolder( serverInfo );
 		serverInfo.serverConfigDir 	= serverProps.serverConfigDir 	?: serverJSON.app.serverConfigDir 	?: defaults.app.serverConfigDir;
@@ -350,14 +319,18 @@ component accessors="true" singleton {
 		serverInfo.runwarArgs		= serverProps.runwarArgs		?: serverJSON.runwar.args			?: defaults.runwar.args;
 		serverInfo.cfengine			= serverProps.cfengine			?: serverJSON.app.cfengine			?: defaults.app.cfengine;
 		serverInfo.WARPath			= serverProps.WARPath			?: serverJSON.app.WARPath			?: defaults.app.WARPath;
-		serverInfo.serverConfigFile	= serverProps.serverConfigFile;
+		
+		// These are already hammered out above, so no need to go through all the defaults.
+		serverInfo.serverConfigFile	= defaultServerConfigFile;
+		serverInfo.name 			= defaultName;
+		serverInfo.webroot 			= defaultwebroot;
 		
 		serverInfo.logdir			= serverInfo.webConfigDir & "/logs";
 		
 		if( serverInfo.debug ) {
 			consoleLogger.info( "start server in - " & serverInfo.webroot );
 			consoleLogger.info( "server name - " & serverInfo.name );
-			consoleLogger.info( "server config file - " & serverProps.serverConfigFile );	
+			consoleLogger.info( "server config file - " & defaultServerConfigFile );	
 		}	
 		
 		if( !len( serverInfo.WARPath ) && !len( serverInfo.cfengine ) ) {
@@ -563,6 +536,107 @@ component accessors="true" singleton {
 	}
 
 	/**
+	* Unified logic to resolve a server given an optional name, directory, and server.json path.
+	* Returns resolved name, webroot, serverConfigFile, serverInfo from the last start and serverJSON
+	* 
+	* @serverProps A struct that can contains name, directory, and/or serverConfigFile
+	*
+	* @returns a struct containing 
+	* - defaultName
+	* - defaultwebroot
+	* - defaultServerConfigFile
+	* - serverJSON
+	* - serverInfo 
+	*/
+	function resolveServerDetails(
+		required struct serverProps
+	) {
+		
+		// As a convenient shorcut, allow the serverConfigFile to be passed via the name parameter.
+		var tmpName = serverProps.name ?: '';
+		var tmpNameResolved = fileSystemUtil.resolvePath( tmpName );
+		// Check if there was no config file specified, but the name was specified and happens to exist as a file on disk
+		if( !len( serverProps.serverConfigFile ?: '' ) && len( tmpName ) && fileExists( tmpNameResolved ) ) {
+			// If so, swap the name into the server config param.
+			serverProps.serverConfigFile = tmpNameResolved;
+			structDelete( serverProps, 'name' );
+		}
+		
+		// If we have no config file path, assume it's called "server.json" in the web root.
+		if( len( serverProps.serverConfigFile ?: '' ) ) {
+			var defaultServerConfigFile = serverProps.serverConfigFile;
+		} else {
+			var defaultServerConfigFile = fileSystemUtil.resolvePath( serverProps.directory ?: '' ) & "/server.json";
+		}
+
+		// Get server descriptor from default location.
+	    if( serverProps.debug ?: false ) {
+			consoleLogger.debug("Reading server JSON file:: #defaultServerConfigFile#");
+	    }
+		var serverJSON = readServerJSON( defaultServerConfigFile );
+		
+		// Get the web root out of the server.json, if specified and make it relative to the actual server.json file.
+		if( len( serverJSON.web.webroot ?: '' ) ) {
+			var defaultwebroot = fileSystemUtil.resolvePath( serverJSON.web.webroot, getDirectoryFromPath( defaultServerConfigFile ) );
+		    if( serverProps.debug ?: false ) {
+				consoleLogger.debug("webroot pulled from server's JSON: #defaultwebroot#");
+		    }
+		// Otherwise default to the directory the server's JSON file lives in (which defaults to the CWD)
+		} else {
+			var defaultwebroot = fileSystemUtil.resolvePath( getDirectoryFromPath( defaultServerConfigFile ) );
+		    if( serverProps.debug ?: false ) {
+				consoleLogger.debug("webroot defaulted to current server's JSON path: #defaultwebroot#");
+		    }
+		}
+
+		// If user types a name, use that above all else
+		if( len( serverProps.name ?: '' ) ) {
+			var defaultName = serverProps.name;
+		} else if( len( serverJSON.name ?: '' ) ) {
+			// otherwise use the name in the server config file if it's specified
+			var defaultName = serverJSON.name;
+		} else {
+			// otherwise default to the c urrent directory
+			// TODO: I don't care for this because it creates conflicts since many servers could have the name "webroot" on one machine.
+			var defaultName = replace( listLast( defaultwebroot, "\/" ), ':', '');
+		}		
+		
+		// Discover by shortname or server and get server info
+		var serverInfo = getServerInfoByDiscovery(
+			directory 	= defaultwebroot,
+			name		= defaultName
+		);
+
+		var serverIsNew = false;
+		//  If it wasn't found, create new server info using defaults
+		if( structIsEmpty( serverInfo ) ){
+			// We need a new entry
+			serverIsNew = true;
+			serverInfo = getServerInfo( defaultwebroot, defaultName );
+		}
+				
+		// If the user didn't provide an explicit config file and it turns out last time we started a server by this name, we used a different
+		// config, let's re-read out that config JSON file to use instead of the default above.
+		if( !len( serverProps.serverConfigFile ?: '' ) && len( serverInfo.serverConfigFile ?: '' ) && serverInfo.serverConfigFile != defaultServerConfigFile ) {
+			// Get server descriptor again
+		    if( serverProps.debug ?: false ) {
+				consoleLogger.debug("Switching to server JSON file:: #serverInfo.serverConfigFile#");
+		    }
+			serverJSON = readServerJSON( serverInfo.serverConfigFile );
+			defaultServerConfigFile = serverInfo.serverConfigFile;
+		}
+		
+		return {
+			defaultName : defaultName,
+			defaultwebroot : defaultwebroot,
+			defaultServerConfigFile : defaultServerConfigFile,
+			serverJSON : serverJSON,
+			serverInfo : serverinfo,
+			serverIsNew : serverIsNew
+		};
+	}
+
+	/**
 	 * Stop server
 	 * @serverInfo.hint The server information struct: [ webroot, name, port, stopSocket, logDir, status, statusInfo ]
 	 *
@@ -663,6 +737,22 @@ component accessors="true" singleton {
 		var portNumber = nextAvail.getLocalPort();
 		nextAvail.close();
 		return portNumber;
+	}
+
+	/**
+	 * Find out if a given host/port is already bound
+	 * @host.hint host to test port on, defaults 127.0.0.1
+ 	 **/
+	function isPortAvailable( host="127.0.0.1", required port ){
+		try {
+			var serverSocket = java.ServerSocket.init( javaCast( "int", arguments.port ),
+													 javaCast( "int", 1 ),
+													 java.InetAddress.getByName( arguments.host ) );
+			serverSocket.close();
+			return true;
+		} catch( any var e ) {
+			return false;
+		}
 	}
 
 	/**
@@ -775,9 +865,10 @@ component accessors="true" singleton {
 	* @webroot.hint The webroot to find
 	*/
 	struct function getServerInfoByWebroot( required webroot ){
+		arguments.webroot = fileSystemUtil.resolvePath( arguments.webroot );
 		var servers = getServers();
 		for( var thisServer in servers ){
-			if( servers[ thisServer ].webroot == arguments.webroot ){
+			if( fileSystemUtil.resolvePath( servers[ thisServer ].webroot ) == arguments.webroot ){
 				return servers[ thisServer ];
 			}
 		}

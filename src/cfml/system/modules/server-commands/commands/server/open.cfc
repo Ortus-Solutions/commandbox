@@ -12,15 +12,29 @@ component {
 	property name="serverService" inject="ServerService";
 	
 	/**
-	* @URI An additional URI to go to when opening the server browser, else it just opens localhost:port 
-	* @directory Web root for the server, auto-calculated if not passed
-	* @name Short name for the server
+	* @URI An additional URI to go to when opening the server browser, else it just opens localhost:port
+	 * @name.hint the short name of the server
+	 * @name.optionsUDF serverNameComplete
+	 * @directory.hint web root for the server
+	 * @serverConfigFile The path to the server's JSON file.
 	**/
-	function run( URI="/", directory="", name="" ){
-		var serverInfo = serverService.getServerInfoByDiscovery( arguments.directory, arguments.name );
-
-		if( structCount( serverInfo ) eq 0 ){
-			print.boldRedLine( "No server configurations found for directory:'#arguments.directory#' name:'#arguments.name#', so have no clue what to open buddy!" );
+	function run( 
+		URI="/",
+		string name,
+		string directory,
+		String serverConfigFile
+		){
+		if( !isNull( arguments.directory ) ) {
+			arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
+		} 
+		if( !isNull( arguments.serverConfigFile ) ) {
+			arguments.serverConfigFile = fileSystemUtil.resolvePath( arguments.serverConfigFile );
+		}		
+		var serverDetails = serverService.resolveServerDetails( arguments );
+		var serverInfo = serverDetails.serverInfo;
+		 
+		if( serverDetails.serverIsNew ){
+			print.boldRedLine( "No server configurations found so have no clue what to open buddy!" );
 		} else {
 			var thisURL = "localhost:#serverInfo.port##arguments.URI#";
 			print.greenLine( "Opening...#thisURL#" );
