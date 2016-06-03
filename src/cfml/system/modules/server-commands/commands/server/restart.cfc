@@ -14,29 +14,32 @@ component aliases="restart" {
 	property name="packageService" 	inject="packageService";
 
 	/**
-	 * @name.hint the short name of the server to restart
+	 * @name.hint the short name of the server
 	 * @name.optionsUDF serverNameComplete
 	 * @directory.hint web root for the server
+	 * @serverConfigFile The path to the server's JSON file.
 	 * @force.hint if passed, this will force restart the server
 	 * @openbrowser.hint open a browser after restarting, defaults to false
 	 **/
 	function run(
-		string name="",
-		string directory="",
+		string name,
+		string directory,
+		String serverConfigFile,
 		boolean force=false,
 		boolean openBrowser=false
 	){
-		// Discover by shortname or webroot and get server info
-		var serverInfo = serverService.getServerInfoByDiscovery(
-			directory 	= arguments.directory,
-			name		= arguments.name
-		);
+		if( !isNull( arguments.directory ) ) {
+			arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
+		} 
+		if( !isNull( arguments.serverConfigFile ) ) {
+			arguments.serverConfigFile = fileSystemUtil.resolvePath( arguments.serverConfigFile );
+		}		
+		var serverDetails = serverService.resolveServerDetails( arguments );
+		var serverInfo = serverDetails.serverInfo;
 
 		// Verify server info
-		if( structIsEmpty( serverInfo ) ){
-			error( "The server you requested to restart was not found (webroot=#arguments.directory#, name=#arguments.name#)." );
-			print.line( "You can use the 'server list' command to get all the available servers." );
-			return;
+		if( serverDetails.serverIsNew ){
+			error( "The server you requested was not found.", "You can use the 'server list' command to get all the available servers." );
 		}
 
 		var stopCommand = "server stop '#serverInfo.name#'";

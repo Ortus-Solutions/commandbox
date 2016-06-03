@@ -108,17 +108,17 @@ component aliases="start" {
 		boolean	saveSettings=true,
 		String  cfengine,
 		String  WARPath,
-		String serverConfigFile=''
+		String serverConfigFile
 	){
 		// Resolve path as used locally
 		if( !isNull( arguments.directory ) ) {
 			arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
+		} 
+		if( !isNull( arguments.serverConfigFile ) ) {
+			arguments.serverConfigFile = fileSystemUtil.resolvePath( arguments.serverConfigFile );
 		}
 		if( !isNull( arguments.WARPath ) ) {
 			arguments.WARPath = fileSystemUtil.resolvePath( arguments.WARPath );
-		} 
-		if( len( arguments.serverConfigFile ) ) {
-			arguments.serverConfigFile = fileSystemUtil.resolvePath( arguments.serverConfigFile );
 		}
 
 		// This is a common mis spelling
@@ -127,16 +127,6 @@ component aliases="start" {
 			// Let's fix that up for them.
 			arguments.rewritesEnable = arguments.rewritesEnabled;
 			structDelete( arguments, 'rewritesEnabled' );
-		}
-
-		// As a convenient shorcut, allow the serverConfigFile to be passed via the name parameter.
-		var tmpName = arguments.name ?: '';
-		var tmpNameResolved = fileSystemUtil.resolvePath( tmpName );
-		// Check if there was no config file specified, but the name was specified and happens to exist as a file on disk
-		if( !len( arguments.serverConfigFile ) && len( tmpName ) && fileExists( tmpNameResolved ) ) {
-			// If so, swap the name into the server config param.
-			arguments.serverConfigFile = tmpNameResolved;
-			structDelete( arguments, 'name' );
 		}
 
 		// startup the server

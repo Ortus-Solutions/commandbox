@@ -13,21 +13,30 @@ component {
 	/**
 	 * Show server log
 	 *
-	 * @name.hint short name for the server
+	 * @name.hint the short name of the server
 	 * @name.optionsUDF serverNameComplete
 	 * @directory.hint web root for the server
+	 * @serverConfigFile The path to the server's JSON file.
 	 **/
-	function run( string name="", string directory="" ){
-		// Discover by shortname or webroot
-		var serverInfo = serverService.getServerInfoByDiscovery( arguments.directory, arguments.name );
+	function run(
+		string name,
+		string directory,
+		String serverConfigFile
+		 ){
+		if( !isNull( arguments.directory ) ) {
+			arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
+		} 
+		if( !isNull( arguments.serverConfigFile ) ) {
+			arguments.serverConfigFile = fileSystemUtil.resolvePath( arguments.serverConfigFile );
+		}		
+		var serverDetails = serverService.resolveServerDetails( arguments );
+		var serverInfo = serverDetails.serverInfo;
 
 		// Verify server info
-		if( structIsEmpty( serverInfo ) ){
-			error( "The server you requested to log was not found (webroot=#arguments.directory#, name=#arguments.name#)." );
-			print.line( "You can use the 'server list' command to get all the available servers." );
-			return;
+		if( serverDetails.serverIsNew ){
+			error( "The server you requested was not found.", "You can use the 'server list' command to get all the available servers." );
 		}
-
+		
 		var logfile = serverInfo.logdir & "/server.out.txt";
 		if( fileExists( logfile) ){
 			return fileRead( logfile );
