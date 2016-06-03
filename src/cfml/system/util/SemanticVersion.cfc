@@ -332,7 +332,7 @@ component singleton{
 		    		
 		    		sComparator.sVersion.minor = '0';
 		    		sComparator.sVersion.revision = '0';
-		    		sComparator.sVersion.major++;
+		    		sComparator.sVersion.major=val( sComparator.sVersion.major )+1;
 		    		sComparator.operator = '<';
 			    	sComparator.version = getVersionAsString( sComparator.sVersion );
 			    	comparatorSet.append( sComparator );
@@ -341,7 +341,7 @@ component singleton{
 		    	} else if( sComparator.sVersion.revision == 'x' ) {
 		    		
 		    		sComparator.sVersion.revision = '0';
-		    		sComparator.sVersion.minor++;
+		    		sComparator.sVersion.minor=val( sComparator.sVersion.minor )+1;
 		    		sComparator.operator = '<';
 			    	sComparator.version = getVersionAsString( sComparator.sVersion );
 			    	comparatorSet.append( sComparator );
@@ -357,7 +357,7 @@ component singleton{
 		    		
 		    		sComparator.sVersion.minor = '0';
 		    		sComparator.sVersion.revision = '0';
-		    		sComparator.sVersion.major++;
+		    		sComparator.sVersion.major=val( sComparator.sVersion.major )+1;
 		    		sComparator.operator = '>=';
 			    	sComparator.version = getVersionAsString( sComparator.sVersion );
 			    	comparatorSet.append( sComparator );
@@ -366,7 +366,7 @@ component singleton{
 		    	} else if( sComparator.sVersion.revision == 'x' ) {
 		    		
 		    		sComparator.sVersion.revision = '0';
-		    		sComparator.sVersion.minor++;
+		    		sComparator.sVersion.minor=val(sComparator.sVersion.minor)+1;
 		    		sComparator.operator = '>=';
 			    	sComparator.version = getVersionAsString( sComparator.sVersion );
 			    	comparatorSet.append( sComparator );
@@ -406,7 +406,7 @@ component singleton{
 		    		sComparator.version = getVersionAsString( sComparator.sVersion );
 					comparatorSet.append( duplicate( sComparator ) );
 									
-		    		sComparator.sVersion.major++;
+		    		sComparator.sVersion.major=val( sComparator.sVersion.major )+1;
 		    		sComparator.operator = '<';
 		    		sComparator.version = getVersionAsString( sComparator.sVersion );
 					comparatorSet.append( sComparator );					
@@ -420,7 +420,7 @@ component singleton{
 		    		sComparator.version = getVersionAsString( sComparator.sVersion );
 					comparatorSet.append( duplicate( sComparator ) );
 										
-		    		sComparator.sVersion.minor++;
+		    		sComparator.sVersion.minor=val( sComparator.sVersion.minor )+1;
 		    		sComparator.operator = '<';
 		    		sComparator.version = getVersionAsString( sComparator.sVersion );
 					comparatorSet.append( sComparator );
@@ -447,7 +447,7 @@ component singleton{
 			    	comparatorSet.append( duplicate( sComparator ) );
 			    	
 		    		sComparator.operator = '<';
-		    		sComparator.sVersion.minor++;
+		    		sComparator.sVersion.minor=val( sComparator.sVersion.minor )+1;
 		    		sComparator.sVersion.revision = 0;
 		    		sComparator.sVersion.preReleaseID = '';
 			    	sComparator.version = getVersionAsString( sComparator.sVersion );
@@ -475,14 +475,14 @@ component singleton{
 	    		sComparator.operator = '<';
 	    		sComparator.sVersion.preReleaseID = '';
 		    	if( sComparator.sVersion.major != 0 || sComparator.sVersion.minor == 'x' ) {
-		    		sComparator.sVersion.major++;
+		    		sComparator.sVersion.major=val( sComparator.sVersion.major )+1;
 		    		sComparator.sVersion.minor = 0;
 		    		sComparator.sVersion.revision = 0;	
 		    	} else if( sComparator.sVersion.minor != 0 || sComparator.sVersion.revision == 'x' ) {
-		    		sComparator.sVersion.minor++;
+		    		sComparator.sVersion.minor=val( sComparator.sVersion.minor )+1;
 		    		sComparator.sVersion.revision = 0;
 		    	} else {
-		    		sComparator.sVersion.revision++;			    		
+		    		sComparator.sVersion.revision=val( sComparator.sVersion.revision )+1;			    		
 		    	}
 		    	
 		    	sComparator.version = getVersionAsString( sComparator.sVersion );

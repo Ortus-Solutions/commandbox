@@ -16,10 +16,10 @@ component name="TestPrint" extends="mxunit.framework.TestCase" {
 	
 	public void function testParseVersionAsString() {
 		var semver = application.wirebox.getInstance( 'semanticVersion' );
-		assertEquals( semver.parseVersionAsString( '1.0.0' ), '1.0.0+0' );
+		assertEquals( semver.parseVersionAsString( '1.0.0' ), '1.0.0' );
 		assertEquals( semver.parseVersionAsString( '1.0.0+123' ), '1.0.0+123' );
 		assertEquals( semver.parseVersionAsString( '1.0.0-alpha+123' ), '1.0.0-alpha+123' );
-		assertEquals( semver.parseVersionAsString( '1' ), '1.0.0+0' );		
+		assertEquals( semver.parseVersionAsString( '1' ), '1.0.0' );		
 	}
 	
 	public void function testIsPreRelease() {
@@ -118,8 +118,8 @@ component name="TestPrint" extends="mxunit.framework.TestCase" {
 	public void function testSatisfies() {
 		var semver = application.wirebox.getInstance( 'semanticVersion' );
 		
-//		assertTrue( semver.satisfies( '1.0.0', '1.0.0+0' ) );
-		//assertTrue( semver.satisfies( '1.2.3', '1.x || >=2.5.0 || 5.0.0 - 7.2.3' ) );
+		assertTrue( semver.satisfies( '1.0.0', '1.0.0+0' ) );
+		assertTrue( semver.satisfies( '1.2.3', '1.x || >=2.5.0 || 5.0.0 - 7.2.3' ) );
 		
 		assertTrue( semver.satisfies( '1.0.0', '<2.0.0' ) );
 		assertTrue( semver.satisfies( '0.5', '<1.0.0' ) );
@@ -254,6 +254,11 @@ component name="TestPrint" extends="mxunit.framework.TestCase" {
 		assertTrue( semver.satisfies( '0.0.1', '^0.0' ) );
 		assertTrue( semver.satisfies( '1.5.0', '^1.x' ) );
 		assertTrue( semver.satisfies( '0.5.0', '^0.x' ) );
+		
+		// test invalid semvers just to make sure they don't error
+		assertfalse( semver.satisfies( '1.2.3', 'foo' ) );
+		assertfalse( semver.satisfies( '1.2.3', 'foo.bar' ) );
+		assertfalse( semver.satisfies( '1.2.3', 'foo.bar.baz' ) );
 		
 		assertTrue( semver.satisfies('1.2.3', '1.x || >=2.5.0 || 5.0.0 - 7.2.3') );
 		
