@@ -3,7 +3,6 @@
     "version":"1.0.0",
     "slug":"commandbox-apidocs",
     "private":true,
-    "defaultPort":8989,
     "dependencies":{
         "docbox":"https://github.com/Ortus-Solutions/DocBox/archive/v2.0.4.zip"
     },
@@ -12,9 +11,5 @@
     },
     "installPaths":{
         "docbox":"docbox"
-    },
-    "ignore":[
-        "**/.*",
-        "tests"
-    ]
+    }
 }

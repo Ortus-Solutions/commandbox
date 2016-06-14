@@ -30,7 +30,7 @@ component {
 		cfmapping=arguments.name,
 		modelNamespace=arguments.name,
 		dependencies="",
-		directory='modules',
+		directory='modules_app',
 		boolean script=true
 	){						
 		// This will make each directory canonical and absolute		

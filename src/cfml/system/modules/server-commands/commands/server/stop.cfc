@@ -17,30 +17,32 @@ component aliases="stop" {
 	 * @name.hint the short name of the server to stop
 	 * @name.optionsUDF serverNameComplete
 	 * @directory.hint web root for the server
+	 * @serverConfigFile The path to the server's JSON file.
 	 * @forget.hint if passed, this will also remove the directory information from disk
 	 * @all.hint If true, stop ALL running servers
 	 **/
 	function run(
-		string name="",
-		string directory="",
+		string name,
+		string directory,
+		String serverConfigFile,
 		boolean forget=false,
 		boolean all=false ){
+			
 			
 		if( arguments.all ) {
 			var servers = serverService.getServers();
 		} else {
-			// Discover by shortname or webroot and get server info
-			var servers = { id: serverService.getServerInfoByDiscovery(
-				directory 	= arguments.directory,
-				name		= arguments.name
-			) };
+				
+			if( !isNull( arguments.directory ) ) {
+				arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
+			} 
+			if( !isNull( arguments.serverConfigFile ) ) {
+				arguments.serverConfigFile = fileSystemUtil.resolvePath( arguments.serverConfigFile );
+			}
+			
+			// Look up the server that we're starting
+			var servers = { id: serverService.resolveServerDetails( arguments ).serverinfo };
 	
-			// Verify server info
-			if( structIsEmpty( servers.id ) ){
-				error( "The server you requested to stop was not found (webroot=#arguments.directory#, name=#arguments.name#)." );
-				print.line( "You can use the 'server list' command to get all the available servers." );
-				return;
-			}			
 		} // End "all" check
 
 		// Stop the server(s)
@@ -48,6 +50,9 @@ component aliases="stop" {
 			var serverInfo = servers[ id ];
 			
 			if( serverInfo.status == 'stopped' ) {
+				if( structCount( servers ) == 1 ) {
+					print.yellowLine( serverInfo.name & ' already stopped..' ).toConsole();
+				}
 				continue;
 			}
 			
@@ -55,7 +60,8 @@ component aliases="stop" {
 			
 			var results = serverService.stop( serverInfo );
 			if( results.error ){
-				error( results.messages );
+				print.boldWhiteOnRedLine( 'ERROR' );
+				print.boldRedLine( results.messages );
 			} else {
 				print.line( results.messages );
 			}

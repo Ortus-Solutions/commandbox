@@ -38,6 +38,7 @@ component aliases="update" {
 	/**  
 	* Update all or one outdated dependencies 
 	* @slug A comma-delimmited list of slugs to update. Pass nothing to update all packages.
+	* @slug.optionsUDF slugComplete
 	* @verbose Outputs additional information about each package
 	* @force Forces an update without confirmations
 	**/
@@ -89,7 +90,7 @@ component aliases="update" {
 			
 			print.magentaLine( "Starting update of #oldID# ").toConsole();
 			// install it
-			runCommand( "install ID='#parser.escapeArg( newID )#' verbose=#arguments.verbose# --force" );
+			runCommand( "install ID='#parser.escapeArg( newID )#' verbose=#arguments.verbose# --force --!save" );
 		}
 		
 	}
@@ -117,4 +118,17 @@ component aliases="update" {
 		} // end for
 	}
 
+
+	// Auto-complete list of slugs
+	function slugComplete() {
+		var results = [];
+		var directory = getCWD();
+		
+		if( packageService.isPackage( directory ) ) {
+			var BoxJSON = packageService.readPackageDescriptor( directory );
+			results.append( BoxJSON.installPaths.keyArray(), true );
+		}
+			
+		return results;
+	}
 }

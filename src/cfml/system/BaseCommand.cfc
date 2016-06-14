@@ -67,10 +67,11 @@ component accessors="true" singleton {
 	/**
 	 * Ask the user a question and wait for response
 	 * @message.hint message to prompt the user with
+	 * @mask.hint When not empty, keyboard input is masked as that character
  	 **/
-	function ask( required message ) {
+	function ask( required message, string mask='' ) {
 		print.toConsole();
-		return shell.ask( arguments.message );
+		return shell.ask( arguments.message, arguments.mask );
 	}
 		
 	/**
@@ -113,8 +114,7 @@ component accessors="true" singleton {
 
 	/**
 	 * Use if if your command wants to give controlled feedback to the user without raising
-	 * an actual exception which comes with a messy stack trace.  "return" this command to stop execution of your command
-	 * Alternativley, multuple errors can be printed by calling this method more than once prior to returning.
+	 * an actual exception which comes with a messy stack trace.  
 	 * Use clearPrintBuffer to wipe out any output accrued in the print buffer. 
 	 * 
 	 * return error( "We're sorry, but happy hour ended 20 minutes ago." );
@@ -123,6 +123,7 @@ component accessors="true" singleton {
 	 * @clearPrintBuffer.hint Wipe out the print buffer or not, it does not by default
  	 **/
 	function error( required message, detail='', clearPrintBuffer=false ) {
+		setExitCode( 1 );
 		hasErrored = true;
 		if( arguments.clearPrintBuffer ) {
 			// Wipe 
@@ -136,11 +137,20 @@ component accessors="true" singleton {
 	}
 	
 	/**
-	 * Tells you if the error() method has been called on this command.  Useful if you have several validation checks, and then want
-	 * to return at the end if one of them failed.
+	 * Tells you if the error() method has been called on this command.  
  	 **/
 	function hasError() {
 		return hasErrored;
+	}
+	
+	/**
+	 * Sets the OS exit code 
+ 	 **/
+	function setExitCode( required string exitCode ) {
+		if( arguments.exitCode != 0 ) {
+			hasErrored = true;
+		}
+		return shell.setExitCode( arguments.exitCode );
 	}
 	
 	/**
@@ -148,14 +158,20 @@ component accessors="true" singleton {
 	 * Useful for opening a new file for editing that was just created.
  	 **/
 	function openPath( path ) {
-		runCommand( "edit '#parser.escapeArg( arguments.path )#'" ); 		
+		// Defer to "open" command.
+		command( "open" )
+			.params( arguments.path )
+			.run();
 	}
 	
 	/**
 	 * This will open a URL in the user's browser  
  	 **/
 	function openURL( theURL ) {
-		runCommand( "browse '#parser.escapeArg( arguments.theURL)#'" ); 		
+		// Defer to "browse" command.
+		command( "browse" )
+			.params( arguments.theURL )
+			.run(); 		
 	}
 	
 }

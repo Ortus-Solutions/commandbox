@@ -141,14 +141,20 @@ component accessors="true" singleton {
 	}
 
 
-
-
 	/**
 	 * Exists the shell
 	 **/
 	Shell function exit() {
     	variables.keepRunning = false;
 
+		return this;
+	}
+
+	/**
+	 * Set's the OS Exit code to be used
+	 **/
+	Shell function setExitCode( required string exitCode ) {
+		createObject( 'java', 'java.lang.System' ).setProperty( 'cfml.cli.exitCode', arguments.exitCode );
 		return this;
 	}
 
@@ -190,12 +196,23 @@ component accessors="true" singleton {
 	/**
 	 * ask the user a question and wait for response
 	 * @message.hint message to prompt the user with
+	 * @mask.hint When not empty, keyboard input is masked as that character
 	 *
 	 * @return the response from the user
  	 **/
-	string function ask( message ) {
-		// read reponse
-		var input = variables.reader.readLine( arguments.message );
+	string function ask( message, string mask='', string buffer='' ) {
+		
+		// read reponse while masking input
+		var input = variables.reader.readLine(
+			// Prompt for the user
+			arguments.message,
+			// Optionally mask their input
+			len( arguments.mask ) ? javacast( "char", left( arguments.mask, 1 ) ) : javacast( "null", '' )//,
+			// This won't work until we can upgrade to Jline 2.14
+			// Optionally pre-fill a default response for them
+		//	len( arguments.buffer ) ? javacast( "String", arguments.buffer ) : javacast( "null", '' )
+		);
+		
 		// Reset back to default prompt
 		setPrompt();
 
@@ -357,8 +374,6 @@ component accessors="true" singleton {
 	 * @input.hint command line to run if running externally
   	 **/
     Boolean function run( input="", silent=false ) {
-        var mask 	= "*";
-        var trigger = "su";
 
 		// init reload to false, just in case
         variables.reloadshell = false;
@@ -400,11 +415,6 @@ component accessors="true" singleton {
 	        	if( !isDefined( 'line' ) ) {
 	        		return false;
 	        	}
-
-	            // If we input the special word then we will mask the next line.
-	            if( ( !isNull( trigger ) ) && ( line.compareTo( trigger ) == 0 ) ){
-	                line = variables.reader.readLine( "password> ", javacast( "char", mask ) );
-	            }
 
 	            // If there's input, try to run it.
 				if( len( trim( line ) ) ) { 
@@ -510,6 +520,8 @@ component accessors="true" singleton {
 	 * @err.hint Error object to print (only message is required)
   	 **/
 	Shell function printError( required err ){
+		
+		setExitCode( 1 );
 		
 		getInterceptorService().announceInterception( 'onException', { exception=err } );
 		

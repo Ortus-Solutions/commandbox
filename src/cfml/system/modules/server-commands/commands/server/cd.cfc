@@ -22,9 +22,7 @@ component {
 
 		// Verify server info
 		if( structIsEmpty( serverInfo ) ){
-			error( "The server you requested to stop was not found (#arguments.name#)." );
-			print.line( "You can use the 'server list' command to get all the available servers." );
-			return;
+			error( "The server you requested was not found.", "You can use the 'server list' command to get all the available servers." );
 		}
 
 		var cdCommand = 'cd ' & '"#parser.escapeArg( serverInfo.webroot )#"';

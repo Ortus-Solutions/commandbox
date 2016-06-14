@@ -58,7 +58,7 @@ component {
 		} else {
 			var historyIterator = history.iterator();
 			while( historyIterator.hasNext() ) {
-				print.line( listLast( historyIterator.next(), ':' ) );
+				print.line( listRest( historyIterator.next(), ':' ) );
 			}
 			
 		} // end clear?

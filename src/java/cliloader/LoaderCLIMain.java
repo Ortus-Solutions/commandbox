@@ -212,6 +212,13 @@ public class LoaderCLIMain{
 				e.getCause().printStackTrace();
 			}
 		}
+		
+
+		if( debug ) {
+			System.out.println( "cfml.cli.exitCode: " + Integer.parseInt( System.getProperty("cfml.cli.exitCode","0") ) );
+		}
+		exitCode = Integer.parseInt( System.getProperty("cfml.cli.exitCode","0") );
+		
 		cl.close();
 		System.out.flush();
 		System.setOut( originalOut );
@@ -622,8 +629,14 @@ public class LoaderCLIMain{
 					cli_home.getPath() + "/engine" ), debug );
 			Util.copyInternalFile( classLoader, "resource/trayicon.png",
 					new File( libDir, "trayicon.png" ) );
-			Util.copyInternalFile( classLoader, "resource/traymenu.json",
-					new File( libDir, "traymenu.json" ) );
+			Util.copyInternalFile( classLoader, "resource/traymenu-adobe.json",
+					new File( libDir, "traymenu-adobe.json" ) );
+			Util.copyInternalFile( classLoader, "resource/traymenu-railo.json",
+					new File( libDir, "traymenu-railo.json" ) );
+			Util.copyInternalFile( classLoader, "resource/traymenu-lucee.json",
+					new File( libDir, "traymenu-lucee.json" ) );
+			Util.copyInternalFile( classLoader, "resource/traymenu-default.json",
+					new File( libDir, "traymenu-default.json" ) );
 			Util.copyInternalFile( classLoader, VERSION_PROPERTIES_PATH,
 					new File( libDir, "version.properties" ) );
 			System.out.println( "" );

@@ -30,11 +30,11 @@ component accessors=true singleton {
 			// Module lifecycle
 			'preModuleLoad','postModuleLoad','preModuleUnLoad','postModuleUnload',
 			// Server lifecycle
-			'onServerStart','onServerStop',
+			'onServerStart','onServerInstall','onServerStop',
 			// Error handling
 			'onException',
 			// Package lifecycle
-			'preInstall','postInstall','preUninstall','postUninstall'		
+			'preInstall','postInstall','preUninstall','postUninstall','preVersion','postVersion','prePublish','postPublish'		
 		] );
 				
 		return this;

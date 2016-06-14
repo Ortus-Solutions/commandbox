@@ -20,7 +20,8 @@ component accessors="true" singleton {
 	property name='formatterUtil'		inject='formatter';
 	property name='ModuleService'		inject='ModuleService';
 	property name='JSONService'			inject='JSONService';
-	
+	property name='ServerService'		inject='ServerService';
+		
 	/**
 	* Constructor
 	*/
@@ -43,8 +44,10 @@ component accessors="true" singleton {
 			'endpoints',
 			'endpoints.forgebox',
 			'endpoints.forgebox.APIToken',
-			'endpoints.forgebox.APIURL'
-			
+			'endpoints.forgebox.APIURL',
+			// Servers
+			'server',
+			'server.defaults'
 		]);
 		
 		setConfigFilePath( '/commandbox-home/CommandBox.json' );
@@ -57,6 +60,13 @@ component accessors="true" singleton {
 		loadConfig();
 		
 		return this;
+	}
+	
+	function onDIComplete() {
+		var serverProps = serverService.completeProperty( 'fake', true );
+		for( var prop in serverProps ) {
+			variables.possibleConfigSettings.append( 'server.defaults.#prop#' );
+		}
 	}
 	
 	function setConfigSettings( required struct configSettings ) {

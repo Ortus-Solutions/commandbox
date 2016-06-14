@@ -84,22 +84,26 @@ component {
 
 				if( arguments.verbose ) {
 
-					print.indentedLine( "host:            " & thisServerInfo.host )
-						.indentedLine( "HTTPEnable:      " & thisServerInfo.HTTPEnable )
-						.indentedLine( "port:            " & thisServerInfo.port )
-						.indentedLine( "SSLEnable:       " & thisServerInfo.SSLEnable )
-						.indentedLine( "SSLport:         " & thisServerInfo.SSLport )
-						.indentedLine( "rewritesEnable:  " & ( thisServerInfo.rewritesEnable ?: "false" ) )
-						.indentedLine( "stopsocket:      " & thisServerInfo.stopsocket )
-						.indentedLine( "logdir:          " & thisServerInfo.logDir )
-						.indentedLine( "debug:           " & thisServerInfo.debug )
-						.indentedLine( "ID:              " & thisServerInfo.id );
+					print.indentedLine( "host:             " & thisServerInfo.host )
+						.indentedLine( "webroot:          " & thisServerInfo.webroot )
+						.indentedLine( "HTTPEnable:       " & thisServerInfo.HTTPEnable )
+						.indentedLine( "port:             " & thisServerInfo.port )
+						.indentedLine( "SSLEnable:        " & thisServerInfo.SSLEnable )
+						.indentedLine( "SSLport:          " & thisServerInfo.SSLport )
+						.indentedLine( "rewritesEnable:   " & ( thisServerInfo.rewritesEnable ?: "false" ) )
+						.indentedLine( "stopsocket:       " & thisServerInfo.stopsocket )
+						.indentedLine( "logdir:           " & thisServerInfo.logDir )
+						.indentedLine( "debug:            " & thisServerInfo.debug )
+						.indentedLine( "ID:               " & thisServerInfo.id );
 
-					if( len( thisServerInfo.libDirs ) ) { print.indentedLine( "libDirs:         " & thisServerInfo.libDirs ); }
-					if( len( thisServerInfo.webConfigDir ) ) { print.indentedLine( "webConfigDir:    " & thisServerInfo.webConfigDir ); }
-					if( len( thisServerInfo.serverConfigDir ) ) { print.indentedLine( "serverConfigDir: " & thisServerInfo.serverConfigDir ); }
-					if( len( thisServerInfo.webXML ) ) { print.indentedLine( "webXML:          " & thisServerInfo.webXML ); }
-					if( len( thisServerInfo.trayicon ) ) { print.indentedLine( "trayicon:        " & thisServerInfo.trayicon ); }
+					if( len( thisServerInfo.cfengine ) ) { print.indentedLine( "cfengine:         " & thisServerInfo.cfengine ); }
+					if( len( thisServerInfo.WARPath ) ) { print.indentedLine( "WARPath:          " & thisServerInfo.WARPath ); }
+					if( len( thisServerInfo.libDirs ) ) { print.indentedLine( "libDirs:          " & thisServerInfo.libDirs ); }
+					if( len( thisServerInfo.webConfigDir ) ) { print.indentedLine( "webConfigDir:     " & thisServerInfo.webConfigDir ); }
+					if( len( thisServerInfo.serverConfigDir ) ) { print.indentedLine( "serverConfigDir:  " & thisServerInfo.serverConfigDir ); }
+					if( len( thisServerInfo.webXML ) ) { print.indentedLine( "webXML:           " & thisServerInfo.webXML ); }
+					if( len( thisServerInfo.trayicon ) ) { print.indentedLine( "trayicon:         " & thisServerInfo.trayicon ); }
+					if( len( thisServerInfo.serverConfigFile ) ) { print.indentedLine( "serverConfigFile: " & thisServerInfo.serverConfigFile ); }
 
 				} else {
 					// Brief version

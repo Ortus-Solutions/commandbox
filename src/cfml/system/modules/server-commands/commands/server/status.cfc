@@ -38,16 +38,18 @@ component aliases='status' {
 	/**
 	 * Show server status
 	 *
-	 * @name.hint 		Short name for the server
-	 * @name.optionsUDF ServerNameComplete
-	 * @directory.hint 	Web root for the server
+	 * @name.hint the short name of the server
+	 * @name.optionsUDF serverNameComplete
+	 * @directory.hint web root for the server
+	 * @serverConfigFile The path to the server's JSON file.
 	 * @showAll.hint 	show all server statuses
 	 * @verbose.hint 	Show extra details
 	 * @json 			Output the server data as json
 	 **/
 	function run(
-		name='', 
-		directory='',
+		string name,
+		string directory,
+		String serverConfigFile,
 		boolean showAll=false,
 		boolean verbose=false,
 		boolean JSON=false
@@ -62,13 +64,15 @@ component aliases='status' {
 			);
 			return;
 		}
-
-		// scissors beats paper
-		if( len( trim( arguments.name ) ) ) {
-			arguments.directory = '';			
-		} else {
-			arguments.directory = fileSystemUtil.resolvePath( arguments.directory );			
-		}
+		
+		if( !isNull( arguments.directory ) ) {
+			arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
+		} 
+		if( !isNull( arguments.serverConfigFile ) ) {
+			arguments.serverConfigFile = fileSystemUtil.resolvePath( arguments.serverConfigFile );
+		}		
+		var serverDetails = serverService.resolveServerDetails( arguments );
+		var serverInfo = serverDetails.serverInfo;
 
 		// Map the server statuses to a color
 		var statusColors = {
@@ -80,13 +84,10 @@ component aliases='status' {
 		for( var thisKey in servers ){
 			var thisServerInfo = servers[ thisKey ];
 
-			// If this is a directory or a name match OR are we just showing everything
-			if( thisServerInfo.webroot == arguments.directory
-				|| thisServerInfo.name == arguments.name
-				|| arguments.showAll 
-			){
+			// If this is a server  match OR are we just showing everything
+			if( thisServerInfo.id == serverInfo.id || arguments.showAll ){
 				
-				// Null Checks, to guarnatee correct struct.
+				// Null Checks, to guarantee correct struct.
 				structAppend( thisServerInfo, serverService.newServerInfoStruct(), false );
 				
 				// Are we doing JSON?

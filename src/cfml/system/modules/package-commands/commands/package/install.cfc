@@ -110,7 +110,7 @@ component aliases="install" {
 		string directory,
 		boolean save=true,
 		boolean saveDev=false,
-		boolean production=false,
+		boolean production,
 		boolean verbose=false,
 		boolean force=false
 	){
@@ -152,21 +152,26 @@ component aliases="install" {
 	}
 
 	// Auto-complete list of IDs
-	function IDComplete() {
-		var result = [];
-		// Cache in command
-		if( !structKeyExists( variables, 'entries' ) ) {
-			variables.entries = forgebox.getEntries();
+	function IDComplete( string paramSoFar ) {
+		// Only hit forgebox if they've typed something.
+		if( !len( trim( arguments.paramSoFar ) ) ) {
+			return [];
 		}
-
-		// Loop over results and append all active ForgeBox entries
-		for( var entry in variables.entries ) {
-			if( val( entry.isactive ) ) {
-				result.append( entry.slug );
-			}
+		try {
+			// Get auto-complete options
+			return forgebox.slugSearch( arguments.paramSoFar );				
+		} catch( forgebox var e ) {
+			// Gracefully handle ForgeBox issues
+			print
+				.line()
+				.yellowLine( e.message & chr( 10 ) & e.detail )
+				.toConsole();
+			// After outputting the message above on a new line, but the user back where they started.
+			getShell().getReader().redrawLine();
 		}
-
-		return result;
+		// In case of error, break glass.
+		return [];
 	}
 
 }
+	

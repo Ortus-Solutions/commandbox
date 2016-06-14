@@ -1,25 +1,26 @@
 /**
 *  Create a blank ColdBox app from one of our app skeletons.  By default it will create
-*  in your current directory.  Use the "pwd" command to find out what directory you're currently in.
+*  in your current directory.
 * .
-*  You can choose what app skeleton to use as well as override the directory it's created in.
-*  The built-in app skeletons are located in the .CommandBox/cfml/skeletons/ directory and include:
-*  .
-*  By default, ColdBox 4.x compatible templates will be used
+* {code:bash}
+* coldbox create app myApp
+* {code}
+* .
+*  Here are the basic skeltons that are available for you.
 *  - Advanced
 *  - AdvancedScript (default)
 *  - rest
 *  - Simple
 *  - SuperSimple
-*  .
-*  These templates are compatible with the previous version of ColdBox (3.x)
-*  - Advancedv3
-*  - AdvancedScriptv3
-*  - Simplev3
-*  - SuperSimplev3
 * .
 * {code:bash}
-* coldbox create app myApp
+* coldbox create app skeleton=rest
+* {code}
+* .
+* The skeleton parameter can also be any valid Endpoint ID, which includes a Git repo or HTTP URL pointing to a package.
+* .
+* {code:bash}
+* coldbox create app skeleton=http://site.com/myCustomAppTemplate.zip
 * {code}
 * .
 * Use the "installColdBox" parameter to install the latest stable version of ColdBox from ForgeBox
@@ -34,21 +35,24 @@
 * 
 **/
 component {
-	
-	/**
-	* The location of our skeletons
-	*/
-	property name="skeletonLocation";
 
 	// DI
 	property name="packageService" 	inject="PackageService";
-	property name='parser' 			inject='Parser';
 	
 	/**
 	* Constructor
 	*/
 	function init(){
-		variables.skeletonLocation = expandPath( '/coldbox-commands/skeletons/' );
+		
+		// Map these shortcut names to the actual ForgeBox slugs
+		variables.templateMap = {
+			Advanced = 'cbtemplate-advanced',
+			AdvancedScript = 'cbtemplate-advanced-script',
+			rest = 'cbtemplate-rest',
+			Simple = 'cbtemplate-simple',
+			SuperSimple = 'cbtemplate-supersimple'			
+		};
+		
 		return this;
 	}
 	
@@ -84,29 +88,27 @@ component {
 
 		// This will make the directory canonical and absolute
 		arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
-				
-		// get the right skeleton
-		var skeletonZip = skeletonLocation & arguments.skeleton & '.zip';
 		
 		// Validate directory, if it doesn't exist, create it.
 		if( !directoryExists( arguments.directory ) ) {
 			directoryCreate( arguments.directory );
 		}
-		
-		// Validate skeleton
-		if( !fileExists( skeletonZip ) ) {
-			var options = directoryList( path=skeletonLocation, listInfo='name', sort="name" );
-			return error( "The app skeleton [#skeletonZip#] doesn't exist.  Valid options are #replaceNoCase( arrayToList( options, ', ' ), '.zip', '', 'all' )#" );			
+
+		// If the skeleton is one of our "shortcut" names
+		if( variables.templateMap.keyExists( arguments.skeleton ) ) {
+			// Replace it with the actual ForgeBox slug name.
+			arguments.skeleton = variables.templateMap[ arguments.skeleton ];
 		}
-		
-		// Unzip the skeleton!
-		zip
-			action="unzip"
-			destination="#arguments.directory#"
-			file="#skeletonZip#";
-	
-		print.line()
-			.greenLine( '#skeleton# Application successfully created in [#arguments.directory#]' );
+
+		// Install the skeleton
+		packageService.installPackage(
+			ID = arguments.skeleton,
+			directory = arguments.directory,
+			save = false,
+			saveDev = false,
+			production = true,
+			currentWorkingDirectory = arguments.directory
+		);
 		
 		// Check for the @appname@ in .project files
 		if( fileExists( "#arguments.directory#/.project" ) ){
@@ -120,11 +122,12 @@ component {
 			var originalPath = getCWD(); 
 			// init must be run from CWD
 			shell.cd( arguments.directory );
-			runCommand( 'init 
-				name="#parser.escapeArg( arguments.name )#" 
-				slug="#parser.escapeArg( replace( arguments.name, ' ', '', 'all' ) )#"
-				wizard=#arguments.initWizard#'
-			); 
+			command( 'init' )
+				.params(
+					name=arguments.name, 
+					slug=replace( arguments.name, ' ', '', 'all' ),
+					wizard=arguments.initWizard )
+				.run(); 
 			shell.cd( originalPath );
 		}
 		
@@ -166,10 +169,7 @@ component {
 	* Returns an array of coldbox skeletons available
 	*/
 	function skeletonComplete( ) {
-		var skeletons = directoryList( path=expandPath("../skeletons"), listInfo="name", filter="*.zip" );
-		return skeletons.map( function( required string skeleton ) {
-			return skeleton.reReplaceNoCase( "\.zip$", "", "once" );
-		} );
+		return variables.templateMap.keyList().listToArray();
 	}
 
 }

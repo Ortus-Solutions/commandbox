@@ -15,6 +15,7 @@ build/launch4j
 tests/testbox
 /mxunit
 /apidocs/CommandBox-CommandDocs/
+/apidocs/CommandBox-APIDocs/
 build-local.properties
 build/resources
 src/cfml/.version

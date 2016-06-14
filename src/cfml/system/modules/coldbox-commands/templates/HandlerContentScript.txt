@@ -27,6 +27,8 @@ component{
 	}
 	function onError( event, rc, prc, faultAction, exception, eventArguments ){
 	}
+	function onInvalidHTTPMethod( event, rc, prc, faultAction, eventArguments ){
+	}
 	*/
 		
 |EventActions|

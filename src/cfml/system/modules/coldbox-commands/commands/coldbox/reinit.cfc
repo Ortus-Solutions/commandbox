@@ -18,8 +18,8 @@ component aliases="fwreinit" {
 	/**
 	* @password.hint The FWReinit password
 	**/
-	function run( password="1" ){
-		var serverInfo = serverService.getServerInfoByWebroot( getCWD() );
+	function run( password="1", name="" ){
+		var serverInfo = serverService.getServerInfoByDiscovery( getCWD(), arguments.name );
 
 		if( structCount( serverInfo ) eq 0 ){
 			print.boldRedLine( "No server configurations found for '#getCWD()#', so have no clue what to reinit buddy!" );
