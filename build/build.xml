@@ -486,6 +486,11 @@ External Dependencies:
         <taskdef name="launch4j" 
         		 classname="net.sf.launch4j.ant.Launch4jTask" 
         		 classpath="./launch4j/launch4j.jar:./launch4j/lib/xstream.jar" />
+        
+        <propertyregex property="commandbox.version.noPrereleaseID"
+               input="${commandbox.version}"
+               select="[0-9]*\.[0-9]*\.[0-9]*" />
+                		 
         <launch4j>
 			<config headerType="console" 
 					outfile="${dist.dir}/box.exe" 
@@ -496,7 +501,7 @@ External Dependencies:
 					icon="${src.dir}/resources/box.ico"
 					stayAlive="true">
 					<jre path="./jre/" minVersion="1.7.0" />
-					<versionInfo fileVersion="${commandbox.version}.0"
+					<versionInfo fileVersion="${commandbox.version.noPrereleaseID}.${build.number}"
 								 txtFileVersion="${commandbox.version}.${build.number}"
 								 fileDescription="${commandbox.description}"
 								 copyright="Copyright since 2013 Ortus Solutions, Corp"
