@@ -502,11 +502,11 @@ External Dependencies:
 					icon="${src.dir}/resources/box.ico"
 					stayAlive="true">
 					<jre path="./jre/" minVersion="1.7.0" />
-					<versionInfo fileVersion="${commandbox.version.noPrereleaseID}.${build.number}"
+					<versionInfo fileVersion="${commandbox.version.noPrereleaseID}.0"
 								 txtFileVersion="${commandbox.version}.${build.number}"
 								 fileDescription="${commandbox.description}"
 								 copyright="Copyright since 2013 Ortus Solutions, Corp"
-								 productVersion="${commandbox.version.noPrereleaseID}.${build.number}"
+								 productVersion="${commandbox.version.noPrereleaseID}.0"
 								 txtProductVersion="${commandbox.version}.${build.number}"
 								 productName="CommandBox"
 								 companyName="Ortus Solutions, Corp"
