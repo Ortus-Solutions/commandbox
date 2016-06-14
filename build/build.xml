@@ -18,6 +18,11 @@ External Dependencies:
  	<property name="commandbox.version"			value="3.2.0-snapshot"/>
  	<property name="commandbox.stableVersion"	value="3.1.0"/>
 
+    <propertyregex property="commandbox.version.noPrereleaseID"
+           input="${commandbox.version}"
+           regexp="([0-9]*\.[0-9]*\.[0-9]*).*"
+           select="\1" />
+                		 
     <!-- Time Label -->
 	<tstamp prefix="start"/>
 	<!-- Load build lib tasks -->
@@ -487,11 +492,6 @@ External Dependencies:
         		 classname="net.sf.launch4j.ant.Launch4jTask" 
         		 classpath="./launch4j/launch4j.jar:./launch4j/lib/xstream.jar" />
         
-        <propertyregex property="commandbox.version.noPrereleaseID"
-               input="${commandbox.version}"
-               regexp="([0-9]*\.[0-9]*\.[0-9]*).*"
-               select="\1" />
-                		 
         <launch4j>
 			<config headerType="console" 
 					outfile="${dist.dir}/box.exe" 
@@ -652,7 +652,7 @@ External Dependencies:
     <echo message="RPM repository location: ${commandbox.rpm.repourl}"/>
     <rpm-create rpm.repo="${rpm.repo}" rpm.release="1"
       rpm.reponame="ortus" rpm.baseurl="${commandbox.rpm.repourl}"
-      rpm.group="com.ortussolutions" rpm.name="${distro.name}" rpm.version="${commandbox.version}"
+      rpm.group="com.ortussolutions" rpm.name="${distro.name}" rpm.version="${commandbox.version.noPrereleaseID}"
       rpm.packager="${commandbox.packager.name} ${commandbox.packager.email}"
       rpm.url="${commandbox.supportURL}" failonerror="false"
       rpm.keyring="${ortus.sign.keyring}" rpm.key="${ortus.sign.key.id}" 
@@ -679,7 +679,7 @@ External Dependencies:
 	    <echo message="RPM repository location: ${commandbox.rpm.repourl.stable}" />
 	    <rpm-create rpm.repo="${rpm.repo.stable}" rpm.release="1"
 	      rpm.reponame="ortus" rpm.baseurl="${commandbox.rpm.repourl.stable}"
-	      rpm.group="com.ortussolutions" rpm.name="${distro.name}" rpm.version="${commandbox.version}"
+	      rpm.group="com.ortussolutions" rpm.name="${distro.name}" rpm.version="${commandbox.version.noPrereleaseID}"
 	      rpm.packager="${commandbox.packager.name} ${commandbox.packager.email}"
 	      rpm.url="${commandbox.supportURL}" failonerror="false"
 	      rpm.keyring="${ortus.sign.keyring}" rpm.key="${ortus.sign.key.id}" 
