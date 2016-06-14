@@ -506,7 +506,7 @@ External Dependencies:
 								 txtFileVersion="${commandbox.version}.${build.number}"
 								 fileDescription="${commandbox.description}"
 								 copyright="Copyright since 2013 Ortus Solutions, Corp"
-								 productVersion="${commandbox.version}.0"
+								 productVersion="${commandbox.version.noPrereleaseID}.${build.number}"
 								 txtProductVersion="${commandbox.version}.${build.number}"
 								 productName="CommandBox"
 								 companyName="Ortus Solutions, Corp"
