@@ -17,12 +17,7 @@ External Dependencies:
  	<property name="distro.name"				value="commandbox"/>
  	<property name="commandbox.version"			value="3.2.0-snapshot"/>
  	<property name="commandbox.stableVersion"	value="3.1.0"/>
-
-    <propertyregex property="commandbox.version.noPrereleaseID"
-           input="${commandbox.version}"
-           regexp="([0-9]*\.[0-9]*\.[0-9]*).*"
-           select="\1" />
-                		 
+ 	                		 
     <!-- Time Label -->
 	<tstamp prefix="start"/>
 	<!-- Load build lib tasks -->
@@ -74,6 +69,11 @@ External Dependencies:
 	    </else>
 	</if>
 	
+    <propertyregex property="commandbox.version.noPrereleaseID"
+           input="${commandbox.version}"
+           regexp="([0-9]*\.[0-9]*\.[0-9]*).*"
+           select="\1" />
+           
 	<!-- Init Build -->
 	<target name="init" description="Init build" unless="src.isInit">
 		<!-- cleanup -->
