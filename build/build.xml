@@ -15,9 +15,9 @@ External Dependencies:
     <!-- Version: UPDATE ON EACH RELEASE AS NEEDED -->
  	<property name="distro.groupID"				value="ortussolutions" />
  	<property name="distro.name"				value="commandbox"/>
- 	<property name="commandbox.version"			value="3.1.0"/>
- 	<property name="commandbox.stableVersion"	value="3.1.0"/>
-
+ 	<property name="commandbox.version"			value="3.1.1"/>
+ 	<property name="commandbox.stableVersion"	value="3.1.1"/>
+ 	                		 
     <!-- Time Label -->
 	<tstamp prefix="start"/>
 	<!-- Load build lib tasks -->
@@ -69,6 +69,11 @@ External Dependencies:
 	    </else>
 	</if>
 	
+    <propertyregex property="commandbox.version.noPrereleaseID"
+           input="${commandbox.version}"
+           regexp="([0-9]*\.[0-9]*\.[0-9]*).*"
+           select="\1" />
+           
 	<!-- Init Build -->
 	<target name="init" description="Init build" unless="src.isInit">
 		<!-- cleanup -->
@@ -486,6 +491,7 @@ External Dependencies:
         <taskdef name="launch4j" 
         		 classname="net.sf.launch4j.ant.Launch4jTask" 
         		 classpath="./launch4j/launch4j.jar:./launch4j/lib/xstream.jar" />
+        
         <launch4j>
 			<config headerType="console" 
 					outfile="${dist.dir}/box.exe" 
@@ -496,11 +502,11 @@ External Dependencies:
 					icon="${src.dir}/resources/box.ico"
 					stayAlive="true">
 					<jre path="./jre/" minVersion="1.7.0" />
-					<versionInfo fileVersion="${commandbox.version}.0"
+					<versionInfo fileVersion="${commandbox.version.noPrereleaseID}.0"
 								 txtFileVersion="${commandbox.version}.${build.number}"
 								 fileDescription="${commandbox.description}"
 								 copyright="Copyright since 2013 Ortus Solutions, Corp"
-								 productVersion="${commandbox.version}.0"
+								 productVersion="${commandbox.version.noPrereleaseID}.0"
 								 txtProductVersion="${commandbox.version}.${build.number}"
 								 productName="CommandBox"
 								 companyName="Ortus Solutions, Corp"
@@ -646,7 +652,7 @@ External Dependencies:
     <echo message="RPM repository location: ${commandbox.rpm.repourl}"/>
     <rpm-create rpm.repo="${rpm.repo}" rpm.release="1"
       rpm.reponame="ortus" rpm.baseurl="${commandbox.rpm.repourl}"
-      rpm.group="com.ortussolutions" rpm.name="${distro.name}" rpm.version="${commandbox.version}"
+      rpm.group="com.ortussolutions" rpm.name="${distro.name}" rpm.version="${commandbox.version.noPrereleaseID}"
       rpm.packager="${commandbox.packager.name} ${commandbox.packager.email}"
       rpm.url="${commandbox.supportURL}" failonerror="false"
       rpm.keyring="${ortus.sign.keyring}" rpm.key="${ortus.sign.key.id}" 
@@ -654,9 +660,9 @@ External Dependencies:
       <tarfileset file="${dist.dir}/box" prefix="/usr/bin" filemode="744" username="root" group="root"/>
     </rpm-create>
     <!-- Copy rpm to repo -->
-    <copy file="${rpm.repo}/${distro.name}-${commandbox.version}-1.noarch.rpm" tofile="${dist.dir}/${distro.name}-rpm-${commandbox.version}.rpm" />
+    <copy file="${rpm.repo}/${distro.name}-${commandbox.version.noPrereleaseID}-1.noarch.rpm" tofile="${dist.dir}/${distro.name}-rpm-${commandbox.version.noPrereleaseID}.rpm" />
     <!-- Build Checksum -->
-    <checksum file="${dist.dir}/${distro.name}-rpm-${commandbox.version}.rpm" forceoverwrite="true" fileext=".md5" />
+    <checksum file="${dist.dir}/${distro.name}-rpm-${commandbox.version.noPrereleaseID}.rpm" forceoverwrite="true" fileext=".md5" />
         
 	<antcall target="build.cli.rpm.stablerepo" />
 	
@@ -673,7 +679,7 @@ External Dependencies:
 	    <echo message="RPM repository location: ${commandbox.rpm.repourl.stable}" />
 	    <rpm-create rpm.repo="${rpm.repo.stable}" rpm.release="1"
 	      rpm.reponame="ortus" rpm.baseurl="${commandbox.rpm.repourl.stable}"
-	      rpm.group="com.ortussolutions" rpm.name="${distro.name}" rpm.version="${commandbox.version}"
+	      rpm.group="com.ortussolutions" rpm.name="${distro.name}" rpm.version="${commandbox.version.noPrereleaseID}"
 	      rpm.packager="${commandbox.packager.name} ${commandbox.packager.email}"
 	      rpm.url="${commandbox.supportURL}" failonerror="false"
 	      rpm.keyring="${ortus.sign.keyring}" rpm.key="${ortus.sign.key.id}" 

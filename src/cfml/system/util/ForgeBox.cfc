@@ -47,7 +47,7 @@ or just add DEBUG to the root logger
 		<cfscript>
 			
 			// Setup Properties
-			variables.APIURL = "https://forgebox.io/api/v1/";
+			variables.APIURL = "https://www.forgebox.io/api/v1/";
 			variables.installURL = "http://www.coldbox.org/forgebox/install/";
 			variables.types = "";
 
