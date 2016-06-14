@@ -489,7 +489,8 @@ External Dependencies:
         
         <propertyregex property="commandbox.version.noPrereleaseID"
                input="${commandbox.version}"
-               select="[0-9]*\.[0-9]*\.[0-9]*" />
+               regexp="([0-9]*\.[0-9]*\.[0-9]*)"
+               select="\1" />
                 		 
         <launch4j>
 			<config headerType="console" 
