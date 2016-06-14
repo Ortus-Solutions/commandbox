@@ -660,9 +660,9 @@ External Dependencies:
       <tarfileset file="${dist.dir}/box" prefix="/usr/bin" filemode="744" username="root" group="root"/>
     </rpm-create>
     <!-- Copy rpm to repo -->
-    <copy file="${rpm.repo}/${distro.name}-${commandbox.version}-1.noarch.rpm" tofile="${dist.dir}/${distro.name}-rpm-${commandbox.version}.rpm" />
+    <copy file="${rpm.repo}/${distro.name}-${commandbox.version.noPrereleaseID}-1.noarch.rpm" tofile="${dist.dir}/${distro.name}-rpm-${commandbox.version.noPrereleaseID}.rpm" />
     <!-- Build Checksum -->
-    <checksum file="${dist.dir}/${distro.name}-rpm-${commandbox.version}.rpm" forceoverwrite="true" fileext=".md5" />
+    <checksum file="${dist.dir}/${distro.name}-rpm-${commandbox.version.noPrereleaseID}.rpm" forceoverwrite="true" fileext=".md5" />
         
 	<antcall target="build.cli.rpm.stablerepo" />
 	
