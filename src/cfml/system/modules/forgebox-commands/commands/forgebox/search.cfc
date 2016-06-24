@@ -34,10 +34,11 @@ component {
 					entry.versions.sort( function( a, b ) { return semanticVersion.compare( b.version, a.version ) } );
 					print.blackOnWhite( ' #entry.title# ' ) 
 						.boldText( '   ( #entry.user.fname# #entry.user.lname# )' )
-						.boldGreenLine( '   #repeatString( '*', val( entry.avgRating ) )#' )
+						.boldGreenLine( '   Rating: #repeatString( '*', val( entry.avgRating ) )#' )
 					.line( 'Versions: #entry.versions.map( function( i ){ return ' ' & i.version; } ).toList()#' )
 					.line( 'Type: #entry.typeName#' )
 					.line( 'Slug: "#entry.slug#"' )
+					.line( 'ForgeBox URL: #forgebox.getEndpointURL()#/view/#entry.slug#' )
 					.yellowline( '#left( entry.summary, 200 )#' )
 					.line()
 					.line();
