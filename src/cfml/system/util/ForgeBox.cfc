@@ -28,6 +28,7 @@ or just add DEBUG to the root logger
 	<cfproperty name="configService" 			inject="configService">
 
 	<!--- Properties --->
+	<cfproperty name="endpointURL">
 	<cfproperty name="apiURL">
 	<cfproperty name="installURL">
 
@@ -35,10 +36,10 @@ or just add DEBUG to the root logger
 	
 	<cfscript>
 		this.ORDER = { 
-			POPULAR = "popular",
-			NEW = "new",
-			RECENT = "recent",
-			INSTALLS = "installs"
+			POPULAR 	= "popular",
+			NEW 		= "new",
+			RECENT 		= "recent",
+			INSTALLS 	= "installs"
 		};
 	</cfscript>
 
@@ -47,9 +48,10 @@ or just add DEBUG to the root logger
 		<cfscript>
 			
 			// Setup Properties
-			variables.APIURL = "https://www.forgebox.io/api/v1/";
-			variables.installURL = "http://www.coldbox.org/forgebox/install/";
-			variables.types = "";
+			variables.endpointURL 	= "https://www.forgebox.io";
+			variables.APIURL 		= "#variables.endpointURL#/api/v1/";
+			variables.installURL 	= "http://www.coldbox.org/forgebox/install/";
+			variables.types 		= "";
 
 			return this;
 		</cfscript>

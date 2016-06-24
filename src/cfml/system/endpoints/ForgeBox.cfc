@@ -217,8 +217,11 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 		}
 		
 		try {			
+			consoleLogger.warn( "Sending package information to ForgeBox, please wait..." );
+
 			forgebox.publish( argumentCollection=props );
-					
+			
+			consoleLogger.info( "Package is alive, you can visit it here: #forgebox.getEndpointURL()#/view/#boxJSON.slug#" );
 		} catch( forgebox var e ) {
 			// This can include "expected" errors such as "User not authenticated"
 			throw( e.message, 'endpointException', e.detail );
