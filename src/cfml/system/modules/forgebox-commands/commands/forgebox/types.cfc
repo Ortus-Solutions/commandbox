@@ -21,12 +21,11 @@ component {
 		print.line()
 			.line( "Here is a listing of the available types in ForgeBox" )
 			.line()
-			.blackOnWhiteLine( 'Name (slug)' );
+			.blackOnWhiteLine( 'Name(Number of Packages) (slug)' );
 
 		for( var type in forgeBox.getCachedTypes() ) {
-			print.boldText( type.typeName )
+			print.boldText( type.typeName & "(#type.numberOfActiveEntries#)" )
 				.line( '  (#type.typeSlug#)' );
-				
 		}
 		
 	}
