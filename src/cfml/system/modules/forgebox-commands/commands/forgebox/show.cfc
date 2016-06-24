@@ -34,11 +34,11 @@
 component aliases="show" {
 	
 	// DI
-	property name="forgeBox" inject="ForgeBox";
+	property name="forgeBox" 			inject="ForgeBox";
 	property name="semanticVersion"		inject="semanticVersion";
 	
 	function onDIComplete() {
-		variables.forgeboxOrders =  forgebox.ORDER;
+		variables.forgeboxOrders = forgebox.ORDER;
 	}
 	
 	/**
@@ -130,7 +130,7 @@ component aliases="show" {
 				print.line();
 				print.blackOnWhite( ' #entryData.title# ' )
 					.boldText( '   ( #entryData.user.fname# #entryData.user.lname#, #entryData.user.email# )' )
-					.boldGreenLine( '   #repeatString( '*', val( entryData.avgRating ) )#' );
+					.boldGreenLine( '   Rating: #repeatString( '*', val( entryData.avgRating ) )#' );
 				print.line()
 					.yellowLine( #formatterUtil.HTML2ANSI( entryData.description )# )
 					.line()
@@ -140,11 +140,15 @@ component aliases="show" {
 					.line( 'Versions: #entryData.versions.map( function( i ){ return ' ' & i.version; } ).toList()#' )
 					.line( 'Created On: #dateFormat( entryData.createdDate )#' )
 					.line( 'Updated On: #dateFormat( entryData.updatedDate )#' )
-					.line( 'ForgeBox Views: #entryData.hits#' )
-					.line( 'Downloads: #entryData.downloads#' )
-					.line( 'Installs: #entryData.installs#' )
+					.line( 'ForgeBox Views: #numberFormat( entryData.hits )#' )
+					.line( 'Downloads: #numberFormat( entryData.downloads )#' )
+					.line( 'Installs: #numberFormat( entryData.installs )#' )
 					.line( 'Home URL: #entryData.homeURL#' )
 					.line( 'Source URL: #entryData.sourceURL#' )
+					.line( 'Bugs URL: #entryData.bugsURL#' )
+					.line( 'Documentation URL: #entryData.documentationURL#' )
+					.line()
+					.cyanLine( 'Visit in ForgeBox at: #forgebox.getEndpointURL()#/view/#entryData.slug#' )
 					.line();
 				
 			// List of entries
