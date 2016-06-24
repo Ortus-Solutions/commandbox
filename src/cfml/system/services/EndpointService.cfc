@@ -61,6 +61,8 @@ component accessors="true" singleton {
 	/**
 	* Inspects ID and returns name of endpoint.  If none is specified, tests for local file
 	* or folder.  Defaults to forgebox.
+	* @ID The id of the endpoint
+	* @currentWorkingDirectory Where we are working from
 	*/	
 	struct function resolveEndpointData( required string ID, required string currentWorkingDirectory ) {
 	
@@ -116,10 +118,9 @@ component accessors="true" singleton {
 		} // End detecting endpoint
 	}
 	
-	
-	
 	/**
 	* Returns the endpoint object.
+	* @endpointName The name of the endpoint to retrieve
 	*/	
 	IEndpoint function getEndpoint( required string endpointName ) {
 		var endpointRegistry = getEndpointRegistry();
@@ -133,6 +134,8 @@ component accessors="true" singleton {
 	
 	/**
 	* Inspects ID and returns endpoint object, endpointName, and ID (with endpoint stripped).
+	* @ID The id of the endpoint
+	* @currentWorkingDirectory Where we are working from
 	*/
 	struct function resolveEndpoint( required string ID, required string currentWorkingDirectory ) {
 		var endpointData = resolveEndpointData(  arguments.ID, arguments.currentWorkingDirectory  );
@@ -143,6 +146,12 @@ component accessors="true" singleton {
 	/**
 	* A facade to create a user with an interactive endpoint.  Keeping this logic here so I can standardize the storage
 	* of the APIToken and make it reusable outside of the command.
+	* @endpointName The name of the endpoint
+	* @username ForgeBox username
+	* @password The password
+	* @email ForgeBox email
+	* @firstName First name
+	* @lastName Last Name
 	*/
 	function createEndpointUser(
 		required string endpointName,
@@ -177,6 +186,9 @@ component accessors="true" singleton {
 	/**
 	* A facade to login a user with an interactive endpoint.  Keeping this logic here so I can standardize the storage
 	* of the APIToken and make it reusable outside of the command.
+	* @endpointName The name of the endpoint
+	* @username The username
+	* @password The password to use
 	*/
 	function loginEndpointUser(
 		required string endpointName,
@@ -208,6 +220,8 @@ component accessors="true" singleton {
 	/**
 	* A facade to publish a user with an interactive endpoint.  Keeping this logic here so I can standardize the storage
 	* of the APIToken and make it reusable outside of the command.
+	* @endpointName The name of the endpoint to publish to
+	* @directory The directory to publish
 	*/
 	function publishEndpointPackage(
 		required string endpointName,
@@ -225,12 +239,12 @@ component accessors="true" singleton {
 		
 		// Confirm is interactive endpoint
 		if( !isInstanceOf( endpoint, 'IEndpointInteractive' ) ) {
-			throw( "Sorry, the endpoint [#arguments.endpointName#] does not support publishing packages users.", 'endpointException' );		}
-		
+			throw( "Sorry, the endpoint [#arguments.endpointName#] does not support publishing packages users.", 'endpointException' );		
+		}
+		// Set the path to publish
 		arguments.path = arguments.directory;
 		// Publish the package
 		endpoint.publish( argumentCollection=arguments );
-				
 	}
 	
 }

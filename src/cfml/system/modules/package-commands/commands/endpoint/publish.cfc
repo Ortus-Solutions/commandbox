@@ -7,20 +7,23 @@
  **/
 component {
 	
-	property name="EndpointService" inject="EndpointService";
+	property name="endpointService" 	inject="EndpointService";
+	property name="packageService" 		inject="PackageService";
 	property name='interceptorService'	inject='interceptorService';	
 	
 	/**  
-	* @endpointName.hint Name of the endpoint for which to publish the package
-	* @username.hint Username for this user
+	* @endpointName Name of the endpoint for which to publish the package
+	* @directory The directory being published
 	**/
 	function run( 
 		required string endpointName,
-		string directory='' ) {			
+		string directory='' 
+	){			
 		// This will make each directory canonical and absolute
 		arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
-		
-		interceptorService.announceInterception( 'prePublish', { publishArgs=arguments } );
+		var boxJSON = packageService.readPackageDescriptor( arguments.directory );
+
+		interceptorService.announceInterception( 'prePublish', { publishArgs=arguments, boxJSON=boxJSON } );
 		
 		try {
 			
@@ -31,9 +34,9 @@ component {
 			error( e.message, e.detail );
 		}
 		
-		interceptorService.announceInterception( 'postPublish', { publishArgs=arguments } );
+		interceptorService.announceInterception( 'postPublish', { publishArgs=arguments, boxJSON=boxJSON } );
 		
-		print.greenLine( 'Package published successfully in [#arguments.endpointName#]' );		
+		print.greenLine( 'Package published successfully in [#arguments.endpointName#]' );
 	}
 
 }

@@ -5,7 +5,7 @@
 ********************************************************************************
 * @author Brad Wood, Luis Majano, Denny Valliant
 *
-* I am the ForgeBox endpoint.  I wrap CFML's coolest package repository
+* I am the ForgeBox endpoint.  I wrap CFML's coolest package repository EVER!
 */
 component accessors="true" implements="IEndpointInteractive" singleton {
 		
@@ -25,13 +25,21 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 	// Properties
 	property name="namePrefixes" type="string";
 	
+	/**
+	 * Constructor
+	 */
 	function init() {
 		setNamePrefixes( 'forgebox' );
 		return this;
 	}
-		
+	
+	/**
+	 * Resolve a package
+	 * @package The package to resolve
+	 * @verbose Verbose flag or silent, defaults to false
+	 */
 	public string function resolvePackage( required string package, boolean verbose=false ) {
-		var slug = parseSlug( arguments.package );
+		var slug 	= parseSlug( arguments.package );
 		var version = parseVersion( arguments.package );
 				
 		// If we have a specific version and it exists in artifacts, use it.  Otherwise, to ForgeBox!!
@@ -46,17 +54,29 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 		}
 	}
 	
+	/**
+	 * Get default name for a package
+	 * @package The package to resolve
+	 */
 	public function getDefaultName( required string package ) {
 		// if "foobar@2.0" just return "foobar"
 		return listFirst( arguments.package, '@' );
 	}
 
+	/**
+	 * Get an update for a package
+	 * @package The package name
+	 * @version The package version
+	 * @verbose Verbose flag or silent, defaults to false
+	 *
+	 * @return struct { isOutdated, version }
+	 */
 	public function getUpdate( required string package, required string version, boolean verbose=false ) {
-		var slug = parseSlug( arguments.package );
-		var boxJSONversion = parseVersion( arguments.package );
-		var result = {
-			isOutdated = false,
-			version = ''
+		var slug 			= parseSlug( arguments.package );
+		var boxJSONversion 	= parseVersion( arguments.package );
+		var result 			= {
+			isOutdated 	= false,
+			version 	= ''
 		};
 		
 		// Only bother checking if we have a version range.  If an exact version is stored in 
@@ -95,21 +115,32 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 		return result;		
 	}
 
+	/**
+	 * Create a new user in ForgeBox
+	 * @username ForgeBox username
+	 * @password The password
+	 * @email ForgeBox email
+	 * @firstName First name
+	 * @lastName Last Name
+	 *
+	 * @return The API Token of the registered user.
+	 */
 	public string function createUser(
 		required string username,
 		required string password,
 		required string email,
 		required string firstName,
-		required string lastName ) {
+		required string lastName 
+	){
 			
 		try {
 			
 			var results = forgebox.register(
 				username = arguments.username,
 				password = arguments.password,
-				email = arguments.email,
-				FName = arguments.firstName,
-				LName = arguments.lastName
+				email 	= arguments.email,
+				FName 	= arguments.firstName,
+				LName 	= arguments.lastName
 			);
 			return results.APIToken;
 					
@@ -119,8 +150,14 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 		}
 	}
 	
+	/**
+	 * Login a user into ForgeBox
+	 * @username The username
+	 * @password The password to use
+	 *
+	 * @return The API Token of the registered user.
+	 */
 	public string function login( required string userName, required string password ) {
-			
 		try {
 			
 			var results = forgebox.login( argumentCollection=arguments );
@@ -130,13 +167,20 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 			// This can include "expected" errors such as "Email already in use"
 			throw( e.message, 'endpointException', e.detail );
 		}
-		
 	}
 	
+	/**
+	 * Publish a package in ForgeBox
+	 * @path The path to publish
+	 */
 	public function publish( required string path ) {
 		
 		if( !packageService.isPackage( arguments.path ) ) {
-			throw( 'Sorry but [#arguments.path#] isn''t a package.', 'endpointException', 'Please double check you''re in the correct directory or use "package init" to turn your directory into a package.' );			
+			throw( 	
+				'Sorry but [#arguments.path#] isn''t a package.', 
+				'endpointException', 
+				'Please double check you''re in the correct directory or use "package init" to turn your directory into a package.' 
+			);			
 		}
 		
 		var boxJSON = packageService.readPackageDescriptor( arguments.path );
@@ -163,7 +207,7 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 			// Check for no ext or .txt or .md in reverse precendence.
 			for( var ext in [ '', '.txt', '.md' ] ) {
 				// Case insensitive search for file name
-				var files = directoryList(path=arguments.path,filter=function( path ){ return path contains ( item.file & ext); } )
+				var files = directoryList( path=arguments.path, filter=function( path ){ return path contains ( item.file & ext); } );0
 				if( arrayLen( files ) ) {
 					// If found, read in the first one found.
 					props[ item.variable ] = fileRead( files[ 1 ] );
@@ -181,35 +225,34 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 		}
 	}	
 
-	/*
+	/**
 	* Figures out what version of a package would be installed with a given semver range without actually going through the installation.
 	* @slug Slug of package
 	* @version Version range to satisfy
 	* @entryData Optional struct of entryData which skips the ForgeBox call.
 	*/
 	function findSatisfyingVersion( required string slug, required string version, struct entryData ) {
+		// Use passed in entrydata, or go get it from ForgeBox.
+		arguments.entryData = arguments.entryData ?: forgebox.getEntry( arguments.slug );
 		
-			// Use passed in entrydata, or go get it from ForgeBox.
-			arguments.entryData = arguments.entryData ?: forgebox.getEntry( arguments.slug );
-			
-			arguments.entryData.versions.sort( function( a, b ) { return semanticVersion.compare( b.version, a.version ) } );
-			
-			var found = false;
-			for( var thisVersion in arguments.entryData.versions ) {
-				if( semanticVersion.satisfies( thisVersion.version, arguments.version ) ) {
-					return thisVersion;
-				}
+		arguments.entryData.versions.sort( function( a, b ) { return semanticVersion.compare( b.version, a.version ) } );
+		
+		var found = false;
+		for( var thisVersion in arguments.entryData.versions ) {
+			if( semanticVersion.satisfies( thisVersion.version, arguments.version ) ) {
+				return thisVersion;
 			}
-			
-			// If we requsted stable and all releases are pre-release, just grab the latest
-			if( arguments.version == 'stable' && arrayLen( arguments.entryData.versions ) ) {
-				return arguments.entryData.versions[ 1 ]; 
-			} else {
-				throw( 'Version [#arguments.version#] not found for package [#arguments.slug#].', 'endpointException', 'Available versions are [#arguments.entryData.versions.map( function( i ){ return ' ' & i.version; } ).toList()#]' );					
-			}
+		}
+		
+		// If we requsted stable and all releases are pre-release, just grab the latest
+		if( arguments.version == 'stable' && arrayLen( arguments.entryData.versions ) ) {
+			return arguments.entryData.versions[ 1 ]; 
+		} else {
+			throw( 'Version [#arguments.version#] not found for package [#arguments.slug#].', 'endpointException', 'Available versions are [#arguments.entryData.versions.map( function( i ){ return ' ' & i.version; } ).toList()#]' );					
+		}
 	}
 		
-	/*
+	/**
 	* Parses just the slug portion out of an endpoint ID
 	* @package The full endpointID like foo@1.0.0 
 	*/
@@ -217,7 +260,7 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 		return listFirst( arguments.package, '@' );
 	}
 
-	/*
+	/**
 	* Parses just the version portion out of an endpoint ID
 	* @package The full endpointID like foo@1.0.0 
 	*/
@@ -233,8 +276,14 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 	}
 
 	
-	// Private methods
+	/****************************************** PRIVATE ******************************************/
 
+	/**
+	 * Get a package path location
+	 * @slug The package slug
+	 * @version The package version
+	 * @verbose Verbose flag or silent, defaults to false
+	 */
 	private function getPackage( slug, version, verbose=false ) {		
 	
 		try {
