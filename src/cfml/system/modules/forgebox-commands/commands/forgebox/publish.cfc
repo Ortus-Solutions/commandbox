@@ -8,10 +8,11 @@
 component aliases="publish" {
 	
 	/**  
-	* @username.hint Username for this user
+	* @directory The directory to publish
 	**/
 	function run( 
-		string directory='' ) {		
+		string directory='' 
+	){		
 	
 		// Default the endpointName
 		arguments.endpointName = 'forgebox';
@@ -20,7 +21,7 @@ component aliases="publish" {
 		command( 'endpoint publish' )
 			.params( argumentCollection=arguments )
 			.run();
-			
+				
 	}
 
 }
