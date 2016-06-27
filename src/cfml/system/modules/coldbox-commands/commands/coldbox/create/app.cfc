@@ -9,6 +9,8 @@
 *  Here are the basic skeltons that are available for you.
 *  - Advanced
 *  - AdvancedScript (default)
+*  - Elixir
+*  - ElixirVuejs
 *  - rest
 *  - Simple
 *  - SuperSimple
