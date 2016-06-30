@@ -1,0 +1,7 @@
+	<cffunction name="|interceptionPoint|" returntype="void" output="false" access="public">
+		<cfargument name="event" hint="The request context object">
+	    <cfargument name="interceptData" hint="A structure containing intercepted information.">
+	    <cfargument name="buffer" hint="A request buffer to produce elegant output from the interceptor">
+	    <cfset var rc = event.getCollection()>
+		
+	</cffunction>

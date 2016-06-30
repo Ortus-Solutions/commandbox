@@ -1,0 +1,3 @@
+	<cffunction name="|method|" hint="|method|" output="false" returntype="any">
+
+	</cffunction>

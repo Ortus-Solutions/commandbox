@@ -363,6 +363,7 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 			
 			
 		} catch( forgebox var e ) {
+			writeDump( var=e, output="console" );abort;
 			// This can include "expected" errors such as "slug not found"
 			throw( '#e.message##CR##e.detail#', 'endpointException' );
 		}		

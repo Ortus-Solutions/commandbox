@@ -129,7 +129,7 @@ component aliases="show" {
 				entryData.versions.sort( function( a, b ) { return semanticVersion.compare( b.version, a.version ) } );
 				print.line();
 				print.blackOnWhite( ' #entryData.title# ' )
-					.boldText( '   ( #entryData.user.fname# #entryData.user.lname#, #entryData.user.email# )' )
+					.boldText( '   ( #entryData.user.fname# #entryData.user.lname#, #entryData.user.username# )' )
 					.boldGreenLine( '   Rating: #repeatString( '*', val( entryData.avgRating ) )#' );
 				print.line()
 					.yellowLine( #formatterUtil.HTML2ANSI( entryData.description )# )
