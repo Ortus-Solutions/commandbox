@@ -1,3 +1,4 @@
+# Build Folders
 /dist
 /build/build.number
 /build/temp
@@ -23,3 +24,6 @@ org.eclipse.jdt.ui.prefs
 apidocs/docbox
 commandbox.rb
 /testbox
+
+# CommandBox config
+src/CommandBox.json
