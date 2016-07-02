@@ -79,9 +79,23 @@ component accessors="true" implements="IEndpoint" singleton {
 			var command = secureCloneCommand( cloneCommand );
 		    // call with our special java wrapper
 			local.result = CommandCaller.call( command );
-		        
+			
+			// Get a list of all branches
+			var branchListCommand = local.result.branchList();
+			var listModeAll = createObject( 'java', 'org.eclipse.jgit.api.ListBranchCommand$ListMode' ).ALL;
+			var branchList = [].append( CommandCaller.call( branchListCommand.setListMode( listModeAll ) ), true );
+			branchList = branchList.map( function( ref ){ return ref.getName(); } );
+			
+	    	if( arguments.verbose ){ consoleLogger.debug( 'Available branches are #branchList.toList()#' ); }
+	    	
+	    	// If the commit-ish looks like it's a branch, modify the ref's name.
+		    if( branchList.containsNoCase( branch ) ) {
+		    	if( arguments.verbose ){ consoleLogger.debug( 'Commit-ish [#branch#] appears to be a branch.' ); }
+		    	branch = 'origin/' & branch;
+		    }
+		    
 		    // Checkout branch, tag, or commit hash.
-	        CommandCaller.call( local.result.checkout().setName( branch ) );		        
+	        CommandCaller.call( local.result.checkout().setName( branch ) );
 		        
 		} catch( any var e ) {
 			// If the exception came from the Java call, this exception won't be null
