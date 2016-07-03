@@ -18,6 +18,8 @@ component accessors="true" singleton="true" {
 	property name='cr'					inject='cr@constants';
 	property name='shell'				inject='shell';
 	property name="semanticVersion"		inject="semanticVersion";
+	property name="artifactService"		inject="artifactService";
+
 	
 	/**
 	* install the server if not already installed to the target directory
@@ -126,7 +128,26 @@ component accessors="true" singleton="true" {
 				var satisfyingVersion = version;				
 			} else {
 				consoleLogger.info( "Contacting ForgeBox to determine the best version match for [#version#].  Use an exact 'cfengine' version to skip this check.");
-				var satisfyingVersion = endpoint.findSatisfyingVersion( endpoint.parseSlug( arguments.ID ), version ).version;				
+				// If ForgeBox is down, don't rain on people's parade.
+				try {
+					var satisfyingVersion = endpoint.findSatisfyingVersion( endpoint.parseSlug( arguments.ID ), version ).version;
+				} catch( any var e ) {
+					
+					consoleLogger.error( ".");
+					consoleLogger.error( "Aww man,  ForgeBox isn't feeling well.");
+					consoleLogger.debug( "#e.message#  #e.detail#");
+					consoleLogger.error( "We're going to look in your local artifacts cache and see if one of those versions will work.");
+					
+					// See if there's something usable in the artifacts cache.  If so, we'll use that version.
+					var satisfyingVersion = artifactService.findSatisfyingVersion( endpoint.parseSlug( arguments.ID ), version );
+					if( len( satisfyingVersion ) ) {
+						consoleLogger.info( ".");
+						consoleLogger.info( "Sweet! We found a local version of [#satisfyingVersion#] that we can use in your artifacts.");
+						consoleLogger.info( ".");
+					} else {
+						throw( 'No satisfying version found for [#version#].', 'endpointException', 'Well, we tried as hard as we can.  ForgeBox is unreachable and you don''t have a usable version in your local artifacts cache.  Please try another version.' );
+					}
+				}				
 			}
 			installDetails.installDir = destination & engineName & "-" & replace( satisfyingVersion, '+', '.', 'all' );
 			installDetails.version = satisfyingVersion;

@@ -20,6 +20,7 @@ component accessors="true" singleton {
 	property name='tempDir' 			inject='tempDir@constants';
 	property name='packageService'	 	inject='PackageService';
 	property name='logger' 				inject='logbox:logger:{this}';
+	property name="semanticVersion"		inject="semanticVersion";
 	
 	
 	/**
@@ -222,5 +223,33 @@ component accessors="true" singleton {
 	
 	}	
 	
+
+	/**
+	* Figures out the closest satisfying version that's available for a package in the local artifacts cache.
+	* @slug Slug of package
+	* @version Version range to satisfy
+	*/
+	function findSatisfyingVersion( required string slug, required string version ) {
+		// Get the locally-stored versions
+		var arrVersions = listArtifacts( slug )[ slug ];
+		
+		// Sort them
+		arrVersions.sort( function( a, b ) { return semanticVersion.compare( b.version, a.version ) } );
+		
+		var found = false;
+		for( var thisVersion in arrVersions ) {
+			if( semanticVersion.satisfies( thisVersion, arguments.version ) ) {
+				return thisVersion;
+			}
+		}
+		
+		// If we requested stable and all releases are pre-release, just grab the latest
+		if( arguments.version == 'stable' && arrayLen( arrVersions ) ) {
+			return arrVersions[ 1 ]; 
+		} else {
+			return '';					
+		}
+	}
+		
 		
 }

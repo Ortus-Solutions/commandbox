@@ -235,8 +235,13 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 	* @entryData Optional struct of entryData which skips the ForgeBox call.
 	*/
 	function findSatisfyingVersion( required string slug, required string version, struct entryData ) {
-		// Use passed in entrydata, or go get it from ForgeBox.
-		arguments.entryData = arguments.entryData ?: forgebox.getEntry( arguments.slug );
+		 try {
+			// Use passed in entrydata, or go get it from ForgeBox.
+			arguments.entryData = arguments.entryData ?: forgebox.getEntry( arguments.slug );
+		} catch( forgebox var e ) {
+			// This can include "expected" errors such as "User not authenticated"
+			throw( e.message, 'endpointException', e.detail );
+		}
 		
 		arguments.entryData.versions.sort( function( a, b ) { return semanticVersion.compare( b.version, a.version ) } );
 		
