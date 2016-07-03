@@ -129,8 +129,16 @@ component aliases="start" {
 			structDelete( arguments, 'rewritesEnabled' );
 		}
 
-		// startup the server
-		return serverService.start( serverProps = arguments );
+		try {
+			
+			// startup the server
+			return serverService.start( serverProps = arguments );
+				
+		// endpointException exception type is used when the endpoint has an issue that needs displayed, 
+		// but I don't want to "blow up" the console with a full error.	
+		} catch( endpointException var e ) {
+			error( e.message, e.detail );
+		}
 	}
 	
 	/**

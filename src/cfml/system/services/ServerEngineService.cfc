@@ -10,13 +10,14 @@
 component accessors="true" singleton="true" {
 
 	// DI
-	property name='tempDir'			inject='tempDir@constants';
-	property name='packageService'	inject='PackageService';
-	property name='endpointService'	inject='EndpointService';
-	property name='logger'			inject='logbox:logger:{this}';
-	property name='consoleLogger'	inject='logbox:logger:console';
-	property name='cr'				inject='cr@constants';
-	property name='shell'			inject='shell';
+	property name='tempDir'				inject='tempDir@constants';
+	property name='packageService'		inject='PackageService';
+	property name='endpointService'		inject='EndpointService';
+	property name='logger'				inject='logbox:logger:{this}';
+	property name='consoleLogger'		inject='logbox:logger:console';
+	property name='cr'					inject='cr@constants';
+	property name='shell'				inject='shell';
+	property name="semanticVersion"		inject="semanticVersion";
 	
 	/**
 	* install the server if not already installed to the target directory
@@ -116,12 +117,19 @@ component accessors="true" singleton="true" {
 		
 		// In order to prevent uneccessary work, we're going to try REALLY hard to figure out exactly what engine will be installed 
 		// before it actually happens so we can skip this whole mess if it's already in place.
+		// if our endpoint is ForgeBox, figure out what version it is going to install.
 		if( endpointData.endpointName == 'forgebox' ) {
+			var version = endpoint.parseVersion( arguments.ID );
 			
-			// if our endpoint is ForgeBox, figure out what version it is going to install.
-			var satisfyingVersion = endpoint.findSatisfyingVersion( endpoint.parseSlug( arguments.ID ), endpoint.parseVersion( arguments.ID ) );
-			installDetails.installDir = destination & engineName & "-" & replace( satisfyingVersion.version, '+', '.', 'all' );
-			installDetails.version = satisfyingVersion.version;
+			// If the user gave us an exact version, just use it!
+			if( semanticVersion.isExactVersion( version ) ) {
+				var satisfyingVersion = version;				
+			} else {
+				consoleLogger.info( "Contacting ForgeBox to determine the best version match for [#version#].  Use an exact 'cfengine' version to skip this check.");
+				var satisfyingVersion = endpoint.findSatisfyingVersion( endpoint.parseSlug( arguments.ID ), version ).version;				
+			}
+			installDetails.installDir = destination & engineName & "-" & replace( satisfyingVersion, '+', '.', 'all' );
+			installDetails.version = satisfyingVersion;
 			
 		} else {
 			

@@ -30,7 +30,7 @@
  * {code}
  * .   
  **/
-component aliases='status' {
+component aliases='status,server info' {
 
 	// DI
 	property name='serverService' inject='ServerService';
