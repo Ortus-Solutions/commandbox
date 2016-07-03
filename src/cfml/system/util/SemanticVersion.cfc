@@ -579,6 +579,9 @@ component singleton{
 	* version.hint A string that contains a version or a range
 	*/
 	boolean function isExactVersion( required string version ) {
+		// Default any missing pieces to "x" so "3" becomes "3.x.x".
+		arguments.version = getVersionAsString (parseVersion( clean( arguments.version ), 'x' ) );
+		
 		if( version contains '*' ) return false;
 		if( version contains 'x.' ) return false;
 		if( version contains '.x' ) return false;

@@ -40,6 +40,8 @@ component name="TestPrint" extends="mxunit.framework.TestCase" {
 	
 	public void function testIsExactVersion() {
 		var semver = application.wirebox.getInstance( 'semanticVersion' );
+		assertFalse( semver.isExactVersion( '3' ) );
+		assertFalse( semver.isExactVersion( '3.4' ) );
 		assertTrue( semver.isExactVersion( '1.0.0' ) );
 		assertTrue( semver.isExactVersion( '1.0.0-alpha' ) );
 		assertTrue( semver.isExactVersion( '1.0.0+123' ) );
