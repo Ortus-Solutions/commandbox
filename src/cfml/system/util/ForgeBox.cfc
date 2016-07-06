@@ -267,6 +267,30 @@ or just add DEBUG to the root logger
 	}
 	
 	/**
+	* Unpublishes a package
+	*/
+	function unpublish(
+		required string slug,
+		string version='',
+		required string APIToken ) {
+		
+		var thisResource = "unpublish/#arguments.slug#";
+		if( len( arguments.version ) ) {
+			thisResource &= "/#arguments.version#";			
+		}
+		
+		var results = makeRequest( resource=thisResource, method='post', headers={ 'x-api-token' : arguments.APIToken } );
+		
+		// error 
+		if( results.error ){
+			throw( "Something went wrong unplublishing.", 'forgebox', arrayToList( results.response.messages ) );
+		}
+		
+		return results.response.data;
+	}
+	
+	
+	/**
 	* Tracks an install
 	*/
 	function recordInstall(

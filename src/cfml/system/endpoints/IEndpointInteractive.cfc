@@ -23,4 +23,6 @@ interface extends="IEndpoint" {
 	
 	public function publish( required string path );
 	
+	public function unpublish( required string path, string version='' );
+	
 }

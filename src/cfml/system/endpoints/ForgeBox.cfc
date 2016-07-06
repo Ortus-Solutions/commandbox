@@ -226,7 +226,35 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 			// This can include "expected" errors such as "User not authenticated"
 			throw( e.message, 'endpointException', e.detail );
 		}
-	}	
+	}
+	
+	/**
+	 * Unpublish a package in ForgeBox
+	 * @path The path to publish
+	 * @version The version to publish
+	 */
+	public function unpublish( required string path, string version='') {
+		
+		if( !packageService.isPackage( arguments.path ) ) {
+			throw( 	
+				'Sorry but [#arguments.path#] isn''t a package.', 
+				'endpointException', 
+				'Please double check you''re in the correct directory.' 
+			);			
+		}
+		
+		var boxJSON = packageService.readPackageDescriptor( arguments.path );
+		
+		try {			
+			consoleLogger.warn( "Unpublishing package [#boxJSON.slug##( len( arguments.version ) ? '@' : '' )##arguments.version#] from ForgeBox, please wait..." );
+
+			forgebox.unpublish( boxJSON.slug, arguments.version, configService.getSetting( 'endpoints.forgebox.APIToken', '' ) );
+			
+		} catch( forgebox var e ) {
+			// This can include "expected" errors such as "User not authenticated"
+			throw( e.message, 'endpointException', e.detail );
+		}
+	}
 
 	/**
 	* Figures out what version of a package would be installed with a given semver range without actually going through the installation.

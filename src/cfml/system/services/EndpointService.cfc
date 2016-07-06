@@ -218,8 +218,7 @@ component accessors="true" singleton {
 	}
 	
 	/**
-	* A facade to publish a user with an interactive endpoint.  Keeping this logic here so I can standardize the storage
-	* of the APIToken and make it reusable outside of the command.
+	* A facade to publish a package with an interactive endpoint.  
 	* @endpointName The name of the endpoint to publish to
 	* @directory The directory to publish
 	*/
@@ -245,6 +244,38 @@ component accessors="true" singleton {
 		arguments.path = arguments.directory;
 		// Publish the package
 		endpoint.publish( argumentCollection=arguments );
+	}
+	
+	
+	/**
+	* A facade to unpublish a package with an interactive endpoint.  
+	* @endpointName The name of the endpoint to publish to
+	* @directory The directory to publish
+	* @version The version to unpublish
+	*/
+	function unpublishEndpointPackage(
+		required string endpointName,
+		required string directory,
+		string version=''		
+	) {
+		// Get all endpoints that are registered
+		var endpointRegistry = getEndpointRegistry();
+		// Confirm endpoint name exists 
+		if( !endpointRegistry.keyExists( arguments.endpointName ) ) {
+			throw( "Sorry, the endpoint [#arguments.endpointName#] doesn't exist.  Valid names are [#endpointRegistry.keyList()#]", 'endpointException' );
+		}
+		
+		// Get endpoint object
+		var endpoint = getEndpoint( arguments.endpointName );
+		
+		// Confirm is interactive endpoint
+		if( !isInstanceOf( endpoint, 'IEndpointInteractive' ) ) {
+			throw( "Sorry, the endpoint [#arguments.endpointName#] does not support unpublishing packages users.", 'endpointException' );		
+		}
+		// Set the path to publish
+		arguments.path = arguments.directory;
+		// Publish the package
+		endpoint.unpublish( argumentCollection=arguments );
 	}
 	
 }
