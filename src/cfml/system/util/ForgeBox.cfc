@@ -377,14 +377,39 @@ or just add DEBUG to the root logger
 				arguments.headers["content-type"] = "";
 			}
 			var thisURL = '#APIURL#/#arguments.resource#';
+			
+			var CFHTTPParams = {
+				method=arguments.method,
+				url=thisURL,
+				charset='utf-8',
+				result='HTTPResults', 
+				timeout=arguments.timeout
+			};
+				
+			// Get proxy settings from the config
+			var proxyServer=ConfigService.getSetting( 'proxy.server', '' );
+			var proxyPort=ConfigService.getSetting( 'proxy.port', '' );
+			var proxyUser=ConfigService.getSetting( 'proxy.user', '' );
+			var proxyPassword=ConfigService.getSetting( 'proxy.password', '' );
+			
+			if( len( proxyServer ) ) {
+				CFHTTPParams.proxyServer = proxyServer;
+						
+				if( len( proxyPort ) ) {
+					CFHTTPParams.proxyPort = proxyPort;					
+				}				
+				if( len( proxyUser ) ) {
+					CFHTTPParams.proxyUser = proxyUser;					
+				}				
+				if( len( proxyPassword ) ) {
+					CFHTTPParams.proxyPassword = proxyPassword;					
+				}
+			}
+			
 		</cfscript>
 		
 		<!--- REST CAll --->
-		<cfhttp method="#arguments.method#" 
-				url="#thisURL#" 
-				charset="utf-8" 
-				result="HTTPResults" 
-				timeout="#arguments.timeout#">
+		<cfhttp attributeCollection="#CFHTTPParams#">
 							
 			<!--- Headers --->
 			<cfloop collection="#arguments.headers#" item="param">
