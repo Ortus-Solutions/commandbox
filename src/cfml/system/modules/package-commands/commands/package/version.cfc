@@ -25,6 +25,21 @@
  * .
  * If multiple version parts are specified, the "larger" one will be used starting with major.  
  * If a version AND a flag are both supplied, the version will be used and the flag(s) ignored.
+ *
+ * If your package is a Git repo AND it is clean, this command will attempt to tag it with the new version number.  
+ * You can provide an optional commit message for this tag:
+ * .
+ * {code:bash}
+ * bump --major message="finalizing release"
+ * {code}
+ * 
+ * If you don't want the tagging functionality, provide the "tagVersion" flag or turn 
+ * off the setting globally with config setting.
+  * .
+ * {code:bash}
+ * bump --major tagVersion=false
+ * config set tagVersion=false
+ * {code}
  **/
 component aliases="bump" {
 	
