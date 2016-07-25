@@ -5,6 +5,13 @@
  * touch file.txt
  * {code}
  * .
+ * Use the open parameter to open the file in your default editor after creating it
+ * .
+ * {code:bash}
+ * touch index.cfm --open
+ * {code}
+ *
+ * .
  * Use the force parameter to overwrite the contents of the file to be empty even if it exists.
  * .
  * {code:bash}
@@ -15,10 +22,14 @@
 component aliases="new" {
 
 	/**
-	 * @file.hint File to create
-	 * @force.hint If forced, then file will be recreated even if it exists
+	 * @file File to create
+	 * @force If forced, then file will be recreated even if it exists
+	 * @open Open the file after creating it
  	 **/
-	function run( required file, boolean force=false )  {
+	function run(
+		required file,
+		boolean force=false,
+		boolean open=false )  {
 		
 		arguments.file = fileSystemUtil.resolvePath( arguments.file );
 
@@ -33,12 +44,19 @@ component aliases="new" {
 		// check for update or creation
 		if( !oFile.exists() ){
 			oFile.createNewFile();
-			return "#fileName# created!";
+			print.line( "#fileName# created!" );
 		} else {
 			oFile.setLastModified( now().getTime() );
-			return "#fileName# last modified bit updated!";
+			print.line( "#fileName# last modified bit updated!" );
 		}
 
+		// Open file for the user
+		if( arguments.open ){
+			// Defer to the "edit" command.
+			command( 'edit' )
+				.params( arguments.file )
+				.run();
+		}
 		
 	}
 
