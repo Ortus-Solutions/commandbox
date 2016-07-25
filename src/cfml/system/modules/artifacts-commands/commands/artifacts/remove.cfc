@@ -29,7 +29,7 @@ component {
 	property name='artifactService' inject='artifactService'; 
 
 	/**
-	 * @packages.hint Comma-delimited list of packages to remove
+	 * @package.hint Comma-delimited list of packages to remove
 	 * @version.hint If passed, it will try to remove a specific package version
 	 * @force.hint Do not confirm, just delete
 	 **/
