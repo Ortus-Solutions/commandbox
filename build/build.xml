@@ -352,54 +352,88 @@ External Dependencies:
 
  	<!-- Build Homebrew Recipe -->
  	<target name="build.homebrew" description="Builds the Homebrew Recipe" depends="">
+ 		<property name="tapRepo"	value="git@github.com:Ortus-Solutions/homebrew-boxtap.git"/>
 		
 		<!-- Check sum properties -->
 		<checksum file="${dist.dir}/${distro.name}-bin-${commandbox.version}.zip" property="commandbox.sha256" algorithm="SHA-256"/>
 		<checksum file="${dist.dir}/${distro.name}-apidocs-${commandbox.version}.zip" property="commandbox.apidocs.sha256" algorithm="SHA-256"/>
+
+		<!-- Retrieve our Stable Versions to generate our SHA256 -->
+		<get src="${ortus.repoPRDURL}/ortussolutions/commandbox/@version@/commandbox-bin-${commandbox.stableVersion}.zip" dest="${dist.dir}/bin-stable.zip"/>
+		<get src="${ortus.repoPRDURL}/ortussolutions/commandbox/@version@/commandbox-apidocs-${commandbox.stableVersion}.zip" dest="${dist.dir}/apidocs-stable.zip"/>
+
+		<checksum file="${dist.dir}/bin-stable.zip" property="commandbox.stablesha256" algorithm="SHA-256"/>
+		<checksum file="${dist.dir}/apidocs-stable.zip" property="commandbox.apidocs.stablesha256" algorithm="SHA-256"/>
+
+		<delete file="${dist.dir}/bin-stable.zip"/>
+		<delete file="${dist.dir}/apidocs-stable.zip"/>
 		
 		<!-- copy over prd file -->
 		<copy file="brew-template.rb" 
 			  tofile="${dist.dir}/commandbox.rb"
 			  overwrite="true"
-			  encoding="UTF-8" />
+			  encoding="UTF-8" />		  
 
 		<replace file="${dist.dir}/commandbox.rb" value="" summary="yes" encoding="UTF-8">
 		  	<replacetoken>@be@</replacetoken>
+		</replace>
+		<replace file="${dist.dir}/commandbox.rb" value="${commandbox.stableVersion}" summary="yes" encoding="UTF-8">
+		  	<replacetoken>@stable-version@</replacetoken>
+		</replace>
+		<replace file="${dist.dir}/commandbox.rb" value="${commandbox.stablesha256}" summary="yes" encoding="UTF-8">
+		  	<replacetoken>@stable-sha256@</replacetoken>
 		</replace>
 		<replace file="${dist.dir}/commandbox.rb" value="${commandbox.version}" summary="yes" encoding="UTF-8">
 		  	<replacetoken>@version@</replacetoken>
 		</replace>
 		<replace file="${dist.dir}/commandbox.rb" value="${ortus.repoPRDURL}" summary="yes" encoding="UTF-8">
+		  	<replacetoken>@repoPRDURL@</replacetoken>
+		</replace>
+		<replace file="${artifact.dir}/commandbox.rb" value="${ortus.repoURL}" summary="yes" encoding="UTF-8">
 		  	<replacetoken>@repoURL@</replacetoken>
 		</replace>
 		<replace file="${dist.dir}/commandbox.rb" value="${commandbox.sha256}" summary="yes" encoding="UTF-8">
 		  	<replacetoken>@sha256@</replacetoken>
 		</replace>
-		<replace file="${dist.dir}/commandbox.rb" value="${commandbox.apidocs.sha256}" summary="yes" encoding="UTF-8">
-		  	<replacetoken>@apidocs.sha256@</replacetoken>
+		<replace file="${dist.dir}/commandbox.rb" value="${commandbox.apidocs.stablesha256}" summary="yes" encoding="UTF-8">
+		  	<replacetoken>@apidocs.stable-sha256@</replacetoken>
 		</replace>
 
-		<!-- copy over be file -->
-		<copy file="brew-template.rb" 
-			  tofile="${artifact.dir}/commandbox-be.rb"
-			  overwrite="true"
-			  encoding="UTF-8" />
+		<!-- Pull and Commit Our Tap Repo -->
+		<macrodef name="git">
+			<attribute name="command" />
+			<attribute name="dir" default="${dist.dir}" />
+			<element name="args" optional="true" />
+			<sequential>
+				<echo message="git @{command}" />
+				<exec executable="git" dir="@{dir}">
+					<arg value="@{command}" />
+					<args/>
+				</exec>
+			</sequential>
+		</macrodef>
 
-		<replace file="${artifact.dir}/commandbox-be.rb" value="Be" summary="yes" encoding="UTF-8">
-		  	<replacetoken>@be@</replacetoken>
-		</replace>
- 		<replace file="${artifact.dir}/commandbox-be.rb" value="${commandbox.version}" summary="yes" encoding="UTF-8">
-		  	<replacetoken>@version@</replacetoken>
-		</replace>
-		<replace file="${artifact.dir}/commandbox-be.rb" value="${ortus.repoURL}" summary="yes" encoding="UTF-8">
-		  	<replacetoken>@repoURL@</replacetoken>
-		</replace>
-		<replace file="${artifact.dir}/commandbox-be.rb" value="${commandbox.sha256}" summary="yes" encoding="UTF-8">
-		  	<replacetoken>@sha256@</replacetoken>
-		</replace>
-		<replace file="${artifact.dir}/commandbox-be.rb" value="${commandbox.apidocs.sha256}" summary="yes" encoding="UTF-8">
-		  	<replacetoken>@apidocs.sha256@</replacetoken>
-		</replace>
+		<git command="clone">
+			<args>
+				<arg value="${tapRepo}"/>
+			</args>
+		</git>
+
+		<copy file="${dist.dir}/commandbox.rb" toDir="${dist.dir}/homebrew-boxtap"/>
+
+		<property name="commit-message"	value="Bump: Release @ ${commandbox.stableVersion}/Devel @ ${commandbox.version}"/>
+
+		<git command="commit" dir="${dist.dir}/homebrew-boxtap">
+			<args>
+				<arg value="commandbox.rb"/>
+				<arg value="-m ${commit-message}" />
+			</args>
+		</git>
+
+
+		<git command="push" dir="${dist.dir}/homebrew-boxtap" />
+
+		<delete dir="${dist.dir}/homebrew-boxtap"/>
 
  	</target>
 
