@@ -433,6 +433,8 @@ External Dependencies:
 
 		<git command="push" dir="${dist.dir}/homebrew-boxtap" />
 
+		<delete dir="${dist.dir}/homebrew-boxtap"/>
+
  	</target>
 
  	<!-- Build API Docs -->
