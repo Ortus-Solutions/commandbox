@@ -359,8 +359,8 @@ External Dependencies:
 		<checksum file="${dist.dir}/${distro.name}-apidocs-${commandbox.version}.zip" property="commandbox.apidocs.sha256" algorithm="SHA-256"/>
 
 		<!-- Retrieve our Stable Versions to generate our SHA256 -->
-		<get src="${ortus.repoPRDURL}/ortussolutions/commandbox/@version@/commandbox-bin-${commandbox.stableVersion}.zip" dest="${dist.dir}/bin-stable.zip"/>
-		<get src="${ortus.repoPRDURL}/ortussolutions/commandbox/@version@/commandbox-apidocs-${commandbox.stableVersion}.zip" dest="${dist.dir}/apidocs-stable.zip"/>
+		<get src="${ortus.repoPRDURL}/ortussolutions/commandbox/${commandbox.stableVersion}/commandbox-bin-${commandbox.stableVersion}.zip" dest="${dist.dir}/bin-stable.zip"/>
+		<get src="${ortus.repoPRDURL}/ortussolutions/commandbox/${commandbox.stableVersion}/commandbox-apidocs-${commandbox.stableVersion}.zip" dest="${dist.dir}/apidocs-stable.zip"/>
 
 		<checksum file="${dist.dir}/bin-stable.zip" property="commandbox.stablesha256" algorithm="SHA-256"/>
 		<checksum file="${dist.dir}/apidocs-stable.zip" property="commandbox.apidocs.stablesha256" algorithm="SHA-256"/>
