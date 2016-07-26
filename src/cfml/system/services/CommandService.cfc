@@ -780,7 +780,7 @@ component accessors="true" singleton {
 		var meta = arguments.commandData.commandMD;
 
 		// Make sure command has a run() method
-		for( var func in meta.functions ){
+		for( var func in meta.functions ?: [] ){
 			// Loop to find the "run()" method
 			if( func.name == 'run' ){
 				return true;
