@@ -9,6 +9,9 @@
 *  Here are the basic skeltons that are available for you.
 *  - Advanced
 *  - AdvancedScript (default)
+*  - elixir
+*  - elixir-bower
+*  - elixir-vuejs
 *  - rest
 *  - Simple
 *  - SuperSimple
@@ -46,11 +49,14 @@ component {
 		
 		// Map these shortcut names to the actual ForgeBox slugs
 		variables.templateMap = {
-			Advanced = 'cbtemplate-advanced',
-			AdvancedScript = 'cbtemplate-advanced-script',
-			rest = 'cbtemplate-rest',
-			Simple = 'cbtemplate-simple',
-			SuperSimple = 'cbtemplate-supersimple'			
+			Advanced 		= 'cbtemplate-advanced',
+			AdvancedScript 	= 'cbtemplate-advanced-script',
+			ElixirVueJS 	= 'cbtemplate-elixir-vuejs',
+			ElixirBower 	= 'cbtemplate-elixir-bower',
+			Elixir 			= 'cbtemplate-elixir',
+			rest 			= 'cbtemplate-rest',
+			Simple 			= 'cbtemplate-simple',
+			SuperSimple 	= 'cbtemplate-supersimple'			
 		};
 		
 		return this;
