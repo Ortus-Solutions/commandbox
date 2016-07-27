@@ -407,6 +407,9 @@ External Dependencies:
 		<replace file="${dist.dir}/commandbox.rb" value="${commandbox.apidocs.stablesha256}" summary="yes" encoding="UTF-8">
 		  	<replacetoken>@apidocs.stable-sha256@</replacetoken>
 		</replace>
+		<replace file="${dist.dir}/commandbox.rb" value="${build.number}" summary="yes" encoding="UTF-8">
+		  	<replacetoken>@buildnumber@</replacetoken>
+		</replace>
 
 		<!-- Pull and Commit Our Tap Repo -->
 		<macrodef name="git">

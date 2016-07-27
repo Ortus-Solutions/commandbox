@@ -6,7 +6,7 @@ class Commandbox < Formula
   version "@stable-version@"
 
   devel do
-    url "@repoURL@/ortussolutions/commandbox/@version@/commandbox-bin-@version@.zip"
+    url "@repoURL@/ortussolutions/commandbox/@version@/commandbox-bin-@version@.zip?build=@buildnumber@"
     sha256 "@sha256@"
     version "@version@"
   end
