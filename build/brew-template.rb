@@ -16,7 +16,7 @@ class Commandbox < Formula
   depends_on :java => "1.7+"
 
   resource "apidocs" do
-    url "@repoPRDURL@/ortussolutions/commandbox/@stable-version@./commandbox-apidocs-@stable-version@.zip"
+    url "@repoPRDURL@/ortussolutions/commandbox/@stable-version@/commandbox-apidocs-@stable-version@.zip"
     sha256 "@apidocs.stable-sha256@"
   end
 
