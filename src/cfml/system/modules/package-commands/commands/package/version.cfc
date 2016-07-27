@@ -123,6 +123,8 @@ component aliases="bump" {
 			.params( version=arguments.version )
 			.run();
 			
+		interceptorService.announceInterception( 'postVersion', { versionArgs=arguments } );
+			
 		// If this package is also a Git repository
 		var repoPath = '#arguments.directory#/.git';
 		arguments.tagVersion = arguments.tagVersion ?: ConfigService.getSetting( 'tagVersion', true );
@@ -175,9 +177,9 @@ component aliases="bump" {
 				error( 'Error tagging Git repository with new version.', e.message & ' ' & e.detail );
 			}
 		
-		}
-
-		interceptorService.announceInterception( 'postVersion', { versionArgs=arguments } );				
+		} // end is Git repo and are we tagging?
+			
+		interceptorService.announceInterception( 'onRelease', { directory=arguments.directory, version=arguments.version } );
 						
 	}
 	

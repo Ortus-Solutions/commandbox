@@ -85,8 +85,15 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 			return result;
 		}
 		
-		// Verify in ForgeBox
-		var entryData = forgebox.getEntry( slug );
+		try { 
+			
+			// Verify in ForgeBox
+			var entryData = forgebox.getEntry( slug );
+					
+		} catch( forgebox var e ) {
+			// This can include "expected" errors such as "Email already in use"
+			throw( e.message, 'endpointException', e.detail );
+		}
 		
 		entryData.versions.sort( function( a, b ) { return semanticVersion.compare( b.version, a.version ) } );
 		

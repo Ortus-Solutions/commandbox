@@ -30,6 +30,7 @@ component {
 	function postUninstall() { processScripts( 'postUninstall' ); }
 	function preVersion() { processScripts( 'preVersion' ); }
 	function postVersion() { processScripts( 'postVersion' ); }
+	function onRelease() { processScripts( 'onRelease' ); }
 	function prePublish() { processScripts( 'prePublish' ); }
 	function postPublish() { processScripts( 'postPublish' ); }
 	
