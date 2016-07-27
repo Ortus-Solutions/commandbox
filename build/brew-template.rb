@@ -1,7 +1,7 @@
 class Commandbox < Formula
   desc "CFML embedded server, package manager, and app scaffolding tools"
   homepage "https://www.ortussolutions.com/products/commandbox"
-  url "@repoPRDURL@/ortussolutions/commandbox/@version@/commandbox-bin-@stable-version@.zip"
+  url "@repoPRDURL@/ortussolutions/commandbox/@stable-version@/commandbox-bin-@stable-version@.zip"
   sha256 "@stable-sha256@"
   version "@stable-version@"
 
@@ -16,7 +16,7 @@ class Commandbox < Formula
   depends_on :java => "1.7+"
 
   resource "apidocs" do
-    url "@repoPRDURL@/ortussolutions/commandbox/@version@/commandbox-apidocs-@stable-version@.zip"
+    url "@repoPRDURL@/ortussolutions/commandbox/@stable-version@./commandbox-apidocs-@stable-version@.zip"
     sha256 "@apidocs.stable-sha256@"
   end
 
