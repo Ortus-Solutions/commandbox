@@ -427,19 +427,45 @@ External Dependencies:
 			</args>
 		</git>
 
-		<copy file="${dist.dir}/commandbox.rb" toDir="${dist.dir}/homebrew-boxtap"/>
+		<!-- Ensure write perms -->
+		<exec executable="sudo" dir="${dist.dir}" failonerror="true">
+			<arg value="chmod" />
+			<arg value="-R" />
+			<arg value="777" />
+			<arg value="./homebrew-boxtap" />
+		</exec>
 
-		<property name="commit-message"	value="Bump: Release @ ${commandbox.stableVersion}/Devel @ ${commandbox.version}"/>
+		<copy file="${dist.dir}/commandbox.rb" 
+			  tofile="${dist.dir}/homebrew-boxtap/commandbox.rb"
+			  overwrite="true"
+			  encoding="UTF-8" />
+
+		<property name="commit-message"	value="CommandBox Build #${build.number}: Release @ ${commandbox.stableVersion}/Devel @ ${commandbox.version}"/>
+
+		<git command="add" dir="${dist.dir}/homebrew-boxtap">
+			<args>
+				<arg value="--all"/>
+			</args>
+		</git>
+		
 
 		<git command="commit" dir="${dist.dir}/homebrew-boxtap">
 			<args>
-				<arg value="commandbox.rb"/>
+				<arg value="--allow-empty"/>
 				<arg value="-m ${commit-message}" />
 			</args>
 		</git>
 
 
 		<git command="push" dir="${dist.dir}/homebrew-boxtap" />
+
+		<!-- Ensure perms allow us to delete since GIT is runing as sudo-er -->
+		<exec executable="sudo" dir="${dist.dir}" failonerror="true">
+			<arg value="chmod" />
+			<arg value="-R" />
+			<arg value="777" />
+			<arg value="./homebrew-boxtap" />
+		</exec>
 
 		<delete dir="${dist.dir}/homebrew-boxtap"/>
 
