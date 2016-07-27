@@ -364,6 +364,7 @@ External Dependencies:
 		<loadresource property="commandbox.stablesha256">
 			<file file="${artifact.baseDir}/${distro.groupID}/${distro.name}/${commandbox.stableVersion}/commandbox-bin-${commandbox.stableVersion}.zip.sha256"/>
 			<filterchain>
+				<striplinebreaks/>
 				<trim/>
 			</filterchain>
 		</loadresource>
@@ -371,6 +372,7 @@ External Dependencies:
 		<loadresource property="commandbox.apidocs.stablesha256">
 		 	<file file="${artifact.baseDir}/${distro.groupID}/${distro.name}/${commandbox.stableVersion}/commandbox-apidocs-${commandbox.stableVersion}.zip.sha256"/>
 			<filterchain>
+				<striplinebreaks/>
 				<trim/>
 			</filterchain>
 		</loadresource>
@@ -404,6 +406,9 @@ External Dependencies:
 		</replace>
 		<replace file="${dist.dir}/commandbox.rb" value="${commandbox.apidocs.stablesha256}" summary="yes" encoding="UTF-8">
 		  	<replacetoken>@apidocs.stable-sha256@</replacetoken>
+		</replace>
+		<replace file="${dist.dir}/commandbox.rb" value="${build.number}" summary="yes" encoding="UTF-8">
+		  	<replacetoken>@buildnumber@</replacetoken>
 		</replace>
 
 		<!-- Pull and Commit Our Tap Repo -->
