@@ -413,7 +413,7 @@ External Dependencies:
 			<element name="args" optional="true" />
 			<sequential>
 				<echo message="git @{command}" />
-				<exec executable="git" dir="@{dir}">
+				<exec executable="git" dir="@{dir}" failonerror="true">
 					<arg value="@{command}" />
 					<args/>
 				</exec>
