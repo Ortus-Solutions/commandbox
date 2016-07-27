@@ -266,7 +266,7 @@ External Dependencies:
 		<!-- Build Checksum for cfml.zip -->
 		<checksum file="${dist.dir}/${distro.name}-cfml-${commandbox.version}.zip" forceoverwrite="true" fileext=".md5" />
 		<checksum file="${dist.dir}/${distro.name}-cfml-${commandbox.version}.zip" forceoverwrite="true" algorithm="sha" />
-		<checksum forceoverwrite="true" file="${dist.dir}/${distro.name}-cfml-${commandbox.version}.zip" algorithm="SHA-256" fileext=".sha256"/>
+		<checksum file="${dist.dir}/${distro.name}-cfml-${commandbox.version}.zip" forceoverwrite="true" algorithm="SHA-256" fileext=".sha256"/>
 		
 		<!--  create the libs zip including cli loader, optionally use pack200 -->
 	    <antcontrib:if>
@@ -325,7 +325,7 @@ External Dependencies:
         <!-- Checksum on Jar -->
         <checksum file="${dist.dir}/box.jar" forceoverwrite="true" fileext=".md5" />
         <checksum file="${dist.dir}/box.jar" forceoverwrite="true" algorithm="sha" />
-		<checksum forceoverwrite="true" file="${dist.dir}/box.jar" algorithm="SHA-256" fileext=".sha256"/>
+		<checksum file="${dist.dir}/box.jar" forceoverwrite="true" algorithm="SHA-256" fileext=".sha256"/>
 
 		<!-- Create box-repo.json -->
 		<box-repo location="${artifact.dir}"
@@ -362,14 +362,14 @@ External Dependencies:
 
 		<!-- Retrieve our stable version checksums -->
 		<loadresource property="commandbox.stablesha256">
-			<file file="${artifact.baseDir}/${commandbox.stableVersion}/commandbox-bin-${commandbox.stableVersion}.zip.sha256"/>
+			<file file="${artifact.baseDir}/${distro.groupID}/${distro.name}/${commandbox.stableVersion}/commandbox-bin-${commandbox.stableVersion}.zip.sha256"/>
 			<filterchain>
 				<trim/>
 			</filterchain>
 		</loadresource>
 
 		<loadresource property="commandbox.apidocs.stablesha256">
-		 	<file file="${artifact.baseDir}/${commandbox.stableVersion}/commandbox-apidocs-${commandbox.stableVersion}.zip.sha256"/>
+		 	<file file="${artifact.baseDir}/${distro.groupID}/${distro.name}/${commandbox.stableVersion}/commandbox-apidocs-${commandbox.stableVersion}.zip.sha256"/>
 			<filterchain>
 				<trim/>
 			</filterchain>
@@ -522,10 +522,10 @@ External Dependencies:
 		<!-- Build Checksum -->
 		<checksum file="${dist.dir}/${distro.name}-bin-${commandbox.version}.zip" forceoverwrite="true" fileext=".md5" />
 		<checksum file="${dist.dir}/${distro.name}-bin-${commandbox.version}.zip" forceoverwrite="true" algorithm="sha" />
-		<checksum forceoverwrite="true" file="${dist.dir}/${distro.name}-bin-${commandbox.version}.zip" algorithm="SHA-256" fileext=".sha256"/>
+		<checksum file="${dist.dir}/${distro.name}-bin-${commandbox.version}.zip" forceoverwrite="true" algorithm="SHA-256" fileext=".sha256"/>
 		<checksum file="${dist.dir}/${distro.name}-sdk-bin-${commandbox.version}.zip" forceoverwrite="true" fileext=".md5" />
 		<checksum file="${dist.dir}/${distro.name}-sdk-bin-${commandbox.version}.zip" forceoverwrite="true" algorithm="sha" />
-		<checksum forceoverwrite="true" file="${dist.dir}/${distro.name}-sdk-bin-${commandbox.version}.zip" algorithm="SHA-256" fileext=".sha256"/>
+		<checksum file="${dist.dir}/${distro.name}-sdk-bin-${commandbox.version}.zip" forceoverwrite="true" algorithm="SHA-256" fileext=".sha256"/>
  	</target>
 
 	<!-- Build windows executable -->
@@ -567,7 +567,7 @@ External Dependencies:
 		<!-- Build Checksum -->
 		<checksum file="${dist.dir}/${distro.name}-win-${commandbox.version}.zip" forceoverwrite="true" fileext=".md5" />
 		<checksum file="${dist.dir}/${distro.name}-win-${commandbox.version}.zip" forceoverwrite="true" algorithm="sha" />
-		<checksum forceoverwrite="true" file="${dist.dir}/${distro.name}-win-${commandbox.version}.zip" algorithm="SHA-256" fileext=".sha256"/>
+		<checksum file="${dist.dir}/${distro.name}-win-${commandbox.version}.zip" forceoverwrite="true" algorithm="SHA-256" fileext=".sha256"/>
 	</target>
 
 	<!-- Build including JREs -->
@@ -664,7 +664,7 @@ External Dependencies:
     <!-- Build Checksum -->
     <checksum file="${dist.dir}/${distro.name}-debian-${commandbox.version}.deb" forceoverwrite="true" fileext=".md5" />
     <checksum file="${dist.dir}/${distro.name}-debian-${commandbox.version}.deb" forceoverwrite="true" algorithm="sha" />
-	<checksum forceoverwrite="true" file="${dist.dir}/${distro.name}-debian-${commandbox.version}.deb" algorithm="SHA-256" fileext=".sha256"/>
+	<checksum file="${dist.dir}/${distro.name}-debian-${commandbox.version}.deb" forceoverwrite="true" algorithm="SHA-256" fileext=".sha256"/>
     <echo message="Updating apt (deb) repo in ${deb.repo}"/>
     <!-- Update Repo -->
     <deb-repo dir="${deb.repo}"
