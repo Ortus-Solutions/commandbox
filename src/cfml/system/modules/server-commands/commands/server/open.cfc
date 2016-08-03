@@ -44,4 +44,12 @@ component {
 		}
 	}
 
+	
+	/**
+	* Complete server names
+	*/
+	function serverNameComplete() {
+		return serverService.getServerNames();
+	}
+	
 }
