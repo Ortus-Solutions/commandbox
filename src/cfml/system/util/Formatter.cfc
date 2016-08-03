@@ -88,7 +88,7 @@ component singleton {
 			arguments.json = serializeJSON( arguments.json );
 		}
 		
-		var retval = '';
+		var retval = createObject("java","java.lang.StringBuilder").init('');
 		var str = json;
 	    var pos = 0;
 	    var strLen = str.length();
@@ -103,13 +103,13 @@ component singleton {
 			
 			if( isEscaped ) {
 				isEscaped = false;
-				retval &= char;
+				retval.append( char );
 				continue;
 			}
 			
 			if( char == '\' ) {
 				isEscaped = true;
-				retval &= char;
+				retval.append( char );
 				continue;
 			}
 			
@@ -119,34 +119,34 @@ component singleton {
 				} else {
 					inQuote = true;					
 				}
-				retval &= char;
+				retval.append( char );
 				continue;
 			}
 			
 			if( inQuote ) {
-				retval &= char;
+				retval.append( char );
 				continue;
 			}	
 			
 			
 			if (char == '}' || char == ']') {
-				retval &= newLine;
+				retval.append( newLine );
 				pos = pos - 1;
 				for (var j=0; j<pos; j++) {
-					retval &= indentStr;
+					retval.append( indentStr );
 				}
 			}
-			retval &= char;
+			retval.append( char );
 			if (char == '{' || char == '[' || char == ',') {
-				retval &= newLine;
+				retval.append( newLine );
 				if (char == '{' || char == '[') {
 					pos = pos + 1;
 				}
 				for (var k=0; k<pos; k++) {
-					retval &= indentStr;
+					retval.append( indentStr );
 				}
 			}
 		}
-		return retval;
+		return retval.toString();
 	}
 }
