@@ -21,6 +21,7 @@
 	<!--- DI --->
 	<cfproperty name="CommandService" inject="CommandService">
 	<cfproperty name="ConfigService" inject="Configservice">
+	<cfproperty name="consoleLogger" inject="logbox:logger:console">
 	
 	
 <!------------------------------------------- CONSTRUCTOR ------------------------------------------->
@@ -255,8 +256,14 @@
 				};
 
 				
-				// Load Module configuration from cfc and store it in module Config Cache
-				var oConfig = loadModuleConfiguration( mConfig, arguments.moduleName );
+				try {
+					// Load Module configuration from cfc and store it in module Config Cache
+					var oConfig = loadModuleConfiguration( mConfig, arguments.moduleName );
+				} catch( any var e ) {
+					consoleLogger.error( 'There was an error loading module [#arguments.moduleName#]' );
+					consoleLogger.error( '#e.message##chr( 10 )##e.detail#' );
+					return false;
+				}
 				// Verify if module has been disabled
 				if( mConfig.disabled ){
 					if( instance.logger.canDebug() ){
