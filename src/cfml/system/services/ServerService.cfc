@@ -341,9 +341,7 @@ component accessors="true" singleton {
 		if( serverInfo.cfengine.endsWith( '@' ) ) {
 			serverInfo.cfengine = left( serverInfo.cfengine, len( serverInfo.cfengine ) - 1 );
 		}
-		
-		interceptorService.announceInterception( 'onServerStart', { serverInfo=serverInfo } );
-		
+					
 		var launchUtil 	= java.LaunchUtil;
 				
 		// Setup lib directory, add more if defined by server info
@@ -373,9 +371,10 @@ component accessors="true" singleton {
 	
 		// This will install the engine war to start, possibly downloading it first
 		var installDetails = serverEngineService.install( cfengine=serverInfo.cfengine, basedirectory=serverInfo.webConfigDir );
-		// This interception point can be used for additional configuration of the endine before it actually starts.
+		// This interception point can be used for additional configuration of the engine before it actually starts.
 		interceptorService.announceInterception( 'onServerInstall', { serverInfo=serverInfo, installDetails=installDetails } );
 		thisVersion = ' ' & installDetails.version;
+		serverInfo.serverHome = installDetails.installDir;
 		serverInfo.logdir = installDetails.installDir & "/logs";
 			
 		// If external Lucee server, set the java agent
@@ -418,7 +417,10 @@ component accessors="true" singleton {
 					
 			}
 		}	
-		
+	
+	// This is a WAR
+	} else {
+		serverInfo.serverHome = getDirectoryFromPath( serverInfo.WARPath );
 	}
 		
 	// Default tray icon
@@ -437,8 +439,9 @@ component accessors="true" singleton {
 	    
     // This is due to a bug in RunWar not creating the right directory for the logs
     directoryCreate( serverInfo.logDir, true, true );
-    	
-
+      
+	interceptorService.announceInterception( 'onServerStart', { serverInfo=serverInfo } );
+							
 	// The java arguments to execute:  Shared server, custom web configs
 	var args = " #serverInfo.JVMargs# -Xmx#serverInfo.heapSize#m -Xms#serverInfo.heapSize#m"
 			& " #javaagent# -jar ""#variables.jarPath#"""
@@ -484,9 +487,6 @@ component accessors="true" singleton {
 		args &= " --urlrewrite-file ""#serverInfo.rewritesConfig#""";
 	}
 	
-	// Persist server information
-	setServerInfo( serverInfo );
-
 	// change status to starting + persist
 	serverInfo.status = "starting";
 	setServerInfo( serverInfo );
@@ -495,6 +495,7 @@ component accessors="true" singleton {
 		var cleanedArgs = cr & '    ' & trim( replaceNoCase( args, ' -', cr & '    -', 'all' ) );					
 		consoleLogger.debug("Server start command: #javaCommand# #cleanedArgs#");
     }
+    
 		// thread the execution
 		var threadName = 'server#hash( serverInfo.webroot )##createUUID()#';
 		thread name="#threadName#" serverInfo=serverInfo args=args {
@@ -802,6 +803,7 @@ component accessors="true" singleton {
 	 * @serverInfo.hint struct of server info (ports, etc.)
  	 **/
 	function setServerInfo( required struct serverInfo ){
+		
 		var servers 	= getServers();
 		var webrootHash = hash( arguments.serverInfo.webroot & ucase( arguments.serverInfo.name ) );
 		arguments.serverInfo.id = webrootHash;
@@ -811,7 +813,9 @@ component accessors="true" singleton {
 		}
 		servers[ webrootHash ] = serverInfo;
 		// persist back safely
+		
 		setServers( servers );
+		
 	}
 
 	/**
