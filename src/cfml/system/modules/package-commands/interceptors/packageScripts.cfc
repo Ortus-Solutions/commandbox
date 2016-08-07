@@ -25,6 +25,7 @@ component {
 	function onServerStop() { processScripts( 'onServerStop', interceptData.serverinfo.webroot ); }
 	function onException() { processScripts( 'onException' ); }
 	function preInstall() { processScripts( 'preInstall' ); }
+	function onInstall() { processScripts( 'onInstall' ); }
 	function postInstall() { processScripts( 'postInstall' ); }
 	function preUninstall() { processScripts( 'preUninstall' ); }
 	function postUninstall() { processScripts( 'postUninstall' ); }

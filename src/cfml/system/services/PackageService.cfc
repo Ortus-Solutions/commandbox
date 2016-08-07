@@ -150,7 +150,7 @@ component accessors="true" singleton {
 			}
 			/******************************************************************************************************************/
 			
-			// Now that we have resolved the directory where our packge lives, read the box.json out of it.
+			// Now that we have resolved the directory where our package lives, read the box.json out of it.
 			var artifactDescriptor = readPackageDescriptor( tmpPath );
 			var ignorePatterns = ( isArray( artifactDescriptor.ignore ) ? artifactDescriptor.ignore : [] );
 			
@@ -234,6 +234,20 @@ component accessors="true" singleton {
 				}
 				installDirectory = arguments.currentWorkingDirectory & '/' & artifactDescriptor.directory;  
 			}
+			
+			// Gather all the interesting things this interceptor might need to know.
+			var interceptData = {
+				installArgs = arguments,
+				installDirectory = installDirectory,
+				containerBoxJSON = containerBoxJSON,
+				artifactDescriptor = artifactDescriptor,
+				ignorePatterns = ignorePatterns,
+				endpointData = endpointData								
+			};
+			interceptorService.announceInterception( 'onInstall', interceptData );
+			// Make sure these get set back into their original variables in case the interceptor changed them.
+			installDirectory = interceptData.installDirectory;
+			ignorePatterns = interceptData.ignorePatterns;
 						
 			// Else, use package type convention
 			if( !len( installDirectory ) && len( packageType ) ) {
