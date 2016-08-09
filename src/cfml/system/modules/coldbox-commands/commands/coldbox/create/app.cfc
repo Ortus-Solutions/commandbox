@@ -1,12 +1,13 @@
 /**
-*  Create a blank ColdBox app from one of our app skeletons.  By default it will create
-*  in your current directory.
+*  Create a blank ColdBox app from one of our app skeletons or a skeleton using a valid Endpoint ID which can come from .
+*  ForgeBox, HTTP/S, git, github, etc.
+*  By default it will create the application in your current directory.
 * .
 * {code:bash}
 * coldbox create app myApp
 * {code}
 * .
-*  Here are the basic skeltons that are available for you.
+*  Here are the basic skeletons that are available for you that come from ForgeBox
 *  - Advanced
 *  - AdvancedScript (default)
 *  - elixir
