@@ -53,6 +53,8 @@ component {
 		boolean accessors=true,
 		properties=""
 	) {
+		// store incoming relative path for testing purposes
+		var modelTestPath = arguments.directory;
 		// This will make each directory canonical and absolute
 		arguments.directory 		= fileSystemUtil.resolvePath( arguments.directory );
 		arguments.testsDirectory 	= fileSystemUtil.resolvePath( arguments.testsDirectory );
@@ -93,6 +95,7 @@ component {
 		modelContent 	 = replaceNoCase( modelContent, '|modelName|', listLast( arguments.name, '/\' ), 'all' );
 		modelContent 	 = replaceNoCase( modelContent, '|modelDescription|', arguments.description, 'all' );
 		modelTestContent = replaceNoCase( modelTestContent, '|modelName|', listChangeDelims( arguments.name, '.', '/\' ), 'all' );
+		modelTestContent = replaceNoCase( modelTestContent, '|modelPath|', listChangeDelims( modelTestPath, '.', '/\' ) & "." & listChangeDelims( arguments.name, '.', '/\' ), 'all' );
 		
 		// Persistence
 		switch ( Persistence ) {

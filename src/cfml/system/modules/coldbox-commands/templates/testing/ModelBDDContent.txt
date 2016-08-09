@@ -3,7 +3,7 @@ The base model test case will use the 'model' annotation as the instantiation pa
 and then create it, prepare it for mocking and then place it in the variables scope as 'model'. It is your
 responsibility to update the model annotation instantiation path and init your model.
 --->
-<cfcomponent extends="coldbox.system.testing.BaseModelTest" model="models.|modelName|" output="false" hint="">
+<cfcomponent extends="coldbox.system.testing.BaseModelTest" model="|modelPath|" output="false" hint="">
 	
 	<!--- *********************************** LIFE CYCLE Methods *********************************** --->
 
