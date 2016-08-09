@@ -22,17 +22,9 @@ component extends="app" {
 	) {
 		var skeletons = skeletonComplete();
 		// turn off wizard
-		arguments.wizard = false;
-		arguments.initWizard = true;
-		arguments.directory=getCWD();
-
-		// Validate skeletons
-		while( !arrayFindNoCase( skeletons, arguments.skeleton ) ){
-			print.boldRedLine( "The skeleton you chose: '#arguments.skeleton#' is not valid." )
-				.boldRedLine( " Valid Choices are (#arrayToList( skeletons, ", " )#)" )
-				.toConsole();
-			arguments.skeleton = ask( "Choose Skeleton: " );
-		}
+		arguments.wizard 		= false;
+		arguments.initWizard 	= true;
+		arguments.directory 	= getCWD();
 
 		super.run( argumentCollection=arguments );	
 	}
