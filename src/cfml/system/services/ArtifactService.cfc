@@ -67,13 +67,17 @@ component accessors="true" singleton {
 	* Removes all artifacts from the cache and returns the number of wiped out directories
 	*/ 
 	numeric function cleanArtifacts() {
-		var dirList = directoryList( path=variables.artifactDir, recurse=false );
+		var qryDir = directoryList( path=variables.artifactDir, recurse=false, listInfo='query' );
+		var numRemoved = 0;
 		
-		for( var dir in dirList ) {
-			directoryDelete( dir, true );
+		for( var path in qryDir ) {
+			if( path.type == 'Dir' ) {
+				numRemoved++;
+				directoryDelete( path.directory & '/' & path.name, true );	
+			}
 		}
 		
-		return dirList.len();
+		return numRemoved;
 	}
 	
 	/**
