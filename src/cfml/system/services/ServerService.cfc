@@ -514,6 +514,9 @@ component accessors="true" singleton {
 				serverInfo.statusInfo.result &= e.message & ' ' & e.detail;
 				serverInfo.status="unknown";
 			} finally {
+				// make sure these don't come back as nulls
+				param name='local.executeResult' default='';
+				param name='local.executeError' default='';
 				serverInfo.statusInfo.result = serverInfo.statusInfo.result & executeResult & ' ' & executeError;
 				setServerInfo( serverInfo );				
 			}
