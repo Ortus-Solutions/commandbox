@@ -67,12 +67,12 @@ component {
 				do {
 					// ask repl
 					if ( arrayLen( REPLParser.getCommandLines() ) == 0 ) {
-						var command = ask( ( arguments.script ? "CFSCRIPT" : "CFML" ) &  "-REPL: " );
+						var command = ask( ( arguments.script ? 'CFSCRIPT' : 'CFML' ) &  '-REPL: ' );
 					} else {
 						var command = ask( "..." );
 	
 						// allow ability to break out of adding additional lines
-						if ( trim(command) == "exit" ) {
+						if ( trim(command) == 'exit' || trim(command) == '' ) {
 							break;
 						}
 					}
