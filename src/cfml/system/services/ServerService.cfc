@@ -327,6 +327,11 @@ component accessors="true" singleton {
 		serverInfo.heapSize 		= serverProps.heapSize 			?: serverJSON.JVM.heapSize			?: defaults.JVM.heapSize;
 		serverInfo.directoryBrowsing = serverProps.directoryBrowsing ?: serverJSON.web.directoryBrowsing ?: defaults.web.directoryBrowsing;
 		
+		// Global defaults are always added on top of server.json (but don't overwrite)
+		// Aliases aren't accepted via command params due to no cleam way to provide them
+		serverInfo.aliases 			= defaults.web.aliases;
+		serverInfo.aliases.append( serverJSON.web.aliases ?: {} );
+		
 		// Global defauls are always added on top of whatever is specified by the user or server.json
 		serverInfo.JVMargs			= ( serverProps.JVMargs			?: serverJSON.JVM.args ?: '' ) & ' ' & defaults.JVM.args;
 		
@@ -456,7 +461,14 @@ component accessors="true" singleton {
     directoryCreate( serverInfo.logDir, true, true );
       
 	interceptorService.announceInterception( 'onServerStart', { serverInfo=serverInfo } );
-													
+						
+	// Turn struct of aliases into a comma-delimited list, plus resolve relative paths.
+	// "/foo=C:\path,/bar=C:\another/path"
+	var CLIAliases = '';
+	for( var thisAlias in serverInfo.aliases ) {
+		CLIAliases = CLIAliases.listAppend( thisAlias & '=' & fileSystemUtil.resolvePath( serverInfo.aliases[ thisAlias ], serverInfo.webroot ) );
+	}
+							
 	// The java arguments to execute:  Shared server, custom web configs
 	var args = ' #serverInfo.JVMargs# -Xmx#serverInfo.heapSize#m -Xms#serverInfo.heapSize#m'
 			& ' #javaagent# -jar "#variables.jarPath#"'
@@ -468,7 +480,7 @@ component accessors="true" singleton {
 			& ' --server-name "#serverInfo.name#"'
 			& ' --tray-icon "#serverInfo.trayIcon#" --tray-config "#trayConfigJSON#"'
 			& ' --directoryindex "#serverInfo.directoryBrowsing#" --cfml-web-config "#serverInfo.webConfigDir#"'
-//			& ' --dirs "/foo=C:\"'
+			& ( len( CLIAliases ) ? ' --dirs "#CLIAliases#"' : '' )
 			& ' --cfml-server-config "#serverInfo.serverConfigDir#" #serverInfo.runwarArgs# --timeout 120';
 			
 	// Starting a WAR
@@ -502,7 +514,6 @@ component accessors="true" singleton {
 		}
 		args &= " --urlrewrite-file ""#serverInfo.rewritesConfig#""";
 	}
-	
 	// change status to starting + persist
 	serverInfo.status = "starting";
 	setServerInfo( serverInfo );
