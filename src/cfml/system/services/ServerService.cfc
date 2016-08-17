@@ -539,7 +539,7 @@ component accessors="true" singleton {
 		
 		// If this is a one off command, wait for the thread to finish, otherwise the JVM will shutdown before
 		// the server is started and the json files get updated.
-		if( shell.getShellType() == 'command' ) {
+		if( shell.getShellType() == 'command' || serverInfo.debug ) {
 			thread action="join" name="#threadName#";
 			
 			// Pull latest info that was saved in the thread and output it. Since we made the 
