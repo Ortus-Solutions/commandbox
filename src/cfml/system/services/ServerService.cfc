@@ -455,38 +455,19 @@ component accessors="true" singleton {
 	
 	// Set default options for all servers
 	// TODO: Don't overwrite existing options with the same label.
-	serverInfo.trayOptions.append(
-		[
-			{ 'label':'Stop Server (${runwar.processName})', 'action':'stopserver' },
-			{ 'label':'Open Browser', 'action':'openbrowser', 'url':'http://${runwar.host}:${runwar.port}/' }
-		],
-		true
-	);
 	
-    if( serverInfo.cfengine contains "lucee" ) { 
-    	serverInfo.trayOptions.append(
-			[
-				{ 'label':'Open Server Admin', 'action':'openbrowser', 'url':'http://${runwar.host}:${runwar.port}/lucee/admin/server.cfm' },
-				{ 'label':'Open Web Admin', 'action':'openbrowser', 'url':'http://${runwar.host}:${runwar.port}/lucee/admin/web.cfm' }
-			],
-			true
-		);
-	} else if( serverInfo.cfengine contains "railo" ) { 
-    	serverInfo.trayOptions.append(
-			[
-				{ 'label':'Open Server Admin', 'action':'openbrowser', 'url':'http://${runwar.host}:${runwar.port}/railo-context/admin/server.cfm' },
-				{ 'label':'Open Web Admin', 'action':'openbrowser', 'url':'http://${runwar.host}:${runwar.port}/railo-context/admin/web.cfm' }
-			],
-			true
-		);		
-	} else if( serverInfo.cfengine contains "adobe" ) { 
-    	serverInfo.trayOptions.append(
-			[
-				{ 'label':'Open Server Admin', 'action':'openbrowser', 'url':'http://${runwar.host}:${runwar.port}/CFIDE/administrator/enter.cfm' }
-			],
-			true
-		);		
+    if( serverInfo.cfengine contains "lucee" ) {
+		serverInfo.trayOptions.prepend( { 'label':'Open Web Admin', 'action':'openbrowser', 'url':'http://${runwar.host}:${runwar.port}/lucee/admin/web.cfm' } );
+		serverInfo.trayOptions.prepend( { 'label':'Open Server Admin', 'action':'openbrowser', 'url':'http://${runwar.host}:${runwar.port}/lucee/admin/server.cfm' } );
+	} else if( serverInfo.cfengine contains "railo" ) {
+		serverInfo.trayOptions.prepend( { 'label':'Open Web Admin', 'action':'openbrowser', 'url':'http://${runwar.host}:${runwar.port}/railo-context/admin/web.cfm' } );
+		serverInfo.trayOptions.prepend( { 'label':'Open Server Admin', 'action':'openbrowser', 'url':'http://${runwar.host}:${runwar.port}/railo-context/admin/server.cfm' } );
+	} else if( serverInfo.cfengine contains "adobe" ) {
+		serverInfo.trayOptions.prepend( { 'label':'Open Server Admin', 'action':'openbrowser', 'url':'http://${runwar.host}:${runwar.port}/CFIDE/administrator/enter.cfm' } );
 	}
+	
+	serverInfo.trayOptions.prepend( { 'label':'Open Browser', 'action':'openbrowser', 'url':'http://${runwar.host}:${runwar.port}/' } );
+	serverInfo.trayOptions.prepend( { 'label':'Stop Server (${runwar.processName})', 'action':'stopserver' } );
 	
     // This is due to a bug in RunWar not creating the right directory for the logs
     directoryCreate( serverInfo.logDir, true, true );
