@@ -234,8 +234,15 @@ component accessors="true" singleton {
 	* @version Version range to satisfy
 	*/
 	function findSatisfyingVersion( required string slug, required string version ) {
+		var artifacts = listArtifacts( slug );
+		
+		// Check to see if we even have any versions for this artifact
+		if( !artifacts.keyExists( slug ) ) {
+			return '';
+		}
+		
 		// Get the locally-stored versions
-		var arrVersions = listArtifacts( slug )[ slug ];
+		var arrVersions = artifacts[ slug ];
 		
 		// Sort them
 		arrVersions.sort( function( a, b ) { return semanticVersion.compare( b.version, a.version ) } );
@@ -251,7 +258,7 @@ component accessors="true" singleton {
 		if( arguments.version == 'stable' && arrayLen( arrVersions ) ) {
 			return arrVersions[ 1 ]; 
 		} else {
-			return '';					
+			return '';
 		}
 	}
 		

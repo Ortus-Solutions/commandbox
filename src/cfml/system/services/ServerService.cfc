@@ -120,6 +120,7 @@ component accessors="true" singleton {
 			stopsocket : d.stopsocket ?: 0,
 			debug : d.debug ?: false,
 			trayicon : d.trayicon ?: '',
+			trayOptions : d.trayOptions ?: [],
 			jvm : {
 				heapSize : d.jvm.heapSize ?: 512,
 				args : d.jvm.args ?: ''
@@ -327,16 +328,21 @@ component accessors="true" singleton {
 		serverInfo.heapSize 		= serverProps.heapSize 			?: serverJSON.JVM.heapSize			?: defaults.JVM.heapSize;
 		serverInfo.directoryBrowsing = serverProps.directoryBrowsing ?: serverJSON.web.directoryBrowsing ?: defaults.web.directoryBrowsing;
 		
-		// Global defaults are always added on top of server.json (but don't overwrite)
-		// Aliases aren't accepted via command params due to no cleam way to provide them
+		// Global aliases are always added on top of server.json (but don't overwrite)
+		// Aliases aren't accepted via command params due to no clean way to provide them
 		serverInfo.aliases 			= defaults.web.aliases;
 		serverInfo.aliases.append( serverJSON.web.aliases ?: {} );
+				
+		// Global trayOptions are always added on top of server.json (but don't overwrite)
+		// trayOptions aren't accepted via command params due to no clean way to provide them
+		serverInfo.trayOptions 			= defaults.trayOptions;
+		serverInfo.trayOptions.append( serverJSON.trayOptions ?: [], true );
 		
 		// Global defauls are always added on top of whatever is specified by the user or server.json
 		serverInfo.JVMargs			= ( serverProps.JVMargs			?: serverJSON.JVM.args ?: '' ) & ' ' & defaults.JVM.args;
 		
-		serverInfo.runwarArgs		= ( serverProps.runwarArgs		?: serverJSON.runwar.args ?: '' ) & ' ' & defaults.runwar.args;
 		// Global defauls are always added on top of whatever is specified by the user or server.json
+		serverInfo.runwarArgs		= ( serverProps.runwarArgs		?: serverJSON.runwar.args ?: '' ) & ' ' & defaults.runwar.args;
 		
 		serverInfo.cfengine			= serverProps.cfengine			?: serverJSON.app.cfengine			?: defaults.app.cfengine;
 		serverInfo.WARPath			= serverProps.WARPath			?: serverJSON.app.WARPath			?: defaults.app.WARPath;
@@ -447,16 +453,41 @@ component accessors="true" singleton {
 	serverInfo.trayIcon = ( len( serverInfo.trayIcon ) ? serverInfo.trayIcon : '#variables.libdir#/trayicon.png' ); 
 	serverInfo.trayIcon = expandPath( serverInfo.trayIcon );
 	
-    // Guess the proper set of tray icons based on the cfengine name. 
-	var trayConfigJSON = '#libdir#/traymenu-default.json';
+	// Set default options for all servers
+	// TODO: Don't overwrite existing options with the same label.
+	serverInfo.trayOptions.append(
+		[
+			{ 'label':'Stop Server (${runwar.processName})', 'action':'stopserver' },
+			{ 'label':'Open Browser', 'action':'openbrowser', 'url':'http://${runwar.host}:${runwar.port}/' }
+		],
+		true
+	);
+	
     if( serverInfo.cfengine contains "lucee" ) { 
-    	trayConfigJSON = '#libdir#/traymenu-lucee.json';
-	} else if( serverInfo.cfengine contains "railo" ) {
-    	trayConfigJSON = '#libdir#/traymenu-railo.json';
-	} else if( serverInfo.cfengine contains "adobe" ) {
-    	trayConfigJSON = '#libdir#/traymenu-adobe.json';
+    	serverInfo.trayOptions.append(
+			[
+				{ 'label':'Open Server Admin', 'action':'openbrowser', 'url':'http://${runwar.host}:${runwar.port}/lucee/admin/server.cfm' },
+				{ 'label':'Open Web Admin', 'action':'openbrowser', 'url':'http://${runwar.host}:${runwar.port}/lucee/admin/web.cfm' }
+			],
+			true
+		);
+	} else if( serverInfo.cfengine contains "railo" ) { 
+    	serverInfo.trayOptions.append(
+			[
+				{ 'label':'Open Server Admin', 'action':'openbrowser', 'url':'http://${runwar.host}:${runwar.port}/railo-context/admin/server.cfm' },
+				{ 'label':'Open Web Admin', 'action':'openbrowser', 'url':'http://${runwar.host}:${runwar.port}/railo-context/admin/web.cfm' }
+			],
+			true
+		);		
+	} else if( serverInfo.cfengine contains "adobe" ) { 
+    	serverInfo.trayOptions.append(
+			[
+				{ 'label':'Open Server Admin', 'action':'openbrowser', 'url':'http://${runwar.host}:${runwar.port}/CFIDE/administrator/enter.cfm' }
+			],
+			true
+		);		
 	}
-	    
+	
     // This is due to a bug in RunWar not creating the right directory for the logs
     directoryCreate( serverInfo.logDir, true, true );
       
@@ -468,6 +499,10 @@ component accessors="true" singleton {
 	for( var thisAlias in serverInfo.aliases ) {
 		CLIAliases = CLIAliases.listAppend( thisAlias & '=' & fileSystemUtil.resolvePath( serverInfo.aliases[ thisAlias ], serverInfo.webroot ) );
 	}
+	
+	// Serialize tray options and write to temp file
+	var trayOptionsPath = serverInfo.serverHome & '/trayOptions.json';
+	fileWrite( trayOptionsPath,  serializeJSON( serverInfo.trayOptions ) );
 							
 	// The java arguments to execute:  Shared server, custom web configs
 	var args = ' #serverInfo.JVMargs# -Xmx#serverInfo.heapSize#m -Xms#serverInfo.heapSize#m'
@@ -478,7 +513,7 @@ component accessors="true" singleton {
 			& ' --open-url ' & ( serverInfo.SSLEnable ? 'https://#serverInfo.host#:#serverInfo.SSLPort#' : 'http://#serverInfo.host#:#serverInfo.port#' )
 			& ( len( CFEngineName ) ? ' --cfengine-name "#CFEngineName#"' : '' )
 			& ' --server-name "#serverInfo.name#"'
-			& ' --tray-icon "#serverInfo.trayIcon#" --tray-config "#trayConfigJSON#"'
+			& ' --tray-icon "#serverInfo.trayIcon#" --tray-config "#trayOptionsPath#"'
 			& ' --directoryindex "#serverInfo.directoryBrowsing#" --cfml-web-config "#serverInfo.webConfigDir#"'
 			& ( len( CLIAliases ) ? ' --dirs "#CLIAliases#"' : '' )
 			& ' --cfml-server-config "#serverInfo.serverConfigDir#" #serverInfo.runwarArgs# --timeout 120';
