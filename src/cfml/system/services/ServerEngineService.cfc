@@ -182,6 +182,7 @@ component accessors="true" singleton="true" {
 		for( var thisFile in directoryList( thisTempDir ) ) {
 			if( listFindNoCase( 'war,zip', listLast( thisFile, '.' ) ) ) {
 				theArchive = thisFile;
+				break;
 			}
 		}
 	
@@ -191,7 +192,7 @@ component accessors="true" singleton="true" {
 		}
 		
 		consoleLogger.info( "Exploding WAR/zip archive...");
-		zip action="unzip" file="#thisFile#" destination="#installDetails.installDir#" overwrite="true";
+		zip action="unzip" file="#theArchive#" destination="#installDetails.installDir#" overwrite="true";
 				
 		// Catch this to gracefully handle where the OS or another program 
 		// has the folder locked.
