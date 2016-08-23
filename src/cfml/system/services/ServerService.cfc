@@ -120,7 +120,8 @@ component accessors="true" singleton {
 			stopsocket : d.stopsocket ?: 0,
 			debug : d.debug ?: false,
 			trayicon : d.trayicon ?: '',
-			trayOptions : d.trayOptions ?: [],
+			// Duplicate so onServerStart interceptors don't actually change config settings via refernce.
+			trayOptions : duplicate( d.trayOptions ?: [] ),
 			jvm : {
 				heapSize : d.jvm.heapSize ?: 512,
 				args : d.jvm.args ?: ''
@@ -129,7 +130,8 @@ component accessors="true" singleton {
 				host : d.web.host ?: '127.0.0.1',				
 				directoryBrowsing : d.web.directoryBrowsing ?: true,
 				webroot : d.web.webroot ?: '',
-				aliases : d.web.aliases ?: {},
+			// Duplicate so onServerStart interceptors don't actually change config settings via refernce.
+				aliases : duplicate( d.web.aliases ?: {} ),
 				http : {
 					port : d.web.http.port ?: 0,
 					enable : d.web.http.enable ?: true
