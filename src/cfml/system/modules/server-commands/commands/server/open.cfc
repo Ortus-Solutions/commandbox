@@ -36,7 +36,7 @@ component {
 		if( serverDetails.serverIsNew ){
 			print.boldRedLine( "No server configurations found so have no clue what to open buddy!" );
 		} else {
-			var thisURL = "localhost:#serverInfo.port##arguments.URI#";
+			var thisURL = "#serverInfo.host#:#serverInfo.port##arguments.URI#";
 			print.greenLine( "Opening...#thisURL#" );
 			openURL( thisURL );
 			
