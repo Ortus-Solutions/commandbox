@@ -58,7 +58,7 @@ component aliases="start" {
 	 * @webConfigDir  	 	custom location for web context configuration
 	 * @serverConfigDir		custom location for server configuration
 	 * @libDirs       	 	comma-separated list of extra lib directories for the server
-	 * @trayIcon       		path to .png file for tray icon
+	 * @trayIconFile   		path to .png file for tray icon
 	 * @webXML         		path to web.xml file used to configure the server
 	 * @HTTPEnable     		enable HTTP
 	 * @SSLEnable      		enable SSL
@@ -91,7 +91,7 @@ component aliases="start" {
 		String  webConfigDir,
 		String  serverConfigDir,
 		String  libDirs,
-		String  trayIcon,
+		String  trayIconFile,
 		String  webXML,
 		Boolean HTTPEnable,
 		Boolean SSLEnable,
@@ -110,16 +110,6 @@ component aliases="start" {
 		String  WARPath,
 		String serverConfigFile
 	){
-		// Resolve path as used locally
-		if( !isNull( arguments.directory ) ) {
-			arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
-		} 
-		if( !isNull( arguments.serverConfigFile ) ) {
-			arguments.serverConfigFile = fileSystemUtil.resolvePath( arguments.serverConfigFile );
-		}
-		if( !isNull( arguments.WARPath ) ) {
-			arguments.WARPath = fileSystemUtil.resolvePath( arguments.WARPath );
-		}
 
 		// This is a common mis spelling
 		if( structKeyExists( arguments, 'rewritesEnabled' ) ) {
@@ -128,7 +118,13 @@ component aliases="start" {
 			arguments.rewritesEnable = arguments.rewritesEnabled;
 			structDelete( arguments, 'rewritesEnabled' );
 		}
-
+		
+		// changed trayIcon to trayIconFile, but let's keep them both working for backwards compat
+		if( structKeyExists( arguments, 'trayIconFile' ) ) {
+			arguments.trayIcon = arguments.trayIconFile;
+			structDelete( arguments, 'trayIconFile' );
+		}
+		
 		try {
 			
 			// startup the server

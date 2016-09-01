@@ -179,6 +179,7 @@ component accessors="true" singleton {
 		var defaultName = serverDetails.defaultName;
 		var defaultwebroot = serverDetails.defaultwebroot;
 		var defaultServerConfigFile = serverDetails.defaultServerConfigFile;
+		var defaultServerConfigFileDirectory = getDirectoryFromPath( defaultServerConfigFile );
 		var serverJSON = serverDetails.serverJSON;
 		var serverInfo = serverDetails.serverinfo;
 
@@ -186,7 +187,7 @@ component accessors="true" singleton {
 		// Backwards compat for default port in box.json. Remove this eventually...			// *
 																							// *
 		// Get package descriptor															// *
-		var boxJSON = packageService.readPackageDescriptor( serverInfo.webroot );			// *
+		var boxJSON = packageService.readPackageDescriptor( defaultwebroot );				// *
 		// Get defaults																		// *
 		var defaults = getDefaultServerJSON();												// *
 																							// *
@@ -200,11 +201,25 @@ component accessors="true" singleton {
 																							// *
 			// Update box.json to remove defaultPort from disk								// *
 			boxJSON.delete( 'defaultPort' );												// *
-			packageService.writePackageDescriptor( boxJSON, serverInfo.webroot );			// *
+			packageService.writePackageDescriptor( boxJSON, defaultwebroot );				// *
 		}																					// *
 																							// *
 		// End backwards compat for default port in box.json.								// *
 		// *************************************************************************************
+				
+		// Resolve path as used locally
+		if( !isNull( serverProps.directory ) ) {
+			serverProps.directory = fileSystemUtil.resolvePath( serverProps.directory );
+		} 
+		if( !isNull( serverProps.serverConfigFile ) ) {
+			serverProps.serverConfigFile = fileSystemUtil.resolvePath( serverProps.serverConfigFile );
+		}
+		if( !isNull( serverProps.WARPath ) ) {
+			serverProps.WARPath = fileSystemUtil.resolvePath( serverProps.WARPath );
+		}
+		if( !isNull( serverProps.trayIcon ) ) {
+			serverProps.trayIcon = fileSystemUtil.resolvePath( serverProps.trayIcon );
+		}		
 		
 		// Save hand-entered properties in our server.json for next time
 		for( var prop in serverProps ) {
@@ -222,13 +237,23 @@ component accessors="true" singleton {
 			         break;
 			    case "directory":
 			    	// Both of these are canonical already.
-			    	var thisDirectory = replace( serverProps[ prop ], '\', '/', 'all' ) & '/';
-			    	var configPath = replace( fileSystemUtil.resolvePath( getDirectoryFromPath( defaultServerConfigFile ) ), '\', '/', 'all' ) & '/';
+			    	var thisDirectory = replace( serverProps[ 'directory' ], '\', '/', 'all' ) & '/';
+			    	var configPath = replace( fileSystemUtil.resolvePath( defaultServerConfigFileDirectory ), '\', '/', 'all' ) & '/';
 			    	// If the web root is south of the server's JSON, make it relative for better portability.
 			    	if( thisDirectory contains configPath ) {
 			    		thisDirectory = replaceNoCase( thisDirectory, configPath, '' );
 			    	}
 					serverJSON[ 'web' ][ 'webroot' ] = thisDirectory;
+			         break;
+			    case "trayIcon":
+			    	// Both of these are canonical already.
+			    	var thisDirectory = replace( serverProps[ 'trayIcon' ], '\', '/', 'all' ) & '/';
+			    	var configPath = replace( fileSystemUtil.resolvePath( defaultServerConfigFileDirectory ), '\', '/', 'all' ) & '/';
+			    	// If the trayIcon is south of the server's JSON, make it relative for better portability.
+			    	if( thisDirectory contains configPath ) {
+			    		thisDirectory = replaceNoCase( thisDirectory, configPath, '' );
+			    	}
+					serverJSON[ 'trayIcon' ] = thisDirectory;
 			         break;
 			    case "stopPort":
 					serverJSON[ 'stopsocket' ] = serverProps[ prop ];
@@ -292,8 +317,7 @@ component accessors="true" singleton {
 		if( !serverJSON.isEmpty() && serverProps.saveSettings ) {
 			saveServerJSON( defaultServerConfigFile, serverJSON );
 		}
-				 
-
+		
 		// Setup serverinfo according to params
 		// Hand-entered values take precendence, then settings saved in server.json, and finally defaults.
 		// The big servers.json is only used to keep a record of the last values the server was started with
@@ -317,6 +341,8 @@ component accessors="true" singleton {
 		serverInfo.webConfigDir 	= serverProps.webConfigDir 		?: serverJSON.app.webConfigDir		?: getCustomServerFolder( serverInfo );
 		serverInfo.serverConfigDir 	= serverProps.serverConfigDir 	?: serverJSON.app.serverConfigDir 	?: defaults.app.serverConfigDir;
 		serverInfo.libDirs			= serverProps.libDirs 			?: serverJSON.app.libDirs			?: defaults.app.libDirs;
+		if( serverJSON.keyExists( 'trayIcon' ) ) { serverJSON.trayIcon = fileSystemUtil.resolvePath( serverJSON.trayIcon, defaultServerConfigFileDirectory ); }
+		if( defaults.keyExists( 'trayIcon' ) ) { defaults.trayIcon = fileSystemUtil.resolvePath( defaults.trayIcon, defaultwebroot ); }
 		serverInfo.trayIcon			= serverProps.trayIcon 			?: serverJSON.trayIcon 				?: defaults.trayIcon;
 		serverInfo.webXML 			= serverProps.webXML 			?: serverJSON.app.webXML 			?: defaults.app.webXML;
 		serverInfo.SSLEnable 		= serverProps.SSLEnable 		?: serverJSON.web.SSL.enable		?: defaults.web.SSL.enable;
@@ -345,6 +371,9 @@ component accessors="true" singleton {
 		
 		// Global defauls are always added on top of whatever is specified by the user or server.json
 		serverInfo.runwarArgs		= ( serverProps.runwarArgs		?: serverJSON.runwar.args ?: '' ) & ' ' & defaults.runwar.args;
+				
+		// Global defauls are always added on top of whatever is specified by the user or server.json
+		serverInfo.libDirs		= ( serverProps.libDirs		?: serverJSON.app.libDirs ?: '' ).listAppend( defaults.app.libDirs );
 		
 		serverInfo.cfengine			= serverProps.cfengine			?: serverJSON.app.cfengine			?: defaults.app.cfengine;
 		serverInfo.WARPath			= serverProps.WARPath			?: serverJSON.app.WARPath			?: defaults.app.WARPath;
@@ -371,12 +400,6 @@ component accessors="true" singleton {
 		}
 					
 		var launchUtil 	= java.LaunchUtil;
-				
-		// Setup lib directory, add more if defined by server info
-		var libDirs     = variables.libDir;
-		if ( Len( Trim( serverInfo.libDirs ?: "" ) ) ) {
-			libDirs = ListAppend( libDirs, serverInfo.libDirs );
-		}
 		
 		// log directory location
 		if( !directoryExists( serverInfo.logDir ) ){ directoryCreate( serverInfo.logDir ); }
@@ -509,7 +532,9 @@ component accessors="true" singleton {
 		args &= " -war ""#serverInfo.webroot#"" --lib-dirs ""#installDetails.installDir#/WEB-INF/lib"" --web-xml-path ""#installDetails.installDir#/WEB-INF/web.xml""";
 	// internal server
 	} else {
-		args &= " -war ""#serverInfo.webroot#"" --lib-dirs ""#libDirs#""";
+		// The internal server borrows the CommandBox lib directory
+		serverInfo.libDirs = serverInfo.libDirs.listAppend( variables.libDir );
+		args &= " -war ""#serverInfo.webroot#"" --lib-dirs ""#serverInfo.libDirs#""";
 	}
 	// Incorporate SSL to command
 	if( serverInfo.SSLEnable ){
