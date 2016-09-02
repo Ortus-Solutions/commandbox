@@ -243,9 +243,8 @@ component accessors="true" singleton {
 		
 		// Get the locally-stored versions
 		var arrVersions = artifacts[ slug ];
-		
 		// Sort them
-		arrVersions.sort( function( a, b ) { return semanticVersion.compare( b.version, a.version ) } );
+		arrVersions.sort( function( a, b ) { return semanticVersion.compare( b, a ) } );
 		
 		var found = false;
 		for( var thisVersion in arrVersions ) {
