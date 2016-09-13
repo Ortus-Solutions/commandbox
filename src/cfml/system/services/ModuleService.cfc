@@ -415,9 +415,6 @@
 				if( directoryExists( mconfig.modelsPhysicalPath ) and mConfig.autoMapModels ){
 					// Add as a mapped directory with module name as the namespace with correct mapping path
 					var packagePath = ( len( mConfig.cfmapping ) ? mConfig.cfmapping & ".#mConfig.conventions.modelsLocation#" :  mConfig.modelsInvocationPath );
-					systemOutput(mConfig.modelNamespace, true);
-					systemOutput(packagePath, true);
-					systemOutput('', true);
 					if( len( mConfig.modelNamespace ) ){
 						wirebox.getBinder().mapDirectory( packagePath=packagePath, namespace="@#mConfig.modelNamespace#" );
 					} else {
@@ -425,7 +422,6 @@
 						wirebox.getBinder().mapDirectory( packagePath=packagePath );
 					}
 					wirebox.getBinder().processMappings();
-					wirebox.getBinder().getMappings().keyArray().sort('text').each( function(i){ systemOutput(i,true); } );
 				}
 				
 				// Register commands if they exist
