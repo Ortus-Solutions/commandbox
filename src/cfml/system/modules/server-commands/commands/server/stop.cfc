@@ -49,9 +49,9 @@ component aliases="stop" {
 		for( var id in servers ) {
 			var serverInfo = servers[ id ];
 			
-			if( serverInfo.status == 'stopped' ) {
+			if(  !serverService.isServerRunning( serverInfo ) ) {
 				if( structCount( servers ) == 1 ) {
-					print.yellowLine( serverInfo.name & ' already stopped..' ).toConsole();
+					print.yellowLine( serverInfo.name & ' already stopped.' ).toConsole();
 				}
 				continue;
 			}

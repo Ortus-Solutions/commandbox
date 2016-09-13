@@ -183,6 +183,23 @@ component accessors="true" singleton {
 		var serverJSON = serverDetails.serverJSON;
 		var serverInfo = serverDetails.serverinfo;
 
+		// If the server is already running, make sure the user really wants to do this.
+		if( isServerRunning( serverInfo ) && !serverProps.force ) {
+			consoleLogger.error( '.' );
+			consoleLogger.error( 'Server "#serverInfo.name#" (#serverInfo.webroot#) is already running!' );
+			consoleLogger.error( 'Overwriting a running server means you won''t be able to use the "stop" command to stop the original one.' );
+			consoleLogger.warn( 'Use the --force parameter to skip this check.' );
+			consoleLogger.error( '.' );
+			// Collect a new name
+			var newName = shell.ask( 'Provide a unique "name" for this server (leave blank to keep starting as-is): ' );
+			// If a name is provided, start over.  Otherwise, just keep starting.
+			// The recursive call here will subject their answer to the same check until they provide a name that hasn't been used for this folder.
+			if( len( newName ) ) {
+				serverProps.name = newName;
+				return start( serverProps );
+			}
+		}
+
 		// *************************************************************************************
 		// Backwards compat for default port in box.json. Remove this eventually...			// *
 																							// *
@@ -224,7 +241,7 @@ component accessors="true" singleton {
 		// Save hand-entered properties in our server.json for next time
 		for( var prop in serverProps ) {
 			// Ignore null props or ones that shouldn't be saved
-			if( isNull( serverProps[ prop ] ) || listFindNoCase( 'saveSettings,serverConfigFile,debug', prop ) ) {
+			if( isNull( serverProps[ prop ] ) || listFindNoCase( 'saveSettings,serverConfigFile,debug,force', prop ) ) {
 				continue;
 			}
 			// Only need switch cases for properties that are nested or use different name

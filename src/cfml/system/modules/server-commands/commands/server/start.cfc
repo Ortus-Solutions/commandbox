@@ -86,7 +86,7 @@ component aliases="start" {
 		Boolean openbrowser,
 		String  directory,
 		Numeric stopPort,
-		Boolean force,
+		Boolean force=false,
 		Boolean debug,
 		String  webConfigDir,
 		String  serverConfigDir,
