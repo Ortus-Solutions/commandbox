@@ -257,7 +257,7 @@ External Dependencies:
 
 		<!-- Install dependencies for CommandBox core -->
 		<exec executable="box" dir="${build.dir}/system">
-			<arg line="${cmdboxhome.arg} install" />
+			<arg line="install" />
 		</exec>
 
 		<!--  create the cfml distro zip -->
