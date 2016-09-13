@@ -14,7 +14,7 @@ component accessors="true" singleton {
 	property name='formatterUtil'		inject='formatter';
 	property name='artifactService' 	inject='ArtifactService';
 	property name='fileSystemUtil'		inject='FileSystem';
-	property name='pathPatternMatcher' 	inject='pathPatternMatcher';
+	property name='pathPatternMatcher' 	inject='provider:pathPatternMatcher@globber';
 	property name='shell' 				inject='Shell';
 	property name='logger'				inject='logbox:logger:{this}';
 	property name='semanticVersion'		inject='provider:semanticVersion@semver';
