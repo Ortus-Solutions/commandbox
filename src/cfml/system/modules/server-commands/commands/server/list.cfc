@@ -66,17 +66,16 @@ component {
 
 		for( var thisKey in servers ){
 			var thisServerInfo = servers[ thisKey ];
+			var status = serverService.isServerRunning( thisServerInfo ) ? 'running' : 'stopped';
 
 			// Check name and status filters.  By default, everything shows
 			if( ( !len( arguments.name ) || listFindNoCase( arguments.name, thisServerInfo.name ) )
-				&& ( !len( statusList ) || listFindNoCase( statusList, thisServerInfo.status ) ) ) {
+				&& ( !len( statusList ) || listFindNoCase( statusList, status ) ) ) {
 
 				// Null Checks, to guarnatee correct struct.
 				structAppend( thisServerInfo, serverService.newServerInfoStruct(), false );
 
 				print.line().boldText( thisServerInfo.name );
-
-				var status = thisServerInfo.status;
 				print.boldtext( ' (' )
 					.bold( status, statusColors.keyExists( status ) ? statusColors[ status ] : 'yellow' )
 					.bold( ')' )

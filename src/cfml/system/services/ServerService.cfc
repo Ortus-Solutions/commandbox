@@ -871,6 +871,15 @@ component accessors="true" singleton {
 		}
 	}
 
+
+	/**
+	 * Logic to tell if a server is running
+	 * @serverInfo.hint Struct of server information
+ 	 **/
+	function isServerRunning( required struct serverInfo ){
+		return !isPortAvailable( serverInfo.host, serverInfo.stopSocket );
+	}
+
 	/**
 	 * persist server info
 	 * @serverInfo.hint struct of server info (ports, etc.)

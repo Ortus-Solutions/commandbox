@@ -38,8 +38,15 @@ component {
 		}		
 		var serverInfo = serverService.resolveServerDetails( arguments ).serverinfo;
 
+		if( arguments.all ) {
+			var servers = serverService.getServers();
+			servers.each( function( ID ){ runningServerCheck( servers[ arguments.ID ] ); } );
+		} else {
+			runningServerCheck( serverInfo );
+		}
+
 		// Confirm deletion
-		var askMessage = arguments.all ? "Really forget & delete all servers (servers=#arrayToList( serverService.getServerNames() )#) forever [y/n]?" :
+		var askMessage = arguments.all ? "Really forget & delete all servers (#arrayToList( serverService.getServerNames() )#) forever [y/n]?" :
 									     "Really forget & delete server '#serverinfo.name#' forever [y/n]?";
 									     
 		if( arguments.force || confirm( askMessage ) ){
@@ -48,6 +55,14 @@ component {
 			print.orangeLine( "Cancelling forget command" );
 		}
 
+	}
+	
+	private function runningServerCheck( required struct serverInfo ) {
+		if( serverService.isServerRunning( serverInfo ) ) {
+			print.redBoldLine( 'Server "#serverInfo.name#" (#serverInfo.webroot#) appears to still be running!' )
+				.yellowLine( 'Forgetting it now may leave the server in a currupt state. Please stop it first.' )
+				.line();
+		}
 	}
 	
 	function serverNameComplete() {
