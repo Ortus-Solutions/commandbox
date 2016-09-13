@@ -255,6 +255,11 @@ External Dependencies:
 		<!-- Create Version Files -->
 		<echo file="${temp.dir}/cli/bin/cliloader/cfml.version" message="${commandbox.version}"/>
 
+		<!-- Install dependencies for CommandBox core -->
+		<exec executable="box" dir="${build.dir}/system">
+			<arg line="${cmdboxhome.arg} install" />
+		</exec>
+
 		<!--  create the cfml distro zip -->
 		<zip destfile="${dist.dir}/${distro.name}-cfml-${commandbox.version}.zip" update="false" level="9">
 	        <fileset dir="${build.dir}"/>

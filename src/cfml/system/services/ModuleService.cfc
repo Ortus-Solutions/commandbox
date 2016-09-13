@@ -85,7 +85,7 @@
     <cffunction name="rebuildModuleRegistry" output="false" access="public" returntype="any" hint="Rescan the module locations directories and re-register all located modules, this method does NOT register or activate any modules, it just reloads the found registry">
     	<cfscript>
     		// Add the application's module's location and the system core modules
-    		var modLocations   = [ '/commandbox/system/modules', '/commandbox/modules' ];
+    		var modLocations   = [ '/commandbox/system/modules','/commandbox/system/modules_app', '/commandbox/modules' ];
 			// Add the application's external locations array.
 			modLocations.addAll( ConfigService.getSetting( "ModulesExternalLocation", [] ) );
 			// iterate through locations and build the module registry in order
@@ -415,12 +415,17 @@
 				if( directoryExists( mconfig.modelsPhysicalPath ) and mConfig.autoMapModels ){
 					// Add as a mapped directory with module name as the namespace with correct mapping path
 					var packagePath = ( len( mConfig.cfmapping ) ? mConfig.cfmapping & ".#mConfig.conventions.modelsLocation#" :  mConfig.modelsInvocationPath );
+					systemOutput(mConfig.modelNamespace, true);
+					systemOutput(packagePath, true);
+					systemOutput('', true);
 					if( len( mConfig.modelNamespace ) ){
 						wirebox.getBinder().mapDirectory( packagePath=packagePath, namespace="@#mConfig.modelNamespace#" );
 					} else {
 						// just register with no namespace
 						wirebox.getBinder().mapDirectory( packagePath=packagePath );
 					}
+					wirebox.getBinder().processMappings();
+					wirebox.getBinder().getMappings().keyArray().sort('text').each( function(i){ systemOutput(i,true); } );
 				}
 				
 				// Register commands if they exist

@@ -19,7 +19,8 @@ component accessors="true" singleton {
 	property name='wirebox' 			inject='wirebox';
 	property name='commandLocations'	inject='commandLocations@constants';
 	property name='interceptorService'	inject='interceptorService';
-	property name='stringDistance'		inject='StringDistance';
+	// Using provider since CommandService is created before modules are loaded
+	property name='stringDistance'		inject='provider:StringSimilarity@string-similarity';
 
 	property name='configured' default="false" type="boolean";
 
@@ -45,7 +46,6 @@ component accessors="true" singleton {
 	* Configure the service
 	*/
 	CommandService function configure(){
-
 		// Check if handler mapped?
 		if( NOT wirebox.getBinder().mappingExists( 'commandbox.system.BaseCommand' ) ){
 			// feed the base class
