@@ -17,7 +17,7 @@ component accessors="true" singleton {
 	property name='pathPatternMatcher' 	inject='pathPatternMatcher';
 	property name='shell' 				inject='Shell';
 	property name='logger'				inject='logbox:logger:{this}';
-	property name='semanticVersion'		inject='semanticVersion';
+	property name='semanticVersion'		inject='provider:semanticVersion@semver';
 	property name='endpointService'		inject='EndpointService';
 	property name='consoleLogger'		inject='logbox:logger:console';
 	property name='interceptorService'	inject='interceptorService';

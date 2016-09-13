@@ -45,7 +45,7 @@ component aliases="bump" {
 	
 	property name='packageService' inject='PackageService';
 	property name='configService' inject='ConfigService';
-	property name='semanticVersion'	inject='semanticVersion';
+	property name='semanticVersion'	inject='provider:semanticVersion@semver';
 	property name='interceptorService'	inject='interceptorService';
 	
 	/**  
