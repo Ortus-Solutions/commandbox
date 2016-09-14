@@ -1033,7 +1033,10 @@ component accessors="true" singleton {
 			var boxJSON = readPackageDescriptor( arguments.directory );
 			// If there is a scripts object with a matching key for this interceptor....
 			if( boxJSON.keyExists( 'scripts' ) && isStruct( boxJSON.scripts ) && boxJSON.scripts.keyExists( arguments.scriptName ) ) {
-					
+				
+				// Run preXXX package script
+				runScript( 'pre#arguments.scriptName#', arguments.directory, true );
+				
 				var thisScript = boxJSON.scripts[ arguments.scriptName ];
 				consoleLogger.debug( '.' );
 				consoleLogger.warn( 'Running package script [#arguments.scriptName#].' );
@@ -1044,6 +1047,10 @@ component accessors="true" singleton {
 				shell.cd( arguments.directory );
 				shell.callCommand( thisScript );
 				shell.cd( previousCWD );
+								
+				// Run postXXX package script
+				runScript( 'post#arguments.scriptName#', arguments.directory, true );
+				
 			} else if( !arguments.ignoreMissing ) {
 				consoleLogger.error( 'The script [#arguments.scriptName#] does not exist in this package.' );
 			}
