@@ -38,10 +38,13 @@ component singleton {
     	
     	if( len( trim( text ) ) == 0 ) {
     		return "";
-    	}
+    	}    	
     	text = ansifyHTML( text, "b", "bold" );
     	text = ansifyHTML( text, "strong", "bold" );
     	text = ansifyHTML( text, "em", "underline" );
+    	
+  	 	// Remove inherent line breaks
+  	 	text = reReplaceNoCase( text , CR, '', 'all' );
   	 	text = reReplaceNoCase( text , "<br[^>]*>", CR, 'all' );
     	    	
     	var t='div';
@@ -68,7 +71,7 @@ component singleton {
   	 **/
 	function ansifyHTML(text,tag,ansiCode) {
     	var t=tag;
-    	var matches = REMatch('(?i)<#t#[^>]*>(.+?)</#t#>', text);
+    	var matches = REMatch('(?i)<#t#[ ^>]*>(.+?)</#t#>', text);
     	for(var match in matches) {
     		// This doesn't really work inside of a larger string that you are applying formatting to
     		// The end of the boldText clears all formatting, and the rest of the string is just plain.

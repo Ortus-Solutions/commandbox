@@ -47,7 +47,7 @@ component aliases="exec"{
 			var out = wirebox.getInstance( "Executor" ).runFile( arguments.file, vars );
 		} catch( any e ){
 			print.boldGreen( "Error executing #arguments.file#: " );
-			return error( '#e.message##CR##e.detail##CR##e.stackTrace#' );
+			rethrow;
 		}
 
 		return ( out ?: "The file '#arguments.file#' executed succesfully!" );
