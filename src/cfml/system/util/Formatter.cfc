@@ -43,9 +43,8 @@ component singleton {
     	text = ansifyHTML( text, "strong", "bold" );
     	text = ansifyHTML( text, "em", "underline" );
     	
-  	 	// Remove inherent line breaks
-  	 	text = reReplaceNoCase( text , CR, '', 'all' );
-  	 	text = reReplaceNoCase( text , "<br[^>]*>", CR, 'all' );
+  	 	// Replace br tags (and any whitespace/line breaks after them) with a CR
+  	 	text = reReplaceNoCase( text , "<br[^>]*>\s*", CR, 'all' );
     	    	
     	var t='div';
     	var matches = REMatch('(?i)<#t#[^>]*>(.*?)</#t#>', text);
