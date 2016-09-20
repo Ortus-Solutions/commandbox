@@ -349,7 +349,16 @@ or just add DEBUG to the root logger
 			throw( "Error searching for slugs", 'forgebox', arrayToList( results.response.messages ) );
 		}
 		
-		return results.response.data;
+		var opts = results.response.data;
+		
+		// If there's only one suggestion and it doesn't have an @ in it, add another suggestion with the @ at the end.
+		// This is to prevent the tab completion from adding a space after the suggestion since it thinks it's the only possible option
+		// Hitting tab will still populate the line, but won't add the space which makes it easier if the user intends to continue for a specific version.
+		if( opts.len() == 1 && !( opts[1] contains '@' ) ) {
+			opts.append( opts[1] & '@' );
+		}
+		
+		return opts;
 	}
 	
 	</cfscript>

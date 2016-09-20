@@ -151,7 +151,7 @@ component aliases="start" {
 		
 		try {
 			// Get auto-complete options
-			return forgebox.slugSearch( arguments.paramSoFar, 'cf-engines' );	
+			return forgebox.slugSearch( arguments.paramSoFar, 'cf-engines' );
 		} catch( forgebox var e ) {
 			// Gracefully handle ForgeBox issues
 			print
