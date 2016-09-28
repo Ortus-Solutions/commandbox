@@ -526,6 +526,11 @@ component accessors="true" singleton {
 	// Serialize tray options and write to temp file
 	var trayOptionsPath = serverInfo.serverHome & '/trayOptions.json';
 	fileWrite( trayOptionsPath,  serializeJSON( serverInfo.trayOptions ) );
+
+
+	var startupTimeout = 120;
+	// Increase our startup allowance for Adobe engines, since a number of files are generated on the first request
+	if( CFEngineName == 'adobe' ) startupTimeout=240;
 							
 	// The java arguments to execute:  Shared server, custom web configs
 	var args = ' #serverInfo.JVMargs# -Xmx#serverInfo.heapSize#m -Xms#serverInfo.heapSize#m'
@@ -539,7 +544,7 @@ component accessors="true" singleton {
 			& ' --tray-icon "#serverInfo.trayIcon#" --tray-config "#trayOptionsPath#"'
 			& ' --directoryindex "#serverInfo.directoryBrowsing#" --cfml-web-config "#serverInfo.webConfigDir#"'
 			& ( len( CLIAliases ) ? ' --dirs "#CLIAliases#"' : '' )
-			& ' --cfml-server-config "#serverInfo.serverConfigDir#" #serverInfo.runwarArgs# --timeout 120';
+			& ' --cfml-server-config "#serverInfo.serverConfigDir#" #serverInfo.runwarArgs# --timeout #startupTimeout#';
 			
 	// Starting a WAR
 	if (serverInfo.WARPath != "" ) {
