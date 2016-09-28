@@ -530,7 +530,9 @@ component accessors="true" singleton {
 
 	var startupTimeout = 120;
 	// Increase our startup allowance for Adobe engines, since a number of files are generated on the first request
-	if( CFEngineName == 'adobe' ) startupTimeout=240;
+	if( CFEngineName == 'adobe' ) {
+		startupTimeout=240;
+	}
 							
 	// The java arguments to execute:  Shared server, custom web configs
 	var args = ' #serverInfo.JVMargs# -Xmx#serverInfo.heapSize#m -Xms#serverInfo.heapSize#m'
