@@ -530,7 +530,7 @@ component accessors="true" singleton {
 
 	var startupTimeout = 120;
 	// Increase our startup allowance for Adobe engines, since a number of files are generated on the first request
-	if( CFEngineName == 'adobe' ) {
+	if( CFEngineName == 'adobe' ){
 		startupTimeout=240;
 	}
 							
