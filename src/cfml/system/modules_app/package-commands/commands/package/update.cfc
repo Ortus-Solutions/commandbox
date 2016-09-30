@@ -59,7 +59,7 @@ component aliases="update" {
 		 	verbose=arguments.verbose,
 		 	includeSlugs=arguments.slug
 		 );
-		
+		 
 		// Advice initial notice
 		if( dependenciesToUpdate.len() ){
 			print.green( 'Found ' )
@@ -90,7 +90,13 @@ component aliases="update" {
 			
 			print.magentaLine( "Starting update of #oldID# ").toConsole();
 			// install it
-			runCommand( "install ID='#parser.escapeArg( newID )#' verbose=#arguments.verbose# --force --!save" );
+			command( 'install' )
+				.params( 
+					ID=newID,
+					verbose=arguments.verbose,
+					directory=dependency.directory )
+				.flags( 'force', '!save' )
+				.run( echo=arguments.verbose )
 		}
 		
 	}

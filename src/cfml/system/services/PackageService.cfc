@@ -916,6 +916,7 @@ component accessors="true" singleton {
 				if( updateData.isOutdated ){
 					aOutdatedDependencies.append({ 
 						slug 				: arguments.slug,
+						directory 			: value.directory,
 						version 			: value.version,
 						packageVersion		: value.packageVersion,
 						newVersion 			: updateData.version,
@@ -958,7 +959,8 @@ component accessors="true" singleton {
 			'shortDescription' : boxJSON.shortDescription,
 			'version': boxJSON.version,
 			'packageVersion': boxJSON.version,
-			'isInstalled': true
+			'isInstalled': true,
+			'directory': arguments.directory
 		};
 		buildChildren( boxJSON, tree, arguments.directory);
 		return tree;
@@ -979,7 +981,8 @@ component accessors="true" singleton {
 				'name' : '',
 				'shortDescription' : '',
 				'packageVersion' : '',
-				'isInstalled': false
+				'isInstalled': false,
+				'directory': ''
 			};
 			   
 			if( structKeyExists( arguments.installPaths, dependency ) ) {
@@ -990,6 +993,12 @@ component accessors="true" singleton {
 				thisDeps[ dependency ][ 'shortDescription'  ] = boxJSON.shortDescription;
 				thisDeps[ dependency ][ 'packageVersion'  ] = boxJSON.version;
 				thisDeps[ dependency ][ 'isInstalled'  ] = true;
+				if( boxJSON.createPackageDirectory ) {
+					// Back up to the "container" folder.  The packge directory will be added back on installation
+					thisDeps[ dependency ][ 'directory'  ] = listDeleteAt( fullPackageInstallPath, listLen( fullPackageInstallPath, '/\' ), '/\' );
+				} else {
+					thisDeps[ dependency ][ 'directory'  ] = fullPackageInstallPath;					
+				}
 				
 				// Down the rabbit hole
 				buildChildren( boxJSON, thisDeps[ dependency ], fullPackageInstallPath );				
