@@ -204,6 +204,21 @@ or just add DEBUG to the root logger
 	}
 	
 	/**
+	* Look up user based on API Token
+	*/
+	function whoami( required string APIToken ) {
+			
+		var results = makeRequest( resource="users/whoami/#APIToken#", method='get' );
+		
+		// error 
+		if( results.response.error ){
+			throw( arrayToList( results.response.messages ), 'forgebox' );
+		}
+		
+		return results.response.data;
+	}
+	
+	/**
 	* Authenticates a user in ForgeBox
 	*/
 	function login(
