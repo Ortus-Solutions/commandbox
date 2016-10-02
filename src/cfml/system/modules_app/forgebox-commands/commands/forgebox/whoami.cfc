@@ -16,7 +16,7 @@ component {
 	function run(){
 		try {
 			var APIToken = configService.getSetting( 'endpoints.forgebox.APIToken', '' );
-			if( !len( APIToken) ) {
+			if( !len( APIToken ) ) {
 				error( 'You don''t have a Forgebox API token set.', 'Use "forgebox login" to authenticate as a user.' );
 			}
 			userData = forgebox.whoami( APIToken );
