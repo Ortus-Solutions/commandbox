@@ -544,6 +544,8 @@ component accessors="true" singleton {
 		tmp &= thisPath.startsWith( '/' ) ? thisPath : '/' & thisPath;
 		errorPages = errorPages.listAppend( tmp );
 	}
+	// Bug in runwar requires me to completley omit this param unless it's populated
+	// https://github.com/cfmlprojects/runwar/issues/33
 	if( len( errorPages ) ) {
 		errorPages = '--error-pages="#errorPages#"';
 	}
