@@ -130,8 +130,10 @@ component accessors="true" singleton {
 				host : d.web.host ?: '127.0.0.1',				
 				directoryBrowsing : d.web.directoryBrowsing ?: true,
 				webroot : d.web.webroot ?: '',
-			// Duplicate so onServerStart interceptors don't actually change config settings via refernce.
+				// Duplicate so onServerStart interceptors don't actually change config settings via refernce.
 				aliases : duplicate( d.web.aliases ?: {} ),
+				// Duplicate so onServerStart interceptors don't actually change config settings via refernce.
+				errorPages : duplicate( d.web.errorPages ?: {} ),
 				http : {
 					port : d.web.http.port ?: 0,
 					enable : d.web.http.enable ?: true
@@ -378,6 +380,12 @@ component accessors="true" singleton {
 		serverInfo.aliases 			= defaults.web.aliases;
 		serverInfo.aliases.append( serverJSON.web.aliases ?: {} );
 				
+		// Global errorPages are always added on top of server.json (but don't overwrite the full struct)
+		// Aliases aren't accepted via command params
+		serverInfo.errorPages		= defaults.web.errorPages;
+		serverInfo.errorPages.append( serverJSON.web.errorPages ?: {} );
+		
+		
 		// Global trayOptions are always added on top of server.json (but don't overwrite)
 		// trayOptions aren't accepted via command params due to no clean way to provide them
 		serverInfo.trayOptions 			= defaults.trayOptions;
@@ -523,6 +531,23 @@ component accessors="true" singleton {
 		CLIAliases = CLIAliases.listAppend( thisAlias & '=' & fileSystemUtil.resolvePath( serverInfo.aliases[ thisAlias ], serverInfo.webroot ) );
 	}
 	
+	// Turn struct of errorPages into a comma-delimited list.
+	// --error-pages="404=/path/to/404.html,500=/path/to/500.html,1=/path/to/default.html"
+	var errorPages = '';
+	for( var thisErrorPage in serverInfo.errorPages ) {
+		// "default" turns into "1"
+		var tmp = thisErrorPage == 'default' ? 1 : thisErrorPage;
+		tmp &= '=';
+		// normalize slashes
+		var thisPath = replace( serverInfo.errorPages[ thisErrorPage ], '\', '/', 'all' );
+		// Add leading slash if it doesn't exist.
+		tmp &= thisPath.startsWith( '/' ) ? thisPath : '/' & thisPath;
+		errorPages = errorPages.listAppend( tmp );
+	}
+	if( len( errorPages ) ) {
+		errorPages = '--error-pages="#errorPages#"';
+	}
+	
 	// Serialize tray options and write to temp file
 	var trayOptionsPath = serverInfo.serverHome & '/trayOptions.json';
 	fileWrite( trayOptionsPath,  serializeJSON( serverInfo.trayOptions ) );
@@ -535,7 +560,7 @@ component accessors="true" singleton {
 			& ' --open-browser #serverInfo.openbrowser#'
 			& ' --open-url ' & ( serverInfo.SSLEnable ? 'https://#serverInfo.host#:#serverInfo.SSLPort#' : 'http://#serverInfo.host#:#serverInfo.port#' )
 			& ( len( CFEngineName ) ? ' --cfengine-name "#CFEngineName#"' : '' )
-			& ' --server-name "#serverInfo.name#"'
+			& ' --server-name "#serverInfo.name#" #errorPages#'
 			& ' --tray-icon "#serverInfo.trayIcon#" --tray-config "#trayOptionsPath#"'
 			& ' --directoryindex "#serverInfo.directoryBrowsing#" --cfml-web-config "#serverInfo.webConfigDir#"'
 			& ( len( CLIAliases ) ? ' --dirs "#CLIAliases#"' : '' )
@@ -1147,8 +1172,18 @@ component accessors="true" singleton {
 		
 		// If we want all possible options...
 		if( arguments.all ) {
-			// ... Then add them in			
+			// ... Then add them in
 			props = JSONService.addProp( props, '', '', getDefaultServerJSON() );
+			// Suggest a couple optional web error pages
+			props = JSONService.addProp( props, '', '', {
+				web : {
+					errorPages : {
+						404 : '',
+						500 : '',
+						default : ''
+					}
+				}
+			} );
 		}
 		
 		return props;		
