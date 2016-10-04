@@ -238,7 +238,10 @@ component accessors="true" singleton {
 		}
 		if( !isNull( serverProps.trayIcon ) ) {
 			serverProps.trayIcon = fileSystemUtil.resolvePath( serverProps.trayIcon );
-		}		
+		}
+		if( !isNull( serverProps.rewritesConfig ) ) {
+			serverProps.rewritesConfig = fileSystemUtil.resolvePath( serverProps.rewritesConfig );
+		}
 		
 		// Save hand-entered properties in our server.json for next time
 		for( var prop in serverProps ) {
@@ -266,13 +269,13 @@ component accessors="true" singleton {
 			         break;
 			    case "trayIcon":
 			    	// Both of these are canonical already.
-			    	var thisDirectory = replace( serverProps[ 'trayIcon' ], '\', '/', 'all' ) & '/';
+			    	var thisFile = replace( serverProps[ 'trayIcon' ], '\', '/', 'all' );
 			    	var configPath = replace( fileSystemUtil.resolvePath( defaultServerConfigFileDirectory ), '\', '/', 'all' ) & '/';
 			    	// If the trayIcon is south of the server's JSON, make it relative for better portability.
-			    	if( thisDirectory contains configPath ) {
-			    		thisDirectory = replaceNoCase( thisDirectory, configPath, '' );
+			    	if( thisFile contains configPath ) {
+			    		thisFile = replaceNoCase( thisFile, configPath, '' );
 			    	}
-					serverJSON[ 'trayIcon' ] = thisDirectory;
+					serverJSON[ 'trayIcon' ] = thisFile;
 			         break;
 			    case "stopPort":
 					serverJSON[ 'stopsocket' ] = serverProps[ prop ];
@@ -317,7 +320,14 @@ component accessors="true" singleton {
 					serverJSON[ 'web' ][ 'rewrites' ][ 'enable' ] = serverProps[ prop ];
 			         break;
 			    case "rewritesConfig":
-					serverJSON[ 'web' ][ 'rewrites' ][ 'config' ] = serverProps[ prop ];
+			    	// Both of these are canonical already.
+			    	var thisFile = replace( serverProps[ 'rewritesConfig' ], '\', '/', 'all' );
+			    	var configPath = replace( fileSystemUtil.resolvePath( defaultServerConfigFileDirectory ), '\', '/', 'all' ) & '/';
+			    	// If the trayIcon is south of the server's JSON, make it relative for better portability.
+			    	if( thisFile contains configPath ) {
+			    		thisFile = replaceNoCase( thisFile, configPath, '' );
+			    	}
+					serverJSON[ 'web' ][ 'rewrites' ][ 'config' ] = thisFile;
 			         break;
 			    case "heapSize":
 					serverJSON[ 'JVM' ][ 'heapSize' ] = serverProps[ prop ];
@@ -371,6 +381,8 @@ component accessors="true" singleton {
 		serverInfo.SSLKey 			= serverProps.SSLKey 			?: serverJSON.web.SSL.key			?: defaults.web.SSL.key;
 		serverInfo.SSLKeyPass 		= serverProps.SSLKeyPass 		?: serverJSON.web.SSL.keyPass		?: defaults.web.SSL.keyPass;
 		serverInfo.rewritesEnable 	= serverProps.rewritesEnable	?: serverJSON.web.rewrites.enable	?: defaults.web.rewrites.enable;
+		if( isDefined( 'serverJSON.web.rewrites.config' ) ) { serverJSON.web.rewrites.config = fileSystemUtil.resolvePath( serverJSON.web.rewrites.config, defaultServerConfigFileDirectory ); }
+		if( isDefined( 'defaults.web.rewrites.config' ) ) { defaults.web.rewrites.config = fileSystemUtil.resolvePath( defaults.web.rewrites.config, defaultwebroot ); }
 		serverInfo.rewritesConfig 	= serverProps.rewritesConfig 	?: serverJSON.web.rewrites.config 	?: defaults.web.rewrites.config;
 		serverInfo.heapSize 		= serverProps.heapSize 			?: serverJSON.JVM.heapSize			?: defaults.JVM.heapSize;
 		serverInfo.directoryBrowsing = serverProps.directoryBrowsing ?: serverJSON.web.directoryBrowsing ?: defaults.web.directoryBrowsing;
@@ -595,9 +607,11 @@ component accessors="true" singleton {
 	args &= " --urlrewrite-enable #serverInfo.rewritesEnable#";
 	
 	if( serverInfo.rewritesEnable ){
-		serverInfo.rewritesConfig = fileSystemUtil.resolvePath( serverInfo.rewritesConfig );
 		if( !fileExists(serverInfo.rewritesConfig) ){
-			return "URL rewrite config not found #serverInfo.rewritesConfig#";
+			consoleLogger.error( '.' );
+			consoleLogger.error( 'URL rewrite config not found [#serverInfo.rewritesConfig#]' );
+			consoleLogger.error( '.' );
+			return;
 		}
 		args &= " --urlrewrite-file ""#serverInfo.rewritesConfig#""";
 	}
