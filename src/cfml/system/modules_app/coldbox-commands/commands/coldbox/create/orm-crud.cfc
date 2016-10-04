@@ -33,8 +33,9 @@ component {
 
 		// entity defaults
 		var entityName = listLast( arguments.entity, "." );
-		var entityCFC 	= fileSystemUtil.resolvePath( replace( arguments.entity, ".", "/", "all" ) );
+		var entityCFC 	= fileSystemUtil.makePathRelative( fileSystemUtil.resolvePath( replace( arguments.entity, ".", "/", "all" ) ) );
 		var entityPath 	= entityCFC & ".cfc";
+		
 		// verify it
 		if( !fileExists( entityPath ) ){
 			return error( "The entity #entityPath# does not exist, cannot continue, ciao!" );
