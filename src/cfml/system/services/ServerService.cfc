@@ -529,7 +529,7 @@ component accessors="true" singleton {
 	}
 	
 	serverInfo.trayOptions.prepend( { 'label':'Open Browser', 'action':'openbrowser', 'url':'http://${runwar.host}:${runwar.port}/' } );
-	serverInfo.trayOptions.prepend( { 'label':'Stop Server (${runwar.processName})', 'action':'stopserver' } );
+	serverInfo.trayOptions.prepend( { 'label':'Stop Server', 'action':'stopserver' } );
 	
     // This is due to a bug in RunWar not creating the right directory for the logs
     directoryCreate( serverInfo.logDir, true, true );
