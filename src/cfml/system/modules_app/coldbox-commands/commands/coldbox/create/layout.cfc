@@ -36,6 +36,13 @@ component {
 		
 		// Write out layout
 		var layoutPath = '#arguments.directory#/#arguments.name#.cfm'; 
+
+		// Confirm it
+		if( fileExists( layoutPath ) && !confirm( "The file '#getFileFromPath( layoutPath )#' already exists, overwrite it (y/n)?" ) ){
+			print.redLine( "Exiting..." );
+			return;
+		}
+
 		file action='write' file='#layoutPath#' mode ='777' output='#layoutContent#';
 		print.greenLine( 'Created #layoutPath#' );				
 		

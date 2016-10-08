@@ -61,6 +61,13 @@ component {
 		var modelPath = '#arguments.directory#/#arguments.serviceName#Service.cfc';
 		// Create dir if it doesn't exist
 		directorycreate( getDirectoryFromPath( modelPath ), true, true );
+
+		// Confirm it
+		if( fileExists( modelPath ) && !confirm( "The file '#getFileFromPath( modelPath )#' already exists, overwrite it (y/n)?" ) ){
+			print.redLine( "Exiting..." );
+			return;
+		}
+		
 		file action='write' file='#modelPath#' mode ='777' output='#modelContent#';
 		print.greenLine( 'Created #modelPath#' );
 

@@ -57,6 +57,13 @@ component {
 		var testPath = '#arguments.testsDirectory#/#listLast( arguments.path, "." )#Test.cfc';
 		// Create dir if it doesn't exist
 		directorycreate( getDirectoryFromPath( testPath ), true, true );
+
+		// Confirm it
+		if( fileExists( testPath ) && !confirm( "The file '#getFileFromPath( testPath )#' already exists, overwrite it (y/n)?" ) ){
+			print.redLine( "Exiting..." );
+			return;
+		}
+		
 		// Create the tests
 		file action='write' file='#testPath#' mode ='777' output='#interceptorTestContent#';
 		print.greenLine( 'Created #testPath#' );

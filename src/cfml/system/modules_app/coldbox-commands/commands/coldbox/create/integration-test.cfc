@@ -108,6 +108,13 @@ component {
 		var integrationTestPath = '#arguments.directory#/#arguments.handler#Test.cfc';
 		// Create dir if it doesn't exist
 		directorycreate( getDirectoryFromPath( integrationTestPath ), true, true );
+
+		// Confirm it
+		if( fileExists( integrationTestPath ) && !confirm( "The file '#getFileFromPath( integrationTestPath )#' already exists, overwrite it (y/n)?" ) ){
+			print.redLine( "Exiting..." );
+			return;
+		}
+
 		// Write out the files
 		file action='write' file='#integrationTestPath#' mode ='777' output='#handlerTestContent#';
 		print.greenLine( 'Created #integrationTestPath#' );

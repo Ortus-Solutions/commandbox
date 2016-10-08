@@ -89,6 +89,13 @@ component {
 
 		// Write it out.
 		var interceptorPath = '#arguments.directory#/#arguments.name#.cfc';
+
+		// Confirm it
+		if( fileExists( interceptorPath ) && !confirm( "The file '#getFileFromPath( interceptorPath )#' already exists, overwrite it (y/n)?" ) ){
+			print.redLine( "Exiting..." );
+			return;
+		}
+		
 		file action='write' file='#interceptorPath#' mode ='777' output='#interceptorContent#';
 		print.greenLine( '#interceptorPath#' );
 

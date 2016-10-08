@@ -49,6 +49,13 @@ component {
 
 		// Write out view
 		var viewPath = '#arguments.directory#/#arguments.name#.cfm';
+
+		// Confirm it
+		if( fileExists( viewPath ) && !confirm( "The file '#getFileFromPath( viewPath )#' already exists, overwrite it (y/n)?" ) ){
+			print.redLine( "Exiting..." );
+			return;
+		}
+
 		file action='write' file='#viewPath#' mode ='777' output='#viewContent#';
 		print.greenLine( 'Created #viewPath#' );
 

@@ -63,6 +63,13 @@ component {
 		moduleConfig = replaceNoCase( moduleConfig, '@modelNamespace@', arguments.modelNamespace, 'all');
 		moduleConfig = replaceNoCase( moduleConfig, '@dependencies@', serializeJSON( listToArray( arguments.dependencies ) ), 'all');
 		
+		// Confirm it
+		if( directoryExists( arguments.directory & '/#arguments.name#' ) && 
+			!confirm( "The module already exists, overwrite it (y/n)?" ) ){
+			print.redLine( "Exiting..." );
+			return;
+		}
+
 		// Copy module template
 		directoryCopy( '/coldbox-commands/templates/modules/', arguments.directory & '/#arguments.name#', true );
 		
