@@ -1,0 +1,16 @@
+{
+    "name":"Globber",
+    "version":"1.0.0",
+    "author":"Brad Wood",
+    "location":"Ortus-Solutions/globber#v1.0.0",
+    "homepage":"https://github.com/Ortus-Solutions/globber/",
+    "documentation":"https://github.com/Ortus-Solutions/globber/",
+    "repository":{
+        "type":"Git",
+        "URL":"git@github.com:Ortus-Solutions/globber.git"
+    },
+    "bugs":"https://github.com/Ortus-Solutions/globber/issues",
+    "slug":"globber",
+    "shortDescription":"I am a utility to match file system path patterns.",
+    "type":"modules"
+}

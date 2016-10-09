@@ -1,0 +1,21 @@
+{
+    "name":"String Similarity",
+    "version":"1.0.0",
+    "author":"Brad Wood",
+    "location":"bdw429s/string-similarity#v1.0.0",
+    "homepage":"https://github.com/bdw429s/string-similarity/",
+    "documentation":"https://github.com/bdw429s/string-similarity/",
+    "repository":{
+        "type":"Git",
+        "URL":"git@github.com:bdw429s/string-similarity.git"
+    },
+    "bugs":"https://github.com/bdw429s/string-similarity/issues",
+    "slug":"string-similarity",
+    "shortDescription":"A small string comparison library to highlight differences between to strings ",
+    "type":"modules",
+    "ignore":[
+        "**/.*",
+        "test",
+        "tests"
+    ]
+}
