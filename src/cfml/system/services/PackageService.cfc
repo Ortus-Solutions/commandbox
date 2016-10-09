@@ -242,12 +242,14 @@ component accessors="true" singleton {
 				containerBoxJSON = containerBoxJSON,
 				artifactDescriptor = artifactDescriptor,
 				ignorePatterns = ignorePatterns,
-				endpointData = endpointData								
+				endpointData = endpointData,
+				artifactPath = tmpPath
 			};
 			interceptorService.announceInterception( 'onInstall', interceptData );
 			// Make sure these get set back into their original variables in case the interceptor changed them.
 			installDirectory = interceptData.installDirectory;
 			ignorePatterns = interceptData.ignorePatterns;
+			tmpPath = interceptData.artifactPath;
 						
 			// Else, use package type convention
 			if( !len( installDirectory ) && len( packageType ) ) {

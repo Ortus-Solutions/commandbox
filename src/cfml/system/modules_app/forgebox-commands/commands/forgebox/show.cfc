@@ -136,9 +136,39 @@ component aliases="show" {
 					.line()
 					.line( 'Type: #entryData.typeName#' )
 					.line( 'Slug: "#entryData.slug#"' )
-					.line( 'Summary: #entryData.summary#' )
-					.line( 'Versions: #entryData.versions.map( function( i ){ return ' ' & i.version; } ).toList()#' )
-					.line( 'Created On: #dateFormat( entryData.createdDate )#' )
+					.line( 'Summary: #entryData.summary#' )					
+					.text( 'Versions: ' );
+					
+				var prevMajor = val( entryData.versions[ 1 ].version.listGetAt( 1, '.' ) );
+				var majorCount = 0;
+				var versionLine = '';
+				var lines = 0;
+				var versionsSkipped = 0;
+				for( var ver in entryData.versions ) {
+					var major = val( ver.version.listGetAt( 1, '.' ) );
+					if( major != prevMajor ) {
+						if( lines > 0 ) { print.text( '          ' ); }
+						print.line( versionLine & ( versionsSkipped > 0 ? ' ( #versionsSkipped# more...)' : '' ) );
+						majorCount = 0;
+						versionLine = '';
+						versionsSkipped = 0;
+						lines++;
+					}
+					majorCount++;
+					if( majorCount <= 5 ) {
+						versionLine = versionLine.listAppend( ' ' & ver.version );
+					} else {
+						versionsSkipped++;
+					}
+					prevMajor = major;
+				}
+				if( len( versionLine ) ) {
+					if( lines > 0 ) { print.text( '          ' ); }
+					print.line( versionLine & ( versionsSkipped > 0 ? ' ( #versionsSkipped# more...)' : '' ) );
+				}
+				
+				 
+				print.line( 'Created On: #dateFormat( entryData.createdDate )#' )
 					.line( 'Updated On: #dateFormat( entryData.updatedDate )#' )
 					.line( 'ForgeBox Views: #numberFormat( entryData.hits )#' )
 					.line( 'Downloads: #numberFormat( entryData.downloads )#' )
