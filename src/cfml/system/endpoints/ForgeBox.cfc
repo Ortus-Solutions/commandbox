@@ -343,7 +343,7 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 			// entrylink,createdate,lname,isactive,installinstructions,typename,version,hits,coldboxversion,sourceurl,slug,homeurl,typeslug,
 			// downloads,entryid,fname,changelog,updatedate,downloadurl,title,entryrating,summary,username,description,email
 							
-			if( !val( entryData.isActive ) ) {				
+			if( !entryData.isActive ) {				
 				throw( 'The ForgeBox entry [#entryData.title#] is inactive.', 'endpointException' );
 			}
 	

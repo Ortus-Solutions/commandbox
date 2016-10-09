@@ -121,8 +121,7 @@ component aliases="show" {
 				var entryData = entryData ?: forgebox.getEntry( slug );
 				// numberOfRatings,boxjson,isActive,typeName,version,hits,sourceURL,slug,createdDate,typeSlug,downloads,updatedDate,entryID,
 				// ratings,versions,avgRating,downloadURL,changelog,installs,title,user,description,summary,homeURL
-								
-				if( !val( entryData.isActive ) ) {
+				if( !entryData.isActive ) {
 					error( 'The ForgeBox entry [#entryData.title#] is inactive, we highly recommed NOT installing it or contact the author about it' );
 				}
 				
@@ -192,7 +191,7 @@ component aliases="show" {
 				print.line();
 				var activeCount = 0;
 				for( var entry in entries.results ) {
-					if( val( entry.isactive ) ) {
+					if( entry.isactive ) {
 						activeCount++;
 						print.blackOnWhite( ' #entry.title# ' ); 
 							print.boldText( '   ( #entry.user.fname# #entry.user.lname# )' );
