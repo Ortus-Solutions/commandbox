@@ -141,6 +141,7 @@ component accessors="true" singleton="true" {
 					// See if there's something usable in the artifacts cache.  If so, we'll use that version.
 					var satisfyingVersion = artifactService.findSatisfyingVersion( endpoint.parseSlug( arguments.ID ), version );
 					if( len( satisfyingVersion ) ) {
+						arguments.ID = endpoint.parseSlug( arguments.ID ) & '@' & satisfyingVersion;
 						consoleLogger.info( ".");
 						consoleLogger.info( "Sweet! We found a local version of [#satisfyingVersion#] that we can use in your artifacts.");
 						consoleLogger.info( ".");
