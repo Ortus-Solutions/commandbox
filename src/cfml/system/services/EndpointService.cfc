@@ -180,6 +180,7 @@ component accessors="true" singleton {
 		
 		// Store the APIToken
 		configService.setSetting( 'endpoints.#endpointName#.APIToken', APIToken );
+		configService.setSetting( 'endpoints.#endpointName#.tokens.#arguments.username#', APIToken );
 		
 	}
 	
@@ -214,6 +215,7 @@ component accessors="true" singleton {
 		
 		// Store the APIToken
 		configService.setSetting( 'endpoints.#endpointName#.APIToken', APIToken );
+		configService.setSetting( 'endpoints.#endpointName#.tokens.#arguments.username#', APIToken );
 		
 	}
 	

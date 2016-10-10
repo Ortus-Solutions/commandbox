@@ -21,6 +21,7 @@
 	<!--- DI --->
 	<cfproperty name="CommandService" inject="CommandService">
 	<cfproperty name="ConfigService" inject="Configservice">
+	<cfproperty name="consoleLogger" inject="logbox:logger:console">
 	
 	
 <!------------------------------------------- CONSTRUCTOR ------------------------------------------->
@@ -84,7 +85,7 @@
     <cffunction name="rebuildModuleRegistry" output="false" access="public" returntype="any" hint="Rescan the module locations directories and re-register all located modules, this method does NOT register or activate any modules, it just reloads the found registry">
     	<cfscript>
     		// Add the application's module's location and the system core modules
-    		var modLocations   = [ '/commandbox/system/modules', '/commandbox/modules' ];
+    		var modLocations   = [ '/commandbox/system/modules','/commandbox/system/modules_app', '/commandbox/modules' ];
 			// Add the application's external locations array.
 			modLocations.addAll( ConfigService.getSetting( "ModulesExternalLocation", [] ) );
 			// iterate through locations and build the module registry in order
@@ -255,8 +256,14 @@
 				};
 
 				
-				// Load Module configuration from cfc and store it in module Config Cache
-				var oConfig = loadModuleConfiguration( mConfig, arguments.moduleName );
+				try {
+					// Load Module configuration from cfc and store it in module Config Cache
+					var oConfig = loadModuleConfiguration( mConfig, arguments.moduleName );
+				} catch( any var e ) {
+					consoleLogger.error( 'There was an error loading module [#arguments.moduleName#]' );
+					consoleLogger.error( '#e.message##chr( 10 )##e.detail#' );
+					return false;
+				}
 				// Verify if module has been disabled
 				if( mConfig.disabled ){
 					if( instance.logger.canDebug() ){
@@ -414,6 +421,7 @@
 						// just register with no namespace
 						wirebox.getBinder().mapDirectory( packagePath=packagePath );
 					}
+					wirebox.getBinder().processMappings();
 				}
 				
 				// Register commands if they exist

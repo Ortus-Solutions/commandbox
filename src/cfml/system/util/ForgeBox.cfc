@@ -68,7 +68,7 @@ or just add DEBUG to the root logger
 		results = makeRequest(resource="types");
 
 		// error 
-		if( results.error ){
+		if( results.response.error ){
 			throw("Error making ForgeBox REST Call", 'forgebox', results.response.messages.toList() );
 		}
 		
@@ -108,7 +108,7 @@ or just add DEBUG to the root logger
 			// Invoke call
 			results = makeRequest(resource="entries",parameters=params);
 			// error 
-			if( results.error ){
+			if( results.response.error ){
 				throw( "Error making ForgeBox REST Call", 'forgebox', results.response.messages.toList() );
 			}
 			
@@ -124,9 +124,9 @@ or just add DEBUG to the root logger
 			
 			// Invoke call
 			results = makeRequest(resource="entry/#arguments.slug#");
-			
+						
 			// error 
-			if( results.error ){
+			if( results.response.error ){
 				throw( "Error getting ForgeBox entry [#arguments.slug#]", 'forgebox', results.response.messages.toList() );
 			}
 			
@@ -144,7 +144,7 @@ or just add DEBUG to the root logger
 			results = makeRequest(resource="slug-check/#arguments.slug#");
 			
 			// error 
-			if( results.error ){
+			if( results.response.error ){
 				throw( "Error making ForgeBox REST Call", 'forgebox', results.response.messages.toList() );
 			}
 			
@@ -196,8 +196,23 @@ or just add DEBUG to the root logger
 		var results = makeRequest( resource="register", parameters=arguments, method='post' );
 		
 		// error 
-		if( results.error ){
+		if( results.response.error ){
 			throw( "Sorry, the user could not be added.", 'forgebox', arrayToList( results.response.messages ) );
+		}
+		
+		return results.response.data;
+	}
+	
+	/**
+	* Look up user based on API Token
+	*/
+	function whoami( required string APIToken ) {
+			
+		var results = makeRequest( resource="users/whoami/#APIToken#", method='get' );
+		
+		// error 
+		if( results.response.error ){
+			throw( arrayToList( results.response.messages ), 'forgebox' );
 		}
 		
 		return results.response.data;
@@ -213,7 +228,7 @@ or just add DEBUG to the root logger
 		var results = makeRequest( resource="authenticate", parameters=arguments, method='post' );
 		
 		// error 
-		if( results.error ){
+		if( results.response.error ){
 			throw( "Sorry, the user could not be logged in.", 'forgebox', arrayToList( results.response.messages ) );
 		}
 		
@@ -259,7 +274,7 @@ or just add DEBUG to the root logger
 				method='post' );
 		
 		// error 
-		if( results.error ){
+		if( results.response.error ){
 			throw( "Sorry, the package could not be published.", 'forgebox', arrayToList( results.response.messages ) );
 		}
 		
@@ -282,7 +297,7 @@ or just add DEBUG to the root logger
 		var results = makeRequest( resource=thisResource, method='post', headers={ 'x-api-token' : arguments.APIToken } );
 		
 		// error 
-		if( results.error ){
+		if( results.response.error ){
 			throw( "Something went wrong unplublishing.", 'forgebox', arrayToList( results.response.messages ) );
 		}
 		
@@ -305,7 +320,7 @@ or just add DEBUG to the root logger
 		var results = makeRequest( resource=thisResource, method='post' );
 		
 		// error 
-		if( results.error ){
+		if( results.response.error ){
 			throw( "Something went wrong tracking this installation.", 'forgebox', arrayToList( results.response.messages ) );
 		}
 		
@@ -327,7 +342,7 @@ or just add DEBUG to the root logger
 		var results = makeRequest( resource=thisResource, method='post' );
 		
 		// error 
-		if( results.error ){
+		if( results.response.error ){
 			throw( "Something went wrong tracking this download.", 'forgebox', arrayToList( results.response.messages ) );
 		}
 		
@@ -345,11 +360,20 @@ or just add DEBUG to the root logger
 		var results = makeRequest( resource=thisResource, method='get', parameters={ typeSlug : arguments.typeSlug } );
 		
 		// error 
-		if( results.error ){
+		if( results.response.error ){
 			throw( "Error searching for slugs", 'forgebox', arrayToList( results.response.messages ) );
 		}
 		
-		return results.response.data;
+		var opts = results.response.data;
+		
+		// If there's only one suggestion and it doesn't have an @ in it, add another suggestion with the @ at the end.
+		// This is to prevent the tab completion from adding a space after the suggestion since it thinks it's the only possible option
+		// Hitting tab will still populate the line, but won't add the space which makes it easier if the user intends to continue for a specific version.
+		if( opts.len() == 1 && !( opts[1] contains '@' ) ) {
+			opts.append( opts[1] & '@' );
+		}
+		
+		return opts;
 	}
 	
 	</cfscript>

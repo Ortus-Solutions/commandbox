@@ -120,6 +120,8 @@ component accessors="true" singleton {
 			stopsocket : d.stopsocket ?: 0,
 			debug : d.debug ?: false,
 			trayicon : d.trayicon ?: '',
+			// Duplicate so onServerStart interceptors don't actually change config settings via refernce.
+			trayOptions : duplicate( d.trayOptions ?: [] ),
 			jvm : {
 				heapSize : d.jvm.heapSize ?: 512,
 				args : d.jvm.args ?: ''
@@ -128,6 +130,10 @@ component accessors="true" singleton {
 				host : d.web.host ?: '127.0.0.1',				
 				directoryBrowsing : d.web.directoryBrowsing ?: true,
 				webroot : d.web.webroot ?: '',
+				// Duplicate so onServerStart interceptors don't actually change config settings via refernce.
+				aliases : duplicate( d.web.aliases ?: {} ),
+				// Duplicate so onServerStart interceptors don't actually change config settings via refernce.
+				errorPages : duplicate( d.web.errorPages ?: {} ),
 				http : {
 					port : d.web.http.port ?: 0,
 					enable : d.web.http.enable ?: true
@@ -175,14 +181,32 @@ component accessors="true" singleton {
 		var defaultName = serverDetails.defaultName;
 		var defaultwebroot = serverDetails.defaultwebroot;
 		var defaultServerConfigFile = serverDetails.defaultServerConfigFile;
+		var defaultServerConfigFileDirectory = getDirectoryFromPath( defaultServerConfigFile );
 		var serverJSON = serverDetails.serverJSON;
 		var serverInfo = serverDetails.serverinfo;
+
+		// If the server is already running, make sure the user really wants to do this.
+		if( isServerRunning( serverInfo ) && !serverProps.force ) {
+			consoleLogger.error( '.' );
+			consoleLogger.error( 'Server "#serverInfo.name#" (#serverInfo.webroot#) is already running!' );
+			consoleLogger.error( 'Overwriting a running server means you won''t be able to use the "stop" command to stop the original one.' );
+			consoleLogger.warn( 'Use the --force parameter to skip this check.' );
+			consoleLogger.error( '.' );
+			// Collect a new name
+			var newName = shell.ask( 'Provide a unique "name" for this server (leave blank to keep starting as-is): ' );
+			// If a name is provided, start over.  Otherwise, just keep starting.
+			// The recursive call here will subject their answer to the same check until they provide a name that hasn't been used for this folder.
+			if( len( newName ) ) {
+				serverProps.name = newName;
+				return start( serverProps );
+			}
+		}
 
 		// *************************************************************************************
 		// Backwards compat for default port in box.json. Remove this eventually...			// *
 																							// *
 		// Get package descriptor															// *
-		var boxJSON = packageService.readPackageDescriptor( serverInfo.webroot );			// *
+		var boxJSON = packageService.readPackageDescriptor( defaultwebroot );				// *
 		// Get defaults																		// *
 		var defaults = getDefaultServerJSON();												// *
 																							// *
@@ -196,16 +220,33 @@ component accessors="true" singleton {
 																							// *
 			// Update box.json to remove defaultPort from disk								// *
 			boxJSON.delete( 'defaultPort' );												// *
-			packageService.writePackageDescriptor( boxJSON, serverInfo.webroot );			// *
+			packageService.writePackageDescriptor( boxJSON, defaultwebroot );				// *
 		}																					// *
 																							// *
 		// End backwards compat for default port in box.json.								// *
 		// *************************************************************************************
+				
+		// Resolve path as used locally
+		if( !isNull( serverProps.directory ) ) {
+			serverProps.directory = fileSystemUtil.resolvePath( serverProps.directory );
+		} 
+		if( !isNull( serverProps.serverConfigFile ) ) {
+			serverProps.serverConfigFile = fileSystemUtil.resolvePath( serverProps.serverConfigFile );
+		}
+		if( !isNull( serverProps.WARPath ) ) {
+			serverProps.WARPath = fileSystemUtil.resolvePath( serverProps.WARPath );
+		}
+		if( !isNull( serverProps.trayIcon ) ) {
+			serverProps.trayIcon = fileSystemUtil.resolvePath( serverProps.trayIcon );
+		}
+		if( !isNull( serverProps.rewritesConfig ) ) {
+			serverProps.rewritesConfig = fileSystemUtil.resolvePath( serverProps.rewritesConfig );
+		}
 		
 		// Save hand-entered properties in our server.json for next time
 		for( var prop in serverProps ) {
 			// Ignore null props or ones that shouldn't be saved
-			if( isNull( serverProps[ prop ] ) || listFindNoCase( 'saveSettings,serverConfigFile,debug', prop ) ) {
+			if( isNull( serverProps[ prop ] ) || listFindNoCase( 'saveSettings,serverConfigFile,debug,force', prop ) ) {
 				continue;
 			}
 			// Only need switch cases for properties that are nested or use different name
@@ -218,13 +259,23 @@ component accessors="true" singleton {
 			         break;
 			    case "directory":
 			    	// Both of these are canonical already.
-			    	var thisDirectory = replace( serverProps[ prop ], '\', '/', 'all' ) & '/';
-			    	var configPath = replace( fileSystemUtil.resolvePath( getDirectoryFromPath( defaultServerConfigFile ) ), '\', '/', 'all' ) & '/';
+			    	var thisDirectory = replace( serverProps[ 'directory' ], '\', '/', 'all' ) & '/';
+			    	var configPath = replace( fileSystemUtil.resolvePath( defaultServerConfigFileDirectory ), '\', '/', 'all' ) & '/';
 			    	// If the web root is south of the server's JSON, make it relative for better portability.
 			    	if( thisDirectory contains configPath ) {
 			    		thisDirectory = replaceNoCase( thisDirectory, configPath, '' );
 			    	}
 					serverJSON[ 'web' ][ 'webroot' ] = thisDirectory;
+			         break;
+			    case "trayIcon":
+			    	// Both of these are canonical already.
+			    	var thisFile = replace( serverProps[ 'trayIcon' ], '\', '/', 'all' );
+			    	var configPath = replace( fileSystemUtil.resolvePath( defaultServerConfigFileDirectory ), '\', '/', 'all' ) & '/';
+			    	// If the trayIcon is south of the server's JSON, make it relative for better portability.
+			    	if( thisFile contains configPath ) {
+			    		thisFile = replaceNoCase( thisFile, configPath, '' );
+			    	}
+					serverJSON[ 'trayIcon' ] = thisFile;
 			         break;
 			    case "stopPort":
 					serverJSON[ 'stopsocket' ] = serverProps[ prop ];
@@ -269,7 +320,14 @@ component accessors="true" singleton {
 					serverJSON[ 'web' ][ 'rewrites' ][ 'enable' ] = serverProps[ prop ];
 			         break;
 			    case "rewritesConfig":
-					serverJSON[ 'web' ][ 'rewrites' ][ 'config' ] = serverProps[ prop ];
+			    	// Both of these are canonical already.
+			    	var thisFile = replace( serverProps[ 'rewritesConfig' ], '\', '/', 'all' );
+			    	var configPath = replace( fileSystemUtil.resolvePath( defaultServerConfigFileDirectory ), '\', '/', 'all' ) & '/';
+			    	// If the trayIcon is south of the server's JSON, make it relative for better portability.
+			    	if( thisFile contains configPath ) {
+			    		thisFile = replaceNoCase( thisFile, configPath, '' );
+			    	}
+					serverJSON[ 'web' ][ 'rewrites' ][ 'config' ] = thisFile;
 			         break;
 			    case "heapSize":
 					serverJSON[ 'JVM' ][ 'heapSize' ] = serverProps[ prop ];
@@ -288,8 +346,7 @@ component accessors="true" singleton {
 		if( !serverJSON.isEmpty() && serverProps.saveSettings ) {
 			saveServerJSON( defaultServerConfigFile, serverJSON );
 		}
-				 
-
+		
 		// Setup serverinfo according to params
 		// Hand-entered values take precendence, then settings saved in server.json, and finally defaults.
 		// The big servers.json is only used to keep a record of the last values the server was started with
@@ -300,10 +357,21 @@ component accessors="true" singleton {
 		if( serverInfo.port == 0 || !isPortAvailable( serverInfo.host, serverInfo.port ) ) { serverInfo.delete( 'port' ); }
 		// Port is the only setting that automatically carries over without being specified since it's random.
 		serverInfo.port 			= serverProps.port 				?: serverJSON.web.http.port			?: serverInfo.port 							?: getRandomPort( serverInfo.host );
+		
+		// Double check that the port in the user params or server.json isn't in use
+		if( !isPortAvailable( serverInfo.host, serverInfo.port ) ) {
+			consoleLogger.error( "." );
+			consoleLogger.error( "You asked for port [#( serverProps.port ?: serverJSON.web.http.port ?: '?' )#] in your #( serverProps.keyExists( 'port' ) ? 'start params' : 'server.json' )# but it's already in use so I'm ignoring it and choosing a random one for you." );
+			consoleLogger.error( "." );
+			serverInfo.port = getRandomPort( serverInfo.host );
+		}
+		
 		serverInfo.stopsocket		= serverProps.stopsocket		?: serverJSON.stopsocket 			?: getRandomPort( serverInfo.host );		
 		serverInfo.webConfigDir 	= serverProps.webConfigDir 		?: serverJSON.app.webConfigDir		?: getCustomServerFolder( serverInfo );
 		serverInfo.serverConfigDir 	= serverProps.serverConfigDir 	?: serverJSON.app.serverConfigDir 	?: defaults.app.serverConfigDir;
 		serverInfo.libDirs			= serverProps.libDirs 			?: serverJSON.app.libDirs			?: defaults.app.libDirs;
+		if( serverJSON.keyExists( 'trayIcon' ) ) { serverJSON.trayIcon = fileSystemUtil.resolvePath( serverJSON.trayIcon, defaultServerConfigFileDirectory ); }
+		if( defaults.keyExists( 'trayIcon' ) && len( defaults.trayIcon ) ) { defaults.trayIcon = fileSystemUtil.resolvePath( defaults.trayIcon, defaultwebroot ); }
 		serverInfo.trayIcon			= serverProps.trayIcon 			?: serverJSON.trayIcon 				?: defaults.trayIcon;
 		serverInfo.webXML 			= serverProps.webXML 			?: serverJSON.app.webXML 			?: defaults.app.webXML;
 		serverInfo.SSLEnable 		= serverProps.SSLEnable 		?: serverJSON.web.SSL.enable		?: defaults.web.SSL.enable;
@@ -313,11 +381,37 @@ component accessors="true" singleton {
 		serverInfo.SSLKey 			= serverProps.SSLKey 			?: serverJSON.web.SSL.key			?: defaults.web.SSL.key;
 		serverInfo.SSLKeyPass 		= serverProps.SSLKeyPass 		?: serverJSON.web.SSL.keyPass		?: defaults.web.SSL.keyPass;
 		serverInfo.rewritesEnable 	= serverProps.rewritesEnable	?: serverJSON.web.rewrites.enable	?: defaults.web.rewrites.enable;
+		if( isDefined( 'serverJSON.web.rewrites.config' ) ) { serverJSON.web.rewrites.config = fileSystemUtil.resolvePath( serverJSON.web.rewrites.config, defaultServerConfigFileDirectory ); }
+		if( isDefined( 'defaults.web.rewrites.config' ) ) { defaults.web.rewrites.config = fileSystemUtil.resolvePath( defaults.web.rewrites.config, defaultwebroot ); }
 		serverInfo.rewritesConfig 	= serverProps.rewritesConfig 	?: serverJSON.web.rewrites.config 	?: defaults.web.rewrites.config;
 		serverInfo.heapSize 		= serverProps.heapSize 			?: serverJSON.JVM.heapSize			?: defaults.JVM.heapSize;
 		serverInfo.directoryBrowsing = serverProps.directoryBrowsing ?: serverJSON.web.directoryBrowsing ?: defaults.web.directoryBrowsing;
-		serverInfo.JVMargs			= serverProps.JVMargs			?: serverJSON.JVM.args				?: defaults.JVM.args;
-		serverInfo.runwarArgs		= serverProps.runwarArgs		?: serverJSON.runwar.args			?: defaults.runwar.args;
+		
+		// Global aliases are always added on top of server.json (but don't overwrite)
+		// Aliases aren't accepted via command params due to no clean way to provide them
+		serverInfo.aliases 			= defaults.web.aliases;
+		serverInfo.aliases.append( serverJSON.web.aliases ?: {} );
+				
+		// Global errorPages are always added on top of server.json (but don't overwrite the full struct)
+		// Aliases aren't accepted via command params
+		serverInfo.errorPages		= defaults.web.errorPages;
+		serverInfo.errorPages.append( serverJSON.web.errorPages ?: {} );
+		
+		
+		// Global trayOptions are always added on top of server.json (but don't overwrite)
+		// trayOptions aren't accepted via command params due to no clean way to provide them
+		serverInfo.trayOptions 			= defaults.trayOptions;
+		serverInfo.trayOptions.append( serverJSON.trayOptions ?: [], true );
+		
+		// Global defauls are always added on top of whatever is specified by the user or server.json
+		serverInfo.JVMargs			= ( serverProps.JVMargs			?: serverJSON.JVM.args ?: '' ) & ' ' & defaults.JVM.args;
+		
+		// Global defauls are always added on top of whatever is specified by the user or server.json
+		serverInfo.runwarArgs		= ( serverProps.runwarArgs		?: serverJSON.runwar.args ?: '' ) & ' ' & defaults.runwar.args;
+				
+		// Global defauls are always added on top of whatever is specified by the user or server.json
+		serverInfo.libDirs		= ( serverProps.libDirs		?: serverJSON.app.libDirs ?: '' ).listAppend( defaults.app.libDirs );
+		
 		serverInfo.cfengine			= serverProps.cfengine			?: serverJSON.app.cfengine			?: defaults.app.cfengine;
 		serverInfo.WARPath			= serverProps.WARPath			?: serverJSON.app.WARPath			?: defaults.app.WARPath;
 		
@@ -341,16 +435,8 @@ component accessors="true" singleton {
 		if( serverInfo.cfengine.endsWith( '@' ) ) {
 			serverInfo.cfengine = left( serverInfo.cfengine, len( serverInfo.cfengine ) - 1 );
 		}
-		
-		interceptorService.announceInterception( 'onServerStart', { serverInfo=serverInfo } );
-		
+					
 		var launchUtil 	= java.LaunchUtil;
-				
-		// Setup lib directory, add more if defined by server info
-		var libDirs     = variables.libDir;
-		if ( Len( Trim( serverInfo.libDirs ?: "" ) ) ) {
-			libDirs = ListAppend( libDirs, serverInfo.libDirs );
-		}
 		
 		// log directory location
 		if( !directoryExists( serverInfo.logDir ) ){ directoryCreate( serverInfo.logDir ); }
@@ -373,9 +459,10 @@ component accessors="true" singleton {
 	
 		// This will install the engine war to start, possibly downloading it first
 		var installDetails = serverEngineService.install( cfengine=serverInfo.cfengine, basedirectory=serverInfo.webConfigDir );
-		// This interception point can be used for additional configuration of the endine before it actually starts.
+		// This interception point can be used for additional configuration of the engine before it actually starts.
 		interceptorService.announceInterception( 'onServerInstall', { serverInfo=serverInfo, installDetails=installDetails } );
 		thisVersion = ' ' & installDetails.version;
+		serverInfo.serverHome = installDetails.installDir;
 		serverInfo.logdir = installDetails.installDir & "/logs";
 			
 		// If external Lucee server, set the java agent
@@ -418,39 +505,93 @@ component accessors="true" singleton {
 					
 			}
 		}	
-		
+	
+	// This is a WAR
+	} else {
+		serverInfo.serverHome = getDirectoryFromPath( serverInfo.WARPath );
 	}
 		
 	// Default tray icon
 	serverInfo.trayIcon = ( len( serverInfo.trayIcon ) ? serverInfo.trayIcon : '#variables.libdir#/trayicon.png' ); 
 	serverInfo.trayIcon = expandPath( serverInfo.trayIcon );
 	
-    // Guess the proper set of tray icons based on the cfengine name. 
-	var trayConfigJSON = '#libdir#/traymenu-default.json';
-    if( serverInfo.cfengine contains "lucee" ) { 
-    	trayConfigJSON = '#libdir#/traymenu-lucee.json';
+	// Set default options for all servers
+	// TODO: Don't overwrite existing options with the same label.
+	
+    if( serverInfo.cfengine contains "lucee" ) {
+		serverInfo.trayOptions.prepend( { 'label':'Open Web Admin', 'action':'openbrowser', 'url':'http://${runwar.host}:${runwar.port}/lucee/admin/web.cfm', 'image' : expandPath('/commandbox/system/config/server-icons/web_settings.png' ) } );
+		serverInfo.trayOptions.prepend( { 'label':'Open Server Admin', 'action':'openbrowser', 'url':'http://${runwar.host}:${runwar.port}/lucee/admin/server.cfm', 'image' : expandPath('/commandbox/system/config/server-icons/server_settings.png' ) } );
 	} else if( serverInfo.cfengine contains "railo" ) {
-    	trayConfigJSON = '#libdir#/traymenu-railo.json';
+		serverInfo.trayOptions.prepend( { 'label':'Open Web Admin', 'action':'openbrowser', 'url':'http://${runwar.host}:${runwar.port}/railo-context/admin/web.cfm', 'image' : expandPath('/commandbox/system/config/server-icons/web_settings.png' ) } );
+		serverInfo.trayOptions.prepend( { 'label':'Open Server Admin', 'action':'openbrowser', 'url':'http://${runwar.host}:${runwar.port}/railo-context/admin/server.cfm', 'image' : expandPath('/commandbox/system/config/server-icons/server_settings.png' ) } );
 	} else if( serverInfo.cfengine contains "adobe" ) {
-    	trayConfigJSON = '#libdir#/traymenu-adobe.json';
+		serverInfo.trayOptions.prepend( { 'label':'Open Server Admin', 'action':'openbrowser', 'url':'http://${runwar.host}:${runwar.port}/CFIDE/administrator/enter.cfm', 'image' : expandPath('/commandbox/system/config/server-icons/server_settings.png' ) } );
 	}
-	    
+	
+	serverInfo.trayOptions.prepend( { 'label':'Open Browser', 'action':'openbrowser', 'url':'http://${runwar.host}:${runwar.port}/', 'image' : expandPath('/commandbox/system/config/server-icons/home.png' ) } );
+	serverInfo.trayOptions.prepend( { 'label':'Stop Server', 'action':'stopserver', 'image' : expandPath('/commandbox/system/config/server-icons/stop.png' ) } );
+	serverInfo.trayOptions.prepend( { 'label': processName, 'disabled':true, 'image' : expandPath('/commandbox/system/config/server-icons/info.png' ) } );
+	
     // This is due to a bug in RunWar not creating the right directory for the logs
     directoryCreate( serverInfo.logDir, true, true );
-    	
+      
+	interceptorService.announceInterception( 'onServerStart', { serverInfo=serverInfo } );
+						
+	// Turn struct of aliases into a comma-delimited list, plus resolve relative paths.
+	// "/foo=C:\path,/bar=C:\another/path"
+	var CLIAliases = '';
+	for( var thisAlias in serverInfo.aliases ) {
+		CLIAliases = CLIAliases.listAppend( thisAlias & '=' & fileSystemUtil.resolvePath( serverInfo.aliases[ thisAlias ], serverInfo.webroot ) );
+	}
+	
+	// Turn struct of errorPages into a comma-delimited list.
+	// --error-pages="404=/path/to/404.html,500=/path/to/500.html,1=/path/to/default.html"
+	var errorPages = '';
+	for( var thisErrorPage in serverInfo.errorPages ) {
+		// "default" turns into "1"
+		var tmp = thisErrorPage == 'default' ? 1 : thisErrorPage;
+		tmp &= '=';
+		// normalize slashes
+		var thisPath = replace( serverInfo.errorPages[ thisErrorPage ], '\', '/', 'all' );
+		// Add leading slash if it doesn't exist.
+		tmp &= thisPath.startsWith( '/' ) ? thisPath : '/' & thisPath;
+		errorPages = errorPages.listAppend( tmp );
+	}
+	// Bug in runwar requires me to completley omit this param unless it's populated
+	// https://github.com/cfmlprojects/runwar/issues/33
+	if( len( errorPages ) ) {
+		errorPages = '--error-pages="#errorPages#"';
+	}
+	
+	// Serialize tray options and write to temp file
+	var trayOptionsPath = serverInfo.serverHome & '/trayOptions.json';
+	var trayJSON = {
+		'title' : processName,
+		'tooltip' : processName,
+		'items' : serverInfo.trayOptions
+	};
+	fileWrite( trayOptionsPath,  serializeJSON( trayJSON ) );
 
+
+	var startupTimeout = 120;
+	// Increase our startup allowance for Adobe engines, since a number of files are generated on the first request
+	if( CFEngineName == 'adobe' ){
+		startupTimeout=240;
+	}
+							
 	// The java arguments to execute:  Shared server, custom web configs
-	var args = " #serverInfo.JVMargs# -Xmx#serverInfo.heapSize#m -Xms#serverInfo.heapSize#m"
-			& " #javaagent# -jar ""#variables.jarPath#"""
-			& " --background=true --port #serverInfo.port# --host #serverInfo.host# --debug=#serverInfo.debug#"
-			& " --stop-port #serverInfo.stopsocket# --processname ""#processName#"" --log-dir ""#serverInfo.logDir#"""
-			& " --open-browser #serverInfo.openbrowser#"
-			& " --open-url " & ( serverInfo.SSLEnable ? 'https://#serverInfo.host#:#serverInfo.SSLPort#' : 'http://#serverInfo.host#:#serverInfo.port#' )
-			& ( len( CFEngineName ) ? " --cfengine-name ""#CFEngineName#""" : "" )
-			& " --server-name ""#serverInfo.name#"""
-			& " --tray-icon ""#serverInfo.trayIcon#"" --tray-config ""#trayConfigJSON#"""
-			& " --directoryindex ""#serverInfo.directoryBrowsing#"" --cfml-web-config ""#serverInfo.webConfigDir#"""
-			& " --cfml-server-config ""#serverInfo.serverConfigDir#"" #serverInfo.runwarArgs# --timeout 120";
+	var args = ' #serverInfo.JVMargs# -Xmx#serverInfo.heapSize#m -Xms#serverInfo.heapSize#m'
+			& ' #javaagent# -jar "#variables.jarPath#"'
+			& ' --background=true --port #serverInfo.port# --host #serverInfo.host# --debug=#serverInfo.debug#'
+			& ' --stop-port #serverInfo.stopsocket# --processname "#processName#" --log-dir "#serverInfo.logDir#"'
+			& ' --open-browser #serverInfo.openbrowser#'
+			& ' --open-url ' & ( serverInfo.SSLEnable ? 'https://#serverInfo.host#:#serverInfo.SSLPort#' : 'http://#serverInfo.host#:#serverInfo.port#' )
+			& ( len( CFEngineName ) ? ' --cfengine-name "#CFEngineName#"' : '' )
+			& ' --server-name "#serverInfo.name#" #errorPages#'
+			& ' --tray-icon "#serverInfo.trayIcon#" --tray-config "#trayOptionsPath#"'
+			& ' --directoryindex "#serverInfo.directoryBrowsing#" --cfml-web-config "#serverInfo.webConfigDir#"'
+			& ( len( CLIAliases ) ? ' --dirs "#CLIAliases#"' : '' )
+			& ' --cfml-server-config "#serverInfo.serverConfigDir#" #serverInfo.runwarArgs# --timeout #startupTimeout#';
 			
 	// Starting a WAR
 	if (serverInfo.WARPath != "" ) {
@@ -460,7 +601,9 @@ component accessors="true" singleton {
 		args &= " -war ""#serverInfo.webroot#"" --lib-dirs ""#installDetails.installDir#/WEB-INF/lib"" --web-xml-path ""#installDetails.installDir#/WEB-INF/web.xml""";
 	// internal server
 	} else {
-		args &= " -war ""#serverInfo.webroot#"" --lib-dirs ""#libDirs#""";
+		// The internal server borrows the CommandBox lib directory
+		serverInfo.libDirs = serverInfo.libDirs.listAppend( variables.libDir );
+		args &= " -war ""#serverInfo.webroot#"" --lib-dirs ""#serverInfo.libDirs#""";
 	}
 	// Incorporate SSL to command
 	if( serverInfo.SSLEnable ){
@@ -477,24 +620,23 @@ component accessors="true" singleton {
 	args &= " --urlrewrite-enable #serverInfo.rewritesEnable#";
 	
 	if( serverInfo.rewritesEnable ){
-		serverInfo.rewritesConfig = fileSystemUtil.resolvePath( serverInfo.rewritesConfig );
 		if( !fileExists(serverInfo.rewritesConfig) ){
-			return "URL rewrite config not found #serverInfo.rewritesConfig#";
+			consoleLogger.error( '.' );
+			consoleLogger.error( 'URL rewrite config not found [#serverInfo.rewritesConfig#]' );
+			consoleLogger.error( '.' );
+			return;
 		}
 		args &= " --urlrewrite-file ""#serverInfo.rewritesConfig#""";
 	}
-	
-	// Persist server information
-	setServerInfo( serverInfo );
-
 	// change status to starting + persist
 	serverInfo.status = "starting";
 	setServerInfo( serverInfo );
 		
-    if(serverInfo.debug) {
+    if( serverInfo.debug ) {
 		var cleanedArgs = cr & '    ' & trim( replaceNoCase( args, ' -', cr & '    -', 'all' ) );					
 		consoleLogger.debug("Server start command: #javaCommand# #cleanedArgs#");
     }
+    
 		// thread the execution
 		var threadName = 'server#hash( serverInfo.webroot )##createUUID()#';
 		thread name="#threadName#" serverInfo=serverInfo args=args {
@@ -513,6 +655,9 @@ component accessors="true" singleton {
 				serverInfo.statusInfo.result &= e.message & ' ' & e.detail;
 				serverInfo.status="unknown";
 			} finally {
+				// make sure these don't come back as nulls
+				param name='local.executeResult' default='';
+				param name='local.executeError' default='';
 				serverInfo.statusInfo.result = serverInfo.statusInfo.result & executeResult & ' ' & executeError;
 				setServerInfo( serverInfo );				
 			}
@@ -524,7 +669,7 @@ component accessors="true" singleton {
 		
 		// If this is a one off command, wait for the thread to finish, otherwise the JVM will shutdown before
 		// the server is started and the json files get updated.
-		if( shell.getShellType() == 'command' ) {
+		if( shell.getShellType() == 'command' || serverInfo.debug ) {
 			thread action="join" name="#threadName#";
 			
 			// Pull latest info that was saved in the thread and output it. Since we made the 
@@ -797,11 +942,21 @@ component accessors="true" singleton {
 		}
 	}
 
+
+	/**
+	 * Logic to tell if a server is running
+	 * @serverInfo.hint Struct of server information
+ 	 **/
+	function isServerRunning( required struct serverInfo ){
+		return !isPortAvailable( serverInfo.host, serverInfo.stopSocket );
+	}
+
 	/**
 	 * persist server info
 	 * @serverInfo.hint struct of server info (ports, etc.)
  	 **/
 	function setServerInfo( required struct serverInfo ){
+		
 		var servers 	= getServers();
 		var webrootHash = hash( arguments.serverInfo.webroot & ucase( arguments.serverInfo.name ) );
 		arguments.serverInfo.id = webrootHash;
@@ -811,7 +966,9 @@ component accessors="true" singleton {
 		}
 		servers[ webrootHash ] = serverInfo;
 		// persist back safely
+		
 		setServers( servers );
+		
 	}
 
 	/**
@@ -1044,8 +1201,18 @@ component accessors="true" singleton {
 		
 		// If we want all possible options...
 		if( arguments.all ) {
-			// ... Then add them in			
+			// ... Then add them in
 			props = JSONService.addProp( props, '', '', getDefaultServerJSON() );
+			// Suggest a couple optional web error pages
+			props = JSONService.addProp( props, '', '', {
+				web : {
+					errorPages : {
+						404 : '',
+						500 : '',
+						default : ''
+					}
+				}
+			} );
 		}
 		
 		return props;		

@@ -14,10 +14,10 @@ component accessors="true" singleton {
 	property name='formatterUtil'		inject='formatter';
 	property name='artifactService' 	inject='ArtifactService';
 	property name='fileSystemUtil'		inject='FileSystem';
-	property name='pathPatternMatcher' 	inject='pathPatternMatcher';
+	property name='pathPatternMatcher' 	inject='provider:pathPatternMatcher@globber';
 	property name='shell' 				inject='Shell';
 	property name='logger'				inject='logbox:logger:{this}';
-	property name='semanticVersion'		inject='semanticVersion';
+	property name='semanticVersion'		inject='provider:semanticVersion@semver';
 	property name='endpointService'		inject='EndpointService';
 	property name='consoleLogger'		inject='logbox:logger:console';
 	property name='interceptorService'	inject='interceptorService';
@@ -150,7 +150,7 @@ component accessors="true" singleton {
 			}
 			/******************************************************************************************************************/
 			
-			// Now that we have resolved the directory where our packge lives, read the box.json out of it.
+			// Now that we have resolved the directory where our package lives, read the box.json out of it.
 			var artifactDescriptor = readPackageDescriptor( tmpPath );
 			var ignorePatterns = ( isArray( artifactDescriptor.ignore ) ? artifactDescriptor.ignore : [] );
 			
@@ -234,6 +234,22 @@ component accessors="true" singleton {
 				}
 				installDirectory = arguments.currentWorkingDirectory & '/' & artifactDescriptor.directory;  
 			}
+			
+			// Gather all the interesting things this interceptor might need to know.
+			var interceptData = {
+				installArgs = arguments,
+				installDirectory = installDirectory,
+				containerBoxJSON = containerBoxJSON,
+				artifactDescriptor = artifactDescriptor,
+				ignorePatterns = ignorePatterns,
+				endpointData = endpointData,
+				artifactPath = tmpPath
+			};
+			interceptorService.announceInterception( 'onInstall', interceptData );
+			// Make sure these get set back into their original variables in case the interceptor changed them.
+			installDirectory = interceptData.installDirectory;
+			ignorePatterns = interceptData.ignorePatterns;
+			tmpPath = interceptData.artifactPath;
 						
 			// Else, use package type convention
 			if( !len( installDirectory ) && len( packageType ) ) {
@@ -902,6 +918,7 @@ component accessors="true" singleton {
 				if( updateData.isOutdated ){
 					aOutdatedDependencies.append({ 
 						slug 				: arguments.slug,
+						directory 			: value.directory,
 						version 			: value.version,
 						packageVersion		: value.packageVersion,
 						newVersion 			: updateData.version,
@@ -944,7 +961,8 @@ component accessors="true" singleton {
 			'shortDescription' : boxJSON.shortDescription,
 			'version': boxJSON.version,
 			'packageVersion': boxJSON.version,
-			'isInstalled': true
+			'isInstalled': true,
+			'directory': arguments.directory
 		};
 		buildChildren( boxJSON, tree, arguments.directory);
 		return tree;
@@ -965,7 +983,8 @@ component accessors="true" singleton {
 				'name' : '',
 				'shortDescription' : '',
 				'packageVersion' : '',
-				'isInstalled': false
+				'isInstalled': false,
+				'directory': ''
 			};
 			   
 			if( structKeyExists( arguments.installPaths, dependency ) ) {
@@ -976,6 +995,12 @@ component accessors="true" singleton {
 				thisDeps[ dependency ][ 'shortDescription'  ] = boxJSON.shortDescription;
 				thisDeps[ dependency ][ 'packageVersion'  ] = boxJSON.version;
 				thisDeps[ dependency ][ 'isInstalled'  ] = true;
+				if( boxJSON.createPackageDirectory ) {
+					// Back up to the "container" folder.  The packge directory will be added back on installation
+					thisDeps[ dependency ][ 'directory'  ] = listDeleteAt( fullPackageInstallPath, listLen( fullPackageInstallPath, '/\' ), '/\' );
+				} else {
+					thisDeps[ dependency ][ 'directory'  ] = fullPackageInstallPath;					
+				}
 				
 				// Down the rabbit hole
 				buildChildren( boxJSON, thisDeps[ dependency ], fullPackageInstallPath );				
@@ -1019,7 +1044,10 @@ component accessors="true" singleton {
 			var boxJSON = readPackageDescriptor( arguments.directory );
 			// If there is a scripts object with a matching key for this interceptor....
 			if( boxJSON.keyExists( 'scripts' ) && isStruct( boxJSON.scripts ) && boxJSON.scripts.keyExists( arguments.scriptName ) ) {
-					
+				
+				// Run preXXX package script
+				runScript( 'pre#arguments.scriptName#', arguments.directory, true );
+				
 				var thisScript = boxJSON.scripts[ arguments.scriptName ];
 				consoleLogger.debug( '.' );
 				consoleLogger.warn( 'Running package script [#arguments.scriptName#].' );
@@ -1030,6 +1058,10 @@ component accessors="true" singleton {
 				shell.cd( arguments.directory );
 				shell.callCommand( thisScript );
 				shell.cd( previousCWD );
+								
+				// Run postXXX package script
+				runScript( 'post#arguments.scriptName#', arguments.directory, true );
+				
 			} else if( !arguments.ignoreMissing ) {
 				consoleLogger.error( 'The script [#arguments.scriptName#] does not exist in this package.' );
 			}

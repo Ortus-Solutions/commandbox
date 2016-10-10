@@ -38,11 +38,13 @@ component singleton {
     	
     	if( len( trim( text ) ) == 0 ) {
     		return "";
-    	}
+    	}    	
     	text = ansifyHTML( text, "b", "bold" );
     	text = ansifyHTML( text, "strong", "bold" );
     	text = ansifyHTML( text, "em", "underline" );
-  	 	text = reReplaceNoCase( text , "<br[^>]*>", CR, 'all' );
+    	
+  	 	// Replace br tags (and any whitespace/line breaks after them) with a CR
+  	 	text = reReplaceNoCase( text , "<br[^>]*>\s*", CR, 'all' );
     	    	
     	var t='div';
     	var matches = REMatch('(?i)<#t#[^>]*>(.*?)</#t#>', text);
@@ -68,7 +70,7 @@ component singleton {
   	 **/
 	function ansifyHTML(text,tag,ansiCode) {
     	var t=tag;
-    	var matches = REMatch('(?i)<#t#[^>]*>(.+?)</#t#>', text);
+    	var matches = REMatch('(?i)<#t#[ ^>]*>(.+?)</#t#>', text);
     	for(var match in matches) {
     		// This doesn't really work inside of a larger string that you are applying formatting to
     		// The end of the boldText clears all formatting, and the rest of the string is just plain.
@@ -88,7 +90,7 @@ component singleton {
 			arguments.json = serializeJSON( arguments.json );
 		}
 		
-		var retval = '';
+		var retval = createObject("java","java.lang.StringBuilder").init('');
 		var str = json;
 	    var pos = 0;
 	    var strLen = str.length();
@@ -103,13 +105,13 @@ component singleton {
 			
 			if( isEscaped ) {
 				isEscaped = false;
-				retval &= char;
+				retval.append( char );
 				continue;
 			}
 			
 			if( char == '\' ) {
 				isEscaped = true;
-				retval &= char;
+				retval.append( char );
 				continue;
 			}
 			
@@ -119,34 +121,34 @@ component singleton {
 				} else {
 					inQuote = true;					
 				}
-				retval &= char;
+				retval.append( char );
 				continue;
 			}
 			
 			if( inQuote ) {
-				retval &= char;
+				retval.append( char );
 				continue;
 			}	
 			
 			
 			if (char == '}' || char == ']') {
-				retval &= newLine;
+				retval.append( newLine );
 				pos = pos - 1;
 				for (var j=0; j<pos; j++) {
-					retval &= indentStr;
+					retval.append( indentStr );
 				}
 			}
-			retval &= char;
+			retval.append( char );
 			if (char == '{' || char == '[' || char == ',') {
-				retval &= newLine;
+				retval.append( newLine );
 				if (char == '{' || char == '[') {
 					pos = pos + 1;
 				}
 				for (var k=0; k<pos; k++) {
-					retval &= indentStr;
+					retval.append( indentStr );
 				}
 			}
 		}
-		return retval;
+		return retval.toString();
 	}
 }

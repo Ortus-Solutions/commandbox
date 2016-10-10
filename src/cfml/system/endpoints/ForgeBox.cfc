@@ -85,8 +85,15 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 			return result;
 		}
 		
-		// Verify in ForgeBox
-		var entryData = forgebox.getEntry( slug );
+		try { 
+			
+			// Verify in ForgeBox
+			var entryData = forgebox.getEntry( slug );
+					
+		} catch( forgebox var e ) {
+			// This can include "expected" errors such as "Email already in use"
+			throw( e.message, 'endpointException', e.detail );
+		}
 		
 		entryData.versions.sort( function( a, b ) { return semanticVersion.compare( b.version, a.version ) } );
 		
@@ -336,7 +343,7 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 			// entrylink,createdate,lname,isactive,installinstructions,typename,version,hits,coldboxversion,sourceurl,slug,homeurl,typeslug,
 			// downloads,entryid,fname,changelog,updatedate,downloadurl,title,entryrating,summary,username,description,email
 							
-			if( !val( entryData.isActive ) ) {				
+			if( !entryData.isActive ) {				
 				throw( 'The ForgeBox entry [#entryData.title#] is inactive.', 'endpointException' );
 			}
 	
