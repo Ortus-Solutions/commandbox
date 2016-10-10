@@ -3,12 +3,10 @@ class Commandbox < Formula
   homepage "https://www.ortussolutions.com/products/commandbox"
   url "@repoPRDURL@/ortussolutions/commandbox/@stable-version@/commandbox-bin-@stable-version@.zip"
   sha256 "@stable-sha256@"
-  version "@stable-version@"
 
   devel do
     url "@repoURL@/ortussolutions/commandbox/@version@/commandbox-bin-@version@.zip?build=@buildnumber@"
     sha256 "@sha256@"
-    version "@version@"
   end
 
   bottle :unneeded
