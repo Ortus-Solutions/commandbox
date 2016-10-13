@@ -174,6 +174,23 @@ component accessors="true" singleton {
 	function start(
 		Struct serverProps
 	){
+				
+		// Resolve path as used locally
+		if( !isNull( serverProps.directory ) ) {
+			serverProps.directory = fileSystemUtil.resolvePath( serverProps.directory );
+		} 
+		if( !isNull( serverProps.serverConfigFile ) ) {
+			serverProps.serverConfigFile = fileSystemUtil.resolvePath( serverProps.serverConfigFile );
+		}
+		if( !isNull( serverProps.WARPath ) ) {
+			serverProps.WARPath = fileSystemUtil.resolvePath( serverProps.WARPath );
+		}
+		if( !isNull( serverProps.trayIcon ) ) {
+			serverProps.trayIcon = fileSystemUtil.resolvePath( serverProps.trayIcon );
+		}
+		if( !isNull( serverProps.rewritesConfig ) ) {
+			serverProps.rewritesConfig = fileSystemUtil.resolvePath( serverProps.rewritesConfig );
+		}
 
 		// Look up the server that we're starting
 		var serverDetails = resolveServerDetails( arguments.serverProps );
@@ -225,23 +242,6 @@ component accessors="true" singleton {
 																							// *
 		// End backwards compat for default port in box.json.								// *
 		// *************************************************************************************
-				
-		// Resolve path as used locally
-		if( !isNull( serverProps.directory ) ) {
-			serverProps.directory = fileSystemUtil.resolvePath( serverProps.directory );
-		} 
-		if( !isNull( serverProps.serverConfigFile ) ) {
-			serverProps.serverConfigFile = fileSystemUtil.resolvePath( serverProps.serverConfigFile );
-		}
-		if( !isNull( serverProps.WARPath ) ) {
-			serverProps.WARPath = fileSystemUtil.resolvePath( serverProps.WARPath );
-		}
-		if( !isNull( serverProps.trayIcon ) ) {
-			serverProps.trayIcon = fileSystemUtil.resolvePath( serverProps.trayIcon );
-		}
-		if( !isNull( serverProps.rewritesConfig ) ) {
-			serverProps.rewritesConfig = fileSystemUtil.resolvePath( serverProps.rewritesConfig );
-		}
 		
 		// Save hand-entered properties in our server.json for next time
 		for( var prop in serverProps ) {
@@ -411,8 +411,9 @@ component accessors="true" singleton {
 				
 		// Global defauls are always added on top of whatever is specified by the user or server.json
 		serverInfo.libDirs		= ( serverProps.libDirs		?: serverJSON.app.libDirs ?: '' ).listAppend( defaults.app.libDirs );
-		
+				
 		serverInfo.cfengine			= serverProps.cfengine			?: serverJSON.app.cfengine			?: defaults.app.cfengine;
+		
 		serverInfo.WARPath			= serverProps.WARPath			?: serverJSON.app.WARPath			?: defaults.app.WARPath;
 		
 		// These are already hammered out above, so no need to go through all the defaults.
