@@ -57,8 +57,13 @@ component accessors="true" singleton="true" {
 		// set flex log dir to prevent WEB-INF/cfform being created in project dir
 		if (fileExists(installDetails.installDir & "/WEB-INF/cfform/flex-config.xml")) {
 			var flexConfig = fileRead(installDetails.installDir & "/WEB-INF/cfform/flex-config.xml");
-			flexConfig = replace(flexConfig, "/WEB-INF/", installDetails.installDir & "/WEB-INF/","all");
-			fileWrite(installDetails.installDir & "/WEB-INF/cfform/flex-config.xml", flexConfig);
+			// escape back slashes,forward slashes, periods and colons in the installDir for the regular expression
+			var escapedInstDir=reReplace(installDetails.installDir,"(\\|\/|\.|\:)","\\1","all");
+			//ugh. reReplace supports 5 backreferences in the replacement substring for case conversions. It doesn't allow escaping of these backreferences though in case you want them literally! 
+			var replaceString=reReplace(installDetails.installDir,"\\(u|U|l|L|E)","##chr(92)##\1","all");
+			var regex="(?:" & escapedInstDir & ")*" & "\/WEB-INF\/" ;
+			flexConfig = reReplace(flexConfig, regex, replaceString & "/WEB-INF/","all");
+			fileWrite(installDetails.installDir & "/WEB-INF/cfform/flex-config.xml", evaluate(de(flexConfig)));
 		}
 		return installDetails;
 	}
