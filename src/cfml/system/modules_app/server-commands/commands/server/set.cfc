@@ -4,7 +4,7 @@
  * .
  * set server port
  * {code:bash}
- * server set port=8080
+ * server set web.http.port=8080
  * {code}
  * .
  * Nested attributes may be set by specifying dot-delimited names or using array notation.
@@ -22,7 +22,7 @@
  * .
  * Set multiple params at once
  * {code:bash}
- * server set name=myServer port="8080"
+ * server set name=myServer web.http.port=8080
  * {code}
  * .
  * Set complex value as JSON
