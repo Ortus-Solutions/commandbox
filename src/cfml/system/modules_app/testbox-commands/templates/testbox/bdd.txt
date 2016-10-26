@@ -16,7 +16,19 @@ component extends="testbox.system.BaseSpec"{
 /*********************************** BDD SUITES ***********************************/
 
 	function run(){
-		// all your suites go here.
+	
+		describe( "My test Suite", function(){
+			
+			it( "should do something", function(){
+                expect( false ).toBeTrue();
+			});
+			
+			it( "should do something else", function(){
+                expect( false ).toBeTrue();
+			});
+			
+		});
+		
 	}
 	
 }
