@@ -189,7 +189,7 @@ component accessors="true" singleton {
 							var candidateBoxJSON = readPackageDescriptor( candidateInstallPath );
 							// Does the package that we found satisfy what we need?
 							if( semanticVersion.satisfies( candidateBoxJSON.version, version ) ) {
-								consoleLogger.warn( '#packageName# (#version#) is already satisifed by #candidateInstallPath# (#candidateBoxJSON.version#).  Skipping installation.' );
+								consoleLogger.warn( '#packageName# (#version#) is already satisfied by #candidateInstallPath# (#candidateBoxJSON.version#).  Skipping installation.' );
 								return;
 							}
 						}
