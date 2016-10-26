@@ -52,6 +52,7 @@ component aliases="bump" {
 	 * @version The new version to set into this package
 	 * @message The message to use when commiting the new tag
 	 * @tagVersion Whether or not to tag the repo
+	 * @tagPrefix The tag prefix to use before the version number
 	 * @force Skip the check if to see if the Git repo is clean
 	 * @major Increment the major version number
 	 * @minor Increment the minor version number
@@ -61,6 +62,7 @@ component aliases="bump" {
 		string version='',
 		string message,
 		boolean tagVersion,
+		string tagPrefix,
 		boolean force = false,
 		boolean major,
 		boolean minor,
@@ -154,6 +156,7 @@ component aliases="bump" {
 						
 				arguments.message = arguments.message ?: ConfigService.getSetting( 'tagVersionMessage', '${version}' );
 				arguments.message = replaceNoCase( arguments.message, '${version}', arguments.version, 'all' );
+				arguments.tagPrefix = arguments.tagPrefix ?: ConfigService.getSetting( 'tagPrefix', 'v' );
 				
 				// Add the box.json
 				git.add()
@@ -167,11 +170,11 @@ component aliases="bump" {
 				
 				// Tag this version
 				git.tag()
-					.setName( 'v#arguments.version#' )
+					.setName( '#arguments.tagPrefix##arguments.version#' )
 					.setMessage( arguments.message )
 					.call();
 			
-				print.yellowLine( 'Tag [v#arguments.version#] created.' ).toConsole();
+				print.yellowLine( 'Tag [#arguments.tagPrefix##arguments.version#] created.' ).toConsole();
 			} catch( any var e ) {
 				logger.error( 'Error tagging Git repository with new version.', e );
 				error( 'Error tagging Git repository with new version.', e.message & ' ' & e.detail );
