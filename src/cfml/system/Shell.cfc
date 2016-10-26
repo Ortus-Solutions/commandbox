@@ -528,7 +528,7 @@ component accessors="true" singleton {
 		variables.logger.error( '#arguments.err.message# #arguments.err.detail ?: ''#', arguments.err.stackTrace ?: '' );
 
 
-		variables.reader.print( variables.print.whiteOnRedLine( 'ERROR' ) );
+		variables.reader.print( variables.print.whiteOnRedLine( 'ERROR (#variables.version#)' ) );
 		variables.reader.println();
 		variables.reader.print( variables.print.boldRedText( variables.formatterUtil.HTML2ANSI( arguments.err.message ) ) );
 		variables.reader.println();
