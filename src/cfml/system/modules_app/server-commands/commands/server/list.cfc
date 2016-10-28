@@ -69,7 +69,7 @@ component {
 			var status = serverService.isServerRunning( thisServerInfo ) ? 'running' : 'stopped';
 
 			// Check name and status filters.  By default, everything shows
-			if( ( !len( arguments.name ) || listFindNoCase( arguments.name, thisServerInfo.name ) )
+			if( ( !len( arguments.name ) || matchesName( thisServerInfo.name, arguments.name ) )
 				&& ( !len( statusList ) || listFindNoCase( statusList, status ) ) ) {
 
 				// Null Checks, to guarnatee correct struct.
@@ -121,6 +121,14 @@ component {
 		// No servers found, then do nothing
 		if( structCount( servers ) eq 0 ){
 			print.boldRedLine( "No server configurations found!" );
+		}
+	}
+
+	function matchesName( name, searchTerm ) {
+		if( listLen( searchTerm ) > 1 ) {
+			return listFindNoCase( searchTerm, name );
+		} else {
+			return findNoCase( searchTerm, name );
 		}
 	}
 
