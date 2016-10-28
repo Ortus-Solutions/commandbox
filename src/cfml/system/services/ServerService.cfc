@@ -203,7 +203,7 @@ component accessors="true" singleton {
 		var serverInfo = serverDetails.serverinfo;
 
 		// If the server is already running, make sure the user really wants to do this.
-		if( isServerRunning( serverInfo ) && !serverProps.force ) {
+		if( isServerRunning( serverInfo ) && !(serverProps.force ?: false ) ) {
 			consoleLogger.error( '.' );
 			consoleLogger.error( 'Server "#serverInfo.name#" (#serverInfo.webroot#) is already running!' );
 			consoleLogger.error( 'Overwriting a running server means you won''t be able to use the "stop" command to stop the original one.' );
