@@ -89,7 +89,7 @@ component singleton {
 				// This is all the possible params for the command
 				var definedParameters = commandInfo.commandReference.parameters;
 				// This is the params the user has entered so far.
-				var passedParameters = commandService.parseParameters( commandInfo.parameters );
+				var passedParameters = commandService.parseParameters( commandInfo.parameters, definedParameters );
 			
 				// For sure we are using named- suggest name or value as necceessary
 				if( structCount( passedParameters.namedParameters ) ) {
