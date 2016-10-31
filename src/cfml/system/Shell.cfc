@@ -451,8 +451,11 @@ component accessors="true" singleton {
 		while( !CommandService.getConfigured() && ++i<50 ) {
 			sleep( 100  );
 		}
-		
-		
+				
+		// Flush history buffer to disk. I could do this in the quit command
+		// but then I would lose everything if the user just closes the window
+		variables.reader.getHistory().flush();
+			
 		try{
 			
 			if( isArray( command ) ) {
@@ -481,10 +484,6 @@ component accessors="true" singleton {
 			} else {
 				printError( e );
 			}
-		} finally {
-			// Flush history buffer to disk. I could do this in the quit command
-			// but then I would lose everything if the user just closes the window
-			variables.reader.getHistory().flush();
 		}
 		
 		// Return the output to the caller to deal with
