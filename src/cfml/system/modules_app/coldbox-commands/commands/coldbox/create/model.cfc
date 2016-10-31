@@ -64,6 +64,10 @@ component {
 			directoryCreate( arguments.directory );
 		}
 		// Validate persistence
+		if( !len( arguments.name ) ) {
+			error( "Cannot scaffold a model with an empty name." );
+		}
+		// Validate persistence
 		if( !listFindNoCase( variables.validPersistences, arguments.persistence ) ) {
 			error( "The persistence value [#arguments.persistence#] is invalid. Valid values are [#listChangeDelims( variables.validPersistences, ', ', ',' )#]" );
 		}
