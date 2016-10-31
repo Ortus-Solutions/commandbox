@@ -49,6 +49,7 @@ component singleton {
 			if( matchedToHere == len( buffer ) && len( buffer ) ) {
 				// Suggest a trailing space
 				candidates.add( buffer & ' ' );
+				arraySort( candidates, 'text' );
 				return 0;
 			// Everything else in the buffer is a partial, unmached command
 			} else if( len( buffer ) ) {
@@ -75,8 +76,10 @@ component singleton {
 
 				// Did we find ANYTHING?
 				if( candidates.size() ) {
+					arraySort( candidates, 'text' );
 					return matchedToHere;
 				} else {
+					arraySort( candidates, 'text' );
 					return len( buffer );
 				}
 
@@ -121,6 +124,7 @@ component singleton {
 							}
 							// Fill in possible param values based on the type and contents so far.
 							paramValueCompletion( commandInfo, paramName, paramType, paramSoFar, candidates );
+							arraySort( candidates, 'text' );
 							return len( buffer ) - len( paramSoFar );
 
 						}
@@ -145,6 +149,7 @@ component singleton {
 					} // Loop over possible params
 
 					// Back up a bit to the beginning of the left over text we're replacing
+					arraySort( candidates, 'text' );
 					return len( buffer ) - len( leftOver ) - iif( !len( leftOver ) && !buffer.endsWith( ' ' ), 0, 1 );
 
 				// For sure positional - suggest next param name and value
@@ -183,7 +188,8 @@ component singleton {
 								break;
 							}
 						}
-														
+						
+						arraySort( candidates, 'text' );								
 						return len( buffer );
 
 
@@ -215,6 +221,7 @@ component singleton {
 								}
 							}
 							
+							arraySort( candidates, 'text' );
 							return len( buffer ) - len( partialMatch );
 						}
 					}
@@ -256,7 +263,8 @@ component singleton {
 
 						// Suggest its value
 						paramValueCompletion( commandInfo, thisParam.name, thisParam.type, partialMatch, candidates );
-
+						
+						arraySort( candidates, 'text' );
 						return len( buffer ) - len( partialMatch );
 
 					}  // End are there params defined
@@ -267,6 +275,8 @@ component singleton {
 
 			} // End was the command found
 
+
+			arraySort( candidates, 'text' );
 			return len( buffer );
 
 		} catch ( any e ) {
