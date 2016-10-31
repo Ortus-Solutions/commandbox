@@ -14,6 +14,7 @@ component aliases="fwreinit" {
 	
 	// DI
 	property name="serverService" inject="ServerService";
+	property name="formatter" inject="formatter";
 	
 	/**
 	* @password.hint The FWReinit password
@@ -34,7 +35,7 @@ component aliases="fwreinit" {
 			} else {
 				print.redLine( "status code: #local.results.statusCode#" )
 					.redline( "error detail: " & local.results.errorDetail )
-					.line( trim( local.results.filecontent ) );
+					.line( trim( formatter.HTML2ANSI( local.results.filecontent ) ) );
 			}
 			
 		}
