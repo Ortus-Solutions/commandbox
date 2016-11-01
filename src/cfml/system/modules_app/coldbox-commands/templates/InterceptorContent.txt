@@ -1,4 +1,4 @@
-<cfcomponent hint="|description|" output="false" extends="coldbox.system.Interceptor">
+<cfcomponent hint="|description|" output="false">
 
 <!------------------------------------------- CONFIGURATOR ------------------------------------------->
 
