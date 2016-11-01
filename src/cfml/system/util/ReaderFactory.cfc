@@ -38,6 +38,9 @@ component singleton{
 	    	reader = createObject( "java", "jline.console.ConsoleReader" ).init( arguments.inStream, arguments.outputStream );
 		}
 		
+	// Let JLine handle Cntrl-C, and throw a UserInterruptException (instead of dying)
+	reader.setHandleUserInterrupt( true );
+
     	// This turns off special stuff that JLine2 looks for related to exclamation marks
     	reader.setExpandEvents( false );
 		
