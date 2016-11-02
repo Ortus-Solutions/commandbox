@@ -9,7 +9,7 @@ component extends="coldbox.system.testing.BaseModelTest" model="models.|modelNam
 		super.setup();
 		
 		// init the model object
-		model.init();	
+		model.init();
 		
 	}
 |TestCases|

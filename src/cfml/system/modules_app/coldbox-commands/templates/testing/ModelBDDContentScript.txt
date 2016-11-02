@@ -9,7 +9,7 @@ component extends="coldbox.system.testing.BaseModelTest" model="|modelPath|"{
 
 	function beforeAll(){
 		// setup the model
-		super.setup();		
+		super.setup();
 		
 		// init the model object
 		model.init();

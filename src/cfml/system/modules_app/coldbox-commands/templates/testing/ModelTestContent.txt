@@ -10,7 +10,7 @@
 		super.setup();
 		
 		// init the model object
-		model.init();	
+		model.init();
 		
 		</cfscript>
 	</cffunction>
