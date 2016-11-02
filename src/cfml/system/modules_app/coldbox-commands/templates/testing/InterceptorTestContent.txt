@@ -12,8 +12,8 @@
 			// init and configure interceptor
 			super.setup();
 			// we are now ready to test this interceptor
-	  
-	  </cfscript>
+		
+		</cfscript>
 	</cffunction>
 	
 	<cffunction name="testConfigure">
@@ -22,7 +22,7 @@
 		
 			// test configure
 			interceptor.configure();
-	  </cfscript>
+		</cfscript>
 	</cffunction>
 	
 |TestCases|

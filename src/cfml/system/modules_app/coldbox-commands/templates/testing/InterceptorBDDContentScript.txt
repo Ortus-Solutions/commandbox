@@ -26,8 +26,8 @@ component extends="coldbox.system.testing.BaseInterceptorTest" interceptor="|nam
 			
 			it( "should configure correctly", function(){
 				interceptor.configure();
-                // Expectations here.
-                expect( false ).toBeTrue();
+				// Expectations here.
+				expect( false ).toBeTrue();
 			});
 			
 |TestCases|			

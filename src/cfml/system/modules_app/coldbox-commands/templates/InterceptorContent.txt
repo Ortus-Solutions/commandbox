@@ -1,6 +1,6 @@
 <cfcomponent hint="|description|" output="false">
 
-<!------------------------------------------- CONFIGURATOR ------------------------------------------->
+<!------------------------------------------- CONFIGURATOR -------------------------------------------------->
 
 	<cffunction name="configure" access="public" returntype="void" output="false" hint="Interceptor config">
 		<cfscript>
@@ -10,6 +10,6 @@
 
 <!------------------------------------------- INTERCEPTION POINTS ------------------------------------------->
 
-|interceptionPoints|	
+|interceptionPoints|
 
-</cfcomponent>	
+</cfcomponent>

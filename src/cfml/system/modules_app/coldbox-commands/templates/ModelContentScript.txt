@@ -3,12 +3,12 @@
 */
 component |modelPersistence||accessors|{
 	
-    // Properties
-    |properties|
+	// Properties
+	|properties|
 
-    /**
-     * Constructor
-     */
+	/**
+	 * Constructor
+	 */
 	|modelName| function init(){
 		
 		return this;

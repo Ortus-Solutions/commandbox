@@ -9,7 +9,7 @@ component{
 	this.posthandler_only 	= "";
 	this.posthandler_except = "";
 	this.aroundHandler_only = "";
-	this.aroundHandler_except = "";		
+	this.aroundHandler_except = "";
 	// REST Allowed HTTP Methods Ex: this.allowedMethods = {delete='POST,DELETE',index='GET'}
 	this.allowedMethods = {};
 	

@@ -1,7 +1,7 @@
 <cfcomponent hint="|modelDescription|" output="false" |modelPersistence||accessors|>
 
-    <!--- Properties --->
-    |properties|
+	<!--- Properties --->
+	|properties|
 
 <!------------------------------------------- CONSTRUCTOR ------------------------------------------->
 
@@ -14,4 +14,4 @@
 <!------------------------------------------- PUBLIC ------------------------------------------->
 
 |methods|
-</cfcomponent>	
+</cfcomponent>
