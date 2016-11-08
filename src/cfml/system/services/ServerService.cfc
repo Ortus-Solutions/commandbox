@@ -296,7 +296,14 @@ component accessors="true" singleton {
 					serverJSON[ 'app' ][ 'cfengine' ] = serverProps[ prop ];
 			         break;
 			    case "WARPath":
-					serverJSON[ 'app' ][ 'WARPath' ] = serverProps[ prop ];
+			    	// Both of these are canonical already.
+			    	var thisFile = replace( serverProps[ 'WARPath' ], '\', '/', 'all' );
+			    	var configPath = replace( fileSystemUtil.resolvePath( defaultServerConfigFileDirectory ), '\', '/', 'all' ) & '/';
+			    	// If the trayIcon is south of the server's JSON, make it relative for better portability.
+			    	if( thisFile contains configPath ) {
+			    		thisFile = replaceNoCase( thisFile, configPath, '' );
+			    	}
+					serverJSON[ 'app' ][ 'WARPath' ] = thisFile;
 			         break;
 			    case "HTTPEnable":
 					serverJSON[ 'web' ][ 'HTTP' ][ 'enable' ] = serverProps[ prop ];
