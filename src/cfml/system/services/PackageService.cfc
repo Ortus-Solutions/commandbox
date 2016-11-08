@@ -338,12 +338,20 @@ component accessors="true" singleton {
 			// Check to see if package has already been installed. Skip unless forced.
 			// This check can only be performed for packages that get installed in their own directory.
 			if ( artifactDescriptor.createPackageDirectory && directoryExists( installDirectory ) && !arguments.force ){
-				// cleanup tmp
-				if( endpointData.endpointName != 'folder' ) {
-					directoryDelete( tmpPath, true );					
-				}
-				consoleLogger.warn("The package #packageName# is already installed at #installDirectory#. Skipping installation. Use --force option to force install.");
-				return;
+				
+				// Do an additional check and make sure the currently installed version is older than what's being requested.
+				// If there's a new version, install it anyway.
+				var alreadyInstalledBoxJSON = readPackageDescriptor( installDirectory );
+				if( isPackage( installDirectory ) && semanticVersion.isNew( alreadyInstalledBoxJSON.version, version  )  ) {
+					consoleLogger.info( "Package already installed but its version [#alreadyInstalledBoxJSON.version#] is older than the new version being installed [#version#].  Forcing a reinstall." );
+				} else {				
+					// cleanup tmp
+					if( endpointData.endpointName != 'folder' ) {
+						directoryDelete( tmpPath, true );					
+					}
+					consoleLogger.warn( "The package #packageName# is already installed at #installDirectory#. Skipping installation. Use --force option to force install." );
+					return;	
+				}				
 			}
 						
 			// Create installation directory if neccesary
