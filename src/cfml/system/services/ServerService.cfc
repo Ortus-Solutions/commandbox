@@ -215,6 +215,8 @@ component accessors="true" singleton {
 			// The recursive call here will subject their answer to the same check until they provide a name that hasn't been used for this folder.
 			if( len( newName ) ) {
 				serverProps.name = newName;
+				//copy the orig server's server.json file to the new file so it starts with the same properties as the original. lots of alternative ways to do this but the file copy works and is simple
+				file action='copy' source="#defaultServerConfigFile#" destination=fileSystemUtil.resolvePath( serverProps.directory ?: '' ) & "/server-#serverProps.name#.json" mode ='777';  		
 				return start( serverProps );
 			}
 		}
