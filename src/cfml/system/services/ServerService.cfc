@@ -886,6 +886,9 @@ component accessors="true" singleton {
 			// Delete server.json if it exists
 			if( fileExists( serverJSONPath ) ) {
 				fileDelete( serverJSONPath );
+				// return now so we don't wipe out the original server.json file too in the next 
+				// if statement! (because this was a "server-#name#.json" file) 
+				return "Poof! Wiped out server " & serverInfo.name;
 			}
 			if( fileExists( defaultServerJSONPath ) ) {
 				fileDelete( defaultServerJSONPath );
