@@ -655,7 +655,6 @@ public class LoaderCLIMain{
 					versionFile.delete();
 
 					// Wipe out existing /cfml/system folder to remove any deleted files
-					Util.unzipInteralZip( classLoader, LIB_ZIP_PATH, libDir, debug );
 					if( cfmlSystemDir.exists() ) {
 						Util.deleteDirectory( cfmlSystemDir );
 					}
