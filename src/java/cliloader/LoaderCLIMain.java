@@ -39,7 +39,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import org.apache.commons.io.FileUtils;
 
 import net.minidev.json.JSONArray;
 
@@ -629,7 +628,7 @@ public class LoaderCLIMain{
 			// Wipe out existing /cfml/system folder to remove any deleted files
 			Util.unzipInteralZip( classLoader, LIB_ZIP_PATH, libDir, debug );
 			if( cfmlSystemDir.exists() ) {
-				FileUtils.deleteDirectory( cfmlSystemDir );
+				Util.deleteDirectory( cfmlSystemDir );
 			}
 			Util.unzipInteralZip( classLoader, CFML_ZIP_PATH, cfmlDir, debug );
 			
@@ -658,7 +657,7 @@ public class LoaderCLIMain{
 					// Wipe out existing /cfml/system folder to remove any deleted files
 					Util.unzipInteralZip( classLoader, LIB_ZIP_PATH, libDir, debug );
 					if( cfmlSystemDir.exists() ) {
-						FileUtils.deleteDirectory( cfmlSystemDir );
+						Util.deleteDirectory( cfmlSystemDir );
 					}
 					
 					Util.unzipInteralZip( classLoader, CFML_ZIP_PATH, cfmlDir, debug );
