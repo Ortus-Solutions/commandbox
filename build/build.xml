@@ -353,7 +353,7 @@ External Dependencies:
  	</target>
 
  	<!-- Build Homebrew Recipe -->
- 	<target name="build.homebrew" description="Builds the Homebrew Recipe" depends="">
+ 	<target name="build.homebrew" description="Builds the Homebrew Recipe" unless="${local.build}">
  		<property name="tapRepo"	value="git@github.com:Ortus-Solutions/homebrew-boxtap.git"/>
 		
 		<!-- Grab the checksum again for our build files -->
@@ -477,7 +477,7 @@ External Dependencies:
  	</target>
 
  	<!-- Build API Docs -->
- 	<target name="build.apidocs" description="Builds the api docs" depends="build.cli.bin">
+ 	<target name="build.apidocs" description="Builds the api docs" depends="build.cli.bin" unless="${local.build}">
  		<!-- Create APIDocs dir -->
  		<property name="cmdboxhome.arg" value="-CommandBox_home=${build.location}/temp/CommandBoxHome" />
  		<mkdir dir="${temp.dir}/apidocs"/>
@@ -603,7 +603,7 @@ External Dependencies:
 	</target>
 
 	<!-- Build including JREs -->
- 	<target name="build.cli.jre" description="Build with JRE included" depends="build.cli.bin,build.cli.exe">
+ 	<target name="build.cli.jre" description="Build with JRE included" depends="build.cli.bin,build.cli.exe" unless="${local.build}">
  		<echo message="Bundling ${jre.version} JRE" />
 		
 		<!-- Get JRE Dependencies -->
