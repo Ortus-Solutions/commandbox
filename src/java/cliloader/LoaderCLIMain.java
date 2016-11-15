@@ -623,10 +623,10 @@ public class LoaderCLIMain{
 			System.out.println( "Library path: " + libDir );
 			System.out
 					.println( "Initializing libraries -- this will only happen once, and takes a few seconds..." );
-			Util.removePreviousLibs( libDir );
+			Util.removePreviousLibs( libDir );			
+			Util.unzipInteralZip( classLoader, LIB_ZIP_PATH, libDir, debug );
 			
 			// Wipe out existing /cfml/system folder to remove any deleted files
-			Util.unzipInteralZip( classLoader, LIB_ZIP_PATH, libDir, debug );
 			if( cfmlSystemDir.exists() ) {
 				Util.deleteDirectory( cfmlSystemDir );
 			}
