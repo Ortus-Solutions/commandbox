@@ -42,6 +42,7 @@ component accessors="true" singleton {
 			'nativeShell',
 			// used in "bump" command
 			'tagVersion',
+			'tagPrefix',
 			// Endpoint data
 			'endpoints',
 			'endpoints.forgebox',
