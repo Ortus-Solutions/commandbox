@@ -27,6 +27,12 @@
  * server list myApp,contentbox,testSite
  * {code}
  * .
+ * If you provide a single name, it will be treated as a partial match and return server names that contain that phrase
+ * .
+ * {code:bash}
+ * # Returns servers named "client1" and "client2"
+ * server list client
+ * {code}
  **/
 component {
 
