@@ -5,6 +5,11 @@
  * {code:bash}
  * server open
  * {code}
+ * .
+ * Open a specific path with the URI parameter
+ * {code:bash}
+ * server open /tests/runner.cfm
+ * {code}
  **/
 component {
 	
@@ -36,6 +41,10 @@ component {
 		if( serverDetails.serverIsNew ){
 			print.boldRedLine( "No server configurations found so have no clue what to open buddy!" );
 		} else {
+			// myPath/file.cfm is normalized to /myMapth/file.cfm
+			if( !arguments.URI.startsWith( '/' ) ) {
+				arguments.URI = '/' & arguments.URI;
+			}
 			var thisURL = "#serverInfo.host#:#serverInfo.port##arguments.URI#";
 			print.greenLine( "Opening...#thisURL#" );
 			openURL( thisURL );
