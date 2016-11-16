@@ -1201,7 +1201,10 @@ component accessors="true" singleton {
 	* Save a server.json file.
 	*/
 	function saveServerJSON( required string configFilePath, required struct data ) {
-		var oldJSON = fileRead( arguments.configFilePath );
+		var oldJSON = '';
+		if( fileExists( arguments.configFilePath ) ) {
+			oldJSON = fileRead( arguments.configFilePath );			
+		}
 		var newJSON = formatterUtil.formatJSON( serializeJSON( arguments.data ) );
 		// Try to prevent bunping the date modified for no reason
 		if( oldJSON != newJSON ) {
