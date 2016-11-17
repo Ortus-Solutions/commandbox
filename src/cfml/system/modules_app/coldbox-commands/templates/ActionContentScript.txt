@@ -1,0 +1,6 @@
+	/**
+	* |action|
+	*/
+	function |action|( event, rc, prc ){
+		event.setView( "|Name|/|action|" );
+	}

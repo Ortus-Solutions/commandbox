@@ -145,7 +145,7 @@ component {
 	/**
 	 * Parse an array of parameter tokens. unescape values and determine if named or positional params are being used.
  	 **/
-	function parseParameters( required array parameters ) {
+	function parseParameters( required array parameters, commandParameters ) {
 		
 		var results = {
 			positionalParameters = [],
@@ -155,6 +155,12 @@ component {
 		
 		if( !arrayLen( parameters ) ) {
 			return results;			
+		}
+		
+		// Pull the valid param names out into an array for easy lookup
+		var commandParameterNameLookup=[];
+		for( var thisParam in commandParameters ) {
+			commandParameterNameLookup.append( thisParam.name );
 		}
 		
 		for( var param in parameters ) {
@@ -173,6 +179,9 @@ component {
 					flagName = right( flagName, len( flagName ) - 1 );
 					// Flag is false
 					results.flags [ flagName ] = false;
+				// If param name starts with "no" and matches existing param, then negate.
+				} else if( len( flagName ) > 2 && left( flagName, 2 ) == 'no' && commandParameterNameLookup.findNoCase( mid( flagName, 3, len( flagName ) ) ) ) {
+					results.flags [ mid( flagName, 3, len( flagName ) ) ] = false;
 				} else {
 					// Flag is true
 					results.flags [ flagName ] = true;

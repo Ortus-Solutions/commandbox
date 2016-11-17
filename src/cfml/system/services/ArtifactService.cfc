@@ -67,13 +67,17 @@ component accessors="true" singleton {
 	* Removes all artifacts from the cache and returns the number of wiped out directories
 	*/ 
 	numeric function cleanArtifacts() {
-		var dirList = directoryList( path=variables.artifactDir, recurse=false );
+		var qryDir = directoryList( path=variables.artifactDir, recurse=false, listInfo='query' );
+		var numRemoved = 0;
 		
-		for( var dir in dirList ) {
-			directoryDelete( dir, true );
+		for( var path in qryDir ) {
+			if( path.type == 'Dir' ) {
+				numRemoved++;
+				directoryDelete( path.directory & '/' & path.name, true );	
+			}
 		}
 		
-		return dirList.len();
+		return numRemoved;
 	}
 	
 	/**
@@ -230,11 +234,17 @@ component accessors="true" singleton {
 	* @version Version range to satisfy
 	*/
 	function findSatisfyingVersion( required string slug, required string version ) {
-		// Get the locally-stored versions
-		var arrVersions = listArtifacts( slug )[ slug ];
+		var artifacts = listArtifacts( slug );
 		
+		// Check to see if we even have any versions for this artifact
+		if( !artifacts.keyExists( slug ) ) {
+			return '';
+		}
+		
+		// Get the locally-stored versions
+		var arrVersions = artifacts[ slug ];
 		// Sort them
-		arrVersions.sort( function( a, b ) { return semanticVersion.compare( b.version, a.version ) } );
+		arrVersions.sort( function( a, b ) { return semanticVersion.compare( b, a ) } );
 		
 		var found = false;
 		for( var thisVersion in arrVersions ) {
@@ -247,7 +257,7 @@ component accessors="true" singleton {
 		if( arguments.version == 'stable' && arrayLen( arrVersions ) ) {
 			return arrVersions[ 1 ]; 
 		} else {
-			return '';					
+			return '';
 		}
 	}
 		

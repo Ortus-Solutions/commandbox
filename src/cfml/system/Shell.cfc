@@ -202,19 +202,23 @@ component accessors="true" singleton {
  	 **/
 	string function ask( message, string mask='', string buffer='' ) {
 		
-		// read reponse while masking input
-		var input = variables.reader.readLine(
-			// Prompt for the user
-			arguments.message,
-			// Optionally mask their input
-			len( arguments.mask ) ? javacast( "char", left( arguments.mask, 1 ) ) : javacast( "null", '' )//,
-			// This won't work until we can upgrade to Jline 2.14
-			// Optionally pre-fill a default response for them
-		//	len( arguments.buffer ) ? javacast( "String", arguments.buffer ) : javacast( "null", '' )
-		);
-		
-		// Reset back to default prompt
-		setPrompt();
+		try {
+			// read reponse while masking input
+			var input = variables.reader.readLine(
+				// Prompt for the user
+				arguments.message,
+				// Optionally mask their input
+				len( arguments.mask ) ? javacast( "char", left( arguments.mask, 1 ) ) : javacast( "null", '' )//,
+				// This won't work until we can upgrade to Jline 2.14
+				// Optionally pre-fill a default response for them
+			//	len( arguments.buffer ) ? javacast( "String", arguments.buffer ) : javacast( "null", '' )
+			);
+		} catch( jline.console.UserInterruptException var e ) {
+			throw( message='CANCELLED', type="UserInterruptException");
+		} finally{
+			// Reset back to default prompt
+			setPrompt();			
+		}
 
 		return input;
 	}
@@ -423,6 +427,10 @@ component accessors="true" singleton {
 
 	        } // end while keep running
 
+		} catch( jline.console.UserInterruptException var e ) {
+			variables.reader.print( variables.print.boldGreenLine( 'Goodbye' ) );
+    		variables.reader.flush();
+			return false;
 		} catch( any e ){
 			SystemOUtput( e.message & e.detail );
 			printError( e );
@@ -451,8 +459,11 @@ component accessors="true" singleton {
 		while( !CommandService.getConfigured() && ++i<50 ) {
 			sleep( 100  );
 		}
-		
-		
+				
+		// Flush history buffer to disk. I could do this in the quit command
+		// but then I would lose everything if the user just closes the window
+		variables.reader.getHistory().flush();
+			
 		try{
 			
 			if( isArray( command ) ) {
@@ -473,6 +484,15 @@ component accessors="true" singleton {
 			} else {
 				printError( { message : e.message, detail: e.detail } );
 			}
+		// This type of error means the user hit Ctrl-C, duck out and move along.
+		} catch ( UserInterruptException var e) {
+			// If this is a nested command, pass the exception along to unwind the entire stack.
+			if( !initialCommand ) {
+				rethrow;
+			} else {
+    			variables.reader.flush();
+				variables.reader.print( variables.print.boldRedLine( 'CANCELLED' ) );
+			}
 		// Anything else is completely unexpected and means boom booms happened-- full stack please.
 		} catch (any e) {
 			// If this is a nested command, pass the exception along to unwind the entire stack.
@@ -481,10 +501,6 @@ component accessors="true" singleton {
 			} else {
 				printError( e );
 			}
-		} finally {
-			// Flush history buffer to disk. I could do this in the quit command
-			// but then I would lose everything if the user just closes the window
-			variables.reader.getHistory().flush();
 		}
 		
 		// Return the output to the caller to deal with
@@ -528,7 +544,7 @@ component accessors="true" singleton {
 		variables.logger.error( '#arguments.err.message# #arguments.err.detail ?: ''#', arguments.err.stackTrace ?: '' );
 
 
-		variables.reader.print( variables.print.whiteOnRedLine( 'ERROR' ) );
+		variables.reader.print( variables.print.whiteOnRedLine( 'ERROR (#variables.version#)' ) );
 		variables.reader.println();
 		variables.reader.print( variables.print.boldRedText( variables.formatterUtil.HTML2ANSI( arguments.err.message ) ) );
 		variables.reader.println();

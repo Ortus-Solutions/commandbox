@@ -34,7 +34,7 @@ component accessors="true" implements="IEndpoint" extends="commandbox.system.end
 	
 	private function createModuleConfig( required string tempFolder ) {
 		var fileContents = 'component {
-			this.modelNamespace="cflib"
+			this.modelNamespace="cflib";
 			function configure() {}
 			}';
 		fileWrite( arguments.tempFolder & '/ModuleConfig.cfc', fileContents );

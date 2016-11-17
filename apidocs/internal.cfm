@@ -15,7 +15,7 @@ try{
 	docbox.generate( 
 		source 		= expandPath( "/commandbox/system" ), 
 		mapping 	= "commandbox.system",
-		excludes 	= "system\/(modules)"
+		excludes 	= "system\/(modules),system\/(modules_app)"
 	);
 } catch ( Any e ){
 	writeOutput( e.message & e.detail );

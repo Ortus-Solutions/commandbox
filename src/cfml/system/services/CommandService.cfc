@@ -19,7 +19,8 @@ component accessors="true" singleton {
 	property name='wirebox' 			inject='wirebox';
 	property name='commandLocations'	inject='commandLocations@constants';
 	property name='interceptorService'	inject='interceptorService';
-	property name='stringDistance'		inject='StringDistance';
+	// Using provider since CommandService is created before modules are loaded
+	property name='stringDistance'		inject='provider:StringSimilarity@string-similarity';
 
 	property name='configured' default="false" type="boolean";
 
@@ -45,7 +46,6 @@ component accessors="true" singleton {
 	* Configure the service
 	*/
 	CommandService function configure(){
-
 		// Check if handler mapped?
 		if( NOT wirebox.getBinder().mappingExists( 'commandbox.system.BaseCommand' ) ){
 			// feed the base class
@@ -212,7 +212,7 @@ component accessors="true" singleton {
 				};
 			// For normal commands, parse them out properly
 			} else {
-				var parameterInfo = parseParameters( commandInfo.parameters );
+				var parameterInfo = parseParameters( commandInfo.parameters, commandInfo.commandReference.parameters );
 			}
 
 			// Parameters need to be ALL positional or ALL named
@@ -418,9 +418,10 @@ component accessors="true" singleton {
 	/**
 	 * Take an array of parameters and parse them out as named or positional
 	 * @parameters.hint The array of params to parse.
+	 * @commandParameters.hint valid params defined by the command
  	 **/
-	function parseParameters( parameters ){
-		return parser.parseParameters( parameters );
+	function parseParameters( parameters, commandParameters ){
+		return parser.parseParameters( parameters, commandParameters );
 	}
 
 	/**
@@ -780,7 +781,7 @@ component accessors="true" singleton {
 		var meta = arguments.commandData.commandMD;
 
 		// Make sure command has a run() method
-		for( var func in meta.functions ){
+		for( var func in meta.functions ?: [] ){
 			// Loop to find the "run()" method
 			if( func.name == 'run' ){
 				return true;

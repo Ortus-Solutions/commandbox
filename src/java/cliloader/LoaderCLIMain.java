@@ -597,6 +597,7 @@ public class LoaderCLIMain{
 		File libDir = getLibDir();
 		props.setProperty( "cfml.cli.lib", libDir.getAbsolutePath() );
 		File cfmlDir = new File( cli_home.getPath() + "/cfml" );
+		File cfmlSystemDir = new File( cli_home.getPath() + "/cfml/system" );
 
 		// clean out any leftover pack files (an issue on windows)
 		Util.cleanUpUnpacked( libDir );
@@ -622,21 +623,17 @@ public class LoaderCLIMain{
 			System.out.println( "Library path: " + libDir );
 			System.out
 					.println( "Initializing libraries -- this will only happen once, and takes a few seconds..." );
-			Util.removePreviousLibs( libDir );
+			Util.removePreviousLibs( libDir );			
 			Util.unzipInteralZip( classLoader, LIB_ZIP_PATH, libDir, debug );
+			
+			// Wipe out existing /cfml/system folder to remove any deleted files
+			if( cfmlSystemDir.exists() ) {
+				Util.deleteDirectory( cfmlSystemDir );
+			}
 			Util.unzipInteralZip( classLoader, CFML_ZIP_PATH, cfmlDir, debug );
+			
 			Util.unzipInteralZip( classLoader, ENGINECONF_ZIP_PATH, new File(
 					cli_home.getPath() + "/engine" ), debug );
-			Util.copyInternalFile( classLoader, "resource/trayicon.png",
-					new File( libDir, "trayicon.png" ) );
-			Util.copyInternalFile( classLoader, "resource/traymenu-adobe.json",
-					new File( libDir, "traymenu-adobe.json" ) );
-			Util.copyInternalFile( classLoader, "resource/traymenu-railo.json",
-					new File( libDir, "traymenu-railo.json" ) );
-			Util.copyInternalFile( classLoader, "resource/traymenu-lucee.json",
-					new File( libDir, "traymenu-lucee.json" ) );
-			Util.copyInternalFile( classLoader, "resource/traymenu-default.json",
-					new File( libDir, "traymenu-default.json" ) );
 			Util.copyInternalFile( classLoader, VERSION_PROPERTIES_PATH,
 					new File( libDir, "version.properties" ) );
 			System.out.println( "" );
@@ -656,8 +653,13 @@ public class LoaderCLIMain{
 				if( autoUpdate != null && Boolean.parseBoolean( autoUpdate ) ) {
 					log.warn( "\n*updating installed CFML" );
 					versionFile.delete();
-					Util.unzipInteralZip( classLoader, CFML_ZIP_PATH, cfmlDir,
-							debug );
+
+					// Wipe out existing /cfml/system folder to remove any deleted files
+					if( cfmlSystemDir.exists() ) {
+						Util.deleteDirectory( cfmlSystemDir );
+					}
+					
+					Util.unzipInteralZip( classLoader, CFML_ZIP_PATH, cfmlDir, debug );
 				} else {
 					log.warn( "run '" + name + " -update' to install new CFML" );
 				}
