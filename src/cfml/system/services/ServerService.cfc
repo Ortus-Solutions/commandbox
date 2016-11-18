@@ -650,7 +650,7 @@ component accessors="true" singleton {
     
 		// thread the execution
 		var threadName = 'server#hash( serverInfo.webroot )##createUUID()#';
-		thread name="#threadName#" serverInfo=serverInfo args=args {
+		thread name="#threadName#" serverInfo=serverInfo args=args startupTimeout=startupTimeout {
 			try{
 				// execute the server command
 				var  executeResult = '';
@@ -659,7 +659,7 @@ component accessors="true" singleton {
 				serverInfo.statusInfo = { command:variables.javaCommand, arguments:attributes.args, result:'' };
 				setServerInfo( serverInfo );
 				// Note this timeout is purposefully longer than the Runwar timeout so if the server takes too long, we get to capture the console info
-				execute name=variables.javaCommand arguments=attributes.args timeout="150" variable="executeResult" errorVariable="executeError";
+				execute name=variables.javaCommand arguments=attributes.args timeout="#startupTimeout+20#" variable="executeResult" errorVariable="executeError";
 				serverInfo.status="running";
 			} catch (any e) {
 				logger.error( "Error starting server: #e.message# #e.detail#", arguments );
