@@ -272,6 +272,10 @@ component accessors="true" singleton {
 				// ContentBox Widget
 				} else if( packageType == 'contentbox-widgets' ) {
 					installDirectory = arguments.packagePathRequestingInstallation & '/modules/contentbox/widgets';
+					// widgets just get dumped in
+					artifactDescriptor.createPackageDirectory = false;
+					// Don't trash the widgets folder with this
+					ignorePatterns.append( '/box.json' );
 				// ContentBox themes/layouts
 				} else if( packageType == 'contentbox-themes' || packageType == 'contentbox-layouts' ) {
 					installDirectory = arguments.packagePathRequestingInstallation & '/modules/contentbox/themes';
