@@ -15,16 +15,33 @@
 component {
 
 	/**
-	 * @path file or directory to tail
+	 * @path file or directory to tail or raw input to process
 	 * @lines number of lines to display.
 	 * @follow Keep outputting new lines to the file until Ctrl-C is pressed
 	 **/
 	function run( required path, numeric lines = 15, boolean follow = false ){
-
+		var rawText = false;
+		var inputAsArray = listToArray( arguments.path, chr(13) & chr(10) );
+		
+		// If there is a line break in the input, then it's raw text
+		if( inputAsArray.len() > 1 ) {
+			var rawText = true;			
+		}		
 		var filePath = fileSystemUtil.resolvePath( arguments.path );
 
 		if( !fileExists( filePath ) ){
-			return error( "The file does not exist: #arguments.path#" );
+			var rawText = true;
+		}
+		
+		// If we're piping raw text and not a file
+		if( rawText ) {
+			// Only show the last X lines
+			var startIndex = max( inputAsArray.len() - arguments.lines + 1, 1 );
+			while( startIndex <= inputAsArray.len() ) {
+				print.line( inputAsArray[ startIndex++ ] );
+			} 
+			
+			return;
 		}
 
 		variables.file = createObject( "java", "java.io.File" ).init( filePath );
