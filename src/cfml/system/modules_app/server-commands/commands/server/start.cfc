@@ -77,6 +77,7 @@ component aliases="start" {
 	 * @cfengine.optionsUDF  cfengineNameComplete
 	 * @WARPath				sets the path to an existing war to use
 	 * @serverConfigFile 	The path to the server's JSON file.  Created if it doesn't exist.
+	 * @timeout 			A custom timeout value for the server startup.
 	 
 	 **/
 	function run(
