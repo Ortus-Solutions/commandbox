@@ -39,6 +39,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import org.apache.commons.io.input.BOMInputStream;
 
 import net.minidev.json.JSONArray;
 
@@ -295,11 +296,11 @@ public class LoaderCLIMain{
 				}
 				if( cliPropFile.isFile() ) {
 					Properties userProps = new Properties();
-					FileInputStream fi;
+					InputStream fi;
 					try {
 						log.debug( "checking for home in properties from "
 								+ cliPropFile.getCanonicalPath() );
-						fi = new FileInputStream( cliPropFile );
+						fi = new BOMInputStream( new FileInputStream( cliPropFile ), false );
 						userProps.load( fi );
 						fi.close();
 						if( mapGetNoCase( userProps, "cli.home" ) != null ) {
@@ -476,7 +477,7 @@ public class LoaderCLIMain{
 		if( cliPropFile.isFile() ) {
 			log.debug( "merging properties from "
 					+ cliPropFile.getCanonicalPath() );
-			FileInputStream fi = new FileInputStream( cliPropFile );
+			InputStream fi = new BOMInputStream( new FileInputStream( cliPropFile ), false );
 			userProps.load( fi );
 			fi.close();
 			props = mergeProperties( props, userProps );
@@ -497,8 +498,7 @@ public class LoaderCLIMain{
 		}
 
 		if( new File( cli_home, "cli.properties" ).isFile() ) {
-			FileInputStream fi = new FileInputStream( new File( cli_home,
-					"cli.properties" ) );
+			InputStream fi = new BOMInputStream( new FileInputStream( new File( cli_home, "cli.properties" ) ), false );
 			userProps.load( fi );
 			fi.close();
 			props = mergeProperties( props, userProps );
