@@ -108,7 +108,8 @@ component aliases="start" {
 		boolean	saveSettings=true,
 		String  cfengine,
 		String  WARPath,
-		String serverConfigFile
+		String serverConfigFile,
+		Numeric timeout
 	){
 
 		// This is a common mis spelling

@@ -581,13 +581,16 @@ component accessors="true" singleton {
 		'tooltip' : processName,
 		'items' : serverInfo.trayOptions
 	};
+	
 	fileWrite( trayOptionsPath,  serializeJSON( trayJSON ) );
-
-
-	var startupTimeout = 120;
+	
 	// Increase our startup allowance for Adobe engines, since a number of files are generated on the first request
-	if( CFEngineName == 'adobe' ){
-		startupTimeout=240;
+	if( structKeyExists( serverInfo, 'timeout' ) ){
+		var startupTimeout = serverInfo.timeout;
+	} else if( findNoCase( 'adobe', CFEngineName ) ){
+		var startupTimeout=240;
+	} else {
+		var startupTimeout = 120;
 	}
 							
 	// The java arguments to execute:  Shared server, custom web configs
