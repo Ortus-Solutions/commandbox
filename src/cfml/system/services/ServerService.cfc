@@ -117,6 +117,7 @@ component accessors="true" singleton {
 		return {
 			name : d.name ?: '',
 			openBrowser : d.openBrowser ?: true,
+			startTimeout : 120,
 			stopsocket : d.stopsocket ?: 0,
 			debug : d.debug ?: false,
 			trayicon : d.trayicon ?: '',
@@ -347,8 +348,17 @@ component accessors="true" singleton {
 			    case "runwarArgs":
 					serverJSON[ 'runwar' ][ 'args' ] = serverProps[ prop ];
 			         break;
+			    case "timeout":
+			    case "startTimeout":
+			    	serverJSON[ 'startTimeout' ] = serverProps[ prop ];
+			    	//normalize our name conventions if the alias is passed
+			    	if( prop == 'timeout' ){
+			    		serverProps[ 'startTimeout' ] = serverProps[ prop ];
+			    	}
+
+			    	break;
 			    default: 
-				serverJSON[ prop ] = serverProps[ prop ];
+					serverJSON[ prop ] = serverProps[ prop ];
 			} // end switch
 		} // for loop
 		
@@ -418,6 +428,9 @@ component accessors="true" singleton {
 		
 		// Global defauls are always added on top of whatever is specified by the user or server.json
 		serverInfo.runwarArgs		= ( serverProps.runwarArgs		?: serverJSON.runwar.args ?: '' ) & ' ' & defaults.runwar.args;
+
+		// Server startup timeout
+		serverInfo.startTimeout		= serverProps.startTimeout 			?: serverJSON.startTimeout 	?: defaults.startTimeout;
 				
 		// Global defauls are always added on top of whatever is specified by the user or server.json
 		serverInfo.libDirs		= ( serverProps.libDirs		?: serverJSON.app.libDirs ?: '' ).listAppend( defaults.app.libDirs );
@@ -581,13 +594,14 @@ component accessors="true" singleton {
 		'tooltip' : processName,
 		'items' : serverInfo.trayOptions
 	};
+	
 	fileWrite( trayOptionsPath,  serializeJSON( trayJSON ) );
-
-
-	var startupTimeout = 120;
+	
 	// Increase our startup allowance for Adobe engines, since a number of files are generated on the first request
-	if( CFEngineName == 'adobe' ){
-		startupTimeout=240;
+	var startupTimeout = serverInfo.startTimeout;
+
+	if( startupTimeout == defaults.startTimeout && findNoCase( 'adobe', CFEngineName ) ){
+		var startupTimeout= ( defaults.startTimeout * 2 );
 	}
 							
 	// The java arguments to execute:  Shared server, custom web configs
