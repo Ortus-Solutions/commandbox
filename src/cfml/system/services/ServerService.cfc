@@ -161,7 +161,8 @@ component accessors="true" singleton {
 				cfengine : d.app.cfengine ?: ""
 			},
 			runwar : {
-				args : d.runwar.args ?: ''
+				args : d.runwar.args ?: '',
+				startTimeout : 120
 			}
 		};
 	}
@@ -347,8 +348,11 @@ component accessors="true" singleton {
 			    case "runwarArgs":
 					serverJSON[ 'runwar' ][ 'args' ] = serverProps[ prop ];
 			         break;
+			    case "timeout":
+			    	serverJSON[ 'runwar' ][ 'startTimeout' ] = serverProps[ prop ];
+			    	break;
 			    default: 
-				serverJSON[ prop ] = serverProps[ prop ];
+					serverJSON[ prop ] = serverProps[ prop ];
 			} // end switch
 		} // for loop
 		
@@ -418,6 +422,9 @@ component accessors="true" singleton {
 		
 		// Global defauls are always added on top of whatever is specified by the user or server.json
 		serverInfo.runwarArgs		= ( serverProps.runwarArgs		?: serverJSON.runwar.args ?: '' ) & ' ' & defaults.runwar.args;
+
+		// Server startup timeout
+		serverInfo.startTimeout		= serverProps.timeout 			?: serverJSON.runwar.startTimeout 	?: defaults.runwar.startTimeout;
 				
 		// Global defauls are always added on top of whatever is specified by the user or server.json
 		serverInfo.libDirs		= ( serverProps.libDirs		?: serverJSON.app.libDirs ?: '' ).listAppend( defaults.app.libDirs );
@@ -585,12 +592,10 @@ component accessors="true" singleton {
 	fileWrite( trayOptionsPath,  serializeJSON( trayJSON ) );
 	
 	// Increase our startup allowance for Adobe engines, since a number of files are generated on the first request
-	if( structKeyExists( serverInfo, 'timeout' ) ){
-		var startupTimeout = serverInfo.timeout;
-	} else if( findNoCase( 'adobe', CFEngineName ) ){
-		var startupTimeout=240;
-	} else {
-		var startupTimeout = 120;
+	var startupTimeout = serverInfo.startTimeout;
+
+	if( startupTimeout == defaults.runwar.startTimeout && findNoCase( 'adobe', CFEngineName ) ){
+		var startupTimeout= ( defaults.runwar.startTimeout * 2 );
 	}
 							
 	// The java arguments to execute:  Shared server, custom web configs
