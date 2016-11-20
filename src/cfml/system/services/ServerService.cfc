@@ -117,6 +117,7 @@ component accessors="true" singleton {
 		return {
 			name : d.name ?: '',
 			openBrowser : d.openBrowser ?: true,
+			startTimeout : 120,
 			stopsocket : d.stopsocket ?: 0,
 			debug : d.debug ?: false,
 			trayicon : d.trayicon ?: '',
@@ -161,8 +162,7 @@ component accessors="true" singleton {
 				cfengine : d.app.cfengine ?: ""
 			},
 			runwar : {
-				args : d.runwar.args ?: '',
-				startTimeout : 120
+				args : d.runwar.args ?: ''
 			}
 		};
 	}
@@ -349,7 +349,8 @@ component accessors="true" singleton {
 					serverJSON[ 'runwar' ][ 'args' ] = serverProps[ prop ];
 			         break;
 			    case "timeout":
-			    	serverJSON[ 'runwar' ][ 'startTimeout' ] = serverProps[ prop ];
+			    case "startTimeout":
+			    	serverJSON[ 'startTimeout' ] = serverProps[ prop ];
 			    	break;
 			    default: 
 					serverJSON[ prop ] = serverProps[ prop ];
@@ -424,7 +425,7 @@ component accessors="true" singleton {
 		serverInfo.runwarArgs		= ( serverProps.runwarArgs		?: serverJSON.runwar.args ?: '' ) & ' ' & defaults.runwar.args;
 
 		// Server startup timeout
-		serverInfo.startTimeout		= serverProps.timeout 			?: serverJSON.runwar.startTimeout 	?: defaults.runwar.startTimeout;
+		serverInfo.startTimeout		= serverProps.timeout 			?: serverJSON.startTimeout 	?: defaults.startTimeout;
 				
 		// Global defauls are always added on top of whatever is specified by the user or server.json
 		serverInfo.libDirs		= ( serverProps.libDirs		?: serverJSON.app.libDirs ?: '' ).listAppend( defaults.app.libDirs );
@@ -594,8 +595,8 @@ component accessors="true" singleton {
 	// Increase our startup allowance for Adobe engines, since a number of files are generated on the first request
 	var startupTimeout = serverInfo.startTimeout;
 
-	if( startupTimeout == defaults.runwar.startTimeout && findNoCase( 'adobe', CFEngineName ) ){
-		var startupTimeout= ( defaults.runwar.startTimeout * 2 );
+	if( startupTimeout == defaults.startTimeout && findNoCase( 'adobe', CFEngineName ) ){
+		var startupTimeout= ( defaults.startTimeout * 2 );
 	}
 							
 	// The java arguments to execute:  Shared server, custom web configs
