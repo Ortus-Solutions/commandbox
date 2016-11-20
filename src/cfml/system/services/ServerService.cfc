@@ -351,6 +351,11 @@ component accessors="true" singleton {
 			    case "timeout":
 			    case "startTimeout":
 			    	serverJSON[ 'startTimeout' ] = serverProps[ prop ];
+			    	//normalize our name conventions if the alias is passed
+			    	if( prop == 'timeout' ){
+			    		serverProps[ 'startTimeout' ] = serverProps[ prop ];
+			    	}
+
 			    	break;
 			    default: 
 					serverJSON[ prop ] = serverProps[ prop ];
@@ -425,7 +430,7 @@ component accessors="true" singleton {
 		serverInfo.runwarArgs		= ( serverProps.runwarArgs		?: serverJSON.runwar.args ?: '' ) & ' ' & defaults.runwar.args;
 
 		// Server startup timeout
-		serverInfo.startTimeout		= serverProps.timeout 			?: serverJSON.startTimeout 	?: defaults.startTimeout;
+		serverInfo.startTimeout		= serverProps.startTimeout 			?: serverJSON.startTimeout 	?: defaults.startTimeout;
 				
 		// Global defauls are always added on top of whatever is specified by the user or server.json
 		serverInfo.libDirs		= ( serverProps.libDirs		?: serverJSON.app.libDirs ?: '' ).listAppend( defaults.app.libDirs );
