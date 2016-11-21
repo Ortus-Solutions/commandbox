@@ -50,7 +50,9 @@ component accessors="true" singleton {
 			'endpoints.forgebox.APIURL',
 			// Servers
 			'server',
-			'server.defaults'
+			'server.defaults',
+			// used in Artifactsservice
+			'artifactsDirectory'
 		]);
 		
 		setConfigFilePath( '/commandbox-home/CommandBox.json' );
