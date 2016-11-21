@@ -117,7 +117,7 @@ component accessors="true" singleton {
 		return {
 			name : d.name ?: '',
 			openBrowser : d.openBrowser ?: true,
-			startTimeout : 120,
+			startTimeout : 240,
 			stopsocket : d.stopsocket ?: 0,
 			debug : d.debug ?: false,
 			trayicon : d.trayicon ?: '',
@@ -348,15 +348,6 @@ component accessors="true" singleton {
 			    case "runwarArgs":
 					serverJSON[ 'runwar' ][ 'args' ] = serverProps[ prop ];
 			         break;
-			    case "timeout":
-			    case "startTimeout":
-			    	serverJSON[ 'startTimeout' ] = serverProps[ prop ];
-			    	//normalize our name conventions if the alias is passed
-			    	if( prop == 'timeout' ){
-			    		serverProps[ 'startTimeout' ] = serverProps[ prop ];
-			    	}
-
-			    	break;
 			    default: 
 					serverJSON[ prop ] = serverProps[ prop ];
 			} // end switch
@@ -596,14 +587,7 @@ component accessors="true" singleton {
 	};
 	
 	fileWrite( trayOptionsPath,  serializeJSON( trayJSON ) );
-	
-	// Increase our startup allowance for Adobe engines, since a number of files are generated on the first request
-	var startupTimeout = serverInfo.startTimeout;
-
-	if( startupTimeout == defaults.startTimeout && findNoCase( 'adobe', CFEngineName ) ){
-		var startupTimeout= ( defaults.startTimeout * 2 );
-	}
-							
+								
 	// The java arguments to execute:  Shared server, custom web configs
 	var args = ' #serverInfo.JVMargs# -Xmx#serverInfo.heapSize#m -Xms#serverInfo.heapSize#m'
 			& ' #javaagent# -jar "#variables.jarPath#"'
@@ -616,7 +600,7 @@ component accessors="true" singleton {
 			& ' --tray-icon "#serverInfo.trayIcon#" --tray-config "#trayOptionsPath#" --servlet-rest-mappings "/rest/*,/api/*"'
 			& ' --directoryindex "#serverInfo.directoryBrowsing#" --cfml-web-config "#serverInfo.webConfigDir#"'
 			& ( len( CLIAliases ) ? ' --dirs "#CLIAliases#"' : '' )
-			& ' --cfml-server-config "#serverInfo.serverConfigDir#" #serverInfo.runwarArgs# --timeout #startupTimeout#';
+			& ' --cfml-server-config "#serverInfo.serverConfigDir#" #serverInfo.runwarArgs# --timeout #serverInfo.startTimeout#';
 			
 	// Starting a WAR
 	if (serverInfo.WARPath != "" ) {
@@ -664,7 +648,7 @@ component accessors="true" singleton {
     
 		// thread the execution
 		var threadName = 'server#hash( serverInfo.webroot )##createUUID()#';
-		thread name="#threadName#" serverInfo=serverInfo args=args startupTimeout=startupTimeout {
+		thread name="#threadName#" serverInfo=serverInfo args=args startTimeout=serverInfo.startTimeout {
 			try{
 				// execute the server command
 				var  executeResult = '';
@@ -673,7 +657,7 @@ component accessors="true" singleton {
 				serverInfo.statusInfo = { command:variables.javaCommand, arguments:attributes.args, result:'' };
 				setServerInfo( serverInfo );
 				// Note this timeout is purposefully longer than the Runwar timeout so if the server takes too long, we get to capture the console info
-				execute name=variables.javaCommand arguments=attributes.args timeout="#startupTimeout+20#" variable="executeResult" errorVariable="executeError";
+				execute name=variables.javaCommand arguments=attributes.args timeout="#startTimeout+20#" variable="executeResult" errorVariable="executeError";
 				serverInfo.status="running";
 			} catch (any e) {
 				logger.error( "Error starting server: #e.message# #e.detail#", arguments );
