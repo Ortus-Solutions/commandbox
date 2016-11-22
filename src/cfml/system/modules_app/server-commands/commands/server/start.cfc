@@ -78,6 +78,7 @@ component aliases="start" {
 	 * @WARPath				sets the path to an existing war to use
 	 * @serverConfigFile 	The path to the server's JSON file.  Created if it doesn't exist.
 	 * @startTimeout 		The amount of time in seconds to wait for the server to start (in the background).
+	 * @console				Start this server in the forground console process and wait until Ctrl-C is pressed to stop it.
 	 
 	 **/
 	function run(
@@ -103,14 +104,15 @@ component aliases="start" {
 		Boolean rewritesEnable,
 		String  rewritesConfig,
 		Numeric heapSize,
-		boolean directoryBrowsing,
+		Boolean directoryBrowsing,
 		String  JVMArgs,
 		String  runwarArgs,
-		boolean	saveSettings=true,
+		Boolean	saveSettings=true,
 		String  cfengine,
 		String  WARPath,
 		String serverConfigFile,
-		Numeric startTimeout
+		Numeric startTimeout,
+		Boolean console
 	){
 
 		// This is a common mis spelling

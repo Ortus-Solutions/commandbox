@@ -587,11 +587,11 @@ component accessors="true" singleton {
 		};
 		
 		fileWrite( trayOptionsPath,  serializeJSON( trayJSON ) );
-									
+		var background = !(serverProps.console ?: true);
 		// The java arguments to execute:  Shared server, custom web configs
 		var args = ' #serverInfo.JVMargs# -Xmx#serverInfo.heapSize#m -Xms#serverInfo.heapSize#m'
 				& ' #javaagent# -jar "#variables.jarPath#"'
-				& ' --background=true --port #serverInfo.port# --host #serverInfo.host# --debug=#serverInfo.debug#'
+				& ' --background=#background# --port #serverInfo.port# --host #serverInfo.host# --debug=#serverInfo.debug#'
 				& ' --stop-port #serverInfo.stopsocket# --processname "#processName#" --log-dir "#serverInfo.logDir#"'
 				& ' --open-browser #serverInfo.openbrowser#'
 				& ' --open-url ' & ( serverInfo.SSLEnable ? 'https://#serverInfo.host#:#serverInfo.SSLPort#' : 'http://#serverInfo.host#:#serverInfo.port#' )
@@ -663,7 +663,7 @@ component accessors="true" singleton {
 		consoleLogger.warn( "The server for #serverInfo.webroot# is starting on #serverInfo.host#:#serverInfo.port#..." );
 			
 		// If the user is running a one-off command to start a server or specified the debug flag, stream the output and wait until it's finished starting.
-		var interactiveStart = ( shell.getShellType() == 'command' || serverInfo.debug );
+		var interactiveStart = ( shell.getShellType() == 'command' || serverInfo.debug || !background );
 		
 		// Spin up a thread to capture the standard out and error from the server
 		thread name="#threadName#" interactiveStart=interactiveStart serverInfo=serverInfo args=args startTimeout=serverInfo.startTimeout  {
@@ -714,6 +714,37 @@ component accessors="true" singleton {
 		
 		// Block until the process ends and the streaming output thread above is done.
 		if( interactiveStart ) {
+			
+			if( !background ) {
+				try {
+					
+					while( true ) {
+						// Wipe out prompt so it doesn't redraw if the user hits enter
+						shell.getReader().setPrompt( '' );
+						
+						// Detect user pressing Ctrl-C
+						// Any other characters captured will be ignored
+						var line = shell.getReader().readLine();
+						if( line == 'q' ) {
+							break;
+						} else {
+							consoleLogger.error( 'To exit press Ctrl-C or "q" followed the enter key.' );
+						}
+					}
+					
+				// user wants to exit, they've pressed Ctrl-C
+				} catch ( jline.console.UserInterruptException e ) {
+				// Something bad happened 
+				} catch ( Any e ) {
+					logger.error( '#e.message# #e.detail#' , e.stackTrace );
+					consoleLogger.error( '#e.message##chr(10)##e.detail#' );
+				// Either way, this server is done like dinner
+				} finally {
+					shell.setPrompt();
+					process.destroy();					
+				}
+			}
+			
 			thread action="join" name="#threadName#";
 		}
 			
