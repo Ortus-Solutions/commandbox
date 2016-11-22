@@ -587,7 +587,7 @@ component accessors="true" singleton {
 		};
 		
 		fileWrite( trayOptionsPath,  serializeJSON( trayJSON ) );
-		var background = !(serverProps.console ?: true);
+		var background = !(serverProps.console ?: false);
 		// The java arguments to execute:  Shared server, custom web configs
 		var args = ' #serverInfo.JVMargs# -Xmx#serverInfo.heapSize#m -Xms#serverInfo.heapSize#m'
 				& ' #javaagent# -jar "#variables.jarPath#"'
@@ -740,6 +740,7 @@ component accessors="true" singleton {
 					consoleLogger.error( '#e.message##chr(10)##e.detail#' );
 				// Either way, this server is done like dinner
 				} finally {
+					consoleLogger.error( 'Stopping server...' );
 					shell.setPrompt();
 					process.destroy();					
 				}
