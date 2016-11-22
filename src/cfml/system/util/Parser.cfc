@@ -64,6 +64,11 @@ component {
 			
 			// If we're in the middle of a quoted string, just keep appending
 			if( inQuotes ) {
+				// Auto-escape = in a quoted string so it doesn't screw up named-parmeter detection.
+				// It will be unescaped later when we parse the params.
+				if( char == '=' && !isEscaped ) {
+					token &= '\';
+				}				
 				token &= char;
 				// We just reached the end of our quoted string
 				if( char == quoteChar && !isEscaped ) {
