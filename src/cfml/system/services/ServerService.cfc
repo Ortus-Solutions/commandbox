@@ -458,7 +458,7 @@ component accessors="true" singleton {
 
 	    
 	    // Default java agent for embedded Lucee engine
-	    var javaagent = serverinfo.cfengine contains 'lucee' ? '-javaagent:"#libdir#/lucee-inst.jar"' : '';
+	    var javaagent = serverinfo.cfengine contains 'lucee' ? '-javaagent:#libdir#/lucee-inst.jar' : '';
 	    
 	    // Not sure what Runwar does with this, but it wants to know what CFEngine we're starting (if we know)
 	    var CFEngineName = '';
@@ -482,11 +482,11 @@ component accessors="true" singleton {
 				
 			// If external Lucee server, set the java agent
 			if( !installDetails.internal && serverInfo.cfengine contains "lucee" ) {
-				javaagent = "-javaagent:""#installDetails.installDir#/WEB-INF/lib/lucee-inst.jar""";
+				javaagent = "-javaagent:#installDetails.installDir#/WEB-INF/lib/lucee-inst.jar";
 			}
 			// If external Railo server, set the java agent
 			if( !installDetails.internal && serverInfo.cfengine contains "railo" ) {
-				javaagent = "-javaagent:""#installDetails.installDir#/WEB-INF/lib/railo-inst.jar""";
+				javaagent = "-javaagent:#installDetails.installDir#/WEB-INF/lib/railo-inst.jar";
 			}
 			// Using built in server that hasn't been started before
 			if( installDetails.internal && !directoryExists( serverInfo.webConfigDir & '/WEB-INF' ) ) {
@@ -590,7 +590,7 @@ component accessors="true" singleton {
 		var background = !(serverProps.console ?: false);
 		// The java arguments to execute:  Shared server, custom web configs
 		var args = ' #serverInfo.JVMargs# -Xmx#serverInfo.heapSize#m -Xms#serverInfo.heapSize#m'
-				& ' #javaagent# -jar "#variables.jarPath#"'
+				& ' #javaagent# -jar #variables.jarPath#'
 				& ' --background=#background# --port #serverInfo.port# --host #serverInfo.host# --debug=#serverInfo.debug#'
 				& ' --stop-port #serverInfo.stopsocket# --processname "#processName#" --log-dir "#serverInfo.logDir#"'
 				& ' --open-browser #serverInfo.openbrowser#'
