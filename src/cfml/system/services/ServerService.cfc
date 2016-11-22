@@ -226,13 +226,13 @@ component accessors="true" singleton {
 		// Backwards compat for default port in box.json. Remove this eventually...			// *
 																							// *
 		// Get package descriptor															// *
-		var boxJSON = packageService.readPackageDescriptor( defaultwebroot );				// *
+		var boxJSON = packageService.readPackageDescriptorRaw( defaultwebroot );			// *
 		// Get defaults																		// *
 		var defaults = getDefaultServerJSON();												// *
 																							// *
 		// Backwards compat with boxJSON default port.  Remove in a future version			// *
 		// The property in box.json is deprecated. 											// *
-		if( boxJSON.defaultPort > 0 ) {														// *
+		if( (boxJSON.defaultPort ?: 0) > 0 ) {												// *
 																							// *
 			// Remove defaultPort from box.json and pretend it was 							// *
 			// manually typed which will cause server.json to save it.						// *
@@ -456,239 +456,267 @@ component accessors="true" singleton {
 		// log directory location
 		if( !directoryExists( serverInfo.logDir ) ){ directoryCreate( serverInfo.logDir ); }
 
-    
-    // Default java agent for embedded Lucee engine
-    var javaagent = serverinfo.cfengine contains 'lucee' ? '-javaagent:"#libdir#/lucee-inst.jar"' : '';
-    
-    // Not sure what Runwar does with this, but it wants to know what CFEngine we're starting (if we know)
-    var CFEngineName = '';
-    CFEngineName = serverinfo.cfengine contains 'lucee' ? 'lucee' : CFEngineName;
-    CFEngineName = serverinfo.cfengine contains 'railo' ? 'railo' : CFEngineName;
-    CFEngineName = serverinfo.cfengine contains 'adobe' ? 'adobe' : CFEngineName;
-    
-    var thisVersion = '';
-	var processName = ( serverInfo.name is "" ? "CommandBox" : serverInfo.name );
-    	  
-    // As long as there's no WAR Path, let's install the engine to use.
-	if( serverInfo.WARPath == '' ){
-	
-		// This will install the engine war to start, possibly downloading it first
-		var installDetails = serverEngineService.install( cfengine=serverInfo.cfengine, basedirectory=serverInfo.webConfigDir );
-		// This interception point can be used for additional configuration of the engine before it actually starts.
-		interceptorService.announceInterception( 'onServerInstall', { serverInfo=serverInfo, installDetails=installDetails } );
-		thisVersion = ' ' & installDetails.version;
-		serverInfo.serverHome = installDetails.installDir;
-		serverInfo.logdir = installDetails.installDir & "/logs";
-			
-		// If external Lucee server, set the java agent
-		if( !installDetails.internal && serverInfo.cfengine contains "lucee" ) {
-			javaagent = "-javaagent:""#installDetails.installDir#/WEB-INF/lib/lucee-inst.jar""";
-		}
-		// If external Railo server, set the java agent
-		if( !installDetails.internal && serverInfo.cfengine contains "railo" ) {
-			javaagent = "-javaagent:""#installDetails.installDir#/WEB-INF/lib/railo-inst.jar""";
-		}
-		// Using built in server that hasn't been started before
-		if( installDetails.internal && !directoryExists( serverInfo.webConfigDir & '/WEB-INF' ) ) {
-			serverInfo.webConfigDir = installDetails.installDir;
-			serverInfo.logdir = serverInfo.webConfigDir & "/logs";
-		}
-
-		// The process native name
-		var processName = ( serverInfo.name is "" ? "CommandBox" : serverInfo.name ) & ' [' & listFirst( serverinfo.cfengine, '@' ) & thisVersion & ']';
+	    
+	    // Default java agent for embedded Lucee engine
+	    var javaagent = serverinfo.cfengine contains 'lucee' ? '-javaagent:"#libdir#/lucee-inst.jar"' : '';
+	    
+	    // Not sure what Runwar does with this, but it wants to know what CFEngine we're starting (if we know)
+	    var CFEngineName = '';
+	    CFEngineName = serverinfo.cfengine contains 'lucee' ? 'lucee' : CFEngineName;
+	    CFEngineName = serverinfo.cfengine contains 'railo' ? 'railo' : CFEngineName;
+	    CFEngineName = serverinfo.cfengine contains 'adobe' ? 'adobe' : CFEngineName;
+	    
+	    var thisVersion = '';
+		var processName = ( serverInfo.name is "" ? "CommandBox" : serverInfo.name );
+	    	  
+	    // As long as there's no WAR Path, let's install the engine to use.
+		if( serverInfo.WARPath == '' ){
+		
+			// This will install the engine war to start, possibly downloading it first
+			var installDetails = serverEngineService.install( cfengine=serverInfo.cfengine, basedirectory=serverInfo.webConfigDir );
+			// This interception point can be used for additional configuration of the engine before it actually starts.
+			interceptorService.announceInterception( 'onServerInstall', { serverInfo=serverInfo, installDetails=installDetails } );
+			thisVersion = ' ' & installDetails.version;
+			serverInfo.serverHome = installDetails.installDir;
+			serverInfo.logdir = installDetails.installDir & "/logs";
 				
-		// Find the correct tray icon for this server
-		if( !len( serverInfo.trayIcon ) ) {
-			var iconSize = fileSystemUtil.isWindows() ? '-32px' : '';
-		    if( serverInfo.cfengine contains "lucee" ) { 
-		    	serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-lucee#iconSize#.png';
-			} else if( serverInfo.cfengine contains "railo" ) {
-		    	serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-railo#iconSize#.png';
-			} else if( serverInfo.cfengine contains "adobe" ) {
-				
-				if( listFirst( installDetails.version, '.' ) == 9 ) {
-					serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-cf09#iconSize#.png';
-				} else if( listFirst( installDetails.version, '.' ) == 10 ) {
-					serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-cf10#iconSize#.png';
-				} else if( listFirst( installDetails.version, '.' ) == 11 ) {
-					serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-cf11#iconSize#.png';
-				} else if( listFirst( installDetails.version, '.' ) == 2016 ) {
-					serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-cf2016#iconSize#.png';
-				} else {
-					serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-cf2016#iconSize#.png';
-				}
-					
+			// If external Lucee server, set the java agent
+			if( !installDetails.internal && serverInfo.cfengine contains "lucee" ) {
+				javaagent = "-javaagent:""#installDetails.installDir#/WEB-INF/lib/lucee-inst.jar""";
 			}
-		}	
+			// If external Railo server, set the java agent
+			if( !installDetails.internal && serverInfo.cfengine contains "railo" ) {
+				javaagent = "-javaagent:""#installDetails.installDir#/WEB-INF/lib/railo-inst.jar""";
+			}
+			// Using built in server that hasn't been started before
+			if( installDetails.internal && !directoryExists( serverInfo.webConfigDir & '/WEB-INF' ) ) {
+				serverInfo.webConfigDir = installDetails.installDir;
+				serverInfo.logdir = serverInfo.webConfigDir & "/logs";
+			}
 	
-	// This is a WAR
-	} else {
-		serverInfo.serverHome = getDirectoryFromPath( serverInfo.WARPath );
-	}
-		
-	// Default tray icon
-	serverInfo.trayIcon = ( len( serverInfo.trayIcon ) ? serverInfo.trayIcon : '#variables.libdir#/trayicon.png' ); 
-	serverInfo.trayIcon = expandPath( serverInfo.trayIcon );
-	
-	// Set default options for all servers
-	// TODO: Don't overwrite existing options with the same label.
-	
-    if( serverInfo.cfengine contains "lucee" ) {
-		serverInfo.trayOptions.prepend( { 'label':'Open Web Admin', 'action':'openbrowser', 'url':'http://${runwar.host}:${runwar.port}/lucee/admin/web.cfm', 'image' : expandPath('/commandbox/system/config/server-icons/web_settings.png' ) } );
-		serverInfo.trayOptions.prepend( { 'label':'Open Server Admin', 'action':'openbrowser', 'url':'http://${runwar.host}:${runwar.port}/lucee/admin/server.cfm', 'image' : expandPath('/commandbox/system/config/server-icons/server_settings.png' ) } );
-	} else if( serverInfo.cfengine contains "railo" ) {
-		serverInfo.trayOptions.prepend( { 'label':'Open Web Admin', 'action':'openbrowser', 'url':'http://${runwar.host}:${runwar.port}/railo-context/admin/web.cfm', 'image' : expandPath('/commandbox/system/config/server-icons/web_settings.png' ) } );
-		serverInfo.trayOptions.prepend( { 'label':'Open Server Admin', 'action':'openbrowser', 'url':'http://${runwar.host}:${runwar.port}/railo-context/admin/server.cfm', 'image' : expandPath('/commandbox/system/config/server-icons/server_settings.png' ) } );
-	} else if( serverInfo.cfengine contains "adobe" ) {
-		serverInfo.trayOptions.prepend( { 'label':'Open Server Admin', 'action':'openbrowser', 'url':'http://${runwar.host}:${runwar.port}/CFIDE/administrator/enter.cfm', 'image' : expandPath('/commandbox/system/config/server-icons/server_settings.png' ) } );
-	}
-	
-	serverInfo.trayOptions.prepend( { 'label':'Open Browser', 'action':'openbrowser', 'url':'http://${runwar.host}:${runwar.port}/', 'image' : expandPath('/commandbox/system/config/server-icons/home.png' ) } );
-	serverInfo.trayOptions.prepend( { 'label':'Stop Server', 'action':'stopserver', 'image' : expandPath('/commandbox/system/config/server-icons/stop.png' ) } );
-	serverInfo.trayOptions.prepend( { 'label': processName, 'disabled':true, 'image' : expandPath('/commandbox/system/config/server-icons/info.png' ) } );
-	
-    // This is due to a bug in RunWar not creating the right directory for the logs
-    directoryCreate( serverInfo.logDir, true, true );
-      
-	interceptorService.announceInterception( 'onServerStart', { serverInfo=serverInfo } );
+			// The process native name
+			var processName = ( serverInfo.name is "" ? "CommandBox" : serverInfo.name ) & ' [' & listFirst( serverinfo.cfengine, '@' ) & thisVersion & ']';
+					
+			// Find the correct tray icon for this server
+			if( !len( serverInfo.trayIcon ) ) {
+				var iconSize = fileSystemUtil.isWindows() ? '-32px' : '';
+			    if( serverInfo.cfengine contains "lucee" ) { 
+			    	serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-lucee#iconSize#.png';
+				} else if( serverInfo.cfengine contains "railo" ) {
+			    	serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-railo#iconSize#.png';
+				} else if( serverInfo.cfengine contains "adobe" ) {
+					
+					if( listFirst( installDetails.version, '.' ) == 9 ) {
+						serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-cf09#iconSize#.png';
+					} else if( listFirst( installDetails.version, '.' ) == 10 ) {
+						serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-cf10#iconSize#.png';
+					} else if( listFirst( installDetails.version, '.' ) == 11 ) {
+						serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-cf11#iconSize#.png';
+					} else if( listFirst( installDetails.version, '.' ) == 2016 ) {
+						serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-cf2016#iconSize#.png';
+					} else {
+						serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-cf2016#iconSize#.png';
+					}
 						
-	// Turn struct of aliases into a comma-delimited list, plus resolve relative paths.
-	// "/foo=C:\path,/bar=C:\another/path"
-	var CLIAliases = '';
-	for( var thisAlias in serverInfo.aliases ) {
-		CLIAliases = CLIAliases.listAppend( thisAlias & '=' & fileSystemUtil.resolvePath( serverInfo.aliases[ thisAlias ], serverInfo.webroot ) );
-	}
-	
-	// Turn struct of errorPages into a comma-delimited list.
-	// --error-pages="404=/path/to/404.html,500=/path/to/500.html,1=/path/to/default.html"
-	var errorPages = '';
-	for( var thisErrorPage in serverInfo.errorPages ) {
-		// "default" turns into "1"
-		var tmp = thisErrorPage == 'default' ? 1 : thisErrorPage;
-		tmp &= '=';
-		// normalize slashes
-		var thisPath = replace( serverInfo.errorPages[ thisErrorPage ], '\', '/', 'all' );
-		// Add leading slash if it doesn't exist.
-		tmp &= thisPath.startsWith( '/' ) ? thisPath : '/' & thisPath;
-		errorPages = errorPages.listAppend( tmp );
-	}
-	// Bug in runwar requires me to completley omit this param unless it's populated
-	// https://github.com/cfmlprojects/runwar/issues/33
-	if( len( errorPages ) ) {
-		errorPages = '--error-pages="#errorPages#"';
-	}
-	
-	// Serialize tray options and write to temp file
-	var trayOptionsPath = serverInfo.serverHome & '/trayOptions.json';
-	var trayJSON = {
-		'title' : processName,
-		'tooltip' : processName,
-		'items' : serverInfo.trayOptions
-	};
-	
-	fileWrite( trayOptionsPath,  serializeJSON( trayJSON ) );
-								
-	// The java arguments to execute:  Shared server, custom web configs
-	var args = ' #serverInfo.JVMargs# -Xmx#serverInfo.heapSize#m -Xms#serverInfo.heapSize#m'
-			& ' #javaagent# -jar "#variables.jarPath#"'
-			& ' --background=true --port #serverInfo.port# --host #serverInfo.host# --debug=#serverInfo.debug#'
-			& ' --stop-port #serverInfo.stopsocket# --processname "#processName#" --log-dir "#serverInfo.logDir#"'
-			& ' --open-browser #serverInfo.openbrowser#'
-			& ' --open-url ' & ( serverInfo.SSLEnable ? 'https://#serverInfo.host#:#serverInfo.SSLPort#' : 'http://#serverInfo.host#:#serverInfo.port#' )
-			& ( len( CFEngineName ) ? ' --cfengine-name "#CFEngineName#"' : '' )
-			& ' --server-name "#serverInfo.name#" #errorPages# --welcome-files "index.cfm,index.cfml,default.cfm,index.html,index.htm,default.html,default.htm"'
-			& ' --tray-icon "#serverInfo.trayIcon#" --tray-config "#trayOptionsPath#" --servlet-rest-mappings "/rest/*,/api/*"'
-			& ' --directoryindex "#serverInfo.directoryBrowsing#" --cfml-web-config "#serverInfo.webConfigDir#"'
-			& ( len( CLIAliases ) ? ' --dirs "#CLIAliases#"' : '' )
-			& ' --cfml-server-config "#serverInfo.serverConfigDir#" #serverInfo.runwarArgs# --timeout #serverInfo.startTimeout#';
-			
-	// Starting a WAR
-	if (serverInfo.WARPath != "" ) {
-		args &= " -war ""#serverInfo.WARPath#""";
-	// Stand alone server
-	} else if( !installDetails.internal ){
-		args &= " -war ""#serverInfo.webroot#"" --lib-dirs ""#installDetails.installDir#/WEB-INF/lib"" --web-xml-path ""#installDetails.installDir#/WEB-INF/web.xml""";
-	// internal server
-	} else {
-		// The internal server borrows the CommandBox lib directory
-		serverInfo.libDirs = serverInfo.libDirs.listAppend( variables.libDir );
-		args &= " -war ""#serverInfo.webroot#"" --lib-dirs ""#serverInfo.libDirs#""";
-	}
-	// Incorporate SSL to command
-	if( serverInfo.SSLEnable ){
-		args &= " --http-enable #serverInfo.HTTPEnable# --ssl-enable #serverInfo.SSLEnable# --ssl-port #serverInfo.SSLPort#";
-	}
-	if( serverInfo.SSLEnable && serverInfo.SSLCert != "") {
-		args &= " --ssl-cert ""#serverInfo.SSLCert#"" --ssl-key ""#serverInfo.SSLKey#"" --ssl-keypass ""#serverInfo.SSLKeyPass#""";
-	}
-	// Incorporate web-xml to command
-	if ( Len( Trim( serverInfo.webXml ?: "" ) ) ) {
-		args &= " --web-xml-path ""#serverInfo.webXml#""";
-	}
-	// Incorporate rewrites to command
-	args &= " --urlrewrite-enable #serverInfo.rewritesEnable#";
-	
-	if( serverInfo.rewritesEnable ){
-		if( !fileExists(serverInfo.rewritesConfig) ){
-			consoleLogger.error( '.' );
-			consoleLogger.error( 'URL rewrite config not found [#serverInfo.rewritesConfig#]' );
-			consoleLogger.error( '.' );
-			return;
-		}
-		args &= " --urlrewrite-file ""#serverInfo.rewritesConfig#""";
-	}
-	// change status to starting + persist
-	serverInfo.status = "starting";
-	setServerInfo( serverInfo );
+				}
+			}	
 		
-    if( serverInfo.debug ) {
-		var cleanedArgs = cr & '    ' & trim( replaceNoCase( args, ' -', cr & '    -', 'all' ) );					
-		consoleLogger.debug("Server start command: #javaCommand# #cleanedArgs#");
-    }
-    
-		// thread the execution
+		// This is a WAR
+		} else {
+			serverInfo.serverHome = getDirectoryFromPath( serverInfo.WARPath );
+		}
+			
+		// Default tray icon
+		serverInfo.trayIcon = ( len( serverInfo.trayIcon ) ? serverInfo.trayIcon : '#variables.libdir#/trayicon.png' ); 
+		serverInfo.trayIcon = expandPath( serverInfo.trayIcon );
+		
+		// Set default options for all servers
+		// TODO: Don't overwrite existing options with the same label.
+		
+	    if( serverInfo.cfengine contains "lucee" ) {
+			serverInfo.trayOptions.prepend( { 'label':'Open Web Admin', 'action':'openbrowser', 'url':'http://${runwar.host}:${runwar.port}/lucee/admin/web.cfm', 'image' : expandPath('/commandbox/system/config/server-icons/web_settings.png' ) } );
+			serverInfo.trayOptions.prepend( { 'label':'Open Server Admin', 'action':'openbrowser', 'url':'http://${runwar.host}:${runwar.port}/lucee/admin/server.cfm', 'image' : expandPath('/commandbox/system/config/server-icons/server_settings.png' ) } );
+		} else if( serverInfo.cfengine contains "railo" ) {
+			serverInfo.trayOptions.prepend( { 'label':'Open Web Admin', 'action':'openbrowser', 'url':'http://${runwar.host}:${runwar.port}/railo-context/admin/web.cfm', 'image' : expandPath('/commandbox/system/config/server-icons/web_settings.png' ) } );
+			serverInfo.trayOptions.prepend( { 'label':'Open Server Admin', 'action':'openbrowser', 'url':'http://${runwar.host}:${runwar.port}/railo-context/admin/server.cfm', 'image' : expandPath('/commandbox/system/config/server-icons/server_settings.png' ) } );
+		} else if( serverInfo.cfengine contains "adobe" ) {
+			serverInfo.trayOptions.prepend( { 'label':'Open Server Admin', 'action':'openbrowser', 'url':'http://${runwar.host}:${runwar.port}/CFIDE/administrator/enter.cfm', 'image' : expandPath('/commandbox/system/config/server-icons/server_settings.png' ) } );
+		}
+		
+		serverInfo.trayOptions.prepend( { 'label':'Open Browser', 'action':'openbrowser', 'url':'http://${runwar.host}:${runwar.port}/', 'image' : expandPath('/commandbox/system/config/server-icons/home.png' ) } );
+		serverInfo.trayOptions.prepend( { 'label':'Stop Server', 'action':'stopserver', 'image' : expandPath('/commandbox/system/config/server-icons/stop.png' ) } );
+		serverInfo.trayOptions.prepend( { 'label': processName, 'disabled':true, 'image' : expandPath('/commandbox/system/config/server-icons/info.png' ) } );
+		
+	    // This is due to a bug in RunWar not creating the right directory for the logs
+	    directoryCreate( serverInfo.logDir, true, true );
+	      
+		interceptorService.announceInterception( 'onServerStart', { serverInfo=serverInfo } );
+							
+		// Turn struct of aliases into a comma-delimited list, plus resolve relative paths.
+		// "/foo=C:\path,/bar=C:\another/path"
+		var CLIAliases = '';
+		for( var thisAlias in serverInfo.aliases ) {
+			CLIAliases = CLIAliases.listAppend( thisAlias & '=' & fileSystemUtil.resolvePath( serverInfo.aliases[ thisAlias ], serverInfo.webroot ) );
+		}
+		
+		// Turn struct of errorPages into a comma-delimited list.
+		// --error-pages="404=/path/to/404.html,500=/path/to/500.html,1=/path/to/default.html"
+		var errorPages = '';
+		for( var thisErrorPage in serverInfo.errorPages ) {
+			// "default" turns into "1"
+			var tmp = thisErrorPage == 'default' ? 1 : thisErrorPage;
+			tmp &= '=';
+			// normalize slashes
+			var thisPath = replace( serverInfo.errorPages[ thisErrorPage ], '\', '/', 'all' );
+			// Add leading slash if it doesn't exist.
+			tmp &= thisPath.startsWith( '/' ) ? thisPath : '/' & thisPath;
+			errorPages = errorPages.listAppend( tmp );
+		}
+		// Bug in runwar requires me to completley omit this param unless it's populated
+		// https://github.com/cfmlprojects/runwar/issues/33
+		if( len( errorPages ) ) {
+			errorPages = '--error-pages="#errorPages#"';
+		}
+		
+		// Serialize tray options and write to temp file
+		var trayOptionsPath = serverInfo.serverHome & '/trayOptions.json';
+		var trayJSON = {
+			'title' : processName,
+			'tooltip' : processName,
+			'items' : serverInfo.trayOptions
+		};
+		
+		fileWrite( trayOptionsPath,  serializeJSON( trayJSON ) );
+									
+		// The java arguments to execute:  Shared server, custom web configs
+		var args = ' #serverInfo.JVMargs# -Xmx#serverInfo.heapSize#m -Xms#serverInfo.heapSize#m'
+				& ' #javaagent# -jar "#variables.jarPath#"'
+				& ' --background=true --port #serverInfo.port# --host #serverInfo.host# --debug=#serverInfo.debug#'
+				& ' --stop-port #serverInfo.stopsocket# --processname "#processName#" --log-dir "#serverInfo.logDir#"'
+				& ' --open-browser #serverInfo.openbrowser#'
+				& ' --open-url ' & ( serverInfo.SSLEnable ? 'https://#serverInfo.host#:#serverInfo.SSLPort#' : 'http://#serverInfo.host#:#serverInfo.port#' )
+				& ( len( CFEngineName ) ? ' --cfengine-name "#CFEngineName#"' : '' )
+				& ' --server-name "#serverInfo.name#" #errorPages# --welcome-files "index.cfm,index.cfml,default.cfm,index.html,index.htm,default.html,default.htm"'
+				& ' --tray-icon "#serverInfo.trayIcon#" --tray-config "#trayOptionsPath#" --servlet-rest-mappings "/rest/*,/api/*"'
+				& ' --directoryindex "#serverInfo.directoryBrowsing#" --cfml-web-config "#serverInfo.webConfigDir#"'
+				& ( len( CLIAliases ) ? ' --dirs "#CLIAliases#"' : '' )
+				& ' --cfml-server-config "#serverInfo.serverConfigDir#" #serverInfo.runwarArgs# --timeout #serverInfo.startTimeout#';
+				
+		// Starting a WAR
+		if (serverInfo.WARPath != "" ) {
+			args &= " -war ""#serverInfo.WARPath#""";
+		// Stand alone server
+		} else if( !installDetails.internal ){
+			args &= " -war ""#serverInfo.webroot#"" --lib-dirs ""#installDetails.installDir#/WEB-INF/lib"" --web-xml-path ""#installDetails.installDir#/WEB-INF/web.xml""";
+		// internal server
+		} else {
+			// The internal server borrows the CommandBox lib directory
+			serverInfo.libDirs = serverInfo.libDirs.listAppend( variables.libDir );
+			args &= " -war ""#serverInfo.webroot#"" --lib-dirs ""#serverInfo.libDirs#""";
+		}
+		// Incorporate SSL to command
+		if( serverInfo.SSLEnable ){
+			args &= " --http-enable #serverInfo.HTTPEnable# --ssl-enable #serverInfo.SSLEnable# --ssl-port #serverInfo.SSLPort#";
+		}
+		if( serverInfo.SSLEnable && serverInfo.SSLCert != "") {
+			args &= " --ssl-cert ""#serverInfo.SSLCert#"" --ssl-key ""#serverInfo.SSLKey#"" --ssl-keypass ""#serverInfo.SSLKeyPass#""";
+		}
+		// Incorporate web-xml to command
+		if ( Len( Trim( serverInfo.webXml ?: "" ) ) ) {
+			args &= " --web-xml-path ""#serverInfo.webXml#""";
+		}
+		// Incorporate rewrites to command
+		args &= " --urlrewrite-enable #serverInfo.rewritesEnable#";
+		
+		if( serverInfo.rewritesEnable ){
+			if( !fileExists(serverInfo.rewritesConfig) ){
+				consoleLogger.error( '.' );
+				consoleLogger.error( 'URL rewrite config not found [#serverInfo.rewritesConfig#]' );
+				consoleLogger.error( '.' );
+				return;
+			}
+			args &= " --urlrewrite-file ""#serverInfo.rewritesConfig#""";
+		}
+		// change status to starting + persist
+		serverInfo.status = "starting";
+		setServerInfo( serverInfo );
+			
+	    if( serverInfo.debug ) {
+			var cleanedArgs = cr & '    ' & trim( replaceNoCase( args, ' -', cr & '    -', 'all' ) );					
+			consoleLogger.debug("Server start command: #javaCommand# #cleanedArgs#");
+	    }
+	    
+	    // needs to be unique in each run to avoid errors
 		var threadName = 'server#hash( serverInfo.webroot )##createUUID()#';
-		thread name="#threadName#" serverInfo=serverInfo args=args startTimeout=serverInfo.startTimeout {
+		// Construct a new process object
+	    var processBuilder = createObject( "java", "java.lang.ProcessBuilder" );
+	    // Pass array of tokens comprised of command plus arguments
+	    var processTokens = [ variables.javaCommand ]
+	    processTokens.append( args.listToArray( ' ' ), true );
+	    processBuilder.init( processTokens );
+	    // Conjoin standard error and output for convenience.
+	    processBuilder.redirectErrorStream( true );
+	    // Kick off actual process
+	    variables.process = processBuilder.start();
+	
+		// She'll be coming 'round the mountain when she comes...
+		consoleLogger.warn( "The server for #serverInfo.webroot# is starting on #serverInfo.host#:#serverInfo.port#..." );
+			
+		// If the user is running a one-off command to start a server or specified the debug flag, stream the output and wait until it's finished starting.
+		var interactiveStart = ( shell.getShellType() == 'command' || serverInfo.debug );
+		
+		// Spin up a thread to capture the standard out and error from the server
+		thread name="#threadName#" interactiveStart=interactiveStart serverInfo=serverInfo args=args startTimeout=serverInfo.startTimeout  {
 			try{
-				// execute the server command
-				var  executeResult = '';
-				var  executeError = '';
+				
 				// save server info and persist
 				serverInfo.statusInfo = { command:variables.javaCommand, arguments:attributes.args, result:'' };
+				serverInfo.status="starting";
 				setServerInfo( serverInfo );
-				// Note this timeout is purposefully longer than the Runwar timeout so if the server takes too long, we get to capture the console info
-				execute name=variables.javaCommand arguments=attributes.args timeout="#startTimeout+20#" variable="executeResult" errorVariable="executeError";
-				serverInfo.status="running";
-			} catch (any e) {
-				logger.error( "Error starting server: #e.message# #e.detail#", arguments );
-				serverInfo.statusInfo.result &= e.message & ' ' & e.detail;
+				
+				var startOutput = createObject( 'java', 'java.lang.StringBuilder' ).init();
+	    		var inputStream = process.getInputStream();
+				var print = wirebox.getInstance( "PrintBuffer" );
+				
+				while( ( var char = inputStream.read() ) > -1 ){
+					// Build up our output
+					startOutput.append( chr( char ) );
+					
+					// output it if we're being interactive
+					if( attributes.interactiveStart ) {
+						print
+							.text( chr( char ) )
+							.toConsole();
+					}
+				} // End of inputStream
+				
+				// When we require Java 8 for CommandBox, we can pass a timeout to waitFor().
+				var exitCode = process.waitFor();
+				
+				if( exitCode == 0 ) {
+					serverInfo.status="running";				
+				} else {
+					serverInfo.status="unknown";
+				}
+				
+			} catch( any e ) {
+				logger.error( e.message & ' ' & e.detail, e.stacktrace );
 				serverInfo.status="unknown";
 			} finally {
-				// make sure these don't come back as nulls
-				param name='local.executeResult' default='';
-				param name='local.executeError' default='';
-				serverInfo.statusInfo.result = serverInfo.statusInfo.result & executeResult & ' ' & executeError;
-				setServerInfo( serverInfo );				
+				// Make sure we always close the file or the process will never quit!
+				if( isDefined( 'inputStream' ) ) {
+					inputStream.close();
+				}
+				serverInfo.statusInfo.result = startOutput.toString();
+				setServerInfo( serverInfo );
 			}
 		}
 		
-		
-		// She'll be coming 'round the mountain when she comes...
-		consoleLogger.warn( "The server for #serverInfo.webroot# is starting on #serverInfo.host#:#serverInfo.port#... type 'server status' to see result" );
-		
-		// If this is a one off command, wait for the thread to finish, otherwise the JVM will shutdown before
-		// the server is started and the json files get updated.
-		if( shell.getShellType() == 'command' || serverInfo.debug ) {
+		// Block until the process ends and the streaming output thread above is done.
+		if( interactiveStart ) {
 			thread action="join" name="#threadName#";
-			
-			// Pull latest info that was saved in the thread and output it. Since we made the 
-			// user wait for the thread to finish, we might as well tell them what happened.
-			wirebox.getinstance( name='CommandDSL', initArguments={ name : 'server status' } )
-				.params( name = serverInfo.name )
-				.run();			
 		}
 			
-		
 	}
 
 	/**
