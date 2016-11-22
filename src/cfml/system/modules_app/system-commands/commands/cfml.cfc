@@ -135,9 +135,17 @@ component{
 	// double quotes are \" instead of "".  Any escaped double quotes must be converted
 	// to the CFML version to work as an object literal.
 	private function convertJSONEscapesToCFML( required string arg ) {
-		arguments.arg = replaceNoCase( arguments.arg, '\\', '__DOUBLE_ESCAPE__', 'all' );
+		arguments.arg = replaceNoCase( arguments.arg, '\\', '__double_backslash_', 'all' );
+		arguments.arg = replaceNoCase( arguments.arg, '\/', '/', 'all' );
 		arguments.arg = replaceNoCase( arguments.arg, '\"', '""', 'all' );
-		arguments.arg = replaceNoCase( arguments.arg, '__DOUBLE_ESCAPE__', '\\', 'all' );
+		arguments.arg = replaceNoCase( arguments.arg, '\t', '	', 'all' );
+		arguments.arg = replaceNoCase( arguments.arg, '\n', chr(13)&chr(10), 'all' );
+		arguments.arg = replaceNoCase( arguments.arg, '\r', chr(13), 'all' );
+		arguments.arg = replaceNoCase( arguments.arg, '\f', chr(12), 'all' );
+		arguments.arg = replaceNoCase( arguments.arg, '\b', chr(8), 'all' );
+		// This doesn't work-- I'd need to do it in a loop and replace each one individually.  Meh...
+		// arguments.arg = reReplaceNoCase( arguments.arg, '\\u([0-9a-f]{4})', chr( inputBaseN( '\1', 16 ) ), 'all' );
+		arguments.arg = replaceNoCase( arguments.arg, '__double_backslash_', '\', 'all' );
 		return arguments.arg;
 	}
 
