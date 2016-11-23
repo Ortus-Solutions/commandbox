@@ -485,6 +485,10 @@ External Dependencies:
 		<exec executable="${dist.dir}/box" dir="${dir.apidocs}">
 			<arg line="${cmdboxhome.arg} install" />
 		</exec>
+ 		<!-- Ensure server isn't still running -->
+		<exec executable="${dist.dir}/box" dir="${dir.apidocs}">
+			<arg line="${cmdboxhome.arg} server stop" />
+		</exec>
 		<!-- Startup the apidocs server, wait for a few seconds for server to start -->
 		<exec executable="${dist.dir}/box" dir="${dir.apidocs}">
 			<arg line="${cmdboxhome.arg} server start openbrowser=false --force port=${apidocs.port} --noSaveSettings --debug" />
@@ -512,8 +516,15 @@ External Dependencies:
  		<get dest="${temp.dir}/docbox.html" 
 			 src="${url.apidocs}/internal.cfm?version=${commandbox.version}&amp;path=${temp.dir.absolute}/apidocs" 
 			 verbose="true"
-			 retries="5"/>
+			 retries="5"
+			 ignoreerrors="true" />
+			 
 		<delete file="${temp.dir}/docbox.html" />
+		
+ 		<!-- stop server -->
+		<exec executable="${dist.dir}/box" dir="${dir.apidocs}">
+			<arg line="${cmdboxhome.arg} server log" />
+		</exec>
 
 		<!-- Zip API Docs -->
 		<zip destfile="${dist.dir}/${distro.name}-core-apidocs-${commandbox.version}.zip" basedir="${temp.dir}/apidocs"></zip>
