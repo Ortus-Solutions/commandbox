@@ -596,7 +596,7 @@ component accessors="true" singleton {
 				& ' --open-browser #serverInfo.openbrowser#'
 				& ' --open-url ' & ( serverInfo.SSLEnable ? 'https://#serverInfo.host#:#serverInfo.SSLPort#' : 'http://#serverInfo.host#:#serverInfo.port#' )
 				& ( len( CFEngineName ) ? ' --cfengine-name "#CFEngineName#"' : '' )
-				& ' --server-name "#serverInfo.name#" #errorPages# --welcome-files "index.cfm,index.cfml,default.cfm,index.html,index.htm,default.html,default.htm"'
+				& ' --server-name "#serverInfo.name#" #errorPages#' //  --welcome-files "index.cfm,index.cfml,default.cfm,index.html,index.htm,default.html,default.htm"
 				& ' --tray-icon "#serverInfo.trayIcon#" --tray-config "#trayOptionsPath#" --servlet-rest-mappings "/rest/*,/api/*"'
 				& ' --directoryindex "#serverInfo.directoryBrowsing#" --cfml-web-config "#serverInfo.webConfigDir#"'
 				& ( len( CLIAliases ) ? ' --dirs "#CLIAliases#"' : '' )
