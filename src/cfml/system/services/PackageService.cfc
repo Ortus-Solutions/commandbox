@@ -61,8 +61,10 @@ component accessors="true" singleton {
 	* @verbose If set, it will produce much more verbose information about the package installation
 	* @force When set to true, it will force dependencies to be installed whether they already exist or not
 	* @packagePathRequestingInstallation If installing smart dependencies packages (like ColdBox modules) that are capable of being nested, this is our current level
+	* 
+	* @returns True if no errors encountered, false if things went boom.
 	**/
-	function installPackage(
+	boolean function installPackage(
 			required string ID,
 			string directory,
 			boolean save=false,
@@ -91,7 +93,7 @@ component accessors="true" singleton {
 				var endpointData = endpointService.resolveEndpoint( arguments.ID, arguments.currentWorkingDirectory );
 			} catch( EndpointNotFound var e ) {
 				consoleLogger.error( e.message );
-				return;				
+				return false;
 			}
 			
 			consoleLogger.info( '.');
@@ -104,7 +106,7 @@ component accessors="true" singleton {
 			// but I don't want to "blow up" the console with a full error.	
 			} catch( endpointException var e ) {
 				consoleLogger.error( e.message & ' ' & e.detail );
-				return;				
+				return false;				
 			}
 			
 			// Support box.json in the root OR in a subfolder (NPM-style!)
@@ -190,7 +192,7 @@ component accessors="true" singleton {
 							// Does the package that we found satisfy what we need?
 							if( semanticVersion.satisfies( candidateBoxJSON.version, version ) ) {
 								consoleLogger.warn( '#packageName# (#version#) is already satisfied by #candidateInstallPath# (#candidateBoxJSON.version#).  Skipping installation.' );
-								return;
+								return true;
 							}
 						}
 					}
@@ -354,7 +356,7 @@ component accessors="true" singleton {
 						directoryDelete( tmpPath, true );					
 					}
 					consoleLogger.warn( "The package #packageName# is already installed at #installDirectory#. Skipping installation. Use --force option to force install." );
-					return;	
+					return true;
 				}				
 			}
 						
@@ -488,7 +490,7 @@ component accessors="true" singleton {
 		}
 		
 		interceptorService.announceInterception( 'postInstall', { installArgs=arguments } );
-
+		return true;
 	}
 	
 	// DRY

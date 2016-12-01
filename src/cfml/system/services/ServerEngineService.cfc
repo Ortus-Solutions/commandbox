@@ -189,7 +189,9 @@ component accessors="true" singleton="true" {
 		 
 		// Install the engine via our standard package service
 		installDetails.initialInstall = true;
-		packageService.installPackage( ID=arguments.ID, directory=thisTempDir, save=false );
+		if( !packageService.installPackage( ID=arguments.ID, directory=thisTempDir, save=false ) ) {
+			throw( message='Server not installed.', type="commandException");
+		}
 				
 		// Look for a war or zip archive inside the package
 		var theArchive = '';
