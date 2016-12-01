@@ -456,9 +456,18 @@ component accessors="true" singleton {
 		}
 		// relative lib dirs in config setting server defaults are resolved relative to the web root
 		if( defaults.keyExists( 'app' ) && defaults.app.keyExists( 'libDirs' ) && len( defaults.app.libDirs ) ) {
-			defaults.app.libDirs = defaults.app.libDirs.listMap( function( thisLibDir ){
-				return fileSystemUtil.resolvePath( thisLibDir, defaultwebroot );
-			});
+			// For each lib dir in the list, resolve the path, but only keep it if the folder actually exists.  
+			// This allows for "optional" global lib dirs.
+			// listReduce starts with an initial value of "" and aggregates the new list, onluy appending the items it wants to keep
+			defaults.app.libDirs = defaults.app.libDirs.listReduce( function( thisLibDirs, thisLibDir ){
+				thisLibDir = fileSystemUtil.resolvePath( thisLibDir, defaultwebroot );
+				if( directoryExists( thisLibDir ) ) {
+					thisLibDirs.listAppend( thisLibDir );
+				} else if( serverInfo.debug ) {
+					consoleLogger.info( "Ignoring non-existant global lib dir: " & thisLibDir );
+				}
+				return thisLibDirs;
+			}, '' );
 		}
 		// Global defauls are always added on top of whatever is specified by the user or server.json
 		serverInfo.libDirs		= ( serverProps.libDirs		?: serverJSON.app.libDirs ?: '' ).listAppend( defaults.app.libDirs );
@@ -687,7 +696,7 @@ component accessors="true" singleton {
 		setServerInfo( serverInfo );
 			
 	    if( serverInfo.debug ) {
-			var cleanedArgs = cr & '    ' & trim( replaceNoCase( args, ' -', cr & '    -', 'all' ) );					
+			var cleanedArgs = cr & '    ' & trim( replaceNoCase( args, ' -', cr & '    -', 'all' ) );
 			consoleLogger.debug("Server start command: #javaCommand# #cleanedArgs#");
 	    }
 	    
