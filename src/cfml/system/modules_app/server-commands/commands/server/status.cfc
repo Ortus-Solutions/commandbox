@@ -106,8 +106,14 @@ component aliases='status,server info' {
 					.bold( ')' );
 	
 				print.indentedLine( thisServerInfo.host & ':' & thisServerInfo.port & ' --> ' & thisServerInfo.webroot );
-					 
+				if( len( serverInfo.cfengine ) ) {
+					print.indentedLine( 'CF Engine: ' & serverInfo.cfengine );
+				}
+				if( len( serverInfo.warPath ) ) {
+					print.indentedLine( 'WAR Path: ' & serverInfo.warPath );
+				}
 				print.line();
+				print.indentedLine( 'Last status message: ' );
 				print.indentedLine( thisServerInfo.statusInfo.result );
 					 
 				if( arguments.verbose ) {
