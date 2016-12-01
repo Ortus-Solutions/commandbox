@@ -482,7 +482,13 @@ component accessors="true" singleton {
 				
 			// If external Lucee server, set the java agent
 			if( !installDetails.internal && serverInfo.cfengine contains "lucee" ) {
-				javaagent = "-javaagent:#installDetails.installDir#/WEB-INF/lib/lucee-inst.jar";
+				// Detect Lucee 4.x
+				if( installDetails.version.listFirst( '.' ) < 5 ) {
+					javaagent = "-javaagent:#installDetails.installDir#/WEB-INF/lib/lucee-inst.jar";					
+				} else {
+					// Lucee 5+ doesn't need the Java agent
+					javaagent = "";					
+				}
 			}
 			// If external Railo server, set the java agent
 			if( !installDetails.internal && serverInfo.cfengine contains "railo" ) {
@@ -607,7 +613,9 @@ component accessors="true" singleton {
 			args &= " -war ""#serverInfo.WARPath#""";
 		// Stand alone server
 		} else if( !installDetails.internal ){
-			args &= " -war ""#serverInfo.webroot#"" --lib-dirs ""#installDetails.installDir#/WEB-INF/lib"" --web-xml-path ""#installDetails.installDir#/WEB-INF/web.xml""";
+			// Add the server WAR's lib folder in
+			serverInfo.libDirs = serverInfo.libDirs.listAppend( installDetails.installDir& '/WEB-INF/lib' );
+			args &= " -war ""#serverInfo.webroot#"" --lib-dirs ""#serverInfo.libDirs.listChangeDelims( ',', ',' )#"" --web-xml-path ""#installDetails.installDir#/WEB-INF/web.xml""";
 		// internal server
 		} else {
 			// The internal server borrows the CommandBox lib directory
