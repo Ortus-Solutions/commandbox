@@ -54,10 +54,10 @@ component aliases="start" {
 	 * @directory     	 	web root for this server
 	 * @stopPort       		stop socket listener port number
 	 * @force          		force start if status is not stopped
-	 * @debug          		sets debug log level
+	 * @debug          		Turns on debug output while starting and streams server output to console.
 	 * @webConfigDir  	 	custom location for web context configuration
 	 * @serverConfigDir		custom location for server configuration
-	 * @libDirs       	 	comma-separated list of extra lib directories for the server
+	 * @libDirs       	 	comma-separated list of extra lib directories for the server to load
 	 * @trayIconFile   		path to .png file for tray icon
 	 * @webXML         		path to web.xml file used to configure the server
 	 * @HTTPEnable     		enable HTTP

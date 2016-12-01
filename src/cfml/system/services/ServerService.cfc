@@ -192,6 +192,13 @@ component accessors="true" singleton {
 		if( !isNull( serverProps.rewritesConfig ) ) {
 			serverProps.rewritesConfig = fileSystemUtil.resolvePath( serverProps.rewritesConfig );
 		}
+		if( !isNull( serverProps.libDirs ) ) {
+			// Comma-delimited list needs each item resolved
+			serverProps.libDirs = serverProps.libDirs
+				.map( function( thisLibDir ){ 
+					return fileSystemUtil.resolvePath( thisLibDir );
+			 	} );
+		}
 
 		// Look up the server that we're starting
 		var serverDetails = resolveServerDetails( arguments.serverProps );
@@ -252,6 +259,7 @@ component accessors="true" singleton {
 			if( isNull( serverProps[ prop ] ) || listFindNoCase( 'saveSettings,serverConfigFile,debug,force', prop ) ) {
 				continue;
 			}
+	    	var configPath = replace( fileSystemUtil.resolvePath( defaultServerConfigFileDirectory ), '\', '/', 'all' ) & '/';
 			// Only need switch cases for properties that are nested or use different name
 			switch(prop) {
 			    case "port":
@@ -261,9 +269,8 @@ component accessors="true" singleton {
 					serverJSON[ 'web' ][ 'host' ] = serverProps[ prop ];
 			         break;
 			    case "directory":
-			    	// Both of these are canonical already.
+			    	// This path is canonical already.
 			    	var thisDirectory = replace( serverProps[ 'directory' ], '\', '/', 'all' ) & '/';
-			    	var configPath = replace( fileSystemUtil.resolvePath( defaultServerConfigFileDirectory ), '\', '/', 'all' ) & '/';
 			    	// If the web root is south of the server's JSON, make it relative for better portability.
 			    	if( thisDirectory contains configPath ) {
 			    		thisDirectory = replaceNoCase( thisDirectory, configPath, '' );
@@ -271,9 +278,8 @@ component accessors="true" singleton {
 					serverJSON[ 'web' ][ 'webroot' ] = thisDirectory;
 			         break;
 			    case "trayIcon":
-			    	// Both of these are canonical already.
+			    	// This path is canonical already.
 			    	var thisFile = replace( serverProps[ 'trayIcon' ], '\', '/', 'all' );
-			    	var configPath = replace( fileSystemUtil.resolvePath( defaultServerConfigFileDirectory ), '\', '/', 'all' ) & '/';
 			    	// If the trayIcon is south of the server's JSON, make it relative for better portability.
 			    	if( thisFile contains configPath ) {
 			    		thisFile = replaceNoCase( thisFile, configPath, '' );
@@ -290,7 +296,18 @@ component accessors="true" singleton {
 					serverJSON[ 'app' ][ 'serverConfigDir' ] = serverProps[ prop ];
 			         break;
 			    case "libDirs":
-					serverJSON[ 'app' ][ 'libDirs' ] = serverProps[ prop ];
+					serverJSON[ 'app' ][ 'libDirs' ] = serverProps[ 'libDirs' ]
+						.listMap( function( thisLibDir ) {
+							// This path is canonical already.
+					    	var thisLibDir = replace( thisLibDir, '\', '/', 'all' );
+					    	// If the libDir is south of the server's JSON, make it relative for better portability.
+					    	if( thisLibDir contains configPath ) {
+					    		return replaceNoCase( thisLibDir, configPath, '' );
+					    	} else {
+					    		return thisLibDir;				    		
+					    	}
+						} );
+					
 			         break;
 			    case "webXML":
 					serverJSON[ 'app' ][ 'webXML' ] = serverProps[ prop ];
@@ -299,9 +316,8 @@ component accessors="true" singleton {
 					serverJSON[ 'app' ][ 'cfengine' ] = serverProps[ prop ];
 			         break;
 			    case "WARPath":
-			    	// Both of these are canonical already.
+			    	// This path is canonical already.
 			    	var thisFile = replace( serverProps[ 'WARPath' ], '\', '/', 'all' );
-			    	var configPath = replace( fileSystemUtil.resolvePath( defaultServerConfigFileDirectory ), '\', '/', 'all' ) & '/';
 			    	// If the trayIcon is south of the server's JSON, make it relative for better portability.
 			    	if( thisFile contains configPath ) {
 			    		thisFile = replaceNoCase( thisFile, configPath, '' );
@@ -330,9 +346,8 @@ component accessors="true" singleton {
 					serverJSON[ 'web' ][ 'rewrites' ][ 'enable' ] = serverProps[ prop ];
 			         break;
 			    case "rewritesConfig":
-			    	// Both of these are canonical already.
+			    	// This path is canonical already.
 			    	var thisFile = replace( serverProps[ 'rewritesConfig' ], '\', '/', 'all' );
-			    	var configPath = replace( fileSystemUtil.resolvePath( defaultServerConfigFileDirectory ), '\', '/', 'all' ) & '/';
 			    	// If the trayIcon is south of the server's JSON, make it relative for better portability.
 			    	if( thisFile contains configPath ) {
 			    		thisFile = replaceNoCase( thisFile, configPath, '' );
@@ -380,10 +395,13 @@ component accessors="true" singleton {
 		serverInfo.webConfigDir 	= serverProps.webConfigDir 		?: serverJSON.app.webConfigDir 		?: defaults.app.webConfigDir;
 		if( !len( serverInfo.webConfigDir ) ) { serverInfo.webConfigDir =  getCustomServerFolder( serverInfo ); }
 		serverInfo.serverConfigDir 	= serverProps.serverConfigDir 	?: serverJSON.app.serverConfigDir 	?: defaults.app.serverConfigDir;
-		serverInfo.libDirs			= serverProps.libDirs 			?: serverJSON.app.libDirs			?: defaults.app.libDirs;
+				
+		// relative trayIcon in server.json is resolved relative to the server.json
 		if( serverJSON.keyExists( 'trayIcon' ) ) { serverJSON.trayIcon = fileSystemUtil.resolvePath( serverJSON.trayIcon, defaultServerConfigFileDirectory ); }
+		// relative trayIcon in config setting server defaults is resolved relative to the web root
 		if( defaults.keyExists( 'trayIcon' ) && len( defaults.trayIcon ) ) { defaults.trayIcon = fileSystemUtil.resolvePath( defaults.trayIcon, defaultwebroot ); }
 		serverInfo.trayIcon			= serverProps.trayIcon 			?: serverJSON.trayIcon 				?: defaults.trayIcon;
+		
 		serverInfo.webXML 			= serverProps.webXML 			?: serverJSON.app.webXML 			?: defaults.app.webXML;
 		serverInfo.SSLEnable 		= serverProps.SSLEnable 		?: serverJSON.web.SSL.enable		?: defaults.web.SSL.enable;
 		serverInfo.HTTPEnable		= serverProps.HTTPEnable 		?: serverJSON.web.HTTP.enable		?: defaults.web.HTTP.enable;
@@ -392,9 +410,14 @@ component accessors="true" singleton {
 		serverInfo.SSLKey 			= serverProps.SSLKey 			?: serverJSON.web.SSL.key			?: defaults.web.SSL.key;
 		serverInfo.SSLKeyPass 		= serverProps.SSLKeyPass 		?: serverJSON.web.SSL.keyPass		?: defaults.web.SSL.keyPass;
 		serverInfo.rewritesEnable 	= serverProps.rewritesEnable	?: serverJSON.web.rewrites.enable	?: defaults.web.rewrites.enable;
+		
+		
+		// relative rewrite config path in server.json is resolved relative to the server.json
 		if( isDefined( 'serverJSON.web.rewrites.config' ) ) { serverJSON.web.rewrites.config = fileSystemUtil.resolvePath( serverJSON.web.rewrites.config, defaultServerConfigFileDirectory ); }
+		// relative rewrite config path in config setting server defaults is resolved relative to the web root
 		if( isDefined( 'defaults.web.rewrites.config' ) ) { defaults.web.rewrites.config = fileSystemUtil.resolvePath( defaults.web.rewrites.config, defaultwebroot ); }
 		serverInfo.rewritesConfig 	= serverProps.rewritesConfig 	?: serverJSON.web.rewrites.config 	?: defaults.web.rewrites.config;
+		
 		serverInfo.heapSize 		= serverProps.heapSize 			?: serverJSON.JVM.heapSize			?: defaults.JVM.heapSize;
 		serverInfo.directoryBrowsing = serverProps.directoryBrowsing ?: serverJSON.web.directoryBrowsing ?: defaults.web.directoryBrowsing;
 		
@@ -423,6 +446,18 @@ component accessors="true" singleton {
 		// Server startup timeout
 		serverInfo.startTimeout		= serverProps.startTimeout 			?: serverJSON.startTimeout 	?: defaults.startTimeout;
 				
+		// relative lib dirs in server.json are resolved relative to the server.json
+		if( serverJSON.keyExists( 'app' ) && serverJSON.app.keyExists( 'libDirs' ) ) {
+			serverJSON.app.libDirs = serverJSON.app.libDirs.listMap( function( thisLibDir ){
+				return fileSystemUtil.resolvePath( thisLibDir, defaultServerConfigFileDirectory );
+			});
+		}
+		// relative lib dirs in config setting server defaults are resolved relative to the web root
+		if( defaults.keyExists( 'app' ) && defaults.app.keyExists( 'libDirs' ) && len( defaults.app.libDirs ) ) {
+			defaults.app.libDirs = defaults.app.libDirs.listMap( function( thisLibDir ){
+				return fileSystemUtil.resolvePath( thisLibDir, defaultwebroot );
+			});
+		}
 		// Global defauls are always added on top of whatever is specified by the user or server.json
 		serverInfo.libDirs		= ( serverProps.libDirs		?: serverJSON.app.libDirs ?: '' ).listAppend( defaults.app.libDirs );
 				
@@ -615,12 +650,14 @@ component accessors="true" singleton {
 		} else if( !installDetails.internal ){
 			// Add the server WAR's lib folder in
 			serverInfo.libDirs = serverInfo.libDirs.listAppend( installDetails.installDir& '/WEB-INF/lib' );
+			// Have to get rid of empty list elements
 			args &= " -war ""#serverInfo.webroot#"" --lib-dirs ""#serverInfo.libDirs.listChangeDelims( ',', ',' )#"" --web-xml-path ""#installDetails.installDir#/WEB-INF/web.xml""";
 		// internal server
 		} else {
 			// The internal server borrows the CommandBox lib directory
 			serverInfo.libDirs = serverInfo.libDirs.listAppend( variables.libDir );
-			args &= " -war ""#serverInfo.webroot#"" --lib-dirs ""#serverInfo.libDirs#""";
+			// Have to get rid of empty list elements
+			args &= " -war ""#serverInfo.webroot#"" --lib-dirs ""#serverInfo.libDirs.listChangeDelims( ',', ',' )#""";
 		}
 		// Incorporate SSL to command
 		if( serverInfo.SSLEnable ){

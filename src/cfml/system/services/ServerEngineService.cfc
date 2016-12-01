@@ -175,7 +175,7 @@ component accessors="true" singleton="true" {
 			
 		}
 		
-		// If we're starting a Lucee server whose version matches the CLI engine, then don't download anyting, we're using internal jars.
+		// If we're starting a Lucee server whose version matches the CLI engine, then don't download anything, we're using internal jars.
 		if( listFirst( arguments.ID, '@' ) == 'lucee' && server.lucee.version == replace( installDetails.version, '+', '.', 'all' ) ) {
 			installDetails.internal = true;
 			return installDetails;
