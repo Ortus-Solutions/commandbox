@@ -40,11 +40,14 @@ component {
 
 		var servers = arguments.all ? serverService.getServers() : { "#serverInfo.id#": serverInfo };
 		if( arguments.force ) {
-			var stopMessage = arguments.all ?
-				"Stopping all running servers (#getRunningServerNames( servers )#) first...." :
-				"Stopping server #serverInfo.name# first....";
-			print.line( stopMessage );
-			servers.each( function( ID ){ serverService.stop( servers[ arguments.ID ] ); } );
+			var runningServers = getRunningServers( servers );
+			if ( ! runningServers.isEmpty() ) {
+				var stopMessage = arguments.all ?
+					"Stopping all running servers (#getServerNames( runningServers ).toList()#) first...." :
+					"Stopping server #serverInfo.name# first....";
+				print.line( stopMessage );
+				runningServers.each( function( ID ){ serverService.stop( runningServers[ arguments.ID ] ); } );
+			}
 		} else {
 			servers.each( function( ID ){ runningServerCheck( servers[ arguments.ID ] ); } );
 		}
@@ -70,12 +73,16 @@ component {
 		}
 	}
 
-	private function getRunningServerNames( required struct servers ){
+	private function getRunningServers( required struct servers ) {
 		return servers.filter( function( ID ){
 			return serverService.isServerRunning( servers[ arguments.ID ] );
-		} ).keyArray().map( function( ID ){
+		} )
+	}
+
+	private function getServerNames( required struct servers ){
+		return servers.keyArray().map( function( ID ){
 			return servers[ arguments.ID ].name;
-		} ).toList();
+		} );
 	}
 	
 	function serverNameComplete() {
