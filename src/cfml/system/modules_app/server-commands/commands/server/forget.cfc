@@ -60,7 +60,7 @@ component {
 	private function runningServerCheck( required struct serverInfo ) {
 		if( serverService.isServerRunning( serverInfo ) ) {
 			print.redBoldLine( 'Server "#serverInfo.name#" (#serverInfo.webroot#) appears to still be running!' )
-				.yellowLine( 'Forgetting it now may leave the server in a currupt state. Please stop it first.' )
+				.yellowLine( 'Forgetting it now may leave the server in a corrupt state. Please stop it first.' )
 				.line();
 		}
 	}
