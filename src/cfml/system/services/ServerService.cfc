@@ -135,6 +135,7 @@ component accessors="true" singleton {
 				aliases : duplicate( d.web.aliases ?: {} ),
 				// Duplicate so onServerStart interceptors don't actually change config settings via refernce.
 				errorPages : duplicate( d.web.errorPages ?: {} ),
+				welcomeFiles : d.web.welcomeFiles ?: '',
 				http : {
 					port : d.web.http.port ?: 0,
 					enable : d.web.http.enable ?: true
@@ -258,7 +259,7 @@ component accessors="true" singleton {
 		// Save hand-entered properties in our server.json for next time
 		for( var prop in serverProps ) {
 			// Ignore null props or ones that shouldn't be saved
-			if( isNull( serverProps[ prop ] ) || listFindNoCase( 'saveSettings,serverConfigFile,debug,force', prop ) ) {
+			if( isNull( serverProps[ prop ] ) || listFindNoCase( 'saveSettings,serverConfigFile,debug,force,console', prop ) ) {
 				continue;
 			}
 	    	var configPath = replace( fileSystemUtil.resolvePath( defaultServerConfigFileDirectory ), '\', '/', 'all' ) & '/';
@@ -344,6 +345,9 @@ component accessors="true" singleton {
 			    case "SSLKeyPass":
 					serverJSON[ 'web' ][ 'SSL' ][ 'keyPass' ] = serverProps[ prop ];
 			         break;
+			    case "welcomeFiles":
+					serverJSON[ 'web' ][ 'welcomeFiles' ] = serverProps[ prop ];
+			         break;
 			    case "rewritesEnable":
 					serverJSON[ 'web' ][ 'rewrites' ][ 'enable' ] = serverProps[ prop ];
 			         break;
@@ -412,6 +416,9 @@ component accessors="true" singleton {
 		serverInfo.SSLKey 			= serverProps.SSLKey 			?: serverJSON.web.SSL.key			?: defaults.web.SSL.key;
 		serverInfo.SSLKeyPass 		= serverProps.SSLKeyPass 		?: serverJSON.web.SSL.keyPass		?: defaults.web.SSL.keyPass;
 		serverInfo.rewritesEnable 	= serverProps.rewritesEnable	?: serverJSON.web.rewrites.enable	?: defaults.web.rewrites.enable;
+		serverInfo.welcomeFiles 	= serverProps.welcomeFiles		?: serverJSON.web.welcomeFiles		?: defaults.web.welcomeFiles;
+		// Clean up spaces in welcome file list
+		serverInfo.welcomeFiles = serverInfo.welcomeFiles.listMap( function( i ){ return trim( i ); } );
 		
 		
 		// relative rewrite config path in server.json is resolved relative to the server.json
@@ -648,7 +655,8 @@ component accessors="true" singleton {
 				& ' --open-browser #serverInfo.openbrowser#'
 				& ' --open-url ' & ( serverInfo.SSLEnable ? 'https://#serverInfo.host#:#serverInfo.SSLPort#' : 'http://#serverInfo.host#:#serverInfo.port#' )
 				& ( len( CFEngineName ) ? ' --cfengine-name "#CFEngineName#"' : '' )
-				& ' --server-name "#serverInfo.name#" #errorPages#' //  --welcome-files "index.cfm,index.cfml,default.cfm,index.html,index.htm,default.html,default.htm"
+				& ' --server-name "#serverInfo.name#" #errorPages#'
+				& ( len( serverInfo.welcomeFiles ) ? ' --welcome-files "#serverInfo.welcomeFiles#" ' : '' )
 				& ' --tray-icon "#serverInfo.trayIcon#" --tray-config "#trayOptionsPath#" --servlet-rest-mappings "/rest/*,/api/*"'
 				& ' --directoryindex "#serverInfo.directoryBrowsing#" --cfml-web-config "#serverInfo.webConfigDir#"'
 				& ( len( CLIAliases ) ? ' --dirs "#CLIAliases#"' : '' )

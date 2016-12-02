@@ -79,6 +79,7 @@ component aliases="start" {
 	 * @serverConfigFile 	The path to the server's JSON file.  Created if it doesn't exist.
 	 * @startTimeout 		The amount of time in seconds to wait for the server to start (in the background).
 	 * @console				Start this server in the forground console process and wait until Ctrl-C is pressed to stop it.
+	 * @welcomeFiles		A comma-delimited list of default files to load when visiting a directory (index.cfm,index.htm,etc)
 	 
 	 **/
 	function run(
@@ -112,7 +113,8 @@ component aliases="start" {
 		String  WARPath,
 		String serverConfigFile,
 		Numeric startTimeout,
-		Boolean console
+		Boolean console,
+		String welcomeFiles
 	){
 
 		// This is a common mis spelling
