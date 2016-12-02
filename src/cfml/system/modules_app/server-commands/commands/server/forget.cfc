@@ -38,16 +38,21 @@ component {
 		}		
 		var serverInfo = serverService.resolveServerDetails( arguments ).serverinfo;
 
-		if( arguments.all ) {
-			var servers = serverService.getServers();
-			servers.each( function( ID ){ runningServerCheck( servers[ arguments.ID ] ); } );
+		var servers = arguments.all ? serverService.getServers() : { "#serverInfo.id#": serverInfo };
+		if( arguments.force ) {
+			var stopMessage = arguments.all ?
+				"Stopping all running servers (#getRunningServerNames( servers )#) first...." :
+				"Stopping server #serverInfo.name# first....";
+			print.line( stopMessage );
+			servers.each( function( ID ){ serverService.stop( servers[ arguments.ID ] ); } );
 		} else {
-			runningServerCheck( serverInfo );
+			servers.each( function( ID ){ runningServerCheck( servers[ arguments.ID ] ); } );
 		}
 
 		// Confirm deletion
-		var askMessage = arguments.all ? "Really forget & delete all servers (#arrayToList( serverService.getServerNames() )#) forever [y/n]?" :
-									     "Really forget & delete server '#serverinfo.name#' forever [y/n]?";
+		var askMessage = arguments.all ?
+			"Really forget & delete all servers (#arrayToList( serverService.getServerNames() )#) forever [y/n]?" :
+			"Really forget & delete server '#serverinfo.name#' forever [y/n]?";
 									     
 		if( arguments.force || confirm( askMessage ) ){
 			print.line( serverService.forget( serverInfo, arguments.all ) );
@@ -63,6 +68,14 @@ component {
 				.yellowLine( 'Forgetting it now may leave the server in a corrupt state. Please stop it first.' )
 				.line();
 		}
+	}
+
+	private function getRunningServerNames( required struct servers ){
+		return servers.filter( function( ID ){
+			return serverService.isServerRunning( servers[ arguments.ID ] );
+		} ).keyArray().map( function( ID ){
+			return servers[ arguments.ID ].name;
+		} ).toList();
 	}
 	
 	function serverNameComplete() {
