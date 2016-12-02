@@ -667,15 +667,19 @@ component accessors="true" singleton {
 			args &= " -war ""#serverInfo.WARPath#""";
 		// Stand alone server
 		} else if( !installDetails.internal ){
-			// Have to get rid of empty list elements
-			args &= " -war ""#serverInfo.webroot#"" --lib-dirs ""#serverInfo.libDirs.listChangeDelims( ',', ',' )#"" --web-xml-path ""#installDetails.installDir#/WEB-INF/web.xml""";
+			args &= " -war ""#serverInfo.webroot#"" --web-xml-path ""#installDetails.installDir#/WEB-INF/web.xml""";
 		// internal server
 		} else {
 			// The internal server borrows the CommandBox lib directory
 			serverInfo.libDirs = serverInfo.libDirs.listAppend( variables.libDir );
-			// Have to get rid of empty list elements
-			args &= " -war ""#serverInfo.webroot#"" --lib-dirs ""#serverInfo.libDirs.listChangeDelims( ',', ',' )#""";
+			args &= " -war ""#serverInfo.webroot#""";
 		}
+		
+		if( len( serverInfo.libDirs ) ) {
+			// Have to get rid of empty list elements
+			args &= " --lib-dirs ""#serverInfo.libDirs.listChangeDelims( ',', ',' )#""";
+		}
+		
 		// Incorporate SSL to command
 		if( serverInfo.SSLEnable ){
 			args &= " --http-enable #serverInfo.HTTPEnable# --ssl-enable #serverInfo.SSLEnable# --ssl-port #serverInfo.SSLPort#";
