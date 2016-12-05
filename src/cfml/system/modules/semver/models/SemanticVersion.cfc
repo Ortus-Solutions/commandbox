@@ -482,7 +482,7 @@ component singleton{
 		    		sComparator.sVersion.minor=val( sComparator.sVersion.minor )+1;
 		    		sComparator.sVersion.revision = 0;
 		    	} else {
-		    		sComparator.sVersion.revision=val( sComparator.sVersion.revision )+1;			    		
+		    		sComparator.sVersion.revision=val( sComparator.sVersion.revision )+1;
 		    	}
 		    	
 		    	sComparator.version = getVersionAsString( sComparator.sVersion );
