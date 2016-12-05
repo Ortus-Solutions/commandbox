@@ -667,8 +667,6 @@ component accessors="true" singleton {
 			args &= " -war ""#serverInfo.WARPath#""";
 		// Stand alone server
 		} else if( !installDetails.internal ){
-			// Add the server WAR's lib folder in
-			serverInfo.libDirs = serverInfo.libDirs.listAppend( installDetails.installDir & '/WEB-INF/lib' );
 			args &= " -war ""#serverInfo.webroot#"" --web-xml-path ""#installDetails.installDir#/WEB-INF/web.xml""";
 		// internal server
 		} else {
