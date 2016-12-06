@@ -137,13 +137,15 @@ component accessors="true" singleton="true" {
 			var version = endpoint.parseVersion( arguments.ID );
 			
 			// If the user gave us an exact version, just use it!
-			if( semanticVersion.isExactVersion( version ) ) {
-				var satisfyingVersion = version;				
+			// Require buildID like 5.1.0+34
+			if( semanticVersion.isExactVersion( version=version, includeBuildID=true ) ) {
+				var satisfyingVersion = version;
 			} else {
-				consoleLogger.info( "Contacting ForgeBox to determine the best version match for [#version#].  Use an exact 'cfengine' version to skip this check.");
+				consoleLogger.warn( "Contacting ForgeBox to determine the latest & greatest version of [#engineName##( len( version ) ? ' ' : '' )##version#].  Use an exact 'cfengine' version to skip this check.");
 				// If ForgeBox is down, don't rain on people's parade.
 				try {
 					var satisfyingVersion = endpoint.findSatisfyingVersion( endpoint.parseSlug( arguments.ID ), version ).version;
+					consoleLogger.info( "OK, [#engineName# #satisfyingVersion#] it is!");
 				} catch( any var e ) {
 					
 					consoleLogger.error( ".");

@@ -54,6 +54,8 @@ component name="TestPrint" extends="mxunit.framework.TestCase" {
 		assertFalse( semver.isExactVersion( '>1.0.0-alpha' ) );
 		assertFalse( semver.isExactVersion( '>=1.0.0-rc.0 <1.0.1' ) );
 		assertFalse( semver.isExactVersion( '^2 <2.2 || > 2.3' ) );
+		assertTrue( semver.isExactVersion( '1.2.3+123', true ) );
+		assertFalse( semver.isExactVersion( '1.2.3', true ) );
 	}
 	
 	public void function testIsNew() {
