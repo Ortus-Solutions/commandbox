@@ -112,10 +112,9 @@ Type "help" for help, or "help [command]" to be more specific.
 		while( shell.run( silent=silent ) ){
 			clearScreen = shell.getDoClearScreen();
 			
-			interceptorService.announceInterception( 'onCLIExit' );			
-			
+			interceptorService.announceInterception( 'onCLIExit' );
 			if( clearScreen ){
-				shell.getReader().clearScreen();
+				shell.clearScreen();
 			}
 			
 			// Clear all caches: template, ...

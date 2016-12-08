@@ -197,10 +197,11 @@ component accessors="true" singleton {
 	 * ask the user a question and wait for response
 	 * @message.hint message to prompt the user with
 	 * @mask.hint When not empty, keyboard input is masked as that character
+	 * @defaultResponse Text to populate the buffer with by default that will be submitted if the user presses enter without typing anything
 	 *
 	 * @return the response from the user
  	 **/
-	string function ask( message, string mask='', string buffer='' ) {
+	string function ask( message, string mask='', string defaultResponse='' ) {
 		
 		try {
 			// read reponse while masking input
@@ -208,10 +209,10 @@ component accessors="true" singleton {
 				// Prompt for the user
 				arguments.message,
 				// Optionally mask their input
-				len( arguments.mask ) ? javacast( "char", left( arguments.mask, 1 ) ) : javacast( "null", '' )//,
+				len( arguments.mask ) ? javacast( "char", left( arguments.mask, 1 ) ) : javacast( "null", '' ),
 				// This won't work until we can upgrade to Jline 2.14
 				// Optionally pre-fill a default response for them
-			//	len( arguments.buffer ) ? javacast( "String", arguments.buffer ) : javacast( "null", '' )
+				len( arguments.defaultResponse ) ? javacast( "String", arguments.defaultResponse ) : javacast( "null", '' )
 			);
 		} catch( jline.console.UserInterruptException var e ) {
 			throw( message='CANCELLED', type="UserInterruptException");
@@ -262,22 +263,9 @@ component accessors="true" singleton {
 	 * @note Almost works on Windows, but doesn't clear text background
 	 *
  	 **/
-	Shell function clearScreen( addLines = true ) {
-		// This outputs a double prompt due to the redrawLine() call
-		//	reader.clearScreen();
-
-		// A temporary workaround for windows. Since background colors aren't cleared
-		// this will force them off the screen with blank lines before clearing.
-		if( variables.fileSystem.isWindows() && arguments.addLines ) {
-			var i = 0;
-			while( ++i <= getTermHeight() + 5 ) {
-				variables.reader.println();
-			}
-		}
-
-		variables.reader.print( '[2J' );
-		variables.reader.print( '[1;1H' );
-
+	Shell function clearScreen() {
+		reader.clearScreen();
+   		variables.reader.flush();
 		return this;
 	}
 

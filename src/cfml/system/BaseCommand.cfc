@@ -63,15 +63,17 @@ component accessors="true" singleton {
 	function getCWD() {
 		return shell.pwd();
 	}
-			
+		
 	/**
-	 * Ask the user a question and wait for response
+	 * ask the user a question and wait for response
 	 * @message.hint message to prompt the user with
 	 * @mask.hint When not empty, keyboard input is masked as that character
+	 *
+	 * @return the response from the user
  	 **/
-	function ask( required message, string mask='' ) {
+	string function ask( message, string mask='', string defaultResponse='' ) {
 		print.toConsole();
-		return shell.ask( arguments.message, arguments.mask );
+		return shell.ask( arguments.message, arguments.mask, arguments.defaultResponse );
 	}
 		
 	/**
