@@ -528,11 +528,18 @@ component accessors="true" singleton {
 		
 			// This will install the engine war to start, possibly downloading it first
 			var installDetails = serverEngineService.install( cfengine=serverInfo.cfengine, basedirectory=serverInfo.webConfigDir );
-			// This interception point can be used for additional configuration of the engine before it actually starts.
-			interceptorService.announceInterception( 'onServerInstall', { serverInfo=serverInfo, installDetails=installDetails } );
 			thisVersion = ' ' & installDetails.version;
 			serverInfo.serverHome = installDetails.installDir;
 			serverInfo.logdir = installDetails.installDir & "/logs";
+			
+			// This is for one-time setup tasks on first install
+			if( installDetails.initialInstall ) {				
+				// Make current settings available to package scripts
+				setServerInfo( serverInfo );
+				
+				// This interception point can be used for additional configuration of the engine before it actually starts.
+				interceptorService.announceInterception( 'onServerInstall', { serverInfo=serverInfo, installDetails=installDetails } );
+			}
 				
 			// If external Lucee server, set the java agent
 			if( !installDetails.internal && serverInfo.cfengine contains "lucee" ) {
@@ -541,7 +548,7 @@ component accessors="true" singleton {
 					javaagent = "-javaagent:#installDetails.installDir#/WEB-INF/lib/lucee-inst.jar";					
 				} else {
 					// Lucee 5+ doesn't need the Java agent
-					javaagent = "";					
+					javaagent = "";
 				}
 			}
 			// If external Railo server, set the java agent
@@ -610,6 +617,8 @@ component accessors="true" singleton {
 	    // This is due to a bug in RunWar not creating the right directory for the logs
 	    directoryCreate( serverInfo.logDir, true, true );
 	      
+		// Make current settings available to package scripts
+		setServerInfo( serverInfo );
 		interceptorService.announceInterception( 'onServerStart', { serverInfo=serverInfo } );
 							
 		// Turn struct of aliases into a comma-delimited list, plus resolve relative paths.
