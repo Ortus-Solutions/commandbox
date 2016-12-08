@@ -803,7 +803,8 @@ External Dependencies:
 		</dependency>
 		<dependency groupId="org.fusesource.jansi" artifactId="jansi" unzip="false" version="1.11" type="jar" dest="${lib.dir}" />
 		 -->
-		<dependency groupId="jline" artifactId="jline" version="2.12.1" dest="${lib.dir}" type="jar" unzip="false"/>
+ 		<mvn-repo id="sonatype" url="https://oss.sonatype.org/content/repositories/snapshots/" />
+		<dependency repoId="sonatype" groupId="jline" artifactId="jline" version="2.15-SNAPSHOT" dest="${lib.dir}" type="jar" unzip="false"/>
 		<dependency groupId="org.eclipse.jgit" artifactId="org.eclipse.jgit" version="4.3.0.201604071810-r" dest="${lib.dir}" repoId="jgit-repository" unzip="false" type="jar">
 			<exclusions>
 				<!-- Lucee already includes these jars --> 
