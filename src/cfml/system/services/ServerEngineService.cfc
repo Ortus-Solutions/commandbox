@@ -59,7 +59,7 @@ component accessors="true" singleton="true" {
 		if (fileExists(installDetails.installDir & "/WEB-INF/cfform/flex-config.xml")) {
 			var flexConfig = fileRead(installDetails.installDir & "/WEB-INF/cfform/flex-config.xml");
 
-			if(!installDetails.internal && installDetails.initialInstall ) {
+			if( installDetails.initialInstall ) {
 				flexConfig = replace(flexConfig, "/WEB-INF/", installDetails.installDir & "/WEB-INF/","all");
  -				fileWrite(installDetails.installDir & "/WEB-INF/cfform/flex-config.xml", flexConfig);
 			} else { 
@@ -141,7 +141,7 @@ component accessors="true" singleton="true" {
 			if( semanticVersion.isExactVersion( version=version, includeBuildID=true ) ) {
 				var satisfyingVersion = version;
 			} else {
-				consoleLogger.warn( "Contacting ForgeBox to determine the latest & greatest version of [#engineName##( len( version ) ? ' ' : '' )##version#].  Use an exact 'cfengine' version to skip this check.");
+				consoleLogger.warn( "Contacting ForgeBox to determine the latest & greatest version of [#engineName##( len( version ) ? ' ' : '' )##version#]...  Use an exact 'cfengine' version to skip this check.");
 				// If ForgeBox is down, don't rain on people's parade.
 				try {
 					var satisfyingVersion = endpoint.findSatisfyingVersion( endpoint.parseSlug( arguments.ID ), version ).version;
@@ -177,20 +177,35 @@ component accessors="true" singleton="true" {
 			
 		}
 		
-		// If we're starting a Lucee server whose version matches the CLI engine, then don't download anything, we're using internal jars.
-		if( listFirst( arguments.ID, '@' ) == 'lucee' && server.lucee.version == replace( installDetails.version, '+', '.', 'all' ) ) {
-			installDetails.internal = true;
-			return installDetails;
-		}
 		
 		// Check to see if this WAR has already been exploded
 		if( fileExists( installDetails.installDir & '/WEB-INF/web.xml' ) ) {
 			consoleLogger.info( "WAR/zip archive already installed.");
 			return installDetails;
 		}
-		 
+		
 		// Install the engine via our standard package service
 		installDetails.initialInstall = true;
+		
+		// If we're starting a Lucee server whose version matches the CLI engine, then don't download anything, we're using internal jars.
+		if( listFirst( arguments.ID, '@' ) == 'lucee' && server.lucee.version == replace( installDetails.version, '+', '.', 'all' ) ) {
+			// installDetails.internal = true;
+			
+			consoleLogger.info( "Building a WAR from local jars.");
+			
+			// Spoof a WAR file.
+			var thisWebinf = installDetails.installDir & '/WEB-INF';
+			var thislib = thisWebinf & '/lib';
+			var thiServerContext = thisWebinf & '/server-context';
+			var thiWebContext = thisWebinf & '/web-context';
+			
+			directoryCreate( installDetails.installDir & '/WEB-INF', true, true );
+			directoryCopy( '/commandbox-home/lib', thislib, false, '*.jar' );
+			fileCopy( '/commandbox/system/config/web.xml', thisWebinf & '/web.xml');
+			
+			return installDetails;
+		}
+		 
 		if( !packageService.installPackage( ID=arguments.ID, directory=thisTempDir, save=false ) ) {
 			throw( message='Server not installed.', type="commandException");
 		}
@@ -238,7 +253,15 @@ component accessors="true" singleton="true" {
 		initParam.XmlChildren[1] = xmlElemnew(webXML,"param-name");
 		initParam.XmlChildren[1].XmlText = "#lcase( cfengine )#-web-directory";
 		initParam.XmlChildren[2] = xmlElemnew(webXML,"param-value");
-		initParam.XmlChildren[2].XmlText = "/WEB-INF/#lcase( cfengine )#/{web-context-label}";
+		initParam.XmlChildren[2].XmlText = "/WEB-INF/#lcase( cfengine )#-web";
+		arrayInsertAt(servlets[1].XmlParent.XmlChildren,4,initParam);
+		
+		var servlets = xmlSearch(webXML,"//:servlet-class[text()='#lcase( cfengine )#.loader.servlet.CFMLServlet']");
+		var initParam = xmlElemnew(webXML,"http://java.sun.com/xml/ns/javaee","init-param");
+		initParam.XmlChildren[1] = xmlElemnew(webXML,"param-name");
+		initParam.XmlChildren[1].XmlText = "#lcase( cfengine )#-server-directory";
+		initParam.XmlChildren[2] = xmlElemnew(webXML,"param-value");
+		initParam.XmlChildren[2].XmlText = "/WEB-INF";
 		arrayInsertAt(servlets[1].XmlParent.XmlChildren,4,initParam);
 		
 		// Lucee 5+ has a LuceeServlet as well as will create the WEB-INF by default in your web root
@@ -248,7 +271,15 @@ component accessors="true" singleton="true" {
 			initParam.XmlChildren[1] = xmlElemnew(webXML,"param-name");
 			initParam.XmlChildren[1].XmlText = "#lcase( cfengine )#-web-directory";
 			initParam.XmlChildren[2] = xmlElemnew(webXML,"param-value");
-			initParam.XmlChildren[2].XmlText = "/WEB-INF/#lcase( cfengine )#/{web-context-label}";
+			initParam.XmlChildren[2].XmlText = "/WEB-INF/#lcase( cfengine )#-web";
+			arrayInsertAt(servlets[1].XmlParent.XmlChildren,4,initParam);
+		
+			var servlets = xmlSearch(webXML,"//:servlet-class[text()='#lcase( cfengine )#.loader.servlet.LuceeServlet']");
+			var initParam = xmlElemnew(webXML,"http://java.sun.com/xml/ns/javaee","init-param");
+			initParam.XmlChildren[1] = xmlElemnew(webXML,"param-name");
+			initParam.XmlChildren[1].XmlText = "#lcase( cfengine )#-server-directory";
+			initParam.XmlChildren[2] = xmlElemnew(webXML,"param-value");
+			initParam.XmlChildren[2].XmlText = "/WEB-INF";
 			arrayInsertAt(servlets[1].XmlParent.XmlChildren,4,initParam);
 		} 
 		

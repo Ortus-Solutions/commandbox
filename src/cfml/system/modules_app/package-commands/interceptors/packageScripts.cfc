@@ -21,6 +21,8 @@ component {
 	function postModuleLoad() { processScripts( 'postModuleLoad' ); }
 	function preModuleUnLoad() { processScripts( 'preModuleUnLoad' ); }
 	function postModuleUnload() { processScripts( 'postModuleUnload' ); }
+	function preServerStart() { processScripts( 'preServerStart' ); }
+	function onServerInstall() { processScripts( 'onServerInstall', interceptData.serverinfo.webroot ); }
 	function onServerStart() { processScripts( 'onServerStart', interceptData.serverinfo.webroot ); }
 	function onServerStop() { processScripts( 'onServerStop', interceptData.serverinfo.webroot ); }
 	function onException() { processScripts( 'onException' ); }
