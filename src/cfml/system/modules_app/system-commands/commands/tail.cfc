@@ -45,6 +45,7 @@ component {
 		}
 
 		variables.file = createObject( "java", "java.io.File" ).init( filePath );
+		
 		var startPos = findStartPos();
 		var startingLength = 0;
 		
@@ -52,8 +53,8 @@ component {
 			
 			var lineCounter = 0;
 			var buffer = [];
-			var randomAccessFile = createObject( "java", "java.io.RandomAccessFile" ).init( file, "r" );
-			var startingLength = file.length(); 
+			var randomAccessFile = createObject( "java", "java.io.RandomAccessFile" ).init( variables.file, "r" );
+			var startingLength = variables.file.length(); 
 			variables.position = startingLength;
 	
 			// move to the end of the file

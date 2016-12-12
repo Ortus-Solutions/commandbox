@@ -527,10 +527,12 @@ component accessors="true" singleton {
 		
 		setExitCode( 1 );
 		
-		getInterceptorService().announceInterception( 'onException', { exception=err } );
+		// If CommandBox blows up while starting, the interceptor service won't be ready yet.
+		if( getInterceptorService().getConfigured() ) {
+			getInterceptorService().announceInterception( 'onException', { exception=err } );
+		}
 		
 		variables.logger.error( '#arguments.err.message# #arguments.err.detail ?: ''#', arguments.err.stackTrace ?: '' );
-
 
 		variables.reader.print( variables.print.whiteOnRedLine( 'ERROR (#variables.version#)' ) );
 		variables.reader.println();
