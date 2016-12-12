@@ -106,8 +106,8 @@ component aliases='status,server info' {
 					.bold( ')' );
 	
 				print.indentedLine( thisServerInfo.host & ':' & thisServerInfo.port & ' --> ' & thisServerInfo.webroot );
-				if( len( serverInfo.cfengine ) ) {
-					print.indentedLine( 'CF Engine: ' & serverInfo.cfengine );
+				if( len( serverInfo.engineName ) ) {
+					print.indentedLine( 'CF Engine: ' & serverInfo.engineName & ' ' & serverInfo.engineVersion );
 				}
 				if( len( serverInfo.warPath ) ) {
 					print.indentedLine( 'WAR Path: ' & serverInfo.warPath );

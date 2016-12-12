@@ -118,6 +118,7 @@ component accessors="true" singleton="true" {
 			
 		var installDetails = {
 			internal : false,
+			engineName : '',
 			version : '',
 			installDir : '',
 			initialInstall : false
@@ -129,6 +130,7 @@ component accessors="true" singleton="true" {
 		var endpointData = endpointService.resolveEndpoint( ID, shell.pwd() );
 		var endpoint = endpointData.endpoint;
 		var engineName = endpoint.getDefaultName( arguments.ID );
+		installDetails.engineName = engineName;
 		
 		// In order to prevent uneccessary work, we're going to try REALLY hard to figure out exactly what engine will be installed 
 		// before it actually happens so we can skip this whole mess if it's already in place.

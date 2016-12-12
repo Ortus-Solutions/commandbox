@@ -531,6 +531,8 @@ component accessors="true" singleton {
 			thisVersion = ' ' & installDetails.version;
 			serverInfo.serverHome = installDetails.installDir;
 			serverInfo.logdir = installDetails.installDir & "/logs";
+			serverInfo.engineName = installDetails.engineName;
+			serverInfo.engineVersion = installDetails.version;
 			
 			// This is for one-time setup tasks on first install
 			if( installDetails.initialInstall ) {				
@@ -1314,6 +1316,8 @@ component accessors="true" singleton {
 			JVMargs			: "",
 			runwarArgs		: "",
 			cfengine		: "",
+			engineName		: "",
+			engineVersion	: "",
 			WARPath			: "",
 			serverConfigFile : ""
 		};

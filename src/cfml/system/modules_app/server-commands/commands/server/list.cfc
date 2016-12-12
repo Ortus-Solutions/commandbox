@@ -89,9 +89,9 @@ component {
 				
 				if( arguments.verbose ) {
 
-					print.indentedLine( "host:             " & thisServerInfo.host );
-					if( len( thisServerInfo.cfengine ) ) {
-						print.indentedLine( "CF Engine:        " & thisServerInfo.cfengine );
+					print.indentedLine( "host:             " & thisServerInfo.host );					
+					if( len( thisServerInfo.engineName ) ) {
+						print.indentedLine( "CF Engine:        " & thisServerInfo.engineName & ' ' & serverInfo.engineVersion );
 					}
 					if( len( thisServerInfo.WARPath ) ) {
 						print.indentedLine( "WARPath:          " & thisServerInfo.WARPath );
@@ -123,8 +123,8 @@ component {
 					if( thisServerInfo.SSLEnable ) {
 						print.indentedLine( 'https://' & thisServerInfo.host & ':' & thisServerInfo.SSLport );
 					}
-					if( len( thisServerInfo.cfengine ) ) {
-						print.indentedLine( 'CF Engine: ' & thisServerInfo.cfengine );
+					if( len( thisServerInfo.engineName ) ) {
+						print.indentedLine( 'CF Engine: ' & thisServerInfo.engineName & ' ' & thisServerInfo.engineVersion );
 					}
 					if( len( thisServerInfo.warPath ) ) {
 						print.indentedLine( 'WAR Path: ' & thisServerInfo.warPath );
