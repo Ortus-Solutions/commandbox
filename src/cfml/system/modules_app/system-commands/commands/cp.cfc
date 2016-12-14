@@ -39,6 +39,7 @@ component aliases="copy" {
 		// It's a file
 		} else if( fileExists( arguments.path ) ){
 			// Copy file
+			DirectoryCreate( getDirectoryFromPath( arguments.newPath ), true, true );
 			fileCopy( arguments.path, arguments.newPath );
 			print.greenLine( "File copied to #arguments.newPath#" );
 		} else {	
