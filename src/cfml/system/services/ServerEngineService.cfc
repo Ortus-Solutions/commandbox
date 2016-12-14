@@ -85,7 +85,7 @@ component accessors="true" singleton="true" {
 	public function installLucee( required destination, required version ) {
 	var installDetails = installEngineArchive( 'lucee@#version#', destination );
 		
-	if( !installDetails.internal && installDetails.initialInstall ) {
+	if( installDetails.initialInstall ) {
 			configureWebXML( cfengine="lucee", version=installDetails.version, source="#installDetails.installDir#/WEB-INF/web.xml", destination="#installDetails.installDir#/WEB-INF/web.xml" );	}	
 		return installDetails;
 	}
@@ -117,7 +117,6 @@ component accessors="true" singleton="true" {
 		) {
 			
 		var installDetails = {
-			internal : false,
 			engineName : '',
 			version : '',
 			installDir : '',
@@ -191,7 +190,6 @@ component accessors="true" singleton="true" {
 		
 		// If we're starting a Lucee server whose version matches the CLI engine, then don't download anything, we're using internal jars.
 		if( listFirst( arguments.ID, '@' ) == 'lucee' && server.lucee.version == replace( installDetails.version, '+', '.', 'all' ) ) {
-			// installDetails.internal = true;
 			
 			consoleLogger.info( "Building a WAR from local jars.");
 			

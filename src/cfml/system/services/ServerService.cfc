@@ -543,8 +543,8 @@ component accessors="true" singleton {
 				interceptorService.announceInterception( 'onServerInstall', { serverInfo=serverInfo, installDetails=installDetails } );
 			}
 				
-			// If external Lucee server, set the java agent
-			if( !installDetails.internal && serverInfo.cfengine contains "lucee" ) {
+			// If Lucee server, set the java agent
+			if( serverInfo.cfengine contains "lucee" ) {
 				// Detect Lucee 4.x
 				if( installDetails.version.listFirst( '.' ) < 5 ) {
 					javaagent = "-javaagent:#installDetails.installDir#/WEB-INF/lib/lucee-inst.jar";					
@@ -554,13 +554,8 @@ component accessors="true" singleton {
 				}
 			}
 			// If external Railo server, set the java agent
-			if( !installDetails.internal && serverInfo.cfengine contains "railo" ) {
+			if( serverInfo.cfengine contains "railo" ) {
 				javaagent = "-javaagent:#installDetails.installDir#/WEB-INF/lib/railo-inst.jar";
-			}
-			// Using built in server that hasn't been started before
-			if( installDetails.internal && !directoryExists( serverInfo.webConfigDir & '/WEB-INF' ) ) {
-				serverInfo.webConfigDir = installDetails.installDir;
-				serverInfo.logdir = serverInfo.webConfigDir & "/logs";
 			}
 	
 			// The process native name
@@ -678,13 +673,8 @@ component accessors="true" singleton {
 		if (serverInfo.WARPath != "" ) {
 			args &= " -war ""#serverInfo.WARPath#""";
 		// Stand alone server
-		} else if( !installDetails.internal ){
-			args &= " -war ""#serverInfo.webroot#"" --web-xml-path ""#installDetails.installDir#/WEB-INF/web.xml""";
-		// internal server
 		} else {
-			// The internal server borrows the CommandBox lib directory
-			serverInfo.libDirs = serverInfo.libDirs.listAppend( variables.libDir );
-			args &= " -war ""#serverInfo.webroot#""";
+			args &= " -war ""#serverInfo.webroot#"" --web-xml-path ""#installDetails.installDir#/WEB-INF/web.xml""";
 		}
 		
 		if( len( serverInfo.libDirs ) ) {
