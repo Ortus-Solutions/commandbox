@@ -64,14 +64,7 @@ component {
 			var lastLF = false;
 			
 			while( true && startingLength ){
-	
-				print
-					.redLine(position)
-					.redLine(startPos)
-					.redLine(lineCounter)
-					.redLine(arguments.lines)
-					.redLine();
-	
+		
 				var char = randomAccessFile.read();
 				
 				// Only increment CRs that were preceeded by a LF
