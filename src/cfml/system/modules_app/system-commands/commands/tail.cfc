@@ -62,17 +62,15 @@ component {
 			// Was the last character a line feed.  
 			// Remeber the CRLFs will be coming in reverse order
 			var lastLF = false;
+			
+			while( true && startingLength ){
 	
-			while( true ){
-	
-				// stop looping if we have met our line limit or if end of file
-				if ( position < startPos-1 || lineCounter == arguments.lines ) {
-					if( buffer.len() ) {
-						// Strip any CR or LF from the last (first really) line to eliminate leading line breaks in console output
-						buffer[ buffer.len() ] = listChangeDelims( buffer[ buffer.len() ], '', chr(13) & chr( 10 ) );
-					}
-					break;
-				}
+				print
+					.redLine(position)
+					.redLine(startPos)
+					.redLine(lineCounter)
+					.redLine(arguments.lines)
+					.redLine();
 	
 				var char = randomAccessFile.read();
 				
@@ -88,10 +86,22 @@ component {
 					lastLF=false;
 				}
 				if ( char != -1 ) buffer.append( chr( char ) );
+		
+				position--;
+		
+				// stop looping if we have met our line limit or if end of file
+				if ( position < startPos || lineCounter == arguments.lines ) {
+					break;
+				}
 	
 				// move to the preceding character
-				randomAccessFile.seek( position-- );
+				randomAccessFile.seek( position );
 	
+			} // End while
+			
+			if( buffer.len() ) {
+				// Strip any CR or LF from the last (first really) line to eliminate leading line breaks in console output
+				buffer[ buffer.len() ] = listChangeDelims( buffer[ buffer.len() ], '', chr(13) & chr( 10 ) );
 			}
 	
 			// print our file to console 
