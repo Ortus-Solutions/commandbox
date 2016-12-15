@@ -123,6 +123,12 @@ component accessors="true" implements="IEndpoint" singleton {
 			}
 		}
 		
+		// Clean up a bit
+		var gitFolder = localPath.getPath() & '/.git';
+		if( directoryExists( gitFolder ) ) {
+			directoryDelete( gitFolder, true );
+		}
+		
 		// Defer to file endpoint
 		return folderEndpoint.resolvePackage( localPath.getPath(), arguments.verbose );
 		
