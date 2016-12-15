@@ -481,15 +481,17 @@ component accessors="true" singleton {
 				
 		serverInfo.cfengine			= serverProps.cfengine			?: serverJSON.app.cfengine			?: defaults.app.cfengine;
 		
+		
+		// relative rewrite config path in server.json is resolved relative to the server.json
+		if( isDefined( 'serverJSON.app.WARPath' ) && len( serverJSON.app.WARPath ) ) { serverJSON.app.WARPath = fileSystemUtil.resolvePath( serverJSON.app.WARPath, defaultServerConfigFileDirectory ); }
+		if( isDefined( 'defaults.app.WARPath' ) && len( defaults.app.WARPath )  ) { defaults.app.WARPath = fileSystemUtil.resolvePath( defaults.app.WARPath, defaultwebroot ); }		
 		serverInfo.WARPath			= serverProps.WARPath			?: serverJSON.app.WARPath			?: defaults.app.WARPath;
 		
 		// These are already hammered out above, so no need to go through all the defaults.
 		serverInfo.serverConfigFile	= defaultServerConfigFile;
 		serverInfo.name 			= defaultName;
 		serverInfo.webroot 			= defaultwebroot;
-		
-		serverInfo.logdir			= serverInfo.webConfigDir & "/logs";
-		
+				
 		if( serverInfo.debug ) {
 			consoleLogger.info( "start server in - " & serverInfo.webroot );
 			consoleLogger.info( "server name - " & serverInfo.name );
@@ -507,10 +509,6 @@ component accessors="true" singleton {
 					
 		var launchUtil 	= java.LaunchUtil;
 		
-		// log directory location
-		if( !directoryExists( serverInfo.logDir ) ){ directoryCreate( serverInfo.logDir ); }
-
-	    
 	    // Default java agent for embedded Lucee engine
 	    var javaagent = serverinfo.cfengine contains 'lucee' ? '-javaagent:#libdir#/lucee-inst.jar' : '';
 	    
@@ -520,7 +518,6 @@ component accessors="true" singleton {
 	    CFEngineName = serverinfo.cfengine contains 'railo' ? 'railo' : CFEngineName;
 	    CFEngineName = serverinfo.cfengine contains 'adobe' ? 'adobe' : CFEngineName;
 	    
-	    var thisVersion = '';
 		var processName = ( serverInfo.name is "" ? "CommandBox" : serverInfo.name );
 	    	  
 	    // As long as there's no WAR Path, let's install the engine to use.
@@ -528,9 +525,9 @@ component accessors="true" singleton {
 		
 			// This will install the engine war to start, possibly downloading it first
 			var installDetails = serverEngineService.install( cfengine=serverInfo.cfengine, basedirectory=serverInfo.webConfigDir );
-			thisVersion = ' ' & installDetails.version;
 			serverInfo.serverHome = installDetails.installDir;
 			serverInfo.logdir = installDetails.installDir & "/logs";
+			serverInfo.consolelogPath	= serverInfo.logdir & '/server.out.txt';
 			serverInfo.engineName = installDetails.engineName;
 			serverInfo.engineVersion = installDetails.version;
 			
@@ -559,7 +556,7 @@ component accessors="true" singleton {
 			}
 	
 			// The process native name
-			var processName = ( serverInfo.name is "" ? "CommandBox" : serverInfo.name ) & ' [' & listFirst( serverinfo.cfengine, '@' ) & thisVersion & ']';
+			var processName = ( serverInfo.name is "" ? "CommandBox" : serverInfo.name ) & ' [' & listFirst( serverinfo.cfengine, '@' ) & ' ' & installDetails.version & ']';
 					
 			// Find the correct tray icon for this server
 			if( !len( serverInfo.trayIcon ) ) {
@@ -587,11 +584,22 @@ component accessors="true" singleton {
 		
 		// This is a WAR
 		} else {
-			serverInfo.serverHome = getDirectoryFromPath( serverInfo.WARPath );
+			// If WAR is a file
+			if( fileExists( serverInfo.WARPath ) ){
+				// It will be extracted into a folder named after the file
+				serverInfo.serverHome = reReplaceNoCase( serverInfo.WARPath, '(.*)(\.zip|\.war)', '\1' );
+			// If WAR is a folder
+			} else {
+				// Just use it
+				serverInfo.serverHome = serverInfo.WARPath;
+			}
+			// Create a custom server folder to house the logs
+			serverInfo.logdir = getCustomServerFolder( serverInfo ) & "/logs";
+			serverInfo.consolelogPath	= serverInfo.logdir & '/server.out.txt';
 		}
 			
 		// Default tray icon
-		serverInfo.trayIcon = ( len( serverInfo.trayIcon ) ? serverInfo.trayIcon : '#variables.libdir#/trayicon.png' ); 
+		serverInfo.trayIcon = ( len( serverInfo.trayIcon ) ? serverInfo.trayIcon : '/commandbox/system/config/server-icons/trayicon.png' ); 
 		serverInfo.trayIcon = expandPath( serverInfo.trayIcon );
 		
 		// Set default options for all servers
@@ -645,13 +653,12 @@ component accessors="true" singleton {
 		}
 		
 		// Serialize tray options and write to temp file
-		var trayOptionsPath = serverInfo.serverHome & '/trayOptions.json';
+		var trayOptionsPath = getCustomServerFolder( serverInfo ) & '/trayOptions.json';
 		var trayJSON = {
 			'title' : processName,
 			'tooltip' : processName,
 			'items' : serverInfo.trayOptions
 		};
-		
 		fileWrite( trayOptionsPath,  serializeJSON( trayJSON ) );
 		var background = !(serverProps.console ?: false);
 		// The java arguments to execute:  Shared server, custom web configs
@@ -665,9 +672,9 @@ component accessors="true" singleton {
 				& ' --server-name "#serverInfo.name#" #errorPages#'
 				& ( len( serverInfo.welcomeFiles ) ? ' --welcome-files "#serverInfo.welcomeFiles#" ' : '' )
 				& ' --tray-icon "#serverInfo.trayIcon#" --tray-config "#trayOptionsPath#" --servlet-rest-mappings "/rest/*,/api/*"'
-				& ' --directoryindex "#serverInfo.directoryBrowsing#" --cfml-web-config "#serverInfo.webConfigDir#"'
+				& ' --directoryindex "#serverInfo.directoryBrowsing#" '
 				& ( len( CLIAliases ) ? ' --dirs "#CLIAliases#"' : '' )
-				& ' --cfml-server-config "#serverInfo.serverConfigDir#" #serverInfo.runwarArgs# --timeout #serverInfo.startTimeout#';
+				& ' #serverInfo.runwarArgs# --timeout #serverInfo.startTimeout#';
 				
 		// Starting a WAR
 		if (serverInfo.WARPath != "" ) {
@@ -1287,10 +1294,12 @@ component accessors="true" singleton {
 			},
 			name			: "",
 			logDir 			: "",
+			consolelogPath	: "",
 			trayicon 		: "",
 			libDirs 		: "",
 			webConfigDir 	: "",
 			serverConfigDir : "",
+			serverHome		: "",
 			webroot			: "",
 			webXML 			: "",
 			HTTPEnable		: true,
@@ -1309,7 +1318,10 @@ component accessors="true" singleton {
 			engineName		: "",
 			engineVersion	: "",
 			WARPath			: "",
-			serverConfigFile : ""
+			serverConfigFile : "",
+			aliases			: {},
+			errorPages		: {},
+			trayOptions		: {}
 		};
 	}
 

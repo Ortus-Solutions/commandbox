@@ -45,6 +45,8 @@ component aliases='status,server info' {
 	 * @showAll.hint 	show all server statuses
 	 * @verbose.hint 	Show extra details
 	 * @json 			Output the server data as json
+	 * @property		Name of a specific property to output. JSON default to true if this is used.
+	 * @property.optionsUDF propertyComplete
 	 **/
 	function run(
 		string name,
@@ -52,10 +54,13 @@ component aliases='status,server info' {
 		String serverConfigFile,
 		boolean showAll=false,
 		boolean verbose=false,
-		boolean JSON=false
-	){
+		boolean JSON=false,
+		string property=''	){
 		// Get all server definitions
 		var servers = serverService.getServers();
+
+		// If you specify a property, JSON gets enabled.
+		arguments.JSON = ( arguments.JSON || len( property ) );
 
 		// Display ALL as JSON?
 		if( arguments.showALL && arguments.json ){
@@ -92,9 +97,36 @@ component aliases='status,server info' {
 				
 				// Are we doing JSON?
 				if( arguments.json ){
-					print.line( 
-						formatterUtil.formatJson( serializeJSON( thisServerInfo ) )
-					);
+					
+					// Are we outputing a specific propery
+					if( len( arguments.property ) ) {
+						
+						// If the key doesn't exist, give a useful error
+						if( !isDefined( 'thisServerInfo.#arguments.property#' ) ) {
+							error( "The propery [#arguments.property#] isn't defined in the JSON.", "Valid keys are: " & chr( 10 ) & "   - "  & thisServerInfo.keyList().lCase().listChangeDelims( chr( 10 ) & "   - " ) );
+						}
+						
+						// Output a single property
+						var thisValue = evaluate( 'thisServerInfo.#arguments.property#' );
+						// Output simple values directly so they're useful 
+						if( isSimpleValue( thisValue ) ) {
+							print.line( thisValue );
+						// Format Complex values as JSON
+						} else {
+							print.line( 
+								formatterUtil.formatJson( serializeJSON( thisValue ) )
+							);							
+						}
+							
+					} else {
+						
+						// Output the entire object
+						print.line( 
+							formatterUtil.formatJson( serializeJSON( thisServerInfo ) )
+						);
+												
+					}
+					
 					continue;
 				}
 
@@ -139,6 +171,13 @@ component aliases='status,server info' {
 	*/
 	function serverNameComplete() {
 		return serverService.getServerNames();
+	}
+	
+	/**
+	* AutoComplete serverInfo properties
+	*/
+	function propertyComplete() {
+		return serverService.newServerInfoStruct().keyArray();
 	}
 
 }
