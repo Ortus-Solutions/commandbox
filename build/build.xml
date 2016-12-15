@@ -182,14 +182,14 @@ External Dependencies:
 		
 		<!-- Configure Lucee Web Dir -->
 		<configure-lucee-web 
-		      config-server="${temp.dir}/engine/cfml/cli/cfml-server/context/lucee-server.xml"
+		      config-server="${temp.dir}/engine/cfml/cli/lucee-server/context/lucee-server.xml"
 		      config-web="${temp.dir}/engine/cfml/cli/cfml-web/lucee-web.xml.cfm"
-		      dump-cfc="${temp.dir}/engine/cfml/cli/cfml-server/context/library/tag/Dump.cfc"/>
+		      dump-cfc="${temp.dir}/engine/cfml/cli/lucee-server/context/library/tag/Dump.cfc"/>
 		<antcontrib:var name="lucee.config.file" value="${temp.dir}/engine/cfml/cli/cfml-web/lucee-web.xml.cfm" />
 		
 		<!-- update lucee password -->
 		<lucee-password 
-	      server-password="commandbox" config-server-file="${temp.dir}/engine/cfml/cli/cfml-server/context/lucee-server.xml"
+	      server-password="commandbox" config-server-file="${temp.dir}/engine/cfml/cli/lucee-server/context/lucee-server.xml"
 	      web-password="commandbox" config-web-file="${temp.dir}/engine/cfml/cli/cfml-web/lucee-web.xml.cfm"
 	    />
 		
