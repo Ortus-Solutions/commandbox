@@ -255,6 +255,7 @@ component accessors="true" singleton="true" {
 		}
 		
 		consoleLogger.info( "Exploding WAR/zip archive...");
+		directoryCreate( installDetails.installDir, true, true );
 		zip action="unzip" file="#theArchive#" destination="#installDetails.installDir#" overwrite="true";
 				
 		// Catch this to gracefully handle where the OS or another program 
