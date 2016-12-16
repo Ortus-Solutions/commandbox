@@ -38,7 +38,12 @@ component accessors="true" singleton {
 	
 			// This tells us if it's a relative path
 			// Note, at this point we don't actually know if it actually even exists yet
-			if( !oPath.isAbsolute() ) {
+			
+			// If we're on windows and the path starts with / or \ 
+			if( isWindows() && reFind( '^[\\\/]', path ) ) {
+				// Concat it with the drive root in the base path so "/foo" becomes "C:/foo" (if the basepath is C:/etc)
+				oPath = createObject( 'java', 'java.io.File' ).init( listFirst( arguments.basePath, '/\' ) & '/' & path );				
+			} else if( !oPath.isAbsolute() ) {
 				// If it's relative, we assume it's relative to the current working directory and make it absolute
 				oPath = createObject( 'java', 'java.io.File' ).init( arguments.basePath & '/' & path );
 			}
