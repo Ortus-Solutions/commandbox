@@ -21,6 +21,7 @@ component accessors="true" singleton {
 
 	function init() {
 		variables.os = createObject( "java", "java.lang.System" ).getProperty( "os.name" ).toLowerCase();
+		variables.userHome = createObject( 'java', 'java.lang.System' ).getProperty( 'user.home' );
 		return this;
 	}
 
@@ -39,13 +40,29 @@ component accessors="true" singleton {
 			// This tells us if it's a relative path
 			// Note, at this point we don't actually know if it actually even exists yet
 			
-			// If we're on windows and the path starts with / or \ 
+			// If we're on windows and the path starts with / or \
 			if( isWindows() && reFind( '^[\\\/]', path ) ) {
+				
 				// Concat it with the drive root in the base path so "/foo" becomes "C:/foo" (if the basepath is C:/etc)
-				oPath = createObject( 'java', 'java.io.File' ).init( listFirst( arguments.basePath, '/\' ) & '/' & path );				
+				oPath = createObject( 'java', 'java.io.File' ).init( listFirst( arguments.basePath, '/\' ) & '/' & path );
+				
+			// If path is "~"
+			// Note, we're supporting this on Windows as well as Linux because it seems useful
+			} else if( path == '~' ) {
+				
+				var userHome = createObject( 'java', 'java.lang.System' ).getProperty( 'user.home' );
+				oPath = createObject( 'java', 'java.io.File' ).init( userHome );
+				
+			// If path starts with "~/something" but not "~foo" (a valid folder name)
+			} else if( reFind( '^~[\\\/]', path ) ) {
+			
+				oPath = createObject( 'java', 'java.io.File' ).init( userHome & right( path, len( path ) - 1 ) );
+				
 			} else if( !oPath.isAbsolute() ) {
+			
 				// If it's relative, we assume it's relative to the current working directory and make it absolute
 				oPath = createObject( 'java', 'java.io.File' ).init( arguments.basePath & '/' & path );
+				
 			}
 	
 			// This will standardize the name and calculate stuff like ../../
