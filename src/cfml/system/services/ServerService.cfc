@@ -19,10 +19,6 @@ component accessors="true" singleton {
 	*/
 	property name="serverConfig";
 	/**
- 	* Where core and custom servers are stored
- 	*/
-	property name="serverHomeDirectory";
-	/**
 	* Where custom servers are stored
 	*/
 	property name="customServerDirectory";
@@ -82,8 +78,6 @@ component accessors="true" singleton {
 		variables.homeDir = arguments.homeDir;
 		// the lib dir location, populated from shell later.
 		variables.libDir = arguments.homeDir & "/lib";
-		// Where core server is installed
-		variables.serverHomeDirectory = arguments.homeDir & "/engine/cfml/server/";
 		// Where custom server configs are stored
 		variables.serverConfig = arguments.homeDir & "/servers.json";
 		// Where custom servers are stored
@@ -156,7 +150,7 @@ component accessors="true" singleton {
 				logDir : d.app.logDir ?: '',
 				libDirs : d.app.libDirs ?: '',
 				webConfigDir : d.app.webConfigDir ?: '',
-				serverConfigDir : d.app.serverConfigDir ?: variables.serverHomeDirectory,
+				serverConfigDir : d.app.serverConfigDir ?: '',
 				webXML : d.app.webXML ?: '',
 				standalone : d.app.standalone ?: false,
 				WARPath : d.app.WARPath ?: "",
@@ -192,6 +186,15 @@ component accessors="true" singleton {
 		}
 		if( !isNull( serverProps.rewritesConfig ) ) {
 			serverProps.rewritesConfig = fileSystemUtil.resolvePath( serverProps.rewritesConfig );
+		}
+		if( !isNull( serverProps.webConfigDir ) ) {
+			serverProps.webConfigDir = fileSystemUtil.resolvePath( serverProps.webConfigDir );
+		}
+		if( !isNull( serverProps.serverConfigDir ) ) {
+			serverProps.serverConfigDir = fileSystemUtil.resolvePath( serverProps.serverConfigDir );
+		}
+		if( !isNull( serverProps.webXML ) ) {
+			serverProps.webXML = fileSystemUtil.resolvePath( serverProps.webXML );
 		}
 		if( !isNull( serverProps.libDirs ) ) {
 			// Comma-delimited list needs each item resolved
@@ -293,10 +296,31 @@ component accessors="true" singleton {
 					serverJSON[ 'stopsocket' ] = serverProps[ prop ];
 			         break;
 			    case "webConfigDir":
-					serverJSON[ 'app' ][ 'webConfigDir' ] = serverProps[ prop ];
-			         break;
+			    	// This path is canonical already.
+			    	var thisDirectory = replace( serverProps[ 'webConfigDir' ], '\', '/', 'all' ) & '/';
+			    	// If the webConfigDir is south of the server's JSON, make it relative for better portability.
+			    	if( thisDirectory contains configPath ) {
+			    		thisDirectory = replaceNoCase( thisDirectory, configPath, '' );
+			    	}
+					serverJSON[ 'app' ][ 'webConfigDir' ] = thisDirectory;
+			        break;
 			    case "serverConfigDir":
-					serverJSON[ 'app' ][ 'serverConfigDir' ] = serverProps[ prop ];
+			    	// This path is canonical already.
+			    	var thisDirectory = replace( serverProps[ 'serverConfigDir' ], '\', '/', 'all' ) & '/';
+			    	// If the webConfigDir is south of the server's JSON, make it relative for better portability.
+			    	if( thisDirectory contains configPath ) {
+			    		thisDirectory = replaceNoCase( thisDirectory, configPath, '' );
+			    	}
+					serverJSON[ 'app' ][ 'serverConfigDir' ] = thisDirectory;
+			         break;
+			    case "webXML":
+			    	// This path is canonical already.
+			    	var thisFile = replace( serverProps[ 'webXML' ], '\', '/', 'all' );
+			    	// If the webXML is south of the server's JSON, make it relative for better portability.
+			    	if( thisFile contains configPath ) {
+			    		thisFile = replaceNoCase( thisFile, configPath, '' );
+			    	}
+					serverJSON[ 'app' ][ 'webXML' ] = thisFile;
 			         break;
 			    case "libDirs":
 					serverJSON[ 'app' ][ 'libDirs' ] = serverProps[ 'libDirs' ]
@@ -311,9 +335,6 @@ component accessors="true" singleton {
 					    	}
 						} );
 					
-			         break;
-			    case "webXML":
-					serverJSON[ 'app' ][ 'webXML' ] = serverProps[ prop ];
 			         break;
 			    case "cfengine":
 					serverJSON[ 'app' ][ 'cfengine' ] = serverProps[ prop ];
@@ -398,17 +419,31 @@ component accessors="true" singleton {
 		}
 		
 		serverInfo.stopsocket		= serverProps.stopsocket		?: serverJSON.stopsocket 			?: getRandomPort( serverInfo.host );		
+
+		// relative trayIcon in server.json is resolved relative to the server.json
+		if( serverJSON.keyExists( 'app' ) && serverJSON.app.keyExists( 'webConfigDir' ) ) { serverJSON.app.webConfigDir = fileSystemUtil.resolvePath( serverJSON.app.webConfigDir, defaultServerConfigFileDirectory ); }
+		// relative trayIcon in config setting server defaults is resolved relative to the web root
+		if( len( defaults.app.webConfigDir ?: '' ) ) { defaults.app.webConfigDir = fileSystemUtil.resolvePath( defaults.app.webConfigDir, defaultwebroot ); }
 		serverInfo.webConfigDir 	= serverProps.webConfigDir 		?: serverJSON.app.webConfigDir 		?: defaults.app.webConfigDir;
-		if( !len( serverInfo.webConfigDir ) ) { serverInfo.webConfigDir =  getCustomServerFolder( serverInfo ); }
+
+		// relative trayIcon in server.json is resolved relative to the server.json
+		if( serverJSON.keyExists( 'app' ) && serverJSON.app.keyExists( 'serverConfigDir' ) ) { serverJSON.app.serverConfigDir = fileSystemUtil.resolvePath( serverJSON.app.serverConfigDir, defaultServerConfigFileDirectory ); }
+		// relative trayIcon in config setting server defaults is resolved relative to the web root
+		if( len( defaults.app.serverConfigDir ?: '' ) ) { defaults.app.serverConfigDir = fileSystemUtil.resolvePath( defaults.app.serverConfigDir, defaultwebroot ); }
 		serverInfo.serverConfigDir 	= serverProps.serverConfigDir 	?: serverJSON.app.serverConfigDir 	?: defaults.app.serverConfigDir;
-				
+
+		// relative trayIcon in server.json is resolved relative to the server.json
+		if( serverJSON.keyExists( 'app' ) && serverJSON.app.keyExists( 'webXML' ) ) { serverJSON.app.webXML = fileSystemUtil.resolvePath( serverJSON.app.webXML, defaultServerConfigFileDirectory ); }
+		// relative trayIcon in config setting server defaults is resolved relative to the web root
+		if( len( defaults.app.webXML ?: '' ) ) { defaults.app.webXML = fileSystemUtil.resolvePath( defaults.app.webXML, defaultwebroot ); }
+		serverInfo.webXML 			= serverProps.webXML 			?: serverJSON.app.webXML 			?: defaults.app.webXML;		
+		
 		// relative trayIcon in server.json is resolved relative to the server.json
 		if( serverJSON.keyExists( 'trayIcon' ) ) { serverJSON.trayIcon = fileSystemUtil.resolvePath( serverJSON.trayIcon, defaultServerConfigFileDirectory ); }
 		// relative trayIcon in config setting server defaults is resolved relative to the web root
 		if( defaults.keyExists( 'trayIcon' ) && len( defaults.trayIcon ) ) { defaults.trayIcon = fileSystemUtil.resolvePath( defaults.trayIcon, defaultwebroot ); }
 		serverInfo.trayIcon			= serverProps.trayIcon 			?: serverJSON.trayIcon 				?: defaults.trayIcon;
 		
-		serverInfo.webXML 			= serverProps.webXML 			?: serverJSON.app.webXML 			?: defaults.app.webXML;
 		serverInfo.SSLEnable 		= serverProps.SSLEnable 		?: serverJSON.web.SSL.enable		?: defaults.web.SSL.enable;
 		serverInfo.HTTPEnable		= serverProps.HTTPEnable 		?: serverJSON.web.HTTP.enable		?: defaults.web.HTTP.enable;
 		serverInfo.SSLPort			= serverProps.SSLPort 			?: serverJSON.web.SSL.port			?: defaults.web.SSL.port;
@@ -524,9 +559,9 @@ component accessors="true" singleton {
 		if( serverInfo.WARPath == '' ){
 		
 			// This will install the engine war to start, possibly downloading it first
-			var installDetails = serverEngineService.install( cfengine=serverInfo.cfengine, basedirectory=serverInfo.webConfigDir );
+			var installDetails = serverEngineService.install( cfengine=serverInfo.cfengine, basedirectory=getCustomServerFolder( serverInfo ), serverInfo=serverInfo );
 			serverInfo.serverHome = installDetails.installDir;
-			serverInfo.logdir = installDetails.installDir & "/logs";
+			serverInfo.logdir = serverInfo.serverHome & "/logs";
 			serverInfo.consolelogPath	= serverInfo.logdir & '/server.out.txt';
 			serverInfo.engineName = installDetails.engineName;
 			serverInfo.engineVersion = installDetails.version;
@@ -544,7 +579,7 @@ component accessors="true" singleton {
 			if( serverInfo.cfengine contains "lucee" ) {
 				// Detect Lucee 4.x
 				if( installDetails.version.listFirst( '.' ) < 5 ) {
-					javaagent = "-javaagent:#installDetails.installDir#/WEB-INF/lib/lucee-inst.jar";					
+					javaagent = "-javaagent:#serverInfo.serverHome#/WEB-INF/lib/lucee-inst.jar";					
 				} else {
 					// Lucee 5+ doesn't need the Java agent
 					javaagent = "";
@@ -552,7 +587,7 @@ component accessors="true" singleton {
 			}
 			// If external Railo server, set the java agent
 			if( serverInfo.cfengine contains "railo" ) {
-				javaagent = "-javaagent:#installDetails.installDir#/WEB-INF/lib/railo-inst.jar";
+				javaagent = "-javaagent:#serverInfo.serverHome#/WEB-INF/lib/railo-inst.jar";
 			}
 	
 			// The process native name
@@ -681,7 +716,14 @@ component accessors="true" singleton {
 			args &= " -war ""#serverInfo.WARPath#""";
 		// Stand alone server
 		} else {
-			args &= " -war ""#serverInfo.webroot#"" --web-xml-path ""#installDetails.installDir#/WEB-INF/web.xml""";
+			args &= " -war ""#serverInfo.webroot#""";
+		}
+		// Custom web.xml (doesn't work right now)
+		if ( Len( Trim( serverInfo.webXml ) ) && false ) {
+			args &= " --web-xml-path ""#serverInfo.webXml#""";
+		// Default is in WAR home
+		} else {
+			args &= " --web-xml-path ""#serverInfo.serverHome#/WEB-INF/web.xml""";
 		}
 		
 		if( len( serverInfo.libDirs ) ) {
@@ -695,10 +737,6 @@ component accessors="true" singleton {
 		}
 		if( serverInfo.SSLEnable && serverInfo.SSLCert != "") {
 			args &= " --ssl-cert ""#serverInfo.SSLCert#"" --ssl-key ""#serverInfo.SSLKey#"" --ssl-keypass ""#serverInfo.SSLKeyPass#""";
-		}
-		// Incorporate web-xml to command
-		if ( Len( Trim( serverInfo.webXml ?: "" ) ) ) {
-			args &= " --web-xml-path ""#serverInfo.webXml#""";
 		}
 		// Incorporate rewrites to command
 		args &= " --urlrewrite-enable #serverInfo.rewritesEnable#";
