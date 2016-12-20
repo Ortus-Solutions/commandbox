@@ -15,7 +15,7 @@ component{
 	// Move everything over to this mapping which is the "root" of our app
 	CFMLRoot = getDirectoryFromPath( getMetadata( this ).path );
 	this.mappings[ '/commandbox' ] 		= CFMLRoot;
-	this.mappings[ '/commandbox-home' ] = expandPath( CFMLRoot & '/../' );
+	this.mappings[ '/commandbox-home' ] = createObject( 'java', 'java.lang.System' ).getProperty( 'cfml.cli.home' );
 	this.mappings[ '/wirebox' ] 		= CFMLRoot & '/system/wirebox';
 
 	function onApplicationStart(){
