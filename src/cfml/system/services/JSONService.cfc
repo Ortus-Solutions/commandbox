@@ -65,7 +65,7 @@ component accessors="true" singleton {
 					// The target property we're trying to append to
 					var targetProperty = evaluate( fullPropertyName );
 					// The value we want to append
-					var complexValue = deserializeJSON( arguments.properties[ prop ] );
+					var complexValue = deserializeJSON( propertyValue );
 					// The target property is not simple, and matches the same data type as the incoming data
 					if( !isSimpleValue( targetProperty ) && ( isArray( targetProperty ) == isArray( complexValue ) ) ) {
 						// Make this idempotent so arrays don't get duplicate values
@@ -82,17 +82,23 @@ component accessors="true" singleton {
 						} else { 
 							targetProperty.append( complexValue, true );							
 						}
-						results.append( '#arguments.properties[ prop ]# appended to #prop#' );
+						results.append( '#propertyValue# appended to #prop#' );
 						continue;
 					}
 					
 				}
 				// If any of the ifs above fail, we'll fall back through to this
-				evaluate( '#fullPropertyName# = deserializeJSON( arguments.properties[ prop ] )' );				
+				
+				// Double check if value is really JSON due to Lucee bug
+				if( listFind( '",{,[', left( propertyValue, 1 ) ) ) {
+					evaluate( '#fullPropertyName# = deserializeJSON( propertyValue )' );
+				} else {
+					evaluate( '#fullPropertyName# = propertyValue' );
+				}			
 			} else {
-				evaluate( '#fullPropertyName# = arguments.properties[ prop ]' );				
+				evaluate( '#fullPropertyName# = propertyValue' );				
 			}
-			results.append( 'Set #prop# = #arguments.properties[ prop ]#' );
+			results.append( 'Set #prop# = #propertyValue#' );
 		}
 		return results;
 	}
