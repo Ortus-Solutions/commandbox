@@ -156,10 +156,6 @@ component accessors="true" singleton {
  	 **/
 	function runCommand( required array commandChain, required string line, string piped ){
 
-		if( structKeyExists( arguments, 'piped' ) ) {
-			var result = arguments.piped;
-		}
-
 		// If nothing is returned, something bad happened (like an error instatiating the CFC)
 		if( !commandChain.len() ){
 			return 'Command not run.';
@@ -169,6 +165,12 @@ component accessors="true" singleton {
 		// default behavior is to keep trucking
 		var previousCommandSeparator = ';';
 		var lastCommandErrored = false;
+		
+		if( structKeyExists( arguments, 'piped' ) ) {
+			var result = arguments.piped;
+			previousCommandSeparator = '|';
+		}
+		
 		// If piping commands, each one will be an item in the chain.
 		// i.e. forgebox show | grep | more
 		// Would result in three separate, chained commands.
