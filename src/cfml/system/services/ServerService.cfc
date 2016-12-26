@@ -552,6 +552,7 @@ component accessors="true" singleton {
 	    CFEngineName = serverinfo.cfengine contains 'lucee' ? 'lucee' : CFEngineName;
 	    CFEngineName = serverinfo.cfengine contains 'railo' ? 'railo' : CFEngineName;
 	    CFEngineName = serverinfo.cfengine contains 'adobe' ? 'adobe' : CFEngineName;
+	    CFEngineName = serverinfo.warPath contains 'adobe' ? 'adobe' : CFEngineName;
 	    
 		var processName = ( serverInfo.name is "" ? "CommandBox" : serverInfo.name );
 	    	  
@@ -592,37 +593,21 @@ component accessors="true" singleton {
 	
 			// The process native name
 			var processName = ( serverInfo.name is "" ? "CommandBox" : serverInfo.name ) & ' [' & listFirst( serverinfo.cfengine, '@' ) & ' ' & installDetails.version & ']';
-					
-			// Find the correct tray icon for this server
-			if( !len( serverInfo.trayIcon ) ) {
-				var iconSize = fileSystemUtil.isWindows() ? '-32px' : '';
-			    if( serverInfo.cfengine contains "lucee" ) { 
-			    	serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-lucee#iconSize#.png';
-				} else if( serverInfo.cfengine contains "railo" ) {
-			    	serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-railo#iconSize#.png';
-				} else if( serverInfo.cfengine contains "adobe" ) {
-					
-					if( listFirst( installDetails.version, '.' ) == 9 ) {
-						serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-cf09#iconSize#.png';
-					} else if( listFirst( installDetails.version, '.' ) == 10 ) {
-						serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-cf10#iconSize#.png';
-					} else if( listFirst( installDetails.version, '.' ) == 11 ) {
-						serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-cf11#iconSize#.png';
-					} else if( listFirst( installDetails.version, '.' ) == 2016 ) {
-						serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-cf2016#iconSize#.png';
-					} else {
-						serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-cf2016#iconSize#.png';
-					}
-						
-				}
-			}	
 		
 		// This is a WAR
 		} else {
 			// If WAR is a file
 			if( fileExists( serverInfo.WARPath ) ){
 				// It will be extracted into a folder named after the file
-				serverInfo.serverHome = reReplaceNoCase( serverInfo.WARPath, '(.*)(\.zip|\.war)', '\1' );
+				serverInfo.serverHomeDirectory = reReplaceNoCase( serverInfo.WARPath, '(.*)(\.zip|\.war)', '\1' );
+				
+				// Expand the war if it doesn't exist or we're forcing
+				if( !directoryExists( serverInfo.serverHomeDirectory ) || serverProps.force ?: false  ) {
+					consoleLogger.info( "Exploding WAR archive...");
+					directoryCreate( serverInfo.serverHomeDirectory, true, true );
+					zip action="unzip" file="#serverInfo.WARPath#" destination="#serverInfo.serverHomeDirectory#" overwrite="true";
+				}
+				
 			// If WAR is a folder
 			} else {
 				// Just use it
@@ -632,6 +617,30 @@ component accessors="true" singleton {
 			serverInfo.logdir = getCustomServerFolder( serverInfo ) & "/logs";
 			serverInfo.consolelogPath	= serverInfo.logdir & '/server.out.txt';
 		}
+					
+		// Find the correct tray icon for this server
+		if( !len( serverInfo.trayIcon ) ) {
+			var iconSize = fileSystemUtil.isWindows() ? '-32px' : '';
+		    if( CFEngineName contains "lucee" ) { 
+		    	serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-lucee#iconSize#.png';
+			} else if( CFEngineName contains "railo" ) {
+		    	serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-railo#iconSize#.png';
+			} else if( CFEngineName contains "adobe" ) {
+				
+				if( listFirst( serverInfo.engineVersion, '.' ) == 9 ) {
+					serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-cf09#iconSize#.png';
+				} else if( listFirst( serverInfo.engineVersion, '.' ) == 10 ) {
+					serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-cf10#iconSize#.png';
+				} else if( listFirst( serverInfo.engineVersion, '.' ) == 11 ) {
+					serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-cf11#iconSize#.png';
+				} else if( listFirst( serverInfo.engineVersion, '.' ) == 2016 ) {
+					serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-cf2016#iconSize#.png';
+				} else {
+					serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-cf2016#iconSize#.png';
+				}
+					
+			}
+		}	
 			
 		// Default tray icon
 		serverInfo.trayIcon = ( len( serverInfo.trayIcon ) ? serverInfo.trayIcon : '/commandbox/system/config/server-icons/trayicon.png' ); 
@@ -640,13 +649,13 @@ component accessors="true" singleton {
 		// Set default options for all servers
 		// TODO: Don't overwrite existing options with the same label.
 		
-	    if( serverInfo.cfengine contains "lucee" ) {
+	    if( CFEngineName contains "lucee" ) {
 			serverInfo.trayOptions.prepend( { 'label':'Open Web Admin', 'action':'openbrowser', 'url':'http://${runwar.host}:${runwar.port}/lucee/admin/web.cfm', 'image' : expandPath('/commandbox/system/config/server-icons/web_settings.png' ) } );
 			serverInfo.trayOptions.prepend( { 'label':'Open Server Admin', 'action':'openbrowser', 'url':'http://${runwar.host}:${runwar.port}/lucee/admin/server.cfm', 'image' : expandPath('/commandbox/system/config/server-icons/server_settings.png' ) } );
-		} else if( serverInfo.cfengine contains "railo" ) {
+		} else if( CFEngineName contains "railo" ) {
 			serverInfo.trayOptions.prepend( { 'label':'Open Web Admin', 'action':'openbrowser', 'url':'http://${runwar.host}:${runwar.port}/railo-context/admin/web.cfm', 'image' : expandPath('/commandbox/system/config/server-icons/web_settings.png' ) } );
 			serverInfo.trayOptions.prepend( { 'label':'Open Server Admin', 'action':'openbrowser', 'url':'http://${runwar.host}:${runwar.port}/railo-context/admin/server.cfm', 'image' : expandPath('/commandbox/system/config/server-icons/server_settings.png' ) } );
-		} else if( serverInfo.cfengine contains "adobe" ) {
+		} else if( CFEngineName contains "adobe" ) {
 			serverInfo.trayOptions.prepend( { 'label':'Open Server Admin', 'action':'openbrowser', 'url':'http://${runwar.host}:${runwar.port}/CFIDE/administrator/enter.cfm', 'image' : expandPath('/commandbox/system/config/server-icons/server_settings.png' ) } );
 		}
 		
@@ -699,7 +708,7 @@ component accessors="true" singleton {
 		// The java arguments to execute:  Shared server, custom web configs
 		var args = ' #serverInfo.JVMargs# -Xmx#serverInfo.heapSize#m -Xms#serverInfo.heapSize#m'
 				& ' #javaagent# -jar #variables.jarPath#'
-				& ' --background=#background# --port #serverInfo.port# --host #serverInfo.host# --debug=#serverInfo.debug#'
+				& ' --background #background# --port #serverInfo.port# --host #serverInfo.host# --debug #serverInfo.debug#'
 				& ' --stop-port #serverInfo.stopsocket# --processname "#processName#" --log-dir "#serverInfo.logDir#"'
 				& ' --open-browser #serverInfo.openbrowser#'
 				& ' --open-url ' & ( serverInfo.SSLEnable ? 'https://#serverInfo.host#:#serverInfo.SSLPort#' : 'http://#serverInfo.host#:#serverInfo.port#' )
@@ -722,8 +731,8 @@ component accessors="true" singleton {
 		if ( Len( Trim( serverInfo.webXml ) ) && false ) {
 			args &= " --web-xml-path ""#serverInfo.webXml#""";
 		// Default is in WAR home
-		} else {
-			args &= " --web-xml-path ""#serverInfo.serverHome#/WEB-INF/web.xml""";
+		} else if( serverInfo.WARPath == "" ){
+			args &= " --web-xml-path ""#serverInfo.serverHomeDirectory#/WEB-INF/web.xml""";
 		}
 		
 		if( len( serverInfo.libDirs ) ) {
