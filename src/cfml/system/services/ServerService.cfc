@@ -732,7 +732,7 @@ component accessors="true" singleton {
 			args &= " --web-xml-path ""#serverInfo.webXml#""";
 		// Default is in WAR home
 		} else if( serverInfo.WARPath == "" ){
-			args &= " --web-xml-path ""#serverInfo.serverHomeDirectory#/WEB-INF/web.xml""";
+			args &= " --web-xml-path ""#serverInfo.serverHome#/WEB-INF/web.xml""";
 		}
 		
 		if( len( serverInfo.libDirs ) ) {
