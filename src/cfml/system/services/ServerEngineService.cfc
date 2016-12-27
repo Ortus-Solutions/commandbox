@@ -56,16 +56,13 @@ component accessors="true" singleton="true" {
 	public function installAdobe( required destination, required version, required struct serverInfo, required string serverHomeDirectory ) {
 		var installDetails = installEngineArchive( 'adobe@#version#', destination, serverInfo, serverHomeDirectory );
 
-		// set password to "commandbox"
-		// TODO: Just make this changes directly in the WAR files
-		fileWrite( installDetails.installDir & "/WEB-INF/cfusion/lib/password.properties", "rdspassword=#cr#password=commandbox#cr#encrypted=false" );
 		// set flex log dir to prevent WEB-INF/cfform being created in project dir
 		if (fileExists(installDetails.installDir & "/WEB-INF/cfform/flex-config.xml")) {
 			var flexConfig = fileRead(installDetails.installDir & "/WEB-INF/cfform/flex-config.xml");
 
 			if( installDetails.initialInstall ) {
 				flexConfig = replace(flexConfig, "/WEB-INF/", installDetails.installDir & "/WEB-INF/","all");
- -				fileWrite(installDetails.installDir & "/WEB-INF/cfform/flex-config.xml", flexConfig);
+				fileWrite(installDetails.installDir & "/WEB-INF/cfform/flex-config.xml", flexConfig);
 			} else { 
 				// TODO: Remove this ELSE block in a future revision. 
 				// This will fix the flex-config.xml files that have been corrupted because we weren't checking initialInstall, above.  
