@@ -80,6 +80,7 @@ component aliases="start" {
 	 * @startTimeout 		The amount of time in seconds to wait for the server to start (in the background).
 	 * @console				Start this server in the forground console process and wait until Ctrl-C is pressed to stop it.
 	 * @welcomeFiles		A comma-delimited list of default files to load when visiting a directory (index.cfm,index.htm,etc)
+	 * @serverHomeDirectory	The folder where the CF engine WAR should be extracted
 	 
 	 **/
 	function run(
@@ -114,7 +115,8 @@ component aliases="start" {
 		String serverConfigFile,
 		Numeric startTimeout,
 		Boolean console,
-		String welcomeFiles
+		String welcomeFiles,
+		String serverHomeDirectory
 	){
 
 		// This is a common mis spelling

@@ -27,20 +27,21 @@ component accessors="true" singleton="true" {
 	* @cfengine	CFML Engine name (lucee, adobe, railo)
 	* @baseDirectory base directory for server install
 	* @serverInfo The struct of server settings
+	* @serverHomeDirectory Override where the server's home with be
 	**/
-	public function install( required cfengine, required baseDirectory, required struct serverInfo ) {
+	public function install( required cfengine, required baseDirectory, required struct serverInfo, required string serverHomeDirectory ) {
 		var version = listLen( cfengine, "@" )>1 ? listLast( cfengine, "@" ) : "";
 		var engineName = listFirst( cfengine, "@" );
 		arguments.baseDirectory = !arguments.baseDirectory.endsWith( "/" ) ? arguments.baseDirectory & "/" : arguments.baseDirectory;
 				
 		if( engineName == "adobe" ) {
-			return installAdobe( destination=arguments.baseDirectory, version=version, serverInfo=serverInfo );
+			return installAdobe( destination=arguments.baseDirectory, version=version, serverInfo=serverInfo, serverHomeDirectory=serverHomeDirectory );
 		} else if (engineName == "railo") {
-			return installRailo( destination=arguments.baseDirectory, version=version, serverInfo=serverInfo );
+			return installRailo( destination=arguments.baseDirectory, version=version, serverInfo=serverInfo, serverHomeDirectory=serverHomeDirectory );
 		} else if (engineName == "lucee") {
-			return installLucee( destination=arguments.baseDirectory, version=version, serverInfo=serverInfo );
+			return installLucee( destination=arguments.baseDirectory, version=version, serverInfo=serverInfo, serverHomeDirectory=serverHomeDirectory );
 		} else {
-			return installEngineArchive( cfengine, arguments.baseDirectory, serverInfo );
+			return installEngineArchive( cfengine, arguments.baseDirectory, serverInfo, serverHomeDirectory );
 		}
 	}
 
@@ -50,9 +51,10 @@ component accessors="true" singleton="true" {
 	* @destination target directory
 	* @version Version number or empty to use default
 	* @serverInfo Struct of server settings
+	* @serverHomeDirectory Override where the server's home with be
 	**/
-	public function installAdobe( required destination, required version, required struct serverInfo ) {
-		var installDetails = installEngineArchive( 'adobe@#version#', destination, serverInfo );	
+	public function installAdobe( required destination, required version, required struct serverInfo, required string serverHomeDirectory ) {
+		var installDetails = installEngineArchive( 'adobe@#version#', destination, serverInfo, serverHomeDirectory );
 
 		// set password to "commandbox"
 		// TODO: Just make this changes directly in the WAR files
@@ -84,9 +86,10 @@ component accessors="true" singleton="true" {
 	* @destination target directory
 	* @version Version number or empty to use default
 	* @serverInfo struct of server settings
+	* @serverHomeDirectory Override where the server's home with be
 	**/
-	public function installLucee( required destination, required version, required struct serverInfo ) {
-		var installDetails = installEngineArchive( 'lucee@#version#', destination, serverInfo );
+	public function installLucee( required destination, required version, required struct serverInfo, required string serverHomeDirectory ) {
+		var installDetails = installEngineArchive( 'lucee@#version#', destination, serverInfo, serverHomeDirectory );
 		
 		if( installDetails.initialInstall ) {
 			configureWebXML( cfengine="lucee", version=installDetails.version, source=serverInfo.webXML, destination=serverInfo.webXML, serverInfo=serverInfo );
@@ -100,9 +103,10 @@ component accessors="true" singleton="true" {
 	* @destination target directory
 	* @version Version number or empty to use default
 	* @serverInfo struct of server settings
+	* @serverHomeDirectory Override where the server's home with be
 	**/
-	public function installRailo( required destination, required version, required struct serverInfo ) {
-	var installDetails = installEngineArchive( 'railo@#version#', destination, serverInfo );
+	public function installRailo( required destination, required version, required struct serverInfo, required string serverHomeDirectory ) {
+	var installDetails = installEngineArchive( 'railo@#version#', destination, serverInfo, serverHomeDirectory );
 	
 		if(  installDetails.initialInstall  ) {
 			configureWebXML( cfengine="railo", version=installDetails.version, source=serverInfo.webXML, destination=serverInfo.webXML, serverInfo=serverInfo );			
@@ -120,7 +124,8 @@ component accessors="true" singleton="true" {
 	function installEngineArchive(
 		required string ID,
 		required string destination,
-		required struct serverInfo
+		required struct serverInfo,
+		required string serverHomeDirectory
 		) {
 			
 		var installDetails = {
@@ -173,15 +178,31 @@ component accessors="true" singleton="true" {
 					}
 				}				
 			}
-			installDetails.installDir = destination & engineName & "-" & replace( satisfyingVersion, '+', '.', 'all' );
+			// Overriding server home which is where the exploded war lives
+			if( len( arguments.serverHomeDirectory ) ) {
+				installDetails.installDir = arguments.serverHomeDirectory;	
+			// Default is engine-version folder in base dir	
+			} else {
+				installDetails.installDir = destination & engineName & "-" & replace( satisfyingVersion, '+', '.', 'all' );
+			}
 			installDetails.version = satisfyingVersion;
+		
+			var thisEngineTag = installDetails.engineName & '@' & installDetails.version;
 			
 		} else {
 			
 			// For all other endpoints, create a predictable folder based on the endpoint ID.
 			// If the file that the endpoint points to changes, you'll have to forget the server to pick up changes.
 			// The alternative is re-downloading the engine EVERY. SINGLE. TIME.
-			installDetails.installDir = destination & engineName;
+			// Overriding server home which is where the exploded war lives
+			if( len( arguments.serverHomeDirectory ) ) {
+				installDetails.installDir = arguments.serverHomeDirectory;	
+			// Default is engine-version folder in base dir	
+			} else {
+				installDetails.installDir = destination & engineName;
+			}
+		
+			var thisEngineTag = arguments.ID;
 			
 		}
 		
@@ -208,10 +229,21 @@ component accessors="true" singleton="true" {
 			serverInfo.serverConfigDir = replace( serverInfo.serverConfigDir, installDetails.installDir, '' );			
 		}
 		
+		var engineTagFile = installDetails.installDir & '/.engineInstall';
 		
 		// Check to see if this WAR has already been exploded
-		if( fileExists( installDetails.installDir & '/WEB-INF/web.xml' ) ) {
+		if( fileExists( engineTagFile ) ) {
+			
+			// Check and see if another version of this engine has already been started in the server home.
+			var previousEngineTag = fileRead( engineTagFile );
+			if( previousEngineTag != thisEngineTag ) {
+				consoleLogger.warn( "You've asked for the engine [#thisEngineTag#] to be started," );
+				consoleLogger.warn( "but this server home already has [#previousEngineTag#] deployed to it!" );
+				consoleLogger.warn( "In orer to get the new version, you need to run 'server forget' on this server and start it again." );
+			}
+			
 			consoleLogger.info( "WAR/zip archive already installed.");
+			
 			return installDetails;
 		}
 		
@@ -232,6 +264,9 @@ component accessors="true" singleton="true" {
 			directoryCreate( installDetails.installDir & '/WEB-INF', true, true );
 			directoryCopy( '/commandbox-home/lib', thislib, false, '*.jar' );
 			fileCopy( '/commandbox/system/config/web.xml', thisWebinf & '/web.xml');
+		
+			// Mark this WAR as being exploded already
+			fileWrite( engineTagFile, thisEngineTag );
 			
 			return installDetails;
 		}
@@ -239,7 +274,7 @@ component accessors="true" singleton="true" {
 		if( !packageService.installPackage( ID=arguments.ID, directory=thisTempDir, save=false ) ) {
 			throw( message='Server not installed.', type="commandException");
 		}
-				
+		
 		// Look for a war or zip archive inside the package
 		var theArchive = '';
 		for( var thisFile in directoryList( thisTempDir ) ) {
@@ -256,7 +291,10 @@ component accessors="true" singleton="true" {
 		
 		consoleLogger.info( "Exploding WAR/zip archive...");
 		directoryCreate( installDetails.installDir, true, true );
-		zip action="unzip" file="#theArchive#" destination="#installDetails.installDir#" overwrite="true";
+		zip action="unzip" file="#theArchive#" destination="#installDetails.installDir#" overwrite="false";
+		
+		// Mark this WAR as being exploded already
+		fileWrite( engineTagFile, thisEngineTag );
 				
 		// Catch this to gracefully handle where the OS or another program 
 		// has the folder locked.

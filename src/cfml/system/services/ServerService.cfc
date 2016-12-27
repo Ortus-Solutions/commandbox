@@ -154,7 +154,8 @@ component accessors="true" singleton {
 				webXML : d.app.webXML ?: '',
 				standalone : d.app.standalone ?: false,
 				WARPath : d.app.WARPath ?: "",
-				cfengine : d.app.cfengine ?: ""
+				cfengine : d.app.cfengine ?: "",
+				serverHomeDirectory : d.app.serverHomeDirectory ?: ""
 			},
 			runwar : {
 				args : d.runwar.args ?: ''
@@ -180,6 +181,9 @@ component accessors="true" singleton {
 		}
 		if( !isNull( serverProps.WARPath ) ) {
 			serverProps.WARPath = fileSystemUtil.resolvePath( serverProps.WARPath );
+		}
+		if( !isNull( serverProps.serverHomeDirectory ) ) {
+			serverProps.serverHomeDirectory = fileSystemUtil.resolvePath( serverProps.serverHomeDirectory );
 		}
 		if( !isNull( serverProps.trayIcon ) ) {
 			serverProps.trayIcon = fileSystemUtil.resolvePath( serverProps.trayIcon );
@@ -348,6 +352,15 @@ component accessors="true" singleton {
 			    	}
 					serverJSON[ 'app' ][ 'WARPath' ] = thisFile;
 			         break;
+			    case "serverHomeDirectory":
+			    	// This path is canonical already.
+			    	var thisDirectory = replace( serverProps[ 'serverHomeDirectory' ], '\', '/', 'all' ) & '/';
+			    	// If the webConfigDir is south of the server's JSON, make it relative for better portability.
+			    	if( thisDirectory contains configPath ) {
+			    		thisDirectory = replaceNoCase( thisDirectory, configPath, '' );
+			    	}
+					serverJSON[ 'app' ][ 'serverHomeDirectory' ] = thisDirectory;
+			        break;
 			    case "HTTPEnable":
 					serverJSON[ 'web' ][ 'HTTP' ][ 'enable' ] = serverProps[ prop ];
 			         break;
@@ -521,6 +534,11 @@ component accessors="true" singleton {
 		if( isDefined( 'serverJSON.app.WARPath' ) && len( serverJSON.app.WARPath ) ) { serverJSON.app.WARPath = fileSystemUtil.resolvePath( serverJSON.app.WARPath, defaultServerConfigFileDirectory ); }
 		if( isDefined( 'defaults.app.WARPath' ) && len( defaults.app.WARPath )  ) { defaults.app.WARPath = fileSystemUtil.resolvePath( defaults.app.WARPath, defaultwebroot ); }		
 		serverInfo.WARPath			= serverProps.WARPath			?: serverJSON.app.WARPath			?: defaults.app.WARPath;
+				
+		// relative rewrite config path in server.json is resolved relative to the server.json
+		if( isDefined( 'serverJSON.app.serverHomeDirectory' ) && len( serverJSON.app.serverHomeDirectory ) ) { serverJSON.app.serverHomeDirectory = fileSystemUtil.resolvePath( serverJSON.app.serverHomeDirectory, defaultServerConfigFileDirectory ); }
+		if( isDefined( 'defaults.app.serverHomeDirectory' ) && len( defaults.app.serverHomeDirectory )  ) { defaults.app.serverHomeDirectory = fileSystemUtil.resolvePath( defaults.app.serverHomeDirectory, defaultwebroot ); }		
+		serverInfo.serverHomeDirectory			= serverProps.serverHomeDirectory			?: serverJSON.app.serverHomeDirectory			?: defaults.app.serverHomeDirectory;
 		
 		// These are already hammered out above, so no need to go through all the defaults.
 		serverInfo.serverConfigFile	= defaultServerConfigFile;
@@ -547,6 +565,9 @@ component accessors="true" singleton {
 	    // Default java agent for embedded Lucee engine
 	    var javaagent = serverinfo.cfengine contains 'lucee' ? '-javaagent:#libdir#/lucee-inst.jar' : '';
 	    
+	    // Regardless of a custom server home, this is still used for various temp files and logs
+	    directoryCreate( getCustomServerFolder( serverInfo ), true, true );
+	    
 	    // Not sure what Runwar does with this, but it wants to know what CFEngine we're starting (if we know)
 	    var CFEngineName = '';
 	    CFEngineName = serverinfo.cfengine contains 'lucee' ? 'lucee' : CFEngineName;
@@ -560,9 +581,9 @@ component accessors="true" singleton {
 		if( serverInfo.WARPath == '' ){
 		
 			// This will install the engine war to start, possibly downloading it first
-			var installDetails = serverEngineService.install( cfengine=serverInfo.cfengine, basedirectory=getCustomServerFolder( serverInfo ), serverInfo=serverInfo );
-			serverInfo.serverHome = installDetails.installDir;
-			serverInfo.logdir = serverInfo.serverHome & "/logs";
+			var installDetails = serverEngineService.install( cfengine=serverInfo.cfengine, basedirectory=getCustomServerFolder( serverInfo ), serverInfo=serverInfo, serverHomeDirectory=serverInfo.serverHomeDirectory );
+			serverInfo.serverHomeDirectory = installDetails.installDir;
+			serverInfo.logdir = serverInfo.serverHomeDirectory & "/logs";
 			serverInfo.consolelogPath	= serverInfo.logdir & '/server.out.txt';
 			serverInfo.engineName = installDetails.engineName;
 			serverInfo.engineVersion = installDetails.version;
@@ -580,7 +601,7 @@ component accessors="true" singleton {
 			if( serverInfo.cfengine contains "lucee" ) {
 				// Detect Lucee 4.x
 				if( installDetails.version.listFirst( '.' ) < 5 ) {
-					javaagent = "-javaagent:#serverInfo.serverHome#/WEB-INF/lib/lucee-inst.jar";					
+					javaagent = "-javaagent:#serverInfo.serverHomeDirectory#/WEB-INF/lib/lucee-inst.jar";					
 				} else {
 					// Lucee 5+ doesn't need the Java agent
 					javaagent = "";
@@ -588,7 +609,7 @@ component accessors="true" singleton {
 			}
 			// If external Railo server, set the java agent
 			if( serverInfo.cfengine contains "railo" ) {
-				javaagent = "-javaagent:#serverInfo.serverHome#/WEB-INF/lib/railo-inst.jar";
+				javaagent = "-javaagent:#serverInfo.serverHomeDirectory#/WEB-INF/lib/railo-inst.jar";
 			}
 	
 			// The process native name
@@ -611,7 +632,7 @@ component accessors="true" singleton {
 			// If WAR is a folder
 			} else {
 				// Just use it
-				serverInfo.serverHome = serverInfo.WARPath;
+				serverInfo.serverHomeDirectory = serverInfo.WARPath;
 			}
 			// Create a custom server folder to house the logs
 			serverInfo.logdir = getCustomServerFolder( serverInfo ) & "/logs";
@@ -731,8 +752,8 @@ component accessors="true" singleton {
 		if ( Len( Trim( serverInfo.webXml ) ) && false ) {
 			args &= " --web-xml-path ""#serverInfo.webXml#""";
 		// Default is in WAR home
-		} else if( serverInfo.WARPath == "" ){
-			args &= " --web-xml-path ""#serverInfo.serverHome#/WEB-INF/web.xml""";
+		} else {
+			args &= " --web-xml-path ""#serverInfo.serverHomeDirectory#/WEB-INF/web.xml""";
 		}
 		
 		if( len( serverInfo.libDirs ) ) {
@@ -1346,7 +1367,7 @@ component accessors="true" singleton {
 			libDirs 		: "",
 			webConfigDir 	: "",
 			serverConfigDir : "",
-			serverHome		: "",
+			serverHomeDirectory : "",
 			webroot			: "",
 			webXML 			: "",
 			HTTPEnable		: true,
