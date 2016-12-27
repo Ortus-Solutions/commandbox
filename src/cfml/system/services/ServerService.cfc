@@ -109,56 +109,56 @@ component accessors="true" singleton {
 		var d = ConfigService.getSetting( 'server.defaults', {} );
 		
 		return {
-			name : d.name ?: '',
-			openBrowser : d.openBrowser ?: true,
-			startTimeout : 240,
-			stopsocket : d.stopsocket ?: 0,
-			debug : d.debug ?: false,
-			trayicon : d.trayicon ?: '',
+			'name' : d.name ?: '',
+			'openBrowser' : d.openBrowser ?: true,
+			'startTimeout' : 240,
+			'stopsocket' : d.stopsocket ?: 0,
+			'debug' : d.debug ?: false,
+			'trayicon' : d.trayicon ?: '',
 			// Duplicate so onServerStart interceptors don't actually change config settings via refernce.
-			trayOptions : duplicate( d.trayOptions ?: [] ),
-			jvm : {
-				heapSize : d.jvm.heapSize ?: 512,
-				args : d.jvm.args ?: ''
+			'trayOptions' : duplicate( d.trayOptions ?: [] ),
+			'jvm' : {
+				'heapSize' : d.jvm.heapSize ?: 512,
+				'args' : d.jvm.args ?: ''
 			},
-			web : {
-				host : d.web.host ?: '127.0.0.1',				
-				directoryBrowsing : d.web.directoryBrowsing ?: true,
-				webroot : d.web.webroot ?: '',
+			'web' : {
+				'host' : d.web.host ?: '127.0.0.1',				
+				'directoryBrowsing' : d.web.directoryBrowsing ?: true,
+				'webroot' : d.web.webroot ?: '',
 				// Duplicate so onServerStart interceptors don't actually change config settings via refernce.
-				aliases : duplicate( d.web.aliases ?: {} ),
+				'aliases' : duplicate( d.web.aliases ?: {} ),
 				// Duplicate so onServerStart interceptors don't actually change config settings via refernce.
-				errorPages : duplicate( d.web.errorPages ?: {} ),
-				welcomeFiles : d.web.welcomeFiles ?: '',
-				http : {
-					port : d.web.http.port ?: 0,
-					enable : d.web.http.enable ?: true
+				'errorPages' : duplicate( d.web.errorPages ?: {} ),
+				'welcomeFiles' : d.web.welcomeFiles ?: '',
+				'http' : {
+					'port' : d.web.http.port ?: 0,
+					'enable' : d.web.http.enable ?: true
 				},
-				ssl : {
-					enable : d.web.ssl.enable ?: false,
-					port : d.web.ssl.port ?: 1443,
-					cert : d.web.ssl.cert ?: '',
-					key : d.web.ssl.key ?: '',
-					keyPass : d.web.ssl.keyPass ?: ''
+				'ssl' : {
+					'enable' : d.web.ssl.enable ?: false,
+					'port' : d.web.ssl.port ?: 1443,
+					'cert' : d.web.ssl.cert ?: '',
+					'key' : d.web.ssl.key ?: '',
+					'keyPass' : d.web.ssl.keyPass ?: ''
 				},
-				rewrites : {
-					enable : d.web.rewrites.enable ?: false,
-					config : d.web.rewrites.config ?: variables.rewritesDefaultConfig
+				'rewrites' : {
+					'enable' : d.web.rewrites.enable ?: false,
+					'config' : d.web.rewrites.config ?: variables.rewritesDefaultConfig
 				}
 			},
-			app : {
-				logDir : d.app.logDir ?: '',
-				libDirs : d.app.libDirs ?: '',
-				webConfigDir : d.app.webConfigDir ?: '',
-				serverConfigDir : d.app.serverConfigDir ?: '',
-				webXML : d.app.webXML ?: '',
-				standalone : d.app.standalone ?: false,
-				WARPath : d.app.WARPath ?: "",
-				cfengine : d.app.cfengine ?: "",
-				serverHomeDirectory : d.app.serverHomeDirectory ?: ""
+			'app' : {
+				'logDir' : d.app.logDir ?: '',
+				'libDirs' : d.app.libDirs ?: '',
+				'webConfigDir' : d.app.webConfigDir ?: '',
+				'serverConfigDir' : d.app.serverConfigDir ?: '',
+				'webXML' : d.app.webXML ?: '',
+				'standalone' : d.app.standalone ?: false,
+				'WARPath' : d.app.WARPath ?: "",
+				'cfengine' : d.app.cfengine ?: "",
+				'serverHomeDirectory' : d.app.serverHomeDirectory ?: ""
 			},
-			runwar : {
-				args : d.runwar.args ?: ''
+			'runwar' : {
+				'args' : d.runwar.args ?: ''
 			}
 		};
 	}
@@ -583,6 +583,8 @@ component accessors="true" singleton {
 			// This will install the engine war to start, possibly downloading it first
 			var installDetails = serverEngineService.install( cfengine=serverInfo.cfengine, basedirectory=getCustomServerFolder( serverInfo ), serverInfo=serverInfo, serverHomeDirectory=serverInfo.serverHomeDirectory );
 			serverInfo.serverHomeDirectory = installDetails.installDir;
+			// TODO: As of 3.5 this is for backwards compat.  Remove in later version
+			serverInfo.serverHome = installDetails.installDir;
 			serverInfo.logdir = serverInfo.serverHomeDirectory & "/logs";
 			serverInfo.consolelogPath	= serverInfo.logdir & '/server.out.txt';
 			serverInfo.engineName = installDetails.engineName;
@@ -1349,47 +1351,47 @@ component accessors="true" singleton {
 	*/
 	struct function newServerInfoStruct(){
 		return {
-			id 				: "",
-			port			: 0,
-			host			: "127.0.0.1",
-			stopsocket		: 0,
-			debug			: false,
-			status			: "stopped",
-			statusInfo		: {
-				result : "",
-				arguments : "",
-				command : "" 
+			'id' 				: "",
+			'port'				: 0,
+			'host'				: "127.0.0.1",
+			'stopSocket'		: 0,
+			'debug'				: false,
+			'status'			: "stopped",
+			'statusInfo'		: {
+				'result' 	: "",
+				'arguments' : "",
+				'command' 	: "" 
 			},
-			name			: "",
-			logDir 			: "",
-			consolelogPath	: "",
-			trayicon 		: "",
-			libDirs 		: "",
-			webConfigDir 	: "",
-			serverConfigDir : "",
-			serverHomeDirectory : "",
-			webroot			: "",
-			webXML 			: "",
-			HTTPEnable		: true,
-			SSLEnable		: false,
-			SSLPort			: 1443,
-			SSLCert 		: "",
-			SSLKey			: "",
-			SSLKeyPass		: "",
-			rewritesEnable  : false,
-			rewritesConfig	: "",
-			heapSize		: 512,
-			directoryBrowsing : true,
-			JVMargs			: "",
-			runwarArgs		: "",
-			cfengine		: "",
-			engineName		: "",
-			engineVersion	: "",
-			WARPath			: "",
-			serverConfigFile : "",
-			aliases			: {},
-			errorPages		: {},
-			trayOptions		: {}
+			'name'				: "",
+			'logDir' 			: "",
+			'consolelogPath'	: "",
+			'trayicon' 			: "",
+			'libDirs' 			: "",
+			'webConfigDir' 		: "",
+			'serverConfigDir' 	: "",
+			'serverHomeDirectory' : "",
+			'webroot'			: "",
+			'webXML' 			: "",
+			'HTTPEnable'		: true,
+			'SSLEnable'			: false,
+			'SSLPort'			: 1443,
+			'SSLCert' 			: "",
+			'SSLKey'			: "",
+			'SSLKeyPass'		: "",
+			'rewritesEnable'	  : false,
+			'rewritesConfig'	: "",
+			'heapSize'			: 512,
+			'directoryBrowsing' : true,
+			'JVMargs'			: "",
+			'runwarArgs'		: "",
+			'cfengine'			: "",
+			'engineName'		: "",
+			'engineVersion'		: "",
+			'WARPath'			: "",
+			'serverConfigFile'	: "",
+			'aliases'			: {},
+			'errorPages'		: {},
+			'trayOptions'		: {}
 		};
 	}
 
@@ -1422,10 +1424,11 @@ component accessors="true" singleton {
 	
 	/**
 	* Dynamic completion for property name based on contents of server.json
-	* @directory.hint web root
-	* @all.hint Pass false to ONLY suggest existing setting names.  True will suggest all possible settings.
+	* @directory web root
+	* @all Pass false to ONLY suggest existing setting names.  True will suggest all possible settings.
+	* @asSet Pass true to add = to the end of the options
 	*/ 	
-	function completeProperty( required directory,  all=false ) {
+	function completeProperty( required directory,  all=false, asSet=false ) {
 		// Get all config settings currently set
 		var props = JSONService.addProp( [], '', '', readServerJSON( arguments.directory & '/server.json' ) );
 		
@@ -1443,6 +1446,9 @@ component accessors="true" singleton {
 					}
 				}
 			} );
+		}
+		if( asSet ) {
+			props = props.map( function( i ){ return i &= '='; } );
 		}
 		
 		return props;		

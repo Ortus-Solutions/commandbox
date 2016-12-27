@@ -1031,8 +1031,9 @@ component accessors="true" singleton {
 	* Dynamic completion for property name based on contents of box.json
 	* @directory The package root
 	* @all Pass false to ONLY suggest existing property names.  True will suggest all possible box.json properties.
+	* @asSet Pass true to add = to the end of the options
 	*/ 	
-	function completeProperty( required directory, all=false ) {
+	function completeProperty( required directory, all=false, asSet=false ) {
 		var props = [];
 		
 		// Check and see if box.json exists
@@ -1043,6 +1044,9 @@ component accessors="true" singleton {
 				var boxJSON = readPackageDescriptorRaw( arguments.directory );
 			}
 			props = JSONService.addProp( props, '', '', boxJSON );			
+		}
+		if( asSet ) {
+			props = props.map( function( i ){ return i &= '='; } );
 		}
 		return props;		
 	}

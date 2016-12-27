@@ -424,10 +424,12 @@ component singleton {
 	 * @candidates.hint tree to populate with completion candidates
  	 **/
 	private function addCandidateIfMatch( required match, required startsWith, required candidates ) {
-		match = lcase( match );
 		startsWith = lcase( startsWith );
-		if( match.startsWith( startsWith ) || len( startsWith ) == 0 ) {
-			candidates.add( match & ' ' );
+		if( lcase( match ).startsWith( startsWith ) || len( startsWith ) == 0 ) {
+			if( !match.endsWith( '=' ) ) {
+				match &= ' ';
+			}
+			candidates.add( match );
 		}
 	}
 

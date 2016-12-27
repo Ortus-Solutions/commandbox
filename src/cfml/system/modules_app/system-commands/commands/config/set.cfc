@@ -72,6 +72,6 @@ component {
 	// Dynamic completion for property name based on contents of box.json
 	function completeProperty() {
 		// all=true will cause "config set" to prompt all possible commandbox.json settings
-		return ConfigService.completeProperty( true );
+		return ConfigService.completeProperty( true, true );
 	}
 }

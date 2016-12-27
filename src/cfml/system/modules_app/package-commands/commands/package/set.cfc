@@ -81,6 +81,6 @@ component {
 	function completeProperty() {
 		var directory = fileSystemUtil.resolvePath( '' );
 		// all=true will cause "package set" to prompt all possible box.json properties
-		return packageService.completeProperty( directory, true );
+		return packageService.completeProperty( directory, true, true );
 	}
 }
