@@ -821,18 +821,27 @@ component accessors="true" singleton {
 				
 				var startOutput = createObject( 'java', 'java.lang.StringBuilder' ).init();
 	    		var inputStream = process.getInputStream();
+	    		var inputStreamReader = createObject( 'java', 'java.io.InputStreamReader' ).init( inputStream );
+	    		var bufferedReader = createObject( 'java', 'java.io.BufferedReader' ).init( inputStreamReader );
 				var print = wirebox.getInstance( "PrintBuffer" );
 				
-				while( ( var char = inputStream.read() ) > -1 ){
+				var line = bufferedReader.readLine();
+				while( !isNull( line ) ){
+					// Clean log4j cruft from line
+					line = reReplaceNoCase( line, '^.* (INFO|DEBUG|ERROR|WARN) RunwarLogger processoutput: ', '' );
+					line = reReplaceNoCase( line, '^.* (INFO|DEBUG|ERROR|WARN) RunwarLogger lib: ', 'Runwar: ' );
+					line = reReplaceNoCase( line, '^.* (INFO|DEBUG|ERROR|WARN) RunwarLogger ', 'Runwar: ' );
+					
 					// Build up our output
-					startOutput.append( chr( char ) );
+					startOutput.append( line & chr( 13 ) & chr( 10 ) );
 					
 					// output it if we're being interactive
 					if( attributes.interactiveStart ) {
 						print
-							.text( chr( char ) )
+							.line( line )
 							.toConsole();
 					}
+					line = bufferedReader.readLine();
 				} // End of inputStream
 				
 				// When we require Java 8 for CommandBox, we can pass a timeout to waitFor().
@@ -849,8 +858,8 @@ component accessors="true" singleton {
 				serverInfo.status="unknown";
 			} finally {
 				// Make sure we always close the file or the process will never quit!
-				if( isDefined( 'inputStream' ) ) {
-					inputStream.close();
+				if( isDefined( 'bufferedReader' ) ) {
+					bufferedReader.close();
 				}
 				serverInfo.statusInfo.result = startOutput.toString();
 				setServerInfo( serverInfo );
