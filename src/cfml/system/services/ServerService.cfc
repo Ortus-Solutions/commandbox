@@ -1076,34 +1076,32 @@ component accessors="true" singleton {
 		if( !arguments.all ){
 			var servers 	= getServers();
 			var serverdir 	= getCustomServerFolder( arguments.serverInfo );
-			var defaultServerJSONPath = arguments.serverInfo.webroot & '/server.json';
-			var serverJSONPath = arguments.serverInfo.webroot & '/server-#arguments.serverInfo.name#.json';
-
+						
+			// Catch this to gracefully handle where the OS or another program
+			// has the folder locked.
+			try {
+					
+				// try to delete interal server dir server
+				if( directoryExists( serverDir ) ){
+					directoryDelete( serverdir, true );
+				}
+				
+				// Server home may be custom, so delete it as well
+				if( len( serverInfo.serverHomeDirectory ) && directoryExists( serverInfo.serverHomeDirectory ) ){
+					directoryDelete( serverInfo.serverHomeDirectory, true );
+				}
+				
+				
+			} catch( any e ) {
+				consoleLogger.error( '#e.message##chr(10)#Did you leave the server running? ' );
+				logger.error( '#e.message# #e.detail#' , e.stackTrace );
+				return '';
+			}
+			
 			// try to delete from config first
 			structDelete( servers, arguments.serverInfo.id );
 			setServers( servers );
-			// try to delete server
-			if( directoryExists( serverDir ) ){
-				// Catch this to gracefully handle where the OS or another program
-				// has the folder locked.
-				try {
-					directoryDelete( serverdir, true );
-				} catch( any e ) {
-					consoleLogger.error( '#e.message##chr(10)#Did you leave the server running? ' );
-					logger.error( '#e.message# #e.detail#' , e.stackTrace );
-				}
-			}
 			
-			// Delete server.json if it exists
-			if( fileExists( serverJSONPath ) ) {
-				fileDelete( serverJSONPath );
-				// return now so we don't wipe out the original server.json file too in the next 
-				// if statement! (because this was a "server-#name#.json" file) 
-				return "Poof! Wiped out server " & serverInfo.name;
-			}
-			if( fileExists( defaultServerJSONPath ) ) {
-				fileDelete( defaultServerJSONPath );
-			}
 			// return message
 			return "Poof! Wiped out server " & serverInfo.name;
 		} else {
