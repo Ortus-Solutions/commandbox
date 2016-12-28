@@ -915,10 +915,11 @@ component accessors="true" singleton {
 	*
 	* @returns a struct containing 
 	* - defaultName
-	* - defaults
+	* - defaultwebroot
 	* - defaultServerConfigFile
 	* - serverJSON
-	* - serverInfo 
+	* - serverInfo
+	* - serverIsNew
 	*/
 	function resolveServerDetails(
 		required struct serverProps
