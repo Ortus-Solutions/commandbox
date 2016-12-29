@@ -13,17 +13,18 @@ This file will stay running the entire time the shell is open
 <cfset variables.wireBox = application.wireBox>
 <cfsetting requesttimeout="999999" />
 <!---Display this banner to users--->
-<cfsavecontent variable="banner">
-  _____                                          _ ____
- / ____|                                        | |  _ \
-| |     ___  _ __ ___  _ __ ___   __ _ _ __   __| | |_) | _____  __
-| |    / _ \| '_ ` _ \| '_ ` _ \ / _` | '_ \ / _` |  _ < / _ \ \/ /
-| |___| (_) | | | | | | | | | | | (_| | | | | (_| | |_) | (_) >  <
- \_____\___/|_| |_| |_|_| |_| |_|\__,_|_| |_|\__,_|____/ \___/_/\_\ v@@version@@
+<cfoutput><cfsavecontent variable="banner">#chr( 27 )#[32m#chr( 27 )#[40m#chr( 27 )#[1m
+   _____                                          _ ____             
+  / ____|                                        | |  _ \            
+ | |     ___  _ __ ___  _ __ ___   __ _ _ __   __| | |_) | _____  __ 
+ | |    / _ \| '_ ` _ \| '_ ` _ \ / _` | '_ \ / _` |  _ < / _ \ \/ / 
+ | |___| (_) | | | | | | | | | | | (_| | | | | (_| | |_) | (_) >  <  
+  \_____\___/|_| |_| |_|_| |_| |_|\__,_|_| |_|\__,_|____/ \___/_/\_\ #chr( 27 )#[0m  v@@version@@
 
-Welcome to CommandBox!
-Type "help" for help, or "help [command]" to be more specific.
-</cfsavecontent>
+#chr( 27 )#[1mWelcome to CommandBox!
+Type "help" for help, or "help [command]" to be more specific.#chr( 27 )#[0m
+
+</cfsavecontent></cfoutput>
 <cfscript>
 	system 	= createObject( "java", "java.lang.System" );
 	args 	= system.getProperty( "cfml.cli.arguments" );
@@ -105,7 +106,7 @@ Type "help" for help, or "help [command]" to be more specific.
 		
 		if( !silent ) {
 			// Output the welcome banner
-			systemOutput( replace( interceptData.banner, '@@version@@', shell.getVersion() ) );
+			shell.printString( replace( interceptData.banner, '@@version@@', shell.getVersion() ) );
 		}
 		
 		// Running the "reload" command will enter this while loop once
