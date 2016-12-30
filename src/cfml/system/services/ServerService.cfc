@@ -40,6 +40,7 @@ component accessors="true" singleton {
 	property name='consoleLogger'			inject='logbox:logger:console';
 	property name='wirebox'					inject='wirebox';
 	property name='CR'						inject='CR@constants';
+	property name='parser'					inject='parser';
 
 	/**
 	* Constructor
@@ -729,9 +730,35 @@ component accessors="true" singleton {
 		fileWrite( trayOptionsPath,  serializeJSON( trayJSON ) );
 		var background = !(serverProps.console ?: false);
 		// The java arguments to execute:  Shared server, custom web configs
-		var args = ' #serverInfo.JVMargs# -Xmx#serverInfo.heapSize#m -Xms#serverInfo.heapSize#m'
-				& ' #javaagent# -jar #variables.jarPath#'
-				& ' --background #background# --port #serverInfo.port# --host #serverInfo.host# --debug #serverInfo.debug#'
+		
+		// If background, wrap up JVM args to pass through to background servers
+		// "real" JVM args must come before Runwar args, so creating two variables, once of which will always be empty.
+		if( background ) {
+			var thisJVMArgs = '';
+			// "borrow" the CommandBox commandline parser to tokenize the JVM args. Not perfect, but close. Handles quoted values with spaces.
+			var argTokens = parser.tokenizeInput( serverInfo.JVMargs )
+				.map( function( i ){
+					// Clean up a couple escapes the parser does that we don't need
+					return i.replace( '\=', '=', 'all' ).replace( '"', '\"', 'all' );
+				});
+			// Add in heap size and java agent
+			argTokens
+				.append( '-Xmx#serverInfo.heapSize#m' )
+				.append( '-Xms#serverInfo.heapSize#m' );
+			if( len( trim( javaAgent ) ) ) { argTokens.append( '#javaagent#' ); }				
+				
+			argString = argTokens.toList( ';' ).replace( '\\', '\', 'all' );
+				
+			var thispassthroughJVMArgs = '--jvm-args="#argString#"';
+		// If foreground, just stick them in.
+		} else {
+			var thisJVMArgs = ' -Xmx#serverInfo.heapSize#m -Xms#serverInfo.heapSize#m #javaagent# #serverInfo.JVMargs# ';
+			var thispassthroughJVMArgs = '';
+		}
+		
+		var args = ' #thisJVMArgs# -jar #variables.jarPath#'
+				// debug and background need to parse as a single token. Leave the =
+				& ' --background=#background# --port #serverInfo.port# --host #serverInfo.host# --debug=#serverInfo.debug#'
 				& ' --stop-port #serverInfo.stopsocket# --processname "#processName#" --log-dir "#serverInfo.logDir#"'
 				& ' --open-browser #serverInfo.openbrowser#'
 				& ' --open-url ' & ( serverInfo.SSLEnable ? 'https://#serverInfo.host#:#serverInfo.SSLPort#' : 'http://#serverInfo.host#:#serverInfo.port#' )
@@ -741,7 +768,7 @@ component accessors="true" singleton {
 				& ' --tray-icon "#serverInfo.trayIcon#" --tray-config "#trayOptionsPath#" --servlet-rest-mappings "/rest/*,/api/*"'
 				& ' --directoryindex "#serverInfo.directoryBrowsing#" '
 				& ( len( CLIAliases ) ? ' --dirs "#CLIAliases#"' : '' )
-				& ' #serverInfo.runwarArgs# --timeout #serverInfo.startTimeout#';
+				& ' #serverInfo.runwarArgs# --timeout #serverInfo.startTimeout# #thispassthroughJVMArgs# ';
 				
 		// Starting a WAR
 		if (serverInfo.WARPath != "" ) {
