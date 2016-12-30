@@ -739,7 +739,7 @@ component accessors="true" singleton {
 			var argTokens = parser.tokenizeInput( serverInfo.JVMargs )
 				.map( function( i ){
 					// Clean up a couple escapes the parser does that we don't need
-					return i.replace( '\=', '=', 'all' ).replace( '"', '\"', 'all' );
+					return i.replace( '\=', '=', 'all' ).replace( '\\', '\', 'all' );
 				});
 			// Add in heap size and java agent
 			argTokens
@@ -747,7 +747,7 @@ component accessors="true" singleton {
 				.append( '-Xms#serverInfo.heapSize#m' );
 			if( len( trim( javaAgent ) ) ) { argTokens.append( '#javaagent#' ); }				
 				
-			argString = argTokens.toList( ';' ).replace( '\\', '\', 'all' );
+			argString = argTokens.toList( ';' ).replace( '"', '\"', 'all' );
 				
 			var thispassthroughJVMArgs = '--jvm-args="#argString#"';
 		// If foreground, just stick them in.
