@@ -137,7 +137,7 @@ Type "help" for help, or "help [command]" to be more specific.#chr( 27 )#[0m
 					
 			if( clearScreen ){
 				// Output the welcome banner
-				systemOutput( replace( interceptData.banner, '@@version@@', shell.getVersion() ) );
+				shell.printString( replace( interceptData.banner, '@@version@@', shell.getVersion() ) );
 			}
 			
 		}
