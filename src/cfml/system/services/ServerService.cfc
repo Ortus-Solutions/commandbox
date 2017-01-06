@@ -1473,11 +1473,11 @@ component accessors="true" singleton {
 			props = JSONService.addProp( props, '', '', getDefaultServerJSON() );
 			// Suggest a couple optional web error pages
 			props = JSONService.addProp( props, '', '', {
-				web : {
-					errorPages : {
-						404 : '',
-						500 : '',
-						default : ''
+				'web' : {
+					'errorPages' : {
+						'404' : '',
+						'500' : '',
+						'default' : ''
 					}
 				}
 			} );

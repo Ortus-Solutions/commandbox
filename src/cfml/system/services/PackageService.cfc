@@ -76,7 +76,7 @@ component accessors="true" singleton {
 			string packagePathRequestingInstallation = arguments.currentWorkingDirectory
 	){
 		
-		interceptorService.announceInterception( 'preInstall', { installArgs=arguments } );
+		interceptorService.announceInterception( 'preInstall', { installArgs=arguments, packagePathRequestingInstallation=packagePathRequestingInstallation } );
 				
 		// If there is a package to install, install it
 		if( len( arguments.ID ) ) {
@@ -245,7 +245,8 @@ component accessors="true" singleton {
 				artifactDescriptor = artifactDescriptor,
 				ignorePatterns = ignorePatterns,
 				endpointData = endpointData,
-				artifactPath = tmpPath
+				artifactPath = tmpPath,
+				packagePathRequestingInstallation = packagePathRequestingInstallation
 			};
 			interceptorService.announceInterception( 'onInstall', interceptData );
 			// Make sure these get set back into their original variables in case the interceptor changed them.
@@ -489,7 +490,7 @@ component accessors="true" singleton {
 			consoleLogger.info( "No dependencies found to install, but it's the thought that counts, right?" );
 		}
 		
-		interceptorService.announceInterception( 'postInstall', { installArgs=arguments } );
+		interceptorService.announceInterception( 'postInstall', { installArgs=arguments, installDirectory=installDirectory } );
 		return true;
 	}
 	
@@ -544,9 +545,7 @@ component accessors="true" singleton {
 			required string currentWorkingDirectory,
 			string packagePathRequestingUninstallation = arguments.currentWorkingDirectory
 	){
-					
-		interceptorService.announceInterception( 'preUninstall', { uninstallArgs=arguments } );
-				
+		
 		// In case someone types "uninstall coldbox@4.0.0"
 		var packageName = listFirst( arguments.ID, '@' );
 		
@@ -569,6 +568,9 @@ component accessors="true" singleton {
 				uninstallDirectory = fileSystemUtil.resolvePath( installPaths[ packageName ] );
 			}			
 		}
+		
+		// Wait to run this until we've decided where the package lives that's being uninstalled.		
+		interceptorService.announceInterception( 'preUninstall', { uninstallArgs=arguments, uninstallDirectory=uninstallDirectory } );
 				
 		// See if the package exists here
 		if( len( uninstallDirectory ) && directoryExists( uninstallDirectory ) ) {
