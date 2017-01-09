@@ -1,6 +1,7 @@
 <!---
 This will produce the internal API Docs for CommandBox.
 --->
+<cfsetting requesttimeout="600">
 <cfparam name="url.version" default="1.0.0">
 <cfparam name="url.path" 	default="#expandPath( "./CommandBox-APIDocs" )#">
 <cfscript>

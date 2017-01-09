@@ -81,7 +81,7 @@ component{
 
 			// Output Results
 			if( !isNull( executeResult ) && len( executeResult ) ) {
-				print.line( executeResult );
+				print.Text( executeResult );
 			}
 			// Output error
 			if( !isNull( executeError ) &&  len( executeError ) ) {				
@@ -94,7 +94,7 @@ component{
 					executeError = replaceNoCase( executeError, 'bash: no job control in this shell', '' );
 					executeError = trim( executeError );					
 				}
-				print.redLine( executeError );
+				print.redText( executeError );
 			}
 
 		} catch (any e) {

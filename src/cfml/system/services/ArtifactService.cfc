@@ -21,6 +21,8 @@ component accessors="true" singleton {
 	property name='packageService'	 	inject='PackageService';
 	property name='logger' 				inject='logbox:logger:{this}';
 	property name="semanticVersion"		inject="semanticVersion";
+	// COMMANDBOX-479
+	property name="configService"		inject="ConfigService";
 	
 	
 	/**
@@ -29,8 +31,9 @@ component accessors="true" singleton {
 	function onDIComplete() {
 		
 		// Create the artifacts directory if it doesn't exist
-		if( !directoryExists( variables.artifactDir ) ) {
-			directoryCreate( variables.artifactDir );
+		// COMMANDBOX-479
+		if( !directoryExists( getArtifactsDirectory() ) ) {
+			directoryCreate( getArtifactsDirectory() );
 		}
 		
 	}
@@ -42,7 +45,8 @@ component accessors="true" singleton {
 	*/
 	struct function listArtifacts( packageName='' ) {
 		var result = {};
-		var dirList = directoryList( path=variables.artifactDir, recurse=false, listInfo='query', sort='name asc' );
+		// COMMANDBOX-479
+		var dirList = directoryList( path=getArtifactsDirectory(), recurse=false, listInfo='query', sort='name asc' );
 		
 		for( var dir in dirList ) {
 			if( dir.type == 'dir' && ( !arguments.packageName.len() || arguments.packageName == dir.name ) ) {
@@ -67,7 +71,8 @@ component accessors="true" singleton {
 	* Removes all artifacts from the cache and returns the number of wiped out directories
 	*/ 
 	numeric function cleanArtifacts() {
-		var qryDir = directoryList( path=variables.artifactDir, recurse=false, listInfo='query' );
+		// COMMANDBOX-479
+		var qryDir = directoryList( path=getArtifactsDirectory(), recurse=false, listInfo='query' );
 		var numRemoved = 0;
 		
 		for( var path in qryDir ) {
@@ -110,7 +115,8 @@ component accessors="true" singleton {
 	*/ 
 	function getPackagePath( required packageName, version="" ){
 		// This will likely change, so I'm only going to put the code here.
-		var path = variables.artifactDir & '/' & arguments.packageName;
+		// COMMANDBOX-479
+		var path = getArtifactsDirectory() & '/' & arguments.packageName;
 		// do we have a version?
 		if( arguments.version.len() ){
 			path &= "/" & arguments.version;
@@ -261,5 +267,8 @@ component accessors="true" singleton {
 		}
 	}
 		
-		
+	// COMMANDBOX-479
+	string function getArtifactsDirectory() {
+		return configService.getSetting( 'artifactsDirectory', variables.artifactDir );
+	}
 }

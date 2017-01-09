@@ -26,20 +26,22 @@ component accessors="true" singleton="true" {
 	* 
 	* @cfengine	CFML Engine name (lucee, adobe, railo)
 	* @baseDirectory base directory for server install
+	* @serverInfo The struct of server settings
+	* @serverHomeDirectory Override where the server's home with be
 	**/
-	public function install( required cfengine, required baseDirectory ) {
+	public function install( required cfengine, required baseDirectory, required struct serverInfo, required string serverHomeDirectory ) {
 		var version = listLen( cfengine, "@" )>1 ? listLast( cfengine, "@" ) : "";
-		var engineName = listFirst(cfengine,"@");
+		var engineName = listFirst( cfengine, "@" );
 		arguments.baseDirectory = !arguments.baseDirectory.endsWith( "/" ) ? arguments.baseDirectory & "/" : arguments.baseDirectory;
 				
 		if( engineName == "adobe" ) {
-			return installAdobe( destination=arguments.baseDirectory, version=version );
+			return installAdobe( destination=arguments.baseDirectory, version=version, serverInfo=serverInfo, serverHomeDirectory=serverHomeDirectory );
 		} else if (engineName == "railo") {
-			return installRailo( destination=arguments.baseDirectory, version=version );
+			return installRailo( destination=arguments.baseDirectory, version=version, serverInfo=serverInfo, serverHomeDirectory=serverHomeDirectory );
 		} else if (engineName == "lucee") {
-			return installLucee( destination=arguments.baseDirectory, version=version );
+			return installLucee( destination=arguments.baseDirectory, version=version, serverInfo=serverInfo, serverHomeDirectory=serverHomeDirectory );
 		} else {
-			return installEngineArchive( cfengine, arguments.baseDirectory );
+			return installEngineArchive( cfengine, arguments.baseDirectory, serverInfo, serverHomeDirectory );
 		}
 	}
 
@@ -48,20 +50,19 @@ component accessors="true" singleton="true" {
 	* 
 	* @destination target directory
 	* @version Version number or empty to use default
+	* @serverInfo Struct of server settings
+	* @serverHomeDirectory Override where the server's home with be
 	**/
-	public function installAdobe( required destination, required version ) {
-		var installDetails = installEngineArchive( 'adobe@#version#', destination );	
+	public function installAdobe( required destination, required version, required struct serverInfo, required string serverHomeDirectory ) {
+		var installDetails = installEngineArchive( 'adobe@#version#', destination, serverInfo, serverHomeDirectory );
 
-		// set password to "commandbox"
-		// TODO: Just make this changes directly in the WAR files
-		fileWrite( installDetails.installDir & "/WEB-INF/cfusion/lib/password.properties", "rdspassword=#cr#password=commandbox#cr#encrypted=false" );
 		// set flex log dir to prevent WEB-INF/cfform being created in project dir
 		if (fileExists(installDetails.installDir & "/WEB-INF/cfform/flex-config.xml")) {
 			var flexConfig = fileRead(installDetails.installDir & "/WEB-INF/cfform/flex-config.xml");
 
-			if(!installDetails.internal && installDetails.initialInstall ) {
+			if( installDetails.initialInstall ) {
 				flexConfig = replace(flexConfig, "/WEB-INF/", installDetails.installDir & "/WEB-INF/","all");
- -				fileWrite(installDetails.installDir & "/WEB-INF/cfform/flex-config.xml", flexConfig);
+				fileWrite(installDetails.installDir & "/WEB-INF/cfform/flex-config.xml", flexConfig);
 			} else { 
 				// TODO: Remove this ELSE block in a future revision. 
 				// This will fix the flex-config.xml files that have been corrupted because we weren't checking initialInstall, above.  
@@ -81,12 +82,15 @@ component accessors="true" singleton="true" {
 	* 
 	* @destination target directory
 	* @version Version number or empty to use default
+	* @serverInfo struct of server settings
+	* @serverHomeDirectory Override where the server's home with be
 	**/
-	public function installLucee( required destination, required version ) {
-	var installDetails = installEngineArchive( 'lucee@#version#', destination );
+	public function installLucee( required destination, required version, required struct serverInfo, required string serverHomeDirectory ) {
+		var installDetails = installEngineArchive( 'lucee@#version#', destination, serverInfo, serverHomeDirectory );
 		
-	if( !installDetails.internal && installDetails.initialInstall ) {
-			configureWebXML( cfengine="lucee", version=installDetails.version, source="#installDetails.installDir#/WEB-INF/web.xml", destination="#installDetails.installDir#/WEB-INF/web.xml" );	}	
+		if( installDetails.initialInstall ) {
+			configureWebXML( cfengine="lucee", version=installDetails.version, source=serverInfo.webXML, destination=serverInfo.webXML, serverInfo=serverInfo );
+		}	
 		return installDetails;
 	}
 
@@ -95,11 +99,14 @@ component accessors="true" singleton="true" {
 	* 
 	* @destination target directory
 	* @version Version number or empty to use default
+	* @serverInfo struct of server settings
+	* @serverHomeDirectory Override where the server's home with be
 	**/
-	public function installRailo( required destination, required version ) {
-	var installDetails = installEngineArchive( 'railo@#version#', destination );
+	public function installRailo( required destination, required version, required struct serverInfo, required string serverHomeDirectory ) {
+	var installDetails = installEngineArchive( 'railo@#version#', destination, serverInfo, serverHomeDirectory );
+	
 		if(  installDetails.initialInstall  ) {
-			configureWebXML( cfengine="railo", version=installDetails.version, source="#installDetails.installDir#/WEB-INF/web.xml", destination="#installDetails.installDir#/WEB-INF/web.xml" );			
+			configureWebXML( cfengine="railo", version=installDetails.version, source=serverInfo.webXML, destination=serverInfo.webXML, serverInfo=serverInfo );			
 		}		
 		return installDetails;
 	}
@@ -113,11 +120,13 @@ component accessors="true" singleton="true" {
 	*/
 	function installEngineArchive(
 		required string ID,
-		required string destination
+		required string destination,
+		required struct serverInfo,
+		required string serverHomeDirectory
 		) {
 			
 		var installDetails = {
-			internal : false,
+			engineName : '',
 			version : '',
 			installDir : '',
 			initialInstall : false
@@ -129,6 +138,7 @@ component accessors="true" singleton="true" {
 		var endpointData = endpointService.resolveEndpoint( ID, shell.pwd() );
 		var endpoint = endpointData.endpoint;
 		var engineName = endpoint.getDefaultName( arguments.ID );
+		installDetails.engineName = engineName;
 		
 		// In order to prevent uneccessary work, we're going to try REALLY hard to figure out exactly what engine will be installed 
 		// before it actually happens so we can skip this whole mess if it's already in place.
@@ -137,13 +147,15 @@ component accessors="true" singleton="true" {
 			var version = endpoint.parseVersion( arguments.ID );
 			
 			// If the user gave us an exact version, just use it!
-			if( semanticVersion.isExactVersion( version ) ) {
-				var satisfyingVersion = version;				
+			// Require buildID like 5.1.0+34
+			if( semanticVersion.isExactVersion( version=version, includeBuildID=true ) ) {
+				var satisfyingVersion = version;
 			} else {
-				consoleLogger.info( "Contacting ForgeBox to determine the best version match for [#version#].  Use an exact 'cfengine' version to skip this check.");
+				consoleLogger.warn( "Contacting ForgeBox to determine the latest & greatest version of [#engineName##( len( version ) ? ' ' : '' )##version#]...  Use an exact 'cfengine' version to skip this check.");
 				// If ForgeBox is down, don't rain on people's parade.
 				try {
 					var satisfyingVersion = endpoint.findSatisfyingVersion( endpoint.parseSlug( arguments.ID ), version ).version;
+					consoleLogger.info( "OK, [#engineName# #satisfyingVersion#] it is!");
 				} catch( any var e ) {
 					
 					consoleLogger.error( ".");
@@ -163,34 +175,103 @@ component accessors="true" singleton="true" {
 					}
 				}				
 			}
-			installDetails.installDir = destination & engineName & "-" & replace( satisfyingVersion, '+', '.', 'all' );
+			// Overriding server home which is where the exploded war lives
+			if( len( arguments.serverHomeDirectory ) ) {
+				installDetails.installDir = arguments.serverHomeDirectory;	
+			// Default is engine-version folder in base dir	
+			} else {
+				installDetails.installDir = destination & engineName & "-" & replace( satisfyingVersion, '+', '.', 'all' );
+			}
 			installDetails.version = satisfyingVersion;
+		
+			var thisEngineTag = installDetails.engineName & '@' & installDetails.version;
 			
 		} else {
 			
 			// For all other endpoints, create a predictable folder based on the endpoint ID.
 			// If the file that the endpoint points to changes, you'll have to forget the server to pick up changes.
 			// The alternative is re-downloading the engine EVERY. SINGLE. TIME.
-			installDetails.installDir = destination & engineName;
+			// Overriding server home which is where the exploded war lives
+			if( len( arguments.serverHomeDirectory ) ) {
+				installDetails.installDir = arguments.serverHomeDirectory;	
+			// Default is engine-version folder in base dir	
+			} else {
+				installDetails.installDir = destination & engineName;
+			}
+		
+			var thisEngineTag = arguments.ID;
 			
 		}
 		
-		// If we're starting a Lucee server whose version matches the CLI engine, then don't download anyting, we're using internal jars.
-		if( listFirst( arguments.ID, '@' ) == 'lucee' && server.lucee.version == replace( installDetails.version, '+', '.', 'all' ) ) {
-			installDetails.internal = true;
+		// Set default web.xml path now that we have an install dir
+		if( !len( serverInfo.webXML ) ) {
+			serverInfo.webXML = "#installDetails.installDir#/WEB-INF/web.xml";
+		}
+		// Set up server and web context dirs if Railo or Lucee
+		if( serverinfo.cfengine contains 'lucee' || serverinfo.cfengine contains 'railo' ) {
+			// Default web context
+			if( !len( serverInfo.webConfigDir ) ) {
+				serverInfo.webConfigDir = "/WEB-INF/#lcase( listFirst( serverinfo.cfengine, "@" ) )#-web";
+			}
+			// Default server context
+			if( !len( serverInfo.serverConfigDir ) ) {
+				serverInfo.serverConfigDir = "/WEB-INF";
+			}
+			// Make relative to WEB-INF if possible
+			serverInfo.webConfigDir = replace( serverInfo.webConfigDir, '\', '/', 'all' );
+			serverInfo.serverConfigDir = replace( serverInfo.serverConfigDir, '\', '/', 'all' );
+			installDetails.installDir = replace( installDetails.installDir, '\', '/', 'all' );
+			
+			serverInfo.webConfigDir = replace( serverInfo.webConfigDir, installDetails.installDir, '' );
+			serverInfo.serverConfigDir = replace( serverInfo.serverConfigDir, installDetails.installDir, '' );			
+		}
+		
+		var engineTagFile = installDetails.installDir & '/.engineInstall';
+		
+		// Check to see if this WAR has already been exploded
+		if( fileExists( engineTagFile ) ) {
+			
+			// Check and see if another version of this engine has already been started in the server home.
+			var previousEngineTag = fileRead( engineTagFile );
+			if( previousEngineTag != thisEngineTag ) {
+				consoleLogger.warn( "You've asked for the engine [#thisEngineTag#] to be started," );
+				consoleLogger.warn( "but this server home already has [#previousEngineTag#] deployed to it!" );
+				consoleLogger.warn( "In orer to get the new version, you need to run 'server forget' on this server and start it again." );
+			}
+			
+			consoleLogger.info( "WAR/zip archive already installed.");
+			
 			return installDetails;
 		}
 		
-		// Check to see if this WAR has already been exploded
-		if( fileExists( installDetails.installDir & '/WEB-INF/web.xml' ) ) {
-			consoleLogger.info( "WAR/zip archive already installed.");
+		// Install the engine via our standard package service
+		installDetails.initialInstall = true;
+		
+		// If we're starting a Lucee server whose version matches the CLI engine, then don't download anything, we're using internal jars.
+		if( listFirst( arguments.ID, '@' ) == 'lucee' && server.lucee.version == replace( installDetails.version, '+', '.', 'all' ) ) {
+			
+			consoleLogger.info( "Building a WAR from local jars.");
+			
+			// Spoof a WAR file.
+			var thisWebinf = installDetails.installDir & '/WEB-INF';
+			var thislib = thisWebinf & '/lib';
+			var thiServerContext = thisWebinf & '/server-context';
+			var thiWebContext = thisWebinf & '/web-context';
+			
+			directoryCreate( installDetails.installDir & '/WEB-INF', true, true );
+			directoryCopy( '/commandbox-home/lib', thislib, false, '*.jar' );
+			fileCopy( '/commandbox/system/config/web.xml', thisWebinf & '/web.xml');
+		
+			// Mark this WAR as being exploded already
+			fileWrite( engineTagFile, thisEngineTag );
+			
 			return installDetails;
 		}
 		 
-		// Install the engine via our standard package service
-		installDetails.initialInstall = true;
-		packageService.installPackage( ID=arguments.ID, directory=thisTempDir, save=false );
-				
+		if( !packageService.installPackage( ID=arguments.ID, directory=thisTempDir, save=false ) ) {
+			throw( message='Server not installed.', type="commandException");
+		}
+		
 		// Look for a war or zip archive inside the package
 		var theArchive = '';
 		for( var thisFile in directoryList( thisTempDir ) ) {
@@ -206,7 +287,11 @@ component accessors="true" singleton="true" {
 		}
 		
 		consoleLogger.info( "Exploding WAR/zip archive...");
-		zip action="unzip" file="#theArchive#" destination="#installDetails.installDir#" overwrite="true";
+		directoryCreate( installDetails.installDir, true, true );
+		zip action="unzip" file="#theArchive#" destination="#installDetails.installDir#" overwrite="false";
+		
+		// Mark this WAR as being exploded already
+		fileWrite( engineTagFile, thisEngineTag );
 				
 		// Catch this to gracefully handle where the OS or another program 
 		// has the folder locked.
@@ -221,20 +306,27 @@ component accessors="true" singleton="true" {
 	
 	/**
 	* configure web.xml file for Lucee and Railo
-	* TODO: Just make these changes directly in the WAR files
 	* 
 	* @cfengine lucee or railo
 	* @source source web.xml
 	* @destination target web.xml
 	**/
-	public function configureWebXML( required cfengine, required version, required source, destination ) {
+	public function configureWebXML( required cfengine, required version, required source, required destination, required struct serverInfo ) {
 		var webXML = XMLParse( source );
 		var servlets = xmlSearch(webXML,"//:servlet-class[text()='#lcase( cfengine )#.loader.servlet.CFMLServlet']");
 		var initParam = xmlElemnew(webXML,"http://java.sun.com/xml/ns/javaee","init-param");
 		initParam.XmlChildren[1] = xmlElemnew(webXML,"param-name");
 		initParam.XmlChildren[1].XmlText = "#lcase( cfengine )#-web-directory";
 		initParam.XmlChildren[2] = xmlElemnew(webXML,"param-value");
-		initParam.XmlChildren[2].XmlText = "/WEB-INF/#lcase( cfengine )#/{web-context-label}";
+		initParam.XmlChildren[2].XmlText = serverInfo.webConfigDir;
+		arrayInsertAt(servlets[1].XmlParent.XmlChildren,4,initParam);
+		
+		var servlets = xmlSearch(webXML,"//:servlet-class[text()='#lcase( cfengine )#.loader.servlet.CFMLServlet']");
+		var initParam = xmlElemnew(webXML,"http://java.sun.com/xml/ns/javaee","init-param");
+		initParam.XmlChildren[1] = xmlElemnew(webXML,"param-name");
+		initParam.XmlChildren[1].XmlText = "#lcase( cfengine )#-server-directory";
+		initParam.XmlChildren[2] = xmlElemnew(webXML,"param-value");
+		initParam.XmlChildren[2].XmlText = serverInfo.serverConfigDir;
 		arrayInsertAt(servlets[1].XmlParent.XmlChildren,4,initParam);
 		
 		// Lucee 5+ has a LuceeServlet as well as will create the WEB-INF by default in your web root
@@ -244,7 +336,15 @@ component accessors="true" singleton="true" {
 			initParam.XmlChildren[1] = xmlElemnew(webXML,"param-name");
 			initParam.XmlChildren[1].XmlText = "#lcase( cfengine )#-web-directory";
 			initParam.XmlChildren[2] = xmlElemnew(webXML,"param-value");
-			initParam.XmlChildren[2].XmlText = "/WEB-INF/#lcase( cfengine )#/{web-context-label}";
+			initParam.XmlChildren[2].XmlText = serverInfo.webConfigDir;
+			arrayInsertAt(servlets[1].XmlParent.XmlChildren,4,initParam);
+		
+			var servlets = xmlSearch(webXML,"//:servlet-class[text()='#lcase( cfengine )#.loader.servlet.LuceeServlet']");
+			var initParam = xmlElemnew(webXML,"http://java.sun.com/xml/ns/javaee","init-param");
+			initParam.XmlChildren[1] = xmlElemnew(webXML,"param-name");
+			initParam.XmlChildren[1].XmlText = "#lcase( cfengine )#-server-directory";
+			initParam.XmlChildren[2] = xmlElemnew(webXML,"param-value");
+			initParam.XmlChildren[2].XmlText = serverInfo.serverConfigDir;
 			arrayInsertAt(servlets[1].XmlParent.XmlChildren,4,initParam);
 		} 
 		

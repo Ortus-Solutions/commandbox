@@ -17,11 +17,13 @@ component {
 	 * @name.optionsUDF serverNameComplete
 	 * @directory.hint web root for the server
 	 * @serverConfigFile The path to the server's JSON file.
+	 * @follow Tail the log file with the "follow" flag. Press Ctrl-C to quit.
 	 **/
 	function run(
 		string name,
 		string directory,
-		String serverConfigFile
+		String serverConfigFile,
+		Boolean follow=false
 		 ){
 		if( !isNull( arguments.directory ) ) {
 			arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
@@ -39,7 +41,16 @@ component {
 		
 		var logfile = serverInfo.logdir & "/server.out.txt";
 		if( fileExists( logfile) ){
-			return fileRead( logfile );
+			
+			if( follow ) {
+				command( 'tail' )
+					.params( logfile, 50 )
+					.flags( 'follow' )
+					.run();
+			} else {
+				return fileRead( logfile );				
+			}
+			
 		} else {
 			print.boldRedLine( "No log file found for '#serverInfo.webroot#'!" )
 				.line( "#logFile#" );

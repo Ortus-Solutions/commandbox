@@ -15,8 +15,9 @@ External Dependencies:
     <!-- Version: UPDATE ON EACH RELEASE AS NEEDED -->
  	<property name="distro.groupID"				value="ortussolutions" />
  	<property name="distro.name"				value="commandbox"/>
- 	<property name="commandbox.version"			value="3.4.0"/>
- 	<property name="commandbox.stableVersion"	value="3.4.0"/>
+ 	<!-- Special things happen when the version and stableVersion are the same value as that signifies a "stable" build.   -->
+ 	<property name="commandbox.version"			value="3.5.0"/>
+ 	<property name="commandbox.stableVersion"	value="3.5.0"/>
  	                		 
     <!-- Time Label -->
 	<tstamp prefix="start"/>
@@ -182,14 +183,14 @@ External Dependencies:
 		
 		<!-- Configure Lucee Web Dir -->
 		<configure-lucee-web 
-		      config-server="${temp.dir}/engine/cfml/cli/cfml-server/context/lucee-server.xml"
+		      config-server="${temp.dir}/engine/cfml/cli/lucee-server/context/lucee-server.xml"
 		      config-web="${temp.dir}/engine/cfml/cli/cfml-web/lucee-web.xml.cfm"
-		      dump-cfc="${temp.dir}/engine/cfml/cli/cfml-server/context/library/tag/Dump.cfc"/>
+		      dump-cfc="${temp.dir}/engine/cfml/cli/lucee-server/context/library/tag/Dump.cfc"/>
 		<antcontrib:var name="lucee.config.file" value="${temp.dir}/engine/cfml/cli/cfml-web/lucee-web.xml.cfm" />
 		
 		<!-- update lucee password -->
 		<lucee-password 
-	      server-password="commandbox" config-server-file="${temp.dir}/engine/cfml/cli/cfml-server/context/lucee-server.xml"
+	      server-password="commandbox" config-server-file="${temp.dir}/engine/cfml/cli/lucee-server/context/lucee-server.xml"
 	      web-password="commandbox" config-web-file="${temp.dir}/engine/cfml/cli/cfml-web/lucee-web.xml.cfm"
 	    />
 		
@@ -270,8 +271,9 @@ External Dependencies:
 		
 		<!--  create the libs zip including cli loader, optionally use pack200 -->
 	    <antcontrib:if>
-	      <equals arg1="${java.pack200}" arg2="true" />
+	      <equals arg1="${isStable}" arg2="true" />
 	      <then>
+			<echo>This is a stable build, let's compress these jars!</echo>
 	        <delete dir="${temp.dir}/packlibs" />
 	        <mkdir dir="${temp.dir}/packlibs"/>
 	        <mkdir dir="${temp.dir}/packlibs/packed"/>
@@ -485,9 +487,13 @@ External Dependencies:
 		<exec executable="${dist.dir}/box" dir="${dir.apidocs}">
 			<arg line="${cmdboxhome.arg} install" />
 		</exec>
+ 		<!-- Ensure server isn't still running -->
+		<exec executable="${dist.dir}/box" dir="${dir.apidocs}">
+			<arg line="${cmdboxhome.arg} server stop" />
+		</exec>
 		<!-- Startup the apidocs server, wait for a few seconds for server to start -->
 		<exec executable="${dist.dir}/box" dir="${dir.apidocs}">
-			<arg line="${cmdboxhome.arg} server start openbrowser=false --force port=${apidocs.port} --!saveSettings" />
+			<arg line="${cmdboxhome.arg} server start openbrowser=false --force port=${apidocs.port} --noSaveSettings --debug" />
 		</exec>
 		<sleep seconds="5"/>
 		
@@ -512,8 +518,15 @@ External Dependencies:
  		<get dest="${temp.dir}/docbox.html" 
 			 src="${url.apidocs}/internal.cfm?version=${commandbox.version}&amp;path=${temp.dir.absolute}/apidocs" 
 			 verbose="true"
-			 retries="5"/>
+			 retries="5"
+			 ignoreerrors="true" />
+			 
 		<delete file="${temp.dir}/docbox.html" />
+		
+ 		<!-- stop server -->
+		<exec executable="${dist.dir}/box" dir="${dir.apidocs}">
+			<arg line="${cmdboxhome.arg} server log" />
+		</exec>
 
 		<!-- Zip API Docs -->
 		<zip destfile="${dist.dir}/${distro.name}-core-apidocs-${commandbox.version}.zip" basedir="${temp.dir}/apidocs"></zip>
@@ -603,7 +616,7 @@ External Dependencies:
 	</target>
 
 	<!-- Build including JREs -->
- 	<target name="build.cli.jre" description="Build with JRE included" depends="build.cli.bin,build.cli.exe" unless="${local.build}">
+ 	<target name="build.cli.jre" description="Build with JRE included" depends="build.cli.bin,build.cli.exe" if="${isStable}">
  		<echo message="Bundling ${jre.version} JRE" />
 		
 		<!-- Get JRE Dependencies -->
@@ -792,7 +805,8 @@ External Dependencies:
 		</dependency>
 		<dependency groupId="org.fusesource.jansi" artifactId="jansi" unzip="false" version="1.11" type="jar" dest="${lib.dir}" />
 		 -->
-		<dependency groupId="jline" artifactId="jline" version="2.12.1" dest="${lib.dir}" type="jar" unzip="false"/>
+ 		<mvn-repo id="sonatype" url="https://oss.sonatype.org/content/repositories/snapshots/" />
+		<dependency repoId="sonatype" groupId="jline" artifactId="jline" version="2.15-SNAPSHOT" dest="${lib.dir}" type="jar" unzip="false"/>
 		<dependency groupId="org.eclipse.jgit" artifactId="org.eclipse.jgit" version="4.3.0.201604071810-r" dest="${lib.dir}" repoId="jgit-repository" unzip="false" type="jar">
 			<exclusions>
 				<!-- Lucee already includes these jars --> 

@@ -84,6 +84,6 @@ component {
 	// Dynamic completion for property name based on contents of server.json
 	function completeProperty() {
 		// all=true will cause "server set" to prompt all possible server.json properties
-		return ServerService.completeProperty( getCWD(), true );
+		return ServerService.completeProperty( getCWD(), true, true );
 	}
 }

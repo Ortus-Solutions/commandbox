@@ -41,9 +41,10 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 	public string function resolvePackage( required string package, boolean verbose=false ) {
 		var slug 	= parseSlug( arguments.package );
 		var version = parseVersion( arguments.package );
-				
-		// If we have a specific version and it exists in artifacts, use it.  Otherwise, to ForgeBox!!
-		if( semanticVersion.isExactVersion( version ) && artifactService.artifactExists( slug, version ) ) {
+		var strVersion = semanticVersion.parseVersion( version );
+		
+		// If we have a specific version and it exists in artifacts and this isn't a snapshot build, use it.  Otherwise, to ForgeBox!!
+		if( semanticVersion.isExactVersion( version ) && artifactService.artifactExists( slug, version ) && strVersion.preReleaseID != 'snapshot' ) {
 			consoleLogger.info( "Package found in local artifacts!");	
 			// Install the package
 			var thisArtifactPath = artifactService.getArtifactPath( slug, version );		
@@ -368,8 +369,10 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 			// Advice we found it
 			consoleLogger.info( "Verified entry in ForgeBox: '#slug#'" );
 				
-			// If the local artifact doesn't exist, download and create it
-			if( !artifactService.artifactExists( slug, version ) ) {
+			var strVersion = semanticVersion.parseVersion( version );
+			
+			// If the local artifact doesn't exist or it's a snapshot build, download and create it
+			if( !artifactService.artifactExists( slug, version ) || strVersion.preReleaseID == 'snapshot' ) {
 					
 				// Test package location to see what endpoint we can refer to.
 				var endpointData = endpointService.resolveEndpoint( downloadURL, 'fakePath' );
@@ -403,8 +406,27 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 			
 			
 		} catch( forgebox var e ) {
-			// This can include "expected" errors such as "slug not found"
-			throw( '#e.message##CR##e.detail#', 'endpointException' );
+			
+			consoleLogger.error( ".");
+			consoleLogger.error( "Aww man,  ForgeBox isn't feeling well.");
+			consoleLogger.debug( "#e.message#  #e.detail#");
+			consoleLogger.error( "We're going to look in your local artifacts cache and see if one of those versions will work.");
+			
+			// See if there's something usable in the artifacts cache.  If so, we'll use that version.
+			var satisfyingVersion = artifactService.findSatisfyingVersion( slug, version );
+			
+			if( len( satisfyingVersion ) ) {
+				consoleLogger.info( ".");
+				consoleLogger.info( "Sweet! We found a local version of [#satisfyingVersion#] that we can use in your artifacts.");
+				consoleLogger.info( ".");
+				
+				var thisArtifactPath = artifactService.getArtifactPath( slug, satisfyingVersion );		
+				// Defer to file endpoint
+				return fileEndpoint.resolvePackage( thisArtifactPath, arguments.verbose );
+			} else {
+				throw( 'No satisfying version found for [#version#].', 'endpointException', 'Well, we tried as hard as we can.  ForgeBox is unreachable and you don''t have a usable version in your local artifacts cache.  Please try another version.' );
+			}
+
 		}		
 	}
 	

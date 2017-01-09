@@ -1,3 +1,4 @@
+<cfsetting requesttimeout="600">
 <cfparam name="url.version" default="1.0.0">
 <cfparam name="url.path" 	default="#expandPath( "./CommandBox-CommandDocs" )#">
 <cfscript>

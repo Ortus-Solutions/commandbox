@@ -54,10 +54,10 @@ component aliases="start" {
 	 * @directory     	 	web root for this server
 	 * @stopPort       		stop socket listener port number
 	 * @force          		force start if status is not stopped
-	 * @debug          		sets debug log level
+	 * @debug          		Turns on debug output while starting and streams server output to console.
 	 * @webConfigDir  	 	custom location for web context configuration
 	 * @serverConfigDir		custom location for server configuration
-	 * @libDirs       	 	comma-separated list of extra lib directories for the server
+	 * @libDirs       	 	comma-separated list of extra lib directories for the server to load
 	 * @trayIconFile   		path to .png file for tray icon
 	 * @webXML         		path to web.xml file used to configure the server
 	 * @HTTPEnable     		enable HTTP
@@ -77,6 +77,10 @@ component aliases="start" {
 	 * @cfengine.optionsUDF  cfengineNameComplete
 	 * @WARPath				sets the path to an existing war to use
 	 * @serverConfigFile 	The path to the server's JSON file.  Created if it doesn't exist.
+	 * @startTimeout 		The amount of time in seconds to wait for the server to start (in the background).
+	 * @console				Start this server in the forground console process and wait until Ctrl-C is pressed to stop it.
+	 * @welcomeFiles		A comma-delimited list of default files to load when visiting a directory (index.cfm,index.htm,etc)
+	 * @serverHomeDirectory	The folder where the CF engine WAR should be extracted
 	 
 	 **/
 	function run(
@@ -102,13 +106,17 @@ component aliases="start" {
 		Boolean rewritesEnable,
 		String  rewritesConfig,
 		Numeric heapSize,
-		boolean directoryBrowsing,
+		Boolean directoryBrowsing,
 		String  JVMArgs,
 		String  runwarArgs,
-		boolean	saveSettings=true,
+		Boolean	saveSettings=true,
 		String  cfengine,
 		String  WARPath,
-		String serverConfigFile
+		String serverConfigFile,
+		Numeric startTimeout,
+		Boolean console,
+		String welcomeFiles,
+		String serverHomeDirectory
 	){
 
 		// This is a common mis spelling

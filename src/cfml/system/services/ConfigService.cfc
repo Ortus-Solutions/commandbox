@@ -50,7 +50,9 @@ component accessors="true" singleton {
 			'endpoints.forgebox.APIURL',
 			// Servers
 			'server',
-			'server.defaults'
+			'server.defaults',
+			// used in Artifactsservice
+			'artifactsDirectory'
 		]);
 		
 		setConfigFilePath( '/commandbox-home/CommandBox.json' );
@@ -154,9 +156,10 @@ component accessors="true" singleton {
 	
 	/**
 	* Dynamic completion for property name based on contents of commandbox.json
-	* @all.hint Pass false to ONLY suggest existing setting names.  True will suggest all possible settings.
+	* @all Pass false to ONLY suggest existing setting names.  True will suggest all possible settings.
+	* @asSet Pass true to add = to the end of the options
 	*/ 	
-	function completeProperty( all=false ) {
+	function completeProperty( all=false, asSet=false ) {
 		// Get all config settings currently set
 		var props = JSONService.addProp( [], '', '', getConfigSettings() );
 		
@@ -165,7 +168,9 @@ component accessors="true" singleton {
 			// ... Then add them in
 			props.append( getPossibleConfigSettings(), true );
 		}
-		
+		if( asSet ) {
+			props = props.map( function( i ){ return i &= '='; } );
+		}
 		return props;		
 	}	
 }

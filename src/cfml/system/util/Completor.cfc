@@ -357,23 +357,18 @@ component singleton {
 	 * @type.showFiles Whether to hit files as well as directories
  	 **/
 	private function pathCompletion(String startsWith, required candidates, showFiles=true ) {
-		// This is what we add to relative paths, with the slashes normalized
-		var relativeRootPath = replace( shell.pwd() & '/', "\", "/", "all" );
-
-		// Keep track of whether this is a relative path or not.
-		var isRelative = false;
-
-		// Note, I'm NOT using fileSystemUtil.resolvePath() here because I don't want the
-		// path canoncalized since that will break my text comparisons.  Leave the ../ stuff in
-		var oPath = createObject( 'java', 'java.io.File' ).init( arguments.startsWith );
-		if( !oPath.isAbsolute() ) {
-			isRelative = true;
-			// If it's relative, we assume it's relative to the current working directory and make it absolute
-			arguments.startsWith = 	relativeRootPath & arguments.startsWith;
-		}
-
-		// This is out absolute directory as typed by the user
+		
+		// keep track of the original here so we can put it back like the user had
+		var originalStartsWith = replace( arguments.startsWith, "\", "/", "all" );
+		// Fully resolve the path.
+		arguments.startsWith = fileSystemUtil.resolvePath( arguments.startsWith );
 		startsWith = replace( startsWith, "\", "/", "all" );
+		
+		// make sure dirs are suffixed with a trailing slash or we'll strip it off, thinking it's a partial name
+		if( ( originalStartsWith == '' || originalStartsWith.endsWith( '/' ) ) && !startsWith.endsWith( '/' ) ) {
+			startsWith &= '/';
+		}
+		
 		// searchIn strips off partial directories, and has the last complete actual directory for searching.
 		var searchIn = startsWith;
 		// This is the bit at the end that is a partially typed directory or file name
@@ -387,7 +382,7 @@ component singleton {
 				partialMatch = replaceNoCase( startsWith, searchIn, '' );
 			}
 		}
-
+		
 		// Don't even bother if search location doesn't exist
 		if( directoryExists( searchIn ) ) {
 			// Pull a list of paths in there
@@ -410,11 +405,9 @@ component singleton {
 						// This is the absolute path that we matched
 						var thisCandidate = searchIn & ( right( searchIn, 1 ) == '/' ? '' : '/' ) & path.name;
 
-						// If we started with a relative path...
-						if( isRelative ) {
-							// ...strip it back down to what they typed
-							thisCandidate = replaceNoCase( thisCandidate, relativeRootPath, '' );
-						}
+						// ...strip it back down to what they typed
+						thisCandidate = replaceNoCase( thisCandidate, startsWith, originalStartsWith );
+						
 						// Finally add this candidate into the list
 						candidates.add( thisCandidate & ( path.type == 'dir' ? '/' : '' ) );
 					}
@@ -431,10 +424,12 @@ component singleton {
 	 * @candidates.hint tree to populate with completion candidates
  	 **/
 	private function addCandidateIfMatch( required match, required startsWith, required candidates ) {
-		match = lcase( match );
 		startsWith = lcase( startsWith );
-		if( match.startsWith( startsWith ) || len( startsWith ) == 0 ) {
-			candidates.add( match & ' ' );
+		if( lcase( match ).startsWith( startsWith ) || len( startsWith ) == 0 ) {
+			if( !match.endsWith( '=' ) ) {
+				match &= ' ';
+			}
+			candidates.add( match );
 		}
 	}
 

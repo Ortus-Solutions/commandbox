@@ -38,11 +38,14 @@ component singleton{
 	    	reader = createObject( "java", "jline.console.ConsoleReader" ).init( arguments.inStream, arguments.outputStream );
 		}
 		
-	// Let JLine handle Cntrl-C, and throw a UserInterruptException (instead of dying)
-	reader.setHandleUserInterrupt( true );
+		// Let JLine handle Cntrl-C, and throw a UserInterruptException (instead of dying)
+		reader.setHandleUserInterrupt( true );
 
     	// This turns off special stuff that JLine2 looks for related to exclamation marks
     	reader.setExpandEvents( false );
+		
+		// Turn off option to add space to end of completion that messes up stuff like path completion.
+		reader.getCompletionHandler().setPrintSpaceAfterFullCompletion( false );
 		
 		// Create our completer and set it in the console reader
 		var jCompletor = createDynamicProxy( completor , [ 'jline.console.completer.Completer' ] );

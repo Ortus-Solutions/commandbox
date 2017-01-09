@@ -11,6 +11,7 @@ component accessors=true singleton {
 	property name='Shell';
 	property name='EventPoolManager';
 	property name='InterceptionPoints';
+	property name='configured' type="boolean" default="false";
 	
 	// DI
 	property name='log' inject='logbox:logger:{this}';
@@ -20,6 +21,8 @@ component accessors=true singleton {
 	
 	*/
 	InterceptorService function init( required shell ) {
+		setConfigured( false );
+		
 		setShell( arguments.shell );
 
 		setInterceptionPoints( [
@@ -30,7 +33,7 @@ component accessors=true singleton {
 			// Module lifecycle
 			'preModuleLoad','postModuleLoad','preModuleUnLoad','postModuleUnload',
 			// Server lifecycle
-			'onServerStart','onServerInstall','onServerStop',
+			'preServerStart','onServerStart','onServerInstall','onServerStop',
 			// Error handling
 			'onException',
 			// Package lifecycle
@@ -44,6 +47,7 @@ component accessors=true singleton {
 	function configure() {
 		setEventPoolManager( getShell().getWireBox().getEventManager() );
 		appendInterceptionPoints( getInterceptionPoints().toList() );
+		setConfigured( true );
 		return this;		
 	}
  

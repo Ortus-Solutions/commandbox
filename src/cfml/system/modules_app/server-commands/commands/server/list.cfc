@@ -86,12 +86,19 @@ component {
 					.bold( status, statusColors.keyExists( status ) ? statusColors[ status ] : 'yellow' )
 					.bold( ')' )
 					.line();
-
+				
 				if( arguments.verbose ) {
 
-					print.indentedLine( "host:             " & thisServerInfo.host )
-						.indentedLine( "webroot:          " & thisServerInfo.webroot )
-						.indentedLine( "HTTPEnable:       " & thisServerInfo.HTTPEnable )
+					print.indentedLine( "host:             " & thisServerInfo.host );					
+					if( len( thisServerInfo.engineName ) ) {
+						print.indentedLine( "CF Engine:        " & thisServerInfo.engineName & ' ' & serverInfo.engineVersion );
+					}
+					if( len( thisServerInfo.WARPath ) ) {
+						print.indentedLine( "WARPath:          " & thisServerInfo.WARPath );
+					} else {
+						print.indentedLine( "webroot:          " & thisServerInfo.webroot );
+					}
+					print.indentedLine( "HTTPEnable:       " & thisServerInfo.HTTPEnable )
 						.indentedLine( "port:             " & thisServerInfo.port )
 						.indentedLine( "SSLEnable:        " & thisServerInfo.SSLEnable )
 						.indentedLine( "SSLport:          " & thisServerInfo.SSLport )
@@ -101,8 +108,6 @@ component {
 						.indentedLine( "debug:            " & thisServerInfo.debug )
 						.indentedLine( "ID:               " & thisServerInfo.id );
 
-					if( len( thisServerInfo.cfengine ) ) { print.indentedLine( "cfengine:         " & thisServerInfo.cfengine ); }
-					if( len( thisServerInfo.WARPath ) ) { print.indentedLine( "WARPath:          " & thisServerInfo.WARPath ); }
 					if( len( thisServerInfo.libDirs ) ) { print.indentedLine( "libDirs:          " & thisServerInfo.libDirs ); }
 					if( len( thisServerInfo.webConfigDir ) ) { print.indentedLine( "webConfigDir:     " & thisServerInfo.webConfigDir ); }
 					if( len( thisServerInfo.serverConfigDir ) ) { print.indentedLine( "serverConfigDir:  " & thisServerInfo.serverConfigDir ); }
@@ -118,7 +123,14 @@ component {
 					if( thisServerInfo.SSLEnable ) {
 						print.indentedLine( 'https://' & thisServerInfo.host & ':' & thisServerInfo.SSLport );
 					}
-					print.indentedLine( thisServerInfo.webroot );
+					if( len( thisServerInfo.engineName ) ) {
+						print.indentedLine( 'CF Engine: ' & thisServerInfo.engineName & ' ' & thisServerInfo.engineVersion );
+					}
+					if( len( thisServerInfo.warPath ) ) {
+						print.indentedLine( 'WAR Path: ' & thisServerInfo.warPath );
+					} else {
+						print.indentedLine( 'Webroot: ' & thisServerInfo.webroot );
+					}
 				}// end verbose
 
 			} // End "filter" if
