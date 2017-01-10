@@ -243,15 +243,19 @@ public class Util{
 						boolean result = previous.delete();
 
 						if( !result ) {
+							System.err.println( "" );
 							System.err.println( "CommandBox is having problems deleting your previous jars to complete the upgrade." );
 							System.err.println( "Please close all open consoles and stop all running servers before trying again." );
+							Thread.sleep( 5000 );
 							System.exit( 1 );
 						}
 						
 					} catch ( Exception e ) {
+						System.err.println( "" );
 						System.err.println( "CommandBox is having problems deleting your previous jars to complete the upgrade." );
 						System.err.println( "Error: " + e.getMessage() );
 						System.err.println( "Please close all open consoles and stop all running servers before trying again." );
+						try { Thread.sleep( 5000 ); } catch( Throwable t ){}
 						System.exit( 1 );
 					}
 				}
@@ -267,15 +271,19 @@ public class Util{
 					boolean result = previous.delete();
 
 					if( !result ) {
+						System.err.println( "" );
 						System.err.println( "CommandBox could not delete the jar [" + previous.getAbsolutePath() + "]" );
 						System.err.println( "Please close all open consoles and stop all running servers before trying again." );
+						Thread.sleep( 5000 );
 						System.exit( 1 );
 					}
 					
 				} catch ( Exception e ) {
+					System.err.println( "" );
 					System.err.println( "CommandBox could not delete the jar [" + previous.getAbsolutePath() + "]" );
 					System.err.println( "Error: " + e.getMessage() );
 					System.err.println( "Please close all open consoles and stop all running servers before trying again." );
+					try { Thread.sleep( 5000 ); } catch( Throwable t ){}
 					System.exit( 1 );
 				}
 			}
