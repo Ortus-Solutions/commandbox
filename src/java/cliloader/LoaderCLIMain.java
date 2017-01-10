@@ -606,7 +606,7 @@ public class LoaderCLIMain{
 			if( !versionFileMatches( versionFile, VERSION_PROPERTIES_PATH ) ) {
 				String autoUpdate = props.getProperty( "cfml.cli.autoupdate" );
 				if( autoUpdate != null && Boolean.parseBoolean( autoUpdate ) ) {
-					log.warn( "\n*updating installed version" );
+					log.warn( "\n*updating installed jars" );
 					updateLibs = true;
 					versionFile.delete();
 				} else {
@@ -622,7 +622,13 @@ public class LoaderCLIMain{
 			System.out.println( "Library path: " + libDir );
 			System.out
 					.println( "Initializing libraries -- this will only happen once, and takes a few seconds..." );
-			Util.removePreviousLibs( libDir );			
+			
+			// Try to delete the Runwar jar first since it's the most likely to be locked.  
+			// If it fails, this method will just abort before we get any farther into deleting stuff.
+			Util.checkIfJarsLocked( libDir, "runwar" );
+			// Ok, try deleting for real.  If any of these jars fail to delete, we'll still holler at the user and abort the upgrade
+			Util.removePreviousLibs( libDir );
+			
 			Util.unzipInteralZip( classLoader, LIB_ZIP_PATH, libDir, debug );
 			
 			// Wipe out existing /cfml/system folder to remove any deleted files
