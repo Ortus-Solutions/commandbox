@@ -1110,52 +1110,41 @@ component accessors="true" singleton {
 	 * @serverInfo.hint struct of server info (ports, etc.)
 	 * @all.hint remove ALL servers
  	 **/
-	function forget( required struct serverInfo, boolean all=false ){
-		if( !arguments.all ){
-			var servers 	= getServers();
-			var serverdir 	= getCustomServerFolder( arguments.serverInfo );
-						
-			// Catch this to gracefully handle where the OS or another program
-			// has the folder locked.
-			try {
+	function forget( required struct serverInfo ){
+		var servers 	= getServers();
+		var serverdir 	= getCustomServerFolder( arguments.serverInfo );
+		
+		interceptorService.announceInterception( 'preServerForget', { serverInfo=serverInfo } );
 					
-				// try to delete interal server dir server
-				if( directoryExists( serverDir ) ){
-					directoryDelete( serverdir, true );
-				}
+		// Catch this to gracefully handle where the OS or another program
+		// has the folder locked.
+		try {
 				
-				// Server home may be custom, so delete it as well
-				if( len( serverInfo.serverHomeDirectory ) && directoryExists( serverInfo.serverHomeDirectory ) ){
-					directoryDelete( serverInfo.serverHomeDirectory, true );
-				}
-				
-				
-			} catch( any e ) {
-				consoleLogger.error( '#e.message##chr(10)#Did you leave the server running? ' );
-				logger.error( '#e.message# #e.detail#' , e.stackTrace );
-				return '';
+			// try to delete interal server dir server
+			if( directoryExists( serverDir ) ){
+				directoryDelete( serverdir, true );
 			}
 			
-			// try to delete from config first
-			structDelete( servers, arguments.serverInfo.id );
-			setServers( servers );
+			// Server home may be custom, so delete it as well
+			if( len( serverInfo.serverHomeDirectory ) && directoryExists( serverInfo.serverHomeDirectory ) ){
+				directoryDelete( serverInfo.serverHomeDirectory, true );
+			}
 			
-			// return message
-			return "Poof! Wiped out server " & serverInfo.name;
-		} else {
-			var serverNames = getServerNames();
-			setServers( {} );
-				// Catch this to gracefully handle where the OS or another program
-				// has the folder locked.
-				try {
-					directoryDelete( variables.customServerDirectory, true );
-					directoryCreate( variables.customServerDirectory );
-				} catch( any e ) {
-					consoleLogger.error( '#e.message##chr(10)#Did you leave a server running? ' );
-					logger.error( '#e.message# #e.detail#' , e.stackTrace );
-				}
-			return "Poof! All servers (#arrayToList( serverNames )#) have been wiped.";
+			
+		} catch( any e ) {
+			consoleLogger.error( '#e.message##chr(10)#Did you leave the server running? ' );
+			logger.error( '#e.message# #e.detail#' , e.stackTrace );
+			return serverInfo.name + ' not deleted.';
 		}
+		
+		// Remove from config
+		structDelete( servers, arguments.serverInfo.id );
+		setServers( servers );
+				
+		interceptorService.announceInterception( 'postServerForget', { serverInfo=serverInfo } );
+				
+		// return message
+		return "Poof! Wiped out server " & serverInfo.name;
 	}
 
 	/**

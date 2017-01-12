@@ -58,7 +58,9 @@ component {
 			"Really forget & delete server '#serverinfo.name#' forever [y/n]?";
 									     
 		if( arguments.force || confirm( askMessage ) ){
-			print.line( serverService.forget( serverInfo, arguments.all ) );
+			servers.each( function( ID ){
+				print.line( serverService.forget( servers[ arguments.ID ] ) );
+			 } );
 		} else {
 			print.orangeLine( "Cancelling forget command" );
 		}

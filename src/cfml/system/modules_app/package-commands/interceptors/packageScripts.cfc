@@ -21,10 +21,14 @@ component {
 	function postModuleLoad() { processScripts( 'postModuleLoad' ); }
 	function preModuleUnLoad() { processScripts( 'preModuleUnLoad' ); }
 	function postModuleUnload() { processScripts( 'postModuleUnload' ); }
+	
 	function preServerStart() { processScripts( 'preServerStart' ); }
 	function onServerInstall() { processScripts( 'onServerInstall', interceptData.serverinfo.webroot ); }
 	function onServerStart() { processScripts( 'onServerStart', interceptData.serverinfo.webroot ); }
 	function onServerStop() { processScripts( 'onServerStop', interceptData.serverinfo.webroot ); }
+	function preServerForget() { processScripts( 'preServerForget', interceptData.serverinfo.webroot ); }
+	function postServerForget() { processScripts( 'postServerForget', interceptData.serverinfo.webroot ); }
+	
 	function onException() { processScripts( 'onException' ); }
 	
 	// preInstall gets package requesting the installation because dep isn't installed yet
