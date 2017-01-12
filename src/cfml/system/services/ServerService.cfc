@@ -567,7 +567,8 @@ component accessors="true" singleton {
 	    var javaagent = serverinfo.cfengine contains 'lucee' ? '-javaagent:#libdir#/lucee-inst.jar' : '';
 	    
 	    // Regardless of a custom server home, this is still used for various temp files and logs
-	    directoryCreate( getCustomServerFolder( serverInfo ), true, true );
+	    serverinfo.customServerFolder = getCustomServerFolder( serverInfo );
+	    directoryCreate( serverinfo.customServerFolder, true, true );
 	    
 	    // Not sure what Runwar does with this, but it wants to know what CFEngine we're starting (if we know)
 	    var CFEngineName = '';
@@ -582,7 +583,7 @@ component accessors="true" singleton {
 		if( serverInfo.WARPath == '' ){
 		
 			// This will install the engine war to start, possibly downloading it first
-			var installDetails = serverEngineService.install( cfengine=serverInfo.cfengine, basedirectory=getCustomServerFolder( serverInfo ), serverInfo=serverInfo, serverHomeDirectory=serverInfo.serverHomeDirectory );
+			var installDetails = serverEngineService.install( cfengine=serverInfo.cfengine, basedirectory=serverinfo.customServerFolder, serverInfo=serverInfo, serverHomeDirectory=serverInfo.serverHomeDirectory );
 			serverInfo.serverHomeDirectory = installDetails.installDir;
 			// TODO: As of 3.5 this is for backwards compat.  Remove in later version
 			serverInfo.serverHome = installDetails.installDir;
@@ -638,7 +639,7 @@ component accessors="true" singleton {
 				serverInfo.serverHomeDirectory = serverInfo.WARPath;
 			}
 			// Create a custom server folder to house the logs
-			serverInfo.logdir = getCustomServerFolder( serverInfo ) & "/logs";
+			serverInfo.logdir = serverinfo.customServerFolder & "/logs";
 			serverInfo.consolelogPath	= serverInfo.logdir & '/server.out.txt';
 		}
 					
@@ -721,7 +722,7 @@ component accessors="true" singleton {
 		}
 		
 		// Serialize tray options and write to temp file
-		var trayOptionsPath = getCustomServerFolder( serverInfo ) & '/trayOptions.json';
+		var trayOptionsPath = serverinfo.customServerFolder & '/trayOptions.json';
 		var trayJSON = {
 			'title' : processName,
 			'tooltip' : processName,
