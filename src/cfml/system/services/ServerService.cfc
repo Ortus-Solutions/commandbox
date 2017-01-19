@@ -757,7 +757,7 @@ component accessors="true" singleton {
 			var thispassthroughJVMArgs = '';
 		}
 		
-		var args = ' #thisJVMArgs# -jar #variables.jarPath#'
+		var args = ' #thisJVMArgs# -jar "#variables.jarPath#"'
 				// debug and background need to parse as a single token. Leave the =
 				& ' --background=#background# --port #serverInfo.port# --host #serverInfo.host# --debug=#serverInfo.debug#'
 				& ' --stop-port #serverInfo.stopsocket# --processname "#processName#" --log-dir "#serverInfo.logDir#"'
