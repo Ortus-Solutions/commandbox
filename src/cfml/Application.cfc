@@ -10,7 +10,7 @@ component{
 
 	this.name 				= "CommandBox CLI";
 	this.sessionmanagement 	= "false";
-	this.applicationTimeout = createTimeSpan( 7, 0, 0, 0 );
+	this.applicationTimeout = createTimeSpan( 999999, 0, 0, 0 );
 
 	// Move everything over to this mapping which is the "root" of our app
 	CFMLRoot = getDirectoryFromPath( getMetadata( this ).path );

@@ -65,7 +65,7 @@ component {
 	
 	/**
 	 * @name The name of the app you want to create
-	 * @skeleton The name of the app skeleton to generate
+	 * @skeleton The name of the app skeleton to generate (or an endpoint ID like a forgebox slug)
 	 * @skeleton.optionsUDF skeletonComplete
 	 * @directory The directory to create the app in and creates the directory if it does not exist.  Defaults to your current working directory.
 	 * @init "init" the directory as a package if it isn't already
