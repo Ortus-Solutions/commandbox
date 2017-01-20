@@ -715,11 +715,6 @@ component accessors="true" singleton {
 			tmp &= thisPath.startsWith( '/' ) ? thisPath : '/' & thisPath;
 			errorPages = errorPages.listAppend( tmp );
 		}
-		// Bug in runwar requires me to completley omit this param unless it's populated
-		// https://github.com/cfmlprojects/runwar/issues/33
-		if( len( errorPages ) ) {
-			errorPages = '--error-pages="#errorPages#"';
-		}
 		
 		// Serialize tray options and write to temp file
 		var trayOptionsPath = serverinfo.customServerFolder & '/trayOptions.json';
@@ -732,74 +727,105 @@ component accessors="true" singleton {
 		var background = !(serverProps.console ?: false);
 		// The java arguments to execute:  Shared server, custom web configs
 		
+		// This is an array of tokens to send to the process builder
+		var args = [];
+		
+		// "borrow" the CommandBox commandline parser to tokenize the JVM args. Not perfect, but close. Handles quoted values with spaces.
+		var argTokens = parser.tokenizeInput( serverInfo.JVMargs )
+			.map( function( i ){
+				// Clean up a couple escapes the parser does that we don't need
+				return i.replace( '\=', '=', 'all' ).replace( '\\', '\', 'all' );
+			});
+		// Add in heap size and java agent
+		argTokens
+			.append( '-Xmx#serverInfo.heapSize#m' )
+			.append( '-Xms#serverInfo.heapSize#m' );
+		if( len( trim( javaAgent ) ) ) { argTokens.append( javaagent ); }				
+		
+		 args
+		 	.append( '-jar' ).append( variables.jarPath )
+		 	.append( '--background' ).append( background )
+		 	.append( '--port' ).append( serverInfo.port )
+		 	.append( '--host' ).append( serverInfo.host )
+		 	.append( '--debug' ).append( serverInfo.debug )
+		 	.append( '--stop-port' ).append( serverInfo.stopsocket )
+		 	.append( '--processname' ).append( processName )
+		 	.append( '--log-dir' ).append( serverInfo.logDir )
+		 	.append( '--open-browser' ).append( serverInfo.openbrowser )
+		 	.append( ' --open-url' ).append( ( serverInfo.SSLEnable ? 'https://#serverInfo.host#:#serverInfo.SSLPort#' : 'http://#serverInfo.host#:#serverInfo.port#' ) )
+		 	.append( '--server-name' ).append( serverInfo.name )
+		 	.append( '--tray-icon' ).append( serverInfo.trayIcon )
+		 	.append( '--tray-config' ).append( trayOptionsPath )
+		 	.append( '--servlet-rest-mappings' ).append( '/rest/*,/api/*' )
+		 	.append( '--directoryindex' ).append( serverInfo.directoryBrowsing )
+		 	.append( '--timeout' ).append( serverInfo.startTimeout )
+		 	.append( serverInfo.runwarArgs.listToArray( ' ' ), true );
+		 
+		if( len( errorPages ) ) {
+			args.append( '--error-pages' ).append( errorPages );
+		}
+	 	if( len( CFEngineName ) ) {
+	 		 args.append( ' --cfengine-name' ).append( CFEngineName );
+	 	}
+	 	if( len( serverInfo.welcomeFiles ) ) {
+	 		 args.append( ' --welcome-files' ).append( erverInfo.welcomeFiles );
+	 	}
+	 	if( len( CLIAliases ) ) {
+	 		 args.append( ' --dirs' ).append( CLIAliases );
+	 	}
+		  
+		
 		// If background, wrap up JVM args to pass through to background servers
 		// "real" JVM args must come before Runwar args, so creating two variables, once of which will always be empty.
 		if( background ) {
-			var thisJVMArgs = '';
-			// "borrow" the CommandBox commandline parser to tokenize the JVM args. Not perfect, but close. Handles quoted values with spaces.
-			var argTokens = parser.tokenizeInput( serverInfo.JVMargs )
-				.map( function( i ){
-					// Clean up a couple escapes the parser does that we don't need
-					return i.replace( '\=', '=', 'all' ).replace( '\\', '\', 'all' );
-				});
-			// Add in heap size and java agent
-			argTokens
-				.append( '-Xmx#serverInfo.heapSize#m' )
-				.append( '-Xms#serverInfo.heapSize#m' );
-			if( len( trim( javaAgent ) ) ) { argTokens.append( '#javaagent#' ); }				
-				
-			argString = argTokens.toList( ';' ).replace( '"', '\"', 'all' );
-				
-			var thispassthroughJVMArgs = '--jvm-args="#argString#"';
+			var argString = argTokens.toList( ';' ).replace( '"', '\"', 'all' );
+			if( len( argString ) ) {
+				args.append( '--jvm-args="#argString#"' );
+			}
 		// If foreground, just stick them in.
 		} else {
-			var thisJVMArgs = ' -Xmx#serverInfo.heapSize#m -Xms#serverInfo.heapSize#m #javaagent# #serverInfo.JVMargs# ';
-			var thispassthroughJVMArgs = '';
+			argTokens.each( function(i) { args.prepend( i ); } );
 		}
 		
-		var args = ' #thisJVMArgs# -jar "#variables.jarPath#"'
-				// debug and background need to parse as a single token. Leave the =
-				& ' --background=#background# --port #serverInfo.port# --host #serverInfo.host# --debug=#serverInfo.debug#'
-				& ' --stop-port #serverInfo.stopsocket# --processname "#processName#" --log-dir "#serverInfo.logDir#"'
-				& ' --open-browser #serverInfo.openbrowser#'
-				& ' --open-url ' & ( serverInfo.SSLEnable ? 'https://#serverInfo.host#:#serverInfo.SSLPort#' : 'http://#serverInfo.host#:#serverInfo.port#' )
-				& ( len( CFEngineName ) ? ' --cfengine-name "#CFEngineName#"' : '' )
-				& ' --server-name "#serverInfo.name#" #errorPages#'
-				& ( len( serverInfo.welcomeFiles ) ? ' --welcome-files "#serverInfo.welcomeFiles#" ' : '' )
-				& ' --tray-icon "#serverInfo.trayIcon#" --tray-config "#trayOptionsPath#" --servlet-rest-mappings "/rest/*,/api/*"'
-				& ' --directoryindex "#serverInfo.directoryBrowsing#" '
-				& ( len( CLIAliases ) ? ' --dirs "#CLIAliases#"' : '' )
-				& ' #serverInfo.runwarArgs# --timeout #serverInfo.startTimeout# #thispassthroughJVMArgs# ';
-				
+		args.append( '-war' );
+			
 		// Starting a WAR
 		if (serverInfo.WARPath != "" ) {
-			args &= " -war ""#serverInfo.WARPath#""";
+			args.append( serverInfo.WARPath );
 		// Stand alone server
 		} else {
-			args &= " -war ""#serverInfo.webroot#""";
+			args.append( serverInfo.webroot );
 		}
+		
 		// Custom web.xml (doesn't work right now)
 		if ( Len( Trim( serverInfo.webXml ) ) && false ) {
-			args &= " --web-xml-path ""#serverInfo.webXml#""";
+			args.append( '--web-xml-path' ).append( serverInfo.webXml );
 		// Default is in WAR home
 		} else {
-			args &= " --web-xml-path ""#serverInfo.serverHomeDirectory#/WEB-INF/web.xml""";
+			args.append( '--web-xml-path' ).append( '#serverInfo.serverHomeDirectory#/WEB-INF/web.xml' );
 		}
 		
 		if( len( serverInfo.libDirs ) ) {
 			// Have to get rid of empty list elements
-			args &= " --lib-dirs ""#serverInfo.libDirs.listChangeDelims( ',', ',' )#""";
+			args.append( '--lib-dirs' ).append( serverInfo.libDirs.listChangeDelims( ',', ',' ) );
 		}
 		
 		// Incorporate SSL to command
 		if( serverInfo.SSLEnable ){
-			args &= " --http-enable #serverInfo.HTTPEnable# --ssl-enable #serverInfo.SSLEnable# --ssl-port #serverInfo.SSLPort#";
+			args
+				.append( '--http-enable' ).append( serverInfo.HTTPEnable )
+				.append( '--ssl-enable' ).append( serverInfo.SSLEnable )
+				.append( '--ssl-port' ).append( serverInfo.SSLPort );
 		}
-		if( serverInfo.SSLEnable && serverInfo.SSLCert != "") {
-			args &= " --ssl-cert ""#serverInfo.SSLCert#"" --ssl-key ""#serverInfo.SSLKey#"" --ssl-keypass ""#serverInfo.SSLKeyPass#""";
+		if( serverInfo.SSLEnable && serverInfo.SSLCert != "" ) {
+			args
+				.append( '--ssl-cert' ).append( serverInfo.SSLCert )
+				.append( '--ssl-key' ).append( serverInfo.SSLKey )
+				.append( '--ssl-keypass' ).append( serverInfo.SSLKeyPass );
 		}
+		
 		// Incorporate rewrites to command
-		args &= " --urlrewrite-enable #serverInfo.rewritesEnable#";
+		args.append( '--urlrewrite-enable' ).append( serverInfo.rewritesEnable );
 		
 		if( serverInfo.rewritesEnable ){
 			if( !fileExists(serverInfo.rewritesConfig) ){
@@ -808,14 +834,14 @@ component accessors="true" singleton {
 				consoleLogger.error( '.' );
 				return;
 			}
-			args &= " --urlrewrite-file ""#serverInfo.rewritesConfig#""";
+			args.append( '--urlrewrite-file' ).append( serverInfo.rewritesConfig );
 		}
 		// change status to starting + persist
 		serverInfo.status = "starting";
 		setServerInfo( serverInfo );
 			
 	    if( serverInfo.debug ) {
-			var cleanedArgs = cr & '    ' & trim( replaceNoCase( args, ' -', cr & '    -', 'all' ) );
+			var cleanedArgs = cr & '    ' & trim( replaceNoCase( args.toList( ' ' ), ' -', cr & '    -', 'all' ) );
 			consoleLogger.debug("Server start command: #javaCommand# #cleanedArgs#");
 	    }
 	    
@@ -824,9 +850,8 @@ component accessors="true" singleton {
 		// Construct a new process object
 	    var processBuilder = createObject( "java", "java.lang.ProcessBuilder" );
 	    // Pass array of tokens comprised of command plus arguments
-	    var processTokens = [ variables.javaCommand ]
-	    processTokens.append( args.listToArray( ' ' ), true );
-	    processBuilder.init( processTokens );
+	    args.prepend( variables.javaCommand );
+	    processBuilder.init( args );
 	    // Conjoin standard error and output for convenience.
 	    processBuilder.redirectErrorStream( true );
 	    // Kick off actual process
@@ -843,7 +868,7 @@ component accessors="true" singleton {
 			try{
 				
 				// save server info and persist
-				serverInfo.statusInfo = { command:variables.javaCommand, arguments:attributes.args, result:'' };
+				serverInfo.statusInfo = { command:variables.javaCommand, arguments:attributes.args.toList( ' ' ), result:'' };
 				serverInfo.status="starting";
 				setServerInfo( serverInfo );
 				

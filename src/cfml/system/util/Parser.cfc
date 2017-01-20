@@ -260,10 +260,8 @@ component {
 		arguments.argValue = replace( arguments.argValue, chr( 9 ), "\t", "all" );
 		return arguments.argValue;
 	}
-	
-	// ----------------------------- Private ---------------------------------------------
 
-	private function unwrapQuotes( theString ) {
+	function unwrapQuotes( theString ) {
 		// If the value is wrapped with backticks, leave them be.  That is a signal to the CommandService 
 		// that the string is special and needs to be evaluated as an expression.
 		if( left( theString, 1 ) == '"' || left( theString, 1 ) == "'" ) {
@@ -271,6 +269,9 @@ component {
 		}
 		return theString;
 	}
+	
+	
+	// ----------------------------- Private ---------------------------------------------
 	
 	private function removeEscapedChars( theString ) {
 		theString = replaceNoCase( theString, "\\", '__backSlash__', "all" );
