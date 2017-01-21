@@ -101,9 +101,9 @@ component accessors="true" singleton {
 		// build command
 		var javaCommand =  createObject( "java", "java.io.File").init( javaPath ).getCanonicalPath();
 		// take care of spaces in command
-		if( javaCommand contains " " ){
+/*		if( javaCommand contains " " ){
 			javaCommand = """#javaCommand#""";
-		}
+		}*/
 		
 		return javaCommand;
 	}

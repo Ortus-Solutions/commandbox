@@ -744,7 +744,7 @@ component accessors="true" singleton {
 		
 		 args
 		 	.append( '-jar' ).append( variables.jarPath )
-		 	.append( '--background' ).append( background )
+		 	.append( '--background=background' )
 		 	.append( '--port' ).append( serverInfo.port )
 		 	.append( '--host' ).append( serverInfo.host )
 		 	.append( '--debug' ).append( serverInfo.debug )
@@ -752,7 +752,7 @@ component accessors="true" singleton {
 		 	.append( '--processname' ).append( processName )
 		 	.append( '--log-dir' ).append( serverInfo.logDir )
 		 	.append( '--open-browser' ).append( serverInfo.openbrowser )
-		 	.append( ' --open-url' ).append( ( serverInfo.SSLEnable ? 'https://#serverInfo.host#:#serverInfo.SSLPort#' : 'http://#serverInfo.host#:#serverInfo.port#' ) )
+		 	.append( '--open-url' ).append( ( serverInfo.SSLEnable ? 'https://#serverInfo.host#:#serverInfo.SSLPort#' : 'http://#serverInfo.host#:#serverInfo.port#' ) )
 		 	.append( '--server-name' ).append( serverInfo.name )
 		 	.append( '--tray-icon' ).append( serverInfo.trayIcon )
 		 	.append( '--tray-config' ).append( trayOptionsPath )
@@ -765,13 +765,13 @@ component accessors="true" singleton {
 			args.append( '--error-pages' ).append( errorPages );
 		}
 	 	if( len( CFEngineName ) ) {
-	 		 args.append( ' --cfengine-name' ).append( CFEngineName );
+	 		 args.append( '--cfengine-name' ).append( CFEngineName );
 	 	}
 	 	if( len( serverInfo.welcomeFiles ) ) {
-	 		 args.append( ' --welcome-files' ).append( erverInfo.welcomeFiles );
+	 		 args.append( '--welcome-files' ).append( erverInfo.welcomeFiles );
 	 	}
 	 	if( len( CLIAliases ) ) {
-	 		 args.append( ' --dirs' ).append( CLIAliases );
+	 		 args.append( '--dirs' ).append( CLIAliases );
 	 	}
 		  
 		
@@ -1159,7 +1159,7 @@ component accessors="true" singleton {
 		} catch( any e ) {
 			consoleLogger.error( '#e.message##chr(10)#Did you leave the server running? ' );
 			logger.error( '#e.message# #e.detail#' , e.stackTrace );
-			return serverInfo.name + ' not deleted.';
+			return serverInfo.name & ' not deleted.';
 		}
 		
 		// Remove from config
