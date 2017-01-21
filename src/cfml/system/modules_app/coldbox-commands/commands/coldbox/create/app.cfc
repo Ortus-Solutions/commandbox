@@ -50,14 +50,14 @@ component {
 		
 		// Map these shortcut names to the actual ForgeBox slugs
 		variables.templateMap = {
-			Advanced 		= 'cbtemplate-advanced',
-			AdvancedScript 	= 'cbtemplate-advanced-script',
-			ElixirVueJS 	= 'cbtemplate-elixir-vuejs',
-			ElixirBower 	= 'cbtemplate-elixir-bower',
-			Elixir 			= 'cbtemplate-elixir',
-			rest 			= 'cbtemplate-rest',
-			Simple 			= 'cbtemplate-simple',
-			SuperSimple 	= 'cbtemplate-supersimple'			
+			'Advanced'			= 'cbtemplate-advanced',
+			'AdvancedScript'	= 'cbtemplate-advanced-script',
+			'ElixirVueJS'		= 'cbtemplate-elixir-vuejs',
+			'ElixirBower'		= 'cbtemplate-elixir-bower',
+			'Elixir'			= 'cbtemplate-elixir',
+			'rest'				= 'cbtemplate-rest',
+			'Simple'			= 'cbtemplate-simple',
+			'SuperSimple'		= 'cbtemplate-supersimple'			
 		};
 		
 		return this;
