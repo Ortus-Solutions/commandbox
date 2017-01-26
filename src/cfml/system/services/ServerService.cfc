@@ -744,7 +744,7 @@ component accessors="true" singleton {
 		
 		 args
 		 	.append( '-jar' ).append( variables.jarPath )
-		 	.append( '--background=background' )
+		 	.append( '--background=#background#' )
 		 	.append( '--port' ).append( serverInfo.port )
 		 	.append( '--host' ).append( serverInfo.host )
 		 	.append( '--debug' ).append( serverInfo.debug )
