@@ -564,7 +564,7 @@ component accessors="true" singleton {
 		var launchUtil 	= java.LaunchUtil;
 		
 	    // Default java agent for embedded Lucee engine
-	    var javaagent = serverinfo.cfengine contains 'lucee' ? '-javaagent:#libdir#/lucee-inst.jar' : '';
+	    var javaagent = serverinfo.cfengine contains 'lucee' ? '"-javaagent:#libdir#/lucee-inst.jar"' : '';
 	    
 	    // Regardless of a custom server home, this is still used for various temp files and logs
 	    serverinfo.customServerFolder = getCustomServerFolder( serverInfo );
@@ -605,15 +605,15 @@ component accessors="true" singleton {
 			if( serverInfo.cfengine contains "lucee" ) {
 				// Detect Lucee 4.x
 				if( installDetails.version.listFirst( '.' ) < 5 ) {
-					javaagent = "-javaagent:#serverInfo.serverHomeDirectory#/WEB-INF/lib/lucee-inst.jar";					
+					javaagent = '"-javaagent:#serverInfo.serverHomeDirectory#/WEB-INF/lib/lucee-inst.jar"';					
 				} else {
 					// Lucee 5+ doesn't need the Java agent
-					javaagent = "";
+					javaagent = '';
 				}
 			}
 			// If external Railo server, set the java agent
 			if( serverInfo.cfengine contains "railo" ) {
-				javaagent = "-javaagent:#serverInfo.serverHomeDirectory#/WEB-INF/lib/railo-inst.jar";
+				javaagent = '"-javaagent:#serverInfo.serverHomeDirectory#/WEB-INF/lib/railo-inst.jar"';
 			}
 	
 			// The process native name
@@ -740,7 +740,7 @@ component accessors="true" singleton {
 		argTokens
 			.append( '-Xmx#serverInfo.heapSize#m' )
 			.append( '-Xms#serverInfo.heapSize#m' );
-		if( len( trim( javaAgent ) ) ) { argTokens.append( javaagent ); }				
+		if( len( trim( javaAgent ) ) ) { argTokens.append( javaagent ); }
 		
 		 args
 		 	.append( '-jar' ).append( variables.jarPath )
@@ -841,8 +841,8 @@ component accessors="true" singleton {
 		setServerInfo( serverInfo );
 			
 	    if( serverInfo.debug ) {
-			var cleanedArgs = cr & '    ' & trim( replaceNoCase( args.toList( ' ' ), ' -', cr & '    -', 'all' ) );
-			consoleLogger.debug("Server start command: #javaCommand# #cleanedArgs#");
+			var cleanedArgs = cr & '    ' & trim( reReplaceNoCase( args.toList( ' ' ), ' -| "-', cr & '    -', 'all' ) );
+			consoleLogger.debug("Server start command: #javaCommand# #cleanedargs#");
 	    }
 	    
 	    // needs to be unique in each run to avoid errors
