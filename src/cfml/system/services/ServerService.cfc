@@ -780,7 +780,7 @@ component accessors="true" singleton {
 		if( background ) {
 			var argString = argTokens.toList( ';' ).replace( '"', '\"', 'all' );
 			if( len( argString ) ) {
-				args.append( '--jvm-args="#argString#"' );
+				args.append( '"--jvm-args=#argString#"' );
 			}
 		// If foreground, just stick them in.
 		} else {
@@ -841,7 +841,7 @@ component accessors="true" singleton {
 		setServerInfo( serverInfo );
 			
 	    if( serverInfo.debug ) {
-			var cleanedArgs = cr & '    ' & trim( reReplaceNoCase( args.toList( ' ' ), ' -| "-', cr & '    -', 'all' ) );
+			var cleanedArgs = cr & '    ' & trim( reReplaceNoCase( args.toList( ' ' ), ' (-|"-)', cr & '    \1', 'all' ) );
 			consoleLogger.debug("Server start command: #javaCommand# #cleanedargs#");
 	    }
 	    
