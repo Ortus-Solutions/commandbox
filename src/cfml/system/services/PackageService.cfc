@@ -902,7 +902,7 @@ component accessors="true" singleton {
 				// If a package is not installed (possibly a dev dependency in production mode), then we skip it
 				if( !value.isInstalled ) {
 					if( verbose ){
-						print.yellowLine( "#arguments.slug# is not installed, skipping.." )
+						print.yellowLine( "    * #arguments.slug# is not installed, skipping.." )
 							.toConsole();
 					}
 					return;					
@@ -945,8 +945,8 @@ component accessors="true" singleton {
 				}
 				// verbose output
 				if( verbose ){
-					print.yellowLine( "* #arguments.slug# (#value.packageVersion#) -> #endpointData.endpointName# version: (#updateData.version#)" )
-						.boldRedLine( updateData.isOutdated ? " ** #arguments.slug# is Outdated" : "" )
+					print.yellowLine( "    * #arguments.slug# (#value.packageVersion#) -> #endpointData.endpointName# version: (#updateData.version#)" )
+						.boldRedText( updateData.isOutdated ? "        * #arguments.slug# is Outdated#chr( 10 )#" : "" )
 						.toConsole();
 				}
 				
@@ -1006,24 +1006,33 @@ component accessors="true" singleton {
 			if( structKeyExists( arguments.installPaths, dependency ) ) {
 				
 				var fullPackageInstallPath = fileSystemUtil.resolvePath( arguments.installPaths[ dependency ], arguments.basePath );
-				var boxJSON = readPackageDescriptor( fullPackageInstallPath );
-				thisDeps[ dependency ][ 'name'  ] = boxJSON.name;
-				thisDeps[ dependency ][ 'shortDescription'  ] = boxJSON.shortDescription;
-				thisDeps[ dependency ][ 'packageVersion'  ] = boxJSON.version;
-				thisDeps[ dependency ][ 'isInstalled'  ] = true;
-				if( boxJSON.createPackageDirectory ) {
-					// Back up to the "container" folder.  The packge directory will be added back on installation
-					thisDeps[ dependency ][ 'directory'  ] = listDeleteAt( fullPackageInstallPath, listLen( fullPackageInstallPath, '/\' ), '/\' );
-				} else {
-					thisDeps[ dependency ][ 'directory'  ] = fullPackageInstallPath;					
-				}
 				
-				// Down the rabbit hole
-				buildChildren( boxJSON, thisDeps[ dependency ], fullPackageInstallPath );				
-			} else {
-				// If we don't have an install path for this package, we don't know about its dependencies
-				thisDeps[ dependency ][ 'dependencies' ] = {};
+				if( directoryExists( fullPackageInstallPath ) ) {
+					var boxJSON = readPackageDescriptor( fullPackageInstallPath );
+					thisDeps[ dependency ][ 'name'  ] = boxJSON.name;
+					thisDeps[ dependency ][ 'shortDescription'  ] = boxJSON.shortDescription;
+					thisDeps[ dependency ][ 'packageVersion'  ] = boxJSON.version;
+					thisDeps[ dependency ][ 'isInstalled'  ] = true;
+					
+					if( boxJSON.createPackageDirectory ) {
+						// Back up to the "container" folder.  The package directory will be added back on installation
+						thisDeps[ dependency ][ 'directory'  ] = listDeleteAt( fullPackageInstallPath, listLen( fullPackageInstallPath, '/\' ), '/\' );
+					} else {
+						thisDeps[ dependency ][ 'directory'  ] = fullPackageInstallPath;					
+					}
+				
+					// Down the rabbit hole
+					buildChildren( boxJSON, thisDeps[ dependency ], fullPackageInstallPath );		
+						
+				} else {
+					thisDeps[ dependency ][ 'isInstalled'  ] = false;					
+				}
+						
 			}
+		
+			// If we don't have an install path for this package, we don't know about its dependencies
+			thisDeps[ dependency ][ 'dependencies' ] = thisDeps[ dependency ][ 'dependencies' ] ?: {};
+		
 		}
 		
 		return thisDeps;
