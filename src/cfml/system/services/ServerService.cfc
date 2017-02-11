@@ -768,7 +768,7 @@ component accessors="true" singleton {
 	 		 args.append( '--cfengine-name' ).append( CFEngineName );
 	 	}
 	 	if( len( serverInfo.welcomeFiles ) ) {
-	 		 args.append( '--welcome-files' ).append( erverInfo.welcomeFiles );
+	 		 args.append( '--welcome-files' ).append( serverInfo.welcomeFiles );
 	 	}
 	 	if( len( CLIAliases ) ) {
 	 		 args.append( '--dirs' ).append( CLIAliases );
