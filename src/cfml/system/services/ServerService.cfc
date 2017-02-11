@@ -780,6 +780,7 @@ component accessors="true" singleton {
 		if( background ) {
 			var argString = argTokens.toList( ';' ).replace( '"', '\"', 'all' );
 			if( len( argString ) ) {
+				argString = '-D_foo=bar;#argString#;-D__foo=bar';
 				args.append( '"--jvm-args=#argString#"' );
 			}
 		// If foreground, just stick them in.
