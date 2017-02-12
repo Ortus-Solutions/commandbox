@@ -1205,7 +1205,17 @@ component accessors="true" singleton {
 													 java.InetAddress.getByName( arguments.host ) );
 			serverSocket.close();
 			return true;
-		} catch( any var e ) {
+		} catch( java.net.UnknownHostException var e ) {
+			// In this case, the host name doesn't exist, so we really don't know about the port, but we'll say it's available
+			// otherwise, old, stopped servers who's host entries no longer exist will show up as running.
+			return true;
+		} catch( java.net.BindException var e ) {
+			// Same as above-- the IP address/host isn't bound to any local adapters.  Probably a host file entry went missing.
+			if( e.message contains 'Cannot assign requested address' ) {
+				return true;
+			}
+			// We're assuming that any other error means the address was in use.
+			// Java doesn't provide a specific message or exception type for this unfortunately.
 			return false;
 		}
 	}
