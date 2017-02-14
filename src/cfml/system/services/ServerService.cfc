@@ -422,12 +422,20 @@ component accessors="true" singleton {
 		// If the last port we used is taken, remove it from consideration.
 		if( serverInfo.port == 0 || !isPortAvailable( serverInfo.host, serverInfo.port ) ) { serverInfo.delete( 'port' ); }
 		// Port is the only setting that automatically carries over without being specified since it's random.
-		serverInfo.port 			= serverProps.port 				?: serverJSON.web.http.port			?: serverInfo.port 							?: getRandomPort( serverInfo.host );
+		serverInfo.port 			= serverProps.port 				?: serverJSON.web.http.port			?: defaults.web.http.port	?: serverInfo.port	?: getRandomPort( serverInfo.host );
 		
 		// Double check that the port in the user params or server.json isn't in use
 		if( !isPortAvailable( serverInfo.host, serverInfo.port ) ) {
 			consoleLogger.error( "." );
-			consoleLogger.error( "You asked for port [#( serverProps.port ?: serverJSON.web.http.port ?: '?' )#] in your #( serverProps.keyExists( 'port' ) ? 'start params' : 'server.json' )# but it's already in use so I'm ignoring it and choosing a random one for you." );
+			var badPortlocation = 'config';
+			if( serverProps.keyExists( 'port' ) ) {
+				badPortlocation = 'start params';
+			} else if ( len( defaults.web.http.port ?: '' ) ) {
+				badPortlocation = 'server.json';
+			} else {
+				badPortlocation = 'config server defaults';				
+			}
+			consoleLogger.error( "You asked for port [#( serverProps.port ?: serverJSON.web.http.port ?: defaults.web.http.port ?: '?' )#] in your #badPortlocation# but it's already in use so I'm ignoring it and choosing a random one for you." );
 			consoleLogger.error( "." );
 			serverInfo.port = getRandomPort( serverInfo.host );
 		}
