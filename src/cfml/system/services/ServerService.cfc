@@ -1387,7 +1387,7 @@ component accessors="true" singleton {
 	}
 
 	/**
-	* Get server info for webroot, if not created, it will init a new server info entry
+	* Get server info for webroot
 	* @webroot.hint root directory for served content
  	**/
 	struct function getServerInfo( required webroot , required name){
@@ -1407,8 +1407,6 @@ component accessors="true" singleton {
 			serverInfo.name 	= listLast( arguments.webroot, "\/" );
 			// Store it in server struct
 			servers[ webrootHash ] = serverInfo;
-			// persist it
-			setServers( servers );
 		}
 
 		// Return the new record
