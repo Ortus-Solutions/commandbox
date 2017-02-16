@@ -345,7 +345,13 @@
 			for( var moduleName in modules ){
 				// Verify the exception and inclusion lists
 				if( canLoad( moduleName ) ){
-					activateModule( moduleName );
+					try {
+						activateModule( moduleName );
+					} catch( any var e ) {
+						systemOutput( 'Module [#moduleName#] failed to load!  Check the logs for more info.', true );
+						systemOutput( e.message & chr( 10 ) & (e.detail ?: '') , true );
+						instance.logger.error( 'Module [#moduleName#] failed to load!', e );
+					}
 				}
 			}
 		</cfscript>
