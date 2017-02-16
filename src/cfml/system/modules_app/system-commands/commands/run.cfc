@@ -47,30 +47,46 @@ component{
 	function run(
 		required command
 	){
-
+/*
 		var executeResult 	= "";
-		var executeError 	= "";
+		var executeError 	= "";*/
 		
 		// Prep the command to run in the OS-specific shell
 		if( fileSystemUtil.isWindows() ) {
 			// Pass through Windows' command shell, /a outputs ANSI formatting, /c runs as a command
-			arguments.command = [ 'cmd','/a','/c', arguments.command ];
+			var commandArray = [ 'cmd','/a','/c', arguments.command ];
 		} else {
-			// Pass through bash in interactive mode to expand aliases like "ll".
-			// -c runs input as a command, && exists cleanly from the shell as long as the original command ran successfully
+			// Pass through bash in interactive mode with -i to expand aliases like "ll".
+			// -c runs input as a command, "&& exits" cleanly from the shell as long as the original command ran successfully
 			var nativeShell = configService.getSetting( 'nativeShell', '/bin/bash' );
-			arguments.command = [ nativeShell,'-i','-c', arguments.command & ' && exit'];
+			commandArray = [ nativeShell,'-i','-c', arguments.command & ' && exit' ];
 		}
 		
 		try{
             // grab the current working directory
-            var pwd = fileSystemUtil.resolvePath( '' );
-            var CWD = createObject( 'java', 'java.io.File' ).init( pwd );
-
+            var CWDFile = createObject( 'java', 'java.io.File' ).init( fileSystemUtil.resolvePath( '' ) );
+            
+			var exitCode = createObject( "java", "java.lang.ProcessBuilder" )
+				.init( commandArray )
+				// Do you believe in magic?
+				.inheritIO()
+				.directory( CWDFile )
+				.start()
+				.waitFor();
+				
+			// This works great on Windows.
+			// On Linux, the standard input (keyboard) is not being piped to the background process.
+			// Also on Linux, the word "exit" appears in the output. The output stream needs to be intercepted to clean it up.
+			
+			if( exitCode != 0 ) {
+				error( 'Command returned failing exit code [#exitCode#]' );
+			}
+			
+/*
             // execute the server command
             var process = createObject( 'java', 'java.lang.Runtime' )
                 .getRuntime()
-                .exec( '#arguments.command#', javaCast( "null", "" ), CWD );
+                .exec( '#commandArray#', javaCast( "null", "" ), CWDFile );
             var commandResult = createObject( 'java', 'lucee.commons.cli.Command' )
                 .execute( process );
                 
@@ -95,7 +111,7 @@ component{
 					executeError = trim( executeError );					
 				}
 				print.redText( executeError );
-			}
+			}*/
 
 		} catch (any e) {
 			error( '#e.message##CR##e.detail#' );
