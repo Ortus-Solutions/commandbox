@@ -563,11 +563,11 @@ component accessors="true" singleton {
 			if( lines != 0 ){
 				for( var idx=1; idx <= lines; idx++) {
 					var tc = arguments.err.tagcontext[ idx ];
+					if( idx > 1 ) {
+						variables.reader.print( print.boldCyanText( "called from " ) );
+					}
+					variables.reader.print( variables.print.boldCyanText( "#tc.template#: line #tc.line##variables.cr#" ));
 					if( len( tc.codeprinthtml ) ){
-						if( idx > 1 ) {
-							variables.reader.print( print.boldCyanText( "called from " ) );
-						}
-						variables.reader.print( variables.print.boldCyanText( "#tc.template#: line #tc.line##variables.cr#" ));
 						variables.reader.print( variables.print.text( variables.formatterUtil.HTML2ANSI( tc.codeprinthtml ) ) );
 					}
 				}
