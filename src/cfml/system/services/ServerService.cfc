@@ -1489,6 +1489,7 @@ component accessors="true" singleton {
 		var newJSON = formatterUtil.formatJSON( serializeJSON( arguments.data ) );
 		// Try to prevent bunping the date modified for no reason
 		if( oldJSON != newJSON ) {
+	    	directoryCreate( getDirectoryFromPath( arguments.configFilePath ), true, true );
 			fileWrite( arguments.configFilePath, newJSON );			
 		}
 	}
