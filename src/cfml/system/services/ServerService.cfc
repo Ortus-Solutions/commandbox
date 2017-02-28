@@ -576,7 +576,7 @@ component accessors="true" singleton {
 		var launchUtil 	= java.LaunchUtil;
 		
 	    // Default java agent for embedded Lucee engine
-	    var javaagent = serverinfo.cfengine contains 'lucee' ? '"-javaagent:#libdir#/lucee-inst.jar"' : '';
+	    var javaagent = serverinfo.cfengine contains 'lucee' ? '-javaagent:#libdir#/lucee-inst.jar' : '';
 	    
 	    // Regardless of a custom server home, this is still used for various temp files and logs
 	    serverinfo.customServerFolder = getCustomServerFolder( serverInfo );
@@ -617,7 +617,7 @@ component accessors="true" singleton {
 			if( serverInfo.cfengine contains "lucee" ) {
 				// Detect Lucee 4.x
 				if( installDetails.version.listFirst( '.' ) < 5 ) {
-					javaagent = '"-javaagent:#serverInfo.serverHomeDirectory#/WEB-INF/lib/lucee-inst.jar"';					
+					javaagent = '-javaagent:#serverInfo.serverHomeDirectory#/WEB-INF/lib/lucee-inst.jar';					
 				} else {
 					// Lucee 5+ doesn't need the Java agent
 					javaagent = '';
@@ -625,7 +625,7 @@ component accessors="true" singleton {
 			}
 			// If external Railo server, set the java agent
 			if( serverInfo.cfengine contains "railo" ) {
-				javaagent = '"-javaagent:#serverInfo.serverHomeDirectory#/WEB-INF/lib/railo-inst.jar"';
+				javaagent = '-javaagent:#serverInfo.serverHomeDirectory#/WEB-INF/lib/railo-inst.jar';
 			}
 	
 			// The process native name
@@ -746,7 +746,7 @@ component accessors="true" singleton {
 		var argTokens = parser.tokenizeInput( serverInfo.JVMargs )
 			.map( function( i ){
 				// Clean up a couple escapes the parser does that we don't need
-				return i.replace( '\=', '=', 'all' ).replace( '\\', '\', 'all' );
+				return parser.unwrapQuotes( i.replace( '\=', '=', 'all' ).replace( '\\', '\', 'all' ) )	;
 			});
 		// Add in heap size and java agent
 		argTokens
@@ -786,14 +786,13 @@ component accessors="true" singleton {
 	 		 args.append( '--dirs' ).append( CLIAliases );
 	 	}
 		  
-		
+			
 		// If background, wrap up JVM args to pass through to background servers
 		// "real" JVM args must come before Runwar args, so creating two variables, once of which will always be empty.
 		if( background ) {
-			var argString = argTokens.toList( ';' ).replace( '"', '\"', 'all' );
+			var argString = argTokens.toList( ';' ); //.replace( '"', '\"', 'all' );
 			if( len( argString ) ) {
-				argString = '-D_foo=bar;#argString#;-D__foo=bar';
-				args.append( '"--jvm-args=#argString#"' );
+				args.append( '--jvm-args=#trim( argString )#' );
 			}
 		// If foreground, just stick them in.
 		} else {
