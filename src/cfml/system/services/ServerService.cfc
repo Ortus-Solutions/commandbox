@@ -639,7 +639,7 @@ component accessors="true" singleton {
 				serverInfo.serverHomeDirectory = reReplaceNoCase( serverInfo.WARPath, '(.*)(\.zip|\.war)', '\1' );
 				
 				// Expand the war if it doesn't exist or we're forcing
-				if( !directoryExists( serverInfo.serverHomeDirectory ) || serverProps.force ?: false  ) {
+				if( !directoryExists( serverInfo.serverHomeDirectory ) || ( serverProps.force ?: false ) ) {
 					consoleLogger.info( "Exploding WAR archive...");
 					directoryCreate( serverInfo.serverHomeDirectory, true, true );
 					zip action="unzip" file="#serverInfo.WARPath#" destination="#serverInfo.serverHomeDirectory#" overwrite="true";
