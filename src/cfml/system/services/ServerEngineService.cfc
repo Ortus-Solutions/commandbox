@@ -236,7 +236,7 @@ component accessors="true" singleton="true" {
 			if( previousEngineTag != thisEngineTag ) {
 				consoleLogger.warn( "You've asked for the engine [#thisEngineTag#] to be started," );
 				consoleLogger.warn( "but this server home already has [#previousEngineTag#] deployed to it!" );
-				consoleLogger.warn( "In orer to get the new version, you need to run 'server forget' on this server and start it again." );
+				consoleLogger.warn( "In order to get the new version, you need to run 'server forget' on this server and start it again." );
 			}
 			
 			consoleLogger.info( "WAR/zip archive already installed.");
