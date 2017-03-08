@@ -289,6 +289,10 @@ component accessors="true" singleton {
 
 			interceptorService.announceInterception( 'preCommand', { commandInfo=commandInfo, parameterInfo=parameterInfo } );
 
+			// Successful command execution resets exit code to 0.  Set this prior to running the command since the command
+			// may explicitly set the exit code to 1 but not call the error() method.
+			shell.setExitCode( 0 );
+			
 			// Run the command
 			try {
 				var result = commandInfo.commandReference.CFC.run( argumentCollection = parameterInfo.namedParameters );
@@ -321,9 +325,6 @@ component accessors="true" singleton {
 				}
 			}
 
-			// Successful command execution resets exit code to 0
-			shell.setExitCode( 0 );
-
 			// Remove it from the stack
 			instance.callStack.deleteAt( 1 );
 
@@ -340,7 +341,6 @@ component accessors="true" singleton {
 			result = interceptData.result;
 
 		} // End loop over command chain
-
 		return result;
 
 	}
