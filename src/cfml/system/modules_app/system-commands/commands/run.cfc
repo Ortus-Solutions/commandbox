@@ -1,7 +1,6 @@
 /**
  * Execute an operating system level command in the native shell.  The binary must be in the PATH, or you can specify the full 
- * path to it.  This command will wait for the OS exectuable to complete.   This cannot be used for any commands that require 
- * interactivity or don't exit automatically or the call will hang indefinitely.  
+ * path to it.  This command will wait for the OS exectuable to complete but will flush the output as it is received.
  * .
  * {code:bash}
  * run myApp.exe
@@ -47,9 +46,6 @@ component{
 	function run(
 		required command
 	){
-/*
-		var executeResult 	= "";
-		var executeError 	= "";*/
 		
 		// Prep the command to run in the OS-specific shell
 		if( fileSystemUtil.isWindows() ) {
@@ -101,7 +97,9 @@ component{
 						
 						// Only output if we arent matching any of the forbidden patterns above.
 						if( !exit.startsWith( trim( token ) )
-							&& !jobControl.startsWith( trim( token ) ) ) {
+							&& !jobControl.startsWith( trim( token ) )
+							&& !char == 13
+							&& !char == 10 ) {
 							// Build up our output
 							print
 								.text( token )
@@ -117,7 +115,7 @@ component{
 					if( !trim( token ).startsWith( exit )
 						&& !trim( token ).startsWith( jobControl )  ) {
 						print
-							.text( token )
+							.text( trim( token ) )
 							.toConsole();
 					}
 					
@@ -136,8 +134,6 @@ component{
 			
 			thread action="join" name="#threadName#";
 			
-			print.line();
-					
 			if( exitCode != 0 ) {
 				error( 'Command returned failing exit code [#exitCode#]' );
 			}			

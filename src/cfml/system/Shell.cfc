@@ -529,6 +529,8 @@ component accessors="true" singleton {
 			if( ! ( lastChar == chr( 10 ) || lastChar == chr( 13 ) ) ) {
 				variables.reader.println();
 			}
+		} else {
+			variables.reader.println();
 		}
 
 		return '';
