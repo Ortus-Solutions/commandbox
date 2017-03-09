@@ -55,7 +55,7 @@ component{
 			// Pass through bash in interactive mode with -i to expand aliases like "ll".
 			// -c runs input as a command, "&& exits" cleanly from the shell as long as the original command ran successfully
 			var nativeShell = configService.getSetting( 'nativeShell', '/bin/bash' );
-			commandArray = [ nativeShell,'-i','-c', arguments.command & ' && exit' ];
+			commandArray = [ nativeShell,'-i','-c', arguments.command & ' && ( exit > /dev/null )' ];
 		}
 		
 		try{
@@ -87,7 +87,7 @@ component{
 		    		var bufferedReader = createObject( 'java', 'java.io.BufferedReader' ).init( inputStreamReader );
 					
 					// These two patterns need to be stripped off the output.
-					var exit = 'exit';
+					var exit = 'foo';
 					var jobControl = 'bash: no job control in this shell';
 					
 					var char = bufferedReader.read();
