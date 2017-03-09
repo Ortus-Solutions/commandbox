@@ -55,22 +55,22 @@ component{
 			// Pass through bash in interactive mode with -i to expand aliases like "ll".
 			// -c runs input as a command, "&& exits" cleanly from the shell as long as the original command ran successfully
 			var nativeShell = configService.getSetting( 'nativeShell', '/bin/bash' );
-			commandArray = [ nativeShell,'-i','-c', arguments.command & ' && ( exit > /dev/null )' ];
+			commandArray = [ nativeShell, '-i', '-c', arguments.command & ' && ( exit $? > /dev/null )' ];
 		}
 		
 		try{
             // grab the current working directory
             var CWDFile = createObject( 'java', 'java.io.File' ).init( fileSystemUtil.resolvePath( '' ) );
-            
-            var redirect = createObject( "java", "java.lang.ProcessBuilder$Redirect" );
-			process = createObject( "java", "java.lang.ProcessBuilder" )
+			var exitCode = createObject( "java", "java.lang.ProcessBuilder" )
 				.init( commandArray )
 				// Assume CommandBox's standard input for this process
-				.redirectInput( redirect.INHERIT )
+				//.redirectInput( redirect.INHERIT )
 				// Combine standard error and standard out
-				.redirectErrorStream( true )				
+				//.redirectErrorStream( true )			
+				.inheritIO()	
 				.directory( CWDFile )
-				.start();
+				.start()
+				.waitFor();
 				
 			// This works great on Windows.
 			// On Linux, the standard input (keyboard) is not being piped to the background process.
@@ -78,7 +78,8 @@ component{
 		    // needs to be unique in each run to avoid errors
 			var threadName = '#createUUID()#';
 				
-			// Spin up a thread to capture the standard out and error from the server
+			/**
+			 * // Spin up a thread to capture the standard out and error from the server
 			thread name="#threadName#" {
 				try{
 					
@@ -129,16 +130,15 @@ component{
 					}
 				}
 			}
-			
 			var exitCode = process.waitFor();
-			
-			thread action="join" name="#threadName#";
+			//thread action="join" name="#threadName#";
+			 */
 			
 			if( exitCode != 0 ) {
 				error( 'Command returned failing exit code [#exitCode#]' );
 			}			
 
-		} catch (any e) {
+		} catch( any e ){
 			error( '#e.message##CR##e.detail#' );
 		}
 
