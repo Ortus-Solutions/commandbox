@@ -62,11 +62,11 @@ component{
             // grab the current working directory
             var CWDFile = createObject( 'java', 'java.io.File' ).init( fileSystemUtil.resolvePath( '' ) );
             
-            var Redirect = createObject( "java", "java.lang.ProcessBuilder$Redirect" );
+            var redirect = createObject( "java", "java.lang.ProcessBuilder$Redirect" );
 			process = createObject( "java", "java.lang.ProcessBuilder" )
 				.init( commandArray )
 				// Assume CommandBox's standard input for this process
-				.redirectInput(Redirect.INHERIT)
+				.redirectInput( redirect.INHERIT )
 				// Combine standard error and standard out
 				.redirectErrorStream( true )				
 				.directory( CWDFile )
