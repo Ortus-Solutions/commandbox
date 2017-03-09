@@ -66,52 +66,81 @@ component{
             // grab the current working directory
             var CWDFile = createObject( 'java', 'java.io.File' ).init( fileSystemUtil.resolvePath( '' ) );
             
-			var exitCode = createObject( "java", "java.lang.ProcessBuilder" )
+            var Redirect = createObject( "java", "java.lang.ProcessBuilder$Redirect" );
+			process = createObject( "java", "java.lang.ProcessBuilder" )
 				.init( commandArray )
-				// Do you believe in magic?
-				.inheritIO()
+				// Assume CommandBox's standard input for this process
+				.redirectInput(Redirect.INHERIT)
+				// Combine standard error and standard out
+				.redirectErrorStream( true )				
 				.directory( CWDFile )
-				.start()
-				.waitFor();
+				.start();
 				
 			// This works great on Windows.
 			// On Linux, the standard input (keyboard) is not being piped to the background process.
-			// Also on Linux, the word "exit" appears in the output. The output stream needs to be intercepted to clean it up.
 			
+		    // needs to be unique in each run to avoid errors
+			var threadName = '#createUUID()#';
+				
+			// Spin up a thread to capture the standard out and error from the server
+			thread name="#threadName#" {
+				try{
+					
+		    		var inputStream = process.getInputStream();
+		    		var inputStreamReader = createObject( 'java', 'java.io.InputStreamReader' ).init( inputStream );
+		    		var bufferedReader = createObject( 'java', 'java.io.BufferedReader' ).init( inputStreamReader );
+					
+					// These two patterns need to be stripped off the output.
+					var exit = 'exit';
+					var jobControl = 'bash: no job control in this shell';
+					
+					var char = bufferedReader.read();
+					var token = '';
+					while( char != -1 ){
+						token &= chr( char );
+						
+						// Only output if we arent matching any of the forbidden patterns above.
+						if( !exit.startsWith( trim( token ) )
+							&& !jobControl.startsWith( trim( token ) ) ) {
+							// Build up our output
+							print
+								.text( token )
+								.toConsole();
+							
+							token = '';
+						}
+						
+						char = bufferedReader.read();
+					} // End of inputStream
+				
+					// Output any trailing text as long as it isn't a match
+					if( !trim( token ).startsWith( exit )
+						&& !trim( token ).startsWith( jobControl )  ) {
+						print
+							.text( token )
+							.toConsole();
+					}
+					
+				} catch( any e ) {
+					logger.error( e.message & ' ' & e.detail, e.stacktrace );
+					print.line( e.message & ' ' & e.detail, e.stacktrace );
+				} finally {
+					// Make sure we always close the file or the process will never quit!
+					if( isDefined( 'bufferedReader' ) ) {
+						bufferedReader.close();
+					}
+				}
+			}
+			
+			var exitCode = process.waitFor();
+			
+			thread action="join" name="#threadName#";
+			
+			print.line();
+					
 			if( exitCode != 0 ) {
 				error( 'Command returned failing exit code [#exitCode#]' );
-			}
-			
-/*
-            // execute the server command
-            var process = createObject( 'java', 'java.lang.Runtime' )
-                .getRuntime()
-                .exec( '#commandArray#', javaCast( "null", "" ), CWDFile );
-            var commandResult = createObject( 'java', 'lucee.commons.cli.Command' )
-                .execute( process );
-                
-            // I don't like the idea of potentially removing significant whitespace, but commands like pwd
-            // come with an extra line break that is a pain if you want to pipe into another command
-            var executeResult = trim( commandResult.getOutput() );
-            var executeError = trim( commandResult.getError() );
-
-			// Output Results
-			if( !isNull( executeResult ) && len( executeResult ) ) {
-				print.Text( executeResult );
-			}
-			// Output error
-			if( !isNull( executeError ) &&  len( executeError ) ) {				
-				// Clean up standard error from Unix interactive shell workaround
-				if( !fileSystemUtil.isWindows() && right( executeError, 4 ) == 'exit' ) {
-				        executeError = mid( executeError, 1, len( executeError )-4 );
-				}
-				// Clean up annoying warnings abour job control in some shells.
-				if( !fileSystemUtil.isWindows() && findNoCase( 'bash: no job control in this shell', executeError ) ) {
-					executeError = replaceNoCase( executeError, 'bash: no job control in this shell', '' );
-					executeError = trim( executeError );					
-				}
-				print.redText( executeError );
-			}*/
+			}			
 
 		} catch (any e) {
 			error( '#e.message##CR##e.detail#' );
