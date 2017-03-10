@@ -211,6 +211,19 @@ component accessors="true" singleton {
 			// If the user gave us a directory, use it above all else
 			if( structKeyExists( arguments, 'directory' ) ) {
 				installDirectory = arguments.directory;
+				
+				// If this is an initial install (not a dependency) into a folder somehwere inside the CommandBox home,
+				// make sure we save correctly to CommandBox's user module box.json.
+				var commandBoxCFMLHome = expandPath( '/commandbox' ).replace( '\', '/', 'all' );
+				installDirectory = installDirectory.replace( '\', '/', 'all' );
+				
+				// If we're already in the CommandBox (a submodule of a commandbox module, most likely)
+				if( installDirectory contains commandBoxCFMLHome ) {
+					// Override the install directories to the CommandBox CFML root
+					arguments.currentWorkingDirectory = installDirectory.listDeleteAt( installDirectory.listLen( '/\' ), '/\' );
+					arguments.packagePathRequestingInstallation = arguments.currentWorkingDirectory;							
+				}
+				
 			}
 			
 			// Next, see if the containing project has an install path configured for this dependency already.
@@ -287,10 +300,20 @@ component accessors="true" singleton {
 					installDirectory = arguments.packagePathRequestingInstallation & '/modules/contentbox/modules_user';	
 				// CommandBox Modules
 				} else if( packageType == 'commandbox-modules' ) {
-					// Override the install directories to the CommandBox CFML root
-					arguments.currentWorkingDirectory = expandPath( '/commandbox' );
-					arguments.packagePathRequestingInstallation = expandPath( '/commandbox' )
-					installDirectory = expandPath( '/commandbox/modules' );
+					var commandBoxCFMLHome = expandPath( '/commandbox' ).replace( '\', '/', 'all' );
+					arguments.packagePathRequestingInstallation = arguments.packagePathRequestingInstallation.replace( '\', '/', 'all' );
+					
+					// If we're already in the CommandBox (a submodule of a commandbox module, most likely)
+					if( arguments.packagePathRequestingInstallation contains commandBoxCFMLHome ) {
+						// Then just nest as normal.
+						installDirectory = arguments.packagePathRequestingInstallation & '/modules';						
+					} else {
+						// Override the install directories to the CommandBox CFML root
+						arguments.currentWorkingDirectory = commandBoxCFMLHome;
+						arguments.packagePathRequestingInstallation = commandBoxCFMLHome;
+						installDirectory = expandPath( '/commandbox/modules' );						
+					}
+										
 					// Flag the shell to reload after this command is finished.
 					consoleLogger.warn( "Shell will be reloaded after installation." );
 					shell.reload( false );
@@ -476,11 +499,6 @@ component accessors="true" singleton {
 				currentWorkingDirectory = arguments.currentWorkingDirectory, // Original dir
 				packagePathRequestingInstallation = installDirectory // directory for smart dependencies to use
 			};
-						
-			// If the user didn't specify this, don't pass it since it overrides the package's desired install location
-			if( structKeyExists( arguments, 'directory' ) ) {
-				params.directory = arguments.directory;
-			}
 			
 			// Recursivley install them
 			installPackage( argumentCollection = params );	
@@ -902,7 +920,7 @@ component accessors="true" singleton {
 				// If a package is not installed (possibly a dev dependency in production mode), then we skip it
 				if( !value.isInstalled ) {
 					if( verbose ){
-						print.yellowLine( "#arguments.slug# is not installed, skipping.." )
+						print.yellowLine( "    * #arguments.slug# is not installed, skipping.." )
 							.toConsole();
 					}
 					return;					
@@ -945,8 +963,8 @@ component accessors="true" singleton {
 				}
 				// verbose output
 				if( verbose ){
-					print.yellowLine( "* #arguments.slug# (#value.packageVersion#) -> #endpointData.endpointName# version: (#updateData.version#)" )
-						.boldRedLine( updateData.isOutdated ? " ** #arguments.slug# is Outdated" : "" )
+					print.yellowLine( "    * #arguments.slug# (#value.packageVersion#) -> #endpointData.endpointName# version: (#updateData.version#)" )
+						.boldRedText( updateData.isOutdated ? "        * #arguments.slug# is Outdated#chr( 10 )#" : "" )
 						.toConsole();
 				}
 				
@@ -1006,24 +1024,33 @@ component accessors="true" singleton {
 			if( structKeyExists( arguments.installPaths, dependency ) ) {
 				
 				var fullPackageInstallPath = fileSystemUtil.resolvePath( arguments.installPaths[ dependency ], arguments.basePath );
-				var boxJSON = readPackageDescriptor( fullPackageInstallPath );
-				thisDeps[ dependency ][ 'name'  ] = boxJSON.name;
-				thisDeps[ dependency ][ 'shortDescription'  ] = boxJSON.shortDescription;
-				thisDeps[ dependency ][ 'packageVersion'  ] = boxJSON.version;
-				thisDeps[ dependency ][ 'isInstalled'  ] = true;
-				if( boxJSON.createPackageDirectory ) {
-					// Back up to the "container" folder.  The packge directory will be added back on installation
-					thisDeps[ dependency ][ 'directory'  ] = listDeleteAt( fullPackageInstallPath, listLen( fullPackageInstallPath, '/\' ), '/\' );
-				} else {
-					thisDeps[ dependency ][ 'directory'  ] = fullPackageInstallPath;					
-				}
 				
-				// Down the rabbit hole
-				buildChildren( boxJSON, thisDeps[ dependency ], fullPackageInstallPath );				
-			} else {
-				// If we don't have an install path for this package, we don't know about its dependencies
-				thisDeps[ dependency ][ 'dependencies' ] = {};
+				if( directoryExists( fullPackageInstallPath ) ) {
+					var boxJSON = readPackageDescriptor( fullPackageInstallPath );
+					thisDeps[ dependency ][ 'name'  ] = boxJSON.name;
+					thisDeps[ dependency ][ 'shortDescription'  ] = boxJSON.shortDescription;
+					thisDeps[ dependency ][ 'packageVersion'  ] = boxJSON.version;
+					thisDeps[ dependency ][ 'isInstalled'  ] = true;
+					
+					if( boxJSON.createPackageDirectory ) {
+						// Back up to the "container" folder.  The package directory will be added back on installation
+						thisDeps[ dependency ][ 'directory'  ] = listDeleteAt( fullPackageInstallPath, listLen( fullPackageInstallPath, '/\' ), '/\' );
+					} else {
+						thisDeps[ dependency ][ 'directory'  ] = fullPackageInstallPath;					
+					}
+				
+					// Down the rabbit hole
+					buildChildren( boxJSON, thisDeps[ dependency ], fullPackageInstallPath );		
+						
+				} else {
+					thisDeps[ dependency ][ 'isInstalled'  ] = false;					
+				}
+						
 			}
+		
+			// If we don't have an install path for this package, we don't know about its dependencies
+			thisDeps[ dependency ][ 'dependencies' ] = thisDeps[ dependency ][ 'dependencies' ] ?: {};
+		
 		}
 		
 		return thisDeps;

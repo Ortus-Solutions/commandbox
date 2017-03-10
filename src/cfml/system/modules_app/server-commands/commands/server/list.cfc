@@ -91,7 +91,7 @@ component {
 
 					print.indentedLine( "host:             " & thisServerInfo.host );					
 					if( len( thisServerInfo.engineName ) ) {
-						print.indentedLine( "CF Engine:        " & thisServerInfo.engineName & ' ' & serverInfo.engineVersion );
+						print.indentedLine( "CF Engine:        " & thisServerInfo.engineName & ' ' & thisServerInfo.engineVersion );
 					}
 					if( len( thisServerInfo.WARPath ) ) {
 						print.indentedLine( "WARPath:          " & thisServerInfo.WARPath );

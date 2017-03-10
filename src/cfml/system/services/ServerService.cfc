@@ -422,12 +422,24 @@ component accessors="true" singleton {
 		// If the last port we used is taken, remove it from consideration.
 		if( serverInfo.port == 0 || !isPortAvailable( serverInfo.host, serverInfo.port ) ) { serverInfo.delete( 'port' ); }
 		// Port is the only setting that automatically carries over without being specified since it's random.
-		serverInfo.port 			= serverProps.port 				?: serverJSON.web.http.port			?: serverInfo.port 							?: getRandomPort( serverInfo.host );
+		serverInfo.port 			= serverProps.port 				?: serverJSON.web.http.port			?: serverInfo.port	?: defaults.web.http.port;
+		// Server default is 0 not null.
+		if( serverInfo.port == 0 ) {
+			serverInfo.port = getRandomPort( serverInfo.host );
+		}
 		
 		// Double check that the port in the user params or server.json isn't in use
 		if( !isPortAvailable( serverInfo.host, serverInfo.port ) ) {
 			consoleLogger.error( "." );
-			consoleLogger.error( "You asked for port [#( serverProps.port ?: serverJSON.web.http.port ?: '?' )#] in your #( serverProps.keyExists( 'port' ) ? 'start params' : 'server.json' )# but it's already in use so I'm ignoring it and choosing a random one for you." );
+			var badPortlocation = 'config';
+			if( serverProps.keyExists( 'port' ) ) {
+				badPortlocation = 'start params';
+			} else if ( len( defaults.web.http.port ?: '' ) ) {
+				badPortlocation = 'server.json';
+			} else {
+				badPortlocation = 'config server defaults';				
+			}
+			consoleLogger.error( "You asked for port [#( serverProps.port ?: serverJSON.web.http.port ?: defaults.web.http.port ?: '?' )#] in your #badPortlocation# but it's already in use so I'm ignoring it and choosing a random one for you." );
 			consoleLogger.error( "." );
 			serverInfo.port = getRandomPort( serverInfo.host );
 		}
@@ -567,7 +579,8 @@ component accessors="true" singleton {
 	    var javaagent = serverinfo.cfengine contains 'lucee' ? '-javaagent:#libdir#/lucee-inst.jar' : '';
 	    
 	    // Regardless of a custom server home, this is still used for various temp files and logs
-	    directoryCreate( getCustomServerFolder( serverInfo ), true, true );
+	    serverinfo.customServerFolder = getCustomServerFolder( serverInfo );
+	    directoryCreate( serverinfo.customServerFolder, true, true );
 	    
 	    // Not sure what Runwar does with this, but it wants to know what CFEngine we're starting (if we know)
 	    var CFEngineName = '';
@@ -582,7 +595,7 @@ component accessors="true" singleton {
 		if( serverInfo.WARPath == '' ){
 		
 			// This will install the engine war to start, possibly downloading it first
-			var installDetails = serverEngineService.install( cfengine=serverInfo.cfengine, basedirectory=getCustomServerFolder( serverInfo ), serverInfo=serverInfo, serverHomeDirectory=serverInfo.serverHomeDirectory );
+			var installDetails = serverEngineService.install( cfengine=serverInfo.cfengine, basedirectory=serverinfo.customServerFolder, serverInfo=serverInfo, serverHomeDirectory=serverInfo.serverHomeDirectory );
 			serverInfo.serverHomeDirectory = installDetails.installDir;
 			// TODO: As of 3.5 this is for backwards compat.  Remove in later version
 			serverInfo.serverHome = installDetails.installDir;
@@ -604,15 +617,15 @@ component accessors="true" singleton {
 			if( serverInfo.cfengine contains "lucee" ) {
 				// Detect Lucee 4.x
 				if( installDetails.version.listFirst( '.' ) < 5 ) {
-					javaagent = "-javaagent:#serverInfo.serverHomeDirectory#/WEB-INF/lib/lucee-inst.jar";					
+					javaagent = '-javaagent:#serverInfo.serverHomeDirectory#/WEB-INF/lib/lucee-inst.jar';					
 				} else {
 					// Lucee 5+ doesn't need the Java agent
-					javaagent = "";
+					javaagent = '';
 				}
 			}
 			// If external Railo server, set the java agent
 			if( serverInfo.cfengine contains "railo" ) {
-				javaagent = "-javaagent:#serverInfo.serverHomeDirectory#/WEB-INF/lib/railo-inst.jar";
+				javaagent = '-javaagent:#serverInfo.serverHomeDirectory#/WEB-INF/lib/railo-inst.jar';
 			}
 	
 			// The process native name
@@ -626,7 +639,7 @@ component accessors="true" singleton {
 				serverInfo.serverHomeDirectory = reReplaceNoCase( serverInfo.WARPath, '(.*)(\.zip|\.war)', '\1' );
 				
 				// Expand the war if it doesn't exist or we're forcing
-				if( !directoryExists( serverInfo.serverHomeDirectory ) || serverProps.force ?: false  ) {
+				if( !directoryExists( serverInfo.serverHomeDirectory ) || ( serverProps.force ?: false ) ) {
 					consoleLogger.info( "Exploding WAR archive...");
 					directoryCreate( serverInfo.serverHomeDirectory, true, true );
 					zip action="unzip" file="#serverInfo.WARPath#" destination="#serverInfo.serverHomeDirectory#" overwrite="true";
@@ -638,7 +651,7 @@ component accessors="true" singleton {
 				serverInfo.serverHomeDirectory = serverInfo.WARPath;
 			}
 			// Create a custom server folder to house the logs
-			serverInfo.logdir = getCustomServerFolder( serverInfo ) & "/logs";
+			serverInfo.logdir = serverinfo.customServerFolder & "/logs";
 			serverInfo.consolelogPath	= serverInfo.logdir & '/server.out.txt';
 		}
 					
@@ -714,14 +727,9 @@ component accessors="true" singleton {
 			tmp &= thisPath.startsWith( '/' ) ? thisPath : '/' & thisPath;
 			errorPages = errorPages.listAppend( tmp );
 		}
-		// Bug in runwar requires me to completley omit this param unless it's populated
-		// https://github.com/cfmlprojects/runwar/issues/33
-		if( len( errorPages ) ) {
-			errorPages = '--error-pages="#errorPages#"';
-		}
 		
 		// Serialize tray options and write to temp file
-		var trayOptionsPath = getCustomServerFolder( serverInfo ) & '/trayOptions.json';
+		var trayOptionsPath = serverinfo.customServerFolder & '/trayOptions.json';
 		var trayJSON = {
 			'title' : processName,
 			'tooltip' : processName,
@@ -731,74 +739,105 @@ component accessors="true" singleton {
 		var background = !(serverProps.console ?: false);
 		// The java arguments to execute:  Shared server, custom web configs
 		
+		// This is an array of tokens to send to the process builder
+		var args = [];
+		
+		// "borrow" the CommandBox commandline parser to tokenize the JVM args. Not perfect, but close. Handles quoted values with spaces.
+		var argTokens = parser.tokenizeInput( serverInfo.JVMargs )
+			.map( function( i ){
+				// Clean up a couple escapes the parser does that we don't need
+				return parser.unwrapQuotes( i.replace( '\=', '=', 'all' ).replace( '\\', '\', 'all' ) )	;
+			});
+		// Add in heap size and java agent
+		argTokens
+			.append( '-Xmx#serverInfo.heapSize#m' )
+			.append( '-Xms#serverInfo.heapSize#m' );
+		if( len( trim( javaAgent ) ) ) { argTokens.append( javaagent ); }
+		
+		 args
+		 	.append( '-jar' ).append( variables.jarPath )
+		 	.append( '--background=#background#' )
+		 	.append( '--port' ).append( serverInfo.port )
+		 	.append( '--host' ).append( serverInfo.host )
+		 	.append( '--debug' ).append( serverInfo.debug )
+		 	.append( '--stop-port' ).append( serverInfo.stopsocket )
+		 	.append( '--processname' ).append( processName )
+		 	.append( '--log-dir' ).append( serverInfo.logDir )
+		 	.append( '--open-browser' ).append( serverInfo.openbrowser )
+		 	.append( '--open-url' ).append( ( serverInfo.SSLEnable ? 'https://#serverInfo.host#:#serverInfo.SSLPort#' : 'http://#serverInfo.host#:#serverInfo.port#' ) )
+		 	.append( '--server-name' ).append( serverInfo.name )
+		 	.append( '--tray-icon' ).append( serverInfo.trayIcon )
+		 	.append( '--tray-config' ).append( trayOptionsPath )
+		 	.append( '--servlet-rest-mappings' ).append( '/rest/*,/api/*' )
+		 	.append( '--directoryindex' ).append( serverInfo.directoryBrowsing )
+		 	.append( '--timeout' ).append( serverInfo.startTimeout )
+		 	.append( serverInfo.runwarArgs.listToArray( ' ' ), true );
+		 
+		if( len( errorPages ) ) {
+			args.append( '--error-pages' ).append( errorPages );
+		}
+	 	if( len( CFEngineName ) ) {
+	 		 args.append( '--cfengine-name' ).append( CFEngineName );
+	 	}
+	 	if( len( serverInfo.welcomeFiles ) ) {
+	 		 args.append( '--welcome-files' ).append( serverInfo.welcomeFiles );
+	 	}
+	 	if( len( CLIAliases ) ) {
+	 		 args.append( '--dirs' ).append( CLIAliases );
+	 	}
+		  
+			
 		// If background, wrap up JVM args to pass through to background servers
 		// "real" JVM args must come before Runwar args, so creating two variables, once of which will always be empty.
 		if( background ) {
-			var thisJVMArgs = '';
-			// "borrow" the CommandBox commandline parser to tokenize the JVM args. Not perfect, but close. Handles quoted values with spaces.
-			var argTokens = parser.tokenizeInput( serverInfo.JVMargs )
-				.map( function( i ){
-					// Clean up a couple escapes the parser does that we don't need
-					return i.replace( '\=', '=', 'all' ).replace( '\\', '\', 'all' );
-				});
-			// Add in heap size and java agent
-			argTokens
-				.append( '-Xmx#serverInfo.heapSize#m' )
-				.append( '-Xms#serverInfo.heapSize#m' );
-			if( len( trim( javaAgent ) ) ) { argTokens.append( '#javaagent#' ); }				
-				
-			argString = argTokens.toList( ';' ).replace( '"', '\"', 'all' );
-				
-			var thispassthroughJVMArgs = '--jvm-args="#argString#"';
+			var argString = argTokens.toList( ';' ); //.replace( '"', '\"', 'all' );
+			if( len( argString ) ) {
+				args.append( '--jvm-args=#trim( argString )#' );
+			}
 		// If foreground, just stick them in.
 		} else {
-			var thisJVMArgs = ' -Xmx#serverInfo.heapSize#m -Xms#serverInfo.heapSize#m #javaagent# #serverInfo.JVMargs# ';
-			var thispassthroughJVMArgs = '';
+			argTokens.each( function(i) { args.prepend( i ); } );
 		}
 		
-		var args = ' #thisJVMArgs# -jar #variables.jarPath#'
-				// debug and background need to parse as a single token. Leave the =
-				& ' --background=#background# --port #serverInfo.port# --host #serverInfo.host# --debug=#serverInfo.debug#'
-				& ' --stop-port #serverInfo.stopsocket# --processname "#processName#" --log-dir "#serverInfo.logDir#"'
-				& ' --open-browser #serverInfo.openbrowser#'
-				& ' --open-url ' & ( serverInfo.SSLEnable ? 'https://#serverInfo.host#:#serverInfo.SSLPort#' : 'http://#serverInfo.host#:#serverInfo.port#' )
-				& ( len( CFEngineName ) ? ' --cfengine-name "#CFEngineName#"' : '' )
-				& ' --server-name "#serverInfo.name#" #errorPages#'
-				& ( len( serverInfo.welcomeFiles ) ? ' --welcome-files "#serverInfo.welcomeFiles#" ' : '' )
-				& ' --tray-icon "#serverInfo.trayIcon#" --tray-config "#trayOptionsPath#" --servlet-rest-mappings "/rest/*,/api/*"'
-				& ' --directoryindex "#serverInfo.directoryBrowsing#" '
-				& ( len( CLIAliases ) ? ' --dirs "#CLIAliases#"' : '' )
-				& ' #serverInfo.runwarArgs# --timeout #serverInfo.startTimeout# #thispassthroughJVMArgs# ';
-				
+		args.append( '-war' );
+			
 		// Starting a WAR
 		if (serverInfo.WARPath != "" ) {
-			args &= " -war ""#serverInfo.WARPath#""";
+			args.append( serverInfo.WARPath );
 		// Stand alone server
 		} else {
-			args &= " -war ""#serverInfo.webroot#""";
+			args.append( serverInfo.webroot );
 		}
+		
 		// Custom web.xml (doesn't work right now)
 		if ( Len( Trim( serverInfo.webXml ) ) && false ) {
-			args &= " --web-xml-path ""#serverInfo.webXml#""";
+			args.append( '--web-xml-path' ).append( serverInfo.webXml );
 		// Default is in WAR home
 		} else {
-			args &= " --web-xml-path ""#serverInfo.serverHomeDirectory#/WEB-INF/web.xml""";
+			args.append( '--web-xml-path' ).append( '#serverInfo.serverHomeDirectory#/WEB-INF/web.xml' );
 		}
 		
 		if( len( serverInfo.libDirs ) ) {
 			// Have to get rid of empty list elements
-			args &= " --lib-dirs ""#serverInfo.libDirs.listChangeDelims( ',', ',' )#""";
+			args.append( '--lib-dirs' ).append( serverInfo.libDirs.listChangeDelims( ',', ',' ) );
 		}
 		
 		// Incorporate SSL to command
 		if( serverInfo.SSLEnable ){
-			args &= " --http-enable #serverInfo.HTTPEnable# --ssl-enable #serverInfo.SSLEnable# --ssl-port #serverInfo.SSLPort#";
+			args
+				.append( '--http-enable' ).append( serverInfo.HTTPEnable )
+				.append( '--ssl-enable' ).append( serverInfo.SSLEnable )
+				.append( '--ssl-port' ).append( serverInfo.SSLPort );
 		}
-		if( serverInfo.SSLEnable && serverInfo.SSLCert != "") {
-			args &= " --ssl-cert ""#serverInfo.SSLCert#"" --ssl-key ""#serverInfo.SSLKey#"" --ssl-keypass ""#serverInfo.SSLKeyPass#""";
+		if( serverInfo.SSLEnable && serverInfo.SSLCert != "" ) {
+			args
+				.append( '--ssl-cert' ).append( serverInfo.SSLCert )
+				.append( '--ssl-key' ).append( serverInfo.SSLKey )
+				.append( '--ssl-keypass' ).append( serverInfo.SSLKeyPass );
 		}
+		
 		// Incorporate rewrites to command
-		args &= " --urlrewrite-enable #serverInfo.rewritesEnable#";
+		args.append( '--urlrewrite-enable' ).append( serverInfo.rewritesEnable );
 		
 		if( serverInfo.rewritesEnable ){
 			if( !fileExists(serverInfo.rewritesConfig) ){
@@ -807,15 +846,15 @@ component accessors="true" singleton {
 				consoleLogger.error( '.' );
 				return;
 			}
-			args &= " --urlrewrite-file ""#serverInfo.rewritesConfig#""";
+			args.append( '--urlrewrite-file' ).append( serverInfo.rewritesConfig );
 		}
 		// change status to starting + persist
 		serverInfo.status = "starting";
 		setServerInfo( serverInfo );
 			
 	    if( serverInfo.debug ) {
-			var cleanedArgs = cr & '    ' & trim( replaceNoCase( args, ' -', cr & '    -', 'all' ) );
-			consoleLogger.debug("Server start command: #javaCommand# #cleanedArgs#");
+			var cleanedArgs = cr & '    ' & trim( reReplaceNoCase( args.toList( ' ' ), ' (-|"-)', cr & '    \1', 'all' ) );
+			consoleLogger.debug("Server start command: #javaCommand# #cleanedargs#");
 	    }
 	    
 	    // needs to be unique in each run to avoid errors
@@ -823,9 +862,8 @@ component accessors="true" singleton {
 		// Construct a new process object
 	    var processBuilder = createObject( "java", "java.lang.ProcessBuilder" );
 	    // Pass array of tokens comprised of command plus arguments
-	    var processTokens = [ variables.javaCommand ]
-	    processTokens.append( args.listToArray( ' ' ), true );
-	    processBuilder.init( processTokens );
+	    args.prepend( variables.javaCommand );
+	    processBuilder.init( args );
 	    // Conjoin standard error and output for convenience.
 	    processBuilder.redirectErrorStream( true );
 	    // Kick off actual process
@@ -842,7 +880,7 @@ component accessors="true" singleton {
 			try{
 				
 				// save server info and persist
-				serverInfo.statusInfo = { command:variables.javaCommand, arguments:attributes.args, result:'' };
+				serverInfo.statusInfo = { command:variables.javaCommand, arguments:attributes.args.toList( ' ' ), result:'' };
 				serverInfo.status="starting";
 				setServerInfo( serverInfo );
 				
@@ -1109,52 +1147,41 @@ component accessors="true" singleton {
 	 * @serverInfo.hint struct of server info (ports, etc.)
 	 * @all.hint remove ALL servers
  	 **/
-	function forget( required struct serverInfo, boolean all=false ){
-		if( !arguments.all ){
-			var servers 	= getServers();
-			var serverdir 	= getCustomServerFolder( arguments.serverInfo );
-						
-			// Catch this to gracefully handle where the OS or another program
-			// has the folder locked.
-			try {
+	function forget( required struct serverInfo ){
+		var servers 	= getServers();
+		var serverdir 	= getCustomServerFolder( arguments.serverInfo );
+		
+		interceptorService.announceInterception( 'preServerForget', { serverInfo=serverInfo } );
 					
-				// try to delete interal server dir server
-				if( directoryExists( serverDir ) ){
-					directoryDelete( serverdir, true );
-				}
+		// Catch this to gracefully handle where the OS or another program
+		// has the folder locked.
+		try {
 				
-				// Server home may be custom, so delete it as well
-				if( len( serverInfo.serverHomeDirectory ) && directoryExists( serverInfo.serverHomeDirectory ) ){
-					directoryDelete( serverInfo.serverHomeDirectory, true );
-				}
-				
-				
-			} catch( any e ) {
-				consoleLogger.error( '#e.message##chr(10)#Did you leave the server running? ' );
-				logger.error( '#e.message# #e.detail#' , e.stackTrace );
-				return '';
+			// try to delete interal server dir server
+			if( directoryExists( serverDir ) ){
+				directoryDelete( serverdir, true );
 			}
 			
-			// try to delete from config first
-			structDelete( servers, arguments.serverInfo.id );
-			setServers( servers );
+			// Server home may be custom, so delete it as well
+			if( len( serverInfo.serverHomeDirectory ) && directoryExists( serverInfo.serverHomeDirectory ) ){
+				directoryDelete( serverInfo.serverHomeDirectory, true );
+			}
 			
-			// return message
-			return "Poof! Wiped out server " & serverInfo.name;
-		} else {
-			var serverNames = getServerNames();
-			setServers( {} );
-				// Catch this to gracefully handle where the OS or another program
-				// has the folder locked.
-				try {
-					directoryDelete( variables.customServerDirectory, true );
-					directoryCreate( variables.customServerDirectory );
-				} catch( any e ) {
-					consoleLogger.error( '#e.message##chr(10)#Did you leave a server running? ' );
-					logger.error( '#e.message# #e.detail#' , e.stackTrace );
-				}
-			return "Poof! All servers (#arrayToList( serverNames )#) have been wiped.";
+			
+		} catch( any e ) {
+			consoleLogger.error( '#e.message##chr(10)#Did you leave the server running? ' );
+			logger.error( '#e.message# #e.detail#' , e.stackTrace );
+			return serverInfo.name & ' not deleted.';
 		}
+		
+		// Remove from config
+		structDelete( servers, arguments.serverInfo.id );
+		setServers( servers );
+				
+		interceptorService.announceInterception( 'postServerForget', { serverInfo=serverInfo } );
+				
+		// return message
+		return "Poof! Wiped out server " & serverInfo.name;
 	}
 
 	/**
@@ -1189,7 +1216,17 @@ component accessors="true" singleton {
 													 java.InetAddress.getByName( arguments.host ) );
 			serverSocket.close();
 			return true;
-		} catch( any var e ) {
+		} catch( java.net.UnknownHostException var e ) {
+			// In this case, the host name doesn't exist, so we really don't know about the port, but we'll say it's available
+			// otherwise, old, stopped servers who's host entries no longer exist will show up as running.
+			return true;
+		} catch( java.net.BindException var e ) {
+			// Same as above-- the IP address/host isn't bound to any local adapters.  Probably a host file entry went missing.
+			if( e.message contains 'Cannot assign requested address' ) {
+				return true;
+			}
+			// We're assuming that any other error means the address was in use.
+			// Java doesn't provide a specific message or exception type for this unfortunately.
 			return false;
 		}
 	}
@@ -1353,7 +1390,7 @@ component accessors="true" singleton {
 	}
 
 	/**
-	* Get server info for webroot, if not created, it will init a new server info entry
+	* Get server info for webroot
 	* @webroot.hint root directory for served content
  	**/
 	struct function getServerInfo( required webroot , required name){
@@ -1373,8 +1410,6 @@ component accessors="true" singleton {
 			serverInfo.name 	= listLast( arguments.webroot, "\/" );
 			// Store it in server struct
 			servers[ webrootHash ] = serverInfo;
-			// persist it
-			setServers( servers );
 		}
 
 		// Return the new record
@@ -1453,6 +1488,7 @@ component accessors="true" singleton {
 		var newJSON = formatterUtil.formatJSON( serializeJSON( arguments.data ) );
 		// Try to prevent bunping the date modified for no reason
 		if( oldJSON != newJSON ) {
+	    	directoryCreate( getDirectoryFromPath( arguments.configFilePath ), true, true );
 			fileWrite( arguments.configFilePath, newJSON );			
 		}
 	}

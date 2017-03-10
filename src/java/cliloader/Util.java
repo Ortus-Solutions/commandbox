@@ -227,15 +227,64 @@ public class Util{
 		return new String( encoded, encoding );
 	}
 
+	/**
+	 * Attempt to delete the Runwar jar and exit if it looks like locks exist on the file
+	 * Do this first, since it's the most likely file to be locked and we can abort before destroying any other files
+	 * @param libDir The folder to look in
+	 * @param nameContains Match a jar with this in the name
+	 */
+	public static void checkIfJarsLocked( File libDir, String nameContains ){
+		if( libDir.exists()
+				&& libDir.listFiles( new ExtFilter( ".jar" ) ).length > 0 ) {
+			for( File previous : libDir.listFiles( new ExtFilter( ".jar" ) )) {
+				// Look for runwar{version}.jar
+				if( previous.getAbsolutePath().toLowerCase().contains( nameContains )  ) {
+					try {
+						boolean result = previous.delete();
+
+						if( !result ) {
+							System.err.println( "" );
+							System.err.println( "CommandBox is having problems deleting your previous jars to complete the upgrade." );
+							System.err.println( "Please close all open consoles and stop all running servers before trying again." );
+							Thread.sleep( 5000 );
+							System.exit( 1 );
+						}
+						
+					} catch ( Exception e ) {
+						System.err.println( "" );
+						System.err.println( "CommandBox is having problems deleting your previous jars to complete the upgrade." );
+						System.err.println( "Error: " + e.getMessage() );
+						System.err.println( "Please close all open consoles and stop all running servers before trying again." );
+						try { Thread.sleep( 5000 ); } catch( Throwable t ){}
+						System.exit( 1 );
+					}
+				}
+			}
+		}
+	}
+
 	public static void removePreviousLibs( File libDir ){
 		if( libDir.exists()
 				&& libDir.listFiles( new ExtFilter( ".jar" ) ).length > 0 ) {
 			for( File previous : libDir.listFiles( new ExtFilter( ".jar" ) )) {
 				try {
-					previous.delete();
+					boolean result = previous.delete();
+
+					if( !result ) {
+						System.err.println( "" );
+						System.err.println( "CommandBox could not delete the jar [" + previous.getAbsolutePath() + "]" );
+						System.err.println( "Please close all open consoles and stop all running servers before trying again." );
+						Thread.sleep( 5000 );
+						System.exit( 1 );
+					}
+					
 				} catch ( Exception e ) {
-					System.err.println( "Could not delete previous lib: "
-							+ previous.getAbsolutePath() );
+					System.err.println( "" );
+					System.err.println( "CommandBox could not delete the jar [" + previous.getAbsolutePath() + "]" );
+					System.err.println( "Error: " + e.getMessage() );
+					System.err.println( "Please close all open consoles and stop all running servers before trying again." );
+					try { Thread.sleep( 5000 ); } catch( Throwable t ){}
+					System.exit( 1 );
 				}
 			}
 		}

@@ -109,6 +109,7 @@ component {
 			print.green( " " & results.filecontent );
 		} else if( results.responseheader[ "x-testbox-totalFail" ] gt 0 ){
 			// print Failure report
+			setExitCode( 1 );
 			print.yellow( " " & results.filecontent );
 		} else if( results.responseheader[ "x-testbox-totalError" ] gt 0 ){
 			// print Failure report

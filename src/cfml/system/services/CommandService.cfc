@@ -289,6 +289,10 @@ component accessors="true" singleton {
 
 			interceptorService.announceInterception( 'preCommand', { commandInfo=commandInfo, parameterInfo=parameterInfo } );
 
+			// Successful command execution resets exit code to 0.  Set this prior to running the command since the command
+			// may explicitly set the exit code to 1 but not call the error() method.
+			shell.setExitCode( 0 );
+			
 			// Run the command
 			try {
 				var result = commandInfo.commandReference.CFC.run( argumentCollection = parameterInfo.namedParameters );
@@ -321,9 +325,6 @@ component accessors="true" singleton {
 				}
 			}
 
-			// Successful command execution resets exit code to 0
-			shell.setExitCode( 0 );
-
 			// Remove it from the stack
 			instance.callStack.deleteAt( 1 );
 
@@ -340,7 +341,6 @@ component accessors="true" singleton {
 			result = interceptData.result;
 
 		} // End loop over command chain
-
 		return result;
 
 	}
@@ -703,7 +703,7 @@ component accessors="true" singleton {
 			var commandData = createCommandData( fullCFCPath, commandName );
 		// This will catch nasty parse errors so the shell can keep loading
 		} catch( any e ){
-			systemOutput( 'Error registering command [#fullCFCPath#] #CR#' );
+			systemOutput( 'Error registering command [#fullCFCPath#] #CR##e.message# #e.detail ?: ''##CR#Check the logs with [system-log | open] for more info.', true );
 			logger.error( 'Error registering command [#fullCFCPath#]. #e.message# #e.detail ?: ''#', e.stackTrace );
 			// pretty print the exception
 			// shell.printError( e );

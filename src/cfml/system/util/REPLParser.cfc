@@ -85,7 +85,9 @@ component accessors="true" singleton {
 	**/
 	function getCommandPreparedForEvaluation() {
 		var cfml = getCommandAsString();
-		cfml = reReplaceNoCase( cfml, ";", "", "all" );
+		// Trailing semicolons cause syntax error with evaluate() BIF so remove them and the following still work as execpted (returning the value)
+		// REPL> foo = 'bar';
+		cfml = reReplaceNoCase( cfml, ";$", "" );
 		return cfml;
 	}
 
