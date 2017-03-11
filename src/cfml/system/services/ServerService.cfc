@@ -138,8 +138,8 @@ component accessors="true" singleton {
 				'ssl' : {
 					'enable' : d.web.ssl.enable ?: false,
 					'port' : d.web.ssl.port ?: 1443,
-					'cert' : d.web.ssl.cert ?: '',
-					'key' : d.web.ssl.key ?: '',
+					'certFile' : d.web.ssl.certFile ?: '',
+					'keyFile' : d.web.ssl.keyFile ?: '',
 					'keyPass' : d.web.ssl.keyPass ?: ''
 				},
 				'rewrites' : {
@@ -379,7 +379,7 @@ component accessors="true" singleton {
 					serverJSON[ 'web' ][ 'SSL' ][ 'port' ] = serverProps[ prop ];
 			         break;
 			    case "SSLCertFile":
-					serverJSON[ 'web' ][ 'SSL' ][ 'cert' ] = serverProps[ prop ];
+					serverJSON[ 'web' ][ 'SSL' ][ 'certFile' ] = serverProps[ prop ];
 			         break;
 			    case "SSLKeyFile":
 					serverJSON[ 'web' ][ 'SSL' ][ 'key' ] = serverProps[ prop ];
@@ -480,7 +480,7 @@ component accessors="true" singleton {
 		serverInfo.SSLEnable 		= serverProps.SSLEnable 		?: serverJSON.web.SSL.enable			?: defaults.web.SSL.enable;
 		serverInfo.HTTPEnable		= serverProps.HTTPEnable 		?: serverJSON.web.HTTP.enable			?: defaults.web.HTTP.enable;
 		serverInfo.SSLPort			= serverProps.SSLPort 			?: serverJSON.web.SSL.port				?: defaults.web.SSL.port;
-		serverInfo.SSLCertFile 		= serverProps.SSLCertFile 		?: serverJSON.web.SSL.certSSLCertFile	?: defaults.web.SSL.certSSLCertFile;
+		serverInfo.SSLCertFile 		= serverProps.SSLCertFile 		?: serverJSON.web.SSL.certFile			?: defaults.web.SSL.certFile;
 		serverInfo.SSLKeyFile 		= serverProps.SSLKeyFile 		?: serverJSON.web.SSL.keyFile			?: defaults.web.SSL.keyFile;
 		serverInfo.SSLKeyPass 		= serverProps.SSLKeyPass 		?: serverJSON.web.SSL.keyPass			?: defaults.web.SSL.keyPass;
 		serverInfo.rewritesEnable 	= serverProps.rewritesEnable	?: serverJSON.web.rewrites.enable		?: defaults.web.rewrites.enable;
@@ -1455,10 +1455,10 @@ component accessors="true" singleton {
 			'HTTPEnable'		: true,
 			'SSLEnable'			: false,
 			'SSLPort'			: 1443,
-			'SSLCertFile' 			: "",
-			'SSLKeyFile'			: "",
+			'SSLCertFile'		: "",
+			'SSLKeyFile'		: "",
 			'SSLKeyPass'		: "",
-			'rewritesEnable'	  : false,
+			'rewritesEnable'	: false,
 			'rewritesConfig'	: "",
 			'heapSize'			: 512,
 			'directoryBrowsing' : true,
