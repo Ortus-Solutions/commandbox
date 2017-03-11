@@ -63,9 +63,9 @@ component aliases="start" {
 	 * @HTTPEnable     		enable HTTP
 	 * @SSLEnable      		enable SSL
 	 * @SSLPort        		SSL port number
-	 * @SSLCert        		SSL certificate
-	 * @SSLKey         		SSL key (required if SSLCert specified)
-	 * @SSLKeyPass     		SSL key passphrase (required if SSLCert specified)
+	 * @SSLCertFile    		Path to SSL certificate file
+	 * @SSLKeyFile     		Path to SSL key file (required if SSLCert specified)
+	 * @SSLKeyPass     		SSL key passphrase
 	 * @rewritesEnable 		enable URL rewriting (default false)
 	 * @rewritesConfig 		optional URL rewriting config file path
 	 * @heapSize			The max heap size in megabytes you would like this server to start with, it defaults to 512mb
@@ -100,8 +100,8 @@ component aliases="start" {
 		Boolean HTTPEnable,
 		Boolean SSLEnable,
 		Numeric SSLPort,
-		String  SSLCert,
-		String  SSLKey,
+		String  SSLCertFile,
+		String  SSLKeyFile,
 		String  SSLKeyPass,
 		Boolean rewritesEnable,
 		String  rewritesConfig,

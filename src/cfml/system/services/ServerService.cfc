@@ -208,6 +208,13 @@ component accessors="true" singleton {
 					return fileSystemUtil.resolvePath( thisLibDir );
 			 	} );
 		}
+		if( !isNull( serverProps.SSLCertFile ) ) {
+			serverProps.SSLCertFile = fileSystemUtil.resolvePath( serverProps.SSLCertFile );
+		}
+		if( !isNull( serverProps.SSLKeyFile ) ) {
+			serverProps.SSLKeyFile = fileSystemUtil.resolvePath( serverProps.SSLKeyFile );
+		}
+
 
 		// Look up the server that we're starting
 		var serverDetails = resolveServerDetails( arguments.serverProps );
@@ -371,10 +378,10 @@ component accessors="true" singleton {
 			    case "SSLPort":
 					serverJSON[ 'web' ][ 'SSL' ][ 'port' ] = serverProps[ prop ];
 			         break;
-			    case "SSLCert":
+			    case "SSLCertFile":
 					serverJSON[ 'web' ][ 'SSL' ][ 'cert' ] = serverProps[ prop ];
 			         break;
-			    case "SSLKey":
+			    case "SSLKeyFile":
 					serverJSON[ 'web' ][ 'SSL' ][ 'key' ] = serverProps[ prop ];
 			         break;
 			    case "SSLKeyPass":
@@ -470,14 +477,14 @@ component accessors="true" singleton {
 		if( defaults.keyExists( 'trayIcon' ) && len( defaults.trayIcon ) ) { defaults.trayIcon = fileSystemUtil.resolvePath( defaults.trayIcon, defaultwebroot ); }
 		serverInfo.trayIcon			= serverProps.trayIcon 			?: serverJSON.trayIcon 				?: defaults.trayIcon;
 		
-		serverInfo.SSLEnable 		= serverProps.SSLEnable 		?: serverJSON.web.SSL.enable		?: defaults.web.SSL.enable;
-		serverInfo.HTTPEnable		= serverProps.HTTPEnable 		?: serverJSON.web.HTTP.enable		?: defaults.web.HTTP.enable;
-		serverInfo.SSLPort			= serverProps.SSLPort 			?: serverJSON.web.SSL.port			?: defaults.web.SSL.port;
-		serverInfo.SSLCert 			= serverProps.SSLCert 			?: serverJSON.web.SSL.cert			?: defaults.web.SSL.cert;
-		serverInfo.SSLKey 			= serverProps.SSLKey 			?: serverJSON.web.SSL.key			?: defaults.web.SSL.key;
-		serverInfo.SSLKeyPass 		= serverProps.SSLKeyPass 		?: serverJSON.web.SSL.keyPass		?: defaults.web.SSL.keyPass;
-		serverInfo.rewritesEnable 	= serverProps.rewritesEnable	?: serverJSON.web.rewrites.enable	?: defaults.web.rewrites.enable;
-		serverInfo.welcomeFiles 	= serverProps.welcomeFiles		?: serverJSON.web.welcomeFiles		?: defaults.web.welcomeFiles;
+		serverInfo.SSLEnable 		= serverProps.SSLEnable 		?: serverJSON.web.SSL.enable			?: defaults.web.SSL.enable;
+		serverInfo.HTTPEnable		= serverProps.HTTPEnable 		?: serverJSON.web.HTTP.enable			?: defaults.web.HTTP.enable;
+		serverInfo.SSLPort			= serverProps.SSLPort 			?: serverJSON.web.SSL.port				?: defaults.web.SSL.port;
+		serverInfo.SSLCertFile 		= serverProps.SSLCertFile 		?: serverJSON.web.SSL.certSSLCertFile	?: defaults.web.SSL.certSSLCertFile;
+		serverInfo.SSLKeyFile 		= serverProps.SSLKeyFile 		?: serverJSON.web.SSL.keyFile			?: defaults.web.SSL.keyFile;
+		serverInfo.SSLKeyPass 		= serverProps.SSLKeyPass 		?: serverJSON.web.SSL.keyPass			?: defaults.web.SSL.keyPass;
+		serverInfo.rewritesEnable 	= serverProps.rewritesEnable	?: serverJSON.web.rewrites.enable		?: defaults.web.rewrites.enable;
+		serverInfo.welcomeFiles 	= serverProps.welcomeFiles		?: serverJSON.web.welcomeFiles			?: defaults.web.welcomeFiles;
 		// Clean up spaces in welcome file list
 		serverInfo.welcomeFiles = serverInfo.welcomeFiles.listMap( function( i ){ return trim( i ); } );
 		
@@ -829,11 +836,14 @@ component accessors="true" singleton {
 				.append( '--ssl-enable' ).append( serverInfo.SSLEnable )
 				.append( '--ssl-port' ).append( serverInfo.SSLPort );
 		}
-		if( serverInfo.SSLEnable && serverInfo.SSLCert != "" ) {
+		if( serverInfo.SSLEnable && serverInfo.SSLCertFile.len() ) {
 			args
-				.append( '--ssl-cert' ).append( serverInfo.SSLCert )
-				.append( '--ssl-key' ).append( serverInfo.SSLKey )
-				.append( '--ssl-keypass' ).append( serverInfo.SSLKeyPass );
+				.append( '--ssl-cert' ).append( serverInfo.SSLCertFile )
+				.append( '--ssl-key' ).append( serverInfo.SSLKeyFile );
+			// Not all certs require a password
+			if( serverInfo.SSLKeyPass.len() ) {
+				args.append( '--ssl-keypass' ).append( serverInfo.SSLKeyPass );	
+			}
 		}
 		
 		// Incorporate rewrites to command
@@ -1445,8 +1455,8 @@ component accessors="true" singleton {
 			'HTTPEnable'		: true,
 			'SSLEnable'			: false,
 			'SSLPort'			: 1443,
-			'SSLCert' 			: "",
-			'SSLKey'			: "",
+			'SSLCertFile' 			: "",
+			'SSLKeyFile'			: "",
 			'SSLKeyPass'		: "",
 			'rewritesEnable'	  : false,
 			'rewritesConfig'	: "",
