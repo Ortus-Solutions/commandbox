@@ -26,7 +26,7 @@ public class CommandCaller {
 	 * @return Whatever results that come back from the Jgit command's calling
 	 * @throws Exception
 	 */
-	public Object call( GitCommand command ) throws Exception {
+	public Object call( Callable command ) throws Exception {
 
 		try { 
 			
