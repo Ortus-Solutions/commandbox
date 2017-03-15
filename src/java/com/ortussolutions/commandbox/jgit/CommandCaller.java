@@ -13,6 +13,7 @@
 package com.ortussolutions.commandbox.jgit;
 
 import org.eclipse.jgit.api.GitCommand;
+import java.util.concurrent.Callable;
 import java.lang.Exception;
 
 public class CommandCaller {
