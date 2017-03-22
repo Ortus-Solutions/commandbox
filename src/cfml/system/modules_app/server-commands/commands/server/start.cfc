@@ -69,6 +69,7 @@ component aliases="start" {
 	 * @rewritesEnable 		enable URL rewriting (default false)
 	 * @rewritesConfig 		optional URL rewriting config file path
 	 * @heapSize			The max heap size in megabytes you would like this server to start with, it defaults to 512mb
+	 * @minHeapSize			The min heap size in megabytes you would like this server to start with
 	 * @directoryBrowsing 	Enable/Disabled directory browsing, defaults to true
 	 * @JVMArgs 			Additional JVM args to use when starting the server. Use "server status --verbose" to debug
 	 * @runwarArgs 			Additional Runwar options to use when starting the server. Use "server status --verbose" to debug
@@ -106,6 +107,7 @@ component aliases="start" {
 		Boolean rewritesEnable,
 		String  rewritesConfig,
 		Numeric heapSize,
+		Numeric minHeapSize,
 		Boolean directoryBrowsing,
 		String  JVMArgs,
 		String  runwarArgs,

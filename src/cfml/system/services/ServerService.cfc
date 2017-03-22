@@ -119,7 +119,8 @@ component accessors="true" singleton {
 			// Duplicate so onServerStart interceptors don't actually change config settings via refernce.
 			'trayOptions' : duplicate( d.trayOptions ?: [] ),
 			'jvm' : {
-				'heapSize' : d.jvm.heapSize ?: 512,
+				'heapSize' : d.jvm.heapSize ?: 512,				
+				'minHeapSize' : d.jvm.minHeapSize ?: 0,
 				'args' : d.jvm.args ?: ''
 			},
 			'web' : {
@@ -404,7 +405,10 @@ component accessors="true" singleton {
 			         break;
 			    case "heapSize":
 					serverJSON[ 'JVM' ][ 'heapSize' ] = serverProps[ prop ];
-			         break;
+			         break;			         
+			    case "minHeapSize":
+					serverJSON[ 'JVM' ][ 'minHeapSize' ] = serverProps[ prop ];
+			         break;			         
 			    case "JVMArgs":
 					serverJSON[ 'JVM' ][ 'args' ] = serverProps[ prop ];
 			         break;
@@ -496,6 +500,8 @@ component accessors="true" singleton {
 		serverInfo.rewritesConfig 	= serverProps.rewritesConfig 	?: serverJSON.web.rewrites.config 	?: defaults.web.rewrites.config;
 		
 		serverInfo.heapSize 		= serverProps.heapSize 			?: serverJSON.JVM.heapSize			?: defaults.JVM.heapSize;
+		serverInfo.minHeapSize 		= serverProps.minHeapSize		?: serverJSON.JVM.minHeapSize		?: defaults.JVM.minHeapSize;
+				
 		serverInfo.directoryBrowsing = serverProps.directoryBrowsing ?: serverJSON.web.directoryBrowsing ?: defaults.web.directoryBrowsing;
 		
 		// Global aliases are always added on top of server.json (but don't overwrite)
@@ -756,9 +762,15 @@ component accessors="true" singleton {
 				return parser.unwrapQuotes( i.replace( '\=', '=', 'all' ).replace( '\\', '\', 'all' ) )	;
 			});
 		// Add in heap size and java agent
-		argTokens
-			.append( '-Xmx#serverInfo.heapSize#m' )
-			.append( '-Xms#serverInfo.heapSize#m' );
+		argTokens.append( '-Xmx#serverInfo.heapSize#m' );
+		
+		if( val( serverInfo.minHeapSize ) ) {
+			if( serverInfo.minHeapSize > serverInfo.heapSize ) {
+				consoleLogger.warn( 'Your JVM min heap size [#serverInfo.minHeapSize#] is set larger than your max size [#serverInfo.heapSize#]! Reducing the Min to prevent errors.' );
+			}
+			argTokens.append( '-Xms#min( serverInfo.minHeapSize, serverInfo.heapSize )#m' );
+		}
+			
 		if( len( trim( javaAgent ) ) ) { argTokens.append( javaagent ); }
 		
 		 args
@@ -1460,7 +1472,8 @@ component accessors="true" singleton {
 			'SSLKeyPass'		: "",
 			'rewritesEnable'	: false,
 			'rewritesConfig'	: "",
-			'heapSize'			: 512,
+			'heapSize'			: 512,			
+			'minHeapSize'		: 0,
 			'directoryBrowsing' : true,
 			'JVMargs'			: "",
 			'runwarArgs'		: "",
