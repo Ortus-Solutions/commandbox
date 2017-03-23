@@ -6,7 +6,7 @@
     "dependencies":{
         "string-similarity":"^1.0.0",
         "semver":"^1.0.0",
-        "globber":"^1.0.0",
+        "globber":"^2.0.0",
         "JSONPrettyPrint":"^1.0.0"
     },
     "devDependencies":{
