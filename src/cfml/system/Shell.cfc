@@ -553,7 +553,7 @@ component accessors="true" singleton {
 
 		variables.reader.print( variables.print.whiteOnRedLine( 'ERROR (#variables.version#)' ) );
 		variables.reader.println();
-		variables.reader.print( variables.print.boldRedText( variables.formatterUtil.HTML2ANSI( arguments.err.message ) ) );
+		variables.reader.print( variables.print.boldRedText( variables.formatterUtil.HTML2ANSI( arguments.err.message, 'boldRed' ) ) );
 		variables.reader.println();
 
 		if( structKeyExists( arguments.err, 'detail' ) ) {

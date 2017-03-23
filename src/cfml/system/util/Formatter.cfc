@@ -33,15 +33,25 @@ component singleton {
 	 * Converts HTML into ANSI text
 	 * @html.hint HTML to convert
   	 **/
-	function HTML2ANSI( required html ) {
+	function HTML2ANSI( required html, additionalFormatting='' ) {
     	var text = html;
     	
     	if( len( trim( text ) ) == 0 ) {
     		return "";
-    	}    	
-    	text = ansifyHTML( text, "b", "bold" );
-    	text = ansifyHTML( text, "strong", "bold" );
-    	text = ansifyHTML( text, "em", "underline" );
+    	}
+    	
+    	// Trim all lines.  leading/trailing whitespace in HTML is not useful
+    	text = text.listToArray( chr( 13 ) & chr( 10 ) ).map( function( i ) {
+    		return trim( i );
+    	} ).toList( chr( 10 ) );
+    	
+    	// Remove style and script blocks
+    	text = reReplaceNoCase(text, "<style>.*</style>","","all");
+    	text = reReplaceNoCase(text, "<script[^>]*>.*</script>","","all");
+    	
+    	text = ansifyHTML( text, "b", "bold", additionalFormatting );
+    	text = ansifyHTML( text, "strong", "bold", additionalFormatting );
+    	text = ansifyHTML( text, "em", "underline", additionalFormatting );
     	
   	 	// Replace br tags (and any whitespace/line breaks after them) with a CR
   	 	text = reReplaceNoCase( text , "<br[^>]*>\s*", CR, 'all' );
@@ -53,9 +63,12 @@ component singleton {
     		text = replace(text,match,blockText,"one");
     	}
     	
-    	// Remove remaining HTML
     	// If you have any < characters in your string that aren't HTML, this will truncate the text 
     	text = reReplaceNoCase(text, "<.*?>","","all");
+    	 
+    	text = reReplaceNoCase(text, "[\n]{2,}",chr( 10 ) & chr( 10 ),"all");
+    	
+    
     	
     	// Turn any escaped HTML entities into their true form
     	text = unescapeHTML( text );
@@ -68,13 +81,13 @@ component singleton {
 	 * @tag.hint HTML tag name to replace
 	 * @ansiCode.hint ANSI code to replace tag with
   	 **/
-	function ansifyHTML(text,tag,ansiCode) {
+	function ansifyHTML(text, tag, ansiCode, additionalFormatting) {
     	var t=tag;
     	var matches = REMatch('(?i)<#t#[ ^>]*>(.+?)</#t#>', text);
     	for(var match in matches) {
     		// This doesn't really work inside of a larger string that you are applying formatting to
     		// The end of the boldText clears all formatting, and the rest of the string is just plain.
-    		var boldtext = print[ ansiCode ]( reReplaceNoCase(match,"<#t#[^>]*>(.+?)</#t#>","\1") );
+    		var boldtext = print[ ansiCode ]( reReplaceNoCase(match,"<#t#[^>]*>(.+?)</#t#>","\1") ) & print.text( '', additionalFormatting, true );
     		text = replace(text,match,boldtext,"one");
     	}
     	return text;

@@ -102,6 +102,8 @@ component {
 		var text = arrayLen(missingMethodArguments) ? missingMethodArguments[ 1 ] : '';
 		// Additional formatting text
 		var methodName &= arrayLen(missingMethodArguments) > 1 ? missingMethodArguments[ 2 ] : '';
+		// Don't turn off ANSI formatting at the end
+		var noEnd = arrayLen(missingMethodArguments) > 2 ? missingMethodArguments[ 3 ] : false;
 
 		// Carve it up until it's gone
 		while( len( methodName ) ) {
@@ -167,7 +169,10 @@ component {
 
 		// Don't mess with the string if we didn't format it
 		if( len( ANSIString ) ) {
-			text = ANSIString & text & getANSIAttribute( this.ANSIAttributes["off"] );			
+			text = ANSIString & text;
+			if( !noEnd ) { 
+				text &= getANSIAttribute( this.ANSIAttributes["off"] );
+			}			
 		}
 
 		// Add a CR if this was supposed to be a line
