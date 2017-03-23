@@ -6,7 +6,8 @@
     "dependencies":{
         "string-similarity":"^1.0.0",
         "semver":"^1.0.0",
-        "globber":"^1.0.0"
+        "globber":"^1.0.0",
+        "JSONPrettyPrint":"^1.0.0"
     },
     "devDependencies":{
         
@@ -14,6 +15,7 @@
     "installPaths":{
         "string-similarity":"modules\\string-similarity",
         "semver":"modules\\semver",
-        "globber":"modules\\globber"
+        "globber":"modules\\globber",
+        "JSONPrettyPrint":"modules\\JSONPrettyPrint"
     }
 }
