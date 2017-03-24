@@ -22,40 +22,50 @@
 component aliases="new" {
 
 	/**
-	 * @file File to create
+	 * @file File or globbing pattern. Creates if not existing, otherwise updates timestamp
 	 * @force If forced, then file will be recreated even if it exists
 	 * @open Open the file after creating it
  	 **/
 	function run(
-		required file,
+		required Globber file,
 		boolean force=false,
 		boolean open=false )  {
 		
-		arguments.file = fileSystemUtil.resolvePath( arguments.file );
-
-		var oFile = createObject( "java", "java.io.File" ).init( arguments.file );
-		var fileName = listLast( arguments.file, "/" );
-
-		// if we have a force, recreate the file
-		if( arguments.force and oFile.existS() ){
-			oFile.delete();
+		// Get matching paths
+		var matches = file.matches();
+		
+		// If no paths were found and the pattern isn't a glob, just use the pattern (it's a new file).  
+		if( !matches.len() && !( file.getPattern() contains '*' ) && !( file.getPattern() contains '?' ) ) {
+			matches.append( file.getPattern() );
 		}
 		
-		// check for update or creation
-		if( !oFile.exists() ){
-			oFile.createNewFile();
-			print.line( "#fileName# created!" );
-		} else {
-			oFile.setLastModified( now().getTime() );
-			print.line( "#fileName# last modified bit updated!" );
-		}
-
-		// Open file for the user
-		if( arguments.open ){
-			// Defer to the "edit" command.
-			command( 'edit' )
-				.params( arguments.file )
-				.run();
+		for( var theFile in matches ) {
+		
+			var oFile = createObject( "java", "java.io.File" ).init( theFile );
+			var fileName = listLast( theFile, "/" );
+	
+			// if we have a force, recreate the file
+			if( arguments.force and oFile.exists() ){
+				oFile.delete();
+			}
+			
+			// check for update or creation
+			if( !oFile.exists() ){
+				oFile.createNewFile();
+				print.line( "#fileName# created!" );
+			} else {
+				oFile.setLastModified( now().getTime() );
+				print.line( "#fileName# last modified bit updated!" );
+			}
+	
+			// Open file for the user
+			if( arguments.open ){
+				// Defer to the "edit" command.
+				command( 'edit' )
+					.params( theFile )
+					.run();
+			}
+				
 		}
 		
 	}

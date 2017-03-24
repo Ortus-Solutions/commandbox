@@ -23,7 +23,7 @@ component aliases="ls,ll,directory" {
 		// If the user gives us an existing directory foo, change it to the 
 		// glob pattern foo/* or foo/** if doing a recursive listing.
 		if( directoryExists( directory.getPattern() ) ){
-			directory.setPattern( directory.getPattern() & '*' & ( recurse ? '*' : '' ) )
+			directory.setPattern( directory.getPattern() & '*' & ( recurse ? '*' : '' ) );
 		}
 		
 		// TODO: Add ability to re-sort this based on user input
