@@ -29,7 +29,7 @@ component aliases="type" {
 	 * @file3.hint File to concatenate to previous file(s)
 	 * @file4.hint File to concatenate to previous file(s)
  	 **/
-	function run( required file1, file2, file3, file4 )  {
+	function run( required Globber file1, Globber file2, Globber file3, Globber file4 )  {
 		
 		var buffer = '';
 		
@@ -38,21 +38,31 @@ component aliases="type" {
 			
 			if( !isNull( file ) ) {
 				
-				// Make file canonical and absolute
-				file = fileSystemUtil.resolvePath( file );
-				
-				if( !fileExists( file ) ){
-					return error( "File: #file# does not exist!" );
-				}
+				if( isSimpleValue( file ) ) {
+					// Make file canonical and absolute
+					file = fileSystemUtil.resolvePath( file );
 					
-				buffer &= fileRead( file );
+					if( !fileExists( file ) ){
+						return error( "File: #file# does not exist!" );
+					}
+					
+					if( buffer.len() ) { buffer &= CR }
+					buffer &= fileRead( file );
+					
+				} else {
+					
+					file.apply( function( thisFile ) {
+						if( buffer.len() ) { buffer &= CR }
+						buffer &= fileRead( thisFile );
+					} );
+					
+				}
 				
 			}
 			
 			
 		}
 		
-
 		return buffer;
 	}
 
