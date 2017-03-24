@@ -28,10 +28,9 @@ component aliases="rename" {
 	 * @path.hint The file or directory source to rename
 	 * @newPath.hint The new name of the file or directory
 	 **/
-	function run( required path, required newPath )  {
+	function run( required Globber path, required newPath )  {
 		
 		// Make path canonical and absolute
-		arguments.path 		= fileSystemUtil.resolvePath( arguments.path );
 		arguments.newPath 	= fileSystemUtil.resolvePath( arguments.newPath );
 		
 		// It's a directory

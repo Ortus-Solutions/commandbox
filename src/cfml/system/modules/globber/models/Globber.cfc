@@ -89,6 +89,13 @@ component accessors="true" {
 	}
 	
 	/**
+	* Get count of matched files
+	*/
+	function count() {
+		return matches().len();		
+	}
+	
+	/**
 	* Make sure the MatchQuery has been loaded.
 	*/
 	private function ensureMatches() {
