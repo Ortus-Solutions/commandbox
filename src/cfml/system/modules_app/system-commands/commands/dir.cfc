@@ -40,7 +40,7 @@ component aliases="ls,ll,directory" {
 				results.attributes[ x ] & " " &
 				numberFormat( results.size[ x ], "999999999" ) & " " &
 				dateTimeFormat( results.dateLastModified[ x ], "MMM dd,yyyy HH:mm:ss" ) & " " &
-				cleanRecursiveDir( arguments.directory.getBaseDir(), results.directory[ x ] ) & results.name[ x ]				
+				cleanRecursiveDir( arguments.directory.getBaseDir(), results.directory[ x ] ) & results.name[ x ] & ( results.type[ x ] == "Dir" ? "/" : "" )				
 			);
 		}
 

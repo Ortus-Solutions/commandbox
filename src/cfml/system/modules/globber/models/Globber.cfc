@@ -108,7 +108,8 @@ component accessors="true" {
 	* Load matching file from the file system
 	*/
 	private function process() {
-		local.thisPattern = getPattern();
+		local.thisPattern = getPattern().replace( '\', '/', 'all' );
+		
 		if( !thisPattern.len() ) {
 			throw( 'Cannot glob empty pattern.' );
 		}
@@ -147,7 +148,7 @@ component accessors="true" {
 		setMatchQuery(
 			directoryList (
 				filter=function( path ){
-					if( pathPatternMatcher.matchPattern( thisPattern, path, true ) ) {
+					if( pathPatternMatcher.matchPattern( thisPattern, path & ( directoryExists( path ) ? '/' : '' ), true ) ) {
 						return true;
 					}
 					return false;

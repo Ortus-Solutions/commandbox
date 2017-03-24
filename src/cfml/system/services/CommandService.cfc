@@ -856,12 +856,14 @@ component accessors="true" singleton {
 				if( ( paramData.type ?: 'any' ) == 'Globber' ) {
 					
 					// Overwrite it with an actual Globber instance seeded with the original canonical path as the pattern.
+					var originalPath = parameterInfo.namedParameters[ paramName ].replace( '\', '/', 'all' );
+					var newPath = fileSystemUtil.resolvePath( originalPath ).replace( '\', '/', 'all' );
+					// Preserve any explicit trailing slashes
+					if( originalPath.endsWith( '/' ) && !newPath.endsWith( '/' ) ) {
+						newPath &= '/';
+					}
 					parameterInfo.namedParameters[ paramName ] = wirebox.getInstance( 'Globber' )
-						.setPattern( 
-							fileSystemUtil.resolvePath(
-								parameterInfo.namedParameters[ paramName ]
-							)
-						 );
+						.setPattern( newPath );
 				}
 			}
 		}

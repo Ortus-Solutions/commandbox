@@ -31,21 +31,29 @@ component aliases="rename" {
 	function run( required Globber path, required newPath )  {
 		
 		// Make path canonical and absolute
-		arguments.newPath 	= fileSystemUtil.resolvePath( arguments.newPath );
+		local.newPath 	= fileSystemUtil.resolvePath( arguments.newPath );
 		
-		// It's a directory
-		if( directoryExists( arguments.path ) ) {
-			// rename directory
-			directoryRename( arguments.path, arguments.newPath, true );
-			print.greenLine( "Directory renamed/moved to #arguments.newPath#" );
-		// It's a file
-		} else if( fileExists( arguments.path ) ){
-			// move file
-			fileMove( arguments.path, arguments.newPath );
-			print.greenLine( "File renamed/moved to #arguments.newPath#" );
-		} else {	
-			return error( "File/directory does not exist: #arguments.path#" );
+		if( path.count() > 1 && !directoryExists( arguments.newPath ) ) {
+			error( '[#arguments.newPath#] is not a directory.' );
 		}
+		
+		path.apply( function( thisPath ){
+			print.redLine( thisPath );
+			// It's a directory
+			if( directoryExists( thisPath ) ) {
+				// rename directory
+				directoryRename( thisPath, newPath, true );
+				print.greenLine( "Directory renamed/moved to #newPath#" );
+			// It's a file
+			} else if( fileExists( thisPath ) ){
+				// move file
+				fileMove( thisPath, newPath );
+				print.greenLine( "File renamed/moved to #newPath#" );
+			} else {	
+				return error( "File/directory does not exist: #thisPath#" );
+			}	
+		} );
+		
 	}
 	
 }

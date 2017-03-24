@@ -68,6 +68,12 @@ component accessors="true" singleton {
 		regex = replace( regex, '__anything_', '.*', 'all' );
 		regex = replace( regex, '__anythingButSlash__', '[^/]*', 'all' );
 		regex = replace( regex, '__singleNonSlash__', '[^/]', 'all' );
+
+		// If the pattern doesn't come with an explicit ending slash, add an optional one
+		// so we can match ending files OR folders
+		if( !regex.endsWith( '/' ) ) {
+			regex &= '/?';
+		}
 				
 		// If pattern starts with slash
 		if( regex.startsWith( '/' ) || exact ) {
@@ -84,8 +90,9 @@ component accessors="true" singleton {
 			regex &= '.*';	
 		}
 		
-		//	writeDump(regex);
-		//	writeDump(arguments.path);		
+		
+		//systemoutput(regex, true);
+		//systemoutput(arguments.path, true);		
 		return ( reFindNoCase( regex, arguments.path ) > 0 );
 	}
 

@@ -35,7 +35,7 @@ component aliases="new" {
 		var matches = file.matches();
 		
 		// If no paths were found and the pattern isn't a glob, just use the pattern (it's a new file).  
-		if( !matches.len() && !( file.getPattern() contains '*' ) && !( file.getPattern() contains '?' ) ) {
+		if( !file.count() && !( file.getPattern() contains '*' ) && !( file.getPattern() contains '?' ) ) {
 			matches.append( file.getPattern() );
 		}
 		
