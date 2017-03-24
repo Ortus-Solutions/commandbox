@@ -176,4 +176,15 @@ component accessors="true" singleton {
 			.run(); 		
 	}
 	
+	/**
+	 * Return a new globber
+ 	 **/
+	function globber( pattern='' ) {
+		var globber = wirebox.getInstance( 'Globber' );
+		if( pattern.len() ) {
+			globber.setPattern( arguments.pattern );
+		}
+		return globber;
+	}
+	
 }

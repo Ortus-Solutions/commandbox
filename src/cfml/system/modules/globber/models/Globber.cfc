@@ -17,13 +17,42 @@ component accessors="true" {
 
 	/** The file globbing pattern to match. */
 	property name='pattern' default='';
-	/** Array of real file system resources that match the pattern */
-	property name='matchArray';
-	/** "file", "dir", or "all" (default) */
-	// property name='type';
+	/** query of real file system resources that match the pattern */
+	property name='matchQuery';
+	/** Return matches as a query instead of an array */
+	property name='format' default='array';
+	/** Sort to use */
+	property name='sort' default='type, name';
+	/** Directory the list was pulled from */
+	property name='baseDir' default='';
 	
 
 	function init() {
+		variables.format = 'array';
+		return this;
+	}
+	
+	/**
+	* Return results as query
+	*/
+	function asQuery() {
+		setFormat( 'query' );
+		return this;
+	}
+	
+	/**
+	* Return results as array
+	*/
+	function asArray() {
+		setFormat( 'array' );
+		return this;
+	}
+	
+	/**
+	* Return results as array
+	*/
+	function withSort( thisSort ) {
+		setSort( thisSort );
 		return this;
 	}
 	
@@ -40,8 +69,7 @@ component accessors="true" {
 	* applied to each paths matched by the pattern.
 	*/
 	function apply( udf ) {
-		ensureMatches();
-		getMatchArray().each( udf );
+		matches().each( udf );
 		return this;
 	}
 	
@@ -50,14 +78,21 @@ component accessors="true" {
 	*/
 	function matches() {
 		ensureMatches();
-		return getMatchArray();
+		if( getFormat() == 'query' ) {
+			return getMatchQuery();	
+		} else {
+			return getMatchQuery().reduce( function( arr, row ) {
+				// Turn all the slashes the right way for this OS
+				return arr.append( row.directory & '/' & row.name & ( row.type == 'Dir' ? '/' : '' ) );
+			}, [] );			
+		}
 	}
 	
 	/**
-	* Make sure the matchArray has been loaded.
+	* Make sure the MatchQuery has been loaded.
 	*/
 	private function ensureMatches() {
-		if( isNull( getMatchArray() ) ) {
+		if( isNull( getMatchQuery() ) ) {
 			process();
 		}
 	}
@@ -70,23 +105,27 @@ component accessors="true" {
 		if( !thisPattern.len() ) {
 			throw( 'Cannot glob empty pattern.' );
 		}
-		
-		// If there's no wildcard, this is not a glob, so just pass it in as the only matched path
-		if( !thisPattern contains '*' && !thisPattern contains '?' ) {
-			setMatchArray( [ pattern ] );
-			return;
-		}
-		
+				
 		// To optimize this as much as possible, we want to get a directory listing as deep as possible so we process a few files as we can.
 		// Find the deepest folder that doesn't have a wildcard in it.
 		var baseDir = '';
 		var i = 0;
-		while( ++i <= thisPattern.listLen( '/' ) ) {
+		// Skip last token
+		while( ++i < thisPattern.listLen( '/' ) ) {
 			var token = thisPattern.listGetAt( i, '/' );
 			if( token contains '*' || token contains '?' ) {
 				break;
 			}
 			baseDir = baseDir.listAppend( token, '/' );
+		}
+		// Unix paths need the leading slash put back
+		if( thisPattern.startsWith( '/' ) ) {
+			baseDir = '/' & baseDir;
+		}
+		
+		// Windows drive letters need trailing slash.
+		if( baseDir.listLen( '/' ) == 1 && baseDir contains ':' ) {
+			baseDir = baseDir & '/';
 		}
 		
 		if( !baseDir.len() ) {
@@ -98,7 +137,7 @@ component accessors="true" {
 			recurse = true;
 		}
 
-		setMatchArray(
+		setMatchQuery(
 			directoryList (
 				filter=function( path ){
 					if( pathPatternMatcher.matchPattern( thisPattern, path, true ) ) {
@@ -106,10 +145,13 @@ component accessors="true" {
 					}
 					return false;
 				},
+				listInfo='query',
 				recurse=local.recurse, 
-				path=baseDir
+				path=baseDir,
+				sort=getSort()
 			)
 		);
+		setBaseDir( baseDir );
 		
 	}
 

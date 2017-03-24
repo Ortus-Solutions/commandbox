@@ -84,8 +84,8 @@ component accessors="true" singleton {
 			regex &= '.*';	
 		}
 		
-	//	writeDump(regex);
-	//	writeDump(arguments.path);
+		//	writeDump(regex);
+		//	writeDump(arguments.path);		
 		return ( reFindNoCase( regex, arguments.path ) > 0 );
 	}
 

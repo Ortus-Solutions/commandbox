@@ -66,9 +66,10 @@ component accessors="true" singleton {
 			}
 	
 			// This will standardize the name and calculate stuff like ../../
-			return oPath.getCanonicalPath();
+			return getCanonicalPath( oPath.toString() );
 			
 		} catch ( any e ) {
+			rethrow;
 			return arguments.basePath & '/' & path;
 		}
 		

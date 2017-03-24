@@ -1,6 +1,6 @@
 ﻿[![Build Status](https://travis-ci.org/Ortus-Solutions/globber.svg?branch=master)](https://travis-ci.org/Ortus-Solutions/globber)
 
-I am a utility to match file system path patterns (globbing) in the same manner as Unix file systems.
+I am a utility to match file system path patterns (globbing) in a similar manner as Unix file systems or `.gitignore` syntax.
 
 ## Installation
 
@@ -50,19 +50,40 @@ A question mark matches a single non-slash character
 
 This transient represents a single globbing pattern and provide a fluent API to access the matching files.  Unlike the PathPatternMatcher, which only handles comparisons of patterns, this model actually interacts with the file system to resolve a pattern to a list of real file system resources.
 
-Finds any text files recursivley below the `myFolder` directory whos name end with `bar`.
+Returns an array of all text files recursively below the `myFolder` directory whose name end with `bar`.
 ```
 var results = wirebox.getInstance( 'globber' )
 	.setPattern( 'C:/myFolder/**/*bar.txt' )
-	matches();
+	.matches();
 ```
 
-Apply a closure to a markdown files in a directory.
+Apply a closure to all markdown files in a directory.
 ```
 wirebox.getInstance( 'globber' )
 	.setPattern( 'C:/myFolder/*.md' )
-	apply( function( path ) {
+	.apply( function( path ) {
 		fileDelete( path );
 	} );
 ```
 
+#### Get data as query
+
+You can get a query back instead of an array by adding `.asQuery()` to your DSL.  The also affects the datatype you `apply()` closure runs against.  
+The query columns match what comes from the `directoryList()` fucntion.
+```
+var qryResults = globber
+	.setPattern( baseDir & '/**' )
+	.asQuery()
+	.matches();
+```
+
+#### Sort data
+
+You may sort the data using the same column names you'd get back from the query (even if you're getting an array) by using the `withSort()` function.
+
+```
+var qryResults = globber
+	.setPattern( baseDir & '/**' )
+	.withSort( 'type asc, name desc' )
+	.matches();
+```

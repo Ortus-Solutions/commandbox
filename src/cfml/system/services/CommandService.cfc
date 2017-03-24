@@ -11,6 +11,8 @@ component accessors="true" singleton {
 
 	// DI Properties
 	property name='shell' 				inject='Shell';
+	property name='wirebox'				inject='wirebox';
+	property name="fileSystemUtil"		inject='FileSystem';
 	property name='parser' 				inject='Parser';
 	property name='system' 				inject='System@constants';
 	property name='cr' 					inject='cr@constants';
@@ -265,11 +267,14 @@ component accessors="true" singleton {
 			// Make sure we have all required params.
 			parameterInfo.namedParameters = ensureRequiredParams( parameterInfo.namedParameters, commandParams );
 
-			// Ensure supplied params match the correct type
-			validateParams( parameterInfo.namedParameters, commandParams );
-
 			// Evaluate parameter expressions
 			evaluateExpressions( parameterInfo );
+
+			// Create globbing patterns
+			createGlobs( parameterInfo, commandParams );
+
+			// Ensure supplied params match the correct type
+			validateParams( parameterInfo.namedParameters, commandParams );
 
 			// Reset the printBuffer
 			commandInfo.commandReference.CFC.reset();
@@ -833,6 +838,34 @@ component accessors="true" singleton {
 		return userNamedParams;
 	}
 
+	/**
+	 * Check for Globber parameters and create actual Globber object out of them
+ 	 **/
+	private function createGlobs( parameterInfo, commandParams ) {
+		// Loop over user-supplied params
+		for( var paramName in parameterInfo.namedParameters ) {
+			
+			// If this is an expected param
+			functionIndex = commandParams.find( function( i ) {
+				return i.name == paramName;
+			} );
+			
+			if( functionIndex ) {
+				var paramData = commandParams[ functionIndex ];
+				// And it's of type Globber
+				if( ( paramData.type ?: 'any' ) == 'Globber' ) {
+					
+					// Overwrite it with an actual Globber instance seeded with the original canonical path as the pattern.
+					parameterInfo.namedParameters[ paramName ] = wirebox.getInstance( 'Globber' )
+						.setPattern( 
+							fileSystemUtil.resolvePath(
+								parameterInfo.namedParameters[ paramName ]
+							)
+						 );
+				}
+			}
+		}
+	}
 
 	/**
 	 * Make sure all params are the correct type
@@ -843,6 +876,7 @@ component accessors="true" singleton {
 			// If it's required and hasn't been supplied...
 			if( userNamedParams.keyExists( param.name )
 				&& param.keyExists( "type" )
+				&& param.type != 'Globber'
 				&& !isValid( param.type, userNamedParams[ param.name ] ) ){
 
 				throw( message='Parameter [#param.name#] has a value of [#userNamedParams[ param.name ]#] which is not of type [#param.type#].', type="commandException");
