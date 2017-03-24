@@ -14,20 +14,22 @@ component aliases="open" {
 	/**
 	 * @path.hint Path to open natively.
  	 **/
-	function run( path='' )  {
+	function run( Globber path=globber( getCWD() ) )  {
 		
-		// Make path canonical and absolute
-		arguments.path = fileSystemUtil.resolvePath( arguments.path );
-
-		if( !fileExists( arguments.path ) AND !directoryExists( arguments.path ) ){
-			return error( "Path: #arguments.path# does not exist, cannot open it!" );
-		}
-
-		if( fileSystemUtil.openNatively( arguments.path ) ){
-			print.line( "Resource Opened!" );
-		} else {
-			error( "Unsupported OS, cannot open path." );
-		};
+		path.apply( function( thisPath ) {
+		
+			if( !fileExists( thisPath ) AND !directoryExists( thisPath ) ){
+				return error( "Path: #thisPath# does not exist, cannot open it!" );
+			}
+	
+			if( fileSystemUtil.openNatively( thisPath ) ){
+				print.line( "Resource Opened!" );
+			} else {
+				error( "Unsupported OS, cannot open path." );
+			};	
+			
+		} );
+		
 	}
 
 }
