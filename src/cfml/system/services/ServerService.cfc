@@ -91,7 +91,7 @@ component accessors="true" singleton {
 
 		// Init server config if not found
 		if( !fileExists( variables.serverConfig ) ){
-			setServers( {} );
+			initServers();
 		}
 		// Init custom server location if not exists
 		if( !directoryExists( variables.customServerDirectory ) ){
@@ -1280,6 +1280,15 @@ component accessors="true" singleton {
 		
 		setServers( servers );
 		
+	}
+
+	/**
+	 * Create initial server JSON
+ 	 **/
+	function initServers(){
+		lock name="serverservice.serverconfig" type="exclusive" throwOnTimeout="true" timeout="10"{
+			fileWrite( serverConfig, '{}' );
+		}
 	}
 
 	/**
