@@ -155,9 +155,10 @@ component accessors="true" singleton {
 				'serverConfigDir' : d.app.serverConfigDir ?: '',
 				'webXML' : d.app.webXML ?: '',
 				'standalone' : d.app.standalone ?: false,
-				'WARPath' : d.app.WARPath ?: "",
-				'cfengine' : d.app.cfengine ?: "",
-				'serverHomeDirectory' : d.app.serverHomeDirectory ?: ""
+				'WARPath' : d.app.WARPath ?: '',
+				'cfengine' : d.app.cfengine ?: '',
+				'restMappings' : d.app.cfengine ?: '',
+				'serverHomeDirectory' : d.app.serverHomeDirectory ?: ''
 			},
 			'runwar' : {
 				'args' : d.runwar.args ?: ''
@@ -352,6 +353,9 @@ component accessors="true" singleton {
 			    case "cfengine":
 					serverJSON[ 'app' ][ 'cfengine' ] = serverProps[ prop ];
 			         break;
+			    case "restMappings":
+					serverJSON[ 'app' ][ 'restMappings' ] = serverProps[ prop ];
+			         break;
 			    case "WARPath":
 			    	// This path is canonical already.
 			    	var thisFile = replace( serverProps[ 'WARPath' ], '\', '/', 'all' );
@@ -427,6 +431,7 @@ component accessors="true" singleton {
 		// Setup serverinfo according to params
 		// Hand-entered values take precendence, then settings saved in server.json, and finally defaults.
 		// The big servers.json is only used to keep a record of the last values the server was started with
+		serverInfo.trace 			= serverProps.trace 			?: serverJSON.trace 				?: defaults.trace;
 		serverInfo.debug 			= serverProps.debug 			?: serverJSON.debug 				?: defaults.debug;
 		serverInfo.openbrowser		= serverProps.openbrowser 		?: serverJSON.openbrowser			?: defaults.openbrowser;
 		serverInfo.host				= serverProps.host 				?: serverJSON.web.host				?: defaults.web.host;
@@ -555,7 +560,7 @@ component accessors="true" singleton {
 				
 		serverInfo.cfengine			= serverProps.cfengine			?: serverJSON.app.cfengine			?: defaults.app.cfengine;
 		
-		
+		serverInfo.restMappings		= serverProps.restMappings		?: serverJSON.app.restMappings		?: defaults.app.restMappings;
 		// relative rewrite config path in server.json is resolved relative to the server.json
 		if( isDefined( 'serverJSON.app.WARPath' ) && len( serverJSON.app.WARPath ) ) { serverJSON.app.WARPath = fileSystemUtil.resolvePath( serverJSON.app.WARPath, defaultServerConfigFileDirectory ); }
 		if( isDefined( 'defaults.app.WARPath' ) && len( defaults.app.WARPath )  ) { defaults.app.WARPath = fileSystemUtil.resolvePath( defaults.app.WARPath, defaultwebroot ); }		
@@ -787,10 +792,16 @@ component accessors="true" singleton {
 		 	.append( '--server-name' ).append( serverInfo.name )
 		 	.append( '--tray-icon' ).append( serverInfo.trayIcon )
 		 	.append( '--tray-config' ).append( trayOptionsPath )
-		 	.append( '--servlet-rest-mappings' ).append( '/rest/*,/api/*' )
 		 	.append( '--directoryindex' ).append( serverInfo.directoryBrowsing )
 		 	.append( '--timeout' ).append( serverInfo.startTimeout )
 		 	.append( serverInfo.runwarArgs.listToArray( ' ' ), true );
+		 	
+		if( len( serverInfo.restMappings ) ) {
+			args.append( '--servlet-rest-mappings' ).append( serverInfo.restMappings );
+		} else {
+			args.append( '--servlet-rest-mappings' ).append( '___DISABLED___' );
+		}
+		 	
 		 
 		if( len( errorPages ) ) {
 			args.append( '--error-pages' ).append( errorPages );
@@ -806,10 +817,9 @@ component accessors="true" singleton {
 	 	}
 		  
 			
-		// If background, wrap up JVM args to pass through to background servers
-		// "real" JVM args must come before Runwar args, so creating two variables, once of which will always be empty.
+		// If background, wrap up JVM args to pass through to background servers.  "Real" JVM args must come before Runwar args
 		if( background ) {
-			var argString = argTokens.toList( ';' ); //.replace( '"', '\"', 'all' );
+			var argString = argTokens.toList( ';' );
 			if( len( argString ) ) {
 				args.append( '--jvm-args=#trim( argString )#' );
 			}
@@ -1487,6 +1497,7 @@ component accessors="true" singleton {
 			'JVMargs'			: "",
 			'runwarArgs'		: "",
 			'cfengine'			: "",
+			'restMappings'		: "",
 			'engineName'		: "",
 			'engineVersion'		: "",
 			'WARPath'			: "",
