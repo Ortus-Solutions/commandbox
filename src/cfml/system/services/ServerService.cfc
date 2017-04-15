@@ -115,6 +115,7 @@ component accessors="true" singleton {
 			'startTimeout' : 240,
 			'stopsocket' : d.stopsocket ?: 0,
 			'debug' : d.debug ?: false,
+			'trace' : d.trace ?: false,
 			'trayicon' : d.trayicon ?: '',
 			// Duplicate so onServerStart interceptors don't actually change config settings via refernce.
 			'trayOptions' : duplicate( d.trayOptions ?: [] ),
@@ -217,6 +218,9 @@ component accessors="true" singleton {
 			serverProps.SSLKeyFile = fileSystemUtil.resolvePath( serverProps.SSLKeyFile );
 		}
 
+		if( structKeyExists( serverProps, 'trace' ) && serverProps.trace ) {
+			serverProps.debug = true;
+		}
 
 		// Look up the server that we're starting
 		var serverDetails = resolveServerDetails( arguments.serverProps );
@@ -276,7 +280,7 @@ component accessors="true" singleton {
 		// Save hand-entered properties in our server.json for next time
 		for( var prop in serverProps ) {
 			// Ignore null props or ones that shouldn't be saved
-			if( isNull( serverProps[ prop ] ) || listFindNoCase( 'saveSettings,serverConfigFile,debug,force,console', prop ) ) {
+			if( isNull( serverProps[ prop ] ) || listFindNoCase( 'saveSettings,serverConfigFile,debug,force,console,trace', prop ) ) {
 				continue;
 			}
 	    	var configPath = replace( fileSystemUtil.resolvePath( defaultServerConfigFileDirectory ), '\', '/', 'all' ) & '/';
@@ -802,6 +806,9 @@ component accessors="true" singleton {
 			args.append( '--servlet-rest-mappings' ).append( '___DISABLED___' );
 		}
 		 	
+		if( serverInfo.trace ) {
+			args.append( '--log-level' ).append( 'trace' );
+		}
 		 
 		if( len( errorPages ) ) {
 			args.append( '--error-pages' ).append( errorPages );
