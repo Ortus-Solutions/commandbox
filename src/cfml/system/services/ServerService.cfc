@@ -800,9 +800,11 @@ component accessors="true" singleton {
 		 	.append( '--timeout' ).append( serverInfo.startTimeout )
 		 	.append( serverInfo.runwarArgs.listToArray( ' ' ), true );
 		 	
+		// Runwar will blow up if there isn't a parameter supplied, so I can't pass an empty string. 
 		if( len( serverInfo.restMappings ) ) {
 			args.append( '--servlet-rest-mappings' ).append( serverInfo.restMappings );
 		} else {
+			// This effectively disables it (assuming there's not a real directory or route called "___disabled___") but it's janky
 			args.append( '--servlet-rest-mappings' ).append( '___DISABLED___' );
 		}
 		 	

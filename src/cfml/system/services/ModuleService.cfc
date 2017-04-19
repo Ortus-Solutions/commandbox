@@ -262,6 +262,7 @@
 				} catch( any var e ) {
 					consoleLogger.error( 'There was an error loading module [#arguments.moduleName#]' );
 					consoleLogger.error( '#e.message##chr( 10 )##e.detail#' );
+					instance.logger.error( 'There was an error loading module [#arguments.moduleName#]', e );
 					return false;
 				}
 				// Verify if module has been disabled
