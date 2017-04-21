@@ -147,6 +147,10 @@ component accessors="true" singleton {
 				'rewrites' : {
 					'enable' : d.web.rewrites.enable ?: false,
 					'config' : d.web.rewrites.config ?: variables.rewritesDefaultConfig
+				},
+				'basicAuth' : {
+					'enable' : d.web.basicAuth.enable ?: true,
+					'users' : d.web.basicAuth.users ?: {}
 				}
 			},
 			'app' : {
@@ -497,6 +501,8 @@ component accessors="true" singleton {
 		serverInfo.SSLKeyFile 		= serverProps.SSLKeyFile 		?: serverJSON.web.SSL.keyFile			?: defaults.web.SSL.keyFile;
 		serverInfo.SSLKeyPass 		= serverProps.SSLKeyPass 		?: serverJSON.web.SSL.keyPass			?: defaults.web.SSL.keyPass;
 		serverInfo.rewritesEnable 	= serverProps.rewritesEnable	?: serverJSON.web.rewrites.enable		?: defaults.web.rewrites.enable;
+		serverInfo.basicAuthEnable 	= 								   serverJSON.web.basicAuth.enable		?: defaults.web.basicAuth.enable;
+		serverInfo.basicAuthUsers 	= 								   serverJSON.web.basicAuth.users		?: defaults.web.basicAuth.users;
 		serverInfo.welcomeFiles 	= serverProps.welcomeFiles		?: serverJSON.web.welcomeFiles			?: defaults.web.welcomeFiles;
 		// Clean up spaces in welcome file list
 		serverInfo.welcomeFiles = serverInfo.welcomeFiles.listMap( function( i ){ return trim( i ); } );
@@ -879,6 +885,18 @@ component accessors="true" singleton {
 		
 		// Incorporate rewrites to command
 		args.append( '--urlrewrite-enable' ).append( serverInfo.rewritesEnable );
+		
+		// Basic auth
+		if( serverInfo.basicAuthEnable && serverInfo.basicAuthUsers.count() ) {
+			// Escape commas and equals with backslash
+			var sanitizeBA = function( i ) { return i.replace( ',', '\,', 'all' ).replace( '=', '\=', 'all' ); };
+			var thisBasicAuthUsers = '';
+			serverInfo.basicAuthUsers.each( function( i ) {
+				thisBasicAuthUsers = thisBasicAuthUsers.listAppend( '#sanitizeBA( i )#=#sanitizeBA( serverInfo.basicAuthUsers[ i ] )#' );
+			} );
+			// user=pass,user2=pass2
+			args.append( '--basicauth-users' ).append( thisBasicAuthUsers );	
+		}
 		
 		if( serverInfo.rewritesEnable ){
 			if( !fileExists(serverInfo.rewritesConfig) ){
@@ -1500,6 +1518,8 @@ component accessors="true" singleton {
 			'SSLKeyPass'		: "",
 			'rewritesEnable'	: false,
 			'rewritesConfig'	: "",
+			'basicAuthEnable'	: true,
+			'basicAuthUsers'	: {},
 			'heapSize'			: 512,			
 			'minHeapSize'		: 0,
 			'directoryBrowsing' : true,
