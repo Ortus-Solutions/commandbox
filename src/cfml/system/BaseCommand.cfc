@@ -24,15 +24,15 @@ component accessors="true" singleton {
 	* Constructor
 	*/
 	function init() {
-		var wirebox = application.wirebox;
+		variables.wirebox					= application.wirebox;
 		variables.CR				= wirebox.getInstance( "CR@constants" );
 		variables.formatterUtil		= wirebox.getInstance( "Formatter" );
 		variables.fileSystemUtil	= wirebox.getInstance( "FileSystem" );
 		variables.shell				= wirebox.getInstance( "shell" );
 		variables.print				= wirebox.getInstance( "PrintBuffer" );
-		variables.wirebox			= wirebox;
 		variables.logger			= wirebox.getLogBox().getLogger( this );
 		variables.parser			= wirebox.getInstance( "Parser" );
+		variables.configService		= wirebox.getInstance( "ConfigService" );
 		
 		hasErrored = false;
 		return this;

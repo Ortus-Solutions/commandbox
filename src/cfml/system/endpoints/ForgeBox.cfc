@@ -73,12 +73,13 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 	 * @return struct { isOutdated, version }
 	 */
 	public function getUpdate( required string package, required string version, boolean verbose=false ) {
+		var APIToken		= configService.getSetting( 'endpoints.forgebox.APIToken', '' );
 		var slug 			= parseSlug( arguments.package );
 		var boxJSONversion 	= parseVersion( arguments.package );
 		var result 			= {
-			isOutdated 	= false,
-			version 	= ''
-		};
+								isOutdated 	= false,
+								version 	= ''
+							  };
 		
 		// Only bother checking if we have a version range.  If an exact version is stored in 
 		// box.json, we're never going to update it anyway.
@@ -89,7 +90,7 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 		try { 
 			
 			// Verify in ForgeBox
-			var entryData = forgebox.getEntry( slug );
+			var entryData = forgebox.getEntry( slug, APIToken );
 					
 		} catch( forgebox var e ) {
 			// This can include "expected" errors such as "Email already in use"
@@ -140,6 +141,7 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 		required string firstName,
 		required string lastName 
 	){
+		var APIToken = configService.getSetting( 'endpoints.forgebox.APIToken', '' );
 			
 		try {
 			
@@ -148,7 +150,8 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 				password = arguments.password,
 				email 	= arguments.email,
 				FName 	= arguments.firstName,
-				LName 	= arguments.lastName
+				LName 	= arguments.lastName,
+				APIToken = APIToken
 			);
 			return results.APIToken;
 					
@@ -271,9 +274,10 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 	* @entryData Optional struct of entryData which skips the ForgeBox call.
 	*/
 	function findSatisfyingVersion( required string slug, required string version, struct entryData ) {
+		var APIToken = configService.getSetting( 'endpoints.forgebox.APIToken', '' );
 		 try {
 			// Use passed in entrydata, or go get it from ForgeBox.
-			arguments.entryData = arguments.entryData ?: forgebox.getEntry( arguments.slug );
+			arguments.entryData = arguments.entryData ?: forgebox.getEntry( arguments.slug, APIToken );
 		} catch( forgebox var e ) {
 			// This can include "expected" errors such as "User not authenticated"
 			throw( e.message, 'endpointException', e.detail );
@@ -330,11 +334,13 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 	 */
 	private function getPackage( slug, version, verbose=false ) {		
 	
+		var APIToken = configService.getSetting( 'endpoints.forgebox.APIToken', '' );
+		
 		try {
 			// Info
 			consoleLogger.warn( "Verifying package '#slug#' in ForgeBox, please wait..." );
 						
-			var entryData = forgebox.getEntry( slug );
+			var entryData = forgebox.getEntry( slug, APIToken );
 					
 			// Verbose info
 			if( arguments.verbose ){
@@ -359,7 +365,7 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 			consoleLogger.info( "Installing version [#arguments.version#]." );
 			
 			try {
-				forgeBox.recordInstall( arguments.slug, arguments.version );
+				forgeBox.recordInstall( arguments.slug, arguments.version, APIToken );
 			} catch( forgebox var e ) {
 				consoleLogger.warn( e.message & CR & e.detail );
 			}

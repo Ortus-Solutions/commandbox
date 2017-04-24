@@ -58,6 +58,7 @@ component aliases="show" {
 		number maxRows,
 		slug 
 	){
+		var APIToken = configService.getSetting( 'endpoints.forgebox.APIToken', '' );
 		
 		print.yellowLine( "Contacting ForgeBox, please wait..." ).toConsole();
 				
@@ -83,7 +84,7 @@ component aliases="show" {
 					// If there's not a slug supplied, see if that works
 					if( !len( slug ) ) {
 						try {
-							var entryData = forgebox.getEntry( orderBy );
+							var entryData = forgebox.getEntry( orderBy, APIToken );
 							slug = orderBy;		
 						} catch( any e ) {
 							if( e.detail contains 'The entry slug sent is invalid' ) {
@@ -118,7 +119,7 @@ component aliases="show" {
 			if( len( slug ) ) {
 	
 				// We might have gotten this above
-				var entryData = entryData ?: forgebox.getEntry( slug );
+				var entryData = entryData ?: forgebox.getEntry( slug, APIToken );
 				// numberOfRatings,boxjson,isActive,typeName,version,hits,sourceURL,slug,createdDate,typeSlug,downloads,updatedDate,entryID,
 				// ratings,versions,avgRating,downloadURL,changelog,installs,title,user,description,summary,homeURL
 				if( !entryData.isActive ) {
@@ -183,7 +184,7 @@ component aliases="show" {
 			// List of entries
 			} else {
 				// Get the entries
-				var entries = forgebox.getEntries( orderBy, maxRows, startRow, typeLookup );
+				var entries = forgebox.getEntries( orderBy=orderBy, maxRows=maxRows, startRow=startRow, typeSlug=typeLookup, APIToken=APIToken );
 				
 				// entrylink,createdate,lname,isactive,installinstructions,typename,version,hits,coldboxversion,sourceurl,slug,homeurl,typeslug,
 				// downloads,entryid,fname,changelog,updatedate,downloadurl,title,entryrating,summary,username,description
@@ -218,10 +219,11 @@ component aliases="show" {
 
 	// Auto-complete 
 	function lookupType( type ) {
+		var APIToken = configService.getSetting( 'endpoints.forgebox.APIToken', '' );
 		var typeLookup = '';
 		
 		// See if they entered a type name or slug
-		for( var thistype in forgebox.getCachedTypes() ) {
+		for( var thistype in forgebox.getCachedTypes( APIToken=APIToken ) ) {
 			if( thisType.typeName == type || thisType.typeSlug == type ) {
 				typeLookup = thisType.typeSlug;
 				break;
@@ -235,9 +237,10 @@ component aliases="show" {
 
 	// Auto-complete list of types
 	function typeComplete( result = [] ) {
+		var APIToken = configService.getSetting( 'endpoints.forgebox.APIToken', '' );
 			
 		// Loop over types and append all active ForgeBox entries
-		for( var thistype in forgebox.getCachedTypes() ) {
+		for( var thistype in forgebox.getCachedTypes( APIToken=APIToken ) ) {
 			arguments.result.append( thisType.typeSlug );
 		}
 		

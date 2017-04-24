@@ -23,8 +23,10 @@ component {
 			
 		try {
 				
+				var APIToken = configService.getSetting( 'endpoints.forgebox.APIToken', '' );
+				
 				// Get the entries
-				var entries = forgebox.getEntries( searchTerm = arguments.searchText );
+				var entries = forgebox.getEntries( searchTerm = arguments.searchText, APIToken=APIToken );
 				
 				// entrylink,createdate,lname,isactive,installinstructions,typename,version,hits,coldboxversion,sourceurl,slug,homeurl,typeslug,
 				// downloads,entryid,fname,changelog,updatedate,downloadurl,title,entryrating,summary,username,description

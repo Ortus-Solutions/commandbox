@@ -61,11 +61,16 @@ or just add DEBUG to the root logger
 	
 	<!--- getTypes --->
 	<cffunction name="getTypes" output="false" access="public" returntype="any" hint="Get an array of entry types">
+		<cfargument name="APIToken" type="string" default="">
 		<cfscript>
 		var results = "";
 		
 		// Invoke call
-		results = makeRequest(resource="types");
+		results = makeRequest(
+			resource="types",
+			headers = {
+				'x-api-token' : arguments.APIToken
+			} );
 
 		// error 
 		if( results.response.error ){
@@ -79,9 +84,10 @@ or just add DEBUG to the root logger
 	<!--- getTypes --->
 	<cffunction name="getCachedTypes" output="false" access="public" returntype="any" hint="Get an array of entry types, locally first else goes and retrieves them">
 		<cfargument name="force" type="boolean" default="false">
+		<cfargument name="APIToken" type="string" default="">
 		<cfscript>
 		if( isSimpleValue( variables.types ) OR arguments.force ){
-			variables.types = getTypes();
+			variables.types = getTypes( APIToken );
 		}
 		
 		return variables.types;
@@ -95,6 +101,7 @@ or just add DEBUG to the root logger
 		<cfargument name="startRow" type="numeric" required="false" default="1" hint="StartRow"/>
 		<cfargument name="typeSlug" type="string" required="false" default="" hint="The type slug to filter on"/>
 		<cfargument name="searchTerm" type="string" required="false" default="" hint="String to search on"/>
+		<cfargument name="APIToken" type="string" default="">
 		<cfscript>
 			var results = "";
 			var params = {
@@ -106,7 +113,12 @@ or just add DEBUG to the root logger
 			};
 			
 			// Invoke call
-			results = makeRequest(resource="entries",parameters=params);
+			results = makeRequest(
+				resource="entries",
+				parameters=params,
+				headers = {
+					'x-api-token' : arguments.APIToken
+				});
 			// error 
 			if( results.response.error ){
 				throw( "Error making ForgeBox REST Call", 'forgebox', results.response.messages.toList() );
@@ -119,11 +131,16 @@ or just add DEBUG to the root logger
 	<!--- getEntry --->
 	<cffunction name="getEntry" output="false" access="public" returntype="struct" hint="Get an entry from forgebox by slug">
 		<cfargument name="slug" type="string" required="true" default="" hint="The entry slug to retreive"/>
+		<cfargument name="APIToken" type="string" default="">
 		<cfscript>
 			var results = "";
 			
 			// Invoke call
-			results = makeRequest(resource="entry/#arguments.slug#");
+			results = makeRequest(
+				resource="entry/#arguments.slug#",
+				headers = {
+					'x-api-token' : arguments.APIToken
+				});
 						
 			// error 
 			if( results.response.error ){
@@ -137,11 +154,16 @@ or just add DEBUG to the root logger
 	<!--- isSlugAvailable --->
 	<cffunction name="isSlugAvailable" output="false" access="public" returntype="boolean" hint="Verifies if a slug is available">
 		<cfargument name="slug" type="string" required="true" default="" hint="The entry slug to verify"/>
+		<cfargument name="APIToken" type="string" default="">
 		<cfscript>
 			var results = "";
 			
 			// Invoke call
-			results = makeRequest(resource="slug-check/#arguments.slug#");
+			results = makeRequest(
+				resource="slug-check/#arguments.slug#",
+				headers = {
+					'x-api-token' : arguments.APIToken
+				});
 			
 			// error 
 			if( results.response.error ){
@@ -152,35 +174,6 @@ or just add DEBUG to the root logger
 		</cfscript>	
 	</cffunction>
 	
-	<!---
-		Install 
-		This simply downloads the file from ForgeBox and stores it locally 
-	--->
-	<cffunction name="install" output="false" access="public" returntype="string" hint="Install Code Entry">
-		<cfargument name="slug"    			type="string" required="true" hint="The slug to install" />
-		<cfargument name="destinationDir" 	type="string" required="true" />
-		
-		<!--- Start Log --->
-		<cfset var destination  = arguments.destinationDir>
-		<!---Don't trust the URL to have a file name --->
-		<cfset var fileName = 'temp#randRange( 1, 1000 )#.zip'>
-		<cfset var fullPath = destination & '/' & fileName>		
-		
-		<!--- Download File --->
-		<cfset var result = progressableDownloader.download(
-			getInstallURL() & "#arguments.slug#",
-			fullPath,
-			function( status ) {
-				progressBar.update( argumentCollection = status );
-			},
-			function( newURL ) {
-				consoleLogger.info( "Redirecting to: '#arguments.newURL#'..." );
-			}
-		)>
-			
-		<cfreturn fullPath>		
-	</cffunction>	
-
 	<cfscript>
 	
 	/**
@@ -191,9 +184,16 @@ or just add DEBUG to the root logger
 		required string password,
 		required string email,
 		required string fName,
-		required string lName ) {
+		required string lName,
+		string APIToken='' ) {
 			
-		var results = makeRequest( resource="register", parameters=arguments, method='post' );
+		var results = makeRequest(
+			resource="register",
+			parameters=arguments,
+			method='post',
+			headers = {
+				'x-api-token' : arguments.APIToken
+			} );
 		
 		// error 
 		if( results.response.error ){
@@ -208,7 +208,12 @@ or just add DEBUG to the root logger
 	*/
 	function whoami( required string APIToken ) {
 			
-		var results = makeRequest( resource="users/whoami/#APIToken#", method='get' );
+		var results = makeRequest(
+			resource="users/whoami/#APIToken#",
+			method='get',
+			headers = {
+				'x-api-token' : arguments.APIToken
+			} );
 		
 		// error 
 		if( results.response.error ){
@@ -310,14 +315,21 @@ or just add DEBUG to the root logger
 	*/
 	function recordInstall(
 		required string slug,
-		string version='' ) {
+		string version='',
+		string APIToken='' ) {
 		
 		var thisResource = "install/#arguments.slug#";
 		if( len( arguments.version ) ) {
 			thisResource &= "/#arguments.version#";			
 		}
 		
-		var results = makeRequest( resource=thisResource, method='post' );
+		var results = makeRequest(
+			resource=thisResource,
+			method='post',
+			headers = {
+				'x-api-token' : arguments.APIToken
+			}
+		);
 		
 		// error 
 		if( results.response.error ){
@@ -332,14 +344,20 @@ or just add DEBUG to the root logger
 	*/
 	function recordDownload(
 		required string slug,
-		string version ) {
+		string version,
+		string APIToken='' ) {
 			
 		var thisResource = "install/#arguments.slug#";
 		if( len( arguments.version ) ) {
 			thisResource &= "/#arguments.version#";			
 		}
 			
-		var results = makeRequest( resource=thisResource, method='post' );
+		var results = makeRequest(
+			resource=thisResource,
+			method='post',
+			headers = {
+				'x-api-token' : arguments.APIToken
+			} );
 		
 		// error 
 		if( results.response.error ){
@@ -353,11 +371,22 @@ or just add DEBUG to the root logger
 	/**
 	* Autocomplete for slugs
 	*/
-	function slugSearch( required string searchTerm, string typeSlug = '' ) {
+	function slugSearch(
+		required string searchTerm,
+		string typeSlug = '',
+		string APIToken='' ) {
 			
 		var thisResource = "slugs/#arguments.searchTerm#";
 		
-		var results = makeRequest( resource=thisResource, method='get', parameters={ typeSlug : arguments.typeSlug } );
+		var results = makeRequest(
+			resource=thisResource,
+			method='get',
+			parameters={
+				typeSlug : arguments.typeSlug
+			},
+			headers = {
+				'x-api-token' : arguments.APIToken
+			} );
 		
 		// error 
 		if( results.response.error ){

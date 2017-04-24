@@ -161,9 +161,11 @@ component aliases="start" {
 	*/
 	function cfengineNameComplete( string paramSoFar ) {
 		
+		var APIToken = configService.getSetting( 'endpoints.forgebox.APIToken', '' );
+		
 		try {
 			// Get auto-complete options
-			return forgebox.slugSearch( arguments.paramSoFar, 'cf-engines' );
+			return forgebox.slugSearch( arguments.paramSoFar, 'cf-engines', APIToken );
 		} catch( forgebox var e ) {
 			// Gracefully handle ForgeBox issues
 			print

@@ -158,8 +158,9 @@ component aliases="install" {
 			return [];
 		}
 		try {
+			var APIToken = configService.getSetting( 'endpoints.forgebox.APIToken', '' );
 			// Get auto-complete options
-			return forgebox.slugSearch( arguments.paramSoFar );				
+			return forgebox.slugSearch( paramSoFar=arguments.paramSoFar, APIToken=APIToken );				
 		} catch( forgebox var e ) {
 			// Gracefully handle ForgeBox issues
 			print

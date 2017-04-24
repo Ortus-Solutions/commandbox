@@ -15,7 +15,8 @@ component {
 	/**
 	* Run Command
 	*/
-	function run(  ) {
+	function run() {
+		var APIToken = configService.getSetting( 'endpoints.forgebox.APIToken', '' );
 		
 		// typetotal,typename,typeid,typeslug
 		print.line()
@@ -23,7 +24,7 @@ component {
 			.line()
 			.blackOnWhiteLine( 'Name(Number of Packages) (slug)' );
 
-		for( var type in forgeBox.getCachedTypes() ) {
+		for( var type in forgeBox.getCachedTypes( APIToken=APIToken ) ) {
 			print.boldText( type.typeName & "(#type.numberOfActiveEntries#)" )
 				.line( '  (#type.typeSlug#)' );
 		}
