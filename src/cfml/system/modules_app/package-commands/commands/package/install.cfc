@@ -160,7 +160,7 @@ component aliases="install" {
 		try {
 			var APIToken = configService.getSetting( 'endpoints.forgebox.APIToken', '' );
 			// Get auto-complete options
-			return forgebox.slugSearch( paramSoFar=arguments.paramSoFar, APIToken=APIToken );				
+			return forgebox.slugSearch( searchTerm=arguments.paramSoFar, APIToken=APIToken );				
 		} catch( forgebox var e ) {
 			// Gracefully handle ForgeBox issues
 			print
