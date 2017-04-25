@@ -28,7 +28,7 @@ component {
 		arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
 		var boxJSON = packageService.readPackageDescriptor( arguments.directory );
 
-		if( !arguments.force && !confirm( 'Are you sure you want to unpublish? This is descrtuctive and can''t be undone.' ) ) {
+		if( !arguments.force && !confirm( 'Are you sure you want to unpublish? This is destructive and can''t be undone. (y/n)' ) ) {
 			error( 'Cancelled!' );
 		}
 
