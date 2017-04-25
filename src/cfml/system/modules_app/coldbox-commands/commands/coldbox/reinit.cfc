@@ -17,7 +17,8 @@ component aliases="fwreinit" {
 	property name="formatter" inject="formatter";
 	
 	/**
-	* @password.hint The FWReinit password
+	* @password The FWReinit password
+	* @name Name of the CommandBox server to reinit
 	**/
 	function run( password="1", name="" ){
 		var serverInfo = serverService.getServerInfoByDiscovery( getCWD(), arguments.name );
