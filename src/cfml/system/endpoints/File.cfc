@@ -37,7 +37,7 @@ component accessors="true" implements="IEndpoint" singleton {
 		var packagePath = fileSystemUtil.resolvePath( "#variables.tempDir#/#createUUID()#" );
 		
 		// Unzip to temp directory
-		consoleLogger.info( "Uncompressing...");
+		consoleLogger.info( "Decompressing...");
 		
 		zip action="unzip" file="#package#" destination="#packagePath#" overwrite="true";
 		
