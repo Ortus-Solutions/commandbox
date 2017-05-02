@@ -15,29 +15,28 @@ component {
 	
 	// DI
 	property name="packageService" 	inject="PackageService";
+	property name="testingService" 	inject="TestingService@testbox-commands";
 
 	/**
 	* Ability to execute TestBox tests
-	* @runner.hint The URL or shortname of the runner to use, if it uses a short name we look in your box.json
-	* @bundles.hint The path or list of paths of the spec bundle CFCs to run and test
-	* @directory.hint The directory mapping to test: directory = the path to the directory using dot notation (myapp.testing.specs)
-	* @recurse.hint Recurse the directory mapping or not, by default it does
-	* @reporter.hint The type of reporter to use for the results, by default is uses our 'simple' report. You can pass in a core reporter string type or a class path to the reporter to use.
-	* @reporterOptions.hint A JSON struct literal of options to pass into the reporter
-	* @labels.hint The list of labels that a suite or spec must have in order to execute.
-	* @options.hint A JSON struct literal of configuration options that are optionally used to configure a runner.
-	* @testBundles.hint A list or array of bundle names that are the ones that will be executed ONLY!
-	* @testSuites.hint A list of suite names that are the ones that will be executed ONLY!
-	* @testSpecs.hint A list of test names that are the ones that will be executed ONLY!
-	* @outputFile.hint We will store the results in this output file as well as presenting it to you.
+	* @runner      The URL or shortname of the runner to use, if it uses a short name we look in your box.json
+	* @bundles     The path or list of paths of the spec bundle CFCs to run and test
+	* @directory   The directory mapping to test: directory = the path to the directory using dot notation (myapp.testing.specs)
+	* @recurse     Recurse the directory mapping or not, by default it does
+	* @reporter    The type of reporter to use for the results, by default is uses our 'simple' report. You can pass in a core reporter string type or a class path to the reporter to use.
+	* @labels      The list of labels that a suite or spec must have in order to execute.
+	* @options     A JSON struct literal of configuration options that are optionally used to configure a runner.
+	* @testBundles A list or array of bundle names that are the ones that will be executed ONLY!
+	* @testSuites  A list of suite names that are the ones that will be executed ONLY!
+	* @testSpecs   A list of test names that are the ones that will be executed ONLY!
+	* @outputFile  We will store the results in this output file as well as presenting it to you.
 	**/
 	function run(
 		string runner="",
 		string bundles,
 		string directory,
-		boolean recurse=true,
-		string reporter="text",
-		string reporterOptions,
+		boolean recurse,
+		string reporter="",
 		string labels,
 		string options,
 		string testBundles,
@@ -45,13 +44,14 @@ component {
 		string testSpecs,
 		string outputFile
 	){
-		var runnerURL = '';
-		// If a URL is passed, used it
+		var runnerURL 	= '';
+
+		// If a URL is passed, used it as an override
 		if( left( arguments.runner, 4 ) == 'http' ) {
 			runnerURL = arguments.runner;
 		// Otherwise, try to get one from box.json
 		} else {
-			runnerURL = packageService.getTestBoxRunner( getCWD(), arguments.runner );
+			runnerURL = testingService.getTestBoxRunner( getCWD(), arguments.runner );
 			// Validate runner
 			if( !len( runnerURL ) ){
 				return error( '(#arguments.runner#) it not a valid runner in your box.json. Runners found are: #packageService.readPackageDescriptor( getCWD() ).testbox.runner.toString()#' );
@@ -63,20 +63,39 @@ component {
 			return error( '[#runnerURL#] it not a valid URL, or does not match a runner slug in your box.json.' );
 		}
 
-		var testboxURL = runnerURL & "?recurse=#arguments.recurse#&reporter=#arguments.reporter#";
-		// Do we have bundles
-		if( !isNull( arguments.bundles ) ){ testboxURL &= "&bundles=#arguments.bundles#"; }
-		// Do we have directory
-		if( !isNull( arguments.bundles ) ){ testboxURL &= "&directory=#arguments.directory#"; }
-		// Do we have labels
-		if( !isNull( arguments.labels ) ){ testboxURL &= "&labels=#arguments.labels#"; }
-		// Do we have testBundles
-		if( !isNull( arguments.testBundles ) ){ testboxURL &= "&testBundles=#arguments.testBundles#"; }
-		// Do we have testSuites
-		if( !isNull( arguments.testSuites ) ){ testboxURL &= "&labels=#arguments.testSuites#"; }
-		// Do we have testSpecs
-		if( !isNull( arguments.testSpecs ) ){ testboxURL &= "&labels=#arguments.testSpecs#"; }
+		// Default runner builder
+		var testboxURL = runnerURL & "?";
 		
+		// Runner options overridable by arguments and box options
+		var RUNNER_OPTIONS = {
+			"reporter"	    : "text",
+			"recurse"	    : true,
+			"bundles"	    : "",
+			"directory"	    : "",
+			"labels"	    : "",
+			"testBundles"	: "",
+			"testSuites"	: "",
+			"testSpecs" 	: ""
+		};
+
+		// Get testbox options from package descriptor
+		var boxOptions 	= packageService.readPackageDescriptor( getCWD() ).testbox;
+		// Build out runner options
+		for( var thisOption in RUNNER_OPTIONS ){
+			// Check argument overrides
+			if( !isNull( arguments[ thisOption ] ) && len( arguments[ thisOption ] ) ){
+				testboxURL &= "&#thisOption#=#arguments[ thisOption ]#";
+			} 
+			// Check runtime options now
+			else if( boxOptions.keyExists( thisOption ) && len( boxOptions[ thisOption ]) ){
+				testboxURL &= "&#thisOption#=#boxOptions[ thisOption ]#";
+			} 
+			// Defaults
+			else if( len( RUNNER_OPTIONS[ thisOption ] ) ) {
+				testboxURL &= "&#thisOption#=#RUNNER_OPTIONS[ thisOption ]#";
+			}
+		}
+
 		// Advice we are running
 		print.boldCyanLine( "Executing tests via #testBoxURL#, please wait..." )
 			.blinkingRed( "Please wait...")
