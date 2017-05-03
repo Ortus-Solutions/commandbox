@@ -118,7 +118,7 @@ component accessors="true" singleton {
 	 * Create a directory watcher.  Call its DSL to configure it.
  	 **/
 	function watch() {
-		return getinstance( 'watch' );
+		return getinstance( 'watcher' );
 	}
 
 	/**

@@ -7,6 +7,16 @@
 *
 * I am a watcher that will run code any time files in a directory change.
 * I am intended to be used as a transient.  Create a new instance of me for each watch operation.
+*
+*
+*	getIsntance( 'watcher' )
+*		.paths( '**.cfc' )
+*		.inDirectory( getCWD() )
+*		.onChange( function() {
+*			command( 'testbox run' )
+*				.run();
+*		} )
+*		.start();
 */
 component accessors=true {
 	// DI
