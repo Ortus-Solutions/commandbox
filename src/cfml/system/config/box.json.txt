@@ -38,7 +38,7 @@
 			{ "default": "" }
 		],
 		"labels" : "",
-		"reporter : "",
+		"reporter" : "",
 	    "bundles" : "test.specs",
 	    "recurse" : true,
 	    "directory" : "",
