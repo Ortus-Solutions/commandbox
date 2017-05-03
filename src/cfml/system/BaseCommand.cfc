@@ -113,6 +113,13 @@ component accessors="true" singleton {
 	function command( required name ) {
 		return getinstance( name='CommandDSL', initArguments={ name : arguments.name } );
 	}
+		
+	/**
+	 * Create a directory watcher.  Call its DSL to configure it.
+ 	 **/
+	function watch() {
+		return getinstance( 'watch' );
+	}
 
 	/**
 	 * Use if if your command wants to give controlled feedback to the user without raising

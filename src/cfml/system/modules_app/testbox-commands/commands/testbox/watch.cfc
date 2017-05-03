@@ -7,7 +7,14 @@ component {
 	 * 
 	 **/
 	function run(  ) {
-		print.line( "Command not implemented!" );
+		watch()
+			.paths( '**.cfc' )
+			.inDirectory( getCWD() )
+			.onChange( function() {
+				command( 'testbox run' )
+					.run();
+			} )
+			.start();
 	}
 
 }
