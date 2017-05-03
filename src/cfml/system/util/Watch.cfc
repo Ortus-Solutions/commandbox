@@ -67,6 +67,10 @@ component accessors=true {
 	*/
 	public function start() {
 		
+		if( isNull( getChangeUDF() ) ) {
+			throw( "No onChange UDF specified.  There's nothing to do!" );	
+		}		
+		
 		setChangeHash( calculateHashes() );
 		setWatcherRun( true );
 		
