@@ -39,6 +39,7 @@ component accessors=true {
 				var thisPattern = arguments[ arg ];
 				pathsToWatch.append( thisPattern, isArray( thisPattern ) );
 		}
+		return this;
 	}
 	
 	/**
@@ -46,6 +47,7 @@ component accessors=true {
 	*/
 	public function inDirectory( baseDirectory ) {
 		setBaseDirectory( arguments.baseDirectory );
+		return this;
 	}
 	
 	/**
@@ -53,6 +55,7 @@ component accessors=true {
 	*/
 	public function withDelay( delayMS ) {
 		setDelayMS( arguments.delayMS );
+		return this;
 	}
 	
 	/**
@@ -60,6 +63,7 @@ component accessors=true {
 	*/
 	public function onChange( changeUDF ) {
 		setChangeUDF( arguments.changeUDF );
+		return this;
 	}
 	
 	/**
@@ -152,6 +156,7 @@ component accessors=true {
 		// Wait until the thread finishes
 		thread action="join" name=threadName;
 		
+		return this;
 	}
 
 
