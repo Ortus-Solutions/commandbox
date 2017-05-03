@@ -37,16 +37,15 @@
 		runner : [
 			{ "default": "" }
 		],
-		labels : [],
-		reporter :"",
-		reporterResults : "",
-		bundles :[ "" ],
-		directory: { mapping : "", recurse: true },
-		watchers :[],
-		notify : {
-			emails : [],
-			growl : "",
-			URL : ""
-		}
+		"labels" : "",
+		"reporter : "",
+	    "bundles" : "test.specs",
+	    "recurse" : true,
+	    "directory" : "",
+	    "testBundles" : "",
+	    "testSuites" : "",
+	    "testSpecs" : "",
+	    "Watchers" : []
+
 	}
 }
