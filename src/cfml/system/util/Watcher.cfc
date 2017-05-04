@@ -9,7 +9,7 @@
 * I am intended to be used as a transient.  Create a new instance of me for each watch operation.
 *
 *
-*	getIsntance( 'watcher' )
+*	getInstance( 'watcher' )
 *		.paths( '**.cfc' )
 *		.inDirectory( getCWD() )
 *		.onChange( function() {
