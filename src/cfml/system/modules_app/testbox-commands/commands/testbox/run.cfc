@@ -16,6 +16,7 @@ component {
 	// DI
 	property name="packageService" 	inject="PackageService";
 	property name="testingService" 	inject="TestingService@testbox-commands";
+	property name="CLIRenderer" 	inject="CLIRenderer@testbox-commands";
 
 	/**
 	* Ability to execute TestBox tests
@@ -30,6 +31,7 @@ component {
 	* @testSuites  A list of suite names that are the ones that will be executed ONLY!
 	* @testSpecs   A list of test names that are the ones that will be executed ONLY!
 	* @outputFile  We will store the results in this output file as well as presenting it to you.
+	* @verbose Display extra details inlcuding passing and skipped tests.  
 	**/
 	function run(
 		string runner="",
@@ -42,7 +44,8 @@ component {
 		string testBundles,
 		string testSuites,
 		string testSpecs,
-		string outputFile
+		string outputFile,
+		boolean verbose=true
 	){
 		var runnerURL 	= '';
 
@@ -68,7 +71,7 @@ component {
 		
 		// Runner options overridable by arguments and box options
 		var RUNNER_OPTIONS = {
-			"reporter"	    : "text",
+			"reporter"	    : "json",
 			"recurse"	    : true,
 			"bundles"	    : "",
 			"directory"	    : "",
@@ -96,10 +99,8 @@ component {
 			}
 		}
 
-		// Advice we are running
+		// Advise we are running
 		print.boldCyanLine( "Executing tests via #testBoxURL#, please wait..." )
-			.blinkingRed( "Please wait...")
-			.printLine()
 			.toConsole();
 
 		// run it now baby!
@@ -120,23 +121,46 @@ component {
 			print.boldGreenLine( "Report written to #arguments.outputFile#!" );
 		}
 		
-		results.fileContent = reReplace( trim( results.fileContent ), '[\r\n]+', CR, 'all' );
+		results.fileContent = trim( results.fileContent );
 		
-		// Print accordingly to results
-		if( ( results.responseheader[ "x-testbox-totalFail" ]  ?: 0 ) eq 0 AND
-			( results.responseheader[ "x-testbox-totalError" ] ?: 0 ) eq 0 ){
-			// print OK report
-			print.green( " " & results.filecontent );
-		} else if( results.responseheader[ "x-testbox-totalFail" ] gt 0 ){
-			// print Failure report
-			setExitCode( 1 );
-			print.yellow( " " & results.filecontent );
-		} else if( results.responseheader[ "x-testbox-totalError" ] gt 0 ){
-			// print Failure report
-			setExitCode( 1 );
-			print.boldRed( " " & results.filecontent );
+		// Default is to template our own output based on a JSON reponse
+		if( RUNNER_OPTIONS.reporter == 'json' && isJSON( results.fileContent ) ) {
+			
+			var testData = deserializeJSON( results.fileContent );
+			
+			// If any tests failed or errored.
+			if( testData.totalFail || testData.totalError ) {
+				// Send back failing exit code to shell
+				setExitCode( 1 );
+			} 
+			
+			CLIRenderer.render( print, testData, verbose );
+									
+			//systemOutput( getINstance( 'formatter' ).formatJSON( testData ) );
+			
+		// For all other reporters, just dump out whatever we got from the server
+		} else {
+			
+			results.fileContent = reReplace( results.fileContent, '[\r\n]+', CR, 'all' );
+		
+			// Print accordingly to results
+			if( ( results.responseheader[ "x-testbox-totalFail" ]  ?: 0 ) eq 0 AND
+				( results.responseheader[ "x-testbox-totalError" ] ?: 0 ) eq 0 ){
+				// print OK report
+				print.green( " " & results.filecontent );
+			} else if( results.responseheader[ "x-testbox-totalFail" ] gt 0 ){
+				// print Failure report
+				setExitCode( 1 );
+				print.yellow( " " & results.filecontent );
+			} else if( results.responseheader[ "x-testbox-totalError" ] gt 0 ){
+				// print Failure report
+				setExitCode( 1 );
+				print.boldRed( " " & results.filecontent );
+			}
+
+			
 		}
-		
+				
 	}
 
 }
