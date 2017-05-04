@@ -302,9 +302,7 @@ component accessors="true" singleton {
 	* Get the temp dir in a safe manner
 	*/
 	string function getTempDir(){
-		lock name="commandbox.tempdir" timeout="10" type="readOnly" throwOnTimeout="true"{
-			return variables.tempDir;
-		}
+		return variables.tempDir;
 	}
 
 	/**
@@ -312,31 +310,14 @@ component accessors="true" singleton {
 	 * @directory.hint directory to use
   	 **/
 	Shell function setTempDir( required directory ){
-        lock name="commandbox.tempdir" timeout="10" type="exclusive" throwOnTimeout="true"{
+       
+       // Create it if it's not there.
+       if( !directoryExists( arguments.directory ) ) {
+	        directoryCreate( arguments.directory );       	
+       }
 
-        	// Delete temp dir
-	        var clearTemp = directoryExists( arguments.directory ) ? directoryDelete( arguments.directory, true ) : "";
-
-	        // Re-create it. Try 3 times.
-	        var tries = 0;
-        	try {
-        		tries++;
-		        directoryCreate( arguments.directory );
-        	} catch (any e) {
-        		if( tries <= 3 ) {
-					variables.logger.info( 'Error creating temp directory [#arguments.directory#]. Trying again in 500ms.', 'Number of tries: #tries#' );
-        			// Wait 500 ms and try again.  OS could be locking the dir
-        			sleep( 500 );
-        			retry;
-        		} else {
-					variables.logger.info( 'Error creating temp directory [#arguments.directory#]. Giving up now.', 'Tried #tries# times.' );
-        			printError( e );
-        		}
-        	}
-
-        	// set now that it is created.
-        	variables.tempdir = arguments.directory;
-        }
+    	// set now that it is created.
+    	variables.tempdir = arguments.directory;
 
     	return this;
 	}
