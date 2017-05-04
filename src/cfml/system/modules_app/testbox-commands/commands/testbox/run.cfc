@@ -45,7 +45,7 @@ component {
 		string testSuites,
 		string testSpecs,
 		string outputFile,
-		boolean verbose=true
+		boolean verbose
 	){
 		var runnerURL 	= '';
 
@@ -134,7 +134,7 @@ component {
 				setExitCode( 1 );
 			} 
 			
-			CLIRenderer.render( print, testData, verbose );
+			CLIRenderer.render( print, testData, arguments.verbose ?: boxOptions.verbose ?: true );
 									
 			//systemOutput( getINstance( 'formatter' ).formatJSON( testData ) );
 			

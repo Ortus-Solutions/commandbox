@@ -45,6 +45,7 @@
 	    "testBundles" : "",
 	    "testSuites" : "",
 	    "testSpecs" : "",
+	    "verbose" : true,
 	    "Watchers" : []
 
 	}
