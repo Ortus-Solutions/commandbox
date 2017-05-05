@@ -14,8 +14,7 @@ component {
  		PASS : 'green',
  		SKIP : 'yellow',
  		ERROR : 'boldRed',
- 		FAIL : 'boldRed',
- 		NORMAL : 'NORMAL'
+ 		FAIL : 'boldRed'
  	};
 
 	/**
@@ -50,7 +49,7 @@ component {
 				.line("=================================================================================", thisColor )
 				.line( "#thisBundle.path# (#thisBundle.totalDuration# ms) [Suites/Specs: #thisBundle.totalSuites#/#thisBundle.totalSpecs#]", thisColor )
 				.line( "[Passed: #thisBundle.totalPass#] [Failed: #thisBundle.totalFail#] [Errors: #thisBundle.totalError#] [Skipped: #thisBundle.totalSkipped#]", thisColor )
-				.line( "---------------------------------------------------------------------------------", thisColor);
+				.line( "---------------------------------------------------------------------------------", thisColor );
 			
 			if ( !isSimpleValue( thisBundle.globalException ) ) {
 	
@@ -71,19 +70,23 @@ component {
 		
 		// Skip this redundant line if no specs printed above in the previous suite
 		if( didPrint ) {
-			print.line("---------------------------------------------------------------------------------" );			
+			print.line("---------------------------------------------------------------------------------", thisColor );			
 		}
-		print
-			.text( "Passed", COLOR.PASS ).text( " || " )
-			.text( "Skipped", COLOR.SKIP ).text( " || " )
-			.text( "Exception/Error", COLOR.ERROR ).text( " || " )
-			.text( "Failure", COLOR.FAIL )
-			.line();
+		
+		if( verbose ) {
+			print
+				.text( "Passed", COLOR.PASS ).text( " || " )
+				.text( "Skipped", COLOR.SKIP ).text( " || " )
+				.text( "Exception/Error", COLOR.ERROR ).text( " || " )
+				.text( "Failure", COLOR.FAIL )
+				.line();
+		}
 
 	}
 			
 	//  Recursive Output
 	function genSuiteReport(suiteStats, bundleStats, level="0", print, verbose ) {
+			
 		if ( ( arguments.suiteStats.totalFail + arguments.suiteStats.totalError ) == 0  && !verbose) {
 			return false;
 		}
