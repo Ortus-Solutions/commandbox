@@ -114,11 +114,13 @@ component accessors=true {
 				} catch( any e ) {
 					// Print out error message from exception and continue watching
 					print.printRedBoldLine( "An exception has ocurred: #e.message# #e.detail#" )
-						.line( e.stacktrace )
+						//.line( e.stacktrace )
 						.line()
 						.printGreenLine( "Starting watcher again..." )
 						.line()
 						.toConsole();
+						
+					retry;
 				}
 			} // end thread
 			

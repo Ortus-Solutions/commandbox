@@ -322,16 +322,14 @@ component accessors="true" singleton {
 					} else {
 						shell.printError( e );
 					}
-				// Unwind the stack and cancell all commands in the chain.
+				// Unwind the stack to the closest catch
 				} else {
-					// Clean up a bit
-					instance.callStack.clear();
 					rethrow;
 				}
+			} finally {
+				// Remove it from the stack
+				instance.callStack.deleteAt( 1 );
 			}
-
-			// Remove it from the stack
-			instance.callStack.deleteAt( 1 );
 
 			// If the command didn't return anything, grab its print buffer value
 			if( isNull( result ) ){

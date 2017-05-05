@@ -18,7 +18,7 @@ component {
 	 **/
 	function run( directory="" )  {
 		
-		// This will make each directory canonical and absolute		
+		// This will make each directory canonical and absolute
 		arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
 		
 		if( !directoryExists( arguments.directory ) ) {
