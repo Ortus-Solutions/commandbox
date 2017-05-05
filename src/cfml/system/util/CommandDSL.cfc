@@ -19,6 +19,7 @@ component accessors=true {
 	property name='flags';
 	property name='append';
 	property name='overwrite';
+	property name='workingDirectory';
 	
 	
 	// DI
@@ -42,6 +43,7 @@ component accessors=true {
 		setFlags( [] );
 		setAppend( '' );
 		setOverwrite( '' );
+		setWorkingDirectory( '' );
 		return this;
 	}
 		
@@ -106,6 +108,14 @@ component accessors=true {
 		setOverwrite( '"#parser.escapeArg( arguments.path )#"' );
 		return this;
 	}
+			
+	/**
+	 * Sets the directory to run the command in 
+  	 **/
+	function inWorkingDirectory( required workingDirectory ) {
+		setWorkingDirectory( arguments.workingDirectory );
+		return this;
+	}
 		
 	/**
 	 * Pipe additional commands
@@ -168,11 +178,28 @@ component accessors=true {
 			shell.callCommand( 'echo "#parser.escapeArg( getCommandString() )#"' );
 		}
 		
+		var originalCWD = shell.getPWD();
+		if( getWorkingDirectory().len() ) {
+			shell.cd( getWorkingDirectory() );
+		}
+		
 		if( structkeyExists( arguments, 'piped' ) ) {
-			return shell.callCommand( getTokens(), arguments.returnOutput, arguments.piped );
+			var result = shell.callCommand( getTokens(), arguments.returnOutput, arguments.piped );
 		} else {
-			return shell.callCommand( getTokens(), arguments.returnOutput );
-		}		
+			var result = shell.callCommand( getTokens(), arguments.returnOutput );
+		}
+		
+		var postCommandCWD = shell.getPWD();
+				
+		// Only change back if the executed command didn't change the CWD
+		if( getWorkingDirectory().len() && postCommandCWD == getWorkingDirectory() ) {
+			shell.cd( originalCWD );
+		}
+		
+		if( !isNull( local.result ) ) {
+			return local.result;
+		}	
+	
 	}
 
 }
