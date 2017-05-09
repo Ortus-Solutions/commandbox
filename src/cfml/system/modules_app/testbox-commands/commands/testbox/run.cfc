@@ -38,7 +38,7 @@ component {
 		string bundles,
 		string directory,
 		boolean recurse,
-		string reporter="",
+		string reporter,
 		string labels,
 		string options,
 		string testBundles,
@@ -89,11 +89,11 @@ component {
 		// Build out runner options
 		for( var thisOption in RUNNER_OPTIONS ){
 			// Check argument overrides
-			if( !isNull( arguments[ thisOption ] ) && len( arguments[ thisOption ] ) ){
+			if( !isNull( arguments[ thisOption ] ) ){
 				testboxURL &= "&#thisOption#=#arguments[ thisOption ]#";
 			} 
 			// Check runtime options now
-			else if( boxOptions.keyExists( thisOption ) && len( boxOptions[ thisOption ]) ){
+			else if( boxOptions.keyExists( thisOption ) ){
 				testboxURL &= "&#thisOption#=#boxOptions[ thisOption ]#";
 			} 
 			// Defaults
