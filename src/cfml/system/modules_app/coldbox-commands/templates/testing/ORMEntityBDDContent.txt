@@ -8,6 +8,8 @@ responsibility to update the model annotation instantiation path and init your m
 	<!--- *********************************** LIFE CYCLE Methods *********************************** --->
 
 	<cffunction name="beforeAll">
+		<cfset super.beforeAll()>
+	
 		<!--- load ColdBox --->
 		<cfset this.loadColdbox = true>
 
@@ -19,7 +21,7 @@ responsibility to update the model annotation instantiation path and init your m
 	</cffunction>
 
 	<cffunction name="afterAll">
-	
+		<cfset super.afterAll()>
 	</cffunction>
 
 	<!--- *********************************** BDD SUITES *********************************** --->

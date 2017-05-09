@@ -8,6 +8,8 @@ component extends="coldbox.system.testing.BaseModelTest" model="|modelPath|"{
 	/*********************************** LIFE CYCLE Methods ***********************************/
 
 	function beforeAll(){
+		super.beforeAll();
+		
 		// setup the model
 		super.setup();
 		
@@ -16,6 +18,7 @@ component extends="coldbox.system.testing.BaseModelTest" model="|modelPath|"{
 	}
 
 	function afterAll(){
+		super.afterAll();
 	}
 
 	/*********************************** BDD SUITES ***********************************/
