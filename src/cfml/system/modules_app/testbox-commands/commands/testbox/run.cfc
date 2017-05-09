@@ -66,8 +66,11 @@ component {
 			return error( '[#runnerURL#] it not a valid URL, or does not match a runner slug in your box.json.' );
 		}
 
-		// Default runner builder
-		var testboxURL = runnerURL & "?";
+		// Default runner builder and add ? if not detected
+		var testboxURL = runnerURL;
+		if( !find( "?", testboxURL ) ){
+			testboxURL &= "?";
+		}
 		
 		// Runner options overridable by arguments and box options
 		var RUNNER_OPTIONS = {
@@ -157,7 +160,6 @@ component {
 				setExitCode( 1 );
 				print.boldRed( " " & results.filecontent );
 			}
-
 			
 		}
 				
