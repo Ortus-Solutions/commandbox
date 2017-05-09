@@ -27,28 +27,51 @@
  *
  **/
 component {
+
+	// DI
+	property name="packageService" 	inject="PackageService";
+
+	variables.WATCH_DELAY 	= 500;
+	variables.PATHS 		= "**.cfc";
 	
 	/**
-	 * @paths Command delimeted list of file globbing paths to watch relative to "directory".
-	 * @delay How may miliseconds to wait before polling for changes
+	 * @paths Command delimeted list of file globbing paths to watch relative to "directory", defaults to **.cfc
+	 * @delay How may miliseconds to wait before polling for changes, defaults to 500 ms
 	 * @directory The directory to watch for changes. "testbox run" is executed in this folder as well.
 	 **/
 	function run(
-		string paths='**.cfc',  
-	 	number delay=500,
+		string paths,  
+	 	number delay,
 	 	string directory=''
 	) {
 		
 		arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
 		
+		// Get testbox options from package descriptor
+		var boxOptions = packageService.readPackageDescriptor( getCWD() ).testbox;
+
+		var getOptionsWatchers = function(){
+			// Return to List
+			if( boxOptions.keyExists( "watchers" ) ){
+				if( isArray( boxOptions.watchers ) ){
+					return boxOptions.watchers.toList();
+				}
+				return boxOptions.watchers;
+			}
+			// should return null if not found
+		}
+		
+		// Determine watching patterns, either from arguments or boxoptions or defaults
+		var globbingPaths = arguments.paths ?: getOptionsWatchers() ?: variables.PATHS;
+
 		// Tabula rasa
 		command( 'cls' ).run();
 		
 		// Start watcher
 		watch()
-			.paths( paths.listToArray() )
+			.paths( globbingPaths.listToArray() )
 			.inDirectory( directory )
-			.withDelay( delay )
+			.withDelay( arguments.delay ?: boxOptions.watchDelay ?: variables.WATCH_DELAY )
 			.onChange( function() {
 				
 				// Clear the screen
