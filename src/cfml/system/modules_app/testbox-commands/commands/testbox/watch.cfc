@@ -42,10 +42,8 @@ component {
 	function run(
 		string paths,  
 	 	number delay,
-	 	string directory=''
+	 	string directory
 	) {
-		
-		arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
 		
 		// Get testbox options from package descriptor
 		var boxOptions = packageService.readPackageDescriptor( getCWD() ).testbox;
@@ -64,13 +62,18 @@ component {
 		// Determine watching patterns, either from arguments or boxoptions or defaults
 		var globbingPaths = arguments.paths ?: getOptionsWatchers() ?: variables.PATHS;
 
+		// Determine base directory
+		arguments.directory = fileSystemUtil.resolvePath( 
+			arguments.directory ?: boxOptions.watchBaseDirectory ?: ''
+		);
+
 		// Tabula rasa
 		command( 'cls' ).run();
 		
 		// Start watcher
 		watch()
 			.paths( globbingPaths.listToArray() )
-			.inDirectory( directory )
+			.inDirectory( arguments.directory )
 			.withDelay( arguments.delay ?: boxOptions.watchDelay ?: variables.WATCH_DELAY )
 			.onChange( function() {
 				
@@ -80,7 +83,7 @@ component {
 					
 				// Run the tests in the target directory
 				command( 'testbox run' )
-					.inWorkingDirectory( directory )
+					.inWorkingDirectory( arguments.directory )
 					.run();
 										
 			} )
