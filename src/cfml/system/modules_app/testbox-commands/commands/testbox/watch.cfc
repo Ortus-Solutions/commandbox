@@ -35,7 +35,7 @@ component {
 	variables.PATHS 		= "**.cfc";
 	
 	/**
-	 * @paths Command delimeted list of file globbing paths to watch relative to "directory", defaults to **.cfc
+	 * @paths Command delimeted list of file globbing paths to watch relative to the working directory, defaults to **.cfc
 	 * @delay How may miliseconds to wait before polling for changes, defaults to 500 ms
 	 **/
 	function run(
