@@ -37,12 +37,10 @@ component {
 	/**
 	 * @paths Command delimeted list of file globbing paths to watch relative to "directory", defaults to **.cfc
 	 * @delay How may miliseconds to wait before polling for changes, defaults to 500 ms
-	 * @directory The directory to watch for changes. "testbox run" is executed in this folder as well.
 	 **/
 	function run(
 		string paths,  
-	 	number delay,
-	 	string directory
+	 	number delay
 	) {
 		
 		// Get testbox options from package descriptor
@@ -63,8 +61,8 @@ component {
 		var globbingPaths = arguments.paths ?: getOptionsWatchers() ?: variables.PATHS;
 
 		// Determine base directory
-		arguments.directory = fileSystemUtil.resolvePath( 
-			arguments.directory ?: boxOptions.watchBaseDirectory ?: ''
+		var currentDirectory = fileSystemUtil.resolvePath( 
+			boxOptions.watchBaseDirectory ?: getCWD()
 		);
 
 		// Tabula rasa
@@ -73,7 +71,7 @@ component {
 		// Start watcher
 		watch()
 			.paths( globbingPaths.listToArray() )
-			.inDirectory( arguments.directory )
+			.inDirectory( currentDirectory )
 			.withDelay( arguments.delay ?: boxOptions.watchDelay ?: variables.WATCH_DELAY )
 			.onChange( function() {
 				
@@ -83,7 +81,7 @@ component {
 					
 				// Run the tests in the target directory
 				command( 'testbox run' )
-					.inWorkingDirectory( arguments.directory )
+					.inWorkingDirectory( currentDirectory )
 					.run();
 										
 			} )
