@@ -54,7 +54,7 @@ component aliases="init" {
 		var directory = getCWD();
 		
 		// Read current box.json if it exists, otherwise, get a new one
-		var boxJSON = PackageService.readPackageDescriptor( directory );
+		var boxJSON = PackageService.readPackageDescriptorTemplate( directory );
 
 		// Don't use these defaults if the existing box.json already has something useful
 		if( len( boxJSON.name ) && arguments.name == 'My Package' ) {
@@ -76,7 +76,7 @@ component aliases="init" {
 			var fullPropertyName = 'boxJSON.#arg#';
 			var propertyValue = arguments[ arg ];
 			if( isJSON( propertyValue ) ) {
-				evaluate( '#fullPropertyName# = deserializeJSON( arguments[ arg ] )' );				
+				evaluate( '#fullPropertyName# = deserializeJSON( arguments[ arg ] )' );
 			} else {
 				evaluate( '#fullPropertyName# = arguments[ arg ]' );				
 			}
@@ -87,6 +87,6 @@ component aliases="init" {
 		PackageService.writePackageDescriptor( boxJSON, directory );
 		
 		// Info message
-		print.yellowLine( 'Package Initialized & Created ' & directory & '/box.json' ).toConsole();
+		print.yellowLine( 'Package Initialized & Created ' & directory & 'box.json' ).toConsole();
 	}
 }
