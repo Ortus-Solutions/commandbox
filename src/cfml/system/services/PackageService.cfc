@@ -786,12 +786,29 @@ component accessors="true" singleton {
 	* Get the default package description, AKA box.json
 	* @defaults A struct of default values to be merged into the empty, default document
 	*/	
-	public function newPackageDescriptor( struct defaults={} ) {
+	public function newPackageDescriptor( struct defaults={}, boolean omitDeprecated=false ) {
 		
 		// TODO: Get author info from default CommandBox config
 		
 		// Read the default JSON file and deserialize it.  
 		var boxJSON = DeserializeJSON( fileRead( '/commandBox/system/config/box.json.txt' ) );
+		
+		// Remove deprecated (or just edge case) properties
+		// from the box.json template as to not confuse people.
+		if( arguments.omitDeprecated ) {
+			
+			// most packages shouldn't need to set these
+			boxJSON.delete( 'directory' )
+			boxJSON.delete( 'createPackageDirectory' )
+			boxJSON.delete( 'packageDirectory' )
+			
+			// These aren't even used
+			boxJSON.delete( 'engines' )
+			boxJSON.delete( 'defaultEngine' )
+			
+			// This went out of style with server.json
+			boxJSON.delete( 'defaultPort' );
+		}
 		
 		// Replace things passed via parameters
 		boxJSON = boxJSON.append( arguments.defaults );
@@ -809,6 +826,15 @@ component accessors="true" singleton {
 	struct function readPackageDescriptor( required directory ){
 		// Merge this JSON with defaults
 		return newPackageDescriptor( readPackageDescriptorRaw( arguments.directory ) );
+	}
+
+	/**
+	* Does everything readPackageDescriptor() does, but won't default deprecated box.json proprties.
+	* @directory The directory to search for the box.json
+	*/
+	struct function readPackageDescriptorTemplate( required directory ){
+		// Merge this JSON with defaults
+		return newPackageDescriptor( readPackageDescriptorRaw( arguments.directory ), true );
 	}
 
 	/**
