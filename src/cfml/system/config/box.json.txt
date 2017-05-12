@@ -46,7 +46,7 @@
 	    "testSuites" : "",
 	    "testSpecs" : "",
 	    "verbose" : true,
-	    "Watchers" : []
-
+	    "watchDelay" : 500,
+	    "watchPaths" : "**.cfc"
 	}
 }

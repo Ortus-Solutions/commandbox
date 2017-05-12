@@ -111,15 +111,28 @@ component accessors=true {
 							sleep( getDelayMS() );
 						}
 					}
-				} catch( any e ) {
-					// Print out error message from exception and continue watching
-					print.printRedBoldLine( "An exception has ocurred: #e.message# #e.detail#" )
-						.line( e.stacktrace )
+				// Handle "expected" exceptions from commands
+				} catch( commandException e ) {
+					shell.printError( { message : e.message, detail: e.detail } );
+					
+					print
+						.line()
+						.printGreenLine( "Starting watcher again..." )
+						.line()
+						.toConsole();
+					
+					// Fire the watcher up again.
+					retry;
+				} catch( any e ) {					
+					shell.printError( e );
+					
+					print
 						.line()
 						.printGreenLine( "Starting watcher again..." )
 						.line()
 						.toConsole();
 						
+					// Fire the watcher up again.
 					retry;
 				}
 			} // end thread

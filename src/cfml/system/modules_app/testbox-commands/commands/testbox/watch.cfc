@@ -9,7 +9,7 @@
  * URL to the test runner in your box.json.
  *
  * {code}
- * server set testbox.runner=http://localhost:8080/tests/runner.cfm
+ * package set testbox.runner=http://localhost:8080/tests/runner.cfm
  * server start
  * testbox watch
  * {code}
@@ -18,9 +18,11 @@
  * which will be picked up automatically by "testbox run" whe it fires.
  *
  * {code}
- * server set testbox.verbose=false
- * server set testbox.labels=foo
- * server set testbox.testSuites=bar
+ * package set testbox.verbose=false
+ * package set testbox.labels=foo
+ * package set testbox.testSuites=bar
+ * package set testbox.watchDelay=1000
+ * package set testbox.watchPaths=/models/**.cfc
  * {code}
  * 
  * This command will run in the foreground until you stop it.  When you are ready to shut down the watcher, press Ctrl+C.
@@ -35,8 +37,8 @@ component {
 	variables.PATHS 		= "**.cfc";
 	
 	/**
-	 * @paths Command delimeted list of file globbing paths to watch relative to the working directory, defaults to **.cfc
-	 * @delay How may miliseconds to wait before polling for changes, defaults to 500 ms
+	 * @paths Command delimited list of file globbing paths to watch relative to the working directory, defaults to **.cfc
+	 * @delay How may milliseconds to wait before polling for changes, defaults to 500 ms
 	 **/
 	function run(
 		string paths,  
@@ -48,17 +50,17 @@ component {
 
 		var getOptionsWatchers = function(){
 			// Return to List
-			if( boxOptions.keyExists( "watchers" ) ){
-				if( isArray( boxOptions.watchers ) ){
-					return boxOptions.watchers.toList();
-				}
-				return boxOptions.watchers;
+			if( boxOptions.keyExists( "watchPaths" ) && boxOptions.watchPaths.len() ){
+				return boxOptions.watchPaths;
 			}
 			// should return null if not found
+			return;
 		}
 		
 		// Determine watching patterns, either from arguments or boxoptions or defaults
 		var globbingPaths = arguments.paths ?: getOptionsWatchers() ?: variables.PATHS;
+		// handle non numberic config and put a floor of 150ms
+		var delayMs = max( val( arguments.delay ?: boxOptions.watchDelay ?: variables.WATCH_DELAY ), 150 );
 
 		// Tabula rasa
 		command( 'cls' ).run();
@@ -67,7 +69,7 @@ component {
 		watch()
 			.paths( globbingPaths.listToArray() )
 			.inDirectory( getCWD() )
-			.withDelay( arguments.delay ?: boxOptions.watchDelay ?: variables.WATCH_DELAY )
+			.withDelay( delayMs )
 			.onChange( function() {
 				
 				// Clear the screen

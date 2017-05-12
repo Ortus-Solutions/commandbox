@@ -561,6 +561,7 @@ component accessors="true" singleton {
 		}
 
 		variables.reader.println();
+		variables.reader.flush();
 
 		return this;
 	}
