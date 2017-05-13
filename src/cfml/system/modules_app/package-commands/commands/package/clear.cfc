@@ -16,9 +16,15 @@ component {
 	/**  
 	 * @property.hint Name of the property to clear 
 	 * @property.optionsUDF completeProperty
+	 * @system.hint When true, show box.json data in the global CommandBox folder
 	 **/
-	function run( required string property ) {
-		var directory = getCWD();
+	function run( required string property, boolean system=false ) {
+		
+		if( arguments.system ) {
+			var directory = expandPath( '/commandbox' );
+		} else {
+			var directory = getCWD();			
+		}
 				
 		// Check and see if box.json exists
 		if( !packageService.isPackage( directory ) ) {

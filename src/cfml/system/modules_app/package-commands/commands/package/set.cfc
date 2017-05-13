@@ -50,14 +50,21 @@ component {
 	 * @_.hint Pass any number of property names in followed by the value to set 
 	 * @_.optionsUDF completeProperty  
 	 * @append.hint If setting an array or struct, set to true to append instead of overwriting.
+	 * @system.hint When true, show box.json data in the global CommandBox folder
 	 **/
-	function run( _, boolean append=false ) {
-		var thisAppend = arguments.append;
-		var directory = getCWD();
+	function run( _, boolean append=false, boolean system=false ) {
+		var thisAppend = arguments.append;					
+		
+		if( arguments.system ) {
+			var directory = expandPath( '/commandbox' );
+		} else {
+			var directory = getCWD();			
+		}
 		
 		// Remove dummy args
 		structDelete( arguments, '_' );
 		structDelete( arguments, 'append' );
+		structDelete( arguments, 'system' );
 
 		// Check and see if box.json exists
 		if( !packageService.isPackage( directory ) ) {

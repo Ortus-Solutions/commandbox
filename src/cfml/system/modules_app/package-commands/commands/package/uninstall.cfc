@@ -28,12 +28,13 @@ component aliases="uninstall" {
 	* @slug.optionsUDF slugComplete
 	* @directory.hint The directory the package is currently installed in including the container folder
 	* @save.hint Remove package as a dependancy in box.json (if it exists)
-	* @saveDev.hint Remove package as a dev dependancy in box.json (if it exists)
+	* @system.hint When true, uninstall this package from the global CommandBox module's folder
 	**/
 	function run( 
 		required string slug='',
 		string directory,
-		boolean save=true
+		boolean save=true,
+		boolean system=false
 	){
 		
 		// Don't default the dir param since we need to differentiate whether the user actually 
@@ -48,10 +49,13 @@ component aliases="uninstall" {
 			}
 			
 		}
-				
-		// TODO: climb tree to find root of the site by searching for box.json
-		arguments.currentWorkingDirectory = getCWD();
 		
+		if( arguments.system ) {
+			arguments.currentWorkingDirectory = expandPath( '/commandbox' );
+		} else {
+			arguments.currentWorkingDirectory = getCWD();			
+		}
+				
 		// Convert slug to array
 		arguments.slug = listToArray( arguments.slug );
 		// iterate and uninstall.

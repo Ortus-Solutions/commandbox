@@ -34,9 +34,15 @@ component {
 	/**
 	 * @property.hint The name of the property to show.  Can nested to get "deep" properties
 	 * @property.optionsUDF completeProperty
+	 * @system.hint When true, show box.json data in the global CommandBox folder
 	 **/
-	function run( string property='' ) {		
-		var directory = getCWD();
+	function run( string property='', boolean system=false ) {
+							
+		if( arguments.system ) {
+			var directory = expandPath( '/commandbox' );
+		} else {
+			var directory = getCWD();			
+		}
 				
 		// Check and see if box.json exists
 		if( !packageService.isPackage( directory ) ) {

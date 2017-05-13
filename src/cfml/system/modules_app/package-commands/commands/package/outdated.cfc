@@ -28,17 +28,27 @@ component aliases="outdated" {
 	
 	/**  
 	 * @verbose.hint Outputs additional information about each package
-	 * @json.hint Outputs results as JSON 
+	 * @json.hint Outputs results as JSON
+	 * @system.hint When true, check the global CommandBox module's folder 
 	 **/
-	function run( boolean verbose=false, boolean JSON=false ) {
+	function run(
+		boolean verbose=false,
+		boolean JSON=false,
+		boolean system=false ) {
 				
 		if( arguments.JSON ) {
 			arguments.verbose = false;
 		}
 		
+		if( arguments.system ) {
+			var directory = expandPath( '/commandbox' );
+		} else {
+			var directory = getCWD();			
+		}
+		
 		// package check
-		if( !packageService.isPackage( getCWD() ) ) {
-			return error( '#getCWD()# is not a package!' );
+		if( !packageService.isPackage( directory ) ) {
+			return error( '#directory# is not a package!' );
 		}
 		
 		// echo output
@@ -47,7 +57,7 @@ component aliases="outdated" {
 		}
 
 		// build dependency tree
-		var aOutdatedDependencies = packageService.getOutdatedDependencies( directory=getCWD(), print=print, verbose=arguments.verbose );
+		var aOutdatedDependencies = packageService.getOutdatedDependencies( directory=directory, print=print, verbose=arguments.verbose );
 
 		// JSON output
 		if( arguments.JSON ) {

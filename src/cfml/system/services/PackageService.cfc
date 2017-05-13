@@ -583,7 +583,7 @@ component accessors="true" singleton {
 			
 			// Is there an install path for this?
 			if( structKeyExists( installPaths, packageName ) ) {
-				uninstallDirectory = fileSystemUtil.resolvePath( installPaths[ packageName ] );
+				uninstallDirectory = fileSystemUtil.resolvePath( installPaths[ packageName ], arguments.currentWorkingDirectory );
 			}			
 		}
 		
@@ -655,7 +655,7 @@ component accessors="true" singleton {
 			consoleLogger.debug( "Package [#packageName#] skipped, it doesn't appear to be installed." );		
 			
 		} else {
-			consoleLogger.error( 'Package [#uninstallDirectory#] not found.' );			
+			consoleLogger.warn( 'Package [#uninstallDirectory#] not found.' );			
 		}
 
 		

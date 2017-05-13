@@ -27,15 +27,26 @@ component aliases="list" {
 	
 	/**  
 	 * @verbose.hint Outputs additional informaiton about each package
-	 * @json.hint Outputs results as JSON 
+	 * @json.hint Outputs results as JSON
+	 * @system.hint When true, list packages from the global CommandBox module's folder 
 	 **/
-	function run( boolean verbose=false, boolean JSON=false ) {
+	function run(
+		boolean verbose=false,
+		boolean JSON=false,
+		boolean system=false ) {
+			
+		if( arguments.system ) {
+			var directory = expandPath( '/commandbox' );
+		} else {
+			var directory = getCWD();			
+		}
+		
 		// package check
-		if( !packageService.isPackage( getCWD() ) ) {
-			return error( '#getCWD()# is not a package!' );
+		if( !packageService.isPackage( directory ) ) {
+			return error( '#directory# is not a package!' );
 		}
 		// build dependency tree
-		var tree = packageService.buildDependencyHierarchy( getCWD() );
+		var tree = packageService.buildDependencyHierarchy( directory );
 
 		// JSON output
 		if( arguments.JSON ) {

@@ -41,12 +41,23 @@ component aliases="update" {
 	* @slug.optionsUDF slugComplete
 	* @verbose Outputs additional information about each package
 	* @force Forces an update without confirmations
+	* @system.hint When true, update packages in the global CommandBox module's folder
 	**/
-	function run( string slug="", boolean verbose=false, boolean force=false ) {
+	function run(
+		string slug="",
+		boolean verbose=false,
+		boolean force=false,
+		boolean system=false ) {
+					
+		if( arguments.system ) {
+			var directory = expandPath( '/commandbox' );
+		} else {
+			var directory = getCWD();			
+		}
 		
 		// package check
-		if( !packageService.isPackage( getCWD() ) ) {
-			return error( '#getCWD()# is not a package!' );
+		if( !packageService.isPackage( directory ) ) {
+			return error( '#directory# is not a package!' );
 		}
 		
 		// echo output
@@ -54,7 +65,7 @@ component aliases="update" {
 
 		// build dependency tree
 		 var dependenciesToUpdate = packageService.getOutdatedDependencies(
-		 	directory=getCWD(),
+		 	directory=directory,
 		 	print=print,
 		 	verbose=arguments.verbose,
 		 	includeSlugs=arguments.slug

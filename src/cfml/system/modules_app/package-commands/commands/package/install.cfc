@@ -104,6 +104,7 @@ component aliases="install" {
 	* @production.hint When calling this command with no ID to install all dependencies, set this to true to ignore devDependencies.
 	* @verbose.hint If set, it will produce much more verbose information about the package installation
 	* @force.hint When set to true, it will force dependencies to be installed whether they already exist or not
+	* @system.hint When true, install this package into the global CommandBox module's folder
 	**/
 	function run(
 		string ID='',
@@ -112,7 +113,8 @@ component aliases="install" {
 		boolean saveDev=false,
 		boolean production,
 		boolean verbose=false,
-		boolean force=false
+		boolean force=false,
+		boolean system=false
 	){
 
 		// Don't default the dir param since we need to differentiate whether the user actually
@@ -128,8 +130,12 @@ component aliases="install" {
 
 		}
 
-		// TODO: climb tree to find root of the site by searching for box.json
-		arguments.currentWorkingDirectory = getCWD();
+
+		if( arguments.system ) {
+			arguments.currentWorkingDirectory = expandPath( '/commandbox' );
+		} else {
+			arguments.currentWorkingDirectory = getCWD();			
+		}
 		// Make ID an array
 		arguments.IDArray = listToArray( arguments.ID );
 
