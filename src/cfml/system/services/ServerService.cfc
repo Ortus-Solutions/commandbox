@@ -1543,7 +1543,13 @@ component accessors="true" singleton {
 	*/
 	struct function readServerJSON( required string path ) {
 		if( fileExists( path ) ) {
-			return deserializeJSON( fileRead( path ) );
+			var fileContents = fileRead( path );
+			if( isJSON( fileContents ) ) {
+				return deserializeJSON( fileContents );				
+			} else {
+				consoleLogger.warn( 'Warning: File is not valid JSON. [#path#]' );
+				return {};
+			}
 		} else {
 			return {};
 		}
