@@ -51,7 +51,7 @@ component {
 		var getOptionsWatchers = function(){
 			// Return to List
 			if( boxOptions.keyExists( "watchPaths" ) && boxOptions.watchPaths.len() ){
-				return boxOptions.watchPaths;
+				return ( isArray( boxOptions.watchPaths ) ? boxOptions.watchPaths.toList() : boxOptions.watchPaths );
 			}
 			// should return null if not found
 			return;
