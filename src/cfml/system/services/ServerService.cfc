@@ -908,6 +908,7 @@ component accessors="true" singleton {
 			args.append( '--urlrewrite-file' ).append( serverInfo.rewritesConfig );
 		}
 		// change status to starting + persist
+		serverInfo.dateLastStarted = now();
 		serverInfo.status = "starting";
 		setServerInfo( serverInfo );
 			
@@ -1121,7 +1122,15 @@ component accessors="true" singleton {
 			if( !len( defaultName ) ) {
 				// If there is still no name, default to the current directory
 				// TODO: I don't care for this because it creates conflicts since many servers could have the name "webroot" on one machine.
-				defaultName = replace( listLast( defaultwebroot, "\/" ), ':', '');				
+				defaultName = replace( listLast( defaultwebroot, "\/" ), ':', '');
+				
+				// Don't overlap an existing server name
+				var originalName = defaultName;
+				var nameCounter = 1;
+				while( structCount( getServerInfoByName( defaultName ) ) ) {
+					defaultName = originalName & ++nameCounter; 
+				}
+								
 			}
 			
 			// We need a new entry
@@ -1306,7 +1315,8 @@ component accessors="true" singleton {
 	function setServerInfo( required struct serverInfo ){
 		
 		var servers 	= getServers();
-		var webrootHash = hash( arguments.serverInfo.webroot & ucase( arguments.serverInfo.name ) );
+		var normalizedWebroot = normalizeWebroot( arguments.serverInfo.webroot );
+		var webrootHash = hash( normalizedWebroot & ucase( arguments.serverInfo.name ) );
 		arguments.serverInfo.id = webrootHash;
 		
 		if( arguments.serverInfo.webroot == "" ){
@@ -1317,6 +1327,16 @@ component accessors="true" singleton {
 		
 		setServers( servers );
 		
+	}
+	
+	function normalizeWebroot( required string webroot ) {
+		if( webroot contains '/' && !webroot.endsWith( '/' ) ) {
+			return webroot & '/';
+		}
+		if( webroot contains '\' && !webroot.endsWith( '\' ) ) {
+			return webroot & '\';
+		}
+		return webroot;
 	}
 
 	/**
@@ -1347,17 +1367,42 @@ component accessors="true" singleton {
 			lock name="serverservice.serverconfig" type="readOnly" throwOnTimeout="true" timeout="10"{
 				var results = deserializeJSON( fileRead( variables.serverConfig ) );
 				var updateRequired = false;
+				var serverKeys = results.keyArray();
 				
 				// Loop over each server for some housekeeping
-				for( var thisKey in results ){
+				for( var thisKey in serverKeys ){
+					// This server may have gotten deleted already based on the cleanup below.
+					if( !results.keyExists( thisKey ) ) {
+						continue;
+					}
+					var thisServer = results[ thisKey ];
 					// Backwards compat-- add in server id if it doesn't exist for older versions of CommandBox
-					if( isNull( results[ thisKey ].id ) ){
-						results[ thisKey ].id = hash( results[ thisKey ].webroot & ucase( results[ thisKey ].name ) );
+					if( isNull( thisServer.id ) ){
+						var normalizedWebroot = normalizeWebroot( thisServer.webroot );
+						thisServer.id = hash( normalizedWebroot & ucase( thisServer.name ) );
 						updateRequired = true;
 					}
+					
+					// Try and clean up orphaned server names that were missing the slash on the path and 
+					// ended up with a different hash.
+					// I really have no idea how this happens. I can't repro it on-demand.
+					for( var orphanKey in results ){
+						var orphan = results[ orphanKey ];
+						// If this is another server with the same name and the same webroot but without a trailing slash...
+						if( orphan.id != thisServer.id 
+							&& orphan.name == thisServer.name
+							&& ( thisServer.webroot.endsWith( '\' ) || thisServer.webroot.endsWith( '/' ) )
+							&& ( !orphan.webroot.endsWith( '\' ) || !orphan.webroot.endsWith( '/' ) )
+							&& ( orphan.webroot & '\' == thisServer.webroot || orphan.webroot & '/' == thisServer.webroot ) ) {
+								// ...kill it dead.
+								results.delete( orphanKey );
+								updateRequired = true;
+							}							
+					}
+					
 					// Future-proof server info by guaranteeing that all properties will exist in the 
 					// server object as long as they are defined in the newServerInfoStruct() method.
-					results[ thisKey ].append( newServerInfoStruct(), false );
+					thisServer.append( newServerInfoStruct(), false );
 				}
 			}
 			// If any server didn't have an ID, go ahead and save it now
@@ -1476,6 +1521,14 @@ component accessors="true" singleton {
 			serverInfo.id 		= webrootHash;
 			serverInfo.webroot 	= arguments.webroot;
 			serverInfo.name 	= listLast( arguments.webroot, "\/" );
+			
+			// Don't overlap an existing server name
+			var originalName = serverInfo.name;
+			var nameCounter = 1;
+			while( structCount( getServerInfoByName( serverInfo.name ) ) ) {
+				serverInfo.name = originalName & ++nameCounter; 
+			}
+			 
 			// Store it in server struct
 			servers[ webrootHash ] = serverInfo;
 		}
