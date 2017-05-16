@@ -98,6 +98,9 @@ component {
 					} else {
 						print.indentedLine( "webroot:          " & thisServerInfo.webroot );
 					}
+					if( len( thisServerInfo.dateLastStarted ) ) {
+						print.indentedLine( 'Last Started: ' & datetimeFormat( thisServerInfo.dateLastStarted ) );
+					}					
 					print.indentedLine( "HTTPEnable:       " & thisServerInfo.HTTPEnable )
 						.indentedLine( "port:             " & thisServerInfo.port )
 						.indentedLine( "SSLEnable:        " & thisServerInfo.SSLEnable )
@@ -131,6 +134,9 @@ component {
 					} else {
 						print.indentedLine( 'Webroot: ' & thisServerInfo.webroot );
 					}
+					if( len( thisServerInfo.dateLastStarted ) ) {
+						print.indentedLine( 'Last Started: ' & datetimeFormat( thisServerInfo.dateLastStarted ) );
+					}					
 				}// end verbose
 
 			} // End "filter" if

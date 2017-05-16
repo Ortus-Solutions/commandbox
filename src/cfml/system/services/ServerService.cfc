@@ -1586,7 +1586,8 @@ component accessors="true" singleton {
 			'serverConfigFile'	: "",
 			'aliases'			: {},
 			'errorPages'		: {},
-			'trayOptions'		: {}
+			'trayOptions'		: {},
+			'dateLastStarted'	: ''
 		};
 	}
 

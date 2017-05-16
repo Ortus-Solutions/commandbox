@@ -144,6 +144,9 @@ component aliases='status,server info' {
 				if( len( serverInfo.warPath ) ) {
 					print.indentedLine( 'WAR Path: ' & serverInfo.warPath );
 				}
+				if( len( serverInfo.dateLastStarted ) ) {
+					print.indentedLine( 'Last Started: ' & datetimeFormat( serverInfo.dateLastStarted ) );
+				}					
 				print.line();
 				print.indentedLine( 'Last status message: ' );
 				print.indentedLine( thisServerInfo.statusInfo.result );
