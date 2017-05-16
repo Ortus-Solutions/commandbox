@@ -706,10 +706,10 @@ component accessors="true" singleton {
 			var commandData = createCommandData( fullCFCPath, commandName );
 		// This will catch nasty parse errors so the shell can keep loading
 		} catch( any e ){
-			systemOutput( 'Error registering command [#fullCFCPath#] #CR##e.message# #e.detail ?: ''##CR#Check the logs with [system-log | open] for more info.', true );
+			systemOutput( 'Error registering command [#fullCFCPath#]', true );
 			logger.error( 'Error registering command [#fullCFCPath#]. #e.message# #e.detail ?: ''#', e.stackTrace );
 			// pretty print the exception
-			// shell.printError( e );
+			 shell.printError( e );
 			return;
 		}
 
