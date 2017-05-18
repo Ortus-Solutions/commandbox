@@ -112,6 +112,7 @@ component accessors="true" singleton {
 		return {
 			'name' : d.name ?: '',
 			'openBrowser' : d.openBrowser ?: true,
+			'openBrowserURL' : d.openBrowserURL ?: '',
 			'startTimeout' : 240,
 			'stopsocket' : d.stopsocket ?: 0,
 			'debug' : d.debug ?: false,
@@ -442,6 +443,9 @@ component accessors="true" singleton {
 		serverInfo.trace 			= serverProps.trace 			?: serverJSON.trace 				?: defaults.trace;
 		serverInfo.debug 			= serverProps.debug 			?: serverJSON.debug 				?: defaults.debug;
 		serverInfo.openbrowser		= serverProps.openbrowser 		?: serverJSON.openbrowser			?: defaults.openbrowser;
+		serverInfo.openbrowserURL	= serverProps.openbrowserURL	?: serverJSON.openbrowserURL		?: defaults.openbrowserURL;
+		
+		
 		serverInfo.host				= serverProps.host 				?: serverJSON.web.host				?: defaults.web.host;
 		// If the last port we used is taken, remove it from consideration.
 		if( serverInfo.port == 0 || !isPortAvailable( serverInfo.host, serverInfo.port ) ) { serverInfo.delete( 'port' ); }
@@ -466,6 +470,17 @@ component accessors="true" singleton {
 			consoleLogger.error( "You asked for port [#( serverProps.port ?: serverJSON.web.http.port ?: defaults.web.http.port ?: '?' )#] in your #badPortlocation# but it's already in use so I'm ignoring it and choosing a random one for you." );
 			consoleLogger.error( "." );
 			serverInfo.port = getRandomPort( serverInfo.host );
+		}
+		
+		// If there's no open URL, let's create a complete one
+		if( !serverInfo.openbrowserURL.len() ) {
+			serverInfo.openbrowserURL = serverInfo.SSLEnable ? 'https://#serverInfo.host#:#serverInfo.SSLPort#' : 'http://#serverInfo.host#:#serverInfo.port#';
+		// Partial URL like /admin/login.cm
+		} else if ( left( serverInfo.openbrowserURL, 4 ) != 'http' ) {
+			if( !serverInfo.openbrowserURL.startsWith( '/' ) ) {
+				serverInfo.openbrowserURL = '/' & serverInfo.openbrowserURL;
+			}
+			serverInfo.openbrowserURL = ( serverInfo.SSLEnable ? 'https://#serverInfo.host#:#serverInfo.SSLPort#' : 'http://#serverInfo.host#:#serverInfo.port#' ) & serverInfo.openbrowserURL;
 		}
 		
 		serverInfo.stopsocket		= serverProps.stopsocket		?: serverJSON.stopsocket 			?: getRandomPort( serverInfo.host );		
@@ -724,7 +739,7 @@ component accessors="true" singleton {
 			serverInfo.trayOptions.prepend( { 'label':'Open Server Admin', 'action':'openbrowser', 'url':'http://${runwar.host}:${runwar.port}/CFIDE/administrator/enter.cfm', 'image' : expandPath('/commandbox/system/config/server-icons/server_settings.png' ) } );
 		}
 		
-		serverInfo.trayOptions.prepend( { 'label':'Open Browser', 'action':'openbrowser', 'url':'http://${runwar.host}:${runwar.port}/', 'image' : expandPath('/commandbox/system/config/server-icons/home.png' ) } );
+		serverInfo.trayOptions.prepend( { 'label':'Open Browser', 'action':'openbrowser', 'url': serverInfo.openbrowserURL, 'image' : expandPath('/commandbox/system/config/server-icons/home.png' ) } );
 		serverInfo.trayOptions.prepend( { 'label':'Stop Server', 'action':'stopserver', 'image' : expandPath('/commandbox/system/config/server-icons/stop.png' ) } );
 		serverInfo.trayOptions.prepend( { 'label': processName, 'disabled':true, 'image' : expandPath('/commandbox/system/config/server-icons/info.png' ) } );
 		
@@ -798,7 +813,7 @@ component accessors="true" singleton {
 		 	.append( '--processname' ).append( processName )
 		 	.append( '--log-dir' ).append( serverInfo.logDir )
 		 	.append( '--open-browser' ).append( serverInfo.openbrowser )
-		 	.append( '--open-url' ).append( ( serverInfo.SSLEnable ? 'https://#serverInfo.host#:#serverInfo.SSLPort#' : 'http://#serverInfo.host#:#serverInfo.port#' ) )
+		 	.append( '--open-url' ).append( serverInfo.openbrowserURL )
 		 	.append( '--server-name' ).append( serverInfo.name )
 		 	.append( '--tray-icon' ).append( serverInfo.trayIcon )
 		 	.append( '--tray-config' ).append( trayOptionsPath )
@@ -1587,7 +1602,9 @@ component accessors="true" singleton {
 			'aliases'			: {},
 			'errorPages'		: {},
 			'trayOptions'		: {},
-			'dateLastStarted'	: ''
+			'dateLastStarted'	: '',
+			'openBrowser'		: true,
+			'openBrowserURL'	: ''
 		};
 	}
 
