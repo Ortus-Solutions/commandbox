@@ -19,12 +19,13 @@ component accessors="true" singleton {
 	property name="wirebox";
 	property name="logger";
 	property name="parser";
+	property name="SystemSettings";
 
 	/**
 	* Constructor
 	*/
 	function init() {
-		variables.wirebox					= application.wirebox;
+		variables.wirebox			= application.wirebox;
 		variables.CR				= wirebox.getInstance( "CR@constants" );
 		variables.formatterUtil		= wirebox.getInstance( "Formatter" );
 		variables.fileSystemUtil	= wirebox.getInstance( "FileSystem" );
@@ -33,6 +34,7 @@ component accessors="true" singleton {
 		variables.logger			= wirebox.getLogBox().getLogger( this );
 		variables.parser			= wirebox.getInstance( "Parser" );
 		variables.configService		= wirebox.getInstance( "ConfigService" );
+		variables.SystemSettings	= wirebox.getInstance( "SystemSettings" );
 		
 		hasErrored = false;
 		return this;
@@ -204,5 +206,36 @@ component accessors="true" singleton {
 			.params( arguments.theURL )
 			.run(); 		
 	}
+
+	/**
+	* Retrieve a Java System property or env value by name.
+	*
+	* @key The name of the setting to look up.
+	* @defaultValue The default value to use if the key does not exist in the system properties
+	*/
+    function getSystemSetting( required string key, defaultValue ) {
+		return systemSettings.getSystemSetting( argumentCollection=arguments );
+	}
+
+	/**
+	* Retrieve a Java System property by name.
+	*
+	* @key The name of the setting to look up.
+	* @defaultValue The default value to use if the key does not exist in the system properties
+	*/
+    function getSystemProperty( required string key, defaultValue ) {
+		return systemSettings.getSystemProperty( argumentCollection=arguments );
+	}
+
+	/**
+	* Retrieve an env value by name.
+	* 
+	* @key The name of the setting to look up.
+	* @defaultValue The default value to use if the key does not exist in the env
+	*/
+    function getEnv( required string key, defaultValue ) {
+		return systemSettings.getEnv( argumentCollection=arguments );
+	}
+
 	
 }

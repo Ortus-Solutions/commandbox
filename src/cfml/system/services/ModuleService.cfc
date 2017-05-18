@@ -21,6 +21,7 @@
 	<!--- DI --->
 	<cfproperty name="CommandService" inject="CommandService">
 	<cfproperty name="ConfigService" inject="Configservice">
+	<cfproperty name="SystemSettings" inject="SystemSettings">
 	<cfproperty name="consoleLogger" inject="logbox:logger:console">
 	
 	
@@ -631,13 +632,16 @@
 			oConfig.getPropertyMixin 	= mixerUtil.getPropertyMixin;
 
 			// MixIn Variables
-			oConfig.injectPropertyMixin( "shell", 			shell );
-			oConfig.injectPropertyMixin( "moduleMapping", 	mConfig.mapping );
-			oConfig.injectPropertyMixin( "modulePath", 		mConfig.path );
-			oConfig.injectPropertyMixin( "logBox", 			shell.getLogBox() );
-			oConfig.injectPropertyMixin( "log", 			shell.getLogBox().getLogger( oConfig) );
-			oConfig.injectPropertyMixin( "wirebox", 		shell.getWireBox() );
-			oConfig.injectPropertyMixin( "binder", 			shell.getWireBox().getBinder() );
+			oConfig.injectPropertyMixin( "shell", 				shell );
+			oConfig.injectPropertyMixin( "moduleMapping", 		mConfig.mapping );
+			oConfig.injectPropertyMixin( "modulePath", 			mConfig.path );
+			oConfig.injectPropertyMixin( "logBox", 				shell.getLogBox() );
+			oConfig.injectPropertyMixin( "log", 				shell.getLogBox().getLogger( oConfig) );
+			oConfig.injectPropertyMixin( "wirebox", 			shell.getWireBox() );
+			oConfig.injectPropertyMixin( "binder", 				shell.getWireBox().getBinder() );
+			oConfig.injectPropertyMixin( "getSystemSetting",	systemSettings.getSystemSetting );
+			oConfig.injectPropertyMixin( "getSystemProperty",	systemSettings.getSystemProperty );
+			oConfig.injectPropertyMixin( "getEnv",				systemSettings.getEnv );
 
 			// Configure the module
 			oConfig.configure();
