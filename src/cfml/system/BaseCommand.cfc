@@ -120,6 +120,28 @@ component accessors="true" singleton {
 	function watch() {
 		return getinstance( 'watcher' );
 	}
+	
+	/**
+	 * Return a new globber
+ 	 **/
+	function globber( pattern='' ) {
+		var globber = wirebox.getInstance( 'Globber' );
+		if( pattern.len() ) {
+			globber.setPattern( arguments.pattern );
+		}
+		return globber;
+	}
+	
+	/**
+	 * Return a new PropertyFile instance
+ 	 **/
+	function propertyFile( propertyFilePath='' ) {
+		var propertyFile = wirebox.getInstance( 'propertyFile@propertyFile' );
+		if( propertyFilePath.len() ) {
+			propertyFile.load( propertyFilePath );
+		}
+		return propertyFile;
+	}
 
 	/**
 	 * Use if if your command wants to give controlled feedback to the user without raising
@@ -181,17 +203,6 @@ component accessors="true" singleton {
 		command( "browse" )
 			.params( arguments.theURL )
 			.run(); 		
-	}
-	
-	/**
-	 * Return a new globber
- 	 **/
-	function globber( pattern='' ) {
-		var globber = wirebox.getInstance( 'Globber' );
-		if( pattern.len() ) {
-			globber.setPattern( arguments.pattern );
-		}
-		return globber;
 	}
 	
 }

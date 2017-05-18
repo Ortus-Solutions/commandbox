@@ -1,0 +1,27 @@
+{
+    "name":"PropertyFile Util",
+    "version":"1.1.0",
+    "author":"Brad Wood",
+    "location":"bdw429s/PropertyFile#v1.1.0",
+    "homepage":"https://github.com/bdw429s/PropertyFile/",
+    "documentation":"https://github.com/bdw429s/PropertyFile/blob/master/readme.md",
+    "repository":{
+        "type":"Git",
+        "URL":"https://github.com/bdw429s/PropertyFile"
+    },
+    "bugs":"https://github.com/bdw429s/PropertyFile/issues",
+    "slug":"propertyFile",
+    "shortDescription":"A library for managing Java property files",
+    "type":"modules",
+    "keywords":"java,property,files",
+    "projectURL":"https://github.com/bdw429s/PropertyFile/",
+    "scripts":{
+        "postVersion":"package set location='bdw429s/PropertyFile#v`package version`'",
+        "postPublish":"!git push --follow-tags"
+    },
+    "ignore":[
+        "**/.*",
+        "test",
+        "tests"
+    ]
+}
