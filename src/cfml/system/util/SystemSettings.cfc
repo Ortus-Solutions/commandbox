@@ -135,6 +135,7 @@ component singleton {
 		} else if ( isSimpleValue( dataStructure ) ) {
 			return expandSystemSettings( dataStructure );
 		}
+		return dataStructure;
 	}
 
 }
