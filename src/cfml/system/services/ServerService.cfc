@@ -41,7 +41,8 @@ component accessors="true" singleton {
 	property name='wirebox'					inject='wirebox';
 	property name='CR'						inject='CR@constants';
 	property name='parser'					inject='parser';
-
+	property name='systemSettings'			inject='SystemSettings';
+	
 	/**
 	* Constructor
 	* @shell.inject shell
@@ -436,6 +437,9 @@ component accessors="true" singleton {
 		if( !serverJSON.isEmpty() && serverProps.saveSettings ) {
 			saveServerJSON( defaultServerConfigFile, serverJSON );
 		}
+		
+		systemSettings.expandDeepSystemSettings( serverJSON );
+		systemSettings.expandDeepSystemSettings( defaults );
 		
 		// Setup serverinfo according to params
 		// Hand-entered values take precendence, then settings saved in server.json, and finally defaults.

@@ -23,7 +23,8 @@ component accessors="true" singleton {
 	property name='interceptorService'	inject='interceptorService';
 	// Using provider since CommandService is created before modules are loaded
 	property name='stringDistance'		inject='provider:StringSimilarity@string-similarity';
-
+	property name='SystemSettings'		inject='SystemSettings';
+	
 	property name='configured' default="false" type="boolean";
 
 	// TODO: Convert these to properties
@@ -267,8 +268,9 @@ component accessors="true" singleton {
 			// Make sure we have all required params.
 			parameterInfo.namedParameters = ensureRequiredParams( parameterInfo.namedParameters, commandParams );
 
-			// Evaluate parameter expressions
+			// Evaluate parameter expressions and system settings
 			evaluateExpressions( parameterInfo );
+			evaluateSystemSettings( parameterInfo );
 
 			// Create globbing patterns
 			createGlobs( parameterInfo, commandParams );
@@ -419,6 +421,43 @@ component accessors="true" singleton {
 			}
 		}
 	}
+
+
+	/**
+	* Evaluates any system settings and puts the output in its place.
+	*/
+	function evaluateSystemSettings( required parameterInfo ) {
+
+		// For each parameter being passed into this command
+		for( var paramName in parameterInfo.namedParameters ) {
+
+			var paramValue = parameterInfo.namedParameters[ paramName ];
+			// Look for a system setting "foo" flagged as "__system__foo__system__"
+			var search = reFindNoCase( '__system__.*?__system__', paramValue, 1, true );
+
+			// As long as there are more system settings
+			while( search.pos[1] ) {
+				// Extract them
+				var systemSetting = mid( paramValue, search.pos[1], search.len[1] );
+				// Evaluate them
+				var settingName = mid( systemSetting, 11, len( systemSetting )-20 );
+				var defaultValue = '';
+				if( settingName.listLen( ':' ) ) {
+					defaultValue = settingName.listRest( ':' );
+					settingName = settingName.listFirst( ':' );					
+				}
+				var result = systemSettings.getSystemSetting( settingName, defaultValue );
+
+				// And stick their results in their place
+				parameterInfo.namedParameters[ paramName ] = replaceNoCase( paramValue, systemSetting, result, 'one' );
+				paramValue = parameterInfo.namedParameters[ paramName ];
+				// Search again
+				var search = reFindNoCase( '__system__.*?__system__', paramValue, 1, true );
+			}
+		}
+	}
+
+
 
 	/**
 	 * Take an array of parameters and parse them out as named or positional

@@ -22,6 +22,7 @@ component accessors="true" singleton {
 	property name='consoleLogger'		inject='logbox:logger:console';
 	property name='interceptorService'	inject='interceptorService';
 	property name='JSONService'			inject='JSONService';
+	property name='systemSettings'		inject='SystemSettings';
 	
 	/**
 	* Constructor
@@ -821,12 +822,22 @@ component accessors="true" singleton {
 	* Get the box.json as data from the passed directory location.
 	* Any missing properties will be defaulted with our box.json template.
 	* If you plan on writing the box.json back out to disk, use readPackageDescriptorRaw() instead.
+	* 
+	* If you ask for system settings to be swapped out, do not write this box.json back to disk.  
+	* It's has possibly been modified to expand the props like ${foo} and will overwrite the actual place holders
+	*
 	* @directory The directory to search for the box.json
 	*/
-	struct function readPackageDescriptor( required directory ){
+	struct function readPackageDescriptor( required directory, boolean expandSystemSettings=true ){
 		// Merge this JSON with defaults
-		return newPackageDescriptor( readPackageDescriptorRaw( arguments.directory ) );
-	}
+		var results = newPackageDescriptor( readPackageDescriptorRaw( arguments.directory ) );
+		// Expand stuff like ${foo:bar}
+		if( expandSystemSettings ) {
+			systemSettings.expandDeepSystemSettings( results );
+		}
+		return results
+		
+	}		
 
 	/**
 	* Does everything readPackageDescriptor() does, but won't default deprecated box.json proprties.

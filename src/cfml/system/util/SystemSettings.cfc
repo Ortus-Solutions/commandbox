@@ -84,7 +84,57 @@ component singleton {
 			type = "SystemSettingNotFound",
 			message = "Could not find a env property with key [#arguments.key#]."
 		);
+
+	}
+
+	function expandSystemSettings( required string text ) {
+		// Temporarily remove escaped ones like \${do.not.expand.me}
+		text = replaceNoCase( text, '\${', '__system_setting__', "all" );
+		// Mark all system settings
+		text = reReplaceNoCase( text, '\$\{(.*?)}', '__system__\1__system__', 'all' );
+		// put escaped stuff back
+		text = replaceNoCase( text, '__system_setting__', '${', "all" );
 		
+		// Look for a system setting "foo" flagged as "__system__foo__system__"
+		var search = reFindNoCase( '__system__.*?__system__', text, 1, true );
+
+		// As long as there are more system settings
+		while( search.pos[1] ) {
+			// Extract them
+			var systemSetting = mid( text, search.pos[1], search.len[1] );
+			// Evaluate them
+			var settingName = mid( systemSetting, 11, len( systemSetting )-20 );
+			var defaultValue = '';
+			if( settingName.listLen( ':' ) ) {
+				defaultValue = settingName.listRest( ':' );
+				settingName = settingName.listFirst( ':' );					
+			}
+			var result = getSystemSetting( settingName, defaultValue );
+
+			// And stick their results in their place
+			text = replaceNoCase( text, systemSetting, result, 'one' );
+			// Search again
+			var search = reFindNoCase( '__system__.*?__system__', text, 1, true );
+		}
+		return text;
+	}
+
+	function expandDeepSystemSettings( required any dataStructure ) {
+		if( isStruct( dataStructure ) ) {
+			for( var key in dataStructure ) {
+				dataStructure[ key ] = expandDeepSystemSettings( dataStructure[ key ] );
+			}
+			return dataStructure;
+		} else if( isArray( dataStructure ) ) {
+			var i = 0;
+			for( var item in dataStructure ) {
+				i++;
+				dataStructure[ i ] = expandDeepSystemSettings( item );
+			}
+			return dataStructure;			
+		} else if ( isSimpleValue( dataStructure ) ) {
+			return expandSystemSettings( dataStructure );
+		}
 	}
 
 }

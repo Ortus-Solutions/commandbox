@@ -201,8 +201,9 @@ component {
 				// Unwrap quotes from value if used
 				value = unwrapQuotes( value );
 				
-				// Mark expressions now while escaped chars are removed
+				// Mark expressions and system settings now while escaped chars are removed
 				value = markExpressions( value );
+				value = markSystemSettings( value );
 				
 				name = replaceEscapedChars( name );
 				value = replaceEscapedChars( value );
@@ -214,8 +215,9 @@ component {
 				// Unwrap quotes from value if used
 				param = unwrapQuotes( param );
 				
-				// Mark expressions now while escaped chars are removed
+				// Mark expressions and system settings now while escaped chars are removed
 				param = markExpressions( param );
+				param = markSystemSettings( param );
 				
 				param = replaceEscapedChars( param );
 				results.positionalParameters.append( param );				
@@ -235,6 +237,13 @@ component {
 	}
 	
 	/**
+	* Find any strings like ${foo} and flag them as a system setting
+	*/
+	function markSystemSettings( required argValue ) {
+		return reReplaceNoCase( argValue, '\$\{(.*?)}', '__system__\1__system__', 'all' );
+	}
+	
+	/**
 	* Escapes a value and for inclusion in a command
 	* The following replacements are made:
 	* " 			--> \"
@@ -244,6 +253,7 @@ component {
 	* ; 			--> \;
 	* & 			--> \&
 	* | 			--> \|
+	* ${ 			--> \${
 	* [line break]  --> \n
 	* [tab]			--> \t
 	*/
@@ -256,6 +266,7 @@ component {
 		arguments.argValue = replace( arguments.argValue, ";", "\;", "all" );
 		arguments.argValue = replace( arguments.argValue, "&", "\&", "all" );
 		arguments.argValue = replace( arguments.argValue, "|", "\|", "all" );
+		arguments.argValue = replace( arguments.argValue, "${", "\${", "all" );
 		arguments.argValue = replace( arguments.argValue, CR, "\n", "all" );
 		arguments.argValue = replace( arguments.argValue, chr( 9 ), "\t", "all" );
 		return arguments.argValue;
@@ -283,6 +294,7 @@ component {
 		theString = replaceNoCase( theString, '\=', '__equalSign__', "all" );
 		theString = replaceNoCase( theString, '\;', '__semiColon__', "all" );
 		theString = replaceNoCase( theString, '\&', '__ampersand__', "all" );
+		theString = replaceNoCase( theString, '\${', '__system_setting__', "all" );
 		return		replaceNoCase( theString, '\|', '__pipe__', "all" );
 	}
 	
@@ -296,6 +308,7 @@ component {
 		theString = replaceNoCase( theString, '__equalSign__', '=', "all" );
 		theString = replaceNoCase( theString, '__semiColon__', ';', "all" );
 		theString = replaceNoCase( theString, '__ampersand__', '&', "all" );
+		theString = replaceNoCase( theString, '__system_setting__', '${', "all" );
 		return		replaceNoCase( theString, '__pipe__', '|', "all" );
 	}
 	
