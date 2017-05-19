@@ -87,6 +87,13 @@ component singleton {
 
 	}
 
+
+	/**
+	* Expands placeholders like ${foo} in a string with the matching java prop or env var.
+	* Will replace as many place holders that exist, but will skip escaped ones like \${do.not.expand.me}
+	* 
+	* @text The string to do the replacement on
+	*/
 	function expandSystemSettings( required string text ) {
 		// Temporarily remove escaped ones like \${do.not.expand.me}
 		text = replaceNoCase( text, '\${', '__system_setting__', "all" );
@@ -119,22 +126,36 @@ component singleton {
 		return text;
 	}
 
+	/**
+	* Expands placeholders like ${foo} in all deep struct keys and array elements with the matching java prop or env var.
+	* Will replace as many place holders that exist, but will skip escaped ones like \${do.not.expand.me}
+	* This will recursivley follow all nested structs and arrays.
+	* 
+	* @dataStructure A string, struct, or array to perform deep replacement on.
+	*/
 	function expandDeepSystemSettings( required any dataStructure ) {
+		// If it's a struct...
 		if( isStruct( dataStructure ) ) {
+			// Loop over and process each key
 			for( var key in dataStructure ) {
 				dataStructure[ key ] = expandDeepSystemSettings( dataStructure[ key ] );
 			}
 			return dataStructure;
+		// If it's an array...
 		} else if( isArray( dataStructure ) ) {
 			var i = 0;
+			// Loop over and process each index
 			for( var item in dataStructure ) {
 				i++;
 				dataStructure[ i ] = expandDeepSystemSettings( item );
 			}
 			return dataStructure;			
+		// If it's a string...
 		} else if ( isSimpleValue( dataStructure ) ) {
+			// Just do the replacement
 			return expandSystemSettings( dataStructure );
 		}
+		// Other complex variables like XML or CFC instance would just get skipped for now.
 		return dataStructure;
 	}
 
