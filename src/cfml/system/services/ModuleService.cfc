@@ -7,24 +7,25 @@
 * This service oversees all CommandBox Modules
 ----------------------------------------------------------------------->
 <cfcomponent output="false" accessors=true singleton>
-	
+
 	<!---
 	Unlike ColdBox which stores all module config and settings in the framework setting struct,
 	CommandBox's ModuleService will internalize this data.  CommandBox "config" settings will
 	just mirror the CommandBox.json file and not include runtime metadata like this.  Any time
-	a config setting is updated programmatically for a module, CommandBox's ConfigService 
+	a config setting is updated programmatically for a module, CommandBox's ConfigService
 	will attempt to keep this runtime data in sync.  Module's will ask the ModuleService for their
 	data which will come from here, overriden at load time by any config settings if they exist.
 	--->
 	<cfproperty name="moduleData">
-		
+
 	<!--- DI --->
 	<cfproperty name="CommandService" inject="CommandService">
+	<cfproperty name="EndpointService" inject="EndpointService">
 	<cfproperty name="ConfigService" inject="Configservice">
 	<cfproperty name="SystemSettings" inject="SystemSettings">
 	<cfproperty name="consoleLogger" inject="logbox:logger:console">
-	
-	
+
+
 <!------------------------------------------- CONSTRUCTOR ------------------------------------------->
 
 	<cffunction name="init" access="public" output="false" returntype="ModuleService" hint="Constructor">
@@ -37,7 +38,7 @@
 			instance.mConfigCache 		= {};
 			instance.moduleRegistry 	= createObject( "java", "java.util.LinkedHashMap" ).init();
 			instance.cfmappingRegistry 	= {};
-			 
+
 			setModuleData( {} );
 
 			return this;
@@ -49,7 +50,7 @@
 
     <cffunction name="getShell" output="false">
     	<cfreturn shell>
-    </cffunction>	
+    </cffunction>
 
 	<!--- onConfigurationLoad --->
     <cffunction name="configure" output="false" access="public" returntype="void" hint="Called by loader service when configuration file loads">
@@ -150,7 +151,7 @@
 			// Module To Load
 			var modName 				= arguments.moduleName;
 			var modulesConfiguration	= getModuleData();
-			// CommandBox doesn't really have settings per se-- 
+			// CommandBox doesn't really have settings per se--
 			// at least not ones I'm comfortable with modules overriding.
 			//var appSettings 			= shell.getConfigSettings();
 
@@ -209,7 +210,7 @@
 
 			// lock registration
 			lock name="module.registration.#arguments.modulename#" type="exclusive" throwontimeout="true" timeout="20"{
-				
+
 				// Setup Vanilla Config information for module
 				var mConfig = {
 					// Module MetaData and Directives
@@ -244,19 +245,22 @@
 					modelsPhysicalPath		= modLocation,
 					commandsInvocationPath  = modulesInvocationPath & "." & modName,
 					commandsPhysicalPath	= modLocation,
+					endpointsInvocationPath = modulesInvocationPath & "." & modName,
+					endpointsPhysicalPath   = modLocation,
 					parentSettings			= {},
 					settings 				= {},
 					interceptors 			= [],
 					interceptorSettings     = { customInterceptionPoints = "" },
 					conventions = {
 						modelsLocation      = "models",
-						commandsLocation    = "commands"
+						commandsLocation    = "commands",
+						endpointsLocation   = "endpoints"
 					},
 					childModules			= [],
 					parent 					= arguments.parent
 				};
 
-				
+
 				try {
 					// Load Module configuration from cfc and store it in module Config Cache
 					var oConfig = loadModuleConfiguration( mConfig, arguments.moduleName );
@@ -285,10 +289,13 @@
 				// Update the paths according to conventions
 				mConfig.modelsInvocationPath    &= ".#replace( mConfig.conventions.modelsLocation, "/", ".", "all" )#";
 				mConfig.modelsPhysicalPath		&= "/#mConfig.conventions.modelsLocation#";
-				
+
 				mConfig.commandsInvocationPath  &= ".#replace( mConfig.conventions.commandsLocation, "/", ".", "all" )#";
 				mConfig.commandsPhysicalPath	&= "/#mConfig.conventions.commandsLocation#";
-						
+
+				mConfig.endpointsInvocationPath &= ".#replace( mConfig.conventions.endpointsLocation, "/", ".", "all" )#";
+				mConfig.endpointsPhysicalPath	&= "/#mConfig.conventions.endpointsLocation#";
+
 				// Register CFML Mapping if it exists, for loading purposes
 				if( len( trim( mConfig.cfMapping ) ) ){
 					shell.getUtil().addMapping( name=mConfig.cfMapping, path=mConfig.path );
@@ -431,11 +438,17 @@
 					}
 					wirebox.getBinder().processMappings();
 				}
-				
+
 				// Register commands if they exist
 				if( directoryExists( mconfig.commandsPhysicalPath ) ){
-					var commandPath = '/' & replace( mconfig.commandsInvocationPath, '.', '/', 'all' );					
+					var commandPath = '/' & replace( mconfig.commandsInvocationPath, '.', '/', 'all' );
 					CommandService.initCommands( commandPath, commandPath );
+				}
+
+				// Register endpoints if they exist
+				if( directoryExists( mconfig.endpointsPhysicalPath ) ){
+					var mappedPath = '/' & replace( mconfig.endpointsInvocationPath, '.', '/', 'all' );
+					EndpointService.buildEndpointRegistry( mappedPath );
 				}
 
 				// Register Interceptors with Announcement service
@@ -569,11 +582,11 @@
 			/*if( shell.settingExists( "sesBaseURL" ) ){
 				interceptorService.getInterceptor( "SES", true ).removeModuleRoutes( arguments.moduleName );
 			}*/
-			
+
 			// Remove the possible config names with the ConfigService for auto-completion
 			var possibleConfigSettings = [];
 			for( var settingName in ConfigService.getPossibleConfigSettings() ) {
-				if( !reFindNoCase( '^modules.#arguments.moduleName#.', settingName ) ) { 
+				if( !reFindNoCase( '^modules.#arguments.moduleName#.', settingName ) ) {
 					possibleConfigSettings.append( settingName );
 				}
 			}
@@ -701,14 +714,14 @@
 			mConfig.settings = oConfig.getPropertyMixin( "settings", "variables", {} );
 			// Override with CommandBox config settings
 			overrideConfigSettings( mConfig.settings, moduleName );
-			
+
 			// Register the possible config names with the ConfigService for auto-completion
 			var possibleConfigSettings = ConfigService.getPossibleConfigSettings();
 			for( var settingName in mConfig.settings ) {
 				possibleConfigSettings.append( 'modules.#moduleName#.#settingName#' );
 			}
 			ConfigService.setPossibleConfigSettings( possibleConfigSettings );
-			
+
 			//Get Interceptors
 			mConfig.interceptors = oConfig.getPropertyMixin( "interceptors", "variables", [] );
 			for(var x=1; x lte arrayLen( mConfig.interceptors ); x=x+1){

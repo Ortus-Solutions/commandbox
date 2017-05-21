@@ -11,11 +11,11 @@ component accessors="true" singleton {
 
 	// DI
 	property name="logger"				inject="logbox:logger:{this}";
-	property name="wirebox"				inject="wirebox";	
+	property name="wirebox"				inject="wirebox";
 	property name="fileSystemUtil"		inject="FileSystem";
 	property name="consoleLogger"		inject="logbox:logger:console";
 	property name="configService"		inject="configService";
-	
+
 	// Properties
 	property name="endpointRegistry" type="struct";
 	property name="endpointRootPath" type="string" default="/commandbox/system/endpoints";
@@ -28,26 +28,26 @@ component accessors="true" singleton {
 		setEndpointRegistry( {} );
 		return this;
 	}
-	
+
 	function onDIComplete() {
-		buildEndpointRegistry();		
+		buildEndpointRegistry();
 	}
-	
+
 	/**
 	* Inspect the endpoints folder and register them.
-	*/	
-	function buildEndpointRegistry() {
+	*/
+	function buildEndpointRegistry( string rootDirectory=getEndpointRootPath() ) {
 		// Get the registry
 		var endpointRegistry = getEndpointRegistry();
 		// Inspect file system for endpoints
-		var files = directoryList( getEndpointRootPath() );
-		
+		var files = directoryList( arguments.rootDirectory );
+
 		for( var file in files ) {
 			var endpointName = listFirst( listLast( file, '/\' ), '.' );
 			// Ignore the interfaces
 			if( !listFindNoCase( 'IEndPoint,IEndPointInteractive', endpointName ) ) {
-				
-				var endpointPath = listChangeDelims( getEndpointRootPath(), '/\', '.' ) & '.' & endpointName;
+
+				var endpointPath = listChangeDelims( arguments.rootDirectory, '/\', '.' ) & '.' & endpointName;
 				var oEndPoint = wirebox.getInstance( endpointPath );
 				var namePrefixs = listToArray( oEndPoint.getNamePrefixes() );
 				for( var prefix in namePrefixs ) {
@@ -55,21 +55,21 @@ component accessors="true" singleton {
 				}
 			}
 		}
-		
+
 	}
-	
+
 	/**
 	* Inspects ID and returns name of endpoint.  If none is specified, tests for local file
 	* or folder.  Defaults to forgebox.
 	* @ID The id of the endpoint
 	* @currentWorkingDirectory Where we are working from
-	*/	
+	*/
 	struct function resolveEndpointData( required string ID, required string currentWorkingDirectory ) {
-	
+
 		var path = fileSystemUtil.resolvePath( arguments.ID, arguments.currentWorkingDirectory );
 		// Is it a real zip file?
 		if( listLast( path, '.' ) == 'zip' && fileExists( path ) ) {
-			var endpointName = 'file';			
+			var endpointName = 'file';
 			return {
 				endpointName : endpointName,
 				package : path,
@@ -77,7 +77,7 @@ component accessors="true" singleton {
 			};
 		// Is it a real folder?
 		} else if( directoryExists( path ) ) {
-			var endpointName = 'folder';			
+			var endpointName = 'folder';
 			return {
 				endpointName : endpointName,
 				package : path,
@@ -108,30 +108,30 @@ component accessors="true" singleton {
 			}
 		// I give up, let's check ForgeBox (default endpoint)
 		} else {
-			var endpointName = 'forgebox';				
+			var endpointName = 'forgebox';
 			return {
 				endpointName : endpointName,
 				package : arguments.ID,
 				ID : endpointName & ':' & arguments.ID
 			};
-			
+
 		} // End detecting endpoint
 	}
-	
+
 	/**
 	* Returns the endpoint object.
 	* @endpointName The name of the endpoint to retrieve
-	*/	
+	*/
 	IEndpoint function getEndpoint( required string endpointName ) {
 		var endpointRegistry = getEndpointRegistry();
 		if( structKeyExists( endpointRegistry, arguments.endpointName ) ) {
 			return endpointRegistry[ arguments.endpointName ];
 		}
-		
+
 		// Didn't find it
 		throw( 'Endpoint [#endpointName#] not registered.', 'EndpointNotFound' );
 	}
-	
+
 	/**
 	* Inspects ID and returns endpoint object, endpointName, and ID (with endpoint stripped).
 	* @ID The id of the endpoint
@@ -142,7 +142,7 @@ component accessors="true" singleton {
 		endpointData[ 'endpoint' ] = getEndpoint( endpointData.endpointName );
 		return endpointData;
 	}
-	
+
 	/**
 	* A facade to create a user with an interactive endpoint.  Keeping this logic here so I can standardize the storage
 	* of the APIToken and make it reusable outside of the command.
@@ -159,31 +159,31 @@ component accessors="true" singleton {
 		required string password,
 		required string email,
 		required string firstName,
-		required string lastName		
+		required string lastName
 	) {
 		// Get all endpoints that are registered
 		var endpointRegistry = getEndpointRegistry();
-		// Confirm endpoint name exists 
+		// Confirm endpoint name exists
 		if( !endpointRegistry.keyExists( arguments.endpointName ) ) {
 			throw( "Sorry, the endpoint [#arguments.endpointName#] doesn't exist.  Valid names are [#endpointRegistry.keyList()#]", 'endpointException' );
 		}
-		
+
 		// Get endpoint object
 		var endpoint = getEndpoint( arguments.endpointName );
-		
+
 		// Confirm is interactive endpoint
 		if( !isInstanceOf( endpoint, 'IEndpointInteractive' ) ) {
 			throw( "Sorry, the endpoint [#arguments.endpointName#] does not support registering users.", 'endpointException' );		}
-		
+
 		// Create the user
 		var APIToken = endpoint.createUser( argumentCollection=arguments );
-		
+
 		// Store the APIToken
 		configService.setSetting( 'endpoints.#endpointName#.APIToken', APIToken );
 		configService.setSetting( 'endpoints.#endpointName#.tokens.#arguments.username#', APIToken );
-		
+
 	}
-	
+
 	/**
 	* A facade to login a user with an interactive endpoint.  Keeping this logic here so I can standardize the storage
 	* of the APIToken and make it reusable outside of the command.
@@ -194,63 +194,63 @@ component accessors="true" singleton {
 	function loginEndpointUser(
 		required string endpointName,
 		required string username,
-		required string password		
+		required string password
 	) {
 		// Get all endpoints that are registered
 		var endpointRegistry = getEndpointRegistry();
-		// Confirm endpoint name exists 
+		// Confirm endpoint name exists
 		if( !endpointRegistry.keyExists( arguments.endpointName ) ) {
 			throw( "Sorry, the endpoint [#arguments.endpointName#] doesn't exist.  Valid names are [#endpointRegistry.keyList()#]", 'endpointException' );
 		}
-		
+
 		// Get endpoint object
 		var endpoint = getEndpoint( arguments.endpointName );
-		
+
 		// Confirm is interactive endpoint
 		if( !isInstanceOf( endpoint, 'IEndpointInteractive' ) ) {
 			throw( "Sorry, the endpoint [#arguments.endpointName#] does not support logging in users.", 'endpointException' );		}
-		
+
 		// Login the user
 		var APIToken = endpoint.login( argumentCollection=arguments );
-		
+
 		// Store the APIToken
 		configService.setSetting( 'endpoints.#endpointName#.APIToken', APIToken );
 		configService.setSetting( 'endpoints.#endpointName#.tokens.#arguments.username#', APIToken );
-		
+
 	}
-	
+
 	/**
-	* A facade to publish a package with an interactive endpoint.  
+	* A facade to publish a package with an interactive endpoint.
 	* @endpointName The name of the endpoint to publish to
 	* @directory The directory to publish
 	*/
 	function publishEndpointPackage(
 		required string endpointName,
-		required string directory		
+		required string directory
 	) {
 		// Get all endpoints that are registered
 		var endpointRegistry = getEndpointRegistry();
-		// Confirm endpoint name exists 
+		// Confirm endpoint name exists
 		if( !endpointRegistry.keyExists( arguments.endpointName ) ) {
 			throw( "Sorry, the endpoint [#arguments.endpointName#] doesn't exist.  Valid names are [#endpointRegistry.keyList()#]", 'endpointException' );
 		}
-		
+
 		// Get endpoint object
 		var endpoint = getEndpoint( arguments.endpointName );
-		
+
 		// Confirm is interactive endpoint
 		if( !isInstanceOf( endpoint, 'IEndpointInteractive' ) ) {
-			throw( "Sorry, the endpoint [#arguments.endpointName#] does not support publishing packages users.", 'endpointException' );		
+			throw( "Sorry, the endpoint [#arguments.endpointName#] does not support publishing packages users.", 'endpointException' );
 		}
 		// Set the path to publish
 		arguments.path = arguments.directory;
 		// Publish the package
 		endpoint.publish( argumentCollection=arguments );
 	}
-	
-	
+
+
 	/**
-	* A facade to unpublish a package with an interactive endpoint.  
+	* A facade to unpublish a package with an interactive endpoint.
 	* @endpointName The name of the endpoint to publish to
 	* @directory The directory to publish
 	* @version The version to unpublish
@@ -258,26 +258,26 @@ component accessors="true" singleton {
 	function unpublishEndpointPackage(
 		required string endpointName,
 		required string directory,
-		string version=''		
+		string version=''
 	) {
 		// Get all endpoints that are registered
 		var endpointRegistry = getEndpointRegistry();
-		// Confirm endpoint name exists 
+		// Confirm endpoint name exists
 		if( !endpointRegistry.keyExists( arguments.endpointName ) ) {
 			throw( "Sorry, the endpoint [#arguments.endpointName#] doesn't exist.  Valid names are [#endpointRegistry.keyList()#]", 'endpointException' );
 		}
-		
+
 		// Get endpoint object
 		var endpoint = getEndpoint( arguments.endpointName );
-		
+
 		// Confirm is interactive endpoint
 		if( !isInstanceOf( endpoint, 'IEndpointInteractive' ) ) {
-			throw( "Sorry, the endpoint [#arguments.endpointName#] does not support unpublishing packages users.", 'endpointException' );		
+			throw( "Sorry, the endpoint [#arguments.endpointName#] does not support unpublishing packages users.", 'endpointException' );
 		}
 		// Set the path to publish
 		arguments.path = arguments.directory;
 		// Publish the package
 		endpoint.unpublish( argumentCollection=arguments );
 	}
-	
+
 }
