@@ -332,6 +332,9 @@ component accessors="true" singleton {
 					artifactDescriptor.createPackageDirectory = false;
 					// Don't trash the plugins folder with this
 					ignorePatterns.append( '/box.json' );
+				// This is a jar.
+				} else if( packageType == 'jars' ) {
+					installDirectory = arguments.packagePathRequestingInstallation & '/lib';
 				}
 			}
 			
