@@ -4,7 +4,7 @@
 component {
 
 	function run(  ) {
-		print.line( "faux-list!" );
+		print.line( "Command not implemented!" );
 	}
 
 }
