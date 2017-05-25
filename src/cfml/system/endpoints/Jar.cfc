@@ -84,6 +84,7 @@ component accessors=true implements="IEndpoint" singleton {
 		if( fileNameListLen > 1 && listLast( fileName, '.' ) == 'jar' ) {
 			return listDeleteAt( fileName, fileNameListLen, '.' );
 		}
+		// We give up, so just make the entire URL a slug
 		return reReplaceNoCase( baseURL, '[^a-zA-Z0-9]', '', 'all' );
 	}
 
