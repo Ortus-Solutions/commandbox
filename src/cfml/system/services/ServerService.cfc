@@ -124,7 +124,8 @@ component accessors="true" singleton {
 			'jvm' : {
 				'heapSize' : d.jvm.heapSize ?: 512,				
 				'minHeapSize' : d.jvm.minHeapSize ?: 0,
-				'args' : d.jvm.args ?: ''
+				'args' : d.jvm.args ?: '',
+				'javaHome' : ( isDefined( 'd.jvm.javaHome' ) ? fileSystemUtil.getJREExecutable( d.jvm.javaHome ) : variables.javaCommand )
 			},
 			'web' : {
 				'host' : d.web.host ?: '127.0.0.1',				
@@ -425,6 +426,9 @@ component accessors="true" singleton {
 			         break;			         
 			    case "JVMArgs":
 					serverJSON[ 'JVM' ][ 'args' ] = serverProps[ prop ];
+			         break;			         
+			    case "javaHomeDirectory":
+					serverJSON[ 'JVM' ][ 'javaHome' ] = serverProps[ prop ];
 			         break;
 			    case "runwarArgs":
 					serverJSON[ 'runwar' ][ 'args' ] = serverProps[ prop ];
@@ -535,7 +539,15 @@ component accessors="true" singleton {
 		
 		serverInfo.heapSize 		= serverProps.heapSize 			?: serverJSON.JVM.heapSize			?: defaults.JVM.heapSize;
 		serverInfo.minHeapSize 		= serverProps.minHeapSize		?: serverJSON.JVM.minHeapSize		?: defaults.JVM.minHeapSize;
-				
+		
+		if( isDefined( 'serverProps.javaHomeDirectory' ) ) {
+			serverInfo.javaHome = fileSystemUtil.getJREExecutable( serverProps.javaHomeDirectory );
+		} else if( isDefined( 'serverJSON.JVM.javaHome' ) ) {
+			serverInfo.javaHome = fileSystemUtil.getJREExecutable( serverJSON.JVM.javaHome );
+		} else {
+			serverInfo.javaHome = defaults.JVM.javaHome;
+		}  
+						
 		serverInfo.directoryBrowsing = serverProps.directoryBrowsing ?: serverJSON.web.directoryBrowsing ?: defaults.web.directoryBrowsing;
 		
 		// Global aliases are always added on top of server.json (but don't overwrite)
@@ -933,7 +945,7 @@ component accessors="true" singleton {
 			
 	    if( serverInfo.debug ) {
 			var cleanedArgs = cr & '    ' & trim( reReplaceNoCase( args.toList( ' ' ), ' (-|"-)', cr & '    \1', 'all' ) );
-			consoleLogger.debug("Server start command: #javaCommand# #cleanedargs#");
+			consoleLogger.debug("Server start command: #serverInfo.javaHome# #cleanedargs#");
 	    }
 	    
 	    // needs to be unique in each run to avoid errors
@@ -941,7 +953,7 @@ component accessors="true" singleton {
 		// Construct a new process object
 	    var processBuilder = createObject( "java", "java.lang.ProcessBuilder" );
 	    // Pass array of tokens comprised of command plus arguments
-	    args.prepend( variables.javaCommand );
+	    args.prepend( serverInfo.javaHome );
 	    processBuilder.init( args );
 	    // Conjoin standard error and output for convenience.
 	    processBuilder.redirectErrorStream( true );
@@ -959,7 +971,7 @@ component accessors="true" singleton {
 			try{
 				
 				// save server info and persist
-				serverInfo.statusInfo = { command:variables.javaCommand, arguments:attributes.args.toList( ' ' ), result:'' };
+				serverInfo.statusInfo = { command:serverInfo.javaHome, arguments:attributes.args.toList( ' ' ), result:'' };
 				serverInfo.status="starting";
 				setServerInfo( serverInfo );
 				
@@ -1593,7 +1605,8 @@ component accessors="true" singleton {
 			'basicAuthEnable'	: true,
 			'basicAuthUsers'	: {},
 			'heapSize'			: 512,			
-			'minHeapSize'		: 0,
+			'minHeapSize'		: 0,			
+			'javaHome'			: '',
 			'directoryBrowsing' : true,
 			'JVMargs'			: "",
 			'runwarArgs'		: "",

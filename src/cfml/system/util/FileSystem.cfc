@@ -89,9 +89,9 @@ component accessors="true" singleton {
 	/**
 	* Get the JRE Executable from the File System
 	*/
-	function getJREExecutable(){
+	function getJREExecutable( javaHome ){
 		// get java home
-		var jreDirectory = createObject( "java", "java.lang.System" ).getProperty( "java.home" );
+		var jreDirectory = arguments.javaHome ?: createObject( "java", "java.lang.System" ).getProperty( "java.home" );
 		if( isNull( jreDirectory ) OR !len( jreDirectory ) ){
 			throw(message="Java.home not found", type="IllegalStateException" );
 		}
@@ -101,10 +101,6 @@ component accessors="true" singleton {
 		var javaPath = jreDirectory & "/" & "bin" & "/java#fileExtension#";
 		// build command
 		var javaCommand =  createObject( "java", "java.io.File").init( javaPath ).getCanonicalPath();
-		// take care of spaces in command
-/*		if( javaCommand contains " " ){
-			javaCommand = """#javaCommand#""";
-		}*/
 		
 		return javaCommand;
 	}

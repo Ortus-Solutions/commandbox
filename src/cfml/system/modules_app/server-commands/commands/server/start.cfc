@@ -82,7 +82,9 @@ component aliases="start" {
 	 * @console				Start this server in the forground console process and wait until Ctrl-C is pressed to stop it.
 	 * @welcomeFiles		A comma-delimited list of default files to load when visiting a directory (index.cfm,index.htm,etc)
 	 * @serverHomeDirectory	The folder where the CF engine WAR should be extracted
-	 * @restMappings		A comma-delimited list of REST mappings in the form of /api/*,/rest/*.  Empty string to disable.	 
+	 * @restMappings		A comma-delimited list of REST mappings in the form of /api/*,/rest/*.  Empty string to disable.
+	 * @trace				Enable trace level logging
+	 * @javaHomeDirectory	Path to the JRE home directory containing ./bin/java
 	 **/
 	function run(
 		String  name,
@@ -120,7 +122,8 @@ component aliases="start" {
 		String welcomeFiles,
 		String serverHomeDirectory,
 		String restMappings,
-		Boolean trace
+		Boolean trace,
+		String javaHomeDirectory
 	){
 
 		// This is a common mis spelling
