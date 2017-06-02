@@ -656,7 +656,7 @@ component accessors="true" singleton {
 			// This will install the engine war to start, possibly downloading it first
 			var installDetails = serverEngineService.install( cfengine=serverInfo.cfengine, basedirectory=serverinfo.customServerFolder, serverInfo=serverInfo, serverHomeDirectory=serverInfo.serverHomeDirectory );
 			serverInfo.serverHomeDirectory = installDetails.installDir;
-			// TODO: As of 3.5 this is for backwards compat.  Remove in later version
+			// TODO: As of 3.5 "serverHome" is for backwards compat.  Remove in later version in favor of serverHomeDirectory above
 			serverInfo.serverHome = installDetails.installDir;
 			serverInfo.logdir = serverInfo.serverHomeDirectory & "/logs";
 			serverInfo.consolelogPath	= serverInfo.logdir & '/server.out.txt';
