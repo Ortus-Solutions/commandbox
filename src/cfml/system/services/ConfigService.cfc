@@ -55,7 +55,8 @@ component accessors="true" singleton {
 			'artifactsDirectory',
 			// commands
 			'command',
-			'command.defaults'
+			'command.defaults',
+			'command.aliases'
 		]);
 		
 		setConfigFilePath( '/commandbox-home/CommandBox.json' );
