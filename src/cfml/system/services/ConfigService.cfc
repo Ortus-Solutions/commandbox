@@ -52,7 +52,10 @@ component accessors="true" singleton {
 			'server',
 			'server.defaults',
 			// used in Artifactsservice
-			'artifactsDirectory'
+			'artifactsDirectory',
+			// commands
+			'command',
+			'command.defaults'
 		]);
 		
 		setConfigFilePath( '/commandbox-home/CommandBox.json' );

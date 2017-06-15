@@ -24,6 +24,7 @@ component accessors="true" singleton {
 	// Using provider since CommandService is created before modules are loaded
 	property name='stringDistance'		inject='provider:StringSimilarity@string-similarity';
 	property name='SystemSettings'		inject='SystemSettings';
+	property name='ConfigService'		inject='ConfigService';
 	
 	property name='configured' default="false" type="boolean";
 
@@ -264,6 +265,9 @@ component accessors="true" singleton {
 
 			// Merge flags into named params
 			mergeFlagParameters( parameterInfo );
+
+			// Add in defaults
+			addDefaultParameters( commandInfo.commandString, parameterInfo );			
 
 			// Make sure we have all required params.
 			parameterInfo.namedParameters = ensureRequiredParams( parameterInfo.namedParameters, commandParams );
@@ -947,12 +951,32 @@ component accessors="true" singleton {
 
 		return results;
 	}
+	
 	/**
 	 * Merge flags into named parameters
  	 **/
-	private function mergeFlagParameters( required struct parameterInfo ){
+	private function mergeFlagParameters( required struct parameterInfo ) {
 		// Add flags into named params
 		arguments.parameterInfo.namedParameters.append( arguments.parameterInfo.flags );
+	}
+	
+	/**
+	 * Merge in parameter defaults
+ 	 **/
+	private function addDefaultParameters( commandString, parameterInfo ) {
+		// Get defaults for this command, an empty struct if nothing.
+		var defaults = configService.getSetting( 'command.defaults["#commandString#"]', {} );
+		var params = parameterInfo.namedParameters;
+		
+		// For each default
+		defaults.each( function( k,v ) {
+			// If it's not already set
+			if( !params.keyExists( k ) ) {
+				// Stick it in there!
+				params[ k ] = v;
+			}
+		} );
+		
 	}
 
 }
