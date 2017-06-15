@@ -53,7 +53,8 @@ component {
 			// Current character
 			char = mid( line, i, 1 );
 			// All the remaining characters
-			remainingChars = mid( line, i, len( line ) );
+			remainingChars = mid( line, i+1, len( line ) );
+			
 			// Reset this every time
 			isEscaped = false;
 			
@@ -73,8 +74,11 @@ component {
 				// We just reached the end of our quoted string
 				if( char == quoteChar && !isEscaped ) {
 					inQuotes = false;
-					tokens.append( token);
-					token = '';
+					// Don't break if an = is next ...
+					if( left( trim( remainingChars ), 1 ) != '=' ) {
+						tokens.append( token);
+						token = '';	
+					}
 				}
 				prevEscaped = isEscaped;
 				prevChar = char;
@@ -199,6 +203,7 @@ component {
 				var value = listRest( param, '=' );
 				
 				// Unwrap quotes from value if used
+				name = unwrapQuotes( name );
 				value = unwrapQuotes( value );
 				
 				// Mark expressions and system settings now while escaped chars are removed
