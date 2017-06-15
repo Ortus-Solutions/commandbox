@@ -491,43 +491,8 @@ component accessors="true" singleton {
 
 		// This will hold the command chain. Usually just a single command,
 		// but a pipe ("|") will chain together commands and pass the output of one along as the input to the next
-		var commandsToResolve = [[]];
+		var commandsToResolve = breakTokensIntoChain( tokens );
 		var commandChain = [];
-
-		// If this command has a pipe, we need to chain multiple commands
-		var i = 0;
-		for( var token in tokens ){
-			i++;
-			// We've reached a pipe and there is at least one command resolved already and there are more tokens left
-			if( token == '|' &&  commandsToResolve[ commandsToResolve.len() ].len() && i < tokens.len()  ){
-				// Add a new command
-				commandsToResolve.append( [ '|' ] );
-				commandsToResolve.append( [] );
-			} else if( token == ';' &&  commandsToResolve[ commandsToResolve.len() ].len() && i < tokens.len()  ){
-				// Add a new command
-				commandsToResolve.append( [ ';' ] );
-				commandsToResolve.append( [] );
-			} else if( token == '&&' &&  commandsToResolve[ commandsToResolve.len() ].len() && i < tokens.len()  ){
-				// Add a new command
-				commandsToResolve.append( [ '&&' ] );
-				commandsToResolve.append( [] );
-			} else if( token == '||' &&  commandsToResolve[ commandsToResolve.len() ].len() && i < tokens.len()  ){
-				// Add a new command
-				commandsToResolve.append( [ '||' ] );
-				commandsToResolve.append( [] );
-			} else if( token == '>' &&  commandsToResolve[ commandsToResolve.len() ].len() && i < tokens.len()  ){
-				// Add a new command
-				commandsToResolve.append( [ '|' ] );
-				commandsToResolve.append( [ 'fileWrite' ] );
-			} else if( token == '>>' &&  commandsToResolve[ commandsToResolve.len() ].len() && i < tokens.len()  ){
-				// Add a new command
-				commandsToResolve.append( [ '|' ] );
-				commandsToResolve.append( [ 'fileAppend' ] );
-			} else if( !listFindNoCase( '|,;,>,>>,&&', token ) ) {
-				//Append this token to the last command
-				commandsToResolve[ commandsToResolve.len() ].append( token );
-			}
-		}
 
 		// command hierarchy
 		var cmds = getCommandHierarchy();
@@ -536,6 +501,7 @@ component accessors="true" singleton {
 		for( var commandTokens in commandsToResolve ){
 
 			tokens = commandTokens;
+			var originalLine = tokens.toList( ' ' );
 
 			// If command ends with "help", switch it around to call the root help command
 			// Ex. "coldbox help" becomes "help coldbox"
@@ -594,7 +560,7 @@ component accessors="true" singleton {
 			}
 
 			var results = {
-				originalLine = tokens.toList( ' ' ),
+				originalLine = originalLine,
 				commandString = '',
 				commandReference = cmds,
 				parameters = [],
@@ -648,6 +614,85 @@ component accessors="true" singleton {
 		// Return command chain
 		return commandChain;
 
+	}
+	
+	/**
+	* Takes a single array of tokens and breaks it into a chain of commands (array of arrays)
+	* i.e. foo bar | baz turns into [ [ 'foo', 'bar' ], [ '|' ], [ 'baz' ] ] 
+	*/
+	private function breakTokensIntoChain( required array tokens ) {
+		
+		var commandsToResolve = [[]];
+		var expandedCommandsToResolve = [];
+
+		// If this command has a pipe, we need to chain multiple commands
+		var i = 0;
+		for( var token in tokens ){
+			i++;
+			// We've reached a pipe and there is at least one command resolved already and there are more tokens left
+			if( token == '|' &&  commandsToResolve[ commandsToResolve.len() ].len() && i < tokens.len()  ){
+				// Add a new command
+				commandsToResolve.append( [ '|' ] );
+				commandsToResolve.append( [] );
+			} else if( token == ';' &&  commandsToResolve[ commandsToResolve.len() ].len() && i < tokens.len()  ){
+				// Add a new command
+				commandsToResolve.append( [ ';' ] );
+				commandsToResolve.append( [] );
+			} else if( token == '&&' &&  commandsToResolve[ commandsToResolve.len() ].len() && i < tokens.len()  ){
+				// Add a new command
+				commandsToResolve.append( [ '&&' ] );
+				commandsToResolve.append( [] );
+			} else if( token == '||' &&  commandsToResolve[ commandsToResolve.len() ].len() && i < tokens.len()  ){
+				// Add a new command 
+				commandsToResolve.append( [ '||' ] );
+				commandsToResolve.append( [] );
+			} else if( token == '>' &&  commandsToResolve[ commandsToResolve.len() ].len() && i < tokens.len()  ){
+				// Add a new command
+				commandsToResolve.append( [ '|' ] );
+				commandsToResolve.append( [ 'fileWrite' ] );
+			} else if( token == '>>' &&  commandsToResolve[ commandsToResolve.len() ].len() && i < tokens.len()  ){
+				// Add a new command
+				commandsToResolve.append( [ '|' ] );
+				commandsToResolve.append( [ 'fileAppend' ] );
+			} else if( !listFindNoCase( '|,;,>,>>,&&', token ) ) {
+				//Append this token to the last command
+				commandsToResolve[ commandsToResolve.len() ].append( token );
+			}
+		}
+	
+		// Expand aliases
+		for( commandTokens in commandsToResolve ) {
+			var originalLine = commandTokens.toList( ' ' );
+			var aliases = configService.getSetting( 'command.aliases', {} );
+			var matchingAlias = '';
+			
+			for( alias in aliases ) {
+				if( lcase( originalLine ).startsWith( lcase( alias ) ) ) {
+					matchingAlias = alias;
+					break;
+				}
+			}
+			
+			// If the exact tokens in this command match an alias, swap it out.
+			if( matchingAlias.len() ) {
+				expandedCommandsToResolve.append(
+					// Recursivley dig down. This allows aliases to alias other alises
+					breakTokensIntoChain(
+						// Re-tokenize the new strin 
+						parser.tokenizeInput( 
+							// Expand the alias with the string it aliases
+							replaceNoCase( originalLine, matchingAlias, aliases[ matchingAlias ], 'once' )
+						)
+					 ),
+				true );
+			// Otherwise just use them as is.
+			} else {
+				expandedCommandsToResolve.append( commandTokens );				
+			}
+				
+		}
+		
+		return expandedCommandsToResolve;
 	}
 
 	/**
