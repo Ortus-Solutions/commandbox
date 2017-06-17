@@ -847,6 +847,7 @@ component accessors="true" singleton {
 		 	.append( '--tray-enable' ).append( serverInfo.trayEnable )		 	
 		 	.append( '--directoryindex' ).append( serverInfo.directoryBrowsing )
 		 	.append( '--timeout' ).append( serverInfo.startTimeout )
+		 	.append( '--proxy-peeraddress' ).append( 'true' )		 	
 		 	.append( serverInfo.runwarArgs.listToArray( ' ' ), true );
 		 	
 		// Runwar will blow up if there isn't a parameter supplied, so I can't pass an empty string. 
