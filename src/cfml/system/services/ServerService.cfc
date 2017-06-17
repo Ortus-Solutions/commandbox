@@ -121,6 +121,7 @@ component accessors="true" singleton {
 			'trayicon' : d.trayicon ?: '',
 			// Duplicate so onServerStart interceptors don't actually change config settings via refernce.
 			'trayOptions' : duplicate( d.trayOptions ?: [] ),
+			'trayEnable' : d.trayEnable ?: true,
 			'jvm' : {
 				'heapSize' : d.jvm.heapSize ?: 512,				
 				'minHeapSize' : d.jvm.minHeapSize ?: 0,
@@ -527,6 +528,10 @@ component accessors="true" singleton {
 		serverInfo.basicAuthEnable 	= 								   serverJSON.web.basicAuth.enable		?: defaults.web.basicAuth.enable;
 		serverInfo.basicAuthUsers 	= 								   serverJSON.web.basicAuth.users		?: defaults.web.basicAuth.users;
 		serverInfo.welcomeFiles 	= serverProps.welcomeFiles		?: serverJSON.web.welcomeFiles			?: defaults.web.welcomeFiles;
+		
+		serverInfo.trayEnable	 	= serverJSON.trayEnable			?: defaults.trayEnable;
+		
+		
 		// Clean up spaces in welcome file list
 		serverInfo.welcomeFiles = serverInfo.welcomeFiles.listMap( function( i ){ return trim( i ); } );
 		
@@ -839,6 +844,7 @@ component accessors="true" singleton {
 		 	.append( '--server-name' ).append( serverInfo.name )
 		 	.append( '--tray-icon' ).append( serverInfo.trayIcon )
 		 	.append( '--tray-config' ).append( trayOptionsPath )
+		 	.append( '--tray-enable' ).append( serverInfo.trayEnable )		 	
 		 	.append( '--directoryindex' ).append( serverInfo.directoryBrowsing )
 		 	.append( '--timeout' ).append( serverInfo.startTimeout )
 		 	.append( serverInfo.runwarArgs.listToArray( ' ' ), true );
@@ -1625,6 +1631,7 @@ component accessors="true" singleton {
 			'aliases'			: {},
 			'errorPages'		: {},
 			'trayOptions'		: {},
+			'trayEnable'		: true,
 			'dateLastStarted'	: '',
 			'openBrowser'		: true,
 			'openBrowserURL'	: ''
