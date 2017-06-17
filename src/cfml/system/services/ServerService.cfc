@@ -150,7 +150,9 @@ component accessors="true" singleton {
 				},
 				'rewrites' : {
 					'enable' : d.web.rewrites.enable ?: false,
-					'config' : d.web.rewrites.config ?: variables.rewritesDefaultConfig
+					'config' : d.web.rewrites.config ?: variables.rewritesDefaultConfig,
+					'statusPath' : d.web.rewrites.statusPath ?: '',
+					'configReloadSeconds' : d.web.rewrites.configReloadSeconds ?: ''
 				},
 				'basicAuth' : {
 					'enable' : d.web.basicAuth.enable ?: true,
@@ -525,6 +527,8 @@ component accessors="true" singleton {
 		serverInfo.SSLKeyFile 		= serverProps.SSLKeyFile 		?: serverJSON.web.SSL.keyFile			?: defaults.web.SSL.keyFile;
 		serverInfo.SSLKeyPass 		= serverProps.SSLKeyPass 		?: serverJSON.web.SSL.keyPass			?: defaults.web.SSL.keyPass;
 		serverInfo.rewritesEnable 	= serverProps.rewritesEnable	?: serverJSON.web.rewrites.enable		?: defaults.web.rewrites.enable;
+		serverInfo.rewritesStatusPath = 							   serverJSON.web.rewrites.statusPath	?: defaults.web.rewrites.statusPath;
+		serverInfo.rewritesConfigReloadSeconds =					   serverJSON.web.rewrites.configReloadSeconds ?: defaults.web.rewrites.configReloadSeconds;
 		serverInfo.basicAuthEnable 	= 								   serverJSON.web.basicAuth.enable		?: defaults.web.basicAuth.enable;
 		serverInfo.basicAuthUsers 	= 								   serverJSON.web.basicAuth.users		?: defaults.web.basicAuth.users;
 		serverInfo.welcomeFiles 	= serverProps.welcomeFiles		?: serverJSON.web.welcomeFiles			?: defaults.web.welcomeFiles;
@@ -847,7 +851,7 @@ component accessors="true" singleton {
 		 	.append( '--tray-enable' ).append( serverInfo.trayEnable )		 	
 		 	.append( '--directoryindex' ).append( serverInfo.directoryBrowsing )
 		 	.append( '--timeout' ).append( serverInfo.startTimeout )
-		 	.append( '--proxy-peeraddress' ).append( 'true' )		 	
+		 	.append( '--proxy-peeraddress' ).append( 'true' )
 		 	.append( serverInfo.runwarArgs.listToArray( ' ' ), true );
 		 	
 		// Runwar will blow up if there isn't a parameter supplied, so I can't pass an empty string. 
@@ -929,6 +933,13 @@ component accessors="true" singleton {
 		
 		// Incorporate rewrites to command
 		args.append( '--urlrewrite-enable' ).append( serverInfo.rewritesEnable );
+		if( len( serverInfo.rewritesStatusPath ) ) {
+			args.append( '--urlrewrite-statuspath' ).append( serverInfo.rewritesStatusPath );	
+		}
+		// A setting of 0 reloads on every request
+		if( len( serverInfo.rewritesConfigReloadSeconds ) ) {
+			args.append( '--urlrewrite-check' ).append( serverInfo.rewritesConfigReloadSeconds );	
+		}
 		
 		// Basic auth
 		if( serverInfo.basicAuthEnable && serverInfo.basicAuthUsers.count() ) {
