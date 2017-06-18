@@ -863,7 +863,7 @@ component accessors="true" singleton {
 		}
 		 	
 		if( serverInfo.trace ) {
-			args.append( '--log-level' ).append( 'trace' );
+			args.append( '--log-level' ).append( 'TRACE' );
 		}
 		 
 		if( len( errorPages ) ) {
@@ -1008,9 +1008,9 @@ component accessors="true" singleton {
 				var line = bufferedReader.readLine();
 				while( !isNull( line ) ){
 					// Clean log4j cruft from line
-					line = reReplaceNoCase( line, '^.* (INFO|DEBUG|ERROR|WARN) RunwarLogger processoutput: ', '' );
+					line = reReplaceNoCase( line, '^.* (INFO|DEBUG|ERROR|WARN) RunwarLogger - processoutput: ', '' );
 					line = reReplaceNoCase( line, '^.* (INFO|DEBUG|ERROR|WARN) RunwarLogger lib: ', 'Runwar: ' );
-					line = reReplaceNoCase( line, '^.* (INFO|DEBUG|ERROR|WARN) RunwarLogger ', 'Runwar: ' );
+					line = reReplaceNoCase( line, '^.* (INFO|DEBUG|ERROR|WARN) RunwarLogger - ', 'Runwar: ' );
 					
 					// Build up our output
 					startOutput.append( line & chr( 13 ) & chr( 10 ) );
