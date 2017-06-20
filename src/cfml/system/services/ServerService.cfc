@@ -704,6 +704,8 @@ component accessors="true" singleton {
 			
 			// The process native name
 			var processName = ( serverInfo.name is "" ? "CommandBox" : serverInfo.name ) & ' [' & listFirst( serverinfo.cfengine, '@' ) & ' ' & installDetails.version & ']';
+			var displayServerName = ( serverInfo.name is "" ? "CommandBox" : serverInfo.name );
+			var displayEngineName = listFirst( serverinfo.cfengine, '@' ) & ' ' & installDetails.version;
 		
 		// This is a WAR
 		} else {
@@ -760,6 +762,16 @@ component accessors="true" singleton {
 		// Set default options for all servers
 		// TODO: Don't overwrite existing options with the same label.
 		
+	/*	serverInfo.trayOptions.prepend(
+			{
+				"label":"Advanced",
+				"items": [
+					{ "label" : "Browse File System", "hotkey" : "B", "action" : "openfilesystem", "path" : "", "image" : expandPath('/commandbox/system/config/server-icons/info.png' ) },
+					{ "label" : displayEngineName, "disabled" : true, 'checkbox': true, "image" : expandPath('/commandbox/system/config/server-icons/info.png' )  },
+					{ "label" : "PID: ${runwar.PID}", "disabled" : true, 'checkbox': true, "image" : expandPath('/commandbox/system/config/server-icons/info.png' )  }
+				]
+			} );*/
+		
 	    if( CFEngineName contains "lucee" ) {
 			serverInfo.trayOptions.prepend( { 'label':'Open Web Admin', 'action':'openbrowser', 'url':'http://${runwar.host}:${runwar.port}/lucee/admin/web.cfm', 'image' : expandPath('/commandbox/system/config/server-icons/web_settings.png' ) } );
 			serverInfo.trayOptions.prepend( { 'label':'Open Server Admin', 'action':'openbrowser', 'url':'http://${runwar.host}:${runwar.port}/lucee/admin/server.cfm', 'image' : expandPath('/commandbox/system/config/server-icons/server_settings.png' ) } );
@@ -771,8 +783,10 @@ component accessors="true" singleton {
 		}
 		
 		serverInfo.trayOptions.prepend( { 'label':'Open Browser', 'action':'openbrowser', 'url': serverInfo.openbrowserURL, 'image' : expandPath('/commandbox/system/config/server-icons/home.png' ) } );
+	/*	serverInfo.trayOptions.prepend( { 'label' : 'Restart Server', 'hotkey':'R', 'action' : 'restartserver', 'image': expandPath('/commandbox/system/config/server-icons/home.png' ) } );
+	*/		
 		serverInfo.trayOptions.prepend( { 'label':'Stop Server', 'action':'stopserver', 'image' : expandPath('/commandbox/system/config/server-icons/stop.png' ) } );
-		serverInfo.trayOptions.prepend( { 'label': processName, 'disabled':true, 'image' : expandPath('/commandbox/system/config/server-icons/info.png' ) } );
+		//serverInfo.trayOptions.prepend( { 'label': displayServerName, 'disabled':true, 'image' : expandPath('/commandbox/system/config/server-icons/info.png' ) } );
 		
 	    // This is due to a bug in RunWar not creating the right directory for the logs
 	    directoryCreate( serverInfo.logDir, true, true );
@@ -805,6 +819,7 @@ component accessors="true" singleton {
 		// Serialize tray options and write to temp file
 		var trayOptionsPath = serverinfo.customServerFolder & '/trayOptions.json';
 		var trayJSON = {
+			//'title' : displayServerName,
 			'title' : processName,
 			'tooltip' : processName,
 			'items' : serverInfo.trayOptions
