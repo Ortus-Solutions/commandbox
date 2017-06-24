@@ -77,10 +77,12 @@ component implements="wirebox.system.ioc.dsl.IDSLBuilder" accessors=true{
 						}
 					}
 					case "ConfigSettings"		: {
-						var configSettings = getInjector().getInstance( 'ConfigService' ).getConfigSettings();;
+						var configService = getInjector().getInstance( 'ConfigService' );
+						var configSettings = configService.getConfigSettings();
+						
 						// Check for setting existance
-						if( structKeyExists(configSettings, thisLocationKey ) ){
-							return configSettings[ thisLocationKey ];
+						if( configService.settingExists( thisLocationKey ) ){
+							return configService.getSetting( thisLocationKey );
 						} else if( getLog().canDebug() ){
 							getLog().debug("The config setting requested: #thisLocationKey# does not exist in the loaded settings. Loaded settings are #structKeyList(configSettings)#");
 						}
