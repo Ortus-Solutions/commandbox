@@ -205,7 +205,8 @@ component accessors="true" singleton {
     * Does NOT apply any canonicalization 
     */
     string function makePathRelative( required string absolutePath ) {
-    	if( !isWindows() ) { 
+    	if( !isWindows() ) {
+    		// TODO: Unix paths with a period in a folder name are likely still a problem.
     		return arguments.absolutePath;
     	}
     	// If one of the folders has a period, we've got to do something special.

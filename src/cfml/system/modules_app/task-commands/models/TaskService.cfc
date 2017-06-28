@@ -39,24 +39,30 @@ component singleton accessors=true {
 		
 		// This is neccessary so changes to tasks get picked up right away.
 		pagePoolClear();
-				
+		
+		// We need the .cfc extension for the file exists check to work.
 		if( right( taskFile, 4 ) != '.cfc' ) {
 			taskFile &= '.cfc';
 		}
+		
 		if( !fileExists( taskFile ) ) {
 			throw( message="Task CFC doesn't exist.", detail=arguments.taskFile, type="commandException");
 		}
 		
+		// Create an instance of the taskCFC.  To prevent caching of the actual code in the task, we're treating them as
+		// transients. Since is since the code is likely to change while devs are building and testing them.
 		var taskCFC = createTaskCFC( taskFile );
+		
 		// If target doesn't exist or isn't a UDF
 		if( !structKeyExists( taskCFC, target ) || !IsCustomFunction( taskCFC[ target ] ) ) {	
 			throw( message="Target [#target#] doesn't exist in Task CFC.", detail=arguments.taskFile, type="commandException");
 		}
+		
 		// Run the task
-		taskCFC.reset();
 		taskCFC[ target ]( argumentCollection = taskArgs );
 		
 		// Return any output.  It's up to the caller to output it.
+		// This is so task output can be correctly captured and piped or redirected to a file.
 		return taskCFC.getResult();
 		
 	}
@@ -83,7 +89,7 @@ component singleton accessors=true {
 			// retrieve, build and wire from wirebox
 			return wireBox.getInstance( "task-" & relTaskFile );
 		
-		// This will catch nasty parse errors so the shell can keep loading
+		// This will catch nasty parse errors and tell us where they happened
 		} catch( any e ){
 			// Log the full exception with stack trace
 			logger.error( 'Error creating Task [#relTaskFile#]. #e.message# #e.detail ?: ''#', e.stackTrace );
