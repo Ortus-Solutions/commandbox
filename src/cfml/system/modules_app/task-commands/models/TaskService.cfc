@@ -32,8 +32,10 @@ component singleton accessors=true {
 	* @taskFile Path to the Task CFC that you want to run
 	* @target Method in Task CFC to run
 	* @taskArgs Struct of arguments to pass on to the task
+	* 
+	* @returns The output of the task.  It's up to the caller to output it.
 	*/
-	function runTask( required string taskFile,  required string target='run', taskArgs={} ) {
+	string function runTask( required string taskFile,  required string target='run', taskArgs={} ) {
 		
 		// This is neccessary so changes to tasks get picked up right away.
 		pagePoolClear();
@@ -53,17 +55,10 @@ component singleton accessors=true {
 		// Run the task
 		taskCFC.reset();
 		taskCFC[ target ]( argumentCollection = taskArgs );
-		var result = taskCFC.getResult();
 		
-		if( len( result ) ) {
-			shell.printString( result );
-			// If the command output text that didn't end with a line break one, add one
-			var lastChar = mid( result, len( result ), 1 );
-			if( ! ( lastChar == chr( 10 ) || lastChar == chr( 13 ) ) ) {
-				shell.getReader().println();
-			}
-    		shell.getReader().flush();
-		}
+		// Return any output.  It's up to the caller to output it.
+		return taskCFC.getResult();
+		
 	}
 	
 	

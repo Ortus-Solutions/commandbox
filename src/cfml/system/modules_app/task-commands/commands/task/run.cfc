@@ -31,16 +31,30 @@ component {
 		string taskFile='task.cfc',
 		string target='run'
 		) {
+			
 		arguments.taskFile = fileSystemUtil.resolvePath( arguments.taskFile );
 		var taskArgs = {};
+		
+		// Named task args will come through in a struct called args
+		// task run :param=value :param2=value2
 		if( arguments.keyExists( 'args' ) && isStruct( arguments.args ) ) {
 			taskArgs = arguments.args;
+			
+		// Positional task args will come through direclty in the arguments scope
+		// task run task.cfc run value value2
 		} else if( arguments.count() > 1 ) {
+			// Make a copy of the arguments scope
 			taskArgs = duplicate( arguments );
+			// And pull out the two args that were meant for this command
 			taskArgs.delete( 'taskFile' );
 			taskArgs.delete( 'target' );
 		}
-		taskService.runTask( taskFile, target, taskArgs );
+		
+		// Run the task!
+		// We're printing the output here so we can capture it and pipe or redirect the output from "task run"
+		print.text( 
+			taskService.runTask( taskFile, target, taskArgs )
+		);
 	}
 
 }
