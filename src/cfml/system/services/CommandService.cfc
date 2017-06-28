@@ -275,6 +275,7 @@ component accessors="true" singleton {
 			// Evaluate parameter expressions and system settings
 			evaluateExpressions( parameterInfo );
 			evaluateSystemSettings( parameterInfo );
+			combineColonParams( parameterInfo );
 
 			// Create globbing patterns
 			createGlobs( parameterInfo, commandParams );
@@ -460,8 +461,32 @@ component accessors="true" singleton {
 			}
 		}
 	}
-
-
+	
+	/**
+	* Look through named parameters and combine any ones with a colon based on matching prefixes.
+	*/
+	function combineColonParams( required struct parameters ) {
+		// Check each param
+		for( var key in parameters.namedParameters.keyArray() ) {
+			// If the name contains a colon, then break it out into a struct
+			if( key contains ':' ) {
+				// Default struct name for :foo=bar
+				if( key.listLen( ':' ) > 1 ) {
+					var prefix = key.listFirst( ':' );
+					var nestedKey = key.listRest( ':' );
+				} else {
+					var prefix = 'args';
+					var nestedKey = mid( key, 2, len( key ) );
+				}
+				// Default to empty struct if this is the first param with this prefix
+				parameters.namedParameters[ prefix ] = parameters.namedParameters[ prefix ] ?: {};
+				// Set the part after the colon as the key in the new struct.
+				parameters.namedParameters[ prefix ][ nestedKey ] = parameters.namedParameters[ key ];
+				// Remove original param
+				parameters.namedParameters.delete( key );
+			}
+		}
+	}
 
 	/**
 	 * Take an array of parameters and parse them out as named or positional
