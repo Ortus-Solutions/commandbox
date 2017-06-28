@@ -177,7 +177,7 @@ component accessors=true singleton {
 	* Unregister an interceptor from an interception state or all states. If the state does not exists, it returns false
 	*/
 	function unregister( required string name, state='' ) {
-		return getEventPoolManager().unregister( arguemnts.name, arguments.state );
+		return getEventPoolManager().unregister( arguments.name, arguments.state );
 	}
 
 }
