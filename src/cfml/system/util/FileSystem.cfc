@@ -208,10 +208,29 @@ component accessors="true" singleton {
     	if( !isWindows() ) { 
     		return arguments.absolutePath;
     	}
-    	var driveLetter = listFirst( arguments.absolutePath, ':' );
-    	var path = listRest( arguments.absolutePath, ':' );
-    	var mapping = locateMapping( driveLetter );
-    	return mapping & path;
+    	// If one of the folders has a period, we've got to do something special.
+    	// C:/users/brad.development/foo.cfc turns into /C__users_brad_development/foo.cfc
+    	if( getDirectoryFromPath( arguments.absolutePath ) contains '.' ) {
+    		var mappingPath = getDirectoryFromPath( arguments.absolutePath );
+    		mappingPath = mappingPath.replace( '\', '/', 'all' );
+    		mappingPath = mappingPath.listChangeDelims( '/', '/' );
+    		
+    		var mappingName = mappingPath.replace( ':', '_', 'all' );
+    		mappingName = mappingName.replace( '.', '_', 'all' );
+    		mappingName = mappingName.replace( '/', '_', 'all' );
+    		mappingName = '/' & mappingName;
+    		
+    		createMapping( mappingName, mappingPath );
+    		return mappingName & '/' & getFileFromPath( arguments.absolutePath );
+    	
+    	// Otherwise, do the "normal" way that re-uses top level drive mappings
+    	// C:/users/brad/foo.cfc turns into /C_Drive/users/brad/foo.cfc
+    	} else {
+	    	var driveLetter = listFirst( arguments.absolutePath, ':' );
+	    	var path = listRest( arguments.absolutePath, ':' );
+	    	var mapping = locateMapping( driveLetter );
+	    	return mapping & path;
+    	}
     }
     
     /** 
@@ -221,12 +240,16 @@ component accessors="true" singleton {
     string function locateMapping( required string driveLetter  ) {
     	var mappingName = '/' & arguments.driveLetter & '_drive';
     	var mappingPath = arguments.driveLetter & ':/';
+    	createMapping( mappingName, mappingPath );
+   		return mappingName;
+    }
+    
+    function createMapping( mappingName, mappingPath ) {
     	var mappings = getApplicationSettings().mappings;
     	if( !structKeyExists( mappings, mappingName ) ) {
     		mappings[ mappingName ] = mappingPath;
     		application action='update' mappings='#mappings#';
    		}
-   		return mappingName;
     }
 
 }

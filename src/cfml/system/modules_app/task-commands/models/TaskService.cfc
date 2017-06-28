@@ -1,0 +1,100 @@
+/**
+*********************************************************************************
+* Copyright Since 2014 CommandBox by Ortus Solutions, Corp
+* www.coldbox.org | www.ortussolutions.com
+********************************************************************************
+* @author Brad Wood, Luis Majano, Denny Valliant
+*
+* I handle running tasks
+*/
+component singleton accessors=true {
+	
+	// DI Properties
+	property name='FileSystemUtil' inject='FileSystem';
+	property name='logger' inject='logbox:logger:{this}';
+	property name='cr' inject='cr@constants';
+	property name='wirebox' inject='wirebox';
+	property name='shell' inject='Shell';
+	property name='consoleLogger' inject='logbox:logger:console';
+
+	function onDIComplete() {
+		// Check if base task class mapped?
+		if( NOT wirebox.getBinder().mappingExists( 'commandbox.system.BaseTask' ) ){
+			// feed the base class
+			wirebox.registerNewInstance( name='commandbox.system.BaseTask', instancePath='commandbox.system.BaseTask' )
+				.setAutowire( false );
+		}
+	}
+	
+	/**
+	* Runs a task
+	* 
+	* @taskFile Path to the Task CFC that you want to run
+	* @target Method in Task CFC to run
+	* @taskArgs Struct of arguments to pass on to the task
+	*/
+	function runTask( required string taskFile,  required string target='run', taskArgs={} ) {
+		
+		// This is neccessary so changes to tasks get picked up right away.
+		pagePoolClear();
+				
+		if( right( taskFile, 4 ) != '.cfc' ) {
+			taskFile &= '.cfc';
+		}
+		if( !fileExists( taskFile ) ) {
+			throw( message="Task CFC doesn't exist.", detail=arguments.taskFile, type="commandException");
+		}
+		
+		var taskCFC = createTaskCFC( taskFile );
+		// If target doesn't exist or isn't a UDF
+		if( !structKeyExists( taskCFC, target ) || !IsCustomFunction( taskCFC[ target ] ) ) {	
+			throw( message="Target [#target#] doesn't exist in Task CFC.", detail=arguments.taskFile, type="commandException");
+		}
+		// Run the task
+		taskCFC.reset();
+		taskCFC[ target ]( argumentCollection = taskArgs );
+		var result = taskCFC.getResult();
+		
+		if( len( result ) ) {
+			shell.printString( result );
+			// If the command output text that didn't end with a line break one, add one
+			var lastChar = mid( result, len( result ), 1 );
+			if( ! ( lastChar == chr( 10 ) || lastChar == chr( 13 ) ) ) {
+				shell.getReader().println();
+			}
+    		shell.getReader().flush();
+		}
+	}
+	
+	
+	function createTaskCFC( required string taskFile ) {
+		// Convert to use a mapping
+		var relTaskFile = FileSystemUtil.makePathRelative( taskFile );
+		
+		// Strip .cfc back off
+		relTaskFile = mid( relTaskFile, 1, len( relTaskFile ) - 4 );
+		relTaskFile = relTaskFile.listChangeDelims( '.', '/' );
+		relTaskFile = relTaskFile.listChangeDelims( '.', '\' );
+		
+		// Create this Task CFC
+		try {
+		
+			// Check if task mapped?
+			if( NOT wirebox.getBinder().mappingExists( "task-" & relTaskFile ) ){
+				// feed this task to wirebox with virtual inheritance
+				wirebox.registerNewInstance( name="task-" & relTaskFile, instancePath=relTaskFile )
+					.setVirtualInheritance( "commandbox.system.BaseTask" );
+			}
+			// retrieve, build and wire from wirebox
+			return wireBox.getInstance( "task-" & relTaskFile );
+		
+		// This will catch nasty parse errors so the shell can keep loading
+		} catch( any e ){
+			// Log the full exception with stack trace
+			logger.error( 'Error creating Task [#relTaskFile#]. #e.message# #e.detail ?: ''#', e.stackTrace );
+			throw( message='Error creating Task [#relTaskFile#]', detail="#e.message# #CR# #e.detail ?: ''# #CR# #e.stacktrace#", type="commandException");
+		}
+
+	}
+}
+
