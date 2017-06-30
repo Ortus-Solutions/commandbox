@@ -854,7 +854,6 @@ component accessors="true" singleton {
 		 	.append( '--background=#background#' )
 		 	.append( '--port' ).append( serverInfo.port )
 		 	.append( '--host' ).append( serverInfo.host )
-		 	.append( '--debug' ).append( serverInfo.debug )
 		 	.append( '--stop-port' ).append( serverInfo.stopsocket )
 		 	.append( '--processname' ).append( processName )
 		 	.append( '--log-dir' ).append( serverInfo.logDir )
@@ -868,6 +867,11 @@ component accessors="true" singleton {
 		 	.append( '--timeout' ).append( serverInfo.startTimeout )
 		 	.append( '--proxy-peeraddress' ).append( 'true' )
 		 	.append( serverInfo.runwarArgs.listToArray( ' ' ), true );
+		 	
+		 	if( serverInfo.debug ) {
+		 		// Debug is getting turned on any time I include the --debug flag regardless of whether it's true or false.
+		 		args.append( '--debug' ).append( serverInfo.debug );
+		 	}
 		 	
 		// Runwar will blow up if there isn't a parameter supplied, so I can't pass an empty string. 
 		if( len( serverInfo.restMappings ) ) {
