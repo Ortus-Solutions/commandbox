@@ -11,12 +11,12 @@
  * .
  * Set excluded extensions (comma seperated list, no periods)
  * {code:bash}
- * config set modules.utils.rts.excludeExtensions="gitignore,cfml"
+ * config set utils.rts.excludeExtensions="gitignore,cfml"
  * {code}
  * .
  * Set excluded folders (comma seperated list)
  * {code:bash}
- * config set modules.utils.rts.excludeFolders="node_modules,bower_components"
+ * config set utils.rts.excludeFolders="node_modules,bower_components"
  * {code}
 **/
 component aliases="rts" {
@@ -25,19 +25,14 @@ component aliases="rts" {
 		variables.settings = configService.getconfigSettings();
 		variables.excludeFolders = getExcludeFolders();
 		variables.excludeExtensions = getExcludeExtensions();
-		var count = arguments.files.count();
+
+		arguments.files = filterFiles( arguments.files );
+		var count = arguments.files.len();
 
 		if ( shell.confirm( "Confirm removing trailing spaces from #count# #count != 1 ? "files" : "file"#" ) ){
-			arguments.files.apply( function( path ){
-				var fileInfo = getFileInfo( arguments.path );
-				// only process files
-				if ( fileInfo.type == "file" &&
-					!isExcludedDirectory( arguments.path ) &&
-					!isExcludedFile( arguments.path )
-				){
-					removeTrailingSpaces( arguments.path );
-				}
-			} );
+			for ( var file in arguments.files ){
+				removeTrailingSpaces( file );
+			}
 		}
 	}
 
@@ -65,6 +60,20 @@ component aliases="rts" {
 		}
 
 		return { lines: lines, lineEndings: lineEndings };
+	}
+
+	private function filterFiles( files ){
+		var filteredFiles = [];
+
+		arguments.files.apply( function( file ) {
+			var fileInfo = getFileInfo( file );
+			// only process files
+			if ( fileInfo.type == "file" && !isExcludedDirectory( file ) && !isExcludedFile( file ) ){
+				filteredFiles.append( file );
+			}
+		} );
+
+		return filteredFiles;
 	}
 
 	private function getLineEndings( data ){
