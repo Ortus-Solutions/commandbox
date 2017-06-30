@@ -42,11 +42,12 @@ component aliases="rts" {
 	}
 
 	private function removeTrailingSpaces( filePath ){
+		print.line( "Removing trailing spaces from " & arguments.filePath & "..." );
+
 		// trim trailing spaces and get line endings
 		var trimLinesResult = fileTrimLines( arguments.filePath );
 
 		// write new file
-		print.line( "Removing trailing spaces from " & arguments.filePath & "..." );
 		fileWrite( arguments.filePath, arrayToList( trimLinesResult.lines, trimLinesResult.lineEndings ) );
 	}
 
