@@ -1,70 +1,44 @@
 /**
- * Removes the trailing spaces from a file
+ * - Usage
+ * .
+ * Remove trailing spaces from a list of files
  * .
  * {code:bash}
- * utils remove-trailing-spaces /home/contentbox/index.cfm
+ * utils remove-trailing-spaces globber-filter
  * {code}
  * .
- * Removes the trailing spaces from a directory
+ * - Configuration
  * .
+ * Set excluded extensions (comma seperated list, no periods)
  * {code:bash}
- * utils remove-trailing-spaces /home/contentbox
+ * config set modules.utils.rts.excludeExtensions="gitignore,cfml"
+ * {code}
+ * .
+ * Set excluded folders (comma seperated list)
+ * {code:bash}
+ * config set modules.utils.rts.excludeFolders="node_modules,bower_components"
  * {code}
 **/
 component aliases="rts" {
-	/**
-	 * @path The file or directory path of a file to remove trailing spaces from
-	 **/
-	function run( path="" ){
+
+	public function run( required Globber files ){
+		variables.settings = configService.getconfigSettings();
+		variables.excludeFolders = getExcludeFolders();
 		variables.excludeExtensions = getExcludeExtensions();
+		var count = arguments.files.count();
 
-		if ( arguments.path == "" ) {
-			print.line( "Please provide a file or folder path" );
-			return;
-		}
-
-		// try adding the file to the current working directory if the file doesn't exist
-		if ( fileExists( arguments.path ) ){
-			// file exists
-		} else if ( fileExists( getCWD() & "/" & arguments.path ) ){
-			arguments.path = getCWD() & "/" & arguments.path;
-		} else if ( fileExists( expandPath( arguments.path ) ) ){
-			// try expanding the path
-			arguments.path = expandPath( arguments.path );
-		} else {
-			if ( directoryExists( arguments.path ) ){
-				// directory exists
-			} else if ( directoryExists( getCWD() & "/" & arguments.path ) ){
-				// try adding the directory to the current working directory if the directory doesn't exist
-				arguments.path = getCWD() & "/" & arguments.path;
-			} else if ( directoryExists( expandPath( arguments.path ) ) ){
-				// try expanding the path
-				arguments.path = expandPath( arguments.path );
-			} else {
-				print.line( arguments.path & " is not a valid file or directory" );
-				return;
-			}
-
-			print.line( "Removing trailing spaces from " & arguments.path & "..." );
-
-			variables.excludeFolders = getExcludeFolders();
-			var fileList = directoryList( arguments.path, true, "path" );
-
-			for ( var i in fileList ){
-				var fileInfo = getFileInfo( i );
+		if ( shell.confirm( "Confirm removing trailing spaces from #count# #count != 1 ? "files" : "file"#" ) ){
+			arguments.files.apply( function( path ){
+				var fileInfo = getFileInfo( arguments.path );
 				// only process files
 				if ( fileInfo.type == "file" &&
-				    !isExcludedDirectory( i ) &&
-					!variables.excludeExtensions.contains( listLast( i, "." ) ) ){
-					removeTrailingSpaces( i );
+					!isExcludedDirectory( arguments.path ) &&
+					!isExcludedFile( arguments.path )
+				){
+					removeTrailingSpaces( arguments.path );
 				}
-			}
-
-			return;
+			} );
 		}
-
-		print.line( "Removing trailing spaces from " & arguments.path & "..." );
-		removeTrailingSpaces( arguments.path );
 	}
 
 	private function removeTrailingSpaces( filePath ){
@@ -72,6 +46,7 @@ component aliases="rts" {
 		var trimLinesResult = fileTrimLines( arguments.filePath );
 
 		// write new file
+		print.line( "Removing trailing spaces from " & arguments.filePath & "..." );
 		fileWrite( arguments.filePath, arrayToList( trimLinesResult.lines, trimLinesResult.lineEndings ) );
 	}
 
@@ -93,9 +68,9 @@ component aliases="rts" {
 
 	private function getLineEndings( data ){
 		if ( arguments.data.len() > 0 ){
-			if ( arguments.data[1].find( chr( 13 ) & chr( 10 ) ) != 0 ){
+			if ( arguments.data[ 1 ].find( chr( 13 ) & chr( 10 ) ) != 0 ){
 				return chr( 13 ) & chr( 10 );
-			} else if ( arguments.data[1].find( chr( 13 ) ) != 0 ){
+			} else if ( arguments.data[ 1 ].find( chr( 13 ) ) != 0 ){
 				return chr( 13 );
 			}
 		}
@@ -113,30 +88,45 @@ component aliases="rts" {
 				return true;
 			}
 		}
+
 		// file isn't in any of the exclude directories
 		return false;
 	}
 
+	private function isExcludedFile( file ){
+		return variables.excludeExtensions.listFind( lCase( listLast( arguments.file, "." ) ) ) != 0;
+	}
+
 	private function getExcludeFolders(){
-		return [ '.git' ];
+		var folders = ".git";
+
+		try {
+			var settingFolders = variables.settings.utils.rts.excludeFolders;
+			folders &= ( settingFolders != "" ? "," : "" ) & settingFolders;
+		} catch ( any ) {}
+
+		return folders;
 	}
 
 	private function getExcludeExtensions(){
-		return [
-			'.eot',
-			'.gif',
-			'.ico',
-			'.jar',
-			'.jpeg',
-			'.jpg',
-			'.otf',
-			'.pdf',
-			'.png',
-			'.svg',
-			'.ttf',
-			'.woff',
-			'.woff2',
-			'.zip',
-		];
+		var extensions = "3ds,3g2,3gp,7z,a,aac,adp,ai,aif,aiff,alz,ape,apk,ar,arj,asf,au,avi,bak,bh," &
+			"bin,bk,bmp,btif,bz2,bzip2,cab,caf,cgm,class,cmx,cpio,cr2,csv,cur,dat,deb,dex,djvu,dll," &
+			"dmg,dng,doc,docm,docx,dot,dotm,dra,DS_Store,dsk,dts,dtshd,dvb,dwg,dxf,ecelp4800,ecelp7470," &
+			"ecelp9600,egg,eol,eot,epub,exe,f4v,fbs,fh,fla,flac,fli,flv,fpx,fst,fvt,g3,gif,graffle," &
+			"gz,gzip,h261,h263,h264,ico,ief,img,ipa,iso,jar,jpeg,jpg,jpgv,jpm,jxr,key,ktx,lha,lvp,lz," &
+			"lzh,lzma,lzo,m3u,m4a,m4v,mar,mdi,mht,mid,midi,mj2,mka,mkv,mmr,mng,mobi,mov,movie,mp3,mp4," &
+			"mp4a,mpeg,mpg,mpga,mxu,nef,npx,numbers,o,oga,ogg,ogv,otf,pages,pbm,pcx,pdf,pea,pgm,pic," &
+			"png,pnm,pot,potm,potx,ppa,ppam,ppm,pps,ppsm,ppsx,ppt,pptm,pptx,psd,pya,pyc,pyo,pyv,qt," &
+			"rar,ras,raw,rgb,rip,rlc,rmf,rmvb,rtf,rz,s3m,s7z,scpt,sgi,shar,sil,sketch,slk,smv,so,sub," &
+			"swf,tar,tbz,tbz2,tga,tgz,thmx,tif,tiff,tlz,ttc,ttf,txz,udf,uvh,uvi,uvm,uvp,uvs,uvu,viv," &
+			"vob,war,wav,wax,wbmp,wdp,weba,webm,webp,whl,wim,wm,wma,wmv,wmx,woff,woff2,wvx,xbm,xif," &
+			"xla,xlam,xls,xlsb,xlsm,xlsx,xlt,xltm,xltx,xm,xmind,xpi,xpm,xwd,xz,z,zip,zipx";
+
+		try {
+			var settingExtensions = variables.settings.utils.rts.excludeExtensions;
+			extensions &= ( settingExtensions != "" ? "," : "" ) & settingExtensions;
+		} catch ( any ) {}
+
+		return extensions;
 	}
 }
