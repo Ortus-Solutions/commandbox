@@ -87,7 +87,7 @@ component accessors="true" singleton {
 		// The JRE executable command
 		variables.javaCommand = arguments.fileSystem.getJREExecutable();
 		// The runwar jar path
-		variables.jarPath = java.File.init( java.launchUtil.class.getProtectionDomain().getCodeSource()
+		variables.jarPath = java.File.init( java.launchUtil.getClass().getProtectionDomain().getCodeSource()
 				.getLocation().toURI().getSchemeSpecificPart() ).getAbsolutePath();
 
 		// Init server config if not found
