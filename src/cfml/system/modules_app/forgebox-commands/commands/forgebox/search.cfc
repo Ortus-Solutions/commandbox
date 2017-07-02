@@ -11,7 +11,7 @@ component {
 	
 	// DI
 	property name="forgeBox"		inject="ForgeBox";
-	property name="semanticVersion"	inject="semanticVersion";
+	property name="semanticVersion"	inject="semanticVersion@semver";
 	
 	/**
 	* @searchText.hint Text to search on

@@ -15,7 +15,7 @@ component accessors="true" implements="IEndpoint" singleton {
 	property name="packageService"		inject="packageService";
 	property name="fileSystemUtil"		inject="FileSystem";
 	property name="folderEndpoint"		inject="commandbox.system.endpoints.Folder";
-	property name="semanticVersion"		inject="semanticVersion";
+	property name="semanticVersion"		inject="semanticVersion@semver";
 	
 	// Properties
 	property name="namePrefixes" type="string";

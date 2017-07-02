@@ -35,7 +35,7 @@ component aliases="show" {
 	
 	// DI
 	property name="forgeBox" 			inject="ForgeBox";
-	property name="semanticVersion"		inject="semanticVersion";
+	property name="semanticVersion"		inject="semanticVersion@semver";
 	
 	function onDIComplete() {
 		variables.forgeboxOrders = forgebox.ORDER;

@@ -11,7 +11,7 @@ component accessors="true" implements="IEndpoint" singleton {
 		
 	// DI
 	property name="packageService"	inject="packageService";
-	property name="semanticVersion"	inject="semanticVersion";
+	property name="semanticVersion"	inject="semanticVersion@semver";
 	
 	// Properties
 	property name="namePrefixes" type="string";

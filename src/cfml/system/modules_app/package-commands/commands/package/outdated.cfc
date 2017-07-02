@@ -24,7 +24,7 @@ component aliases="outdated" {
 	
 	// DI
 	property name="packageService" 	inject="PackageService";
-	property name="semanticVersion" inject="semanticVersion";
+	property name="semanticVersion" inject="semanticVersion@semver";
 	
 	/**  
 	 * @verbose.hint Outputs additional information about each package

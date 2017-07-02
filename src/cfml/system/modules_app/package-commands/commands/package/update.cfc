@@ -32,7 +32,7 @@ component aliases="update" {
 	
 	// DI
 	property name="packageService" 	inject="PackageService";
-	property name="semanticVersion" inject="semanticVersion";
+	property name="semanticVersion" inject="semanticVersion@semver";
 	property name='parser'			inject='Parser';
 	
 	/**  
