@@ -6,7 +6,7 @@
  * {code}
  * .
  * Use the "latest" parameter to download the bleeding edge version
- * .
+ * .x
  * {code:bash}
  * upgrade --latest
  * {code}
@@ -26,7 +26,7 @@ component {
 	property name="ortusPRDArtifactsURL" 	inject="ortusPRDArtifactsURL@constants";
 	property name="progressableDownloader"	inject="ProgressableDownloader";
 	property name="progressBar" 			inject="ProgressBar";
-	property name="semanticVersion"			inject="semanticVersion";
+	property name="semanticVersion"			inject="semanticVersion@semver";
 	property name="ConfigService"			inject="ConfigService";
 	
 	/**

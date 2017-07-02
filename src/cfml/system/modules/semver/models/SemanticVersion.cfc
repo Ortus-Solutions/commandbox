@@ -59,8 +59,6 @@ component singleton{
 		Semantic version: major.minor.revision-alpha.1+build
 		**/
 
-systemOutput( current & ' <==> ' & target 	, true);
-
 		var current = parseVersion( arguments.current );
 		var target 	= parseVersion( arguments.target );
 
@@ -86,9 +84,6 @@ systemOutput( current & ' <==> ' & target 	, true);
 		if( !len( target.preReleaseID ) ) { target.preReleaseID = 'zzzzzzzzzzzzzzzzzz'; }
 		if( !len( current.preReleaseID ) ) { current.preReleaseID = 'zzzzzzzzzzzzzzzzzz'; }
 
-systemOutput( target.preReleaseID, true);
-systemOutput( current.preReleaseID, true);
-systemOutput( lcase( target.preReleaseID ) gt lcase( current.preReleaseID ), true);
 		// pre-release Check
 		if( target.major eq current.major AND
 			target.minor eq current.minor AND

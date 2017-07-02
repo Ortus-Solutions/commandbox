@@ -20,7 +20,7 @@ component accessors="true" singleton {
 	property name='tempDir' 			inject='tempDir@constants';
 	property name='packageService'	 	inject='PackageService';
 	property name='logger' 				inject='logbox:logger:{this}';
-	property name="semanticVersion"		inject="semanticVersion@semver";
+	property name="semanticVersion"		inject="provider:semanticVersion@semver";
 	// COMMANDBOX-479
 	property name="configService"		inject="ConfigService";
 	

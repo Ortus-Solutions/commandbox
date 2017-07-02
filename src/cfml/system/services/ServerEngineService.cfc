@@ -17,7 +17,7 @@ component accessors="true" singleton="true" {
 	property name='consoleLogger'		inject='logbox:logger:console';
 	property name='cr'					inject='cr@constants';
 	property name='shell'				inject='shell';
-	property name="semanticVersion"		inject="semanticVersion@semver";
+	property name="semanticVersion"		inject="provider:semanticVersion@semver";
 	property name="artifactService"		inject="artifactService";
 
 	

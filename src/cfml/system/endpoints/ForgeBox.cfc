@@ -14,7 +14,7 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 	property name="consoleLogger"		inject="logbox:logger:console";
 	property name="forgeBox" 			inject="ForgeBox";
 	property name="tempDir" 			inject="tempDir@constants";
-	property name="semanticVersion"		inject="semanticVersion@semver";
+	property name="semanticVersion"		inject="provider:semanticVersion@semver";
 	property name="artifactService" 	inject="ArtifactService";
 	property name="packageService" 		inject="packageService";
 	property name="configService" 		inject="configService";
