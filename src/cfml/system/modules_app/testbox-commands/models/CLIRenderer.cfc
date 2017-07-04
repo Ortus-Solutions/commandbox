@@ -55,13 +55,19 @@ component {
 	
 				print.line("GLOBAL BUNDLE EXCEPTION", COLOR.ERROR )
 					.line( "-> #thisBundle.globalException.type#:#thisBundle.globalException.message#:#thisBundle.globalException.detail#", COLOR.ERROR )
-					.line( "---------------------------------------------------------------------------------", COLOR.ERROR )
-					.line( "STACKTRACE", COLOR.ERROR )
-					.line( "---------------------------------------------------------------------------------", COLOR.ERROR )
-					.line( "#thisBundle.globalException.stacktrace#", COLOR.ERROR )
-					.line( "---------------------------------------------------------------------------------", COLOR.ERROR )
-					.line( "END STACKTRACE", COLOR.ERROR )
 					.line( "---------------------------------------------------------------------------------", COLOR.ERROR );
+				
+				// ACF has an array for the stack trace
+				if( isSimpleValue( thisBundle.globalException.stacktrace ) ) {
+					print
+						.line( "STACKTRACE", COLOR.ERROR )
+						.line( "---------------------------------------------------------------------------------", COLOR.ERROR )
+						.line( "#thisBundle.globalException.stacktrace#", COLOR.ERROR )
+						.line( "---------------------------------------------------------------------------------", COLOR.ERROR )
+						.line( "END STACKTRACE", COLOR.ERROR );
+				}
+					
+				print.line( "---------------------------------------------------------------------------------", COLOR.ERROR );
 			}
 			for ( suiteStats in thisBundle.suiteStats ) {
 				didPrint = genSuiteReport( suiteStats, thisBundle, 0, print, verbose );
