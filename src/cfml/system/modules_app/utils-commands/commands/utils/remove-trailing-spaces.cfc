@@ -4,26 +4,28 @@
  * Remove trailing spaces from a list of files
  * .
  * {code:bash}
- * utils remove-trailing-spaces globber-filter
+ * rts globber-filter
  * {code}
  * .
  * No-confirm
  * .
  * {code:bash}
- * utils remove-trailing-spaces globber-filter --force
+ * rts globber-filter --force
  * {code}
  * .
  * Print the file path of each file affected
  * .
  * {code:bash}
- * utils remove-trailing-spaces globber-filter --verbose
+ * rts globber-filter --verbose
  * {code}
  * .
  * Exclude a list a globber patterns
  * .
  * {code:bash}
- * utils remove-trailing-spaces globber-filter *.png,node_modules/
+ * rts globber-filter *.png,node_modules/
  * {code}
+ * .
+ * - Configuration
  * .
  * Set default force parameter
  * {code:bash}
