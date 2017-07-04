@@ -109,8 +109,11 @@ component {
 				print.line("#repeatString( "    ", arguments.level+2 )#-> Failure: #local.thisSpec.failMessage##chr(13)#", COLOR.FAIL ); 
 			}
 			if ( local.thisSpec.status == "error" ) {
-				print.line("#repeatString( "    ", arguments.level+2 )#-> Error: #local.thisSpec.error.message##chr(13)#", COLOR.ERROR )
-					.line( "#repeatString( "    ", arguments.level+2 )#-> Exception Trace: #local.thisSpec.error.stackTrace# #chr(13)##chr(13)#", COLOR.ERROR );
+				print.line("#repeatString( "    ", arguments.level+2 )#-> Error: #local.thisSpec.error.message##chr(13)#", COLOR.ERROR );
+				// If there's a tag context, show the file name and line number where the error occurred
+				if( isDefined( 'local.thisSpec.error.tagContext' ) && isArray( local.thisSpec.error.tagContext ) && local.thisSpec.error.tagContext.len() ) {
+					print.line( "#repeatString( "    ", arguments.level+2 )#-> at #local.thisSpec.error.tagContext[1].template#:#local.thisSpec.error.tagContext[1].line# #chr(13)##chr(13)#", COLOR.ERROR );
+				}
 			}
 		}
 		if ( arrayLen( arguments.suiteStats.suiteStats ) ) {
