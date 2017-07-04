@@ -1,70 +1,70 @@
 /**
- * Removes the trailing spaces from a file
+ * - Usage
+ * .
+ * Remove trailing spaces from a list of files
  * .
  * {code:bash}
- * utils remove-trailing-spaces /home/contentbox/index.cfm
+ * rts globber-filter
  * {code}
  * .
- * Removes the trailing spaces from a directory
+ * No-confirm
  * .
  * {code:bash}
- * utils remove-trailing-spaces /home/contentbox
+ * rts globber-filter --force
+ * {code}
+ * .
+ * Print the file path of each file affected
+ * .
+ * {code:bash}
+ * rts globber-filter --verbose
+ * {code}
+ * .
+ * Exclude a list a globber patterns
+ * .
+ * {code:bash}
+ * rts globber-filter *.png,node_modules/
+ * {code}
+ * .
+ * - Configuration
+ * .
+ * Set default force parameter
+ * {code:bash}
+ * config set command.defaults.rts.force=true
+ * {code}
+ * .
+ * Set default verbose parameter
+ * {code:bash}
+ * config set command.defaults.rts.verbose=true
+ * {code}
+ * .
+ * Set default exclude patterns
+ * {code:bash}
+ * config set command.defaults.rts.exclude=.git/,*.png
  * {code}
 **/
 component aliases="rts" {
-	/**
-	 * @path The file or directory path of a file to remove trailing spaces from
-	 **/
-	function run( path="" ){
-		variables.excludeExtensions = getExcludeExtensions();
+	property name="pathPatternMatcher" inject="provider:pathPatternMatcher@globber";
 
-		if ( arguments.path == "" ) {
-			print.line( "Please provide a file or folder path" );
+	public function run(
+		required Globber files,
+		String exclude = "",
+		Boolean force = false,
+		Boolean verbose = false
+	){
+		arguments.files = filterFiles( arguments.files, arguments.exclude );
+		var count = arguments.files.len();
+
+		if ( !arguments.force && !shell.confirm( "Confirm removing trailing spaces from #count# #count != 1 ? "files" : "file"#" ) ){
 			return;
 		}
 
-		// try adding the file to the current working directory if the file doesn't exist
-		if ( fileExists( arguments.path ) ){
-			// file exists
-		} else if ( fileExists( getCWD() & "/" & arguments.path ) ){
-			arguments.path = getCWD() & "/" & arguments.path;
-		} else if ( fileExists( expandPath( arguments.path ) ) ){
-			// try expanding the path
-			arguments.path = expandPath( arguments.path );
-		} else {
-			if ( directoryExists( arguments.path ) ){
-				// directory exists
-			} else if ( directoryExists( getCWD() & "/" & arguments.path ) ){
-				// try adding the directory to the current working directory if the directory doesn't exist
-				arguments.path = getCWD() & "/" & arguments.path;
-			} else if ( directoryExists( expandPath( arguments.path ) ) ){
-				// try expanding the path
-				arguments.path = expandPath( arguments.path );
-			} else {
-				print.line( arguments.path & " is not a valid file or directory" );
-				return;
+		for ( var file in arguments.files ){
+			if ( arguments.verbose ){
+				print.line( "Removing trailing spaces from " & file & "..." );
 			}
 
-			print.line( "Removing trailing spaces from " & arguments.path & "..." );
-
-			variables.excludeFolders = getExcludeFolders();
-			var fileList = directoryList( arguments.path, true, "path" );
-
-			for ( var i in fileList ){
-				var fileInfo = getFileInfo( i );
-				// only process files
-				if ( fileInfo.type == "file" &&
-				    !isExcludedDirectory( i ) &&
-					!variables.excludeExtensions.contains( listLast( i, "." ) ) ){
-					removeTrailingSpaces( i );
-				}
-			}
-
-			return;
+			removeTrailingSpaces( file );
 		}
-
-		print.line( "Removing trailing spaces from " & arguments.path & "..." );
-		removeTrailingSpaces( arguments.path );
 	}
 
 	private function removeTrailingSpaces( filePath ){
@@ -91,52 +91,29 @@ component aliases="rts" {
 		return { lines: lines, lineEndings: lineEndings };
 	}
 
+	private function filterFiles( files, exclude ){
+		var filteredFiles = [];
+
+		arguments.files.apply( function( file ){
+			var fileInfo = getFileInfo( arguments.file );
+			// only process files
+			if ( fileInfo.type == "file" && !pathPatternMatcher.matchPatterns( listToArray( exclude ), arguments.file ) ){
+				filteredFiles.append( arguments.file );
+			}
+		} );
+
+		return filteredFiles;
+	}
+
 	private function getLineEndings( data ){
 		if ( arguments.data.len() > 0 ){
-			if ( arguments.data[1].find( chr( 13 ) & chr( 10 ) ) != 0 ){
+			if ( arguments.data[ 1 ].find( chr( 13 ) & chr( 10 ) ) != 0 ){
 				return chr( 13 ) & chr( 10 );
-			} else if ( arguments.data[1].find( chr( 13 ) ) != 0 ){
+			} else if ( arguments.data[ 1 ].find( chr( 13 ) ) != 0 ){
 				return chr( 13 );
 			}
 		}
 
 		return chr( 10 );
-	}
-
-	private function isExcludedDirectory( file ){
-		// convert all backslashes to forward-slashes
-		var f = arguments.file.replace( "\", "/" );
-
-		for ( var i in variables.excludeFolders ){
-			// check if file exists in the exclude directory
-			if ( f.find( "/" & i & "/" ) || f.startsWith( i )){
-				return true;
-			}
-		}
-		// file isn't in any of the exclude directories
-		return false;
-	}
-
-	private function getExcludeFolders(){
-		return [ '.git' ];
-	}
-
-	private function getExcludeExtensions(){
-		return [
-			'.eot',
-			'.gif',
-			'.ico',
-			'.jar',
-			'.jpeg',
-			'.jpg',
-			'.otf',
-			'.pdf',
-			'.png',
-			'.svg',
-			'.ttf',
-			'.woff',
-			'.woff2',
-			'.zip',
-		];
 	}
 }
