@@ -91,4 +91,3 @@ component aliases="about" {
 	}
 
 }
-
