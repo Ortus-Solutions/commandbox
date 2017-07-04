@@ -9,29 +9,29 @@
 * install cflib:UDFName
 */
 component accessors="true" implements="IEndpoint" singleton {
-		
+
 	// DI
 	property name="consoleLogger"			inject="logbox:logger:console";
 	property name="tempDir" 				inject="tempDir@constants";
 	property name="progressableDownloader" 	inject="ProgressableDownloader";
 	property name="progressBar" 			inject="ProgressBar";
 	property name="CR" 						inject="CR@constants";
-	
+
 	// Properties
 	property name="namePrefixes" type="string";
-	
+
 	function init() {
 		setNamePrefixes( 'CFLib' );
 		return this;
 	}
-		
+
 	public string function resolvePackage( required string package, boolean verbose=false ) {
-		
+
 		var folderName = tempDir & '/' & 'temp#randRange( 1, 1000 )#';
 		var fullPath = folderName & '/' & package & '.cfm';
-		
+
 		directoryCreate( folderName, true, true );
-		
+
 		try {
 			// Download File
 			var result = progressableDownloader.download(
@@ -49,8 +49,8 @@ component accessors="true" implements="IEndpoint" singleton {
 		};
 
 		fixTags( fullPath );
-		
-		return folderName;	
+
+		return folderName;
 	}
 
 	public function getDefaultName( required string package ) {
@@ -62,7 +62,7 @@ component accessors="true" implements="IEndpoint" singleton {
 			isOutdated = true,
 			version = 'unknown'
 		};
-		
+
 		return result;
 	}
 
@@ -74,7 +74,7 @@ component accessors="true" implements="IEndpoint" singleton {
 		if( !findNoCase( '<c' & 'ffunction', fileContents ) ) {
 			// wrap it in cfscript
 			fileContents = '<c' & 'fscript>#chr(13)##chr(10)#' & fileContents & '#chr(13)##chr(10)#</c' & 'fscript>';
-			fileWrite( arguments.fileName, fileContents ); 
+			fileWrite( arguments.fileName, fileContents );
 		}
 	}
 

@@ -19,7 +19,7 @@ or just add DEBUG to the root logger
 
 ----------------------------------------------------------------------->
 <cfcomponent hint="ForgeBox API REST Wrapper" output="false" accessors="true" singleton>
-	
+
 	<!--- DI --->
 	<cfproperty name="progressableDownloader" 	inject="ProgressableDownloader">
 	<cfproperty name="progressBar" 				inject="ProgressBar">
@@ -33,9 +33,9 @@ or just add DEBUG to the root logger
 	<cfproperty name="installURL">
 
 <!------------------------------------------- CONSTRUCTOR ------------------------------------------>
-	
+
 	<cfscript>
-		this.ORDER = { 
+		this.ORDER = {
 			POPULAR 	= "popular",
 			NEW 		= "new",
 			RECENT 		= "recent",
@@ -46,7 +46,7 @@ or just add DEBUG to the root logger
 
 	<cffunction name="init" access="public" returnType="ForgeBox" output="false" hint="Constructor">
 		<cfscript>
-			
+
 			// Setup Properties
 			variables.endpointURL 	= "https://www.forgebox.io";
 			variables.APIURL 		= "#variables.endpointURL#/api/v1/";
@@ -58,13 +58,13 @@ or just add DEBUG to the root logger
 	</cffunction>
 
 <!------------------------------------------- PUBLIC ------------------------------------------>
-	
+
 	<!--- getTypes --->
 	<cffunction name="getTypes" output="false" access="public" returntype="any" hint="Get an array of entry types">
 		<cfargument name="APIToken" type="string" default="">
 		<cfscript>
 		var results = "";
-		
+
 		// Invoke call
 		results = makeRequest(
 			resource="types",
@@ -72,13 +72,13 @@ or just add DEBUG to the root logger
 				'x-api-token' : arguments.APIToken
 			} );
 
-		// error 
+		// error
 		if( results.response.error ){
 			throw("Error making ForgeBox REST Call", 'forgebox', results.response.messages.toList() );
 		}
-		
-		return results.response.data;				
-		</cfscript>	
+
+		return results.response.data;
+		</cfscript>
 	</cffunction>
 
 	<!--- getTypes --->
@@ -89,11 +89,11 @@ or just add DEBUG to the root logger
 		if( isSimpleValue( variables.types ) OR arguments.force ){
 			variables.types = getTypes( APIToken );
 		}
-		
+
 		return variables.types;
-		</cfscript>	
+		</cfscript>
 	</cffunction>
-	
+
 	<!--- getEntries --->
 	<cffunction name="getEntries" output="false" access="public" returntype="any" hint="Get entries">
 		<cfargument name="orderBy"  type="string"  required="false" default="#this.ORDER.POPULAR#" hint="The type to order by, look at this.ORDERBY"/>
@@ -109,9 +109,9 @@ or just add DEBUG to the root logger
 				max = arguments.maxrows,
 				offset = arguments.startrow-1,
 				typeSlug = arguments.typeSlug,
-				searchTerm = arguments.searchTerm	
+				searchTerm = arguments.searchTerm
 			};
-			
+
 			// Invoke call
 			results = makeRequest(
 				resource="entries",
@@ -119,36 +119,36 @@ or just add DEBUG to the root logger
 				headers = {
 					'x-api-token' : arguments.APIToken
 				});
-			// error 
+			// error
 			if( results.response.error ){
 				throw( "Error making ForgeBox REST Call", 'forgebox', results.response.messages.toList() );
 			}
-			
+
 			return results.response.data;
-		</cfscript>	
+		</cfscript>
 	</cffunction>
-	
+
 	<!--- getEntry --->
 	<cffunction name="getEntry" output="false" access="public" returntype="struct" hint="Get an entry from forgebox by slug">
 		<cfargument name="slug" type="string" required="true" default="" hint="The entry slug to retreive"/>
 		<cfargument name="APIToken" type="string" default="">
 		<cfscript>
 			var results = "";
-			
+
 			// Invoke call
 			results = makeRequest(
 				resource="entry/#arguments.slug#",
 				headers = {
 					'x-api-token' : arguments.APIToken
 				});
-						
-			// error 
+
+			// error
 			if( results.response.error ){
 				throw( "Error getting ForgeBox entry [#arguments.slug#]", 'forgebox', results.response.messages.toList() );
 			}
-			
-			return results.response.data;				
-		</cfscript>	
+
+			return results.response.data;
+		</cfscript>
 	</cffunction>
 
 	<!--- isSlugAvailable --->
@@ -157,25 +157,25 @@ or just add DEBUG to the root logger
 		<cfargument name="APIToken" type="string" default="">
 		<cfscript>
 			var results = "";
-			
+
 			// Invoke call
 			results = makeRequest(
 				resource="slug-check/#arguments.slug#",
 				headers = {
 					'x-api-token' : arguments.APIToken
 				});
-			
-			// error 
+
+			// error
 			if( results.response.error ){
 				throw( "Error making ForgeBox REST Call", 'forgebox', results.response.messages.toList() );
 			}
-			
-			return results.response.data;				
-		</cfscript>	
+
+			return results.response.data;
+		</cfscript>
 	</cffunction>
-	
+
 	<cfscript>
-	
+
 	/**
 	* Registers a new user in ForgeBox
 	*/
@@ -186,7 +186,7 @@ or just add DEBUG to the root logger
 		required string fName,
 		required string lName,
 		string APIToken='' ) {
-			
+
 		var results = makeRequest(
 			resource="register",
 			parameters=arguments,
@@ -194,52 +194,52 @@ or just add DEBUG to the root logger
 			headers = {
 				'x-api-token' : arguments.APIToken
 			} );
-		
-		// error 
+
+		// error
 		if( results.response.error ){
 			throw( "Sorry, the user could not be added.", 'forgebox', arrayToList( results.response.messages ) );
 		}
-		
+
 		return results.response.data;
 	}
-	
+
 	/**
 	* Look up user based on API Token
 	*/
 	function whoami( required string APIToken ) {
-			
+
 		var results = makeRequest(
 			resource="users/whoami/#APIToken#",
 			method='get',
 			headers = {
 				'x-api-token' : arguments.APIToken
 			} );
-		
-		// error 
+
+		// error
 		if( results.response.error ){
 			throw( arrayToList( results.response.messages ), 'forgebox' );
 		}
-		
+
 		return results.response.data;
 	}
-	
+
 	/**
 	* Authenticates a user in ForgeBox
 	*/
 	function login(
 		required string username,
 		required string password ) {
-			
+
 		var results = makeRequest( resource="authenticate", parameters=arguments, method='post' );
-		
-		// error 
+
+		// error
 		if( results.response.error ){
 			throw( "Sorry, the user could not be logged in.", 'forgebox', arrayToList( results.response.messages ) );
 		}
-		
+
 		return results.response.data;
 	}
-	
+
 	/**
 	* Publishes a package in ForgeBox
 	*/
@@ -255,7 +255,7 @@ or just add DEBUG to the root logger
 		string changeLog='',
 		string changeLogFormat='text',
 		required string APIToken ) {
-			
+
 		var body = {
 			slug : arguments.slug,
 			version : arguments.version,
@@ -268,8 +268,8 @@ or just add DEBUG to the root logger
 			changeLog : arguments.changeLog,
 			changeLogFormat : arguments.changeLogFormat
 		};
-		
-		var results = makeRequest( 
+
+		var results = makeRequest(
 				resource = "publish",
 				headers = {
 					'x-api-token' : arguments.APIToken,
@@ -277,15 +277,15 @@ or just add DEBUG to the root logger
 				},
 				body = serializeJSON( body ),
 				method='post' );
-		
-		// error 
+
+		// error
 		if( results.response.error ){
 			throw( "Sorry, the package could not be published.", 'forgebox', arrayToList( results.response.messages ) );
 		}
-		
+
 		return results.response.data;
 	}
-	
+
 	/**
 	* Unpublishes a package
 	*/
@@ -293,23 +293,23 @@ or just add DEBUG to the root logger
 		required string slug,
 		string version='',
 		required string APIToken ) {
-		
+
 		var thisResource = "unpublish/#arguments.slug#";
 		if( len( arguments.version ) ) {
-			thisResource &= "/#arguments.version#";			
+			thisResource &= "/#arguments.version#";
 		}
-		
+
 		var results = makeRequest( resource=thisResource, method='post', headers={ 'x-api-token' : arguments.APIToken } );
-		
-		// error 
+
+		// error
 		if( results.response.error ){
 			throw( "Something went wrong unplublishing.", 'forgebox', arrayToList( results.response.messages ) );
 		}
-		
+
 		return results.response.data;
 	}
-	
-	
+
+
 	/**
 	* Tracks an install
 	*/
@@ -317,12 +317,12 @@ or just add DEBUG to the root logger
 		required string slug,
 		string version='',
 		string APIToken='' ) {
-		
+
 		var thisResource = "install/#arguments.slug#";
 		if( len( arguments.version ) ) {
-			thisResource &= "/#arguments.version#";			
+			thisResource &= "/#arguments.version#";
 		}
-		
+
 		var results = makeRequest(
 			resource=thisResource,
 			method='post',
@@ -330,15 +330,15 @@ or just add DEBUG to the root logger
 				'x-api-token' : arguments.APIToken
 			}
 		);
-		
-		// error 
+
+		// error
 		if( results.response.error ){
 			throw( "Something went wrong tracking this installation.", 'forgebox', arrayToList( results.response.messages ) );
 		}
-		
+
 		return results.response.data;
 	}
-	
+
 	/**
 	* Tracks a download
 	*/
@@ -346,28 +346,28 @@ or just add DEBUG to the root logger
 		required string slug,
 		string version,
 		string APIToken='' ) {
-			
+
 		var thisResource = "install/#arguments.slug#";
 		if( len( arguments.version ) ) {
-			thisResource &= "/#arguments.version#";			
+			thisResource &= "/#arguments.version#";
 		}
-			
+
 		var results = makeRequest(
 			resource=thisResource,
 			method='post',
 			headers = {
 				'x-api-token' : arguments.APIToken
 			} );
-		
-		// error 
+
+		// error
 		if( results.response.error ){
 			throw( "Something went wrong tracking this download.", 'forgebox', arrayToList( results.response.messages ) );
 		}
-		
+
 		return results.response.data;
 	}
-	
-	
+
+
 	/**
 	* Autocomplete for slugs
 	*/
@@ -375,9 +375,9 @@ or just add DEBUG to the root logger
 		required string searchTerm,
 		string typeSlug = '',
 		string APIToken='' ) {
-			
+
 		var thisResource = "slugs/#arguments.searchTerm#";
-		
+
 		var results = makeRequest(
 			resource=thisResource,
 			method='get',
@@ -387,24 +387,24 @@ or just add DEBUG to the root logger
 			headers = {
 				'x-api-token' : arguments.APIToken
 			} );
-		
-		// error 
+
+		// error
 		if( results.response.error ){
 			throw( "Error searching for slugs", 'forgebox', arrayToList( results.response.messages ) );
 		}
-		
+
 		var opts = results.response.data;
-		
+
 		// If there's only one suggestion and it doesn't have an @ in it, add another suggestion with the @ at the end.
 		// This is to prevent the tab completion from adding a space after the suggestion since it thinks it's the only possible option
 		// Hitting tab will still populate the line, but won't add the space which makes it easier if the user intends to continue for a specific version.
 		if( opts.len() == 1 && !( opts[1] contains '@' ) ) {
 			opts.append( opts[1] & '@' );
 		}
-		
+
 		return opts;
 	}
-	
+
 	</cfscript>
 <!------------------------------------------- PRIVATE ------------------------------------------>
 
@@ -424,75 +424,75 @@ or just add DEBUG to the root logger
 			if( APIURL.endsWith( '/' ) ) {
 				APIURL = left( APIURL, len( APIURL )-1 );
 			}
-			
+
 			// Default Content Type
 			if( NOT structKeyExists(arguments.headers,"content-type") ){
 				arguments.headers["content-type"] = "";
 			}
 			var thisURL = '#APIURL#/#arguments.resource#';
-			
+
 			var CFHTTPParams = {
 				method=arguments.method,
 				url=thisURL,
 				charset='utf-8',
-				result='HTTPResults', 
+				result='HTTPResults',
 				timeout=arguments.timeout
 			};
-				
+
 			// Get proxy settings from the config
 			var proxyServer=ConfigService.getSetting( 'proxy.server', '' );
 			var proxyPort=ConfigService.getSetting( 'proxy.port', '' );
 			var proxyUser=ConfigService.getSetting( 'proxy.user', '' );
 			var proxyPassword=ConfigService.getSetting( 'proxy.password', '' );
-			
+
 			if( len( proxyServer ) ) {
 				CFHTTPParams.proxyServer = proxyServer;
-						
+
 				if( len( proxyPort ) ) {
-					CFHTTPParams.proxyPort = proxyPort;					
-				}				
+					CFHTTPParams.proxyPort = proxyPort;
+				}
 				if( len( proxyUser ) ) {
-					CFHTTPParams.proxyUser = proxyUser;					
-				}				
+					CFHTTPParams.proxyUser = proxyUser;
+				}
 				if( len( proxyPassword ) ) {
-					CFHTTPParams.proxyPassword = proxyPassword;					
+					CFHTTPParams.proxyPassword = proxyPassword;
 				}
 			}
-			
+
 		</cfscript>
-		
+
 		<!--- REST CAll --->
 		<cfhttp attributeCollection="#CFHTTPParams#">
-							
+
 			<!--- Headers --->
 			<cfloop collection="#arguments.headers#" item="param">
 				<cfhttpparam type="header" name="#param#" value="#arguments.headers[param]#" >
-			</cfloop>	
-			
+			</cfloop>
+
 			<!--- URL Parameters: encoded automatically by CF --->
 			<cfloop collection="#arguments.parameters#" item="param">
 				<cfhttpparam type="URL" name="#param#" value="#arguments.parameters[param]#" >
-			</cfloop>	
-			
+			</cfloop>
+
 			<!--- Body --->
 			<cfif len(arguments.body) >
 				<cfhttpparam type="body" value="#arguments.body#" >
-			</cfif>	
+			</cfif>
 		</cfhttp>
-		
+
 		<cfscript>
 			// Log
 			//log.debug("ForgeBox Rest Call ->Arguments: #arguments.toString()#",HTTPResults);
-			
+
 			// Set Results
 			results.responseHeader 	= HTTPResults.responseHeader;
 			results.rawResponse 	= HTTPResults.fileContent.toString();
-			
+
 			// Error Details found?
 			results.message = HTTPResults.errorDetail;
 			if( len(HTTPResults.errorDetail) ){ results.error = true; }
 			// Try to inflate JSON
-			
+
             if (isJSON(results.rawResponse)) {
                 results.response = deserializeJSON(results.rawResponse,false);
             } else {
@@ -503,12 +503,12 @@ or just add DEBUG to the root logger
             		errorDetail &= chr( 10 ) & statusMessage;
             	}
             	errorDetail = ucase( arguments.method ) & ' ' &thisURL & chr( 10 ) & errorDetail;
-            	CommandBoxlogger.error( 'Something other than JSON returned. #errorDetail#', 'Actual HTTP Response: ' & results.rawResponse );            	
+            	CommandBoxlogger.error( 'Something other than JSON returned. #errorDetail#', 'Actual HTTP Response: ' & results.rawResponse );
 				throw( 'Uh-oh, ForgeBox returned something other than JSON.  Run "system-log | open" to see the full response.', 'forgebox', errorDetail );
             }
-			
+
 			return results;
-		</cfscript>	
+		</cfscript>
 	</cffunction>
-		
+
 </cfcomponent>

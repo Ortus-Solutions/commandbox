@@ -27,41 +27,41 @@
  * .
  **/
 component {
-	
+
 	property name="packageService" inject="PackageService";
 	property name="JSONService" inject="JSONService";
-	
+
 	/**
 	 * @property.hint The name of the property to show.  Can nested to get "deep" properties
 	 * @property.optionsUDF completeProperty
 	 * @system.hint When true, show box.json data in the global CommandBox folder
 	 **/
 	function run( string property='', boolean system=false ) {
-							
+
 		if( arguments.system ) {
 			var directory = expandPath( '/commandbox' );
 		} else {
-			var directory = getCWD();			
+			var directory = getCWD();
 		}
-				
+
 		// Check and see if box.json exists
 		if( !packageService.isPackage( directory ) ) {
 			return error( 'File [#packageService.getDescriptorPath( directory )#] does not exist.  Use the "init" command to create it.' );
 		}
-		
+
 		// Read without defaulted values
 		var boxJSON = packageService.readPackageDescriptorRaw( directory );
 
 		try {
-			
+
 			var propertyValue = JSONService.show( boxJSON, arguments.property );
-			
+
 			if( isSimpleValue( propertyValue ) ) {
 				print.line( propertyValue );
 			} else {
-				print.line( formatterUtil.formatJson( propertyValue ) );			
+				print.line( formatterUtil.formatJson( propertyValue ) );
 			}
-		
+
 		} catch( JSONException var e ) {
 			error( e.message );
 		} catch( any var e ) {
@@ -73,6 +73,6 @@ component {
 	// Dynamic completion for property name based on contents of box.json
 	function completeProperty() {
 		var directory = fileSystemUtil.resolvePath( '' );
-		return packageService.completeProperty( directory );				
+		return packageService.completeProperty( directory );
 	}
 }

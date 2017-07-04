@@ -1,4 +1,4 @@
-﻿<!-----------------------------------------------------------------------
+<!-----------------------------------------------------------------------
 ********************************************************************************
 Copyright Since 2005 ColdBox Framework by Luis Majano and Ortus Solutions, Corp
 www.ortussolutions.com
@@ -7,7 +7,7 @@ www.ortussolutions.com
 Author 	    :	Luis Majano
 Description :
 	The DSL processor for all LogBox Related Stuff
-	
+
 ----------------------------------------------------------------------->
 <cfcomponent hint="The DSL processor for all LogBox Related Stuff" implements="wirebox.system.ioc.dsl.IDSLBuilder" output="false">
 
@@ -18,11 +18,11 @@ Description :
 			instance = { injector = arguments.injector };
 			instance.logBox 	= instance.injector.getLogBox();
 			instance.log		= instance.logBox.getLogger( this );
-			
+
 			return this;
-		</cfscript>   
+		</cfscript>
     </cffunction>
-	
+
 	<!--- process --->
     <cffunction name="process" output="false" access="public" returntype="any" hint="Process an incoming DSL definition and produce an object with it.">
 		<cfargument name="definition" 	required="true" hint="The injection dsl definition structure to process. Keys: name, dsl"/>
@@ -32,12 +32,12 @@ Description :
 			var thisTypeLen 		= listLen(thisType,":");
 			var thisLocationType 	= "";
 			var thisLocationKey 	= "";
-			
+
 			// DSL stages
 			switch(thisTypeLen){
 				// logbox
 				case 1 : { return instance.logBox; }
-				// logbox:root and logbox:logger 
+				// logbox:root and logbox:logger
 				case 2 : {
 					thisLocationKey = getToken(thisType,2,":");
 					switch( thisLocationKey ){
@@ -53,19 +53,19 @@ Description :
 					// DSL Level 2 Stage Types
 					switch(thisLocationType){
 						// Get a named Logger
-						case "logger" : { 
+						case "logger" : {
 							// Check for {this} and targetobject exists
-							if( thisLocationKey eq "{this}" AND structKeyExists(arguments, "targetObject") ){ 
-								return instance.logBox.getLogger( arguments.targetObject ); 
+							if( thisLocationKey eq "{this}" AND structKeyExists(arguments, "targetObject") ){
+								return instance.logBox.getLogger( arguments.targetObject );
 							}
 							// Normal Logger injection
-							return instance.logBox.getLogger(thisLocationKey); break; 
+							return instance.logBox.getLogger(thisLocationKey); break;
 						}
 					}
 					break;
 				} // end level 3 main DSL
 			}
-		</cfscript>   	
-    </cffunction>		
-	
+		</cfscript>
+    </cffunction>
+
 </cfcomponent>

@@ -1,4 +1,4 @@
-﻿<!-----------------------------------------------------------------------
+<!-----------------------------------------------------------------------
 ********************************************************************************
 Copyright Since 2005 ColdBox Framework by Luis Majano and Ortus Solutions, Corp
 www.ortussolutions.com
@@ -9,7 +9,7 @@ Date        :	3/13/2009
 Description :
 	A RollingFileAppender. This appenders rotates the log files according
 	to the properties defined.
-	
+
 Properties:
 
 - filepath : The location of where to store the log file.
@@ -20,12 +20,12 @@ Properties:
 - fileMaxSize : The max file size for log files. Defaults to 2000 (2 MB)
 - fileMaxArchives : The max number of archives to keep. Defaults to 2.
 ----------------------------------------------------------------------->
-<cfcomponent extends="wirebox.system.logging.appenders.FileAppender" 
+<cfcomponent extends="wirebox.system.logging.appenders.FileAppender"
 			 output="false"
 			 hint="This is a simple implementation of an appender that is file based but multithreaded">
-			 
+
 <!------------------------------------------- CONSTRUCTOR ------------------------------------------->
-	
+
 	<!--- Constructor --->
 	<cffunction name="init" access="public" returntype="RollingFileAppender" hint="Constructor" output="false">
 		<!--- ************************************************************* --->
@@ -37,20 +37,20 @@ Properties:
 		<!--- ************************************************************* --->
 		<cfscript>
 			super.init(argumentCollection=arguments);
-			
+
 			if( NOT propertyExists("fileMaxSize") OR NOT isNumeric(getProperty("fileMaxSize")) ){
 				setProperty("fileMaxSize","2000");
 			}
 			if( NOT propertyExists("fileMaxArchives") OR NOT isNumeric(getProperty("fileMaxArchives")) ){
 				setProperty("fileMaxArchives","2");
 			}
-			
+
 			instance.fileRotator = createObject("component","wirebox.system.logging.util.FileRotator").init();
-			
+
 			return this;
 		</cfscript>
 	</cffunction>
-	
+
 	<!--- Log Message --->
 	<cffunction name="logMessage" access="public" output="false" returntype="void" hint="Write an entry into the appender.">
 		<!--- ************************************************************* --->
@@ -59,7 +59,7 @@ Properties:
 		<cfscript>
 			// Log the message in the super.
 			super.logMessage(arguments.logEvent);
-			
+
 			// Rotate
 			try{
 				instance.fileRotator.checkRotation(this);
@@ -71,6 +71,6 @@ Properties:
 	</cffunction>
 
 <!------------------------------------------- PRIVATE ------------------------------------------->
-	
-	
+
+
 </cfcomponent>

@@ -16,12 +16,12 @@
  * {code}
  * .
  * If you're using positional parameters, they will be available as ${position} in the variables scope.
- * variables.$1, variables.$2 
+ * variables.$1, variables.$2
  * .
   * {code:bash}
  * execute myFile.cfm bar baz
  * {code}
- 
+
  **/
 component aliases="exec"{
 
@@ -38,10 +38,10 @@ component aliases="exec"{
 		if( !fileExists( arguments.file ) ){
 			return error( "File: #arguments.file# does not exist!" );
 		}
-		
+
 		// Parse arguments
 		var vars = parseArguments( arguments );
-		
+
 		try{
 			// we use the executor to capture output thread safely
 			var out = wirebox.getInstance( "Executor" ).runFile( arguments.file, vars );
@@ -58,7 +58,7 @@ component aliases="exec"{
 	*/
 	private struct function parseArguments( required args ){
 		var parsedArgs = {};
-		
+
 		for( var arg in args ) {
 			argName = arg;
 			if( !isNull( args[arg] ) && arg != 'file' ) {
@@ -75,5 +75,5 @@ component aliases="exec"{
 	private void function clearTemplateCache() {
 		pagePoolClear();
 	}
-	
+
 }

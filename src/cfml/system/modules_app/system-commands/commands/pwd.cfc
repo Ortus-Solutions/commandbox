@@ -4,7 +4,7 @@
 * {code:bash}
 * pwd
 * {code}
- * 
+ *
  **/
 component {
 

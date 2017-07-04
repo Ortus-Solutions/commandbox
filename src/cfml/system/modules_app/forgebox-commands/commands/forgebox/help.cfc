@@ -1,7 +1,7 @@
 component excludeFromHelp=true {
-	
+
 	function run()  {
-		
+
 		print.line()
 			.yellow( 'The ' ).boldYellow( 'forgebox' ).yellowLine( ' namespace helps you interact with the ForgeBox online code repo.' )
 			.yellowLine( 'Use these commands to browse ForgeBox entries as well as download and install ForgeBox projects into your code.' )

@@ -1,4 +1,4 @@
-﻿<!-----------------------------------------------------------------------
+<!-----------------------------------------------------------------------
 ********************************************************************************
 Copyright Since 2005 ColdBox Framework by Luis Majano and Ortus Solutions, Corp
 www.ortussolutions.com
@@ -8,14 +8,14 @@ Author     :	Luis Majano
 Date        :	04/12/2009
 Description :
 	A simple cftracer appender
-	
+
 Properties:
 
 ----------------------------------------------------------------------->
-<cfcomponent extends="wirebox.system.logging.AbstractAppender" 
+<cfcomponent extends="wirebox.system.logging.AbstractAppender"
 			 output="false"
 			 hint="A simple cftrace Appender">
-	
+
 	<!--- Init --->
 	<cffunction name="init" access="public" returntype="TracerAppender" hint="Constructor" output="false" >
 		<!--- ************************************************************* --->
@@ -28,11 +28,11 @@ Properties:
 		<cfscript>
 			// Init supertype
 			super.init(argumentCollection=arguments);
-			
+
 			return this;
 		</cfscript>
-	</cffunction>	
-	
+	</cffunction>
+
 	<!--- Log Message --->
 	<cffunction name="logMessage" access="public" output="false" returntype="void" hint="Write an entry into the appender.">
 		<!--- ************************************************************* --->
@@ -42,14 +42,14 @@ Properties:
 			var loge = arguments.logEvent;
 			var entry = "";
 			var traceSeverity = "information";
-			
+
 			if ( hasCustomLayout() ){
 				entry = getCustomLayout().format(loge);
 			}
 			else{
 				entry = "#loge.getMessage()# ExtraInfo: #loge.getextraInfoAsString()#";
 			}
-			
+
 			// Severity by cftrace
 			switch( this.logLevels.lookupCF(loge.getSeverity()) ){
 				case "FATAL" : { traceSeverity = "fatal information"; break; }
@@ -57,14 +57,14 @@ Properties:
 				case "WARN"  : { traceSeverity = "warning"; break; }
 			}
 		</cfscript>
-		
+
 		<cftry>
 			<cftrace category="#loge.getCategory()#" text="#entry#" type="#traceSeverity#">
 			<cfcatch type="any"><!--- Silent as sometimes, the tag fails itself on cf9, boohoo! ---></cfcatch>
 		</cftry>
 	</cffunction>
-	
+
 <!------------------------------------------- PRIVATE ------------------------------------------>
-	
-	
+
+
 </cfcomponent>

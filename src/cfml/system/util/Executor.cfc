@@ -41,11 +41,11 @@ component {
 	* @vars.hint Struct of vars to set so the code can access them
 	*/
 	function runCode( required string code, boolean script=true, required string directory,  struct vars = {} ){
-		
+
 		// Temp file to evaluate
 		var tmpFile = createUUID() & ".cfm";
 		var tmpFileAbsolute = arguments.directory & "/" & tmpFile;
-		
+
 		// generate cfml command to write to file
 		var CFMLFileContents = ( arguments.script ? "<cfscript>" & arguments.code & "</cfscript>" : arguments.code );
 
@@ -71,9 +71,9 @@ component {
 	function eval( required string statement, required string directory ){
 		variables.__statement = arguments.statement;
 		var cfml = 'savecontent variable="variables.__out" { variables.__result = evaluate( variables.__statement ); }';
-		
+
 		runCode( cfml, true, arguments.directory );
-				
+
 		if( len( variables.__out ) ) {
 			return variables.__out;
 		} else {

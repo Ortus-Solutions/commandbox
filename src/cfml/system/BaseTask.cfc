@@ -9,7 +9,7 @@
 *
 */
 component accessors="true" extends='commandbox.system.BaseCommand' {
-	
+
 	// For now, tasks just do everything commands do
-	
+
 }

@@ -1,5 +1,5 @@
 /**
- * The REPL (Read-Eval-Print-Loop) command allows you to write and execute a-la-carte CFML code right in 
+ * The REPL (Read-Eval-Print-Loop) command allows you to write and execute a-la-carte CFML code right in
  * your console. Variables set in will be available on subsequent lines.
  * .
  * {code:bash}
@@ -13,9 +13,9 @@
  * repl --!script
  * {code}
  * .
- * The REPL has a separate command history for scripts and tags.  Use the up-arrow to look at previous 
+ * The REPL has a separate command history for scripts and tags.  Use the up-arrow to look at previous
  * lines in the history.  The REPLs histories can be managed by the "history" command.
- * 
+ *
  **/
 component {
 
@@ -33,12 +33,12 @@ component {
 	* @directory.hint Directory to start the REPL in (defaults to current working directory).
 	**/
 	function run( string input,  boolean script=true, string directory='' ){
-		
+
 		var quit 	 	= false;
 		var results  		= "";
 		var executor 		= wirebox.getInstance( "executor" );
 		var newHistory 		= arguments.script ? variables.REPLScriptHistoryFile : variables.REPLTagHistoryFile;
-		
+
   	   arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
 
 		// Setup REPL history file
@@ -48,7 +48,7 @@ component {
 			print.cyanLine( "Enter any valid CFML code in the following prompt in order to evaluate it and print out any results (if any)" );
 			print.line( "Type 'quit' or 'q' to exit!" ).toConsole();
 		}
-			
+
 		// Loop until they choose to quit
 		while( !quit ){
 
@@ -57,41 +57,41 @@ component {
 				REPLParser.startCommand();
 				REPLParser.addCommandLines( arguments.input );
 				quit = true;
-				
+
 			// Else, collect the code via a prompt
 			} else {
-	
+
 				// start new command
 				REPLParser.startCommand();
-	
+
 				do {
 					// ask repl
 					if ( arrayLen( REPLParser.getCommandLines() ) == 0 ) {
 						var command = ask( ( arguments.script ? 'CFSCRIPT' : 'CFML' ) &  '-REPL: ' );
 					} else {
 						var command = ask( "..." );
-	
+
 						// allow ability to break out of adding additional lines
 						if ( trim(command) == 'exit' || trim(command) == '' ) {
 							break;
 						}
 					}
-	
+
 					// add command to our parser
 					REPLParser.addCommandLine( command );
-	
+
 				} while ( !REPLParser.isCommandComplete() );
-	
+
 			}
 
 			// REPL command is complete. get entire command as string
 			var cfml = REPLParser.getCommandAsString();
-				
+
 			// quitting
 			if( listFindNoCase( 'quit,q,exit', cfml ) ){
 				quit = true;
 			} else {
-				
+
 				// evaluate it
 				try {
 
@@ -111,7 +111,7 @@ component {
 						results = REPLParser.serializeOutput( results );
 						print.line( results, structKeyExists( arguments, 'input' ) ? '' : 'boldRed' )
 					}
-					
+
 				} catch( any e ){
 					// flush out anything in buffer
 					print.toConsole();
@@ -135,7 +135,7 @@ component {
 		}
 		// flush history out
 		newHistory.flush();
-		// set back original history 
+		// set back original history
 		shell.getReader().setHistory( commandHistoryFile );
 	}
 

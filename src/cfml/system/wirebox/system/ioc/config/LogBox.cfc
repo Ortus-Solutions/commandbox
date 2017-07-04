@@ -1,4 +1,4 @@
-﻿<!-----------------------------------------------------------------------
+<!-----------------------------------------------------------------------
 ********************************************************************************
 Copyright Since 2005 ColdBox Framework by Luis Majano and Ortus Solutions, Corp
 www.ortussolutions.com
@@ -20,7 +20,7 @@ Description :
 		logBox = {
 			// Define Appenders
 			appenders = {
-				console = { 
+				console = {
 					class="wirebox.system.logging.appenders.ConsoleAppender"
 				}
 				/**,

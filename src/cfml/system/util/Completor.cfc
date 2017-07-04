@@ -90,30 +90,30 @@ component singleton {
 				var definedParameters = commandInfo.commandReference.parameters;
 				// This is the params the user has entered so far.
 				var passedParameters = commandService.parseParameters( commandInfo.parameters, definedParameters );
-			
+
 				// For sure we are using named- suggest name or value as necceessary
 				if( structCount( passedParameters.namedParameters ) ) {
 
 					var leftOver = '';
-					
+
 					// Still typing
 					if( !buffer.endsWith( ' ' ) ) {
-						
+
 						// grab the last chunk of text from the buffer
 						var leftOver = listLast( buffer, ' ' );
-						
-						// value completion only 
+
+						// value completion only
 						if( leftOver contains '=' ) {
-							
+
 							// Param name is bit before the =
 							var paramName = listFirst( leftOver, '=' );
 							// Everything else, is the value so far
 							var paramSoFar = '';
 							// There's only a value if somethign was typed after the =
 							if( !leftOver.endsWith( '=' ) ) {
-								paramSoFar = listLast( leftOver, '=' );	
+								paramSoFar = listLast( leftOver, '=' );
 							}
-						
+
 							var paramType = '';
 							// Now that we have the name, see if we can look up the type
 							for( var param in definedParameters ) {
@@ -128,7 +128,7 @@ component singleton {
 							return len( buffer ) - len( paramSoFar );
 
 						}
-						
+
 
 					} // End still typing?
 
@@ -157,13 +157,13 @@ component singleton {
 				// or a single one with flags present
 				} else if(
 							passedParameters.positionalParameters.len() > 1
-							|| ( passedParameters.positionalParameters.len() == 1 
+							|| ( passedParameters.positionalParameters.len() == 1
 								&& ( buffer.endsWith( ' ' ) || structCount( passedParameters.flags ) ) )
 						) {
 
 					// If the buffer ends with a space, they were done typing the last param
 					if( buffer.endsWith( ' ' ) ) {
-						
+
 						// Loop over remaining possible params and suggest the boolean ones as flags
 						var i = 0;
 						for( var param in definedParameters ) {
@@ -181,15 +181,15 @@ component singleton {
 							if( i > passedParameters.positionalParameters.len() && !structKeyExists( passedParameters.flags, param.name )) {
 								// Add the name of the next one in the list. The user will have to backspace and
 								// replace this with their actual param so this may not be that useful.
-								
+
 								candidates.add( param.name & ' ' );
 								paramValueCompletion( commandInfo, param.name, param.type, '', candidates );
 								// Bail once we find one
 								break;
 							}
 						}
-						
-						arraySort( candidates, 'text' );								
+
+						arraySort( candidates, 'text' );
 						return len( buffer );
 
 
@@ -198,16 +198,16 @@ component singleton {
 
 						// Make sure defined params actually exist for this
 						if( definedParameters.len() >= passedParameters.positionalParameters.len() ) {
-							
+
 							// If there is a passed positional param or flags
 							if( passedParameters.positionalParameters.len() || structCount( passedParameters.flags ) ) {
 								// grab the last chunk of text from the buffer
 								var partialMatch = listLast( buffer, ' ' );
 							}
-							
+
 							var thisParam = definedParameters[ passedParameters.positionalParameters.len() ];
 							paramValueCompletion( commandInfo, thisParam.name, thisParam.type, partialMatch, candidates );
-							
+
 							// Loop over remaining possible params and suggest the boolean ones as flags
 							var i = 0;
 							for( var param in definedParameters ) {
@@ -216,11 +216,11 @@ component singleton {
 								if( i >= passedParameters.positionalParameters.len() && param.type == 'boolean' && !structKeyExists( passedParameters.flags, param.name ) ) {
 									var paramFlagname = '--' & param.name;
 									if( lcase( paramFlagname ).startsWith( lcase( partialMatch ) ) ) {
-										candidates.add( paramFlagname & ' ' );										
+										candidates.add( paramFlagname & ' ' );
 									}
 								}
 							}
-							
+
 							arraySort( candidates, 'text' );
 							return len( buffer ) - len( partialMatch );
 						}
@@ -250,11 +250,11 @@ component singleton {
 							if( !structKeyExists( passedParameters.flags, param.name )  && ( !len( partialMatch ) || lcase( param.name ).startsWith( lcase( partialMatch ) ) ) ) {
 								candidates.add( param.name & '=' );
 							}
-							
+
 							// If this param is a boolean that isn't a flag yet, sugguest the --flag version
 							var paramFlagname = '--' & param.name;
 							if( param.type == 'boolean' && !structKeyExists( passedParameters.flags, param.name ) && lcase( paramFlagname ).startsWith( lcase( partialMatch ) ) ) {
-								candidates.add( paramFlagname & ' ' );										
+								candidates.add( paramFlagname & ' ' );
 							}
 						}
 
@@ -263,7 +263,7 @@ component singleton {
 
 						// Suggest its value
 						paramValueCompletion( commandInfo, thisParam.name, thisParam.type, partialMatch, candidates );
-						
+
 						arraySort( candidates, 'text' );
 						return len( buffer ) - len( partialMatch );
 
@@ -297,7 +297,7 @@ component singleton {
 	private function paramValueCompletion( struct commandInfo, String paramName, String paramType, String paramSoFar, required candidates) {
 
 		var completorData = commandInfo.commandReference.completor;
-		
+
 		if( structKeyExists( completorData, paramName ) ) {
 			// Add static values
 			if( structKeyExists( completorData[ paramName ], 'options' ) ) {
@@ -321,24 +321,24 @@ component singleton {
            		addCandidateIfMatch( "false", paramSoFar, candidates );
 				break;
 		}
-		
+
 		paramName = lcase( paramName );
-		if( paramName.startsWith( 'directory' ) || 
+		if( paramName.startsWith( 'directory' ) ||
 			paramName.startsWith( 'destination' ) ||
 			paramName.endsWith( 'directory' ) ||
-			paramName.endsWith( 'destination' ) 
+			paramName.endsWith( 'destination' )
 		){
-			pathCompletion( paramSoFar, candidates, false );			
-		} else if( paramName.startsWith( 'file' ) || 
-				   paramName.endsWith( 'file' ) || 
+			pathCompletion( paramSoFar, candidates, false );
+		} else if( paramName.startsWith( 'file' ) ||
+				   paramName.endsWith( 'file' ) ||
 				   paramName.startsWith( 'path' ) ||
-				   paramName.endsWith( 'path' ) 
+				   paramName.endsWith( 'path' )
 		){
 			pathCompletion( paramSoFar, candidates, true );
 		}
 	}
 
-	
+
 	/**
 	 * Convience method since calling addAll() directly errors if each value isn't a string
 	 * @candidates.hint Java TreeSet object
@@ -357,18 +357,18 @@ component singleton {
 	 * @type.showFiles Whether to hit files as well as directories
  	 **/
 	private function pathCompletion(String startsWith, required candidates, showFiles=true ) {
-		
+
 		// keep track of the original here so we can put it back like the user had
 		var originalStartsWith = replace( arguments.startsWith, "\", "/", "all" );
 		// Fully resolve the path.
 		arguments.startsWith = fileSystemUtil.resolvePath( arguments.startsWith );
 		startsWith = replace( startsWith, "\", "/", "all" );
-		
+
 		// make sure dirs are suffixed with a trailing slash or we'll strip it off, thinking it's a partial name
 		if( ( originalStartsWith == '' || originalStartsWith.endsWith( '/' ) ) && !startsWith.endsWith( '/' ) ) {
 			startsWith &= '/';
 		}
-		
+
 		// searchIn strips off partial directories, and has the last complete actual directory for searching.
 		var searchIn = startsWith;
 		// This is the bit at the end that is a partially typed directory or file name
@@ -382,7 +382,7 @@ component singleton {
 				partialMatch = replaceNoCase( startsWith, searchIn, '' );
 			}
 		}
-		
+
 		// Don't even bother if search location doesn't exist
 		if( directoryExists( searchIn ) ) {
 			// Pull a list of paths in there
@@ -407,7 +407,7 @@ component singleton {
 
 						// ...strip it back down to what they typed
 						thisCandidate = replaceNoCase( thisCandidate, startsWith, originalStartsWith );
-						
+
 						// Finally add this candidate into the list
 						candidates.add( thisCandidate & ( path.type == 'dir' ? '/' : '' ) );
 					}

@@ -4,11 +4,11 @@
 * .
 * {code:bash}
 * coldbox create module myModule
-* {code}  
-*  
+* {code}
+*
  **/
 component {
-		
+
 	/**
 	* @name Name of the module to create.
 	* @author Whoever wrote this module
@@ -18,10 +18,10 @@ component {
 	* @cfmapping A CF app mapping to create that points to the root of this module
 	* @modelNamespace The namespace to use when mapping the models in this module
 	* @dependencies The list of dependencies for this module
-	* @directory The base directory to create your model in and creates the directory if it does not exist. 
+	* @directory The base directory to create your model in and creates the directory if it does not exist.
 	* @script.hint Generate content in script markup or tag markup
 	**/
-	function run( 	
+	function run(
 		required name,
 		author='',
 		authorURL='',
@@ -32,27 +32,27 @@ component {
 		dependencies="",
 		directory='modules/contentbox/modules_user',
 		boolean script=true
-	){						
-		// This will make each directory canonical and absolute		
+	){
+		// This will make each directory canonical and absolute
 		arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
-		
+
 		// Validate directory
 		if( !directoryExists( arguments.directory ) ) {
-			directoryCreate( arguments.directory );			
+			directoryCreate( arguments.directory );
 		}
 		// This help readability so the success messages aren't up against the previous command line
 		print.line();
-				
+
 		// Script?
 		var scriptPrefix = '';
 		// TODO: Pull this from box.json
 		if( arguments.script ) {
-			scriptPrefix = 'Script';	
+			scriptPrefix = 'Script';
 		}
-		
+
 		// Read in Module Config
 		var moduleConfig = fileRead( '/coldbox-commands/templates/modules/ModuleConfig#scriptPrefix#.cfc' );
-		
+
 		// Start Generation Replacing
 		moduleConfig = replaceNoCase( moduleConfig, '@title@', arguments.name, 'all');
 		moduleConfig = replaceNoCase( moduleConfig, '@author@', arguments.author, 'all');
@@ -62,10 +62,10 @@ component {
 		moduleConfig = replaceNoCase( moduleConfig, '@cfmapping@', arguments.cfmapping, 'all');
 		moduleConfig = replaceNoCase( moduleConfig, '@modelNamespace@', arguments.modelNamespace, 'all');
 		moduleConfig = replaceNoCase( moduleConfig, '@dependencies@', serializeJSON( listToArray( arguments.dependencies ) ), 'all');
-		
+
 		// Copy module template
 		directoryCopy( '/coldbox-commands/templates/modules/', arguments.directory & '/#arguments.name#', true );
-		
+
 		// Clean Files Out
 		if( script ) {
 			fileDelete( arguments.directory & '/#arguments.name#/handlers/Home.cfc' );
@@ -74,16 +74,16 @@ component {
 			fileDelete( arguments.directory & '/#arguments.name#/handlers/HomeScript.cfc' );
 		}
 		fileDelete( arguments.directory & '/#arguments.name#/ModuleConfigScript.cfc' );
-			
+
 		// Write Out the New Config
 		fileWrite( arguments.directory & '/#arguments.name#/ModuleConfig.cfc', moduleConfig );
-		
+
 		var stuffAdded = directoryList( arguments.directory & '/#arguments.name#', true );
 		print.greenLine( 'Created ' & arguments.directory & '/#arguments.name#' );
 		for( var thing in stuffAdded ) {
-			print.greenLine( 'Created ' & thing );			
+			print.greenLine( 'Created ' & thing );
 		}
-								
+
 	}
 
 }

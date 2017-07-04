@@ -8,10 +8,10 @@
 * I am an endpoint.  I can retreive packages for you.
 */
 interface {
-	
+
 	/**
 	* Accepts the name of a package, retrieves it, and returns a local folder path where the package is
-	* 
+	*
 	* @throws endpointException
 	*/
 	public string function resolvePackage( required string package, boolean verbose=false );
@@ -31,7 +31,7 @@ interface {
 	* 	isOutdated = false,
 	* 	version = ''
 	* }
-	*	
+	*
 	* @throws endpointException
 	*/
 	public function getUpdate( required string package, required string version, boolean verbose=false );

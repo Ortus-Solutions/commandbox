@@ -20,27 +20,27 @@
  * {code}
  **/
 component aliases="list" {
-	
+
 	processingdirective pageEncoding='UTF-8';
-	
-	property name="packageService" inject="PackageService";	
-	
-	/**  
+
+	property name="packageService" inject="PackageService";
+
+	/**
 	 * @verbose.hint Outputs additional informaiton about each package
 	 * @json.hint Outputs results as JSON
-	 * @system.hint When true, list packages from the global CommandBox module's folder 
+	 * @system.hint When true, list packages from the global CommandBox module's folder
 	 **/
 	function run(
 		boolean verbose=false,
 		boolean JSON=false,
 		boolean system=false ) {
-			
+
 		if( arguments.system ) {
 			var directory = expandPath( '/commandbox' );
 		} else {
-			var directory = getCWD();			
+			var directory = getCWD();
 		}
-		
+
 		// package check
 		if( !packageService.isPackage( directory ) ) {
 			return error( '#directory# is not a package!' );
@@ -51,12 +51,12 @@ component aliases="list" {
 		// JSON output
 		if( arguments.JSON ) {
 			print.line( formatterUtil.formatJson( serializeJSON( tree ) ) );
-			return;			
+			return;
 		}
 		// normal output
 		print.green( 'Dependency Hierarchy for ' ).boldCyanLine( "#tree.name# (#tree.version#)" );
 		printDependencies( tree, '', arguments.verbose );
-		
+
 	}
 
 	/**
@@ -72,22 +72,22 @@ component aliases="list" {
 			var isLast = ( i == depCount );
 			var branch = ( isLast ? '└' : '├' ) & '─' & ( childDepCount ? '┬' : '─' );
 			var branchCont = ( isLast ? ' ' : '│' ) & ' ' & ( childDepCount ? '│' : ' ' );
-			
+
 			print.text( prefix & branch & ' ' );
-			
+
 			print[ ( dependency.dev ? 'boldYellowline' : 'boldLine' ) ]( '#dependencyName# (#dependency.packageVersion#)' );
-						
+
 			if( arguments.verbose ) {
 				if( len( dependency.name ) ) {
 					print.text( prefix & branchCont & ' ' );
-					print[ ( dependency.dev ? 'yellowLine' : 'line' ) ]( dependency.name );	
+					print[ ( dependency.dev ? 'yellowLine' : 'line' ) ]( dependency.name );
 				}
 				if( len( dependency.shortDescription ) ) {
 					print.text( prefix & branchCont & ' ' );
-					print[ ( dependency.dev ? 'yellowLine' : 'line' ) ]( dependency.shortDescription );	
+					print[ ( dependency.dev ? 'yellowLine' : 'line' ) ]( dependency.shortDescription );
 				}
 			} // end verbose?
-			
+
 			printDependencies( dependency, prefix & ( isLast ? '  ' : '│ ' ), arguments.verbose );
 		}
 	}

@@ -1,4 +1,4 @@
-﻿<!-----------------------------------------------------------------------
+<!-----------------------------------------------------------------------
 ********************************************************************************
 Copyright Since 2005 ColdBox Framework by Luis Majano and Ortus Solutions, Corp
 www.ortussolutions.com
@@ -15,13 +15,13 @@ Description :
 		<cfscript>
 			instance = structnew();
 			instance.scopes = "application|client|cookie|session|server|cluster|request";
-			
+
 			return this;
 		</cfscript>
 	</cffunction>
-	
-	<!----------------------------------------- PUBLIC ------------------------------------->	
-	
+
+	<!----------------------------------------- PUBLIC ------------------------------------->
+
 	<cffunction name="put" access="public" returntype="void" hint="Put into a scope" output="false" >
 		<cfargument name="key"    type="string" required="true" hint="The key value">
 		<cfargument name="value"  type="any" required="true" hint="The value to put">
@@ -31,7 +31,7 @@ Description :
 			scopePointer[arguments.key] = arguments.value;
 		</cfscript>
 	</cffunction>
-	
+
 	<cffunction name="delete" access="public" returntype="boolean" hint="delete from a scope" output="false" >
 		<cfargument name="key"    type="string" required="true" hint="The key value">
 		<cfargument name="scope"  type="string" required="true" hint="The CF scope to place it in">
@@ -39,7 +39,7 @@ Description :
 			return structDelete(getScope(arguments.scope),arguments.key,true);
 		</cfscript>
 	</cffunction>
-	
+
 	<cffunction name="get" access="public" returntype="any" hint="Get something from a scope. Throws exception if not found" output="false" >
 		<cfargument name="key"    	type="string" required="true" hint="The key to retrieve">
 		<cfargument name="scope"  	type="string" required="true" hint="The CF scope to get an object from">
@@ -55,22 +55,22 @@ Description :
 		<cfthrow type="ScopeStorage.KeyNotFound"
 				 message="The key #arguments.key# does not exist in the #arguments.scope# scope.">
 	</cffunction>
-	
+
 	<cffunction name="exists" access="public" returntype="boolean" hint="Check if a value is in scope" output="false" >
 		<cfargument name="key"    	type="string" required="true" hint="The key to retrieve">
 		<cfargument name="scope"  	type="string" required="true" hint="The CF scope to get an object from">
 		<cfscript>
-			return structKeyExists(getScope(arguments.scope),arguments.key);	
+			return structKeyExists(getScope(arguments.scope),arguments.key);
 		</cfscript>
 	</cffunction>
-	
+
 	<cffunction name="getScope" access="public" returntype="struct" hint="Get a named scope" output="false" >
 		<cfargument name="scope"  	type="string" required="true" hint="The CF scope to get an object from">
 		<cfscript>
 			scopeCheck(arguments.scope);
-			
+
 			switch( arguments.scope ){
-				case "session" : { 
+				case "session" : {
 					if( isDefined("session") ){
 						return session;
 					}
@@ -85,9 +85,9 @@ Description :
 				case "cluster" : return cluster;
 				case "request" : return request;
 	 		}
-		</cfscript>	
+		</cfscript>
 	</cffunction>
-	
+
 	<cffunction name="getSession" access="public" returntype="struct" hint="Get Session" output="false" >
 		<cfreturn getScope("session")>
 	</cffunction>
@@ -106,7 +106,7 @@ Description :
 	<cffunction name="getCluster" access="public" returntype="struct" hint="Get cluster" output="false" >
 		<cfreturn getScope("cluster")>
 	</cffunction>
-	
+
 	<cffunction name="scopeCheck" access="public" returntype="void" hint="Check if a scope is valid, else throw exception" output="false" >
 		<cfargument name="scope"  type="string" required="true" hint="The CF scope to check">
 		<cfif NOT reFindNoCase("^(#instance.scopes#)$", arguments.scope)>
@@ -116,6 +116,6 @@ Description :
 		</cfif>
 	</cffunction>
 
-<!----------------------------------------- PRIVATE ------------------------------------->	
+<!----------------------------------------- PRIVATE ------------------------------------->
 
 </cfcomponent>

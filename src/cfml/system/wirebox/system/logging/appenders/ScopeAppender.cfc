@@ -1,4 +1,4 @@
-﻿<!-----------------------------------------------------------------------
+<!-----------------------------------------------------------------------
 ********************************************************************************
 Copyright Since 2005 ColdBox Framework by Luis Majano and Ortus Solutions, Corp
 www.ortussolutions.com
@@ -17,10 +17,10 @@ Properties:
 - limit : a limit to the amount of logs to rotate. Defaults to 0, unlimited (optional)
 
 ----------------------------------------------------------------------->
-<cfcomponent extends="wirebox.system.logging.AbstractAppender" 
+<cfcomponent extends="wirebox.system.logging.AbstractAppender"
 			 output="false"
 			 hint="A scope appender">
-	
+
 	<!--- Init --->
 	<cffunction name="init" access="public" returntype="ScopeAppender" hint="Constructor" output="false" >
 		<!--- ************************************************************* --->
@@ -33,7 +33,7 @@ Properties:
 		<cfscript>
 			// Init supertype
 			super.init(argumentCollection=arguments);
-			
+
 			// Verify properties
 			if( NOT propertyExists('scope') ){
 				setProperty("scope","request");
@@ -44,19 +44,19 @@ Properties:
 			if( NOT propertyExists('limit') OR NOT isNumeric(getProperty("limit"))){
 				setProperty("limit",0);
 			}
-			
+
 			// Scope storage
 			instance.scopeStorage = createObject("component","wirebox.system.core.collections.ScopeStorage").init();
 			// Scope Checks
 			instance.scopeStorage.scopeCheck(getproperty('scope'));
 			// UUID generator
 			instance.uuid = createobject("java", "java.util.UUID");
-			
-						
+
+
 			return this;
 		</cfscript>
-	</cffunction>	
-	
+	</cffunction>
+
 	<!--- Log Message --->
 	<cffunction name="logMessage" access="public" output="true" returntype="void" hint="Write an entry into the appender.">
 		<!--- ************************************************************* --->
@@ -67,18 +67,18 @@ Properties:
 			var entry = structnew();
 			var limit = getProperty('limit');
 			var loge = arguments.logEvent;
-			
+
 			// Verify storage
 			ensureStorage();
-			
+
 			// Check Limits
 			logStack = getStorage();
-			
+
 			if( limit GT 0 and arrayLen(logStack) GTE limit ){
 				// pop one out, the oldest
 				arrayDeleteAt(logStack,1);
 			}
-			
+
 			// Log Away
 			entry.id = instance.uuid.randomUUID().toString();
 			entry.logDate = loge.getTimeStamp();
@@ -87,13 +87,13 @@ Properties:
 			entry.message = loge.getMessage();
 			entry.extraInfo = loge.getextraInfo();
 			entry.category = loge.getCategory();
-			
+
 			// Save Storage
 			arrayAppend(logStack, entry);
-			saveStorage(logStack);		
-		</cfscript>	   
+			saveStorage(logStack);
+		</cfscript>
 	</cffunction>
-	
+
 <!------------------------------------------- PRIVATE ------------------------------------------>
 
 	<!--- getStorage --->
@@ -102,7 +102,7 @@ Properties:
 			<cfreturn instance.scopeStorage.get(getProperty('key'), getProperty('scope'))>
 		</cflock>
 	</cffunction>
-	
+
 	<!--- saveStorage --->
 	<cffunction name="saveStorage" output="false" access="private" returntype="void" hint="Save Storage">
 		<cfargument name="data" required="true" hint="Data to save"/>
@@ -119,6 +119,6 @@ Properties:
 			}
 		</cfscript>
 	</cffunction>
-	
-	
+
+
 </cfcomponent>

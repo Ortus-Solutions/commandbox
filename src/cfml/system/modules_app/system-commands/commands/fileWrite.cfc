@@ -1,5 +1,5 @@
 /**
- * Write a file, overwriting it if it exists. 
+ * Write a file, overwriting it if it exists.
  * .
  * {code:bash}
  * fileWrite "My file contents" file.txt
@@ -16,7 +16,7 @@
  * {code:bash}
  * dir > fileList.txt
  * {code}
- * 
+ *
  **/
 component excludeFromHelp=true {
 
@@ -25,7 +25,7 @@ component excludeFromHelp=true {
 	 * @file.hint File to write to
  	 **/
 	function run( required contents='', required string file )  {
-		
+
 		// This will make the file path canonical and absolute
 		arguments.file = fileSystemUtil.resolvePath( arguments.file );
 
@@ -34,7 +34,7 @@ component excludeFromHelp=true {
 
 		// Write the file
 		fileWrite( arguments.file, arguments.contents );
-		
+
 	}
 
 }

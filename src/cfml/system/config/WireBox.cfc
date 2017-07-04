@@ -25,7 +25,7 @@ component extends="wirebox.system.ioc.config.Binder" {
 		wirebox.listeners = [
 			// { class="", name="", properties={} }
 		];
-			
+
 		// LogBox
 		wirebox.logBoxConfig = "commandbox.system.config.LogBox";
 
@@ -66,7 +66,7 @@ component extends="wirebox.system.ioc.config.Binder" {
 		map( 'ortusArtifactsURL@constants' ).toValue( ortusArtifactsURL );
 		map( 'ortusPRDArtifactsURL@constants' ).toValue( ortusPRDArtifactsURL );
 		map( 'rewritesDefaultConfig@constants' ).toValue( "#homeDir#/cfml/system/config/urlrewrite.xml" );
-		
+
 		// Map Java Classes
 		map( 'commandHistoryFile@java' ).toJava( "jline.console.history.FileHistory" )
 			.initWith( createObject( "java", "java.io.File" ).init( commandHistoryFile ) )
@@ -79,7 +79,7 @@ component extends="wirebox.system.ioc.config.Binder" {
 		map( 'REPLTagHistoryFile@java' ).toJava( "jline.console.history.FileHistory" )
 			.initWith( createObject( "java", "java.io.File" ).init( REPLTagHistoryFile ) )
 			.asSingleton();
-			
+
 		// Map Directories
 		mapDirectory( '/commandbox/system/services' );
 		mapDirectory( '/commandbox/system/util' );

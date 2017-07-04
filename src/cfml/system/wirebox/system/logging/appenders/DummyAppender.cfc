@@ -1,4 +1,4 @@
-﻿<!-----------------------------------------------------------------------
+<!-----------------------------------------------------------------------
 ********************************************************************************
 Copyright Since 2005 ColdBox Framework by Luis Majano and Ortus Solutions, Corp
 www.ortussolutions.com
@@ -8,14 +8,14 @@ Author     :	Luis Majano
 Date        :	04/12/2009
 Description :
 	A dummy appender for usage in unit testing.
-	
+
 Properties:
 
 ----------------------------------------------------------------------->
-<cfcomponent extends="wirebox.system.logging.AbstractAppender" 
+<cfcomponent extends="wirebox.system.logging.AbstractAppender"
 			 output="false"
 			 hint="A dummy appender">
-	
+
 	<!--- Init --->
 	<cffunction name="init" access="public" returntype="DummyAppender" hint="Constructor" output="false" >
 		<!--- ************************************************************* --->
@@ -28,20 +28,20 @@ Properties:
 		<cfscript>
 			// Init supertype
 			super.init(argumentCollection=arguments);
-			
+
 			return this;
 		</cfscript>
-	</cffunction>	
-	
+	</cffunction>
+
 	<!--- Log Message --->
 	<cffunction name="logMessage" access="public" output="false" returntype="void" hint="Write an entry into the appender.">
 		<!--- ************************************************************* --->
 		<cfargument name="logEvent" type="any" required="true" hint="The logging event"/>
 		<!--- ************************************************************* --->
-		<!--- Dummy Empty --->   
+		<!--- Dummy Empty --->
 	</cffunction>
-	
+
 <!------------------------------------------- PRIVATE ------------------------------------------>
-	
-	
+
+
 </cfcomponent>

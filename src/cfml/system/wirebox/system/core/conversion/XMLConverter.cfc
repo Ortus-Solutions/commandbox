@@ -1,4 +1,4 @@
-﻿<!-----------------------------------------------------------------------
+<!-----------------------------------------------------------------------
 ********************************************************************************
 Copyright Since 2005 ColdBox Framework by Luis Majano and Ortus Solutions, Corp
 www.ortussolutions.com
@@ -318,32 +318,32 @@ Modifications
 		<cfargument name="value" type="string" required="yes">
 		<cfscript>
 			var string = arguments.value;
-			string = replaceNoCase(string,chr(8218),'&##8218;','all');	// �
-			string = replaceNoCase(string,chr(402),'&##402;','all');		// �
-			string = replaceNoCase(string,chr(8222),'&##8222;','all');	// �
-			string = replaceNoCase(string,chr(8230),'&##8230;','all');	// �
-			string = replaceNoCase(string,chr(8224),'&##8224;','all');	// �
-			string = replaceNoCase(string,chr(8225),'&##8225;','all');	// �
-			string = replaceNoCase(string,chr(710),'&##710;','all');		// �
-			string = replaceNoCase(string,chr(8240),'&##8240;','all');	// �
-			string = replaceNoCase(string,chr(352),'&##352;','all');		// �
-			string = replaceNoCase(string,chr(8249),'&##8249;','all');	// �
-			string = replaceNoCase(string,chr(338),'&##338;','all');		// �
-			string = replaceNoCase(string,chr(8216),'&##8216;','all');	// �
-			string = replaceNoCase(string,chr(8217),'&##8217;','all');	// �
-			string = replaceNoCase(string,chr(8220),'&##8220;','all');	// �
-			string = replaceNoCase(string,chr(8221),'&##8221;','all');	// �
-			string = replaceNoCase(string,chr(8226),'&##8226;','all');	// �
-			string = replaceNoCase(string,chr(8211),'&##8211;','all');	// �
-			string = replaceNoCase(string,chr(8212),'&##8212;','all');	// �
-			string = replaceNoCase(string,chr(732),'&##732;','all');		// �
-			string = replaceNoCase(string,chr(8482),'&##8482;','all');	// �
-			string = replaceNoCase(string,chr(353),'&##353;','all');		// �
-			string = replaceNoCase(string,chr(8250),'&##8250;','all');	// �
-			string = replaceNoCase(string,chr(339),'&##339;','all');		// �
-			string = replaceNoCase(string,chr(376),'&##376;','all');		// �
-			string = replaceNoCase(string,chr(376),'&##376;','all');		// �
-			string = replaceNoCase(string,chr(8364),'&##8364','all');		// �
+			string = replaceNoCase(string,chr(8218),'&##8218;','all');	// ?
+			string = replaceNoCase(string,chr(402),'&##402;','all');		// ?
+			string = replaceNoCase(string,chr(8222),'&##8222;','all');	// ?
+			string = replaceNoCase(string,chr(8230),'&##8230;','all');	// ?
+			string = replaceNoCase(string,chr(8224),'&##8224;','all');	// ?
+			string = replaceNoCase(string,chr(8225),'&##8225;','all');	// ?
+			string = replaceNoCase(string,chr(710),'&##710;','all');		// ?
+			string = replaceNoCase(string,chr(8240),'&##8240;','all');	// ?
+			string = replaceNoCase(string,chr(352),'&##352;','all');		// ?
+			string = replaceNoCase(string,chr(8249),'&##8249;','all');	// ?
+			string = replaceNoCase(string,chr(338),'&##338;','all');		// ?
+			string = replaceNoCase(string,chr(8216),'&##8216;','all');	// ?
+			string = replaceNoCase(string,chr(8217),'&##8217;','all');	// ?
+			string = replaceNoCase(string,chr(8220),'&##8220;','all');	// ?
+			string = replaceNoCase(string,chr(8221),'&##8221;','all');	// ?
+			string = replaceNoCase(string,chr(8226),'&##8226;','all');	// ?
+			string = replaceNoCase(string,chr(8211),'&##8211;','all');	// ?
+			string = replaceNoCase(string,chr(8212),'&##8212;','all');	// ?
+			string = replaceNoCase(string,chr(732),'&##732;','all');		// ?
+			string = replaceNoCase(string,chr(8482),'&##8482;','all');	// ?
+			string = replaceNoCase(string,chr(353),'&##353;','all');		// ?
+			string = replaceNoCase(string,chr(8250),'&##8250;','all');	// ?
+			string = replaceNoCase(string,chr(339),'&##339;','all');		// ?
+			string = replaceNoCase(string,chr(376),'&##376;','all');		// ?
+			string = replaceNoCase(string,chr(376),'&##376;','all');		// ?
+			string = replaceNoCase(string,chr(8364),'&##8364','all');		// ?
 			return string;
 		</cfscript>
 	</cffunction>

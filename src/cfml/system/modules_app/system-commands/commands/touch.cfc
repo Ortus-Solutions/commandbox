@@ -17,7 +17,7 @@
  * {code:bash}
  * touch file.txt --force
  * {code}
- * 
+ *
  **/
 component aliases="new" {
 
@@ -30,25 +30,25 @@ component aliases="new" {
 		required Globber file,
 		boolean force=false,
 		boolean open=false )  {
-		
+
 		// Get matching paths
 		var matches = file.matches();
-		
-		// If no paths were found and the pattern isn't a glob, just use the pattern (it's a new file).  
+
+		// If no paths were found and the pattern isn't a glob, just use the pattern (it's a new file).
 		if( !file.count() && !( file.getPattern() contains '*' ) && !( file.getPattern() contains '?' ) ) {
 			matches.append( file.getPattern() );
 		}
-		
+
 		for( var theFile in matches ) {
-		
+
 			var oFile = createObject( "java", "java.io.File" ).init( theFile );
 			var fileName = listLast( theFile, "/" );
-	
+
 			// if we have a force, recreate the file
 			if( arguments.force and oFile.exists() ){
 				oFile.delete();
 			}
-			
+
 			// check for update or creation
 			if( !oFile.exists() ){
 				oFile.createNewFile();
@@ -57,7 +57,7 @@ component aliases="new" {
 				oFile.setLastModified( now().getTime() );
 				print.line( "#fileName# last modified bit updated!" );
 			}
-	
+
 			// Open file for the user
 			if( arguments.open ){
 				// Defer to the "edit" command.
@@ -65,9 +65,9 @@ component aliases="new" {
 					.params( theFile )
 					.run();
 			}
-				
+
 		}
-		
+
 	}
 
 }

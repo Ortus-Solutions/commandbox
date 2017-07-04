@@ -9,7 +9,7 @@
 *
 */
 component singleton {
-	
+
 	variables.system = createObject( "java", "java.lang.System" );
 
 	/**
@@ -19,12 +19,12 @@ component singleton {
 	* @defaultValue The default value to use if the key does not exist in the system properties
 	*/
     function getSystemSetting( required string key, defaultValue ) {
-		
+
 		var value = system.getProperty( arguments.key );
 		if ( ! isNull( value ) ) {
 			return value;
 		}
-		
+
 		value = system.getEnv( arguments.key );
 		if ( ! isNull( value ) ) {
 			return value;
@@ -47,7 +47,7 @@ component singleton {
 	* @defaultValue The default value to use if the key does not exist in the system properties
 	*/
     function getSystemProperty( required string key, defaultValue ) {
-		
+
 		var value = system.getProperty( arguments.key );
 		if ( ! isNull( value ) ) {
 			return value;
@@ -65,12 +65,12 @@ component singleton {
 
 	/**
 	* Retrieve an env value by name.
-	* 
+	*
 	* @key The name of the setting to look up.
 	* @defaultValue The default value to use if the key does not exist in the env
 	*/
     function getEnv( required string key, defaultValue ) {
-		
+
 		var value = system.getEnv( arguments.key );
 		if ( ! isNull( value ) ) {
 			return value;
@@ -91,7 +91,7 @@ component singleton {
 	/**
 	* Expands placeholders like ${foo} in a string with the matching java prop or env var.
 	* Will replace as many place holders that exist, but will skip escaped ones like \${do.not.expand.me}
-	* 
+	*
 	* @text The string to do the replacement on
 	*/
 	function expandSystemSettings( required string text ) {
@@ -101,7 +101,7 @@ component singleton {
 		text = reReplaceNoCase( text, '\$\{(.*?)}', '__system__\1__system__', 'all' );
 		// put escaped stuff back
 		text = replaceNoCase( text, '__system_setting__', '${', "all" );
-		
+
 		// Look for a system setting "foo" flagged as "__system__foo__system__"
 		var search = reFindNoCase( '__system__.*?__system__', text, 1, true );
 
@@ -114,7 +114,7 @@ component singleton {
 			var defaultValue = '';
 			if( settingName.listLen( ':' ) ) {
 				defaultValue = settingName.listRest( ':' );
-				settingName = settingName.listFirst( ':' );					
+				settingName = settingName.listFirst( ':' );
 			}
 			var result = getSystemSetting( settingName, defaultValue );
 
@@ -130,7 +130,7 @@ component singleton {
 	* Expands placeholders like ${foo} in all deep struct keys and array elements with the matching java prop or env var.
 	* Will replace as many place holders that exist, but will skip escaped ones like \${do.not.expand.me}
 	* This will recursivley follow all nested structs and arrays.
-	* 
+	*
 	* @dataStructure A string, struct, or array to perform deep replacement on.
 	*/
 	function expandDeepSystemSettings( required any dataStructure ) {
@@ -149,7 +149,7 @@ component singleton {
 				i++;
 				dataStructure[ i ] = expandDeepSystemSettings( item );
 			}
-			return dataStructure;			
+			return dataStructure;
 		// If it's a string...
 		} else if ( isSimpleValue( dataStructure ) ) {
 			// Just do the replacement

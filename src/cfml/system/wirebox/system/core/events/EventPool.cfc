@@ -1,4 +1,4 @@
-﻿<!-----------------------------------------------------------------------
+<!-----------------------------------------------------------------------
 ********************************************************************************
 Copyright Since 2005 ColdBox Framework by Luis Majano and Ortus Solutions, Corp
 www.ortussolutions.com
@@ -18,7 +18,7 @@ Description :
 	    <cfscript>
 			var linkedHashMap = createObject("java","java.util.LinkedHashMap").init( 3 );
 			var collections   = createObject("java", "java.util.Collections");
-			
+
 			// keep a state of objects
 			instance = structnew();
 
@@ -87,16 +87,16 @@ Description :
 		<cfscript>
 			var key 		= "";
 			var stopChain 	= "";
-	
+
 			// Loop and execute each target object as registered in order
 			for( key in instance.pool ){
 				// Invoke the execution point
 				stopChain = invoker( instance.pool[ key ], arguments.interceptData );
-	
+
 				// Check for results
 				if( stopChain ){ break; }
 			}
-			
+
 			return this;
 		</cfscript>
 	</cffunction>

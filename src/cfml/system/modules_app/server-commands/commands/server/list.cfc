@@ -86,10 +86,10 @@ component {
 					.bold( status, statusColors.keyExists( status ) ? statusColors[ status ] : 'yellow' )
 					.bold( ')' )
 					.line();
-				
+
 				if( arguments.verbose ) {
 
-					print.indentedLine( "host:             " & thisServerInfo.host );					
+					print.indentedLine( "host:             " & thisServerInfo.host );
 					if( len( thisServerInfo.engineName ) ) {
 						print.indentedLine( "CF Engine:        " & thisServerInfo.engineName & ' ' & thisServerInfo.engineVersion );
 					}
@@ -100,7 +100,7 @@ component {
 					}
 					if( len( thisServerInfo.dateLastStarted ) ) {
 						print.indentedLine( 'Last Started: ' & datetimeFormat( thisServerInfo.dateLastStarted ) );
-					}					
+					}
 					print.indentedLine( "HTTPEnable:       " & thisServerInfo.HTTPEnable )
 						.indentedLine( "port:             " & thisServerInfo.port )
 						.indentedLine( "SSLEnable:        " & thisServerInfo.SSLEnable )
@@ -136,7 +136,7 @@ component {
 					}
 					if( len( thisServerInfo.dateLastStarted ) ) {
 						print.indentedLine( 'Last Started: ' & datetimeFormat( thisServerInfo.dateLastStarted ) );
-					}					
+					}
 				}// end verbose
 
 			} // End "filter" if

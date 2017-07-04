@@ -21,13 +21,13 @@
 *
 * If you want to modify formatting at runtime, pass a second parameter of additional text
 * that will be appended to the method name upon processing.
-* 
+*
 * print.text( 'Hello World', 'blue' );
 * print.text( 'Hello World', statusColor );
 * print.text( 'Hello World', ( status == 'running' ? 'green' : 'red' ) );
-* 
+*
 * Indent each carridge return with two spaces like so:
-* 
+*
 * print.indentedLine( 'Hello World' );
 *
 */
@@ -170,9 +170,9 @@ component {
 		// Don't mess with the string if we didn't format it
 		if( len( ANSIString ) ) {
 			text = ANSIString & text;
-			if( !noEnd ) { 
+			if( !noEnd ) {
 				text &= getANSIAttribute( this.ANSIAttributes["off"] );
-			}			
+			}
 		}
 
 		// Add a CR if this was supposed to be a line

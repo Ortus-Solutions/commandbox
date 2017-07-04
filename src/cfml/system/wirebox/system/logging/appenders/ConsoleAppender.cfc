@@ -1,4 +1,4 @@
-﻿/**
+/**
 *********************************************************************************
 * Copyright Since 2005 ColdBox Framework by Luis Majano and Ortus Solutions, Corp
 * www.ortussolutions.com
@@ -21,7 +21,7 @@ component extends="wirebox.system.logging.AbstractAppender"{
 		struct properties = {},
 		string layout     = "",
 		string levelMin   = 0,
-		string levelMax   = 4 
+		string levelMax   = 4
 	){
 		super.init( argumentCollection=arguments );
 		instance.out = createObject( "java", "java.lang.System" ).out;
@@ -42,10 +42,10 @@ component extends="wirebox.system.logging.AbstractAppender"{
 		  	logEvent.getmessage() & " ExtraInfo: " &
 		  	logEvent.getextraInfoAsString();
 		}
-		
+
 		// log message
 		instance.out.println( entry );
-		
+
 		return;
 	}
 

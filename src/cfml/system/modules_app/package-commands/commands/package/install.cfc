@@ -134,7 +134,7 @@ component aliases="install" {
 		if( arguments.system ) {
 			arguments.currentWorkingDirectory = expandPath( '/commandbox' );
 		} else {
-			arguments.currentWorkingDirectory = getCWD();			
+			arguments.currentWorkingDirectory = getCWD();
 		}
 		// Make ID an array
 		arguments.IDArray = listToArray( arguments.ID );
@@ -166,7 +166,7 @@ component aliases="install" {
 		try {
 			var APIToken = configService.getSetting( 'endpoints.forgebox.APIToken', '' );
 			// Get auto-complete options
-			return forgebox.slugSearch( searchTerm=arguments.paramSoFar, APIToken=APIToken );				
+			return forgebox.slugSearch( searchTerm=arguments.paramSoFar, APIToken=APIToken );
 		} catch( forgebox var e ) {
 			// Gracefully handle ForgeBox issues
 			print
@@ -181,4 +181,3 @@ component aliases="install" {
 	}
 
 }
-	

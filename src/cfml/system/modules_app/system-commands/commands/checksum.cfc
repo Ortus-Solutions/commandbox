@@ -1,5 +1,5 @@
 /**
- * Generate checksum for a file or a directory via a globbing pattern. 
+ * Generate checksum for a file or a directory via a globbing pattern.
  * Default is MD5, but SHA-1, SHA-256, and SHA-512 can also be used.
  * .
  * {code:bash}
@@ -28,7 +28,7 @@
  * {code}
  *
  * Control the format of the hash with the "format" parameter.
- * 
+ *
  * {code:bash}
  *   - "checksum" (default) -- just the hash
  *   - "md5sum" -- The format of GNU textutils md5sum
@@ -41,7 +41,7 @@
  * checksum path=myFile.zip verify=2A95F32028087699CCBEB09AFDA0348C
  * {code}
  *
- **/	
+ **/
 component {
 
 	variables.algorithms = 'md5,sha1,sha-1,sha-256,sha-512';
@@ -72,31 +72,31 @@ component {
 		 	}
 		 	// Default extension is algorithm name
 		 	extension = extension ?: algorithm;
-			
+
 			// validate format
 			if( !variables.formats.listFindNoCase( format ) ) {
 				error( 'The checksum format [#format#] is not supported' );
 			}
-			
+
 			// Validate algorithm
 			if( !variables.algorithms.listFindNoCase( algorithm ) ) {
 				error( 'The hashing algorithm [#algorithm#] is not supported' );
 			}
-			
+
 			// If file or glog doesn't exist, error.
 			if( !path.count() ) {
 				error( "File or globbing pattern doesn't exist. I can't hash thin air! [#path.getPattern()#]" );
 			}
-			
+
 			// If verifying a hash, only one file can be matched
 			if( verify.len() && path.count() > 1 ) {
 				error( 'You can only verify a single hash/file at a time.' );
 			}
-			
+
 			// Loop over matched globbing patterns
 			path.apply( function( thisPath ){
 				var thisHash = hash( fileReadBinary( thisPath ), algorithm );
-				
+
 				// Verifying incoming hash
 				if( verify.len() ) {
 					// Doesn't match
@@ -108,10 +108,10 @@ component {
 						return;
 					}
 				}
-				
+
 				// Default output format is just the checksum
 				var formattedHash = thisHash;
-				
+
 				// Match the format of GNU textutils md5sum
 				if( format == 'md5sum' ) {
 					var formattedHash = thisHash & ' *' & listLast( thisPath, '/\' );
@@ -125,29 +125,29 @@ component {
 					fileWrite( thisPath & '.' & extension, formattedHash );
 				// If outputting
 				} else {
-					
+
 					print
 						.text( formattedHash )
 						.toConsole();
-						
+
 					// If we're doing more than one hash, put a line break in.
 					if( path.count() > 1 ) {
 						print.line();
 					}
-					
+
 				}
 			} );
-			
+
 	}
-	
+
 	function algorithmComplete() {
 		return variables.algorithms.listToArray();
 	}
-	
+
 	function formatComplete() {
 		return variables.formats.listToArray();
 	}
-	
-	
-	
+
+
+
 }

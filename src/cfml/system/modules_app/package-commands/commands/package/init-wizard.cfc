@@ -4,7 +4,7 @@
 component extends="init" {
 
 	/**
-	 * @name The human-readable name for this package 
+	 * @name The human-readable name for this package
 	 * @slug The ForgeBox or unique slug for this package (no spaces or special chars)
 	 * @version The version for this package, please use semantic versioning - 0.0.0
 	 * @private Would you like to mark your package as private, which prevents it to submit it to ForgeBox
@@ -14,8 +14,8 @@ component extends="init" {
 	 * @homepage Your package's homepage URL
 	 * @ignoreList Add commonly ignored files to the package's ignore list
 	 **/
-	function run( 
-		required name, 
+	function run(
+		required name,
 		required slug,
 		required version,
 		required boolean private,
@@ -27,6 +27,6 @@ component extends="init" {
 	){
 		// turn off wizard
 		arguments.wizard = false;
-		super.run( argumentCollection=arguments );		
+		super.run( argumentCollection=arguments );
 	}
 }

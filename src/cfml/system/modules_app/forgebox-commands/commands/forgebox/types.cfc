@@ -5,19 +5,19 @@
  * forgebox types
  * {code}
  * .
- 
+
  **/
 component {
-	
+
 	// DI
 	property name="forgeBox" inject="ForgeBox";
-	
+
 	/**
 	* Run Command
 	*/
 	function run() {
 		var APIToken = configService.getSetting( 'endpoints.forgebox.APIToken', '' );
-		
+
 		// typetotal,typename,typeid,typeslug
 		print.line()
 			.line( "Here is a listing of the available types in ForgeBox" )
@@ -28,7 +28,7 @@ component {
 			print.boldText( type.typeName & "(#type.numberOfActiveEntries#)" )
 				.line( '  (#type.typeSlug#)' );
 		}
-		
+
 	}
 
 }

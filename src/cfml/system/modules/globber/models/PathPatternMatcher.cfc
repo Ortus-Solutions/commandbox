@@ -6,7 +6,7 @@
 * @author Brad Wood
 *
 * I am a utility to match file system path patterns
-* 
+*
 * End a pattern with a slash to only match a directory. Start a pattern with a slash to start in the root. Ex:
 * - foo will match any file or folder in the directory tree
 * - /foo will only match a file or folder in the root
@@ -18,10 +18,10 @@
 * - foo*.txt will match any file or folder starting with "foo" and ending with .txt
 * - *foo will match any file or folder ending with "foo"
 * - a/* /z will match a/b/z but not a/b/c/z
-* 
+*
 * Use a double ** to match zero or more characters including slashes. This allows a pattern to span directories Ex:
 * - a/** /z will match a/z and a/b/z and a/b/c/z
-* 
+*
 * A question mark matches a single non-slash character
 * - /h?t matches hat but not ham or h/t
 *
@@ -41,19 +41,19 @@ component accessors="true" singleton {
 	boolean function matchPattern( required string pattern, required string path, boolean exact=false) {
 		// Normalize slashes
 		arguments.pattern = replace( arguments.pattern, '\', '/', 'all' );
-		arguments.path = replace( arguments.path, '\', '/', 'all' );	
-		
+		arguments.path = replace( arguments.path, '\', '/', 'all' );
+
 		if( !exact ) {
 			// Start all paths with /
 			arguments.path = ( arguments.path.startsWith( '/' ) ? arguments.path : '/' & arguments.path );
 		}
-		
+
 		// build a regex based on the pattern
 		var regex = arguments.pattern;
-		
+
 		// Escape any periods in the pattern
 		regex = replace( regex, '.', '\.', 'all' );
-		
+
 		// /**/ matches zero or more directories (at least one /)
 		regex = replace( regex, '/**/', '__zeroOrMoreDirs_', 'all' );
 		// Double ** matches anything
@@ -62,7 +62,7 @@ component accessors="true" singleton {
 		regex = replace( regex, '*', '__anythingButSlash__', 'all' );
 		// ? matches any single non-slash character
 		regex = replace( regex, '?', '__singleNonSlash__', 'all' );
-		
+
 		// Switch placeholders for actual regex
 		regex = replace( regex, '__zeroOrMoreDirs_', '(/.*/|/)', 'all' );
 		regex = replace( regex, '__anything_', '.*', 'all' );
@@ -74,25 +74,25 @@ component accessors="true" singleton {
 		if( !regex.endsWith( '/' ) ) {
 			regex &= '/?';
 		}
-				
+
 		// If pattern starts with slash
 		if( regex.startsWith( '/' ) || exact ) {
 			// add a ^ to match start of string
 			regex = '^' & regex;
 		} else {
 			// Otherwise, anything can precede this pattern
-			regex = '.*' & regex;			
+			regex = '.*' & regex;
 		}
 		if( exact ) {
 			regex &= '$';
-		// Anything can follow this pattern	
+		// Anything can follow this pattern
 		} else {
-			regex &= '.*';	
+			regex &= '.*';
 		}
-		
-		
+
+
 		//systemoutput(regex, true);
-		//systemoutput(arguments.path, true);		
+		//systemoutput(arguments.path, true);
 		return ( reFindNoCase( regex, arguments.path ) > 0 );
 	}
 

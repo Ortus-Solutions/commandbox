@@ -1,32 +1,32 @@
 /**
- * 
- * Remove those pesky trailing spaces from each line that some editors add.  
+ *
+ * Remove those pesky trailing spaces from each line that some editors add.
  * Can be run on a single file or aginst a list of files defined by a file globbing pattern.
- * 
+ *
  * {code:bash}
  * rts **.cf*
  * {code}
- * 
+ *
  * Skip the user confirmation with the --force flag.
- * 
+ *
  * {code:bash}
  * rts models/**.cfc --force
  * {code}
- * 
+ *
  * Print the file path of each file affected with the --verbose flag.
- * 
+ *
  * {code:bash}
  * rts includes/*.cfm --verbose
  * {code}
- * 
+ *
  * Exclude a list a file globbing patterns
- * 
+ *
  * {code:bash}
  * rts ** *.png,node_modules/
  * {code}
- * 
+ *
  * You can set global default parameters for this command to use like so:
- * 
+ *
  * {code:bash}
  * config set command.defaults.rts.force=true
  * config set command.defaults.rts.verbose=true

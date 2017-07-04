@@ -6,10 +6,10 @@
  * {code:bash}
  * recipe myRecipe.boxr
  * {code}
- * . 
- * You can also bind the recipe with arguments that will be replaced inside of your recipe.  
- * Pass any arguments as additional parameters to the recipe command.  
- * Named arguments will be accessable inside the recipe as  $arg1Name, $arg2Name, etc. 
+ * .
+ * You can also bind the recipe with arguments that will be replaced inside of your recipe.
+ * Pass any arguments as additional parameters to the recipe command.
+ * Named arguments will be accessable inside the recipe as  $arg1Name, $arg2Name, etc.
  * Positional args will be avaialble as $1, $2, etc.
  * .
  * Recipe will receive $name and $action
@@ -27,7 +27,7 @@
  * $arg1 may contain spaces
  * {code:bash}
  * rm "$arg1"
- * {code} 
+ * {code}
  * .
  * If an argument is not bound, no error will be thrown, and the name of the argument will be left in the command.
  * .
@@ -35,20 +35,20 @@
  * This can be useful for debugging or confirming the success of commands with no output.  Echo is on by default.
  * Note, "echo off" doesn't suppress the output of the commands, just the printing of the command and its arguments prior to execution.
  * This does not use the actual "echo" command and is a feature that only applies during the execution of recipes.
- * 
+ *
  * {code:bash}
  * echo on
  * # Now you see me
  * echo off
- * # Now you don't 
- * {code} 
- * 
+ * # Now you don't
+ * {code}
+ *
  **/
 component {
-	
+
 	// DI Properties
 	property name='parser' 	inject='Parser';
-	
+
 	/**
 	 * @recipeFile.hint The name of the recipe file to execute including extension.  Any text file may be used.
 	 **/
@@ -57,32 +57,32 @@ component {
 		var originalPath = getCWD();
 		// Make file canonical and absolute
 		arguments.recipeFile = fileSystemUtil.resolvePath( arguments.recipeFile );
-		
+
 		// Validate the file
 		if( !fileExists( arguments.recipeFile ) ){
 			return error( "File: #arguments.recipeFile# does not exist!" );
 		}
-		
+
 		var isEcho = true;
-		
+
 		// read it
 		var recipe = fileRead( arguments.recipeFile );
-		
+
 		// Parse arguments
 		var sArgs = parseArguments( arguments );
-		
+
 		// bind commands with arguments
 		recipe = bindArgs( recipe, sArgs );
-		
+
 		// split commands using carriage returns and/or line feeds
 		var commands = listToArray( recipe, chr( 10 ) & chr( 13 ) );
-		
+
 		// iterate and execute.
 		for( var thisCommand in commands ){
 			thisCommand = trim( thisCommand );
-			
+
 			// Ignore blank lines and comments.
-			// Comments are any line that starts with a hash followed by some form of whitespace. 
+			// Comments are any line that starts with a hash followed by some form of whitespace.
 			if( !thisCommand.len() || reFindNoCase( '##\s', thisCommand ) ) {
 				continue;
 			}
@@ -97,11 +97,11 @@ component {
 				print.line( thisCommand );
 				continue;
 			}
-					
+
 			try{
 				// If echo is on, display the command
 				if( isEcho ) {
-					print.line( thisCommand );	
+					print.line( thisCommand );
 				}
 				// run Command
 				runCommand( thisCommand );
@@ -112,7 +112,7 @@ component {
 			}
 		}
 
-		// cd to original path just incase 
+		// cd to original path just incase
 		shell.cd( originalPath );
 	}
 
@@ -133,7 +133,7 @@ component {
 	*/
 	private struct function parseArguments( required args ){
 		var parsedArgs = {};
-		
+
 		for( var arg in args ) {
 			argName = arg;
 			if( !isNull( args[arg] ) && arg != 'recipeFile' ) {

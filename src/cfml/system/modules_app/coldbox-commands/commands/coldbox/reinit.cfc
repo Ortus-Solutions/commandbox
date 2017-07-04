@@ -11,11 +11,11 @@
  * {code}
  **/
 component aliases="fwreinit" {
-	
+
 	// DI
 	property name="serverService" inject="ServerService";
 	property name="formatter" inject="formatter";
-	
+
 	/**
 	* @password The FWReinit password
 	* @name Name of the CommandBox server to reinit
@@ -28,7 +28,7 @@ component aliases="fwreinit" {
 		} else {
 			var thisURL = "#serverInfo.host#:#serverInfo.port#/?fwreinit=#arguments.password#";
 			print.greenLine( "Hitting...#thisURL#" );
-			http result="local.results" 
+			http result="local.results"
 				 url="#thisURL#";
 
 			if( findNoCase( "200", local.results.statusCode ) ){
@@ -38,7 +38,7 @@ component aliases="fwreinit" {
 					.redline( "error detail: " & local.results.errorDetail )
 					.line( trim( formatter.HTML2ANSI( local.results.filecontent ) ) );
 			}
-			
+
 		}
 	}
 

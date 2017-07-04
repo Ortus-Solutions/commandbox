@@ -11,31 +11,31 @@ component accessors="true" singleton {
 
 	// DI
 	property name="logger" inject="logbox:logger:{this}";
-	
+
 	/**
 	* Constructor
 	*/
 	function init(){
 		return this;
 	}
-	
+
 	/**
 	* I check for the existance of a property
 	*/
 	boolean function check( required any JSON, required string property ){
-		
+
 		var fullPropertyName = 'arguments.JSON' & toBracketNotation( arguments.property );
-				
+
 		return isDefined( fullPropertyName );
 	}
-	
+
 	/**
 	* I get a property from a deserialized JSON object and return it
 	*/
 	function show( required any JSON, required string property, defaultValue ){
-		
+
 		var fullPropertyName = 'arguments.JSON' & toBracketNotation( arguments.property );
-				
+
 		if( !isDefined( fullPropertyName ) ) {
 			if( structKeyExists( arguments, 'defaultValue' ) ) {
 				return arguments.defaultValue;
@@ -43,7 +43,7 @@ component accessors="true" singleton {
 				throw( message='Property [#arguments.property#] doesn''t exist.', type="JSONException");
 			}
 		}
-		
+
 		return evaluate( fullPropertyName );
 	}
 
@@ -53,11 +53,11 @@ component accessors="true" singleton {
 	*/
 	function set( required any JSON, required struct properties, required boolean thisAppend ){
 		var results = [];
-		
+
 		for( var prop in arguments.properties ) {
-			
+
 			var fullPropertyName = 'arguments.JSON' & toBracketNotation( prop );
-			
+
 			var propertyValue = arguments.properties[ prop ];
 			if( isJSON( propertyValue ) ) {
 				// We're trying to append and the target property exists
@@ -79,24 +79,24 @@ component accessors="true" singleton {
 								}
 							}
 						// structs
-						} else { 
-							targetProperty.append( complexValue, true );							
+						} else {
+							targetProperty.append( complexValue, true );
 						}
 						results.append( '#propertyValue# appended to #prop#' );
 						continue;
 					}
-					
+
 				}
 				// If any of the ifs above fail, we'll fall back through to this
-				
+
 				// Double check if value is really JSON due to Lucee bug
 				if( listFind( '",{,[', left( propertyValue, 1 ) ) ) {
 					evaluate( '#fullPropertyName# = deserializeJSON( propertyValue )' );
 				} else {
 					evaluate( '#fullPropertyName# = propertyValue' );
-				}			
+				}
 			} else {
-				evaluate( '#fullPropertyName# = propertyValue' );				
+				evaluate( '#fullPropertyName# = propertyValue' );
 			}
 			results.append( 'Set #prop# = #propertyValue#' );
 		}
@@ -108,19 +108,19 @@ component accessors="true" singleton {
 	* I clear a property from a deserialized JSON object.
 	*/
 	function clear( required any JSON, required string property ){
-				
+
 		// See if this string ends with array brackets containing a number greater than 1. Ex: test[3]
 		var search = reFind( "\[\s*([1-9][0-9]*)\s*\]$", property, 1, true );
-		
+
 		// Deal with array index
 		if( search.pos[1] ) {
 			// Index to remove
 			var arrayIndex = mid( property, search.pos[2], search.len[2] );
 			// Path to the array
 			var theArray = left( property, search.pos[1]-1 );
-			
+
 			// Verify the full path exists (including the array index)
-			
+
 			var fullPropertyName = 'arguments.JSON' & toBracketNotation( arguments.property );
 			if( !isDefined( fullPropertyName ) ) {
 				throw( message='#arguments.property# does not exist.', type="JSONException");
@@ -130,23 +130,23 @@ component accessors="true" singleton {
 			var propertyValue = evaluate( fullPropertyName );
 			// Remove the index
 			propertyValue.deleteAt( arrayIndex );
-			
+
 		// Else see if it's a dot-delimted struct path. Ex foo.bar
 		} else if( listLen( property, '.' ) >= 2 ) {
 			// Name of last key to remove
 			var last = listLast( property, '.' );
 			// path to containing struct
 			var everythingBut = listDeleteAt( property, listLen( property, '.' ), '.' );
-			
+
 			// Confirm it exists
 			var fullPropertyName = 'arguments.JSON' & toBracketNotation( everythingBut );
-			
+
 			if( !isDefined( fullPropertyName ) ) {
 				throw( message='#arguments.property# does not exist.', type="JSONException");
 			}
 			// Get a refernce to the containing struct
 			var propertyValue = evaluate( fullPropertyName );
-			// Remove the key			
+			// Remove the key
 			structDelete( propertyValue, last );
 		// Else just a simple propery name
 		} else {
@@ -157,7 +157,7 @@ component accessors="true" singleton {
 			// Remove it
 			structDelete( JSON, arguments.property );
 		}
-		
+
 	}
 
 
@@ -170,7 +170,7 @@ component accessors="true" singleton {
 			if( item.startsWith( '[' ) ) {
 				fullPropertyName &= item;
 			} else {
-				fullPropertyName &= '[ "#item#" ]';	
+				fullPropertyName &= '[ "#item#" ]';
 			}
 		}
 		return fullPropertyName;
@@ -179,7 +179,7 @@ component accessors="true" singleton {
 	// Recursive function to crawl struct and create a string that represents each property.
 	function addProp( props, prop, safeProp, targetStruct ) {
 		var propValue = ( len( prop ) ? evaluate( 'targetStruct#safeProp#' ) : targetStruct );
-		
+
 		if( isStruct( propValue ) ) {
 			// Add all of this struct's keys
 			for( var thisProp in propValue ) {
@@ -187,9 +187,9 @@ component accessors="true" singleton {
 				var newSafeProp = "#safeProp#['#thisProp#']";
 				props.append( newProp );
 				props = addProp( props, newProp, newSafeProp, targetStruct );
-			}			
+			}
 		}
-		
+
 		if( isArray( propValue ) ) {
 			// Add all of this array's indexes
 			var i = 0;
@@ -200,8 +200,8 @@ component accessors="true" singleton {
 				props = addProp( props, newProp, newSafeProp, targetStruct );
 			}
 		}
-		
+
 		return props;
 	}
-		
+
 }

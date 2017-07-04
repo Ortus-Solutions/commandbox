@@ -1,4 +1,4 @@
-﻿<!-----------------------------------------------------------------------
+<!-----------------------------------------------------------------------
 ********************************************************************************
 Copyright Since 2005 ColdBox Framework by Luis Majano and Ortus Solutions, Corp
 www.ortussolutions.com
@@ -10,25 +10,25 @@ Description :
 ----------------------------------------------------------------------->
 <cfcomponent output="false" hint="The default WireBox Injector configuration object" extends="wirebox.system.ioc.config.Binder">
 <cfscript>
-	
+
 	/**
 	* Configure WireBox, that's it!
 	*/
 	function configure(){
-		
+
 		// The WireBox configuration structure DSL
 		wireBox = {
 			// Default LogBox Configuration file
-			logBoxConfig 	= "wirebox.system.ioc.config.LogBox", 
-			
+			logBoxConfig 	= "wirebox.system.ioc.config.LogBox",
+
 			// CacheBox Integration OFF by default
 			cacheBox = {
-				enabled = false 
+				enabled = false
 				// configFile = "wirebox.system.ioc.config.CacheBox", An optional configuration file to use for loading CacheBox
 				// cacheFactory = ""  A reference to an already instantiated CacheBox CacheFactory
 				// classNamespace = "" A class path namespace to use to create CacheBox: Default=wirebox.system.cache or wirebox.system.cache
-			},			
-			
+			},
+
 			// Scope registration, automatically register a wirebox injector instance on any CF scope
 			// By default it registeres itself on application scope
 			scopeRegistration = {
@@ -41,26 +41,26 @@ Description :
 			customDSL = {
 				// namespace = "mapping name"
 			},
-			
+
 			// Custom Storage Scopes
 			customScopes = {
 				// annotationName = "mapping name"
 			},
-			
+
 			// Package scan locations
 			scanLocations = [],
-			
+
 			// Stop Recursions
 			stopRecursions = [],
-			
+
 			// Parent Injector to assign to the configured injector, this must be an object reference
 			parentInjector = "",
-			
+
 			// Register all event listeners here, they are created in the specified order
 			listeners = [
 				// { class="", name="", properties={} }
-			]			
+			]
 		};
-	}	
+	}
 </cfscript>
 </cfcomponent>

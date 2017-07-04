@@ -8,23 +8,23 @@
 * I am the folder endpoint.  I get packages from a local folder.
 */
 component accessors="true" implements="IEndpoint" singleton {
-		
+
 	// DI
 	property name="packageService"	inject="packageService";
 	property name="semanticVersion"	inject="provider:semanticVersion@semver";
-	
+
 	// Properties
 	property name="namePrefixes" type="string";
-	
+
 	function init() {
 		setNamePrefixes( 'folder' );
 		return this;
 	}
-		
+
 	public string function resolvePackage( required string package, boolean verbose=false ) {
-	
+
 		package = packageService.findPackageRoot( package );
-		
+
 		return package;
 
 	}
@@ -41,14 +41,14 @@ component accessors="true" implements="IEndpoint" singleton {
 			isOutdated = false,
 			version = 'unknown'
 		};
-		
+
 		if( directoryExists( arguments.package ) ) {
 			var boxJSON = packageService.readPackageDescriptor( arguments.package );
 			result.isOutdated = semanticVersion.isNew( current=arguments.version, target=boxJSON.version );
 			result.version = boxJSON.version;
 		}
-		
+
 		return result;
 	}
-	
+
 }

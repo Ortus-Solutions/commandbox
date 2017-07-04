@@ -5,11 +5,11 @@
 ********************************************************************************
 * @author Brad Wood, Luis Majano, Denny Valliant
 *
-* I am an interactive endpoint.  That means I can not only resolve packages, 
+* I am an interactive endpoint.  That means I can not only resolve packages,
 * but be logged into and can have packages published to me.
 */
 interface extends="IEndpoint" {
-		
+
 	// Returns access token
 	public string function createUser(
 		required string username,
@@ -17,12 +17,12 @@ interface extends="IEndpoint" {
 		required string email,
 		required string firstName,
 		required string lastName );
-	
+
 	// Returns access token
 	public string function login( required string userName, required string password );
-	
+
 	public function publish( required string path );
-	
+
 	public function unpublish( required string path, string version='' );
-	
+
 }

@@ -28,18 +28,18 @@ component{
 		// kick in an abort to exit shell, application timeout controls wirebox.
 		abort;
 	}
-	
+
 	function onError( any exception, string eventName ) {
-		
+
 		createObject( 'java', 'java.lang.System' ).setProperty( 'cfml.cli.exitCode', '1' );
-		
+
 		// Try to log this to LogBox
 		try {
     		application.wireBox.getLogBox().getRootLogger().error( '#exception.message# #exception.detail ?: ''#', exception.stackTrace );
 			application.wireBox.getInstance( 'interceptorService' ).announceInterception( 'onException', { exception=exception } );
     	// If it fails no worries, LogBox just probably isn't loaded yet.
 		} catch ( Any e ) {}
-		
+
 		// Give nicer message to user
 		var err = arguments.exception;
     	var CR = chr( 13 );
@@ -71,8 +71,8 @@ component{
     	systemOutput( '', true );
     	systemOutput( '#err.stacktrace#', true );
 
-    	//writeDump(var=arguments.exception, output="console"); 	
-    	
+    	//writeDump(var=arguments.exception, output="console");
+
 		// Give them a chance to read it
 		sleep( 30000 );
 	}

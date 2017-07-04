@@ -19,38 +19,38 @@
  * {code}
  **/
 component aliases="outdated" {
-	
+
 	processingdirective pageEncoding='UTF-8';
-	
+
 	// DI
 	property name="packageService" 	inject="PackageService";
 	property name="semanticVersion" inject="semanticVersion@semver";
-	
-	/**  
+
+	/**
 	 * @verbose.hint Outputs additional information about each package
 	 * @json.hint Outputs results as JSON
-	 * @system.hint When true, check the global CommandBox module's folder 
+	 * @system.hint When true, check the global CommandBox module's folder
 	 **/
 	function run(
 		boolean verbose=false,
 		boolean JSON=false,
 		boolean system=false ) {
-				
+
 		if( arguments.JSON ) {
 			arguments.verbose = false;
 		}
-		
+
 		if( arguments.system ) {
 			var directory = expandPath( '/commandbox' );
 		} else {
-			var directory = getCWD();			
+			var directory = getCWD();
 		}
-		
+
 		// package check
 		if( !packageService.isPackage( directory ) ) {
 			return error( '#directory# is not a package!' );
 		}
-		
+
 		// echo output
 		if( !arguments.JSON ) {
 			print.yellowLine( "Resolving Dependencies, please wait..." ).toConsole();
@@ -62,7 +62,7 @@ component aliases="outdated" {
 		// JSON output
 		if( arguments.JSON ) {
 			print.line( formatterUtil.formatJson( serializeJSON( aOutdatedDependencies ) ) );
-			return;			
+			return;
 		}
 
 		// normal output
@@ -76,25 +76,25 @@ component aliases="outdated" {
 		} else {
 			print.boldYellowLine( 'There are no outdated dependencies!' );
 		}
-		
+
 	}
 
 	/**
 	* Pretty print dependencies
 	*/
 	private function printDependencies( required array data, boolean verbose ) {
-		
-		for( var dependency in arguments.data ){ 
+
+		for( var dependency in arguments.data ){
 			// print it out
 			print[ ( dependency.dev ? 'boldYellow' : 'bold' ) ]( '* #dependency.slug# (#dependency.packageVersion#)' )
 				.boldRedLine( ' ─> new version: #dependency.newVersion#' );
-			// verbose data			
+			// verbose data
 			if( arguments.verbose ) {
 				if( len( dependency.name ) ) {
-					print[ ( dependency.dev ? 'yellowLine' : 'line' ) ]( dependency.name );	
+					print[ ( dependency.dev ? 'yellowLine' : 'line' ) ]( dependency.name );
 				}
 				if( len( dependency.shortDescription ) ) {
-					print[ ( dependency.dev ? 'yellowLine' : 'line' ) ]( dependency.shortDescription );	
+					print[ ( dependency.dev ? 'yellowLine' : 'line' ) ]( dependency.shortDescription );
 				}
 				print.line();
 			} // end verbose?

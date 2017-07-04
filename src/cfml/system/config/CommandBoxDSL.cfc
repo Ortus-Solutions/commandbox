@@ -13,7 +13,7 @@ component implements="wirebox.system.ioc.dsl.IDSLBuilder" accessors=true{
 	property name="injector";
 	property name="log";
 
-	/** 
+	/**
 	* Configure the DSL for operation and returns itself
 	*/
     public any function init( required any injector ) output=false {
@@ -22,15 +22,15 @@ component implements="wirebox.system.ioc.dsl.IDSLBuilder" accessors=true{
 		return this;
 	}
 
-	
-	/** 
+
+	/**
 	* Process an incoming DSL definition and produce an object with it.
 	* @output false
 	* @definition.hint The injection dsl definition structure to process. Keys: name, dsl
 	* @targetObject.hint The target object we are building the DSL dependency for. If empty, means we are just requesting building
 	*/
     public any function process( required definition, targetObject ) output=false {
-    	
+
 		var thisName 			= arguments.definition.name;
 		var thisType 			= arguments.definition.dsl;
 		var thisTypeLen 		= listLen(thisType,":");
@@ -53,7 +53,7 @@ component implements="wirebox.system.ioc.dsl.IDSLBuilder" accessors=true{
 
 				break;
 			}
-			//commandbox:{key}:{target} 
+			//commandbox:{key}:{target}
 			case 3: {
 				thisLocationType = getToken(thisType,2,":");
 				thisLocationKey  = getToken(thisType,3,":");
@@ -79,7 +79,7 @@ component implements="wirebox.system.ioc.dsl.IDSLBuilder" accessors=true{
 					case "ConfigSettings"		: {
 						var configService = getInjector().getInstance( 'ConfigService' );
 						var configSettings = configService.getConfigSettings();
-						
+
 						// Check for setting existance
 						if( configService.settingExists( thisLocationKey ) ){
 							return configService.getSetting( thisLocationKey );
@@ -105,7 +105,7 @@ component implements="wirebox.system.ioc.dsl.IDSLBuilder" accessors=true{
 								return moduleConfig[ thisLocationKey ].settings[ thisLocationToken ];
 							} else if( getLog().canDebug() ){
 								getLog().debug("The module requested: #thisLocationKey# does not exist in the loaded modules. Loaded modules are #structKeyList(moduleConfig)#");
-							}							
+							}
 						} else if( getLog().canDebug() ){
 							getLog().debug("The module requested: #thisLocationKey# does not exist in the loaded modules. Loaded modules are #structKeyList(moduleConfig)#");
 						}
@@ -114,11 +114,11 @@ component implements="wirebox.system.ioc.dsl.IDSLBuilder" accessors=true{
 				break;
 			}
 		}
-		
+
 		// debug info
 		if( getLog().canDebug() ){
 			getLog().debug("getColdboxDSL() cannot find dependency using definition: #arguments.definition.toString()#");
-		}    
+		}
 	}
 
 

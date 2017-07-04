@@ -1,4 +1,4 @@
-﻿<!-----------------------------------------------------------------------
+<!-----------------------------------------------------------------------
 ********************************************************************************
 Copyright Since 2005 ColdBox Framework by Luis Majano and Ortus Solutions, Corp
 www.ortussolutions.com
@@ -7,7 +7,7 @@ www.ortussolutions.com
 Author 	    :	Luis Majano
 Description :
 	The DSL processor for all CacheBox related stuff
-	
+
 ----------------------------------------------------------------------->
 <cfcomponent hint="The DSL processor for all CacheBox related stuff" implements="wirebox.system.ioc.dsl.IDSLBuilder" output="false">
 
@@ -18,11 +18,11 @@ Description :
 			instance = { injector = arguments.injector };
 			instance.cacheBox 	= instance.injector.getCacheBox();
 			instance.log		= instance.injector.getLogBox().getLogger( this );
-			
+
 			return this;
-		</cfscript>   
+		</cfscript>
     </cffunction>
-	
+
 	<!--- process --->
     <cffunction name="process" output="false" access="public" returntype="any" hint="Process an incoming DSL definition and produce an object with it.">
 		<cfargument name="definition" 	required="true" hint="The injection dsl definition structure to process. Keys: name, dsl"/>
@@ -32,7 +32,7 @@ Description :
 			var thisTypeLen 		= listLen(thisType,":");
 			var cacheName 			= "";
 			var cacheElement 		= "";
-			
+
 			// DSL stages
 			switch(thisTypeLen){
 				// CacheBox
@@ -63,7 +63,7 @@ Description :
 					break;
 				} // end level 3 main DSL
 			}
-		</cfscript>   	
-    </cffunction>		
-	
+		</cfscript>
+    </cffunction>
+
 </cfcomponent>

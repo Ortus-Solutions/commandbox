@@ -1,4 +1,4 @@
-﻿<!-----------------------------------------------------------------------
+<!-----------------------------------------------------------------------
 ********************************************************************************
 Copyright Since 2005 ColdBox Framework by Luis Majano and Ortus Solutions, Corp
 www.ortussolutions.com
@@ -7,7 +7,7 @@ www.ortussolutions.com
 Author 	    :	Luis Majano
 Description :
 	The main interface to produce WireBox storage scopes
-	
+
 ----------------------------------------------------------------------->
 <cfinterface hint="The main interface to produce WireBox storage scopes">
 
@@ -20,7 +20,7 @@ Description :
     <cffunction name="getFromScope" output="false" access="public" returntype="any" hint="Retrieve an object from scope or create it if not found in scope">
     	<cfargument name="mapping" 			type="any" required="true"  hint="The object mapping" colddoc:generic="wirebox.system.ioc.config.Mapping"/>
     	<cfargument name="initArguments" 	type="any" required="false" hint="The constructor structure of arguments to passthrough when initializing the instance" colddoc:generic="struct"/>
-		
+
 	</cffunction>
-	
+
 </cfinterface>

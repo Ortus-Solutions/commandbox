@@ -3,7 +3,7 @@
  * .
  * Rename a file
  * {code:bash}
- * mv sample.html sample.htm 
+ * mv sample.html sample.htm
  * {code}
  * .
  * Move a file
@@ -13,15 +13,15 @@
  * .
  * Rename a directory
  * {code:bash}
- * mv foo/ bar/ 
+ * mv foo/ bar/
  * {code}
  * .
  * Move a directory
  * {code:bash}
- * mv foo/ bar/foo/ 
+ * mv foo/ bar/foo/
  * {code}
  *
- **/	
+ **/
 component aliases="rename" {
 
 	/**
@@ -29,14 +29,14 @@ component aliases="rename" {
 	 * @newPath.hint The new name of the file or directory
 	 **/
 	function run( required Globber path, required newPath )  {
-		
+
 		// Make path canonical and absolute
 		var thisNewPath 	= fileSystemUtil.resolvePath( arguments.newPath );
-		
+
 		if( path.count() > 1 && !directoryExists( thisNewPath ) ) {
 			error( '[#thisNewPath#] is not a directory.' );
 		}
-		
+
 		path.apply( function( thisPath ){
 			print.redLine( thisPath );
 			// It's a directory
@@ -49,11 +49,11 @@ component aliases="rename" {
 				// move file
 				fileMove( thisPath, thisNewPath );
 				print.greenLine( "File renamed/moved to #thisNewPath#" );
-			} else {	
+			} else {
 				return error( "File/directory does not exist: #thisPath#" );
-			}	
+			}
 		} );
-		
+
 	}
-	
+
 }

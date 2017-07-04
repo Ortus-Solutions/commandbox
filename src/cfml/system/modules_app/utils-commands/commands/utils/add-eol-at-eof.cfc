@@ -1,38 +1,38 @@
 /**
- * 
+ *
  * Ensure files have a trailing newline to adhere to POSIX standard.  Operates on a single file
  * or multiple files as defined by a file globbing pattern.
- * 
+ *
  * {code:bash}
  * eol **.cf*
  * {code}
- * 
+ *
  * To skip the confirmation, use the --force flag.
- * 
+ *
  * {code:bash}
  * eol models/**.cfc --force
  * {code}
- * 
+ *
  * Print the file path of each file affected with the --verbose flag.
- * 
+ *
  * {code:bash}
  * eol includes/*.cfm --verbose
  * {code}
- * 
+ *
  * Exclude a list a globber patterns
- * 
+ *
  * {code:bash}
  * eol ** *.png,node_modules/
  * {code}
- * 
+ *
  * You can set global default parameters for this command to use like so:
- * 
+ *
  * {code:bash}
  * config set command.defaults.eol.force=true
  * config set command.defaults.eol.verbose=true
  * config set command.defaults.eol.exclude=.git/,*.png
  * {code}
- * 
+ *
 **/
 component aliases="eol" {
 	property name="pathPatternMatcher" inject="provider:pathPatternMatcher@globber";

@@ -12,7 +12,7 @@
  * tokenReplace path=file.txt token="foo" replacement="bar"
  * {code}
  *
- **/	
+ **/
 component {
 
 	/**
@@ -26,9 +26,9 @@ component {
 		required String token,
 		required String replacement,
 		boolean verbose=false )  {
-		
+
 		path.apply( function( thisPath ) {
-			
+
 			// It's a file
 			if( fileExists( thisPath ) ){
 				if( verbose ) {
@@ -36,11 +36,11 @@ component {
 				}
 				var fileContents = fileRead( thisPath );
 				if( fileContents.findNoCase( token ) ) {
-					fileWrite( thisPath, fileContents.replaceNoCase( token, replacement, 'all' ) );					
+					fileWrite( thisPath, fileContents.replaceNoCase( token, replacement, 'all' ) );
 				}
 			}
 
-		} );			
+		} );
 	}
-	
+
 }

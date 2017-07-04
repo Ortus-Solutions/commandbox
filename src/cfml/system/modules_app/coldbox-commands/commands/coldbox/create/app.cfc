@@ -36,18 +36,18 @@
 * {code:bash}
 * coldbox create app myApp --installColdBox --installTestBox
 * {code}
-* 
+*
 **/
 component {
 
 	// DI
 	property name="packageService" 	inject="PackageService";
-	
+
 	/**
 	* Constructor
 	*/
 	function init(){
-		
+
 		// Map these shortcut names to the actual ForgeBox slugs
 		variables.templateMap = {
 			'Advanced'			= 'cbtemplate-advanced',
@@ -57,12 +57,12 @@ component {
 			'Elixir'			= 'cbtemplate-elixir',
 			'rest'				= 'cbtemplate-rest',
 			'Simple'			= 'cbtemplate-simple',
-			'SuperSimple'		= 'cbtemplate-supersimple'			
+			'SuperSimple'		= 'cbtemplate-supersimple'
 		};
-		
+
 		return this;
 	}
-	
+
 	/**
 	 * @name The name of the app you want to create
 	 * @skeleton The name of the app skeleton to generate (or an endpoint ID like a forgebox slug)
@@ -86,7 +86,7 @@ component {
 		boolean wizard=false,
 		boolean initWizard=false
 	) {
-		
+
 		// Check for wizard argument
 		if( arguments.wizard ){
 			runCommand( 'coldbox create app-wizard' );
@@ -95,7 +95,7 @@ component {
 
 		// This will make the directory canonical and absolute
 		arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
-		
+
 		// Validate directory, if it doesn't exist, create it.
 		if( !directoryExists( arguments.directory ) ) {
 			directoryCreate( arguments.directory );
@@ -116,7 +116,7 @@ component {
 			production = true,
 			currentWorkingDirectory = arguments.directory
 		);
-		
+
 		// Check for the @appname@ in .project files
 		if( fileExists( "#arguments.directory#/.project" ) ){
 			var sProject = fileRead( "#arguments.directory#/.project" );
@@ -126,24 +126,24 @@ component {
 
 		// Init, if not a package as a Box Package
 		if( arguments.init && !packageService.isPackage( arguments.directory ) ) {
-			var originalPath = getCWD(); 
+			var originalPath = getCWD();
 			// init must be run from CWD
 			shell.cd( arguments.directory );
 			command( 'init' )
 				.params(
-					name=arguments.name, 
+					name=arguments.name,
 					slug=replace( arguments.name, ' ', '', 'all' ),
 					wizard=arguments.initWizard )
-				.run(); 
+				.run();
 			shell.cd( originalPath );
 		}
-		
+
 		// Install the ColdBox platform
 		if( arguments.installColdBox || arguments.installColdBoxBE ) {
-			
+
 			// Flush out stuff from above
 			print.toConsole();
-			
+
 			packageService.installPackage(
 				ID = 'coldbox#iif( arguments.installColdBoxBE, de( '-be' ), de( '' ) )#',
 				directory = arguments.directory,
@@ -156,10 +156,10 @@ component {
 
 		// Install TestBox
 		if( arguments.installTestBox ) {
-			
+
 			// Flush out stuff from above
 			print.toConsole();
-			
+
 			packageService.installPackage(
 				ID = 'testbox',
 				directory = arguments.directory,
@@ -169,7 +169,7 @@ component {
 				currentWorkingDirectory = arguments.directory
 			);
 		}
-		
+
 	}
 
 	/**

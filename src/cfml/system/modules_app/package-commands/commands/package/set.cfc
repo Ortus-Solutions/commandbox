@@ -37,30 +37,30 @@
  * {code:bash}
  * package set contributors="[ 'brad@coldbox.org' ]" --append
  * {code}
- * 
+ *
  **/
 component {
-	
+
 	property name="packageService" inject="PackageService";
-	property name="JSONService" inject="JSONService"; 
-	
+	property name="JSONService" inject="JSONService";
+
 	/**
 	 * This param is a dummy param just to get the custom completor to work.
-	 * The actual parameter names will be whatever property name the user wants to set  
-	 * @_.hint Pass any number of property names in followed by the value to set 
-	 * @_.optionsUDF completeProperty  
+	 * The actual parameter names will be whatever property name the user wants to set
+	 * @_.hint Pass any number of property names in followed by the value to set
+	 * @_.optionsUDF completeProperty
 	 * @append.hint If setting an array or struct, set to true to append instead of overwriting.
 	 * @system.hint When true, show box.json data in the global CommandBox folder
 	 **/
 	function run( _, boolean append=false, boolean system=false ) {
-		var thisAppend = arguments.append;					
-		
+		var thisAppend = arguments.append;
+
 		if( arguments.system ) {
 			var directory = expandPath( '/commandbox' );
 		} else {
-			var directory = getCWD();			
+			var directory = getCWD();
 		}
-		
+
 		// Remove dummy args
 		structDelete( arguments, '_' );
 		structDelete( arguments, 'append' );
@@ -73,15 +73,15 @@ component {
 		// Read without defaulted values
 		var boxJSON = packageService.readPackageDescriptorRaw( directory );
 
-		var results = JSONService.set( boxJSON, arguments, thisAppend ); 
+		var results = JSONService.set( boxJSON, arguments, thisAppend );
 
 		// Write the file back out.
 		PackageService.writePackageDescriptor( boxJSON, directory );
-		
+
 		for( var message in results ) {
 			print.greeLine( message );
 		}
-			
+
 	}
 
 	// Dynamic completion for property name based on contents of box.json

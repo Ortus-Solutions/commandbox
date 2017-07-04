@@ -21,7 +21,7 @@ component accessors="true" singleton {
 	property name="InterceptorService"	inject="InterceptorService";
 	property name="ModuleService"		inject="ModuleService";
 	property name="Util"				inject="wirebox.system.core.util.Util";
-	
+
 
 	/**
 	* The java jline reader class.
@@ -65,7 +65,7 @@ component accessors="true" singleton {
 	* to be fed into another OS command.
 	*/
 	property name="shellType" default="interactive";
-	
+
 
 	/**
 	 * constructor
@@ -81,7 +81,7 @@ component accessors="true" singleton {
 		any outputStream,
 		required string userDir,
 		required string tempDir,
-		boolean asyncLoad=true 
+		boolean asyncLoad=true
 	){
 		// Possible byte order marks
 		variables.BOMS = [
@@ -132,12 +132,12 @@ component accessors="true" singleton {
 
 		// Create temp dir & set
 		setTempDir( variables.tempdir );
-		
+
 		getInterceptorService().configure();
 		getModuleService().configure();
-				
+
 		getModuleService().activateAllModules();
-		
+
 		// load commands
 		if( variables.initArgs.asyncLoad ){
 			thread name="commandbox.loadcommands#getTickCount()#"{
@@ -172,7 +172,7 @@ component accessors="true" singleton {
 	 * @clear.hint clears the screen after reload
  	 **/
 	Shell function reload( Boolean clear=true ){
-		
+
 		setDoClearScreen( arguments.clear );
 		setReloadshell( true );
     	setKeepRunning( false );
@@ -210,7 +210,7 @@ component accessors="true" singleton {
 	 * @return the response from the user
  	 **/
 	string function ask( message, string mask='', string defaultResponse='' ) {
-		
+
 		try {
 			// read reponse while masking input
 			var input = variables.reader.readLine(
@@ -226,7 +226,7 @@ component accessors="true" singleton {
 			throw( message='CANCELLED', type="UserInterruptException");
 		} finally{
 			// Reset back to default prompt
-			setPrompt();			
+			setPrompt();
 		}
 
 		return input;
@@ -310,10 +310,10 @@ component accessors="true" singleton {
 	 * @directory.hint directory to use
   	 **/
 	Shell function setTempDir( required directory ){
-       
+
        // Create it if it's not there.
        if( !directoryExists( arguments.directory ) ) {
-	        directoryCreate( arguments.directory );       	
+	        directoryCreate( arguments.directory );
        }
 
     	// set now that it is created.
@@ -383,20 +383,20 @@ component accessors="true" singleton {
 				if( arguments.input != "" ){
 					variables.keepRunning = false;
 				}
-								
+
 				// Shell stops on this line while waiting for user input
 		        if( arguments.silent ) {
 		        	line = variables.reader.readLine( javacast( "char", ' ' ) );
 				} else {
 		        	line = variables.reader.readLine();
 				}
-	        	
+
 	        	// If the standard input isn't avilable, bail.  This happens
 	        	// when commands are piped in and we've reached the end of the piped stream
 	        	if( !isDefined( 'line' ) ) {
 	        		return false;
 	        	}
-	        	
+
 	        	// Clean BOM from start of text in case something was piped from a file
 	        	BOMS.each( function( i ){
 	        		if( line.startsWith( i ) ) {
@@ -405,7 +405,7 @@ component accessors="true" singleton {
 	        	} );
 
 	            // If there's input, try to run it.
-				if( len( trim( line ) ) ) { 
+				if( len( trim( line ) ) ) {
 					callCommand( command=line, initialCommand=true );
 				}
 
@@ -425,31 +425,31 @@ component accessors="true" singleton {
 
 	/**
 	 * Call a command
- 	 * @command.hint Either a string containing a text command, or an array of tokens representing the command and parameters. 
+ 	 * @command.hint Either a string containing a text command, or an array of tokens representing the command and parameters.
  	 * @returnOutput.hint True will return the output of the command as a string, false will send the output to the console.  If command outputs nothing, an empty string will come back.
  	 * @piped.hint Any text being piped into the command.  This will overwrite the first parameter (pushing any positional params back)
  	 * @initialCommand.hint Since commands can recursivley call new commands via this method, this flags the first in the chain so exceptions can bubble all the way back to the beginning.
- 	 * In other words, if "foo" calls "bar", which calls "baz" and baz errors, all three commands are scrapped and do not finish execution. 
+ 	 * In other words, if "foo" calls "bar", which calls "baz" and baz errors, all three commands are scrapped and do not finish execution.
  	 **/
-	function callCommand( 
+	function callCommand(
 		required any command,
 		returnOutput=false,
 		string piped,
 		boolean initialCommand=false )  {
-		
+
 		// Commands a loaded async in interactive mode, so this is a failsafe to ensure the CommandService
 		// is finished.  Especially useful for commands run onCLIStart.  Wait up to 5 seconds.
 		var i = 0;
 		while( !CommandService.getConfigured() && ++i<50 ) {
 			sleep( 100  );
 		}
-				
+
 		// Flush history buffer to disk. I could do this in the quit command
 		// but then I would lose everything if the user just closes the window
 		variables.reader.getHistory().flush();
-			
+
 		try{
-			
+
 			if( isArray( command ) ) {
 				if( structKeyExists( arguments, 'piped' ) ) {
 					var result = variables.commandService.runCommandTokens( arguments.command, piped );
@@ -459,7 +459,7 @@ component accessors="true" singleton {
 			} else {
 				var result = variables.commandService.runCommandLine( arguments.command );
 			}
-		
+
 		// This type of error is recoverable-- like validation error or unresolved command, just a polite message please.
 		} catch ( commandException var e) {
 			// If this is a nested command, pass the exception along to unwind the entire stack.
@@ -486,7 +486,7 @@ component accessors="true" singleton {
 				printError( e );
 			}
 		}
-		
+
 		// Return the output to the caller to deal with
 		if( arguments.returnOutput ) {
 			if( isNull( result ) ) {
@@ -495,7 +495,7 @@ component accessors="true" singleton {
 				return result;
 			}
 		}
-		
+
 		// We get to output the results ourselves
 		if( !isNull( result ) && !isSimpleValue( result ) ){
 			if( isArray( result ) ){
@@ -522,14 +522,14 @@ component accessors="true" singleton {
 	 * @err.hint Error object to print (only message is required)
   	 **/
 	Shell function printError( required err ){
-		
+
 		setExitCode( 1 );
-		
+
 		// If CommandBox blows up while starting, the interceptor service won't be ready yet.
 		if( getInterceptorService().getConfigured() ) {
 			getInterceptorService().announceInterception( 'onException', { exception=err } );
 		}
-		
+
 		variables.logger.error( '#arguments.err.message# #arguments.err.detail ?: ''#', arguments.err.stackTrace ?: '' );
 
 		variables.reader.print( variables.print.whiteOnRedLine( 'ERROR (#variables.version#)' ) );

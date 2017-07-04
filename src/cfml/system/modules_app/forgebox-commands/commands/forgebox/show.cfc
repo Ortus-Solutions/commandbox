@@ -1,5 +1,5 @@
 /**
- * Show forgeBox entries by slug or type.  You can sort entires by most popular, recently updated, and newest.  
+ * Show forgeBox entries by slug or type.  You can sort entires by most popular, recently updated, and newest.
  * You can also filter for specific entry types such as cachebox, interceptors, modules, logbox, etc.
  * Pro Tip: The first parameter will accept a type or a slug.
  * .
@@ -32,15 +32,15 @@
  *
  **/
 component aliases="show" {
-	
+
 	// DI
 	property name="forgeBox" 			inject="ForgeBox";
 	property name="semanticVersion"		inject="semanticVersion@semver";
-	
+
 	function onDIComplete() {
 		variables.forgeboxOrders = forgebox.ORDER;
 	}
-	
+
 	/**
 	* @orderBy.hint How to order results. Possible values are popular, new, installs, recent or a specific ForgeBox type
 	* @orderBy.optionsUDF orderByComplete
@@ -49,28 +49,28 @@ component aliases="show" {
 	* @startRow.hint Row to start returning records on
 	* @maxRows.hint Number of records to return
 	* @slug.hint Slug of a specific ForgeBox entry to show.
-	* 
+	*
 	**/
-	function run( 
+	function run(
 		orderBy='popular',
 		type,
 		number startRow,
 		number maxRows,
-		slug 
+		slug
 	){
 		var APIToken = configService.getSetting( 'endpoints.forgebox.APIToken', '' );
-		
+
 		print.yellowLine( "Contacting ForgeBox, please wait..." ).toConsole();
-				
+
 		// Default parameters
 		arguments.type 		= arguments.type ?: '';
 		arguments.startRow 	= arguments.startRow ?: 1;
 		arguments.maxRows 	= arguments.maxRows ?: 0;
 		arguments.slug 		= arguments.slug ?: '';
 		var typeLookup = '';
-		
+
 		// Validate orderBy
-		var orderLookup = forgeboxOrders.findKey( orderBy ); 
+		var orderLookup = forgeboxOrders.findKey( orderBy );
 		if( !orderLookup.len() ) {
 			// If there is a type supplied, quit here
 			if( len( type ) ){
@@ -85,23 +85,23 @@ component aliases="show" {
 					if( !len( slug ) ) {
 						try {
 							var entryData = forgebox.getEntry( orderBy, APIToken );
-							slug = orderBy;		
+							slug = orderBy;
 						} catch( any e ) {
 							if( e.detail contains 'The entry slug sent is invalid' ) {
-								error( 'Parameter [#orderBy#] isn''t a valid orderBy, type, or slug.  Valid orderBys are [#lcase( listChangeDelims( forgeboxOrders.keyList(), ', ' ) )#] See possible types with "forgebox types".' );								
+								error( 'Parameter [#orderBy#] isn''t a valid orderBy, type, or slug.  Valid orderBys are [#lcase( listChangeDelims( forgeboxOrders.keyList(), ', ' ) )#] See possible types with "forgebox types".' );
 							} else {
-								rethrow;								
+								rethrow;
 							}
 						}
-					} 
-				}		
+					}
+				}
 			}
 		}
-		
+
 		// Validate Type if we got one
 		if( len( type ) ) {
 			typeLookup = lookupType( type );
-			
+
 			// Were we able to resolve what they typed in?
 			if( !len( typeLookup ) ) {
 				error( 'Type value of [#type#] is invalid. See possible types with "forgebox types".' );
@@ -112,12 +112,12 @@ component aliases="show" {
 		if( hasError() ){
 			return;
 		}
-		
+
 		try {
-			
-			// We're displaying a single entry	
+
+			// We're displaying a single entry
 			if( len( slug ) ) {
-	
+
 				// We might have gotten this above
 				var entryData = entryData ?: forgebox.getEntry( slug, APIToken );
 				// numberOfRatings,boxjson,isActive,typeName,version,hits,sourceURL,slug,createdDate,typeSlug,downloads,updatedDate,entryID,
@@ -125,7 +125,7 @@ component aliases="show" {
 				if( !entryData.isActive ) {
 					error( 'The ForgeBox entry [#entryData.title#] is inactive, we highly recommed NOT installing it or contact the author about it' );
 				}
-				
+
 				entryData.versions.sort( function( a, b ) { return semanticVersion.compare( b.version, a.version ) } );
 				print.line();
 				print.blackOnWhite( ' #entryData.title# ' )
@@ -136,9 +136,9 @@ component aliases="show" {
 					.line()
 					.line( 'Type: #entryData.typeName#' )
 					.line( 'Slug: "#entryData.slug#"' )
-					.line( 'Summary: #entryData.summary#' )					
+					.line( 'Summary: #entryData.summary#' )
 					.text( 'Versions: ' );
-					
+
 				var prevMajor = val( entryData.versions[ 1 ].version.listGetAt( 1, '.' ) );
 				var majorCount = 0;
 				var versionLine = '';
@@ -166,8 +166,8 @@ component aliases="show" {
 					if( lines > 0 ) { print.text( '          ' ); }
 					print.line( versionLine & ( versionsSkipped > 0 ? ' ( #versionsSkipped# more...)' : '' ) );
 				}
-				
-				 
+
+
 				print.line( 'Created On: #dateFormat( entryData.createdDate )#' )
 					.line( 'Updated On: #dateFormat( entryData.updatedDate )#' )
 					.line( 'ForgeBox Views: #numberFormat( entryData.hits )#' )
@@ -180,21 +180,21 @@ component aliases="show" {
 					.line()
 					.cyanLine( 'Visit in ForgeBox at: #forgebox.getEndpointURL()#/view/#entryData.slug#' )
 					.line();
-				
+
 			// List of entries
 			} else {
 				// Get the entries
 				var entries = forgebox.getEntries( orderBy=orderBy, maxRows=maxRows, startRow=startRow, typeSlug=typeLookup, APIToken=APIToken );
-				
+
 				// entrylink,createdate,lname,isactive,installinstructions,typename,version,hits,coldboxversion,sourceurl,slug,homeurl,typeslug,
 				// downloads,entryid,fname,changelog,updatedate,downloadurl,title,entryrating,summary,username,description
-				
+
 				print.line();
 				var activeCount = 0;
 				for( var entry in entries.results ) {
 					if( entry.isactive ) {
 						activeCount++;
-						print.blackOnWhite( ' #entry.title# ' ); 
+						print.blackOnWhite( ' #entry.title# ' );
 							print.boldText( '   ( #entry.user.fname# #entry.user.lname# )' );
 							print.boldGreenLine( '   #repeatString( '*', val( entry.avgRating ) )#' );
 						print.line( 'Type: #entry.typeName#' );
@@ -204,24 +204,24 @@ component aliases="show" {
 						print.line();
 					}
 				}
-						
+
 				print.line();
 				print.boldCyanline( '  Found #activeCount# record#(activeCount == 1 ? '': 's')#.' );
-				
+
 			} // end single entry check
-				
+
 		} catch( forgebox var e ) {
 			// This can include "expected" errors such as "slug not found"
 			return error( '#e.message##CR##e.detail#' );
 		}
-		
+
 	}
 
-	// Auto-complete 
+	// Auto-complete
 	function lookupType( type ) {
 		var APIToken = configService.getSetting( 'endpoints.forgebox.APIToken', '' );
 		var typeLookup = '';
-		
+
 		// See if they entered a type name or slug
 		for( var thistype in forgebox.getCachedTypes( APIToken=APIToken ) ) {
 			if( thisType.typeName == type || thisType.typeSlug == type ) {
@@ -229,34 +229,34 @@ component aliases="show" {
 				break;
 			}
 		}
-		
+
 		// This will be empty if not found
 		return typeLookup;
-		
+
 	}
 
 	// Auto-complete list of types
 	function typeComplete( result = [] ) {
 		var APIToken = configService.getSetting( 'endpoints.forgebox.APIToken', '' );
-			
+
 		// Loop over types and append all active ForgeBox entries
 		for( var thistype in forgebox.getCachedTypes( APIToken=APIToken ) ) {
 			arguments.result.append( thisType.typeSlug );
 		}
-		
+
 		return arguments.result;
 	}
 
 	// Auto-complete list of orderBys (can also include types and slugs)
 	function orderByComplete() {
 		var result = [ 'popular', 'new', 'recent', 'installs' ];
-			
+
 		// Add types
 		result = typeComplete( result );
-		
+
 		// For now, I'm not going to add slugs since it will always be too many to display without prompting the user
-		
+
 		return result;
 	}
 
-} 
+}

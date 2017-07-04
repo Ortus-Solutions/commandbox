@@ -11,19 +11,19 @@ component accessors="true" singleton {
 
 	// DI
 	property name="packageService" 	inject="PackageService";
-	
+
 	/**
 	* Constructor
 	*/
 	function init(){
 		return this;
 	}
-	
+
 	/**
 	* Gets a TestBox runner URL from box.json with an optional slug to look up.  If no slug is passed, the first runner will be used
 	* @directory The directory that is the root of the package
 	* @slug An optional runner slug to look for in the list of runners
-	*/	
+	*/
 	public function getTestBoxRunner( required string directory, string slug='' ) {
 		// Get box.json, create empty if it doesn't exist
 		var boxJSON 	= packageService.readPackageDescriptor( arguments.directory );
@@ -44,21 +44,21 @@ component accessors="true" singleton {
 		}
 
 		// Just get the first one we can find
-		 
+
 		// simple runner?
 		if( isSimpleValue( runners ) ){
 			return runners;
 		}
-		
+
 		// Array of runners?
 		if( isArray( runners ) ) {
 			// get the first definition in the list to use
 			var firstRunner = runners[ 1 ];
 			return firstRunner[ listFirst( structKeyList( firstRunner ) ) ];
 		}
-		
+
 		// We failed to find anything
 		return '';
 	}
-	
-} 
+
+}

@@ -14,18 +14,18 @@ component {
 
 	property name="forgeBox" inject="ForgeBox";
 	property name="configService" inject="ConfigService";
-		
-	/**  
+
+	/**
 	* @username The ForgeBox username to switch to.
 	* @skipLogin If username isn't authenticated, retuen an error instead of prompting with login
 	**/
 	function run( required string username, boolean skipLogin=false ){
-		
+
 		var tokens = configService.getSetting( 'endpoints.forgebox.tokens', {} );
 		if( !len( arguments.username ) ) {
 			error( 'Please provide a ForgeBox username to use.' );
 		}
-		
+
 		// If this username exists
 		if( tokens.keyExists( arguments.username ) ) {
 			// Set the active token

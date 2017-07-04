@@ -22,7 +22,7 @@ component {
 	* @script Generate content in script markup or tag markup
 	* @open.hint Open the interceptor once generated
 	**/
-	function run( 
+	function run(
 		required name,
 		points='',
 		description="I am a new interceptor",
@@ -71,7 +71,7 @@ component {
 			var methodContent = '';
 			var allTestsCases = '';
 			var thisTestCase = '';
-			
+
 			for( var thisPoint in listToArray( arguments.points ) ) {
 				methodContent = methodContent & replaceNoCase( interceptorMethod, '|interceptionPoint|', thisPoint, 'all' ) & CR & CR;
 
@@ -97,7 +97,7 @@ component {
 			print.redLine( "Exiting..." );
 			return;
 		}
-		
+
 		file action='write' file='#interceptorPath#' mode ='777' output='#interceptorContent#';
 		print.greenLine( '#interceptorPath#' );
 
@@ -109,11 +109,11 @@ component {
 			file action='write' file='#testPath#' mode ='777' output='#interceptorTestContent#';
 			print.greenLine( 'Created #testPath#' );
 			// open file
-			if( arguments.open ){ openPath( testPath ); }			
+			if( arguments.open ){ openPath( testPath ); }
 		}
 
 		// open file
-		if( arguments.open ){ openPath( interceptorPath ); }			
+		if( arguments.open ){ openPath( interceptorPath ); }
 	}
 
 }

@@ -16,7 +16,7 @@
  * cp foo/ bar/
  * {code}
  *
- **/	
+ **/
 component aliases="copy" {
 
 	/**
@@ -26,16 +26,16 @@ component aliases="copy" {
 	 * @filter.hint A directory copy filter string that uses "*" as a wildcard, for example, "*.cfm"
 	 **/
 	function run( required Globber path, required newPath, boolean recurse=false, string filter="*" )  {
-		
+
 		// Make path canonical and absolute
 		var thisNewPath = fileSystemUtil.resolvePath( arguments.newPath );
-		
+
 		if( path.count() > 1 && !directoryExists( thisNewPath ) ) {
 			error( '[#thisNewPath#] is not a directory.' );
 		}
-		
+
 		path.apply( function( thisPath ){
-			
+
 			// It's a directory
 			if( directoryExists( thisPath ) ) {
 				// rename directory
@@ -47,11 +47,11 @@ component aliases="copy" {
 				DirectoryCreate( getDirectoryFromPath( thisNewPath ), true, true );
 				fileCopy( thisPath, thisNewPath );
 				print.greenLine( "File copied to #thisNewPath#" );
-			} else {	
+			} else {
 				return error( "File/directory does not exist: #thisPath#" );
 			}
-				
+
 		} );
 	}
-	
+
 }

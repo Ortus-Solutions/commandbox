@@ -4,8 +4,8 @@
  * {code}
  * testbox watch
  * {code}
- * 
- * In order for this command to work, you need to have started your server and configured the 
+ *
+ * In order for this command to work, you need to have started your server and configured the
  * URL to the test runner in your box.json.
  *
  * {code}
@@ -13,7 +13,7 @@
  * server start
  * testbox watch
  * {code}
- * 
+ *
  * If you need more control over what tests run and their output, you can set additional options in your box.json
  * which will be picked up automatically by "testbox run" whe it fires.
  *
@@ -24,7 +24,7 @@
  * package set testbox.watchDelay=1000
  * package set testbox.watchPaths=/models/**.cfc
  * {code}
- * 
+ *
  * This command will run in the foreground until you stop it.  When you are ready to shut down the watcher, press Ctrl+C.
  *
  **/
@@ -35,16 +35,16 @@ component {
 
 	variables.WATCH_DELAY 	= 500;
 	variables.PATHS 		= "**.cfc";
-	
+
 	/**
 	 * @paths Command delimited list of file globbing paths to watch relative to the working directory, defaults to **.cfc
 	 * @delay How may milliseconds to wait before polling for changes, defaults to 500 ms
 	 **/
 	function run(
-		string paths,  
+		string paths,
 	 	number delay
 	) {
-		
+
 		// Get testbox options from package descriptor
 		var boxOptions = packageService.readPackageDescriptor( getCWD() ).testbox;
 
@@ -56,7 +56,7 @@ component {
 			// should return null if not found
 			return;
 		}
-		
+
 		// Determine watching patterns, either from arguments or boxoptions or defaults
 		var globbingPaths = arguments.paths ?: getOptionsWatchers() ?: variables.PATHS;
 		// handle non numberic config and put a floor of 150ms
@@ -64,23 +64,23 @@ component {
 
 		// Tabula rasa
 		command( 'cls' ).run();
-		
+
 		// Start watcher
 		watch()
 			.paths( globbingPaths.listToArray() )
 			.inDirectory( getCWD() )
 			.withDelay( delayMs )
 			.onChange( function() {
-				
+
 				// Clear the screen
 				command( 'cls' )
 					.run();
-					
+
 				// Run the tests in the target directory
 				command( 'testbox run' )
 					.inWorkingDirectory( getCWD() )
 					.run();
-										
+
 			} )
 			.start();
 	}

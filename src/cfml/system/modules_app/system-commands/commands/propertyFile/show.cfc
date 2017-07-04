@@ -7,10 +7,10 @@
  * propertyFile show property.name.here
  * propertyFile show --JSON
  * {code}
- * 
+ *
  **/
 component {
-	
+
 	/**
 	 * @propertyFilePath The path to the property file to interact with
 	 * @propertyName The name of the property to show
@@ -21,13 +21,13 @@ component {
 		string propertyName='',
 		boolean JSON=false
 		) {
-			
+
 			// This will make each directory canonical and absolute
 			propertyFilePath = fileSystemUtil.resolvePath( propertyFilePath );
-			
+
 			// Create and load property file object
 			var propertyFile = propertyFile( propertyFilePath );
-			
+
 			// JSON output takes precedence
 			if( JSON ) {
 				print.text( formatterUtil.formatJson( propertyFile.getAsStruct() ) );
@@ -42,7 +42,7 @@ component {
 						print.line( i & ' = ' & properties[ i ] );
 					} );
 			}
-			
+
 	}
-	
+
 }

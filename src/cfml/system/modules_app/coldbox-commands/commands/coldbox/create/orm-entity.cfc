@@ -16,13 +16,13 @@
 * {code:bash}
 * // Basic
 * coldbox create orm-entity User --open
-* 
+*
 * // Active Entity
 * coldbox create orm-entity User --open --activeEntity
-* 
+*
 * // With Some Specifics
 * coldbox create orm-entity entityName=User table=users primaryKey=userID generator=uuid
-* 
+*
 * // With some properties
 * coldbox create orm-entity entityName=User properties=firstname,lastname,email,createDate:timestamp,updatedate:timestamp,age:numeric
 * {code}
@@ -45,7 +45,7 @@ component {
 	* @script Generate as script or not, defaults to true
 	* @open Open the file(s) once generated
 	**/
-	function run( 
+	function run(
 		required entityName,
 		table="",
 		directory="models",
@@ -139,12 +139,12 @@ component {
 			// Create the tests
 			file action='write' file='#testPath#' mode ='777' output='#modelTestContent#';
 			// open file
-			if( arguments.open ){ openPath( testPath ); }			
+			if( arguments.open ){ openPath( testPath ); }
 			print.greenLine( 'Created #testPath#' );
 		}
 
 		// Open file?
-		if( arguments.open ){ openPath( modelPath ); }			
+		if( arguments.open ){ openPath( modelPath ); }
 	}
 
 }

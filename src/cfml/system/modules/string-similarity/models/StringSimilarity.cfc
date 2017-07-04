@@ -1,5 +1,5 @@
 component {
-		
+
 	/**
 	*  	StringSimilarity
 	*	Brad Wood
@@ -12,9 +12,9 @@ component {
 	*		s1:			First string to be compared
 	*		s2:			Second string to be compared
 	*		maxOffset:	Average number of characters that s1 will deviate from s2 at any given point.
-	*					This is used to control how far ahead the function looks to try and find the 
+	*					This is used to control how far ahead the function looks to try and find the
 	*					end of a piece of inserted text.  Play with it to suit.
-	*						
+	*
 	*	2016-50-20 James Moberg SunStarMedia.com
 	*	- Added VAR scope to 15 variables. (Increased performance from 15-32 to 0-15ms.)
 	*	- Added generateHTML flag (optional). If disabled, will return empty s1 & s2 strings.
@@ -45,13 +45,13 @@ component {
 			// These two strings will contain the "highlighted" version
 			_s1 = createObject("java","java.lang.StringBuffer").init(javacast("int",len(s1)*3));
 			_s2 = createObject("java","java.lang.StringBuffer").init(javacast("int",len(s2)*3));
-			// These characters will surround differences in the strings 
+			// These characters will surround differences in the strings
 			// (Inserted into _s1 and _s2)
 			h1 = "<span style=""background:yellow;"">";
 			h2 = "</span>";
 		}
-		// If both strings are empty 
-		if (not len(trim(s1)) and not len(trim(s2))){	
+		// If both strings are empty
+		if (not len(trim(s1)) and not len(trim(s2))){
 			return return_struct;
 		}
 		// If s2 is empty, but s1 isn't
@@ -85,17 +85,17 @@ component {
 				}
 			}
 			// The next two charactes did not match
-			// Now we will go into a sub-loop while we attempt to 
+			// Now we will go into a sub-loop while we attempt to
 			// find our place again.  We will only search as long as
 			// our maxOffset allows us to.
 			else {
-				// Don't reset the offsets, just back them up so you 
+				// Don't reset the offsets, just back them up so you
 				// have a point of reference
 				old_offset1 = offset1;
 				old_offset2 = offset2;
 				_s1_deviation = "";
 				_s2_deviation = "";
-				// Loop for as long as allowed by our offset 
+				// Loop for as long as allowed by our offset
 				// to see if we can match up again
 				for (i = 0; i lt maxOffset; i=i+1){
 					next_s1 = mid(s1,c + offset1 + i+1,3); // Increments each time through.
@@ -155,7 +155,7 @@ component {
 					}
 				}
 			}
-		c=c+1;	
+		c=c+1;
 		}
 		// Anything left at the end of s1 is extra
 		if (generateHTML){

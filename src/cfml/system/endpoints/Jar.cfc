@@ -9,7 +9,7 @@
 * I will spoof a package around the jar so CommandBox doesn't try to unzip the jar itself.
 */
 component accessors=true implements="IEndpoint" singleton {
-		
+
 	// DI
 	property name="consoleLogger"			inject="logbox:logger:console";
 	property name="tempDir" 				inject="tempDir@constants";
@@ -17,24 +17,24 @@ component accessors=true implements="IEndpoint" singleton {
 	property name="progressBar" 			inject="ProgressBar";
 	property name="CR" 						inject="CR@constants";
 	property name='formatterUtil'		inject='formatter';
-	
+
 	// Properties
 	property name="namePrefixes" type="string";
-	
+
 	function init() {
 		setNamePrefixes( 'jar' );
 		return this;
 	}
-		
+
 	public string function resolvePackage( required string package, boolean verbose=false ) {
-		
+
 		var folderName = tempDir & '/' & 'temp#randRange( 1, 1000 )#';
 		directoryCreate( folderName );
 		var fullJarPath = folderName & '/' & getDefaultName( package ) & '.jar';
 		var fullBoxJSONPath = folderName & '/box.json';
-		
+
 		consoleLogger.info( "Downloading [#package#]" );
-		
+
 		try {
 			// Download File
 			var result = progressableDownloader.download(
@@ -60,25 +60,25 @@ component accessors=true implements="IEndpoint" singleton {
 			'type' : 'jars'
 		};
 		fileWrite( fullBoxJSONPath, formatterUtil.formatJSON( boxJSON ) );
-		
+
 		// Here is where our alleged so-called "package" lives.
 		return folderName;
-		
+
 	}
 
 	public function getDefaultName( required string package ) {
-		
+
 		var baseURL = arguments.package;
-			
+
 		// strip query string, unless it possibly contains .jar like so:
 		// https://search.maven.org/remotecontent?filepath=jline/jline/3.0.0.M1/jline-3.0.0.M1.jar
 		if( !right( arguments.package, 4 ) == '.jar' ) {
 			baseURL = listFirst( arguments.package, '?' );
 		}
-		
+
 		// Find last segment of URL (may or may not be a file)
 		var fileName = listLast( baseURL, '/' );
-		
+
 		// Check for file extension in URL
 		var fileNameListLen = listLen( fileName, '.' );
 		if( fileNameListLen > 1 && listLast( fileName, '.' ) == 'jar' ) {
@@ -93,7 +93,7 @@ component accessors=true implements="IEndpoint" singleton {
 			isOutdated = true,
 			version = 'unknown'
 		};
-		
+
 		return result;
 	}
 

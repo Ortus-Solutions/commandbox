@@ -6,14 +6,14 @@
  * {code}
  **/
 component {
-	
-	/**  
+
+	/**
 	* @username.hint Username for this user
 	* @password.hint Password for this user
 	**/
-	function run( 
+	function run(
 		string username='',
-		string password='' 
+		string password=''
 	){
 
 		// Default the endpointName
@@ -21,7 +21,7 @@ component {
 
 		// Ask for username if not passed
 		if( !len( arguments.username ) ) {
-				
+
 			// Info for ForgeBox
 			print.line()
 				.line( "Login with your ForgeBox ID to publish and manage packages in Forgebox.io. ")
@@ -30,15 +30,15 @@ component {
 				.line( "command to register a new account.")
 				.line()
 				.toConsole();
-	
+
             arguments.username = ask( 'Enter your username: ' );
         }
 
    		// Ask for password if not passed
         if( !len( arguments.password ) ) {
-            arguments.password = ask( 'Enter your password: ', '*' );            
+            arguments.password = ask( 'Enter your password: ', '*' );
         }
-		
+
 		// Message user since there can be a couple-second delay here
 		print.line()
 			.yellowLine( 'Contacting ForgeBox...' )
@@ -48,7 +48,7 @@ component {
 		command( 'endpoint login' )
 			.params( argumentCollection=arguments )
 			.run();
-			
+
 	}
 
 }

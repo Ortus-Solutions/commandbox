@@ -25,7 +25,7 @@ component accessors="true" singleton {
 	property name='stringDistance'		inject='provider:StringSimilarity@string-similarity';
 	property name='SystemSettings'		inject='SystemSettings';
 	property name='ConfigService'		inject='ConfigService';
-	
+
 	property name='configured' default="false" type="boolean";
 
 	// TODO: Convert these to properties
@@ -169,12 +169,12 @@ component accessors="true" singleton {
 		// default behavior is to keep trucking
 		var previousCommandSeparator = ';';
 		var lastCommandErrored = false;
-		
+
 		if( structKeyExists( arguments, 'piped' ) ) {
 			var result = arguments.piped;
 			previousCommandSeparator = '|';
 		}
-		
+
 		// If piping commands, each one will be an item in the chain.
 		// i.e. forgebox show | grep | more
 		// Would result in three separate, chained commands.
@@ -267,7 +267,7 @@ component accessors="true" singleton {
 			mergeFlagParameters( parameterInfo );
 
 			// Add in defaults
-			addDefaultParameters( commandInfo.commandString, parameterInfo );			
+			addDefaultParameters( commandInfo.commandString, parameterInfo );
 
 			// Make sure we have all required params.
 			parameterInfo.namedParameters = ensureRequiredParams( parameterInfo.namedParameters, commandParams );
@@ -304,7 +304,7 @@ component accessors="true" singleton {
 			// Successful command execution resets exit code to 0.  Set this prior to running the command since the command
 			// may explicitly set the exit code to 1 but not call the error() method.
 			shell.setExitCode( 0 );
-			
+
 			// Run the command
 			try {
 				var result = commandInfo.commandReference.CFC.run( argumentCollection = parameterInfo.namedParameters );
@@ -449,7 +449,7 @@ component accessors="true" singleton {
 				var defaultValue = '';
 				if( settingName.listLen( ':' ) ) {
 					defaultValue = settingName.listRest( ':' );
-					settingName = settingName.listFirst( ':' );					
+					settingName = settingName.listFirst( ':' );
 				}
 				var result = systemSettings.getSystemSetting( settingName, defaultValue );
 
@@ -461,7 +461,7 @@ component accessors="true" singleton {
 			}
 		}
 	}
-	
+
 	/**
 	* Look through named parameters and combine any ones with a colon based on matching prefixes.
 	*/
@@ -640,13 +640,13 @@ component accessors="true" singleton {
 		return commandChain;
 
 	}
-	
+
 	/**
 	* Takes a single array of tokens and breaks it into a chain of commands (array of arrays)
-	* i.e. foo bar | baz turns into [ [ 'foo', 'bar' ], [ '|' ], [ 'baz' ] ] 
+	* i.e. foo bar | baz turns into [ [ 'foo', 'bar' ], [ '|' ], [ 'baz' ] ]
 	*/
 	private function breakTokensIntoChain( required array tokens ) {
-		
+
 		var commandsToResolve = [[]];
 		var expandedCommandsToResolve = [];
 
@@ -668,7 +668,7 @@ component accessors="true" singleton {
 				commandsToResolve.append( [ '&&' ] );
 				commandsToResolve.append( [] );
 			} else if( token == '||' &&  commandsToResolve[ commandsToResolve.len() ].len() && i < tokens.len()  ){
-				// Add a new command 
+				// Add a new command
 				commandsToResolve.append( [ '||' ] );
 				commandsToResolve.append( [] );
 			} else if( token == '>' &&  commandsToResolve[ commandsToResolve.len() ].len() && i < tokens.len()  ){
@@ -684,27 +684,27 @@ component accessors="true" singleton {
 				commandsToResolve[ commandsToResolve.len() ].append( token );
 			}
 		}
-	
+
 		// Expand aliases
 		for( commandTokens in commandsToResolve ) {
 			var originalLine = commandTokens.toList( ' ' );
 			var aliases = configService.getSetting( 'command.aliases', {} );
 			var matchingAlias = '';
-			
+
 			for( alias in aliases ) {
 				if( lcase( originalLine ).startsWith( lcase( alias ) ) ) {
 					matchingAlias = alias;
 					break;
 				}
 			}
-			
+
 			// If the exact tokens in this command match an alias, swap it out.
 			if( matchingAlias.len() ) {
 				expandedCommandsToResolve.append(
 					// Recursivley dig down. This allows aliases to alias other alises
 					breakTokensIntoChain(
-						// Re-tokenize the new strin 
-						parser.tokenizeInput( 
+						// Re-tokenize the new strin
+						parser.tokenizeInput(
 							// Expand the alias with the string it aliases
 							replaceNoCase( originalLine, matchingAlias, aliases[ matchingAlias ], 'once' )
 						)
@@ -712,11 +712,11 @@ component accessors="true" singleton {
 				true );
 			// Otherwise just use them as is.
 			} else {
-				expandedCommandsToResolve.append( commandTokens );				
+				expandedCommandsToResolve.append( commandTokens );
 			}
-				
+
 		}
-		
+
 		return expandedCommandsToResolve;
 	}
 
@@ -955,17 +955,17 @@ component accessors="true" singleton {
 	private function createGlobs( parameterInfo, commandParams ) {
 		// Loop over user-supplied params
 		for( var paramName in parameterInfo.namedParameters ) {
-			
+
 			// If this is an expected param
 			functionIndex = commandParams.find( function( i ) {
 				return i.name == paramName;
 			} );
-			
+
 			if( functionIndex ) {
 				var paramData = commandParams[ functionIndex ];
 				// And it's of type Globber
 				if( ( paramData.type ?: 'any' ) == 'Globber' ) {
-					
+
 					// Overwrite it with an actual Globber instance seeded with the original canonical path as the pattern.
 					var originalPath = parameterInfo.namedParameters[ paramName ].replace( '\', '/', 'all' );
 					var newPath = fileSystemUtil.resolvePath( originalPath ).replace( '\', '/', 'all' );
@@ -1021,7 +1021,7 @@ component accessors="true" singleton {
 
 		return results;
 	}
-	
+
 	/**
 	 * Merge flags into named parameters
  	 **/
@@ -1029,7 +1029,7 @@ component accessors="true" singleton {
 		// Add flags into named params
 		arguments.parameterInfo.namedParameters.append( arguments.parameterInfo.flags );
 	}
-	
+
 	/**
 	 * Merge in parameter defaults
  	 **/
@@ -1037,7 +1037,7 @@ component accessors="true" singleton {
 		// Get defaults for this command, an empty struct if nothing.
 		var defaults = configService.getSetting( 'command.defaults["#commandString#"]', {} );
 		var params = parameterInfo.namedParameters;
-		
+
 		// For each default
 		defaults.each( function( k,v ) {
 			// If it's not already set
@@ -1046,7 +1046,7 @@ component accessors="true" singleton {
 				params[ k ] = v;
 			}
 		} );
-		
+
 	}
 
 }

@@ -133,39 +133,39 @@ component aliases="start" {
 			arguments.rewritesEnable = arguments.rewritesEnabled;
 			structDelete( arguments, 'rewritesEnabled' );
 		}
-		
+
 		// changed trayIcon to trayIconFile, but let's keep them both working for backwards compat
 		if( structKeyExists( arguments, 'trayIconFile' ) ) {
 			arguments.trayIcon = arguments.trayIconFile;
 			structDelete( arguments, 'trayIconFile' );
 		}
-		
+
 		try {
-			
+
 			// startup the server
 			return serverService.start( serverProps = arguments );
-				
-		// endpointException exception type is used when the endpoint has an issue that needs displayed, 
-		// but I don't want to "blow up" the console with a full error.	
+
+		// endpointException exception type is used when the endpoint has an issue that needs displayed,
+		// but I don't want to "blow up" the console with a full error.
 		} catch( endpointException var e ) {
 			error( e.message, e.detail );
 		}
 	}
-	
+
 	/**
 	* Complete server names
 	*/
 	function serverNameComplete() {
 		return serverService.getServerNames();
 	}
-	
+
 	/**
 	* Complete cfengine names
 	*/
 	function cfengineNameComplete( string paramSoFar ) {
-		
+
 		var APIToken = configService.getSetting( 'endpoints.forgebox.APIToken', '' );
-		
+
 		try {
 			// Get auto-complete options
 			return forgebox.slugSearch( arguments.paramSoFar, 'cf-engines', APIToken );

@@ -1,4 +1,4 @@
-﻿/**
+/**
 *********************************************************************************
 * Copyright Since 2005 ColdBox Framework by Luis Majano and Ortus Solutions, Corp
 * www.ortussolutions.com
@@ -15,14 +15,14 @@ component{
 	this.WARN 	= 2;
 	this.INFO 	= 3;
 	this.DEBUG 	= 4;
-	
+
 	// List of valid levels
 	this.VALIDLEVELS = "off,fatal,error,warn,info,debug";
-	
+
 	// Max
 	this.MINLEVEL = -1;
 	this.MAXLEVEL = 4;
-	
+
 	function lookup(level){
 		switch(level){
 			case -1: return "OFF";
@@ -30,10 +30,10 @@ component{
 			case 1: return "ERROR";
 			case 2: return "WARN";
 			case 3: return "INFO";
-			case 4: return "DEBUG";		
+			case 4: return "DEBUG";
 		}
 	}
-	
+
 	function lookupAsInt(level){
 		switch(level){
 			case "OFF": return -1;
@@ -43,11 +43,11 @@ component{
 			case "WARNING" : return 2;
 			case "INFO": return 3;
 			case "INFORMATION" : return 3;
-			case "DEBUG": return 4;	
-			default: return 999;	
+			case "DEBUG": return 4;
+			default: return 999;
 		}
 	}
-	
+
 	function lookupCF(level){
 		switch(level){
 			case -1: return "OFF";
@@ -56,10 +56,10 @@ component{
 			case 2: return "Warning";
 			case 3: return "Information";
 			case 4: return "Information";
-			default: return "Information";		
+			default: return "Information";
 		}
 	}
-	
+
 	function isLevelValid(level){
 		return ( arguments.level gte this.MINLEVEL AND arguments.level lte this.MAXLEVEL );
 	}

@@ -19,28 +19,28 @@
  * .
  **/
 component {
-	
+
 	property name="ConfigService" inject="ConfigService";
 	property name="JSONService" inject="JSONService";
-	
+
 	/**
 	 * @property.hint The name of the property to show.  Can nested to get "deep" properties
 	 * @property.optionsUDF completeProperty
 	 **/
 	function run( string property='' ) {
-				
+
 		var configSettings = ConfigService.getconfigSettings();
 
 		try {
-			
+
 			var propertyValue = JSONService.show( configSettings, arguments.property );
-			
+
 			if( isSimpleValue( propertyValue ) ) {
 				print.line( propertyValue );
 			} else {
-				print.line( formatterUtil.formatJson( propertyValue ) );			
+				print.line( formatterUtil.formatJson( propertyValue ) );
 			}
-		
+
 		} catch( JSONException var e ) {
 			error( e.message );
 		} catch( any var e ) {
@@ -51,6 +51,6 @@ component {
 
 	// Dynamic completion for property name based on contents of commandbox.json
 	function completeProperty() {
-		return ConfigService.completeProperty();				
+		return ConfigService.completeProperty();
 	}
 }

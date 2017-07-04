@@ -13,9 +13,9 @@ component singleton {
 	property name="print" inject="print";
 	property name="CR" inject="CR@constants";
 	property name="JSONPrettyPrint" inject="provider:JSONPrettyPrint";
-	
+
 	function init(){
-		
+
 		variables.stringEscapeUtils = createObject("java","org.apache.commons.lang.StringEscapeUtils");
 		return this;
 	}
@@ -36,41 +36,41 @@ component singleton {
   	 **/
 	function HTML2ANSI( required html, additionalFormatting='' ) {
     	var text = html;
-    	
+
     	if( len( trim( text ) ) == 0 ) {
     		return "";
     	}
-    	
+
     	// Trim all lines.  leading/trailing whitespace in HTML is not useful
     	text = text.listToArray( chr( 13 ) & chr( 10 ) ).map( function( i ) {
     		return trim( i );
     	} ).toList( chr( 10 ) );
-    	
+
     	// Remove style and script blocks
     	text = reReplaceNoCase(text, "<style>.*</style>","","all");
     	text = reReplaceNoCase(text, "<script[^>]*>.*</script>","","all");
-    	
+
     	text = ansifyHTML( text, "b", "bold", additionalFormatting );
     	text = ansifyHTML( text, "strong", "bold", additionalFormatting );
     	text = ansifyHTML( text, "em", "underline", additionalFormatting );
-    	
+
   	 	// Replace br tags (and any whitespace/line breaks after them) with a CR
   	 	text = reReplaceNoCase( text , "<br[^>]*>\s*", CR, 'all' );
-    	    	
+
     	var t='div';
     	var matches = REMatch('(?i)<#t#[^>]*>(.*?)</#t#>', text);
     	for(var match in matches) {
     		var blockText = reReplaceNoCase(match,"<#t#[^>]*>(.*?)</#t#>","\1") & CR;
     		text = replace(text,match,blockText,"one");
     	}
-    	
-    	// If you have any < characters in your string that aren't HTML, this will truncate the text 
+
+    	// If you have any < characters in your string that aren't HTML, this will truncate the text
     	text = reReplaceNoCase(text, "<.*?>","","all");
-    	 
+
     	text = reReplaceNoCase(text, "[\n]{2,}",chr( 10 ) & chr( 10 ),"all");
-    	
-    
-    	
+
+
+
     	// Turn any escaped HTML entities into their true form
     	text = unescapeHTML( text );
        	return text;

@@ -1,4 +1,4 @@
-﻿<!-----------------------------------------------------------------------
+<!-----------------------------------------------------------------------
 ********************************************************************************
 Copyright Since 2005 ColdBox Framework by Luis Majano and Ortus Solutions, Corp
 www.ortussolutions.com
@@ -318,7 +318,7 @@ Description :
 				}
 				default: { throw(message="Invalid Construction Type: #thisMap.getType()#",type="Injector.InvalidConstructionType"); }
 			}
-			
+
 			// Check and see if this mapping as an influence closure
 			var influenceClosure = thisMap.getInfluenceClosure();
 			if( !isSimpleValue( influenceClosure ) ) {
@@ -327,9 +327,9 @@ Description :
 				// Allow the closure to override the entire instance if it wishes
 				if( structKeyExists( local, 'result' ) ) {
 					oModel = local.result;
-				}	
+				}
 			}
-			
+
 			// log data
 			if( instance.log.canDebug() ){
 				instance.log.debug("Instance object built: #arguments.mapping.getName()#:#arguments.mapping.getPath().toString()#");

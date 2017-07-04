@@ -19,9 +19,9 @@ component aliases="ver" {
 	*/
 	function run( boolean loader=false )  {
 		if( arguments.loader ) {
-			print.line( 'CLI Loader #shell.getLoaderVersion()#' );			
+			print.line( 'CLI Loader #shell.getLoaderVersion()#' );
 		} else {
-			print.line( 'CommandBox #shell.getVersion()#' );			
+			print.line( 'CommandBox #shell.getVersion()#' );
 		}
 	}
 

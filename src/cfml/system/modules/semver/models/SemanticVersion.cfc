@@ -1,4 +1,4 @@
-/** 
+/**
 ********************************************************************************
 Copyright Since 2005 ColdBox Framework by Luis Majano and Ortus Solutions, Corp
 www.coldbox.org | www.luismajano.com | www.ortussolutions.com
@@ -10,7 +10,7 @@ www.coldbox.org | www.luismajano.com | www.ortussolutions.com
 * https://github.com/npm/node-semver
 */
 component singleton{
-	
+
 	/**
 	* Constructor
 	*/
@@ -23,15 +23,15 @@ component singleton{
 	}
 
 	function compare(
-		required string current, 
+		required string current,
 		required string target,
 		boolean checkBuildID=true ) {
-			
+
 		// versions are identical
 		if( isEQ( arguments.current, arguments.target, checkBuildID ) ) {
 			return 0;
 		}
-			
+
 		// first is 'smaller' than the second
 		if( isNew( arguments.current, arguments.target, checkBuildID ) ) {
 			return -1;
@@ -39,19 +39,19 @@ component singleton{
 		} else {
 			return 1;
 		}
-		
+
 	}
 
 	/**
 	* Checks if target version is a newer semantic version than the passed current version
-	* Note: To confirm to semvar, I think this needs to defer to gt(). 
+	* Note: To confirm to semvar, I think this needs to defer to gt().
 	* @current The current version of the system
 	* @target The newer version received
 	* @checkBuildID If true it will check build equality, else it will ignore it
-	* 
+	*
 	*/
-	boolean function isNew( 
-		required string current, 
+	boolean function isNew(
+		required string current,
 		required string target,
 		boolean checkBuildID=true
 	){
@@ -79,7 +79,7 @@ component singleton{
 			return true;
 		}
 
-		// A little hacky, but less code than what I had.  
+		// A little hacky, but less code than what I had.
 		// Basically, an empty pre release ID needs to sort AFTER a non-empty one.
 		if( !len( target.preReleaseID ) ) { target.preReleaseID = 'zzzzzzzzzzzzzzzzzz'; }
 		if( !len( current.preReleaseID ) ) { current.preReleaseID = 'zzzzzzzzzzzzzzzzzz'; }
@@ -92,14 +92,14 @@ component singleton{
 			lcase( target.preReleaseID ) gt lcase( current.preReleaseID ) ) {
 			return true;
 		}
-		
+
 		// BuildID verification is turned on?
 		if( !arguments.checkBuildID ){ return false; }
 
 		// Build Check
 		if( target.major eq current.major AND
 			target.minor eq current.minor AND
-			target.revision eq current.revision AND			
+			target.revision eq current.revision AND
 			target.preReleaseID eq current.preReleaseID AND
 			target.buildID gt current.buildID ){
 			return true;
@@ -118,26 +118,26 @@ component singleton{
 
 	/**
 	* Decides whether a version satisfies a range
-	* 
+	*
 	*/
 	boolean function satisfies( required string version, required string range ){
-		
+
 		arguments.version = clean( arguments.version );
-		
+
 		if( range == 'be' ) {
 			return true;
 		}
-				
+
 		if( range == 'stable' && !isPreRelease( version ) ) {
 			return true;
 		} else if( range == 'stable' ) {
 			return false;
 		}
 
-		// An array of comparator sets.  At least one of the comparator sets needs to 
+		// An array of comparator sets.  At least one of the comparator sets needs to
 		// satisfy.  Each comparator of a given comparator set must match for the set to pass.
 		var semverRange = buildRange( range );
-		
+
 		// Only one of our comparatorSets in the range need to match
 		for( var comparatorSet in semverRange ) {
 			// If the version we're inspecting is a pre-release, don't consider it unless at least one comparator in this
@@ -155,21 +155,21 @@ component singleton{
 			// If this comparatorSet passed, we've seen all we need to see
 			if( setResult ) { return true; }
 		}
-		
+
 		// If we made it here, none of the comparatorSets in our range matched
 		return false;
-		
-		
+
+
 		return isEQ( arguments.version, arguments.range, false );
 	}
-		
+
 	private function evaluateComparator( required struct comparator, version ) {
 		switch( comparator.operator ) {
 		    case "<":
-		    	return isNew( arguments.version, comparator.version, false ); 
+		    	return isNew( arguments.version, comparator.version, false );
 		         break;
 		    case "<=":
-		    	return isNew( arguments.version, comparator.version, false ) || isEq( comparator.version, arguments.version, false ); 
+		    	return isNew( arguments.version, comparator.version, false ) || isEq( comparator.version, arguments.version, false );
 		         break;
 		    case ">":
 		    	return isNew( comparator.version, arguments.version, false );
@@ -180,11 +180,11 @@ component singleton{
 		    case "=":
 		    	return isEq( comparator.version, arguments.version, false );
 		         break;
-		    default: 
+		    default:
 		         return false;
 		}
 	}
-	
+
 	private function interestedInPreReleasesOfThisVersion( required array comparatorSet, required string version ) {
 		var sVersion = parseVersion( arguments.version );
 		// Look at each comparator
@@ -197,43 +197,43 @@ component singleton{
 			 	return true;
 			 }
 		}
-		return false;		 
+		return false;
 	}
-	
+
 	private function buildRange( required string range ) {
 		// A character that I hope will never be part of an actual range so split easier.
 		// Comprator sets inside a range are delimited by " || "
 		arguments.range = replaceNoCase( arguments.range, ' || ', '•', 'all' );
 		var semverRange = listToArray( arguments.range, '•' );
-		
+
 		// An empty range becomes *
 		if( !arrayLen( semverRange ) ) {
 			semverRange = [ '*' ];
 		}
-		
+
 		// Loop over each comparator set and parse
 		semverRange = semverRange.map( function( i ) {
 			return buildComparatorSet( i );
 		} );
-		
+
 		return semverRange;
 	}
 
 	private function buildComparatorSet( required string set ) {
 		var comparatorSet = [];
-		
+
 		// Check for a hyphen range
 		if( set contains ' - ' ) {
 			set = replaceNoCase( set, ' - ', '•', 'all' );
 			var lowerBound = listFirst( set, '•' );
 			var upperBound = listLast( set, '•' );
-			
+
 			lowerBound = replaceNoCase( lowerBound, '*', 'x', 'all' );
 			upperBound = replaceNoCase( upperBound, '*', 'x', 'all' );
-			
+
 			sVersion = parseVersion( lowerBound, 'x' );
-			
-			comparatorSet.append( 
+
+			comparatorSet.append(
 				expandXRanges( {
 					operator : '>=',
 					sVersion : sVersion,
@@ -241,10 +241,10 @@ component singleton{
 				} ),
 				true
 			 );
-			
+
 			sVersion = parseVersion( upperBound, 'x' );
-			
-			comparatorSet.append( 
+
+			comparatorSet.append(
 				expandXRanges( {
 					operator : '<=',
 					sVersion : sVersion,
@@ -252,16 +252,16 @@ component singleton{
 				} ),
 				true
 			 );
-			
+
 			return comparatorSet;
 		}
-		
+
 		// Comparators are delimited by whitespace
 		for( var comparator in listToArray( set, ' ' ) ) {
-			
+
 			// standardize * to x
 			comparator = replaceNoCase( comparator, '*', 'x', 'all' );
-			// >=1.2.3 
+			// >=1.2.3
 			if( comparator.startsWith( '>=' ) ) {
 				var version  = right( comparator, len( comparator )-2 );
 				var operator = '>=';
@@ -294,11 +294,11 @@ component singleton{
 				var version  = comparator;
 				var operator = '=';
 			}
-			
+
 			// Missing bits become x.  So 1.3 becomes 1.3.x
 			sVersion = parseVersion( version, 'x' );
 			comparatorSet.append(
-				// Convert 1.x into multiple comparators 
+				// Convert 1.x into multiple comparators
 				expandXRanges( {
 					operator : operator,
 					sVersion : sVersion,
@@ -306,127 +306,127 @@ component singleton{
 				} ),
 				true
 			 );
-			
+
 		}
-		
+
 		return comparatorSet;
 	}
 
 	private function expandXRanges( required struct sComparator ) {
 		var comparatorSet = [];
-		
+
 		switch( sComparator.operator ) {
 		    case "<":
 		    	// <1.1.x becomes <1.1.0
 		    	// <1.x becomes <1.0.0
-		
+
 		    	if( sComparator.sVersion.major == 'x' ) { sComparator.sVersion.major = '0'; }
 		    	if( sComparator.sVersion.minor == 'x' ) { sComparator.sVersion.minor = '0'; }
-		    	if( sComparator.sVersion.revision == 'x' ) { sComparator.sVersion.revision = '0'; }		
+		    	if( sComparator.sVersion.revision == 'x' ) { sComparator.sVersion.revision = '0'; }
 		    	sComparator.version = getVersionAsString( sComparator.sVersion );
-		    	comparatorSet.append( sComparator ); 
+		    	comparatorSet.append( sComparator );
 		        break;
 		    case "<=":
 		    	// <=1.x becomes <2.0.0
 		    	if( sComparator.sVersion.minor == 'x' ) {
-		    		
+
 		    		sComparator.sVersion.minor = '0';
 		    		sComparator.sVersion.revision = '0';
 		    		sComparator.sVersion.major=val( sComparator.sVersion.major )+1;
 		    		sComparator.operator = '<';
 			    	sComparator.version = getVersionAsString( sComparator.sVersion );
 			    	comparatorSet.append( sComparator );
-			    	
+
 		    	// <=1.0.x becomes <1.1.0
 		    	} else if( sComparator.sVersion.revision == 'x' ) {
-		    		
+
 		    		sComparator.sVersion.revision = '0';
 		    		sComparator.sVersion.minor=val( sComparator.sVersion.minor )+1;
 		    		sComparator.operator = '<';
 			    	sComparator.version = getVersionAsString( sComparator.sVersion );
 			    	comparatorSet.append( sComparator );
-			    	
+
 		    	}
 		    	else {
-			    	comparatorSet.append( sComparator );		    		
-		    	} 
+			    	comparatorSet.append( sComparator );
+		    	}
 		        break;
 		    case ">":
 		    	// >1.x becomes >=2.0.0
 		    	if( sComparator.sVersion.minor == 'x' ) {
-		    		
+
 		    		sComparator.sVersion.minor = '0';
 		    		sComparator.sVersion.revision = '0';
 		    		sComparator.sVersion.major=val( sComparator.sVersion.major )+1;
 		    		sComparator.operator = '>=';
 			    	sComparator.version = getVersionAsString( sComparator.sVersion );
 			    	comparatorSet.append( sComparator );
-			    	
+
 		    	// >1.0.x becomes >=1.1.0
 		    	} else if( sComparator.sVersion.revision == 'x' ) {
-		    		
+
 		    		sComparator.sVersion.revision = '0';
 		    		sComparator.sVersion.minor=val(sComparator.sVersion.minor)+1;
 		    		sComparator.operator = '>=';
 			    	sComparator.version = getVersionAsString( sComparator.sVersion );
 			    	comparatorSet.append( sComparator );
-			    	
+
 		    	}
 		    	else {
-			    	comparatorSet.append( sComparator );		    		
+			    	comparatorSet.append( sComparator );
 		    	}
 		        break;
 		    case ">=":
 		    	// >=1.1.x becomes >=1.1.0
 		    	// >=1.x becomes >=1.0.0
-		
+
 		    	if( sComparator.sVersion.major == 'x' ) { sComparator.sVersion.major = '0'; }
 		    	if( sComparator.sVersion.minor == 'x' ) { sComparator.sVersion.minor = '0'; }
-		    	if( sComparator.sVersion.revision == 'x' ) { sComparator.sVersion.revision = '0'; }		
+		    	if( sComparator.sVersion.revision == 'x' ) { sComparator.sVersion.revision = '0'; }
 		    	sComparator.version = getVersionAsString( sComparator.sVersion );
-		    	comparatorSet.append( sComparator ); 
+		    	comparatorSet.append( sComparator );
 		        break;
 		    case "=":
 		    	// * becomes >=0.0.0
 		    	if( sComparator.sVersion.major == 'x' ) {
-		    		
+
 		    		sComparator.sVersion.major = 0;
 		    		sComparator.sVersion.minor = 0;
 		    		sComparator.sVersion.revision = 0;
 		    		sComparator.operator = '>=';
 		    		sComparator.version = getVersionAsString( sComparator.sVersion );
 					comparatorSet.append( sComparator );
-				
+
 				// 1.x becomes >=1.0.0 < 2.0.0
 		    	} else if ( sComparator.sVersion.minor == 'x' ) {
-		    		
+
 		    		sComparator.sVersion.minor = 0;
 		    		sComparator.sVersion.revision = 0;
 		    		sComparator.operator = '>=';
 		    		sComparator.version = getVersionAsString( sComparator.sVersion );
 					comparatorSet.append( duplicate( sComparator ) );
-									
+
 		    		sComparator.sVersion.major=val( sComparator.sVersion.major )+1;
 		    		sComparator.operator = '<';
 		    		sComparator.version = getVersionAsString( sComparator.sVersion );
-					comparatorSet.append( sComparator );					
-					
-					
+					comparatorSet.append( sComparator );
+
+
 				// 1.0.x becomes >=1.0.0 < 1.1.0
 		    	} else if( sComparator.sVersion.revision == 'x' ) {
-		    				    		
+
 		    		sComparator.sVersion.revision = 0;
 		    		sComparator.operator = '>=';
 		    		sComparator.version = getVersionAsString( sComparator.sVersion );
 					comparatorSet.append( duplicate( sComparator ) );
-										
+
 		    		sComparator.sVersion.minor=val( sComparator.sVersion.minor )+1;
 		    		sComparator.operator = '<';
 		    		sComparator.version = getVersionAsString( sComparator.sVersion );
 					comparatorSet.append( sComparator );
-		    				    		
+
 		    	} else {
-					comparatorSet.append( sComparator );		    		
+					comparatorSet.append( sComparator );
 		    	}
 		        break;
 		    case "~":
@@ -439,26 +439,26 @@ component singleton{
 		    		// Recursivley handle as an X range
 		    		comparatorSet.append( expandXRanges( sComparator ), true );
 		    	} else {
-		    			    
+
 					// ~0.2.3 becomes >=0.2.3 <0.3.0
 			    	// ~1.2.3 becomes >=1.2.3 <1.3.0
 		    		sComparator.operator = '>=';
 		    		sComparator.version = getVersionAsString( sComparator.sVersion );
 			    	comparatorSet.append( duplicate( sComparator ) );
-			    	
+
 		    		sComparator.operator = '<';
 		    		sComparator.sVersion.minor=val( sComparator.sVersion.minor )+1;
 		    		sComparator.sVersion.revision = 0;
 		    		sComparator.sVersion.preReleaseID = '';
 			    	sComparator.version = getVersionAsString( sComparator.sVersion );
 			    	comparatorSet.append( sComparator );
-			    }    	 
+			    }
 		        break;
 		    case "^":
 				// ^1.2.3 becomes >=1.2.3 <2.0.0
 				// ^0.2.3 becomes >=0.2.3 <0.3.0
 				// ^0.0.3 becomes >=0.0.3 <0.0.4
-				// ^1.2.3-beta.2 becomes >=1.2.3-beta.2 <2.0.0 
+				// ^1.2.3-beta.2 becomes >=1.2.3-beta.2 <2.0.0
 				// ^1.2.x becomes >=1.2.0 <2.0.0
 				// ^0.0.x becomes >=0.0.0 <0.1.0
 				// ^0.0 becomes >=0.0.0 <0.1.0
@@ -468,34 +468,34 @@ component singleton{
 	    		sComparator2.operator = '>=';
 		    	if( sComparator2.sVersion.major == 'x' ) { sComparator2.sVersion.major = '0'; }
 		    	if( sComparator2.sVersion.minor == 'x' ) { sComparator2.sVersion.minor = '0'; }
-		    	if( sComparator2.sVersion.revision == 'x' ) { sComparator2.sVersion.revision = '0'; }	
+		    	if( sComparator2.sVersion.revision == 'x' ) { sComparator2.sVersion.revision = '0'; }
 	    		sComparator2.version = getVersionAsString( sComparator2.sVersion );
 		    	comparatorSet.append( sComparator2 );
-		    	
+
 	    		sComparator.operator = '<';
 	    		sComparator.sVersion.preReleaseID = '';
 		    	if( sComparator.sVersion.major != 0 || sComparator.sVersion.minor == 'x' ) {
 		    		sComparator.sVersion.major=val( sComparator.sVersion.major )+1;
 		    		sComparator.sVersion.minor = 0;
-		    		sComparator.sVersion.revision = 0;	
+		    		sComparator.sVersion.revision = 0;
 		    	} else if( sComparator.sVersion.minor != 0 || sComparator.sVersion.revision == 'x' ) {
 		    		sComparator.sVersion.minor=val( sComparator.sVersion.minor )+1;
 		    		sComparator.sVersion.revision = 0;
 		    	} else {
 		    		sComparator.sVersion.revision=val( sComparator.sVersion.revision )+1;
 		    	}
-		    	
+
 		    	sComparator.version = getVersionAsString( sComparator.sVersion );
 		    	comparatorSet.append( sComparator );
-		    	
+
 		        break;
 		}
-		
+
 		return comparatorSet;
 	}
 
 	/**
-	* Parse the semantic version. If no minor found, then 0. If not revision found, then 0. 
+	* Parse the semantic version. If no minor found, then 0. If not revision found, then 0.
 	* If not Bleeding Edge bit, then empty. If not buildID, then 0
 	* @return struct:{major,minor,revision,preReleaseID,buildid}
 	*/
@@ -571,9 +571,9 @@ component singleton{
 		var current = parseVersionAsString( arguments.current, checkBuildID );
 		var target 	= parseVersionAsString( arguments.target, checkBuildID );
 
-		return ( current == target ); 
+		return ( current == target );
 	}
-	
+
 	/**
 	* True if a specific version, false if a range that could match multiple versions
 	* version.hint A string that contains a version or a range
@@ -581,7 +581,7 @@ component singleton{
 	boolean function isExactVersion( required string version ) {
 		// Default any missing pieces to "x" so "3" becomes "3.x.x".
 		arguments.version = getVersionAsString (parseVersion( clean( arguments.version ), 'x' ) );
-		
+
 		if( version contains '*' ) return false;
 		if( version contains 'x.' ) return false;
 		if( version contains '.x' ) return false;

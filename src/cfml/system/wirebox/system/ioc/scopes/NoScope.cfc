@@ -1,4 +1,4 @@
-﻿<!-----------------------------------------------------------------------
+<!-----------------------------------------------------------------------
 ********************************************************************************
 Copyright Since 2005 ColdBox Framework by Luis Majano and Ortus Solutions, Corp
 www.ortussolutions.com
@@ -7,7 +7,7 @@ www.ortussolutions.com
 Author 	    :	Luis Majano
 Description :
 	I am the NoScope Scope of Scopes
-	
+
 ----------------------------------------------------------------------->
 <cfcomponent output="false" implements="wirebox.system.ioc.scopes.IScope" hint="I am the NoScope Scope of Scopes">
 
@@ -35,5 +35,5 @@ Description :
 			return object;
 		</cfscript>
     </cffunction>
-	
+
 </cfcomponent>

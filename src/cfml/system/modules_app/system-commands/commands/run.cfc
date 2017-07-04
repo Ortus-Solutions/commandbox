@@ -1,5 +1,5 @@
 /**
- * Execute an operating system level command in the native shell.  The binary must be in the PATH, or you can specify the full 
+ * Execute an operating system level command in the native shell.  The binary must be in the PATH, or you can specify the full
  * path to it.  This command will wait for the OS exectuable to complete but will flush the output as it is received.
  * .
  * {code:bash}
@@ -8,7 +8,7 @@
  * {code}
  * .
  * A shortcut for running OS binaries is to prefix the binary with "!".  In this mode, any other params need to be positional.
- * There is no CommandBox parsing applied to the command's arguments.  They are passed straight to the native shell. 
+ * There is no CommandBox parsing applied to the command's arguments.  They are passed straight to the native shell.
  * .
  * {code:bash}
  * !myApp.exe
@@ -37,7 +37,7 @@
  *
  **/
 component{
-	
+
 	property name="configService" inject="configService";
 
 	/**
@@ -46,7 +46,7 @@ component{
 	function run(
 		required command
 	){
-		
+
 		// Prep the command to run in the OS-specific shell
 		if( fileSystemUtil.isWindows() ) {
 			// Pass through Windows' command shell, /a outputs ANSI formatting, /c runs as a command
@@ -57,13 +57,13 @@ component{
 			var nativeShell = configService.getSetting( 'nativeShell', '/bin/bash' );
 			commandArray = [ nativeShell, '-i', '-c', arguments.command & ' && ( exit $? > /dev/null )' ];
 		}
-		
+
 		try{
             // grab the current working directory
             var CWDFile = createObject( 'java', 'java.io.File' ).init( fileSystemUtil.resolvePath( '' ) );
 			var exitCode = createObject( "java", "java.lang.ProcessBuilder" )
 				.init( commandArray )
-				// Do you believe in magic			
+				// Do you believe in magic
 				// This works great on Mac/Windows.
 				// On Linux, the standard input (keyboard) is not being piped to the background process.
 				.inheritIO()
@@ -73,10 +73,10 @@ component{
 				.start()
 				// waits for it to exit, returning the exit code
 				.waitFor();
-			
+
 			if( exitCode != 0 ) {
 				error( 'Command returned failing exit code [#exitCode#]' );
-			}			
+			}
 
 		} catch( any e ){
 			error( '#e.message##CR##e.detail#' );

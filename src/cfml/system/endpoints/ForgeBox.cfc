@@ -8,7 +8,7 @@
 * I am the ForgeBox endpoint.  I wrap CFML's coolest package repository EVER!
 */
 component accessors="true" implements="IEndpointInteractive" singleton {
-		
+
 	// DI
 	property name="CR" 					inject="CR@constants";
 	property name="consoleLogger"		inject="logbox:logger:console";
@@ -21,10 +21,10 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 	property name="endpointService"		inject="endpointService";
 	property name="fileSystemUtil"		inject="FileSystem";
 	property name="fileEndpoint"		inject="commandbox.system.endpoints.File";
-	
+
 	// Properties
 	property name="namePrefixes" type="string";
-	
+
 	/**
 	 * Constructor
 	 */
@@ -32,7 +32,7 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 		setNamePrefixes( 'forgebox' );
 		return this;
 	}
-	
+
 	/**
 	 * Resolve a package
 	 * @package The package to resolve
@@ -42,19 +42,19 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 		var slug 	= parseSlug( arguments.package );
 		var version = parseVersion( arguments.package );
 		var strVersion = semanticVersion.parseVersion( version );
-		
+
 		// If we have a specific version and it exists in artifacts and this isn't a snapshot build, use it.  Otherwise, to ForgeBox!!
 		if( semanticVersion.isExactVersion( version ) && artifactService.artifactExists( slug, version ) && strVersion.preReleaseID != 'snapshot' ) {
-			consoleLogger.info( "Package found in local artifacts!");	
+			consoleLogger.info( "Package found in local artifacts!");
 			// Install the package
-			var thisArtifactPath = artifactService.getArtifactPath( slug, version );		
+			var thisArtifactPath = artifactService.getArtifactPath( slug, version );
 			// Defer to file endpoint
 			return fileEndpoint.resolvePackage( thisArtifactPath, arguments.verbose );
 		} else {
-			return getPackage( slug, version, arguments.verbose );			 
+			return getPackage( slug, version, arguments.verbose );
 		}
 	}
-	
+
 	/**
 	 * Get default name for a package
 	 * @package The package to resolve
@@ -80,25 +80,25 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 								isOutdated 	= false,
 								version 	= ''
 							  };
-		
-		// Only bother checking if we have a version range.  If an exact version is stored in 
+
+		// Only bother checking if we have a version range.  If an exact version is stored in
 		// box.json, we're never going to update it anyway.
 		if( semanticVersion.isExactVersion( boxJSONversion ) ) {
 			return result;
 		}
-		
-		try { 
-			
+
+		try {
+
 			// Verify in ForgeBox
 			var entryData = forgebox.getEntry( slug, APIToken );
-					
+
 		} catch( forgebox var e ) {
 			// This can include "expected" errors such as "Email already in use"
 			throw( e.message, 'endpointException', e.detail );
 		}
-		
+
 		entryData.versions.sort( function( a, b ) { return semanticVersion.compare( b.version, a.version ) } );
-		
+
 		var found = false;
 		for( var thisVersion in entryData.versions ) {
 			// Look for a version on ForgeBox that satisfies our range
@@ -107,21 +107,21 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 				found = true;
 				// Only flag it as outdated if the matching version is newer.
 				if( semanticVersion.isNew( current=version, target=thisVersion.version, checkBuildID=false ) ) {
-					result.isOutdated = true;					
-				} 
+					result.isOutdated = true;
+				}
 				break;
 			}
 		}
-		
+
 		if( !found ) {
 			// If we requsted stable and all releases are pre-release, just grab the latest
 			if( boxJSONversion == 'stable' && arrayLen( entryData.versions ) ) {
 				result.version = entryData.versions[ 1 ].version;
-				result.isOutdated = true;					
+				result.isOutdated = true;
 			}
 		}
-		
-		return result;		
+
+		return result;
 	}
 
 	/**
@@ -139,12 +139,12 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 		required string password,
 		required string email,
 		required string firstName,
-		required string lastName 
+		required string lastName
 	){
 		var APIToken = configService.getSetting( 'endpoints.forgebox.APIToken', '' );
-			
+
 		try {
-			
+
 			var results = forgebox.register(
 				username = arguments.username,
 				password = arguments.password,
@@ -154,13 +154,13 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 				APIToken = APIToken
 			);
 			return results.APIToken;
-					
+
 		} catch( forgebox var e ) {
 			// This can include "expected" errors such as "Email already in use"
 			throw( e.message, 'endpointException', e.detail );
 		}
 	}
-	
+
 	/**
 	 * Login a user into ForgeBox
 	 * @username The username
@@ -170,32 +170,32 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 	 */
 	public string function login( required string userName, required string password ) {
 		try {
-			
+
 			var results = forgebox.login( argumentCollection=arguments );
 			return results.APIToken;
-					
+
 		} catch( forgebox var e ) {
 			// This can include "expected" errors such as "Email already in use"
 			throw( e.message, 'endpointException', e.detail );
 		}
 	}
-	
+
 	/**
 	 * Publish a package in ForgeBox
 	 * @path The path to publish
 	 */
 	public function publish( required string path ) {
-		
+
 		if( !packageService.isPackage( arguments.path ) ) {
-			throw( 	
-				'Sorry but [#arguments.path#] isn''t a package.', 
-				'endpointException', 
-				'Please double check you''re in the correct directory or use "package init" to turn your directory into a package.' 
-			);			
+			throw(
+				'Sorry but [#arguments.path#] isn''t a package.',
+				'endpointException',
+				'Please double check you''re in the correct directory or use "package init" to turn your directory into a package.'
+			);
 		}
-		
+
 		var boxJSON = packageService.readPackageDescriptor( arguments.path );
-		
+
 		var props = {}
 		props.slug = boxJSON.slug;
 		props.version = boxJSON.version;
@@ -208,7 +208,7 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 		props.changeLog = boxJSON.changeLog;
 		props.changeLogFormat = 'text';
 		props.APIToken = configService.getSetting( 'endpoints.forgebox.APIToken', '' );
-		
+
 		// Look for readme, instruction, and changelog files
 		for( var item in [
 			{ variable : 'description', file : 'readme' },
@@ -226,41 +226,41 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 				}
 			}
 		}
-		
-		try {			
+
+		try {
 			consoleLogger.warn( "Sending package information to ForgeBox, please wait..." );
 
 			forgebox.publish( argumentCollection=props );
-			
+
 			consoleLogger.info( "Package is alive, you can visit it here: #forgebox.getEndpointURL()#/view/#boxJSON.slug#" );
 		} catch( forgebox var e ) {
 			// This can include "expected" errors such as "User not authenticated"
 			throw( e.message, 'endpointException', e.detail );
 		}
 	}
-	
+
 	/**
 	 * Unpublish a package in ForgeBox
 	 * @path The path to publish
 	 * @version The version to publish
 	 */
 	public function unpublish( required string path, string version='') {
-		
+
 		if( !packageService.isPackage( arguments.path ) ) {
-			throw( 	
-				'Sorry but [#arguments.path#] isn''t a package.', 
-				'endpointException', 
-				'Please double check you''re in the correct directory.' 
-			);			
+			throw(
+				'Sorry but [#arguments.path#] isn''t a package.',
+				'endpointException',
+				'Please double check you''re in the correct directory.'
+			);
 		}
-		
+
 		var boxJSON = packageService.readPackageDescriptor( arguments.path );
-		
-		try {			
+
+		try {
 			consoleLogger.warn( "Unpublishing package [#boxJSON.slug##( len( arguments.version ) ? '@' : '' )##arguments.version#] from ForgeBox, please wait..." );
 
 			forgebox.unpublish( boxJSON.slug, arguments.version, configService.getSetting( 'endpoints.forgebox.APIToken', '' ) );
-			
+
 		} catch( forgebox var e ) {
 			// This can include "expected" errors such as "User not authenticated"
 			throw( e.message, 'endpointException', e.detail );
@@ -282,27 +282,27 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 			// This can include "expected" errors such as "User not authenticated"
 			throw( e.message, 'endpointException', e.detail );
 		}
-		
+
 		arguments.entryData.versions.sort( function( a, b ) { return semanticVersion.compare( b.version, a.version ) } );
-		
+
 		var found = false;
 		for( var thisVersion in arguments.entryData.versions ) {
 			if( semanticVersion.satisfies( thisVersion.version, arguments.version ) ) {
 				return thisVersion;
 			}
 		}
-		
+
 		// If we requsted stable and all releases are pre-release, just grab the latest
 		if( arguments.version == 'stable' && arrayLen( arguments.entryData.versions ) ) {
-			return arguments.entryData.versions[ 1 ]; 
+			return arguments.entryData.versions[ 1 ];
 		} else {
-			throw( 'Version [#arguments.version#] not found for package [#arguments.slug#].', 'endpointException', 'Available versions are [#arguments.entryData.versions.map( function( i ){ return ' ' & i.version; } ).toList()#]' );					
+			throw( 'Version [#arguments.version#] not found for package [#arguments.slug#].', 'endpointException', 'Available versions are [#arguments.entryData.versions.map( function( i ){ return ' ' & i.version; } ).toList()#]' );
 		}
 	}
-		
+
 	/**
 	* Parses just the slug portion out of an endpoint ID
-	* @package The full endpointID like foo@1.0.0 
+	* @package The full endpointID like foo@1.0.0
 	*/
 	public function parseSlug( required string package ) {
 		return listFirst( arguments.package, '@' );
@@ -310,7 +310,7 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 
 	/**
 	* Parses just the version portion out of an endpoint ID
-	* @package The full endpointID like foo@1.0.0 
+	* @package The full endpointID like foo@1.0.0
 	*/
 	public function parseVersion( required string package ) {
 		var version = 'stable';
@@ -323,7 +323,7 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 		return version;
 	}
 
-	
+
 	/****************************************** PRIVATE ******************************************/
 
 	/**
@@ -332,108 +332,108 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 	 * @version The package version
 	 * @verbose Verbose flag or silent, defaults to false
 	 */
-	private function getPackage( slug, version, verbose=false ) {		
-	
+	private function getPackage( slug, version, verbose=false ) {
+
 		var APIToken = configService.getSetting( 'endpoints.forgebox.APIToken', '' );
-		
+
 		try {
 			// Info
 			consoleLogger.warn( "Verifying package '#slug#' in ForgeBox, please wait..." );
-						
+
 			var entryData = forgebox.getEntry( slug, APIToken );
-					
+
 			// Verbose info
 			if( arguments.verbose ){
 				consoleLogger.debug( "Package data retrieved: ", entryData );
 			}
-			
+
 			// entrylink,createdate,lname,isactive,installinstructions,typename,version,hits,coldboxversion,sourceurl,slug,homeurl,typeslug,
 			// downloads,entryid,fname,changelog,updatedate,downloadurl,title,entryrating,summary,username,description,email
-							
-			if( !entryData.isActive ) {				
+
+			if( !entryData.isActive ) {
 				throw( 'The ForgeBox entry [#entryData.title#] is inactive.', 'endpointException' );
 			}
-	
+
 			var satisfyingVersion = findSatisfyingVersion( slug, version, entryData );
 			arguments.version = satisfyingVersion.version;
 			var downloadURL = satisfyingVersion.downloadURL;
-						
+
 			if( !len( downloadurl ) ) {
 				throw( 'No download URL provided in ForgeBox.  Manual install only.', 'endpointException' );
 			}
-			
+
 			consoleLogger.info( "Installing version [#arguments.version#]." );
-			
+
 			try {
 				forgeBox.recordInstall( arguments.slug, arguments.version, APIToken );
 			} catch( forgebox var e ) {
 				consoleLogger.warn( e.message & CR & e.detail );
 			}
-					
+
 			var packageType = entryData.typeSlug;
-			
+
 			// Advice we found it
 			consoleLogger.info( "Verified entry in ForgeBox: '#slug#'" );
-				
+
 			var strVersion = semanticVersion.parseVersion( version );
-			
+
 			// If the local artifact doesn't exist or it's a snapshot build, download and create it
 			if( !artifactService.artifactExists( slug, version ) || strVersion.preReleaseID == 'snapshot' ) {
-					
+
 				// Test package location to see what endpoint we can refer to.
 				var endpointData = endpointService.resolveEndpoint( downloadURL, 'fakePath' );
-				
+
 				consoleLogger.info( "Deferring to [#endpointData.endpointName#] endpoint for ForgeBox entry [#slug#]..." );
-				
+
 				var packagePath = endpointData.endpoint.resolvePackage( endpointData.package, arguments.verbose );
-								
+
 				// Cheat for people who set a version, slug, or type in ForgeBox, but didn't put it in their box.json
 				var boxJSON = packageService.readPackageDescriptorRaw( packagePath );
 				if( !structKeyExists( boxJSON, 'type' ) || !len( boxJSON.type ) ) { boxJSON.type = entryData.typeslug; }
 				if( !structKeyExists( boxJSON, 'slug' ) || !len( boxJSON.slug ) ) { boxJSON.slug = entryData.slug; }
 				if( !structKeyExists( boxJSON, 'version' ) || !len( boxJSON.version ) ) { boxJSON.version = version; }
 				packageService.writePackageDescriptor( boxJSON, packagePath );
-				
+
 				consoleLogger.info( "Storing download in artifact cache..." );
-												
+
 				// Store it locally in the artfact cache
 				artifactService.createArtifact( slug, version, packagePath );
-													
+
 				consoleLogger.info( "Done." );
-				
+
 				return packagePath;
-				
+
 			} else {
 				consoleLogger.info( "Package found in local artifacts!");
-				var thisArtifactPath = artifactService.getArtifactPath( slug, version );		
+				var thisArtifactPath = artifactService.getArtifactPath( slug, version );
 				// Defer to file endpoint
 				return fileEndpoint.resolvePackage( thisArtifactPath, arguments.verbose );
 			}
-			
-			
+
+
 		} catch( forgebox var e ) {
-			
+
 			consoleLogger.error( ".");
 			consoleLogger.error( "Aww man,  ForgeBox isn't feeling well.");
 			consoleLogger.debug( "#e.message#  #e.detail#");
 			consoleLogger.error( "We're going to look in your local artifacts cache and see if one of those versions will work.");
-			
+
 			// See if there's something usable in the artifacts cache.  If so, we'll use that version.
 			var satisfyingVersion = artifactService.findSatisfyingVersion( slug, version );
-			
+
 			if( len( satisfyingVersion ) ) {
 				consoleLogger.info( ".");
 				consoleLogger.info( "Sweet! We found a local version of [#satisfyingVersion#] that we can use in your artifacts.");
 				consoleLogger.info( ".");
-				
-				var thisArtifactPath = artifactService.getArtifactPath( slug, satisfyingVersion );		
+
+				var thisArtifactPath = artifactService.getArtifactPath( slug, satisfyingVersion );
 				// Defer to file endpoint
 				return fileEndpoint.resolvePackage( thisArtifactPath, arguments.verbose );
 			} else {
 				throw( 'No satisfying version found for [#version#].', 'endpointException', 'Well, we tried as hard as we can.  ForgeBox is unreachable and you don''t have a usable version in your local artifacts cache.  Please try another version.' );
 			}
 
-		}		
+		}
 	}
-	
+
 }

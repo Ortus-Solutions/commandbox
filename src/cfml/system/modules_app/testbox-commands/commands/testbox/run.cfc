@@ -1,9 +1,9 @@
 /**
- * Executes TestBox runners via HTTP/S.  By default, the "testbox.runner" property will be read from your box.json.   
+ * Executes TestBox runners via HTTP/S.  By default, the "testbox.runner" property will be read from your box.json.
 * .
 * {code:bash}
 * testbox run
-* {code}   
+* {code}
 * .
 * You can also specify the URL manually
 * {code:bash}
@@ -12,7 +12,7 @@
 *
  **/
 component {
-	
+
 	// DI
 	property name="packageService" 	inject="PackageService";
 	property name="testingService" 	inject="TestingService@testbox-commands";
@@ -31,7 +31,7 @@ component {
 	* @testSuites  A list of suite names that are the ones that will be executed ONLY!
 	* @testSpecs   A list of test names that are the ones that will be executed ONLY!
 	* @outputFile  We will store the results in this output file as well as presenting it to you.
-	* @verbose Display extra details inlcuding passing and skipped tests.  
+	* @verbose Display extra details inlcuding passing and skipped tests.
 	**/
 	function run(
 		string runner="",
@@ -71,7 +71,7 @@ component {
 		if( !find( "?", testboxURL ) ){
 			testboxURL &= "?";
 		}
-		
+
 		// Runner options overridable by arguments and box options
 		var RUNNER_OPTIONS = {
 			"reporter"	    : "json",
@@ -91,11 +91,11 @@ component {
 			// Check argument overrides
 			if( !isNull( arguments[ thisOption ] ) ){
 				testboxURL &= "&#thisOption#=#arguments[ thisOption ]#";
-			} 
+			}
 			// Check runtime options now
 			else if( boxOptions.keyExists( thisOption ) ){
 				testboxURL &= "&#thisOption#=#boxOptions[ thisOption ]#";
-			} 
+			}
 			// Defaults
 			else if( len( RUNNER_OPTIONS[ thisOption ] ) ) {
 				testboxURL &= "&#thisOption#=#RUNNER_OPTIONS[ thisOption ]#";
@@ -109,8 +109,8 @@ component {
 		// run it now baby!
 		try{
 			// Throw on error means this command will fail if the actual test runner blows up-- possibly on a compilation issue.
-			Http url=testBoxURL throwonerror=true result='local.results' ;			
-		} catch( any e ){			
+			Http url=testBoxURL throwonerror=true result='local.results' ;
+		} catch( any e ){
 			logger.error( "Error executing tests: #e.message# #e.detail#", e );
 			return error( 'Error executing tests: #CR# #e.message##CR##e.detail##CR##local.results.fileContent ?: ''#' );
 		}
@@ -123,29 +123,29 @@ component {
 			fileWrite( arguments.outputFile, results.fileContent );
 			print.boldGreenLine( "Report written to #arguments.outputFile#!" );
 		}
-		
+
 		results.fileContent = trim( results.fileContent );
-		
+
 		// Default is to template our own output based on a JSON reponse
 		if( RUNNER_OPTIONS.reporter == 'json' && isJSON( results.fileContent ) ) {
-			
+
 			var testData = deserializeJSON( results.fileContent );
-			
+
 			// If any tests failed or errored.
 			if( testData.totalFail || testData.totalError ) {
 				// Send back failing exit code to shell
 				setExitCode( 1 );
-			} 
-			
+			}
+
 			CLIRenderer.render( print, testData, arguments.verbose ?: boxOptions.verbose ?: true );
-									
+
 			//systemOutput( getINstance( 'formatter' ).formatJSON( testData ) );
-			
+
 		// For all other reporters, just dump out whatever we got from the server
 		} else {
-			
+
 			results.fileContent = reReplace( results.fileContent, '[\r\n]+', CR, 'all' );
-		
+
 			// Print accordingly to results
 			if( ( results.responseheader[ "x-testbox-totalFail" ]  ?: 0 ) eq 0 AND
 				( results.responseheader[ "x-testbox-totalError" ] ?: 0 ) eq 0 ){
@@ -160,9 +160,9 @@ component {
 				setExitCode( 1 );
 				print.boldRed( " " & results.filecontent );
 			}
-			
+
 		}
-				
+
 	}
 
 }

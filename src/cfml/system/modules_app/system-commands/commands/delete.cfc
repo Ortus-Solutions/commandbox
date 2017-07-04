@@ -17,7 +17,7 @@
  * {code:bash}
  * delete myFolder/ --recurse
  * {code}
- **/	
+ **/
 component aliases="rm,del" {
 
 	/**
@@ -26,55 +26,55 @@ component aliases="rm,del" {
 	 * @recurse.hint Delete sub directories
 	 **/
 	function run( required Globber path, Boolean force=false, Boolean recurse=false )  {
-		
+
 		path.apply( function( thisPath ) {
 			// It's a directory
 			if( directoryExists( thisPath ) ) {
-									
+
 					var subMessage = recurse ? ' and all its subdirectories' : '';
-					
+
 					if( force || confirm( "Delete #thisPath##subMessage#? [y/n]" ) ) {
-						
+
 						if( directoryList( thisPath ).len() && !recurse ) {
 							return error( 'Directory [#thisPath#] is not empty! Use the "recurse" parameter to override' );
 						}
-						// Catch this to gracefully handle where the OS or another program 
+						// Catch this to gracefully handle where the OS or another program
 						// has the folder locked.
 						try {
 							directoryDelete( thisPath, recurse );
-							print.greenLine( "Deleted #thisPath#" );				
+							print.greenLine( "Deleted #thisPath#" );
 						} catch( any e ) {
 							error( '#e.message##CR#The folder is possibly locked by another program.'  );
 							logger.error( '#e.message# #e.detail#' , e.stackTrace );
 						}
 					} else {
-						print.redLine( "Cancelled!" );					
+						print.redLine( "Cancelled!" );
 					}
-					
-				
+
+
 			// It's a file
 			} else if( fileExists( thisPath ) ){
-							
+
 				if( force || confirm( "Delete #thisPath#? [y/n]" ) ) {
-					
-						// Catch this to gracefully handle where the OS or another program 
+
+						// Catch this to gracefully handle where the OS or another program
 						// has the file locked.
 						try {
 							fileDelete( thisPath );
-							print.greenLine( "Deleted #thisPath#" );				
+							print.greenLine( "Deleted #thisPath#" );
 						} catch( any e ) {
 							error( '#e.message##CR#The file is possibly locked by another program.'  );
 							logger.error( '#e.message# #e.detail#' , e.stackTrace );
 						}
 				} else {
-					print.redLine( "Cancelled!" );					
+					print.redLine( "Cancelled!" );
 				}
-				
-			} else {	
+
+			} else {
 				return error( "File/directory does not exist: #thisPath#" );
 			}
 
-		} );			
+		} );
 	}
-	
+
 }

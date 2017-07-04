@@ -10,37 +10,37 @@
  * {code:bash}
  * dir samples/ --recurse
  * {code}
- * 
+ *
  **/
 component aliases="ls,ll,directory" {
 
 	/**
 	 * @directory.hint The directory to list the contents of or a file Globbing path to filter on
-	 * @recurse.hint Include nested files and folders 
+	 * @recurse.hint Include nested files and folders
 	 **/
 	function run( Globber directory=globber( ( getCWD().endsWith( '/' ) || getCWD().endsWith( '\' )  ? getCWD() : getCWD() & '/' ) ), Boolean recurse=false )  {
-		
-		// If the user gives us an existing directory foo, change it to the 
+
+		// If the user gives us an existing directory foo, change it to the
 		// glob pattern foo/* or foo/** if doing a recursive listing.
 		if( directoryExists( directory.getPattern() ) ){
 			directory.setPattern( directory.getPattern() & '*' & ( recurse ? '*' : '' ) );
 		}
-		
+
 		// TODO: Add ability to re-sort this based on user input
 		var results = directory
 			.asQuery()
 			.matches();
-		
+
 		for( var x=1; x lte results.recordcount; x++ ) {
 			var printCommand = ( results.type[ x ] eq "File" ? "green" : "white" );
 
-			print[ printCommand & "line" ]( 
+			print[ printCommand & "line" ](
 				results.type[ x ] & " " &
 				( results.type[ x ] eq "Dir" ? " " : "" ) & //padding
 				results.attributes[ x ] & " " &
 				numberFormat( results.size[ x ], "999999999" ) & " " &
 				dateTimeFormat( results.dateLastModified[ x ], "MMM dd,yyyy HH:mm:ss" ) & " " &
-				cleanRecursiveDir( arguments.directory.getBaseDir(), results.directory[ x ] ) & results.name[ x ] & ( results.type[ x ] == "Dir" ? "/" : "" )				
+				cleanRecursiveDir( arguments.directory.getBaseDir(), results.directory[ x ] ) & results.name[ x ] & ( results.type[ x ] == "Dir" ? "/" : "" )
 			);
 		}
 
