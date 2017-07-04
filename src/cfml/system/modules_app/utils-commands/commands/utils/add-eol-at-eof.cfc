@@ -1,50 +1,48 @@
 /**
- * - Usage
- * .
- * Add trailing newline to a list of files
- * .
+ * 
+ * Ensure files have a trailing newline to adhere to POSIX standard.  Operates on a single file
+ * or multiple files as defined by a file globbing pattern.
+ * 
  * {code:bash}
- * eol globber-filter
+ * eol **.cf*
  * {code}
- * .
- * No-confirm
- * .
+ * 
+ * To skip the confirmation, use the --force flag.
+ * 
  * {code:bash}
- * eol globber-filter --force
+ * eol models/**.cfc --force
  * {code}
- * .
- * Print the file path of each file affected
- * .
+ * 
+ * Print the file path of each file affected with the --verbose flag.
+ * 
  * {code:bash}
- * eol globber-filter --verbose
+ * eol includes/*.cfm --verbose
  * {code}
- * .
+ * 
  * Exclude a list a globber patterns
- * .
+ * 
  * {code:bash}
- * eol globber-filter *.png,node_modules/
+ * eol ** *.png,node_modules/
  * {code}
- * .
- * - Configuration
- * .
- * Set default force parameter
+ * 
+ * You can set global default parameters for this command to use like so:
+ * 
  * {code:bash}
  * config set command.defaults.eol.force=true
- * {code}
- * .
- * Set default verbose parameter
- * {code:bash}
  * config set command.defaults.eol.verbose=true
- * {code}
- * .
- * Set default exclude patterns
- * {code:bash}
  * config set command.defaults.eol.exclude=.git/,*.png
  * {code}
+ * 
 **/
 component aliases="eol" {
 	property name="pathPatternMatcher" inject="provider:pathPatternMatcher@globber";
 
+	/**
+	* @files A file globbing pattern that matches one or more files
+	* @exclude  A list of globbing patterns to ignore
+	* @force Skip user confirmation of modiying files
+	* @verbose Output additional information about each file affected
+	*/
 	public function run(
 		required Globber files,
 		String exclude = "",

@@ -1,50 +1,48 @@
 /**
- * - Usage
- * .
- * Remove trailing spaces from a list of files
- * .
+ * 
+ * Remove those pesky trailing spaces from each line that some editors add.  
+ * Can be run on a single file or aginst a list of files defined by a file globbing pattern.
+ * 
  * {code:bash}
- * rts globber-filter
+ * rts **.cf*
  * {code}
- * .
- * No-confirm
- * .
+ * 
+ * Skip the user confirmation with the --force flag.
+ * 
  * {code:bash}
- * rts globber-filter --force
+ * rts models/**.cfc --force
  * {code}
- * .
- * Print the file path of each file affected
- * .
+ * 
+ * Print the file path of each file affected with the --verbose flag.
+ * 
  * {code:bash}
- * rts globber-filter --verbose
+ * rts includes/*.cfm --verbose
  * {code}
- * .
- * Exclude a list a globber patterns
- * .
+ * 
+ * Exclude a list a file globbing patterns
+ * 
  * {code:bash}
- * rts globber-filter *.png,node_modules/
+ * rts ** *.png,node_modules/
  * {code}
- * .
- * - Configuration
- * .
- * Set default force parameter
+ * 
+ * You can set global default parameters for this command to use like so:
+ * 
  * {code:bash}
  * config set command.defaults.rts.force=true
- * {code}
- * .
- * Set default verbose parameter
- * {code:bash}
  * config set command.defaults.rts.verbose=true
- * {code}
- * .
- * Set default exclude patterns
- * {code:bash}
  * config set command.defaults.rts.exclude=.git/,*.png
  * {code}
+ *
 **/
 component aliases="rts" {
 	property name="pathPatternMatcher" inject="provider:pathPatternMatcher@globber";
 
+	/**
+	* @files A file globbing pattern that matches one or more files
+	* @exclude  A list of globbing patterns to ignore
+	* @force Skip user confirmation of modiying files
+	* @verbose Output additional information about each file affected
+	*/
 	public function run(
 		required Globber files,
 		String exclude = "",
