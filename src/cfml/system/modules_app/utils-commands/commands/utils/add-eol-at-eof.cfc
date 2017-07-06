@@ -57,23 +57,27 @@ component aliases="eol" {
 		}
 
 		for ( var file in arguments.files ){
-			if ( arguments.verbose ){
-				print.line( "Adding EOL at EOF to " & file & "..." );
-			}
-
-			addEOL( file );
+			addEOL( file, arguments.verbose );
 		}
 	}
 
-	private function addEOL( filePath ){
+	private function addEOL( filePath, verbose ){
 		// trim and get line endings
-		var content = rTrim( fileRead( arguments.filePath ) );
+		var content = fileRead( arguments.filePath );
+		var newContent = rTrim( content );
 
 		// Add single newline to file content
-		content &= getLineEndings( content );
+		newContent &= getLineEndings( newContent );
 
-		// write new file
-		fileWrite( arguments.filePath, content );
+		if ( content != newContent ) {
+			if ( arguments.verbose ){
+				print.line( "Adding EOL at EOF to " & arguments.filePath & "..." )
+					.toConsole();
+			}
+
+			// write new file
+			fileWrite( arguments.filePath, newContent );
+		}
 	}
 
 	private function filterFiles( files, exclude ){
