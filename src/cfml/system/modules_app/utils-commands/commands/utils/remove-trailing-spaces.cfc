@@ -57,36 +57,47 @@ component aliases="rts" {
 		}
 
 		for ( var file in arguments.files ){
-			if ( arguments.verbose ){
-				print.line( "Removing trailing spaces from " & file & "..." );
-			}
-
-			removeTrailingSpaces( file );
+			removeTrailingSpaces( file, verbose );
 		}
 	}
 
-	private function removeTrailingSpaces( filePath ){
+	private function removeTrailingSpaces( filePath, verbose ){
 		// trim trailing spaces and get line endings
 		var trimLinesResult = fileTrimLines( arguments.filePath );
 
-		// write new file
-		fileWrite( arguments.filePath, arrayToList( trimLinesResult.lines, trimLinesResult.lineEndings ) );
+		if ( trimLinesResult.fileChanged ){
+			if ( arguments.verbose ){
+				print.line( "Removing trailing spaces from " & arguments.filePath & "..." )
+					.toConsole();
+			}
+
+			// write new file
+			fileWrite( arguments.filePath, arrayToList( trimLinesResult.lines, trimLinesResult.lineEndings ) );
+		}
 	}
 
 	private function fileTrimLines( filePath ){
 		var lines = [];
 		var lineEndings = "";
+		var currentLine = "";
+		var fileChanged = false;
 
 		cfloop( file=filePath, index="line" ){
 			// get the file line endings
 			if ( lineEndings == "" ){
 				lineEndings = getLineEndings( line );
 			}
+
 			// trim the trailing spaces
-			lines.append( rTrim( line ) );
+			currentLine = rTrim( line );
+			lines.append( currentLine );
+
+			if ( currentLine != line ) {
+				fileChanged = true;
+			}
 		}
 
-		return { lines: lines, lineEndings: lineEndings };
+		return { lines: lines, lineEndings: lineEndings, fileChanged: fileChanged };
 	}
 
 	private function filterFiles( files, exclude ){
