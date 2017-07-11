@@ -118,6 +118,7 @@ component accessors="true" singleton {
 			'stopsocket' : d.stopsocket ?: 0,
 			'debug' : d.debug ?: false,
 			'trace' : d.trace ?: false,
+			'console' : d.console ?: false,
 			'trayicon' : d.trayicon ?: '',
 			// Duplicate so onServerStart interceptors don't actually change config settings via refernce.
 			'trayOptions' : duplicate( d.trayOptions ?: [] ),
@@ -453,6 +454,7 @@ component accessors="true" singleton {
 		// The big servers.json is only used to keep a record of the last values the server was started with
 		serverInfo.trace 			= serverProps.trace 			?: serverJSON.trace 				?: defaults.trace;
 		serverInfo.debug 			= serverProps.debug 			?: serverJSON.debug 				?: defaults.debug;
+		serverInfo.console 			= serverProps.console 			?: serverJSON.console 				?: defaults.console;
 		serverInfo.openbrowser		= serverProps.openbrowser 		?: serverJSON.openbrowser			?: defaults.openbrowser;
 		serverInfo.openbrowserURL	= serverProps.openbrowserURL	?: serverJSON.openbrowserURL		?: defaults.openbrowserURL;
 
@@ -825,7 +827,7 @@ component accessors="true" singleton {
 			'items' : serverInfo.trayOptions
 		};
 		fileWrite( trayOptionsPath,  serializeJSON( trayJSON ) );
-		var background = !(serverProps.console ?: false);
+		var background = !(serverInfo.console ?: false);
 		// The java arguments to execute:  Shared server, custom web configs
 
 		// This is an array of tokens to send to the process builder
