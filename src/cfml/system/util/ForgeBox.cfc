@@ -245,6 +245,7 @@ or just add DEBUG to the root logger
 	*/
 	function publish(
 		required string slug,
+		required boolean private,
 		required string version,
 		required string boxJSON,
 		required string isStable=true,
@@ -258,6 +259,7 @@ or just add DEBUG to the root logger
 
 		var body = {
 			slug : arguments.slug,
+			private : arguments.private,
 			version : arguments.version,
 			boxJSON : arguments.boxJSON,
 			isStable : arguments.isStable,
@@ -458,7 +460,6 @@ or just add DEBUG to the root logger
 					CFHTTPParams.proxyPassword = proxyPassword;
 				}
 			}
-
 		</cfscript>
 
 		<!--- REST CAll --->

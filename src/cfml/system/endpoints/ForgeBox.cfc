@@ -198,6 +198,7 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 
 		var props = {}
 		props.slug = boxJSON.slug;
+		props.private = boxJSON.private;
 		props.version = boxJSON.version;
 		props.boxJSON = serializeJSON( boxJSON );
 		props.isStable = !semanticVersion.isPreRelease( boxJSON.version );
