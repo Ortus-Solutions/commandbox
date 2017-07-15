@@ -13,6 +13,7 @@
 package com.ortussolutions.commandbox.jgit;
 
 import org.eclipse.jgit.api.GitCommand;
+import java.util.concurrent.Callable;
 import java.lang.Exception;
 
 public class CommandCaller {
@@ -26,7 +27,7 @@ public class CommandCaller {
 	 * @return Whatever results that come back from the Jgit command's calling
 	 * @throws Exception
 	 */
-	public Object call( GitCommand command ) throws Exception {
+	public Object call( Callable command ) throws Exception {
 
 		try { 
 			

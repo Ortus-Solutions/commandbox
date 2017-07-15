@@ -6,7 +6,7 @@
 * @author Brad Wood, Luis Majano, Denny Valliant
 *
 * I am the Git endpoint.  I get packages from a Git  URL.
-* 
+*
 * - git+ssh://git@github.com:user/repo.git#v1.0.27
 * - git+https://login@github.com/user/repo.git
 * - git+http://login@github.com/user/repo.git
@@ -21,7 +21,7 @@
 *
 */
 component accessors="true" implements="IEndpoint" singleton {
-		
+
 	// DI
 	property name="consoleLogger"			inject="logbox:logger:console";
 	property name="tempDir" 				inject="tempDir@constants";
@@ -30,18 +30,18 @@ component accessors="true" implements="IEndpoint" singleton {
 	property name="progressableDownloader" 	inject="ProgressableDownloader";
 	property name="progressBar" 			inject="ProgressBar";
 	property name="system" 					inject="system@constants";
-	
-	
+
+
 	// Properties
 	property name="namePrefixes" type="string";
-	
+
 	function init() {
 		setNamePrefixes( 'git' );
 		return this;
 	}
-		
+
 	public string function resolvePackage( required string package, boolean verbose=false ) {
-		
+
 		var GitURL = replace( arguments.package, '//', '' );
 		GitURL = getProtocol() & GitURL;
 		var branch = 'master';
@@ -52,55 +52,55 @@ component accessors="true" implements="IEndpoint" singleton {
 		}
 
 		consoleLogger.debug( 'Cloning Git URL [#GitURL#]' );
-		
+
 		// The main Git API
 		var Git = createObject( 'java', 'org.eclipse.jgit.api.Git' );
-		
+
 		// Wrap up system out in a PrintWriter and create a progress monitor to track our clone
 		var printWriter = createObject( 'java', 'java.io.PrintWriter' ).init( system.out, true );
 		var progressMonitor = createObject( 'java', 'org.eclipse.jgit.lib.TextProgressMonitor' ).init( printWriter );
-		
+
 		// Temporary location to place the repo
 		var localPath = createObject( 'java', 'java.io.File' ).init( "#tempDir#/git_#randRange( 1, 1000 )#" );
-		
+
 		// This will trap the full java exceptions to work around this annoying behavior:
 		// https://luceeserver.atlassian.net/browse/LDEV-454
 		var CommandCaller = createObject( 'java', 'com.ortussolutions.commandbox.jgit.CommandCaller' ).init();
-		    
-		try { 
+
+		try {
 			// Clone the repo locally into a temp folder
 			var cloneCommand = Git.cloneRepository()
-				.setURI( GitURL )	
+				.setURI( GitURL )
 				.setCloneSubmodules( true )
 				.setDirectory( localPath )
 				.setProgressMonitor( progressMonitor );
-		        		         
+
 			// Conditionally apply security
 			var command = secureCloneCommand( cloneCommand );
 		    // call with our special java wrapper
 			local.result = CommandCaller.call( command );
-			
+
 			// Get a list of all branches
 			var branchListCommand = local.result.branchList();
 			var listModeAll = createObject( 'java', 'org.eclipse.jgit.api.ListBranchCommand$ListMode' ).ALL;
 			var branchList = [].append( CommandCaller.call( branchListCommand.setListMode( listModeAll ) ), true );
 			branchList = branchList.map( function( ref ){ return ref.getName(); } );
-			
+
 	    	if( arguments.verbose ){ consoleLogger.debug( 'Available branches are #branchList.toList()#' ); }
-	    	
+
 	    	// If the commit-ish looks like it's a branch, modify the ref's name.
 		    if( branchList.containsNoCase( branch ) ) {
 		    	if( arguments.verbose ){ consoleLogger.debug( 'Commit-ish [#branch#] appears to be a branch.' ); }
 		    	branch = 'origin/' & branch;
 		    }
-		    
+
 		    // Checkout branch, tag, or commit hash.
 	        CommandCaller.call( local.result.checkout().setName( branch ) );
-		        
+
 		} catch( any var e ) {
 			// If the exception came from the Java call, this exception won't be null
 			var theRealJavaException = CommandCaller.getException();
-			
+
 			// If it's null, that just means some other CFML code must have blown chunks above.
 			if( isNull( theRealJavaException ) ) {
 				throw( message="Error Cloning Git repository", detail="#e.message#",  type="endpointException");
@@ -111,10 +111,10 @@ component accessors="true" implements="IEndpoint" singleton {
 					deepMessage &= '#theRealJavaException.toString()# #chr( 10 )#';
 					theRealJavaException = theRealJavaException.getCause()
 				} while( !isNull( theRealJavaException ) )
-				
+
 				throw( message="Error Cloning Git repository", detail="#deepMessage#",  type="endpointException");
 			}
-						 
+
 		} finally {
 			// Release file system locks on the repo
 			if( structKeyExists( local, 'result' ) ) {
@@ -122,16 +122,16 @@ component accessors="true" implements="IEndpoint" singleton {
 				result.close();
 			}
 		}
-		
+
 		// Clean up a bit
 		var gitFolder = localPath.getPath() & '/.git';
 		if( directoryExists( gitFolder ) ) {
 			directoryDelete( gitFolder, true );
 		}
-		
+
 		// Defer to file endpoint
 		return folderEndpoint.resolvePackage( localPath.getPath(), arguments.verbose );
-		
+
 	}
 
 	/**
@@ -140,15 +140,15 @@ component accessors="true" implements="IEndpoint" singleton {
 	public function getDefaultName( required string package ) {
 		// Remove committ-ish
 		var baseURL = listFirst( arguments.package, '##' );
-		
+
 		// Find last segment of URL (may or may not be a repo name)
 		var repoName = listLast( baseURL, '/' );
-		
+
 		// Check for the "git" extension in URL
 		if( listLast( repoName, '.' ) == 'git' ) {
 			return listFirst( repoName, '.' );
 		}
-		return reReplaceNoCase( arguments.package, '[^a-zA-Z0-9]', '', 'all' );		
+		return reReplaceNoCase( arguments.package, '[^a-zA-Z0-9]', '', 'all' );
 	}
 
 	private function getProtocol() {
@@ -161,7 +161,7 @@ component accessors="true" implements="IEndpoint" singleton {
 			return "";
 		}
 		return prefix & '://';
-		
+
 	}
 
 	public function getUpdate( required string package, required string version, boolean verbose=false ) {
@@ -169,7 +169,7 @@ component accessors="true" implements="IEndpoint" singleton {
 			isOutdated = true,
 			version = 'unknown'
 		};
-		
+
 		return result;
 	}
 

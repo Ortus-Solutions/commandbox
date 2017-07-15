@@ -8,7 +8,7 @@
 * I am the git+ssh endpoint.
 */
 component accessors="true" implements="IEndpoint" extends="commandbox.system.endpoints.Git" singleton {
-			
+
 	// Properties
 	property name="namePrefixes" type="string";
 
@@ -16,11 +16,11 @@ component accessors="true" implements="IEndpoint" extends="commandbox.system.end
 		setNamePrefixes( 'git+ssh' );
 		return this;
 	}
-	
+
 	// Set SSH listener
 	private function secureCloneCommand( required any cloneCommand ) {
 		// This is our custom SSH callback
-		var SSHCallback = createObject( 'java', 'com.ortussolutions.commandbox.jgit.SSHCallback' ).init(); 
+		var SSHCallback = createObject( 'java', 'com.ortussolutions.commandbox.jgit.SSHCallback' ).init();
 		cloneCommand.setTransportConfigCallback( SSHCallback );
 		return cloneCommand;
 	}

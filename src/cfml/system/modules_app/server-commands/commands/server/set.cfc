@@ -36,49 +36,49 @@
  * {code:bash}
  * server set aliases="[ '/includes' ]" --append
  * {code}
- * 
+ *
  **/
 component {
-	
+
 	property name="ServerService" inject="ServerService";
-	property name="JSONService" inject="JSONService"; 
-	
+	property name="JSONService" inject="JSONService";
+
 	/**
 	 * This param is a dummy param just to get the custom completor to work.
-	 * The actual parameter names will be whatever property name the user wants to set  
-	 * @_.hint Pass any number of property names in followed by the value to set 
+	 * The actual parameter names will be whatever property name the user wants to set
+	 * @_.hint Pass any number of property names in followed by the value to set
 	 * @_.optionsUDF completeProperty
-	 * @serverConfigFile The path to the server's JSON file.  
+	 * @serverConfigFile The path to the server's JSON file.
 	 * @append.hint If setting an array or struct, set to true to append instead of overwriting.
 	 **/
-	function run( 
+	function run(
 		_,
 		String serverConfigFile='',
 		boolean append=false ) {
-			
+
 		var thisAppend = arguments.append;
 
 		if( len( arguments.serverConfigFile ) ) {
 			arguments.serverConfigFile = fileSystemUtil.resolvePath( arguments.serverConfigFile );
 		}
 		var thisServerConfigFile = ( len( arguments.serverConfigFile ) ? arguments.serverConfigFile : getCWD() & '/server.json' );
-		
+
 		// Remove dummy args
 		structDelete( arguments, '_' );
 		structDelete( arguments, 'append' );
-		structDelete( arguments, 'serverConfigFile' );		
+		structDelete( arguments, 'serverConfigFile' );
 
 		var serverJSON = ServerService.readServerJSON( thisServerConfigFile );
 
-		var results = JSONService.set( serverJSON, arguments, thisAppend ); 
+		var results = JSONService.set( serverJSON, arguments, thisAppend );
 
 		// Write the file back out.
 		ServerService.saveServerJSON( thisServerConfigFile, serverJSON );
-		
+
 		for( var message in results ) {
 			print.greeLine( message );
 		}
-			
+
 	}
 
 	// Dynamic completion for property name based on contents of server.json

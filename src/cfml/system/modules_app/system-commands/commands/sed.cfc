@@ -23,7 +23,7 @@
  * .
  * The delimiter in the subsdtitute command does not have to be "/".  Whatever character
  * that immediatley follows the "s" will be used.  This can be useful where the regex
- * and/or replacement text contain a "/".  
+ * and/or replacement text contain a "/".
  * .
  * This example uses a tilde (~) as the delimiter.  It reads a file, replaces all instances
  * of a given file path, and writes the file back out.
@@ -36,7 +36,7 @@ component {
 
 	// DI Properties
 	property name='parser' 	inject='Parser';
-	
+
 	/**
 	 * @inputOrFile.hint The text to process, or a file name to read with --file
 	 * @commands.hint The command to perform on the input text.  Ex: s/replaceMe/withMe/g
@@ -47,32 +47,32 @@ component {
 		required string commands,
 		boolean file=false
 		)  {
-		
+
 		// Treat input as a file path
 		if( arguments.file ) {
-			arguments.inputOrFile = runCommand( command="cat '#parser.escapeArg( arguments.inputOrFile )#'", returnOutput=true );			
+			arguments.inputOrFile = runCommand( command="cat '#parser.escapeArg( arguments.inputOrFile )#'", returnOutput=true );
 		}
-		
+
 		// Turn output into an array, breaking on carriage returns
 		var inputLines = listToArray( arguments.inputOrFile, CR );
 		arguments.commands = trim( arguments.commands );
-		
+
 		// Only support a single command right now
 		if( left( arguments.commands, 1 ) == 's' ) {
 			substitute( inputLines, right( arguments.commands, len( arguments.commands ) -1 ) );
 		} else {
 			return error( 'Unknown command: [#arguments.commands#].  Type "sed help" for assistance.' );
 		}
-		
+
 	}
 
 	private function substitute( inputLines, command ) {
 		var commandParts = parseCommandParts( arguments.command );
 		if( hasError() ) { return; }
 		var flags = parseFlags( commandParts.flags );
-		
+
 		try {
-			
+
 			// Loop over content
 			for( var line in inputLines ) {
 				if( flags.caseInsensitive ) {
@@ -80,13 +80,13 @@ component {
 				} else {
 					line = REReplace( line, commandParts.regex, commandParts.replacement, ( flags.global ? 'all' : 'one' ) );
 				}
-					
+
 				print.line( line );
-				
+
 			} // End loop over inputLines
-				
+
 		} catch ( any var e ) {
-			// Any errors here are most likley from bad regex.  Control the "error" and 
+			// Any errors here are most likley from bad regex.  Control the "error" and
 			// include some additional debugging information.
 			return error(
 				e.message & CR &
@@ -94,7 +94,7 @@ component {
 				'Replacement: ' & commandParts.replacement
 			);
 		}
-		
+
 	}
 
 	private function parseCommandParts( command ) {
@@ -102,18 +102,18 @@ component {
 		// The next char is the delimiter.  (doesn't have to be "/")
 		var delimiter = left( str, 1 );
 		str = right( str, len( str ) -1 );
-		
+
 	    var strLen = str.length();
 		var isEscaped = false;
 		var char = '';
 		var phase = 1;
-		
+
 		var commandParts = {
 			regex = '',
 			replacement = '',
 			flags = ''
 		};
-		
+
 		// closure to help building up each part
 		var appendStr = function() {
 			// phase 1 is the regex
@@ -123,19 +123,19 @@ component {
 			// everything else is the flags
 			else { commandParts.flags &= char; }
 		};
-		
+
 		// Not using list manipulation since the list delimiter is variable
 		// AND can appear escaped with a backslash in the actual values.
 		for (var i=0; i<strLen; i++) {
 			char = str.substring(i,i+1);
-			
+
 			// If previous char was an escape, append no questions asked.
 			if( isEscaped ) {
 				isEscaped = false;
 				appendStr();
 				continue;
 			}
-			
+
 			// If this is an escape, append and continue.
 			if( char == '\' ) {
 				isEscaped = true;
@@ -145,23 +145,23 @@ component {
 				}
 				continue;
 			}
-			
+
 			// If we hit a delimiter, we've reached a new phase
 			if( char == delimiter ) {
 				phase++;
 				continue;
 			}
-						
+
 			appendStr();
 		}
-		
+
 		if( phase < 3 ) {
 			error( "Unterminated 's' command. We didn't find three delimiters of [#delimiter#]" );
 		}
-		
+
 		return commandParts;
 	}
-	
+
 	private function parseFlags( flags ) {
 		return {
 			global = ( arguments.flags contains 'g' ),

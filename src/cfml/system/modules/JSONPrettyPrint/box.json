@@ -1,0 +1,38 @@
+{
+    "name":"JSONPrettyPrint",
+    "version":"1.0.0",
+    "author":"",
+    "location":"Ortus-Solutions/JSONPrettyPrint#v1.0.0",
+    "homepage":"https://github.com/Ortus-Solutions/JSONPrettyPrint",
+    "documentation":"https://github.com/Ortus-Solutions/JSONPrettyPrint",
+    "repository":{
+        "type":"git",
+        "URL":"https://github.com/Ortus-Solutions/JSONPrettyPrint"
+    },
+    "bugs":"https://github.com/Ortus-Solutions/JSONPrettyPrint/issues",
+    "slug":"JSONPrettyPrint",
+    "shortDescription":"Pretty print JSON objects",
+    "description":"Pretty print JSON objects",
+    "type":"modules",
+    "dependencies":{
+        
+    },
+    "devDependencies":{
+        "coldbox":"^4.3.0+188",
+        "testbox":"^2.4.0+80"
+    },
+    "installPaths":{
+        "testbox":"testbox",
+        "coldbox":"tests\\resources\\app\\coldbox"
+    },
+    "scripts":{
+        "postVersion":"package set location='Ortus-Solutions/JSONPrettyPrint#v`package version`'",
+        "onRelease":"forgebox use ortus && publish",
+        "postPublish":"!git push && !git push --tags"
+    },
+    "ignore":[
+        "**/.*",
+        "test",
+        "tests"
+    ]
+}

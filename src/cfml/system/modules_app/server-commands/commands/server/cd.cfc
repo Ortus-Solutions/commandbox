@@ -16,7 +16,7 @@ component {
 	 * @name.optionsUDF serverNameComplete
 	 **/
 	function run( string name="" ){
-			
+
 		// Discover by shortname
 		var serverInfo = serverService.getServerInfoByName( arguments.name );
 
@@ -28,9 +28,9 @@ component {
 		var cdCommand = 'cd ' & '"#parser.escapeArg( serverInfo.webroot )#"';
 		print.yellowLine( '> ' & cdCommand );
 		runCommand( cdCommand );
-				
+
 	}
-	
+
 	function serverNameComplete() {
 		return serverService.getServerNames();
 	}

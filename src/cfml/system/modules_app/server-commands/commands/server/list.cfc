@@ -86,10 +86,10 @@ component {
 					.bold( status, statusColors.keyExists( status ) ? statusColors[ status ] : 'yellow' )
 					.bold( ')' )
 					.line();
-				
+
 				if( arguments.verbose ) {
 
-					print.indentedLine( "host:             " & thisServerInfo.host );					
+					print.indentedLine( "host:             " & thisServerInfo.host );
 					if( len( thisServerInfo.engineName ) ) {
 						print.indentedLine( "CF Engine:        " & thisServerInfo.engineName & ' ' & thisServerInfo.engineVersion );
 					}
@@ -97,6 +97,9 @@ component {
 						print.indentedLine( "WARPath:          " & thisServerInfo.WARPath );
 					} else {
 						print.indentedLine( "webroot:          " & thisServerInfo.webroot );
+					}
+					if( len( thisServerInfo.dateLastStarted ) ) {
+						print.indentedLine( 'Last Started: ' & datetimeFormat( thisServerInfo.dateLastStarted ) );
 					}
 					print.indentedLine( "HTTPEnable:       " & thisServerInfo.HTTPEnable )
 						.indentedLine( "port:             " & thisServerInfo.port )
@@ -130,6 +133,9 @@ component {
 						print.indentedLine( 'WAR Path: ' & thisServerInfo.warPath );
 					} else {
 						print.indentedLine( 'Webroot: ' & thisServerInfo.webroot );
+					}
+					if( len( thisServerInfo.dateLastStarted ) ) {
+						print.indentedLine( 'Last Started: ' & datetimeFormat( thisServerInfo.dateLastStarted ) );
 					}
 				}// end verbose
 

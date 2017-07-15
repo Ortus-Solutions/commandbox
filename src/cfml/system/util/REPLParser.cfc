@@ -107,6 +107,9 @@ component accessors="true" singleton {
 		// null
 		if( isNull( result ) ){
 			return;
+		// binary
+		} else if( isBinary( result ) ) {
+			return '[BINARY]';
 		// string
 		} else if( isSimpleValue( result ) ) {
 			return result;

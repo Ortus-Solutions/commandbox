@@ -8,13 +8,13 @@
 * I am the git+http endpoint.
 */
 component accessors="true" implements="IEndpoint" extends="commandbox.system.endpoints.Git" singleton {
-			
+
 	// Properties
 	property name="namePrefixes" type="string";
-	
+
 	function init() {
 		setNamePrefixes( 'git+http' );
 		return this;
 	}
-	
+
 }

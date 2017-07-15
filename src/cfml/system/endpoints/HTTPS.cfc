@@ -8,13 +8,13 @@
 * I am the HTTPS endpoint.  I get packages from an HTTPS URL.
 */
 component accessors="true" implements="IEndpoint" extends="commandbox.system.endpoints.HTTP" singleton {
-			
+
 	// Properties
 	property name="namePrefixes" type="string";
-	
+
 	function init() {
 		setNamePrefixes( 'HTTPS' );
 		return this;
 	}
-		
+
 }

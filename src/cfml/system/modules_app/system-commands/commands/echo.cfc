@@ -10,7 +10,7 @@
  * {code:bash}
  * echo "Step 3 complete" >> log.txt
  * {code}
- * 
+ *
  **/
 component {
 

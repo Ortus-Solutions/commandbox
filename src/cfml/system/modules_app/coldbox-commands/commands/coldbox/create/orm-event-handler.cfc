@@ -14,7 +14,7 @@ component {
 	* @directory.hint The base directory to create your event handler in and creates the directory if it does not exist.
 	* @open.hint Open the file once generated
 	**/
-	function run( 
+	function run(
 		required name,
 		directory='models',
 		boolean open=false
@@ -43,7 +43,7 @@ component {
 		print.greenLine( 'Created #modelPath#' );
 
 		// Open file?
-		if( arguments.open ){ openPath( modelPath ); }			
+		if( arguments.open ){ openPath( modelPath ); }
 	}
 
 }

@@ -1,4 +1,4 @@
-﻿<!-----------------------------------------------------------------------
+<!-----------------------------------------------------------------------
 ********************************************************************************
 Copyright Since 2005 ColdBox Framework by Luis Majano and Ortus Solutions, Corp
 www.ortussolutions.com
@@ -8,16 +8,16 @@ Author     :	Luis Majano
 Date        :	04/12/2009
 Description :
 	A simple CF appender
-	
+
 Properties:
 
 - logType : file or application
 - fileName : The log file name to use, else uses the appender's name
 ----------------------------------------------------------------------->
-<cfcomponent extends="wirebox.system.logging.AbstractAppender" 
+<cfcomponent extends="wirebox.system.logging.AbstractAppender"
 			 output="false"
 			 hint="A simple CF Appender">
-	
+
 	<!--- Init --->
 	<cffunction name="init" access="public" returntype="CFAppender" hint="Constructor" output="false" >
 		<!--- ************************************************************* --->
@@ -30,7 +30,7 @@ Properties:
 		<cfscript>
 			// Init supertype
 			super.init(argumentCollection=arguments);
-			
+
 			// Verify properties
 			if( NOT propertyExists('logType') ){
 				setProperty("logType","file");
@@ -46,11 +46,11 @@ Properties:
 			if( NOT propertyExists("fileName") ){
 				setProperty("fileName", getName());
 			}
-						
+
 			return this;
 		</cfscript>
-	</cffunction>	
-	
+	</cffunction>
+
 	<!--- Log Message --->
 	<cffunction name="logMessage" access="public" output="false" returntype="void" hint="Write an entry into the appender.">
 		<!--- ************************************************************* --->
@@ -58,15 +58,15 @@ Properties:
 		<!--- ************************************************************* --->
 		<cfset var loge = arguments.logEvent>
 		<cfset var entry = "">
-		
+
 		<cfif hasCustomLayout()>
 			<cfset entry = getCustomLayout().format(loge)>
 		<cfelse>
 			<cfset entry = "#loge.getCategory()# #loge.getMessage()# ExtraInfo: #loge.getextraInfoAsString()#">
 		</cfif>
-		
+
 		<cfif getProperty("logType") eq "file">
-			<cflog file="#getProperty('fileName')#" 
+			<cflog file="#getProperty('fileName')#"
 			  	   type="#this.logLevels.lookupCF(loge.getSeverity())#"
 			  	   text="#entry#">
 		<cfelse>
@@ -74,10 +74,10 @@ Properties:
 				   type="#this.logLevels.lookupCF(loge.getSeverity())#"
 			  	   text="#entry#">
 		</cfif>
-			   
+
 	</cffunction>
-	
+
 <!------------------------------------------- PRIVATE ------------------------------------------>
-	
-	
+
+
 </cfcomponent>

@@ -15,7 +15,7 @@ component {
 	* @testsDirectory Your unit tests directory. Only used if tests is true
 	* @open.hint Open the test once generated
 	**/
-	function run( 
+	function run(
 		required path,
 		points='',
 		testsDirectory='tests/specs/interceptors',
@@ -43,7 +43,7 @@ component {
 		if( len( arguments.points ) ) {
 			var allTestsCases = '';
 			var thisTestCase = '';
-			
+
 			for( var thisPoint in listToArray( arguments.points ) ) {
 				thisTestCase = replaceNoCase( interceptorTestCase, '|point|', thisPoint, 'all' );
 				allTestsCases &= thisTestCase & CR & CR;
@@ -63,13 +63,13 @@ component {
 			print.redLine( "Exiting..." );
 			return;
 		}
-		
+
 		// Create the tests
 		file action='write' file='#testPath#' mode ='777' output='#interceptorTestContent#';
 		print.greenLine( 'Created #testPath#' );
 
 		// open file
-		if( arguments.open ){ openPath( testPath ); }			
+		if( arguments.open ){ openPath( testPath ); }
 	}
 
 }

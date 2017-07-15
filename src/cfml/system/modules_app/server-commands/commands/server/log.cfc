@@ -27,10 +27,10 @@ component {
 		 ){
 		if( !isNull( arguments.directory ) ) {
 			arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
-		} 
+		}
 		if( !isNull( arguments.serverConfigFile ) ) {
 			arguments.serverConfigFile = fileSystemUtil.resolvePath( arguments.serverConfigFile );
-		}		
+		}
 		var serverDetails = serverService.resolveServerDetails( arguments );
 		var serverInfo = serverDetails.serverInfo;
 
@@ -38,28 +38,28 @@ component {
 		if( serverDetails.serverIsNew ){
 			error( "The server you requested was not found.", "You can use the 'server list' command to get all the available servers." );
 		}
-		
+
 		var logfile = serverInfo.logdir & "/server.out.txt";
 		if( fileExists( logfile) ){
-			
+
 			if( follow ) {
 				command( 'tail' )
 					.params( logfile, 50 )
 					.flags( 'follow' )
 					.run();
 			} else {
-				return fileRead( logfile );				
+				return fileRead( logfile );
 			}
-			
+
 		} else {
 			print.boldRedLine( "No log file found for '#serverInfo.webroot#'!" )
 				.line( "#logFile#" );
 		}
 	}
 
-	
+
 	function serverNameComplete() {
 		return serverService.getServerNames();
 	}
-	
+
 }

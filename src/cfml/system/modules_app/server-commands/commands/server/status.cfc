@@ -12,29 +12,29 @@
  * {code}
  * .
  * Or specifiy the web root directory.  If name and directory are both specified, name takes precedence.
- * 
+ *
  * {code:bash}
  * server status directory=C:\path\to\server
  * {code}
  * .
  * Show all registered servers with the --showAll flag
- * 
+ *
  * {code:bash}
  * server status --showAll
  * {code}
  * .
  * Get extra information about the server and how it was last started/stopped with the --verbose flag
- * 
+ *
  * {code:bash}
  * server status --verbose
  * {code}
- * .   
+ * .
  **/
 component aliases='status,server info' {
 
 	// DI
 	property name='serverService' inject='ServerService';
-	
+
 	/**
 	 * Show server status
 	 *
@@ -64,18 +64,18 @@ component aliases='status,server info' {
 
 		// Display ALL as JSON?
 		if( arguments.showALL && arguments.json ){
-			print.line( 
+			print.line(
 				formatterUtil.formatJson( serializeJSON( servers ) )
 			);
 			return;
 		}
-		
+
 		if( !isNull( arguments.directory ) ) {
 			arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
-		} 
+		}
 		if( !isNull( arguments.serverConfigFile ) ) {
 			arguments.serverConfigFile = fileSystemUtil.resolvePath( arguments.serverConfigFile );
-		}		
+		}
 		var serverDetails = serverService.resolveServerDetails( arguments );
 		var serverInfo = serverDetails.serverInfo;
 
@@ -83,7 +83,7 @@ component aliases='status,server info' {
 		var statusColors = {
 			running 	: 'green',
 			starting 	: 'yellow',
-			stopped 	: 'red'			
+			stopped 	: 'red'
 		};
 
 		for( var thisKey in servers ){
@@ -91,52 +91,52 @@ component aliases='status,server info' {
 
 			// If this is a server  match OR are we just showing everything
 			if( thisServerInfo.id == serverInfo.id || arguments.showAll ){
-				
+
 				// Null Checks, to guarantee correct struct.
 				structAppend( thisServerInfo, serverService.newServerInfoStruct(), false );
-				
+
 				// Are we doing JSON?
 				if( arguments.json ){
-					
+
 					// Are we outputing a specific propery
 					if( len( arguments.property ) ) {
-						
+
 						// If the key doesn't exist, give a useful error
 						if( !isDefined( 'thisServerInfo.#arguments.property#' ) ) {
 							error( "The propery [#arguments.property#] isn't defined in the JSON.", "Valid keys are: " & chr( 10 ) & "   - "  & thisServerInfo.keyList().lCase().listChangeDelims( chr( 10 ) & "   - " ) );
 						}
-						
+
 						// Output a single property
 						var thisValue = evaluate( 'thisServerInfo.#arguments.property#' );
-						// Output simple values directly so they're useful 
+						// Output simple values directly so they're useful
 						if( isSimpleValue( thisValue ) ) {
 							print.line( thisValue );
 						// Format Complex values as JSON
 						} else {
-							print.line( 
+							print.line(
 								formatterUtil.formatJson( serializeJSON( thisValue ) )
-							);							
+							);
 						}
-							
+
 					} else {
-						
+
 						// Output the entire object
-						print.line( 
+						print.line(
 							formatterUtil.formatJson( serializeJSON( thisServerInfo ) )
 						);
-												
+
 					}
-					
+
 					continue;
 				}
 
 				print.line().boldText( thisServerInfo.name );
-	
+
 				var status = serverService.isServerRunning( thisServerInfo ) ? 'running' : 'stopped';;
 				print.boldtext( ' (' )
 					.bold( status, statusColors.keyExists( status ) ? statusColors[ status ] : 'yellow' )
 					.bold( ')' );
-	
+
 				print.indentedLine( thisServerInfo.host & ':' & thisServerInfo.port & ' --> ' & thisServerInfo.webroot );
 				if( len( serverInfo.engineName ) ) {
 					print.indentedLine( 'CF Engine: ' & serverInfo.engineName & ' ' & serverInfo.engineVersion );
@@ -144,18 +144,21 @@ component aliases='status,server info' {
 				if( len( serverInfo.warPath ) ) {
 					print.indentedLine( 'WAR Path: ' & serverInfo.warPath );
 				}
+				if( len( serverInfo.dateLastStarted ) ) {
+					print.indentedLine( 'Last Started: ' & datetimeFormat( serverInfo.dateLastStarted ) );
+				}
 				print.line();
 				print.indentedLine( 'Last status message: ' );
 				print.indentedLine( thisServerInfo.statusInfo.result );
-					 
+
 				if( arguments.verbose ) {
-					
+
 					print.indentedLine( trim( thisServerInfo.statusInfo.command ) );
 					// Put each --arg or -arg on a new line
 					var args = trim( reReplaceNoCase( thisServerInfo.statusInfo.arguments, ' (-|"-)', cr & '\1', 'all' ) );
 					print.indentedIndentedLine( args )
-						.line(); 
-					
+						.line();
+
 				}
 			} // End "filter" if
 		}
@@ -165,14 +168,14 @@ component aliases='status,server info' {
 			print.boldRedLine( 'No server configurations found!' );
 		}
 	}
-	
+
 	/**
 	* AutoComplete server names
 	*/
 	function serverNameComplete() {
 		return serverService.getServerNames();
 	}
-	
+
 	/**
 	* AutoComplete serverInfo properties
 	*/

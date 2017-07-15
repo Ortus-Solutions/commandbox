@@ -40,7 +40,7 @@ component {
 	* @accessors Setup accessors to be true or not in the component
 	* @properties Enter a list of properties to generate. You can add the type via semicolon separator. Ex: firstName,age:numeric,wheels:array
 	**/
-	function run( 
+	function run(
 		required name,
 		methods="",
 		persistence='transient',
@@ -100,7 +100,7 @@ component {
 		modelContent 	 = replaceNoCase( modelContent, '|modelDescription|', arguments.description, 'all' );
 		modelTestContent = replaceNoCase( modelTestContent, '|modelName|', listChangeDelims( arguments.name, '.', '/\' ), 'all' );
 		modelTestContent = replaceNoCase( modelTestContent, '|modelPath|', listChangeDelims( modelTestPath, '.', '/\' ) & "." & listChangeDelims( arguments.name, '.', '/\' ), 'all' );
-		
+
 		// Persistence
 		switch ( Persistence ) {
 			case 'Transient' :
@@ -142,7 +142,7 @@ component {
 			// Loop Over methods to generate them
 			for( var thisMethod in listToArray( arguments.methods ) ) {
 				if( thisMethod == 'init' ) { continue; }
-				
+
 				thisMethod = trim( thisMethod );
 				allMethods = allMethods & replaceNoCase( modelMethodContent, '|method|', thisMethod, 'all' ) & cr & cr;
 
@@ -183,12 +183,12 @@ component {
 			// Create the tests
 			file action='write' file='#testPath#' mode ='777' output='#modelTestContent#';
 			// open file
-			if( arguments.open ){ openPath( testPath ); }			
+			if( arguments.open ){ openPath( testPath ); }
 			print.greenLine( 'Created #testPath#' );
 		}
 
 		// Open file?
-		if( arguments.open ){ openPath( modelPath ); }			
+		if( arguments.open ){ openPath( modelPath ); }
 	}
 
 }

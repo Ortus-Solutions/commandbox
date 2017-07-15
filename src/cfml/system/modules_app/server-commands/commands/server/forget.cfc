@@ -29,13 +29,13 @@ component {
 		String serverConfigFile,
 		Boolean all=false,
 		Boolean force=false
-	){	
+	){
 		if( !isNull( arguments.directory ) ) {
 			arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
-		} 
+		}
 		if( !isNull( arguments.serverConfigFile ) ) {
 			arguments.serverConfigFile = fileSystemUtil.resolvePath( arguments.serverConfigFile );
-		}		
+		}
 		var serverInfo = serverService.resolveServerDetails( arguments ).serverinfo;
 
 		var servers = arguments.all ? serverService.getServers() : { "#serverInfo.id#": serverInfo };
@@ -56,7 +56,7 @@ component {
 		var askMessage = arguments.all ?
 			"Really forget & delete all servers (#arrayToList( serverService.getServerNames() )#) forever [y/n]?" :
 			"Really forget & delete server '#serverinfo.name#' forever [y/n]?";
-									     
+
 		if( arguments.force || confirm( askMessage ) ){
 			servers.each( function( ID ){
 				print
@@ -68,7 +68,7 @@ component {
 		}
 
 	}
-	
+
 	private function runningServerCheck( required struct serverInfo ) {
 		if( serverService.isServerRunning( serverInfo ) ) {
 			print.redBoldLine( 'Server "#serverInfo.name#" (#serverInfo.webroot#) appears to still be running!' )
@@ -88,7 +88,7 @@ component {
 			return servers[ arguments.ID ].name;
 		} );
 	}
-	
+
 	function serverNameComplete() {
 		return serverService.getServerNames();
 	}

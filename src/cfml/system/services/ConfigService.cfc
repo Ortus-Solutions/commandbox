@@ -21,7 +21,7 @@ component accessors="true" singleton {
 	property name='ModuleService'		inject='ModuleService';
 	property name='JSONService'			inject='JSONService';
 	property name='ServerService'		inject='ServerService';
-		
+
 	/**
 	* Constructor
 	*/
@@ -52,44 +52,48 @@ component accessors="true" singleton {
 			'server',
 			'server.defaults',
 			// used in Artifactsservice
-			'artifactsDirectory'
+			'artifactsDirectory',
+			// commands
+			'command',
+			'command.defaults',
+			'command.aliases'
 		]);
-		
+
 		setConfigFilePath( '/commandbox-home/CommandBox.json' );
-		
+
 		// Create the config file if neccessary
 		if( !fileExists( getConfigFilePath() ) ) {
 			fileWrite( getConfigFilePath(), '{}' );
 		}
-		
+
 		loadConfig();
-		
+
 		return this;
 	}
-	
+
 	function onDIComplete() {
 		var serverProps = serverService.completeProperty( 'fake', true );
 		for( var prop in serverProps ) {
 			variables.possibleConfigSettings.append( 'server.defaults.#prop#' );
 		}
 	}
-	
+
 	function setConfigSettings( required struct configSettings ) {
 		variables.configSettings = arguments.configSettings;
 		saveConfig();
 	}
-	
+
 	/**
 	* Get a setting from a configuration structure
 	* @name.hint The name of the setting.  Allows for "deep" struct/array names.
 	* @defaultValue.hint The default value to use if setting does not exist
 	*/
 	function getSetting( required name, defaultValue ){
-		
+
 		arguments.JSON = getConfigSettings();
 		arguments.property = arguments.name;
-		
-		return JSONService.show( argumentCollection = arguments ); 
+
+		return JSONService.show( argumentCollection = arguments );
 	}
 
 	/**
@@ -99,7 +103,7 @@ component accessors="true" singleton {
 	boolean function settingExists( required name ){
 		arguments.JSON = getConfigSettings();
 		arguments.property = arguments.name;
-		
+
 		return JSONService.check( argumentCollection = arguments );
 	}
 
@@ -110,12 +114,12 @@ component accessors="true" singleton {
 	* @thisAppend.hint Append an array or struct to existing
 	*/
 	function setSetting( required name, required value, boolean thisAppend=false ){
-		
+
 		arguments.JSON = getConfigSettings();
 		arguments.properties[ name ] = arguments.value;
-		
+
 		JSONService.set( argumentCollection = arguments );
-		
+
 		saveConfig();
 		return this;
 	}
@@ -125,12 +129,12 @@ component accessors="true" singleton {
 	* @name.hint The name of the setting.  Allows for "deep" struct/array names.
 	*/
 	function removeSetting( required name ){
-		
+
 		arguments.JSON = getConfigSettings();
 		arguments.property = arguments.name;
-		
+
 		JSONService.clear( argumentCollection = arguments );
-		
+
 		saveConfig();
 		return this;
 	}
@@ -140,7 +144,7 @@ component accessors="true" singleton {
 	*/
 	function loadConfig(){
 		// Don't call the setter here since we don't need to trigger a save.
-		variables.configSettings = deserializeJSON( fileRead( getConfigFilePath() ) );				
+		variables.configSettings = deserializeJSON( fileRead( getConfigFilePath() ) );
 	}
 
 	/**
@@ -148,21 +152,21 @@ component accessors="true" singleton {
 	*/
 	function saveConfig(){
 		fileWrite( getConfigFilePath(), formatterUtil.formatJSON( serializeJSON( getConfigSettings() ) ) );
-				
+
 		// Update ModuleService
 		ModuleService.overrideAllConfigSettings();
 	}
 
-	
+
 	/**
 	* Dynamic completion for property name based on contents of commandbox.json
 	* @all Pass false to ONLY suggest existing setting names.  True will suggest all possible settings.
 	* @asSet Pass true to add = to the end of the options
-	*/ 	
+	*/
 	function completeProperty( all=false, asSet=false ) {
 		// Get all config settings currently set
 		var props = JSONService.addProp( [], '', '', getConfigSettings() );
-		
+
 		// If we want all possible options...
 		if( arguments.all ) {
 			// ... Then add them in
@@ -171,6 +175,6 @@ component accessors="true" singleton {
 		if( asSet ) {
 			props = props.map( function( i ){ return i &= '='; } );
 		}
-		return props;		
-	}	
+		return props;
+	}
 }

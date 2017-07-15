@@ -9,19 +9,19 @@
 * install riaforge:projectURLSlug
 */
 component accessors="true" implements="IEndpoint" singleton {
-		
+
 	// DI
 	property name="consoleLogger"			inject="logbox:logger:console";
 	property name="HTTPEndpoint"			inject="commandbox.system.endpoints.HTTP";
-	
+
 	// Properties
 	property name="namePrefixes" type="string";
-	
+
 	function init() {
 		setNamePrefixes( 'RIAForge' );
 		return this;
 	}
-		
+
 	public string function resolvePackage( required string package, boolean verbose=false ) {
 		// Defer to HTTP endpoint
 		// This assumes that the download URL will point to a zip file.  If not, all bets are off.
@@ -37,7 +37,7 @@ component accessors="true" implements="IEndpoint" singleton {
 			isOutdated = true,
 			version = 'unknown'
 		};
-		
+
 		return result;
 	}
 

@@ -35,38 +35,38 @@
  * {code:bash}
  * config set myArraySetting="[ 'another value' ]" --append
  * {code}
- * 
+ *
  **/
 component {
-	
+
 	property name="ConfigService" inject="ConfigService";
-	property name="JSONService" inject="JSONService"; 
-	
+	property name="JSONService" inject="JSONService";
+
 	/**
 	 * This param is a dummy param just to get the custom completor to work.
-	 * The actual parameter names will be whatever property name the user wants to set  
-	 * @_.hint Pass any number of property names in followed by the value to set 
-	 * @_.optionsUDF completeProperty  
+	 * The actual parameter names will be whatever property name the user wants to set
+	 * @_.hint Pass any number of property names in followed by the value to set
+	 * @_.optionsUDF completeProperty
 	 * @append.hint If setting an array or struct, set to true to append instead of overwriting.
 	 **/
 	function run( _, boolean append=false ) {
 		var thisAppend = arguments.append;
-		
+
 		// Remove dummy args
 		structDelete( arguments, '_' );
 		structDelete( arguments, 'append' );
 
 		var configSettings = ConfigService.getconfigSettings();
 
-		var results = JSONService.set( configSettings, arguments, thisAppend ); 
+		var results = JSONService.set( configSettings, arguments, thisAppend );
 
 		// Write the file back out.
 		ConfigService.setConfigSettings( configSettings );
-		
+
 		for( var message in results ) {
 			print.greeLine( message );
 		}
-			
+
 	}
 
 	// Dynamic completion for property name based on contents of box.json

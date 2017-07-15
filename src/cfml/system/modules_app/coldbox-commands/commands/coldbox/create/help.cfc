@@ -1,7 +1,7 @@
 component excludeFromHelp=true {
-	
+
 	function run()  {
-		
+
 		print.line()
 			.yellow( 'The ' ).boldYellow( 'coldbox create' ).yellowLine( ' namespace allows you to quickly scaffold applications ' )
 			.yellowLine( 'and individual app pieces.  Use these commands to stub out placeholder files' )

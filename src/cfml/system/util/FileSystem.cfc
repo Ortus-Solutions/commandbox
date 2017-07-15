@@ -14,7 +14,7 @@ component accessors="true" singleton {
 	* The os
 	*/
 	property name="os";
-	
+
 	// DI
 	property name="shell" inject="shell";
 	property name="logger" inject="logbox:logger:{this}";
@@ -31,47 +31,48 @@ component accessors="true" singleton {
 	* @basePath.hint An expanded base path to resolve the path against. Defaults to CWD.
 	*/
 	function resolvePath( required string path, basePath=shell.pwd() ) {
-		
+
 		try {
-			
+
 			// Load our path into a Java file object so we can use some of its nice utility methods
 			var oPath = createObject( 'java', 'java.io.File' ).init( path );
-	
+
 			// This tells us if it's a relative path
 			// Note, at this point we don't actually know if it actually even exists yet
-			
+
 			// If we're on windows and the path starts with / or \
 			if( isWindows() && reFind( '^[\\\/]', path ) ) {
-				
+
 				// Concat it with the drive root in the base path so "/foo" becomes "C:/foo" (if the basepath is C:/etc)
 				oPath = createObject( 'java', 'java.io.File' ).init( listFirst( arguments.basePath, '/\' ) & '/' & path );
-				
+
 			// If path is "~"
 			// Note, we're supporting this on Windows as well as Linux because it seems useful
 			} else if( path == '~' ) {
-				
+
 				var userHome = createObject( 'java', 'java.lang.System' ).getProperty( 'user.home' );
 				oPath = createObject( 'java', 'java.io.File' ).init( userHome );
-				
+
 			// If path starts with "~/something" but not "~foo" (a valid folder name)
 			} else if( reFind( '^~[\\\/]', path ) ) {
-			
+
 				oPath = createObject( 'java', 'java.io.File' ).init( userHome & right( path, len( path ) - 1 ) );
-				
+
 			} else if( !oPath.isAbsolute() ) {
-			
+
 				// If it's relative, we assume it's relative to the current working directory and make it absolute
 				oPath = createObject( 'java', 'java.io.File' ).init( arguments.basePath & '/' & path );
-				
+
 			}
-	
+
 			// This will standardize the name and calculate stuff like ../../
-			return oPath.getCanonicalPath();
-			
+			return getCanonicalPath( oPath.toString() );
+
 		} catch ( any e ) {
+			rethrow;
 			return arguments.basePath & '/' & path;
 		}
-		
+
 	}
 
 	/**
@@ -82,15 +83,15 @@ component accessors="true" singleton {
 		// Load our path into a Java file object so we can use some of its nice utility methods
 		var oPath = createObject( 'java', 'java.io.File' ).init( path );
 		// Drive roots don't have any name elements
-		return ( oPath.toPath().getNameCount()==0 );		
+		return ( oPath.toPath().getNameCount()==0 );
 	}
 
 	/**
 	* Get the JRE Executable from the File System
 	*/
-	function getJREExecutable(){
+	function getJREExecutable( javaHome ){
 		// get java home
-		var jreDirectory = createObject( "java", "java.lang.System" ).getProperty( "java.home" );
+		var jreDirectory = arguments.javaHome ?: createObject( "java", "java.lang.System" ).getProperty( "java.home" );
 		if( isNull( jreDirectory ) OR !len( jreDirectory ) ){
 			throw(message="Java.home not found", type="IllegalStateException" );
 		}
@@ -100,11 +101,7 @@ component accessors="true" singleton {
 		var javaPath = jreDirectory & "/" & "bin" & "/java#fileExtension#";
 		// build command
 		var javaCommand =  createObject( "java", "java.io.File").init( javaPath ).getCanonicalPath();
-		// take care of spaces in command
-/*		if( javaCommand contains " " ){
-			javaCommand = """#javaCommand#""";
-		}*/
-		
+
 		return javaCommand;
 	}
 
@@ -133,11 +130,11 @@ component accessors="true" singleton {
 	    	if( desktop.isDesktopSupported() and target.isFile() ){
 	    		desktop.getDesktop().edit( target );
 	    		return true;
-	    	} 	
+	    	}
     	} catch( any e ) {
     		// Silently log this and we'll try a different method below
     		if( e.message contains 'No application is associated with the specified file' ) {
-				logger.error( '#e.message# #e.detail#' );    			
+				logger.error( '#e.message# #e.detail#' );
     		} else {
 				logger.error( '#e.message# #e.detail#' , e.stackTrace );
     		}
@@ -147,7 +144,7 @@ component accessors="true" singleton {
     	var runtime = createObject( "java", "java.lang.Runtime" ).getRuntime();
     	if( isWindows() and target.isFile() ){
     		runtime.exec( [ "rundll32", "url.dll,FileProtocolHandler", target.getCanonicalPath() ] );
-		} 
+		}
 		else if( isWindows() and target.isDirectory() ){
 			var processBuilder = createObject( "java", "java.lang.ProcessBuilder" )
 				.init( [ "explorer.exe", target.getCanonicalPath() ] )
@@ -202,34 +199,58 @@ component accessors="true" singleton {
 
 		return true;
     }
-    
-    /** 
+
+    /**
     * Accepts an absolute path and returns a relative path
-    * Does NOT apply any canonicalization 
+    * Does NOT apply any canonicalization
     */
     string function makePathRelative( required string absolutePath ) {
-    	if( !isWindows() ) { 
+    	if( !isWindows() ) {
+    		// TODO: Unix paths with a period in a folder name are likely still a problem.
     		return arguments.absolutePath;
     	}
-    	var driveLetter = listFirst( arguments.absolutePath, ':' );
-    	var path = listRest( arguments.absolutePath, ':' );
-    	var mapping = locateMapping( driveLetter );
-    	return mapping & path;
+    	// If one of the folders has a period, we've got to do something special.
+    	// C:/users/brad.development/foo.cfc turns into /C__users_brad_development/foo.cfc
+    	if( getDirectoryFromPath( arguments.absolutePath ) contains '.' ) {
+    		var mappingPath = getDirectoryFromPath( arguments.absolutePath );
+    		mappingPath = mappingPath.replace( '\', '/', 'all' );
+    		mappingPath = mappingPath.listChangeDelims( '/', '/' );
+
+    		var mappingName = mappingPath.replace( ':', '_', 'all' );
+    		mappingName = mappingName.replace( '.', '_', 'all' );
+    		mappingName = mappingName.replace( '/', '_', 'all' );
+    		mappingName = '/' & mappingName;
+
+    		createMapping( mappingName, mappingPath );
+    		return mappingName & '/' & getFileFromPath( arguments.absolutePath );
+
+    	// Otherwise, do the "normal" way that re-uses top level drive mappings
+    	// C:/users/brad/foo.cfc turns into /C_Drive/users/brad/foo.cfc
+    	} else {
+	    	var driveLetter = listFirst( arguments.absolutePath, ':' );
+	    	var path = listRest( arguments.absolutePath, ':' );
+	    	var mapping = locateMapping( driveLetter );
+	    	return mapping & path;
+    	}
     }
-    
-    /** 
+
+    /**
     * Accepts a Windows drive letter and returns a CF Mapping
     * Creates the mapping if it doesn't exist
     */
     string function locateMapping( required string driveLetter  ) {
     	var mappingName = '/' & arguments.driveLetter & '_drive';
     	var mappingPath = arguments.driveLetter & ':/';
+    	createMapping( mappingName, mappingPath );
+   		return mappingName;
+    }
+
+    function createMapping( mappingName, mappingPath ) {
     	var mappings = getApplicationSettings().mappings;
     	if( !structKeyExists( mappings, mappingName ) ) {
     		mappings[ mappingName ] = mappingPath;
     		application action='update' mappings='#mappings#';
    		}
-   		return mappingName;
     }
 
 }

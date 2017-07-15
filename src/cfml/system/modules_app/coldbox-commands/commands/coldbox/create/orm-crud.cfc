@@ -18,7 +18,7 @@ component {
 	* @tests Generate the BDD tests for this CRUD operation
 	* @testsDirectory Your integration tests directory. Only used if tests is true
 	**/
-	function run( 
+	function run(
 		required entity,
 		pluralName="",
 		handlersDirectory="handlers",
@@ -35,7 +35,7 @@ component {
 		var entityName = listLast( arguments.entity, "." );
 		var entityCFC 	= fileSystemUtil.makePathRelative( fileSystemUtil.resolvePath( replace( arguments.entity, ".", "/", "all" ) ) );
 		var entityPath 	= entityCFC & ".cfc";
-		
+
 		// verify it
 		if( !fileExists( entityPath ) ){
 			return error( "The entity #entityPath# does not exist, cannot continue, ciao!" );
@@ -45,7 +45,7 @@ component {
 		// property Map
 		var metadata 	= { properties = [], pk="" };
 		var md 			= getComponentMetadata( entityCFC );
-		
+
 		// argument defaults
 		if( !len( arguments.pluralname ) ){ arguments.pluralName = entityName & "s"; }
 
@@ -57,13 +57,13 @@ component {
 				entityDefaults( thisProperty );
 				// store the pk for convenience
 				if( compareNoCase( thisProperty.fieldType, "id" ) EQ 0 ){ metadata.pk = thisProperty.name; }
-				
+
 				// Store only persistable columns
 				if( thisProperty.isPersistable ){
 					arrayAppend( metadata.properties, thisProperty );
 				}
 			}
-			
+
 			//********************** generate handler ************************************//
 
 			// Read Handler Content
@@ -72,7 +72,7 @@ component {
 			hContent = replacenocase( hContent, "|entity|", entityName, "all" );
 			hContent = replacenocase( hContent, "|entityPlural|", arguments.pluralName, "all" );
 			hContent = replacenocase( hContent, "|pk|", metadata.pk, "all" );
-			
+
 			// Write Out Handler
 			var hpath = '#arguments.handlersDirectory#/#arguments.pluralName#.cfc';
 			// Create dir if it doesn't exist
@@ -94,10 +94,10 @@ component {
 			}
 
 			//********************** generate table output ************************************//
-			
+
 			// Build table output for index
 			savecontent variable="local.tableData"{
-				include '/coldbox-commands/templates/crud/table.cfm';	
+				include '/coldbox-commands/templates/crud/table.cfm';
 			}
 			tableData = replaceNoCase( tableData, "%cf", "#chr(60)#cf", "all" );
 			tableData = replaceNoCase( tableData, "%/cf", "#chr(60)#/cf", "all" );
@@ -111,7 +111,7 @@ component {
 		} else {
 			return error( "The entity: #entityName# has no properties, so I have no clue what to CRUD on dude!" );
 		}
-		
+
 	}
 
 	/**

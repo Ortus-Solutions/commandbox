@@ -6,7 +6,7 @@
  * {code}
  * .
  * Use the "latest" parameter to download the bleeding edge version
- * .
+ * .x
  * {code:bash}
  * upgrade --latest
  * {code}
@@ -26,9 +26,9 @@ component {
 	property name="ortusPRDArtifactsURL" 	inject="ortusPRDArtifactsURL@constants";
 	property name="progressableDownloader"	inject="ProgressableDownloader";
 	property name="progressBar" 			inject="ProgressBar";
-	property name="semanticVersion"			inject="semanticVersion";
+	property name="semanticVersion"			inject="semanticVersion@semver";
 	property name="ConfigService"			inject="ConfigService";
-	
+
 	/**
 	 * @latest.hint Will download bleeding edge if true, last stable version if false
 	 * @force.hint Force the update even if the version on the server is the same as locally
@@ -43,8 +43,8 @@ component {
 		print.greenLine( "Getting #arguments.latest ? 'latest' : 'stable'# versioning information from #thisArtifactsURL#" ).toConsole();
 		var boxRepoURL = '#thisArtifactsURL#ortussolutions/commandbox/box-repo.json';
 		var loaderRepoURL = '#thisArtifactsURL#ortussolutions/commandbox/box-loader.json';
-		
-		http 
+
+		http
 			url="#boxRepoURL#"
 			file="#temp#/box-repo.json"
 			throwOnError=false
@@ -53,7 +53,7 @@ component {
 			proxyUser="#ConfigService.getSetting( 'proxy.user', '' )#"
 			proxyPassword="#ConfigService.getSetting( 'proxy.password', '' )#"
 			result="local.boxRepoResult";
-			
+
 		http
 			url="#loaderRepoURL#"
 			file="#temp#/box-loader.json"
@@ -63,19 +63,19 @@ component {
 			proxyUser="#ConfigService.getSetting( 'proxy.user', '' )#"
 			proxyPassword="#ConfigService.getSetting( 'proxy.password', '' )#"
 			result="local.loaderRepoResult";
-		
+
 		// Do some error checking
 		if( !local.boxRepoResult.statusCode contains "200" || !fileExists( '#temp#/box-repo.json' ) ||
 			!local.loaderRepoResult.statusCode contains "200" || !fileExists( '#temp#/box-loader.json' ) ) {
 			error(
 				"Sorry, we're having troubles accessing the interwebs now or the update site is down. Please try again later",
 				"Box Repo: [#local.boxRepoResult.statusCode#] Loader Repo: [#local.loaderRepoResult.statusCode#]"
-			);  
+			);
 		}
-		
+
 		var boxRepoJSON = fileRead( '#temp#/box-repo.json' );
 		var loaderRepoJSON = fileRead( '#temp#/box-loader.json' );
-		
+
 		if( !isJSON( boxRepoJSON ) ) {
 			return error( "Oops, we expected [#boxRepoURL#] to be JSON, but it wasn't.  #cr#I'm afraid we can't upgrade right now." );
 		}
@@ -96,9 +96,9 @@ component {
 			// We don't store build numbers for stable versions in box-repo.json
 			var repoVersionShort= repoData.versioning.stableVersion;
 			var repoVersion 	= repoVersionShort;
-			var loaderVersion 	= loaderData.versioning.stableVersion;			
+			var loaderVersion 	= loaderData.versioning.stableVersion;
 		}
-				
+
 		// Is there a new version of CommandBox.  New builds consistute new BE verions.
 		var isNewVersion 	= semanticVersion.isNew( current=shell.getVersion(), target=repoVersion, checkBuildID=arguments.latest );
 		// Is there a new version of the CLI Loader. Ignore build number since it's sort of fake (Just a copy of the CommandBox build number)
@@ -109,7 +109,7 @@ component {
 			// Inform User about update
 			print.boldCyanLine( "Ohh Goody Goody, an update has been found (#repoVersion#) for your installation (#shell.getVersion()#)!" )
 				.toConsole();
-				
+
 			if( isNewLoaderVersion ) {
 				// We can't handle this kind of update from CFML
 				// so instruct the user to do a manual update with a new binary
@@ -155,14 +155,14 @@ component {
 
 			// Notify the user
 			print
-				.greenLine( "Update applied successfully, installed v#repoVersion#" )		
+				.greenLine( "Update applied successfully, installed v#repoVersion#" )
 				.redLine( "CommandBox needs to exit to complete the installation." )
 				.yellowLine( "This message will self-destruct in 10 seconds" )
 				.toConsole();
-			
+
 			// Give them a chance to read it.
 			sleep( 10000 );
-			
+
 			// Stop executing.  Since the unzipping possbily replaced .cfm files that were
 			// also cached in memory, there's no good way we've found to be able to reload and keep going.
 			abort;

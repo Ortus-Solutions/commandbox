@@ -12,17 +12,17 @@ component accessors=true singleton {
 	property name='EventPoolManager';
 	property name='InterceptionPoints';
 	property name='configured' type="boolean" default="false";
-	
+
 	// DI
 	property name='log' inject='logbox:logger:{this}';
 
 	/**
 	* @shell.inject shell
-	
+
 	*/
 	InterceptorService function init( required shell ) {
 		setConfigured( false );
-		
+
 		setShell( arguments.shell );
 
 		setInterceptionPoints( [
@@ -37,9 +37,9 @@ component accessors=true singleton {
 			// Error handling
 			'onException',
 			// Package lifecycle
-			'preInstall','onInstall','postInstall','preUninstall','postUninstall','preVersion','postVersion','prePublish','postPublish','preUnpublish','postUnpublish','onRelease'		
+			'preInstall','onInstall','postInstall','preUninstall','postUninstall','preVersion','postVersion','prePublish','postPublish','preUnpublish','postUnpublish','onRelease'
 		] );
-				
+
 		return this;
 	}
 
@@ -48,13 +48,13 @@ component accessors=true singleton {
 		setEventPoolManager( getShell().getWireBox().getEventManager() );
 		appendInterceptionPoints( getInterceptionPoints().toList() );
 		setConfigured( true );
-		return this;		
+		return this;
 	}
- 
+
 	function announceInterception( required string state, struct interceptData={} ) {
 		getEventPoolManager().processState( state, interceptData );
 	}
-	
+
 	/**
 	* @interceptor.hint The qualified class of the interceptor to register or an already instantiated object as an interceptor.
 	* @interceptorProperties.hint The structure of properties to register this interceptor with.
@@ -68,7 +68,7 @@ component accessors=true singleton {
 		string customPoints='',
 		string interceptorName=''
 	) {
-	
+
 		// determine registration names
 		if( !len( arguments.interceptorName ) ) {
 			if( isSimpleValue( arguments.interceptor ) ){
@@ -133,7 +133,7 @@ component accessors=true singleton {
 
 		return oInterceptor;
 	}
-    
+
     /**
     * Verifies the setup for interceptor classes is online
     */
@@ -149,9 +149,9 @@ component accessors=true singleton {
 				.setAutowire( false );
 		}
     }
-    
+
     /**
-    * Get an interceptor according to its name from a state. 
+    * Get an interceptor according to its name from a state.
     */
 	function getInterceptor( required string interceptorName ) {
 		return getEventPoolManager().getObject( arguments.interceptorName );
@@ -177,7 +177,7 @@ component accessors=true singleton {
 	* Unregister an interceptor from an interception state or all states. If the state does not exists, it returns false
 	*/
 	function unregister( required string name, state='' ) {
-		return getEventPoolManager().unregister( arguemnts.name, arguments.state );
+		return getEventPoolManager().unregister( arguments.name, arguments.state );
 	}
 
 }

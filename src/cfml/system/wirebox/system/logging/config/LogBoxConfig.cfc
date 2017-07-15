@@ -1,4 +1,4 @@
-﻿<!-----------------------------------------------------------------------
+<!-----------------------------------------------------------------------
 ********************************************************************************
 Copyright Since 2005 ColdBox Framework by Luis Majano and Ortus Solutions, Corp
 www.ortussolutions.com
@@ -20,7 +20,7 @@ Description :
 
 		// Instance private scope
 		instance = structnew();
-		
+
 		// Startup the configuration
 		reset();
 	</cfscript>
@@ -31,12 +31,12 @@ Description :
 		<cfargument name="CFCConfigPath" 	required="false" hint="The logBox Data Configuration CFC path to use"/>
 		<cfscript>
 			var logBoxDSL = "";
-			
+
 			// Test and load via Data CFC Path
 			if( structKeyExists(arguments, "CFCConfigPath") ){
 				arguments.CFCConfig = createObject("component",arguments.CFCConfigPath);
 			}
-			
+
 			// Test and load via Data CFC
 			if( structKeyExists(arguments,"CFCConfig") and isObject(arguments.CFCConfig) ){
 				// Decorate our data CFC
@@ -48,19 +48,19 @@ Description :
 				// Load the DSL
 				loadDataDSL( logBoxDSL );
 			}
-			
+
 			// Just return, most likely programmatic config
 			return this;
 		</cfscript>
 	</cffunction>
-	
+
 	<!--- loadDataCFC --->
     <cffunction name="loadDataDSL" output="false" access="public" returntype="void" hint="Load a data configuration CFC data DSL">
     	<cfargument name="rawDSL" required="true" hint="The data configuration DSL structure" colddoc:generic="struct"/>
     	<cfscript>
 			var logBoxDSL  = arguments.rawDSL;
 			var key 		= "";
-			
+
 			// Are appenders defined?
 			if( NOT structKeyExists( logBoxDSL, "appenders" ) ){
 				throw("No appenders defined","Please define at least one appender","#getMetadata(this).name#.NoAppendersFound");
@@ -70,13 +70,13 @@ Description :
 				logBoxDSL.appenders[key].name = key;
 				appender(argumentCollection=logBoxDSL.appenders[key]);
 			}
-			
+
 			// Register Root Logger
 			if( NOT structKeyExists( logBoxDSL, "root" ) ){
 				throw("No Root Logger Defined","Please define the root logger","#getMetadata(this).name#.NoRootLoggerException");
 			}
 			root(argumentCollection=logBoxDSL.root);
-			
+
 			// Register Categories
 			if( structKeyExists( logBoxDSL, "categories") ){
 				for( key in logBoxDSL.categories ){
@@ -84,29 +84,29 @@ Description :
 					category(argumentCollection=logBoxDSL.categories[key]);
 				}
 			}
-			
+
 			// Register Level Categories
-			if( structKeyExists( logBoxDSL, "debug" ) ){ 
+			if( structKeyExists( logBoxDSL, "debug" ) ){
 				DEBUG(argumentCollection=variables.utility.arrayToStruct(logBoxDSL.debug) );
 			}
-			if( structKeyExists( logBoxDSL, "info" ) ){ 
+			if( structKeyExists( logBoxDSL, "info" ) ){
 				INFO(argumentCollection=variables.utility.arrayToStruct(logBoxDSL.info) );
 			}
-			if( structKeyExists( logBoxDSL, "warn" ) ){ 
+			if( structKeyExists( logBoxDSL, "warn" ) ){
 				WARN(argumentCollection=variables.utility.arrayToStruct(logBoxDSL.warn) );
 			}
-			if( structKeyExists( logBoxDSL, "error" ) ){ 
+			if( structKeyExists( logBoxDSL, "error" ) ){
 				ERROR(argumentCollection=variables.utility.arrayToStruct(logBoxDSL.error) );
 			}
-			if( structKeyExists( logBoxDSL, "fatal" ) ){ 
+			if( structKeyExists( logBoxDSL, "fatal" ) ){
 				FATAL(argumentCollection=variables.utility.arrayToStruct(logBoxDSL.fatal) );
 			}
-			if( structKeyExists( logBoxDSL, "off" ) ){ 
+			if( structKeyExists( logBoxDSL, "off" ) ){
 				OFF(argumentCollection=variables.utility.arrayToStruct(logBoxDSL.off) );
-			}			
+			}
 		</cfscript>
     </cffunction>
-	
+
 	<!--- reset --->
 	<cffunction name="reset" output="false" access="public" returntype="void" hint="Reset the configuration">
 		<cfscript>
@@ -118,33 +118,33 @@ Description :
 			instance.rootLogger = structnew();
 		</cfscript>
 	</cffunction>
-	
+
 	<!--- resetAppenders --->
     <cffunction name="resetAppenders" output="false" access="public" returntype="void" hint="Reset the appender configurations">
     	<cfset instance.appenders = structNew()>
     </cffunction>
-	
+
 	<!--- resetCategories --->
     <cffunction name="resetCategories" output="false" access="public" returntype="void" hint="Reset the set categories">
     	<cfset instance.categories = structnew()>
     </cffunction>
-	
+
 	<!--- resetRoot --->
     <cffunction name="resetRoot" output="false" access="public" returntype="void" hint="Reset the root logger">
     	<cfset instance.rootLogger = structnew()>
     </cffunction>
-	
+
 	<!--- Get Memento --->
 	<cffunction name="getMemento" access="public" returntype="any" output="false" hint="Get the instance data" colddoc:generic="struct">
 		<cfreturn instance>
 	</cffunction>
-	
+
 	<!--- validate --->
 	<cffunction name="validate" output="false" access="public" returntype="void" hint="Validates the configuration. If not valid, it will throw an appropriate exception.">
 		<cfscript>
 			var x=1;
 			var key ="";
-			
+
 			// Are appenders defined
 			if( structIsEmpty(instance.appenders) ){
 				throw(message="Invalid Configuration. No appenders defined.",type="#getMetadata(this).name#.NoAppendersFound");
@@ -153,7 +153,7 @@ Description :
 			if( structIsEmpty(instance.rootLogger) ){
 				throw(message="Invalid Configuration. No root logger defined.",type="#getMetadata(this).name#.RootLoggerNotFound");
 			}
-			
+
 			// All root appenders?
 			if( instance.rootLogger.appenders eq "*"){
 				instance.rootLogger.appenders = structKeyList(getAllAppenders());
@@ -166,15 +166,15 @@ Description :
 						   					 type="#getMetadata(this).name#.AppenderNotFound");
 				}
 			}
-			
+
 			// Check all Category Appenders
 			for(key in instance.categories){
-				
+
 				// Check * all appenders
 				if( instance.categories[key].appenders eq "*"){
 					instance.categories[key].appenders = structKeyList(getAllAppenders());
 				}
-				
+
 				for(x=1; x lte listlen(instance.categories[key].appenders); x=x+1){
 					if( NOT structKeyExists(instance.appenders, listGetAt(instance.categories[key].appenders,x)) ){
 						throw(message="Invalid appender in Category: #key#",
@@ -185,7 +185,7 @@ Description :
 			}
 		</cfscript>
 	</cffunction>
-	
+
 	<!--- addAppender --->
 	<cffunction name="appender" output="false" access="public" returntype="any" hint="Add an appender configuration.">
 		<cfargument name="name" 		required="true"  hint="A unique name for the appender to register. Only unique names can be registered per instance."/>
@@ -194,20 +194,20 @@ Description :
 		<cfargument name="layout" 		required="false" default="" hint="The layout class path to use in this appender for custom message rendering."/>
 		<cfargument name="levelMin" 	required="false" default="0" hint="The default log level for the root logger, by default it is 0 (FATAL). Optional. ex: config.logLevels.WARN"/>
 		<cfargument name="levelMax" 	required="false" default="4" hint="The default log level for the root logger, by default it is 4 (DEBUG). Optional. ex: config.logLevels.WARN"/>
-		<cfscript>			
+		<cfscript>
 			// Convert Levels
 			convertLevels(arguments);
-			
+
 			// Check levels
 			levelChecks(arguments.levelMin, arguments.levelMax);
-			
+
 			// Register appender
 			instance.appenders[arguments.name] = arguments;
-			
+
 			return this;
 		</cfscript>
 	</cffunction>
-	
+
 	<!--- Set the root logger information  --->
 	<cffunction name="root" access="public" returntype="any" output="false" hint="Register the root logger in this configuration.">
 		<cfargument name="levelMin" 	required="false" default="0" hint="The default log level for the root logger, by default it is 0 (FATAL). Optional. ex: config.logLevels.WARN"/>
@@ -217,10 +217,10 @@ Description :
 			var x = 1;
 			// Convert Levels
 			convertLevels(arguments);
-			
+
 			// Check levels
 			levelChecks(arguments.levelMin, arguments.levelMax);
-			
+
 			//Verify appender list
 			if( NOT listLen(arguments.appenders) ){
 				throw("Invalid Appenders","Please send in at least one appender for the root logger","#getMetadata(this).name#.InvalidAppenders");
@@ -228,16 +228,16 @@ Description :
 
 			// Add definition
 			instance.rootLogger = arguments;
-			
+
 			return this;
 		</cfscript>
 	</cffunction>
-	
+
 	<!--- Get root logger --->
 	<cffunction name="getRoot" access="public" returntype="any" output="false" hint="Get the root logger definition." colddoc:generic="struct">
 		<cfreturn instance.rootLogger>
 	</cffunction>
-	
+
 	<!--- addCategory --->
 	<cffunction name="category" output="true" access="public" returntype="any" hint="Add a new category configuration with appender(s).  Appenders MUST be defined first, else this method will throw an exception">
 		<cfargument name="name" 		required="true"  hint="A unique name for the appender to register. Only unique names can be registered per instance."/>
@@ -247,41 +247,41 @@ Description :
 		<cfscript>
 			// Convert Levels
 			convertLevels(arguments);
-			
+
 			// Check levels
 			levelChecks(arguments.levelMin, arguments.levelMax);
-			
+
 			// Add category registration
 			instance.categories[arguments.name] = arguments;
-			
+
 			return this;
 		</cfscript>
 	</cffunction>
-	
+
 	<!--- getCategory --->
 	<cffunction name="getCategory" output="false" access="public" returntype="any" hint="Get a specifed category definition" colddoc:generic="struct">
 		<cfargument name="name" required="true" hint="The category to retrieve"/>
 		<cfreturn instance.categories[arguments.name]>
 	</cffunction>
-	
+
 	<!--- categoryExists --->
 	<cffunction name="categoryExists" output="false" access="public" returntype="any" hint="Check if a category definition exists" colddoc:generic="boolean">
 		<cfargument name="name" required="true" hint="The category to retrieve"/>
 		<cfreturn structKeyExists(instance.categories, arguments.name)>
 	</cffunction>
-	
+
 	<!--- getCategories --->
 	<cffunction name="getAllCategories" output="false" access="public" returntype="any" hint="Get the configured categories" colddoc:generic="struct">
 		<cfreturn instance.categories>
 	</cffunction>
-	
+
 	<!--- getappenders --->
 	<cffunction name="getAllAppenders" output="false" access="public" returntype="any" hint="Get all the configured appenders" colddoc:generic="struct">
 		<cfreturn instance.appenders>
 	</cffunction>
-	
+
 <!------------------------------------------- Facade methods for categoreis with levels only ------------------------------------------>
-	
+
 	<!--- DEBUG --->
 	<cffunction name="DEBUG" output="false" access="public" returntype="any" hint="Add categories to the DEBUG level. Send each category as an argument.">
 		<cfscript>
@@ -292,7 +292,7 @@ Description :
 			return this;
 		</cfscript>
 	</cffunction>
-	
+
 	<!--- INFO --->
 	<cffunction name="INFO" output="false" access="public" returntype="any" hint="Add categories to the INFO level. Send each category as an argument.">
 		<cfscript>
@@ -303,7 +303,7 @@ Description :
 			return this;
 		</cfscript>
 	</cffunction>
-	
+
 	<!--- WARN --->
 	<cffunction name="WARN" output="false" access="public" returntype="any" hint="Add categories to the WARN level. Send each category as an argument.">
 		<cfscript>
@@ -314,7 +314,7 @@ Description :
 			return this;
 		</cfscript>
 	</cffunction>
-	
+
 	<!--- ERROR --->
 	<cffunction name="ERROR" output="false" access="public" returntype="any" hint="Add categories to the ERROR level. Send each category as an argument.">
 		<cfscript>
@@ -325,7 +325,7 @@ Description :
 			return this;
 		</cfscript>
 	</cffunction>
-	
+
 	<!--- FATAL --->
 	<cffunction name="FATAL" output="false" access="public" returntype="any" hint="Add categories to the FATAL level. Send each category as an argument.">
 		<cfscript>
@@ -336,7 +336,7 @@ Description :
 			return this;
 		</cfscript>
 	</cffunction>
-	
+
 	<!--- OFF --->
 	<cffunction name="OFF" output="false" access="public" returntype="any" hint="Add categories to the OFF level. Send each category as an argument.">
 		<cfscript>
@@ -362,7 +362,7 @@ Description :
 			if( structKeyExists(arguments.target, "levelMax") and NOT isNumeric(arguments.target.levelMax)){
 				arguments.target.levelMax = this.logLevels.lookupAsInt(arguments.target.levelMax);
 			}
-			
+
 			// For chaining
 			return arguments.target;
 		</cfscript>
@@ -378,5 +378,5 @@ Description :
 			<cfthrow message="LevelMin #arguments.levelMax# is not a valid level." type="LogBoxConfig.InvalidLevel">
 		</cfif>
 	</cffunction>
-	
+
 </cfcomponent>

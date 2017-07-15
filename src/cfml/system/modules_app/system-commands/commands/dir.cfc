@@ -10,39 +10,37 @@
  * {code:bash}
  * dir samples/ --recurse
  * {code}
- * 
+ *
  **/
 component aliases="ls,ll,directory" {
 
 	/**
-	 * @directory.hint The directory to list the contents of
-	 * @recurse.hint Include nested files and folders 
+	 * @directory.hint The directory to list the contents of or a file Globbing path to filter on
+	 * @recurse.hint Include nested files and folders
 	 **/
-	function run( String directory="", Boolean recurse=false )  {
-		// This will make each directory canonical and absolute
-		arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
-		
-		var results = directoryList( arguments.directory, arguments.recurse, "query" );
+	function run( Globber directory=globber( ( getCWD().endsWith( '/' ) || getCWD().endsWith( '\' )  ? getCWD() : getCWD() & '/' ) ), Boolean recurse=false )  {
+
+		// If the user gives us an existing directory foo, change it to the
+		// glob pattern foo/* or foo/** if doing a recursive listing.
+		if( directoryExists( directory.getPattern() ) ){
+			directory.setPattern( directory.getPattern() & '*' & ( recurse ? '*' : '' ) );
+		}
 
 		// TODO: Add ability to re-sort this based on user input
-	 	query name="local.results" dbtype="query" {
-	        echo("
-	        	SELECT *
-			   FROM results
-			   ORDER BY type, name
-			 ");
-	    }
-		
-		for( var x=1; x lte results.recordcount; x++ ) {
-			var printCommand = ( results.type[ x ] eq "File" ? "green" : "purple" );
+		var results = directory
+			.asQuery()
+			.matches();
 
-			print[ printCommand & "line" ]( 
+		for( var x=1; x lte results.recordcount; x++ ) {
+			var printCommand = ( results.type[ x ] eq "File" ? "green" : "white" );
+
+			print[ printCommand & "line" ](
 				results.type[ x ] & " " &
 				( results.type[ x ] eq "Dir" ? " " : "" ) & //padding
 				results.attributes[ x ] & " " &
 				numberFormat( results.size[ x ], "999999999" ) & " " &
 				dateTimeFormat( results.dateLastModified[ x ], "MMM dd,yyyy HH:mm:ss" ) & " " &
-				cleanRecursiveDir( arguments.directory, results.directory[ x ] ) & results.name[ x ]				
+				cleanRecursiveDir( arguments.directory.getBaseDir(), results.directory[ x ] ) & results.name[ x ] & ( results.type[ x ] == "Dir" ? "/" : "" )
 			);
 		}
 
@@ -55,7 +53,7 @@ component aliases="ls,ll,directory" {
 	* Cleanup directory recursive nesting
 	*/
 	private function cleanRecursiveDir( required directory, required incoming ){
-		var prefix = ( replacenocase( arguments.incoming, arguments.directory, "" ) );
+		var prefix = ( replacenocase( expandPath( arguments.incoming ), expandPath( arguments.directory ), "" ) );
 		return ( len( prefix ) ? reReplace( prefix, "^(/|\\)", "" ) & "/" : "" );
 	}
 

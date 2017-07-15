@@ -32,7 +32,7 @@ component {
 			var extendedPath = nameArray.slice(1, nameArrayLength - 1).toList('/');
 			arguments.directory &= '/#extendedPath#';
 		}
-        
+
 		// This will make each directory canonical and absolute
 		arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
 

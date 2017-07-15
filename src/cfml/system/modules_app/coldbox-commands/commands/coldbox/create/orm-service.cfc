@@ -19,7 +19,7 @@ component {
 	* @testsDirectory Your unit tests directory. Only used if tests is true
 	* @open Open the file once generated
 	**/
-	function run( 
+	function run(
 		required serviceName,
 		directory="models",
 		boolean queryCaching=false,
@@ -67,7 +67,7 @@ component {
 			print.redLine( "Exiting..." );
 			return;
 		}
-		
+
 		file action='write' file='#modelPath#' mode ='777' output='#modelContent#';
 		print.greenLine( 'Created #modelPath#' );
 
@@ -78,12 +78,12 @@ component {
 			// Create the tests
 			file action='write' file='#testPath#' mode ='777' output='#modelTestContent#';
 			// open file
-			if( arguments.open ){ openPath( testPath ); }			
+			if( arguments.open ){ openPath( testPath ); }
 			print.greenLine( 'Created #testPath#' );
 		}
 
 		// Open file?
-		if( arguments.open ){ openPath( modelPath ); }			
+		if( arguments.open ){ openPath( modelPath ); }
 	}
 
 }

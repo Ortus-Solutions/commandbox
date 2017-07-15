@@ -1,4 +1,4 @@
-﻿<!-----------------------------------------------------------------------
+<!-----------------------------------------------------------------------
 ********************************************************************************
 Copyright Since 2005 ColdBox Framework by Luis Majano and Ortus Solutions, Corp
 www.ortussolutions.com
@@ -17,10 +17,10 @@ Properties:
 - timeout : the timeout in seconds. defaults to 5 seconds
 - persistConnection : Whether to persist the connection or create a new one every log time. Defaults to true;
 ----------------------------------------------------------------------->
-<cfcomponent extends="wirebox.system.logging.AbstractAppender" 
+<cfcomponent extends="wirebox.system.logging.AbstractAppender"
 			 output="false"
 			 hint="A NIO socket appender">
-	
+
 	<!--- Init --->
 	<cffunction name="init" access="public" returntype="SocketAppender" hint="Constructor" output="false" >
 		<!--- ************************************************************* --->
@@ -33,7 +33,7 @@ Properties:
 		<cfscript>
 			// Init supertype
 			super.init(argumentCollection=arguments);
-			
+
 			// Verify properties
 			if( NOT propertyExists('host') ){
 				throw(message="The host must be provided",type="SocketAppender.HostNotFound");
@@ -47,29 +47,29 @@ Properties:
 			if( NOT propertyExists('persistConnection') ){
 				setProperty("persistConnection",true);
 			}
-			
+
 			// Socket storage
 			instance.socket = "";
 			instance.socketWriter = "";
-			
+
 			return this;
 		</cfscript>
-	</cffunction>	
-	
+	</cffunction>
+
 	<!--- onRegistration --->
 	<cffunction name="onRegistration" output="false" access="public" returntype="void" hint="When registration occurs">
 		<cfif getProperty("persistConnection")>
 			<cfset openConnection()>
 		</cfif>
 	</cffunction>
-	
+
 	<!--- onRegistration --->
 	<cffunction name="onUnRegistration" output="false" access="public" returntype="void" hint="When Unregistration occurs">
 		<cfif getProperty("persistConnection")>
 			<cfset closeConnection()>
 		</cfif>
 	</cffunction>
-	
+
 	<!--- Log Message --->
 	<cffunction name="logMessage" access="public" output="true" returntype="void" hint="Write an entry into the appender.">
 		<!--- ************************************************************* --->
@@ -78,20 +78,20 @@ Properties:
 		<cfscript>
 			var loge = arguments.logEvent;
 			var entry = "";
-			
+
 			// Prepare entry to send.
 			if( hasCustomLayout() ){
 				entry = getCustomLayout().format(loge);
 			}
 			else{
 				entry = "#severityToString(loge.getseverity())# #loge.getCategory()# #loge.getmessage()# ExtraInfo: #loge.getextraInfoAsString()#";
-			}	
-			
+			}
+
 			// Open connection?
 			if( NOT getProperty("persistConnection") ){
 				openConnection();
 			}
-			
+
 			// Send data to Socket
 			try{
 				getSocketWriter().println(entry);
@@ -99,22 +99,22 @@ Properties:
 			catch(Any e){
 				$log("ERROR","#getName()# - Error sending entry to socket #getProperties().toString()#. #e.message# #e.detail#");
 			}
-			
+
 			// Close Connection?
 			if( NOT getProperty("persistConnection") ){
 				closeConnection();
-			}			
-		</cfscript>	   
+			}
+		</cfscript>
 	</cffunction>
-	
+
 	<cffunction name="getSocket" access="public" returntype="any" output="false" hint="Get the socket object">
 		<cfreturn instance.socket>
 	</cffunction>
-	
+
 	<cffunction name="getSocketWriter" access="public" returntype="any" output="false" hint="Get the socket writer object">
 		<cfreturn instance.socketWriter>
 	</cffunction>
-	
+
 <!------------------------------------------- PRIVATE ------------------------------------------>
 
 	<!--- Open a Connection --->
@@ -130,7 +130,7 @@ Properties:
 			}
 			// Set Timeout
 			instance.socket.setSoTimeout(javaCast("int",getProperty("timeout") * 1000));
-			
+
 			//Prepare Writer
 			instance.socketWriter = createObject("java","java.io.PrintWriter").init(instance.socket.getOutputStream());
 		</cfscript>
@@ -143,6 +143,6 @@ Properties:
 			getSocket().close();
 		</cfscript>
 	</cffunction>
-	
-	
+
+
 </cfcomponent>

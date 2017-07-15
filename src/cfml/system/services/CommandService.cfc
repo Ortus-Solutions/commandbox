@@ -11,6 +11,8 @@ component accessors="true" singleton {
 
 	// DI Properties
 	property name='shell' 				inject='Shell';
+	property name='wirebox'				inject='wirebox';
+	property name="fileSystemUtil"		inject='FileSystem';
 	property name='parser' 				inject='Parser';
 	property name='system' 				inject='System@constants';
 	property name='cr' 					inject='cr@constants';
@@ -21,6 +23,8 @@ component accessors="true" singleton {
 	property name='interceptorService'	inject='interceptorService';
 	// Using provider since CommandService is created before modules are loaded
 	property name='stringDistance'		inject='provider:StringSimilarity@string-similarity';
+	property name='SystemSettings'		inject='SystemSettings';
+	property name='ConfigService'		inject='ConfigService';
 
 	property name='configured' default="false" type="boolean";
 
@@ -165,12 +169,12 @@ component accessors="true" singleton {
 		// default behavior is to keep trucking
 		var previousCommandSeparator = ';';
 		var lastCommandErrored = false;
-		
+
 		if( structKeyExists( arguments, 'piped' ) ) {
 			var result = arguments.piped;
 			previousCommandSeparator = '|';
 		}
-		
+
 		// If piping commands, each one will be an item in the chain.
 		// i.e. forgebox show | grep | more
 		// Would result in three separate, chained commands.
@@ -262,14 +266,22 @@ component accessors="true" singleton {
 			// Merge flags into named params
 			mergeFlagParameters( parameterInfo );
 
+			// Add in defaults
+			addDefaultParameters( commandInfo.commandString, parameterInfo );
+
 			// Make sure we have all required params.
 			parameterInfo.namedParameters = ensureRequiredParams( parameterInfo.namedParameters, commandParams );
 
+			// Evaluate parameter expressions and system settings
+			evaluateExpressions( parameterInfo );
+			evaluateSystemSettings( parameterInfo );
+			combineColonParams( parameterInfo );
+
+			// Create globbing patterns
+			createGlobs( parameterInfo, commandParams );
+
 			// Ensure supplied params match the correct type
 			validateParams( parameterInfo.namedParameters, commandParams );
-
-			// Evaluate parameter expressions
-			evaluateExpressions( parameterInfo );
 
 			// Reset the printBuffer
 			commandInfo.commandReference.CFC.reset();
@@ -292,7 +304,7 @@ component accessors="true" singleton {
 			// Successful command execution resets exit code to 0.  Set this prior to running the command since the command
 			// may explicitly set the exit code to 1 but not call the error() method.
 			shell.setExitCode( 0 );
-			
+
 			// Run the command
 			try {
 				var result = commandInfo.commandReference.CFC.run( argumentCollection = parameterInfo.namedParameters );
@@ -317,16 +329,14 @@ component accessors="true" singleton {
 					} else {
 						shell.printError( e );
 					}
-				// Unwind the stack and cancell all commands in the chain.
+				// Unwind the stack to the closest catch
 				} else {
-					// Clean up a bit
-					instance.callStack.clear();
 					rethrow;
 				}
+			} finally {
+				// Remove it from the stack
+				instance.callStack.deleteAt( 1 );
 			}
-
-			// Remove it from the stack
-			instance.callStack.deleteAt( 1 );
 
 			// If the command didn't return anything, grab its print buffer value
 			if( isNull( result ) ){
@@ -417,6 +427,67 @@ component accessors="true" singleton {
 		}
 	}
 
+
+	/**
+	* Evaluates any system settings and puts the output in its place.
+	*/
+	function evaluateSystemSettings( required parameterInfo ) {
+
+		// For each parameter being passed into this command
+		for( var paramName in parameterInfo.namedParameters ) {
+
+			var paramValue = parameterInfo.namedParameters[ paramName ];
+			// Look for a system setting "foo" flagged as "__system__foo__system__"
+			var search = reFindNoCase( '__system__.*?__system__', paramValue, 1, true );
+
+			// As long as there are more system settings
+			while( search.pos[1] ) {
+				// Extract them
+				var systemSetting = mid( paramValue, search.pos[1], search.len[1] );
+				// Evaluate them
+				var settingName = mid( systemSetting, 11, len( systemSetting )-20 );
+				var defaultValue = '';
+				if( settingName.listLen( ':' ) ) {
+					defaultValue = settingName.listRest( ':' );
+					settingName = settingName.listFirst( ':' );
+				}
+				var result = systemSettings.getSystemSetting( settingName, defaultValue );
+
+				// And stick their results in their place
+				parameterInfo.namedParameters[ paramName ] = replaceNoCase( paramValue, systemSetting, result, 'one' );
+				paramValue = parameterInfo.namedParameters[ paramName ];
+				// Search again
+				var search = reFindNoCase( '__system__.*?__system__', paramValue, 1, true );
+			}
+		}
+	}
+
+	/**
+	* Look through named parameters and combine any ones with a colon based on matching prefixes.
+	*/
+	function combineColonParams( required struct parameters ) {
+		// Check each param
+		for( var key in parameters.namedParameters.keyArray() ) {
+			// If the name contains a colon, then break it out into a struct
+			if( key contains ':' ) {
+				// Default struct name for :foo=bar
+				if( key.listLen( ':' ) > 1 ) {
+					var prefix = key.listFirst( ':' );
+					var nestedKey = key.listRest( ':' );
+				} else {
+					var prefix = 'args';
+					var nestedKey = mid( key, 2, len( key ) );
+				}
+				// Default to empty struct if this is the first param with this prefix
+				parameters.namedParameters[ prefix ] = parameters.namedParameters[ prefix ] ?: {};
+				// Set the part after the colon as the key in the new struct.
+				parameters.namedParameters[ prefix ][ nestedKey ] = parameters.namedParameters[ key ];
+				// Remove original param
+				parameters.namedParameters.delete( key );
+			}
+		}
+	}
+
 	/**
 	 * Take an array of parameters and parse them out as named or positional
 	 * @parameters.hint The array of params to parse.
@@ -445,43 +516,8 @@ component accessors="true" singleton {
 
 		// This will hold the command chain. Usually just a single command,
 		// but a pipe ("|") will chain together commands and pass the output of one along as the input to the next
-		var commandsToResolve = [[]];
+		var commandsToResolve = breakTokensIntoChain( tokens );
 		var commandChain = [];
-
-		// If this command has a pipe, we need to chain multiple commands
-		var i = 0;
-		for( var token in tokens ){
-			i++;
-			// We've reached a pipe and there is at least one command resolved already and there are more tokens left
-			if( token == '|' &&  commandsToResolve[ commandsToResolve.len() ].len() && i < tokens.len()  ){
-				// Add a new command
-				commandsToResolve.append( [ '|' ] );
-				commandsToResolve.append( [] );
-			} else if( token == ';' &&  commandsToResolve[ commandsToResolve.len() ].len() && i < tokens.len()  ){
-				// Add a new command
-				commandsToResolve.append( [ ';' ] );
-				commandsToResolve.append( [] );
-			} else if( token == '&&' &&  commandsToResolve[ commandsToResolve.len() ].len() && i < tokens.len()  ){
-				// Add a new command
-				commandsToResolve.append( [ '&&' ] );
-				commandsToResolve.append( [] );
-			} else if( token == '||' &&  commandsToResolve[ commandsToResolve.len() ].len() && i < tokens.len()  ){
-				// Add a new command
-				commandsToResolve.append( [ '||' ] );
-				commandsToResolve.append( [] );
-			} else if( token == '>' &&  commandsToResolve[ commandsToResolve.len() ].len() && i < tokens.len()  ){
-				// Add a new command
-				commandsToResolve.append( [ '|' ] );
-				commandsToResolve.append( [ 'fileWrite' ] );
-			} else if( token == '>>' &&  commandsToResolve[ commandsToResolve.len() ].len() && i < tokens.len()  ){
-				// Add a new command
-				commandsToResolve.append( [ '|' ] );
-				commandsToResolve.append( [ 'fileAppend' ] );
-			} else if( !listFindNoCase( '|,;,>,>>,&&', token ) ) {
-				//Append this token to the last command
-				commandsToResolve[ commandsToResolve.len() ].append( token );
-			}
-		}
 
 		// command hierarchy
 		var cmds = getCommandHierarchy();
@@ -490,6 +526,7 @@ component accessors="true" singleton {
 		for( var commandTokens in commandsToResolve ){
 
 			tokens = commandTokens;
+			var originalLine = tokens.toList( ' ' );
 
 			// If command ends with "help", switch it around to call the root help command
 			// Ex. "coldbox help" becomes "help coldbox"
@@ -548,7 +585,7 @@ component accessors="true" singleton {
 			}
 
 			var results = {
-				originalLine = tokens.toList( ' ' ),
+				originalLine = originalLine,
 				commandString = '',
 				commandReference = cmds,
 				parameters = [],
@@ -602,6 +639,85 @@ component accessors="true" singleton {
 		// Return command chain
 		return commandChain;
 
+	}
+
+	/**
+	* Takes a single array of tokens and breaks it into a chain of commands (array of arrays)
+	* i.e. foo bar | baz turns into [ [ 'foo', 'bar' ], [ '|' ], [ 'baz' ] ]
+	*/
+	private function breakTokensIntoChain( required array tokens ) {
+
+		var commandsToResolve = [[]];
+		var expandedCommandsToResolve = [];
+
+		// If this command has a pipe, we need to chain multiple commands
+		var i = 0;
+		for( var token in tokens ){
+			i++;
+			// We've reached a pipe and there is at least one command resolved already and there are more tokens left
+			if( token == '|' &&  commandsToResolve[ commandsToResolve.len() ].len() && i < tokens.len()  ){
+				// Add a new command
+				commandsToResolve.append( [ '|' ] );
+				commandsToResolve.append( [] );
+			} else if( token == ';' &&  commandsToResolve[ commandsToResolve.len() ].len() && i < tokens.len()  ){
+				// Add a new command
+				commandsToResolve.append( [ ';' ] );
+				commandsToResolve.append( [] );
+			} else if( token == '&&' &&  commandsToResolve[ commandsToResolve.len() ].len() && i < tokens.len()  ){
+				// Add a new command
+				commandsToResolve.append( [ '&&' ] );
+				commandsToResolve.append( [] );
+			} else if( token == '||' &&  commandsToResolve[ commandsToResolve.len() ].len() && i < tokens.len()  ){
+				// Add a new command
+				commandsToResolve.append( [ '||' ] );
+				commandsToResolve.append( [] );
+			} else if( token == '>' &&  commandsToResolve[ commandsToResolve.len() ].len() && i < tokens.len()  ){
+				// Add a new command
+				commandsToResolve.append( [ '|' ] );
+				commandsToResolve.append( [ 'fileWrite' ] );
+			} else if( token == '>>' &&  commandsToResolve[ commandsToResolve.len() ].len() && i < tokens.len()  ){
+				// Add a new command
+				commandsToResolve.append( [ '|' ] );
+				commandsToResolve.append( [ 'fileAppend' ] );
+			} else if( !listFindNoCase( '|,;,>,>>,&&', token ) ) {
+				//Append this token to the last command
+				commandsToResolve[ commandsToResolve.len() ].append( token );
+			}
+		}
+
+		// Expand aliases
+		for( commandTokens in commandsToResolve ) {
+			var originalLine = commandTokens.toList( ' ' );
+			var aliases = configService.getSetting( 'command.aliases', {} );
+			var matchingAlias = '';
+
+			for( alias in aliases ) {
+				if( lcase( originalLine ).startsWith( lcase( alias ) ) ) {
+					matchingAlias = alias;
+					break;
+				}
+			}
+
+			// If the exact tokens in this command match an alias, swap it out.
+			if( matchingAlias.len() ) {
+				expandedCommandsToResolve.append(
+					// Recursivley dig down. This allows aliases to alias other alises
+					breakTokensIntoChain(
+						// Re-tokenize the new strin
+						parser.tokenizeInput(
+							// Expand the alias with the string it aliases
+							replaceNoCase( originalLine, matchingAlias, aliases[ matchingAlias ], 'once' )
+						)
+					 ),
+				true );
+			// Otherwise just use them as is.
+			} else {
+				expandedCommandsToResolve.append( commandTokens );
+			}
+
+		}
+
+		return expandedCommandsToResolve;
 	}
 
 	/**
@@ -703,10 +819,10 @@ component accessors="true" singleton {
 			var commandData = createCommandData( fullCFCPath, commandName );
 		// This will catch nasty parse errors so the shell can keep loading
 		} catch( any e ){
-			systemOutput( 'Error registering command [#fullCFCPath#] #CR##e.message# #e.detail ?: ''##CR#Check the logs with [system-log | open] for more info.', true );
+			systemOutput( 'Error registering command [#fullCFCPath#]', true );
 			logger.error( 'Error registering command [#fullCFCPath#]. #e.message# #e.detail ?: ''#', e.stackTrace );
 			// pretty print the exception
-			// shell.printError( e );
+			 shell.printError( e );
 			return;
 		}
 
@@ -833,6 +949,36 @@ component accessors="true" singleton {
 		return userNamedParams;
 	}
 
+	/**
+	 * Check for Globber parameters and create actual Globber object out of them
+ 	 **/
+	private function createGlobs( parameterInfo, commandParams ) {
+		// Loop over user-supplied params
+		for( var paramName in parameterInfo.namedParameters ) {
+
+			// If this is an expected param
+			functionIndex = commandParams.find( function( i ) {
+				return i.name == paramName;
+			} );
+
+			if( functionIndex ) {
+				var paramData = commandParams[ functionIndex ];
+				// And it's of type Globber
+				if( ( paramData.type ?: 'any' ) == 'Globber' ) {
+
+					// Overwrite it with an actual Globber instance seeded with the original canonical path as the pattern.
+					var originalPath = parameterInfo.namedParameters[ paramName ].replace( '\', '/', 'all' );
+					var newPath = fileSystemUtil.resolvePath( originalPath ).replace( '\', '/', 'all' );
+					// Preserve any explicit trailing slashes
+					if( originalPath.endsWith( '/' ) && !newPath.endsWith( '/' ) ) {
+						newPath &= '/';
+					}
+					parameterInfo.namedParameters[ paramName ] = wirebox.getInstance( 'Globber' )
+						.setPattern( newPath );
+				}
+			}
+		}
+	}
 
 	/**
 	 * Make sure all params are the correct type
@@ -843,6 +989,7 @@ component accessors="true" singleton {
 			// If it's required and hasn't been supplied...
 			if( userNamedParams.keyExists( param.name )
 				&& param.keyExists( "type" )
+				&& param.type != 'Globber'
 				&& !isValid( param.type, userNamedParams[ param.name ] ) ){
 
 				throw( message='Parameter [#param.name#] has a value of [#userNamedParams[ param.name ]#] which is not of type [#param.type#].', type="commandException");
@@ -874,12 +1021,32 @@ component accessors="true" singleton {
 
 		return results;
 	}
+
 	/**
 	 * Merge flags into named parameters
  	 **/
-	private function mergeFlagParameters( required struct parameterInfo ){
+	private function mergeFlagParameters( required struct parameterInfo ) {
 		// Add flags into named params
 		arguments.parameterInfo.namedParameters.append( arguments.parameterInfo.flags );
+	}
+
+	/**
+	 * Merge in parameter defaults
+ 	 **/
+	private function addDefaultParameters( commandString, parameterInfo ) {
+		// Get defaults for this command, an empty struct if nothing.
+		var defaults = configService.getSetting( 'command.defaults["#commandString#"]', {} );
+		var params = parameterInfo.namedParameters;
+
+		// For each default
+		defaults.each( function( k,v ) {
+			// If it's not already set
+			if( !params.keyExists( k ) ) {
+				// Stick it in there!
+				params[ k ] = v;
+			}
+		} );
+
 	}
 
 }

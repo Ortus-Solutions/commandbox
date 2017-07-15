@@ -37,16 +37,16 @@
 		runner : [
 			{ "default": "" }
 		],
-		labels : [],
-		reporter :"",
-		reporterResults : "",
-		bundles :[ "" ],
-		directory: { mapping : "", recurse: true },
-		watchers :[],
-		notify : {
-			emails : [],
-			growl : "",
-			URL : ""
-		}
+		"labels" : "",
+		"reporter" : "",
+	    "bundles" : "",
+	    "recurse" : true,
+	    "directory" : "tests.specs",
+	    "testBundles" : "",
+	    "testSuites" : "",
+	    "testSpecs" : "",
+	    "verbose" : true,
+	    "watchDelay" : 500,
+	    "watchPaths" : "**.cfc"
 	}
 }

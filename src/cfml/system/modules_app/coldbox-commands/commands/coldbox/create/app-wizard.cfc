@@ -2,7 +2,7 @@
 *  Create a blank ColdBox app from one of our app skeletons by following our lovely wizard.
 **/
 component extends="app" {
-	
+
 	/**
 	 * @name The name of the app you want to create
 	 * @skeleton The application skeleton you want to use
@@ -26,7 +26,7 @@ component extends="app" {
 		arguments.initWizard 	= true;
 		arguments.directory 	= getCWD();
 
-		super.run( argumentCollection=arguments );	
+		super.run( argumentCollection=arguments );
 	}
 
 }

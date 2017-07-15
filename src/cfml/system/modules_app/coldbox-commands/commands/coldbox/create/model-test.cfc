@@ -1,6 +1,6 @@
 /**
 * Create a new model bdd test in an existing ColdBox application.  Make sure you are running this command in the root
-* of your app for it to find the correct folder. 
+* of your app for it to find the correct folder.
 * .
 * {code:bash}
 * coldbox create model-test myModel --open
@@ -25,7 +25,7 @@ component {
 	* @testsDirectory.hint Your unit tests directory. Only used if tests is true
 	* @open.hint Open the file once generated
 	**/
-	function run( 
+	function run(
 		required path,
 		methods="",
 		testsDirectory='tests/specs/unit',
@@ -48,7 +48,7 @@ component {
 
 		// Basic replacements
 		modelTestContent = replaceNoCase( modelTestContent, '|modelName|', arguments.path, 'all' );
-		
+
 		// Handle Methods
 		if( len( arguments.methods ) ){
 			var allTestsCases   = "";
@@ -78,14 +78,14 @@ component {
 			print.redLine( "Exiting..." );
 			return;
 		}
-		
+
 		// Create the tests
 		file action='write' file='#testPath#' mode ='777' output='#modelTestContent#';
 		// open file
-		if( arguments.open ){ openPath( testPath ); }			
+		if( arguments.open ){ openPath( testPath ); }
 		print.greenLine( 'Created #testPath#' );
 		// Open file?
-		if( arguments.open ){ openPath( testPath ); }			
+		if( arguments.open ){ openPath( testPath ); }
 	}
 
 }

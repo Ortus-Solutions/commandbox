@@ -1,4 +1,4 @@
-﻿<!-----------------------------------------------------------------------
+<!-----------------------------------------------------------------------
 ********************************************************************************
 Copyright Since 2005 ColdBox Framework by Luis Majano and Ortus Solutions, Corp
 www.ortussolutions.com
@@ -45,7 +45,7 @@ Description :
 				// Double get just in case of race conditions
 				refLocal.target = cacheProvider.get( cacheKey );
 				if( structKeyExists(refLocal, "target") ){ return refLocal.target; }
-				
+
 				// some nice debug info.
 				if( instance.log.canDebug() ){
 					instance.log.debug("Object: (#cacheProperties.toString()#) not found in cacheBox, beginning construction.");

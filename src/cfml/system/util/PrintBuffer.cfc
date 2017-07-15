@@ -13,31 +13,31 @@ component accessors="true" extends="Print"{
 
 	// DI
 	property name="shell" inject="shell";
-	
+
 	/**
 	* Result buffer
 	*/
 	property name="result" default="";
-	
+
 	function init(){
 		return this;
 	}
-	
+
 	// Force a flush
 	function toConsole(){
 		variables.shell.printString( getResult() );
 		clear();
 	}
-	
+
 	// Reset the result
 	function clear(){
-		variables.result = '';		
+		variables.result = '';
 	}
-		
+
 	// Proxy through any methods to the actual print helper
 	function onMissingMethod( missingMethodName, missingMethodArguments ){
 		variables.result &= super.onMissingMethod( arguments.missingMethodName, arguments.missingMethodArguments );
 		return this;
 	}
-	
+
 }

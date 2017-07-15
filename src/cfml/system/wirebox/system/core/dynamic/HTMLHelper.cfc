@@ -1,4 +1,4 @@
-﻿<!-----------------------------------------------------------------------
+<!-----------------------------------------------------------------------
 ********************************************************************************
 Copyright Since 2005 ColdBox Framework by Luis Majano and Ortus Solutions, Corp
 www.ortussolutions.com
@@ -179,14 +179,14 @@ Description :
 			// Check if we have a base URL and if we need to build our link
 			if( arguments.noBaseURL eq FALSE and NOT find( "://", arguments.href ) ){
 				// Verify SSL Bit
-				if( structKeyExists( arguments, "ssl" ) ){ 
+				if( structKeyExists( arguments, "ssl" ) ){
 					arguments.href = event.buildLink(
 						linkto 		= arguments.href,
 						ssl			= arguments.ssl,
 						queryString = arguments.queryString
-					); 
-				} else { 
-					arguments.href = event.buildLink( linkto=arguments.action, queryString=arguments.queryString ); 
+					);
+				} else {
+					arguments.href = event.buildLink( linkto=arguments.action, queryString=arguments.queryString );
 				}
 			}
 
@@ -580,13 +580,13 @@ Description :
 			// Check if we have a base URL and if we need to build our link
 			if( arguments.noBaseURL eq FALSE and NOT find( "://", arguments.action ) ){
 				// Verify SSL Bit
-				if( structKeyExists( arguments, "ssl" ) ){ 
+				if( structKeyExists( arguments, "ssl" ) ){
 					arguments.action = event.buildLink(
 						linkto 		= arguments.action,
 						ssl			= arguments.ssl
-					); 
-				} else { 
-					arguments.action = event.buildLink( linkto=arguments.action ); 
+					);
+				} else {
+					arguments.action = event.buildLink( linkto=arguments.action );
 				}
 			}
 

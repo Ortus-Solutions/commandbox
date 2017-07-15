@@ -16,7 +16,7 @@
  * {code:bash}
  * echo "Step 3 complete" >> log.txt
  * {code}
- * 
+ *
  **/
 component excludeFromHelp=true {
 
@@ -25,20 +25,20 @@ component excludeFromHelp=true {
 	 * @file.hint File to append to
  	 **/
 	function run( required contents='', required string file )  {
-		
+
 		// This will make the file path canonical and absolute
 		arguments.file = fileSystemUtil.resolvePath( arguments.file );
 
 		// Clean out any ANI escape codes from the text
 		arguments.contents = print.unansi( arguments.contents );
-		
+
 		// Append to the file
-		file  
-		    action = "append" 
-		    file = "#arguments.file#" 
-		    output = "#arguments.contents#" 
+		file
+		    action = "append"
+		    file = "#arguments.file#"
+		    output = "#arguments.contents#"
 		    addNewLine = "yes";
-		
+
 	}
 
 }

@@ -1,4 +1,4 @@
-﻿<!-----------------------------------------------------------------------
+<!-----------------------------------------------------------------------
 ********************************************************************************
 Copyright Since 2005 ColdBox Framework by Luis Majano and Ortus Solutions, Corp
 www.ortussolutions.com
@@ -20,7 +20,7 @@ Properties:
  - ensureChecks : if true, then we will check the dsn and table existence.  Defaults to true (Optional)
  - textDBType : Defaults to 'text'. This is used on the autocreate features of the appender for the
  				   message and extended info fields.  This is the actual database type.
-				   
+
 The columns needed in the table are
 
  - id : UUID
@@ -34,10 +34,10 @@ The columns needed in the table are
 If you are building a mapper, the map must have the above keys in it.
 
 ----------------------------------------------------------------------->
-<cfcomponent extends="wirebox.system.logging.AbstractAppender" 
+<cfcomponent extends="wirebox.system.logging.AbstractAppender"
 			 output="false"
 			 hint="This is a simple implementation of a appender that is db based.">
-	
+
 	<!--- Init --->
 	<cffunction name="init" access="public" returntype="DBAppender" hint="Constructor" output="false" >
 		<!--- ************************************************************* --->
@@ -50,21 +50,21 @@ If you are building a mapper, the map must have the above keys in it.
 		<cfscript>
 			// Init supertype
 			super.init(argumentCollection=arguments);
-			
+
 			// valid columns
 			instance.columns = "id,severity,category,logdate,appendername,message,extrainfo";
 			// UUID generator
 			instance.uuid = createobject("java", "java.util.UUID");
-			
+
 			// Verify properties
-			if( NOT propertyExists('dsn') ){ 
-				throw(message="No dsn property defined",type="DBAppender.InvalidProperty"); 
+			if( NOT propertyExists('dsn') ){
+				throw(message="No dsn property defined",type="DBAppender.InvalidProperty");
 			}
-			if( NOT propertyExists('table') ){ 
-				throw(message="No table property defined",type="DBAppender.InvalidProperty"); 
+			if( NOT propertyExists('table') ){
+				throw(message="No table property defined",type="DBAppender.InvalidProperty");
 			}
-			if( NOT propertyExists('autoCreate') OR NOT isBoolean(getProperty('autoCreate')) ){ 
-				setProperty('autoCreate',false); 
+			if( NOT propertyExists('autoCreate') OR NOT isBoolean(getProperty('autoCreate')) ){
+				setProperty('autoCreate',false);
 			}
 			if( NOT propertyExists('defaultCategory') ){
 				setProperty("defaultCategory",arguments.name);
@@ -90,15 +90,15 @@ If you are building a mapper, the map must have the above keys in it.
 			if( NOT propertyExists( "schema" ) ){
 				setProperty( "schema", "" );
 			}
-			
-			
+
+
 			// DB Rotation Time
 			instance.lastDBRotation = "";
-			
+
 			return this;
 		</cfscript>
-	</cffunction>	
-	
+	</cffunction>
+
 	<!--- onRegistration --->
 	<cffunction name="onRegistration" output="false" access="public" returntype="void" hint="Runs on registration">
 		<cfscript>
@@ -108,7 +108,7 @@ If you are building a mapper, the map must have the above keys in it.
 			}
 		</cfscript>
 	</cffunction>
-	
+
 	<!--- Log Message --->
 	<cffunction name="logMessage" access="public" output="false" returntype="void" hint="Write an entry into the appender.">
 		<!--- ************************************************************* --->
@@ -121,12 +121,12 @@ If you are building a mapper, the map must have the above keys in it.
 			var cols = "";
 			var loge = arguments.logEvent;
 			var message = loge.getMessage();
-			
+
 			// Check Category Sent?
 			if( NOT loge.getCategory() eq "" ){
 				category = loge.getCategory();
 			}
-			
+
 			// Column Maps
 			if( propertyExists('columnMap') ){
 				cmap = getProperty('columnMap');
@@ -136,7 +136,7 @@ If you are building a mapper, the map must have the above keys in it.
 				cols = instance.columns;
 			}
 		</cfscript>
-		
+
 		<!--- write the log message to the DB --->
 		<cfquery datasource="#getProperty("dsn")#">
 			INSERT INTO #getTable()# (#cols#) VALUES (
@@ -149,47 +149,47 @@ If you are building a mapper, the map must have the above keys in it.
 				<cfqueryparam cfsqltype="cf_sql_varchar" value="#loge.getExtraInfoAsString()#">
 			)
 		</cfquery>
-		
+
 		<!--- rotation --->
 		<cfset this.rotationCheck()>
 	</cffunction>
-	
-	<!--- rotationCheck --->    
-    <cffunction name="rotationCheck" output="false" access="public" returntype="any" hint="Rotation checks">    
-    	<cfscript>	    
+
+	<!--- rotationCheck --->
+    <cffunction name="rotationCheck" output="false" access="public" returntype="any" hint="Rotation checks">
+    	<cfscript>
 			// Verify if in rotation frequency
 			if( isDate( instance.lastDBRotation ) AND dateDiff( "n",  instance.lastDBRotation, now() ) LTE getProperty( "rotationFrequency" ) ){
 				return;
 			}
-			
+
 			// Rotations
 			this.doRotation();
-			
+
 			// Store last profile time
-			instance.lastDBRotation = now();			
-    	</cfscript>    
+			instance.lastDBRotation = now();
+    	</cfscript>
     </cffunction>
-    
-    <!--- doRotation --->    
-    <cffunction name="doRotation" output="false" access="public" returntype="any" hint="Do Rotation">    
+
+    <!--- doRotation --->
+    <cffunction name="doRotation" output="false" access="public" returntype="any" hint="Do Rotation">
    		<cfset var qLogs = "">
 		<cfset var cols = instance.columns>
 		<cfset var targetDate = dateAdd( "d", "-#getProperty( "rotationDays" )#", now() ) >
-		
+
    		<cfquery datasource="#getProperty("dsn")#" name="qLogs">
 			DELETE
 			  FROM #getTable()#
 			 WHERE #listgetAt( cols,4)# < <cfqueryparam cfsqltype="#getDateTimeDBType()#" value="#dateFormat( targetDate, 'mm/dd/yyyy')#">
 		</cfquery>
-		
+
     </cffunction>
-	
+
 <!------------------------------------------- PRIVATE ------------------------------------------>
-	
+
 	<cffunction name="getTable" hint="Return the table name with the schema included if found." access="private">
 		<cfscript>
 			if( len( getProperty( 'schema' ) ) ){
-				return getProperty( 'schema' ) & "." & getProperty( 'table' );  
+				return getProperty( 'schema' ) & "." & getProperty( 'table' );
 			}
 			return getProperty( 'table' );
 		</cfscript>
@@ -202,7 +202,7 @@ If you are building a mapper, the map must have the above keys in it.
 		<cfset var tableFound = false>
 		<cfset var qCreate = "">
 		<cfset var cols = instance.columns>
-		
+
 		<!--- Get Tables on this DSN --->
 		<cfdbinfo datasource="#dsn#" name="qTables" type="tables" />
 
@@ -213,7 +213,7 @@ If you are building a mapper, the map must have the above keys in it.
 				<cfbreak>
 			</cfif>
 		</cfloop>
-		
+
 		<!--- AutoCreate Table? --->
 		<cfif NOT tableFound and getProperty('autoCreate')>
 			<!--- Try to Create Table  --->
@@ -236,13 +236,13 @@ If you are building a mapper, the map must have the above keys in it.
 					 type="DBAppender.TableNotFoundException">
 		</cfif>
 	</cffunction>
-	
+
 	<!--- checkColumnMap --->
 	<cffunction name="checkColumnMap" output="false" access="private" returntype="void" hint="Check a column map definition">
 		<cfscript>
 			var map = getProperty('columnMap');
 			var key = "";
-			
+
 			for(key in map){
 				if( NOT listFindNoCase(instance.columns,key) ){
 					throw(message="Invalid column map key: #key#",detail="The available keys are #instance.columns#",type="DBAppender.InvalidColumnMapException");
@@ -250,12 +250,12 @@ If you are building a mapper, the map must have the above keys in it.
 			}
 		</cfscript>
 	</cffunction>
-	
-	<!--- getDateTimeDBType --->    
-    <cffunction name="getDateTimeDBType" output="false" access="private" returntype="any">    
+
+	<!--- getDateTimeDBType --->
+    <cffunction name="getDateTimeDBType" output="false" access="private" returntype="any">
     	<cfset var qResults = "">
     	<cfdbinfo type="Version" name="qResults" datasource="#getProperty( 'dsn' )#" >
-    	<cfscript>	 
+    	<cfscript>
 			switch( qResults.database_productName ){
 				case "PostgreSQL" : {
 					return "cf_sql_timestamp";
@@ -272,15 +272,15 @@ If you are building a mapper, the map must have the above keys in it.
 				default : {
 					return "cf_sql_timestamp";
 				}
-			}   
-    	</cfscript>    
+			}
+    	</cfscript>
     </cffunction>
 
-    <!--- getDateTimeColumnType --->    
-    <cffunction name="getDateTimeColumnType" output="false" access="private" returntype="any">    
+    <!--- getDateTimeColumnType --->
+    <cffunction name="getDateTimeColumnType" output="false" access="private" returntype="any">
     	<cfset var qResults = "">
     	<cfdbinfo type="Version" name="qResults" datasource="#getProperty( 'dsn' )#" >
-    	<cfscript>	 
+    	<cfscript>
 			switch( qResults.database_productName ){
 				case "PostgreSQL" : {
 					return "TIMESTAMP";
@@ -297,8 +297,8 @@ If you are building a mapper, the map must have the above keys in it.
 				default : {
 					return "DATETIME";
 				}
-			}   
-    	</cfscript>    
+			}
+    	</cfscript>
     </cffunction>
-	
+
 </cfcomponent>

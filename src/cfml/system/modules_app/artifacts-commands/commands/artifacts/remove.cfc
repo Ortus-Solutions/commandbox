@@ -21,12 +21,12 @@
  * {code:bash}
  * artifacts remove package-name --force
  * {code}
- * 
+ *
  **/
 component {
 
 	// DI
-	property name='artifactService' inject='artifactService'; 
+	property name='artifactService' inject='artifactService';
 
 	/**
 	 * @package.hint Comma-delimited list of packages to remove

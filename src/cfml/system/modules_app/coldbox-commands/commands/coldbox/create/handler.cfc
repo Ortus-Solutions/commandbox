@@ -112,7 +112,7 @@ component aliases='coldbox create controller' {
 		var handlerPath = '#arguments.directory#/#arguments.name#.cfc';
 		// Create dir if it doesn't exist
 		directorycreate( getDirectoryFromPath( handlerPath ), true, true );
-		
+
 		// Confirm it
 		if( fileExists( handlerPath ) && !confirm( "The file '#getFileFromPath( handlerPath )#' already exists, overwrite it (y/n)?" ) ){
 			print.redLine( "Exiting..." );

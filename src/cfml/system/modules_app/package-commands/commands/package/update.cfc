@@ -27,39 +27,50 @@
  * {code}
  **/
 component aliases="update" {
-	
+
 	processingdirective pageEncoding='UTF-8';
-	
+
 	// DI
 	property name="packageService" 	inject="PackageService";
-	property name="semanticVersion" inject="semanticVersion";
+	property name="semanticVersion" inject="semanticVersion@semver";
 	property name='parser'			inject='Parser';
-	
-	/**  
-	* Update all or one outdated dependencies 
+
+	/**
+	* Update all or one outdated dependencies
 	* @slug A comma-delimmited list of slugs to update. Pass nothing to update all packages.
 	* @slug.optionsUDF slugComplete
 	* @verbose Outputs additional information about each package
 	* @force Forces an update without confirmations
+	* @system.hint When true, update packages in the global CommandBox module's folder
 	**/
-	function run( string slug="", boolean verbose=false, boolean force=false ) {
-		
-		// package check
-		if( !packageService.isPackage( getCWD() ) ) {
-			return error( '#getCWD()# is not a package!' );
+	function run(
+		string slug="",
+		boolean verbose=false,
+		boolean force=false,
+		boolean system=false ) {
+
+		if( arguments.system ) {
+			var directory = expandPath( '/commandbox' );
+		} else {
+			var directory = getCWD();
 		}
-		
+
+		// package check
+		if( !packageService.isPackage( directory ) ) {
+			return error( '#directory# is not a package!' );
+		}
+
 		// echo output
 		print.yellowLine( "Resolving Dependencies, please wait..." ).toConsole();
 
 		// build dependency tree
 		 var dependenciesToUpdate = packageService.getOutdatedDependencies(
-		 	directory=getCWD(),
+		 	directory=directory,
 		 	print=print,
 		 	verbose=arguments.verbose,
 		 	includeSlugs=arguments.slug
 		 );
-		 
+
 		// Advice initial notice
 		if( dependenciesToUpdate.len() ){
 			print.green( 'Found ' )
@@ -78,7 +89,7 @@ component aliases="update" {
 
 		// iterate and update
 		for( var dependency in dependenciesToUpdate ){
-			
+
 			// Contains an endpoint
 			if( dependency.version contains ':' ) {
 				var oldID = dependency.version;
@@ -87,37 +98,37 @@ component aliases="update" {
 				var oldID = dependency.slug & '@' & dependency.Version;
 				var newID = dependency.slug & '@' & dependency.newVersion;
 			}
-			
+
 			print.magentaLine( "Starting update of #oldID# ").toConsole();
 			// install it
 			command( 'install' )
-				.params( 
+				.params(
 					ID=newID,
 					verbose=arguments.verbose,
 					directory=dependency.directory )
 				.flags( 'force', '!save' )
 				.run( echo=arguments.verbose )
 		}
-		
+
 	}
 
 	/**
 	* Pretty print dependencies
 	*/
 	private function printDependencies( required array data, boolean verbose ) {
-		
+
 		for( var dependency in arguments.data ){
 			// print it out
 			print[ ( dependency.dev ? 'boldYellow' : 'bold' ) ]( '* #dependency.slug# (#dependency.version#)' )
 				.boldRedLine( ' ─> new version: #dependency.newVersion#' )
 				.toConsole();
-			// verbose data			
+			// verbose data
 			if( arguments.verbose ) {
 				if( len( dependency.name ) ) {
-					print[ ( dependency.dev ? 'yellowLine' : 'line' ) ]( dependency.name ).toConsole();	
+					print[ ( dependency.dev ? 'yellowLine' : 'line' ) ]( dependency.name ).toConsole();
 				}
 				if( len( dependency.shortDescription ) ) {
-					print[ ( dependency.dev ? 'yellowLine' : 'line' ) ]( dependency.shortDescription ).toConsole();	
+					print[ ( dependency.dev ? 'yellowLine' : 'line' ) ]( dependency.shortDescription ).toConsole();
 				}
 				print.line().toConsole();
 			} // end verbose?
@@ -129,12 +140,12 @@ component aliases="update" {
 	function slugComplete() {
 		var results = [];
 		var directory = getCWD();
-		
+
 		if( packageService.isPackage( directory ) ) {
 			var BoxJSON = packageService.readPackageDescriptor( directory );
 			results.append( BoxJSON.installPaths.keyArray(), true );
 		}
-			
+
 		return results;
 	}
 }

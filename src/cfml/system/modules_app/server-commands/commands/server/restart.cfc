@@ -30,10 +30,10 @@ component aliases="restart" {
 	){
 		if( !isNull( arguments.directory ) ) {
 			arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
-		} 
+		}
 		if( !isNull( arguments.serverConfigFile ) ) {
 			arguments.serverConfigFile = fileSystemUtil.resolvePath( arguments.serverConfigFile );
-		}		
+		}
 		var serverDetails = serverService.resolveServerDetails( arguments );
 		var serverInfo = serverDetails.serverInfo;
 
@@ -49,14 +49,14 @@ component aliases="restart" {
 		print.boldCyanLine( "Trying to stop server..." );
 		print.yellowLine( '> ' & stopCommand );
 		runCommand( stopCommand );
-		
+
 		// start up server
 		print.line().boldCyanLine( "Trying to start server..." );
 		print.yellowLine( '> ' & startCommand );
 		runCommand( startCommand );
 	}
 
-	
+
 	function serverNameComplete() {
 		return serverService.getServerNames();
 	}

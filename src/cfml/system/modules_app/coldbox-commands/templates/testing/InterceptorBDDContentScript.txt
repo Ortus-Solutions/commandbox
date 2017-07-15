@@ -8,6 +8,8 @@ component extends="coldbox.system.testing.BaseInterceptorTest" interceptor="|nam
 	/*********************************** LIFE CYCLE Methods ***********************************/
 
 	function beforeAll(){
+		super.beforeAll();
+		
 		// interceptor configuration properties, if any
 		configProperties = {};
 		// init and configure interceptor
@@ -16,6 +18,8 @@ component extends="coldbox.system.testing.BaseInterceptorTest" interceptor="|nam
 	}
 
 	function afterAll(){
+		// do your own stuff here
+		super.afterAll();
 	}
 	
 	/*********************************** BDD SUITES ***********************************/

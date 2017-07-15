@@ -1,5 +1,5 @@
 /**
- * Open a path in the native OS application in order to edit it. If you pass in a 
+ * Open a path in the native OS application in order to edit it. If you pass in a
  * folder, it will try to open the folder in an explorer or finder window.
  * Passing no path, or an empty string will open the current working directory
  * .
@@ -7,27 +7,29 @@
  * edit index.cfm
  * open myApp/
  * {code}
- * 
+ *
  **/
 component aliases="open" {
 
 	/**
 	 * @path.hint Path to open natively.
  	 **/
-	function run( path='' )  {
-		
-		// Make path canonical and absolute
-		arguments.path = fileSystemUtil.resolvePath( arguments.path );
+	function run( Globber path=globber( getCWD() ) )  {
 
-		if( !fileExists( arguments.path ) AND !directoryExists( arguments.path ) ){
-			return error( "Path: #arguments.path# does not exist, cannot open it!" );
-		}
+		path.apply( function( thisPath ) {
 
-		if( fileSystemUtil.openNatively( arguments.path ) ){
-			print.line( "Resource Opened!" );
-		} else {
-			error( "Unsupported OS, cannot open path." );
-		};
+			if( !fileExists( thisPath ) AND !directoryExists( thisPath ) ){
+				return error( "Path: #thisPath# does not exist, cannot open it!" );
+			}
+
+			if( fileSystemUtil.openNatively( thisPath ) ){
+				print.line( "Resource Opened!" );
+			} else {
+				error( "Unsupported OS, cannot open path." );
+			};
+
+		} );
+
 	}
 
 }

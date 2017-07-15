@@ -1,8 +1,8 @@
 {
     "name":"Globber",
-    "version":"1.0.0",
+    "version":"2.0.6",
     "author":"Brad Wood",
-    "location":"Ortus-Solutions/globber#v1.0.0",
+    "location":"Ortus-Solutions/globber#v2.0.6",
     "homepage":"https://github.com/Ortus-Solutions/globber/",
     "documentation":"https://github.com/Ortus-Solutions/globber/",
     "repository":{
@@ -12,5 +12,26 @@
     "bugs":"https://github.com/Ortus-Solutions/globber/issues",
     "slug":"globber",
     "shortDescription":"I am a utility to match file system path patterns.",
-    "type":"modules"
+    "type":"modules",
+    "dependencies":{
+        
+    },
+    "devDependencies":{
+        "coldbox":"^4.3.0+188",
+        "testbox":"^2.4.0+80"
+    },
+    "installPaths":{
+        "testbox":"testbox",
+        "coldbox":"tests\\resources\\app\\coldbox"
+    },
+    "scripts":{
+        "postVersion":"package set location='Ortus-Solutions/globber#v`package version`'",
+        "onRelease":"forgebox use ortus && publish",
+        "postPublish":"!git push && !git push --tags"
+    },
+    "ignore":[
+        "**/.*",
+        "test",
+        "tests"
+    ]
 }

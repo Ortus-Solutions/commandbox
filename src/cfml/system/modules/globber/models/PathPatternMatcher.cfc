@@ -1,12 +1,12 @@
 /**
 *********************************************************************************
-* Copyright Since 2014 CommandBox by Ortus Solutions, Corp
+* Copyright Since 2014 by Ortus Solutions, Corp
 * www.coldbox.org | www.ortussolutions.com
 ********************************************************************************
-* @author Brad Wood, Luis Majano, Denny Valliant
+* @author Brad Wood
 *
 * I am a utility to match file system path patterns
-* 
+*
 * End a pattern with a slash to only match a directory. Start a pattern with a slash to start in the root. Ex:
 * - foo will match any file or folder in the directory tree
 * - /foo will only match a file or folder in the root
@@ -18,9 +18,12 @@
 * - foo*.txt will match any file or folder starting with "foo" and ending with .txt
 * - *foo will match any file or folder ending with "foo"
 * - a/* /z will match a/b/z but not a/b/c/z
-* 
+*
 * Use a double ** to match zero or more characters including slashes. This allows a pattern to span directories Ex:
 * - a/** /z will match a/z and a/b/z and a/b/c/z
+*
+* A question mark matches a single non-slash character
+* - /h?t matches hat but not ham or h/t
 *
 */
 component accessors="true" singleton {
@@ -31,46 +34,65 @@ component accessors="true" singleton {
 
 	/**
 	* Match a single path to a single pattern.  Returns true if the path matches the pattern, otherwise false.
-	* @pattern.hint The pattern to match against the path
-	* @path.hint The file system path to test.  Can be a file or directory.  Direcories MUST end with a trailing slash
+	* @pattern The pattern to match against the path
+	* @path The file system path to test.  Can be a file or directory.  Direcories MUST end with a trailing slash
+	* @exact True if the full path needs to match.  False to match inside a path
 	*/
-	boolean function matchPattern( required string pattern, required string path ) {
+	boolean function matchPattern( required string pattern, required string path, boolean exact=false) {
 		// Normalize slashes
 		arguments.pattern = replace( arguments.pattern, '\', '/', 'all' );
-		arguments.path = replace( arguments.path, '\', '/', 'all' );	
-		
-		// Start all paths with /
-		arguments.path = ( arguments.path.startsWith( '/' ) ? arguments.path : '/' & arguments.path );
-		
+		arguments.path = replace( arguments.path, '\', '/', 'all' );
+
+		if( !exact ) {
+			// Start all paths with /
+			arguments.path = ( arguments.path.startsWith( '/' ) ? arguments.path : '/' & arguments.path );
+		}
+
 		// build a regex based on the pattern
 		var regex = arguments.pattern;
-		
+
 		// Escape any periods in the pattern
 		regex = replace( regex, '.', '\.', 'all' );
-		
+
 		// /**/ matches zero or more directories (at least one /)
 		regex = replace( regex, '/**/', '__zeroOrMoreDirs_', 'all' );
 		// Double ** matches anything
 		regex = replace( regex, '**', '__anything_', 'all' );
 		// Single * matches anything BUT slash
 		regex = replace( regex, '*', '__anythingButSlash__', 'all' );
+		// ? matches any single non-slash character
+		regex = replace( regex, '?', '__singleNonSlash__', 'all' );
+
 		// Switch placeholders for actual regex
-		regex = replace( regex, '__zeroOrMoreDirs_', '/.*', 'all' );
+		regex = replace( regex, '__zeroOrMoreDirs_', '(/.*/|/)', 'all' );
 		regex = replace( regex, '__anything_', '.*', 'all' );
 		regex = replace( regex, '__anythingButSlash__', '[^/]*', 'all' );
-				
+		regex = replace( regex, '__singleNonSlash__', '[^/]', 'all' );
+
+		// If the pattern doesn't come with an explicit ending slash, add an optional one
+		// so we can match ending files OR folders
+		if( !regex.endsWith( '/' ) ) {
+			regex &= '/?';
+		}
+
 		// If pattern starts with slash
-		if( regex.startsWith( '/' )) {
+		if( regex.startsWith( '/' ) || exact ) {
 			// add a ^ to match start of string
 			regex = '^' & regex;
 		} else {
 			// Otherwise, anything can precede this pattern
-			regex = '.*' & regex;			
+			regex = '.*' & regex;
 		}
+		if( exact ) {
+			regex &= '$';
 		// Anything can follow this pattern
-		regex &= '.*';
-		
-		//writeDump(regex);abort;
+		} else {
+			regex &= '.*';
+		}
+
+
+		//systemoutput(regex, true);
+		//systemoutput(arguments.path, true);
 		return ( reFindNoCase( regex, arguments.path ) > 0 );
 	}
 
