@@ -50,6 +50,15 @@ component {
 			taskArgs.delete( 'target' );
 		}
 
+		// Fix for negated flags like --no:verbose
+		if( arguments.keyExists( 'no' ) && isStruct( arguments.no ) ) {
+			arguments.no.each( function( k, v ) {
+				if( isBoolean( v ) ) {
+					taskArgs[ k ] = false;
+				}
+			} );
+		}
+
 		// Run the task!
 		// We're printing the output here so we can capture it and pipe or redirect the output from "task run"
 		print.text(
