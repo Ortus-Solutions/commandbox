@@ -120,7 +120,7 @@ component accessors="true" singleton {
 			'trace' : d.trace ?: false,
 			'console' : d.console ?: false,
 			'trayicon' : d.trayicon ?: '',
-			// Duplicate so onServerStart interceptors don't actually change config settings via refernce.
+			// Duplicate so onServerStart interceptors don't actually change config settings via reference.
 			'trayOptions' : duplicate( d.trayOptions ?: [] ),
 			'trayEnable' : d.trayEnable ?: true,
 			'jvm' : {
