@@ -29,6 +29,10 @@ Download from the [Ortus Integration Repository](http://integration.stg.ortussol
 
 Get going with CommandBox in a matter of minutes with our [Getting Started Guide](http://ortus.gitbooks.io/commandbox-documentation/content/getting_started_guide.html) 
 
+**Bug Tracker**
+
+Found an issue? Check out [Bug Tracker](https://ortussolutions.atlassian.net/browse/COMMANDBOX)
+
 
 ## DOCUMENTATION
 
