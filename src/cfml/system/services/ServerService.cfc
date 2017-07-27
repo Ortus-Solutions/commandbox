@@ -583,10 +583,28 @@ component accessors="true" singleton {
 		serverInfo.errorPages.append( serverJSON.web.errorPages ?: {} );
 
 
+		serverInfo.trayOptions = defaults.trayOptions;
+		serverJSON.trayOptions = serverJSON.trayOptions ?: [];
+		
+		// global defaults are relative to web root
+		serverInfo.trayOptions = serverInfo.trayOptions.map( function( item ){
+			if( item.keyExists( 'image' ) && item.image.len() ) {
+				item.image = fileSystemUtil.resolvePath( item.image, defaultwebroot );
+			}
+			return item;
+		} );
+		
+		// server.json settings are relative to the folder server.json lives
+		serverJSON.trayOptions = serverJSON.trayOptions.map( function( item ){
+			if( item.keyExists( 'image' ) && item.image.len() ) {				
+				item.image = fileSystemUtil.resolvePath( item.image, defaultServerConfigFileDirectory );
+			}
+			return item;
+		} );
+		
 		// Global trayOptions are always added on top of server.json (but don't overwrite)
 		// trayOptions aren't accepted via command params due to no clean way to provide them
-		serverInfo.trayOptions 			= defaults.trayOptions;
-		serverInfo.trayOptions.append( serverJSON.trayOptions ?: [], true );
+		serverInfo.trayOptions.append( serverJSON.trayOptions, true );
 
 		// Global defauls are always added on top of whatever is specified by the user or server.json
 		serverInfo.JVMargs			= ( serverProps.JVMargs			?: serverJSON.JVM.args ?: '' ) & ' ' & defaults.JVM.args;
