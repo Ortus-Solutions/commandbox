@@ -402,7 +402,7 @@ component accessors="true" singleton {
 					serverJSON[ 'web' ][ 'SSL' ][ 'certFile' ] = serverProps[ prop ];
 			         break;
 			    case "SSLKeyFile":
-					serverJSON[ 'web' ][ 'SSL' ][ 'key' ] = serverProps[ prop ];
+					serverJSON[ 'web' ][ 'SSL' ][ 'keyFile' ] = serverProps[ prop ];
 			         break;
 			    case "SSLKeyPass":
 					serverJSON[ 'web' ][ 'SSL' ][ 'keyPass' ] = serverProps[ prop ];
@@ -525,8 +525,19 @@ component accessors="true" singleton {
 		serverInfo.SSLEnable 		= serverProps.SSLEnable 		?: serverJSON.web.SSL.enable			?: defaults.web.SSL.enable;
 		serverInfo.HTTPEnable		= serverProps.HTTPEnable 		?: serverJSON.web.HTTP.enable			?: defaults.web.HTTP.enable;
 		serverInfo.SSLPort			= serverProps.SSLPort 			?: serverJSON.web.SSL.port				?: defaults.web.SSL.port;
+		
+		// relative certFile in server.json is resolved relative to the server.json
+		if( isDefined( 'serverJSON.web.SSL.certFile' ) ) { serverJSON.web.SSL.certFile = fileSystemUtil.resolvePath( serverJSON.web.SSL.certFile, defaultServerConfigFileDirectory ); }
+		// relative certFile in config setting server defaults is resolved relative to the web root
+		if( len( defaults.web.SSL.certFile ?: '' ) ) { defaults.web.SSL.certFile = fileSystemUtil.resolvePath( defaults.web.SSL.certFile, defaultwebroot ); }
 		serverInfo.SSLCertFile 		= serverProps.SSLCertFile 		?: serverJSON.web.SSL.certFile			?: defaults.web.SSL.certFile;
+		
+		// relative keyFile in server.json is resolved relative to the server.json
+		if( isDefined( 'serverJSON.web.SSL.keyFile' ) ) { serverJSON.web.SSL.keyFile = fileSystemUtil.resolvePath( serverJSON.web.SSL.keyFile, defaultServerConfigFileDirectory ); }
+		// relative trayIcon in config setting server defaults is resolved relative to the web root
+		if( len( defaults.web.SSL.keyFile ?: '' ) ) { defaults.web.SSL.keyFile = fileSystemUtil.resolvePath( defaults.web.SSL.keyFile, defaultwebroot ); }
 		serverInfo.SSLKeyFile 		= serverProps.SSLKeyFile 		?: serverJSON.web.SSL.keyFile			?: defaults.web.SSL.keyFile;
+		
 		serverInfo.SSLKeyPass 		= serverProps.SSLKeyPass 		?: serverJSON.web.SSL.keyPass			?: defaults.web.SSL.keyPass;
 		serverInfo.rewritesEnable 	= serverProps.rewritesEnable	?: serverJSON.web.rewrites.enable		?: defaults.web.rewrites.enable;
 		serverInfo.rewritesStatusPath = 							   serverJSON.web.rewrites.statusPath	?: defaults.web.rewrites.statusPath;
