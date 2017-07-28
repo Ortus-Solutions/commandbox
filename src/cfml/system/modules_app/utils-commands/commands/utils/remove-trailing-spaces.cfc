@@ -72,32 +72,15 @@ component aliases="rts" {
 			}
 
 			// write new file
-			fileWrite( arguments.filePath, arrayToList( trimLinesResult.lines, trimLinesResult.lineEndings ) );
+			fileWrite( arguments.filePath, trimLinesResult.cleanFile );
 		}
 	}
 
 	private function fileTrimLines( filePath ){
-		var lines = [];
-		var lineEndings = "";
-		var currentLine = "";
-		var fileChanged = false;
+		var fileData = fileRead( arguments.filePath );
+		var cleanFile = javaCast( "string", fileData ).replaceAll( "(?m)[ \t]+$", "" );
 
-		cfloop( file=filePath, index="line" ){
-			// get the file line endings
-			if ( lineEndings == "" ){
-				lineEndings = getLineEndings( line );
-			}
-
-			// trim the trailing spaces
-			currentLine = rTrim( line );
-			lines.append( currentLine );
-
-			if ( currentLine != line ) {
-				fileChanged = true;
-			}
-		}
-
-		return { lines: lines, lineEndings: lineEndings, fileChanged: fileChanged };
+		return { cleanFile: cleanFile, fileChanged: cleanFile != fileData };
 	}
 
 	private function filterFiles( files, exclude ){
@@ -112,17 +95,5 @@ component aliases="rts" {
 		} );
 
 		return filteredFiles;
-	}
-
-	private function getLineEndings( data ){
-		if ( arguments.data.len() > 0 ){
-			if ( arguments.data[ 1 ].find( chr( 13 ) & chr( 10 ) ) != 0 ){
-				return chr( 13 ) & chr( 10 );
-			} else if ( arguments.data[ 1 ].find( chr( 13 ) ) != 0 ){
-				return chr( 13 );
-			}
-		}
-
-		return chr( 10 );
 	}
 }
