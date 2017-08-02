@@ -697,7 +697,7 @@ component accessors="true" singleton {
 			var installDetails = serverEngineService.install( cfengine=serverInfo.cfengine, basedirectory=serverinfo.customServerFolder, serverInfo=serverInfo, serverHomeDirectory=serverInfo.serverHomeDirectory );
 			serverInfo.serverHomeDirectory = installDetails.installDir;
 			// TODO: As of 3.5 "serverHome" is for backwards compat.  Remove in later version in favor of serverHomeDirectory above
-			serverInfo.serverHome = installDetails.installDir;
+			serverInfo[ 'serverHome' ] = installDetails.installDir;
 			serverInfo.logdir = serverInfo.serverHomeDirectory & "/logs";
 			serverInfo.consolelogPath	= serverInfo.logdir & '/server.out.txt';
 			serverInfo.engineName = installDetails.engineName;
@@ -1648,6 +1648,8 @@ component accessors="true" singleton {
 			'host'				: "127.0.0.1",
 			'stopSocket'		: 0,
 			'debug'				: false,
+			'trace'				: false,
+			'console'			: false,
 			'status'			: "stopped",
 			'statusInfo'		: {
 				'result' 	: "",
@@ -1662,6 +1664,7 @@ component accessors="true" singleton {
 			'webConfigDir' 		: "",
 			'serverConfigDir' 	: "",
 			'serverHomeDirectory' : "",
+			'serverHome'		 : "",
 			'webroot'			: "",
 			'webXML' 			: "",
 			'HTTPEnable'		: true,
@@ -1672,6 +1675,8 @@ component accessors="true" singleton {
 			'SSLKeyPass'		: "",
 			'rewritesEnable'	: false,
 			'rewritesConfig'	: "",
+			'rewritesStatusPath': "",
+			'rewritesConfigReloadSeconds'	: "",
 			'basicAuthEnable'	: true,
 			'basicAuthUsers'	: {},
 			'heapSize'			: 512,
@@ -1692,7 +1697,9 @@ component accessors="true" singleton {
 			'trayEnable'		: true,
 			'dateLastStarted'	: '',
 			'openBrowser'		: true,
-			'openBrowserURL'	: ''
+			'openBrowserURL'	: '',
+			'customServerFolder': '',
+			'welcomeFiles'		: ''
 		};
 	}
 

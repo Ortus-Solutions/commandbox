@@ -358,7 +358,12 @@
 						activateModule( moduleName );
 					} catch( any var e ) {
 						systemOutput( 'Module [#moduleName#] failed to load!  Check the logs for more info.', true );
-						systemOutput( e.message & chr( 10 ) & (e.detail ?: '') , true );
+						systemOutput( '    ' & e.message, true );
+						if( (e.detail ?: '').len() ) {
+							systemOutput( '    ' & e.detail, true );
+						}
+						systemOutput( '    ' & e.tagContext[ 1 ].template & ':' &  e.tagContext[ 1 ].line, true );
+						systemOutput( '', true );
 						instance.logger.error( 'Module [#moduleName#] failed to load!', e );
 					}
 				}
