@@ -91,4 +91,9 @@ component accessors="true"{
 		return this;
 	}
 
+	// Convenience method for getting stuff from WireBox
+	function getInstance( name, dsl, initArguments={}, targetObject='' ) {
+		return getWirebox().getInstance( argumentCollection = arguments );
+	}
+	
 }
