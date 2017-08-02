@@ -703,14 +703,10 @@ component accessors="true" singleton {
 			serverInfo.engineName = installDetails.engineName;
 			serverInfo.engineVersion = installDetails.version;
 
-			// This is for one-time setup tasks on first install
-			if( installDetails.initialInstall ) {
-				// Make current settings available to package scripts
-				setServerInfo( serverInfo );
-
-				// This interception point can be used for additional configuration of the engine before it actually starts.
-				interceptorService.announceInterception( 'onServerInstall', { serverInfo=serverInfo, installDetails=installDetails } );
-			}
+			// Make current settings available to package scripts
+			setServerInfo( serverInfo );
+			// This interception point can be used for additional configuration of the engine before it actually starts.
+			interceptorService.announceInterception( 'onServerInstall', { serverInfo=serverInfo, installDetails=installDetails, serverJSON=serverJSON } );
 
 			// If Lucee server, set the java agent
 			if( serverInfo.cfengine contains "lucee" ) {
