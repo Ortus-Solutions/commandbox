@@ -6,7 +6,7 @@
 * The default generator used is 'native'
 * .
 * To generate properties you will pass a list of property names to the 'properties' argument.  You can also add
-* ORM types to the properties by separating them with a semicolon.  For example:
+* ORM types to the properties by separating them with a colon.  For example:
 * {code:bash}
 * properties=name,createDate:timestamp,age:numeric
 * {code}
@@ -39,7 +39,7 @@ component {
 	* @primaryKeyColumn Enter the name of the primary key column. Leave empty if same as the primaryKey value
 	* @generator Enter the ORM key generator to use, defaults to 'native'
 	* @generator.options increment,identity,sequence,native,assigned,foreign,seqhilo,uuid,guid,select,sequence-identiy
-	* @properties Enter a list of properties to generate. You can add the ORM type via semicolon separator, default type is string. Ex: firstName,age:numeric,createdate:timestamp
+	* @properties Enter a list of properties to generate. You can add the ORM type via colon separator, default type is string. Ex: firstName,age:numeric,createdate:timestamp
 	* @tests Generate the unit test BDD component
 	* @testsDirectory Your unit tests directory. Only used if tests is true
 	* @script Generate as script or not, defaults to true
