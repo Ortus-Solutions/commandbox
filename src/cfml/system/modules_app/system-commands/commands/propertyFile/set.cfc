@@ -23,9 +23,14 @@ component {
 			propertyFilePath = fileSystemUtil.resolvePath( propertyFilePath );
 
 			// Create and load property file object
-			propertyFile( propertyFilePath )
+			if( fileExists( propertyFilePath ) ){
+				var pf = propertyFile( propertyFilePath );
+			} else {
+				var pf = propertyFile();				
+			}
+			pf
 				.set( propertyName, propertyValue )
-				.store();
+				.store( propertyFilePath );
 
 			print
 				.greenLine( 'Property set!' )
