@@ -1608,8 +1608,9 @@ component accessors="true" singleton {
 	* @webroot.hint root directory for served content
  	**/
 	struct function getServerInfo( required webroot , required name){
-		var servers 	= getServers();
-		var webrootHash = hash( arguments.webroot & ucase( arguments.name ) );
+		var servers 	= getServers();	
+		var normalizedWebroot = normalizeWebroot( arguments.webroot );
+		var webrootHash = hash( normalizedWebroot & ucase( arguments.name ) );
 		var statusInfo 	= {};
 
 		if( !directoryExists( arguments.webroot ) ){
