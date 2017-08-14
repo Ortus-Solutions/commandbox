@@ -115,14 +115,6 @@ component{
 		// Print out the results
 		print.text( result );
 
-		// Try to do some "smart" debugging if the response was an error
-		// Todo, need to have a more explicit 'error' code that comes back
-		if( result contains 'error' ) {
-			print.yellowline( "Here is the last CFML function that was run" )
-				.line()
-				.line( functionText )
-				.line();
-		}
 	}
 
 	private function escapeArg( required string arg ) {

@@ -15,7 +15,7 @@
  * {code}
  *
  * If you need more control over what tests run and their output, you can set additional options in your box.json
- * which will be picked up automatically by "testbox run" whe it fires.
+ * which will be picked up automatically by "testbox run" when it fires.
  *
  * {code}
  * package set testbox.verbose=false

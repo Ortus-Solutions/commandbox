@@ -93,7 +93,7 @@ component {
 				testboxURL &= "&#thisOption#=#arguments[ thisOption ]#";
 			}
 			// Check runtime options now
-			else if( boxOptions.keyExists( thisOption ) ){
+			else if( boxOptions.keyExists( thisOption ) && len( boxOptions[ thisOption ] ) ){
 				testboxURL &= "&#thisOption#=#boxOptions[ thisOption ]#";
 			}
 			// Defaults

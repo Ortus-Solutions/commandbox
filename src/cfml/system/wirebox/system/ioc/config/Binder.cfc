@@ -913,19 +913,32 @@ Description :
     	<cfscript>
 			var key 			= "";
 			var thisMapping 	= "";
+			var mappingError	= "";
+			var keys = instance.mappings.keyArray();
 
 			// iterate over declared mappings,process, announce, eager and the whole nine yards
-			for(key in instance.mappings){
+			for(key in keys ){
 				thisMapping = instance.mappings[key];
 				// has it been discovered yet?
 				if( NOT thisMapping.isDiscovered() ){
 					// process the metadata
-					thisMapping.process(binder=this,injector=instance.injector);
-					// is it eager?
-					if( thisMapping.isEagerInit() ){
-						instance.injector.getInstance( thisMapping.getName() );
+					try {
+						
+						thisMapping.process(binder=this,injector=instance.injector);
+						// is it eager?
+						if( thisMapping.isEagerInit() ){
+							instance.injector.getInstance( thisMapping.getName() );
+						}
+						
+					} catch( any e ) {
+						// Remove bad mapping
+						instance.mappings.delete( key );
+						mappingError = e;
 					}
 				}
+			}
+			if( !isSimpleValue( mappingError ) ) {
+				throw( object=mappingError );
 			}
 		</cfscript>
     </cffunction>

@@ -306,7 +306,14 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 	* @package The full endpointID like foo@1.0.0
 	*/
 	public function parseSlug( required string package ) {
-		return listFirst( arguments.package, '@' );
+		var matches = REFindNoCase( "^((?:@[\w\-]+\/)?[\w\-]+)(?:@(.+))?", package, 1, true );
+		if ( arrayLen( matches.len ) < 2 ) {
+			throw(
+				type = "endpointException",
+				message = "Invalid slug detected.  Slugs can only contain letters, numbers, underscores, and hyphens. They may also be prepended with an @ sign for private packages"
+			);
+		}
+		return mid( package, matches.pos[ 2 ], matches.len[ 2 ] );
 	}
 
 	/**
@@ -316,10 +323,11 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 	public function parseVersion( required string package ) {
 		var version = 'stable';
 		// foo@1.0.0
-		if( arguments.package contains '@' ) {
+		var matches = REFindNoCase( "^((?:@[\w\-]+\/)?[\w\-]+)(?:@(.+))?", package, 1, true );
+		if ( matches.pos.len() >= 3 && matches.pos[ 3 ] != 0 ) {
 			// Note this can also be a semver range like 1.2.x, >2.0.0, or 1.0.4-2.x
 			// For now I'm assuming it's a specific version
-			version = listRest( arguments.package, '@' );
+			version = mid( package, matches.pos[ 3 ], matches.len[ 3 ] );
 		}
 		return version;
 	}

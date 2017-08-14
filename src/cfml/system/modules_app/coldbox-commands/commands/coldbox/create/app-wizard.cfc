@@ -5,7 +5,7 @@ component extends="app" {
 
 	/**
 	 * @name The name of the app you want to create
-	 * @skeleton The application skeleton you want to use
+	 * @skeleton The application skeleton you want to use (Advanced, AdvancedScript, rest, Simple, SuperSimple)
 	 * @skeleton.optionsUDF skeletonComplete
 	 * @init Would you like to init this as a CommandBox Package
 	 * @installColdBox Install the latest stable version of ColdBox from ForgeBox
@@ -16,8 +16,6 @@ component extends="app" {
 		required name,
 		required skeleton,
 		required boolean init,
-		required boolean installColdBox,
-		required boolean installColdBoxBE,
 		required boolean installTestBox
 	) {
 		var skeletons = skeletonComplete();
@@ -25,6 +23,11 @@ component extends="app" {
 		arguments.wizard 		= false;
 		arguments.initWizard 	= true;
 		arguments.directory 	= getCWD();
+
+		if( !arguments.skeleton.len() ) {
+			// Remove if empty so it can default correctly
+			arguments.delete( 'skeleton' );
+		}
 
 		super.run( argumentCollection=arguments );
 	}

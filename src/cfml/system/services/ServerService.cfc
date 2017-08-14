@@ -120,7 +120,7 @@ component accessors="true" singleton {
 			'trace' : d.trace ?: false,
 			'console' : d.console ?: false,
 			'trayicon' : d.trayicon ?: '',
-			// Duplicate so onServerStart interceptors don't actually change config settings via refernce.
+			// Duplicate so onServerStart interceptors don't actually change config settings via reference.
 			'trayOptions' : duplicate( d.trayOptions ?: [] ),
 			'trayEnable' : d.trayEnable ?: true,
 			'jvm' : {
@@ -402,7 +402,7 @@ component accessors="true" singleton {
 					serverJSON[ 'web' ][ 'SSL' ][ 'certFile' ] = serverProps[ prop ];
 			         break;
 			    case "SSLKeyFile":
-					serverJSON[ 'web' ][ 'SSL' ][ 'key' ] = serverProps[ prop ];
+					serverJSON[ 'web' ][ 'SSL' ][ 'keyFile' ] = serverProps[ prop ];
 			         break;
 			    case "SSLKeyPass":
 					serverJSON[ 'web' ][ 'SSL' ][ 'keyPass' ] = serverProps[ prop ];
@@ -525,8 +525,19 @@ component accessors="true" singleton {
 		serverInfo.SSLEnable 		= serverProps.SSLEnable 		?: serverJSON.web.SSL.enable			?: defaults.web.SSL.enable;
 		serverInfo.HTTPEnable		= serverProps.HTTPEnable 		?: serverJSON.web.HTTP.enable			?: defaults.web.HTTP.enable;
 		serverInfo.SSLPort			= serverProps.SSLPort 			?: serverJSON.web.SSL.port				?: defaults.web.SSL.port;
+		
+		// relative certFile in server.json is resolved relative to the server.json
+		if( isDefined( 'serverJSON.web.SSL.certFile' ) ) { serverJSON.web.SSL.certFile = fileSystemUtil.resolvePath( serverJSON.web.SSL.certFile, defaultServerConfigFileDirectory ); }
+		// relative certFile in config setting server defaults is resolved relative to the web root
+		if( len( defaults.web.SSL.certFile ?: '' ) ) { defaults.web.SSL.certFile = fileSystemUtil.resolvePath( defaults.web.SSL.certFile, defaultwebroot ); }
 		serverInfo.SSLCertFile 		= serverProps.SSLCertFile 		?: serverJSON.web.SSL.certFile			?: defaults.web.SSL.certFile;
+		
+		// relative keyFile in server.json is resolved relative to the server.json
+		if( isDefined( 'serverJSON.web.SSL.keyFile' ) ) { serverJSON.web.SSL.keyFile = fileSystemUtil.resolvePath( serverJSON.web.SSL.keyFile, defaultServerConfigFileDirectory ); }
+		// relative trayIcon in config setting server defaults is resolved relative to the web root
+		if( len( defaults.web.SSL.keyFile ?: '' ) ) { defaults.web.SSL.keyFile = fileSystemUtil.resolvePath( defaults.web.SSL.keyFile, defaultwebroot ); }
 		serverInfo.SSLKeyFile 		= serverProps.SSLKeyFile 		?: serverJSON.web.SSL.keyFile			?: defaults.web.SSL.keyFile;
+		
 		serverInfo.SSLKeyPass 		= serverProps.SSLKeyPass 		?: serverJSON.web.SSL.keyPass			?: defaults.web.SSL.keyPass;
 		serverInfo.rewritesEnable 	= serverProps.rewritesEnable	?: serverJSON.web.rewrites.enable		?: defaults.web.rewrites.enable;
 		serverInfo.rewritesStatusPath = 							   serverJSON.web.rewrites.statusPath	?: defaults.web.rewrites.statusPath;
@@ -572,10 +583,28 @@ component accessors="true" singleton {
 		serverInfo.errorPages.append( serverJSON.web.errorPages ?: {} );
 
 
+		serverInfo.trayOptions = defaults.trayOptions;
+		serverJSON.trayOptions = serverJSON.trayOptions ?: [];
+		
+		// global defaults are relative to web root
+		serverInfo.trayOptions = serverInfo.trayOptions.map( function( item ){
+			if( item.keyExists( 'image' ) && item.image.len() ) {
+				item.image = fileSystemUtil.resolvePath( item.image, defaultwebroot );
+			}
+			return item;
+		} );
+		
+		// server.json settings are relative to the folder server.json lives
+		serverJSON.trayOptions = serverJSON.trayOptions.map( function( item ){
+			if( item.keyExists( 'image' ) && item.image.len() ) {				
+				item.image = fileSystemUtil.resolvePath( item.image, defaultServerConfigFileDirectory );
+			}
+			return item;
+		} );
+		
 		// Global trayOptions are always added on top of server.json (but don't overwrite)
 		// trayOptions aren't accepted via command params due to no clean way to provide them
-		serverInfo.trayOptions 			= defaults.trayOptions;
-		serverInfo.trayOptions.append( serverJSON.trayOptions ?: [], true );
+		serverInfo.trayOptions.append( serverJSON.trayOptions, true );
 
 		// Global defauls are always added on top of whatever is specified by the user or server.json
 		serverInfo.JVMargs			= ( serverProps.JVMargs			?: serverJSON.JVM.args ?: '' ) & ' ' & defaults.JVM.args;
@@ -668,20 +697,16 @@ component accessors="true" singleton {
 			var installDetails = serverEngineService.install( cfengine=serverInfo.cfengine, basedirectory=serverinfo.customServerFolder, serverInfo=serverInfo, serverHomeDirectory=serverInfo.serverHomeDirectory );
 			serverInfo.serverHomeDirectory = installDetails.installDir;
 			// TODO: As of 3.5 "serverHome" is for backwards compat.  Remove in later version in favor of serverHomeDirectory above
-			serverInfo.serverHome = installDetails.installDir;
+			serverInfo[ 'serverHome' ] = installDetails.installDir;
 			serverInfo.logdir = serverInfo.serverHomeDirectory & "/logs";
 			serverInfo.consolelogPath	= serverInfo.logdir & '/server.out.txt';
 			serverInfo.engineName = installDetails.engineName;
 			serverInfo.engineVersion = installDetails.version;
 
-			// This is for one-time setup tasks on first install
-			if( installDetails.initialInstall ) {
-				// Make current settings available to package scripts
-				setServerInfo( serverInfo );
-
-				// This interception point can be used for additional configuration of the engine before it actually starts.
-				interceptorService.announceInterception( 'onServerInstall', { serverInfo=serverInfo, installDetails=installDetails } );
-			}
+			// Make current settings available to package scripts
+			setServerInfo( serverInfo );
+			// This interception point can be used for additional configuration of the engine before it actually starts.
+			interceptorService.announceInterception( 'onServerInstall', { serverInfo=serverInfo, installDetails=installDetails, serverJSON=serverJSON } );
 
 			// If Lucee server, set the java agent
 			if( serverInfo.cfengine contains "lucee" ) {
@@ -1583,8 +1608,9 @@ component accessors="true" singleton {
 	* @webroot.hint root directory for served content
  	**/
 	struct function getServerInfo( required webroot , required name){
-		var servers 	= getServers();
-		var webrootHash = hash( arguments.webroot & ucase( arguments.name ) );
+		var servers 	= getServers();	
+		var normalizedWebroot = normalizeWebroot( arguments.webroot );
+		var webrootHash = hash( normalizedWebroot & ucase( arguments.name ) );
 		var statusInfo 	= {};
 
 		if( !directoryExists( arguments.webroot ) ){
@@ -1623,6 +1649,8 @@ component accessors="true" singleton {
 			'host'				: "127.0.0.1",
 			'stopSocket'		: 0,
 			'debug'				: false,
+			'trace'				: false,
+			'console'			: false,
 			'status'			: "stopped",
 			'statusInfo'		: {
 				'result' 	: "",
@@ -1637,6 +1665,7 @@ component accessors="true" singleton {
 			'webConfigDir' 		: "",
 			'serverConfigDir' 	: "",
 			'serverHomeDirectory' : "",
+			'serverHome'		 : "",
 			'webroot'			: "",
 			'webXML' 			: "",
 			'HTTPEnable'		: true,
@@ -1647,6 +1676,8 @@ component accessors="true" singleton {
 			'SSLKeyPass'		: "",
 			'rewritesEnable'	: false,
 			'rewritesConfig'	: "",
+			'rewritesStatusPath': "",
+			'rewritesConfigReloadSeconds'	: "",
 			'basicAuthEnable'	: true,
 			'basicAuthUsers'	: {},
 			'heapSize'			: 512,
@@ -1667,7 +1698,9 @@ component accessors="true" singleton {
 			'trayEnable'		: true,
 			'dateLastStarted'	: '',
 			'openBrowser'		: true,
-			'openBrowserURL'	: ''
+			'openBrowserURL'	: '',
+			'customServerFolder': '',
+			'welcomeFiles'		: ''
 		};
 	}
 

@@ -1,5 +1,7 @@
 /**
  * Forget an embedded CFML server from persistent disk.  Run command from the web root of the server, or use the short name.
+ * This command will remove all of the engine files for the server as well as all CF configuration as well. If you don't 
+ * want to lose your settings, back them up first with the CFConfig tool.
  * .
  * {code:bash}
  * server forget

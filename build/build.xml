@@ -16,8 +16,8 @@ External Dependencies:
  	<property name="distro.groupID"				value="ortussolutions" />
  	<property name="distro.name"				value="commandbox"/>
  	<!-- Special things happen when the version and stableVersion are the same value as that signifies a "stable" build.   -->
- 	<property name="commandbox.version"			value="3.7.0"/>
- 	<property name="commandbox.stableVersion"	value="3.7.0"/>
+ 	<property name="commandbox.version"			value="3.8.0"/>
+ 	<property name="commandbox.stableVersion"	value="3.8.0"/>
  	                		 
     <!-- Time Label -->
 	<tstamp prefix="start"/>
@@ -821,6 +821,7 @@ External Dependencies:
 	  	<dependency groupId="org.lucee" artifactId="lucee" version="${lucee.version}" dest="${lucee.lib.dir}" unzip="false" type="jar">
 			<exclusions>
 				<exclusion groupId="org.lucee.lib" artifactId="railo-slf4j" />
+				<exclusion groupId="org.lucee.lib" artifactId="slf4j-nop" />
 			</exclusions>
 		</dependency>
 	    <dependency groupId="org.lucee" artifactId="lucee.optional" version="${lucee.version}" 
