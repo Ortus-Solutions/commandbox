@@ -671,6 +671,29 @@ public class LoaderCLIMain{
 			}
 		}
 
+
+		// Allow the user to add ad-hoc Java props to the process via an environment variable called
+		// BOX_JAVA_PROPS that is a semi-colon delimited list of key=value pairs.
+		// BOX_JAVA_PROPS="foo=bar;brad=wood"
+		Map< String, String > env = System.getenv();
+		if( mapGetNoCase( env, "BOX_JAVA_PROPS" ) != null ) {
+			log.debug( "Environment Variable BOX_JAVA_PROPS found." );
+			String BOX_JAVA_PROPS = mapGetNoCase( env, "BOX_JAVA_PROPS" );
+			if( BOX_JAVA_PROPS.length() > 0 ) {
+				log.debug( "Environment Variable BOX_JAVA_PROPS: " + BOX_JAVA_PROPS );
+				String[] boxJavaProps = BOX_JAVA_PROPS.split( ";" );
+
+                for( String thisBoxJavaProp : boxJavaProps ) {
+                	if( thisBoxJavaProp.indexOf( '=' ) != -1 ) {
+           				System.setProperty( thisBoxJavaProp.split( "=" )[ 1 ], thisBoxJavaProp.split( "=" )[ 2 ] );
+    					log.debug( "Added BOX_JAVA_PROP to System Properties:" + thisBoxJavaProp );
+    				} else {
+    					log.debug( "BOX_JAVA_PROP is malformed. Missing equals sign: " + thisBoxJavaProp.split( "=" )[ 1 ] + "=" + thisBoxJavaProp.split( "=" )[ 2 ] );
+    				}
+                }
+			}
+		}
+		
 		File configServerDir = new File( libDir.getParentFile(),
 				"engine/cfml/server/" );
 		File configWebDir = new File( libDir.getParentFile(),
