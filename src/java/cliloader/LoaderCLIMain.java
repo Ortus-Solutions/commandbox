@@ -685,10 +685,10 @@ public class LoaderCLIMain{
 
                 for( String thisBoxJavaProp : boxJavaProps ) {
                 	if( thisBoxJavaProp.indexOf( '=' ) != -1 ) {
-           				System.setProperty( thisBoxJavaProp.split( "=" )[ 1 ], thisBoxJavaProp.split( "=" )[ 2 ] );
+           				System.setProperty( thisBoxJavaProp.split( "=" )[ 0 ], thisBoxJavaProp.split( "=" )[ 1 ] );
     					log.debug( "Added BOX_JAVA_PROP to System Properties:" + thisBoxJavaProp );
     				} else {
-    					log.debug( "BOX_JAVA_PROP is malformed. Missing equals sign: " + thisBoxJavaProp.split( "=" )[ 1 ] + "=" + thisBoxJavaProp.split( "=" )[ 2 ] );
+    					log.debug( "BOX_JAVA_PROP is malformed. Missing equals sign: " + thisBoxJavaProp.split( "=" )[ 0 ] + "=" + thisBoxJavaProp.split( "=" )[ 1 ] );
     				}
                 }
 			}
