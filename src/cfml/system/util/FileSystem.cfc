@@ -247,7 +247,7 @@ component accessors="true" singleton {
 
     function createMapping( mappingName, mappingPath ) {
     	var mappings = getApplicationSettings().mappings;
-    	if( !structKeyExists( mappings, mappingName ) ) {
+    	if( !structKeyExists( mappings, mappingName ) || mappings[ mappingName ] != mappingPath ) {
     		mappings[ mappingName ] = mappingPath;
     		application action='update' mappings='#mappings#';
    		}
