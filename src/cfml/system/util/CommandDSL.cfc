@@ -182,18 +182,21 @@ component accessors=true {
 		if( getWorkingDirectory().len() ) {
 			shell.cd( getWorkingDirectory() );
 		}
-
-		if( structkeyExists( arguments, 'piped' ) ) {
-			var result = shell.callCommand( getTokens(), arguments.returnOutput, arguments.piped );
-		} else {
-			var result = shell.callCommand( getTokens(), arguments.returnOutput );
-		}
-
-		var postCommandCWD = shell.getPWD();
-
-		// Only change back if the executed command didn't change the CWD
-		if( getWorkingDirectory().len() && postCommandCWD == getWorkingDirectory() ) {
-			shell.cd( originalCWD );
+		
+		try {
+			if( structkeyExists( arguments, 'piped' ) ) {
+				var result = shell.callCommand( getTokens(), arguments.returnOutput, arguments.piped );
+			} else {
+				var result = shell.callCommand( getTokens(), arguments.returnOutput );
+			}
+		} finally {
+	
+			var postCommandCWD = shell.getPWD();
+	
+			// Only change back if the executed command didn't change the CWD
+			if( getWorkingDirectory().len() && postCommandCWD == getWorkingDirectory() ) {
+				shell.cd( originalCWD );
+			}
 		}
 
 		if( !isNull( local.result ) ) {
