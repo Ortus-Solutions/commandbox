@@ -51,6 +51,10 @@ component aliases="new" {
 
 			// check for update or creation
 			if( !oFile.exists() ){
+				var thisDir = getDirectoryFromPath( theFile );
+				if( !directoryExists( thisDir ) ) {
+					directoryCreate( thisDir );
+				}
 				oFile.createNewFile();
 				print.line( "#fileName# created!" );
 			} else {
