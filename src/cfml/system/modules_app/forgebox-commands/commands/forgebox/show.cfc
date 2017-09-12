@@ -131,9 +131,17 @@ component aliases="show" {
 				print.blackOnWhite( ' #entryData.title# ' )
 					.boldText( '   ( #entryData.user.fname# #entryData.user.lname#, #entryData.user.username# )' )
 					.boldGreenLine( '   Rating: #repeatString( '*', val( entryData.avgRating ) )#' );
+				print.line();
+				
+				if( listFindNoCase( 'md,markdown', entryData.descriptionFormat ) ) {
+					// Convert markdown to ANSI
+					print.yellowLine( #formatterUtil.MD2ANSI( entryData.description, 'yellow' )# );
+				} else {
+					// Convert HTML to ANSI
+					print.yellowLine( #formatterUtil.HTML2ANSI( entryData.description, 'yellow' )# );					
+				}
+				
 				print.line()
-					.yellowLine( #formatterUtil.HTML2ANSI( entryData.description )# )
-					.line()
 					.line( 'Type: #entryData.typeName#' )
 					.line( 'Slug: "#entryData.slug#"' )
 					.line( 'Summary: #entryData.summary#' )
