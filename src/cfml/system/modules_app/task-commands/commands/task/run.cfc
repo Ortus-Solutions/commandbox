@@ -43,11 +43,12 @@ component {
 		// Positional task args will come through direclty in the arguments scope
 		// task run task.cfc run value value2
 		} else if( arguments.count() > 1 ) {
-			// Make a copy of the arguments scope
-			taskArgs = duplicate( arguments );
-			// And pull out the two args that were meant for this command
-			taskArgs.delete( 'taskFile' );
-			taskArgs.delete( 'target' );
+			taskArgs = [];
+			var i = 2;
+			// Skip first two args, and pass the rest through in position 1, 2, 3, etc
+			while( ++i <= arguments.count() ) {
+				taskArgs.append( arguments[ i ] );
+			}
 		}
 
 		// Fix for negated flags like --no:verbose
