@@ -1,52 +1,77 @@
 {
-	name : "",
-	version :"1.0.0",
-	author : "",
-	location :"",
-	directory: "",
-	createPackageDirectory: true,
-	packageDirectory: "",
-	homepage :"",
-	documentation : "",
-	repository: { type:"", URL:"" },
-	bugs : "",
-	slug : "",
-	shortDescription : "",
-	description : "",
-	instructions : "",
-	changelog: "",
-	type : "",
-	keywords :[],
-	private :false,
-	engines :[
-		{ type : "", version : "" }
-	],
-	defaultEngine : "",
-	defaultPort : 0,
-	projectURL: "",
-	license :[
-		{ type:"", URL: "" }
-	],
-	contributors : [],
-	dependencies : {},
-	devDependencies : {},
-	installPaths : {},
-	scripts : {},
-	ignore : [],
-	testbox :{
-		runner : [
-			{ "default": "" }
-		],
-		"labels" : "",
-		"reporter" : "",
-	    "bundles" : "",
-	    "recurse" : true,
-	    "directory" : "tests.specs",
-	    "testBundles" : "",
-	    "testSuites" : "",
-	    "testSpecs" : "",
-	    "verbose" : true,
-	    "watchDelay" : 500,
-	    "watchPaths" : "**.cfc"
-	}
+    "name":"",
+    "version":"1.0.0",
+    "author":"",
+    "location":"",
+    "directory":"",
+    "createPackageDirectory":true,
+    "packageDirectory":"",
+    "homepage":"",
+    "documentation":"",
+    "repository":{
+        "type":"",
+        "URL":""
+    },
+    "bugs":"",
+    "slug":"",
+    "shortDescription":"",
+    "description":"",
+    "instructions":"",
+    "changelog":"",
+    "type":"",
+    "keywords":[
+        
+    ],
+    "private":false,
+    "engines":[
+        {
+            "type":"",
+            "version":""
+        }
+    ],
+    "defaultEngine":"",
+    "defaultPort":0,
+    "projectURL":"",
+    "license":[
+        {
+            "type":"",
+            "URL":""
+        }
+    ],
+    "contributors":[
+        
+    ],
+    "dependencies":{
+        
+    },
+    "devDependencies":{
+        
+    },
+    "installPaths":{
+        
+    },
+    "scripts":{
+        
+    },
+    "ignore":[
+        
+    ],
+    "testbox":{
+        "runner":[
+            {
+                "default":""
+            }
+        ],
+        "labels":"",
+        "reporter":"",
+        "bundles":"",
+        "recurse":true,
+        "directory":"tests.specs",
+        "testBundles":"",
+        "testSuites":"",
+        "testSpecs":"",
+        "verbose":true,
+        "watchDelay":500,
+        "watchPaths":"**.cfc"
+    }
 }
