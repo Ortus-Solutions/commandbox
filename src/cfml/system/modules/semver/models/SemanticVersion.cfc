@@ -578,7 +578,7 @@ component singleton{
 	* True if a specific version, false if a range that could match multiple versions
 	* version.hint A string that contains a version or a range
 	*/
-	boolean function isExactVersion( required string version ) {
+	boolean function isExactVersion( required string version, includeBuildID=false ) {
 		// Default any missing pieces to "x" so "3" becomes "3.x.x".
 		arguments.version = getVersionAsString (parseVersion( clean( arguments.version ), 'x' ) );
 
@@ -593,6 +593,8 @@ component singleton{
 		if( version contains '~' ) return false;
 		if( version contains '^' ) return false;
 		if( version contains ' || ' ) return false;
+		if( includeBuildID && not version contains '+' ) return false;
+		
 		return len( trim( version ) ) > 0;
 	}
 
