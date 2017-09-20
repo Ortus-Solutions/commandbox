@@ -39,7 +39,7 @@ component aliases="copy" {
 			// It's a directory
 			if( directoryExists( thisPath ) ) {
 				// rename directory
-				directoryCopy( thisPath, thisNewPath, arguments.recurse, arguments.filter, true );
+				directoryCopy( thisPath, thisNewPath, recurse, filter, true );
 				print.greenLine( "Directory copied to #thisNewPath#" );
 			// It's a file
 			} else if( fileExists( thisPath ) ){
