@@ -13,7 +13,7 @@ This file will stay running the entire time the shell is open
 <cfset variables.wireBox = application.wireBox>
 <cfsetting requesttimeout="86399913600" /><!--- 999999 days --->
 <!---Display this banner to users--->
-<cfoutput><cfsavecontent variable="banner">#chr( 27 )#[32m#chr( 27 )#[40m#chr( 27 )#[1m
+<cfoutput><cfsavecontent variable="banner">#chr( 27 )#[32m#chr( 27 )#[1m
    _____                                          _ ____
   / ____|                                        | |  _ \
  | |     ___  _ __ ___  _ __ ___   __ _ _ __   __| | |_) | _____  __
