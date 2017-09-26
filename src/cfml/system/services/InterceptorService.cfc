@@ -55,6 +55,10 @@ component accessors=true singleton {
 		getEventPoolManager().processState( state, interceptData );
 	}
 
+	function processState( required string state, struct interceptData={} ) {
+		announceInterception( state, interceptData );
+	}
+
 	/**
 	* @interceptor.hint The qualified class of the interceptor to register or an already instantiated object as an interceptor.
 	* @interceptorProperties.hint The structure of properties to register this interceptor with.
