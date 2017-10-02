@@ -257,7 +257,7 @@ or just add DEBUG to the root logger
 		string changeLogFormat='text',
 		required string APIToken ) {
 
-		var body = {
+		var formFields = {
 			slug : arguments.slug,
 			private : arguments.private,
 			version : arguments.version,
@@ -274,10 +274,10 @@ or just add DEBUG to the root logger
 		var results = makeRequest(
 				resource = "publish",
 				headers = {
-					'x-api-token' : arguments.APIToken,
-					'Content-Type' : 'application/json'
+					"X-Api-Token" : arguments.APIToken,
+					"Content-Type" : "application/x-www-form-urlencoded"
 				},
-				body = serializeJSON( body ),
+				formFields = formFields,
 				method='post' );
 
 		// error
@@ -418,6 +418,9 @@ or just add DEBUG to the root logger
 		<cfargument name="headers" 			type="struct" 	required="false" default="#structNew()#" hint="An struct of HTTP headers to send"/>
 		<cfargument name="parameters"		type="struct" 	required="false" default="#structNew()#" hint="An struct of HTTP URL parameters to send in the request"/>
 		<cfargument name="timeout" 			type="numeric" 	required="false" default="20" hint="The default call timeout"/>
+		<cfargument name="formFields" 			type="struct" 	required="false" default="#structNew()#" hint="A struct of form fields to send"/>
+		<cfargument name="files" 			type="struct" 	required="false" default="#structNew()#" hint="A struct of files to send"/>
+		<cfargument name="multipart" 			type="boolean" 	required="false" default="false" hint="Whether the request needs to be multipart/form-data"/>
 		<cfscript>
 			var results = {error=false,response={},message="",responseheader={},rawResponse=""};
 			var HTTPResults = "";
@@ -429,7 +432,11 @@ or just add DEBUG to the root logger
 
 			// Default Content Type
 			if( NOT structKeyExists(arguments.headers,"content-type") ){
-				arguments.headers["content-type"] = "";
+				if ( arguments.multipart ) {
+					arguments.headers["Content-Type"] = "multipart/form-data"
+				} else {
+					arguments.headers["Content-Type"] = "";
+				}
 			}
 			var thisURL = '#APIURL#/#arguments.resource#';
 
@@ -438,7 +445,8 @@ or just add DEBUG to the root logger
 				url=thisURL,
 				charset='utf-8',
 				result='HTTPResults',
-				timeout=arguments.timeout
+				timeout=arguments.timeout,
+				multipart=arguments.multipart
 			};
 
 			// Get proxy settings from the config
@@ -473,6 +481,14 @@ or just add DEBUG to the root logger
 			<!--- URL Parameters: encoded automatically by CF --->
 			<cfloop collection="#arguments.parameters#" item="param">
 				<cfhttpparam type="URL" name="#param#" value="#arguments.parameters[param]#" >
+			</cfloop>
+
+			<cfloop collection="#arguments.formFields#" item="field">
+				<cfhttpparam type="formfield" name="#field#" value="#arguments.formFields[field]#" />
+			</cfloop>
+
+			<cfloop collection="#arguments.files#" item="file">
+				<cfhttpparam type="file" name="#file#" file="#arguments.files[file]#" />
 			</cfloop>
 
 			<!--- Body --->
