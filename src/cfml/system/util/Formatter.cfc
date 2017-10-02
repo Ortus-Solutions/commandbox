@@ -217,7 +217,7 @@ component singleton {
 	 * Pretty JSON
 	 * @json.hint A string containing JSON, or a complex value that can be serialized to JSON
  	 **/
-	public function formatJson( json, indtent, lineEnding ) {
+	public function formatJson( json, indent, lineEnding ) {
 		// This is an external lib now.  Leaving here for backwards compat.
 		return JSONPrettyPrint.formatJSON( argumentCollection=arguments );
 	}
