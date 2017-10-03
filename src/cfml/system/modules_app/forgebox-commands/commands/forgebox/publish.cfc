@@ -11,9 +11,12 @@ component aliases="publish" {
 
 	/**
 	* @directory The directory to publish
+	* @upload    Upload the directory as a zip file.
 	**/
 	function run(
-		string directory=''
+		string directory='',
+		boolean upload = false,
+		boolean forceUpload = false
 	){
 
 		var APIToken = configService.getSetting( 'endpoints.forgebox.APIToken', '' );

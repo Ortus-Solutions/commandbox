@@ -184,7 +184,11 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 	 * Publish a package in ForgeBox
 	 * @path The path to publish
 	 */
-	public function publish( required string path ) {
+	public function publish(
+		required string path,
+		string zipPath = "",
+		boolean forceUpload = false
+	) {
 
 		if( !packageService.isPackage( arguments.path ) ) {
 			throw(
@@ -209,6 +213,8 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 		props.changeLog = boxJSON.changeLog;
 		props.changeLogFormat = 'text';
 		props.APIToken = configService.getSetting( 'endpoints.forgebox.APIToken', '' );
+		props.zipPath = arguments.zipPath;
+		props.forceUpload = arguments.forceUpload;
 
 		// Look for readme, instruction, and changelog files
 		for( var item in [
@@ -230,6 +236,9 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 
 		try {
 			consoleLogger.warn( "Sending package information to ForgeBox, please wait..." );
+			if( len( props.zipPath ) ){
+				consoleLogger.warn( "Uploading package zip to ForgeBox..." );
+			}
 
 			forgebox.publish( argumentCollection=props );
 

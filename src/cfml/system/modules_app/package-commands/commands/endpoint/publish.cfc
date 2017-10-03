@@ -13,15 +13,19 @@ component {
 
 	/**
 	* @endpointName Name of the endpoint for which to publish the package
-	* @directory The directory being published
+	* @directory    The directory being published
+	* @upload       Upload the directory as a zip file.
 	**/
 	function run(
 		required string endpointName,
-		string directory=''
+		string directory='',
+		boolean upload = false,
+		boolean forceUpload = false
 	){
 		// This will make each directory canonical and absolute
 		arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
 		var boxJSON = packageService.readPackageDescriptor( arguments.directory );
+		arguments.upload = boxJSON.location == "forgeboxStorage";
 
 		interceptorService.announceInterception( 'prePublish', { publishArgs=arguments, boxJSON=boxJSON } );
 

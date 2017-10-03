@@ -255,30 +255,43 @@ or just add DEBUG to the root logger
 		string installInstructionsFormat='text',
 		string changeLog='',
 		string changeLogFormat='text',
-		required string APIToken ) {
+		required string APIToken,
+		string zipPath = "",
+		boolean forceUpload = false
+	) {
 
 		var formFields = {
-			slug : arguments.slug,
-			private : arguments.private,
-			version : arguments.version,
-			boxJSON : arguments.boxJSON,
-			isStable : arguments.isStable,
-			description : arguments.description,
-			descriptionFormat : arguments.descriptionFormat,
-			installInstructions : arguments.installInstructions,
-			installInstructionsFormat : arguments.installInstructionsFormat,
-			changeLog : arguments.changeLog,
-			changeLogFormat : arguments.changeLogFormat
+			slug                      = arguments.slug,
+			private                   = arguments.private,
+			version                   = arguments.version,
+			boxJSON                   = arguments.boxJSON,
+			isStable                  = arguments.isStable,
+			description               = arguments.description,
+			descriptionFormat         = arguments.descriptionFormat,
+			installInstructions       = arguments.installInstructions,
+			installInstructionsFormat = arguments.installInstructionsFormat,
+			changeLog                 = arguments.changeLog,
+			changeLogFormat           = arguments.changeLogFormat,
+			forceUpload               = arguments.forceUpload
 		};
 
-		var results = makeRequest(
-				resource = "publish",
-				headers = {
-					"X-Api-Token" : arguments.APIToken,
-					"Content-Type" : "application/x-www-form-urlencoded"
-				},
-				formFields = formFields,
-				method='post' );
+		var requestArguments = {
+			resource   = "publish",
+			headers    = {
+				"X-Api-Token"  = arguments.APIToken,
+				"Content-Type" = "application/x-www-form-urlencoded"
+			},
+			formFields = formFields,
+			files      = {},
+			method     = "post"
+		};
+
+		if ( len( arguments.zipPath ) ) {
+			requestArguments.files[ "zip" ] = arguments.zipPath;
+			requestArguments.multipart = true;
+		}
+
+		var results = makeRequest( argumentCollection = requestArguments );
 
 		// error
 		if( results.response.error ){
@@ -432,12 +445,12 @@ or just add DEBUG to the root logger
 
 			// Default Content Type
 			if( NOT structKeyExists(arguments.headers,"content-type") ){
-				if ( arguments.multipart ) {
-					arguments.headers["Content-Type"] = "multipart/form-data"
-				} else {
-					arguments.headers["Content-Type"] = "";
-				}
+				arguments.headers[ "Content-Type" ] = "";
 			}
+			if( arguments.multipart ){
+				structDelete( arguments.headers, "Content-Type" );
+			}
+
 			var thisURL = '#APIURL#/#arguments.resource#';
 
 			var CFHTTPParams = {
@@ -468,6 +481,7 @@ or just add DEBUG to the root logger
 					CFHTTPParams.proxyPassword = proxyPassword;
 				}
 			}
+			// structDelete( arguments.headers, "Content-Type" );
 		</cfscript>
 
 		<!--- REST CAll --->
