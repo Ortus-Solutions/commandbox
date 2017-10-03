@@ -399,7 +399,7 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 			if( !artifactService.artifactExists( slug, version ) || strVersion.preReleaseID == 'snapshot' ) {
 
 				// Test package location to see what endpoint we can refer to.
-				var endpointData = endpointService.resolveEndpoint( downloadURL, 'fakePath' );
+				var endpointData = endpointService.resolveEndpoint( downloadURL, 'fakePath', arguments.slug, arguments.version );
 
 				consoleLogger.info( "Deferring to [#endpointData.endpointName#] endpoint for ForgeBox entry [#slug#]..." );
 

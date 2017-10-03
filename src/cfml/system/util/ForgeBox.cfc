@@ -420,6 +420,22 @@ or just add DEBUG to the root logger
 		return opts;
 	}
 
+	function getStorageLocation( required string slug, required string version, required string APIToken ) {
+		var results = makeRequest(
+			resource = "storage/#slug#/#version#",
+			method = "get",
+			headers = {
+				'x-api-token' : arguments.APIToken
+			} );
+
+		// error
+		if( results.response.error ){
+			throw( arrayToList( results.response.messages ), 'forgebox' );
+		}
+
+		return results.response.data;
+	}
+
 	</cfscript>
 <!------------------------------------------- PRIVATE ------------------------------------------>
 
