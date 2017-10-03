@@ -1031,7 +1031,7 @@ component accessors="true" singleton {
 	    variables.process = processBuilder.start();
 
 		// She'll be coming 'round the mountain when she comes...
-		consoleLogger.warn( "The server for #serverInfo.webroot# is starting on #serverInfo.host#:#serverInfo.port#..." );
+		consoleLogger.warn( "The server for #serverInfo.webroot# is starting on #serverInfo.host#:#serverInfo.port# ..." );
 
 		// If the user is running a one-off command to start a server or specified the debug flag, stream the output and wait until it's finished starting.
 		var interactiveStart = ( shell.getShellType() == 'command' || serverInfo.debug || !background );

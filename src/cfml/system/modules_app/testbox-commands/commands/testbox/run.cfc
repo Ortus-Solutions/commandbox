@@ -103,7 +103,7 @@ component {
 		}
 
 		// Advise we are running
-		print.boldCyanLine( "Executing tests via #testBoxURL#, please wait..." )
+		print.boldCyanLine( "Executing tests via #testBoxURL# please wait..." )
 			.toConsole();
 
 		// run it now baby!
