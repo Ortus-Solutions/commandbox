@@ -83,7 +83,7 @@ component accessors="true" singleton {
 	*/
 	string function calculateCanonicalPath( required string path ) {
 		path = path.replace( '\', '/', 'all' );
-		pathArr = path.listToArray( '/' );
+		var pathArr = path.listToArray( '/' );
 			
 		// Empty string for Unix
 		if( path.left( 1 ) == '/' ) {
@@ -94,7 +94,7 @@ component accessors="true" singleton {
 			pathArr.deleteAt( 1 );
 		}
 		
-		newPathArr = [];
+		var newPathArr = [];
 		// Loop over path
 		for( var pathElem in pathArr ) {
 			// For every ../ trim a folder off the accumulated path
