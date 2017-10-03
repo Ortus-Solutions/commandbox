@@ -400,7 +400,8 @@ component accessors="true" singleton {
 
 			// This will normalize the slashes to match
 			tmpPath = fileSystemUtil.resolvePath( tmpPath );
-
+			var thisPathPatternMatcher = pathPatternMatcher.get();
+			
 			// Copy Assets now to destination
 			directoryCopy( tmpPath, installDirectory, true, function( path ){
 				// This will normalize the slashes to match
@@ -412,7 +413,7 @@ component accessors="true" singleton {
 				// cleanup path so we just get from the archive down
 				var thisPath = replacenocase( arguments.path, tmpPath, "" );
 				// Ignore paths that match one of our ignore patterns
-				var ignored = pathPatternMatcher.matchPatterns( ignorePatterns, thisPath );
+				var ignored = thisPathPatternMatcher.matchPatterns( ignorePatterns, thisPath );
 				// What do we do with this file/directory
 				if( ignored ) {
 					results.ignored.append( thisPath );

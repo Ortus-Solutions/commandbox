@@ -66,13 +66,50 @@ component accessors="true" singleton {
 			}
 
 			// This will standardize the name and calculate stuff like ../../
-			return getCanonicalPath( oPath.toString() );
+			return calculateCanonicalPath( oPath.toString() );
 
 		} catch ( any e ) {
 			rethrow;
 			return arguments.basePath & '/' & path;
 		}
 
+	}
+
+	/**
+	* I wrote my own version of this because the getCanonicalPath() runs isDirectory() and exists()
+	* checks inside of it which SLOW DOWN when ran tens of thousands of times at once!
+	* 
+	* @path The path to Canonicalize
+	*/
+	string function calculateCanonicalPath( required string path ) {
+		path = path.replace( '\', '/', 'all' );
+		pathArr = path.listToArray( '/' );
+			
+		// Empty string for Unix
+		if( path.left( 1 ) == '/' ) {
+			var root = '';
+		// C:, D:, etc for Windows
+		} else {
+			var root = path.listFirst( '/' );
+			pathArr.deleteAt( 1 );
+		}
+		
+		newPathArr = [];
+		// Loop over path
+		for( var pathElem in pathArr ) {
+			// For every ../ trim a folder off the accumulated path
+			if( pathElem == '..' ) {
+				if( newPathArr.len() ) {
+					newPathArr.deleteAt( newPathArr.len() );
+				}
+			// "normal" folder names just get appended
+			} else {
+				newPathArr.append( pathElem );	
+			}
+		}
+		// Re-attach the drive root and turn the array back into a slash-delimted path
+		return root & '/' & newPathArr.toList( '/' );
+		
 	}
 
 	/**
