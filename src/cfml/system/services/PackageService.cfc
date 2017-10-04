@@ -568,9 +568,7 @@ component accessors="true" singleton {
 			required string currentWorkingDirectory,
 			string packagePathRequestingUninstallation = arguments.currentWorkingDirectory
 	){
-
-		// In case someone types "uninstall coldbox@4.0.0"
-		var packageName = listFirst( arguments.ID, '@' );
+		var packageName = parseSlug( arguments.ID );
 
 		consoleLogger.info( '.');
 		consoleLogger.info( 'Uninstalling package: #packageName#');
@@ -585,6 +583,8 @@ component accessors="true" singleton {
 			// Read the box.json
 			var boxjson = readPackageDescriptor( arguments.currentWorkingDirectory );
 			var installPaths = boxJSON.installPaths;
+
+			systemOutput( installPaths );
 
 			// Is there an install path for this?
 			if( structKeyExists( installPaths, packageName ) ) {
@@ -1111,5 +1111,20 @@ component accessors="true" singleton {
 			} else if( !arguments.ignoreMissing ) {
 				consoleLogger.error( 'The script [#arguments.scriptName#] does not exist in this package.' );
 			}
+	}
+
+	/**
+	* Parses just the slug portion out of an endpoint ID
+	* @package The full endpointID like foo@1.0.0
+	*/
+	private function parseSlug( required string package ) {
+		var matches = REFindNoCase( "^((?:@[\w\-]+\/)?[\w\-]+)(?:@(.+))?", package, 1, true );
+		if ( arrayLen( matches.len ) < 2 ) {
+			throw(
+				type = "endpointException",
+				message = "Invalid slug detected.  Slugs can only contain letters, numbers, underscores, and hyphens. They may also be prepended with an @ sign for private packages"
+			);
+		}
+		return mid( package, matches.pos[ 2 ], matches.len[ 2 ] );
 	}
 }
