@@ -120,6 +120,8 @@ component aliases="show" {
 
 				// We might have gotten this above
 				var entryData = entryData ?: forgebox.getEntry( slug, APIToken );
+				// This line is needed until ForgeBox releases unlisted entries.
+				entryData.listed = entryData.listed ?: true;
 				// numberOfRatings,boxjson,isActive,typeName,version,hits,sourceURL,slug,createdDate,typeSlug,downloads,updatedDate,entryID,
 				// ratings,versions,avgRating,downloadURL,changelog,installs,title,user,description,summary,homeURL
 				if( !entryData.isActive ) {
