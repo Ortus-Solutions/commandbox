@@ -130,17 +130,18 @@ component aliases="show" {
 				print.line();
 				print.blackOnWhite( ' #entryData.title# ' )
 					.boldText( '   ( #entryData.user.fname# #entryData.user.lname#, #entryData.user.username# )' )
-					.boldGreenLine( '   Rating: #repeatString( '*', val( entryData.avgRating ) )#' );
+					.boldGreen( '   Rating: #repeatString( '*', val( entryData.avgRating ) )#   ' )
+					.boldWhiteOnRedLine( entryData.listed ? "" : "  Unlisted  " );
 				print.line();
-				
+
 				if( listFindNoCase( 'md,markdown', entryData.descriptionFormat ) ) {
 					// Convert markdown to ANSI
 					print.yellowLine( #formatterUtil.MD2ANSI( entryData.description, 'yellow' )# );
 				} else {
 					// Convert HTML to ANSI
-					print.yellowLine( #formatterUtil.HTML2ANSI( entryData.description, 'yellow' )# );					
+					print.yellowLine( #formatterUtil.HTML2ANSI( entryData.description, 'yellow' )# );
 				}
-				
+
 				print.line()
 					.line( 'Type: #entryData.typeName#' )
 					.line( 'Slug: "#entryData.slug#"' )
