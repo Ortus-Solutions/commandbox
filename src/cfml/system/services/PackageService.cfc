@@ -584,8 +584,6 @@ component accessors="true" singleton {
 			var boxjson = readPackageDescriptor( arguments.currentWorkingDirectory );
 			var installPaths = boxJSON.installPaths;
 
-			systemOutput( installPaths );
-
 			// Is there an install path for this?
 			if( structKeyExists( installPaths, packageName ) ) {
 				uninstallDirectory = fileSystemUtil.resolvePath( installPaths[ packageName ], arguments.currentWorkingDirectory );
