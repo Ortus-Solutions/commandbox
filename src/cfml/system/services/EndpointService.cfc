@@ -256,18 +256,8 @@ component accessors="true" singleton {
 		// Set the path to publish
 		arguments.path = arguments.directory;
 
-		if( arguments.upload ){
-			arguments.zipPath = createZipFromPath( arguments.path );
-		}
-
 		// Publish the package
 		endpoint.publish( argumentCollection=arguments );
-
-		if( ! isNull( arguments.zipPath ) ){
-			if( fileExists( arguments.zipPath ) ){
-				fileDelete( arguments.zipPath );
-			}
-		}
 	}
 
 
@@ -300,50 +290,6 @@ component accessors="true" singleton {
 		arguments.path = arguments.directory;
 		// Publish the package
 		endpoint.unpublish( argumentCollection=arguments );
-	}
-
-	private function createZipFromPath( required string path ) {
-		if( !packageService.isPackage( arguments.path ) ) {
-			throw(
-				'Sorry but [#arguments.path#] isn''t a package.',
-				'endpointException',
-				'Please double check you''re in the correct directory or use "package init" to turn your directory into a package.'
-			);
-		}
-		var boxJSON = packageService.readPackageDescriptor( arguments.path );
-		var ignorePatterns = ( isArray( boxJSON.ignore ) ? boxJSON.ignore : [] );
-		var tmpPath = tempDir & hash( arguments.path );
-		if ( directoryExists( tmpPath ) ) {
-			directoryDelete( tmpPath, true );
-		}
-		directoryCreate( tmpPath );
-		directoryCopy( arguments.path, tmpPath, true, function( directoryPath ){
-			// This will normalize the slashes to match
-			directoryPath = fileSystemUtil.resolvePath( directoryPath );
-			// Directories need to end in a trailing slash
-			if( directoryExists( directoryPath ) ) {
-				directoryPath &= server.separator.file;
-			}
-			// cleanup path so we just get from the archive down
-			var thisPath = replacenocase( directoryPath, tmpPath, "" );
-			// Ignore paths that match one of our ignore patterns
-			var ignored = pathPatternMatcher.matchPatterns( ignorePatterns, thisPath );
-			// What do we do with this file/directory
-			if( ignored ) {
-				return false;
-			} else {
-				return true;
-			}
-		});
-		var zipFileName = tmpPath & ".zip";
-		cfzip(
-			action = "zip",
-			file = zipFileName,
-			overwrite = true,
-			source = tmpPath
-		);
-		directoryDelete( tmpPath, true );
-		return zipFileName;
 	}
 
 }

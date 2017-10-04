@@ -187,8 +187,14 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 	public function publish(
 		required string path,
 		string zipPath = "",
-		boolean forceUpload = false
+		boolean force = false
 	) {
+		// start upload stuff here
+		var upload = boxJSON.location == "forgeboxStorage";
+
+		if( var upload ){
+			arguments.zipPath = createZipFromPath( arguments.path );
+		}
 
 		if( !packageService.isPackage( arguments.path ) ) {
 			throw(
@@ -214,7 +220,7 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 		props.changeLogFormat = 'text';
 		props.APIToken = configService.getSetting( 'endpoints.forgebox.APIToken', '' );
 		props.zipPath = arguments.zipPath;
-		props.forceUpload = arguments.forceUpload;
+		props.forceUpload = arguments.force;
 
 		// Look for readme, instruction, and changelog files
 		for( var item in [
@@ -241,6 +247,12 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 			}
 
 			forgebox.publish( argumentCollection=props );
+
+			if( ! isNull( arguments.zipPath ) ){
+				if( fileExists( arguments.zipPath ) ){
+					fileDelete( arguments.zipPath );
+				}
+			}
 
 			consoleLogger.info( "Package is alive, you can visit it here: #forgebox.getEndpointURL()#/view/#boxJSON.slug#" );
 		} catch( forgebox var e ) {
@@ -452,6 +464,46 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 			}
 
 		}
+	}
+
+	private function createZipFromPath( required string path ) {
+		if( !packageService.isPackage( arguments.path ) ) {
+			throw(
+				'Sorry but [#arguments.path#] isn''t a package.',
+				'endpointException',
+				'Please double check you''re in the correct directory or use "package init" to turn your directory into a package.'
+			);
+		}
+		var boxJSON = packageService.readPackageDescriptor( arguments.path );
+		var ignorePatterns = ( isArray( boxJSON.ignore ) ? boxJSON.ignore : [] );
+		var tmpPath = tempDir & hash( arguments.path );
+		if ( directoryExists( tmpPath ) ) {
+			directoryDelete( tmpPath, true );
+		}
+		directoryCreate( tmpPath );
+		directoryCopy( arguments.path, tmpPath, true, function( directoryPath ){
+			// This will normalize the slashes to match
+			directoryPath = fileSystemUtil.resolvePath( directoryPath );
+			// Directories need to end in a trailing slash
+			if( directoryExists( directoryPath ) ) {
+				directoryPath &= server.separator.file;
+			}
+			// cleanup path so we just get from the archive down
+			var thisPath = replacenocase( directoryPath, tmpPath, "" );
+			// Ignore paths that match one of our ignore patterns
+			var ignored = pathPatternMatcher.matchPatterns( ignorePatterns, thisPath );
+			// What do we do with this file/directory
+			return ! ignored;
+		});
+		var zipFileName = tmpPath & ".zip";
+		cfzip(
+			action = "zip",
+			file = zipFileName,
+			overwrite = true,
+			source = tmpPath
+		);
+		directoryDelete( tmpPath, true );
+		return zipFileName;
 	}
 
 }
