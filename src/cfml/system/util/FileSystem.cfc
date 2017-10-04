@@ -83,6 +83,7 @@ component accessors="true" singleton {
 	*/
 	string function calculateCanonicalPath( required string path ) {
 		path = path.replace( '\', '/', 'all' );
+		var trailingSlash = path.endsWith( '/' );
 		var pathArr = path.listToArray( '/' );
 			
 		// Empty string for Unix
@@ -108,7 +109,8 @@ component accessors="true" singleton {
 			}
 		}
 		// Re-attach the drive root and turn the array back into a slash-delimted path
-		return root & '/' & newPathArr.toList( '/' );
+		return ( root & '/' & newPathArr.toList( '/' ) )
+			.reReplace( '[/\\]', server.separator.file, 'all' ) & ( trailingSlash ? server.separator.file : '' );
 		
 	}
 

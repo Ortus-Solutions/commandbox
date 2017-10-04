@@ -655,7 +655,7 @@ component accessors="true" singleton {
 		// These are already hammered out above, so no need to go through all the defaults.
 		serverInfo.serverConfigFile	= defaultServerConfigFile;
 		serverInfo.name 			= defaultName;
-		serverInfo.webroot 			= defaultwebroot;
+		serverInfo.webroot 			= normalizeWebroot( defaultwebroot );
 
 		if( serverInfo.debug ) {
 			consoleLogger.info( "start server in - " & serverInfo.webroot );
