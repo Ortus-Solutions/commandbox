@@ -401,7 +401,7 @@ component accessors="true" singleton {
 			// This will normalize the slashes to match
 			tmpPath = fileSystemUtil.resolvePath( tmpPath );
 			var thisPathPatternMatcher = pathPatternMatcher.get();
-			
+
 			// Copy Assets now to destination
 			directoryCopy( tmpPath, installDirectory, true, function( path ){
 				// This will normalize the slashes to match
@@ -1118,10 +1118,7 @@ component accessors="true" singleton {
 	private function parseSlug( required string package ) {
 		var matches = REFindNoCase( "^((?:@[\w\-]+\/)?[\w\-]+)(?:@(.+))?", package, 1, true );
 		if ( arrayLen( matches.len ) < 2 ) {
-			throw(
-				type = "endpointException",
-				message = "Invalid slug detected.  Slugs can only contain letters, numbers, underscores, and hyphens. They may also be prepended with an @ sign for private packages"
-			);
+			return package;
 		}
 		return mid( package, matches.pos[ 2 ], matches.len[ 2 ] );
 	}
