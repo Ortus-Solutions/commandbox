@@ -401,7 +401,7 @@ component accessors="true" singleton {
 			// This will normalize the slashes to match
 			tmpPath = fileSystemUtil.resolvePath( tmpPath );
 			var thisPathPatternMatcher = pathPatternMatcher.get();
-			
+
 			// Copy Assets now to destination
 			directoryCopy( tmpPath, installDirectory, true, function( path ){
 				// This will normalize the slashes to match
@@ -568,9 +568,7 @@ component accessors="true" singleton {
 			required string currentWorkingDirectory,
 			string packagePathRequestingUninstallation = arguments.currentWorkingDirectory
 	){
-
-		// In case someone types "uninstall coldbox@4.0.0"
-		var packageName = listFirst( arguments.ID, '@' );
+		var packageName = parseSlug( arguments.ID );
 
 		consoleLogger.info( '.');
 		consoleLogger.info( 'Uninstalling package: #packageName#');
@@ -1111,5 +1109,17 @@ component accessors="true" singleton {
 			} else if( !arguments.ignoreMissing ) {
 				consoleLogger.error( 'The script [#arguments.scriptName#] does not exist in this package.' );
 			}
+	}
+
+	/**
+	* Parses just the slug portion out of an endpoint ID
+	* @package The full endpointID like foo@1.0.0
+	*/
+	private function parseSlug( required string package ) {
+		var matches = REFindNoCase( "^((?:@[\w\-]+\/)?[\w\-]+)(?:@(.+))?", package, 1, true );
+		if ( arrayLen( matches.len ) < 2 ) {
+			return package;
+		}
+		return mid( package, matches.pos[ 2 ], matches.len[ 2 ] );
 	}
 }
