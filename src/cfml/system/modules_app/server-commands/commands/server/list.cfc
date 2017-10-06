@@ -19,7 +19,6 @@
  * server list --stopped
  * server list --starting
  * server list --unknown
- * server list --local
  * {code}
  * .
  * You can also supply a comma-delimited list of server short names to display
@@ -48,7 +47,6 @@ component {
 	 * @starting.hint Show starting servers
 	 * @unknown.hint Show servers with unknown status
 	 * @verbose.hint Show detailed information
-	 * @local.hint Show servers with webroot matching the current directory
 	 **/
 	function run(
 		name='',
@@ -56,8 +54,7 @@ component {
 		boolean stopped = false,
 		boolean starting = false,
 		boolean unknown = false,
-		boolean verbose = false,
-		boolean local = false ){
+		boolean verbose = false ){
 		var servers = serverService.getServers();
 
 		var statusList = '';
@@ -79,8 +76,7 @@ component {
 
 			// Check name and status filters.  By default, everything shows
 			if( ( !len( arguments.name ) || matchesName( thisServerInfo.name, arguments.name ) )
-				&& ( !len( statusList ) || listFindNoCase( statusList, status ) ) 
-				&& ( !arguments.local || getCanonicalPath(getCWD()) == getCanonicalPath(thisServerInfo.webroot) ) ) {
+				&& ( !len( statusList ) || listFindNoCase( statusList, status ) ) ) {
 
 				// Null Checks, to guarnatee correct struct.
 				structAppend( thisServerInfo, serverService.newServerInfoStruct(), false );
