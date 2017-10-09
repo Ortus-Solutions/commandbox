@@ -23,6 +23,7 @@
         
     ],
     "private":false,
+    "isListed":true,
     "engines":[
         {
             "type":"",
