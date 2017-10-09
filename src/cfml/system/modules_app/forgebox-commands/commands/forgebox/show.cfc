@@ -121,7 +121,7 @@ component aliases="show" {
 				// We might have gotten this above
 				var entryData = entryData ?: forgebox.getEntry( slug, APIToken );
 				// This line is needed until ForgeBox releases unlisted entries.
-				entryData.listed = entryData.listed ?: true;
+				entryData.isListed = entryData.isListed ?: true;
 				// numberOfRatings,boxjson,isActive,typeName,version,hits,sourceURL,slug,createdDate,typeSlug,downloads,updatedDate,entryID,
 				// ratings,versions,avgRating,downloadURL,changelog,installs,title,user,description,summary,homeURL
 				if( !entryData.isActive ) {
@@ -133,7 +133,7 @@ component aliases="show" {
 				print.blackOnWhite( ' #entryData.title# ' )
 					.boldText( '   ( #entryData.user.fname# #entryData.user.lname#, #entryData.user.username# )' )
 					.boldGreen( '   Rating: #repeatString( '*', val( entryData.avgRating ) )#   ' )
-					.boldWhiteOnRedLine( entryData.listed ? "" : "  Unlisted  " );
+					.boldWhiteOnRedLine( entryData.isListed ? "" : "  Unlisted  " );
 				print.line();
 
 				if( listFindNoCase( 'md,markdown', entryData.descriptionFormat ) ) {
