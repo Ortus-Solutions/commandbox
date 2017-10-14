@@ -369,15 +369,19 @@ component accessors="true" singleton {
 				consoleLogger.info( "#packagePathRequestingInstallation#/box.json updated with #( arguments.saveDev ? 'dev ': '' )#dependency." );
 			}
 
-			// Check to see if package has already been installed. Skip unless forced.
-			// This check can only be performed for packages that get installed in their own directory.
-			if ( artifactDescriptor.createPackageDirectory && directoryExists( installDirectory ) && !arguments.force ){
-
-				// Do an additional check and make sure the currently installed version is older than what's being requested.
-				// If there's a new version, install it anyway.
+			// Check to see if package has already been installed.  This check can only be performed for packages that get installed in their own directory.
+			if( artifactDescriptor.createPackageDirectory && directoryExists( installDirectory ) ){
+				var uninstallFirst = false;
+				
+				// Make sure the currently installed version is older than what's being requested.  If there's a new version, install it anyway.
 				var alreadyInstalledBoxJSON = readPackageDescriptor( installDirectory );
 				if( isPackage( installDirectory ) && semanticVersion.isNew( alreadyInstalledBoxJSON.version, version  )  ) {
 					consoleLogger.info( "Package already installed but its version [#alreadyInstalledBoxJSON.version#] is older than the new version being installed [#version#].  Forcing a reinstall." );
+					uninstallFirst = true;
+				// Allow if forced.
+				} else if( arguments.force ) {
+					consoleLogger.info( "Package already installed but you forced a reinstall." );
+					uninstallFirst = true;					
 				} else {
 					// cleanup tmp
 					if( endpointData.endpointName != 'folder' ) {
@@ -386,6 +390,24 @@ component accessors="true" singleton {
 					consoleLogger.warn( "The package #packageName# is already installed at #installDirectory#. Skipping installation. Use --force option to force install." );
 					return true;
 				}
+				
+				if( uninstallFirst ) {
+					consoleLogger.warn( "Uninstalling first to get a fresh slate..." );
+					
+					var params = {
+						id : packageName,
+						save : false,
+						currentWorkingDirectory : currentWorkingDirectory,
+						packagePathRequestingUninstallation : packagePathRequestingInstallation
+					};
+					
+					if( structKeyExists( arguments, 'directory' ) ) {
+						params.directory = arguments.directory;
+					}
+							
+					uninstallPackage( argumentCollection=params );
+				}
+				
 			}
 
 			// Create installation directory if neccesary
