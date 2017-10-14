@@ -49,12 +49,14 @@ component {
 	 * @_.optionsUDF completeProperty
 	 * @append.hint If setting an array or struct, set to true to append instead of overwriting.
 	 **/
-	function run( _, boolean append=false ) {
+	function run( _, boolean append=false, boolean quiet=false ) {
 		var thisAppend = arguments.append;
+		var thisQuiet = arguments.quiet;
 
 		// Remove dummy args
 		structDelete( arguments, '_' );
 		structDelete( arguments, 'append' );
+		structDelete( arguments, 'quiet' );
 
 		var configSettings = ConfigService.getconfigSettings();
 
@@ -63,8 +65,10 @@ component {
 		// Write the file back out.
 		ConfigService.setConfigSettings( configSettings );
 
-		for( var message in results ) {
-			print.greeLine( message );
+		if( !thisQuiet ) {
+			for( var message in results ) {
+				print.greeLine( message );
+			}
 		}
 
 	}
