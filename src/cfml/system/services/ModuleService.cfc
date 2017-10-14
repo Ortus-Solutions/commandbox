@@ -746,7 +746,7 @@
 				mConfig.interceptorSettings.customInterceptionPoints = "";
 			}
 			// Convert array of customInterceptionPoints into list
-			if( isArray( mConfig.interceptorSettings.customInterceptionPoints ) ) ){
+			if( isArray( mConfig.interceptorSettings.customInterceptionPoints ) ){
 				mConfig.interceptorSettings.customInterceptionPoints = mConfig.interceptorSettings.customInterceptionPoints.toList();
 			}
 
