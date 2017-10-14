@@ -149,6 +149,8 @@ component aliases="start" {
 		// but I don't want to "blow up" the console with a full error.
 		} catch( endpointException var e ) {
 			error( e.message, e.detail );
+		} catch( serverException var e ) {
+			error( e.message, e.detail );
 		}
 	}
 

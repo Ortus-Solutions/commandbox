@@ -1369,11 +1369,19 @@ component accessors="true" singleton {
 	 * @host.hint host to get port on, defaults 127.0.0.1
  	 **/
 	function getRandomPort( host="127.0.0.1" ){
-		var nextAvail  = java.ServerSocket.init( javaCast( "int", 0 ),
-												 javaCast( "int", 1 ),
-												 java.InetAddress.getByName( arguments.host ) );
-		var portNumber = nextAvail.getLocalPort();
-		nextAvail.close();
+		try {
+			var nextAvail  = java.ServerSocket.init( javaCast( "int", 0 ),
+													 javaCast( "int", 1 ),
+													 java.InetAddress.getByName( arguments.host ) );
+			var portNumber = nextAvail.getLocalPort();
+			nextAvail.close();
+		} catch( java.net.UnknownHostException var e ) {
+			throw( "The host name [#arguments.host#] can't be found. Do you need to add a host file entry?", 'serverException', e.message & ' ' & e.detail );
+		} catch( java.net.BindException var e ) {
+			// Same as above-- the IP address/host isn't bound to any local adapters.  Probably a host file entry went missing.
+			throw( "The IP address that [#arguments.host#] resovles to can't be bound.  If you ping it, does it point to a local network adapter?", 'serverException', e.message & ' ' & e.detail );
+		}
+			
 		return portNumber;
 	}
 
