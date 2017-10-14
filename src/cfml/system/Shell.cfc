@@ -222,6 +222,8 @@ component accessors="true" singleton {
 				// Optionally pre-fill a default response for them
 				len( arguments.defaultResponse ) ? javacast( "String", arguments.defaultResponse ) : javacast( "null", '' )
 			);
+			// remove the reponse from history
+			variables.reader.getHistory().removeLast();
 		} catch( jline.console.UserInterruptException var e ) {
 			throw( message='CANCELLED', type="UserInterruptException");
 		} finally{
