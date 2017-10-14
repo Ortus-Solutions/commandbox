@@ -98,20 +98,14 @@ public class LoaderCLIMain{
 	private static Boolean			debug					= false;
 	private static String			ENGINECONF_ZIP_PATH		= "engine.zip";
 	private static int				exitCode				= 0;
-	private static Boolean			isBackground;
 	private static String			LIB_ZIP_PATH			= "libs.zip";
 	private static File				libDirectory;
-	private static File				luceeConfigServerDirectory,
-			luceeConfigWebDirectory, luceeCLIConfigServerDirectory,
-			luceeCLIConfigWebDirectory;
+	private static File				luceeCLIConfigServerDirectory, luceeCLIConfigWebDirectory;
 	private static String			name;
-	private static String			serverName				= "default";
 
 	private static String			shellPath;
 
 	private static String			VERSION_PROPERTIES_PATH	= "cliloader/version.properties";
-
-	private static File				webRoot;
 
 	public static String arrayToList( String[] s, String separator ){
 		String result = "";
@@ -375,14 +369,6 @@ public class LoaderCLIMain{
 		return luceeCLIConfigWebDirectory;
 	}
 
-	private static File getLuceeConfigServerDir(){
-		return luceeConfigServerDirectory;
-	}
-
-	private static File getLuceeConfigWebDir(){
-		return luceeConfigWebDirectory;
-	}
-
 	private static String getName(){
 		return name;
 	}
@@ -391,20 +377,8 @@ public class LoaderCLIMain{
 		return string.replaceAll( "^([^\\\\//]*?[\\\\//]).*?$", "$1" );
 	}
 
-	private static String getServerName(){
-		return serverName == null ? "default" : serverName;
-	}
-
 	private static String getShellPath(){
 		return shellPath;
-	}
-
-	private static File getWebRoot(){
-		return webRoot;
-	}
-
-	private static Boolean isBackground(){
-		return isBackground;
 	}
 
 	public static boolean listContains( ArrayList< String > argList, String text ){
@@ -447,13 +421,12 @@ public class LoaderCLIMain{
 				Arrays.asList( arguments ) );
 		File cli_home;
 		Boolean updateLibs = false;
-		Boolean startServer = false;
-		Boolean stopServer = false;
+
 		Properties props = new Properties(), userProps = new Properties();
-		if( listContains( cliArguments, "-debug" ) ) {
+		if( listContains( cliArguments, "-clidebug" ) ) {
 			debug = true;
-			listRemoveContaining( cliArguments, "-debug" );
-			arguments = removeElement( arguments, "-debug" );
+			listRemoveContaining( cliArguments, "-clidebug" );
+			arguments = removeElement( arguments, "-clidebug" );
 		}
 		try {
 			props.load( ClassLoader
@@ -509,70 +482,17 @@ public class LoaderCLIMain{
 		}
 
 		// update/overwrite libs
-		if( listContains( cliArguments, "-update" ) ) {
+		if( listContains( cliArguments, "-cliupdate" ) ) {
 			System.out.println( "updating " + name + " home" );
 			updateLibs = true;
-			listRemoveContaining( cliArguments, "-update" );
-			arguments = removeElement( arguments, "-update" );
+			listRemoveContaining( cliArguments, "-cliupdate" );
+			arguments = removeElement( arguments, "-cliupdate" );
 		}
 
 		setLibDir( new File( cli_home, "lib" ).getCanonicalFile() );
 
-		// background
-		if( listContains( cliArguments, "-background" ) ) {
-			setBackground( true );
-			arguments = removeElement( arguments, "-background" );
-		} else {
-			setBackground( false );
-		}
-
-		if( listContains( cliArguments, "-stop" ) ) {
-			stopServer = true;
-			setBackground( false );
-		}
-
-		if( listContains( cliArguments, "-name" ) ) {
-			setServerName( config.get( "name" ) );
-			log.debug( "Set server name to" + getServerName() );
-			arguments = removeElement( arguments, "-name" );
-			listRemoveContaining( cliArguments, "-name" );
-		}
-
-		if( !updateLibs
-				&& ( listContains( cliArguments, "-?" ) || listContains(
-						cliArguments, "-help" ) ) ) {
-			System.out.println( props.get( "usage" ).toString()
-					.replace( "/n", CR ) );
-			Thread.sleep( 1000 );
-			System.exit( 0 );
-		}
-
-		// lucee libs dir
-		if( listContains( cliArguments, "-lib" ) ) {
-			String strLibs = config.get( "lib" );
-			setLibDir( new File( strLibs ) );
-			arguments = removeElementThenAdd( arguments, "-lib=", null );
-			listRemoveContaining( cliArguments, "-lib" );
-		}
-
-		if( listContains( cliArguments, "-server" ) ) {
-			startServer = true;
-		}
-
-		if( listContains( cliArguments, "-webroot" )
-				&& config.get( "webroot" ) != null ) {
-			arguments = removeElement( arguments, "-webroot" );
-			setWebRoot( new File( config.get( "webroot" ) ).getCanonicalFile() );
-		} else {
-			if( getCurrentDir() != null ) {
-				setWebRoot( new File( getCurrentDir() ).getCanonicalFile() );
-			} else {
-				setWebRoot( new File( "./" ).getCanonicalFile() );
-			}
-		}
-
-		if( listContains( cliArguments, "-shellpath" ) ) {
-			int shellpathIdx = listIndexOf( cliArguments, "-shellpath" );
+		if( listContains( cliArguments, "-clishellpath" ) ) {
+			int shellpathIdx = listIndexOf( cliArguments, "-clishellpath" );
 			String shellpath = cliArguments.get( shellpathIdx );
 			if( shellpath.indexOf( '=' ) == -1 ) {
 				setShellPath( cliArguments.get( shellpathIdx + 1 ) );
@@ -582,16 +502,9 @@ public class LoaderCLIMain{
 				setShellPath( shellpath.split( "=" )[ 1 ] );
 				cliArguments.remove( shellpathIdx );
 			}
-			arguments = removeElement( arguments, "-shellpath" );
+			arguments = removeElement( arguments, "-clishellpath" );
 		}
 		props.setProperty( "cfml.cli.shell", getShellPath() );
-
-		if( listContains( cliArguments, "-shell" ) ) {
-			startServer = false;
-			log.debug( "we will be running the shell" );
-			arguments = removeElement( arguments, "-shell" );
-			listRemoveContaining( cliArguments, "-shell" );
-		}
 
 		File libDir = getLibDir();
 		props.setProperty( "cfml.cli.lib", libDir.getAbsolutePath() );
@@ -610,8 +523,7 @@ public class LoaderCLIMain{
 					updateLibs = true;
 					versionFile.delete();
 				} else {
-					log.warn( "run '" + name
-							+ " -update' to install new version" );
+					log.warn( "run '" + name + " -update' to install new version" );
 				}
 			}
 		}
@@ -694,12 +606,6 @@ public class LoaderCLIMain{
 			}
 		}
 		
-		File configServerDir = new File( libDir.getParentFile(),
-				"engine/cfml/server/" );
-		File configWebDir = new File( libDir.getParentFile(),
-				"engine/cfml/server/cfml-web/" + getServerName() );
-		setLuceeConfigServerDir( configServerDir );
-		setLuceeConfigWebDir( configWebDir );
 		File configCLIServerDir = new File( libDir.getParentFile(),
 				"engine/cfml/cli/" );
 		File configCLIWebDir = new File( libDir.getParentFile(),
@@ -708,28 +614,17 @@ public class LoaderCLIMain{
 		setLuceeCLIConfigWebDir( configCLIWebDir );
 		props.setProperty( "cfml.cli.home", cli_home.getAbsolutePath() );
 		props.setProperty( "cfml.cli.pwd", getCurrentDir() );
-		props.setProperty( "cfml.config.server",
-				configServerDir.getAbsolutePath() );
-		props.setProperty( "cfml.config.web", configWebDir.getAbsolutePath() );
-		props.setProperty( "cfml.server.trayicon", libDir.getAbsolutePath()
-				+ "/trayicon.png" );
 		props.setProperty( "cfml.server.dockicon", "" );
+		
 		for( Object name2 : props.keySet()) {
 			String key = ( String ) name2;
 			String value = props.get( key ).toString();
 			System.setProperty( key, value );
 			log.debug( key + ": " + value );
 		}
-		// Thread shutdownHook = new Thread( "cli-shutdown-hook" ) { public void
-		// run() { cl.close(); } };
-		// Runtime.getRuntime().addShutdownHook( shutdownHook );
-
-		if( !startServer && !stopServer ) {
-			execute( cliArguments );
-			System.exit( exitCode );
-		} else {
-			startRunwarServer( arguments, config );
-		}
+		
+		execute( cliArguments );
+		System.exit( exitCode );
 	}
 
 	private static String mapGetNoCase( Map< String, String > source,
@@ -815,10 +710,6 @@ public class LoaderCLIMain{
 		return result.toArray( input );
 	}
 
-	private static void setBackground( Boolean value ){
-		isBackground = value;
-	}
-
 	private static void setCLI_HOME( File value ){
 		CLI_HOME = value;
 	}
@@ -835,105 +726,12 @@ public class LoaderCLIMain{
 		luceeCLIConfigWebDirectory = value;
 	}
 
-	private static void setLuceeConfigServerDir( File value ){
-		luceeConfigServerDirectory = value;
-	}
-
-	private static void setLuceeConfigWebDir( File value ){
-		luceeConfigWebDirectory = value;
-	}
-
 	private static void setName( String value ){
 		name = value;
 	}
 
-	private static void setServerName( String value ){
-		serverName = value;
-	}
-
 	private static void setShellPath( String value ){
 		shellPath = value;
-	}
-
-	private static void setWebRoot( File value ){
-		webRoot = value;
-	}
-
-	private static void startRunwarServer( String[] args,
-			Map< String, String > config ) throws ClassNotFoundException,
-			NoSuchMethodException, SecurityException, IOException{
-		System.setProperty( "apple.awt.UIElement", "false" );
-		log.debug( "Running in server mode" );
-		// only used for server mode, cli root is /
-		File webRoot = getWebRoot();
-		String path = LoaderCLIMain.class.getProtectionDomain().getCodeSource()
-				.getLocation().getPath();
-		// System.out.println("yum from:"+path);
-		String decodedPath = java.net.URLDecoder.decode( path, "UTF-8" );
-		decodedPath = new File( decodedPath ).getPath();
-
-		// args =
-		// removeElementThenAdd(args,"-server","-war "+webRoot.getPath()+" --background false --logdir "
-		// + libDir.getParent());
-		String name = getName();
-		File libDir = getLibDir(), configServerDir = getLuceeConfigServerDir(), configWebDir = getLuceeConfigWebDir();
-		String[] addArgs;
-		if( isBackground() ) {
-			addArgs = new String[] { "-war", webRoot.getPath(),
-					"--server-name", getServerName(), "--cfengine-name",
-					"lucee", "--cfml-server-config",
-					configServerDir.getAbsolutePath(), "--cfml-web-config",
-					configWebDir.getAbsolutePath(), "--background", "true",
-					"--tray-icon", libDir.getAbsolutePath() + "/trayicon.png",
-					"--tray-config",
-					libDir.getAbsolutePath() + "/traymenu.json", "--lib-dirs",
-					libDir.getPath(), "--debug", Boolean.toString( debug ),
-					"--processname", name };
-		} else {
-			addArgs = new String[] { "-war", webRoot.getPath(),
-					"--server-name", getServerName(), "--cfengine-name",
-					"lucee", "--cfml-server-config",
-					configServerDir.getAbsolutePath(), "--cfml-web-config",
-					configWebDir.getAbsolutePath(), "--tray-icon",
-					libDir.getAbsolutePath() + "/trayicon.png",
-					"--tray-config",
-					libDir.getAbsolutePath() + "/traymenu.json", "--lib-dirs",
-					libDir.getPath(), "--background", "false", "--debug",
-					Boolean.toString( debug ), "--processname", name };
-		}
-		args = removeElementThenAdd( args, "-server", addArgs );
-		if( debug ) {
-					System.out.println( "Server args: " + arrayToList( args, " " ) );
-				}
-		// URLClassLoader rrcl = new
-		// URLClassLoader(runwarURL,ClassLoader.getSystemClassLoader());
-		// URLClassLoader empty = new URLClassLoader(new URL[0],null);
-		// XercesFriendlyURLClassLoader cl = new
-		// XercesFriendlyURLClassLoader(urls,null);
-		// Thread.currentThread().setContextClassLoader(cl);
-		URL[] urls = new URL[ 1 ];
-		urls[ 0 ] = libDir.listFiles( new PrefixFilter( "runwar" ) )[ 0 ]
-				.toURI().toURL();
-		URLClassLoader cl = new URLClassLoader( urls, getClassLoader() );
-		Class< ? > runwar;
-		try {
-			runwar = cl.loadClass( "runwar.Server" );
-			Method startServer = runwar.getMethod( "startServer", new Class[] {
-					String[].class, URLClassLoader.class } );
-			// Thread.currentThread().setContextClassLoader(cl);
-			startServer.invoke( runwar.getConstructor().newInstance(),
-					new Object[] { args, cl } );
-			// startServer.invoke(runwar.getConstructor().newInstance(), new
-			// Object[]{args,null});
-		} catch ( Exception e ) {
-			exitCode = 1;
-			if( e.getCause() != null ) {
-				e.getCause().printStackTrace();
-			} else {
-				e.printStackTrace();
-			}
-		}
-		cl.close();
 	}
 
 	private static Map< String, String > toMap( String[] args ){
