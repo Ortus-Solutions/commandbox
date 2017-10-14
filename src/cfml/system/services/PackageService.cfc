@@ -725,16 +725,16 @@ component accessors="true" singleton {
 			param name='boxJSON.installPaths' default='#{}#';
 			var installPaths = boxJSON.installPaths;
 
-			// normalize slashes
-			arguments.currentWorkingDirectory = fileSystemUtil.resolvePath( arguments.currentWorkingDirectory );
-			arguments.installDirectory = fileSystemUtil.resolvePath( arguments.installDirectory );
+			// normalize slashes and make them all "/"
+			arguments.currentWorkingDirectory = fileSystemUtil.resolvePath( arguments.currentWorkingDirectory ).replace( '\', '/', 'all' );
+			arguments.installDirectory = fileSystemUtil.resolvePath( arguments.installDirectory ).replace( '\', '/', 'all' );
 
 			// If the install location is contained within the package root...
 			if( arguments.installDirectory contains arguments.currentWorkingDirectory ) {
 				// Make it relative
 				arguments.installDirectory = replaceNoCase( arguments.installDirectory, arguments.currentWorkingDirectory, '' );
 				// Strip any leading slashes so Unix-based OS's don't think it's the drive root
-				if( len( arguments.installDirectory ) && listFind( '\,/', left( arguments.installDirectory, 1 ) ) ) {
+				if( len( arguments.installDirectory ) && arguments.installDirectory.left( 1 ) == '/' ) {
 					arguments.installDirectory = right( arguments.installDirectory, len( arguments.installDirectory ) - 1 );
 				}
 			}
