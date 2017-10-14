@@ -90,25 +90,12 @@ component accessors="true" singleton {
 				consoleLogger.debug( "Save:#arguments.save# SaveDev:#arguments.saveDev# Production:#arguments.production# Directory:#arguments.directory#" );
 			}
 
-			try {
-				var endpointData = endpointService.resolveEndpoint( arguments.ID, arguments.currentWorkingDirectory );
-			} catch( EndpointNotFound var e ) {
-				consoleLogger.error( e.message );
-				return false;
-			}
+			var endpointData = endpointService.resolveEndpoint( arguments.ID, arguments.currentWorkingDirectory );
 
 			consoleLogger.info( '.');
 			consoleLogger.info( 'Installing package [#endpointData.ID#]' );
 
-			try {
-				var tmpPath = endpointData.endpoint.resolvePackage( endpointData.package, arguments.verbose );
-
-			// endpointException exception type is used when the endpoint has an issue that needs displayed,
-			// but I don't want to "blow up" the console with a full error.
-			} catch( endpointException var e ) {
-				consoleLogger.error( e.message & ' ' & e.detail );
-				return false;
-			}
+			var tmpPath = endpointData.endpoint.resolvePackage( endpointData.package, arguments.verbose );
 
 			// Support box.json in the root OR in a subfolder (NPM-style!)
 			tmpPath = findPackageRoot( tmpPath );
