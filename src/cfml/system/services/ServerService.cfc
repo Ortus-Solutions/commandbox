@@ -820,7 +820,7 @@ component accessors="true" singleton {
 
 		// Make current settings available to package scripts
 		setServerInfo( serverInfo );
-		interceptorService.announceInterception( 'onServerStart', { serverInfo=serverInfo } );
+		interceptorService.announceInterception( 'onServerStart', { serverInfo=serverInfo, serverJSON=serverJSON, defaults=defaults, serverProps=serverProps } );
 
 		// Turn struct of aliases into a comma-delimited list, plus resolve relative paths.
 		// "/foo=C:\path,/bar=C:\another/path"

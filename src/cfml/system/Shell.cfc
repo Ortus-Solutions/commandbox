@@ -206,10 +206,11 @@ component accessors="true" singleton {
 	 * @message.hint message to prompt the user with
 	 * @mask.hint When not empty, keyboard input is masked as that character
 	 * @defaultResponse Text to populate the buffer with by default that will be submitted if the user presses enter without typing anything
+	 * @keepHistory True to remeber the text typed in the shell history
 	 *
 	 * @return the response from the user
  	 **/
-	string function ask( message, string mask='', string defaultResponse='' ) {
+	string function ask( message, string mask='', string defaultResponse='', keepHistory=false ) {
 
 		try {
 			// read reponse while masking input
@@ -222,8 +223,10 @@ component accessors="true" singleton {
 				// Optionally pre-fill a default response for them
 				len( arguments.defaultResponse ) ? javacast( "String", arguments.defaultResponse ) : javacast( "null", '' )
 			);
-			// remove the reponse from history
-			variables.reader.getHistory().removeLast();
+			if( !keepHistory ) {
+				// remove the reponse from history
+				variables.reader.getHistory().removeLast();
+			}
 		} catch( jline.console.UserInterruptException var e ) {
 			throw( message='CANCELLED', type="UserInterruptException");
 		} finally{
