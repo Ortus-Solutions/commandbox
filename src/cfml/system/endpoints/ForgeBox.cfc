@@ -21,6 +21,7 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 	property name="endpointService"		inject="endpointService";
 	property name="fileSystemUtil"		inject="FileSystem";
 	property name="fileEndpoint"		inject="commandbox.system.endpoints.File";
+	property name='pathPatternMatcher' 	inject='provider:pathPatternMatcher@globber';
 
 	// Properties
 	property name="namePrefixes" type="string";
@@ -189,13 +190,6 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 		string zipPath = "",
 		boolean force = false
 	) {
-		// start upload stuff here
-		var upload = boxJSON.location == "forgeboxStorage";
-
-		if( var upload ){
-			arguments.zipPath = createZipFromPath( arguments.path );
-		}
-
 		if( !packageService.isPackage( arguments.path ) ) {
 			throw(
 				'Sorry but [#arguments.path#] isn''t a package.',
@@ -219,8 +213,29 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 		props.changeLog = boxJSON.changeLog;
 		props.changeLogFormat = 'text';
 		props.APIToken = configService.getSetting( 'endpoints.forgebox.APIToken', '' );
-		props.zipPath = arguments.zipPath;
 		props.forceUpload = arguments.force;
+
+		// start upload stuff here
+		var upload = boxJSON.location == "forgeboxStorage";
+
+		if( upload ){
+			try {
+				forgebox.getStorageLocation( props.slug, props.version, props.APIToken );
+				if ( ! arguments.force ) {
+					consoleLogger.warn( "A zip for this version has already been uploaded.  If you want to override the uploaded zip, run this command with the `force` flag.  We will continue to update your package metadata." );
+					upload = false;
+				}
+			}
+			catch ( any e ) {
+				if ( e.errorCode != 404 ) {
+					rethrow;
+				}
+			}
+		}
+
+		if ( upload ) {
+			props.zipPath = createZipFromPath( arguments.path );
+		}
 
 		// Look for readme, instruction, and changelog files
 		for( var item in [
@@ -242,15 +257,13 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 
 		try {
 			consoleLogger.warn( "Sending package information to ForgeBox, please wait..." );
-			if( len( props.zipPath ) ){
-				consoleLogger.warn( "Uploading package zip to ForgeBox..." );
-			}
+			if ( upload ) { consoleLogger.warn( "Uploading package zip to ForgeBox..." ); }
 
 			forgebox.publish( argumentCollection=props );
 
-			if( ! isNull( arguments.zipPath ) ){
-				if( fileExists( arguments.zipPath ) ){
-					fileDelete( arguments.zipPath );
+			if( ! isNull( props.zipPath ) ){
+				if( fileExists( props.zipPath ) ){
+					fileDelete( props.zipPath );
 				}
 			}
 

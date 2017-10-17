@@ -16,8 +16,6 @@ component accessors="true" singleton {
 	property name="fileSystemUtil"		inject="FileSystem";
 	property name="consoleLogger"		inject="logbox:logger:console";
 	property name="configService"		inject="configService";
-	property name="packageService" 		inject="packageService";
-	property name='pathPatternMatcher' 	inject='provider:pathPatternMatcher@globber';
 
 
 	// Properties

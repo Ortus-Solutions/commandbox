@@ -21,7 +21,7 @@ interface extends="IEndpoint" {
 	// Returns access token
 	public string function login( required string userName, required string password );
 
-	public function publish( required string path, string zipPath, boolean forceUpload );
+	public function publish( required string path, string zipPath, boolean force );
 
 	public function unpublish( required string path, string version='' );
 
