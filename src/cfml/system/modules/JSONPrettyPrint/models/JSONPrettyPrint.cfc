@@ -22,8 +22,13 @@ component accessors="true" singleton alias='JSONPrettyPrint' {
 			arguments.json = serializeJSON( arguments.json );
 		}
 		
+		arguments.json = arguments.json.replace( '	', '', 'all' );
+		arguments.json = arguments.json.replace( chr( 10 ), '', 'all' );
+		arguments.json = arguments.json.replace( chr( 13 ), '', 'all' );
+		
 		var retval = createObject( 'java', 'java.lang.StringBuilder' ).init( '' );
 		var str = json;
+		var strLen = str.len();
 	    var pos = 0;
 	    var strLen = str.length();
 		var indentStr = arguments.indent;
@@ -39,10 +44,11 @@ component accessors="true" singleton alias='JSONPrettyPrint' {
 			// The current char we're looking at
 			char = str.substring( i, i+1 );
 			// "peek" at the next non-whitespace char in line
-			if( str.len()-1 > i ) {
-				nextChar = str.substring( i+1 ).trim().left( 1 );
+			var offset = 1;
+			while( strLen > i+offset && nextChar == ' ' ) {
+				nextChar = str.substring( i+offset, i+offset+1 );
 			}
-			
+						
 			// Is current char escaped
 			if( isEscaped ) {
 				isEscaped = false;
