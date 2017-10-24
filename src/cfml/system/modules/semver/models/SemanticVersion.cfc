@@ -59,8 +59,8 @@ component singleton{
 		Semantic version: major.minor.revision-alpha.1+build
 		**/
 
-		var current = parseVersion( arguments.current );
-		var target 	= parseVersion( arguments.target );
+		local.current = parseVersion( arguments.current );
+		local.target 	= parseVersion( arguments.target );
 
 		// Major check
 		if( target.major gt current.major ){
@@ -568,8 +568,8 @@ component singleton{
 		Semantic version: major.minor.revision-alpha.1+build
 		**/
 
-		var current = parseVersionAsString( arguments.current, checkBuildID );
-		var target 	= parseVersionAsString( arguments.target, checkBuildID );
+		local.current = parseVersionAsString( arguments.current, checkBuildID );
+		local.target 	= parseVersionAsString( arguments.target, checkBuildID );
 
 		return ( current == target );
 	}

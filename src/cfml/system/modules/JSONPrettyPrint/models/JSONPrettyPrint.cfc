@@ -13,8 +13,9 @@ component accessors="true" singleton alias='JSONPrettyPrint' {
 	 * @json A string containing JSON, or a complex value that can be serialized to JSON
 	 * @lineEnding String to use for indenting lines.  Defaults to four spaces.
 	 * @lineEnding String to use for line endings.  Defaults to CRLF.
+	 * @spaceAfterColon Add space after each colon like "value": true instead of"value":true 
  	 **/
-	public function formatJson( json, indent='    ', lineEnding=chr( 13 ) & chr( 10 ) ) {
+	public function formatJson( json, indent='    ', lineEnding=chr( 13 ) & chr( 10 ), boolean spaceAfterColon=false ) {
 		
 		// Overload this method to accept a struct or array
 		if( !isSimpleValue( arguments.json ) ) {
@@ -28,12 +29,17 @@ component accessors="true" singleton alias='JSONPrettyPrint' {
 		var indentStr = arguments.indent;
 	    var newLine = arguments.lineEnding;
 		var char = '';
+		var nextChar = '';
 		var inQuote = false;
 		var isEscaped = false;
+		var itemsInCollection = 0;
 
 		for ( var i=0; i<strLen; i++ ) {
+			nextChar = '';
 			char = str.substring( i, i+1 );
-			
+			if( str.len()-1 > i ) {
+				nextChar = str.substring( i+1, i+2 );				
+			}
 			if( isEscaped ) {
 				isEscaped = false;
 				retval.append( char );
@@ -63,20 +69,33 @@ component accessors="true" singleton alias='JSONPrettyPrint' {
 			
 			
 			if (char == '}' || char == ']') {
-				retval.append( newLine );
 				pos = pos - 1;
-				for (var j=0; j<pos; j++) {
-					retval.append( indentStr );
+				if( itemsInCollection ) {
+					retval.append( newLine );
+					retval.append( repeatString( indentStr, pos ) );
+				}				
+			}
+			
+			retval.append( char );
+			
+			if (char == ',') {
+				retval.append( newLine );
+				retval.append( repeatString( indentStr, pos ) );
+			}
+			
+			if ( char == '{' || char == '[') {
+				itemsInCollection = 0;
+				pos = pos + 1;
+				if( nextChar != ']' && nextChar != '}' ) {
+					retval.append( newLine );
+					retval.append( repeatString( indentStr, pos ) );
 				}
 			}
-			retval.append( char );
-			if (char == '{' || char == '[' || char == ',') {
-				retval.append( newLine );
-				if (char == '{' || char == '[') {
-					pos = pos + 1;
-				}
-				for (var k=0; k<pos; k++) {
-					retval.append( indentStr );
+			
+			if (char == ':' ) {
+				itemsInCollection++;
+				if( spaceAfterColon ) {
+					retval.append( ' ' );
 				}
 			}
 		}
