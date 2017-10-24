@@ -1,8 +1,8 @@
 {
     "name":"JSONPrettyPrint",
-    "version":"1.2.0",
+    "version":"1.2.1",
     "author":"",
-    "location":"Ortus-Solutions/JSONPrettyPrint#v1.2.0",
+    "location":"Ortus-Solutions/JSONPrettyPrint#v1.2.1",
     "homepage":"https://github.com/Ortus-Solutions/JSONPrettyPrint",
     "documentation":"https://github.com/Ortus-Solutions/JSONPrettyPrint",
     "repository":{
@@ -14,9 +14,7 @@
     "shortDescription":"Pretty print JSON objects",
     "description":"Pretty print JSON objects",
     "type":"modules",
-    "dependencies":{
-        
-    },
+    "dependencies":{},
     "devDependencies":{
         "coldbox":"^4.3.0+188",
         "testbox":"^2.4.0+80"
@@ -33,6 +31,4 @@
     "ignore":[
         "**/.*",
         "test",
-        "tests"
-    ]
-}
+        "tests"]}

@@ -36,22 +36,28 @@ component accessors="true" singleton alias='JSONPrettyPrint' {
 
 		for ( var i=0; i<strLen; i++ ) {
 			nextChar = '';
+			// The current char we're looking at
 			char = str.substring( i, i+1 );
+			// "peek" at the next non-whitespace char in line
 			if( str.len()-1 > i ) {
-				nextChar = str.substring( i+1, i+2 );				
+				nextChar = str.substring( i+1 ).trim().left( 1 );
 			}
+			
+			// Is current char escaped
 			if( isEscaped ) {
 				isEscaped = false;
 				retval.append( char );
 				continue;
 			}
 			
+			// Next char is Escaped
 			if( char == '\' ) {
 				isEscaped = true;
 				retval.append( char );
 				continue;
 			}
 			
+			// Detect start of quotes
 			if( char == '"' ) {
 				if( inQuote ) {
 					inQuote = false;
@@ -62,12 +68,18 @@ component accessors="true" singleton alias='JSONPrettyPrint' {
 				continue;
 			}
 			
+			// All text in quotes is appended right in
 			if( inQuote ) {
 				retval.append( char );
 				continue;
 			}	
 			
+			// Ignore whitespace not in quotes.  We'll be adding back in what we want
+			if ( !char.trim().len() ) {
+				continue;				
+			}
 			
+			// Ending a block
 			if (char == '}' || char == ']') {
 				pos = pos - 1;
 				if( itemsInCollection ) {
@@ -78,11 +90,13 @@ component accessors="true" singleton alias='JSONPrettyPrint' {
 			
 			retval.append( char );
 			
+			// End of an item in an object or array
 			if (char == ',') {
 				retval.append( newLine );
 				retval.append( repeatString( indentStr, pos ) );
 			}
 			
+			// Startinga block
 			if ( char == '{' || char == '[') {
 				itemsInCollection = 0;
 				pos = pos + 1;
@@ -92,13 +106,16 @@ component accessors="true" singleton alias='JSONPrettyPrint' {
 				}
 			}
 			
+			// Colon between key and value.
 			if (char == ':' ) {
 				itemsInCollection++;
 				if( spaceAfterColon ) {
 					retval.append( ' ' );
 				}
 			}
-		}
+			
+		} // End for loop
+		
 		return retval.toString();
 	}
 
