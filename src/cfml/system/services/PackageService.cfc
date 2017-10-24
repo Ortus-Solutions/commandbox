@@ -387,10 +387,6 @@ component accessors="true" singleton {
 						currentWorkingDirectory : currentWorkingDirectory,
 						packagePathRequestingUninstallation : packagePathRequestingInstallation
 					};
-					
-					if( structKeyExists( arguments, 'directory' ) ) {
-						params.directory = arguments.directory;
-					}
 							
 					uninstallPackage( argumentCollection=params );
 				}
