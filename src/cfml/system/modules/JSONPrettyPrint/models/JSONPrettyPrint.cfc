@@ -37,18 +37,19 @@ component accessors="true" singleton alias='JSONPrettyPrint' {
 		var nextChar = '';
 		var inQuote = false;
 		var isEscaped = false;
-		var itemsInCollection = 0;
+		var itemsInCollection = [];
 
 		for ( var i=0; i<strLen; i++ ) {
-			nextChar = '';
+			nextChar = ' ';
 			// The current char we're looking at
-			char = str.substring( i, i+1 );
+			char = str.mid( i+1, 1 );
 			// "peek" at the next non-whitespace char in line
 			var offset = 1;
 			while( strLen > i+offset && nextChar == ' ' ) {
-				nextChar = str.substring( i+offset, i+offset+1 );
+				nextChar = str.mid( i+offset+1, 1 );
+				offset++;
 			}
-						
+			
 			// Is current char escaped
 			if( isEscaped ) {
 				isEscaped = false;
@@ -88,10 +89,11 @@ component accessors="true" singleton alias='JSONPrettyPrint' {
 			// Ending a block
 			if (char == '}' || char == ']') {
 				pos = pos - 1;
-				if( itemsInCollection ) {
+				if( itemsInCollection.last() ) {
 					retval.append( newLine );
 					retval.append( repeatString( indentStr, pos ) );
-				}				
+				}
+				itemsInCollection.deleteAt( itemsInCollection.len() )			
 			}
 			
 			retval.append( char );
@@ -104,17 +106,18 @@ component accessors="true" singleton alias='JSONPrettyPrint' {
 			
 			// Startinga block
 			if ( char == '{' || char == '[') {
-				itemsInCollection = 0;
 				pos = pos + 1;
 				if( nextChar != ']' && nextChar != '}' ) {
+					itemsInCollection.append( true );
 					retval.append( newLine );
 					retval.append( repeatString( indentStr, pos ) );
-				}
+				} else {
+					itemsInCollection.append( false );
+				}				
 			}
 			
 			// Colon between key and value.
 			if (char == ':' ) {
-				itemsInCollection++;
 				if( spaceAfterColon ) {
 					retval.append( ' ' );
 				}
