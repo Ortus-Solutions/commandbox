@@ -351,9 +351,10 @@ component accessors="true" singleton {
 			// Should we save this as a dependency. Save the install even though the package may already be there
 			if( ( arguments.save || arguments.saveDev ) ) {
 				// Add it!
-				addDependency( packagePathRequestingInstallation, packageName, version, installDirectory, artifactDescriptor.createPackageDirectory,  arguments.saveDev, endpointData );
-				// Tell the user...
-				consoleLogger.info( "#packagePathRequestingInstallation#/box.json updated with #( arguments.saveDev ? 'dev ': '' )#dependency." );
+				if( addDependency( packagePathRequestingInstallation, packageName, version, installDirectory, artifactDescriptor.createPackageDirectory,  arguments.saveDev, endpointData ) ) {
+					// Tell the user...
+					consoleLogger.info( "#packagePathRequestingInstallation#/box.json updated with #( arguments.saveDev ? 'dev ': '' )#dependency." );	
+				}
 			}
 
 			// Check to see if package has already been installed.  This check can only be performed for packages that get installed in their own directory.
@@ -687,6 +688,8 @@ component accessors="true" singleton {
 	* @installDirectory The location that the package is installed to including the container folder.
 	* @installDirectoryIsDedicated True if the package was placed in a dedicated folder
 	* @dev True if this is a development depenency, false if it is a production dependency
+	* 
+	* @returns boolean True if box.json was updated, false if update wasn't neccessary (keys already existed with correct values)
 	*/
 	public function addDependency(
 		required string currentWorkingDirectory,
@@ -702,32 +705,39 @@ component accessors="true" singleton {
 
 		// Get reference to appropriate dependency struct
 		if( arguments.dev ) {
-			param name='boxJSON.devDependencies' default='#{}#';
+			boxJSON[ 'devDependencies' ] = boxJSON.devDependencie ?: {};
 			var dependencies = boxJSON.devDependencies;
 		} else {
-			param name='boxJSON.dependencies' default='#{}#';
+			boxJSON[ 'dependencies' ] = boxJSON.dependencies ?: {};
 			var dependencies = boxJSON.dependencies;
 		}
+		var updated = false;
 
 		// Add/overwrite this dependency
 
 		if( endpointData.endpointName == 'forgebox' ) {
 
 			if( listLen( endpointData.package, '@' ) > 1 ) {
-				dependencies[ arguments.packageName ] = listLast( endpointData.package, '@' );
+				var thisValue = listLast( endpointData.package, '@' );
 			} else {
 				// caret version range (^1.2.3) allows updates that don't bump the major version.
-				dependencies[ arguments.packageName ] = '^' & arguments.version;
+				var thisValue = '^' & arguments.version;
 			}
 		} else {
-			dependencies[ arguments.packageName ] = endpointData.ID;
+			var thisValue = endpointData.ID;
+		}
+		
+		// Prevent unneccessary updates to the JSON file.
+		if( !dependencies.keyExists( arguments.packageName ) || dependencies[ arguments.packageName ] != thisValue ) {
+			dependencies[ arguments.packageName ] = thisValue;
+			updated = true;
 		}
 
 		// Only packages installed in a dedicated directory of their own can be uninstalled
 		// so don't save this if they were just dumped somewhere like the package root amongst
 		// other unrelated files and folders.
 		if( arguments.installDirectoryIsDedicated ) {
-			param name='boxJSON.installPaths' default='#{}#';
+			boxJSON[ 'installPaths' ] = boxJSON.installPaths ?: {};
 			var installPaths = boxJSON.installPaths;
 
 			// normalize slashes and make them all "/"
@@ -746,13 +756,23 @@ component accessors="true" singleton {
 
 			// Just in case-- an empty install dir would be useless.
 			if( len( arguments.installDirectory ) ) {
-				installPaths[ arguments.packageName ] = arguments.installDirectory;
+			
+				// Prevent unneccessary updates to the JSON file.
+				if( !installPaths.keyExists( arguments.packageName ) || installPaths[ arguments.packageName ] != arguments.installDirectory ) {
+					installPaths[ arguments.packageName ] = arguments.installDirectory;
+					updated = true;
+				}
+				
 			}
 
 		} // end installDirectoryIsDedicated
 
 		// Write the box.json back out
-		writePackageDescriptor( boxJSON, arguments.currentWorkingDirectory );
+		if( updated ) {
+			writePackageDescriptor( boxJSON, arguments.currentWorkingDirectory );
+			return true;
+		}
+		return false;
 	}
 
 	/**
