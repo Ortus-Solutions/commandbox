@@ -202,8 +202,8 @@ component accessors="true" singleton {
 
 				// If this is an initial install (not a dependency) into a folder somehwere inside the CommandBox home,
 				// make sure we save correctly to CommandBox's user module box.json.
-				var commandBoxCFMLHome = expandPath( '/commandbox' ).replace( '\', '/', 'all' );
-				installDirectory = installDirectory.replace( '\', '/', 'all' );
+				var commandBoxCFMLHome = fileSystemUtil.normalizeSlashes( expandPath( '/commandbox' ) );
+				installDirectory = fileSystemUtil.normalizeSlashes( installDirectory );
 
 				// If we're already in the CommandBox (a submodule of a commandbox module, most likely)
 				if( installDirectory contains commandBoxCFMLHome ) {
@@ -288,8 +288,8 @@ component accessors="true" singleton {
 					installDirectory = arguments.packagePathRequestingInstallation & '/modules/contentbox/modules_user';
 				// CommandBox Modules
 				} else if( packageType == 'commandbox-modules' ) {
-					var commandBoxCFMLHome = expandPath( '/commandbox' ).replace( '\', '/', 'all' );
-					arguments.packagePathRequestingInstallation = arguments.packagePathRequestingInstallation.replace( '\', '/', 'all' );
+					var commandBoxCFMLHome = fileSystemUtil.normalizeSlashes( expandPath( '/commandbox' ) );
+					arguments.packagePathRequestingInstallation = fileSystemUtil.normalizeSlashes( arguments.packagePathRequestingInstallation );
 
 					// If we're already in the CommandBox (a submodule of a commandbox module, most likely)
 					if( arguments.packagePathRequestingInstallation contains commandBoxCFMLHome ) {
@@ -731,8 +731,8 @@ component accessors="true" singleton {
 			var installPaths = boxJSON.installPaths;
 
 			// normalize slashes and make them all "/"
-			arguments.currentWorkingDirectory = fileSystemUtil.resolvePath( arguments.currentWorkingDirectory ).replace( '\', '/', 'all' );
-			arguments.installDirectory = fileSystemUtil.resolvePath( arguments.installDirectory ).replace( '\', '/', 'all' );
+			arguments.currentWorkingDirectory = fileSystemUtil.normalizeSlashes( fileSystemUtil.resolvePath( arguments.currentWorkingDirectory ) );
+			arguments.installDirectory = fileSystemUtil.normalizeSlashes( fileSystemUtil.resolvePath( arguments.installDirectory ) );
 
 			// If the install location is contained within the package root...
 			if( arguments.installDirectory contains arguments.currentWorkingDirectory ) {

@@ -60,7 +60,7 @@ component accessors="true" {
 	* Override setter to ensure consistent slashe in pattern
 	*/
 	function setPattern( required string pattern ) {
-		variables.pattern = arguments.pattern.replace( '\', '/', 'all' );
+		variables.pattern = pathPatternMatcher.normalizeSlashes( arguments.pattern );
 		return this;
 	}
 
@@ -108,8 +108,8 @@ component accessors="true" {
 	* Load matching file from the file system
 	*/
 	private function process() {
-		local.thisPattern = getPattern().replace( '\', '/', 'all' );
-
+		local.thisPattern = pathPatternMatcher.normalizeSlashes( getPattern() );
+		
 		if( !thisPattern.len() ) {
 			throw( 'Cannot glob empty pattern.' );
 		}
@@ -144,7 +144,7 @@ component accessors="true" {
 		if( thisPattern contains '**' ) {
 			recurse = true;
 		}
-
+		
 		setMatchQuery(
 			directoryList (
 				filter=function( path ){
@@ -162,5 +162,6 @@ component accessors="true" {
 		setBaseDir( baseDir );
 
 	}
+	
 
 }

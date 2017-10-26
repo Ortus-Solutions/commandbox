@@ -40,6 +40,7 @@ component accessors="true" singleton {
 	*/
 	boolean function matchPattern( required string pattern, required string path, boolean exact=false) {
 		// Normalize slashes
+		// This will turn a Windows UNC path into //server, but it will at least be consitent across pattern and path
 		arguments.pattern = replace( arguments.pattern, '\', '/', 'all' );
 		arguments.path = replace( arguments.path, '\', '/', 'all' );
 
@@ -108,6 +109,17 @@ component accessors="true" singleton {
 			}
 		}
 		return false;
+	}
+	
+	/*
+	* Turns all slashes in a path to forward slashes except for \\ in a Windows UNC network share
+	*/
+	function normalizeSlashes( string path ) {
+		if( path.left( 2 ) == '\\' ) {
+			return '\\' & path.replace( '\', '/', 'all' ).right( -2 );
+		} else {
+			return path.replace( '\', '/', 'all' );			
+		}
 	}
 
 }

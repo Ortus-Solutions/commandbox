@@ -32,46 +32,39 @@ component accessors="true" singleton {
 	*/
 	function resolvePath( required string path, basePath=shell.pwd() ) {
 
-		try {
+		// Load our path into a Java file object so we can use some of its nice utility methods
+		var oPath = createObject( 'java', 'java.io.File' ).init( path );
 
-			// Load our path into a Java file object so we can use some of its nice utility methods
-			var oPath = createObject( 'java', 'java.io.File' ).init( path );
+		// This tells us if it's a relative path
+		// Note, at this point we don't actually know if it actually even exists yet
 
-			// This tells us if it's a relative path
-			// Note, at this point we don't actually know if it actually even exists yet
+		// If we're on windows and the path starts with a single / or \
+		if( isWindows() && reFind( '^[\\/][^\\/]', path ) ) {
 
-			// If we're on windows and the path starts with / or \
-			if( isWindows() && reFind( '^[\\\/]', path ) ) {
+			// Concat it with the drive root in the base path so "/foo" becomes "C:/foo" (if the basepath is C:/etc)
+			oPath = createObject( 'java', 'java.io.File' ).init( listFirst( arguments.basePath, '/\' ) & '/' & path );
 
-				// Concat it with the drive root in the base path so "/foo" becomes "C:/foo" (if the basepath is C:/etc)
-				oPath = createObject( 'java', 'java.io.File' ).init( listFirst( arguments.basePath, '/\' ) & '/' & path );
+		// If path is "~"
+		// Note, we're supporting this on Windows as well as Linux because it seems useful
+		} else if( path == '~' ) {
 
-			// If path is "~"
-			// Note, we're supporting this on Windows as well as Linux because it seems useful
-			} else if( path == '~' ) {
+			var userHome = createObject( 'java', 'java.lang.System' ).getProperty( 'user.home' );
+			oPath = createObject( 'java', 'java.io.File' ).init( userHome );
 
-				var userHome = createObject( 'java', 'java.lang.System' ).getProperty( 'user.home' );
-				oPath = createObject( 'java', 'java.io.File' ).init( userHome );
+		// If path starts with "~/something" but not "~foo" (a valid folder name)
+		} else if( reFind( '^~[\\\/]', path ) ) {
 
-			// If path starts with "~/something" but not "~foo" (a valid folder name)
-			} else if( reFind( '^~[\\\/]', path ) ) {
+			oPath = createObject( 'java', 'java.io.File' ).init( userHome & right( path, len( path ) - 1 ) );
 
-				oPath = createObject( 'java', 'java.io.File' ).init( userHome & right( path, len( path ) - 1 ) );
+		} else if( !oPath.isAbsolute() ) {
 
-			} else if( !oPath.isAbsolute() ) {
+			// If it's relative, we assume it's relative to the current working directory and make it absolute
+			oPath = createObject( 'java', 'java.io.File' ).init( arguments.basePath & '/' & path );
 
-				// If it's relative, we assume it's relative to the current working directory and make it absolute
-				oPath = createObject( 'java', 'java.io.File' ).init( arguments.basePath & '/' & path );
-
-			}
-
-			// This will standardize the name and calculate stuff like ../../
-			return calculateCanonicalPath( oPath.toString() );
-
-		} catch ( any e ) {
-			rethrow;
-			return arguments.basePath & '/' & path;
 		}
+
+		// This will standardize the name and calculate stuff like ../../
+		return calculateCanonicalPath( oPath.toString() );
 
 	}
 
@@ -82,16 +75,18 @@ component accessors="true" singleton {
 	* @path The path to Canonicalize
 	*/
 	string function calculateCanonicalPath( required string path ) {
-		path = path.replace( '\', '/', 'all' );
 		var trailingSlash = path.endsWith( '/' );
-		var pathArr = path.listToArray( '/' );
+		var pathArr = path.listToArray( '/\' );
 			
 		// Empty string for Unix
 		if( path.left( 1 ) == '/' ) {
 			var root = '';
+		// Windows network share like //server-name
+		} else if( path.left( 2 ) == '\\' ) {
+			var root = '\\';
 		// C:, D:, etc for Windows
 		} else {
-			var root = path.listFirst( '/' );
+			var root = path.listFirst( '/\' );
 			pathArr.deleteAt( 1 );
 		}
 		
@@ -108,9 +103,15 @@ component accessors="true" singleton {
 				newPathArr.append( pathElem );	
 			}
 		}
+		
 		// Re-attach the drive root and turn the array back into a slash-delimted path
-		return ( root & '/' & newPathArr.toList( '/' ) )
-			.reReplace( '[/\\]', server.separator.file, 'all' ) & ( trailingSlash ? server.separator.file : '' );
+		var tmpPath = newPathArr.toList( '/' ).reReplace( '[/\\]', server.separator.file, 'all' ) & ( trailingSlash ? server.separator.file : '' );
+		
+		if( root == '\\' ) {
+			return root & tmpPath;
+		} else {
+			return root & '/' & tmpPath;			
+		}
 		
 	}
 
@@ -266,10 +267,28 @@ component accessors="true" singleton {
     	// Otherwise, do the "normal" way that re-uses top level drive mappings
     	// C:/users/brad/foo.cfc turns into /C_Drive/users/brad/foo.cfc
     	} else {
-	    	var driveLetter = listFirst( arguments.absolutePath, ':' );
-	    	var path = listRest( arguments.absolutePath, ':' );
-	    	var mapping = locateMapping( driveLetter );
-	    	return mapping & path;
+    		// UNC network path.
+    		if( arguments.absolutePath.left( 2 ) == '\\' ) {
+    			// Strip the \\
+    			arguments.absolutePath = arguments.absolutePath.right( -2 );
+    			if( arguments.absolutePath.listLen( '/\' ) < 2 ) {
+    				throw( 'Can''t make relative path for [#absolutePath#].  A mapping must point ot a share name, not the root of the server name.' );
+    			}
+    			
+    			// server/share
+		    	var UNCShare = listFirst( arguments.absolutePath, '/\' ) & '/' & listGetAt( arguments.absolutePath, 2, '/\' );
+		    	// everything after server/share
+		    	var path = arguments.absolutePath.listDeleteAt( 1, '/\' ).listDeleteAt( 1, '/\' );
+		    	var mapping = locateUNCMapping( UNCShare );
+		    	return mapping & '/' & path;
+		    	
+    		// Regular Windows drive leetter
+    		} else {
+		    	var driveLetter = listFirst( arguments.absolutePath, ':' );
+		    	var path = listRest( arguments.absolutePath, ':' );
+		    	var mapping = locateDriveMapping( driveLetter );
+		    	return mapping & path;    			
+    		}
     	}
     }
 
@@ -277,13 +296,24 @@ component accessors="true" singleton {
     * Accepts a Windows drive letter and returns a CF Mapping
     * Creates the mapping if it doesn't exist
     */
-    string function locateMapping( required string driveLetter  ) {
+    string function locateDriveMapping( required string driveLetter  ) {
     	var mappingName = '/' & arguments.driveLetter & '_drive';
     	var mappingPath = arguments.driveLetter & ':/';
     	createMapping( mappingName, mappingPath );
    		return mappingName;
     }
 
+    /**
+    * Accepts a Windows UNC network share and returns a CF Mapping
+    * Creates the mapping if it doesn't exist
+    */
+    string function locateUNCMapping( required string UNCShare  ) {
+    	var mappingName = '/' & arguments.UNCShare.replace( '/', '_' ) & '_UNC';
+    	var mappingPath = '\\' & arguments.UNCShare & '/';
+    	createMapping( mappingName, mappingPath );
+   		return mappingName;
+    }
+    
     function createMapping( mappingName, mappingPath ) {
     	var mappings = getApplicationSettings().mappings;
     	if( !structKeyExists( mappings, mappingName ) || mappings[ mappingName ] != mappingPath ) {
@@ -291,5 +321,16 @@ component accessors="true" singleton {
     		application action='update' mappings='#mappings#';
    		}
     }
+	
+	/*
+	* Turns all slashes in a path to forward slashes except for \\ in a Windows UNC network share
+	*/
+	function normalizeSlashes( string path ) {
+		if( path.left( 2 ) == '\\' ) {
+			return '\\' & path.replace( '\', '/', 'all' ).right( -2 );
+		} else {
+			return path.replace( '\', '/', 'all' );			
+		}
+	}
 
 }
