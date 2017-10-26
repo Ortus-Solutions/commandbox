@@ -249,9 +249,25 @@ component accessors="true" singleton {
     		// TODO: Unix paths with a period in a folder name are likely still a problem.
     		return arguments.absolutePath;
     	}
+    	
+		// UNC network path.
+		if( arguments.absolutePath.left( 2 ) == '\\' ) {
+			// Strip the \\
+			arguments.absolutePath = arguments.absolutePath.right( -2 );
+			if( arguments.absolutePath.listLen( '/\' ) < 2 ) {
+				throw( 'Can''t make relative path for [#absolutePath#].  A mapping must point ot a share name, not the root of the server name.' );
+			}
+			
+			// server/share
+	    	var UNCShare = listFirst( arguments.absolutePath, '/\' ) & '/' & listGetAt( arguments.absolutePath, 2, '/\' );
+	    	// everything after server/share
+	    	var path = arguments.absolutePath.listDeleteAt( 1, '/\' ).listDeleteAt( 1, '/\' );
+	    	var mapping = locateUNCMapping( UNCShare );
+	    	return mapping & '/' & path;
+    	
     	// If one of the folders has a period, we've got to do something special.
     	// C:/users/brad.development/foo.cfc turns into /C__users_brad_development/foo.cfc
-    	if( getDirectoryFromPath( arguments.absolutePath ) contains '.' ) {
+    	} else if( getDirectoryFromPath( arguments.absolutePath ) contains '.' ) {
     		var mappingPath = getDirectoryFromPath( arguments.absolutePath );
     		mappingPath = mappingPath.replace( '\', '/', 'all' );
     		mappingPath = mappingPath.listChangeDelims( '/', '/' );
@@ -267,28 +283,10 @@ component accessors="true" singleton {
     	// Otherwise, do the "normal" way that re-uses top level drive mappings
     	// C:/users/brad/foo.cfc turns into /C_Drive/users/brad/foo.cfc
     	} else {
-    		// UNC network path.
-    		if( arguments.absolutePath.left( 2 ) == '\\' ) {
-    			// Strip the \\
-    			arguments.absolutePath = arguments.absolutePath.right( -2 );
-    			if( arguments.absolutePath.listLen( '/\' ) < 2 ) {
-    				throw( 'Can''t make relative path for [#absolutePath#].  A mapping must point ot a share name, not the root of the server name.' );
-    			}
-    			
-    			// server/share
-		    	var UNCShare = listFirst( arguments.absolutePath, '/\' ) & '/' & listGetAt( arguments.absolutePath, 2, '/\' );
-		    	// everything after server/share
-		    	var path = arguments.absolutePath.listDeleteAt( 1, '/\' ).listDeleteAt( 1, '/\' );
-		    	var mapping = locateUNCMapping( UNCShare );
-		    	return mapping & '/' & path;
-		    	
-    		// Regular Windows drive leetter
-    		} else {
-		    	var driveLetter = listFirst( arguments.absolutePath, ':' );
-		    	var path = listRest( arguments.absolutePath, ':' );
-		    	var mapping = locateDriveMapping( driveLetter );
-		    	return mapping & path;    			
-    		}
+	    	var driveLetter = listFirst( arguments.absolutePath, ':' );
+	    	var path = listRest( arguments.absolutePath, ':' );
+	    	var mapping = locateDriveMapping( driveLetter );
+	    	return mapping & path;
     	}
     }
 
