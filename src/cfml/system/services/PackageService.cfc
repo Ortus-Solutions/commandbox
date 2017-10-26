@@ -806,13 +806,13 @@ component accessors="true" singleton {
 		if( arguments.omitDeprecated ) {
 
 			// most packages shouldn't need to set these
-			boxJSON.delete( 'directory' )
-			boxJSON.delete( 'createPackageDirectory' )
-			boxJSON.delete( 'packageDirectory' )
+			boxJSON.delete( 'directory' );
+			boxJSON.delete( 'createPackageDirectory' );
+			boxJSON.delete( 'packageDirectory' );
 
 			// These aren't even used
-			boxJSON.delete( 'engines' )
-			boxJSON.delete( 'defaultEngine' )
+			boxJSON.delete( 'engines' );
+			boxJSON.delete( 'defaultEngine' );
 
 			// This went out of style with server.json
 			boxJSON.delete( 'defaultPort' );
