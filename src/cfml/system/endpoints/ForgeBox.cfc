@@ -494,6 +494,11 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 		}
 		var boxJSON = packageService.readPackageDescriptor( arguments.path );
 		var ignorePatterns = ( isArray( boxJSON.ignore ) ? boxJSON.ignore : [] );
+		var alwaysIgnores = [
+			".*.swp", "._*", ".DS_Store", ".git", "hg", ".svn",
+			".lock-wscript", ".wafpickle-*", "config.gypi"
+		];
+		arrayAppend( ignorePatterns, alwaysIgnores, true );
 		var tmpPath = tempDir & hash( arguments.path );
 		if ( directoryExists( tmpPath ) ) {
 			directoryDelete( tmpPath, true );
