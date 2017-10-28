@@ -107,12 +107,6 @@ component accessors="true" singleton {
 				}
 				throw( 'Endpoint [#endpointName#] not registered.', 'EndpointNotFound' );
 			}
-		} else if ( arguments.ID == "forgeboxStorage" ) {
-			return {
-				endpointName: "forgeboxStorage",
-				package: "#arguments.slug#@#arguments.version#",
-				ID: arguments.ID
-			};
 		// I give up, let's check ForgeBox (default endpoint)
 		} else {
 			var endpointName = 'forgebox';

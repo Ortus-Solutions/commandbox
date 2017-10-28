@@ -376,7 +376,6 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 	 * @verbose Verbose flag or silent, defaults to false
 	 */
 	private function getPackage( slug, version, verbose=false ) {
-
 		var APIToken = configService.getSetting( 'endpoints.forgebox.APIToken', '' );
 
 		try {
@@ -401,7 +400,7 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 			arguments.version = satisfyingVersion.version;
 			var downloadURL = satisfyingVersion.downloadURL;
 
-			if( !len( downloadurl ) ) {
+			if( !len( downloadURL ) ) {
 				throw( 'No download URL provided in ForgeBox.  Manual install only.', 'endpointException' );
 			}
 
@@ -422,6 +421,12 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 
 			// If the local artifact doesn't exist or it's a snapshot build, download and create it
 			if( !artifactService.artifactExists( slug, version ) || strVersion.preReleaseID == 'snapshot' ) {
+				if( downloadURL == "forgeboxStorage" ){
+					downloadURL = forgebox.getStorageLocation(
+						slug, arguments.version, APIToken
+					);
+					consoleLogger.info( "Downloading entry from ForgeBox Pro" );
+				}
 
 				// Test package location to see what endpoint we can refer to.
 				var endpointData = endpointService.resolveEndpoint( downloadURL, 'fakePath', arguments.slug, arguments.version );
