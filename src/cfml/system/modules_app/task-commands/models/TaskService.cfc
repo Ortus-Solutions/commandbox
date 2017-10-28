@@ -15,6 +15,7 @@ component singleton accessors=true {
 	property name='cr' inject='cr@constants';
 	property name='wirebox' inject='wirebox';
 	property name='shell' inject='Shell';
+	property name='CommandService' inject='CommandService';
 	property name='consoleLogger' inject='logbox:logger:console';
 
 	function onDIComplete() {
@@ -57,6 +58,8 @@ component singleton accessors=true {
 		if( !structKeyExists( taskCFC, target ) || !IsCustomFunction( taskCFC[ target ] ) ) {
 			throw( message="Target [#target#] doesn't exist in Task CFC.", detail=arguments.taskFile, type="commandException");
 		}
+
+		CommandService.ensureRequiredparams( taskArgs, getMetadata( taskCFC[ target ] ).parameters );
 
 		// Run the task
 		taskCFC[ target ]( argumentCollection = taskArgs );
