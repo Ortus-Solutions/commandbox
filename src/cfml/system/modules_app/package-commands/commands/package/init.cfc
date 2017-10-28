@@ -22,6 +22,7 @@ component aliases="init" {
 
 	// DI
 	property name="PackageService" 	inject="PackageService";
+	property name="configService"	inject="configService";
 
 	/**
 	 * @name The human-readable name for this package
@@ -62,6 +63,22 @@ component aliases="init" {
 		}
 		if( len( boxJSON.slug ) && arguments.slug == 'my-package' ) {
 			structDelete( arguments, 'slug' );
+		}
+
+		if( structKeyExists( arguments, 'slug' ) && arguments.private ){
+			var APIToken = configService.getSetting( 'endpoints.forgebox.APIToken', '' );
+			if( ! len( APIToken ) ){
+				return error( "You must be logged in to ForgeBox to create a private package." );
+			}
+			var APITokens = configService.getSetting( 'endpoints.forgebox.tokens', {} );
+			var usernames = structKeyArray( APITokens );
+			var foundToken = usernames.filter( function( name ){
+				return APITokens[ name ] == APIToken;
+			} );
+			if( ! foundToken.len() ){
+				return error( "We're sorry, we're having problems locating your ForgeBox account.  Please `forgebox login` and try again." );
+			}
+			arguments.slug = "@#foundToken[ 1 ]#/#arguments.slug#";
 		}
 
 		// Ignore List
