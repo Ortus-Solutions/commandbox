@@ -493,12 +493,7 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 			);
 		}
 		var boxJSON = packageService.readPackageDescriptor( arguments.path );
-		var ignorePatterns = ( isArray( boxJSON.ignore ) ? boxJSON.ignore : [] );
-		var alwaysIgnores = [
-			".*.swp", "._*", ".DS_Store", ".git", "hg", ".svn",
-			".lock-wscript", ".wafpickle-*", "config.gypi"
-		];
-		arrayAppend( ignorePatterns, alwaysIgnores, true );
+		var ignorePatterns = generateIgnorePatterns( boxJSON );
 		var tmpPath = tempDir & hash( arguments.path );
 		if ( directoryExists( tmpPath ) ) {
 			directoryDelete( tmpPath, true );
@@ -527,6 +522,33 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 		);
 		directoryDelete( tmpPath, true );
 		return zipFileName;
+	}
+
+	private array function generateIgnorePatterns( boxJSON ) {
+		var ignorePatterns = ( isArray( boxJSON.ignore ) ? boxJSON.ignore : [] );
+		var alwaysIgnores = [
+			".*.swp", "._*", ".DS_Store", ".git", "hg", ".svn",
+			".lock-wscript", ".wafpickle-*", "config.gypi"
+		];
+		arrayAppend( ignorePatterns, alwaysIgnores, true );
+		arrayAppend( ignorePatterns, readGitIgnores(), true );
+		// make any `/` paths absolute
+		return ignorePatterns.map( function( pattern ) {
+			if ( left( pattern, 1 ) == "/" ) {
+				return fileSystemUtil.resolvePath( "" ) & pattern;
+			}
+			return pattern;
+		} );
+	}
+
+	private array function readGitIgnores() {
+		var projectRoot = fileSystemUtil.resolvePath( "" );
+		if ( ! fileExists( projectRoot & "/.gitignore" ) ) {
+			return [];
+		}
+		return fileRead( projectRoot & "/.gitignore" ).listToArray(
+			createObject( "java", "java.lang.System" ).getProperty( "line.separator" )
+		);
 	}
 
 }

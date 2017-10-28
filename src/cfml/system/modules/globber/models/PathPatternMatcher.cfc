@@ -102,12 +102,25 @@ component accessors="true" singleton {
 	* @path.hint The file system path to test.  Can be a file or directory.  Direcories MUST end with a trailing slash
 	*/
 	boolean function matchPatterns( required array patterns, required string path ){
+		var matched = false;
 		for( var pattern in arguments.patterns ) {
-			if( matchPattern( pattern, arguments.path ) ) {
-				return true;
+			if ( isExclusion( pattern ) ) {
+				var patternWithoutBang = mid( pattern, 2, len( pattern ) - 1 );
+				if ( matchPattern( patternWithoutBang, arguments.path ) ) {
+					matched = false;
+				}
+			}
+			else {
+				if ( matchPattern( pattern, arguments.path ) ) {
+					matched = true;
+				}
 			}
 		}
-		return false;
+		return matched;
+	}
+
+	boolean function isExclusion( required string pattern ) {
+		return left( pattern, 1 ) == "!";
 	}
 
 }
