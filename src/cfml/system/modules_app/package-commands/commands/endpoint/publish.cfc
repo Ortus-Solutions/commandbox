@@ -13,11 +13,13 @@ component {
 
 	/**
 	* @endpointName Name of the endpoint for which to publish the package
-	* @directory The directory being published
+	* @directory    The directory being published
+	* @force        Force the publish
 	**/
 	function run(
 		required string endpointName,
-		string directory=''
+		string directory='',
+		boolean force = false
 	){
 		// This will make each directory canonical and absolute
 		arguments.directory = fileSystemUtil.resolvePath( arguments.directory );

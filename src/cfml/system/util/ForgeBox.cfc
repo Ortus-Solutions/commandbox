@@ -255,30 +255,43 @@ or just add DEBUG to the root logger
 		string installInstructionsFormat='text',
 		string changeLog='',
 		string changeLogFormat='text',
-		required string APIToken ) {
+		required string APIToken,
+		string zipPath = "",
+		boolean forceUpload = false
+	) {
 
-		var body = {
-			slug : arguments.slug,
-			private : arguments.private,
-			version : arguments.version,
-			boxJSON : arguments.boxJSON,
-			isStable : arguments.isStable,
-			description : arguments.description,
-			descriptionFormat : arguments.descriptionFormat,
-			installInstructions : arguments.installInstructions,
-			installInstructionsFormat : arguments.installInstructionsFormat,
-			changeLog : arguments.changeLog,
-			changeLogFormat : arguments.changeLogFormat
+		var formFields = {
+			slug                      = arguments.slug,
+			private                   = arguments.private,
+			version                   = arguments.version,
+			boxJSON                   = arguments.boxJSON,
+			isStable                  = arguments.isStable,
+			description               = arguments.description,
+			descriptionFormat         = arguments.descriptionFormat,
+			installInstructions       = arguments.installInstructions,
+			installInstructionsFormat = arguments.installInstructionsFormat,
+			changeLog                 = arguments.changeLog,
+			changeLogFormat           = arguments.changeLogFormat,
+			forceUpload               = arguments.forceUpload
 		};
 
-		var results = makeRequest(
-				resource = "publish",
-				headers = {
-					'x-api-token' : arguments.APIToken,
-					'Content-Type' : 'application/json'
-				},
-				body = serializeJSON( body ),
-				method='post' );
+		var requestArguments = {
+			resource   = "publish",
+			headers    = {
+				"X-Api-Token"  = arguments.APIToken,
+				"Content-Type" = "application/x-www-form-urlencoded"
+			},
+			formFields = formFields,
+			files      = {},
+			method     = "post"
+		};
+
+		if ( len( arguments.zipPath ) ) {
+			requestArguments.files[ "zip" ] = arguments.zipPath;
+			requestArguments.multipart = true;
+		}
+
+		var results = makeRequest( argumentCollection = requestArguments );
 
 		// error
 		if( results.response.error ){
@@ -407,6 +420,22 @@ or just add DEBUG to the root logger
 		return opts;
 	}
 
+	function getStorageLocation( required string slug, required string version, required string APIToken ) {
+		var results = makeRequest(
+			resource = "storage/#slug#/#version#",
+			method = "get",
+			headers = {
+				'x-api-token' : arguments.APIToken
+			} );
+
+		// error
+		if( results.response.error ){
+			throw( message = arrayToList( results.response.messages ), type = 'forgebox', errorcode = results.responseheader.status_code ?: 500 );
+		}
+
+		return results.response.data;
+	}
+
 	</cfscript>
 <!------------------------------------------- PRIVATE ------------------------------------------>
 
@@ -418,6 +447,9 @@ or just add DEBUG to the root logger
 		<cfargument name="headers" 			type="struct" 	required="false" default="#structNew()#" hint="An struct of HTTP headers to send"/>
 		<cfargument name="parameters"		type="struct" 	required="false" default="#structNew()#" hint="An struct of HTTP URL parameters to send in the request"/>
 		<cfargument name="timeout" 			type="numeric" 	required="false" default="20" hint="The default call timeout"/>
+		<cfargument name="formFields" 			type="struct" 	required="false" default="#structNew()#" hint="A struct of form fields to send"/>
+		<cfargument name="files" 			type="struct" 	required="false" default="#structNew()#" hint="A struct of files to send"/>
+		<cfargument name="multipart" 			type="boolean" 	required="false" default="false" hint="Whether the request needs to be multipart/form-data"/>
 		<cfscript>
 			var results = {error=false,response={},message="",responseheader={},rawResponse=""};
 			var HTTPResults = "";
@@ -429,8 +461,12 @@ or just add DEBUG to the root logger
 
 			// Default Content Type
 			if( NOT structKeyExists(arguments.headers,"content-type") ){
-				arguments.headers["content-type"] = "";
+				arguments.headers[ "Content-Type" ] = "";
 			}
+			if( arguments.multipart ){
+				structDelete( arguments.headers, "Content-Type" );
+			}
+
 			var thisURL = '#APIURL#/#arguments.resource#';
 
 			var CFHTTPParams = {
@@ -438,7 +474,8 @@ or just add DEBUG to the root logger
 				url=thisURL,
 				charset='utf-8',
 				result='HTTPResults',
-				timeout=arguments.timeout
+				timeout=arguments.timeout,
+				multipart=arguments.multipart
 			};
 
 			// Get proxy settings from the config
@@ -460,6 +497,7 @@ or just add DEBUG to the root logger
 					CFHTTPParams.proxyPassword = proxyPassword;
 				}
 			}
+			// structDelete( arguments.headers, "Content-Type" );
 		</cfscript>
 
 		<!--- REST CAll --->
@@ -473,6 +511,14 @@ or just add DEBUG to the root logger
 			<!--- URL Parameters: encoded automatically by CF --->
 			<cfloop collection="#arguments.parameters#" item="param">
 				<cfhttpparam type="URL" name="#param#" value="#arguments.parameters[param]#" >
+			</cfloop>
+
+			<cfloop collection="#arguments.formFields#" item="field">
+				<cfhttpparam type="formfield" name="#field#" value="#arguments.formFields[field]#" />
+			</cfloop>
+
+			<cfloop collection="#arguments.files#" item="file">
+				<cfhttpparam type="file" name="#file#" file="#arguments.files[file]#" />
 			</cfloop>
 
 			<!--- Body --->

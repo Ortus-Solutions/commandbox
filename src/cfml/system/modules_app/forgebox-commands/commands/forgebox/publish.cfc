@@ -11,9 +11,11 @@ component aliases="publish" {
 
 	/**
 	* @directory The directory to publish
+	* @force     Force the publish
 	**/
 	function run(
-		string directory=''
+		string directory='',
+		boolean force = false
 	){
 
 		var APIToken = configService.getSetting( 'endpoints.forgebox.APIToken', '' );
