@@ -266,8 +266,13 @@ component accessors="true" singleton {
 			// Merge flags into named params
 			mergeFlagParameters( parameterInfo );
 
-			// Add in defaults
-			addDefaultParameters( commandInfo.commandString, parameterInfo );
+			// Add in defaults for every possible alias of this command
+			[]
+				.append( commandInfo.commandReference.originalName )
+				.append( commandInfo.commandReference.aliases, true )
+				.each( function( thisName ) {
+					addDefaultParameters( thisName, parameterInfo );
+				} );
 
 			// Make sure we have all required params.
 			parameterInfo.namedParameters = ensureRequiredParams( parameterInfo.namedParameters, commandParams );
