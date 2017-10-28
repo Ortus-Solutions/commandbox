@@ -430,7 +430,7 @@ or just add DEBUG to the root logger
 
 		// error
 		if( results.response.error ){
-			throw( message = arrayToList( results.response.messages ), type = 'forgebox', errorcode = results.status_code ?: 500 );
+			throw( message = arrayToList( results.response.messages ), type = 'forgebox', errorcode = results.responseheader.status_code ?: 500 );
 		}
 
 		return results.response.data;
