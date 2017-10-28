@@ -525,13 +525,20 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 	}
 
 	private array function generateIgnorePatterns( boxJSON ) {
-		var ignorePatterns = ( isArray( boxJSON.ignore ) ? boxJSON.ignore : [] );
+		var ignorePatterns = [];
+
 		var alwaysIgnores = [
 			".*.swp", "._*", ".DS_Store", ".git", "hg", ".svn",
 			".lock-wscript", ".wafpickle-*", "config.gypi"
 		];
+		var gitIgnores = readGitIgnores();
+		var boxJSONIgnores = ( isArray( boxJSON.ignore ) ? boxJSON.ignore : [] );
+
+		// this order is important for exclusions to work as expected.
 		arrayAppend( ignorePatterns, alwaysIgnores, true );
-		arrayAppend( ignorePatterns, readGitIgnores(), true );
+		arrayAppend( ignorePatterns, gitIgnores, true );
+		arrayAppend( ignorePatterns, boxJSONIgnores, true );
+
 		// make any `/` paths absolute
 		return ignorePatterns.map( function( pattern ) {
 			if ( left( pattern, 1 ) == "/" ) {
