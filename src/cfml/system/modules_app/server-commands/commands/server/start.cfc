@@ -85,6 +85,8 @@ component aliases="start" {
 	 * @restMappings		A comma-delimited list of REST mappings in the form of /api/*,/rest/*.  Empty string to disable.
 	 * @trace				Enable trace level logging
 	 * @javaHomeDirectory	Path to the JRE home directory containing ./bin/java
+	 * @AJPEnable			Enable AJP
+	 * @AJPPort				AJP Port number
 	 **/
 	function run(
 		String  name,
@@ -123,7 +125,9 @@ component aliases="start" {
 		String serverHomeDirectory,
 		String restMappings,
 		Boolean trace,
-		String javaHomeDirectory
+		String javaHomeDirectory,
+		Boolean AJPEnable,
+		Numeric AJPPort
 	){
 
 		// This is a common mis spelling

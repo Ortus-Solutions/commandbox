@@ -138,16 +138,20 @@ component accessors="true" singleton {
 				// Duplicate so onServerStart interceptors don't actually change config settings via refernce.
 				'errorPages' : duplicate( d.web.errorPages ?: {} ),
 				'welcomeFiles' : d.web.welcomeFiles ?: '',
-				'http' : {
+				'HTTP' : {
 					'port' : d.web.http.port ?: 0,
 					'enable' : d.web.http.enable ?: true
 				},
-				'ssl' : {
+				'SSL' : {
 					'enable' : d.web.ssl.enable ?: false,
 					'port' : d.web.ssl.port ?: 1443,
 					'certFile' : d.web.ssl.certFile ?: '',
 					'keyFile' : d.web.ssl.keyFile ?: '',
 					'keyPass' : d.web.ssl.keyPass ?: ''
+				},
+				'AJP' : {
+					'enable' : d.web.ajp.enable ?: false,
+					'port' : d.web.ajp.port ?: 8009
 				},
 				'rewrites' : {
 					'enable' : d.web.rewrites.enable ?: false,
@@ -398,6 +402,12 @@ component accessors="true" singleton {
 			    case "SSLPort":
 					serverJSON[ 'web' ][ 'SSL' ][ 'port' ] = serverProps[ prop ];
 			         break;
+			    case "AJPEnable":
+					serverJSON[ 'web' ][ 'AJP' ][ 'enable' ] = serverProps[ prop ];
+			         break;
+			    case "AJPPort":
+					serverJSON[ 'web' ][ 'AJP' ][ 'port' ] = serverProps[ prop ];
+			         break;
 			    case "SSLCertFile":
 					serverJSON[ 'web' ][ 'SSL' ][ 'certFile' ] = serverProps[ prop ];
 			         break;
@@ -524,7 +534,10 @@ component accessors="true" singleton {
 
 		serverInfo.SSLEnable 		= serverProps.SSLEnable 		?: serverJSON.web.SSL.enable			?: defaults.web.SSL.enable;
 		serverInfo.HTTPEnable		= serverProps.HTTPEnable 		?: serverJSON.web.HTTP.enable			?: defaults.web.HTTP.enable;
-		serverInfo.SSLPort			= serverProps.SSLPort 			?: serverJSON.web.SSL.port				?: defaults.web.SSL.port;
+		serverInfo.SSLPort
+		
+		serverInfo.AJPEnable 		= serverProps.AJPEnable 		?: serverJSON.web.AJP.enable			?: defaults.web.AJP.enable;
+		serverInfo.AJPPort			= serverProps.AJPPort 			?: serverJSON.web.AJP.port				?: defaults.web.AJP.port;
 		
 		// relative certFile in server.json is resolved relative to the server.json
 		if( isDefined( 'serverJSON.web.SSL.certFile' ) ) { serverJSON.web.SSL.certFile = fileSystemUtil.resolvePath( serverJSON.web.SSL.certFile, defaultServerConfigFileDirectory ); }
@@ -879,13 +892,10 @@ component accessors="true" singleton {
 		 args
 		 	.append( '-jar' ).append( variables.jarPath )
 		 	.append( '--background=#background#' )
-		 	.append( '--port' ).append( serverInfo.port )
 		 	.append( '--host' ).append( serverInfo.host )
 		 	.append( '--stop-port' ).append( serverInfo.stopsocket )
 		 	.append( '--processname' ).append( processName )
 		 	.append( '--log-dir' ).append( serverInfo.logDir )
-		 	.append( '--open-browser' ).append( serverInfo.openbrowser )
-		 	.append( '--open-url' ).append( serverInfo.openbrowserURL )
 		 	.append( '--server-name' ).append( serverInfo.name )
 		 	.append( '--tray-icon' ).append( serverInfo.trayIcon )
 		 	.append( '--tray-config' ).append( trayOptionsPath )
@@ -895,10 +905,10 @@ component accessors="true" singleton {
 		 	.append( '--proxy-peeraddress' ).append( 'true' )
 		 	.append( serverInfo.runwarArgs.listToArray( ' ' ), true );
 
-		 	if( serverInfo.debug ) {
-		 		// Debug is getting turned on any time I include the --debug flag regardless of whether it's true or false.
-		 		args.append( '--debug' ).append( serverInfo.debug );
-		 	}
+		if( serverInfo.debug ) {
+			// Debug is getting turned on any time I include the --debug flag regardless of whether it's true or false.
+			args.append( '--debug' ).append( serverInfo.debug );
+		}
 
 		// Runwar will blow up if there isn't a parameter supplied, so I can't pass an empty string.
 		if( len( serverInfo.restMappings ) ) {
@@ -960,13 +970,38 @@ component accessors="true" singleton {
 			args.append( '--lib-dirs' ).append( serverInfo.libDirs.listChangeDelims( ',', ',' ) );
 		}
 
-		// Incorporate SSL to command
-		if( serverInfo.SSLEnable ){
+		// Always send the enable flag for each protocol
+		args
+			.append( '--http-enable' ).append( serverInfo.HTTPEnable )
+			.append( '--ssl-enable' ).append( serverInfo.SSLEnable )
+			.append( '--ajp-enable' ).append( serverInfo.AJPEnable );
+				
+				
+		if( serverInfo.HTTPEnable || serverInfo.SSLEnable ) {
 			args
-				.append( '--http-enable' ).append( serverInfo.HTTPEnable )
-				.append( '--ssl-enable' ).append( serverInfo.SSLEnable )
-				.append( '--ssl-port' ).append( serverInfo.SSLPort );
+			 	.append( '--open-browser' ).append( serverInfo.openbrowser )
+			 	.append( '--open-url' ).append( serverInfo.openbrowserURL );	
+		} else {
+			args.append( '--open-browser' ).append( false );			
 		}
+		 	
+		 	
+		// Send HTTP port if it's enabled
+		if( serverInfo.HTTPEnable ){
+			args.append( '--port' ).append( serverInfo.port )
+		}
+
+		// Send SSL port if it's enabled
+		if( serverInfo.SSLEnable ){
+			args.append( '--ssl-port' ).append( serverInfo.SSLPort );
+		}
+
+		// Send AJP port if it's enabled
+		if( serverInfo.AJPEnable ){
+			args.append( '--ajp-port' ).append( serverInfo.AJPPort );
+		}
+		
+		// Send SSL cert info if SSL is enabled and there's cert info
 		if( serverInfo.SSLEnable && serverInfo.SSLCertFile.len() ) {
 			args
 				.append( '--ssl-cert' ).append( serverInfo.SSLCertFile )
@@ -1682,6 +1717,8 @@ component accessors="true" singleton {
 			'HTTPEnable'		: true,
 			'SSLEnable'			: false,
 			'SSLPort'			: 1443,
+			'AJPEnable'			: false,
+			'AJPPort'			: 8009,
 			'SSLCertFile'		: "",
 			'SSLKeyFile'		: "",
 			'SSLKeyPass'		: "",
