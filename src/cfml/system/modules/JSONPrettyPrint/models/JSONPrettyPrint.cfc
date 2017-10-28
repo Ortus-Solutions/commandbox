@@ -43,12 +43,6 @@ component accessors="true" singleton alias='JSONPrettyPrint' {
 			nextChar = ' ';
 			// The current char we're looking at
 			char = str.mid( i+1, 1 );
-			// "peek" at the next non-whitespace char in line
-			var offset = 1;
-			while( strLen > i+offset && nextChar == ' ' ) {
-				nextChar = str.mid( i+offset+1, 1 );
-				offset++;
-			}
 			
 			// Is current char escaped
 			if( isEscaped ) {
@@ -107,6 +101,14 @@ component accessors="true" singleton alias='JSONPrettyPrint' {
 			// Startinga block
 			if ( char == '{' || char == '[') {
 				pos = pos + 1;
+				
+				// "peek" at the next non-whitespace char in line
+				var offset = 1;
+				while( strLen > i+offset && nextChar == ' ' ) {
+					nextChar = str.mid( i+offset+1, 1 );
+					offset++;
+				}
+				
 				if( nextChar != ']' && nextChar != '}' ) {
 					itemsInCollection.append( true );
 					retval.append( newLine );
