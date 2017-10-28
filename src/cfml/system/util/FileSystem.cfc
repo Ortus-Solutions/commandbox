@@ -110,7 +110,7 @@ component accessors="true" singleton {
 		if( root == '\\' ) {
 			return root & tmpPath;
 		} else {
-			return root & '/' & tmpPath;			
+			return root & server.separator.file & tmpPath;			
 		}
 		
 	}
