@@ -26,17 +26,21 @@ component accessors="true" singleton {
 	}
 
 	/**
+	* This resolves an absolute or relative path using the rules of the operating system and CLI.
+	* It doesn't follow CF mappings and will also always return a trailing slash if pointing to 
+	* an existing directory.
+	* 
 	* Resolve the incoming path from the file system
 	* @path.hint The directory to resolve
 	* @basePath.hint An expanded base path to resolve the path against. Defaults to CWD.
 	*/
 	function resolvePath( required string path, basePath=shell.pwd() ) {
 
+		// The Java class will strip trailing slashses, but these are meaningful in globbing patterns
+		var trailingSlash = ( path.len() > 1 && ( path.endsWith( '/' ) || path.endsWith( '\' ) ) );
+		
 		// Load our path into a Java file object so we can use some of its nice utility methods
 		var oPath = createObject( 'java', 'java.io.File' ).init( path );
-
-		// This tells us if it's a relative path
-		// Note, at this point we don't actually know if it actually even exists yet
 
 		// If we're on windows and the path starts with a single / or \
 		if( isWindows() && reFind( '^[\\/][^\\/]', path ) ) {
@@ -56,26 +60,31 @@ component accessors="true" singleton {
 
 			oPath = createObject( 'java', 'java.io.File' ).init( userHome & right( path, len( path ) - 1 ) );
 
+		// This tells us if it's a relative path
+		// Note, at this point we don't actually know if it actually even exists yet
 		} else if( !oPath.isAbsolute() ) {
 
 			// If it's relative, we assume it's relative to the current working directory and make it absolute
 			oPath = createObject( 'java', 'java.io.File' ).init( arguments.basePath & '/' & path );
 
 		}
-
+		
 		// This will standardize the name and calculate stuff like ../../
-		return calculateCanonicalPath( oPath.toString() );
+		return getCanonicalPath( oPath.toString() & ( trailingSlash ? server.separator.file : '' ) );
 
 	}
 
 	/**
 	* I wrote my own version of this because the getCanonicalPath() runs isDirectory() and exists()
 	* checks inside of it which SLOW DOWN when ran tens of thousands of times at once!
+	* This function differs from getCanonicalPath() in that it won't append a trailing slash
+	* if the path points to an actual folder.  
 	* 
 	* @path The path to Canonicalize
 	*/
 	string function calculateCanonicalPath( required string path ) {
-		var trailingSlash = path.endsWith( '/' );
+		// Trailing slashses are meaningful in globbing patterns
+		var trailingSlash = ( path.len() > 1 && ( path.endsWith( '/' ) || path.endsWith( '\' ) ) );
 		var pathArr = path.listToArray( '/\' );
 			
 		// Empty string for Unix
@@ -105,7 +114,7 @@ component accessors="true" singleton {
 		}
 		
 		// Re-attach the drive root and turn the array back into a slash-delimted path
-		var tmpPath = newPathArr.toList( '/' ).reReplace( '[/\\]', server.separator.file, 'all' ) & ( trailingSlash ? server.separator.file : '' );
+		var tmpPath = newPathArr.toList( server.separator.file ) & ( trailingSlash ? server.separator.file : '' );
 		
 		if( root == '\\' ) {
 			return root & tmpPath;

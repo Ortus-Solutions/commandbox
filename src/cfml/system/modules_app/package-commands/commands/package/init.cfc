@@ -104,6 +104,6 @@ component aliases="init" {
 		PackageService.writePackageDescriptor( boxJSON, directory );
 
 		// Info message
-		print.yellowLine( 'Package Initialized & Created ' & directory & '/' & 'box.json' ).toConsole();
+		print.yellowLine( 'Package Initialized & Created ' & directory & 'box.json' ).toConsole();
 	}
 }
