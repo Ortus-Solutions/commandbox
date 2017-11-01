@@ -98,13 +98,19 @@ public class Util{
 	public static void ensureJavaVersion(){
 		Class< ? > nio;
 		try {
-			nio = Util.class.getClassLoader().loadClass(
-					"java.nio.charset.StandardCharsets" );
+			nio = Util.class.getClassLoader().loadClass( "java.nio.charset.StandardCharsets" );
 			if( nio == null ) {
-				System.out
-						.println( "Could not load NIO!  Are we running on Java 7 or greater?  Sorry, exiting..." );
+				System.out.println( "Could not load NIO!  Are we running on Java 7 or greater?  Sorry, exiting..." );
 				System.exit( 1 );
 			}
+			
+			if( System.getProperty("java.version").startsWith( "9" ) ) {
+				System.out.println( "It looks like you're using Java 9, which CommandBox doesn't support!" );
+				System.out.println( "If your PC needs Java 9 installed, then place a folder called 'JRE' with Java 8 in the same direcotry as your box binary." );
+				System.exit( 1 );
+			}
+		
+			
 		} catch ( java.lang.ClassNotFoundException e ) {
 			System.out
 					.println( "Could not load NIO!  Are we running on Java 7 or greater?  Sorry, exiting..." );
