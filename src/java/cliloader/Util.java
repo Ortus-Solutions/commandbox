@@ -100,21 +100,28 @@ public class Util{
 		try {
 			nio = Util.class.getClassLoader().loadClass( "java.nio.charset.StandardCharsets" );
 			if( nio == null ) {
-				System.out.println( "Could not load NIO!  Are we running on Java 7 or greater?  Sorry, exiting..." );
+				System.out.println( "Could not load NIO!  Are we running on Java 7 or 8?  Sorry, exiting..." );
+				Thread.sleep( 5000 );
 				System.exit( 1 );
 			}
 			
 			if( System.getProperty("java.version").startsWith( "9" ) ) {
 				System.out.println( "It looks like you're using Java 9, which CommandBox doesn't support!" );
 				System.out.println( "If your PC needs Java 9 installed, then place a folder called 'JRE' with Java 8 in the same direcotry as your box binary." );
+				System.out.println( "We'll be working on Java 9 support soon!" );
+				Thread.sleep( 5000 );
 				System.exit( 1 );
 			}
 		
-			
+
 		} catch ( java.lang.ClassNotFoundException e ) {
-			System.out
-					.println( "Could not load NIO!  Are we running on Java 7 or greater?  Sorry, exiting..." );
+			System.out.println( "Could not load NIO!  Are we running on Java 7 or 8?  Sorry, exiting..." );
+			try {
+				Thread.sleep( 5000 );
+			} catch( Throwable e2 ) {}
 			System.exit( 1 );
+		} catch ( java.lang.Exception e ) {
+			throw new RuntimeException( e );
 		}
 	}
 
