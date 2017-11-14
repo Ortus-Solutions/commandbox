@@ -56,7 +56,8 @@ component aliases="show" {
 		type,
 		number startRow,
 		number maxRows,
-		slug
+		slug,
+		boolean json=false
 	){
 		var APIToken = configService.getSetting( 'endpoints.forgebox.APIToken', '' );
 
@@ -120,20 +121,38 @@ component aliases="show" {
 
 				// We might have gotten this above
 				var entryData = entryData ?: forgebox.getEntry( slug, APIToken );
+				// This line is needed until ForgeBox releases unlisted entries.
+				entryData.isListed = entryData.isListed ?: true;
 				// numberOfRatings,boxjson,isActive,typeName,version,hits,sourceURL,slug,createdDate,typeSlug,downloads,updatedDate,entryID,
 				// ratings,versions,avgRating,downloadURL,changelog,installs,title,user,description,summary,homeURL
 				if( !entryData.isActive ) {
 					error( 'The ForgeBox entry [#entryData.title#] is inactive, we highly recommed NOT installing it or contact the author about it' );
 				}
 
-				entryData.versions.sort( function( a, b ) { return semanticVersion.compare( b.version, a.version ) } );
+				entryData.versions.sort( function( a, b ) { return semanticVersion.compare( b.version, a.version ); } );
+				
+				// Display results as JSON
+				if( json ) {
+					print.text( formatterUtil.formatJSON( entryData ) );
+					return;					
+				}
+				
 				print.line();
 				print.blackOnWhite( ' #entryData.title# ' )
 					.boldText( '   ( #entryData.user.fname# #entryData.user.lname#, #entryData.user.username# )' )
-					.boldGreenLine( '   Rating: #repeatString( '*', val( entryData.avgRating ) )#' );
+					.boldGreen( '   Rating: #repeatString( '*', val( entryData.avgRating ) )#   ' )
+					.boldWhiteOnRedLine( entryData.isListed ? "" : "  Unlisted  " );
+				print.line();
+
+				if( listFindNoCase( 'md,markdown', entryData.descriptionFormat ) ) {
+					// Convert markdown to ANSI
+					print.yellowLine( #formatterUtil.MD2ANSI( entryData.description, 'yellow' )# );
+				} else {
+					// Convert HTML to ANSI
+					print.yellowLine( #formatterUtil.HTML2ANSI( entryData.description, 'yellow' )# );
+				}
+
 				print.line()
-					.yellowLine( #formatterUtil.HTML2ANSI( entryData.description )# )
-					.line()
 					.line( 'Type: #entryData.typeName#' )
 					.line( 'Slug: "#entryData.slug#"' )
 					.line( 'Summary: #entryData.summary#' )
@@ -189,6 +208,13 @@ component aliases="show" {
 				// entrylink,createdate,lname,isactive,installinstructions,typename,version,hits,coldboxversion,sourceurl,slug,homeurl,typeslug,
 				// downloads,entryid,fname,changelog,updatedate,downloadurl,title,entryrating,summary,username,description
 
+
+				// Display results as JSON
+				if( json ) {
+					print.text( formatterUtil.formatJSON( entries ) );
+					return;					
+				}
+
 				print.line();
 				var activeCount = 0;
 				for( var entry in entries.results ) {
@@ -206,7 +232,7 @@ component aliases="show" {
 				}
 
 				print.line();
-				print.boldCyanline( '  Found #activeCount# record#(activeCount == 1 ? '': 's')#.' );
+				print.boldCyanline( '  Found #activeCount# record' & ( activeCount == 1 ? '' : 's') & '.' );
 
 			} // end single entry check
 

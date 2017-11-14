@@ -40,14 +40,15 @@ component {
 		if( arguments.keyExists( 'args' ) && isStruct( arguments.args ) ) {
 			taskArgs = arguments.args;
 
-		// Positional task args will come through direclty in the arguments scope
+		// Positional task args will come through directly in the arguments scope
 		// task run task.cfc run value value2
-		} else if( arguments.count() > 1 ) {
-			// Make a copy of the arguments scope
-			taskArgs = duplicate( arguments );
-			// And pull out the two args that were meant for this command
-			taskArgs.delete( 'taskFile' );
-			taskArgs.delete( 'target' );
+		} else if( arguments.count() > 2 && listFind( structKeyList( arguments ), '3' ) ) {
+			taskArgs = [];
+			var i = 2;
+			// Skip first two args, and pass the rest through in position 1, 2, 3, etc
+			while( ++i <= arguments.count() ) {
+				taskArgs.append( arguments[ i ] );
+			}
 		}
 
 		// Fix for negated flags like --no:verbose
@@ -58,7 +59,7 @@ component {
 				}
 			} );
 		}
-
+		
 		// Run the task!
 		// We're printing the output here so we can capture it and pipe or redirect the output from "task run"
 		print.text(

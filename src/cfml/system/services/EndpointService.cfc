@@ -11,10 +11,12 @@ component accessors="true" singleton {
 
 	// DI
 	property name="logger"				inject="logbox:logger:{this}";
+	property name="tempDir" 			inject="tempDir@constants";
 	property name="wirebox"				inject="wirebox";
 	property name="fileSystemUtil"		inject="FileSystem";
 	property name="consoleLogger"		inject="logbox:logger:console";
 	property name="configService"		inject="configService";
+
 
 	// Properties
 	property name="endpointRegistry" type="struct";
@@ -64,8 +66,7 @@ component accessors="true" singleton {
 	* @ID The id of the endpoint
 	* @currentWorkingDirectory Where we are working from
 	*/
-	struct function resolveEndpointData( required string ID, required string currentWorkingDirectory ) {
-
+	struct function resolveEndpointData( required string ID, required string currentWorkingDirectory, string slug = "", string version = "" ) {
 		var path = fileSystemUtil.resolvePath( arguments.ID, arguments.currentWorkingDirectory );
 		// Is it a real zip file?
 		if( listLast( path, '.' ) == 'zip' && fileExists( path ) ) {
@@ -137,8 +138,8 @@ component accessors="true" singleton {
 	* @ID The id of the endpoint
 	* @currentWorkingDirectory Where we are working from
 	*/
-	struct function resolveEndpoint( required string ID, required string currentWorkingDirectory ) {
-		var endpointData = resolveEndpointData(  arguments.ID, arguments.currentWorkingDirectory  );
+	struct function resolveEndpoint( required string ID, required string currentWorkingDirectory, string slug = "", string version = "" ) {
+		var endpointData = resolveEndpointData(  argumentCollection = arguments  );
 		endpointData[ 'endpoint' ] = getEndpoint( endpointData.endpointName );
 		return endpointData;
 	}
@@ -226,7 +227,9 @@ component accessors="true" singleton {
 	*/
 	function publishEndpointPackage(
 		required string endpointName,
-		required string directory
+		required string directory,
+		boolean upload = false,
+		boolean forceUpload = false
 	) {
 		// Get all endpoints that are registered
 		var endpointRegistry = getEndpointRegistry();
@@ -244,6 +247,7 @@ component accessors="true" singleton {
 		}
 		// Set the path to publish
 		arguments.path = arguments.directory;
+
 		// Publish the package
 		endpoint.publish( argumentCollection=arguments );
 	}

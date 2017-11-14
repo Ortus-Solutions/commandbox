@@ -143,18 +143,27 @@ component aliases="install" {
 		// Install this package(s).
 		// Don't pass directory unless you intend to override the box.json of the package being installed
 
-		// One or more IDs
-		if( arguments.IDArray.len() ) {
-			for( var thisID in arguments.IDArray ){
-				arguments.ID = thisID;
+
+		try {
+
+			// One or more IDs
+			if( arguments.IDArray.len() ) {
+				for( var thisID in arguments.IDArray ){
+					arguments.ID = thisID;
+					packageService.installPackage( argumentCollection = arguments );
+				}
+			// No ID, just install the dependencies in box.json
+			} else {
+				arguments.ID = '';
 				packageService.installPackage( argumentCollection = arguments );
 			}
-		// No ID, just install the dependencies in box.json
-		} else {
-			arguments.ID = '';
-			packageService.installPackage( argumentCollection = arguments );
-		}
 
+		// endpointException exception type is used when the endpoint has an issue that needs displayed,
+		// but I don't want to "blow up" the console with a full error.
+		} catch( endpointException var e ) {
+			error( e.message, e.detail );
+		}
+		
 	}
 
 	// Auto-complete list of IDs

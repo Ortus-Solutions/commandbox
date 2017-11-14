@@ -40,6 +40,7 @@ component accessors="true" singleton {
 	*/
 	boolean function matchPattern( required string pattern, required string path, boolean exact=false) {
 		// Normalize slashes
+		// This will turn a Windows UNC path into //server, but it will at least be consitent across pattern and path
 		arguments.pattern = replace( arguments.pattern, '\', '/', 'all' );
 		arguments.path = replace( arguments.path, '\', '/', 'all' );
 
@@ -102,12 +103,36 @@ component accessors="true" singleton {
 	* @path.hint The file system path to test.  Can be a file or directory.  Direcories MUST end with a trailing slash
 	*/
 	boolean function matchPatterns( required array patterns, required string path ){
+		var matched = false;
 		for( var pattern in arguments.patterns ) {
-			if( matchPattern( pattern, arguments.path ) ) {
-				return true;
+			if ( isExclusion( pattern ) ) {
+				var patternWithoutBang = mid( pattern, 2, len( pattern ) - 1 );
+				if ( matchPattern( patternWithoutBang, arguments.path ) ) {
+					matched = false;
+				}
+			}
+			else {
+				if ( matchPattern( pattern, arguments.path ) ) {
+					matched = true;
+				}
 			}
 		}
-		return false;
+		return matched;
+	}
+
+	boolean function isExclusion( required string pattern ) {
+		return left( pattern, 1 ) == "!";
+	}
+	
+	/*
+	* Turns all slashes in a path to forward slashes except for \\ in a Windows UNC network share
+	*/
+	function normalizeSlashes( string path ) {
+		if( path.left( 2 ) == '\\' ) {
+			return '\\' & path.replace( '\', '/', 'all' ).right( -2 );
+		} else {
+			return path.replace( '\', '/', 'all' );			
+		}
 	}
 
 }

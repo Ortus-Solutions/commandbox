@@ -1,7 +1,7 @@
 component {
-
+	
 	function configure() {
-
+		
 	}
-
+	
 }

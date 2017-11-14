@@ -266,8 +266,13 @@ component accessors="true" singleton {
 			// Merge flags into named params
 			mergeFlagParameters( parameterInfo );
 
-			// Add in defaults
-			addDefaultParameters( commandInfo.commandString, parameterInfo );
+			// Add in defaults for every possible alias of this command
+			[]
+				.append( commandInfo.commandReference.originalName )
+				.append( commandInfo.commandReference.aliases, true )
+				.each( function( thisName ) {
+					addDefaultParameters( thisName, parameterInfo );
+				} );
 
 			// Make sure we have all required params.
 			parameterInfo.namedParameters = ensureRequiredParams( parameterInfo.namedParameters, commandParams );
@@ -913,18 +918,19 @@ component accessors="true" singleton {
 	/**
 	 * Make sure we have all required params
  	 **/
-	private function ensureRequiredparams( userNamedParams, commandParams ){
+	function ensureRequiredparams( userNamedParams, commandParams ){
 		// For each command param
 		for( var param in commandParams ){
 			// If it's required and hasn't been supplied...
 			if( param.required && !structKeyExists( userNamedParams, param.name ) ){
 				// ... Ask the user
-				var message = 'Enter #param.name#';
+				var message = 'Enter #param.name# ';
 				var value  	= "";
 				// Verify hint
 				if( structKeyExists( param, 'hint' ) ){
-					message &= ' (#param.hint#) :';
+					message &= '(#param.hint#) ';
 				}
+				message &= ':';
 				// ask value logic
 				var askValue = function(){
 					// Is this a boolean value
@@ -967,8 +973,8 @@ component accessors="true" singleton {
 				if( ( paramData.type ?: 'any' ) == 'Globber' ) {
 
 					// Overwrite it with an actual Globber instance seeded with the original canonical path as the pattern.
-					var originalPath = parameterInfo.namedParameters[ paramName ].replace( '\', '/', 'all' );
-					var newPath = fileSystemUtil.resolvePath( originalPath ).replace( '\', '/', 'all' );
+					var originalPath = parameterInfo.namedParameters[ paramName ];
+					var newPath = fileSystemUtil.resolvePath( originalPath );
 					// Preserve any explicit trailing slashes
 					if( originalPath.endsWith( '/' ) && !newPath.endsWith( '/' ) ) {
 						newPath &= '/';

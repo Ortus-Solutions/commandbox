@@ -16,7 +16,6 @@ this.dependencies 		= "The array of dependencies for this module"
 structures to create for configuration
 - parentSettings : struct (will append and override parent)
 - settings : struct
-- datasources : struct (will append and override parent)
 - interceptorSettings : struct of the following keys ATM
 	- customInterceptionPoints : string list of custom interception points
 - interceptors : array
@@ -79,11 +78,6 @@ component {
 		// Layout Settings
 		layoutSettings = {
 			defaultLayout = ""
-		};
-
-		// datasources
-		datasources = {
-
 		};
 
 		// SES Routes

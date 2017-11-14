@@ -34,6 +34,9 @@ component {
 				print.line();
 				for( var entry in entries.results ) {
 					entry.versions.sort( function( a, b ) { return semanticVersion.compare( b.version, a.version ) } );
+					if ( entry.isPrivate ) {
+						print.boldWhiteOnRed( "Private" ).text( "   " );
+					}
 					print.blackOnWhite( ' #entry.title# ' )
 						.boldText( '   ( #entry.user.fname# #entry.user.lname# )' )
 						.boldGreenLine( '   Rating: #repeatString( '*', val( entry.avgRating ) )#' )

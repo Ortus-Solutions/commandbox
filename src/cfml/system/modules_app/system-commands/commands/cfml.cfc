@@ -58,7 +58,6 @@ component{
 		required string name
 		boolean debug
 	){
-
 		var functionText = arguments.name & '( ';
 
 		// Additional param go into the function
@@ -130,6 +129,7 @@ component{
 		arguments.arg = replaceNoCase( arguments.arg, '\\', '__double_backslash_', 'all' );
 		arguments.arg = replaceNoCase( arguments.arg, '\/', '/', 'all' );
 		arguments.arg = replaceNoCase( arguments.arg, '\"', '""', 'all' );
+		arguments.arg = replaceNoCase( arguments.arg, '##', '####', 'all' );
 		arguments.arg = replaceNoCase( arguments.arg, '\t', '	', 'all' );
 		arguments.arg = replaceNoCase( arguments.arg, '\n', chr(13)&chr(10), 'all' );
 		arguments.arg = replaceNoCase( arguments.arg, '\r', chr(13), 'all' );

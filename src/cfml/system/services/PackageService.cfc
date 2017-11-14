@@ -90,25 +90,12 @@ component accessors="true" singleton {
 				consoleLogger.debug( "Save:#arguments.save# SaveDev:#arguments.saveDev# Production:#arguments.production# Directory:#arguments.directory#" );
 			}
 
-			try {
-				var endpointData = endpointService.resolveEndpoint( arguments.ID, arguments.currentWorkingDirectory );
-			} catch( EndpointNotFound var e ) {
-				consoleLogger.error( e.message );
-				return false;
-			}
+			var endpointData = endpointService.resolveEndpoint( arguments.ID, arguments.currentWorkingDirectory );
 
 			consoleLogger.info( '.');
 			consoleLogger.info( 'Installing package [#endpointData.ID#]' );
 
-			try {
-				var tmpPath = endpointData.endpoint.resolvePackage( endpointData.package, arguments.verbose );
-
-			// endpointException exception type is used when the endpoint has an issue that needs displayed,
-			// but I don't want to "blow up" the console with a full error.
-			} catch( endpointException var e ) {
-				consoleLogger.error( e.message & ' ' & e.detail );
-				return false;
-			}
+			var tmpPath = endpointData.endpoint.resolvePackage( endpointData.package, arguments.verbose );
 
 			// Support box.json in the root OR in a subfolder (NPM-style!)
 			tmpPath = findPackageRoot( tmpPath );
@@ -215,8 +202,8 @@ component accessors="true" singleton {
 
 				// If this is an initial install (not a dependency) into a folder somehwere inside the CommandBox home,
 				// make sure we save correctly to CommandBox's user module box.json.
-				var commandBoxCFMLHome = expandPath( '/commandbox' ).replace( '\', '/', 'all' );
-				installDirectory = installDirectory.replace( '\', '/', 'all' );
+				var commandBoxCFMLHome = fileSystemUtil.normalizeSlashes( expandPath( '/commandbox' ) );
+				installDirectory = fileSystemUtil.normalizeSlashes( installDirectory );
 
 				// If we're already in the CommandBox (a submodule of a commandbox module, most likely)
 				if( installDirectory contains commandBoxCFMLHome ) {
@@ -301,8 +288,8 @@ component accessors="true" singleton {
 					installDirectory = arguments.packagePathRequestingInstallation & '/modules/contentbox/modules_user';
 				// CommandBox Modules
 				} else if( packageType == 'commandbox-modules' ) {
-					var commandBoxCFMLHome = expandPath( '/commandbox' ).replace( '\', '/', 'all' );
-					arguments.packagePathRequestingInstallation = arguments.packagePathRequestingInstallation.replace( '\', '/', 'all' );
+					var commandBoxCFMLHome = fileSystemUtil.normalizeSlashes( expandPath( '/commandbox' ) );
+					arguments.packagePathRequestingInstallation = fileSystemUtil.normalizeSlashes( arguments.packagePathRequestingInstallation );
 
 					// If we're already in the CommandBox (a submodule of a commandbox module, most likely)
 					if( arguments.packagePathRequestingInstallation contains commandBoxCFMLHome ) {
@@ -364,20 +351,25 @@ component accessors="true" singleton {
 			// Should we save this as a dependency. Save the install even though the package may already be there
 			if( ( arguments.save || arguments.saveDev ) ) {
 				// Add it!
-				addDependency( packagePathRequestingInstallation, packageName, version, installDirectory, artifactDescriptor.createPackageDirectory,  arguments.saveDev, endpointData );
-				// Tell the user...
-				consoleLogger.info( "#packagePathRequestingInstallation#/box.json updated with #( arguments.saveDev ? 'dev ': '' )#dependency." );
+				if( addDependency( packagePathRequestingInstallation, packageName, version, installDirectory, artifactDescriptor.createPackageDirectory,  arguments.saveDev, endpointData ) ) {
+					// Tell the user...
+					consoleLogger.info( "#packagePathRequestingInstallation#/box.json updated with #( arguments.saveDev ? 'dev ': '' )#dependency." );	
+				}
 			}
 
-			// Check to see if package has already been installed. Skip unless forced.
-			// This check can only be performed for packages that get installed in their own directory.
-			if ( artifactDescriptor.createPackageDirectory && directoryExists( installDirectory ) && !arguments.force ){
-
-				// Do an additional check and make sure the currently installed version is older than what's being requested.
-				// If there's a new version, install it anyway.
+			// Check to see if package has already been installed.  This check can only be performed for packages that get installed in their own directory.
+			if( artifactDescriptor.createPackageDirectory && directoryExists( installDirectory ) ){
+				var uninstallFirst = false;
+				
+				// Make sure the currently installed version is older than what's being requested.  If there's a new version, install it anyway.
 				var alreadyInstalledBoxJSON = readPackageDescriptor( installDirectory );
 				if( isPackage( installDirectory ) && semanticVersion.isNew( alreadyInstalledBoxJSON.version, version  )  ) {
 					consoleLogger.info( "Package already installed but its version [#alreadyInstalledBoxJSON.version#] is older than the new version being installed [#version#].  Forcing a reinstall." );
+					uninstallFirst = true;
+				// Allow if forced.
+				} else if( arguments.force ) {
+					consoleLogger.info( "Package already installed but you forced a reinstall." );
+					uninstallFirst = true;					
 				} else {
 					// cleanup tmp
 					if( endpointData.endpointName != 'folder' ) {
@@ -386,6 +378,20 @@ component accessors="true" singleton {
 					consoleLogger.warn( "The package #packageName# is already installed at #installDirectory#. Skipping installation. Use --force option to force install." );
 					return true;
 				}
+				
+				if( uninstallFirst ) {
+					consoleLogger.warn( "Uninstalling first to get a fresh slate..." );
+					
+					var params = {
+						id : packageName,
+						save : false,
+						currentWorkingDirectory : currentWorkingDirectory,
+						packagePathRequestingUninstallation : packagePathRequestingInstallation
+					};
+							
+					uninstallPackage( argumentCollection=params );
+				}
+				
 			}
 
 			// Create installation directory if neccesary
@@ -400,6 +406,7 @@ component accessors="true" singleton {
 
 			// This will normalize the slashes to match
 			tmpPath = fileSystemUtil.resolvePath( tmpPath );
+			var thisPathPatternMatcher = pathPatternMatcher.get();
 
 			// Copy Assets now to destination
 			directoryCopy( tmpPath, installDirectory, true, function( path ){
@@ -412,7 +419,7 @@ component accessors="true" singleton {
 				// cleanup path so we just get from the archive down
 				var thisPath = replacenocase( arguments.path, tmpPath, "" );
 				// Ignore paths that match one of our ignore patterns
-				var ignored = pathPatternMatcher.matchPatterns( ignorePatterns, thisPath );
+				var ignored = thisPathPatternMatcher.matchPatterns( ignorePatterns, thisPath );
 				// What do we do with this file/directory
 				if( ignored ) {
 					results.ignored.append( thisPath );
@@ -567,9 +574,7 @@ component accessors="true" singleton {
 			required string currentWorkingDirectory,
 			string packagePathRequestingUninstallation = arguments.currentWorkingDirectory
 	){
-
-		// In case someone types "uninstall coldbox@4.0.0"
-		var packageName = listFirst( arguments.ID, '@' );
+		var packageName = parseSlug( arguments.ID );
 
 		consoleLogger.info( '.');
 		consoleLogger.info( 'Uninstalling package: #packageName#');
@@ -683,6 +688,8 @@ component accessors="true" singleton {
 	* @installDirectory The location that the package is installed to including the container folder.
 	* @installDirectoryIsDedicated True if the package was placed in a dedicated folder
 	* @dev True if this is a development depenency, false if it is a production dependency
+	* 
+	* @returns boolean True if box.json was updated, false if update wasn't neccessary (keys already existed with correct values)
 	*/
 	public function addDependency(
 		required string currentWorkingDirectory,
@@ -698,57 +705,74 @@ component accessors="true" singleton {
 
 		// Get reference to appropriate dependency struct
 		if( arguments.dev ) {
-			param name='boxJSON.devDependencies' default='#{}#';
+			boxJSON[ 'devDependencies' ] = boxJSON.devDependencie ?: {};
 			var dependencies = boxJSON.devDependencies;
 		} else {
-			param name='boxJSON.dependencies' default='#{}#';
+			boxJSON[ 'dependencies' ] = boxJSON.dependencies ?: {};
 			var dependencies = boxJSON.dependencies;
 		}
+		var updated = false;
 
 		// Add/overwrite this dependency
 
 		if( endpointData.endpointName == 'forgebox' ) {
 
 			if( listLen( endpointData.package, '@' ) > 1 ) {
-				dependencies[ arguments.packageName ] = listLast( endpointData.package, '@' );
+				var thisValue = listLast( endpointData.package, '@' );
 			} else {
 				// caret version range (^1.2.3) allows updates that don't bump the major version.
-				dependencies[ arguments.packageName ] = '^' & arguments.version;
+				var thisValue = '^' & arguments.version;
 			}
 		} else {
-			dependencies[ arguments.packageName ] = endpointData.ID;
+			var thisValue = endpointData.ID;
+		}
+		
+		// Prevent unneccessary updates to the JSON file.
+		if( !dependencies.keyExists( arguments.packageName ) || dependencies[ arguments.packageName ] != thisValue ) {
+			dependencies[ arguments.packageName ] = thisValue;
+			updated = true;
 		}
 
 		// Only packages installed in a dedicated directory of their own can be uninstalled
 		// so don't save this if they were just dumped somewhere like the package root amongst
 		// other unrelated files and folders.
 		if( arguments.installDirectoryIsDedicated ) {
-			param name='boxJSON.installPaths' default='#{}#';
+			boxJSON[ 'installPaths' ] = boxJSON.installPaths ?: {};
 			var installPaths = boxJSON.installPaths;
 
-			// normalize slashes
-			arguments.currentWorkingDirectory = fileSystemUtil.resolvePath( arguments.currentWorkingDirectory );
-			arguments.installDirectory = fileSystemUtil.resolvePath( arguments.installDirectory );
+			// normalize slashes and make them all "/"
+			arguments.currentWorkingDirectory = fileSystemUtil.normalizeSlashes( fileSystemUtil.resolvePath( arguments.currentWorkingDirectory ) );
+			arguments.installDirectory = fileSystemUtil.normalizeSlashes( fileSystemUtil.resolvePath( arguments.installDirectory ) );
 
 			// If the install location is contained within the package root...
 			if( arguments.installDirectory contains arguments.currentWorkingDirectory ) {
 				// Make it relative
 				arguments.installDirectory = replaceNoCase( arguments.installDirectory, arguments.currentWorkingDirectory, '' );
 				// Strip any leading slashes so Unix-based OS's don't think it's the drive root
-				if( len( arguments.installDirectory ) && listFind( '\,/', left( arguments.installDirectory, 1 ) ) ) {
+				if( len( arguments.installDirectory ) && arguments.installDirectory.left( 1 ) == '/' ) {
 					arguments.installDirectory = right( arguments.installDirectory, len( arguments.installDirectory ) - 1 );
 				}
 			}
 
 			// Just in case-- an empty install dir would be useless.
 			if( len( arguments.installDirectory ) ) {
-				installPaths[ arguments.packageName ] = arguments.installDirectory;
+			
+				// Prevent unneccessary updates to the JSON file.
+				if( !installPaths.keyExists( arguments.packageName ) || installPaths[ arguments.packageName ] != arguments.installDirectory ) {
+					installPaths[ arguments.packageName ] = arguments.installDirectory;
+					updated = true;
+				}
+				
 			}
 
 		} // end installDirectoryIsDedicated
 
 		// Write the box.json back out
-		writePackageDescriptor( boxJSON, arguments.currentWorkingDirectory );
+		if( updated ) {
+			writePackageDescriptor( boxJSON, arguments.currentWorkingDirectory );
+			return true;
+		}
+		return false;
 	}
 
 	/**
@@ -802,13 +826,13 @@ component accessors="true" singleton {
 		if( arguments.omitDeprecated ) {
 
 			// most packages shouldn't need to set these
-			boxJSON.delete( 'directory' )
-			boxJSON.delete( 'createPackageDirectory' )
-			boxJSON.delete( 'packageDirectory' )
+			boxJSON.delete( 'directory' );
+			boxJSON.delete( 'createPackageDirectory' );
+			boxJSON.delete( 'packageDirectory' );
 
 			// These aren't even used
-			boxJSON.delete( 'engines' )
-			boxJSON.delete( 'defaultEngine' )
+			boxJSON.delete( 'engines' );
+			boxJSON.delete( 'defaultEngine' );
 
 			// This went out of style with server.json
 			boxJSON.delete( 'defaultPort' );
@@ -1110,5 +1134,17 @@ component accessors="true" singleton {
 			} else if( !arguments.ignoreMissing ) {
 				consoleLogger.error( 'The script [#arguments.scriptName#] does not exist in this package.' );
 			}
+	}
+
+	/**
+	* Parses just the slug portion out of an endpoint ID
+	* @package The full endpointID like foo@1.0.0
+	*/
+	private function parseSlug( required string package ) {
+		var matches = REFindNoCase( "^((?:@[\w\-]+\/)?[\w\-]+)(?:@(.+))?", package, 1, true );
+		if ( arrayLen( matches.len ) < 2 ) {
+			return package;
+		}
+		return mid( package, matches.pos[ 2 ], matches.len[ 2 ] );
 	}
 }

@@ -24,6 +24,7 @@ org.eclipse.jdt.ui.prefs
 apidocs/docbox
 commandbox.rb
 /testbox
+jmimemagic.log
 
 # CommandBox config
 src/CommandBox.json

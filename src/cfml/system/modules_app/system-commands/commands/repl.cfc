@@ -67,9 +67,9 @@ component {
 				do {
 					// ask repl
 					if ( arrayLen( REPLParser.getCommandLines() ) == 0 ) {
-						var command = ask( ( arguments.script ? 'CFSCRIPT' : 'CFML' ) &  '-REPL: ' );
+						var command = ask( message=( arguments.script ? 'CFSCRIPT' : 'CFML' ) &  '-REPL: ', keepHistory=true );
 					} else {
-						var command = ask( "..." );
+						var command = ask( message="...", keepHistory=true );
 
 						// allow ability to break out of adding additional lines
 						if ( trim(command) == 'exit' || trim(command) == '' ) {
