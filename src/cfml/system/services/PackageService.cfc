@@ -705,7 +705,7 @@ component accessors="true" singleton {
 
 		// Get reference to appropriate dependency struct
 		if( arguments.dev ) {
-			boxJSON[ 'devDependencies' ] = boxJSON.devDependencie ?: {};
+			boxJSON[ 'devDependencies' ] = boxJSON.devDependencies ?: {};
 			var dependencies = boxJSON.devDependencies;
 		} else {
 			boxJSON[ 'dependencies' ] = boxJSON.dependencies ?: {};
