@@ -94,7 +94,11 @@ component {
 			}
 			// Check runtime options now
 			else if( boxOptions.keyExists( thisOption ) && len( boxOptions[ thisOption ] ) ){
-				testboxURL &= "&#thisOption#=#boxOptions[ thisOption ]#";
+				if( isSimpleValue( boxOptions[ thisOption ] ) ) {
+					testboxURL &= "&#thisOption#=#boxOptions[ thisOption ]#";	
+				} else {
+					print.yellowLine( 'Ignoring [testbox.#thisOption#] in your box.json since it''s not a string.  We can''t append it to a URL like that.' );
+				}
 			}
 			// Defaults
 			else if( len( RUNNER_OPTIONS[ thisOption ] ) ) {
