@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="ISO-8859-1"?>
+<?xml version="1.0" encoding="ISO-8859-1"?>
 <web-app xmlns="http://java.sun.com/xml/ns/javaee"
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"
@@ -44,8 +44,43 @@
       <description>Lucee Web Directory (for Website-specific configurations, settings, and libraries)</description>
     </init-param>
     !-->
-    <load-on-startup>1</load-on-startup>
+    <load-on-startup>2</load-on-startup>
   </servlet>
+  <servlet-name>LuceeServlet</servlet-name>
+    <servlet-class>lucee.loader.servlet.LuceeServlet</servlet-class>
+    <load-on-startup>1</load-on-startup>
+    <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+    <!-- to specify the location of the Lucee Server config and libraries,   -->
+    <!-- uncomment the init-param below.  make sure that the param-value     -->
+    <!-- points to a valid folder, and that the process that runs Lucee has  -->
+    <!-- write permissions to that folder.  leave commented for defaults.    -->
+    <!--
+    <init-param>
+      <param-name>lucee-server-directory</param-name>
+      <param-value>/var/Lucee/config/server/</param-value>
+      <description>Lucee Server configuration directory (for Server-wide configurations, settings, and libraries)</description>
+    </init-param>
+    !-->
+    <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+    <!-- to specify the location of the Web Contexts' config and libraries,  -->
+    <!-- uncomment the init-param below.  make sure that the param-value     -->
+    <!-- points to a valid folder, and that the process that runs Lucee has  -->
+    <!-- write permissions to that folder.  the {web-context-label} can be   -->
+    <!-- set in Lucee Server Admin homepage.  leave commented for defaults.  -->
+    <!--
+    <init-param>
+      <param-name>lucee-web-directory</param-name>
+      <param-value>/var/Lucee/config/web/{web-context-label}/</param-value> 
+      <description>Lucee Web Directory (for Website-specific configurations, settings, and libraries)</description>
+    </init-param>
+    !-->
+  </servlet>
+  
+  <servlet-mapping>
+    <servlet-name>LuceeServlet</servlet-name>
+    <url-pattern>*.lucee</url-pattern>
+    <url-pattern>/index.lucee/*</url-pattern>
+  </servlet-mapping>
   
   <servlet-mapping>
     <servlet-name>CFMLServlet</servlet-name>
@@ -123,6 +158,7 @@
 	<!-- default file to execute if directory is called with no file name, e.g. http://mysite.com/ !-->
 	<welcome-file-list>
 		<welcome-file>index.cfm</welcome-file>
+	    <welcome-file>index.lucee</welcome-file>
 		<welcome-file>index.cfml</welcome-file>
 		<welcome-file>index.html</welcome-file>
 		<welcome-file>index.htm</welcome-file>

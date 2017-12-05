@@ -16,7 +16,7 @@ External Dependencies:
  	<property name="distro.groupID"				value="ortussolutions" />
  	<property name="distro.name"				value="commandbox"/>
  	<!-- Special things happen when the version and stableVersion are the same value as that signifies a "stable" build.   -->
- 	<property name="commandbox.version"			value="3.9.2"/>
+ 	<property name="commandbox.version"			value="4.0.0-SNAPSHOT"/>
  	<property name="commandbox.stableVersion"	value="3.9.2"/>
  	                		 
     <!-- Time Label -->
@@ -258,7 +258,10 @@ External Dependencies:
 
 		<!--  create the cfml distro zip -->
 		<zip destfile="${dist.dir}/${distro.name}-cfml-${commandbox.version}.zip" update="false" level="9">
-	        <fileset dir="${build.dir}"/>
+	        <fileset dir="${build.dir}">
+			    <exclude name="box.json"/>
+			    <exclude name="modules/**"/>
+	        </fileset>
 			<zipfileset file="${temp.dir}/version" fullpath="cli/version"/>
 			<zipfileset file="${temp.dir}/cli/bin/cliloader/cfml.version" fullpath=".version"/>
 		</zip>
@@ -824,10 +827,6 @@ External Dependencies:
 				<exclusion groupId="org.lucee.lib" artifactId="slf4j-nop" />
 			</exclusions>
 		</dependency>
-	    <dependency groupId="org.lucee" artifactId="lucee.optional" version="${lucee.version}" 
-	      dest="${lucee.lib.dir}" unzip="false" type="pom" />
-		  <move file="${lucee.lib.dir}/lucee-inst-${lucee.version}.jar" toFile="${lucee.lib.dir}/lucee-inst.jar"/>
-		  <delete dir="${lucee.lib.dir}" includes="*.pom"/>
 	    <mvn-repo id="java.repo" url="http://download.java.net/maven/2/" />
 	    <dependency groupId="javax.mail" artifactId="mail" version="1.4.4" dest="${lucee.lib.dir}" repoId="java.repo" unzip="false" type="jar" />
    </target>
