@@ -1,168 +1,42 @@
-<?xml version="1.0" encoding="ISO-8859-1"?>
-<web-app xmlns="http://java.sun.com/xml/ns/javaee"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"
-	metadata-complete="true"
-	version="2.5">
-
-
-	  
-  <!-- ********************************************************************* -->
-  <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
-  <!-- Lucee Servlet Definitions (Servlet Spec. Version 2.5 or greater req.) -->
-  
-
-  <!-- ===================================================================== -->
-  <!-- Lucee CFML Servlet - this is the main Lucee servlet                   -->
-  <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
-  <servlet id="Lucee">
-    <description>Lucee Engine</description>
-    <servlet-name>CFMLServlet</servlet-name>    
-    <servlet-class>lucee.loader.servlet.CFMLServlet</servlet-class>
-    <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
-    <!-- to specify the location of the Lucee Server config and libraries,   -->
-    <!-- uncomment the init-param below.  make sure that the param-value     -->
-    <!-- points to a valid folder, and that the process that runs Lucee has  -->
-    <!-- write permissions to that folder.  leave commented for defaults.    -->
-    <!--
-    <init-param>
-      <param-name>lucee-server-directory</param-name>
-      <param-value>/var/Lucee/config/server/</param-value>
-      <description>Lucee Server configuration directory (for Server-wide configurations, settings, and libraries)</description>
-    </init-param>
-    !-->
-    <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
-    <!-- to specify the location of the Web Contexts' config and libraries,  -->
-    <!-- uncomment the init-param below.  make sure that the param-value     -->
-    <!-- points to a valid folder, and that the process that runs Lucee has  -->
-    <!-- write permissions to that folder.  the {web-context-label} can be   -->
-    <!-- set in Lucee Server Admin homepage.  leave commented for defaults.  -->
-    <!--
-    <init-param>
-      <param-name>lucee-web-directory</param-name>
-      <param-value>/var/Lucee/config/web/{web-context-label}/</param-value> 
-      <description>Lucee Web Directory (for Website-specific configurations, settings, and libraries)</description>
-    </init-param>
-    !-->
-    <load-on-startup>2</load-on-startup>
-  </servlet>
-  <servlet-name>LuceeServlet</servlet-name>
+<?xml version="1.0" encoding="utf-8"?><web-app xmlns="http://java.sun.com/xml/ns/javaee" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" metadata-complete="true" version="2.5" xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd">
+  <servlet>
+    <servlet-name>LuceeServlet</servlet-name>
     <servlet-class>lucee.loader.servlet.LuceeServlet</servlet-class>
     <load-on-startup>1</load-on-startup>
-    <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
-    <!-- to specify the location of the Lucee Server config and libraries,   -->
-    <!-- uncomment the init-param below.  make sure that the param-value     -->
-    <!-- points to a valid folder, and that the process that runs Lucee has  -->
-    <!-- write permissions to that folder.  leave commented for defaults.    -->
-    <!--
-    <init-param>
-      <param-name>lucee-server-directory</param-name>
-      <param-value>/var/Lucee/config/server/</param-value>
-      <description>Lucee Server configuration directory (for Server-wide configurations, settings, and libraries)</description>
-    </init-param>
-    !-->
-    <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
-    <!-- to specify the location of the Web Contexts' config and libraries,  -->
-    <!-- uncomment the init-param below.  make sure that the param-value     -->
-    <!-- points to a valid folder, and that the process that runs Lucee has  -->
-    <!-- write permissions to that folder.  the {web-context-label} can be   -->
-    <!-- set in Lucee Server Admin homepage.  leave commented for defaults.  -->
-    <!--
-    <init-param>
-      <param-name>lucee-web-directory</param-name>
-      <param-value>/var/Lucee/config/web/{web-context-label}/</param-value> 
-      <description>Lucee Web Directory (for Website-specific configurations, settings, and libraries)</description>
-    </init-param>
-    !-->
   </servlet>
-  
+  <servlet>
+    <servlet-name>CFMLServlet</servlet-name>
+    <servlet-class>lucee.loader.servlet.CFMLServlet</servlet-class>
+    <load-on-startup>2</load-on-startup>
+  </servlet>
+  <servlet>
+    <servlet-name>RESTServlet</servlet-name>
+    <servlet-class>lucee.loader.servlet.RestServlet</servlet-class>
+    <load-on-startup>3</load-on-startup>
+  </servlet>
   <servlet-mapping>
     <servlet-name>LuceeServlet</servlet-name>
     <url-pattern>*.lucee</url-pattern>
     <url-pattern>/index.lucee/*</url-pattern>
   </servlet-mapping>
-  
   <servlet-mapping>
     <servlet-name>CFMLServlet</servlet-name>
     <url-pattern>*.cfc</url-pattern>
     <url-pattern>*.cfm</url-pattern>
-    <url-pattern>*.cfml</url-pattern>   
+    <url-pattern>*.cfml</url-pattern>
     <url-pattern>/index.cfc/*</url-pattern>
     <url-pattern>/index.cfm/*</url-pattern>
     <url-pattern>/index.cfml/*</url-pattern>
-    
-    <!-- url-pattern>*.cfm/*</url-pattern !-->
-    <!-- url-pattern>*.cfml/*</url-pattern !-->
-    <!-- url-pattern>*.cfc/*</url-pattern !-->
-    <!-- url-pattern>*.htm</url-pattern !-->
-    <!-- url-pattern>*.jsp</url-pattern !-->
   </servlet-mapping>
-  
-
-  <!-- ===================================================================== -->
-  <!-- Lucee REST Servlet - handles Lucee's RESTful web services             -->
-  <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
-  <servlet id="RESTServlet">
-    <description>Lucee Servlet for RESTful services</description>
-    <servlet-name>RESTServlet</servlet-name>    
-    <servlet-class>lucee.loader.servlet.RestServlet</servlet-class>
-    <load-on-startup>2</load-on-startup>
-  </servlet>  
-
   <servlet-mapping>
     <servlet-name>RESTServlet</servlet-name>
     <url-pattern>/rest/*</url-pattern>
   </servlet-mapping>
-
-
-  <!-- ===================================================================== -->
-  <!-- Lucee MessageBroker Servlet - Flex Gateway                            -->
-  <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
-  <!-- * ATTENTION - ATENCION - ACHTUNG  -  ATTENTION - ATENCION - ACHTUNG * -->
-  <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
-  <!-- messageBrokerId must be unique for each defintion of the MessageBroker-->
-  <!-- Servlet.  if you use the MessageBroker Servlet and define it in more  -->
-  <!-- than one xml file, you must uncomment the messageBrokerId init-param  -->
-  <!-- and set a different value in each definition.                         -->
-  <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
-  <!-- <servlet id="MessageBrokerServlet">
-    <description>Lucee Servlet for Flex Gateway</description>
-    <servlet-name>MessageBrokerServlet</servlet-name>
-    <servlet-class>flex.messaging.MessageBrokerServlet</servlet-class> -->
-    <!-- init-param>
-      <param-name>services.configuration.file</param-name>
-      <param-value>/WEB-INF/flex/services-config.xml</param-value>
-    </init-param !-->
-    <!-- init-param>
-      <param-name>messageBrokerId</param-name>
-      <param-value>_default_</param-value>
-    </init-param !-->
-    <!-- load-on-startup>2</load-on-startup !-->
-  <!-- </servlet>
-
-  <servlet-mapping>
-    <servlet-name>MessageBrokerServlet</servlet-name>
-    <url-pattern>/flex2gateway/*</url-pattern>
-    <url-pattern>/flashservices/gateway/*</url-pattern>
-    <url-pattern>/messagebroker/*</url-pattern>
-  </servlet-mapping> -->
-
-
-  <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
-  <!--                                                 Lucee Definitions End -->  
-  <!-- ===================================================================== -->
-  <!-- _____________________________________________________________________ -->
-
-
-
-	<!-- default file to execute if directory is called with no file name, e.g. http://mysite.com/ !-->
-	<welcome-file-list>
-		<welcome-file>index.cfm</welcome-file>
-	    <welcome-file>index.lucee</welcome-file>
-		<welcome-file>index.cfml</welcome-file>
-		<welcome-file>index.html</welcome-file>
-		<welcome-file>index.htm</welcome-file>
-		<welcome-file>index.jsp</welcome-file>
-	</welcome-file-list>
-
+  <!-- default file to execute if directory is called with no file name, e.g. http://mysite.com/ !-->
+  <welcome-file-list>
+    <welcome-file>index.cfm</welcome-file>
+    <welcome-file>index.lucee</welcome-file>
+    <welcome-file>index.html</welcome-file>
+    <welcome-file>index.htm</welcome-file>
+  </welcome-file-list>
 </web-app>
