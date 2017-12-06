@@ -1,13 +1,39 @@
 /**
- * Executes TestBox runners via HTTP/S.  By default, the "testbox.runner" property will be read from your box.json.
+* Executes TestBox runners via HTTP/S.  By default, the "testbox.runner" property will be read from your box.json.
+* If the property is a string, it will be used directly as a URL.
 * .
 * {code:bash}
 * testbox run
 * {code}
+* 
+* If testbox.runner is an array of structs like so:
+* .
+* {code:bash}
+* |  "testbox" : {
+* |    "runner" : [
+* |      {
+* |        "server1" : "http://localhost/tests/runner.cfm",
+* |        "server2" : "/tests/runner.cfm"
+* |      }
+* |    ]
+* |  }
+* {code}
+* .
+* You target a specific URL by name.
+* .
+* {code:bash}
+* testbox run server1
+* testbox run server2
+* {code}
 * .
 * You can also specify the URL manually
 * {code:bash}
-* testbox run "http://localhost:8080/tests/runner.cfm"
+* testbox run http://localhost:8080/tests/runner.cfm
+* {code}
+* .
+* If you have a CommandBox server running in the current directory, you can specify a partial URL that starts with /
+* {code:bash}
+* testbox run /tests/runner.cfm
 * {code}
 *
  **/
@@ -17,6 +43,7 @@ component {
 	property name="packageService" 	inject="PackageService";
 	property name="testingService" 	inject="TestingService@testbox-commands";
 	property name="CLIRenderer" 	inject="CLIRenderer@testbox-commands";
+	property name="serverService" inject="ServerService";
 
 	/**
 	* Ability to execute TestBox tests
@@ -50,15 +77,30 @@ component {
 		var runnerURL 	= '';
 
 		// If a URL is passed, used it as an override
-		if( left( arguments.runner, 4 ) == 'http' ) {
+		if( left( arguments.runner, 4 ) == 'http' || left( arguments.runner, 1 ) == '/' ) {
 			runnerURL = arguments.runner;
 		// Otherwise, try to get one from box.json
 		} else {
 			runnerURL = testingService.getTestBoxRunner( getCWD(), arguments.runner );
 			// Validate runner
 			if( !len( runnerURL ) ){
-				return error( '(#arguments.runner#) it not a valid runner in your box.json. Runners found are: #packageService.readPackageDescriptor( getCWD() ).testbox.runner.toString()#' );
+				var boxJSON = packageService.readPackageDescriptor( getCWD() );
+				var boxJSONRunner = boxJSON.testbox.runner ?: '';
+				return error( '[#arguments.runner#] it not a valid runner in your box.json. Runners found are: #boxJSONRunner.toString()#' );
 			}
+		}
+
+		// Resolve relative URI
+		if( left( runnerURL, 1 ) == '/' ) {
+
+			var serverDetails = serverService.resolveServerDetails( {} );
+			var serverInfo = serverDetails.serverInfo;
+	
+			if( serverDetails.serverIsNew ){
+				error( "The test runner we found [#runnerURL#] looks like partial URI, but we can't find any servers in this directory. Please give us a full URL." );
+			} else {
+				runnerURL = ( serverInfo.SSLEnable ? 'https://' : 'https://' ) & '#serverInfo.host#:#serverInfo.port##runnerURL#';	
+			}			
 		}
 
 		// If we failed to find a URL, throw an error
