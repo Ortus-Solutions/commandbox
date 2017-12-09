@@ -74,7 +74,8 @@ component accessors="true" singleton {
 			string currentWorkingDirectory=shell.pwd(),
 			boolean verbose=false,
 			boolean force=false,
-			string packagePathRequestingInstallation = arguments.currentWorkingDirectory
+			string packagePathRequestingInstallation = arguments.currentWorkingDirectory,
+			string defaultName=''
 	){
 
 		interceptorService.announceInterception( 'preInstall', { installArgs=arguments, packagePathRequestingInstallation=packagePathRequestingInstallation } );
@@ -110,7 +111,12 @@ component accessors="true" singleton {
 				consoleLogger.error( "box.json is missing so this isn't really a package! I'll install it anyway, but I'm not happy about it" );
 				consoleLogger.warn( "I'm just guessing what the package name, version and type are.  Please ask the package owner to add a box.json." );
 				var packageType = 'project';
-				var packageName = endpointData.endpoint.getDefaultName( endpointData.package );
+				if( defaultName.len() ) {
+					consoleLogger.warn( "Package name guessed to be [#defaultName#] from your box.json." );
+					var packageName = defaultName;
+				} else {
+					var packageName = endpointData.endpoint.getDefaultName( endpointData.package );
+				}
 				var version = '1.0.0';
 			}
 
@@ -508,7 +514,8 @@ component accessors="true" singleton {
 				// Nested packages never get dev dependencies
 				production = true,
 				currentWorkingDirectory = arguments.currentWorkingDirectory, // Original dir
-				packagePathRequestingInstallation = installDirectory // directory for smart dependencies to use
+				packagePathRequestingInstallation = installDirectory, // directory for smart dependencies to use
+				defaultName = dependency
 			};
 
 			// Recursivley install them
