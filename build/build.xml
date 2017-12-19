@@ -583,7 +583,7 @@ External Dependencies:
         <!-- Build Executable Now -->
         <taskdef name="launch4j" 
         		 classname="net.sf.launch4j.ant.Launch4jTask" 
-        		 classpath="./launch4j/launch4j.jar:./launch4j/lib/xstream.jar" />
+        		 classpath="./launch4j-${launch4j.version}/launch4j/launch4j.jar:./launch4j-${launch4j.version}/launch4j/lib/xstream.jar" />
         
         <launch4j>
 			<config headerType="console" 
@@ -835,7 +835,7 @@ External Dependencies:
 	<target name="getlaunch4j" description="Get an OS dependent launch4j into the build directory">
 		<!-- do a check -->
 		<antcontrib:if>
-	        <available file="launch4j/launch4j.jar" />
+	        <available file="launch4j-${launch4j.version}/launch4j/launch4j.jar" />
 	        <then><echo>Launch4j Binary found!</echo></then>
 	        <else>
 	            <echo>Launch4j not found, getting artifact from ${ortus.repoURL}</echo>
@@ -860,10 +860,10 @@ External Dependencies:
 				<antcontrib:if>
 					<os family="windows" />
 					<then>
-						<unzip src="${launch4j.filename}" dest="." overwrite="true"/>
+						<unzip src="${launch4j.filename}" dest="./launch4j-${launch4j.version}/" overwrite="true"/>
 					</then>
 					<else>
-						<untar src="${launch4j.filename}" dest="." compression="gzip"/>
+						<untar src="${launch4j.filename}" dest="./launch4j-${launch4j.version}/" compression="gzip"/>
 					</else>
 				</antcontrib:if>
 				<!-- Removal -->
@@ -871,7 +871,7 @@ External Dependencies:
 	        </else>
 	    </antcontrib:if>
 	    <!-- Add execution perms every time just in case -->
-	    <chmod dir="./launch4j/bin/" perm="ugo+rx" includes="*"/>
+	    <chmod dir="./launch4j-${launch4j.version}/launch4j/bin/" perm="ugo+rx" includes="*"/>
 	</target>
 	
 	<!-- Get Dependencies -->

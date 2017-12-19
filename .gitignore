@@ -12,7 +12,7 @@ tests/results
 tests/work
 Icon?
 src/cfml/logs
-build/launch4j
+build/launch4j-*
 tests/testbox
 /mxunit
 /apidocs/CommandBox-CommandDocs/
