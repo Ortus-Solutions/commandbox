@@ -104,11 +104,6 @@ External Dependencies:
 		
 		<!-- If stg, change perms and owners -->
 		<antcall target="update.permissions" />
-
-		<!-- get commandbox dependencies 
-		<dependency groupId="jline" artifactId="jline" version="2.12" dest="${lib.dir}" type="jar" unzip="false"/>
-		<dependency groupId="org.lucee" artifactId="lucee.cli" version="${cfml.cli.version}" dest="${temp.dir}/rcli" type="jar" unzip="true"/>
-		-->
 		
 		<!-- Mark as init -->
 		<property name="src.isInit" value="true" />
@@ -796,20 +791,8 @@ External Dependencies:
 	<target name="resolve.libs">
 		<delete dir="${lib.dir}"/>
  		<mvn-repo id="jgit-repository" url="https://repo.eclipse.org/content/groups/releases/" />
- 		<!-- 
- 		<mvn-repo id="jboss.repo" url="http://repository.jboss.org/nexus/content/repositories/releases" />
-		
-		<dependency groupId="org.jboss.aesh" artifactId="aesh" unzip="false" version="0.53" type="jar" dest="${lib.dir}" repoId="jboss.repo" />
-		<dependency groupId="org.jboss.jreadline" artifactId="jreadline"
-			unzip="false" version="0.20" type="jar" dest="${lib.dir}" repoId="jboss.repo">
-			<exclusions>
-				<exclusion groupId="org.fusesource.jansi" artifactId="jansi" />
-			</exclusions>
-		</dependency>
-		<dependency groupId="org.fusesource.jansi" artifactId="jansi" unzip="false" version="1.11" type="jar" dest="${lib.dir}" />
-		 -->
- 		<mvn-repo id="sonatype" url="https://oss.sonatype.org/content/repositories/snapshots/" />
-		<dependency repoId="sonatype" groupId="jline" artifactId="jline" version="2.15-SNAPSHOT" dest="${lib.dir}" type="jar" unzip="false"/>
+
+		<dependency  groupId="org.jline" artifactId="jline" version="${jline.version}" dest="${lib.dir}" type="jar" unzip="false"/>
 		<dependency groupId="org.eclipse.jgit" artifactId="org.eclipse.jgit" version="4.3.0.201604071810-r" dest="${lib.dir}" repoId="jgit-repository" unzip="false" type="jar">
 			<exclusions>
 				<!-- Lucee already includes these jars --> 
@@ -817,9 +800,11 @@ External Dependencies:
 				<exclusion groupId="org.apache.httpcomponents" artifactId="httpclient" />
 			</exclusions>
 		</dependency>
+		
 	    <dependency groupId="com.beust" artifactId="jcommander" version="1.47" dest="${lib.dir}" type="jar" unzip="false"/>
 	    <dependency groupId="net.minidev" artifactId="json-smart-mini" version="1.0.8" unzip="false" type="jar" dest="${lib.dir}"/>
 	    <dependency groupId="org.cfmlprojects" artifactId="runwar" version="${runwar.version}" dest="${lucee.lib.dir}" unzip="false" type="jar" />
+
 	    <!-- engine libs -->
 	  	<dependency groupId="org.lucee" artifactId="lucee" version="${lucee.version}" dest="${lucee.lib.dir}" unzip="false" type="jar">
 			<exclusions>
@@ -827,6 +812,7 @@ External Dependencies:
 				<exclusion groupId="org.lucee.lib" artifactId="slf4j-nop" />
 			</exclusions>
 		</dependency>
+		
 	    <mvn-repo id="java.repo" url="http://download.java.net/maven/2/" />
 	    <dependency groupId="javax.mail" artifactId="mail" version="1.4.4" dest="${lucee.lib.dir}" repoId="java.repo" unzip="false" type="jar" />
    </target>
@@ -874,32 +860,6 @@ External Dependencies:
 	    <chmod dir="./launch4j-${launch4j.version}/launch4j/bin/" perm="ugo+rx" includes="*"/>
 	</target>
 	
-	<!-- Get Dependencies -->
-	<target name="getDependencies" description="Get all the necessary dependencies for the cli build process." depends="getlaunch4j">
-		<!-- Get Runwar -->
-		<box-dependency groupID="cfmlprojects" 
- 						artifactID="runwar" 
- 						version="${runwar.version}"
- 						extension="jar"
- 						destination="${dependencies.dir}"/>
- 		<copy file="${dependencies.dir}/runwar-${runwar.version}.jar" toDir="${lucee.lib.dir}" encoding="UTF-8" />
- 		<!-- Get JLine directly to railo build dir -->
- 		<box-dependency groupID="" 
- 						artifactID="jline" 
- 						version="${jline.version}"
- 						extension="jar"
- 						destination="${dependencies.dir}"/>
- 		<copy file="${dependencies.dir}/jline-${jline.version}.jar" toDir="${railo.lib.dir}" encoding="UTF-8" />
- 		<!-- Get Railo as a dependency -->
- 		<box-dependency groupID="railo" 
- 						artifactID="railo" 
- 						classifiers="jars"
- 						version="${railo.version}"
- 						destination="${dependencies.dir}"/>
-		<!-- Expand to railo lib for build process -->
-		<unzip src="${dependencies.dir}/railo-jars-${railo.version}.zip" dest="${railo.lib.dir}" overwrite="true"/>
-	</target>
-
 	<!-- ********************************************************************************************-->
 	<!--						CUSTOM MACROS    													 -->
 	<!-- ********************************************************************************************-->
