@@ -197,7 +197,7 @@ component accessors="true" singleton {
 		} else {
 			variables.shellPrompt = arguments.text;
 		}
-		variables.reader.setPrompt( variables.shellPrompt );
+		//variables.reader.setPrompt( variables.shellPrompt );
 		return this;
 	}
 
@@ -227,7 +227,7 @@ component accessors="true" singleton {
 				// remove the reponse from history
 				variables.reader.getHistory().removeLast();
 			}
-		} catch( jline.console.UserInterruptException var e ) {
+		} catch( org.jline.reader.UserInterruptException var e ) {
 			throw( message='CANCELLED', type="UserInterruptException");
 		} finally{
 			// Reset back to default prompt
@@ -278,7 +278,7 @@ component accessors="true" singleton {
  	 **/
 	Shell function clearScreen() {
 		reader.clearScreen();
-   		variables.reader.flush();
+   		variables.reader.getTerminal().writer().flush();
 		return this;
 	}
 
@@ -349,8 +349,8 @@ component accessors="true" singleton {
 			writedump(var=arguments.string, output="console");
 			arguments.string = "";
 		}
-    	variables.reader.print( arguments.string );
-    	variables.reader.flush();
+    	variables.reader.getTerminal().writer().print( arguments.string );
+    	variables.reader.getTerminal().writer().flush();
 
     	return this;
 	}
@@ -373,7 +373,7 @@ component accessors="true" singleton {
 	        }
 
 	        // setup bell enabled + keep running flags
-	        variables.reader.setBellEnabled( true );
+	        // variables.reader.setBellEnabled( true );
 	        variables.keepRunning = true;
 
 	        var line ="";
@@ -393,7 +393,7 @@ component accessors="true" singleton {
 		        if( arguments.silent ) {
 		        	line = variables.reader.readLine( javacast( "char", ' ' ) );
 				} else {
-		        	line = variables.reader.readLine();
+		        	line = variables.reader.readLine( variables.shellPrompt );
 				}
 
 	        	// If the standard input isn't avilable, bail.  This happens
@@ -416,9 +416,9 @@ component accessors="true" singleton {
 
 	        } // end while keep running
 
-		} catch( jline.console.UserInterruptException var e ) {
-			variables.reader.print( variables.print.boldGreenLine( 'Goodbye' ) );
-    		variables.reader.flush();
+		} catch( org.jline.reader.UserInterruptException var e ) {
+			variables.reader.getTerminal().writer().print( variables.print.boldGreenLine( 'Goodbye' ) );
+    		variables.reader.getTerminal().writer().flush();
 			return false;
 		} catch( any e ){
 			SystemOUtput( e.message & e.detail );
@@ -427,6 +427,15 @@ component accessors="true" singleton {
 
 		return variables.reloadshell;
     }
+
+	/**
+	* Shutdown the shell and close/release any resources associated.
+	* This isn't gunartuneed to run if the shell is closed, but it 
+	* will run for a reload command
+	*/
+	function shutdown() {
+		variables.reader.getTerminal().close();
+	}
 
 	/**
 	 * Call a command
@@ -451,7 +460,7 @@ component accessors="true" singleton {
 
 		// Flush history buffer to disk. I could do this in the quit command
 		// but then I would lose everything if the user just closes the window
-		variables.reader.getHistory().flush();
+		variables.reader.getHistory().save();
 
 		try{
 
@@ -479,8 +488,8 @@ component accessors="true" singleton {
 			if( !initialCommand ) {
 				rethrow;
 			} else {
-    			variables.reader.flush();
-				variables.reader.print( variables.print.boldRedLine( 'CANCELLED' ) );
+    			variables.reader.getTerminal().writer().flush();
+				variables.reader.getTerminal().writer().print( variables.print.boldRedLine( 'CANCELLED' ) );
 			}
 		// Anything else is completely unexpected and means boom booms happened-- full stack please.
 		} catch (any e) {
@@ -504,7 +513,7 @@ component accessors="true" singleton {
 		// We get to output the results ourselves
 		if( !isNull( result ) && !isSimpleValue( result ) ){
 			if( isArray( result ) ){
-				return variables.reader.printColumns( result );
+				return variables.reader.getTerminal().writer().printColumns( result );
 			}
 			result = variables.formatterUtil.formatJson( serializeJSON( result ) );
 			printString( result );
@@ -513,10 +522,10 @@ component accessors="true" singleton {
 			// If the command output text that didn't end with a line break one, add one
 			var lastChar = mid( result, len( result ), 1 );
 			if( ! ( lastChar == chr( 10 ) || lastChar == chr( 13 ) ) ) {
-				variables.reader.println();
+				variables.reader.getTerminal().writer().println();
 			}
 		} else {
-			variables.reader.println();
+			variables.reader.getTerminal().writer().println();
 		}
 
 		return '';
@@ -537,14 +546,14 @@ component accessors="true" singleton {
 
 		variables.logger.error( '#arguments.err.message# #arguments.err.detail ?: ''#', arguments.err.stackTrace ?: '' );
 
-		variables.reader.print( variables.print.whiteOnRedLine( 'ERROR (#variables.version#)' ) );
-		variables.reader.println();
-		variables.reader.print( variables.print.boldRedText( variables.formatterUtil.HTML2ANSI( arguments.err.message, 'boldRed' ) ) );
-		variables.reader.println();
+		variables.reader.getTerminal().writer().print( variables.print.whiteOnRedLine( 'ERROR (#variables.version#)' ) );
+		variables.reader.getTerminal().writer().println();
+		variables.reader.getTerminal().writer().print( variables.print.boldRedText( variables.formatterUtil.HTML2ANSI( arguments.err.message, 'boldRed' ) ) );
+		variables.reader.getTerminal().writer().println();
 
 		if( structKeyExists( arguments.err, 'detail' ) ) {
-			variables.reader.print( variables.print.boldRedText( variables.formatterUtil.HTML2ANSI( arguments.err.detail ) ) );
-			variables.reader.println();
+			variables.reader.getTerminal().writer().print( variables.print.boldRedText( variables.formatterUtil.HTML2ANSI( arguments.err.detail ) ) );
+			variables.reader.getTerminal().writer().println();
 		}
 		if( structKeyExists( arguments.err, 'tagcontext' ) ){
 			var lines = arrayLen( arguments.err.tagcontext );
@@ -552,21 +561,21 @@ component accessors="true" singleton {
 				for( var idx=1; idx <= lines; idx++) {
 					var tc = arguments.err.tagcontext[ idx ];
 					if( idx > 1 ) {
-						variables.reader.print( print.boldCyanText( "called from " ) );
+						variables.reader.getTerminal().writer().print( print.boldCyanText( "called from " ) );
 					}
-					variables.reader.print( variables.print.boldCyanText( "#tc.template#: line #tc.line##variables.cr#" ));
+					variables.reader.getTerminal().writer().print( variables.print.boldCyanText( "#tc.template#: line #tc.line##variables.cr#" ));
 					if( len( tc.codeprinthtml ) ){
-						variables.reader.print( variables.print.text( variables.formatterUtil.HTML2ANSI( tc.codeprinthtml ) ) );
+						variables.reader.getTerminal().writer().print( variables.print.text( variables.formatterUtil.HTML2ANSI( tc.codeprinthtml ) ) );
 					}
 				}
 			}
 		}
 		if( structKeyExists( arguments.err, 'stacktrace' ) ) {
-			variables.reader.print( arguments.err.stacktrace );
+			variables.reader.getTerminal().writer().print( arguments.err.stacktrace );
 		}
 
-		variables.reader.println();
-		variables.reader.flush();
+		variables.reader.getTerminal().writer().println();
+		variables.reader.getTerminal().writer().flush();
 
 		return this;
 	}

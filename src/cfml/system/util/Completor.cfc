@@ -27,14 +27,15 @@ component singleton {
 	/**
 	 * populate completion candidates and return cursor position
 	 * @buffer.hint text so far
-	 * @cursor.hint cursor position
 	 * @candidates.hint tree to populate with completion candidates
  	 **/
-	numeric function complete( String buffer, numeric cursor, candidates )  {
+	numeric function complete( reader, parsedLine, candidates )  {
 
 		try {
+			var javaCandidates = candidates;
+			arguments.candidates = [];
 
-			var buffer = buffer ?: "";
+			var buffer = parsedLine.line();
 			// Try to resolve the command.
 			var commandChain = commandService.resolveCommand( buffer );
 			// If there are multiple commands like "help | more", we only care about the last one
@@ -50,7 +51,9 @@ component singleton {
 				// Suggest a trailing space
 				candidates.add( buffer & ' ' );
 				arraySort( candidates, 'text' );
-				return 0;
+				
+				createCandidates( candidates, javaCandidates );
+				return;
 			// Everything else in the buffer is a partial, unmached command
 			} else if( len( buffer ) ) {
 				// This is the unmatched stuff
@@ -77,10 +80,16 @@ component singleton {
 				// Did we find ANYTHING?
 				if( candidates.size() ) {
 					arraySort( candidates, 'text' );
-					return matchedToHere;
+					// return matchedToHere;
+					
+					createCandidates( candidates, javaCandidates );
+					return;
 				} else {
 					arraySort( candidates, 'text' );
-					return len( buffer );
+					// return len( buffer );
+					
+					createCandidates( candidates, javaCandidates );
+					return;
 				}
 
 
@@ -125,7 +134,10 @@ component singleton {
 							// Fill in possible param values based on the type and contents so far.
 							paramValueCompletion( commandInfo, paramName, paramType, paramSoFar, candidates );
 							arraySort( candidates, 'text' );
-							return len( buffer ) - len( paramSoFar );
+							//return len( buffer ) - len( paramSoFar );
+							
+							createCandidates( candidates, javaCandidates );
+							return;
 
 						}
 
@@ -150,7 +162,10 @@ component singleton {
 
 					// Back up a bit to the beginning of the left over text we're replacing
 					arraySort( candidates, 'text' );
-					return len( buffer ) - len( leftOver ) - iif( !len( leftOver ) && !buffer.endsWith( ' ' ), 0, 1 );
+					//return len( buffer ) - len( leftOver ) - iif( !len( leftOver ) && !buffer.endsWith( ' ' ), 0, 1 );
+					
+					createCandidates( candidates, javaCandidates );
+					return;
 
 				// For sure positional - suggest next param name and value
 				// Either there's more than one positional param supplied, or a single one with a space after it
@@ -190,7 +205,10 @@ component singleton {
 						}
 
 						arraySort( candidates, 'text' );
-						return len( buffer );
+						// return len( buffer );
+						
+						createCandidates( candidates, javaCandidates );
+						return;
 
 
 					// They were in the middle of typing
@@ -222,7 +240,10 @@ component singleton {
 							}
 
 							arraySort( candidates, 'text' );
-							return len( buffer ) - len( partialMatch );
+							// return len( buffer ) - len( partialMatch );
+							
+							createCandidates( candidates, javaCandidates );
+							return;
 						}
 					}
 
@@ -265,7 +286,10 @@ component singleton {
 						paramValueCompletion( commandInfo, thisParam.name, thisParam.type, partialMatch, candidates );
 
 						arraySort( candidates, 'text' );
-						return len( buffer ) - len( partialMatch );
+						// return len( buffer ) - len( partialMatch );
+						
+						createCandidates( candidates, javaCandidates );
+						return;
 
 					}  // End are there params defined
 
@@ -277,12 +301,15 @@ component singleton {
 
 
 			arraySort( candidates, 'text' );
-			return len( buffer );
+			// return len( buffer );
+			
+			createCandidates( candidates, javaCandidates );
+			return;
 
 		} catch ( any e ) {
 			// by default, errors thrown from proxied components are useless and don't have an actual stack trace.
 			shell.printError( e );
-			return 0;
+			return;
 		}
 	}
 
@@ -431,6 +458,30 @@ component singleton {
 			}
 			candidates.add( match );
 		}
+	}
+
+
+	/**
+	* JLine3 needs an array of Java objects, so convert our array of strings to that
+ 	**/
+	private function createCandidates( candidates, javaCandidates ) {
+		candidates.each( function( candidate ){
+			
+			//systemOutput( 'adding: ' & candidate, 1 );
+				
+			javaCandidates.append(
+				createObject( 'java', 'org.jline.reader.Candidate' )
+					.init(
+						candidate, 				// value
+						candidate, 				// displ
+						javaCast( 'null', ''), 	// group
+						javaCast( 'null', ''), 	// descr 
+						javaCast( 'null', ''), 	// suffix
+						javaCast( 'null', ''), 	// key
+						false 					// complete
+					)
+			);			
+		} );
 	}
 
 }

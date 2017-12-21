@@ -154,7 +154,7 @@ component accessors=true {
 
 
 		// user wants to exit, they've pressed Ctrl-C
-		} catch ( jline.console.UserInterruptException e ) {
+		} catch ( org.jline.reader.UserInterruptException e ) {
 
 			print
 				.printLine( "" )

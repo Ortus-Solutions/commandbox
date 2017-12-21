@@ -1151,7 +1151,7 @@ component accessors="true" singleton {
 					}
 
 				// user wants to exit, they've pressed Ctrl-C
-				} catch ( jline.console.UserInterruptException e ) {
+				} catch ( org.jline.reader.UserInterruptException e ) {
 				// Something bad happened
 				} catch ( Any e ) {
 					logger.error( '#e.message# #e.detail#' , e.stackTrace );

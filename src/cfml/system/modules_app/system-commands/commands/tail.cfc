@@ -173,7 +173,7 @@ component {
 
 
 		// user wants to exit, they've pressed Ctrl-C
-		} catch ( jline.console.UserInterruptException e ) {
+		} catch ( org.jline.reader.UserInterruptException e ) {
 			// make sure the thread exits
 			variables.tailRun = false;
 			// Wait until the thread finishes its last draw

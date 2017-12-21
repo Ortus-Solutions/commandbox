@@ -13,7 +13,9 @@ component singleton{
 	// DI
 	property name="completor" 			inject="Completor";
 	property name="homedir"				inject="homedir@constants";
-	property name="commandHistoryFile"	inject="commandHistoryFile@java";
+	// property name="commandHistoryFile"	inject="commandHistoryFile@java";
+	property name="commandHistoryFile"	inject="commandHistoryFile@constants";
+	
 
 	/**
 	* Build a jline console reader instance
@@ -22,7 +24,27 @@ component singleton{
 	*/
 	function getInstance( inStream, outputStream ) {
 		var reader = "";
-
+		
+		var terminal = createObject( "java", "org.jline.terminal.TerminalBuilder" ).terminal();
+		
+		var DefaultHistory = createObject( "java", "org.jline.reader.impl.history.DefaultHistory" );
+		var LineReaderOption = createObject( "java", "org.jline.reader.LineReader$Option" );
+		var LineReader = createObject( "java", "org.jline.reader.LineReader" );
+		var jCompletor = createDynamicProxy( completor , [ 'org.jline.reader.Completer' ] );
+		reader = createObject( "java", "org.jline.reader.LineReaderBuilder" )
+			.builder()
+			.terminal( terminal )
+			.variables( {
+				LineReader.HISTORY_FILE : createObject( "java", "java.io.File" ).init( commandHistoryFile )
+			} )
+			.history( DefaultHistory )
+        	.completer( jCompletor )
+			.build();
+			
+		
+		reader.unsetOpt( LineReaderOption.INSERT_TAB );
+				
+/*
 		// If no print writer was passed in, create one
 		if( isNull( arguments.outputStream ) ) {
 			// create the jline console reader
@@ -53,7 +75,7 @@ component singleton{
 
 		// Create our history file and set it in the console reader
 		reader.setHistory( commandHistoryFile );
-
+*/
 		return reader;
 
 	}

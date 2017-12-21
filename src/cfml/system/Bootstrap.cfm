@@ -117,6 +117,9 @@ Type "help" for help, or "help [command]" to be more specific.#chr( 27 )#[0m
 			if( clearScreen ){
 				shell.clearScreen();
 			}
+				
+			// Shut down the shell, which includes cleaing up JLine
+			shell.shutdown();
 
 			// Clear all caches: template, ...
 			SystemCacheClear( "all" );
