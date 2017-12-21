@@ -225,7 +225,8 @@ component accessors="true" singleton {
 			);
 			if( !keepHistory ) {
 				// remove the reponse from history
-				variables.reader.getHistory().removeLast();
+				// TODO: fix this
+				// variables.reader.getHistory().removeLast();
 			}
 		} catch( org.jline.reader.UserInterruptException var e ) {
 			throw( message='CANCELLED', type="UserInterruptException");
@@ -388,12 +389,28 @@ component accessors="true" singleton {
 				if( arguments.input != "" ){
 					variables.keepRunning = false;
 				}
-
-				// Shell stops on this line while waiting for user input
-		        if( arguments.silent ) {
-		        	line = variables.reader.readLine( javacast( "char", ' ' ) );
-				} else {
-		        	line = variables.reader.readLine( variables.shellPrompt );
+				
+				try {
+					
+					// Shell stops on this line while waiting for user input
+			        if( arguments.silent ) {
+			        	line = variables.reader.readLine( javacast( "char", ' ' ) );
+					} else {
+			        	line = variables.reader.readLine( variables.shellPrompt );
+					}
+					
+				// User hits Ctrl-C.  Don't let them exit the shell.
+				} catch( org.jline.reader.UserInterruptException var e ) {
+					// On windows, getting this fired twice, pausing prevents that
+				 	sleep( 200 );
+					variables.reader.getTerminal().writer().print( variables.print.yellowLine( 'Use the "exit" command or Ctrl-D to leave this shell.' ) );
+		    		variables.reader.getTerminal().writer().flush();
+		    		
+				// User hits Ctrl-D.  Murder the shell dead.
+				} catch( org.jline.reader.EndOfFileException var e ) {
+					variables.reader.getTerminal().writer().print( variables.print.boldGreenLine( 'Goodbye!' ) );
+		    		variables.reader.getTerminal().writer().flush();
+					variables.keepRunning = false;
 				}
 				
 	        	// If the standard input isn't avilable, bail.  This happens
@@ -416,12 +433,8 @@ component accessors="true" singleton {
 
 	        } // end while keep running
 
-		} catch( org.jline.reader.UserInterruptException var e ) {
-			variables.reader.getTerminal().writer().print( variables.print.boldGreenLine( 'Goodbye' ) );
-    		variables.reader.getTerminal().writer().flush();
-			return false;
 		} catch( any e ){
-			SystemOUtput( e.message & e.detail );
+			SystemOutput( e.message & e.detail );
 			printError( e );
 		}
 
