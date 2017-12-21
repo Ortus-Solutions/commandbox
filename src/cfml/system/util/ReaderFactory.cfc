@@ -13,7 +13,6 @@ component singleton{
 	// DI
 	property name="completor" 			inject="Completor";
 	property name="homedir"				inject="homedir@constants";
-	// property name="commandHistoryFile"	inject="commandHistoryFile@java";
 	property name="commandHistoryFile"	inject="commandHistoryFile@constants";
 	
 
@@ -31,13 +30,13 @@ component singleton{
 		var LineReaderOption = createObject( "java", "org.jline.reader.LineReader$Option" );
 		var LineReader = createObject( "java", "org.jline.reader.LineReader" );
 		var jCompletor = createDynamicProxy( completor , [ 'org.jline.reader.Completer' ] );
+		
 		reader = createObject( "java", "org.jline.reader.LineReaderBuilder" )
 			.builder()
 			.terminal( terminal )
 			.variables( {
-				LineReader.HISTORY_FILE : createObject( "java", "java.io.File" ).init( commandHistoryFile )
+				'#LineReader.HISTORY_FILE#' : commandHistoryFile
 			} )
-			.history( DefaultHistory )
         	.completer( jCompletor )
 			.build();
 			

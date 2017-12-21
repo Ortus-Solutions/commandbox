@@ -67,19 +67,6 @@ component extends="wirebox.system.ioc.config.Binder" {
 		map( 'ortusPRDArtifactsURL@constants' ).toValue( ortusPRDArtifactsURL );
 		map( 'rewritesDefaultConfig@constants' ).toValue( "#homeDir#/cfml/system/config/urlrewrite.xml" );
 
-		// Map Java Classes
-		map( 'commandHistoryFile@java' ).toJava( "org.jline.reader.impl.history.DefaultHistory" )
-			//.initWith( createObject( "java", "java.io.File" ).init( commandHistoryFile ) )
-			.asSingleton();
-/*
-		map( 'REPLScriptHistoryFile@java' ).toJava( "jline.console.history.FileHistory" )
-			.initWith( createObject( "java", "java.io.File" ).init( REPLScriptHistoryFile ) )
-			.asSingleton();
-
-		map( 'REPLTagHistoryFile@java' ).toJava( "jline.console.history.FileHistory" )
-			.initWith( createObject( "java", "java.io.File" ).init( REPLTagHistoryFile ) )
-			.asSingleton();*/
-
 		// Map Directories
 		mapDirectory( '/commandbox/system/services' );
 		mapDirectory( '/commandbox/system/util' );

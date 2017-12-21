@@ -395,7 +395,7 @@ component accessors="true" singleton {
 				} else {
 		        	line = variables.reader.readLine( variables.shellPrompt );
 				}
-
+				
 	        	// If the standard input isn't avilable, bail.  This happens
 	        	// when commands are piped in and we've reached the end of the piped stream
 	        	if( !isDefined( 'line' ) ) {
@@ -437,6 +437,25 @@ component accessors="true" singleton {
 		variables.reader.getTerminal().close();
 	}
 
+
+	/**
+	* @filePath The path to the history file to set
+	* 
+	* Use this wrapper method to change the history file in use by the shell.
+	*/
+	function setHistory( filePath ) {
+		
+		var LineReader = createObject( "java", "org.jline.reader.LineReader" );
+		
+		// Save current file
+		variables.reader.getHistory().save();
+		// Swap out the file setting
+		variables.reader.setVariable( LineReader.HISTORY_FILE, filePath );
+		// Load in the new file
+		variables.reader.getHistory().load();
+		
+	}
+
 	/**
 	 * Call a command
  	 * @command.hint Either a string containing a text command, or an array of tokens representing the command and parameters.
@@ -461,7 +480,7 @@ component accessors="true" singleton {
 		// Flush history buffer to disk. I could do this in the quit command
 		// but then I would lose everything if the user just closes the window
 		variables.reader.getHistory().save();
-
+		
 		try{
 
 			if( isArray( command ) ) {
