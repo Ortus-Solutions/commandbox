@@ -213,6 +213,12 @@ component accessors="true" singleton {
 	string function ask( message, string mask='', string defaultResponse='', keepHistory=false ) {
 
 		try {
+			
+			// Some things are best forgotten
+			if( !keepHistory ) {
+				enableHistory( false );
+			}
+			
 			// read reponse while masking input
 			var input = variables.reader.readLine(
 				// Prompt for the user
@@ -223,16 +229,14 @@ component accessors="true" singleton {
 				// Optionally pre-fill a default response for them
 				len( arguments.defaultResponse ) ? javacast( "String", arguments.defaultResponse ) : javacast( "null", '' )
 			);
-			if( !keepHistory ) {
-				// remove the reponse from history
-				// TODO: fix this
-				// variables.reader.getHistory().removeLast();
-			}
+			
 		} catch( org.jline.reader.UserInterruptException var e ) {
 			throw( message='CANCELLED', type="UserInterruptException");
 		} finally{
 			// Reset back to default prompt
 			setPrompt();
+			// Turn history back on
+			enableHistory();
 		}
 
 		return input;
@@ -450,7 +454,6 @@ component accessors="true" singleton {
 		variables.reader.getTerminal().close();
 	}
 
-
 	/**
 	* @filePath The path to the history file to set
 	* 
@@ -467,6 +470,19 @@ component accessors="true" singleton {
 		// Load in the new file
 		variables.reader.getHistory().load();
 		
+	}
+
+	/**
+	* @enable Pass true to enable, false to disable
+	* 
+	* Enable or disables history in the shell
+	*/
+	function enableHistory( boolean enable=true ) {
+		
+		var LineReader = createObject( "java", "org.jline.reader.LineReader" );
+		
+		// Swap out the file setting
+		variables.reader.setVariable( LineReader.DISABLE_HISTORY, !enable );
 	}
 
 	/**
