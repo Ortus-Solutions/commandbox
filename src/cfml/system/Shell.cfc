@@ -409,12 +409,14 @@ component accessors="true" singleton {
 				 	sleep( 200 );
 					variables.reader.getTerminal().writer().print( variables.print.yellowLine( 'Use the "exit" command or Ctrl-D to leave this shell.' ) );
 		    		variables.reader.getTerminal().writer().flush();
+		    		continue;
 		    		
 				// User hits Ctrl-D.  Murder the shell dead.
 				} catch( org.jline.reader.EndOfFileException var e ) {
 					variables.reader.getTerminal().writer().print( variables.print.boldGreenLine( 'Goodbye!' ) );
 		    		variables.reader.getTerminal().writer().flush();
 					variables.keepRunning = false;
+		    		continue; 
 				}
 				
 	        	// If the standard input isn't avilable, bail.  This happens
