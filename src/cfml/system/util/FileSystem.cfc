@@ -38,6 +38,8 @@ component accessors="true" singleton {
 
 		// The Java class will strip trailing slashses, but these are meaningful in globbing patterns
 		var trailingSlash = ( path.len() > 1 && ( path.endsWith( '/' ) || path.endsWith( '\' ) ) );
+		// java will remove trailing periods when canonicalizing a path.  I'm not sure that's correct.
+		var trailingPeriod = ( path.len() > 1 && path.endsWith( '.' ) );
 		
 		// Load our path into a Java file object so we can use some of its nice utility methods
 		var oPath = createObject( 'java', 'java.io.File' ).init( path );
@@ -66,11 +68,16 @@ component accessors="true" singleton {
 
 			// If it's relative, we assume it's relative to the current working directory and make it absolute
 			oPath = createObject( 'java', 'java.io.File' ).init( arguments.basePath & '/' & path );
-
 		}
 		
+		// Add back trailing slash if we had it
+		var finalPath = oPath.toString() & ( trailingSlash ? server.separator.file : '' );
+		
 		// This will standardize the name and calculate stuff like ../../
-		return getCanonicalPath( oPath.toString() & ( trailingSlash ? server.separator.file : '' ) );
+		finalPath = getCanonicalPath( finalPath )
+		
+		// have to add back the period after canonicalizing since Java removes it!
+		return finalPath & ( trailingPeriod && !finalPath.endsWith( '.' ) ? '.' : '' );
 
 	}
 

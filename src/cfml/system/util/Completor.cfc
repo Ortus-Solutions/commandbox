@@ -132,7 +132,7 @@ component singleton {
 								}
 							}
 							// Fill in possible param values based on the type and contents so far.
-							paramValueCompletion( commandInfo, paramName, paramType, paramSoFar, candidates );
+							paramValueCompletion( commandInfo, paramName, paramType, paramSoFar, candidates, true );
 							arraySort( candidates, 'text' );
 							//return len( buffer ) - len( paramSoFar );
 							
@@ -198,7 +198,7 @@ component singleton {
 								// replace this with their actual param so this may not be that useful.
 
 								candidates.add( param.name & ' ' );
-								paramValueCompletion( commandInfo, param.name, param.type, '', candidates );
+								paramValueCompletion( commandInfo, param.name, param.type, '', candidates, false );
 								// Bail once we find one
 								break;
 							}
@@ -224,7 +224,7 @@ component singleton {
 							}
 
 							var thisParam = definedParameters[ passedParameters.positionalParameters.len() ];
-							paramValueCompletion( commandInfo, thisParam.name, thisParam.type, partialMatch, candidates );
+							paramValueCompletion( commandInfo, thisParam.name, thisParam.type, partialMatch, candidates, false );
 
 							// Loop over remaining possible params and suggest the boolean ones as flags
 							var i = 0;
@@ -283,7 +283,7 @@ component singleton {
 						var thisParam = definedParameters[ 1 ];
 
 						// Suggest its value
-						paramValueCompletion( commandInfo, thisParam.name, thisParam.type, partialMatch, candidates );
+						paramValueCompletion( commandInfo, thisParam.name, thisParam.type, partialMatch, candidates, false );
 
 						arraySort( candidates, 'text' );
 						// return len( buffer ) - len( partialMatch );
@@ -321,21 +321,21 @@ component singleton {
 	 * @paramSoFar.hint text typed so far
 	 * @candidates.hint tree to populate with completion candidates
  	 **/
-	private function paramValueCompletion( struct commandInfo, String paramName, String paramType, String paramSoFar, required candidates) {
+	private function paramValueCompletion( struct commandInfo, String paramName, String paramType, String paramSoFar, required candidates, boolean namedParams ) {
 
 		var completorData = commandInfo.commandReference.completor;
 
 		if( structKeyExists( completorData, paramName ) ) {
 			// Add static values
 			if( structKeyExists( completorData[ paramName ], 'options' ) ) {
-				addAllIfMatch( candidates, completorData[ paramName ][ 'options' ], paramSoFar );
+				addAllIfMatch( candidates, completorData[ paramName ][ 'options' ], paramSoFar, paramName, namedParams );
 			}
 			// Call function to populate dynamic values
 			if( structKeyExists( completorData[ paramName ], 'optionsUDF' ) ) {
 				var completorFunctionName = completorData[ paramName ][ 'optionsUDF' ];
 				var additions = commandInfo.commandReference.CFC[ completorFunctionName ]( paramSoFar=arguments.paramSoFar );
 				if( isArray( additions ) ) {
-					addAllIfMatch( candidates, additions, paramSoFar );
+					addAllIfMatch( candidates, additions, paramSoFar, paramName, namedParams );
 				}
 			}
 			// Completor annotations override default
@@ -344,8 +344,8 @@ component singleton {
 
 		switch(paramType) {
 			case "Boolean" :
-           		addCandidateIfMatch( "true", paramSoFar, candidates );
-           		addCandidateIfMatch( "false", paramSoFar, candidates );
+           		addCandidateIfMatch( "true", paramSoFar, candidates, paramName, namedParams );
+           		addCandidateIfMatch( "false", paramSoFar, candidates, paramName, namedParams );
 				break;
 		}
 
@@ -371,9 +371,9 @@ component singleton {
 	 * @candidates.hint Java TreeSet object
 	 * @additions.hint array of values to add
  	 **/
-	private function addAllIfMatch( candidates, array additions, paramSoFar ) {
+	private function addAllIfMatch( candidates, array additions, paramSoFar, paramName, namedParams ) {
 		for( var addition in additions ) {
-       		addCandidateIfMatch( addition, arguments.paramSoFar, arguments.candidates );
+       		addCandidateIfMatch( addition, arguments.paramSoFar, arguments.candidates, paramName, namedParams );
 		}
 	}
 
@@ -384,10 +384,9 @@ component singleton {
 	 * @type.showFiles Whether to hit files as well as directories
  	 **/
 	private function pathCompletion(String startsWith, required candidates, showFiles=true ) {
-
 		// keep track of the original here so we can put it back like the user had
 		var originalStartsWith = replace( arguments.startsWith, "\", "/", "all" );
-		// Fully resolve the path.
+		// Fully resolve the path.	
 		arguments.startsWith = fileSystemUtil.resolvePath( arguments.startsWith );
 		startsWith = replace( startsWith, "\", "/", "all" );
 
@@ -400,23 +399,22 @@ component singleton {
 		var searchIn = startsWith;
 		// This is the bit at the end that is a partially typed directory or file name
 		// Note, this can be an empty string!
-		var partialMatch = '';
+		var partialMatch = '';		
 		// If we aren't already pointing to the root of a real directory, peel the path back to the dir
 		if( right( searchIn, 1 ) != '/' ) {
-			searchIn = getDirectoryFromPath( searchIn );
+			searchIn = getDirectoryFromPath( searchIn );		
 			// If we stripped back to a directory, take what is left as the partial match
 			if( startsWith.len() > searchIn.len() ) {
 				partialMatch = replaceNoCase( startsWith, searchIn, '' );
 			}
 		}
-
+		
 		// Don't even bother if search location doesn't exist
 		if( directoryExists( searchIn ) ) {
 			// Pull a list of paths in there
 			var paths = directoryList( path=searchIn, listInfo='query' );
 
 			for( var path in paths ) {
-
 				// Leave original case in path, we'll lowercase it on Windows
 				var thisName = path.name;
 				if( server.os.name contains 'Windows' ) {
@@ -424,17 +422,17 @@ component singleton {
 					thisName = lcase( path.name );
 				}
 
-				// This comparison will be case-sensitive on Mac and Linux/
+				// This comparison will be case-sensitive on Mac and Linux
 				if( thisName.startsWith( partialMatch ) ) {
 					// Do we care about this type?
 					if( arguments.showFiles == true || path.type == 'dir' ) {
 
 						// This is the absolute path that we matched
 						var thisCandidate = searchIn & ( right( searchIn, 1 ) == '/' ? '' : '/' ) & path.name;
-
+						
 						// ...strip it back down to what they typed
 						thisCandidate = replaceNoCase( thisCandidate, startsWith, originalStartsWith );
-
+				
 						// Finally add this candidate into the list
 						candidates.add( thisCandidate & ( path.type == 'dir' ? '/' : '' ) );
 					}
@@ -450,13 +448,17 @@ component singleton {
 	 * @startsWith.hint text typed so far
 	 * @candidates.hint tree to populate with completion candidates
  	 **/
-	private function addCandidateIfMatch( required match, required startsWith, required candidates ) {
+	private function addCandidateIfMatch( required match, required startsWith, required candidates, paramName, namedParams ) {
 		startsWith = lcase( startsWith );
 		if( lcase( match ).startsWith( startsWith ) || len( startsWith ) == 0 ) {
 			if( !match.endsWith( '=' ) ) {
 				match &= ' ';
 			}
-			candidates.add( match );
+			if( namedParams ) {
+				candidates.add( paramName & '=' & match );
+			} else {
+				candidates.add( match );	
+			}
 		}
 	}
 
@@ -465,23 +467,27 @@ component singleton {
 	* JLine3 needs an array of Java objects, so convert our array of strings to that
  	**/
 	private function createCandidates( candidates, javaCandidates ) {
+		
 		candidates.each( function( candidate ){
-			
-			//systemOutput( 'adding: ' & candidate, 1 );
 				
+			var thisCandidate = candidate.listLast( ' ' ) & ( candidate.endsWith( ' ' ) ? ' ' : '' );
+			
+			// systemOutput( 'adding: ' & thisCandidate, 1 );
+			
 			javaCandidates.append(
 				createObject( 'java', 'org.jline.reader.Candidate' )
 					.init(
-						candidate, 				// value
-						candidate, 				// displ
-						javaCast( 'null', ''), 	// group
-						javaCast( 'null', ''), 	// descr 
-						javaCast( 'null', ''), 	// suffix
-						javaCast( 'null', ''), 	// key
-						false 					// complete
+						thisCandidate,				// value
+						thisCandidate,				// displ
+						javaCast( 'null', ''),		// group      candidate.startsWith( '--' ) ? 'flags' : 'non-flags', 
+						javaCast( 'null', ''), 		// descr 
+						javaCast( 'null', ''), 		// suffix
+						javaCast( 'null', ''), 		// key
+						false 						// complete
 					)
 			);			
 		} );
+		
 	}
 
 }
