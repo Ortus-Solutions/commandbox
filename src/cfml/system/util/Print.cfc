@@ -77,8 +77,7 @@ component {
 	 * @string.hint string to remove ANSI from
   	 **/
 	function unansi(required ansiString) {
-		var st = createObject("java","org.fusesource.jansi.AnsiString").init(ansiString);
-		return st.getPlain();
+		return createObject("java","org.jline.utils.AttributedString").stripAnsi( ansiString );
 	}
 
 	/**
