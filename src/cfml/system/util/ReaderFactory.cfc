@@ -24,29 +24,42 @@ component singleton{
 	function getInstance( inStream, outputStream ) {
 		var reader = "";
 		
+		// Creating static refernces to these so we can get at nested classes and their properties
+		var LineReaderOption = createObject( "java", "org.jline.reader.LineReader$Option" );
+		var LineReader = createObject( "java", "org.jline.reader.LineReader" );
 		var SignalHandler = createObject( "java", "org.jline.terminal.Terminal$SignalHandler" );
 		var LineReaderOption = createObject( "java", "org.jline.reader.LineReader$Option" );
 		
-		var terminal = createObject( "java", "org.jline.terminal.TerminalBuilder" )
-			.builder()
-        //	.signalHandler( SignalHandler.SIG_IGN )
-			.build();
-		
-		var LineReaderOption = createObject( "java", "org.jline.reader.LineReader$Option" );
-		var LineReader = createObject( "java", "org.jline.reader.LineReader" );
+		// A CFC instance of our completor that implements a JLine Java interface
 		var jCompletor = createDynamicProxy( completor , [ 'org.jline.reader.Completer' ] );
 		
+		// This prevents JLine's inbuilt parsing from swallowing things like backslashes.  CommandBox has its own parser.
+		var parser = createObject( "java", "org.jline.reader.impl.DefaultParser" );
+		parser.setEscapeChars( javaCast( 'null', '' ) );
+		
+		// Build our terminal instance
+		var terminal = createObject( "java", "org.jline.terminal.TerminalBuilder" )
+			.builder()
+			.build();
+		
+		// Build our reader instance
 		reader = createObject( "java", "org.jline.reader.LineReaderBuilder" )
 			.builder()
 			.terminal( terminal )
 			.variables( {
+				// The default file for history is set into the shell here though it's used by the DefaultHistory class
 				'#LineReader.HISTORY_FILE#' : commandHistoryFile
 			} )
         	.completer( jCompletor )
+        	.parser( parser )
 			.build();
 			
-		
+		// This lets you hit tab with nothing entered on the prompt and get auto-complete
 		reader.unsetOpt( LineReaderOption.INSERT_TAB );
+		// This turns off annoying Vim stuff built into JLine
+		reader.setOpt( LineReaderOption.DISABLE_EVENT_EXPANSION );
+		// This is _supposed_ to make auto complete case insensitive but it doesn't seem to work
+		reader.setOpt( LineReaderOption.CASE_INSENSITIVE );
 
 		return reader;
 

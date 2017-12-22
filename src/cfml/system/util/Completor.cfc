@@ -479,10 +479,10 @@ component singleton {
 					.init(
 						thisCandidate,				// value
 						thisCandidate,				// displ
-						javaCast( 'null', ''),		// group      candidate.startsWith( '--' ) ? 'flags' : 'non-flags', 
-						javaCast( 'null', ''), 		// descr 
-						javaCast( 'null', ''), 		// suffix
-						javaCast( 'null', ''), 		// key
+						javaCast( 'null', '' ),		// group      candidate.startsWith( '--' ) ? 'flags' : 'non-flags', 
+						javaCast( 'null', '' ), 		// descr 
+						javaCast( 'null', '' ), 		// suffix
+						javaCast( 'null', '' ), 		// key
 						false 						// complete
 					)
 			);			
