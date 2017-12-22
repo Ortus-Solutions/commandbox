@@ -28,11 +28,11 @@ component singleton {
 		required numeric completeSizeKB,
 		required numeric speedKBps
 		) {
-
-		var ansi = createObject( 'java', 'org.fusesource.jansi.Ansi' ).init();
-		var AnsiConsole = createObject( 'java', 'org.fusesource.jansi.AnsiConsole' );
-		AnsiConsole.systemInstall();
-		var ansiErase = createObject( 'java', 'org.fusesource.jansi.Ansi$Erase' );
+		
+		var terminal = shell.getReader().getTerminal();
+		var display = createObject( 'java', 'org.jline.utils.Display' ).init( terminal, false );
+		display.resize( terminal.getHeight(), terminal.getWidth() );
+		
 		// Total space availble to progress bar.  Subtract 5 for good measure since it will wrap if you get too close
 		var totalWidth = shell.getTermWidth()-5	;
 
@@ -42,12 +42,6 @@ component singleton {
 		var nonProgressChars = len( progressBarTemplate ) - 1;
 		// Minimum progressbar length is 5.  It will wrap if the user's console is super short, but I'm not sure I care.
 		var progressChars = max( totalWidth - nonProgressChars, 5 );
-
-		// Clear the line
-		ansi.eraseLine(ansiErase.ALL);
-		// Windows DOS can have a window size larger than the reported terminal size.  Moving the cursor left
-		// a ridiculous amount seems to have no ill-affect so we're just going to make darn sure we're up against the left side.
-		ansi.cursorLeft( totalWidth+99999 );
 
 		// Get the template
 		var progressRendered = progressBarTemplate;
@@ -64,21 +58,15 @@ component singleton {
 		progressRendered = replace( progressRendered, '^^^^^^^', formatSize( arguments.totalSizeKB, 7 ) );
 		progressRendered = replace( progressRendered, '$$$$$$$', formatSize( arguments.completeSizeKB, 7 ) );
 		progressRendered = replace( progressRendered, '&&&&&&&&', formatSize( min( arguments.speedKBps, 99000), 6 ) & 'ps' );
-
-		// Add to buffer
- 		ansi.a( progressRendered );
+				
+		// Add to console and flush
+		display.update( [ createObject( 'java', 'org.jline.utils.AttributedString' ).init( progressRendered ) ], 0 );
 
  		// If we're done, add a line break
 		if( arguments.percent == 100 ) {
-			ansi.newline();
+			shell.printString( chr( 10 ) );
 		}
-
- 		// Add to console and flush
-	 	system.out.print(ansi);
-        system.out.flush();
-		AnsiConsole.systemUninstall();
-
-
+	
 	}
 
 
