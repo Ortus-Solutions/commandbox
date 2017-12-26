@@ -24,7 +24,7 @@ component singleton{
 	function getInstance( inStream, outputStream ) {
 		var reader = "";
 		
-		// Creating static refernces to these so we can get at nested classes and their properties
+		// Creating static references to these so we can get at nested classes and their properties
 		var LineReaderOption = createObject( "java", "org.jline.reader.LineReader$Option" );
 		var LineReader = createObject( "java", "org.jline.reader.LineReader" );
 		var SignalHandler = createObject( "java", "org.jline.terminal.Terminal$SignalHandler" );
