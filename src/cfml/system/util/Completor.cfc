@@ -32,6 +32,7 @@ component singleton {
 	numeric function complete( reader, parsedLine, candidates )  {
 
 		try {
+			
 			var javaCandidates = candidates;
 			arguments.candidates = [];
 
@@ -64,7 +65,7 @@ component singleton {
 					matchedToHere++;
 				}
 			}
-
+					
 			// Didn't match an exact command, but might have matched part of one.
 			if( !commandInfo.found ) {
 
@@ -355,13 +356,13 @@ component singleton {
 			paramName.endsWith( 'directory' ) ||
 			paramName.endsWith( 'destination' )
 		){
-			pathCompletion( paramSoFar, candidates, false );
+			pathCompletion( paramSoFar, candidates, false, paramName, namedParams );
 		} else if( paramName.startsWith( 'file' ) ||
 				   paramName.endsWith( 'file' ) ||
 				   paramName.startsWith( 'path' ) ||
 				   paramName.endsWith( 'path' )
 		){
-			pathCompletion( paramSoFar, candidates, true );
+			pathCompletion( paramSoFar, candidates, true, paramName, namedParams );
 		}
 	}
 
@@ -383,7 +384,7 @@ component singleton {
 	 * @candidates.hint tree to populate with completion candidates
 	 * @type.showFiles Whether to hit files as well as directories
  	 **/
-	private function pathCompletion(String startsWith, required candidates, showFiles=true ) {
+	private function pathCompletion(String startsWith, required candidates, showFiles=true, paramName, namedParams ) {
 		// keep track of the original here so we can put it back like the user had
 		var originalStartsWith = replace( arguments.startsWith, "\", "/", "all" );
 		// Fully resolve the path.	
@@ -434,7 +435,12 @@ component singleton {
 						thisCandidate = replaceNoCase( thisCandidate, startsWith, originalStartsWith );
 				
 						// Finally add this candidate into the list
-						candidates.add( thisCandidate & ( path.type == 'dir' ? '/' : '' ) );
+						
+						if( namedParams ) {
+							candidates.add( paramName & '=' & thisCandidate & ( path.type == 'dir' ? '/' : '' ) );
+						} else {
+							candidates.add( thisCandidate & ( path.type == 'dir' ? '/' : '' ) );	
+						}
 					}
 				}
 			} // End path loop
@@ -485,7 +491,7 @@ component singleton {
 						javaCast( 'null', '' ), 		// key
 						false 						// complete
 					)
-			);			
+			);
 		} );
 		
 	}

@@ -268,7 +268,26 @@ component accessors="true" singleton {
 		if( len( arguments.message ) ) {
 			printString( arguments.message );
 		}
-		key = variables.reader.readCharacter();
+		
+		var terminal = getReader().getTerminal();
+		
+		var keys = createObject( 'java', 'org.jline.keymap.KeyMap' );
+		var capability = createObject( 'java', 'org.jline.utils.InfoCmp$Capability' );
+		var bindingReader = createObject( 'java', 'org.jline.keymap.BindingReader' ).init( terminal.reader() );
+				
+		keys.setNomatch( 'self-insert' );	
+		keys.bind( capability.key_left.name(), keys.key( terminal, capability.key_left ) );
+		keys.bind( capability.key_right.name(), keys.key( terminal, capability.key_right ) );
+		keys.bind( capability.key_up.name(), keys.key( terminal, capability.key_up ) );
+		keys.bind( capability.key_down.name(), keys.key( terminal, capability.key_down ) );
+			
+		var binding = bindingReader.readBinding( keys );
+		if( binding == 'self-insert' ) {
+			key = bindingReader.getLastBinding();
+		} else {
+			key = binding;
+		}
+		
 		// Reset back to default prompt
 		setPrompt();
 

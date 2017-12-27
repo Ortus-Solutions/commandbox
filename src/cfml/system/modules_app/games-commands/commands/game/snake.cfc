@@ -59,10 +59,8 @@ component aliases="snake" {
 		
 		variables.gameFooter =
 		'╠═════════════════════════════════════════════════════╣░' & cr &
-		'║                 ' & p.bold( 'S' ) & ' or ' & p.bold( '4' ) & ' moves left                   ║░' & cr &
-		'║                 ' & p.bold( 'F' ) & ' or ' & p.bold( '6' ) & ' moves right                  ║░' & cr &
-		'║                 ' & p.bold( 'E' ) & ' or ' & p.bold( '8' ) & ' moves up                     ║░' & cr &
-		'║                 ' & p.bold( 'C' ) & ' or ' & p.bold( '2' ) & ' moves down                   ║░' & cr &
+		'║                                                     ║░' & cr &
+		'║     Use arrow keys to move up/down/left/right       ║░' & cr &
 		'║                                                     ║░' & cr &
 		'║                   Press ' & p.bold( 'Q' ) & ' to quit                   ║░' & cr &
 		'╚═════════════════════════════════════════════════════╝░'  & cr &
@@ -422,32 +420,28 @@ component aliases="snake" {
 		
 	private function isQuit( key ) {
 		// q or Q
-		return ( key == 113 || key == 81 );
+		return ( key == 'q' );
 	}
 		
 	private function isRetry( key ) {
 		// r or R
-		return ( key == 114 || key == 82 );
+		return ( key == 'r' );
 	}
-		
-	private function isUp( key ) {
-		// e or E 
-		return ( key == 101 || key == 69 || key == 56 );
+
+	private function isUp( key ) { 
+		return ( key == 'key_up' );
 	}
 		
 	private function isDown( key ) {
-		// c or C 
-		return ( key == 99 || key == 67 || key == 50 );
+		return ( key == 'key_down' );
 	}
 		
 	private function isLeft( key ) {
-		// s or S 
-		return ( key == 115 || key == 83 || key == 52 );
+		return ( key == 'key_left' );
 	}
 		
 	private function isRight( key ) {
-		// f or F 
-		return ( key == 102 || key == 70 || key == 54 );
+		return ( key == 'key_right' );
 	}
 
 

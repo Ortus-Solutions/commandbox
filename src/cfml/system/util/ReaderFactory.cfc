@@ -12,6 +12,7 @@ component singleton{
 
 	// DI
 	property name="completor" 			inject="Completor";
+	property name="JLineParser"			inject="JLineParser";
 	property name="homedir"				inject="homedir@constants";
 	property name="commandHistoryFile"	inject="commandHistoryFile@constants";
 	
@@ -32,10 +33,11 @@ component singleton{
 		
 		// A CFC instance of our completor that implements a JLine Java interface
 		var jCompletor = createDynamicProxy( completor , [ 'org.jline.reader.Completer' ] );
-		
+		var jParser = createDynamicProxy( JLineParser, [ 'org.jline.reader.Parser' ] );
+				
 		// This prevents JLine's inbuilt parsing from swallowing things like backslashes.  CommandBox has its own parser.
-		var parser = createObject( "java", "org.jline.reader.impl.DefaultParser" );
-		parser.setEscapeChars( javaCast( 'null', '' ) );
+		//var parser = createObject( "java", "org.jline.reader.impl.DefaultParser" );
+		//parser.setEscapeChars( javaCast( 'null', '' ) );
 		
 		// Build our terminal instance
 		var terminal = createObject( "java", "org.jline.terminal.TerminalBuilder" )
@@ -51,7 +53,7 @@ component singleton{
 				'#LineReader.HISTORY_FILE#' : commandHistoryFile
 			} )
         	.completer( jCompletor )
-        	.parser( parser )
+        	.parser( jParser )
 			.build();
 			
 		// This lets you hit tab with nothing entered on the prompt and get auto-complete
