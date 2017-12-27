@@ -43,6 +43,7 @@ component {
 
 		// Setup REPL history file
 		shell.setHistory( newHistory );
+		shell.enableHighlighter( false );
 
 		if( !structKeyExists( arguments, 'input' ) ) {
 			print.cyanLine( "Enter any valid CFML code in the following prompt in order to evaluate it and print out any results (if any)" );
@@ -122,6 +123,7 @@ component {
 						shell.getReader().getHistory().save();
 						// set back original history
 						shell.setHistory( commandHistoryFile );
+						shell.enableHighlighter( true );
 						// This will exist the command
 						error( '#e.message##CR##e.detail#' );
 					} else {
@@ -137,6 +139,7 @@ component {
 		shell.getReader().getHistory().save();
 		// set back original history
 		shell.setHistory( commandHistoryFile );
+		shell.enableHighlighter( true );
 	}
 
 

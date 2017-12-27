@@ -1,4 +1,4 @@
- /**
+/**
 *********************************************************************************
 * Copyright Since 2005 ColdBox Platform by Ortus Solutions, Corp
 * www.coldbox.org | www.ortussolutions.com
@@ -21,6 +21,7 @@ component accessors="true" singleton {
 	property name="InterceptorService"	inject="InterceptorService";
 	property name="ModuleService"		inject="ModuleService";
 	property name="Util"				inject="wirebox.system.core.util.Util";
+	property name="JLineHighlighter"	inject="JLineHighlighter";
 
 
 	/**
@@ -214,6 +215,8 @@ component accessors="true" singleton {
 
 		try {
 			
+			enableHighlighter( false );
+			
 			// Some things are best forgotten
 			if( !keepHistory ) {
 				enableHistory( false );
@@ -237,6 +240,7 @@ component accessors="true" singleton {
 			setPrompt();
 			// Turn history back on
 			enableHistory();
+			enableHighlighter( true );
 		}
 
 		return input;
@@ -504,6 +508,21 @@ component accessors="true" singleton {
 		
 		// Swap out the file setting
 		variables.reader.setVariable( LineReader.DISABLE_HISTORY, !enable );
+	}
+
+	/**
+	* @enable Pass true to enable, false to disable
+	* 
+	* Enable or disables highlighting in the shell
+	*/
+	function enableHighlighter( boolean enable=true ) {
+		if( enable ) {
+			// Our CommandBox parser/command-aware highlighter
+			variables.reader.setHighlighter( createDynamicProxy( JLineHighlighter, [ 'org.jline.reader.Highlighter' ] ) );			
+		} else {
+			// A dummy highlighter, or at least one that never seems to do anything...
+			variables.reader.setHighlighter( createObject( 'java', 'org.jline.reader.impl.DefaultHighlighter' ) );
+		}
 	}
 
 	/**
