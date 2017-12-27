@@ -36,14 +36,13 @@ component singleton{
 		var jCompletor = createDynamicProxy( completor , [ 'org.jline.reader.Completer' ] );
 		var jParser = createDynamicProxy( JLineParser, [ 'org.jline.reader.Parser' ] );
 		var jHighlighter = createDynamicProxy( JLineHighlighter, [ 'org.jline.reader.Highlighter' ] );
-				
-		// This prevents JLine's inbuilt parsing from swallowing things like backslashes.  CommandBox has its own parser.
-		//var parser = createObject( "java", "org.jline.reader.impl.DefaultParser" );
-		//parser.setEscapeChars( javaCast( 'null', '' ) );
 		
 		// Build our terminal instance
 		var terminal = createObject( "java", "org.jline.terminal.TerminalBuilder" )
 			.builder()
+	        .system( true )
+	        .nativeSignals( true )
+	        .signalHandler( SignalHandler.SIG_IGN )
 			.build();
 		
 		// Build our reader instance

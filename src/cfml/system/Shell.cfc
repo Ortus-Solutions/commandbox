@@ -265,7 +265,7 @@ component accessors="true" singleton {
 	 * Wait until the user's next keystroke, returns the key pressed
 	 * @message.message An optional message to display to the user such as "Press any key to continue."
 	 *
-	 * @return code of key pressed
+	 * @return character of key pressed or key binding name.
  	 **/
 	string function waitForKey( message='' ) {
 		var key = '';
@@ -278,13 +278,54 @@ component accessors="true" singleton {
 		var keys = createObject( 'java', 'org.jline.keymap.KeyMap' );
 		var capability = createObject( 'java', 'org.jline.utils.InfoCmp$Capability' );
 		var bindingReader = createObject( 'java', 'org.jline.keymap.BindingReader' ).init( terminal.reader() );
-				
-		keys.setNomatch( 'self-insert' );	
+
+		// Everything else
+		keys.setNomatch( 'self-insert' );
+		
+		// left, right, up, down arrow
 		keys.bind( capability.key_left.name(), keys.key( terminal, capability.key_left ) );
 		keys.bind( capability.key_right.name(), keys.key( terminal, capability.key_right ) );
 		keys.bind( capability.key_up.name(), keys.key( terminal, capability.key_up ) );
 		keys.bind( capability.key_down.name(), keys.key( terminal, capability.key_down ) );
-			
+		
+		// Home/end
+		keys.bind( capability.key_home.name(), keys.key( terminal, capability.key_home ) );
+		keys.bind( capability.key_end.name(), keys.key( terminal, capability.key_end ) );
+		
+		// delete key/delete line/backspace
+		keys.bind( capability.key_dc.name(), keys.key( terminal, capability.key_dc ) );
+		keys.bind( capability.key_dl.name(), keys.key( terminal, capability.key_dl ) );
+		keys.bind( capability.key_backspace.name(), keys.key( terminal, capability.key_backspace ) );
+		
+		keys.bind( capability.key_ic.name(), keys.key( terminal, capability.key_ic ) );
+		
+		// Page up/down
+		keys.bind( capability.key_npage.name(), keys.key( terminal, capability.key_npage ) );
+		keys.bind( capability.key_ppage.name(), keys.key( terminal, capability.key_ppage ) );
+		
+		// Function keys
+		keys.bind( capability.key_f1.name(), keys.key( terminal, capability.key_f1 ) );
+		keys.bind( capability.key_f2.name(), keys.key( terminal, capability.key_f2 ) );
+		keys.bind( capability.key_f3.name(), keys.key( terminal, capability.key_f3 ) );
+		keys.bind( capability.key_f4.name(), keys.key( terminal, capability.key_f4 ) );
+		keys.bind( capability.key_f5.name(), keys.key( terminal, capability.key_f5 ) );
+		keys.bind( capability.key_f6.name(), keys.key( terminal, capability.key_f6 ) );
+		keys.bind( capability.key_f7.name(), keys.key( terminal, capability.key_f7 ) );
+		keys.bind( capability.key_f8.name(), keys.key( terminal, capability.key_f8 ) );
+		keys.bind( capability.key_f9.name(), keys.key( terminal, capability.key_f9 ) );
+		keys.bind( capability.key_f10.name(), keys.key( terminal, capability.key_f10 ) );
+		keys.bind( capability.key_f11.name(), keys.key( terminal, capability.key_f11 ) );
+		keys.bind( capability.key_f12.name(), keys.key( terminal, capability.key_f12 ) );
+
+		// Everything else
+		keys.setNomatch( 'self-insert' );		
+
+		// This doesn't seem to work on Windows
+		keys.bind( 'delete', keys.del() );
+		
+		keys.bind( 'escape', keys.esc() );
+		keys.setAmbiguousTimeout( 50 );
+		
 		var binding = bindingReader.readBinding( keys );
 		if( binding == 'self-insert' ) {
 			key = bindingReader.getLastBinding();
