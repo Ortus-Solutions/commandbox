@@ -16,6 +16,8 @@ component singleton{
 	property name="JLineHighlighter"	inject="JLineHighlighter";
 	property name="homedir"				inject="homedir@constants";
 	property name="commandHistoryFile"	inject="commandHistoryFile@constants";
+	property name="REPLScriptHistoryFile"	inject="REPLScriptHistoryFile@constants";
+	property name="REPLTagHistoryFile"	inject="REPLTagHistoryFile@constants";
 	
 
 	/**
@@ -25,6 +27,11 @@ component singleton{
 	*/
 	function getInstance( inStream, outputStream ) {
 		var reader = "";
+		
+		// Before we laod JLine, auto-convert any legacy history files.  JLine isn't smart enough to use them
+		upgradeHistoryFile( commandHistoryFile );
+		upgradeHistoryFile( REPLScriptHistoryFile );
+		upgradeHistoryFile( REPLTagHistoryFile );
 		
 		// Creating static references to these so we can get at nested classes and their properties
 		var LineReaderOption = createObject( "java", "org.jline.reader.LineReader$Option" );
@@ -67,6 +74,38 @@ component singleton{
 
 		return reader;
 
+	}
+	
+	private function upgradeHistoryFile( required string historyFile ) {
+		
+		if( fileExists( historyFile ) ) {
+			
+			try {
+				
+				var fileContents = fileRead( historyFile );
+				if( fileContents.len() ) {
+					// break on line breaks into array 
+					var fileContentsArray = fileContents.listToArray( chr( 13 ) & chr( 10 ) );
+					// Test the first line to see if it isn't in format of
+					// 1513970736912:cat myFile.txt
+					if( fileContentsArray.first().listLen( ':' ) == 1 ) {
+						var instant = createObject( 'java', 'java.time.Instant' );
+						// Add epoch milis and a colon to each line
+						fileContentsArray = fileContentsArray.map( function( line ) {
+							return instant.now().toEpochMilli() & ':' & line;
+						} );
+						// Write the new file back out
+						fileWrite( historyFile, fileContentsArray.toList( chr( 10 ) ) );
+					}
+				}
+			
+			// IF something went really bad, no worries, just nuke the file
+			} catch( any var e ) {
+				systemOutput( 'Error updating history file: ' & e.message, 1 );
+				fileDelete( historyFile );
+			}
+			
+		}
 	}
 
 }

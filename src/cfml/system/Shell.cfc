@@ -279,9 +279,6 @@ component accessors="true" singleton {
 		var capability = createObject( 'java', 'org.jline.utils.InfoCmp$Capability' );
 		var bindingReader = createObject( 'java', 'org.jline.keymap.BindingReader' ).init( terminal.reader() );
 
-		// Everything else
-		keys.setNomatch( 'self-insert' );
-		
 		// left, right, up, down arrow
 		keys.bind( capability.key_left.name(), keys.key( terminal, capability.key_left ) );
 		keys.bind( capability.key_right.name(), keys.key( terminal, capability.key_right ) );
@@ -318,7 +315,7 @@ component accessors="true" singleton {
 		keys.bind( capability.key_f12.name(), keys.key( terminal, capability.key_f12 ) );
 
 		// Everything else
-		keys.setNomatch( 'self-insert' );		
+		keys.setnomatch( 'self-insert' );
 
 		// This doesn't seem to work on Windows
 		keys.bind( 'delete', keys.del() );
