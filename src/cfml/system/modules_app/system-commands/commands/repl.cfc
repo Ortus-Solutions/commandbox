@@ -107,11 +107,9 @@ component {
 					}
 
 					// print results
-					if( !isNull( results ) ){
-						// Make sure results is a string
-						results = REPLParser.serializeOutput( results );
-						print.line( results, structKeyExists( arguments, 'input' ) ? '' : 'boldRed' )
-					}
+					// Make sure results is a string
+					results = REPLParser.serializeOutput( argumentCollection={ result : ( isNull( results ) ? nullValue() : results ) } );
+					print.line( results, structKeyExists( arguments, 'input' ) ? '' : 'boldRed' )
 
 				} catch( any e ){
 					// flush out anything in buffer

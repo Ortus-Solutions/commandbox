@@ -106,10 +106,13 @@ component accessors="true" singleton {
 	function serializeOutput( result ) {
 		// null
 		if( isNull( result ) ){
-			return;
+			return '[NULL]';
 		// binary
 		} else if( isBinary( result ) ) {
 			return '[BINARY]';
+		// empty string
+		} else if( isSimpleValue( result ) && !result.len() ) {
+			return '[EMPTY STRING]';
 		// string
 		} else if( isSimpleValue( result ) ) {
 			return result;

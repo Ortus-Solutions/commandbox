@@ -76,8 +76,10 @@ component {
 
 		if( len( variables.__out ) ) {
 			return variables.__out;
+		} else if ( !isNull( variables.__result ) ){
+			return variables.__result;
 		} else {
-			return variables.__result ?: '';
+			return;
 		}
 	}
 
