@@ -99,7 +99,7 @@ component singleton{
 					}
 				}
 			
-			// IF something went really bad, no worries, just nuke the file
+			// If something went really bad, no worries, just nuke the file
 			} catch( any var e ) {
 				systemOutput( 'Error updating history file: ' & e.message, 1 );
 				fileDelete( historyFile );

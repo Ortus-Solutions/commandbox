@@ -30,6 +30,12 @@ component singleton {
 		) {
 		
 		var terminal = shell.getReader().getTerminal();
+		
+		// If Jline uses a "dumb" terminal, the width reports as zero, which throws devide by zero errors.
+		// TODO: I might be able to just fake a reasonable width.
+		if( terminal.getWidth() == 0 || 1 ) {
+			return;
+		}
 		var display = createObject( 'java', 'org.jline.utils.Display' ).init( terminal, false );
 		display.resize( terminal.getHeight(), terminal.getWidth() );
 		
