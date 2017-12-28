@@ -84,6 +84,8 @@ component accessors="true" singleton {
 		required string tempDir,
 		boolean asyncLoad=true
 	){
+		variables.currentThread = createObject( 'java', 'java.lang.Thread' ).currentThread();
+		
 		// Possible byte order marks
 		variables.BOMS = [
 			chr( 254 ) & chr( 255 ),
@@ -119,7 +121,7 @@ component accessors="true" singleton {
 		}
 
 		setShellType( 'interactive' );
-
+		
     	return this;
 	}
 
@@ -261,6 +263,10 @@ component accessors="true" singleton {
 		return false;
 	}
 
+	function getMainThread() {
+		return variables.currentThread;
+	}
+
 	/**
 	 * Wait until the user's next keystroke, returns the key pressed
 	 * @message.message An optional message to display to the user such as "Press any key to continue."
@@ -291,7 +297,6 @@ component accessors="true" singleton {
 		
 		// delete key/delete line/backspace
 		keys.bind( capability.key_dc.name(), keys.key( terminal, capability.key_dc ) );
-		keys.bind( capability.key_dl.name(), keys.key( terminal, capability.key_dl ) );
 		keys.bind( capability.key_backspace.name(), keys.key( terminal, capability.key_backspace ) );
 		
 		keys.bind( capability.key_ic.name(), keys.key( terminal, capability.key_ic ) );
@@ -466,8 +471,6 @@ component accessors="true" singleton {
 					
 				// User hits Ctrl-C.  Don't let them exit the shell.
 				} catch( org.jline.reader.UserInterruptException var e ) {
-					// On windows, getting this fired twice, pausing prevents that
-				 	sleep( 200 );
 					variables.reader.getTerminal().writer().print( variables.print.yellowLine( 'Use the "exit" command or Ctrl-D to leave this shell.' ) );
 		    		variables.reader.getTerminal().writer().flush();
 		    		continue;
@@ -608,20 +611,28 @@ component accessors="true" singleton {
 			} else {
 				printError( { message : e.message, detail: e.detail } );
 			}
-		// This type of error means the user hit Ctrl-C, duck out and move along.
+		// This type of error means the user hit Ctrl-C, during a readLine() call. Duck out and move along.
 		} catch ( UserInterruptException var e) {
 			// If this is a nested command, pass the exception along to unwind the entire stack.
 			if( !initialCommand ) {
 				rethrow;
 			} else {
     			variables.reader.getTerminal().writer().flush();
+				variables.reader.getTerminal().writer().println();
 				variables.reader.getTerminal().writer().print( variables.print.boldRedLine( 'CANCELLED' ) );
 			}
-		// Anything else is completely unexpected and means boom booms happened-- full stack please.
+		
 		} catch (any e) {
+			
 			// If this is a nested command, pass the exception along to unwind the entire stack.
 			if( !initialCommand ) {
 				rethrow;
+			// This type of error means the user hit Ctrl-C, when not in a readLine() call (and hit my custom signal handler).  Duck out and move along.
+			} else if( e.getPageException().getRootCause().getClass().getName() == 'java.lang.InterruptedException' ) {
+    			variables.reader.getTerminal().writer().flush();
+				variables.reader.getTerminal().writer().println();
+				variables.reader.getTerminal().writer().print( variables.print.boldRedLine( 'CANCELLED' ) );			
+			// Anything else is completely unexpected and means boom booms happened-- full stack please.
 			} else {
 				printError( e );
 			}
@@ -662,7 +673,6 @@ component accessors="true" singleton {
 	 * @err.hint Error object to print (only message is required)
   	 **/
 	Shell function printError( required err ){
-
 		setExitCode( 1 );
 
 		// If CommandBox blows up while starting, the interceptor service won't be ready yet.

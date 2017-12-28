@@ -45,6 +45,8 @@ component accessors=true implements="IEndpoint" singleton {
 					consoleLogger.info( "Redirecting to: '#arguments.newURL#'..." );
 				}
 			);
+		} catch( UserInterruptException var e ) {
+			rethrow;
 		} catch( Any var e ) {
 			throw( '#e.message##CR##e.detail#', 'endpointException' );
 		};

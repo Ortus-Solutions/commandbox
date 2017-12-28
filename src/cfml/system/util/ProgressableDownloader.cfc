@@ -47,8 +47,17 @@ component singleton {
 			var lastTickCount = currentTickCount;
 			var kiloBytesPerSecondRunningAverage = [];
 			var lastKiloBytesPerSeconde = 0;
+			var currentThread = createObject( 'java', 'java.lang.Thread' ).currentThread();
 
 			while ( ( var count = inputStream.read( data ) ) != -1 ) {
+				
+				// Has the user tried to interrupt this thread?
+				if( currentThread.isInterrupted() ) {
+					// This clearn the interrupted status. i.e., "yeah, yeah, I'm on it!"
+					currentThread.interrupted();
+					throw( 'UserInterruptException', 'UserInterruptException', '' );
+				}
+				
 				total += count;
 				currentPercentage = int( ( total * 100 ) / lenghtOfFile );
 				outputStream.write( data, 0, count );

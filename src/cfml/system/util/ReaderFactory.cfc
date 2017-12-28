@@ -14,6 +14,7 @@ component singleton{
 	property name="completor" 			inject="Completor";
 	property name="JLineParser"			inject="JLineParser";
 	property name="JLineHighlighter"	inject="JLineHighlighter";
+	property name="JLineSignalHandler"	inject="JLineSignalHandler";
 	property name="homedir"				inject="homedir@constants";
 	property name="commandHistoryFile"	inject="commandHistoryFile@constants";
 	property name="REPLScriptHistoryFile"	inject="REPLScriptHistoryFile@constants";
@@ -34,22 +35,22 @@ component singleton{
 		upgradeHistoryFile( REPLTagHistoryFile );
 		
 		// Creating static references to these so we can get at nested classes and their properties
-		var LineReaderOption = createObject( "java", "org.jline.reader.LineReader$Option" );
 		var LineReader = createObject( "java", "org.jline.reader.LineReader" );
 		var SignalHandler = createObject( "java", "org.jline.terminal.Terminal$SignalHandler" );
 		var LineReaderOption = createObject( "java", "org.jline.reader.LineReader$Option" );
 		
-		// A CFC instance of our completor that implements a JLine Java interface
+		// CFC instances that implements a JLine Java interfaces
 		var jCompletor = createDynamicProxy( completor , [ 'org.jline.reader.Completer' ] );
 		var jParser = createDynamicProxy( JLineParser, [ 'org.jline.reader.Parser' ] );
 		var jHighlighter = createDynamicProxy( JLineHighlighter, [ 'org.jline.reader.Highlighter' ] );
+		var jSignalHandler = createDynamicProxy( JLineSignalHandler, [ 'org.jline.terminal.Terminal$SignalHandler' ] );
 		
 		// Build our terminal instance
 		var terminal = createObject( "java", "org.jline.terminal.TerminalBuilder" )
 			.builder()
 	        .system( true )
 	        .nativeSignals( true )
-	        .signalHandler( SignalHandler.SIG_IGN )
+	        .signalHandler( jSignalHandler )
 			.build();
 		
 		// Build our reader instance
