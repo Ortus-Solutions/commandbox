@@ -560,6 +560,8 @@ component accessors="true" singleton {
 				tokens[1] = right( tokens[1], len( tokens[1] ) - 1 );
 				// tack on "run"
 				tokens.prepend( 'run' );
+			} else if( tokens.len() && tokens[1] == '!' ) {
+				tokens[1] = 'run' ;
 			}
 
 			/* If command is "run", merge all remaining tokens into one string
