@@ -21,6 +21,7 @@ component singleton {
 	 * Constructor
 	 **/
 	function init() {
+		variables.functionList = getFunctionList();
 		return this;
 	}
 
@@ -47,6 +48,24 @@ component singleton {
 			// Partial text that didn't match anything
 			var leftOver = '';
 
+			// TODO: Break REPL completion out into separate CFC
+			// Tab completion for stuff like #now if we're still on the first word
+			if( commandInfo.commandString.left( 4 ) == 'cfml' && commandInfo.originalLine.listLen( ' ' ) == 1 && !buffer.endsWith( ' ' ) ) {
+				
+							
+				// Loop over all the possibilities at this level
+				for( var func in variables.functionList ) {
+					// Match the partial bit if it exists
+					if( lcase( func ).startsWith( lcase( commandInfo.originalLine.right( -1 ) ) ) ) {
+						// Add extra space so they don't have to
+						candidates.add( '##' & func & ' ' );
+					}
+				}
+				createCandidates( candidates, javaCandidates );
+				return;
+				
+			}
+			
 			// If stuff was typed and it's an exact match to a command part
 			if( matchedToHere == len( buffer ) && len( buffer ) ) {
 				// Suggest a trailing space
@@ -65,10 +84,11 @@ component singleton {
 					matchedToHere++;
 				}
 			}
-					
+			
+			
 			// Didn't match an exact command, but might have matched part of one.
 			if( !commandInfo.found ) {
-
+							
 				// Loop over all the possibilities at this level
 				for( var command in commandInfo.commandReference ) {
 					// Match the partial bit if it exists

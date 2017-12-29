@@ -12,6 +12,11 @@ component {
 	property name='CommandService'	inject='CommandService';
 	property name='print'			inject='print';
 	
+	function init() {
+		variables.functionList = getFunctionList();
+		return this;
+	}
+	
 	function highlight( reader, buffer ) {
 		
 		// Call CommandBox parser to parse the line.
@@ -29,9 +34,13 @@ component {
 				// > echo "echo"
 				// Things like whitespace is normalized and escapes are processed, so I can't rebuild the exact original
 				// buffer from the command chain so this work around is a "close enough" implementation for now.
-				
 				var thisCommand = command.commandString.listChangeDelims( ' ', '.' );
-				buffer = replaceNoCase( buffer, thisCommand, print.yellowBold( thisCommand ) );
+				// Check if the user is typing something like #now!
+				if( thisCommand.left( 4 ) == 'cfml' && variables.functionList.keyExists( command.parameters[ 1 ] ) ) {					
+					buffer = replaceNoCase( buffer, command.parameters[ 1 ], print.yellowBold( command.parameters[ 1 ] ) );
+				} else {
+					buffer = replaceNoCase( buffer, thisCommand, print.yellowBold( thisCommand ) );
+				}
 			}  
 		}
 		

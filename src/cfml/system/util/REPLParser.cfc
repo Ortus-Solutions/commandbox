@@ -111,7 +111,7 @@ component accessors="true" singleton {
 		} else if( isBinary( result ) ) {
 			return '[BINARY]';
 		// empty string
-		} else if( isSimpleValue( result ) && !result.len() ) {
+		} else if( isSimpleValue( result ) && !len( result ) ) {
 			return '[EMPTY STRING]';
 		// string
 		} else if( isSimpleValue( result ) ) {

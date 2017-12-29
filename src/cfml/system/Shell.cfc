@@ -530,7 +530,7 @@ component accessors="true" singleton {
 
 		// Has the user tried to interrupt this thread?
 		if( thisThread.isInterrupted() ) {
-			// This clearn the interrupted status. i.e., "yeah, yeah, I'm on it!"
+			// This clears the interrupted status. i.e., "yeah, yeah, I'm on it!"
 			thisThread.interrupted();
 			throw( 'UserInterruptException', 'UserInterruptException', '' );
 		}
