@@ -60,6 +60,7 @@ component accessors=true {
 	 * Convert params to named or positional arguments
   	 **/
 	private array function processParams() {
+		var runCommand = ( getCommand().startsWith( '!' ) || getCommand().left( 3 ) == 'run' );
 		var processedParams = [];
 		if( !arraylen( getParams() ) ) {
 			return processedParams;
@@ -68,12 +69,20 @@ component accessors=true {
 		// Positional params
 		if( isNumeric( listFirst( structKeyList( getParams() ) ) ) ) {
 			for( var param in getParams() ) {
-				processedParams.append( '"#parser.escapeArg( getParams()[ param ] )#"' );
+				if( runCommand ) {
+					processedParams.append( getParams()[ param ] );					
+				} else {
+					processedParams.append( '"#parser.escapeArg( getParams()[ param ] )#"' );					
+				}
 			}
 		// Named params
 		} else {
 			for( var param in getParams() ) {
-				processedParams.append( '#param#="#parser.escapeArg( getParams()[ param ] )#"' );
+				if( runCommand ) {
+					processedParams.append( '#param#=#getParams()[ param ]#' );	
+				} else {
+					processedParams.append( '#param#="#parser.escapeArg( getParams()[ param ] )#"' );					
+				}
 			}
 		}
 
