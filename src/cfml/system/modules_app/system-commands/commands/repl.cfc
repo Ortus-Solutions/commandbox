@@ -43,7 +43,7 @@ component {
 
 		// Setup REPL history file
 		shell.setHistory( newHistory );
-		shell.enableHighlighter( false );
+		shell.setHighlighter( 'REPL' );
 
 		if( !structKeyExists( arguments, 'input' ) ) {
 			print.cyanLine( "Enter any valid CFML code in the following prompt in order to evaluate it and print out any results (if any)" );
@@ -68,9 +68,9 @@ component {
 				do {
 					// ask repl
 					if ( arrayLen( REPLParser.getCommandLines() ) == 0 ) {
-						var command = ask( message=( arguments.script ? 'CFSCRIPT' : 'CFML' ) &  '-REPL: ', keepHistory=true );
+						var command = ask( message=( arguments.script ? 'CFSCRIPT' : 'CFML' ) &  '-REPL: ', keepHistory=true, highlight=true );
 					} else {
-						var command = ask( message="...", keepHistory=true );
+						var command = ask( message="... ", keepHistory=true, highlight=true );
 
 						// allow ability to break out of adding additional lines
 						if ( trim(command) == 'exit' || trim(command) == '' ) {
@@ -121,7 +121,7 @@ component {
 						shell.getReader().getHistory().save();
 						// set back original history
 						shell.setHistory( commandHistoryFile );
-						shell.enableHighlighter( true );
+						shell.setHighlighter( 'command' );
 						// This will exist the command
 						error( '#e.message##CR##e.detail#' );
 					} else {
@@ -137,7 +137,7 @@ component {
 		shell.getReader().getHistory().save();
 		// set back original history
 		shell.setHistory( commandHistoryFile );
-		shell.enableHighlighter( true );
+		shell.setHighlighter( 'command' );
 	}
 
 

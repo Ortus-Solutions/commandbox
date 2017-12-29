@@ -9,19 +9,20 @@
 component accessors="true" singleton {
 
 	// DI
-	property name="commandService" 		inject="CommandService";
-	property name="readerFactory" 		inject="ReaderFactory";
-	property name="print" 				inject="print";
-	property name="cr" 					inject="cr@constants";
-	property name="formatterUtil" 		inject="Formatter";
-	property name="logger" 				inject="logbox:logger:{this}";
-	property name="fileSystem"			inject="FileSystem";
-	property name="WireBox"				inject="wirebox";
-	property name="LogBox"				inject="logbox";
-	property name="InterceptorService"	inject="InterceptorService";
-	property name="ModuleService"		inject="ModuleService";
-	property name="Util"				inject="wirebox.system.core.util.Util";
-	property name="JLineHighlighter"	inject="JLineHighlighter";
+	property name="commandService" 			inject="CommandService";
+	property name="readerFactory" 			inject="ReaderFactory";
+	property name="print" 					inject="print";
+	property name="cr" 						inject="cr@constants";
+	property name="formatterUtil" 			inject="Formatter";
+	property name="logger" 					inject="logbox:logger:{this}";
+	property name="fileSystem"				inject="FileSystem";
+	property name="WireBox"					inject="wirebox";
+	property name="LogBox"					inject="logbox";
+	property name="InterceptorService"		inject="InterceptorService";
+	property name="ModuleService"			inject="ModuleService";
+	property name="Util"					inject="wirebox.system.core.util.Util";
+	property name="JLineHighlighter"	 	inject="JLineHighlighter";
+	property name="JLineREPLHighlighter"	inject="JLineREPLHighlighter";
 
 
 	/**
@@ -213,11 +214,13 @@ component accessors="true" singleton {
 	 *
 	 * @return the response from the user
  	 **/
-	string function ask( message, string mask='', string defaultResponse='', keepHistory=false ) {
+	string function ask( message, string mask='', string defaultResponse='', keepHistory=false, highlight=false ) {
 
 		try {
 			
-			enableHighlighter( false );
+			if( !highlight ) {
+				enableHighlighter( false );
+			}
 			
 			// Some things are best forgotten
 			if( !keepHistory ) {
@@ -242,7 +245,10 @@ component accessors="true" singleton {
 			setPrompt();
 			// Turn history back on
 			enableHistory();
-			enableHighlighter( true );
+			
+			if( !highlight ) {
+				enableHighlighter( true );
+			}
 		}
 
 		return input;
@@ -574,11 +580,27 @@ component accessors="true" singleton {
 	*/
 	function enableHighlighter( boolean enable=true ) {
 		if( enable ) {
-			// Our CommandBox parser/command-aware highlighter
-			variables.reader.setHighlighter( createDynamicProxy( JLineHighlighter, [ 'org.jline.reader.Highlighter' ] ) );			
+			setHighlighter( 'command' );			
 		} else {
 			// A dummy highlighter, or at least one that never seems to do anything...
+			setHighlighter( 'dummy' );
+		}
+	}
+
+	/**
+	* @highlighterName Pass "command", "repl", or "dummy"
+	* 
+	* Set the shell's highlighter
+	*/
+	function setHighlighter( string highlighterName ) {
+		if( highlighterName == 'command' ) {
+			variables.reader.setHighlighter( createDynamicProxy( JLineHighlighter, [ 'org.jline.reader.Highlighter' ] ) );	
+		} else if( highlighterName == 'repl' ) {
+			variables.reader.setHighlighter( createDynamicProxy( JLineREPLHighlighter, [ 'org.jline.reader.Highlighter' ] ) );			
+		} else if( highlighterName == 'dummy' ) {
 			variables.reader.setHighlighter( createObject( 'java', 'org.jline.reader.impl.DefaultHighlighter' ) );
+		} else {
+			throw( 'Invalid highlighter name [#highlighterName#].  Valid names are "command", "repl", or "dummy".' );
 		}
 	}
 
