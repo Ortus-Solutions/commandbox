@@ -11,6 +11,7 @@
 component singleton {
 
 	property name='ConfigService' inject='ConfigService';
+	property name='shell' inject='shell';
 
 	/**
 	* Call me to download a file with a status callback
@@ -47,16 +48,11 @@ component singleton {
 			var lastTickCount = currentTickCount;
 			var kiloBytesPerSecondRunningAverage = [];
 			var lastKiloBytesPerSeconde = 0;
-			var currentThread = createObject( 'java', 'java.lang.Thread' ).currentThread();
 
 			while ( ( var count = inputStream.read( data ) ) != -1 ) {
 				
 				// Has the user tried to interrupt this thread?
-				if( currentThread.isInterrupted() ) {
-					// This clearn the interrupted status. i.e., "yeah, yeah, I'm on it!"
-					currentThread.interrupted();
-					throw( 'UserInterruptException', 'UserInterruptException', '' );
-				}
+				shell.checkInterrupted();
 				
 				total += count;
 				currentPercentage = int( ( total * 100 ) / lenghtOfFile );

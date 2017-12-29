@@ -238,4 +238,13 @@ component accessors="true" singleton {
 	}
 
 
+	/**
+	* Call this method periodically in a long-running task to check and see
+	* if the user has hit Ctrl-C.  This method will throw an UserInterruptException
+	* which you should not catch.  It will unroll the stack all the way back to the shell
+	*/
+	function checkInterrupted() {
+		shell.checkInterrupted();
+	}
+
 }

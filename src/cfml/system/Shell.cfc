@@ -521,6 +521,22 @@ component accessors="true" singleton {
 	}
 
 	/**
+	* Call this method periodically in a long-running task to check and see
+	* if the user has hit Ctrl-C.  This method will throw an UserInterruptException
+	* which you should not catch.  It will unroll the stack all the way back to the shell
+	*/
+	function checkInterrupted() {
+		var thisThread = createObject( 'java', 'java.lang.Thread' ).currentThread();
+
+		// Has the user tried to interrupt this thread?
+		if( thisThread.isInterrupted() ) {
+			// This clearn the interrupted status. i.e., "yeah, yeah, I'm on it!"
+			thisThread.interrupted();
+			throw( 'UserInterruptException', 'UserInterruptException', '' );
+		}
+	}
+
+	/**
 	* @filePath The path to the history file to set
 	* 
 	* Use this wrapper method to change the history file in use by the shell.
