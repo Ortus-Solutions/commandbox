@@ -19,7 +19,7 @@ component singleton{
 	property name="commandHistoryFile"	inject="commandHistoryFile@constants";
 	property name="REPLScriptHistoryFile"	inject="REPLScriptHistoryFile@constants";
 	property name="REPLTagHistoryFile"	inject="REPLTagHistoryFile@constants";
-	
+	property name="systemSettings"		inject="SystemSettings";
 
 	/**
 	* Build a jline console reader instance
@@ -33,6 +33,15 @@ component singleton{
 		upgradeHistoryFile( commandHistoryFile );
 		upgradeHistoryFile( REPLScriptHistoryFile );
 		upgradeHistoryFile( REPLTagHistoryFile );
+		
+		// Work around for lockdown STIGs on govt machines.
+		// By default JANSI tries to write files into a locked down folder under appData
+		var JANSI_path = expandPath( '/commandbox-home/lib/jansi' );
+		if( !directoryExists( JANSI_path ) ){
+			directoryCreate( JANSI_path );
+		}
+		// The JANSI lib will pick this up and use it
+		systemSettings.setSystemProperty( 'library.jansi.path', JANSI_path );
 		
 		// Creating static references to these so we can get at nested classes and their properties
 		var LineReader = createObject( "java", "org.jline.reader.LineReader" );
