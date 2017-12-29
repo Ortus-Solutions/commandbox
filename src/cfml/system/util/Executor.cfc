@@ -87,4 +87,15 @@ component {
 		return $wirebox.getInstance( argumentCollection = arguments );
 	}
 
+	function getCurrentVariables(){
+		return variables
+			.keyArray()
+			.filter( function( i ) {
+				return ( !'RUNFILE,EVAL,RUNCODE,$shell,GETINSTANCE,$wirebox,$fileSystemUtil,GETCURRENTVARIABLES,THIS,__RESULT,__STATEMENT,__out'.listFindNoCase( i ) );
+			} )
+			.map( function( i ) {
+				return i.lcase();
+			} );
+	}
+
 }

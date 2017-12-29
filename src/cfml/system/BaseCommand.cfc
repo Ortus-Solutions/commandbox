@@ -73,9 +73,9 @@ component accessors="true" singleton {
 	 *
 	 * @return the response from the user
  	 **/
-	string function ask( message, string mask='', string defaultResponse='', keepHistory=false, highlight=true ) {
+	string function ask( message, string mask='', string defaultResponse='', keepHistory=false, highlight=true, complete=false ) {
 		print.toConsole();
-		return shell.ask( arguments.message, arguments.mask, arguments.defaultResponse, arguments.keepHistory, arguments.highlight );
+		return shell.ask( arguments.message, arguments.mask, arguments.defaultResponse, arguments.keepHistory, arguments.highlight, arguments.complete );
 	}
 
 	/**

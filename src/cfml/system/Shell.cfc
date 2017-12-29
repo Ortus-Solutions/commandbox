@@ -10,6 +10,8 @@ component accessors="true" singleton {
 
 	// DI
 	property name="commandService" 			inject="CommandService";
+	property name="completor" 				inject="Completor";
+	property name="REPLCompletor" 			inject="REPLCompletor";	
 	property name="readerFactory" 			inject="ReaderFactory";
 	property name="print" 					inject="print";
 	property name="cr" 						inject="cr@constants";
@@ -214,12 +216,16 @@ component accessors="true" singleton {
 	 *
 	 * @return the response from the user
  	 **/
-	string function ask( message, string mask='', string defaultResponse='', keepHistory=false, highlight=false ) {
+	string function ask( message, string mask='', string defaultResponse='', keepHistory=false, highlight=false, complete=false ) {
 
 		try {
 			
 			if( !highlight ) {
 				enableHighlighter( false );
+			}
+			
+			if( !complete ) {
+				enableCompletion( false );
 			}
 			
 			// Some things are best forgotten
@@ -245,6 +251,10 @@ component accessors="true" singleton {
 			setPrompt();
 			// Turn history back on
 			enableHistory();
+			
+			if( !complete ) {
+				enableCompletion( true );
+			}
 			
 			if( !highlight ) {
 				enableHighlighter( true );
@@ -571,6 +581,46 @@ component accessors="true" singleton {
 		
 		// Swap out the file setting
 		variables.reader.setVariable( LineReader.DISABLE_HISTORY, !enable );
+	}
+
+	/**
+	* @enable Pass true to enable, false to disable
+	* 
+	* Enable or disables tab completion in the shell
+	*/
+	function enableCompletion( boolean enable=true ) {
+		
+		// DOESN'T WORK. NOT IMPLEMENTED IN JLINE!
+		//var LineReader = createObject( "java", "org.jline.reader.LineReader" );
+		// variables.reader.setVariable( LineReader.DISABLE_COMPLETION, !enable );
+		
+		if( enable ) {
+			setCompletor( 'command' );
+		} else {
+			setCompletor( 'dummy' );
+		}
+	}
+
+	/**
+	* @CompletorName Pass "command", "repl", or "dummy"
+	* @executor If using REPL completor, pass an optional executor for better completion results
+	* 
+	* Set the shell's completor
+	*/
+	function setCompletor( string completorName, any executor ) {
+		if( completorName == 'command' ) {
+			variables.reader.setCompleter( createDynamicProxy( completor, [ 'org.jline.reader.Completer' ] ) );		
+		} else if( completorName == 'repl' ) {
+			
+			REPLCompletor.setCurrentExecutor( arguments.executor ?: '' );
+			var thisCompletor = createDynamicProxy( REPLCompletor, [ 'org.jline.reader.Completer' ] );			
+			variables.reader.setCompleter( thisCompletor );
+			
+		} else if( completorName == 'dummy' ) {
+			variables.reader.setCompleter( createObject( 'java', 'org.jline.reader.impl.completer.NullCompleter' ) );	
+		} else {
+			throw( 'Invalid completor name [#completorName#].  Valid names are "command", "repl", or "dummy".' );
+		}
 	}
 
 	/**
