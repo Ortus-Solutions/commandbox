@@ -132,7 +132,7 @@ component aliases='status,server info' {
 
 				print.line().boldText( thisServerInfo.name );
 
-				var status = serverService.isServerRunning( thisServerInfo ) ? 'running' : 'stopped';;
+				var status = serverService.isServerRunning( thisServerInfo ) ? 'running' : 'stopped';
 				print.boldtext( ' (' )
 					.bold( status, statusColors.keyExists( status ) ? statusColors[ status ] : 'yellow' )
 					.bold( ')' );

@@ -115,10 +115,8 @@ component implements="wirebox.system.ioc.dsl.IDSLBuilder" accessors=true{
 			}
 		}
 
-		// debug info
-		if( getLog().canDebug() ){
-			getLog().debug("getColdboxDSL() cannot find dependency using definition: #arguments.definition.toString()#");
-		}
+		throw( "CommandBox DSL cannot find dependency using definition: #arguments.definition.toString()#" );
+
 	}
 
 

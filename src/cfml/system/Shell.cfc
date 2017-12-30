@@ -165,11 +165,19 @@ component accessors="true" singleton {
 	}
 
 	/**
-	 * Set's the OS Exit code to be used
+	 * Sets the OS Exit code to be used
 	 **/
 	Shell function setExitCode( required string exitCode ) {
 		createObject( 'java', 'java.lang.System' ).setProperty( 'cfml.cli.exitCode', arguments.exitCode );
 		return this;
+	}
+
+	/**
+	 * Gets the last Exit code to be used
+	 **/
+	function getExitCode() {
+		return (createObject( 'java', 'java.lang.System' ).getProperty( 'cfml.cli.exitCode' ) ?: 0);
+		
 	}
 
 
@@ -478,11 +486,14 @@ component accessors="true" singleton {
 				
 				try {
 					
+					var interceptData = { prompt : variables.shellPrompt };
+					getInterceptorService().announceInterception( 'prePrompt', interceptData );
+					
 					// Shell stops on this line while waiting for user input
 			        if( arguments.silent ) {
-			        	line = variables.reader.readLine( javacast( "char", ' ' ) );
+			        	line = variables.reader.readLine( interceptData.prompt, javacast( "char", ' ' ) );
 					} else {
-			        	line = variables.reader.readLine( variables.shellPrompt );
+			        	line = variables.reader.readLine( interceptData.prompt );
 					}
 					
 				// User hits Ctrl-C.  Don't let them exit the shell.

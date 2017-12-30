@@ -15,6 +15,8 @@ component {
 
 	function onCLIStart() { processScripts( 'onCLIStart' ); }
 	function onCLIExit() { processScripts( 'onCLIExit' ); }
+	function prePrompt() { processScripts( 'prePrompt' ); }
+	
 	function preCommand() { processScripts( 'preCommand' ); }
 	function postCommand() { processScripts( 'postCommand' ); }
 	function preModuleLoad() { processScripts( 'preModuleLoad' ); }
