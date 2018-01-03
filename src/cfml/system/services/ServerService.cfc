@@ -1137,9 +1137,6 @@ component accessors="true" singleton {
 				try {
 
 					while( true ) {
-						// Wipe out prompt so it doesn't redraw if the user hits enter
-						shell.getReader().setPrompt( '' );
-
 						// Detect user pressing Ctrl-C
 						// Any other characters captured will be ignored
 						var line = shell.getReader().readLine();
