@@ -28,3 +28,4 @@ jmimemagic.log
 
 # CommandBox config
 src/CommandBox.json
+.classpath
