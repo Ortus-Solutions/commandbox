@@ -220,11 +220,17 @@ component accessors="true" singleton {
 
 			}
 
+			// Default directory to package name
+			var packageDirectory = packageName;
+			
 			// Next, see if the containing project has an install path configured for this dependency already.
 			var containerBoxJSON = readPackageDescriptor( arguments.packagePathRequestingInstallation );
 			if( !len( installDirectory ) && structKeyExists( containerBoxJSON.installPaths, packageName ) ) {
 				// Get the resolved installation path for this package
 				installDirectory = fileSystemUtil.resolvePath( containerBoxJSON.installPaths[ packageName ], arguments.packagePathRequestingInstallation );
+
+				// Use the last folder as the package directory in case the user wanted to override the default package name
+				packageDirectory = listLast( installDirectory, '/\' );
 
 				// Back up to the "container" folder.  The packge directory will be added back below
 				installDirectory = listDeleteAt( installDirectory, listLen( installDirectory, '/\' ), '/\' );
@@ -336,10 +342,8 @@ component accessors="true" singleton {
 				installDirectory = arguments.currentWorkingDirectory;
 			}
 
-			// Default directory to package name
-			var packageDirectory = packageName;
 			// Override package directory in descriptor?
-			if( len( artifactDescriptor.packageDirectory ) ) {
+			if( len( artifactDescriptor.packageDirectory ) && !packageDirectory.len() ) {
 				packageDirectory = artifactDescriptor.packageDirectory;
 			}
 
