@@ -10,9 +10,9 @@
 *  Here are the basic skeletons that are available for you that come from ForgeBox
 *  - Advanced
 *  - AdvancedScript (default)
-*  - elixir
-*  - elixir-bower
-*  - elixir-vuejs
+*  - ElixirVueJS
+*  - ElixirBower
+*  - Elixir
 *  - rest
 *  - Simple
 *  - SuperSimple
