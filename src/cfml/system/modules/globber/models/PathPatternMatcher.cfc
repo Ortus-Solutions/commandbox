@@ -91,9 +91,6 @@ component accessors="true" singleton {
 			regex &= '.*';
 		}
 
-
-		//systemoutput(regex, true);
-		//systemoutput(arguments.path, true);
 		return ( reFindNoCase( regex, arguments.path ) > 0 );
 	}
 

@@ -357,13 +357,13 @@
 					try {
 						activateModule( moduleName );
 					} catch( any var e ) {
-						systemOutput( 'Module [#moduleName#] failed to load!  Check the logs for more info.', true );
-						systemOutput( '    ' & e.message, true );
+						consoleLogger.error( 'Module [#moduleName#] failed to load!  Check the logs for more info.' );
+						consoleLogger.error( '    ' & e.message );
 						if( (e.detail ?: '').len() ) {
-							systemOutput( '    ' & e.detail, true );
+							consoleLogger.error( '    ' & e.detail );
 						}
-						systemOutput( '    ' & e.tagContext[ 1 ].template & ':' &  e.tagContext[ 1 ].line, true );
-						systemOutput( '', true );
+						consoleLogger.error( '    ' & e.tagContext[ 1 ].template & ':' &  e.tagContext[ 1 ].line );
+						consoleLogger.error( '' );
 						instance.logger.error( 'Module [#moduleName#] failed to load!', e );
 					}
 				}

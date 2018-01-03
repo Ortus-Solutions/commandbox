@@ -93,9 +93,7 @@ component singleton {
 		candidates.each( function( candidate ){
 				
 			var thisCandidate = candidate.listLast( ' ' ) & ( candidate.endsWith( ' ' ) ? ' ' : '' );
-			
-			// systemOutput( 'adding: ' & thisCandidate, 1 );
-			
+						
 			javaCandidates.append(
 				createObject( 'java', 'org.jline.reader.Candidate' )
 					.init(

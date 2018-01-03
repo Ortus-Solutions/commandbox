@@ -42,7 +42,8 @@ component{
 
 		// Give nicer message to user
 		var err = arguments.exception;
-    	var CR = chr( 13 );
+    	var CR = chr( 10 );    	
+		// JLine may not be loaded yet, so I have to use systemOutput() here.
     	systemOutput( 'BOOM GOES THE DYNAMITE!!', true );
     	systemOutput( 'We''re truly sorry, but something horrible has gone wrong when starting up CommandBox.', true );
     	systemOutput( 'Here''s what we know:.', true );

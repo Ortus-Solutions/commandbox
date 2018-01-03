@@ -44,7 +44,6 @@ component {
 			}  
 		}
 		
-		//systemoutput( commandChain[ 1 ].originalLinehighlighted, 1 );
 		return createObject("java","org.jline.utils.AttributedString").fromAnsi( buffer );	
 	}
 	

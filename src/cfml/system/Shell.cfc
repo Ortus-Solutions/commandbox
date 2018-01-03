@@ -440,6 +440,7 @@ component accessors="true" singleton {
   	 **/
 	Shell function printString( required string ){
 		if( !isSimpleValue( arguments.string ) ){
+			// TODO: is this even in use?? replace with shell.printString() if so
 			systemOutput( "[COMPLEX VALUE]\n" );
 			writedump(var=arguments.string, output="console");
 			arguments.string = "";
@@ -531,7 +532,6 @@ component accessors="true" singleton {
 	        } // end while keep running
 
 		} catch( any e ){
-			SystemOutput( e.message & e.detail );
 			printError( e );
 		}
 

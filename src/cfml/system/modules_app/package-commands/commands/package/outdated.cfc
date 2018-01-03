@@ -72,7 +72,10 @@ component aliases="outdated" {
 				.green( ' Outdated Dependenc#( aOutdatedDependencies.len()  == 1 ? 'y' : 'ies' )# ' )
 				.line();
 			printDependencies( data=aOutdatedDependencies, verbose=arguments.verbose );
-			print.line().cyanLine( "Run the 'update' command to update all the outdated dependencies to their latest version or use 'update {slug}' to update a specific dependency" );
+			print
+				.line()
+				.cyanLine( "Run the 'update' command to update all the outdated dependencies to their latest version." )
+				.cyanLine( "Or use 'update {slug}' to update a specific dependency" );
 		} else {
 			print.boldYellowLine( 'There are no outdated dependencies!' );
 		}

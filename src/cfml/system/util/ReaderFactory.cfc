@@ -111,6 +111,7 @@ component singleton{
 			
 			// If something went really bad, no worries, just nuke the file
 			} catch( any var e ) {
+				// JLine isn't loaded yet, so I have to use systemOutput() here.
 				systemOutput( 'Error updating history file: ' & e.message, 1 );
 				fileDelete( historyFile );
 			}

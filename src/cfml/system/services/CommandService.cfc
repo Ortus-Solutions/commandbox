@@ -826,7 +826,7 @@ component accessors="true" singleton {
 			var commandData = createCommandData( fullCFCPath, commandName );
 		// This will catch nasty parse errors so the shell can keep loading
 		} catch( any e ){
-			systemOutput( 'Error registering command [#fullCFCPath#]', true );
+			shell.printString( 'Error registering command [#fullCFCPath#]#cr#' );
 			logger.error( 'Error registering command [#fullCFCPath#]. #e.message# #e.detail ?: ''#', e.stackTrace );
 			// pretty print the exception
 			 shell.printError( e );

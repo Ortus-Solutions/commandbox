@@ -185,8 +185,6 @@ component {
 
 			CLIRenderer.render( print, testData, arguments.verbose ?: boxOptions.verbose ?: true );
 
-			//systemOutput( getINstance( 'formatter' ).formatJSON( testData ) );
-
 		// For all other reporters, just dump out whatever we got from the server
 		} else {
 
