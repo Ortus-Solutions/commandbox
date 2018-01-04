@@ -199,6 +199,7 @@ component accessors="true" singleton {
 			// If nothing was found, bail out here.
 			if( !commandInfo.found ){
 				var detail = generateListOfSimilarCommands( commandInfo );
+				shell.setExitCode( 1 );
 				throw( message='Command "#line#" cannot be resolved.', detail=detail, type="commandException");
 			}
 
@@ -223,6 +224,7 @@ component accessors="true" singleton {
 
 			// Parameters need to be ALL positional or ALL named
 			if( arrayLen( parameterInfo.positionalParameters ) && structCount( parameterInfo.namedParameters ) ){
+				shell.setExitCode( 1 );
 				throw( message='Please don''t mix named and positional parameters, it makes me dizzy.', detail=line, type="commandException");
 			}
 
@@ -239,6 +241,7 @@ component accessors="true" singleton {
 				// If we're using named parameters and this command has at least one param defined
 				if( structCount( parameterInfo.namedParameters ) ){
 					if( commandInfo.commandString == 'cfml' ) {
+						shell.setExitCode( 1 );
 						throw( message='Sorry, you can''t pipe data into a CFML function using named parameters since I don''t know the name of the piped parameter.', detail=line, type="commandException");
 					}
 					// Insert/overwrite the first param as our last result
@@ -753,6 +756,7 @@ component accessors="true" singleton {
 			} catch( any e ){
 				// Log the full exception with stack trace
 				logger.error( 'Error creating command [#commandData.fullCFCPath#]. #e.message# #e.detail ?: ''#', e.stackTrace );
+				shell.setExitCode( 1 );
 				throw( message='Error creating command [#commandData.fullCFCPath#]', detail="#e.message# #CR# #e.detail ?: ''# #CR# #e.stacktrace#", type="commandException");
 			}
 		} // CFC exists check
@@ -1000,6 +1004,7 @@ component accessors="true" singleton {
 				&& param.type != 'Globber'
 				&& !isValid( param.type, userNamedParams[ param.name ] ) ){
 
+				shell.setExitCode( 1 );
 				throw( message='Parameter [#param.name#] has a value of [#userNamedParams[ param.name ]#] which is not of type [#param.type#].', type="commandException");
 			}
 		} // end for loop

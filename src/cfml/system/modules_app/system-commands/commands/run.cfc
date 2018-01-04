@@ -74,12 +74,12 @@ component{
 				// waits for it to exit, returning the exit code
 				.waitFor();
 
-			if( exitCode != 0 ) {
-				error( 'Command returned failing exit code [#exitCode#]' );
-			}
-
 		} catch( any e ){
 			error( '#e.message##CR##e.detail#' );
+		}
+
+		if( exitCode != 0 ) {
+			error( message='Command returned failing exit code [#exitCode#]', exitCode=exitCode );
 		}
 
 	}

@@ -772,7 +772,10 @@ component accessors="true" singleton {
 	 * @err.hint Error object to print (only message is required)
   	 **/
 	Shell function printError( required err ){
-		setExitCode( 1 );
+		// Don't override a non-1 exit code.
+		if( getExitCode() == 0 ) {
+			setExitCode( 1 );	
+		}
 
 		// If CommandBox blows up while starting, the interceptor service won't be ready yet.
 		if( getInterceptorService().getConfigured() ) {

@@ -155,8 +155,8 @@ component accessors="true" singleton {
 	 * @message.hint The error message to display
 	 * @clearPrintBuffer.hint Wipe out the print buffer or not, it does not by default
  	 **/
-	function error( required message, detail='', clearPrintBuffer=false ) {
-		setExitCode( 1 );
+	function error( required message, detail='', clearPrintBuffer=false, exitCode=1 ) {
+		setExitCode( exitCode );
 		hasErrored = true;
 		if( arguments.clearPrintBuffer ) {
 			// Wipe
