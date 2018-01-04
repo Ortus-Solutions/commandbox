@@ -166,7 +166,10 @@ component accessors="true" implements="IEndpoint" singleton {
 
 	public function getUpdate( required string package, required string version, boolean verbose=false ) {
 		var result = {
-			isOutdated = true,
+			// Repo URLs with a semver in the name are considered to not have an update since we assume they are an exact version
+			isOutdated = !package
+				.listRest( '##' )
+				.reFindNoCase( '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' ),
 			version = 'unknown'
 		};
 
