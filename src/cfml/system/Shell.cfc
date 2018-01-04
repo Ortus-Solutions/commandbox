@@ -526,7 +526,15 @@ component accessors="true" singleton {
 
 	            // If there's input, try to run it.
 				if( len( trim( line ) ) ) {
+					var interceptData = {
+						line : line
+					}
+					interceptorService.announceInterception( 'preProcessLine', interceptData );
+					line = interceptData.line;
+					
 					callCommand( command=line, initialCommand=true );
+					
+					interceptorService.announceInterception( 'postProcessLine', interceptData );
 				}
 
 	        } // end while keep running

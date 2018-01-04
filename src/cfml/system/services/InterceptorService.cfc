@@ -29,7 +29,7 @@ component accessors=true singleton {
 			// CLI lifecycle
 			'onCLIStart','onCLIExit','prePrompt',
 			// Command execution lifecycle
-			'preCommand','postCommand',
+			'preCommand','postCommand','preProcessLine', 'postProcessLine',
 			// Module lifecycle
 			'preModuleLoad','postModuleLoad','preModuleUnLoad','postModuleUnload',
 			// Server lifecycle
