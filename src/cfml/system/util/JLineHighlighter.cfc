@@ -35,9 +35,30 @@ component {
 				// Things like whitespace is normalized and escapes are processed, so I can't rebuild the exact original
 				// buffer from the command chain so this work around is a "close enough" implementation for now.
 				var thisCommand = command.commandString.listChangeDelims( ' ', '.' );
+				
+				// Check if the user is typing something like 
+				// server start help 
+				// server start ?
+				// help server start
+				if( thisCommand.left( 4 ) == 'help' ) {
+									
+					// Highlight the ? or help at the end
+					buffer = reReplaceNoCase( buffer, '(.*)(\?|help)([\s]*)$', '\1' & print.yellowBold( '\2' ) & '\3' );
+					// Highlight the ? or help at the beginning
+					buffer = reReplaceNoCase( buffer, '(\?|help)(.*)$', print.yellowBold( '\1' ) & '\2' );
+					
+					// See if the rest of the text they typed in resolves to a command or not
+					var helloCommandChain = CommandService.resolveCommand( command.parameters.toList( ' ' ) );
+					var helloCommand = helloCommandChain[1].commandstring.listChangeDelims( ' ', '.' );
+					// If so, let's highlight the command part of it
+					if( helloCommand.len() ) {						
+						buffer = replaceNoCase( buffer, helloCommand, print.yellowBold( helloCommand ) );
+						
+					}
 				// Check if the user is typing something like #now!
-				if( thisCommand.left( 4 ) == 'cfml' && variables.functionList.keyExists( command.parameters[ 1 ] ) ) {					
+				} else 	if( thisCommand.left( 4 ) == 'cfml' && variables.functionList.keyExists( command.parameters[ 1 ] ) ) {			
 					buffer = replaceNoCase( buffer, command.parameters[ 1 ], print.yellowBold( command.parameters[ 1 ] ) );
+				// All other "normal" commands
 				} else {
 					buffer = replaceNoCase( buffer, thisCommand, print.yellowBold( thisCommand ) );
 				}
