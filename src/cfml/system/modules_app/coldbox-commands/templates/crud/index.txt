@@ -9,8 +9,7 @@
 </cfif>
 
 <!--- Create Button --->
-#html.href( href="|entityPlural|.new", text="Create |entity|", class="btn btn-primary")#
-#html.br(2)#
+#html.href( href="|entityPlural|.new", text="Create |entity|", class="btn btn-primary" )#
 
 <!--- Listing --->
 |tableListing|

@@ -54,6 +54,8 @@ component {
 	this.layoutParentLookup = true;
 	// Module Entry Point
 	this.entryPoint			= "@title@";
+	// Inherit Entry Point
+	this.inheritEntryPoint 	= false;
 	// Model Namespace
 	this.modelNamespace		= "@modelNamespace@";
 	// CF Mapping
@@ -86,6 +88,11 @@ component {
 			{ pattern="/", handler="home", action="index" },
 			// Convention Route
 			{ pattern="/:handler/:action?" }
+		];
+
+		// SES Resources
+		resources = [
+			// { resource = "" }
 		];
 
 		// Custom Declared Points

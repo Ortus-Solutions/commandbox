@@ -1,81 +1,85 @@
 /**
-* Manage |entityPlural|
-* It will be your responsibility to fine tune this template, add validations, try/catch blocks, logging, etc.
-*/
+ * Manage |entityPlural|
+ * It will be your responsibility to fine tune this template, add validations, try/catch blocks, logging, etc.
+ */
 component extends="coldbox.system.EventHandler"{
 	
 	// DI Virtual Entity Service
-	property name="ormService" inject="entityService:|entity|";
+	property name="ORMService" inject="entityService:|entity|";
 	
 	// HTTP Method Security
 	this.allowedMethods = {
-		index = "GET", 
-		new = "GET", 
-		edit = "GET", 
+		index  = "GET", 
+		new    = "GET", 
+		edit   = "GET", 
 		delete = "POST,DELETE", 
-		save = "POST,PUT"
+		save   = "POST,PUT"
 	};
 	
 	/**
-	* preHandler()
-	*/
+	 * Param incoming format, defaults to `html`
+	 */
 	function preHandler( event, rc, prc ){
 		event.paramValue( "format", "html" );
 	}
 		
 	/**
-	* Listing
-	*/
+	 * Listing
+	 */
 	function index( event, rc, prc ){
 		// Get all |entityPlural|
-		prc.|entityPlural| = ormService.getAll();
+		prc.|entityPlural| = ORMService.getAll();
 		// Multi-format rendering
 		event.renderData( data=prc.|entityPlural|, formats="xml,json,html,pdf" );
 	}	
 	
 	/**
-	* New Form
-	*/
+	 * New Form
+	 */
 	function new( event, rc, prc ){
 		// get new |entity|
-		prc.|entity| = ormService.new();
+		prc.|entity| = ORMService.new();
 		
 		event.setView( "|entityPlural|/new" );
 	}	
 
 	/**
-	* Edit Form
-	*/
+	 * Edit Form
+	 */
 	function edit( event, rc, prc ){
 		// get persisted |entity|
-		prc.|entity| = ormService.get( rc.|pk| );
+		prc.|entity| = ORMService.get( rc.|pk| );
 		
 		event.setView( "|entityPlural|/edit" );
 	}	
 	
 	/**
-	* View |entity| mostly used for RESTful services only.
-	*/
+	 * View |entity| mostly used for RESTful services only.
+	 */
 	function show( event, rc, prc ){
 		// Default rendering.
 		event.paramValue( "format", "json" );
 		// Get requested entity by id
-		prc.|entity| = ormService.get( rc.|pk| );
+		prc.|entity| = ORMService.get( rc.|pk| );
 		// Multi-format rendering
 		event.renderData( data=prc.|entity|, formats="xml,json" );
 	}
 
 	/**
-	* Save and Update
-	*/
+	 * Save and Update
+	 */
 	function save( event, rc, prc ){
 		// get |entity| to persist or update and populate it with incoming form
-		prc.|entity| = populateModel( model=ormService.get( rc.|pk| ), exclude="|pk|", composeRelationships=true );
+		prc.|entity| = populateModel( 
+			model                = ORMService.get( rc.|pk| ), 
+			exclude              = "|pk|", 
+			composeRelationships = true 
+		);
 		
 		// Do your validations here
 		
 		// Save it
-		ormService.save( prc.|entity| );
+		ORMService.save( prc.|entity| );
 		
 		// RESTful Handler
 		switch(rc.format){
@@ -88,18 +92,18 @@ component extends="coldbox.system.EventHandler"{
 			default:{
 				// Show a nice notice
 				flash.put( "notice", { message="|entity| Created", type="success" } );
-				// Redirect to listing
-				setNextEvent( '|entityPlural|' );
+				// Redirect to listing: change to `setNextEvetn()` if using ColdBox <5
+				relocate( '|entityPlural|' );
 			}
 		}
 	}	
 
 	/**
-	* Delete
-	*/
+	 * Delete
+	 */
 	function delete( event, rc, prc ){
 		// Delete record by ID
-		var removed = ormService.delete( ormService.get( rc.|pk| ) );
+		var removed = ORMService.delete( ORMService.get( rc.|pk| ) );
 		
 		// RESTful Handler
 		switch( rc.format ){
@@ -113,8 +117,8 @@ component extends="coldbox.system.EventHandler"{
 			default:{
 				// Show a nice notice
 				flash.put( "notice", { message="|entity| Poofed!", type="success" } );
-				// Redirect to listing
-				setNextEvent( '|entityPlural|' );
+				// Redirect to listing: change to `setNextEvetn()` if using ColdBox <5
+				relocate( '|entityPlural|' );
 			}
 		}
 	}	

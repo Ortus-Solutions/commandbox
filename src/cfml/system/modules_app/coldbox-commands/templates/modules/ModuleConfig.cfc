@@ -11,6 +11,7 @@ this.viewParentLookup   = (true) [boolean] (Optional) // If true, checks for vie
 this.layoutParentLookup = (true) [boolean] (Optional) // If true, checks for layouts in the parent first, then it the module.If false, then modules first, then parent.
 this.entryPoint  		= "" (Optional) // If set, this is the default event (ex:forgebox:manager.index) or default route (/forgebox) the framework
 									       will use to create an entry link to the module. Similar to a default event.
+this.inheritEntryPoint  = false;
 this.cfmapping			= "The CF mapping to create";
 this.modelNamespace		= "The namespace to use for registered models, if blank it uses the name of the module."
 this.dependencies 		= "The array of dependencies for this module"
@@ -18,12 +19,12 @@ this.dependencies 		= "The array of dependencies for this module"
 structures to create for configuration
 - parentSettings : struct (will append and override parent)
 - settings : struct
-- datasources : struct (will append and override parent)
 - interceptorSettings : struct of the following keys ATM
 	- customInterceptionPoints : string list of custom interception points
 - interceptors : array
 - layoutSettings : struct (will allow to define a defaultLayout for the module)
 - routes : array Allowed keys are same as the addRoute() method of the SES interceptor.
+- resources : Array of resources to load
 - wirebox : The wirebox DSL to load and use
 
 Available objects in variable scope
@@ -34,6 +35,7 @@ Available objects in variable scope
 - log (A pre-configured logBox logger object for this object)
 - binder (The wirebox configuration binder)
 - wirebox (The wirebox injector)
+- coldboxVersion - the version of the running ColdBox framework
 
 Required Methods
 - configure() : The method ColdBox calls to configure the module.
@@ -56,6 +58,8 @@ Optional Methods
 	this.layoutParentLookup = true;
 	// Module Entry Point
 	this.entryPoint			= "@title@";
+	// Inherit Entry Point
+	this.inheritEntryPoint 	= false;
 	// Model Namespace
 	this.modelNamespace		= "@modelNamespace@";
 	// CF Mapping
@@ -82,17 +86,17 @@ Optional Methods
 			defaultLayout = ""
 		};
 
-		// datasources
-		datasources = {
-
-		};
-
 		// SES Routes
 		routes = [
 			// Module Entry Point
 			{ pattern="/", handler="home", action="index" },
 			// Convention Route
 			{ pattern="/:handler/:action?" }
+		];
+
+		// SES Resources
+		resources = [
+			// { resource = "" }
 		];
 
 		// Custom Declared Points
