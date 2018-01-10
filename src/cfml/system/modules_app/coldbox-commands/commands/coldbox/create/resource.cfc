@@ -13,14 +13,14 @@
  * - `/photos/:id` : `DELETE` -> `photos.delete` Delete a specific photo
  * {code:bash}
  * // Basic
- * coldbox create resources photos
- * // Many resources
- * coldbox create resources photos,users,categories
+ * coldbox create resource photos
+ * // Many resource
+ * coldbox create resource photos,users,categories
  * // Custom Handler
- * coldbox create resources photos myPhoto
- * coldbox create resources resource=photos handler=myPhoto
+ * coldbox create resource photos myPhoto
+ * coldbox create resource resource=photos handler=myPhoto
  * // ORM Enabled 
- * coldbox create resources resource=photos singularName=Photo --persistent
+ * coldbox create resource resource=photos singularName=Photo --persistent
  * {code}
  *
  */
