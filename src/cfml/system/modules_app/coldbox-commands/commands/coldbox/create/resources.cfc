@@ -82,6 +82,7 @@ component {
 		boolean tests=true,
 		specsDirectory='tests/specs'
 	) {
+
 		// This will make each directory canonical and absolute
 		arguments.handlersDirectory	= fileSystemUtil.resolvePath( arguments.handlersDirectory );
 		arguments.viewsDirectory 	= fileSystemUtil.resolvePath( arguments.viewsDirectory );
@@ -180,6 +181,26 @@ component {
 					methods 	= "save,delete,list,get"
 				)
 				.run();
+		}
+
+		//********************** generate resources ************************************//
+		
+		print
+			.line()
+			.greenBoldLine( "Generation completed, please add the following to your routes.cfm:" )
+				
+		if( arguments.resource == arguments.handler ){
+			if( arguments.parameterName != "id" ){
+				print.greenLine( 'resources( resource="#arguments.resource#" );' );			
+			} else {
+				print.greenLine( 'resources( resource="#arguments.resource#", parameterName="#arguments.parameterName#" );' );			
+			}
+		} else {
+			if( arguments.parameterName != "id" ){
+				print.greenLine( 'resources( resource="#arguments.resource#", handler="#arguments.handler#" );' );			
+			} else {
+				print.greenLine( 'resources( resource="#arguments.resource#", handler="#arguments.handler#", parameterName="#arguments.parameterName#" );' );			
+			}
 		}
 		
 	}
