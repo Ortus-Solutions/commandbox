@@ -1,5 +1,5 @@
 /**
- * Generate resourceful routing by generating a handler, model and even modularizing it.
+ * Generate resourceful routing by generating a handler, model, services and even modularizing it.
  * .
  * Make sure you are running this command in the root of your app for it to find the correct folder.
  * .
@@ -19,6 +19,8 @@
  * // Custom Handler
  * coldbox create resources photos myPhoto
  * coldbox create resources resource=photos handler=myPhoto
+ * // ORM Enabled 
+ * coldbox create resources resource=photos singularName=Photo --persistent
  * {code}
  *
  */
