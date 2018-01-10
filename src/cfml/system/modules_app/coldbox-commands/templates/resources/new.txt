@@ -1,0 +1,4 @@
+<cfoutput>
+<h1>New |singularName|</h1>
+
+</cfoutput>

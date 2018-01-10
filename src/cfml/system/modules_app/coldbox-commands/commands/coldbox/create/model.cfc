@@ -164,7 +164,7 @@ component {
 		}
 
 		// Write out the model
-		var modelPath = '#directory#/#arguments.name#.cfc';
+		var modelPath = '#directory##arguments.name#.cfc';
 		// Create dir if it doesn't exist
 		directorycreate( getDirectoryFromPath( modelPath ), true, true );
 		// Prompt for override
@@ -177,7 +177,7 @@ component {
 		print.greenLine( 'Created #modelPath#' );
 
 		if( arguments.tests ) {
-			var testPath = '#arguments.TestsDirectory#/#arguments.name#Test.cfc';
+			var testPath = '#arguments.TestsDirectory##arguments.name#Test.cfc';
 			// Create dir if it doesn't exist
 			directorycreate( getDirectoryFromPath( testPath ), true, true );
 			// Create the tests
