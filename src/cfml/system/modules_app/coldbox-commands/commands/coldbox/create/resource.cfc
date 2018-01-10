@@ -43,7 +43,7 @@ component {
 	 * @singularName The singular name of the resource, else we use the resource name
 	 * @parameterName The name of the id/parameter for the resource. Defaults to `id`.
 	 * @module If passed, the module these resources will be created in.
-	 * @appMapping.hint The root location of the application in the web root: ex: /MyApp or / if in the root
+	 * @appMapping The root location of the application in the web root: ex: /MyApp or / if in the root
 	 * 
 	 * @model The name of the model to generate that models the resource
 	 * @persistent If true, then the model will be created as an ORM entity
@@ -55,8 +55,10 @@ component {
 	 * @generator.options increment,identity,sequence,native,assigned,foreign,seqhilo,uuid,guid,select,sequence-identiy
 	 * @properties Enter a list of properties to generate. You can add the ORM type via colon separator, default type is string. Ex: firstName,age:numeric,createdate:timestamp
 	 * 
+	 * @modulesDirectory The location of the modules. Defaults to 'modules'
 	 * @handlersDirectory The location of the handlers. Defaults to 'handlers'
 	 * @viewsDirectory The location of the views. Defaults to 'views'
+	 * @modelsDirectory The location of the models. Defaults to 'models'
 	 * @tests Generate the integration and unit tests for this generation
 	 * @specsDirectory Your specs directory. Only used if tests is true
 	 */
@@ -77,17 +79,45 @@ component {
 		generator="native",
 		properties="",
 		
+		modulesDirectory="modules_app",
 		handlersDirectory="handlers",
 		viewsDirectory="views",
+		modelsDirectory="models",
 		boolean tests=true,
 		specsDirectory='tests/specs'
 	) {
 
 		// This will make each directory canonical and absolute
-		arguments.handlersDirectory	= fileSystemUtil.resolvePath( arguments.handlersDirectory );
-		arguments.viewsDirectory 	= fileSystemUtil.resolvePath( arguments.viewsDirectory );
 		arguments.specsDirectory 	= fileSystemUtil.resolvePath( arguments.specsDirectory );
+		arguments.modulesDirectory 	= fileSystemUtil.resolvePath( arguments.modulesDirectory );
+		var configPath 				= fileSystemUtil.resolvePath( "config" );
 
+		/********************** Verify Module ************************/
+
+		var modulePath = arguments.modulesDirectory & arguments.module;
+		if( arguments.module.len() ){
+			// Check if module exists, if not, ask to create it first.
+			if( !directoryExists( modulePath ) && confirm( "The module '#arguments.module#' does not exist, should we create it for you?" ) ){
+				print.greenBoldLine( "Generating #arguments.module# module..." );
+				command( "coldbox create module" )
+					.params(
+						name 		= arguments.module,
+						directory 	= arguments.modulesDirectory
+					)
+					.run();
+			}
+
+			// Setup new locations inside of the module for handlers and views
+			arguments.handlersDirectory	= modulePath & "/" & arguments.handlersDirectory & "/";
+			arguments.viewsDirectory	= modulePath & "/" & arguments.viewsDirectory & "/";
+			arguments.modelsDirectory	= modulePath & "/" & arguments.modelsDirectory & "/";
+
+		} else {
+			arguments.handlersDirectory	= fileSystemUtil.resolvePath( arguments.handlersDirectory );
+			arguments.viewsDirectory 	= fileSystemUtil.resolvePath( arguments.viewsDirectory );
+			arguments.modelsDirectory 	= fileSystemUtil.resolvePath( arguments.modelsDirectory );
+		}
+		
 		/********************** GENERATE HANDLER ************************/
 
 		print.greenBoldLine( "Generating #arguments.resource# resources..." );
@@ -149,14 +179,16 @@ component {
 					primaryKey 			= arguments.primaryKey,
 					primaryKeyColumn 	= arguments.primaryKeyColumn,
 					generator 			= arguments.generator,
-					properties 			= arguments.properties
+					properties 			= arguments.properties,
+					directory 			= arguments.modelsDirectory
 				)
 				.run();
 			
 			print.blueLine( '--> Generating ORM Virtual Service (#arguments.singularName#)' );
 			command( "coldbox create orm-virtual-service" )
 				.params(
-					entityName  = arguments.singularName
+					entityName  = arguments.singularName,
+					directory 	= arguments.modelsDirectory
 				)
 				.run();
 
@@ -167,7 +199,8 @@ component {
 				.params(
 					name        = ucFirst( arguments.singularName ),
 					description = "I model a #arguments.singularName#",
-					properties  = arguments.properties
+					properties  = arguments.properties,
+					directory 	= arguments.modelsDirectory
 				)
 				.run();
 
@@ -178,29 +211,61 @@ component {
 					name        = ucFirst( arguments.resource ) & "Service",
 					persistence = "singleton",
 					description = "I manage #arguments.singularName#",
-					methods 	= "save,delete,list,get"
+					methods 	= "save,delete,list,get",
+					directory 	= arguments.modelsDirectory
 				)
 				.run();
 		}
 
 		//********************** generate resources ************************************//
 		
-		print
-			.line()
-			.greenBoldLine( "Generation completed, please add the following to your routes.cfm:" )
-				
-		if( arguments.resource == arguments.handler ){
-			if( arguments.parameterName != "id" ){
-				print.greenLine( 'resources( resource="#arguments.resource#" );' );			
+		// Open the routes file.
+		if( arguments.module.len() ){
+			print
+				.line()
+				.greenBoldLine( "Generation completed, please add the following to your (ModuleConfig.cfc), which we are opening for you as well:" );
+			
+			// Generate code
+			print.blueLine( "resources = [" );
+
+			if( arguments.resource == arguments.handler ){
+				if( arguments.parameterName == "id" ){
+					print.greenLine( '	{ resource="#arguments.resource#" }' );			
+				} else {
+					print.greenLine( '	{ resource="#arguments.resource#", parameterName="#arguments.parameterName#" }' );			
+				}
 			} else {
-				print.greenLine( 'resources( resource="#arguments.resource#", parameterName="#arguments.parameterName#" );' );			
+				if( arguments.parameterName == "id" ){
+					print.greenLine( '	{ resource="#arguments.resource#", handler="#arguments.handler#" }' );			
+				} else {
+					print.greenLine( '	{ resource="#arguments.resource#", handler="#arguments.handler#", parameterName="#arguments.parameterName#" }' );			
+				}
 			}
+
+			print.blueLine( "];" );
+			openPath( modulePath & "/ModuleConfig.cfc" );
 		} else {
-			if( arguments.parameterName != "id" ){
-				print.greenLine( 'resources( resource="#arguments.resource#", handler="#arguments.handler#" );' );			
+			// Instructions
+			print
+				.line()
+				.greenBoldLine( "Generation completed, please add the following to your (routes.cfm), which we are opening for you as well:" );
+
+			// Generate code
+			if( arguments.resource == arguments.handler ){
+				if( arguments.parameterName == "id" ){
+					print.greenLine( 'resources( resource="#arguments.resource#" );' );			
+				} else {
+					print.greenLine( 'resources( resource="#arguments.resource#", parameterName="#arguments.parameterName#" );' );			
+				}
 			} else {
-				print.greenLine( 'resources( resource="#arguments.resource#", handler="#arguments.handler#", parameterName="#arguments.parameterName#" );' );			
+				if( arguments.parameterName == "id" ){
+					print.greenLine( 'resources( resource="#arguments.resource#", handler="#arguments.handler#" );' );			
+				} else {
+					print.greenLine( 'resources( resource="#arguments.resource#", handler="#arguments.handler#", parameterName="#arguments.parameterName#" );' );			
+				}
 			}
+
+			openPath( configPath & "routes.cfm" );
 		}
 		
 	}
