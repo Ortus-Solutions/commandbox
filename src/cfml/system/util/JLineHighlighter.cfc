@@ -56,7 +56,8 @@ component {
 						
 					}
 				// Check if the user is typing something like #now!
-				} else 	if( thisCommand.left( 4 ) == 'cfml' && variables.functionList.keyExists( command.parameters[ 1 ] ) ) {			
+				} else 	if( thisCommand.left( 4 ) == 'cfml' && command.parameters.len()
+				&& variables.functionList.keyExists( command.parameters[ 1 ] ) ) {
 					buffer = replaceNoCase( buffer, command.parameters[ 1 ], print.yellowBold( command.parameters[ 1 ] ) );
 				// All other "normal" commands
 				} else {
