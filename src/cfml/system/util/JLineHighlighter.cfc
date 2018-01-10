@@ -28,12 +28,6 @@ component {
 			if( command.commandString.len() ) {
 				
 				// Highlight the command portion of the line.
-				// This won't highlight more than one instance of the same command like 
-				// > echo foo | grep foo | grep bar
-				// If we replace "all" the above will work, but the following will highlight the param as well:
-				// > echo "echo"
-				// Things like whitespace is normalized and escapes are processed, so I can't rebuild the exact original
-				// buffer from the command chain so this work around is a "close enough" implementation for now.
 				var thisCommand = command.commandString.listChangeDelims( ' ', '.' );
 				
 				// Check if the user is typing something like 
@@ -55,12 +49,18 @@ component {
 						buffer = replaceNoCase( buffer, helloCommand, print.yellowBold( helloCommand ) );
 						
 					}
-				// Check if the user is typing something like #now!
+				// Check if the user is typing something like #now
 				} else 	if( thisCommand.left( 4 ) == 'cfml' && command.parameters.len()
 				&& variables.functionList.keyExists( command.parameters[ 1 ] ) ) {
 					buffer = replaceNoCase( buffer, command.parameters[ 1 ], print.yellowBold( command.parameters[ 1 ] ) );
 				// All other "normal" commands
 				} else {
+					// This won't highlight more than one instance of the same command like 
+					// > echo foo | grep foo | grep bar
+					// If we replace "all" the above will work, but the following will highlight the param as well:
+					// > echo "echo"
+					// Things like whitespace is normalized and escapes are processed, so I can't rebuild the exact original
+					// buffer from the command chain so this work around is a "close enough" implementation for now.
 					buffer = replaceNoCase( buffer, thisCommand, print.yellowBold( thisCommand ) );
 				}
 			}  
