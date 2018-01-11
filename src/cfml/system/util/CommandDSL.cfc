@@ -20,6 +20,7 @@ component accessors=true {
 	property name='append';
 	property name='overwrite';
 	property name='workingDirectory';
+	property name='rawParams';
 
 
 	// DI
@@ -44,6 +45,7 @@ component accessors=true {
 		setAppend( '' );
 		setOverwrite( '' );
 		setWorkingDirectory( '' );
+		setRawParams( false );
 		return this;
 	}
 
@@ -71,6 +73,8 @@ component accessors=true {
 			for( var param in getParams() ) {
 				if( runCommand ) {
 					processedParams.append( getParams()[ param ] );					
+				} else if( getRawParams() ) {
+					processedParams.append( '"#getParams()[ param ]#"' );
 				} else {
 					processedParams.append( '"#parser.escapeArg( getParams()[ param ] )#"' );					
 				}
@@ -181,7 +185,9 @@ component accessors=true {
 	/**
 	 * Run this command
   	 **/
-	string function run( returnOutput=false, string piped, boolean echo=false ) {
+	string function run( returnOutput=false, string piped, boolean echo=false, boolean rawParams=false ) {
+
+		setRawParams( rawParams );
 
 		if( arguments.echo ) {
 			shell.callCommand( 'echo "#parser.escapeArg( getCommandString() )#"' );
