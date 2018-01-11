@@ -1152,8 +1152,11 @@ component accessors="true" singleton {
 						}
 					}
 
-				// user wants to exit, they've pressed Ctrl-C
+				// user wants to exit this command, they've pressed Ctrl-C
 				} catch ( org.jline.reader.UserInterruptException e ) {
+				// user wants to exit the shell, they've pressed Ctrl-D
+				} catch ( org.jline.reader.EndOfFileException e ) {
+					shell.setKeepRunning( false );
 				// Something bad happened
 				} catch ( Any e ) {
 					logger.error( '#e.message# #e.detail#' , e.stackTrace );

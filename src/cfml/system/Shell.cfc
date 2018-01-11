@@ -252,7 +252,12 @@ component accessors="true" singleton {
 				len( arguments.defaultResponse ) ? javacast( "String", arguments.defaultResponse ) : javacast( "null", '' )
 			);
 			
+		// user wants to exit this command, they've pressed Ctrl-C
 		} catch( org.jline.reader.UserInterruptException var e ) {
+			throw( message='CANCELLED', type="UserInterruptException");
+		// user wants to exit the entire shell, they've pressed Ctrl-D
+		} catch( org.jline.reader.EndOfFileException var e ) {
+			setKeepRunning( false );
 			throw( message='CANCELLED', type="UserInterruptException");
 		} finally{
 			// Reset back to default prompt

@@ -169,13 +169,21 @@ component {
 			}
 
 
-		// user wants to exit, they've pressed Ctrl-C
+		// user wants to exit this command, they've pressed Ctrl-C
 		} catch ( org.jline.reader.UserInterruptException e ) {
 			// make sure the thread exits
 			variables.tailRun = false;
 			// Wait until the thread finishes its last draw
 			thread action="join" name=threadName;
 			shell.setPrompt();
+		// user wants to exit the entire shell, they've pressed Ctrl-D
+		} catch ( org.jline.reader.EndOfFileException e ) {
+			// make sure the thread exits
+			variables.tailRun = false;
+			// Wait until the thread finishes its last draw
+			thread action="join" name=threadName;
+			shell.setPrompt();
+			shell.setKeepRunning( false );
 		// Something horrible went wrong
 		} catch ( any e ) {
 			// make sure the thread exits

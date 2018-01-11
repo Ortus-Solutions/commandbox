@@ -123,6 +123,9 @@ component accessors=true {
 
 					// Fire the watcher up again.
 					retry;
+				// If the thread has been interrupted
+				} catch( java.lang.ThreadDeath e ) {
+					// There's nothign to do here.  Just exit the thread!
 				} catch( any e ) {
 					shell.printError( e );
 
@@ -150,8 +153,7 @@ component accessors=true {
 				}
 			}
 
-
-		// user wants to exit, they've pressed Ctrl-C
+		// user wants to exit this command, they've pressed Ctrl-C
 		} catch ( org.jline.reader.UserInterruptException e ) {
 
 			print
@@ -162,13 +164,28 @@ component accessors=true {
 			// make sure the thread exits
 			setWatcherRun( false );
 			// Wait until the thread finishes its last draw
-			thread action="join" name=threadName;
+			thread action="terminate" name=threadName;
+			
+		// user wants to exit the shell, they've pressed Ctrl-D
+		} catch ( org.jline.reader.EndOfFileException e ) {
+
+			print
+				.printLine( "" )
+				.printBoldRedLine( "Stopping and exiting shell..." )
+				.toConsole();
+
+			// make sure the thread exits
+			setWatcherRun( false );
+			// Wait until the thread finishes its last draw
+			thread action="terminate" name=threadName;
+			shell.setKeepRunning( false );
+			
 		// Something horrible went wrong
 		} catch ( any e ) {
 			// make sure the thread exits
 			setWatcherRun( false );
 			// Wait until the thread finishes its last draw
-			thread action="join" name=threadName;
+			thread action="terminate" name=threadName;
 			rethrow;
 		} finally{
 			shell.setPrompt();
@@ -177,7 +194,7 @@ component accessors=true {
 		// make sure the thread exits
 		setWatcherRun( false );
 		// Wait until the thread finishes
-		thread action="join" name=threadName;
+		thread action="terminate" name=threadName;
 
 		return this;
 	}
