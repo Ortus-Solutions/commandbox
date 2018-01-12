@@ -30,6 +30,7 @@ component accessors="true" implements="IEndpoint" singleton {
 	property name="progressableDownloader" 	inject="ProgressableDownloader";
 	property name="progressBar" 			inject="ProgressBar";
 	property name="system" 					inject="system@constants";
+	property name="shell" 					inject="shell";
 
 
 	// Properties
@@ -98,6 +99,9 @@ component accessors="true" implements="IEndpoint" singleton {
 	        CommandCaller.call( local.result.checkout().setName( branch ) );
 
 		} catch( any var e ) {
+			// Check for Ctrl-C
+			shell.checkInterrupted();
+			
 			// If the exception came from the Java call, this exception won't be null
 			var theRealJavaException = CommandCaller.getException();
 

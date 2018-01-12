@@ -33,7 +33,8 @@
 */
 component {
 
-	property name='cr' inject='cr@constants' scope='this';
+	property name='cr'		inject='cr@constants' scope='this';
+	property name='shell'	inject='shell';
 
 	this.tab 		= chr( 9 );
 	this.esc 		= chr( 27 );
@@ -88,6 +89,9 @@ component {
   	 **/
 	function onMissingMethod( missingMethodName, missingMethodArguments ) {
 
+		// Check for Ctrl-C
+		shell.checkInterrupted();
+		
 		// Flag for if this is a line or not
 		var newLine = false;
 		

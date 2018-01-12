@@ -32,6 +32,9 @@ component extends="wirebox.system.logging.AbstractAppender" {
 
 	function logMessage( required logEvent ) {
 
+		// Check for Ctrl-C
+		application.wirebox.getInstance( 'shell' ).checkInterrupted();
+
 		var loge = arguments.logEvent;
 		var entry = "";
 
