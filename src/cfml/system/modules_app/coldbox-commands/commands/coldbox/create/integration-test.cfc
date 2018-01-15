@@ -105,7 +105,7 @@ component {
 			handlerTestContent 	= replaceNoCase( handlerTestContent, '|TestCases|', '', 'all' );
 		}
 
-		var integrationTestPath = '#arguments.directory##arguments.handler#Test.cfc';
+		var integrationTestPath = '#arguments.directory#/#arguments.handler#Test.cfc';
 		// Create dir if it doesn't exist
 		directorycreate( getDirectoryFromPath( integrationTestPath ), true, true );
 

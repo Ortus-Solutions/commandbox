@@ -130,7 +130,7 @@ component {
 		hContent = replacenocase( hContent, "|parameterName|",  arguments.parameterName,    "all" );
 
 		// Write Out Handler
-		var hpath = '#arguments.handlersDirectory##arguments.handler#.cfc';
+		var hpath = '#arguments.handlersDirectory#/#arguments.handler#.cfc';
 		// Create dir if it doesn't exist
 		directorycreate( getDirectoryFromPath( hpath ), true, true );
 
@@ -146,7 +146,7 @@ component {
 
 		// Create Views Path
 		directorycreate( arguments.viewsDirectory & "/#arguments.resource#", true, true );
-		var views = [ "new", "edit", "show" ];
+		var views = [ "new", "edit", "show", "index" ];
 		for( var thisView in views ){
 			var vContent = fileRead( '/coldbox-commands/templates/resources/#thisView#.txt' );
 			vContent = replacenocase( vContent, "|resource|", arguments.resource, "all" );

@@ -119,7 +119,7 @@ component {
 		modelContent = replaceNoCase( modelContent, "|properties|", buffer.toString() );
 
 		// Write out the model
-		var modelPath = '#arguments.directory##arguments.entityName#.cfc';
+		var modelPath = '#arguments.directory#/#arguments.entityName#.cfc';
 		// Create dir if it doesn't exist
 		directorycreate( getDirectoryFromPath( modelPath ), true, true );
 
@@ -133,7 +133,7 @@ component {
 		print.greenLine( 'Created #modelPath#' );
 
 		if( arguments.tests ) {
-			var testPath = '#arguments.TestsDirectory##arguments.entityName#Test.cfc';
+			var testPath = '#arguments.TestsDirectory#/#arguments.entityName#Test.cfc';
 			// Create dir if it doesn't exist
 			directorycreate( getDirectoryFromPath( testPath ), true, true );
 			// Create the tests
