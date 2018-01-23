@@ -732,7 +732,11 @@ component accessors="true" singleton {
 				var thisValue = listLast( endpointData.package, '@' );
 			} else {
 				// caret version range (^1.2.3) allows updates that don't bump the major version.
-				var thisValue = '^' & arguments.version;
+				// Unless the version isn't really a semantic version.  Than just use what they gave us.
+				var thisValue = arguments.version;
+				if ( semanticVersion.isValid( thisValue ) ) {
+				    thisValue = '^' & thisValue;
+				}
 			}
 		} else {
 			var thisValue = endpointData.ID;
