@@ -1076,8 +1076,12 @@ component accessors="true" singleton {
 		// If the user is running a one-off command to start a server or specified the debug flag, stream the output and wait until it's finished starting.
 		var interactiveStart = ( shell.getShellType() == 'command' || serverInfo.debug || !background );
 
+		// A reference to the current thread so the thread we're about to spin up can access it.
+		// This may be available as parent thread or something.
+		var thisThread = createObject( 'java', 'java.lang.Thread' ).currentThread();
+		variables.waitingOnConsoleStart = false; 
 		// Spin up a thread to capture the standard out and error from the server
-		thread name="#threadName#" interactiveStart=interactiveStart serverInfo=serverInfo args=args startTimeout=serverInfo.startTimeout  {
+		thread name="#threadName#" interactiveStart=interactiveStart serverInfo=serverInfo args=args startTimeout=serverInfo.startTimeout parentThread=thisThread {
 			try{
 
 				// save server info and persist
@@ -1132,6 +1136,15 @@ component accessors="true" singleton {
 				}
 				serverInfo.statusInfo.result = startOutput.toString();
 				setServerInfo( serverInfo );
+				// If the "start" command is on the line watching our console output
+				if( variables.waitingOnConsoleStart ) {
+					print
+						.line()
+						.line( "Server's output stream closed. It's been stopped elsewhere." )
+						.toConsole();
+					// This will end the readline() call below so the "start" command can finally exit
+					parentThread.interrupt();
+				}
 			}
 		}
 
@@ -1141,6 +1154,7 @@ component accessors="true" singleton {
 			if( !background ) {
 				try {
 
+					variables.waitingOnConsoleStart = true;
 					while( true ) {
 						// Detect user pressing Ctrl-C
 						// Any other characters captured will be ignored
@@ -1154,8 +1168,10 @@ component accessors="true" singleton {
 
 				// user wants to exit this command, they've pressed Ctrl-C
 				} catch ( org.jline.reader.UserInterruptException e ) {
+					consoleLogger.error( 'Stopping server...' );
 				// user wants to exit the shell, they've pressed Ctrl-D
 				} catch ( org.jline.reader.EndOfFileException e ) {
+					consoleLogger.error( 'Stopping server...' );
 					shell.setKeepRunning( false );
 				// Something bad happened
 				} catch ( Any e ) {
@@ -1163,7 +1179,7 @@ component accessors="true" singleton {
 					consoleLogger.error( '#e.message##chr(10)##e.detail#' );
 				// Either way, this server is done like dinner
 				} finally {
-					consoleLogger.error( 'Stopping server...' );
+					variables.waitingOnConsoleStart = false;
 					shell.setPrompt();
 					process.destroy();
 				}
