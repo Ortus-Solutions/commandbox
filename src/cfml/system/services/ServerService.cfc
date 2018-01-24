@@ -686,8 +686,8 @@ component accessors="true" singleton {
 
 		var launchUtil 	= java.LaunchUtil;
 
-	    // Default java agent for embedded Lucee engine
-	    var javaagent = serverinfo.cfengine contains 'lucee' ? '-javaagent:#libdir#/lucee-inst.jar' : '';
+	    // Default java agent
+	    var javaagent = '';
 
 	    // Regardless of a custom server home, this is still used for various temp files and logs
 	    serverinfo.customServerFolder = getCustomServerFolder( serverInfo );
@@ -723,7 +723,7 @@ component accessors="true" singleton {
 			// If Lucee server, set the java agent
 			if( serverInfo.cfengine contains "lucee" ) {
 				// Detect Lucee 4.x
-				if( installDetails.version.listFirst( '.' ) < 5 ) {
+				if( installDetails.version.listFirst( '.' ) < 5 && fileExists( '#serverInfo.serverHomeDirectory#/WEB-INF/lib/lucee-inst.jar' ) ) {
 					javaagent = '-javaagent:#serverInfo.serverHomeDirectory#/WEB-INF/lib/lucee-inst.jar';
 				} else {
 					// Lucee 5+ doesn't need the Java agent
