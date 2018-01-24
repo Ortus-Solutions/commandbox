@@ -716,15 +716,8 @@ External Dependencies:
         passphrase="${ortus.sign.key.passphrase}"
         keyring="${ortus.sign.keyring}" />
         
-	<antcall target="build.cli.deb.stablerepo" />
-        
-    <!-- Update stable Repo -->
-    <deb-repo dir="${deb.repo.stable}"
-        label="ortus" description="ortussolutions.com debian repository"
-        key="${ortus.sign.key.id}"
-        passphrase="${ortus.sign.key.passphrase}"
-        keyring="${ortus.sign.keyring}" />
-	        
+		<antcall target="build.cli.deb.stablerepo" />
+            
   </target>
   
 	<target name="build.cli.deb.stablerepo" if="${isStable}">
@@ -735,8 +728,14 @@ External Dependencies:
 	    <!-- Copy deb package to stable dist dir too -->
 	    <copy file="${deb.repo}/${distro.name}_${commandbox.version}-1_all.deb" toFile="${deb.repo.stable}/${distro.name}_${commandbox.version}-1_all.deb"/>
 	    <copy file="${deb.repo}/${distro.name}_${commandbox.version}-1_all.changes" toFile="${deb.repo.stable}/${distro.name}_${commandbox.version}-1_all.changes"/>
-	        
-	</target>
+		        
+	    <!-- Update stable Repo -->
+	    <deb-repo dir="${deb.repo.stable}"
+	        label="ortus" description="ortussolutions.com debian repository"
+	        key="${ortus.sign.key.id}"
+	        passphrase="${ortus.sign.key.passphrase}"
+	        keyring="${ortus.sign.keyring}" />
+		</target>
 
   <!-- Build RPM: Leverages redline task -->
   <target name="build.cli.rpm" depends="build.cli.bin">
