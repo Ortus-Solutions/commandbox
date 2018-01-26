@@ -82,6 +82,15 @@ component singleton{
 		// This is _supposed_ to make auto complete case insensitive but it doesn't seem to work
 		reader.setOpt( LineReaderOption.CASE_INSENSITIVE );
 
+		// Stupid workaround for ConEMU, which refuses to print bold text unless you scroll to the bottom "working area" of your terminal
+		// Detect ConEMU terminal with existance of this env var
+		if( systemSettings.getEnv( 'ConEmuPID', '' ).len() ) {
+			// Print out ESC[9999;1H to scroll to bottom "working area"
+			// https://github.com/jline/jline3/issues/218#issuecomment-360773891
+			reader.getTerminal().writer().print( '#chr(27)#[9999;1H' );
+    		reader.getTerminal().writer().flush();
+		}
+
 		return reader;
 
 	}
