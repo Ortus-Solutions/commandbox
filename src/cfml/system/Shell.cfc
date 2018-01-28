@@ -452,7 +452,7 @@ component accessors="true" singleton {
 		}
 		// Pass string through JLine for color rounding, etc
 		// This allows crappy 16 color terminals like Windows cmd to still show the "closest" color when using 256 color output
-		string = createObject("java","org.jline.utils.AttributedString").fromAnsi( string ).toAnsi();
+		string = createObject("java","org.jline.utils.AttributedString").fromAnsi( string ).toAnsi( variables.reader.getTerminal() );
     	variables.reader.getTerminal().writer().print( arguments.string );
     	variables.reader.getTerminal().writer().flush();
 

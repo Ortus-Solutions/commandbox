@@ -58,13 +58,13 @@ component {
 		// Highlight CF function names
 		for( var func in functionList ) {
 			// Find function names that are at the line start or prepended with a space, curly, or period and ending with an opening paren
-			buffer = reReplaceNoCase( buffer, '(^|[ \.\{\}])(#func#)(\()', '\1' & print.cyan( '\2' ) & '\3', 'all' );
+			buffer = reReplaceNoCase( buffer, '(^|[ \.\{\}])(#func#)(\()', '\1' & print.boldCyan( '\2' ) & '\3', 'all' );
 		}
 		
 		// highight reserved words
 		for( var reservedWord in reservedWords ) {
 			// Find keywords, bookended by a space, curly, paren, or semicolon. Or, of course, the start/end of the line
-			buffer = reReplaceNoCase( buffer, '(^|[ \{\}\(])(#reservedWord#)($|[ ;\(\)\{\}])', '\1' & print.cyanBold( '\2' ) & '\3', 'all' );
+			buffer = reReplaceNoCase( buffer, '(^|[ \{\}\(])(#reservedWord#)($|[ ;\(\)\{\}])', '\1' & print.boldCyan( '\2' ) & '\3', 'all' );
 		}
 		
 		return createObject("java","org.jline.utils.AttributedString").fromAnsi( buffer );	
