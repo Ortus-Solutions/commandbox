@@ -838,7 +838,8 @@ component accessors="true" singleton {
 
 		// Make current settings available to package scripts
 		setServerInfo( serverInfo );
-		interceptorService.announceInterception( 'onServerStart', { serverInfo=serverInfo, serverJSON=serverJSON, defaults=defaults, serverProps=serverProps } );
+		// installDetails doesn't exist for a war server
+		interceptorService.announceInterception( 'onServerStart', { serverInfo=serverInfo, serverJSON=serverJSON, defaults=defaults, serverProps=serverProps, serverDetails=serverDetails, installDetails=installDetails ?: {} } );
 
 		// Turn struct of aliases into a comma-delimited list, plus resolve relative paths.
 		// "/foo=C:\path,/bar=C:\another/path"
