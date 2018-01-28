@@ -395,6 +395,7 @@ component accessors="true" singleton {
 					var params = {
 						id : packageName,
 						save : false,
+						directory : installDirectory,
 						currentWorkingDirectory : currentWorkingDirectory,
 						packagePathRequestingUninstallation : packagePathRequestingInstallation
 					};
