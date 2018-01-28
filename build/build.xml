@@ -790,8 +790,10 @@ External Dependencies:
 	<target name="resolve.libs">
 		<delete dir="${lib.dir}"/>
  		<mvn-repo id="jgit-repository" url="https://repo.eclipse.org/content/groups/releases/" />
+		<mvn-repo id="jline-repository" url="https://oss.sonatype.org/content/repositories/snapshots/" />
+		 
 
-		<dependency  groupId="org.jline" artifactId="jline" version="${jline.version}" dest="${lib.dir}" type="jar" unzip="false"/>
+		<dependency  groupId="org.jline" artifactId="jline" version="${jline.version}" dest="${lib.dir}" type="jar" repoId="jline-repository" unzip="false"/>
 		<dependency groupId="org.eclipse.jgit" artifactId="org.eclipse.jgit" version="4.3.0.201604071810-r" dest="${lib.dir}" repoId="jgit-repository" unzip="false" type="jar">
 			<exclusions>
 				<!-- Lucee already includes these jars --> 
