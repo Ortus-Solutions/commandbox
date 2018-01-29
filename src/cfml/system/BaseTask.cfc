@@ -41,4 +41,13 @@ component accessors="true" extends='commandbox.system.BaseCommand' {
 		return propertyFile;
 	}
 
+
+	/**
+	 * Run another task by DSL.
+	 * @taskFile.hint The name of the task to run.
+ 	 **/
+	function task( required taskFile='task' ) {
+		return getinstance( name='TaskDSL', initArguments={ taskFile : arguments.taskFile } );
+	}
+
 }
