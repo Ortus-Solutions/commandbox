@@ -50,6 +50,13 @@ component {
 			'return',
 			'in'
 		];
+		variables.sets = {
+			')' : '(',
+			'}' : '{',
+			']' : '[',
+			"'" : "'",
+			'"' : '"'
+		};
 		return this;
 	}
 	
@@ -67,6 +74,45 @@ component {
 			buffer = reReplaceNoCase( buffer, '(^|[ \{\}\(])(#reservedWord#)($|[ ;\(\)\{\}])', '\1' & print.boldCyan( '\2' ) & '\3', 'all' );
 		}
 		
+		// If the last character was an ending } or ) or ] or " or ' then highlight it and the matching start character
+		if( sets.keyExists( buffer.right( 1 ) ) ) {
+			var endChar = buffer.right( 1 );
+			var startChar = sets[ endChar ];
+			var depth = 1;
+			var pos = buffer.len()-1;
+			// Work backwords over the string until we find a matching start char
+			while( pos > 0 && depth > 0 ) {
+				if( buffer.mid( pos, 1 ) == endChar && startChar != endChar ) {
+					depth++;
+				} else if( buffer.mid( pos, 1 ) == startChar ) {
+					depth--;
+				}
+				if( depth == 0 ) {
+					break;
+				}
+				pos--;
+			}			
+			
+			// If we found a matching start char
+			if( pos > 0 ) {
+				var originalBuffer = buffer;
+				buffer = '';
+				// Optional text before the start char
+				if( pos > 1 ) {
+					buffer = originalBuffer.mid( 1, pos-1 );
+				}
+				// The start char
+				buffer &= print.boldMagenta( startChar );
+				
+				// Optional text between matching chars
+				if( pos < originalBuffer.len()-1 ) {
+					buffer &= originalBuffer.mid( pos+1, originalBuffer.len()-pos-1 );
+				}
+				// Ending char
+				buffer &= print.boldMagenta( endChar );
+			}
+		}
+
 		return createObject("java","org.jline.utils.AttributedString").fromAnsi( buffer );	
 	}
 	
