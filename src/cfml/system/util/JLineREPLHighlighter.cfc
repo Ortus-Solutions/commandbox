@@ -75,6 +75,7 @@ component {
 		}
 		
 		// If the last character was an ending } or ) or ] or " or ' then highlight it and the matching start character
+		// This logic is pretty basic and doesn't account for escaped stuff.  If you want, please send a pull to improve it :)
 		if( sets.keyExists( buffer.right( 1 ) ) ) {
 			var endChar = buffer.right( 1 );
 			var startChar = sets[ endChar ];
