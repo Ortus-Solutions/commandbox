@@ -411,9 +411,9 @@ component singleton {
 		arguments.startsWith = fileSystemUtil.resolvePath( arguments.startsWith );
 		startsWith = replace( startsWith, "\", "/", "all" );
 
-		// make sure dirs are suffixed with a trailing slash or we'll strip it off, thinking it's a partial name
-		if( ( originalStartsWith == '' || originalStartsWith.endsWith( '/' ) ) && !startsWith.endsWith( '/' ) ) {
-			startsWith &= '/';
+		// Even if the incoming string is a folder, keep off the trailing slash if the user hadn't typed it yet.
+		if( originalStartsWith.len() && !originalStartsWith.endsWith( '/' ) && startsWith.endsWith( '/' ) ) {
+			startsWith = startsWith.left( -1 );
 		}
 
 		// searchIn strips off partial directories, and has the last complete actual directory for searching.
@@ -450,10 +450,10 @@ component singleton {
 
 						// This is the absolute path that we matched
 						var thisCandidate = searchIn & ( right( searchIn, 1 ) == '/' ? '' : '/' ) & path.name;
-						
+
 						// ...strip it back down to what they typed
 						thisCandidate = replaceNoCase( thisCandidate, startsWith, originalStartsWith );
-				
+
 						// Finally add this candidate into the list
 						
 						if( namedParams ) {
