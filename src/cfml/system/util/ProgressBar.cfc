@@ -38,32 +38,46 @@ component singleton {
 		}
 		var display = createObject( 'java', 'org.jline.utils.Display' ).init( terminal, false );
 		display.resize( terminal.getHeight(), terminal.getWidth() );
+		var progressRendered = '';
 		
-		// Total space availble to progress bar.  Subtract 5 for good measure since it will wrap if you get too close
-		var totalWidth = shell.getTermWidth()-5	;
-
-		// TODO: ETA
-		var progressBarTemplate = '@@@% [=>] $$$$$$$ / ^^^^^^^  (&&&&&&&&)';
-		// Dynamically assign the remaining width to the moving progress bar
-		var nonProgressChars = len( progressBarTemplate ) - 1;
-		// Minimum progressbar length is 5.  It will wrap if the user's console is super short, but I'm not sure I care.
-		var progressChars = max( totalWidth - nonProgressChars, 5 );
-
-		// Get the template
-		var progressRendered = progressBarTemplate;
-
-		// Replace percent
-		progressRendered = replace( progressRendered, '@@@', numberFormat( arguments.percent, '___' ) );
-
-		// Replace actual progress bar
-		var progressSize = int( progressChars * (arguments.percent/100) );
-		var barChars = repeatString( '=', progressSize ) & '>' & repeatString( ' ', max( progressChars-progressSize, 0 ) );
-		progressRendered = replace( progressRendered, '=>', barChars );
-
-		// Replace sizes and speed
-		progressRendered = replace( progressRendered, '^^^^^^^', formatSize( arguments.totalSizeKB, 7 ) );
-		progressRendered = replace( progressRendered, '$$$$$$$', formatSize( arguments.completeSizeKB, 7 ) );
-		progressRendered = replace( progressRendered, '&&&&&&&&', formatSize( min( arguments.speedKBps, 99000), 6 ) & 'ps' );
+		// We don't know the total size (all we can show is the amount downloaded thus far)
+		if( totalSizeKB == -1 ) {
+			
+			var progressBarTemplate = 'Downloading: $$$$$$$ (&&&&&&&&)';
+			progressRendered = replace( progressBarTemplate, '$$$$$$$', formatSize( arguments.completeSizeKB, 7 ) );
+			progressRendered = replace( progressRendered, '&&&&&&&&', formatSize( min( arguments.speedKBps, 99000), 6 ) & 'ps' );
+		
+		// We do know the total size (show percentages)
+		} else {
+			
+			// Total space availble to progress bar.  Subtract 5 for good measure since it will wrap if you get too close
+			var totalWidth = shell.getTermWidth()-5	;
+	
+			// TODO: ETA
+			var progressBarTemplate = '@@@% [=>] $$$$$$$ / ^^^^^^^  (&&&&&&&&)';
+			// Dynamically assign the remaining width to the moving progress bar
+			var nonProgressChars = len( progressBarTemplate ) - 1;
+			// Minimum progressbar length is 5.  It will wrap if the user's console is super short, but I'm not sure I care.
+			var progressChars = max( totalWidth - nonProgressChars, 5 );
+	
+			// Get the template
+			progressRendered = progressBarTemplate;
+	
+			// Replace percent
+			progressRendered = replace( progressRendered, '@@@', numberFormat( arguments.percent, '___' ) );
+	
+			// Replace actual progress bar
+			var progressSize = int( progressChars * (arguments.percent/100) );
+			var barChars = repeatString( '=', progressSize ) & '>' & repeatString( ' ', max( progressChars-progressSize, 0 ) );
+			progressRendered = replace( progressRendered, '=>', barChars );
+	
+			// Replace sizes and speed
+			progressRendered = replace( progressRendered, '^^^^^^^', formatSize( arguments.totalSizeKB, 7 ) );
+			progressRendered = replace( progressRendered, '$$$$$$$', formatSize( arguments.completeSizeKB, 7 ) );
+			progressRendered = replace( progressRendered, '&&&&&&&&', formatSize( min( arguments.speedKBps, 99000), 6 ) & 'ps' );
+			
+		}
+		
 				
 		// Add to console and flush
 		display.update( [ createObject( 'java', 'org.jline.utils.AttributedString' ).init( progressRendered ) ], 0 );
