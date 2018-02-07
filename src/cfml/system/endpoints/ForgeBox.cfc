@@ -78,9 +78,9 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 		var slug 			= parseSlug( arguments.package );
 		var boxJSONversion 	= parseVersion( arguments.package );
 		var result 			= {
-								isOutdated 	= false,
-								version 	= ''
-							  };
+            isOutdated 	= false,
+            version 	= boxJSONversion
+        };
 
 		// Only bother checking if we have a version range.  If an exact version is stored in
 		// box.json, we're never going to update it anyway.
