@@ -220,8 +220,11 @@ component accessors="true" singleton {
 
 			}
 
-			// Default directory to package name
-			var packageDirectory = packageName;
+			// Default directory to package name.
+            		// The `listLast` is to handle packages with slashes (/) in them.
+            		// Instead of creating nested directories, we just use the last part
+            		// of the package name.
+			var packageDirectory = listLast( packageName, "/" );
 			
 			// Next, see if the containing project has an install path configured for this dependency already.
 			var containerBoxJSON = readPackageDescriptor( arguments.packagePathRequestingInstallation );
