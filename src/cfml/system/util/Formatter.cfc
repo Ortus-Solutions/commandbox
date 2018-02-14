@@ -218,6 +218,9 @@ component singleton {
 	 * @json.hint A string containing JSON, or a complex value that can be serialized to JSON
  	 **/
 	public function formatJson( json, indent, lineEnding ) {
+		if ( !structKeyExists(arguments, "lineEnding") )
+			arguments.lineEnding = variables.LF;
+
 		// This is an external lib now.  Leaving here for backwards compat.
 		return JSONPrettyPrint.formatJSON( argumentCollection=arguments );
 	}
