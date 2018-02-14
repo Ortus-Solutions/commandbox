@@ -1784,8 +1784,7 @@ component accessors="true" singleton {
 			if( isJSON( fileContents ) ) {
 				return deserializeJSON( fileContents );
 			} else {
-				consoleLogger.warn( 'Warning: File is not valid JSON. [#path#]' );
-				return {};
+				throw( message='File is not valid JSON. [#path#].  Operation aborted.', type="commandException");
 			}
 		} else {
 			return {};
