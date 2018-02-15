@@ -430,7 +430,12 @@ or just add DEBUG to the root logger
 
 		// error
 		if( results.response.error ){
-			throw( message = arrayToList( results.response.messages ), type = 'forgebox', errorcode = results.responseheader.status_code ?: 500 );
+            throw(
+                "Error getting ForgeBox storage location.",
+                "forgebox",
+                results.response.messages.toList(),
+                results.responseheader.status_code ?: 500
+            );
 		}
 
 		return results.response.data;

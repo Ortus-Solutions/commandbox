@@ -265,8 +265,9 @@
 					// Load Module configuration from cfc and store it in module Config Cache
 					var oConfig = loadModuleConfiguration( mConfig, arguments.moduleName );
 				} catch( any var e ) {
-					consoleLogger.error( 'There was an error loading module [#arguments.moduleName#]' );
-					consoleLogger.error( '#e.message##chr( 10 )##e.detail#' );
+					consoleLogger.error( 'There was an error loading module [#arguments.moduleName#].  Check the logs for more info ( system-log | open ).' );
+					consoleLogger.error( '>    #e.message##chr( 10 )##e.detail#' );
+					consoleLogger.error( '>    ' & e.tagContext[ 1 ].template & ':' &  e.tagContext[ 1 ].line );
 					instance.logger.error( 'There was an error loading module [#arguments.moduleName#]', e );
 					return false;
 				}
@@ -357,12 +358,12 @@
 					try {
 						activateModule( moduleName );
 					} catch( any var e ) {
-						consoleLogger.error( 'Module [#moduleName#] failed to load!  Check the logs for more info.' );
-						consoleLogger.error( '    ' & e.message );
+						consoleLogger.error( 'Module [#moduleName#] failed to load!  Check the logs for more info ( system-log | open ).' );
+						consoleLogger.error( '>    ' & e.message );
 						if( (e.detail ?: '').len() ) {
 							consoleLogger.error( '    ' & e.detail );
 						}
-						consoleLogger.error( '    ' & e.tagContext[ 1 ].template & ':' &  e.tagContext[ 1 ].line );
+						consoleLogger.error( '>    ' & e.tagContext[ 1 ].template & ':' &  e.tagContext[ 1 ].line );
 						consoleLogger.error( '' );
 						instance.logger.error( 'Module [#moduleName#] failed to load!', e );
 					}

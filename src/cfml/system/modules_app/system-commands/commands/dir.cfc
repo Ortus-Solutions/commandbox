@@ -18,7 +18,7 @@ component aliases="ls,ll,directory" {
 	 * @directory.hint The directory to list the contents of or a file Globbing path to filter on
 	 * @recurse.hint Include nested files and folders
 	 **/
-	function run( Globber directory=globber( ( getCWD().endsWith( '/' ) || getCWD().endsWith( '\' )  ? getCWD() : getCWD() & '/' ) ), Boolean recurse=false )  {
+	function run( Globber directory=globber( getCWD() ), Boolean recurse=false )  {
 
 		// If the user gives us an existing directory foo, change it to the
 		// glob pattern foo/* or foo/** if doing a recursive listing.

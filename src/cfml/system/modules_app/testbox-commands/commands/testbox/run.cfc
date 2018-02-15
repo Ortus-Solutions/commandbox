@@ -99,7 +99,7 @@ component {
 			if( serverDetails.serverIsNew ){
 				error( "The test runner we found [#runnerURL#] looks like partial URI, but we can't find any servers in this directory. Please give us a full URL." );
 			} else {
-				runnerURL = ( serverInfo.SSLEnable ? 'https://' : 'https://' ) & '#serverInfo.host#:#serverInfo.port##runnerURL#';	
+				runnerURL = ( serverInfo.SSLEnable ? 'https://' : 'http://' ) & '#serverInfo.host#:#serverInfo.port##runnerURL#';	
 			}			
 		}
 
