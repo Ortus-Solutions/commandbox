@@ -1,12 +1,10 @@
-# Build Folders
+# Build Folders & OS
 /dist
 /build/build.number
 /build/temp
 /build/requires.txt
 /lib
 /src/cfml/box.json
-settings.xml
-.project
 WEB-INF
 tests/results
 tests/work
@@ -29,4 +27,8 @@ jmimemagic.log
 # CommandBox config
 src/CommandBox.json
 .classpath
+
+# IDE
 .vscode
+settings.xml
+.project
