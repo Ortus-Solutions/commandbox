@@ -161,16 +161,20 @@ component {
 			return error( 'Error executing tests: #CR# #e.message##CR##e.detail##CR##local.results.fileContent ?: ''#' );
 		}
 
+		// Trim whitespaces
+		results.fileContent = trim( results.fileContent );
+
 		// Do we have an output file
 		if( !isNull( arguments.outputFile ) ){
 			// This will make each directory canonical and absolute
 			arguments.outputFile = fileSystemUtil.resolvePath( arguments.outputFile );
 			// write it
-			fileWrite( arguments.outputFile, results.fileContent );
-			print.boldGreenLine( "Report written to #arguments.outputFile#!" );
+			fileWrite( 
+				arguments.outputFile, 
+				formatterUtil.formatJSON( results.fileContent )
+			);
+			print.boldGreenLine( "===> Report written to #arguments.outputFile#!" );
 		}
-
-		results.fileContent = trim( results.fileContent );
 
 		// Default is to template our own output based on a JSON reponse
 		if( RUNNER_OPTIONS.reporter == 'json' && isJSON( results.fileContent ) ) {
