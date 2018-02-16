@@ -4,7 +4,7 @@
 	<rule>
 		<note>Generic Front-Controller URLs</note>
 		<!-- These are paths that don't exist on disk, but shouldn't get rewritten since the CF engine treats them special. -->
-		<condition type="request-uri" operator="notequal">/(flex2gateway|flashservices/gateway|messagebroker|lucee|rest|cfide|CFIDE|cfformgateway|jrunscripts)/.*</condition>
+		<condition type="request-uri" operator="notequal">/(flex2gateway|flashservices/gateway|messagebroker|lucee|rest|cfide|CFIDE|cfformgateway|jrunscripts|cf_scripts)/.*</condition>
 		<!-- This is a special URL that can be enabled with debuggin -->
 		<condition type="request-uri" operator="notequal">/tuckey-status</condition>
 		<!-- Browsers like to send this request and it will get rewritten to /index.cfm/favicon.ico when it really just needs to be a 404 -->
