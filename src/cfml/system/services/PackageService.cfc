@@ -619,12 +619,14 @@ component accessors="true" singleton {
 			// and grab all the dependencies
 			var dependencies = boxJSON.dependencies;
 			var type = boxJSON.type;
+			var installpaths = boxJSON.installPaths;
 			// Add in the devDependencies
 			dependencies.append( boxJSON.devDependencies );
 
 		} else {
 			// If the package isn't on disk, no dependencies
 			var dependencies = {};
+			var installpaths = {};
 			var type = '';
 		}
 
@@ -647,9 +649,9 @@ component accessors="true" singleton {
 					packagePathRequestingUninstallation=arguments.packagePathRequestingUninstallation
 				};
 
-				// If the user didn't specify this, don't pass it since it overrides the package's desired install location
-				if( structKeyExists( arguments, 'directory' ) ) {
-					params.directory = arguments.directory;
+				// If we know where the dependency is installed, save ourselves some trouble of guessing
+				if( installpaths.keyExists( dependency ) ) {
+					params.directory = fileSystemUtil.resolvePath( installpaths[ dependency ], uninstallDirectory );
 				}
 
 				// Recursivley install them
