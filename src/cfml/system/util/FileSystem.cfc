@@ -14,6 +14,7 @@ component accessors="true" singleton {
 	* The os
 	*/
 	property name="os";
+	property name="coreClassLoader";
 
 	// DI
 	property name="shell" inject="shell";
@@ -345,6 +346,44 @@ component accessors="true" singleton {
 		} else {
 			return path.replace( '\', '/', 'all' );			
 		}
+	}
+	
+	/*
+	* Loads up a jar file into the core Lucee classloader.  Note, jars cannot be unloaded and their classes
+	* will remain in memory until the CLI exits.  On Windows, the jar files will also be locked on the file system.
+	* 
+	* @path The absolute path of a jar you would like loaded
+	*/
+	function loadJar( string path ) {
+		path = normalizeSlashes( path );
+		var jURL = createObject( 'java', 'java.io.File' ).init( path ).toURI().toURL();
+		var cl = getCoreClassLoader();
+		
+		// Don't add it if it's already there.
+		for( var lib in cl.getURLs() ) {
+			if( lib.File contains jURL.getFile() ) {
+				return;
+			}
+		}
+		
+		var method = cl.getClass().getDeclaredMethod("addURL", [ jURL.getClass() ] );
+		method.setAccessible(true);
+		method.invoke( cl, [ jURL ] );		
+	}
+	
+	/*
+	* Get the Lucee core class loader
+	*/
+	function getCoreClassLoader( string path ) {
+		
+		if( isNull( coreClassLoader ) ) {
+			var main = createObject( 'java', 'cliloader.LoaderCLIMain' );
+			var class = main.getClass();
+			var method = class.getDeclaredMethod( 'getClassLoader', []);
+			method.setAccessible(true);
+			coreClassLoader = method.invoke( class, [] );	
+		}
+		return coreClassLoader;		
 	}
 
 }

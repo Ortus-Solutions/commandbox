@@ -247,4 +247,16 @@ component accessors="true" singleton {
 		shell.checkInterrupted();
 	}
 
+	
+	/*
+	* Loads up a jar file into the core Lucee classloader.  Note, jars cannot be unloaded and their classes
+	* will remain in memory until the CLI exits.  On Windows, the jar files will also be locked on the file system.
+	* 
+	* @path The absolute path of a jar you would like loaded
+	*/
+	function loadJar( string path ) {
+		fileSystemUtil.loadJar( path );
+	}
+
+
 }
