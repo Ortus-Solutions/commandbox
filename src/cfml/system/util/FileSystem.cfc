@@ -349,12 +349,52 @@ component accessors="true" singleton {
 	}
 	
 	/*
-	* Loads up a jar file into the core Lucee classloader.  Note, jars cannot be unloaded and their classes
+	* Loads up Java classes into the class loader that loaded the CLI for immediate use. 
+	* You can pass either an array or list of:
+	* - directories
+	* - Jar files
+	* - Class files
+	*
+	* Note, loaded jars/classes cannot be unloaded and will remain in memory until the CLI exits.
+	* On Windows, the jar/class files will also be locked on the file system.  Directories are scanned
+	* recursively for for files and everything found will be loaded.
+	* 
+	* @paths List or array of absolute paths of a jar/class files or directories of them you would like loaded
+	*/
+	function classLoad( any paths ) {
+		
+		// Allow list or arrays
+		if( isSimpleValue( paths ) ) {
+			paths = paths.listToArray();
+		}
+
+		// For each path....
+		paths.each( function( path ) {
+
+			// Is file
+			if( fileExists( path ) ) {
+				_classLoad( path );
+			// Is directory
+			} else if( directoryExists( path ) ) {
+				directoryList( path, true, 'array', '*.jar|*.class' )
+					.each( function( file ) {
+						_classLoad( file );
+					} );
+			// Is ????
+			} else {
+				throw( message='The path [#path#] doesn''t exist on your file system.', detail='Make sure you expand any paths you send in.', type="commandException" );
+			}
+
+		} );
+	}
+	
+	/*
+	* Loads up a jar or class file into the core Lucee classloader.  Note, jars cannot be unloaded and their classes
 	* will remain in memory until the CLI exits.  On Windows, the jar files will also be locked on the file system.
 	* 
-	* @path The absolute path of a jar you would like loaded
+	* @path The absolute path of a jar or class file you would like loaded
 	*/
-	function loadJar( string path ) {
+	function _classLoad( string path ) {
 		path = normalizeSlashes( path );
 		var jURL = createObject( 'java', 'java.io.File' ).init( path ).toURI().toURL();
 		var cl = getCoreClassLoader();
@@ -377,11 +417,7 @@ component accessors="true" singleton {
 	function getCoreClassLoader( string path ) {
 		
 		if( isNull( coreClassLoader ) ) {
-			var main = createObject( 'java', 'cliloader.LoaderCLIMain' );
-			var class = main.getClass();
-			var method = class.getDeclaredMethod( 'getClassLoader', []);
-			method.setAccessible(true);
-			coreClassLoader = method.invoke( class, [] );	
+			coreClassLoader = createObject( 'java', 'cliloader.LoaderCLIMain' ).getClassLoader();
 		}
 		return coreClassLoader;		
 	}

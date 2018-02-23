@@ -249,13 +249,20 @@ component accessors="true" singleton {
 
 	
 	/*
-	* Loads up a jar file into the core Lucee classloader.  Note, jars cannot be unloaded and their classes
-	* will remain in memory until the CLI exits.  On Windows, the jar files will also be locked on the file system.
+	* Loads up Java classes into the class loader that loaded the CLI for immediate use. 
+	* You can pass either an array or list of:
+	* - directories
+	* - Jar files
+	* - Class files
+	*
+	* Note, loaded jars/classes cannot be unloaded and will remain in memory until the CLI exits.
+	* On Windows, the jar/class files will also be locked on the file system.  Directories are scanned
+	* recursively for for files and everything found will be loaded.
 	* 
-	* @path The absolute path of a jar you would like loaded
+	* @paths List or array of absolute paths of a jar/class files or directories of them you would like loaded
 	*/
-	function loadJar( string path ) {
-		fileSystemUtil.loadJar( path );
+	function classLoad( paths ) {
+		fileSystemUtil.classLoad( paths );
 	}
 
 

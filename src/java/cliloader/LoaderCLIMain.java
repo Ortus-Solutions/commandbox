@@ -219,7 +219,7 @@ public class LoaderCLIMain{
 		System.setIn( originalIn );
 	}
 
-	private static URLClassLoader getClassLoader(){
+	public static URLClassLoader getClassLoader(){
 		if( _classLoader == null ) {
 			File libDir = getLibDir();
 			File[] children = libDir.listFiles( new ExtFilter( ".jar" ) );
