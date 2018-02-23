@@ -881,7 +881,7 @@ component accessors="true" singleton {
 		var argTokens = parser.tokenizeInput( serverInfo.JVMargs )
 			.map( function( i ){
 				// Clean up a couple escapes the parser does that we don't need
-				return parser.unwrapQuotes( i.replace( '\=', '=', 'all' ).replace( '\\', '\', 'all' ) )	;
+				return parser.unwrapQuotes( i.replace( '\=', '=', 'all' ).replace( '\\', '\', 'all' ).replace( ';', '\;', 'all' ) );
 			});
 		// Add in heap size and java agent
 		argTokens.append( '-Xmx#serverInfo.heapSize#m' );
