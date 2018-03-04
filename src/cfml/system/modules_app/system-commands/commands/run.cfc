@@ -75,6 +75,10 @@ component{
 				.waitFor();
 
 		} catch( any e ){
+			checkInterrupted();
+			if( e.getPageException().getRootCause().getClass().getName() == 'java.lang.InterruptedException' ) {
+				rethrow;
+			}
 			error( '#e.message##CR##e.detail#' );
 		}
 
