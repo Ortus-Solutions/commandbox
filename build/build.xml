@@ -232,21 +232,36 @@ External Dependencies:
 	
 		<!-- Copy CommandBox code -->
       	<copy todir="${build.dir}" encoding="UTF-8">
-        	<fileset dir="${src.dir}/cfml"/>
+        	<fileset dir="${src.dir}/cfml">
+        		<exclude name="modules/**"/>
+        	</fileset>
         	<fileset file="../license.txt"/>
         	<fileset file="../readme.txt"/>
         </copy>
+        
+ 		<echo message="Replace build version..." />
 		<!-- Replace Version Numbers -->
 		<replaceregexp match='@build.version@' replace="${commandbox.version}" flags="ig" byline="true" encoding="UTF-8">
-		  <fileset dir="${build.dir}" />
+		  <fileset dir="${build.dir}">
+    		<include name="**/*.cfc"/>
+    		<include name="**/*.cfm"/>
+		  </fileset>
 		</replaceregexp>
+ 		<echo message="Replace loader version..." />
 		<!-- Replace Loader Version Numbers -->
 		<replaceregexp match='@build.LoaderVersion@' replace="${cfml.loader.version}" flags="ig" byline="true" encoding="UTF-8">
-		  <fileset dir="${build.dir}" />
+		  <fileset dir="${build.dir}">
+    		<include name="**/*.cfc"/>
+    		<include name="**/*.cfm"/>
+		  </fileset>
 		</replaceregexp>
+ 		<echo message="Replace build number..." />
 		<!-- Replace Build Numbers -->
 		<replaceregexp match='@build.number@' replace="${build.number}" flags="ig" byline="true" encoding="UTF-8">
-		  <fileset dir="${build.dir}" />
+		  <fileset dir="${build.dir}">
+    		<include name="**/*.cfc"/>
+    		<include name="**/*.cfm"/>
+		  </fileset>
 		</replaceregexp>
 		<!-- Create Version Files -->
 		<echo file="${temp.dir}/cli/bin/cliloader/cfml.version" message="${commandbox.version}"/>
