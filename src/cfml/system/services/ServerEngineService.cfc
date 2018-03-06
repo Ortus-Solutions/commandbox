@@ -30,7 +30,7 @@ component accessors="true" singleton="true" {
 	* @serverHomeDirectory Override where the server's home with be
 	**/
 	public function install( required cfengine, required baseDirectory, required struct serverInfo, required string serverHomeDirectory ) {
-		var version = listLen( cfengine, "@" )>1 ? listLast( cfengine, "@" ) : "";
+		var version = listLen( cfengine, "@" )>1 ? listLast( cfengine, "@" ) : "stable";
 		var engineName = listFirst( cfengine, "@" );
 		arguments.baseDirectory = !arguments.baseDirectory.endsWith( "/" ) ? arguments.baseDirectory & "/" : arguments.baseDirectory;
 
