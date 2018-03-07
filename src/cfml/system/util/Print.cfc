@@ -33,8 +33,9 @@
 */
 component {
 
-	property name='cr'		inject='cr@constants' scope='this';
-	property name='shell'	inject='shell';
+	property name='cr'				inject='cr@constants';
+	property name='shell'			inject='shell';
+	property name='colors256Data'	inject='colors256Data@constants';
 
 	this.tab 		= chr( 9 );
 	this.esc 		= chr( 27 );
@@ -52,25 +53,6 @@ component {
 		"reversed" : 7,
 		"concealed" : 8,
 
-		// Text Color
-		"black" : 30,
-		"red" : 31,
-		"green" : 32,
-		"yellow" : 33,
-		"blue" : 34,
-		"magenta" : 35,
-		"cyan" : 36,
-		"white" : 37,
-
-		// Background
-		"onBlack" : 40,
-		"onRed" : 41,
-		"onGreen" : 42,
-		"onYellow" : 43,
-		"onBlue" : 44,
-		"onMagenta" : 45,
-		"onCyan" : 46,
-		"onWhite" : 47
 	};
 
 	/**
@@ -95,7 +77,7 @@ component {
 		// Flag for if this is a line or not
 		var newLine = false;
 		
-		// Keep track of bold separatley 
+		// Keep track of bold separately
 		var bold = false;
 
 		// Name of the method to chop up
@@ -114,6 +96,49 @@ component {
 		// Carve it up until it's gone
 		while( len( methodName ) ) {
 			foundANSI = false;
+			
+			// 256 color support.  Denormalized into groups to reduce the amount of string manipulation
+			for( var group in colors256Data ) {
+				// Bail if the remaining string isn't even long enough to search
+				if( methodName.len() < group.len ) {
+					continue;
+				}
+				// Peel off this many chars and check for all colors of that length at once
+				var thisToken = methodName.left( group.len );
+				if( group.colors.keyExists( thisToken ) ) {
+					// Generate the ANSI escape code
+					ANSIString &= get256Color( group.colors[ thisToken ].colorID );
+					
+					// Slice this bit off the method name
+					methodName  = mid( methodName, group.len+1, len( methodName ) );
+					foundANSI = true;
+					// Next!
+					break;
+				}
+				// Check for background colors
+				
+				// Bail if the remaining string isn't even long enough to search
+				if( methodName.len() < group.len + 2 ) {
+					continue;
+				}
+				// Peel off this many chars and check for all colors of that length at once
+				var thisToken = methodName.left( group.len + 2 );
+				if( group.colors.keyExists( thisToken.right( -2 ) ) ) {
+					// Generate the ANSI escape code
+					ANSIString &= get256Color( group.colors[ thisToken.right( -2 ) ].colorID, false );
+					
+					// Slice this bit off the method name
+					methodName  = mid( methodName, group.len+3, len( methodName ) );
+					foundANSI = true;
+					// Next!
+					break;
+				}
+			}
+			
+			// If we matched an ANSI code, start the loop over
+			if( foundANSI ) {
+				continue;
+			}
 
 			// Look for each attrib
 			for( var attrib in this.ANSIAttributes ) {
@@ -136,7 +161,7 @@ component {
 				}
 
 			}
-
+			
 			// If we matched an ANSI code, start the loop over
 			if( foundANSI ) {
 				continue;
@@ -170,6 +195,42 @@ component {
 				continue;
 			}
 
+			// Check for "color123"
+			if( methodName.left( 5 ) == 'color' ) {
+				// Slice this bit off the method name
+				methodName  = mid( methodName, 6, len( methodName ) );
+				var colorID = val( methodName );
+				
+				if( colorID > 0 || methodname.startsWith( '0' ) ) {
+				
+					ANSIString &= get256Color( colorID );
+					
+					// Slice this bit off the method name
+					methodName  = mid( methodName, len( colorID )+1 , len( methodName ) );
+					
+					// Next!
+					continue;	
+				}
+			}
+
+			// Check for "onColor123"
+			if( methodName.left( 7 ) == 'onColor' ) {
+				// Slice this bit off the method name
+				methodName  = mid( methodName, 8, len( methodName ) );
+				var colorID = val( methodName );
+				
+				if( colorID > 0 || methodname.startsWith( '0' ) ) {
+				
+					ANSIString &= get256Color( colorID, false );
+					
+					// Slice this bit off the method name
+					methodName  = mid( methodName, len( colorID )+1 , len( methodName ) );
+					
+					// Next!
+					continue;	
+				}
+			}
+
 			// If we reached here, it means unrecognized text got in the method name.
 			// Just slice of a character and try again.  Eventually we'll reach something we
 			// recognize, or we'll hit the end of the string
@@ -191,7 +252,7 @@ component {
 
 		// Add a CR if this was supposed to be a line
 		if( newLine ) {
-			text &= this.cr;
+			text &= cr;
 		}
 
 		return text;
@@ -206,10 +267,17 @@ component {
     }
 
 	/**
+	* Get an 256 color ANSI 
+	*/
+	private String function get256Color( required id, foreground=true ) {
+		return this.ESC & "[" & ( foreground ? 3 : 4 ) & "8;5;" & arguments.id & "m";
+    }
+
+	/**
 	* Pad all lines with 2 spaces
 	*/
 	private String function indent( text ) {
-		return '  ' & replaceNoCase( arguments.text, this.cr, this.cr & '  ', 'all' );
+		return '  ' & replaceNoCase( arguments.text, cr, cr & '  ', 'all' );
     }
 
 }

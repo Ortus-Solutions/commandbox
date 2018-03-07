@@ -50,6 +50,7 @@ component extends="wirebox.system.ioc.config.Binder" {
 		];
 		var ortusArtifactsURL		= 'http://integration.stg.ortussolutions.com/artifacts/';
 		var ortusPRDArtifactsURL	= 'http://downloads.ortussolutions.com/';
+		var colors256Data			= deserializeJSON( fileRead( homedir & "/cfml/system/config/colors.json" ) );
 		// engine versions, first is default - for lucee, first is internal version
 
 		// map constants
@@ -66,6 +67,7 @@ component extends="wirebox.system.ioc.config.Binder" {
 		map( 'ortusArtifactsURL@constants' ).toValue( ortusArtifactsURL );
 		map( 'ortusPRDArtifactsURL@constants' ).toValue( ortusPRDArtifactsURL );
 		map( 'rewritesDefaultConfig@constants' ).toValue( "#homeDir#/cfml/system/config/urlrewrite.xml" );
+		map( 'colors256Data@constants' ).toValue( colors256Data );
 
 		// Map Directories
 		mapDirectory( '/commandbox/system/services' );
