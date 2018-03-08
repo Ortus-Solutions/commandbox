@@ -42,7 +42,7 @@ component accessors="true" singleton {
 		// Get the registry
 		var endpointRegistry = getEndpointRegistry();
 		// Inspect file system for endpoints
-		var files = directoryList( arguments.rootDirectory );
+		var files = directoryList( expandPath( arguments.rootDirectory ) );
 
 		for( var file in files ) {
 			var endpointName = listFirst( listLast( file, '/\' ), '.' );
