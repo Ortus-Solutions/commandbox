@@ -1,4 +1,4 @@
-<cfsilent>
+<cfsilent><cftry>
 <!---
 *********************************************************************************
  Copyright Since 2014 CommandBox by Ortus Solutions, Corp
@@ -10,6 +10,32 @@ I bootstrap CommandBox up, create the shell and get it running.
 I am a CFM because the CLI seems to need a .cfm file to call
 This file will stay running the entire time the shell is open
 --->
+
+<cfset mappings = getApplicationSettings().mappings>
+
+<!--- Move everything over to this mapping which is the "root" of our app --->
+<cfset CFMLRoot = expandPath( getDirectoryFromPath( getCurrentTemplatePath() ) & "../" ) >
+<cfset mappings[ '/commandbox' ]		= CFMLRoot >
+<cfset mappings[ '/commandbox-home' ]	= createObject( 'java', 'java.lang.System' ).getProperty( 'cfml.cli.home' ) >
+<cfset mappings[ '/wirebox' ]			= CFMLRoot & '/system/wirebox' >
+	
+<cfset systemoutput( 'mappings from the bootstrap', 1 )>
+<cfset systemoutput( cfmlroot, 1 )>
+<cfset systemoutput( mappings, 1 )>
+	
+<cfapplication 
+	action="update"
+	name 				= "CommandBox CLI"
+	sessionmanagement 	= "false"
+	applicationTimeout = "#createTimeSpan( 999999, 0, 0, 0 )#"
+	mappings="#mappings#">
+
+<cfset systemoutput( 'expand paths', 1 )>
+<cfset systemoutput( expandPath( '/' ), 1 )>
+<cfset systemoutput( expandPath( '/commandbox' ), 1 )>
+
+<cfset new wirebox.system.ioc.Injector( 'commandbox.system.config.WireBox' )>
+
 <cfset variables.wireBox = application.wireBox>
 <cfsetting requesttimeout="86399913600" /><!--- 999999 days --->
 <!---Display this banner to users--->
@@ -152,4 +178,56 @@ Type "help" for help, or "help [command]" to be more specific.#chr( 27 )#[0m
     system.runFinalization();
     system.gc();
 </cfscript>
+
+	<cfcatch type="any">
+		<cfscript>
+			
+			createObject( 'java', 'java.lang.System' ).setProperty( 'cfml.cli.exitCode', '1' );
+	
+			// Try to log this to LogBox
+			try {
+	    		application.wireBox.getLogBox().getRootLogger().error( '#exception.message# #exception.detail ?: ''#', exception.stackTrace );
+				application.wireBox.getInstance( 'interceptorService' ).announceInterception( 'onException', { exception=exception } );
+	    	// If it fails no worries, LogBox just probably isn't loaded yet.
+			} catch ( Any e ) {}
+	
+			// Give nicer message to user
+			var err = cfcatch;
+	    	var CR = chr( 10 );    	
+			// JLine may not be loaded yet, so I have to use systemOutput() here.
+	    	systemOutput( 'BOOM GOES THE DYNAMITE!!', true );
+	    	systemOutput( 'We''re truly sorry, but something horrible has gone wrong when starting up CommandBox.', true );
+	    	systemOutput( 'Here''s what we know:.', true );
+	    	systemOutput( '', true );
+	    	systemOutput( 'Message:', true );
+	    	systemOutput( '#err.message#', true );
+	    	systemOutput( '', true );
+			if( structKeyExists( err, 'detail' ) ) {
+	    		systemOutput( '#err.detail#', true );
+			}
+			if( structKeyExists( err, 'tagcontext' ) ){
+				var lines = arrayLen( err.tagcontext );
+				if( lines != 0 ){
+					systemOutput( 'Tag Context:', true );
+					for( var idx=1; idx <= lines; idx++) {
+						var tc = err.tagcontext[ idx ];
+						if( len( tc.codeprinthtml ) ){
+							if( idx > 1 ) {
+	    						systemOutput( 'called from ' );
+							}
+	   						systemOutput( '#tc.template#: line #tc.line#', true );
+						}
+					}
+				}
+			}
+	    	systemOutput( '', true );
+	    	systemOutput( '#err.stacktrace#', true );
+	
+	    	//writeDump(var=cfcatch, output="console");
+	
+			// Give them a chance to read it
+			sleep( 30000 );
+		</cfscript>
+	</cfcatch>
+</cftry>
 </cfsilent>

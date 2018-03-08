@@ -25,7 +25,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.io.PrintWriter;
-import java.lang.reflect.Method;
+//import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -39,6 +39,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import javax.script.ScriptEngineManager;
+import javax.script.ScriptEngine;
+import java.time.Instant;
 
 import net.minidev.json.JSONArray;
 
@@ -191,13 +194,49 @@ public class LoaderCLIMain{
 
 		URLClassLoader cl = getClassLoader();
 		try {
-			Class< ? > cli;
+			/* Class< ? > cli;
 			cli = cl.loadClass( "luceecli.CLIMain" );
-			Method run = cli.getMethod( "run", new Class[] { File.class,
-					File.class, File.class, String.class, boolean.class } );
+			Method run = cli.getMethod( "run", new Class[] { File.class, File.class, File.class, String.class, boolean.class } );
+			
+			
+			run.invoke( null, webroot, getLuceeCLIConfigServerDir(), getLuceeCLIConfigWebDir(), uri, debug );
+			*/
+
+            System.out.println( String.valueOf( Instant.now().toEpochMilli() ) + " starting JSR-223" );
+
 			File webroot = new File( getPathRoot( uri ) ).getCanonicalFile();
-			run.invoke( null, webroot, getLuceeCLIConfigServerDir(),
-					getLuceeCLIConfigWebDir(), uri, debug );
+
+    		System.setProperty( "lucee.web.dir", getLuceeCLIConfigWebDir().getAbsolutePath() );
+    		System.setProperty( "lucee.base.dir", getLuceeCLIConfigServerDir().getAbsolutePath() );
+            
+            ScriptEngineManager engineManager = new ScriptEngineManager( cl );
+            System.out.println( String.valueOf( Instant.now().toEpochMilli() ) + " after script engine manager" );
+
+            ScriptEngine engine = engineManager.getEngineByName( "CFML" );
+
+            System.out.println( String.valueOf( Instant.now().toEpochMilli() ) + " after getting CFML engine" );
+
+    		String bootstrap = new File( uri ).toURI().toURL().toExternalForm().replaceAll( "file:/(\\w:)", "file://$1" );
+
+            System.out.println( "Webroot: " + webroot.getPath() );
+            System.out.println( "Bootstrap: " + "/" + uri.toString().replaceFirst( webroot.getPath().replace("\\", "\\\\"), "" ) );
+
+    		String CFML = "mappings = getApplicationSettings().mappings; "
+    	    		+ " mappings[ '/' ] = '" + webroot.getPath() + "'; "
+    	    		+ " mappings[ '/__boxBootstrap__' ] = '" + webroot.getPath() + "'; "
+    	            + " application mappings='#mappings#' action='update'; "
+    	            + " systemoutput( expandpath( '/' ), 1 ); "
+            		+ " include '" + "/__boxBootstrap__/" + uri.toString().replaceFirst( webroot.getPath().replace("\\", "\\\\"), "" ) + "'; ";
+
+            System.out.println( "" );
+            System.out.println( CFML );
+            System.out.println( "" );
+
+    		// Kick off the box bootstrap
+            engine.eval( CFML );
+            
+            //System.out.println( String.valueOf( Instant.now().toEpochMilli() ) +  );
+			
 		} catch ( Exception e ) {
 			exitCode = 1;
 			e.printStackTrace();
