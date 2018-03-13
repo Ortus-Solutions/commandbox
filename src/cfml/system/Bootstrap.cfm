@@ -18,10 +18,6 @@ This file will stay running the entire time the shell is open
 <cfset mappings[ '/commandbox' ]		= CFMLRoot >
 <cfset mappings[ '/commandbox-home' ]	= createObject( 'java', 'java.lang.System' ).getProperty( 'cfml.cli.home' ) >
 <cfset mappings[ '/wirebox' ]			= CFMLRoot & 'system/wirebox' >
-
-<!---<cfset systemoutput( 'mappings from the bootstrap', 1 )>
-<cfset systemoutput( cfmlroot, 1 )>
-<cfset systemoutput( mappings, 1 )>--->
 	
 <cfapplication 
 	action="update"
@@ -29,11 +25,6 @@ This file will stay running the entire time the shell is open
 	sessionmanagement 	= "false"
 	applicationTimeout = "#createTimeSpan( 999999, 0, 0, 0 )#"
 	mappings="#mappings#">
-
-<!---<cfset systemoutput( 'expand paths', 1 )>
-<cfset systemoutput( expandPath( '/' ), 1 )>
-<cfset systemoutput( expandPath( '/commandbox' ), 1 )>--->
-
 
 <cfset new wirebox.system.ioc.Injector( 'commandbox.system.config.WireBox' )>
 
