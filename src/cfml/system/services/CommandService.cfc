@@ -84,11 +84,12 @@ component accessors="true" singleton {
 		string commandPath=''
 	){
 		var varDirs = DirectoryList(
-			path		= arguments.commandDirectory,
+			path		= expandPath( arguments.commandDirectory ),
 			recurse		= false,
 			listInfo	= 'query',
 			sort		= 'type desc, name asc'
 		);
+		
 		for( var dir in varDirs ){
 			// For CFC files, process them as a command
 			if( dir.type  == 'File' && listLast( dir.name, '.' ) == 'cfc' ){

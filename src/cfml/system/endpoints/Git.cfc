@@ -123,7 +123,6 @@ component accessors="true" implements="IEndpoint" singleton {
 			// Release file system locks on the repo
 			if( structKeyExists( local, 'result' ) ) {
 				result.getRepository().close();
-				result.close();
 			}
 		}
 

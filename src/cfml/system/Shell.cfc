@@ -136,6 +136,9 @@ component accessors="true" singleton {
 		variables.reader 		= readerFactory.getInstance( argumentCollection = variables.initArgs  );
 		variables.shellPrompt 	= print.green( "CommandBox> ");
 
+		// When the shell first starts, the current working dir doesn't always containt the trailing slash
+		variables.pwd = fileSystem.resolvePath( variables.pwd );
+
 		// Create temp dir & set
 		setTempDir( variables.tempdir );
 
@@ -326,7 +329,8 @@ component accessors="true" singleton {
 		
 		// delete key/delete line/backspace
 		keys.bind( capability.key_dc.name(), keys.key( terminal, capability.key_dc ) );
-		keys.bind( capability.key_backspace.name(), keys.key( terminal, capability.key_backspace ) );
+		// Not sure why, but throwing unsupported exception on Linux
+		// keys.bind( capability.key_backspace.name(), keys.key( terminal, capability.key_backspace ) );
 		
 		keys.bind( capability.key_ic.name(), keys.key( terminal, capability.key_ic ) );
 		

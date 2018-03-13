@@ -260,7 +260,7 @@ component accessors="true" singleton="true" {
 
 			directoryCreate( installDetails.installDir & '/WEB-INF', true, true );
 			directoryCopy( '/commandbox-home/lib', thislib, false, '*.jar' );
-			fileCopy( '/commandbox/system/config/web.xml', thisWebinf & '/web.xml');
+			fileCopy( expandPath( '/commandbox/system/config/web.xml' ), thisWebinf & '/web.xml');
 
 			// Mark this WAR as being exploded already
 			fileWrite( engineTagFile, thisEngineTag );

@@ -21,11 +21,7 @@ component {
   	 **/
 	function run()  {
 
-		var system 	= createObject( "java", "java.lang.System" );
-		var logFilePath = isNull( system.getProperty('cfml.cli.home') ) ?
-			system.getProperty( 'user.home' ) & "/.CommandBox/" :
-			system.getProperty( 'cfml.cli.home' )
-				& "/logs/commandbox.log";
+		var logFilePath = expandpath( '/commandbox-home' ) & "/logs/commandbox.log";
 
 		print.line( logFilePath );
 
