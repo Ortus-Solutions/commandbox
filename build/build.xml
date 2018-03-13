@@ -155,6 +155,13 @@ External Dependencies:
 	<!-- Build CLI -->
 	<target name="build.cli" description="builds box.jar" depends="init,resolve.libs">
 		
+		<!-- Copy libs to engine destination -->
+		<mkdir dir="${lucee.lib.dir}" />
+		<copy todir="${lucee.lib.dir}">
+	      <fileset dir="${lib.dir}" includes="*.jar" />
+	    </copy>
+		<mkdir dir="${temp.dir}/engine" />
+		
 		<!-- Prepare Compile Path -->
 		<path id="classpath">
 			<fileset dir="${lucee.lib.dir}"/>
@@ -169,12 +176,6 @@ External Dependencies:
 			   target="${java.compiler}" 
 			   classpath="${toString:classpath}"
 			   debug="${java.debug}" />
-		
-		<!-- Copy libs to engine destination -->
-		<copy todir="${lucee.lib.dir}">
-	      <fileset dir="${lib.dir}" includes="*.jar" />
-	    </copy>
-		<mkdir dir="${temp.dir}/engine" />
 		
 		<!-- Configure Lucee Web Dir -->
 		<configure-lucee-web 
@@ -806,9 +807,9 @@ External Dependencies:
 		<delete dir="${lib.dir}"/>
  		<mvn-repo id="jgit-repository" url="https://repo.eclipse.org/content/groups/releases/" />
 		<mvn-repo id="jline-repository" url="https://oss.sonatype.org/content/repositories/snapshots/" />
-		 
 
 		<dependency  groupId="org.jline" artifactId="jline" version="${jline.version}" dest="${lib.dir}" type="jar" repoId="jline-repository" unzip="false"/>
+
 		<dependency groupId="org.eclipse.jgit" artifactId="org.eclipse.jgit" version="${jgit.version}" dest="${lib.dir}" repoId="jgit-repository" unzip="false" type="jar">
 			<exclusions>
 				<!-- Lucee already includes these jars --> 
@@ -816,21 +817,27 @@ External Dependencies:
 				<exclusion groupId="org.apache.httpcomponents" artifactId="httpclient" />
 			</exclusions>
 		</dependency>
-		
+
 	    <dependency groupId="com.beust" artifactId="jcommander" version="1.47" dest="${lib.dir}" type="jar" unzip="false"/>
 	    <dependency groupId="net.minidev" artifactId="json-smart-mini" version="1.0.8" unzip="false" type="jar" dest="${lib.dir}"/>
-	    <dependency groupId="org.cfmlprojects" artifactId="runwar" version="${runwar.version}" dest="${lucee.lib.dir}" unzip="false" type="jar" />
+	    <dependency groupId="org.cfmlprojects" artifactId="runwar" version="${runwar.version}" dest="${lib.dir}" unzip="false" type="jar" />
 
 	    <!-- engine libs -->
-	  	<dependency groupId="org.lucee" artifactId="lucee" version="${lucee.version}" dest="${lucee.lib.dir}" unzip="false" type="jar">
+	  	<dependency groupId="org.lucee" artifactId="lucee" version="${lucee.version}" dest="${lib.dir}" unzip="false" type="jar" repoId="jline-repository">
 			<exclusions>
-				<exclusion groupId="org.lucee.lib" artifactId="railo-slf4j" />
+				<exclusion groupId="org.apache.ant" artifactId="ant" />
+				<exclusion groupId="javax.servlet" artifactId="javax.servlet-api" />
+				<exclusion groupId="javax.servlet.jsp" artifactId="jsp-api" />
+				<exclusion groupId="javax.el" artifactId="javax.el-api" />
+				<exclusion groupId="org.apache.felix" artifactId="org.apache.felix.framework" />
+				<exclusion groupId="junit" artifactId="junit" />
 				<exclusion groupId="org.lucee.lib" artifactId="slf4j-nop" />
 			</exclusions>
 		</dependency>
-		
+
 	    <mvn-repo id="java.repo" url="http://download.java.net/maven/2/" />
-	    <dependency groupId="javax.mail" artifactId="mail" version="1.4.4" dest="${lucee.lib.dir}" repoId="java.repo" unzip="false" type="jar" />
+	    <dependency groupId="javax.mail" artifactId="mail" version="1.4.4" dest="${lib.dir}" repoId="java.repo" unzip="false" type="jar" />
+
    </target>
 
 	<!-- Get launch4j -->

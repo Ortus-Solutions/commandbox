@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.io.PrintWriter;
-//import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -42,6 +41,7 @@ import java.util.Properties;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptEngine;
 import java.time.Instant;
+import java.nio.file.Paths;
 
 import net.minidev.json.JSONArray;
 
@@ -191,11 +191,20 @@ public class LoaderCLIMain{
 		
             //System.out.println( String.valueOf( Instant.now().toEpochMilli() ) + " starting JSR-223" );
 
-			File webroot = new File( getPathRoot( uri ) ).getCanonicalFile();
+			String webroot = Paths.get( uri ).toAbsolutePath().getRoot().toString();
+            // On a *nix machine
+            if( webroot.equals( "/" ) ) {
+            	// Include first folder like /usr/
+            	webroot += Paths.get( uri ).toAbsolutePath().subpath( 0, 1 ).toString() + "/";
+            }
+			
+            // Escape backslash in webroot since replace uses a regular expression
+			String bootstrap = "/" + Paths.get( uri ).toAbsolutePath().toString().replaceFirst( webroot.replace( "\\", "\\\\" ), "" );
 
     		System.setProperty( "lucee.web.dir", getLuceeCLIConfigWebDir().getAbsolutePath() );
     		System.setProperty( "lucee.base.dir", getLuceeCLIConfigServerDir().getAbsolutePath() );
-            
+    		//System.setProperty( "lucee.mapping.first", "true" );
+    		
             ScriptEngineManager engineManager = new ScriptEngineManager( cl );
             //System.out.println( String.valueOf( Instant.now().toEpochMilli() ) + " after script engine manager" );
 
@@ -203,16 +212,19 @@ public class LoaderCLIMain{
 
             //System.out.println( String.valueOf( Instant.now().toEpochMilli() ) + " after getting CFML engine" );
 
+            
+            
+			if( debug ) {
+	            System.out.println( "Webroot: " + webroot );
+	            System.out.println( "Bootstrap: " + bootstrap );
+			}
+			
     		String CFML = "mappings = getApplicationSettings().mappings; \n"
-    	    		+ " mappings[ '/' ] = '" + webroot.getPath() + "'; \n"
-    	    		+ " mappings[ '/__boxBootstrap__' ] = '" + webroot.getPath() + "'; \n"
+    	    		+ " mappings[ '/__commandbox_root/' ] = '" + webroot + "'; \n"
     	            + " application mappings='#mappings#' action='update'; \n"
-            		+ " include '" + "/__boxBootstrap__/" + uri.toString().replaceFirst( webroot.getPath().replace("\\", "\\\\"), "" ) + "'; \n";
+            		+ " include '/__commandbox_root" + bootstrap + "'; \n";
 
 			if( debug ) {
-	            System.out.println( "Webroot: " + webroot.getPath() );
-	            System.out.println( "Bootstrap: " + "/" + uri.toString().replaceFirst( webroot.getPath().replace("\\", "\\\\"), "" ) );
-	            
 	            System.out.println( "" );
 	            System.out.println( CFML );
 	            System.out.println( "" );
