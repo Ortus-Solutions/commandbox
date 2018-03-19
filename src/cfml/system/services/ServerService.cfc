@@ -298,7 +298,11 @@ component accessors="true" singleton {
 			if( isNull( serverProps[ prop ] ) || listFindNoCase( 'saveSettings,serverConfigFile,debug,force,console,trace', prop ) ) {
 				continue;
 			}
-	    	var configPath = replace( fileSystemUtil.resolvePath( defaultServerConfigFileDirectory ), '\', '/', 'all' ) & '/';
+	    	var configPath = replace( fileSystemUtil.resolvePath( defaultServerConfigFileDirectory ), '\', '/', 'all' );
+	    	// Ensure trailing slash
+	    	if( !configPath.endsWith( '/' ) ) {
+	    		configPath &= '/';
+	    	}
 			// Only need switch cases for properties that are nested or use different name
 			switch(prop) {
 			    case "port":
