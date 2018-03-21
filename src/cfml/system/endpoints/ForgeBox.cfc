@@ -318,13 +318,25 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 			throw( e.message, 'endpointException', e.detail );
 		}
 
+		// If this is an exact version (not a range) just do a simple lookup for it
+		if( semanticVersion.isExactVersion( version, true ) ) {
+			for( var thisVer in arguments.entryData.versions ) {
+				if( semanticVersion.isEQ( version, thisVer.version, true ) ) {
+					return thisVer;
+				}
+			}			
+			throw( 'Version [#arguments.version#] not found for package [#arguments.slug#].', 'endpointException', 'Available versions are [#arguments.entryData.versions.map( function( i ){ return ' ' & i.version; } ).toList()#]' );
+		}
+ 
+ 		// For version ranges, do a smart lookup
 		arguments.entryData.versions.sort( function( a, b ) { return semanticVersion.compare( b.version, a.version ) } );
-
+		
 		var found = false;
 		for( var thisVersion in arguments.entryData.versions ) {
 			if( semanticVersion.satisfies( thisVersion.version, arguments.version ) ) {
 				return thisVersion;
 			}
+			throw( 'Version [#arguments.version#] not found for package [#arguments.slug#].', 'endpointException', 'Available versions are [#arguments.entryData.versions.map( function( i ){ return ' ' & i.version; } ).toList()#]' );
 		}
 
 		// If we requsted stable and all releases are pre-release, just grab the latest
