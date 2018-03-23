@@ -220,8 +220,7 @@ component accessors="true" singleton {
 
 			}
 
-			// Default directory to package name
-			var packageDirectory = packageName;
+			var packageDirectory = "";
 			
 			// Next, see if the containing project has an install path configured for this dependency already.
 			var containerBoxJSON = readPackageDescriptor( arguments.packagePathRequestingInstallation );
@@ -345,6 +344,9 @@ component accessors="true" singleton {
 			// Override package directory in descriptor?
 			if( len( artifactDescriptor.packageDirectory ) && !packageDirectory.len() ) {
 				packageDirectory = artifactDescriptor.packageDirectory;
+			} else {
+				// Default directory to package name
+				packageDirectory = packageName;
 			}
 
 			// Some packages may just want to be dumped in their destination without being contained in a subfolder
