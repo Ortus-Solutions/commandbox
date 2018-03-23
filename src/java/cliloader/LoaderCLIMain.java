@@ -37,11 +37,13 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptEngine;
 import java.time.Instant;
 import java.nio.file.Paths;
+import java.security.Security;
 
 import net.minidev.json.JSONArray;
 
@@ -187,10 +189,16 @@ public class LoaderCLIMain{
 		PrintStream originalOut = System.out;
 
 		URLClassLoader cl = getClassLoader();
-		try {
 		
-            //System.out.println( String.valueOf( Instant.now().toEpochMilli() ) + " starting JSR-223" );
+		try {
 
+			// This is a fix for Windows machine to avoid very slow access to the network adapter's mac address during UUID creation in Felix startup:
+			// https://www.mail-archive.com/users@felix.apache.org/msg18083.html
+			Optional.ofNullable( Security.getProvider( "SunMSCAPI" ) ).ifPresent( p->{
+			    Security.removeProvider( p.getName() );
+			    Security.insertProviderAt( p, 1 );
+			} );
+			
 			String webroot = Paths.get( uri ).toAbsolutePath().getRoot().toString();
             // On a *nix machine
             if( webroot.equals( "/" ) ) {
@@ -203,16 +211,9 @@ public class LoaderCLIMain{
 
     		System.setProperty( "lucee.web.dir", getLuceeCLIConfigWebDir().getAbsolutePath() );
     		System.setProperty( "lucee.base.dir", getLuceeCLIConfigServerDir().getAbsolutePath() );
-    		//System.setProperty( "lucee.mapping.first", "true" );
     		
             ScriptEngineManager engineManager = new ScriptEngineManager( cl );
-            //System.out.println( String.valueOf( Instant.now().toEpochMilli() ) + " after script engine manager" );
-
             ScriptEngine engine = engineManager.getEngineByName( "CFML" );
-
-            //System.out.println( String.valueOf( Instant.now().toEpochMilli() ) + " after getting CFML engine" );
-
-            
             
 			if( debug ) {
 	            System.out.println( "Webroot: " + webroot );
@@ -233,8 +234,6 @@ public class LoaderCLIMain{
     		// Kick off the box bootstrap
             engine.eval( CFML );
             
-            //System.out.println( String.valueOf( Instant.now().toEpochMilli() ) +  );
-			
 		} catch ( Exception e ) {
 			exitCode = 1;
 			e.printStackTrace();
@@ -452,7 +451,7 @@ public class LoaderCLIMain{
 
 	@SuppressWarnings( "static-access" )
 	public static void main( String[] arguments ) throws Throwable{
-		Util.ensureJavaVersion();
+		Util.ensureJavaVersion();	
 		System.setProperty( "apple.awt.UIElement", "true" );
 		ArrayList< String > cliArguments = new ArrayList< String >(
 				Arrays.asList( arguments ) );
