@@ -95,8 +95,8 @@ component singleton accessors=true {
 		// This will catch nasty parse errors and tell us where they happened
 		} catch( any e ){
 			// Log the full exception with stack trace
-			logger.error( 'Error creating Task [#relTaskFile#]. #e.message# #e.detail ?: ''#', e.stackTrace );
-			throw( message='Error creating Task [#relTaskFile#]', detail="#e.message# #CR# #e.detail ?: ''# #CR# #e.stacktrace#", type="commandException");
+			consoleLogger.error( 'Error creating Task [#relTaskFile#].' );
+			rethrow;
 		}
 
 	}
