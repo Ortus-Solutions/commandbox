@@ -68,7 +68,8 @@ component singleton{
 			.terminal( terminal )
 			.variables( {
 				// The default file for history is set into the shell here though it's used by the DefaultHistory class
-				'#LineReader.HISTORY_FILE#' : commandHistoryFile
+				'#LineReader.HISTORY_FILE#' : commandHistoryFile,
+				'#LineReader.BLINK_MATCHING_PAREN#' : 0
 			} )
         	.completer( jCompletor )
         	.parser( jParser )
