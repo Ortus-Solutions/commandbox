@@ -325,7 +325,7 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 					return thisVer;
 				}
 			}			
-			throw( 'Version [#arguments.version#] not found for package [#arguments.slug#].', 'endpointException', 'Available versions are [#arguments.entryData.versions.map( function( i ){ return ' ' & i.version; } ).toList()#]' );
+			throw( 'Exact version [#arguments.version#] not found for package [#arguments.slug#].', 'endpointException', 'Available versions are [#arguments.entryData.versions.map( function( i ){ return ' ' & i.version; } ).toList()#]' );
 		}
  
  		// For version ranges, do a smart lookup
@@ -336,7 +336,6 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 			if( semanticVersion.satisfies( thisVersion.version, arguments.version ) ) {
 				return thisVersion;
 			}
-			throw( 'Version [#arguments.version#] not found for package [#arguments.slug#].', 'endpointException', 'Available versions are [#arguments.entryData.versions.map( function( i ){ return ' ' & i.version; } ).toList()#]' );
 		}
 
 		// If we requsted stable and all releases are pre-release, just grab the latest
