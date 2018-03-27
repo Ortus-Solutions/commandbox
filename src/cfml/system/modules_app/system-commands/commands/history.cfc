@@ -53,7 +53,7 @@ component {
 	
 			// Clear the history?
 			if( arguments.clear ) {
-				shell.getReader().getHistory().clear();
+				shell.getReader().getHistory().purge();
 				print.greenLine( 'History cleared.' );
 				// Flush out anything in the buffer
 				shell.getReader().getHistory().save();
