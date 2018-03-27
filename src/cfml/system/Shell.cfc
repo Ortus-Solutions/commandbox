@@ -361,7 +361,17 @@ component accessors="true" singleton {
 		keys.bind( 'escape', keys.esc() );
 		keys.setAmbiguousTimeout( 50 );
 		
-		var binding = bindingReader.readBinding( keys );
+		
+		try {
+			var binding = bindingReader.readBinding( keys );
+			
+		} catch (any e) {
+			if( e.getPageException().getRootCause().getClass().getName() == 'java.io.InterruptedIOException' ) {
+				throw( message='CANCELLED', type="UserInterruptException");
+			}
+			rethrow;
+		}
+		
 		if( binding == 'self-insert' ) {
 			key = bindingReader.getLastBinding();
 		} else {
