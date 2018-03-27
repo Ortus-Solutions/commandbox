@@ -46,7 +46,7 @@ component{
 	function run(
 		required command
 	){
-
+        var terminal = shell.getReader().getTerminal();
 		// Prep the command to run in the OS-specific shell
 		if( fileSystemUtil.isWindows() ) {
 			// Pass through Windows' command shell, /a outputs ANSI formatting, /c runs as a command
@@ -61,7 +61,11 @@ component{
 		try{
             // grab the current working directory
             var CWDFile = createObject( 'java', 'java.io.File' ).init( fileSystemUtil.resolvePath( '' ) );
-			var exitCode = createObject( "java", "java.lang.ProcessBuilder" )
+            
+            // This unbinds JLine from our input and output so it's not fighting over the keyboard
+            terminal.pause();
+            
+			var pb = createObject( "java", "java.lang.ProcessBuilder" )
 				.init( commandArray )
 				// Do you believe in magic
 				// This works great on Mac/Windows.
@@ -70,11 +74,22 @@ component{
 				// Sets current working directory for the process
 				.directory( CWDFile )
 				// Fires process async
-				.start()
+				.start();
+				
 				// waits for it to exit, returning the exit code
-				.waitFor();
-
+				var exitCode = pb.waitFor();
+			
+			// As you were, JLine
+            terminal.resume();
 		} catch( any e ){
+			// I had issues with Ctrl-C not fully existing cmd on Windows.  This make sure it's dead.
+			pb.destroy();
+			
+			// As you were, JLine
+			if( terminal.paused() ) {
+				terminal.resume();
+			}
+			
 			checkInterrupted();
 			if( e.getPageException().getRootCause().getClass().getName() == 'java.lang.InterruptedException' ) {
 				rethrow;
