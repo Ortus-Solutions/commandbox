@@ -63,18 +63,31 @@ public class LoaderCLIMain{
 	}
 
 	private static class log{
+		private static volatile PrintStream printStream;
+		
+		public static void printstream( PrintStream stream ){
+			printStream = stream;
+		}
+		public static PrintStream printstream(){
+			return printStream != null ? printStream : System.out;
+		}
+		
 		public static void debug( String message ){
 			if( debug ) {
-				System.out.println( message.replace( "/n", CR ) );
+				printstream().println( message.replace( "/n", CR ) );
 			}
 		}
 
 		public static void error( String message ){
-			System.err.println( message.replace( "/n", CR ) );
+			printstream().println( message.replace( "/n", CR ) );
 		}
 
 		public static void warn( String message ){
-			System.out.println( message.replace( "/n", CR ) );
+			printstream().println( message.replace( "/n", CR ) );
+		}
+
+		public static void info( String message ){
+			printstream().println( message.replace( "/n", CR ) );
 		}
 	}
 
@@ -101,6 +114,7 @@ public class LoaderCLIMain{
 																	"line.separator" )
 																	.toString();
 	private static Boolean			debug					= false;
+	private static Boolean			initialized				= false;
 	private static String			ENGINECONF_ZIP_PATH		= "engine.zip";
 	private static int				exitCode				= 0;
 	private static String			LIB_ZIP_PATH			= "libs.zip";
@@ -123,13 +137,45 @@ public class LoaderCLIMain{
 		return result;
 	}
 
-	private static void execute( ArrayList< String > cliArguments )
+	public static void execute( ArrayList< String > cliArguments )
 			throws ClassNotFoundException, NoSuchMethodException,
 			SecurityException, IOException{
 		log.debug( "Running in CLI mode" );
+
 		System.setIn( new NonClosingInputStream( System.in ) );
+
+		InputStream originalIn = System.in;
+		PrintStream originalOut = System.out;
+
+		execute(cliArguments,System.in,System.out);
+
+		System.setOut( originalOut );
+		System.setIn( originalIn );
+	}
+
+	public static void execute( ArrayList< String > cliArguments, InputStream inputStream, PrintStream printStream )
+			throws ClassNotFoundException, NoSuchMethodException,
+			SecurityException, IOException {
+		log.printstream(printStream);
+		log.debug( "Running in CLI mode" );
+		if(!initialized) {
+			try {
+				initialize(cliArguments.toArray(new String[cliArguments.size()]));
+			} catch (Exception e){
+				System.err.println("*******  ERROR initializing ***********");
+				e.printStackTrace();
+			}
+		}
+		removeInternalArguments(cliArguments);
 		String uri = null;
-		if( new File( getCLI_HOME(), getShellPath() ).exists() ) {
+		File home = getCLI_HOME();
+		if(home == null){
+			String[] arguments = cliArguments.toArray(new String[cliArguments.size()]);
+			Map< String, String > config = toMap( arguments );
+			home = getCLI_HOME(cliArguments,System.getProperties(),arguments,config);
+		}
+		String shellPath = getShellPath();
+		if( new File( home, shellPath ).exists() ) {
 			uri = new File( getCLI_HOME(), getShellPath() ).getCanonicalPath();
 		} else if( new File( getShellPath() ).exists() ) {
 			uri = new File( getShellPath() ).getCanonicalPath();
@@ -169,7 +215,7 @@ public class LoaderCLIMain{
 			}
 		} else {
 			if( debug ) {
-				System.out.println( "uri: " + uri );
+				printStream.println( "uri: " + uri );
 			}
 		}
 		
@@ -181,12 +227,9 @@ public class LoaderCLIMain{
 		System.setProperty( "cfml.cli.argument.array", jsonArray.toJSONString() );
 		
 		if( debug ) {
-			System.out.println( "cfml.cli.arguments: " + Arrays.toString( cliArguments.toArray() ) );
-			System.out.println( "cfml.cli.argument.array: " + jsonArray.toJSONString() );
+			printStream.println( "cfml.cli.arguments: " + Arrays.toString( cliArguments.toArray() ) );
+			printStream.println( "cfml.cli.argument.array: " + jsonArray.toJSONString() );
 		}
-
-		InputStream originalIn = System.in;
-		PrintStream originalOut = System.out;
 
 		URLClassLoader cl = getClassLoader();
 		
@@ -216,8 +259,8 @@ public class LoaderCLIMain{
             ScriptEngine engine = engineManager.getEngineByName( "CFML" );
             
 			if( debug ) {
-	            System.out.println( "Webroot: " + webroot );
-	            System.out.println( "Bootstrap: " + bootstrap );
+				printStream.println( "Webroot: " + webroot );
+				printStream.println( "Bootstrap: " + bootstrap );
 			}
 			
     		String CFML = "mappings = getApplicationSettings().mappings; \n"
@@ -226,9 +269,9 @@ public class LoaderCLIMain{
             		+ " include '/__commandbox_root" + bootstrap + "'; \n";
 
 			if( debug ) {
-	            System.out.println( "" );
-	            System.out.println( CFML );
-	            System.out.println( "" );
+				printStream.println( "" );
+				printStream.println( CFML );
+				printStream.println( "" );
 			}
 
     		// Kick off the box bootstrap
@@ -238,22 +281,20 @@ public class LoaderCLIMain{
 			exitCode = 1;
 			e.printStackTrace();
 			if( e.getCause() != null ) {
-				System.out.println( "Cause:" );
+				printStream.println( "Cause:" );
 				e.getCause().printStackTrace();
 			}
 		}
 		
 
 		if( debug ) {
-			System.out.println( "cfml.cli.exitCode: " + Integer.parseInt( System.getProperty("cfml.cli.exitCode","0") ) );
+			printStream.println( "cfml.cli.exitCode: " + Integer.parseInt( System.getProperty("cfml.cli.exitCode","0") ) );
 		}
 		exitCode = Integer.parseInt( System.getProperty("cfml.cli.exitCode","0") );
 		
 		cl.close();
-		System.out.flush();
-		System.setOut( originalOut );
-		System.setIn( originalIn );
-	}
+		printStream.flush();
+		}
 
 	public static URLClassLoader getClassLoader(){
 		if( _classLoader == null ) {
@@ -266,7 +307,7 @@ public class LoaderCLIMain{
 				children = libDir.listFiles( new ExtFilter( ".jar" ) );
 			}
 			if( children == null || children.length < 2 ) {
-				System.out.println( "Could not find libraries" );
+				log.error( "Could not find libraries" );
 				System.exit( 1 );
 			}
 
@@ -276,15 +317,11 @@ public class LoaderCLIMain{
 				}
 			}
 			URL[] urls = new URL[ jars.size() ];
-			if( debug ) {
-				System.out.println( "Loading Jars" );
-			}
+			log.debug( "Loading Jars" );
 			for( int i = 0; i < jars.size(); i++) {
 				try {
 					urls[ i ] = jars.get( i ).toURI().toURL();
-					if( debug ) {
-						System.out.println( "- " + urls[ i ] );
-					}
+					log.debug( "- " + urls[ i ] );
 				} catch ( MalformedURLException e ) {
 					e.printStackTrace();
 				}
@@ -451,7 +488,13 @@ public class LoaderCLIMain{
 
 	@SuppressWarnings( "static-access" )
 	public static void main( String[] arguments ) throws Throwable{
-		Util.ensureJavaVersion();	
+		Util.ensureJavaVersion();
+		execute( initialize( arguments ) );
+		System.exit( exitCode );
+	}
+
+	@SuppressWarnings( "static-access" )
+	public static ArrayList< String > initialize( String[] arguments ) throws IOException {
 		System.setProperty( "apple.awt.UIElement", "true" );
 		ArrayList< String > cliArguments = new ArrayList< String >(
 				Arrays.asList( arguments ) );
@@ -467,7 +510,7 @@ public class LoaderCLIMain{
 		try {
 			props.load( ClassLoader
 					.getSystemResourceAsStream( "cliloader/cli.properties" ) );
-		} catch ( IOException e ) {
+		} catch ( Exception e ) {
 			e.printStackTrace();
 		}
 		log.debug( "initial arguments:" + Arrays.toString( arguments ) );
@@ -498,7 +541,7 @@ public class LoaderCLIMain{
 
 		log.debug( "initial cfml.cli.home: " + cli_home );
 		if( !cli_home.exists() ) {
-			System.out.println( "Configuring " + name + " home: " + cli_home + " (change with -" + name + "_home=/path/to/dir)" );
+			log.info( "Configuring " + name + " home: " + cli_home + " (change with -" + name + "_home=/path/to/dir)" );
 			cli_home.mkdir();
 		}
 
@@ -516,7 +559,7 @@ public class LoaderCLIMain{
 
 		// update/overwrite libs
 		if( listContains( cliArguments, "-cliupdate" ) ) {
-			System.out.println( "updating " + name + " home" );
+			log.info( "updating " + name + " home" );
 			updateLibs = true;
 			listRemoveContaining( cliArguments, "-cliupdate" );
 			arguments = removeElement( arguments, "-cliupdate" );
@@ -564,9 +607,8 @@ public class LoaderCLIMain{
 		if( !libDir.exists()
 				|| libDir.listFiles( new ExtFilter( ".jar" ) ).length < 2
 				|| updateLibs ) {
-			System.out.println( "Library path: " + libDir );
-			System.out
-					.println( "Initializing libraries -- this will only happen once, and takes a few seconds..." );
+			log.info( "Library path: " + libDir );
+			log.info( "Initializing libraries -- this will only happen once, and takes a few seconds..." );
 			
 			// Try to delete the Runwar jar first since it's the most likely to be locked.  
 			// If it fails, this method will just abort before we get any farther into deleting stuff.
@@ -586,11 +628,11 @@ public class LoaderCLIMain{
 					cli_home.getPath() + "/engine" ), debug );
 			Util.copyInternalFile( classLoader, VERSION_PROPERTIES_PATH,
 					new File( libDir, "version.properties" ) );
-			System.out.println( "" );
-			System.out.println( "Libraries initialized" );
+			log.info( "" );
+			log.info( "Libraries initialized" );
 			if( updateLibs && arguments.length == 0 ) {
-				System.out.println( "updated " + cli_home + "!" );
-				// System.out.println("updated! ctrl-c now or wait a few seconds for exit..");
+				log.info( "updated " + cli_home + "!" );
+				// log.info("updated! ctrl-c now or wait a few seconds for exit..");
 				// System.exit(0);
 			}
 			Util.cleanUpUnpacked( libDir );
@@ -655,9 +697,17 @@ public class LoaderCLIMain{
 			System.setProperty( key, value );
 			log.debug( key + ": " + value );
 		}
-		
-		execute( cliArguments );
-		System.exit( exitCode );
+
+		initialized = true;
+		return cliArguments;
+	}
+
+	private static void removeInternalArguments(ArrayList< String > cliArguments){
+		String name = getName();
+		String home = name + "_home";
+		listRemoveContaining( cliArguments, "-" + home );
+		listRemoveContaining( cliArguments, "-cliupdate" );
+		listRemoveContaining( cliArguments, "-clidebug" );
 	}
 
 	private static String mapGetNoCase( Map< String, String > source,
