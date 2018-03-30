@@ -119,7 +119,10 @@ component {
 				// If there's a tag context, show the file name and line number where the error occurred
 				if( isDefined( 'local.thisSpec.error.tagContext' ) && isArray( local.thisSpec.error.tagContext ) && local.thisSpec.error.tagContext.len() ) {
 					print.line( "#repeatString( "    ", arguments.level+2 )#-> at #local.thisSpec.error.tagContext[1].template#:#local.thisSpec.error.tagContext[1].line# #chr(13)##chr(13)#", COLOR.ERROR );
-				}
+				// For some reason, the tag context sometimes is here.  Isn't consistency great??
+				} else if( isDefined( 'local.thisSpec.failOrigin' ) && isArray( local.thisSpec.failOrigin ) && local.thisSpec.failOrigin.len() ) {
+					print.line( "#repeatString( "    ", arguments.level+2 )#-> at #local.thisSpec.failOrigin[1].template#:#local.thisSpec.failOrigin[1].line# #chr(13)##chr(13)#", COLOR.ERROR );
+				} 
 			}
 		}
 		if ( arrayLen( arguments.suiteStats.suiteStats ) ) {
