@@ -63,15 +63,6 @@ component accessors="true" singleton="true" {
 			if( installDetails.initialInstall ) {
 				flexConfig = replace(flexConfig, "/WEB-INF/", installDetails.installDir & "/WEB-INF/","all");
 				fileWrite(installDetails.installDir & "/WEB-INF/cfform/flex-config.xml", flexConfig);
-			} else {
-				// TODO: Remove this ELSE block in a future revision.
-				// This will fix the flex-config.xml files that have been corrupted because we weren't checking initialInstall, above.
-				var escapedInstDir=reReplace(installDetails.installDir,"(\\|\/|\.|\:)","\\1","all");
-				//reReplace supports 5 backreferences in the replacement substring for case conversions. It doesn't allow escaping of these backreferences though in case you want them literally!
-				var replaceString=reReplace(installDetails.installDir,"\\(u|U|l|L|E)","##chr(92)##\1","all");
-				var regex="(?:" & escapedInstDir & ")*" & "\/WEB-INF\/" ;
-				flexConfig = reReplace(flexConfig, regex, replaceString & "/WEB-INF/","all");
-				fileWrite(installDetails.installDir & "/WEB-INF/cfform/flex-config.xml", evaluate(de(flexConfig)));
 			}
 		}
 		return installDetails;
