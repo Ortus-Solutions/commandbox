@@ -1069,6 +1069,20 @@ component accessors="true" singleton {
 	    var processBuilder = createObject( "java", "java.lang.ProcessBuilder" );
 	    // Pass array of tokens comprised of command plus arguments
 	    args.prepend( serverInfo.javaHome );
+	    
+	    // In *nix OS's we need to separate the server process from the CLI process
+	    // so SIGINTs from Ctrl-C won't also kill previously started servers
+	    if( !fileSystemUtil.isWindows() && background ) {
+	    	// The shell script will take care of creating this file and emptying it every time
+	    	var nohupLog = '#serverInfo.serverHomeDirectory#/nohup.log';
+	    	// Pass log file to external process.  This is no we can capture the output of the server process
+	    	args.prepend( '#serverInfo.serverHomeDirectory#/nohup.log' );
+	    	// Use this intermediate shell script to start our server via nohup
+	    	args.prepend( expandPath( '/server-commands/bin/server_spawner.sh' ) );
+	    	// Pass script directly to bash so I don't have to worry about it being executable
+			args.prepend( expandPath( '/bin/bash' ) );
+	    }
+	    
 	    processBuilder.init( args );
 	    // Conjoin standard error and output for convenience.
 	    processBuilder.redirectErrorStream( true );
