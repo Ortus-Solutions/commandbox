@@ -724,12 +724,12 @@ component accessors="true" singleton {
 
 			if( isArray( command ) ) {
 				if( structKeyExists( arguments, 'piped' ) ) {
-					var result = variables.commandService.runCommandTokens( arguments.command, piped );
+					var result = variables.commandService.runCommandTokens( arguments.command, piped, returnOutput );
 				} else {
-					var result = variables.commandService.runCommandTokens( arguments.command );
+					var result = variables.commandService.runCommandTokens( tokens=arguments.command, captureOutput=returnOutput );
 				}
 			} else {
-				var result = variables.commandService.runCommandLine( arguments.command );
+				var result = variables.commandService.runCommandLine( arguments.command, returnOutput );
 			}
 
 		// This type of error is recoverable-- like validation error or unresolved command, just a polite message please.

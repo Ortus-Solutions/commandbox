@@ -122,8 +122,9 @@ component accessors="true" singleton {
 	/**
 	 * run a command line
 	 * @line.hint line to run
+	 * @captureOutput Temp workaroundn to allow capture of run command
  	 **/
-	function runCommandline( required string line ){
+	function runCommandline( required string line, captureOutput=false ){
 
 		if( left( arguments.line, 4 ) == 'box ' && len( arguments.line ) > 4 ) {
 			consoleLogger.warn( "Removing extra text [box ] from start of command. You don't need that here." );
@@ -133,33 +134,35 @@ component accessors="true" singleton {
 		// Resolve the command they are wanting to run
 		var commandChain = resolveCommand( line );
 
-		return runCommand( commandChain, line );
+		return runCommand( commandChain=commandChain, line=line, captureOutput=captureOutput );
 	}
 
 	/**
 	 * run a command tokens
 	 * @tokens.hint tokens to run
 	 * @piped.hint Data to pipe in to the first command
+	 * @captureOutput Temp workaroundn to allow capture of run command
  	 **/
-	function runCommandTokens( required array tokens, string piped ){
+	function runCommandTokens( required array tokens, string piped, captureOutput=false ){
 
 		// Resolve the command they are wanting to run
 		var commandChain = resolveCommandTokens( tokens );
 
 		// If there was piped input
 		if( structKeyExists( arguments, 'piped' ) ) {
-			return runCommand( commandChain, tokens.toList( ' ' ), arguments.piped );
+			return runCommand( commandChain, tokens.toList( ' ' ), arguments.piped, captureOutput );
 		}
 
-		return runCommand( commandChain, tokens.toList( ' ' ) );
+		return runCommand( commandChain=commandChain, line=tokens.toList( ' ' ), captureOutput=captureOutput );
 
 	}
 
 	/**
 	 * run a command
 	 * @commandChain.hint the chain of commands to run
+	 * @captureOutput Temp workaroundn to allow capture of run command
  	 **/
-	function runCommand( required array commandChain, required string line, string piped ){
+	function runCommand( required array commandChain, required string line, string piped, captureOutput=false ){
 
 		// If nothing is returned, something bad happened (like an error instatiating the CFC)
 		if( !commandChain.len() ){
@@ -314,8 +317,24 @@ component accessors="true" singleton {
 			// may explicitly set the exit code to 1 but not call the error() method.
 			shell.setExitCode( 0 );
 
+			// Tells us if we are going to capture the output of this command and pass it to another
+			// Used for our workaround to switch if the "run" command pipes to the terminal or not
+			// If there are more commands in the chain and we are going to pipe or redirect to them
+			if( arrayLen( commandChain ) > i && listFindNoCase( '|,>,>>', commandChain[ i+1 ].originalLine ) ) {
+				captureOutput = true;
+			}
+			
+			// This is my workaround to "smartly" capture the output of the run command if we're piping it or 
+			// nesting it as an expression, etc.
+			if( commandInfo.commandReference.originalName == 'run' && captureOutput ) {
+				parameterInfo.namedParameters.interactive=false;
+			} 
+			
+			
 			// Run the command
 			try {
+				captureOutput
+				
 				var result = commandInfo.commandReference.CFC.run( argumentCollection = parameterInfo.namedParameters );
 				lastCommandErrored = commandInfo.commandReference.CFC.hasError();
 			} catch( any e ){
@@ -419,8 +438,8 @@ component accessors="true" singleton {
 			while( search.pos[1] ) {
 				// Extract them
 				var expression = mid( paramValue, search.pos[1], search.len[1] );
-				// Evaluate them
-				var result = runCommandline( mid( expression, 15, len( expression )-28 ) ) ?: '';
+				// Evaluate them (and capture output of any "run" command
+				var result = runCommandline( mid( expression, 15, len( expression )-28 ), true ) ?: '';
 
 				// Clean off trailing any CR to help with piping one-liner outputs as inputs to another command
 				if( result.endsWith( chr( 10 ) ) && len( result ) > 1 ){
