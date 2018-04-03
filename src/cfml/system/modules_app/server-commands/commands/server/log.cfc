@@ -23,7 +23,8 @@ component {
 		string name,
 		string directory,
 		String serverConfigFile,
-		Boolean follow=false
+		Boolean follow=false,
+		Boolean access=false
 		 ){
 		if( !isNull( arguments.directory ) ) {
 			arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
@@ -40,6 +41,9 @@ component {
 		}
 
 		var logfile = serverInfo.logdir & "/server.out.txt";
+		if( access ) {
+			logfile = serverInfo.accessLogPath;
+		}
 		if( fileExists( logfile) ){
 
 			if( follow ) {
@@ -54,6 +58,9 @@ component {
 		} else {
 			print.boldRedLine( "No log file found for '#serverInfo.webroot#'!" )
 				.line( "#logFile#" );
+			if( access ) {
+				print.yellowLine( 'Enable accesss logging with [server set web.acessLogEnable=true]' );
+			}
 		}
 	}
 

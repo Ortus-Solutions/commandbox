@@ -133,10 +133,11 @@ component accessors="true" singleton {
 				'host' : d.web.host ?: '127.0.0.1',
 				'directoryBrowsing' : d.web.directoryBrowsing ?: true,
 				'webroot' : d.web.webroot ?: '',
-				// Duplicate so onServerStart interceptors don't actually change config settings via refernce.
+				// Duplicate so onServerStart interceptors don't actually change config settings via reference.
 				'aliases' : duplicate( d.web.aliases ?: {} ),
-				// Duplicate so onServerStart interceptors don't actually change config settings via refernce.
+				// Duplicate so onServerStart interceptors don't actually change config settings via reference.
 				'errorPages' : duplicate( d.web.errorPages ?: {} ),
+				'accessLogEnable' : d.web.accessLogEnable ?: false,
 				'welcomeFiles' : d.web.welcomeFiles ?: '',
 				'HTTP' : {
 					'port' : d.web.http.port ?: 0,
@@ -622,6 +623,8 @@ component accessors="true" singleton {
 		// trayOptions aren't accepted via command params due to no clean way to provide them
 		serverInfo.trayOptions.append( serverJSON.trayOptions, true );
 
+		serverInfo.accessLogEnable	= serverJSON.web.accessLogEnable ?: defaults.web.accessLogEnable; 
+				
 		// Global defauls are always added on top of whatever is specified by the user or server.json
 		serverInfo.JVMargs			= ( serverProps.JVMargs			?: serverJSON.JVM.args ?: '' ) & ' ' & defaults.JVM.args;
 
@@ -716,6 +719,7 @@ component accessors="true" singleton {
 			serverInfo[ 'serverHome' ] = installDetails.installDir;
 			serverInfo.logdir = serverInfo.serverHomeDirectory & "/logs";
 			serverInfo.consolelogPath	= serverInfo.logdir & '/server.out.txt';
+			serverInfo.accessLogPath = serverInfo.logDir & '/access.txt';
 			serverInfo.engineName = installDetails.engineName;
 			serverInfo.engineVersion = installDetails.version;
 
@@ -777,7 +781,8 @@ component accessors="true" singleton {
 			}
 			// Create a custom server folder to house the logs
 			serverInfo.logdir = serverinfo.customServerFolder & "/logs";
-			serverInfo.consolelogPath	= serverInfo.logdir & '/server.out.txt';
+			serverInfo.consolelogPath = serverInfo.logdir & '/server.out.txt';
+			serverInfo.accessLogPath = serverInfo.logDir & '/access.txt';
 		}
 
 		// Find the correct tray icon for this server
@@ -905,7 +910,7 @@ component accessors="true" singleton {
 		 	.append( '--host' ).append( serverInfo.host )
 		 	.append( '--stop-port' ).append( serverInfo.stopsocket )
 		 	.append( '--processname' ).append( processName )
-		 	.append( '--log-dir' ).append( serverInfo.logDir )
+		 	.append( '--log-dir' ).append( serverInfo.logDir )		 	
 		 	.append( '--server-name' ).append( serverInfo.name )
 		 	.append( '--tray-icon' ).append( serverInfo.trayIcon )
 		 	.append( '--tray-config' ).append( trayOptionsPath )
@@ -935,6 +940,21 @@ component accessors="true" singleton {
 		if( len( errorPages ) ) {
 			args.append( '--error-pages' ).append( errorPages );
 		}
+
+		if( serverInfo.accessLogEnable ) {
+			args
+				.append( '--logaccess-enable' ).append( true )
+			 	.append( '--logaccess-basename' ).append( 'access' )
+			 	.append( '--logaccess-dir' ).append( serverInfo.logDir );
+		}
+		
+		 	
+		/* 	.append( '--logrequests-enable' ).append( true )
+		 	.append( '--logrequests-basename' ).append( 'request' )
+		 	.append( '--logrequests-dir' ).append( serverInfo.logDir )
+		 	*/
+		
+		
 	 	if( len( CFEngineName ) ) {
 	 		 args.append( '--cfengine-name' ).append( CFEngineName );
 	 	}
@@ -1782,6 +1802,7 @@ component accessors="true" singleton {
 			'serverConfigFile'	: "",
 			'aliases'			: {},
 			'errorPages'		: {},
+			'accessLogEnable'	: false,
 			'trayOptions'		: {},
 			'trayEnable'		: true,
 			'dateLastStarted'	: '',
