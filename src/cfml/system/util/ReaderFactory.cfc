@@ -80,8 +80,10 @@ component singleton{
 		reader.unsetOpt( LineReaderOption.INSERT_TAB );
 		// This turns off annoying Vim stuff built into JLine
 		reader.setOpt( LineReaderOption.DISABLE_EVENT_EXPANSION );
-		// This is _supposed_ to make auto complete case insensitive but it doesn't seem to work
+		// Makes auto complete case insensitive
 		reader.setOpt( LineReaderOption.CASE_INSENSITIVE );
+		// This is _supposed_ to make auto complete case insensitive but it doesn't seem to work
+		reader.setOpt( LineReaderOption.CASE_INSENSITIVE_SEARCH );
 
 		return reader;
 
