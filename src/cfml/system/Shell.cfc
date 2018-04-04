@@ -322,6 +322,7 @@ component accessors="true" singleton {
 		keys.bind( capability.key_right.name(), keys.key( terminal, capability.key_right ) );
 		keys.bind( capability.key_up.name(), keys.key( terminal, capability.key_up ) );
 		keys.bind( capability.key_down.name(), keys.key( terminal, capability.key_down ) );
+		keys.bind( capability.back_tab.name(), keys.key( terminal, capability.back_tab ) );
 		
 		// Home/end
 		keys.bind( capability.key_home.name(), keys.key( terminal, capability.key_home ) );
@@ -832,13 +833,14 @@ component accessors="true" singleton {
 						variables.reader.getTerminal().writer().print( print.boldCyanText( "called from " ) );
 					}
 					variables.reader.getTerminal().writer().print( variables.print.boldCyanText( "#tc.template#: line #tc.line##variables.cr#" ));
-					if( len( tc.codeprinthtml ) ){
+					if( len( tc.codeprinthtml ) && idx == 1 ){
 						variables.reader.getTerminal().writer().print( variables.print.text( variables.formatterUtil.HTML2ANSI( tc.codeprinthtml ) ) );
 					}
 				}
 			}
 		}
 		if( structKeyExists( arguments.err, 'stacktrace' ) ) {
+			variables.reader.getTerminal().writer().println( '' );
 			variables.reader.getTerminal().writer().print( arguments.err.stacktrace );
 		}
 

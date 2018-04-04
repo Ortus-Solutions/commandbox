@@ -100,6 +100,14 @@ component accessors="true" singleton {
 	}
 
 	/**
+	 * Let a user choose between several options. Can be set to multiselect, which returns array of selections
+	 * multiSelect().setQuestion( 'Please Choose: ' ).setOptions( 'one,two,three' ).ask()
+	 **/
+	function multiSelect() {
+		return getinstance( 'MultiSelect' );
+	}
+
+	/**
 	 * Run another command by name.
 	 * This is deprecated in favor of command(), which escapes parameters for you.
 	 * @command.hint The command to run. Pass the same string a user would type at the shell.
