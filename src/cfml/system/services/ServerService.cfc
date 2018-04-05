@@ -257,16 +257,37 @@ component accessors="true" singleton {
 			consoleLogger.error( 'Overwriting a running server means you won''t be able to use the "stop" command to stop the original one.' );
 			consoleLogger.warn( 'Use the --force parameter to skip this check.' );
 			consoleLogger.error( '.' );
-			// Collect a new name
-			var newName = shell.ask( 'Provide a unique "name" for this server (leave blank to keep starting as-is): ' );
-			// If a name is provided, start over.  Otherwise, just keep starting.
-			// The recursive call here will subject their answer to the same check until they provide a name that hasn't been used for this folder.
-			if( len( newName ) ) {
-				serverProps.name = newName;
-				//copy the orig server's server.json file to the new file so it starts with the same properties as the original. lots of alternative ways to do this but the file copy works and is simple
-				file action='copy' source="#defaultServerConfigFile#" destination=fileSystemUtil.resolvePath( serverProps.directory ?: '' ) & "/server-#serverProps.name#.json" mode ='777';
-				return start( serverProps );
+			// Ask the user what they want to do
+			var action = wirebox.getInstance( 'multiselect' )
+				.setQuestion( 'What would you like to do? ' )
+				.setOptions( [
+					{ display : 'Provide a new name for this server (recommended)', value : 'newName', accessKey='N', selected=true },
+					{ display : 'Just keep starting this new server and overwrite the old, running one.', value : 'overwrite', accessKey='o' },
+					{ display : 'Stop and do not start a server right now.', value : 'stop', accessKey='s' }
+				] )
+				.setRequired( true )
+				.ask();
+
+			if( action == 'stop' ) {
+				consoleLogger.error( 'Aborting...' );
+				return;
+			} else if( action == 'newname' ) {
+				
+				// Collect a new name
+				var newName = shell.ask( 'Provide a new unique "name" for this server: ' );
+				// If a name is provided, start over.  Otherwise, just keep starting.
+				// The recursive call here will subject their answer to the same check until they provide a name that hasn't been used for this folder.
+				if( len( newName ) ) {
+					serverProps.name = newName;
+					//copy the orig server's server.json file to the new file so it starts with the same properties as the original. lots of alternative ways to do this but the file copy works and is simple
+					file action='copy' source="#defaultServerConfigFile#" destination=fileSystemUtil.resolvePath( serverProps.directory ?: '' ) & "/server-#serverProps.name#.json" mode ='777';
+					return start( serverProps );
+				}
+					
+			} else {
+				consoleLogger.warn( 'Overwriting previous server [#serverInfo.name#].' );
 			}
+			
 		}
 
 		// *************************************************************************************

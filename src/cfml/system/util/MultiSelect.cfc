@@ -95,6 +95,8 @@ component accessors=true {
 						} )
 				.prepend( aStr.init( '' ) )
 				.prepend( aStr.init( '' ) )
+				.append( aStr.init( ' ' ) )
+				.append( aStr.init( ' ' ) )
 				.append( aStr.init( ' ' ) ),
 				getQuestion().len()
 			);
@@ -219,6 +221,8 @@ component accessors=true {
 			} )
 			.prepend( aStr.init( '' ) )
 			.prepend( aStr.init( '' ) )
+			.append( aStr.init( ' ' ) )
+			.append( aStr.init( print.yellow( '      Use <spacebar> to toggle selections, <enter> to submit.' ) ) )
 			.append( aStr.init( ' ' ) );
 	}
 
