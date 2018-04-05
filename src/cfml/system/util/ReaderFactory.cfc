@@ -82,7 +82,7 @@ component singleton{
 		reader.setOpt( LineReaderOption.DISABLE_EVENT_EXPANSION );
 		// Makes auto complete case insensitive
 		reader.setOpt( LineReaderOption.CASE_INSENSITIVE );
-		// This is _supposed_ to make auto complete case insensitive but it doesn't seem to work
+		// Makes i-search case insensitive (Ctrl-R and Ctrl-S)
 		reader.setOpt( LineReaderOption.CASE_INSENSITIVE_SEARCH );
 
 		return reader;

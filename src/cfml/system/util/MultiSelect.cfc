@@ -5,13 +5,17 @@
 ********************************************************************************
 * @author Brad Wood, Luis Majano
 *
-* Sweet ASCII form control
+* Sweet ASCII input control
 */
 component accessors=true {
 
+	// The question to present to the user
 	property name='question' type="string";
+	// The options to present to the user
 	property name='options' type="array";
+	// Can more than one option be selected at a time
 	property name='multiple' type="boolean";
+	// Can the input be submitted without anything selected?
 	property name='required' type="boolean";
 
 	// DI
@@ -20,10 +24,16 @@ component accessors=true {
 	property name='print' inject='print';
 
 	function init() {
+		// Static reference to the class so we can create instances later
 		aStr = createObject( 'java', 'org.jline.utils.AttributedString' );
-		selectedOption = 1;
-		multiple=false;
+		// Currently highlighted option on the screen
+		activeOption = 1;
+		
+		// Default these since they're optional
+		multiple=false;		
 		required=false;
+		question='';
+		
 		return this;
 	}
 	
@@ -33,6 +43,11 @@ component accessors=true {
 		display.resize( terminal.getHeight(), terminal.getWidth() );
 	}
 
+	/**
+	* Call this method after all options and settings have been placed. This method will block while the user interacts
+	* with the input control and will return a string containing the value of the selected option.  If "multiple" is 
+	* enabled, this method will return an array of selected values.
+	*/
 	function ask(){
 
 		if( isNull( getOptions() ) ) {
@@ -40,8 +55,7 @@ component accessors=true {
 		}
 		
 		printBuffer
-			.line( getQuestion() )
-			.line( '' )
+			.text( getQuestion() )
 			.toConsole();
 		
 		try {
@@ -50,23 +64,22 @@ component accessors=true {
 			while( ( var key = shell.waitForKey() ) != chr( 13 ) || !checkRequired() ) {
 				
 				if( isUp( key ) ) {
-					selectedOption = max( 1, selectedOption-1 );
+					activeOption = max( 1, activeOption-1 );
 				} else if ( isDown( key ) ) {
-					selectedOption = min( getOptions().len(), selectedOption+1 );
+					activeOption = min( getOptions().len(), activeOption+1 );
 				} else if ( isSelect( key ) ) {
-					var i = 0;
-					getOptions().each( function( o ) {
-						i++
-						if( i == selectedOption ) {
-							o.selected = !o.selected;
-						} else if( !multiple ) {
-							o.selected = false;
-						}
-					} );
-					
+					doSelect( activeOption );					
+				// Access key?
 				} else {
-					// systemoutput( key, 1 );
-					// systemoutput( asc( key ), 1 );
+					var i = 0;
+					for( var o in getOptions() ) {
+						i++;
+						if( key == o.accessKey ) {
+							activeOption = i;
+							doSelect( activeOption );
+							break;
+						}
+					}
 				}
 				
 				draw();
@@ -79,26 +92,62 @@ component accessors=true {
 				getOptions()
 					.map( function( o ) {
 						return aStr.init( '' );
-					} ),
-				0
+						} )
+				.prepend( aStr.init( '' ) )
+				.prepend( aStr.init( '' ) )
+				.append( aStr.init( ' ' ) ),
+				getQuestion().len()
 			);
-		
+			
 		}
 		
+		// if in multiple mode
 		if( multiple ) {
+			
+			// Print out comma delimited list of selected option display names
+			printBuffer
+				.line( 
+					getOptions().reduce( function( prev='', o ) {
+						if( o.selected ) {
+							prev = prev.listAppend( ' ' & o.display );
+						}
+						return prev;
+					} )
+					.trim()
+				)
+				.toConsole();
+			
+			// Return an array of selected option values
 			return getOptions().reduce( function( prev=[], o ) {
 				if( o.selected ) {
 					prev.append( o.value );
 				}
 				return prev;
 			} );
-		} else {
+			
+		// In single mode
+		} else { 
+			
+			// Print out the first found selected option display name
+			printBuffer
+				.line(
+					getOptions().reduce( function( prev='', o ) {
+						if( o.selected ) {
+							return o.display;
+						}
+						return prev;
+					} )
+				)
+				.toConsole();
+				
+			// Return the first found selected option value
 			return getOptions().reduce( function( prev='', o ) {
 				if( o.selected ) {
 					return o.value;
 				}
 				return prev;
-			} );		
+			} );
+			
 		}
 	}
 	
@@ -112,7 +161,8 @@ component accessors=true {
 				opts.append( {
 					display : i,
 					value : i,
-					selected : false
+					selected : false,
+					accessKey : i.left( 1 )
 				} );
 			} );
 			
@@ -124,8 +174,8 @@ component accessors=true {
 					throw( 'Option must be array of structs' );
 				}
 				
-				if( isnull( i.value ) ) {
-					throw( 'Option is missing "value" key in struct. #serializeJSON( i )#' );
+				if( isnull( i.value ) && isnull( i.display ) ) {
+					throw( 'Option struct must have either a "value" key or "display" key. #serializeJSON( i )#' );
 				}
 				
 				if( !isBoolean( i.selected ?: false ) ) {
@@ -134,8 +184,9 @@ component accessors=true {
 				
 				opts.append( {
 					display : i.display ?: i.value,
-					value : i.value,
-					selected : i.selected ?: false
+					value : i.value?: i.display,
+					selected : i.selected ?: false,
+					accessKey : i.accessKey ?: ( i.display ?: i.value ).left( 1 )
 				} );
 			} );
 			
@@ -147,24 +198,28 @@ component accessors=true {
 		return this;
 	}
 
-	function draw() {
+	private function draw() {
 		display.update(
 				generateRows(),
-				( ( terminal.getWidth()+1) * ( selectedOption-1 ) ) + 3
+				( ( terminal.getWidth()+1) * ( activeOption+1 ) ) + 3
 			);
 	}
 	
-	function generateRows() {
+	private function generateRows() {
 		var i = 0;
 		return getOptions()
 			.map( function( o ) {
+				var optionFormatting = ( activeOption == ++i ? 'green' : '' );
 				return aStr.fromAnsi(
 					print.text( 
-						'  [' & ( o .selected ? 'X' : ' ' ) & '] ' & o.display,
-						( selectedOption == ++i ? 'boldBlue' : '' )
+						'  [' & ( o .selected ? 'X' : ' ' ) & '] ' & reReplaceNoCase( o.display, '(#o.accessKey#)', print.bold( '\1' ) & print.text( '', optionFormatting, true ), 'once' ),
+						optionFormatting
 					)
-				 );
-			} );
+				 );				 
+			} )
+			.prepend( aStr.init( '' ) )
+			.prepend( aStr.init( '' ) )
+			.append( aStr.init( ' ' ) );
 	}
 
 	function checkRequired() {
@@ -177,6 +232,19 @@ component accessors=true {
 			}
 		}
 		return false;
+	}
+	
+	
+	function doSelect( optionNum ) {
+		var i = 0;
+		getOptions().each( function( o ) {
+			i++
+			if( i == activeOption ) {
+				o.selected = !o.selected;
+			} else if( !multiple ) {
+				o.selected = false;
+			}
+		} );
 	}
 
 	private function isUp( key ) { 
