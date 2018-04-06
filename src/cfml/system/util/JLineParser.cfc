@@ -21,6 +21,7 @@ component {
 		tokens = ( line.endsWith( ' ' ) ? tokens.append( '' ) : tokens );
 	
 		return createObject( 'java', 'org.jline.reader.impl.DefaultParser$ArgumentList' ).init(
+			// Since this inner class is not a static reference, an instance of the parent class is required
 			createObject( 'java', 'org.jline.reader.impl.DefaultParser' ).init(),
 			// line - The unparsed line
 			line,
