@@ -29,11 +29,11 @@ component aliases="about" {
 		print.greenLine( '****************************************************************************************************' );
 		print.greenLine( '*                                                                                                  *' );
 		print.greenLine( '*                                                                                                  *' );
-		print.green( '*' ); print.magenta( '  CommandBox Version: ' ); print.white( '#shellVersion##repeatString( ' ', width - 24 - len( shellVersion ) )#' );	print.greenLine( '*' );
-		print.green( '*' ); print.magenta( '  CFML Engine:        ' ); print.white( '#CFMLEngine##repeatString( ' ', width - 24 - len( CFMLEngine ) )#' );		print.greenLine( '*' );
-		print.green( '*' ); print.magenta( '  CFML Version:       ' ); print.white( '#CFMLVersion##repeatString( ' ', width - 24 - len( CFMLVersion ) )#' );	print.greenLine( '*' );
-		print.green( '*' ); print.magenta( '  Java Version:       ' ); print.white( '#javaVersion##repeatString( ' ', width - 24 - len( javaVersion ) )#' );	print.greenLine( '*' );
-		print.green( '*' ); print.magenta( '  Authors:            ' ); print.white( 'Brad Wood, Luis Majano, Denny Valiant                                       ' );	print.greenLine( '*' );
+		print.green( '*' ); print.cyan( '  CommandBox Version: ' ); print.white( '#shellVersion##repeatString( ' ', width - 24 - len( shellVersion ) )#' );	print.greenLine( '*' );
+		print.green( '*' ); print.cyan( '  CFML Engine:        ' ); print.white( '#CFMLEngine##repeatString( ' ', width - 24 - len( CFMLEngine ) )#' );		print.greenLine( '*' );
+		print.green( '*' ); print.cyan( '  CFML Version:       ' ); print.white( '#CFMLVersion##repeatString( ' ', width - 24 - len( CFMLVersion ) )#' );	print.greenLine( '*' );
+		print.green( '*' ); print.cyan( '  Java Version:       ' ); print.white( '#javaVersion##repeatString( ' ', width - 24 - len( javaVersion ) )#' );	print.greenLine( '*' );
+		print.green( '*' ); print.cyan( '  Authors:            ' ); print.white( 'Brad Wood, Luis Majano, Denny Valiant                                       ' );	print.greenLine( '*' );
 		print.greenLine( '*                                                                                                  *' );
 		print.greenLine( '*                                                                                                  *' );
 		print.greenLine( '****************************************************************************************************' );

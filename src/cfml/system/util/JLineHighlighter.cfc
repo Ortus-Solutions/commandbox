@@ -103,14 +103,14 @@ component {
 					buffer = originalBuffer.mid( 1, pos-1 );
 				}
 				// The start char
-				buffer &= print.boldMagenta( startChar );
+				buffer &= print.boldcyan( startChar );
 				
 				// Optional text between matching chars
 				if( pos < originalBuffer.len()-1 ) {
 					buffer &= originalBuffer.mid( pos+1, originalBuffer.len()-pos-1 );
 				}
 				// Ending char
-				buffer &= print.boldMagenta( endChar );
+				buffer &= print.boldcyan( endChar );
 			}
 		}
 		

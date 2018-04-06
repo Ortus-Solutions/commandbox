@@ -1,0 +1,100 @@
+Now with 100% more ASCII art!
+Your CFML CLI and package manager
+Better than Node on every day of the week ending in "Y"
+I can start Adobe ColdFusion and Lucee servers for you
+Do you believe in magic?
+Keep current on releases with the "commandbox-update-check" module
+Increase your productivity with the "commandbox-bullet-train" module
+Don't forget to brush your teeth!
+We'll leave the light on for ya'
+Did you know servers support basic auth?
+CommandBox rewrites are easy to enable with --rewriteEnable
+Forget a server as you stop it with "stop --forget"
+Stop all your servers at once with "stop --all"
+View the servers for a given folder with "server list --local"
+This CLI viewed best on Netscape navigator 2.0
+On WIndows? Use ConEMU, it supports 256 glorious colors!
+The code name for CommandBox before it launched was "Project Gideon"
+CommandBox is a registered trademark of Ortus Solutions
+CommandBox is professional supported open source software
+Pressing Ctrl-C will stop the current command
+Pressing Ctrl-D will exit the shell
+You can publish packages to ForgeBox with the "publish" command
+BUWAHAHAHAHA! MUHAHAHA!! 
+Tomorrow will have highs in the mid 70's and a 30% chance of rain
+Run CFML functions directly from the prompt like "#now" or "#hash foo"
+CommandBox has its own "tail", "grep", and "sed" that work on Windows.
+Tail a running server log with "server log --follow"
+Now accepting pull requests, inquire within.
+<<Insert pithy comment here>>
+Have CLI, will travel.
+Press tab while typing to get auto-complete
+Have you used your REPL today?
+The REPL now has syntax highlighting.  Your welcome.
+Please direct all feedback to /dev/null
+CLI: Continuous Liverpool Investigator
+CLI: Commonly Livid Iguana
+CLI: Come Look Inside
+CLI: Chrome Looks Intense
+Always follow the recipe
+Manage your CF server settings with the "commandbox-cfconfig" module
+Roses are red, violets are blue, I like CFML, but never learned to rhyme
+A man, a plan, a canal, Panama
+No ASCII Art was harmed in the making of this CLI
+You can set default paramets for commonly-used commands
+You can set default server settings that apply to all servers
+Run native binaries easily from the CLI like so: "!java -version"
+Whatever you do, DON'T run the "info" command. You have been warned.
+Your webcam watches you while you sleep. That's what your keyboard told me.
+Adding manpower to a late software project makes it later. --Brook's Law
+Java is to JavaScript what ham is to hampster. --Jeremy Keith
+One of the best programming skills is knowing when to walk away for a while.
+Computers are good at following instructions, but not at reading your mind.
+while( ! ( succeed = try() ) );
+Talk is cheap. Show me the code. --Linus Torvalds
+In theory, theory and practice are the same. In practice, they're not.
+Did you know CFML is the 4th most used web language according to W3Techs?
+There's a box for that
+Publish your CFML projects big and small to http://www.ForgeBox.io
+Quit slouching in your chair!
+2 hardest problems: cache invalidation, naming things, and off-by-1 errors
+Use a server.json file to easily re-use server settings
+Reference environment variables from the CLI as ${myVarName}
+The CommandBox docs are open source on GitHub. Please fix my typos.
+UFOs are real. Underperforming Fictional Optometrists
+Keep hitting tab to cycle through auto-complete options
+When installing from a Git repo, you can target a branch, tag, or commit
+This page intentionally left blank
+You can "cd ~" to your home directory even on Windows
+Replace your Ant builds and shell scripts with Task Runners
+Behold, the power of CFML! 
+Take that, stupid fish.
+CFML is the answer to the Ultimate Question of Life, Universe, & Everything
+Run the "system-colors" command to see if your terminal supports 256 colors
+Use the "box-ngrok" module to share your servers with clients via proxy
+Press Ctrl-R at the prompt to search through your history
+Type a partial command, then hit up to jump to the closest matching history
+CommandBox is now powered by Lucee 5 via JSR-223
+Welcome back.  We've been expecting you!
+ASCII art gives life meaning
+DON'T SHOUT ON THE INTERNET, IT'S RUDE
+Server won't start? Add "--debug --console" to see why.
+You can start/stop servers by name from any directory. "start foo"
+Don't forget to write tests!
+When installing TestBox, save it as a dev dependency with "--saveDev"
+What happens in the CLI, stays in the CLI.
+CommandBox caches artifacts for faster installation & offline use
+Add jars to a server with the "libDirs" parameter
+You need to use root to bind to servers below 1024 on *Nix
+View you system modules by running "list --system"
+Update any outdated dependencies by running "update"
+Get live feedback from your unit tests with "testbox watch"
+Run your test suite from the CLI with "testbox run"
+CommandBox works great with Travis-CI for testing your open source code
+CommandBox is written in CFML. Feel free to hack around on it.
+How many cups of coffee have you had today?
+Use the "history" command to remember what you did yesterday.
+Commands like "dir", "rm", and "touch" support file globbing. ex: *.txt
+Each running server has a matching icon in your system tray
+You're Good Enough, You're Smart Enough, and Doggone It, People Like You.
+Use the "commandbox-hostupdater" module to edit your hosts file for you

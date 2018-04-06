@@ -97,7 +97,7 @@ component aliases="init" {
 			} else {
 				evaluate( '#fullPropertyName# = arguments[ arg ]' );
 			}
-			print.magentaLine( '- Set #arg# = #arguments[ arg ]#' );
+			print.cyanLine( '- Set #arg# = #arguments[ arg ]#' );
 		}
 
 		// Write the file back out

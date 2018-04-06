@@ -30,19 +30,44 @@ This file will stay running the entire time the shell is open
 
 <cfset variables.wireBox = application.wireBox>
 <cfsetting requesttimeout="86399913600" /><!--- 999999 days --->
-<!---Display this banner to users--->
-<cfoutput><cfsavecontent variable="banner">#chr( 27 )#[32m#chr( 27 )#[1m
-   _____                                          _ ____
-  / ____|                                        | |  _ \
- | |     ___  _ __ ___  _ __ ___   __ _ _ __   __| | |_) | _____  __
- | |    / _ \| '_ ` _ \| '_ ` _ \ / _` | '_ \ / _` |  _ < / _ \ \/ /
- | |___| (_) | | | | | | | | | | | (_| | | | | (_| | |_) | (_) >  <
-  \_____\___/|_| |_| |_|_| |_| |_|\__,_|_| |_|\__,_|____/ \___/_/\_\ #chr( 27 )#[0m  v@@version@@
 
-#chr( 27 )#[1mWelcome to CommandBox!
-Type "help" for help, or "help [command]" to be more specific.#chr( 27 )#[0m
+<cffunction name="getBanner"> 
+	<!---Display this banner to users--->
+	<cfscript>
+	 	
+		var esc = chr( 27 );
+		var caps = createObject( 'java', 'org.jline.utils.InfoCmp$Capability' );
+		var numColors = shell.getReader().getTerminal().getNumericCapability( caps.max_colors );
+	
+		if( numColors < 256 ) {
+			l1 = l2 = l3 = l4 = l5 = '#esc#[38;5;14m';
+		} else {
+			l1 = '#esc#[38;5;45m';
+			l2 = '#esc#[38;5;39m';
+			l3 = '#esc#[38;5;33m';
+			l4 = '#esc#[38;5;27m';
+			l5 = '#esc#[38;5;21m';
+		}
+	
+	</cfscript>
+<cfoutput><cfsavecontent variable="banner">	
+#l1##esc#[1m   ______                                          ______            
+#l2##esc#[1m  / ____/___  ____ ___  ____ ___  ____ _____  ____/ / __ )____  _  __
+#l3##esc#[1m / /   / __ \/ __ `__ \/ __ `__ \/ __ `/ __ \/ __  / __  / __ \| |/_/
+#l4##esc#[1m/ /___/ /_/ / / / / / / / / / / / /_/ / / / / /_/ / /_/ / /_/ />  <  
+#l5##esc#[1m\____/\____/_/ /_/ /_/_/ /_/ /_/\__,_/_/ /_/\__,_/_____/\____/_/|_|   #esc#[0m#esc#[1mv@@version@@  
 
+#esc#[0m#esc#[38;5;196m@@quote@@
+
+#esc#[38;5;15mWelcome to CommandBox!
 </cfsavecontent></cfoutput>
+	<cfset var banner = replace( banner, '@@version@@', shell.getVersion().replace( '@build.version@+@build.number@', '1.2.3' ) )>
+	<cfset var quotes = fileRead( 'Quotes.txt' ).listToArray( chr( 13 ) & chr( 10 ) )>
+	<cfset var quote = quotes[ randRange( 1, quotes.len() ) ]>
+	<cfset banner = replace( banner, '@@quote@@', repeatString( ' ', max( 77-quote.len(), 1 ) ) & quote )>
+		
+	<cfreturn banner>
+</cffunction>
 <cfscript>
 	system 	= createObject( "java", "java.lang.System" );
 	args 	= system.getProperty( "cfml.cli.arguments" );
@@ -70,7 +95,7 @@ Type "help" for help, or "help [command]" to be more specific.#chr( 27 )#[0m
 		shell.setShellType( 'command' );
 		interceptorService =  shell.getInterceptorService();
 
-		interceptData = { shellType=shell.getShellType(), args=argsArray, banner=banner };
+		interceptData = { shellType=shell.getShellType(), args=argsArray, banner=getBanner() };
 		interceptorService.announceInterception( 'onCLIStart', interceptData );
 
  		piped = [];
@@ -120,12 +145,12 @@ Type "help" for help, or "help [command]" to be more specific.#chr( 27 )#[0m
 		shell.setShellType( 'interactive' );
 		interceptorService =  shell.getInterceptorService();
 
-		interceptData = { shellType=shell.getShellType(), args=argsArray, banner=banner };
+		interceptData = { shellType=shell.getShellType(), args=argsArray, banner=getBanner() };
 		interceptorService.announceInterception( 'onCLIStart', interceptData );
 
 		if( !silent ) {
 			// Output the welcome banner
-			shell.printString( replace( interceptData.banner, '@@version@@', shell.getVersion() ) );
+			shell.printString( interceptData.banner );
 		}
 
 		// Running the "reload" command will enter this while loop once
@@ -154,12 +179,12 @@ Type "help" for help, or "help [command]" to be more specific.#chr( 27 )#[0m
 			shell = wireBox.getInstance( 'Shell' );
 			interceptorService =  shell.getInterceptorService();
 			shell.setShellType( 'interactive' );
-			interceptData = { shellType=shell.getShellType(), args=[], banner=banner };
+			interceptData = { shellType=shell.getShellType(), args=[], banner=getBanner() };
 			interceptorService.announceInterception( 'onCLIStart', interceptData );
 
 			if( clearScreen ){
 				// Output the welcome banner
-				shell.printString( replace( interceptData.banner, '@@version@@', shell.getVersion() ) );
+				shell.printString( interceptData.banner );
 			}
 
 		}

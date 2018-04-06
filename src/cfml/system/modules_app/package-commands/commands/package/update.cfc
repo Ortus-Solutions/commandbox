@@ -99,7 +99,7 @@ component aliases="update" {
 				var newID = dependency.slug & '@' & dependency.newVersion;
 			}
 
-			print.magentaLine( "Starting update of #oldID# ").toConsole();
+			print.cyanLine( "Starting update of #oldID# ").toConsole();
 			// install it
 			command( 'install' )
 				.params(
