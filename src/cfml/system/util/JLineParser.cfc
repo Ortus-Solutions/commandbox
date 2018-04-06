@@ -21,6 +21,7 @@ component {
 		tokens = ( line.endsWith( ' ' ) ? tokens.append( '' ) : tokens );
 	
 		return createObject( 'java', 'org.jline.reader.impl.DefaultParser$ArgumentList' ).init(
+			createObject( 'java', 'org.jline.reader.impl.DefaultParser' ).init(),
 			// line - The unparsed line
 			line,
 			// words - The list of words
@@ -30,7 +31,9 @@ component {
 			// wordCursor - The cursor position within the current word
 			( tokens.len() ? tokens.last().len() : 0 ),
 			// cursor - The cursor position within the line
-			cursor
+			cursor,
+			// openingQuote - Not sure what this does.
+			nullValue()
 		);	
 		
 	}
