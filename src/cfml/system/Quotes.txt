@@ -98,3 +98,7 @@ Commands like "dir", "rm", and "touch" support file globbing. ex: *.txt
 Each running server has a matching icon in your system tray
 You're Good Enough, You're Smart Enough, and Doggone It, People Like You.
 Use the "commandbox-hostupdater" module to edit your hosts file for you
+Pull requests make the world go 'round
+Have you hugged a developer today?
+A pull request a day keeps the bugs away
+There are 10 types of people: those who understand binary & those who don't.

@@ -33,7 +33,7 @@ component {
 			// cursor - The cursor position within the line
 			cursor,
 			// openingQuote - Not sure what this does.
-			nullValue()
+			''
 		);	
 		
 	}
