@@ -2,7 +2,7 @@
  * Set property into a property file.
  * .
  * {code:bash}
- * propertyFile set name=mySetting
+ * propertyFile set myFile.properties mySetting myValue
  * {code}
  *
  **/

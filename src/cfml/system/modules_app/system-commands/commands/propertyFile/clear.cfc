@@ -2,7 +2,7 @@
  * Remove a property from a property file.
  * .
  * {code:bash}
- * propertyFile clear my.name
+ * propertyFile clear myFile.properties mySetting
  * {code}
  *
  **/
