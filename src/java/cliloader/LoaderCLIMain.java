@@ -488,6 +488,7 @@ public class LoaderCLIMain{
 
 	@SuppressWarnings( "static-access" )
 	public static void main( String[] arguments ) throws Throwable{
+		System.setProperty("log4j.configuration", "resource/log4j.xml");
 		Util.ensureJavaVersion();
 		execute( initialize( arguments ) );
 		System.exit( exitCode );
