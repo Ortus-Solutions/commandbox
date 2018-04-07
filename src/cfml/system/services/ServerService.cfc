@@ -156,6 +156,7 @@ component accessors="true" singleton {
 				},
 				'rewrites' : {
 					'enable' : d.web.rewrites.enable ?: false,
+					'logEnable' : d.web.rewrites.logEnable ?: false,
 					'config' : d.web.rewrites.config ?: variables.rewritesDefaultConfig,
 					'statusPath' : d.web.rewrites.statusPath ?: '',
 					'configReloadSeconds' : d.web.rewrites.configReloadSeconds ?: ''
@@ -645,6 +646,7 @@ component accessors="true" singleton {
 		serverInfo.trayOptions.append( serverJSON.trayOptions, true );
 
 		serverInfo.accessLogEnable	= serverJSON.web.accessLogEnable ?: defaults.web.accessLogEnable; 
+		serverInfo.rewriteslogEnable = serverJSON.web.rewrites.logEnable ?: defaults.web.rewrites.logEnable;
 				
 		// Global defauls are always added on top of whatever is specified by the user or server.json
 		serverInfo.JVMargs			= ( serverProps.JVMargs			?: serverJSON.JVM.args ?: '' ) & ' ' & defaults.JVM.args;
@@ -741,6 +743,7 @@ component accessors="true" singleton {
 			serverInfo.logdir = serverInfo.serverHomeDirectory & "/logs";
 			serverInfo.consolelogPath	= serverInfo.logdir & '/server.out.txt';
 			serverInfo.accessLogPath = serverInfo.logDir & '/access.txt';
+			serverInfo.rewritesLogPath = serverInfo.logDir & '/rewrites.txt';
 			serverInfo.engineName = installDetails.engineName;
 			serverInfo.engineVersion = installDetails.version;
 
@@ -804,7 +807,10 @@ component accessors="true" singleton {
 			serverInfo.logdir = serverinfo.customServerFolder & "/logs";
 			serverInfo.consolelogPath = serverInfo.logdir & '/server.out.txt';
 			serverInfo.accessLogPath = serverInfo.logDir & '/access.txt';
+			serverInfo.rewritesLogPath = serverInfo.logDir & '/rewrites.txt';
 		}
+		
+		 
 
 		// Find the correct tray icon for this server
 		if( !len( serverInfo.trayIcon ) ) {
@@ -945,13 +951,11 @@ component accessors="true" singleton {
 			// Debug is getting turned on any time I include the --debug flag regardless of whether it's true or false.
 			args.append( '--debug' ).append( serverInfo.debug );
 		}
-
-		// Runwar will blow up if there isn't a parameter supplied, so I can't pass an empty string.
+		
 		if( len( serverInfo.restMappings ) ) {
 			args.append( '--servlet-rest-mappings' ).append( serverInfo.restMappings );
 		} else {
-			// This effectively disables it (assuming there's not a real directory or route called "___disabled___") but it's janky
-			args.append( '--servlet-rest-mappings' ).append( '___DISABLED___' );
+			args.append( '--servlet-rest-enable' ).append( 'false' );
 		}
 
 		if( serverInfo.trace ) {
@@ -962,14 +966,17 @@ component accessors="true" singleton {
 			args.append( '--error-pages' ).append( errorPages );
 		}
 
-		if( serverInfo.accessLogEnable ) {
+		if( serverInfo.accesslogenable ) {
 			args
 				.append( '--logaccess-enable' ).append( true )
 			 	.append( '--logaccess-basename' ).append( 'access' )
 			 	.append( '--logaccess-dir' ).append( serverInfo.logDir );
 		}
 		
-		 	
+		if( serverInfo.rewritesLogEnable ) {
+			args.append( '--urlrewrite-log' ).append( serverInfo.rewritesLogPath );
+		}
+		 
 		/* 	.append( '--logrequests-enable' ).append( true )
 		 	.append( '--logrequests-basename' ).append( 'request' )
 		 	.append( '--logrequests-dir' ).append( serverInfo.logDir )
@@ -1787,6 +1794,8 @@ component accessors="true" singleton {
 			'name'				: "",
 			'logDir' 			: "",
 			'consolelogPath'	: "",
+			'accessLogPath'		: "",
+			'rewritesLogPath'	: "",
 			'trayicon' 			: "",
 			'libDirs' 			: "",
 			'webConfigDir' 		: "",
@@ -1824,6 +1833,7 @@ component accessors="true" singleton {
 			'aliases'			: {},
 			'errorPages'		: {},
 			'accessLogEnable'	: false,
+			'rewritesLogEnable'	: false,
 			'trayOptions'		: {},
 			'trayEnable'		: true,
 			'dateLastStarted'	: '',
