@@ -18,13 +18,16 @@ component {
 	 * @directory.hint web root for the server
 	 * @serverConfigFile The path to the server's JSON file.
 	 * @follow Tail the log file with the "follow" flag. Press Ctrl-C to quit.
+	 * @access Set this flag to view/tail the access log
+	 * @rewrites Set this flag to view/tail the rewrites log
 	 **/
 	function run(
 		string name,
 		string directory,
 		String serverConfigFile,
 		Boolean follow=false,
-		Boolean access=false
+		Boolean access=false,
+		Boolean rewrites=false
 		 ){
 		if( !isNull( arguments.directory ) ) {
 			arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
@@ -43,6 +46,9 @@ component {
 		var logfile = serverInfo.logdir & "/server.out.txt";
 		if( access ) {
 			logfile = serverInfo.accessLogPath;
+		}
+		if( rewrites ) {
+			logfile = serverInfo.rewritesLogPath;
 		}
 		if( fileExists( logfile) ){
 
