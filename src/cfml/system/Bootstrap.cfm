@@ -39,7 +39,7 @@ This file will stay running the entire time the shell is open
 		var caps = createObject( 'java', 'org.jline.utils.InfoCmp$Capability' );
 		var numColors = shell.getReader().getTerminal().getNumericCapability( caps.max_colors );
 	
-		if( numColors < 256 ) {
+		if( !isNull( numColors ) && numColors < 256 ) {
 			l1 = l2 = l3 = l4 = l5 = '#esc#[38;5;14m';
 		} else {
 			l1 = '#esc#[38;5;45m';
