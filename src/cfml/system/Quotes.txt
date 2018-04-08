@@ -30,7 +30,7 @@ Now accepting pull requests, inquire within.
 Have CLI, will travel.
 Press tab while typing to get auto-complete
 Have you used your REPL today?
-The REPL now has syntax highlighting.  Your welcome.
+The REPL now has syntax highlighting.  You're welcome.
 Please direct all feedback to /dev/null
 CLI: Continuous Liverpool Investigator
 CLI: Commonly Livid Iguana
@@ -123,3 +123,4 @@ Install the "comamndbox-chuck-norris" module for Chuch Norris facts
 Run "forgebox whoami" to see if you're logged in correctly from the CLI
 Run "task create" to scaffold out an empty Task Runner CFC
 You can script property file modifications with "propertyfile set"
+Objects in terminal are closer than they appear
