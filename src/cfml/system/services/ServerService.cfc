@@ -176,7 +176,9 @@ component accessors="true" singleton {
 				'WARPath' : d.app.WARPath ?: '',
 				'cfengine' : d.app.cfengine ?: '',
 				'restMappings' : d.app.cfengine ?: '',
-				'serverHomeDirectory' : d.app.serverHomeDirectory ?: ''
+				'serverHomeDirectory' : d.app.serverHomeDirectory ?: '',
+				'sessionCookieSecure' : d.app.sessionCookieSecure ?: false,
+				'sessionCookieHTTPOnly' : d.app.sessionCookieHTTPOnly ?: false
 			},
 			'runwar' : {
 				'args' : d.runwar.args ?: ''
@@ -694,6 +696,9 @@ component accessors="true" singleton {
 		if( isDefined( 'defaults.app.serverHomeDirectory' ) && len( defaults.app.serverHomeDirectory )  ) { defaults.app.serverHomeDirectory = fileSystemUtil.resolvePath( defaults.app.serverHomeDirectory, defaultwebroot ); }
 		serverInfo.serverHomeDirectory			= serverProps.serverHomeDirectory			?: serverJSON.app.serverHomeDirectory			?: defaults.app.serverHomeDirectory;
 
+		serverInfo.sessionCookieSecure			= serverJSON.app.sessionCookieSecure			?: defaults.app.sessionCookieSecure;
+		serverInfo.sessionCookieHTTPOnly			= serverJSON.app.sessionCookieHTTPOnly			?: defaults.app.sessionCookieHTTPOnly;
+
 		// These are already hammered out above, so no need to go through all the defaults.
 		serverInfo.serverConfigFile	= defaultServerConfigFile;
 		serverInfo.name 			= defaultName;
@@ -945,6 +950,8 @@ component accessors="true" singleton {
 		 	.append( '--directoryindex' ).append( serverInfo.directoryBrowsing )
 		 	.append( '--timeout' ).append( serverInfo.startTimeout )
 		 	.append( '--proxy-peeraddress' ).append( 'true' )
+		 	.append( '--cookie-secure' ).append( serverInfo.sessionCookieSecure )
+		 	.append( '--cookie-httponly' ).append( serverInfo.sessionCookieHTTPOnly )
 		 	.append( serverInfo.runwarArgs.listToArray( ' ' ), true );
 
 		if( serverInfo.debug ) {
@@ -955,7 +962,7 @@ component accessors="true" singleton {
 		if( len( serverInfo.restMappings ) ) {
 			args.append( '--servlet-rest-mappings' ).append( serverInfo.restMappings );
 		} else {
-			args.append( '--servlet-rest-enable' ).append( 'false' );
+			args.append( '--servlet-rest-mappings' ).append( '__DISABLED__' );
 		}
 
 		if( serverInfo.trace ) {
@@ -1826,6 +1833,8 @@ component accessors="true" singleton {
 			'runwarArgs'		: "",
 			'cfengine'			: "",
 			'restMappings'		: "",
+			'sessionCookieSecure'	: false,
+			'sessionCookieHTTPOnly'	: false,
 			'engineName'		: "",
 			'engineVersion'		: "",
 			'WARPath'			: "",
