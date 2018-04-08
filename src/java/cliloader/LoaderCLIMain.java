@@ -254,7 +254,10 @@ public class LoaderCLIMain{
 
     		System.setProperty( "lucee.web.dir", getLuceeCLIConfigWebDir().getAbsolutePath() );
     		System.setProperty( "lucee.base.dir", getLuceeCLIConfigServerDir().getAbsolutePath() );
+    		System.setProperty( "felix.cache.locking", "false" );
+    		System.setProperty( "felix.storage.clean", "none" );
     		
+    		// Load up JSR-223!
             ScriptEngineManager engineManager = new ScriptEngineManager( cl );
             ScriptEngine engine = engineManager.getEngineByName( "CFML" );
             
