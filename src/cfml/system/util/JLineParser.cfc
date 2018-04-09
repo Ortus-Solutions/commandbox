@@ -34,7 +34,11 @@ component {
 			// cursor - The cursor position within the line
 			cursor,
 			// openingQuote - Not sure what this does.
-			''
+			'',
+			// rawWordCursor
+			( tokens.len() ? tokens.last().len() : 0 ),
+			// rawWordLength
+			( tokens.len() ? tokens.last().len() : 0 )
 		);	
 		
 	}
