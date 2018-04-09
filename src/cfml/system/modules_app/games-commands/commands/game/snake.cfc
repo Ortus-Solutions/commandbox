@@ -18,15 +18,12 @@ component aliases="snake" {
 	
 	property name='p' inject='print';
 
-	function onDIComplete() {
+	function run()  {
 		// Static reference to the class so we can create instances later
 		aStr = createObject( 'java', 'org.jline.utils.AttributedString' );
 		terminal = shell.getReader().getTerminal();
 		display = createObject( 'java', 'org.jline.utils.Display' ).init( terminal, false );
 		display.resize( terminal.getHeight(), terminal.getWidth() );
-	}
-
-	function run()  {
 		
 		variables.directionOpposites = {
 			'up' = 'down',
