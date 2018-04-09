@@ -1,6 +1,6 @@
 /**
 * Play a fun, retro-style snake game.  The "snake" is on the loose and you need to gobble up as many juicy apples as you can. 
-* Use the S, F, E, and C keys on your keyboard to move left, right, up and down respectively.  If you have a 10-key pad, you can also use 4, 6, 8, and 2.
+* Use the up, down, left, and right keys on your keyboard to move.  
 * But be careful- if you run into a wall or into your own tail, the game is over!  The snake will grow every time he eats and apple, and once you 
 * clear all the apples, more will appear for your chomping pleasure.
 * .
@@ -17,6 +17,14 @@ component aliases="snake" {
 	processingdirective pageEncoding='UTF-8';
 	
 	property name='p' inject='print';
+
+	function onDIComplete() {
+		// Static reference to the class so we can create instances later
+		aStr = createObject( 'java', 'org.jline.utils.AttributedString' );
+		terminal = shell.getReader().getTerminal();
+		display = createObject( 'java', 'org.jline.utils.Display' ).init( terminal, false );
+		display.resize( terminal.getHeight(), terminal.getWidth() );
+	}
 
 	function run()  {
 		
@@ -39,11 +47,12 @@ component aliases="snake" {
 		resetGame();
 	
 		
-		variables.gameHeader = 
-		'╔═════════════════════════════════════════════════════╗' & cr & 
-		'║                   ' & p.boldGreen( 'CommandBox Snake' ) & '                  ║' & cr &
-		'║                     by Brad Wood                    ║░' & cr &
-		'╠═════════════════════════════════════════════════════╣░';
+		variables.gameHeader = [
+			aStr.init( '╔═════════════════════════════════════════════════════╗' ), 
+			aStr.init( '║                   ' & p.boldGreen( 'CommandBox Snake' ) & '                  ║' ),
+			aStr.init( '║                     by Brad Wood                    ║░' ),
+			aStr.init( '╠═════════════════════════════════════════════════════╣░' )
+		];
 		
 		// Initialize an array with an index for each row
 		variables.gameSurface = arrayNew( 2 );
@@ -57,14 +66,15 @@ component aliases="snake" {
 			}			
 		}
 		
-		variables.gameFooter =
-		'╠═════════════════════════════════════════════════════╣░' & cr &
-		'║                                                     ║░' & cr &
-		'║     Use arrow keys to move up/down/left/right       ║░' & cr &
-		'║                                                     ║░' & cr &
-		'║                   Press ' & p.bold( 'Q' ) & ' to quit                   ║░' & cr &
-		'╚═════════════════════════════════════════════════════╝░'  & cr &
-		' ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░';
+		variables.gameFooter = [
+			aStr.init( '╠═════════════════════════════════════════════════════╣░' ),
+			aStr.init( '║                                                     ║░' ),
+			aStr.init( '║     Use arrow keys to move up/down/left/right       ║░' ),
+			aStr.init( '║                                                     ║░' ),
+			aStr.init( '║                   Press ' & p.bold( 'Q' ) & ' to quit                   ║░' ),
+			aStr.init( '╚═════════════════════════════════════════════════════╝░' ),
+			aStr.init( ' ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░' )
+		];
 		
 		
 		var h = p.bold( '═' );
@@ -150,6 +160,12 @@ component aliases="snake" {
 		variables.snakeRun = false;
 		// Wait until the thread finishes its last draw
 		thread action="join" name=threadName;
+		
+		// Push the prompt down below the game box.
+		var lines = 29;
+		while( lines-- > 0 ) {
+			print.line();
+		}
 				
 	}
 
@@ -158,11 +174,9 @@ component aliases="snake" {
 	************************************************************************************* */
 
 	private function printGame() {
-		
-			// Reset cursor to upper left hand corner
-			print.text( chr( 27 ) & '[H' ).toConsole();
-		
-			print.line( variables.gameHeader );
+			var gameLines = [];
+			
+			gameLines.append( gameHeader, true );
 			
 			var thisGameSurface = duplicate( variables.gameSurface );
 			
@@ -203,17 +217,21 @@ component aliases="snake" {
 			
 			// Now that we've build up the array of characters, spit them out to the console
 			for( var row in thisGameSurface ) {
-				print.text( '║' );
-				for( var col in row ) {				
-					print.text( col );
+				var thisLine = '║';
+				for( var col in row ) {
+					thisLine &= col;
 				}
-				print.line( '║░' );
+				thisLine &= '║░';
 				
+				gameLines.append( aStr.fromAnsi( thisLine ) );
 			}
 			
-			print.line( variables.gameFooter );
+			gameLines.append( gameFooter, true );
 						
-			print.toConsole();
+			display.update(
+				gameLines,
+				0
+			);
 			
 	}
 

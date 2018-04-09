@@ -124,3 +124,9 @@ Run "forgebox whoami" to see if you're logged in correctly from the CLI
 Run "task create" to scaffold out an empty Task Runner CFC
 You can script property file modifications with "propertyfile set"
 Objects in terminal are closer than they appear
+Real men test in production!
+I love Docker!  Check out the Ortus CommandBox-based Docker images
+Warning: Don't feed the variables
+CFML is a dynamic, loosely typed, multi-paradigm JVM language
+Read the CommandBox docs at http://commandbox.ortusbooks.com
+Bored at work? Type "snake" to have some ASCII fun from the past
