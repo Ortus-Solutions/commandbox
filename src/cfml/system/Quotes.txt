@@ -130,3 +130,9 @@ Warning: Don't feed the variables
 CFML is a dynamic, loosely typed, multi-paradigm JVM language
 Read the CommandBox docs at http://commandbox.ortusbooks.com
 Bored at work? Type "snake" to have some ASCII fun from the past
+Help I'm trapped in a CLI factory
+Don't code like it's 1998. Or 2008 for that matter!
+Help is on the way
+CLI: Credit Line Increase
+CLI: Colloquial Literary Interference
+Skip "Are you sure?" prompts in most commands with the "--force" flag
