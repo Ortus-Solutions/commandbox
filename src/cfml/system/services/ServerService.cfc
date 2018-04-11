@@ -746,9 +746,6 @@ component accessors="true" singleton {
 			// TODO: As of 3.5 "serverHome" is for backwards compat.  Remove in later version in favor of serverHomeDirectory above
 			serverInfo[ 'serverHome' ] = installDetails.installDir;
 			serverInfo.logdir = serverInfo.serverHomeDirectory & "/logs";
-			serverInfo.consolelogPath	= serverInfo.logdir & '/server.out.txt';
-			serverInfo.accessLogPath = serverInfo.logDir & '/access.txt';
-			serverInfo.rewritesLogPath = serverInfo.logDir & '/rewrites.txt';
 			serverInfo.engineName = installDetails.engineName;
 			serverInfo.engineVersion = installDetails.version;
 
@@ -810,13 +807,13 @@ component accessors="true" singleton {
 			}
 			// Create a custom server folder to house the logs
 			serverInfo.logdir = serverinfo.customServerFolder & "/logs";
-			serverInfo.consolelogPath = serverInfo.logdir & '/server.out.txt';
-			serverInfo.accessLogPath = serverInfo.logDir & '/access.txt';
-			serverInfo.rewritesLogPath = serverInfo.logDir & '/rewrites.txt';
 		}
 		
+		// logdir is set above and is different for WARs and CF engines
+		serverInfo.consolelogPath = serverInfo.logdir & '/server.out.txt';
+		serverInfo.accessLogPath = serverInfo.logDir & '/access.txt';
+		serverInfo.rewritesLogPath = serverInfo.logDir & '/rewrites.txt';
 		 
-
 		// Find the correct tray icon for this server
 		if( !len( serverInfo.trayIcon ) ) {
 			var iconSize = fileSystemUtil.isWindows() ? '-32px' : '';
@@ -1171,23 +1168,38 @@ component accessors="true" singleton {
 
 				var line = bufferedReader.readLine();
 				while( !isNull( line ) ){
-					// Clean log4j cruft from line
-					line = reReplaceNoCase( line, '^.* (INFO|DEBUG|ERROR|WARN) RunwarLogger - processoutput: ', '' );
-					line = reReplaceNoCase( line, '^.* (INFO|DEBUG|ERROR|WARN) RunwarLogger processoutput: ', '' );
-					line = reReplaceNoCase( line, '^.* (INFO|DEBUG|ERROR|WARN) RunwarLogger lib: ', 'Runwar: ' );
-					line = reReplaceNoCase( line, '^.* (INFO|DEBUG|ERROR|WARN) RunwarLogger - ', 'Runwar: ' );
-					line = reReplaceNoCase( line, '^.* (INFO|DEBUG|ERROR|WARN) RunwarLogger - ', 'Runwar: ' );
-					line = reReplaceNoCase( line, '^.* (INFO|DEBUG|ERROR|WARN) RunwarLogger ', 'Runwar: ' );
-
-					// Build up our output
-					startOutput.append( line & chr( 13 ) & chr( 10 ) );
 
 					// output it if we're being interactive
-					if( attributes.interactiveStart ) {
+					if( attributes.interactiveStart ) {					
+						
+						// Debug non-console starts have nested log output
+						// Ex:
+						// [INFO ] runwar.server: processoutput: [INFO ] runwar.context: Apr 11, 2018 15:57:32 PM Information [main] - Event Gateway Disabled.
+						line = reReplaceNoCase( line, '^\[[^]]*] runwar\.server: processoutput: ', '' );
+						
+						// Log messages from the CF engine or app code writing direclty to std/err out strip off "runwar.context" but leave color coded severity
+						// Ex:
+						// [INFO ] runwar.context: 04/11 15:47:10 INFO Starting Flex 1.5 CF Edition
+						line = reReplaceNoCase( line, '^(\[[^]]*])( runwar\.context: )(.*)', '\1 \3' );
+						
+						// Log messages from runwar itself, simplify the logging category to just "Runwar:" and leave color coded severity
+						// Ex:
+						// [DEBUG] runwar.config: Enabling Proxy Peer Address handling
+						// [DEBUG] runwar.server: Starting open browser action
+						line = reReplaceNoCase( line, '^(\[[^]]*])( runwar\.[^:]*: )(.*)', '\1 Runwar: \3' );
+	
+						// Log messages from any other 3rd party java lib tapping into Log4j will be left alone
+						// Ex:
+						// [DEBUG] org.tuckey.web.filters.urlrewrite.RuleExecutionOutput: needs to be forwarded to /index.cfm/Main
+	
+						// Build up our output
+						startOutput.append( line & chr( 13 ) & chr( 10 ) );
+
 						print
 							.line( line )
 							.toConsole();
 					}
+					
 					line = bufferedReader.readLine();
 				} // End of inputStream
 
