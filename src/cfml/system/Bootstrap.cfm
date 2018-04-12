@@ -61,7 +61,7 @@ This file will stay running the entire time the shell is open
 
 #esc#[38;5;15mWelcome to CommandBox!
 </cfsavecontent></cfoutput>
-	<cfset var banner = replace( banner, '@@version@@', shell.getVersion().replace( '@build.version@+@build.number@', '1.2.3' ) )>
+	<cfset var banner = replace( banner, '@@version@@', shell.getVersion().replace( '@build' & '.version@+@build' & '.number@', '1.2.3' ) )>
 	<cfset var quotes = fileRead( 'Quotes.txt' ).listToArray( chr( 13 ) & chr( 10 ) )>
 	<cfset var quote = quotes[ randRange( 1, quotes.len() ) ]>
 	<cfset banner = replace( banner, '@@quote@@', repeatString( ' ', max( 77-quote.len(), 1 ) ) & quote )>
