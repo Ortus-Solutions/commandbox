@@ -768,12 +768,6 @@ component accessors="true" singleton {
 			if( serverInfo.cfengine contains "railo" ) {
 				javaagent = '-javaagent:#serverInfo.serverHomeDirectory#/WEB-INF/lib/railo-inst.jar';
 			}
-			
-			// If starting Adobe server with SSL
-			if( serverInfo.cfengine contains "adobe" && serverInfo.SSLEnable ) {
-				// https://ortussolutions.atlassian.net/browse/COMMANDBOX-725
-				serverInfo.JVMargs &= ' -Dcom.sun.net.ssl.enableECC=false';
-			}
 
 			// Add in "/cf_scripts" alias for 2016+ servers if the /cf_scripts folder exists in the war we're starting and there isn't already an alias
 			// for this.  I'm specifically not checking the engine name and version so this will work on regular Adobe wars and be future proof.
@@ -1170,11 +1164,11 @@ component accessors="true" singleton {
 				while( !isNull( line ) ){
 
 					// output it if we're being interactive
-					if( attributes.interactiveStart ) {					
+					if( attributes.interactiveStart ) {
 						
 						// Debug non-console starts have nested log output
 						// Ex:
-						// [INFO ] runwar.server: processoutput: [INFO ] runwar.context: Apr 11, 2018 15:57:32 PM Information [main] - Event Gateway Disabled.
+						// [INFO ] Runwar: processoutput: [DEBUG] runwar.server: Added websocket context
 						line = reReplaceNoCase( line, '^\[[^]]*] runwar\.server: processoutput: ', '' );
 						
 						// Log messages from the CF engine or app code writing direclty to std/err out strip off "runwar.context" but leave color coded severity

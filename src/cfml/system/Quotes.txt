@@ -136,3 +136,4 @@ Help is on the way
 CLI: Credit Line Increase
 CLI: Colloquial Literary Interference
 Skip "Are you sure?" prompts in most commands with the "--force" flag
+Premature cleverness is the root of all evil

@@ -37,10 +37,13 @@ This file will stay running the entire time the shell is open
 	 	
 		var esc = chr( 27 );
 		var caps = createObject( 'java', 'org.jline.utils.InfoCmp$Capability' );
+		// See how many colors this terminal supports
 		var numColors = shell.getReader().getTerminal().getNumericCapability( caps.max_colors );
 	
+		// Windows cmd gets solid blue
 		if( !isNull( numColors ) && numColors < 256 ) {
 			l1 = l2 = l3 = l4 = l5 = '#esc#[38;5;14m';
+		// Terminals with 256 color support get pretty colors
 		} else {
 			l1 = '#esc#[38;5;45m';
 			l2 = '#esc#[38;5;39m';
