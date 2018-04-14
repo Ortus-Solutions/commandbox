@@ -33,10 +33,7 @@ component singleton {
 	numeric function complete( reader, parsedLine, candidates )  {
 
 		try {
-			
-			var javaCandidates = candidates;
-			arguments.candidates = [];
-
+		
 			var buffer = parsedLine.line();
 			// Try to resolve the command.
 			var commandChain = commandService.resolveCommand( buffer );
@@ -58,10 +55,9 @@ component singleton {
 					// Match the partial bit if it exists
 					if( lcase( func ).startsWith( lcase( commandInfo.originalLine.right( -1 ) ) ) ) {
 						// Add extra space so they don't have to
-						candidates.add( '##' & func & ' ' );
+						add( candidates, '##' & func & ' ', 'CFML Functions' );
 					}
 				}
-				createCandidates( candidates, javaCandidates );
 				return;
 				
 			}
@@ -69,10 +65,8 @@ component singleton {
 			// If stuff was typed and it's an exact match to a command part
 			if( matchedToHere == len( buffer ) && len( buffer ) ) {
 				// Suggest a trailing space
-				candidates.add( buffer & ' ' );
-				arraySort( candidates, 'text' );
+				add( candidates, buffer & ' ' );
 				
-				createCandidates( candidates, javaCandidates );
 				return;
 			// Everything else in the buffer is a partial, unmached command
 			} else if( len( buffer ) ) {
@@ -94,22 +88,17 @@ component singleton {
 					// Match the partial bit if it exists
 					if( !len( leftOver ) || lcase( command ).startsWith( lcase( leftOver ) ) ) {
 						// Add extra space so they don't have to
-						candidates.add( command & ' ' );
+						var commandHint = '';
+						if( commandInfo.commandReference[ command ].keyList() == '$' ) {
+							commandHint = commandInfo.commandReference[ command ][ '$' ].hint.listFirst( '.#chr(13)##chr(10)#' ).trim();
+						}
+						add( candidates, command & ' ', ( commandInfo.commandReference[ command ].keyList() == '$' ? 'Commands' : 'Namespaces' ), commandHint );
 					}
 				}
-
 				// Did we find ANYTHING?
 				if( candidates.size() ) {
-					arraySort( candidates, 'text' );
-					// return matchedToHere;
-					
-					createCandidates( candidates, javaCandidates );
 					return;
 				} else {
-					arraySort( candidates, 'text' );
-					// return len( buffer );
-					
-					createCandidates( candidates, javaCandidates );
 					return;
 				}
 
@@ -154,12 +143,8 @@ component singleton {
 							}
 							// Fill in possible param values based on the type and contents so far.
 							paramValueCompletion( commandInfo, paramName, paramType, paramSoFar, candidates, true );
-							arraySort( candidates, 'text' );
-							//return len( buffer ) - len( paramSoFar );
 							
-							createCandidates( candidates, javaCandidates );
 							return;
-
 						}
 
 
@@ -169,23 +154,18 @@ component singleton {
 					for( var param in definedParameters ) {
 						if( !structKeyExists( passedParameters.namedParameters, param.name ) && !structKeyExists( passedParameters.flags, param.name ) ) {
 							if( !len( leftOver ) || lcase( param.name ).startsWith( lcase( leftOver ) ) ) {
-								candidates.add( ' ' & param.name & '=' );
+								add( candidates, ' ' & param.name & '=', 'Parameters', param.hint ?: '' );
 							}
 							// If this is a boolean param, suggest the --flag version
 							if( param.type == 'boolean' ) {
 								var flagParamName = '--' & param.name;
 								if( !len( leftOver ) || lcase( flagParamName ).startsWith( lcase( leftOver ) ) ) {
-									candidates.add( ' ' & flagParamName & ' ' );
+									add( candidates, ' ' & flagParamName & ' ', 'Flags', param.hint ?: '' );
 								}
 							}
 						} // Does it exist yet?
 					} // Loop over possible params
-
-					// Back up a bit to the beginning of the left over text we're replacing
-					arraySort( candidates, 'text' );
-					//return len( buffer ) - len( leftOver ) - iif( !len( leftOver ) && !buffer.endsWith( ' ' ), 0, 1 );
 					
-					createCandidates( candidates, javaCandidates );
 					return;
 
 				// For sure positional - suggest next param name and value
@@ -206,7 +186,7 @@ component singleton {
 							i++;
 							// If this is a boolean param not already here, suggest the --flag version
 							if( i > passedParameters.positionalParameters.len() && param.type == 'boolean' && !structKeyExists( passedParameters.flags, param.name )  ) {
-								candidates.add( ' --' & param.name & ' ' );
+								add( candidates, ' --' & param.name & ' ', 'Flags', param.hint ?: '' );
 							}
 						}
 
@@ -218,19 +198,14 @@ component singleton {
 								// Add the name of the next one in the list. The user will have to backspace and
 								// replace this with their actual param so this may not be that useful.
 
-								candidates.add( param.name & ' ' );
+								add( candidates, param.name & ' ', 'Parameters', param.hint ?: '' );
 								paramValueCompletion( commandInfo, param.name, param.type, '', candidates, false );
 								// Bail once we find one
 								break;
 							}
 						}
-
-						arraySort( candidates, 'text' );
-						// return len( buffer );
 						
-						createCandidates( candidates, javaCandidates );
 						return;
-
 
 					// They were in the middle of typing
 					} else {
@@ -255,15 +230,11 @@ component singleton {
 								if( i >= passedParameters.positionalParameters.len() && param.type == 'boolean' && !structKeyExists( passedParameters.flags, param.name ) ) {
 									var paramFlagname = '--' & param.name;
 									if( lcase( paramFlagname ).startsWith( lcase( partialMatch ) ) ) {
-										candidates.add( paramFlagname & ' ' );
+										add( candidates, paramFlagname & ' ', 'Flags', param.hint ?: '' );
 									}
 								}
 							}
-
-							arraySort( candidates, 'text' );
-							// return len( buffer ) - len( partialMatch );
 							
-							createCandidates( candidates, javaCandidates );
 							return;
 						}
 					}
@@ -290,13 +261,13 @@ component singleton {
 						for( var param in definedParameters ) {
 							// If this param is not already a flag and it matches the partial text add it
 							if( !structKeyExists( passedParameters.flags, param.name )  && ( !len( partialMatch ) || lcase( param.name ).startsWith( lcase( partialMatch ) ) ) ) {
-								candidates.add( param.name & '=' );
+								add( candidates, param.name & '=', 'Parameters', param.hint ?: '' );
 							}
 
 							// If this param is a boolean that isn't a flag yet, sugguest the --flag version
 							var paramFlagname = '--' & param.name;
 							if( param.type == 'boolean' && !structKeyExists( passedParameters.flags, param.name ) && lcase( paramFlagname ).startsWith( lcase( partialMatch ) ) ) {
-								candidates.add( paramFlagname & ' ' );
+								add( candidates, paramFlagname & ' ', 'Flags', param.hint ?: '' );
 							}
 						}
 
@@ -305,11 +276,7 @@ component singleton {
 
 						// Suggest its value
 						paramValueCompletion( commandInfo, thisParam.name, thisParam.type, partialMatch, candidates, false );
-
-						arraySort( candidates, 'text' );
-						// return len( buffer ) - len( partialMatch );
 						
-						createCandidates( candidates, javaCandidates );
 						return;
 
 					}  // End are there params defined
@@ -319,12 +286,7 @@ component singleton {
 
 
 			} // End was the command found
-
-
-			arraySort( candidates, 'text' );
-			// return len( buffer );
 			
-			createCandidates( candidates, javaCandidates );
 			return;
 
 		} catch ( any e ) {
@@ -457,9 +419,9 @@ component singleton {
 						// Finally add this candidate into the list
 						
 						if( namedParams ) {
-							candidates.add( paramName & '=' & thisCandidate & ( path.type == 'dir' ? '/' : '' ) );
+							add( candidates, paramName & '=' & thisCandidate & ( path.type == 'dir' ? '/' : '' ), ( path.type == 'dir' ? 'Directories' : 'Files' ) );
 						} else {
-							candidates.add( thisCandidate & ( path.type == 'dir' ? '/' : '' ) );	
+							add( candidates, thisCandidate & ( path.type == 'dir' ? '/' : '' ), ( path.type == 'dir' ? 'Directories' : 'Files' ) );	
 						}
 					}
 				}
@@ -481,36 +443,32 @@ component singleton {
 				match &= ' ';
 			}
 			if( namedParams ) {
-				candidates.add( paramName & '=' & match );
+				add( candidates, paramName & '=' & match, 'Values' );
 			} else {
-				candidates.add( match );	
+				add( candidates, match, 'Values' );
 			}
 		}
 	}
 
-
 	/**
 	* JLine3 needs an array of Java objects, so convert our array of strings to that
  	**/
-	private function createCandidates( candidates, javaCandidates ) {
+	private function add( candidates, name, group='', description='' ) {
 		
-		candidates.each( function( candidate ){
-				
-			var thisCandidate = candidate.listLast( ' ' ) & ( candidate.endsWith( ' ' ) ? ' ' : '' );
-						
-			javaCandidates.append(
-				createObject( 'java', 'org.jline.reader.Candidate' )
-					.init(
-						thisCandidate,				// value
-						thisCandidate,				// displ
-						javaCast( 'null', '' ),		// group      candidate.startsWith( '--' ) ? 'flags' : 'non-flags', 
-						javaCast( 'null', '' ), 		// descr 
-						javaCast( 'null', '' ), 		// suffix
-						javaCast( 'null', '' ), 		// key
-						false 						// complete
-					)
-			);
-		} );
+		var thisCandidate = name.listLast( ' ' ) & ( name.endsWith( ' ' ) ? ' ' : '' );
+					
+		candidates.append(
+			createObject( 'java', 'org.jline.reader.Candidate' )
+				.init(
+					thisCandidate,							// value
+					thisCandidate,							// displ
+					group,									// group
+					description.len() ? description : nullValue(),	// descr 
+					nullValue(),							// suffix
+					nullValue(),							// key
+					false 									// complete
+				)
+		);
 		
 	}
 

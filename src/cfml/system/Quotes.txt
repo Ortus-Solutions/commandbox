@@ -119,7 +119,7 @@ Use "server cd myServer" to drop directly in the webroot of a server
 You can manage your server.json entire from the CLI with "server set"
 You can manage your box.json entire from the CLI with "server set"
 CommandBox servers run on JBoss Undertow for blazing fast performance
-Install the "comamndbox-chuck-norris" module for Chuch Norris facts
+Install the "comamndbox-chuck-norris" module for Chuck Norris facts
 Run "forgebox whoami" to see if you're logged in correctly from the CLI
 Run "task create" to scaffold out an empty Task Runner CFC
 You can script property file modifications with "propertyfile set"
@@ -137,3 +137,4 @@ CLI: Credit Line Increase
 CLI: Colloquial Literary Interference
 Skip "Are you sure?" prompts in most commands with the "--force" flag
 Premature cleverness is the root of all evil
+You can create ad-hoc aliases for common commands or sets of commands

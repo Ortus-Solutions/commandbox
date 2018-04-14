@@ -1,5 +1,5 @@
 /**
- * This command will open the browser window to the current server root if started, else it is ignored.
+ * Open the browser window to the current server root.  If not started it is ignored.
  * This command must be ran from the directory were the server was started.
  * .
  * {code:bash}
