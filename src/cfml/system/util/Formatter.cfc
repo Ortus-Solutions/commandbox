@@ -47,7 +47,7 @@ component singleton {
     	// Trim all lines.  leading/trailing whitespace in HTML is not useful
     	text = text.listToArray( CRLF ).map( function( i ) {
     		return trim( i );
-    	} ).toList( chr( 10 ) );
+    	} ).toList( '' );
 
     	// Remove style and script blocks
     	text = reReplaceNoCase(text, "<style>.*</style>","","all");
@@ -57,22 +57,30 @@ component singleton {
     	text = ansifyHTML( text, "strong", "bold", additionalFormatting );
     	text = ansifyHTML( text, "em", "underline", additionalFormatting );
 
-  	 	// Replace br tags (and any whitespace/line breaks after them) with a LF
-  	 	text = reReplaceNoCase( text , "<br[^>]*>\s*", LF, 'all' );
-
-    	var t='div';
-    	var matches = REMatch('(?i)<#t#[^>]*>(.*?)</#t#>', text);
+    	var matches = REMatch('(?i)<div[^>]*>(.*?)</div>', text);
     	for(var match in matches) {
-    		var blockText = reReplaceNoCase(match,"<#t#[^>]*>(.*?)</#t#>","\1") & LF;
+    		var blockText = reReplaceNoCase(match,"<div[^>]*>(.*?)</div>","\1") & LF;
     		text = replace(text,match,blockText,"one");
     	}
+
+    	var matches = REMatch('(?i)<blockquote[^>]*>(.*?)</blockquote>', text);
+    	for(var match in matches) {
+    		var blockText = reReplaceNoCase(match,"<blockquote[^>]*>(.*?)</blockquote>","\1");
+    		blockText = '<br>' & blockText & '<br>';
+    		blockText = reReplaceNoCase( blockText, '<br[^>]*>', '<br>&nbsp;&nbsp;&nbsp;&nbsp;', 'all' );
+    		text = replace(text,match,blockText,"one");
+    	}
+
+  	 	text = reReplaceNoCase( text , "</td[^>]*>", ' ', 'all' );
+  		text = reReplaceNoCase( text , "</tr[^>]*>", LF & LF, 'all' );
+
+  	 	// Replace br tags (and any whitespace/line breaks after them) with a LF
+  	 	text = reReplaceNoCase( text , "<br[^>]*>[ 	]*", LF, 'all' );
 
     	// If you have any < characters in your string that aren't HTML, this will truncate the text
     	text = reReplaceNoCase(text, "<.*?>","","all");
 
-    	text = reReplaceNoCase(text, "[\n]{2,}",chr( 10 ) & chr( 10 ),"all");
-
-
+    	text = reReplaceNoCase(text, "[\n]{2,}",LF & LF,"all");
 
     	// Turn any escaped HTML entities into their true form
     	text = unescapeHTML( text );
