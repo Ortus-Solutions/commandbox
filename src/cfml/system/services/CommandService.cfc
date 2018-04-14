@@ -124,7 +124,7 @@ component accessors="true" singleton {
 	 * @line.hint line to run
 	 * @captureOutput Temp workaroundn to allow capture of run command
  	 **/
-	function runCommandline( required string line, captureOutput=false ){
+	function runCommandline( required string line, boolean captureOutput=false ){
 
 		if( left( arguments.line, 4 ) == 'box ' && len( arguments.line ) > 4 ) {
 			consoleLogger.warn( "Removing extra text [box ] from start of command. You don't need that here." );
@@ -143,7 +143,7 @@ component accessors="true" singleton {
 	 * @piped.hint Data to pipe in to the first command
 	 * @captureOutput Temp workaroundn to allow capture of run command
  	 **/
-	function runCommandTokens( required array tokens, string piped, captureOutput=false ){
+	function runCommandTokens( required array tokens, string piped, boolean captureOutput=false ){
 
 		// Resolve the command they are wanting to run
 		var commandChain = resolveCommandTokens( tokens );
@@ -162,7 +162,7 @@ component accessors="true" singleton {
 	 * @commandChain.hint the chain of commands to run
 	 * @captureOutput Temp workaroundn to allow capture of run command
  	 **/
-	function runCommand( required array commandChain, required string line, string piped, captureOutput=false ){
+	function runCommand( required array commandChain, required string line, string piped, boolean captureOutput=false ){
 
 		// If nothing is returned, something bad happened (like an error instatiating the CFC)
 		if( !commandChain.len() ){
@@ -332,9 +332,7 @@ component accessors="true" singleton {
 			
 			
 			// Run the command
-			try {
-				captureOutput
-				
+			try {				
 				var result = commandInfo.commandReference.CFC.run( argumentCollection = parameterInfo.namedParameters );
 				lastCommandErrored = commandInfo.commandReference.CFC.hasError();
 			} catch( any e ){

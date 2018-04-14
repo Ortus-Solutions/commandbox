@@ -8,14 +8,31 @@
 */
 component accessors="true" singleton alias='JSONPrettyPrint' {
 
+	function init() {
+		variables.os = createObject( "java", "java.lang.System" ).getProperty( "os.name" ).toLowerCase();
+		return this;
+	}
+		
+	// OS detector
+	private boolean function isWindows(){ return variables.os.contains( "win" ); }
+
 	/**
 	 * Pretty JSON
 	 * @json A string containing JSON, or a complex value that can be serialized to JSON
-	 * @lineEnding String to use for indenting lines.  Defaults to four spaces.
-	 * @lineEnding String to use for line endings.  Defaults to CRLF.
+	 * @indent String to use for indenting lines.  Defaults to four spaces.
+	 * @lineEnding String to use for line endings.  Defaults to CRLF on Windows and LF on *nix
 	 * @spaceAfterColon Add space after each colon like "value": true instead of"value":true 
  	 **/
-	public function formatJson( json, indent='    ', lineEnding=chr( 13 ) & chr( 10 ), boolean spaceAfterColon=false ) {
+	public function formatJson( any json, string indent='    ', lineEnding, boolean spaceAfterColon=false ) {
+		
+		// Default line ending based on OS
+		if( isNull( arguments.lineEnding ) ) {
+			if( isWindows() ) {
+				arguments.lineEnding = chr( 13 ) & chr( 10 );
+			} else {
+				arguments.lineEnding = chr( 10 );				
+			}
+		}
 		
 		// Overload this method to accept a struct or array
 		if( !isSimpleValue( arguments.json ) ) {
@@ -87,7 +104,7 @@ component accessors="true" singleton alias='JSONPrettyPrint' {
 					retval.append( newLine );
 					retval.append( repeatString( indentStr, pos ) );
 				}
-				itemsInCollection.deleteAt( itemsInCollection.len() )			
+				itemsInCollection.deleteAt( itemsInCollection.len() );
 			}
 			
 			retval.append( char );
