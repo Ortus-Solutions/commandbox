@@ -881,7 +881,7 @@ component accessors="true" singleton {
 		if( expandSystemSettings ) {
 			systemSettings.expandDeepSystemSettings( results );
 		}
-		return results
+		return results;
 
 	}
 
