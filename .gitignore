@@ -32,3 +32,4 @@ src/CommandBox.json
 .vscode
 settings.xml
 .project
+src/cfml/system/mdCache

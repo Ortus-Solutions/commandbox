@@ -145,6 +145,8 @@ component {
 				}
 			);
 
+			wirebox.getCacheBox().getCache( 'metadataCache' ).clearAll();
+
 			// Tell user what's going on
 			print.greenLine( "Unzipping #filePath#..." ).toConsole();
 			zip

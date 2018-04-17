@@ -652,6 +652,7 @@ public class LoaderCLIMain{
 
 					// Wipe out existing /cfml/system folder to remove any deleted files
 					if( cfmlSystemDir.exists() ) {
+						// This also inherently clears the metadata cache since it was inside this folder
 						Util.deleteDirectory( cfmlSystemDir );
 					}
 					
