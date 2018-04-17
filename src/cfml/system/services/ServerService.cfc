@@ -825,8 +825,10 @@ component accessors="true" singleton {
 					serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-cf11#iconSize#.png';
 				} else if( listFirst( serverInfo.engineVersion, '.' ) == 2016 ) {
 					serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-cf2016#iconSize#.png';
+				} else if( listFirst( serverInfo.engineVersion, '.' ) == 2018 ) {
+					serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-cf2018#iconSize#.png';
 				} else {
-					serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-cf2016#iconSize#.png';
+					serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-cf2018#iconSize#.png';
 				}
 
 			}
