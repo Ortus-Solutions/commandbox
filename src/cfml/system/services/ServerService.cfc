@@ -1166,21 +1166,16 @@ component accessors="true" singleton {
 					// output it if we're being interactive
 					if( attributes.interactiveStart ) {
 						
-						// Debug non-console starts have nested log output
-						// Ex:
-						// [INFO ] Runwar: processoutput: [DEBUG] runwar.server: Added websocket context
-						line = reReplaceNoCase( line, '^\[[^]]*] runwar\.server: processoutput: ', '' );
-						
 						// Log messages from the CF engine or app code writing direclty to std/err out strip off "runwar.context" but leave color coded severity
 						// Ex:
 						// [INFO ] runwar.context: 04/11 15:47:10 INFO Starting Flex 1.5 CF Edition
-						line = reReplaceNoCase( line, '^(\[[^]]*])( runwar\.context: )(.*)', '\1 \3' );
+						line = reReplaceNoCase( line, '^(#chr( 27 )#\[m\[[^]]*])( runwar\.context: )(.*)', '\1 \3' );
 						
 						// Log messages from runwar itself, simplify the logging category to just "Runwar:" and leave color coded severity
 						// Ex:
 						// [DEBUG] runwar.config: Enabling Proxy Peer Address handling
 						// [DEBUG] runwar.server: Starting open browser action
-						line = reReplaceNoCase( line, '^(\[[^]]*])( runwar\.[^:]*: )(.*)', '\1 Runwar: \3' );
+						line = reReplaceNoCase( line, '^(#chr( 27 )#\[m\[[^]]*])( runwar\.[^:]*: )(.*)', '\1 Runwar: \3' );
 	
 						// Log messages from any other 3rd party java lib tapping into Log4j will be left alone
 						// Ex:

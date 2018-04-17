@@ -1,8 +1,7 @@
-/**
-*********************************************************************************
+﻿/**
 * Copyright Since 2005 ColdBox Framework by Luis Majano and Ortus Solutions, Corp
 * www.ortussolutions.com
-********************************************************************************
+* ---
 * Console Appender
 */
 component extends="wirebox.system.logging.AbstractAppender"{
@@ -24,7 +23,8 @@ component extends="wirebox.system.logging.AbstractAppender"{
 		string levelMax   = 4
 	){
 		super.init( argumentCollection=arguments );
-		instance.out = createObject( "java", "java.lang.System" ).out;
+		variables.out 	= createObject( "java", "java.lang.System" ).out;
+		variables.error = createObject( "java", "java.lang.System" ).err;
     	return this;
 	}
 
@@ -33,20 +33,33 @@ component extends="wirebox.system.logging.AbstractAppender"{
 	*
 	* @logEvent The logging event.
 	*/
-	public void function logMessage( required any logEvent ) {
+	function logMessage( required any logEvent ) {
+		var entry = "";
 		if( hasCustomLayout() ){
-		  var entry = getCustomLayout().format( logEvent );
+			entry = getCustomLayout().format( logEvent );
 		} else {
-		  var entry = severityToString( logEvent.getseverity() ) & " " &
-		  	logEvent.getCategory() & " " &
-		  	logEvent.getmessage() & " ExtraInfo: " &
-		  	logEvent.getextraInfoAsString();
+		  	entry = severityToString( logEvent.getseverity() ) & " " &
+		  		logEvent.getCategory() & " " &
+		  		logEvent.getmessage() & " ExtraInfo: " &
+		  		logEvent.getextraInfoAsString();
+		}
+		switch( logEvent.getSeverity() ){
+			// Fatal + Error go to error stream
+			case "0" : case "1" : {
+				// log message
+				variables.error.println( entry );
+				break;
+			}
+			// Warning and above go to info stream
+			default : {
+				// log message
+				variables.out.println( entry );
+				break;
+			}
 		}
 
-		// log message
-		instance.out.println( entry );
 
-		return;
+		return this;
 	}
 
 }

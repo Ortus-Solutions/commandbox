@@ -1,4 +1,4 @@
-<!-----------------------------------------------------------------------
+﻿<!-----------------------------------------------------------------------
 ********************************************************************************
 Copyright Since 2005 ColdBox Framework by Luis Majano and Ortus Solutions, Corp
 www.ortussolutions.com
@@ -248,8 +248,17 @@ Description :
 				for(key in arguments.memento){
 					// init population flag
 					pop = true;
-					// init nullValue flag
-					nullValue = false;
+					// init nullValue flag and shortcut to property value
+					// conditional with StructKeyExist, to prevent language issues with Null value checking of struct keys in ACF
+					if ( structKeyExists( arguments.memento, key) ){
+						nullValue = false;
+						propertyValue = arguments.memento[ key ];
+
+					} else {
+						nullValue = true;
+						propertyValue = JavaCast( "null", "" );
+					}
+
 					// Include List?
 					if( len(arguments.include) AND NOT listFindNoCase(arguments.include,key) ){
 						pop = false;
@@ -258,15 +267,13 @@ Description :
 					if( len(arguments.exclude) AND listFindNoCase(arguments.exclude,key) ){
 						pop = false;
 					}
-					// Ignore Empty?
-					if( arguments.ignoreEmpty and isSimpleValue(arguments.memento[key]) and not len( trim( arguments.memento[key] ) ) ){
+					// Ignore Empty? Check added for real Null value
+					if( arguments.ignoreEmpty and not IsNull(propertyValue) and isSimpleValue(arguments.memento[key]) and not len( trim( arguments.memento[key] ) ) ){
 						pop = false;
 					}
 
 					// Pop?
 					if( pop ){
-						// shortcut to property value
-						propertyValue = arguments.memento[ key ];
 						// Scope Injection?
 						if( scopeInjection ){
 							beanInstance.populatePropertyMixin(propertyName=key,propertyValue=propertyValue,scope=arguments.scope);
@@ -289,14 +296,23 @@ Description :
 								nullValue = false;
 							}
 							// Is value nullable (e.g., simple, empty string)? If so, set null...
-							if( isSimpleValue( propertyValue ) && !len( trim( propertyValue ) ) && nullValue ) {
+							// short circuit evealuaton of IsNull added, so it won't break IsSimpleValue with Real null values. Real nulls are already set.
+							if( !IsNull(propertyValue) && isSimpleValue( propertyValue ) && !len( trim( propertyValue ) ) && nullValue ) {
 								propertyValue = JavaCast( "null", "" );
 							}
+
+							var getEntityMap = function(){
+								if( find( "2018", server.coldfusion.productVersion ) ){
+									return arrayToList( ORMGetSessionFactory().getMetaModel().getAllEntityNames() ).listToArray();
+								} else {
+									return structKeyArray( ORMGetSessionFactory().getAllClassMetadata() );
+								}
+							};
 
 							// If property isn't null, try to compose the relationship
 							if( !isNull( propertyValue ) && composeRelationships && structKeyExists( relationalMeta, key ) ) {
 								// get valid, known entity name list
-								var validEntityNames = structKeyList( ORMGetSessionFactory().getAllClassMetadata() );
+								var validEntityNames = getEntityMap();
 								var targetEntityName = "";
 								/**
 								 * The only info we know about the relationships are the property names and the cfcs
@@ -308,11 +324,11 @@ Description :
 								 */
 
 								// 1.) name match
-								if( listFindNoCase( validEntityNames, key ) ) {
+								if( validEntityNames.findNoCase( key ) ){
 									targetEntityName = key;
 								}
 								// 2.) attempt match on CFC metadata
-								else if( listFindNoCase( validEntityNames, listLast( relationalMeta[ key ].cfc, "." ) ) ) {
+								else if( validEntityNames.findNoCase( listLast( relationalMeta[ key ].cfc, "." ) ) ) {
 									targetEntityName = listLast( relationalMeta[ key ].cfc, "." );
 								}
 								// 3.) component lookup
@@ -355,12 +371,13 @@ Description :
 													// try to get struct key value from entity
 													if( !isNull( item ) ) {
 														try {
-															keyValue = evaluate("item.get#structKeyColumn#()");
+															keyValue = invoke( item, "get#structKeyColumn#" );
 														}
 														catch( Any e ) {
-															throw(type="BeanPopulator.PopulateBeanException",
-                    							  			  message="Error populating bean #getMetaData(beanInstance).name# relationship of #key#. The structKeyColumn #structKeyColumn# could not be resolved.",
-                    							  			  detail="#e.Detail#<br>#e.message#<br>#e.tagContext.toString()#");
+															throw(
+																type	= "BeanPopulator.PopulateBeanException",
+                    							  			 	message	= "Error populating bean #getMetaData( beanInstance ).name# relationship of #key#. The structKeyColumn #structKeyColumn# could not be resolved.",
+                    							  			  	detail	= "#e.Detail#<br>#e.message#<br>#e.tagContext.toString()#");
 														}
 													}
 													// if the structKeyColumn value was found...
@@ -384,11 +401,11 @@ Description :
 							// Populate the property as a null value
 							if( isNull( propertyValue ) ) {
 								// Finally...set the value
-								evaluate( "beanInstance.set#key#( JavaCast( 'null', '' ) )" );
+								invoke( beanInstance, "set#key#", [ JavaCast( 'null', '' ) ] );
 							}
 							// Populate the property as the value obtained whether simple or related
 							else {
-								evaluate( "beanInstance.set#key#( propertyValue )" );
+								invoke( beanInstance, "set#key#", [ propertyValue ] );
 							}
 
 						} // end if setter or scope injection
@@ -420,7 +437,9 @@ Description :
 		<cfscript>
 			var meta = {};
 			// get array of properties
-			var properties = getMetaData( arguments.target ).properties;
+			var stopRecursions= [ "lucee.Component", "WEB-INF.cftags.component" ];
+			var properties = getUtil().getInheritedMetaData( arguments.target, stopRecursions ).properties;
+
 			// loop over properties
 			for( var i = 1; i <= arrayLen( properties ); i++ ) {
 				var property = properties[ i ];

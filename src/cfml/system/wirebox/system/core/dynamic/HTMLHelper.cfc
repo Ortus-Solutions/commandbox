@@ -1,4 +1,4 @@
-<!-----------------------------------------------------------------------
+﻿<!-----------------------------------------------------------------------
 ********************************************************************************
 Copyright Since 2005 ColdBox Framework by Luis Majano and Ortus Solutions, Corp
 www.ortussolutions.com
@@ -59,7 +59,7 @@ Description :
 		<cfargument name="async" 		type="boolean" 	required="false" default="false" hint="HTML5 JavaScript argument: Specifies that the script is executed asynchronously (only for external scripts)"/>
 		<cfargument name="defer" 		type="boolean" 	required="false" default="false" hint="HTML5 JavaScript argument: Specifies that the script is executed when the page has finished parsing (only for external scripts)"/>
 		<cfscript>
-			var sb = createObject("java","java.lang.StringBuffer").init('');
+			var sb = createObject("java","java.lang.StringBuilder").init('');
 			var x = 1;
 			var thisAsset = "";
 			var event = controller.getRequestService().getContext();
@@ -133,7 +133,7 @@ Description :
 		<cfargument name="content"		type="string" required="false" default=""	hint="The content of the tag"/>
 		<cfargument name="data"			type="struct" required="false" default="#structNew()#"	hint="A structure that will add data-{key} elements to the HTML control"/>
 		<cfscript>
-			var buffer	= createObject("java","java.lang.StringBuffer").init( "<#arguments.tag#" );
+			var buffer	= createObject("java","java.lang.StringBuilder").init( "<#arguments.tag#" );
 
 			// append tag attributes
 			flattenAttributes( arguments, "tag,content", buffer ).append( '>#arguments.content#</#arguments.tag#>' );
@@ -148,7 +148,7 @@ Description :
 		<cfargument name="text" 	 	type="any" 		required="false" default="" 	hint="The text of the link"/>
 		<cfargument name="data"			type="struct" required="false" default="#structNew()#"	hint="A structure that will add data-{key} elements to the HTML control"/>
 		<cfscript>
-			var buffer 		= createObject("java","java.lang.StringBuffer").init("<a");
+			var buffer 		= createObject("java","java.lang.StringBuilder").init("<a");
 
 			// build link
 			flattenAttributes( arguments, "text", buffer ).append( '>#arguments.text#</a>' );
@@ -168,7 +168,7 @@ Description :
 		<cfargument name="noBaseURL" 	type="boolean" 	required="false" 	default="false" hint="Defaults to false. If you want to NOT append a request's ses or html base url then set this argument to true"/>
 		<cfargument name="data"			type="struct" required="false" default="#structNew()#"	hint="A structure that will add data-{key} elements to the HTML control"/>
 		<cfscript>
-			var buffer 	= createObject( "java", "java.lang.StringBuffer" ).init( "<a" );
+			var buffer 	= createObject( "java", "java.lang.StringBuilder" ).init( "<a" );
 			var event	= controller.getRequestService().getContext();
 
 			// self-link?
@@ -181,12 +181,12 @@ Description :
 				// Verify SSL Bit
 				if( structKeyExists( arguments, "ssl" ) ){
 					arguments.href = event.buildLink(
-						linkto 		= arguments.href,
+						to 			= arguments.href,
 						ssl			= arguments.ssl,
 						queryString = arguments.queryString
 					);
 				} else {
-					arguments.href = event.buildLink( linkto=arguments.action, queryString=arguments.queryString );
+					arguments.href = event.buildLink( to=arguments.action, queryString=arguments.queryString );
 				}
 			}
 
@@ -210,7 +210,7 @@ Description :
 		<cfargument name="sendToHeader" type="boolean"	required="false" 	default="false" hint="Send to the header via htmlhead by default, else it returns the content"/>
 		<cfargument name="data"			type="struct" required="false" default="#structNew()#"	hint="A structure that will add data-{key} elements to the HTML control"/>
 		<cfscript>
-			var buffer 		= createObject("java","java.lang.StringBuffer").init("<link");
+			var buffer 		= createObject("java","java.lang.StringBuilder").init("<link");
 
 			// Check if we have a base URL
 			arguments.href = prepareBaseLink(arguments.noBaseURL,arguments.href);
@@ -249,7 +249,7 @@ Description :
 		<cfargument name="noBaseURL" type="boolean" required="false" default="false" hint="Defaults to false. If you want to NOT append a request's ses or html base url then set this argument to true"/>
 		<cfargument name="data"			type="struct" required="false" default="#structNew()#"	hint="A structure that will add data-{key} elements to the HTML control"/>
 		<cfscript>
-			var buffer = createObject("java","java.lang.StringBuffer").init("<img");
+			var buffer = createObject("java","java.lang.StringBuilder").init("<img");
 
 			// ID Normalization
 			normalizeID(arguments);
@@ -287,41 +287,50 @@ Description :
 		<cfargument name="excludes" 	type="string"		required="false" default=""	hint="The columns to exclude in the rendering"/>
 		<cfargument name="name" 		type="string"		 required="false" default="" hint="The name tag"/>
 		<cfscript>
-			var str		= createObject("java","java.lang.StringBuffer").init('');
+			var str		= createObject( "java", "java.lang.StringBuilder" ).init( '' );
 			var attrs	= "";
 			var key		= "";
 
 			// ID Normalization
-			normalizeID(arguments);
+			normalizeID( arguments );
 
 			// Start Table
-			str.append("<table");
+			str.append( "<table" );
 
 			// flatten extra attributes via arguments
-			flattenAttributes(arguments,"data,includes,excludes",str).append("><thead><tr>");
+			flattenAttributes( arguments, "data,includes,excludes", str ).append( "><thead><tr>" );
 
 			// Buffer Reference
 			arguments.buffer = str;
 
 			// Convert Query To Table Body
-			if( isQuery(arguments.data) ){
-				queryToTable(argumentCollection=arguments);
+			if( isQuery( arguments.data ) ){
+				queryToTable( argumentCollection=arguments );
 			}
 			// Convert Array to Table Body
-			else if( isArray(arguments.data) and arrayLen(arguments.data) ){
-
-				// Check first element for an object, if it is then convert to query
-				if( isObject(arguments.data[1]) ){
-					arguments.data = entityToQuery(arguments.data);
-					queryToTable(argumentCollection=arguments);
+			else if( isArray( arguments.data ) and arrayLen( arguments.data ) ){
+				var firstMetadata = getMetadata( arguments.data[ 1 ] );
+				// Check for array of ORM Object
+				if(
+					isObject( arguments.data[ 1 ] )
+					AND
+					structKeyExists( firstMetadata, "persistent" ) && firstMetadata.persistent
+				){
+					arguments.data = entityToQuery( arguments.data );
+					queryToTable( argumentCollection=arguments );
 				}
+				// Array of objects, discover properties via metadata
+				else if ( isObject( arguments.data[ 1 ] ) ){
+					objectsToTable( argumentCollection = arguments );
+				}
+				// array of structs go here
 				else{
-					arrayToTable(argumentCollection=arguments);
+					arrayToTable( argumentCollection=arguments );
 				}
 			}
 
 			// Finalize table
-			str.append("</tbody></table>");
+			str.append( "</tbody></table>" );
 
 			return str.toString();
 		</cfscript>
@@ -333,9 +342,10 @@ Description :
 		<cfargument name="content" 	type="any" 		required="false" default="" hint="The content attribute"/>
 		<cfargument name="type" 	type="string"	 required="false" default="name" hint="Either ''name'' or ''equiv'' which produces http-equiv instead of the name"/>
 		<cfargument name="sendToHeader" type="boolean"	required="false" default="false" hint="Send to the header via htmlhead by default, else it returns the content"/>
+		<cfargument name="property" type="any" 		required="false" default="" hint="The property attribute"/>
 		<cfscript>
 			var x 		= 1;
-			var buffer	= createObject("java","java.lang.StringBuffer").init("");
+			var buffer	= createObject("java","java.lang.StringBuilder").init("");
 			var tmpType = "";
 
 			// prep type
@@ -354,8 +364,11 @@ Description :
 					if(	arguments.name[x].type eq "equiv" ){
 						arguments.name[x].type = "http-equiv";
 					}
-
-					buffer.append('<meta #arguments.name[x].type#="#arguments.name[x].name#" content="#arguments.name[x].content#" />');
+					if ( structKeyExists(arguments.name[x], "property") ) {
+						buffer.append('<meta property=#arguments.name[x].property# #arguments.name[x].type#="#arguments.name[x].name#" content="#arguments.name[x].content#" />');
+					} else {
+						buffer.append('<meta #arguments.name[x].type#="#arguments.name[x].name#" content="#arguments.name[x].content#" />');
+					}
 				}
 			}
 
@@ -393,14 +406,14 @@ Description :
 		<cfargument name="allow" type="string" required="false" default="" hint="a regex safe list of additional characters to allow"/>
 		<cfscript>
 			// Cleanup and slugify the string
-			var slug = lcase(trim(arguments.str));
-
-			slug = reReplace(slug,"[^a-z0-9-\s#arguments.allow#]","","all");
-			slug = trim ( reReplace(slug,"[\s-]+", " ", "all") );
-			slug = reReplace(slug,"\s", "-", "all");
+			var slug 	= lcase( trim( arguments.str ) );
+			slug 		= replaceList( slug, '#chr(228)#,#chr(252)#,#chr(246)#,#chr(223)#', 'ae,ue,oe,ss' );
+			slug 		= reReplace( slug, "[^a-z0-9-\s#arguments.allow#]", "", "all" );
+			slug 		= trim ( reReplace( slug, "[\s-]+", " ", "all" ) );
+			slug 		= reReplace( slug, "\s", "-", "all" );
 
 			// is there a max length restriction
-			if ( arguments.maxlength ) {slug = left ( slug, arguments.maxlength );}
+			if( arguments.maxlength ){ slug = left( slug, arguments.maxlength ); }
 
 			return slug;
 		</cfscript>
@@ -414,7 +427,7 @@ Description :
 		<cfargument name="title"	 	type="any" 		required="false" default="" hint="The title attribute"/>
 		<cfargument name="data"			type="struct" required="false" default="#structNew()#"	hint="A structure that will add data-{key} elements to the HTML control"/>
 		<cfscript>
-			var buffer	= createObject("java","java.lang.StringBuffer").init("<link");
+			var buffer	= createObject("java","java.lang.StringBuilder").init("<link");
 
 			// type: determination
 			switch(arguments.type){
@@ -444,7 +457,7 @@ Description :
 		<cfargument name="name" 	 type="string"	required="false" default="" hint="The name tag"/>
 		<cfargument name="data"			type="struct" required="false" default="#structNew()#"	hint="A structure that will add data-{key} elements to the HTML control"/>
 		<cfscript>
-			var video 		= createObject("java","java.lang.StringBuffer").init("<video");
+			var video 		= createObject("java","java.lang.StringBuilder").init("<video");
 			var x			= 1;
 
 			// autoplay diff
@@ -499,7 +512,7 @@ Description :
 		<cfargument name="name" 	 type="string"	required="false" default="" hint="The name tag"/>
 		<cfargument name="data"			type="struct" required="false" default="#structNew()#"	hint="A structure that will add data-{key} elements to the HTML control"/>
 		<cfscript>
-			var audio 		= createObject("java","java.lang.StringBuffer").init("<audio");
+			var audio 		= createObject("java","java.lang.StringBuilder").init("<audio");
 			var x			= 1;
 
 			// autoplay diff
@@ -550,7 +563,7 @@ Description :
 		<cfargument name="height"		type="string"	required="false" default="" hint="The height tag"/>
 		<cfargument name="data"			type="struct" required="false" default="#structNew()#"	hint="A structure that will add data-{key} elements to the HTML control"/>
 		<cfscript>
-			var canvas 		= createObject("java","java.lang.StringBuffer").init("<canvas");
+			var canvas 		= createObject("java","java.lang.StringBuilder").init("<canvas");
 
 			// create canvas tag
 			flattenAttributes(arguments,"",canvas).append("></canvas>");
@@ -569,8 +582,17 @@ Description :
 		<cfargument name="noBaseURL" 	type="boolean" 	required="false" 	default="false" hint="Defaults to false. If you want to NOT append a request's ses or html base url then set this argument to true"/>
 		<cfargument name="data"			type="struct" required="false" default="#structNew()#"	hint="A structure that will add data-{key} elements to the HTML control"/>
 		<cfscript>
-			var formBuffer	= createObject( "java", "java.lang.StringBuffer" ).init( "<form" );
-			var event 		= controller.getRequestService().getContext();
+			var formBuffer	  = createObject( "java", "java.lang.StringBuilder" ).init( "<form" );
+			var event         = controller.getRequestService().getContext();
+			var desiredMethod = '';
+
+			// Browsers can't support all the HTTP verbs, so if we passed in something
+			// besides GET or POST, we'll default to POST and save off
+			// the desired method to spoof later.
+			if ( arguments.method != "GET" AND arguments.method != "POST" ) {
+				desiredMethod = arguments.method;
+				arguments.method = "POST";
+			}
 
 			// self-submitting?
 			if( NOT len( arguments.action ) ){
@@ -582,11 +604,11 @@ Description :
 				// Verify SSL Bit
 				if( structKeyExists( arguments, "ssl" ) ){
 					arguments.action = event.buildLink(
-						linkto 		= arguments.action,
+						to	 		= arguments.action,
 						ssl			= arguments.ssl
 					);
 				} else {
-					arguments.action = event.buildLink( linkto=arguments.action );
+					arguments.action = event.buildLink( to=arguments.action );
 				}
 			}
 
@@ -600,6 +622,12 @@ Description :
 			// create tag
 			flattenAttributes( arguments, "noBaseURL,ssl,multipart", formBuffer )
 				.append( ">" );
+
+			// If we wanted to use PUT, PATCH, or DELETE, spoof the HTTP method
+			// by including a hidden field in the form that ColdBox will look for.
+			if ( len( desiredMethod ) ) {
+				formBuffer.append( "<input type=""hidden"" name=""_method"" value=""#desiredMethod#"" />" );
+			}
 
 			return formBuffer.toString();
 		</cfscript>
@@ -615,7 +643,7 @@ Description :
 		<cfargument name="legend" 		type="string" 	required="false" 	default="" hint="The legend to use (if any)"/>
 		<cfargument name="data"			type="struct" required="false" default="#structNew()#"	hint="A structure that will add data-{key} elements to the HTML control"/>
 		<cfscript>
-			var buffer = createObject("java","java.lang.StringBuffer").init('<fieldset');
+			var buffer = createObject("java","java.lang.StringBuilder").init('<fieldset');
 
 			// fieldset attributes
 			flattenAttributes(arguments,"legend",buffer).append(">");
@@ -638,25 +666,34 @@ Description :
 	<cffunction name="label" access="public" returntype="any" output="false" hint="Render a label tag. Remember that any extra arguments are passed as tag attributes">
 		<cfargument name="field" 		type="string" required="true"	hint="The for who attribute"/>
 		<cfargument name="content" 		type="string" required="false" default="" hint="The label content. If not passed the field is used"/>
+		<cfargument name="labelAttrs"	type="struct" required="false" default="#structNew()#" hint="Attributes to add to the label tag. Empty by default">
 		<cfargument name="wrapper" 		type="string" required="false" default="" hint="The wrapper tag to use around the tag. Empty by default">
+		<cfargument name="wrapperAttrs"	type="struct" required="false" default="#structNew()#" hint="Attributes to add to the wrapper tag. Empty by default">
 		<cfargument name="data"			type="struct" required="false" default="#structNew()#"	hint="A structure that will add data-{key} elements to the HTML control"/>
 		<cfargument name="class"		type="string" required="false" default="" hint="The class to be applied to the label">
+		<cfargument name="labelMode"	type="numeric" required="false" default=0 hint="0 - Open and close the label tag with wrappers around it (default); 1 - Open the wrapper and the label but do not close them; 2- Output the content, close the label and the wrapper">
 		<cfscript>
-			var buffer = createObject("java","java.lang.StringBuffer").init('');
-
-			// wrapper?
-			wrapTag(buffer,arguments.wrapper);
+			var buffer = createObject("java","java.lang.StringBuilder").init('');
 
 			// get content
 			if( NOT len(content) ){ arguments.content = makePretty(arguments.field); }
 			arguments.for = arguments.field;
 
-			// create label tag
-			buffer.append("<label");
-			flattenAttributes(arguments,"content,field,wrapper",buffer).append(">#arguments.content#</label>");
+			if (labelMode == 0 || labelMode == 1) {
+				// wrapper?
+				wrapTag(buffer,arguments.wrapper,0,arguments.wrapperAttrs);
 
-			//wrapper?
-			wrapTag(buffer,arguments.wrapper,1);
+				// create label tag
+				buffer.append("<label");
+				flattenAttributes(arguments,"content,field,wrapper,labelMode,labelAttrs",buffer);
+				flattenAttributes(target=arguments.labelAttrs,buffer=buffer).append(">");
+			}
+
+			if (labelMode == 0 || labelMode == 2) {
+				buffer.append("#arguments.content#</label>");
+				//wrapper?
+				wrapTag(buffer,arguments.wrapper,1);
+			}
 
 			return buffer.toString();
 		</cfscript>
@@ -671,25 +708,31 @@ Description :
 		<cfargument name="disabled" 	type="boolean" 	required="false" default="false" hint="Disabled"/>
 		<cfargument name="readonly" 	type="boolean" 	required="false" default="false" hint="Readonly"/>
 		<cfargument name="wrapper" 		type="string" 	required="false" default="" hint="The wrapper tag to use around the tag. Empty by default">
+		<cfargument name="wrapperAttrs"	type="struct" required="false" default="#structNew()#" hint="Attributes to add to the wrapper tag. Empty by default">
 		<cfargument name="groupWrapper" type="string" 	required="false" default="" hint="The wrapper tag to use around the tag and label. Empty by default">
+		<cfargument name="groupWrapperAttrs" type="struct" required="false" default="#structNew()#" hint="Attributes to add to the group wrapper tag. Empty by default">
 		<cfargument name="label" 		type="string"	required="false" default="" hint="If Passed we will prepend a label tag"/>
+		<cfargument name="labelAttrs"	type="struct"	required="false" default="#structNew()#" hint="Attributes to add to the label tag. Empty by default">
 		<cfargument name="labelwrapper" type="string"	required="false" default="" hint="The wrapper tag to use around the label. Empty by default"/>
+		<cfargument name="labelWrapperAttrs" type="struct" required="false" default="#structNew()#" hint="Attributes to add to the label wrapper tag. Empty by default">
 		<cfargument name="labelClass" 	type="string"	required="false" default="" hint="The class to be applied to the label"/>
 		<cfargument name="bind" 		type="any" 		required="false" default="" hint="The entity binded to this control, the value comes by convention from the name attribute"/>
 		<cfargument name="bindProperty" type="any" 		required="false" default="" hint="The property to use for the value, by convention we use the name attribute"/>
 		<cfargument name="data"			type="struct" required="false" default="#structNew()#"	hint="A structure that will add data-{key} elements to the HTML control"/>
+		<cfargument name="inputInsideLabel"	type="boolean"	required="false" default=false hint="If true, closes the label tag after the input tag and puts the label text after the input tag" />
 		<cfscript>
-			var buffer = createObject("java","java.lang.StringBuffer").init('');
+			var buffer = createObject("java","java.lang.StringBuilder").init('');
 
 			// ID Normalization
 			normalizeID(arguments);
 			// group wrapper?
-			wrapTag(buffer,arguments.groupWrapper);
+			wrapTag(buffer,arguments.groupWrapper,0,arguments.groupWrapperAttrs);
 			// label?
-			if( len(arguments.label) ){ buffer.append( this.label(field=arguments.id,content=arguments.label,wrapper=arguments.labelWrapper,class=arguments.labelClass) ); }
+			if( len(arguments.label) ){ buffer.append( this.label(field=arguments.id,content=arguments.label,wrapper=arguments.labelWrapper,wrapperAttrs=arguments.labelWrapperAttrs,class=arguments.labelClass,
+				labelMode = (arguments.inputInsideLabel ? 1 : 0), labelAttrs=arguments.labelAttrs) ); }
 
 			//wrapper?
-			wrapTag(buffer,arguments.wrapper);
+			wrapTag(buffer,arguments.wrapper,0,arguments.wrapperAttrs);
 
 			// disabled fix
 			if( arguments.disabled ){ arguments.disabled = "disabled"; }
@@ -703,7 +746,7 @@ Description :
 
 			// create textarea
 			buffer.append("<textarea");
-			flattenAttributes(arguments,"value,label,wrapper,labelWrapper,groupWrapper,labelClass,bind,bindProperty",buffer).append(">#arguments.value#</textarea>");
+			flattenAttributes(arguments,"value,label,wrapper,labelWrapper,groupWrapper,labelAttrs,labelClass,bind,bindProperty,inputInsideLabel",buffer).append(">#arguments.value#</textarea>");
 
 			//wrapper?
 			wrapTag(buffer,arguments.wrapper,1);
@@ -720,12 +763,17 @@ Description :
 		<cfargument name="disabled" 	type="boolean" 	required="false" default="false" hint="Disabled"/>
 		<cfargument name="readonly" 	type="boolean" 	required="false" default="false" hint="Readonly"/>
 		<cfargument name="wrapper" 		type="string" 	required="false" default="" hint="The wrapper tag to use around the tag. Empty by default">
+		<cfargument name="wrapperAttrs"	type="struct"	required="false" default="#structNew()#" hint="Attributes to add to the wrapper tag. Empty by default">
 		<cfargument name="groupWrapper" type="string" 	required="false" default="" hint="The wrapper tag to use around the tag and label. Empty by default">
+		<cfargument name="groupWrapperAttrs" type="struct" required="false" default="#structNew()#" hint="Attributes to add to the group wrapper tag. Empty by default">
 		<cfargument name="label" 		type="string"	required="false" default="" hint="If Passed we will prepend a label tag"/>
+		<cfargument name="labelAttrs"	type="struct"	required="false" default="#structNew()#" hint="Attributes to add to the label tag. Empty by default">
 		<cfargument name="labelwrapper" type="string"	required="false" default="" hint="The wrapper tag to use around the label. Empty by default"/>
+		<cfargument name="labelWrapperAttrs" type="struct" required="false" default="#structNew()#" hint="Attributes to add to the label wrapper tag. Empty by default">
 		<cfargument name="labelClass" 	type="string"	required="false" default="" hint="The class to be applied to the label"/>
 		<cfargument name="bind" 		type="any" 		required="false" default="" hint="The entity binded to this control"/>
 		<cfargument name="bindProperty" type="any" 		required="false" default="" hint="The property to use for the value, by convention we use the name attribute"/>
+		<cfargument name="inputInsideLabel"	type="boolean"	required="false" default=false hint="If true, closes the label tag after the input tag and puts the label text after the input tag" />
 		<cfscript>
 			arguments.type="password";
 			return inputField(argumentCollection=arguments);
@@ -739,12 +787,17 @@ Description :
 		<cfargument name="disabled" 	type="boolean" 	required="false" default="false" hint="Disabled"/>
 		<cfargument name="readonly" 	type="boolean" 	required="false" default="false" hint="Readonly"/>
 		<cfargument name="wrapper" 		type="string" 	required="false" default="" hint="The wrapper tag to use around the tag. Empty by default">
+		<cfargument name="wrapperAttrs"	type="struct"	required="false" default="#structNew()#" hint="Attributes to add to the wrapper tag. Empty by default">
 		<cfargument name="groupWrapper" type="string" 	required="false" default="" hint="The wrapper tag to use around the tag and label. Empty by default">
+		<cfargument name="groupWrapperAttrs" type="struct" required="false" default="#structNew()#" hint="Attributes to add to the group wrapper tag. Empty by default">
 		<cfargument name="label" 		type="string"	required="false" default="" hint="If Passed we will prepend a label tag"/>
+		<cfargument name="labelAttrs"	type="struct"	required="false" default="#structNew()#" hint="Attributes to add to the label tag. Empty by default">
 		<cfargument name="labelwrapper" type="string"	required="false" default="" hint="The wrapper tag to use around the label. Empty by default"/>
+		<cfargument name="labelWrapperAttrs" type="struct" required="false" default="#structNew()#" hint="Attributes to add to the label wrapper tag. Empty by default">
 		<cfargument name="labelClass" 	type="string"	required="false" default="" hint="The class to be applied to the label"/>
 		<cfargument name="bind" 		type="any" 		required="false" default="" hint="The entity binded to this control"/>
 		<cfargument name="bindProperty" type="any" 		required="false" default="" hint="The property to use for the value, by convention we use the name attribute"/>
+		<cfargument name="inputInsideLabel"	type="boolean"	required="false" default=false hint="If true, closes the label tag after the input tag and puts the label text after the input tag" />
 		<cfscript>
 			arguments.type="url";
 			return inputField(argumentCollection=arguments);
@@ -758,12 +811,17 @@ Description :
 		<cfargument name="disabled" 	type="boolean" 	required="false" default="false" hint="Disabled"/>
 		<cfargument name="readonly" 	type="boolean" 	required="false" default="false" hint="Readonly"/>
 		<cfargument name="wrapper" 		type="string" 	required="false" default="" hint="The wrapper tag to use around the tag. Empty by default">
+		<cfargument name="wrapperAttrs"	type="struct"	required="false" default="#structNew()#" hint="Attributes to add to the wrapper tag. Empty by default">
 		<cfargument name="groupWrapper" type="string" 	required="false" default="" hint="The wrapper tag to use around the tag and label. Empty by default">
+		<cfargument name="groupWrapperAttrs" type="struct" required="false" default="#structNew()#" hint="Attributes to add to the group wrapper tag. Empty by default">
 		<cfargument name="label" 		type="string"	required="false" default="" hint="If Passed we will prepend a label tag"/>
+		<cfargument name="labelAttrs"	type="struct"	required="false" default="#structNew()#" hint="Attributes to add to the label tag. Empty by default">
 		<cfargument name="labelwrapper" type="string"	required="false" default="" hint="The wrapper tag to use around the label. Empty by default"/>
+		<cfargument name="labelWrapperAttrs" type="struct" required="false" default="#structNew()#" hint="Attributes to add to the label wrapper tag. Empty by default">
 		<cfargument name="labelClass" 	type="string"	required="false" default="" hint="The class to be applied to the label"/>
 		<cfargument name="bind" 		type="any" 		required="false" default="" hint="The entity binded to this control"/>
 		<cfargument name="bindProperty" type="any" 		required="false" default="" hint="The property to use for the value, by convention we use the name attribute"/>
+		<cfargument name="inputInsideLabel"	type="boolean"	required="false" default=false hint="If true, closes the label tag after the input tag and puts the label text after the input tag" />
 		<cfscript>
 			arguments.type="email";
 			return inputField(argumentCollection=arguments);
@@ -775,12 +833,17 @@ Description :
 		<cfargument name="name" 		type="string" 	required="false" default="" hint="The name of the field"/>
 		<cfargument name="value" 		type="string"	required="false" default="" hint="The value of the field"/>
 		<cfargument name="wrapper" 		type="string" 	required="false" default="" hint="The wrapper tag to use around the tag. Empty by default">
+		<cfargument name="wrapperAttrs"	type="struct"	required="false" default="#structNew()#" hint="Attributes to add to the wrapper tag. Empty by default">
 		<cfargument name="groupWrapper" type="string" 	required="false" default="" hint="The wrapper tag to use around the tag and label. Empty by default">
+		<cfargument name="groupWrapperAttrs" type="struct" required="false" default="#structNew()#" hint="Attributes to add to the group wrapper tag. Empty by default">
 		<cfargument name="label" 		type="string"	required="false" default="" hint="If Passed we will prepend a label tag"/>
+		<cfargument name="labelAttrs"	type="struct"	required="false" default="#structNew()#" hint="Attributes to add to the label tag. Empty by default">
 		<cfargument name="labelwrapper" type="string"	required="false" default="" hint="The wrapper tag to use around the label. Empty by default"/>
+		<cfargument name="labelWrapperAttrs" type="struct" required="false" default="#structNew()#" hint="Attributes to add to the label wrapper tag. Empty by default">
 		<cfargument name="labelClass" 	type="string"	required="false" default="" hint="The class to be applied to the label"/>
 		<cfargument name="bind" 		type="any" 		required="false" default="" hint="The entity binded to this control"/>
 		<cfargument name="bindProperty" type="any" 		required="false" default="" hint="The property to use for the value, by convention we use the name attribute"/>
+		<cfargument name="inputInsideLabel"	type="boolean"	required="false" default=false hint="If true, closes the label tag after the input tag and puts the label text after the input tag" />
 		<cfscript>
 			arguments.type="hidden";
 			return inputField(argumentCollection=arguments);
@@ -794,12 +857,17 @@ Description :
 		<cfargument name="disabled" 	type="boolean" 	required="false" default="false" hint="Disabled"/>
 		<cfargument name="readonly" 	type="boolean" 	required="false" default="false" hint="Readonly"/>
 		<cfargument name="wrapper" 		type="string" 	required="false" default="" hint="The wrapper tag to use around the tag. Empty by default">
+		<cfargument name="wrapperAttrs"	type="struct" 	required="false" default="#structNew()#" hint="Attributes to add to the wrapper tag. Empty by default">
 		<cfargument name="groupWrapper" type="string" 	required="false" default="" hint="The wrapper tag to use around the tag and label. Empty by default">
+		<cfargument name="groupWrapperAttrs" type="struct" required="false" default="#structNew()#" hint="Attributes to add to the group wrapper tag. Empty by default">
 		<cfargument name="label" 		type="string"	required="false" default="" hint="If Passed we will prepend a label tag"/>
+		<cfargument name="labelAttrs"	type="struct"	required="false" default="#structNew()#" hint="Attributes to add to the label tag. Empty by default">
 		<cfargument name="labelwrapper" type="string"	required="false" default="" hint="The wrapper tag to use around the label. Empty by default"/>
+		<cfargument name="labelWrapperAttrs" type="struct" required="false" default="#structNew()#" hint="Attributes to add to the label wrapper tag. Empty by default">
 		<cfargument name="labelClass" 	type="string"	required="false" default="" hint="The class to be applied to the label"/>
 		<cfargument name="bind" 		type="any" 		required="false" default="" hint="The entity binded to this control"/>
 		<cfargument name="bindProperty" type="any" 		required="false" default="" hint="The property to use for the value, by convention we use the name attribute"/>
+		<cfargument name="inputInsideLabel"	type="boolean"	required="false" default=false hint="If true, closes the label tag after the input tag and puts the label text after the input tag" />
 		<cfscript>
 			arguments.type="text";
 			return inputField(argumentCollection=arguments);
@@ -811,25 +879,31 @@ Description :
 		<cfargument name="name" 		type="string" 	required="false" default="" hint="The name of the field"/>
 		<cfargument name="value" 		type="string"	required="false" default="" hint="The value of the field"/>
 		<cfargument name="disabled" 	type="boolean" 	required="false" default="false" hint="Disabled button or not?"/>
-		<cfargument name="type" 		type="string"	 required="false" default="button" hint="The type of button to create: button, reset or submit"/>
+		<cfargument name="type" 		type="string"	required="false" default="button" hint="The type of button to create: button, reset or submit"/>
 		<cfargument name="wrapper" 		type="string" 	required="false" default="" hint="The wrapper tag to use around the tag. Empty by default">
+		<cfargument name="wrapperAttrs"	type="struct"	required="false" default="#structNew()#" hint="Attributes to add to the wrapper tag. Empty by default">
 		<cfargument name="groupWrapper" type="string" 	required="false" default="" hint="The wrapper tag to use around the tag and label. Empty by default">
+		<cfargument name="groupWrapperAttrs" type="struct" required="false" default="#structNew()#" hint="Attributes to add to the group wrapper tag. Empty by default">
 		<cfargument name="label" 		type="string"	required="false" default="" hint="If Passed we will prepend a label tag"/>
+		<cfargument name="labelAttrs"	type="struct"	required="false" default="#structNew()#" hint="Attributes to add to the label tag. Empty by default">
 		<cfargument name="labelwrapper" type="string"	required="false" default="" hint="The wrapper tag to use around the label. Empty by default"/>
+		<cfargument name="labelWrapperAttrs" type="struct" required="false" default="#structNew()#" hint="Attributes to add to the label wrapper tag. Empty by default">
 		<cfargument name="data"			type="struct" required="false" default="#structNew()#"	hint="A structure that will add data-{key} elements to the HTML control"/>
 		<cfargument name="labelClass" 	type="string"	required="false" default="" hint="The class to be applied to the label"/>
+		<cfargument name="inputInsideLabel"	type="boolean"	required="false" default=false hint="If true, closes the label tag after the input tag and puts the label text after the input tag" />
 		<cfscript>
-			var buffer = createObject("java","java.lang.StringBuffer").init('');
+			var buffer = createObject("java","java.lang.StringBuilder").init('');
 
 			// ID Normalization
 			normalizeID(arguments);
 			// group wrapper?
-			wrapTag(buffer,arguments.groupWrapper);
+			wrapTag(buffer,arguments.groupWrapper,0,arguments.groupWrapperAttrs);
 			// label?
-			if( len(arguments.label) ){ buffer.append( this.label(field=arguments.id,content=arguments.label,wrapper=arguments.labelWrapper,class=arguments.labelClass) ); }
+			if( len(arguments.label) ){ buffer.append( this.label(field=arguments.id,content=arguments.label,wrapper=arguments.labelWrapper,wrapperAttrs=arguments.labelWrapperAttrs,class=arguments.labelClass,
+				labelMode = (arguments.inputInsideLabel ? 1 : 0),  labelAttrs=arguments.labelAttrs) ); }
 
 			//wrapper?
-			wrapTag(buffer,arguments.wrapper);
+			wrapTag(buffer,arguments.wrapper,0,arguments.wrapperAttrs);
 
 			// disabled fix
 			if( arguments.disabled ){ arguments.disabled = "disabled"; }
@@ -837,10 +911,16 @@ Description :
 
 			// create textarea
 			buffer.append("<button");
-			flattenAttributes(arguments,"value,label,wrapper,labelWrapper,groupWrapper,labelClass",buffer).append(">#arguments.value#</button>");
+			flattenAttributes(arguments,"value,label,wrapper,labelWrapper,groupWrapper,labelClass,inputInsideLabel",buffer).append(">#arguments.value#</button>");
 
 			//wrapper?
 			wrapTag(buffer,arguments.wrapper,1);
+
+			// close label tag if inputInsideLabel?
+			if (len(arguments.label) && arguments.inputInsideLabel) {
+				buffer.append( this.label(field=arguments.id, content=arguments.label, wrapper=arguments.labelWrapper, labelMode = 2) ); // close the label tag if we have one opened
+			}
+
 			// group wrapper?
 			wrapTag(buffer,arguments.groupWrapper,1);
 			return buffer.toString();
@@ -854,10 +934,15 @@ Description :
 		<cfargument name="disabled" 	type="boolean" 	required="false" default="false" hint="Disabled"/>
 		<cfargument name="readonly" 	type="boolean" 	required="false" default="false" hint="Readonly"/>
 		<cfargument name="wrapper" 		type="string" 	required="false" default="" hint="The wrapper tag to use around the tag. Empty by default">
+		<cfargument name="wrapperAttrs"	type="struct" 	required="false" default="#structNew()#" hint="Attributes to add to the wrapper tag. Empty by default">
 		<cfargument name="groupWrapper" type="string" 	required="false" default="" hint="The wrapper tag to use around the tag and label. Empty by default">
+		<cfargument name="groupWrapperAttrs" type="struct" required="false" default="#structNew()#" hint="Attributes to add to the group wrapper tag. Empty by default">
 		<cfargument name="label" 		type="string"	required="false" default="" hint="If Passed we will prepend a label tag"/>
+		<cfargument name="labelAttrs"	type="struct"	required="false" default="#structNew()#" hint="Attributes to add to the label tag. Empty by default">
 		<cfargument name="labelwrapper" type="string"	required="false" default="" hint="The wrapper tag to use around the label. Empty by default"/>
+		<cfargument name="labelWrapperAttrs" type="struct" required="false" default="#structNew()#" hint="Attributes to add to the label wrapper tag. Empty by default">
 		<cfargument name="labelClass" 	type="string"	required="false" default="" hint="The class to be applied to the label"/>
+		<cfargument name="inputInsideLabel"	type="boolean"	required="false" default=false hint="If true, closes the label tag after the input tag and puts the label text after the input tag" />
 		<cfscript>
 			arguments.type="file";
 			return inputField(argumentCollection=arguments);
@@ -871,10 +956,15 @@ Description :
 		<cfargument name="disabled" 	type="boolean" 	required="false" default="false" hint="Disabled"/>
 		<cfargument name="checked" 		type="boolean" 	required="false" default="false" hint="Checked"/>
 		<cfargument name="wrapper" 		type="string" 	required="false" default="" hint="The wrapper tag to use around the tag. Empty by default">
+		<cfargument name="wrapperAttrs"	type="struct" 	required="false" default="#structNew()#" hint="Attributes to add to the wrapper tag. Empty by default">
 		<cfargument name="groupWrapper" type="string" 	required="false" default="" hint="The wrapper tag to use around the tag and label. Empty by default">
+		<cfargument name="groupWrapperAttrs" type="struct" required="false" default="#structNew()#" hint="Attributes to add to the group wrapper tag. Empty by default">
 		<cfargument name="label" 		type="string"	required="false" default="" hint="If Passed we will prepend a label tag"/>
+		<cfargument name="labelAttrs"	type="struct"	required="false" default="#structNew()#" hint="Attributes to add to the label tag. Empty by default">
 		<cfargument name="labelwrapper" type="string"	required="false" default="" hint="The wrapper tag to use around the label. Empty by default"/>
+		<cfargument name="labelWrapperAttrs" type="struct" required="false" default="#structNew()#" hint="Attributes to add to the label wrapper tag. Empty by default">
 		<cfargument name="labelClass" 	type="string"	required="false" default="" hint="The class to be applied to the label"/>
+		<cfargument name="inputInsideLabel"	type="boolean"	required="false" default=false hint="If true, closes the label tag after the input tag and puts the label text after the input tag" />
 		<cfargument name="bind" 		type="any" 		required="false" default="" hint="The entity binded to this control"/>
 		<cfargument name="bindProperty" type="any" 		required="false" default="" hint="The property to use for the value, by convention we use the name attribute"/>
 		<cfscript>
@@ -890,10 +980,15 @@ Description :
 		<cfargument name="disabled" 	type="boolean" 	required="false" default="false" hint="Disabled"/>
 		<cfargument name="checked" 		type="boolean" 	required="false" default="false" hint="Checked"/>
 		<cfargument name="wrapper" 		type="string" 	required="false" default="" hint="The wrapper tag to use around the tag. Empty by default">
+		<cfargument name="wrapperAttrs"	type="struct" 	required="false" default="#structNew()#" hint="Attributes to add to the wrapper tag. Empty by default">
 		<cfargument name="groupWrapper" type="string" 	required="false" default="" hint="The wrapper tag to use around the tag and label. Empty by default">
+		<cfargument name="groupWrapperAttrs" type="struct" required="false" default="#structNew()#" hint="Attributes to add to the group wrapper tag. Empty by default">
 		<cfargument name="label" 		type="string"	required="false" default="" hint="If Passed we will prepend a label tag"/>
+		<cfargument name="labelAttrs"	type="struct"	required="false" default="#structNew()#" hint="Attributes to add to the label tag. Empty by default">
 		<cfargument name="labelwrapper" type="string"	required="false" default="" hint="The wrapper tag to use around the label. Empty by default"/>
+		<cfargument name="labelWrapperAttrs" type="struct" required="false" default="#structNew()#" hint="Attributes to add to the label wrapper tag. Empty by default">
 		<cfargument name="labelClass" 	type="string"	required="false" default="" hint="The class to be applied to the label"/>
+		<cfargument name="inputInsideLabel"	type="boolean"	required="false" default=false hint="If true, closes the label tag after the input tag and puts the label text after the input tag" />
 		<cfargument name="bind" 		type="any" 		required="false" default="" hint="The entity binded to this control"/>
 		<cfargument name="bindProperty" type="any" 		required="false" default="" hint="The property to use for the value, by convention we use the name attribute"/>
 		<cfscript>
@@ -908,10 +1003,15 @@ Description :
 		<cfargument name="value" 		type="string"	required="false" default="Submit" hint="The value of the field"/>
 		<cfargument name="disabled" 	type="boolean" 	required="false" default="false" hint="Disabled"/>
 		<cfargument name="wrapper" 		type="string" 	required="false" default="" hint="The wrapper tag to use around the tag. Empty by default">
+		<cfargument name="wrapperAttrs"	type="struct" 	required="false" default="#structNew()#" hint="Attributes to add to the wrapper tag. Empty by default">
 		<cfargument name="groupWrapper" type="string" 	required="false" default="" hint="The wrapper tag to use around the tag and label. Empty by default">
+		<cfargument name="groupWrapperAttrs" type="struct" required="false" default="#structNew()#" hint="Attributes to add to the group wrapper tag. Empty by default">
 		<cfargument name="label" 		type="string"	required="false" default="" hint="If Passed we will prepend a label tag"/>
+		<cfargument name="labelAttrs"	type="struct"	required="false" default="#structNew()#" hint="Attributes to add to the label tag. Empty by default">
 		<cfargument name="labelwrapper" type="string"	required="false" default="" hint="The wrapper tag to use around the label. Empty by default"/>
+		<cfargument name="labelWrapperAttrs" type="struct" required="false" default="#structNew()#" hint="Attributes to add to the label wrapper tag. Empty by default">
 		<cfargument name="labelClass" 	type="string"	required="false" default="" hint="The class to be applied to the label"/>
+		<cfargument name="inputInsideLabel"	type="boolean"	required="false" default=false hint="If true, closes the label tag after the input tag and puts the label text after the input tag" />
 		<cfscript>
 			arguments.type="submit";
 			return inputField(argumentCollection=arguments);
@@ -924,10 +1024,15 @@ Description :
 		<cfargument name="value" 		type="string"	required="false" default="Reset" hint="The value of the field"/>
 		<cfargument name="disabled" 	type="boolean" 	required="false" default="false" hint="Disabled"/>
 		<cfargument name="wrapper" 		type="string" 	required="false" default="" hint="The wrapper tag to use around the tag. Empty by default">
+		<cfargument name="wrapperAttrs"	type="struct" 	required="false" default="#structNew()#" hint="Attributes to add to the wrapper tag. Empty by default">
 		<cfargument name="groupWrapper" type="string" 	required="false" default="" hint="The wrapper tag to use around the tag and label. Empty by default">
+		<cfargument name="groupWrapperAttrs" type="struct" required="false" default="#structNew()#" hint="Attributes to add to the group wrapper tag. Empty by default">
 		<cfargument name="label" 		type="string"	required="false" default="" hint="If Passed we will prepend a label tag"/>
+		<cfargument name="labelAttrs"	type="struct"	required="false" default="#structNew()#" hint="Attributes to add to the label tag. Empty by default">
 		<cfargument name="labelwrapper" type="string"	required="false" default="" hint="The wrapper tag to use around the label. Empty by default"/>
+		<cfargument name="labelWrapperAttrs" type="struct" required="false" default="#structNew()#" hint="Attributes to add to the label wrapper tag. Empty by default">
 		<cfargument name="labelClass" 	type="string"	required="false" default="" hint="The class to be applied to the label"/>
+		<cfargument name="inputInsideLabel"	type="boolean"	required="false" default=false hint="If true, closes the label tag after the input tag and puts the label text after the input tag" />
 		<cfscript>
 			arguments.type="reset";
 			return inputField(argumentCollection=arguments);
@@ -940,10 +1045,15 @@ Description :
 		<cfargument name="name" 		type="string" 	required="false" default=""	hint="The name of the field"/>
 		<cfargument name="disabled" 	type="boolean" 	required="false" default="false" hint="Disabled"/>
 		<cfargument name="wrapper" 		type="string" 	required="false" default="" hint="The wrapper tag to use around the tag. Empty by default">
+		<cfargument name="wrapperAttrs"	type="struct" 	required="false" default="#structNew()#" hint="Attributes to add to the wrapper tag. Empty by default">
 		<cfargument name="groupWrapper" type="string" 	required="false" default="" hint="The wrapper tag to use around the tag and label. Empty by default">
+		<cfargument name="groupWrapperAttrs" type="struct" required="false" default="#structNew()#" hint="Attributes to add to the group wrapper tag. Empty by default">
 		<cfargument name="label" 		type="string"	required="false" default="" hint="If Passed we will prepend a label tag"/>
+		<cfargument name="labelAttrs"	type="struct"	required="false" default="#structNew()#" hint="Attributes to add to the label tag. Empty by default">
 		<cfargument name="labelwrapper" type="string"	required="false" default="" hint="The wrapper tag to use around the label. Empty by default"/>
+		<cfargument name="labelWrapperAttrs" type="struct" required="false" default="#structNew()#" hint="Attributes to add to the label wrapper tag. Empty by default">
 		<cfargument name="labelClass" 	type="string"	required="false" default="" hint="The class to be applied to the label"/>
+		<cfargument name="inputInsideLabel"	type="boolean"	required="false" default=false hint="If true, closes the label tag after the input tag and puts the label text after the input tag" />
 		<cfscript>
 			arguments.type="image";
 			return inputField(argumentCollection=arguments);
@@ -958,7 +1068,7 @@ Description :
 		<cfargument name="selectedIndex" 	type="any" 		required="false" default="0" hint="selected index(s) if any. So either one or a list of indexes"/>
 		<cfargument name="selectedValue" 	type="any" 		required="false" default=""	hint="selected value(s) if any. So either one or a list of values"/>
 		<cfscript>
-			var buffer 		= createObject("java","java.lang.StringBuffer").init('');
+			var buffer 		= createObject("java","java.lang.StringBuilder").init('');
 			var val 		= "";
 			var nameVal		= "";
 			var x	 		= 1;
@@ -1061,24 +1171,29 @@ Description :
 		<cfargument name="disabled" 	type="boolean" 	required="false" default="false" hint="Disabled button or not?"/>
 		<cfargument name="multiple" 	type="boolean" 	required="false" default="false" hint="multiple button or not?"/>
 		<cfargument name="wrapper" 		type="string" 	required="false" default="" hint="The wrapper tag to use around the tag. Empty by default">
+		<cfargument name="wrapperAttrs"	type="struct" 	required="false" default="#structNew()#" hint="Attributes to add to the wrapper tag. Empty by default">
 		<cfargument name="groupWrapper" type="string" 	required="false" default="" hint="The wrapper tag to use around the tag and label. Empty by default">
+		<cfargument name="groupWrapperAttrs" type="struct" required="false" default="#structNew()#" hint="Attributes to add to the group wrapper tag. Empty by default">
 		<cfargument name="label" 		type="string"	required="false" default="" hint="If Passed we will prepend a label tag"/>
+		<cfargument name="labelAttrs"	type="struct"	required="false" default="#structNew()#" hint="Attributes to add to the label tag. Empty by default">
 		<cfargument name="labelwrapper" type="string"	required="false" default="" hint="The wrapper tag to use around the label. Empty by default"/>
+		<cfargument name="labelWrapperAttrs" type="struct" required="false" default="#structNew()#" hint="Attributes to add to the label wrapper tag. Empty by default">
 		<cfargument name="data"			type="struct" required="false" default="#structNew()#"	hint="A structure that will add data-{key} elements to the HTML control"/>
 		<cfargument name="labelClass" 	type="string"	required="false" default="" hint="The class to be applied to the label"/>
+		<cfargument name="inputInsideLabel"	type="boolean"	required="false" default=false hint="If true, closes the label tag after the input tag and puts the label text after the input tag" />
 
 		<cfscript>
-			var buffer = createObject("java","java.lang.StringBuffer").init('');
+			var buffer = createObject("java","java.lang.StringBuilder").init('');
 
 			// ID Normalization
 			normalizeID(arguments);
 			// group wrapper?
-			wrapTag(buffer,arguments.groupWrapper);
+			wrapTag(buffer,arguments.groupWrapper,0,arguments.groupWrapperAttrs);
 			// label?
-			if( len(arguments.label) ){ buffer.append( this.label(field=arguments.id,content=arguments.label,wrapper=arguments.labelWrapper,class=arguments.labelClass) ); }
+			if( len(arguments.label) ){ buffer.append( this.label(field=arguments.id,content=arguments.label,wrapper=arguments.labelWrapper,wrapperAttrs=arguments.labelWrapperAttrs,class=arguments.labelClass, labelAttrs=arguments.labelAttrs) ); }
 
 			//wrapper?
-			wrapTag(buffer,arguments.wrapper);
+			wrapTag(buffer,arguments.wrapper,0,arguments.wrapperAttrs);
 
 			// disabled fix
 			if( arguments.disabled ){ arguments.disabled = "disabled"; }
@@ -1089,7 +1204,7 @@ Description :
 
 			// create select
 			buffer.append("<select");
-			flattenAttributes(arguments,"options,column,nameColumn,selectedIndex,selectedValue,bind,bindProperty,label,wrapper,labelWrapper,groupWrapper,labelClass",buffer).append(">");
+			flattenAttributes(arguments,"options,column,nameColumn,selectedIndex,selectedValue,bind,bindProperty,label,labelAttrs,wrapper,labelWrapper,groupWrapper,labelClass,inputInsideLabel",buffer).append(">");
 
 			// binding of option
 			bindValue(arguments);
@@ -1110,6 +1225,12 @@ Description :
 
 			//wrapper?
 			wrapTag(buffer,arguments.wrapper,1);
+
+			// close label tag if inputInsideLabel
+			if (len(arguments.label) && arguments.inputInsideLabel) {
+				buffer.append( this.label(field=arguments.id, content=arguments.label, wrapper=arguments.labelWrapper, labelMode = 2) ); // close the label tag if we have one opened
+			}
+
 			// group wrapper?
 			wrapTag(buffer,arguments.groupWrapper, 1);
 
@@ -1126,25 +1247,31 @@ Description :
 		<cfargument name="checked" 		type="boolean" 	required="false" default="false" hint="Checked"/>
 		<cfargument name="readonly" 	type="boolean" 	required="false" default="false" hint="Readonly"/>
 		<cfargument name="wrapper" 		type="string" 	required="false" default="" hint="The wrapper tag to use around the tag. Empty by default">
+		<cfargument name="wrapperAttrs"	type="struct" 	required="false" default="#structNew()#" hint="Attributes to add to the wrapper tag. Empty by default">
 		<cfargument name="groupWrapper" type="string" 	required="false" default="" hint="The wrapper tag to use around the tag and label. Empty by default">
+		<cfargument name="groupWrapperAttrs" type="struct" required="false" default="#structNew()#" hint="Attributes to add to the group wrapper tag. Empty by default">
 		<cfargument name="label" 		type="string"	required="false" default="" hint="If Passed we will prepend a label tag"/>
+		<cfargument name="labelAttrs"	type="struct"	required="false" default="#structNew()#" hint="Attributes to add to the label tag. Empty by default">
 		<cfargument name="labelwrapper" type="string"	required="false" default="" hint="The wrapper tag to use around the label. Empty by default"/>
+		<cfargument name="labelWrapperAttrs" type="struct" required="false" default="#structNew()#" hint="Attributes to add to the label wrapper tag. Empty by default">
 		<cfargument name="labelClass" 	type="string"	required="false" default="" hint="The class to be applied to the label"/>
 		<cfargument name="bind" 		type="any" 		required="false" default="" hint="The entity binded to this control"/>
 		<cfargument name="bindProperty" type="any" 		required="false" default="" hint="The property to use for the value, by convention we use the name attribute"/>
 		<cfargument name="data"			type="struct" required="false" default="#structNew()#"	hint="A structure that will add data-{key} elements to the HTML control"/>
+		<cfargument name="inputInsideLabel"	type="boolean"	required="false" default=false hint="If true, closes the label tag after the input tag and puts the label text after the input tag" />
 		<cfscript>
-			var buffer 		= createObject( "java", "java.lang.StringBuffer" ).init( '' );
-			var excludeList = "label,wrapper,labelWrapper,groupWrapper,labelClass,bind,bindProperty";
+			var buffer 		= createObject( "java", "java.lang.StringBuilder" ).init( '' );
+			var excludeList = "label,wrapper,labelWrapper,groupWrapper,labelClass,labelAttrs,inputInsideLabel,bind,bindProperty";
 
 			// ID Normalization
 			normalizeID( arguments );
 			// group wrapper?
-			wrapTag( buffer, arguments.groupWrapper );
+			wrapTag( buffer, arguments.groupWrapper, 0, arguments.groupWrapperAttrs );
 			// label?
-			if( len( arguments.label ) ){ buffer.append( this.label( field=arguments.id, content=arguments.label, wrapper=arguments.labelWrapper, class=arguments.labelClass ) ); }
+			if( len( arguments.label ) ){ buffer.append( this.label( field=arguments.id, content=arguments.label, wrapper=arguments.labelWrapper, wrapperAttrs=arguments.labelWrapperAttrs, class=arguments.labelClass,
+				labelMode = (arguments.inputInsideLabel ? 1 : 0), labelAttrs=arguments.labelAttrs ) ); }
 			//wrapper?
-			wrapTag( buffer, arguments.wrapper );
+			wrapTag( buffer, arguments.wrapper, 0, arguments.wrapperAttrs );
 
 			// disabled fix
 			if( arguments.disabled ){ arguments.disabled = "disabled"; }
@@ -1165,6 +1292,12 @@ Description :
 
 			//wrapper?
 			wrapTag( buffer, arguments.wrapper, 1 );
+
+			// close label tag if inputInsideLabel
+			if (len(arguments.label) && arguments.inputInsideLabel) {
+				buffer.append( this.label(field=arguments.id, content=arguments.label, wrapper=arguments.labelWrapper, labelMode = 2) ); // close the label tag if we have one opened
+			}
+
 			// group wrapper?
 			wrapTag( buffer, arguments.groupWrapper, 1 );
 
@@ -1176,16 +1309,22 @@ Description :
 	<cffunction name="entityFields" output="false" access="public" returntype="any" hint="Create fields based on entity properties">
 		<cfargument name="entity" 			type="any" 		required="true" hint="The entity binded to this control"/>
 		<cfargument name="groupWrapper" 	type="string" 	required="false" default="" hint="The wrapper tag to use around the tag and label. Empty by default">
+		<cfargument name="groupWrapperAttrs" type="struct" required="false" default="#structNew()#" hint="Attributes to add to the group wrapper tag. Empty by default">
 		<cfargument name="fieldwrapper" 	type="any"		required="false" default="" hint="The wrapper tag to use around the field items. Empty by default"/>
+		<cfargument name="fieldWrapperAttrs"	type="struct" 	required="false" default="#structNew()#" hint="Attributes to add to the field wrapper tag. Empty by default">
+		<cfargument name="labelAttrs"	type="struct"	required="false" default="#structNew()#" hint="Attributes to add to the label tag. Empty by default">
 		<cfargument name="labelwrapper" 	type="any"		required="false" default="" hint="The wrapper tag to use around the label items. Empty by default"/>
+		<cfargument name="labelWrapperAttrs" type="struct" required="false" default="#structNew()#" hint="Attributes to add to the label wrapper tag. Empty by default">
 		<cfargument name="labelClass" 		type="string"	required="false" default="" hint="The class to be applied to the label"/>
 		<cfargument name="textareas" 		type="any"		required="false" default="" hint="A list of property names that you want as textareas"/>
 		<cfargument name="booleanSelect" 	type="boolean" 	required="false" default="true" hint="If a boolean is detected a dropdown is generated, if false, then radio buttons"/>
 		<cfargument name="showRelations" 	type="boolean" 	required="false" default="true" hint="If true it will show relation tables for one to one and one to many"/>
 		<cfargument name="manytoone" 		type="struct" 	required="false" default="#structnew()#" hint="A structure of data to help with many to one relationships on how they are presented. Possible key values for each key are [valuecolumn='',namecolumn='',criteria={},sortorder=string]. Example: {criteria={productid=1},sortorder='Department desc'}"/>
 		<cfargument name="manytomany" 		type="struct" 	required="false" default="#structnew()#" hint="A structure of data to help with many to one relationships on how they are presented. Possible key values for each key are [valuecolumn='',namecolumn='',criteria={},sortorder=string,selectColumn='']. Example: {criteria={productid=1},sortorder='Department desc'}"/>
+		<cfargument name="inputInsideLabel"	type="boolean"	required="false" default=false hint="If true, closes the label tag after the input tag and puts the label text after the input tag" />
+
 		<cfscript>
-			var buffer 	= createObject("java","java.lang.StringBuffer").init('');
+			var buffer 	= createObject("java","java.lang.StringBuilder").init('');
 			var md 		= getMetadata( arguments.entity );
 			var x		= 1;
 			var y		= 1;
@@ -1238,6 +1377,11 @@ Description :
 						break;
 					}
 					case "many-to-many" : {
+						// A new or persisted entity? If new, then skip out
+						if( NOT loc.orm.contains(arguments.entity) OR NOT arguments.showRelations){
+							break;
+						}
+
 						// prepare lookup args
 						loc.criteria			= {};
 						loc.sortorder 		= "";
@@ -1271,7 +1415,8 @@ Description :
 						}
 
 						// values should be an array of objects, so let's convert them
-						loc.relArray = evaluate("arguments.entity.get#prop.name#()");
+						loc.relArray = invoke( arguments.entity, "get#prop.name#" );
+
 						if( isNull(loc.relArray) ){ loc.relArray = []; }
 						if( NOT len(loc.selectColumn) AND arrayLen(loc.relArray) ){
 							// if select column is empty, then select first property as select value, not perfect but hey better than nothing
@@ -1279,13 +1424,15 @@ Description :
 						}
 						// iterate and select
 						for(y=1; y lte arrayLen(loc.relArray); y++){
-							arrayAppend(loc.values, evaluate("loc.relArray[y].get#loc.selectColumn#()") );
+							loc.values.append(
+								invoke( loc.relArray[ y ], "get#loc.selectColumn#" )
+							);
 						}
 						// generation args
 						args = {
 							name=prop.name, options=entityLoad( prop.cfc, loc.criteria, loc.sortorder ), column=loc.column, nameColumn=loc.nameColumn,
-							multiple=true, label=prop.name, labelwrapper=arguments.labelWrapper, labelClass=arguments.labelClass, wrapper=arguments.fieldwrapper,
-							groupWrapper=arguments.groupWrapper, selectedValue=arrayToList( loc.values )
+							multiple=true, label=prop.name, labelwrapper=arguments.labelWrapper, labelWrapperAttrs=arguments.labelWrapperAttrs, labelClass=arguments.labelClass, wrapper=arguments.fieldwrapper, wrapperAttrs=arguments.fieldWrapperAttrs,
+							groupWrapper=arguments.groupWrapper, groupWrapper=arguments.groupWrapperAttrs, labelAttrs=arguments.labelAttrs, inputInsideLabel=arguments.inputInsideLabel, selectedValue=arrayToList( loc.values )
 						};
 						structAppend(args,arguments);
 						buffer.append( this.select(argumentCollection=args) );
@@ -1293,7 +1440,6 @@ Description :
 					}
 					// one to many display
 					case "one-to-many" : {
-						loc.orm = ORMGetSession();
 						// A new or persisted entity? If new, then skip out
 						if( NOT loc.orm.contains(arguments.entity) OR NOT arguments.showRelations){
 							break;
@@ -1301,12 +1447,12 @@ Description :
 						arguments["data-ormtype"] 	= "one-to-many";
 						// We just show them as a nice table because we are not scaffolding, just display
 						// values should be an array of objects, so let's convert them
-						loc.relArray = evaluate("arguments.entity.get#prop.name#()");
+						loc.relArray = invoke( arguments.entity, "get#prop.name#" );
 						if( isNull(loc.relArray) ){ loc.relArray = []; }
 
 						// Label Generation
 						args = {
-							field=prop.name, wrapper=arguments.labelWrapper, class=arguments.labelClass
+							field=prop.name, wrapper=arguments.labelWrapper, class=arguments.labelClass, inputInsideLabel=arguments.inputInsideLabel
 						};
 						structAppend(args,arguments);
 						buffer.append( this.label(argumentCollection=args) );
@@ -1327,7 +1473,6 @@ Description :
 					}
 					// one to many display
 					case "one-to-one" : {
-						loc.orm = ORMGetSession();
 						// A new or persisted entity? If new, then skip out
 						if( NOT loc.orm.contains(arguments.entity) OR NOT arguments.showRelations){
 							break;
@@ -1336,13 +1481,13 @@ Description :
 						arguments["data-ormtype"] 	= "one-to-one";
 						// We just show them as a nice table because we are not scaffolding, just display
 						// values should be an array of objects, so let's convert them
-						loc.data = evaluate("arguments.entity.get#prop.name#()");
+						loc.data = invoke( arguments.entity, "get#prop.name#" );
 						if( isNull(loc.data) ){ loc.relArray = []; }
 						else{ loc.relArray = [ loc.data ]; }
 
 						// Label Generation
 						args = {
-							field=prop.name, wrapper=arguments.labelWrapper, class=arguments.labelClass
+							field=prop.name, wrapper=arguments.labelWrapper, class=arguments.labelClass, inputInsideLabel=arguments.inputInsideLabel
 						};
 						structAppend(args,arguments);
 						buffer.append( this.label(argumentCollection=args) );
@@ -1362,6 +1507,10 @@ Description :
 					}
 					// many to one
 					case "many-to-one" : {
+						// A new or persisted entity? If new, then skip out
+						if( NOT loc.orm.contains(arguments.entity) OR NOT arguments.showRelations){
+							break;
+						}
 						arguments["data-ormtype"] 	= "many-to-one";
 						// prepare lookup args
 						loc.criteria	= {};
@@ -1391,8 +1540,9 @@ Description :
 						args = {
 							name=prop.name, options=entityLoad( prop.cfc, loc.criteria, loc.sortorder ),
 							column=loc.column, nameColumn=loc.nameColumn,
-							label=prop.name, bind=arguments.entity, labelwrapper=arguments.labelWrapper, labelClass=arguments.labelClass,
-							wrapper=arguments.fieldwrapper, groupWrapper=arguments.groupWrapper
+							label=prop.name, bind=arguments.entity, labelwrapper=arguments.labelWrapper, labelWrapperAttrs=arguments.labelWrapperAttrs, labelClass=arguments.labelClass,
+							wrapper=arguments.fieldwrapper, wrapperAttrs=arguments.fieldWrapperAttrs, groupWrapper=arguments.groupWrapper, groupWrapperAttrs=arguments.groupWrapperAttrs,
+							inputInsideLabel=arguments.inputInsideLabel
 						};
 						structAppend(args,arguments);
 						buffer.append( this.select(argumentCollection=args) );
@@ -1406,16 +1556,16 @@ Description :
 							// boolean select or radio buttons
 							if( arguments.booleanSelect ){
 								args = {
-									name=prop.name, options=[true,false], label=prop.name, bind=arguments.entity, labelwrapper=arguments.labelWrapper, labelClass=arguments.labelClass,
-									wrapper=arguments.fieldwrapper, groupWrapper=arguments.groupWrapper
+									name=prop.name, options=[true,false], label=prop.name, bind=arguments.entity, labelwrapper=arguments.labelWrapper, labelWrapperAttrs=arguments.labelWrapperAttrs, labelClass=arguments.labelClass,
+									wrapper=arguments.fieldwrapper, wrapperAttrs=arguments.wrapperAttrs, groupWrapper=arguments.groupWrapper, groupWrapperAttrs=arguments.groupWrapperAttrs, inputInsideLabel=arguments.inputInsideLabel
 								};
 								structAppend(args,arguments);
 								buffer.append( this.select(argumentCollection=args) );
 							}
 							else{
 								args = {
-									name=prop.name, value="true", label="True", bind=arguments.entity, labelwrapper=arguments.labelWrapper, labelClass=arguments.labelClass,
-									groupWrapper=arguments.groupWrapper, wrapper=arguments.fieldWrapper
+									name=prop.name, value="true", label="True", bind=arguments.entity, labelwrapper=arguments.labelWrapper, labelWrapperAttrs=arguments.labelWrapperAttrs, labelClass=arguments.labelClass,
+									groupWrapper=arguments.groupWrapper, groupWrapperAttrs = arguments.groupWrapperAttrs, wrapper=arguments.fieldWrapper, wrapperAttrs=arguments.fieldWrapperAttrs,inputInsideLabel=arguments.inputInsideLabel
 								};
 								structAppend(args,arguments);
 								buffer.append( this.radioButton(argumentCollection=args) );
@@ -1427,8 +1577,8 @@ Description :
 						}
 						// text args
 						args = {
-							name=prop.name, label=prop.name, bind=arguments.entity, labelwrapper=arguments.labelWrapper, labelClass=arguments.labelClass,
-							wrapper=arguments.fieldwrapper, groupWrapper=arguments.groupWrapper
+							name=prop.name, label=prop.name, bind=arguments.entity, labelwrapper=arguments.labelWrapper, labelWrapperAttrs=arguments.labelWrapperAttrs, labelClass=arguments.labelClass,
+							wrapper=arguments.fieldwrapper, wrapperAttrs=arguments.fieldWrapperAttrs, groupWrapper=arguments.groupWrapper, groupWrapperAttrs=arguments.groupWrapperAttrs, inputInsideLabel=arguments.inputInsideLabel
 						};
 						structAppend(args,arguments);
 						// text and textarea fields
@@ -1448,7 +1598,96 @@ Description :
 		</cfscript>
 	</cffunction>
 
+	<!--- elixir --->
+	<cffunction name="elixir" output="false" access="public" returntype="void" hint="Adds the versioned path for an asset to the view">
+		<cfargument name="fileName" type="string" required="true" hint="The asset path to find relative to the includes convention directory"/>
+		<cfargument name="buildDirectory" type="string" required="false" default="build" hint="The build directory inside the includes convention directory"/>
+		<cfargument name="sendToHeader" type="boolean" required="false" default="true" hint="Send to the header via htmlhead by default, else it returns the content"/>
+		<cfargument name="async" type="boolean" required="false" default="false" hint="HTML5 JavaScript argument: Specifies that the script is executed asynchronously (only for external scripts)"/>
+		<cfargument name="defer" type="boolean" required="false" default="false" hint="HTML5 JavaScript argument: Specifies that the script is executed when the page has finished parsing (only for external scripts)"/>
+		<cfscript>
+			addAsset(
+				elixirPath( arguments.fileName, arguments.buildDirectory ),
+				arguments.sendToHeader,
+				arguments.async,
+				arguments.defer
+			);
+		</cfscript>
+	</cffunction>
+
+	<!--- elixirPath --->
+	<cffunction name="elixirPath" output="false" access="public" returntype="string" hint="Finds the versioned path for an asset">
+		<cfargument name="fileName" 		type="string" required="true" hint="The asset path to find relative to the includes convention directory"/>
+		<cfargument name="buildDirectory" 	type="string" required="false" default="build" hint="The build directory inside the includes convention directory"/>
+		<cfargument name="useModuleRoot"   type="boolean" required="false" default="false" hint="If true, use the module root as the root of the file path"/>
+		<cfscript>
+			var includesLocation 	= controller.getSetting( "IncludesConvention", true );
+			var event 				= getRequestContext();
+			var mapping             = ( useModuleRoot && len( event.getCurrentModule() ) ) ?
+										event.getModuleRoot() :
+										controller.getSetting( "appMapping" );
+			var filePath 			= expandPath( "#mapping#/#includesLocation#/#arguments.buildDirectory#/rev-manifest.json" );
+			var href 				= "#mapping#/#includesLocation#/#arguments.fileName#";
+
+			if ( ! fileExists( filePath ) ) {
+				return href;
+			}
+
+			var fileContents = fileRead( filePath );
+			if ( ! isJSON( fileContents ) ) {
+				return href;
+			}
+
+			var json = deserializeJSON( fileContents );
+			if ( ! structKeyExists( json, arguments.fileName ) ) {
+				return href;
+			}
+
+			return "#mapping#/#includesLocation#/#arguments.buildDirectory#/#json[ arguments.fileName ]#";
+		</cfscript>
+	</cffunction>
+
 <!------------------------------------------- PRIVATE ------------------------------------------>
+
+	<!--- objectsToTable --->
+	<cffunction name="objectsToTable" output="false" access="private" returntype="void" hint="Convert a table out of an array of objects">
+		<cfargument name="data" 		type="any"			 required="true"	hint="The array to convert into a table"/>
+		<cfargument name="includes" 	type="string"		required="false" default=""	hint="The columns to include in the rendering"/>
+		<cfargument name="excludes" 	type="string"		required="false" default=""	hint="The columns to exclude in the rendering"/>
+		<cfargument name="buffer" 		type="any" 	 	 required="true"/>
+		<cfscript>
+			var str			= arguments.buffer;
+			var attrs		= "";
+			var x			= 1;
+			var y			= 1;
+			var key			= "";
+
+			var firstMetadata 	= getMetadata( arguments.data[ 1 ] );
+			var properties 		= structKeyExists( firstMetadata, "properties" ) ? firstMetadata.properties : [];
+
+			for( var thisProperty in properties ){
+				// Display headers?
+				if( passIncludeExclude( thisProperty.name, arguments.includes, arguments.excludes ) ){
+					str.append( "<th>#thisProperty.name#</th>" );
+				}
+			}
+			str.append( "</tr></thead>" );
+
+			// Render Body
+			str.append( "<tbody>" );
+
+			for( var thisRecord in arguments.data ){
+				str.append( "<tr>" );
+				for( var thisProperty in properties ){
+					// Display headers?
+					if( passIncludeExclude( thisProperty.name, arguments.includes, arguments.excludes ) ){
+						str.append( "<td>#invoke( thisRecord, "get#thisProperty.name#" )#</td>" );
+					}
+				}
+				str.append( "</tr>" );
+			}
+		</cfscript>
+	</cffunction>
 
 	<!--- arrayToTable --->
 	<cffunction name="arrayToTable" output="false" access="private" returntype="void" hint="Convert a table out of an array">
@@ -1533,7 +1772,7 @@ Description :
 		<cfscript>
 			var val 	= arguments.values;
 			var x	 	= 1;
-			var str 	= createObject("java","java.lang.StringBuffer").init("");
+			var str 	= createObject("java","java.lang.StringBuilder").init("");
 			var br		= chr(13);
 			var args	= "";
 
@@ -1584,10 +1823,14 @@ Description :
 				}
 
 				// entity value
-				entityValue = evaluate( "arguments.args.bind.get#arguments.args.bindProperty#()" );
-				if( isNull( entityValue ) ){ entityValue = ""; }
+				entityValue = invoke( arguments.args.bind, "get#arguments.args.bindProperty#" );
+				if( isNull( entityValue ) ){
+					entityValue = "";
+				}
 				// Verify if the value is an entity, if it is, then use the 'column' to retrieve the value
-				if( isObject( entityValue ) ){ entityValue = evaluate( "entityValue.get#arguments.args.column#()" ); }
+				if( isObject( entityValue ) ){
+					entityValue = invoke( entityValue, "get#arguments.args.column#" );
+				}
 
 				// If radio or checkbox button, check it
 				if( structKeyExists( arguments.args, "type" ) AND listFindNoCase( "radio,checkbox", arguments.args.type ) ){
@@ -1625,11 +1868,22 @@ Description :
 		<cfargument name="buffer">
 		<cfargument name="tag">
 		<cfargument name="end" required="false" default="false">
+		<cfargument name="attrs" type="struct" required="false" hint="Key/value pairs of attributes to add to the tag">
 		<cfscript>
-			var slash = "";
+			// Only do if we have length
 			if( len( arguments.tag ) ){
-				if( arguments.end ){ slash = "/"; }
-				arguments.buffer.append("<#slash##arguments.tag#>");
+				// Starting or ending?
+				if( arguments.end ){
+					arguments.buffer.append( "</#listFirst( arguments.tag, " " )#>" );
+				} else {
+					arguments.buffer.append( "<#arguments.tag#" );
+					if (!isNull(arguments.attrs)) {
+						for (var attr in structKeyArray(arguments.attrs)) {
+							arguments.buffer.append(' ' & attr & '="' & structFind(arguments.attrs,attr) & '"');
+						}
+					}
+					arguments.buffer.append(">");
+				}
 			}
 		</cfscript>
 	</cffunction>
@@ -1688,7 +1942,7 @@ Description :
 			var datakey = "";
 
 			// global exclusions
-			arguments.excludes &= ",fieldWrapper,labelWrapper,entity,booleanSelect,textareas,manytoone,onetomany,sendToHeader,bind";
+			arguments.excludes &= ",fieldWrapper,labelWrapper,wrapperAttrs,fieldWrapperAttrs,labelWrapperAttrs,groupWrapperAttrs,entity,booleanSelect,textareas,manytoone,onetomany,sendToHeader,bind,inputInsideLabel,labelAttrs";
 
 			for(key in arguments.target){
 				// Excludes

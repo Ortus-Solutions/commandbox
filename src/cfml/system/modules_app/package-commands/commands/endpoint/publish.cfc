@@ -37,7 +37,7 @@ component {
 		}
 
 		interceptorService.announceInterception( 'postPublish', { publishArgs=arguments, boxJSON=boxJSON } );
-
+		
 		print.greenLine( 'Package published successfully in [#arguments.endpointName#]' );
 	}
 
