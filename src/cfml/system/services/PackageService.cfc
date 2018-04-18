@@ -86,11 +86,6 @@ component accessors="true" singleton {
 			// By default, a specific package install doesn't include dev dependencies
 			arguments.production = arguments.production ?: true;
 
-			// Verbose info
-			if( arguments.verbose ){
-				consoleLogger.debug( "Save:#arguments.save# SaveDev:#arguments.saveDev# Production:#arguments.production# Directory:#arguments.directory#" );
-			}
-
 			var endpointData = endpointService.resolveEndpoint( arguments.ID, arguments.currentWorkingDirectory );
 
 			consoleLogger.info( '.');

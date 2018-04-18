@@ -395,11 +395,6 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 
 			var entryData = forgebox.getEntry( slug, APIToken );
 
-			// Verbose info
-			if( arguments.verbose ){
-				consoleLogger.debug( "Package data retrieved: ", entryData );
-			}
-
 			// entrylink,createdate,lname,isactive,installinstructions,typename,version,hits,coldboxversion,sourceurl,slug,homeurl,typeslug,
 			// downloads,entryid,fname,changelog,updatedate,downloadurl,title,entryrating,summary,username,description,email
 

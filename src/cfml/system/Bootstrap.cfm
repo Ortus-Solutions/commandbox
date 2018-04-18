@@ -203,6 +203,13 @@ This file will stay running the entire time the shell is open
 	<cfcatch type="any">
 		<cfscript>
 			
+			try {
+				if( isDefined( 'wirebox' ) ) {
+					wirebox.getCacheBox().getCache( 'metadataCache' ).clearAll();
+				}
+			} catch( any e) {
+			}
+			
 			createObject( 'java', 'java.lang.System' ).setProperty( 'cfml.cli.exitCode', '1' );
 	
 			// Try to log this to LogBox

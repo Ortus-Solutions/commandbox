@@ -108,15 +108,6 @@ component singleton {
 				} // Closure check
 				first = false;
 			} // End loop
-			
-			// One final update for non progress bar scenarios
-			if( lenghtOfFile == -1 ) {
-				if( !isNull( arguments.statusUDF ) ) {
-					// Re-use last values
-					status.percent = 100;
-					arguments.statusUDF( status );
-				}
-			} 
 
 			outputStream.flush();
 			outputStream.close();
@@ -148,6 +139,11 @@ component singleton {
 			}
 			if( !isNull( inputStream ) ) {
 				inputStream.close();
+			}
+		
+			if( !isNull( arguments.statusUDF ) ) {
+				status.percent = 100;
+				arguments.statusUDF( status );
 			}
 		}
 
