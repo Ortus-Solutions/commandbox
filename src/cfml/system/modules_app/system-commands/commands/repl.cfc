@@ -68,15 +68,19 @@ component {
 
 				do {
 					// ask repl
-					if ( arrayLen( REPLParser.getCommandLines() ) == 0 ) {
-						var command = ask( message=( arguments.script ? 'CFSCRIPT' : 'CFML' ) &  '-REPL: ', keepHistory=true, highlight=true, complete=true );
-					} else {
-						var command = ask( message=".............: ", keepHistory=true, highlight=true, complete=true );
-
-						// allow ability to break out of adding additional lines
-						if ( trim(command) == 'exit' || trim(command) == '' ) {
-							break;
+					try {
+						if ( arrayLen( REPLParser.getCommandLines() ) == 0 ) {
+							var command = ask( message=( arguments.script ? 'CFSCRIPT' : 'CFML' ) &  '-REPL: ', keepHistory=true, highlight=true, complete=true );
+						} else {
+							var command = ask( message=".............: ", keepHistory=true, highlight=true, complete=true );
+	
+							// allow ability to break out of adding additional lines
+							if ( trim(command) == 'exit' || trim(command) == '' ) {
+								break;
+							}
 						}
+					} finally {
+						resetShell();
 					}
 
 					// add command to our parser
@@ -118,12 +122,7 @@ component {
 					// Log it
 					logger.error( '#e.message# #e.detail#' , e.stackTrace );
 					if( quit ) {
-						// flush history out
-						shell.getReader().getHistory().save();
-						// set back original history
-						shell.setHistory( commandHistoryFile );
-						shell.setHighlighter( 'command' );
-						shell.setCompletor( 'command' );
+						resetShell();
 						// This will exist the command
 						error( '#e.message##CR##e.detail#' );
 					} else {
@@ -135,14 +134,17 @@ component {
 				}
 			}
 		}
+		resetShell();
+	}
+
+	private function resetShell() {	
 		// flush history out
 		shell.getReader().getHistory().save();
 		// set back original history
 		shell.setHistory( commandHistoryFile );
 		shell.setHighlighter( 'command' );
 		shell.setCompletor( 'command' );
-	}
-
+	} 
 
 	/**
 	* Returns variable type if it can be determined
