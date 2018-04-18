@@ -1009,7 +1009,7 @@ component accessors="true" singleton {
 
 		// Starting a WAR
 		if (serverInfo.WARPath != "" ) {
-			args.append( serverInfo.WARPath );
+			args.append( serverInfo.serverHomeDirectory );
 		// Stand alone server
 		} else {
 			args.append( serverInfo.webroot );
