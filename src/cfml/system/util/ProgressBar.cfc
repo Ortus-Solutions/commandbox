@@ -15,6 +15,10 @@ component singleton {
 	property name='shell' inject='shell';
 	property name='print' inject='Print';
 
+	function init() {
+		variables.attr = createObject( 'java', 'org.jline.utils.AttributedString' );
+	}
+
 	/**
 	* Call me to update the screen.  If another thread outputs to the console in the mean time, it will mess it up.
 	* This method assumes it's on a fresh line with the cursor at the far left.
@@ -84,9 +88,9 @@ component singleton {
 		// Add to console and flush
 		display.update(
 			[
-				createObject( 'java', 'org.jline.utils.AttributedString' ).fromAnsi( print.Grey66( repeatString( '=', totalWidth ) ) ),
-				createObject( 'java', 'org.jline.utils.AttributedString' ).fromAnsi( progressRendered ),
-				createObject( 'java', 'org.jline.utils.AttributedString' ).fromAnsi( print.Grey66( repeatString( '=', totalWidth ) ) )
+				attr.fromAnsi( print.Grey66( repeatString( '=', totalWidth ) ) ),
+				attr.fromAnsi( progressRendered ),
+				attr.fromAnsi( print.Grey66( repeatString( '=', totalWidth ) ) )
 			],
 			0
 		);
@@ -112,9 +116,9 @@ component singleton {
 						
 		display.update(
 			[
-				createObject( 'java', 'org.jline.utils.AttributedString' ).init( repeatString( ' ', terminal.getWidth() ) ),
-				createObject( 'java', 'org.jline.utils.AttributedString' ).init( repeatString( ' ', terminal.getWidth() ) ),
-				createObject( 'java', 'org.jline.utils.AttributedString' ).init( repeatString( ' ', terminal.getWidth() ) )
+				attr.init( repeatString( ' ', terminal.getWidth() ) ),
+				attr.init( repeatString( ' ', terminal.getWidth() ) ),
+				attr.init( repeatString( ' ', terminal.getWidth() ) )
 			],
 			0
 		);

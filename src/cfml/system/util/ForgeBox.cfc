@@ -23,7 +23,6 @@ or just add DEBUG to the root logger
 	<!--- DI --->
 	<cfproperty name="progressableDownloader" 	inject="ProgressableDownloader">
 	<cfproperty name="progressBar" 				inject="ProgressBar">
-	<cfproperty name="consoleLogger"			inject="logbox:logger:console">
 	<cfproperty name="CommandBoxlogger" 		inject="logbox:logger:{this}">
 	<cfproperty name="configService" 			inject="configService">
 

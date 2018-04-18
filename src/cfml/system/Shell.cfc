@@ -10,7 +10,7 @@ component accessors="true" singleton {
 
 	// DI
 	property name="commandService" 			inject="CommandService";
-	property name="completor" 				inject="Completor";
+	property name="CommandCompletor" 		inject="CommandCompletor";
 	property name="REPLCompletor" 			inject="REPLCompletor";	
 	property name="readerFactory" 			inject="ReaderFactory";
 	property name="print" 					inject="print";
@@ -23,8 +23,8 @@ component accessors="true" singleton {
 	property name="InterceptorService"		inject="InterceptorService";
 	property name="ModuleService"			inject="ModuleService";
 	property name="Util"					inject="wirebox.system.core.util.Util";
-	property name="JLineHighlighter"	 	inject="JLineHighlighter";
-	property name="JLineREPLHighlighter"	inject="JLineREPLHighlighter";
+	property name="CommandHighlighter"	 	inject="CommandHighlighter";
+	property name="REPLHighlighter"			inject="REPLHighlighter";
 
 
 	/**
@@ -651,7 +651,7 @@ component accessors="true" singleton {
 	*/
 	function setCompletor( string completorName, any executor ) {
 		if( completorName == 'command' ) {
-			variables.reader.setCompleter( createDynamicProxy( completor, [ 'org.jline.reader.Completer' ] ) );		
+			variables.reader.setCompleter( createDynamicProxy( CommandCompletor, [ 'org.jline.reader.Completer' ] ) );		
 		} else if( completorName == 'repl' ) {
 			
 			REPLCompletor.setCurrentExecutor( arguments.executor ?: '' );
@@ -686,9 +686,9 @@ component accessors="true" singleton {
 	*/
 	function setHighlighter( string highlighterName ) {
 		if( highlighterName == 'command' ) {
-			variables.reader.setHighlighter( createDynamicProxy( JLineHighlighter, [ 'org.jline.reader.Highlighter' ] ) );	
+			variables.reader.setHighlighter( createDynamicProxy( CommandHighlighter, [ 'org.jline.reader.Highlighter' ] ) );	
 		} else if( highlighterName == 'repl' ) {
-			variables.reader.setHighlighter( createDynamicProxy( JLineREPLHighlighter, [ 'org.jline.reader.Highlighter' ] ) );			
+			variables.reader.setHighlighter( createDynamicProxy( REPLHighlighter, [ 'org.jline.reader.Highlighter' ] ) );			
 		} else if( highlighterName == 'dummy' ) {
 			variables.reader.setHighlighter( createObject( 'java', 'org.jline.reader.impl.DefaultHighlighter' ) );
 		} else {

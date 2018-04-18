@@ -11,15 +11,15 @@
 component singleton{
 
 	// DI
-	property name="completor" 			inject="Completor";
-	property name="JLineParser"			inject="JLineParser";
-	property name="JLineHighlighter"	inject="JLineHighlighter";
-	property name="JLineSignalHandler"	inject="JLineSignalHandler";
-	property name="homedir"				inject="homedir@constants";
-	property name="commandHistoryFile"	inject="commandHistoryFile@constants";
+	property name="CommandCompletor" 		inject="CommandCompletor";
+	property name="CommandParser"			inject="CommandParser";
+	property name="CommandHighlighter"		inject="CommandHighlighter";
+	property name="SignalHandler"			inject="SignalHandler";
+	property name="homedir"					inject="homedir@constants";
+	property name="commandHistoryFile"		inject="commandHistoryFile@constants";
 	property name="REPLScriptHistoryFile"	inject="REPLScriptHistoryFile@constants";
-	property name="REPLTagHistoryFile"	inject="REPLTagHistoryFile@constants";
-	property name="systemSettings"		inject="SystemSettings";
+	property name="REPLTagHistoryFile"		inject="REPLTagHistoryFile@constants";
+	property name="systemSettings"			inject="SystemSettings";
 
 	/**
 	* Build a jline console reader instance
@@ -44,15 +44,14 @@ component singleton{
 		systemSettings.setSystemProperty( 'library.jansi.path', JANSI_path );
 		
 		// Creating static references to these so we can get at nested classes and their properties
-		var LineReader = createObject( "java", "org.jline.reader.LineReader" );
-		var SignalHandler = createObject( "java", "org.jline.terminal.Terminal$SignalHandler" );
-		var LineReaderOption = createObject( "java", "org.jline.reader.LineReader$Option" );
+		var LineReaderClass = createObject( "java", "org.jline.reader.LineReader" );
+		var LineReaderOptionClass = createObject( "java", "org.jline.reader.LineReader$Option" );
 		
 		// CFC instances that implements a JLine Java interfaces
-		var jCompletor = createDynamicProxy( completor , [ 'org.jline.reader.Completer' ] );
-		var jParser = createDynamicProxy( JLineParser, [ 'org.jline.reader.Parser' ] );
-		var jHighlighter = createDynamicProxy( JLineHighlighter, [ 'org.jline.reader.Highlighter' ] );
-		var jSignalHandler = createDynamicProxy( JLineSignalHandler, [ 'org.jline.terminal.Terminal$SignalHandler' ] );
+		var jCompletor = createDynamicProxy( CommandCompletor , [ 'org.jline.reader.Completer' ] );
+		var jParser = createDynamicProxy( CommandParser, [ 'org.jline.reader.Parser' ] );
+		var jHighlighter = createDynamicProxy( CommandHighlighter, [ 'org.jline.reader.Highlighter' ] );
+		var jSignalHandler = createDynamicProxy( SignalHandler, [ 'org.jline.terminal.Terminal$SignalHandler' ] );
 		
 		// Build our terminal instance
 		var terminal = createObject( "java", "org.jline.terminal.TerminalBuilder" )
@@ -68,8 +67,8 @@ component singleton{
 			.terminal( terminal )
 			.variables( {
 				// The default file for history is set into the shell here though it's used by the DefaultHistory class
-				'#LineReader.HISTORY_FILE#' : commandHistoryFile,
-				'#LineReader.BLINK_MATCHING_PAREN#' : 0
+				'#LineReaderClass.HISTORY_FILE#' : commandHistoryFile,
+				'#LineReaderClass.BLINK_MATCHING_PAREN#' : 0
 			} )
         	.completer( jCompletor )
         	.parser( jParser )
@@ -77,13 +76,13 @@ component singleton{
 			.build();
 			
 		// This lets you hit tab with nothing entered on the prompt and get auto-complete
-		reader.unsetOpt( LineReaderOption.INSERT_TAB );
+		reader.unsetOpt( LineReaderOptionClass.INSERT_TAB );
 		// This turns off annoying Vim stuff built into JLine
-		reader.setOpt( LineReaderOption.DISABLE_EVENT_EXPANSION );
+		reader.setOpt( LineReaderOptionClass.DISABLE_EVENT_EXPANSION );
 		// Makes auto complete case insensitive
-		reader.setOpt( LineReaderOption.CASE_INSENSITIVE );
+		reader.setOpt( LineReaderOptionClass.CASE_INSENSITIVE );
 		// Makes i-search case insensitive (Ctrl-R and Ctrl-S)
-		reader.setOpt( LineReaderOption.CASE_INSENSITIVE_SEARCH );
+		reader.setOpt( LineReaderOptionClass.CASE_INSENSITIVE_SEARCH );
 
 		return reader;
 

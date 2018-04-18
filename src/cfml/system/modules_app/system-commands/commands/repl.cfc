@@ -51,24 +51,25 @@ component {
 			print.line( "Type 'quit' or 'q' to exit!" ).toConsole();
 		}
 
-		// Loop until they choose to quit
-		while( !quit ){
-
-			// code provided via standard input to process.  Exit after finishing.
-			if( structKeyExists( arguments, 'input' ) ) {
-				REPLParser.startCommand();
-				REPLParser.addCommandLines( arguments.input );
-				quit = true;
-
-			// Else, collect the code via a prompt
-			} else {
-
-				// start new command
-				REPLParser.startCommand();
-
-				do {
-					// ask repl
-					try {
+		try {
+							
+			// Loop until they choose to quit
+			while( !quit ){
+	
+				// code provided via standard input to process.  Exit after finishing.
+				if( structKeyExists( arguments, 'input' ) ) {
+					REPLParser.startCommand();
+					REPLParser.addCommandLines( arguments.input );
+					quit = true;
+	
+				// Else, collect the code via a prompt
+				} else {
+	
+					// start new command
+					REPLParser.startCommand();
+	
+					do {
+						// ask repl
 						if ( arrayLen( REPLParser.getCommandLines() ) == 0 ) {
 							var command = ask( message=( arguments.script ? 'CFSCRIPT' : 'CFML' ) &  '-REPL: ', keepHistory=true, highlight=true, complete=true );
 						} else {
@@ -79,62 +80,62 @@ component {
 								break;
 							}
 						}
-					} finally {
-						resetShell();
-					}
-
-					// add command to our parser
-					REPLParser.addCommandLine( command );
-
-				} while ( !REPLParser.isCommandComplete() );
-
-			}
-
-			// REPL command is complete. get entire command as string
-			var cfml = REPLParser.getCommandAsString();
-
-			// quitting
-			if( listFindNoCase( 'quit,q,exit', cfml ) ){
-				quit = true;
-			} else {
-
-				// evaluate it
-				try {
-
-					results = '';
-
+	
+						// add command to our parser
+						REPLParser.addCommandLine( command );
+	
+					} while ( !REPLParser.isCommandComplete() );
+	
+				}
+	
+				// REPL command is complete. get entire command as string
+				var cfml = REPLParser.getCommandAsString();
+	
+				// quitting
+				if( listFindNoCase( 'quit,q,exit', cfml ) ){
+					quit = true;
+				} else {
+	
+					// evaluate it
 					try {
-						// Attempt evaluation
-						results = REPLParser.evaluateCommand( executor, arguments.directory );
-					} catch (any var e) {
-						// execute our command using temp file
-						results = executor.runCode( cfml, arguments.script, arguments.directory );
-					}
-
-					// print results
-					// Make sure results is a string
-					results = REPLParser.serializeOutput( argumentCollection={ result : ( isNull( results ) ? nullValue() : results ) } );
-					print.line( results, structKeyExists( arguments, 'input' ) ? '' : 'boldRed' )
-
-				} catch( any e ){
-					// flush out anything in buffer
-					print.toConsole();
-					// Log it
-					logger.error( '#e.message# #e.detail#' , e.stackTrace );
-					if( quit ) {
-						resetShell();
-						// This will exist the command
-						error( '#e.message##CR##e.detail#' );
-					} else {
-						print.whiteOnRedLine( 'ERROR' )
-							.line()
-							.boldRedLine( '#e.message##CR##e.detail#' )
-							.line();
+	
+						results = '';
+	
+						try {
+							// Attempt evaluation
+							results = REPLParser.evaluateCommand( executor, arguments.directory );
+						} catch (any var e) {
+							// execute our command using temp file
+							results = executor.runCode( cfml, arguments.script, arguments.directory );
+						}
+	
+						// print results
+						// Make sure results is a string
+						results = REPLParser.serializeOutput( argumentCollection={ result : ( isNull( results ) ? nullValue() : results ) } );
+						print.line( results, structKeyExists( arguments, 'input' ) ? '' : 'boldRed' )
+	
+					} catch( any e ){
+						// flush out anything in buffer
+						print.toConsole();
+						// Log it
+						logger.error( '#e.message# #e.detail#' , e.stackTrace );
+						if( quit ) {
+							resetShell();
+							// This will exist the command
+							error( '#e.message##CR##e.detail#' );
+						} else {
+							print.whiteOnRedLine( 'ERROR' )
+								.line()
+								.boldRedLine( '#e.message##CR##e.detail#' )
+								.line();
+						}
 					}
 				}
 			}
+			
+		} finally {
+			resetShell();
 		}
-		resetShell();
 	}
 
 	private function resetShell() {	
