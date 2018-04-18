@@ -56,15 +56,6 @@ component accessors="true" singleton="true" {
 	public function installAdobe( required destination, required version, required struct serverInfo, required string serverHomeDirectory ) {
 		var installDetails = installEngineArchive( 'adobe@#version#', destination, serverInfo, serverHomeDirectory );
 
-		// set flex log dir to prevent WEB-INF/cfform being created in project dir
-		if (fileExists(installDetails.installDir & "/WEB-INF/cfform/flex-config.xml")) {
-			var flexConfig = fileRead(installDetails.installDir & "/WEB-INF/cfform/flex-config.xml");
-
-			if( installDetails.initialInstall ) {
-				flexConfig = replace(flexConfig, "/WEB-INF/", installDetails.installDir & "/WEB-INF/","all");
-				fileWrite(installDetails.installDir & "/WEB-INF/cfform/flex-config.xml", flexConfig);
-			}
-		}
 		return installDetails;
 	}
 
