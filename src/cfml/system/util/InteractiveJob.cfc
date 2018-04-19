@@ -49,6 +49,13 @@ component accessors=true singleton {
 	* Clear from the screen, but don't reset
 	*/
 	function clear() {
+		
+		// If Jline uses a "dumb" terminal, the width reports as zero, which throws devide by zero errors.
+		// TODO: I might be able to just fake a reasonable width.
+		if( terminal.getWidth() == 0 ) {
+			return;
+		}
+		
 		var lines = [
 			aStr.init( '' )			
 		];
@@ -197,6 +204,13 @@ component accessors=true singleton {
 	* Render the information to the console
 	*/
 	function draw() {
+		
+		// If Jline uses a "dumb" terminal, the width reports as zero, which throws devide by zero errors.
+		// TODO: I might be able to just fake a reasonable width.
+		if( terminal.getWidth() == 0 ) {
+			return;
+		}
+		
 		var lines = getLines()
 			// Extra whitespace at the bottom
 			.append( aStr.init( ' ' ) );
