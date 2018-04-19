@@ -14,11 +14,11 @@ component accessors="true" singleton="true" {
 	property name='packageService'		inject='PackageService';
 	property name='endpointService'		inject='EndpointService';
 	property name='logger'				inject='logbox:logger:{this}';
-	property name='consoleLogger'		inject='logbox:logger:console';
 	property name='cr'					inject='cr@constants';
 	property name='shell'				inject='shell';
 	property name="semanticVersion"		inject="provider:semanticVersion@semver";
 	property name="artifactService"		inject="artifactService";
+	property name="wirebox"				inject="wirebox";
 
 
 	/**
@@ -107,6 +107,8 @@ component accessors="true" singleton="true" {
 		required string serverHomeDirectory
 		) {
 
+		var job = wirebox.getInstance( 'interactiveJob' );
+		
 		var installDetails = {
 			engineName : '',
 			version : '',
@@ -133,25 +135,22 @@ component accessors="true" singleton="true" {
 			if( semanticVersion.isExactVersion( version=version, includeBuildID=true ) ) {
 				var satisfyingVersion = version;
 			} else {
-				consoleLogger.warn( "Contacting ForgeBox to determine the latest & greatest version of [#engineName##( len( version ) ? ' ' : '' )##version#]...  Use an exact 'cfengine' version to skip this check.");
+				job.addWarnLog( "Contacting ForgeBox to determine the latest & greatest version of [#engineName##( len( version ) ? ' ' : '' )##version#]...  Use an exact 'cfengine' version to skip this check.");
 				// If ForgeBox is down, don't rain on people's parade.
 				try {
 					var satisfyingVersion = endpoint.findSatisfyingVersion( endpoint.parseSlug( arguments.ID ), version ).version;
-					consoleLogger.info( "OK, [#engineName# #satisfyingVersion#] it is!");
+					job.addInfoLog( "OK, [#engineName# #satisfyingVersion#] it is!");
 				} catch( any var e ) {
 
-					consoleLogger.error( ".");
-					consoleLogger.error( "Aww man,  ForgeBox isn't feeling well.");
-					consoleLogger.debug( "#e.message#  #e.detail#");
-					consoleLogger.error( "We're going to look in your local artifacts cache and see if one of those versions will work.");
+					job.addErrorLog( "Aww man,  ForgeBox isn't feeling well.");
+					job.addLog( "#e.message#  #e.detail#");
+					job.addErrorLog( "We're going to look in your local artifacts cache and see if one of those versions will work.");
 
 					// See if there's something usable in the artifacts cache.  If so, we'll use that version.
 					var satisfyingVersion = artifactService.findSatisfyingVersion( endpoint.parseSlug( arguments.ID ), version );
 					if( len( satisfyingVersion ) ) {
 						arguments.ID = endpoint.parseSlug( arguments.ID ) & '@' & satisfyingVersion;
-						consoleLogger.info( ".");
-						consoleLogger.info( "Sweet! We found a local version of [#satisfyingVersion#] that we can use in your artifacts.");
-						consoleLogger.info( ".");
+						job.addLog( "Sweet! We found a local version of [#satisfyingVersion#] that we can use in your artifacts.");
 					} else {
 						throw( 'No satisfying version found for [#version#].', 'endpointException', 'Well, we tried as hard as we can.  ForgeBox is unreachable and you don''t have a usable version in your local artifacts cache.  Please try another version.' );
 					}
@@ -216,12 +215,12 @@ component accessors="true" singleton="true" {
 			// Check and see if another version of this engine has already been started in the server home.
 			var previousEngineTag = fileRead( engineTagFile );
 			if( previousEngineTag != thisEngineTag ) {
-				consoleLogger.warn( "You've asked for the engine [#thisEngineTag#] to be started," );
-				consoleLogger.warn( "but this server home already has [#previousEngineTag#] deployed to it!" );
-				consoleLogger.warn( "In order to get the new version, you need to run 'server forget' on this server and start it again." );
+				job.addWarnLog( "You've asked for the engine [#thisEngineTag#] to be started," );
+				job.addWarnLog( "but this server home already has [#previousEngineTag#] deployed to it!" );
+				job.addWarnLog( "In order to get the new version, you need to run 'server forget' on this server and start it again." );
 			}
 
-			consoleLogger.info( "WAR/zip archive already installed.");
+			job.addLog( "WAR/zip archive already installed.");
 
 			return installDetails;
 		}
@@ -232,7 +231,7 @@ component accessors="true" singleton="true" {
 		// If we're starting a Lucee server whose version matches the CLI engine, then don't download anything, we're using internal jars.
 		if( listFirst( arguments.ID, '@' ) == 'lucee' && server.lucee.version == replace( installDetails.version, '+', '.', 'all' ) ) {
 
-			consoleLogger.info( "Building a WAR from local jars.");
+			job.addLog( "Building a WAR from local jars.");
 
 			// Spoof a WAR file.
 			var thisWebinf = installDetails.installDir & '/WEB-INF';
@@ -268,7 +267,7 @@ component accessors="true" singleton="true" {
 			throw( "Package didn't contain a war or zip archive." );
 		}
 
-		consoleLogger.info( "Exploding WAR/zip archive...");
+		job.addLog( "Exploding WAR/zip archive...");
 		directoryCreate( installDetails.installDir, true, true );
 		zip action="unzip" file="#theArchive#" destination="#installDetails.installDir#" overwrite="false";
 
@@ -280,7 +279,8 @@ component accessors="true" singleton="true" {
 		try {
 			directoryDelete( thisTempDir, true );
 		} catch( any e ) {
-			consoleLogger.error( '#e.message##CR#The folder is possibly locked by another program.' );
+			job.adderrorLog( e.message );
+			job.adderrorLog( 'The folder is possibly locked by another program.' );
 			logger.error( '#e.message# #e.detail#' , e.stackTrace );
 		}
 		return installDetails;

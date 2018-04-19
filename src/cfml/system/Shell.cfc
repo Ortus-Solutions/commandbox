@@ -709,6 +709,8 @@ component accessors="true" singleton {
 		returnOutput=false,
 		string piped,
 		boolean initialCommand=false )  {
+		
+		var job = wirebox.getInstance( 'interactiveJob' );
 
 		// Commands a loaded async in interactive mode, so this is a failsafe to ensure the CommandService
 		// is finished.  Especially useful for commands run onCLIStart.  Wait up to 5 seconds.
@@ -739,6 +741,11 @@ component accessors="true" singleton {
 			if( !initialCommand ) {
 				rethrow;
 			} else {
+				
+				if( job.isActive() ) {
+					job.errorRemaining();
+				}
+				
 				printError( { message : e.message, detail: e.detail } );
 			}
 		// This type of error means the user hit Ctrl-C, during a readLine() call. Duck out and move along.
@@ -747,6 +754,9 @@ component accessors="true" singleton {
 			if( !initialCommand ) {
 				rethrow;
 			} else {
+				if( job.isActive() ) {
+					job.errorRemaining();
+				}
     			variables.reader.getTerminal().writer().flush();
 				variables.reader.getTerminal().writer().println();
 				variables.reader.getTerminal().writer().print( variables.print.boldRedLine( 'CANCELLED' ) );
@@ -759,11 +769,22 @@ component accessors="true" singleton {
 				rethrow;
 			// This type of error means the user hit Ctrl-C, when not in a readLine() call (and hit my custom signal handler).  Duck out and move along.
 			} else if( e.getPageException().getRootCause().getClass().getName() == 'java.lang.InterruptedException' ) {
+				
+				if( job.isActive() ) {
+					job.errorRemaining();
+				}
+				
     			variables.reader.getTerminal().writer().flush();
 				variables.reader.getTerminal().writer().println();
 				variables.reader.getTerminal().writer().print( variables.print.boldRedLine( 'CANCELLED' ) );			
 			// Anything else is completely unexpected and means boom booms happened-- full stack please.
 			} else {
+				
+				if( job.isActive() ) {
+					job.errorRemaining( e.message );
+					variables.reader.getTerminal().writer().println();
+				}
+				
 				printError( e );
 			}
 		}

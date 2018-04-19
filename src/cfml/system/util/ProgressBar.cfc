@@ -11,9 +11,10 @@
 component singleton {
 	
 	// DI
-	property name='system' inject='system@constants';
-	property name='shell' inject='shell';
-	property name='print' inject='Print';
+	property name='system'	inject='system@constants';
+	property name='shell'	inject='shell';
+	property name='print'	inject='Print';
+	property name='job'		inject='provider:InteractiveJob';
 
 	function init() {
 		variables.attr = createObject( 'java', 'org.jline.utils.AttributedString' );
@@ -45,6 +46,12 @@ component singleton {
 		var display = createObject( 'java', 'org.jline.utils.Display' ).init( terminal, false );
 		display.resize( terminal.getHeight(), terminal.getWidth() );
 		var progressRendered = '';
+				
+		var lines = [];
+		// If there is a currently running job, include its output first so we don't overwrite each other
+		if( job.getActive() ) {
+			lines = job.getLines();
+		}
 		
 		// We don't know the total size (all we can show is the amount downloaded thus far)
 		if( totalSizeKB == -1 ) {
@@ -52,6 +59,13 @@ component singleton {
 			var progressBarTemplate = 'Downloading: $$$$$$$ (&&&&&&&&)';
 			progressRendered = replace( progressBarTemplate, '$$$$$$$', formatSize( arguments.completeSizeKB, 7 ) );
 			progressRendered = replace( progressRendered, '&&&&&&&&', formatSize( min( arguments.speedKBps, 99000), 6 ) & 'ps' );
+		
+			
+			lines.append( [
+					attr.fromAnsi( progressRendered ),
+				],
+				true
+			);		
 		
 		// We do know the total size (show percentages)
 		} else {
@@ -81,17 +95,20 @@ component singleton {
 			progressRendered = replace( progressRendered, '^^^^^^^', print.deepSkyBlue1( formatSize( arguments.totalSizeKB, 7 ) ) );
 			progressRendered = replace( progressRendered, '$$$$$$$', print.deepSkyBlue1( formatSize( arguments.completeSizeKB, 7 ) ) );
 			progressRendered = replace( progressRendered, '&&&&&&&&', print.orangeRed1( formatSize( min( arguments.speedKBps, 99000), 6 ) & 'ps' ) );
-			
+		
+			lines.append( [
+					attr.fromAnsi( print.Grey66( repeatString( '=', totalWidth ) ) ),
+					attr.fromAnsi( progressRendered ),
+					attr.fromAnsi( print.Grey66( repeatString( '=', totalWidth ) ) )
+				],
+				true
+			);			
 		}
 		
 				
 		// Add to console and flush
 		display.update(
-			[
-				attr.fromAnsi( print.Grey66( repeatString( '=', totalWidth ) ) ),
-				attr.fromAnsi( progressRendered ),
-				attr.fromAnsi( print.Grey66( repeatString( '=', totalWidth ) ) )
-			],
+			lines,
 			0
 		);
 
@@ -113,13 +130,22 @@ component singleton {
 
 		var display = createObject( 'java', 'org.jline.utils.Display' ).init( terminal, false );
 		display.resize( terminal.getHeight(), terminal.getWidth() );
-						
-		display.update(
-			[
+		
+		var lines = [];
+		if( job.getActive() ) {
+			lines = job.getLines();
+		}
+		
+		lines.append( [
 				attr.init( repeatString( ' ', terminal.getWidth() ) ),
 				attr.init( repeatString( ' ', terminal.getWidth() ) ),
 				attr.init( repeatString( ' ', terminal.getWidth() ) )
 			],
+			true
+		);		
+
+		display.update(
+			lines,
 			0
 		);
 	}

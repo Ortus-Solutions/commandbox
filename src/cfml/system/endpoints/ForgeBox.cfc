@@ -22,6 +22,7 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 	property name="fileSystemUtil"		inject="FileSystem";
 	property name="fileEndpoint"		inject="commandbox.system.endpoints.File";
 	property name='pathPatternMatcher' 	inject='provider:pathPatternMatcher@globber';
+	property name='wirebox'				inject='wirebox';
 
 	// Properties
 	property name="namePrefixes" type="string";
@@ -40,13 +41,14 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 	 * @verbose Verbose flag or silent, defaults to false
 	 */
 	public string function resolvePackage( required string package, boolean verbose=false ) {
+		var job = wirebox.getInstance( 'interactiveJob' );
 		var slug 	= parseSlug( arguments.package );
 		var version = parseVersion( arguments.package );
 		var strVersion = semanticVersion.parseVersion( version );
 
 		// If we have a specific version and it exists in artifacts and this isn't a snapshot build, use it.  Otherwise, to ForgeBox!!
 		if( semanticVersion.isExactVersion( version ) && artifactService.artifactExists( slug, version ) && strVersion.preReleaseID != 'snapshot' ) {
-			consoleLogger.info( "Package found in local artifacts!");
+			job.addLog( "Package found in local artifacts!");
 			// Install the package
 			var thisArtifactPath = artifactService.getArtifactPath( slug, version );
 			// Defer to file endpoint
@@ -387,11 +389,12 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 	 * @verbose Verbose flag or silent, defaults to false
 	 */
 	private function getPackage( slug, version, verbose=false ) {
+		var job = wirebox.getInstance( 'interactiveJob' );
 		var APIToken = configService.getSetting( 'endpoints.forgebox.APIToken', '' );
 
 		try {
 			// Info
-			consoleLogger.warn( "Verifying package '#slug#' in ForgeBox, please wait..." );
+			job.addLog( "Verifying package '#slug#' in ForgeBox, please wait..." );
 
 			var entryData = forgebox.getEntry( slug, APIToken );
 
@@ -410,18 +413,19 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 				throw( 'No download URL provided in ForgeBox.  Manual install only.', 'endpointException' );
 			}
 
-			consoleLogger.info( "Installing version [#arguments.version#]." );
+			job.addLog( "Installing version [#arguments.version#]." );
 
 			try {
 				forgeBox.recordInstall( arguments.slug, arguments.version, APIToken );
 			} catch( forgebox var e ) {
-				consoleLogger.warn( e.message & CR & e.detail );
+				job.addLog( e.message );
+				job.addLog( e.detail );
 			}
 
 			var packageType = entryData.typeSlug;
 
 			// Advice we found it
-			consoleLogger.info( "Verified entry in ForgeBox: '#slug#'" );
+			job.addLog( "Verified entry in ForgeBox: '#slug#'" );
 
 			var strVersion = semanticVersion.parseVersion( version );
 
@@ -431,13 +435,13 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 					downloadURL = forgebox.getStorageLocation(
 						slug, arguments.version, APIToken
 					);
-					consoleLogger.info( "Downloading entry from ForgeBox Pro" );
+					job.addLog( "Downloading entry from ForgeBox Pro" );
 				}
 
 				// Test package location to see what endpoint we can refer to.
 				var endpointData = endpointService.resolveEndpoint( downloadURL, 'fakePath', arguments.slug, arguments.version );
 
-				consoleLogger.info( "Deferring to [#endpointData.endpointName#] endpoint for ForgeBox entry [#slug#]..." );
+				job.addLog( "Deferring to [#endpointData.endpointName#] endpoint for ForgeBox entry [#slug#]..." );
 
 				var packagePath = endpointData.endpoint.resolvePackage( endpointData.package, arguments.verbose );
 
@@ -448,17 +452,17 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 				if( !structKeyExists( boxJSON, 'version' ) || !len( boxJSON.version ) ) { boxJSON.version = version; }
 				packageService.writePackageDescriptor( boxJSON, packagePath );
 
-				consoleLogger.info( "Storing download in artifact cache..." );
+				job.addLog( "Storing download in artifact cache..." );
 
 				// Store it locally in the artfact cache
 				artifactService.createArtifact( slug, version, packagePath );
 
-				consoleLogger.info( "Done." );
+				job.addLog( "Done." );
 
 				return packagePath;
 
 			} else {
-				consoleLogger.info( "Package found in local artifacts!");
+				job.addLog( "Package found in local artifacts!");
 				var thisArtifactPath = artifactService.getArtifactPath( slug, version );
 				// Defer to file endpoint
 				return fileEndpoint.resolvePackage( thisArtifactPath, arguments.verbose );
@@ -467,18 +471,17 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 
 		} catch( forgebox var e ) {
 
-			consoleLogger.error( ".");
-			consoleLogger.error( "Aww man,  ForgeBox isn't feeling well.");
-			consoleLogger.debug( "#e.message#  #e.detail#");
-			consoleLogger.error( "We're going to look in your local artifacts cache and see if one of those versions will work.");
+			job.addErrorLog( "Aww man,  ForgeBox isn't feeling well.");
+			job.addLog( "#e.message#  #e.detail#");
+			job.addErrorLog( "We're going to look in your local artifacts cache and see if one of those versions will work.");
 
 			// See if there's something usable in the artifacts cache.  If so, we'll use that version.
 			var satisfyingVersion = artifactService.findSatisfyingVersion( slug, version );
 
 			if( len( satisfyingVersion ) ) {
-				consoleLogger.info( ".");
-				consoleLogger.info( "Sweet! We found a local version of [#satisfyingVersion#] that we can use in your artifacts.");
-				consoleLogger.info( ".");
+				job.addLog( "" );
+				job.addLog( "Sweet! We found a local version of [#satisfyingVersion#] that we can use in your artifacts.");
+				job.addLog( "" );
 
 				var thisArtifactPath = artifactService.getArtifactPath( slug, satisfyingVersion );
 				// Defer to file endpoint

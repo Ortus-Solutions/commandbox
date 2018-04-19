@@ -19,9 +19,10 @@ component accessors=true {
 	property name='required' type="boolean";
 
 	// DI
-	property name='shell' inject='shell';
-	property name='printBuffer' inject='printBuffer';
-	property name='print' inject='print';
+	property name='shell'		inject='shell';
+	property name='printBuffer'	inject='printBuffer';
+	property name='print'		inject='print';
+	property name='job'			inject='provider:InteractiveJob';
 
 	function init() {
 		// Static reference to the class so we can create instances later
@@ -53,10 +54,6 @@ component accessors=true {
 		if( isNull( getOptions() ) ) {
 			throw( 'No options defined. Provde a list or array of structs (display,value,selected)' );
 		}
-		
-		printBuffer
-			.text( getQuestion() )
-			.toConsole();
 		
 		try {
 			draw();
@@ -108,6 +105,8 @@ component accessors=true {
 			
 			// Print out comma delimited list of selected option display names
 			printBuffer
+				.line()
+				.text( getQuestion() )
 				.line( 
 					getOptions().reduce( function( prev='', o ) {
 						if( o.selected ) {
@@ -132,6 +131,8 @@ component accessors=true {
 			
 			// Print out the first found selected option display name
 			printBuffer
+				.line()
+				.text( getQuestion() )
 				.line(
 					getOptions().reduce( function( prev='', o ) {
 						if( o.selected ) {
@@ -201,9 +202,18 @@ component accessors=true {
 	}
 
 	private function draw() {
+				
+		var lines = [];
+		// If there is a currently running job, include its output first so we don't overwrite each other
+		if( job.getActive() ) {
+			lines = job.getLines();
+		}
+		var extraLines = lines.len();
+		lines.append( generateRows(), 1 );
+		
 		display.update(
-				generateRows(),
-				( ( terminal.getWidth()+1) * ( activeOption+1 ) ) + 3
+				lines,
+				( ( terminal.getWidth()+1) * ( activeOption+2+extraLines ) ) + 3
 			);
 	}
 	
@@ -219,6 +229,7 @@ component accessors=true {
 					)
 				 );				 
 			} )
+			.prepend( aStr.init( getQuestion() ) )
 			.prepend( aStr.init( '' ) )
 			.prepend( aStr.init( '' ) )
 			.append( aStr.init( ' ' ) )

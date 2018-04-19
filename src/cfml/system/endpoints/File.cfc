@@ -16,6 +16,7 @@ component accessors="true" implements="IEndpoint" singleton {
 	property name="fileSystemUtil"		inject="FileSystem";
 	property name="folderEndpoint"		inject="commandbox.system.endpoints.Folder";
 	property name="semanticVersion"		inject="provider:semanticVersion@semver";
+	property name='wirebox'				inject='wirebox';
 
 	// Properties
 	property name="namePrefixes" type="string";
@@ -26,6 +27,7 @@ component accessors="true" implements="IEndpoint" singleton {
 	}
 
 	public string function resolvePackage( required string package, boolean verbose=false ) {
+		var job = wirebox.getInstance( 'interactiveJob' );
 
 
 		// Has file size?
@@ -37,7 +39,7 @@ component accessors="true" implements="IEndpoint" singleton {
 		var packagePath = fileSystemUtil.resolvePath( "#variables.tempDir#/#createUUID()#" );
 
 		// Unzip to temp directory
-		consoleLogger.info( "Decompressing...");
+		job.addLog( "Decompressing...");
 
 		zip action="unzip" file="#package#" destination="#packagePath#" overwrite="true";
 

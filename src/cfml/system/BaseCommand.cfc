@@ -20,6 +20,7 @@ component accessors="true" singleton {
 	property name="logger";
 	property name="parser";
 	property name="SystemSettings";
+	property name="job";
 
 	/**
 	* Constructor
@@ -35,6 +36,7 @@ component accessors="true" singleton {
 		variables.parser			= wirebox.getInstance( "Parser" );
 		variables.configService		= wirebox.getInstance( "ConfigService" );
 		variables.SystemSettings	= wirebox.getInstance( "SystemSettings" );
+		variables.job				= wirebox.getInstance( "interactiveJob" );
 
 		hasErrored = false;
 		return this;
@@ -164,6 +166,13 @@ component accessors="true" singleton {
 	 * @clearPrintBuffer.hint Wipe out the print buffer or not, it does not by default
  	 **/
 	function error( required message, detail='', clearPrintBuffer=false, exitCode=1 ) {
+
+		if( job.isActive() ) {
+			job.errorRemaining( message );
+			// Distance ourselves from whatever other output the command may have given so far.
+			print.line().toConsole();
+		}
+		
 		setExitCode( exitCode );
 		hasErrored = true;
 		if( arguments.clearPrintBuffer ) {

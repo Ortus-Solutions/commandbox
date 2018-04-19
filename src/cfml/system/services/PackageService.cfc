@@ -23,6 +23,7 @@ component accessors="true" singleton {
 	property name='interceptorService'	inject='interceptorService';
 	property name='JSONService'			inject='JSONService';
 	property name='systemSettings'		inject='SystemSettings';
+	property name='wirebox'				inject='wirebox';
 
 	/**
 	* Constructor
@@ -77,7 +78,7 @@ component accessors="true" singleton {
 			string packagePathRequestingInstallation = arguments.currentWorkingDirectory,
 			string defaultName=''
 	){
-
+		var job = wirebox.getInstance( 'interactiveJob' );
 		interceptorService.announceInterception( 'preInstall', { installArgs=arguments, packagePathRequestingInstallation=packagePathRequestingInstallation } );
 
 		// If there is a package to install, install it
@@ -88,8 +89,7 @@ component accessors="true" singleton {
 
 			var endpointData = endpointService.resolveEndpoint( arguments.ID, arguments.currentWorkingDirectory );
 
-			consoleLogger.info( '.');
-			consoleLogger.info( 'Installing package [#endpointData.ID#]' );
+			job.start(  'Installing package [#endpointData.ID#]', 5 );
 
 			var tmpPath = endpointData.endpoint.resolvePackage( endpointData.package, arguments.verbose );
 
@@ -103,11 +103,11 @@ component accessors="true" singleton {
 				var packageName = boxJSON.slug;
 				var version = boxJSON.version;
 			} else {
-				consoleLogger.error( "box.json is missing so this isn't really a package! I'll install it anyway, but I'm not happy about it" );
-				consoleLogger.warn( "I'm just guessing what the package name, version and type are.  Please ask the package owner to add a box.json." );
+				job.addErrorLog( "box.json is missing so this isn't really a package! I'll install it anyway, but I'm not happy about it" );
+				job.addWarnLog( "I'm just guessing what the package name, version and type are.  Please ask the package owner to add a box.json." );
 				var packageType = 'project';
 				if( defaultName.len() ) {
-					consoleLogger.warn( "Package name guessed to be [#defaultName#] from your box.json." );
+					job.addWarnLog( "Package name guessed to be [#defaultName#] from your box.json." );
 					var packageName = defaultName;
 				} else {
 					var packageName = endpointData.endpoint.getDefaultName( endpointData.package );
@@ -180,7 +180,8 @@ component accessors="true" singleton {
 							var candidateBoxJSON = readPackageDescriptor( candidateInstallPath );
 							// Does the package that we found satisfy what we need?
 							if( semanticVersion.satisfies( candidateBoxJSON.version, version ) ) {
-								consoleLogger.warn( '#packageName# (#version#) is already satisfied by #candidateInstallPath# (#candidateBoxJSON.version#).  Skipping installation.' );
+								job.addWarnLog( '#packageName# (#version#) is already satisfied by #candidateInstallPath# (#candidateBoxJSON.version#).  Skipping installation.' );
+								job.complete( verbose );
 								return true;
 							}
 						}
@@ -275,7 +276,7 @@ component accessors="true" singleton {
 					arguments.saveDev = false;
 					ignorePatterns.append( '/box.json' );
 					// Flag the shell to reload after this command is finished.
-					consoleLogger.warn( "Shell will be reloaded after installation." );
+					job.addWarnLog( "Shell will be reloaded after installation." );
 					shell.reload( false );
 				// If this is a module
 				} else if( packageType == 'modules' ) {
@@ -310,7 +311,7 @@ component accessors="true" singleton {
 					}
 
 					// Flag the shell to reload after this command is finished.
-					consoleLogger.warn( "Shell will be reloaded after installation." );
+					job.addWarnLog( "Shell will be reloaded after installation." );
 					shell.reload( false );
 				// If this is a plugin
 				} else if( packageType == 'plugins' ) {
@@ -363,7 +364,7 @@ component accessors="true" singleton {
 				// Add it!
 				if( addDependency( packagePathRequestingInstallation, packageName, version, installDirectory, artifactDescriptor.createPackageDirectory,  arguments.saveDev, endpointData ) ) {
 					// Tell the user...
-					consoleLogger.info( "#packagePathRequestingInstallation#/box.json updated with #( arguments.saveDev ? 'dev ': '' )#dependency." );	
+					job.addLog( "#packagePathRequestingInstallation#/box.json updated with #( arguments.saveDev ? 'dev ': '' )#dependency." );	
 				}
 			}
 
@@ -374,23 +375,24 @@ component accessors="true" singleton {
 				// Make sure the currently installed version is older than what's being requested.  If there's a new version, install it anyway.
 				var alreadyInstalledBoxJSON = readPackageDescriptor( installDirectory );
 				if( isPackage( installDirectory ) && semanticVersion.isNew( alreadyInstalledBoxJSON.version, version  )  ) {
-					consoleLogger.info( "Package already installed but its version [#alreadyInstalledBoxJSON.version#] is older than the new version being installed [#version#].  Forcing a reinstall." );
+					job.addLog( "Package already installed but its version [#alreadyInstalledBoxJSON.version#] is older than the new version being installed [#version#].  Forcing a reinstall." );
 					uninstallFirst = true;
 				// Allow if forced.
 				} else if( arguments.force ) {
-					consoleLogger.info( "Package already installed but you forced a reinstall." );
+					job.addLog( "Package already installed but you forced a reinstall." );
 					uninstallFirst = true;					
 				} else {
 					// cleanup tmp
 					if( endpointData.endpointName != 'folder' ) {
 						directoryDelete( tmpPath, true );
 					}
-					consoleLogger.warn( "The package #packageName# is already installed at #installDirectory#. Skipping installation. Use --force option to force install." );
+					job.addWarnLog( "The package #packageName# is already installed at #installDirectory#. Skipping installation. Use --force option to force install." );
+					job.complete( verbose );
 					return true;
 				}
 				
 				if( uninstallFirst ) {
-					consoleLogger.warn( "Uninstalling first to get a fresh slate..." );
+					job.addWarnLog( "Uninstalling first to get a fresh slate..." );
 					
 					var params = {
 						id : packageName,
@@ -449,31 +451,18 @@ component accessors="true" singleton {
 					directoryDelete( tmpPath, true );
 				}
 			} catch( any e ) {
-				consoleLogger.error( '#e.message##CR#The folder is possibly locked by another program.' );
+				job.addErrorLog( e.message );
+				job.addErrorLog( 'The folder is possibly locked by another program.' );
 				logger.error( '#e.message# #e.detail#' , e.stackTrace );
 			}
 
 
 			// Summary output
-			consoleLogger.info( "Installing to: #installDirectory#" );
-			consoleLogger.debug( "-> #results.copied.len()# File(s) Installed" );
+			job.addLog( "Installing to: #installDirectory#" );
+			job.addLog( "-> #results.copied.len()# File(s) Installed" );
+			job.addLog( "-> #results.ignored.len()# File(s) ignored" );
 
-			// Verbose info
-			if( arguments.verbose ){
-				for( var file in results.copied ) {
-					consoleLogger.debug( ".    #file#" );
-				}
-			}
-
-			// Ignored Summary
-			consoleLogger.debug( "-> #results.ignored.len()# File(s) ignored" );
-			if( arguments.verbose ){
-				for( var file in results.ignored ) {
-					consoleLogger.debug( ".    #file#" );
-				}
-			}
-
-			consoleLogger.info( "Eureka, '#arguments.ID#' has been installed!" );
+			job.addLog( "Eureka, '#arguments.ID#' has been installed!" );
 
 		// If no package ID was specified, just get the dependencies for the current directory
 		} else {
@@ -483,7 +472,7 @@ component accessors="true" singleton {
 
 			// By default, a general package install includes dev dependencies
 			arguments.production = arguments.production ?: false;
-
+			job.start( 'Installing ALL dependencies' );
 		}
 
 		// and grab all the dependencies
@@ -528,10 +517,11 @@ component accessors="true" singleton {
 		}
 
 		if( !len( arguments.ID ) && dependencies.isEmpty() ) {
-			consoleLogger.info( "No dependencies found to install, but it's the thought that counts, right?" );
+			job.addLog( "No dependencies found to install, but it's the thought that counts, right?" );
 		}
 
 		interceptorService.announceInterception( 'postInstall', { installArgs=arguments, installDirectory=installDirectory } );
+		job.complete( verbose );
 		return true;
 	}
 
@@ -586,16 +576,16 @@ component accessors="true" singleton {
 			required string currentWorkingDirectory,
 			string packagePathRequestingUninstallation = arguments.currentWorkingDirectory
 	){
+		var job = wirebox.getInstance( 'interactiveJob' );
 		var packageName = parseSlug( arguments.ID );
 
-		consoleLogger.info( '.');
-		consoleLogger.info( 'Uninstalling package: #packageName#');
+		job.start( 'Uninstalling package: #packageName#' );
 
 		var uninstallDirectory = '';
 
 		// If a directory is passed in, use it
 		if( structKeyExists( arguments, 'directory' ) ) {
-			var uninstallDirectory = arguments.directory
+			var uninstallDirectory = arguments.directory;
 		// Otherwise, are we a package
 		} else if( isPackage( arguments.currentWorkingDirectory ) ) {
 			// Read the box.json
@@ -635,7 +625,7 @@ component accessors="true" singleton {
 		if( !isPackageModule( type ) ) {
 
 			if( dependencies.count() ) {
-				consoleLogger.debug( "Uninstalling dependencies first..." );
+				job.addLog( "Uninstalling dependencies first..." );
 			}
 
 			// Loop over this packages dependencies
@@ -668,17 +658,18 @@ component accessors="true" singleton {
 			try {
 				directoryDelete( uninstallDirectory, true );
 			} catch( any e ) {
-				consoleLogger.error( '#e.message##CR#The folder is possibly locked by another program.' );
+				job.addLog( e.message );
+				job.addLog( 'The folder is possibly locked by another program.' );
 				logger.error( '#e.message# #e.detail#' , e.stackTrace );
 			}
 
-			consoleLogger.info( "'#packageName#' has been uninstalled" );
+			job.addLog( "'#packageName#' has been uninstalled" );
 
 		} else if( !len( uninstallDirectory ) ) {
-			consoleLogger.debug( "Package [#packageName#] skipped, it doesn't appear to be installed." );
+			job.addLog( "Package [#packageName#] skipped, it doesn't appear to be installed." );
 
 		} else {
-			consoleLogger.warn( 'Package [#uninstallDirectory#] not found.' );
+			job.addWarnLog( 'Package [#uninstallDirectory#] not found.' );
 		}
 
 
@@ -688,10 +679,11 @@ component accessors="true" singleton {
 			// Add it!
 			removeDependency( currentWorkingDirectory, packageName );
 			// Tell the user...
-			consoleLogger.info( "Dependency removed from box.json." );
+			job.addLog( "Dependency removed from box.json." );
 		}
 
 		interceptorService.announceInterception( 'postUninstall', { uninstallArgs=arguments } );
+		job.complete();
 	}
 
 	/**
