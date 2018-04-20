@@ -462,7 +462,7 @@ component accessors="true" singleton {
 			job.addLog( "-> #results.copied.len()# File(s) Installed" );
 			job.addLog( "-> #results.ignored.len()# File(s) ignored" );
 
-			job.addLog( "Eureka, '#arguments.ID#' has been installed!" );
+			job.addSuccessLog( "Eureka, '#arguments.ID#' has been installed!" );
 
 		// If no package ID was specified, just get the dependencies for the current directory
 		} else {

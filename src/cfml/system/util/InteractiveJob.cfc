@@ -50,8 +50,6 @@ component accessors=true singleton {
 		
 		display.resize( terminal.getHeight(), safeWidth );
 		
-		
-		
 		return this;
 	}
 	
@@ -66,20 +64,8 @@ component accessors=true singleton {
 			return;
 		}
 		
-		var lines = [
-			aStr.init( '' )			
-		];
-		// Output as many blank lines as there are lines of output
-		lines.append(
-			getCurrentJob().logLines
-				.map( function( line ) {
-					return aStr.init( '' );
-				} ),
-			true
-		);
-		
 		display.update(
-			lines,
+			[ aStr.init( ' ' ) ],
 			0
 		);
 		return this;
@@ -199,6 +185,7 @@ component accessors=true singleton {
 		clear();
 		// There are now no jobs here to see
 		setActive( false );
+		printBuffer.clear();
 		// Loop over and output each line for good
 		getLines( includeAllLogs=dumpLog ).each( function( line ) {
 			printBuffer.line( line.toAnsi() );

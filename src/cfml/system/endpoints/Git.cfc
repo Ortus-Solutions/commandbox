@@ -58,7 +58,7 @@ component accessors="true" implements="IEndpoint" singleton {
 		var Git = createObject( 'java', 'org.eclipse.jgit.api.Git' );
 
 		// Wrap up system out in a PrintWriter and create a progress monitor to track our clone
-		var printWriter = createObject( 'java', 'java.io.PrintWriter' ).init( system.out, true );
+		var printWriter = shell.getReader().getTerminal().writer();
 		var progressMonitor = createObject( 'java', 'org.eclipse.jgit.lib.TextProgressMonitor' ).init( printWriter );
 
 		// Temporary location to place the repo
