@@ -56,6 +56,29 @@ component accessors="true" singleton="true" {
 	public function installAdobe( required destination, required version, required struct serverInfo, required string serverHomeDirectory ) {
 		var installDetails = installEngineArchive( 'adobe@#version#', destination, serverInfo, serverHomeDirectory );
 
+		// Fix Adobe's broken default /CFIDE mapping
+		var runtimeConfigPath = installDetails.installDir & "/WEB-INF/cfusion/lib/neo-runtime.xml";
+		var CFIDEPath = installDetails.installDir & "/CFIDE";
+		if ( fileExists( runtimeConfigPath ) ) {
+			
+			var runtimeConfigDoc = XMLParse( runtimeConfigPath );
+			// Looking for a <string> tag whose sibling is a <var> tag with a "name" attribute of "/CFIDE".
+			var results = xmlSearch( runtimeConfigDoc, "//struct/var[@name='/CFIDE']/string" );
+			// If we found a node in the XML
+			if( results.len() 
+				// And it is blank
+				&& !len( results[ 1 ].XMLText )
+				// OR points to a nonexistent directory that is not what we think it should be.
+				|| ( !directoryExists( results[ 1 ].XMLText ) 
+					&& results[ 1 ].XMLText != CFIDEPath ) ) {
+					
+				// Here you go, sir.
+				results[ 1 ].XMLText = CFIDEPath;
+				// Write it back out.
+				writeXMLFile( runtimeConfigDoc, runtimeConfigPath );
+			}
+		}
+
 		return installDetails;
 	}
 
@@ -329,14 +352,18 @@ component accessors="true" singleton="true" {
 			initParam.XmlChildren[2].XmlText = serverInfo.serverConfigDir;
 			arrayInsertAt(servlets[1].XmlParent.XmlChildren,4,initParam);
 		}
-
+		writeXMLFile( XMLDoc, destination );
+		return true;
+	}
+	
+	private function writeXMLFile( XMLDoc, path ) {
 		var xlt = '<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
 		<xsl:output method="xml" encoding="utf-8" indent="yes" xslt:indent-amount="2" xmlns:xslt="http://xml.apache.org/xslt" />
 		<xsl:strip-space elements="*"/>
 		<xsl:template match="node() | @*"><xsl:copy><xsl:apply-templates select="node() | @*" /></xsl:copy></xsl:template>
 		</xsl:stylesheet>';
-		fileWrite( destination, toString( XmlTransform( webXML, xlt) ) );
-		return true;
+		
+		fileWrite( path, toString( XmlTransform( XMLDoc, xlt) ) );		
 	}
 
 }
