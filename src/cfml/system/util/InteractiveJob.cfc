@@ -31,7 +31,7 @@ component accessors=true singleton {
 	function onDIComplete() {
 		terminal = shell.getReader().getTerminal();
 		display = createObject( 'java', 'org.jline.utils.Display' ).init( terminal, false );
-		
+		safeWidth = 80;
 		reset();
 	}
 	
@@ -41,7 +41,17 @@ component accessors=true singleton {
 	function reset() {
 		jobs = [];
 		setActive( false );
-		display.resize( terminal.getHeight(), terminal.getWidth() );
+		
+		if( terminal.getWidth() == 0 ) {
+			safeWidth=80;
+		} else {
+			safeWidth=terminal.getWidth();
+		}
+		
+		display.resize( terminal.getHeight(), safeWidth );
+		
+		
+		
 		return this;
 	}
 	
@@ -254,7 +264,7 @@ component accessors=true singleton {
 		
 		if( job.status == 'Running' || includeAllLogs ) {
 		
-			lines.append( aStr.fromAnsi( print.text( '   |' & repeatString( '-', min( job.name.len()+15, terminal.getWidth()-5 ) ), statusColor( job ) ) ) );
+			lines.append( aStr.fromAnsi( print.text( '   |' & repeatString( '-', min( job.name.len()+15, safeWidth-5 ) ), statusColor( job ) ) ) );
 		
 			var relevantLogLines = [];
 			var thisLogLines = job.logLines;
@@ -282,7 +292,7 @@ component accessors=true singleton {
 			
 			// Only print divider if we had at least one log message above
 			if( atLeastOne ) {
-				lines.append( aStr.init( print.text( '   |' & repeatString( '-', min( job.name.len()+15, terminal.getWidth()-5 ) ), statusColor( job ) ) ) );	
+				lines.append( aStr.init( print.text( '   |' & repeatString( '-', min( job.name.len()+15, safeWidth-5 ) ), statusColor( job ) ) ) );	
 			}
 			
 		} // End is job running
