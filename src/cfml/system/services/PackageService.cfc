@@ -78,6 +78,7 @@ component accessors="true" singleton {
 			string packagePathRequestingInstallation = arguments.currentWorkingDirectory,
 			string defaultName=''
 	){
+		var shellWillReload = false;
 		var job = wirebox.getInstance( 'interactiveJob' );
 		interceptorService.announceInterception( 'preInstall', { installArgs=arguments, packagePathRequestingInstallation=packagePathRequestingInstallation } );
 
@@ -278,6 +279,7 @@ component accessors="true" singleton {
 					// Flag the shell to reload after this command is finished.
 					job.addWarnLog( "Shell will be reloaded after installation." );
 					shell.reload( false );
+					shellWillReload = true;
 				// If this is a module
 				} else if( packageType == 'modules' ) {
 					installDirectory = arguments.packagePathRequestingInstallation & '/modules';
@@ -313,6 +315,7 @@ component accessors="true" singleton {
 					// Flag the shell to reload after this command is finished.
 					job.addWarnLog( "Shell will be reloaded after installation." );
 					shell.reload( false );
+					shellWillReload = true;
 				// If this is a plugin
 				} else if( packageType == 'plugins' ) {
 					installDirectory = arguments.packagePathRequestingInstallation & '/plugins';
@@ -522,6 +525,10 @@ component accessors="true" singleton {
 
 		interceptorService.announceInterception( 'postInstall', { installArgs=arguments, installDirectory=installDirectory } );
 		job.complete( verbose );
+		if( shellWillReload ) {
+			consoleLogger.warn( '.' );
+			consoleLogger.warn( 'Please sit tight while your shell reloads...' );
+		}
 		return true;
 	}
 
