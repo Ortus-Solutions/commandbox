@@ -139,7 +139,7 @@ component accessors="true" singleton="true" {
 				// If ForgeBox is down, don't rain on people's parade.
 				try {
 					var satisfyingVersion = endpoint.findSatisfyingVersion( endpoint.parseSlug( arguments.ID ), version ).version;
-					job.addInfoLog( "OK, [#engineName# #satisfyingVersion#] it is!");
+					job.addLog( "OK, [#engineName# #satisfyingVersion#] it is!");
 				} catch( any var e ) {
 
 					job.addErrorLog( "Aww man,  ForgeBox isn't feeling well.");
