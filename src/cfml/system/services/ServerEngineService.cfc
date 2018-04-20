@@ -1,4 +1,4 @@
-/**
+5/**
 *********************************************************************************
 * Copyright Since 2005 ColdBox Platform by Ortus Solutions, Corp
 * www.coldbox.org | www.ortussolutions.com
@@ -352,7 +352,7 @@ component accessors="true" singleton="true" {
 			initParam.XmlChildren[2].XmlText = serverInfo.serverConfigDir;
 			arrayInsertAt(servlets[1].XmlParent.XmlChildren,4,initParam);
 		}
-		writeXMLFile( XMLDoc, destination );
+		writeXMLFile( webXML, destination );
 		return true;
 	}
 	
