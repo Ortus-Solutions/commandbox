@@ -79,30 +79,38 @@ component aliases="ls,ll,directory" {
 		} else {
 			var ext = name.listLast( '.' );
 			if( name.startsWith( '.' ) ) { ext = 'hidden'; }
+			
 			switch( ext ) {
-		    case "exe": case "jar": case "com": case "bat": case "msi": case "zip": case "lar": case "lco": case "tar": case "class": case "dll": case "war":  case "eot":  case "svg":  case "ttf":  case "woff":  case "woff2": 
-				print.AquaLine( name );
-		         break;
-		    case "cfml": case "cfm": case "cfc": case "html": case "htm":  case "js":  case "css":  case "java": case "boxr": case "sh": case "sql": 
-				print.CyanLine( name );
-		         break;
-		    case "gif": case "jpg": case "bmp": case "jpeg": case "png": case "ico": 
-				print.YellowLine( name );
-		         break;
-		    case "js": case "css": case "less": case "sass":    
-				print.OliveLine( name );
-		         break;
-		    case "json": case "txt": case "properties": case "yml": case "yaml": case "xml": case "xsd": case "log": case "ini": 
-				print.LimeLine( name );
-		         break;
-		    case "pdf": case "doc": case "docx": case "xls":  case "csv":  case "md": case "ppt": case "pptx": case "xlsx": case "odp": case "ods": case "rtf": 
-				print.RedLine( name );
-		         break;
-		    case "hidden": 
-				print.MaroonLine( name );
-		         break;
-		    default: 
-				print.Line( name );
+				// Binary/exuctable
+			    case "exe": case "jar": case "com": case "bat": case "msi": case "zip": case "lar": case "lco": case "tar": case "class": case "dll": case "war":  case "eot":  case "svg":  case "ttf":  case "woff":  case "woff2": 
+					print.AquaLine( name );
+			         break;
+		        // Code
+			    case "cfml": case "cfm": case "cfc": case "html": case "htm":  case "js":  case "css":  case "java": case "boxr": case "sh": case "sql": 
+					print.CyanLine( name );
+			         break;
+		       // Images
+			    case "gif": case "jpg": case "bmp": case "jpeg": case "png": case "ico": 
+					print.YellowLine( name );
+			         break;
+			    // Design/browser assets
+			    case "js": case "css": case "less": case "sass":    
+					print.OliveLine( name );
+			         break;
+			    // Plain text/data
+			    case "json": case "txt": case "properties": case "yml": case "yaml": case "xml": case "xsd": case "log": case "ini": 
+					print.LimeLine( name );
+			         break;
+			    // Documents
+			    case "pdf": case "doc": case "docx": case "xls":  case "csv":  case "md": case "ppt": case "pptx": case "xlsx": case "odp": case "ods": case "rtf": 
+					print.RedLine( name );
+			         break;
+			    // Hidden files
+			    case "hidden": 
+					print.MaroonLine( name );
+			         break;
+			    default: 
+					print.Line( name );
 			}
 			
 		}
