@@ -82,15 +82,15 @@ component aliases="ls,ll,directory" {
 			
 			switch( ext ) {
 				// Binary/exuctable
-			    case "exe": case "jar": case "com": case "bat": case "msi":  case "lar": case "lco": case "class": case "dll": case "war":  case "eot":  case "svg":  case "ttf":  case "woff":  case "woff2": 
+			    case "exe": case "jar": case "com": case "bat": case "msi": case "lar": case "lco": case "class": case "dll": case "war": case "eot": case "svg": case "ttf": case "woff": case "woff2": 
 					print.AquaLine( name );
 			         break;
 			    // Compressed
-			    case "zip":  case "tar":  case "gz": 
+			    case "zip": case "tar": case "gz": 
 					print.Gold3Line( name );
-			         break;
+			         break;     
 		        // Code
-			    case "cfml": case "cfm": case "cfc": case "html": case "htm":  case "js":  case "css":  case "java": case "boxr": case "sh": case "sql": 
+			    case "cfml": case "cfm": case "cfc": case "html": case "htm": case "js": case "css": case "java": case "boxr": case "sh": case "sql": 
 					print.CyanLine( name );
 			         break;
 		       // Images
@@ -106,7 +106,7 @@ component aliases="ls,ll,directory" {
 					print.LimeLine( name );
 			         break;
 			    // Documents
-			    case "pdf": case "doc": case "docx": case "xls":  case "csv":  case "md": case "ppt": case "pptx": case "xlsx": case "odp": case "ods": case "rtf": 
+			    case "pdf": case "doc": case "docx": case "xls": case "csv": case "md": case "ppt": case "pptx": case "xlsx": case "odp": case "ods": case "rtf": 
 					print.RedLine( name );
 			         break;
 			    // Hidden files
