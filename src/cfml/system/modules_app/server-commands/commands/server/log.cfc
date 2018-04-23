@@ -8,7 +8,8 @@
  **/
 component {
 
-	property name="serverService" inject="ServerService";
+	property name="serverService"	inject="ServerService";
+	property name="printUtil"		inject="print";
 
 	/**
 	 * Show server log
@@ -58,7 +59,12 @@ component {
 					.flags( 'follow' )
 					.run();
 			} else {
-				return fileRead( logfile );
+				return fileRead( logfile )
+					.listToArray( chr( 13 ) & chr( 10 ) )
+					.map( function( line ) {
+						return cleanLine( line );
+					} )
+					.toList( chr( 10 ) );
 			}
 
 		} else {
@@ -73,6 +79,39 @@ component {
 
 	function serverNameComplete() {
 		return serverService.getServerNames();
+	}
+
+	private function cleanLine( line ) {
+		
+		// Log messages from the CF engine or app code writing direclty to std/err out strip off "runwar.context" but leave color coded severity
+		// Ex:
+		// [INFO ] runwar.context: 04/11 15:47:10 INFO Starting Flex 1.5 CF Edition
+		line = reReplaceNoCase( line, '^(\[[^]]*])( runwar\.context: )(.*)', '\1 \3' );
+		
+		// Log messages from runwar itself, simplify the logging category to just "Runwar:" and leave color coded severity
+		// Ex:
+		// [DEBUG] runwar.config: Enabling Proxy Peer Address handling
+		// [DEBUG] runwar.server: Starting open browser action
+		line = reReplaceNoCase( line, '^(\[[^]]*])( runwar\.[^:]*: )(.*)', '\1 Runwar: \3' );
+		
+		if( line.startsWith( '[INFO ]' ) ) {
+			return reReplaceNoCase( line, '^(\[INFO ] )(.*)', '[#printUtil.boldCyan('INFO ')#] \2' );
+		}
+
+		if( line.startsWith( '[ERROR]' ) ) {
+			return reReplaceNoCase( line, '^(\[ERROR] )(.*)', '[#printUtil.boldMaroon('ERROR')#] \2' );
+		}
+
+		if( line.startsWith( '[DEBUG]' ) ) {
+			return reReplaceNoCase( line, '^(\[DEBUG] )(.*)', '[#printUtil.boldOlive('DEBUG')#] \2' );
+		}
+
+		if( line.startsWith( '[WARN ]' ) ) {
+			return reReplaceNoCase( line, '^(\[WARN ] )(.*)', '[#printUtil.boldYellow('WARN ')#] \2' );
+		}
+
+		return line;
+
 	}
 
 }
