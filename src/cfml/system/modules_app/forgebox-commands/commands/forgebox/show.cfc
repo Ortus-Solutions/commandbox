@@ -158,7 +158,10 @@ component aliases="show" {
 					.line( 'Summary: #entryData.summary#' )
 					.text( 'Versions: ' );
 
-				var prevMajor = val( entryData.versions[ 1 ].version.listGetAt( 1, '.' ) );
+				var prevMajor = 0;
+				if( entryData.versions.len() ) {
+					prevMajor = val( entryData.versions[ 1 ].version.listGetAt( 1, '.' ) );
+				}
 				var majorCount = 0;
 				var versionLine = '';
 				var lines = 0;

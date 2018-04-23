@@ -44,6 +44,10 @@ component aliases="about" {
 			.line( '                   Stare at it and diverge your eyes (the opposite of crossing them)' )
 			.line( '                             If you can''t see it, you can come back later.' )
 			.line( '                This image will be here all day.  Tomorrow holds a new day and a new iamge.' )
+			.line()
+			.line()
+			.line()
+			.line()
 			.line();
 
 		var art = getArt()
