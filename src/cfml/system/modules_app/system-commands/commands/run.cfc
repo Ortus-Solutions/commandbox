@@ -102,6 +102,9 @@ component{
 				}
 			} 
 			
+			// make sure it's dead
+			process.waitFor();
+
 			// Get the exit code
 			exitCode = process.exitValue();
 		
