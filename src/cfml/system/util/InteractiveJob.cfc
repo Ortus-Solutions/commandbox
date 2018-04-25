@@ -246,7 +246,7 @@ component accessors=true singleton {
 		
 		// Add error message if it exists
 		if( job.errorMessage.len() ) {
-			lines.append( aStr.init( print.redText( '   | > ' & job.errorMessage ) ) );
+			lines.append( aStr.fromAnsi( print.redText( '   | > ' & job.errorMessage ) ) );
 		}
 		
 		if( job.status == 'Running' || includeAllLogs ) {
@@ -279,7 +279,7 @@ component accessors=true singleton {
 			
 			// Only print divider if we had at least one log message above
 			if( atLeastOne ) {
-				lines.append( aStr.init( print.text( '   |' & repeatString( '-', min( job.name.len()+15, safeWidth-5 ) ), statusColor( job ) ) ) );	
+				lines.append( aStr.fromAnsi( print.text( '   |' & repeatString( '-', min( job.name.len()+15, safeWidth-5 ) ), statusColor( job ) ) ) );	
 			}
 			
 		} // End is job running
