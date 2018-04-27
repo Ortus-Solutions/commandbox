@@ -879,10 +879,10 @@ component accessors="true" singleton {
 	*/
 	private struct function createCommandData( required fullCFCPath, required commandName ){	
 		// Get from cache or produce on demand
-		commandMD = metadataCache.getOrSet(
+		var commandMD = metadataCache.getOrSet(
 			fullCFCPath,
 			function() {
-				return getComponentMetadata( fullCFCPath );
+				return wirebox.getUtil().getInheritedMetaData( fullCFCPath );
 			}
 		);
 		
