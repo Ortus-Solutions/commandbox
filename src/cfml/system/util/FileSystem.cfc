@@ -281,7 +281,7 @@ component accessors="true" singleton {
 		}
     	
     	// *nix needs to include first folder due to Lucee bug.
-    	// So /usr/brad/foo.cfc because /usr
+    	// So /usr/brad/foo.cfc becomes /usr
     	if( !isWindows() ) {
 	    	var firstFolder = listFirst( arguments.absolutePath, '/' );
 	    	var path = listRest( arguments.absolutePath, '/' );

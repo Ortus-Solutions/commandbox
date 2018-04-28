@@ -269,7 +269,7 @@ public class LoaderCLIMain{
     		String CFML = "mappings = getApplicationSettings().mappings; \n"
     	    		+ " mappings[ '/__commandbox_root/' ] = '" + webroot + "'; \n"
     	            + " application mappings='#mappings#' action='update'; \n"
-            		+ " include '/__commandbox_root" + bootstrap + "'; \n";
+            		+ " include '/__commandbox_root" + bootstrap.replace( "'", "''" ) + "'; \n";
 
 			if( debug ) {
 				printStream.println( "" );
