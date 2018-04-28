@@ -798,6 +798,8 @@ component accessors="true" singleton {
 			}
 		}
 
+		var job = wirebox.getInstance( 'interactiveJob' );
+
 		// We get to output the results ourselves
 		if( !isNull( result ) && !isSimpleValue( result ) ){
 			if( isArray( result ) ){
@@ -806,14 +808,22 @@ component accessors="true" singleton {
 			result = variables.formatterUtil.formatJson( serializeJSON( result ) );
 			printString( result );
 		} else if( !isNull( result ) && len( result ) ) {
-			printString( result );
-			// If the command output text that didn't end with a line break one, add one
-			var lastChar = mid( result, len( result ), 1 );
-			if( ! ( lastChar == chr( 10 ) || lastChar == chr( 13 ) ) ) {
-				variables.reader.getTerminal().writer().println();
+			// If there is an active job, print our output through it
+			if( job.getActive() ) {
+				job.addLog( result )
+			} else {
+				printString( result );
+				
+				// If the command output text that didn't end with a line break one, add one
+				var lastChar = mid( result, len( result ), 1 );
+				if( ! ( lastChar == chr( 10 ) || lastChar == chr( 13 ) ) ) {
+					variables.reader.getTerminal().writer().println();
+				}
 			}
 		} else {
-			variables.reader.getTerminal().writer().println();
+			if( !job.getActive() ) {
+				variables.reader.getTerminal().writer().println();
+			}
 		}
 
 		return '';
