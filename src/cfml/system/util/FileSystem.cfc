@@ -267,6 +267,8 @@ component accessors="true" singleton {
     	// If one of the folders has a period, we've got to do something special.
     	// C:/users/brad.development/foo.cfc turns into /C__users_brad_development/foo.cfc
     	if( getDirectoryFromPath( arguments.absolutePath ) contains '.' ) {
+			var leadingSlash = arguments.absolutePath.startsWith( '/' );
+			var UNC = arguments.absolutePath.startsWith( '\\' );
     		var mappingPath = getDirectoryFromPath( arguments.absolutePath );
     		mappingPath = mappingPath.replace( '\', '/', 'all' );
     		mappingPath = mappingPath.listChangeDelims( '/', '/' );
@@ -276,8 +278,19 @@ component accessors="true" singleton {
     		mappingName = mappingName.replace( '/', '_', 'all' );
     		mappingName = '/' & mappingName;
 
-    		createMapping( mappingName, mappingPath );
-    		return mappingName & '/' & getFileFromPath( arguments.absolutePath );
+			// *nix needs this
+			if( leadingSlash ) {
+				mappingPath = '/' & mappingPath;
+			}
+
+			// UNC network paths
+			if( UNC ) {	
+				var mapping = locateUNCMapping( mappingPath );
+				return mapping & '/' & getFileFromPath( arguments.absolutePath );
+			} else {
+				createMapping( mappingName, mappingPath );
+				return mappingName & '/' & getFileFromPath( arguments.absolutePath );
+			}
 		}
     	
     	// *nix needs to include first folder due to Lucee bug.
@@ -341,7 +354,7 @@ component accessors="true" singleton {
     * Creates the mapping if it doesn't exist
     */
     string function locateUNCMapping( required string UNCShare  ) {
-    	var mappingName = '/' & arguments.UNCShare.replace( '/', '_' ) & '_UNC';
+    	var mappingName = '/' & arguments.UNCShare.replace( '/', '_' ).replace( '.', '_', 'all' ) & '_UNC';
     	var mappingPath = '\\' & arguments.UNCShare & '/';
     	createMapping( mappingName, mappingPath );
    		return mappingName;
