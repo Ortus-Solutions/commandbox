@@ -31,6 +31,7 @@ component singleton{
 
 		// Hit this if by adding -clidebug to the box binary.
 		// $> box -clidebug
+		// Do not be alarmed by errors regarding loading signal handlers from JLine. It just means your terminal doesn't support them.
 		if( systemSettings.getSystemProperty( 'cfml.cli.debug', false ) ) {
 			// This will make the underlying JLine logger sing... 
 			var LevelClass = createObject( 'java', 'java.util.logging.Level');
@@ -124,10 +125,11 @@ component singleton{
 						var instant = createObject( 'java', 'java.time.Instant' );
 						// Add epoch milis and a colon to each line
 						fileContentsArray = fileContentsArray.map( function( line ) {
-							return instant.now().toEpochMilli() & ':' & line;
+																			// Jline 3 escapes backslash
+							return instant.now().toEpochMilli() & ':' & line.replace( '\', '\\', 'all' );
 						} );
 						// Write the new file back out
-						fileWrite( historyFile, fileContentsArray.toList( chr( 10 ) ) );
+						fileWrite( historyFile, fileContentsArray.toList( chr( 10 ) ) & chr( 10 ) );
 					}
 				}
 			
