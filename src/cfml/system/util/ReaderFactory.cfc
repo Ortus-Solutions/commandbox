@@ -28,6 +28,22 @@ component singleton{
 	*/
 	function getInstance( inStream, outputStream ) {
 		var reader = "";
+
+		// Hit this if by adding -clidebug to the box binary.
+		// $> box -clidebug
+		if( systemSettings.getSystemProperty( 'cfml.cli.debug', false ) ) {
+			// This will make the underlying JLine logger sing... 
+			var LevelClass = createObject( 'java', 'java.util.logging.Level');
+			var consoleHandler = createObject( 'java', 'java.util.logging.ConsoleHandler' );
+			consoleHandler.setLevel( LevelClass.FINEST );
+			consoleHandler.setFormatter( createObject( 'java', 'java.util.logging.SimpleFormatter' ) );		
+			var jlineLogger = createObject( 'java', 'java.util.logging.Logger').getLogger("org.jline");
+	        jlineLogger.setLevel( LevelClass.FINEST );
+	        jlineLogger.addHandler( consoleHandler );
+	        // And this will make the JNA lib chirp
+			systemSettings.setSystemProperty( 'jna.debug_load', true );
+		}
+        
 		
 		// Before we laod JLine, auto-convert any legacy history files.  JLine isn't smart enough to use them
 		upgradeHistoryFile( commandHistoryFile );
@@ -42,6 +58,10 @@ component singleton{
 		}
 		// The JANSI lib will pick this up and use it
 		systemSettings.setSystemProperty( 'library.jansi.path', JANSI_path );
+		// And JNA will pick this up. 
+		// https://java-native-access.github.io/jna/4.2.1/com/sun/jna/Native.html#getTempDir--
+		systemSettings.setSystemProperty( 'jna.tmpdir', JANSI_path );
+		
 		
 		// Creating static references to these so we can get at nested classes and their properties
 		var LineReaderClass = createObject( "java", "org.jline.reader.LineReader" );

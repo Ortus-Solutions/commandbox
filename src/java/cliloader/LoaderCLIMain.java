@@ -511,6 +511,8 @@ public class LoaderCLIMain{
 			listRemoveContaining( cliArguments, "-clidebug" );
 			arguments = removeElement( arguments, "-clidebug" );
 		}
+
+		System.setProperty( "cfml.cli.debug", debug.toString() );
 		try {
 			props.load( ClassLoader
 					.getSystemResourceAsStream( "cliloader/cli.properties" ) );

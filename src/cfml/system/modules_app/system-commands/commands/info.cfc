@@ -43,7 +43,7 @@ component aliases="about" {
 			.line( '                                  Here is an ASCII art stereogram.' )
 			.line( '                   Stare at it and diverge your eyes (the opposite of crossing them)' )
 			.line( '                             If you can''t see it, you can come back later.' )
-			.line( '                This image will be here all day.  Tomorrow holds a new day and a new iamge.' )
+			.line( '                This image will be here all day.  Tomorrow holds a new day and a new image.' )
 			.line()
 			.line()
 			.line()
