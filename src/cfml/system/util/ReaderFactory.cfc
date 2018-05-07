@@ -34,11 +34,11 @@ component singleton{
 		// Do not be alarmed by errors regarding loading signal handlers from JLine. It just means your terminal doesn't support them.
 		if( systemSettings.getSystemProperty( 'cfml.cli.debug', false ) ) {
 			// This will make the underlying JLine logger sing... 
-			var LevelClass = createObject( 'java', 'java.util.logging.Level');
+			var LevelClass = createObject( 'java', 'java.util.logging.Level' );
 			var consoleHandler = createObject( 'java', 'java.util.logging.ConsoleHandler' );
 			consoleHandler.setLevel( LevelClass.FINEST );
 			consoleHandler.setFormatter( createObject( 'java', 'java.util.logging.SimpleFormatter' ) );		
-			var jlineLogger = createObject( 'java', 'java.util.logging.Logger').getLogger("org.jline");
+			var jlineLogger = createObject( 'java', 'java.util.logging.Logger' ).getLogger( 'org.jline' );
 	        jlineLogger.setLevel( LevelClass.FINEST );
 	        jlineLogger.addHandler( consoleHandler );
 	        // And this will make the JNA lib chirp

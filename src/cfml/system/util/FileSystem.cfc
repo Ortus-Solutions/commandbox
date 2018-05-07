@@ -40,7 +40,7 @@ component accessors="true" singleton {
 		// The Java class will strip trailing slashses, but these are meaningful in globbing patterns
 		var trailingSlash = ( path.len() > 1 && ( path.endsWith( '/' ) || path.endsWith( '\' ) ) );
 		// java will remove trailing periods when canonicalizing a path.  I'm not sure that's correct.
-		var trailingPeriod = ( path.len() > 1 && path.endsWith( '.' ) );
+		var trailingPeriod = ( path.len() > 1 && path.endsWith( '.' ) && !path.endsWith( '..' ) );
 		
 		// Load our path into a Java file object so we can use some of its nice utility methods
 		var oPath = createObject( 'java', 'java.io.File' ).init( path );
