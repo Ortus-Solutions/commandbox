@@ -1560,7 +1560,15 @@ component accessors="true" singleton {
 	 * @serverInfo.hint Struct of server information
  	 **/
 	function isServerRunning( required struct serverInfo ){
-		return !isPortAvailable( serverInfo.host, serverInfo.stopSocket );
+		var portToCheck = serverInfo.stopSocket;
+		if( serverInfo.HTTPEnable ) {
+			portToCheck = serverInfo.port;
+		} else if( serverInfo.SSLEnable ) {
+			portToCheck = serverInfo.SSLPort;
+		} else if( serverInfo.AJPEnable ) {
+			portToCheck = serverInfo.AJPPort;
+		} 
+		return !isPortAvailable( serverInfo.host, portToCheck );
 	}
 
 	/**
