@@ -364,6 +364,11 @@ component accessors="true" singleton {
 		
 		
 		try {
+			// Next 3 lines required for this to work on *nix
+			attr = terminal.enterRawMode();
+			terminal.puts( capability.keypad_xmit, [] );
+			terminal.flush();
+			
 			var binding = bindingReader.readBinding( keys );
 			
 		} catch (any e) {
@@ -371,6 +376,13 @@ component accessors="true" singleton {
 				throw( message='CANCELLED', type="UserInterruptException");
 			}
 			rethrow;
+		} finally {
+			// Undo the rawmode stuff above
+			if( !isNull( attr ) ) {
+				terminal.setAttributes( attr );	
+			}
+			terminal.puts( capability.keypad_local, [] );
+			terminal.flush();	
 		}
 		
 		if( binding == 'self-insert' ) {

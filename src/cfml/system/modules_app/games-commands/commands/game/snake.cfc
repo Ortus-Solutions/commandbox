@@ -45,10 +45,10 @@ component aliases="snake" {
 	
 		
 		variables.gameHeader = [
-			aStr.init( '╔═════════════════════════════════════════════════════╗' ), 
-			aStr.init( '║                   ' & p.boldGreen( 'CommandBox Snake' ) & '                  ║' ),
-			aStr.init( '║                     by Brad Wood                    ║░' ),
-			aStr.init( '╠═════════════════════════════════════════════════════╣░' )
+			aStr.fromAnsi( '╔═════════════════════════════════════════════════════╗' ), 
+			aStr.fromAnsi( '║                   ' & p.boldGreen( 'CommandBox Snake' ) & '                  ║' ),
+			aStr.fromAnsi( '║                     by Brad Wood                    ║░' ),
+			aStr.fromAnsi( '╠═════════════════════════════════════════════════════╣░' )
 		];
 		
 		// Initialize an array with an index for each row
@@ -64,13 +64,13 @@ component aliases="snake" {
 		}
 		
 		variables.gameFooter = [
-			aStr.init( '╠═════════════════════════════════════════════════════╣░' ),
-			aStr.init( '║                                                     ║░' ),
-			aStr.init( '║     Use arrow keys to move up/down/left/right       ║░' ),
-			aStr.init( '║                                                     ║░' ),
-			aStr.init( '║                   Press ' & p.bold( 'Q' ) & ' to quit                   ║░' ),
-			aStr.init( '╚═════════════════════════════════════════════════════╝░' ),
-			aStr.init( ' ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░' )
+			aStr.fromAnsi( '╠═════════════════════════════════════════════════════╣░' ),
+			aStr.fromAnsi( '║                                                     ║░' ),
+			aStr.fromAnsi( '║     Use arrow keys to move up/down/left/right       ║░' ),
+			aStr.fromAnsi( '║                                                     ║░' ),
+			aStr.fromAnsi( '║                   Press ' & p.bold( 'Q' ) & ' to quit                   ║░' ),
+			aStr.fromAnsi( '╚═════════════════════════════════════════════════════╝░' ),
+			aStr.fromAnsi( ' ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░' )
 		];
 		
 		
