@@ -28,6 +28,8 @@ component accessors="true" singleton {
         variables.StandardOpenOption = createObject( "java", "java.nio.file.StandardOpenOption" );
         variables.FileChannel = createObject( "java", "java.nio.channels.FileChannel" );
         variables.ByteBuffer = createObject( "java", "java.nio.ByteBuffer" );
+        variables.CharBuffer = createObject( "java", "java.nio.CharBuffer" );
+        variables.String = createObject( "java", "java.lang.String" );
 		
 		return this;
 	}
@@ -476,8 +478,11 @@ component accessors="true" singleton {
 				// Use a reader to collect the characters into a string builder
 				var sb = createObject( "java", "java.lang.StringBuilder" ).init();
 				var reader = Channels.newReader( fch, 'UTF-8' );
-				while( ( var char = reader.read() ) != -1 ) {
-					sb.append( chr( char ) );
+				var cb = CharBuffer.allocate( 8192 );
+				while( ( var size = reader.read( cb ) ) != -1 ) {
+					cb.flip();
+					sb.append( cb );
+					cb.clear();
 				}
 		        
 		    // This stuff always gotta' run.
