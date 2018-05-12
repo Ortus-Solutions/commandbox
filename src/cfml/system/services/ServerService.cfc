@@ -1606,9 +1606,7 @@ component accessors="true" singleton {
 	 * Create initial server JSON
  	 **/
 	function initServers(){
-		lock name="serverservice.serverconfig" type="exclusive" throwOnTimeout="true" timeout="10"{
-			fileWrite( serverConfig, '{}' );
-		}
+		fileSystemUtil.lockingFileWrite( serverConfig, '{}' );
 	}
 
 	/**
@@ -1616,9 +1614,7 @@ component accessors="true" singleton {
 	 * @servers.hint struct of serverInfos
  	 **/
 	ServerService function setServers( required Struct servers ){
-		lock name="serverservice.serverconfig" type="exclusive" throwOnTimeout="true" timeout="10"{
-			fileWrite( serverConfig, formatterUtil.formatJson( serializeJSON( servers ) ) );
-		}
+		fileSystemUtil.lockingfileWrite( serverConfig, formatterUtil.formatJson( serializeJSON( servers ) ) );
 		return this;
 	}
 
@@ -1627,46 +1623,44 @@ component accessors="true" singleton {
  	**/
 	struct function getServers() {
 		if( fileExists( variables.serverConfig ) ){
-			lock name="serverservice.serverconfig" type="readOnly" throwOnTimeout="true" timeout="10"{
-				var results = deserializeJSON( fileRead( variables.serverConfig ) );
-				var updateRequired = false;
-				var serverKeys = results.keyArray();
+			var results = deserializeJSON( fileSystemUtil.lockingfileRead( variables.serverConfig ) );
+			var updateRequired = false;
+			var serverKeys = results.keyArray();
 
-				// Loop over each server for some housekeeping
-				for( var thisKey in serverKeys ){
-					// This server may have gotten deleted already based on the cleanup below.
-					if( !results.keyExists( thisKey ) ) {
-						continue;
-					}
-					var thisServer = results[ thisKey ];
-					// Backwards compat-- add in server id if it doesn't exist for older versions of CommandBox
-					if( isNull( thisServer.id ) ){
-						var normalizedWebroot = normalizeWebroot( thisServer.webroot );
-						thisServer.id = hash( normalizedWebroot & ucase( thisServer.name ) );
-						updateRequired = true;
-					}
-
-					// Try and clean up orphaned server names that were missing the slash on the path and
-					// ended up with a different hash.
-					// I really have no idea how this happens. I can't repro it on-demand.
-					for( var orphanKey in results ){
-						var orphan = results[ orphanKey ];
-						// If this is another server with the same name and the same webroot but without a trailing slash...
-						if( orphan.id != thisServer.id
-							&& orphan.name == thisServer.name
-							&& ( thisServer.webroot.endsWith( '\' ) || thisServer.webroot.endsWith( '/' ) )
-							&& ( !orphan.webroot.endsWith( '\' ) || !orphan.webroot.endsWith( '/' ) )
-							&& ( orphan.webroot & '\' == thisServer.webroot || orphan.webroot & '/' == thisServer.webroot ) ) {
-								// ...kill it dead.
-								results.delete( orphanKey );
-								updateRequired = true;
-							}
-					}
-
-					// Future-proof server info by guaranteeing that all properties will exist in the
-					// server object as long as they are defined in the newServerInfoStruct() method.
-					thisServer.append( newServerInfoStruct(), false );
+			// Loop over each server for some housekeeping
+			for( var thisKey in serverKeys ){
+				// This server may have gotten deleted already based on the cleanup below.
+				if( !results.keyExists( thisKey ) ) {
+					continue;
 				}
+				var thisServer = results[ thisKey ];
+				// Backwards compat-- add in server id if it doesn't exist for older versions of CommandBox
+				if( isNull( thisServer.id ) ){
+					var normalizedWebroot = normalizeWebroot( thisServer.webroot );
+					thisServer.id = hash( normalizedWebroot & ucase( thisServer.name ) );
+					updateRequired = true;
+				}
+
+				// Try and clean up orphaned server names that were missing the slash on the path and
+				// ended up with a different hash.
+				// I really have no idea how this happens. I can't repro it on-demand.
+				for( var orphanKey in results ){
+					var orphan = results[ orphanKey ];
+					// If this is another server with the same name and the same webroot but without a trailing slash...
+					if( orphan.id != thisServer.id
+						&& orphan.name == thisServer.name
+						&& ( thisServer.webroot.endsWith( '\' ) || thisServer.webroot.endsWith( '/' ) )
+						&& ( !orphan.webroot.endsWith( '\' ) || !orphan.webroot.endsWith( '/' ) )
+						&& ( orphan.webroot & '\' == thisServer.webroot || orphan.webroot & '/' == thisServer.webroot ) ) {
+							// ...kill it dead.
+							results.delete( orphanKey );
+							updateRequired = true;
+						}
+				}
+
+				// Future-proof server info by guaranteeing that all properties will exist in the
+				// server object as long as they are defined in the newServerInfoStruct() method.
+				thisServer.append( newServerInfoStruct(), false );
 			}
 			// If any server didn't have an ID, go ahead and save it now
 			if( updateRequired ){ setServers( results ); }

@@ -23,6 +23,12 @@ component accessors="true" singleton {
 	function init() {
 		variables.os = createObject( "java", "java.lang.System" ).getProperty( "os.name" ).toLowerCase();
 		variables.userHome = createObject( 'java', 'java.lang.System' ).getProperty( 'user.home' );
+		
+        variables.Channels = createObject( "java", "java.nio.channels.Channels" );
+        variables.StandardOpenOption = createObject( "java", "java.nio.file.StandardOpenOption" );
+        variables.FileChannel = createObject( "java", "java.nio.channels.FileChannel" );
+        variables.ByteBuffer = createObject( "java", "java.nio.ByteBuffer" );
+		
 		return this;
 	}
 
@@ -451,6 +457,74 @@ component accessors="true" singleton {
 			coreClassLoader = createObject( 'java', 'cliloader.LoaderCLIMain' ).getClassLoader();
 		}
 		return coreClassLoader;		
+	}
+	
+	/*
+	* Read a file while locking the file system
+	*/
+	function lockingFileRead( required string path ) {
+		// CFLock to prevent two threads on the same JVM from trying to lock the same file. 
+		// That will throw an overlappinglock exception since the file lock is JVM-wide
+		lock name=path type="exclusive" {
+			try {
+		        var file = createObject( "java", "java.io.File" ).init( path );		
+				var fch=FileChannel.open( file.toPath(), [ StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.READ ] );
+		
+		        // This method blocks until it can retrieve the lock.
+		        var fileLock = fch.lock();
+		
+				// Use a reader to collect the characters into a string builder
+				var sb = createObject( "java", "java.lang.StringBuilder" ).init();
+				var reader = Channels.newReader( fch, 'UTF-8' );
+				while( ( var char = reader.read() ) != -1 ) {
+					sb.append( chr( char ) );
+				}
+		        
+		    // This stuff always gotta' run.
+			} finally {
+		        if( !isNull( fileLock ) && fileLock.isValid() ) {
+		            fileLock.release();
+		        }
+		
+		        if( !isNull( fch ) ) {
+		        	fch.close();
+		        }			
+			}	
+		}
+		return sb.toString();
+		
+	}
+	
+	/*
+	* write a file while locking the file system
+	*/
+	function lockingFileWrite( required string path, required string contents ) {
+		// CFLock to prevent two threads on the same JVM from trying to lock the same file. 
+		// That will throw an overlappinglock exception since the file lock is JVM-wide
+		lock name=path type="exclusive" {
+			try {
+				
+		        var file = createObject( "java", "java.io.File" ).init( path );		
+				var fch=FileChannel.open( file.toPath(), [ StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.READ ] );
+		
+		        // This method blocks until it can retrieve the lock.
+		        var fileLock = fch.lock();
+		
+		        fch.write( ByteBuffer.wrap( contents.getBytes() ) );
+		        // Trim off any excess
+		        fch.truncate( fch.position() );
+		        
+		    // This stuff always gotta' run.
+			} finally {
+		        if( !isNull( fileLock ) && fileLock.isValid() ) {
+		            fileLock.release();
+		        }
+		
+		        if( !isNull( fch ) ) {
+		        	fch.close();
+		        }			
+			}	
+		}
 	}
 
 }
