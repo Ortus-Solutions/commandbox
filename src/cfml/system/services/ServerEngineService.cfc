@@ -245,6 +245,13 @@ component accessors="true" singleton="true" {
 
 			job.addLog( "WAR/zip archive already installed.");
 
+			// For existing engines, grab the version from the engine tag file.
+			// This is important so non-forgebox-sourced engines don't revert to stupid names without versions
+			if( previousEngineTag.listLen( '@' ) > 1 ) {
+				installDetails.engineName = previousEngineTag.listFirst( '@' );
+				installDetails.version = previousEngineTag.listLast( '@' );
+			}
+
 			return installDetails;
 		}
 
