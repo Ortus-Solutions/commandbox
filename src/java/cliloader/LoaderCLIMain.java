@@ -277,8 +277,18 @@ public class LoaderCLIMain{
 				printStream.println( "" );
 			}
 
-    		// Kick off the box bootstrap
-            engine.eval( CFML );
+			try {
+				
+	    		// Kick off the box bootstrap
+	            engine.eval( CFML );
+	            
+			} catch( javax.script.ScriptException e ) {
+				if( e.getCause() != null && e.getCause().getClass().getName() == "lucee.runtime.exp.Abort"  ) {
+					// Just a CFAbort, nothing to do here
+				} else {
+					throw( e );
+				}
+			}
             
 		} catch ( Exception e ) {
 			exitCode = 1;
