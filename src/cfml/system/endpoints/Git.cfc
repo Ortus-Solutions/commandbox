@@ -70,7 +70,8 @@ component accessors="true" implements="IEndpoint" singleton {
 
 		try {
 			job.clear();
-			consoleLogger.debug( '.' );
+			// Manually give us some space before our Git Clone
+			shell.printString( chr( 10 ) );
 			
 			// Clone the repo locally into a temp folder
 			var cloneCommand = Git.cloneRepository()
@@ -84,7 +85,7 @@ component accessors="true" implements="IEndpoint" singleton {
 		    // call with our special java wrapper
 			local.result = CommandCaller.call( command );
 
-			consoleLogger.debug( '.' );
+			shell.printString( chr( 10 ) );
 			job.draw();
 			
 			// Get a list of all branches
