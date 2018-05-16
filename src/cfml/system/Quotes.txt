@@ -139,3 +139,4 @@ Skip "Are you sure?" prompts in most commands with the "--force" flag
 Premature cleverness is the root of all evil
 You can create ad-hoc aliases for common commands or sets of commands
 A unicorn smiles each time someone downloads commandbox-bullet-train
+CommandBox makes you feel like a wizard.
