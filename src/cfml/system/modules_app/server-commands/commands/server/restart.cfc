@@ -26,7 +26,8 @@ component aliases="restart" {
 		string directory,
 		String serverConfigFile,
 		boolean force=false,
-		boolean openBrowser=false
+		boolean openBrowser=false,
+		boolean debug=false
 	){
 		if( !isNull( arguments.directory ) ) {
 			arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
@@ -43,7 +44,7 @@ component aliases="restart" {
 		}
 
 		var stopCommand = "server stop '#serverInfo.name#'";
-		var startCommand = "server start name='#serverInfo.name#' openBrowser=#arguments.openBrowser# --!saveSettings";
+		var startCommand = "server start name='#serverInfo.name#' openBrowser=#arguments.openBrowser# debug=#arguments.debug# --!saveSettings";
 
 		// stop server
 		print.boldCyanLine( "Trying to stop server..." );
