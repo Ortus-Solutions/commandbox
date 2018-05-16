@@ -1,4 +1,4 @@
-5/**
+/**
 *********************************************************************************
 * Copyright Since 2005 ColdBox Platform by Ortus Solutions, Corp
 * www.coldbox.org | www.ortussolutions.com
@@ -274,6 +274,17 @@ component accessors="true" singleton="true" {
 
 		if( !packageService.installPackage( ID=arguments.ID, directory=thisTempDir, save=false ) ) {
 			throw( message='Server not installed.', type="commandException");
+		}
+		
+		// Extract engine name and version from the package.  This is required for non-ForgeBox endpoints 
+		// since we don't know it until we actualy do the installation
+		if( packageService.isPackage( thisTempDir ) ) {
+			var boxJSON = packageService.readPackageDescriptor( thisTempDir );
+			// This ensure the CommandBox server will pick up the correct metadata
+			installDetails.version = boxJSON.version;
+			installDetails.engineName = boxJSON.slug;
+			// This file is so we know the correct version of our server on disk
+			thisEngineTag = boxJSON.slug & '@' & boxJSON.version;			
 		}
 
 		// Look for a war or zip archive inside the package
