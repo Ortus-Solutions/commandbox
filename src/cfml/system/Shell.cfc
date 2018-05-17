@@ -864,7 +864,12 @@ component accessors="true" singleton {
 		variables.reader.getTerminal().writer().println();
 
 		if( structKeyExists( arguments.err, 'detail' ) ) {
-			variables.reader.getTerminal().writer().print( variables.print.boldRedText( variables.formatterUtil.HTML2ANSI( arguments.err.detail ) ) );
+			// If there's a tag context, this is likely a Lucee error and therefore has HTML in the detail
+			if( structKeyExists( arguments.err, 'tagcontext' ) ) {
+				variables.reader.getTerminal().writer().print( variables.print.boldRedText( variables.formatterUtil.HTML2ANSI( arguments.err.detail ) ) );	
+			} else {
+				variables.reader.getTerminal().writer().print( variables.print.boldRedText( arguments.err.detail ) );				
+			}
 			variables.reader.getTerminal().writer().println();
 		}
 		if( structKeyExists( arguments.err, 'tagcontext' ) ){
