@@ -12,14 +12,17 @@ component aliases="about" {
 
 		var width = 100;
 
-		shellVersion = shell.getVersion();
-		CFMLEngine = server.coldfusion.productName;
+		var shellVersion = shell.getVersion();
+		var CFMLEngine = server.coldfusion.productName;
 		if( structKeyExists( server, CFMLEngine ) ) {
-			CFMLVersion = '#server[ CFMLEngine ].version# #server[ CFMLEngine ].state# (#server[ CFMLEngine ].versionName#)';
+			var CFMLVersion = '#server[ CFMLEngine ].version# #server[ CFMLEngine ].state# (#server[ CFMLEngine ].versionName#)';
 		} else {
-			CFMLVersion = server.coldfusion.productVersion;
+			var CFMLVersion = server.coldfusion.productVersion;
 		}
-		javaVersion = '#server.java.version# (#server.java.vendor#)';
+		var javaVersion = '#server.java.version# (#server.java.vendor#)';
+		var commandboxHome = expandpath( '/commandbox-home' );
+		var binaryPath = getSystemSetting( 'java.class.path', 'Unkonwn' );
+		var userName = getSystemSetting( 'user.name', 'Unkonwn' );
 
 		print.line();
 		print.greenLine( '****************************************************************************************************' );
@@ -29,10 +32,13 @@ component aliases="about" {
 		print.greenLine( '****************************************************************************************************' );
 		print.greenLine( '*                                                                                                  *' );
 		print.greenLine( '*                                                                                                  *' );
-		print.green( '*' ); print.cyan( '  CommandBox Version: ' ); print.white( '#shellVersion##repeatString( ' ', width - 24 - len( shellVersion ) )#' );	print.greenLine( '*' );
-		print.green( '*' ); print.cyan( '  CFML Engine:        ' ); print.white( '#CFMLEngine##repeatString( ' ', width - 24 - len( CFMLEngine ) )#' );		print.greenLine( '*' );
-		print.green( '*' ); print.cyan( '  CFML Version:       ' ); print.white( '#CFMLVersion##repeatString( ' ', width - 24 - len( CFMLVersion ) )#' );	print.greenLine( '*' );
-		print.green( '*' ); print.cyan( '  Java Version:       ' ); print.white( '#javaVersion##repeatString( ' ', width - 24 - len( javaVersion ) )#' );	print.greenLine( '*' );
+		print.green( '*' ); print.cyan( '  CommandBox Version: ' ); print.white( '#shellVersion##repeatString( ' ', max( 0, width - 24 - len( shellVersion ) ) )#' );	print.greenLine( '*' );
+		print.green( '*' ); print.cyan( '  CFML Engine:        ' ); print.white( '#CFMLEngine##repeatString( ' ', max( 0, width - 24 - len( CFMLEngine ) ) )#' );		print.greenLine( '*' );
+		print.green( '*' ); print.cyan( '  CFML Version:       ' ); print.white( '#CFMLVersion##repeatString( ' ', max( 0, width - 24 - len( CFMLVersion ) ) )#' );	print.greenLine( '*' );
+		print.green( '*' ); print.cyan( '  Java Version:       ' ); print.white( '#javaVersion##repeatString( ' ', max( 0, width - 24 - len( javaVersion ) ) )#' );	print.greenLine( '*' );
+		print.green( '*' ); print.cyan( '  CommandBox Home     ' ); print.white( '#commandboxHome##repeatString( ' ', max( 0, width - 24 - len( commandboxHome ) ) )#' );	print.greenLine( '*' );
+		print.green( '*' ); print.cyan( '  Binary              ' ); print.white( '#binaryPath##repeatString( ' ', max( 0, width - 24 - len( binaryPath ) ) )#' );	print.greenLine( '*' );
+		print.green( '*' ); print.cyan( '  Username            ' ); print.white( '#userName##repeatString( ' ', max( 0, width - 24 - len( userName ) ) )#' );	print.greenLine( '*' );
 		print.green( '*' ); print.cyan( '  Authors:            ' ); print.white( 'Brad Wood, Luis Majano, Denny Valiant                                       ' );	print.greenLine( '*' );
 		print.greenLine( '*                                                                                                  *' );
 		print.greenLine( '*                                                                                                  *' );
