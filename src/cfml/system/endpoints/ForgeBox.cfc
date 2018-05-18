@@ -249,7 +249,7 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 			for( var ext in [ '', '.txt', '.md' ] ) {
 				// Case insensitive search for file name
 				var files = directoryList( path=arguments.path, filter=function( path ){ return path contains ( item.file & ext); } );0
-				if( arrayLen( files ) ) {
+				if( arrayLen( files ) && fileExists( files[ 1 ] ) ) {
 					// If found, read in the first one found.
 					props[ item.variable ] = fileRead( files[ 1 ] );
 					props[ item.variable & 'Format' ] = ( ext == '.md' ? 'md' : 'text' );
