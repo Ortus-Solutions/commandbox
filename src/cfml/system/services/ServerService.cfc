@@ -1110,11 +1110,6 @@ component accessors="true" singleton {
 		serverInfo.status = "starting";
 		setServerInfo( serverInfo );
 
-	    if( serverInfo.debug ) {
-			var cleanedArgs = cr & '    ' & trim( reReplaceNoCase( args.toList( ' ' ), ' (-|"-)', cr & '    \1', 'all' ) );
-			job.addLog("Server start command: #serverInfo.javaHome# #cleanedargs#");
-	    }
-
 	    // needs to be unique in each run to avoid errors
 		var threadName = 'server#hash( serverInfo.webroot )##createUUID()#';
 		// Construct a new process object
@@ -1133,6 +1128,11 @@ component accessors="true" singleton {
 	    	args.prepend( expandPath( '/server-commands/bin/server_spawner.sh' ) );
 	    	// Pass script directly to bash so I don't have to worry about it being executable
 			args.prepend( expandPath( '/bin/bash' ) );
+	    }
+
+	    if( serverInfo.debug ) {
+			var cleanedArgs = cr & '    ' & trim( reReplaceNoCase( args.toList( ' ' ), ' (-|"-)', cr & '    \1', 'all' ) );
+			job.addLog("Server start command: #cleanedargs#");
 	    }
 	    
 	    processBuilder.init( args );

@@ -14,7 +14,7 @@ shift
 
 # Pass all remaining args through to "nohup" which will make the server process ignore
 # 'hangup' signals so it stays running and it not part of the thread group that the CLI is in.
-nohup $* > "$log_file" 2>&1 &
+nohup "$@" > "$log_file" 2>&1 &
 
 # Grab the PID of our server (last backgrounded job)
 p_name=$!
