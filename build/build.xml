@@ -434,8 +434,8 @@ External Dependencies:
 			<element name="args" optional="true" />
 			<sequential>
 				<echo message="git @{command}" />
-				<exec executable="sudo" dir="@{dir}" failonerror="true">
-					<arg value="git" />
+				<exec executable="git" dir="@{dir}" failonerror="true">
+					<!--<arg value="git" />-->
 					<arg value="@{command}" />
 					<args/>
 				</exec>
@@ -448,13 +448,14 @@ External Dependencies:
 			</args>
 		</git>
 
-		<!-- Ensure write perms -->
+		<!-- Ensure write perms 
 		<exec executable="sudo" dir="${dist.dir}" failonerror="true">
 			<arg value="chmod" />
 			<arg value="-R" />
 			<arg value="777" />
 			<arg value="./homebrew-boxtap" />
-		</exec>
+		</exec>-->
+		<chmod file="${dist.dir}/homebrew-boxtap" perm="777" type="both" />
 
 		<copy file="${dist.dir}/commandbox.rb"
 			  tofile="${dist.dir}/homebrew-boxtap/commandbox.rb"
@@ -480,13 +481,14 @@ External Dependencies:
 
 		<git command="push" dir="${dist.dir}/homebrew-boxtap" />
 
-		<!-- Ensure perms allow us to delete since GIT is runing as sudo-er -->
+		<!-- Ensure perms allow us to delete since GIT is runing as sudo-er
 		<exec executable="sudo" dir="${dist.dir}" failonerror="true">
 			<arg value="chmod" />
 			<arg value="-R" />
 			<arg value="777" />
 			<arg value="./homebrew-boxtap" />
-		</exec>
+		</exec> -->
+		<chmod file="${dist.dir}/homebrew-boxtap" perm="777" type="both" />
 
 		<delete dir="${dist.dir}/homebrew-boxtap"/>
 
