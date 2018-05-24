@@ -22,6 +22,7 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 	property name="fileSystemUtil"		inject="FileSystem";
 	property name="fileEndpoint"		inject="commandbox.system.endpoints.File";
 	property name='pathPatternMatcher' 	inject='provider:pathPatternMatcher@globber';
+	property name='wirebox'				inject='wirebox';
 
 	// Properties
 	property name="namePrefixes" type="string";
@@ -40,13 +41,14 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 	 * @verbose Verbose flag or silent, defaults to false
 	 */
 	public string function resolvePackage( required string package, boolean verbose=false ) {
+		var job = wirebox.getInstance( 'interactiveJob' );
 		var slug 	= parseSlug( arguments.package );
 		var version = parseVersion( arguments.package );
 		var strVersion = semanticVersion.parseVersion( version );
 
 		// If we have a specific version and it exists in artifacts and this isn't a snapshot build, use it.  Otherwise, to ForgeBox!!
 		if( semanticVersion.isExactVersion( version ) && artifactService.artifactExists( slug, version ) && strVersion.preReleaseID != 'snapshot' ) {
-			consoleLogger.info( "Package found in local artifacts!");
+			job.addLog( "Package found in local artifacts!");
 			// Install the package
 			var thisArtifactPath = artifactService.getArtifactPath( slug, version );
 			// Defer to file endpoint
@@ -78,9 +80,9 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 		var slug 			= parseSlug( arguments.package );
 		var boxJSONversion 	= parseVersion( arguments.package );
 		var result 			= {
-								isOutdated 	= false,
-								version 	= ''
-							  };
+            isOutdated 	= false,
+            version 	= boxJSONversion
+        };
 
 		// Only bother checking if we have a version range.  If an exact version is stored in
 		// box.json, we're never going to update it anyway.
@@ -247,7 +249,7 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 			for( var ext in [ '', '.txt', '.md' ] ) {
 				// Case insensitive search for file name
 				var files = directoryList( path=arguments.path, filter=function( path ){ return path contains ( item.file & ext); } );0
-				if( arrayLen( files ) ) {
+				if( arrayLen( files ) && fileExists( files[ 1 ] ) ) {
 					// If found, read in the first one found.
 					props[ item.variable ] = fileRead( files[ 1 ] );
 					props[ item.variable & 'Format' ] = ( ext == '.md' ? 'md' : 'text' );
@@ -318,8 +320,19 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 			throw( e.message, 'endpointException', e.detail );
 		}
 
+		// If this is an exact version (not a range) just do a simple lookup for it
+		if( semanticVersion.isExactVersion( version, true ) ) {
+			for( var thisVer in arguments.entryData.versions ) {
+				if( semanticVersion.isEQ( version, thisVer.version, true ) ) {
+					return thisVer;
+				}
+			}			
+			throw( 'Exact version [#arguments.version#] not found for package [#arguments.slug#].', 'endpointException', 'Available versions are [#arguments.entryData.versions.map( function( i ){ return ' ' & i.version; } ).toList()#]' );
+		}
+ 
+ 		// For version ranges, do a smart lookup
 		arguments.entryData.versions.sort( function( a, b ) { return semanticVersion.compare( b.version, a.version ) } );
-
+		
 		var found = false;
 		for( var thisVersion in arguments.entryData.versions ) {
 			if( semanticVersion.satisfies( thisVersion.version, arguments.version ) ) {
@@ -340,7 +353,7 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 	* @package The full endpointID like foo@1.0.0
 	*/
 	public function parseSlug( required string package ) {
-		var matches = REFindNoCase( "^((?:@[\w\-]+\/)?[\w\-]+)(?:@(.+))?", package, 1, true );
+		var matches = REFindNoCase( "^([a-zA-Z][\w\-\.]*(?:\@(?!stable\b)(?!be\b)[a-zA-Z][\w\-]*)?)(?:\@(.+))?$", package, 1, true );
 		if ( arrayLen( matches.len ) < 2 ) {
 			throw(
 				type = "endpointException",
@@ -357,7 +370,7 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 	public function parseVersion( required string package ) {
 		var version = 'stable';
 		// foo@1.0.0
-		var matches = REFindNoCase( "^((?:@[\w\-]+\/)?[\w\-]+)(?:@(.+))?", package, 1, true );
+		var matches = REFindNoCase( "^([a-zA-Z][\w\-\.]*(?:\@(?!stable\b)(?!be\b)[a-zA-Z][\w\-]*)?)(?:\@(.+))?$", package, 1, true );
 		if ( matches.pos.len() >= 3 && matches.pos[ 3 ] != 0 ) {
 			// Note this can also be a semver range like 1.2.x, >2.0.0, or 1.0.4-2.x
 			// For now I'm assuming it's a specific version
@@ -376,18 +389,14 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 	 * @verbose Verbose flag or silent, defaults to false
 	 */
 	private function getPackage( slug, version, verbose=false ) {
+		var job = wirebox.getInstance( 'interactiveJob' );
 		var APIToken = configService.getSetting( 'endpoints.forgebox.APIToken', '' );
 
 		try {
 			// Info
-			consoleLogger.warn( "Verifying package '#slug#' in ForgeBox, please wait..." );
+			job.addLog( "Verifying package '#slug#' in ForgeBox, please wait..." );
 
 			var entryData = forgebox.getEntry( slug, APIToken );
-
-			// Verbose info
-			if( arguments.verbose ){
-				consoleLogger.debug( "Package data retrieved: ", entryData );
-			}
 
 			// entrylink,createdate,lname,isactive,installinstructions,typename,version,hits,coldboxversion,sourceurl,slug,homeurl,typeslug,
 			// downloads,entryid,fname,changelog,updatedate,downloadurl,title,entryrating,summary,username,description,email
@@ -404,18 +413,19 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 				throw( 'No download URL provided in ForgeBox.  Manual install only.', 'endpointException' );
 			}
 
-			consoleLogger.info( "Installing version [#arguments.version#]." );
+			job.addLog( "Installing version [#arguments.version#]." );
 
 			try {
 				forgeBox.recordInstall( arguments.slug, arguments.version, APIToken );
 			} catch( forgebox var e ) {
-				consoleLogger.warn( e.message & CR & e.detail );
+				job.addLog( e.message );
+				job.addLog( e.detail );
 			}
 
 			var packageType = entryData.typeSlug;
 
 			// Advice we found it
-			consoleLogger.info( "Verified entry in ForgeBox: '#slug#'" );
+			job.addLog( "Verified entry in ForgeBox: '#slug#'" );
 
 			var strVersion = semanticVersion.parseVersion( version );
 
@@ -425,13 +435,13 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 					downloadURL = forgebox.getStorageLocation(
 						slug, arguments.version, APIToken
 					);
-					consoleLogger.info( "Downloading entry from ForgeBox Pro" );
+					job.addLog( "Downloading entry from ForgeBox Pro" );
 				}
 
 				// Test package location to see what endpoint we can refer to.
 				var endpointData = endpointService.resolveEndpoint( downloadURL, 'fakePath', arguments.slug, arguments.version );
 
-				consoleLogger.info( "Deferring to [#endpointData.endpointName#] endpoint for ForgeBox entry [#slug#]..." );
+				job.addLog( "Deferring to [#endpointData.endpointName#] endpoint for ForgeBox entry [#slug#]..." );
 
 				var packagePath = endpointData.endpoint.resolvePackage( endpointData.package, arguments.verbose );
 
@@ -442,17 +452,17 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 				if( !structKeyExists( boxJSON, 'version' ) || !len( boxJSON.version ) ) { boxJSON.version = version; }
 				packageService.writePackageDescriptor( boxJSON, packagePath );
 
-				consoleLogger.info( "Storing download in artifact cache..." );
+				job.addLog( "Storing download in artifact cache..." );
 
 				// Store it locally in the artfact cache
 				artifactService.createArtifact( slug, version, packagePath );
 
-				consoleLogger.info( "Done." );
+				job.addLog( "Done." );
 
 				return packagePath;
 
 			} else {
-				consoleLogger.info( "Package found in local artifacts!");
+				job.addLog( "Package found in local artifacts!");
 				var thisArtifactPath = artifactService.getArtifactPath( slug, version );
 				// Defer to file endpoint
 				return fileEndpoint.resolvePackage( thisArtifactPath, arguments.verbose );
@@ -461,18 +471,17 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 
 		} catch( forgebox var e ) {
 
-			consoleLogger.error( ".");
-			consoleLogger.error( "Aww man,  ForgeBox isn't feeling well.");
-			consoleLogger.debug( "#e.message#  #e.detail#");
-			consoleLogger.error( "We're going to look in your local artifacts cache and see if one of those versions will work.");
+			job.addErrorLog( "Aww man,  ForgeBox isn't feeling well.");
+			job.addLog( "#e.message#  #e.detail#");
+			job.addErrorLog( "We're going to look in your local artifacts cache and see if one of those versions will work.");
 
 			// See if there's something usable in the artifacts cache.  If so, we'll use that version.
 			var satisfyingVersion = artifactService.findSatisfyingVersion( slug, version );
 
 			if( len( satisfyingVersion ) ) {
-				consoleLogger.info( ".");
-				consoleLogger.info( "Sweet! We found a local version of [#satisfyingVersion#] that we can use in your artifacts.");
-				consoleLogger.info( ".");
+				job.addLog( "" );
+				job.addLog( "Sweet! We found a local version of [#satisfyingVersion#] that we can use in your artifacts.");
+				job.addLog( "" );
 
 				var thisArtifactPath = artifactService.getArtifactPath( slug, satisfyingVersion );
 				// Defer to file endpoint

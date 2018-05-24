@@ -133,10 +133,11 @@ component accessors="true" singleton {
 				'host' : d.web.host ?: '127.0.0.1',
 				'directoryBrowsing' : d.web.directoryBrowsing ?: true,
 				'webroot' : d.web.webroot ?: '',
-				// Duplicate so onServerStart interceptors don't actually change config settings via refernce.
+				// Duplicate so onServerStart interceptors don't actually change config settings via reference.
 				'aliases' : duplicate( d.web.aliases ?: {} ),
-				// Duplicate so onServerStart interceptors don't actually change config settings via refernce.
+				// Duplicate so onServerStart interceptors don't actually change config settings via reference.
 				'errorPages' : duplicate( d.web.errorPages ?: {} ),
+				'accessLogEnable' : d.web.accessLogEnable ?: false,
 				'welcomeFiles' : d.web.welcomeFiles ?: '',
 				'HTTP' : {
 					'port' : d.web.http.port ?: 0,
@@ -155,6 +156,7 @@ component accessors="true" singleton {
 				},
 				'rewrites' : {
 					'enable' : d.web.rewrites.enable ?: false,
+					'logEnable' : d.web.rewrites.logEnable ?: false,
 					'config' : d.web.rewrites.config ?: variables.rewritesDefaultConfig,
 					'statusPath' : d.web.rewrites.statusPath ?: '',
 					'configReloadSeconds' : d.web.rewrites.configReloadSeconds ?: ''
@@ -174,7 +176,9 @@ component accessors="true" singleton {
 				'WARPath' : d.app.WARPath ?: '',
 				'cfengine' : d.app.cfengine ?: '',
 				'restMappings' : d.app.cfengine ?: '',
-				'serverHomeDirectory' : d.app.serverHomeDirectory ?: ''
+				'serverHomeDirectory' : d.app.serverHomeDirectory ?: '',
+				'sessionCookieSecure' : d.app.sessionCookieSecure ?: false,
+				'sessionCookieHTTPOnly' : d.app.sessionCookieHTTPOnly ?: false
 			},
 			'runwar' : {
 				'args' : d.runwar.args ?: ''
@@ -190,6 +194,9 @@ component accessors="true" singleton {
 	function start(
 		Struct serverProps
 	){
+		
+		var job = wirebox.getInstance( 'interactiveJob' );
+		job.start( 'Starting Server', 10 );
 
 		// Resolve path as used locally
 		if( !isNull( serverProps.directory ) ) {
@@ -251,21 +258,45 @@ component accessors="true" singleton {
 
 		// If the server is already running, make sure the user really wants to do this.
 		if( isServerRunning( serverInfo ) && !(serverProps.force ?: false ) ) {
-			consoleLogger.error( '.' );
-			consoleLogger.error( 'Server "#serverInfo.name#" (#serverInfo.webroot#) is already running!' );
-			consoleLogger.error( 'Overwriting a running server means you won''t be able to use the "stop" command to stop the original one.' );
-			consoleLogger.warn( 'Use the --force parameter to skip this check.' );
-			consoleLogger.error( '.' );
-			// Collect a new name
-			var newName = shell.ask( 'Provide a unique "name" for this server (leave blank to keep starting as-is): ' );
-			// If a name is provided, start over.  Otherwise, just keep starting.
-			// The recursive call here will subject their answer to the same check until they provide a name that hasn't been used for this folder.
-			if( len( newName ) ) {
-				serverProps.name = newName;
-				//copy the orig server's server.json file to the new file so it starts with the same properties as the original. lots of alternative ways to do this but the file copy works and is simple
-				file action='copy' source="#defaultServerConfigFile#" destination=fileSystemUtil.resolvePath( serverProps.directory ?: '' ) & "/server-#serverProps.name#.json" mode ='777';
-				return start( serverProps );
+			job.addErrorLog( 'Server "#serverInfo.name#" (#serverInfo.webroot#) is already running!' );
+			job.addErrorLog( 'Overwriting a running server means you won''t be able to use the "stop" command to stop the original one.' );
+			job.addWarnLog( 'Use the --force parameter to skip this check.' );
+			// Ask the user what they want to do
+			var action = wirebox.getInstance( 'multiselect' )
+				.setQuestion( 'What would you like to do? ' )
+				.setOptions( [
+					{ display : 'Provide a new name for this server (recommended)', value : 'newName', accessKey='N', selected=true },
+					{ display : 'Just keep starting this new server and overwrite the old, running one.', value : 'overwrite', accessKey='o' },
+					{ display : 'Stop and do not start a server right now.', value : 'stop', accessKey='s' }
+				] )
+				.setRequired( true )
+				.ask();
+
+			if( action == 'stop' ) {
+				job.error( 'Aborting...' );
+				return;
+			} else if( action == 'newname' ) {
+				job.clear();
+				// Collect a new name
+				var newName = shell.ask( 'Provide a new unique "name" for this server: ' );
+				job.draw();
+				// If a name is provided, start over.  Otherwise, just keep starting.
+				// The recursive call here will subject their answer to the same check until they provide a name that hasn't been used for this folder.
+				if( len( newName ) ) {
+					job.error( 'Server name [#serverInfo.name#] in use, trying a new one.' );
+					serverProps.name = newName;
+					var newServerJSONFile = fileSystemUtil.resolvePath( serverProps.directory ?: '' ) & "/server-#serverProps.name#.json";
+					// copy the orig server's server.json file to the new file so it starts with the same properties as the original. lots of alternative ways to do this but the file copy works and is simple
+					if( fileExists( defaultServerConfigFile ) && newServerJSONFile != defaultServerConfigFile ) {					
+						file action='copy' source="#defaultServerConfigFile#" destination="#newServerJSONFile#" mode ='777';	
+					}
+					return start( serverProps );
+				}
+					
+			} else {
+				job.addWarnLog( 'Overwriting previous server [#serverInfo.name#].' );
 			}
+			
 		}
 
 		// *************************************************************************************
@@ -298,7 +329,11 @@ component accessors="true" singleton {
 			if( isNull( serverProps[ prop ] ) || listFindNoCase( 'saveSettings,serverConfigFile,debug,force,console,trace', prop ) ) {
 				continue;
 			}
-	    	var configPath = replace( fileSystemUtil.resolvePath( defaultServerConfigFileDirectory ), '\', '/', 'all' ) & '/';
+	    	var configPath = replace( fileSystemUtil.resolvePath( defaultServerConfigFileDirectory ), '\', '/', 'all' );
+	    	// Ensure trailing slash
+	    	if( !configPath.endsWith( '/' ) ) {
+	    		configPath &= '/';
+	    	}
 			// Only need switch cases for properties that are nested or use different name
 			switch(prop) {
 			    case "port":
@@ -481,7 +516,7 @@ component accessors="true" singleton {
 
 		// Double check that the port in the user params or server.json isn't in use
 		if( !isPortAvailable( serverInfo.host, serverInfo.port ) ) {
-			consoleLogger.error( "." );
+			job.addErrorLog( "" );
 			var badPortlocation = 'config';
 			if( serverProps.keyExists( 'port' ) ) {
 				badPortlocation = 'start params';
@@ -490,20 +525,9 @@ component accessors="true" singleton {
 			} else {
 				badPortlocation = 'config server defaults';
 			}
-			consoleLogger.error( "You asked for port [#( serverProps.port ?: serverJSON.web.http.port ?: defaults.web.http.port ?: '?' )#] in your #badPortlocation# but it's already in use so I'm ignoring it and choosing a random one for you." );
-			consoleLogger.error( "." );
+			job.addErrorLog( "You asked for port [#( serverProps.port ?: serverJSON.web.http.port ?: defaults.web.http.port ?: '?' )#] in your #badPortlocation# but it's already in use so I'm ignoring it and choosing a random one for you." );
+			job.addErrorLog( "" );
 			serverInfo.port = getRandomPort( serverInfo.host );
-		}
-
-		// If there's no open URL, let's create a complete one
-		if( !serverInfo.openbrowserURL.len() ) {
-			serverInfo.openbrowserURL = serverInfo.SSLEnable ? 'https://#serverInfo.host#:#serverInfo.SSLPort#' : 'http://#serverInfo.host#:#serverInfo.port#';
-		// Partial URL like /admin/login.cm
-		} else if ( left( serverInfo.openbrowserURL, 4 ) != 'http' ) {
-			if( !serverInfo.openbrowserURL.startsWith( '/' ) ) {
-				serverInfo.openbrowserURL = '/' & serverInfo.openbrowserURL;
-			}
-			serverInfo.openbrowserURL = ( serverInfo.SSLEnable ? 'https://#serverInfo.host#:#serverInfo.SSLPort#' : 'http://#serverInfo.host#:#serverInfo.port#' ) & serverInfo.openbrowserURL;
 		}
 
 		serverInfo.stopsocket		= serverProps.stopsocket		?: serverJSON.stopsocket 			?: getRandomPort( serverInfo.host );
@@ -561,6 +585,16 @@ component accessors="true" singleton {
 
 		serverInfo.trayEnable	 	= serverJSON.trayEnable			?: defaults.trayEnable;
 
+		// If there's no open URL, let's create a complete one
+		if( !serverInfo.openbrowserURL.len() ) {
+			serverInfo.openbrowserURL = serverInfo.SSLEnable ? 'https://#serverInfo.host#:#serverInfo.SSLPort#' : 'http://#serverInfo.host#:#serverInfo.port#';
+		// Partial URL like /admin/login.cm
+		} else if ( left( serverInfo.openbrowserURL, 4 ) != 'http' ) {
+			if( !serverInfo.openbrowserURL.startsWith( '/' ) ) {
+				serverInfo.openbrowserURL = '/' & serverInfo.openbrowserURL;
+			}
+			serverInfo.openbrowserURL = ( serverInfo.SSLEnable ? 'https://#serverInfo.host#:#serverInfo.SSLPort#' : 'http://#serverInfo.host#:#serverInfo.port#' ) & serverInfo.openbrowserURL;
+		}
 
 		// Clean up spaces in welcome file list
 		serverInfo.welcomeFiles = serverInfo.welcomeFiles.listMap( function( i ){ return trim( i ); } );
@@ -619,6 +653,9 @@ component accessors="true" singleton {
 		// trayOptions aren't accepted via command params due to no clean way to provide them
 		serverInfo.trayOptions.append( serverJSON.trayOptions, true );
 
+		serverInfo.accessLogEnable	= serverJSON.web.accessLogEnable ?: defaults.web.accessLogEnable; 
+		serverInfo.rewriteslogEnable = serverJSON.web.rewrites.logEnable ?: defaults.web.rewrites.logEnable;
+				
 		// Global defauls are always added on top of whatever is specified by the user or server.json
 		serverInfo.JVMargs			= ( serverProps.JVMargs			?: serverJSON.JVM.args ?: '' ) & ' ' & defaults.JVM.args;
 
@@ -644,7 +681,7 @@ component accessors="true" singleton {
 				if( directoryExists( thisLibDir ) ) {
 					thisLibDirs.listAppend( thisLibDir );
 				} else if( serverInfo.debug ) {
-					consoleLogger.info( "Ignoring non-existant global lib dir: " & thisLibDir );
+					job.addLog( "Ignoring non-existant global lib dir: " & thisLibDir );
 				}
 				return thisLibDirs;
 			}, '' );
@@ -665,15 +702,18 @@ component accessors="true" singleton {
 		if( isDefined( 'defaults.app.serverHomeDirectory' ) && len( defaults.app.serverHomeDirectory )  ) { defaults.app.serverHomeDirectory = fileSystemUtil.resolvePath( defaults.app.serverHomeDirectory, defaultwebroot ); }
 		serverInfo.serverHomeDirectory			= serverProps.serverHomeDirectory			?: serverJSON.app.serverHomeDirectory			?: defaults.app.serverHomeDirectory;
 
+		serverInfo.sessionCookieSecure			= serverJSON.app.sessionCookieSecure			?: defaults.app.sessionCookieSecure;
+		serverInfo.sessionCookieHTTPOnly			= serverJSON.app.sessionCookieHTTPOnly			?: defaults.app.sessionCookieHTTPOnly;
+
 		// These are already hammered out above, so no need to go through all the defaults.
 		serverInfo.serverConfigFile	= defaultServerConfigFile;
 		serverInfo.name 			= defaultName;
 		serverInfo.webroot 			= normalizeWebroot( defaultwebroot );
 
 		if( serverInfo.debug ) {
-			consoleLogger.info( "start server in - " & serverInfo.webroot );
-			consoleLogger.info( "server name - " & serverInfo.name );
-			consoleLogger.info( "server config file - " & defaultServerConfigFile );
+			job.addLog( "start server in - " & serverInfo.webroot );
+			job.addLog( "server name - " & serverInfo.name );
+			job.addLog( "server config file - " & defaultServerConfigFile );
 		}
 
 		if( !len( serverInfo.WARPath ) && !len( serverInfo.cfengine ) ) {
@@ -687,8 +727,8 @@ component accessors="true" singleton {
 
 		var launchUtil 	= java.LaunchUtil;
 
-	    // Default java agent for embedded Lucee engine
-	    var javaagent = serverinfo.cfengine contains 'lucee' ? '-javaagent:#libdir#/lucee-inst.jar' : '';
+	    // Default java agent
+	    var javaagent = '';
 
 	    // Regardless of a custom server home, this is still used for various temp files and logs
 	    serverinfo.customServerFolder = getCustomServerFolder( serverInfo );
@@ -712,7 +752,6 @@ component accessors="true" singleton {
 			// TODO: As of 3.5 "serverHome" is for backwards compat.  Remove in later version in favor of serverHomeDirectory above
 			serverInfo[ 'serverHome' ] = installDetails.installDir;
 			serverInfo.logdir = serverInfo.serverHomeDirectory & "/logs";
-			serverInfo.consolelogPath	= serverInfo.logdir & '/server.out.txt';
 			serverInfo.engineName = installDetails.engineName;
 			serverInfo.engineVersion = installDetails.version;
 
@@ -724,7 +763,7 @@ component accessors="true" singleton {
 			// If Lucee server, set the java agent
 			if( serverInfo.cfengine contains "lucee" ) {
 				// Detect Lucee 4.x
-				if( installDetails.version.listFirst( '.' ) < 5 ) {
+				if( installDetails.version.listFirst( '.' ) < 5 && fileExists( '#serverInfo.serverHomeDirectory#/WEB-INF/lib/lucee-inst.jar' ) ) {
 					javaagent = '-javaagent:#serverInfo.serverHomeDirectory#/WEB-INF/lib/lucee-inst.jar';
 				} else {
 					// Lucee 5+ doesn't need the Java agent
@@ -756,7 +795,7 @@ component accessors="true" singleton {
 
 				// Expand the war if it doesn't exist or we're forcing
 				if( !directoryExists( serverInfo.serverHomeDirectory ) || ( serverProps.force ?: false ) ) {
-					consoleLogger.info( "Exploding WAR archive...");
+					job.addLog( "Exploding WAR archive...");
 					directoryCreate( serverInfo.serverHomeDirectory, true, true );
 					zip action="unzip" file="#serverInfo.WARPath#" destination="#serverInfo.serverHomeDirectory#" overwrite="true";
 				}
@@ -768,9 +807,13 @@ component accessors="true" singleton {
 			}
 			// Create a custom server folder to house the logs
 			serverInfo.logdir = serverinfo.customServerFolder & "/logs";
-			serverInfo.consolelogPath	= serverInfo.logdir & '/server.out.txt';
 		}
-
+		
+		// logdir is set above and is different for WARs and CF engines
+		serverInfo.consolelogPath = serverInfo.logdir & '/server.out.txt';
+		serverInfo.accessLogPath = serverInfo.logDir & '/access.txt';
+		serverInfo.rewritesLogPath = serverInfo.logDir & '/rewrites.txt';
+		 
 		// Find the correct tray icon for this server
 		if( !len( serverInfo.trayIcon ) ) {
 			var iconSize = fileSystemUtil.isWindows() ? '-32px' : '';
@@ -788,8 +831,10 @@ component accessors="true" singleton {
 					serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-cf11#iconSize#.png';
 				} else if( listFirst( serverInfo.engineVersion, '.' ) == 2016 ) {
 					serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-cf2016#iconSize#.png';
+				} else if( listFirst( serverInfo.engineVersion, '.' ) == 2018 ) {
+					serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-cf2018#iconSize#.png';
 				} else {
-					serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-cf2016#iconSize#.png';
+					serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-cf2018#iconSize#.png';
 				}
 
 			}
@@ -833,7 +878,8 @@ component accessors="true" singleton {
 
 		// Make current settings available to package scripts
 		setServerInfo( serverInfo );
-		interceptorService.announceInterception( 'onServerStart', { serverInfo=serverInfo, serverJSON=serverJSON, defaults=defaults, serverProps=serverProps } );
+		// installDetails doesn't exist for a war server
+		interceptorService.announceInterception( 'onServerStart', { serverInfo=serverInfo, serverJSON=serverJSON, defaults=defaults, serverProps=serverProps, serverDetails=serverDetails, installDetails=installDetails ?: {} } );
 
 		// Turn struct of aliases into a comma-delimited list, plus resolve relative paths.
 		// "/foo=C:\path,/bar=C:\another/path"
@@ -875,14 +921,14 @@ component accessors="true" singleton {
 		var argTokens = parser.tokenizeInput( serverInfo.JVMargs )
 			.map( function( i ){
 				// Clean up a couple escapes the parser does that we don't need
-				return parser.unwrapQuotes( i.replace( '\=', '=', 'all' ).replace( '\\', '\', 'all' ) )	;
+				return parser.unwrapQuotes( i.replace( '\=', '=', 'all' ).replace( '\\', '\', 'all' ).replace( ';', '\;', 'all' ) );
 			});
 		// Add in heap size and java agent
 		argTokens.append( '-Xmx#serverInfo.heapSize#m' );
 
 		if( val( serverInfo.minHeapSize ) ) {
 			if( serverInfo.minHeapSize > serverInfo.heapSize ) {
-				consoleLogger.warn( 'Your JVM min heap size [#serverInfo.minHeapSize#] is set larger than your max size [#serverInfo.heapSize#]! Reducing the Min to prevent errors.' );
+				job.addWarnLog( 'Your JVM min heap size [#serverInfo.minHeapSize#] is set larger than your max size [#serverInfo.heapSize#]! Reducing the Min to prevent errors.' );
 			}
 			argTokens.append( '-Xms#min( serverInfo.minHeapSize, serverInfo.heapSize )#m' );
 		}
@@ -895,7 +941,7 @@ component accessors="true" singleton {
 		 	.append( '--host' ).append( serverInfo.host )
 		 	.append( '--stop-port' ).append( serverInfo.stopsocket )
 		 	.append( '--processname' ).append( processName )
-		 	.append( '--log-dir' ).append( serverInfo.logDir )
+		 	.append( '--log-dir' ).append( serverInfo.logDir )		 	
 		 	.append( '--server-name' ).append( serverInfo.name )
 		 	.append( '--tray-icon' ).append( serverInfo.trayIcon )
 		 	.append( '--tray-config' ).append( trayOptionsPath )
@@ -903,19 +949,19 @@ component accessors="true" singleton {
 		 	.append( '--directoryindex' ).append( serverInfo.directoryBrowsing )
 		 	.append( '--timeout' ).append( serverInfo.startTimeout )
 		 	.append( '--proxy-peeraddress' ).append( 'true' )
+		 	.append( '--cookie-secure' ).append( serverInfo.sessionCookieSecure )
+		 	.append( '--cookie-httponly' ).append( serverInfo.sessionCookieHTTPOnly )
 		 	.append( serverInfo.runwarArgs.listToArray( ' ' ), true );
 
 		if( serverInfo.debug ) {
 			// Debug is getting turned on any time I include the --debug flag regardless of whether it's true or false.
 			args.append( '--debug' ).append( serverInfo.debug );
 		}
-
-		// Runwar will blow up if there isn't a parameter supplied, so I can't pass an empty string.
+		
 		if( len( serverInfo.restMappings ) ) {
 			args.append( '--servlet-rest-mappings' ).append( serverInfo.restMappings );
 		} else {
-			// This effectively disables it (assuming there's not a real directory or route called "___disabled___") but it's janky
-			args.append( '--servlet-rest-mappings' ).append( '___DISABLED___' );
+			args.append( '--servlet-rest-mappings' ).append( '__DISABLED__' );
 		}
 
 		if( serverInfo.trace ) {
@@ -925,6 +971,24 @@ component accessors="true" singleton {
 		if( len( errorPages ) ) {
 			args.append( '--error-pages' ).append( errorPages );
 		}
+
+		if( serverInfo.accesslogenable ) {
+			args
+				.append( '--logaccess-enable' ).append( true )
+			 	.append( '--logaccess-basename' ).append( 'access' )
+			 	.append( '--logaccess-dir' ).append( serverInfo.logDir );
+		}
+		
+		if( serverInfo.rewritesLogEnable ) {
+			args.append( '--urlrewrite-log' ).append( serverInfo.rewritesLogPath );
+		}
+		 
+		/* 	.append( '--logrequests-enable' ).append( true )
+		 	.append( '--logrequests-basename' ).append( 'request' )
+		 	.append( '--logrequests-dir' ).append( serverInfo.logDir )
+		 	*/
+		
+		
 	 	if( len( CFEngineName ) ) {
 	 		 args.append( '--cfengine-name' ).append( CFEngineName );
 	 	}
@@ -951,7 +1015,7 @@ component accessors="true" singleton {
 
 		// Starting a WAR
 		if (serverInfo.WARPath != "" ) {
-			args.append( serverInfo.WARPath );
+			args.append( serverInfo.serverHomeDirectory );
 		// Stand alone server
 		} else {
 			args.append( serverInfo.webroot );
@@ -1036,9 +1100,7 @@ component accessors="true" singleton {
 
 		if( serverInfo.rewritesEnable ){
 			if( !fileExists(serverInfo.rewritesConfig) ){
-				consoleLogger.error( '.' );
-				consoleLogger.error( 'URL rewrite config not found [#serverInfo.rewritesConfig#]' );
-				consoleLogger.error( '.' );
+				job.error( 'URL rewrite config not found [#serverInfo.rewritesConfig#]' );
 				return;
 			}
 			args.append( '--urlrewrite-file' ).append( serverInfo.rewritesConfig );
@@ -1048,17 +1110,31 @@ component accessors="true" singleton {
 		serverInfo.status = "starting";
 		setServerInfo( serverInfo );
 
-	    if( serverInfo.debug ) {
-			var cleanedArgs = cr & '    ' & trim( reReplaceNoCase( args.toList( ' ' ), ' (-|"-)', cr & '    \1', 'all' ) );
-			consoleLogger.debug("Server start command: #serverInfo.javaHome# #cleanedargs#");
-	    }
-
 	    // needs to be unique in each run to avoid errors
 		var threadName = 'server#hash( serverInfo.webroot )##createUUID()#';
 		// Construct a new process object
 	    var processBuilder = createObject( "java", "java.lang.ProcessBuilder" );
 	    // Pass array of tokens comprised of command plus arguments
 	    args.prepend( serverInfo.javaHome );
+	    
+	    // In *nix OS's we need to separate the server process from the CLI process
+	    // so SIGINTs from Ctrl-C won't also kill previously started servers
+	    if( !fileSystemUtil.isWindows() && background ) {
+	    	// The shell script will take care of creating this file and emptying it every time
+	    	var nohupLog = '#serverInfo.serverHomeDirectory#/nohup.log';
+	    	// Pass log file to external process.  This is no we can capture the output of the server process
+	    	args.prepend( '#serverInfo.serverHomeDirectory#/nohup.log' );
+	    	// Use this intermediate shell script to start our server via nohup
+	    	args.prepend( expandPath( '/server-commands/bin/server_spawner.sh' ) );
+	    	// Pass script directly to bash so I don't have to worry about it being executable
+			args.prepend( expandPath( '/bin/bash' ) );
+	    }
+
+	    if( serverInfo.debug ) {
+			var cleanedArgs = cr & '    ' & trim( reReplaceNoCase( args.toList( ' ' ), ' (-|"-)', cr & '    \1', 'all' ) );
+			job.addLog("Server start command: #cleanedargs#");
+	    }
+	    
 	    processBuilder.init( args );
 	    // Conjoin standard error and output for convenience.
 	    processBuilder.redirectErrorStream( true );
@@ -1066,13 +1142,20 @@ component accessors="true" singleton {
 	    variables.process = processBuilder.start();
 
 		// She'll be coming 'round the mountain when she comes...
-		consoleLogger.warn( "The server for #serverInfo.webroot# is starting on #serverInfo.openbrowserURL# ..." );
-
+		job.addWarnLog( "The server for #serverInfo.webroot# is starting on #serverInfo.openbrowserURL# ..." );
+	    
+	    job.complete( serverInfo.debug );
+	    consoleLogger.debug( '.' );
+	    
 		// If the user is running a one-off command to start a server or specified the debug flag, stream the output and wait until it's finished starting.
 		var interactiveStart = ( shell.getShellType() == 'command' || serverInfo.debug || !background );
 
+		// A reference to the current thread so the thread we're about to spin up can access it.
+		// This may be available as parent thread or something.
+		var thisThread = createObject( 'java', 'java.lang.Thread' ).currentThread();
+		variables.waitingOnConsoleStart = false; 
 		// Spin up a thread to capture the standard out and error from the server
-		thread name="#threadName#" interactiveStart=interactiveStart serverInfo=serverInfo args=args startTimeout=serverInfo.startTimeout  {
+		thread name="#threadName#" interactiveStart=interactiveStart serverInfo=serverInfo args=args startTimeout=serverInfo.startTimeout parentThread=thisThread {
 			try{
 
 				// save server info and persist
@@ -1088,23 +1171,33 @@ component accessors="true" singleton {
 
 				var line = bufferedReader.readLine();
 				while( !isNull( line ) ){
-					// Clean log4j cruft from line
-					line = reReplaceNoCase( line, '^.* (INFO|DEBUG|ERROR|WARN) RunwarLogger - processoutput: ', '' );
-					line = reReplaceNoCase( line, '^.* (INFO|DEBUG|ERROR|WARN) RunwarLogger processoutput: ', '' );
-					line = reReplaceNoCase( line, '^.* (INFO|DEBUG|ERROR|WARN) RunwarLogger lib: ', 'Runwar: ' );
-					line = reReplaceNoCase( line, '^.* (INFO|DEBUG|ERROR|WARN) RunwarLogger - ', 'Runwar: ' );
-					line = reReplaceNoCase( line, '^.* (INFO|DEBUG|ERROR|WARN) RunwarLogger - ', 'Runwar: ' );
-					line = reReplaceNoCase( line, '^.* (INFO|DEBUG|ERROR|WARN) RunwarLogger ', 'Runwar: ' );
-
-					// Build up our output
-					startOutput.append( line & chr( 13 ) & chr( 10 ) );
 
 					// output it if we're being interactive
 					if( attributes.interactiveStart ) {
+						
+						// Log messages from the CF engine or app code writing direclty to std/err out strip off "runwar.context" but leave color coded severity
+						// Ex:
+						// [INFO ] runwar.context: 04/11 15:47:10 INFO Starting Flex 1.5 CF Edition
+						line = reReplaceNoCase( line, '^(#chr( 27 )#\[m\[[^]]*])( runwar\.context: )(.*)', '\1 \3' );
+						
+						// Log messages from runwar itself, simplify the logging category to just "Runwar:" and leave color coded severity
+						// Ex:
+						// [DEBUG] runwar.config: Enabling Proxy Peer Address handling
+						// [DEBUG] runwar.server: Starting open browser action
+						line = reReplaceNoCase( line, '^(#chr( 27 )#\[m\[[^]]*])( runwar\.[^:]*: )(.*)', '\1 Runwar: \3' );
+	
+						// Log messages from any other 3rd party java lib tapping into Log4j will be left alone
+						// Ex:
+						// [DEBUG] org.tuckey.web.filters.urlrewrite.RuleExecutionOutput: needs to be forwarded to /index.cfm/Main
+	
+						// Build up our output
+						startOutput.append( line & chr( 13 ) & chr( 10 ) );
+
 						print
 							.line( line )
 							.toConsole();
 					}
+					
 					line = bufferedReader.readLine();
 				} // End of inputStream
 
@@ -1127,6 +1220,15 @@ component accessors="true" singleton {
 				}
 				serverInfo.statusInfo.result = startOutput.toString();
 				setServerInfo( serverInfo );
+				// If the "start" command is on the line watching our console output
+				if( variables.waitingOnConsoleStart ) {
+					print
+						.line()
+						.line( "Server's output stream closed. It's been stopped elsewhere." )
+						.toConsole();
+					// This will end the readline() call below so the "start" command can finally exit
+					parentThread.interrupt();
+				}
 			}
 		}
 
@@ -1136,10 +1238,8 @@ component accessors="true" singleton {
 			if( !background ) {
 				try {
 
+					variables.waitingOnConsoleStart = true;
 					while( true ) {
-						// Wipe out prompt so it doesn't redraw if the user hits enter
-						shell.getReader().setPrompt( '' );
-
 						// Detect user pressing Ctrl-C
 						// Any other characters captured will be ignored
 						var line = shell.getReader().readLine();
@@ -1150,15 +1250,20 @@ component accessors="true" singleton {
 						}
 					}
 
-				// user wants to exit, they've pressed Ctrl-C
-				} catch ( jline.console.UserInterruptException e ) {
+				// user wants to exit this command, they've pressed Ctrl-C
+				} catch ( org.jline.reader.UserInterruptException e ) {
+					consoleLogger.error( 'Stopping server...' );
+				// user wants to exit the shell, they've pressed Ctrl-D
+				} catch ( org.jline.reader.EndOfFileException e ) {
+					consoleLogger.error( 'Stopping server...' );
+					shell.setKeepRunning( false );
 				// Something bad happened
 				} catch ( Any e ) {
 					logger.error( '#e.message# #e.detail#' , e.stackTrace );
 					consoleLogger.error( '#e.message##chr(10)##e.detail#' );
 				// Either way, this server is done like dinner
 				} finally {
-					consoleLogger.error( 'Stopping server...' );
+					variables.waitingOnConsoleStart = false;
 					shell.setPrompt();
 					process.destroy();
 				}
@@ -1188,6 +1293,8 @@ component accessors="true" singleton {
 	function resolveServerDetails(
 		required struct serverProps
 	) {
+		
+		var job = wirebox.getInstance( 'interactiveJob' );
 		var locDebug = serverProps.debug ?: false;
 
 		// As a convenient shorcut, allow the serverConfigFile to be passed via the name parameter.
@@ -1281,7 +1388,8 @@ component accessors="true" singleton {
 		// config, let's re-read out that config JSON file to use instead of the default above.
 		if( !len( serverProps.serverConfigFile ?: '' )
 			&& len( serverInfo.serverConfigFile ?: '' )
-			&& serverInfo.serverConfigFile != defaultServerConfigFile ) {
+			&& serverInfo.serverConfigFile != defaultServerConfigFile
+			&& fileExists( serverInfo.serverConfigFile ) ) {
 
 			// Get server descriptor again
 		    if( locDebug ) { consoleLogger.debug("Switching to the last-used server JSON file for this server: #serverInfo.serverConfigFile#"); }
@@ -1452,7 +1560,15 @@ component accessors="true" singleton {
 	 * @serverInfo.hint Struct of server information
  	 **/
 	function isServerRunning( required struct serverInfo ){
-		return !isPortAvailable( serverInfo.host, serverInfo.stopSocket );
+		var portToCheck = serverInfo.stopSocket;
+		if( serverInfo.HTTPEnable ) {
+			portToCheck = serverInfo.port;
+		} else if( serverInfo.SSLEnable ) {
+			portToCheck = serverInfo.SSLPort;
+		} else if( serverInfo.AJPEnable ) {
+			portToCheck = serverInfo.AJPPort;
+		} 
+		return !isPortAvailable( serverInfo.host, portToCheck );
 	}
 
 	/**
@@ -1490,9 +1606,7 @@ component accessors="true" singleton {
 	 * Create initial server JSON
  	 **/
 	function initServers(){
-		lock name="serverservice.serverconfig" type="exclusive" throwOnTimeout="true" timeout="10"{
-			fileWrite( serverConfig, '{}' );
-		}
+		fileSystemUtil.lockingFileWrite( serverConfig, '{}' );
 	}
 
 	/**
@@ -1500,9 +1614,7 @@ component accessors="true" singleton {
 	 * @servers.hint struct of serverInfos
  	 **/
 	ServerService function setServers( required Struct servers ){
-		lock name="serverservice.serverconfig" type="exclusive" throwOnTimeout="true" timeout="10"{
-			fileWrite( serverConfig, formatterUtil.formatJson( serializeJSON( servers ) ) );
-		}
+		fileSystemUtil.lockingfileWrite( serverConfig, formatterUtil.formatJson( serializeJSON( servers ) ) );
 		return this;
 	}
 
@@ -1511,46 +1623,44 @@ component accessors="true" singleton {
  	**/
 	struct function getServers() {
 		if( fileExists( variables.serverConfig ) ){
-			lock name="serverservice.serverconfig" type="readOnly" throwOnTimeout="true" timeout="10"{
-				var results = deserializeJSON( fileRead( variables.serverConfig ) );
-				var updateRequired = false;
-				var serverKeys = results.keyArray();
+			var results = deserializeJSON( fileSystemUtil.lockingfileRead( variables.serverConfig ) );
+			var updateRequired = false;
+			var serverKeys = results.keyArray();
 
-				// Loop over each server for some housekeeping
-				for( var thisKey in serverKeys ){
-					// This server may have gotten deleted already based on the cleanup below.
-					if( !results.keyExists( thisKey ) ) {
-						continue;
-					}
-					var thisServer = results[ thisKey ];
-					// Backwards compat-- add in server id if it doesn't exist for older versions of CommandBox
-					if( isNull( thisServer.id ) ){
-						var normalizedWebroot = normalizeWebroot( thisServer.webroot );
-						thisServer.id = hash( normalizedWebroot & ucase( thisServer.name ) );
-						updateRequired = true;
-					}
-
-					// Try and clean up orphaned server names that were missing the slash on the path and
-					// ended up with a different hash.
-					// I really have no idea how this happens. I can't repro it on-demand.
-					for( var orphanKey in results ){
-						var orphan = results[ orphanKey ];
-						// If this is another server with the same name and the same webroot but without a trailing slash...
-						if( orphan.id != thisServer.id
-							&& orphan.name == thisServer.name
-							&& ( thisServer.webroot.endsWith( '\' ) || thisServer.webroot.endsWith( '/' ) )
-							&& ( !orphan.webroot.endsWith( '\' ) || !orphan.webroot.endsWith( '/' ) )
-							&& ( orphan.webroot & '\' == thisServer.webroot || orphan.webroot & '/' == thisServer.webroot ) ) {
-								// ...kill it dead.
-								results.delete( orphanKey );
-								updateRequired = true;
-							}
-					}
-
-					// Future-proof server info by guaranteeing that all properties will exist in the
-					// server object as long as they are defined in the newServerInfoStruct() method.
-					thisServer.append( newServerInfoStruct(), false );
+			// Loop over each server for some housekeeping
+			for( var thisKey in serverKeys ){
+				// This server may have gotten deleted already based on the cleanup below.
+				if( !results.keyExists( thisKey ) ) {
+					continue;
 				}
+				var thisServer = results[ thisKey ];
+				// Backwards compat-- add in server id if it doesn't exist for older versions of CommandBox
+				if( isNull( thisServer.id ) ){
+					var normalizedWebroot = normalizeWebroot( thisServer.webroot );
+					thisServer.id = hash( normalizedWebroot & ucase( thisServer.name ) );
+					updateRequired = true;
+				}
+
+				// Try and clean up orphaned server names that were missing the slash on the path and
+				// ended up with a different hash.
+				// I really have no idea how this happens. I can't repro it on-demand.
+				for( var orphanKey in results ){
+					var orphan = results[ orphanKey ];
+					// If this is another server with the same name and the same webroot but without a trailing slash...
+					if( orphan.id != thisServer.id
+						&& orphan.name == thisServer.name
+						&& ( thisServer.webroot.endsWith( '\' ) || thisServer.webroot.endsWith( '/' ) )
+						&& ( !orphan.webroot.endsWith( '\' ) || !orphan.webroot.endsWith( '/' ) )
+						&& ( orphan.webroot & '\' == thisServer.webroot || orphan.webroot & '/' == thisServer.webroot ) ) {
+							// ...kill it dead.
+							results.delete( orphanKey );
+							updateRequired = true;
+						}
+				}
+
+				// Future-proof server info by guaranteeing that all properties will exist in the
+				// server object as long as they are defined in the newServerInfoStruct() method.
+				thisServer.append( newServerInfoStruct(), false );
 			}
 			// If any server didn't have an ID, go ahead and save it now
 			if( updateRequired ){ setServers( results ); }
@@ -1706,6 +1816,8 @@ component accessors="true" singleton {
 			'name'				: "",
 			'logDir' 			: "",
 			'consolelogPath'	: "",
+			'accessLogPath'		: "",
+			'rewritesLogPath'	: "",
 			'trayicon' 			: "",
 			'libDirs' 			: "",
 			'webConfigDir' 		: "",
@@ -1736,12 +1848,16 @@ component accessors="true" singleton {
 			'runwarArgs'		: "",
 			'cfengine'			: "",
 			'restMappings'		: "",
+			'sessionCookieSecure'	: false,
+			'sessionCookieHTTPOnly'	: false,
 			'engineName'		: "",
 			'engineVersion'		: "",
 			'WARPath'			: "",
 			'serverConfigFile'	: "",
 			'aliases'			: {},
 			'errorPages'		: {},
+			'accessLogEnable'	: false,
+			'rewritesLogEnable'	: false,
 			'trayOptions'		: {},
 			'trayEnable'		: true,
 			'dateLastStarted'	: '',
@@ -1762,8 +1878,7 @@ component accessors="true" singleton {
 			if( isJSON( fileContents ) ) {
 				return deserializeJSON( fileContents );
 			} else {
-				consoleLogger.warn( 'Warning: File is not valid JSON. [#path#]' );
-				return {};
+				throw( message='File is not valid JSON. [#path#].  Operation aborted.', type="commandException");
 			}
 		} else {
 			return {};

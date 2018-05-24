@@ -1,4 +1,4 @@
-<!-----------------------------------------------------------------------
+﻿<!-----------------------------------------------------------------------
 ********************************************************************************
 Copyright Since 2005 ColdBox Framework by Luis Majano and Ortus Solutions, Corp
 www.ortussolutions.com
@@ -47,7 +47,7 @@ Modifications
 		<cfargument name="delimiter" 	type="string" 	required="false" default="," hint="The delimiter in the list. Comma by default">
 		<cfargument name="rootName"     type="string"   required="true"   default="" hint="The name of the root element, else it defaults to the internal defaults."/>
 		<cfscript>
-			var buffer = createObject("java","java.lang.StringBuffer").init('');
+			var buffer = createObject("java","java.lang.StringBuilder").init('');
 
 			// Header
 			if( arguments.addHeader ){
@@ -86,7 +86,7 @@ Modifications
 		<cfargument name="rootName"     type="string"   required="true"   default="" hint="The name of the root element, else it defaults to the internal defaults."/>
 
 		<cfscript>
-		var buffer = createObject('java','java.lang.StringBuffer').init('');
+		var buffer = createObject('java','java.lang.StringBuilder').init('');
 		var target = arguments.data;
 		var x = 1;
 		var dataLen = arrayLen(target);
@@ -132,7 +132,7 @@ Modifications
 		<cfargument name="useCDATA"  	type="boolean" required="false" default="false" hint="Use CDATA content for ALL values">
 		<cfargument name="rootName"     type="string"  required="true"   default="" hint="The name of the root element, else it defaults to the internal defaults."/>
 
-		<cfset var buffer = createObject('java','java.lang.StringBuffer').init('')>
+		<cfset var buffer = createObject('java','java.lang.StringBuilder').init('')>
 		<cfset var col = "">
 		<cfset var columns = arguments.columnlist>
 		<cfset var value = "">
@@ -183,7 +183,7 @@ Modifications
 		<cfargument name="rootName"     type="string"   required="true"   default="" hint="The name of the root element, else it defaults to the internal defaults."/>
 		<cfscript>
 		var target = arguments.data;
-		var buffer = createObject("java","java.lang.StringBuffer").init('');
+		var buffer = createObject("java","java.lang.StringBuilder").init('');
 		var key = 0;
 		var thisValue = "";
 		var args = structnew();
@@ -205,7 +205,7 @@ Modifications
 		// Content
 		for(key in target){
 			// Null Checks
-			if( NOT structKeyExists(target, key) ){
+			if( !structKeyExists( target, key ) || isNull( target[key] ) ){
 				target[key] = 'NULL';
 			}
 			// Translate Value
@@ -230,8 +230,8 @@ Modifications
 		<cfargument name="useCDATA"  	type="boolean"  required="false"  default="false" hint="Use CDATA content for ALL values">
 		<cfargument name="rootName"     type="string"   required="true"   default="" hint="The name of the root element, else it defaults to the internal defaults."/>
 		<cfscript>
-		var target 			= arguments.data;
-		var buffer 			= createObject("java","java.lang.StringBuffer").init('');
+		var target 			= isNull( arguments.data ) ? "NULL" : arguments.data;
+		var buffer 			= createObject("java","java.lang.StringBuilder").init('');
 		var md 				= getMetadata(target);
 		var rootElement		= lcase( safeText( listLast( md.name, "." ) ) );
 		var thisName 		= "";
@@ -256,7 +256,7 @@ Modifications
 					OR md.properties[x]["marshal"] EQ true
 				){
 					thisName  = md.properties[x].name;
-					thisValue = evaluate("target.get#thisName#()");
+					thisValue = invoke( target, "get#thisName()#" );
 
 					// Value Defined?
 					if( not isDefined("thisValue") ){
@@ -307,7 +307,7 @@ Modifications
 		<cfargument name="useCDATA" type="boolean" required="false" default="false" hint="Use CDATA content for ALL values">
 		<cfset var newTxt = xmlFormat(unicodeWin1252(trim(arguments.txt)))>
 		<cfif arguments.useCDATA>
-			<cfreturn "<![CDATA[" & newTxt & "]]" & ">">
+			<cfreturn "<![CDATA[" & newTxt & "]]>">
 		<cfelse>
 			<cfreturn newTxt>
 		</cfif>
@@ -318,32 +318,32 @@ Modifications
 		<cfargument name="value" type="string" required="yes">
 		<cfscript>
 			var string = arguments.value;
-			string = replaceNoCase(string,chr(8218),'&##8218;','all');	// ?
-			string = replaceNoCase(string,chr(402),'&##402;','all');		// ?
-			string = replaceNoCase(string,chr(8222),'&##8222;','all');	// ?
-			string = replaceNoCase(string,chr(8230),'&##8230;','all');	// ?
-			string = replaceNoCase(string,chr(8224),'&##8224;','all');	// ?
-			string = replaceNoCase(string,chr(8225),'&##8225;','all');	// ?
-			string = replaceNoCase(string,chr(710),'&##710;','all');		// ?
-			string = replaceNoCase(string,chr(8240),'&##8240;','all');	// ?
-			string = replaceNoCase(string,chr(352),'&##352;','all');		// ?
-			string = replaceNoCase(string,chr(8249),'&##8249;','all');	// ?
-			string = replaceNoCase(string,chr(338),'&##338;','all');		// ?
-			string = replaceNoCase(string,chr(8216),'&##8216;','all');	// ?
-			string = replaceNoCase(string,chr(8217),'&##8217;','all');	// ?
-			string = replaceNoCase(string,chr(8220),'&##8220;','all');	// ?
-			string = replaceNoCase(string,chr(8221),'&##8221;','all');	// ?
-			string = replaceNoCase(string,chr(8226),'&##8226;','all');	// ?
-			string = replaceNoCase(string,chr(8211),'&##8211;','all');	// ?
-			string = replaceNoCase(string,chr(8212),'&##8212;','all');	// ?
-			string = replaceNoCase(string,chr(732),'&##732;','all');		// ?
-			string = replaceNoCase(string,chr(8482),'&##8482;','all');	// ?
-			string = replaceNoCase(string,chr(353),'&##353;','all');		// ?
-			string = replaceNoCase(string,chr(8250),'&##8250;','all');	// ?
-			string = replaceNoCase(string,chr(339),'&##339;','all');		// ?
-			string = replaceNoCase(string,chr(376),'&##376;','all');		// ?
-			string = replaceNoCase(string,chr(376),'&##376;','all');		// ?
-			string = replaceNoCase(string,chr(8364),'&##8364','all');		// ?
+			string = replaceNoCase(string,chr(8218),'&##8218;','all');	// �
+			string = replaceNoCase(string,chr(402),'&##402;','all');		// �
+			string = replaceNoCase(string,chr(8222),'&##8222;','all');	// �
+			string = replaceNoCase(string,chr(8230),'&##8230;','all');	// �
+			string = replaceNoCase(string,chr(8224),'&##8224;','all');	// �
+			string = replaceNoCase(string,chr(8225),'&##8225;','all');	// �
+			string = replaceNoCase(string,chr(710),'&##710;','all');		// �
+			string = replaceNoCase(string,chr(8240),'&##8240;','all');	// �
+			string = replaceNoCase(string,chr(352),'&##352;','all');		// �
+			string = replaceNoCase(string,chr(8249),'&##8249;','all');	// �
+			string = replaceNoCase(string,chr(338),'&##338;','all');		// �
+			string = replaceNoCase(string,chr(8216),'&##8216;','all');	// �
+			string = replaceNoCase(string,chr(8217),'&##8217;','all');	// �
+			string = replaceNoCase(string,chr(8220),'&##8220;','all');	// �
+			string = replaceNoCase(string,chr(8221),'&##8221;','all');	// �
+			string = replaceNoCase(string,chr(8226),'&##8226;','all');	// �
+			string = replaceNoCase(string,chr(8211),'&##8211;','all');	// �
+			string = replaceNoCase(string,chr(8212),'&##8212;','all');	// �
+			string = replaceNoCase(string,chr(732),'&##732;','all');		// �
+			string = replaceNoCase(string,chr(8482),'&##8482;','all');	// �
+			string = replaceNoCase(string,chr(353),'&##353;','all');		// �
+			string = replaceNoCase(string,chr(8250),'&##8250;','all');	// �
+			string = replaceNoCase(string,chr(339),'&##339;','all');		// �
+			string = replaceNoCase(string,chr(376),'&##376;','all');		// �
+			string = replaceNoCase(string,chr(376),'&##376;','all');		// �
+			string = replaceNoCase(string,chr(8364),'&##8364','all');		// �
 			return string;
 		</cfscript>
 	</cffunction>

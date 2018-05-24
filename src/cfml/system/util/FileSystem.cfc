@@ -14,6 +14,7 @@ component accessors="true" singleton {
 	* The os
 	*/
 	property name="os";
+	property name="coreClassLoader";
 
 	// DI
 	property name="shell" inject="shell";
@@ -22,6 +23,14 @@ component accessors="true" singleton {
 	function init() {
 		variables.os = createObject( "java", "java.lang.System" ).getProperty( "os.name" ).toLowerCase();
 		variables.userHome = createObject( 'java', 'java.lang.System' ).getProperty( 'user.home' );
+		
+        variables.Channels = createObject( "java", "java.nio.channels.Channels" );
+        variables.StandardOpenOption = createObject( "java", "java.nio.file.StandardOpenOption" );
+        variables.FileChannel = createObject( "java", "java.nio.channels.FileChannel" );
+        variables.ByteBuffer = createObject( "java", "java.nio.ByteBuffer" );
+        variables.CharBuffer = createObject( "java", "java.nio.CharBuffer" );
+        variables.String = createObject( "java", "java.lang.String" );
+		
 		return this;
 	}
 
@@ -38,6 +47,8 @@ component accessors="true" singleton {
 
 		// The Java class will strip trailing slashses, but these are meaningful in globbing patterns
 		var trailingSlash = ( path.len() > 1 && ( path.endsWith( '/' ) || path.endsWith( '\' ) ) );
+		// java will remove trailing periods when canonicalizing a path.  I'm not sure that's correct.
+		var trailingPeriod = ( path.len() > 1 && path.endsWith( '.' ) && !path.endsWith( '..' ) );
 		
 		// Load our path into a Java file object so we can use some of its nice utility methods
 		var oPath = createObject( 'java', 'java.io.File' ).init( path );
@@ -66,11 +77,16 @@ component accessors="true" singleton {
 
 			// If it's relative, we assume it's relative to the current working directory and make it absolute
 			oPath = createObject( 'java', 'java.io.File' ).init( arguments.basePath & '/' & path );
-
 		}
 		
+		// Add back trailing slash if we had it
+		var finalPath = oPath.toString() & ( trailingSlash ? server.separator.file : '' );
+		
 		// This will standardize the name and calculate stuff like ../../
-		return getCanonicalPath( oPath.toString() & ( trailingSlash ? server.separator.file : '' ) );
+		finalPath = getCanonicalPath( finalPath )
+		
+		// have to add back the period after canonicalizing since Java removes it!
+		return finalPath & ( trailingPeriod && !finalPath.endsWith( '.' ) ? '.' : '' );
 
 	}
 
@@ -254,9 +270,44 @@ component accessors="true" singleton {
     * Does NOT apply any canonicalization
     */
     string function makePathRelative( required string absolutePath ) {
+    	
+    	    	
+    	// If one of the folders has a period, we've got to do something special.
+    	// C:/users/brad.development/foo.cfc turns into /C__users_brad_development/foo.cfc
+    	if( getDirectoryFromPath( arguments.absolutePath ) contains '.' ) {
+			var leadingSlash = arguments.absolutePath.startsWith( '/' );
+			var UNC = arguments.absolutePath.startsWith( '\\' );
+    		var mappingPath = getDirectoryFromPath( arguments.absolutePath );
+    		mappingPath = mappingPath.replace( '\', '/', 'all' );
+    		mappingPath = mappingPath.listChangeDelims( '/', '/' );
+
+    		var mappingName = mappingPath.replace( ':', '_', 'all' );
+    		mappingName = mappingName.replace( '.', '_', 'all' );
+    		mappingName = mappingName.replace( '/', '_', 'all' );
+    		mappingName = '/' & mappingName;
+
+			// *nix needs this
+			if( leadingSlash ) {
+				mappingPath = '/' & mappingPath;
+			}
+
+			// UNC network paths
+			if( UNC ) {	
+				var mapping = locateUNCMapping( mappingPath );
+				return mapping & '/' & getFileFromPath( arguments.absolutePath );
+			} else {
+				createMapping( mappingName, mappingPath );
+				return mappingName & '/' & getFileFromPath( arguments.absolutePath );
+			}
+		}
+    	
+    	// *nix needs to include first folder due to Lucee bug.
+    	// So /usr/brad/foo.cfc becomes /usr
     	if( !isWindows() ) {
-    		// TODO: Unix paths with a period in a folder name are likely still a problem.
-    		return arguments.absolutePath;
+	    	var firstFolder = listFirst( arguments.absolutePath, '/' );
+	    	var path = listRest( arguments.absolutePath, '/' );
+	    	var mapping = locateUnixDriveMapping( firstFolder );
+	    	return mapping & '/' & path;
     	}
     	
 		// UNC network path.
@@ -273,21 +324,6 @@ component accessors="true" singleton {
 	    	var path = arguments.absolutePath.listDeleteAt( 1, '/\' ).listDeleteAt( 1, '/\' );
 	    	var mapping = locateUNCMapping( UNCShare );
 	    	return mapping & '/' & path;
-    	
-    	// If one of the folders has a period, we've got to do something special.
-    	// C:/users/brad.development/foo.cfc turns into /C__users_brad_development/foo.cfc
-    	} else if( getDirectoryFromPath( arguments.absolutePath ) contains '.' ) {
-    		var mappingPath = getDirectoryFromPath( arguments.absolutePath );
-    		mappingPath = mappingPath.replace( '\', '/', 'all' );
-    		mappingPath = mappingPath.listChangeDelims( '/', '/' );
-
-    		var mappingName = mappingPath.replace( ':', '_', 'all' );
-    		mappingName = mappingName.replace( '.', '_', 'all' );
-    		mappingName = mappingName.replace( '/', '_', 'all' );
-    		mappingName = '/' & mappingName;
-
-    		createMapping( mappingName, mappingPath );
-    		return mappingName & '/' & getFileFromPath( arguments.absolutePath );
 
     	// Otherwise, do the "normal" way that re-uses top level drive mappings
     	// C:/users/brad/foo.cfc turns into /C_Drive/users/brad/foo.cfc
@@ -311,11 +347,22 @@ component accessors="true" singleton {
     }
 
     /**
+    * Accepts a Unix root folder and returns a CF Mapping
+    * Creates the mapping if it doesn't exist
+    */
+    string function locateUnixDriveMapping( required string rootFolder ) {
+    	var mappingName = '/' & arguments.rootFolder & '_root';
+    	var mappingPath = '/' & arguments.rootFolder & '/';
+    	createMapping( mappingName, mappingPath );
+   		return mappingName;
+    }
+
+    /**
     * Accepts a Windows UNC network share and returns a CF Mapping
     * Creates the mapping if it doesn't exist
     */
     string function locateUNCMapping( required string UNCShare  ) {
-    	var mappingName = '/' & arguments.UNCShare.replace( '/', '_' ) & '_UNC';
+    	var mappingName = '/' & arguments.UNCShare.replace( '/', '_' ).replace( '.', '_', 'all' ) & '_UNC';
     	var mappingPath = '\\' & arguments.UNCShare & '/';
     	createMapping( mappingName, mappingPath );
    		return mappingName;
@@ -337,6 +384,151 @@ component accessors="true" singleton {
 			return '\\' & path.replace( '\', '/', 'all' ).right( -2 );
 		} else {
 			return path.replace( '\', '/', 'all' );			
+		}
+	}
+	
+	/*
+	* Loads up Java classes into the class loader that loaded the CLI for immediate use. 
+	* You can pass either an array or list of:
+	* - directories
+	* - Jar files
+	* - Class files
+	*
+	* Note, loaded jars/classes cannot be unloaded and will remain in memory until the CLI exits.
+	* On Windows, the jar/class files will also be locked on the file system.  Directories are scanned
+	* recursively for for files and everything found will be loaded.
+	* 
+	* @paths List or array of absolute paths of a jar/class files or directories of them you would like loaded
+	*/
+	function classLoad( any paths ) {
+		
+		// Allow list or arrays
+		if( isSimpleValue( paths ) ) {
+			paths = paths.listToArray();
+		}
+
+		// For each path....
+		paths.each( function( path ) {
+
+			// Is file
+			if( fileExists( path ) ) {
+				_classLoad( path );
+			// Is directory
+			} else if( directoryExists( path ) ) {
+				directoryList( path, true, 'array', '*.jar|*.class' )
+					.each( function( file ) {
+						_classLoad( file );
+					} );
+			// Is ????
+			} else {
+				throw( message='The path [#path#] doesn''t exist on your file system.', detail='Make sure you expand any paths you send in.', type="commandException" );
+			}
+
+		} );
+	}
+	
+	/*
+	* Loads up a jar or class file into the core Lucee classloader.  Note, jars cannot be unloaded and their classes
+	* will remain in memory until the CLI exits.  On Windows, the jar files will also be locked on the file system.
+	* 
+	* @path The absolute path of a jar or class file you would like loaded
+	*/
+	function _classLoad( string path ) {
+		path = normalizeSlashes( path );
+		var jURL = createObject( 'java', 'java.io.File' ).init( path ).toURI().toURL();
+		var cl = getCoreClassLoader();
+		
+		// Don't add it if it's already there.
+		for( var lib in cl.getURLs() ) {
+			if( lib.File contains jURL.getFile() ) {
+				return;
+			}
+		}
+		
+		var method = cl.getClass().getDeclaredMethod("addURL", [ jURL.getClass() ] );
+		method.setAccessible(true);
+		method.invoke( cl, [ jURL ] );		
+	}
+	
+	/*
+	* Get the Lucee core class loader
+	*/
+	function getCoreClassLoader( string path ) {
+		
+		if( isNull( coreClassLoader ) ) {
+			coreClassLoader = createObject( 'java', 'cliloader.LoaderCLIMain' ).getClassLoader();
+		}
+		return coreClassLoader;		
+	}
+	
+	/*
+	* Read a file while locking the file system
+	*/
+	function lockingFileRead( required string path ) {
+		// CFLock to prevent two threads on the same JVM from trying to lock the same file. 
+		// That will throw an overlappinglock exception since the file lock is JVM-wide
+		lock name=path type="exclusive" {
+			try {
+		        var file = createObject( "java", "java.io.File" ).init( path );		
+				var fch=FileChannel.open( file.toPath(), [ StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.READ ] );
+		
+		        // This method blocks until it can retrieve the lock.
+		        var fileLock = fch.lock();
+		
+				// Use a reader to collect the characters into a string builder
+				var sb = createObject( "java", "java.lang.StringBuilder" ).init();
+				var reader = Channels.newReader( fch, 'UTF-8' );
+				var cb = CharBuffer.allocate( 8192 );
+				while( ( var size = reader.read( cb ) ) != -1 ) {
+					cb.flip();
+					sb.append( cb );
+					cb.clear();
+				}
+		        
+		    // This stuff always gotta' run.
+			} finally {
+		        if( !isNull( fileLock ) && fileLock.isValid() ) {
+		            fileLock.release();
+		        }
+		
+		        if( !isNull( fch ) ) {
+		        	fch.close();
+		        }			
+			}	
+		}
+		return sb.toString();
+		
+	}
+	
+	/*
+	* write a file while locking the file system
+	*/
+	function lockingFileWrite( required string path, required string contents ) {
+		// CFLock to prevent two threads on the same JVM from trying to lock the same file. 
+		// That will throw an overlappinglock exception since the file lock is JVM-wide
+		lock name=path type="exclusive" {
+			try {
+				
+		        var file = createObject( "java", "java.io.File" ).init( path );		
+				var fch=FileChannel.open( file.toPath(), [ StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.READ ] );
+		
+		        // This method blocks until it can retrieve the lock.
+		        var fileLock = fch.lock();
+		
+		        fch.write( ByteBuffer.wrap( contents.getBytes() ) );
+		        // Trim off any excess
+		        fch.truncate( fch.position() );
+		        
+		    // This stuff always gotta' run.
+			} finally {
+		        if( !isNull( fileLock ) && fileLock.isValid() ) {
+		            fileLock.release();
+		        }
+		
+		        if( !isNull( fch ) ) {
+		        	fch.close();
+		        }			
+			}	
 		}
 	}
 

@@ -78,7 +78,7 @@ component aliases="init" {
 			if( ! foundToken.len() ){
 				return error( "We're sorry, we're having problems locating your ForgeBox account.  Please `forgebox login` and try again." );
 			}
-			arguments.slug = "@#foundToken[ 1 ]#/#arguments.slug#";
+			arguments.slug = "#arguments.slug#@#foundToken[ 1 ]#";
 		}
 
 		// Ignore List
@@ -97,7 +97,7 @@ component aliases="init" {
 			} else {
 				evaluate( '#fullPropertyName# = arguments[ arg ]' );
 			}
-			print.magentaLine( '- Set #arg# = #arguments[ arg ]#' );
+			print.cyanLine( '- Set #arg# = #arguments[ arg ]#' );
 		}
 
 		// Write the file back out

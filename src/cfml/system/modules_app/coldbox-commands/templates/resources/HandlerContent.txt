@@ -1,0 +1,84 @@
+/**
+ * Manage |resource|
+ * It will be your responsibility to fine tune this template, add validations, try/catch blocks, logging, etc.
+ */
+component extends="coldbox.system.EventHandler"{
+	
+	// DI 
+	
+	// HTTP Method Security
+	this.allowedMethods = {
+		index  		= "GET", 
+		new    		= "GET", 
+		create   	= "POST,PUT", 
+		show 		= "GET", 
+		edit		= "GET",
+		update 		= "POST,PUT,PATCH",
+		delete 		= "DELETE"
+	};
+	
+	/**
+	 * Param incoming format, defaults to `html`
+	 */
+	function preHandler( event, rc, prc ){
+		event.paramValue( "format", "html" );
+	}
+		
+	/**
+	 * Display a list of |resource|
+	 */
+	function index( event, rc, prc ){
+		// Get resources here
+
+		event.setView( "|resource|/index" );
+	}
+
+	/**
+	 * Return an HTML form for creating one |singularName|
+	 */
+	function new( event, rc, prc ){
+		event.setView( "|resource|/new" );
+	}
+
+	/**
+	 * Create a |singularName|
+	 */
+	function create( event, rc, prc ){
+		
+	}
+
+	/**
+	 * Show a |singularName|
+	 */
+	function show( event, rc, prc ){
+		event.paramValue( "|parameterName|", 0 );
+		
+		event.setView( "|resource|/show" );
+	}
+
+	/**
+	 * Edit a |singularName|
+	 */
+	function edit( event, rc, prc ){
+		event.paramValue( "|parameterName|", 0 );
+		
+		event.setView( "|resource|/edit" );
+	}
+
+	/**
+	 * Update a |singularName|
+	 */
+	function update( event, rc, prc ){
+		event.paramValue( "|parameterName|", 0 );
+		
+	}
+
+	/**
+	 * Delete a |singularName|
+	 */
+	function delete( event, rc, prc ){
+		event.paramValue( "|parameterName|", 0 );
+		
+	}
+	
+}

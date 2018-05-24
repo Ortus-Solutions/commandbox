@@ -220,7 +220,7 @@ component aliases="h,/?,?,--help,-help" {
 				if( param.type != 'any' ) {
 					print.text( '#param.type# ' );
 				}
-				print.magentaText( '#param.name# ' );
+				print.cyanText( '#param.name# ' );
 				// Default value
 				if( !isNull(param.default) && param.default!= '[runtime expression]' )  {
 					print.text( '= "#param.default#" ' );

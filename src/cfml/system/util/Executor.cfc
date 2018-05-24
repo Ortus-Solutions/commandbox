@@ -76,13 +76,26 @@ component {
 
 		if( len( variables.__out ) ) {
 			return variables.__out;
+		} else if ( !isNull( variables.__result ) ){
+			return variables.__result;
 		} else {
-			return variables.__result ?: '';
+			return;
 		}
 	}
 
 	function getInstance(){
 		return $wirebox.getInstance( argumentCollection = arguments );
+	}
+
+	function getCurrentVariables(){
+		return variables
+			.keyArray()
+			.filter( function( i ) {
+				return ( !'RUNFILE,EVAL,RUNCODE,$shell,GETINSTANCE,$wirebox,$fileSystemUtil,GETCURRENTVARIABLES,THIS,__RESULT,__STATEMENT,__out'.listFindNoCase( i ) );
+			} )
+			.map( function( i ) {
+				return i.lcase();
+			} );
 	}
 
 }

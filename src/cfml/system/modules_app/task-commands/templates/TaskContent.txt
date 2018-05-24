@@ -1,0 +1,13 @@
+/**
+* Description of task
+*/
+component {
+
+	/**
+	* 
+	*/
+	function |targetName|() {
+		print.greenLine( 'Complete!' );
+	}
+
+}

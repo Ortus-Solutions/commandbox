@@ -12,7 +12,8 @@
  * tail file.txt 100
  * {code}
  **/
-component {
+ component {
+	property name="printUtil"		inject="print";
 
 	/**
 	 * @path file or directory to tail or raw input to process
@@ -99,7 +100,15 @@ component {
 
 			// print our file to console
 			print
-				.text( buffer.reverse().toList( "" ) )
+				.text( buffer
+					.reverse()
+					.toList( "" )
+					.listToArray( chr( 13 ) & chr( 10 ) )
+					.map( function( line ) {
+						return cleanLine( line );
+					} )
+					.toList( chr( 10 ) )
+				)
 				.toConsole();
 
 		}
@@ -131,16 +140,18 @@ component {
 
 							var randomAccessFile = createObject( "java", "java.io.RandomAccessFile" ).init( file, "r" );
 							randomAccessFile.seek( position );
-							// As long as there is at least one more character in the file
-							while( ( var char = randomAccessFile.read() ) > -1 ){
-								// output it
-								print
-									.text( chr( char ) )
-									.toConsole();
+							var line = randomAccessFile.readLine();
+							while( !isnull( line ) ){
 
-								randomAccessFile.seek( ++position );
+								line = cleanLine( line );
+								print
+									.line( line )
+									.toConsole();
+							
+								var line = randomAccessFile.readLine();
 							}
 							// Close the file every time so we don't keep it open and locked
+							position = randomAccessFile.getFilePointer();
 							randomAccessFile.close();
 
 						// Decrease this to speed up the Tail
@@ -158,9 +169,6 @@ component {
 			}   // End thread
 
 			while( true ) {
-				// Wipe out prompt so it doesn't redraw if the user hits enter
-				shell.getReader().setPrompt( '' );
-
 				// Detect user pressing Ctrl-C
 				// Any other characters captured will be ignored
 				var line = shell.getReader().readLine();
@@ -172,13 +180,21 @@ component {
 			}
 
 
-		// user wants to exit, they've pressed Ctrl-C
-		} catch ( jline.console.UserInterruptException e ) {
+		// user wants to exit this command, they've pressed Ctrl-C
+		} catch ( org.jline.reader.UserInterruptException e ) {
 			// make sure the thread exits
 			variables.tailRun = false;
 			// Wait until the thread finishes its last draw
 			thread action="join" name=threadName;
 			shell.setPrompt();
+		// user wants to exit the entire shell, they've pressed Ctrl-D
+		} catch ( org.jline.reader.EndOfFileException e ) {
+			// make sure the thread exits
+			variables.tailRun = false;
+			// Wait until the thread finishes its last draw
+			thread action="join" name=threadName;
+			shell.setPrompt();
+			shell.setKeepRunning( false );
 		// Something horrible went wrong
 		} catch ( any e ) {
 			// make sure the thread exits
@@ -246,6 +262,39 @@ component {
 
 		randomAccessFile.close();
 		return startPos;
+	}
+
+	private function cleanLine( line ) {
+		
+		// Log messages from the CF engine or app code writing direclty to std/err out strip off "runwar.context" but leave color coded severity
+		// Ex:
+		// [INFO ] runwar.context: 04/11 15:47:10 INFO Starting Flex 1.5 CF Edition
+		line = reReplaceNoCase( line, '^(\[[^]]*])( runwar\.context: )(.*)', '\1 \3' );
+		
+		// Log messages from runwar itself, simplify the logging category to just "Runwar:" and leave color coded severity
+		// Ex:
+		// [DEBUG] runwar.config: Enabling Proxy Peer Address handling
+		// [DEBUG] runwar.server: Starting open browser action
+		line = reReplaceNoCase( line, '^(\[[^]]*])( runwar\.[^:]*: )(.*)', '\1 Runwar: \3' );
+		
+		if( line.startsWith( '[INFO ]' ) ) {
+			return reReplaceNoCase( line, '^(\[INFO ] )(.*)', '[#printUtil.boldCyan('INFO ')#] \2' );
+		}
+
+		if( line.startsWith( '[ERROR]' ) ) {
+			return reReplaceNoCase( line, '^(\[ERROR] )(.*)', '[#printUtil.boldMaroon('ERROR')#] \2' );
+		}
+
+		if( line.startsWith( '[DEBUG]' ) ) {
+			return reReplaceNoCase( line, '^(\[DEBUG] )(.*)', '[#printUtil.boldOlive('DEBUG')#] \2' );
+		}
+
+		if( line.startsWith( '[WARN ]' ) ) {
+			return reReplaceNoCase( line, '^(\[WARN ] )(.*)', '[#printUtil.boldYellow('WARN ')#] \2' );
+		}
+
+		return line;
+
 	}
 
 }

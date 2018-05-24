@@ -89,8 +89,13 @@ component aliases='link' {
 		var oFiles = createObject( 'java', 'java.nio.file.Files' );
 		var oFileTarget = fileSystemUtil.getJavaFile( linkTarget );
 		var oFileSource = fileSystemUtil.getJavaFile( packageDirectory );
-		oFiles.createSymbolicLink( oFileTarget.toPath(), oFileSource.toPath(), [] );
-		
+
+		try {
+			oFiles.createSymbolicLink( oFileTarget.toPath(), oFileSource.toPath(), [] );
+		} catch( any var e ) {
+			error( 'Could not link package. Try running your shell as administrator', e.message );
+		}
+
 		if( commandBoxCoreLinked ) {
 			print.greenLine( 'Package [#boxJSON.slug#] linked to CommandBox core.' );		
 			command( 'reload' )

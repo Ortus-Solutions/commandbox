@@ -29,9 +29,9 @@
  **/
 component {
 
-	property name="commandHistoryFile"		inject="commandHistoryFile@java";
-	property name="REPLScriptHistoryFile"	inject="REPLScriptHistoryFile@java";
-	property name="REPLTagHistoryFile"	inject="REPLTagHistoryFile@java";
+	property name="commandHistoryFile"		inject="commandHistoryFile@constants";
+	property name="REPLScriptHistoryFile"	inject="REPLScriptHistoryFile@constants";
+	property name="REPLTagHistoryFile"	inject="REPLTagHistoryFile@constants";
 
 	/**
 	 * @clear.hint Erase your history.
@@ -39,29 +39,37 @@ component {
 	 * @type.options command,scriptREPL,tagREPL
 	 **/
 	function run( boolean clear=false, string type='command' ) {
-		// Get the Java JLine.History object
-		if( arguments.type == 'scriptREPL' ) {
-			var history = variables.REPLScriptHistoryFile;
-		} else if( arguments.type == 'tagREPL' ) {
-			var history = variables.REPLTagHistoryFile;
-		} else {
-			var history = variables.commandHistoryFile;
-		}
-
-		// Clear the history?
-		if( arguments.clear ) {
-			history.clear();
-			print.greenLine( 'History cleared.' );
-			// Flush out anything in the buffer
-			history.flush();
-		// Default behavior is just to display history
-		} else {
-			var historyIterator = history.iterator();
-			while( historyIterator.hasNext() ) {
-				print.line( listRest( historyIterator.next(), ':' ) );
+		try {
+			// Get the Java JLine.History object
+			if( arguments.type == 'scriptREPL' ) {
+				shell.setHistory( REPLScriptHistoryFile );
+			} else if( arguments.type == 'tagREPL' ) {
+				shell.setHistory( REPLTagHistoryFile );
+			} else if( arguments.type == 'command' ) {
+				shell.setHistory( commandHistoryFile );
+			} else {
+				error( 'History type [#arguments.type#] is invalid.  Valid types are "command", "scriptREPL", and "tagREPL".' );
 			}
-
-		} // end clear?
+	
+			// Clear the history?
+			if( arguments.clear ) {
+				shell.getReader().getHistory().purge();
+				print.greenLine( 'History cleared.' );
+				// Flush out anything in the buffer
+				shell.getReader().getHistory().save();
+			// Default behavior is just to display history
+			} else {
+				var historyIterator = shell.getReader().getHistory().iterator();
+				while( historyIterator.hasNext() ) {
+					print.line( listRest( historyIterator.next(), ':' ).trim() );
+				}
+	
+			} // end clear?
+			
+		// Whatever happens in Vegas, stays in Vegas
+		} finally {
+			shell.setHistory( commandHistoryFile );
+		}
 
 	}
 

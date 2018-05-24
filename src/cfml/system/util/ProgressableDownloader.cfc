@@ -11,6 +11,7 @@
 component singleton {
 
 	property name='ConfigService' inject='ConfigService';
+	property name='shell' inject='shell';
 
 	/**
 	* Call me to download a file with a status callback
@@ -47,20 +48,27 @@ component singleton {
 			var lastTickCount = currentTickCount;
 			var kiloBytesPerSecondRunningAverage = [];
 			var lastKiloBytesPerSeconde = 0;
+			var first = true;
 
 			while ( ( var count = inputStream.read( data ) ) != -1 ) {
+				
+				// Has the user tried to interrupt this thread?
+				shell.checkInterrupted();
+				
 				total += count;
+				// This number will be worthless if content length is -1
 				currentPercentage = int( ( total * 100 ) / lenghtOfFile );
+				bytesSinceLastUpdate = total - lastTotalDownloaded;
 				outputStream.write( data, 0, count );
 
 				// Is there a callback closure
 				if( !isNull( arguments.statusUDF ) ) {
 
 					// Have we progressed a full percent?
-					if( currentPercentage >= lastPercentage + 1 ) {
+					// Or if we don't know the total length, have we at least gotten
+					if( ( lenghtOfFile == -1 && bytesSinceLastUpdate >= 250000 ) || currentPercentage >= lastPercentage + 1 || first ) {
 
 						currentTickCount = getTickCount();
-						bytesSinceLastUpdate = total - lastTotalDownloaded;
 						milisSinceLastUpdate = currentTickCount - lastTickCount;
 
 						// Make sure time passed since last update in case network got ahead of our loop
@@ -79,7 +87,7 @@ component singleton {
 						var status = {
 							percent = currentPercentage,
 							speedKBps = kiloBytesPerSecond,
-							totalSizeKB = lenghtOfFile/1000,
+							totalSizeKB = ( lenghtOfFile == -1 ? -1 : lenghtOfFile/1000 ),
 							completeSizeKB = total/1000
 						};
 
@@ -98,9 +106,8 @@ component singleton {
 					} // full percentage check
 
 				} // Closure check
-
+				first = false;
 			} // End loop
-
 
 			outputStream.flush();
 			outputStream.close();
@@ -132,6 +139,11 @@ component singleton {
 			}
 			if( !isNull( inputStream ) ) {
 				inputStream.close();
+			}
+		
+			if( !isNull( arguments.statusUDF ) ) {
+				status.percent = 100;
+				arguments.statusUDF( status );
 			}
 		}
 

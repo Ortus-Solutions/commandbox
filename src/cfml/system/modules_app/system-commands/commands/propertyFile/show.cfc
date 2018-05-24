@@ -3,9 +3,9 @@
  * .
  * Output a single property, all properties, or all properties as JSON.
  * {code:bash}
- * propertyFile show
- * propertyFile show property.name.here
- * propertyFile show --JSON
+ * propertyFile show myFile.properties
+ * propertyFile show myFile.properties property.name.here
+ * propertyFile show myFile.properties --JSON
  * {code}
  *
  **/

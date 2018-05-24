@@ -8,7 +8,8 @@
  **/
 component {
 
-	property name="serverService" inject="ServerService";
+	property name="serverService"	inject="ServerService";
+	property name="printUtil"		inject="print";
 
 	/**
 	 * Show server log
@@ -18,12 +19,16 @@ component {
 	 * @directory.hint web root for the server
 	 * @serverConfigFile The path to the server's JSON file.
 	 * @follow Tail the log file with the "follow" flag. Press Ctrl-C to quit.
+	 * @access Set this flag to view/tail the access log
+	 * @rewrites Set this flag to view/tail the rewrites log
 	 **/
 	function run(
 		string name,
 		string directory,
 		String serverConfigFile,
-		Boolean follow=false
+		Boolean follow=false,
+		Boolean access=false,
+		Boolean rewrites=false
 		 ){
 		if( !isNull( arguments.directory ) ) {
 			arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
@@ -40,6 +45,12 @@ component {
 		}
 
 		var logfile = serverInfo.logdir & "/server.out.txt";
+		if( access ) {
+			logfile = serverInfo.accessLogPath;
+		}
+		if( rewrites ) {
+			logfile = serverInfo.rewritesLogPath;
+		}
 		if( fileExists( logfile) ){
 
 			if( follow ) {
@@ -48,18 +59,59 @@ component {
 					.flags( 'follow' )
 					.run();
 			} else {
-				return fileRead( logfile );
+				return fileRead( logfile )
+					.listToArray( chr( 13 ) & chr( 10 ) )
+					.map( function( line ) {
+						return cleanLine( line );
+					} )
+					.toList( chr( 10 ) );
 			}
 
 		} else {
 			print.boldRedLine( "No log file found for '#serverInfo.webroot#'!" )
 				.line( "#logFile#" );
+			if( access ) {
+				print.yellowLine( 'Enable accesss logging with [server set web.acessLogEnable=true]' );
+			}
 		}
 	}
 
 
 	function serverNameComplete() {
 		return serverService.getServerNames();
+	}
+
+	private function cleanLine( line ) {
+		
+		// Log messages from the CF engine or app code writing direclty to std/err out strip off "runwar.context" but leave color coded severity
+		// Ex:
+		// [INFO ] runwar.context: 04/11 15:47:10 INFO Starting Flex 1.5 CF Edition
+		line = reReplaceNoCase( line, '^(\[[^]]*])( runwar\.context: )(.*)', '\1 \3' );
+		
+		// Log messages from runwar itself, simplify the logging category to just "Runwar:" and leave color coded severity
+		// Ex:
+		// [DEBUG] runwar.config: Enabling Proxy Peer Address handling
+		// [DEBUG] runwar.server: Starting open browser action
+		line = reReplaceNoCase( line, '^(\[[^]]*])( runwar\.[^:]*: )(.*)', '\1 Runwar: \3' );
+		
+		if( line.startsWith( '[INFO ]' ) ) {
+			return reReplaceNoCase( line, '^(\[INFO ] )(.*)', '[#printUtil.boldCyan('INFO ')#] \2' );
+		}
+
+		if( line.startsWith( '[ERROR]' ) ) {
+			return reReplaceNoCase( line, '^(\[ERROR] )(.*)', '[#printUtil.boldMaroon('ERROR')#] \2' );
+		}
+
+		if( line.startsWith( '[DEBUG]' ) ) {
+			return reReplaceNoCase( line, '^(\[DEBUG] )(.*)', '[#printUtil.boldOlive('DEBUG')#] \2' );
+		}
+
+		if( line.startsWith( '[WARN ]' ) ) {
+			return reReplaceNoCase( line, '^(\[WARN ] )(.*)', '[#printUtil.boldYellow('WARN ')#] \2' );
+		}
+
+		return line;
+
 	}
 
 }

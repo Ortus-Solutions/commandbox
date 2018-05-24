@@ -4,14 +4,14 @@
 	<rule>
 		<note>Generic Front-Controller URLs</note>
 		<!-- These are paths that don't exist on disk, but shouldn't get rewritten since the CF engine treats them special. -->
-		<condition type="request-uri" operator="notequal">/(flex2gateway|flashservices/gateway|messagebroker|lucee|rest|cfide|CFIDE|cfformgateway|jrunscripts)/.*</condition>
+		<condition type="request-uri" operator="notequal">^/(flex2gateway|flashservices/gateway|messagebroker|lucee|rest|cfide|CFIDE|cfformgateway|jrunscripts|cf_scripts)/.*</condition>
 		<!-- This is a special URL that can be enabled with debuggin -->
-		<condition type="request-uri" operator="notequal">/tuckey-status</condition>
+		<condition type="request-uri" operator="notequal">^/tuckey-status</condition>
 		<!-- Browsers like to send this request and it will get rewritten to /index.cfm/favicon.ico when it really just needs to be a 404 -->
-		<condition type="request-uri" operator="notequal">/favicon.ico</condition>
+		<condition type="request-uri" operator="notequal">^/favicon.ico</condition>
 		<!-- Ignore any path to a .cfm or .cfml file in a sub directory that has a path info attached. These won't trigger as "real" directories below
 		since the rewrite filter doesn't know what part is the actual file name.  Note, the ses path info servlet filter hasn't fired yet. -->
-		<condition type="request-uri" operator="notequal">/.*\.cf(m|ml)/.*</condition>
+		<condition type="request-uri" operator="notequal">^/.*\.cf(m|ml)/.*</condition>
 		<!-- Do not rewrite paths that point to real files or directories -->
 		<condition type="request-filename" operator="notdir"/>
 		<condition type="request-filename" operator="notfile"/>

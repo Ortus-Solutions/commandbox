@@ -20,6 +20,7 @@ component accessors=true {
 	property name='append';
 	property name='overwrite';
 	property name='workingDirectory';
+	property name='rawParams';
 
 
 	// DI
@@ -44,6 +45,7 @@ component accessors=true {
 		setAppend( '' );
 		setOverwrite( '' );
 		setWorkingDirectory( '' );
+		setRawParams( false );
 		return this;
 	}
 
@@ -60,6 +62,7 @@ component accessors=true {
 	 * Convert params to named or positional arguments
   	 **/
 	private array function processParams() {
+		var runCommand = ( getCommand().startsWith( '!' ) || getCommand().left( 3 ) == 'run' );
 		var processedParams = [];
 		if( !arraylen( getParams() ) ) {
 			return processedParams;
@@ -68,12 +71,22 @@ component accessors=true {
 		// Positional params
 		if( isNumeric( listFirst( structKeyList( getParams() ) ) ) ) {
 			for( var param in getParams() ) {
-				processedParams.append( '"#parser.escapeArg( getParams()[ param ] )#"' );
+				if( runCommand ) {
+					processedParams.append( getParams()[ param ] );					
+				} else if( getRawParams() ) {
+					processedParams.append( '"#getParams()[ param ]#"' );
+				} else {
+					processedParams.append( '"#parser.escapeArg( getParams()[ param ] )#"' );					
+				}
 			}
 		// Named params
 		} else {
 			for( var param in getParams() ) {
-				processedParams.append( '#param#="#parser.escapeArg( getParams()[ param ] )#"' );
+				if( runCommand ) {
+					processedParams.append( '#param#=#getParams()[ param ]#' );	
+				} else {
+					processedParams.append( '#param#="#parser.escapeArg( getParams()[ param ] )#"' );					
+				}
 			}
 		}
 
@@ -172,7 +185,9 @@ component accessors=true {
 	/**
 	 * Run this command
   	 **/
-	string function run( returnOutput=false, string piped, boolean echo=false ) {
+	string function run( returnOutput=false, string piped, boolean echo=false, boolean rawParams=false ) {
+
+		setRawParams( rawParams );
 
 		if( arguments.echo ) {
 			shell.callCommand( 'echo "#parser.escapeArg( getCommandString() )#"' );

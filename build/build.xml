@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<!-- ====================================================================== 
+<!-- ======================================================================
 Build a new distribution of Ortus CommandBox:
 This build downloads required libs depending on the target.
 
@@ -16,9 +16,9 @@ External Dependencies:
  	<property name="distro.groupID"				value="ortussolutions" />
  	<property name="distro.name"				value="commandbox"/>
  	<!-- Special things happen when the version and stableVersion are the same value as that signifies a "stable" build.   -->
- 	<property name="commandbox.version"			value="3.9.2"/>
- 	<property name="commandbox.stableVersion"	value="3.9.2"/>
- 	                		 
+ 	<property name="commandbox.version"			value="4.0.0"/>
+ 	<property name="commandbox.stableVersion"	value="4.0.0"/>
+
     <!-- Time Label -->
 	<tstamp prefix="start"/>
 	<!-- Load build lib tasks -->
@@ -33,7 +33,7 @@ External Dependencies:
 	<taskdef resource="net/sf/antcontrib/antlib.xml" classpathref="build.antcontrib.libpath" />
 	<!-- Import Box-Repo Tasks -->
 	<import><url url="https://raw.githubusercontent.com/Ortus-Solutions/box-tasks/master/box-repo.xml"/></import>
-	
+
 	<!-- Default environment check, if not passed via -Denvironment -->
 	<condition property="environment" value="local">
 		<not><isset property="environment" /></not>
@@ -59,7 +59,7 @@ External Dependencies:
 	<!-- import cfdistro -->
 	<import file="${cfdistro.build.file}"/>
 	<property name="maven.repo.local" value="${cfdistro.basedir}/artifacts"/>
-	
+
 	<if>
 	    <equals arg1="${commandbox.version}" arg2="${commandbox.stableVersion}"/>
 	    <then>
@@ -69,12 +69,12 @@ External Dependencies:
 		 	<property name="isStable"	value="false"/>
 	    </else>
 	</if>
-	
+
     <propertyregex property="commandbox.version.noPrereleaseID"
            input="${commandbox.version}"
            regexp="([0-9]*\.[0-9]*\.[0-9]*).*"
            select="\1" />
-           
+
 	<!-- Init Build -->
 	<target name="init" description="Init build" unless="src.isInit">
 		<!-- cleanup -->
@@ -90,8 +90,8 @@ External Dependencies:
 
 		<!-- Increment Build Number -->
 		<propertyfile file="build.number" comment="Build Number for ANT. Edit not!">
-			<entry key="build.number" 
-					type="int" 
+			<entry key="build.number"
+					type="int"
 			     	operation="+"
 					pattern="00000"
 			     	default="1" />
@@ -101,15 +101,10 @@ External Dependencies:
 
 		<!-- Create version file -->
 		<echo file="${build.dir}/.version" append="false">${commandbox.version}+${build.number}</echo>
-		
+
 		<!-- If stg, change perms and owners -->
 		<antcall target="update.permissions" />
 
-		<!-- get commandbox dependencies 
-		<dependency groupId="jline" artifactId="jline" version="2.12" dest="${lib.dir}" type="jar" unzip="false"/>
-		<dependency groupId="org.lucee" artifactId="lucee.cli" version="${cfml.cli.version}" dest="${temp.dir}/rcli" type="jar" unzip="true"/>
-		-->
-		
 		<!-- Mark as init -->
 		<property name="src.isInit" value="true" />
 	</target>
@@ -159,45 +154,46 @@ External Dependencies:
 
 	<!-- Build CLI -->
 	<target name="build.cli" description="builds box.jar" depends="init,resolve.libs">
-		
+
+		<!-- Copy libs to engine destination -->
+		<mkdir dir="${lucee.lib.dir}" />
+		<copy todir="${lucee.lib.dir}">
+	      <fileset dir="${lib.dir}" includes="*.jar" />
+	    </copy>
+		<mkdir dir="${temp.dir}/engine" />
+
 		<!-- Prepare Compile Path -->
 		<path id="classpath">
 			<fileset dir="${lucee.lib.dir}"/>
 			<fileset dir="${lib.dir}"/>
 		</path>
-		
+
 		<!-- Compile java source -->
 		<mkdir dir="${temp.dir}/cli/bin" />
-		<javac srcdir="${src.dir}/java" 
-			   destdir="${temp.dir}/cli/bin" 
+		<javac srcdir="${src.dir}/java"
+			   destdir="${temp.dir}/cli/bin"
 			   source="${java.compiler}"
-			   target="${java.compiler}" 
+			   target="${java.compiler}"
 			   classpath="${toString:classpath}"
 			   debug="${java.debug}" />
-		
-		<!-- Copy libs to engine destination -->
-		<copy todir="${lucee.lib.dir}">
-	      <fileset dir="${lib.dir}" includes="*.jar" />
-	    </copy>
-		<mkdir dir="${temp.dir}/engine" />
-		
+
 		<!-- Configure Lucee Web Dir -->
-		<configure-lucee-web 
+		<configure-lucee-web
 		      config-server="${temp.dir}/engine/cfml/cli/lucee-server/context/lucee-server.xml"
 		      config-web="${temp.dir}/engine/cfml/cli/cfml-web/lucee-web.xml.cfm"
 		      dump-cfc="${temp.dir}/engine/cfml/cli/lucee-server/context/library/tag/Dump.cfc"/>
 		<antcontrib:var name="lucee.config.file" value="${temp.dir}/engine/cfml/cli/cfml-web/lucee-web.xml.cfm" />
-		
+
 		<!-- update lucee password -->
-		<lucee-password 
+		<lucee-password
 	      server-password="commandbox" config-server-file="${temp.dir}/engine/cfml/cli/lucee-server/context/lucee-server.xml"
 	      web-password="commandbox" config-web-file="${temp.dir}/engine/cfml/cli/cfml-web/lucee-web.xml.cfm"
 	    />
-		
+
 		<!-- update lucee error template path -->
 		<!-- Copy Error Template From Our Resources -->
 		<copy file="${src.dir}/resources/error-cli.cfm" todir="${temp.dir}/engine/cfml/cli/cfml-web/context/templates/error/" encoding="UTF-8"/>
-		<lucee-error-template path="/lucee/templates/error/error-cli.cfm" 
+		<lucee-error-template path="/lucee/templates/error/error-cli.cfm"
 	      configfile="${temp.dir}/engine/cfml/cli/cfml-web/lucee-web.xml.cfm" />
 
 		<!-- Copy Resources to build cli bin -->
@@ -208,12 +204,12 @@ External Dependencies:
 		<copy todir="${temp.dir}/cli/bin/cliloader" file="${src.dir}/java/cliloader/version.properties">
 	      <filterchain><expandproperties/><deletecharacters chars="\n"/><trim/><ignoreblank/></filterchain>
 	    </copy>
-		
+
 		<!-- Zip up the engine -->
 		<zip destfile="${temp.dir}/cli/engine.zip">
 	      <fileset dir="${temp.dir}/engine"/>
 	    </zip>
-		
+
 		<!-- we put the loader into a jar and then into libs.zip for classloading reasons -->
 		<jar destfile="${temp.dir}/cli/luceecli.jar" filesetmanifest="mergewithoutmain" level="9">
 			<manifest>
@@ -225,7 +221,7 @@ External Dependencies:
 			</fileset>
 		</jar>
 		<delete dir="${temp.dir}/cli/bin/luceecli" />
-		
+
 		<!-- Custom Jgit libs -->
 		<jar destfile="${temp.dir}/cli/ortus-jgit.jar" filesetmanifest="mergewithoutmain" level="9">
 			<fileset dir="${temp.dir}/cli/bin">
@@ -234,41 +230,59 @@ External Dependencies:
 			</fileset>
 		</jar>
 		<delete dir="${temp.dir}/cli/bin/com" />
-	
+
 		<!-- Copy CommandBox code -->
       	<copy todir="${build.dir}" encoding="UTF-8">
-        	<fileset dir="${src.dir}/cfml"/>
+        	<fileset dir="${src.dir}/cfml">
+        		<exclude name="modules/**"/>
+        	</fileset>
         	<fileset file="../license.txt"/>
         	<fileset file="../readme.txt"/>
         </copy>
+
+ 		<echo message="Replace build version..." />
 		<!-- Replace Version Numbers -->
 		<replaceregexp match='@build.version@' replace="${commandbox.version}" flags="ig" byline="true" encoding="UTF-8">
-		  <fileset dir="${build.dir}" />
+		  <fileset dir="${build.dir}">
+    		<include name="**/*.cfc"/>
+    		<include name="**/*.cfm"/>
+		  </fileset>
 		</replaceregexp>
+ 		<echo message="Replace loader version..." />
 		<!-- Replace Loader Version Numbers -->
 		<replaceregexp match='@build.LoaderVersion@' replace="${cfml.loader.version}" flags="ig" byline="true" encoding="UTF-8">
-		  <fileset dir="${build.dir}" />
+		  <fileset dir="${build.dir}">
+    		<include name="**/*.cfc"/>
+    		<include name="**/*.cfm"/>
+		  </fileset>
 		</replaceregexp>
+ 		<echo message="Replace build number..." />
 		<!-- Replace Build Numbers -->
 		<replaceregexp match='@build.number@' replace="${build.number}" flags="ig" byline="true" encoding="UTF-8">
-		  <fileset dir="${build.dir}" />
+		  <fileset dir="${build.dir}">
+    		<include name="**/*.cfc"/>
+    		<include name="**/*.cfm"/>
+		  </fileset>
 		</replaceregexp>
 		<!-- Create Version Files -->
 		<echo file="${temp.dir}/cli/bin/cliloader/cfml.version" message="${commandbox.version}"/>
 
 		<!--  create the cfml distro zip -->
 		<zip destfile="${dist.dir}/${distro.name}-cfml-${commandbox.version}.zip" update="false" level="9">
-	        <fileset dir="${build.dir}"/>
+	        <fileset dir="${build.dir}">
+			    <exclude name="box.json"/>
+			    <exclude name="modules/**"/>
+	        </fileset>
 			<zipfileset file="${temp.dir}/version" fullpath="cli/version"/>
 			<zipfileset file="${temp.dir}/cli/bin/cliloader/cfml.version" fullpath=".version"/>
 		</zip>
 		<copy file="${dist.dir}/${distro.name}-cfml-${commandbox.version}.zip" toFile="${temp.dir}/cli/cfml.zip" overwrite="true" />
-			
+
 		<!-- Build Checksum for cfml.zip -->
 		<checksum file="${dist.dir}/${distro.name}-cfml-${commandbox.version}.zip" forceoverwrite="true" fileext=".md5" />
 		<checksum file="${dist.dir}/${distro.name}-cfml-${commandbox.version}.zip" forceoverwrite="true" algorithm="sha" />
 		<checksum file="${dist.dir}/${distro.name}-cfml-${commandbox.version}.zip" forceoverwrite="true" algorithm="SHA-256" fileext=".sha256"/>
-		
+
 		<!--  create the libs zip including cli loader, optionally use pack200 -->
 	    <antcontrib:if>
 	      <equals arg1="${isStable}" arg2="true" />
@@ -308,9 +322,9 @@ External Dependencies:
 	    </antcontrib:if>
 	    <delete file="${temp.dir}/cli/luceecli.jar" />
 	    <delete file="${temp.dir}/cli/ortus-jgit.jar" />
-		
+
 		<echo file="${temp.dir}/version" message="${cfml.loader.version}" />
-		
+
 		<!-- Create jar -->
         <jar destfile="${dist.dir}/box.jar" filesetmanifest="mergewithoutmain" level="9">
 			<manifest>
@@ -331,13 +345,13 @@ External Dependencies:
 
 		<!-- Create box-repo.json -->
 		<box-repo location="${artifact.dir}"
-				  artifactID="${distro.name}" 
+				  artifactID="${distro.name}"
 				  groupID="${distro.groupID}"
 				  buildID="${build.number}"
 				  latest="${commandbox.version}"
 				  stableVersion="${commandbox.stableVersion}"
 				  classifiers="cfml,bin,win,deb,rpm,apidocs"/>
-		
+
 		<!-- Create box-loader.json -->
 		<concat destfile="${artifact.dir}/box-loader.json" overwrite="true">{
 			"artifactID" : "commandbox-loader",
@@ -357,7 +371,7 @@ External Dependencies:
  	<!-- Build Homebrew Recipe -->
  	<target name="build.homebrew" description="Builds the Homebrew Recipe" unless="${local.build}">
  		<property name="tapRepo"	value="git@github.com:Ortus-Solutions/homebrew-boxtap.git"/>
-		
+
 		<!-- Grab the checksum again for our build files -->
 		<checksum file="${dist.dir}/${distro.name}-bin-${commandbox.version}.zip" property="commandbox.sha256" algorithm="SHA-256"/>
 		<checksum file="${dist.dir}/${distro.name}-apidocs-${commandbox.version}.zip" property="commandbox.apidocs.sha256" algorithm="SHA-256"/>
@@ -378,12 +392,12 @@ External Dependencies:
 				<trim/>
 			</filterchain>
 		</loadresource>
-		
+
 		<!-- copy over prd file -->
-		<copy file="brew-template.rb" 
+		<copy file="brew-template.rb"
 			  tofile="${dist.dir}/commandbox.rb"
 			  overwrite="true"
-			  encoding="UTF-8" />		  
+			  encoding="UTF-8" />
 
 		<replace file="${dist.dir}/commandbox.rb" value="" summary="yes" encoding="UTF-8">
 		  	<replacetoken>@be@</replacetoken>
@@ -420,8 +434,8 @@ External Dependencies:
 			<element name="args" optional="true" />
 			<sequential>
 				<echo message="git @{command}" />
-				<exec executable="sudo" dir="@{dir}" failonerror="true">
-					<arg value="git" />
+				<exec executable="git" dir="@{dir}" failonerror="true">
+					<!--<arg value="git" />-->
 					<arg value="@{command}" />
 					<args/>
 				</exec>
@@ -434,15 +448,16 @@ External Dependencies:
 			</args>
 		</git>
 
-		<!-- Ensure write perms -->
+		<!-- Ensure write perms 
 		<exec executable="sudo" dir="${dist.dir}" failonerror="true">
 			<arg value="chmod" />
 			<arg value="-R" />
 			<arg value="777" />
 			<arg value="./homebrew-boxtap" />
-		</exec>
+		</exec>-->
+		<chmod file="${dist.dir}/homebrew-boxtap" perm="777" type="both" />
 
-		<copy file="${dist.dir}/commandbox.rb" 
+		<copy file="${dist.dir}/commandbox.rb"
 			  tofile="${dist.dir}/homebrew-boxtap/commandbox.rb"
 			  overwrite="true"
 			  encoding="UTF-8" />
@@ -454,7 +469,7 @@ External Dependencies:
 				<arg value="--all"/>
 			</args>
 		</git>
-		
+
 
 		<git command="commit" dir="${dist.dir}/homebrew-boxtap">
 			<args>
@@ -466,13 +481,14 @@ External Dependencies:
 
 		<git command="push" dir="${dist.dir}/homebrew-boxtap" />
 
-		<!-- Ensure perms allow us to delete since GIT is runing as sudo-er -->
+		<!-- Ensure perms allow us to delete since GIT is runing as sudo-er
 		<exec executable="sudo" dir="${dist.dir}" failonerror="true">
 			<arg value="chmod" />
 			<arg value="-R" />
 			<arg value="777" />
 			<arg value="./homebrew-boxtap" />
-		</exec>
+		</exec> -->
+		<chmod file="${dist.dir}/homebrew-boxtap" perm="777" type="both" />
 
 		<delete dir="${dist.dir}/homebrew-boxtap"/>
 
@@ -496,15 +512,15 @@ External Dependencies:
 			<arg line="${cmdboxhome.arg} server start openbrowser=false --force port=${apidocs.port} --noSaveSettings --debug" />
 		</exec>
 		<sleep seconds="5"/>
-		
+
 		<!-- Get the apidocs now -->
 		<property name="temp.dir.absolute" location="${temp.dir}"/>
-		<get dest="${temp.dir}/docbox.html" 
-			 src="${url.apidocs}/index.cfm?version=${commandbox.version}&amp;path=${temp.dir.absolute}/apidocs" 
+		<get dest="${temp.dir}/docbox.html"
+			 src="${url.apidocs}/index.cfm?version=${commandbox.version}&amp;path=${temp.dir.absolute}/apidocs"
 			 verbose="true"
 			 retries="5"/>
 		<delete file="${temp.dir}/docbox.html" />
- 		
+
 		<!-- Zip API Docs -->
 		<zip destfile="${dist.dir}/${distro.name}-apidocs-${commandbox.version}.zip" basedir="${temp.dir}/apidocs"></zip>
  		<!-- Build Checksum -->
@@ -515,14 +531,14 @@ External Dependencies:
  		<!-- Wipe & recreate for core API docs -->
  		<delete dir="${temp.dir}/apidocs" />
  		<mkdir dir="${temp.dir}/apidocs"/>
- 		<get dest="${temp.dir}/docbox.html" 
-			 src="${url.apidocs}/internal.cfm?version=${commandbox.version}&amp;path=${temp.dir.absolute}/apidocs" 
+ 		<get dest="${temp.dir}/docbox.html"
+			 src="${url.apidocs}/internal.cfm?version=${commandbox.version}&amp;path=${temp.dir.absolute}/apidocs"
 			 verbose="true"
 			 retries="5"
 			 ignoreerrors="true" />
-			 
+
 		<delete file="${temp.dir}/docbox.html" />
-		
+
  		<!-- stop server -->
 		<exec executable="${dist.dir}/box" dir="${dir.apidocs}">
 			<arg line="${cmdboxhome.arg} server log" />
@@ -554,16 +570,16 @@ External Dependencies:
 		<zip destfile="${dist.dir}/${distro.name}-bin-${commandbox.version}.zip" level="9" update="false">
 	        <zipfileset file="${dist.dir}/box" filemode="711" prefix="" />
 		</zip>
-		
+
 		<!-- Build SDK format. Same file/zip but with folders.] -->
 		<mkdir dir="${temp.dir}/sdk-bin/${distro.name}-${commandbox.version}/bin/"/>
 		<copy file="${dist.dir}/box" toDir="${temp.dir}/sdk-bin/${distro.name}-${commandbox.version}/bin/"/>
-		
+
         <!-- Create SDK zip -->
 		<zip destfile="${dist.dir}/${distro.name}-sdk-bin-${commandbox.version}.zip" level="9" update="false">
 	        <zipfileset dir="${temp.dir}/sdk-bin/" filemode="711" />
-		</zip>		
-		
+		</zip>
+
 		<!-- Build Checksum -->
 		<checksum file="${dist.dir}/${distro.name}-bin-${commandbox.version}.zip" forceoverwrite="true" fileext=".md5" />
 		<checksum file="${dist.dir}/${distro.name}-bin-${commandbox.version}.zip" forceoverwrite="true" algorithm="sha" />
@@ -578,20 +594,20 @@ External Dependencies:
         <!-- Get OS version of lanuch4j -->
         <antcall target="getlaunch4j" />
         <!-- Build Executable Now -->
-        <taskdef name="launch4j" 
-        		 classname="net.sf.launch4j.ant.Launch4jTask" 
-        		 classpath="./launch4j/launch4j.jar:./launch4j/lib/xstream.jar" />
-        
+        <taskdef name="launch4j"
+        		 classname="net.sf.launch4j.ant.Launch4jTask"
+        		 classpath="./launch4j-${launch4j.version}/launch4j/launch4j.jar:./launch4j-${launch4j.version}/launch4j/lib/xstream.jar" />
+
         <launch4j>
-			<config headerType="console" 
-					outfile="${dist.dir}/box.exe" 
-					jarPath="${dist.dir}/box.jar" 
+			<config headerType="console"
+					outfile="${dist.dir}/box.exe"
+					jarPath="${dist.dir}/box.jar"
 					errTitle="Error running CommandBox"
 					supportURL="${commandbox.supportURL}"
 					chdir="%OLDPWD%"
 					icon="${src.dir}/resources/box.ico"
 					stayAlive="true">
-					<jre path="./jre/" minVersion="1.7.0" />
+					<jre path="./jre/" minVersion="1.8.0" maxVersion="1.8.0_999" />
 					<versionInfo fileVersion="${commandbox.version.noPrereleaseID}.0"
 								 txtFileVersion="${commandbox.version}.${build.number}"
 								 fileDescription="${commandbox.description}"
@@ -604,7 +620,7 @@ External Dependencies:
 								 originalFilename="box.exe" />
 			</config>
 		</launch4j>
-		
+
 		<!-- Zip it -->
 		<zip destfile="${dist.dir}/${distro.name}-win-${commandbox.version}.zip" level="9" update="false">
 	        <zipfileset file="${dist.dir}/box.exe" prefix="" />
@@ -618,7 +634,7 @@ External Dependencies:
 	<!-- Build including JREs -->
  	<target name="build.cli.jre" description="Build with JRE included" depends="build.cli.bin,build.cli.exe" if="${isStable}">
  		<echo message="Bundling ${jre.version} JRE" />
-		
+
 		<!-- Get JRE Dependencies -->
 		<dependency groupId="oracle" artifactId="jre" version="${jre.version}" type="zip" classifier="win32" />
 		<dependency groupId="oracle" artifactId="jre" version="${jre.version}" type="zip" classifier="win64" />
@@ -665,7 +681,7 @@ External Dependencies:
 			</fileset>
 		</checksum>
  	</target>
-	
+
 	<!-- Build local maven repository build.cli.deb,build.cli.exe,build.cli.rpm-->
  	<target name="build.cli.mvn" depends="build.cli.deb,build.cli.exe,build.cli.jre,build.cli.rpm">
 		<pom-and-deploy pomid="commandbox.pom" packaging="pom" buildtype="${mvn.type}"
@@ -717,28 +733,27 @@ External Dependencies:
         key="${ortus.sign.key.id}"
         passphrase="${ortus.sign.key.passphrase}"
         keyring="${ortus.sign.keyring}" />
-        
-	<antcall target="build.cli.deb.stablerepo" />
-        
-    <!-- Update stable Repo -->
-    <deb-repo dir="${deb.repo.stable}"
-        label="ortus" description="ortussolutions.com debian repository"
-        key="${ortus.sign.key.id}"
-        passphrase="${ortus.sign.key.passphrase}"
-        keyring="${ortus.sign.keyring}" />
-	        
+
+		<antcall target="build.cli.deb.stablerepo" />
+
   </target>
-  
+
 	<target name="build.cli.deb.stablerepo" if="${isStable}">
 		<echo>This is a stable build, let's update the stable Debian repo</echo>
-			
+
     	<mkdir dir="${deb.repo.stable}"/>
-    	
+
 	    <!-- Copy deb package to stable dist dir too -->
 	    <copy file="${deb.repo}/${distro.name}_${commandbox.version}-1_all.deb" toFile="${deb.repo.stable}/${distro.name}_${commandbox.version}-1_all.deb"/>
 	    <copy file="${deb.repo}/${distro.name}_${commandbox.version}-1_all.changes" toFile="${deb.repo.stable}/${distro.name}_${commandbox.version}-1_all.changes"/>
-	        
-	</target>
+
+	    <!-- Update stable Repo -->
+	    <deb-repo dir="${deb.repo.stable}"
+	        label="ortus" description="ortussolutions.com debian repository"
+	        key="${ortus.sign.key.id}"
+	        passphrase="${ortus.sign.key.passphrase}"
+	        keyring="${ortus.sign.keyring}" />
+		</target>
 
   <!-- Build RPM: Leverages redline task -->
   <target name="build.cli.rpm" depends="build.cli.bin">
@@ -752,7 +767,7 @@ External Dependencies:
       rpm.group="com.ortussolutions" rpm.name="${distro.name}" rpm.version="${commandbox.version.noPrereleaseID}"
       rpm.packager="${commandbox.packager.name} ${commandbox.packager.email}"
       rpm.url="${commandbox.supportURL}" failonerror="false"
-      rpm.keyring="${ortus.sign.keyring}" rpm.key="${ortus.sign.key.id}" 
+      rpm.keyring="${ortus.sign.keyring}" rpm.key="${ortus.sign.key.id}"
       rpm.passphrase="${ortus.sign.key.passphrase}">
       <tarfileset file="${dist.dir}/box" prefix="/usr/bin" filemode="744" username="root" group="root"/>
     </rpm-create>
@@ -760,15 +775,15 @@ External Dependencies:
     <copy file="${rpm.repo}/${distro.name}-${commandbox.version.noPrereleaseID}-1.noarch.rpm" tofile="${dist.dir}/${distro.name}-rpm-${commandbox.version.noPrereleaseID}.rpm" />
     <!-- Build Checksum -->
     <checksum file="${dist.dir}/${distro.name}-rpm-${commandbox.version.noPrereleaseID}.rpm" forceoverwrite="true" fileext=".md5" />
-        
+
 	<antcall target="build.cli.rpm.stablerepo" />
-	
+
 	<rpm-repo name="${distro.name}" baseurl="${commandbox.rpm.repourl.stable}" dir="${rpm.repo.stable}" failonerror="false"/>
   </target>
-   
+
 	<target name="build.cli.rpm.stablerepo" if="${isStable}">
 		<echo message="This is a stable build, let's update the stable RPM repo" />
-	
+
 	    <mkdir dir="${rpm.repo.stable}" />
 	    <echo message="Making stable rpm in ${rpm.repo.stable} Packager:${commandbox.packager.name} ${commandbox.packager.email} Version: ${commandbox.version}" />
 	    <!-- execute rpm -->
@@ -779,64 +794,59 @@ External Dependencies:
 	      rpm.group="com.ortussolutions" rpm.name="${distro.name}" rpm.version="${commandbox.version.noPrereleaseID}"
 	      rpm.packager="${commandbox.packager.name} ${commandbox.packager.email}"
 	      rpm.url="${commandbox.supportURL}" failonerror="false"
-	      rpm.keyring="${ortus.sign.keyring}" rpm.key="${ortus.sign.key.id}" 
+	      rpm.keyring="${ortus.sign.keyring}" rpm.key="${ortus.sign.key.id}"
 	      rpm.passphrase="${ortus.sign.key.passphrase}">
 	      <tarfileset file="${dist.dir}/box" prefix="/usr/bin" filemode="744" username="root" group="root"/>
 	    </rpm-create>
-	    
+
 	</target>
-  
+
 	<!-- ********************************************************************************************-->
 	<!--						DEPENDENCY TARGETS 													 -->
 	<!-- ********************************************************************************************-->
-	
+
 	<target name="resolve.libs">
 		<delete dir="${lib.dir}"/>
  		<mvn-repo id="jgit-repository" url="https://repo.eclipse.org/content/groups/releases/" />
- 		<!-- 
- 		<mvn-repo id="jboss.repo" url="http://repository.jboss.org/nexus/content/repositories/releases" />
-		
-		<dependency groupId="org.jboss.aesh" artifactId="aesh" unzip="false" version="0.53" type="jar" dest="${lib.dir}" repoId="jboss.repo" />
-		<dependency groupId="org.jboss.jreadline" artifactId="jreadline"
-			unzip="false" version="0.20" type="jar" dest="${lib.dir}" repoId="jboss.repo">
+		<mvn-repo id="sonatype-repository" url="https://oss.sonatype.org/content/repositories/snapshots/" />
+
+		<dependency  groupId="org.jline" artifactId="jline" version="${jline.version}" dest="${lib.dir}" type="jar" unzip="false" />
+
+		<dependency groupId="org.eclipse.jgit" artifactId="org.eclipse.jgit" version="${jgit.version}" dest="${lib.dir}" repoId="jgit-repository" unzip="false" type="jar">
 			<exclusions>
-				<exclusion groupId="org.fusesource.jansi" artifactId="jansi" />
-			</exclusions>
-		</dependency>
-		<dependency groupId="org.fusesource.jansi" artifactId="jansi" unzip="false" version="1.11" type="jar" dest="${lib.dir}" />
-		 -->
- 		<mvn-repo id="sonatype" url="https://oss.sonatype.org/content/repositories/snapshots/" />
-		<dependency repoId="sonatype" groupId="jline" artifactId="jline" version="2.15-SNAPSHOT" dest="${lib.dir}" type="jar" unzip="false"/>
-		<dependency groupId="org.eclipse.jgit" artifactId="org.eclipse.jgit" version="4.3.0.201604071810-r" dest="${lib.dir}" repoId="jgit-repository" unzip="false" type="jar">
-			<exclusions>
-				<!-- Lucee already includes these jars --> 
+				<!-- Lucee already includes these jars -->
 				<exclusion groupId="org.slf4j" artifactId="slf4j-api" />
 				<exclusion groupId="org.apache.httpcomponents" artifactId="httpclient" />
 			</exclusions>
 		</dependency>
+
 	    <dependency groupId="com.beust" artifactId="jcommander" version="1.47" dest="${lib.dir}" type="jar" unzip="false"/>
 	    <dependency groupId="net.minidev" artifactId="json-smart-mini" version="1.0.8" unzip="false" type="jar" dest="${lib.dir}"/>
-	    <dependency groupId="org.cfmlprojects" artifactId="runwar" version="${runwar.version}" dest="${lucee.lib.dir}" unzip="false" type="jar" />
+	    <dependency groupId="org.cfmlprojects" artifactId="runwar" version="${runwar.version}" dest="${lib.dir}" unzip="false" type="jar" />
+
 	    <!-- engine libs -->
-	  	<dependency groupId="org.lucee" artifactId="lucee" version="${lucee.version}" dest="${lucee.lib.dir}" unzip="false" type="jar">
+	  	<dependency groupId="org.lucee" artifactId="lucee" version="${lucee.version}" dest="${lib.dir}" unzip="false" type="jar" repoId="sonatype-repository">
 			<exclusions>
-				<exclusion groupId="org.lucee.lib" artifactId="railo-slf4j" />
+				<exclusion groupId="org.apache.ant" artifactId="ant" />
+				<exclusion groupId="javax.servlet" artifactId="javax.servlet-api" />
+				<exclusion groupId="javax.servlet.jsp" artifactId="jsp-api" />
+				<exclusion groupId="javax.el" artifactId="javax.el-api" />
+				<exclusion groupId="org.apache.felix" artifactId="org.apache.felix.framework" />
+				<exclusion groupId="junit" artifactId="junit" />
 				<exclusion groupId="org.lucee.lib" artifactId="slf4j-nop" />
 			</exclusions>
 		</dependency>
-	    <dependency groupId="org.lucee" artifactId="lucee.optional" version="${lucee.version}" 
-	      dest="${lucee.lib.dir}" unzip="false" type="pom" />
-		  <move file="${lucee.lib.dir}/lucee-inst-${lucee.version}.jar" toFile="${lucee.lib.dir}/lucee-inst.jar"/>
-		  <delete dir="${lucee.lib.dir}" includes="*.pom"/>
+
 	    <mvn-repo id="java.repo" url="http://download.java.net/maven/2/" />
-	    <dependency groupId="javax.mail" artifactId="mail" version="1.4.4" dest="${lucee.lib.dir}" repoId="java.repo" unzip="false" type="jar" />
+	    <dependency groupId="javax.mail" artifactId="mail" version="1.4.4" dest="${lib.dir}" repoId="java.repo" unzip="false" type="jar" />
+
    </target>
 
 	<!-- Get launch4j -->
 	<target name="getlaunch4j" description="Get an OS dependent launch4j into the build directory">
 		<!-- do a check -->
 		<antcontrib:if>
-	        <available file="launch4j/launch4j.jar" />
+	        <available file="launch4j-${launch4j.version}/launch4j/launch4j.jar" />
 	        <then><echo>Launch4j Binary found!</echo></then>
 	        <else>
 	            <echo>Launch4j not found, getting artifact from ${ortus.repoURL}</echo>
@@ -854,17 +864,17 @@ External Dependencies:
 					</elseif>
 				</antcontrib:if>
 				<echo>Downloading ${launch4j.filename} from ${ortus.repoURL}...</echo>
-				<get src="${ortus.repoURL}/launch4j/${launch4j.version}/${launch4j.filename}" 
+				<get src="${ortus.repoURL}/launch4j/${launch4j.version}/${launch4j.filename}"
 					 dest="."
 					 verbose="true" />
 				<!-- Unzip according to OS -->
 				<antcontrib:if>
 					<os family="windows" />
 					<then>
-						<unzip src="${launch4j.filename}" dest="." overwrite="true"/>
+						<unzip src="${launch4j.filename}" dest="./launch4j-${launch4j.version}/" overwrite="true"/>
 					</then>
 					<else>
-						<untar src="${launch4j.filename}" dest="." compression="gzip"/>
+						<untar src="${launch4j.filename}" dest="./launch4j-${launch4j.version}/" compression="gzip"/>
 					</else>
 				</antcontrib:if>
 				<!-- Removal -->
@@ -872,39 +882,13 @@ External Dependencies:
 	        </else>
 	    </antcontrib:if>
 	    <!-- Add execution perms every time just in case -->
-	    <chmod dir="./launch4j/bin/" perm="ugo+rx" includes="*"/>
-	</target>
-	
-	<!-- Get Dependencies -->
-	<target name="getDependencies" description="Get all the necessary dependencies for the cli build process." depends="getlaunch4j">
-		<!-- Get Runwar -->
-		<box-dependency groupID="cfmlprojects" 
- 						artifactID="runwar" 
- 						version="${runwar.version}"
- 						extension="jar"
- 						destination="${dependencies.dir}"/>
- 		<copy file="${dependencies.dir}/runwar-${runwar.version}.jar" toDir="${lucee.lib.dir}" encoding="UTF-8" />
- 		<!-- Get JLine directly to railo build dir -->
- 		<box-dependency groupID="" 
- 						artifactID="jline" 
- 						version="${jline.version}"
- 						extension="jar"
- 						destination="${dependencies.dir}"/>
- 		<copy file="${dependencies.dir}/jline-${jline.version}.jar" toDir="${railo.lib.dir}" encoding="UTF-8" />
- 		<!-- Get Railo as a dependency -->
- 		<box-dependency groupID="railo" 
- 						artifactID="railo" 
- 						classifiers="jars"
- 						version="${railo.version}"
- 						destination="${dependencies.dir}"/>
-		<!-- Expand to railo lib for build process -->
-		<unzip src="${dependencies.dir}/railo-jars-${railo.version}.zip" dest="${railo.lib.dir}" overwrite="true"/>
+	    <chmod dir="./launch4j-${launch4j.version}/launch4j/bin/" perm="ugo+rwx" includes="*"/>
 	</target>
 
 	<!-- ********************************************************************************************-->
 	<!--						CUSTOM MACROS    													 -->
 	<!-- ********************************************************************************************-->
-	
+
 	<!-- Configure Lucee Web -->
 	<macrodef name="configure-lucee-web">
 		<attribute name="lucee-jar" default="${lucee.lib.dir}/lucee-jar-${lucee.version}.jar" />
@@ -912,13 +896,13 @@ External Dependencies:
 		<attribute name="config-server" />
 		<attribute name="dump-cfc" />
 		<sequential>
-		  <dependency groupId="org.lucee" artifactId="lucee.config" version="${lucee.version}" dest="${temp.dir}/luceeconfigs" unzip="true" type="zip" />
+		  <dependency groupId="org.lucee" artifactId="lucee.config" version="${lucee.config.version}" dest="${temp.dir}/luceeconfigs" unzip="true" type="zip" />
 		  <property name="extracted" value="${temp.dir}/luceeconfigs" />
 		  <copy file="${extracted}/server.xml" tofile="@{config-server}" overwrite="true" />
 		  <copy file="${extracted}/web.xml" tofile="@{config-web}" overwrite="true" />
 		</sequential>
 	</macrodef>
-	
+
 	<!-- Update Lucee Error Template -->
 	<macrodef name="lucee-error-template">
 		<attribute name="path" />
@@ -933,7 +917,7 @@ External Dependencies:
 				<attr path="/*[1]/error" attr="template-@{type}" value="@{path}" />
 			</xmltask>
 		</sequential>
-	</macrodef>	
+	</macrodef>
 
 	<!-- Macro to pack jars via java tool -->
 	<macrodef name="packjars">
@@ -946,10 +930,10 @@ External Dependencies:
 	    	    <fileset dir="@{dir}" includes="*.jar" excludes="@{excludes}"/>
 	    	  </path>
 	    	  <sequential>
-	    	  	<var name="pack200.destdir" unset = "true"/> 
-	    	  	<property name="pack200.destdir" location="@{packdir}"/> 
-	    	  	<var name="pack200.destfile" unset = "true"/> 
-                <basename property="pack200.destfile" file="@{file}" /> 
+	    	  	<var name="pack200.destdir" unset = "true"/>
+	    	  	<property name="pack200.destdir" location="@{packdir}"/>
+	    	  	<var name="pack200.destfile" unset = "true"/>
+                <basename property="pack200.destfile" file="@{file}" />
 	    	  	<echo message="packing @{file}"/>
 		        <exec executable="${java.home}/bin/pack200" resultproperty="pack.resultcode">
 		            <arg value="${pack200.destdir}/${pack200.destfile}.pack.gz"/>
@@ -991,7 +975,7 @@ External Dependencies:
 
 	<target name="test" description="starts test server, runs tests, then stops test server">
 		<server-run>
-			<testbox-rundirs basePath="${tests.dir}/cfml" componentPath="tests.cfml" outputdir="${dist.dir}/testresults/"  
+			<testbox-rundirs basePath="${tests.dir}/cfml" componentPath="tests.cfml" outputdir="${dist.dir}/testresults/"
 			runner="http://${runwar.host}:${runwar.port}/tests/tboxrunner.cfm?"/>
 		</server-run>
 	</target>

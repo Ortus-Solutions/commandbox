@@ -20,9 +20,9 @@
 component {
 
 	// repl history file
-	property name="commandHistoryFile"		inject="commandHistoryFile@java";
-	property name="REPLScriptHistoryFile"	inject="REPLScriptHistoryFile@java";
-	property name="REPLTagHistoryFile"	inject="REPLTagHistoryFile@java";
+	property name="commandHistoryFile"		inject="commandHistoryFile@constants";
+	property name="REPLScriptHistoryFile"	inject="REPLScriptHistoryFile@constants";
+	property name="REPLTagHistoryFile"	inject="REPLTagHistoryFile@constants";
 
 	// repl parser
 	property name="REPLParser"		inject="REPLParser";
@@ -42,103 +42,110 @@ component {
   	   arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
 
 		// Setup REPL history file
-		shell.getReader().setHistory( newHistory );
+		shell.setHistory( newHistory );
+		shell.setHighlighter( 'REPL' );
+		shell.setCompletor( 'REPL', executor );
 
 		if( !structKeyExists( arguments, 'input' ) ) {
 			print.cyanLine( "Enter any valid CFML code in the following prompt in order to evaluate it and print out any results (if any)" );
 			print.line( "Type 'quit' or 'q' to exit!" ).toConsole();
 		}
 
-		// Loop until they choose to quit
-		while( !quit ){
-
-			// code provided via standard input to process.  Exit after finishing.
-			if( structKeyExists( arguments, 'input' ) ) {
-				REPLParser.startCommand();
-				REPLParser.addCommandLines( arguments.input );
-				quit = true;
-
-			// Else, collect the code via a prompt
-			} else {
-
-				// start new command
-				REPLParser.startCommand();
-
-				do {
-					// ask repl
-					if ( arrayLen( REPLParser.getCommandLines() ) == 0 ) {
-						var command = ask( message=( arguments.script ? 'CFSCRIPT' : 'CFML' ) &  '-REPL: ', keepHistory=true );
-					} else {
-						var command = ask( message="...", keepHistory=true );
-
-						// allow ability to break out of adding additional lines
-						if ( trim(command) == 'exit' || trim(command) == '' ) {
-							break;
+		try {
+							
+			// Loop until they choose to quit
+			while( !quit ){
+	
+				// code provided via standard input to process.  Exit after finishing.
+				if( structKeyExists( arguments, 'input' ) ) {
+					REPLParser.startCommand();
+					REPLParser.addCommandLines( arguments.input );
+					quit = true;
+	
+				// Else, collect the code via a prompt
+				} else {
+	
+					// start new command
+					REPLParser.startCommand();
+	
+					do {
+						// ask repl
+						if ( arrayLen( REPLParser.getCommandLines() ) == 0 ) {
+							var command = ask( message=( arguments.script ? 'CFSCRIPT' : 'CFML' ) &  '-REPL: ', keepHistory=true, highlight=true, complete=true );
+						} else {
+							var command = ask( message=".............: ", keepHistory=true, highlight=true, complete=true );
+	
+							// allow ability to break out of adding additional lines
+							if ( trim(command) == 'exit' || trim(command) == '' ) {
+								break;
+							}
 						}
-					}
-
-					// add command to our parser
-					REPLParser.addCommandLine( command );
-
-				} while ( !REPLParser.isCommandComplete() );
-
-			}
-
-			// REPL command is complete. get entire command as string
-			var cfml = REPLParser.getCommandAsString();
-
-			// quitting
-			if( listFindNoCase( 'quit,q,exit', cfml ) ){
-				quit = true;
-			} else {
-
-				// evaluate it
-				try {
-
-					results = '';
-
+	
+						// add command to our parser
+						REPLParser.addCommandLine( command );
+	
+					} while ( !REPLParser.isCommandComplete() );
+	
+				}
+	
+				// REPL command is complete. get entire command as string
+				var cfml = REPLParser.getCommandAsString();
+	
+				// quitting
+				if( listFindNoCase( 'quit,q,exit', cfml ) ){
+					quit = true;
+				} else {
+	
+					// evaluate it
 					try {
-						// Attempt evaluation
-						results = REPLParser.evaluateCommand( executor, arguments.directory );
-					} catch (any var e) {
-						// execute our command using temp file
-						results = executor.runCode( cfml, arguments.script, arguments.directory );
-					}
-
-					// print results
-					if( !isNull( results ) ){
+	
+						results = '';
+	
+						try {
+							// Attempt evaluation
+							results = REPLParser.evaluateCommand( executor, arguments.directory );
+						} catch (any var e) {
+							// execute our command using temp file
+							results = executor.runCode( cfml, arguments.script, arguments.directory );
+						}
+	
+						// print results
 						// Make sure results is a string
-						results = REPLParser.serializeOutput( results );
+						results = REPLParser.serializeOutput( argumentCollection={ result : ( isNull( results ) ? nullValue() : results ) } );
 						print.line( results, structKeyExists( arguments, 'input' ) ? '' : 'boldRed' )
-					}
-
-				} catch( any e ){
-					// flush out anything in buffer
-					print.toConsole();
-					// Log it
-					logger.error( '#e.message# #e.detail#' , e.stackTrace );
-					if( quit ) {
-						// flush history out
-						newHistory.flush();
-						// set back original history
-						shell.getReader().setHistory( commandHistoryFile );
-						// This will exist the command
-						error( '#e.message##CR##e.detail#' );
-					} else {
-						print.whiteOnRedLine( 'ERROR' )
-							.line()
-							.boldRedLine( '#e.message##CR##e.detail#' )
-							.line();
+	
+					} catch( any e ){
+						// flush out anything in buffer
+						print.toConsole();
+						// Log it
+						logger.error( '#e.message# #e.detail#' , e.stackTrace );
+						if( quit ) {
+							resetShell();
+							// This will exist the command
+							error( '#e.message##CR##e.detail#' );
+						} else {
+							print.whiteOnRedLine( 'ERROR' )
+								.line()
+								.boldRedLine( '#e.message##CR##e.detail#' )
+								.line();
+						}
 					}
 				}
 			}
+			
+		} finally {
+			resetShell();
 		}
-		// flush history out
-		newHistory.flush();
-		// set back original history
-		shell.getReader().setHistory( commandHistoryFile );
 	}
 
+	private function resetShell() {	
+		// flush history out
+		shell.getReader().getHistory().save();
+		// set back original history
+		shell.setHistory( commandHistoryFile );
+		shell.setHighlighter( 'command' );
+		shell.setCompletor( 'command' );
+	} 
 
 	/**
 	* Returns variable type if it can be determined

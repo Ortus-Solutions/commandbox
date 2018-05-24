@@ -63,7 +63,7 @@ component aliases="stop" {
 				print.boldWhiteOnRedLine( 'ERROR' );
 				print.boldRedLine( results.messages );
 			} else {
-				print.line( results.messages );
+				print.greenLine( 'Stopped' );
 			}
 
 			if( arguments.forget ) {

@@ -8,12 +8,8 @@
 component {
 
 	function configure(){
-		var system 	= createObject( "java", "java.lang.System" );
-		var homeDir	= isNull( system.getProperty('cfml.cli.home') ) ?
-				system.getProperty( 'user.home' ) & "/.CommandBox/" : system.getProperty( 'cfml.cli.home' );
-
+		
 		logBox = {};
-
 
 		// Define Appenders
 		logBox.appenders = {
@@ -22,9 +18,10 @@ component {
 				properties = {
 					fileMaxArchives = 5,
 					filename = "commandbox",
-					filepath = homeDir & "/logs"
-				},
-				async=true
+					filepath = expandpath( '/commandbox-home' ) & "/logs",
+					autoExpand=false,
+					async=true
+				}
 			},
 			ANSIConsoleAppender = {
 				class="commandbox.system.util.ANSIConsoleAppender"

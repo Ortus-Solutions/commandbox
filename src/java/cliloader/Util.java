@@ -105,10 +105,11 @@ public class Util{
 				System.exit( 1 );
 			}
 			
-			if( System.getProperty("java.version").startsWith( "9" ) ) {
-				System.out.println( "It looks like you're using Java 9, which CommandBox doesn't support!" );
-				System.out.println( "If your PC needs Java 9 installed, then place a folder called 'JRE' with Java 8 in the same direcotry as your box binary." );
-				System.out.println( "We'll be working on Java 9 support soon!" );
+			String jVer = System.getProperty("java.version");
+			if( jVer.startsWith( "9" ) || jVer.startsWith( "10" ) || jVer.startsWith( "11" ) ) {
+				System.out.println( "It looks like you're using Java 9, 10, or higher, which CommandBox doesn't support!" );
+				System.out.println( "If your PC needs this version of Java installed, then place a folder called 'JRE' with Java 8 in the same direcotry as your box binary." );
+				System.out.println( "We'll be working on Java 9+ support soon!" );
 				Thread.sleep( 5000 );
 				System.exit( 1 );
 			}

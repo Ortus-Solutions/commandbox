@@ -1,4 +1,4 @@
-<cfsilent>
+<cfsilent><cftry>
 <!---
 *********************************************************************************
  Copyright Since 2014 CommandBox by Ortus Solutions, Corp
@@ -10,21 +10,66 @@ I bootstrap CommandBox up, create the shell and get it running.
 I am a CFM because the CLI seems to need a .cfm file to call
 This file will stay running the entire time the shell is open
 --->
-<cfset variables.wireBox = application.wireBox>
+
+<cfset mappings = getApplicationSettings().mappings>
+
+<!--- Move everything over to this mapping which is the "root" of our app --->
+<cfset CFMLRoot = expandPath( getDirectoryFromPath( getCurrentTemplatePath() ) & "../" ) >
+<cfset mappings[ '/commandbox' ]		= CFMLRoot >
+<cfset mappings[ '/commandbox-home' ]	= createObject( 'java', 'java.lang.System' ).getProperty( 'cfml.cli.home' ) >
+<cfset mappings[ '/wirebox' ]			= CFMLRoot & 'system/wirebox' >
+	
+<cfapplication 
+	action="update"
+	name 				= "CommandBox CLI"
+	sessionmanagement 	= "false"
+	applicationTimeout = "#createTimeSpan( 999999, 0, 0, 0 )#"
+	mappings="#mappings#">
+
+<cfset variables.wireBox = new wirebox.system.ioc.Injector( 'commandbox.system.config.WireBox' )>
+
 <cfsetting requesttimeout="86399913600" /><!--- 999999 days --->
-<!---Display this banner to users--->
-<cfoutput><cfsavecontent variable="banner">#chr( 27 )#[32m#chr( 27 )#[1m
-   _____                                          _ ____
-  / ____|                                        | |  _ \
- | |     ___  _ __ ___  _ __ ___   __ _ _ __   __| | |_) | _____  __
- | |    / _ \| '_ ` _ \| '_ ` _ \ / _` | '_ \ / _` |  _ < / _ \ \/ /
- | |___| (_) | | | | | | | | | | | (_| | | | | (_| | |_) | (_) >  <
-  \_____\___/|_| |_| |_|_| |_| |_|\__,_|_| |_|\__,_|____/ \___/_/\_\ #chr( 27 )#[0m  v@@version@@
 
-#chr( 27 )#[1mWelcome to CommandBox!
-Type "help" for help, or "help [command]" to be more specific.#chr( 27 )#[0m
+<cffunction name="getBanner"> 
+	<!---Display this banner to users--->
+	<cfscript>
+	 	
+		var esc = chr( 27 );
+		var caps = createObject( 'java', 'org.jline.utils.InfoCmp$Capability' );
+		// See how many colors this terminal supports
+		var numColors = shell.getReader().getTerminal().getNumericCapability( caps.max_colors );
+	
+		// Windows cmd gets solid blue
+		if( !isNull( numColors ) && numColors < 256 ) {
+			l1 = l2 = l3 = l4 = l5 = '#esc#[38;5;14m';
+		// Terminals with 256 color support get pretty colors
+		} else {
+			l1 = '#esc#[38;5;45m';
+			l2 = '#esc#[38;5;39m';
+			l3 = '#esc#[38;5;33m';
+			l4 = '#esc#[38;5;27m';
+			l5 = '#esc#[38;5;21m';
+		}
+	
+	</cfscript>
+<cfoutput><cfsavecontent variable="banner">	
+#l1##esc#[1m   ______                                          ______            
+#l2##esc#[1m  / ____/___  ____ ___  ____ ___  ____ _____  ____/ / __ )____  _  __
+#l3##esc#[1m / /   / __ \/ __ `__ \/ __ `__ \/ __ `/ __ \/ __  / __  / __ \| |/_/
+#l4##esc#[1m/ /___/ /_/ / / / / / / / / / / / /_/ / / / / /_/ / /_/ / /_/ />  <  
+#l5##esc#[1m\____/\____/_/ /_/ /_/_/ /_/ /_/\__,_/_/ /_/\__,_/_____/\____/_/|_| (R)  #esc#[0m#esc#[1mv@@version@@  
 
+#esc#[0m#esc#[38;5;196m@@quote@@
+
+#esc#[38;5;15mWelcome to CommandBox!
 </cfsavecontent></cfoutput>
+	<cfset var banner = replace( banner, '@@version@@', shell.getVersion().replace( '@build' & '.version@+@build' & '.number@', '1.2.3' ) )>
+	<cfset var quotes = fileRead( 'Quotes.txt' ).listToArray( chr( 13 ) & chr( 10 ) )>
+	<cfset var quote = quotes[ randRange( 1, quotes.len() ) ]>
+	<cfset banner = replace( banner, '@@quote@@', repeatString( ' ', max( 77-quote.len(), 1 ) ) & quote )>
+		
+	<cfreturn banner>
+</cffunction>
 <cfscript>
 	system 	= createObject( "java", "java.lang.System" );
 	args 	= system.getProperty( "cfml.cli.arguments" );
@@ -37,8 +82,9 @@ Type "help" for help, or "help [command]" to be more specific.#chr( 27 )#[0m
 	bufferedReader = createObject( 'java', 'java.io.BufferedReader' ).init( inputStreamReader );
 
 	// Verify if we can run CommandBox Java v. 1.7+
-	if( findNoCase( "1.6", server.java.version ) ){
-		systemOutput( "The Java Version you have (#server.java.version#) is not supported by CommandBox. Please install a Java JRE/JDK 1.7+" );
+	if( !findNoCase( "1.8", server.java.version ) ){
+		// JLine isn't loaded yet, so I have to use systemOutput() here.
+		systemOutput( "The Java Version you have (#server.java.version#) is not supported by CommandBox. Please install a Java JRE/JDK 1.8." );
 		sleep( 5000 );
 		abort;
 	}
@@ -48,10 +94,11 @@ Type "help" for help, or "help [command]" to be more specific.#chr( 27 )#[0m
 
 		// Create the shell
 		shell = wireBox.getInstance( name='Shell', initArguments={ asyncLoad=false } );
+		
 		shell.setShellType( 'command' );
 		interceptorService =  shell.getInterceptorService();
 
-		interceptData = { shellType=shell.getShellType(), args=argsArray, banner=banner };
+		interceptData = { shellType=shell.getShellType(), args=argsArray, banner=getBanner() };
 		interceptorService.announceInterception( 'onCLIStart', interceptData );
 
  		piped = [];
@@ -101,22 +148,28 @@ Type "help" for help, or "help [command]" to be more specific.#chr( 27 )#[0m
 		shell.setShellType( 'interactive' );
 		interceptorService =  shell.getInterceptorService();
 
-		interceptData = { shellType=shell.getShellType(), args=argsArray, banner=banner };
+		interceptData = { shellType=shell.getShellType(), args=argsArray, banner=getBanner() };
 		interceptorService.announceInterception( 'onCLIStart', interceptData );
 
 		if( !silent ) {
 			// Output the welcome banner
-			shell.printString( replace( interceptData.banner, '@@version@@', shell.getVersion() ) );
+			shell.printString( interceptData.banner );
 		}
 
 		// Running the "reload" command will enter this while loop once
 		while( shell.run( silent=silent ) ){
 			clearScreen = shell.getDoClearScreen();
-
+			
 			interceptorService.announceInterception( 'onCLIExit' );
 			if( clearScreen ){
 				shell.clearScreen();
 			}
+			
+			// Wipe out cached metadata on reload.
+			wirebox.getCacheBox().getCache( 'metadataCache' ).clearAll();
+				
+			// Shut down the shell, which includes cleaing up JLine
+			shell.shutdown();
 
 			// Clear all caches: template, ...
 			SystemCacheClear( "all" );
@@ -124,20 +177,18 @@ Type "help" for help, or "help [command]" to be more specific.#chr( 27 )#[0m
 
 			// reload wirebox
 			wireBox.shutdown();
-			new wirebox.system.ioc.Injector( 'commandbox.system.config.WireBox' );
-			variables.wireBox = application.wireBox;
-
+			variables.wireBox = new wirebox.system.ioc.Injector( 'commandbox.system.config.WireBox' );
 
 			// startup a new shell
 			shell = wireBox.getInstance( 'Shell' );
 			interceptorService =  shell.getInterceptorService();
 			shell.setShellType( 'interactive' );
-			interceptData = { shellType=shell.getShellType(), args=[], banner=banner };
+			interceptData = { shellType=shell.getShellType(), args=[], banner=getBanner() };
 			interceptorService.announceInterception( 'onCLIStart', interceptData );
 
 			if( clearScreen ){
 				// Output the welcome banner
-				shell.printString( replace( interceptData.banner, '@@version@@', shell.getVersion() ) );
+				shell.printString( interceptData.banner );
 			}
 
 		}
@@ -148,4 +199,63 @@ Type "help" for help, or "help [command]" to be more specific.#chr( 27 )#[0m
     system.runFinalization();
     system.gc();
 </cfscript>
+
+	<cfcatch type="any">
+		<cfscript>
+			
+			try {
+				if( isDefined( 'wirebox' ) ) {
+					wirebox.getCacheBox().getCache( 'metadataCache' ).clearAll();
+				}
+			} catch( any e) {
+			}
+			
+			createObject( 'java', 'java.lang.System' ).setProperty( 'cfml.cli.exitCode', '1' );
+	
+			// Try to log this to LogBox
+			try {
+	    		application.wireBox.getLogBox().getRootLogger().error( '#exception.message# #exception.detail ?: ''#', exception.stackTrace );
+				application.wireBox.getInstance( 'interceptorService' ).announceInterception( 'onException', { exception=exception } );
+	    	// If it fails no worries, LogBox just probably isn't loaded yet.
+			} catch ( Any e ) {}
+	
+			// Give nicer message to user
+			err = cfcatch;
+	    	CR = chr( 10 );    	
+			// JLine may not be loaded yet, so I have to use systemOutput() here.
+	    	systemOutput( 'BOOM GOES THE DYNAMITE!!', true );
+	    	systemOutput( 'We''re truly sorry, but something horrible has gone wrong when starting up CommandBox.', true );
+	    	systemOutput( 'Here''s what we know:.', true );
+	    	systemOutput( '', true );
+	    	systemOutput( 'Message:', true );
+	    	systemOutput( '#err.message#', true );
+	    	systemOutput( '', true );
+			if( structKeyExists( err, 'detail' ) ) {
+	    		systemOutput( '#err.detail#', true );
+			}
+			if( structKeyExists( err, 'tagcontext' ) ){
+				lines = arrayLen( err.tagcontext );
+				if( lines != 0 ){
+					systemOutput( 'Tag Context:', true );
+					for( idx=1; idx <= lines; idx++) {
+						tc = err.tagcontext[ idx ];
+						if( len( tc.codeprinthtml ) ){
+							if( idx > 1 ) {
+	    						systemOutput( 'called from ' );
+							}
+	   						systemOutput( '#tc.template#: line #tc.line#', true );
+						}
+					}
+				}
+			}
+	    	systemOutput( '', true );
+	    	systemOutput( '#err.stacktrace#', true );
+	
+	    	//writeDump(var=cfcatch, output="console");
+	
+			// Give them a chance to read it
+			sleep( 30000 );
+		</cfscript>
+	</cfcatch>
+</cftry>
 </cfsilent>

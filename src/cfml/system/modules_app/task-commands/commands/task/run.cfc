@@ -62,9 +62,7 @@ component {
 		
 		// Run the task!
 		// We're printing the output here so we can capture it and pipe or redirect the output from "task run"
-		print.text(
-			taskService.runTask( taskFile, target, taskArgs )
-		);
+		return taskService.runTask( taskFile, target, taskArgs );
 	}
 
 }

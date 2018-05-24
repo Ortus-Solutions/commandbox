@@ -46,7 +46,11 @@ component{
 	function run(
 		required command
 	){
-
+		if( !arguments.keyExists( 'interactive' ) ) {
+			arguments.interactive = true;
+		}
+		
+        var terminal = shell.getReader().getTerminal();
 		// Prep the command to run in the OS-specific shell
 		if( fileSystemUtil.isWindows() ) {
 			// Pass through Windows' command shell, /a outputs ANSI formatting, /c runs as a command
@@ -59,27 +63,88 @@ component{
 		}
 
 		try{
+			var exitCode = 1;
             // grab the current working directory
             var CWDFile = createObject( 'java', 'java.io.File' ).init( fileSystemUtil.resolvePath( '' ) );
-			var exitCode = createObject( "java", "java.lang.ProcessBuilder" )
+            
+            // This unbinds JLine from our input and output so it's not fighting over the keyboard
+            terminal.pause();
+            
+            // Static reference to inner class
+            var redirect = createObject( 'java', 'java.lang.ProcessBuilder$Redirect' );
+            // A string builder to collect the output that we're also streaming to the console so it can be captured and piped to another command as well.
+            var processOutputStringBuilder = createObject( 'java', 'java.lang.StringBuilder' ).init( '' );
+			var process = createObject( 'java', 'java.lang.ProcessBuilder' )
 				.init( commandArray )
-				// Do you believe in magic
-				// This works great on Mac/Windows.
-				// On Linux, the standard input (keyboard) is not being piped to the background process.
-				.inheritIO()
+				// Keyboard pipes through to the input of the process
+				.redirectInput( redirect.INHERIT )
+				// Error stream joins the standard out stream
+				.redirectErrorStream( true )
 				// Sets current working directory for the process
 				.directory( CWDFile )
 				// Fires process async
-				.start()
-				// waits for it to exit, returning the exit code
-				.waitFor();
+				.start();
+			
+			// Depsite the name, this is the stream that the *output* of the external process is in.
+			var inputStream = process.getInputStream();
+			// I convert the byte array in the piped input stream to a character array
+			var inputStreamReader = createObject( 'java', 'java.io.InputStreamReader' ).init( inputStream );
+			
+			// This will block/loop until the input stream closes, which means this loops until the process ends.
+			while( ( var char = inputStreamReader.read() ) != -1 ) {
+				checkInterrupted();
+				if( interactive ) {
+					// If running interactive, append directly to terminal
+			    	shell.getReader().getTerminal().writer().write( char );
+				} else {
+					// if running non-interactive, gather the output of the command
+					processOutputStringBuilder.append( javaCast( 'char', char ) );
+				}
+			} 
+			
+			// make sure it's dead
+			process.waitFor();
 
-			if( exitCode != 0 ) {
-				error( 'Command returned failing exit code [#exitCode#]' );
+			// Get the exit code
+			exitCode = process.exitValue();
+		
+			// If this was non-interactive, print out the text output all at once.
+			if( processOutputStringBuilder.toString().len() ) {
+				print.text( processOutputStringBuilder.toString() );
 			}
+		
+			// As you were, JLine
+            terminal.resume();
+		} finally {
+			
+			// Clean up the streams
+			if( !isNull( inputStream ) ) {
+				inputStream.close();
+			}
+			
+			// Clean up the streams
+			if( !isNull( inputStreamReader ) ) {
+				inputStreamReader.close();
+			} 
+			
+			// I had issues with Ctrl-C not fully existing cmd on Windows.  This make sure it's dead.
+			// Note, this doesn't always work and I don't think I can control it. An example is if you run
+			// !cmd on Windows and then hit Ctrl-C. The cmd process won't die and you'll have to just type
+			// "exit" followed by enter TWICE to get back to CommandBox. I can't find a way around this.
+			if( !isNull( process ) ) {
+				process.destroy();	
+			}
+			
+			// As you were, JLine
+			if( terminal.paused() ) {
+				terminal.resume();
+			}
+			
+			checkInterrupted();
+		}
 
-		} catch( any e ){
-			error( '#e.message##CR##e.detail#' );
+		if( exitCode != 0 ) {
+			error( message='Command returned failing exit code [#exitCode#]', exitCode=exitCode );
 		}
 
 	}

@@ -27,9 +27,9 @@ component accessors=true singleton {
 
 		setInterceptionPoints( [
 			// CLI lifecycle
-			'onCLIStart','onCLIExit',
+			'onCLIStart','onCLIExit','prePrompt',
 			// Command execution lifecycle
-			'preCommand','postCommand',
+			'preCommand','postCommand','preProcessLine', 'postProcessLine',
 			// Module lifecycle
 			'preModuleLoad','postModuleLoad','preModuleUnLoad','postModuleUnload',
 			// Server lifecycle

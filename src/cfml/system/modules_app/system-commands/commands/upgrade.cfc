@@ -34,6 +34,15 @@ component {
 	 * @force.hint Force the update even if the version on the server is the same as locally
 	 **/
 	function run( boolean latest=false, boolean force=false ) {
+		
+		if( !latest && semanticVersion.isPreRelease( shell.getVersion() ) ) {
+			print
+				.yellowLine( 'Your version of CommandBox [#shell.getVersion()#] is a prerelease build, so defaulting to "latest".' )
+				.line(); 
+			latest = true;
+		}
+		
+		
 		// tmp dir location
 		var temp = shell.getTempDir();
 		// Determine artifacts location used
@@ -144,6 +153,8 @@ component {
 					progressBar.update( argumentCollection = status );
 				}
 			);
+
+			wirebox.getCacheBox().getCache( 'metadataCache' ).clearAll();
 
 			// Tell user what's going on
 			print.greenLine( "Unzipping #filePath#..." ).toConsole();

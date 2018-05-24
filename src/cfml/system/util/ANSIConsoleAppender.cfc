@@ -32,6 +32,9 @@ component extends="wirebox.system.logging.AbstractAppender" {
 
 	function logMessage( required logEvent ) {
 
+		// Check for Ctrl-C
+		application.wirebox.getInstance( 'shell' ).checkInterrupted();
+
 		var loge = arguments.logEvent;
 		var entry = "";
 
@@ -47,23 +50,34 @@ component extends="wirebox.system.logging.AbstractAppender" {
 		// Log message
 		switch( loge.getseverity() ) {
 		    case logLevels.FATAL: case logLevels.ERROR:
-				print().boldRedLine( entry ).toConsole();
+				print().boldRedLine( entry );
 		         break;
 		    case logLevels.WARN:
-				print().yellowLine( entry ).toConsole();
+				print().yellowLine( entry );
 		         break;
 		    case logLevels.INFO:
-				print().greenLine( entry ).toConsole();
+				print().greenLine( entry );
 		         break;
 		    default:
-				print().line( entry ).toConsole();
+				print().line( entry );
 		}
 
 		// Log Extra Info as a string
 		var extraInfo = loge.getExtraInfoAsString();
 		if( len( extraInfo ) ){
-			print().line( loge.getExtraInfo().toString() ).toConsole();
+			print().line( loge.getExtraInfo().toString() );
 		}
+		
+		// If we're inside of an active job...
+		if( job().isActive() ) {
+			// Redirect out output into that current job's log
+			job().addLog( print().getResult() );
+			print().clear();
+		} else {
+			// Otherwise, just send it straight to the console
+			print().toConsole();
+		}
+		
 	}
 
 	function print() {
@@ -72,6 +86,14 @@ component extends="wirebox.system.logging.AbstractAppender" {
 			variables.printBuffer = application.wireBox.getInstance( 'PrintBuffer' );
 		}
 		return variables.printBuffer;
+	}
+
+	function job() {
+		if( !structKeyExists( variables, 'InteractiveJob' ) ){
+			// Appenders are created by WireBox, so we can't DI.
+			variables.InteractiveJob = application.wireBox.getInstance( 'InteractiveJob' );
+		}
+		return variables.InteractiveJob;
 	}
 
 }

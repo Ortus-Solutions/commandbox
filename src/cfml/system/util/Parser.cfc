@@ -259,8 +259,6 @@ component {
 	* & 			--> \&
 	* | 			--> \|
 	* ${ 			--> \${
-	* [line break]  --> \n
-	* [tab]			--> \t
 	*/
 	string function escapeArg( argValue ) {
 		arguments.argValue = replace( arguments.argValue, '\', "\\", "all" );
@@ -272,8 +270,6 @@ component {
 		arguments.argValue = replace( arguments.argValue, "&", "\&", "all" );
 		arguments.argValue = replace( arguments.argValue, "|", "\|", "all" );
 		arguments.argValue = replace( arguments.argValue, "${", "\${", "all" );
-		arguments.argValue = replace( arguments.argValue, CR, "\n", "all" );
-		arguments.argValue = replace( arguments.argValue, chr( 9 ), "\t", "all" );
 		return arguments.argValue;
 	}
 
@@ -294,8 +290,6 @@ component {
 		theString = replaceNoCase( theString, "\'", '__singleQuote__', "all" );
 		theString = replaceNoCase( theString, '\"', '__doubleQuote__', "all" );
 		theString = replaceNoCase( theString, '\`', '__backtick__', "all" );
-		theString = replaceNoCase( theString, '\n', '__newLine__', "all" );
-		theString = replaceNoCase( theString, '\t', '__tab__', "all" );
 		theString = replaceNoCase( theString, '\=', '__equalSign__', "all" );
 		theString = replaceNoCase( theString, '\;', '__semiColon__', "all" );
 		theString = replaceNoCase( theString, '\&', '__ampersand__', "all" );
@@ -308,8 +302,6 @@ component {
 		theString = replaceNoCase( theString, '__singleQuote__', "'", "all" );
 		theString = replaceNoCase( theString, '__doubleQuote__', '"', "all" );
 		theString = replaceNoCase( theString, '__backtick__', '`', "all" );
-		theString = replaceNoCase( theString, '__newLine__', CR, "all" );
-		theString = replaceNoCase( theString, '__tab__', chr( 9 ), "all" );
 		theString = replaceNoCase( theString, '__equalSign__', '=', "all" );
 		theString = replaceNoCase( theString, '__semiColon__', ';', "all" );
 		theString = replaceNoCase( theString, '__ampersand__', '&', "all" );

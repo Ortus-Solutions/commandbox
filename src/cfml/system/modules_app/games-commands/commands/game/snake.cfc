@@ -1,6 +1,6 @@
 /**
 * Play a fun, retro-style snake game.  The "snake" is on the loose and you need to gobble up as many juicy apples as you can. 
-* Use the S, F, E, and C keys on your keyboard to move left, right, up and down respectively.  If you have a 10-key pad, you can also use 4, 6, 8, and 2.
+* Use the up, down, left, and right keys on your keyboard to move.  
 * But be careful- if you run into a wall or into your own tail, the game is over!  The snake will grow every time he eats and apple, and once you 
 * clear all the apples, more will appear for your chomping pleasure.
 * .
@@ -19,6 +19,11 @@ component aliases="snake" {
 	property name='p' inject='print';
 
 	function run()  {
+		// Static reference to the class so we can create instances later
+		aStr = createObject( 'java', 'org.jline.utils.AttributedString' );
+		terminal = shell.getReader().getTerminal();
+		display = createObject( 'java', 'org.jline.utils.Display' ).init( terminal, false );
+		display.resize( terminal.getHeight(), terminal.getWidth() );
 		
 		variables.directionOpposites = {
 			'up' = 'down',
@@ -39,11 +44,12 @@ component aliases="snake" {
 		resetGame();
 	
 		
-		variables.gameHeader = 
-		'╔═════════════════════════════════════════════════════╗' & cr & 
-		'║                   ' & p.boldGreen( 'CommandBox Snake' ) & '                  ║' & cr &
-		'║                     by Brad Wood                    ║░' & cr &
-		'╠═════════════════════════════════════════════════════╣░';
+		variables.gameHeader = [
+			aStr.fromAnsi( '╔═════════════════════════════════════════════════════╗' ), 
+			aStr.fromAnsi( '║                   ' & p.boldGreen( 'CommandBox Snake' ) & '                  ║' ),
+			aStr.fromAnsi( '║                     by Brad Wood                    ║░' ),
+			aStr.fromAnsi( '╠═════════════════════════════════════════════════════╣░' )
+		];
 		
 		// Initialize an array with an index for each row
 		variables.gameSurface = arrayNew( 2 );
@@ -57,16 +63,15 @@ component aliases="snake" {
 			}			
 		}
 		
-		variables.gameFooter =
-		'╠═════════════════════════════════════════════════════╣░' & cr &
-		'║                 ' & p.bold( 'S' ) & ' or ' & p.bold( '4' ) & ' moves left                   ║░' & cr &
-		'║                 ' & p.bold( 'F' ) & ' or ' & p.bold( '6' ) & ' moves right                  ║░' & cr &
-		'║                 ' & p.bold( 'E' ) & ' or ' & p.bold( '8' ) & ' moves up                     ║░' & cr &
-		'║                 ' & p.bold( 'C' ) & ' or ' & p.bold( '2' ) & ' moves down                   ║░' & cr &
-		'║                                                     ║░' & cr &
-		'║                   Press ' & p.bold( 'Q' ) & ' to quit                   ║░' & cr &
-		'╚═════════════════════════════════════════════════════╝░'  & cr &
-		' ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░';
+		variables.gameFooter = [
+			aStr.fromAnsi( '╠═════════════════════════════════════════════════════╣░' ),
+			aStr.fromAnsi( '║                                                     ║░' ),
+			aStr.fromAnsi( '║     Use arrow keys to move up/down/left/right       ║░' ),
+			aStr.fromAnsi( '║                                                     ║░' ),
+			aStr.fromAnsi( '║                   Press ' & p.bold( 'Q' ) & ' to quit                   ║░' ),
+			aStr.fromAnsi( '╚═════════════════════════════════════════════════════╝░' ),
+			aStr.fromAnsi( ' ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░' )
+		];
 		
 		
 		var h = p.bold( '═' );
@@ -152,6 +157,12 @@ component aliases="snake" {
 		variables.snakeRun = false;
 		// Wait until the thread finishes its last draw
 		thread action="join" name=threadName;
+		
+		// Push the prompt down below the game box.
+		var lines = 29;
+		while( lines-- > 0 ) {
+			print.line();
+		}
 				
 	}
 
@@ -160,11 +171,9 @@ component aliases="snake" {
 	************************************************************************************* */
 
 	private function printGame() {
-		
-			// Reset cursor to upper left hand corner
-			print.text( chr( 27 ) & '[H' ).toConsole();
-		
-			print.line( variables.gameHeader );
+			var gameLines = [];
+			
+			gameLines.append( gameHeader, true );
 			
 			var thisGameSurface = duplicate( variables.gameSurface );
 			
@@ -205,17 +214,21 @@ component aliases="snake" {
 			
 			// Now that we've build up the array of characters, spit them out to the console
 			for( var row in thisGameSurface ) {
-				print.text( '║' );
-				for( var col in row ) {				
-					print.text( col );
+				var thisLine = '║';
+				for( var col in row ) {
+					thisLine &= col;
 				}
-				print.line( '║░' );
+				thisLine &= '║░';
 				
+				gameLines.append( aStr.fromAnsi( thisLine ) );
 			}
 			
-			print.line( variables.gameFooter );
+			gameLines.append( gameFooter, true );
 						
-			print.toConsole();
+			display.update(
+				gameLines,
+				0
+			);
 			
 	}
 
@@ -422,32 +435,28 @@ component aliases="snake" {
 		
 	private function isQuit( key ) {
 		// q or Q
-		return ( key == 113 || key == 81 );
+		return ( key == 'q' );
 	}
 		
 	private function isRetry( key ) {
 		// r or R
-		return ( key == 114 || key == 82 );
+		return ( key == 'r' );
 	}
-		
-	private function isUp( key ) {
-		// e or E 
-		return ( key == 101 || key == 69 || key == 56 );
+
+	private function isUp( key ) { 
+		return ( key == 'key_up' );
 	}
 		
 	private function isDown( key ) {
-		// c or C 
-		return ( key == 99 || key == 67 || key == 50 );
+		return ( key == 'key_down' );
 	}
 		
 	private function isLeft( key ) {
-		// s or S 
-		return ( key == 115 || key == 83 || key == 52 );
+		return ( key == 'key_left' );
 	}
 		
 	private function isRight( key ) {
-		// f or F 
-		return ( key == 102 || key == 70 || key == 54 );
+		return ( key == 'key_right' );
 	}
 
 

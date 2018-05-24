@@ -25,6 +25,7 @@ component accessors="true" singleton {
 	property name='stringDistance'		inject='provider:StringSimilarity@string-similarity';
 	property name='SystemSettings'		inject='SystemSettings';
 	property name='ConfigService'		inject='ConfigService';
+	property name='metadataCache'		inject='cachebox:metadataCache';
 
 	property name='configured' default="false" type="boolean";
 
@@ -84,11 +85,12 @@ component accessors="true" singleton {
 		string commandPath=''
 	){
 		var varDirs = DirectoryList(
-			path		= arguments.commandDirectory,
+			path		= expandPath( arguments.commandDirectory ),
 			recurse		= false,
 			listInfo	= 'query',
 			sort		= 'type desc, name asc'
 		);
+		
 		for( var dir in varDirs ){
 			// For CFC files, process them as a command
 			if( dir.type  == 'File' && listLast( dir.name, '.' ) == 'cfc' ){
@@ -121,8 +123,9 @@ component accessors="true" singleton {
 	/**
 	 * run a command line
 	 * @line.hint line to run
+	 * @captureOutput Temp workaround to allow capture of run command
  	 **/
-	function runCommandline( required string line ){
+	function runCommandline( required string line, boolean captureOutput=false ){
 
 		if( left( arguments.line, 4 ) == 'box ' && len( arguments.line ) > 4 ) {
 			consoleLogger.warn( "Removing extra text [box ] from start of command. You don't need that here." );
@@ -132,33 +135,35 @@ component accessors="true" singleton {
 		// Resolve the command they are wanting to run
 		var commandChain = resolveCommand( line );
 
-		return runCommand( commandChain, line );
+		return runCommand( commandChain=commandChain, line=line, captureOutput=captureOutput );
 	}
 
 	/**
 	 * run a command tokens
 	 * @tokens.hint tokens to run
 	 * @piped.hint Data to pipe in to the first command
+	 * @captureOutput Temp workaround to allow capture of run command
  	 **/
-	function runCommandTokens( required array tokens, string piped ){
+	function runCommandTokens( required array tokens, string piped, boolean captureOutput=false ){
 
 		// Resolve the command they are wanting to run
 		var commandChain = resolveCommandTokens( tokens );
 
 		// If there was piped input
 		if( structKeyExists( arguments, 'piped' ) ) {
-			return runCommand( commandChain, tokens.toList( ' ' ), arguments.piped );
+			return runCommand( commandChain, tokens.toList( ' ' ), arguments.piped, captureOutput );
 		}
 
-		return runCommand( commandChain, tokens.toList( ' ' ) );
+		return runCommand( commandChain=commandChain, line=tokens.toList( ' ' ), captureOutput=captureOutput );
 
 	}
 
 	/**
 	 * run a command
 	 * @commandChain.hint the chain of commands to run
+	 * @captureOutput Temp workaround to allow capture of run command
  	 **/
-	function runCommand( required array commandChain, required string line, string piped ){
+	function runCommand( required array commandChain, required string line, string piped, boolean captureOutput=false ){
 
 		// If nothing is returned, something bad happened (like an error instatiating the CFC)
 		if( !commandChain.len() ){
@@ -199,6 +204,7 @@ component accessors="true" singleton {
 			// If nothing was found, bail out here.
 			if( !commandInfo.found ){
 				var detail = generateListOfSimilarCommands( commandInfo );
+				shell.setExitCode( 1 );
 				throw( message='Command "#line#" cannot be resolved.', detail=detail, type="commandException");
 			}
 
@@ -223,6 +229,7 @@ component accessors="true" singleton {
 
 			// Parameters need to be ALL positional or ALL named
 			if( arrayLen( parameterInfo.positionalParameters ) && structCount( parameterInfo.namedParameters ) ){
+				shell.setExitCode( 1 );
 				throw( message='Please don''t mix named and positional parameters, it makes me dizzy.', detail=line, type="commandException");
 			}
 
@@ -234,11 +241,12 @@ component accessors="true" singleton {
 			if( previousCommandSeparator == '|' && structKeyExists( local, 'result' ) ){
 				// Clean off trailing any CR to help with piping one-liner outputs as inputs to another command
 				if( result.endsWith( chr( 10 ) ) && len( result ) > 1 ){
-					result = left( result, len( result ) - 1 );
+					local.result = left( result, len( result ) - 1 );
 				}
 				// If we're using named parameters and this command has at least one param defined
 				if( structCount( parameterInfo.namedParameters ) ){
 					if( commandInfo.commandString == 'cfml' ) {
+						shell.setExitCode( 1 );
 						throw( message='Sorry, you can''t pipe data into a CFML function using named parameters since I don''t know the name of the piped parameter.', detail=line, type="commandException");
 					}
 					// Insert/overwrite the first param as our last result
@@ -310,8 +318,22 @@ component accessors="true" singleton {
 			// may explicitly set the exit code to 1 but not call the error() method.
 			shell.setExitCode( 0 );
 
+			// Tells us if we are going to capture the output of this command and pass it to another
+			// Used for our workaround to switch if the "run" command pipes to the terminal or not
+			// If there are more commands in the chain and we are going to pipe or redirect to them
+			if( arrayLen( commandChain ) > i && listFindNoCase( '|,>,>>', commandChain[ i+1 ].originalLine ) ) {
+				captureOutput = true;
+			}
+			
+			// This is my workaround to "smartly" capture the output of the run command if we're piping it or 
+			// nesting it as an expression, etc.
+			if( commandInfo.commandReference.originalName == 'run' && captureOutput ) {
+				parameterInfo.namedParameters.interactive=false;
+			} 
+			
+			
 			// Run the command
-			try {
+			try {				
 				var result = commandInfo.commandReference.CFC.run( argumentCollection = parameterInfo.namedParameters );
 				lastCommandErrored = commandInfo.commandReference.CFC.hasError();
 			} catch( any e ){
@@ -345,7 +367,7 @@ component accessors="true" singleton {
 
 			// If the command didn't return anything, grab its print buffer value
 			if( isNull( result ) ){
-				result = commandInfo.commandReference.CFC.getResult();
+				local.result = commandInfo.commandReference.CFC.getResult();
 			}
 			var interceptData = {
 				commandInfo=commandInfo,
@@ -353,10 +375,11 @@ component accessors="true" singleton {
 				result=result
 			};
 			interceptorService.announceInterception( 'postCommand', interceptData );
-			result = interceptData.result;
+			local.result = interceptData.result;
 
 		} // End loop over command chain
-		return result;
+		
+		return local.result;
 
 	}
 
@@ -415,8 +438,8 @@ component accessors="true" singleton {
 			while( search.pos[1] ) {
 				// Extract them
 				var expression = mid( paramValue, search.pos[1], search.len[1] );
-				// Evaluate them
-				var result = runCommandline( mid( expression, 15, len( expression )-28 ) ) ?: '';
+				// Evaluate them (and capture output of any "run" command
+				var result = runCommandline( mid( expression, 15, len( expression )-28 ), true ) ?: '';
 
 				// Clean off trailing any CR to help with piping one-liner outputs as inputs to another command
 				if( result.endsWith( chr( 10 ) ) && len( result ) > 1 ){
@@ -560,6 +583,8 @@ component accessors="true" singleton {
 				tokens[1] = right( tokens[1], len( tokens[1] ) - 1 );
 				// tack on "run"
 				tokens.prepend( 'run' );
+			} else if( tokens.len() && tokens[1] == '!' ) {
+				tokens[1] = 'run' ;
 			}
 
 			/* If command is "run", merge all remaining tokens into one string
@@ -751,6 +776,7 @@ component accessors="true" singleton {
 			} catch( any e ){
 				// Log the full exception with stack trace
 				logger.error( 'Error creating command [#commandData.fullCFCPath#]. #e.message# #e.detail ?: ''#', e.stackTrace );
+				shell.setExitCode( 1 );
 				throw( message='Error creating command [#commandData.fullCFCPath#]', detail="#e.message# #CR# #e.detail ?: ''# #CR# #e.stacktrace#", type="commandException");
 			}
 		} // CFC exists check
@@ -824,7 +850,7 @@ component accessors="true" singleton {
 			var commandData = createCommandData( fullCFCPath, commandName );
 		// This will catch nasty parse errors so the shell can keep loading
 		} catch( any e ){
-			systemOutput( 'Error registering command [#fullCFCPath#]', true );
+			shell.printString( 'Error registering command [#fullCFCPath#]#cr#' );
 			logger.error( 'Error registering command [#fullCFCPath#]. #e.message# #e.detail ?: ''#', e.stackTrace );
 			// pretty print the exception
 			 shell.printError( e );
@@ -851,10 +877,15 @@ component accessors="true" singleton {
 	* @fullCFCPath the full CFC path
 	* @commandName the command name
 	*/
-	private struct function createCommandData( required fullCFCPath, required commandName ){
-		// Get Command MD?
-		var commandMD = getComponentMetadata( arguments.fullCFCPath );
-
+	private struct function createCommandData( required fullCFCPath, required commandName ){	
+		// Get from cache or produce on demand
+		var commandMD = metadataCache.getOrSet(
+			fullCFCPath,
+			function() {
+				return wirebox.getUtil().getInheritedMetaData( fullCFCPath );
+			}
+		);
+		
 		// Set up of command data
 		var commandData = {
 			fullCFCPath 	= arguments.fullCFCPath,
@@ -975,10 +1006,7 @@ component accessors="true" singleton {
 					// Overwrite it with an actual Globber instance seeded with the original canonical path as the pattern.
 					var originalPath = parameterInfo.namedParameters[ paramName ];
 					var newPath = fileSystemUtil.resolvePath( originalPath );
-					// Preserve any explicit trailing slashes
-					if( originalPath.endsWith( '/' ) && !newPath.endsWith( '/' ) ) {
-						newPath &= '/';
-					}
+					
 					parameterInfo.namedParameters[ paramName ] = wirebox.getInstance( 'Globber' )
 						.setPattern( newPath );
 				}
@@ -998,6 +1026,7 @@ component accessors="true" singleton {
 				&& param.type != 'Globber'
 				&& !isValid( param.type, userNamedParams[ param.name ] ) ){
 
+				shell.setExitCode( 1 );
 				throw( message='Parameter [#param.name#] has a value of [#userNamedParams[ param.name ]#] which is not of type [#param.type#].', type="commandException");
 			}
 		} // end for loop

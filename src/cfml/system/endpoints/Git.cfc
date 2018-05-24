@@ -30,7 +30,8 @@ component accessors="true" implements="IEndpoint" singleton {
 	property name="progressableDownloader" 	inject="ProgressableDownloader";
 	property name="progressBar" 			inject="ProgressBar";
 	property name="system" 					inject="system@constants";
-
+	property name="shell" 					inject="shell";
+	property name='wirebox'					inject='wirebox';
 
 	// Properties
 	property name="namePrefixes" type="string";
@@ -41,23 +42,23 @@ component accessors="true" implements="IEndpoint" singleton {
 	}
 
 	public string function resolvePackage( required string package, boolean verbose=false ) {
-
+		var job = wirebox.getInstance( 'interactiveJob' );
 		var GitURL = replace( arguments.package, '//', '' );
 		GitURL = getProtocol() & GitURL;
 		var branch = 'master';
 		if( GitURL contains '##' ) {
 			branch = listLast( GitURL, '##' );
 			GitURL = listFirst( GitURL, '##' );
-			consoleLogger.debug( 'Using branch [#branch#]' );
+			job.addLog( 'Using branch [#branch#]' );
 		}
 
-		consoleLogger.debug( 'Cloning Git URL [#GitURL#]' );
+		job.addLog( 'Cloning Git URL [#GitURL#]' );
 
 		// The main Git API
 		var Git = createObject( 'java', 'org.eclipse.jgit.api.Git' );
 
 		// Wrap up system out in a PrintWriter and create a progress monitor to track our clone
-		var printWriter = createObject( 'java', 'java.io.PrintWriter' ).init( system.out, true );
+		var printWriter = shell.getReader().getTerminal().writer();
 		var progressMonitor = createObject( 'java', 'org.eclipse.jgit.lib.TextProgressMonitor' ).init( printWriter );
 
 		// Temporary location to place the repo
@@ -68,6 +69,10 @@ component accessors="true" implements="IEndpoint" singleton {
 		var CommandCaller = createObject( 'java', 'com.ortussolutions.commandbox.jgit.CommandCaller' ).init();
 
 		try {
+			job.clear();
+			// Manually give us some space before our Git Clone
+			shell.printString( chr( 10 ) );
+			
 			// Clone the repo locally into a temp folder
 			var cloneCommand = Git.cloneRepository()
 				.setURI( GitURL )
@@ -80,24 +85,30 @@ component accessors="true" implements="IEndpoint" singleton {
 		    // call with our special java wrapper
 			local.result = CommandCaller.call( command );
 
+			shell.printString( chr( 10 ) );
+			job.draw();
+			
 			// Get a list of all branches
 			var branchListCommand = local.result.branchList();
 			var listModeAll = createObject( 'java', 'org.eclipse.jgit.api.ListBranchCommand$ListMode' ).ALL;
 			var branchList = [].append( CommandCaller.call( branchListCommand.setListMode( listModeAll ) ), true );
 			branchList = branchList.map( function( ref ){ return ref.getName(); } );
 
-	    	if( arguments.verbose ){ consoleLogger.debug( 'Available branches are #branchList.toList()#' ); }
+	    	if( arguments.verbose ){ job.addLog( 'Available branches are #branchList.toList()#' ); }
 
 	    	// If the commit-ish looks like it's a branch, modify the ref's name.
 		    if( branchList.containsNoCase( branch ) ) {
-		    	if( arguments.verbose ){ consoleLogger.debug( 'Commit-ish [#branch#] appears to be a branch.' ); }
+		    	if( arguments.verbose ){ job.addLog( 'Commit-ish [#branch#] appears to be a branch.' ); }
 		    	branch = 'origin/' & branch;
 		    }
 
 		    // Checkout branch, tag, or commit hash.
 	        CommandCaller.call( local.result.checkout().setName( branch ) );
-
+	        
 		} catch( any var e ) {
+			// Check for Ctrl-C
+			shell.checkInterrupted();
+			
 			// If the exception came from the Java call, this exception won't be null
 			var theRealJavaException = CommandCaller.getException();
 
@@ -119,7 +130,6 @@ component accessors="true" implements="IEndpoint" singleton {
 			// Release file system locks on the repo
 			if( structKeyExists( local, 'result' ) ) {
 				result.getRepository().close();
-				result.close();
 			}
 		}
 
@@ -166,7 +176,10 @@ component accessors="true" implements="IEndpoint" singleton {
 
 	public function getUpdate( required string package, required string version, boolean verbose=false ) {
 		var result = {
-			isOutdated = true,
+			// Repo URLs with a semver in the name are considered to not have an update since we assume they are an exact version
+			isOutdated = !package
+				.listRest( '##' )
+				.reFindNoCase( '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' ),
 			version = 'unknown'
 		};
 

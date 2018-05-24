@@ -17,6 +17,7 @@ component accessors=true implements="IEndpoint" singleton {
 	property name="progressableDownloader" 	inject="ProgressableDownloader";
 	property name="progressBar" 			inject="ProgressBar";
 	property name="CR" 						inject="CR@constants";
+	property name='wirebox'					inject='wirebox';
 
 	// Properties
 	property name="namePrefixes" type="string";
@@ -27,11 +28,12 @@ component accessors=true implements="IEndpoint" singleton {
 	}
 
 	public string function resolvePackage( required string package, boolean verbose=false ) {
+		var job = wirebox.getInstance( 'interactiveJob' );
 
 		var fileName = 'temp#randRange( 1, 1000 )#.zip';
 		var fullPath = tempDir & '/' & fileName;
 
-		consoleLogger.info( "Downloading [#getNamePrefixes() & ':' & package#]" );
+		job.addLog( "Downloading [#getNamePrefixes() & ':' & package#]" );
 
 		try {
 			// Download File
@@ -42,9 +44,11 @@ component accessors=true implements="IEndpoint" singleton {
 					progressBar.update( argumentCollection = status );
 				},
 				function( newURL ) {
-					consoleLogger.info( "Redirecting to: '#arguments.newURL#'..." );
+					job.addLog( "Redirecting to: '#arguments.newURL#'..." );
 				}
 			);
+		} catch( UserInterruptException var e ) {
+			rethrow;
 		} catch( Any var e ) {
 			throw( '#e.message##CR##e.detail#', 'endpointException' );
 		};
@@ -83,7 +87,11 @@ component accessors=true implements="IEndpoint" singleton {
 
 	public function getUpdate( required string package, required string version, boolean verbose=false ) {
 		var result = {
-			isOutdated = true,
+			// URLs with a semver in the name are considered to not have an update since we assume they are an exact version
+			isOutdated = !package
+				.reReplaceNoCase( 'http(s)?://', '' )
+				.listRest( '/\' )
+				.reFindNoCase( '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' ),
 			version = 'unknown'
 		};
 

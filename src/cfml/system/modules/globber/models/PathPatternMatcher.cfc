@@ -52,8 +52,16 @@ component accessors="true" singleton {
 		// build a regex based on the pattern
 		var regex = arguments.pattern;
 
-		// Escape any periods in the pattern
+		// Escape any regex metacharacters in the pattern
 		regex = replace( regex, '.', '\.', 'all' );
+		regex = replace( regex, '(', '\(', 'all' );
+		regex = replace( regex, ')', '\)', 'all' );
+		regex = replace( regex, '^', '\^', 'all' );
+		regex = replace( regex, '$', '\$', 'all' );
+		regex = replace( regex, '|', '\|', 'all' );
+		regex = replace( regex, '+', '\+', 'all' );
+		regex = replace( regex, '{', '\{', 'all' );
+		regex = replace( regex, '}', '\}', 'all' );
 
 		// /**/ matches zero or more directories (at least one /)
 		regex = replace( regex, '/**/', '__zeroOrMoreDirs_', 'all' );
@@ -90,10 +98,7 @@ component accessors="true" singleton {
 		} else {
 			regex &= '.*';
 		}
-
-
-		//systemoutput(regex, true);
-		//systemoutput(arguments.path, true);
+		
 		return ( reFindNoCase( regex, arguments.path ) > 0 );
 	}
 

@@ -28,7 +28,7 @@ component accessors="true" singleton {
 		// Get box.json, create empty if it doesn't exist
 		var boxJSON 	= packageService.readPackageDescriptor( arguments.directory );
 		// Get reference to appropriate depenency struct
-		var runners 	= boxJSON.testbox.runner;
+		var runners 	= boxJSON.testbox.runner ?: '';
 		var runnerURL 	= '';
 
 		// If there is a slug and runners is an array, look it up
@@ -46,19 +46,22 @@ component accessors="true" singleton {
 		// Just get the first one we can find
 
 		// simple runner?
-		if( isSimpleValue( runners ) ){
+		if( isSimpleValue( runners ) && runners.len() ){
 			return runners;
 		}
 
 		// Array of runners?
-		if( isArray( runners ) ) {
+		if( isArray( runners ) && runners.len() ) {
 			// get the first definition in the list to use
 			var firstRunner = runners[ 1 ];
-			return firstRunner[ listFirst( structKeyList( firstRunner ) ) ];
+			var firstRunnerValue = firstRunner[ listFirst( structKeyList( firstRunner ) ) ];
+			if( firstRunnerValue.len() ) {
+				return firstRunnerValue;	
+			}
 		}
 
 		// We failed to find anything
-		return '';
+		return '/tests/runner.cfm';
 	}
 
 }

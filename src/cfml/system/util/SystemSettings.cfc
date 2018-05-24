@@ -64,6 +64,16 @@ component singleton {
 	}
 
 	/**
+	* Set a Java System property.
+	*
+	* @key The name of the setting to set.
+	* @value The value to use
+	*/
+    function setSystemProperty( required string key, required string value ) {
+		system.setProperty( arguments.key, arguments.value );
+	}
+
+	/**
 	* Retrieve an env value by name.
 	*
 	* @key The name of the setting to look up.
