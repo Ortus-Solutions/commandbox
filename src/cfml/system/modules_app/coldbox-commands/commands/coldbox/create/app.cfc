@@ -56,6 +56,7 @@ component {
 			'ElixirBower'		= 'cbtemplate-elixir-bower',
 			'Elixir'			= 'cbtemplate-elixir',
 			'rest'				= 'cbtemplate-rest',
+			'rest-hmvc'			= 'cbtemplate-rest-hmvc',
 			'Simple'			= 'cbtemplate-simple',
 			'SuperSimple'		= 'cbtemplate-supersimple'
 		};
@@ -69,9 +70,6 @@ component {
 	 * @skeleton.optionsUDF skeletonComplete
 	 * @directory The directory to create the app in
 	 * @init "init" the directory as a package if it isn't already
-	 * @installColdBox Install the latest stable version of ColdBox from ForgeBox
-	 * @installColdBoxBE Install the bleeding edge version of ColdBox from ForgeBox
-	 * @installTestBox Install the latest stable version of TestBox from ForgeBox
 	 * @wizard Run the ColdBox Creation wizard
 	 * @initWizard Run the init creation package wizard
 	 **/
@@ -80,9 +78,6 @@ component {
 		skeleton='AdvancedScript',
 		directory=getCWD(),
 		boolean init=true,
-		boolean installColdBox=false,
-		boolean installColdBoxBE=false,
-		boolean installTestBox=false,
 		boolean wizard=false,
 		boolean initWizard=false
 	) {
@@ -109,11 +104,11 @@ component {
 
 		// Install the skeleton
 		packageService.installPackage(
-			ID = arguments.skeleton,
-			directory = arguments.directory,
-			save = false,
-			saveDev = false,
-			production = true,
+			ID                      = arguments.skeleton,
+			directory               = arguments.directory,
+			save                    = false,
+			saveDev                 = false,
+			production              = true,
 			currentWorkingDirectory = arguments.directory
 		);
 
@@ -131,45 +126,19 @@ component {
 			shell.cd( arguments.directory );
 			command( 'init' )
 				.params(
-					name=arguments.name,
-					slug=replace( arguments.name, ' ', '', 'all' ),
-					wizard=arguments.initWizard )
+					name   = arguments.name,
+					slug   = replace( arguments.name, ' ', '', 'all' ),
+					wizard = arguments.initWizard )
 				.run();
-			shell.cd( originalPath );
+			shell.cd( originalPath ); 
 		}
 
-		// Install the ColdBox platform
-		if( arguments.installColdBox || arguments.installColdBoxBE ) {
-
-			// Flush out stuff from above
-			print.toConsole();
-
-			packageService.installPackage(
-				ID = 'coldbox#iif( arguments.installColdBoxBE, de( '-be' ), de( '' ) )#',
-				directory = arguments.directory,
-				save = true,
-				saveDev = false,
-				production = true,
-				currentWorkingDirectory = arguments.directory
-			);
-		}
-
-		// Install TestBox
-		if( arguments.installTestBox ) {
-
-			// Flush out stuff from above
-			print.toConsole();
-
-			packageService.installPackage(
-				ID = 'testbox',
-				directory = arguments.directory,
-				save = false,
-				saveDev = true,
-				production = true,
-				currentWorkingDirectory = arguments.directory
-			);
-		}
-
+		// Prepare defaults on box.json so we remove template based ones
+		runCommand( 'package set name="#arguments.name#"' );
+		runCommand( 'package set slug="#variables.formatterUtil.slugify( arguments.name )#' );
+		runCommand( 'package set version="1.0.0"' );
+		runCommand( 'package set location=""' );
+		runCommand( 'package set scripts={}' );
 	}
 
 	/**
