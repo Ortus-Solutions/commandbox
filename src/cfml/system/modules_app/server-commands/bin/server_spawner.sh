@@ -1,4 +1,4 @@
-﻿#!/bin/bash
+#!/bin/bash
 
 # In *nix OS's we need to separate the server process from the CLI process
 # so SIGINTs from Ctrl-C won't also kill previously started servers
