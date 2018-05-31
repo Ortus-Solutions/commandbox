@@ -123,7 +123,8 @@ component {
 			"labels"	    : "",
 			"testBundles"	: "",
 			"testSuites"	: "",
-			"testSpecs" 	: ""
+			"testSpecs" 	: "",
+			"verbose"		: false
 		};
 
 		// Get testbox options from package descriptor
