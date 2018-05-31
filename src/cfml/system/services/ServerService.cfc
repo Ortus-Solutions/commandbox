@@ -1545,7 +1545,7 @@ component accessors="true" singleton {
 			return true;
 		} catch( java.net.BindException var e ) {
 			// Same as above-- the IP address/host isn't bound to any local adapters.  Probably a host file entry went missing.
-			if( e.message contains 'Cannot assign requested address' ) {
+			if( e.message contains 'Cannot assign requested address' || e.message contains 'Can''t assign requested address' ) {
 				return true;
 			}
 			// We're assuming that any other error means the address was in use.
