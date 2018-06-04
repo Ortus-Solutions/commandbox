@@ -1,5 +1,5 @@
 /**
- * This command will reinitialize a running ColdBox application if a server was started with CommandBox.
+ * Reinitialize a running ColdBox app if a server was started with CommandBox.
  * This command must be ran from the root of the ColdBox Application
  * .
  * {code:bash}
