@@ -37,12 +37,19 @@ component {
 	variables.PATHS 		= "**.cfc";
 
 	/**
-	 * @paths Command delimited list of file globbing paths to watch relative to the working directory, defaults to **.cfc
-	 * @delay How may milliseconds to wait before polling for changes, defaults to 500 ms
+	 * @paths 		Command delimited list of file globbing paths to watch relative to the working directory, defaults to **.cfc
+	 * @delay 		How may milliseconds to wait before polling for changes, defaults to 500 ms
+	 * @directory   The directory mapping to test: directory = the path to the directory using dot notation (myapp.testing.specs)
+	 * @bundles     The path or list of paths of the spec bundle CFCs to run and test
+	 * @labels      The list of labels that a suite or spec must have in order to execute.
 	 **/
 	function run(
 		string paths,
-	 	number delay
+	 	number delay,
+	 	directory,
+	 	bundles,
+	 	labels,
+	 	boolean verbose=true
 	) {
 
 		// Get testbox options from package descriptor
@@ -65,6 +72,20 @@ component {
 		// Tabula rasa
 		command( 'cls' ).run();
 
+		// Prepare test args
+		var testArgs = {
+			verbose = arguments.verbose
+		};
+		if( !isNull( arguments.directory ) ){
+			testArgs.directory = arguments.directory;
+		}
+		if( !isNull( arguments.bundles ) ){
+			testArgs.bundles = arguments.bundles;
+		}
+		if( !isNull( arguments.labels ) ){
+			testArgs.labels = arguments.labels;
+		}
+
 		// Start watcher
 		watch()
 			.paths( globbingPaths.listToArray() )
@@ -78,6 +99,7 @@ component {
 
 				// Run the tests in the target directory
 				command( 'testbox run' )
+					.params( argumentCollection = testArgs )
 					.inWorkingDirectory( getCWD() )
 					.run();
 

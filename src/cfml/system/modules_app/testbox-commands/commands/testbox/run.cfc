@@ -123,7 +123,8 @@ component {
 			"labels"	    : "",
 			"testBundles"	: "",
 			"testSuites"	: "",
-			"testSpecs" 	: ""
+			"testSpecs" 	: "",
+			"verbose"		: false
 		};
 
 		// Get testbox options from package descriptor
@@ -155,7 +156,7 @@ component {
 		// run it now baby!
 		try{
 			// Throw on error means this command will fail if the actual test runner blows up-- possibly on a compilation issue.
-			Http url=testBoxURL throwonerror=true result='local.results' ;
+			http url=testBoxURL throwonerror=true result='local.results';
 		} catch( any e ){
 			logger.error( "Error executing tests: #e.message# #e.detail#", e );
 			return error( 'Error executing tests: #CR# #e.message##CR##e.detail##CR##local.results.fileContent ?: ''#' );
@@ -187,6 +188,7 @@ component {
 				setExitCode( 1 );
 			}
 
+			// User our Renderer to publish the nice results
 			CLIRenderer.render( print, testData, arguments.verbose ?: boxOptions.verbose ?: true );
 
 		// For all other reporters, just dump out whatever we got from the server
