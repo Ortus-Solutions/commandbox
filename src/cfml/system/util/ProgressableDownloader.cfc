@@ -41,7 +41,7 @@ component singleton {
 
 			var lenghtOfFile = connection.getContentLength();
 
-			var inputStream = createObject( 'java', 'java.io.BufferedInputStream' ).init( netURL.openStream() );
+			var inputStream = createObject( 'java', 'java.io.BufferedInputStream' ).init( connection.getInputStream() );
 			var outputStream = createObject( 'java', 'java.io.FileOutputStream' ).init( arguments.destinationFile );
 
 			var currentTickCount = getTickCount();
@@ -190,6 +190,8 @@ component singleton {
 			var connection = netURL.openConnection();
 		}
 
+		// Add user agent so proxies like Cloudflare won't be dumb and block us.
+		connection.setRequestProperty( 'User-Agent', 'Mozilla /5.0 (Compatible MSIE 9.0;Windows NT 6.1;WOW64; Trident/5.0)' );
 
 		// The reason we're following redirects manually, is because the java class
 		// won't switch between HTTP and HTTPS without erroring
