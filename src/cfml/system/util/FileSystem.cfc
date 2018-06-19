@@ -29,6 +29,8 @@ component accessors="true" singleton {
         variables.FileChannel = createObject( "java", "java.nio.channels.FileChannel" );
         variables.ByteBuffer = createObject( "java", "java.nio.ByteBuffer" );
         variables.CharBuffer = createObject( "java", "java.nio.CharBuffer" );
+        variables.Charset = createObject( "java", "java.nio.charset.Charset" );
+        variables.CodingErrorAction = createObject( "java", "java.nio.charset.CodingErrorAction" );        
         variables.String = createObject( "java", "java.lang.String" );
 		
 		return this;
@@ -477,14 +479,22 @@ component accessors="true" singleton {
 		
 				// Use a reader to collect the characters into a string builder
 				var sb = createObject( "java", "java.lang.StringBuilder" ).init();
-				var reader = Channels.newReader( fch, 'UTF-8' );
+				
+				var CharsetDecoder = Charset
+					.forName( 'UTF-8' )
+					.newDecoder()
+					.onMalformedInput( CodingErrorAction.REPLACE )
+					.onUnmappableCharacter(  CodingErrorAction.REPLACE  )
+					.replaceWith( '?' );
+					
+				var reader = Channels.newReader( fch, CharsetDecoder, -1 );
 				var cb = CharBuffer.allocate( 8192 );
 				while( ( var size = reader.read( cb ) ) != -1 ) {
 					cb.flip();
 					sb.append( cb );
 					cb.clear();
 				}
-		        
+		    
 		    // This stuff always gotta' run.
 			} finally {
 		        if( !isNull( fileLock ) && fileLock.isValid() ) {
@@ -515,7 +525,7 @@ component accessors="true" singleton {
 		        // This method blocks until it can retrieve the lock.
 		        var fileLock = fch.lock();
 		
-		        fch.write( ByteBuffer.wrap( contents.getBytes() ) );
+		        fch.write( ByteBuffer.wrap( contents.getBytes( Charset.forName( 'UTF-8' ) ) ) );
 		        // Trim off any excess
 		        fch.truncate( fch.position() );
 		        
