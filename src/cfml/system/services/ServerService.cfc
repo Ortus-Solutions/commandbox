@@ -1171,28 +1171,30 @@ component accessors="true" singleton {
 
 				var line = bufferedReader.readLine();
 				while( !isNull( line ) ){
+						
+					// Log messages from the CF engine or app code writing direclty to std/err out strip off "runwar.context" but leave color coded severity
+					// Ex:
+					// [INFO ] runwar.context: 04/11 15:47:10 INFO Starting Flex 1.5 CF Edition
+					line = reReplaceNoCase( line, '^(#chr( 27 )#\[m\[[^]]*])( runwar\.context: )(.*)', '\1 \3' );
+					
+					// Log messages from runwar itself, simplify the logging category to just "Runwar:" and leave color coded severity
+					// Ex:
+					// [DEBUG] runwar.config: Enabling Proxy Peer Address handling
+					// [DEBUG] runwar.server: Starting open browser action
+					line = reReplaceNoCase( line, '^(#chr( 27 )#\[m\[[^]]*])( runwar\.[^:]*: )(.*)', '\1 Runwar: \3' );
+
+					// Log messages from any other 3rd party java lib tapping into Log4j will be left alone
+					// Ex:
+					// [DEBUG] org.tuckey.web.filters.urlrewrite.RuleExecutionOutput: needs to be forwarded to /index.cfm/Main
+
+					// Build up our output.  Limit the size of this so a console server running for a month doesn't fill up memory.
+					// We only use this for the server info result anyway.
+					if( startOutput.length() < 1000 ) {
+						startOutput.append( line & chr( 13 ) & chr( 10 ) );
+					}
 
 					// output it if we're being interactive
 					if( attributes.interactiveStart ) {
-						
-						// Log messages from the CF engine or app code writing direclty to std/err out strip off "runwar.context" but leave color coded severity
-						// Ex:
-						// [INFO ] runwar.context: 04/11 15:47:10 INFO Starting Flex 1.5 CF Edition
-						line = reReplaceNoCase( line, '^(#chr( 27 )#\[m\[[^]]*])( runwar\.context: )(.*)', '\1 \3' );
-						
-						// Log messages from runwar itself, simplify the logging category to just "Runwar:" and leave color coded severity
-						// Ex:
-						// [DEBUG] runwar.config: Enabling Proxy Peer Address handling
-						// [DEBUG] runwar.server: Starting open browser action
-						line = reReplaceNoCase( line, '^(#chr( 27 )#\[m\[[^]]*])( runwar\.[^:]*: )(.*)', '\1 Runwar: \3' );
-	
-						// Log messages from any other 3rd party java lib tapping into Log4j will be left alone
-						// Ex:
-						// [DEBUG] org.tuckey.web.filters.urlrewrite.RuleExecutionOutput: needs to be forwarded to /index.cfm/Main
-	
-						// Build up our output
-						startOutput.append( line & chr( 13 ) & chr( 10 ) );
-
 						print
 							.line( line )
 							.toConsole();
@@ -1218,7 +1220,7 @@ component accessors="true" singleton {
 				if( isDefined( 'bufferedReader' ) ) {
 					bufferedReader.close();
 				}
-				serverInfo.statusInfo.result = startOutput.toString();
+				serverInfo.statusInfo.result = print.unansi( startOutput.toString() );
 				setServerInfo( serverInfo );
 				// If the "start" command is on the line watching our console output
 				if( variables.waitingOnConsoleStart ) {
