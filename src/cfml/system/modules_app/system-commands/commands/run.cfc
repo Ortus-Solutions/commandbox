@@ -78,14 +78,14 @@ component{
 				.init( commandArray )
 				// Keyboard pipes through to the input of the process
 				.redirectInput( redirect.INHERIT )
-				// Error stream joins the standard out stream
-				.redirectErrorStream( true )
+				// redirectErrorStream(true) disables job control on *nix and causes the dreaded "bash:no job control for this shell" message
+				.redirectError(Redirect.INHERIT)
 				// Sets current working directory for the process
 				.directory( CWDFile )
 				// Fires process async
 				.start();
 			
-			// Depsite the name, this is the stream that the *output* of the external process is in.
+			// Despite the name, this is the stream that the *output* of the external process is in.
 			var inputStream = process.getInputStream();
 			// I convert the byte array in the piped input stream to a character array
 			var inputStreamReader = createObject( 'java', 'java.io.InputStreamReader' ).init( inputStream );
