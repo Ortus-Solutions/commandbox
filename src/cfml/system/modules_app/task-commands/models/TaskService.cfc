@@ -10,13 +10,14 @@
 component singleton accessors=true {
 
 	// DI Properties
-	property name='FileSystemUtil' inject='FileSystem';
-	property name='logger' inject='logbox:logger:{this}';
-	property name='cr' inject='cr@constants';
-	property name='wirebox' inject='wirebox';
-	property name='shell' inject='Shell';
-	property name='CommandService' inject='CommandService';
-	property name='consoleLogger' inject='logbox:logger:console';
+	property name='FileSystemUtil'	inject='FileSystem';
+	property name='logger'			inject='logbox:logger:{this}';
+	property name='cr'				inject='cr@constants';
+	property name='wirebox'			inject='wirebox';
+	property name='shell'			inject='Shell';
+	property name='CommandService'	inject='CommandService';
+	property name='consoleLogger'	inject='logbox:logger:console';
+	property name='metadataCache'	inject='cachebox:metadataCache';
 
 	function onDIComplete() {
 		// Check if base task class mapped?
@@ -80,17 +81,24 @@ component singleton accessors=true {
 		relTaskFile = relTaskFile.listChangeDelims( '.', '/' );
 		relTaskFile = relTaskFile.listChangeDelims( '.', '\' );
 
+		metadataCache.clear( relTaskFile );		
+
 		// Create this Task CFC
 		try {
-
+			var mappingName = '"task-" & relTaskFile';
+			
 			// Check if task mapped?
-			if( NOT wirebox.getBinder().mappingExists( "task-" & relTaskFile ) ){
-				// feed this task to wirebox with virtual inheritance
-				wirebox.registerNewInstance( name="task-" & relTaskFile, instancePath=relTaskFile )
-					.setVirtualInheritance( "commandbox.system.BaseTask" );
+			if( wirebox.getBinder().mappingExists( mappingName ) ){
+				// Clear it so metadata can be refreshed.
+				wirebox.getBinder().unMap( mappingName );
 			}
+			
+			// feed this task to wirebox with virtual inheritance
+			wirebox.registerNewInstance( name=mappingName, instancePath=relTaskFile )
+				.setVirtualInheritance( "commandbox.system.BaseTask" );
+				
 			// retrieve, build and wire from wirebox
-			return wireBox.getInstance( "task-" & relTaskFile );
+			return wireBox.getInstance( mappingName );
 
 		// This will catch nasty parse errors and tell us where they happened
 		} catch( any e ){

@@ -58,7 +58,7 @@ component extends='wirebox.system.ioc.config.Binder' {
 			// This is deprecated in favor of modules, but leaving it so 'old' style commands will still load.
 			'/commandbox-home/commands'
 		];
-		var ortusArtifactsURL		= 'http://integration.stg.ortussolutions.com/artifacts/';
+		var ortusArtifactsURL		= 'http://downloads.ortussolutions.com/';
 		var ortusPRDArtifactsURL	= 'http://downloads.ortussolutions.com/';
 		var colors256Data			= deserializeJSON( fileRead( homedir & '/cfml/system/config/colors.json' ) );
 		// engine versions, first is default - for lucee, first is internal version

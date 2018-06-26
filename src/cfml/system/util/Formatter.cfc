@@ -10,13 +10,16 @@
 */
 component singleton {
 
+	// DI
 	property name="shell" inject="shell";
 	property name="print" inject="print";
 	property name="JSONPrettyPrint" inject="provider:JSONPrettyPrint";
 
+	/**
+	 * Constructor
+	 */
 	function init(){
-
-		variables.stringEscapeUtils = createObject("java","org.apache.commons.lang.StringEscapeUtils");
+		variables.stringEscapeUtils = createObject( "java", "org.apache.commons.lang.StringEscapeUtils" );
 		variables.CR = chr( 13 );
 		variables.LF = chr( 10 );
 		variables.CRLF = CR & LF;
@@ -24,10 +27,30 @@ component singleton {
 	}
 
 	/**
+	 * Create a URL safe slug from a string
+	 * @str The string to slugify
+	 * @maxLength The maximum number of characters for the slug
+	 * @allow A regex safe list of additional characters to allow
+	 */
+	function slugify( required str, numeric maxLength=0, allow="" ){
+		// Cleanup and slugify the string
+		var slug 	= lcase( trim( arguments.str ) );
+		slug 		= replaceList( slug, '#chr(228)#,#chr(252)#,#chr(246)#,#chr(223)#', 'ae,ue,oe,ss' );
+		slug 		= reReplace( slug, "[^a-z0-9-\s#arguments.allow#]", "", "all" );
+		slug 		= trim ( reReplace( slug, "[\s-]+", " ", "all" ) );
+		slug 		= reReplace( slug, "\s", "-", "all" );
+
+		// is there a max length restriction
+		if( arguments.maxlength ){ slug = left( slug, arguments.maxlength ); }
+
+		return slug;
+	}
+
+	/**
 	 * Converts HTML into plain text
-	 * @html.hint HTML to convert
+	 * @html HTML to convert
   	 **/
-	function unescapeHTML(required html) {
+	function unescapeHTML( required html ){
     	var text = StringEscapeUtils.unescapeHTML( html );
     	//text = replace(text,"<" & "br" & ">","","all");
        	return text;
@@ -35,7 +58,7 @@ component singleton {
 
 	/**
 	 * Converts HTML into ANSI text
-	 * @html.hint HTML to convert
+	 * @html HTML to convert
   	 **/
 	function HTML2ANSI( required html, additionalFormatting='' ) {
     	var text = html;
@@ -89,9 +112,9 @@ component singleton {
 
 	/**
 	 * Converts HTML matches into ANSI text
-	 * @text.hint HTML to convert
-	 * @tag.hint HTML tag name to replace
-	 * @ansiCode.hint ANSI code to replace tag with
+	 * @text HTML to convert
+	 * @tag HTML tag name to replace
+	 * @ansiCode ANSI code to replace tag with
   	 **/
 	function ansifyHTML( text, tag, ansiCode, additionalFormatting ) {
     	var t=tag;
@@ -219,11 +242,9 @@ component singleton {
 
 	}
 	
-    	
-	
 	/**
 	 * Pretty JSON
-	 * @json.hint A string containing JSON, or a complex value that can be serialized to JSON
+	 * @json A string containing JSON, or a complex value that can be serialized to JSON
  	 **/
 	public function formatJson( json, indent, lineEnding ) {
 		// This is an external lib now.  Leaving here for backwards compat.

@@ -11,7 +11,7 @@
 component accessors=true singleton {
 
 	processingdirective pageEncoding='UTF-8';
-	
+
 	// An array of possibly-nested job details
 	property name='jobs' type='array';
 	// Is job currently running
@@ -27,58 +27,59 @@ component accessors=true singleton {
 		aStr = createObject( 'java', 'org.jline.utils.AttributedString' );
 		return this;
 	}
-	
+
 	function onDIComplete() {
 		terminal = shell.getReader().getTerminal();
+		configService = shell.getWirebox().getInstance( "configService" );
 		display = createObject( 'java', 'org.jline.utils.Display' ).init( terminal, false );
 		safeWidth = 80;
 		reset();
 	}
-	
+
 	/**
 	* Reset the internal state of this job
 	*/
 	function reset() {
 		jobs = [];
 		setActive( false );
-		
+
 		if( terminal.getWidth() == 0 ) {
 			safeWidth=80;
 		} else {
 			safeWidth=terminal.getWidth();
 		}
-		
+
 		display.resize( terminal.getHeight(), safeWidth );
-		
+
 		return this;
 	}
-	
+
 	/**
 	* Clear from the screen, but don't reset
 	*/
 	function clear() {
-		
+		var nonInteractive = configService.getSetting( "nonInteractiveShell", false );
 		// If Jline uses a "dumb" terminal, the width reports as zero, which throws devide by zero errors.
 		// TODO: I might be able to just fake a reasonable width.
-		if( terminal.getWidth() == 0 ) {
+		if( ( IsBoolean( nonInteractive ) && nonInteractive ) || terminal.getWidth() == 0 ) {
 			return;
 		}
-		
+
 		display.update(
 			[ aStr.init( ' ' ) ],
 			0
 		);
 		return this;
 	}
-	
+
 	/**
 	* Add a line of logging.  Feel free to use ANSI formatting
-	* 
+	*
 	* @line Message to log
 	*/
 	function addLog( required string line ) {
 		getCurrentJob()
-			.logLines.append( 
+			.logLines.append(
 				// Any log lines with a line break needs to become multuple lines
 				line.listToArray( chr( 13 ) & chr( 10 ) )
 				,true
@@ -86,57 +87,57 @@ component accessors=true singleton {
 		draw();
 		return this;
 	}
-	
+
 	/**
 	* Convenience method to log a red message
-	* 
+	*
 	* @line Message to log
 	*/
 	function addErrorLog( required string line ) {
 		return addLog( print.red( line ) );
 	}
-	
+
 	/**
 	* Convenience method to log a yellow message
-	* 
+	*
 	* @line Message to log
 	*/
 	function addWarnLog( required string line ) {
 		return addLog( print.yellow( line ) );
 	}
-	
+
 	/**
 	* Convenience method to log a green message
-	* 
+	*
 	* @line Message to log
 	*/
 	function addSuccessLog( required string line ) {
 		return addLog( print.green( line ) );
 	}
-	
+
 	/**
 	* Mark job as completed.  This will print out any final permanent lines and clear the state
-	* 
+	*
 	* @dumpLog Dump out all internal log lines permenantly to the console
 	*/
 	function complete( boolean dumpLog=false ) {
 		getCurrentJob().status = 'Complete';
 		if( jobs.last().status != 'Running' ) {
-			finalizeOutput( dumpLog );	
+			finalizeOutput( dumpLog );
 		}
 		return this;
 	}
-	
+
 	/**
 	* Mark job as Failed.  This will print out any final permanent lines and clear the state
-	* 
+	*
 	* @dumpLog Dump out all internal log lines permenantly to the console
 	*/
 	function error( string message='', boolean dumpLog=false ) {
 		getCurrentJob().errorMessage = message;
 		getCurrentJob().status = 'Error';
 		if( jobs.last().status != 'Running' ) {
-			finalizeOutput( dumpLog );	
+			finalizeOutput( dumpLog );
 		}
 		return this;
 	}
@@ -145,7 +146,7 @@ component accessors=true singleton {
 	* Cancel all remaining jobs and mark with error
 	*
 	* @message Error message to be applied to the current job
-	*/	
+	*/
 	function errorRemaining( message='' ) {
 		while( isActive() ) {
 			error( message );
@@ -153,10 +154,10 @@ component accessors=true singleton {
 		}
 		return this;
 	}
-	
+
 	/**
 	* Kick off a job.  Clears any previous state and starts drawing
-	* 
+	*
 	* @name Name of the job
 	*/
 	function start( required string name, logSize=5 ) {
@@ -167,7 +168,7 @@ component accessors=true singleton {
 			getCurrentJob().children.append( newJob( name, logSize ) );
 		} else {
 			// ... otherwise just add this as a top level job
-			jobs.append( newJob( name, logSize ) );	
+			jobs.append( newJob( name, logSize ) );
 		}
 		draw();
 		return this;
@@ -190,9 +191,9 @@ component accessors=true singleton {
 		getLines( includeAllLogs=dumpLog ).each( function( line ) {
 			printBuffer.line( line.toAnsi() );
 		} );
-		
+
 		printBuffer.toConsole()
-				
+
 		// Reset internal state
 		reset();
 	}
@@ -201,23 +202,24 @@ component accessors=true singleton {
 	* Render the information to the console
 	*/
 	function draw() {
-		
+		var nonInteractive = configService.getSetting( "nonInteractiveShell", false );
+
 		// If Jline uses a "dumb" terminal, the width reports as zero, which throws devide by zero errors.
 		// TODO: I might be able to just fake a reasonable width.
-		if( terminal.getWidth() == 0 ) {
+		if( ( IsBoolean( nonInteractive ) && nonInteractive ) || terminal.getWidth() == 0 ) {
 			return;
 		}
-		
+
 		var lines = getLines()
 			// Extra whitespace at the bottom
 			.append( aStr.init( ' ' ) );
-			
+
 		// Trim to terminal height so the screen doesn't go all jumpy
 		// If there is more output than screen, the user just doesn't get to see the rest
 		if( lines.len() > terminal.getHeight()-2 ) {
 			lines = lines.slice( 1, terminal.getHeight()-2 );
 		}
-			
+
 		display.update(
 			lines,
 			0
@@ -227,7 +229,7 @@ component accessors=true singleton {
 
 	/**
 	* Returns array of AttribtuedString objects that represent this job and its children's current state
-	* 
+	*
 	* @job Reference to a job struct so this method can be called recursively
 	* @includeAllLogs Ignore logSize and include all log lines
 	*/
@@ -241,18 +243,18 @@ component accessors=true singleton {
 		}
 		// Display job title
 		var lines = [
-			aStr.fromAnsi( getJobTitle( job ) )	
+			aStr.fromAnsi( getJobTitle( job ) )
 		];
-		
+
 		// Add error message if it exists
 		if( job.errorMessage.len() ) {
 			lines.append( aStr.fromAnsi( print.redText( '   | > ' & job.errorMessage ) ) );
 		}
-		
+
 		if( job.status == 'Running' || includeAllLogs ) {
-		
+
 			lines.append( aStr.fromAnsi( print.text( '   |' & repeatString( '-', min( job.name.len()+15, safeWidth-5 ) ), statusColor( job ) ) ) );
-		
+
 			var relevantLogLines = [];
 			var thisLogLines = job.logLines;
 			var thisLogSize = job.logSize;
@@ -261,7 +263,7 @@ component accessors=true singleton {
 			}
 			// These are the lines that are going to be printed
 			if( thisLogLines.len() && thisLogSize > 0 ) {
-				relevantLogLines = thisLogLines.slice( max( thisLogLines.len() - thisLogSize + 1, 1 ), min( thisLogLines.len(), thisLogSize ) ); 	
+				relevantLogLines = thisLogLines.slice( max( thisLogLines.len() - thisLogSize + 1, 1 ), min( thisLogLines.len(), thisLogSize ) );
 			}
 			var i = 0;
 			var atLeastOne = false;
@@ -276,14 +278,14 @@ component accessors=true singleton {
 					//lines.append( aStr.fromAnsi( print.text( '   |  ', statusColor( job ) ) ) );
 				}
 			}
-			
+
 			// Only print divider if we had at least one log message above
 			if( atLeastOne ) {
-				lines.append( aStr.fromAnsi( print.text( '   |' & repeatString( '-', min( job.name.len()+15, safeWidth-5 ) ), statusColor( job ) ) ) );	
+				lines.append( aStr.fromAnsi( print.text( '   |' & repeatString( '-', min( job.name.len()+15, safeWidth-5 ) ), statusColor( job ) ) ) );
 			}
-			
+
 		} // End is job running
-		
+
 		// Add in children
 		for( var child in job.children ) {
 			lines.append(
@@ -295,13 +297,13 @@ component accessors=true singleton {
 				true
 			);
 		}
-		
+
 		return lines;
 	}
-	
+
 	/**
 	* Returns colored and formatted job title
-	* 
+	*
 	* @job Job struct to use
 	*/
 	private string function getJobTitle( job ) {
@@ -314,10 +316,10 @@ component accessors=true singleton {
 			return print.text( ' - | ' & job.name, statusColor( job ) );
 		}
 	}
-	
+
 	/**
 	* Returns name of color for current job status
-	* 
+	*
 	* @job Job struct to use
 	*/
 	private string function statusColor( job ) {
@@ -328,17 +330,17 @@ component accessors=true singleton {
 		} else {
 			return 'yellow';
 		}
-		
+
 	}
-	
+
 	/**
 	* Returns empty struct of default job details
-	* 
+	*
 	* @name Name of job
 	* @logSize Size of the log to display
 	*/
 	private struct function newJob( name, logSize ) {
-		
+
 		return {
 			// The current status of the job
 			// Running, Complete, Error
@@ -355,7 +357,7 @@ component accessors=true singleton {
 			children = []
 		};
 	}
-	
+
 	/**
 	* Get struct that represents the currentlly executing job.
 	*/
@@ -375,7 +377,7 @@ component accessors=true singleton {
 		// Climb down the rabbit hole until we find the last running job
 		return getLastChild( pointer.last() );
 	}
-	
+
 	/**
 	* Is there an active job?
 	*/

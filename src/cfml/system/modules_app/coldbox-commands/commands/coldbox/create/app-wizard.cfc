@@ -8,15 +8,11 @@ component extends="app" {
 	 * @skeleton The application skeleton you want to use (Advanced, AdvancedScript, rest, Simple, SuperSimple)
 	 * @skeleton.optionsUDF skeletonComplete
 	 * @init Would you like to init this as a CommandBox Package
-	 * @installColdBox Install the latest stable version of ColdBox from ForgeBox
-	 * @installColdBoxBE Install the bleeding edge version of ColdBox from ForgeBox
-	 * @installTestBox Install the latest stable version of TestBox from ForgeBox
 	 **/
 	function run(
 		required name,
 		required skeleton,
-		required boolean init,
-		required boolean installTestBox
+		required boolean init
 	) {
 		var skeletons = skeletonComplete();
 		// turn off wizard
