@@ -37,7 +37,7 @@
  *
  **/
 component{
-
+	property name="fileSystemUtil" inject="fileSystem"; 
 	property name="configService" inject="configService";
 
 	/**
@@ -59,7 +59,7 @@ component{
 			// Pass through bash in interactive mode with -i to expand aliases like "ll".
 			// -c runs input as a command, "&& exits" cleanly from the shell as long as the original command ran successfully
 			var nativeShell = configService.getSetting( 'nativeShell', '/bin/bash' );
-			commandArray = [ nativeShell, '-i', '-c', arguments.command & ' && ( exit $? > /dev/null )' ];
+			commandArray = [ nativeShell, '-i', '-c', arguments.command & ' 2>&1 && ( exit $? > /dev/null )' ];
 		}
 
 		try{
@@ -78,14 +78,17 @@ component{
 				.init( commandArray )
 				// Keyboard pipes through to the input of the process
 				.redirectInput( redirect.INHERIT )
-				// Error stream joins the standard out stream
-				.redirectErrorStream( true )
+				.redirectErrorStream(fileSystemUtil.isWindows())
 				// Sets current working directory for the process
-				.directory( CWDFile )
-				// Fires process async
-				.start();
+				.directory( CWDFile );
+
+			if(!fileSystemUtil.isWIndows()) {
+				process=process.redirectError(redirect.INHERIT);
+			}
+			// Fires process async
+			process=process.start();
 			
-			// Depsite the name, this is the stream that the *output* of the external process is in.
+			// Despite the name, this is the stream that the *output* of the external process is in.
 			var inputStream = process.getInputStream();
 			// I convert the byte array in the piped input stream to a character array
 			var inputStreamReader = createObject( 'java', 'java.io.InputStreamReader' ).init( inputStream );
