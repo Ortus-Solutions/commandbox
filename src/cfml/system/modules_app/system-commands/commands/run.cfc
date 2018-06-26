@@ -37,7 +37,7 @@
  *
  **/
 component{
-
+	property name="fileSystemUtil" inject="fileSystem"; 
 	property name="configService" inject="configService";
 
 	/**
@@ -78,12 +78,15 @@ component{
 				.init( commandArray )
 				// Keyboard pipes through to the input of the process
 				.redirectInput( redirect.INHERIT )
-				// redirectErrorStream(true) disables job control on *nix and causes the dreaded "bash:no job control for this shell" message
-				.redirectError(Redirect.INHERIT)
+				.redirectErrorStream(fileSystemUtil.isWindows())
 				// Sets current working directory for the process
-				.directory( CWDFile )
-				// Fires process async
-				.start();
+				.directory( CWDFile );
+
+			if(!fileSystemUtil.isWIndows()) {
+				process=process.redirectError(redirect.INHERIT);
+			}
+			// Fires process async
+			process=process.start();
 			
 			// Despite the name, this is the stream that the *output* of the external process is in.
 			var inputStream = process.getInputStream();
