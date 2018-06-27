@@ -51,7 +51,7 @@ External Dependencies:
 	<loadproperties srcFile="build.properties"/>
 
 	<!-- Load secret properties -->
-	<property file="/root/creds/secret.properties"/>
+	<property file="/var/lib/jenkins/creds/secret.properties"/>
 	<property name="ortus.sign.keyring" value=""/>
 	<property name="ortus.sign.key.id" value=""/>
 	<property name="ortus.sign.key.passphrase" value=""/>
