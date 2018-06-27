@@ -56,6 +56,8 @@ External Dependencies:
 	<property name="ortus.sign.key.id" value=""/>
 	<property name="ortus.sign.key.passphrase" value=""/>
 
+	<echo message="ortus.sign.keyring: ${ortus.sign.keyring}" />
+
 	<!-- import cfdistro -->
 	<import file="${cfdistro.build.file}"/>
 	<property name="maven.repo.local" value="${cfdistro.basedir}/artifacts"/>
