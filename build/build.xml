@@ -778,9 +778,10 @@ External Dependencies:
     <!-- Build Checksum -->
     <checksum file="${dist.dir}/${distro.name}-rpm-${commandbox.version.noPrereleaseID}.rpm" forceoverwrite="true" fileext=".md5" />
 
+	<rpm-repo name="${distro.name}" baseurl="${commandbox.rpm.repourl}" dir="${rpm.repo}" failonerror="false"/>
+	
 	<antcall target="build.cli.rpm.stablerepo" />
 
-	<rpm-repo name="${distro.name}" baseurl="${commandbox.rpm.repourl.stable}" dir="${rpm.repo.stable}" failonerror="false"/>
   </target>
 
 	<target name="build.cli.rpm.stablerepo" if="${isStable}">
@@ -801,6 +802,8 @@ External Dependencies:
 	      <tarfileset file="${dist.dir}/box" prefix="/usr/bin" filemode="744" username="root" group="root"/>
 	    </rpm-create>
 
+		<rpm-repo name="${distro.name}" baseurl="${commandbox.rpm.repourl.stable}" dir="${rpm.repo.stable}" failonerror="false"/>
+		
 	</target>
 
 	<!-- ********************************************************************************************-->
