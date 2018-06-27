@@ -148,8 +148,9 @@ External Dependencies:
 					<fileset file="${dist.dir}/box" />
 					<fileset file="${dist.dir}/box.exe" />
 				</delete>
-				<!-- BE API Docs -->
+				<!-- BE API Docs 
 				<unzip src="${dist.dir}/${distro.name}-apidocs-${commandbox.version}.zip" dest="${artifact.dir}/be-apidocs" overwrite="true"/>
+				-->
 			</then>
 		</antcontrib:if>
 	</target>
