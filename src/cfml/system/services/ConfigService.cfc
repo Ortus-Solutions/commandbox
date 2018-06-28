@@ -56,7 +56,9 @@ component accessors="true" singleton {
 			// commands
 			'command',
 			'command.defaults',
-			'command.aliases'
+			'command.aliases',
+			// Interactivity
+			'nonInteractiveShell'
 		]);
 
 		setConfigFilePath( '/commandbox-home/CommandBox.json' );
