@@ -1323,7 +1323,8 @@ component accessors="true" singleton {
 		// Get server descriptor from default location.
 		// If starting by name and we guessed the server.json file name, this serverJSON maybe replaced later by another saved file.
 	    if( locDebug ) { consoleLogger.debug("Looking for server JSON file by convention: #defaultServerConfigFile#"); }
-		var serverJSON = readServerJSON( defaultServerConfigFile );
+		var serverJSON_rawSystemSettings = readServerJSON( defaultServerConfigFile );
+		var serverJSON = systemSettings.expandDeepSystemSettings( serverJSON_rawSystemSettings );
 
 		// Get the web root out of the server.json, if specified and make it relative to the actual server.json file.
 		// If user gave us a webroot, we use it first.
@@ -1395,7 +1396,8 @@ component accessors="true" singleton {
 
 			// Get server descriptor again
 		    if( locDebug ) { consoleLogger.debug("Switching to the last-used server JSON file for this server: #serverInfo.serverConfigFile#"); }
-			serverJSON = readServerJSON( serverInfo.serverConfigFile );
+			var serverJSON_rawSystemSettings = readServerJSON( serverInfo.serverConfigFile );
+			var serverJSON = systemSettings.expandDeepSystemSettings( serverJSON_rawSystemSettings );			
 			defaultServerConfigFile = serverInfo.serverConfigFile;
 
 			// Now that we changed server JSONs, we need to recalculate the webroot.
@@ -1418,12 +1420,12 @@ component accessors="true" singleton {
 
 		// By now we've figured out the name, webroot, and serverConfigFile for this server.
 		// Also return the serverInfo of the last values the server was started with (if ever)
-		// and the serverJSON setting for the server, if they exist.
+		// and the serverJSON setting for the server, if they exist.		
 		return {
 			defaultName : defaultName,
 			defaultwebroot : defaultwebroot,
 			defaultServerConfigFile : defaultServerConfigFile,
-			serverJSON : serverJSON,
+			serverJSON : serverJSON_rawSystemSettings,
 			serverInfo : serverInfo,
 			serverIsNew : serverIsNew
 		};
