@@ -53,12 +53,15 @@ component {
 		}
 	}
 
-
 	/**
 	* Complete server names
-	*/
+	*/	
 	function serverNameComplete() {
-		return serverService.getServerNames();
+		return serverService
+			.getServerNames()
+			.map( ( i ) => {
+				return { name : i, group : 'Server Names' };
+			} );
 	}
 
 }
