@@ -915,6 +915,13 @@ component accessors="true" singleton {
 							// Grab name of completor function for this param
 							commandData.completor[ param.name ][ 'optionsUDF' ] = param.optionsUDF;
 						}
+						// Check for diretory or file path completion
+						// File completion inhernently includes directories, so no need for both.
+						if( structKeyExists( param, 'optionsFileComplete' ) && param.optionsFileComplete ){
+							commandData.completor[ param.name ][ 'optionsFileComplete' ] = param.optionsFileComplete;
+						} else if( structKeyExists( param, 'optionsDirectoryComplete' ) && param.optionsDirectoryComplete ){
+							commandData.completor[ param.name ][ 'optionsDirectoryComplete' ] = param.optionsDirectoryComplete;
+						}
 					}
 
 					break;
