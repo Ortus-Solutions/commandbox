@@ -5,12 +5,12 @@
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 3.0 of the License, or (at your option) any later version.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library.
  */
@@ -104,16 +104,16 @@ public class Util{
 				Thread.sleep( 5000 );
 				System.exit( 1 );
 			}
-			
+
 			String jVer = System.getProperty("java.version");
 			if( jVer.startsWith( "9" ) || jVer.startsWith( "10" ) || jVer.startsWith( "11" ) ) {
 				System.out.println( "It looks like you're using Java 9, 10, or higher, which CommandBox doesn't support!" );
-				System.out.println( "If your PC needs this version of Java installed, then place a folder called 'JRE' with Java 8 in the same direcotry as your box binary." );
+				System.out.println( "If your PC needs this version of Java installed, then place a folder called 'JRE' with Java 8 in the same directory as your box binary." );
 				System.out.println( "We'll be working on Java 9+ support soon!" );
 				Thread.sleep( 5000 );
 				System.exit( 1 );
 			}
-		
+
 
 		} catch ( java.lang.ClassNotFoundException e ) {
 			System.out.println( "Could not load NIO!  Are we running on Java 7 or 8?  Sorry, exiting..." );
@@ -263,7 +263,7 @@ public class Util{
 							Thread.sleep( 5000 );
 							System.exit( 1 );
 						}
-						
+
 					} catch ( Exception e ) {
 						System.err.println( "" );
 						System.err.println( "CommandBox is having problems deleting your previous jars to complete the upgrade." );
@@ -291,7 +291,7 @@ public class Util{
 						Thread.sleep( 5000 );
 						System.exit( 1 );
 					}
-					
+
 				} catch ( Exception e ) {
 					System.err.println( "" );
 					System.err.println( "CommandBox could not delete the jar [" + previous.getAbsolutePath() + "]" );
@@ -418,7 +418,7 @@ public class Util{
 		}
 		return answer;
 	}
-	
+
 	public static void deleteDirectory(File f) throws IOException {
 		  if (f.isDirectory()) {
 		    for (File c : f.listFiles())
@@ -427,5 +427,5 @@ public class Util{
 		  if (!f.delete())
 		    throw new FileNotFoundException("Failed to delete file: " + f);
 		}
-	
+
 }
