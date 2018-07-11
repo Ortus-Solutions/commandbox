@@ -122,8 +122,9 @@ component accessors="true" implements="IEndpoint" singleton {
         }
 
         if (!settings.defaultRegion.len()) {
-            var config = loadSettingsFile(settings.configFile);
-            settings.defaultRegion = config[settings.profile].region ?: 'us-east-1';
+            var configFilePath = fileSystemUtil.resolvePath(settings.configFile);
+            var region = getProfileString(configFilePath, settings.profile, 'region');
+            settings.defaultRegion = len(region) ? region : 'us-east-1';
         }
 
         return settings;
@@ -131,15 +132,14 @@ component accessors="true" implements="IEndpoint" singleton {
 
     private function resolveCredentials(credentialsFile, profile) {
         // check for an aws credentials file for current user
-        var credentials = loadSettingsFile(credentialsFile);
-        try {
-            return {
-                awsKey: credentials[profile].aws_access_key_id,
-                awsSecretKey: credentials[profile].aws_secret_access_key,
-                sessionToken: credentials[profile].aws_session_token ?: ''
-            };
-        } catch(any e) {
-            // pass
+        var credentialsFilePath = fileSystemUtil.resolvePath(credentialsFile);
+        var credentials = {
+            awsKey: getProfileString(credentialsFilePath, profile, 'aws_access_key_id'),
+            awsSecretKey: getProfileString(credentialsFilePath, profile, 'aws_secret_access_key'),
+            sessionToken: getProfileString(credentialsFilePath, profile, 'aws_session_token')
+        };
+        if (len(credentials.awsKey) && len(credentials.awsSecretKey)) {
+            return credentials;
         }
 
         // check for IAM role
@@ -162,24 +162,6 @@ component accessors="true" implements="IEndpoint" singleton {
             'Could not locate S3 Credentials',
             'endpointException'
         );
-    }
-
-    private function loadSettingsFile(settingsFilePath) {
-        var settings = {};
-        var fullPath = fileSystemUtil.resolvePath(settingsFilePath);
-        if (fileExists(fullPath)) {
-            var settingLines = fileRead(fullPath).listToArray(chr(10));
-            var profile = '';
-            for (var line in settingLines) {
-                line = line.trim();
-                if (reFindNoCase('^\[[a-z]+\]$', line)) {
-                    profile = line.mid(2, line.len() - 2);
-                } else if (profile.len() && line.len()) {
-                    settings[profile][line.listFirst('=').trim()] = line.listRest('=').trim();
-                }
-            }
-        }
-        return settings;
     }
 
     private function iso8601(dateToFormat = now()) {
