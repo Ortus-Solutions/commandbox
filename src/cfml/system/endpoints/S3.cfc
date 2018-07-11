@@ -14,6 +14,7 @@ component accessors="true" implements="IEndpoint" singleton {
     property name="systemSettings"  inject="SystemSettings";
     property name="fileSystemUtil"  inject="FileSystem";
     property name="httpsEndpoint"   inject="commandbox.system.endpoints.HTTPS";
+    property name='wirebox'         inject='wirebox';
 
     // Properties
     property name="namePrefixes" type="string";
@@ -28,7 +29,7 @@ component accessors="true" implements="IEndpoint" singleton {
     public string function resolvePackage(required string package, boolean verbose=false) {
         var bucket = package.listFirst('/');
         var objectKey = package.listRest('/');
-        var awsSettings = resolveAwsSettings();
+        var awsSettings = resolveAwsSettings(bucket, verbose);
         var presignedPath = generatePresignedPath(bucket, objectKey, awsSettings);
         return httpsEndpoint.resolvePackage(presignedPath, verbose);
     }
@@ -50,13 +51,13 @@ component accessors="true" implements="IEndpoint" singleton {
         // query string
         var qs = {
             'X-Amz-Algorithm': 'AWS4-HMAC-SHA256',
-            'X-Amz-Credential': awsSettings.awsKey & '/' & isoTime.left( 8 ) & '/' & bucketRegion & '/s3/aws4_request',
+            'X-Amz-Credential': awsSettings.credentials.awsKey & '/' & isoTime.left( 8 ) & '/' & bucketRegion & '/s3/aws4_request',
             'X-Amz-Date': isoTime,
             'X-Amz-Expires': 300,
             'X-Amz-SignedHeaders': 'host'
         };
-        if (awsSettings.sessionToken.len()) {
-            qs['X-Amz-Security-Token'] = awsSettings.sessionToken;
+        if (awsSettings.credentials.sessionToken.len()) {
+            qs['X-Amz-Security-Token'] = awsSettings.credentials.sessionToken;
         }
         qs = qs.keyArray()
             .sort('text')
@@ -82,7 +83,7 @@ component accessors="true" implements="IEndpoint" singleton {
         ].toList(chr(10));
 
         // signature
-        var signingKey = binaryDecode(hmac(isoTime.left(8), 'AWS4' & awsSettings.awsSecretKey, 'hmacSHA256', 'utf-8'), 'hex');
+        var signingKey = binaryDecode(hmac(isoTime.left(8), 'AWS4' & awsSettings.credentials.awsSecretKey, 'hmacSHA256', 'utf-8'), 'hex');
         signingKey = binaryDecode(hmac(bucketRegion, signingKey, 'hmacSHA256', 'utf-8'), 'hex');
         signingKey = binaryDecode(hmac('s3', signingKey, 'hmacSHA256', 'utf-8'), 'hex');
         signingKey = binaryDecode(hmac('aws4_request', signingKey, 'hmacSHA256', 'utf-8'), 'hex');
@@ -105,21 +106,15 @@ component accessors="true" implements="IEndpoint" singleton {
         return req.responseheader['x-amz-bucket-region'];
     }
 
-    private function resolveAwsSettings() {
-        var settings = {
-            awsKey: systemSettings.getSystemSetting('AWS_ACCESS_KEY_ID', ''),
-            awsSecretKey: systemSettings.getSystemSetting('AWS_SECRET_ACCESS_KEY', ''),
-            sessionToken: systemSettings.getSystemSetting('AWS_SESSION_TOKEN', ''),
-            defaultRegion: systemSettings.getSystemSetting('AWS_DEFAULT_REGION', ''),
-            profile: systemSettings.getSystemSetting('AWS_PROFILE', 'default'),
-            configFile: systemSettings.getSystemSetting('AWS_CONFIG_FILE', '~/.aws/config'),
-            credentialsFile: systemSettings.getSystemSetting('AWS_SHARED_CREDENTIALS_FILE', '~/.aws/credentials')
-        };
+    private function resolveAwsSettings(bucket, verbose=false) {
+        var endpointSettings = configService.getSetting('endpoint.s3', {});
 
-        if (!settings.awsKey.len() || !settings.awsSecretKey.len()) {
-            var credentials = resolveCredentials(settings.credentialsFile, settings.profile);
-            settings.append(credentials);
-        }
+        var settings = {
+            defaultRegion: endpointSettings.aws_default_region ?: systemSettings.getSystemSetting('AWS_DEFAULT_REGION', ''),
+            profile: endpointSettings.aws_profile ?: systemSettings.getSystemSetting('AWS_PROFILE', 'default'),
+            configFile: endpointSettings.aws_config_file ?: systemSettings.getSystemSetting('AWS_CONFIG_FILE', '~/.aws/config'),
+            credentialsFile: endpointSettings.aws_shared_credentials_file ?: systemSettings.getSystemSetting('AWS_SHARED_CREDENTIALS_FILE', '~/.aws/credentials')
+        };
 
         if (!settings.defaultRegion.len()) {
             var configFilePath = fileSystemUtil.resolvePath(settings.configFile);
@@ -127,11 +122,52 @@ component accessors="true" implements="IEndpoint" singleton {
             settings.defaultRegion = len(region) ? region : 'us-east-1';
         }
 
+        var endpointSettingsPerBucket = endpointSettings.keyExists(bucket) && isStruct(endpointSettings[bucket]) ? endpointSettings[bucket] : endpointSettings;
+        settings.credentials = resolveCredentials(endpointSettingsPerBucket, settings.credentialsFile, settings.profile, verbose);
+
         return settings;
     }
 
-    private function resolveCredentials(credentialsFile, profile) {
-        // check for an aws credentials file for current user
+    private function resolveCredentials(endpointSettings, credentialsFile, profile, verbose=false) {
+        var job = wirebox.getInstance( 'interactiveJob' );
+
+        // check CommandBox endpoint settings for AWS credentials
+        if (verbose) {
+            job.addLog('Checking for AWS credentials in CommandBox settings: `endpoint.s3`')
+        }
+        var credentials = {
+            awsKey: endpointSettings.aws_access_key_id ?: '',
+            awsSecretKey: endpointSettings.aws_secret_access_key ?: '',
+            sessionToken: endpointSettings.aws_session_token ?: ''
+        }
+        if (len(credentials.awsKey) && len(credentials.awsSecretKey)) {
+            if (verbose) {
+                job.addSuccessLog('AWS Credentials found in endpoint settings')
+            }
+            return credentials;
+        }
+
+        // check for AWS credentials in environment
+        if (verbose) {
+            job.addLog('Checking for AWS credentials in environment variables and Java system properties')
+        }
+        var credentials = {
+            awsKey: systemSettings.getSystemSetting('AWS_ACCESS_KEY_ID', ''),
+            awsSecretKey: systemSettings.getSystemSetting('AWS_SECRET_ACCESS_KEY', ''),
+            sessionToken: systemSettings.getSystemSetting('AWS_SESSION_TOKEN', ''),
+        };
+        if (len(credentials.awsKey) && len(credentials.awsSecretKey)) {
+            if (verbose) {
+                job.addSuccessLog('AWS Credentials found in environment variables')
+            }
+            return credentials;
+        }
+
+
+        // check for an AWS credentials file for current user
+        if (verbose) {
+            job.addLog('Checking for AWS credentials in #credentialsFile#')
+        }
         var credentialsFilePath = fileSystemUtil.resolvePath(credentialsFile);
         var credentials = {
             awsKey: getProfileString(credentialsFilePath, profile, 'aws_access_key_id'),
@@ -139,27 +175,43 @@ component accessors="true" implements="IEndpoint" singleton {
             sessionToken: getProfileString(credentialsFilePath, profile, 'aws_session_token')
         };
         if (len(credentials.awsKey) && len(credentials.awsSecretKey)) {
+            if (verbose) {
+                job.addSuccessLog('AWS Credentials found in #credentialsFile#')
+            }
             return credentials;
         }
 
         // check for IAM role
+        if (verbose) {
+            job.addLog('Checking for AWS credentials via IAM Role')
+        }
         try {
             var roleName = makeHTTPRequest(urlPath=getIamRolePath(), timeout=1, allowProxy=false).filecontent;
             var req = makeHTTPRequest(urlPath=getIamRolePath() & roleName, timeout=1, allowProxy=false);
             var data = deserializeJSON( req.filecontent );
-            return {
+            var credentials = {
                 awsKey: data.AccessKeyId,
                 awsSecretKey: data.SecretAccessKey,
                 sessionToken: data.Token,
                 expires: parseDateTime(data.Expiration)
+            };
+            if (verbose) {
+                job.addSuccessLog('AWS Credentials found via IAM Role: #roleName#')
             }
+            return credentials;
         } catch(any e) {
             // pass
         }
 
         // Credentials unable to be located
+        var errorMessage = '
+            Could not locate S3 Credentials. Credentials can be set in CommandBox settings under the key `endpoint.s3`
+            or by following one of the configuration methods used for configuring the AWS CLI.
+            See https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html and in particular
+            "Configuration Settings and Precedence".
+        '.trim();
         throw(
-            'Could not locate S3 Credentials',
+            errorMessage,
             'endpointException'
         );
     }
