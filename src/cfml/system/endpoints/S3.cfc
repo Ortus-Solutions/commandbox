@@ -32,7 +32,25 @@ component accessors="true" implements="IEndpoint" singleton {
         var objectKey = package.listRest('/');
         var awsSettings = resolveAwsSettings(bucket, verbose);
         var bucketRegion = len(encodedRegion) ? encodedRegion : resolveBucketRegion(bucket, awsSettings.defaultRegion, verbose);
-        var presignedPath = generatePresignedPath(bucket, objectKey, bucketRegion, awsSettings);
+
+        // if objectKey does not end in `.zip` we have to do a HEAD request to see if the path is valid as is
+        // or if .zip should be appended to it - this is for backward compat with https://github.com/pixl8/s3-commandbox-commands
+        if (!objectKey.endsWith('.zip')) {
+            var job = wirebox.getInstance('interactiveJob');
+            if (verbose) {
+                job.addLog('Validating object key since it does not have a .zip extension');
+            }
+            var presignedPath = generatePresignedPath('HEAD', bucket, objectKey, bucketRegion, awsSettings.credentials);
+            var req = makeHTTPRequest('https:#presignedPath#', 'HEAD');
+            if (req.status_code == 404) {
+                if (verbose) {
+                    job.addLog('Object key does not exist on S3, appending .zip extension');
+                }
+                objectKey &= '.zip';
+            }
+        }
+
+        var presignedPath = generatePresignedPath('GET', bucket, objectKey, bucketRegion, awsSettings.credentials);
         return httpsEndpoint.resolvePackage(presignedPath, verbose);
     }
 
@@ -44,7 +62,7 @@ component accessors="true" implements="IEndpoint" singleton {
         return httpsEndpoint.getUpdate(argumentCollection = arguments);
     }
 
-    private function generatePresignedPath(bucket, objectKey, bucketRegion, awsSettings) {
+    private function generatePresignedPath(method, bucket, objectKey, bucketRegion, credentials) {
         var isoTime = iso8601();
         var host = 's3.#bucketRegion#.amazonaws.com';
         var path = encodeUrl('/#bucket#/#objectKey#', false);
@@ -52,13 +70,13 @@ component accessors="true" implements="IEndpoint" singleton {
         // query string
         var qs = {
             'X-Amz-Algorithm': 'AWS4-HMAC-SHA256',
-            'X-Amz-Credential': awsSettings.credentials.awsKey & '/' & isoTime.left( 8 ) & '/' & bucketRegion & '/s3/aws4_request',
+            'X-Amz-Credential': credentials.awsKey & '/' & isoTime.left( 8 ) & '/' & bucketRegion & '/s3/aws4_request',
             'X-Amz-Date': isoTime,
             'X-Amz-Expires': 300,
             'X-Amz-SignedHeaders': 'host'
         };
-        if (awsSettings.credentials.sessionToken.len()) {
-            qs['X-Amz-Security-Token'] = awsSettings.credentials.sessionToken;
+        if (credentials.sessionToken.len()) {
+            qs['X-Amz-Security-Token'] = credentials.sessionToken;
         }
         qs = qs.keyArray()
             .sort('text')
@@ -66,7 +84,7 @@ component accessors="true" implements="IEndpoint" singleton {
 
         // canonical request
         var canonicalRequest = [
-            'GET',
+            method.uCase(),
             path,
             qs,
             'host:#host#',
@@ -84,7 +102,7 @@ component accessors="true" implements="IEndpoint" singleton {
         ].toList(chr(10));
 
         // signature
-        var signingKey = binaryDecode(hmac(isoTime.left(8), 'AWS4' & awsSettings.credentials.awsSecretKey, 'hmacSHA256', 'utf-8'), 'hex');
+        var signingKey = binaryDecode(hmac(isoTime.left(8), 'AWS4' & credentials.awsSecretKey, 'hmacSHA256', 'utf-8'), 'hex');
         signingKey = binaryDecode(hmac(bucketRegion, signingKey, 'hmacSHA256', 'utf-8'), 'hex');
         signingKey = binaryDecode(hmac('s3', signingKey, 'hmacSHA256', 'utf-8'), 'hex');
         signingKey = binaryDecode(hmac('aws4_request', signingKey, 'hmacSHA256', 'utf-8'), 'hex');
