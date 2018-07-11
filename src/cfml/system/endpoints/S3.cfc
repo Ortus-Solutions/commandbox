@@ -10,6 +10,7 @@
 component accessors="true" implements="IEndpoint" singleton {
 
     // DI
+    property name="configService"   inject="configService";
     property name="systemSettings"  inject="SystemSettings";
     property name="fileSystemUtil"  inject="FileSystem";
     property name="httpsEndpoint"   inject="commandbox.system.endpoints.HTTPS";
@@ -92,10 +93,15 @@ component accessors="true" implements="IEndpoint" singleton {
     }
 
     private function resolveBucketRegion(bucket, defaultRegion) {
-        var req = '';
-        cfhttp(url='https://s3.#defaultRegion#.amazonaws.com', method='HEAD', result='req', redirect=false) {
-            cfhttpparam(type='header', name='Host', value='#bucket#.s3.amazonaws.com');
-        }
+        var args = {
+            urlPath: 'https://s3.#defaultRegion#.amazonaws.com',
+            method: 'HEAD',
+            redirect: false,
+            headers: {
+                'Host': '#bucket#.s3.amazonaws.com'
+            }
+        };
+        var req = makeHTTPRequest(argumentCollection = args);
         return req.responseheader['x-amz-bucket-region'];
     }
 
@@ -138,10 +144,8 @@ component accessors="true" implements="IEndpoint" singleton {
 
         // check for IAM role
         try {
-            var req = '';
-            cfhttp(url = getIamRolePath(), timeout = 1, result = 'req');
-            var roleName = req.filecontent;
-            cfhttp(url = getIamRolePath() & roleName, timeout = 1, result = 'req');
+            var roleName = makeHTTPRequest(urlPath=getIamRolePath(), timeout=1, allowProxy=false).filecontent;
+            var req = makeHTTPRequest(urlPath=getIamRolePath() & roleName, timeout=1, allowProxy=false);
             var data = deserializeJSON( req.filecontent );
             return {
                 awsKey: data.AccessKeyId,
@@ -188,6 +192,37 @@ component accessors="true" implements="IEndpoint" singleton {
             result = result.replace('%2F', '/', 'all');
         }
         return result;
+    }
+
+    private function makeHTTPRequest(urlPath, method='GET', redirect=true, timeout=20, headers={}, allowProxy=true) {
+        var req = '';
+        var attributeCol = {
+            url: urlPath,
+            method: method,
+            timeout: timeout,
+            redirect: redirect,
+            result = 'req'
+        };
+
+        if (allowProxy) {
+            var proxy = configService.getSetting('proxy', {});
+            if (proxy.keyExists('server') && len(proxy.server)) {
+                attributeCol.proxyServer = proxy.server;
+                for (var key in ['port', 'user', 'password'] ) {
+                    if (proxy.keyExists(key) && len(proxy[key])) {
+                        attributeCol['proxy#key#'] = proxy[key];
+                    }
+                }
+            }
+        }
+
+        cfhttp(attributeCollection = attributeCol) {
+            for (var key in headers) {
+                cfhttpparam(type='header', name=key, value=headers[key]);
+            }
+        }
+
+        return req;
     }
 
 }
