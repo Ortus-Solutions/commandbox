@@ -27,10 +27,12 @@ component accessors="true" implements="IEndpoint" singleton {
     }
 
     public string function resolvePackage(required string package, boolean verbose=false) {
-        var bucket = package.listFirst('/');
+        var bucket = package.listFirst('/').listFirst(':');
+        var encodedRegion = package.listFirst('/').listRest(':');
         var objectKey = package.listRest('/');
         var awsSettings = resolveAwsSettings(bucket, verbose);
-        var presignedPath = generatePresignedPath(bucket, objectKey, awsSettings);
+        var bucketRegion = len(encodedRegion) ? encodedRegion : resolveBucketRegion(bucket, awsSettings.defaultRegion, verbose);
+        var presignedPath = generatePresignedPath(bucket, objectKey, bucketRegion, awsSettings);
         return httpsEndpoint.resolvePackage(presignedPath, verbose);
     }
 
@@ -42,9 +44,8 @@ component accessors="true" implements="IEndpoint" singleton {
         return httpsEndpoint.getUpdate(argumentCollection = arguments);
     }
 
-    private function generatePresignedPath(bucket, objectKey, awsSettings) {
+    private function generatePresignedPath(bucket, objectKey, bucketRegion, awsSettings) {
         var isoTime = iso8601();
-        var bucketRegion = resolveBucketRegion(bucket, awsSettings.defaultRegion);
         var host = 's3.#bucketRegion#.amazonaws.com';
         var path = encodeUrl('/#bucket#/#objectKey#', false);
 
@@ -93,7 +94,12 @@ component accessors="true" implements="IEndpoint" singleton {
         return '//' & host & path & '?' & qs;
     }
 
-    private function resolveBucketRegion(bucket, defaultRegion) {
+    private function resolveBucketRegion(bucket, defaultRegion, verbose=false) {
+        if (verbose) {
+            var job = wirebox.getInstance( 'interactiveJob' );
+            job.addLog('Resolving bucket region');
+        }
+
         var args = {
             urlPath: 'https://s3.#defaultRegion#.amazonaws.com',
             method: 'HEAD',
