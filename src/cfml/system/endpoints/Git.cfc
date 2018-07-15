@@ -56,10 +56,11 @@ component accessors="true" implements="IEndpoint" singleton {
 
 		// The main Git API
 		var Git = createObject( 'java', 'org.eclipse.jgit.api.Git' );
-
-		// Wrap up system out in a PrintWriter and create a progress monitor to track our clone
-		var printWriter = shell.getReader().getTerminal().writer();
-		var progressMonitor = createObject( 'java', 'org.eclipse.jgit.lib.TextProgressMonitor' ).init( printWriter );
+		
+		var progressMonitor = createDynamicProxy(
+				wirebox.getInstance( 'JGitProgressMonitor@package-commands' ),
+				[ 'org.eclipse.jgit.lib.ProgressMonitor' ]
+			);
 
 		// Temporary location to place the repo
 		var localPath = createObject( 'java', 'java.io.File' ).init( "#tempDir#/git_#randRange( 1, 1000 )#" );
@@ -69,9 +70,6 @@ component accessors="true" implements="IEndpoint" singleton {
 		var CommandCaller = createObject( 'java', 'com.ortussolutions.commandbox.jgit.CommandCaller' ).init();
 
 		try {
-			job.clear();
-			// Manually give us some space before our Git Clone
-			shell.printString( chr( 10 ) );
 			
 			// Clone the repo locally into a temp folder
 			var cloneCommand = Git.cloneRepository()
@@ -84,9 +82,6 @@ component accessors="true" implements="IEndpoint" singleton {
 			var command = secureCloneCommand( cloneCommand );
 		    // call with our special java wrapper
 			local.result = CommandCaller.call( command );
-
-			shell.printString( chr( 10 ) );
-			job.draw();
 			
 			// Get a list of all branches
 			var branchListCommand = local.result.branchList();
