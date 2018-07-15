@@ -1020,8 +1020,9 @@ component accessors="true" singleton {
 	/**
 	* Builds a struct of structs that represents the dependency hierarchy
 	* @directory The directory of the package to start in
+	* @depth how deep to climb down the rabbit hole.  A value of 0 means infinite depth
 	*/
-	function buildDependencyHierarchy( required directory ){
+	function buildDependencyHierarchy( required directory, depth=0 ){
 
 		var boxJSON = readPackageDescriptor( arguments.directory );
 		var tree = {
@@ -1033,16 +1034,21 @@ component accessors="true" singleton {
 			'isInstalled': true,
 			'directory': arguments.directory
 		};
-		buildChildren( boxJSON, tree, arguments.directory);
+		buildChildren( boxJSON, tree, arguments.directory, depth, 1 );
 		return tree;
 	}
 
-	private function buildChildren( required struct boxJSON, required struct parent, required string basePath ) {
-		parent[ 'dependencies' ] = processDependencies( boxJSON.dependencies, boxJSON.installPaths, false, arguments.basePath );
-		parent[ 'dependencies' ].append( processDependencies( boxJSON.devDependencies, boxJSON.installPaths, true, arguments.basePath ) );
+	private function buildChildren( required struct boxJSON, required struct parent, required string basePath, depth=0, currentlevel ) {
+		// If we've reached our depth stop here
+		if( depth > 0 && currentLevel > depth ) {
+			parent[ 'dependencies' ] = {};
+			return;
+		}
+		parent[ 'dependencies' ] = processDependencies( boxJSON.dependencies, boxJSON.installPaths, false, arguments.basePath, depth, currentlevel );
+		parent[ 'dependencies' ].append( processDependencies( boxJSON.devDependencies, boxJSON.installPaths, true, arguments.basePath, depth, currentlevel ) );
 	}
 
-	private function processDependencies( dependencies, installPaths, dev=false, basePath ) {
+	private function processDependencies( dependencies, installPaths, dev=false, basePath, depth=0, currentlevel ) {
 		var thisDeps = {};
 
 		for( var dependency in arguments.dependencies ) {
@@ -1075,7 +1081,7 @@ component accessors="true" singleton {
 					}
 
 					// Down the rabbit hole
-					buildChildren( boxJSON, thisDeps[ dependency ], fullPackageInstallPath );
+					buildChildren( boxJSON, thisDeps[ dependency ], fullPackageInstallPath, depth, currentlevel+1 );
 
 				} else {
 					thisDeps[ dependency ][ 'isInstalled'  ] = false;

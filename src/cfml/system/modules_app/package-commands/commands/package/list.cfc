@@ -26,14 +26,16 @@ component aliases="list" {
 	property name="packageService" inject="PackageService";
 
 	/**
-	 * @verbose.hint Outputs additional informaiton about each package
-	 * @json.hint Outputs results as JSON
-	 * @system.hint When true, list packages from the global CommandBox module's folder
+	 * @verbose Outputs additional informaiton about each package
+	 * @json Outputs results as JSON
+	 * @system When true, list packages from the global CommandBox module's folder
+	 * @depth how deep to climb down the rabbit hole.  A value of 0 means infinite depth
 	 **/
 	function run(
 		boolean verbose=false,
 		boolean JSON=false,
-		boolean system=false ) {
+		boolean system=false,
+		depth=0 ) {
 
 		if( arguments.system ) {
 			var directory = expandPath( '/commandbox' );
@@ -46,7 +48,7 @@ component aliases="list" {
 			return error( '#directory# is not a package!' );
 		}
 		// build dependency tree
-		var tree = packageService.buildDependencyHierarchy( directory );
+		var tree = packageService.buildDependencyHierarchy( directory, depth );
 
 		// JSON output
 		if( arguments.JSON ) {
