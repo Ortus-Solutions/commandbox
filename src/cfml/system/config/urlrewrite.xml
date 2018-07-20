@@ -5,8 +5,10 @@
 		<note>Generic Front-Controller URLs</note>
 		<!-- These are paths that don't exist on disk, but shouldn't get rewritten since the CF engine treats them special. -->
 		<condition type="request-uri" operator="notequal">^/(flex2gateway|flashservices/gateway|messagebroker|lucee|rest|cfide|CFIDE|cfformgateway|jrunscripts|cf_scripts)/.*</condition>
-		<!-- This is a special URL that can be enabled with debuggin -->
+		<!-- This is a special URL that can be enabled with debugging -->
 		<condition type="request-uri" operator="notequal">^/tuckey-status</condition>
+		<!-- Used for the Adobe CF 2018 performance monitoring service -->
+		<condition type="request-uri" operator="notequal">^/pms$</condition>
 		<!-- Browsers like to send this request and it will get rewritten to /index.cfm/favicon.ico when it really just needs to be a 404 -->
 		<condition type="request-uri" operator="notequal">^/favicon.ico</condition>
 		<!-- Ignore any path to a .cfm or .cfml file in a sub directory that has a path info attached. These won't trigger as "real" directories below
