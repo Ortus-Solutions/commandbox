@@ -169,10 +169,21 @@ component {
 		if( !isNull( arguments.outputFile ) ){
 			// This will make each directory canonical and absolute
 			arguments.outputFile = fileSystemUtil.resolvePath( arguments.outputFile );
+			
+			
+			var thisDir = getDirectoryFromPath( arguments.outputFile );
+			if( !directoryExists( thisDir ) ) {
+				directoryCreate( thisDir );
+			}
+			
+			if( isJSON( results.fileContent ) ) {
+				results.fileContent = formatterUtil.formatJSON( results.fileContent );	
+			}
+			
 			// write it
 			fileWrite( 
 				arguments.outputFile, 
-				formatterUtil.formatJSON( results.fileContent )
+				results.fileContent
 			);
 			print.boldGreenLine( "===> Report written to #arguments.outputFile#!" );
 		}
