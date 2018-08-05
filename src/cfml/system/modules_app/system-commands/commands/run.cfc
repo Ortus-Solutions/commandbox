@@ -144,10 +144,7 @@ component{
 				inputStreamReader.close();
 			} 
 			
-			// I had issues with Ctrl-C not fully existing cmd on Windows.  This make sure it's dead.
-			// Note, this doesn't always work and I don't think I can control it. An example is if you run
-			// !cmd on Windows and then hit Ctrl-C. The cmd process won't die and you'll have to just type
-			// "exit" followed by enter TWICE to get back to CommandBox. I can't find a way around this.
+			// I had issues with Ctrl-C not fully existing cmd on Windows.  This should make sure it's dead.
 			if( !isNull( process ) ) {
 				process.destroy();	
 			}
