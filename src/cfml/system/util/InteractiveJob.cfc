@@ -30,7 +30,6 @@ component accessors=true singleton {
 
 	function onDIComplete() {
 		terminal = shell.getReader().getTerminal();
-		configService = shell.getWirebox().getInstance( "configService" );
 		display = createObject( 'java', 'org.jline.utils.Display' ).init( terminal, false );
 		safeWidth = 80;
 		reset();
@@ -58,10 +57,9 @@ component accessors=true singleton {
 	* Clear from the screen, but don't reset
 	*/
 	function clear() {
-		var nonInteractive = configService.getSetting( "nonInteractiveShell", false );
 		// If Jline uses a "dumb" terminal, the width reports as zero, which throws devide by zero errors.
 		// TODO: I might be able to just fake a reasonable width.
-		if( ( IsBoolean( nonInteractive ) && nonInteractive ) || terminal.getWidth() == 0 ) {
+		if( !shell.isTerminalInteractive() || terminal.getWidth() == 0 ) {
 			return;
 		}
 
@@ -202,11 +200,9 @@ component accessors=true singleton {
 	* Render the information to the console
 	*/
 	function draw() {
-		var nonInteractive = configService.getSetting( "nonInteractiveShell", false );
-
 		// If Jline uses a "dumb" terminal, the width reports as zero, which throws devide by zero errors.
 		// TODO: I might be able to just fake a reasonable width.
-		if( ( IsBoolean( nonInteractive ) && nonInteractive ) || terminal.getWidth() == 0 ) {
+		if( !shell.isTerminalInteractive() || terminal.getWidth() == 0 ) {
 			return;
 		}
 

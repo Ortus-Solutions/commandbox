@@ -25,7 +25,8 @@ component accessors="true" singleton {
 	property name="Util"					inject="wirebox.system.core.util.Util";
 	property name="CommandHighlighter"	 	inject="CommandHighlighter";
 	property name="REPLHighlighter"			inject="REPLHighlighter";
-
+	property name="configService"			inject="configService";
+	property name='systemSettings'			inject='SystemSettings';
 
 	/**
 	* The java jline reader class.
@@ -839,6 +840,24 @@ component accessors="true" singleton {
 		}
 
 		return '';
+	}
+	
+
+	/**
+	 * Is the current terminal interactive?
+	 * @returns boolean
+  	 **/
+	function isTerminalInteractive() {
+		// Check for config setting called "nonInteractiveShell"
+		if( configService.settingExists( 'nonInteractiveShell' ) && isBoolean( configService.getSetting( "nonInteractiveShell" ) ) ) {
+			return !configService.getSetting( "nonInteractiveShell" );
+		// Next check for an Environment Variable called "CI" that is set
+		} else if( systemSettings.getSystemSetting( 'CI', '__NOT_SET__' ) != '__NOT_SET__' ) {
+			return false;
+		// Default to true
+		} else {
+			return true;
+		}
 	}
 
 	/**
