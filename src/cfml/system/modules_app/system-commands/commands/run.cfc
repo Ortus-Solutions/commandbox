@@ -61,63 +61,77 @@ component{
 			var nativeShell = configService.getSetting( 'nativeShell', '/bin/bash' );
 			commandArray = [ nativeShell, '-i', '-c', arguments.command & ' 2>&1 && ( exit $? > /dev/null )' ];
 		}
-
+		
+		var exitCode = 1;
+        // grab the current working directory
+        var CWDFile = createObject( 'java', 'java.io.File' ).init( fileSystemUtil.resolvePath( '' ) );
+				
 		try{
-			var exitCode = 1;
-            // grab the current working directory
-            var CWDFile = createObject( 'java', 'java.io.File' ).init( fileSystemUtil.resolvePath( '' ) );
             
             // This unbinds JLine from our input and output so it's not fighting over the keyboard
             terminal.pause();
             
-            // Static reference to inner class
-            var redirect = createObject( 'java', 'java.lang.ProcessBuilder$Redirect' );
-            // A string builder to collect the output that we're also streaming to the console so it can be captured and piped to another command as well.
-            var processOutputStringBuilder = createObject( 'java', 'java.lang.StringBuilder' ).init( '' );
-			var process = createObject( 'java', 'java.lang.ProcessBuilder' )
-				.init( commandArray )
-				// Keyboard pipes through to the input of the process
-				.redirectInput( redirect.INHERIT )
-				.redirectErrorStream(fileSystemUtil.isWindows())
-				// Sets current working directory for the process
-				.directory( CWDFile );
-
-			if(!fileSystemUtil.isWIndows()) {
-				process=process.redirectError(redirect.INHERIT);
-			}
-			// Fires process async
-			process=process.start();
-			
-			// Despite the name, this is the stream that the *output* of the external process is in.
-			var inputStream = process.getInputStream();
-			// I convert the byte array in the piped input stream to a character array
-			var inputStreamReader = createObject( 'java', 'java.io.InputStreamReader' ).init( inputStream );
-			
-			// This will block/loop until the input stream closes, which means this loops until the process ends.
-			while( ( var char = inputStreamReader.read() ) != -1 ) {
-				checkInterrupted();
-				if( interactive ) {
-					// If running interactive, append directly to terminal
-			    	shell.getReader().getTerminal().writer().write( char );
-				} else {
+			if( interactive ) {
+				
+				var exitCode = createObject( "java", "java.lang.ProcessBuilder" )
+					.init( commandArray )
+					// Do you believe in magic
+					// This works great on Mac/Windows.
+					// On Linux, the standard input (keyboard) is not being piped to the background process.
+					.inheritIO()
+					// Sets current working directory for the process
+					.directory( CWDFile )
+					// Fires process async
+					.start()
+					// waits for it to exit, returning the exit code
+					.waitFor();
+	
+			} else {
+		            
+	            // Static reference to inner class
+	            var redirect = createObject( 'java', 'java.lang.ProcessBuilder$Redirect' );
+	            // A string builder to collect the output that we're also streaming to the console so it can be captured and piped to another command as well.
+	            var processOutputStringBuilder = createObject( 'java', 'java.lang.StringBuilder' ).init( '' );
+				var process = createObject( 'java', 'java.lang.ProcessBuilder' )
+					.init( commandArray )
+					// Keyboard pipes through to the input of the process
+					.redirectInput( redirect.INHERIT )
+					.redirectErrorStream(fileSystemUtil.isWindows())
+					// Sets current working directory for the process
+					.directory( CWDFile );
+	
+				if(!fileSystemUtil.isWIndows()) {
+					process=process.redirectError(redirect.INHERIT);
+				}
+				// Fires process async
+				process=process.start();
+				
+				// Despite the name, this is the stream that the *output* of the external process is in.
+				var inputStream = process.getInputStream();
+				// I convert the byte array in the piped input stream to a character array
+				var inputStreamReader = createObject( 'java', 'java.io.InputStreamReader' ).init( inputStream );
+				
+				// This will block/loop until the input stream closes, which means this loops until the process ends.
+				while( ( var char = inputStreamReader.read() ) != -1 ) {
+					checkInterrupted();
 					// if running non-interactive, gather the output of the command
 					processOutputStringBuilder.append( javaCast( 'char', char ) );
-				}
-			} 
+				} 
+				
+				// make sure it's dead
+				process.waitFor();
+	
+				// Get the exit code
+				exitCode = process.exitValue();
 			
-			// make sure it's dead
-			process.waitFor();
-
-			// Get the exit code
-			exitCode = process.exitValue();
-		
-			// If this was non-interactive, print out the text output all at once.
-			if( processOutputStringBuilder.toString().len() ) {
+				// This was non-interactive, print out the text output all at once.
 				print.text( processOutputStringBuilder.toString() );
 			}
-		
+
+			
 			// As you were, JLine
             terminal.resume();
+            
 		} finally {
 			
 			// Clean up the streams
