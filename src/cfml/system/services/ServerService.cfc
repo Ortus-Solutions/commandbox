@@ -503,6 +503,7 @@ component accessors="true" singleton {
 		serverInfo.openbrowser		= serverProps.openbrowser 		?: serverJSON.openbrowser			?: defaults.openbrowser;
 		serverInfo.openbrowserURL	= serverProps.openbrowserURL	?: serverJSON.openbrowserURL		?: defaults.openbrowserURL;
 
+		job.setDumpLog( serverInfo.debug );
 
 		serverInfo.host				= serverProps.host 				?: serverJSON.web.host				?: defaults.web.host;
 		// If the last port we used is taken, remove it from consideration.
