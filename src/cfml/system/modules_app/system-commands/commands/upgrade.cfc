@@ -128,7 +128,7 @@ component {
 					.boldYellowLine( "CommandBox will finish the upgrade for you the first time it is run." )
 					.line()
 					.text( "Download URL: ").
-						boldLine( arguments.latest ? '#thisArtifactsURL#ortussolutions/commandbox/#repoVersionShort#/' : 'http://www.ortussolutions.com/products/commandbox/##download' )
+						boldLine( arguments.latest ? '#thisArtifactsURL#/##/ortussolutions/commandbox/#repoVersionShort#/' : 'http://www.ortussolutions.com/products/commandbox/##download' )
 					.line()
 					.yellowLine( "(Your CLI Loader version is #shell.getLoaderVersion()# and the latest is #LoaderVersion#)" )
 					.toConsole();
