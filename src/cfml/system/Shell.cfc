@@ -489,42 +489,31 @@ component accessors="true" singleton {
 
 	/**
 	 * Runs the shell thread until exit flag is set
-	 * @input.hint command line to run if running externally
+	 * @silent Supress prompt
   	 **/
-    Boolean function run( input="", silent=false ) {
-
+    Boolean function run( silent=false ) {
 		// init reload to false, just in case
         variables.reloadshell = false;
 
 		try{
-	        // Get input stream
-	        if( arguments.input != "" ){
-	        	 arguments.input &= chr(10);
-	        	var inStream = createObject( "java", "java.io.ByteArrayInputStream" ).init( arguments.input.getBytes() );
-	        	variables.reader.setInput( inStream );
-	        }
 
 	        // setup bell enabled + keep running flags
 	        // variables.reader.setBellEnabled( true );
 	        variables.keepRunning = true;
 
 	        var line ="";
-	        if( !arguments.silent ) {
-				// Set default prompt on reader
-				setPrompt();
-			}
 
 			// while keep running
 	        while( variables.keepRunning ){
-	        	// check if running externally
-				if( arguments.input != "" ){
-					variables.keepRunning = false;
-				}
 				
 				try {
 					
 					var interceptData = { prompt : variables.shellPrompt };
 					getInterceptorService().announceInterception( 'prePrompt', interceptData );
+					
+					if( arguments.silent ) {
+						interceptData.prompt = '';
+					}
 					
 					// Shell stops on this line while waiting for user input
 			        if( arguments.silent ) {
@@ -541,8 +530,13 @@ component accessors="true" singleton {
 		    		
 				// User hits Ctrl-D.  Murder the shell dead.
 				} catch( org.jline.reader.EndOfFileException var e ) {
-					variables.reader.getTerminal().writer().print( variables.print.boldGreenLine( 'Goodbye!' ) );
-		    		variables.reader.getTerminal().writer().flush();
+					
+					// Only output this if a user presses Ctrl-D, EOF can also happen if piping an actual file of input into the shell.
+					if( !arguments.silent ) {
+						variables.reader.getTerminal().writer().print( variables.print.boldGreenLine( 'Goodbye!' ) );
+		    			variables.reader.getTerminal().writer().flush();
+					}
+					
 					variables.keepRunning = false;
 		    		continue; 
 				}
