@@ -586,15 +586,17 @@ component accessors="true" singleton {
 
 		serverInfo.trayEnable	 	= serverJSON.trayEnable			?: defaults.trayEnable;
 
+		serverInfo.defaultBaseURL = serverInfo.SSLEnable ? 'https://#serverInfo.host#:#serverInfo.SSLPort#' : 'http://#serverInfo.host#:#serverInfo.port#';
+			
 		// If there's no open URL, let's create a complete one
 		if( !serverInfo.openbrowserURL.len() ) {
-			serverInfo.openbrowserURL = serverInfo.SSLEnable ? 'https://#serverInfo.host#:#serverInfo.SSLPort#' : 'http://#serverInfo.host#:#serverInfo.port#';
+			serverInfo.openbrowserURL = serverInfo.defaultBaseURL;
 		// Partial URL like /admin/login.cm
 		} else if ( left( serverInfo.openbrowserURL, 4 ) != 'http' ) {
 			if( !serverInfo.openbrowserURL.startsWith( '/' ) ) {
 				serverInfo.openbrowserURL = '/' & serverInfo.openbrowserURL;
 			}
-			serverInfo.openbrowserURL = ( serverInfo.SSLEnable ? 'https://#serverInfo.host#:#serverInfo.SSLPort#' : 'http://#serverInfo.host#:#serverInfo.port#' ) & serverInfo.openbrowserURL;
+			serverInfo.openbrowserURL = serverInfo.defaultBaseURL & serverInfo.openbrowserURL;
 		}
 
 		// Clean up spaces in welcome file list
@@ -635,6 +637,7 @@ component accessors="true" singleton {
 		serverJSON.trayOptions = serverJSON.trayOptions ?: [];
 		
 		// global defaults are relative to web root
+		// TODO: perform this recursivley into "items" sub arrays
 		serverInfo.trayOptions = serverInfo.trayOptions.map( function( item ){
 			if( item.keyExists( 'image' ) && item.image.len() ) {
 				item.image = fileSystemUtil.resolvePath( item.image, defaultwebroot );
@@ -643,6 +646,7 @@ component accessors="true" singleton {
 		} );
 		
 		// server.json settings are relative to the folder server.json lives
+		// TODO: perform this recursivley into "items" sub arrays
 		serverJSON.trayOptions = serverJSON.trayOptions.map( function( item ){
 			if( item.keyExists( 'image' ) && item.image.len() ) {				
 				item.image = fileSystemUtil.resolvePath( item.image, defaultServerConfigFileDirectory );
@@ -755,6 +759,7 @@ component accessors="true" singleton {
 			serverInfo.logdir = serverInfo.serverHomeDirectory & "/logs";
 			serverInfo.engineName = installDetails.engineName;
 			serverInfo.engineVersion = installDetails.version;
+			serverInfo.appFileSystemPath = serverInfo.webroot;
 
 			// Make current settings available to package scripts
 			setServerInfo( serverInfo );
@@ -806,8 +811,11 @@ component accessors="true" singleton {
 				// Just use it
 				serverInfo.serverHomeDirectory = serverInfo.WARPath;
 			}
+			serverInfo.appFileSystemPath = serverInfo.serverHomeDirectory;
 			// Create a custom server folder to house the logs
 			serverInfo.logdir = serverinfo.customServerFolder & "/logs";
+			var displayServerName = processName;
+			var displayEngineName = 'WAR';
 		}
 		
 		// logdir is set above and is different for WARs and CF engines
@@ -848,31 +856,53 @@ component accessors="true" singleton {
 		// Set default options for all servers
 		// TODO: Don't overwrite existing options with the same label.
 
-	/*	serverInfo.trayOptions.prepend(
-			{
-				"label":"Advanced",
-				"items": [
-					{ "label" : "Browse File System", "hotkey" : "B", "action" : "openfilesystem", "path" : "", "image" : expandPath('/commandbox/system/config/server-icons/info.png' ) },
-					{ "label" : displayEngineName, "disabled" : true, 'checkbox': true, "image" : expandPath('/commandbox/system/config/server-icons/info.png' )  },
-					{ "label" : "PID: ${runwar.PID}", "disabled" : true, 'checkbox': true, "image" : expandPath('/commandbox/system/config/server-icons/info.png' )  }
-				]
-			} );*/
-
-	    if( CFEngineName contains "lucee" ) {
-			serverInfo.trayOptions.prepend( { 'label':'Open Web Admin', 'action':'openbrowser', 'url':'http://${runwar.host}:${runwar.port}/lucee/admin/web.cfm', 'image' : expandPath('/commandbox/system/config/server-icons/web_settings.png' ) } );
-			serverInfo.trayOptions.prepend( { 'label':'Open Server Admin', 'action':'openbrowser', 'url':'http://${runwar.host}:${runwar.port}/lucee/admin/server.cfm', 'image' : expandPath('/commandbox/system/config/server-icons/server_settings.png' ) } );
-		} else if( CFEngineName contains "railo" ) {
-			serverInfo.trayOptions.prepend( { 'label':'Open Web Admin', 'action':'openbrowser', 'url':'http://${runwar.host}:${runwar.port}/railo-context/admin/web.cfm', 'image' : expandPath('/commandbox/system/config/server-icons/web_settings.png' ) } );
-			serverInfo.trayOptions.prepend( { 'label':'Open Server Admin', 'action':'openbrowser', 'url':'http://${runwar.host}:${runwar.port}/railo-context/admin/server.cfm', 'image' : expandPath('/commandbox/system/config/server-icons/server_settings.png' ) } );
-		} else if( CFEngineName contains "adobe" ) {
-			serverInfo.trayOptions.prepend( { 'label':'Open Server Admin', 'action':'openbrowser', 'url':'http://${runwar.host}:${runwar.port}/CFIDE/administrator/enter.cfm', 'image' : expandPath('/commandbox/system/config/server-icons/server_settings.png' ) } );
+		var appFileSystemPathDisplay = fileSystemUtil.normalizeSlashes( serverInfo.appFileSystemPath );
+		// Deal with possibly very deep folder structures which would look bad in the menu or possible reach off the screen
+		if( appFileSystemPathDisplay.len() > 50 && appFileSystemPathDisplay.listLen( '/' ) > 2 ) {
+			var pathLength = appFileSystemPathDisplay.listLen( '/' );
+			var firstFolder = appFileSystemPathDisplay.listFirst( '/' );
+			var lastFolder = appFileSystemPathDisplay.listLast( '/' );
+			var middleStuff = appFileSystemPathDisplay.listDeleteAt( pathLength, '/' ).listDeleteAt( 1, '/' );
+			// Ignoring slashes here.  Doesn't need to be exact.
+			var leftOverLen = max( 50 - (firstFolder.len() + lastFolder.len() ), 1 ); 
+			// This will shorten the path to C:/firstfolder/somes/tuff.../lastFolder/
+			// with a final result that is close to 50 characters
+			appFileSystemPathDisplay = firstFolder & '/' & middleStuff.left( leftOverLen ) & '.../' & lastFolder & '/';	 
 		}
 
-		serverInfo.trayOptions.prepend( { 'label':'Open Browser', 'action':'openbrowser', 'url': serverInfo.openbrowserURL, 'image' : expandPath('/commandbox/system/config/server-icons/home.png' ) } );
-	/*	serverInfo.trayOptions.prepend( { 'label' : 'Restart Server', 'hotkey':'R', 'action' : 'restartserver', 'image': expandPath('/commandbox/system/config/server-icons/home.png' ) } );
-	*/
+		serverInfo.trayOptions.prepend(
+			{
+				"label":"Info",
+				"items": [
+					{ "label" : "Engine: " & displayEngineName, "disabled" : true },
+					{ "label" : "Webroot: " & appFileSystemPathDisplay, "action" : "openfilesystem", "path" : serverInfo.appFileSystemPath, 'image' : expandPath('/commandbox/system/config/server-icons/folder.png' ) },
+					{ "label" : "URL: " & serverInfo.defaultBaseURL, 'action':'openbrowser', 'url': serverInfo.defaultBaseURL, 'image' : expandPath('/commandbox/system/config/server-icons/home.png' ) },
+					{ "label" : "PID: ${runwar.PID}", "disabled" : true  },
+					{ "label" : "Heap: #serverInfo.heapSize#m", "disabled" : true  }
+				],
+				"image" : expandPath('/commandbox/system/config/server-icons/info.png' )
+			} );
+
+		var openItems = [];
+	    if( CFEngineName contains "lucee" ) {
+			openItems.prepend( { 'label':'Web Admin', 'action':'openbrowser', 'url':'#serverInfo.defaultBaseURL#/lucee/admin/web.cfm', 'image' : expandPath('/commandbox/system/config/server-icons/web_settings.png' ) } );
+			openItems.prepend( { 'label':'Server Admin', 'action':'openbrowser', 'url':'#serverInfo.defaultBaseURL#/lucee/admin/server.cfm', 'image' : expandPath('/commandbox/system/config/server-icons/server_settings.png' ) } );
+		} else if( CFEngineName contains "railo" ) {
+			openItems.prepend( { 'label':'Web Admin', 'action':'openbrowser', 'url':'#serverInfo.defaultBaseURL#/railo-context/admin/web.cfm', 'image' : expandPath('/commandbox/system/config/server-icons/web_settings.png' ) } );
+			openItems.prepend( { 'label':'Server Admin', 'action':'openbrowser', 'url':'#serverInfo.defaultBaseURL#/railo-context/admin/server.cfm', 'image' : expandPath('/commandbox/system/config/server-icons/server_settings.png' ) } );
+		} else if( CFEngineName contains "adobe" ) {
+			openItems.prepend( { 'label':'Server Admin', 'action':'openbrowser', 'url':'#serverInfo.defaultBaseURL#/CFIDE/administrator/enter.cfm', 'image' : expandPath('/commandbox/system/config/server-icons/server_settings.png' ) } );
+		}
+
+		openItems.prepend( { 'label':'Site Home', 'action':'openbrowser', 'url': serverInfo.openbrowserURL, 'image' : expandPath('/commandbox/system/config/server-icons/home.png' ) } );
+
+		openItems.prepend( { "label" : "File System", "hotkey" : "B", "action" : "openfilesystem", "path" : serverInfo.appFileSystemPath, "image" : expandPath('/commandbox/system/config/server-icons/folder.png' ) } );
+		
+		serverInfo.trayOptions.prepend( { 'label':'Open...', 'items': openItems, "image" : expandPath('/commandbox/system/config/server-icons/open.png' ) } );
+
+		// serverInfo.trayOptions.prepend( { 'label' : 'Restart Server', 'hotkey':'R', 'action' : 'restartserver', 'image': expandPath('/commandbox/system/config/server-icons/home.png' ) } );
+	
 		serverInfo.trayOptions.prepend( { 'label':'Stop Server', 'action':'stopserver', 'image' : expandPath('/commandbox/system/config/server-icons/stop.png' ) } );
-		//serverInfo.trayOptions.prepend( { 'label': displayServerName, 'disabled':true, 'image' : expandPath('/commandbox/system/config/server-icons/info.png' ) } );
 
 	    // This is due to a bug in RunWar not creating the right directory for the logs
 	    directoryCreate( serverInfo.logDir, true, true );
@@ -906,8 +936,7 @@ component accessors="true" singleton {
 		// Serialize tray options and write to temp file
 		var trayOptionsPath = serverinfo.customServerFolder & '/trayOptions.json';
 		var trayJSON = {
-			//'title' : displayServerName,
-			'title' : processName,
+			'title' : displayServerName,
 			'tooltip' : processName,
 			'items' : serverInfo.trayOptions
 		};
@@ -1012,15 +1041,8 @@ component accessors="true" singleton {
 			argTokens.each( function(i) { args.prepend( i ); } );
 		}
 
-		args.append( '-war' );
-
-		// Starting a WAR
-		if (serverInfo.WARPath != "" ) {
-			args.append( serverInfo.serverHomeDirectory );
-		// Stand alone server
-		} else {
-			args.append( serverInfo.webroot );
-		}
+		// Webroot for normal server, and war home for a standard war
+		args.append( '-war' ).append( serverInfo.appFileSystemPath );
 
 		// Custom web.xml (doesn't work right now)
 		if ( Len( Trim( serverInfo.webXml ) ) && false ) {
