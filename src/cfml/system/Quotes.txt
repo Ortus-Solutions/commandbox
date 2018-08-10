@@ -140,3 +140,4 @@ Premature cleverness is the root of all evil
 You can create ad-hoc aliases for common commands or sets of commands
 A unicorn smiles each time someone downloads commandbox-bullet-train
 CommandBox makes you feel like a wizard.
+In the unlikely event of a water landing, CLI can be used as a flotation device
