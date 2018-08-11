@@ -173,6 +173,8 @@ component accessors="true" singleton {
 	 **/
 	Shell function setExitCode( required string exitCode ) {
 		createObject( 'java', 'java.lang.System' ).setProperty( 'cfml.cli.exitCode', arguments.exitCode );
+		// Keep a more readable version in sync for people to acces via the shell
+		createObject( 'java', 'java.lang.System' ).setProperty( 'exitCode', exitCode );
 		return this;
 	}
 

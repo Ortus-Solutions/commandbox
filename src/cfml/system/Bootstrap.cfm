@@ -11,6 +11,7 @@ I am a CFM because the CLI seems to need a .cfm file to call
 This file will stay running the entire time the shell is open
 --->
 
+<cfset createObject( 'java', 'java.lang.System' ).setProperty( 'exitCode', '0' )>
 <cfset mappings = getApplicationSettings().mappings>
 
 <!--- Move everything over to this mapping which is the "root" of our app --->
