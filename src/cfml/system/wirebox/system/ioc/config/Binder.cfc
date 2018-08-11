@@ -390,7 +390,7 @@ Description :
 		<cfscript>
 			// copy parent class's memento instance, exclude alias, name and path
 			for( var mapping in getCurrentMapping() ) {
-				mapping.processMemento( getMapping( arguments.alias ).getMemento(), "alias,name,path" );
+				mapping.processMemento( getMapping( arguments.alias ).getMemento(), "alias,name" );
 			}
 			return this;
 		</cfscript>
@@ -1009,12 +1009,12 @@ Description :
 				return ( !thisMapping.isDiscovered() );
 			} ).each( function( key, thisMapping ){
 				try {
-					// process the metadata
-					thisMapping.process( binder=this, injector=instance.injector );
-					// is it eager?
-					if( thisMapping.isEagerInit() ){
-						instance.injector.getInstance( thisMapping.getName() );
-					}
+				// process the metadata
+				thisMapping.process( binder=this, injector=instance.injector );
+				// is it eager?
+				if( thisMapping.isEagerInit() ){
+					instance.injector.getInstance( thisMapping.getName() );
+				}
 				} catch( any e ) {
 					// Remove bad mapping
 					instance.mappings.delete( key );

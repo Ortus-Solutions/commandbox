@@ -126,7 +126,7 @@ component serializable="false" accessors="true" implements="wirebox.system.ioc.I
 		// Scope Storages
 		variables.scopeStorage = new wirebox.system.core.collections.ScopeStorage();
 		// Version
-		variables.version      = "5.0.0-snapshot";
+		variables.version      = "5.1.4+741";
 		// The Configuration Binder object
 		variables.binder       = "";
 		// ColdBox Application Link
@@ -196,6 +196,9 @@ component serializable="false" accessors="true" implements="wirebox.system.ioc.I
 				variables.eventManager = variables.coldbox.getInterceptorService();
 			}
 
+			// Create and Configure Event Manager
+			configureEventManager();
+
 			// Store binder object built accordingly to our binder building procedures
 			variables.binder = buildBinder( arguments.binder, arguments.properties );
 
@@ -207,8 +210,6 @@ component serializable="false" accessors="true" implements="wirebox.system.ioc.I
 				configureCacheBox( variables.binder.getCacheBoxConfig() );
 			}
 
-			// Create and Configure Event Manager
-			configureEventManager();
 			// Register All Custom Listeners
 			registerListeners();
 			// Create our object builder
@@ -264,6 +265,11 @@ component serializable="false" accessors="true" implements="wirebox.system.ioc.I
 		}
 		// Notify Listeners
 		variables.eventManager.processState( "beforeInjectorShutdown", iData );
+
+		// Check if binder has onShutdown convention
+		if( structKeyExists( variables.binder, "onShutdown" ) ){
+			variables.binder.onShutdown();
+		}
 
 		// Is parent linked
 		if( isObject( variables.parent ) ){
@@ -338,8 +344,8 @@ component serializable="false" accessors="true" implements="wirebox.system.ioc.I
 		// Check if the mapping has been discovered yet, and if it hasn't it must be autowired enabled in order to process.
 		if( NOT mapping.isDiscovered() ){
 			try {
-				// process inspection of instance
-				mapping.process( binder=variables.binder, injector=this );
+			// process inspection of instance
+			mapping.process( binder=variables.binder, injector=this );
 			} catch( any e ) {
 				// Remove bad mapping
 				var mappings = variables.binder.getMappings();
@@ -1134,16 +1140,12 @@ component serializable="false" accessors="true" implements="wirebox.system.ioc.I
 		// Use or create event manager
 		if( isColdBoxLinked() && isObject( variables.eventManager ) ){
 			// Link Interception States
-			variables.eventManager.appendInterceptionPoints( arrayToList(variables.eventStates) );
+			variables.eventManager.appendInterceptionPoints( variables.eventStates );
 			return this;
 		}
 
 		// create event manager
 		variables.eventManager = new wirebox.system.core.events.EventPoolManager( variables.eventStates );
-		// Debugging
-		if( variables.log.canDebug() ){
-			variables.log.debug( "Registered injector's event manager with the following event states: #variables.eventStates.toString()#" );
-		}
 
 		return this;
 	}
@@ -1160,6 +1162,11 @@ component serializable="false" accessors="true" implements="wirebox.system.ioc.I
 			arguments.binder = createObject( "component", arguments.binder );
 		}
 
+		// Inject Environment Support
+		arguments.binder[ "getSystemSetting" ]  = variables.utility.getSystemSetting;
+		arguments.binder[ "getSystemProperty" ] = variables.utility.getSystemProperty;
+		arguments.binder[ "getEnv" ]            = variables.utility.getEnv;
+
 		// Check if data CFC or binder family
 		if( NOT isInstanceOf( arguments.binder, "wirebox.system.ioc.config.Binder" ) ){
 			// simple data cfc, create native binder and decorate data CFC
@@ -1169,7 +1176,7 @@ component serializable="false" accessors="true" implements="wirebox.system.ioc.I
 				properties = arguments.properties
 			);
 		} else {
-			// else init the binder and configur it
+			// else init the binder and configure it
 			var nativeBinder = arguments.binder.init( injector=this, properties=arguments.properties );
 			// Configure it
 			nativeBinder.configure();
