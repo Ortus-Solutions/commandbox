@@ -6,6 +6,12 @@
 * exit
 * {code}
 * .
+* You can exit the shell with a specific exit code like this:
+* .
+* {code:bash}
+* exit 1
+* {code}
+* .
 * Please note, any embedded servers started during your session will continue to run as they are in a separate
 * process.  Use the icon in your OS's command tray to interact with the servers, or start CommandBox back up
 * at a later time and "cd" to the root folder of the server.
@@ -13,7 +19,11 @@
 **/
 component aliases="exit,q,e" {
 
-	function run()  {
+	/**
+	* @exitCode The exitCode for the box process to return
+	*/
+	function run( exitCode=0 )  {
+		setExitCode( exitCode );
 		shell.exit();
 	}
 
