@@ -15,7 +15,6 @@ component singleton {
 	property name='shell'         inject='shell';
 	property name='print'         inject='Print';
 	property name='job'           inject='provider:InteractiveJob';
-	property name='configService' inject='configService';
 
 	function init() {
 		variables.attr = createObject( 'java', 'org.jline.utils.AttributedString' );
@@ -37,11 +36,10 @@ component singleton {
 		) {
 
 		var terminal = shell.getReader().getTerminal();
-		var nonInteractive = configService.getSetting( "nonInteractiveShell", false );
 
 		// If Jline uses a "dumb" terminal, the width reports as zero, which throws devide by zero errors.
 		// TODO: I might be able to just fake a reasonable width.
-		if( ( IsBoolean( nonInteractive ) && nonInteractive ) || terminal.getWidth() == 0 ) {
+		if( !shell.isTerminalInteractive() || terminal.getWidth() == 0 ) {
 			return;
 		}
 
@@ -125,9 +123,8 @@ component singleton {
 	function clear() {
 
 		var terminal = shell.getReader().getTerminal();
-		var nonInteractive = configService.getSetting( "nonInteractiveShell", false );
 
-		if( ( IsBoolean( nonInteractive ) && nonInteractive ) || terminal.getWidth() == 0 ) {
+		if( !shell.isTerminalInteractive() || terminal.getWidth() == 0 ) {
 			return;
 		}
 

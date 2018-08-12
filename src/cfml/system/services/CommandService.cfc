@@ -314,10 +314,6 @@ component accessors="true" singleton {
 
 			interceptorService.announceInterception( 'preCommand', { commandInfo=commandInfo, parameterInfo=parameterInfo } );
 
-			// Successful command execution resets exit code to 0.  Set this prior to running the command since the command
-			// may explicitly set the exit code to 1 but not call the error() method.
-			shell.setExitCode( 0 );
-
 			// Tells us if we are going to capture the output of this command and pass it to another
 			// Used for our workaround to switch if the "run" command pipes to the terminal or not
 			// If there are more commands in the chain and we are going to pipe or redirect to them
@@ -363,6 +359,8 @@ component accessors="true" singleton {
 			} finally {
 				// Remove it from the stack
 				instance.callStack.deleteAt( 1 );
+				// Set command exit code into the shell
+				shell.setExitCode( commandInfo.commandReference.CFC.getExitCode() );
 			}
 
 			// If the command didn't return anything, grab its print buffer value
@@ -914,6 +912,13 @@ component accessors="true" singleton {
 						if( structKeyExists( param, 'optionsUDF' ) ){
 							// Grab name of completor function for this param
 							commandData.completor[ param.name ][ 'optionsUDF' ] = param.optionsUDF;
+						}
+						// Check for diretory or file path completion
+						// File completion inhernently includes directories, so no need for both.
+						if( structKeyExists( param, 'optionsFileComplete' ) && param.optionsFileComplete ){
+							commandData.completor[ param.name ][ 'optionsFileComplete' ] = param.optionsFileComplete;
+						} else if( structKeyExists( param, 'optionsDirectoryComplete' ) && param.optionsDirectoryComplete ){
+							commandData.completor[ param.name ][ 'optionsDirectoryComplete' ] = param.optionsDirectoryComplete;
 						}
 					}
 

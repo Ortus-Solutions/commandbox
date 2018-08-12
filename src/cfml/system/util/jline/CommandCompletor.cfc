@@ -308,7 +308,9 @@ component singleton {
 
 		var completorData = commandInfo.commandReference.completor;
 
-		if( structKeyExists( completorData, paramName ) ) {
+		if( structKeyExists( completorData, paramName ) 
+				&& ( structKeyExists( completorData[ paramName ], 'options' ) || structKeyExists( completorData[ paramName ], 'optionsUDF' ) ) 
+			) {
 			// Add static values
 			if( structKeyExists( completorData[ paramName ], 'options' ) ) {
 				addAllIfMatch( candidates, completorData[ paramName ][ 'options' ], paramSoFar, paramName, namedParams );
@@ -321,6 +323,15 @@ component singleton {
 					addAllIfMatch( candidates, additions, paramSoFar, paramName, namedParams );
 				}
 			}
+			
+			// Should this param include directory or file completion (in addition to what came back from the options UDF?
+			if( structKeyExists( completorData[ paramName ], 'optionsFileComplete' ) && completorData[ paramName ][ 'optionsFileComplete' ] ) {
+				pathCompletion( paramSoFar, candidates, true, paramName, namedParams );
+			}
+			if( structKeyExists( completorData[ paramName ], 'optionsDirectoryComplete' ) && completorData[ paramName ][ 'optionsDirectoryComplete' ] ) {
+				pathCompletion( paramSoFar, candidates, false, paramName, namedParams );
+			}
+			
 			// Completor annotations override default
 			return;
 		}
@@ -336,13 +347,17 @@ component singleton {
 		if( paramName.startsWith( 'directory' ) ||
 			paramName.startsWith( 'destination' ) ||
 			paramName.endsWith( 'directory' ) ||
-			paramName.endsWith( 'destination' )
+			paramName.endsWith( 'destination' ) ||
+			// Has optionsDirectoryComplete annotation set to true
+			( completorData[ paramName ][ 'optionsDirectoryComplete' ] ?: false )
 		){
 			pathCompletion( paramSoFar, candidates, false, paramName, namedParams );
 		} else if( paramName.startsWith( 'file' ) ||
 				   paramName.endsWith( 'file' ) ||
 				   paramName.startsWith( 'path' ) ||
-				   paramName.endsWith( 'path' )
+				   paramName.endsWith( 'path' ) ||
+					// Has optionsFileComplete annotation set to true
+				   ( completorData[ paramName ][ 'optionsFileComplete' ] ?: false )
 		){
 			pathCompletion( paramSoFar, candidates, true, paramName, namedParams );
 		}
@@ -432,20 +447,29 @@ component singleton {
 
 	/**
 	 * add a value completion candidate if it matches what was typed so far
-	 * @match.hint text to compare as match
+	 * @match.hint text to compare as match or struct containing "name", "group", "description"
 	 * @startsWith.hint text typed so far
 	 * @candidates.hint tree to populate with completion candidates
  	 **/
 	private function addCandidateIfMatch( required match, required startsWith, required candidates, paramName, namedParams ) {
+		if( isStruct( match ) ) {
+			var name = match.name;
+			var group = match.group ?: 'Values';
+			var description = match.description ?: '';
+		} else {
+			var name = match;
+			var group = 'Values';
+			var description = '';
+		}
 		startsWith = lcase( startsWith );
-		if( lcase( match ).startsWith( startsWith ) || len( startsWith ) == 0 ) {
-			if( !match.endsWith( '=' ) ) {
-				match &= ' ';
+		if( lcase( name ).startsWith( startsWith ) || len( startsWith ) == 0 ) {
+			if( !name.endsWith( '=' ) ) {
+				name &= ' ';
 			}
 			if( namedParams ) {
-				add( candidates, paramName & '=' & match, 'Values' );
+				add( candidates, paramName & '=' & name, group, description );
 			} else {
-				add( candidates, match, 'Values' );
+				add( candidates, name, group, description );
 			}
 		}
 	}

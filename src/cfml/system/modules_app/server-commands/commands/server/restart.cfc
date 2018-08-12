@@ -78,9 +78,12 @@ component aliases="restart" {
 		print.yellowLine( '> ' & startCommand );
 		runCommand( startCommand );
 	}
-
-
+	
 	function serverNameComplete() {
-		return serverService.getServerNames();
+		return serverService
+			.getServerNames()
+			.map( ( i ) => {
+				return { name : i, group : 'Server Names' };
+			} );
 	}
 }

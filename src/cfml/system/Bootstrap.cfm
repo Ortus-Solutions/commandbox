@@ -11,6 +11,7 @@ I am a CFM because the CLI seems to need a .cfm file to call
 This file will stay running the entire time the shell is open
 --->
 
+<cfset createObject( 'java', 'java.lang.System' ).setProperty( 'exitCode', '0' )>
 <cfset mappings = getApplicationSettings().mappings>
 
 <!--- Move everything over to this mapping which is the "root" of our app --->
@@ -126,21 +127,6 @@ This file will stay running the entire time the shell is open
 		// If the standard input has content waiting, cut the chit chat and just run the commands so we can exit.
 		silent = bufferedReader.ready();
 		inStream = system.in;
-
-		// If we're piping in data, let's grab it and treat it as commands.
-		// system.in should work directly, but Windows was blocking forever and not reading the InputStream
-		// So we'll create our own input stream with a line break at the end
-		if( silent ) {
-	 		piped = [];
-		 	// If data is piped to CommandBox, it will be in this buffered reader
-		 	while ( bufferedReader.ready() ) {
-		 		// Read  all the lines and append them together.
-		 		piped.append( bufferedReader.readLine() );
-		 	}
-		 	// Build a string with a line for each line read from the standard input.
-		 	piped = piped.toList( chr( 10 ) ) & chr( 10 );
-    		inStream = createObject("java","java.io.ByteArrayInputStream").init(piped.getBytes());
-		}
 
 		// Create the shell
 		shell = application.wirebox.getInstance( name='Shell', initArguments={ asyncLoad=!silent, inStream=inStream, outputStream=system.out } );

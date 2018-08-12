@@ -16,6 +16,8 @@ component accessors=true singleton {
 	property name='jobs' type='array';
 	// Is job currently running
 	property name='active' type='boolean';
+	// Should we dump the log by default when ending
+	property name='dumpLog' type='boolean';
 
 	// DI
 	property name='shell' inject='shell';
@@ -30,7 +32,6 @@ component accessors=true singleton {
 
 	function onDIComplete() {
 		terminal = shell.getReader().getTerminal();
-		configService = shell.getWirebox().getInstance( "configService" );
 		display = createObject( 'java', 'org.jline.utils.Display' ).init( terminal, false );
 		safeWidth = 80;
 		reset();
@@ -42,6 +43,7 @@ component accessors=true singleton {
 	function reset() {
 		jobs = [];
 		setActive( false );
+		
 
 		if( terminal.getWidth() == 0 ) {
 			safeWidth=80;
@@ -58,10 +60,9 @@ component accessors=true singleton {
 	* Clear from the screen, but don't reset
 	*/
 	function clear() {
-		var nonInteractive = configService.getSetting( "nonInteractiveShell", false );
 		// If Jline uses a "dumb" terminal, the width reports as zero, which throws devide by zero errors.
 		// TODO: I might be able to just fake a reasonable width.
-		if( ( IsBoolean( nonInteractive ) && nonInteractive ) || terminal.getWidth() == 0 ) {
+		if( !shell.isTerminalInteractive() || terminal.getWidth() == 0 ) {
 			return;
 		}
 
@@ -120,7 +121,7 @@ component accessors=true singleton {
 	*
 	* @dumpLog Dump out all internal log lines permenantly to the console
 	*/
-	function complete( boolean dumpLog=false ) {
+	function complete( boolean dumpLog=variables.dumpLog ) {
 		getCurrentJob().status = 'Complete';
 		if( jobs.last().status != 'Running' ) {
 			finalizeOutput( dumpLog );
@@ -133,7 +134,7 @@ component accessors=true singleton {
 	*
 	* @dumpLog Dump out all internal log lines permenantly to the console
 	*/
-	function error( string message='', boolean dumpLog=false ) {
+	function error( string message='', boolean dumpLog=variables.dumpLog ) {
 		getCurrentJob().errorMessage = message;
 		getCurrentJob().status = 'Error';
 		if( jobs.last().status != 'Running' ) {
@@ -168,6 +169,7 @@ component accessors=true singleton {
 			getCurrentJob().children.append( newJob( name, logSize ) );
 		} else {
 			// ... otherwise just add this as a top level job
+			setDumpLog( false );
 			jobs.append( newJob( name, logSize ) );
 		}
 		draw();
@@ -202,11 +204,9 @@ component accessors=true singleton {
 	* Render the information to the console
 	*/
 	function draw() {
-		var nonInteractive = configService.getSetting( "nonInteractiveShell", false );
-
 		// If Jline uses a "dumb" terminal, the width reports as zero, which throws devide by zero errors.
 		// TODO: I might be able to just fake a reasonable width.
-		if( ( IsBoolean( nonInteractive ) && nonInteractive ) || terminal.getWidth() == 0 ) {
+		if( !shell.isTerminalInteractive() || terminal.getWidth() == 0 ) {
 			return;
 		}
 

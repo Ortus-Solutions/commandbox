@@ -10,7 +10,6 @@
 */
 component accessors="true" singleton {
 
-	// DI
 	property name="CR";
 	property name="formatterUtil";
 	property name="fileSystemUtil";
@@ -21,6 +20,7 @@ component accessors="true" singleton {
 	property name="parser";
 	property name="SystemSettings";
 	property name="job";
+	property name="exitCode";
 
 	/**
 	* Constructor
@@ -38,7 +38,7 @@ component accessors="true" singleton {
 		variables.SystemSettings	= wirebox.getInstance( "SystemSettings" );
 		variables.job				= wirebox.getInstance( "interactiveJob" );
 
-		hasErrored = false;
+		variables.exitCode = 0;
 		return this;
 	}
 
@@ -52,10 +52,18 @@ component accessors="true" singleton {
 		return wirebox.getInstance( argumentCollection = arguments );
 	}
 
+	function getExitCode() {
+		return variables.exitCode;
+	}
+
+	function setExitCode( exitCode ) {
+		variables.exitCode = arguments.exitCode;
+	}
+
 	// Called prior to each execution to reset any state stored in the CFC
 	function reset() {
 		print.clear();
-		hasErrored = false;
+		variables.exitCode = 0;
 	}
 
 	// Get the result.  This will be called if the run() method doesn't return anything
@@ -173,8 +181,7 @@ component accessors="true" singleton {
 			print.line().toConsole();
 		}
 		
-		setExitCode( exitCode );
-		hasErrored = true;
+		setExitCode( arguments.exitCode );
 		if( arguments.clearPrintBuffer ) {
 			// Wipe
 			print.clear();
@@ -190,17 +197,7 @@ component accessors="true" singleton {
 	 * Tells you if the error() method has been called on this command.
  	 **/
 	function hasError() {
-		return hasErrored;
-	}
-
-	/**
-	 * Sets the OS exit code
- 	 **/
-	function setExitCode( required string exitCode ) {
-		if( arguments.exitCode != 0 ) {
-			hasErrored = true;
-		}
-		return shell.setExitCode( arguments.exitCode );
+		return variables.exitCode != 0;
 	}
 
 	/**

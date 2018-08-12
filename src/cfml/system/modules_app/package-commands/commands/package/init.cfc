@@ -28,7 +28,7 @@ component aliases="init" {
 	 * @name The human-readable name for this package
 	 * @slug The ForgeBox or unique slug for this package (no spaces or special chars)
 	 * @version The version for this package, please use semantic versioning - 0.0.0
-	 * @private Would you like to mark your package as private, which prevents it to submit it to ForgeBox
+	 * @private Mark your package as private? If published to ForgeBox only you can see it.
 	 * @shortDescription A short description for the package
 	 * @ignoreList Add commonly ignored files to the package's ignore list
 	 * @wizard Run the init wizard, defaults to false
@@ -68,17 +68,29 @@ component aliases="init" {
 		if( structKeyExists( arguments, 'slug' ) && arguments.private ){
 			var APIToken = configService.getSetting( 'endpoints.forgebox.APIToken', '' );
 			if( ! len( APIToken ) ){
-				return error( "You must be logged in to ForgeBox to create a private package." );
-			}
-			var APITokens = configService.getSetting( 'endpoints.forgebox.tokens', {} );
-			var usernames = structKeyArray( APITokens );
-			var foundToken = usernames.filter( function( name ){
-				return APITokens[ name ] == APIToken;
-			} );
-			if( ! foundToken.len() ){
-				return error( "We're sorry, we're having problems locating your ForgeBox account.  Please `forgebox login` and try again." );
-			}
-			arguments.slug = "#arguments.slug#@#foundToken[ 1 ]#";
+				print.redLine( "You've opted to create a private package, but you're not logged into ForgeBox." );
+				if( confirm( 'Would you like to stop and log into ForgeBox now? ' ) ) {
+					print.greenBoldLine( 'Run the "forgebox login" command to sign into your ForgeBox account and then run "init" again.' );
+					return;
+				} else {
+					print.redLine( "You will need to update your package slug before you can publish it." );
+					print.redLine( "Use the format [#arguments.slug#@USERNAME] and replace 'username' with your actual user." );					
+				}
+			} else {
+			
+				var APITokens = configService.getSetting( 'endpoints.forgebox.tokens', {} );
+				var usernames = structKeyArray( APITokens );
+				var foundToken = usernames.filter( function( name ){
+					return APITokens[ name ] == APIToken;
+				} );
+				if( ! foundToken.len() ){
+					print.redLine( "We're sorry, we're having problems locating your ForgeBox account.  Please `forgebox login` and try again." );
+					print.redLine( "You will need to update your package slug before you can publish it." );
+					print.redLine( "Use the format [#arguments.slug#@USERNAME] and replace 'username' with your actual user." );
+				} else {
+					arguments.slug = "#arguments.slug#@#foundToken[ 1 ]#";	
+				}
+			}			
 		}
 
 		// Ignore List

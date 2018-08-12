@@ -58,6 +58,9 @@ component {
 		// Make file canonical and absolute
 		arguments.recipeFile = fileSystemUtil.resolvePath( arguments.recipeFile );
 
+		// Start clean so we can tell if any of our commands error without being affected by whatever may have run prior to this recipe
+		shell.setExitCode( 0 );
+
 		// Validate the file
 		if( !fileExists( arguments.recipeFile ) ){
 			return error( "File: #arguments.recipeFile# does not exist!" );
@@ -87,12 +90,12 @@ component {
 				continue;
 			}
 			// Turn echo on
-			if( reFindNoCase( 'echo\s+on', thisCommand ) ) {
+			if( reFindNoCase( '^echo\s+on', thisCommand ) ) {
 				isEcho = true;
 				continue;
 			}
 			// Turn echo off
-			if( reFindNoCase( 'echo\s+off', thisCommand ) ) {
+			if( reFindNoCase( '^echo\s+off', thisCommand ) ) {
 				isEcho = false;
 				print.line( thisCommand );
 				continue;
@@ -103,12 +106,41 @@ component {
 				if( isEcho ) {
 					print.line( thisCommand );
 				}
+				
 				// run Command
 				runCommand( thisCommand );
+																
+				// If the recipe ran "exit"
+				if( !shell.getKeepRunning() ) {
+					
+					if( shell.getExitCode() != 0 ) {
+						setExitCode( shell.getExitCode() );
+						print
+							.boldRed( "command [#thiscommand#] returned exit code [#shell.getExitCode()#], exiting recipe." )
+							.line();
+					}
+					
+					// Just kidding, the shell can stay....
+					shell.setKeepRunning( true );
+					// But this recipe is baked.
+					break;
+				}
+				
+				// If a command sets a failing exit code but doesn't throw an exception, stop where we are
+				if( shell.getExitCode() != 0 ) {
+					setExitCode( shell.getExitCode() );
+					print
+						.boldRed( "command [#thiscommand#] returned exit code [#shell.getExitCode()#], exiting recipe." )
+						.line();
+					break;
+				}
+				
 
 			} catch( any e ){
-				print.boldGreen( "Error executing command #thiscommand#, exiting recipe." );
-				return error( '#e.message##CR##e.detail##CR##e.stackTrace#' );
+				print
+					.boldRed( "Error executing command [#thiscommand#], exiting recipe." )
+					.line();
+				rethrow;
 			}
 		}
 

@@ -24,6 +24,7 @@ component aliases="about" {
 		var binaryPath = getSystemSetting( 'java.class.path', 'Unkonwn' );
 		var userName = getSystemSetting( 'user.name', 'Unkonwn' );
 		var javaBinary = fileSystemUtil.getJREExecutable();
+		var JLineTerminal = shell.getReader().getTerminal().getClass().getName();
 
 		print.line();
 		print.greenLine( '****************************************************************************************************' );
@@ -42,6 +43,7 @@ component aliases="about" {
 		print.green( '*' ); print.cyan( '  Java Version:       ' ); print.text( '#javaVersion##repeatString( ' ', max( 0, width - 24 - len( javaVersion ) ) )#' );	print.greenLine( '*' );
 		print.green( '*' ); print.cyan( '  Java Path:          ' ); print.text( '#javaBinary##repeatString( ' ', max( 0, width - 24 - len( javaBinary ) ) )#' );	print.greenLine( '*' );
 		print.green( '*' ); print.cyan( '  OS Username         ' ); print.text( '#userName##repeatString( ' ', max( 0, width - 24 - len( userName ) ) )#' );	print.greenLine( '*' );
+		print.green( '*' ); print.cyan( '  JLine Terminal      ' ); print.text( '#JLineTerminal##repeatString( ' ', max( 0, width - 24 - len( JLineTerminal ) ) )#' );	print.greenLine( '*' );
 		print.greenLine( '*                                                                                                  *' );
 		print.greenLine( '*                                                                                                  *' );
 		print.greenLine( '****************************************************************************************************' );

@@ -175,7 +175,20 @@ component accessors="true" singleton="true" {
 						arguments.ID = endpoint.parseSlug( arguments.ID ) & '@' & satisfyingVersion;
 						job.addLog( "Sweet! We found a local version of [#satisfyingVersion#] that we can use in your artifacts.");
 					} else {
-						throw( 'No satisfying version found for [#version#].', 'endpointException', 'Well, we tried as hard as we can.  ForgeBox is unreachable and you don''t have a usable version in your local artifacts cache.  Please try another version.' );
+						if( len( arguments.serverHomeDirectory ) && fileExists( arguments.serverHomeDirectory & '/.engineInstall' ) ) {
+							var previousEngineTag = fileRead( arguments.serverHomeDirectory & '/.engineInstall' );
+							job.addErrorLog( "No matching artifacts found.");
+							job.addErrorLog( "Your custom server home has an engine there [#previousEngineTag#], so we'll just roll with that.");
+							var satisfyingVersion = '';
+							
+							if( previousEngineTag.listLen( '@' ) > 1 ) {
+								satisfyingVersion = previousEngineTag.listLast( '@' );
+							}
+															
+						} else {					
+							throw( 'No satisfying version found for [#version#].', 'endpointException', 'Well, we tried as hard as we can.  ForgeBox is unreachable and you don''t have a usable version in your local artifacts cache.  Please try another version.' );	
+						}
+						
 					}
 				}
 			}
