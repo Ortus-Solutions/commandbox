@@ -4,7 +4,7 @@
 	<rule>
 		<note>Generic Front-Controller URLs</note>
 		<!-- These are paths that don't exist on disk, but shouldn't get rewritten since the CF engine treats them special. -->
-		<condition type="request-uri" operator="notequal">^/(flex2gateway|flashservices/gateway|messagebroker|lucee|rest|cfide|CFIDE|cfformgateway|jrunscripts|cf_scripts)/.*</condition>
+		<condition type="request-uri" operator="notequal">^/(flex2gateway|flashservices/gateway|messagebroker|lucee|rest|cfide|CFIDE|cfformgateway|jrunscripts|cf_scripts|CFFileServlet)/.*</condition>
 		<!-- This is a special URL that can be enabled with debugging -->
 		<condition type="request-uri" operator="notequal">^/tuckey-status</condition>
 		<!-- Used for the Adobe CF 2018 performance monitoring service -->
