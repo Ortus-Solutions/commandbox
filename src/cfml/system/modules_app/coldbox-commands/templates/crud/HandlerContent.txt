@@ -92,7 +92,7 @@ component extends="coldbox.system.EventHandler"{
 			default:{
 				// Show a nice notice
 				flash.put( "notice", { message="|entity| Created", type="success" } );
-				// Redirect to listing: change to `setNextEvetn()` if using ColdBox <5
+				// Redirect to listing: change to `setNextEvent()` if using ColdBox <5
 				relocate( '|entityPlural|' );
 			}
 		}
@@ -117,7 +117,7 @@ component extends="coldbox.system.EventHandler"{
 			default:{
 				// Show a nice notice
 				flash.put( "notice", { message="|entity| Poofed!", type="success" } );
-				// Redirect to listing: change to `setNextEvetn()` if using ColdBox <5
+				// Redirect to listing: change to `setNextEvent()` if using ColdBox <5
 				relocate( '|entityPlural|' );
 			}
 		}
