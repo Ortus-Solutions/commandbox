@@ -63,7 +63,7 @@ component accessors="true" singleton {
 				job.addLog('Validating object key since it does not have a .zip extension');
 			}
 			var presignedPath = generatePresignedPath('HEAD', bucket, objectKey, bucketRegion, awsSettings.credentials);
-			var req = makeHTTPRequest('https:#presignedPath#', 'HEAD');
+			var req = makeHTTPRequest(presignedPath, 'HEAD');
 			if (req.status_code == 404) {
 				if (verbose) {
 					job.addLog('Object key does not exist on S3, appending .zip extension');
