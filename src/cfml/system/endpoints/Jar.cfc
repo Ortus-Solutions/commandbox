@@ -18,6 +18,7 @@ component accessors=true implements="IEndpoint" singleton {
 	property name="CR" 						inject="CR@constants";
 	property name='formatterUtil'			inject='formatter';
 	property name='wirebox'					inject='wirebox';
+	property name='S3Service'				inject='S3Service';
 
 	// Properties
 	property name="namePrefixes" type="string";
@@ -36,10 +37,12 @@ component accessors=true implements="IEndpoint" singleton {
 
 		job.addLog( "Downloading [#package#]" );
 
+		var packageUrl = package.startsWith('s3://') ? S3Service.generateSignedURL(package, verbose) : package;
+
 		try {
 			// Download File
 			var result = progressableDownloader.download(
-				package, // URL to package
+				packageUrl, // URL to package
 				fullJarPath, // Place to store it locally
 				function( status ) {
 					progressBar.update( argumentCollection = status );
