@@ -58,7 +58,6 @@ component accessors="true" singleton {
 		// if objectKey does not end in `.zip` we have to do a HEAD request to see if the path is valid as is
 		// or if .zip should be appended to it - this is for backward compat with https://github.com/pixl8/s3-commandbox-commands
 		if (!objectKey.endsWith('.zip')) {
-			var job = wirebox.getInstance('interactiveJob');
 			if (verbose) {
 				job.addLog('Validating object key since it does not have a .zip extension');
 			}
