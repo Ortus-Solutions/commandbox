@@ -45,20 +45,20 @@ component accessors="true" implements="IEndpoint" singleton {
                 presignedPath, // URL to package
                 fullPath, // Place to store it locally
                 function(status) {
-                    progressBar.update( argumentCollection = status );
+                    progressBar.update(argumentCollection = status);
                 },
                 function(newURL) {
-                    job.addLog( "Redirecting to: '#arguments.newURL#'..." );
+                    job.addLog("Redirecting to: '#arguments.newURL#'...");
                 }
             );
-        } catch( UserInterruptException var e ) {
+        } catch(UserInterruptException var e) {
             rethrow;
-        } catch( Any var e ) {
-            throw( '#e.message##CR##e.detail#', 'endpointException' );
+        } catch(Any var e) {
+            throw('#e.message##CR##e.detail#', 'endpointException');
         };
 
         // Defer to file endpoint
-        return fileEndpoint.resolvePackage( fullPath, arguments.verbose );
+        return fileEndpoint.resolvePackage(fullPath, arguments.verbose);
     }
 
     public function getDefaultName(required string package) {
