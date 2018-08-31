@@ -138,6 +138,7 @@ component accessors="true" singleton {
 				// Duplicate so onServerStart interceptors don't actually change config settings via reference.
 				'errorPages' : duplicate( d.web.errorPages ?: {} ),
 				'accessLogEnable' : d.web.accessLogEnable ?: false,
+				'GZIPEnable' : d.web.GZIPEnable ?: true,
 				'welcomeFiles' : d.web.welcomeFiles ?: '',
 				'HTTP' : {
 					'port' : d.web.http.port ?: 0,
@@ -658,7 +659,9 @@ component accessors="true" singleton {
 		// trayOptions aren't accepted via command params due to no clean way to provide them
 		serverInfo.trayOptions.append( serverJSON.trayOptions, true );
 
-		serverInfo.accessLogEnable	= serverJSON.web.accessLogEnable ?: defaults.web.accessLogEnable; 
+		serverInfo.accessLogEnable	= serverJSON.web.accessLogEnable ?: defaults.web.accessLogEnable;
+		serverInfo.GZIPEnable	= serverJSON.web.GZIPEnable ?: defaults.web.GZIPEnable;
+		 
 		serverInfo.rewriteslogEnable = serverJSON.web.rewrites.logEnable ?: defaults.web.rewrites.logEnable;
 				
 		// Global defauls are always added on top of whatever is specified by the user or server.json
@@ -1002,12 +1005,18 @@ component accessors="true" singleton {
 			args.append( '--error-pages' ).append( errorPages );
 		}
 
+		if( serverInfo.GZIPEnable ) {
+			args
+				.append( '--gzip-enable' ).append( true )
+		}
+
 		if( serverInfo.accesslogenable ) {
 			args
 				.append( '--logaccess-enable' ).append( true )
 			 	.append( '--logaccess-basename' ).append( 'access' )
 			 	.append( '--logaccess-dir' ).append( serverInfo.logDir );
 		}
+
 		
 		if( serverInfo.rewritesLogEnable ) {
 			args.append( '--urlrewrite-log' ).append( serverInfo.rewritesLogPath );
@@ -1884,6 +1893,7 @@ component accessors="true" singleton {
 			'aliases'			: {},
 			'errorPages'		: {},
 			'accessLogEnable'	: false,
+			'GZIPEnable'		: true,			
 			'rewritesLogEnable'	: false,
 			'trayOptions'		: {},
 			'trayEnable'		: true,
