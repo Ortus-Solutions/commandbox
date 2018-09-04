@@ -19,8 +19,7 @@ component {
 					fileMaxArchives = 5,
 					filename = "commandbox",
 					filepath = expandpath( '/commandbox-home' ) & "/logs",
-					autoExpand=false,
-					async=true
+					autoExpand=false
 				}
 			},
 			ANSIConsoleAppender = {

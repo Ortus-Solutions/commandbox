@@ -52,7 +52,7 @@ component singleton accessors=true {
 		}
 
 		// Create an instance of the taskCFC.  To prevent caching of the actual code in the task, we're treating them as
-		// transients. Since is since the code is likely to change while devs are building and testing them.
+		// transients. Since the code is likely to change while devs are building and testing them.
 		var taskCFC = createTaskCFC( taskFile );
 
 		// If target doesn't exist or isn't a UDF
