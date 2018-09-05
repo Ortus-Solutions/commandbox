@@ -336,8 +336,14 @@ component accessors="true" singleton {
 				lastCommandErrored = true;
 				// If this command didn't already set a failing exit code...
 				if( commandInfo.commandReference.CFC.getExitCode() == 0 ) {
+					
 					// Go ahead and set one for it.  The shell will inherit it below in the finally block.
-					commandInfo.commandReference.CFC.setExitCode( 1 );
+					if( val( e.errorCode ?: 0 ) > 0 ) {
+						commandInfo.commandReference.CFC.setExitCode( e.errorCode );
+					} else {
+						commandInfo.commandReference.CFC.setExitCode( 1 );
+					}
+					
 				}
 
 				// Dump out anything the command had printed so far

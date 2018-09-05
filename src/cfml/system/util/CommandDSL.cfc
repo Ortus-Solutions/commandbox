@@ -24,8 +24,9 @@ component accessors=true {
 
 
 	// DI
-	property name='parser' inject='parser';
-	property name='shell' inject='shell';
+	property name='parser'	inject='parser';
+	property name='shell'	inject='shell';
+	property name="job"		inject='interactiveJob';
 
 	/**
 	 * Create a new, executable command
@@ -204,6 +205,19 @@ component accessors=true {
 			} else {
 				var result = shell.callCommand( getTokens(), arguments.returnOutput );
 			}
+		
+			// If the previous command chain failed
+			if( shell.getExitCode() != 0 ) {
+				
+				if( job.isActive() ) {
+					job.errorRemaining( message );
+					// Distance ourselves from whatever other output the command may have given so far.
+					shell.printString( chr( 10 ) );
+				}
+				
+				throw( message='Command returned failing exit code (#shell.getExitCode()#)', detail='Failing Command: ' & getTokens().toList( ' ' ), type="commandException", errorCode=shell.getExitCode() );
+			}
+			
 		} finally {
 	
 			var postCommandCWD = shell.getPWD();

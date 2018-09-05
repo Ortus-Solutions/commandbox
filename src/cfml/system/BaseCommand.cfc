@@ -123,7 +123,14 @@ component accessors="true" singleton {
 	 * @command.hint The command to run. Pass the same string a user would type at the shell.
  	 **/
 	function runCommand( required command, returnOutput=false ) {
-		return shell.callCommand( arguments.command, arguments.returnOutput );
+		var results = shell.callCommand( arguments.command, arguments.returnOutput );
+		
+		// If the previous command chain failed
+		if( shell.getExitCode() != 0 ) {
+			error( 'Command returned failing exit code (#shell.getExitCode()#)', 'Failing Command: ' & command, shell.getExitCode(), errorCode=shell.getExitCode() );
+		}
+		
+		return results;
 	}
 
 	/**
