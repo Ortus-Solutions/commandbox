@@ -34,27 +34,25 @@ component accessors="true" singleton="true" {
 		var engineName = listFirst( cfengine, "@" );
 		arguments.baseDirectory = !arguments.baseDirectory.endsWith( "/" ) ? arguments.baseDirectory & "/" : arguments.baseDirectory;
 
-		if( engineName == "adobe" ) {
-			return installAdobe( destination=arguments.baseDirectory, version=version, serverInfo=serverInfo, serverHomeDirectory=serverHomeDirectory );
-		} else if (engineName == "railo") {
-			return installRailo( destination=arguments.baseDirectory, version=version, serverInfo=serverInfo, serverHomeDirectory=serverHomeDirectory );
-		} else if (engineName == "lucee") {
-			return installLucee( destination=arguments.baseDirectory, version=version, serverInfo=serverInfo, serverHomeDirectory=serverHomeDirectory );
+		var installDetails = installEngineArchive( cfengine, arguments.baseDirectory, serverInfo, serverHomeDirectory );
+
+		if( installDetails.engineName contains "adobe" ) {
+			return installAdobe( installDetails, serverInfo );
+		} else if ( installDetails.engineName contains "railo" ) {
+			return installRailo( installDetails, serverInfo );
+		} else if ( installDetails.engineName contains "lucee" ) {
+			return installLucee( installDetails, serverInfo );
 		} else {
-			return installEngineArchive( cfengine, arguments.baseDirectory, serverInfo, serverHomeDirectory );
+			return installDetails;	
 		}
+		
 	}
 
 	/**
 	* install adobe
 	*
-	* @destination target directory
-	* @version Version number or empty to use default
-	* @serverInfo Struct of server settings
-	* @serverHomeDirectory Override where the server's home with be
 	**/
-	public function installAdobe( required destination, required version, required struct serverInfo, required string serverHomeDirectory ) {
-		var installDetails = installEngineArchive( 'adobe@#version#', destination, serverInfo, serverHomeDirectory );
+	public function installAdobe( installDetails, serverInfo ) {
 
 		// Fix Adobe's broken default /CFIDE mapping
 		var runtimeConfigPath = installDetails.installDir & "/WEB-INF/cfusion/lib/neo-runtime.xml";
@@ -85,13 +83,8 @@ component accessors="true" singleton="true" {
 	/**
 	* install lucee
 	*
-	* @destination target directory
-	* @version Version number or empty to use default
-	* @serverInfo struct of server settings
-	* @serverHomeDirectory Override where the server's home with be
 	**/
-	public function installLucee( required destination, required version, required struct serverInfo, required string serverHomeDirectory ) {
-		var installDetails = installEngineArchive( 'lucee@#version#', destination, serverInfo, serverHomeDirectory );
+	public function installLucee( installDetails, serverInfo ) {
 
 		if( installDetails.initialInstall ) {
 			configureWebXML( cfengine="lucee", version=installDetails.version, source=serverInfo.webXML, destination=serverInfo.webXML, serverInfo=serverInfo );
@@ -102,13 +95,8 @@ component accessors="true" singleton="true" {
 	/**
 	* install railo
 	*
-	* @destination target directory
-	* @version Version number or empty to use default
-	* @serverInfo struct of server settings
-	* @serverHomeDirectory Override where the server's home with be
 	**/
-	public function installRailo( required destination, required version, required struct serverInfo, required string serverHomeDirectory ) {
-	var installDetails = installEngineArchive( 'railo@#version#', destination, serverInfo, serverHomeDirectory );
+	public function installRailo( installDetails, serverInfo ) {
 
 		if(  installDetails.initialInstall  ) {
 			configureWebXML( cfengine="railo", version=installDetails.version, source=serverInfo.webXML, destination=serverInfo.webXML, serverInfo=serverInfo );
@@ -224,24 +212,6 @@ component accessors="true" singleton="true" {
 		if( !len( serverInfo.webXML ) ) {
 			serverInfo.webXML = "#installDetails.installDir#/WEB-INF/web.xml";
 		}
-		// Set up server and web context dirs if Railo or Lucee
-		if( serverinfo.cfengine contains 'lucee' || serverinfo.cfengine contains 'railo' ) {
-			// Default web context
-			if( !len( serverInfo.webConfigDir ) ) {
-				serverInfo.webConfigDir = "/WEB-INF/#lcase( listFirst( serverinfo.cfengine, "@" ) )#-web";
-			}
-			// Default server context
-			if( !len( serverInfo.serverConfigDir ) ) {
-				serverInfo.serverConfigDir = "/WEB-INF";
-			}
-			// Make relative to WEB-INF if possible
-			serverInfo.webConfigDir = replace( serverInfo.webConfigDir, '\', '/', 'all' );
-			serverInfo.serverConfigDir = replace( serverInfo.serverConfigDir, '\', '/', 'all' );
-			installDetails.installDir = replace( installDetails.installDir, '\', '/', 'all' );
-
-			serverInfo.webConfigDir = replace( serverInfo.webConfigDir, installDetails.installDir, '' );
-			serverInfo.serverConfigDir = replace( serverInfo.serverConfigDir, installDetails.installDir, '' );
-		}
 
 		var engineTagFile = installDetails.installDir & '/.engineInstall';
 
@@ -305,6 +275,25 @@ component accessors="true" singleton="true" {
 			installDetails.engineName = boxJSON.slug;
 			// This file is so we know the correct version of our server on disk
 			thisEngineTag = boxJSON.slug & '@' & boxJSON.version;			
+		}
+		
+		// Set up server and web context dirs if Railo or Lucee
+		if( installDetails.engineName contains 'lucee' || installDetails.engineName contains 'railo' ) {
+			// Default web context
+			if( !len( serverInfo.webConfigDir ) ) {
+				serverInfo.webConfigDir = "/WEB-INF/#lcase( installDetails.engineName )#-web";
+			}
+			// Default server context
+			if( !len( serverInfo.serverConfigDir ) ) {
+				serverInfo.serverConfigDir = "/WEB-INF";
+			}
+			// Make relative to WEB-INF if possible
+			serverInfo.webConfigDir = replace( serverInfo.webConfigDir, '\', '/', 'all' );
+			serverInfo.serverConfigDir = replace( serverInfo.serverConfigDir, '\', '/', 'all' );
+			installDetails.installDir = replace( installDetails.installDir, '\', '/', 'all' );
+
+			serverInfo.webConfigDir = replace( serverInfo.webConfigDir, installDetails.installDir, '' );
+			serverInfo.serverConfigDir = replace( serverInfo.serverConfigDir, installDetails.installDir, '' );
 		}
 
 		// Look for a war or zip archive inside the package
