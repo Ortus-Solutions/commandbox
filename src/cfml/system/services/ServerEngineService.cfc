@@ -234,7 +234,8 @@ component accessors="true" singleton="true" {
 				installDetails.engineName = previousEngineTag.listFirst( '@' );
 				installDetails.version = previousEngineTag.listLast( '@' );
 			}
-
+			
+			calcLuceeRailoContextPaths( installDetails, serverInfo );
 			return installDetails;
 		}
 
@@ -258,7 +259,8 @@ component accessors="true" singleton="true" {
 
 			// Mark this WAR as being exploded already
 			fileWrite( engineTagFile, thisEngineTag );
-
+			
+			calcLuceeRailoContextPaths( installDetails, serverInfo );
 			return installDetails;
 		}
 
@@ -277,24 +279,7 @@ component accessors="true" singleton="true" {
 			thisEngineTag = boxJSON.slug & '@' & boxJSON.version;			
 		}
 		
-		// Set up server and web context dirs if Railo or Lucee
-		if( installDetails.engineName contains 'lucee' || installDetails.engineName contains 'railo' ) {
-			// Default web context
-			if( !len( serverInfo.webConfigDir ) ) {
-				serverInfo.webConfigDir = "/WEB-INF/#lcase( installDetails.engineName )#-web";
-			}
-			// Default server context
-			if( !len( serverInfo.serverConfigDir ) ) {
-				serverInfo.serverConfigDir = "/WEB-INF";
-			}
-			// Make relative to WEB-INF if possible
-			serverInfo.webConfigDir = replace( serverInfo.webConfigDir, '\', '/', 'all' );
-			serverInfo.serverConfigDir = replace( serverInfo.serverConfigDir, '\', '/', 'all' );
-			installDetails.installDir = replace( installDetails.installDir, '\', '/', 'all' );
-
-			serverInfo.webConfigDir = replace( serverInfo.webConfigDir, installDetails.installDir, '' );
-			serverInfo.serverConfigDir = replace( serverInfo.serverConfigDir, installDetails.installDir, '' );
-		}
+		calcLuceeRailoContextPaths( installDetails, serverInfo );
 
 		// Look for a war or zip archive inside the package
 		var theArchive = '';
@@ -327,6 +312,28 @@ component accessors="true" singleton="true" {
 			logger.error( '#e.message# #e.detail#' , e.stackTrace );
 		}
 		return installDetails;
+	}
+	
+	private function calcLuceeRailoContextPaths( installDetails, serverInfo ) {
+		
+		// Set up server and web context dirs if Railo or Lucee
+		if( installDetails.engineName contains 'lucee' || installDetails.engineName contains 'railo' ) {
+			// Default web context
+			if( !len( serverInfo.webConfigDir ) ) {
+				serverInfo.webConfigDir = "/WEB-INF/#lcase( installDetails.engineName )#-web";
+			}
+			// Default server context
+			if( !len( serverInfo.serverConfigDir ) ) {
+				serverInfo.serverConfigDir = "/WEB-INF";
+			}
+			// Make relative to WEB-INF if possible
+			serverInfo.webConfigDir = replace( serverInfo.webConfigDir, '\', '/', 'all' );
+			serverInfo.serverConfigDir = replace( serverInfo.serverConfigDir, '\', '/', 'all' );
+			installDetails.installDir = replace( installDetails.installDir, '\', '/', 'all' );
+
+			serverInfo.webConfigDir = replace( serverInfo.webConfigDir, installDetails.installDir, '' );
+			serverInfo.serverConfigDir = replace( serverInfo.serverConfigDir, installDetails.installDir, '' );
+		}
 	}
 
 	/**
