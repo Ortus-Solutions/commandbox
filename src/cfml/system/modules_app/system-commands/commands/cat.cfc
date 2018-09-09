@@ -52,8 +52,10 @@ component aliases="type" {
 				} else {
 
 					file.apply( function( thisFile ) {
-						if( buffer.len() ) { buffer &= CR }
-						buffer &= fileRead( thisFile );
+						if( fileExists( thisFile ) ){
+							if( buffer.len() ) { buffer &= CR }
+							buffer &= fileRead( thisFile );
+						}
 					} );
 
 				}
