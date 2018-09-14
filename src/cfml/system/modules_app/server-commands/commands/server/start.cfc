@@ -47,6 +47,7 @@ component aliases="start" {
 
 	/**
 	 * @name           		short name for this server or a path to the server.json file.
+	 * @name.optionsFileComplete true
 	 * @name.optionsUDF		serverNameComplete
 	 * @port           		port number
 	 * @host           		bind to a host/ip
