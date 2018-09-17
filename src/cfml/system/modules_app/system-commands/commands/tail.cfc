@@ -108,6 +108,7 @@
 						return cleanLine( line );
 					} )
 					.toList( chr( 10 ) )
+					& chr( 10 )
 				)
 				.toConsole();
 
