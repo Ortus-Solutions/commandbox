@@ -109,7 +109,7 @@ Optional Methods
 		];
 
 		// Binder Mappings
-		// binder.map("Alias").to("#moduleMapping#.model.MyService");
+		// binder.map("Alias").to("#moduleMapping#.models.MyService");
 
 	}
 
