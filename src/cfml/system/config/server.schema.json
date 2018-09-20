@@ -12,94 +12,113 @@
 		},
 		"openBrowser": {
 			"title": "Open Browser",
-			"description": "",
+			"description": "Controls whether browser opens by default when starting server",
 			"type": "boolean",
 			"default": true
 		},
 		"openBrowserURL": {
 			"title": "Open Browser URL",
-			"description": "",
+			"description": "Override the URL to open when starting the server",
 			"type": "string",
 			"default": ""
 		},
 		"startTimeout": {
-			"title": "Open Browser URL",
-			"description": "",
+			"title": "Server start timeout",
+			"description": "The length of time in seconds to wait for the server to start",
 			"type": "number",
 			"default": 240
 		},
 		"stopsocket": {
 			"title": "Stop Socket",
-			"description": "",
+			"description": "The port the server listens on to receive a stop command",
 			"type": "number",
 			"default": 0
 		},
 		"debug": {
 			"title": "Debug",
-			"description": "",
+			"description": "Enable debug level logging for server",
 			"type": "boolean",
 			"default": false
 		},
 		"trace": {
 			"title": "Trace",
-			"description": "",
+			"description": "Enable trace level logging for server",
 			"type": "boolean",
 			"default": false
 		},
 		"console": {
 			"title": "Console",
-			"description": "",
+			"description": "Start the server in console mode instead of in the background",
 			"type": "boolean",
 			"default": false
 		},
 		"trayEnable": {
 			"title": "Tray Enable",
-			"description": "",
+			"description": "Control whether the server has an associated icon in the system tray",
 			"type": "boolean",
 			"default": true
 		},
 		"trayicon": {
 			"title": "Tray Icon",
-			"description": "Path to icon",
+			"description": "Path to the server's tray icon",
 			"type": "string",
 			"default": ""
 		},
 		"trayOptions": {
 			"title": "Tray Options",
-			"description": "",
+			"description": "An array of custom menu items to be added to the server's tray menu",
 			"type": "array",
 			"minItems": 0,
 			"items": {
 				"title": "Tray Option",
-				"description": "",
+				"description": "An object that represents a single tray menu item",
 				"type": "object",
 				"properties": {
 					"label": {
 						"title": "Label",
-						"description": "",
+						"description": "Text of menu item",
 						"type": "string"
 					},
 					"action": {
 						"title": "Action",
-						"description": "",
+						"description": "Action to perform when user clicks this menu item. 'openfilesystem', 'openbrowser', or 'stopserver'",
 						"type": "string"
 					},
 					"url": {
 						"title": "URL",
-						"description": "",
+						"description": "Url to open for 'openbrowser' action",
 						"type": "string"
 					},
 					"disabled": {
 						"title": "Disabled",
-						"description": "",
+						"description": "Turn menu item grey and nothing happens when clicking on it",
 						"type": "boolean",
 						"default": false
 					},
 					"image": {
 						"title": "Image",
-						"description": "Path to image",
+						"description": "Path to PNG image to display on menu item next to the label",
 						"type": "string",
 						"default": ""
+					},
+					"hotkey": {
+						"title": "Hotkey",
+						"description": "Keyboard shortcut to choose this menu item",
+						"type": "string",
+						"default": ""
+					},
+					"path": {
+						"title": "Path",
+						"description": "Filesystem path to open for 'openfilesystem' action",
+						"type": "string",
+						"default": ""
+					},
+					"items": {
+						"title": "Items",
+						"description": "Nested menu items",
+						"type": "array",
+						"minItems": 0,
+						"default": []
 					}
 				}
 			},
@@ -111,25 +130,25 @@
 			"type": "object",
 			"properties": {
 				"heapSize": {
-					"title": "Heap Size",
-					"description": "The max heap size the server is allowed to have",
+					"title": "Max Heap Size",
+					"description": "The max heap size of the server in MB",
 					"type": "number",
 					"default": 512
 				},
 				"minHeapSize": {
-					"title": "Minimum Heap Size",
-					"description": "The starting heap size for the server",
+					"title": "Min Heap Size",
+					"description": "The starting heap size for the server in MB",
 					"type": "number",
 					"default": 0
 				},
 				"args": {
-					"title": "Arguments",
-					"description": "Ad-hoc JVM args for the server",
+					"title": "JVM Arguments",
+					"description": "Ad-hoc JVM args for the server such as -X:name",
 					"type": "string",
 					"default": ""
 				},
 				"javaHome": {
-					"title": "Java Home",
+					"title": "Java Home Path",
 					"description": "Path to custom JRE. Default is the one that the CommandBox CLI is using",
 					"type": "string"
 				}
@@ -142,7 +161,7 @@
 			"properties": {
 				"host": {
 					"title": "Host",
-					"description": "",
+					"description": "The default host name of the server",
 					"type": "string",
 					"default": "127.0.0.1"
 				},
@@ -154,25 +173,25 @@
 				},
 				"directoryBrowsing": {
 					"title": "Directory Browsing",
-					"description": "",
+					"description": "Enables file listing for directories with no welcome file",
 					"type": "boolean",
 					"default": true
 				},
 				"accessLogEnable": {
 					"title": "Access Log Enable",
-					"description": "",
+					"description": "Enable web server access log",
 					"type": "boolean",
 					"default": true
 				},
 				"GZIPEnable": {
 					"title": "GZIP Enable",
-					"description": "",
+					"description": "Enable GZip compression in HTTP responses",
 					"type": "boolean",
 					"default": true
 				},
 				"welcomeFiles": {
 					"title": "Welcome Files",
-					"description": "A comma-delimited list of files that you would like CommandBox to look for when a user hits a directory on a running server",
+					"description": "A comma-delimited list of files that you would like CommandBox to look for when a user hits a directory",
 					"type": "string",
 					"default": ""
 				},
@@ -183,7 +202,7 @@
 					"patternProperties": {
 						"^(/[^/]+)+$": {
 							"title": "Alias",
-							"description": "The key is the web-accessible virtual path and the value is the relative or absolute path to the folder the alias points to.",
+							"description": "The key is the web-accessible virtual path and the value is the relative or absolute path to the folder the alias points to",
 							"type": "string"
 						}
 					},
@@ -192,7 +211,7 @@
 				},
 				"errorPages": {
 					"title": "Error Pages",
-					"description": "The error pages that CommandBox servers return. You can have a setting for each status code including a default error page to be used if no other setting applies.",
+					"description": "The error pages that CommandBox servers return. You can have a setting for each status code including a default error page to be used if no other setting applies",
 					"type": "object",
 					"properties": {
 						"default": {
@@ -205,7 +224,7 @@
 					"patternProperties": {
 						"^[1-5][0-9]{2}$": {
 							"title": "Error Page",
-							"description": "The key is the status code integer and the value is a relative (to the web root) path to be loaded for that status code.",
+							"description": "The key is the status code integer and the value is a relative (to the web root) path to be loaded for that status code",
 							"type": "string"
 						}
 					},
@@ -213,19 +232,19 @@
 					"default": {}
 				},
 				"HTTP": {
-					"title": "HTTP",
-					"description": "",
+					"title": "HTTP Settings",
+					"description": "Configure the HTTP listener on the server",
 					"type": "object",
 					"properties": {
 						"enable": {
 							"title": "Enable",
-							"description": "",
+							"description": "Enable HTTP for this serer",
 							"type": "boolean",
 							"default": true
 						},
 						"port": {
 							"title": "Port",
-							"description": "",
+							"description": "HTTP port to use",
 							"type": "number",
 							"default": 0
 						}
@@ -233,36 +252,36 @@
 				},
 				"SSL": {
 					"title": "SSL",
-					"description": "",
+					"description": "Configure the HTTPS listener on the server",
 					"type": "object",
 					"properties": {
 						"enable": {
 							"title": "Enable",
-							"description": "",
+							"description": "Enable HTTPS for this server",
 							"type": "boolean",
 							"default": false
 						},
 						"port": {
 							"title": "Port",
-							"description": "",
+							"description": "HTTPS port to use",
 							"type": "number",
 							"default": 1443
 						},
 						"certFile": {
 							"title": "Cert File",
-							"description": "",
+							"description": "Path to SSL cert file",
 							"type": "string",
 							"default": ""
 						},
 						"keyFile": {
 							"title": "Key File",
-							"description": "",
+							"description": "Path to SSL key file",
 							"type": "string",
 							"default": ""
 						},
 						"keyPass": {
 							"title": "Key Pass",
-							"description": "",
+							"description": "Password for SSL key file",
 							"type": "string",
 							"default": ""
 						}
@@ -270,18 +289,18 @@
 				},
 				"AJP": {
 					"title": "AJP",
-					"description": "",
+					"description": "Configure the AJP listener on the server",
 					"type": "object",
 					"properties": {
 						"enable": {
 							"title": "Enable",
-							"description": "",
+							"description": "Enable AJP for this server",
 							"type": "boolean",
 							"default": false
 						},
 						"port": {
 							"title": "Port",
-							"description": "",
+							"description": "AJP port to use",
 							"type": "number",
 							"default": 8009
 						}
@@ -289,54 +308,54 @@
 				},
 				"rewrites": {
 					"title": "Rewrites",
-					"description": "",
+					"description": "Configure URL Rewrites",
 					"type": "object",
 					"properties": {
 						"enable": {
 							"title": "Enable",
-							"description": "",
+							"description": "Enable URL Rewrites on this server",
 							"type": "boolean",
 							"default": false
 						},
 						"logEnable": {
 							"title": "Log Enable",
-							"description": "",
+							"description": "Enable Rewrite log file",
 							"type": "boolean",
 							"default": false
 						},
 						"config": {
 							"title": "Config",
-							"description": "Path to config.xml",
+							"description": "Path to xml config file or .htaccess",
 							"type": "string",
 							"default": ""
 						},
 						"statusPath": {
-							"title": "Status Path",
-							"description": "",
+							"title": "Tuckey Status Path",
+							"description": "URL path to visit Tuckey status page like '/tuckey-status'",
 							"type": "string",
-							"default": ""
+							"default": "/tuckey-status"
 						},
 						"configReloadSeconds": {
 							"title": "Config Reload Seconds",
-							"description": "",
+							"description": "Number of seconds to check rewrite config file for changes",
 							"type": "number"
 						}
 					}
 				},
 				"basicAuth": {
-					"title": "Server Home Directory",
+					"title": "Configure basic authentication",
 					"description": "",
 					"type": "object",
 					"properties": {
 						"enable": {
 							"title": "Enable",
-							"description": "",
+							"description": "Enable basic auth for this server",
 							"type": "boolean",
 							"default": true
 						},
 						"users": {
 							"title": "Users",
-							"description": "",
+							"description": "Users who can authentiate to basic auth",
 							"type": "object",
 							"additionalProperties": {
 								"title": "User",
@@ -356,81 +375,75 @@
 			"properties": {
 				"logDir": {
 					"title": "Log Directory",
-					"description": "",
+					"description": "The folder path where the servlet out, rewrite, and access log are written to",
 					"type": "string",
 					"default": ""
 				},
 				"libDirs": {
-					"title": "Library Directories",
+					"title": "Jar lib Directories",
 					"description": "A comma-delimited list of directories from which CommandBox will load JARs",
 					"type": "string",
 					"default": ""
 				},
-				"args": {
-					"title": "Arguments",
-					"description": "",
-					"type": "string",
-					"default": ""
-				},
 				"webConfigDir": {
-					"title": "Web Configuration Directory",
-					"description": "",
+					"title": "Web Context Directory",
+					"description": "Directory for Lucee/Railo web context",
 					"type": "string",
 					"default": ""
 				},
 				"serverConfigDir": {
-					"title": "Server Configuration Directory",
-					"description": "",
+					"title": "Server Context Directory",
+					"description": "Directory for Lucee/Railo server context",
 					"type": "string",
 					"default": ""
 				},
 				"webXML": {
 					"title": "Web XML",
-					"description": "",
+					"description": "Path to web.xml file",
 					"type": "string",
 					"default": ""
 				},
 				"WARPath": {
 					"title": "WAR Path",
-					"description": "",
+					"description": "Path to a local WAR archive or exploded WAR folder.  Mutually exclusive with cfengine.",
 					"type": "string",
 					"default": ""
 				},
 				"cfengine": {
-					"title": "CF Engine",
-					"description": "",
+					"title": "CFML Engine",
+					"description": "An Endpoint ID that resolves to a CF engine such as 'adobe' or 'lucee'. Include version as 'adobe@2016'",
 					"type": "string",
 					"default": ""
 				},
 				"restMappings": {
 					"title": "REST Mappings",
-					"description": "",
+					"description": "Comma delimted list of paths to map to the CF engine's REST servlet such as '/rest/*,/api/*'",
 					"type": "string",
 					"default": ""
 				},
 				"serverHomeDirectory": {
 					"title": "Server Home Directory",
-					"description": "",
+					"description": "Path to folder where the server WAR will be expanded",
 					"type": "string",
 					"default": ""
 				},
 				"sessionCookieSecure": {
 					"title": "Session Cookie Secure",
-					"description": "",
+					"description": "Enable secure session cookies",
 					"type": "boolean",
 					"default": false
 				},
 				"sessionCookieHTTPOnly": {
 					"title": "Session Cookie HttpOnly",
-					"description": "",
+					"description": "Enable HTTP-only session cookies",
 					"type": "boolean",
 					"default": false
 				}
 			}
 		},
 		"runwar": {
-			"title": "Run WAR",
-			"description": "",
+			"title": "Confiure RunWar",
+			"description": "These settings apply to the underlying Runwar library that starts servers",
 			"type": "object",
 			"properties": {
 				"args": {
