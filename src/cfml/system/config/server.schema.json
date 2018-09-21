@@ -1,5 +1,63 @@
 {
-	"$schema": "http://json-schema.org/draft-04/schema#",
+	"$schema": "http://json-schema.org/draft-06/schema#",
+	"definitions": {
+		"trayOptionsItem": {
+			"title": "Tray Option",
+			"description": "An object that represents a single tray menu item",
+			"type": "object",
+			"properties": {
+				"label": {
+					"title": "Label",
+					"description": "Text of menu item",
+					"type": "string"
+				},
+				"action": {
+					"title": "Action",
+					"description": "Action to perform when user clicks this menu item. 'openfilesystem', 'openbrowser', or 'stopserver'",
+					"type": "string"
+				},
+				"url": {
+					"title": "URL",
+					"description": "Url to open for 'openbrowser' action",
+					"type": "string"
+				},
+				"disabled": {
+					"title": "Disabled",
+					"description": "Turn menu item grey and nothing happens when clicking on it",
+					"type": "boolean",
+					"default": false
+				},
+				"image": {
+					"title": "Image",
+					"description": "Path to PNG image to display on menu item next to the label",
+					"type": "string",
+					"default": ""
+				},
+				"hotkey": {
+					"title": "Hotkey",
+					"description": "Keyboard shortcut to choose this menu item",
+					"type": "string",
+					"default": ""
+				},
+				"path": {
+					"title": "Path",
+					"description": "Filesystem path to open for 'openfilesystem' action",
+					"type": "string",
+					"default": ""
+				},
+				"items": {
+					"title": "Items",
+					"description": "Nested menu items",
+					"type": "array",
+					"minItems": 0,
+					"items": {
+						"$ref": "#/definitions/trayOptionsItem"
+					},
+					"default": []
+				}
+			}
+		}
+	},
 	"title": "CommandBox Server",
 	"description": "Configuration file for a CommandBox server",
 	"type": "object",
@@ -70,57 +128,7 @@
 			"type": "array",
 			"minItems": 0,
 			"items": {
-				"title": "Tray Option",
-				"description": "An object that represents a single tray menu item",
-				"type": "object",
-				"properties": {
-					"label": {
-						"title": "Label",
-						"description": "Text of menu item",
-						"type": "string"
-					},
-					"action": {
-						"title": "Action",
-						"description": "Action to perform when user clicks this menu item. 'openfilesystem', 'openbrowser', or 'stopserver'",
-						"type": "string"
-					},
-					"url": {
-						"title": "URL",
-						"description": "Url to open for 'openbrowser' action",
-						"type": "string"
-					},
-					"disabled": {
-						"title": "Disabled",
-						"description": "Turn menu item grey and nothing happens when clicking on it",
-						"type": "boolean",
-						"default": false
-					},
-					"image": {
-						"title": "Image",
-						"description": "Path to PNG image to display on menu item next to the label",
-						"type": "string",
-						"default": ""
-					},
-					"hotkey": {
-						"title": "Hotkey",
-						"description": "Keyboard shortcut to choose this menu item",
-						"type": "string",
-						"default": ""
-					},
-					"path": {
-						"title": "Path",
-						"description": "Filesystem path to open for 'openfilesystem' action",
-						"type": "string",
-						"default": ""
-					},
-					"items": {
-						"title": "Items",
-						"description": "Nested menu items",
-						"type": "array",
-						"minItems": 0,
-						"default": []
-					}
-				}
+				"$ref": "#/definitions/trayOptionsItem"
 			},
 			"default": []
 		},
@@ -355,7 +363,7 @@
 						},
 						"users": {
 							"title": "Users",
-							"description": "Users who can authentiate to basic auth",
+							"description": "Users who can authenticate to basic auth",
 							"type": "object",
 							"additionalProperties": {
 								"title": "User",
@@ -417,7 +425,7 @@
 				},
 				"restMappings": {
 					"title": "REST Mappings",
-					"description": "Comma delimted list of paths to map to the CF engine's REST servlet such as '/rest/*,/api/*'",
+					"description": "Comma delimited list of paths to map to the CF engine's REST servlet such as '/rest/*,/api/*'",
 					"type": "string",
 					"default": ""
 				},
@@ -442,7 +450,7 @@
 			}
 		},
 		"runwar": {
-			"title": "Confiure RunWar",
+			"title": "Configure RunWar",
 			"description": "These settings apply to the underlying Runwar library that starts servers",
 			"type": "object",
 			"properties": {
