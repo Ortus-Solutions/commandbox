@@ -71,7 +71,7 @@ component {
 			print.boldRedLine( "No log file found for '#serverInfo.webroot#'!" )
 				.line( "#logFile#" );
 			if( access ) {
-				print.yellowLine( 'Enable accesss logging with [server set web.acessLogEnable=true]' );
+				print.yellowLine( 'Enable accesss logging with [server set web.accessLogEnable=true]' );
 			}
 		}
 	}
