@@ -61,8 +61,16 @@ component singleton accessors=true {
 			throw( message="Target [#target#] doesn't exist in Task CFC.", detail=arguments.taskFile, type="commandException");
 		}
 
-		CommandService.ensureRequiredparams( taskArgs, getMetadata( taskCFC[ target ] ).parameters );
-
+		var targetMD = getMetadata( taskCFC[ target ] );
+		CommandService.ensureRequiredparams( taskArgs, targetMD.parameters );
+		
+		// Check for, and run target dependencies
+		var taskDeps = targetMD.depends ?: '';
+		taskDeps.listToArray()
+			.each( function( dep ) {
+				taskCFC.getPrinter().print( runTask( taskFile, dep, taskArgs ) );
+			} );
+		
 		try {
 			
 			// Run the task

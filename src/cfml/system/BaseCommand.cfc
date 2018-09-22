@@ -47,6 +47,10 @@ component accessors="true" singleton {
 		return 'This command CFC has not implemented a run() method.';
 	}
 
+	function getPrinter() {
+		return variables.print;
+	}
+
 	// Convenience method for getting stuff from WireBox
 	function getInstance( name, dsl, initArguments={}, targetObject='' ) {
 		return wirebox.getInstance( argumentCollection = arguments );
