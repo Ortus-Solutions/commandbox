@@ -46,7 +46,8 @@ component accessors="true" extends='commandbox.system.BaseCommand' {
 	 * @taskFile The name of the task to run.
  	 **/
 	function task( required taskFile='task' ) {
-		return getinstance( name='TaskDSL', initArguments={ taskFile : arguments.taskFile } );
+		return getinstance( name='TaskDSL', initArguments={ taskFile : arguments.taskFile } )
+			.inWorkingDirectory( getDirectoryFromPath( getCurrentTemplatePath() ) );
 	}
 
 	/**
