@@ -44,7 +44,7 @@ component accessors="true" singleton {
 
 	// This method needs to be overridden by the concrete class.
 	function run() {
-		return 'This command CFC has not implemented a run() method.';
+		error( 'This command CFC has not implemented a run() method.' );
 	}
 
 	function getPrinter() {
