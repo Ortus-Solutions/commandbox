@@ -134,11 +134,15 @@ component {
 		}
 
 		// Prepare defaults on box.json so we remove template based ones
-		runCommand( 'package set name="#arguments.name#"' );
-		runCommand( 'package set slug="#variables.formatterUtil.slugify( arguments.name )#' );
-		runCommand( 'package set version="1.0.0"' );
-		runCommand( 'package set location=""' );
-		runCommand( 'package set scripts={}' );
+		command( 'package set' )
+			.params(
+					name=arguments.name,
+					slug=variables.formatterUtil.slugify( arguments.name ),
+					version='1.0.0',
+					location='',
+					scripts='{}'
+				)
+			.run();
 	}
 
 	/**
