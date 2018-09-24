@@ -108,7 +108,7 @@ component {
 			directory               = arguments.directory,
 			save                    = false,
 			saveDev                 = false,
-			production              = true,
+			production              = false,
 			currentWorkingDirectory = arguments.directory
 		);
 
