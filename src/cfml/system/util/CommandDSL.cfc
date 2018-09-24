@@ -21,6 +21,7 @@ component accessors=true {
 	property name='overwrite';
 	property name='workingDirectory';
 	property name='rawParams';
+	property name='paramsType';
 
 
 	// DI
@@ -47,6 +48,7 @@ component accessors=true {
 		setOverwrite( '' );
 		setWorkingDirectory( '' );
 		setRawParams( false );
+		setParamsType( 'none' );
 		return this;
 	}
 
@@ -54,8 +56,29 @@ component accessors=true {
 	 * Add params to the command
   	 **/
 	function params() {
-
-		setParams( arguments );
+		// Positional params
+		if ( isNumeric( listFirst( structKeyList( arguments ) ) ) ) {
+			if ( getParamsType() == 'named' ) {
+				throw(
+					message = 'You have passed both named and positional params to the command DSL. Named and positional params cannot be mixed.',
+					type = 'commandException'
+				);
+			}
+			setParamsType( 'positional' );
+		// Named params
+		} else {
+			if ( getParamsType() == 'positional' ) {
+				throw(
+					message = 'You have passed both named and positional params to the command DSL. Named and positional params cannot be mixed.',
+					type = 'commandException'
+				);
+			}
+			if ( getParamsType() == 'none' ) {
+				setParams( {} );
+			}
+			setParamsType( 'named' );
+		}
+		getParams().append( arguments, true );
 		return this;
 	}
 
@@ -65,28 +88,28 @@ component accessors=true {
 	private array function processParams() {
 		var runCommand = ( getCommand().startsWith( '!' ) || getCommand().left( 3 ) == 'run' );
 		var processedParams = [];
-		if( !arraylen( getParams() ) ) {
+		if( getParamsType() == 'none' ) {
 			return processedParams;
 		}
 
 		// Positional params
-		if( isNumeric( listFirst( structKeyList( getParams() ) ) ) ) {
+		if( getParamsType() == 'positional' ) {
 			for( var param in getParams() ) {
 				if( runCommand ) {
-					processedParams.append( getParams()[ param ] );					
+					processedParams.append( param );
 				} else if( getRawParams() ) {
-					processedParams.append( '"#getParams()[ param ]#"' );
+					processedParams.append( '"#param#"' );
 				} else {
-					processedParams.append( '"#parser.escapeArg( getParams()[ param ] )#"' );					
+					processedParams.append( '"#parser.escapeArg( param )#"' );
 				}
 			}
 		// Named params
 		} else {
 			for( var param in getParams() ) {
 				if( runCommand ) {
-					processedParams.append( '#param#=#getParams()[ param ]#' );	
+					processedParams.append( '#param#=#getParams()[ param ]#' );
 				} else {
-					processedParams.append( '#param#="#parser.escapeArg( getParams()[ param ] )#"' );					
+					processedParams.append( '#param#="#parser.escapeArg( getParams()[ param ] )#"' );
 				}
 			}
 		}
