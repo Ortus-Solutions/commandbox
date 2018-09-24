@@ -62,13 +62,15 @@ component accessors="true" singleton="true" {
 			var runtimeConfigDoc = XMLParse( runtimeConfigPath );
 			// Looking for a <string> tag whose sibling is a <var> tag with a "name" attribute of "/CFIDE".
 			var results = xmlSearch( runtimeConfigDoc, "//struct/var[@name='/CFIDE']/string" );
-			// If we found a node in the XML
-			if( results.len() 
-				// And it is blank
-				&& !len( results[ 1 ].XMLText )
+			var oldCFIDEPath = '';
+			if( results.len() ) {
+				oldCFIDEPath = results[ 1 ].XMLText;
+			}
+			
+			if( !len( oldCFIDEPath )
 				// OR points to a nonexistent directory that is not what we think it should be.
-				|| ( !directoryExists( results[ 1 ].XMLText ) 
-					&& results[ 1 ].XMLText != CFIDEPath ) ) {
+				|| ( !directoryExists( oldCFIDEPath ) 
+					&& oldCFIDEPath != CFIDEPath ) ) {
 					
 				// Here you go, sir.
 				results[ 1 ].XMLText = CFIDEPath;
