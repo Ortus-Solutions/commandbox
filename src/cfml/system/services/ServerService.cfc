@@ -1650,7 +1650,7 @@ component accessors="true" singleton {
 	 * @servers.hint struct of serverInfos
  	 **/
 	ServerService function setServers( required Struct servers ){
-		fileSystemUtil.lockingfileWrite( serverConfig, formatterUtil.formatJson( serializeJSON( servers ) ) );
+		JSONService.writeJSONFile( serverConfig, servers, true );
 		return this;
 	}
 

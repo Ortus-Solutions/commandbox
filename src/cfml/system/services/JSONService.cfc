@@ -10,7 +10,10 @@
 component accessors="true" singleton {
 
 	// DI
-	property name="logger" inject="logbox:logger:{this}";
+	property name="configService" inject="ConfigService";
+	property name="fileSytemUtil" inject="FileSystem";
+	property name="formatterUtil" inject="Formatter";
+	property name="logger"        inject="logbox:logger:{this}";
 
 	/**
 	* Constructor
@@ -202,6 +205,37 @@ component accessors="true" singleton {
 		}
 
 		return props;
+	}
+
+	function writeJSONFile( path, json, locking = false ) {
+		var sortKeys = configService.getSetting( 'JSONPrettyPrint.sortKeys', 'textnocase' );
+
+		// if sortKeys was not explicitly set, try to determine current file state
+		if (
+			!configService.settingExists( 'JSONPrettyPrint.sortKeys' ) &&
+			fileExists( path )
+		) {
+			var jsonString = locking ? fileSytemUtil.lockingFileRead( path ) : fileRead( path );
+			sortKeys = isSortedJSON( jsonString, sortKeys ) ? sortKeys : '';
+		}
+
+		if ( locking ) {
+			fileSytemUtil.lockingFileWrite( path, formatterUtil.formatJson( json = json, sortKeys = sortKeys ) );
+		} else {
+			fileWrite( path, formatterUtil.formatJson( json = json, sortKeys = sortKeys ) );
+		}
+	}
+
+	function isSortedJSON( json, sortType ) {
+		if ( isSimpleValue( json ) ) {
+			json = deserializeJSON( json );
+		}
+		// simple check - are top level keys sorted, default to true if we can't tell
+		if ( isStruct( json ) ) {
+			return json.keyList() == json.keyArray().sort( sortType ).toList();
+		}
+
+		return true;
 	}
 
 }
