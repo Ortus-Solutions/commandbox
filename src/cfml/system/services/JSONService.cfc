@@ -207,32 +207,44 @@ component accessors="true" singleton {
 		return props;
 	}
 
-	function writeJSONFile( path, json, locking = false ) {
+	function writeJSONFile( path, json, locking = false, writeOnChangeOnly = false ) {
 		var sortKeys = configService.getSetting( 'JSONPrettyPrint.sortKeys', 'textnocase' );
+		var oldJSON = '';
 
-		// if sortKeys was not explicitly set, try to determine current file state
+		// if sortKeys is not explicitly set or writeOnChangeOnly is set
+		// try to determine current file state
 		if (
-			!configService.settingExists( 'JSONPrettyPrint.sortKeys' ) &&
+			( !configService.settingExists( 'JSONPrettyPrint.sortKeys' ) || writeOnChangeOnly ) &&
 			fileExists( path )
 		) {
-			var jsonString = locking ? fileSytemUtil.lockingFileRead( path ) : fileRead( path );
-			sortKeys = isSortedJSON( jsonString, sortKeys ) ? sortKeys : '';
+			oldJSON = locking ? fileSytemUtil.lockingFileRead( path ) : fileRead( path );
+			sortKeys = isSortedJSON( oldJSON, sortKeys ) ? sortKeys : '';
 		}
 
+		var newJSON = formatterUtil.formatJson( json = json, sortKeys = sortKeys );
+
+		if ( writeOnChangeOnly && oldJSON == newJSON ) {
+			return;
+		}
+
+		// ensure we are writing to an existing directory
+		directoryCreate( getDirectoryFromPath( path ), true, true );
+
 		if ( locking ) {
-			fileSytemUtil.lockingFileWrite( path, formatterUtil.formatJson( json = json, sortKeys = sortKeys ) );
+			fileSytemUtil.lockingFileWrite( path, newJSON );
 		} else {
-			fileWrite( path, formatterUtil.formatJson( json = json, sortKeys = sortKeys ) );
+			fileWrite( path, newJSON );
 		}
 	}
 
-	function isSortedJSON( json, sortType ) {
+	function isSortedJSON( json, sortKeys ) {
 		if ( isSimpleValue( json ) ) {
 			json = deserializeJSON( json );
 		}
+
 		// simple check - are top level keys sorted, default to true if we can't tell
 		if ( isStruct( json ) ) {
-			return json.keyList() == json.keyArray().sort( sortType ).toList();
+			return json.keyList() == json.keyArray().sort( sortKeys ).toList();
 		}
 
 		return true;
