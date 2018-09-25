@@ -105,11 +105,12 @@ component accessors=true {
 			}
 		// Named params
 		} else {
-			for( var param in getParams() ) {
+			var paramStruct = getParams();
+			for( var param in paramStruct ) {
 				if( runCommand ) {
-					processedParams.append( '#param#=#getParams()[ param ]#' );
+					processedParams.append( '#param#=#paramStruct[ param ] ?: ''#' );
 				} else {
-					processedParams.append( '#param#="#parser.escapeArg( getParams()[ param ] )#"' );
+					processedParams.append( '#param#="#parser.escapeArg( paramStruct[ param ] ?: '' )#"' );
 				}
 			}
 		}
