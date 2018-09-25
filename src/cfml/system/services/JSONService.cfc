@@ -208,17 +208,17 @@ component accessors="true" singleton {
 	}
 
 	function writeJSONFile( path, json, locking = false, writeOnChangeOnly = false ) {
+		var sortKeysIsSet = configService.settingExists( 'JSONPrettyPrint.sortKeys' );
 		var sortKeys = configService.getSetting( 'JSONPrettyPrint.sortKeys', 'textnocase' );
 		var oldJSON = '';
 
 		// if sortKeys is not explicitly set or writeOnChangeOnly is set
 		// try to determine current file state
-		if (
-			( !configService.settingExists( 'JSONPrettyPrint.sortKeys' ) || writeOnChangeOnly ) &&
-			fileExists( path )
-		) {
+		if ( ( !sortKeysIsSet || writeOnChangeOnly ) && fileExists( path ) ) {
 			oldJSON = locking ? fileSytemUtil.lockingFileRead( path ) : fileRead( path );
-			sortKeys = isSortedJSON( oldJSON, sortKeys ) ? sortKeys : '';
+			if ( !sortKeysIsSet && !isSortedJSON( oldJSON, sortKeys ) ) {
+				sortKeys = '';
+			}
 		}
 
 		var newJSON = formatterUtil.formatJson( json = json, sortKeys = sortKeys );
