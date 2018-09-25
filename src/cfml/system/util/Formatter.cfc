@@ -246,12 +246,15 @@ component singleton {
 	/**
 	 * Pretty JSON
 	 * @json A string containing JSON, or a complex value that can be serialized to JSON
- 	 **/
-	public function formatJson( json, indent, lineEnding ) {
+	 **/
+	public function formatJson( json, indent, lineEnding, spaceAfterColon, sortKeys ) {
 		// This is an external lib now.  Leaving here for backwards compat.
-        if ( isNull( arguments.sortKeys ) ) {
-            arguments.sortKeys = configService.getSetting( 'JSONPrettyPrint.sortKeys', 'textnocase' );
-        }
+		if ( isNull( arguments.spaceAfterColon ) ) {
+			arguments.spaceAfterColon = configService.getSetting( 'JSONPrettyPrint.spaceAfterColon', false );
+		}
+		if ( isNull( arguments.sortKeys ) ) {
+			arguments.sortKeys = configService.getSetting( 'JSONPrettyPrint.sortKeys', 'textnocase' );
+		}
 		return JSONPrettyPrint.formatJSON( argumentCollection=arguments );
 	}
 }
