@@ -11,7 +11,7 @@ component accessors="true" singleton {
 
 	// DI
 	property name="configService" inject="ConfigService";
-	property name="fileSytemUtil" inject="FileSystem";
+	property name="fileSystemUtil" inject="FileSystem";
 	property name="formatterUtil" inject="Formatter";
 	property name="logger"        inject="logbox:logger:{this}";
 
@@ -215,7 +215,7 @@ component accessors="true" singleton {
 		// if sortKeys is not explicitly set or writeOnChangeOnly is set
 		// try to determine current file state
 		if ( ( !sortKeysIsSet || writeOnChangeOnly ) && fileExists( path ) ) {
-			oldJSON = locking ? fileSytemUtil.lockingFileRead( path ) : fileRead( path );
+			oldJSON = locking ? fileSystemUtil.lockingFileRead( path ) : fileRead( path );
 			if ( !sortKeysIsSet && !isSortedJSON( oldJSON, sortKeys ) ) {
 				sortKeys = '';
 			}
@@ -231,7 +231,7 @@ component accessors="true" singleton {
 		directoryCreate( getDirectoryFromPath( path ), true, true );
 
 		if ( locking ) {
-			fileSytemUtil.lockingFileWrite( path, newJSON );
+			fileSystemUtil.lockingFileWrite( path, newJSON );
 		} else {
 			fileWrite( path, newJSON );
 		}
