@@ -195,7 +195,7 @@ component accessors="true" singleton {
 	function start(
 		Struct serverProps
 	){
-		
+
 		var job = wirebox.getInstance( 'interactiveJob' );
 		job.start( 'Starting Server', 10 );
 
@@ -288,16 +288,16 @@ component accessors="true" singleton {
 					serverProps.name = newName;
 					var newServerJSONFile = fileSystemUtil.resolvePath( serverProps.directory ?: '' ) & "/server-#serverProps.name#.json";
 					// copy the orig server's server.json file to the new file so it starts with the same properties as the original. lots of alternative ways to do this but the file copy works and is simple
-					if( fileExists( defaultServerConfigFile ) && newServerJSONFile != defaultServerConfigFile ) {					
-						file action='copy' source="#defaultServerConfigFile#" destination="#newServerJSONFile#" mode ='777';	
+					if( fileExists( defaultServerConfigFile ) && newServerJSONFile != defaultServerConfigFile ) {
+						file action='copy' source="#defaultServerConfigFile#" destination="#newServerJSONFile#" mode ='777';
 					}
 					return start( serverProps );
 				}
-					
+
 			} else {
 				job.addWarnLog( 'Overwriting previous server [#serverInfo.name#].' );
 			}
-			
+
 		}
 
 		// *************************************************************************************
@@ -561,22 +561,22 @@ component accessors="true" singleton {
 		serverInfo.SSLEnable 		= serverProps.SSLEnable 		?: serverJSON.web.SSL.enable			?: defaults.web.SSL.enable;
 		serverInfo.HTTPEnable		= serverProps.HTTPEnable 		?: serverJSON.web.HTTP.enable			?: defaults.web.HTTP.enable;
 		serverInfo.SSLPort			= serverProps.SSLPort 			?: serverJSON.web.SSL.port				?: defaults.web.SSL.port;
-		
+
 		serverInfo.AJPEnable 		= serverProps.AJPEnable 		?: serverJSON.web.AJP.enable			?: defaults.web.AJP.enable;
 		serverInfo.AJPPort			= serverProps.AJPPort 			?: serverJSON.web.AJP.port				?: defaults.web.AJP.port;
-		
+
 		// relative certFile in server.json is resolved relative to the server.json
 		if( isDefined( 'serverJSON.web.SSL.certFile' ) ) { serverJSON.web.SSL.certFile = fileSystemUtil.resolvePath( serverJSON.web.SSL.certFile, defaultServerConfigFileDirectory ); }
 		// relative certFile in config setting server defaults is resolved relative to the web root
 		if( len( defaults.web.SSL.certFile ?: '' ) ) { defaults.web.SSL.certFile = fileSystemUtil.resolvePath( defaults.web.SSL.certFile, defaultwebroot ); }
 		serverInfo.SSLCertFile 		= serverProps.SSLCertFile 		?: serverJSON.web.SSL.certFile			?: defaults.web.SSL.certFile;
-		
+
 		// relative keyFile in server.json is resolved relative to the server.json
 		if( isDefined( 'serverJSON.web.SSL.keyFile' ) ) { serverJSON.web.SSL.keyFile = fileSystemUtil.resolvePath( serverJSON.web.SSL.keyFile, defaultServerConfigFileDirectory ); }
 		// relative trayIcon in config setting server defaults is resolved relative to the web root
 		if( len( defaults.web.SSL.keyFile ?: '' ) ) { defaults.web.SSL.keyFile = fileSystemUtil.resolvePath( defaults.web.SSL.keyFile, defaultwebroot ); }
 		serverInfo.SSLKeyFile 		= serverProps.SSLKeyFile 		?: serverJSON.web.SSL.keyFile			?: defaults.web.SSL.keyFile;
-		
+
 		serverInfo.SSLKeyPass 		= serverProps.SSLKeyPass 		?: serverJSON.web.SSL.keyPass			?: defaults.web.SSL.keyPass;
 		serverInfo.rewritesEnable 	= serverProps.rewritesEnable	?: serverJSON.web.rewrites.enable		?: defaults.web.rewrites.enable;
 		serverInfo.rewritesStatusPath = 							   serverJSON.web.rewrites.statusPath	?: defaults.web.rewrites.statusPath;
@@ -588,7 +588,7 @@ component accessors="true" singleton {
 		serverInfo.trayEnable	 	= serverJSON.trayEnable			?: defaults.trayEnable;
 
 		serverInfo.defaultBaseURL = serverInfo.SSLEnable ? 'https://#serverInfo.host#:#serverInfo.SSLPort#' : 'http://#serverInfo.host#:#serverInfo.port#';
-			
+
 		// If there's no open URL, let's create a complete one
 		if( !serverInfo.openbrowserURL.len() ) {
 			serverInfo.openbrowserURL = serverInfo.defaultBaseURL;
@@ -636,7 +636,7 @@ component accessors="true" singleton {
 
 		serverInfo.trayOptions = defaults.trayOptions;
 		serverJSON.trayOptions = serverJSON.trayOptions ?: [];
-		
+
 		// global defaults are relative to web root
 		// TODO: perform this recursivley into "items" sub arrays
 		serverInfo.trayOptions = serverInfo.trayOptions.map( function( item ){
@@ -645,25 +645,25 @@ component accessors="true" singleton {
 			}
 			return item;
 		} );
-		
+
 		// server.json settings are relative to the folder server.json lives
 		// TODO: perform this recursivley into "items" sub arrays
 		serverJSON.trayOptions = serverJSON.trayOptions.map( function( item ){
-			if( item.keyExists( 'image' ) && item.image.len() ) {				
+			if( item.keyExists( 'image' ) && item.image.len() ) {
 				item.image = fileSystemUtil.resolvePath( item.image, defaultServerConfigFileDirectory );
 			}
 			return item;
 		} );
-		
+
 		// Global trayOptions are always added on top of server.json (but don't overwrite)
 		// trayOptions aren't accepted via command params due to no clean way to provide them
 		serverInfo.trayOptions.append( serverJSON.trayOptions, true );
 
 		serverInfo.accessLogEnable	= serverJSON.web.accessLogEnable ?: defaults.web.accessLogEnable;
 		serverInfo.GZIPEnable	= serverJSON.web.GZIPEnable ?: defaults.web.GZIPEnable;
-		 
+
 		serverInfo.rewriteslogEnable = serverJSON.web.rewrites.logEnable ?: defaults.web.rewrites.logEnable;
-				
+
 		// Global defauls are always added on top of whatever is specified by the user or server.json
 		serverInfo.JVMargs			= ( serverProps.JVMargs			?: serverJSON.JVM.args ?: '' ) & ' ' & defaults.JVM.args;
 
@@ -820,12 +820,12 @@ component accessors="true" singleton {
 			var displayServerName = processName;
 			var displayEngineName = 'WAR';
 		}
-		
+
 		// logdir is set above and is different for WARs and CF engines
 		serverInfo.consolelogPath = serverInfo.logdir & '/server.out.txt';
 		serverInfo.accessLogPath = serverInfo.logDir & '/access.txt';
 		serverInfo.rewritesLogPath = serverInfo.logDir & '/rewrites.txt';
-		 
+
 		// Find the correct tray icon for this server
 		if( !len( serverInfo.trayIcon ) ) {
 			var iconSize = fileSystemUtil.isWindows() ? '-32px' : '';
@@ -867,10 +867,10 @@ component accessors="true" singleton {
 			var lastFolder = appFileSystemPathDisplay.listLast( '/' );
 			var middleStuff = appFileSystemPathDisplay.listDeleteAt( pathLength, '/' ).listDeleteAt( 1, '/' );
 			// Ignoring slashes here.  Doesn't need to be exact.
-			var leftOverLen = max( 50 - (firstFolder.len() + lastFolder.len() ), 1 ); 
+			var leftOverLen = max( 50 - (firstFolder.len() + lastFolder.len() ), 1 );
 			// This will shorten the path to C:/firstfolder/somes/tuff.../lastFolder/
 			// with a final result that is close to 50 characters
-			appFileSystemPathDisplay = firstFolder & '/' & middleStuff.left( leftOverLen ) & '.../' & lastFolder & '/';	 
+			appFileSystemPathDisplay = firstFolder & '/' & middleStuff.left( leftOverLen ) & '.../' & lastFolder & '/';
 		}
 
 		serverInfo.trayOptions.prepend(
@@ -900,11 +900,11 @@ component accessors="true" singleton {
 		openItems.prepend( { 'label':'Site Home', 'action':'openbrowser', 'url': serverInfo.openbrowserURL, 'image' : expandPath('/commandbox/system/config/server-icons/home.png' ) } );
 
 		openItems.prepend( { "label" : "File System", "hotkey" : "B", "action" : "openfilesystem", "path" : serverInfo.appFileSystemPath, "image" : expandPath('/commandbox/system/config/server-icons/folder.png' ) } );
-		
+
 		serverInfo.trayOptions.prepend( { 'label':'Open...', 'items': openItems, "image" : expandPath('/commandbox/system/config/server-icons/open.png' ) } );
 
 		// serverInfo.trayOptions.prepend( { 'label' : 'Restart Server', 'hotkey':'R', 'action' : 'restartserver', 'image': expandPath('/commandbox/system/config/server-icons/home.png' ) } );
-	
+
 		serverInfo.trayOptions.prepend( { 'label':'Stop Server', 'action':'stopserver', 'image' : expandPath('/commandbox/system/config/server-icons/stop.png' ) } );
 
 	    // This is due to a bug in RunWar not creating the right directory for the logs
@@ -974,7 +974,7 @@ component accessors="true" singleton {
 		 	.append( '--host' ).append( serverInfo.host )
 		 	.append( '--stop-port' ).append( serverInfo.stopsocket )
 		 	.append( '--processname' ).append( processName )
-		 	.append( '--log-dir' ).append( serverInfo.logDir )		 	
+		 	.append( '--log-dir' ).append( serverInfo.logDir )
 		 	.append( '--server-name' ).append( serverInfo.name )
 		 	.append( '--tray-icon' ).append( serverInfo.trayIcon )
 		 	.append( '--tray-config' ).append( trayOptionsPath )
@@ -990,7 +990,7 @@ component accessors="true" singleton {
 			// Debug is getting turned on any time I include the --debug flag regardless of whether it's true or false.
 			args.append( '--debug' ).append( serverInfo.debug );
 		}
-		
+
 		if( len( serverInfo.restMappings ) ) {
 			args.append( '--servlet-rest-mappings' ).append( serverInfo.restMappings );
 		} else {
@@ -1017,17 +1017,17 @@ component accessors="true" singleton {
 			 	.append( '--logaccess-dir' ).append( serverInfo.logDir );
 		}
 
-		
+
 		if( serverInfo.rewritesLogEnable ) {
 			args.append( '--urlrewrite-log' ).append( serverInfo.rewritesLogPath );
 		}
-		 
+
 		/* 	.append( '--logrequests-enable' ).append( true )
 		 	.append( '--logrequests-basename' ).append( 'request' )
 		 	.append( '--logrequests-dir' ).append( serverInfo.logDir )
 		 	*/
-		
-		
+
+
 	 	if( len( CFEngineName ) ) {
 	 		 args.append( '--cfengine-name' ).append( CFEngineName );
 	 	}
@@ -1071,17 +1071,17 @@ component accessors="true" singleton {
 			.append( '--http-enable' ).append( serverInfo.HTTPEnable )
 			.append( '--ssl-enable' ).append( serverInfo.SSLEnable )
 			.append( '--ajp-enable' ).append( serverInfo.AJPEnable );
-				
-				
+
+
 		if( serverInfo.HTTPEnable || serverInfo.SSLEnable ) {
 			args
 			 	.append( '--open-browser' ).append( serverInfo.openbrowser )
-			 	.append( '--open-url' ).append( serverInfo.openbrowserURL );	
+			 	.append( '--open-url' ).append( serverInfo.openbrowserURL );
 		} else {
-			args.append( '--open-browser' ).append( false );			
+			args.append( '--open-browser' ).append( false );
 		}
-		 	
-		 	
+
+
 		// Send HTTP port if it's enabled
 		if( serverInfo.HTTPEnable ){
 			args.append( '--port' ).append( serverInfo.port )
@@ -1096,7 +1096,7 @@ component accessors="true" singleton {
 		if( serverInfo.AJPEnable ){
 			args.append( '--ajp-port' ).append( serverInfo.AJPPort );
 		}
-		
+
 		// Send SSL cert info if SSL is enabled and there's cert info
 		if( serverInfo.SSLEnable && serverInfo.SSLCertFile.len() ) {
 			args
@@ -1148,7 +1148,7 @@ component accessors="true" singleton {
 	    var processBuilder = createObject( "java", "java.lang.ProcessBuilder" );
 	    // Pass array of tokens comprised of command plus arguments
 	    args.prepend( serverInfo.javaHome );
-	    
+
 	    // In *nix OS's we need to separate the server process from the CLI process
 	    // so SIGINTs from Ctrl-C won't also kill previously started servers
 	    if( !fileSystemUtil.isWindows() && background ) {
@@ -1166,7 +1166,7 @@ component accessors="true" singleton {
 			var cleanedArgs = cr & '    ' & trim( reReplaceNoCase( args.toList( ' ' ), ' (-|"-)', cr & '    \1', 'all' ) );
 			job.addLog("Server start command: #cleanedargs#");
 	    }
-	    
+
 	    processBuilder.init( args );
 	    // Conjoin standard error and output for convenience.
 	    processBuilder.redirectErrorStream( true );
@@ -1175,17 +1175,17 @@ component accessors="true" singleton {
 
 		// She'll be coming 'round the mountain when she comes...
 		job.addWarnLog( "The server for #serverInfo.webroot# is starting on #serverInfo.openbrowserURL# ..." );
-	    
+
 	    job.complete( serverInfo.debug );
 	    consoleLogger.debug( '.' );
-	    
+
 		// If the user is running a one-off command to start a server or specified the debug flag, stream the output and wait until it's finished starting.
 		var interactiveStart = ( shell.getShellType() == 'command' || serverInfo.debug || !background );
 
 		// A reference to the current thread so the thread we're about to spin up can access it.
 		// This may be available as parent thread or something.
 		var thisThread = createObject( 'java', 'java.lang.Thread' ).currentThread();
-		variables.waitingOnConsoleStart = false; 
+		variables.waitingOnConsoleStart = false;
 		// Spin up a thread to capture the standard out and error from the server
 		thread name="#threadName#" interactiveStart=interactiveStart serverInfo=serverInfo args=args startTimeout=serverInfo.startTimeout parentThread=thisThread {
 			try{
@@ -1203,12 +1203,12 @@ component accessors="true" singleton {
 
 				var line = bufferedReader.readLine();
 				while( !isNull( line ) ){
-						
+
 					// Log messages from the CF engine or app code writing direclty to std/err out strip off "runwar.context" but leave color coded severity
 					// Ex:
 					// [INFO ] runwar.context: 04/11 15:47:10 INFO Starting Flex 1.5 CF Edition
 					line = reReplaceNoCase( line, '^(#chr( 27 )#\[m\[[^]]*])( runwar\.context: )(.*)', '\1 \3' );
-					
+
 					// Log messages from runwar itself, simplify the logging category to just "Runwar:" and leave color coded severity
 					// Ex:
 					// [DEBUG] runwar.config: Enabling Proxy Peer Address handling
@@ -1231,7 +1231,7 @@ component accessors="true" singleton {
 							.line( line )
 							.toConsole();
 					}
-					
+
 					line = bufferedReader.readLine();
 				} // End of inputStream
 
@@ -1327,7 +1327,7 @@ component accessors="true" singleton {
 	function resolveServerDetails(
 		required struct serverProps
 	) {
-		
+
 		var job = wirebox.getInstance( 'interactiveJob' );
 		var locDebug = serverProps.debug ?: false;
 
@@ -1429,7 +1429,7 @@ component accessors="true" singleton {
 			// Get server descriptor again
 		    if( locDebug ) { consoleLogger.debug("Switching to the last-used server JSON file for this server: #serverInfo.serverConfigFile#"); }
 			var serverJSON_rawSystemSettings = readServerJSON( serverInfo.serverConfigFile );
-			var serverJSON = systemSettings.expandDeepSystemSettings( duplicate( serverJSON_rawSystemSettings ) );			
+			var serverJSON = systemSettings.expandDeepSystemSettings( duplicate( serverJSON_rawSystemSettings ) );
 			defaultServerConfigFile = serverInfo.serverConfigFile;
 
 			// Now that we changed server JSONs, we need to recalculate the webroot.
@@ -1452,7 +1452,7 @@ component accessors="true" singleton {
 
 		// By now we've figured out the name, webroot, and serverConfigFile for this server.
 		// Also return the serverInfo of the last values the server was started with (if ever)
-		// and the serverJSON setting for the server, if they exist.		
+		// and the serverJSON setting for the server, if they exist.
 		return {
 			defaultName : defaultName,
 			defaultwebroot : defaultwebroot,
@@ -1560,7 +1560,7 @@ component accessors="true" singleton {
 			// Same as above-- the IP address/host isn't bound to any local adapters.  Probably a host file entry went missing.
 			throw( "The IP address that [#arguments.host#] resovles to can't be bound.  If you ping it, does it point to a local network adapter?", 'serverException', e.message & ' ' & e.detail );
 		}
-			
+
 		return portNumber;
 	}
 
@@ -1603,7 +1603,7 @@ component accessors="true" singleton {
 			portToCheck = serverInfo.SSLPort;
 		} else if( serverInfo.AJPEnable ) {
 			portToCheck = serverInfo.AJPPort;
-		} 
+		}
 		return !isPortAvailable( serverInfo.host, portToCheck );
 	}
 
@@ -1800,7 +1800,7 @@ component accessors="true" singleton {
 	* @webroot.hint root directory for served content
  	**/
 	struct function getServerInfo( required webroot , required name){
-		var servers 	= getServers();	
+		var servers 	= getServers();
 		var normalizedWebroot = normalizeWebroot( arguments.webroot );
 		var webrootHash = hash( normalizedWebroot & ucase( arguments.name ) );
 		var statusInfo 	= {};
@@ -1893,7 +1893,7 @@ component accessors="true" singleton {
 			'aliases'			: {},
 			'errorPages'		: {},
 			'accessLogEnable'	: false,
-			'GZIPEnable'		: true,			
+			'GZIPEnable'		: true,
 			'rewritesLogEnable'	: false,
 			'trayOptions'		: {},
 			'trayEnable'		: true,
