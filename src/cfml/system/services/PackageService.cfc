@@ -921,12 +921,7 @@ component accessors="true" singleton {
 	* @directory The directory to write the box.json
 	*/
 	function writePackageDescriptor( required any JSONData, required directory ){
-
-		if( !isSimpleValue( JSONData ) ) {
-			JSONData = serializeJSON( JSONData );
-		}
-
-		fileWrite( getDescriptorPath( arguments.directory ), formatterUtil.formatJSON( JSONData ) );
+		JSONService.writeJSONFile( getDescriptorPath( arguments.directory ), JSONData );
 	}
 
 	/**

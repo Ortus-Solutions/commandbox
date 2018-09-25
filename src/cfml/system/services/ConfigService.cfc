@@ -153,7 +153,7 @@ component accessors="true" singleton {
 	* Persists config settings to disk
 	*/
 	function saveConfig(){
-		fileWrite( getConfigFilePath(), formatterUtil.formatJSON( serializeJSON( getConfigSettings() ) ) );
+		JSONService.writeJSONFile( getConfigFilePath(), getConfigSettings() );
 
 		// Update ModuleService
 		ModuleService.overrideAllConfigSettings();
