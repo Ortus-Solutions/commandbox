@@ -62,7 +62,7 @@ component {
 			// Set this as a localized environment variable so the command can access it.
 			systemSettings.setSystemSetting( itemName, line );			
 			
-			theCommand.run();		
+			theCommand.run();
 			
 		}
 	}
