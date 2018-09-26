@@ -35,6 +35,17 @@
 * {code:bash}
 * testbox run /tests/runner.cfm
 * {code}
+* .
+* You can set arbitrary URL options in our box.json like so
+* {code:bash}
+* package set testbox.options.opt1=value1
+* package set testbox.options.opt2=value2
+* {code}
+* .
+* You can set arbitrary URL options when you run the command like so
+* {code:bash}
+* testbox run options:opt1=value1 options:opt2=value2
+* {code}
 *
  **/
 component {
@@ -53,7 +64,7 @@ component {
 	* @recurse     Recurse the directory mapping or not, by default it does
 	* @reporter    The type of reporter to use for the results, by default is uses our 'simple' report. You can pass in a core reporter string type or a class path to the reporter to use.
 	* @labels      The list of labels that a suite or spec must have in order to execute.
-	* @options     A JSON struct literal of configuration options that are optionally used to configure a runner.
+	* @options     Add adhoc URL options to the runner as options:name=value options:name2=value2
 	* @testBundles A list or array of bundle names that are the ones that will be executed ONLY!
 	* @testSuites  A list of suite names that are the ones that will be executed ONLY!
 	* @testSpecs   A list of test names that are the ones that will be executed ONLY!
@@ -67,7 +78,7 @@ component {
 		boolean recurse,
 		string reporter,
 		string labels,
-		string options,
+		struct options={},
 		string testBundles,
 		string testSuites,
 		string testSpecs,
@@ -133,20 +144,29 @@ component {
 		for( var thisOption in RUNNER_OPTIONS ){
 			// Check argument overrides
 			if( !isNull( arguments[ thisOption ] ) ){
-				testboxURL &= "&#thisOption#=#arguments[ thisOption ]#";
+				testboxURL &= "&#encodeForURL( thisOption )#=#encodeForURL( arguments[ thisOption ] )#";
 			}
 			// Check runtime options now
 			else if( boxOptions.keyExists( thisOption ) && len( boxOptions[ thisOption ] ) ){
 				if( isSimpleValue( boxOptions[ thisOption ] ) ) {
-					testboxURL &= "&#thisOption#=#boxOptions[ thisOption ]#";	
+					testboxURL &= "&#encodeForURL( thisOption )#=#encodeForURL( boxOptions[ thisOption ] )#";	
 				} else {
 					print.yellowLine( 'Ignoring [testbox.#thisOption#] in your box.json since it''s not a string.  We can''t append it to a URL like that.' );
 				}
 			}
 			// Defaults
 			else if( len( RUNNER_OPTIONS[ thisOption ] ) ) {
-				testboxURL &= "&#thisOption#=#RUNNER_OPTIONS[ thisOption ]#";
+				testboxURL &= "&#encodeForURL( thisOption )#=#encodeForURL( RUNNER_OPTIONS[ thisOption ] )#";
 			}
+		}
+		
+		// Get global URL options from box.json
+		var extraOptions = boxOptions.options ?: {};
+		// Add in command-specific options
+		extraOptions.append( arguments.options );
+		// Append to URL.
+		for( var opt in extraOptions ) {
+			testboxURL &= "&#encodeForURL( opt )#=#encodeForURL( extraOptions[ opt ] )#";
 		}
 
 		// Advise we are running
