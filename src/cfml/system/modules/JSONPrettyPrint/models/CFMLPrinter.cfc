@@ -70,6 +70,14 @@ component {
             }
             return '[' & settings.lineEnding & strs.toList( ',' & settings.lineEnding ) & settings.lineEnding & baseIndent & ']';
         }
+        // This could be a query, a Java object like a HashMap, or an XML Doc. 
+        // Before giving up, we'll give the CF engine a chance to turn it into something useful.
+        if( !isSimpleValue( json ) ) {
+        	// Attempt to convert to native JSON data types...
+        	arguments.json = deserializeJSON( serializeJSON( json ) );
+        	// ... and start over.
+        	return formatJson( argumentCollection=arguments );
+        }
         /*
             Simple types don't require any special formatting so we can let
             serializeJSON convert them to JSON for us.
