@@ -250,9 +250,6 @@ component singleton {
 	public function formatJson( json, indent, lineEnding, spaceAfterColon, sortKeys ) {
 		// This is an external lib now.  Leaving here for backwards compat.
 		structAppend( arguments, configService.getSetting( 'json', { } ), false );
-		if ( isNull( arguments.sortKeys ) ) {
-			arguments.sortKeys = 'textnocase';
-		}
 		return JSONPrettyPrint.formatJSON( argumentCollection = arguments );
 	}
 }
