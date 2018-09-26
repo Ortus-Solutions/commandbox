@@ -220,7 +220,7 @@ component accessors="true" singleton {
 		var oldJSON = '';
 
 		if ( fileExists( path ) ) {
-			oldJSON = locking ? fileSytemUtil.lockingFileRead( path ) : fileRead( path );
+			oldJSON = locking ? fileSystemUtil.lockingFileRead( path ) : fileRead( path );
 			// if sortKeys is not explicitly set try to determine current file state
 			if ( !sortKeysIsSet && !isSortedJSON( oldJSON, sortKeys ) ) {
 				sortKeys = '';
@@ -237,7 +237,7 @@ component accessors="true" singleton {
 		directoryCreate( getDirectoryFromPath( path ), true, true );
 
 		if ( locking ) {
-			fileSytemUtil.lockingFileWrite( path, newJSON );
+			fileSystemUtil.lockingFileWrite( path, newJSON );
 		} else {
 			fileWrite( path, newJSON );
 		}
