@@ -1926,7 +1926,7 @@ component accessors="true" singleton {
 	* Save a server.json file.
 	*/
 	function saveServerJSON( required string configFilePath, required struct data ) {
-		JSONService.writeJSONFile( path = configFilePath, json = data, writeOnChangeOnly = true );
+		JSONService.writeJSONFile( configFilePath, data );
 	}
 
 	/**
