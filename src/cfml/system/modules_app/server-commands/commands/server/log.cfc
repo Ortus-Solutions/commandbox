@@ -73,6 +73,9 @@ component {
 			if( access ) {
 				print.yellowLine( 'Enable accesss logging with [server set web.accessLogEnable=true]' );
 			}
+			if( rewrites ) {
+				print.yellowLine( 'Enable Rewrite logging with [server set web.rewrites.logEnable=true] and ensure you are started in debug mode.' );
+			}
 		}
 	}
 	
