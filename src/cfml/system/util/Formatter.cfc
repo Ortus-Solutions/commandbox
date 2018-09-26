@@ -249,12 +249,10 @@ component singleton {
 	 **/
 	public function formatJson( json, indent, lineEnding, spaceAfterColon, sortKeys ) {
 		// This is an external lib now.  Leaving here for backwards compat.
-		if ( isNull( arguments.spaceAfterColon ) ) {
-			arguments.spaceAfterColon = configService.getSetting( 'JSONPrettyPrint.spaceAfterColon', false );
-		}
+		structAppend( arguments, configService.getSetting( 'json', { } ), false );
 		if ( isNull( arguments.sortKeys ) ) {
-			arguments.sortKeys = configService.getSetting( 'JSONPrettyPrint.sortKeys', 'textnocase' );
+			arguments.sortKeys = 'textnocase';
 		}
-		return JSONPrettyPrint.formatJSON( argumentCollection=arguments );
+		return JSONPrettyPrint.formatJSON( argumentCollection = arguments );
 	}
 }

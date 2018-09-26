@@ -207,15 +207,21 @@ component accessors="true" singleton {
 		return props;
 	}
 
-	function writeJSONFile( path, json, locking = false, writeOnChangeOnly = false ) {
-		var sortKeysIsSet = configService.settingExists( 'JSONPrettyPrint.sortKeys' );
-		var sortKeys = configService.getSetting( 'JSONPrettyPrint.sortKeys', 'textnocase' );
+	/**
+	* I write JSON objects to disk after pretty printing them.
+	* (I also work for CFML objects that can be serialized to JSON.)
+	* @path.hint The file path to write to
+	* @json.hint A string containing JSON, or a complex value that can be serialized to JSON
+	* @locking.hint Set to true to have file system access wrapped in a lock
+	*/
+	function writeJSONFile( required string path, required any json, boolean locking = false ) {
+		var sortKeysIsSet = configService.settingExists( 'json.sortKeys' );
+		var sortKeys = configService.getSetting( 'json.sortKeys', 'textnocase' );
 		var oldJSON = '';
 
-		// if sortKeys is not explicitly set or writeOnChangeOnly is set
-		// try to determine current file state
-		if ( ( !sortKeysIsSet || writeOnChangeOnly ) && fileExists( path ) ) {
-			oldJSON = locking ? fileSystemUtil.lockingFileRead( path ) : fileRead( path );
+		if ( fileExists( path ) ) {
+			oldJSON = locking ? fileSytemUtil.lockingFileRead( path ) : fileRead( path );
+			// if sortKeys is not explicitly set try to determine current file state
 			if ( !sortKeysIsSet && !isSortedJSON( oldJSON, sortKeys ) ) {
 				sortKeys = '';
 			}
@@ -223,7 +229,7 @@ component accessors="true" singleton {
 
 		var newJSON = formatterUtil.formatJson( json = json, sortKeys = sortKeys );
 
-		if ( writeOnChangeOnly && oldJSON == newJSON ) {
+		if ( oldJSON == newJSON ) {
 			return;
 		}
 
@@ -231,13 +237,19 @@ component accessors="true" singleton {
 		directoryCreate( getDirectoryFromPath( path ), true, true );
 
 		if ( locking ) {
-			fileSystemUtil.lockingFileWrite( path, newJSON );
+			fileSytemUtil.lockingFileWrite( path, newJSON );
 		} else {
 			fileWrite( path, newJSON );
 		}
 	}
 
-	function isSortedJSON( json, sortKeys ) {
+	/**
+	* I check to see if a JSON object has sorted keys.
+	* (I also work for CFML objects that can be serialized to JSON.)
+	* @json.hint A string containing JSON, or a complex value that can be serialized to JSON
+	* @sortKeys.hint The type of key sorting to check for - i.e. "text" or "textnocase"
+	*/
+	function isSortedJSON( required any json, required string sortKeys ) {
 		if ( isSimpleValue( json ) ) {
 			json = deserializeJSON( json );
 		}
