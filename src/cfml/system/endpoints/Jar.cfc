@@ -16,7 +16,7 @@ component accessors=true implements="IEndpoint" singleton {
 	property name="progressableDownloader" 	inject="ProgressableDownloader";
 	property name="progressBar" 			inject="ProgressBar";
 	property name="CR" 						inject="CR@constants";
-	property name='formatterUtil'			inject='formatter';
+	property name='JSONService'				inject='JSONService';
 	property name='wirebox'					inject='wirebox';
 	property name='S3Service'				inject='S3Service';
 
@@ -63,7 +63,7 @@ component accessors=true implements="IEndpoint" singleton {
 			'location' : 'jar:#package#',
 			'type' : 'jars'
 		};
-		fileWrite( fullBoxJSONPath, formatterUtil.formatJSON( boxJSON ) );
+		JSONService.writeJSONFile( fullBoxJSONPath, boxJSON );
 
 		// Here is where our alleged so-called "package" lives.
 		return folderName;

@@ -830,7 +830,7 @@ component accessors="true" singleton {
 			if( isArray( result ) ){
 				return variables.reader.getTerminal().writer().printColumns( result );
 			}
-			result = variables.formatterUtil.formatJson( serializeJSON( result ) );
+			result = variables.formatterUtil.formatJson( result );
 			printString( result );
 		} else if( !isNull( result ) && len( result ) ) {
 			// If there is an active job, print our output through it

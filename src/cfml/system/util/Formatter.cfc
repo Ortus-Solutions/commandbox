@@ -11,6 +11,7 @@
 component singleton {
 
 	// DI
+    property name="configService" inject="ConfigService";
 	property name="shell" inject="shell";
 	property name="print" inject="print";
 	property name="JSONPrettyPrint" inject="provider:JSONPrettyPrint";
@@ -127,7 +128,7 @@ component singleton {
     	}
     	return text;
 	}
-	
+
 
 	/**
 	 * Converts markdown into ANSI text
@@ -139,12 +140,12 @@ component singleton {
 		var codeBlockContents = '';
 		var formattedText = [];
 		var previousLineNeedsPadding = false;
-		
+
     	if( len( trim( text ) ) == 0 ) {
     		return "";
     	}
-    	
-		// Turn all line endings into LF or it will be impossible to 
+
+		// Turn all line endings into LF or it will be impossible to
 		// parse the lines and keep empty rows.
 		text = replace( text, CRLF, LF, 'all' );
 		text = replace( text, CR, LF, 'all' );
@@ -152,20 +153,20 @@ component singleton {
 		text
 			.listToArray( LF, true )
 			.each( function( line ) {
-				
-				
+
+
 				// Detect the start of code blocks
 				if( line.trim().startsWith( '```' ) && !inCodeBlock ) {
 					inCodeBlock=true;
 					return;
 				}
-				
+
 				// If we're already in a code block
 				if( inCodeBlock ) {
 					// Is this the end of the code block?
 					if( line.trim().startsWith( '```' ) ) {
 						inCodeBlock = false;
-						
+
 						// Turn code block into array,
 						var codeArray = codeBlockContents
 							.listToArray( LF, true )
@@ -175,18 +176,18 @@ component singleton {
 							} )
 							// pad before and after
 							.prepend( '' )
-						
+
 						// Find the longest line of code
 						var longestLine = codeArray.reduce( function( prev, codeLine) {
 							return max( prev, codeLine.len() );
 						}, 0 ) + 2;
-						
+
 						// pad each row so the lengths are all the same
 						codeArray = codeArray.map( function( codeLine ) {
 							return '  ' & print.indentedBlackOnWhite( codeLine & repeatString( ' ', longestLine-codeLine.len() ) );
 						} );
-						
-						// Turn array back into string with 
+
+						// Turn array back into string with
 						line = LF & codeArray.toList( LF ) & print.text( '', additionalFormatting, true );
 						codeBlockContents = '';
 						previousLineNeedsPadding = true;
@@ -195,59 +196,60 @@ component singleton {
 					return;
 					}
 				} else {
-					
+
 					// Add extra line after heading and code blocks if it's not already there
 					if( previousLineNeedsPadding && !line.trim() == '' ) {
 						formattedText.append( '' );
 					}
-					
+
 					// Let the next interation know we just had a section heading
 					if( reFindNoCase( '^##{1,4}\s*(.*)$', line ) ) {
 						previousLineNeedsPadding = true;
 					} else {
 						previousLineNeedsPadding = false;
 					}
-					
+
 					// Convert section headings
 					line = reReplaceNoCase( line, '^##{1,4}\s*(.*)$', print.bold( LF & '\1' ) & print.text( '', additionalFormatting, true ) );
-					
+
 					// Convert inline blocks
 					line = reReplaceNoCase( line, '`([^`]*)`', print.bold( '\1' ) & print.text( '', additionalFormatting, true ), 'all' );
-					
+
 					// Convert bold blocks
 					line = reReplaceNoCase( line, '\*\*([^`]*)\*\*', print.bold( '\1' ) & print.text( '', additionalFormatting, true ), 'all' );
-					
+
 					// Convert italics blocks
 					line = reReplaceNoCase( line, '`([^`]*)`', print.bold( '\1' ) & print.text( '', additionalFormatting, true ), 'all' );
-					
+
 					// Indent lists
 					if( line.startsWith( '* ' ) || line.startsWith( '- ' ) ) {
-						line = '  ' & line;	
+						line = '  ' & line;
 					}
-					
+
 					// Horizontal Rule
 					if( line.trim().reFind( '^([-]{3,}|[_]{3,}|[*]{3,})$' ) ) {
 						// Repeat across 75% of the terminal width
 						line = repeatString( '_', int( shell.getTermWidth() * .75 ) );
-						previousLineNeedsPadding = true; 
+						previousLineNeedsPadding = true;
 					}
-					
+
 				}
-				
+
 				formattedText.append( line );
 			} );
-			
-			
+
+
 		return formattedText.toList( LF );
 
 	}
-	
+
 	/**
 	 * Pretty JSON
 	 * @json A string containing JSON, or a complex value that can be serialized to JSON
- 	 **/
-	public function formatJson( json, indent, lineEnding ) {
+	 **/
+	public function formatJson( json, indent, lineEnding, spaceAfterColon, sortKeys ) {
 		// This is an external lib now.  Leaving here for backwards compat.
-		return JSONPrettyPrint.formatJSON( argumentCollection=arguments );
+		structAppend( arguments, configService.getSetting( 'json', { } ), false );
+		return JSONPrettyPrint.formatJSON( argumentCollection = arguments );
 	}
 }
