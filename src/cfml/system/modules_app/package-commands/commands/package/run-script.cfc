@@ -18,7 +18,7 @@ component aliases="run-script" {
 	function run( required string scriptname, string directory='' ){
 
 		// This will make each directory canonical and absolute
-		arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
+		arguments.directory = resolvePath( arguments.directory );
 
 		// package check
 		if( !packageService.isPackage( arguments.directory ) ) {

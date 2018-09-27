@@ -32,7 +32,7 @@ component {
 		string target='run'
 		) {
 
-		arguments.taskFile = fileSystemUtil.resolvePath( arguments.taskFile );
+		arguments.taskFile = resolvePath( arguments.taskFile );
 		var taskArgs = {};
 
 		// Named task args will come through in a struct called args

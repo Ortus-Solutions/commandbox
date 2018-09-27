@@ -86,7 +86,7 @@ component {
 
 	// Dynamic completion for property name based on contents of box.json
 	function completeProperty() {
-		var directory = fileSystemUtil.resolvePath( '' );
+		var directory = resolvePath( '' );
 		// all=true will cause "package set" to prompt all possible box.json properties
 		return packageService.completeProperty( directory, true, true );
 	}

@@ -28,7 +28,7 @@ component aliases="copy" {
 	function run( required Globber path, required newPath, boolean recurse=false, string filter="*" )  {
 
 		// Make path canonical and absolute
-		var thisNewPath = fileSystemUtil.resolvePath( arguments.newPath );
+		var thisNewPath = resolvePath( arguments.newPath );
 
 		if( path.count() > 1 && !directoryExists( thisNewPath ) ) {
 			error( '[#thisNewPath#] is not a directory.' );

@@ -28,7 +28,7 @@
 		if( inputAsArray.len() > 1 ) {
 			var rawText = true;
 		}
-		var filePath = fileSystemUtil.resolvePath( arguments.path );
+		var filePath = resolvePath( arguments.path );
 
 		if( !fileExists( filePath ) ){
 			var rawText = true;

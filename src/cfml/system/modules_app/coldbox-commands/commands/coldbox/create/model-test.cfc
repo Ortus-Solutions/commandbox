@@ -32,7 +32,7 @@ component {
 		boolean open=false
 	) {
 		// This will make each directory canonical and absolute
-		arguments.testsDirectory = fileSystemUtil.resolvePath( arguments.testsDirectory );
+		arguments.testsDirectory = resolvePath( arguments.testsDirectory );
 
 		// Validate directory
 		if( !directoryExists( arguments.testsDirectory ) ) {

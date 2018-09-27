@@ -153,6 +153,19 @@ component accessors="true" singleton {
 	}
 
 	/**
+	* This resolves an absolute or relative path using the rules of the operating system and CLI.
+	* It doesn't follow CF mappings and will also always return a trailing slash if pointing to 
+	* an existing directory.
+	* 
+	* Resolve the incoming path from the file system
+	* @path.hint The directory to resolve
+	* @basePath.hint An expanded base path to resolve the path against. Defaults to CWD.
+	*/
+	function resolvePath( required string path, basePath=shell.pwd() ) {
+		return filesystemUtil.resolvepath( path, basePath );
+	}
+
+	/**
 	 * Return a new globber
  	 **/
 	function globber( pattern='' ) {
@@ -168,8 +181,22 @@ component accessors="true" singleton {
  	 **/
 	function propertyFile( propertyFilePath='' ) {
 		var propertyFile = wirebox.getInstance( 'propertyFile@propertyFile' );
+		
+		// If the user passed a propertyFile path
 		if( propertyFilePath.len() ) {
-			propertyFile.load( propertyFilePath );
+			
+			// Make relative paths resolve to the current folder that the task lives in.
+			propertyFilePath = resolvePath( propertyFilePath );
+			
+			// If it exists, go ahead and load it now
+			if( fileExists( propertyFilePath ) ){
+				propertyFile.load( propertyFilePath );
+			} else {
+				// Otherwise, just set it so it can be used later on save.
+				propertyFile
+					.setPath( propertyFilePath );
+			}
+			
 		}
 		return propertyFile;
 	}

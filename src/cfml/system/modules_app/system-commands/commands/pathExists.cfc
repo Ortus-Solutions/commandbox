@@ -26,7 +26,7 @@ component {
 			error( 'Path not provided!' );
 		}
 		
-		thepath = fileSystemUtil.resolvepath( thepath );
+		thepath = resolvePath( thepath );
 		
 		// Must be a file
 		if( file ) {

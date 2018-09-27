@@ -89,7 +89,7 @@ component {
 		}
 
 		// This will make the directory canonical and absolute
-		arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
+		arguments.directory = resolvePath( arguments.directory );
 
 		// Validate directory, if it doesn't exist, create it.
 		if( !directoryExists( arguments.directory ) ) {

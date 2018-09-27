@@ -48,7 +48,7 @@ component aliases='link' {
 			arguments.moduleDrectory = expandPath( '/commandbox/modules' );
 			commandBoxCoreLinked = true;
 		} else {
-			arguments.moduleDrectory = fileSystemUtil.resolvePath( arguments.moduleDrectory );
+			arguments.moduleDrectory = resolvePath( arguments.moduleDrectory );
 		}
 		
 		// package check

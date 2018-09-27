@@ -33,7 +33,7 @@ component aliases="exec"{
 		clearTemplateCache();
 
 		// Make file canonical and absolute
-		arguments.file = fileSystemUtil.resolvePath( arguments.file );
+		arguments.file = resolvePath( arguments.file );
 
 		if( !fileExists( arguments.file ) ){
 			return error( "File: #arguments.file# does not exist!" );

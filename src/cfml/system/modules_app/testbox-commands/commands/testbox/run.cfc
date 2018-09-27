@@ -188,7 +188,7 @@ component {
 		// Do we have an output file
 		if( !isNull( arguments.outputFile ) ){
 			// This will make each directory canonical and absolute
-			arguments.outputFile = fileSystemUtil.resolvePath( arguments.outputFile );
+			arguments.outputFile = resolvePath( arguments.outputFile );
 			
 			
 			var thisDir = getDirectoryFromPath( arguments.outputFile );
