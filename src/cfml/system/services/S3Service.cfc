@@ -19,13 +19,14 @@ component accessors="true" singleton {
 	* Local URL to query for IAM role
 	*/
 	property name="iamRolePath" type="string";
+	property name="bucketRegionCache" type="struct";
 
 	/**
 	* Constructor
 	*/
-	function init(
-	){
+	function init() {
 		setIamRolePath('169.254.169.254/latest/meta-data/iam/security-credentials/');
+		setBucketRegionCache({});
 		return this;
 	}
 
@@ -130,16 +131,20 @@ component accessors="true" singleton {
 			job.addLog('Resolving bucket region');
 		}
 
-		var args = {
-			urlPath: 'https://s3.#defaultRegion#.amazonaws.com',
-			method: 'HEAD',
-			redirect: false,
-			headers: {
-				'Host': '#bucket#.s3.amazonaws.com'
-			}
-		};
-		var req = makeHTTPRequest(argumentCollection = args);
-		return req.responseheader['x-amz-bucket-region'];
+		if (!bucketRegionCache.keyExists(bucket)) {
+			var args = {
+				urlPath: 'https://s3.#defaultRegion#.amazonaws.com',
+				method: 'HEAD',
+				redirect: false,
+				headers: {
+					'Host': '#bucket#.s3.amazonaws.com'
+				}
+			};
+			var req = makeHTTPRequest(argumentCollection = args);
+			bucketRegionCache[bucket] = req.responseheader['x-amz-bucket-region'];
+		}
+
+		return bucketRegionCache[bucket];
 	}
 
 	private function resolveAwsSettings(bucket, verbose=false) {
