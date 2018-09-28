@@ -38,7 +38,7 @@ component {
             if ( structIsEmpty( json ) ) {
                 return '{}';
             }
-            var keys = json.keyArray();
+            var keys = structKeyArray( json );
             if ( len( settings.sortKeys ) ) {
                 keys.sort( settings.sortKeys );
             }
