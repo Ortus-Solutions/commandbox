@@ -380,12 +380,13 @@ component accessors="true" singleton {
 	
 	/*
 	* Turns all slashes in a path to forward slashes except for \\ in a Windows UNC network share
+	* Also changes double slashes to a single slash
 	*/
 	function normalizeSlashes( string path ) {
 		if( path.left( 2 ) == '\\' ) {
 			return '\\' & path.replace( '\', '/', 'all' ).right( -2 );
 		} else {
-			return path.replace( '\', '/', 'all' );			
+			return path.replace( '\', '/', 'all' ).replace( '//', '/', 'all' );			
 		}
 	}
 	
