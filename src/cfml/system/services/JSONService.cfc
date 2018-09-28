@@ -254,12 +254,22 @@ component accessors="true" singleton {
 			json = deserializeJSON( json );
 		}
 
-		// simple check - are top level keys sorted, default to true if we can't tell
-		if ( isStruct( json ) ) {
-			return json.keyList() == json.keyArray().sort( sortKeys ).toList();
+		var isSorted = function( obj ) {
+			if ( isStruct( obj ) ) {
+				if ( obj.keyList() != obj.keyArray().sort( sortKeys ).toList() ) {
+					return false;
+				}
+				return obj.every( ( k, v ) => isSorted( v ) );
+			}
+
+			if ( isArray( obj ) ) {
+				return obj.every( isSorted );
+			}
+
+			return true;
 		}
 
-		return true;
+		return isSorted( json );
 	}
 
 }
