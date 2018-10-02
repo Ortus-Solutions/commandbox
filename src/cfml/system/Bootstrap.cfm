@@ -83,7 +83,7 @@ This file will stay running the entire time the shell is open
 	bufferedReader = createObject( 'java', 'java.io.BufferedReader' ).init( inputStreamReader );
 
 	// Verify if we can run CommandBox Java v. 1.7+
-	if( !findNoCase( "1.8", server.java.version ) ){
+	if( !findNoCase( "1.8", server.java.version ) && 0 ){
 		// JLine isn't loaded yet, so I have to use systemOutput() here.
 		systemOutput( "The Java Version you have (#server.java.version#) is not supported by CommandBox. Please install a Java JRE/JDK 1.8." );
 		sleep( 5000 );
