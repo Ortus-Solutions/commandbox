@@ -23,9 +23,10 @@ component accessors=true {
 
 
 	// DI
-	property name='parser' inject='parser';
-	property name='shell' inject='shell';
-	property name='wirebox' inject='wirebox';
+	property name='parser'	inject='parser';
+	property name='shell'	inject='shell';
+	property name='wirebox'	inject='wirebox';
+	property name="job"		inject='interactiveJob';
 
 	/**
 	 * Create a new, executable task
@@ -143,7 +144,7 @@ component accessors=true {
 	/**
 	 * Run this command
   	 **/
-string function run( returnOutput=false, boolean echo=false, boolean rawParams=false ) {
+	string function run( returnOutput=false, boolean echo=false, boolean rawParams=false ) {
 
 		setRawParams( rawParams );
 
@@ -157,7 +158,7 @@ string function run( returnOutput=false, boolean echo=false, boolean rawParams=f
 		}
 		
 		try {
-			var result = shell.callCommand( getTokens(), true );
+			var result = shell.callCommand( getTokens(), true );			
 		} finally {
 	
 			var postCommandCWD = shell.getPWD();

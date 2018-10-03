@@ -18,6 +18,7 @@ component singleton accessors=true {
 	property name='CommandService'	inject='CommandService';
 	property name='consoleLogger'	inject='logbox:logger:console';
 	property name='metadataCache'	inject='cachebox:metadataCache';
+	property name='job'				inject='interactiveJob';
 
 	function onDIComplete() {
 		// Check if base task class mapped?
@@ -52,7 +53,7 @@ component singleton accessors=true {
 		}
 
 		// Create an instance of the taskCFC.  To prevent caching of the actual code in the task, we're treating them as
-		// transients. Since is since the code is likely to change while devs are building and testing them.
+		// transients. Since the code is likely to change while devs are building and testing them.
 		var taskCFC = createTaskCFC( taskFile );
 
 		// If target doesn't exist or isn't a UDF
@@ -60,10 +61,57 @@ component singleton accessors=true {
 			throw( message="Target [#target#] doesn't exist in Task CFC.", detail=arguments.taskFile, type="commandException");
 		}
 
-		CommandService.ensureRequiredparams( taskArgs, getMetadata( taskCFC[ target ] ).parameters );
-
-		// Run the task
-		taskCFC[ target ]( argumentCollection = taskArgs );
+		var targetMD = getMetadata( taskCFC[ target ] );
+		CommandService.ensureRequiredparams( taskArgs, targetMD.parameters );
+		
+		// Check for, and run target dependencies
+		var taskDeps = targetMD.depends ?: '';
+		taskDeps.listToArray()
+			.each( function( dep ) {
+				taskCFC.getPrinter().print( runTask( taskFile, dep, taskArgs ) );
+			} );
+		
+		try {
+			
+			// Run the task
+			taskCFC[ target ]( argumentCollection = taskArgs );
+		 } catch( any e ) {
+		 	
+			// If this task didn't already set a failing exit code...
+			if( taskCFC.getExitCode() == 0 ) {
+				// Go ahead and set one for it.  The shell will inherit it below in the finally block.
+				if( val( e.errorCode ?: 0 ) > 0 ) {
+					taskCFC.setExitCode( e.errorCode );
+				} else {
+					taskCFC.setExitCode( 1 );
+				}
+			}
+			
+			// Dump out anything the task had printed so far
+			var result = taskCFC.getResult();
+			if( len( result ) ){
+				shell.printString( result & cr );
+			}
+			
+			rethrow;
+			
+		 } finally {
+			// Set task exit code into the shell
+			shell.setExitCode( taskCFC.getExitCode() );		 	
+		 }
+	 
+		// If the previous Task failed
+		if( taskCFC.getExitCode() != 0 ) {
+			
+			if( job.isActive() ) {
+				job.errorRemaining( message );
+				// Distance ourselves from whatever other output the Task may have given so far.
+				shell.printString( chr( 10 ) );
+			}
+			
+			throw( message='Task returned failing exit code (#taskCFC.getExitCode()#)', detail='Failing Task: #taskFile# #target#', type="commandException", errorCode=taskCFC.getExitCode() );
+		}
+		
 
 		// Return any output.  It's up to the caller to output it.
 		// This is so task output can be correctly captured and piped or redirected to a file.

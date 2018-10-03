@@ -27,13 +27,13 @@ component {
 		testsDirectory='tests/specs/integration'
 	) {
 		// This will make each directory canonical and absolute
-		arguments.handlersDirectory	= fileSystemUtil.resolvePath( arguments.handlersDirectory );
-		arguments.viewsDirectory 	= fileSystemUtil.resolvePath( arguments.viewsDirectory );
-		arguments.testsDirectory 	= fileSystemUtil.resolvePath( arguments.testsDirectory );
+		arguments.handlersDirectory	= resolvePath( arguments.handlersDirectory );
+		arguments.viewsDirectory 	= resolvePath( arguments.viewsDirectory );
+		arguments.testsDirectory 	= resolvePath( arguments.testsDirectory );
 
 		// entity defaults
 		var entityName = listLast( arguments.entity, "." );
-		var entityCFC 	= fileSystemUtil.makePathRelative( fileSystemUtil.resolvePath( replace( arguments.entity, ".", "/", "all" ) ) );
+		var entityCFC 	= fileSystemUtil.makePathRelative( resolvePath( replace( arguments.entity, ".", "/", "all" ) ) );
 		var entityPath 	= entityCFC & ".cfc";
 
 		// verify it

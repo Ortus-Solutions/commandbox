@@ -13,6 +13,12 @@
  * list --verbose
  * {code}
  * .
+ * Limit how many levels deep the list shows.  See all top level packages like so:
+ * .
+ * {code:bash}
+ * list depth=1
+ * {code}
+ * .
  * Get output in JSON format with the --JSON flag.  JSON output always includes verbose details
  * .
  * {code:bash}
@@ -52,7 +58,7 @@ component aliases="list" {
 
 		// JSON output
 		if( arguments.JSON ) {
-			print.line( formatterUtil.formatJson( serializeJSON( tree ) ) );
+			print.line( formatterUtil.formatJson( tree ) );
 			return;
 		}
 		// normal output

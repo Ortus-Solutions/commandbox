@@ -17,8 +17,9 @@ component aliases="ls,ll,directory" {
 	/**
 	 * @directory.hint The directory to list the contents of or a file Globbing path to filter on
 	 * @recurse.hint Include nested files and folders
+	 * @simple.hint Output only path names and nothing else.
 	 **/
-	function run( Globber directory=globber( getCWD() ), Boolean recurse=false )  {
+	function run( Globber directory=globber( getCWD() ), Boolean recurse=false, boolean simple=false )  {
 
 		// If the user gives us an existing directory foo, change it to the
 		// glob pattern foo/* or foo/** if doing a recursive listing.
@@ -32,6 +33,18 @@ component aliases="ls,ll,directory" {
 			.matches();
 
 		for( var x=1; x lte results.recordcount; x++ ) {
+			
+			if( simple ) {
+				
+				print.line( 
+					cleanRecursiveDir( arguments.directory.getBaseDir(), results.directory[ x ] )
+					& results.name[ x ]
+					& ( results.type[ x ] == "Dir" ? "/" : "" )
+				);
+				
+				continue;
+			}
+			
 			var printCommand = ( results.type[ x ] eq "File" ? "green" : "white" );
 
 			print.text(

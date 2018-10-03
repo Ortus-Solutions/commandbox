@@ -39,7 +39,7 @@ component {
 		var executor 		= wirebox.getInstance( "executor" );
 		var newHistory 		= arguments.script ? variables.REPLScriptHistoryFile : variables.REPLTagHistoryFile;
 
-  	   arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
+  	   arguments.directory = resolvePath( arguments.directory );
 
 		// Setup REPL history file
 		shell.setHistory( newHistory );

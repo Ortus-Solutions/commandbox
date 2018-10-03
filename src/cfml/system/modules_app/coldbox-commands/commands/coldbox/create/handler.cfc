@@ -37,9 +37,9 @@ component aliases='coldbox create controller' {
 		boolean open=false
 	){
 		// This will make each directory canonical and absolute
-		arguments.directory 		= fileSystemUtil.resolvePath( arguments.directory );
-		arguments.viewsDirectory 	= fileSystemUtil.resolvePath( arguments.viewsDirectory );
-		arguments.testsDirectory 	= fileSystemUtil.resolvePath( arguments.testsDirectory );
+		arguments.directory 		= resolvePath( arguments.directory );
+		arguments.viewsDirectory 	= resolvePath( arguments.viewsDirectory );
+		arguments.testsDirectory 	= resolvePath( arguments.testsDirectory );
 
 		// Validate directory
 		if( !directoryExists( arguments.directory ) ) {

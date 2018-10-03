@@ -30,10 +30,10 @@ component {
 		String serverConfigFile
 		){
 		if( !isNull( arguments.directory ) ) {
-			arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
+			arguments.directory = resolvePath( arguments.directory );
 		}
 		if( !isNull( arguments.serverConfigFile ) ) {
-			arguments.serverConfigFile = fileSystemUtil.resolvePath( arguments.serverConfigFile );
+			arguments.serverConfigFile = resolvePath( arguments.serverConfigFile );
 		}
 		var serverDetails = serverService.resolveServerDetails( arguments );
 		var serverInfo = serverDetails.serverInfo;

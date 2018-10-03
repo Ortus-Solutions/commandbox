@@ -72,6 +72,7 @@
         "testSpecs":"",
         "verbose":true,
         "watchDelay":500,
-        "watchPaths":"**.cfc"
+        "watchPaths":"**.cfc",
+        "options":{}
     }
 }

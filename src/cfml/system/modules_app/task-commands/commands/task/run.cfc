@@ -32,7 +32,7 @@ component {
 		string target='run'
 		) {
 
-		arguments.taskFile = fileSystemUtil.resolvePath( arguments.taskFile );
+		arguments.taskFile = resolvePath( arguments.taskFile );
 		var taskArgs = {};
 
 		// Named task args will come through in a struct called args
@@ -60,9 +60,21 @@ component {
 			} );
 		}
 		
-		// Run the task!
-		// We're printing the output here so we can capture it and pipe or redirect the output from "task run"
-		return taskService.runTask( taskFile, target, taskArgs );
+		try {
+			
+			// Run the task!
+			// We're printing the output here so we can capture it and pipe or redirect the output from "task run"
+			var results = taskService.runTask( taskFile, target, taskArgs );
+			
+		} catch( any e ) {
+			rethrow;
+		} finally{
+			if( shell.getExitCode() != 0 ) {
+				setExitCode( shell.getExitCode() );
+			}	
+		}
+		
+		return results;
 	}
 
 }

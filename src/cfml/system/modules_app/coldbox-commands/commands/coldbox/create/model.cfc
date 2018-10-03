@@ -56,8 +56,8 @@ component {
 		// store incoming relative path for testing purposes
 		var modelTestPath = arguments.directory;
 		// This will make each directory canonical and absolute
-		arguments.directory 		= fileSystemUtil.resolvePath( arguments.directory );
-		arguments.testsDirectory 	= fileSystemUtil.resolvePath( arguments.testsDirectory );
+		arguments.directory 		= resolvePath( arguments.directory );
+		arguments.testsDirectory 	= resolvePath( arguments.testsDirectory );
 
 		// Validate directory
 		if( !directoryExists( arguments.directory ) ) {

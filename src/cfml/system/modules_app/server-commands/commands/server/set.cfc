@@ -59,7 +59,7 @@ component {
 		var thisAppend = arguments.append;
 
 		if( len( arguments.serverConfigFile ) ) {
-			arguments.serverConfigFile = fileSystemUtil.resolvePath( arguments.serverConfigFile );
+			arguments.serverConfigFile = resolvePath( arguments.serverConfigFile );
 		}
 		var thisServerConfigFile = ( len( arguments.serverConfigFile ) ? arguments.serverConfigFile : getCWD() & '/server.json' );
 

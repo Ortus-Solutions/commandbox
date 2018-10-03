@@ -104,8 +104,8 @@ public class Util{
 				Thread.sleep( 5000 );
 				System.exit( 1 );
 			}
-
-			String jVer = System.getProperty("java.version");
+return;
+	/*		String jVer = System.getProperty("java.version");
 			if( jVer.startsWith( "9" ) || jVer.startsWith( "10" ) || jVer.startsWith( "11" ) ) {
 				System.out.println( "It looks like you're using Java 9, 10, or higher, which CommandBox doesn't support!" );
 				System.out.println( "If your PC needs this version of Java installed, then place a folder called 'JRE' with Java 8 in the same directory as your box binary." );
@@ -113,7 +113,7 @@ public class Util{
 				Thread.sleep( 5000 );
 				System.exit( 1 );
 			}
-
+*/
 
 		} catch ( java.lang.ClassNotFoundException e ) {
 			System.out.println( "Could not load NIO!  Are we running on Java 7 or 8?  Sorry, exiting..." );

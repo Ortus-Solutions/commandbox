@@ -1,6 +1,6 @@
 /**
  * Returns a passing (0) or failing (1) exit code whether both parameters match.  Command outputs nothing.
- * Comparsion is case insensitive.
+ * Comparison is case insensitive.
  * .
  * {code:bash}
  * assertEqual `package show name` "My Package" || package set name="My Package"

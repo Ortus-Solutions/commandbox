@@ -34,10 +34,10 @@ component aliases="stop" {
 		} else {
 
 			if( !isNull( arguments.directory ) ) {
-				arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
+				arguments.directory = resolvePath( arguments.directory );
 			}
 			if( !isNull( arguments.serverConfigFile ) ) {
-				arguments.serverConfigFile = fileSystemUtil.resolvePath( arguments.serverConfigFile );
+				arguments.serverConfigFile = resolvePath( arguments.serverConfigFile );
 			}
 
 			// Look up the server that we're starting

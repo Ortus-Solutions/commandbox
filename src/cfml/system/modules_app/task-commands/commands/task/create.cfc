@@ -29,7 +29,7 @@ component {
 		) {
 				
 		// This will make each directory canonical and absolute
-		arguments.directory 		= fileSystemUtil.resolvePath( arguments.directory );
+		arguments.directory 		= resolvePath( arguments.directory );
 
 		// Read in Templates
 		var taskContent = fileRead( '/task-commands/templates/TaskContent.txt' );

@@ -72,7 +72,7 @@ component {
 
 	// Dynamic completion for property name based on contents of box.json
 	function completeProperty() {
-		var directory = fileSystemUtil.resolvePath( '' );
+		var directory = resolvePath( '' );
 		return packageService.completeProperty( directory );
 	}
 }

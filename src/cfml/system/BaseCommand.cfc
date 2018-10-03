@@ -44,7 +44,11 @@ component accessors="true" singleton {
 
 	// This method needs to be overridden by the concrete class.
 	function run() {
-		return 'This command CFC has not implemented a run() method.';
+		error( 'This command CFC has not implemented a run() method.' );
+	}
+
+	function getPrinter() {
+		return variables.print;
 	}
 
 	// Convenience method for getting stuff from WireBox
@@ -123,7 +127,14 @@ component accessors="true" singleton {
 	 * @command.hint The command to run. Pass the same string a user would type at the shell.
  	 **/
 	function runCommand( required command, returnOutput=false ) {
-		return shell.callCommand( arguments.command, arguments.returnOutput );
+		var results = shell.callCommand( arguments.command, arguments.returnOutput );
+		
+		// If the previous command chain failed
+		if( shell.getExitCode() != 0 ) {
+			error( 'Command returned failing exit code (#shell.getExitCode()#)', 'Failing Command: ' & command, shell.getExitCode(), errorCode=shell.getExitCode() );
+		}
+		
+		return results;
 	}
 
 	/**
@@ -142,6 +153,19 @@ component accessors="true" singleton {
 	}
 
 	/**
+	* This resolves an absolute or relative path using the rules of the operating system and CLI.
+	* It doesn't follow CF mappings and will also always return a trailing slash if pointing to 
+	* an existing directory.
+	* 
+	* Resolve the incoming path from the file system
+	* @path.hint The directory to resolve
+	* @basePath.hint An expanded base path to resolve the path against. Defaults to CWD.
+	*/
+	function resolvePath( required string path, basePath=shell.pwd() ) {
+		return filesystemUtil.resolvepath( path, basePath );
+	}
+
+	/**
 	 * Return a new globber
  	 **/
 	function globber( pattern='' ) {
@@ -157,8 +181,22 @@ component accessors="true" singleton {
  	 **/
 	function propertyFile( propertyFilePath='' ) {
 		var propertyFile = wirebox.getInstance( 'propertyFile@propertyFile' );
+		
+		// If the user passed a propertyFile path
 		if( propertyFilePath.len() ) {
-			propertyFile.load( propertyFilePath );
+			
+			// Make relative paths resolve to the current folder that the task lives in.
+			propertyFilePath = resolvePath( propertyFilePath );
+			
+			// If it exists, go ahead and load it now
+			if( fileExists( propertyFilePath ) ){
+				propertyFile.load( propertyFilePath );
+			} else {
+				// Otherwise, just set it so it can be used later on save.
+				propertyFile
+					.setPath( propertyFilePath );
+			}
+			
 		}
 		return propertyFile;
 	}

@@ -34,8 +34,8 @@ component {
 	){
 		// This will make each directory canonical and absolute
 		var relativeDirectory = arguments.directory;
-		arguments.directory 		= fileSystemUtil.resolvePath( arguments.directory );
-		arguments.testsDirectory	= fileSystemUtil.resolvePath( arguments.testsDirectory );
+		arguments.directory 		= resolvePath( arguments.directory );
+		arguments.testsDirectory	= resolvePath( arguments.testsDirectory );
 
 		// Validate directory
 		if( !directoryExists( arguments.directory ) ) {

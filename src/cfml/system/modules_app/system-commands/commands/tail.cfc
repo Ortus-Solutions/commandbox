@@ -28,7 +28,7 @@
 		if( inputAsArray.len() > 1 ) {
 			var rawText = true;
 		}
-		var filePath = fileSystemUtil.resolvePath( arguments.path );
+		var filePath = resolvePath( arguments.path );
 
 		if( !fileExists( filePath ) ){
 			var rawText = true;
@@ -108,6 +108,7 @@
 						return cleanLine( line );
 					} )
 					.toList( chr( 10 ) )
+					& chr( 10 )
 				)
 				.toConsole();
 
@@ -276,6 +277,13 @@
 		// [DEBUG] runwar.config: Enabling Proxy Peer Address handling
 		// [DEBUG] runwar.server: Starting open browser action
 		line = reReplaceNoCase( line, '^(\[[^]]*])( runwar\.[^:]*: )(.*)', '\1 Runwar: \3' );
+		
+		// Strip off redundant severities that come from wrapping LogBox apenders in Log4j appenders
+		// [INFO ] DEBUG my.logger.name This rain in spain stays mainly in the plains
+		line = reReplaceNoCase( line, '^(\[(INFO |ERROR|DEBUG|WARN )] )(INFO|ERROR|DEBUG|WARN)( .*)', '[\3]\4' );
+		
+		// Add extra space so [WARN] becomes [WARN ]
+		line = reReplaceNoCase( line, '^\[(INFO|WARN)]( .*)', '[\1 ]\2' );
 		
 		if( line.startsWith( '[INFO ]' ) ) {
 			return reReplaceNoCase( line, '^(\[INFO ] )(.*)', '[#printUtil.boldCyan('INFO ')#] \2' );

@@ -31,7 +31,7 @@ component singleton {
 
 		var terminal = shell.getReader().getTerminal();
 
-		// If Jline uses a "dumb" terminal, the width reports as zero, which throws devide by zero errors.
+		// If Jline uses a "dumb" terminal, the width reports as zero, which throws divide by zero errors.
 		// TODO: I might be able to just fake a reasonable width.
 		if( !shell.isTerminalInteractive() || terminal.getWidth() == 0 ) {
 			return;

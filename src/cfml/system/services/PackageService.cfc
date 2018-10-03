@@ -312,10 +312,6 @@ component accessors="true" singleton {
 						installDirectory = expandPath( '/commandbox/modules' );
 					}
 
-					// Flag the shell to reload after this command is finished.
-					job.addWarnLog( "Shell will be reloaded after installation." );
-					shell.reload( false );
-					shellWillReload = true;
 				// If this is a plugin
 				} else if( packageType == 'plugins' ) {
 					installDirectory = arguments.packagePathRequestingInstallation & '/plugins';
@@ -334,6 +330,15 @@ component accessors="true" singleton {
 				} else if( packageType == 'jars' ) {
 					installDirectory = arguments.packagePathRequestingInstallation & '/lib';
 				}
+			}
+
+
+			// If this package is being installed anywhere south of the CommandBox system folder, 
+			// flag the shell to reload after this command is finished.
+			if( fileSystemUtil.normalizeSlashes( installDirectory ).startsWith( fileSystemUtil.normalizeSlashes( expandPath( '/commandbox' ) ) ) ) {
+				job.addWarnLog( "Shell will be reloaded after installation." );
+				shell.reload( false );
+				shellWillReload = true;	
 			}
 
 			// I give up, just stick it in the CWD
@@ -921,12 +926,7 @@ component accessors="true" singleton {
 	* @directory The directory to write the box.json
 	*/
 	function writePackageDescriptor( required any JSONData, required directory ){
-
-		if( !isSimpleValue( JSONData ) ) {
-			JSONData = serializeJSON( JSONData );
-		}
-
-		fileWrite( getDescriptorPath( arguments.directory ), formatterUtil.formatJSON( JSONData ) );
+		JSONService.writeJSONFile( getDescriptorPath( arguments.directory ), JSONData );
 	}
 
 	/**

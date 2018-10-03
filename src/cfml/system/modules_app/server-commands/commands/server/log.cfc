@@ -31,10 +31,10 @@ component {
 		Boolean rewrites=false
 		 ){
 		if( !isNull( arguments.directory ) ) {
-			arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
+			arguments.directory = resolvePath( arguments.directory );
 		}
 		if( !isNull( arguments.serverConfigFile ) ) {
-			arguments.serverConfigFile = fileSystemUtil.resolvePath( arguments.serverConfigFile );
+			arguments.serverConfigFile = resolvePath( arguments.serverConfigFile );
 		}
 		var serverDetails = serverService.resolveServerDetails( arguments );
 		var serverInfo = serverDetails.serverInfo;
@@ -71,7 +71,10 @@ component {
 			print.boldRedLine( "No log file found for '#serverInfo.webroot#'!" )
 				.line( "#logFile#" );
 			if( access ) {
-				print.yellowLine( 'Enable accesss logging with [server set web.acessLogEnable=true]' );
+				print.yellowLine( 'Enable accesss logging with [server set web.accessLogEnable=true]' );
+			}
+			if( rewrites ) {
+				print.yellowLine( 'Enable Rewrite logging with [server set web.rewrites.logEnable=true] and ensure you are started in debug mode.' );
 			}
 		}
 	}
@@ -97,6 +100,13 @@ component {
 		// [DEBUG] runwar.server: Starting open browser action
 		line = reReplaceNoCase( line, '^(\[[^]]*])( runwar\.[^:]*: )(.*)', '\1 Runwar: \3' );
 		
+		// Strip off redundant severities that come from wrapping LogBox apenders in Log4j appenders
+		// [INFO ] DEBUG my.logger.name This rain in spain stays mainly in the plains
+		line = reReplaceNoCase( line, '^(\[(INFO |ERROR|DEBUG|WARN )] )(INFO|ERROR|DEBUG|WARN)( .*)', '[\3]\4' );
+		
+		// Add extra space so [WARN] becomes [WARN ]
+		line = reReplaceNoCase( line, '^\[(INFO|WARN)]( .*)', '[\1 ]\2' );
+				
 		if( line.startsWith( '[INFO ]' ) ) {
 			return reReplaceNoCase( line, '^(\[INFO ] )(.*)', '[#printUtil.boldCyan('INFO ')#] \2' );
 		}

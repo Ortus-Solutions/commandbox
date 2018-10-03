@@ -64,7 +64,7 @@ component{
 		
 		var exitCode = 1;
         // grab the current working directory
-        var CWDFile = createObject( 'java', 'java.io.File' ).init( fileSystemUtil.resolvePath( '' ) );
+        var CWDFile = createObject( 'java', 'java.io.File' ).init( resolvePath( '' ) );
 				
 		try{
             

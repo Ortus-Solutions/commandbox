@@ -540,7 +540,17 @@ component accessors="true" singleton {
 					}
 					
 					variables.keepRunning = false;
-		    		continue; 
+		    		continue;
+		    		
+				// Catch all for custom user interrupt thrown from CFML
+				} catch( any var e ) {
+					
+					if( e.type == 'UserInterruptException' ) {
+			    		continue;			    			
+					} else {
+						rethrow;
+					}
+					
 				}
 				
 	        	// If the standard input isn't avilable, bail.  This happens
@@ -720,6 +730,7 @@ component accessors="true" singleton {
 		boolean initialCommand=false )  {
 		
 		var job = wirebox.getInstance( 'interactiveJob' );
+		var progressBarGeneric = wirebox.getInstance( 'progressBarGeneric' );
 
 		// Commands a loaded async in interactive mode, so this is a failsafe to ensure the CommandService
 		// is finished.  Especially useful for commands run onCLIStart.  Wait up to 5 seconds.
@@ -751,6 +762,7 @@ component accessors="true" singleton {
 				rethrow;
 			} else {
 				
+				progressBarGeneric.clear();
 				if( job.isActive() ) {
 					job.errorRemaining();
 				}
@@ -763,6 +775,8 @@ component accessors="true" singleton {
 			if( !initialCommand ) {
 				rethrow;
 			} else {
+				
+				progressBarGeneric.clear();
 				if( job.isActive() ) {
 					job.errorRemaining();
 				}
@@ -777,8 +791,9 @@ component accessors="true" singleton {
 			if( !initialCommand ) {
 				rethrow;
 			// This type of error means the user hit Ctrl-C, when not in a readLine() call (and hit my custom signal handler).  Duck out and move along.
-			} else if( e.getPageException().getRootCause().getClass().getName() == 'java.lang.InterruptedException' ) {
-				
+			} else if( e.getPageException().getRootCause().getClass().getName() == 'java.lang.InterruptedException' || e.type == 'UserInterruptException' || e.message == 'UserInterruptException' ) {
+
+				progressBarGeneric.clear();				
 				if( job.isActive() ) {
 					job.errorRemaining();
 				}
@@ -788,7 +803,8 @@ component accessors="true" singleton {
 				variables.reader.getTerminal().writer().print( variables.print.boldRedLine( 'CANCELLED' ) );			
 			// Anything else is completely unexpected and means boom booms happened-- full stack please.
 			} else {
-				
+
+				progressBarGeneric.clear();				
 				if( job.isActive() ) {
 					job.errorRemaining( e.message );
 					variables.reader.getTerminal().writer().println();
@@ -814,7 +830,7 @@ component accessors="true" singleton {
 			if( isArray( result ) ){
 				return variables.reader.getTerminal().writer().printColumns( result );
 			}
-			result = variables.formatterUtil.formatJson( serializeJSON( result ) );
+			result = variables.formatterUtil.formatJson( result );
 			printString( result );
 		} else if( !isNull( result ) && len( result ) ) {
 			// If there is an active job, print our output through it

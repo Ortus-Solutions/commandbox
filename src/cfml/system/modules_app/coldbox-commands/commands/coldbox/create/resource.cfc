@@ -88,9 +88,9 @@ component {
 	) {
 
 		// This will make each directory canonical and absolute
-		arguments.specsDirectory 	= fileSystemUtil.resolvePath( arguments.specsDirectory );
-		arguments.modulesDirectory 	= fileSystemUtil.resolvePath( arguments.modulesDirectory );
-		var configPath 				= fileSystemUtil.resolvePath( "config" );
+		arguments.specsDirectory 	= resolvePath( arguments.specsDirectory );
+		arguments.modulesDirectory 	= resolvePath( arguments.modulesDirectory );
+		var configPath 				= resolvePath( "config" );
 
 		/********************** Verify Module ************************/
 
@@ -113,9 +113,9 @@ component {
 			arguments.modelsDirectory	= modulePath & "/" & arguments.modelsDirectory & "/";
 
 		} else {
-			arguments.handlersDirectory	= fileSystemUtil.resolvePath( arguments.handlersDirectory );
-			arguments.viewsDirectory 	= fileSystemUtil.resolvePath( arguments.viewsDirectory );
-			arguments.modelsDirectory 	= fileSystemUtil.resolvePath( arguments.modelsDirectory );
+			arguments.handlersDirectory	= resolvePath( arguments.handlersDirectory );
+			arguments.viewsDirectory 	= resolvePath( arguments.viewsDirectory );
+			arguments.modelsDirectory 	= resolvePath( arguments.modelsDirectory );
 		}
 		
 		/********************** GENERATE HANDLER ************************/

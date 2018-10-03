@@ -20,7 +20,7 @@ component {
 		) {
 
 			// This will make each directory canonical and absolute
-			propertyFilePath = fileSystemUtil.resolvePath( propertyFilePath );
+			propertyFilePath = resolvePath( propertyFilePath );
 
 			// Create and load property file object
 			if( fileExists( propertyFilePath ) ){

@@ -64,6 +64,17 @@ component singleton {
 	}
 
 	/**
+	* Set a System Setting.
+	*
+	* @key The name of the setting to set.
+	* @value The value to use
+	*/
+    function setSystemSetting( required string key, required string value ) {
+    	// TODO: change this to be context-aware env vars for the current command, not global
+		system.setProperty( arguments.key, arguments.value );
+	}
+
+	/**
 	* Set a Java System property.
 	*
 	* @key The name of the setting to set.

@@ -36,6 +36,7 @@ component {
 	property name='cr'				inject='cr@constants';
 	property name='shell'			inject='shell';
 	property name='colors256Data'	inject='colors256Data@constants';
+	property name='formatterUtil'	inject='formatter';
 
 	this.tab 		= chr( 9 );
 	this.esc 		= chr( 27 );
@@ -88,6 +89,18 @@ component {
 
 		// Text needing formatting
 		var text = arrayLen(missingMethodArguments) ? missingMethodArguments[ 1 ] : '';
+		// Convert complex values to a string representation
+		if( !isSimpleValue( text ) ) {
+			
+			// Serializable types
+			if( isArray( text ) || isStruct( text ) || isQuery( text ) ) {
+				text = formatterUtil.formatJson( text );
+			// Yeah, I give up
+			} else {
+				text = '[#text.getClass().getName()#]';
+			}
+			
+		}
 		// Additional formatting text
 		var methodName &= arrayLen(missingMethodArguments) > 1 ? missingMethodArguments[ 2 ] : '';
 		// Don't turn off ANSI formatting at the end

@@ -65,16 +65,16 @@ component aliases='status,server info' {
 		// Display ALL as JSON?
 		if( arguments.showALL && arguments.json ){
 			print.line(
-				formatterUtil.formatJson( serializeJSON( servers ) )
+				formatterUtil.formatJson( servers )
 			);
 			return;
 		}
 
 		if( !isNull( arguments.directory ) ) {
-			arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
+			arguments.directory = resolvePath( arguments.directory );
 		}
 		if( !isNull( arguments.serverConfigFile ) ) {
-			arguments.serverConfigFile = fileSystemUtil.resolvePath( arguments.serverConfigFile );
+			arguments.serverConfigFile = resolvePath( arguments.serverConfigFile );
 		}
 		var serverDetails = serverService.resolveServerDetails( arguments );
 		var serverInfo = serverDetails.serverInfo;
@@ -114,7 +114,7 @@ component aliases='status,server info' {
 						// Format Complex values as JSON
 						} else {
 							print.line(
-								formatterUtil.formatJson( serializeJSON( thisValue ) )
+								formatterUtil.formatJson( thisValue )
 							);
 						}
 
@@ -122,7 +122,7 @@ component aliases='status,server info' {
 
 						// Output the entire object
 						print.line(
-							formatterUtil.formatJson( serializeJSON( thisServerInfo ) )
+							formatterUtil.formatJson( thisServerInfo )
 						);
 
 					}
@@ -171,7 +171,7 @@ component aliases='status,server info' {
 
 	/**
 	* AutoComplete server names
-	*/	
+	*/
 	function serverNameComplete() {
 		return serverService
 			.getServerNames()

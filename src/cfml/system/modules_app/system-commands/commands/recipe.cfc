@@ -56,7 +56,7 @@ component {
 		// store original path
 		var originalPath = getCWD();
 		// Make file canonical and absolute
-		arguments.recipeFile = fileSystemUtil.resolvePath( arguments.recipeFile );
+		arguments.recipeFile = resolvePath( arguments.recipeFile );
 
 		// Start clean so we can tell if any of our commands error without being affected by whatever may have run prior to this recipe
 		shell.setExitCode( 0 );
