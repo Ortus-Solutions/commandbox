@@ -97,11 +97,16 @@ component {
 				command( 'cls' )
 					.run();
 
-				// Run the tests in the target directory
-				command( 'testbox run' )
-					.params( argumentCollection = testArgs )
-					.inWorkingDirectory( getCWD() )
-					.run();
+				// Ignore failing tests, don't stop the watcher
+				try {
+					// Run the tests in the target directory
+					command( 'testbox run' )
+						.params( argumentCollection = testArgs )
+						.inWorkingDirectory( getCWD() )
+						.run();
+				} catch( commandException var  e ) {
+					// ignore
+				}
 
 			} )
 			.start();
