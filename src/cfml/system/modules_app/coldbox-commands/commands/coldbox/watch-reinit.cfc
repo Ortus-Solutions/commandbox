@@ -5,20 +5,19 @@
  * coldbox watch-reinit
  * {code}
  *
- * In order for this command to work, you need to have started your server and configured the
- * URL to the test runner in your box.json.
+ * In order for this command to work, you need to have started your server.
  *
  * {code}
  * server start
  * coldbox watch-reinit
  * {code}
  *
- * If you need more control over what tests run and their output, you can set additional options in your box.json
- * which will be picked up automatically by "testbox run" when it fires.
+ * If you need more control over what files reinit the framework, you can set additional options in your box.json
+ * which will be picked up automatically by "coldbox watch-reinit" when it fires.
  *
  * {code}
  * package set reinitWatchDelay=1000
- * package set reinitWatchPaths=["config/**.cfc","handler/**.cfc","models/**.cfc"]
+ * package set reinitWatchPaths= "config/**.cfc,handlers/**.cfc,models/**.cfc"
  * {code}
  *
  * This command will run in the foreground until you stop it.  When you are ready to shut down the watcher, press Ctrl+C.
