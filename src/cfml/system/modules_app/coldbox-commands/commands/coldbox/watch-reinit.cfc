@@ -58,9 +58,17 @@ component {
 		var globbingPaths = arguments.paths ?: getOptionsWatchers() ?: variables.PATHS;
 		// handle non numberic config and put a floor of 150ms
 		var delayMs = max( val( arguments.delay ?: boxOptions.reinitWatchDelay ?: variables.WATCH_DELAY ), 150 );
-
+		var statusColors = {'added': 'green', 'removed': 'red', 'changed': 'yellow'}
 		// Tabula rasa
 		command( 'cls' ).run();
+		print
+			.greenLine( '---------------------------------------------------' )
+			.greenLine( 'Watching the following files for a framework reinit' )
+			.greenLine( '---------------------------------------------------' )
+			.greenLine( ' '  &  globbingPaths )
+			.greenLine( ' Press Ctrl-C to exit ' )
+			.greenLine( '---------------------------------------------------' )
+			.toConsole();
 
 		// Start watcher
 		watch()
@@ -69,34 +77,17 @@ component {
 			.withDelay( delayMs )
 			.onChange( function( changeData ) {
 				var changetime = '[' & timeformat(now(),"HH:mm:ss") & '] ';
+				for(status in changeData){
+					changeData[ status ].map( function( filePath ){
+						print
+							.text( changetime, statusColors[status])
+							.text( filePath, statusColors[status] & "Bold" )
+							.text( ' ' & status & ' ', statusColors[status] )
+							.toConsole();
+					})
+				}
 
-				changeData[ 'added' ].map( function( filePath ){
-					print
-						.greenText( changetime )
-						.greenBoldText( filePath )
-						.greenText( ' added ' )
-						.toConsole();
-				})
-
-
-				changeData[ 'changed' ].map( function( filePath ){
-					print
-						.yellowText( changetime )
-						.yellowBoldText(filePath )
-						.yellowText( ' changed ' )
-						.toConsole();
-				})
-
-
-				changeData[ 'removed' ].map( function( filePath ){
-					print
-						.redText( changetime )
-						.redBoldText( filePath )
-						.redText( ' removed ' )
-						.toConsole();
-				})
-
-				command( 'coldbox reinit password="#initPassword#" verbose="false"' ).run();
+				command( 'coldbox reinit password="#initPassword#" showUrl="false"' ).run();
 
 			} )
 			.start();

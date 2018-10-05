@@ -20,21 +20,21 @@ component aliases="fwreinit" {
 	* @password The FWReinit password
 	* @name Name of the CommandBox server to reinit
 	**/
-	function run( password="1", name="" ,verbose=true){
+	function run( password="1", name="" ,showUrl=true){
 		var serverInfo = serverService.getServerInfoByDiscovery( getCWD(), arguments.name );
 
 		if( structCount( serverInfo ) eq 0 ){
 			print.boldRedLine( "No server configurations found for '#getCWD()#', so have no clue what to reinit buddy!" );
 		} else {
 			var thisURL = "#serverInfo.host#:#serverInfo.port#/?fwreinit=#arguments.password#";
-			if(arguments.verbose) print.greenLine( "Hitting...#thisURL#" );
+			if(arguments.showUrl) print.greenLine( "Hitting...#thisURL#" );
 			http result="local.results"
-				 url="#thisURL#";
+				url="#thisURL#";
 
 			if( findNoCase( "200", local.results.statusCode ) ){
-				if(arguments.verbose) print.boldGreenLine( "App Reinited!" );
+				print.boldGreenLine( "App Reinited!" );
 			} else {
-				if(arguments.verbose) print.redLine( "status code: #local.results.statusCode#" )
+				print.redLine( "status code: #local.results.statusCode#" )
 					.redline( "error detail: " & local.results.errorDetail )
 					.line( trim( formatter.HTML2ANSI( local.results.filecontent ) ) );
 			}
