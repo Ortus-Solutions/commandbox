@@ -9,7 +9,7 @@
  *
  * {code}
  * server start
- * coldbox watch-reinit
+ * coldbox watch-reinit password="mypass"
  * {code}
  *
  * If you need more control over what files reinit the framework, you can set additional options in your box.json
@@ -37,11 +37,13 @@ component {
 	 **/
 	function run(
 		string paths,
-	 	number delay
+	 	number delay,
+	 	string password="1"
 	) {
 
 		// Get watch options from package descriptor
 		var boxOptions = packageService.readPackageDescriptor( getCWD() );
+		var initPassword = arguments.password;
 
 		var getOptionsWatchers = function(){
 			// Return to List
@@ -56,9 +58,17 @@ component {
 		var globbingPaths = arguments.paths ?: getOptionsWatchers() ?: variables.PATHS;
 		// handle non numberic config and put a floor of 150ms
 		var delayMs = max( val( arguments.delay ?: boxOptions.reinitWatchDelay ?: variables.WATCH_DELAY ), 150 );
-
+		var statusColors = {'added': 'green', 'removed': 'red', 'changed': 'yellow'}
 		// Tabula rasa
 		command( 'cls' ).run();
+		print
+			.greenLine( '---------------------------------------------------' )
+			.greenLine( 'Watching the following files for a framework reinit' )
+			.greenLine( '---------------------------------------------------' )
+			.greenLine( ' '  &  globbingPaths )
+			.greenLine( ' Press Ctrl-C to exit ' )
+			.greenLine( '---------------------------------------------------' )
+			.toConsole();
 
 		// Start watcher
 		watch()
@@ -66,11 +76,18 @@ component {
 			.inDirectory( getCWD() )
 			.withDelay( delayMs )
 			.onChange( function( changeData ) {
+				var changetime = '[' & timeformat(now(),"HH:mm:ss") & '] ';
+				for(status in changeData){
+					changeData[ status ].map( function( filePath ){
+						print
+							.text( changetime, statusColors[status])
+							.text( filePath, statusColors[status] & "Bold" )
+							.text( ' ' & status & ' ', statusColors[status] )
+							.toConsole();
+					})
+				}
 
-				print.line( formatterUtil.formatJSON(changeData) ).toConsole();
-
-				command( 'coldbox reinit' ).run();
-
+				command( 'coldbox reinit password="#initPassword#" showUrl="false"' ).run();
 
 			} )
 			.start();
