@@ -9,7 +9,7 @@
  *
  * {code}
  * server start
- * coldbox watch-reinit
+ * coldbox watch-reinit password="mypass"
  * {code}
  *
  * If you need more control over what files reinit the framework, you can set additional options in your box.json
@@ -37,11 +37,13 @@ component {
 	 **/
 	function run(
 		string paths,
-	 	number delay
+	 	number delay,
+	 	string password="1"
 	) {
 
 		// Get watch options from package descriptor
 		var boxOptions = packageService.readPackageDescriptor( getCWD() );
+		var initPassword = arguments.password;
 
 		var getOptionsWatchers = function(){
 			// Return to List
@@ -66,11 +68,35 @@ component {
 			.inDirectory( getCWD() )
 			.withDelay( delayMs )
 			.onChange( function( changeData ) {
+				var changetime = '[' & timeformat(now(),"HH:mm:ss") & '] ';
 
-				print.line( formatterUtil.formatJSON(changeData) ).toConsole();
+				changeData[ 'added' ].map( function( filePath ){
+					print
+						.greenText( changetime )
+						.greenBoldText( filePath )
+						.greenText( ' added ' )
+						.toConsole();
+				})
 
-				command( 'coldbox reinit' ).run();
 
+				changeData[ 'changed' ].map( function( filePath ){
+					print
+						.yellowText( changetime )
+						.yellowBoldText(filePath )
+						.yellowText( ' changed ' )
+						.toConsole();
+				})
+
+
+				changeData[ 'removed' ].map( function( filePath ){
+					print
+						.redText( changetime )
+						.redBoldText( filePath )
+						.redText( ' removed ' )
+						.toConsole();
+				})
+
+				command( 'coldbox reinit password="#initPassword#" verbose="false"' ).run();
 
 			} )
 			.start();
