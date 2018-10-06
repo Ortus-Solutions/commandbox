@@ -17,7 +17,7 @@
  *
  * {code}
  * package set reinitWatchDelay=1000
- * package set reinitWatchPaths= "config/**.cfc,handlers/**.cfc,models/**.cfc"
+ * package set reinitWatchPaths= "config/**.cfc,handlers/**.cfc,models/**.cfc,ModuleConfig.cfc"
  * {code}
  *
  * This command will run in the foreground until you stop it.  When you are ready to shut down the watcher, press Ctrl+C.
@@ -29,7 +29,7 @@ component {
 	property name="packageService" 	inject="PackageService";
 
 	variables.WATCH_DELAY 	= 500;
-	variables.PATHS 		= "config/**.cfc,handlers/**.cfc,models/**.cfc";
+	variables.PATHS 		= "config/**.cfc,handlers/**.cfc,models/**.cfc,ModuleConfig.cfc";
 
 	/**
 	 * @paths Command delimited list of file globbing paths to watch relative to the working directory, defaults to **.cfc
@@ -58,7 +58,7 @@ component {
 		var globbingPaths = arguments.paths ?: getOptionsWatchers() ?: variables.PATHS;
 		// handle non numberic config and put a floor of 150ms
 		var delayMs = max( val( arguments.delay ?: boxOptions.reinitWatchDelay ?: variables.WATCH_DELAY ), 150 );
-		var statusColors = {'added': 'green', 'removed': 'red', 'changed': 'yellow'}
+		var statusColors = { 'added': 'green', 'removed': 'red', 'changed': 'yellow' }
 		// Tabula rasa
 		command( 'cls' ).run();
 		print
@@ -76,13 +76,13 @@ component {
 			.inDirectory( getCWD() )
 			.withDelay( delayMs )
 			.onChange( function( changeData ) {
-				var changetime = '[' & timeformat(now(),"HH:mm:ss") & '] ';
-				for(status in changeData){
+				var changetime = '[' & timeformat( now(), "HH:mm:ss" ) & '] ';
+				for( status in changeData ){
 					changeData[ status ].map( function( filePath ){
 						print
-							.text( changetime, statusColors[status])
-							.text( filePath, statusColors[status] & "Bold" )
-							.text( ' ' & status & ' ', statusColors[status] )
+							.text( changetime, statusColors[ status ] )
+							.text( filePath, statusColors[ status ] & "Bold" )
+							.text( ' ' & status & ' ', statusColors[ status ] )
 							.toConsole();
 					})
 				}

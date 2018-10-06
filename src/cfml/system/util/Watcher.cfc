@@ -244,21 +244,21 @@ component accessors=true {
 		}
 		var currentWatchList = getFileIndex();
 
-		var changes = {'added':[],'removed':[],'changed':[]};
+		var changes = { 'added':[], 'removed':[], 'changed':[] };
 
 		//loop over new array and look for changes and adds
-		currentWatchList.each(function(filePath,fileDate){
+		currentWatchList.each( function( filePath, fileDate ){
 			//if found check for date change, else new file
-			if(structKeyExists(previousWatchList,filePath)){
-				if(previousWatchList[filePath] != fileDate) changes.changed.append(filePath);
+			if(structKeyExists( previousWatchList, filePath )){
+				if( previousWatchList[ filePath ] != fileDate ){ changes.changed.append( filePath ); }
 			} else {
-				changes.added.append(filePath);
+				changes.added.append( filePath );
 			}
 		})
 
 		//look for deleted files that no longer exist in the list
-		previousWatchList.each(function(filePath,fileDate){
-			if(!structKeyExists(currentWatchList, filePath)) changes.removed.append(filePath);
+		previousWatchList.each( function( filePath, fileDate ){
+			if( !structKeyExists( currentWatchList, filePath ) ){ changes.removed.append( filePath ); }
 		})
 
 		setChangeData( changes );
