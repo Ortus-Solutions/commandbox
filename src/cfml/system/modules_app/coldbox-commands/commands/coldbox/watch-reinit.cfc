@@ -27,6 +27,7 @@ component {
 
 	// DI
 	property name="packageService" 	inject="PackageService";
+	property name="serverService" 	inject="ServerService";
 
 	variables.WATCH_DELAY 	= 500;
 	variables.PATHS 		= "config/**.cfc,handlers/**.cfc,models/**.cfc,ModuleConfig.cfc";
@@ -59,8 +60,25 @@ component {
 		// handle non numberic config and put a floor of 150ms
 		var delayMs = max( val( arguments.delay ?: boxOptions.reinitWatchDelay ?: variables.WATCH_DELAY ), 150 );
 		var statusColors = { 'added': 'green', 'removed': 'red', 'changed': 'yellow' }
+		var serverDetails = serverService.resolveServerDetails( {} );
+		var serverStatus = serverService.isServerRunning( serverDetails.serverInfo );
+
 		// Tabula rasa
 		command( 'cls' ).run();
+
+
+		//Check if the server is up, prompt if not to start it
+		if( !serverStatus ) {
+			print.redBoldText( 'Server Status: Stopped' ).line().toConsole();
+			var startServer = confirm( 'Would you like to start it [y/n]?' );
+			if( startServer ){
+				command( 'start' ).run();
+			} else {
+				return;
+			}
+		}
+
+		//General Message about the globbing paths and its purpose
 		print
 			.greenLine( '---------------------------------------------------' )
 			.greenLine( 'Watching the following files for a framework reinit' )
@@ -76,6 +94,8 @@ component {
 			.inDirectory( getCWD() )
 			.withDelay( delayMs )
 			.onChange( function( changeData ) {
+
+				//output file changes
 				var changetime = '[' & timeformat( now(), "HH:mm:ss" ) & '] ';
 				for( status in changeData ){
 					changeData[ status ].map( function( filePath ){
@@ -87,6 +107,7 @@ component {
 					})
 				}
 
+				//reinit the framework
 				command( 'coldbox reinit password="#initPassword#" showUrl="false"' ).run();
 
 			} )
