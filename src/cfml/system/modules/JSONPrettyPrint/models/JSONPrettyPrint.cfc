@@ -35,13 +35,15 @@ component accessors="true" singleton alias='JSONPrettyPrint' {
      * @lineEnding String to use for line endings.  Defaults to CRLF on Windows and LF on *nix
      * @spaceAfterColon Add space after each colon like "value": true instead of"value":true
      * @sortKeys Specify a sort type to sort the keys of json objects: "text" or "textnocase"
+     * @ansiColors A struct of ANSI color codes. If supplied, output will be ANSI encoded. Struct keys are "constant", "key", "number", and "string".
      **/
     public function formatJson(
         any json,
         string indent = '    ',
         lineEnding,
         boolean spaceAfterColon = false,
-        string sortKeys = ''
+        string sortKeys = '',
+        struct ansiColors = {}
     ) {
         // Default line ending based on OS
         if ( isNull( arguments.lineEnding ) ) {
