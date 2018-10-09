@@ -216,8 +216,8 @@ component accessors="true" singleton {
 	* @locking.hint Set to true to have file system access wrapped in a lock
 	*/
 	function writeJSONFile( required string path, required any json, boolean locking = false ) {
-		var sortKeysIsSet = configService.settingExists( 'json.sortKeys' );
-		var sortKeys = configService.getSetting( 'json.sortKeys', 'textnocase' );
+		var sortKeysIsSet = configService.settingExists( 'JSON.sortKeys' );
+		var sortKeys = configService.getSetting( 'JSON.sortKeys', 'textnocase' );
 		var oldJSON = '';
 
 		if ( fileExists( path ) ) {
@@ -229,6 +229,9 @@ component accessors="true" singleton {
 		}
 
 		var newJSON = formatterUtil.formatJson( json = json, sortKeys = sortKeys );
+		if ( !oldJSON.len() || oldJSON.right( 1 ) == chr( 10 ) ) {
+			newJSON &= configService.getSetting( 'JSON.lineEnding', server.separator.line );
+		}
 
 		if ( oldJSON == newJSON ) {
 			return;
@@ -283,7 +286,7 @@ component accessors="true" singleton {
             'number' : configService.getSetting( 'JSON.ANSIColors.number', 'aqua' ),
             'string' : configService.getSetting( 'JSON.ANSIColors.string', 'lime' )
 		};
-		
+
 		return ANSIColors.map( function( k, v ) {
 			if( v.startsWith( chr( 27 ) ) ) {
 				return v;
@@ -292,7 +295,7 @@ component accessors="true" singleton {
 				return print.text( '', v, true );
 			}
 		} );
-		
+
 	}
 
 
