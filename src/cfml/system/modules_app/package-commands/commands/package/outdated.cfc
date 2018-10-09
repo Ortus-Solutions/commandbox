@@ -61,7 +61,7 @@ component aliases="outdated" {
 
 		// JSON output
 		if( arguments.JSON ) {
-			print.line( formatterUtil.formatJson( aOutdatedDependencies ) );
+			print.line( aOutdatedDependencies );
 			return;
 		}
 

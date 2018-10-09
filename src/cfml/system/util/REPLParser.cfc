@@ -11,6 +11,7 @@
 component accessors="true" singleton {
 
 	property name="formatterUtil" inject="Formatter";
+	property name="JSONService" inject="JSONService";
 	instance = {};
 
 	/**
@@ -121,7 +122,7 @@ component accessors="true" singleton {
 			return '[Object #getMetaData( result ).name#]';
 		// Serializable types
 		} else if( isArray( result ) || isStruct( result ) || isQuery( result ) ) {
-			return formatterUtil.formatJson( result );
+			return formatterUtil.formatJson( json=result, ANSIColors=JSONService.getANSIColors() );
 		// Yeah, I give up
 		} else {
 			return '[#result.getClass().getName()#]';

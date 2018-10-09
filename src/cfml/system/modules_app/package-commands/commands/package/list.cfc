@@ -58,7 +58,7 @@ component aliases="list" {
 
 		// JSON output
 		if( arguments.JSON ) {
-			print.line( formatterUtil.formatJson( tree ) );
+			print.line( tree );
 			return;
 		}
 		// normal output

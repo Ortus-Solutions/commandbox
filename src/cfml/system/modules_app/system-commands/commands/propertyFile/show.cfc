@@ -30,7 +30,7 @@ component {
 
 			// JSON output takes precedence
 			if( JSON ) {
-				print.text( formatterUtil.formatJson( propertyFile.getAsStruct() ) );
+				print.text( propertyFile.getAsStruct() );
 			// Output single property
 			} else if( propertyName.len() ) {
 				print.text( propertyFile.get( propertyName ) );

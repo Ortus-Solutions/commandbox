@@ -112,7 +112,7 @@ component {
 						// print results
 						// Make sure results is a string
 						results = REPLParser.serializeOutput( argumentCollection={ result : ( isNull( results ) ? nullValue() : results ) } );
-						print.line( results, structKeyExists( arguments, 'input' ) ? '' : 'boldRed' )
+						print.line( results, structKeyExists( arguments, 'input' ) ? '' : '' )
 	
 					} catch( any e ){
 						// flush out anything in buffer

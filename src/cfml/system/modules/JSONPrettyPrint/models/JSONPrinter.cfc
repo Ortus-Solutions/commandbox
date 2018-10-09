@@ -17,7 +17,7 @@ component accessors="true" {
      * @lineEnding String to use for line endings.  Defaults to CRLF on Windows and LF on *nix
      * @spaceAfterColon Add space after each colon like "value": true instead of"value":true
      * @sortKeys Specify a sort type to sort the keys of json objects: "text" or "textnocase"
-     * @ansiColors A struct of ANSI color codes. If supplied, output will be ANSI encoded. Struct keys are "constant", "key", "number", and "string".
+     * @ansiColors A struct of ANSI color codes. If supplied, output will be ANSI encoded. Struct keys are "constant", "key", "number", and "string" and values are valid ANSI escape sequence such as chr( 27 ) & '[38;5;52m'.
      **/
     public string function formatJson(
         required any json,

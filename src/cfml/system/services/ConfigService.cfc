@@ -58,7 +58,16 @@ component accessors="true" singleton {
 			'command.defaults',
 			'command.aliases',
 			// Interactivity
-			'nonInteractiveShell'
+			'nonInteractiveShell',
+			// JSON
+			'json.indent',
+			'json.lineEnding',
+			'json.spaceAfterColon',
+			'json.sortKeys',
+			'json.ansiColors.constant',
+			'json.ansiColors.key',
+			'json.ansiColors.number',
+			'json.ansiColors.string'			
 		]);
 
 		setConfigFilePath( '/commandbox-home/CommandBox.json' );

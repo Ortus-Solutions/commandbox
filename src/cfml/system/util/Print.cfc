@@ -37,6 +37,7 @@ component {
 	property name='shell'			inject='shell';
 	property name='colors256Data'	inject='colors256Data@constants';
 	property name='formatterUtil'	inject='formatter';
+	property name='JSONService'		inject='JSONService';
 
 	this.tab 		= chr( 9 );
 	this.esc 		= chr( 27 );
@@ -94,7 +95,7 @@ component {
 			
 			// Serializable types
 			if( isArray( text ) || isStruct( text ) || isQuery( text ) ) {
-				text = formatterUtil.formatJson( text );
+				text = formatterUtil.formatJson( json=text, ANSIColors=JSONService.getANSIColors() );
 			// Yeah, I give up
 			} else {
 				text = '[#text.getClass().getName()#]';

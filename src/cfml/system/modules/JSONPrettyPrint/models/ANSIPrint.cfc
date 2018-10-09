@@ -4,10 +4,10 @@ component accessors="true" {
 
     function init() {
         setANSIDefaults( {
-            constant: 0,
-            key: 0,
-            number: 0,
-            string: 0
+            'constant' : chr( 27 ) & '[38;5;0m',
+            'key' : chr( 27 ) & '[38;5;0m',
+            'number' : chr( 27 ) & '[38;5;0m',
+            'string' : chr( 27 ) & '[38;5;0m'
         } );
         return this;
     }
@@ -25,14 +25,10 @@ component accessors="true" {
             code = colors.number;
         }
 
-        if ( code ) {
-            return ANSIColor( code ) & str & ANSIReset();
+        if ( code.len() ) {
+            return code & str & ANSIReset();
         }
         return str;
-    }
-
-    private function ANSIColor( code ) {
-        return chr( 27 ) & '[38;5;' & code & 'm';
     }
 
     private function ANSIReset() {

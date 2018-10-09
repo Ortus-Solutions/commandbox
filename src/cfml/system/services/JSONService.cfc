@@ -14,6 +14,7 @@ component accessors="true" singleton {
 	property name="fileSystemUtil" inject="FileSystem";
 	property name="formatterUtil" inject="Formatter";
 	property name="logger"        inject="logbox:logger:{this}";
+	property name="print"         inject="print";
 
 	/**
 	* Constructor
@@ -271,5 +272,29 @@ component accessors="true" singleton {
 
 		return isSorted( json );
 	}
+
+	/**
+	* Get ANSI colors for formatting JSON.  Returns defaults if no settings are present
+	*/
+	function getANSIColors() {
+		var ANSIColors = {
+            'constant' : configService.getSetting( 'json.ansiColors.constant', 'magenta' ),
+            'key' : configService.getSetting( 'json.ansiColors.key', 'blue' ),
+            'number' : configService.getSetting( 'json.ansiColors.number', 'green' ),
+            'string' : configService.getSetting( 'json.ansiColors.string', 'red' )
+		};
+		
+		return ANSIColors.map( function( k, v ) {
+			if( v.startsWith( chr( 27 ) ) ) {
+				return v;
+			} else {
+				// Use print helper to convert "DeepPink2" or "color203" to the escape
+				return print.text( '', v, true );
+			}
+		} );
+		
+	}
+
+
 
 }

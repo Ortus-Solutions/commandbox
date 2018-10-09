@@ -70,6 +70,7 @@ component{
 				while( ++i <= arrayLen( arguments ) ) {
 
 					functionText &= ( i>2 ? ', ' : '' );
+					arguments[ i ] = print.unansi( arguments[ i ] );
 
 					// If this is a struct or array function, we have at least one param, and it's JSON, just pass it in as complex data.
 					if( ( left( arguments.name, 5 ) == 'array' || left( arguments.name, 6 ) == 'struct' )
@@ -94,7 +95,7 @@ component{
 
 					functionText &= ( i>1 ? ', ' : '' );
 
-					functionText &= '#param#="#escapeArg( arguments[ param ] )#"';
+					functionText &= '#param#="#escapeArg( print.unansi( arguments[ param ] ) )#"';
 
 				} // end param loop
 

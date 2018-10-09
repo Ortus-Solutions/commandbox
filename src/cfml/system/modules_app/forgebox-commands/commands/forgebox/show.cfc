@@ -133,7 +133,7 @@ component aliases="show" {
 				
 				// Display results as JSON
 				if( json ) {
-					print.text( formatterUtil.formatJSON( entryData ) );
+					print.text( entryData );
 					return;					
 				}
 				
@@ -214,7 +214,7 @@ component aliases="show" {
 
 				// Display results as JSON
 				if( json ) {
-					print.text( formatterUtil.formatJSON( entries ) );
+					print.text( entries );
 					return;					
 				}
 
