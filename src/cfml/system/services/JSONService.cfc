@@ -278,10 +278,10 @@ component accessors="true" singleton {
 	*/
 	function getANSIColors() {
 		var ANSIColors = {
-            'constant' : configService.getSetting( 'json.ansiColors.constant', 'magenta' ),
+            'constant' : configService.getSetting( 'json.ansiColors.constant', 'red' ),
             'key' : configService.getSetting( 'json.ansiColors.key', 'blue' ),
-            'number' : configService.getSetting( 'json.ansiColors.number', 'green' ),
-            'string' : configService.getSetting( 'json.ansiColors.string', 'red' )
+            'number' : configService.getSetting( 'json.ansiColors.number', 'aqua' ),
+            'string' : configService.getSetting( 'json.ansiColors.string', 'lime' )
 		};
 		
 		return ANSIColors.map( function( k, v ) {
