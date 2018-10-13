@@ -15,7 +15,7 @@ component excludeFromHelp=true {
 		// Get terminal height
 		var termHeight = shell.getTermHeight()-2;
 		// Turn output into an array, breaking on carriage returns
-		var content = listToArray( arguments.input, CR );
+		var content = listToArray( arguments.input, chr(13) & chr(10), true );
 		var key= '';
 		var i = 0;
 		var StopAtLine = termHeight;

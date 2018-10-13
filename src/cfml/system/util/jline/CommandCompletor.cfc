@@ -65,7 +65,7 @@ component singleton {
 			// If stuff was typed and it's an exact match to a command part
 			if( matchedToHere == len( buffer ) && len( buffer ) ) {
 				// Suggest a trailing space
-				add( candidates, buffer & ' ' );
+				add( candidates, buffer.listLast( ' ' ) & ' ' );
 				
 				return;
 			// Everything else in the buffer is a partial, unmached command
@@ -92,7 +92,7 @@ component singleton {
 						if( commandInfo.commandReference[ command ].keyList() == '$' ) {
 							commandHint = commandInfo.commandReference[ command ][ '$' ].hint.listFirst( '.#chr(13)##chr(10)#' ).trim();
 						}
-						add( candidates, command & ' ', ( commandInfo.commandReference[ command ].keyList() == '$' ? 'Commands' : 'Namespaces' ), commandHint );
+						add( candidates, command.listLast( ' ' ) & ' ', ( commandInfo.commandReference[ command ].keyList() == '$' ? 'Commands' : 'Namespaces' ), commandHint );
 					}
 				}
 				// Did we find ANYTHING?
@@ -187,6 +187,7 @@ component singleton {
 							// If this is a boolean param not already here, suggest the --flag version
 							if( i > passedParameters.positionalParameters.len() && param.type == 'boolean' && !structKeyExists( passedParameters.flags, param.name )  ) {
 								add( candidates, ' --' & param.name & ' ', 'Flags', param.hint ?: '' );
+								add( candidates, ' --no' & param.name & ' ', 'Flags', param.hint ?: '' );
 							}
 						}
 
@@ -466,6 +467,7 @@ component singleton {
 			if( !name.endsWith( '=' ) ) {
 				name &= ' ';
 			}
+			
 			if( namedParams ) {
 				add( candidates, paramName & '=' & name, group, description );
 			} else {
@@ -478,19 +480,17 @@ component singleton {
 	* JLine3 needs an array of Java objects, so convert our array of strings to that
  	**/
 	private function add( candidates, name, group='', description='' ) {
-		
-		var thisCandidate = name.listLast( ' ' ) & ( name.endsWith( ' ' ) ? ' ' : '' );
-					
+							
 		candidates.append(
 			createObject( 'java', 'org.jline.reader.Candidate' )
 				.init(
-					thisCandidate,							// value
-					thisCandidate,							// displ
-					group,									// group
+					name,											// value
+					name,											// displ
+					group,											// group
 					description.len() ? description : nullValue(),	// descr 
-					nullValue(),							// suffix
-					nullValue(),							// key
-					false 									// complete
+					nullValue(),									// suffix
+					nullValue(),									// key
+					false 											// complete
 				)
 		);
 		
