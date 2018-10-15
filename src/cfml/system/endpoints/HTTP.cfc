@@ -18,6 +18,8 @@ component accessors=true implements="IEndpoint" singleton {
 	property name="progressBar" 			inject="ProgressBar";
 	property name="CR" 						inject="CR@constants";
 	property name='wirebox'					inject='wirebox';
+	property name="semanticVersion"			inject="provider:semanticVersion@semver";
+	property name='semverRegex'				inject='semverRegex@constants';
 
 	// Properties
 	property name="namePrefixes" type="string";
@@ -85,17 +87,22 @@ component accessors=true implements="IEndpoint" singleton {
 		return reReplaceNoCase( arguments.package, '[^a-zA-Z0-9]', '', 'all' );
 	}
 
-	public function getUpdate( required string package, required string version, boolean verbose=false ) {
-		var result = {
-			// URLs with a semver in the name are considered to not have an update since we assume they are an exact version
-			isOutdated = !package
-				.reReplaceNoCase( 'http(s)?://', '' )
-				.listRest( '/\' )
-				.reFindNoCase( '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' ),
-			version = 'unknown'
-		};
+	public function getUpdate( required string package, required string version, boolean verbose = false ) {
+		// Check to see if a semver exists in the URL and if so use that
+		var versionMatch = reMatch( semverRegex, package.reReplaceNoCase( '(https?:)?//', '' ).listRest( '/\' ) );
 
-		return result;
+		if ( versionMatch.len() ) {
+			return {
+				isOutdated: semanticVersion.isNew( current = arguments.version, target = versionMatch.last() ),
+				version: versionMatch.last()
+			};
+		}
+
+		// Did not find a version in the URL so assume package is outdated
+		return {
+			isOutdated: true,
+			version: 'unknown'
+		};
 	}
 
 }
