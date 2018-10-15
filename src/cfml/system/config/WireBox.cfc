@@ -28,12 +28,12 @@ component extends='wirebox.system.ioc.config.Binder' {
 
 		// LogBox
 		wirebox.logBoxConfig = 'commandbox.system.config.LogBox';
-		
+
 		wirebox.cacheBox = {
 			enabled = true,
 			configFile = 'commandbox.system.config.CacheBox'
 		};
-		
+
 		wirebox.metadataCache='metadataCache';
 
 		// Register CommandBox DSL for special injection namespaces
@@ -61,6 +61,7 @@ component extends='wirebox.system.ioc.config.Binder' {
 		var ortusArtifactsURL		= 'http://downloads.ortussolutions.com/';
 		var ortusPRDArtifactsURL	= 'http://downloads.ortussolutions.com/';
 		var colors256Data			= deserializeJSON( fileRead( homedir & '/cfml/system/config/colors.json' ) );
+		var semverRegex				= '\d{1,3}(?:\.\d{1,3}){2}(?:-\w+(?:\.\w+)*)?(?:\+\w+(?:\.\w+)*)?';
 		// engine versions, first is default - for lucee, first is internal version
 
 		// map constants
@@ -78,10 +79,11 @@ component extends='wirebox.system.ioc.config.Binder' {
 		map( 'ortusPRDArtifactsURL@constants' ).toValue( ortusPRDArtifactsURL );
 		map( 'rewritesDefaultConfig@constants' ).toValue( '#homeDir#/cfml/system/config/urlrewrite.xml' );
 		map( 'colors256Data@constants' ).toValue( colors256Data );
+		map( 'semverRegex@constants' ).toValue( semverRegex );
 
 		// Map Directories
 		mapDirectory( '/commandbox/system/services' );
-		mapDirectory( '/commandbox/system/util' );		
+		mapDirectory( '/commandbox/system/util' );
 	}
 
 }

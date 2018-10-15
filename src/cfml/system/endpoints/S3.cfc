@@ -18,6 +18,8 @@ component accessors="true" implements="IEndpoint" singleton {
     property name="S3Service"              inject="S3Service";
     property name="tempDir"                inject="tempDir@constants";
     property name='wirebox'                inject='wirebox';
+    property name="semanticVersion"        inject="provider:semanticVersion@semver";
+    property name='semverRegex'            inject='semverRegex@constants';
 
     // Properties
     property name="namePrefixes" type="string";
@@ -66,7 +68,21 @@ component accessors="true" implements="IEndpoint" singleton {
     }
 
     public function getUpdate(required string package, required string version, boolean verbose=false) {
-        return httpsEndpoint.getUpdate(argumentCollection = arguments);
+        // Check to see if a semver exists in the path and if so use that
+        var versionMatch = reMatch( semverRegex, package.reReplaceNoCase( '(s3:)?//', '' ).listRest( '/\' ) );
+
+        if ( versionMatch.len() ) {
+            return {
+                isOutdated: semanticVersion.isNew( current = arguments.version, target = versionMatch.last() ),
+                version: versionMatch.last()
+            };
+        }
+
+        // Did not find a version in the path so assume package is outdated
+        return {
+            isOutdated: true,
+            version: 'unknown'
+        };
     }
 
 }
