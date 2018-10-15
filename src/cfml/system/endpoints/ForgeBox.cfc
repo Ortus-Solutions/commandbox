@@ -86,7 +86,8 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 
 		// Only bother checking if we have a version range.  If an exact version is stored in
 		// box.json, we're never going to update it anyway.
-		if( semanticVersion.isExactVersion( boxJSONversion ) ) {
+		// UNLESS the box.json has been udpated to have a new exact version that is different from what's installed (ignoreing buildID)
+		if( semanticVersion.isExactVersion( boxJSONversion ) && semanticVersion.compare( boxJSONversion, version, false ) == 0 ) {
 			return result;
 		}
 
