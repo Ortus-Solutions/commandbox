@@ -116,7 +116,16 @@ component accessors="true" singleton {
 			return '[EMPTY STRING]';
 		// string
 		} else if( isSimpleValue( result ) ) {
+			
+			if( isJSON( result ) ) {
+				var parsed = deserializeJSON( result );
+				if( isStruct( parsed ) || isArray( parsed ) ) {
+					return formatterUtil.formatJson( json=result, ANSIColors=JSONService.getANSIColors() );					
+				}
+			}
+			
 			return result;
+			
 		// CFC, possibly Java object too (though I think that's a bug)
 		} else if( isObject( result ) ) {
 			return '[Object #getMetaData( result ).name#]';
