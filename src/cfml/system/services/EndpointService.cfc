@@ -92,6 +92,15 @@ component accessors="true" singleton {
 				package : arguments.ID,
 				ID : endpointName & ':' & arguments.ID
 			};
+		// Is it a Gist user/gistID?
+		} else if( left( arguments.ID, 5 ) == "gist:" && listLen( arguments.ID, '/' ) == 2 ) {
+			var endpointName =  'gist';
+			/* Remove github username from the  */
+			return {
+				endpointName : endpointName,
+				package : listLast( arguments.ID, "/" ),
+				ID : endpointName & ':' & listLast( arguments.ID, "/" )
+			};
 		// Endpoint is specified as "endpoint:resource"
 		} else if( listLen( arguments.ID, ':' ) > 1 ) {
 			var endpointName = listFirst( arguments.ID, ':' );

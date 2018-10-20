@@ -41,7 +41,7 @@
  * {code}
  * .
  * Installation from endpoints other than ForgeBox is supported.
- * Additional endpoints include HTTP/HTTPS, local zip file or folder, Git repos, CFlib.org, and RIAForge.org
+ * Additional endpoints include HTTP/HTTPS, local zip file or folder, Git repos, Github Gists, CFlib.org, and RIAForge.org
  * .
  * {code:bash}
  * install C:/myZippedPackages/package.zip
@@ -69,6 +69,14 @@
  * .
  * {code:bash}
  * install mygithubuser/myproject
+ * {code}
+ * .
+ * The Gist endpoint will install a package from gist.github.com. The username is optional but the gist ID is required.
+ * You can also use a commit-ish to target a specific commit.
+ * .
+ * {code:bash}
+ * install gist:b6cfe92a08c742bab78dd15fc2c1b2bb
+ * install gist:b6cfe92a08c742bab78dd15fc2c1b2bb#37348a126f1f410120785be0d84ad7a2148c3e9f
  * {code}
  * .
  * UDFs from CFLib.org can be installed via the cflib endpoint.  Install UDFs into a ColdBox app with the cflib-coldbox endpoint.
@@ -163,7 +171,7 @@ component aliases="install" {
 		} catch( endpointException var e ) {
 			error( e.message, e.detail );
 		}
-		
+
 	}
 
 	// Auto-complete list of IDs
