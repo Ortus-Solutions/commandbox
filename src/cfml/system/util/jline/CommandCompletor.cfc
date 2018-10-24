@@ -384,10 +384,10 @@ component singleton {
  	 **/
 	private function pathCompletion(String startsWith, required candidates, showFiles=true, paramName, namedParams ) {
 		// keep track of the original here so we can put it back like the user had
-		var originalStartsWith = replace( arguments.startsWith, "\", "/", "all" );
+		var originalStartsWith = fileSystemUtil.normalizeSlashes( arguments.startsWith );
 		// Fully resolve the path.	
 		arguments.startsWith = fileSystemUtil.resolvePath( arguments.startsWith );
-		startsWith = replace( startsWith, "\", "/", "all" );
+		startsWith = fileSystemUtil.normalizeSlashes( startsWith );
 
 		// Even if the incoming string is a folder, keep off the trailing slash if the user hadn't typed it yet.
 		if( originalStartsWith.len() && !originalStartsWith.endsWith( '/' ) && startsWith.endsWith( '/' ) ) {
