@@ -158,6 +158,7 @@ component aliases="show" {
 					.line( 'Summary: #entryData.summary#' )
 					.text( 'Versions: ' );
 
+				// TODO: Consolidate this with identical logic in "forgebox search"
 				var prevMajor = 0;
 				if( entryData.versions.len() ) {
 					prevMajor = val( entryData.versions[ 1 ].version.listGetAt( 1, '.' ) );
@@ -168,6 +169,9 @@ component aliases="show" {
 				var versionsSkipped = 0;
 				for( var ver in entryData.versions ) {
 					var major = val( ver.version.listGetAt( 1, '.' ) );
+					if( major == 0 && ver.version.listlen( '.' ) > 1 ) {
+						major = val( ver.version.listGetAt( 2, '.' ) );						
+					}
 					if( major != prevMajor ) {
 						if( lines > 0 ) { print.text( '          ' ); }
 						print.line( versionLine & ( versionsSkipped > 0 ? ' ( #versionsSkipped# more...)' : '' ) );
