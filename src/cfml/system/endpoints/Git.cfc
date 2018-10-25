@@ -120,9 +120,7 @@ component accessors="true" implements="IEndpoint" singleton {
 					theRealJavaException = theRealJavaException.getCause()
 				} while( !isNull( theRealJavaException ) )
 
-				var errorMessage = getNamePrefixes() == "gist" ? "Error cloning Gist" : "Error Cloning Git repository";
-
-				throw( message=errorMessage, detail="#deepMessage#",  type="endpointException");
+				throw( message="Error cloning #getNamePrefixes()# repository", detail="#deepMessage#",  type="endpointException");
 			}
 
 		} finally {
