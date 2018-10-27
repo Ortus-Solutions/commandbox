@@ -387,7 +387,13 @@ component accessors="true" singleton="true" {
 		writeXMLFile( webXML, destination );
 		return true;
 	}
-	
+
+	/**
+	* Write an XML file to disk and format it so it's human-readable
+	*
+	* @XMLDoc XML Doc to write (complex value)
+	* @path File path to write XML to
+	**/
 	private function writeXMLFile( XMLDoc, path ) {
 		var xlt = '<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
 		<xsl:output method="xml" encoding="utf-8" indent="yes" xslt:indent-amount="2" xmlns:xslt="http://xml.apache.org/xslt" />
@@ -398,6 +404,14 @@ component accessors="true" singleton="true" {
 		fileWrite( path, toString( XmlTransform( XMLDoc, xlt) ) );		
 	}
 
+	/**
+	* Find the Lucee jar in the lib directory and if it's packed, unpack it.
+	* If the unpacked jar is found in artifacts, use it instead.  
+	* If not, unpack and store in artifacts for next time.
+	*
+	* @libDirectory Directory where the libs are for the server
+	* @luceeVersion Semver for the Lucee version so we can use artifacts
+	**/
 	private function unpackLuceeJar( libDirectory, luceeVersion ) {
 		var job = wirebox.getInstance( 'interactiveJob' );
 		var tempDir = wirebox.getInstance( 'tempDir@constants' ) & '/lucee_unpack' & randRange( 1, 500 );
@@ -447,6 +461,7 @@ component accessors="true" singleton="true" {
 						var extArray = directoryList( path=explodedJarExtensionsDir, filter="*.lex" );
 						var extTmpDir = explodedJarExtensionsDir & '/temp';
 						var extJarsTmpDir = extTmpDir & '/jars';
+						// For each LEX file
 						extArray.each( function( extFile ) {
 							directoryCreate( explodedJarDir, true, true );
 							zip action="unzip" file="#extFile#" destination="#extTmpDir#" overwrite="false";
@@ -457,6 +472,7 @@ component accessors="true" singleton="true" {
 								bundleArray.each( unpackInPlace, true, createObject( 'java', 'java.lang.Runtime' ).getRuntime().availableProcessors() );
 							}
 							
+							// Delete the old lex and replace with the new unpacked one
 							fileDelete( extFile );
 							zip action='zip' source=extTmpDir file=extFile;
 							
@@ -477,6 +493,8 @@ component accessors="true" singleton="true" {
 			} // end if for jar existence
 				
 		} catch( any var e ) {
+			// If something goes wrong, let the user know in the job logs, but ignore the error.
+			// The server will continue to start, but just using the packed jar. 
 			job.adderrorLog( 'Error unpacking Lucee jar' );
 			job.adderrorLog( e.message );
 			job.adderrorLog( e.detail );
@@ -491,7 +509,12 @@ component accessors="true" singleton="true" {
 		}
 			
 	}
-	
+
+	/**
+	* Take a pack200 packed jar and unpack it into the same folder, deleting the original
+	*
+	* @packedFile Path to the packed file named something.foo.pack.gz. Will be replaced with something.foo
+	**/
 	private function unpackInPlace( packedFile ) {
 		var packedFileDir = getDirectoryFromPath( packedFile );
 		var unpackedFile = packedFile.replace( '.pack.gz', '' );
