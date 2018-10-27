@@ -257,6 +257,9 @@ component accessors="true" singleton="true" {
 
 			directoryCreate( installDetails.installDir & '/WEB-INF', true, true );
 			directoryCopy( '/commandbox-home/lib', thislib, false, '*.jar' );
+			// CommandBox ships with a pack200 compressed Lucee jar. Unpack it for faster start
+			unpackLuceeJar( thislib, installDetails.version );
+			
 			fileCopy( expandPath( '/commandbox/system/config/web.xml' ), thisWebinf & '/web.xml');
 
 			// Mark this WAR as being exploded already
@@ -393,6 +396,134 @@ component accessors="true" singleton="true" {
 		</xsl:stylesheet>';
 		
 		fileWrite( path, toString( XmlTransform( XMLDoc, xlt) ) );		
+	}
+
+	private function unpackLuceeJar( libDirectory, luceeVersion ) {
+		var job = wirebox.getInstance( 'interactiveJob' );
+		var tempDir = wirebox.getInstance( 'tempDir@constants' ) & '/lucee_unpack' & randRange( 1, 500 );
+	
+		try { 
+			// Look for a jar called "lucee-1.2.3-packed.jar
+			var luceeJarArr = directoryList( path=libDirectory, filter="lucee*-packed.jar" );
+			
+			// If we found one
+			if( luceeJarArr.len() ) {
+				var luceeJarPath = luceeJarArr[ 1 ];
+				var luceeUnpackedJarPath = luceeJarPath.replace( '-packed', '' )
+				var explodedJarDir = tempDir & '/explodedJar';
+				var explodedJarBundlesDir = explodedJarDir & '/bundles';
+				var explodedJarCoreDir = explodedJarDir & '/core';
+				var explodedJarExtensionsDir = explodedJarDir & '/extensions';
+				
+				// If found in artifacts
+				if( artifactService.artifactExists( 'luceejar-unpacked', luceeVersion ) ) {
+					
+					// Delete the packed one
+					fileDelete( luceeJarPath );
+					// And put the artifact in its place
+					fileCopy( artifactService.getArtifactPath( 'luceejar-unpacked', luceeVersion ), luceeUnpackedJarPath );
+					
+				} else {
+					
+					job.addLog( 'Unpacking Lucee jar for faster start (one-time operation)' );
+					
+					directoryCreate( explodedJarDir, true, true );
+					zip action="unzip" file="#luceeJarPath#" destination="#explodedJarDir#" overwrite="false";
+					
+					// Process packed OSGI bundles
+					if( directoryExists( explodedJarBundlesDir ) ) {
+						var bundleArray = directoryList( path=explodedJarBundlesDir, filter="*.jar.pack.gz" );
+						bundleArray.each( unpackInPlace, true, createObject( 'java', 'java.lang.Runtime' ).getRuntime().availableProcessors() );
+					}
+					
+					// Process Lucee Core file
+					if( directoryExists( explodedJarCoreDir ) ) {
+						var coreArray = directoryList( path=explodedJarCoreDir, filter="*.pack.gz" );
+						coreArray.each( unpackInPlace );
+					}
+					
+					// Process Lucee Extensions
+					if( directoryExists( explodedJarExtensionsDir ) ) {
+						var extArray = directoryList( path=explodedJarExtensionsDir, filter="*.lex" );
+						var extTmpDir = explodedJarExtensionsDir & '/temp';
+						var extJarsTmpDir = extTmpDir & '/jars';
+						extArray.each( function( extFile ) {
+							directoryCreate( explodedJarDir, true, true );
+							zip action="unzip" file="#extFile#" destination="#extTmpDir#" overwrite="false";
+							
+							if( directoryExists( extJarsTmpDir ) ) {
+								// Process packed OSGI bundles
+								var bundleArray = directoryList( path=extJarsTmpDir, filter="*.jar.pack.gz" );
+								bundleArray.each( unpackInPlace, true, createObject( 'java', 'java.lang.Runtime' ).getRuntime().availableProcessors() );
+							}
+							
+							fileDelete( extFile );
+							zip action='zip' source=extTmpDir file=extFile;
+							
+							directoryDelete( extTmpDir, true );
+						} );
+					}
+					
+					fileDelete( luceeJarPath );
+					zip action='zip' source=explodedJarDir file=luceeUnpackedJarPath;
+					
+					// Place in artifacts
+					fileCopy( luceeUnpackedJarPath, tempDir & 'temp.zip' );
+					artifactService.createArtifact( 'luceejar-unpacked', luceeVersion, tempDir & 'temp.zip' );
+					
+				}
+				
+				
+			} // end if for jar existence
+				
+		} catch( any var e ) {
+			job.adderrorLog( 'Error unpacking Lucee jar' );
+			job.adderrorLog( e.message );
+			job.adderrorLog( e.detail );
+			job.adderrorLog( e.tagContext[ 1 ].template & ':' &  e.tagContext[ 1 ].line );
+		} finally {
+			// Clean up
+			if( directoryExists( tempDir ) ) {
+				try {
+					directoryDelete( tempDir, true );
+				} catch( any var e2 ) {}
+			}
+		}
+			
+	}
+	
+	private function unpackInPlace( packedFile ) {
+		var packedFileDir = getDirectoryFromPath( packedFile );
+		var unpackedFile = packedFile.replace( '.pack.gz', '' );
+		
+		try {
+			// Class to unpack the jars
+			var unpacker = createObject( 'java', 'java.util.jar.Pack200' ).newUnpacker();
+			// Out stream (the file being written to)
+			var out = createObject( 'java', 'java.util.jar.JarOutputStream' ).init( createObject( 'java', 'java.io.FileOutputStream' ).init( unpackedFile ) );
+			// In stream (the jar being unpacked)
+			var in = createObject( 'java', 'java.util.zip.GZIPInputStream' ).init( createObject( 'java', 'java.io.FileInputStream' ).init( packedFile ) );
+			
+			// Do the unpacking
+			unpacker.unpack( in, out );
+			
+		// This stuff 'gotta happen
+		} finally {
+			try {
+				// Close input streama
+				in.close();
+			} catch( any var e2 ) {}
+			
+			try {
+				// Flush and close output streama
+				out.flush();
+				out.close();
+			} catch( any var e2 ) {}
+			
+			// Delete original packed filee
+			fileDelete( packedFile );
+		}
+		
 	}
 
 }
