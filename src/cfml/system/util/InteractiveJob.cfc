@@ -80,6 +80,9 @@ component accessors=true singleton {
 	*/
 	function addLog( required string line, string color='' ) {
 		var termWidth = terminal.getWidth() - ( getCurrentJobDepth() * 4 ) - 3;
+		if( termWidth <= 0 ){
+			termWidth = 70;
+		}
 			
 		getCurrentJob()
 			.logLines.append(
