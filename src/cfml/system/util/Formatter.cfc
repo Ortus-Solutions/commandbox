@@ -247,9 +247,26 @@ component singleton {
 	 * Pretty JSON
 	 * @json A string containing JSON, or a complex value that can be serialized to JSON
 	 **/
-	public function formatJson( json, indent, lineEnding, spaceAfterColon, sortKeys ) {
+	public function formatJson( any json, string indent, string lineEnding, boolean spaceAfterColon, string sortKeys, struct ansiColors ) {
+		
+		// If these settings are defined, they take over and are used
+		// ansiColors are NOT defauled here since there are cases in which we DON'T want any color coding.
+		// Therefore, ansiColors default need to be grabbed at the code which is calling this method if and
+		// only if that code needs coloring to be applied.
+		if( configService.settingExists( 'json.indent' ) ) {
+			indent = configService.getSetting( 'json.indent' );
+		}		
+		if( configService.settingExists( 'json.lineEnding' ) ) {
+			lineEnding = configService.getSetting( 'json.lineEnding' );
+		}		
+		if( configService.settingExists( 'json.spaceAfterColon' ) ) {
+			spaceAfterColon = configService.getSetting( 'json.spaceAfterColon' );
+		}		
+		if( configService.settingExists( 'json.sortKeys' ) ) {
+			sortKeys = configService.getSetting( 'json.sortKeys' );
+		}
+		
 		// This is an external lib now.  Leaving here for backwards compat.
-		structAppend( arguments, configService.getSetting( 'json', { } ), false );
 		return JSONPrettyPrint.formatJSON( argumentCollection = arguments );
 	}
 }

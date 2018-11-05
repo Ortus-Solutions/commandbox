@@ -48,7 +48,8 @@ component {
 			'true',
 			'false',
 			'return',
-			'in'
+			'in',
+			'function'
 		];
 		variables.sets = {
 			')' : '(',

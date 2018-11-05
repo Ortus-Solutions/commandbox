@@ -59,7 +59,7 @@ component {
 			if( isSimpleValue( propertyValue ) ) {
 				print.line( propertyValue );
 			} else {
-				print.line( formatterUtil.formatJson( propertyValue ) );
+				print.line( propertyValue );
 			}
 
 		} catch( JSONException var e ) {

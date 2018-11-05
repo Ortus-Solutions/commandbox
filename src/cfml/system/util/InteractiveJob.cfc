@@ -78,11 +78,39 @@ component accessors=true singleton {
 	*
 	* @line Message to log
 	*/
-	function addLog( required string line ) {
+	function addLog( required string line, string color='' ) {
+		var termWidth = terminal.getWidth() - ( getCurrentJobDepth() * 4 ) - 3;
+		if( termWidth <= 0 ){
+			termWidth = 70;
+		}
+			
 		getCurrentJob()
 			.logLines.append(
 				// Any log lines with a line break needs to become multuple lines
-				line.listToArray( chr( 13 ) & chr( 10 ) )
+				line
+					// Break multiple lines into array
+					.listToArray( chr( 13 ) & chr( 10 ) )
+					// Break lines longer than the current terminal width into multiples
+					.reduce( function( result, i ) {
+						// Keep breaking off chunks until we're short enough to fit
+						while( i.len() > termWidth ) {
+							result.append( i.left( termWidth ) );
+							i = i.right( -termWidth );
+						}
+						// Add any remaining.
+						if( i.len() ) {
+							result.append( i );	
+						}
+						return result;
+					}, [] )
+					// Apply coloring to all lines if there is a color.
+					.map( function( i ) {
+						if( color.len() ) {
+							return print.text( i, color );
+						} else {
+							return i;
+						}
+					} )
 				,true
 			);
 		draw();
@@ -95,7 +123,7 @@ component accessors=true singleton {
 	* @line Message to log
 	*/
 	function addErrorLog( required string line ) {
-		return addLog( print.red( line ) );
+		return addLog( line, 'red' );
 	}
 
 	/**
@@ -104,7 +132,7 @@ component accessors=true singleton {
 	* @line Message to log
 	*/
 	function addWarnLog( required string line ) {
-		return addLog( print.yellow( line ) );
+		return addLog( line, 'yellow' );
 	}
 
 	/**
@@ -113,7 +141,7 @@ component accessors=true singleton {
 	* @line Message to log
 	*/
 	function addSuccessLog( required string line ) {
-		return addLog( print.green( line ) );
+		return addLog( line, 'green' );
 	}
 
 	/**
@@ -359,7 +387,7 @@ component accessors=true singleton {
 	}
 
 	/**
-	* Get struct that represents the currentlly executing job.
+	* Get struct that represents the currently executing job.
 	*/
 	private struct function getCurrentJob() {
 		var pointer = getJobs();
@@ -376,6 +404,29 @@ component accessors=true singleton {
 		}
 		// Climb down the rabbit hole until we find the last running job
 		return getLastChild( pointer.last() );
+	}
+
+	/**
+	* Get number that represents the depth of the currently executing job.
+	*/
+	private numeric function getCurrentJobDepth() {
+		var pointer = getJobs();
+		var depth = 0;
+		if( !pointer.len() ) {
+			throw( 'No active job' );
+		}
+		// Declare a closure here for easy recursion
+		var getLastChild = function( job ) {
+			depth++;
+			if( job.children.len() && job.children.last().status=='Running' ) {
+				return getLastChild( job.children.last() );
+			} else {
+				return job;
+			}
+		}
+		// Climb down the rabbit hole until we find the last running job
+		getLastChild( pointer.last() );
+		return depth;
 	}
 
 	/**

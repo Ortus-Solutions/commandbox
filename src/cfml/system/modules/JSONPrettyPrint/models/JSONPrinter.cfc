@@ -1,5 +1,6 @@
 component accessors="true" {
 
+    property name="ANSIPrint" inject="ANSIPrint@JSONPrettyPrint";
     property name="parser" inject="JSONSimpleParser@JSONPrettyPrint";
 
     public any function init() {
@@ -16,13 +17,15 @@ component accessors="true" {
      * @lineEnding String to use for line endings.  Defaults to CRLF on Windows and LF on *nix
      * @spaceAfterColon Add space after each colon like "value": true instead of"value":true
      * @sortKeys Specify a sort type to sort the keys of json objects: "text" or "textnocase"
+     * @ansiColors A struct of ANSI color codes. If supplied, output will be ANSI encoded. Struct keys are "constant", "key", "number", and "string" and values are valid ANSI escape sequence such as chr( 27 ) & '[38;5;52m'.
      **/
     public string function formatJson(
         required any json,
         string indent = defaultIndent,
         string lineEnding = defaultLineEnding,
         boolean spaceAfterColon = false,
-        string sortKeys = ''
+        string sortKeys = '',
+        struct ansiColors = {}
     ) {
         if ( !isSimpleValue( json ) ) {
             json = serializeJSON( json );
@@ -32,8 +35,11 @@ component accessors="true" {
             indent: indent,
             lineEnding: lineEnding,
             colon: spaceAfterColon ? ': ' : ':',
-            sortKeys: sortKeys
+            sortKeys: sortKeys,
+            ansi: !ansiColors.isEmpty(),
+            ansiColors: ansiColors
         };
+        structAppend( settings.ansiColors, ANSIPrint.getANSIDefaults(), false );
         return printByType( json, parsedJSON, settings );
     }
 
@@ -44,12 +50,13 @@ component accessors="true" {
             case 'array':
                 return printArray( json, parsedJSON, settings, indent );
             case 'element':
-                return printElement( json, parsedJSON );
+                return printElement( json, parsedJSON, 'value', settings );
         }
     }
 
-    private string function printElement( json, parsedJSON ) {
-        return mid( json, parsedJSON.start + 1, parsedJSON.end - parsedJSON.start );
+    private string function printElement( json, parsedJSON, type, settings ) {
+        var elem = mid( json, parsedJSON.start + 1, parsedJSON.end - parsedJSON.start );
+        return settings.ansi ? ANSIPrint.wrap( elem, type, settings.ansiColors ) : elem;
     }
 
     private string function printArray( json, parsedJSON, settings, indent ) {
@@ -68,7 +75,7 @@ component accessors="true" {
         if ( !parsedJSON.elements.len() ) return '{}';
         var nested_indent = indent & settings.indent;
         var elementData = parsedJSON.elements.reduce( function( r, e ) {
-            var key = printElement( json, e.key );
+            var key = printElement( json, e.key, 'key', settings );
             r.keys.append( key );
             r.valuesByKey[ key ] = printByType(
                 json,

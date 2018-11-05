@@ -46,23 +46,71 @@ component {
 	 * @itemName.hint Name of system setting to access each item per iteration
 	 * @delimiter.hint Delimiter Char(s) to split input
 	 **/
-	function run( input='', command='echo', itemName='item', delimiter=CR ) {
-		// Turn output into an array, breaking on delimiter
-		var content = listToArray( arguments.input, delimiter );
+	function run(
+		string input='',
+		string command='echo',
+		string itemName='item',
+		string delimiter=CR,
+		string valueName='value',
+		boolean continueOnError=false
+		) {
+		var wasJSON = false;
+		var inputJSON = '';
+		
+		arguments.input = print.unANSI( arguments.input );
+		
+		if( isJSON( arguments.input ) ) {
+			var inputJSON = deserializeJSON( arguments.input );
+			
+			if( isArray( inputJSON ) || isStruct( inputJSON ) ) {
+				var content = inputJSON;
+				wasJSON = true;
+			}
+		}
+		if( !wasJSON ) {
+			// Turn output into an array, breaking on delimiter
+			var content = listToArray( arguments.input, delimiter );
+		}
 		
 		// Loop over content
 		for( var line in content ) {
 			var theCommand = this.command( arguments.command );
 			
+			if( !isSimpleValue( line ) ) {
+				line = serializeJSON( line );
+			}
+			
 			// If it doesn't look like they are using the placeholder, then set the item as the next param
-			if( !arguments.command.findNoCase( '${#itemName#' ) ) {
+			if( !arguments.command.findNoCase( '${#itemName#' ) && !arguments.command.findNoCase( '${#valueName#' ) ) {
 				theCommand.params( line );
 			}
 			
-			// Set this as a localized environment variable so the command can access it.
-			systemSettings.setSystemSetting( itemName, line );			
+			// Set this as a localized environment variable so the command can access it.			
+			systemSettings.setSystemSetting( itemName, line );
 			
-			theCommand.run();
+			// If foreach was passed a struct, set the value as well
+			if( isStruct( inputJSON ) ) {
+				var thisValue = content[line ];
+				if( !isSimpleValue( thisValue ) ) {
+					thisValue = serializeJSON( thisValue );
+				}
+				systemSettings.setSystemSetting( valueName, thisValue );
+			}
+			
+			try {
+				theCommand.run();
+			} catch( any var e ) {
+				if( continueOnError ) {
+					
+					print
+						.redLine( e.message )
+						.redLine( e.detail ?: '' )
+						.toConsole();
+						
+				} else {
+					rethrow;
+				}
+			}
 			
 		}
 	}

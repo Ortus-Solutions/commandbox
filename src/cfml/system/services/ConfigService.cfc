@@ -30,9 +30,9 @@ component accessors="true" singleton {
 		// and smart auto-completion to help people set new settings.
 		setPossibleConfigSettings([
 			// Used in ModuleService
-			'ModulesExternalLocation',
+			'modulesExternalLocation',
 			'modulesInclude',
-			'ModulesExclude',
+			'modulesExclude',
 			// HTTP Proxy settings
 			'proxy.server',
 			'proxy.port',
@@ -58,7 +58,16 @@ component accessors="true" singleton {
 			'command.defaults',
 			'command.aliases',
 			// Interactivity
-			'nonInteractiveShell'
+			'nonInteractiveShell',
+			// JSON
+			'JSON.indent',
+			'JSON.lineEnding',
+			'JSON.spaceAfterColon',
+			'JSON.sortKeys',
+			'JSON.ANSIColors.constant',
+			'JSON.ANSIColors.key',
+			'JSON.ANSIColors.number',
+			'JSON.ANSIColors.string'			
 		]);
 
 		setConfigFilePath( '/commandbox-home/CommandBox.json' );

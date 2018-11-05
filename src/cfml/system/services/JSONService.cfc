@@ -14,6 +14,7 @@ component accessors="true" singleton {
 	property name="fileSystemUtil" inject="FileSystem";
 	property name="formatterUtil" inject="Formatter";
 	property name="logger"        inject="logbox:logger:{this}";
+	property name="print"         inject="print";
 
 	/**
 	* Constructor
@@ -215,8 +216,8 @@ component accessors="true" singleton {
 	* @locking.hint Set to true to have file system access wrapped in a lock
 	*/
 	function writeJSONFile( required string path, required any json, boolean locking = false ) {
-		var sortKeysIsSet = configService.settingExists( 'json.sortKeys' );
-		var sortKeys = configService.getSetting( 'json.sortKeys', 'textnocase' );
+		var sortKeysIsSet = configService.settingExists( 'JSON.sortKeys' );
+		var sortKeys = configService.getSetting( 'JSON.sortKeys', 'textnocase' );
 		var oldJSON = '';
 
 		if ( fileExists( path ) ) {
@@ -228,6 +229,9 @@ component accessors="true" singleton {
 		}
 
 		var newJSON = formatterUtil.formatJson( json = json, sortKeys = sortKeys );
+		if ( !oldJSON.len() || oldJSON.right( 1 ) == chr( 10 ) ) {
+			newJSON &= configService.getSetting( 'JSON.lineEnding', server.separator.line );
+		}
 
 		if ( oldJSON == newJSON ) {
 			return;
@@ -271,5 +275,29 @@ component accessors="true" singleton {
 
 		return isSorted( json );
 	}
+
+	/**
+	* Get ANSI colors for formatting JSON.  Returns defaults if no settings are present
+	*/
+	function getANSIColors() {
+		var ANSIColors = {
+            'constant' : configService.getSetting( 'JSON.ANSIColors.constant', 'red' ),
+            'key' : configService.getSetting( 'JSON.ANSIColors.key', 'blue' ),
+            'number' : configService.getSetting( 'JSON.ANSIColors.number', 'aqua' ),
+            'string' : configService.getSetting( 'JSON.ANSIColors.string', 'lime' )
+		};
+
+		return ANSIColors.map( function( k, v ) {
+			if( v.startsWith( chr( 27 ) ) ) {
+				return v;
+			} else {
+				// Use print helper to convert "DeepPink2" or "color203" to the escape
+				return print.text( '', v, true );
+			}
+		} );
+
+	}
+
+
 
 }

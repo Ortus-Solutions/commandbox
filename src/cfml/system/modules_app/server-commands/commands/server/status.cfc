@@ -65,7 +65,7 @@ component aliases='status,server info' {
 		// Display ALL as JSON?
 		if( arguments.showALL && arguments.json ){
 			print.line(
-				formatterUtil.formatJson( servers )
+				servers
 			);
 			return;
 		}
@@ -114,7 +114,7 @@ component aliases='status,server info' {
 						// Format Complex values as JSON
 						} else {
 							print.line(
-								formatterUtil.formatJson( thisValue )
+								thisValue
 							);
 						}
 
@@ -122,7 +122,7 @@ component aliases='status,server info' {
 
 						// Output the entire object
 						print.line(
-							formatterUtil.formatJson( thisServerInfo )
+							thisServerInfo
 						);
 
 					}

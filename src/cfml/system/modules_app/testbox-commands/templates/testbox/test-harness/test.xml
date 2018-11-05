@@ -23,7 +23,7 @@ PLEASE NOTE THAT YOU MUST ALTER THE RUNNER'S URL ACCORDING TO YOUR ENVIRONMENT.
 	<!-- FILL OUT THE BUNDLES TO TEST, CAN BE A LIST OF CFC PATHS -->
 	<property name="test.bundles"		value="" />
 	<!-- FILL OUT THE DIRECTORY MAPPING TO TEST -->
-	<property name="test.directory"		value="test.specs" />
+	<property name="test.directory"		value="tests.specs" />
 	<!-- FILL OUT IF YOU WANT THE DIRECTORY RUNNER TO RECURSE OR NOT -->
 	<property name="test.recurse"		value="true" />
 	<!-- FILL OUT THE LABELS YOU WANT TO APPLY TO THE TESTS -->
@@ -35,7 +35,14 @@ PLEASE NOTE THAT YOU MUST ALTER THE RUNNER'S URL ACCORDING TO YOUR ENVIRONMENT.
 	<property name="junitreport.dir"  	value="${report.dir}/junitreport" />
 
 	<target name="init" description="Init the tests">
+		<delete dir="${junitreport.dir}" />
 		<mkdir dir="${junitreport.dir}" />
+		<delete>
+			<fileset dir="${report.dir}">  
+				<include name="TEST-*.xml"/>
+				<include name="TEST.properties"/>
+			</fileset>
+		</delete>
 		<tstamp prefix="start">
 			<format property="TODAY" pattern="MM-dd-YYYY hh:mm:ss aa"/>
 		</tstamp>
@@ -71,12 +78,12 @@ PLEASE NOTE THAT YOU MUST ALTER THE RUNNER'S URL ACCORDING TO YOUR ENVIRONMENT.
 			 verbose="true"/>
 		 -->
 		
-        <!-- Read Result Properties -->
-        <property file="${report.dir}/TEST.properties"/>
-        <!-- Echo them out -->
-        <echoproperties regex="^(test|total).*"/>
-        <!-- Fail build if they failed -->
-        <fail if="test.failed"/>
+		<!-- Read Result Properties -->
+		<property file="${report.dir}/TEST.properties"/>
+		<!-- Echo them out -->
+		<echoproperties regex="^(test|total).*"/>
+		<!-- Fail build if they failed -->
+		<fail if="test.failed"/>
 	</target>
 
 	<target name="run-junit" depends="init" description="Run our tests and produce ANT JUnit reports">  
@@ -119,12 +126,12 @@ PLEASE NOTE THAT YOU MUST ALTER THE RUNNER'S URL ACCORDING TO YOUR ENVIRONMENT.
 			</report>
 		</junitreport> 
 		
-        <!-- Read Result Properties -->
-        <property file="${report.dir}/TEST.properties"/>
-        <!-- Echo them out -->
-        <echoproperties regex="^(test|total).*"/>
-        <!-- Fail build if they failed -->
-        <fail if="test.failed"/>
+		<!-- Read Result Properties -->
+		<property file="${report.dir}/TEST.properties"/>
+		<!-- Echo them out -->
+		<echoproperties regex="^(test|total).*"/>
+		<!-- Fail build if they failed -->
+		<fail if="test.failed"/>
 	</target>
 
 </project>

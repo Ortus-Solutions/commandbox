@@ -96,7 +96,7 @@ component accessors=true implements="IEndpoint" singleton {
 		var result = {
 			// Jars with a semver in the name are considered to not have an update since we assume they are an exact version
 			isOutdated = !package
-				.reReplaceNoCase( 'http(s)?://', '' )
+				.reReplaceNoCase( '^([\w:]+)?//', '' )
 				.listRest( '/\' )
 				.reFindNoCase( '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' ),
 			version = 'unknown'

@@ -11,6 +11,7 @@
 component accessors="true" singleton {
 
 	property name="formatterUtil" inject="Formatter";
+	property name="JSONService" inject="JSONService";
 	instance = {};
 
 	/**
@@ -115,13 +116,22 @@ component accessors="true" singleton {
 			return '[EMPTY STRING]';
 		// string
 		} else if( isSimpleValue( result ) ) {
+			
+			if( isJSON( result ) ) {
+				var parsed = deserializeJSON( result );
+				if( isStruct( parsed ) || isArray( parsed ) ) {
+					return formatterUtil.formatJson( json=result, ANSIColors=JSONService.getANSIColors() );					
+				}
+			}
+			
 			return result;
+			
 		// CFC, possibly Java object too (though I think that's a bug)
 		} else if( isObject( result ) ) {
 			return '[Object #getMetaData( result ).name#]';
 		// Serializable types
 		} else if( isArray( result ) || isStruct( result ) || isQuery( result ) ) {
-			return formatterUtil.formatJson( result );
+			return formatterUtil.formatJson( json=result, ANSIColors=JSONService.getANSIColors() );
 		// Yeah, I give up
 		} else {
 			return '[#result.getClass().getName()#]';
