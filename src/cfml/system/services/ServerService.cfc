@@ -131,7 +131,7 @@ component accessors="true" singleton {
 			},
 			'web' : {
 				'host' : d.web.host ?: '127.0.0.1',
-				'directoryBrowsing' : d.web.directoryBrowsing ?: true,
+				'directoryBrowsing' : d.web.directoryBrowsing ?: false,
 				'webroot' : d.web.webroot ?: '',
 				// Duplicate so onServerStart interceptors don't actually change config settings via refernce.
 				'aliases' : duplicate( d.web.aliases ?: {} ),
@@ -1753,7 +1753,7 @@ component accessors="true" singleton {
 			'heapSize'			: 512,
 			'minHeapSize'		: 0,
 			'javaHome'			: '',
-			'directoryBrowsing' : true,
+			'directoryBrowsing' : false,
 			'JVMargs'			: "",
 			'runwarArgs'		: "",
 			'cfengine'			: "",

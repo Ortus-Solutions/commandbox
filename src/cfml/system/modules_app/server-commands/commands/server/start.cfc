@@ -70,7 +70,7 @@ component aliases="start" {
 	 * @rewritesConfig 		optional URL rewriting config file path
 	 * @heapSize			The max heap size in megabytes you would like this server to start with, it defaults to 512mb
 	 * @minHeapSize			The min heap size in megabytes you would like this server to start with
-	 * @directoryBrowsing 	Enable/Disabled directory browsing, defaults to true
+	 * @directoryBrowsing 	Enable/Disabled directory browsing, defaults to false
 	 * @JVMArgs 			Additional JVM args to use when starting the server. Use "server status --verbose" to debug
 	 * @runwarArgs 			Additional Runwar options to use when starting the server. Use "server status --verbose" to debug
 	 * @saveSettings 		Save start settings in server.json
