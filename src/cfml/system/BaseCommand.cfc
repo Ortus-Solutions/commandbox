@@ -131,7 +131,7 @@ component accessors="true" singleton {
 		
 		// If the previous command chain failed
 		if( shell.getExitCode() != 0 ) {
-			error( 'Command returned failing exit code (#shell.getExitCode()#)', 'Failing Command: ' & command, shell.getExitCode(), errorCode=shell.getExitCode() );
+			error( 'Command returned failing exit code (#shell.getExitCode()#)', 'Failing Command: ' & command, shell.getExitCode(), shell.getExitCode() );
 		}
 		
 		return results;
