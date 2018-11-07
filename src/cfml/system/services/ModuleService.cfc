@@ -24,6 +24,7 @@
 	<cfproperty name="ConfigService" inject="Configservice">
 	<cfproperty name="SystemSettings" inject="SystemSettings">
 	<cfproperty name="consoleLogger" inject="logbox:logger:console">
+	<cfproperty name="fileSystemUtil" inject="FileSystem">
 
 
 <!------------------------------------------- CONSTRUCTOR ------------------------------------------->
@@ -89,7 +90,11 @@
     		// Add the application's module's location and the system core modules
     		var modLocations   = [ '/commandbox/system/modules','/commandbox/system/modules_app', '/commandbox/modules' ];
 			// Add the application's external locations array.
-			modLocations.addAll( ConfigService.getSetting( "ModulesExternalLocation", [] ) );
+			var externalPaths = ConfigService.getSetting( "ModulesExternalLocation", [] )
+				.map( function( path ) {
+					return fileSystemUtil.makePathRelative( path );
+				} );
+			modLocations.addAll( externalPaths );
 			// iterate through locations and build the module registry in order
 			buildRegistry( modLocations );
 		</cfscript>
