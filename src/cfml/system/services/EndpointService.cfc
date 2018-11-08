@@ -77,7 +77,7 @@ component accessors="true" singleton {
 				ID : endpointName & ':' & path
 			};
 		// Is it a real folder?
-		} else if( directoryExists( path ) ) {
+		} else if( listFind( '\/', arguments.ID ) && directoryExists( path ) ) {
 			var endpointName = 'folder';
 			return {
 				endpointName : endpointName,
