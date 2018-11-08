@@ -99,6 +99,11 @@ This file will stay running the entire time the shell is open
 		shell.setShellType( 'command' );
 		interceptorService =  shell.getInterceptorService();
 
+		if( argsArray.len() == 1 && argsArray[ 1 ].listLen( ' ' ) > 1 ) {
+			parser = wirebox.getInstance( 'parser' );
+			argsArray = parser.tokenizeInput( argsArray[ 1 ] );
+		}
+
 		interceptData = { shellType=shell.getShellType(), args=argsArray, banner=getBanner() };
 		interceptorService.announceInterception( 'onCLIStart', interceptData );
 
