@@ -137,6 +137,9 @@ component {
 				
 
 			} catch( any e ){
+				// If we ran an exit command in the recipe, don't actually exit the shell.  
+				shell.setKeepRunning( true );	
+				
 				print
 					.boldRed( "Error executing command [#thiscommand#], exiting recipe." )
 					.line();
