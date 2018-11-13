@@ -1054,7 +1054,7 @@ component accessors="true" singleton {
 	/**
 	 * Match positional parameters up with their names
  	 **/
-	private function convertToNamedParameters( userPositionalParams, commandParams ){
+	function convertToNamedParameters( userPositionalParams, commandParams ){
 		var results = {};
 
 		var i = 0;
