@@ -26,7 +26,7 @@ component  {
 		if( name.len() ) {
 			print.line( systemSettings.getSystemSetting( name, defaultValue ) );	
 		} else {
-			print.line( systemSettings.getCurrentEnvironment( true ) );			
+			print.line( systemSettings.getAllEnvironmentsFlattened() );			
 		}
 	}
 

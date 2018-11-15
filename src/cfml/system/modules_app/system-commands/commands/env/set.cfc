@@ -12,7 +12,7 @@ component aliases="set" {
 	*/
 	function run()  {
 		for( var arg in arguments ) {
-			SystemSettings.setSystemSetting( arg, arguments[ arg ], true );
+			systemSettings.setSystemSetting( arg, arguments[ arg ], true );
 			print.line( '#arg#=#arguments[ arg ]#' );	
 		}
 	}
