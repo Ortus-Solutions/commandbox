@@ -12,9 +12,8 @@
  * env show
  * {code}
  *
- * Note that a command calling another command creates nested environments that inherit.  A given 
- * system setting not present in the current environment may still reseolve because it is found in a 
- * parent environment context.
+ * This command does not include Java system properties or OS environment variables even though 
+ * they are included in the lookup order for System Setting resolution.
   **/
 component  {
 
