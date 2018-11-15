@@ -9,9 +9,12 @@
 *
 */
 component singleton {
+	property name='commandService' inject='CommandService';
 
 	variables.system = createObject( "java", "java.lang.System" );
-
+	// Default environment for the shell
+	variables.environment = {};
+	
 	/**
 	* Retrieve a Java System property or env value by name.
 	*
@@ -20,20 +23,37 @@ component singleton {
 	*/
     function getSystemSetting( required string key, defaultValue ) {
 
+		// See if the key exists in the current env or any of the parent envs
+		var cs = commandService.getCallStack();
+		for( var call in cs ) {
+			if ( call.environment.keyExists( key ) ) {
+				return call.environment[ key ];
+			}
+		}
+		
+		// See if the default shell env has it
+		if ( variables.environment.keyExists( key ) ) {
+			return variables.environment[ key ];
+		}
+
+		// Now check Java system props
 		var value = system.getProperty( arguments.key );
 		if ( ! isNull( value ) ) {
 			return value;
 		}
 
+		// Finally check OS env vars.
 		value = system.getEnv( arguments.key );
 		if ( ! isNull( value ) ) {
 			return value;
 		}
 
+		// Umm, is there a default?
 		if ( ! isNull( arguments.defaultValue ) ) {
 			return arguments.defaultValue;
 		}
 
+		// Yeah, I give up.
 		throw(
 			type = "SystemSettingNotFound",
 			message = "Could not find a Java System property or Env setting with key [#arguments.key#]."
@@ -64,14 +84,15 @@ component singleton {
 	}
 
 	/**
-	* Set a System Setting.
+	* Set a System Setting into the current environment
 	*
 	* @key The name of the setting to set.
 	* @value The value to use
+	* @inParent Pass true to set the variable in the parent environment
 	*/
-    function setSystemSetting( required string key, required string value ) {
-    	// TODO: change this to be context-aware env vars for the current command, not global
-		system.setProperty( arguments.key, arguments.value );
+    function setSystemSetting( required string key, required string value, inParent=false ) {
+    	var env = getCurrentEnvironment( inParent );
+		env[ arguments.key ] = arguments.value;
 	}
 
 	/**
@@ -178,6 +199,33 @@ component singleton {
 		}
 		// Other complex variables like XML or CFC instance would just get skipped for now.
 		return dataStructure;
+	}
+
+
+	/**
+	* Return current environment for the shell.
+	*
+	* @parent Get the parent environment
+	*/	
+	struct function getCurrentEnvironment( parent=false ) {
+		// If there is an executing command, use the env for that command
+		var cs = commandService.getCallStack();
+		
+		// Check for a parent command
+		if( parent ) {
+			if( cs.len() > 1 ) {
+				return cs[ 2 ].environment;
+			}
+		// Fall back to current command if not getting parent
+		} else {
+			if( cs.len() ) {
+				return cs[ 1 ].environment;
+			}			
+		}
+		
+		// Otherwise, the default shell env
+		// We'll also hit this if getting the parent, but there is only one command level deep processing.
+		return variables.environment;
 	}
 
 }

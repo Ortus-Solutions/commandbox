@@ -303,14 +303,14 @@ component accessors="true" singleton {
 			// This will prevent the output from showing up out of order if one command nests a call to another.
 			if( instance.callStack.len() ){
 				// Print anything in the buffer
-				shell.printString( instance.callStack[1].commandReference.CFC.getResult() );
+				shell.printString( instance.callStack[1].commandInfo.commandReference.CFC.getResult() );
 				// And reset it now that it's been printed.
 				// This command can add more to the buffer once it's executing again.
-				instance.callStack[1].commandReference.CFC.reset();
+				instance.callStack[1].commandInfo.commandReference.CFC.reset();
 			}
 
 			// Add command to the top of the stack
-			instance.callStack.prepend( commandInfo );
+			instance.callStack.prepend( { commandInfo : commandInfo, environment : {} } );
 
 			interceptorService.announceInterception( 'preCommand', { commandInfo=commandInfo, parameterInfo=parameterInfo } );
 
@@ -803,7 +803,7 @@ component accessors="true" singleton {
 		if( len( command ) ){
 			for( var call in instance.callStack ){
 				// CommandString is a dot-delimted path
-				if( call.commandString == listChangeDelims( command, ' ', '.' ) ){
+				if( call.commandInfo.commandString == listChangeDelims( command, ' ', '.' ) ){
 					return true;
 				}
 			}
@@ -1098,6 +1098,15 @@ component accessors="true" singleton {
 			}
 		} );
 
+	}
+	
+
+	/**
+	 * Get the array of commands being executed.
+	 * This may be empty.
+ 	 **/
+	array function getCallStack() {
+		return instance.callStack;
 	}
 
 }

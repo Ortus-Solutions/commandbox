@@ -85,7 +85,7 @@ component {
 				theCommand.params( line );
 			}
 			
-			// Set this as a localized environment variable so the command can access it.			
+			// Set this as a localized environment variable so the command can access it.
 			systemSettings.setSystemSetting( itemName, line );
 			
 			// If foreach was passed a struct, set the value as well
