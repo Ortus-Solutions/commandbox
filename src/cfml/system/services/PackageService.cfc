@@ -940,79 +940,77 @@ component accessors="true" singleton {
 	*/
 	array function getOutdatedDependencies( required directory, required print, boolean verbose=false, includeSlugs='' ){
 		// build dependency tree
-		var tree = buildDependencyHierarchy( arguments.directory );
+		var tree 	= buildDependencyHierarchy( arguments.directory )
+			// Only check slugs we're supposed to
+			.filter( function( key, value ){
+				return ( !len( includeSlugs ) || listFindNoCase( includeSlugs, arguments.key ) );
+			} );
 		var fakeDir = arguments.directory & '/fake';
 		var verbose = arguments.verbose;
 
 		// Global outdated check bit
-		var aOutdatedDependencies = [];
+		var aOutdatedDependencies 	= [];
+
 		// Outdated check closure
 		var fOutdatedCheck 	= function( slug, value ){
-
-			// Only check slugs we're supposed to
-			if( !len( includeSlugs ) || listFindNoCase( includeSlugs, arguments.slug ) ) {
-
-				// If a package is not installed (possibly a dev dependency in production mode), then we skip it
-				if( !value.isInstalled ) {
-					if( verbose ){
-						print.yellowLine( "    * #arguments.slug# is not installed, skipping.." )
-							.toConsole();
-					}
-					return;
-				}
-
-				// Contains an enpoint
-				if( value.version contains ':' ) {
-					var ID = value.version;
-				} else {
-					var ID = arguments.slug & '@' & value.version;
-				}
-
-				try {
-					var endpointData = endpointService.resolveEndpoint( ID, fakeDir );
-				} catch( EndpointNotFound var e ) {
-					consoleLogger.error( e.message );
-					return;
-				}
-
-				try {
-					var updateData = endpointData.endpoint.getUpdate( endpointData.package, value.packageVersion, verbose );
-				// endpointException exception type is used when the endpoint has an issue that needs displayed,
-				// but I don't want to "blow up" the console with a full error.
-				} catch( endpointException var e ) {
-					consoleLogger.error( e.message & ' ' & e.detail );
-					return;
-				}
-
-				if( updateData.isOutdated ){
-					aOutdatedDependencies.append({
-						slug 				: arguments.slug,
-						directory 			: value.directory,
-						version 			: value.version,
-						packageVersion		: value.packageVersion,
-						newVersion 			: updateData.version,
-						shortDescription 	: value.shortDescription,
-						name 				: value.name,
-						dev 				: value.dev
-					});
-				}
-				// verbose output
+			// If a package is not installed (possibly a dev dependency in production mode), then we skip it
+			if( !value.isInstalled ) {
 				if( verbose ){
-					print.yellowLine( "    * #arguments.slug# (#value.packageVersion#) -> #endpointData.endpointName# version: (#updateData.version#)" )
-						.boldRedText( updateData.isOutdated ? "        * #arguments.slug# is Outdated#chr( 10 )#" : "" )
+					print.yellowLine( "    * #arguments.slug# is not installed, skipping.." )
 						.toConsole();
 				}
-
+				return;
 			}
+
+			// Contains an enpoint
+			if( value.version contains ':' ) {
+				var ID = value.version;
+			} else {
+				var ID = arguments.slug & '@' & value.version;
+			}
+
+			try {
+				var endpointData = endpointService.resolveEndpoint( ID, fakeDir );
+			} catch( EndpointNotFound var e ) {
+				consoleLogger.error( e.message );
+				return;
+			}
+
+			try {
+				var updateData = endpointData.endpoint.getUpdate( endpointData.package, value.packageVersion, verbose );
+			// endpointException exception type is used when the endpoint has an issue that needs displayed,
+			// but I don't want to "blow up" the console with a full error.
+			} catch( endpointException var e ) {
+				consoleLogger.error( e.message & ' ' & e.detail );
+				return;
+			}
+
+			if( updateData.isOutdated ){
+				aOutdatedDependencies.append({
+					slug 				: arguments.slug,
+					directory 			: value.directory,
+					version 			: value.version,
+					packageVersion		: value.packageVersion,
+					newVersion 			: updateData.version,
+					shortDescription 	: value.shortDescription,
+					name 				: value.name,
+					dev 				: value.dev
+				});
+			}
+
+			// verbose output
+			print.yellowLine( "    * #arguments.slug# (#value.packageVersion#) -> #endpointData.endpointName# version: (#updateData.version#)" )
+				.boldRedText( updateData.isOutdated ? "        * #arguments.slug# is Outdated#chr( 10 )#" : "" )
+				.toConsole();
 
 			// Do we have more dependencies, go down the tree in parallel
 			if( structCount( value.dependencies ) ){
-				structEach( value.dependencies, fOutdatedCheck );
+				structEach( value.dependencies, fOutdatedCheck, true );
 			}
 		};
 
 		// Verify outdated dependency graph in parallel
-		structEach( tree.dependencies, fOutdatedCheck );
+		structEach( tree.dependencies, fOutdatedCheck, true );
 
 		return aOutdatedDependencies;
 	}
