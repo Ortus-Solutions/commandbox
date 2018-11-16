@@ -219,7 +219,7 @@ component accessors="true" singleton {
 
 			// Initialize as empty.  We try to populate this with the option that has the highest precedence first but stop once it has a value set.
 			var packageDirectory = '';
-			
+
 			// Next, see if the containing project has an install path configured for this dependency already.
 			var containerBoxJSON = readPackageDescriptor( arguments.packagePathRequestingInstallation );
 			if( !len( installDirectory ) && structKeyExists( containerBoxJSON.installPaths, packageName ) ) {
@@ -333,12 +333,12 @@ component accessors="true" singleton {
 			}
 
 
-			// If this package is being installed anywhere south of the CommandBox system folder, 
+			// If this package is being installed anywhere south of the CommandBox system folder,
 			// flag the shell to reload after this command is finished.
 			if( fileSystemUtil.normalizeSlashes( installDirectory ).startsWith( fileSystemUtil.normalizeSlashes( expandPath( '/commandbox' ) ) ) ) {
 				job.addWarnLog( "Shell will be reloaded after installation." );
 				shell.reload( false );
-				shellWillReload = true;	
+				shellWillReload = true;
 			}
 
 			// I give up, just stick it in the CWD
@@ -350,7 +350,7 @@ component accessors="true" singleton {
 			if( len( artifactDescriptor.packageDirectory ) && !packageDirectory.len() ) {
 				packageDirectory = artifactDescriptor.packageDirectory;
 			}
-			
+
 			// Still empty?  Use a default value of the package name
 			if( !packageDirectory.len() ) {
 				packageDirectory = packageName;
@@ -372,14 +372,14 @@ component accessors="true" singleton {
 				// Add it!
 				if( addDependency( packagePathRequestingInstallation, packageName, version, installDirectory, artifactDescriptor.createPackageDirectory,  arguments.saveDev, endpointData ) ) {
 					// Tell the user...
-					job.addLog( "#packagePathRequestingInstallation#/box.json updated with #( arguments.saveDev ? 'dev ': '' )#dependency." );	
+					job.addLog( "#packagePathRequestingInstallation#/box.json updated with #( arguments.saveDev ? 'dev ': '' )#dependency." );
 				}
 			}
 
 			// Check to see if package has already been installed.  This check can only be performed for packages that get installed in their own directory.
 			if( artifactDescriptor.createPackageDirectory && directoryExists( installDirectory ) ){
 				var uninstallFirst = false;
-				
+
 				// Make sure the currently installed version is older than what's being requested.  If there's a new version, install it anyway.
 				var alreadyInstalledBoxJSON = readPackageDescriptor( installDirectory );
 				if( isPackage( installDirectory ) && semanticVersion.isNew( alreadyInstalledBoxJSON.version, version  )  ) {
@@ -388,7 +388,7 @@ component accessors="true" singleton {
 				// Allow if forced.
 				} else if( arguments.force ) {
 					job.addLog( "Package already installed but you forced a reinstall." );
-					uninstallFirst = true;					
+					uninstallFirst = true;
 				} else {
 					// cleanup tmp
 					if( endpointData.endpointName != 'folder' ) {
@@ -398,10 +398,10 @@ component accessors="true" singleton {
 					job.complete( verbose );
 					return true;
 				}
-				
+
 				if( uninstallFirst ) {
 					job.addWarnLog( "Uninstalling first to get a fresh slate..." );
-					
+
 					var params = {
 						id : packageName,
 						save : false,
@@ -409,10 +409,10 @@ component accessors="true" singleton {
 						currentWorkingDirectory : currentWorkingDirectory,
 						packagePathRequestingUninstallation : packagePathRequestingInstallation
 					};
-							
+
 					uninstallPackage( argumentCollection=params );
 				}
-				
+
 			}
 
 			// Create installation directory if neccesary
@@ -706,7 +706,7 @@ component accessors="true" singleton {
 	* @installDirectory The location that the package is installed to including the container folder.
 	* @installDirectoryIsDedicated True if the package was placed in a dedicated folder
 	* @dev True if this is a development depenency, false if it is a production dependency
-	* 
+	*
 	* @returns boolean True if box.json was updated, false if update wasn't neccessary (keys already existed with correct values)
 	*/
 	public function addDependency(
@@ -744,7 +744,7 @@ component accessors="true" singleton {
 		} else {
 			var thisValue = endpointData.ID;
 		}
-		
+
 		// Prevent unneccessary updates to the JSON file.
 		if( !dependencies.keyExists( arguments.packageName ) || dependencies[ arguments.packageName ] != thisValue ) {
 			dependencies[ arguments.packageName ] = thisValue;
@@ -774,13 +774,13 @@ component accessors="true" singleton {
 
 			// Just in case-- an empty install dir would be useless.
 			if( len( arguments.installDirectory ) ) {
-			
+
 				// Prevent unneccessary updates to the JSON file.
 				if( !installPaths.keyExists( arguments.packageName ) || installPaths[ arguments.packageName ] != arguments.installDirectory ) {
 					installPaths[ arguments.packageName ] = arguments.installDirectory;
 					updated = true;
 				}
-				
+
 			}
 
 		} // end installDirectoryIsDedicated
@@ -940,11 +940,7 @@ component accessors="true" singleton {
 	*/
 	array function getOutdatedDependencies( required directory, required print, boolean verbose=false, includeSlugs='' ){
 		// build dependency tree
-		var tree 	= buildDependencyHierarchy( arguments.directory )
-			// Only check slugs we're supposed to
-			.filter( function( key, value ){
-				return ( !len( includeSlugs ) || listFindNoCase( includeSlugs, arguments.key ) );
-			} );
+		var tree 	= buildDependencyHierarchy( arguments.directory );
 		var fakeDir = arguments.directory & '/fake';
 		var verbose = arguments.verbose;
 
@@ -953,55 +949,60 @@ component accessors="true" singleton {
 
 		// Outdated check closure
 		var fOutdatedCheck 	= function( slug, value ){
-			// If a package is not installed (possibly a dev dependency in production mode), then we skip it
-			if( !value.isInstalled ) {
-				if( verbose ){
-					print.yellowLine( "    * #arguments.slug# is not installed, skipping.." )
-						.toConsole();
+
+			if( !len( includeSlugs ) || listFindNoCase( includeSlugs, arguments.slug ) ){
+
+				// If a package is not installed (possibly a dev dependency in production mode), then we skip it
+				if( !value.isInstalled ) {
+					if( verbose ){
+						print.yellowLine( "    * #arguments.slug# is not installed, skipping.." )
+							.toConsole();
+					}
+					return;
 				}
-				return;
-			}
 
-			// Contains an enpoint
-			if( value.version contains ':' ) {
-				var ID = value.version;
-			} else {
-				var ID = arguments.slug & '@' & value.version;
-			}
+				// Contains an enpoint
+				if( value.version contains ':' ) {
+					var ID = value.version;
+				} else {
+					var ID = arguments.slug & '@' & value.version;
+				}
 
-			try {
-				var endpointData = endpointService.resolveEndpoint( ID, fakeDir );
-			} catch( EndpointNotFound var e ) {
-				consoleLogger.error( e.message );
-				return;
-			}
+				try {
+					var endpointData = endpointService.resolveEndpoint( ID, fakeDir );
+				} catch( EndpointNotFound var e ) {
+					consoleLogger.error( e.message );
+					return;
+				}
 
-			try {
-				var updateData = endpointData.endpoint.getUpdate( endpointData.package, value.packageVersion, verbose );
-			// endpointException exception type is used when the endpoint has an issue that needs displayed,
-			// but I don't want to "blow up" the console with a full error.
-			} catch( endpointException var e ) {
-				consoleLogger.error( e.message & ' ' & e.detail );
-				return;
-			}
+				try {
+					var updateData = endpointData.endpoint.getUpdate( endpointData.package, value.packageVersion, verbose );
+				// endpointException exception type is used when the endpoint has an issue that needs displayed,
+				// but I don't want to "blow up" the console with a full error.
+				} catch( endpointException var e ) {
+					consoleLogger.error( e.message & ' ' & e.detail );
+					return;
+				}
 
-			if( updateData.isOutdated ){
-				aOutdatedDependencies.append({
-					slug 				: arguments.slug,
-					directory 			: value.directory,
-					version 			: value.version,
-					packageVersion		: value.packageVersion,
-					newVersion 			: updateData.version,
-					shortDescription 	: value.shortDescription,
-					name 				: value.name,
-					dev 				: value.dev
-				});
-			}
+				if( updateData.isOutdated ){
+					aOutdatedDependencies.append({
+						slug 				: arguments.slug,
+						directory 			: value.directory,
+						version 			: value.version,
+						packageVersion		: value.packageVersion,
+						newVersion 			: updateData.version,
+						shortDescription 	: value.shortDescription,
+						name 				: value.name,
+						dev 				: value.dev
+					});
+				}
 
-			// verbose output
-			print.yellowLine( "    * #arguments.slug# (#value.packageVersion#) -> #endpointData.endpointName# version: (#updateData.version#)" )
-				.boldRedText( updateData.isOutdated ? "        * #arguments.slug# is Outdated#chr( 10 )#" : "" )
-				.toConsole();
+				// verbose output
+				print.yellowLine( "    * #arguments.slug# (#value.packageVersion#) -> #endpointData.endpointName# version: (#updateData.version#)" )
+					.boldRedText( updateData.isOutdated ? "        * #arguments.slug# is Outdated#chr( 10 )#" : "" )
+					.toConsole();
+
+			}
 
 			// Do we have more dependencies, go down the tree in parallel
 			if( structCount( value.dependencies ) ){
