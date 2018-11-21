@@ -209,6 +209,11 @@ This file will stay running the entire time the shell is open
 				application.wireBox.getInstance( 'interceptorService' ).announceInterception( 'onException', { exception=exception } );
 	    	// If it fails no worries, LogBox just probably isn't loaded yet.
 			} catch ( Any e ) {}
+			
+			verboseErrors = true;
+			try{
+				verboseErrors = wirebox.getInstance( 'configService' ).getSetting( 'verboseErrors', false );
+			} catch( any e ) {}
 	
 			// Give nicer message to user
 			err = cfcatch;
@@ -239,13 +244,22 @@ This file will stay running the entire time the shell is open
 					}
 				}
 			}
-	    	systemOutput( '', true );
-	    	systemOutput( '#err.stacktrace#', true );
+			if( verboseErrors ) {
+		    	systemOutput( '', true );
+		    	systemOutput( '#err.stacktrace#', true );	
+			} else {
+		    	systemOutput( '', true );
+				systemOutput( 'To enable full stack trace, run "config set verboseErrors=true"', true );
+		    	systemOutput( '', true );
+			}
 	
 	    	//writeDump(var=cfcatch, output="console");
 	
-			// Give them a chance to read it
-			sleep( 30000 );
+			// ignore "sleep interrupted" exception if they hit Ctrl-C here
+			try {
+				// Give them a chance to read it
+				sleep( 30000 );
+			} catch( any e ) {}
 		</cfscript>
 	</cfcatch>
 </cftry>

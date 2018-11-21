@@ -17,7 +17,7 @@ component {
 
 	/**
 	* @username The ForgeBox username to switch to.
-	* @skipLogin If username isn't authenticated, retuen an error instead of prompting with login
+	* @skipLogin If username isn't authenticated, return an error instead of prompting with login
 	**/
 	function run( required string username, boolean skipLogin=false ){
 
@@ -37,7 +37,7 @@ component {
 				.params( arguments.username )
 				.run();
 		} else {
-			error( 'Username [#arguments.username#] isn''t authentcated.  Please use "forgebox login".' );
+			error( 'Username [#arguments.username#] isn''t authenticated.  Please use "forgebox login".' );
 		}
 	}
 
