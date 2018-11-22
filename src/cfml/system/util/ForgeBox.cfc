@@ -18,7 +18,7 @@ or just add DEBUG to the root logger
 
 
 ----------------------------------------------------------------------->
-<cfcomponent hint="ForgeBox API REST Wrapper" output="false" accessors="true" singleton>
+<cfcomponent hint="ForgeBox API REST Wrapper" output="false" accessors="true">
 
 	<!--- DI --->
 	<cfproperty name="progressableDownloader" 	inject="ProgressableDownloader">
@@ -28,8 +28,7 @@ or just add DEBUG to the root logger
 
 	<!--- Properties --->
 	<cfproperty name="endpointURL">
-	<cfproperty name="apiURL">
-	<cfproperty name="installURL">
+	<cfproperty name="APIURL">
 
 <!------------------------------------------- CONSTRUCTOR ------------------------------------------>
 
@@ -49,7 +48,6 @@ or just add DEBUG to the root logger
 			// Setup Properties
 			variables.endpointURL 	= "https://www.forgebox.io";
 			variables.APIURL 		= "#variables.endpointURL#/api/v1/";
-			variables.installURL 	= "http://www.coldbox.org/forgebox/install/";
 			variables.types 		= "";
 
 			return this;
@@ -458,7 +456,7 @@ or just add DEBUG to the root logger
 			var results = {error=false,response={},message="",responseheader={},rawResponse=""};
 			var HTTPResults = "";
 			var param = "";
-			var APIURL = configService.getSetting( 'endpoints.forgebox.APIURL', getAPIURL() );
+			var APIURL = getAPIURL();
 			if( APIURL.endsWith( '/' ) ) {
 				APIURL = left( APIURL, len( APIURL )-1 );
 			}

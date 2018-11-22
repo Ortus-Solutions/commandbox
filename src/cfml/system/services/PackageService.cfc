@@ -731,15 +731,20 @@ component accessors="true" singleton {
 		}
 		var updated = false;
 
-		// Add/overwrite this dependency
-
-		if( endpointData.endpointName == 'forgebox' ) {
+		// If this is a ForgeBox-based endpoint, add the version as ^1.2.3 if the
+		// user didn't specify a version, otherwise, just use what they typed
+		if( isInstanceOf(endpointData.endpoint, 'forgebox') ) {
             var parsedVersion = parseVersion( endpointData.package );
 			if( len( parsedVersion ) ) {
 				var thisValue = parsedVersion;
 			} else {
 				// caret version range (^1.2.3) allows updates that don't bump the major version.
 				var thisValue = '^' & arguments.version;
+			}
+			// If not the default forgebox endpoint, include the endpoint name and package name as"
+			// myEndpoing:mypackage@^1.2.3
+			if( endpointData.endpointName != 'forgebox' ) {
+				thisValue = '#endpointData.endpointName#:#arguments.packageName#@#thisValue#';
 			}
 		} else {
 			var thisValue = endpointData.ID;

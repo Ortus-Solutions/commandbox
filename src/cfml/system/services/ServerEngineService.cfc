@@ -140,7 +140,7 @@ component accessors="true" singleton="true" {
 		// In order to prevent uneccessary work, we're going to try REALLY hard to figure out exactly what engine will be installed
 		// before it actually happens so we can skip this whole mess if it's already in place.
 		// if our endpoint is ForgeBox, figure out what version it is going to install.
-		if( endpointData.endpointName == 'forgebox' ) {
+		if( isInstanceOf(endpointData.endpoint, 'forgebox') ) {
 			var version = endpoint.parseVersion( arguments.ID );
 
 			// If the user gave us an exact version, just use it!

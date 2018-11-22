@@ -100,8 +100,8 @@ component aliases="install" {
 	property name="entries";
 
 	// DI
-	property name="forgeBox" 		inject="ForgeBox";
-	property name="packageService" 	inject="PackageService";
+	property name="packageService"	inject="PackageService";
+	property name="endpointService"	inject="endpointService";
 
 	/**
 	* @ID.hint "endpoint:package" to install. Default endpoint is "forgebox".  If no ID is passed, all dependencies in box.json will be installed.
@@ -170,6 +170,8 @@ component aliases="install" {
 		// but I don't want to "blow up" the console with a full error.
 		} catch( endpointException var e ) {
 			error( e.message, e.detail );
+		} catch( EndpointNotFound var e ) {
+			error( e.message, e.detail );
 		}
 
 	}
@@ -181,7 +183,19 @@ component aliases="install" {
 			return [];
 		}
 		try {
-			var APIToken = configService.getSetting( 'endpoints.forgebox.APIToken', '' );
+			
+						
+			var endpointName = configService.getSetting( 'endpoints.defaultForgeBoxEndpoint', 'forgebox' );
+			
+			try {		
+				var oEndpoint = endpointService.getEndpoint( endpointName );
+			} catch( EndpointNotFound var e ) {
+				error( e.message, e.detail ?: '' );
+			}
+			
+			var forgebox = oEndpoint.getForgebox();
+			var APIToken = oEndpoint.getAPIToken();
+			
 			// Get auto-complete options
 			return forgebox.slugSearch( searchTerm=arguments.paramSoFar, APIToken=APIToken );
 		} catch( forgebox var e ) {

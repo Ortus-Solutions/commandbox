@@ -22,7 +22,8 @@ component aliases="init" {
 
 	// DI
 	property name="PackageService" 	inject="PackageService";
-	property name="configService"	inject="configService";
+	property name="configService" inject="configService";
+	property name="endpointService" inject="endpointService";
 
 	/**
 	 * @name The human-readable name for this package
@@ -32,6 +33,7 @@ component aliases="init" {
 	 * @shortDescription A short description for the package
 	 * @ignoreList Add commonly ignored files to the package's ignore list
 	 * @wizard Run the init wizard, defaults to false
+	 * @endpointName  Name of custom forgebox endpoint to use
 	 **/
 	function run(
 		name="My Package",
@@ -40,7 +42,8 @@ component aliases="init" {
 		boolean private=false,
 		shortDescription="A sweet package",
 		boolean ignoreList=true,
-		boolean wizard=false
+		boolean wizard=false,
+		string endpointName
 	){
 		// Check for wizard argument
 		if( arguments.wizard ){
@@ -50,6 +53,19 @@ component aliases="init" {
 
 		// Clean this up so it doesn't get written as a property
 		structDelete( arguments, "wizard" );
+		var endpointName = arguemnts.endpointName;
+		structDelete( arguments, "endpointName" );
+		
+		endpointName = endpointName ?: configService.getSetting( 'endpoints.defaultForgeBoxEndpoint', 'forgebox' );
+		
+		try {		
+			var oEndpoint = endpointService.getEndpoint( endpointName );
+		} catch( EndpointNotFound var e ) {
+			error( e.message, e.detail ?: '' );
+		}
+		
+		var forgebox = oEndpoint.getForgebox();
+		var APIToken = oEndpoint.getAPIToken();
 
 		// This will make each directory canonical and absolute
 		var directory = getCWD();
@@ -66,7 +82,6 @@ component aliases="init" {
 		}
 
 		if( structKeyExists( arguments, 'slug' ) && arguments.private ){
-			var APIToken = configService.getSetting( 'endpoints.forgebox.APIToken', '' );
 			if( ! len( APIToken ) ){
 				print.redLine( "You've opted to create a private package, but you're not logged into ForgeBox." );
 				if( confirm( 'Would you like to stop and log into ForgeBox now? ' ) ) {
@@ -78,7 +93,7 @@ component aliases="init" {
 				}
 			} else {
 			
-				var APITokens = configService.getSetting( 'endpoints.forgebox.tokens', {} );
+				var APITokens = oEndpoint.getAPITokens();
 				var usernames = structKeyArray( APITokens );
 				var foundToken = usernames.filter( function( name ){
 					return APITokens[ name ] == APIToken;

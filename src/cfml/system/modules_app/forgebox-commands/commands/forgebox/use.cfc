@@ -12,16 +12,32 @@
  **/
 component {
 
-	property name="forgeBox" inject="ForgeBox";
-	property name="configService" inject="ConfigService";
+	property name="configService" inject="configService";
+	property name="endpointService" inject="endpointService";
 
 	/**
 	* @username The ForgeBox username to switch to.
 	* @skipLogin If username isn't authenticated, return an error instead of prompting with login
+	* @endpointName  Name of custom forgebox endpoint to use
+	* @endpointName.optionsUDF endpointNameComplete
 	**/
-	function run( required string username, boolean skipLogin=false ){
+	function run(
+		required string username,
+		boolean skipLogin=false,
+		string endpointName ){
 
-		var tokens = configService.getSetting( 'endpoints.forgebox.tokens', {} );
+		endpointName = endpointName ?: configService.getSetting( 'endpoints.defaultForgeBoxEndpoint', 'forgebox' );
+		
+		try {		
+			var oEndpoint = endpointService.getEndpoint( endpointName );
+		} catch( EndpointNotFound var e ) {
+			error( e.message, e.detail ?: '' );
+		}
+		
+		var APIToken = oEndpoint.getAPIToken();
+
+		var tokens = oEndpoint.getAPITokens();
+		
 		if( !len( arguments.username ) ) {
 			error( 'Please provide a ForgeBox username to use.' );
 		}
@@ -29,16 +45,20 @@ component {
 		// If this username exists
 		if( tokens.keyExists( arguments.username ) ) {
 			// Set the active token
-			configService.setSetting( 'endpoints.forgebox.APIToken', tokens[ arguments.username ] );
+			oEndpoint.setDefaultAPIToken( tokens[ arguments.username ] );
 			print.greenLine( 'Active Forgebox user set to [#arguments.username#]' );
 		} else if( !skipLogin ) {
 			// Otherwise, prompt them to login
 			command( 'forgebox login' )
-				.params( arguments.username )
+				.params( username=arguments.username, endpointName=endpointName )
 				.run();
 		} else {
 			error( 'Username [#arguments.username#] isn''t authenticated.  Please use "forgebox login".' );
 		}
+	}
+	
+	function endpointNameComplete() {
+		return getInstance( 'endpointService' ).forgeboxEndpointNameComplete();
 	}
 
 }

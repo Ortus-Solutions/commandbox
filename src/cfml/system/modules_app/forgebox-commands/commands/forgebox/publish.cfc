@@ -8,17 +8,26 @@
 component aliases="publish" {
 
 	property name="configService" inject="configService";
+	property name="endpointService" inject="endpointService";
 
 	/**
 	* @directory The directory to publish
 	* @force     Force the publish
+	* @endpointName  Name of custom forgebox endpoint to use
+	* @endpointName.optionsUDF endpointNameComplete
 	**/
 	function run(
 		string directory='',
-		boolean force = false
+		boolean force = false,
+		string endpointName
 	){
+		endpointName = endpointName ?: configService.getSetting( 'endpoints.defaultForgeBoxEndpoint', 'forgebox' );
 
-		var APIToken = configService.getSetting( 'endpoints.forgebox.APIToken', '' );
+		try {		
+			var APIToken = endpointService.getEndpoint( endpointName ).getAPIToken();
+		} catch( EndpointNotFound var e ) {
+			error( e.message, e.detail ?: '' );
+		}
 
 		if( !APIToken.len() ) {
 			print.yellowLine( 'Please log into Forgebox to continue' );
@@ -26,13 +35,17 @@ component aliases="publish" {
 		}
 
 		// Default the endpointName
-		arguments.endpointName = 'forgebox';
+		arguments.endpointName = endpointName;
 
 		// Defer to the generic command
 		command( 'endpoint publish' )
 			.params( argumentCollection=arguments )
 			.run();
 
+	}
+	
+	function endpointNameComplete() {
+		return getInstance( 'endpointService' ).forgeboxEndpointNameComplete();
 	}
 
 }

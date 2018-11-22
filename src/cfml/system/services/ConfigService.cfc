@@ -45,6 +45,7 @@ component accessors="true" singleton {
 			'tagPrefix',
 			// Endpoint data
 			'endpoints',
+			'endpoints.defaultForgeBoxEndpoint',
 			'endpoints.forgebox',
 			'endpoints.forgebox.APIToken',
 			'endpoints.forgebox.APIURL',
