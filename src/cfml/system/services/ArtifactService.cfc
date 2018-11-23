@@ -190,7 +190,7 @@ component accessors="true" singleton {
 	* @version.hint The version of the package to look for
 	* @packageFolder.hint A file path to a local folder that contains the package
 	*/
-	private function createArtifactFromFolder( required packageName, required version, required packageFolder ) {
+	function createArtifactFromFolder( required packageName, required version, required packageFolder ) {
 
 		//  Where will this artifact live?
 		var thisArtifactPath = getArtifactPath( arguments.packageName, arguments.version );
