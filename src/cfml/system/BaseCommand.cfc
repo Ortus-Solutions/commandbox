@@ -227,8 +227,7 @@ component accessors="true" singleton {
 			// Distance ourselves from whatever other output the command may have given so far.
 			print.line();
 		}
-		throw( message=arguments.message, detail=arguments.detail, type="commandException");
-
+		throw( message=arguments.message, detail=arguments.detail, type="commandException", errorcode=arguments.exitCode );
 	}
 
 	/**
