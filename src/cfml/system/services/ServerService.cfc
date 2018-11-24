@@ -1355,6 +1355,7 @@ component accessors="true" singleton {
 		if( heapSize.endsWith( 'k' ) ) {
 			return val( heapSize ) / 1024;
 		}
+		throw( 'Invalid Heap size [#heapSize#]' );
 	}
 
 	/**
