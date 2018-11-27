@@ -78,9 +78,9 @@ component accessors=true implements="IEndpoint" singleton {
 			return fileEndpoint.resolvePackage( artifactService.getArtifactPath( package, version ) );
 		}
 
-		job.addLog( APIURL );
-
 		var APIURLInfo = APIURL.replace( '/binary/', '/info/' );
+		job.addLog( APIURLInfo );
+
 
 		// Get JSON info about the download. If this URL doesn't work, neither will the binary one
 		http
@@ -95,10 +95,45 @@ component accessors=true implements="IEndpoint" singleton {
 		if( local.artifactResult.status_code == 200 && isJSON( local.artifactResult.fileContent ) ) {
 			var artifactJSON = deserializeJSON( local.artifactResult.fileContent );
 		} else {
-			throw( 'This specific Java version doesn''t seem to exist.  Please try another.', 'endpointException' );
+			var validReleases = 'unknown';
+			
+			try {
+				// Do a quick peek at the API to see if we can get results back without the release name.
+				var APIURLCheck = 'https://api.adoptopenjdk.net/v2/info/releases/#javaDetails.version#?openjdk_impl=#javaDetails['jvm-implementation']#&os=#javaDetails.os#&arch=#javaDetails.arch#&type=#javaDetails.type#';
+			
+				http
+					url="#APIURLCheck#"
+					throwOnError=false
+					proxyServer="#ConfigService.getSetting( 'proxy.server', '' )#"
+					proxyPort="#ConfigService.getSetting( 'proxy.port', 80 )#"
+					proxyUser="#ConfigService.getSetting( 'proxy.user', '' )#"
+					proxyPassword="#ConfigService.getSetting( 'proxy.password', '' )#"
+					result="local.artifactResult";
+					
+				if( local.artifactResult.status_code == 200 && isJSON( local.artifactResult.fileContent ) ) {
+					var artifactJSON = deserializeJSON( local.artifactResult.fileContent );
+					validReleases = artifactJSON
+						.map( function( release ) {
+							return release.release_name;
+						} )
+						.tolist( ', ' );			
+				}
+				
+			} catch ( any var e ) {
+				job.addErrorLog( 'Error peeking at the API to try and find some valid releases.' );
+				job.addErrorLog( e.message );
+				job.addErrorLog( e.detail );
+			}
+		
+			throw( 'This specific Java version doesn''t seem to exist.  Valid [#javaDetails.version#] releases are [#validReleases#].', 'endpointException' );
 		}
 		
-		if( !artifactJSON.binaries.len() ) {
+		// Sometimes the API gives me back a struct, sometimes I get an array of structs. ¯\_(ツ)_/¯
+		if( isArray( artifactJSON ) && arraylen( artifactJSON ) ) {
+			artifactJSON = artifactJSON[ 1 ];
+		}
+				
+		if( !isStruct( artifactJSON ) || !artifactJSON.keyExists( 'binaries' ) || !isArray( artifactJSON.binaries ) || !artifactJSON.binaries.len() ) {
 			throw( 'This specific Java version doesn''t seem to exist.  Please try another.', 'endpointException' );
 		}
 
@@ -194,7 +229,7 @@ component accessors=true implements="IEndpoint" singleton {
 				type : 'jre',
 				arch : server.java.archModel contains 32 ? 'x32' : 'x64',
 				os : '',
-				'jvm-implementation' : 'hotspot',
+				'jvm-implementation' : ( ID.findNoCase( 'openj9' ) ? 'openj9' : 'hotspot' ),
 				release : 'latest'
 			};
 
@@ -225,7 +260,7 @@ component accessors=true implements="IEndpoint" singleton {
 						continue;
 					}
 					// OS
-					if( listFindNoCase( 'windows,linux,mac', token) ) {
+					if( listFindNoCase( 'windows,linux,mac,aix', token) ) {
 						results.os = token;
 						continue;
 					}
@@ -239,6 +274,12 @@ component accessors=true implements="IEndpoint" singleton {
 						results.release = token;
 						continue;
 					}
+					// release, part 2
+					if( token.lcase().startsWith( 'openj' ) ) {
+						results.release &= ( '_' & token );
+						continue;
+					}
+					
 				}
 			}
 
