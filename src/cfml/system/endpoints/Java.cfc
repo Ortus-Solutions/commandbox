@@ -111,6 +111,7 @@ component accessors=true implements="IEndpoint" singleton {
 					result="local.artifactResult";
 					
 				if( local.artifactResult.status_code == 200 && isJSON( local.artifactResult.fileContent ) ) {
+					// If we got a valid reply back, gather up a list of the release names that were returned.
 					var artifactJSON = deserializeJSON( local.artifactResult.fileContent );
 					validReleases = artifactJSON
 						.map( function( release ) {
