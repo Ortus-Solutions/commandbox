@@ -24,6 +24,7 @@ component accessors="true" singleton {
 	property name='JSONService'			inject='JSONService';
 	property name='systemSettings'		inject='SystemSettings';
 	property name='wirebox'				inject='wirebox';
+	property name="tempDir" 			inject="tempDir@constants";
 
 	/**
 	* Constructor
@@ -392,8 +393,12 @@ component accessors="true" singleton {
 					uninstallFirst = true;
 				} else {
 					// cleanup tmp
-					if( endpointData.endpointName != 'folder' ) {
-						directoryDelete( tmpPath, true );
+					tempDir = fileSystemUtil.resolvePath( tempDir );
+					tmpPath = fileSystemUtil.resolvePath( tmpPath );
+					if( tmpPath contains tempDir ) {
+						var pathInsideTmp = tmpPath.replaceNoCase( tempDir, '' );
+						// Delete the top most directory inside the temp folder
+						directoryDelete( tempDir & '/' & pathInsideTmp.listFirst( '/\' ), true );
 					}
 					job.addWarnLog( "The package #packageName# is already installed at #installDirectory#. Skipping installation. Use --force option to force install." );
 					job.complete( verbose );
@@ -456,8 +461,11 @@ component accessors="true" singleton {
 			// has the folder locked.
 			try {
 				// cleanup unzip
-				if( endpointData.endpointName != 'folder' ) {
-					directoryDelete( tmpPath, true );
+				tempDir = fileSystemUtil.resolvePath( tempDir );
+				if( tmpPath contains tempDir ) {
+					var pathInsideTmp = tmpPath.replaceNoCase( tempDir, '' );
+					// Delete the top most directory inside the temp folder
+					directoryDelete( tempDir & '/' & pathInsideTmp.listFirst( '/\' ), true );
 				}
 			} catch( any e ) {
 				job.addErrorLog( e.message );

@@ -84,6 +84,9 @@ component {
 
 		var boxRepoJSON = fileRead( '#temp#/box-repo.json' );
 		var loaderRepoJSON = fileRead( '#temp#/box-loader.json' );
+		
+		fileDelete( '#temp#/box-repo.json' );
+		fileDelete( '#temp#/box-loader.json' );
 
 		if( !isJSON( boxRepoJSON ) ) {
 			return error( "Oops, we expected [#boxRepoURL#] to be JSON, but it wasn't.  #cr#I'm afraid we can't upgrade right now." );

@@ -45,7 +45,7 @@ component accessors=true implements="IEndpoint" singleton {
 	public string function resolvePackage( required string package, boolean verbose=false ) {
 		var job = wirebox.getInstance( 'interactiveJob' );
 		var folderName = tempDir & '/' & 'temp#randRange( 1, 1000 )#';
-		directoryCreate( folderName );
+		var folderName2 = tempDir & '/' & 'temp#randRange( 1, 1000 )#';
 
 		var javaDetails = parseDetails( package );
 		var APIURL = 'https://api.adoptopenjdk.net/v2/binary/releases/#javaDetails.version#?openjdk_impl=#javaDetails['jvm-implementation']#&os=#javaDetails.os#&arch=#javaDetails.arch#&release=#javaDetails.release#&type=#javaDetails.type#';
@@ -141,6 +141,7 @@ component accessors=true implements="IEndpoint" singleton {
 		var releaseName = artifactJSON.release_name;
 		var version = artifactJSON.binaries[ 1 ].version;
 		
+		directoryCreate( folderName );
 		var tmpFilePath = folderName & '/' & getDefaultName( package ) & ( javaDetails.os == 'windows' ? '.zip' : '.tar.gz' );
 
 		try {
@@ -155,23 +156,32 @@ component accessors=true implements="IEndpoint" singleton {
 					job.addLog( "Redirecting to: '#arguments.newURL#'..." );
 				}
 			);
+		} catch( UserInterruptException var e ) {
+			directoryDelete( folderName, true );
+			rethrow;
 		} catch( Any var e ) {
+			directoryDelete( folderName, true );
 			throw( '#e.message##CR##e.detail#', 'endpointException' );
 		};
+		
+		directoryCreate( folderName2 );		
 
 		// Extract the archive into a temp folder
 		if( tmpFilePath.endsWith( '.zip' ) ) {
-			zip action="unzip" file="#tmpFilePath#" destination="#folderName#/tmp" overwrite="false";
+			zip action="unzip" file="#tmpFilePath#" destination="#folderName2#" overwrite="false";
 		} else {
-			filesystemUtil.extractTarGz( tmpFilePath, '#folderName#/tmp' );
+			filesystemUtil.extractTarGz( tmpFilePath, '#folderName2#' );
 		}
-
+		
+		// Clean up original tmp dir
+		directoryDelete( folderName, true );
+			
 		// We need to find the first folder that was INSIDE the archive
-		var folders = directoryList( path="#folderName#/tmp", type="dir", listInfo="name" );
+		var folders = directoryList( path="#folderName2#", type="dir", listInfo="name" );
 		if( !folders.len() ) {
 			throw( 'The downloaded archive did not contain a folder as expected.', 'endpointException', APIURL );
 		}
-		var finalPackageRoot = '#folderName#/tmp/#folders[ 1 ]#'
+		var finalPackageRoot = '#folderName2#/#folders[ 1 ]#'
 		var fullBoxJSONPath = '#finalPackageRoot#/box.json';
 
 		// Spoof a box.json so this looks like a package
