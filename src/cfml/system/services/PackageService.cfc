@@ -597,6 +597,7 @@ component accessors="true" singleton {
 			required string currentWorkingDirectory,
 			string packagePathRequestingUninstallation = arguments.currentWorkingDirectory
 	){
+		
 		var job = wirebox.getInstance( 'interactiveJob' );
 		var packageName = parseSlug( arguments.ID );
 
@@ -775,6 +776,11 @@ component accessors="true" singleton {
 			// normalize slashes and make them all "/"
 			arguments.currentWorkingDirectory = fileSystemUtil.normalizeSlashes( fileSystemUtil.resolvePath( arguments.currentWorkingDirectory ) );
 			arguments.installDirectory = fileSystemUtil.normalizeSlashes( fileSystemUtil.resolvePath( arguments.installDirectory ) );
+
+			// If the folder doesn't exist yet, make sure we still have a trailing slash on the path.
+			if( !installDirectory.endsWith( '/' ) ) {
+				installDirectory &= '/';
+			}
 
 			// If the install location is contained within the package root...
 			if( arguments.installDirectory contains arguments.currentWorkingDirectory ) {
