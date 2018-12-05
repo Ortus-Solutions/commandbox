@@ -11,13 +11,15 @@ I am a CFM because the CLI seems to need a .cfm file to call
 This file will stay running the entire time the shell is open
 --->
 
-<cfset createObject( 'java', 'java.lang.System' ).setProperty( 'exitCode', '0' )>
+
+<cfset system = createObject( "java", "java.lang.System" )>
+<cfset system.setProperty( 'exitCode', '0' )>
 <cfset mappings = getApplicationSettings().mappings>
 
 <!--- Move everything over to this mapping which is the "root" of our app --->
 <cfset CFMLRoot = expandPath( getDirectoryFromPath( getCurrentTemplatePath() ) & "../" ) >
 <cfset mappings[ '/commandbox' ]		= CFMLRoot >
-<cfset mappings[ '/commandbox-home' ]	= createObject( 'java', 'java.lang.System' ).getProperty( 'cfml.cli.home' ) >
+<cfset mappings[ '/commandbox-home' ]	= system.getProperty( 'cfml.cli.home' ) >
 <cfset mappings[ '/wirebox' ]			= CFMLRoot & 'system/wirebox' >
 	
 <cfapplication 
@@ -26,6 +28,13 @@ This file will stay running the entire time the shell is open
 	sessionmanagement 	= "false"
 	applicationTimeout = "#createTimeSpan( 999999, 0, 0, 0 )#"
 	mappings="#mappings#">
+
+<!--- 
+	Workaround to snuff out annoying ESAPI warnings in the console.
+	If necessary, move this to the Java loader.  Right now Lucee doesn't seem to hit any ESAPI libs until CommandBox is loaded. 
+--->
+<cfset system.setProperty( 'org.owasp.esapi.opsteam', expandPath( '/commandbox/system/config/ESAPI.properties' ) )>
+<cfset system.setProperty( 'org.owasp.esapi.devteam', expandPath( '/commandbox/system/config/ESAPI.properties' ) )>
 
 <cfset variables.wireBox = new wirebox.system.ioc.Injector( 'commandbox.system.config.WireBox' )>
 
@@ -72,7 +81,6 @@ This file will stay running the entire time the shell is open
 	<cfreturn banner>
 </cffunction>
 <cfscript>
-	system 	= createObject( "java", "java.lang.System" );
 	args 	= system.getProperty( "cfml.cli.arguments" );
 	argsArray = deserializeJSON( system.getProperty( "cfml.cli.argument.array" ) );
 
@@ -201,7 +209,7 @@ This file will stay running the entire time the shell is open
 			} catch( any e) {
 			}
 			
-			createObject( 'java', 'java.lang.System' ).setProperty( 'cfml.cli.exitCode', '1' );
+			system.setProperty( 'cfml.cli.exitCode', '1' );
 	
 			// Try to log this to LogBox
 			try {
