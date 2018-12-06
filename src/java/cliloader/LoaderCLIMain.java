@@ -44,6 +44,8 @@ import javax.script.ScriptEngine;
 import java.time.Instant;
 import java.nio.file.Paths;
 import java.security.Security;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 
 import net.minidev.json.JSONArray;
 
@@ -501,6 +503,7 @@ public class LoaderCLIMain{
 
 	@SuppressWarnings( "static-access" )
 	public static void main( String[] arguments ) throws Throwable{
+		disableAccessWarnings();
 		System.setProperty("log4j.configuration", "resource/log4j.xml");
 		Util.ensureJavaVersion();
 		execute( initialize( arguments ) );
@@ -898,4 +901,23 @@ public class LoaderCLIMain{
 		return true;
 	}
 
+	@SuppressWarnings("unchecked")
+    public static void disableAccessWarnings() {
+        try {
+            Class unsafeClass = Class.forName("sun.misc.Unsafe");
+            Field field = unsafeClass.getDeclaredField("theUnsafe");
+            field.setAccessible(true);
+            Object unsafe = field.get(null);
+
+            Method putObjectVolatile = unsafeClass.getDeclaredMethod("putObjectVolatile", Object.class, long.class, Object.class);
+            Method staticFieldOffset = unsafeClass.getDeclaredMethod("staticFieldOffset", Field.class);
+
+            Class loggerClass = Class.forName("jdk.internal.module.IllegalAccessLogger");
+            Field loggerField = loggerClass.getDeclaredField("logger");
+            Long offset = (Long) staticFieldOffset.invoke(unsafe, loggerField);
+            putObjectVolatile.invoke(unsafe, loggerClass, offset, null);
+        } catch (Exception ignored) {
+        }
+    }
+	
 }
