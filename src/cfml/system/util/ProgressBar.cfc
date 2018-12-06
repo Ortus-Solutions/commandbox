@@ -114,6 +114,12 @@ component singleton {
 		}
 
 
+		// Trim to terminal height so the screen doesn't go all jumpy
+		// If there is more output than screen, the user just doesn't get to see the rest
+		if( lines.len() > terminal.getHeight()-2 ) {
+			lines = lines.slice( 1, terminal.getHeight()-2 );
+		}
+
 		// Add to console and flush
 		display.update(
 			lines,
