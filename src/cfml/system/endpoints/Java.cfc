@@ -32,7 +32,8 @@ component accessors=true implements="IEndpoint" singleton {
 	property name='ConfigService'			inject='ConfigService';
 	property name='artifactService'			inject='artifactService';
 	property name='filesystemUtil'			inject='fileSystem';
-	property name="fileEndpoint"			inject="commandbox.system.endpoints.File";
+	property name="folderEndpoint"			inject="commandbox.system.endpoints.Folder";
+	property name="PackageService"			inject="packageService";
 
 	// Properties
 	property name="namePrefixes" type="string";
@@ -43,6 +44,7 @@ component accessors=true implements="IEndpoint" singleton {
 	}
 
 	public string function resolvePackage( required string package, boolean verbose=false ) {
+		var packageFullName = getDefaultName( package );
 		var job = wirebox.getInstance( 'interactiveJob' );
 		var folderName = tempDir & '/' & 'temp#randRange( 1, 1000 )#';
 		var folderName2 = tempDir & '/' & 'temp#randRange( 1, 1000 )#';
@@ -58,27 +60,12 @@ component accessors=true implements="IEndpoint" singleton {
 		job.addLog( "Java jvm-implementation:   #javaDetails['jvm-implementation']#" );
 		job.addLog( "Java release:              #javaDetails.release#" );
 		
-		// Crap way of getting version and only gets major number right now.
-		// Alternate method would be to parse all the possible release names:
-		/*
-			jdk-11+28
-			jdk-11.0.1+13
-			jdk-10.0.1+10
-			jdk-10.0.2+13_openj9-0.9.0
-			jdk-9+181
-			jdk-9.0.4+11
-			jdk-9.0.4+12_openj9-0.9.0
-			jdk8u162-b12_openj9-0.8.0
-			jdk8u172-b11
-		*/
-		var version = javaDetails.version.replaceNoCase( 'openjdk', '' );
-		
-		if( artifactService.artifactExists( package, version ) ) {
-			job.addLog( "Lucky you, we found this version of Java in local artifacts!" );
-			return fileEndpoint.resolvePackage( artifactService.getArtifactPath( package, version ) );
+		if( artifactService.artifactExists( 'OpenJDK', packageFullName ) ) {
+			return serveFromArtifacts( package, packageFullName );
 		}
 
 		var APIURLInfo = APIURL.replace( '/binary/', '/info/' );
+		job.addLog( 'Hitting the AdoptOpenJDK API to find your download.' );
 		job.addLog( APIURLInfo );
 
 
@@ -138,11 +125,18 @@ component accessors=true implements="IEndpoint" singleton {
 			throw( 'This specific Java version doesn''t seem to exist.  Please try another.', 'endpointException' );
 		}
 
-		var releaseName = artifactJSON.release_name;
-		var version = artifactJSON.binaries[ 1 ].version;
+		// worthless version that's just "11", etc
+		// artifactjson.binaries[ 1 ].version
+		javaDetails.release = artifactJSON.release_name;
+		var version = getDefaultNameFromStruct( javaDetails );
+		job.addLog( 'new version is #version#' );
+		// Now that we know exactly what we're going to get, try the artifacts one more time
+		if( artifactService.artifactExists( 'OpenJDK', version ) ) {
+			return serveFromArtifacts( package, version );
+		}
 		
 		directoryCreate( folderName );
-		var tmpFilePath = folderName & '/' & getDefaultName( package ) & ( javaDetails.os == 'windows' ? '.zip' : '.tar.gz' );
+		var tmpFilePath = folderName & '/' & package & ( javaDetails.os == 'windows' ? '.zip' : '.tar.gz' );
 
 		try {
 			// Download File
@@ -183,11 +177,11 @@ component accessors=true implements="IEndpoint" singleton {
 		}
 		var finalPackageRoot = '#folderName2#/#folders[ 1 ]#'
 		var fullBoxJSONPath = '#finalPackageRoot#/box.json';
-
+		
 		// Spoof a box.json so this looks like a package
 		var boxJSON = {
-			'name' : getDefaultName( package ),
-			'slug' : getDefaultName( package ),
+			'name' : package,
+			'slug' : package,
 			'version' : version,
 			'location' : 'java:#package#',
 			'type' : 'projects',
@@ -196,7 +190,7 @@ component accessors=true implements="IEndpoint" singleton {
 		JSONService.writeJSONFile( fullBoxJSONPath, boxJSON );
 
 		// Store in artifacts for next time
-		artifactService.createArtifactFromFolder( package, version, finalPackageRoot );
+		artifactService.createArtifactFromFolder( 'OpenJDK', version, finalPackageRoot );
 
 		// Here is where our alleged so-called "package" lives.
 		return finalPackageRoot;
@@ -204,7 +198,11 @@ component accessors=true implements="IEndpoint" singleton {
 	}
 
 	public function getDefaultName( required string package ) {
-		return package;
+		return getDefaultNameFromStruct( parseDetails( package ) );
+	}
+	
+	function getDefaultNameFromStruct( required struct javaDetails ) {
+		return '#javaDetails.version#_#javaDetails.type#_#javaDetails.arch#_#javaDetails.os#_#javaDetails[ 'jvm-implementation' ]#_#javaDetails.release#';
 	}
 
 	public function getUpdate( required string package, required string version, boolean verbose=false ) {
@@ -297,5 +295,36 @@ component accessors=true implements="IEndpoint" singleton {
 		return results;
 	
 	}
+
+	function serveFromArtifacts( package, version ) {
+		var job = wirebox.getInstance( 'interactiveJob' );
+		var folderName = tempDir & '/' & 'temp#randRange( 1, 1000 )#';
+				
+		job.addLog( "Lucky you, we found this version of Java in local artifacts!" );
+		
+		directoryCreate( folderName );
+		zip action="unzip" file="#artifactService.getArtifactPath( 'OpenJDK', version )#" destination="#folderName#";
+		
+		// Update the box.json to match the name we're using since different slugs can all point to the same "normalized" name
+		var boxJSON = packageService.readPackageDescriptorRaw( folderName );
+		boxJSON.name = package;
+		boxJSON.slug = package;
+		boxJSON.location = package;
+		packageService.writePackageDescriptor( boxJSON, folderName );
+
+		return folderEndpoint.resolvePackage( folderName );
+	}
+
+			/*
+			jdk-11+28
+			jdk-11.0.1+13
+			jdk-10.0.1+10
+			jdk-10.0.2+13_openj9-0.9.0
+			jdk-9+181
+			jdk-9.0.4+11
+			jdk-9.0.4+12_openj9-0.9.0
+			jdk8u162-b12_openj9-0.8.0
+			jdk8u172-b11
+		*/
 
 }

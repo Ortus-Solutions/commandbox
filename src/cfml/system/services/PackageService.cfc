@@ -599,7 +599,7 @@ component accessors="true" singleton {
 	){
 		
 		var job = wirebox.getInstance( 'interactiveJob' );
-		var packageName = parseSlug( arguments.ID );
+		var packageName = arguments.ID;
 
 		job.start( 'Uninstalling package: #packageName#' );
 
