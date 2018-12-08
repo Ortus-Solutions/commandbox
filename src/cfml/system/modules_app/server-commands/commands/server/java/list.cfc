@@ -5,7 +5,7 @@
  * server java list
  * {code}
  **/
-component {
+component aliases='java list' {
 
 	// DI
 	property name="javaService" inject="JavaService";
@@ -26,7 +26,7 @@ component {
 		print
 			.line()
 			.indentedLine( fileSystemUtil.getJREExecutable().reReplace( 'bin[\\/]java(.exe)?$', '' ) )
-			.indentedYellowLine( 'This is the Java installation in use by the CLI.  it cannot be removed.' );
+			.indentedYellowLine( 'This is the Java installation in use by the CLI, it cannot be removed.' );
 		
 		print.line();
 		

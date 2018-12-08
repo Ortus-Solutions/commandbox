@@ -5,7 +5,7 @@
  * server java install openjdk11
  * {code}
  **/
-component {
+component aliases='java install' {
 
 	// DI
 	property name="javaService" inject="JavaService";

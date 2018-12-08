@@ -6,7 +6,7 @@
  * server java uninstall openjdk9_jre_x64_windows_hotspot_jdk-9.0.4+11
  * {code}
  **/
-component {
+component aliases='java uninstall' {
 
 	// DI
 	property name="javaService" inject="JavaService";
