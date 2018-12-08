@@ -92,7 +92,10 @@ component accessors="true" singleton {
 			var endpointData = endpointService.resolveEndpoint( arguments.ID, arguments.currentWorkingDirectory );
 
 			job.start(  'Installing package [#endpointData.ID#]', 5 );
-			job.setDumpLog( verbose );
+			
+			if( verbose ) {
+				job.setDumpLog( verbose );	
+			}
 
 			var tmpPath = endpointData.endpoint.resolvePackage( endpointData.package, arguments.verbose );
 

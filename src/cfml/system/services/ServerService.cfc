@@ -509,7 +509,9 @@ component accessors="true" singleton {
 		serverInfo.openbrowser		= serverProps.openbrowser 		?: serverJSON.openbrowser			?: defaults.openbrowser;
 		serverInfo.openbrowserURL	= serverProps.openbrowserURL	?: serverJSON.openbrowserURL		?: defaults.openbrowserURL;
 
-		job.setDumpLog( serverInfo.debug );
+		if( serverInfo.debug ) {
+			job.setDumpLog( serverInfo.debug );	
+		}
 
 		serverInfo.host				= serverProps.host 				?: serverJSON.web.host				?: defaults.web.host;
 		// If the last port we used is taken, remove it from consideration.
@@ -640,7 +642,7 @@ component accessors="true" singleton {
 		} else if( defaults.JVM.javaVersion.len() ) {
 			serverInfo.javaVersion = defaults.JVM.javaVersion;
 		}
-			
+		
 		// There was no java home at any level, but there was a java version, use it 
 		if( !serverInfo.javaHome.len() && serverInfo.javaVersion.len() ) {
 			serverInfo.javaHome = javaService.getJavaInstallPath( serverInfo.javaVersion );
