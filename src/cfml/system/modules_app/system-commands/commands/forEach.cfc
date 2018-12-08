@@ -41,10 +41,13 @@ component {
 	property name='SystemSettings' inject='SystemSettings';
 
 	/**
-	 * @input.hint The piped input to iterate over
-	 * @command.hint Command to be run once per input item
-	 * @itemName.hint Name of system setting to access each item per iteration
-	 * @delimiter.hint Delimiter Char(s) to split input
+	 * @input The piped input to iterate over
+	 * @command Command to be run once per input item
+	 * @itemName Name of system setting to access each item per iteration
+	 * @delimiter Delimiter Char(s) to split input,
+	 * @valueName Name of system setting to access value when iterating over struct
+	 * @continueOnError Whether to stop processing when one iteration errors
+	 * @debug Output command to be executed for each iteration
 	 **/
 	function run(
 		string input='',
@@ -52,7 +55,8 @@ component {
 		string itemName='item',
 		string delimiter=CR,
 		string valueName='value',
-		boolean continueOnError=false
+		boolean continueOnError=false,
+		boolean debug=false
 		) {
 		var wasJSON = false;
 		var inputJSON = '';
@@ -98,7 +102,7 @@ component {
 			}
 			
 			try {
-				theCommand.run();
+				theCommand.run( echo=debug );
 			} catch( any var e ) {
 				if( continueOnError ) {
 					
