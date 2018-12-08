@@ -43,6 +43,7 @@ component aliases="start" {
 
 	// DI
 	property name="serverService" 	inject="ServerService";
+	property name="javaService" 	inject="JavaService";
 
 	/**
 	 * @name           		short name for this server or a path to the server.json file.
@@ -87,6 +88,8 @@ component aliases="start" {
 	 * @javaHomeDirectory	Path to the JRE home directory containing ./bin/java
 	 * @AJPEnable			Enable AJP
 	 * @AJPPort				AJP Port number
+	 * @javaVersion			Any endpoint ID, such as "java:openjdk11" fromt the Java endpoint 
+	 * @javaVersion.optionsUDF	javaVersionComplete
 	 **/
 	function run(
 		String  name,
@@ -127,7 +130,8 @@ component aliases="start" {
 		Boolean trace,
 		String javaHomeDirectory,
 		Boolean AJPEnable,
-		Numeric AJPPort
+		Numeric AJPPort,
+		String javaVersion
 	){
 
 		// This is a common mis spelling
@@ -201,4 +205,16 @@ component aliases="start" {
 		return [];
 	}
 
+	/**
+	* Complete java versions
+	*/	
+	function javaVersionComplete() {
+		return javaService
+			.listJavaInstalls()
+			.keyArray()
+			.map( ( i ) => {
+				return { name : i, group : 'Java Versions' };
+			} );
+	}	
+	
 }

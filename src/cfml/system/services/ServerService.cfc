@@ -42,6 +42,7 @@ component accessors="true" singleton {
 	property name='CR'						inject='CR@constants';
 	property name='parser'					inject='parser';
 	property name='systemSettings'			inject='SystemSettings';
+	property name='javaService'				inject='provider:javaService';
 
 	/**
 	* Constructor
@@ -127,7 +128,8 @@ component accessors="true" singleton {
 				'heapSize' : d.jvm.heapSize ?: '',
 				'minHeapSize' : d.jvm.minHeapSize ?: '',
 				'args' : d.jvm.args ?: '',
-				'javaHome' : ( isDefined( 'd.jvm.javaHome' ) ? fileSystemUtil.getJREExecutable( d.jvm.javaHome ) : variables.javaCommand )
+				'javaHome' : d.jvm.javaHome ?: '',
+				'javaVersion' : d.jvm.javaVersion ?: ''
 			},
 			'web' : {
 				'host' : d.web.host ?: '127.0.0.1',
@@ -480,6 +482,9 @@ component accessors="true" singleton {
 			    case "javaHomeDirectory":
 					serverJSON[ 'JVM' ][ 'javaHome' ] = serverProps[ prop ];
 			         break;
+			    case "javaVersion":
+					serverJSON[ 'JVM' ][ 'javaVersion' ] = serverProps[ prop ];
+			         break;
 			    case "runwarArgs":
 					serverJSON[ 'runwar' ][ 'args' ] = serverProps[ prop ];
 			         break;
@@ -613,12 +618,39 @@ component accessors="true" singleton {
 		serverInfo.heapSize 		= serverProps.heapSize 			?: serverJSON.JVM.heapSize			?: defaults.JVM.heapSize;
 		serverInfo.minHeapSize 		= serverProps.minHeapSize		?: serverJSON.JVM.minHeapSize		?: defaults.JVM.minHeapSize;
 
+		serverInfo.javaVersion = '';
+		serverInfo.javaHome = '';
+
+		// First, take start command home dir
 		if( isDefined( 'serverProps.javaHomeDirectory' ) ) {
-			serverInfo.javaHome = fileSystemUtil.getJREExecutable( serverProps.javaHomeDirectory );
+			serverInfo.javaHome = serverProps.javaHomeDirectory;
+		// Then start command java version
+		} else if( isDefined( 'serverProps.javaVersion' ) ) {
+			serverInfo.javaVersion = serverProps.javaVersion;
+		// Then server.json java home dir
 		} else if( isDefined( 'serverJSON.JVM.javaHome' ) ) {
-			serverInfo.javaHome = fileSystemUtil.getJREExecutable( serverJSON.JVM.javaHome );
-		} else {
+			serverInfo.javaHome = serverJSON.JVM.javaHome;
+		// Then server.json java version
+		} else if( isDefined( 'serverJSON.JVM.javaVersion' ) ) {
+			serverInfo.javaVersion = serverJSON.JVM.javaVersion;
+		// Then server defaults java home dir
+		} else if( defaults.JVM.javaHome.len() ) {
 			serverInfo.javaHome = defaults.JVM.javaHome;
+		// Then server defaults java versiom
+		} else if( defaults.JVM.javaVersion.len() ) {
+			serverInfo.javaVersion = defaults.JVM.javaVersion;
+		}
+			
+		// There was no java home at any level, but there was a java version, use it 
+		if( !serverInfo.javaHome.len() && serverInfo.javaVersion.len() ) {
+			serverInfo.javaHome = javaService.getJavaInstallPath( serverInfo.javaVersion );
+		}
+				
+		// There is still no java home, use the same JRE as the CLI 
+		if( serverInfo.javaHome.len() ) {
+			serverInfo.javaHome = fileSystemUtil.getJREExecutable( serverInfo.javaHome );
+		} else {
+			serverInfo.javaHome = variables.javaCommand;
 		}
 
 		serverInfo.directoryBrowsing = serverProps.directoryBrowsing ?: serverJSON.web.directoryBrowsing ?: defaults.web.directoryBrowsing;
@@ -1929,6 +1961,7 @@ component accessors="true" singleton {
 			'heapSize'			: '',
 			'minHeapSize'		: '',
 			'javaHome'			: '',
+			'javaVersion'		: '',
 			'directoryBrowsing' : false,
 			'JVMargs'			: "",
 			'runwarArgs'		: "",

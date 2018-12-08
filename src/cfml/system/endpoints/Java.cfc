@@ -8,7 +8,7 @@
 * I am the Java endpoint.  I interact with the AdoptOpenJDK API to get OpenJDK builds.
 * I will spoof a package around the download so CommandBox doesn't try to unzip the JRE itself.
 * 
-* Endpoint IDs are the in the format <version>_<type>_<arch>_<os>_<jvm-implementation>_<release>
+* Endpoint IDs are the in the format <version>_<type>_<arch>_<os>_<jvm-implementation>_<release>[:lockVersion]
 * Ex: OpenJDK8_jre_x64_windows_hotspot_8u181b13
 *
 * <version>				: openjdk8, openjdk9, openjdk10, etc...
@@ -17,6 +17,8 @@
 * <os>					: windows, linux, mac
 * <jvm-implementation>	: hotspot, openj9
 * <release>				: latest, jdk8u172, jdk8u172-b00, etc...
+* 
+* Adding :lockVersion to the end will cause the slug reported by the package to be the full ID, not just what the user typed 
 *
 */
 component accessors=true implements="IEndpoint" singleton {
@@ -44,6 +46,11 @@ component accessors=true implements="IEndpoint" singleton {
 	}
 
 	public string function resolvePackage( required string package, boolean verbose=false ) {
+		var lockVersion = false;
+		if( package.right( 12 ) == ':lockVersion' ) {
+			var lockVersion = true;
+			package = package.replace( ':lockVersion', '' );
+		}
 		var packageFullName = getDefaultName( package );
 		var job = wirebox.getInstance( 'interactiveJob' );
 		var folderName = tempDir & '/' & 'temp#randRange( 1, 1000 )#';
@@ -61,7 +68,8 @@ component accessors=true implements="IEndpoint" singleton {
 		job.addLog( "Java release:              #javaDetails.release#" );
 		
 		if( artifactService.artifactExists( 'OpenJDK', packageFullName ) ) {
-			return serveFromArtifacts( package, packageFullName );
+			job.addLog( "Lucky you, we found this version of Java in local artifacts!" );
+			return serveFromArtifacts( package, packageFullName, lockVersion );
 		}
 
 		var APIURLInfo = APIURL.replace( '/binary/', '/info/' );
@@ -112,8 +120,27 @@ component accessors=true implements="IEndpoint" singleton {
 				job.addErrorLog( e.message );
 				job.addErrorLog( e.detail );
 			}
-		
-			throw( 'This specific Java version doesn''t seem to exist.  Valid [#javaDetails.version#] releases are [#validReleases#].', 'endpointException' );
+			var message = 'This specific Java version doesn''t seem to exist.  Valid [#javaDetails.version#] releases are [#validReleases#].';
+			job.addErrorLog( message );
+			
+			// Before we give up, check artifacts for a downloaded version that might work
+			// Ideally I'd only do this for catastropic errors, but the AdoptOpenJDK API doesn't really allow me to 
+			// tell the difference since it pretty much just pukes non-JSON if it can't find what I was looking for
+			var artifactJDKs = artifactService.listArtifacts( 'OpenJDK' );
+			if( artifactJDKs.keyExists( 'OpenJDK' ) ) {
+				job.addWarnLog( 'Digging through your artifacts to see if we can find something useful before we give up...' );
+				// Trying to get the later ones first, but this approach is a little flakey
+				var artifactVersions = artifactJDKs.OpenJDK.sort( 'text', 'desc' );
+				var partialUserVersion = '#javaDetails.version#_#javaDetails.type#_#javaDetails.arch#_#javaDetails.os#_#javaDetails[ 'jvm-implementation' ]#'.lcase();
+				for( var thisVer in artifactVersions ) {
+					if( thisVer.lcase().startsWith( partialUserVersion ) ) {
+						job.addLog( "Looks like you already have [#thisVer#] downloaded. Using it instead." );
+						return serveFromArtifacts( package, thisVer, lockVersion );
+					}
+				}	
+			}
+			
+			throw( message, 'endpointException' );
 		}
 		
 		// Sometimes the API gives me back a struct, sometimes I get an array of structs. ¯\_(ツ)_/¯
@@ -129,10 +156,11 @@ component accessors=true implements="IEndpoint" singleton {
 		// artifactjson.binaries[ 1 ].version
 		javaDetails.release = artifactJSON.release_name;
 		var version = getDefaultNameFromStruct( javaDetails );
-		job.addLog( 'new version is #version#' );
+		job.addLog( 'Exact version is [#version#]' );
 		// Now that we know exactly what we're going to get, try the artifacts one more time
 		if( artifactService.artifactExists( 'OpenJDK', version ) ) {
-			return serveFromArtifacts( package, version );
+			job.addLog( "Lucky you, we found this version of Java in local artifacts!" );
+			return serveFromArtifacts( package, version, lockVersion );
 		}
 		
 		directoryCreate( folderName );
@@ -180,12 +208,15 @@ component accessors=true implements="IEndpoint" singleton {
 		
 		// Spoof a box.json so this looks like a package
 		var boxJSON = {
-			'name' : package,
-			'slug' : package,
+			'name' : ( lockVersion ? version : package ),
+			'slug' : ( lockVersion ? version : package ),
 			'version' : version,
-			'location' : 'java:#package#',
+			'location' : 'java:#( lockVersion ? version : package )#',
 			'type' : 'projects',
-			'java' : artifactJSON.binaries[ 1 ]
+			'java' : artifactJSON.binaries[ 1 ],
+			'author' : 'AdoptOpenJDK',
+			'projectURL' : 'https://adoptopenjdk.net/',
+			'homepage' : 'https://adoptopenjdk.net/'
 		};
 		JSONService.writeJSONFile( fullBoxJSONPath, boxJSON );
 
@@ -296,20 +327,18 @@ component accessors=true implements="IEndpoint" singleton {
 	
 	}
 
-	function serveFromArtifacts( package, version ) {
+	function serveFromArtifacts( package, version, lockVersion ) {
 		var job = wirebox.getInstance( 'interactiveJob' );
 		var folderName = tempDir & '/' & 'temp#randRange( 1, 1000 )#';
-				
-		job.addLog( "Lucky you, we found this version of Java in local artifacts!" );
 		
 		directoryCreate( folderName );
 		zip action="unzip" file="#artifactService.getArtifactPath( 'OpenJDK', version )#" destination="#folderName#";
 		
 		// Update the box.json to match the name we're using since different slugs can all point to the same "normalized" name
 		var boxJSON = packageService.readPackageDescriptorRaw( folderName );
-		boxJSON.name = package;
-		boxJSON.slug = package;
-		boxJSON.location = package;
+		boxJSON.name = ( lockVersion ? version : package );
+		boxJSON.slug = ( lockVersion ? version : package );
+		boxJSON.location = 'java:' & ( lockVersion ? version : package );
 		packageService.writePackageDescriptor( boxJSON, folderName );
 
 		return folderEndpoint.resolvePackage( folderName );

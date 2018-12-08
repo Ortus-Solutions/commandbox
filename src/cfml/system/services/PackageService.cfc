@@ -583,8 +583,7 @@ component accessors="true" singleton {
 
 	/**
 	* Uninstalls a package and its dependencies
-	* @slug.ID Identifier of the packge to uninstall.
-	* @slug.optionsUDF slugComplete
+	* @ID Identifier of the packge to uninstall.
 	* @directory The directory to install in. This will override the packages's box.json install dir if provided.
 	* @save Remove package as a dependancy in box.json (if it exists)
 	* @saveDev Remove package as a dev dependancy in box.json (if it exists)

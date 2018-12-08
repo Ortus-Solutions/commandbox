@@ -52,6 +52,7 @@ component accessors="true" singleton {
 			// Servers
 			'server',
 			'server.defaults',
+			'server.javaInstallDirectory',
 			// used in Artifactsservice
 			'artifactsDirectory',
 			// commands
