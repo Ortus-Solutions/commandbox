@@ -8,14 +8,17 @@
 component aliases='java list' {
 
 	// DI
-	property name="javaService" inject="JavaService";
-	property name="packageService" inject="PackageService";
+	property name="javaService"		inject="JavaService";
+	property name="packageService"	inject="PackageService";
+	property name="java"			inject="commandbox.system.endpoints.java";
 
 	/**
 	* 
 	*/
 	function run(){
 		var serverDefaultJvmJavaVersion = ConfigService.getSetting( 'server.defaults.jvm.javaVersion', '' );
+		var expandedDefault = java.getDefaultName( serverDefaultJvmJavaVersion );
+		var foundDefault = false;
 		
 		print
 			.line()
@@ -33,8 +36,10 @@ component aliases='java list' {
 		javaService.listJavaInstalls().each( function( slug, jVer ) {
 			
 			print.boldCyanText( slug );
-			if( serverDefaultJvmJavaVersion == slug ) {
+			// Checking the original string as well as the expanded, since the default java install doesn't have to be from the Java endpoint
+			if( serverDefaultJvmJavaVersion == slug || expandedDefault == slug ) {
 				print.redText( '   (Default)' );
+				foundDefault = true;
 			}
 			print.line();
 			
@@ -49,9 +54,16 @@ component aliases='java list' {
 			}
 		} );
 		
+		if( serverDefaultJvmJavaVersion.len() && !foundDefault ) {
+			print
+				.yellowText( 'You have a default Java version set to [' ).boldYellow( serverDefaultJvmJavaVersion ) .yellowLine( '] but it didn''t match any of your installed versions.')
+				.yellowLine( 'If you specified a partial version, it might download a new version when it comes avaialble.  If your default version' )
+				.yellowLine( 'simply isn''t installed, it will get downloaded automatically the next time you start a server.' )
+				.line();
+		}
 		print
 			.yellowLine( 'To set a different default Java version for your servers, run: ')
-			.indentedBoldYellow( 'config set server.defaults.jvm.javaVersion=openjdk11' );
+			.indentedBoldYellow( 'server java setDefault openjdk11' );
 		
 	}
 
