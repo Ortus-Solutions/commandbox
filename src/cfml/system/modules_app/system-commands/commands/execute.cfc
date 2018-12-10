@@ -66,6 +66,8 @@ component aliases="exec"{
 				if( isNumeric( argName ) ) {
 					argName--;
 				}
+				// Make incoming args avaialble to this command as env vars too
+				systemSettings.setSystemSetting( argName, args[ arg ] );
 				parsedArgs[ '$' & argName ] = args[arg];
 			}
 		}
