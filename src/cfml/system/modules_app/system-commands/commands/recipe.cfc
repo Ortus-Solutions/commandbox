@@ -59,20 +59,22 @@ component {
 		// store original path
 		var originalPath = getCWD();
 		// Make file canonical and absolute
-		arguments.recipeFile = resolvePath( arguments.recipeFile );
+		var tmpRecipeFile = resolvePath( arguments.recipeFile );
 
 		// Start clean so we can tell if any of our commands error without being affected by whatever may have run prior to this recipe
 		shell.setExitCode( 0 );
 
 		// Validate the file
-		if( !fileExists( arguments.recipeFile ) ){
-			return error( "File: #arguments.recipeFile# does not exist!" );
+		if( !fileExists( tmpRecipeFile ) ){
+			// If the file doesn't exist, accept the input as commands
+			var recipe = arguments.recipeFile;
+		} else {
+			// read it
+			var recipe = fileRead( tmpRecipeFile );
 		}
 
 		var isEcho = true;
 
-		// read it
-		var recipe = fileRead( arguments.recipeFile );
 
 		// Parse arguments
 		var sArgs = parseArguments( arguments );
