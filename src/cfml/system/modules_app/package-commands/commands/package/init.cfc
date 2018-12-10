@@ -53,7 +53,7 @@ component aliases="init" {
 
 		// Clean this up so it doesn't get written as a property
 		structDelete( arguments, "wizard" );
-		var endpointName = arguemnts.endpointName;
+		var endpointName = arguments.endpointName;
 		structDelete( arguments, "endpointName" );
 		
 		endpointName = endpointName ?: configService.getSetting( 'endpoints.defaultForgeBoxEndpoint', 'forgebox' );
