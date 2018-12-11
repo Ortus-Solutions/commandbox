@@ -855,11 +855,11 @@ External Dependencies:
       	    <zipfileset file="${dist.dir}/box" filemode="711" prefix="" />
 		</zip> -->
 		<zip destfile="${dist.dir}/${distro.name}-jre-linux64-${commandbox.version}.zip" level="9" update="true">
-			<zipfileset prefix="jre" dir="JREs\jre_${jre.version}_linux_x64/${jre.version}-jre/"/>
+			<zipfileset prefix="jre" dir="JREs\jre_${jre.version}_linux_x64/${jre.version}-jre/" filemode="711" />
       	    <zipfileset file="${dist.dir}/box" filemode="711" prefix="" />
 		</zip>
 		<zip destfile="${dist.dir}/${distro.name}-jre-darwin64-${commandbox.version}.zip" level="9" update="true">
-			<zipfileset prefix="jre" dir="JREs\jre_${jre.version}_mac_x64/${jre.version}-jre/Contents/Home/"/>
+			<zipfileset prefix="jre" dir="JREs\jre_${jre.version}_mac_x64/${jre.version}-jre/Contents/Home/" filemode="711" />
   		    <zipfileset file="${dist.dir}/box" filemode="711" prefix="" />
 		</zip>
 
