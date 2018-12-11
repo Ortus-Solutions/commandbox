@@ -835,7 +835,7 @@ External Dependencies:
 					 verbose="true" />
 			
 				<gunzip src="JREs/jre_${jre.version}_mac_x64.tar.gz"/>
-				<untar src="JREs/jre_${jre.version}_mac_x64.tar" dest="C:\Users\Brad.development\Documents\GitHub\box-cli\build\JREs\jre_${jre.version}_mac_x64"/>
+				<untar src="JREs/jre_${jre.version}_mac_x64.tar" dest="JREs\jre_${jre.version}_mac_x64"/>
 	        </else>
 	    </antcontrib:if>
 		
