@@ -204,6 +204,10 @@ component accessors=true implements="IEndpoint" singleton {
 			throw( 'The downloaded archive did not contain a folder as expected.', 'endpointException', APIURL );
 		}
 		var finalPackageRoot = '#folderName2#/#folders[ 1 ]#'
+		
+		if( javaDetails.os == 'mac' ) {
+			finalPackageRoot &= '/Contents/Home';
+		}
 		var fullBoxJSONPath = '#finalPackageRoot#/box.json';
 		
 		// Spoof a box.json so this looks like a package
