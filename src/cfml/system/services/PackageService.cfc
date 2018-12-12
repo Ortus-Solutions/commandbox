@@ -460,6 +460,23 @@ component accessors="true" singleton {
 				}
 			});
 
+			// Stupid annoying fix For *nix file systems because Lucee LOSES the executable bit on files when zipping or copying them
+			// I'm detecting JRE/JDK installations and attempting to make the files executable again.  
+			if( !fileSystemUtil.isWindows() && artifactDescriptor.createPackageDirectory && fileExists( installDirectory & '/bin/java' ) ) {
+				job.addWarnLog( 'Fixing *nix file permissions on java' );
+				
+				directoryList( installDirectory & '/bin', true ).each( function( path ) {
+					fileSetAccessMode( path, 755 );
+				} );
+				
+				if( fileExists( installDirectory & '/jre/bin/java' ) ) {
+					directoryList( installDirectory & '/bin', true ).each( function( path ) {
+						fileSetAccessMode( path, 755 );
+					} );					
+				}
+				
+			}
+
 			// Catch this to gracefully handle where the OS or another program
 			// has the folder locked.
 			try {
