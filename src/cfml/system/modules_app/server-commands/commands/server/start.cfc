@@ -44,7 +44,8 @@ component aliases="start" {
 	// DI
 	property name="serverService" 	inject="ServerService";
 	property name="javaService" 	inject="JavaService";
-
+	property name="endpointService" inject="endpointService";
+	
 	/**
 	 * @name           		short name for this server or a path to the server.json file.
 	 * @name.optionsFileComplete true
