@@ -188,6 +188,9 @@ component accessors="true" singleton {
 							if( semanticVersion.satisfies( candidateBoxJSON.version, version ) ) {
 								job.addWarnLog( '#packageName# (#version#) is already satisfied by #candidateInstallPath# (#candidateBoxJSON.version#).  Skipping installation.' );
 								job.complete( verbose );
+								
+								interceptorService.announceInterception( 'postInstall', { installArgs=arguments, installDirectory=candidateInstallPath } );
+
 								return true;
 							}
 						}
@@ -405,6 +408,9 @@ component accessors="true" singleton {
 					}
 					job.addWarnLog( "The package #packageName# is already installed at #installDirectory#. Skipping installation. Use --force option to force install." );
 					job.complete( verbose );
+					
+					interceptorService.announceInterception( 'postInstall', { installArgs=arguments, installDirectory=installDirectory } );
+					
 					return true;
 				}
 
