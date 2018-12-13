@@ -13,6 +13,9 @@ component accessors="true" singleton {
 	property name='CR' 					inject='CR@constants';
 	property name='formatterUtil'		inject='formatter';
 	property name='artifactService' 	inject='ArtifactService';
+	// Using provider since javaService registers itself as an interceptor and I get errors from that happening before
+	// the interceptor service is read so I need to delay the registration
+	property name='javaService'     	inject='provider:JavaService';
 	property name='fileSystemUtil'		inject='FileSystem';
 	property name='pathPatternMatcher' 	inject='provider:pathPatternMatcher@globber';
 	property name='shell' 				inject='Shell';
@@ -79,6 +82,9 @@ component accessors="true" singleton {
 			string packagePathRequestingInstallation = arguments.currentWorkingDirectory,
 			string defaultName=''
 	){
+		// Java service registers itself as an interceptor on creation so I need to force the provder to create the service before installing anything.
+		javaService.get();
+		
 		var shellWillReload = false;
 		var job = wirebox.getInstance( 'interactiveJob' );
 		interceptorService.announceInterception( 'preInstall', { installArgs=arguments, packagePathRequestingInstallation=packagePathRequestingInstallation } );

@@ -116,9 +116,9 @@ component accessors="true" singleton {
 	/**
 	* Sort of hacky way to capture the last place we installed Java into
 	*/
-	function onInstall() {
-		if( fileSystemUtil.normalizeSlashes( interceptData.installDirectory ) == fileSystemUtil.normalizeSlashes( getJavaInstallDirectory() ) ) {
-			lastInstallDir = interceptData.installDirectory & '/' & interceptData.artifactDescriptor.slug;	
+	function postInstall() {
+		if( fileSystemUtil.normalizeSlashes( interceptData.installDirectory ) contains fileSystemUtil.normalizeSlashes( getJavaInstallDirectory() ) ) {
+			lastInstallDir = interceptData.installDirectory;
 		}
 	}
 	
