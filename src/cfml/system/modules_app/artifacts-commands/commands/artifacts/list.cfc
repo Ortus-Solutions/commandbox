@@ -17,7 +17,8 @@ component {
 	property name='artifactService' inject='artifactService';
 
 	/**
-	 * @package.hint An optional package to filter the results by
+	 * @package An optional package to filter the results by
+	 * @package.optionsUDF packageComplete
 	 **/
 	function run( package='' ) {
 		var results = artifactService.listArtifacts( arguments.package );
@@ -36,6 +37,11 @@ component {
 			}
 		}
 
+	}
+	
+	function packageComplete() {
+		return artifactService.listArtifacts()
+			.keyArray();
 	}
 
 }
