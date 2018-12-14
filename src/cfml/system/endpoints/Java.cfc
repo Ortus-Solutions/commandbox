@@ -57,7 +57,7 @@ component accessors=true implements="IEndpoint" singleton {
 		var folderName2 = tempDir & '/' & 'temp#randRange( 1, 1000 )#';
 
 		var javaDetails = parseDetails( package );
-		var APIURL = 'https://api.adoptopenjdk.net/v2/binary/releases/#javaDetails.version#?openjdk_impl=#javaDetails['jvm-implementation']#&os=#javaDetails.os#&arch=#javaDetails.arch#&release=#javaDetails.release#&type=#javaDetails.type#';
+		var APIURL = 'https://api.adoptopenjdk.net/v2/binary/releases/#javaDetails.version#?openjdk_impl=#encodeForURL( javaDetails['jvm-implementation'] )#&os=#encodeForURL( javaDetails.os )#&arch=#encodeForURL( javaDetails.arch )#&release=#encodeForURL( javaDetails.release )#&type=#encodeForURL( javaDetails.type )#';
 
 		job.addLog( "Installing [#package#]" );
 		job.addLog( "Java version:              #javaDetails.version#" );
@@ -94,7 +94,7 @@ component accessors=true implements="IEndpoint" singleton {
 			
 			try {
 				// Do a quick peek at the API to see if we can get results back without the release name.
-				var APIURLCheck = 'https://api.adoptopenjdk.net/v2/info/releases/#javaDetails.version#?openjdk_impl=#javaDetails['jvm-implementation']#&os=#javaDetails.os#&arch=#javaDetails.arch#&type=#javaDetails.type#';
+				var APIURLCheck = 'https://api.adoptopenjdk.net/v2/info/releases/#javaDetails.version#?openjdk_impl=#encodeForURL( javaDetails['jvm-implementation'] )#&os=#encodeForURL( javaDetails.os )#&arch=#encodeForURL( javaDetails.arch )#&type=#encodeForURL( javaDetails.type )#';
 			
 				http
 					url="#APIURLCheck#"

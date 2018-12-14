@@ -65,19 +65,19 @@ component aliases='java search' {
 		var APIURLCheck = 'https://api.adoptopenjdk.net/v2/info/releases/#version.lcase()#?';
 		
 		if( jvm.len() ) {
-			APIURLCheck &= '&openjdk_impl=#jvm#' 
+			APIURLCheck &= '&openjdk_impl=#encodeForURL( jvm )#';
 		}
 		if( os.len() ) {
-			APIURLCheck &= '&os=#os#' 
+			APIURLCheck &= '&os=#encodeForURL( os )#';
 		}
 		if( arch.len() ) {
-			APIURLCheck &= '&arch=#arch#' 
+			APIURLCheck &= '&arch=#encodeForURL( arch )#';
 		}
 		if( type.len() ) {
-			APIURLCheck &= '&type=#type#' 
+			APIURLCheck &= '&type=#encodeForURL( type )#';
 		}
 		if( release.len() ) {
-			APIURLCheck &= '&release=#release#' 
+			APIURLCheck &= '&release=#encodeForURL( release )#';
 		}
 		
 		print
