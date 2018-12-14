@@ -477,15 +477,9 @@ component accessors="true" singleton {
 			if( !fileSystemUtil.isWindows() && artifactDescriptor.createPackageDirectory && fileExists( installDirectory & '/bin/java' ) ) {
 				job.addWarnLog( 'Fixing *nix file permissions on java' );
 				
-				directoryList( installDirectory & '/bin', true ).each( function( path ) {
+				directoryList( installDirectory , true ).each( function( path ) {
 					fileSetAccessMode( path, 755 );
 				} );
-				
-				if( fileExists( installDirectory & '/jre/bin/java' ) ) {
-					directoryList( installDirectory & '/bin', true ).each( function( path ) {
-						fileSetAccessMode( path, 755 );
-					} );					
-				}
 				
 			}
 
