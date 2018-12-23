@@ -27,7 +27,7 @@ component aliases="fwreinit" {
 			print.boldRedLine( "No server configurations found for '#getCWD()#', so have no clue what to reinit buddy!" );
 		} else {
 			var thisURL = "#serverInfo.host#:#serverInfo.port#/?fwreinit=#arguments.password#";
-			if( arguments.showUrl ){ print.greenLine( "Hitting...#thisURL#" ); }
+			if( arguments.showUrl ){ print.greenLine( "Hitting... #thisURL#" ); }
 			http result="local.results"
 				url="#thisURL#";
 
