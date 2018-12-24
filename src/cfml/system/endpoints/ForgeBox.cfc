@@ -7,7 +7,7 @@
 *
 * I am the ForgeBox endpoint.  I wrap CFML's coolest package repository EVER!
 */
-component accessors="true" implements="IEndpointInteractive" singleton {
+component accessors="true" implements="IEndpointInteractive" {
 
 	// DI
 	property name="CR" 					inject="CR@constants";
@@ -76,7 +76,7 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 	 * @return struct { isOutdated, version }
 	 */
 	public function getUpdate( required string package, required string version, boolean verbose=false ) {
-		var APIToken		= configService.getSetting( 'endpoints.forgebox.APIToken', '' );
+		var APIToken		= getAPIToken();
 		var slug 			= parseSlug( arguments.package );
 		var boxJSONversion 	= parseVersion( arguments.package );
 		var result 			= {
@@ -145,7 +145,7 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 		required string firstName,
 		required string lastName
 	){
-		var APIToken = configService.getSetting( 'endpoints.forgebox.APIToken', '' );
+		var APIToken = getAPIToken();
 
 		try {
 
@@ -215,7 +215,7 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 		props.installInstructionsFormat = 'text';
 		props.changeLog = boxJSON.changeLog;
 		props.changeLogFormat = 'text';
-		props.APIToken = configService.getSetting( 'endpoints.forgebox.APIToken', '' );
+		props.APIToken = getAPIToken();
 		props.forceUpload = arguments.force;
 
 		// start upload stuff here
@@ -297,7 +297,7 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 		try {
 			consoleLogger.warn( "Unpublishing package [#boxJSON.slug##( len( arguments.version ) ? '@' : '' )##arguments.version#] from ForgeBox, please wait..." );
 
-			forgebox.unpublish( boxJSON.slug, arguments.version, configService.getSetting( 'endpoints.forgebox.APIToken', '' ) );
+			forgebox.unpublish( boxJSON.slug, arguments.version, getAPIToken() );
 
 		} catch( forgebox var e ) {
 			// This can include "expected" errors such as "User not authenticated"
@@ -312,7 +312,7 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 	* @entryData Optional struct of entryData which skips the ForgeBox call.
 	*/
 	function findSatisfyingVersion( required string slug, required string version, struct entryData ) {
-		var APIToken = configService.getSetting( 'endpoints.forgebox.APIToken', '' );
+		var APIToken = getAPIToken();
 		 try {
 			// Use passed in entrydata, or go get it from ForgeBox.
 			arguments.entryData = arguments.entryData ?: forgebox.getEntry( arguments.slug, APIToken );
@@ -391,7 +391,7 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 	 */
 	private function getPackage( slug, version, verbose=false ) {
 		var job = wirebox.getInstance( 'interactiveJob' );
-		var APIToken = configService.getSetting( 'endpoints.forgebox.APIToken', '' );
+		var APIToken = getAPIToken();
 
 		try {
 			// Info
@@ -567,5 +567,52 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 			createObject( "java", "java.lang.System" ).getProperty( "line.separator" )
 		);
 	}
+
+	/**
+	* Returns the correct API token based on the name of this forgebox-based endpoint
+	*/
+	public function getAPIToken() {
+		if( getNamePrefixes() == 'forgebox' ) {
+			return configService.getSetting( 'endpoints.forgebox.APIToken', '' );	
+		} else {
+			return configService.getSetting( 'endpoints.forgebox-#getNamePrefixes()#.APIToken', '' );			
+		}
+	}
+
+	/**
+	* Set the default APIToken to be used for this forgebox-based endpoint
+	*/
+	public function setDefaultAPIToken( required string APIToken ) {
+		if( getNamePrefixes() == 'forgebox' ) {
+			configService.setSetting( 'endpoints.forgebox.APIToken', APIToken );	
+		} else {
+			configService.setSetting( 'endpoints.forgebox-#getNamePrefixes()#.APIToken', APIToken );			
+		}	
+	}
+
+	/**
+	* Returns the struct of all logged in tokens based on the name of this forgebox-based endpoint
+	*/
+	public function getAPITokens() {
+		if( getNamePrefixes() == 'forgebox' ) {
+			return configService.getSetting( 'endpoints.forgebox.tokens', {} );	
+		} else {
+			return configService.getSetting( 'endpoints.forgebox-#getNamePrefixes()#.tokens', {} );			
+		}
+	}
+
+	/**
+	* Store a new API Token
+	*/
+	public function storeAPIToken( required string username, required string APIToken ) {
+		if( getNamePrefixes() == 'forgebox' ) {
+			configService.setSetting( 'endpoints.forgebox.APIToken', APIToken );
+			configService.setSetting( 'endpoints.forgebox.tokens.#username#', APIToken );	
+		} else {
+			configService.setSetting( 'endpoints.forgebox-#getNamePrefixes()#.APIToken', APIToken );
+			configService.setSetting( 'endpoints.forgebox-#getNamePrefixes()#.tokens.#username#', APIToken );			
+		}
+	}
+
 
 }

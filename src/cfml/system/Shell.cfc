@@ -881,6 +881,11 @@ component accessors="true" singleton {
 		if( getExitCode() == 0 ) {
 			setExitCode( 1 );	
 		}
+		
+		var verboseErrors = true;
+		try{
+			verboseErrors = configService.getSetting( 'verboseErrors', false );
+		} catch( any var e ) {}
 
 		// If CommandBox blows up while starting, the interceptor service won't be ready yet.
 		if( getInterceptorService().getConfigured() ) {
@@ -911,7 +916,11 @@ component accessors="true" singleton {
 					if( idx > 1 ) {
 						variables.reader.getTerminal().writer().print( print.boldCyanText( "called from " ) );
 					}
-					variables.reader.getTerminal().writer().print( variables.print.boldCyanText( "#tc.template#: line #tc.line##variables.cr#" ));
+					if( verboseErrors ) {
+						variables.reader.getTerminal().writer().print( variables.print.boldCyanText( "#tc.template#: line #tc.line##variables.cr#" ));
+					} else {
+						variables.reader.getTerminal().writer().print( variables.print.boldCyanText( "#tc.template.replaceNoCase( expandPath( '/CommandBox' ), '' )#: line #tc.line##variables.cr#" ));						
+					}
 					if( len( tc.codeprinthtml ) && idx == 1 ){
 						variables.reader.getTerminal().writer().print( variables.print.text( variables.formatterUtil.HTML2ANSI( tc.codeprinthtml ) ) );
 					}
@@ -919,8 +928,13 @@ component accessors="true" singleton {
 			}
 		}
 		if( structKeyExists( arguments.err, 'stacktrace' ) ) {
-			variables.reader.getTerminal().writer().println( '' );
-			variables.reader.getTerminal().writer().print( arguments.err.stacktrace );
+			if( verboseErrors ) {
+					variables.reader.getTerminal().writer().println( '' );
+					variables.reader.getTerminal().writer().print( arguments.err.stacktrace );
+			} else {
+				variables.reader.getTerminal().writer().println();
+				variables.reader.getTerminal().writer().println( variables.print.whiteText( 'To enable full stack trace, run ' ) & variables.print.boldYellowText( 'config set verboseErrors=true' ) );
+			}
 		}
 
 		variables.reader.getTerminal().writer().println();

@@ -35,7 +35,16 @@ component {
 			.line( "---------------------------------------------------------------------------------", thisColor );
 
 		if ( arrayLen( testData.labels ) ) {
-			print.line( "->[Labels Applied: #arrayToList( testData.labels )#]" );
+			print.line( "Labels Applied: #arrayToList( testData.labels )#", thisColor );
+		}
+		if( isDefined( 'testData.coverage.enabled' ) && testData.coverage.enabled ) {
+			print.line( "Coverage: #testData.coverage.data.stats.totalCoveredLines# / #testData.coverage.data.stats.totalExecutableLines# LOC (#numberFormat( testData.coverage.data.stats.percTotalCoverage*100, '9.9' )#%) Covered", thisColor );
+			if( len( testData.coverage.data.sonarQubeResults ) ) {
+				print.line( "Coverage: SonarQube file written to [#testData.coverage.data.sonarQubeResults#]", thisColor );
+			}
+			if( len( testData.coverage.data.browserResults ) ) {
+				print.line( "Coverage: Browser written to [#testData.coverage.data.browserResults#]", thisColor );
+			}
 		}
 
 		var didPrint = false;

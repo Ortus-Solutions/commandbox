@@ -11,13 +11,15 @@ I am a CFM because the CLI seems to need a .cfm file to call
 This file will stay running the entire time the shell is open
 --->
 
-<cfset createObject( 'java', 'java.lang.System' ).setProperty( 'exitCode', '0' )>
+
+<cfset system = createObject( "java", "java.lang.System" )>
+<cfset system.setProperty( 'exitCode', '0' )>
 <cfset mappings = getApplicationSettings().mappings>
 
 <!--- Move everything over to this mapping which is the "root" of our app --->
 <cfset CFMLRoot = expandPath( getDirectoryFromPath( getCurrentTemplatePath() ) & "../" ) >
 <cfset mappings[ '/commandbox' ]		= CFMLRoot >
-<cfset mappings[ '/commandbox-home' ]	= createObject( 'java', 'java.lang.System' ).getProperty( 'cfml.cli.home' ) >
+<cfset mappings[ '/commandbox-home' ]	= system.getProperty( 'cfml.cli.home' ) >
 <cfset mappings[ '/wirebox' ]			= CFMLRoot & 'system/wirebox' >
 	
 <cfapplication 
@@ -26,6 +28,13 @@ This file will stay running the entire time the shell is open
 	sessionmanagement 	= "false"
 	applicationTimeout = "#createTimeSpan( 999999, 0, 0, 0 )#"
 	mappings="#mappings#">
+
+<!--- 
+	Workaround to snuff out annoying ESAPI warnings in the console.
+	If necessary, move this to the Java loader.  Right now Lucee doesn't seem to hit any ESAPI libs until CommandBox is loaded. 
+--->
+<cfset system.setProperty( 'org.owasp.esapi.opsteam', expandPath( '/commandbox/system/config/ESAPI.properties' ) )>
+<cfset system.setProperty( 'org.owasp.esapi.devteam', expandPath( '/commandbox/system/config/ESAPI.properties' ) )>
 
 <cfset variables.wireBox = new wirebox.system.ioc.Injector( 'commandbox.system.config.WireBox' )>
 
@@ -38,7 +47,7 @@ This file will stay running the entire time the shell is open
 		var esc = chr( 27 );
 		var caps = createObject( 'java', 'org.jline.utils.InfoCmp$Capability' );
 		// See how many colors this terminal supports
-		var numColors = shell.getReader().getTerminal().getNumericCapability( caps.max_colors );
+		var numColors = shell.getReader().getTerminal().getNumericCapability( caps.max_colors ) ?: 0;
 	
 		// Windows cmd gets solid blue
 		if( !isNull( numColors ) && numColors < 256 ) {
@@ -72,7 +81,6 @@ This file will stay running the entire time the shell is open
 	<cfreturn banner>
 </cffunction>
 <cfscript>
-	system 	= createObject( "java", "java.lang.System" );
 	args 	= system.getProperty( "cfml.cli.arguments" );
 	argsArray = deserializeJSON( system.getProperty( "cfml.cli.argument.array" ) );
 
@@ -98,6 +106,11 @@ This file will stay running the entire time the shell is open
 		
 		shell.setShellType( 'command' );
 		interceptorService =  shell.getInterceptorService();
+
+		if( argsArray.len() == 1 && argsArray[ 1 ].listLen( ' ' ) > 1 ) {
+			parser = wirebox.getInstance( 'parser' );
+			argsArray = parser.tokenizeInput( argsArray[ 1 ] );
+		}
 
 		interceptData = { shellType=shell.getShellType(), args=argsArray, banner=getBanner() };
 		interceptorService.announceInterception( 'onCLIStart', interceptData );
@@ -196,7 +209,7 @@ This file will stay running the entire time the shell is open
 			} catch( any e) {
 			}
 			
-			createObject( 'java', 'java.lang.System' ).setProperty( 'cfml.cli.exitCode', '1' );
+			system.setProperty( 'cfml.cli.exitCode', '1' );
 	
 			// Try to log this to LogBox
 			try {
@@ -204,6 +217,11 @@ This file will stay running the entire time the shell is open
 				application.wireBox.getInstance( 'interceptorService' ).announceInterception( 'onException', { exception=exception } );
 	    	// If it fails no worries, LogBox just probably isn't loaded yet.
 			} catch ( Any e ) {}
+			
+			verboseErrors = true;
+			try{
+				verboseErrors = wirebox.getInstance( 'configService' ).getSetting( 'verboseErrors', false );
+			} catch( any e ) {}
 	
 			// Give nicer message to user
 			err = cfcatch;
@@ -234,13 +252,22 @@ This file will stay running the entire time the shell is open
 					}
 				}
 			}
-	    	systemOutput( '', true );
-	    	systemOutput( '#err.stacktrace#', true );
+			if( verboseErrors ) {
+		    	systemOutput( '', true );
+		    	systemOutput( '#err.stacktrace#', true );	
+			} else {
+		    	systemOutput( '', true );
+				systemOutput( 'To enable full stack trace, run "config set verboseErrors=true"', true );
+		    	systemOutput( '', true );
+			}
 	
 	    	//writeDump(var=cfcatch, output="console");
 	
-			// Give them a chance to read it
-			sleep( 30000 );
+			// ignore "sleep interrupted" exception if they hit Ctrl-C here
+			try {
+				// Give them a chance to read it
+				sleep( 30000 );
+			} catch( any e ) {}
 		</cfscript>
 	</cfcatch>
 </cftry>

@@ -9,27 +9,20 @@
  * .
  * You can also bind the recipe with arguments that will be replaced inside of your recipe.
  * Pass any arguments as additional parameters to the recipe command.
- * Named arguments will be accessable inside the recipe as  $arg1Name, $arg2Name, etc.
- * Positional args will be avaialble as $1, $2, etc.
+ * Named arguments will be accessable inside the recipe as system settings ${arg1Name}, ${arg2Name}, etc.
+ * Positional args will be avaialble as ${1}, ${2}, etc.
  * .
- * Recipe will receive $name and $action
+ * Recipe will receive ${name} and ${action}
  * {code:bash}
  * recipe recipeFile=buildSite.boxr name=luis action=create
  * {code}
  * .
- * Recipe will receive $1 and $2
+ * Recipe will receive ${1} and ${2}
  * {code:bash}
  * recipe buildSite.boxr luis create
  * {code}
  * .
- * When using args inside a recipe, you will need to wrap the arg in quotes if it may contain a space
- * .
- * $arg1 may contain spaces
- * {code:bash}
- * rm "$arg1"
- * {code}
- * .
- * If an argument is not bound, no error will be thrown, and the name of the argument will be left in the command.
+ * System settings which are not found, are replaced with a space.  Remember, you can default then as ${name:default}
  * .
  * You can use "echo on" and "echo off" in recipes to control whether the commands output to the console as they are executed.
  * This can be useful for debugging or confirming the success of commands with no output.  Echo is on by default.
@@ -43,6 +36,16 @@
  * # Now you don't
  * {code}
  *
+ * If you have one or more commands to execute which are not contained in a file, but are in a variable or being output
+ * from another command, you can simply pass the commands in directly. The your input does not match a file on the 
+ * file system, the recipe command will attempt to execute your input directly as commands
+ *
+ * {code:bash}
+ * set cmd="package show"
+ * recipe ${cmd}
+ * env show cmd | recipe
+ * {code}
+ *
  **/
 component {
 
@@ -50,31 +53,34 @@ component {
 	property name='parser' 	inject='Parser';
 
 	/**
-	 * @recipeFile.hint The name of the recipe file to execute including extension.  Any text file may be used.
+	 * @recipeFile.hint The name of the recipe file to execute including extension.  Alternatively, text comamnds to direct execute.
 	 **/
 	function run( required recipeFile ){
 		// store original path
 		var originalPath = getCWD();
 		// Make file canonical and absolute
-		arguments.recipeFile = resolvePath( arguments.recipeFile );
+		var tmpRecipeFile = resolvePath( arguments.recipeFile );
 
 		// Start clean so we can tell if any of our commands error without being affected by whatever may have run prior to this recipe
 		shell.setExitCode( 0 );
 
 		// Validate the file
-		if( !fileExists( arguments.recipeFile ) ){
-			return error( "File: #arguments.recipeFile# does not exist!" );
+		if( !fileExists( tmpRecipeFile ) ){
+			// If the file doesn't exist, accept the input as commands
+			var recipe = arguments.recipeFile;
+		} else {
+			// read it
+			var recipe = fileRead( tmpRecipeFile );
 		}
 
 		var isEcho = true;
 
-		// read it
-		var recipe = fileRead( arguments.recipeFile );
 
 		// Parse arguments
 		var sArgs = parseArguments( arguments );
 
 		// bind commands with arguments
+		// TODO: deprecate this in future version in favor of env vars which we're already setting
 		recipe = bindArgs( recipe, sArgs );
 
 		// split commands using carriage returns and/or line feeds
@@ -137,6 +143,9 @@ component {
 				
 
 			} catch( any e ){
+				// If we ran an exit command in the recipe, don't actually exit the shell.  
+				shell.setKeepRunning( true );	
+				
 				print
 					.boldRed( "Error executing command [#thiscommand#], exiting recipe." )
 					.line();
@@ -173,7 +182,9 @@ component {
 				if( isNumeric( argName ) ) {
 					argName--;
 				}
-				parsedArgs[ '$' & argName ] = args[arg];
+				// This is an eventual replacement for the variable binding above
+				systemSettings.setSystemSetting( argName, args[ arg ] );
+				parsedArgs[ '$' & argName ] = args[ arg ];
 			}
 		}
 		return parsedArgs;

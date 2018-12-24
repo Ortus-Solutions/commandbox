@@ -50,8 +50,10 @@ component accessors=true implements="IEndpoint" singleton {
 				}
 			);
 		} catch( UserInterruptException var e ) {
+			if( fileExists( fullPath ) ) { fileDelete( fullPath ); }
 			rethrow;
 		} catch( Any var e ) {
+			if( fileExists( fullPath ) ) { fileDelete( fullPath ); }
 			throw( '#e.message##CR##e.detail#', 'endpointException' );
 		};
 

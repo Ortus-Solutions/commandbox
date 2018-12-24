@@ -10,20 +10,31 @@
 component {
 
 	// DI
-	property name="forgeBox"		inject="ForgeBox";
 	property name="semanticVersion"	inject="semanticVersion@semver";
+	property name="endpointService" inject="endpointService";
+	property name="configService" inject="configService";
 
 	/**
 	* @searchText.hint Text to search on
+	* @endpointName  Name of custom forgebox endpoint to use
+	* @endpointName.optionsUDF endpointNameComplete
 	**/
-	function run( searchText ) {
+	function run( string searchText, string endpointName ) {
+		endpointName = endpointName ?: configService.getSetting( 'endpoints.defaultForgeBoxEndpoint', 'forgebox' );
 
 		// Default parameter
 		arguments.searchText = arguments.searchText ?: '';
 
 		try {
-
-				var APIToken = configService.getSetting( 'endpoints.forgebox.APIToken', '' );
+				
+				try {		
+					var oEndpoint = endpointService.getEndpoint( endpointName );
+				} catch( EndpointNotFound var e ) {
+					error( e.message, e.detail ?: '' );
+				}
+		
+				var APIToken = oEndpoint.getAPIToken();
+				var forgebox = oEndpoint.getForgeBox();
 
 				// Get the entries
 				var entries = forgebox.getEntries( searchTerm = arguments.searchText, APIToken=APIToken );
@@ -95,6 +106,10 @@ component {
 			return error( '#e.message##CR##e.detail#' );
 		}
 
+	}
+	
+	function endpointNameComplete() {
+		return getInstance( 'endpointService' ).forgeboxEndpointNameComplete();
 	}
 
 }

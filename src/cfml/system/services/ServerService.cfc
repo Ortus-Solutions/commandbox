@@ -42,6 +42,7 @@ component accessors="true" singleton {
 	property name='CR'						inject='CR@constants';
 	property name='parser'					inject='parser';
 	property name='systemSettings'			inject='SystemSettings';
+	property name='javaService'				inject='provider:javaService';
 
 	/**
 	* Constructor
@@ -124,14 +125,15 @@ component accessors="true" singleton {
 			'trayOptions' : duplicate( d.trayOptions ?: [] ),
 			'trayEnable' : d.trayEnable ?: true,
 			'jvm' : {
-				'heapSize' : d.jvm.heapSize ?: 512,
-				'minHeapSize' : d.jvm.minHeapSize ?: 0,
+				'heapSize' : d.jvm.heapSize ?: '',
+				'minHeapSize' : d.jvm.minHeapSize ?: '',
 				'args' : d.jvm.args ?: '',
-				'javaHome' : ( isDefined( 'd.jvm.javaHome' ) ? fileSystemUtil.getJREExecutable( d.jvm.javaHome ) : variables.javaCommand )
+				'javaHome' : d.jvm.javaHome ?: '',
+				'javaVersion' : d.jvm.javaVersion ?: ''
 			},
 			'web' : {
 				'host' : d.web.host ?: '127.0.0.1',
-				'directoryBrowsing' : d.web.directoryBrowsing ?: true,
+				'directoryBrowsing' : d.web.directoryBrowsing ?: false,
 				'webroot' : d.web.webroot ?: '',
 				// Duplicate so onServerStart interceptors don't actually change config settings via reference.
 				'aliases' : duplicate( d.web.aliases ?: {} ),
@@ -268,7 +270,7 @@ component accessors="true" singleton {
 				.setOptions( [
 					{ display : 'Provide a new name for this server (recommended)', value : 'newName', accessKey='N', selected=true },
 					{ display : 'Just keep starting this new server and overwrite the old, running one.', value : 'overwrite', accessKey='o' },
-					{ display : 'Stop and do not start a server right now.', value : 'stop', accessKey='s' }
+					{ display : 'Cancel and do not start a server right now.', value : 'stop', accessKey='s' }
 				] )
 				.setRequired( true )
 				.ask();
@@ -480,6 +482,9 @@ component accessors="true" singleton {
 			    case "javaHomeDirectory":
 					serverJSON[ 'JVM' ][ 'javaHome' ] = serverProps[ prop ];
 			         break;
+			    case "javaVersion":
+					serverJSON[ 'JVM' ][ 'javaVersion' ] = serverProps[ prop ];
+			         break;
 			    case "runwarArgs":
 					serverJSON[ 'runwar' ][ 'args' ] = serverProps[ prop ];
 			         break;
@@ -504,7 +509,9 @@ component accessors="true" singleton {
 		serverInfo.openbrowser		= serverProps.openbrowser 		?: serverJSON.openbrowser			?: defaults.openbrowser;
 		serverInfo.openbrowserURL	= serverProps.openbrowserURL	?: serverJSON.openbrowserURL		?: defaults.openbrowserURL;
 
-		job.setDumpLog( serverInfo.debug );
+		if( serverInfo.debug ) {
+			job.setDumpLog( serverInfo.debug );	
+		}
 
 		serverInfo.host				= serverProps.host 				?: serverJSON.web.host				?: defaults.web.host;
 		// If the last port we used is taken, remove it from consideration.
@@ -613,12 +620,39 @@ component accessors="true" singleton {
 		serverInfo.heapSize 		= serverProps.heapSize 			?: serverJSON.JVM.heapSize			?: defaults.JVM.heapSize;
 		serverInfo.minHeapSize 		= serverProps.minHeapSize		?: serverJSON.JVM.minHeapSize		?: defaults.JVM.minHeapSize;
 
+		serverInfo.javaVersion = '';
+		serverInfo.javaHome = '';
+
+		// First, take start command home dir
 		if( isDefined( 'serverProps.javaHomeDirectory' ) ) {
-			serverInfo.javaHome = fileSystemUtil.getJREExecutable( serverProps.javaHomeDirectory );
+			serverInfo.javaHome = serverProps.javaHomeDirectory;
+		// Then start command java version
+		} else if( isDefined( 'serverProps.javaVersion' ) ) {
+			serverInfo.javaVersion = serverProps.javaVersion;
+		// Then server.json java home dir
 		} else if( isDefined( 'serverJSON.JVM.javaHome' ) ) {
-			serverInfo.javaHome = fileSystemUtil.getJREExecutable( serverJSON.JVM.javaHome );
-		} else {
+			serverInfo.javaHome = serverJSON.JVM.javaHome;
+		// Then server.json java version
+		} else if( isDefined( 'serverJSON.JVM.javaVersion' ) ) {
+			serverInfo.javaVersion = serverJSON.JVM.javaVersion;
+		// Then server defaults java home dir
+		} else if( defaults.JVM.javaHome.len() ) {
 			serverInfo.javaHome = defaults.JVM.javaHome;
+		// Then server defaults java versiom
+		} else if( defaults.JVM.javaVersion.len() ) {
+			serverInfo.javaVersion = defaults.JVM.javaVersion;
+		}
+		
+		// There was no java home at any level, but there was a java version, use it 
+		if( !serverInfo.javaHome.len() && serverInfo.javaVersion.len() ) {
+			serverInfo.javaHome = javaService.getJavaInstallPath( serverInfo.javaVersion );
+		}
+				
+		// There is still no java home, use the same JRE as the CLI 
+		if( serverInfo.javaHome.len() ) {
+			serverInfo.javaHome = fileSystemUtil.getJREExecutable( serverInfo.javaHome );
+		} else {
+			serverInfo.javaHome = variables.javaCommand;
 		}
 
 		serverInfo.directoryBrowsing = serverProps.directoryBrowsing ?: serverJSON.web.directoryBrowsing ?: defaults.web.directoryBrowsing;
@@ -873,6 +907,17 @@ component accessors="true" singleton {
 			appFileSystemPathDisplay = firstFolder & '/' & middleStuff.left( leftOverLen ) & '.../' & lastFolder & '/';
 		}
 
+		// If there is a max size and it doesn't have a letter in it
+		if( len( serverInfo.heapSize ) && serverInfo.heapSize == val( serverInfo.heapSize ) ) {
+			// Default it to megs
+			serverInfo.heapSize &= 'm';
+		}
+		// Same for min heap size
+		if( len( serverInfo.minHeapSize ) && serverInfo.minHeapSize == val( serverInfo.minHeapSize ) ) {
+			// Default it to megs
+			serverInfo.minHeapSize &= 'm';
+		}
+		
 		serverInfo.trayOptions.prepend(
 			{
 				"label":"Info",
@@ -881,7 +926,7 @@ component accessors="true" singleton {
 					{ "label" : "Webroot: " & appFileSystemPathDisplay, "action" : "openfilesystem", "path" : serverInfo.appFileSystemPath, 'image' : expandPath('/commandbox/system/config/server-icons/folder.png' ) },
 					{ "label" : "URL: " & serverInfo.defaultBaseURL, 'action':'openbrowser', 'url': serverInfo.defaultBaseURL, 'image' : expandPath('/commandbox/system/config/server-icons/home.png' ) },
 					{ "label" : "PID: ${runwar.PID}", "disabled" : true  },
-					{ "label" : "Heap: #serverInfo.heapSize#m", "disabled" : true  }
+					{ "label" : "Heap: #( len( serverInfo.heapSize ) ? serverInfo.heapSize : 'Not set' )#", "disabled" : true  }
 				],
 				"image" : expandPath('/commandbox/system/config/server-icons/info.png' )
 			} );
@@ -956,16 +1001,23 @@ component accessors="true" singleton {
 				// Clean up a couple escapes the parser does that we don't need
 				return parser.unwrapQuotes( i.replace( '\=', '=', 'all' ).replace( '\\', '\', 'all' ).replace( ';', '\;', 'all' ) );
 			});
-		// Add in heap size and java agent
-		argTokens.append( '-Xmx#serverInfo.heapSize#m' );
-
-		if( val( serverInfo.minHeapSize ) ) {
-			if( serverInfo.minHeapSize > serverInfo.heapSize ) {
-				job.addWarnLog( 'Your JVM min heap size [#serverInfo.minHeapSize#] is set larger than your max size [#serverInfo.heapSize#]! Reducing the Min to prevent errors.' );
-			}
-			argTokens.append( '-Xms#min( serverInfo.minHeapSize, serverInfo.heapSize )#m' );
+			
+			
+		// Add in max heap size
+		if( len( serverInfo.heapSize ) ) {
+			argTokens.append( '-Xmx#serverInfo.heapSize#' );	
 		}
 
+		// Add in min heap size
+		if( len( serverInfo.minHeapSize ) ) {
+			if( len(serverInfo.minHeapSize ) && len( serverInfo.heapSize ) && isHeapLarger( serverInfo.minHeapSize, serverInfo.heapSize ) ) {
+				job.addWarnLog( 'Your JVM min heap size [#serverInfo.minHeapSize#] is set larger than your max size [#serverInfo.heapSize#]! Reducing the Min to prevent errors.' );
+				serverInfo.minHeapSize = serverInfo.heapSize;
+			}
+			argTokens.append( '-Xms#serverInfo.minHeapSize#' );
+		}
+
+		// Add java agent
 		if( len( trim( javaAgent ) ) ) { argTokens.append( javaagent ); }
 
 		 args
@@ -1306,6 +1358,38 @@ component accessors="true" singleton {
 			thread action="join" name="#threadName#";
 		}
 
+	}
+
+	/**
+	* Detects if the first heap size is larger than the second
+	* @heapSize1 Specified as 1024m, 2G, or 512k
+	* @heapSize2 Specified as 1024m, 2G, or 512k
+	*/
+	function isHeapLarger( heapSize1, heapSize2 ) {
+		heapSize1 = convertHeapToMB( heapSize1 );
+		heapSize2 = convertHeapToMB( heapSize2 );
+		return heapSize1 > heapSize2;
+	}
+	
+	/**
+	* Convert heap in format like 1G to 1024
+	* Will always return MB, but without the "m"
+	*/
+	function convertHeapToMB( heapSize ) {
+		heapSize = heapSize.lcase();
+		// 1024m or just 1024
+		if( heapSize.endsWith( 'm' ) || val( heapSize ) == heapSize ) {
+			return val( heapSize );
+		}
+		// 2G
+		if( heapSize.endsWith( 'g' ) ) {
+			return val( heapSize ) * 1024;
+		}
+		// 512K
+		if( heapSize.endsWith( 'k' ) ) {
+			return val( heapSize ) / 1024;
+		}
+		throw( 'Invalid Heap size [#heapSize#]' );
 	}
 
 	/**
@@ -1876,10 +1960,11 @@ component accessors="true" singleton {
 			'rewritesConfigReloadSeconds'	: "",
 			'basicAuthEnable'	: true,
 			'basicAuthUsers'	: {},
-			'heapSize'			: 512,
-			'minHeapSize'		: 0,
+			'heapSize'			: '',
+			'minHeapSize'		: '',
 			'javaHome'			: '',
-			'directoryBrowsing' : true,
+			'javaVersion'		: '',
+			'directoryBrowsing' : false,
 			'JVMargs'			: "",
 			'runwarArgs'		: "",
 			'cfengine'			: "",

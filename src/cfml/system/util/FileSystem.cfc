@@ -19,6 +19,7 @@ component accessors="true" singleton {
 	// DI
 	property name="shell" inject="shell";
 	property name="logger" inject="logbox:logger:{this}";
+	property name="tempDir" inject="tempDir@constants";
 
 	function init() {
 		variables.os = createObject( "java", "java.lang.System" ).getProperty( "os.name" ).toLowerCase();
@@ -540,6 +541,43 @@ component accessors="true" singleton {
 		        	fch.close();
 		        }			
 			}	
+		}
+	}
+
+	/** 
+	 * Extract a tar.gz file into a folder
+	*/
+	function extractTarGz( required string sourceFile, required string targetFolder ) {
+		// Ensure target directory
+		directoryCreate( targetFolder, true, true );
+
+		// Uncompress the Gzip into a tar file
+		try {
+
+			var file_in = createobject('java','java.io.FileInputStream').init( sourceFile );
+			var fin = createobject('java','java.util.zip.GZIPInputStream').init(file_in);
+			var tmpFile = tempDir & '/' & 'temp#randRange( 1, 1000 )#.tar';
+			var out = createobject('java','java.io.FileOutputStream').init( tmpFile );
+			var buf =  repeatString(" " ,100).getBytes();
+			var flen = fin.read(buf);
+			while (flen GT 0) {
+				out.write(buf, 0, flen);
+				flen = fin.read(buf);
+				shell.checkInterrupted();
+			}
+
+			// Extract tar file into our folder
+			extract( format='tar', source=tmpFile, target=targetFolder );
+
+		} finally {
+
+			// Clean up, clean up, everybody clean up!
+			try { file_in.close(); } catch( any e ) {}
+			try { fin.close(); } catch( any e ) {}
+			try { out.close(); } catch( any e ) {}
+
+			try { fileDelete( tmpFile ); } catch( any e ) {}
+
 		}
 	}
 

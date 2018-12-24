@@ -266,35 +266,6 @@ component accessors="true" singleton {
 				structDelete( local, 'result', false );
 			}
 
-			// If we're using postitional params, convert them to named
-			if( arrayLen( parameterInfo.positionalParameters ) ){
-				parameterInfo.namedParameters = convertToNamedParameters( parameterInfo.positionalParameters, commandParams );
-			}
-
-			// Merge flags into named params
-			mergeFlagParameters( parameterInfo );
-
-			// Add in defaults for every possible alias of this command
-			[]
-				.append( commandInfo.commandReference.originalName )
-				.append( commandInfo.commandReference.aliases, true )
-				.each( function( thisName ) {
-					addDefaultParameters( thisName, parameterInfo );
-				} );
-
-			// Make sure we have all required params.
-			parameterInfo.namedParameters = ensureRequiredParams( parameterInfo.namedParameters, commandParams );
-
-			// Evaluate parameter expressions and system settings
-			evaluateExpressions( parameterInfo );
-			evaluateSystemSettings( parameterInfo );
-			combineColonParams( parameterInfo );
-
-			// Create globbing patterns
-			createGlobs( parameterInfo, commandParams );
-
-			// Ensure supplied params match the correct type
-			validateParams( parameterInfo.namedParameters, commandParams );
 
 			// Reset the printBuffer
 			commandInfo.commandReference.CFC.reset();
@@ -303,33 +274,70 @@ component accessors="true" singleton {
 			// This will prevent the output from showing up out of order if one command nests a call to another.
 			if( instance.callStack.len() ){
 				// Print anything in the buffer
-				shell.printString( instance.callStack[1].commandReference.CFC.getResult() );
+				shell.printString( instance.callStack[1].commandInfo.commandReference.CFC.getResult() );
 				// And reset it now that it's been printed.
 				// This command can add more to the buffer once it's executing again.
-				instance.callStack[1].commandReference.CFC.reset();
+				instance.callStack[1].commandInfo.commandReference.CFC.reset();
 			}
 
 			// Add command to the top of the stack
-			instance.callStack.prepend( commandInfo );
-
-			interceptorService.announceInterception( 'preCommand', { commandInfo=commandInfo, parameterInfo=parameterInfo } );
-
-			// Tells us if we are going to capture the output of this command and pass it to another
-			// Used for our workaround to switch if the "run" command pipes to the terminal or not
-			// If there are more commands in the chain and we are going to pipe or redirect to them
-			if( arrayLen( commandChain ) > i && listFindNoCase( '|,>,>>', commandChain[ i+1 ].originalLine ) ) {
-				captureOutput = true;
-			}
+			instance.callStack.prepend( { commandInfo : commandInfo, environment : {} } );
 			
-			// This is my workaround to "smartly" capture the output of the run command if we're piping it or 
-			// nesting it as an expression, etc.
-			if( commandInfo.commandReference.originalName == 'run' && captureOutput ) {
-				parameterInfo.namedParameters.interactive=false;
-			} 
-			
-			
+			// Start the try as soon as we prepend to the call stack so any errors from here on out, even parsing the params, will 
+			// correct remove this call from the stack in the finally block.
+			try {
+							
+				// If we're using postitional params, convert them to named
+				if( arrayLen( parameterInfo.positionalParameters ) ){
+					parameterInfo.namedParameters = convertToNamedParameters( parameterInfo.positionalParameters, commandParams );
+				}
+	
+				// Merge flags into named params
+				mergeFlagParameters( parameterInfo );
+	
+				// Add in defaults for every possible alias of this command
+				[]
+					.append( commandInfo.commandReference.originalName )
+					.append( commandInfo.commandReference.aliases, true )
+					.each( function( thisName ) {
+						addDefaultParameters( thisName, parameterInfo );
+					} );
+	
+				// Make sure we have all required params.
+				parameterInfo.namedParameters = ensureRequiredParams( parameterInfo.namedParameters, commandParams );
+	
+				interceptorService.announceInterception( 'preCommandParamProcess', { commandInfo=commandInfo, parameterInfo=parameterInfo } );
+	
+				// System settings need evaluated prior to expressions!
+				evaluateSystemSettings( parameterInfo );
+				evaluateExpressions( parameterInfo );
+				
+				// Combine params like command foo:bar=1 foo:baz=2 foo:bum=3
+				combineColonParams( parameterInfo );
+	
+				// Create globbing patterns
+				createGlobs( parameterInfo, commandParams );
+	
+				// Ensure supplied params match the correct type
+				validateParams( parameterInfo.namedParameters, commandParams );
+	
+				interceptorService.announceInterception( 'preCommand', { commandInfo=commandInfo, parameterInfo=parameterInfo } );
+	
+				// Tells us if we are going to capture the output of this command and pass it to another
+				// Used for our workaround to switch if the "run" command pipes to the terminal or not
+				// If there are more commands in the chain and we are going to pipe or redirect to them
+				if( arrayLen( commandChain ) > i && listFindNoCase( '|,>,>>', commandChain[ i+1 ].originalLine ) ) {
+					captureOutput = true;
+				}
+				
+				// This is my workaround to "smartly" capture the output of the run command if we're piping it or 
+				// nesting it as an expression, etc.
+				if( commandInfo.commandReference.originalName == 'run' && captureOutput ) {
+					parameterInfo.namedParameters.interactive=false;
+				} 
+				
+				
 			// Run the command
-			try {				
 				var result = commandInfo.commandReference.CFC.run( argumentCollection = parameterInfo.namedParameters );
 				lastCommandErrored = commandInfo.commandReference.CFC.hasError();
 			} catch( any e ){
@@ -803,7 +811,7 @@ component accessors="true" singleton {
 		if( len( command ) ){
 			for( var call in instance.callStack ){
 				// CommandString is a dot-delimted path
-				if( call.commandString == listChangeDelims( command, ' ', '.' ) ){
+				if( call.commandInfo.commandString == listChangeDelims( command, ' ', '.' ) ){
 					return true;
 				}
 			}
@@ -1054,7 +1062,7 @@ component accessors="true" singleton {
 	/**
 	 * Match positional parameters up with their names
  	 **/
-	private function convertToNamedParameters( userPositionalParams, commandParams ){
+	function convertToNamedParameters( userPositionalParams, commandParams ){
 		var results = {};
 
 		var i = 0;
@@ -1098,6 +1106,15 @@ component accessors="true" singleton {
 			}
 		} );
 
+	}
+	
+
+	/**
+	 * Get the array of commands being executed.
+	 * This may be empty.
+ 	 **/
+	array function getCallStack() {
+		return instance.callStack;
 	}
 
 }

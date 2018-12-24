@@ -276,8 +276,16 @@ component {
 	function unwrapQuotes( theString ) {
 		// If the value is wrapped with backticks, leave them be.  That is a signal to the CommandService
 		// that the string is special and needs to be evaluated as an expression.
-		if( left( theString, 1 ) == '"' || left( theString, 1 ) == "'" ) {
-			return mid( theString, 2, len( theString ) - 2 );
+
+		// If the string begins with a matching single or double quote, strip it.
+		var startChar = left( theString, 1 );
+		if(  startChar == '"' || startChar == "'" ) {
+			theString =  mid( theString, 2, len( theString ) - 1 );
+			// Strip any matching single or double ending quote
+			// Missing ending quotes are invalid but will be ignored
+			if( right( theString, 1 ) == startChar ) {
+				return mid( theString, 1, len( theString ) - 1 );
+			}
 		}
 		return theString;
 	}

@@ -109,6 +109,11 @@ component singleton {
 				var definedParameters = commandInfo.commandReference.parameters;
 				// This is the params the user has entered so far.
 				var passedParameters = commandService.parseParameters( commandInfo.parameters, definedParameters );
+				var passedNamedParameters = passedParameters.namedParameters;
+				
+				if( arrayLen( passedParameters.positionalParameters ) ){
+					passedNamedParameters = commandService.convertToNamedParameters( passedParameters.positionalParameters, definedParameters );
+				}
 
 				// For sure we are using named- suggest name or value as necceessary
 				if( structCount( passedParameters.namedParameters ) ) {
@@ -142,7 +147,7 @@ component singleton {
 								}
 							}
 							// Fill in possible param values based on the type and contents so far.
-							paramValueCompletion( commandInfo, paramName, paramType, paramSoFar, candidates, true );
+							paramValueCompletion( commandInfo, paramName, paramType, paramSoFar, candidates, true, passedNamedParameters );
 							
 							return;
 						}
@@ -200,7 +205,7 @@ component singleton {
 								// replace this with their actual param so this may not be that useful.
 
 								add( candidates, param.name & ' ', 'Parameters', param.hint ?: '' );
-								paramValueCompletion( commandInfo, param.name, param.type, '', candidates, false );
+								paramValueCompletion( commandInfo, param.name, param.type, '', candidates, false, passedNamedParameters );
 								// Bail once we find one
 								break;
 							}
@@ -221,7 +226,7 @@ component singleton {
 							}
 
 							var thisParam = definedParameters[ passedParameters.positionalParameters.len() ];
-							paramValueCompletion( commandInfo, thisParam.name, thisParam.type, partialMatch, candidates, false );
+							paramValueCompletion( commandInfo, thisParam.name, thisParam.type, partialMatch, candidates, false, passedNamedParameters );
 
 							// Loop over remaining possible params and suggest the boolean ones as flags
 							var i = 0;
@@ -276,7 +281,7 @@ component singleton {
 						var thisParam = definedParameters[ 1 ];
 
 						// Suggest its value
-						paramValueCompletion( commandInfo, thisParam.name, thisParam.type, partialMatch, candidates, false );
+						paramValueCompletion( commandInfo, thisParam.name, thisParam.type, partialMatch, candidates, false, passedNamedParameters );
 						
 						return;
 
@@ -305,7 +310,7 @@ component singleton {
 	 * @paramSoFar.hint text typed so far
 	 * @candidates.hint tree to populate with completion candidates
  	 **/
-	private function paramValueCompletion( struct commandInfo, String paramName, String paramType, String paramSoFar, required candidates, boolean namedParams ) {
+	private function paramValueCompletion( struct commandInfo, String paramName, String paramType, String paramSoFar, required candidates, boolean namedParams, struct passedNamedParameters={} ) {
 
 		var completorData = commandInfo.commandReference.completor;
 
@@ -319,7 +324,7 @@ component singleton {
 			// Call function to populate dynamic values
 			if( structKeyExists( completorData[ paramName ], 'optionsUDF' ) ) {
 				var completorFunctionName = completorData[ paramName ][ 'optionsUDF' ];
-				var additions = commandInfo.commandReference.CFC[ completorFunctionName ]( paramSoFar=arguments.paramSoFar );
+				var additions = commandInfo.commandReference.CFC[ completorFunctionName ]( paramSoFar=arguments.paramSoFar, passedNamedParameters=passedNamedParameters );
 				if( isArray( additions ) ) {
 					addAllIfMatch( candidates, additions, paramSoFar, paramName, namedParams );
 				}

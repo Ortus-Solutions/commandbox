@@ -43,8 +43,9 @@ component aliases="start" {
 
 	// DI
 	property name="serverService" 	inject="ServerService";
-	property name="forgeBox" 		inject="ForgeBox";
-
+	property name="javaService" 	inject="JavaService";
+	property name="endpointService" inject="endpointService";
+	
 	/**
 	 * @name           		short name for this server or a path to the server.json file.
 	 * @name.optionsFileComplete true
@@ -71,7 +72,7 @@ component aliases="start" {
 	 * @rewritesConfig 		optional URL rewriting config file path
 	 * @heapSize			The max heap size in megabytes you would like this server to start with, it defaults to 512mb
 	 * @minHeapSize			The min heap size in megabytes you would like this server to start with
-	 * @directoryBrowsing 	Enable/Disabled directory browsing, defaults to true
+	 * @directoryBrowsing 	Enable/Disabled directory browsing, defaults to false
 	 * @JVMArgs 			Additional JVM args to use when starting the server. Use "server status --verbose" to debug
 	 * @runwarArgs 			Additional Runwar options to use when starting the server. Use "server status --verbose" to debug
 	 * @saveSettings 		Save start settings in server.json
@@ -88,6 +89,8 @@ component aliases="start" {
 	 * @javaHomeDirectory	Path to the JRE home directory containing ./bin/java
 	 * @AJPEnable			Enable AJP
 	 * @AJPPort				AJP Port number
+	 * @javaVersion			Any endpoint ID, such as "java:openjdk11" fromt the Java endpoint 
+	 * @javaVersion.optionsUDF	javaVersionComplete
 	 **/
 	function run(
 		String  name,
@@ -128,7 +131,8 @@ component aliases="start" {
 		Boolean trace,
 		String javaHomeDirectory,
 		Boolean AJPEnable,
-		Numeric AJPPort
+		Numeric AJPPort,
+		String javaVersion
 	){
 
 		// This is a common mis spelling
@@ -174,8 +178,17 @@ component aliases="start" {
 	* Complete cfengine names
 	*/
 	function cfengineNameComplete( string paramSoFar ) {
-
-		var APIToken = configService.getSetting( 'endpoints.forgebox.APIToken', '' );
+		
+		var endpointName = configService.getSetting( 'endpoints.defaultForgeBoxEndpoint', 'forgebox' );
+		
+		try {		
+			var oEndpoint = endpointService.getEndpoint( endpointName );
+		} catch( EndpointNotFound var e ) {
+			error( e.message, e.detail ?: '' );
+		}
+		
+		var forgebox = oEndpoint.getForgebox();
+		var APIToken = oEndpoint.getAPIToken();
 
 		try {
 			// Get auto-complete options
@@ -193,4 +206,16 @@ component aliases="start" {
 		return [];
 	}
 
+	/**
+	* Complete java versions
+	*/	
+	function javaVersionComplete() {
+		return javaService
+			.listJavaInstalls()
+			.keyArray()
+			.map( ( i ) => {
+				return { name : i, group : 'Java Versions' };
+			} );
+	}	
+	
 }

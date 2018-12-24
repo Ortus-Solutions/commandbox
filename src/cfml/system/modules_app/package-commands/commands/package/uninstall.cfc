@@ -20,7 +20,6 @@
 component aliases="uninstall" {
 
 	// DI
-	property name="forgeBox" 		inject="ForgeBox";
 	property name="packageService" 	inject="PackageService";
 
 	/**

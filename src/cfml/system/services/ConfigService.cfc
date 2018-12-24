@@ -45,12 +45,14 @@ component accessors="true" singleton {
 			'tagPrefix',
 			// Endpoint data
 			'endpoints',
+			'endpoints.defaultForgeBoxEndpoint',
 			'endpoints.forgebox',
 			'endpoints.forgebox.APIToken',
 			'endpoints.forgebox.APIURL',
 			// Servers
 			'server',
 			'server.defaults',
+			'server.javaInstallDirectory',
 			// used in Artifactsservice
 			'artifactsDirectory',
 			// commands
@@ -67,7 +69,9 @@ component accessors="true" singleton {
 			'JSON.ANSIColors.constant',
 			'JSON.ANSIColors.key',
 			'JSON.ANSIColors.number',
-			'JSON.ANSIColors.string'			
+			'JSON.ANSIColors.string',
+			// General
+			'verboseErrors'
 		]);
 
 		setConfigFilePath( '/commandbox-home/CommandBox.json' );

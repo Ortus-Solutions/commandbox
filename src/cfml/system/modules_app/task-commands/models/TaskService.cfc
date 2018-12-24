@@ -62,7 +62,10 @@ component singleton accessors=true {
 		}
 
 		var targetMD = getMetadata( taskCFC[ target ] );
-		CommandService.ensureRequiredparams( taskArgs, targetMD.parameters );
+		if( isArray( taskargs ) ) {
+			taskargs = commandService.convertToNamedParameters( taskargs, targetMD.parameters );
+		}
+		commandService.ensureRequiredparams( taskargs, targetMD.parameters );
 		
 		// Check for, and run target dependencies
 		var taskDeps = targetMD.depends ?: '';

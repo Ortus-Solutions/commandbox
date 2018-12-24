@@ -65,10 +65,10 @@ component aliases="update" {
 
 		// build dependency tree
 		 var dependenciesToUpdate = packageService.getOutdatedDependencies(
-		 	directory=directory,
-		 	print=print,
-		 	verbose=arguments.verbose,
-		 	includeSlugs=arguments.slug
+		 	directory    = directory,
+		 	print        = print,
+		 	verbose      = arguments.verbose,
+		 	includeSlugs = arguments.slug
 		 );
 
 		// Advice initial notice

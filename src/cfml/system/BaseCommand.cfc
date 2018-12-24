@@ -131,7 +131,7 @@ component accessors="true" singleton {
 		
 		// If the previous command chain failed
 		if( shell.getExitCode() != 0 ) {
-			error( 'Command returned failing exit code (#shell.getExitCode()#)', 'Failing Command: ' & command, shell.getExitCode(), errorCode=shell.getExitCode() );
+			error( 'Command returned failing exit code (#shell.getExitCode()#)', 'Failing Command: ' & command, shell.getExitCode(), shell.getExitCode() );
 		}
 		
 		return results;
@@ -227,8 +227,7 @@ component accessors="true" singleton {
 			// Distance ourselves from whatever other output the command may have given so far.
 			print.line();
 		}
-		throw( message=arguments.message, detail=arguments.detail, type="commandException");
-
+		throw( message=arguments.message, detail=arguments.detail, type="commandException", errorcode=arguments.exitCode );
 	}
 
 	/**

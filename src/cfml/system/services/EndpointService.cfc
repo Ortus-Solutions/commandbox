@@ -33,6 +33,7 @@ component accessors="true" singleton {
 
 	function onDIComplete() {
 		buildEndpointRegistry();
+		registerCustomForgeboxEndpoints();
 	}
 
 	/**
@@ -51,13 +52,59 @@ component accessors="true" singleton {
 
 				var endpointPath = listChangeDelims( arguments.rootDirectory, '/\', '.' ) & '.' & endpointName;
 				var oEndPoint = wirebox.getInstance( endpointPath );
-				var namePrefixs = listToArray( oEndPoint.getNamePrefixes() );
-				for( var prefix in namePrefixs ) {
-					endpointRegistry[ prefix ] = oEndPoint;
-				}
+				registerEndpoint( oEndPoint );				
 			}
 		}
 
+	}
+	
+
+	/**
+	* Look for custom ForgeBox endpoints that are in the config and register themm
+	* These will use the same base ForgeBox.cfc endpoint but with custom data
+	*/
+	function registerCustomForgeboxEndpoints() {
+		var endpointConfigs = configService
+			.getSetting( 'endpoints', {} )
+			.filter( function( endpointName ) {
+				return endpointName.lcase().startsWith( 'forgebox-' );
+			} );
+
+		for( var endpointName in endpointConfigs ) {
+			var endpointData = endpointConfigs[ endpointName ];
+			if( endpointData.keyExists( 'APIURL' ) && endpointData.APIURL.len() ) {
+
+				var endpointPath = listChangeDelims( getEndpointRootPath(), '/\', '.' ) & '.ForgeBox';
+				var oEndPoint = wirebox.getInstance( endpointPath );
+				
+				// Set the prefix for this endpoint
+				oEndPoint.setNamePrefixes( endpointName.replaceNoCase( 'forgebox-', '' ) );
+				
+				// Set the API URL for this endpoint's forgebox Util
+				oEndPoint.getForgeBox().setEndpointURL( endpointData.APIURL );
+				oEndPoint.getForgeBox().setAPIURL( endpointData.APIURL );
+				
+				// Register it, baby!
+				registerEndpoint( oEndPoint );
+								
+			} else {
+				consoleLogger.warn( 'ForgeBox endpoint [#endpointName#] doesn''t have a valid APIURL, skipping...' );
+			}
+		}
+
+	}
+	
+	/**
+	* Register a single CFC instance as an endpoint
+	* 
+	* @oEndPoint An instance of a CFC implementing IEndPoint
+	*/
+	function registerEndpoint( required any oEndPoint ) {
+		var namePrefixs = listToArray( oEndPoint.getNamePrefixes() );
+		for( var prefix in namePrefixs ) {
+			endpointRegistry[ prefix ] = oEndPoint;
+		}
+		return oEndPoint;
 	}
 
 	/**
@@ -77,7 +124,7 @@ component accessors="true" singleton {
 				ID : endpointName & ':' & path
 			};
 		// Is it a real folder?
-		} else if( directoryExists( path ) ) {
+		} else if( listFind( '\/', arguments.ID ) && directoryExists( path ) ) {
 			var endpointName = 'folder';
 			return {
 				endpointName : endpointName,
@@ -109,7 +156,7 @@ component accessors="true" singleton {
 			}
 		// I give up, let's check ForgeBox (default endpoint)
 		} else {
-			var endpointName = 'forgebox';
+			var endpointName = configService.getSetting( 'endpoints.defaultForgeBoxEndpoint', 'forgebox' );
 			return {
 				endpointName : endpointName,
 				package : arguments.ID,
@@ -180,9 +227,7 @@ component accessors="true" singleton {
 		var APIToken = endpoint.createUser( argumentCollection=arguments );
 
 		// Store the APIToken
-		configService.setSetting( 'endpoints.#endpointName#.APIToken', APIToken );
-		configService.setSetting( 'endpoints.#endpointName#.tokens.#arguments.username#', APIToken );
-
+		endpoint.storeAPIToken( arguments.username, APIToken );
 	}
 
 	/**
@@ -215,8 +260,7 @@ component accessors="true" singleton {
 		var APIToken = endpoint.login( argumentCollection=arguments );
 
 		// Store the APIToken
-		configService.setSetting( 'endpoints.#endpointName#.APIToken', APIToken );
-		configService.setSetting( 'endpoints.#endpointName#.tokens.#arguments.username#', APIToken );
+		endpoint.storeAPIToken( arguments.username, APIToken );
 
 	}
 
@@ -282,6 +326,20 @@ component accessors="true" singleton {
 		arguments.path = arguments.directory;
 		// Publish the package
 		endpoint.unpublish( argumentCollection=arguments );
+	}
+
+
+
+	function forgeboxEndpointNameComplete() {
+		return configService
+			.getSetting( 'endpoints', {} )
+			.filter( function( endpointName ) {
+				return (endpointName.lcase().startsWith( 'forgebox-' ) || endpointName == 'forgebox' );
+			} )
+			.reduce( function( endpoints, endpointName ) {
+				endpoints.append( endpointName.replaceNoCase( 'forgebox-', '' ) );
+				return endpoints;
+			}, [] );
 	}
 
 }

@@ -16,8 +16,8 @@ External Dependencies:
  	<property name="distro.groupID"				value="ortussolutions" />
  	<property name="distro.name"				value="commandbox"/>
  	<!-- Special things happen when the version and stableVersion are the same value as that signifies a "stable" build.   -->
- 	<property name="commandbox.version"			value="4.4.0"/>
- 	<property name="commandbox.stableVersion"	value="4.4.0"/>
+ 	<property name="commandbox.version"			value="4.5.0"/>
+ 	<property name="commandbox.stableVersion"	value="4.5.0"/>
 
     <!-- Time Label -->
 	<tstamp prefix="start"/>
@@ -741,7 +741,7 @@ External Dependencies:
 					chdir="%OLDPWD%"
 					icon="${src.dir}/resources/box.ico"
 					stayAlive="true">
-					<jre path="./jre/" minVersion="1.8.0" maxVersion="1.8.0_999" />
+					<jre path="./jre/" minVersion="1.8.0" />
 					<versionInfo fileVersion="${commandbox.version.noPrereleaseID}.0"
 								 txtFileVersion="${commandbox.version}.${build.number}"
 								 fileDescription="${commandbox.description}"
@@ -766,36 +766,101 @@ External Dependencies:
 	</target>
 
 	<!-- Build including JREs -->
- 	<target name="build.cli.jre" description="Build with JRE included" depends="build.cli.bin,build.cli.exe" if="${isStable}">
+ 	<target name="build.cli.jre" description="Build with JRE included"><!--  depends="build.cli.bin,build.cli.exe" if="${isStable}" -->
  		<echo message="Bundling ${jre.version} JRE" />
 
-		<!-- Get JRE Dependencies -->
-		<dependency groupId="oracle" artifactId="jre" version="${jre.version}" type="zip" classifier="win32" />
-		<dependency groupId="oracle" artifactId="jre" version="${jre.version}" type="zip" classifier="win64" />
-		<dependency groupId="oracle" artifactId="jre" version="${jre.version}" type="zip" classifier="linux32" />
-		<dependency groupId="oracle" artifactId="jre" version="${jre.version}" type="zip" classifier="linux64" />
-		<dependency groupId="oracle" artifactId="jre" version="${jre.version}" type="zip" classifier="darwin64" />
+		<mkdir dir="JREs"/>
 
+
+		<!-- Get JRE Dependencies -->
+		
+		<antcontrib:if>
+	        <available file="JREs/jre_${jre.version}_linux_x64.tar.gz" />
+	        <then><echo>Linux x64 JRE found!</echo></then>
+	        <else>
+	            <echo>Linux x64 JRE not found, downloading artifact</echo>
+	            
+				<mkdir dir="JREs/jre_${jre.version}_linux_x64"/>
+				
+				<get src="https://api.adoptopenjdk.net/v2/binary/releases/${jre.adoptVesionr}?openjdk_impl=hotspot&amp;os=linux&amp;arch=x64&amp;release=${jre.version}&amp;type=JRE"
+					 dest="JREs/jre_${jre.version}_linux_x64.tar.gz"
+					 verbose="true" />
+			
+				<gunzip src="JREs/jre_${jre.version}_linux_x64.tar.gz"/>
+				<untar src="JREs/jre_${jre.version}_linux_x64.tar" dest="JREs\jre_${jre.version}_linux_x64"/>
+				
+	        </else>
+	    </antcontrib:if>
+		
+		<antcontrib:if>
+	        <available file="JREs/jre_${jre.version}_windows_x64.zip" />
+	        <then><echo>Windows x64 JRE found!</echo></then>
+	        <else>
+	            <echo>Windows x64 JRE not found, downloading artifact</echo>
+	            
+				<mkdir dir="JREs/jre_${jre.version}_windows_x64"/>
+				
+				<get src="https://api.adoptopenjdk.net/v2/binary/releases/${jre.adoptVesionr}?openjdk_impl=hotspot&amp;os=windows&amp;arch=x64&amp;release=${jre.version}&amp;type=JRE"
+					 dest="JREs/jre_${jre.version}_windows_x64.zip"
+					 verbose="true" />
+				<unzip src="JREs/jre_${jre.version}_windows_x64.zip" dest="JREs\jre_${jre.version}_windows_x64/" overwrite="true"/>
+	        </else>
+	    </antcontrib:if>
+		
+		<antcontrib:if>
+	        <available file="JREs/jre_${jre.version}_windows_x32.zip" />
+	        <then><echo>Windows x32 JRE found!</echo></then>
+	        <else>
+	            <echo>Windows x32 JRE not found, downloading artifact</echo>
+	            
+				<mkdir dir="JREs/jre_${jre.version}_windows_x32"/>
+				
+				<get src="https://api.adoptopenjdk.net/v2/binary/releases/${jre.adoptVesionr}?openjdk_impl=hotspot&amp;os=windows&amp;arch=x32&amp;release=${jre.version}&amp;type=JRE"
+					 dest="JREs/jre_${jre.version}_windows_x32.zip"
+					 verbose="true" />
+				<unzip src="JREs/jre_${jre.version}_windows_x32.zip" dest="JREs\jre_${jre.version}_windows_x32/" overwrite="true"/>
+	        </else>
+	    </antcontrib:if>
+		
+		<antcontrib:if>
+	        <available file="JREs/jre_${jre.version}_mac_x64.tar.gz" />
+	        <then><echo>Mac x64 JRE found!</echo></then>
+	        <else>
+	            <echo>Mac x64 JRE not found, downloading artifact</echo>
+	            
+				<mkdir dir="JREs/jre_${jre.version}_mac_x64"/>
+				
+				<get src="https://api.adoptopenjdk.net/v2/binary/releases/${jre.adoptVesionr}?openjdk_impl=hotspot&amp;os=mac&amp;arch=x64&amp;release=${jre.version}&amp;type=JRE"
+					 dest="JREs/jre_${jre.version}_mac_x64.tar.gz"
+					 verbose="true" />
+			
+				<gunzip src="JREs/jre_${jre.version}_mac_x64.tar.gz"/>
+				<untar src="JREs/jre_${jre.version}_mac_x64.tar" dest="JREs\jre_${jre.version}_mac_x64"/>
+	        </else>
+	    </antcontrib:if>
+		
+		<!-- /Contents/Home -->
+		
 		<!--Zip Box Binary With JRE -->
-		<zip destfile="${dist.dir}/${distro.name}-jre-win32-${commandbox.version}.zip" level="9" update="false">
-			<zipfileset prefix="jre" src="${maven.repo.local}/oracle/jre/${jre.version}/jre-${jre.version}-win32.zip"/>
+		<zip destfile="${dist.dir}/${distro.name}-jre-win32-${commandbox.version}.zip" level="9" update="true">
+			<zipfileset prefix="jre" dir="JREs\jre_${jre.version}_windows_x32/${jre.version}-jre/"/>
 	        <fileset file="${dist.dir}/box.exe" />
 		</zip>
-		<zip destfile="${dist.dir}/${distro.name}-jre-win64-${commandbox.version}.zip" level="9" update="false">
-			<zipfileset prefix="jre" src="${maven.repo.local}/oracle/jre/${jre.version}/jre-${jre.version}-win64.zip"/>
+		<zip destfile="${dist.dir}/${distro.name}-jre-win64-${commandbox.version}.zip" level="9" update="true">
+			<zipfileset prefix="jre" dir="JREs\jre_${jre.version}_windows_x64/${jre.version}-jre/"/>
 	        <fileset file="${dist.dir}/box.exe" />
 		</zip>
-		<zip destfile="${dist.dir}/${distro.name}-jre-linux32-${commandbox.version}.zip" level="9" update="false">
-			<zipfileset prefix="jre" src="${maven.repo.local}/oracle/jre/${jre.version}/jre-${jre.version}-linux32.zip"/>
-      <zipfileset file="${dist.dir}/box" filemode="711" prefix="" />
+		<!-- <zip destfile="${dist.dir}/${distro.name}-jre-linux32-${commandbox.version}.zip" level="9" update="true">
+			<zipfileset prefix="jre" dir="${maven.repo.local}/oracle/jre/${jre.version}/jre-${jre.version}-linux32.zip"/>
+      	    <zipfileset file="${dist.dir}/box" filemode="711" prefix="" />
+		</zip> -->
+		<zip destfile="${dist.dir}/${distro.name}-jre-linux64-${commandbox.version}.zip" level="9" update="true">
+			<zipfileset prefix="jre" dir="JREs\jre_${jre.version}_linux_x64/${jre.version}-jre/" filemode="711" />
+      	    <zipfileset file="${dist.dir}/box" filemode="711" prefix="" />
 		</zip>
-		<zip destfile="${dist.dir}/${distro.name}-jre-linux64-${commandbox.version}.zip" level="9" update="false">
-			<zipfileset prefix="jre" src="${maven.repo.local}/oracle/jre/${jre.version}/jre-${jre.version}-linux64.zip"/>
-      <zipfileset file="${dist.dir}/box" filemode="711" prefix="" />
-		</zip>
-		<zip destfile="${dist.dir}/${distro.name}-jre-darwin64-${commandbox.version}.zip" level="9" update="false">
-			<zipfileset prefix="jre" src="${maven.repo.local}/oracle/jre/${jre.version}/jre-${jre.version}-darwin64.zip"/>
-      <zipfileset file="${dist.dir}/box" filemode="711" prefix="" />
+		<zip destfile="${dist.dir}/${distro.name}-jre-darwin64-${commandbox.version}.zip" level="9" update="true">
+			<zipfileset prefix="jre" dir="JREs\jre_${jre.version}_mac_x64/${jre.version}-jre/Contents/Home/" filemode="711" />
+  		    <zipfileset file="${dist.dir}/box" filemode="711" prefix="" />
 		</zip>
 
 		<!-- Build Checksum -->

@@ -276,7 +276,9 @@ component accessors=true singleton {
 
 		// Add error message if it exists
 		if( job.errorMessage.len() ) {
-			lines.append( aStr.fromAnsi( print.redText( '   | > ' & job.errorMessage ) ) );
+			job.errorMessage.listToArray( chr( 13 ) & chr( 10 ) ).each( function( thisErrorLine) {
+				lines.append( aStr.fromAnsi( print.redText( '   | > ' & thisErrorLine ) ) );
+			} );
 		}
 
 		if( job.status == 'Running' || includeAllLogs ) {
