@@ -199,6 +199,14 @@ External Dependencies:
 		<lucee-error-template path="/lucee/templates/error/error-cli.cfm"
 	      configfile="${temp.dir}/engine/cfml/cli/cfml-web/lucee-web.xml.cfm" />
 
+		<!-- Turn of the default time server setting in Luce -->
+		<replaceregexp
+			file="${temp.dir}/engine/cfml/cli/lucee-server/context/lucee-server.xml"
+			match='&lt;regional.*/&gt;'
+			replace="&lt;regional timeserver=&quot;pool.ntp.org&quot; use-timeserver=&quot;false&quot; /&gt;"
+			flags="i"
+			encoding="UTF-8" />
+
 		<!-- Copy Resources to build cli bin -->
         <copy todir="${temp.dir}/cli/bin/resource" encoding="UTF-8">
         	<fileset dir="${src.dir}/resources"/>
