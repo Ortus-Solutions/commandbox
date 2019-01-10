@@ -80,6 +80,9 @@ component {
 								break;
 							}
 						}
+						
+						// Evaluate any ${} placeholders
+						command = systemSettings.expandSystemSettings( command )
 	
 						// add command to our parser
 						REPLParser.addCommandLine( command );
