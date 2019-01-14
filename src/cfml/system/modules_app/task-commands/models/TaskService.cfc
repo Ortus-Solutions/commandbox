@@ -77,7 +77,7 @@ component singleton accessors=true {
 		try {
 			
 			// Run the task
-			taskCFC[ target ]( argumentCollection = taskArgs );
+			local.returnedExitCode = taskCFC[ target ]( argumentCollection = taskArgs );
 		 } catch( any e ) {
 		 	
 			// If this task didn't already set a failing exit code...
@@ -100,7 +100,11 @@ component singleton accessors=true {
 			
 		 } finally {
 			// Set task exit code into the shell
-			shell.setExitCode( taskCFC.getExitCode() );		 	
+		 	if( !isNull( local.returnedExitCode ) && isSimpleValue( local.returnedExitCode ) ) {
+				shell.setExitCode( val( local.returnedExitCode ) );		 		
+		 	} else {
+				shell.setExitCode( taskCFC.getExitCode() );		 		
+		 	}		 	
 		 }
 	 
 		// If the previous Task failed
