@@ -20,6 +20,7 @@ component accessors=true {
 	property name='flags';
 	property name='workingDirectory';
 	property name='rawParams';
+	property name='exitCode';
 
 
 	// DI
@@ -45,6 +46,7 @@ component accessors=true {
 		setFlags( [] );
 		setWorkingDirectory( '' );
 		setRawParams( false );
+		setExitCode( 0 );
 		return this;
 	}
 
@@ -161,6 +163,8 @@ component accessors=true {
 			var result = shell.callCommand( getTokens(), true );			
 		} finally {
 	
+			setExitCode( shell.getExitCode() );
+			
 			var postCommandCWD = shell.getPWD();
 	
 			// Only change back if the executed command didn't change the CWD
