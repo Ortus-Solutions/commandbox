@@ -1871,7 +1871,7 @@ component accessors="true" singleton {
 		arguments.webroot = fileSystemUtil.resolvePath( arguments.webroot );
 		var servers = getServers();
 		for( var thisServer in servers ){
-			if( fileSystemUtil.resolvePath( servers[ thisServer ].webroot ) == arguments.webroot ){
+			if( fileSystemUtil.resolvePath( path=servers[ thisServer ].webroot, forceDirectory=true ) == arguments.webroot ){
 				return servers[ thisServer ];
 			}
 		}

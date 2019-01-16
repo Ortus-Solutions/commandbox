@@ -45,8 +45,9 @@ component accessors="true" singleton {
 	* Resolve the incoming path from the file system
 	* @path.hint The directory to resolve
 	* @basePath.hint An expanded base path to resolve the path against. Defaults to CWD.
+	* @forceDirectory is for optimization. If you know the path is a directory for sure, pass true and we'll skip the directoryExists() check for performance
 	*/
-	function resolvePath( required string path, basePath=shell.pwd() ) {
+	function resolvePath( required string path, basePath=shell.pwd(), boolean forceDirectory=false ) {
 
 		// The Java class will strip trailing slashses, but these are meaningful in globbing patterns
 		var trailingSlash = ( path.len() > 1 && ( path.endsWith( '/' ) || path.endsWith( '\' ) ) );
@@ -83,10 +84,14 @@ component accessors="true" singleton {
 		}
 		
 		// Add back trailing slash if we had it
-		var finalPath = oPath.toString() & ( trailingSlash ? server.separator.file : '' );
+		var finalPath = oPath.toString() & ( ( trailingSlash || forceDirectory ) ? server.separator.file : '' );
 		
 		// This will standardize the name and calculate stuff like ../../
-		finalPath = getCanonicalPath( finalPath )
+		if( forceDirectory ) {
+			finalPath = calculateCanonicalPath( finalPath );
+		} else {
+			finalPath = getCanonicalPath( finalPath );
+		}
 		
 		// have to add back the period after canonicalizing since Java removes it!
 		return finalPath & ( trailingPeriod && !finalPath.endsWith( '.' ) ? '.' : '' );
