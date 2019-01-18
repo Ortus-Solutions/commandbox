@@ -36,6 +36,14 @@ component singleton {
 		var info = resolveConnection( arguments.downloadURL, arguments.redirectUDF );
 		var connection = info.connection;
 		var netURL = info.netURL;
+		
+		// Initialize status
+		var status = {
+			percent = 0,
+			speedKBps = 0,
+			totalSizeKB = -1,
+			completeSizeKB = 0
+		};
 
 		try {
 
@@ -84,7 +92,7 @@ component singleton {
 						}
 
 						// Build status data to pass to closure
-						var status = {
+						status = {
 							percent = currentPercentage,
 							speedKBps = kiloBytesPerSecond,
 							totalSizeKB = ( lenghtOfFile == -1 ? -1 : lenghtOfFile/1000 ),
