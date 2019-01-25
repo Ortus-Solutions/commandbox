@@ -37,6 +37,7 @@ component accessors="true" singleton {
 		variables.configService		= wirebox.getInstance( "ConfigService" );
 		variables.SystemSettings	= wirebox.getInstance( "SystemSettings" );
 		variables.job				= wirebox.getInstance( "interactiveJob" );
+		variables.thisThread		 = createObject( 'java', 'java.lang.Thread' ).currentThread();
 
 		variables.exitCode = 0;
 		return this;
@@ -294,8 +295,8 @@ component accessors="true" singleton {
 	* if the user has hit Ctrl-C.  This method will throw an UserInterruptException
 	* which you should not catch.  It will unroll the stack all the way back to the shell
 	*/
-	function checkInterrupted() {
-		shell.checkInterrupted();
+	function checkInterrupted( thisThread=variables.thisThread ) {
+		shell.checkInterrupted( argumentCollection=arguments );
 	}
 
 	
