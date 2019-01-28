@@ -217,15 +217,21 @@ component accessors="true" singleton {
     	var runtime = createObject( "java", "java.lang.Runtime" ).getRuntime();
     	if( isWindows() and target.isFile() ){
     		runtime.exec( [ "rundll32", "url.dll,FileProtocolHandler", target.getCanonicalPath() ] );
-		}
-		else if( isWindows() and target.isDirectory() ){
+		} else if( isWindows() and target.isDirectory() ){
 			var processBuilder = createObject( "java", "java.lang.ProcessBuilder" )
 				.init( [ "explorer.exe", target.getCanonicalPath() ] )
 				.start();
-		}
-		// Linux based or mac
-		else {
+		} else if( isMac() ) {
+		    // Mac
 			runtime.exec( [ "/usr/bin/open", target.getCanonicalPath() ] );
+		} else {
+            // Default to Linux   
+            // If there is xdg-open around, we'll try to use it - otherwise we'll use see.
+            if( runtime.exec( "which xdg-open" ).waitFor() == 0 ) {
+                runtime.exec( [ "/usr/bin/xdg-open", target.getCanonicalPath() ] );
+            } else {
+                runtime.exec( [ "/usr/bin/see", target.getCanonicalPath() ] );
+            }
 		}
 		return true;
     }
