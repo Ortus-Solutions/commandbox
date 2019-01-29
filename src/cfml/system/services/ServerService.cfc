@@ -855,6 +855,18 @@ component accessors="true" singleton {
 			var displayEngineName = 'WAR';
 		}
 
+		// Doing this check here instead of the ServerEngineService so it can apply to existing installs
+		if( CFEngineName == 'adobe' ) {
+			// Work arounnd sketchy resoution of non-existant paths in Undertow
+			// https://issues.jboss.org/browse/UNDERTOW-1413
+			var flexLogFile = serverInfo.serverHomeDirectory & "/WEB-INF/cfform/logs/flex.log";
+			if ( !fileExists( flexLogFile ) ) {
+				// if this doesn't already exist, it ends up getting created in a WEB-INF folder in the web root.  Eww....
+				directoryCreate( getDirectoryFromPath( flexLogFile ), true, true );
+				fileWrite( flexLogFile, '' );
+			}
+		}
+
 		// logdir is set above and is different for WARs and CF engines
 		serverInfo.consolelogPath = serverInfo.logdir & '/server.out.txt';
 		serverInfo.accessLogPath = serverInfo.logDir & '/access.txt';
