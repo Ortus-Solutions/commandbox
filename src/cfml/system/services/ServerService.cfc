@@ -1338,13 +1338,19 @@ component accessors="true" singleton {
 
 					variables.waitingOnConsoleStart = true;
 					while( true ) {
-						// Detect user pressing Ctrl-C
-						// Any other characters captured will be ignored
-						var line = shell.getReader().readLine();
-						if( line == 'q' ) {
-							break;
+						// For dumb terminals, just sit and wait to be interrupted
+						// Trying to read from a dumb terminal will throw "The handle is invalid" errors
+						if( shell.getReader().getTerminal().getClass().getName() contains 'dumb' ) {
+							sleep( 500 );
 						} else {
-							consoleLogger.error( 'To exit press Ctrl-C or "q" followed the enter key.' );
+							// Detect user pressing Ctrl-C
+							// Any other characters captured will be ignored
+							var line = shell.getReader().readLine();
+							if( line == 'q' ) {
+								break;
+							} else {
+								consoleLogger.error( 'To exit press Ctrl-C or "q" followed the enter key.' );
+							}
 						}
 					}
 
