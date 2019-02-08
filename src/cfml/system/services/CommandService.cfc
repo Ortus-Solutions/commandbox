@@ -914,6 +914,12 @@ component accessors="true" singleton {
 			excludeFromHelp = commandMD.excludeFromHelp ?: false,
 			commandMD 		= commandMD
 		};
+		
+		// Fix for CFCs with no hint, they inherit this from the Lucee base compnent.
+		if( commandData.hint == 'This is the Base Component' ) {
+			commandData.hint = '';
+		}
+		
 		// check functions
 		if( structKeyExists( commandMD, 'functions' ) ){
 			// Capture the command's parameters
