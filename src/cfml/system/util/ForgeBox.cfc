@@ -419,7 +419,7 @@ or just add DEBUG to the root logger
 
 	function getStorageLocation( required string slug, required string version, required string APIToken ) {
 		var results = makeRequest(
-			resource = "storage/#slug#/#version#",
+			resource = "storage/#urlEncode( slug )#/#urlEncode( version )#",
 			method = "get",
 			headers = {
 				'x-api-token' : arguments.APIToken
@@ -551,7 +551,7 @@ or just add DEBUG to the root logger
             	if( errorDetail != statusMessage ) {
             		errorDetail &= chr( 10 ) & statusMessage;
             	}
-            	errorDetail = ucase( arguments.method ) & ' ' &thisURL & chr( 10 ) & errorDetail;
+            	errorDetail = ucase( arguments.method ) & ' ' & thisURL & ' ' & errorDetail;
             	CommandBoxlogger.error( 'Something other than JSON returned. #errorDetail#', 'Actual HTTP Response: ' & results.rawResponse );
 				throw( 'Uh-oh, ForgeBox returned something other than JSON.  Run "system-log | open" to see the full response.', 'forgebox', errorDetail );
             }
