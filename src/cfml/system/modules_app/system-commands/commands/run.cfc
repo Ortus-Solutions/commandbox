@@ -62,6 +62,10 @@ component{
 			commandArray = [ nativeShell, '-i', '-c', arguments.command & ' 2>&1 && ( exit $? > /dev/null )' ];
 		}
 		
+		if( configService.getSetting( 'debugNativeExecution', false ) ) {
+			print.line( commandArray.tolist( ' ' ) ).toConsole();
+		}
+		
 		var exitCode = 1;
         // grab the current working directory
         var CWDFile = createObject( 'java', 'java.io.File' ).init( resolvePath( '' ) );
