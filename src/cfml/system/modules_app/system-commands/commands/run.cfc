@@ -115,9 +115,13 @@ component{
 				// I convert the byte array in the piped input stream to a character array
 				var inputStreamReader = createObject( 'java', 'java.io.InputStreamReader' ).init( inputStream );
 				
+				var interruptCount = 0;	
 				// This will block/loop until the input stream closes, which means this loops until the process ends.
 				while( ( var char = inputStreamReader.read() ) != -1 ) {
-					checkInterrupted();
+					if( ++interruptCount > 1000 ) {
+						checkInterrupted();
+						interruptCount=0;
+					}
 					// if running non-interactive, gather the output of the command
 					processOutputStringBuilder.append( javaCast( 'char', char ) );
 				} 
