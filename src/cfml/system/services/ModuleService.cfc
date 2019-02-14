@@ -165,7 +165,7 @@
 			if( len( arguments.invocationPath ) ){
 				// Check if passed module name is already registered
 				if( structKeyExists( instance.moduleRegistry, arguments.moduleName ) AND !arguments.force ){
-					instance.logger.warn( "The module #arguments.moduleName# has already been registered, so skipping registration" );
+					instance.logger.debug( "The module #arguments.moduleName# has already been registered, so skipping registration" );
 					return false;
 				}
 				// register new incoming location
