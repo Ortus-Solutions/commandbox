@@ -468,8 +468,13 @@
 														    interceptorProperties=mConfig.interceptors[ y ].properties,
 														    interceptorName=mConfig.interceptors[ y ].name);
 					// Loop over module interceptors to autowire them
-					wirebox.autowire( target=interceptorService.getInterceptor( mConfig.interceptors[ y ].name, true ),
-						     		  targetID=mConfig.interceptors[ y ].class );
+					try { 
+						wirebox.autowire( target=interceptorService.getInterceptor( mConfig.interceptors[ y ].name, true ),
+							     		  targetID=mConfig.interceptors[ y ].class );
+					} catch( EventPoolManager.ObjectNotFound var e ){
+						// This error simply means our interceptor had no states
+						// And an interceptor with no states basically ceases to exist as it has no purpose in life
+					}
 				}
 
 				// Register module routing entry point pre-pended to routes
