@@ -199,7 +199,7 @@ External Dependencies:
 		<lucee-error-template path="/lucee/templates/error/error-cli.cfm"
 	      configfile="${temp.dir}/engine/cfml/cli/cfml-web/lucee-web.xml.cfm" />
 
-		<!-- Turn of the default time server setting in Luce -->
+		<!-- Turn of the default time server setting in Lucee -->
 		<replaceregexp
 			file="${temp.dir}/engine/cfml/cli/lucee-server/context/lucee-server.xml"
 			match='&lt;regional.*/&gt;'
