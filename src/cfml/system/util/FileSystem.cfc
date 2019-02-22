@@ -246,12 +246,18 @@ component accessors="true" singleton {
     	if( !findNoCase( "http", arguments.URI ) ){
     		arguments.URI = "http://#arguments.uri#";
     	}
-
-    	// open using awt class, if it fails, we are in headless mode.
-    	if( desktop.isDesktopSupported() ){
-    		desktop.getDesktop().browse( createObject( "java", "java.net.URI" ).init( arguments.URI ) );
-    		return true;
-    	}
+		
+    	// Some openJDK distros error out above if installed headlessly.
+		try {
+	    	// open using awt class, if it fails, we are in headless mode.
+	    	if( desktop.isDesktopSupported() ){
+	    		desktop.getDesktop().browse( createObject( "java", "java.net.URI" ).init( arguments.URI ) );
+	    		return true;
+	    	}
+	    } catch( any var e ) {
+	    	// Bird strike!  Log it.
+			logger.error( '#e.message# #e.detail#' );
+	    }
 
     	// if we get here, then we don't support desktop awt class, most likely in headless mode.
     	var runtime = createObject( "java", "java.lang.Runtime" ).getRuntime();
