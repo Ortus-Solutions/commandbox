@@ -83,12 +83,18 @@ component aliases='coldbox create controller' {
 
 				// Are we creating views?
 				if( arguments.views ) {
-					var viewPath = arguments.viewsDirectory & '/' & arguments.name & '/' & thisAction & '.cfm';
+					
+					 var camelCaseHandlerName = arguments.name.left( 1 ).lCase();
+					 if( arguments.name.len() > 1 ) {
+					 	 camelCaseHandlerName &= arguments.name.right( -1 );
+					 }
+					
+					var viewPath = resolvePath( arguments.viewsDirectory & '/' & camelCaseHandlerName & '/' & thisAction & '.cfm' );
 					// Create dir if it doesn't exist
 					directorycreate( getDirectoryFromPath( viewPath ), true, true );
 					// Create View Stub
 					fileWrite( viewPath, '<cfoutput>#cr#<h1>#arguments.name#.#thisAction#</h1>#cr#</cfoutput>' );
-					print.greenLine( 'Created ' & arguments.viewsDirectory & '/' & arguments.name & '/' & thisAction & '.cfm' );
+					print.greenLine( 'Created ' & viewPath );
 				}
 
 				// Are we creating tests cases on actions
@@ -109,7 +115,7 @@ component aliases='coldbox create controller' {
 			handlerTestContent = replaceNoCase( handlerTestContent, '|TestCases|', '', 'all' );
 		}
 
-		var handlerPath = '#arguments.directory#/#arguments.name#.cfc';
+		var handlerPath = resolvePath( '#arguments.directory#/#arguments.name#.cfc' );
 		// Create dir if it doesn't exist
 		directorycreate( getDirectoryFromPath( handlerPath ), true, true );
 
@@ -124,7 +130,7 @@ component aliases='coldbox create controller' {
 		print.greenLine( 'Created #handlerPath#' );
 
 		if( arguments.integrationTests ) {
-			var testPath = '#arguments.testsDirectory#/#arguments.name#Test.cfc';
+			var testPath = resolvePath( '#arguments.testsDirectory#/#arguments.name#Test.cfc' );
 			// Create dir if it doesn't exist
 			directorycreate( getDirectoryFromPath( testPath ), true, true );
 			// Create the tests

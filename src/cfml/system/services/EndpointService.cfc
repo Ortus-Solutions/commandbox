@@ -52,7 +52,14 @@ component accessors="true" singleton {
 
 				var endpointPath = listChangeDelims( arguments.rootDirectory, '/\', '.' ) & '.' & endpointName;
 				var oEndPoint = wirebox.getInstance( endpointPath );
-				registerEndpoint( oEndPoint );				
+				if( endPointName == 'forgebox' ) {
+					var customForgeBoxAPIURL = configService.getSetting( 'endpoints.forgebox.apiURL', '' );
+					if( customForgeBoxAPIURL.len() ) {
+						oEndPoint.getForgeBox().setEndpointURL( customForgeBoxAPIURL.reReplaceNoCase( '/api/.*', '' ) );
+						oEndPoint.getForgeBox().setAPIURL( customForgeBoxAPIURL );
+					}
+				}
+				registerEndpoint( oEndPoint );
 			}
 		}
 
@@ -81,7 +88,7 @@ component accessors="true" singleton {
 				oEndPoint.setNamePrefixes( endpointName.replaceNoCase( 'forgebox-', '' ) );
 				
 				// Set the API URL for this endpoint's forgebox Util
-				oEndPoint.getForgeBox().setEndpointURL( endpointData.APIURL );
+				oEndPoint.getForgeBox().setEndpointURL( endpointData.APIURL.reReplaceNoCase( '/api/.*', '' ) );
 				oEndPoint.getForgeBox().setAPIURL( endpointData.APIURL );
 				
 				// Register it, baby!

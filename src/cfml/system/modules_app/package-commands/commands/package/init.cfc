@@ -110,7 +110,7 @@ component aliases="init" {
 
 		// Ignore List
 		if( arguments.ignoreList ){
-			arguments[ "ignore" ] = serializeJSON( [ '**/.*', 'test', 'tests' ] );
+			arguments[ "ignore" ] = serializeJSON( [ '**/.*', '/test/', '/tests/' ] );
 		}
 		// Cleanup the argument so it does not get written.
 		structDelete( arguments, "ignoreList" );

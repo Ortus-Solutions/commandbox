@@ -410,7 +410,7 @@ or just add DEBUG to the root logger
 		// If there's only one suggestion and it doesn't have an @ in it, add another suggestion with the @ at the end.
 		// This is to prevent the tab completion from adding a space after the suggestion since it thinks it's the only possible option
 		// Hitting tab will still populate the line, but won't add the space which makes it easier if the user intends to continue for a specific version.
-		if( opts.len() == 1 && !( opts[1] contains '@' ) ) {
+		if( opts.len() == 1 && ( !( opts[1] contains '@' ) || opts[1].listRest( '@' ).reFindNoCase( '^[a-z]' ) ) ) {
 			opts.append( opts[1] & '@' );
 		}
 
@@ -419,7 +419,7 @@ or just add DEBUG to the root logger
 
 	function getStorageLocation( required string slug, required string version, required string APIToken ) {
 		var results = makeRequest(
-			resource = "storage/#slug#/#version#",
+			resource = "storage/#urlEncode( slug )#/#urlEncode( version )#",
 			method = "get",
 			headers = {
 				'x-api-token' : arguments.APIToken
@@ -551,7 +551,7 @@ or just add DEBUG to the root logger
             	if( errorDetail != statusMessage ) {
             		errorDetail &= chr( 10 ) & statusMessage;
             	}
-            	errorDetail = ucase( arguments.method ) & ' ' &thisURL & chr( 10 ) & errorDetail;
+            	errorDetail = ucase( arguments.method ) & ' ' & thisURL & ' ' & errorDetail;
             	CommandBoxlogger.error( 'Something other than JSON returned. #errorDetail#', 'Actual HTTP Response: ' & results.rawResponse );
 				throw( 'Uh-oh, ForgeBox returned something other than JSON.  Run "system-log | open" to see the full response.', 'forgebox', errorDetail );
             }

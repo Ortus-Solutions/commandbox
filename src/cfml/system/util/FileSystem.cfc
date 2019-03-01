@@ -45,8 +45,9 @@ component accessors="true" singleton {
 	* Resolve the incoming path from the file system
 	* @path.hint The directory to resolve
 	* @basePath.hint An expanded base path to resolve the path against. Defaults to CWD.
+	* @forceDirectory is for optimization. If you know the path is a directory for sure, pass true and we'll skip the directoryExists() check for performance
 	*/
-	function resolvePath( required string path, basePath=shell.pwd() ) {
+	function resolvePath( required string path, basePath=shell.pwd(), boolean forceDirectory=false ) {
 
 		// The Java class will strip trailing slashses, but these are meaningful in globbing patterns
 		var trailingSlash = ( path.len() > 1 && ( path.endsWith( '/' ) || path.endsWith( '\' ) ) );
@@ -83,10 +84,14 @@ component accessors="true" singleton {
 		}
 		
 		// Add back trailing slash if we had it
-		var finalPath = oPath.toString() & ( trailingSlash ? server.separator.file : '' );
+		var finalPath = oPath.toString() & ( ( trailingSlash || forceDirectory ) ? server.separator.file : '' );
 		
 		// This will standardize the name and calculate stuff like ../../
-		finalPath = getCanonicalPath( finalPath )
+		if( forceDirectory ) {
+			finalPath = calculateCanonicalPath( finalPath );
+		} else {
+			finalPath = getCanonicalPath( finalPath );
+		}
 		
 		// have to add back the period after canonicalizing since Java removes it!
 		return finalPath & ( trailingPeriod && !finalPath.endsWith( '.' ) ? '.' : '' );
@@ -212,15 +217,21 @@ component accessors="true" singleton {
     	var runtime = createObject( "java", "java.lang.Runtime" ).getRuntime();
     	if( isWindows() and target.isFile() ){
     		runtime.exec( [ "rundll32", "url.dll,FileProtocolHandler", target.getCanonicalPath() ] );
-		}
-		else if( isWindows() and target.isDirectory() ){
+		} else if( isWindows() and target.isDirectory() ){
 			var processBuilder = createObject( "java", "java.lang.ProcessBuilder" )
 				.init( [ "explorer.exe", target.getCanonicalPath() ] )
 				.start();
-		}
-		// Linux based or mac
-		else {
+		} else if( isMac() ) {
+		    // Mac
 			runtime.exec( [ "/usr/bin/open", target.getCanonicalPath() ] );
+		} else {
+            // Default to Linux   
+            // If there is xdg-open around, we'll try to use it - otherwise we'll use see.
+            if( runtime.exec( "which xdg-open" ).waitFor() == 0 ) {
+                runtime.exec( [ "/usr/bin/xdg-open", target.getCanonicalPath() ] );
+            } else {
+                runtime.exec( [ "/usr/bin/see", target.getCanonicalPath() ] );
+            }
 		}
 		return true;
     }
@@ -235,12 +246,18 @@ component accessors="true" singleton {
     	if( !findNoCase( "http", arguments.URI ) ){
     		arguments.URI = "http://#arguments.uri#";
     	}
-
-    	// open using awt class, if it fails, we are in headless mode.
-    	if( desktop.isDesktopSupported() ){
-    		desktop.getDesktop().browse( createObject( "java", "java.net.URI" ).init( arguments.URI ) );
-    		return true;
-    	}
+		
+    	// Some openJDK distros error out above if installed headlessly.
+		try {
+	    	// open using awt class, if it fails, we are in headless mode.
+	    	if( desktop.isDesktopSupported() ){
+	    		desktop.getDesktop().browse( createObject( "java", "java.net.URI" ).init( arguments.URI ) );
+	    		return true;
+	    	}
+	    } catch( any var e ) {
+	    	// Bird strike!  Log it.
+			logger.error( '#e.message# #e.detail#' );
+	    }
 
     	// if we get here, then we don't support desktop awt class, most likely in headless mode.
     	var runtime = createObject( "java", "java.lang.Runtime" ).getRuntime();

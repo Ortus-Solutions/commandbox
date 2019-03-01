@@ -602,8 +602,10 @@ component accessors="true" singleton {
 	* if the user has hit Ctrl-C.  This method will throw an UserInterruptException
 	* which you should not catch.  It will unroll the stack all the way back to the shell
 	*/
-	function checkInterrupted() {
-		var thisThread = createObject( 'java', 'java.lang.Thread' ).currentThread();
+	function checkInterrupted( thisThread ) {
+		if( isNull( arguments.thisThread ) ) {
+			thisThread = createObject( 'java', 'java.lang.Thread' ).currentThread();
+		}
 
 		// Has the user tried to interrupt this thread?
 		if( thisThread.isInterrupted() ) {

@@ -26,8 +26,12 @@ component {
 	
 	function highlight( reader, buffer ) {
 		
-		// Call CommandBox parser to parse the line.
-		var commandChain = CommandService.resolveCommand( buffer );
+		try {
+			// Call CommandBox parser to parse the line.
+			var commandChain = CommandService.resolveCommand( buffer );
+		} catch( any var e ) {
+			return createObject("java","org.jline.utils.AttributedString").fromAnsi( buffer );
+		}
 		
 		// For each command in the chain
 		for( var command in commandChain ) {

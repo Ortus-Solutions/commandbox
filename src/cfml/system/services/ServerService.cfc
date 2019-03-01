@@ -855,6 +855,18 @@ component accessors="true" singleton {
 			var displayEngineName = 'WAR';
 		}
 
+		// Doing this check here instead of the ServerEngineService so it can apply to existing installs
+		if( CFEngineName == 'adobe' ) {
+			// Work arounnd sketchy resoution of non-existant paths in Undertow
+			// https://issues.jboss.org/browse/UNDERTOW-1413
+			var flexLogFile = serverInfo.serverHomeDirectory & "/WEB-INF/cfform/logs/flex.log";
+			if ( !fileExists( flexLogFile ) ) {
+				// if this doesn't already exist, it ends up getting created in a WEB-INF folder in the web root.  Eww....
+				directoryCreate( getDirectoryFromPath( flexLogFile ), true, true );
+				fileWrite( flexLogFile, '' );
+			}
+		}
+
 		// logdir is set above and is different for WARs and CF engines
 		serverInfo.consolelogPath = serverInfo.logdir & '/server.out.txt';
 		serverInfo.accessLogPath = serverInfo.logDir & '/access.txt';
@@ -1326,13 +1338,19 @@ component accessors="true" singleton {
 
 					variables.waitingOnConsoleStart = true;
 					while( true ) {
-						// Detect user pressing Ctrl-C
-						// Any other characters captured will be ignored
-						var line = shell.getReader().readLine();
-						if( line == 'q' ) {
-							break;
+						// For dumb terminals, just sit and wait to be interrupted
+						// Trying to read from a dumb terminal will throw "The handle is invalid" errors
+						if( shell.getReader().getTerminal().getClass().getName() contains 'dumb' ) {
+							sleep( 500 );
 						} else {
-							consoleLogger.error( 'To exit press Ctrl-C or "q" followed the enter key.' );
+							// Detect user pressing Ctrl-C
+							// Any other characters captured will be ignored
+							var line = shell.getReader().readLine();
+							if( line == 'q' ) {
+								break;
+							} else {
+								consoleLogger.error( 'To exit press Ctrl-C or "q" followed the enter key.' );
+							}
 						}
 					}
 
@@ -1642,7 +1660,7 @@ component accessors="true" singleton {
 			throw( "The host name [#arguments.host#] can't be found. Do you need to add a host file entry?", 'serverException', e.message & ' ' & e.detail );
 		} catch( java.net.BindException var e ) {
 			// Same as above-- the IP address/host isn't bound to any local adapters.  Probably a host file entry went missing.
-			throw( "The IP address that [#arguments.host#] resovles to can't be bound.  If you ping it, does it point to a local network adapter?", 'serverException', e.message & ' ' & e.detail );
+			throw( "The IP address that [#arguments.host#] resolves to can't be bound.  If you ping it, does it point to a local network adapter?", 'serverException', e.message & ' ' & e.detail );
 		}
 
 		return portNumber;
@@ -1871,7 +1889,7 @@ component accessors="true" singleton {
 		arguments.webroot = fileSystemUtil.resolvePath( arguments.webroot );
 		var servers = getServers();
 		for( var thisServer in servers ){
-			if( fileSystemUtil.resolvePath( servers[ thisServer ].webroot ) == arguments.webroot ){
+			if( fileSystemUtil.resolvePath( path=servers[ thisServer ].webroot, forceDirectory=true ) == arguments.webroot ){
 				return servers[ thisServer ];
 			}
 		}

@@ -225,7 +225,7 @@ component accessors="true" implements="IEndpointInteractive" {
 			try {
 				forgebox.getStorageLocation( props.slug, props.version, props.APIToken );
 				if ( ! arguments.force ) {
-					consoleLogger.warn( "A zip for this version has already been uploaded.  If you want to override the uploaded zip, run this command with the `force` flag.  We will continue to update your package metadata." );
+					consoleLogger.error( "A zip for this version has already been uploaded.  If you want to override the uploaded zip, run this command with the `force` flag.  We will continue to update your package metadata." );
 					upload = false;
 				}
 			}
