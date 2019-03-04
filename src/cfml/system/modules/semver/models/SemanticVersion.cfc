@@ -159,27 +159,20 @@ component singleton{
 		// If we made it here, none of the comparatorSets in our range matched
 		return false;
 
-
-		return isEQ( arguments.version, arguments.range, false );
 	}
 
 	private function evaluateComparator( required struct comparator, version ) {
 		switch( comparator.operator ) {
 		    case "<":
 		    	return isNew( arguments.version, comparator.version, false );
-		         break;
 		    case "<=":
 		    	return isNew( arguments.version, comparator.version, false ) || isEq( comparator.version, arguments.version, false );
-		         break;
 		    case ">":
 		    	return isNew( comparator.version, arguments.version, false );
-		         break;
 		    case ">=":
 		    	return isNew( comparator.version, arguments.version, false ) || isEq( comparator.version, arguments.version, false );
-		         break;
 		    case "=":
 		    	return isEq( comparator.version, arguments.version, false );
-		         break;
 		    default:
 		         return false;
 		}
@@ -511,15 +504,34 @@ component singleton{
 		results.preReleaseID = find( "-", arguments.version ) ? listLast( arguments.version, "-" ) : '';
 		// Remove preReleaseID
 		arguments.version 	= reReplace( arguments.version, "\-([^\-]*).$", "" );
+		
 		// Get Revision
 		results.revision	= getToken( arguments.version, 3, "." );
-		if( results.revision == "" ){ results.revision = missingValuePlaceholder ?: 0; }
+		if( results.revision == "" ){
+			// Default missing revision to placeholder
+			results.revision = missingValuePlaceholder ?: 0;
+		} else if( results.revision.startsWith( '0' )  ) {
+			// If we found a revision, remove leading zeros
+			results.revision = val( results.revision );			
+		}
 
 		// Get Minor + Major
 		results.minor		= getToken( arguments.version, 2, "." );
-		if( results.minor == "" ){ results.minor = missingValuePlaceholder ?: 0; }
-		results.major 		= getToken( arguments.version, 1, "." );
-
+		if( results.minor == "" ){
+			// Default missing minor to placeholder
+			results.minor = missingValuePlaceholder ?: 0;
+		} else if( results.minor.startsWith( '0' )  ) {
+			// If we found a minor, remove leading zeros
+			results.minor = val( results.minor );			
+		}
+		
+		// Major is required.  Remove leading zeros with val()
+		results.major 		=  getToken( arguments.version, 1, "." );
+		if( results.major.startsWith( '0' )  ) {
+			// If we found a major, remove leading zeros
+			results.major = val( results.major );			
+		}
+		
 		return results;
 	}
 
@@ -579,20 +591,23 @@ component singleton{
 	* version.hint A string that contains a version or a range
 	*/
 	boolean function isExactVersion( required string version, includeBuildID=false ) {
-		// Default any missing pieces to "x" so "3" becomes "3.x.x".
-		arguments.version = getVersionAsString (parseVersion( clean( arguments.version ), 'x' ) );
 
-		if( version contains '*' ) return false;
-		if( version contains 'x.' ) return false;
-		if( version contains '.x' ) return false;
+		// Run these basic range checks first before we attempt to parse the version.
+		if( version contains ' - ' ) return false;
+		if( version contains ' || ' ) return false;
 		if( version contains '>=' ) return false;
 		if( version contains '<=' ) return false;
 		if( version contains '<' ) return false;
 		if( version contains '>' ) return false;
-		if( version contains ' - ' ) return false;
 		if( version contains '~' ) return false;
 		if( version contains '^' ) return false;
-		if( version contains ' || ' ) return false;
+
+		// if it's not a range, try and parse it as a single version, defaulting any missing pieces to "x" so "3" becomes "3.x.x".
+		arguments.version = getVersionAsString (parseVersion( clean( arguments.version ), 'x' ) );
+		
+		if( version contains '*' ) return false;
+		if( version contains 'x.' ) return false;
+		if( version contains '.x' ) return false;
 		if( includeBuildID && not version contains '+' ) return false;
 		
 		return len( trim( version ) ) > 0;
