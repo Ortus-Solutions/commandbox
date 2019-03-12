@@ -620,13 +620,17 @@ component accessors="true" singleton {
 			string directory,
 			boolean save=false,
 			required string currentWorkingDirectory,
-			string packagePathRequestingUninstallation = arguments.currentWorkingDirectory
+			string packagePathRequestingUninstallation = arguments.currentWorkingDirectory,
+			boolean verbose = false
 	){
 		
 		var job = wirebox.getInstance( 'interactiveJob' );
 		var packageName = arguments.ID;
 
 		job.start( 'Uninstalling package: #packageName#' );
+		if( verbose ) {
+			job.setDumpLog( verbose );
+		}
 
 		var uninstallDirectory = '';
 
