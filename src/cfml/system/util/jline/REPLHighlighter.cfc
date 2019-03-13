@@ -7,13 +7,13 @@
 * I am a JLine highighter class that attempts to highlight the command portion of the input buffer
 */
 component {
-	
+
 	// DI
 	property name='print'			inject='print';
 	property name='shell'			inject='provider:shell';
-	
+
 	function init() {
-		
+
 		variables.reservedWords = [
 			'if',
 			'else',
@@ -36,7 +36,7 @@ component {
 			'function',
 			'any'
 		].toList( '|' );
-		
+
 		variables.sets = {
 			')' : '(',
 			'}' : '{',
@@ -46,13 +46,13 @@ component {
 		};
 		return this;
 	}
-	
+
 	function highlight( reader, buffer ) {
-		
+
 		// Highlight CF function names
 		// Find text that is at the line start or prepended with a space, curly, or period and ending with an opening paren
-		buffer = reReplaceNoCase( buffer, '(^|[ \.\{\}\(\)])([^ \.\{\}\(\)]*)(\()', '\1' & print.boldCyan( '\2' ) & '\3', 'all' );
-		
+		buffer = reReplaceNoCase( buffer, '(^|[ \-##\.\{\}\(\)])([^ \-##\.\{\}\(\)]*)(\()', '\1' & print.boldCyan( '\2' ) & '\3', 'all' );
+
 		// highight reserved words
 		buffer = reReplaceNoCase( buffer, '(^|[ \{\}\(])(#reservedWords#)($|[ ;\(\)\{\}])', '\1' & print.boldCyan( '\2' ) & '\3', 'all' );
 
@@ -74,8 +74,8 @@ component {
 					break;
 				}
 				pos--;
-			}			
-			
+			}
+
 			// If we found a matching start char
 			if( pos > 0 ) {
 				var originalBuffer = buffer;
@@ -86,7 +86,7 @@ component {
 				}
 				// The start char
 				buffer &= print.boldRed( startChar );
-				
+
 				// Optional text between matching chars
 				if( pos < originalBuffer.len()-1 ) {
 					buffer &= originalBuffer.mid( pos+1, originalBuffer.len()-pos-1 );
@@ -96,7 +96,7 @@ component {
 			}
 		}
 
-		return createObject("java","org.jline.utils.AttributedString").fromAnsi( buffer );	
+		return createObject("java","org.jline.utils.AttributedString").fromAnsi( buffer );
 	}
-	
+
 }
