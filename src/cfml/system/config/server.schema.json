@@ -139,15 +139,21 @@
 			"properties": {
 				"heapSize": {
 					"title": "Max Heap Size",
-					"description": "The max heap size of the server in MB",
-					"type": "number",
-					"default": 512
+					"description": "The max heap size of the server",
+					"type": [
+						"number",
+						"string"
+					],
+					"default": ""
 				},
 				"minHeapSize": {
 					"title": "Min Heap Size",
-					"description": "The starting heap size for the server in MB",
-					"type": "number",
-					"default": 0
+					"description": "The starting heap size for the server",
+					"type": [
+						"number",
+						"string"
+					],
+					"default": ""
 				},
 				"args": {
 					"title": "JVM Arguments",
@@ -158,7 +164,14 @@
 				"javaHome": {
 					"title": "Java Home Path",
 					"description": "Path to custom JRE. Default is the one that the CommandBox CLI is using",
-					"type": "string"
+					"type": "string",
+					"default": ""
+				},
+				"javaVersion": {
+					"title": "Java Version",
+					"description": "A Java installation ID. In its entirety, it has the form <version>_<type>_<arch>_<os>_<jvm-implementation>_<release>",
+					"type": "string",
+					"default": ""
 				}
 			}
 		},
@@ -183,7 +196,7 @@
 					"title": "Directory Browsing",
 					"description": "Enables file listing for directories with no welcome file",
 					"type": "boolean",
-					"default": true
+					"default": false
 				},
 				"accessLogEnable": {
 					"title": "Access Log Enable",
