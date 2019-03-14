@@ -140,13 +140,19 @@
 				"heapSize": {
 					"title": "Max Heap Size",
 					"description": "The max heap size of the server",
-					"type": "string",
+					"type": [
+						"number",
+						"string"
+					],
 					"default": ""
 				},
 				"minHeapSize": {
 					"title": "Min Heap Size",
 					"description": "The starting heap size for the server",
-					"type": "string",
+					"type": [
+						"number",
+						"string"
+					],
 					"default": ""
 				},
 				"args": {
