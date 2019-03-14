@@ -291,6 +291,15 @@
 			"title": "Install Paths",
 			"description": "Tracks install locations so uninstall can work. The key is the package name/slug and the value is the path",
 			"type": "object",
+			"additionalProperties": {
+				"type": "string"
+			},
+			"default": {}
+		},
+		"scripts": {
+			"title": "Scripts",
+			"description": "Set of script commands that correspond to the interception points in CommandBox or arbitrary names that can be run with the `run-script` command",
+			"type": "object",
 			"properties": {
 				"preInstall": {
 					"description": "Run BEFORE the package is installed",
@@ -333,15 +342,6 @@
 					"type": "string"
 				}
 			},
-			"additionalProperties": {
-				"type": "string"
-			},
-			"default": {}
-		},
-		"scripts": {
-			"title": "Scripts",
-			"description": "Set of script commands that correspond to the interception points in CommandBox or arbitrary names that can be run with the `run-script` command",
-			"type": "object",
 			"additionalProperties": {
 				"type": "string"
 			},
