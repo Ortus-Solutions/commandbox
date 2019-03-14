@@ -183,7 +183,7 @@
 					"title": "Directory Browsing",
 					"description": "Enables file listing for directories with no welcome file",
 					"type": "boolean",
-					"default": true
+					"default": false
 				},
 				"accessLogEnable": {
 					"title": "Access Log Enable",
