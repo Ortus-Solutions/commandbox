@@ -291,6 +291,48 @@
 			"title": "Install Paths",
 			"description": "Tracks install locations so uninstall can work. The key is the package name/slug and the value is the path",
 			"type": "object",
+			"properties": {
+				"preInstall": {
+					"description": "Run BEFORE the package is installed",
+					"type": "string"
+				},
+				"onInstall": {
+					"description": "Run WHILE the package is installed",
+					"type": "string"
+				},
+				"postInstall": {
+					"description": "Run AFTER the package is installed",
+					"type": "string"
+				},
+				"preUninstall": {
+					"description": "Run BEFORE the package is uninstalled",
+					"type": "string"
+				},
+				"postUninstall": {
+					"description": "Run AFTER the package is uninstalled",
+					"type": "string"
+				},
+				"preVersion": {
+					"description": "Run BEFORE bump the package version",
+					"type": "string"
+				},
+				"postVersion": {
+					"description": "Run AFTER bump the package version, but BEFORE Git repo is tagged",
+					"type": "string"
+				},
+				"onRelease": {
+					"description": "Run AFTER bump the package version and AFTER Git repo is tagged",
+					"type": "string"
+				},
+				"prePublish": {
+					"description": "Run BEFORE the package is published",
+					"type": "string"
+				},
+				"postPublish": {
+					"description": "Run AFTER the package is published",
+					"type": "string"
+				}
+			},
 			"additionalProperties": {
 				"type": "string"
 			},
