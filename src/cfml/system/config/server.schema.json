@@ -158,12 +158,14 @@
 				"javaHome": {
 					"title": "Java Home Path",
 					"description": "Path to custom JRE. Default is the one that the CommandBox CLI is using",
-					"type": "string"
+					"type": "string",
+					"default": ""
 				},
 				"javaVersion": {
 					"title": "Java Version",
 					"description": "A Java installation ID. In its entirety, it has the form <version>_<type>_<arch>_<os>_<jvm-implementation>_<release>",
-					"type": "string"
+					"type": "string",
+					"default": ""
 				}
 			}
 		},
