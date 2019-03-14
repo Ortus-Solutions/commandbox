@@ -7,7 +7,7 @@
 			"properties": {
 				"type": {
 					"title": "Engine Type",
-					"description": "The name of the package",
+					"description": "The name of the engine",
 					"type": "string",
 					"enum": [
 						"railo",
@@ -17,7 +17,7 @@
 				},
 				"version": {
 					"title": "Engine Version",
-					"description": "The semantic version of the ",
+					"description": "The semantic version of the engine that is supported",
 					"type": "string",
 					"default": ""
 				}
