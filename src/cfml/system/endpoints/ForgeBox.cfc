@@ -440,7 +440,7 @@ component accessors="true" implements="IEndpointInteractive" {
 				}
 
 				// Test package location to see what endpoint we can refer to.
-				var endpointData = endpointService.resolveEndpoint( downloadURL, 'fakePath', arguments.slug, arguments.version );
+				var endpointData = endpointService.resolveEndpoint( downloadURL, 'fakePath' );
 
 				job.addLog( "Deferring to [#endpointData.endpointName#] endpoint for ForgeBox entry [#slug#]..." );
 
