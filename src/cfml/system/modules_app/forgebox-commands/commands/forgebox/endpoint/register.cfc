@@ -18,6 +18,7 @@ component {
 	/**
 	* @endpointName The name of the ForgeBox-based endpoint to set as the default
 	* @APIURL The full HTTP address of the ForgeBox API endpoint
+	* @force Overwrite the endpoint if it already exists
 	**/
 	function run(
 		required string endpointName,
