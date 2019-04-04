@@ -79,17 +79,11 @@ component singleton{
 			return true;
 		}
 
-		// A little hacky, but less code than what I had.
-		// Basically, an empty pre release ID needs to sort AFTER a non-empty one.
-		if( !len( target.preReleaseID ) ) { target.preReleaseID = 'zzzzzzzzzzzzzzzzzz'; }
-		if( !len( current.preReleaseID ) ) { current.preReleaseID = 'zzzzzzzzzzzzzzzzzz'; }
-
 		// pre-release Check
 		if( target.major eq current.major AND
 			target.minor eq current.minor AND
 			target.revision eq current.revision AND
-			// preReleaseID is either alphabetically higher, or target has no prereleaes id and current does.
-			lcase( target.preReleaseID ) gt lcase( current.preReleaseID ) ) {
+			preReleaseCompare( target.preReleaseID, current.preReleaseID ) == 1 ) {
 			return true;
 		}
 
@@ -163,18 +157,18 @@ component singleton{
 
 	private function evaluateComparator( required struct comparator, version ) {
 		switch( comparator.operator ) {
-		    case "<":
-		    	return isNew( arguments.version, comparator.version, false );
-		    case "<=":
-		    	return isNew( arguments.version, comparator.version, false ) || isEq( comparator.version, arguments.version, false );
-		    case ">":
-		    	return isNew( comparator.version, arguments.version, false );
-		    case ">=":
-		    	return isNew( comparator.version, arguments.version, false ) || isEq( comparator.version, arguments.version, false );
-		    case "=":
-		    	return isEq( comparator.version, arguments.version, false );
-		    default:
-		         return false;
+			case "<":
+				return isNew( arguments.version, comparator.version, false );
+			case "<=":
+				return isNew( arguments.version, comparator.version, false ) || isEq( comparator.version, arguments.version, false );
+			case ">":
+				return isNew( comparator.version, arguments.version, false );
+			case ">=":
+				return isNew( comparator.version, arguments.version, false ) || isEq( comparator.version, arguments.version, false );
+			case "=":
+				return isEq( comparator.version, arguments.version, false );
+			default:
+				 return false;
 		}
 	}
 
@@ -185,9 +179,9 @@ component singleton{
 			// And see if there is a pre release version that matches major.minor.revision
 			if( isPreRelease( comparator.version )
 				&& comparator.sVersion.major == sVersion.major
-			 	&& comparator.sVersion.minor == sVersion.minor
-			 	&& comparator.sVersion.revision == sVersion.revision) {
-			 	return true;
+				 && comparator.sVersion.minor == sVersion.minor
+				 && comparator.sVersion.revision == sVersion.revision) {
+				 return true;
 			 }
 		}
 		return false;
@@ -309,145 +303,145 @@ component singleton{
 		var comparatorSet = [];
 
 		switch( sComparator.operator ) {
-		    case "<":
-		    	// <1.1.x becomes <1.1.0
-		    	// <1.x becomes <1.0.0
+			case "<":
+				// <1.1.x becomes <1.1.0
+				// <1.x becomes <1.0.0
 
-		    	if( sComparator.sVersion.major == 'x' ) { sComparator.sVersion.major = '0'; }
-		    	if( sComparator.sVersion.minor == 'x' ) { sComparator.sVersion.minor = '0'; }
-		    	if( sComparator.sVersion.revision == 'x' ) { sComparator.sVersion.revision = '0'; }
-		    	sComparator.version = getVersionAsString( sComparator.sVersion );
-		    	comparatorSet.append( sComparator );
-		        break;
-		    case "<=":
-		    	// <=1.x becomes <2.0.0
-		    	if( sComparator.sVersion.minor == 'x' ) {
+				if( sComparator.sVersion.major == 'x' ) { sComparator.sVersion.major = '0'; }
+				if( sComparator.sVersion.minor == 'x' ) { sComparator.sVersion.minor = '0'; }
+				if( sComparator.sVersion.revision == 'x' ) { sComparator.sVersion.revision = '0'; }
+				sComparator.version = getVersionAsString( sComparator.sVersion );
+				comparatorSet.append( sComparator );
+				break;
+			case "<=":
+				// <=1.x becomes <2.0.0
+				if( sComparator.sVersion.minor == 'x' ) {
 
-		    		sComparator.sVersion.minor = '0';
-		    		sComparator.sVersion.revision = '0';
-		    		sComparator.sVersion.major=val( sComparator.sVersion.major )+1;
-		    		sComparator.operator = '<';
-			    	sComparator.version = getVersionAsString( sComparator.sVersion );
-			    	comparatorSet.append( sComparator );
+					sComparator.sVersion.minor = '0';
+					sComparator.sVersion.revision = '0';
+					sComparator.sVersion.major=val( sComparator.sVersion.major )+1;
+					sComparator.operator = '<';
+					sComparator.version = getVersionAsString( sComparator.sVersion );
+					comparatorSet.append( sComparator );
 
-		    	// <=1.0.x becomes <1.1.0
-		    	} else if( sComparator.sVersion.revision == 'x' ) {
+				// <=1.0.x becomes <1.1.0
+				} else if( sComparator.sVersion.revision == 'x' ) {
 
-		    		sComparator.sVersion.revision = '0';
-		    		sComparator.sVersion.minor=val( sComparator.sVersion.minor )+1;
-		    		sComparator.operator = '<';
-			    	sComparator.version = getVersionAsString( sComparator.sVersion );
-			    	comparatorSet.append( sComparator );
+					sComparator.sVersion.revision = '0';
+					sComparator.sVersion.minor=val( sComparator.sVersion.minor )+1;
+					sComparator.operator = '<';
+					sComparator.version = getVersionAsString( sComparator.sVersion );
+					comparatorSet.append( sComparator );
 
-		    	}
-		    	else {
-			    	comparatorSet.append( sComparator );
-		    	}
-		        break;
-		    case ">":
-		    	// >1.x becomes >=2.0.0
-		    	if( sComparator.sVersion.minor == 'x' ) {
+				}
+				else {
+					comparatorSet.append( sComparator );
+				}
+				break;
+			case ">":
+				// >1.x becomes >=2.0.0
+				if( sComparator.sVersion.minor == 'x' ) {
 
-		    		sComparator.sVersion.minor = '0';
-		    		sComparator.sVersion.revision = '0';
-		    		sComparator.sVersion.major=val( sComparator.sVersion.major )+1;
-		    		sComparator.operator = '>=';
-			    	sComparator.version = getVersionAsString( sComparator.sVersion );
-			    	comparatorSet.append( sComparator );
+					sComparator.sVersion.minor = '0';
+					sComparator.sVersion.revision = '0';
+					sComparator.sVersion.major=val( sComparator.sVersion.major )+1;
+					sComparator.operator = '>=';
+					sComparator.version = getVersionAsString( sComparator.sVersion );
+					comparatorSet.append( sComparator );
 
-		    	// >1.0.x becomes >=1.1.0
-		    	} else if( sComparator.sVersion.revision == 'x' ) {
+				// >1.0.x becomes >=1.1.0
+				} else if( sComparator.sVersion.revision == 'x' ) {
 
-		    		sComparator.sVersion.revision = '0';
-		    		sComparator.sVersion.minor=val(sComparator.sVersion.minor)+1;
-		    		sComparator.operator = '>=';
-			    	sComparator.version = getVersionAsString( sComparator.sVersion );
-			    	comparatorSet.append( sComparator );
+					sComparator.sVersion.revision = '0';
+					sComparator.sVersion.minor=val(sComparator.sVersion.minor)+1;
+					sComparator.operator = '>=';
+					sComparator.version = getVersionAsString( sComparator.sVersion );
+					comparatorSet.append( sComparator );
 
-		    	}
-		    	else {
-			    	comparatorSet.append( sComparator );
-		    	}
-		        break;
-		    case ">=":
-		    	// >=1.1.x becomes >=1.1.0
-		    	// >=1.x becomes >=1.0.0
+				}
+				else {
+					comparatorSet.append( sComparator );
+				}
+				break;
+			case ">=":
+				// >=1.1.x becomes >=1.1.0
+				// >=1.x becomes >=1.0.0
 
-		    	if( sComparator.sVersion.major == 'x' ) { sComparator.sVersion.major = '0'; }
-		    	if( sComparator.sVersion.minor == 'x' ) { sComparator.sVersion.minor = '0'; }
-		    	if( sComparator.sVersion.revision == 'x' ) { sComparator.sVersion.revision = '0'; }
-		    	sComparator.version = getVersionAsString( sComparator.sVersion );
-		    	comparatorSet.append( sComparator );
-		        break;
-		    case "=":
-		    	// * becomes >=0.0.0
-		    	if( sComparator.sVersion.major == 'x' ) {
+				if( sComparator.sVersion.major == 'x' ) { sComparator.sVersion.major = '0'; }
+				if( sComparator.sVersion.minor == 'x' ) { sComparator.sVersion.minor = '0'; }
+				if( sComparator.sVersion.revision == 'x' ) { sComparator.sVersion.revision = '0'; }
+				sComparator.version = getVersionAsString( sComparator.sVersion );
+				comparatorSet.append( sComparator );
+				break;
+			case "=":
+				// * becomes >=0.0.0
+				if( sComparator.sVersion.major == 'x' ) {
 
-		    		sComparator.sVersion.major = 0;
-		    		sComparator.sVersion.minor = 0;
-		    		sComparator.sVersion.revision = 0;
-		    		sComparator.operator = '>=';
-		    		sComparator.version = getVersionAsString( sComparator.sVersion );
+					sComparator.sVersion.major = 0;
+					sComparator.sVersion.minor = 0;
+					sComparator.sVersion.revision = 0;
+					sComparator.operator = '>=';
+					sComparator.version = getVersionAsString( sComparator.sVersion );
 					comparatorSet.append( sComparator );
 
 				// 1.x becomes >=1.0.0 < 2.0.0
-		    	} else if ( sComparator.sVersion.minor == 'x' ) {
+				} else if ( sComparator.sVersion.minor == 'x' ) {
 
-		    		sComparator.sVersion.minor = 0;
-		    		sComparator.sVersion.revision = 0;
-		    		sComparator.operator = '>=';
-		    		sComparator.version = getVersionAsString( sComparator.sVersion );
+					sComparator.sVersion.minor = 0;
+					sComparator.sVersion.revision = 0;
+					sComparator.operator = '>=';
+					sComparator.version = getVersionAsString( sComparator.sVersion );
 					comparatorSet.append( duplicate( sComparator ) );
 
-		    		sComparator.sVersion.major=val( sComparator.sVersion.major )+1;
-		    		sComparator.operator = '<';
-		    		sComparator.version = getVersionAsString( sComparator.sVersion );
+					sComparator.sVersion.major=val( sComparator.sVersion.major )+1;
+					sComparator.operator = '<';
+					sComparator.version = getVersionAsString( sComparator.sVersion );
 					comparatorSet.append( sComparator );
 
 
 				// 1.0.x becomes >=1.0.0 < 1.1.0
-		    	} else if( sComparator.sVersion.revision == 'x' ) {
+				} else if( sComparator.sVersion.revision == 'x' ) {
 
-		    		sComparator.sVersion.revision = 0;
-		    		sComparator.operator = '>=';
-		    		sComparator.version = getVersionAsString( sComparator.sVersion );
+					sComparator.sVersion.revision = 0;
+					sComparator.operator = '>=';
+					sComparator.version = getVersionAsString( sComparator.sVersion );
 					comparatorSet.append( duplicate( sComparator ) );
 
-		    		sComparator.sVersion.minor=val( sComparator.sVersion.minor )+1;
-		    		sComparator.operator = '<';
-		    		sComparator.version = getVersionAsString( sComparator.sVersion );
+					sComparator.sVersion.minor=val( sComparator.sVersion.minor )+1;
+					sComparator.operator = '<';
+					sComparator.version = getVersionAsString( sComparator.sVersion );
 					comparatorSet.append( sComparator );
 
-		    	} else {
+				} else {
 					comparatorSet.append( sComparator );
-		    	}
-		        break;
-		    case "~":
-		    	// ~1.2 Same as 1.2.x
+				}
+				break;
+			case "~":
+				// ~1.2 Same as 1.2.x
 				// ~1 Same as 1.x
 				// ~0.2 Same as 0.2.x
 				// ~0 Same as 0.x
-		    	if( sComparator.sVersion.minor== 'x' || sComparator.sVersion.revision== 'x' ) {
-		    		sComparator.operator = '=';
-		    		// Recursivley handle as an X range
-		    		comparatorSet.append( expandXRanges( sComparator ), true );
-		    	} else {
+				if( sComparator.sVersion.minor== 'x' || sComparator.sVersion.revision== 'x' ) {
+					sComparator.operator = '=';
+					// Recursivley handle as an X range
+					comparatorSet.append( expandXRanges( sComparator ), true );
+				} else {
 
 					// ~0.2.3 becomes >=0.2.3 <0.3.0
-			    	// ~1.2.3 becomes >=1.2.3 <1.3.0
-		    		sComparator.operator = '>=';
-		    		sComparator.version = getVersionAsString( sComparator.sVersion );
-			    	comparatorSet.append( duplicate( sComparator ) );
+					// ~1.2.3 becomes >=1.2.3 <1.3.0
+					sComparator.operator = '>=';
+					sComparator.version = getVersionAsString( sComparator.sVersion );
+					comparatorSet.append( duplicate( sComparator ) );
 
-		    		sComparator.operator = '<';
-		    		sComparator.sVersion.minor=val( sComparator.sVersion.minor )+1;
-		    		sComparator.sVersion.revision = 0;
-		    		sComparator.sVersion.preReleaseID = '';
-			    	sComparator.version = getVersionAsString( sComparator.sVersion );
-			    	comparatorSet.append( sComparator );
-			    }
-		        break;
-		    case "^":
+					sComparator.operator = '<';
+					sComparator.sVersion.minor=val( sComparator.sVersion.minor )+1;
+					sComparator.sVersion.revision = 0;
+					sComparator.sVersion.preReleaseID = '';
+					sComparator.version = getVersionAsString( sComparator.sVersion );
+					comparatorSet.append( sComparator );
+				}
+				break;
+			case "^":
 				// ^1.2.3 becomes >=1.2.3 <2.0.0
 				// ^0.2.3 becomes >=0.2.3 <0.3.0
 				// ^0.0.3 becomes >=0.0.3 <0.0.4
@@ -457,31 +451,31 @@ component singleton{
 				// ^0.0 becomes >=0.0.0 <0.1.0
 				// ^1.x becomes >=1.0.0 <2.0.0
 				// ^0.x becomes >=0.0.0 <1.0.0
-	    		var sComparator2 = duplicate( sComparator );
-	    		sComparator2.operator = '>=';
-		    	if( sComparator2.sVersion.major == 'x' ) { sComparator2.sVersion.major = '0'; }
-		    	if( sComparator2.sVersion.minor == 'x' ) { sComparator2.sVersion.minor = '0'; }
-		    	if( sComparator2.sVersion.revision == 'x' ) { sComparator2.sVersion.revision = '0'; }
-	    		sComparator2.version = getVersionAsString( sComparator2.sVersion );
-		    	comparatorSet.append( sComparator2 );
+				var sComparator2 = duplicate( sComparator );
+				sComparator2.operator = '>=';
+				if( sComparator2.sVersion.major == 'x' ) { sComparator2.sVersion.major = '0'; }
+				if( sComparator2.sVersion.minor == 'x' ) { sComparator2.sVersion.minor = '0'; }
+				if( sComparator2.sVersion.revision == 'x' ) { sComparator2.sVersion.revision = '0'; }
+				sComparator2.version = getVersionAsString( sComparator2.sVersion );
+				comparatorSet.append( sComparator2 );
 
-	    		sComparator.operator = '<';
-	    		sComparator.sVersion.preReleaseID = '';
-		    	if( sComparator.sVersion.major != 0 || sComparator.sVersion.minor == 'x' ) {
-		    		sComparator.sVersion.major=val( sComparator.sVersion.major )+1;
-		    		sComparator.sVersion.minor = 0;
-		    		sComparator.sVersion.revision = 0;
-		    	} else if( sComparator.sVersion.minor != 0 || sComparator.sVersion.revision == 'x' ) {
-		    		sComparator.sVersion.minor=val( sComparator.sVersion.minor )+1;
-		    		sComparator.sVersion.revision = 0;
-		    	} else {
-		    		sComparator.sVersion.revision=val( sComparator.sVersion.revision )+1;
-		    	}
+				sComparator.operator = '<';
+				sComparator.sVersion.preReleaseID = '';
+				if( sComparator.sVersion.major != 0 || sComparator.sVersion.minor == 'x' ) {
+					sComparator.sVersion.major=val( sComparator.sVersion.major )+1;
+					sComparator.sVersion.minor = 0;
+					sComparator.sVersion.revision = 0;
+				} else if( sComparator.sVersion.minor != 0 || sComparator.sVersion.revision == 'x' ) {
+					sComparator.sVersion.minor=val( sComparator.sVersion.minor )+1;
+					sComparator.sVersion.revision = 0;
+				} else {
+					sComparator.sVersion.revision=val( sComparator.sVersion.revision )+1;
+				}
 
-		    	sComparator.version = getVersionAsString( sComparator.sVersion );
-		    	comparatorSet.append( sComparator );
+				sComparator.version = getVersionAsString( sComparator.sVersion );
+				comparatorSet.append( sComparator );
 
-		        break;
+				break;
 		}
 
 		return comparatorSet;
@@ -504,7 +498,7 @@ component singleton{
 		results.preReleaseID = find( "-", arguments.version ) ? listLast( arguments.version, "-" ) : '';
 		// Remove preReleaseID
 		arguments.version 	= reReplace( arguments.version, "\-([^\-]*).$", "" );
-		
+
 		// Get Revision
 		results.revision	= getToken( arguments.version, 3, "." );
 		if( results.revision == "" ){
@@ -512,7 +506,7 @@ component singleton{
 			results.revision = missingValuePlaceholder ?: 0;
 		} else if( results.revision.startsWith( '0' )  ) {
 			// If we found a revision, remove leading zeros
-			results.revision = val( results.revision );			
+			results.revision = val( results.revision );
 		}
 
 		// Get Minor + Major
@@ -522,16 +516,16 @@ component singleton{
 			results.minor = missingValuePlaceholder ?: 0;
 		} else if( results.minor.startsWith( '0' )  ) {
 			// If we found a minor, remove leading zeros
-			results.minor = val( results.minor );			
+			results.minor = val( results.minor );
 		}
-		
+
 		// Major is required.  Remove leading zeros with val()
 		results.major 		=  getToken( arguments.version, 1, "." );
 		if( results.major.startsWith( '0' )  ) {
 			// If we found a major, remove leading zeros
-			results.major = val( results.major );			
+			results.major = val( results.major );
 		}
-		
+
 		return results;
 	}
 
@@ -604,13 +598,64 @@ component singleton{
 
 		// if it's not a range, try and parse it as a single version, defaulting any missing pieces to "x" so "3" becomes "3.x.x".
 		arguments.version = getVersionAsString (parseVersion( clean( arguments.version ), 'x' ) );
-		
+
 		if( version contains '*' ) return false;
 		if( version contains 'x.' ) return false;
 		if( version contains '.x' ) return false;
 		if( includeBuildID && not version contains '+' ) return false;
-		
+
 		return len( trim( version ) ) > 0;
+	}
+
+	function preReleaseCompare( targetPreReleaseID, currentPreReleaseID ) {
+		// no prerelease is newer than a prerelease
+		if ( targetPreReleaseID == "" && currentPreReleaseID == "" ) {
+			return 0;
+		} else if ( targetPreReleaseID == "" && currentPreReleaseID != "" ) {
+			return 1;
+		} else if ( targetPreReleaseID != "" && currentPreReleaseID == "" ) {
+			return -1;
+		} else {
+			return preReleaseCompareSegment( targetPreReleaseID, currentPreReleaseID );
+		}
+	}
+
+	function preReleaseCompareSegment( targetPreReleaseID, currentPreReleaseID ) {
+		var targetSegment = listFirst( targetPreReleaseID, "." );
+		var currentSegment = listFirst( currentPreReleaseID, "." );
+
+		if ( targetSegment == "" && currentSegment == "" ) {
+			return 0;
+		}
+
+		// if the values are the same, move on to the next segment
+		if ( targetSegment == currentSegment ) {
+			return preReleaseCompareSegment(
+				listRest( targetPreReleaseID, "." ),
+				listRest( currentPreReleaseID, "." )
+			);
+		}
+
+		// return when one has more segments than the other
+		if ( targetSegment == "" && currentSegment != "" ) {
+			return -1;
+		} else if ( targetSegment != "" && currentSegment == "" ) {
+			return 1;
+		}
+
+		// letters trump numbers
+		if ( isNumeric( targetSegment ) && ! isNumeric( currentSegment ) ) {
+			return -1;
+		} else if ( ! isNumeric( targetSegment ) && isNumeric( currentSegment ) ) {
+			return 1;
+		}
+
+		// finally, do a numeric or alphabetic comparison
+		if ( isNumeric( targetSegment ) && isNumeric( currentSegment ) ) {
+			return targetSegment > currentSegment ? 1 : -1;
+		} else {
+			return compare( targetSegment, currentSegment );
+		}
 	}
 
 }
