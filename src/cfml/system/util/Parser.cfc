@@ -72,6 +72,7 @@ component {
 				}
 				token &= char;
 				// We just reached the end of our quoted string
+				// This will break `foo="bar"baz` into two tokens: `foo="bar"` and `baz`
 				if( char == quoteChar && !isEscaped ) {
 					inQuotes = false;
 					// Don't break if an = is next ...

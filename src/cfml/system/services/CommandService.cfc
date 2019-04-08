@@ -131,7 +131,7 @@ component accessors="true" singleton {
 			consoleLogger.warn( "Removing extra text [box ] from start of command. You don't need that here." );
 			arguments.line = right( arguments.line, len( arguments.line ) - 4 );
 		}
-
+				
 		// Resolve the command they are wanting to run
 		var commandChain = resolveCommand( line );
 
@@ -549,16 +549,16 @@ component accessors="true" singleton {
 	function resolveCommand( required string line ){
 		// Turn the users input into an array of tokens
 		var tokens = parser.tokenizeInput( line );
-
-		return resolveCommandTokens( tokens );
+		
+		return resolveCommandTokens( tokens, line );
 	}
 
 	/**
 	 * Figure out what command to run based on the tokenized user input
 	 * @tokens.hint An array containing the command and parameters that the user entered
  	 **/
-	function resolveCommandTokens( required array tokens ){
-
+	function resolveCommandTokens( required array tokens, string rawLine=tokens.toList( ' ' ) ){
+					
 		// This will hold the command chain. Usually just a single command,
 		// but a pipe ("|") will chain together commands and pass the output of one along as the input to the next
 		var commandsToResolve = breakTokensIntoChain( tokens );
@@ -613,7 +613,8 @@ component accessors="true" singleton {
 			 if( tokens.len() > 2 && tokens.first() == 'run' ) {
 			 	tokens = [
 			 		'run',
-			 		tokens.slice( 2, tokens.len()-1 ).toList( ' ' )
+			 		// Strip off "!" or "run" at the start of the raw line.
+			 		rawLine.reReplaceNoCase( '[\s]*(run|!)[\s]*(.*)', '\2' )
 			 	];
 			 }
 
