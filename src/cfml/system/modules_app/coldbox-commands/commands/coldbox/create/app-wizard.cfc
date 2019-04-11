@@ -1,7 +1,7 @@
 /**
 *  Create a blank ColdBox app from one of our app skeletons by following our lovely wizard.
 **/
-component extends="app" {
+component extends="app" aliases="" {
 
 	/**
 	 * @name The name of the app you want to create
