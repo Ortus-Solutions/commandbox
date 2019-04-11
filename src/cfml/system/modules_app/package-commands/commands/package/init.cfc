@@ -34,6 +34,8 @@ component aliases="init" {
 	 * @ignoreList Add commonly ignored files to the package's ignore list
 	 * @wizard Run the init wizard, defaults to false
 	 * @endpointName  Name of custom forgebox endpoint to use
+	 * @location Where the package is located
+	 * @type Type of pacakge (modules, etc)
 	 **/
 	function run(
 		name="My Package",
@@ -42,9 +44,12 @@ component aliases="init" {
 		boolean private=false,
 		shortDescription="A sweet package",
 		boolean ignoreList=true,
-		boolean wizard=false,
-		string endpointName
+		string location='ForgeboxStorage',
+		string type='modules',
+		string endpointName,
+		boolean wizard=false
 	){
+		
 		// Check for wizard argument
 		if( arguments.wizard ){
 			runCommand( 'package init-wizard' );
