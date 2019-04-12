@@ -49,6 +49,8 @@ component implements="wirebox.system.ioc.dsl.IDSLBuilder" accessors=true{
 				switch( thisLocationKey ){
 					case "moduleConfig"	: { return getInjector().getInstance( 'ModuleService' ).getModuleData(); }
 					case "ConfigSettings"	: { return getInjector().getInstance( 'ConfigService' ).getConfigSettings(); }
+					case "interceptorService"	: { return getInjector().getInstance( 'interceptorService' ); }
+					case "moduleService"	: { return getInjector().getInstance( 'moduleService' ); }
 				}
 
 				break;
@@ -63,29 +65,45 @@ component implements="wirebox.system.ioc.dsl.IDSLBuilder" accessors=true{
 						// Check for module existance
 						if( structKeyExists(moduleConfig, thisLocationKey ) ){
 							return moduleConfig[ thisLocationKey ];
-						} else if( getLog().canDebug() ){
-							getLog().debug("The module requested: #thisLocationKey# does not exist in the loaded modules. Loaded modules are #structKeyList(moduleConfig)#");
+						} else {
+							throw( message="CommandBox DSL cannot find dependency using definition: #arguments.definition.toString()#", detail="The module requested: #thisLocationKey# does not exist in the loaded modules. Loaded modules are #structKeyList(moduleConfig)#" );
 						}
+					}
+					case "interceptor"		: {
+						return getInjector().getInstance( 'interceptorService' ).getInterceptor( thisLocationKey );
 					}
 					case "modulesettings"		: {
 						var moduleConfig = getInjector().getInstance( 'ModuleService' ).getModuleData();
 						// Check for module existance
 						if( structKeyExists(moduleConfig, thisLocationKey ) ){
 							return moduleConfig[ thisLocationKey ].settings;
-						} else if( getLog().canDebug() ){
-							getLog().debug("The module requested: #thisLocationKey# does not exist in the loaded modules. Loaded modules are #structKeyList(moduleConfig)#");
+						} else {
+							throw( message="CommandBox DSL cannot find dependency using definition: #arguments.definition.toString()#", detail="The module requested: #thisLocationKey# does not exist in the loaded modules. Loaded modules are #structKeyList(moduleConfig)#" );
 						}
 					}
-					case "ConfigSettings"		: {
-						var configService = getInjector().getInstance( 'ConfigService' );
-						var configSettings = configService.getConfigSettings();
-
-						// Check for setting existance
-						if( configService.settingExists( thisLocationKey ) ){
-							return configService.getSetting( thisLocationKey );
-						} else if( getLog().canDebug() ){
-							getLog().debug("The config setting requested: #thisLocationKey# does not exist in the loaded settings. Loaded settings are #structKeyList(configSettings)#");
+					case "setting" : case "ConfigSettings"	: {
+						
+						// Getting setting from module
+						if( thisLocationKey contains '@' ) {
+							
+							thisLocationToken  = listFirst( thisLocationKey, '@' );
+							thisLocationKey  = listRest( thisLocationKey, '@' );
+							
+							return getModuleSetting( definition,  thisLocationKey, thisLocationToken );
+							
+						} else {
+							
+							var configService = getInjector().getInstance( 'ConfigService' );
+							var configSettings = configService.getConfigSettings();
+	
+							// Check for setting existance
+							if( configService.settingExists( thisLocationKey ) ){
+								return configService.getSetting( thisLocationKey );
+							} else {								
+								throw( message="CommandBox DSL cannot find dependency using definition: #arguments.definition.toString()#", detail="The config setting requested: #thisLocationKey# does not exist in the loaded settings. Loaded settings are #structKeyList(configSettings)#" );
+							}
 						}
+						
 					}
 				}
 				break;
@@ -97,28 +115,33 @@ component implements="wirebox.system.ioc.dsl.IDSLBuilder" accessors=true{
 				thisLocationToken  = getToken(thisType,4,":");
 				switch(thisLocationType){
 					case "modulesettings"		: {
-						var moduleConfig = getInjector().getInstance( 'ModuleService' ).getModuleData();
-						// Check for module existance
-						if( structKeyExists(moduleConfig, thisLocationKey ) ){
-							// Check for setting existance
-							if( structKeyExists( moduleConfig[ thisLocationKey ].settings, thisLocationToken ) ) {
-								return moduleConfig[ thisLocationKey ].settings[ thisLocationToken ];
-							} else if( getLog().canDebug() ){
-								getLog().debug("The module requested: #thisLocationKey# does not exist in the loaded modules. Loaded modules are #structKeyList(moduleConfig)#");
-							}
-						} else if( getLog().canDebug() ){
-							getLog().debug("The module requested: #thisLocationKey# does not exist in the loaded modules. Loaded modules are #structKeyList(moduleConfig)#");
-						}
+						return getModuleSetting( definition,  thisLocationKey, thisLocationToken );
 					}
 				}
 				break;
 			}
 		}
 
-		throw( "CommandBox DSL cannot find dependency using definition: #arguments.definition.toString()#" );
+		throw( message="CommandBox DSL cannot find dependency using definition: #arguments.definition.toString()#", detail="Unkonwn DSL" );
 
 	}
 
+	function getModuleSetting( definition, thisLocationKey, thisLocationToken ) {
+							
+		var moduleConfig = getInjector().getInstance( 'ModuleService' ).getModuleData();
+		// Check for module existance
+		if( structKeyExists(moduleConfig, thisLocationKey ) ){
+			// Check for setting existance
+			if( structKeyExists( moduleConfig[ thisLocationKey ].settings, thisLocationToken ) ) {
+				return moduleConfig[ thisLocationKey ].settings[ thisLocationToken ];
+			} else {
+				throw( message="CommandBox DSL cannot find dependency using definition: #arguments.definition.toString()#", detail="The setting requested: #thisLocationToken# does not exist in this module. Loaded settings are #structKeyList(moduleConfig[ thisLocationKey ].settings)#" );
+			}
+		} else {
+			throw( message="CommandBox DSL cannot find dependency using definition: #arguments.definition.toString()#", detail="The module requested: #thisLocationKey# does not exist in the loaded modules. Loaded modules are #structKeyList(moduleConfig)#" );
+		}
+		
+	}
 
 
 }

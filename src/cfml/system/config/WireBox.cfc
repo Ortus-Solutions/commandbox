@@ -38,6 +38,7 @@ component extends='wirebox.system.ioc.config.Binder' {
 
 		// Register CommandBox DSL for special injection namespaces
 		mapDSL( 'commandbox', 'commandbox.system.config.CommandBoxDSL' );
+		mapDSL( 'box', 'commandbox.system.config.CommandBoxDSL' );
 	}
 
 	function onLoad() {
