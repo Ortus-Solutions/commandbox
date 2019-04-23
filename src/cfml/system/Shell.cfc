@@ -263,8 +263,9 @@ component accessors="true" singleton {
 			throw( message='CANCELLED', type="UserInterruptException");
 		// user wants to exit the entire shell, they've pressed Ctrl-D
 		} catch( org.jline.reader.EndOfFileException var e ) {
-			setKeepRunning( false );
-			throw( message='CANCELLED', type="UserInterruptException");
+			// This should probably just read what is currently on the buffer, 
+			// but JLine doesn't give me a way to get that currently
+			throw( message='EOF', type="EndOfFileException");
 		} finally{
 			// Reset back to default prompt
 			setPrompt();
@@ -793,7 +794,7 @@ component accessors="true" singleton {
 			if( !initialCommand ) {
 				rethrow;
 			// This type of error means the user hit Ctrl-C, when not in a readLine() call (and hit my custom signal handler).  Duck out and move along.
-			} else if( e.getPageException().getRootCause().getClass().getName() == 'java.lang.InterruptedException' || e.type == 'UserInterruptException' || e.message == 'UserInterruptException' ) {
+			} else if( e.getPageException().getRootCause().getClass().getName() == 'java.lang.InterruptedException' || e.type == 'UserInterruptException' || e.message == 'UserInterruptException' || e.type == 'EndOfFileException' ) {
 
 				progressBarGeneric.clear();				
 				if( job.isActive() ) {

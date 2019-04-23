@@ -84,12 +84,6 @@ This file will stay running the entire time the shell is open
 	args 	= system.getProperty( "cfml.cli.arguments" );
 	argsArray = deserializeJSON( system.getProperty( "cfml.cli.argument.array" ) );
 
-	// System.in is usually the keyboard input, but if the output of another command or a file
-	// was piped into CommandBox, System.in will represent that input.  Wrap System.in
-	// in a buffered reader so we can check it.
-	inputStreamReader = createObject( 'java', 'java.io.InputStreamReader' ).init( system.in );
-	bufferedReader = createObject( 'java', 'java.io.BufferedReader' ).init( inputStreamReader );
-
 	// Verify if we can run CommandBox Java v. 1.7+
 	if( !findNoCase( "1.8", server.java.version ) && 0 ){
 		// JLine isn't loaded yet, so I have to use systemOutput() here.
@@ -115,28 +109,20 @@ This file will stay running the entire time the shell is open
 		interceptData = { shellType=shell.getShellType(), args=argsArray, banner=getBanner() };
 		interceptorService.announceInterception( 'onCLIStart', interceptData );
 
- 		piped = [];
- 		hasPiped = false;
-	 	// If data is piped to CommandBox, it will be in this buffered reader
-	 	while ( bufferedReader.ready() ) {
-	 		// Read  all the lines and append them together.
-	 		piped.append( bufferedReader.readLine() );
- 			hasPiped = true;
-	 	}
-
-	 	// If data was piped via standard input
-	 	if( hasPiped ) {
-		 	// Concat lines back together
-			piped = arrayToList( piped, chr( 10 ) );
-			shell.callCommand( command=argsArray, piped=piped, initialCommand=true );
-		} else {
-			shell.callCommand( command=argsArray, initialCommand=true );
-		}
+		shell.callCommand( command=argsArray, initialCommand=true );
 
 		// flush console
 		shell.getReader().flush();
+		
 	// "box" was called all by itself with no commands
 	} else {
+
+		// System.in is usually the keyboard input, but if the output of another command or a file
+		// was piped into CommandBox, System.in will represent that input.  Wrap System.in
+		// in a buffered reader so we can check it.
+		inputStreamReader = createObject( 'java', 'java.io.InputStreamReader' ).init( system.in );
+		bufferedReader = createObject( 'java', 'java.io.BufferedReader' ).init( inputStreamReader );
+		
 		// If the standard input has content waiting, cut the chit chat and just run the commands so we can exit.
 		silent = bufferedReader.ready();
 		inStream = system.in;

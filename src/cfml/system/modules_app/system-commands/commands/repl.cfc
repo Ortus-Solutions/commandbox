@@ -40,7 +40,7 @@ component {
 		var newHistory 		= arguments.script ? variables.REPLScriptHistoryFile : variables.REPLTagHistoryFile;
 
   	   arguments.directory = resolvePath( arguments.directory );
-
+  	   
 		// Setup REPL history file
 		shell.setHistory( newHistory );
 		shell.setHighlighter( 'REPL' );
@@ -136,6 +136,8 @@ component {
 				}
 			}
 			
+		} catch( EndOfFileException var e ) {
+			// End of input reached
 		} finally {
 			resetShell();
 		}
