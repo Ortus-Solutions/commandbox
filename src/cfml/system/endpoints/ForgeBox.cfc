@@ -259,8 +259,8 @@ component accessors="true" implements="IEndpointInteractive" {
 		}
 
 		try {
-			consoleLogger.warn( "Sending package information to ForgeBox, please wait..." );
-			if ( upload ) { consoleLogger.warn( "Uploading package zip to ForgeBox..." ); }
+			consoleLogger.warn( "Sending package information to #getNamePrefixes()#, please wait..." );
+			if ( upload ) { consoleLogger.warn( "Uploading package zip to #getNamePrefixes()#..." ); }
 
 			forgebox.publish( argumentCollection=props );
 
@@ -295,7 +295,7 @@ component accessors="true" implements="IEndpointInteractive" {
 		var boxJSON = packageService.readPackageDescriptor( arguments.path );
 
 		try {
-			consoleLogger.warn( "Unpublishing package [#boxJSON.slug##( len( arguments.version ) ? '@' : '' )##arguments.version#] from ForgeBox, please wait..." );
+			consoleLogger.warn( "Unpublishing package [#boxJSON.slug##( len( arguments.version ) ? '@' : '' )##arguments.version#] from #getNamePrefixes()#, please wait..." );
 
 			forgebox.unpublish( boxJSON.slug, arguments.version, getAPIToken() );
 
@@ -395,7 +395,7 @@ component accessors="true" implements="IEndpointInteractive" {
 
 		try {
 			// Info
-			job.addLog( "Verifying package '#slug#' in ForgeBox, please wait..." );
+			job.addLog( "Verifying package '#slug#' in #getNamePrefixes()#, please wait..." );
 
 			var entryData = forgebox.getEntry( slug, APIToken );
 
@@ -403,7 +403,7 @@ component accessors="true" implements="IEndpointInteractive" {
 			// downloads,entryid,fname,changelog,updatedate,downloadurl,title,entryrating,summary,username,description,email
 
 			if( !entryData.isActive ) {
-				throw( 'The ForgeBox entry [#entryData.title#] is inactive.', 'endpointException' );
+				throw( 'The #getNamePrefixes()# entry [#entryData.title#] is inactive.', 'endpointException' );
 			}
 
 			var satisfyingVersion = findSatisfyingVersion( slug, version, entryData );
@@ -411,7 +411,7 @@ component accessors="true" implements="IEndpointInteractive" {
 			var downloadURL = satisfyingVersion.downloadURL;
 
 			if( !len( downloadURL ) ) {
-				throw( 'No download URL provided in ForgeBox.  Manual install only.', 'endpointException' );
+				throw( 'No download URL provided in #getNamePrefixes()#.  Manual install only.', 'endpointException' );
 			}
 
 			job.addLog( "Installing version [#arguments.version#]." );
@@ -426,7 +426,7 @@ component accessors="true" implements="IEndpointInteractive" {
 			var packageType = entryData.typeSlug;
 
 			// Advice we found it
-			job.addLog( "Verified entry in ForgeBox: '#slug#'" );
+			job.addLog( "Verified entry in #getNamePrefixes()#: '#slug#'" );
 
 			var strVersion = semanticVersion.parseVersion( version );
 
@@ -436,13 +436,13 @@ component accessors="true" implements="IEndpointInteractive" {
 					downloadURL = forgebox.getStorageLocation(
 						slug, arguments.version, APIToken
 					);
-					job.addLog( "Downloading entry from ForgeBox Pro" );
+					job.addLog( "Downloading entry from #getNamePrefixes()#." );
 				}
 
 				// Test package location to see what endpoint we can refer to.
 				var endpointData = endpointService.resolveEndpoint( downloadURL, 'fakePath' );
 
-				job.addLog( "Deferring to [#endpointData.endpointName#] endpoint for ForgeBox entry [#slug#]..." );
+				job.addLog( "Deferring to [#endpointData.endpointName#] endpoint for #getNamePrefixes()# entry [#slug#]..." );
 
 				var packagePath = endpointData.endpoint.resolvePackage( endpointData.package, arguments.verbose );
 
@@ -472,7 +472,7 @@ component accessors="true" implements="IEndpointInteractive" {
 
 		} catch( forgebox var e ) {
 
-			job.addErrorLog( "Aww man,  ForgeBox isn't feeling well.");
+			job.addErrorLog( "Aww man,  #getNamePrefixes()# isn't feeling well.");
 			job.addLog( "#e.message#  #e.detail#");
 			job.addErrorLog( "We're going to look in your local artifacts cache and see if one of those versions will work.");
 
@@ -488,7 +488,7 @@ component accessors="true" implements="IEndpointInteractive" {
 				// Defer to file endpoint
 				return fileEndpoint.resolvePackage( thisArtifactPath, arguments.verbose );
 			} else {
-				throw( 'No satisfying version found for [#version#].', 'endpointException', 'Well, we tried as hard as we can.  ForgeBox is unreachable and you don''t have a usable version in your local artifacts cache.  Please try another version.' );
+				throw( 'No satisfying version found for [#version#].', 'endpointException', 'Well, we tried as hard as we can.  #getNamePrefixes()# is unreachable and you don''t have a usable version in your local artifacts cache.  Please try another version.' );
 			}
 
 		}

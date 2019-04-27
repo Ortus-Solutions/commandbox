@@ -57,6 +57,7 @@ component accessors="true" singleton {
 					if( customForgeBoxAPIURL.len() ) {
 						oEndPoint.getForgeBox().setEndpointURL( customForgeBoxAPIURL.reReplaceNoCase( '/api/.*', '' ) );
 						oEndPoint.getForgeBox().setAPIURL( customForgeBoxAPIURL );
+						oEndPoint.getForgeBox().setEndpointName( endpointName );
 					}
 				}
 				registerEndpoint( oEndPoint );
@@ -90,6 +91,7 @@ component accessors="true" singleton {
 				// Set the API URL for this endpoint's forgebox Util
 				oEndPoint.getForgeBox().setEndpointURL( endpointData.APIURL.reReplaceNoCase( '/api/.*', '' ) );
 				oEndPoint.getForgeBox().setAPIURL( endpointData.APIURL );
+				oEndPoint.getForgeBox().setEndpointName( endpointName.replaceNoCase( 'forgebox-', '' ) );
 				
 				// Register it, baby!
 				registerEndpoint( oEndPoint );
