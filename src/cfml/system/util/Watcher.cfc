@@ -108,6 +108,10 @@ component accessors=true {
 							var thisChangeUDF = getChangeUDF();
 							thisChangeUDF( getChangeData() );
 
+							// In case the change UDF modified the file system,
+							// reset our hashes so we don't end up with endless firing 
+							setChangeHash( calculateHashes() );
+
 						} else {
 							// Sleep and test again.
 							sleep( getDelayMS() );
