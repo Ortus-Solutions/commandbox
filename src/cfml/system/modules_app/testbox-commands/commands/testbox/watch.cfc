@@ -105,7 +105,9 @@ component {
 						.inWorkingDirectory( getCWD() )
 						.run();
 				} catch( commandException var  e ) {
-					// ignore
+					// Log something, just in case we need to instead of empty console
+					print.boldRedLine( left( e.message, 3000 ) )
+						.toConsole();
 				}
 
 			} )
