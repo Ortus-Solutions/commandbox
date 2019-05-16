@@ -74,11 +74,14 @@ component{
             
             // This unbinds JLine from our input and output so it's not fighting over the keyboard
             terminal.pause();
+            var processBuilder = createObject( "java", "java.lang.ProcessBuilder" ).init( commandArray );
             
+            // incorporate CommandBox environment variables into the process's env
+            processBuilder.environment().putAll( systemSettings.getAllEnvironmentsFlattened() );
+                        
 			if( interactive ) {
 				
-				var exitCode = createObject( "java", "java.lang.ProcessBuilder" )
-					.init( commandArray )
+				var exitCode = processBuilder
 					// Do you believe in magic
 					// This works great on Mac/Windows.
 					// On Linux, the standard input (keyboard) is not being piped to the background process.
@@ -96,8 +99,7 @@ component{
 	            var redirect = createObject( 'java', 'java.lang.ProcessBuilder$Redirect' );
 	            // A string builder to collect the output that we're also streaming to the console so it can be captured and piped to another command as well.
 	            var processOutputStringBuilder = createObject( 'java', 'java.lang.StringBuilder' ).init( '' );
-				var process = createObject( 'java', 'java.lang.ProcessBuilder' )
-					.init( commandArray )
+				processBuilder
 					// Keyboard pipes through to the input of the process
 					.redirectInput( redirect.INHERIT )
 					.redirectErrorStream(fileSystemUtil.isWindows())
@@ -152,7 +154,7 @@ component{
 				inputStreamReader.close();
 			} 
 			
-			// I had issues with Ctrl-C not fully existing cmd on Windows.  This should make sure it's dead.
+			// I had issues with Ctrl-C not fully exiting cmd on Windows.  This should make sure it's dead.
 			if( !isNull( process ) ) {
 				process.destroy();	
 			}
