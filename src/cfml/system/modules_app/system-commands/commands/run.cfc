@@ -107,10 +107,10 @@ component{
 					.directory( CWDFile );
 	
 				if(!fileSystemUtil.isWIndows()) {
-					process=process.redirectError(redirect.INHERIT);
+					processBuilder=processBuilder.redirectError(redirect.INHERIT);
 				}
 				// Fires process async
-				process=process.start();
+				process=processBuilder.start();
 				
 				// Despite the name, this is the stream that the *output* of the external process is in.
 				var inputStream = process.getInputStream();
