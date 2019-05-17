@@ -230,7 +230,8 @@ component accessors="true" singleton {
 			// Parameters need to be ALL positional or ALL named
 			if( arrayLen( parameterInfo.positionalParameters ) && structCount( parameterInfo.namedParameters ) ){
 				shell.setExitCode( 1 );
-				throw( message='Please don''t mix named and positional parameters, it makes me dizzy.', detail=line, type="commandException");
+				var detail = "You specified named parameters: #structKeyList(parameterInfo.namedParameters)# but you did not specify a name for: #parameterInfo.positionalParameters[1]# #chr(10)##chr(9)#" & line; 
+				throw( message='Please don''t mix named and positional parameters, it makes me dizzy.', detail=detail, type="commandException");
 			}
 
 			// These are the parameters declared by the command CFC
