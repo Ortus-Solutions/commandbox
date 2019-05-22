@@ -77,7 +77,17 @@ component{
             var processBuilder = createObject( "java", "java.lang.ProcessBuilder" ).init( commandArray );
             
             // incorporate CommandBox environment variables into the process's env
-            processBuilder.environment().putAll( systemSettings.getAllEnvironmentsFlattened() );
+            var currentEnv = processBuilder.environment();
+            currentEnv.putAll( systemSettings.getAllEnvironmentsFlattened() );
+            
+            // Special check to remove ConEMU vars which can screw up the sub process if it happens to run cmd, such as opening VSCode.
+            if( fileSystemUtil.isWindows() && currentEnv.containsKey( 'ConEmuPID' ) ) {
+	            for( var key in currentEnv ) {
+	            	if( key.startsWith( 'ConEmu' ) || key == 'PROMPT' ) {
+	            		currentEnv.remove( key );
+	            	}	
+	            }
+	        }
                         
 			if( interactive ) {
 				
