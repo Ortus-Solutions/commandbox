@@ -24,6 +24,7 @@ component accessors=true {
 	property name='print'				inject='PrintBuffer';
 	property name='pathPatternMatcher'	inject='provider:pathPatternMatcher@globber';
 	property name='fileSystemUtil'		inject='FileSystem';
+	property name='fileSeparator'		inject='fileSeparator@constants';
 
 	// Properties
 	property name='changeHash'			type='string';
@@ -228,7 +229,7 @@ component accessors=true {
 
 			var fileIndex = {};
 			for(file in fileListing){
-				var thisPath = replacenocase( file.directory & '/' & file.name, thisBaseDir, "" );
+				var thisPath = replacenocase( file.directory & fileSeparator & file.name, thisBaseDir, "" );
 				fileIndex[thisPath] = file.DATELASTMODIFIED;
 			}
 
