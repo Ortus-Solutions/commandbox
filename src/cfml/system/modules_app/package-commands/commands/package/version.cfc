@@ -130,6 +130,9 @@ component aliases="bump" {
 		// If this package is also a Git repository
 		var repoPath = '#arguments.directory#/.git';
 		arguments.tagVersion = arguments.tagVersion ?: ConfigService.getSetting( 'tagVersion', true );
+		if( fileExists( repoPath ) && arguments.tagVersion ) {
+			repoPath= resolvePath( trim( replace( fileRead( repoPath ), "gitdir: ", "" ) ) );
+		}
 		if( directoryExists( repoPath ) && arguments.tagVersion ) {
 			print.yellowLine( 'Package is a Git repo.  Tagging...' );
 
