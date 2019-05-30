@@ -120,11 +120,11 @@ This file will stay running the entire time the shell is open
 		// System.in is usually the keyboard input, but if the output of another command or a file
 		// was piped into CommandBox, System.in will represent that input.  Wrap System.in
 		// in a buffered reader so we can check it.
-		inputStreamReader = createObject( 'java', 'java.io.InputStreamReader' ).init( system.in );
-		bufferedReader = createObject( 'java', 'java.io.BufferedReader' ).init( inputStreamReader );
+		//inputStreamReader = createObject( 'java', 'java.io.InputStreamReader' ).init( system.in );
+		//bufferedReader = createObject( 'java', 'java.io.BufferedReader' ).init( inputStreamReader );
 		
 		// If the standard input has content waiting, cut the chit chat and just run the commands so we can exit.
-		silent = bufferedReader.ready();
+		silent = false;
 		inStream = system.in;
 
 		// Create the shell
@@ -135,7 +135,7 @@ This file will stay running the entire time the shell is open
 
 		interceptData = { shellType=shell.getShellType(), args=argsArray, banner=getBanner() };
 		interceptorService.announceInterception( 'onCLIStart', interceptData );
-
+	
 		if( !silent ) {
 			// Output the welcome banner
 			shell.printString( interceptData.banner );
