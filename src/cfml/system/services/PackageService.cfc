@@ -825,9 +825,13 @@ component accessors="true" singleton {
 			if( len( arguments.installDirectory ) ) {
 
 				// Prevent unneccessary updates to the JSON file.
-				if( !installPaths.keyExists( arguments.packageName ) || installPaths[ arguments.packageName ] != arguments.installDirectory ) {
+				if( !installPaths.keyExists( arguments.packageName )
+					// Resolve the install path in box.json. If it's relative like ../lib but it's still equivalent to the actual install dir, then leave it alone. The user probably wants to keep it relative! 
+					|| fileSystemUtil.normalizeSlashes( fileSystemUtil.resolvePath( installPaths[ arguments.packageName ], arguments.currentWorkingDirectory ) ) != arguments.installDirectory ) {
+						
 					installPaths[ arguments.packageName ] = arguments.installDirectory;
 					updated = true;
+					
 				}
 
 			}
