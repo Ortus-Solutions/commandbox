@@ -35,8 +35,11 @@ component singleton {
 		try {
 		
 			var buffer = parsedLine.line();
+			
 			// Try to resolve the command.
-			var commandChain = commandService.resolveCommand( buffer );
+			// If buffer ends in space, we don't need to worry about the partial match of a command
+			var commandChain = commandService.resolveCommand( line=buffer, forCompletion=!buffer.endsWith( ' ' ) );
+			
 			// If there are multiple commands like "help | more", we only care about the last one
 			var commandInfo = commandChain[ commandChain.len() ];
 
@@ -105,6 +108,7 @@ component singleton {
 
 			// If we DID find a command and it's followed by a space, then suggest parameters
 			} else {
+			
 				// This is all the possible params for the command
 				var definedParameters = commandInfo.commandReference.parameters;
 				// This is the params the user has entered so far.

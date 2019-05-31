@@ -547,18 +547,18 @@ component accessors="true" singleton {
 	 * Figure out what command to run based on the the user input string
 	 * @line.hint A string containing the command and parameters that the user entered
  	 **/
-	function resolveCommand( required string line ){
+	function resolveCommand( required string line, boolean forCompletion=false ){
 		// Turn the users input into an array of tokens
 		var tokens = parser.tokenizeInput( line );
 		
-		return resolveCommandTokens( tokens, line );
+		return resolveCommandTokens( tokens, line, forCompletion );
 	}
 
 	/**
 	 * Figure out what command to run based on the tokenized user input
 	 * @tokens.hint An array containing the command and parameters that the user entered
  	 **/
-	function resolveCommandTokens( required array tokens, string rawLine=tokens.toList( ' ' ) ){
+	function resolveCommandTokens( required array tokens, string rawLine=tokens.toList( ' ' ), boolean forCompletion=false ){
 					
 		// This will hold the command chain. Usually just a single command,
 		// but a pipe ("|") will chain together commands and pass the output of one along as the input to the next
@@ -656,6 +656,18 @@ component accessors="true" singleton {
 				// If we hit a dead end, then quit looking
 				if( !structKeyExists( results.commandReference, token ) ){
 					break;
+				}
+					
+				// If this is for command tab completion, don't select the command if there are two commands at the same level that start wtih this string
+				if( forCompletion ) {
+					if( results.commandReference
+						.keyArray()
+						.filter( function( i ){
+							return i.lcase().startsWith( token.lcase() );
+						} )
+						.len() > 1 ) {
+							break;
+						}
 				}
 
 				// Move the pointer
