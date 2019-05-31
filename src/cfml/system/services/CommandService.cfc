@@ -568,6 +568,7 @@ component accessors="true" singleton {
 		// command hierarchy
 		var cmds = getCommandHierarchy();
 		var helpTokens = 'help,?,/?';
+		var stopProcessingLine = false;
 
 		for( var commandTokens in commandsToResolve ){
 
@@ -611,12 +612,20 @@ component accessors="true" singleton {
 			* would essentially be turned into
 			* run "cmd /c dir"
 			 */
-			 if( tokens.len() > 2 && tokens.first() == 'run' ) {
+			 if( tokens.len() > 1 && tokens.first() == 'run' ) {
+			 	
 			 	tokens = [
 			 		'run',
 			 		// Strip off "!" or "run" at the start of the raw line.
-			 		rawLine.reReplaceNoCase( '[\s]*(run|!)[\s]*(.*)', '\2' )
+			 		// TODO: this line will fail:
+			 		//   echo "!git status" && !git status
+			 		// Because we don't know where in the rawLine our current place in the command chain starts
+			 		// To fix it though I'd need to substantially change how tokenizing works
+			 		rawLine.reReplaceNoCase( '^(.*?)?[\s]*(run |!)[\s]*(#tokens[ 2 ]#.*)', '\3' )
 			 	];
+			 	
+			 	// The run command "eats" end entire rest of the line, so stop processing the command chain.
+				stopProcessingLine = true;
 			 }
 
 			// Shortcut for "cfml" command if first token starts with #
@@ -682,7 +691,12 @@ component accessors="true" singleton {
 			}
 
 			commandChain.append( results );
-
+			
+			// Quit here if we're done with this command line
+			if( stopProcessingLine ) {
+				break;
+			}
+			
 		} // end loop over commands to resolve
 
 		// Return command chain
