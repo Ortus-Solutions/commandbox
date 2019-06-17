@@ -131,7 +131,7 @@ component accessors="true" singleton {
 			consoleLogger.warn( "Removing extra text [box ] from start of command. You don't need that here." );
 			arguments.line = right( arguments.line, len( arguments.line ) - 4 );
 		}
-
+				
 		// Resolve the command they are wanting to run
 		var commandChain = resolveCommand( line );
 
@@ -230,7 +230,8 @@ component accessors="true" singleton {
 			// Parameters need to be ALL positional or ALL named
 			if( arrayLen( parameterInfo.positionalParameters ) && structCount( parameterInfo.namedParameters ) ){
 				shell.setExitCode( 1 );
-				throw( message='Please don''t mix named and positional parameters, it makes me dizzy.', detail=line, type="commandException");
+				var detail = "You specified named parameters: #structKeyList(parameterInfo.namedParameters)# but you did not specify a name for: #parameterInfo.positionalParameters[1]# #chr(10)##chr(9)#" & line; 
+				throw( message='Please don''t mix named and positional parameters, it makes me dizzy.', detail=detail, type="commandException");
 			}
 
 			// These are the parameters declared by the command CFC
@@ -546,19 +547,19 @@ component accessors="true" singleton {
 	 * Figure out what command to run based on the the user input string
 	 * @line.hint A string containing the command and parameters that the user entered
  	 **/
-	function resolveCommand( required string line ){
+	function resolveCommand( required string line, boolean forCompletion=false ){
 		// Turn the users input into an array of tokens
 		var tokens = parser.tokenizeInput( line );
-
-		return resolveCommandTokens( tokens );
+		
+		return resolveCommandTokens( tokens, line, forCompletion );
 	}
 
 	/**
 	 * Figure out what command to run based on the tokenized user input
 	 * @tokens.hint An array containing the command and parameters that the user entered
  	 **/
-	function resolveCommandTokens( required array tokens ){
-
+	function resolveCommandTokens( required array tokens, string rawLine=tokens.toList( ' ' ), boolean forCompletion=false ){
+					
 		// This will hold the command chain. Usually just a single command,
 		// but a pipe ("|") will chain together commands and pass the output of one along as the input to the next
 		var commandsToResolve = breakTokensIntoChain( tokens );
@@ -567,6 +568,7 @@ component accessors="true" singleton {
 		// command hierarchy
 		var cmds = getCommandHierarchy();
 		var helpTokens = 'help,?,/?';
+		var stopProcessingLine = false;
 
 		for( var commandTokens in commandsToResolve ){
 
@@ -610,11 +612,20 @@ component accessors="true" singleton {
 			* would essentially be turned into
 			* run "cmd /c dir"
 			 */
-			 if( tokens.len() > 2 && tokens.first() == 'run' ) {
+			 if( tokens.len() > 1 && tokens.first() == 'run' ) {
+			 	
 			 	tokens = [
 			 		'run',
-			 		tokens.slice( 2, tokens.len()-1 ).toList( ' ' )
+			 		// Strip off "!" or "run" at the start of the raw line.
+			 		// TODO: this line will fail:
+			 		//   echo "!git status" && !git status
+			 		// Because we don't know where in the rawLine our current place in the command chain starts
+			 		// To fix it though I'd need to substantially change how tokenizing works
+			 		rawLine.reReplaceNoCase( '^(.*?)?[\s]*(run |!)[\s]*(#tokens[ 2 ]#.*)', '\3' )
 			 	];
+			 	
+			 	// The run command "eats" end entire rest of the line, so stop processing the command chain.
+				stopProcessingLine = true;
 			 }
 
 			// Shortcut for "cfml" command if first token starts with #
@@ -645,6 +656,18 @@ component accessors="true" singleton {
 				// If we hit a dead end, then quit looking
 				if( !structKeyExists( results.commandReference, token ) ){
 					break;
+				}
+					
+				// If this is for command tab completion, don't select the command if there are two commands at the same level that start wtih this string
+				if( forCompletion ) {
+					if( results.commandReference
+						.keyArray()
+						.filter( function( i ){
+							return i.lcase().startsWith( token.lcase() );
+						} )
+						.len() > 1 ) {
+							break;
+						}
 				}
 
 				// Move the pointer
@@ -680,7 +703,12 @@ component accessors="true" singleton {
 			}
 
 			commandChain.append( results );
-
+			
+			// Quit here if we're done with this command line
+			if( stopProcessingLine ) {
+				break;
+			}
+			
 		} // end loop over commands to resolve
 
 		// Return command chain

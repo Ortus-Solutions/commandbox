@@ -180,7 +180,9 @@ component singleton {
 		if( isStruct( dataStructure ) ) {
 			// Loop over and process each key
 			for( var key in dataStructure ) {
-				dataStructure[ key ] = expandDeepSystemSettings( dataStructure[ key ] );
+				var expandedKey = expandSystemSettings( key );
+				dataStructure[ expandedKey ] = expandDeepSystemSettings( dataStructure[ key ] );
+				if( expandedKey != key ) dataStructure.delete( key );
 			}
 			return dataStructure;
 		// If it's an array...

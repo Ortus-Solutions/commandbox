@@ -94,7 +94,7 @@ component accessors="true" implements="IEndpoint" singleton {
 			if( arguments.verbose ){ job.addLog( 'Available branches are #branchList.toList()#' ); }
 
 			// If the commit-ish looks like it's a branch, modify the ref's name.
-			if( branchList.containsNoCase( branch ) ) {
+			if( branchList.filter( function( i ) { return i contains branch; } ).len() ) {
 				if( arguments.verbose ){ job.addLog( 'Commit-ish [#branch#] appears to be a branch.' ); }
 				branch = 'origin/' & branch;
 			}

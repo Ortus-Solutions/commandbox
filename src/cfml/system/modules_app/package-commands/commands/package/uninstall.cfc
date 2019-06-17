@@ -33,7 +33,8 @@ component aliases="uninstall" {
 		required string slug='',
 		string directory,
 		boolean save=true,
-		boolean system=false
+		boolean system=false,
+		boolean verbose=false
 	){
 
 		// Don't default the dir param since we need to differentiate whether the user actually

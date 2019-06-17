@@ -38,6 +38,7 @@ component extends='wirebox.system.ioc.config.Binder' {
 
 		// Register CommandBox DSL for special injection namespaces
 		mapDSL( 'commandbox', 'commandbox.system.config.CommandBoxDSL' );
+		mapDSL( 'box', 'commandbox.system.config.CommandBoxDSL' );
 	}
 
 	function onLoad() {
@@ -53,6 +54,7 @@ component extends='wirebox.system.ioc.config.Binder' {
 		var REPLScriptHistoryFile 	= homedir & '/.history-repl-script';
 		var REPLTagHistoryFile 		= homedir & '/.history-repl-tag';
 		var cr						= chr( 10 );
+		var fileSeparator			= system.getProperty( 'file.separator' );
 		var commandLocations		= [
 			// This is where user-installed commands are stored
 			// This is deprecated in favor of modules, but leaving it so 'old' style commands will still load.
@@ -74,6 +76,7 @@ component extends='wirebox.system.ioc.config.Binder' {
 		map( 'REPLScriptHistoryFile@constants' ).toValue( REPLScriptHistoryFile );
 		map( 'REPLTagHistoryFile@constants' ).toValue( REPLTagHistoryFile );
 		map( 'cr@constants' ).toValue( cr );
+		map( 'fileSeparator@constants' ).toValue( fileSeparator );
 		map( 'commandLocations@constants' ).toValue( commandLocations );
 		map( 'ortusArtifactsURL@constants' ).toValue( ortusArtifactsURL );
 		map( 'ortusPRDArtifactsURL@constants' ).toValue( ortusPRDArtifactsURL );

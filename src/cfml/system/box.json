@@ -5,17 +5,15 @@
     "shortDescription":"This tracks the CommandBox core dependencies",
     "dependencies":{
         "string-similarity":"^1.0.0",
-        "semver":"^1.0.0",
+        "semver":"^1.2.3",
         "globber":"^2.0.0",
         "JSONPrettyPrint":"^1.0.0",
         "propertyFile":"^1.0.9"
     },
-    "devDependencies":{
-        
-    },
+    "devDependencies":{},
     "installPaths":{
         "string-similarity":"modules\\string-similarity",
-        "semver":"modules\\semver",
+        "semver":"modules/semver/",
         "globber":"modules\\globber",
         "JSONPrettyPrint":"modules\\JSONPrettyPrint",
         "propertyFile":"modules\\propertyFile"

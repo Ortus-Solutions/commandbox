@@ -84,7 +84,7 @@ component accessors="true" singleton {
 	){
 		// Java service registers itself as an interceptor on creation so I need to force the provder to create the service before installing anything.
 		javaService.get();
-		
+
 		var shellWillReload = false;
 		var job = wirebox.getInstance( 'interactiveJob' );
 		interceptorService.announceInterception( 'preInstall', { installArgs=arguments, packagePathRequestingInstallation=packagePathRequestingInstallation } );
@@ -98,9 +98,9 @@ component accessors="true" singleton {
 			var endpointData = endpointService.resolveEndpoint( arguments.ID, arguments.currentWorkingDirectory );
 
 			job.start(  'Installing package [#endpointData.ID#]', 5 );
-			
+
 			if( verbose ) {
-				job.setDumpLog( verbose );	
+				job.setDumpLog( verbose );
 			}
 
 			var tmpPath = endpointData.endpoint.resolvePackage( endpointData.package, arguments.verbose );
@@ -194,7 +194,7 @@ component accessors="true" singleton {
 							if( semanticVersion.satisfies( candidateBoxJSON.version, version ) ) {
 								job.addWarnLog( '#packageName# (#version#) is already satisfied by #candidateInstallPath# (#candidateBoxJSON.version#).  Skipping installation.' );
 								job.complete( verbose );
-								
+
 								interceptorService.announceInterception( 'postInstall', { installArgs=arguments, installDirectory=candidateInstallPath } );
 
 								return true;
@@ -414,9 +414,9 @@ component accessors="true" singleton {
 					}
 					job.addWarnLog( "The package #packageName# is already installed at #installDirectory#. Skipping installation. Use --force option to force install." );
 					job.complete( verbose );
-					
+
 					interceptorService.announceInterception( 'postInstall', { installArgs=arguments, installDirectory=installDirectory } );
-					
+
 					return true;
 				}
 
@@ -473,14 +473,14 @@ component accessors="true" singleton {
 			});
 
 			// Stupid annoying fix For *nix file systems because Lucee LOSES the executable bit on files when zipping or copying them
-			// I'm detecting JRE/JDK installations and attempting to make the files executable again.  
+			// I'm detecting JRE/JDK installations and attempting to make the files executable again.
 			if( !fileSystemUtil.isWindows() && artifactDescriptor.createPackageDirectory && fileExists( installDirectory & '/bin/java' ) ) {
 				job.addWarnLog( 'Fixing *nix file permissions on java' );
-				
+
 				directoryList( installDirectory , true ).each( function( path ) {
 					fileSetAccessMode( path, 755 );
 				} );
-				
+
 			}
 
 			// Catch this to gracefully handle where the OS or another program
@@ -620,13 +620,17 @@ component accessors="true" singleton {
 			string directory,
 			boolean save=false,
 			required string currentWorkingDirectory,
-			string packagePathRequestingUninstallation = arguments.currentWorkingDirectory
+			string packagePathRequestingUninstallation = arguments.currentWorkingDirectory,
+			boolean verbose = false
 	){
-		
+
 		var job = wirebox.getInstance( 'interactiveJob' );
 		var packageName = arguments.ID;
 
 		job.start( 'Uninstalling package: #packageName#' );
+		if( verbose ) {
+			job.setDumpLog( verbose );
+		}
 
 		var uninstallDirectory = '';
 
@@ -821,9 +825,13 @@ component accessors="true" singleton {
 			if( len( arguments.installDirectory ) ) {
 
 				// Prevent unneccessary updates to the JSON file.
-				if( !installPaths.keyExists( arguments.packageName ) || installPaths[ arguments.packageName ] != arguments.installDirectory ) {
+				if( !installPaths.keyExists( arguments.packageName )
+					// Resolve the install path in box.json. If it's relative like ../lib but it's still equivalent to the actual install dir, then leave it alone. The user probably wants to keep it relative! 
+					|| fileSystemUtil.normalizeSlashes( fileSystemUtil.resolvePath( installPaths[ arguments.packageName ], arguments.currentWorkingDirectory ) ) != arguments.installDirectory ) {
+						
 					installPaths[ arguments.packageName ] = arguments.installDirectory;
 					updated = true;
+					
 				}
 
 			}
@@ -1208,7 +1216,7 @@ component accessors="true" singleton {
 		if ( arrayLen( matches.len ) < 2 ) {
 			throw(
 				type = "endpointException",
-				message = "Invalid slug detected.  Slugs can only contain letters, numbers, underscores, and hyphens. They may also be prepended with an @ sign for private packages"
+				message = "Invalid slug detected.  Slugs can only contain letters, numbers, underscores, and hyphens. They may also contain an @ sign for private packages"
 			);
 		}
 		return mid( package, matches.pos[ 2 ], matches.len[ 2 ] );

@@ -57,6 +57,7 @@ component accessors="true" singleton {
 					if( customForgeBoxAPIURL.len() ) {
 						oEndPoint.getForgeBox().setEndpointURL( customForgeBoxAPIURL.reReplaceNoCase( '/api/.*', '' ) );
 						oEndPoint.getForgeBox().setAPIURL( customForgeBoxAPIURL );
+						oEndPoint.getForgeBox().setEndpointName( endpointName );
 					}
 				}
 				registerEndpoint( oEndPoint );
@@ -90,6 +91,7 @@ component accessors="true" singleton {
 				// Set the API URL for this endpoint's forgebox Util
 				oEndPoint.getForgeBox().setEndpointURL( endpointData.APIURL.reReplaceNoCase( '/api/.*', '' ) );
 				oEndPoint.getForgeBox().setAPIURL( endpointData.APIURL );
+				oEndPoint.getForgeBox().setEndpointName( endpointName.replaceNoCase( 'forgebox-', '' ) );
 				
 				// Register it, baby!
 				registerEndpoint( oEndPoint );
@@ -120,8 +122,9 @@ component accessors="true" singleton {
 	* @ID The id of the endpoint
 	* @currentWorkingDirectory Where we are working from
 	*/
-	struct function resolveEndpointData( required string ID, required string currentWorkingDirectory, string slug = "", string version = "" ) {
+	struct function resolveEndpointData( required string ID, required string currentWorkingDirectory ) {
 		var path = fileSystemUtil.resolvePath( arguments.ID, arguments.currentWorkingDirectory );
+		
 		// Is it a real zip file?
 		if( listLast( path, '.' ) == 'zip' && fileExists( path ) ) {
 			var endpointName = 'file';
@@ -130,8 +133,8 @@ component accessors="true" singleton {
 				package : path,
 				ID : endpointName & ':' & path
 			};
-		// Is it a real folder?
-		} else if( listFind( '\/', arguments.ID ) && directoryExists( path ) ) {
+		// Does the ID contain at least one slash and is it a real folder path?
+		} else if( listLen( arguments.ID, '\/' ) > 1 && directoryExists( path ) ) {
 			var endpointName = 'folder';
 			return {
 				endpointName : endpointName,
@@ -192,7 +195,7 @@ component accessors="true" singleton {
 	* @ID The id of the endpoint
 	* @currentWorkingDirectory Where we are working from
 	*/
-	struct function resolveEndpoint( required string ID, required string currentWorkingDirectory, string slug = "", string version = "" ) {
+	struct function resolveEndpoint( required string ID, required string currentWorkingDirectory ) {
 		var endpointData = resolveEndpointData(  argumentCollection = arguments  );
 		endpointData[ 'endpoint' ] = getEndpoint( endpointData.endpointName );
 		return endpointData;

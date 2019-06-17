@@ -74,11 +74,24 @@ component{
             
             // This unbinds JLine from our input and output so it's not fighting over the keyboard
             terminal.pause();
+            var processBuilder = createObject( "java", "java.lang.ProcessBuilder" ).init( commandArray );
             
+            // incorporate CommandBox environment variables into the process's env
+            var currentEnv = processBuilder.environment();
+            currentEnv.putAll( systemSettings.getAllEnvironmentsFlattened() );
+            
+            // Special check to remove ConEMU vars which can screw up the sub process if it happens to run cmd, such as opening VSCode.
+            if( fileSystemUtil.isWindows() && currentEnv.containsKey( 'ConEmuPID' ) ) {
+	            for( var key in currentEnv ) {
+	            	if( key.startsWith( 'ConEmu' ) || key == 'PROMPT' ) {
+	            		currentEnv.remove( key );
+	            	}	
+	            }
+	        }
+                        
 			if( interactive ) {
 				
-				var exitCode = createObject( "java", "java.lang.ProcessBuilder" )
-					.init( commandArray )
+				var exitCode = processBuilder
 					// Do you believe in magic
 					// This works great on Mac/Windows.
 					// On Linux, the standard input (keyboard) is not being piped to the background process.
@@ -96,8 +109,7 @@ component{
 	            var redirect = createObject( 'java', 'java.lang.ProcessBuilder$Redirect' );
 	            // A string builder to collect the output that we're also streaming to the console so it can be captured and piped to another command as well.
 	            var processOutputStringBuilder = createObject( 'java', 'java.lang.StringBuilder' ).init( '' );
-				var process = createObject( 'java', 'java.lang.ProcessBuilder' )
-					.init( commandArray )
+				processBuilder
 					// Keyboard pipes through to the input of the process
 					.redirectInput( redirect.INHERIT )
 					.redirectErrorStream(fileSystemUtil.isWindows())
@@ -105,10 +117,10 @@ component{
 					.directory( CWDFile );
 	
 				if(!fileSystemUtil.isWIndows()) {
-					process=process.redirectError(redirect.INHERIT);
+					processBuilder=processBuilder.redirectError(redirect.INHERIT);
 				}
 				// Fires process async
-				process=process.start();
+				process=processBuilder.start();
 				
 				// Despite the name, this is the stream that the *output* of the external process is in.
 				var inputStream = process.getInputStream();
@@ -152,7 +164,7 @@ component{
 				inputStreamReader.close();
 			} 
 			
-			// I had issues with Ctrl-C not fully existing cmd on Windows.  This should make sure it's dead.
+			// I had issues with Ctrl-C not fully exiting cmd on Windows.  This should make sure it's dead.
 			if( !isNull( process ) ) {
 				process.destroy();	
 			}

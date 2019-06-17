@@ -150,9 +150,11 @@ component accessors=true singleton {
 	* @dumpLog Dump out all internal log lines permenantly to the console
 	*/
 	function complete( boolean dumpLog=variables.dumpLog ) {
-		getCurrentJob().status = 'Complete';
-		if( jobs.last().status != 'Running' ) {
-			finalizeOutput( dumpLog );
+		lock name="job-queue" timeout=20 {
+			getCurrentJob().status = 'Complete';
+			if( jobs.last().status != 'Running' ) {
+				finalizeOutput( dumpLog );
+			}
 		}
 		return this;
 	}
@@ -163,10 +165,12 @@ component accessors=true singleton {
 	* @dumpLog Dump out all internal log lines permenantly to the console
 	*/
 	function error( string message='', boolean dumpLog=variables.dumpLog ) {
-		getCurrentJob().errorMessage = message;
-		getCurrentJob().status = 'Error';
-		if( jobs.last().status != 'Running' ) {
-			finalizeOutput( dumpLog );
+		lock name="job-queue" timeout=20 {
+			getCurrentJob().errorMessage = message;
+			getCurrentJob().status = 'Error';
+			if( jobs.last().status != 'Running' ) {
+				finalizeOutput( dumpLog );
+			}
 		}
 		return this;
 	}
@@ -190,15 +194,17 @@ component accessors=true singleton {
 	* @name Name of the job
 	*/
 	function start( required string name, logSize=5 ) {
-		setActive( true );
-		// If there are currently jobs running...
-		if( jobs.len() ) {
-			// ... make this a child of he currently active one
-			getCurrentJob().children.append( newJob( name, logSize ) );
-		} else {
-			// ... otherwise just add this as a top level job
-			setDumpLog( false );
-			jobs.append( newJob( name, logSize ) );
+		lock name="job-queue" timeout=20 {
+			setActive( true );
+			// If there are currently jobs running...
+			if( jobs.len() ) {
+				// ... make this a child of he currently active one
+				getCurrentJob().children.append( newJob( name, logSize ) );
+			} else {
+				// ... otherwise just add this as a top level job
+				setDumpLog( false );
+				jobs.append( newJob( name, logSize ) );
+			}
 		}
 		draw();
 		return this;
@@ -232,26 +238,28 @@ component accessors=true singleton {
 	* Render the information to the console
 	*/
 	function draw() {
-		// If Jline uses a "dumb" terminal, the width reports as zero, which throws devide by zero errors.
-		// TODO: I might be able to just fake a reasonable width.
-		if( !shell.isTerminalInteractive() || terminal.getWidth() == 0 ) {
-			return;
+		lock name="job-draw" timeout=20 {
+			// If Jline uses a "dumb" terminal, the width reports as zero, which throws devide by zero errors.
+			// TODO: I might be able to just fake a reasonable width.
+			if( !shell.isTerminalInteractive() || terminal.getWidth() == 0 ) {
+				return;
+			}
+
+			var lines = getLines()
+				// Extra whitespace at the bottom
+				.append( aStr.init( ' ' ) );
+
+			// Trim to terminal height so the screen doesn't go all jumpy
+			// If there is more output than screen, the user just doesn't get to see the rest
+			if( lines.len() > terminal.getHeight()-2 ) {
+				lines = lines.slice( 1, terminal.getHeight()-2 );
+			}
+
+			display.update(
+				lines,
+				0
+			);
 		}
-
-		var lines = getLines()
-			// Extra whitespace at the bottom
-			.append( aStr.init( ' ' ) );
-
-		// Trim to terminal height so the screen doesn't go all jumpy
-		// If there is more output than screen, the user just doesn't get to see the rest
-		if( lines.len() > terminal.getHeight()-2 ) {
-			lines = lines.slice( 1, terminal.getHeight()-2 );
-		}
-
-		display.update(
-			lines,
-			0
-		);
 		return this;
 	}
 
