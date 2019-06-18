@@ -65,7 +65,7 @@ component accessors="true" implements="IEndpoint" singleton {
 			);
 
 		// Temporary location to place the repo
-		var localPath = createObject( 'java', 'java.io.File' ).init( "#tempDir#/git_#randRange( 1, 1000 )#" );
+		var localPath = createObject( 'java', 'java.io.File' ).init( "#tempDir#/git_#createUUID()#" );
 
 		// This will trap the full java exceptions to work around this annoying behavior:
 		// https://luceeserver.atlassian.net/browse/LDEV-454

@@ -28,7 +28,7 @@ component accessors="true" implements="IEndpoint" singleton {
 
 	public string function resolvePackage( required string package, boolean verbose=false ) {
 		var job = wirebox.getInstance( 'interactiveJob' );
-		var folderName = tempDir & '/' & 'temp#randRange( 1, 1000 )#';
+		var folderName = tempDir & '/' & 'temp#createUUID()#';
 		var fullPath = folderName & '/' & package & '.cfm';
 
 		directoryCreate( folderName, true, true );
