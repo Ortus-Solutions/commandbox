@@ -1370,6 +1370,8 @@ component accessors="true" singleton {
 					variables.waitingOnConsoleStart = false;
 					shell.setPrompt();
 					process.destroy();
+					// "server stop" is never run for a --console start, so make sure this fires.
+					interceptorService.announceInterception( 'onServerStop', { serverInfo=serverInfo } );
 				}
 			}
 
