@@ -613,6 +613,19 @@ component accessors="true" singleton {
 			* run "cmd /c dir"
 			 */
 			 if( tokens.len() > 1 && tokens.first() == 'run' ) {
+			
+				var tokens2 = tokens[ 2 ];
+				// Escape any regex metacharacters in the pattern
+				tokens2 = replace( tokens2, '\', '\\', 'all' );
+				tokens2 = replace( tokens2, '.', '\.', 'all' );
+				tokens2 = replace( tokens2, '(', '\(', 'all' );
+				tokens2 = replace( tokens2, ')', '\)', 'all' );
+				tokens2 = replace( tokens2, '^', '\^', 'all' );
+				tokens2 = replace( tokens2, '$', '\$', 'all' );
+				tokens2 = replace( tokens2, '|', '\|', 'all' );
+				tokens2 = replace( tokens2, '+', '\+', 'all' );
+				tokens2 = replace( tokens2, '{', '\{', 'all' );
+				tokens2 = replace( tokens2, '}', '\}', 'all' );
 			 	
 			 	tokens = [
 			 		'run',
@@ -621,7 +634,7 @@ component accessors="true" singleton {
 			 		//   echo "!git status" && !git status
 			 		// Because we don't know where in the rawLine our current place in the command chain starts
 			 		// To fix it though I'd need to substantially change how tokenizing works
-			 		rawLine.reReplaceNoCase( '^(.*?)?[\s]*(run |!)[\s]*(#tokens[ 2 ]#.*)', '\3' )
+			 		rawLine.reReplaceNoCase( '^(.*?)?[\s]*(run |!)[\s]*(#tokens2#.*)', '\3' )
 			 	];
 			 	
 			 	// The run command "eats" end entire rest of the line, so stop processing the command chain.
