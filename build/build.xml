@@ -976,7 +976,7 @@ External Dependencies:
       rpm.url="${commandbox.supportURL}" failonerror="false"
       rpm.keyring="${ortus.sign.keyring}" rpm.key="${ortus.sign.key.id}"
       rpm.passphrase="${ortus.sign.key.passphrase}">
-      <tarfileset file="${dist.dir}/box" prefix="/usr/bin" filemode="744" username="root" group="root"/>
+      <tarfileset file="${dist.dir}/box" prefix="/usr/bin" filemode="755" username="root" group="root"/>
     </rpm-create>
     <!-- Copy rpm to repo -->
     <copy file="${rpm.repo}/${distro.name}-${commandbox.version.noPrereleaseID}-1.noarch.rpm" tofile="${dist.dir}/${distro.name}-rpm-${commandbox.version.noPrereleaseID}.rpm" />
@@ -1004,7 +1004,7 @@ External Dependencies:
 	      rpm.url="${commandbox.supportURL}" failonerror="false"
 	      rpm.keyring="${ortus.sign.keyring}" rpm.key="${ortus.sign.key.id}"
 	      rpm.passphrase="${ortus.sign.key.passphrase}">
-	      <tarfileset file="${dist.dir}/box" prefix="/usr/bin" filemode="744" username="root" group="root"/>
+	      <tarfileset file="${dist.dir}/box" prefix="/usr/bin" filemode="755" username="root" group="root"/>
 	    </rpm-create>
 
 		<rpm-repo name="${distro.name}" baseurl="${commandbox.rpm.repourl.stable}" dir="${rpm.repo.stable}" failonerror="false"/>
