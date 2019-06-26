@@ -166,8 +166,10 @@ component accessors=true singleton {
 	*/
 	function error( string message='', boolean dumpLog=variables.dumpLog ) {
 		lock name="job-queue" timeout=20 {
-			getCurrentJob().errorMessage = message;
-			getCurrentJob().status = 'Error';
+			var currentJob = getCurrentJob();
+			currentJob.dumpLog = true;
+			currentJob.errorMessage = message;
+			currentJob.status = 'Error';
 			if( jobs.last().status != 'Running' ) {
 				finalizeOutput( dumpLog );
 			}
@@ -224,7 +226,7 @@ component accessors=true singleton {
 		setActive( false );
 		printBuffer.clear();
 		// Loop over and output each line for good
-		getLines( includeAllLogs=dumpLog ).each( function( line ) {
+		getLines( includeAllLogs=dumpLog, finalOutput=true ).each( function( line ) {
 			printBuffer.line( line.toAnsi() );
 		} );
 
@@ -268,8 +270,9 @@ component accessors=true singleton {
 	*
 	* @job Reference to a job struct so this method can be called recursively
 	* @includeAllLogs Ignore logSize and include all log lines
+	* @finalOutput True if getting final output at the completion of the job. 
 	*/
-	array function getLines( job, includeAllLogs=false ) {
+	array function getLines( job, includeAllLogs=false, finalOutput=false ) {
 		if( isNull( arguments.job ) ) {
 			if( !getJobs().len() ) {
 				throw( 'No active job' );
@@ -289,14 +292,14 @@ component accessors=true singleton {
 			} );
 		}
 
-		if( job.status == 'Running' || includeAllLogs ) {
+		if( job.status == 'Running' || includeAllLogs || ( finalOutput && job.dumpLog ) ) {
 
 			lines.append( aStr.fromAnsi( print.text( '   |' & repeatString( '-', min( job.name.len()+15, safeWidth-5 ) ), statusColor( job ) ) ) );
 
 			var relevantLogLines = [];
 			var thisLogLines = job.logLines;
 			var thisLogSize = job.logSize;
-			if( includeAllLogs ) {
+			if( includeAllLogs || ( finalOutput && job.dumpLog ) ) {
 				thisLogSize = thisLogLines.len();
 			}
 			// These are the lines that are going to be printed
@@ -327,7 +330,7 @@ component accessors=true singleton {
 		// Add in children
 		for( var child in job.children ) {
 			lines.append(
-				getLines( child, includeAllLogs )
+				getLines( child, includeAllLogs, finalOutput )
 					// Indent our children inside of our own "box"
 					.map( function( line ){
 						return aStr.fromAnsi( print.text( '   |', statusColor( job ) ) & line.toAnsi() );
@@ -382,17 +385,19 @@ component accessors=true singleton {
 		return {
 			// The current status of the job
 			// Running, Complete, Error
-			status = 'Running',
+			status : 'Running',
 			// Message that goes along with a failed job.
 			errorMessage = '',
 			// Name of the job
-			name = arguments.name ?: '',
+			name : arguments.name ?: '',
 			// Array of potentially-ANSI-formatted message from this job
-			logLines = [],
+			logLines : [],
 			// Number of recent log lines to show on the console
-			logSize = arguments.logSize ?: 5,
+			logSize : arguments.logSize ?: 5,
+			// Should log lines for this job only be dumped on completion. Can be overridden by main dumpLog setting
+			dumpLog : false,
 			// Children jobs
-			children = []
+			children : []
 		};
 	}
 
