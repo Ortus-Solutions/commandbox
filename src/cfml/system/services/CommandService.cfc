@@ -664,7 +664,9 @@ component accessors="true" singleton {
 				closestHelpCommand = 'help'
 			};
 
+			var pos = 0;
 			for( var token in tokens ){
+				pos++;
 
 				// If we hit a dead end, then quit looking
 				if( !structKeyExists( results.commandReference, token ) ){
@@ -672,7 +674,8 @@ component accessors="true" singleton {
 				}
 					
 				// If this is for command tab completion, don't select the command if there are two commands at the same level that start wtih this string
-				if( forCompletion ) {
+				// This check only runs if we've matched all the entered tokens and there is no trailing space.
+				if( forCompletion && pos == tokens.len() ) {
 					if( results.commandReference
 						.keyArray()
 						.filter( function( i ){
