@@ -10,10 +10,11 @@
 *  Here are the basic skeletons that are available for you that come from ForgeBox
 *  - Advanced
 *  - AdvancedScript (default)
-*  - ElixirVueJS
-*  - ElixirBower
 *  - Elixir
+*  - ElixirBower
+*  - ElixirVueJS
 *  - rest
+*  - rest-hmvc
 *  - Simple
 *  - SuperSimple
 * .
@@ -52,9 +53,9 @@ component {
 		variables.templateMap = {
 			'Advanced'			= 'cbtemplate-advanced',
 			'AdvancedScript'	= 'cbtemplate-advanced-script',
-			'ElixirVueJS'		= 'cbtemplate-elixir-vuejs',
-			'ElixirBower'		= 'cbtemplate-elixir-bower',
 			'Elixir'			= 'cbtemplate-elixir',
+			'ElixirBower'		= 'cbtemplate-elixir-bower',
+			'ElixirVueJS'		= 'cbtemplate-elixir-vuejs',
 			'rest'				= 'cbtemplate-rest',
 			'rest-hmvc'			= 'cbtemplate-rest-hmvc',
 			'Simple'			= 'cbtemplate-simple',
