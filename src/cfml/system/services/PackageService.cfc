@@ -1178,13 +1178,18 @@ component accessors="true" singleton {
 	* @scriptName Name of the package script to run
 	* @directory The package root
 	*/
-	function runScript( required string scriptName, string directory=shell.pwd(), boolean ignoreMissing=true ) {
+	function runScript( required string scriptName, string directory=shell.pwd(), boolean ignoreMissing=true, interceptData={} ) {
 
 			// Read the box.json from this package (if it exists)
-			var boxJSON = readPackageDescriptor( arguments.directory );
+			var boxJSON = readPackageDescriptorRaw( arguments.directory );
 			// If there is a scripts object with a matching key for this interceptor....
 			if( boxJSON.keyExists( 'scripts' ) && isStruct( boxJSON.scripts ) && boxJSON.scripts.keyExists( arguments.scriptName ) ) {
 
+				// Skip this if we're not in a command so we don't litter the default env var namespace
+				if( systemSettings.getAllEnvironments().len() > 1 ) {
+					systemSettings.setDeepSystemSettings( interceptData );
+				}
+				
 				// Run preXXX package script
 				runScript( 'pre#arguments.scriptName#', arguments.directory, true );
 

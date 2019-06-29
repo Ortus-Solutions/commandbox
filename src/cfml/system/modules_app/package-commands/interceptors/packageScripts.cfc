@@ -13,51 +13,70 @@ component {
 	property name="shell"				inject="shell";
 	property name='consoleLogger'		inject='logbox:logger:console';
 
-	function onCLIStart() { processScripts( 'onCLIStart' ); }
-	function onCLIExit() { processScripts( 'onCLIExit' ); }
-	function prePrompt() { processScripts( 'prePrompt' ); }
-	
-	function preProcessLine() { processScripts( 'preProcessLine' ); }
-	function postProcessLine() { processScripts( 'postProcessLine' ); }
-	function preCommand() { processScripts( 'preCommand' ); }
-	function postCommand() { processScripts( 'postCommand' ); }
-	function preModuleLoad() { processScripts( 'preModuleLoad' ); }
-	function postModuleLoad() { processScripts( 'postModuleLoad' ); }
-	function preModuleUnLoad() { processScripts( 'preModuleUnLoad' ); }
-	function postModuleUnload() { processScripts( 'postModuleUnload' ); }
+	function init() {
+		variables.inScript=false;
+	}
 
-	function preServerStart() { processScripts( 'preServerStart' ); }
-	function onServerInstall() { processScripts( 'onServerInstall', interceptData.serverinfo.webroot ); }
-	function onServerStart() { processScripts( 'onServerStart', interceptData.serverinfo.webroot ); }
-	function onServerStop() { processScripts( 'onServerStop', interceptData.serverinfo.webroot ); }
-	function preServerForget() { processScripts( 'preServerForget', interceptData.serverinfo.webroot ); }
-	function postServerForget() { processScripts( 'postServerForget', interceptData.serverinfo.webroot ); }
+	function onCLIStart() { processScripts( 'onCLIStart', shell.pwd(), interceptData ); }
+	function onCLIExit() { processScripts( 'onCLIExit', shell.pwd(), interceptData ); }
+	function prePrompt() { processScripts( 'prePrompt', shell.pwd(), interceptData ); }
 
-	function onException() { processScripts( 'onException' ); }
+	function preProcessLine() { processScripts( 'preProcessLine', shell.pwd(), interceptData ); }
+	function postProcessLine() { processScripts( 'postProcessLine', shell.pwd(), interceptData ); }
+	function preCommand() { 
+		// quick check to prevent nasty recursion
+		if( !inScript ) {
+			processScripts( 'preCommand', shell.pwd(), interceptData );
+		}
+	}
+	function postCommand() {
+		// quick check to prevent nasty recursion
+		if( !inScript ) {
+			processScripts( 'postCommand', shell.pwd(), interceptData );
+		}
+	}
+	function preModuleLoad() { processScripts( 'preModuleLoad', shell.pwd(), interceptData ); }
+	function postModuleLoad() { processScripts( 'postModuleLoad', shell.pwd(), interceptData ); }
+	function preModuleUnLoad() { processScripts( 'preModuleUnLoad', shell.pwd(), interceptData ); }
+	function postModuleUnload() { processScripts( 'postModuleUnload', shell.pwd(), interceptData ); }
+
+	function preServerStart() { processScripts( 'preServerStart', shell.pwd(), interceptData ); }
+	function onServerInstall() { processScripts( 'onServerInstall', interceptData.serverinfo.webroot, interceptData ); }
+	function onServerStart() { processScripts( 'onServerStart', interceptData.serverinfo.webroot, interceptData ); }
+	function onServerStop() { processScripts( 'onServerStop', interceptData.serverinfo.webroot, interceptData ); }
+	function preServerForget() { processScripts( 'preServerForget', interceptData.serverinfo.webroot, interceptData ); }
+	function postServerForget() { processScripts( 'postServerForget', interceptData.serverinfo.webroot, interceptData ); }
+
+	function onException() { processScripts( 'onException', shell.pwd(), interceptData ); }
 
 	// preInstall gets package requesting the installation because dep isn't installed yet
-	function preInstall() { processScripts( 'preInstall', interceptData.packagePathRequestingInstallation ); }
+	function preInstall() { processScripts( 'preInstall', interceptData.packagePathRequestingInstallation, interceptData ); }
 
 	// onInstall gets package requesting the installation because dep isn't installed yet
-	function onInstall() { processScripts( 'onInstall', interceptData.packagePathRequestingInstallation ); }
+	function onInstall() { processScripts( 'onInstall', interceptData.packagePathRequestingInstallation, interceptData  ); }
 
 	// postInstall runs in the newly installed package
-	function postInstall() { processScripts( 'postInstall', interceptData.installDirectory ); }
+	function postInstall() { processScripts( 'postInstall', interceptData.installDirectory, interceptData  ); }
 
 	// preUninstall runs in the package that's about to be uninstalled
-	function preUninstall() { processScripts( 'preUninstall', interceptData.uninstallDirectory ); }
+	function preUninstall() { processScripts( 'preUninstall', interceptData.uninstallDirectory, interceptData  ); }
 
 	// postUninstall gets package that requested uninstallation because dep isn't there any longer
-	function postUninstall() { processScripts( 'postUninstall', interceptData.uninstallArgs.packagePathRequestingUninstallation ); }
+	function postUninstall() { processScripts( 'postUninstall', interceptData.uninstallArgs.packagePathRequestingUninstallation, interceptData  ); }
 
-	function preVersion() { processScripts( 'preVersion' ); }
-	function postVersion() { processScripts( 'postVersion' ); }
-	function onRelease() { processScripts( 'onRelease' ); }
-	function prePublish() { processScripts( 'prePublish' ); }
-	function postPublish() { processScripts( 'postPublish' ); }
+	function preVersion() { processScripts( 'preVersion', shell.pwd(), interceptData ); }
+	function postVersion() { processScripts( 'postVersion', shell.pwd(), interceptData ); }
+	function onRelease() { processScripts( 'onRelease', shell.pwd(), interceptData ); }
+	function prePublish() { processScripts( 'prePublish', shell.pwd(), interceptData ); }
+	function postPublish() { processScripts( 'postPublish', shell.pwd(), interceptData ); }
 
-	function processScripts( required string interceptionPoint, string directory=shell.pwd() ) {
-		packageService.runScript( arguments.interceptionPoint, arguments.directory );
+	function processScripts( required string interceptionPoint, string directory=shell.pwd(), interceptData={} ) {
+		inScript=true;
+		try {
+			packageService.runScript( arguments.interceptionPoint, arguments.directory, true, interceptData );
+		} finally {
+			inScript=false;
+		}
 	}
 
 }
