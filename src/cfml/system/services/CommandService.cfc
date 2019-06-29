@@ -386,6 +386,7 @@ component accessors="true" singleton {
 			// If the command didn't return anything, grab its print buffer value
 			if( isNull( result ) ){
 				local.result = commandInfo.commandReference.CFC.getResult();
+				// Wipe out what's in there now that we have it
 			}
 			var interceptData = {
 				commandInfo=commandInfo,
