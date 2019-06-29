@@ -387,6 +387,7 @@ component accessors="true" singleton {
 			if( isNull( result ) ){
 				local.result = commandInfo.commandReference.CFC.getResult();
 				// Wipe out what's in there now that we have it
+				commandInfo.commandReference.CFC.reset();
 			}
 			var interceptData = {
 				commandInfo=commandInfo,
