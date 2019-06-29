@@ -56,14 +56,3 @@ component aliases="run-script" {
 	}
 
 }
-
-for( var key in arguments ) {
-	if(  key != 'scriptName' ) {
-		systemSettings.setSystemSetting( key, arguments[ key ] );	
-	}	
-}
-
-arguments
-	.filter( ( k, v ) => k != 'scriptName' )
-	.each( ( k, v ) => systemSettings.setSystemSetting( k, v ) );
-
