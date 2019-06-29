@@ -230,7 +230,7 @@ component singleton {
 		// If it's a string...
 		} else if ( isSimpleValue( dataStructure ) ) {
 			// Just set the setting
-			setSystemSetting( prefix, dataStructure ?: '' );
+			setSystemSetting( prefix, toString( dataStructure ?: '' ) );
 		}
 		
 	}
