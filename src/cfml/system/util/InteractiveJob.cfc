@@ -43,7 +43,7 @@ component accessors=true singleton {
 	function reset() {
 		jobs = [];
 		setActive( false );
-		
+
 
 		if( terminal.getWidth() == 0 ) {
 			safeWidth=80;
@@ -83,7 +83,7 @@ component accessors=true singleton {
 		if( termWidth <= 0 ){
 			termWidth = 70;
 		}
-			
+
 		getCurrentJob()
 			.logLines.append(
 				// Any log lines with a line break needs to become multuple lines
@@ -99,7 +99,7 @@ component accessors=true singleton {
 						}
 						// Add any remaining.
 						if( i.len() ) {
-							result.append( i );	
+							result.append( i );
 						}
 						return result;
 					}, [] )
@@ -270,7 +270,7 @@ component accessors=true singleton {
 	*
 	* @job Reference to a job struct so this method can be called recursively
 	* @includeAllLogs Ignore logSize and include all log lines
-	* @finalOutput True if getting final output at the completion of the job. 
+	* @finalOutput True if getting final output at the completion of the job.
 	*/
 	array function getLines( job, includeAllLogs=false, finalOutput=false ) {
 		if( isNull( arguments.job ) ) {
@@ -349,9 +349,9 @@ component accessors=true singleton {
 	*/
 	private string function getJobTitle( job ) {
 		if( job.status == 'Error' ) {
-			return print.text( ' ✘ | ' & job.name, statusColor( job ) );
+			return print.text( ' × | ' & job.name, statusColor( job ) );
 		} else if( job.status == 'complete' ) {
-			return print.text( ' ✓ | ' & job.name, statusColor( job ) );
+			return print.text( ' √ | ' & job.name, statusColor( job ) );
 		} else {
 			// Totally ok with finding something cooler than a hyphen here...
 			return print.text( ' - | ' & job.name, statusColor( job ) );
