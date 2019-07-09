@@ -27,19 +27,19 @@ component singleton {
 
 	/**
 	 * populate completion candidates and return cursor position
-	 * @buffer.hint text so far
+	 * @parsedLine.hint a dynamic proxy wrapping an instance of `ArgumentList.cfc`
 	 * @candidates.hint tree to populate with completion candidates
  	 **/
 	numeric function complete( reader, parsedLine, candidates )  {
 
 		try {
-		
+
 			var buffer = parsedLine.line();
-			
+
 			// Try to resolve the command.
 			// If buffer ends in space, we don't need to worry about the partial match of a command
 			var commandChain = commandService.resolveCommand( line=buffer, forCompletion=!buffer.endsWith( ' ' ) );
-			
+
 			// If there are multiple commands like "help | more", we only care about the last one
 			var commandInfo = commandChain[ commandChain.len() ];
 
@@ -51,25 +51,25 @@ component singleton {
 			// TODO: Break REPL completion out into separate CFC
 			// Tab completion for stuff like #now if we're still on the first word
 			if( commandInfo.commandString.left( 4 ) == 'cfml' && commandInfo.originalLine.listLen( ' ' ) == 1 && !buffer.endsWith( ' ' ) ) {
-				
-							
+
+
 				// Loop over all the possibilities at this level
 				for( var func in variables.functionList ) {
 					// Match the partial bit if it exists
 					if( lcase( func ).startsWith( lcase( commandInfo.originalLine.right( -1 ) ) ) ) {
 						// Add extra space so they don't have to
-						add( candidates, '##' & func & ' ', 'CFML Functions' );
+						add( candidates, '##' & func, 'CFML Functions', '', true );
 					}
 				}
 				return;
-				
+
 			}
-			
+
 			// If stuff was typed and it's an exact match to a command part
 			if( matchedToHere == len( buffer ) && len( buffer ) ) {
 				// Suggest a trailing space
-				add( candidates, buffer.listLast( ' ' ) & ' ' );
-				
+				add( candidates, parsedLine.word(), '', '', true );
+
 				return;
 			// Everything else in the buffer is a partial, unmached command
 			} else if( len( buffer ) ) {
@@ -81,11 +81,11 @@ component singleton {
 					matchedToHere++;
 				}
 			}
-			
-			
+
+
 			// Didn't match an exact command, but might have matched part of one.
 			if( !commandInfo.found ) {
-							
+
 				// Loop over all the possibilities at this level
 				for( var command in commandInfo.commandReference ) {
 					// Match the partial bit if it exists
@@ -95,7 +95,7 @@ component singleton {
 						if( commandInfo.commandReference[ command ].keyList() == '$' ) {
 							commandHint = commandInfo.commandReference[ command ][ '$' ].hint.listFirst( '.#chr(13)##chr(10)#' ).trim();
 						}
-						add( candidates, command.listLast( ' ' ) & ' ', ( commandInfo.commandReference[ command ].keyList() == '$' ? 'Commands' : 'Namespaces' ), commandHint );
+						add( candidates, command.listLast( ' ' ), ( commandInfo.commandReference[ command ].keyList() == '$' ? 'Commands' : 'Namespaces' ), commandHint, true );
 					}
 				}
 				// Did we find ANYTHING?
@@ -108,13 +108,13 @@ component singleton {
 
 			// If we DID find a command and it's followed by a space, then suggest parameters
 			} else {
-			
+
 				// This is all the possible params for the command
 				var definedParameters = commandInfo.commandReference.parameters;
 				// This is the params the user has entered so far.
 				var passedParameters = commandService.parseParameters( commandInfo.parameters, definedParameters );
 				var passedNamedParameters = passedParameters.namedParameters;
-				
+
 				if( arrayLen( passedParameters.positionalParameters ) ){
 					passedNamedParameters = commandService.convertToNamedParameters( passedParameters.positionalParameters, definedParameters );
 				}
@@ -127,8 +127,8 @@ component singleton {
 					// Still typing
 					if( !buffer.endsWith( ' ' ) ) {
 
-						// grab the last chunk of text from the buffer
-						var leftOver = listLast( buffer, ' ' );
+						// grab the last word from the parsed line
+						var leftOver = parsedLine.word();
 
 						// value completion only
 						if( leftOver contains '=' ) {
@@ -152,7 +152,7 @@ component singleton {
 							}
 							// Fill in possible param values based on the type and contents so far.
 							paramValueCompletion( commandInfo, paramName, paramType, paramSoFar, candidates, true, passedNamedParameters );
-							
+
 							return;
 						}
 
@@ -174,7 +174,7 @@ component singleton {
 							}
 						} // Does it exist yet?
 					} // Loop over possible params
-					
+
 					return;
 
 				// For sure positional - suggest next param name and value
@@ -214,7 +214,7 @@ component singleton {
 								break;
 							}
 						}
-						
+
 						return;
 
 					// They were in the middle of typing
@@ -226,7 +226,7 @@ component singleton {
 							// If there is a passed positional param or flags
 							if( passedParameters.positionalParameters.len() || structCount( passedParameters.flags ) ) {
 								// grab the last chunk of text from the buffer
-								var partialMatch = listLast( buffer, ' ' );
+								var partialMatch = parsedLine.word();
 							}
 
 							var thisParam = definedParameters[ passedParameters.positionalParameters.len() ];
@@ -244,7 +244,7 @@ component singleton {
 									}
 								}
 							}
-							
+
 							return;
 						}
 					}
@@ -264,7 +264,7 @@ component singleton {
 						// If there are flags and the buffer doesn't end with a space, then we must still be typing one
 						} else if( structCount( passedParameters.flags ) && !buffer.endsWith( ' ' ) ) {
 							// grab the last chunk of text from the buffer
-							partialMatch = listLast( buffer, ' ' );
+							partialMatch = parsedLine.word();
 						}
 
 						// Loop over all possible params and suggest them
@@ -286,7 +286,7 @@ component singleton {
 
 						// Suggest its value
 						paramValueCompletion( commandInfo, thisParam.name, thisParam.type, partialMatch, candidates, false, passedNamedParameters );
-						
+
 						return;
 
 					}  // End are there params defined
@@ -296,7 +296,7 @@ component singleton {
 
 
 			} // End was the command found
-			
+
 			return;
 
 		} catch ( any e ) {
@@ -318,8 +318,8 @@ component singleton {
 
 		var completorData = commandInfo.commandReference.completor;
 
-		if( structKeyExists( completorData, paramName ) 
-				&& ( structKeyExists( completorData[ paramName ], 'options' ) || structKeyExists( completorData[ paramName ], 'optionsUDF' ) ) 
+		if( structKeyExists( completorData, paramName )
+				&& ( structKeyExists( completorData[ paramName ], 'options' ) || structKeyExists( completorData[ paramName ], 'optionsUDF' ) )
 			) {
 			// Add static values
 			if( structKeyExists( completorData[ paramName ], 'options' ) ) {
@@ -333,7 +333,7 @@ component singleton {
 					addAllIfMatch( candidates, additions, paramSoFar, paramName, namedParams );
 				}
 			}
-			
+
 			// Should this param include directory or file completion (in addition to what came back from the options UDF?
 			if( structKeyExists( completorData[ paramName ], 'optionsFileComplete' ) && completorData[ paramName ][ 'optionsFileComplete' ] ) {
 				pathCompletion( paramSoFar, candidates, true, paramName, namedParams );
@@ -341,7 +341,7 @@ component singleton {
 			if( structKeyExists( completorData[ paramName ], 'optionsDirectoryComplete' ) && completorData[ paramName ][ 'optionsDirectoryComplete' ] ) {
 				pathCompletion( paramSoFar, candidates, false, paramName, namedParams );
 			}
-			
+
 			// Completor annotations override default
 			return;
 		}
@@ -394,7 +394,7 @@ component singleton {
 	private function pathCompletion(String startsWith, required candidates, showFiles=true, paramName, namedParams ) {
 		// keep track of the original here so we can put it back like the user had
 		var originalStartsWith = fileSystemUtil.normalizeSlashes( arguments.startsWith );
-		// Fully resolve the path.	
+		// Fully resolve the path.
 		arguments.startsWith = fileSystemUtil.resolvePath( arguments.startsWith );
 		startsWith = fileSystemUtil.normalizeSlashes( startsWith );
 
@@ -407,16 +407,16 @@ component singleton {
 		var searchIn = startsWith;
 		// This is the bit at the end that is a partially typed directory or file name
 		// Note, this can be an empty string!
-		var partialMatch = '';		
+		var partialMatch = '';
 		// If we aren't already pointing to the root of a real directory, peel the path back to the dir
 		if( right( searchIn, 1 ) != '/' ) {
-			searchIn = getDirectoryFromPath( searchIn );		
+			searchIn = getDirectoryFromPath( searchIn );
 			// If we stripped back to a directory, take what is left as the partial match
 			if( startsWith.len() > searchIn.len() ) {
 				partialMatch = replaceNoCase( startsWith, searchIn, '' );
 			}
 		}
-		
+
 		// Don't even bother if search location doesn't exist
 		if( directoryExists( searchIn ) ) {
 			// Pull a list of paths in there
@@ -442,11 +442,11 @@ component singleton {
 						thisCandidate = replaceNoCase( thisCandidate, startsWith, originalStartsWith );
 
 						// Finally add this candidate into the list
-						
+
 						if( namedParams ) {
 							add( candidates, paramName & '=' & thisCandidate & ( path.type == 'dir' ? '/' : '' ), ( path.type == 'dir' ? 'Directories' : 'Files' ) );
 						} else {
-							add( candidates, thisCandidate & ( path.type == 'dir' ? '/' : '' ), ( path.type == 'dir' ? 'Directories' : 'Files' ) );	
+							add( candidates, thisCandidate & ( path.type == 'dir' ? '/' : '' ), ( path.type == 'dir' ? 'Directories' : 'Files' ) );
 						}
 					}
 				}
@@ -472,15 +472,16 @@ component singleton {
 			var description = '';
 		}
 		startsWith = lcase( startsWith );
+		var complete = false;
 		if( lcase( name ).startsWith( startsWith ) || len( startsWith ) == 0 ) {
 			if( !name.endsWith( '=' ) ) {
-				name &= ' ';
+				complete = true;
 			}
-			
+
 			if( namedParams ) {
-				add( candidates, paramName & '=' & name, group, description );
+				add( candidates, paramName & '=' & name, group, description, complete );
 			} else {
-				add( candidates, name, group, description );
+				add( candidates, name, group, description, complete );
 			}
 		}
 	}
@@ -488,21 +489,21 @@ component singleton {
 	/**
 	* JLine3 needs an array of Java objects, so convert our array of strings to that
  	**/
-	private function add( candidates, name, group='', description='' ) {
-							
+	private function add( candidates, name, group='', description='', boolean complete = false ) {
+
 		candidates.append(
 			createObject( 'java', 'org.jline.reader.Candidate' )
 				.init(
 					name,											// value
 					name,											// displ
 					group,											// group
-					description.len() ? description : nullValue(),	// descr 
+					description.len() ? description : nullValue(),	// descr
 					nullValue(),									// suffix
 					nullValue(),									// key
-					false 											// complete
+					complete 										// complete
 				)
 		);
-		
+
 	}
 
 }
