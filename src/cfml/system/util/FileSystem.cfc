@@ -243,6 +243,11 @@ component accessors="true" singleton {
     boolean function openBrowser( required URI ){
     	var desktop = createObject( "java", "java.awt.Desktop" );
 
+		// if binding to all IPs, swap out with localhost.
+		if( URI.find( '0.0.0.0' ) ) {
+			URI.replace( '0.0.0.0', '127.0.0.1' );
+		}
+
     	if( !findNoCase( "http", arguments.URI ) ){
     		arguments.URI = "http://#arguments.uri#";
     	}
