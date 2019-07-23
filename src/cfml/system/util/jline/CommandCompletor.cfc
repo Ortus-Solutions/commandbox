@@ -163,13 +163,13 @@ component singleton {
 					for( var param in definedParameters ) {
 						if( !structKeyExists( passedParameters.namedParameters, param.name ) && !structKeyExists( passedParameters.flags, param.name ) ) {
 							if( !len( leftOver ) || lcase( param.name ).startsWith( lcase( leftOver ) ) ) {
-								add( candidates, ' ' & param.name & '=', 'Parameters', param.hint ?: '' );
+								add( candidates, param.name & '=', 'Parameters', param.hint ?: '' );
 							}
 							// If this is a boolean param, suggest the --flag version
 							if( param.type == 'boolean' ) {
 								var flagParamName = '--' & param.name;
 								if( !len( leftOver ) || lcase( flagParamName ).startsWith( lcase( leftOver ) ) ) {
-									add( candidates, ' ' & flagParamName & ' ', 'Flags', param.hint ?: '' );
+									add( candidates, flagParamName, 'Flags', param.hint ?: '', true );
 								}
 							}
 						} // Does it exist yet?
@@ -195,8 +195,8 @@ component singleton {
 							i++;
 							// If this is a boolean param not already here, suggest the --flag version
 							if( i > passedParameters.positionalParameters.len() && param.type == 'boolean' && !structKeyExists( passedParameters.flags, param.name )  ) {
-								add( candidates, ' --' & param.name & ' ', 'Flags', param.hint ?: '' );
-								add( candidates, ' --no' & param.name & ' ', 'Flags', param.hint ?: '' );
+								add( candidates, '--' & param.name, 'Flags', param.hint ?: '', true );
+								add( candidates, '--no' & param.name, 'Flags', param.hint ?: '', true );
 							}
 						}
 
@@ -208,7 +208,7 @@ component singleton {
 								// Add the name of the next one in the list. The user will have to backspace and
 								// replace this with their actual param so this may not be that useful.
 
-								add( candidates, param.name & ' ', 'Parameters', param.hint ?: '' );
+								add( candidates, param.name, 'Parameters', param.hint ?: '', true );
 								paramValueCompletion( commandInfo, param.name, param.type, '', candidates, false, passedNamedParameters );
 								// Bail once we find one
 								break;
@@ -240,7 +240,7 @@ component singleton {
 								if( i >= passedParameters.positionalParameters.len() && param.type == 'boolean' && !structKeyExists( passedParameters.flags, param.name ) ) {
 									var paramFlagname = '--' & param.name;
 									if( lcase( paramFlagname ).startsWith( lcase( partialMatch ) ) ) {
-										add( candidates, paramFlagname & ' ', 'Flags', param.hint ?: '' );
+										add( candidates, paramFlagname, 'Flags', param.hint ?: '', true );
 									}
 								}
 							}
@@ -277,7 +277,7 @@ component singleton {
 							// If this param is a boolean that isn't a flag yet, sugguest the --flag version
 							var paramFlagname = '--' & param.name;
 							if( param.type == 'boolean' && !structKeyExists( passedParameters.flags, param.name ) && lcase( paramFlagname ).startsWith( lcase( partialMatch ) ) ) {
-								add( candidates, paramFlagname & ' ', 'Flags', param.hint ?: '' );
+								add( candidates, paramFlagname, 'Flags', param.hint ?: '', true );
 							}
 						}
 

@@ -122,7 +122,7 @@ component {
 		var param = namedParam( candidate );
 
 		// If this completion candidate contains spaces and does not already contain quotes then it needs to be quoted
-		if ( reFind( ' .', param.value ) && !reFind( '(?:^|[^\\])[''"]', param.value ) ) {
+		if ( find( ' ', param.value ) && !reFind( '(?:^|[^\\])[''"]', param.value ) ) {
 			// JLine's implementation only adds the closing quote for `complete` candidates so copy that for now
 			// This hard codes double quotes - we could also inspect the current token to see if a quote
 			// is already present and use the same quote type if so.
