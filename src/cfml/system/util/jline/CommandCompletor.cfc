@@ -65,6 +65,12 @@ component singleton {
 
 			}
 
+			// special handing for run command - suggest path completions for last token
+			if ( commandInfo.commandstring == 'run' ) {
+				pathCompletion( parsedLine.word(), candidates, true, '', false );
+				return;
+			}
+
 			// If stuff was typed and it's an exact match to a command part
 			if( matchedToHere == len( buffer ) && len( buffer ) ) {
 				// Suggest a trailing space
