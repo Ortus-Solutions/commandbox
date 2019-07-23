@@ -450,9 +450,9 @@ component singleton {
 						// Finally add this candidate into the list
 
 						if( namedParams ) {
-							add( candidates, paramName & '=' & thisCandidate & ( path.type == 'dir' ? '/' : '' ), ( path.type == 'dir' ? 'Directories' : 'Files' ) );
+							add( candidates, paramName & '=' & thisCandidate & ( path.type == 'dir' ? '/' : '' ), ( path.type == 'dir' ? 'Directories' : 'Files' ), '', path.type != 'dir' );
 						} else {
-							add( candidates, thisCandidate & ( path.type == 'dir' ? '/' : '' ), ( path.type == 'dir' ? 'Directories' : 'Files' ) );
+							add( candidates, thisCandidate & ( path.type == 'dir' ? '/' : '' ), ( path.type == 'dir' ? 'Directories' : 'Files' ), '', path.type != 'dir'  );
 						}
 					}
 				}
