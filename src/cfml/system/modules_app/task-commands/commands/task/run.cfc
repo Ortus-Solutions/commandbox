@@ -26,6 +26,7 @@ component {
 	/**
 	* @taskFile Path to the Task CFC that you want to run
 	* @target Method in Task CFC to run
+	* @target.optionsUDF taskTargetOptions
 	*/
 	function run(
 		string taskFile='task.cfc',
@@ -75,6 +76,17 @@ component {
 		}
 		
 		return results;
+	}
+
+	array function taskTargetOptions( string paramSoFar, struct passedNamedParameters ) {
+		var taskFile = resolvePath( passedNamedParameters.taskFile ?: 'task.cfc' );
+		try {
+			return taskService.getTaskMethods( taskFile );
+		} catch ( any e ) {
+			// Recover shell prompt from console error output
+			getShell().getReader().redrawLine();
+		}
+		return [];
 	}
 
 }

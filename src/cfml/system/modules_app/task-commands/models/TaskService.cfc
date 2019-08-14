@@ -126,6 +126,29 @@ component singleton accessors=true {
 
 	}
 
+	/**
+	* Returns the public methods in a task component
+	*
+	* @taskFile Path to the Task CFC
+	*
+	* @returns An array of public method names
+	*/
+	array function getTaskMethods( required string taskFile ) {
+		pagePoolClear();
+
+		if( right( taskFile, 4 ) != '.cfc' ) {
+			taskFile &= '.cfc';
+		}
+
+		if( !fileExists( taskFile ) ) {
+			return [];
+		}
+
+		var taskCFC = createTaskCFC( taskFile );
+		return getMetadata( taskCFC ).functions
+			.filter( ( f ) => f.access == 'public' )
+			.map( ( f ) => f.name );
+	}
 
 	function createTaskCFC( required string taskFile ) {
 		// Convert to use a mapping
