@@ -34,7 +34,7 @@ component accessors="true" extends="Print"{
 			var thingToPrint = getResult();
 			clear();
 		}
-		  
+		  	
 		// Once we get the text to print above, we can release the lock while we actually print it.
 		variables.shell.printString( thingToPrint );
 	}
@@ -47,7 +47,7 @@ component accessors="true" extends="Print"{
 	// Proxy through any methods to the actual print helper
 	function onMissingMethod( missingMethodName, missingMethodArguments ){
 		// Don't modify the buffer if it's being printed
-		lock name='printBuffer-#getObjectID()#' type="readonly" timeout="20" {		
+		lock name='printBuffer-#getObjectID()#' type="readonly" timeout="20" {
 			variables.result &= super.onMissingMethod( arguments.missingMethodName, arguments.missingMethodArguments );
 			return this;
 		}

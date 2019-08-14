@@ -110,7 +110,7 @@ component accessors="true" singleton {
 			return '[NULL]';
 		// binary
 		} else if( isBinary( result ) ) {
-			return '[BINARY]';
+			return result;
 		// empty string
 		} else if( isSimpleValue( result ) && !len( result ) ) {
 			return '[EMPTY STRING]';
