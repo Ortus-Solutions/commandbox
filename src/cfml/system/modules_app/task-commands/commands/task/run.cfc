@@ -80,7 +80,13 @@ component {
 
 	array function taskTargetOptions( string paramSoFar, struct passedNamedParameters ) {
 		var taskFile = resolvePath( passedNamedParameters.taskFile ?: 'task.cfc' );
-		return taskService.getTaskMethods( taskFile );
+		try {
+			return taskService.getTaskMethods( taskFile );
+		} catch ( any e ) {
+			// Recover shell prompt from console error output
+			getShell().getReader().redrawLine();
+		}
+		return [];
 	}
 
 }
