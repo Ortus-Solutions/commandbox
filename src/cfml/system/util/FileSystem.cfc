@@ -224,15 +224,19 @@ component accessors="true" singleton {
 		} else if( isMac() ) {
 		    // Mac
 			runtime.exec( [ "/usr/bin/open", target.getCanonicalPath() ] );
-		} else {
-            // Default to Linux
-            // If there is xdg-open around, we'll try to use it - otherwise we'll use see.
+		} else if( isLinux() ) {
+            // Linux
+            // If there is xdg-open around, we'll try to use it. This should at least work on Ubuntu-based desktop systems and can deal well with both directories and files.
             if( runtime.exec( "which xdg-open" ).waitFor() == 0 ) {
                 runtime.exec( [ "/usr/bin/xdg-open", target.getCanonicalPath() ] );
-            } else {
-                runtime.exec( [ "/usr/bin/see", target.getCanonicalPath() ] );
+            // Fallback to generic system editor for files
+            } else if ( runtime.exec ("which editor" ).waitFor() == 0  and target.isFile() ) {
+                runtime.exec( [ "/usr/bin/editor", target.getCanonicalPath() ] );
             }
-		}
+            // Nothing else to do at this stage
+		} else {
+            // We don't even know the operating system
+        }
 		return true;
     }
 
