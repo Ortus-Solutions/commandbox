@@ -13,25 +13,34 @@
  **/
 component {
 
+	function init() {
+		variables.previousDirectory = '.';
+	}
+
 	/**
 	 * @directory.hint The directory to change to
 	 **/
 	function run( directory="" )  {
 
+		if (arguments.directory == '-') {
+			arguments.directory = variables.previousDirectory;
+		}
+
 		// This will make each directory canonical and absolute
 		arguments.directory = resolvePath( arguments.directory );
 
 		if( !directoryExists( arguments.directory ) ) {
-			
-			// Add a friendly check for someone trying to CD into the root of a UNC network share 
+
+			// Add a friendly check for someone trying to CD into the root of a UNC network share
 			if( arguments.directory.reFind( '^\\\\[^\\/]*[\\/]?$' ) ) {
 				print.boldRedLine( 'The root path of a Windows UNC network path cannot be listed or CD''d into.' )
 					.boldRedLine( 'Try Changing into a shared folder like [#arguments.directory.listAppend( 'shareName', '/' )#]' );
 			}
-			
+
 			return error( "#arguments.directory#: No such file or directory" );
 		}
 
+		variables.previousDirectory = shell.pwd();
 		return shell.cd( arguments.directory );
 	}
 
