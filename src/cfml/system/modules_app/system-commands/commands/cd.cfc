@@ -19,7 +19,7 @@ component {
 	function run( directory="" )  {
 
 		if (arguments.directory == '-') {
-			arguments.directory = systemSettings.getSystemSetting( 'OLDPWD' );
+			arguments.directory = systemSettings.getSystemSetting( 'OLDPWD', shell.pwd() );
 		}
 
 		// This will make each directory canonical and absolute
