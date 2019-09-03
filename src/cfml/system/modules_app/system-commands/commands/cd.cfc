@@ -18,20 +18,25 @@ component {
 	 **/
 	function run( directory="" )  {
 
+		if (arguments.directory == '-') {
+			arguments.directory = systemSettings.getSystemSetting( 'OLDPWD', shell.pwd() );
+		}
+
 		// This will make each directory canonical and absolute
 		arguments.directory = resolvePath( arguments.directory );
 
 		if( !directoryExists( arguments.directory ) ) {
-			
-			// Add a friendly check for someone trying to CD into the root of a UNC network share 
+
+			// Add a friendly check for someone trying to CD into the root of a UNC network share
 			if( arguments.directory.reFind( '^\\\\[^\\/]*[\\/]?$' ) ) {
 				print.boldRedLine( 'The root path of a Windows UNC network path cannot be listed or CD''d into.' )
 					.boldRedLine( 'Try Changing into a shared folder like [#arguments.directory.listAppend( 'shareName', '/' )#]' );
 			}
-			
+
 			return error( "#arguments.directory#: No such file or directory" );
 		}
 
+		systemSettings.setSystemSetting( 'OLDPWD', shell.pwd(), true );
 		return shell.cd( arguments.directory );
 	}
 
