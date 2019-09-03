@@ -13,17 +13,13 @@
  **/
 component {
 
-	function init() {
-		variables.previousDirectory = '.';
-	}
-
 	/**
 	 * @directory.hint The directory to change to
 	 **/
 	function run( directory="" )  {
 
 		if (arguments.directory == '-') {
-			arguments.directory = variables.previousDirectory;
+			arguments.directory = systemSettings.getSystemSetting( 'OLDPWD' );
 		}
 
 		// This will make each directory canonical and absolute
@@ -40,7 +36,7 @@ component {
 			return error( "#arguments.directory#: No such file or directory" );
 		}
 
-		variables.previousDirectory = shell.pwd();
+		systemSettings.setSystemSetting( 'OLDPWD', shell.pwd(), true );
 		return shell.cd( arguments.directory );
 	}
 
