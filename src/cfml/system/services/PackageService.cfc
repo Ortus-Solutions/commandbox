@@ -371,7 +371,8 @@ component accessors="true" singleton {
 			}
 
 			// Some packages may just want to be dumped in their destination without being contained in a subfolder
-			if( artifactDescriptor.createPackageDirectory ) {
+			// If the box.json had an explicit override for the install directory, then we're just going to use it directly			
+			if( artifactDescriptor.createPackageDirectory || structKeyExists( containerBoxJSON.installPaths, packageName ) ) {
 				installDirectory &= '/#packageDirectory#';
 			// If we're dumping in the root and the install dir is already a package then ignore box.json or it will overwrite the existing one
 			// If the directory wasn't already a package, still save so our box.json gets install paths added
