@@ -1250,6 +1250,8 @@ component accessors="true" singleton {
 		// This may be available as parent thread or something.
 		var thisThread = createObject( 'java', 'java.lang.Thread' ).currentThread();
 		variables.waitingOnConsoleStart = false;
+		variables.internalInterrupt = false;
+		serverInfo.exitCode = 0;
 		// Spin up a thread to capture the standard out and error from the server
 		thread name="#threadName#" interactiveStart=interactiveStart serverInfo=serverInfo args=args startTimeout=serverInfo.startTimeout parentThread=thisThread {
 			try{
@@ -1300,9 +1302,9 @@ component accessors="true" singleton {
 				} // End of inputStream
 
 				// When we require Java 8 for CommandBox, we can pass a timeout to waitFor().
-				var exitCode = process.waitFor();
-
-				if( exitCode == 0 ) {
+				serverInfo.exitCode = process.waitFor();
+				
+				if( serverInfo.exitCode == 0 ) {
 					serverInfo.status="running";
 				} else {
 					serverInfo.status="unknown";
@@ -1325,11 +1327,13 @@ component accessors="true" singleton {
 						.line( "Server's output stream closed. It's been stopped elsewhere." )
 						.toConsole();
 					// This will end the readline() call below so the "start" command can finally exit
+					variables.internalInterrupt = true;
 					parentThread.interrupt();
 				}
 			}
 		}
-
+		
+		var serverInterrupted = false;
 		// Block until the process ends and the streaming output thread above is done.
 		if( interactiveStart ) {
 
@@ -1357,10 +1361,12 @@ component accessors="true" singleton {
 				// user wants to exit this command, they've pressed Ctrl-C
 				} catch ( org.jline.reader.UserInterruptException e ) {
 					consoleLogger.error( 'Stopping server...' );
+					serverInterrupted = true;
 				// user wants to exit the shell, they've pressed Ctrl-D
 				} catch ( org.jline.reader.EndOfFileException e ) {
 					consoleLogger.error( 'Stopping server...' );
 					shell.setKeepRunning( false );
+					serverInterrupted = true;
 				// Something bad happened
 				} catch ( Any e ) {
 					logger.error( '#e.message# #e.detail#' , e.stackTrace );
@@ -1376,6 +1382,13 @@ component accessors="true" singleton {
 			}
 
 			thread action="join" name="#threadName#";
+		}
+		
+		// It's hard to tell the difference between a user hitting Ctrl-C on a console server and the process getting killed elsewhere, which also sends an interrupt to the main thread.
+		// We care abut failing exit codes if the server was interrupted unexpectedly 
+		if( serverInfo.exitCode != 0 && ( !serverInterrupted || variables.internalInterrupt ) ) {
+			consoleLogger.info( '.' );
+			throw( message='Server process returned failing exit code [#serverInfo.exitCode#]', type="commandException", errorcode=serverInfo.exitCode );
 		}
 
 	}
@@ -2006,7 +2019,8 @@ component accessors="true" singleton {
 			'openBrowser'		: true,
 			'openBrowserURL'	: '',
 			'customServerFolder': '',
-			'welcomeFiles'		: ''
+			'welcomeFiles'		: '',
+			'exitCode'			: 0
 		};
 	}
 

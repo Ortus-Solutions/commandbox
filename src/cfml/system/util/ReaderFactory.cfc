@@ -78,12 +78,13 @@ component singleton{
 		var terminal = createObject( "java", "org.jline.terminal.TerminalBuilder" )
 			.builder()
 	        .system( true )
+	       // .streams( createObject( 'java', 'java.lang.System' ).in, createObject( 'java', 'java.lang.System' ).out )
 	        .nativeSignals( true )
 	        .signalHandler( jSignalHandler )
 	        // This hides the warning when JLine defaults to a dumb terminal on CI builds
 	        .dumb( true )
 			.build();
-		
+				
 		// Build our reader instance
 		reader = createObject( "java", "org.jline.reader.LineReaderBuilder" )
 			.builder()
