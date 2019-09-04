@@ -112,7 +112,7 @@ Description :
 
 			return false;
 		</cfscript>
-		</cflock>r
+		</cflock>
 
 	</cffunction>
 
