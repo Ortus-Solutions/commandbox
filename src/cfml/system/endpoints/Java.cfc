@@ -323,7 +323,7 @@ component accessors=true implements="IEndpoint" singleton {
 						results.release &= ( '_' & token );
 						continue;
 					}
-
+					throw( message='Unknown token [#token#] in Java install slug [#ID#]', detail='Please use "java search" to find valid java install slugs.', type='endpointException' );
 				}
 			}
 
