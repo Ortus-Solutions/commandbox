@@ -1232,6 +1232,20 @@ component accessors="true" singleton {
 	    }
 
 	    processBuilder.init( args );
+	    
+        // incorporate CommandBox environment variables into the process's env
+        var currentEnv = processBuilder.environment();
+        currentEnv.putAll( systemSettings.getAllEnvironmentsFlattened() );
+        
+        // Special check to remove ConEMU vars which can screw up the sub process if it happens to run cmd, such as opening VSCode.
+        if( fileSystemUtil.isWindows() && currentEnv.containsKey( 'ConEmuPID' ) ) {
+            for( var key in currentEnv ) {
+            	if( key.startsWith( 'ConEmu' ) || key == 'PROMPT' ) {
+            		currentEnv.remove( key );
+            	}	
+            }
+        }
+	    
 	    // Conjoin standard error and output for convenience.
 	    processBuilder.redirectErrorStream( true );
 	    // Kick off actual process
