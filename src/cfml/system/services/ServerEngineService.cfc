@@ -323,9 +323,16 @@ component accessors="true" singleton="true" {
 		
 		// Set up server and web context dirs if Railo or Lucee
 		if( installDetails.engineName contains 'lucee' || installDetails.engineName contains 'railo' ) {
+			
+			// Loose checking so "lucee-light" still turnes into "lucee"
+			var thisName = 'lucee';
+			if( installDetails.engineName contains 'railo' ) {
+				thisName = 'railo';
+			} 
+			
 			// Default web context
 			if( !len( serverInfo.webConfigDir ) ) {
-				serverInfo.webConfigDir = "/WEB-INF/#lcase( installDetails.engineName )#-web";
+				serverInfo.webConfigDir = "/WEB-INF/#lcase( thisName )#-web";
 			}
 			// Default server context
 			if( !len( serverInfo.serverConfigDir ) ) {

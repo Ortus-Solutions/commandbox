@@ -790,6 +790,17 @@ component accessors="true" singleton {
 
 			// This will install the engine war to start, possibly downloading it first
 			var installDetails = serverEngineService.install( cfengine=serverInfo.cfengine, basedirectory=serverinfo.customServerFolder, serverInfo=serverInfo, serverHomeDirectory=serverInfo.serverHomeDirectory );
+			
+			// If we couldn't guess the engine type above, give it another go.  Perhaps the box.json in the CF Engine gave us a clue.
+			// This happens then starting like so 
+			// start cfengine=http://hostname/rest/update/provider/forgebox/5.3.4.54-rc
+			// Because the cfengine value doesn't actually contain "lucee" but the box.json in the download will tell us
+			if( !len( CFEngineName ) ) {				
+			    CFEngineName = installDetails.engineName contains 'lucee' ? 'lucee' : CFEngineName;
+			    CFEngineName = installDetails.engineName contains 'railo' ? 'railo' : CFEngineName;
+			    CFEngineName = installDetails.engineName contains 'adobe' ? 'adobe' : CFEngineName;
+			}
+			
 			serverInfo.serverHomeDirectory = installDetails.installDir;
 			// TODO: As of 3.5 "serverHome" is for backwards compat.  Remove in later version in favor of serverHomeDirectory above
 			serverInfo[ 'serverHome' ] = installDetails.installDir;
@@ -827,7 +838,7 @@ component accessors="true" singleton {
 			// The process native name
 			var processName = ( serverInfo.name is "" ? "CommandBox" : serverInfo.name ) & ' [' & listFirst( serverinfo.cfengine, '@' ) & ' ' & installDetails.version & ']';
 			var displayServerName = ( serverInfo.name is "" ? "CommandBox" : serverInfo.name );
-			var displayEngineName = listFirst( serverinfo.cfengine, '@' ) & ' ' & installDetails.version;
+			var displayEngineName = serverInfo.engineName & ' ' & installDetails.version;
 
 		// This is a WAR
 		} else {
