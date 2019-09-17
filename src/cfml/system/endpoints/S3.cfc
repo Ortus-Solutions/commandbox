@@ -32,7 +32,7 @@ component accessors="true" implements="IEndpoint" singleton {
     public string function resolvePackage(required string package, boolean verbose=false) {
         var job = wirebox.getInstance('interactiveJob');
 
-        var fileName = 'temp#randRange( 1, 1000 )#.zip';
+        var fileName = 'temp#createUUID()#.zip';
         var fullPath = tempDir & '/' & fileName;
 
         job.addLog('Downloading [s3:#package#]');

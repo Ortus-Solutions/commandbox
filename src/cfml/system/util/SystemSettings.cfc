@@ -202,6 +202,38 @@ component singleton {
 		// Other complex variables like XML or CFC instance would just get skipped for now.
 		return dataStructure;
 	}
+	
+
+	/**
+	* Take a struct of data and set system settings for each deep key
+	*
+	* @dataStructure A string, struct, or array. Initial value should be a struct.
+	*/
+	function setDeepSystemSettings( any dataStructure, string prefix='interceptData' ) {
+		
+		// If it's a struct...
+		if( isStruct( dataStructure ) && !isObject( dataStructure ) ) {
+			// Loop over and process each key
+			for( var key in dataStructure ) {
+				if( key != 'COMMANDREFERENCE' ) {
+					setDeepSystemSettings( dataStructure[ key ] ?: '', prefix.listAppend( key, '.' ) );
+				}
+			}
+		// If it's an array...
+		} else if( isArray( dataStructure ) ) {
+			var i = 0;
+			// Loop over and process each index
+			for( var item in dataStructure ) {
+				i++;
+				setDeepSystemSettings( item ?: '', prefix & '[#i#]' );
+			}
+		// If it's a string...
+		} else if ( isSimpleValue( dataStructure ) ) {
+			// Just set the setting
+			setSystemSetting( prefix, toString( dataStructure ?: '' ) );
+		}
+		
+	}
 
 	/**
 	* Return current environment for the shell.

@@ -790,6 +790,17 @@ component accessors="true" singleton {
 
 			// This will install the engine war to start, possibly downloading it first
 			var installDetails = serverEngineService.install( cfengine=serverInfo.cfengine, basedirectory=serverinfo.customServerFolder, serverInfo=serverInfo, serverHomeDirectory=serverInfo.serverHomeDirectory );
+			
+			// If we couldn't guess the engine type above, give it another go.  Perhaps the box.json in the CF Engine gave us a clue.
+			// This happens then starting like so 
+			// start cfengine=http://hostname/rest/update/provider/forgebox/5.3.4.54-rc
+			// Because the cfengine value doesn't actually contain "lucee" but the box.json in the download will tell us
+			if( !len( CFEngineName ) ) {				
+			    CFEngineName = installDetails.engineName contains 'lucee' ? 'lucee' : CFEngineName;
+			    CFEngineName = installDetails.engineName contains 'railo' ? 'railo' : CFEngineName;
+			    CFEngineName = installDetails.engineName contains 'adobe' ? 'adobe' : CFEngineName;
+			}
+			
 			serverInfo.serverHomeDirectory = installDetails.installDir;
 			// TODO: As of 3.5 "serverHome" is for backwards compat.  Remove in later version in favor of serverHomeDirectory above
 			serverInfo[ 'serverHome' ] = installDetails.installDir;
@@ -827,7 +838,7 @@ component accessors="true" singleton {
 			// The process native name
 			var processName = ( serverInfo.name is "" ? "CommandBox" : serverInfo.name ) & ' [' & listFirst( serverinfo.cfengine, '@' ) & ' ' & installDetails.version & ']';
 			var displayServerName = ( serverInfo.name is "" ? "CommandBox" : serverInfo.name );
-			var displayEngineName = listFirst( serverinfo.cfengine, '@' ) & ' ' & installDetails.version;
+			var displayEngineName = serverInfo.engineName & ' ' & installDetails.version;
 
 		// This is a WAR
 		} else {
@@ -1232,6 +1243,20 @@ component accessors="true" singleton {
 	    }
 
 	    processBuilder.init( args );
+	    
+        // incorporate CommandBox environment variables into the process's env
+        var currentEnv = processBuilder.environment();
+        currentEnv.putAll( systemSettings.getAllEnvironmentsFlattened() );
+        
+        // Special check to remove ConEMU vars which can screw up the sub process if it happens to run cmd, such as opening VSCode.
+        if( fileSystemUtil.isWindows() && currentEnv.containsKey( 'ConEmuPID' ) ) {
+            for( var key in currentEnv ) {
+            	if( key.startsWith( 'ConEmu' ) || key == 'PROMPT' ) {
+            		currentEnv.remove( key );
+            	}	
+            }
+        }
+	    
 	    // Conjoin standard error and output for convenience.
 	    processBuilder.redirectErrorStream( true );
 	    // Kick off actual process
@@ -1250,6 +1275,8 @@ component accessors="true" singleton {
 		// This may be available as parent thread or something.
 		var thisThread = createObject( 'java', 'java.lang.Thread' ).currentThread();
 		variables.waitingOnConsoleStart = false;
+		variables.internalInterrupt = false;
+		serverInfo.exitCode = 0;
 		// Spin up a thread to capture the standard out and error from the server
 		thread name="#threadName#" interactiveStart=interactiveStart serverInfo=serverInfo args=args startTimeout=serverInfo.startTimeout parentThread=thisThread {
 			try{
@@ -1300,9 +1327,9 @@ component accessors="true" singleton {
 				} // End of inputStream
 
 				// When we require Java 8 for CommandBox, we can pass a timeout to waitFor().
-				var exitCode = process.waitFor();
-
-				if( exitCode == 0 ) {
+				serverInfo.exitCode = process.waitFor();
+				
+				if( serverInfo.exitCode == 0 ) {
 					serverInfo.status="running";
 				} else {
 					serverInfo.status="unknown";
@@ -1325,11 +1352,13 @@ component accessors="true" singleton {
 						.line( "Server's output stream closed. It's been stopped elsewhere." )
 						.toConsole();
 					// This will end the readline() call below so the "start" command can finally exit
+					variables.internalInterrupt = true;
 					parentThread.interrupt();
 				}
 			}
 		}
-
+		
+		var serverInterrupted = false;
 		// Block until the process ends and the streaming output thread above is done.
 		if( interactiveStart ) {
 
@@ -1357,10 +1386,12 @@ component accessors="true" singleton {
 				// user wants to exit this command, they've pressed Ctrl-C
 				} catch ( org.jline.reader.UserInterruptException e ) {
 					consoleLogger.error( 'Stopping server...' );
+					serverInterrupted = true;
 				// user wants to exit the shell, they've pressed Ctrl-D
 				} catch ( org.jline.reader.EndOfFileException e ) {
 					consoleLogger.error( 'Stopping server...' );
 					shell.setKeepRunning( false );
+					serverInterrupted = true;
 				// Something bad happened
 				} catch ( Any e ) {
 					logger.error( '#e.message# #e.detail#' , e.stackTrace );
@@ -1370,10 +1401,19 @@ component accessors="true" singleton {
 					variables.waitingOnConsoleStart = false;
 					shell.setPrompt();
 					process.destroy();
+					// "server stop" is never run for a --console start, so make sure this fires.
+					interceptorService.announceInterception( 'onServerStop', { serverInfo=serverInfo } );
 				}
 			}
 
 			thread action="join" name="#threadName#";
+		}
+		
+		// It's hard to tell the difference between a user hitting Ctrl-C on a console server and the process getting killed elsewhere, which also sends an interrupt to the main thread.
+		// We care abut failing exit codes if the server was interrupted unexpectedly 
+		if( serverInfo.exitCode != 0 && ( !serverInterrupted || variables.internalInterrupt ) ) {
+			consoleLogger.info( '.' );
+			throw( message='Server process returned failing exit code [#serverInfo.exitCode#]', type="commandException", errorcode=serverInfo.exitCode );
 		}
 
 	}
@@ -2004,7 +2044,8 @@ component accessors="true" singleton {
 			'openBrowser'		: true,
 			'openBrowserURL'	: '',
 			'customServerFolder': '',
-			'welcomeFiles'		: ''
+			'welcomeFiles'		: '',
+			'exitCode'			: 0
 		};
 	}
 

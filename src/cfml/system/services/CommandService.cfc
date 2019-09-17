@@ -386,6 +386,8 @@ component accessors="true" singleton {
 			// If the command didn't return anything, grab its print buffer value
 			if( isNull( result ) ){
 				local.result = commandInfo.commandReference.CFC.getResult();
+				// Wipe out what's in there now that we have it
+				commandInfo.commandReference.CFC.reset();
 			}
 			var interceptData = {
 				commandInfo=commandInfo,
@@ -613,6 +615,19 @@ component accessors="true" singleton {
 			* run "cmd /c dir"
 			 */
 			 if( tokens.len() > 1 && tokens.first() == 'run' ) {
+			
+				var tokens2 = tokens[ 2 ];
+				// Escape any regex metacharacters in the pattern
+				tokens2 = replace( tokens2, '\', '\\', 'all' );
+				tokens2 = replace( tokens2, '.', '\.', 'all' );
+				tokens2 = replace( tokens2, '(', '\(', 'all' );
+				tokens2 = replace( tokens2, ')', '\)', 'all' );
+				tokens2 = replace( tokens2, '^', '\^', 'all' );
+				tokens2 = replace( tokens2, '$', '\$', 'all' );
+				tokens2 = replace( tokens2, '|', '\|', 'all' );
+				tokens2 = replace( tokens2, '+', '\+', 'all' );
+				tokens2 = replace( tokens2, '{', '\{', 'all' );
+				tokens2 = replace( tokens2, '}', '\}', 'all' );
 			 	
 			 	tokens = [
 			 		'run',
@@ -621,7 +636,7 @@ component accessors="true" singleton {
 			 		//   echo "!git status" && !git status
 			 		// Because we don't know where in the rawLine our current place in the command chain starts
 			 		// To fix it though I'd need to substantially change how tokenizing works
-			 		rawLine.reReplaceNoCase( '^(.*?)?[\s]*(run |!)[\s]*(#tokens[ 2 ]#.*)', '\3' )
+			 		rawLine.reReplaceNoCase( '^(.*?)?[\s]*(run |!)[\s]*(#tokens2#.*)', '\3' )
 			 	];
 			 	
 			 	// The run command "eats" end entire rest of the line, so stop processing the command chain.
@@ -651,7 +666,9 @@ component accessors="true" singleton {
 				closestHelpCommand = 'help'
 			};
 
+			var pos = 0;
 			for( var token in tokens ){
+				pos++;
 
 				// If we hit a dead end, then quit looking
 				if( !structKeyExists( results.commandReference, token ) ){
@@ -659,7 +676,8 @@ component accessors="true" singleton {
 				}
 					
 				// If this is for command tab completion, don't select the command if there are two commands at the same level that start wtih this string
-				if( forCompletion ) {
+				// This check only runs if we've matched all the entered tokens and there is no trailing space.
+				if( forCompletion && pos == tokens.len() ) {
 					if( results.commandReference
 						.keyArray()
 						.filter( function( i ){

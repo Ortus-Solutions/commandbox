@@ -30,17 +30,26 @@ component accessors=true implements="IEndpoint" singleton {
 	}
 
 	public string function resolvePackage( required string package, boolean verbose=false ) {
+		// Defer to file endpoint
+		return fileEndpoint.resolvePackage(
+			resolvePackageZip( package, arguments.verbose ),
+			arguments.verbose
+		);
+
+	}
+
+	public string function resolvePackageZip( required string package, boolean verbose=false ) {
 		var job = wirebox.getInstance( 'interactiveJob' );
 
-		var fileName = 'temp#randRange( 1, 1000 )#.zip';
+		var fileName = 'temp#createUUID()#.zip';
 		var fullPath = tempDir & '/' & fileName;
 
-		job.addLog( "Downloading [#getNamePrefixes() & ':' & package#]" );
+		job.addLog( "Downloading [#getNamePrefixes().replaceNoCase( '+cached', '' ) & ':' & package#]" );
 
 		try {
 			// Download File
 			var result = progressableDownloader.download(
-				getNamePrefixes() & ':' & package, // URL to package
+				getNamePrefixes().replaceNoCase( '+cached', '' ) & ':' & package, // URL to package
 				fullPath, // Place to store it locally
 				function( status ) {
 					progressBar.update( argumentCollection = status );
@@ -57,9 +66,7 @@ component accessors=true implements="IEndpoint" singleton {
 			throw( '#e.message##CR##e.detail#', 'endpointException' );
 		};
 
-		// Defer to file endpoint
-		return fileEndpoint.resolvePackage( fullPath, arguments.verbose );
-
+		return fullPath;
 	}
 
 	public function getDefaultName( required string package ) {
@@ -90,6 +97,8 @@ component accessors=true implements="IEndpoint" singleton {
 	}
 
 	public function getUpdate( required string package, required string version, boolean verbose = false ) {
+		// If we're coming through the http+cached or https+cached endpoint, strip this out
+		package = package.replaceNoCase( '+cached', '' );
 		// Check to see if a semver exists in the URL and if so use that
 		var versionMatch = reMatch( semverRegex, package.reReplaceNoCase( '(https?:)?//', '' ).listRest( '/\' ) );
 

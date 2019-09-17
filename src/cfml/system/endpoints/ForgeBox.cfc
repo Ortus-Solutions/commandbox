@@ -252,7 +252,7 @@ component accessors="true" implements="IEndpointInteractive" {
 				var files = directoryList( path=arguments.path, filter=function( path ){ return path contains ( item.file & ext); } );0
 				if( arrayLen( files ) && fileExists( files[ 1 ] ) ) {
 					// If found, read in the first one found.
-					props[ item.variable ] = fileRead( files[ 1 ] );
+					props[ item.variable ] = fileRead( files[ 1 ], 'UTF-8' );
 					props[ item.variable & 'Format' ] = ( ext == '.md' ? 'md' : 'text' );
 				}
 			}

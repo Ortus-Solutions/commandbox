@@ -49,7 +49,7 @@ component {
 	 	directory,
 	 	bundles,
 	 	labels,
-	 	boolean verbose=true
+	 	boolean verbose
 	) {
 
 		// Get testbox options from package descriptor
@@ -73,9 +73,11 @@ component {
 		command( 'cls' ).run();
 
 		// Prepare test args
-		var testArgs = {
-			verbose = arguments.verbose
-		};
+		var testArgs = {};
+		
+		if( !isNull( arguments.verbose ) ){
+			testArgs.verbose = arguments.verbose;
+		}
 		if( !isNull( arguments.directory ) ){
 			testArgs.directory = arguments.directory;
 		}

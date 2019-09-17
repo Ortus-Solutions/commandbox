@@ -94,7 +94,13 @@ component {
 		if( !isSimpleValue( text ) ) {
 			
 			// Serializable types
-			if( isArray( text ) || isStruct( text ) || isQuery( text ) ) {
+			if( isBinary( text ) ) {
+				// Generally speaking, leave binary alone, but if it just so hapens to be a string that happens to be JSON, let's format it!
+				// CommandBox will turn the binary to a string when it outputs anyway if we don't here.
+				if( isJSON( toString( text ) ) ) {
+					text = formatterUtil.formatJson( json=toString( text ), ANSIColors=JSONService.getANSIColors() );
+				}
+			} else if( isArray( text ) || isStruct( text ) || isQuery( text ) ) {
 				text = formatterUtil.formatJson( json=text, ANSIColors=JSONService.getANSIColors() );
 			// Yeah, I give up
 			} else {

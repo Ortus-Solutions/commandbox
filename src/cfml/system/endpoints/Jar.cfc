@@ -30,11 +30,11 @@ component accessors=true implements="IEndpoint" singleton {
 
 	public string function resolvePackage( required string package, boolean verbose=false ) {
 		var job = wirebox.getInstance( 'interactiveJob' );
-		var folderName = tempDir & '/' & 'temp#randRange( 1, 1000 )#';
+		var folderName = tempDir & '/' & 'temp#createUUID()#';
 		var fullJarPath = folderName & '/' & getDefaultName( package ) & '.jar';
 		var fullBoxJSONPath = folderName & '/box.json';
 		directoryCreate( folderName );
-		
+
 		job.addLog( "Downloading [#package#]" );
 
 		var packageUrl = package.startsWith('s3://') ? S3Service.generateSignedURL(package, verbose) : package;
@@ -59,7 +59,7 @@ component accessors=true implements="IEndpoint" singleton {
 			throw( '#e.message##CR##e.detail#', 'endpointException' );
 		};
 
-		
+
 		// Spoof a box.json so this looks like a package
 		var boxJSON = {
 			'name' : '#getDefaultName( package )#.jar',

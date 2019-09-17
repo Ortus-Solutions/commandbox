@@ -59,7 +59,7 @@ component{
 			// Pass through bash in interactive mode with -i to expand aliases like "ll".
 			// -c runs input as a command, "&& exits" cleanly from the shell as long as the original command ran successfully
 			var nativeShell = configService.getSetting( 'nativeShell', '/bin/bash' );
-			commandArray = [ nativeShell, '-i', '-c', arguments.command & ' 2>&1 && ( exit $? > /dev/null )' ];
+			commandArray = [ nativeShell, '-i', '-c', arguments.command & ' 2>&1; ( exit $? > /dev/null )' ];
 		}
 		
 		if( configService.getSetting( 'debugNativeExecution', false ) ) {

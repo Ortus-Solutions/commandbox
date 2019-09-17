@@ -7,7 +7,7 @@
 *
 * I am the Java endpoint.  I interact with the AdoptOpenJDK API to get OpenJDK builds.
 * I will spoof a package around the download so CommandBox doesn't try to unzip the JRE itself.
-* 
+*
 * Endpoint IDs are the in the format <version>_<type>_<arch>_<os>_<jvm-implementation>_<release>[:lockVersion]
 * Ex: OpenJDK8_jre_x64_windows_hotspot_8u181b13
 *
@@ -17,8 +17,8 @@
 * <os>					: windows, linux, mac
 * <jvm-implementation>	: hotspot, openj9
 * <release>				: latest, jdk8u172, jdk8u172-b00, etc...
-* 
-* Adding :lockVersion to the end will cause the slug reported by the package to be the full ID, not just what the user typed 
+*
+* Adding :lockVersion to the end will cause the slug reported by the package to be the full ID, not just what the user typed
 *
 */
 component accessors=true implements="IEndpoint" singleton {
@@ -53,8 +53,8 @@ component accessors=true implements="IEndpoint" singleton {
 		}
 		var packageFullName = getDefaultName( package );
 		var job = wirebox.getInstance( 'interactiveJob' );
-		var folderName = tempDir & '/' & 'temp#randRange( 1, 1000 )#';
-		var folderName2 = tempDir & '/' & 'temp#randRange( 1, 1000 )#';
+		var folderName = tempDir & '/' & 'temp#createUUID()#';
+		var folderName2 = tempDir & '/' & 'temp#createUUID()#';
 
 		var javaDetails = parseDetails( package );
 		var APIURL = 'https://api.adoptopenjdk.net/v2/binary/releases/#javaDetails.version#?openjdk_impl=#encodeForURL( javaDetails['jvm-implementation'] )#&os=#encodeForURL( javaDetails.os )#&arch=#encodeForURL( javaDetails.arch )#&release=#encodeForURL( javaDetails.release )#&type=#encodeForURL( javaDetails.type )#';
@@ -66,7 +66,7 @@ component accessors=true implements="IEndpoint" singleton {
 		job.addLog( "Java os:                   #javaDetails.os#" );
 		job.addLog( "Java jvm-implementation:   #javaDetails['jvm-implementation']#" );
 		job.addLog( "Java release:              #javaDetails.release#" );
-		
+
 		if( artifactService.artifactExists( 'OpenJDK', packageFullName ) ) {
 			job.addLog( "Lucky you, we found this version of Java in local artifacts!" );
 			return serveFromArtifacts( package, packageFullName, lockVersion );
@@ -91,11 +91,11 @@ component accessors=true implements="IEndpoint" singleton {
 			var artifactJSON = deserializeJSON( local.artifactResult.fileContent );
 		} else {
 			var validReleases = 'unknown';
-			
+
 			try {
 				// Do a quick peek at the API to see if we can get results back without the release name.
 				var APIURLCheck = 'https://api.adoptopenjdk.net/v2/info/releases/#javaDetails.version#?openjdk_impl=#encodeForURL( javaDetails['jvm-implementation'] )#&os=#encodeForURL( javaDetails.os )#&arch=#encodeForURL( javaDetails.arch )#&type=#encodeForURL( javaDetails.type )#';
-			
+
 				http
 					url="#APIURLCheck#"
 					throwOnError=false
@@ -104,7 +104,7 @@ component accessors=true implements="IEndpoint" singleton {
 					proxyUser="#ConfigService.getSetting( 'proxy.user', '' )#"
 					proxyPassword="#ConfigService.getSetting( 'proxy.password', '' )#"
 					result="local.artifactResult";
-					
+
 				if( local.artifactResult.status_code == 200 && isJSON( local.artifactResult.fileContent ) ) {
 					// If we got a valid reply back, gather up a list of the release names that were returned.
 					var artifactJSON = deserializeJSON( local.artifactResult.fileContent );
@@ -112,9 +112,9 @@ component accessors=true implements="IEndpoint" singleton {
 						.map( function( release ) {
 							return release.release_name;
 						} )
-						.tolist( ', ' );			
+						.tolist( ', ' );
 				}
-				
+
 			} catch ( any var e ) {
 				job.addErrorLog( 'Error peeking at the API to try and find some valid releases.' );
 				job.addErrorLog( e.message );
@@ -122,9 +122,9 @@ component accessors=true implements="IEndpoint" singleton {
 			}
 			var message = 'This specific Java version doesn''t seem to exist.  Valid [#javaDetails.version#] releases are [#validReleases#].';
 			job.addErrorLog( message );
-			
+
 			// Before we give up, check artifacts for a downloaded version that might work
-			// Ideally I'd only do this for catastropic errors, but the AdoptOpenJDK API doesn't really allow me to 
+			// Ideally I'd only do this for catastropic errors, but the AdoptOpenJDK API doesn't really allow me to
 			// tell the difference since it pretty much just pukes non-JSON if it can't find what I was looking for
 			var artifactJDKs = artifactService.listArtifacts( 'OpenJDK' );
 			if( artifactJDKs.keyExists( 'OpenJDK' ) ) {
@@ -137,17 +137,17 @@ component accessors=true implements="IEndpoint" singleton {
 						job.addLog( "Looks like you already have [#thisVer#] downloaded. Using it instead." );
 						return serveFromArtifacts( package, thisVer, lockVersion );
 					}
-				}	
+				}
 			}
-			
+
 			throw( message, 'endpointException' );
 		}
-		
+
 		// Sometimes the API gives me back a struct, sometimes I get an array of structs. ¯\_(ツ)_/¯
 		if( isArray( artifactJSON ) && arraylen( artifactJSON ) ) {
 			artifactJSON = artifactJSON[ 1 ];
 		}
-				
+
 		if( !isStruct( artifactJSON ) || !artifactJSON.keyExists( 'binaries' ) || !isArray( artifactJSON.binaries ) || !artifactJSON.binaries.len() ) {
 			throw( 'This specific Java version doesn''t seem to exist.  Please try another.', 'endpointException' );
 		}
@@ -162,7 +162,7 @@ component accessors=true implements="IEndpoint" singleton {
 			job.addLog( "Lucky you, we found this version of Java in local artifacts!" );
 			return serveFromArtifacts( package, version, lockVersion );
 		}
-		
+
 		directoryCreate( folderName );
 		var tmpFilePath = folderName & '/' & package & ( javaDetails.os == 'windows' ? '.zip' : '.tar.gz' );
 
@@ -185,8 +185,8 @@ component accessors=true implements="IEndpoint" singleton {
 			directoryDelete( folderName, true );
 			throw( '#e.message##CR##e.detail#', 'endpointException' );
 		};
-		
-		directoryCreate( folderName2 );		
+
+		directoryCreate( folderName2 );
 
 		// Extract the archive into a temp folder
 		if( tmpFilePath.endsWith( '.zip' ) ) {
@@ -194,22 +194,22 @@ component accessors=true implements="IEndpoint" singleton {
 		} else {
 			filesystemUtil.extractTarGz( tmpFilePath, '#folderName2#' );
 		}
-		
+
 		// Clean up original tmp dir
 		directoryDelete( folderName, true );
-			
+
 		// We need to find the first folder that was INSIDE the archive
 		var folders = directoryList( path="#folderName2#", type="dir", listInfo="name" );
 		if( !folders.len() ) {
 			throw( 'The downloaded archive did not contain a folder as expected.', 'endpointException', APIURL );
 		}
 		var finalPackageRoot = '#folderName2#/#folders[ 1 ]#'
-		
+
 		if( javaDetails.os == 'mac' ) {
 			finalPackageRoot &= '/Contents/Home';
 		}
 		var fullBoxJSONPath = '#finalPackageRoot#/box.json';
-		
+
 		// Spoof a box.json so this looks like a package
 		var boxJSON = {
 			'name' : ( lockVersion ? version : package ),
@@ -235,7 +235,7 @@ component accessors=true implements="IEndpoint" singleton {
 	public function getDefaultName( required string package ) {
 		return getDefaultNameFromStruct( parseDetails( package ) );
 	}
-	
+
 	function getDefaultNameFromStruct( required struct javaDetails ) {
 		return '#javaDetails.version#_#javaDetails.type#_#javaDetails.arch#_#javaDetails.os#_#javaDetails[ 'jvm-implementation' ]#_#javaDetails.release#';
 	}
@@ -323,21 +323,21 @@ component accessors=true implements="IEndpoint" singleton {
 						results.release &= ( '_' & token );
 						continue;
 					}
-					
+					throw( message='Unknown token [#token#] in Java install slug [#ID#]', detail='Please use "java search" to find valid java install slugs.', type='endpointException' );
 				}
 			}
 
 		return results;
-	
+
 	}
 
 	function serveFromArtifacts( package, version, lockVersion ) {
 		var job = wirebox.getInstance( 'interactiveJob' );
-		var folderName = tempDir & '/' & 'temp#randRange( 1, 1000 )#';
-		
+		var folderName = tempDir & '/' & 'temp#createUUID()#';
+
 		directoryCreate( folderName );
 		zip action="unzip" file="#artifactService.getArtifactPath( 'OpenJDK', version )#" destination="#folderName#";
-		
+
 		// Update the box.json to match the name we're using since different slugs can all point to the same "normalized" name
 		var boxJSON = packageService.readPackageDescriptorRaw( folderName );
 		boxJSON.name = ( lockVersion ? version : package );

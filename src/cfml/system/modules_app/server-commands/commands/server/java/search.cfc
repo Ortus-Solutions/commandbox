@@ -31,7 +31,7 @@ component aliases='java search' {
 
 	/**
 	* @version Major OpenJDK version such as "openjdk8"
-	* @version.options openjdk8,openjdk9,openjdk10,openjdk11
+	* @version.options openjdk8,openjdk9,openjdk10,openjdk11,openjdk12,openjdk13
 	* @jvm The JVM Implementation such as "hotspot" or "openj9"
 	* @jvm.options hotspot,openj9
 	* @os The operating system. Windows, linux, or mac
