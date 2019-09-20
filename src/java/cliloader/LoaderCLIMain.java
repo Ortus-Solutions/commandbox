@@ -605,6 +605,8 @@ public class LoaderCLIMain{
 		props.setProperty( "cfml.cli.lib", libDir.getAbsolutePath() );
 		File cfmlDir = new File( cli_home.getPath() + "/cfml" );
 		File cfmlSystemDir = new File( cli_home.getPath() + "/cfml/system" );
+		File cfmlBundlesDir = new File( cli_home.getPath() + "/engine/cfml/cli/lucee-server/bundles" );
+		File cfmlFelixCacheDir = new File( cli_home.getPath() + "/engine/cfml/cli/lucee-server/felix-cache" );
 
 		// clean out any leftover pack files (an issue on windows)
 		Util.cleanUpUnpacked( libDir );
@@ -641,6 +643,17 @@ public class LoaderCLIMain{
 			if( cfmlSystemDir.exists() ) {
 				Util.deleteDirectory( cfmlSystemDir );
 			}
+			
+			// OSGI can be grumpy on uprade with comppeting bundles.  Start fresh
+			if( cfmlBundlesDir.exists() ) {
+				log.info( "Cleaning old OSGI Bundles..." );
+				Util.deleteDirectory( cfmlBundlesDir );
+			}
+			// OSGI can be grumpy on uprade with comppeting bundles.  Start fresh
+			if( cfmlSystemDir.exists() ) {
+				Util.deleteDirectory( cfmlFelixCacheDir );
+			}
+		
 			Util.unzipInteralZip( classLoader, CFML_ZIP_PATH, cfmlDir, debug );
 			
 			Util.unzipInteralZip( classLoader, ENGINECONF_ZIP_PATH, new File(
