@@ -1726,6 +1726,10 @@ component accessors="true" singleton {
 			if( e.message contains 'Cannot assign requested address' || e.message contains 'Can''t assign requested address' ) {
 				return true;
 			}
+			if( e.message contains 'Permission denied' ) {
+				consoleLogger.debug( e.message);
+				consoleLogger.error( "you can't do that you id10t. Use sudo or pick a port above 1027");
+			}
 			// We're assuming that any other error means the address was in use.
 			// Java doesn't provide a specific message or exception type for this unfortunately.
 			return false;
