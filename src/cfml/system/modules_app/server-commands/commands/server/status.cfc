@@ -153,6 +153,10 @@ component aliases='status,server info' {
 
 				if( arguments.verbose ) {
 
+					print.indentedLine( 'ID: ' & thisServerInfo.id );
+					
+					print.indentedLine( 'Server Home: ' & thisServerInfo.serverHome );
+
 					print.indentedLine( trim( thisServerInfo.statusInfo.command ) );
 					// Put each --arg or -arg on a new line
 					var args = trim( reReplaceNoCase( thisServerInfo.statusInfo.arguments, ' (-|"-)', cr & '\1', 'all' ) );
