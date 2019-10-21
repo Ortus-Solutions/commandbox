@@ -630,6 +630,17 @@ public class LoaderCLIMain{
 				|| updateLibs ) {
 			log.info( "Library path: " + libDir );
 			log.info( "Initializing libraries -- this will only happen once, and takes a few seconds..." );
+						
+			// OSGI can be grumpy on uprade with comppeting bundles.  Start fresh
+			if( cfmlBundlesDir.exists() ) {
+				log.info( "Cleaning old OSGI Bundles..." );
+				Util.deleteDirectory( cfmlBundlesDir );
+			}
+			// OSGI can be grumpy on uprade with comppeting bundles.  Start fresh
+			if( cfmlSystemDir.exists() ) {
+				log.info( "Cleaning old Felix Cache..." );
+				Util.deleteDirectory( cfmlFelixCacheDir );
+			}
 			
 			// Try to delete the Runwar jar first since it's the most likely to be locked.  
 			// If it fails, this method will just abort before we get any farther into deleting stuff.
@@ -642,16 +653,6 @@ public class LoaderCLIMain{
 			// Wipe out existing /cfml/system folder to remove any deleted files
 			if( cfmlSystemDir.exists() ) {
 				Util.deleteDirectory( cfmlSystemDir );
-			}
-			
-			// OSGI can be grumpy on uprade with comppeting bundles.  Start fresh
-			if( cfmlBundlesDir.exists() ) {
-				log.info( "Cleaning old OSGI Bundles..." );
-				Util.deleteDirectory( cfmlBundlesDir );
-			}
-			// OSGI can be grumpy on uprade with comppeting bundles.  Start fresh
-			if( cfmlSystemDir.exists() ) {
-				Util.deleteDirectory( cfmlFelixCacheDir );
 			}
 		
 			Util.unzipInteralZip( classLoader, CFML_ZIP_PATH, cfmlDir, debug );
