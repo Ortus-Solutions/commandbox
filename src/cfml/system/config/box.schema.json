@@ -378,6 +378,30 @@
 						}
 					},
 					"format": "uri"
+				},
+				"labels": {
+				    "title": "Labels List",
+					"description": "A list of labels to only include when running the tests",
+					"type": [
+						"string",
+						"array"
+					],
+					"items": {
+						"description": "A label a spec must have to be ran",
+						"type": "string"
+					}
+				}
+				"excludes": {
+				    "title": "Exclude List",
+					"description": "A list of labels to exclude when running the tests",
+					"type": [
+						"string",
+						"array"
+					],
+					"items": {
+						"description": "A label to be excluded from the test run",
+						"type": "string"
+					}
 				}
 			}
 		}
