@@ -1081,7 +1081,7 @@ component accessors="true" singleton {
 
 					// Overwrite it with an actual Globber instance seeded with the original canonical path as the pattern.
 					var originalPath = parameterInfo.namedParameters[ paramName ];
-					var newPath = fileSystemUtil.resolvePath( originalPath );
+					var newPath = originalPath.listMap( (p) => fileSystemUtil.resolvePath( p ) );
 
 					parameterInfo.namedParameters[ paramName ] = wirebox.getInstance( 'Globber' )
 						.setPattern( newPath );

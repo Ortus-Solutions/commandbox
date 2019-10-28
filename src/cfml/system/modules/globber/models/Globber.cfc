@@ -16,7 +16,9 @@ component accessors="true" {
 	property name='pathPatternMatcher' inject='pathPatternMatcher@globber';
 
 	/** The file globbing pattern to match. */
-	property name='pattern' default='';
+	property name='pattern';
+	/** The file globbing pattern NOT to match. */
+	property name='excludePattern';
 	/** query of real file system resources that match the pattern */
 	property name='matchQuery';
 	/** Return matches as a query instead of an array */
@@ -29,6 +31,8 @@ component accessors="true" {
 
 	function init() {
 		variables.format = 'array';
+		variables.pattern = [];
+		variables.excludePattern = [];
 		return this;
 	}
 
@@ -58,10 +62,86 @@ component accessors="true" {
 
 	/**
 	* Override setter to ensure consistent slashe in pattern
+	* Can be list of patterns or array of patterns.
+	* Empty patterns will be ignored
 	*/
-	function setPattern( required string pattern ) {
-		variables.pattern = pathPatternMatcher.normalizeSlashes( arguments.pattern );
+	function setPattern( required any pattern ) {
+		if( isSimpleValue( arguments.pattern ) ) {
+			arguments.pattern = listToArray( arguments.pattern );
+		}
+		arguments.pattern = arguments.pattern.map( function( p ) {
+			return pathPatternMatcher.normalizeSlashes( arguments.p );
+		}).filter( function( p ){
+			return len( arguments.p );
+		} );
+		variables.pattern = arguments.pattern;
 		return this;
+	}
+
+	/**
+	* Add addiional pattern to process
+	*/
+	function addPattern( required string pattern ) {
+		if( len( arguments.pattern ) ) {
+			variables.pattern.append( arguments.pattern  );
+		}
+		return this;
+	}
+
+	/**
+	* Always returns a string which is a list of patterns
+	*/
+	function getPattern() {
+		return variables.pattern.toList();
+	}
+
+	/**
+	* 
+	*/
+	function getPatternArray() {
+		return variables.pattern;
+	}
+
+
+	/**
+	* Can be list of excludePatterns or array of excludePatterns.
+	* Empty excludePatterns will be ignored
+	*/
+	function setExcludePattern( required any excludePattern ) {
+		if( isSimpleValue( arguments.excludePattern ) ) {
+			arguments.excludePattern = listToArray( arguments.excludePattern );
+		}
+		arguments.excludePattern = arguments.excludePattern.map( function( p ) {
+			return pathPatternMatcher.normalizeSlashes( arguments.p );
+		}).filter( function( p ){
+			return len( arguments.p );
+		} );
+		variables.excludePattern = arguments.excludePattern;
+		return this;
+	}
+
+	/**
+	* Add addiional excludePattern to process
+	*/
+	function addExcludePattern( required string excludePattern ) {
+		if( len( arguments.excludePattern ) ) {
+			variables.excludePattern.append( arguments.excludePattern  );
+		}
+		return this;
+	}
+
+	/**
+	* Always returns a string which is a list of excludePatterns
+	*/
+	function getExcludePattern() {
+		return variables.excludePattern.toList();
+	}
+
+	/**
+	* 
+	*/
+	function getExcludePatternArray() {
+		return variables.excludePattern;
 	}
 
 	/**
@@ -108,12 +188,66 @@ component accessors="true" {
 	* Load matching file from the file system
 	*/
 	private function process() {
-		local.thisPattern = pathPatternMatcher.normalizeSlashes( getPattern() );
+		var patterns = getPatternArray();
 		
-		if( !thisPattern.len() ) {
+		if( !patterns.len() ) {
 			throw( 'Cannot glob empty pattern.' );
 		}
+				
+		for( var thisPattern in patterns ) {			
+			var results = processPattern( thisPattern );
+			// First one in just gets set
+			if( isNull( getMatchQuery() ) ) {
+				setMatchQuery( results );
+			// merge remaining patterns
+			} else {
+				var previousMatch = getMatchQuery();
 
+				cfquery( dbtype="query" ,name="local.newMatchQuery" ) {
+					writeOutput( 'SELECT * FROM results UNION SELECT * FROM previousMatch ' );
+				}
+				
+				// UNION isn't removing dupes on Lucee so doing second select here for that purpose.
+				cfquery( dbtype="query" ,name="local.newMatchQuery" ) {
+					writeOutput( 'SELECT DISTINCT * FROM newMatchQuery ' );
+					if( len( getSort() ) ) {
+						writeOutput( 'ORDER BY #getCleanSort()#' );
+					}
+				}
+				
+				setMatchQuery( local.newMatchQuery );
+			}
+		}
+		
+		if( patterns.len() > 1 ) {
+			var dirs = queryColumnData( getMatchQuery(), 'directory' );						
+			var lookups = {};
+			dirs.each( function( dir ) {
+				// Account for *nix paths & Windows UNC network shares
+				var prefix = '';
+				if( dir.startsWith( '/' ) ) {
+					prefix = '/';
+				} else if( dir.startsWith( '\\' ) ) {
+					prefix = '//';
+				}
+				evaluate( 'lookups["#prefix##dir.listChangeDelims( '"]["', '/\' )#"]={}' );
+			} );
+			var findRoot = function( lookups ){
+				if( lookups.count() == 1 ) {
+					return lookups.keyList() & '/' & findRoot( lookups[ lookups.keyList() ] );
+				} else {
+					return '';
+				}
+			}
+			setBaseDir( findRoot( lookups ) );
+		}
+		
+	}
+	
+	private function processPattern( string pattern ) {
+
+		local.thisPattern = pathPatternMatcher.normalizeSlashes( arguments.pattern );
+		
 		// To optimize this as much as possible, we want to get a directory listing as deep as possible so we process a few files as we can.
 		// Find the deepest folder that doesn't have a wildcard in it.
 		var baseDir = '';
@@ -144,11 +278,16 @@ component accessors="true" {
 		if( thisPattern contains '**' ) {
 			recurse = true;
 		}
-		
-		setMatchQuery(
-			directoryList (
+
+		setBaseDir( baseDir & ( baseDir.endsWith( '/' ) ? '' : '/' ) );
+
+		return directoryList (
 				filter=function( path ){
-					if( pathPatternMatcher.matchPattern( thisPattern, path & ( directoryExists( path ) ? '/' : '' ), true ) ) {
+					var thisPath = path & ( directoryExists( path ) ? '/' : '' );
+					if( pathPatternMatcher.matchPattern( thisPattern, thisPath, true ) ) {
+						if( getExcludePatternArray().len() && pathPatternMatcher.matchPatterns( getExcludePatternArray(), thisPath, true ) ) {
+							return false;
+						}
 						return true;
 					}
 					return false;
@@ -157,11 +296,33 @@ component accessors="true" {
 				recurse=local.recurse,
 				path=baseDir,
 				sort=getSort()
-			)
-		);
-		setBaseDir( baseDir );
-
+			);
+		
 	}
 	
+	/**
+	* The sort function in CFDirectory will simply ignore invalid sort columns so I'm mimicing that here, as much as I dislike it.
+	* The sort should be in the format of "col asc, col2 desc, col3, col4" like a SQL order by
+	* If any of the coluns or sort directions don't look right, just bail and return the default sort. 
+	*/
+	function getCleanSort() {
+		// Loop over each sort item
+		for( var item in listToArray( getSort() ) ) {
+			// Validate column name
+			if( !listFindNoCase( 'name,directory,size,type,dateLastModified,attributes,mode', trim( item.listFirst( ' 	' ) ) ) ) {
+				return 'type, name';
+			}
+			// Validate sort direction
+			if( item.listLen( ' 	' ) == 2 && !listFindNoCase( 'asc,desc', trim( item.listLast( ' 	' ) ) ) ) {
+				return 'type, name';
+			}
+			// Ensure no more than 2 tokens 
+			if( item.listLen( ' 	' ) > 2 ) {
+				return 'type, name';
+			}
+		}
+		// Ok, everything passes.
+		return getSort();
+	}
 
 }

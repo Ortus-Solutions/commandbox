@@ -5,39 +5,80 @@
  * dir samples/
  * {code}
  * .
- * Use the "recurse" paramater to show all nested files and folders.
+ * File globbing patterns can be used to filter results. Can also be a list
+ * .
+ * {code:bash}
+ * dir **.cfc,*.cfm
+ * {code}
+ * .
+ * File globbing patterns can be used to exclude results. Can also be a list
+ * .
+ * {code:bash}
+ * dir paths=modules excludePath=**.md --recurse
+ * {code}
+ * .
+ * Use the "recurse" parameter to show all nested files and folders.
  * .
  * {code:bash}
  * dir samples/ --recurse
+ * {code}
+ * .
+ * Ordering results is in format of an ORDER BY SQL clause. Invalid sorts are ignored.
+ * .
+ * {code:bash}
+ * dir samples "directory asc, name desc"
  * {code}
  *
  **/
 component aliases="ls,ll,directory" {
 
 	/**
-	 * @directory.hint The directory to list the contents of or a file Globbing path to filter on
+	 * @directory.hint The directory to list the contents of or a list of file Globbing path to filter on
+	 * @excludePath.hint A list of file glob patterns to exclude
+	 * @sort.hint Sort columns and direction. name, directory, size, type, dateLastModified, attributes, mode
 	 * @recurse.hint Include nested files and folders
 	 * @simple.hint Output only path names and nothing else.
 	 **/
-	function run( Globber directory=globber( getCWD() ), Boolean recurse=false, boolean simple=false )  {
+	function run( Globber paths=globber( getCWD() ), sort='type, name', string excludePaths='', boolean recurse=false, boolean simple=false )  {
+		
+		// Backwards compat for old parameter name
+		if( arguments.keyExists( 'directory' ) && arguments.directory.len() ) {
+			paths.setPattern( fileSystemUtil.resolvePath( arguments.directory ) );
+		}
 
 		// If the user gives us an existing directory foo, change it to the
 		// glob pattern foo/* or foo/** if doing a recursive listing.
-		if( directoryExists( directory.getPattern() ) ){
-			directory.setPattern( directory.getPattern() & '*' & ( recurse ? '*' : '' ) );
-		}
-
+		paths.setPattern(
+			paths.getPatternArray().map( (p) => {
+				if( pathsExists( p ) ){
+					return p & '*' & ( recurse ? '*' : '' );
+				}
+				return p;
+			} )
+		);
+		
 		// TODO: Add ability to re-sort this based on user input
-		var results = directory
+		
+		var excludePath = excludePath.listMap( (p) => {
+			p = fileSystemUtil.resolvePath( p )
+			if( directoryExists( p ) ){
+				return p & '*' & ( recurse ? '*' : '' );
+			}
+			return p;			
+		} );
+		
+		var results = paths
+			.setExcludePattern( excludePath )
 			.asQuery()
+			.withSort( sort )
 			.matches();
-
+			
 		for( var x=1; x lte results.recordcount; x++ ) {
 			
 			if( simple ) {
 				
 				print.line( 
-					cleanRecursiveDir( arguments.directory.getBaseDir(), results.directory[ x ] )
+					cleanRecursiveDir( arguments.paths.getBaseDir(), results.paths[ x ] & '/' )
 					& results.name[ x ]
 					& ( results.type[ x ] == "Dir" ? "/" : "" )
 				);
@@ -61,8 +102,8 @@ component aliases="ls,ll,directory" {
 			
 			colorPath( 
 				cleanRecursiveDir( 
-					arguments.directory.getBaseDir(),
-					results.directory[ x ]
+					arguments.paths.getBaseDir(),
+					results.paths[ x ] & '/'
 					)
 					& results.name[ x ]
 					& ( results.type[ x ] == "Dir" ? "/" : ""
@@ -82,7 +123,7 @@ component aliases="ls,ll,directory" {
 	*/
 	private function cleanRecursiveDir( required directory, required incoming, type ){
 		var prefix = ( replacenocase( expandPath( arguments.incoming ), expandPath( arguments.directory ), "" ) );
-		return ( len( prefix ) ? reReplace( prefix, "^(/|\\)", "" ) & "/" : "" );		
+		return ( len( prefix ) ? reReplace( prefix, "^(/|\\)", "" ) : "" );		
 	}
 	
 	private function colorPath( name, type ){
