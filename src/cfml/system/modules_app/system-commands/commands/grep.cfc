@@ -33,7 +33,7 @@ component excludeFromHelp=true {
 		for( var line in content ) {
 
 			// Does it match
-			if( reFindNoCase( arguments.expression, line ) ) {
+			if( arguments.expression == '' || reFindNoCase( arguments.expression, line ) ) {
 				if( count ) {
 					numMatches++;
 				} else {	
