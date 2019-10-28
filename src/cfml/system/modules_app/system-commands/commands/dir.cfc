@@ -14,7 +14,7 @@
  * File globbing patterns can be used to exclude results. Can also be a list
  * .
  * {code:bash}
- * dir paths=modules excludePath=**.md --recurse
+ * dir paths=modules excludePaths=**.md --recurse
  * {code}
  * .
  * Use the "recurse" parameter to show all nested files and folders.
@@ -34,7 +34,7 @@ component aliases="ls,ll,directory" {
 
 	/**
 	 * @directory.hint The directory to list the contents of or a list of file Globbing path to filter on
-	 * @excludePath.hint A list of file glob patterns to exclude
+	 * @excludePaths.hint A list of file glob patterns to exclude
 	 * @sort.hint Sort columns and direction. name, directory, size, type, dateLastModified, attributes, mode
 	 * @recurse.hint Include nested files and folders
 	 * @simple.hint Output only path names and nothing else.
@@ -50,7 +50,7 @@ component aliases="ls,ll,directory" {
 		// glob pattern foo/* or foo/** if doing a recursive listing.
 		paths.setPattern(
 			paths.getPatternArray().map( (p) => {
-				if( pathsExists( p ) ){
+				if( directoryExists( p ) ){
 					return p & '*' & ( recurse ? '*' : '' );
 				}
 				return p;
@@ -59,7 +59,7 @@ component aliases="ls,ll,directory" {
 		
 		// TODO: Add ability to re-sort this based on user input
 		
-		var excludePath = excludePath.listMap( (p) => {
+		excludePaths = excludePaths.listMap( (p) => {
 			p = fileSystemUtil.resolvePath( p )
 			if( directoryExists( p ) ){
 				return p & '*' & ( recurse ? '*' : '' );
@@ -68,7 +68,7 @@ component aliases="ls,ll,directory" {
 		} );
 		
 		var results = paths
-			.setExcludePattern( excludePath )
+			.setExcludePattern( excludePaths )
 			.asQuery()
 			.withSort( sort )
 			.matches();
@@ -78,7 +78,7 @@ component aliases="ls,ll,directory" {
 			if( simple ) {
 				
 				print.line( 
-					cleanRecursiveDir( arguments.paths.getBaseDir(), results.paths[ x ] & '/' )
+					cleanRecursiveDir( arguments.paths.getBaseDir(), results.directory[ x ] & '/' )
 					& results.name[ x ]
 					& ( results.type[ x ] == "Dir" ? "/" : "" )
 				);
@@ -103,7 +103,7 @@ component aliases="ls,ll,directory" {
 			colorPath( 
 				cleanRecursiveDir( 
 					arguments.paths.getBaseDir(),
-					results.paths[ x ] & '/'
+					results.directory[ x ] & '/'
 					)
 					& results.name[ x ]
 					& ( results.type[ x ] == "Dir" ? "/" : ""
@@ -122,7 +122,7 @@ component aliases="ls,ll,directory" {
 	* Cleanup directory recursive nesting
 	*/
 	private function cleanRecursiveDir( required directory, required incoming, type ){
-		var prefix = ( replacenocase( expandPath( arguments.incoming ), expandPath( arguments.directory ), "" ) );
+		var prefix = ( replacenocase( fileSystemUtil.normalizeSlashes( arguments.incoming ), fileSystemUtil.normalizeSlashes( arguments.directory ), "" ) );
 		return ( len( prefix ) ? reReplace( prefix, "^(/|\\)", "" ) : "" );		
 	}
 	
