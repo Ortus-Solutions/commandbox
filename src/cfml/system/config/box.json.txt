@@ -63,6 +63,7 @@
             }
         ],
         "labels":"",
+		"excludes":"",
         "reporter":"",
         "bundles":"",
         "recurse":true,
