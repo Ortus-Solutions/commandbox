@@ -374,9 +374,9 @@ component accessors="true" singleton {
 			// If the box.json had an explicit override for the install directory, then we're just going to use it directly			
 			if( artifactDescriptor.createPackageDirectory || structKeyExists( containerBoxJSON.installPaths, packageName ) ) {
 				installDirectory &= '/#packageDirectory#';
-			// If we're dumping in the root and the install dir is already a package then ignore box.json or it will overwrite the existing one
+			// If we're dumping in the root and the install dir is already another package then ignore box.json or it will overwrite the existing one
 			// If the directory wasn't already a package, still save so our box.json gets install paths added
-			} else if( isPackage( installDirectory ) ) {
+			} else if( isPackage( installDirectory ) && readPackageDescriptor( installDirectory ).slug != packageName ) {
 				ignorePatterns.append( '/box.json' );
 			}
 
@@ -392,7 +392,8 @@ component accessors="true" singleton {
 			}
 
 			// Check to see if package has already been installed.  This check can only be performed for packages that get installed in their own directory.
-			if( artifactDescriptor.createPackageDirectory && directoryExists( installDirectory ) ){
+			// OR if the install dir has a box.json that is the package being installed.
+			if( directoryExists( installDirectory ) && ( artifactDescriptor.createPackageDirectory || readPackageDescriptor( installDirectory ).slug == packageName ) ){
 				var uninstallFirst = false;
 
 				// Make sure the currently installed version is older than what's being requested.  If there's a new version, install it anyway.
@@ -403,6 +404,10 @@ component accessors="true" singleton {
 				// Allow if forced.
 				} else if( arguments.force ) {
 					job.addLog( "Package already installed but you forced a reinstall." );
+					uninstallFirst = true;
+				// Check for empty directories that sometimes get left behind, but really shouldn't count as the package actually being there.
+				} else if( !directorylist( installDirectory ).len() ) {
+					job.addLog( "Package directory exists, but is empty so we're going to assume it's not really installed." );
 					uninstallFirst = true;
 				} else {
 					// cleanup tmp
@@ -421,7 +426,7 @@ component accessors="true" singleton {
 					return true;
 				}
 
-				if( uninstallFirst ) {
+				if( uninstallFirst && artifactDescriptor.createPackageDirectory ) {
 					job.addWarnLog( "Uninstalling first to get a fresh slate..." );
 
 					var params = {
