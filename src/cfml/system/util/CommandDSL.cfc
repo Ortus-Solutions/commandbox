@@ -98,7 +98,10 @@ component accessors=true {
 				if( runCommand ) {
 					processedParams.append( param );
 				} else if( getRawParams() ) {
-					processedParams.append( '"#param#"' );
+					// The tokenizing process escapes any = signs in quotes as \= as a convenience so it doesn't look like a named param
+					// We're skipping the tokenzier since we're going to directly pass an array of tokes, but we still need to handle
+					// any = signs inside of quotes or the param processor will think it is a named parameter since we don't re-processes quote at that time
+					processedParams.append( '"#replace( param, "=", "\=", "all" )#"' );
 				} else {
 					processedParams.append( '"#parser.escapeArg( param )#"' );
 				}
