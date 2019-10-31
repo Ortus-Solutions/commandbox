@@ -1023,6 +1023,7 @@ External Dependencies:
 		<mvn-repo id="sonatype-repository" url="https://oss.sonatype.org/content/repositories/snapshots/" />
 
 		<dependency  groupId="org.jline" artifactId="jline" version="${jline.version}" dest="${lib.dir}" type="jar" unzip="false" />
+		<dependency  groupId="org.fusesource.jansi" artifactId="jansi" version="${jansi.version}" dest="${lib.dir}" type="jar" unzip="false" />
 
 		<dependency groupId="org.eclipse.jgit" artifactId="org.eclipse.jgit" version="${jgit.version}" dest="${lib.dir}" repoId="jgit-repository" unzip="false" type="jar">
 			<exclusions>
