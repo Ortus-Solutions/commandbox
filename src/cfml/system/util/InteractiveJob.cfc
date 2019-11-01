@@ -87,7 +87,7 @@ component accessors=true singleton {
 		getCurrentJob()
 			.logLines.append(
 				// Any log lines with a line break needs to become multuple lines
-				line
+				toString( line )
 					// Break multiple lines into array
 					.listToArray( chr( 13 ) & chr( 10 ) )
 					// Break lines longer than the current terminal width into multiples
@@ -287,7 +287,7 @@ component accessors=true singleton {
 
 		// Add error message if it exists
 		if( job.errorMessage.len() ) {
-			job.errorMessage.listToArray( chr( 13 ) & chr( 10 ) ).each( function( thisErrorLine) {
+			toString( job.errorMessage ).listToArray( chr( 13 ) & chr( 10 ) ).each( function( thisErrorLine) {
 				lines.append( aStr.fromAnsi( print.redText( '   | > ' & thisErrorLine ) ) );
 			} );
 		}
