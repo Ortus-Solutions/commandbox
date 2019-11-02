@@ -1229,7 +1229,7 @@ component accessors="true" singleton {
 	    if( !fileSystemUtil.isWindows() && background ) {
 	    	// The shell script will take care of creating this file and emptying it every time
 	    	var nohupLog = '#serverInfo.serverHomeDirectory#/nohup.log';
-	    	// Pass log file to external process.  This is no we can capture the output of the server process
+	    	// Pass log file to external process.  This is so we can capture the output of the server process
 	    	args.prepend( '#serverInfo.serverHomeDirectory#/nohup.log' );
 	    	// Use this intermediate shell script to start our server via nohup
 	    	args.prepend( expandPath( '/server-commands/bin/server_spawner.sh' ) );
