@@ -1035,7 +1035,6 @@ External Dependencies:
 
 	    <dependency groupId="com.beust" artifactId="jcommander" version="1.47" dest="${lib.dir}" type="jar" unzip="false"/>
 	    <dependency groupId="net.minidev" artifactId="json-smart-mini" version="1.0.8" unzip="false" type="jar" dest="${lib.dir}"/>
-	    <dependency groupId="org.cfmlprojects" artifactId="runwar" version="${runwar.version}" dest="${lib.dir}" unzip="false" type="jar" />
 
 	    <!-- engine libs -->
 	  	<dependency groupId="org.lucee" artifactId="lucee" version="${lucee.version}" dest="${lib.dir}" unzip="false" type="jar" repoId="sonatype-repository">
@@ -1052,8 +1051,39 @@ External Dependencies:
 
 	    <mvn-repo id="java.repo" url="http://download.java.net/maven/2/" />
 	    <dependency groupId="javax.mail" artifactId="mail" version="1.4.4" dest="${lib.dir}" repoId="java.repo" unzip="false" type="jar" />
+	    
+        <antcall target="getrunwar" />
 
    </target>
+
+	<!-- Get runwar -->
+	<target name="getrunwar" description="Get runwar">
+		<!-- do a check -->
+		<antcontrib:if>
+		   <and>
+	       		<available file="runwar/${runwar.version}/runwar-${runwar.version}.jar" />
+	       		<not>
+		   			<contains string="${runwar.version}" substring="snapshot"/>
+		   		</not>
+		   </and>
+	        <then>
+	        	<echo>Runwar Binary found!</echo>
+	        </then>
+	        <else>
+	            <echo>runwar not found or snapshot build, getting artifact from ${ortus.repoURL}</echo>
+	            <mkdir dir="runwar/${runwar.version}" />
+				<get src="${ortus.repoURL}/cfmlprojects/runwar/${runwar.version}/runwar-${runwar.version}.jar"				
+					 dest="runwar/${runwar.version}/runwar-${runwar.version}.jar"
+					 verbose="true" />	 
+	        </else>
+	    </antcontrib:if>
+	    
+		<copy file="runwar/${runwar.version}/runwar-${runwar.version}.jar" tofile="${lib.dir}/runwar-${runwar.version}.jar" overwrite="true" />
+		
+		<!-- Temporary work around since Runwar isn't tagged as snapshot! -->
+		<delete file="runwar/${runwar.version}/runwar-${runwar.version}.jar" />
+		
+	</target>
 
 	<!-- Get launch4j -->
 	<target name="getlaunch4j" description="Get an OS dependent launch4j into the build directory">
