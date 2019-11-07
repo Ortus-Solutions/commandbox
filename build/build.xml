@@ -1079,10 +1079,7 @@ External Dependencies:
 	    </antcontrib:if>
 	    
 		<copy file="runwar/${runwar.version}/runwar-${runwar.version}.jar" tofile="${lib.dir}/runwar-${runwar.version}.jar" overwrite="true" />
-		
-		<!-- Temporary work around since Runwar isn't tagged as snapshot! -->
-		<delete file="runwar/${runwar.version}/runwar-${runwar.version}.jar" />
-		
+				
 	</target>
 
 	<!-- Get launch4j -->
