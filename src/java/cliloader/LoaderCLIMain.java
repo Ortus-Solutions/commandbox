@@ -190,6 +190,7 @@ public class LoaderCLIMain{
 		// This is mostly just for backwards compat and to enforce consistency.
 		if( cliArguments.size() > 0  
 				&& new File( cliArguments.get( 0 ) ).exists()
+				&& new File( cliArguments.get( 0 ) ).isFile()
 				&& ( cliArguments.get( 0 ).toLowerCase().endsWith( ".cfm" )
 					|| isShebang( new File( cliArguments.get( 0 ) ).getCanonicalPath() ) ) ) {
 			
