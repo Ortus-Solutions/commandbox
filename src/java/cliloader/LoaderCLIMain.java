@@ -188,17 +188,14 @@ public class LoaderCLIMain{
 		}
 		// Check for "box foo.cfm" or "box foo.cfm param1 ..."
 		// This is mostly just for backwards compat and to enforce consistency.
-		
-		File arg1File = new File( cliArguments.get( 0 ) );
-		
 		if( cliArguments.size() > 0  
-				&& arg1File.exists()
+				&& new File( cliArguments.get( 0 ) ).exists()
 				&& ( cliArguments.get( 0 ).toLowerCase().endsWith( ".cfm" )
-					|| isShebang( arg1File.getCanonicalPath() ) ) ) {
+					|| isShebang( new File( cliArguments.get( 0 ) ).getCanonicalPath() ) ) ) {
 			
 			log.debug( "Funneling: " + cliArguments.get( 0 ) + " through execute command." );
 			
-			String CFMLFile = arg1File.getCanonicalPath();
+			String CFMLFile = new File( cliArguments.get( 0 ) ).getCanonicalPath();
 			
 			// handle bash script
 			String CFMLFile2 = removeBinBash( CFMLFile );
@@ -211,7 +208,7 @@ public class LoaderCLIMain{
 			log.debug( "Executing: " + uri );
 			
 		} else if( cliArguments.size() > 0
-				&& arg1File.isFile() ) {
+				&& new File( cliArguments.get( 0 ) ).isFile() ) {
 			
 			String filename = cliArguments.get( 0 ).toLowerCase();
 			// This will force the shell to run the recipe command
