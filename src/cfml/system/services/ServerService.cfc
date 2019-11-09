@@ -1368,11 +1368,16 @@ component accessors="true" singleton {
 			if( !background ) {
 				try {
 
+					// Need to start reading the input stream or we can't detect Ctrl-C on Windows
+					var terminal = shell.getReader().getTerminal();
+					if( terminal.paused() ) {
+							terminal.resume();
+					}
 					variables.waitingOnConsoleStart = true;
 					while( true ) {
 						// For dumb terminals, just sit and wait to be interrupted
 						// Trying to read from a dumb terminal will throw "The handle is invalid" errors
-						if( shell.getReader().getTerminal().getClass().getName() contains 'dumb' ) {
+						if( terminal.getClass().getName() contains 'dumb' ) {
 							sleep( 500 );
 						} else {
 							// Detect user pressing Ctrl-C

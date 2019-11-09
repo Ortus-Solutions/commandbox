@@ -323,7 +323,7 @@ component accessors="true" singleton {
 		var terminal = getReader().getTerminal();
 		if( terminal.paused() ) {
 				terminal.resume();
-			}
+		}
 		
 		var keys = createObject( 'java', 'org.jline.keymap.KeyMap' );
 		var capability = createObject( 'java', 'org.jline.utils.InfoCmp$Capability' );
