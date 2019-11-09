@@ -188,13 +188,17 @@ public class LoaderCLIMain{
 		}
 		// Check for "box foo.cfm" or "box foo.cfm param1 ..."
 		// This is mostly just for backwards compat and to enforce consistency.
-		if( cliArguments.size() > 0 
-				&& cliArguments.get( 0 ).toLowerCase().endsWith( ".cfm" ) 
-				&& new File( cliArguments.get( 0 ) ).exists() ) {
+		
+		File arg1File = new File( cliArguments.get( 0 ) );
+		
+		if( cliArguments.size() > 0  
+				&& arg1File.exists()
+				&& ( cliArguments.get( 0 ).toLowerCase().endsWith( ".cfm" )
+					|| isShebang( arg1File.getCanonicalPath() ) ) ) {
 			
 			log.debug( "Funneling: " + cliArguments.get( 0 ) + " through execute command." );
 			
-			String CFMLFile = new File( cliArguments.get( 0 ) ).getCanonicalPath();
+			String CFMLFile = arg1File.getCanonicalPath();
 			
 			// handle bash script
 			String CFMLFile2 = removeBinBash( CFMLFile );
@@ -207,7 +211,7 @@ public class LoaderCLIMain{
 			log.debug( "Executing: " + uri );
 			
 		} else if( cliArguments.size() > 0
-				&& new File( cliArguments.get( 0 ) ).isFile() ) {
+				&& arg1File.isFile() ) {
 			
 			String filename = cliArguments.get( 0 ).toLowerCase();
 			// This will force the shell to run the recipe command
@@ -774,6 +778,16 @@ public class LoaderCLIMain{
 		merged.putAll( source );
 		merged.putAll( override );
 		return merged;
+	}
+
+	private static Boolean isShebang( String uri ) throws IOException{
+		FileReader namereader = new FileReader( new File( uri ) );
+		BufferedReader in = new BufferedReader( namereader );
+		String line = in.readLine();
+		if( line != null && line.startsWith( "#!" ) ) {
+			return true;
+		}
+		return false;
 	}
 
 	private static String removeBinBash( String uri ) throws IOException{
