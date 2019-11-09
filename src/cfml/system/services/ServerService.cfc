@@ -142,6 +142,7 @@ component accessors="true" singleton {
 				'accessLogEnable' : d.web.accessLogEnable ?: false,
 				'GZIPEnable' : d.web.GZIPEnable ?: true,
 				'welcomeFiles' : d.web.welcomeFiles ?: '',
+				'maxRequests' : d.web.maxRequests ?: '',
 				'HTTP' : {
 					'port' : d.web.http.port ?: 0,
 					'enable' : d.web.http.enable ?: true
@@ -591,6 +592,7 @@ component accessors="true" singleton {
 		serverInfo.basicAuthEnable 	= 								   serverJSON.web.basicAuth.enable		?: defaults.web.basicAuth.enable;
 		serverInfo.basicAuthUsers 	= 								   serverJSON.web.basicAuth.users		?: defaults.web.basicAuth.users;
 		serverInfo.welcomeFiles 	= serverProps.welcomeFiles		?: serverJSON.web.welcomeFiles			?: defaults.web.welcomeFiles;
+		serverInfo.maxRequests		= 								   serverJSON.web.maxRequests			?: defaults.web.maxRequests;
 
 		serverInfo.trayEnable	 	= serverJSON.trayEnable			?: defaults.trayEnable;
 
@@ -1109,6 +1111,9 @@ component accessors="true" singleton {
 	 	if( len( serverInfo.welcomeFiles ) ) {
 	 		 args.append( '--welcome-files' ).append( serverInfo.welcomeFiles );
 	 	}
+	 	if( len( serverInfo.maxRequests ) ) {
+	 		 args.append( '--worker-threads' ).append( serverInfo.maxRequests );
+	 	}	 	
 	 	if( len( CLIAliases ) ) {
 	 		 args.append( '--dirs' ).append( CLIAliases );
 	 	}
@@ -2049,6 +2054,7 @@ component accessors="true" singleton {
 			'openBrowserURL'	: '',
 			'customServerFolder': '',
 			'welcomeFiles'		: '',
+			'maxRequests'		: '',
 			'exitCode'			: 0
 		};
 	}
