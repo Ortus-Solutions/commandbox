@@ -1070,8 +1070,6 @@ component accessors="true" singleton {
 
 		if( len( serverInfo.restMappings ) ) {
 			args.append( '--servlet-rest-mappings' ).append( serverInfo.restMappings );
-		} else {
-			args.append( '--servlet-rest-mappings' ).append( '__DISABLED__' );
 		}
 
 		if( serverInfo.trace ) {
