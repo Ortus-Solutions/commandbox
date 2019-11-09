@@ -83,6 +83,7 @@ component singleton{
 	        .signalHandler( jSignalHandler )
 	        // This hides the warning when JLine defaults to a dumb terminal on CI builds
 	        .dumb( true )
+	        //.paused( true )
 			.build();
 				
 		// Build our reader instance

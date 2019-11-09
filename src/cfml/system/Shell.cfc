@@ -247,6 +247,11 @@ component accessors="true" singleton {
 				enableHistory( false );
 			}
 			
+			var terminal = getReader().getTerminal();
+			if( terminal.paused() ) {
+				terminal.resume();
+			}
+			
 			// read reponse while masking input
 			var input = variables.reader.readLine(
 				// Prompt for the user
@@ -316,6 +321,9 @@ component accessors="true" singleton {
 		}
 		
 		var terminal = getReader().getTerminal();
+		if( terminal.paused() ) {
+				terminal.resume();
+			}
 		
 		var keys = createObject( 'java', 'org.jline.keymap.KeyMap' );
 		var capability = createObject( 'java', 'org.jline.utils.InfoCmp$Capability' );
@@ -516,6 +524,11 @@ component accessors="true" singleton {
 					
 					if( arguments.silent ) {
 						interceptData.prompt = '';
+					}
+					
+					var terminal = getReader().getTerminal();
+					if( terminal.paused() ) {
+						terminal.resume();
 					}
 					
 					// Shell stops on this line while waiting for user input
