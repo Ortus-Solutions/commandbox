@@ -243,6 +243,9 @@ component accessors="true" singleton {
 		if( !isNull( serverProps.SSLKeyFile ) ) {
 			serverProps.SSLKeyFile = fileSystemUtil.resolvePath( serverProps.SSLKeyFile );
 		}
+		if( !isNull( serverProps.javaHomeDirectory ) ) {
+			serverProps.javaHomeDirectory = fileSystemUtil.resolvePath( serverProps.javaHomeDirectory );
+		}
 
 		if( structKeyExists( serverProps, 'trace' ) && serverProps.trace ) {
 			serverProps.debug = true;
@@ -633,13 +636,13 @@ component accessors="true" singleton {
 			serverInfo.javaVersion = serverProps.javaVersion;
 		// Then server.json java home dir
 		} else if( isDefined( 'serverJSON.JVM.javaHome' ) ) {
-			serverInfo.javaHome = serverJSON.JVM.javaHome;
+			serverInfo.javaHome = fileSystemUtil.resolvePath( serverJSON.JVM.javaHome, defaultServerConfigFileDirectory );
 		// Then server.json java version
 		} else if( isDefined( 'serverJSON.JVM.javaVersion' ) ) {
 			serverInfo.javaVersion = serverJSON.JVM.javaVersion;
 		// Then server defaults java home dir
 		} else if( defaults.JVM.javaHome.len() ) {
-			serverInfo.javaHome = defaults.JVM.javaHome;
+			serverInfo.javaHome = fileSystemUtil.resolvePath( defaults.JVM.javaHome, defaultwebroot );
 		// Then server defaults java versiom
 		} else if( defaults.JVM.javaVersion.len() ) {
 			serverInfo.javaVersion = defaults.JVM.javaVersion;
