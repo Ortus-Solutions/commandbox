@@ -604,7 +604,7 @@ component accessors="true" singleton {
 
 	/**
 	* Shutdown the shell and close/release any resources associated.
-	* This isn't gunartuneed to run if the shell is closed, but it 
+	* This isn't guaranteed to run if the shell is closed, but it 
 	* will run for a reload command
 	*/
 	function shutdown() {

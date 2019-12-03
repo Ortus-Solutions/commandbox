@@ -106,6 +106,7 @@ public class LoaderCLIMain{
 		}
 	}
 
+	public static Object			FRTrans;
 	private static URLClassLoader	_classLoader;
 	private static String			CFML_VERSION_PATH		= "cliloader/cfml.version";
 	private static String			CFML_ZIP_PATH			= "cfml.zip";
@@ -223,6 +224,19 @@ public class LoaderCLIMain{
 			}
 		}
 		
+		//try { 
+			Object FRAPI = new com.intergral.fusionreactor.api.FRAPI();
+			while( FRAPI.getInstance() == null || !FRAPI.getInstance().isInitialized() ) {
+				printStream.println( "Waiting on FusionReactor to load..." );
+				Thread.sleep( 500 );
+			}
+			Object FRInstance = FRAPI.getInstance();
+
+			FRTrans = FRAPI.createTrackedTransaction( "CLI Java Startup" );
+			FRAPI.setTransactionApplicationName( "CommandBox CLI" );
+			FRTransaction.setDescription( "Java Code from start of JVM to CF code running" );
+		//} catch( Throwable e ) {}
+		
 		System.setProperty( "cfml.cli.arguments", arrayToList( cliArguments.toArray( new String[ cliArguments.size() ] ), " " ) );
 		System.setProperty( "cfml.cli.argument.list", arrayToList( cliArguments.toArray( new String[ cliArguments.size() ] ), "," ) );
 		
@@ -270,7 +284,10 @@ public class LoaderCLIMain{
 				printStream.println( "Bootstrap: " + bootstrap );
 			}
 			
-    		String CFML = "mappings = getApplicationSettings().mappings; \n"
+    		String CFML = "loader = createObject( 'java', 'cliloader.LoaderCLIMain' ); \n" 
+    				+ "if( !isNull( loader.FRTrans ) ) { loader.FRTrans.close(); } \n" 
+    				+ "\n" 
+    				+ "mappings = getApplicationSettings().mappings; \n"
     	    		+ " mappings[ '/__commandbox_root/' ] = '" + webroot + "'; \n"
     	            + " application mappings='#mappings#' action='update'; \n"
             		+ " include '/__commandbox_root" + bootstrap.replace( "'", "''" ) + "'; \n";

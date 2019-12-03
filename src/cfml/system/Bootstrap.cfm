@@ -11,7 +11,6 @@ I am a CFM because the CLI seems to need a .cfm file to call
 This file will stay running the entire time the shell is open
 --->
 
-
 <cfset system = createObject( "java", "java.lang.System" )>
 <cfset system.setProperty( 'exitCode', '0' )>
 <cfset mappings = getApplicationSettings().mappings>
@@ -28,6 +27,12 @@ This file will stay running the entire time the shell is open
 	sessionmanagement 	= "false"
 	applicationTimeout = "#createTimeSpan( 999999, 0, 0, 0 )#"
 	mappings="#mappings#">
+
+<cfscript>
+	FRTransService = new commandbox.system.services.FRTransService();
+	FRTransaction = FRTransService.startTransaction( 'CLI CF Startup', 'CF Code from start of CFM bootstrap until ready to process' );
+</cfscript>
+
 
 <!--- 
 	Workaround to snuff out annoying ESAPI warnings in the console.
@@ -108,6 +113,8 @@ This file will stay running the entire time the shell is open
 
 		interceptData = { shellType=shell.getShellType(), args=argsArray, banner=getBanner() };
 		interceptorService.announceInterception( 'onCLIStart', interceptData );
+		
+		FRTransService.endTransaction( FRTransaction );
 
 		shell.callCommand( command=argsArray, initialCommand=true );
 
@@ -141,8 +148,11 @@ This file will stay running the entire time the shell is open
 			shell.printString( interceptData.banner );
 		}
 
+		FRTransService.endTransaction( FRTransaction );
+		
 		// Running the "reload" command will enter this while loop once
 		while( shell.run( silent=silent ) ){
+			FRTransaction = FRTransService.startTransaction( 'CLI Restart', 'Reloading CLI Shell' );
 			clearScreen = shell.getDoClearScreen();
 			
 			interceptorService.announceInterception( 'onCLIExit' );
@@ -176,6 +186,7 @@ This file will stay running the entire time the shell is open
 				shell.printString( interceptData.banner );
 			}
 
+			FRTransService.endTransaction( FRTransaction );
 		}
 	}
 

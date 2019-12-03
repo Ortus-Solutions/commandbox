@@ -26,6 +26,7 @@ component accessors="true" singleton {
 	property name='SystemSettings'		inject='SystemSettings';
 	property name='ConfigService'		inject='ConfigService';
 	property name='metadataCache'		inject='cachebox:metadataCache';
+	property name='FRTransService'		inject='FRTransService';
 
 	property name='configured' default="false" type="boolean";
 
@@ -285,9 +286,10 @@ component accessors="true" singleton {
 			instance.callStack.prepend( { commandInfo : commandInfo, environment : {} } );
 
 			// Start the try as soon as we prepend to the call stack so any errors from here on out, even parsing the params, will
-			// correct remove this call from the stack in the finally block.
+			// correctly remove this call from the stack in the finally block.
 			try {
-
+				var FRTrans = FRTransService.startTransaction( commandInfo.commandString.listChangeDelims( ' ', '.' ), commandInfo.originalLine );
+				
 				// If we're using postitional params, convert them to named
 				if( arrayLen( parameterInfo.positionalParameters ) ){
 					parameterInfo.namedParameters = convertToNamedParameters( parameterInfo.positionalParameters, commandParams );
@@ -342,6 +344,7 @@ component accessors="true" singleton {
 				var result = commandInfo.commandReference.CFC.run( argumentCollection = parameterInfo.namedParameters );
 				lastCommandErrored = commandInfo.commandReference.CFC.hasError();
 			} catch( any e ){
+				FRTransService.errorTransaction( FRTrans, e.getPageException() );
 				lastCommandErrored = true;
 				// If this command didn't already set a failing exit code...
 				if( commandInfo.commandReference.CFC.getExitCode() == 0 ) {
@@ -381,6 +384,8 @@ component accessors="true" singleton {
 				instance.callStack.deleteAt( 1 );
 				// Set command exit code into the shell
 				shell.setExitCode( commandInfo.commandReference.CFC.getExitCode() );
+				
+				FRTransService.endTransaction( FRTrans );
 			}
 
 			// If the command didn't return anything, grab its print buffer value
