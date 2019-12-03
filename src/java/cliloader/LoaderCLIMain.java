@@ -50,7 +50,7 @@ import java.lang.reflect.Method;
 import net.minidev.json.JSONArray;
 
 public class LoaderCLIMain{
-	
+
 	public static class ExtFilter implements FilenameFilter{
 		private final String	ext;
 
@@ -224,18 +224,42 @@ public class LoaderCLIMain{
 			}
 		}
 		
-		//try { 
-			Object FRAPI = new com.intergral.fusionreactor.api.FRAPI();
-			while( FRAPI.getInstance() == null || !FRAPI.getInstance().isInitialized() ) {
-				printStream.println( "Waiting on FusionReactor to load..." );
+		try { 
+			Class FRAPIClass = classLoader.loadClass( "com.intergral.fusionreactor.api.FRAPI" );
+		    Method getInstance = FRAPIClass.getMethod("getInstance", (Class[])null);
+
+			while( getInstance.invoke( FRAPIClass, (Object[])null ) == null ) {
+				if( debug ) {
+					printStream.println( "Waiting on FusionReactor to load..." );
+				}
 				Thread.sleep( 500 );
 			}
-			Object FRInstance = FRAPI.getInstance();
+			Object FRAPIInstance = getInstance.invoke( FRAPIClass, (Object[])null );
+		    Method isInitialized = FRAPIInstance.getClass().getMethod("isInitialized", (Class[])null);			
+			while( !(Boolean)isInitialized.invoke( FRAPIInstance, (Object[])null ) ) {
+				if( debug ) {
+					printStream.println( "Waiting on FusionReactor to load..." );
+				}
+				Thread.sleep( 500 );
+			}
+			
+		    Method createTrackedTransaction = FRAPIInstance.getClass().getMethod("createTrackedTransaction", String.class );		
 
-			FRTrans = FRAPI.createTrackedTransaction( "CLI Java Startup" );
-			FRAPI.setTransactionApplicationName( "CommandBox CLI" );
-			FRTransaction.setDescription( "Java Code from start of JVM to CF code running" );
-		//} catch( Throwable e ) {}
+		    FRTrans = createTrackedTransaction.invoke( FRAPIInstance, "CLI Java Startup" );
+
+		    Method setTransactionApplicationName = FRAPIClass.getMethod("setTransactionApplicationName", String.class );
+		    setTransactionApplicationName.invoke( FRAPIInstance, "CommandBox CLI" );
+
+		    Method setDescription = FRTrans.getClass().getMethod("setDescription", String.class );
+		    setDescription.invoke( FRTrans, "Java Code from start of JVM to CF code running" );
+		    
+		} catch( Throwable e ) {
+			if( debug ) {
+				printStream.println( e.getMessage() );
+				//throw new IOException( e );
+			}
+			
+		}
 		
 		System.setProperty( "cfml.cli.arguments", arrayToList( cliArguments.toArray( new String[ cliArguments.size() ] ), " " ) );
 		System.setProperty( "cfml.cli.argument.list", arrayToList( cliArguments.toArray( new String[ cliArguments.size() ] ), "," ) );
