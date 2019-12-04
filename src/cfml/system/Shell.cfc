@@ -559,7 +559,7 @@ component accessors="true" singleton {
 				// Catch all for custom user interrupt thrown from CFML
 				} catch( any var e ) {
 					
-					if( e.type == 'UserInterruptException' ) {
+					if( e.type.toString() == 'UserInterruptException' ) {
 			    		continue;			    			
 					} else {
 						rethrow;
@@ -801,13 +801,15 @@ component accessors="true" singleton {
 				variables.reader.getTerminal().writer().print( variables.print.boldRedLine( 'CANCELLED' ) );
 			}
 		
-		} catch (any e) {
-			
+		} catch (any e) {			
 			// If this is a nested command, pass the exception along to unwind the entire stack.
 			if( !initialCommand ) {
 				rethrow;
 			// This type of error means the user hit Ctrl-C, when not in a readLine() call (and hit my custom signal handler).  Duck out and move along.
-			} else if( e.getPageException().getRootCause().getClass().getName() == 'java.lang.InterruptedException' || e.type == 'UserInterruptException' || e.message == 'UserInterruptException' || e.type == 'EndOfFileException' ) {
+			} else if( e.getPageException().getRootCause().getClass().getName() == 'java.lang.InterruptedException' 
+				|| e.type.toString() == 'UserInterruptException' 
+				|| e.message == 'UserInterruptException' 
+				|| e.type.toString() == 'EndOfFileException' ) {
 
 				progressBarGeneric.clear();				
 				if( job.isActive() ) {

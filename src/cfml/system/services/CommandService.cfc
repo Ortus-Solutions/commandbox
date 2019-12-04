@@ -369,7 +369,7 @@ component accessors="true" singleton {
 				// since in that case I don't want to execute the "echo" command since the "cat" failed.
 				if( arrayLen( commandChain ) > i && listFindNoCase( '||,;', commandChain[ i+1 ].originalLine ) ) {
 					// These are "expected" exceptions like validation errors that can be "pretty"
-					if( e.type == 'commandException' ) {
+					if( e.type.toString() == 'commandException' ) {
 						shell.printError( { message : e.message, detail: e.detail } );
 					// These are catastrophic errors that warrant a full stack trace.
 					} else {
