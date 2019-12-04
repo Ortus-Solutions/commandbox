@@ -17,4 +17,10 @@ component accessors="true" implements="IEndpoint" extends="commandbox.system.end
 		return this;
 	}
 
+	/*private function secureCloneCommand( required any cloneCommand ) {
+		cloneCommand.setCredentialsProvider( createObject( 'java', 'org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider' ).init( "brad", "gxzzSxkYh6cYAsHJq2Y8" ) );
+		return cloneCommand;
+	}*/
+	
+
 }
