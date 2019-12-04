@@ -89,7 +89,7 @@ component aliases="start" {
 	 * @javaHomeDirectory	Path to the JRE home directory containing ./bin/java
 	 * @AJPEnable			Enable AJP
 	 * @AJPPort				AJP Port number
-	 * @javaVersion			Any endpoint ID, such as "java:openjdk11" fromt the Java endpoint 
+	 * @javaVersion			Any endpoint ID, such as "java:openjdk11" from the Java endpoint 
 	 * @javaVersion.optionsUDF	javaVersionComplete
 	 **/
 	function run(
