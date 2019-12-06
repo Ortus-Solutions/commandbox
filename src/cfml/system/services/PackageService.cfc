@@ -764,14 +764,20 @@ component accessors="true" singleton {
 		struct endpointData
 		) {
 		// Get box.json, create empty if it doesn't exist
-		var boxJSON = readPackageDescriptorRaw( arguments.currentWorkingDirectory );
+		var boxJSONRaw = readPackageDescriptorRaw( arguments.currentWorkingDirectory );
+		// Reading the non-raw version purely for the purpose of comparisons with the env vars replaced.
+		var boxJSON = readPackageDescriptor( arguments.currentWorkingDirectory );
 
 		// Get reference to appropriate dependency struct
 		if( arguments.dev ) {
-			boxJSON[ 'devDependencies' ] = boxJSON.devDependencies ?: {};
+			boxJSONRaw[ 'devDependencies' ] = boxJSONRaw.devDependencies ?: {};
+			boxJSON[ 'devDependencies' ] = boxJSON.devDependencies ?: {};			
+			var dependenciesRaw = boxJSONRaw.devDependencies;			
 			var dependencies = boxJSON.devDependencies;
 		} else {
+			boxJSONRaw[ 'dependencies' ] = boxJSONRaw.dependencies ?: {};
 			boxJSON[ 'dependencies' ] = boxJSON.dependencies ?: {};
+			var dependenciesRaw = boxJSONRaw.dependencies;
 			var dependencies = boxJSON.dependencies;
 		}
 		var updated = false;
@@ -796,8 +802,9 @@ component accessors="true" singleton {
 		}
 
 		// Prevent unneccessary updates to the JSON file.
+		// For the comparison, we look in the non-raw version of the box.json so env vars are replaced
 		if( !dependencies.keyExists( arguments.packageName ) || dependencies[ arguments.packageName ] != thisValue ) {
-			dependencies[ arguments.packageName ] = thisValue;
+			dependenciesRaw[ arguments.packageName ] = thisValue;
 			updated = true;
 		}
 
@@ -805,8 +812,8 @@ component accessors="true" singleton {
 		// so don't save this if they were just dumped somewhere like the package root amongst
 		// other unrelated files and folders.
 		if( arguments.installDirectoryIsDedicated ) {
-			boxJSON[ 'installPaths' ] = boxJSON.installPaths ?: {};
-			var installPaths = boxJSON.installPaths;
+			boxJSONRaw[ 'installPaths' ] = boxJSONRaw.installPaths ?: {};
+			var installPaths = boxJSONRaw.installPaths;
 
 			// normalize slashes and make them all "/"
 			arguments.currentWorkingDirectory = fileSystemUtil.normalizeSlashes( fileSystemUtil.resolvePath( arguments.currentWorkingDirectory ) );
@@ -846,7 +853,7 @@ component accessors="true" singleton {
 
 		// Write the box.json back out
 		if( updated ) {
-			writePackageDescriptor( boxJSON, arguments.currentWorkingDirectory );
+			writePackageDescriptor( boxJSONRaw, arguments.currentWorkingDirectory );
 			return true;
 		}
 		return false;
