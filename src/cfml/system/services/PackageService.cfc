@@ -792,7 +792,7 @@ component accessors="true" singleton {
 				// caret version range (^1.2.3) allows updates that don't bump the major version.
 				var thisValue = '^' & arguments.version;
 			}
-			// If not the default forgebox endpoint, include the endpoint name and package name as"
+			// If not the default forgebox endpoint, include the endpoint name and package name as
 			// myEndpoing:mypackage@^1.2.3
 			if( endpointData.endpointName != 'forgebox' ) {
 				thisValue = '#endpointData.endpointName#:#arguments.packageName#@#thisValue#';
