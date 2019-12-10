@@ -1063,7 +1063,7 @@ External Dependencies:
 		   <and>
 	       		<available file="runwar/${runwar.version}/runwar-${runwar.version}.jar" />
 	       		<not>
-		   			<contains string="${runwar.version}" substring="snapshot"/>
+		   			<contains string="${runwar.version}" substring="snapshot" casesensitive="false" />
 		   		</not>
 		   </and>
 	        <then>
