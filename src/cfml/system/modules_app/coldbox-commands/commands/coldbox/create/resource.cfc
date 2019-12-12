@@ -162,7 +162,8 @@ component {
 			.params(
 				handler    = arguments.handler,
 				actions    = variables.ACTIONS.toList(),
-				appMapping = arguments.appMapping
+				appMapping = arguments.appMapping,
+				directory  = arguments.specsDirectory & '/integration'
 			)
 			.run();
 
@@ -180,15 +181,17 @@ component {
 					primaryKeyColumn 	= arguments.primaryKeyColumn,
 					generator 			= arguments.generator,
 					properties 			= arguments.properties,
-					directory 			= arguments.modelsDirectory
+					directory 			= arguments.modelsDirectory,
+					testsDirectory      = arguments.specsDirectory & '/unit'
 				)
 				.run();
 			
 			print.blueLine( '--> Generating ORM Virtual Service (#arguments.singularName#)' );
 			command( "coldbox create orm-virtual-service" )
 				.params(
-					entityName  = arguments.singularName,
-					directory 	= arguments.modelsDirectory
+					entityName     = arguments.singularName,
+					directory      = arguments.modelsDirectory,
+					testsDirectory = arguments.specsDirectory & '/unit'
 				)
 				.run();
 
@@ -200,7 +203,8 @@ component {
 					name        = ucFirst( arguments.singularName ),
 					description = "I model a #arguments.singularName#",
 					properties  = arguments.properties,
-					directory 	= arguments.modelsDirectory
+					directory 	= arguments.modelsDirectory,
+					testsDirectory = arguments.specsDirectory & '/unit'
 				)
 				.run();
 
@@ -208,11 +212,12 @@ component {
 			print.blueLine( '--> Generating resource service (#arguments.resource#Service)' );
 			command( "coldbox create model" )
 				.params(
-					name        = ucFirst( arguments.resource ) & "Service",
-					persistence = "singleton",
-					description = "I manage #arguments.singularName#",
-					methods 	= "save,delete,list,get",
-					directory 	= arguments.modelsDirectory
+					name           = ucFirst( arguments.resource ) & "Service",
+					persistence    = "singleton",
+					description    = "I manage #arguments.singularName#",
+					methods        = "save,delete,list,get",
+					directory      = arguments.modelsDirectory,
+					testsDirectory = arguments.specsDirectory & '/unit'
 				)
 				.run();
 		}
