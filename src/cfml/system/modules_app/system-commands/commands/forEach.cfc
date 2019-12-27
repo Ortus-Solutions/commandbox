@@ -114,6 +114,8 @@ component {
 				} else {
 					rethrow;
 				}
+			} finally {
+				checkinterrupted();
 			}
 			
 		}
