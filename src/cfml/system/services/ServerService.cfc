@@ -185,7 +185,11 @@ component accessors="true" singleton {
 				'sessionCookieHTTPOnly' : d.app.sessionCookieHTTPOnly ?: false
 			},
 			'runwar' : {
-				'args' : d.runwar.args ?: ''
+				'args' : d.runwar.args ?: '',
+				// Duplicate so onServerStart interceptors don't actually change config settings via reference.
+				'XNIOOptions' : duplicate( d.runwar.XNIOOptions ?: {} ),
+				// Duplicate so onServerStart interceptors don't actually change config settings via reference.
+				'undertowOptions' : duplicate( d.runwar.undertowOptions ?: {} )
 			}
 		};
 	}
@@ -708,7 +712,13 @@ component accessors="true" singleton {
 
 		// Global defauls are always added on top of whatever is specified by the user or server.json
 		serverInfo.runwarArgs		= ( serverProps.runwarArgs		?: serverJSON.runwar.args ?: '' ) & ' ' & defaults.runwar.args;
-
+		
+		// Global defauls are always added on top of whatever is specified by the user or server.json
+		serverInfo.runwarXNIOOptions	= ( serverJSON.runwar.XNIOOptions ?: {} ).append( defaults.runwar.XNIOOptions, true );
+		
+		// Global defauls are always added on top of whatever is specified by the user or server.json
+		serverInfo.runwarUndertowOptions	= ( serverJSON.runwar.UndertowOptions ?: {} ).append( defaults.runwar.UndertowOptions, true );
+		
 		// Server startup timeout
 		serverInfo.startTimeout		= serverProps.startTimeout 			?: serverJSON.startTimeout 	?: defaults.startTimeout;
 
@@ -1065,7 +1075,15 @@ component accessors="true" singleton {
 		 	.append( '--cookie-secure' ).append( serverInfo.sessionCookieSecure )
 		 	.append( '--cookie-httponly' ).append( serverInfo.sessionCookieHTTPOnly )
 		 	.append( serverInfo.runwarArgs.listToArray( ' ' ), true );
-
+		
+		if( serverInfo.runwarXNIOOptions.count() ) {
+			args.append( '--xnio-options=' & serverInfo.runwarXNIOOptions.reduce( ( opts='', k, v ) => opts.listAppend( k & '=' & v ) ) );
+		} 	
+		
+		if( serverInfo.runwarUndertowOptions.count() ) {
+			args.append( '--undertow-options=' & serverInfo.runwarUndertowOptions.reduce( ( opts='', k, v ) => opts.listAppend( k & '=' & v ) ) );
+		}
+		 	
 		if( serverInfo.debug ) {
 			// Debug is getting turned on any time I include the --debug flag regardless of whether it's true or false.
 			args.append( '--debug' ).append( serverInfo.debug );
@@ -1247,7 +1265,7 @@ component accessors="true" singleton {
 			var cleanedArgs = cr & '    ' & trim( reReplaceNoCase( args.toList( ' ' ), ' (-|"-)', cr & '    \1', 'all' ) );
 			job.addLog("Server start command: #cleanedargs#");
 	    }
-
+	    
 	    processBuilder.init( args );
 	    
         // incorporate CommandBox environment variables into the process's env
@@ -2040,6 +2058,8 @@ component accessors="true" singleton {
 			'directoryBrowsing' : false,
 			'JVMargs'			: "",
 			'runwarArgs'		: "",
+			'runwarXNIOOptions'	: {},
+			'runwarUndertowOptions'	: {},
 			'cfengine'			: "",
 			'restMappings'		: "",
 			'sessionCookieSecure'	: false,
