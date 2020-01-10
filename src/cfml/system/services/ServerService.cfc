@@ -337,7 +337,7 @@ component accessors="true" singleton {
 		// Save hand-entered properties in our server.json for next time
 		for( var prop in serverProps ) {
 			// Ignore null props or ones that shouldn't be saved
-			if( isNull( serverProps[ prop ] ) || listFindNoCase( 'saveSettings,serverConfigFile,debug,force,console,trace', prop ) ) {
+			if( isNull( serverProps[ prop ] ) || listFindNoCase( 'saveSettings,serverConfigFile,debug,force,console,trace,command', prop ) ) {
 				continue;
 			}
 	    	var configPath = replace( fileSystemUtil.resolvePath( defaultServerConfigFileDirectory ), '\', '/', 'all' );
@@ -1266,6 +1266,11 @@ component accessors="true" singleton {
 			job.addLog("Server start command: #cleanedargs#");
 	    }
 	    
+		if( serverProps.command ?: false ) {
+			job.complete( serverInfo.debug );
+			return args.map( ( arg ) => '"#arg#"' ).toList( ' ' );
+		}
+
 	    processBuilder.init( args );
 	    
         // incorporate CommandBox environment variables into the process's env
