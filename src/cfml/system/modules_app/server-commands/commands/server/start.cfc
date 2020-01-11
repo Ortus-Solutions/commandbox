@@ -91,6 +91,7 @@ component aliases="start" {
 	 * @AJPPort				AJP Port number
 	 * @javaVersion			Any endpoint ID, such as "java:openjdk11" from the Java endpoint 
 	 * @javaVersion.optionsUDF	javaVersionComplete
+	 * @comamnd				Experimental feature to return raw command for starting server. Pass true/false
 	 **/
 	function run(
 		String  name,
@@ -132,7 +133,8 @@ component aliases="start" {
 		String javaHomeDirectory,
 		Boolean AJPEnable,
 		Numeric AJPPort,
-		String javaVersion
+		String javaVersion,
+		Boolean command
 	){
 
 		// This is a common mis spelling
