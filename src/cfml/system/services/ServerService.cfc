@@ -1268,7 +1268,7 @@ component accessors="true" singleton {
 	    
 		if( serverProps.command ?: false ) {
 			job.complete( serverInfo.debug );
-			return args.map( ( arg ) => '"#arg#"' ).toList( ' ' );
+			return args.map( ( arg ) => toString( arg ).reReplace( '^\-([Dd][^=]+)', '-"\1"' ).replace(' ', '" "', 'all') ).toList( ' ' );
 		}
 
 	    processBuilder.init( args );
