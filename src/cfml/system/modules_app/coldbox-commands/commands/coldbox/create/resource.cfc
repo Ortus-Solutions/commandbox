@@ -115,9 +115,10 @@ component {
 		} else {
 			arguments.handlersDirectory	= resolvePath( arguments.handlersDirectory );
 			arguments.viewsDirectory 	= resolvePath( arguments.viewsDirectory );
+			var relativeModelsDirectory = arguments.modelsDirectory;
 			arguments.modelsDirectory 	= resolvePath( arguments.modelsDirectory );
 		}
-		
+
 		/********************** GENERATE HANDLER ************************/
 
 		print.greenBoldLine( "Generating #arguments.resource# resources..." );
@@ -200,10 +201,10 @@ component {
 			// Generate model
 			command( "coldbox create model" )
 				.params(
-					name        = ucFirst( arguments.singularName ),
-					description = "I model a #arguments.singularName#",
-					properties  = arguments.properties,
-					directory 	= arguments.modelsDirectory,
+					name           = ucFirst( arguments.singularName ),
+					description    = "I model a #arguments.singularName#",
+					properties     = arguments.properties,
+					directory      = relativeModelsDirectory,
 					testsDirectory = arguments.specsDirectory & '/unit'
 				)
 				.run();
@@ -216,7 +217,7 @@ component {
 					persistence    = "singleton",
 					description    = "I manage #arguments.singularName#",
 					methods        = "save,delete,list,get",
-					directory      = arguments.modelsDirectory,
+					directory      = relativeModelsDirectory,
 					testsDirectory = arguments.specsDirectory & '/unit'
 				)
 				.run();
