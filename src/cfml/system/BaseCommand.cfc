@@ -61,7 +61,7 @@ component accessors="true" singleton {
 		return variables.exitCode;
 	}
 
-	function setExitCode( exitCode ) {
+	function setExitCode( required numeric exitCode ) {
 		variables.exitCode = arguments.exitCode;
 	}
 
