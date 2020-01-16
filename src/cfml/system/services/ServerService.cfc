@@ -1265,10 +1265,10 @@ component accessors="true" singleton {
 			var cleanedArgs = cr & '    ' & trim( reReplaceNoCase( args.toList( ' ' ), ' (-|"-)', cr & '    \1', 'all' ) );
 			job.addLog("Server start command: #cleanedargs#");
 	    }
-	    
-		if( serverProps.command ?: false ) {
+
+		if( serverProps.keyExists( 'command' ) ) {
 			job.complete( serverInfo.debug );
-			return args.map( ( arg ) => '"#arg#"' ).toList( ' ' );
+			return args.map( escapeCommandArgs( serverProps.command ) ).toList( ' ' );
 		}
 
 	    processBuilder.init( args );
@@ -2144,5 +2144,64 @@ component accessors="true" singleton {
 		}
 
 		return props;
+	}
+
+	function escapeCommandArgs( required string targetShell ) {
+		// regex to split a string into quoted and unquoted segments
+		var segmentRegex = function( escapeChar ) {
+			if( !isNull( arguments.escapeChar ) ) {
+				// (?:[^"]|#escapeChar#.)+
+				// match anything that is not a quote or is an escape followed by anything
+				// or
+				// "(?:[^"]|#escapeChar#.)*"
+				// match an opening quote, followed by matching anything that is not
+				// a quote or is an escape followed by anything, followed by a closing quote
+				return '(?:[^"]|#escapeChar#.)+|"(?:[^"]|#escapeChar#.)*"';
+			}
+			// if no escape char, then just match unquoted and quoted sections
+			return '[^"]+|"[^"]*"';
+		};
+
+		var shellEscapes = {
+			bash: function( arg, idx ) {
+				return toString( arg ).reMatch( segmentRegex( '\\' ) ).map( ( segment ) => {
+					if( !segment.startswith( '"' ) ) {
+						segment = segment.replace( ' ', '\ ', 'all' );
+					}
+					return segment;
+				} ).toList( '' );
+			},
+			cmd: function( arg, idx ) {
+				return toString( arg ).reMatch( segmentRegex() ).map( ( segment ) => {
+					if( !segment.startswith( '"' ) and segment.find( ' ' ) ) {
+						segment = '"#segment#"';
+					}
+					if( segment.endswith( '\"' ) ) {
+						// cmd will pass this literally, so we need to escape it for the underlying Java process
+						segment = segment.left( -2 ) & '\\"';
+					}
+					return segment;
+				} ).toList( '' );
+			},
+			pwsh: function( arg, idx ) {
+				return toString( arg ).reMatch( segmentRegex( '`' ) ).map( ( segment ) => {
+					if( !segment.startswith( '"' ) ) {
+						segment = segment.replace( ' ', '` ', 'all' );
+					}
+					// PowerShell needs the `-` in single `-` args escaped when they contain periods
+					// or it will split the argument at the period
+					if( segment.reFind( '^-(?!-)' ) && segment.find( '.' ) ) {
+						segment = '`' & segment;
+					}
+					return segment;
+				} ).toList( '' );
+			}
+		};
+
+		if( !shellEscapes.keyExists( targetShell ) ) {
+			throw( message="Invalid target shell specified. [#targetShell#].", type="commandException");
+		}
+
+		return shellEscapes[ targetShell ];
 	}
 }
