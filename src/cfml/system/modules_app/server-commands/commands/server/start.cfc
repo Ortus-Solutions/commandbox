@@ -137,8 +137,8 @@ component aliases="start" {
 		Boolean AJPEnable,
 		Numeric AJPPort,
 		String javaVersion,
-		String scriptFile,
-		String scriptFilePath,
+		String startScript,
+		String startScriptFile,
 		Boolean dryRun
 	){
 
