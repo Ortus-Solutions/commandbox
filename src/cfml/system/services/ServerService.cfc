@@ -337,7 +337,7 @@ component accessors="true" singleton {
 		// Save hand-entered properties in our server.json for next time
 		for( var prop in serverProps ) {
 			// Ignore null props or ones that shouldn't be saved
-			if( isNull( serverProps[ prop ] ) || listFindNoCase( 'saveSettings,serverConfigFile,debug,force,console,trace,command', prop ) ) {
+			if( isNull( serverProps[ prop ] ) || listFindNoCase( 'saveSettings,serverConfigFile,debug,force,console,trace,startScript,startScriptFile,dryRun', prop ) ) {
 				continue;
 			}
 	    	var configPath = replace( fileSystemUtil.resolvePath( defaultServerConfigFileDirectory ), '\', '/', 'all' );

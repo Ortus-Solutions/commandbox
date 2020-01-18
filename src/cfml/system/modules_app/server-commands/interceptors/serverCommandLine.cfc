@@ -5,7 +5,7 @@
  ********************************************************************************
  *
  * I am an interceptor that listens for the server start command line arguments
- * and generates a shell script from them if `scriptFile` is specified.
+ * and generates a shell script from them if `startScript` is specified.
  *
  */
 component {
@@ -23,16 +23,16 @@ component {
 	};
 
 	function onServerProcessLaunch( struct interceptData ) {
-		if( interceptData.serverProps.keyExists( 'scriptFile' ) ) {
-			if( !shellScripts.keyExists( interceptData.serverProps.scriptFile ) ) {
+		if( interceptData.serverProps.keyExists( 'startScript' ) ) {
+			if( !shellScripts.keyExists( interceptData.serverProps.startScript ) ) {
 				job.addErrorLog(
-					'Invalid target shell specified [#interceptData.serverProps.scriptFile#] for command line shell script. Unable to generate script.'
+					'Invalid target shell specified [#interceptData.serverProps.startScript#] for command line shell script. Unable to generate script.'
 				);
 			} else {
 				generateStartScript(
 					interceptData.commandLineArguments,
-					interceptData.serverProps.scriptFile,
-					interceptData.serverProps.scriptFilePath ?: '',
+					interceptData.serverProps.startScript,
+					interceptData.serverProps.startScriptFile ?: '',
 					interceptData.serverInfo.serverConfigFile
 				);
 			}
@@ -42,30 +42,30 @@ component {
 	private function generateStartScript(
 		required array commandLineArguments,
 		required string targetShell,
-		required string scriptFilePath,
+		required string startScriptFile,
 		required string serverConfigFile
 	) {
-		if( !scriptFilePath.len() ) {
-			scriptFilePath = getFileFromPath( serverConfigFile );
-			if( scriptFilePath.startsWith( 'server' ) ) {
-				scriptFilePath = scriptFilePath.replace( 'server', 'server-start' );
+		if( !startScriptFile.len() ) {
+			startScriptFile = getFileFromPath( serverConfigFile );
+			if( startScriptFile.startsWith( 'server' ) ) {
+				startScriptFile = startScriptFile.replace( 'server', 'server-start' );
 			} else {
-				scriptFilePath = 'server-start-' & scriptFilePath;
+				startScriptFile = 'server-start-' & startScriptFile;
 			}
-			scriptFilePath = scriptFilePath.left( -4 ) & shellScripts[ targetShell ].ext;
-			scriptFilePath = getDirectoryFromPath( serverConfigFile ) & scriptFilePath;
+			startScriptFile = startScriptFile.left( -4 ) & shellScripts[ targetShell ].ext;
+			startScriptFile = getDirectoryFromPath( serverConfigFile ) & startScriptFile;
 		}
 
-		scriptFilePath = fileSystemUtil.resolvePath( scriptFilePath );
+		startScriptFile = fileSystemUtil.resolvePath( startScriptFile );
 
 		var cmdLines = [];
 		cmdLines.append( shellScripts[ targetShell ].startlines, true );
 		cmdLines.append( encodeShellEnv( targetShell ), true );
 		cmdLines.append( encodeShellCmd( commandLineArguments, targetShell ) );
 		cmdLines.append( shellScripts[ targetShell ].endlines, true );
-		fileWrite( scriptFilePath, cmdLines.toList( cr ) & cr );
+		fileWrite( startScriptFile, cmdLines.toList( cr ) & cr );
 
-		job.addLog( 'Start script for shell [#targetShell#] generated at: #scriptFilePath#' );
+		job.addLog( 'Start script for shell [#targetShell#] generated at: #startScriptFile#' );
 	}
 
 	private function encodeShellEnv( required string targetShell ) {

@@ -91,7 +91,10 @@ component aliases="start" {
 	 * @AJPPort				AJP Port number
 	 * @javaVersion			Any endpoint ID, such as "java:openjdk11" from the Java endpoint 
 	 * @javaVersion.optionsUDF	javaVersionComplete
-	 * @comamnd				Experimental feature to return raw command for starting server. Pass true/false
+	 * @startScript			If you want to generate a native script to directly start the server process pass bash, cmd, or pwsh
+	 * @startScript.options	bash,cmd,pwsh
+	 * @startScriptFile		Optional override for the name and location of the start script. This is ignored if no startScript param is specified
+	 * @dryRun				Pass true to abort actually starting the server process, but all instalation and downloading will still be performed to "warm up" the engine installation.
 	 **/
 	function run(
 		String  name,
@@ -134,7 +137,9 @@ component aliases="start" {
 		Boolean AJPEnable,
 		Numeric AJPPort,
 		String javaVersion,
-		Boolean command
+		String scriptFile,
+		String scriptFilePath,
+		Boolean dryRun
 	){
 
 		// This is a common mis spelling
