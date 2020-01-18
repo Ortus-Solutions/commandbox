@@ -1261,31 +1261,47 @@ component accessors="true" singleton {
 			args.prepend( expandPath( '/bin/bash' ) );
 	    }
 
+		// At this point all command line arguments are in place, announce this
+		var interceptData = {
+			commandLineArguments=args,
+			serverInfo=serverInfo,
+			serverJSON=serverJSON,
+			defaults=defaults,
+			serverProps=serverProps,
+			serverDetails=serverDetails,
+			installDetails=installDetails ?: {}
+		};
+		interceptorService.announceInterception( 'onServerCommandLine', interceptData );
+		// ensure we get the updated args if they were replaced wholesale by interceptor
+		args = interceptData.commandLineArguments;
+
+		// now we can log the *final* command line string that will be used to start the server
 	    if( serverInfo.debug ) {
 			var cleanedArgs = cr & '    ' & trim( reReplaceNoCase( args.toList( ' ' ), ' (-|"-)', cr & '    \1', 'all' ) );
 			job.addLog("Server start command: #cleanedargs#");
 	    }
 
-		if( serverProps.keyExists( 'command' ) ) {
+		if( serverProps.dryRun ?: false ) {
+			job.addLog( 'Dry run specified, exiting without starting server.' );
 			job.complete( serverInfo.debug );
-			return args.map( escapeCommandArgs( serverProps.command ) ).toList( ' ' );
+			return;
 		}
 
 	    processBuilder.init( args );
-	    
+
         // incorporate CommandBox environment variables into the process's env
         var currentEnv = processBuilder.environment();
         currentEnv.putAll( systemSettings.getAllEnvironmentsFlattened() );
-        
+
         // Special check to remove ConEMU vars which can screw up the sub process if it happens to run cmd, such as opening VSCode.
         if( fileSystemUtil.isWindows() && currentEnv.containsKey( 'ConEmuPID' ) ) {
             for( var key in currentEnv ) {
             	if( key.startsWith( 'ConEmu' ) || key == 'PROMPT' ) {
             		currentEnv.remove( key );
-            	}	
+            	}
             }
         }
-        
+
 	    // Conjoin standard error and output for convenience.
 	    processBuilder.redirectErrorStream( true );
 	    // Kick off actual process
@@ -2146,62 +2162,4 @@ component accessors="true" singleton {
 		return props;
 	}
 
-	function escapeCommandArgs( required string targetShell ) {
-		// regex to split a string into quoted and unquoted segments
-		var segmentRegex = function( escapeChar ) {
-			if( !isNull( arguments.escapeChar ) ) {
-				// (?:[^"]|#escapeChar#.)+
-				// match anything that is not a quote or is an escape followed by anything
-				// or
-				// "(?:[^"]|#escapeChar#.)*"
-				// match an opening quote, followed by matching anything that is not
-				// a quote or is an escape followed by anything, followed by a closing quote
-				return '(?:[^"]|#escapeChar#.)+|"(?:[^"]|#escapeChar#.)*"';
-			}
-			// if no escape char, then just match unquoted and quoted sections
-			return '[^"]+|"[^"]*"';
-		};
-
-		var shellEscapes = {
-			bash: function( arg, idx ) {
-				return toString( arg ).reMatch( segmentRegex( '\\' ) ).map( ( segment ) => {
-					if( !segment.startswith( '"' ) ) {
-						segment = segment.replace( ' ', '\ ', 'all' );
-					}
-					return segment;
-				} ).toList( '' );
-			},
-			cmd: function( arg, idx ) {
-				return toString( arg ).reMatch( segmentRegex() ).map( ( segment ) => {
-					if( !segment.startswith( '"' ) and segment.find( ' ' ) ) {
-						segment = '"#segment#"';
-					}
-					if( segment.endswith( '\"' ) ) {
-						// cmd will pass this literally, so we need to escape it for the underlying Java process
-						segment = segment.left( -2 ) & '\\"';
-					}
-					return segment;
-				} ).toList( '' );
-			},
-			pwsh: function( arg, idx ) {
-				return toString( arg ).reMatch( segmentRegex( '`' ) ).map( ( segment ) => {
-					if( !segment.startswith( '"' ) ) {
-						segment = segment.replace( ' ', '` ', 'all' );
-					}
-					// PowerShell needs the `-` in single `-` args escaped when they contain periods
-					// or it will split the argument at the period
-					if( segment.reFind( '^-(?!-)' ) && segment.find( '.' ) ) {
-						segment = '`' & segment;
-					}
-					return segment;
-				} ).toList( '' );
-			}
-		};
-
-		if( !shellEscapes.keyExists( targetShell ) ) {
-			throw( message="Invalid target shell specified. [#targetShell#].", type="commandException");
-		}
-
-		return shellEscapes[ targetShell ];
-	}
 }
