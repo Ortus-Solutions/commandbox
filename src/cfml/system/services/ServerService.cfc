@@ -1271,7 +1271,7 @@ component accessors="true" singleton {
 			serverDetails=serverDetails,
 			installDetails=installDetails ?: {}
 		};
-		interceptorService.announceInterception( 'onServerCommandLine', interceptData );
+		interceptorService.announceInterception( 'onServerProcessLaunch', interceptData );
 		// ensure we get the updated args if they were replaced wholesale by interceptor
 		args = interceptData.commandLineArguments;
 

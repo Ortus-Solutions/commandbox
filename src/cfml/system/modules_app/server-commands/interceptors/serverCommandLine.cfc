@@ -22,7 +22,7 @@ component {
 		pwsh: { ext: 'ps1', startlines: [], endlines: [] }
 	};
 
-	function onServerCommandLine( struct interceptData ) {
+	function onServerProcessLaunch( struct interceptData ) {
 		if( interceptData.serverProps.keyExists( 'scriptFile' ) ) {
 			if( !shellScripts.keyExists( interceptData.serverProps.scriptFile ) ) {
 				job.addErrorLog(
