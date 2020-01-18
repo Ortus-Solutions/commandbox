@@ -294,7 +294,7 @@ component {
 
 	// ----------------------------- Private ---------------------------------------------
 
-	private function removeEscapedChars( theString ) {
+	function removeEscapedChars( theString ) {
 		theString = replaceNoCase( theString, "\\", '__backSlash__', "all" );
 		theString = replaceNoCase( theString, "\'", '__singleQuote__', "all" );
 		theString = replaceNoCase( theString, '\"', '__doubleQuote__', "all" );
@@ -306,7 +306,7 @@ component {
 		return		replaceNoCase( theString, '\|', '__pipe__', "all" );
 	}
 
-	private function replaceEscapedChars( theString ) {
+	function replaceEscapedChars( theString ) {
 		theString = replaceNoCase( theString, '__backSlash__', "\", "all" );
 		theString = replaceNoCase( theString, '__singleQuote__', "'", "all" );
 		theString = replaceNoCase( theString, '__doubleQuote__', '"', "all" );

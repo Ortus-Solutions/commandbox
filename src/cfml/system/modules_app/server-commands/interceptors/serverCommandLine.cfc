@@ -77,7 +77,20 @@ component {
 				return result;
 			},
 			cmd:function( result, key, value ) {
-				result.append( 'set #key#=#value.reReplace( '([<>\|\&\^])', '^\1', 'all' )#' );
+				var escapedvalue = '';
+				var inQuotes = false;
+				for( var char in toString( value ).listToArray( '' ) ) {
+					if( char == '"' ) {
+						inQuotes = !inQuotes;
+					}
+					// Escape special chars <>|& but only if not currently inside quotes
+					if( inQuotes ) {
+						escapedvalue &= char;
+					} else {
+						escapedvalue &= char.reReplace( '([<>\|\&\^])', '^\1', 'all' );	
+					}
+				}
+				result.append( 'set #key#=#escapedvalue#' );
 				return result;
 			},
 			pwsh:function( result, key, value ) {
@@ -92,7 +105,7 @@ component {
 	private function encodeShellCmd( required array args, required string targetShell ) {
 		var shellNewlineEscape = { bash: '\', cmd: '^', pwsh: '`' };
 		var newLineSep         = ' ' & shellNewlineEscape[ targetShell ] & cr & chr( 9 );
-		var reducer            = ( r, a ) => r & ( a.startswith( '-' ) ? newLineSep : ' ' ) & a;
+		var reducer            = ( r, a ) => r & ( ( a.startswith( '-' ) || a.startswith( '"-' ) ) ? newLineSep : ' ' ) & a;
 		return args
 			.map( escapeCommandArgs( targetShell ) )
 			.reduce( reducer, '' )
@@ -128,21 +141,12 @@ component {
 					.toList( '' );
 			},
 			cmd:function( arg, idx ) {
-				return toString( arg )
-					.reMatch( segmentRegex() )
-					.map( ( segment ) => {
-						if( !segment.startswith( '"' ) and segment.find( ' ' ) ) {
-							segment = '"#segment#"';
-						} else {
-							segment = segment.reReplace( '([<>\|\&\^])', '^\1', 'all' );
-						}
-						if( segment.endswith( '\"' ) ) {
-							// cmd will pass this literally, so we need to escape it for the underlying Java process
-							segment = segment.left( -2 ) & '\\"';
-						}
-						return segment;
-					} )
-					.toList( '' );
+				var segment = toString( arg );
+				// Wrap this arg up in quotes and double up any quotes already inside of it
+				segment = '"#segment.replace( '"', '""', 'all' )#"';
+				// Also any literal values of \" need to be turned into \\"
+				segment = segment.replace( '\"', '\\"', 'all' );
+				return segment;
 			},
 			pwsh:function( arg, idx ) {
 				return toString( arg )

@@ -268,7 +268,7 @@ component accessors="true" singleton {
 		var serverInfo = serverDetails.serverinfo;
 
 		// If the server is already running, make sure the user really wants to do this.
-		if( isServerRunning( serverInfo ) && !(serverProps.force ?: false ) ) {
+		if( isServerRunning( serverInfo ) && !(serverProps.force ?: false ) && !(serverProps.dryRun ?: false ) ) {
 			job.addErrorLog( 'Server "#serverInfo.name#" (#serverInfo.webroot#) is already running!' );
 			job.addErrorLog( 'Overwriting a running server means you won''t be able to use the "stop" command to stop the original one.' );
 			job.addWarnLog( 'Use the --force parameter to skip this check.' );
@@ -1032,12 +1032,11 @@ component accessors="true" singleton {
 
 		// This is an array of tokens to send to the process builder
 		var args = [];
-
 		// "borrow" the CommandBox commandline parser to tokenize the JVM args. Not perfect, but close. Handles quoted values with spaces.
 		var argTokens = parser.tokenizeInput( serverInfo.JVMargs )
 			.map( function( i ){
-				// Clean up a couple escapes the parser does that we don't need
-				return parser.unwrapQuotes( i.replace( '\=', '=', 'all' ).replace( '\\', '\', 'all' ).replace( ';', '\;', 'all' ) );
+				// unwrap quotes, and unescape any special chars like \" inside the string
+				return parser.replaceEscapedChars( parser.removeEscapedChars( parser.unwrapQuotes( i ) ) );
 			});
 			
 			
