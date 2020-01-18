@@ -77,7 +77,7 @@ component {
 				return result;
 			},
 			cmd:function( result, key, value ) {
-				result.append( 'set #key#=#value#' );
+				result.append( 'set #key#=#value.reReplace( '([<>\|\&\^])', '^\1', 'all' )#' );
 				return result;
 			},
 			pwsh:function( result, key, value ) {
@@ -133,6 +133,8 @@ component {
 					.map( ( segment ) => {
 						if( !segment.startswith( '"' ) and segment.find( ' ' ) ) {
 							segment = '"#segment#"';
+						} else {
+							segment = segment.reReplace( '([<>\|\&\^])', '^\1', 'all' );
 						}
 						if( segment.endswith( '\"' ) ) {
 							// cmd will pass this literally, so we need to escape it for the underlying Java process
