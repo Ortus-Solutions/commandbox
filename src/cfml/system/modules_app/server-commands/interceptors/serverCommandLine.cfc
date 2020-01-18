@@ -72,11 +72,15 @@ component {
 		var cmdEnv = systemSettings.getAllEnvironmentsFlattened();
 
 		var shellEncoders = {
-			bash:function( result, key, value ) {
-				result.append( 'export #key#="#value.replace( '"', '\"', 'all' )#"' );
+			bash: function( result, key, value ) {
+				// in bash, only a-z, A-Z, _ and 0-9 are allowed for env variables
+				// so java props with `.` in the key are out
+				if( reFind( '^[a-zA-Z_]+[a-zA-Z0-9_]*$', key ) ) {
+					result.append( "export #key#='#value.replace( "'", "'\''", "all" )#'" );
+				}
 				return result;
 			},
-			cmd:function( result, key, value ) {
+			cmd: function( result, key, value ) {
 				var escapedvalue = '';
 				var inQuotes = false;
 				for( var char in toString( value ).listToArray( '' ) ) {
@@ -87,14 +91,16 @@ component {
 					if( inQuotes ) {
 						escapedvalue &= char;
 					} else {
-						escapedvalue &= char.reReplace( '([<>\|\&\^])', '^\1', 'all' );	
+						escapedvalue &= char.reReplace( '([<>\|\&\^])', '^\1', 'all' );
 					}
 				}
-				result.append( 'set #key#=#escapedvalue#' );
+				result.append( 'set #key#=#escapedvalue.replace( "%", "%%", "all" )#' );
 				return result;
 			},
-			pwsh:function( result, key, value ) {
-				result.append( '$env:#key#="#value.replace( '"', '`"', 'all' )#"' );
+			pwsh: function( result, key, value ) {
+				key = "${env:#key.reReplace( '([{}])', '`\1', 'all' )#}";
+				value = "'" & value.replace( "'", "''", "all" ) & "'";
+				result.append( '#key#=#value#' );
 				return result;
 			}
 		};
@@ -105,7 +111,7 @@ component {
 	private function encodeShellCmd( required array args, required string targetShell ) {
 		var shellNewlineEscape = { bash: '\', cmd: '^', pwsh: '`' };
 		var newLineSep         = ' ' & shellNewlineEscape[ targetShell ] & cr & chr( 9 );
-		var reducer            = ( r, a ) => r & ( ( a.startswith( '-' ) || a.startswith( '"-' ) ) ? newLineSep : ' ' ) & a;
+		var reducer            = ( r, a ) => r & ( a.reFind( '^[''"]?-' ) ? newLineSep : ' ' ) & a;
 		return args
 			.map( escapeCommandArgs( targetShell ) )
 			.reduce( reducer, '' )
@@ -113,56 +119,37 @@ component {
 	}
 
 	private function escapeCommandArgs( required string targetShell ) {
-		// regex to split a string into quoted and unquoted segments
-		var segmentRegex = function( escapeChar ) {
-			if( !isNull( arguments.escapeChar ) ) {
-				// (?:[^"]|#escapeChar#.)+
-				// match anything that is not a quote or is an escape followed by anything
-				// or
-				// "(?:[^"]|#escapeChar#.)*"
-				// match an opening quote, followed by matching anything that is not
-				// a quote or is an escape followed by anything, followed by a closing quote
-				return '(?:[^"]|#escapeChar#.)+|"(?:[^"]|#escapeChar#.)*"';
-			}
-			// if no escape char, then just match unquoted and quoted sections
-			return '[^"]+|"[^"]*"';
-		};
-
 		var shellEscapes = {
-			bash:function( arg, idx ) {
-				return toString( arg )
-					.reMatch( segmentRegex( '\\' ) )
-					.map( ( segment ) => {
-						if( !segment.startswith( '"' ) ) {
-							segment = segment.replace( ' ', '\ ', 'all' );
-						}
-						return segment;
-					} )
-					.toList( '' );
+			bash: function( arg, idx ) {
+				if( idx == 1 ) {
+					// actual process to run, don't quote this
+					return toString( arg ).replace( ' ', '\ ', 'all' );
+				}
+				// otherwise, just fully quote with _single_ quotes
+				return "'" & toString( arg ).replace( "'", "'\''", "all" ) & "'";
 			},
-			cmd:function( arg, idx ) {
+			cmd: function( arg, idx ) {
 				var segment = toString( arg );
 				// Wrap this arg up in quotes and double up any quotes already inside of it
 				segment = '"#segment.replace( '"', '""', 'all' )#"';
 				// Also any literal values of \" need to be turned into \\"
 				segment = segment.replace( '\"', '\\"', 'all' );
+				// Any % chars need to be turned into %%
+				segment = segment.replace( '%', '%%', 'all' );
 				return segment;
 			},
-			pwsh:function( arg, idx ) {
-				return toString( arg )
-					.reMatch( segmentRegex( '`' ) )
-					.map( ( segment ) => {
-						if( !segment.startswith( '"' ) ) {
-							segment = segment.replace( ' ', '` ', 'all' );
-						}
-						// PowerShell needs the `-` in single `-` args escaped when they contain periods
-						// or it will split the argument at the period
-						if( segment.reFind( '^-(?!-)' ) && segment.find( '.' ) ) {
-							segment = '`' & segment;
-						}
-						return segment;
-					} )
-					.toList( '' );
+			pwsh: function( arg, idx ) {
+				var specialChars = '([{}()@|!''"; &`$##])';
+				if( idx == 1 ) {
+					// actual process to run, don't quote this
+					return toString( arg ).reReplace(specialChars, '`\1', 'all');
+				}
+				// otherwise, just fully quote with single quotes
+				arg = "'" & toString( arg ).replace( "'", "''", "all" ) & "'";
+				// Also any literal values of " need to be escaped for the underlying Java
+				// process that is called. If the " was preceded by a \ then that needs
+				// to be escaped as well
+				return arg.replace( '"', '\"', 'all' ).replace( '\\"', '\\\"', 'all' );
 			}
 		};
 
