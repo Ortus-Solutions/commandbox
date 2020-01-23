@@ -27,7 +27,7 @@ component accessors="true" singleton {
 	public function getTestBoxRunner( required string directory, string slug='' ) {
 		// Get box.json, create empty if it doesn't exist
 		var boxJSON 	= packageService.readPackageDescriptor( arguments.directory );
-		// Get reference to appropriate depenency struct
+		// Get reference to appropriate dependency struct
 		var runners 	= boxJSON.testbox.runner ?: '';
 		var runnerURL 	= '';
 

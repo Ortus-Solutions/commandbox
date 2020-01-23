@@ -40,7 +40,7 @@ component aliases="stop" {
 				arguments.serverConfigFile = resolvePath( arguments.serverConfigFile );
 			}
 
-			// Look up the server that we're starting
+			// Look up the server that we're stopping
 			var servers = { id: serverService.resolveServerDetails( arguments ).serverinfo };
 
 		} // End "all" check
