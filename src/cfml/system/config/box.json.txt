@@ -2,7 +2,7 @@
     "name":"",
     "version":"1.0.0",
     "author":"",
-    "location":"",
+    "location":"forgeboxStorage",
     "directory":"",
     "createPackageDirectory":true,
     "packageDirectory":"",
