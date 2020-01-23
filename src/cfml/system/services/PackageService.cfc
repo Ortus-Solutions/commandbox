@@ -28,7 +28,8 @@ component accessors="true" singleton {
 	property name='systemSettings'		inject='SystemSettings';
 	property name='wirebox'				inject='wirebox';
 	property name="tempDir" 			inject="tempDir@constants";
-
+	property name="serverService"		inject="serverService";
+	
 	/**
 	* Constructor
 	*/
@@ -118,13 +119,15 @@ component accessors="true" singleton {
 				job.addErrorLog( "box.json is missing so this isn't really a package! I'll install it anyway, but I'm not happy about it" );
 				job.addWarnLog( "I'm just guessing what the package name, version and type are.  Please ask the package owner to add a box.json." );
 				var packageType = 'project';
-				if( defaultName.len() ) {
-					job.addWarnLog( "Package name guessed to be [#defaultName#] from your box.json." );
-					var packageName = defaultName;
-				} else {
-					var packageName = endpointData.endpoint.getDefaultName( endpointData.package );
-				}
+				var packageName = endpointData.endpoint.getDefaultName( endpointData.package );
 				var version = '1.0.0';
+			}
+			
+			// If the dependency struct in box.json has a name, use it.  This is mostly for
+			// HTTP, Jar, and Lex endpoints to be able to override their package name.
+			if( defaultName.len() && packageName != defaultName ) {
+				job.addWarnLog( "Package named [#defaultName#] from your box.json." );
+				packageName = defaultName;
 			}
 
 
@@ -343,6 +346,28 @@ component accessors="true" singleton {
 				// This is a jar.
 				} else if( packageType == 'jars' ) {
 					installDirectory = arguments.packagePathRequestingInstallation & '/lib';
+				} else if( packageType == 'lucee-extensions' ) {
+					// This is making several assumption, but if the directory of the installation is a Lucee server, then 
+					// assume the user wants this lex to be dropped in their server context's deploy folder.  To override this
+					// behavior, speciofy a custom install directory in your box.json to in the "install" params.
+					var serverDetails = serverService.resolveServerDetails( { directory = arguments.packagePathRequestingInstallation } );
+					var serverInfo = serverDetails.serverInfo;
+					
+					if( !serverDetails.serverIsNew && serverInfo.engineName == 'lucee' && len( serverInfo.serverConfigDir ) ) {
+						var serverDeployFolder = serverInfo.serverConfigDir & '/lucee-server/deploy/';
+						// Handle paths relative to the server home dir
+						if( serverDeployFolder.uCase().startsWith('/WEB-INF' ) ) {
+							serverDeployFolder = serverInfo.serverHomeDirectory & serverDeployFolder;
+						}
+						if( directoryExists( serverDeployFolder ) ) {
+							job.addWarnLog( "Current dir seems to be a Lucee server." );
+							job.addWarnLog( "Defaulting lex Install to [#serverDeployFolder#]" );
+							installDirectory = serverDeployFolder;
+							artifactDescriptor.createPackageDirectory = false;
+							ignorePatterns.append( '/box.json' );	
+						}
+					}
+									
 				}
 			}
 
@@ -750,7 +775,7 @@ component accessors="true" singleton {
 	* @version Version of the dependency
 	* @installDirectory The location that the package is installed to including the container folder.
 	* @installDirectoryIsDedicated True if the package was placed in a dedicated folder
-	* @dev True if this is a development depenency, false if it is a production dependency
+	* @dev True if this is a development dependency, false if it is a production dependency
 	*
 	* @returns boolean True if box.json was updated, false if update wasn't neccessary (keys already existed with correct values)
 	*/
@@ -863,7 +888,7 @@ component accessors="true" singleton {
 	* Removes a dependency from a packge if it exists
 	* @directory The directory that is the root of the package
 	* @packageName Package to add a a dependency
-	* @dev True if this is a development depenency, false if it is a production dependency
+	* @dev True if this is a development dependency, false if it is a production dependency
 	*/
 	public function removeDependency( required string directory, required string packageName ) {
 		// Get box.json, create empty if it doesn't exist
@@ -1230,7 +1255,7 @@ component accessors="true" singleton {
 	* @package The full endpointID like foo@1.0.0
 	*/
 	private function parseSlug( required string package ) {
-		var matches = REFindNoCase( "^([a-zA-Z][\w\-\.]*(?:\@(?!stable\b)(?!be\b)[a-zA-Z][\w\-]*)?)(?:\@(.+))?$", package, 1, true );
+		var matches = REFindNoCase( "^([\w\-\.]+(?:\@(?!stable\b)(?!be\b)[a-zA-Z][\w\-]*)?)(?:\@(.+))?$", package, 1, true );
 		if ( arrayLen( matches.len ) < 2 ) {
 			throw(
 				type = "endpointException",
@@ -1247,7 +1272,7 @@ component accessors="true" singleton {
 	private function parseVersion( required string package ) {
 		var version = '';
 		// foo@1.0.0
-		var matches = REFindNoCase( "^([a-zA-Z][\w\-\.]*(?:\@(?!stable\b)(?!be\b)[a-zA-Z][\w\-]*)?)(?:\@(.+))?$", package, 1, true );
+		var matches = REFindNoCase( "^([\w\-\.]+(?:\@(?!stable\b)(?!be\b)[a-zA-Z][\w\-]*)?)(?:\@(.+))?$", package, 1, true );
 		if ( matches.pos.len() >= 3 && matches.pos[ 3 ] != 0 ) {
 			// Note this can also be a semver range like 1.2.x, >2.0.0, or 1.0.4-2.x
 			// For now I'm assuming it's a specific version
