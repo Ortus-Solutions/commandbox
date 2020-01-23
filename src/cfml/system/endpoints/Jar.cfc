@@ -77,24 +77,24 @@ component accessors=true implements="IEndpoint" singleton {
 
 	public function getDefaultName( required string package ) {
 
-		var baseURL = arguments.package;
+		// Strip protocol and host to reveal just path and query string
+		package = package.reReplaceNoCase( '^([\w:]+)?//.*?/', '' );
 
-		// strip query string, unless it possibly contains .jar like so:
+		// Check and see if the name of the jar appears somewhere in the URL and use that as the pacakge name
 		// https://search.maven.org/remotecontent?filepath=jline/jline/3.0.0.M1/jline-3.0.0.M1.jar
-		if( !right( arguments.package, 4 ) == '.jar' ) {
-			baseURL = listFirst( arguments.package, '?' );
-		}
+		// https://site.com/path/to/package-1.0.0.jar
 
-		// Find last segment of URL (may or may not be a file)
-		var fileName = listLast( baseURL, '/' );
+		// If we see /foo.jar or name=foo.jar or ?foo.jar
+		if( package.reFindNoCase( '[/\?=](.*\.jar)' ) ) {
+			// Then strip the name and remove extension
+			// Note the first .* is greedy so in the case of 
+			// https://site.com/path/to/file.jar?name=custom.jar
+			// the regex will extract the last match, i.e. "custom"
+			return package.reReplaceNoCase( '.*[/\?=](.*\.jar).*', '\1' ).left( -4 );
+		} 
 
-		// Check for file extension in URL
-		var fileNameListLen = listLen( fileName, '.' );
-		if( fileNameListLen > 1 && listLast( fileName, '.' ) == 'jar' ) {
-			return listDeleteAt( fileName, fileNameListLen, '.' );
-		}
 		// We give up, so just make the entire URL a slug
-		return reReplaceNoCase( baseURL, '[^a-zA-Z0-9]', '', 'all' );
+		return reReplaceNoCase( package, '[^a-zA-Z0-9]', '', 'all' );
 	}
 
 	public function getUpdate( required string package, required string version, boolean verbose=false ) {
