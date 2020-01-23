@@ -349,7 +349,7 @@ component accessors="true" singleton {
 				} else if( packageType == 'lucee-extensions' ) {
 					// This is making several assumption, but if the directory of the installation is a Lucee server, then 
 					// assume the user wants this lex to be dropped in their server context's deploy folder.  To override this
-					// behavior, speciofy a custom install directory in your box.json to in the "install" params.
+					// behavior, specify a custom install directory in your box.json or in the "install" params.
 					var serverDetails = serverService.resolveServerDetails( { directory = arguments.packagePathRequestingInstallation } );
 					var serverInfo = serverDetails.serverInfo;
 					
