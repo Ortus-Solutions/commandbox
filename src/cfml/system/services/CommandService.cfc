@@ -343,6 +343,12 @@ component accessors="true" singleton {
 			// Run the command
 				var result = commandInfo.commandReference.CFC.run( argumentCollection = parameterInfo.namedParameters );
 				lastCommandErrored = commandInfo.commandReference.CFC.hasError();
+				
+				// If the previous command failed
+				var finalExitCode = commandInfo.commandReference.CFC.getExitCode();
+				if( finalExitCode != 0 ) {			
+					throw( message='Command returned failing exit code (#finalExitCode#)', detail='Failing Command: #commandInfo.originalLine#', type="commandException", errorCode=finalExitCode );
+				}	
 			} catch( any e ){
 				FRTransService.errorTransaction( FRTrans, e.getPageException() );
 				lastCommandErrored = true;

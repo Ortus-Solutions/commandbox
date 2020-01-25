@@ -1217,7 +1217,6 @@ component accessors="true" singleton {
 	* @directory The package root
 	*/
 	function runScript( required string scriptName, string directory=shell.pwd(), boolean ignoreMissing=true, interceptData={} ) {
-
 			// Read the box.json from this package (if it exists)
 			var boxJSON = readPackageDescriptorRaw( arguments.directory );
 			// If there is a scripts object with a matching key for this interceptor....
