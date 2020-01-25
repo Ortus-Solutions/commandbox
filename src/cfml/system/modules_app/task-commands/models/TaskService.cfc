@@ -117,6 +117,12 @@ component singleton accessors=true {
 				shell.printString( chr( 10 ) );
 			}
 			
+			// Dump out anything the task had printed so far
+			var result = taskCFC.getResult();
+			if( len( result ) ){
+				shell.printString( result & cr );
+			}
+			
 			throw( message='Task returned failing exit code (#finalExitCode#)', detail='Failing Task: #taskFile# #target#', type="commandException", errorCode=finalExitCode );
 		}
 		
