@@ -101,14 +101,15 @@ component singleton accessors=true {
 		 } finally {
 			// Set task exit code into the shell
 		 	if( !isNull( local.returnedExitCode ) && isSimpleValue( local.returnedExitCode ) ) {
-				shell.setExitCode( val( local.returnedExitCode ) );		 		
+		 		var finalExitCode = val( local.returnedExitCode );
 		 	} else {
-				shell.setExitCode( taskCFC.getExitCode() );		 		
-		 	}		 	
+				var finalExitCode = taskCFC.getExitCode();		 		
+		 	}
+			shell.setExitCode( finalExitCode );		 		
 		 }
 	 
 		// If the previous Task failed
-		if( taskCFC.getExitCode() != 0 ) {
+		if( finalExitCode != 0 ) {
 			
 			if( job.isActive() ) {
 				job.errorRemaining( message );
@@ -116,7 +117,7 @@ component singleton accessors=true {
 				shell.printString( chr( 10 ) );
 			}
 			
-			throw( message='Task returned failing exit code (#taskCFC.getExitCode()#)', detail='Failing Task: #taskFile# #target#', type="commandException", errorCode=taskCFC.getExitCode() );
+			throw( message='Task returned failing exit code (#finalExitCode#)', detail='Failing Task: #taskFile# #target#', type="commandException", errorCode=finalExitCode );
 		}
 		
 
