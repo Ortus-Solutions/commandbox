@@ -1139,7 +1139,9 @@ component accessors="true" singleton {
 
 		// If background, wrap up JVM args to pass through to background servers.  "Real" JVM args must come before Runwar args
 		if( background ) {
-			var argString = argTokens.toList( ';' );
+			// Escape any semi colons in the args so Runwar can process this properly
+			// -Darg=one;-Darg=two
+			var argString = argTokens.map( ( token ) => token.replace( ';', '\;', 'all' ) ).toList( ';' );
 			if( len( argString ) ) {
 				args.append( '--jvm-args=#trim( argString )#' );
 			}
