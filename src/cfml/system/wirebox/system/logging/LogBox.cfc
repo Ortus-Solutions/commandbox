@@ -66,7 +66,7 @@ component accessors="true"{
 		// Category Appenders
 		variables.categoryAppenders = "";
 		// Version
-		variables.version           = "5.1.4+741";
+		variables.version           = "5.6.2+1021";
 
 		// Link incoming ColdBox argument
 		variables.coldbox = arguments.coldbox;
@@ -293,7 +293,7 @@ component accessors="true"{
 				return target;
 			} );
 
-		return ( isNull( results ) ? structNew() : results );
+		return ( isNull( local.results ) ? structNew() : results );
 	}
 
 	/**

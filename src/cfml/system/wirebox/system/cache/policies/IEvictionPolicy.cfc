@@ -4,19 +4,19 @@
 * ----
 *
 * CacheBox Eviction polify interface
-*/ 
+*/
 interface{
-	
+
 	/**
 	* Execute the eviction policy on the associated cache
 	*/
-	public void function execute();
+	void function execute();
 
 	/**
-	* Get the Associated Cache Provider of type: wirebox.system.cache.ICacheProvider
-	* 
-	* @return wirebox.system.cache.ICacheProvider
+	* Get the Associated Cache Provider of type: wirebox.system.cache.providers.ICacheProvider
+	*
+	* @return wirebox.system.cache.providers.ICacheProvider
 	*/
-	public any function getAssociatedCache();	
+	any function getAssociatedCache();
 
 }
