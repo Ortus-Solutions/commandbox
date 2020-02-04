@@ -240,7 +240,7 @@ component accessors=true {
 			if( shell.getExitCode() != 0 ) {
 				
 				if( job.isActive() ) {
-					job.errorRemaining( message );
+					job.errorRemaining();
 					// Distance ourselves from whatever other output the command may have given so far.
 					shell.printString( chr( 10 ) );
 				}
