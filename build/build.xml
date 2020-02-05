@@ -1049,7 +1049,7 @@ External Dependencies:
 			</exclusions>
 		</dependency>
 
-	    <mvn-repo id="java.repo" url="http://download.java.net/maven/2/" />
+	    <mvn-repo id="java.repo" url="https://download.java.net/maven/2/" />
 	    <dependency groupId="javax.mail" artifactId="mail" version="1.4.4" dest="${lib.dir}" repoId="java.repo" unzip="false" type="jar" />
 
         <antcall target="getrunwar" />
