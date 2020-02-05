@@ -16,7 +16,7 @@ External Dependencies:
  	<property name="distro.groupID"				value="ortussolutions" />
  	<property name="distro.name"				value="commandbox"/>
  	<!-- Special things happen when the version and stableVersion are the same value as that signifies a "stable" build.   -->
- 	<property name="commandbox.version"			value="4.9.0-alpha"/>
+ 	<property name="commandbox.version"			value="5.0.0-RC.1"/>
  	<property name="commandbox.stableVersion"	value="4.8.0"/>
 
     <!-- Time Label -->
@@ -148,7 +148,7 @@ External Dependencies:
 					<fileset file="${dist.dir}/box" />
 					<fileset file="${dist.dir}/box.exe" />
 				</delete>
-				<!-- BE API Docs 
+				<!-- BE API Docs
 				<unzip src="${dist.dir}/${distro.name}-apidocs-${commandbox.version}.zip" dest="${artifact.dir}/be-apidocs" overwrite="true"/>
 				-->
 			</then>
@@ -246,7 +246,7 @@ External Dependencies:
       	<copy todir="${build.dir}" encoding="UTF-8">
         	<fileset dir="${src.dir}/cfml">
         		<exclude name="modules/**"/>
-        		<exclude name="system/mdCache/**"/>        		
+        		<exclude name="system/mdCache/**"/>
         	</fileset>
         	<fileset file="../license.txt"/>
         	<fileset file="../readme.txt"/>
@@ -300,42 +300,42 @@ External Dependencies:
 	      <equals arg1="${isStable}" arg2="${isStable}" />
 	      <then>
 			<echo>This is a stable build, let's compress these jars!</echo>
-			
+
 	        <delete dir="${temp.dir}/luceejar"/>
 	        <mkdir dir="${temp.dir}/luceejar"/>
 	        <delete dir="${temp.dir}/luceejarBundles"/>
 	        <mkdir dir="${temp.dir}/luceejarBundles"/>
 	        <delete dir="${temp.dir}/luceejarExtension"/>
 	        <mkdir dir="${temp.dir}/luceejarExtension"/>
-			
+
 			<!-- unzip the lucee-5.x.x.x.jar -->
 			<unzip dest="${temp.dir}/luceejar/" overwrite="true">
 			    <fileset dir="${lucee.lib.dir}">
 				    <include name="lucee-5*.jar"/>
 			    </fileset>
 			</unzip>
-			
+
 			<!-- delete the old lucee jar -->
 			<delete>
 				<fileset dir="${lucee.lib.dir}" includes="lucee-5*.jar"/>
 			</delete>
-			
+
 			<!-- pack the OSGI bundles -->
 	        <packjars dir="${temp.dir}/luceejar/bundles" packdir="${temp.dir}/luceejarBundles" excludes="ESAPI*,microsoft-*"/>
-			
+
 			<!-- delete the unpacked bundles -->
 			<delete>
 				<fileset dir="${temp.dir}/luceejar/bundles" includes="*.jar"/>
 			</delete>
-			
+
 			<!-- copy packed bundles over to jar folder -->
 	        <copy todir="${temp.dir}/luceejar/bundles">
 	          <fileset dir="${temp.dir}/luceejarBundles">
 	            <include name="*"/>
 	          </fileset>
 	        </copy>
-	        
-			
+
+
 			<!-- process each lex extension -->
 		    <sequential>
 		    	<for param="file">
@@ -343,93 +343,93 @@ External Dependencies:
 		    	    <fileset dir="${temp.dir}/luceejar/extensions" includes="*.lex"/>
 		    	  </path>
 		    	  <sequential>
-		    	  	
+
 		    	  	<var name="pack200.extName" unset = "true"/>
                 	<basename property="pack200.extName" file="@{file}" />
-                	
-		    	  	<echo message="Compressing extension: ${pack200.extName}"/>		    	  	
-		    	  	
+
+		    	  	<echo message="Compressing extension: ${pack200.extName}"/>
+
 		    	  	<delete includeEmptyDirs="true">
 					  <fileset dir="${temp.dir}/luceejarExtension" includes="**/*" defaultexcludes="no"/>
 					  <fileset dir="${temp.dir}/luceejarBundles" includes="**/*" defaultexcludes="no"/>
 					</delete>
-		    	  	
+
 					<!-- unzip the extension -->
 					<unzip dest="${temp.dir}/luceejarExtension/" src="@{file}" overwrite="true" />
-			        
-			        
+
+
 			        <!-- Test if a directory called "my_directory" is present -->
 					<if>
 					  <available file="${temp.dir}/luceejarExtension/jars" type="dir" />
 					  <then>
 					    <echo message="Jars Directory exists" />
-			        
+
 						<!-- delete the old extension -->
 						<delete file="@{file}"/>
-									
+
 						<!-- pack the OSGI bundles -->
 				        <packjars dir="${temp.dir}/luceejarExtension/jars" packdir="${temp.dir}/luceejarBundles" excludes="ESAPI*,microsoft-*"/>
-						
+
 						<!-- delete the unpacked bundles -->
 						<delete>
 							<fileset dir="${temp.dir}/luceejarExtension/jars" includes="*.jar"/>
 						</delete>
-						
+
 						<!-- copy packed bundles over to jar folder -->
 				        <copy todir="${temp.dir}/luceejarExtension/jars">
 				          <fileset dir="${temp.dir}/luceejarBundles">
 				            <include name="*"/>
 				          </fileset>
 				        </copy>
-				        
-				        
+
+
 						<!-- Zip the extension back up -->
 				        <zip destfile="@{file}">
 				          <fileset dir="${temp.dir}/luceejarExtension"/>
 				        </zip>
-					
+
 					  </then>
 					</if>
-					
+
 		    	  </sequential>
-		    	</for>	
-		    </sequential>	
-		    		
-	     	
-	     	     	
-    	  	<echo message="Compressing core.lco"/>		    	  	
-    	  	
+		    	</for>
+		    </sequential>
+
+
+
+    	  	<echo message="Compressing core.lco"/>
+
     	  	<delete includeEmptyDirs="true">
 			  <fileset dir="${temp.dir}/luceejarBundles" includes="**/*" defaultexcludes="no"/>
 			</delete>
-    	  	
+
 			<!-- Temporarily rename lco file to jar file so packjars will pick it up -->
     	  	<move file="${temp.dir}/luceejar/core/core.lco" tofile="${temp.dir}/luceejar/core/core.jar"/>
-    	  	
+
 			<!-- pack core.lco -->
 	        <packjars dir="${temp.dir}/luceejar/core" packdir="${temp.dir}/luceejarBundles" excludes="dummy"/>
-			
+
 			<!-- delete the unpacked bundles -->
 			<delete>
 				<fileset dir="${temp.dir}/luceejar/core" includes="*.jar"/>
 			</delete>
-			
+
 			<!-- copy packed bundles over to jar folder -->
 	        <copy todir="${temp.dir}/luceejar/core">
 	          <fileset dir="${temp.dir}/luceejarBundles">
 	            <include name="*"/>
 	          </fileset>
 	        </copy>
-	        
+
 			<!-- put file name back -->
 	        <move file="${temp.dir}/luceejar/core/core.jar.pack.gz" tofile="${temp.dir}/luceejar/core/core.lco.pack.gz"/>
-	             	
+
 			<!-- Zip lucee jar back up -->
 	        <zip destfile="${lucee.lib.dir}/lucee-${cfml.version}-packed.jar">
 	          <fileset dir="${temp.dir}/luceejar"/>
 	        </zip>
-			
-			
+
+
 	        <delete dir="${temp.dir}/packlibs" />
 	        <mkdir dir="${temp.dir}/packlibs"/>
 	        <mkdir dir="${temp.dir}/packlibs/packed"/>
@@ -590,7 +590,7 @@ External Dependencies:
 			</args>
 		</git>
 
-		<!-- Ensure write perms 
+		<!-- Ensure write perms
 		<exec executable="sudo" dir="${dist.dir}" failonerror="true">
 			<arg value="chmod" />
 			<arg value="-R" />
@@ -782,75 +782,75 @@ External Dependencies:
 		<urlencode name="jre.version.escaped" value="${jre.version}" />
 
 		<!-- Get JRE Dependencies -->
-		
+
 		<antcontrib:if>
 	        <available file="JREs/jre_${jre.version}_linux_x64.tar.gz" />
 	        <then><echo>Linux x64 JRE found!</echo></then>
 	        <else>
 	            <echo>Linux x64 JRE not found, downloading artifact</echo>
-	            
+
 				<mkdir dir="JREs/jre_${jre.version}_linux_x64"/>
-				
-				
+
+
 				<get src="https://api.adoptopenjdk.net/v2/binary/releases/${jre.adoptVesionr}?openjdk_impl=hotspot&amp;os=linux&amp;arch=x64&amp;release=${jre.version.escaped}&amp;type=JRE"
 					 dest="JREs/jre_${jre.version}_linux_x64.tar.gz"
 					 verbose="true" />
-			
+
 				<gunzip src="JREs/jre_${jre.version}_linux_x64.tar.gz"/>
 				<untar src="JREs/jre_${jre.version}_linux_x64.tar" dest="JREs\jre_${jre.version}_linux_x64"/>
-				
+
 	        </else>
 	    </antcontrib:if>
-		
+
 		<antcontrib:if>
 	        <available file="JREs/jre_${jre.version}_windows_x64.zip" />
 	        <then><echo>Windows x64 JRE found!</echo></then>
 	        <else>
 	            <echo>Windows x64 JRE not found, downloading artifact</echo>
-	            
+
 				<mkdir dir="JREs/jre_${jre.version}_windows_x64"/>
-				
+
 				<get src="https://api.adoptopenjdk.net/v2/binary/releases/${jre.adoptVesionr}?openjdk_impl=hotspot&amp;os=windows&amp;arch=x64&amp;release=${jre.version.escaped}&amp;type=JRE"
 					 dest="JREs/jre_${jre.version}_windows_x64.zip"
 					 verbose="true" />
 				<unzip src="JREs/jre_${jre.version}_windows_x64.zip" dest="JREs\jre_${jre.version}_windows_x64/" overwrite="true"/>
 	        </else>
 	    </antcontrib:if>
-		
+
 		<antcontrib:if>
 	        <available file="JREs/jre_${jre.version}_windows_x32.zip" />
 	        <then><echo>Windows x32 JRE found!</echo></then>
 	        <else>
 	            <echo>Windows x32 JRE not found, downloading artifact</echo>
-	            
+
 				<mkdir dir="JREs/jre_${jre.version}_windows_x32"/>
-				
+
 				<get src="https://api.adoptopenjdk.net/v2/binary/releases/${jre.adoptVesionr}?openjdk_impl=hotspot&amp;os=windows&amp;arch=x32&amp;release=${jre.version.escaped}&amp;type=JRE"
 					 dest="JREs/jre_${jre.version}_windows_x32.zip"
 					 verbose="true" />
 				<unzip src="JREs/jre_${jre.version}_windows_x32.zip" dest="JREs\jre_${jre.version}_windows_x32/" overwrite="true"/>
 	        </else>
 	    </antcontrib:if>
-		
+
 		<antcontrib:if>
 	        <available file="JREs/jre_${jre.version}_mac_x64.tar.gz" />
 	        <then><echo>Mac x64 JRE found!</echo></then>
 	        <else>
 	            <echo>Mac x64 JRE not found, downloading artifact</echo>
-	            
+
 				<mkdir dir="JREs/jre_${jre.version}_mac_x64"/>
-				
+
 				<get src="https://api.adoptopenjdk.net/v2/binary/releases/${jre.adoptVesionr}?openjdk_impl=hotspot&amp;os=mac&amp;arch=x64&amp;release=${jre.version.escaped}&amp;type=JRE"
 					 dest="JREs/jre_${jre.version}_mac_x64.tar.gz"
 					 verbose="true" />
-			
+
 				<gunzip src="JREs/jre_${jre.version}_mac_x64.tar.gz"/>
 				<untar src="JREs/jre_${jre.version}_mac_x64.tar" dest="JREs\jre_${jre.version}_mac_x64"/>
 	        </else>
 	    </antcontrib:if>
-		
+
 		<!-- /Contents/Home -->
-		
+
 		<!--Zip Box Binary With JRE -->
 		<zip destfile="${dist.dir}/${distro.name}-jre-win32-${commandbox.version}.zip" level="9" update="true">
 			<zipfileset prefix="jre" dir="JREs\jre_${jre.version}_windows_x32/${jre.version}-jre/"/>
@@ -986,7 +986,7 @@ External Dependencies:
     <checksum file="${dist.dir}/${distro.name}-rpm-${commandbox.version.noPrereleaseID}.rpm" forceoverwrite="true" fileext=".md5" />
 
 	<rpm-repo name="${distro.name}" baseurl="${commandbox.rpm.repourl}" dir="${rpm.repo}" failonerror="false"/>
-	
+
 	<antcall target="build.cli.rpm.stablerepo" />
 
   </target>
@@ -1010,7 +1010,7 @@ External Dependencies:
 	    </rpm-create>
 
 		<rpm-repo name="${distro.name}" baseurl="${commandbox.rpm.repourl.stable}" dir="${rpm.repo.stable}" failonerror="false"/>
-		
+
 	</target>
 
 	<!-- ********************************************************************************************-->
@@ -1051,7 +1051,7 @@ External Dependencies:
 
 	    <mvn-repo id="java.repo" url="http://download.java.net/maven/2/" />
 	    <dependency groupId="javax.mail" artifactId="mail" version="1.4.4" dest="${lib.dir}" repoId="java.repo" unzip="false" type="jar" />
-	    
+
         <antcall target="getrunwar" />
 
    </target>
@@ -1072,14 +1072,14 @@ External Dependencies:
 	        <else>
 	            <echo>runwar not found or snapshot build, getting artifact from ${ortus.repoURL}</echo>
 	            <mkdir dir="runwar/${runwar.version}" />
-				<get src="${ortus.repoURL}/cfmlprojects/runwar/${runwar.version}/runwar-${runwar.version}.jar"				
+				<get src="${ortus.repoURL}/cfmlprojects/runwar/${runwar.version}/runwar-${runwar.version}.jar"
 					 dest="runwar/${runwar.version}/runwar-${runwar.version}.jar"
-					 verbose="true" />	 
+					 verbose="true" />
 	        </else>
 	    </antcontrib:if>
-	    
+
 		<copy file="runwar/${runwar.version}/runwar-${runwar.version}.jar" tofile="${lib.dir}/runwar-${runwar.version}.jar" overwrite="true" />
-				
+
 	</target>
 
 	<!-- Get launch4j -->
