@@ -1,7 +1,7 @@
 /**
  * Excecute a command against every item in an incoming list.  The list can be passed directly
- * or piped into this command.  The default delimiter is a new line so this works great piping 
- * the output of file listings direclty in, which have a file name per line.  
+ * or piped into this command.  The default delimiter is a new line so this works great piping
+ * the output of file listings direclty in, which have a file name per line.
  * .
  * This powerful construct allows you to perform basic loops from the CLI over arbitrary input.
  * Most of the examples show file listings, but any input can be used that you want to iterate over.
@@ -25,7 +25,7 @@
  * {code}
  * .
  * If you want a more complex command, you can choose exactly where you wish to use the incoming item
- * by referencing the default system setting expansion of ${item}.  Remember to escape the expansion in 
+ * by referencing the default system setting expansion of ${item}.  Remember to escape the expansion in
  * your command so it's resolution is deferred until the forEach runs it internally.
  * Here we echo each file name followed by the contents of the file.
  * {code}
@@ -53,19 +53,19 @@ component {
 		string input='',
 		string command='echo',
 		string itemName='item',
-		string delimiter=CR,
+		string delimiter=chr(13)&chr(10),
 		string valueName='value',
 		boolean continueOnError=false,
 		boolean debug=false
 		) {
 		var wasJSON = false;
 		var inputJSON = '';
-		
+
 		arguments.input = print.unANSI( arguments.input );
-		
+
 		if( isJSON( arguments.input ) ) {
 			var inputJSON = deserializeJSON( arguments.input );
-			
+
 			if( isArray( inputJSON ) || isStruct( inputJSON ) ) {
 				var content = inputJSON;
 				wasJSON = true;
@@ -75,23 +75,23 @@ component {
 			// Turn output into an array, breaking on delimiter
 			var content = listToArray( arguments.input, delimiter );
 		}
-		
+
 		// Loop over content
 		for( var line in content ) {
 			var theCommand = this.command( arguments.command );
-			
+
 			if( !isSimpleValue( line ) ) {
 				line = serializeJSON( line );
 			}
-			
+
 			// If it doesn't look like they are using the placeholder, then set the item as the next param
 			if( !arguments.command.findNoCase( '${#itemName#' ) && !arguments.command.findNoCase( '${#valueName#' ) ) {
 				theCommand.params( line );
 			}
-			
+
 			// Set this as a localized environment variable so the command can access it.
 			systemSettings.setSystemSetting( itemName, line );
-			
+
 			// If foreach was passed a struct, set the value as well
 			if( isStruct( inputJSON ) ) {
 				var thisValue = content[line ];
@@ -100,24 +100,24 @@ component {
 				}
 				systemSettings.setSystemSetting( valueName, thisValue );
 			}
-			
+
 			try {
 				theCommand.run( echo=debug );
 			} catch( any var e ) {
 				if( continueOnError ) {
-					
+
 					print
 						.redLine( e.message )
 						.redLine( e.detail ?: '' )
 						.toConsole();
-						
+
 				} else {
 					rethrow;
 				}
 			} finally {
 				checkinterrupted();
 			}
-			
+
 		}
 	}
 

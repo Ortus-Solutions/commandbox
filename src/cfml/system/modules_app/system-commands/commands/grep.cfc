@@ -26,7 +26,7 @@ component excludeFromHelp=true {
 	 **/
 	function run( input='', expression='', boolean count=false ) {
 		// Turn output into an array, breaking on carriage returns
-		var content = listToArray( arguments.input, CR );
+		var content = listToArray( arguments.input, chr(13)&chr(10) );
 		var numMatches = 0;
 
 		// Loop over content
@@ -36,13 +36,13 @@ component excludeFromHelp=true {
 			if( arguments.expression == '' || reFindNoCase( arguments.expression, line ) ) {
 				if( count ) {
 					numMatches++;
-				} else {	
+				} else {
 					print.line( line );
 				}
 			}
 
 		}
-		
+
 		if( count ) {
 			print.line( numMatches );
 		}
