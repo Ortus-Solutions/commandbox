@@ -29,7 +29,7 @@ component accessors="true" singleton {
 	property name='wirebox'				inject='wirebox';
 	property name="tempDir" 			inject="tempDir@constants";
 	property name="serverService"		inject="serverService";
-	
+
 	/**
 	* Constructor
 	*/
@@ -122,7 +122,7 @@ component accessors="true" singleton {
 				var packageName = endpointData.endpoint.getDefaultName( endpointData.package );
 				var version = '1.0.0';
 			}
-			
+
 			// If the dependency struct in box.json has a name, use it.  This is mostly for
 			// HTTP, Jar, and Lex endpoints to be able to override their package name.
 			if( defaultName.len() && packageName != defaultName ) {
@@ -347,12 +347,12 @@ component accessors="true" singleton {
 				} else if( packageType == 'jars' ) {
 					installDirectory = arguments.packagePathRequestingInstallation & '/lib';
 				} else if( packageType == 'lucee-extensions' ) {
-					// This is making several assumption, but if the directory of the installation is a Lucee server, then 
+					// This is making several assumption, but if the directory of the installation is a Lucee server, then
 					// assume the user wants this lex to be dropped in their server context's deploy folder.  To override this
 					// behavior, specify a custom install directory in your box.json or in the "install" params.
 					var serverDetails = serverService.resolveServerDetails( { directory = arguments.packagePathRequestingInstallation } );
 					var serverInfo = serverDetails.serverInfo;
-					
+
 					if( !serverDetails.serverIsNew && serverInfo.engineName == 'lucee' && len( serverInfo.serverConfigDir ) ) {
 						var serverDeployFolder = serverInfo.serverConfigDir & '/lucee-server/deploy/';
 						// Handle paths relative to the server home dir
@@ -364,10 +364,10 @@ component accessors="true" singleton {
 							job.addWarnLog( "Defaulting lex Install to [#serverDeployFolder#]" );
 							installDirectory = serverDeployFolder;
 							artifactDescriptor.createPackageDirectory = false;
-							ignorePatterns.append( '/box.json' );	
+							ignorePatterns.append( '/box.json' );
 						}
 					}
-									
+
 				}
 			}
 
@@ -396,7 +396,7 @@ component accessors="true" singleton {
 			}
 
 			// Some packages may just want to be dumped in their destination without being contained in a subfolder
-			// If the box.json had an explicit override for the install directory, then we're just going to use it directly			
+			// If the box.json had an explicit override for the install directory, then we're just going to use it directly
 			if( artifactDescriptor.createPackageDirectory || structKeyExists( containerBoxJSON.installPaths, packageName ) ) {
 				installDirectory &= '/#packageDirectory#';
 			// If we're dumping in the root and the install dir is already another package then ignore box.json or it will overwrite the existing one
@@ -796,8 +796,8 @@ component accessors="true" singleton {
 		// Get reference to appropriate dependency struct
 		if( arguments.dev ) {
 			boxJSONRaw[ 'devDependencies' ] = boxJSONRaw.devDependencies ?: {};
-			boxJSON[ 'devDependencies' ] = boxJSON.devDependencies ?: {};			
-			var dependenciesRaw = boxJSONRaw.devDependencies;			
+			boxJSON[ 'devDependencies' ] = boxJSON.devDependencies ?: {};
+			var dependenciesRaw = boxJSONRaw.devDependencies;
 			var dependencies = boxJSON.devDependencies;
 		} else {
 			boxJSONRaw[ 'dependencies' ] = boxJSONRaw.dependencies ?: {};
@@ -864,12 +864,12 @@ component accessors="true" singleton {
 
 				// Prevent unneccessary updates to the JSON file.
 				if( !installPaths.keyExists( arguments.packageName )
-					// Resolve the install path in box.json. If it's relative like ../lib but it's still equivalent to the actual install dir, then leave it alone. The user probably wants to keep it relative! 
+					// Resolve the install path in box.json. If it's relative like ../lib but it's still equivalent to the actual install dir, then leave it alone. The user probably wants to keep it relative!
 					|| fileSystemUtil.normalizeSlashes( fileSystemUtil.resolvePath( installPaths[ arguments.packageName ], arguments.currentWorkingDirectory ) ) != arguments.installDirectory ) {
-						
+
 					installPaths[ arguments.packageName ] = arguments.installDirectory;
 					updated = true;
-					
+
 				}
 
 			}
@@ -1226,7 +1226,7 @@ component accessors="true" singleton {
 				if( systemSettings.getAllEnvironments().len() > 1 ) {
 					systemSettings.setDeepSystemSettings( interceptData );
 				}
-				
+
 				// Run preXXX package script
 				runScript( 'pre#arguments.scriptName#', arguments.directory, true );
 
@@ -1235,11 +1235,25 @@ component accessors="true" singleton {
 				consoleLogger.warn( 'Running package script [#arguments.scriptName#].' );
 				consoleLogger.debug( '> ' & thisScript );
 
+				// Normally the shell retains the previous exit code, but in this case
+				// it's important for us to know if the scripts return a failing exit code wihtout throwing an exception
+				shell.setExitCode( 0 );
+
 				// ... then run the script! (in the context of the package's working directory)
 				var previousCWD = shell.pwd();
 				shell.cd( arguments.directory );
 				shell.callCommand( thisScript );
 				shell.cd( previousCWD );
+
+				// If the script ran "exit"
+				if( !shell.getKeepRunning() ) {
+					// Just kidding, the shell can stay....
+					shell.setKeepRunning( true );
+				}
+
+				if( shell.getExitCode() != 0 ) {
+					throw( message='Package script returned failing exit code (#shell.getExitCode()#)', detail='Failing script: #arguments.scriptName#', type="commandException", errorCode=shell.getExitCode() );
+				}
 
 				// Run postXXX package script
 				runScript( 'post#arguments.scriptName#', arguments.directory, true );

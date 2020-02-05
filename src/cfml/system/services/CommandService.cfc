@@ -289,7 +289,7 @@ component accessors="true" singleton {
 			// correctly remove this call from the stack in the finally block.
 			try {
 				var FRTrans = FRTransService.startTransaction( commandInfo.commandString.listChangeDelims( ' ', '.' ), commandInfo.originalLine );
-				
+
 				// If we're using postitional params, convert them to named
 				if( arrayLen( parameterInfo.positionalParameters ) ){
 					parameterInfo.namedParameters = convertToNamedParameters( parameterInfo.positionalParameters, commandParams );
@@ -339,16 +339,10 @@ component accessors="true" singleton {
 					parameterInfo.namedParameters.interactive=false;
 				}
 
-
-			// Run the command
+				// Run the command
 				var result = commandInfo.commandReference.CFC.run( argumentCollection = parameterInfo.namedParameters );
 				lastCommandErrored = commandInfo.commandReference.CFC.hasError();
-				
-				// If the previous command failed
-				var finalExitCode = commandInfo.commandReference.CFC.getExitCode();
-				if( finalExitCode != 0 ) {			
-					throw( message='Command returned failing exit code (#finalExitCode#)', detail='Failing Command: #commandInfo.originalLine#', type="commandException", errorCode=finalExitCode );
-				}	
+
 			} catch( any e ){
 				FRTransService.errorTransaction( FRTrans, e.getPageException() );
 				lastCommandErrored = true;
@@ -390,7 +384,7 @@ component accessors="true" singleton {
 				instance.callStack.deleteAt( 1 );
 				// Set command exit code into the shell
 				shell.setExitCode( commandInfo.commandReference.CFC.getExitCode() );
-				
+
 				FRTransService.endTransaction( FRTrans );
 			}
 
