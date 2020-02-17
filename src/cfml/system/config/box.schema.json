@@ -390,7 +390,7 @@
 						"description": "A label a spec must have to be ran",
 						"type": "string"
 					}
-				}
+				},
 				"excludes": {
 				    "title": "Exclude List",
 					"description": "A list of labels to exclude when running the tests",
