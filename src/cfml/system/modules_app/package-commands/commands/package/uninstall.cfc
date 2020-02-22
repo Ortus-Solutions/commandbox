@@ -50,7 +50,10 @@ component aliases="uninstall" {
 
 		}
 
-		if( arguments.system ) {
+		// account for system slugs
+		var systemPackageSlugs = returnSystemPackageSlugs();
+
+		if( arguments.system || systemPackageSlugs.containsnocase( arguments.slug ) ) {
 			arguments.currentWorkingDirectory = expandPath( '/commandbox' );
 		} else {
 			arguments.currentWorkingDirectory = getCWD();
