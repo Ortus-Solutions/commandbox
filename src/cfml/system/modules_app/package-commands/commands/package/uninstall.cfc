@@ -80,4 +80,10 @@ component aliases="uninstall" {
 		return results;
 	}
 
+	private array function returnSystemPackageSlugs() {
+		var directory = expandPath( '/commandbox' );
+		var BoxJSON = packageService.readPackageDescriptor( directory );
+		return BoxJSON.installPaths.keyArray();
+	}
+
 }
