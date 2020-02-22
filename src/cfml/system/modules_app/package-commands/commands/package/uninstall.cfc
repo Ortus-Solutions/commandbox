@@ -74,8 +74,21 @@ component aliases="uninstall" {
 
 		if( packageService.isPackage( directory ) ) {
 			var BoxJSON = packageService.readPackageDescriptor( directory );
-			results.append( BoxJSON.installPaths.keyArray(), true );
+			var directoryPackages = BoxJSON.installPaths.keyArray().map(
+				function( item, index ){
+					return { 'name' = item, 'group' = 'Packages' };
+				}
+			);
+			results.append( directoryPackages, true );
 		}
+
+		// account for system slugs
+		var systemPackages = returnSystemPackageSlugs().map(
+			function( item, index ){
+				return { 'name' = item, 'group' = 'Packages (--system)' };
+			}
+		);
+		results.append( systemPackages, true );
 
 		return results;
 	}
