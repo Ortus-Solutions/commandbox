@@ -51,9 +51,12 @@ component aliases="uninstall" {
 		}
 
 		// account for system slugs
-		var systemPackageSlugs = returnSystemPackageSlugs();
+		var systemPackageSlugs = returnPackageSlugs();
+		var localPackageSlugs = returnPackageSlugs( getCWD() );
+		// exists as system package and not as local package
+		var isSystemPackageOnly = systemPackageSlugs.containsnocase( arguments.slug ) && !localPackageSlugs.containsnocase( arguments.slug );
 
-		if( arguments.system || systemPackageSlugs.containsnocase( arguments.slug ) ) {
+		if( arguments.system || isSystemPackageOnly ) {
 			arguments.currentWorkingDirectory = expandPath( '/commandbox' );
 		} else {
 			arguments.currentWorkingDirectory = getCWD();
@@ -76,8 +79,7 @@ component aliases="uninstall" {
 		var directory = getCWD();
 
 		if( packageService.isPackage( directory ) ) {
-			var BoxJSON = packageService.readPackageDescriptor( directory );
-			var directoryPackages = BoxJSON.installPaths.keyArray().map(
+			var directoryPackages = returnPackageSlugs( directory ).map(
 				function( item, index ){
 					return { 'name' = item, 'group' = 'Packages' };
 				}
@@ -86,7 +88,7 @@ component aliases="uninstall" {
 		}
 
 		// account for system slugs
-		var systemPackages = returnSystemPackageSlugs().map(
+		var systemPackages = returnPackageSlugs().map(
 			function( item, index ){
 				return { 'name' = item, 'group' = 'Packages (--system)' };
 			}
@@ -96,9 +98,11 @@ component aliases="uninstall" {
 		return results;
 	}
 
-	private array function returnSystemPackageSlugs() {
-		var directory = expandPath( '/commandbox' );
-		var BoxJSON = packageService.readPackageDescriptor( directory );
+	/**
+	* If no directory is provided, it defaults to the system directory to be the system directory
+	*/
+	private array function returnPackageSlugs( string directory = expandPath( '/commandbox' ) ) {
+		var BoxJSON = packageService.readPackageDescriptor( arguments.directory );
 		return BoxJSON.installPaths.keyArray();
 	}
 
