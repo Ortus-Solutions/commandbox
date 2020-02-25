@@ -1059,23 +1059,27 @@ component accessors="true" singleton {
 		// Add java agent
 		if( len( trim( javaAgent ) ) ) { argTokens.append( javaagent ); }
 
-		 args
-		 	.append( '-jar' ).append( variables.jarPath )
-		 	.append( '--background=#background#' )
-		 	.append( '--host' ).append( serverInfo.host )
-		 	.append( '--stop-port' ).append( serverInfo.stopsocket )
-		 	.append( '--processname' ).append( processName )
-		 	.append( '--log-dir' ).append( serverInfo.logDir )
-		 	.append( '--server-name' ).append( serverInfo.name )
-		 	.append( '--tray-icon' ).append( serverInfo.trayIcon )
-		 	.append( '--tray-config' ).append( trayOptionsPath )
-		 	.append( '--tray-enable' ).append( serverInfo.trayEnable )
-		 	.append( '--directoryindex' ).append( serverInfo.directoryBrowsing )
-		 	.append( '--timeout' ).append( serverInfo.startTimeout )
-		 	.append( '--proxy-peeraddress' ).append( 'true' )
-		 	.append( '--cookie-secure' ).append( serverInfo.sessionCookieSecure )
-		 	.append( '--cookie-httponly' ).append( serverInfo.sessionCookieHTTPOnly )
-		 	.append( serverInfo.runwarArgs.listToArray( ' ' ), true );
+		args
+			.append( '-jar' ).append( variables.jarPath )
+			.append( '--background=#background#' )
+			.append( '--host' ).append( serverInfo.host )
+			.append( '--stop-port' ).append( serverInfo.stopsocket )
+			.append( '--processname' ).append( processName )
+			.append( '--log-dir' ).append( serverInfo.logDir )
+			.append( '--server-name' ).append( serverInfo.name )
+			.append( '--tray-enable' ).append( serverInfo.trayEnable )
+			.append( '--directoryindex' ).append( serverInfo.directoryBrowsing )
+			.append( '--timeout' ).append( serverInfo.startTimeout )
+			.append( '--proxy-peeraddress' ).append( 'true' )
+			.append( '--cookie-secure' ).append( serverInfo.sessionCookieSecure )
+			.append( '--cookie-httponly' ).append( serverInfo.sessionCookieHTTPOnly )
+			.append( serverInfo.runwarArgs.listToArray( ' ' ), true );
+
+		if( serverInfo.trayEnable ) {
+			args
+				.append( '--tray-icon' ).append( serverInfo.trayIcon )
+				.append( '--tray-config' ).append( trayOptionsPath )
+		}
 		
 		if( serverInfo.runwarXNIOOptions.count() ) {
 			args.append( '--xnio-options=' & serverInfo.runwarXNIOOptions.reduce( ( opts='', k, v ) => opts.listAppend( k & '=' & v ) ) );
