@@ -508,7 +508,7 @@ component accessors="true" implements="IEndpointInteractive" {
 		}
 	}
 
-	private function createZipFromPath( required string path ) {
+	function createZipFromPath( required string path ) {
 		if( !packageService.isPackage( arguments.path ) ) {
 			throw(
 				'Sorry but [#arguments.path#] isn''t a package.',
