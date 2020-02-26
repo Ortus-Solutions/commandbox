@@ -11,7 +11,7 @@ class Commandbox < Formula
 
   bottle :unneeded
 
-  depends_on :java => "1.8"
+  depends_on java: '>= 8'
 
   resource "apidocs" do
     url "@repoPRDURL@/ortussolutions/commandbox/@stable-version@/commandbox-apidocs-@stable-version@.zip"
@@ -20,7 +20,6 @@ class Commandbox < Formula
 
   def install
     libexec.install "box"
-    (bin/"box").write_env_script libexec/"box", Language::Java.java_home_env("1.8")
     doc.install resource("apidocs")
   end
 
