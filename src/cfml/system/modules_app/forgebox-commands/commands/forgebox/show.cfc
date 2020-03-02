@@ -71,7 +71,9 @@ component aliases="show" {
 		var forgebox = oEndpoint.getForgeBox();
 		var forgeboxOrders = forgebox.ORDER;
 
-		print.yellowLine( "Contacting ForgeBox, please wait..." ).toConsole();
+		if( !json ) {
+			print.yellowLine( "Contacting ForgeBox, please wait..." ).toConsole();
+		}
 
 		// Default parameters
 		arguments.type 		= arguments.type ?: '';
