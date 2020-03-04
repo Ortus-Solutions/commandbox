@@ -19,7 +19,7 @@ class Commandbox < Formula
   end
 
   def install
-    libexec.install "box"
+    bin.install "box"
     doc.install resource("apidocs")
   end
 
