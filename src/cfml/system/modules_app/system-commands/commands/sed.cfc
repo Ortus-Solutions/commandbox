@@ -54,7 +54,7 @@ component {
 		}
 
 		// Turn output into an array, breaking on carriage returns
-		var inputLines = listToArray( arguments.inputOrFile, CR );
+		var inputLines = listToArray( arguments.inputOrFile, chr(13)&chr(10) );
 		arguments.commands = trim( arguments.commands );
 
 		// Only support a single command right now

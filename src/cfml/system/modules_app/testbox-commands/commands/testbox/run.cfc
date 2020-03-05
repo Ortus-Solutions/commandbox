@@ -64,6 +64,7 @@ component {
 	* @recurse     Recurse the directory mapping or not, by default it does
 	* @reporter    The type of reporter to use for the results, by default is uses our 'simple' report. You can pass in a core reporter string type or a class path to the reporter to use.
 	* @labels      The list of labels that a suite or spec must have in order to execute.
+	* @excludes    The list of labels that a suite or spec must not have in order to execute.
 	* @options     Add adhoc URL options to the runner as options:name=value options:name2=value2
 	* @testBundles A list or array of bundle names that are the ones that will be executed ONLY!
 	* @testSuites  A list of suite names that are the ones that will be executed ONLY!
@@ -78,6 +79,7 @@ component {
 		boolean recurse,
 		string reporter,
 		string labels,
+		string excludes,
 		struct options={},
 		string testBundles,
 		string testSuites,
@@ -132,6 +134,7 @@ component {
 			"bundles"	    : "",
 			"directory"	    : "",
 			"labels"	    : "",
+			"excludes"      : "",
 			"testBundles"	: "",
 			"testSuites"	: "",
 			"testSpecs" 	: "",

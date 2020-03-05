@@ -100,7 +100,7 @@ component implements="wirebox.system.ioc.IProvider" accessors="true"{
 	any function onMissingMethod( required missingMethodName, required missingMethodArguments ){
 		var results = invoke( get(), arguments.missingMethodName, arguments.missingMethodArguments );
 
-		if ( !isNull( results ) ){
+		if ( !isNull( local.results ) ){
 			return results;
 		}
 	}

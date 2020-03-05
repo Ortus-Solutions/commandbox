@@ -27,10 +27,10 @@ Description :
 		<cfscript>
 			return arguments.in.reduce( function( result, item, index ){
 				var target = {};
-				if( !isNull( result ) ){
-					target = result;
+				if( !isNull( arguments.result ) ){
+					target = arguments.result;
 				}
-				target[ index ] = item;
+				target[ arguments.index ] = arguments.item;
 				return target;
 			} );
 		</cfscript>
@@ -142,12 +142,12 @@ Description :
 		<cfargument name="defaultValue" required="false" hint="The default value to use if the key does not exist in the system properties or the env" />
 		<cfscript>
 			var value = getJavaSystem().getProperty( arguments.key );
-			if ( ! isNull( value ) ) {
+			if ( ! isNull( local.value ) ) {
 				return value;
 			}
 
 			value = getJavaSystem().getEnv( arguments.key );
-			if ( ! isNull( value ) ) {
+			if ( ! isNull( local.value ) ) {
 				return value;
 			}
 
@@ -168,7 +168,7 @@ Description :
         <cfargument name="defaultValue" required="false" hint="The default value to use if the key does not exist in the system properties" />
 		<cfscript>
 			var value = getJavaSystem().getProperty( arguments.key );
-			if ( ! isNull( value ) ) {
+			if ( ! isNull( local.value ) ) {
 				return value;
 			}
 
@@ -189,7 +189,7 @@ Description :
         <cfargument name="defaultValue" required="false" hint="The default value to use if the key does not exist in the env" />
 		<cfscript>
 			var value = getJavaSystem().getEnv( arguments.key );
-			if ( ! isNull( value ) ) {
+			if ( ! isNull( local.value ) ) {
 				return value;
 			}
 
@@ -355,8 +355,9 @@ Description :
 
 	<!--- addMapping --->
     <cffunction name="addMapping" output="false" access="public" returntype="Util" hint="Add a CFML Mapping">
-    	<cfargument name="name" type="string" required="true" hint="The name of the mapping"/>
-    	<cfargument name="path" type="string" required="true" hint="The path to the mapping"/>
+    	<cfargument name="name" 	type="string" 		required="false" hint="The name of the mapping"/>
+		<cfargument name="path" 	type="string" 		required="false" hint="The path to the mapping"/>
+		<cfargument name="mappings" type="struct" 		required="false" hint="A struct of mappings" >
     	<cfscript>
     		var mappingHelper = "";
 
@@ -367,13 +368,17 @@ Description :
 				mappingHelper = new CFMappingHelper();
 			}
 
-			// Add / registration
-			if( left( arguments.name, 1 ) != "/" ){
-				arguments.name = "/#arguments.name#";
-			}
+			if( !isNull( arguments.mappings ) ){
+				mappingHelper.addMappings( arguments.mappings );
+			} else {
+				// Add / registration
+				if( left( arguments.name, 1 ) != "/" ){
+					arguments.name = "/#arguments.name#";
+				}
 
-			// Add mapping
-			mappingHelper.addMapping( arguments.name, arguments.path );
+				// Add mapping
+				mappingHelper.addMapping( arguments.name, arguments.path );
+			}
 
 			return this;
     	</cfscript>

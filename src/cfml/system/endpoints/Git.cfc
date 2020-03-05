@@ -81,7 +81,7 @@ component accessors="true" implements="IEndpoint" singleton {
 				.setProgressMonitor( progressMonitor );
 
 			// Conditionally apply security
-			var command = secureCloneCommand( cloneCommand );
+			var command = secureCloneCommand( cloneCommand, GitURL );
 			// call with our special java wrapper
 			local.result = CommandCaller.call( command );
 

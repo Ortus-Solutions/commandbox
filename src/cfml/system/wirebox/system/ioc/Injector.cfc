@@ -126,7 +126,7 @@ component serializable="false" accessors="true" implements="wirebox.system.ioc.I
 		// Scope Storages
 		variables.scopeStorage = new wirebox.system.core.collections.ScopeStorage();
 		// Version
-		variables.version      = "5.1.4+741";
+		variables.version      = "5.6.2+1021";
 		// The Configuration Binder object
 		variables.binder       = "";
 		// ColdBox Application Link
@@ -241,7 +241,7 @@ component serializable="false" accessors="true" implements="wirebox.system.ioc.I
 			}
 
 			// process mappings for metadata and initialization.
-			variables.binder.processMappings();
+			//variables.binder.processMappings();
 
 			// Announce To Listeners we are online
 			iData.injector = this;
@@ -388,11 +388,12 @@ component serializable="false" accessors="true" implements="wirebox.system.ioc.I
 	 **/
 	function buildInstance( required mapping, struct initArguments = {} ){
 		var thisMap = arguments.mapping;
+
 		// before construction event
 		variables.eventManager.processState(
 			"beforeInstanceCreation",
 			{ mapping=arguments.mapping, injector=this }
-			);
+		);
 
 		var oModel	= "";
 		// determine construction type
@@ -449,7 +450,7 @@ component serializable="false" accessors="true" implements="wirebox.system.ioc.I
 			// Influence the creation of the instance
 			var result = influenceClosure( instance=oModel, injector=this );
 			// Allow the closure to override the entire instance if it wishes
-			if( !isNull( result ) ){
+			if( !isNull( local.result ) ){
 				oModel = result;
 			}
 		}
@@ -538,6 +539,11 @@ component serializable="false" accessors="true" implements="wirebox.system.ioc.I
 		var scanLocations		= variables.binder.getScanLocations();
 		var CFCName				= replace( arguments.name, ".", "/", "all" ) & ".cfc";
 
+		// If we find a :, then avoid doing lookups on the i/o system.
+		if( find( ":", CFCName ) ){
+			return "";
+		}
+
 		// Check Scan Locations In Order
 		for( var thisScanPath in scanLocations){
 			// Check if located? If so, return instantiation path
@@ -555,6 +561,7 @@ component serializable="false" accessors="true" implements="wirebox.system.ioc.I
 
 		// debug info, NADA found!
 		if( variables.log.canDebug() ){ variables.log.debug( "Instance: #arguments.name# was not located anywhere" ); }
+
 		return "";
 	}
 
@@ -790,7 +797,13 @@ component serializable="false" accessors="true" implements="wirebox.system.ioc.I
 	 * @mapping The target mapping
 	 */
 	 private Injector function processMixins( required targetObject, required mapping ){
-		var mixin 	= new wirebox.system.ioc.config.Mixin().$init( arguments.mapping.getMixins() );
+		// If no length, kick out
+		if( !arguments.mapping.getMixins().len() ){
+			return this;
+		}
+
+		// Process
+		var mixin = new wirebox.system.ioc.config.Mixin().$init( arguments.mapping.getMixins() );
 
 		// iterate and mixin baby!
 		for( var key in mixin ){
@@ -838,7 +851,7 @@ component serializable="false" accessors="true" implements="wirebox.system.ioc.I
 	 * @DICompleteMethods The array of DI completion methods to call
 	 */
 	private Injector function processAfterCompleteDI(required targetObject, required DICompleteMethods) {
-		var DILen 		= arrayLen(arguments.DICompleteMethods);
+		var DILen = arrayLen( arguments.DICompleteMethods );
 
 		//  Check for convention first
 		if ( StructKeyExists( arguments.targetObject, "onDIComplete" ) ) {

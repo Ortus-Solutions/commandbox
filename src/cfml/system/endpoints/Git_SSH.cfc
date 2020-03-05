@@ -18,7 +18,7 @@ component accessors="true" implements="IEndpoint" extends="commandbox.system.end
 	}
 
 	// Set SSH listener
-	private function secureCloneCommand( required any cloneCommand ) {
+	private function secureCloneCommand( required any cloneCommand, string GitURL ) {
 		// This is our custom SSH callback
 		var SSHCallback = createObject( 'java', 'com.ortussolutions.commandbox.jgit.SSHCallback' ).init();
 		cloneCommand.setTransportConfigCallback( SSHCallback );

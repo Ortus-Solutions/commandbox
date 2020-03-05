@@ -19,9 +19,9 @@ CommandBox ColdFusion (CFML) CLI, Package Manager, REPL and much more!
 
 Official stable releases can be found at the [CommandBox Official Page](http://www.ortussolutions.com/products/commandbox#download)
 
-**Integration Releases**
+**Snapshot Releases**
 
-Download from the [Ortus Integration Repository](http://integration.stg.ortussolutions.com/artifacts/ortussolutions/commandbox/).  
+Download from the [Ortus Download Site](https://downloads.ortussolutions.com/#/ortussolutions/commandbox/).  
 
 *Just please note that this contains latest bleeding edge releases that might not be stable.*
 

@@ -18,10 +18,11 @@ component {
 
 	/**
 	* @URI An additional URI to go to when opening the server browser, else it just opens localhost:port
-	 * @name.hint the short name of the server
-	 * @name.optionsUDF serverNameComplete
-	 * @directory.hint web root for the server
-	 * @serverConfigFile The path to the server's JSON file.
+	* @URI.optionsFileComplete true
+	* @name.hint the short name of the server
+	* @name.optionsUDF serverNameComplete
+	* @directory.hint web root for the server
+	* @serverConfigFile The path to the server's JSON file.
 	**/
 	function run(
 		URI="/",

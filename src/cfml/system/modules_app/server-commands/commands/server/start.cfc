@@ -89,8 +89,12 @@ component aliases="start" {
 	 * @javaHomeDirectory	Path to the JRE home directory containing ./bin/java
 	 * @AJPEnable			Enable AJP
 	 * @AJPPort				AJP Port number
-	 * @javaVersion			Any endpoint ID, such as "java:openjdk11" fromt the Java endpoint 
+	 * @javaVersion			Any endpoint ID, such as "java:openjdk11" from the Java endpoint 
 	 * @javaVersion.optionsUDF	javaVersionComplete
+	 * @startScript			If you want to generate a native script to directly start the server process pass bash, cmd, or pwsh
+	 * @startScript.options	bash,cmd,pwsh
+	 * @startScriptFile		Optional override for the name and location of the start script. This is ignored if no startScript param is specified
+	 * @dryRun				Pass true to abort actually starting the server process, but all instalation and downloading will still be performed to "warm up" the engine installation.
 	 **/
 	function run(
 		String  name,
@@ -132,7 +136,10 @@ component aliases="start" {
 		String javaHomeDirectory,
 		Boolean AJPEnable,
 		Numeric AJPPort,
-		String javaVersion
+		String javaVersion,
+		String startScript,
+		String startScriptFile,
+		Boolean dryRun
 	){
 
 		// This is a common mis spelling

@@ -302,17 +302,32 @@ component accessors="true" singleton {
 
 
     	// If one of the folders has a period, we've got to do something special.
-    	// C:/users/brad.development/foo.cfc turns into /C__users_brad_development/foo.cfc
+    	// C:/users/brad.development/foo/bar.cfc turns into /C__users_brad_development/foo/bar.cfc
     	if( getDirectoryFromPath( arguments.absolutePath ) contains '.' ) {
 			var leadingSlash = arguments.absolutePath.startsWith( '/' );
 			var UNC = arguments.absolutePath.startsWith( '\\' );
-    		var mappingPath = getDirectoryFromPath( arguments.absolutePath );
-    		mappingPath = mappingPath.replace( '\', '/', 'all' );
-    		mappingPath = mappingPath.listChangeDelims( '/', '/' );
-
-    		var mappingName = mappingPath.replace( ':', '_', 'all' );
-    		mappingName = mappingName.replace( '.', '_', 'all' );
-    		mappingName = mappingName.replace( '/', '_', 'all' );
+    		var leftOver = getDirectoryFromPath( arguments.absolutePath );
+    		leftOver = leftOver.replace( '\', '/', 'all' );
+    		leftOver = leftOver.listChangeDelims( '/', '/' );
+    		var mappingPath = '';    		
+    		var mappingName = '';
+    		
+    		// "eat up" the original path until we've consumed the folder containing the dot
+    		while( leftOver contains '.' ) {
+    			// Strip off the first folder and add it to the mapping name
+    			var nextSegmentCleaned = leftOver.listFirst( '/' )
+    				.replace( ':', '_', 'all' )
+    				.replace( '.', '_', 'all' );
+    			mappingName = mappingName.listAppend( nextSegmentCleaned, '_' );
+	    			
+	    		// Add the non-escaped version to the matching path
+				mappingPath = mappingPath.listAppend( leftOver.listFirst( '/' ), '/' );
+				
+				// Reduce the left over path
+				leftOver = leftOver.listDeleteAt( 1, '/' )
+    		}
+    		
+    		// Mapping needs to be in format of /mapping_name
     		mappingName = '/' & mappingName;
 
 			// *nix needs this
@@ -320,13 +335,17 @@ component accessors="true" singleton {
 				mappingPath = '/' & mappingPath;
 			}
 
+			var nonMappingPart = getFileFromPath( arguments.absolutePath );
+			if( leftOver.len() ) {
+				nonMappingPart = leftOver & '/' & nonMappingPart;
+			}
 			// UNC network paths
 			if( UNC ) {
 				var mapping = locateUNCMapping( mappingPath );
-				return mapping & '/' & getFileFromPath( arguments.absolutePath );
+				return mapping & '/' & nonMappingPart;
 			} else {
 				createMapping( mappingName, mappingPath );
-				return mappingName & '/' & getFileFromPath( arguments.absolutePath );
+				return mappingName & '/' & nonMappingPart;
 			}
 		}
 

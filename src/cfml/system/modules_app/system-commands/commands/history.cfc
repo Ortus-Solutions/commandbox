@@ -12,7 +12,7 @@
  * {code}
  * .
  * There are separate histories for commands, script REPL and tag REPL.
- * Use the "type" paramater to specifiy which history you want to view or clear.
+ * Use the "type" parameter to specifiy which history you want to view or clear.
  * .
  * {code:bash}
  * history type=command

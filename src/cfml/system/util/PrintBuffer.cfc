@@ -19,9 +19,10 @@ component accessors="true" extends="Print"{
 	/**
 	* Result buffer
 	*/
-	property name="result" default="";
+	property name="result";
 
 	function init(){
+		variables.result = createObject( 'java', 'java.lang.StringBuilder' ).init( '' );
 		setObjectID( createUUID() );
 		return this;
 	}
@@ -41,14 +42,18 @@ component accessors="true" extends="Print"{
 
 	// Reset the result
 	function clear(){
-		variables.result = '';
+		variables.result.setLength(0);
+	}
+	
+	function getResult() {
+		return variables.result.toString();
 	}
 
 	// Proxy through any methods to the actual print helper
 	function onMissingMethod( missingMethodName, missingMethodArguments ){
 		// Don't modify the buffer if it's being printed
 		lock name='printBuffer-#getObjectID()#' type="readonly" timeout="20" {
-			variables.result &= super.onMissingMethod( arguments.missingMethodName, arguments.missingMethodArguments );
+			variables.result.append( super.onMissingMethod( arguments.missingMethodName, arguments.missingMethodArguments ) );
 			return this;
 		}
 	}

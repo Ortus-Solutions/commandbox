@@ -88,10 +88,6 @@ Optional Methods
 
 		// SES Routes
 		routes = [
-			// Module Entry Point
-			{ pattern="/", handler="home", action="index" },
-			// Convention Route
-			{ pattern="/:handler/:action?" }
 		];
 
 		// SES Resources

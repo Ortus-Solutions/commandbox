@@ -177,6 +177,10 @@ component singleton {
 								if( !len( leftOver ) || lcase( flagParamName ).startsWith( lcase( leftOver ) ) ) {
 									add( candidates, flagParamName, 'Flags', param.hint ?: '', true );
 								}
+								var flagParamName = '--no' & param.name;
+								if( !len( leftOver ) || lcase( flagParamName ).startsWith( lcase( leftOver ) ) ) {
+									add( candidates, flagParamName, 'Flags', param.hint ?: '', true );
+								}
 							}
 						} // Does it exist yet?
 					} // Loop over possible params
@@ -248,6 +252,10 @@ component singleton {
 									if( lcase( paramFlagname ).startsWith( lcase( partialMatch ) ) ) {
 										add( candidates, paramFlagname, 'Flags', param.hint ?: '', true );
 									}
+									var paramFlagname = '--no' & param.name;
+									if( lcase( paramFlagname ).startsWith( lcase( partialMatch ) ) ) {
+										add( candidates, paramFlagname, 'Flags', param.hint ?: '', true );
+									}
 								}
 							}
 
@@ -282,6 +290,12 @@ component singleton {
 
 							// If this param is a boolean that isn't a flag yet, sugguest the --flag version
 							var paramFlagname = '--' & param.name;
+							if( param.type == 'boolean' && !structKeyExists( passedParameters.flags, param.name ) && lcase( paramFlagname ).startsWith( lcase( partialMatch ) ) ) {
+								add( candidates, paramFlagname, 'Flags', param.hint ?: '', true );
+							}
+
+							// If this param is a boolean that isn't a flag yet, sugguest the --flag version
+							var paramFlagname = '--no' & param.name;
 							if( param.type == 'boolean' && !structKeyExists( passedParameters.flags, param.name ) && lcase( paramFlagname ).startsWith( lcase( partialMatch ) ) ) {
 								add( candidates, paramFlagname, 'Flags', param.hint ?: '', true );
 							}

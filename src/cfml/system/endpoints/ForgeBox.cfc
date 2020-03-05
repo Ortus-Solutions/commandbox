@@ -21,6 +21,7 @@ component accessors="true" implements="IEndpointInteractive" {
 	property name="endpointService"		inject="endpointService";
 	property name="fileSystemUtil"		inject="FileSystem";
 	property name="fileEndpoint"		inject="commandbox.system.endpoints.File";
+	property name="lexEndpoint"			inject="commandbox.system.endpoints.Lex";
 	property name='pathPatternMatcher' 	inject='provider:pathPatternMatcher@globber';
 	property name='wirebox'				inject='wirebox';
 
@@ -354,7 +355,7 @@ component accessors="true" implements="IEndpointInteractive" {
 	* @package The full endpointID like foo@1.0.0
 	*/
 	public function parseSlug( required string package ) {
-		var matches = REFindNoCase( "^([a-zA-Z][\w\-\.]*(?:\@(?!stable\b)(?!be\b)[a-zA-Z][\w\-]*)?)(?:\@(.+))?$", package, 1, true );
+		var matches = REFindNoCase( "^([\w\-\.]+(?:\@(?!stable\b)(?!be\b)[a-zA-Z][\w\-]*)?)(?:\@(.+))?$", package, 1, true );
 		if ( arrayLen( matches.len ) < 2 ) {
 			throw(
 				type = "endpointException",
@@ -371,7 +372,7 @@ component accessors="true" implements="IEndpointInteractive" {
 	public function parseVersion( required string package ) {
 		var version = 'stable';
 		// foo@1.0.0
-		var matches = REFindNoCase( "^([a-zA-Z][\w\-\.]*(?:\@(?!stable\b)(?!be\b)[a-zA-Z][\w\-]*)?)(?:\@(.+))?$", package, 1, true );
+		var matches = REFindNoCase( "^([\w\-\.]+(?:\@(?!stable\b)(?!be\b)[a-zA-Z][\w\-]*)?)(?:\@(.+))?$", package, 1, true );
 		if ( matches.pos.len() >= 3 && matches.pos[ 3 ] != 0 ) {
 			// Note this can also be a semver range like 1.2.x, >2.0.0, or 1.0.4-2.x
 			// For now I'm assuming it's a specific version
@@ -441,17 +442,30 @@ component accessors="true" implements="IEndpointInteractive" {
 
 				// Test package location to see what endpoint we can refer to.
 				var endpointData = endpointService.resolveEndpoint( downloadURL, 'fakePath' );
-
-				job.addLog( "Deferring to [#endpointData.endpointName#] endpoint for #getNamePrefixes()# entry [#slug#]..." );
-
-				var packagePath = endpointData.endpoint.resolvePackage( endpointData.package, arguments.verbose );
-
-				// Cheat for people who set a version, slug, or type in ForgeBox, but didn't put it in their box.json
-				var boxJSON = packageService.readPackageDescriptorRaw( packagePath );
-				if( !structKeyExists( boxJSON, 'type' ) || !len( boxJSON.type ) ) { boxJSON.type = entryData.typeslug; }
-				if( !structKeyExists( boxJSON, 'slug' ) || !len( boxJSON.slug ) ) { boxJSON.slug = entryData.slug; }
-				if( !structKeyExists( boxJSON, 'version' ) || !len( boxJSON.version ) ) { boxJSON.version = version; }
-				packageService.writePackageDescriptor( boxJSON, packagePath );
+				
+				// Very simple check for HTTP URLs pointing to a Lex file
+				if( isInstanceOf( endpointData.endpoint, 'HTTP' ) && entryData.typeslug == 'lucee-extensions' ) {
+					job.addLog( "Deferring to [Lex] endpoint for #getNamePrefixes()# entry [#slug#]..." );
+					var packagePath = lexEndpoint.resolvePackage( downloadURL );
+					
+					var boxJSON = packageService.readPackageDescriptorRaw( packagePath );
+					boxJSON.slug = entryData.slug;
+					boxJSON.name = entryData.title;
+					boxJSON.version = version;
+					packageService.writePackageDescriptor( boxJSON, packagePath );
+					
+				} else {
+					job.addLog( "Deferring to [#endpointData.endpointName#] endpoint for #getNamePrefixes()# entry [#slug#]..." );
+					var packagePath = endpointData.endpoint.resolvePackage( endpointData.package, arguments.verbose );
+						
+					// Cheat for people who set a version, slug, or type in ForgeBox, but didn't put it in their box.json
+					var boxJSON = packageService.readPackageDescriptorRaw( packagePath );
+					if( !structKeyExists( boxJSON, 'type' ) || !len( boxJSON.type ) ) { boxJSON.type = entryData.typeslug; }
+					if( !structKeyExists( boxJSON, 'slug' ) || !len( boxJSON.slug ) ) { boxJSON.slug = entryData.slug; }
+					if( !structKeyExists( boxJSON, 'version' ) || !len( boxJSON.version ) ) { boxJSON.version = version; }
+					packageService.writePackageDescriptor( boxJSON, packagePath );
+										
+				}
 
 				job.addLog( "Storing download in artifact cache..." );
 

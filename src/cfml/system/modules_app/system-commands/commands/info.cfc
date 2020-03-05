@@ -25,6 +25,16 @@ component aliases="about" {
 		var userName = getSystemSetting( 'user.name', 'Unkonwn' );
 		var javaBinary = fileSystemUtil.getJREExecutable();
 		var JLineTerminal = shell.getReader().getTerminal().getClass().getName();
+		var runwarVersion = 'Unknown';
+		try {
+			var runwarClass = createObjecT( 'java', 'runwar.Server' );
+			runwarVersion = runwarClass.getVersion();
+			
+			var runwarJarPath = createObject( "java", "java.io.File" )
+				.init( runwarClass.getClass().getProtectionDomain().getCodeSource().getLocation().toURI().getSchemeSpecificPart() ).getAbsolutePath();
+				
+			runwarVersion &= ' (#runwarJarPath#)'
+		}catch( any e ) {}
 
 		print.line();
 		print.greenLine( '****************************************************************************************************' );
@@ -44,6 +54,7 @@ component aliases="about" {
 		print.green( '*' ); print.cyan( '  Java Path:          ' ); print.text( '#javaBinary##repeatString( ' ', max( 0, width - 24 - len( javaBinary ) ) )#' );	print.greenLine( '*' );
 		print.green( '*' ); print.cyan( '  OS Username         ' ); print.text( '#userName##repeatString( ' ', max( 0, width - 24 - len( userName ) ) )#' );	print.greenLine( '*' );
 		print.green( '*' ); print.cyan( '  JLine Terminal      ' ); print.text( '#JLineTerminal##repeatString( ' ', max( 0, width - 24 - len( JLineTerminal ) ) )#' );	print.greenLine( '*' );
+		print.green( '*' ); print.cyan( '  Runwar Version      ' ); print.text( '#runwarVersion##repeatString( ' ', max( 0, width - 24 - len( runwarVersion ) ) )#' );	print.greenLine( '*' );
 		print.greenLine( '*                                                                                                  *' );
 		print.greenLine( '*                                                                                                  *' );
 		print.greenLine( '****************************************************************************************************' );

@@ -98,6 +98,12 @@ component accessors=true {
 				if( runCommand ) {
 					processedParams.append( param );
 				} else if( getRawParams() ) {
+					// The tokenizing process escapes any unescaped = signs in quotes as \= as a convenience so it doesn't look like a named param
+					// We're skipping the tokenzier since we're going to directly pass an array of tokes, but we still need to handle
+					// any = signs inside of quotes or the param processor will think it is a named parameter since we don't re-processes quote at that time
+					param = replace( param, "\=", "__escaped_equals__", "all" );
+					param = replace( param, "=", "\=", "all" );
+					param = replace( param, "__escaped_equals__", "\=", "all" );
 					processedParams.append( '"#param#"' );
 				} else {
 					processedParams.append( '"#parser.escapeArg( param )#"' );
@@ -234,7 +240,7 @@ component accessors=true {
 			if( shell.getExitCode() != 0 ) {
 				
 				if( job.isActive() ) {
-					job.errorRemaining( message );
+					job.errorRemaining();
 					// Distance ourselves from whatever other output the command may have given so far.
 					shell.printString( chr( 10 ) );
 				}

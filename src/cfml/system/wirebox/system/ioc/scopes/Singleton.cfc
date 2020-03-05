@@ -23,11 +23,11 @@ component implements="wirebox.system.ioc.scopes.IScope" accessors="true"{
 
 	/**
 	 * Configure the scope for operation and returns itself
-	 * 
-	 * 
+	 *
+	 *
 	 * @injector The linked WireBox injector
 	 * @injector.doc_generic wirebox.system.ioc.Injector
-	 * 
+	 *
 	 * @return wirebox.system.ioc.scopes.IScope
 	 */
 	function init( required injector ){
@@ -39,8 +39,8 @@ component implements="wirebox.system.ioc.scopes.IScope" accessors="true"{
 
 	/**
 	 * Retrieve an object from scope or create it if not found in scope
-	 * 
-	 * 
+	 *
+	 *
 	 * @mapping The linked WireBox injector
 	 * @mapping.doc_generic wirebox.system.ioc.config.Mapping
 	 * @initArguments The constructor struct of arguments to passthrough to initialization
@@ -50,20 +50,20 @@ component implements="wirebox.system.ioc.scopes.IScope" accessors="true"{
 		var cacheKey = lcase( arguments.mapping.getName() );
 
 		// Verify in Singleton Cache
-		if( NOT structKeyExists( variables.singletons, cacheKey ) ){
-			
+		if( NOT variables.singletons.containsKey(cacheKey) ){
+
 			// Lock it
-			lock 	name="WireBox.#variables.injector.getInjectorID()#.Singleton.#cacheKey#" 
-					type="exclusive" 
-					timeout="30" 
+			lock 	name="WireBox.#variables.injector.getInjectorID()#.Singleton.#cacheKey#"
+					type="exclusive"
+					timeout="30"
 					throwontimeout="true"{
-			
+
 						// double lock it
-				if( NOT structKeyExists( variables.singletons, cacheKey) ){
+				if( NOT variables.singletons.containsKey(cacheKey) ){
 
 					// some nice debug info.
 					if( variables.log.canDebug() ){
-						variables.log.debug("Object: (#cacheKey#) not found in singleton cache, beggining construction.");
+						variables.log.debug("Object: (#cacheKey#) not found in singleton cache, beginning construction.");
 					}
 
 					// construct the singleton object
@@ -71,7 +71,7 @@ component implements="wirebox.system.ioc.scopes.IScope" accessors="true"{
 
 					// If not in wiring thread safety, store in singleton cache to satisfy circular dependencies
 					if( NOT arguments.mapping.getThreadSafe() ){
-						variables.singletons[ cacheKey ] = tmpSingleton;
+						variables.singletons.put(cacheKey, tmpSingleton);
 					}
 
 					// wire up dependencies on the singleton object
@@ -79,7 +79,7 @@ component implements="wirebox.system.ioc.scopes.IScope" accessors="true"{
 
 					// If thread safe, then now store it in the singleton cache, as all dependencies are now safely wired
 					if( arguments.mapping.getThreadSafe() ){
-						variables.singletons[ cacheKey ] = tmpSingleton;
+						variables.singletons.put(cacheKey, tmpSingleton);
 					}
 
 					// log it
@@ -88,26 +88,26 @@ component implements="wirebox.system.ioc.scopes.IScope" accessors="true"{
 					}
 
 					// return it
-					return variables.singletons[ cacheKey ];
+					return variables.singletons.get(cacheKey);
 				}
-			
+
 			} // end lock
 		}
 
 		// return singleton
-		return variables.singletons[ cacheKey ];
+		return variables.singletons.get(cacheKey);
 	}
 
 	/**
 	 * Indicates whether an object exists in scope
-	 * 
+	 *
 	 * @mapping The linked WireBox injector
 	 * @mapping.doc_generic wirebox.system.ioc.config.Mapping
-	 * 
+	 *
 	 * @return wirebox.system.ioc.scopes.IScope
 	 */
 	boolean function exists( required mapping ){
-		return structKeyExists( variables.singletons, lcase( arguments.mapping.getName() ) );
+		return variables.singletons.containsKey(lcase( arguments.mapping.getName() ));
 	}
 
 	/**

@@ -1,21 +1,21 @@
 /**
-* Create a new TestBox test harness for an application. The test harness will be created in a directory called tests.
-* .
-* You can run it from the root of your application.
-* {code:bash}
-* testbox create harness
-* {code}
-* .
-* Or pass the base directory of your application as a parameter
-* {code:bash}
-* testbox create harness C:\myApp
-* {code}
-**/
+ * Create a new TestBox test harness for an application. The test harness will be created in a directory called tests.
+ * .
+ * You can run it from the root of your application.
+ * {code:bash}
+ * testbox create harness
+ * {code}
+ * .
+ * Or pass the base directory of your application as a parameter
+ * {code:bash}
+ * testbox create harness C:\myApp
+ * {code}
+ */
 component {
 
 	/**
-	* @directory The base directory to create your test harness
-	**/
+	 * @directory The base directory to create your test harness
+	 */
 	function run( string directory = getCWD() ) {
 
 		// This will make each directory canonical and absolute

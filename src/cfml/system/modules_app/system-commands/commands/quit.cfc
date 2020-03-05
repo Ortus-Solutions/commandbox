@@ -23,6 +23,9 @@ component aliases="exit,q,e" {
 	* @exitCode The exitCode for the box process to return
 	*/
 	function run( exitCode=0 )  {
+		if( !isNumeric( exitCode ) ) {
+			error( 'Exit code [#exitCode#] is invalid. Please supply a numeric input' );
+		}
 		setExitCode( exitCode );
 		shell.exit();
 	}

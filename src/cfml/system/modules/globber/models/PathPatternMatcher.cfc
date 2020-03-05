@@ -38,7 +38,7 @@ component accessors="true" singleton {
 	* @path The file system path to test.  Can be a file or directory.  Direcories MUST end with a trailing slash
 	* @exact True if the full path needs to match.  False to match inside a path
 	*/
-	boolean function matchPattern( required string pattern, required string path, boolean exact=false) {
+	boolean function matchPattern( required string pattern, required string path, boolean exact=false ) {
 		// Normalize slashes
 		// This will turn a Windows UNC path into //server, but it will at least be consitent across pattern and path
 		arguments.pattern = replace( arguments.pattern, '\', '/', 'all' );
@@ -107,17 +107,17 @@ component accessors="true" singleton {
 	* @patterns.hint An array of patterns to match against the path
 	* @path.hint The file system path to test.  Can be a file or directory.  Direcories MUST end with a trailing slash
 	*/
-	boolean function matchPatterns( required array patterns, required string path ){
+	boolean function matchPatterns( required array patterns, required string path, boolean exact=false ){
 		var matched = false;
 		for( var pattern in arguments.patterns ) {
 			if ( isExclusion( pattern ) ) {
 				var patternWithoutBang = mid( pattern, 2, len( pattern ) - 1 );
-				if ( matchPattern( patternWithoutBang, arguments.path ) ) {
+				if ( matchPattern( patternWithoutBang, arguments.path, arguments.exact ) ) {
 					matched = false;
 				}
 			}
 			else {
-				if ( matchPattern( pattern, arguments.path ) ) {
+				if ( matchPattern( pattern, arguments.path, arguments.exact ) ) {
 					matched = true;
 				}
 			}

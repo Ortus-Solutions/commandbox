@@ -9,7 +9,7 @@ component{
 	this.sessionManagement = true;
 
 	// any mappings go here, we create one that points to the root called test.
-	this.mappings[ "/test" ] = getDirectoryFromPath( getCurrentTemplatePath() );
+	this.mappings[ "/tests" ] = getDirectoryFromPath( getCurrentTemplatePath() );
 
 	// any orm definitions go here.
 

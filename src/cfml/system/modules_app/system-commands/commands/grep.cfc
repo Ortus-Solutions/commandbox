@@ -22,20 +22,29 @@ component excludeFromHelp=true {
 	/**
 	 * @input.hint The piped input to be checked.
 	 * @expression.hint A regular expression to match against each line of the input. Only matching lines will be output.
+	 * @count.hint Return only a count of the matched rows
 	 **/
-	function run( input='', expression='' ) {
+	function run( input='', expression='', boolean count=false ) {
 		// Turn output into an array, breaking on carriage returns
-		var content = listToArray( arguments.input, CR );
+		var content = listToArray( arguments.input, chr(13)&chr(10) );
+		var numMatches = 0;
 
 		// Loop over content
 		for( var line in content ) {
 
 			// Does it match
-			if( reFindNoCase( arguments.expression, line ) ) {
-				// print it out
-				print.line( line );
+			if( arguments.expression == '' || reFindNoCase( arguments.expression, line ) ) {
+				if( count ) {
+					numMatches++;
+				} else {
+					print.line( line );
+				}
 			}
 
+		}
+
+		if( count ) {
+			print.line( numMatches );
 		}
 	}
 

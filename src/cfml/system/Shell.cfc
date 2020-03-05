@@ -11,7 +11,7 @@ component accessors="true" singleton {
 	// DI
 	property name="commandService" 			inject="CommandService";
 	property name="CommandCompletor" 		inject="CommandCompletor";
-	property name="REPLCompletor" 			inject="REPLCompletor";	
+	property name="REPLCompletor" 			inject="REPLCompletor";
 	property name="readerFactory" 			inject="ReaderFactory";
 	property name="print" 					inject="print";
 	property name="cr" 						inject="cr@constants";
@@ -89,7 +89,7 @@ component accessors="true" singleton {
 		boolean asyncLoad=true
 	){
 		variables.currentThread = createObject( 'java', 'java.lang.Thread' ).currentThread();
-		
+
 		// Possible byte order marks
 		variables.BOMS = [
 			chr( 254 ) & chr( 255 ),
@@ -125,7 +125,7 @@ component accessors="true" singleton {
 		}
 
 		setShellType( 'interactive' );
-		
+
     	return this;
 	}
 
@@ -183,7 +183,7 @@ component accessors="true" singleton {
 	 **/
 	function getExitCode() {
 		return (createObject( 'java', 'java.lang.System' ).getProperty( 'cfml.cli.exitCode' ) ?: 0);
-		
+
 	}
 
 
@@ -233,20 +233,25 @@ component accessors="true" singleton {
 	string function ask( message, string mask='', string defaultResponse='', keepHistory=false, highlight=false, complete=false ) {
 
 		try {
-			
+
 			if( !highlight ) {
 				enableHighlighter( false );
 			}
-			
+
 			if( !complete ) {
 				enableCompletion( false );
 			}
-			
+
 			// Some things are best forgotten
 			if( !keepHistory ) {
 				enableHistory( false );
 			}
-			
+
+			var terminal = getReader().getTerminal();
+			if( terminal.paused() ) {
+				terminal.resume();
+			}
+
 			// read reponse while masking input
 			var input = variables.reader.readLine(
 				// Prompt for the user
@@ -257,13 +262,13 @@ component accessors="true" singleton {
 				// Optionally pre-fill a default response for them
 				len( arguments.defaultResponse ) ? javacast( "String", arguments.defaultResponse ) : javacast( "null", '' )
 			);
-			
+
 		// user wants to exit this command, they've pressed Ctrl-C
 		} catch( org.jline.reader.UserInterruptException var e ) {
 			throw( message='CANCELLED', type="UserInterruptException");
 		// user wants to exit the entire shell, they've pressed Ctrl-D
 		} catch( org.jline.reader.EndOfFileException var e ) {
-			// This should probably just read what is currently on the buffer, 
+			// This should probably just read what is currently on the buffer,
 			// but JLine doesn't give me a way to get that currently
 			throw( message='EOF', type="EndOfFileException");
 		} finally{
@@ -271,11 +276,11 @@ component accessors="true" singleton {
 			setPrompt();
 			// Turn history back on
 			enableHistory();
-			
+
 			if( !complete ) {
 				enableCompletion( true );
 			}
-			
+
 			if( !highlight ) {
 				enableHighlighter( true );
 			}
@@ -314,9 +319,12 @@ component accessors="true" singleton {
 		if( len( arguments.message ) ) {
 			printString( arguments.message );
 		}
-		
+
 		var terminal = getReader().getTerminal();
-		
+		if( terminal.paused() ) {
+				terminal.resume();
+		}
+
 		var keys = createObject( 'java', 'org.jline.keymap.KeyMap' );
 		var capability = createObject( 'java', 'org.jline.utils.InfoCmp$Capability' );
 		var bindingReader = createObject( 'java', 'org.jline.keymap.BindingReader' ).init( terminal.reader() );
@@ -327,22 +335,22 @@ component accessors="true" singleton {
 		keys.bind( capability.key_up.name(), keys.key( terminal, capability.key_up ) );
 		keys.bind( capability.key_down.name(), keys.key( terminal, capability.key_down ) );
 		keys.bind( capability.back_tab.name(), keys.key( terminal, capability.back_tab ) );
-		
+
 		// Home/end
 		keys.bind( capability.key_home.name(), keys.key( terminal, capability.key_home ) );
 		keys.bind( capability.key_end.name(), keys.key( terminal, capability.key_end ) );
-		
+
 		// delete key/delete line/backspace
 		keys.bind( capability.key_dc.name(), keys.key( terminal, capability.key_dc ) );
 		// Not sure why, but throwing unsupported exception on Linux
 		// keys.bind( capability.key_backspace.name(), keys.key( terminal, capability.key_backspace ) );
-		
+
 		keys.bind( capability.key_ic.name(), keys.key( terminal, capability.key_ic ) );
-		
+
 		// Page up/down
 		keys.bind( capability.key_npage.name(), keys.key( terminal, capability.key_npage ) );
 		keys.bind( capability.key_ppage.name(), keys.key( terminal, capability.key_ppage ) );
-		
+
 		// Function keys
 		keys.bind( capability.key_f1.name(), keys.key( terminal, capability.key_f1 ) );
 		keys.bind( capability.key_f2.name(), keys.key( terminal, capability.key_f2 ) );
@@ -362,19 +370,19 @@ component accessors="true" singleton {
 
 		// This doesn't seem to work on Windows
 		keys.bind( 'delete', keys.del() );
-		
+
 		keys.bind( 'escape', keys.esc() );
 		keys.setAmbiguousTimeout( 50 );
-		
-		
+
+
 		try {
 			// Next 3 lines required for this to work on *nix
 			attr = terminal.enterRawMode();
 			terminal.puts( capability.keypad_xmit, [] );
 			terminal.flush();
-			
+
 			var binding = bindingReader.readBinding( keys );
-			
+
 		} catch (any e) {
 			if( e.getPageException().getRootCause().getClass().getName() == 'java.io.InterruptedIOException' ) {
 				throw( message='CANCELLED', type="UserInterruptException");
@@ -383,18 +391,18 @@ component accessors="true" singleton {
 		} finally {
 			// Undo the rawmode stuff above
 			if( !isNull( attr ) ) {
-				terminal.setAttributes( attr );	
+				terminal.setAttributes( attr );
 			}
 			terminal.puts( capability.keypad_local, [] );
-			terminal.flush();	
+			terminal.flush();
 		}
-		
+
 		if( binding == 'self-insert' ) {
 			key = bindingReader.getLastBinding();
 		} else {
 			key = binding;
 		}
-		
+
 		// Reset back to default prompt
 		setPrompt();
 
@@ -508,52 +516,57 @@ component accessors="true" singleton {
 
 			// while keep running
 	        while( variables.keepRunning ){
-				
+
 				try {
-					
+
 					var interceptData = { prompt : variables.shellPrompt };
 					getInterceptorService().announceInterception( 'prePrompt', interceptData );
-					
+
 					if( arguments.silent ) {
 						interceptData.prompt = '';
 					}
-					
+
+					var terminal = getReader().getTerminal();
+					if( terminal.paused() ) {
+						terminal.resume();
+					}
+
 					// Shell stops on this line while waiting for user input
 			        if( arguments.silent ) {
 			        	line = variables.reader.readLine( interceptData.prompt, javacast( "char", ' ' ) );
 					} else {
 			        	line = variables.reader.readLine( interceptData.prompt );
 					}
-					
+
 				// User hits Ctrl-C.  Don't let them exit the shell.
 				} catch( org.jline.reader.UserInterruptException var e ) {
 					variables.reader.getTerminal().writer().print( variables.print.yellowLine( 'Use the "exit" command or Ctrl-D to leave this shell.' ) );
 		    		variables.reader.getTerminal().writer().flush();
 		    		continue;
-		    		
+
 				// User hits Ctrl-D.  Murder the shell dead.
 				} catch( org.jline.reader.EndOfFileException var e ) {
-					
+
 					// Only output this if a user presses Ctrl-D, EOF can also happen if piping an actual file of input into the shell.
 					if( !arguments.silent ) {
 						variables.reader.getTerminal().writer().print( variables.print.boldGreenLine( 'Goodbye!' ) );
 		    			variables.reader.getTerminal().writer().flush();
 					}
-					
+
 					variables.keepRunning = false;
 		    		continue;
-		    		
+
 				// Catch all for custom user interrupt thrown from CFML
 				} catch( any var e ) {
-					
-					if( e.type == 'UserInterruptException' ) {
-			    		continue;			    			
+
+					if( e.type.toString() == 'UserInterruptException' ) {
+			    		continue;
 					} else {
 						rethrow;
 					}
-					
+
 				}
-				
+
 	        	// If the standard input isn't avilable, bail.  This happens
 	        	// when commands are piped in and we've reached the end of the piped stream
 	        	if( !isDefined( 'line' ) ) {
@@ -574,9 +587,9 @@ component accessors="true" singleton {
 					}
 					interceptorService.announceInterception( 'preProcessLine', interceptData );
 					line = interceptData.line;
-					
+
 					callCommand( command=line, initialCommand=true );
-					
+
 					interceptorService.announceInterception( 'postProcessLine', interceptData );
 				}
 
@@ -591,7 +604,7 @@ component accessors="true" singleton {
 
 	/**
 	* Shutdown the shell and close/release any resources associated.
-	* This isn't gunartuneed to run if the shell is closed, but it 
+	* This isn't guaranteed to run if the shell is closed, but it
 	* will run for a reload command
 	*/
 	function shutdown() {
@@ -618,46 +631,46 @@ component accessors="true" singleton {
 
 	/**
 	* @filePath The path to the history file to set
-	* 
+	*
 	* Use this wrapper method to change the history file in use by the shell.
 	*/
 	function setHistory( filePath ) {
-		
+
 		var LineReader = createObject( "java", "org.jline.reader.LineReader" );
-		
+
 		// Save current file
 		variables.reader.getHistory().save();
 		// Swap out the file setting
 		variables.reader.setVariable( LineReader.HISTORY_FILE, filePath );
 		// Load in the new file
 		variables.reader.getHistory().load();
-		
+
 	}
 
 	/**
 	* @enable Pass true to enable, false to disable
-	* 
+	*
 	* Enable or disables history in the shell
 	*/
 	function enableHistory( boolean enable=true ) {
-		
+
 		var LineReader = createObject( "java", "org.jline.reader.LineReader" );
-		
+
 		// Swap out the file setting
 		variables.reader.setVariable( LineReader.DISABLE_HISTORY, !enable );
 	}
 
 	/**
 	* @enable Pass true to enable, false to disable
-	* 
+	*
 	* Enable or disables tab completion in the shell
 	*/
 	function enableCompletion( boolean enable=true ) {
-		
+
 		// DOESN'T WORK. NOT IMPLEMENTED IN JLINE!
 		//var LineReader = createObject( "java", "org.jline.reader.LineReader" );
 		// variables.reader.setVariable( LineReader.DISABLE_COMPLETION, !enable );
-		
+
 		if( enable ) {
 			setCompletor( 'command' );
 		} else {
@@ -668,20 +681,20 @@ component accessors="true" singleton {
 	/**
 	* @CompletorName Pass "command", "repl", or "dummy"
 	* @executor If using REPL completor, pass an optional executor for better completion results
-	* 
+	*
 	* Set the shell's completor
 	*/
 	function setCompletor( string completorName, any executor ) {
 		if( completorName == 'command' ) {
-			variables.reader.setCompleter( createDynamicProxy( CommandCompletor, [ 'org.jline.reader.Completer' ] ) );		
+			variables.reader.setCompleter( createDynamicProxy( CommandCompletor, [ 'org.jline.reader.Completer' ] ) );
 		} else if( completorName == 'repl' ) {
-			
+
 			REPLCompletor.setCurrentExecutor( arguments.executor ?: '' );
-			var thisCompletor = createDynamicProxy( REPLCompletor, [ 'org.jline.reader.Completer' ] );			
+			var thisCompletor = createDynamicProxy( REPLCompletor, [ 'org.jline.reader.Completer' ] );
 			variables.reader.setCompleter( thisCompletor );
-			
+
 		} else if( completorName == 'dummy' ) {
-			variables.reader.setCompleter( createObject( 'java', 'org.jline.reader.impl.completer.NullCompleter' ) );	
+			variables.reader.setCompleter( createObject( 'java', 'org.jline.reader.impl.completer.NullCompleter' ) );
 		} else {
 			throw( 'Invalid completor name [#completorName#].  Valid names are "command", "repl", or "dummy".' );
 		}
@@ -689,12 +702,12 @@ component accessors="true" singleton {
 
 	/**
 	* @enable Pass true to enable, false to disable
-	* 
+	*
 	* Enable or disables highlighting in the shell
 	*/
 	function enableHighlighter( boolean enable=true ) {
 		if( enable ) {
-			setHighlighter( 'command' );			
+			setHighlighter( 'command' );
 		} else {
 			// A dummy highlighter, or at least one that never seems to do anything...
 			setHighlighter( 'dummy' );
@@ -703,14 +716,14 @@ component accessors="true" singleton {
 
 	/**
 	* @highlighterName Pass "command", "repl", or "dummy"
-	* 
+	*
 	* Set the shell's highlighter
 	*/
 	function setHighlighter( string highlighterName ) {
 		if( highlighterName == 'command' ) {
-			variables.reader.setHighlighter( createDynamicProxy( CommandHighlighter, [ 'org.jline.reader.Highlighter' ] ) );	
+			variables.reader.setHighlighter( createDynamicProxy( CommandHighlighter, [ 'org.jline.reader.Highlighter' ] ) );
 		} else if( highlighterName == 'repl' ) {
-			variables.reader.setHighlighter( createDynamicProxy( REPLHighlighter, [ 'org.jline.reader.Highlighter' ] ) );			
+			variables.reader.setHighlighter( createDynamicProxy( REPLHighlighter, [ 'org.jline.reader.Highlighter' ] ) );
 		} else if( highlighterName == 'dummy' ) {
 			variables.reader.setHighlighter( createObject( 'java', 'org.jline.reader.impl.DefaultHighlighter' ) );
 		} else {
@@ -731,7 +744,7 @@ component accessors="true" singleton {
 		returnOutput=false,
 		string piped,
 		boolean initialCommand=false )  {
-		
+
 		var job = wirebox.getInstance( 'interactiveJob' );
 		var progressBarGeneric = wirebox.getInstance( 'progressBarGeneric' );
 
@@ -745,7 +758,7 @@ component accessors="true" singleton {
 		// Flush history buffer to disk. I could do this in the quit command
 		// but then I would lose everything if the user just closes the window
 		variables.reader.getHistory().save();
-		
+
 		try{
 
 			if( isArray( command ) ) {
@@ -764,12 +777,12 @@ component accessors="true" singleton {
 			if( !initialCommand ) {
 				rethrow;
 			} else {
-				
+
 				progressBarGeneric.clear();
 				if( job.isActive() ) {
 					job.errorRemaining();
 				}
-				
+
 				printError( { message : e.message, detail: e.detail } );
 			}
 		// This type of error means the user hit Ctrl-C, during a readLine() call. Duck out and move along.
@@ -778,7 +791,7 @@ component accessors="true" singleton {
 			if( !initialCommand ) {
 				rethrow;
 			} else {
-				
+
 				progressBarGeneric.clear();
 				if( job.isActive() ) {
 					job.errorRemaining();
@@ -787,32 +800,34 @@ component accessors="true" singleton {
 				variables.reader.getTerminal().writer().println();
 				variables.reader.getTerminal().writer().print( variables.print.boldRedLine( 'CANCELLED' ) );
 			}
-		
+
 		} catch (any e) {
-			
 			// If this is a nested command, pass the exception along to unwind the entire stack.
 			if( !initialCommand ) {
 				rethrow;
 			// This type of error means the user hit Ctrl-C, when not in a readLine() call (and hit my custom signal handler).  Duck out and move along.
-			} else if( e.getPageException().getRootCause().getClass().getName() == 'java.lang.InterruptedException' || e.type == 'UserInterruptException' || e.message == 'UserInterruptException' || e.type == 'EndOfFileException' ) {
+			} else if( e.getPageException().getRootCause().getClass().getName() == 'java.lang.InterruptedException'
+				|| e.type.toString() == 'UserInterruptException'
+				|| e.message == 'UserInterruptException'
+				|| e.type.toString() == 'EndOfFileException' ) {
 
-				progressBarGeneric.clear();				
+				progressBarGeneric.clear();
 				if( job.isActive() ) {
 					job.errorRemaining();
 				}
-				
+
     			variables.reader.getTerminal().writer().flush();
 				variables.reader.getTerminal().writer().println();
-				variables.reader.getTerminal().writer().print( variables.print.boldRedLine( 'CANCELLED' ) );			
+				variables.reader.getTerminal().writer().print( variables.print.boldRedLine( 'CANCELLED' ) );
 			// Anything else is completely unexpected and means boom booms happened-- full stack please.
 			} else {
 
-				progressBarGeneric.clear();				
+				progressBarGeneric.clear();
 				if( job.isActive() ) {
 					job.errorRemaining( e.message );
 					variables.reader.getTerminal().writer().println();
 				}
-				
+
 				printError( e );
 			}
 		}
@@ -841,22 +856,18 @@ component accessors="true" singleton {
 				job.addLog( result )
 			} else {
 				printString( result );
-				
+
 				// If the command output text that didn't end with a line break one, add one
 				var lastChar = mid( result, len( result ), 1 );
 				if( ! ( lastChar == chr( 10 ) || lastChar == chr( 13 ) ) ) {
 					variables.reader.getTerminal().writer().println();
 				}
 			}
-		} else {
-			if( !job.getActive() ) {
-				variables.reader.getTerminal().writer().println();
-			}
 		}
 
 		return '';
 	}
-	
+
 
 	/**
 	 * Is the current terminal interactive?
@@ -882,9 +893,9 @@ component accessors="true" singleton {
 	Shell function printError( required err ){
 		// Don't override a non-1 exit code.
 		if( getExitCode() == 0 ) {
-			setExitCode( 1 );	
+			setExitCode( 1 );
 		}
-		
+
 		var verboseErrors = true;
 		try{
 			verboseErrors = configService.getSetting( 'verboseErrors', false );
@@ -905,9 +916,9 @@ component accessors="true" singleton {
 		if( structKeyExists( arguments.err, 'detail' ) ) {
 			// If there's a tag context, this is likely a Lucee error and therefore has HTML in the detail
 			if( structKeyExists( arguments.err, 'tagcontext' ) ) {
-				variables.reader.getTerminal().writer().print( variables.print.boldRedText( variables.formatterUtil.HTML2ANSI( arguments.err.detail ) ) );	
+				variables.reader.getTerminal().writer().print( variables.print.boldRedText( variables.formatterUtil.HTML2ANSI( arguments.err.detail ) ) );
 			} else {
-				variables.reader.getTerminal().writer().print( variables.print.boldRedText( arguments.err.detail ) );				
+				variables.reader.getTerminal().writer().print( variables.print.boldRedText( arguments.err.detail ) );
 			}
 			variables.reader.getTerminal().writer().println();
 		}
@@ -922,7 +933,7 @@ component accessors="true" singleton {
 					if( verboseErrors ) {
 						variables.reader.getTerminal().writer().print( variables.print.boldCyanText( "#tc.template#: line #tc.line##variables.cr#" ));
 					} else {
-						variables.reader.getTerminal().writer().print( variables.print.boldCyanText( "#tc.template.replaceNoCase( expandPath( '/CommandBox' ), '' )#: line #tc.line##variables.cr#" ));						
+						variables.reader.getTerminal().writer().print( variables.print.boldCyanText( "#tc.template.replaceNoCase( expandPath( '/CommandBox' ), '' )#: line #tc.line##variables.cr#" ));
 					}
 					if( len( tc.codeprinthtml ) && idx == 1 ){
 						variables.reader.getTerminal().writer().print( variables.print.text( variables.formatterUtil.HTML2ANSI( tc.codeprinthtml ) ) );
