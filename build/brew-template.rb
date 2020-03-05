@@ -11,7 +11,7 @@ class Commandbox < Formula
 
   bottle :unneeded
 
-  depends_on java: '>= 8'
+  depends_on :java => ">= 8"
 
   resource "apidocs" do
     url "@repoPRDURL@/ortussolutions/commandbox/@stable-version@/commandbox-apidocs-@stable-version@.zip"
