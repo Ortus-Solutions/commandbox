@@ -74,6 +74,7 @@ component aliases="start" {
 	 * @minHeapSize			The min heap size in megabytes you would like this server to start with
 	 * @directoryBrowsing 	Enable/Disabled directory browsing, defaults to false
 	 * @JVMArgs 			Additional JVM args to use when starting the server. Use "server status --verbose" to debug
+	 * @runwarJarPath		path to runwar jar (overrides the default runwar location in the ~/.CommandBox/lib/ folder)
 	 * @runwarArgs 			Additional Runwar options to use when starting the server. Use "server status --verbose" to debug
 	 * @saveSettings 		Save start settings in server.json
 	 * @cfengine        	sets the cfml engine type
