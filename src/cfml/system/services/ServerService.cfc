@@ -251,6 +251,9 @@ component accessors="true" singleton {
 		if( !isNull( serverProps.javaHomeDirectory ) ) {
 			serverProps.javaHomeDirectory = fileSystemUtil.resolvePath( serverProps.javaHomeDirectory );
 		}
+		if( !isNull( serverProps.runwarJarPath ) ) {
+			serverProps.runwarJarPath = fileSystemUtil.resolvePath( serverProps.runwarJarPath );
+		}
 
 		if( structKeyExists( serverProps, 'trace' ) && serverProps.trace ) {
 			serverProps.debug = true;
