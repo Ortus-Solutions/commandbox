@@ -185,6 +185,7 @@ component accessors="true" singleton {
 				'sessionCookieHTTPOnly' : d.app.sessionCookieHTTPOnly ?: false
 			},
 			'runwar' : {
+				'jarPath' : d.runwar.jarPath ?: variables.jarPath,
 				'args' : d.runwar.args ?: '',
 				// Duplicate so onServerStart interceptors don't actually change config settings via reference.
 				'XNIOOptions' : duplicate( d.runwar.XNIOOptions ?: {} ),
@@ -249,6 +250,9 @@ component accessors="true" singleton {
 		}
 		if( !isNull( serverProps.javaHomeDirectory ) ) {
 			serverProps.javaHomeDirectory = fileSystemUtil.resolvePath( serverProps.javaHomeDirectory );
+		}
+		if( !isNull( serverProps.runwarJarPath ) ) {
+			serverProps.runwarJarPath = fileSystemUtil.resolvePath( serverProps.runwarJarPath );
 		}
 
 		if( structKeyExists( serverProps, 'trace' ) && serverProps.trace ) {
@@ -493,6 +497,9 @@ component accessors="true" singleton {
 			    case "javaVersion":
 					serverJSON[ 'JVM' ][ 'javaVersion' ] = serverProps[ prop ];
 			         break;
+				case "runwarJarPath":
+					serverJSON[ 'runwar' ][ 'jarPath' ] = serverProps[ prop ];
+					 break;
 			    case "runwarArgs":
 					serverJSON[ 'runwar' ][ 'args' ] = serverProps[ prop ];
 			         break;
@@ -709,6 +716,9 @@ component accessors="true" singleton {
 
 		// Global defauls are always added on top of whatever is specified by the user or server.json
 		serverInfo.JVMargs			= ( serverProps.JVMargs			?: serverJSON.JVM.args ?: '' ) & ' ' & defaults.JVM.args;
+
+		// Global defauls are always added on top of whatever is specified by the user or server.json
+		serverInfo.runwarJarPath	= serverProps.runwarJarPath		?: serverJSON.runwar.jarPath	?: defaults.runwar.jarPath;
 
 		// Global defauls are always added on top of whatever is specified by the user or server.json
 		serverInfo.runwarArgs		= ( serverProps.runwarArgs		?: serverJSON.runwar.args ?: '' ) & ' ' & defaults.runwar.args;
@@ -1060,22 +1070,26 @@ component accessors="true" singleton {
 		if( len( trim( javaAgent ) ) ) { argTokens.append( javaagent ); }
 
 		 args
-		 	.append( '-jar' ).append( variables.jarPath )
-		 	.append( '--background=#background#' )
-		 	.append( '--host' ).append( serverInfo.host )
-		 	.append( '--stop-port' ).append( serverInfo.stopsocket )
-		 	.append( '--processname' ).append( processName )
-		 	.append( '--log-dir' ).append( serverInfo.logDir )
-		 	.append( '--server-name' ).append( serverInfo.name )
-		 	.append( '--tray-icon' ).append( serverInfo.trayIcon )
-		 	.append( '--tray-config' ).append( trayOptionsPath )
-		 	.append( '--tray-enable' ).append( serverInfo.trayEnable )
-		 	.append( '--directoryindex' ).append( serverInfo.directoryBrowsing )
-		 	.append( '--timeout' ).append( serverInfo.startTimeout )
-		 	.append( '--proxy-peeraddress' ).append( 'true' )
-		 	.append( '--cookie-secure' ).append( serverInfo.sessionCookieSecure )
-		 	.append( '--cookie-httponly' ).append( serverInfo.sessionCookieHTTPOnly )
-		 	.append( serverInfo.runwarArgs.listToArray( ' ' ), true );
+		 	.append( '-jar' ).append( serverInfo.runwarJarPath )
+			.append( '--background=#background#' )
+			.append( '--host' ).append( serverInfo.host )
+			.append( '--stop-port' ).append( serverInfo.stopsocket )
+			.append( '--processname' ).append( processName )
+			.append( '--log-dir' ).append( serverInfo.logDir )
+			.append( '--server-name' ).append( serverInfo.name )
+			.append( '--tray-enable' ).append( serverInfo.trayEnable )
+			.append( '--directoryindex' ).append( serverInfo.directoryBrowsing )
+			.append( '--timeout' ).append( serverInfo.startTimeout )
+			.append( '--proxy-peeraddress' ).append( 'true' )
+			.append( '--cookie-secure' ).append( serverInfo.sessionCookieSecure )
+			.append( '--cookie-httponly' ).append( serverInfo.sessionCookieHTTPOnly )
+			.append( serverInfo.runwarArgs.listToArray( ' ' ), true );
+
+		if( serverInfo.trayEnable ) {
+			args
+				.append( '--tray-icon' ).append( serverInfo.trayIcon )
+				.append( '--tray-config' ).append( trayOptionsPath )
+		}
 		
 		if( serverInfo.runwarXNIOOptions.count() ) {
 			args.append( '--xnio-options=' & serverInfo.runwarXNIOOptions.reduce( ( opts='', k, v ) => opts.listAppend( k & '=' & v ) ) );

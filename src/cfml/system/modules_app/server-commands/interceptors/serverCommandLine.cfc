@@ -123,7 +123,8 @@ component {
 			bash: function( arg, idx ) {
 				if( idx == 1 ) {
 					// actual process to run, don't quote this
-					return toString( arg ).replace( ' ', '\ ', 'all' );
+					// add exec so that the java process replaces the shell process
+					return 'exec ' & toString( arg ).replace( ' ', '\ ', 'all' );
 				}
 				// otherwise, just fully quote with _single_ quotes
 				return "'" & toString( arg ).replace( "'", "'\''", "all" ) & "'";

@@ -50,7 +50,13 @@ component aliases="uninstall" {
 
 		}
 
-		if( arguments.system ) {
+		// account for system slugs
+		var systemPackageSlugs = returnPackageSlugs();
+		var localPackageSlugs = returnPackageSlugs( getCWD() );
+		// exists as system package and not as local package
+		var isSystemPackageOnly = systemPackageSlugs.containsnocase( arguments.slug ) && !localPackageSlugs.containsnocase( arguments.slug );
+
+		if( arguments.system || isSystemPackageOnly ) {
 			arguments.currentWorkingDirectory = expandPath( '/commandbox' );
 		} else {
 			arguments.currentWorkingDirectory = getCWD();
@@ -73,11 +79,31 @@ component aliases="uninstall" {
 		var directory = getCWD();
 
 		if( packageService.isPackage( directory ) ) {
-			var BoxJSON = packageService.readPackageDescriptor( directory );
-			results.append( BoxJSON.installPaths.keyArray(), true );
+			var directoryPackages = returnPackageSlugs( directory ).map(
+				function( item, index ){
+					return { 'name' = item, 'group' = 'Packages' };
+				}
+			);
+			results.append( directoryPackages, true );
 		}
 
+		// account for system slugs
+		var systemPackages = returnPackageSlugs().map(
+			function( item, index ){
+				return { 'name' = item, 'group' = 'Packages (--system)' };
+			}
+		);
+		results.append( systemPackages, true );
+
 		return results;
+	}
+
+	/**
+	* If no directory is provided, it defaults to the system directory to be the system directory
+	*/
+	private array function returnPackageSlugs( string directory = expandPath( '/commandbox' ) ) {
+		var BoxJSON = packageService.readPackageDescriptor( arguments.directory );
+		return BoxJSON.installPaths.keyArray();
 	}
 
 }
