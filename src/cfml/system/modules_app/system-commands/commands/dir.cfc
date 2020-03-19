@@ -33,13 +33,14 @@
 component aliases="ls,ll,directory" {
 
 	/**
-	 * @directory.hint The directory to list the contents of or a list of file Globbing path to filter on
-	 * @excludePaths.hint A list of file glob patterns to exclude
-	 * @sort.hint Sort columns and direction. name, directory, size, type, dateLastModified, attributes, mode
-	 * @recurse.hint Include nested files and folders
-	 * @simple.hint Output only path names and nothing else.
+	 * @directory The directory to list the contents of or a list of file Globbing path to filter on
+	 * @excludePaths A list of file glob patterns to exclude
+	 * @sort Sort columns and direction. name, directory, size, type, dateLastModified, attributes, mode
+	 * @recurse Include nested files and folders
+	 * @simple Output only path names and nothing else.
+	 * @full Output abolute file path, not just relative to current working directory
 	 **/
-	function run( Globber paths=globber( getCWD() ), sort='type, name', string excludePaths='', boolean recurse=false, boolean simple=false )  {
+	function run( Globber paths=globber( getCWD() ), sort='type, name', string excludePaths='', boolean recurse=false, boolean simple=false, boolean full=false )  {
 		
 		// Backwards compat for old parameter name
 		if( arguments.keyExists( 'directory' ) && arguments.directory.len() ) {
@@ -78,7 +79,7 @@ component aliases="ls,ll,directory" {
 			if( simple ) {
 				
 				print.line( 
-					cleanRecursiveDir( arguments.paths.getBaseDir(), results.directory[ x ] & '/' )
+					cleanRecursiveDir( arguments.paths.getBaseDir(), results.directory[ x ] & '/', full )
 					& results.name[ x ]
 					& ( results.type[ x ] == "Dir" ? "/" : "" )
 				);
@@ -101,10 +102,7 @@ component aliases="ls,ll,directory" {
 			);
 			
 			colorPath( 
-				cleanRecursiveDir( 
-					arguments.paths.getBaseDir(),
-					results.directory[ x ] & '/'
-					)
+				cleanRecursiveDir( arguments.paths.getBaseDir(), results.directory[ x ] & '/', full )
 					& results.name[ x ]
 					& ( results.type[ x ] == "Dir" ? "/" : ""
 				),
@@ -121,7 +119,10 @@ component aliases="ls,ll,directory" {
 	/**
 	* Cleanup directory recursive nesting
 	*/
-	private function cleanRecursiveDir( required directory, required incoming, type ){
+	private function cleanRecursiveDir( required directory, required incoming, boolean full ){
+		if( full ) {
+			return incoming;
+		}
 		var prefix = ( replacenocase( fileSystemUtil.normalizeSlashes( arguments.incoming ), fileSystemUtil.normalizeSlashes( arguments.directory ), "" ) );
 		return ( len( prefix ) ? reReplace( prefix, "^(/|\\)", "" ) : "" );		
 	}
