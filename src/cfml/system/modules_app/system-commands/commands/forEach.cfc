@@ -102,7 +102,15 @@ component {
 			}
 
 			try {
-				theCommand.run( echo=debug );
+				if( systemsettings.getSystemSetting( 'box_currentCommandPiped', false ) ) {
+					var thisOutput = theCommand.run( echo=debug, returnOutput=true )
+					if( len( thisOutput ) && ! ( mid( thisOutput, len( thisOutput ), 1 ) == chr( 10 ) || mid( thisOutput, len( thisOutput ), 1 ) == chr( 13 ) ) ) {
+						thisOutput &= chr( 10 );
+					}					
+					print.text( thisOutput );	
+				} else {
+					theCommand.run( echo=debug );					
+				}
 			} catch( any var e ) {
 				if( continueOnError ) {
 
