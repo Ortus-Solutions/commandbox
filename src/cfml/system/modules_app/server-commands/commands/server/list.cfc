@@ -75,12 +75,16 @@ component {
 		// Local ref to avoid the `local` scope issue
 		var localOnly = arguments.local;
 
+		// Get Servers
+		var servers = serverService.getServers();
+
 		// Verbalize yourself!
 		print
 			.boldCyanLine( "Processing (#servers.count()#) servers, please wait..." )
 			.toConsole();
 
-		var servers = serverService.getServers()
+		// Re-assign to calculate at the end
+		servers = servers
 			// filter out what we don't need
 			.filter( ( serverName, thisServerInfo ) => {
 				return ( 
