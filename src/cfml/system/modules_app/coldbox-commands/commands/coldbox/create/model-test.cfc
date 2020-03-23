@@ -43,8 +43,8 @@ component {
 		print.line();
 
 		// Read in Template
-		var modelTestContent       = fileRead( "/coldbox-commands/templates/testing/ModelBDDContentScript.txt" );
-		var modelTestMethodContent = fileRead( "/coldbox-commands/templates/testing/ModelBDDMethodContentScript.txt" );
+		var modelTestContent       = fileRead( "/coldbox-commands/templates/testing/ModelBDDContent.txt" );
+		var modelTestMethodContent = fileRead( "/coldbox-commands/templates/testing/ModelBDDMethodContent.txt" );
 
 		// Basic replacements
 		modelTestContent = replaceNoCase(

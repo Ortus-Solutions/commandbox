@@ -19,7 +19,6 @@ component aliases="coldbox create controller" {
 	 * @integrationTests Generate the integration test component
 	 * @testsDirectory Your integration tests directory. Only used if integrationTests is true
 	 * @directory The base directory to create your handler in and creates the directory if it does not exist. Defaults to 'handlers'.
-	 * @script Generate content in script markup or tag markup
 	 * @description The handler hint description
 	 * @open Open the handler (and test(s) if applicable) once generated
 	 **/
@@ -32,7 +31,6 @@ component aliases="coldbox create controller" {
 		appMapping               = "/",
 		testsDirectory           = "tests/specs/integration",
 		directory                = "handlers",
-		boolean script           = true,
 		description              = "I am a new handler",
 		boolean open             = false
 	){
@@ -51,19 +49,12 @@ component aliases="coldbox create controller" {
 		// This help readability so the success messages aren't up against the previous command line
 		print.line();
 
-		// Script?
-		var scriptPrefix = "";
-		// TODO: Pull this from box.json
-		if ( arguments.script ) {
-			scriptPrefix = "Script";
-		}
-
 		// Read in Templates
-		var handlerContent         = fileRead( "/coldbox-commands/templates/HandlerContent#scriptPrefix#.txt" );
-		var actionContent          = fileRead( "/coldbox-commands/templates/ActionContent#scriptPrefix#.txt" );
-		var handlerTestContent     = fileRead( "/coldbox-commands/templates/testing/HandlerBDDContent#scriptPrefix#.txt" );
+		var handlerContent         = fileRead( "/coldbox-commands/templates/HandlerContent.txt" );
+		var actionContent          = fileRead( "/coldbox-commands/templates/ActionContent.txt" );
+		var handlerTestContent     = fileRead( "/coldbox-commands/templates/testing/HandlerBDDContent.txt" );
 		var handlerTestCaseContent = fileRead(
-			"/coldbox-commands/templates/testing/HandlerBDDCaseContent#scriptPrefix#.txt"
+			"/coldbox-commands/templates/testing/HandlerBDDCaseContent.txt"
 		);
 
 		// Start text replacements

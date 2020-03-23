@@ -8,7 +8,6 @@
  * {code}
  * .
  *  Here are the basic skeletons that are available for you that come from ForgeBox
- *  - Advanced
  *  - AdvancedScript (default)
  *  - Elixir
  *  - ElixirBower
@@ -27,16 +26,6 @@
  * {code:bash}
  * coldbox create app skeleton=http://site.com/myCustomAppTemplate.zip
  * {code}
- * .
- * Use the "installColdBox" parameter to install the latest stable version of ColdBox from ForgeBox
- * {code:bash}
- * coldbox create app myApp --installColdBox
- * {code}
- * .
- * Use the "installTestBox" parameter to install the latest stable version of TestBox from ForgeBox
- * {code:bash}
- * coldbox create app myApp --installColdBox --installTestBox
- * {code}
  *
  **/
 component {
@@ -50,7 +39,6 @@ component {
 	function init(){
 		// Map these shortcut names to the actual ForgeBox slugs
 		variables.templateMap = {
-			"Advanced"       : "cbtemplate-advanced",
 			"AdvancedScript" : "cbtemplate-advanced-script",
 			"Elixir"         : "cbtemplate-elixir",
 			"ElixirBower"    : "cbtemplate-elixir-bower",

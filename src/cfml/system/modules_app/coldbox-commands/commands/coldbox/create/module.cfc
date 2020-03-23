@@ -7,7 +7,7 @@
  * {code}
  *
  **/
-component {
+component scope="noscope"{
 
 	/**
 	 * @name Name of the module to create.
@@ -19,7 +19,7 @@ component {
 	 * @modelNamespace The namespace to use when mapping the models in this module
 	 * @dependencies The list of dependencies for this module
 	 * @directory The base directory to create your model in and creates the directory if it does not exist.
-	 * @script Generate content in script markup or tag markup
+	 * @views Create the views folder on creatin or remove it. Defaults to true
 	 **/
 	function run(
 		required name,
@@ -31,7 +31,7 @@ component {
 		modelNamespace = arguments.name,
 		dependencies   = "",
 		directory      = "modules_app",
-		boolean script = true
+		boolean views  = true
 	){
 		// This will make each directory canonical and absolute
 		arguments.directory = resolvePath( arguments.directory );
@@ -43,15 +43,8 @@ component {
 		// This help readability so the success messages aren't up against the previous command line
 		print.line();
 
-		// Script?
-		var scriptPrefix = "";
-		// TODO: Pull this from box.json
-		if ( arguments.script ) {
-			scriptPrefix = "Script";
-		}
-
 		// Read in Module Config
-		var moduleConfig = fileRead( "/coldbox-commands/templates/modules/ModuleConfig#scriptPrefix#.cfc" );
+		var moduleConfig = fileRead( "/coldbox-commands/templates/modules/ModuleConfig.cfc" );
 
 		// Start Generation Replacing
 		moduleConfig = replaceNoCase(
@@ -119,26 +112,23 @@ component {
 			true
 		);
 
-		// Clean Files Out
-		if ( script ) {
-			fileDelete( arguments.directory & "/#arguments.name#/handlers/Home.cfc" );
-			fileMove(
-				arguments.directory & "/#arguments.name#/handlers/HomeScript.cfc",
-				arguments.directory & "/#arguments.name#/handlers/Home.cfc"
-			);
-		} else {
-			fileDelete( arguments.directory & "/#arguments.name#/handlers/HomeScript.cfc" );
+		// Remove or keep Views?
+		if( !arguments.views ){
+			directoryDelete( arguments.directory & "/#arguments.name#/views", true );
 		}
-		fileDelete( arguments.directory & "/#arguments.name#/ModuleConfigScript.cfc" );
 
 		// Write Out the New Config
 		fileWrite( arguments.directory & "/#arguments.name#/ModuleConfig.cfc", moduleConfig );
 
-		var stuffAdded = directoryList( arguments.directory & "/#arguments.name#", true );
-		print.greenLine( "Created " & arguments.directory & "/#arguments.name#" );
-		for ( var thing in stuffAdded ) {
-			print.greenLine( "Created " & thing );
-		}
+		// Output
+		print.blueLine( "Created the (#arguments.name#) module at: " & arguments.directory );
+		directoryList(
+				arguments.directory & "/#arguments.name#",
+				true,
+				"path",
+				( path ) => !reFindNoCase( "\.DS_Store", arguments.path )
+			)
+			.each( ( item ) => print.greenLine( "  => " & item.replace( directory, "" ) ) );
 	}
 
 }

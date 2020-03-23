@@ -1,12 +1,14 @@
-<cfcomponent extends="coldbox.system.testing.BaseTestCase" appMapping="|appMapping|">
+component extends="coldbox.system.testing.BaseTestCase" appMapping="|appMapping|" {
 	
-	<cffunction name="setUp" returntype="void" output="false" hint="Remove if not needed.">
-		<cfscript>
+	/**
+	* You can remove this setup method if you do not have anything to setup
+	*/
+	void function setup(){
 		//Call the super setup method to setup the app.
 		super.setup();
 		
-		</cfscript>
-	</cffunction>
-	
+		// Your own setup here if needed
+	}
+
 |TestCases|
-</cfcomponent>
+}

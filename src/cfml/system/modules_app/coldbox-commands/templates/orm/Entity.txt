@@ -1,23 +1,38 @@
-<cfcomponent persistent="true" table="|table|" output="false" hint="A cool |entity|"|activeEntity|>
+/**
+ * A cool |entityName| entity
+ */
+component persistent="true" table="|table|"|activeEntity|{
 
-	<!--- Primary Key --->
-	<cfproperty name="|primaryKey|" fieldtype="id" column="|primaryKeyColumn|" generator="|generator|" setter="false">
-	
-	<!--- Properties --->
+	// Primary Key
+	property name="|primaryKey|" fieldtype="id" column="|primaryKeyColumn|" generator="|generator|" setter="false";
+
+	// Properties
 	|properties|
-	
-	<!--- Validation --->
-	<cfset this.constraints = {
-		<!--- Example: age = { required=true, min="18", type="numeric" --->
-	}>
-	
-	<!--- init --->
-    <cffunction name="init" output="false" access="public" returntype="any">
-    	<cfscript>
-    		|activeEntityInit|
-    		return this;
-    	</cfscript>
-    </cffunction>
 
-	
-</cfcomponent>
+	// Validation
+	this.constraints = {
+		// Example: age = { required=true, min="18", type="numeric" }
+	};
+
+	// Mementifier
+	this.memento = {
+		// An array of the properties/relationships to include by default
+		defaultIncludes = [ "*" ],
+		// An array of properties/relationships to exclude by default
+		defaultExcludes = [],
+		// An array of properties/relationships to NEVER include
+		neverInclude = [],
+		// A struct of defaults for properties/relationships if they are null
+		defaults = {},
+		// A struct of mapping functions for properties/relationships that can transform them
+		mappers = {}
+	};
+
+	/**
+	 * Constructor
+	 */
+	function init(){
+		|activeEntityInit|
+		return this;
+	}
+}

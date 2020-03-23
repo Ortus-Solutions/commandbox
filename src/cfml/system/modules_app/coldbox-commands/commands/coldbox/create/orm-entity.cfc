@@ -42,7 +42,6 @@ component {
 	 * @properties Enter a list of properties to generate. You can add the ORM type via colon separator, default type is string. Ex: firstName,age:numeric,createdate:timestamp
 	 * @tests Generate the unit test BDD component
 	 * @testsDirectory Your unit tests directory. Only used if tests is true
-	 * @script Generate as script or not, defaults to true
 	 * @open Open the file(s) once generated
 	 **/
 	function run(
@@ -56,7 +55,6 @@ component {
 		properties           = "",
 		boolean tests        = true,
 		testsDirectory       = "tests/specs/unit",
-		boolean script       = true,
 		boolean open         = false
 	){
 		// non-canonical path
@@ -70,12 +68,6 @@ component {
 			directoryCreate( arguments.directory );
 		}
 
-		// script
-		var scriptPrefix = "";
-		if ( arguments.script ) {
-			scriptPrefix = "Script";
-		}
-
 		// Argument defaults
 		if ( !len( arguments.table ) ) {
 			arguments.table = arguments.entityName;
@@ -85,8 +77,8 @@ component {
 		}
 
 		// Read in Template
-		var modelContent     = fileRead( "/coldbox-commands/templates/orm/Entity#scriptPrefix#.txt" );
-		var modelTestContent = fileRead( "/coldbox-commands/templates/testing/ORMEntityBDDContent#scriptPrefix#.txt" );
+		var modelContent     = fileRead( "/coldbox-commands/templates/orm/Entity.txt" );
+		var modelTestContent = fileRead( "/coldbox-commands/templates/testing/ORMEntityBDDContent.txt" );
 
 		// Basic replacements
 		modelContent = replaceNoCase(
@@ -172,14 +164,7 @@ component {
 			if ( NOT len( propType ) ) {
 				propType = "string";
 			}
-
-			if ( arguments.script ) {
-				buffer.append( "property name=""#propName#"" ormtype=""#propType#"";#chr( 13 ) & chr( 9 )#" );
-			} else {
-				buffer.append(
-					chr( 60 ) & "cfproperty name=""#propName#"" ormtype=""#propType#"">#chr( 13 ) & chr( 9 )#"
-				);
-			}
+			buffer.append( "property name=""#propName#"" ormtype=""#propType#"";#chr( 13 ) & chr( 9 )#" );
 		}
 		modelContent = replaceNoCase(
 			modelContent,

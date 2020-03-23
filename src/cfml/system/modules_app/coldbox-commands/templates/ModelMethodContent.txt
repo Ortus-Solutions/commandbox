@@ -1,3 +1,6 @@
-	<cffunction name="|method|" hint="|method|" output="false" returntype="any">
+	/**
+	 * |method|
+	 */
+	function |method|(){
 
-	</cffunction>
+	}

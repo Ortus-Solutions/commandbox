@@ -34,7 +34,6 @@ component {
 	 * @tests Generate the unit test BDD component
 	 * @testsDirectory Your unit tests directory. Only used if tests is true
 	 * @directory The base directory to create your model in and creates the directory if it does not exist.
-	 * @script Generate content in script markup or tag markup
 	 * @description The model hint description
 	 * @open Open the file once generated
 	 * @accessors Setup accessors to be true or not in the component
@@ -47,7 +46,6 @@ component {
 		boolean tests     = true,
 		testsDirectory    = "tests/specs/unit",
 		directory         = "models",
-		boolean script    = true,
 		description       = "I am a new Model Object",
 		boolean open      = false,
 		boolean accessors = true,
@@ -87,19 +85,12 @@ component {
 		// This help readability so the success messages aren't up against the previous command line
 		print.line();
 
-		// Script?
-		var scriptPrefix = "";
-		// TODO: Pull this from box.json
-		if ( arguments.script ) {
-			scriptPrefix = "Script";
-		}
-
 		// Read in Template
-		var modelContent           = fileRead( "/coldbox-commands/templates/ModelContent#scriptPrefix#.txt" );
-		var modelMethodContent     = fileRead( "/coldbox-commands/templates/ModelMethodContent#scriptPrefix#.txt" );
-		var modelTestContent       = fileRead( "/coldbox-commands/templates/testing/ModelBDDContent#scriptPrefix#.txt" );
+		var modelContent           = fileRead( "/coldbox-commands/templates/ModelContent.txt" );
+		var modelMethodContent     = fileRead( "/coldbox-commands/templates/ModelMethodContent.txt" );
+		var modelTestContent       = fileRead( "/coldbox-commands/templates/testing/ModelBDDContent.txt" );
 		var modelTestMethodContent = fileRead(
-			"/coldbox-commands/templates/testing/ModelBDDMethodContent#scriptPrefix#.txt"
+			"/coldbox-commands/templates/testing/ModelBDDMethodContent.txt"
 		);
 
 
@@ -174,12 +165,7 @@ component {
 			if ( NOT len( propType ) ) {
 				propType = "string";
 			}
-
-			if ( arguments.script ) {
-				buffer.append( "property name=""#propName#"" type=""#propType#"";#chr( 13 ) & chr( 9 )#" );
-			} else {
-				buffer.append( chr( 60 ) & "cfproperty name=""#propName#"" type=""#propType#"">#chr( 13 ) & chr( 9 )#" );
-			}
+			buffer.append( "property name=""#propName#"" type=""#propType#"";#chr( 13 ) & chr( 9 )#" );
 		}
 		modelContent = replaceNoCase(
 			modelContent,
