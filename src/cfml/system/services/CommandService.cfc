@@ -165,7 +165,6 @@ component accessors="true" singleton {
 	 * @captureOutput Temp workaround to allow capture of run command
  	 **/
 	function runCommand( required array commandChain, required string line, string piped, boolean captureOutput=false ){
-
 		// If nothing is returned, something bad happened (like an error instatiating the CFC)
 		if( !commandChain.len() ){
 			return 'Command not run.';
@@ -290,7 +289,7 @@ component accessors="true" singleton {
 
 			// Add command to the top of the stack
 			instance.callStack.prepend( { commandInfo : commandInfo, environment : {} } );
-			
+
 			if( captureOutput ) {
 				// This is really just a workaround for the fact that command output isn't naturally piped to the console.
 				// Once that is fixed, commands will no longer need to know this.

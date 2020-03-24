@@ -16,25 +16,26 @@ component {
 	/**
 	 * @directory The base directory to create your test browser
 	 */
-	function run( string directory = getCWD() ) {
-
+	function run( string directory = getCWD() ){
 		// This will make each directory canonical and absolute
 		arguments.directory = resolvePath( arguments.directory & "/tests/test-browser" );
 
 		// Validate directory
-		if( !directoryExists( arguments.directory ) ) {
+		if ( !directoryExists( arguments.directory ) ) {
 			directoryCreate( arguments.directory );
 
 			// Copy template
-			directoryCopy( '/testbox-commands/templates/testbox/test-browser/', arguments.directory, true );
+			directoryCopy(
+				"/testbox-commands/templates/testbox/test-browser/",
+				arguments.directory,
+				true
+			);
 
 			// Print the results to the console
-			print.greenLine( 'Created ' & arguments.directory );
-		}
-		else {
+			print.greenLine( "Created " & arguments.directory );
+		} else {
 			error( "Directory #arguments.directory# already exists!" );
 		}
-
 	}
 
 }

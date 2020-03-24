@@ -19,6 +19,7 @@ component aliases="fwreinit" {
 	/**
 	 * @password The FWReinit password
 	 * @name Name of the CommandBox server to reinit
+	 * @showUrl Show the Url to reinit
 	 **/
 	function run(
 		password = "1",
@@ -27,7 +28,7 @@ component aliases="fwreinit" {
 	){
 		var serverInfo = serverService.getServerInfoByDiscovery( getCWD(), arguments.name );
 
-		if ( structCount( serverInfo ) eq 0 ) {
+		if ( !structCount( serverInfo ) ) {
 			print.boldRedLine(
 				"No server configurations found for '#getCWD()#', so have no clue what to reinit buddy!"
 			);

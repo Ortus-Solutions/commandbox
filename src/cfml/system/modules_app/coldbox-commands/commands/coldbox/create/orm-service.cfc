@@ -42,7 +42,7 @@ component {
 
 		// Read in Template
 		var modelContent     = fileRead( "/coldbox-commands/templates/orm/TemplatedEntityService.txt" );
-		var modelTestContent = fileRead( "/coldbox-commands/templates/testing/ModelBDDContentScript.txt" );
+		var modelTestContent = fileRead( "/coldbox-commands/templates/testing/ModelBDDContent.txt" );
 
 		// Query cache Region
 		if ( !len( arguments.cacheRegion ) ) {

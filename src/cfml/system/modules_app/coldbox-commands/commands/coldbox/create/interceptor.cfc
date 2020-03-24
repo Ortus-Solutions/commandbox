@@ -19,7 +19,6 @@ component {
 	 * @tests Generate the unit test component
 	 * @testsDirectory Your unit tests directory. Only used if tests is true
 	 * @directory The base directory to create your interceptor in and creates the directory if it does not exist.
-	 * @script Generate content in script markup or tag markup
 	 * @open Open the interceptor once generated
 	 **/
 	function run(
@@ -29,7 +28,6 @@ component {
 		boolean tests  = true,
 		testsDirectory = "tests/specs/interceptors",
 		directory      = "interceptors",
-		boolean script = true,
 		boolean open   = false
 	){
 		// This will make each directory canonical and absolute
@@ -45,18 +43,11 @@ component {
 		// This help readability so the success messages aren't up against the previous command line
 		print.line();
 
-		// Script?
-		var scriptPrefix = "";
-		// TODO: Pull this from box.json
-		if ( arguments.script ) {
-			scriptPrefix = "Script";
-		}
-
 		// Read in Template
-		var interceptorContent     = fileRead( "/coldbox-commands/templates/InterceptorContent#scriptPrefix#.txt" );
-		var interceptorMethod      = fileRead( "/coldbox-commands/templates/InterceptorMethod#scriptPrefix#.txt" );
-		var interceptorTestContent = fileRead( "/coldbox-commands/templates/testing/InterceptorBDDContentScript.txt" );
-		var interceptorTestCase    = fileRead( "/coldbox-commands/templates/testing/InterceptorBDDCaseContentScript.txt" );
+		var interceptorContent     = fileRead( "/coldbox-commands/templates/InterceptorContent.txt" );
+		var interceptorMethod      = fileRead( "/coldbox-commands/templates/InterceptorMethod.txt" );
+		var interceptorTestContent = fileRead( "/coldbox-commands/templates/testing/InterceptorBDDContent.txt" );
+		var interceptorTestCase    = fileRead( "/coldbox-commands/templates/testing/InterceptorBDDCaseContent.txt" );
 
 		// Start Replacings
 		interceptorContent = replaceNoCase(

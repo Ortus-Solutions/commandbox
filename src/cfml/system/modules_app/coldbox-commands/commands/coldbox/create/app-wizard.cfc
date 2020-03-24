@@ -5,7 +5,7 @@ component extends="app" aliases="" {
 
 	/**
 	 * @name The name of the app you want to create
-	 * @skeleton The application skeleton you want to use (Advanced, AdvancedScript, rest, Simple, SuperSimple)
+	 * @skeleton The application skeleton you want to use (AdvancedScript, rest, rest-hmvc, Simple, SuperSimple)
 	 * @skeleton.optionsUDF skeletonComplete
 	 * @init Would you like to init this as a CommandBox Package
 	 **/

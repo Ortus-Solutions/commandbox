@@ -1593,7 +1593,7 @@
 	}],
 	"totalPass": 2,
 	"totalDuration": 115,
-	"version": "@build.version@+@build.number@",
+	"version": "3.1.0+339",
 	"totalSkipped": 0,
 	"totalFail": 2,
 	"totalSpecs": 11,

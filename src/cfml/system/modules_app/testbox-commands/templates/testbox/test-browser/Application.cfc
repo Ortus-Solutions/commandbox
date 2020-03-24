@@ -1,10 +1,11 @@
 /**
-* Copyright Since 2005 Ortus Solutions, Corp
-* www.coldbox.org | www.luismajano.com | www.ortussolutions.com | www.gocontentbox.org
-**************************************************************************************
-*/
-component{
-	this.name = "A TestBox Browser " & hash( getCurrentTemplatePath() );
+ * Copyright Since 2005 Ortus Solutions, Corp
+ * www.coldbox.org | www.luismajano.com | www.ortussolutions.com | www.gocontentbox.org
+ **************************************************************************************
+ */
+component {
+
+	this.name              = "A TestBox Browser";
 	// any other application.cfc stuff goes below:
 	this.sessionManagement = true;
 
@@ -15,7 +16,7 @@ component{
 
 	// request start
 	public boolean function onRequestStart( String targetPage ){
-
 		return true;
 	}
+
 }

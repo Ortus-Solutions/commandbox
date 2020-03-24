@@ -32,7 +32,6 @@ component {
 	 * @bdd Defaults to BDD style
 	 * @xunit You can alternatively use xUnit style
 	 * @open Open the file once it is created
-	 * @script Generate content in script markup or tag markup
 	 * @directory The base directory to create your test spec in and creates the directory if it does not exist. Defaults to 'tests/specs/integration'
 	 **/
 	function run(
@@ -42,7 +41,6 @@ component {
 		boolean bdd    = true,
 		boolean xunit  = false,
 		boolean open   = false,
-		boolean script = true,
 		directory      = "tests/specs/integration"
 	){
 		// This will make each directory canonical and absolute
@@ -62,13 +60,6 @@ component {
 		// This help readability so the success messages aren't up against the previous command line
 		print.line();
 
-		// Script?
-		var scriptPrefix = "";
-		// TODO: Pull this from box.json
-		if ( arguments.script ) {
-			scriptPrefix = "Script";
-		}
-
 		// Style?
 		var stylePrefix = "BDD";
 		if ( arguments.xunit OR !arguments.bdd ) {
@@ -77,10 +68,10 @@ component {
 
 		// Read in Templates
 		var handlerTestContent = fileRead(
-			"/coldbox-commands/templates/testing/Handler#stylePrefix#Content#scriptPrefix#.txt"
+			"/coldbox-commands/templates/testing/Handler#stylePrefix#Content.txt"
 		);
 		var handlerTestCaseContent = fileRead(
-			"/coldbox-commands/templates/testing/Handler#stylePrefix#CaseContent#scriptPrefix#.txt"
+			"/coldbox-commands/templates/testing/Handler#stylePrefix#CaseContent.txt"
 		);
 
 		// Start text replacements

@@ -35,6 +35,7 @@ component {
 	/**
 	 * @paths Command delimited list of file globbing paths to watch relative to the working directory, defaults to **.cfc
 	 * @delay How may milliseconds to wait before polling for changes, defaults to 500 ms
+	 * @password Reinit password
 	 **/
 	function run(
 		string paths,

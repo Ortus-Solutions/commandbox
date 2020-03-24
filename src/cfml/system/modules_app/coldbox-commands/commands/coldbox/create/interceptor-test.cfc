@@ -33,8 +33,8 @@ component {
 		print.line();
 
 		// Read in Template
-		var interceptorTestContent = fileRead( "/coldbox-commands/templates/testing/InterceptorBDDContentScript.txt" );
-		var interceptorTestCase    = fileRead( "/coldbox-commands/templates/testing/InterceptorBDDCaseContentScript.txt" );
+		var interceptorTestContent = fileRead( "/coldbox-commands/templates/testing/InterceptorBDDContent.txt" );
+		var interceptorTestCase    = fileRead( "/coldbox-commands/templates/testing/InterceptorBDDCaseContent.txt" );
 
 		// Start Replacings
 		interceptorTestContent = replaceNoCase(
