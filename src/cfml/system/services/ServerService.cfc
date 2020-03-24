@@ -1779,9 +1779,11 @@ component accessors="true" singleton {
  	 **/
 	function isPortAvailable( host="127.0.0.1", required port ){
 		try {
-			var serverSocket = java.ServerSocket.init( javaCast( "int", arguments.port ),
-													 javaCast( "int", 1 ),
-													 java.InetAddress.getByName( arguments.host ) );
+			var serverSocket = java.serverSocket
+				.init( 
+					javaCast( "int", arguments.port ),
+					javaCast( "int", 1 ),
+					java.InetAddress.getByName( arguments.host ) );
 			serverSocket.close();
 			return true;
 		} catch( java.net.UnknownHostException var e ) {
@@ -1817,7 +1819,10 @@ component accessors="true" singleton {
 		} else if( serverInfo.AJPEnable ) {
 			portToCheck = serverInfo.AJPPort;
 		}
-		return !isPortAvailable( serverInfo.host, portToCheck );
+
+		lock name="server-status-check-#portToCheck#" type="exclusive"{
+			return !isPortAvailable( serverInfo.host, portToCheck );
+		}
 	}
 
 	/**
