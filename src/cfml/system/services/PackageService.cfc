@@ -353,7 +353,7 @@ component accessors="true" singleton {
 					var serverDetails = serverService.resolveServerDetails( { directory = arguments.packagePathRequestingInstallation } );
 					var serverInfo = serverDetails.serverInfo;
 
-					if( !serverDetails.serverIsNew && serverInfo.engineName == 'lucee' && len( serverInfo.serverConfigDir ) ) {
+					if( !serverDetails.serverIsNew && serverInfo.engineName contains 'lucee' && len( serverInfo.serverConfigDir ) ) {
 						var serverDeployFolder = serverInfo.serverConfigDir & '/lucee-server/deploy/';
 						// Handle paths relative to the server home dir
 						if( serverDeployFolder.uCase().startsWith('/WEB-INF' ) ) {
