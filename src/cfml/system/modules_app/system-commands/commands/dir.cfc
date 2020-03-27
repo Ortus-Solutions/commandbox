@@ -59,8 +59,6 @@ component aliases="ls,ll,directory" {
 			} )
 		);
 		
-		// TODO: Add ability to re-sort this based on user input
-		
 		excludePaths = excludePaths.listMap( (p) => {
 			p = fileSystemUtil.resolvePath( p )
 			if( directoryExists( p ) ){
