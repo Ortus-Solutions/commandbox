@@ -78,7 +78,7 @@ component{
             
             // incorporate CommandBox environment variables into the process's env
             var currentEnv = processBuilder.environment();
-            currentEnv.putAll( systemSettings.getAllEnvironmentsFlattened() );
+            currentEnv.putAll( systemSettings.getAllEnvironmentsFlattened().map( (k, v)=>toString(v) ) );
             
             // Special check to remove ConEMU vars which can screw up the sub process if it happens to run cmd, such as opening VSCode.
             if( fileSystemUtil.isWindows() && currentEnv.containsKey( 'ConEmuPID' ) ) {
