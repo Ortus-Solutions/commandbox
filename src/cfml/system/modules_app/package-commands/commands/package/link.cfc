@@ -35,20 +35,20 @@ component aliases='link' {
 	property name="packageService" inject="PackageService";
 
 	/**
-	 * @moduleDrectory Path to an app's modules directory
+	 * @moduleDirectory Path to an app's modules directory
 	 * @force Overwrite any existing module or link.
 	 **/
 	function run(
-		string moduleDrectory,
+		string moduleDirectory,
 		boolean force=false ) {
 			
 		var packageDirectory=getCWD();
 		var commandBoxCoreLinked = false;
-		if( !arguments.keyExists( 'moduleDrectory' ) ) {
-			arguments.moduleDrectory = expandPath( '/commandbox/modules' );
+		if( !arguments.keyExists( 'moduleDirectory' ) ) {
+			arguments.moduleDirectory = expandPath( '/commandbox/modules' );
 			commandBoxCoreLinked = true;
 		} else {
-			arguments.moduleDrectory = resolvePath( arguments.moduleDrectory );
+			arguments.moduleDirectory = resolvePath( arguments.moduleDirectory );
 		}
 		
 		// package check
@@ -56,8 +56,8 @@ component aliases='link' {
 			error( '#packageDirectory# is not a package!' );
 		}
 		
-		if( !directoryExists( arguments.moduleDrectory ) ) {
-			error( 'The target directory [#arguments.moduleDrectory#] doesn''t exist.' );
+		if( !directoryExists( arguments.moduleDirectory ) ) {
+			error( 'The target directory [#arguments.moduleDirectory#] doesn''t exist.' );
 		}
 		
 		var boxJSON = packageService.readPackageDescriptor( packageDirectory );
@@ -69,7 +69,7 @@ component aliases='link' {
 			error( 'Package type [#boxJSON.type#] is invalid for linking.  Needs to be a module type.' );
 		}
 		
-		var linkTarget = moduleDrectory & '/' & boxJSON.slug;
+		var linkTarget = moduleDirectory & '/' & boxJSON.slug;
 		// Check to see if link or module already exists
 		if( directoryExists( linkTarget ) ) {
 			if( force ) {
@@ -102,7 +102,7 @@ component aliases='link' {
 				.params( clearScreen=false )
 				.run();
 		} else {
-			print.greenLine( 'Package [#boxJSON.slug#] linked to [#moduleDrectory#]' );			
+			print.greenLine( 'Package [#boxJSON.slug#] linked to [#moduleDirectory#]' );			
 		}
 	}
 }
