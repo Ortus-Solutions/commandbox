@@ -33,7 +33,7 @@
 component aliases="ls,ll,directory" {
 
 	/**
-	 * @directory The directory to list the contents of or a list of file Globbing path to filter on
+	 * @paths The directory to list the contents of or a list of file Globbing path to filter on
 	 * @excludePaths A list of file glob patterns to exclude
 	 * @sort Sort columns and direction. name, directory, size, type, dateLastModified, attributes, mode
 	 * @sort.options DateLastModified,Directory,Name,Size,Type,attributes,mode
