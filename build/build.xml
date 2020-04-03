@@ -297,7 +297,7 @@ External Dependencies:
 
 		<!--  create the libs zip including cli loader, optionally use pack200 -->
 	    <antcontrib:if>
-	      <equals arg1="${isStable}" arg2="${isStable}" />
+	      <equals arg1="${isStable}" arg2="sdfsdf" />
 	      <then>
 			<echo>This is a stable build, let's compress these jars!</echo>
 
