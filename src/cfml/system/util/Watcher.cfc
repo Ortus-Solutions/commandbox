@@ -131,6 +131,8 @@ component accessors=true {
 					// Fire the watcher up again.
 					retry;
 				// If the thread has been interrupted
+				} catch( java.lang.InterruptedException e ) {
+					// There's nothign to do here.  Just exit the thread!
 				} catch( java.lang.ThreadDeath e ) {
 					// There's nothign to do here.  Just exit the thread!
 				} catch( any e ) {
