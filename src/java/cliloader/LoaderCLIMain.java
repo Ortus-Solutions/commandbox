@@ -674,13 +674,13 @@ public class LoaderCLIMain{
 			log.info( "Library path: " + libDir );
 			log.info( "Initializing libraries -- this will only happen once, and takes a few seconds..." );
 						
-			// OSGI can be grumpy on uprade with comppeting bundles.  Start fresh
+			// OSGI can be grumpy on upgrade with competing bundles.  Start fresh
 			if( cfmlBundlesDir.exists() ) {
 				log.info( "Cleaning old OSGI Bundles..." );
 				Util.deleteDirectory( cfmlBundlesDir );
 			}
-			// OSGI can be grumpy on uprade with comppeting bundles.  Start fresh
-			if( cfmlSystemDir.exists() ) {
+			// OSGI can be grumpy on upgrade with competing bundles.  Start fresh
+			if( cfmlFelixCacheDir.exists() ) {
 				log.info( "Cleaning old Felix Cache..." );
 				Util.deleteDirectory( cfmlFelixCacheDir );
 			}
