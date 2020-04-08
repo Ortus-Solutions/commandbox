@@ -201,6 +201,9 @@ component singleton {
 		// Add user agent so proxies like Cloudflare won't be dumb and block us.
 		connection.setRequestProperty( 'User-Agent', 'Mozilla /5.0 (Compatible MSIE 9.0;Windows NT 6.1;WOW64; Trident/5.0)' );
 
+		// Add an Accept header so sources such as gitlab are willing to send files back.
+		connection.setRequestProperty( 'Accept', '*/*' );
+
 		// The reason we're following redirects manually, is because the java class
 		// won't switch between HTTP and HTTPS without erroring
 		connection.setInstanceFollowRedirects( false );
