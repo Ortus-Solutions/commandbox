@@ -643,18 +643,33 @@ public class LoaderCLIMain{
 			arguments = removeElement( arguments, "-clishellpath" );
 		}
 		props.setProperty( "cfml.cli.shell", getShellPath() );
+		String cliworkingdirFinal = getCurrentDir();
 		
 		if( listContains( cliArguments, "-cliworkingdir" ) ) {
 			log.debug( "overriding user.dir from -cliworkingdir" );
 			int cliworkingdirIdx = listIndexOf( cliArguments, "-cliworkingdir" );
 			String cliworkingdir = cliArguments.get( cliworkingdirIdx );
-			log.debug( "Working Dir set to " + cliworkingdir );
-			props.setProperty( "cfml.cli.pwd", cliworkingdir );
-			listRemoveContaining( cliArguments, "-cliworkingdir" );
-			arguments = removeElement( arguments, "-cliworkingdir" );
-		} else {
-			props.setProperty( "cfml.cli.pwd", getCurrentDir() );			
+			
+			if( cliworkingdir.indexOf( '=' ) == -1  ) {
+				if( cliArguments.size() > cliworkingdirIdx+1 ) {
+					cliworkingdirFinal = cliArguments.get( cliworkingdirIdx + 1 );
+					cliArguments.remove( cliworkingdirIdx + 1 );	
+				}
+				cliArguments.remove( cliworkingdirIdx );
+			} else if( cliworkingdir.indexOf( '=' ) > -1 ) {
+				String[] keyVal = cliworkingdir.split( "=" );
+				if( keyVal.length > 1 ) {
+					cliworkingdirFinal = keyVal[ 1 ];
+				}
+				cliArguments.remove( cliworkingdirIdx );
+			}
+			
+			
+		//	arguments = removeElement( arguments, "-cliworkingdir" );
 		}
+
+		log.debug( "Working Dir set to " + cliworkingdirFinal );
+		props.setProperty( "cfml.cli.pwd", cliworkingdirFinal );
 
 		File libDir = getLibDir();
 		props.setProperty( "cfml.cli.lib", libDir.getAbsolutePath() );
