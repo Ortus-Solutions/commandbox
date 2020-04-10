@@ -891,7 +891,9 @@ External Dependencies:
 	<target name="resolve.libs">
 		<delete dir="${lib.dir}"/>
  		<mvn-repo id="jgit-repository" url="https://repo.eclipse.org/content/groups/releases/" />
-		<mvn-repo id="sonatype-repository" url="https://repo1.maven.org/maven2/" />
+		<mvn-repo id="sonatype-repository" url="https://oss.sonatype.org/content/repositories/snapshots/" />
+		<mvn-repo id="maven-repository" url="https://repo1.maven.org/maven2/" />
+		
 
 		<dependency  groupId="org.jline" artifactId="jline" version="${jline.version}" dest="${lib.dir}" type="jar" unzip="false" />
 		<dependency  groupId="org.fusesource.jansi" artifactId="jansi" version="${jansi.version}" dest="${lib.dir}" type="jar" unzip="false" />

@@ -643,6 +643,18 @@ public class LoaderCLIMain{
 			arguments = removeElement( arguments, "-clishellpath" );
 		}
 		props.setProperty( "cfml.cli.shell", getShellPath() );
+		
+		if( listContains( cliArguments, "-cliworkingdir" ) ) {
+			log.debug( "overriding user.dir from -cliworkingdir" );
+			int cliworkingdirIdx = listIndexOf( cliArguments, "-cliworkingdir" );
+			String cliworkingdir = cliArguments.get( cliworkingdirIdx );
+			log.debug( "Working Dir set to " + cliworkingdir );
+			props.setProperty( "cfml.cli.pwd", cliworkingdir );
+			listRemoveContaining( cliArguments, "-cliworkingdir" );
+			arguments = removeElement( arguments, "-cliworkingdir" );
+		} else {
+			props.setProperty( "cfml.cli.pwd", getCurrentDir() );			
+		}
 
 		File libDir = getLibDir();
 		props.setProperty( "cfml.cli.lib", libDir.getAbsolutePath() );
@@ -765,7 +777,6 @@ public class LoaderCLIMain{
 		setLuceeCLIConfigWebDir( configCLIWebDir );
 		
 		props.setProperty( "cfml.cli.home", cli_home.getAbsolutePath() );
-		props.setProperty( "cfml.cli.pwd", getCurrentDir() );
 		props.setProperty( "cfml.server.dockicon", "" );
 		
 		for( Object name2 : props.keySet()) {
@@ -785,6 +796,7 @@ public class LoaderCLIMain{
 		listRemoveContaining( cliArguments, "-" + home );
 		listRemoveContaining( cliArguments, "-cliupdate" );
 		listRemoveContaining( cliArguments, "-clidebug" );
+		listRemoveContaining( cliArguments, "-cliworkingdir" );
 	}
 
 	private static String mapGetNoCase( Map< String, String > source,
