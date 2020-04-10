@@ -350,11 +350,26 @@ External Dependencies:
         	<zipfileset src="${lib.dir}/json-smart-mini-1.0.8.jar" includes="**/*.class" />
         	<fileset file="${temp.dir}/cli/version"/>
 		</jar>
+		
+		<!-- Create thin jar -->
+        <jar destfile="${dist.dir}/box-thin.jar" filesetmanifest="mergewithoutmain" level="9">
+			<manifest>
+				<attribute name="Main-Class" value="cliloader.LoaderCLIMain" />
+			</manifest>
+	        <fileset dir="${temp.dir}/cli/bin" />
+        	<zipfileset src="${lib.dir}/json-smart-mini-1.0.8.jar" includes="**/*.class" />
+        	<fileset file="${temp.dir}/cli/version"/>
+		</jar>
 
         <!-- Checksum on Jar -->
         <checksum file="${dist.dir}/box.jar" forceoverwrite="true" fileext=".md5" />
         <checksum file="${dist.dir}/box.jar" forceoverwrite="true" algorithm="sha" />
 		<checksum file="${dist.dir}/box.jar" forceoverwrite="true" algorithm="SHA-256" fileext=".sha256"/>
+
+        <!-- Checksum on Jar -->
+        <checksum file="${dist.dir}/box-thin.jar" forceoverwrite="true" fileext=".md5" />
+        <checksum file="${dist.dir}/box-thin.jar" forceoverwrite="true" algorithm="sha" />
+		<checksum file="${dist.dir}/box-thin.jar" forceoverwrite="true" algorithm="SHA-256" fileext=".sha256"/>
 
 		<!-- Create box-repo.json -->
 		<box-repo location="${artifact.dir}"
@@ -572,11 +587,20 @@ External Dependencies:
 
 	<!-- Build linux/mac bin -->
 	<target name="build.cli.bin" description="create linux/mac binary" depends="build.cli">
+		
 		<!--  this bundles the jar into the executable wrapper, which is a bash script -->
         <concat destfile="${dist.dir}/box" force="yes" binary="true">
           <fileset file="${src.dir}/bin/box.sh" />
           <fileset file="${dist.dir}/box.jar" />
         </concat>
+        
+		<!--  this bundles the thin jar into the executable wrapper, which is a bash script -->
+        <concat destfile="${dist.dir}/box-thin" force="yes" binary="true">
+          <fileset file="${src.dir}/bin/box.sh" />
+          <fileset file="${dist.dir}/box-thin.jar" />
+        </concat>
+        
+        
         <!-- Change execute perm -->
         <chmod file="${dist.dir}/box" perm="755"/>
         <!-- Create distro zip -->
@@ -631,6 +655,29 @@ External Dependencies:
 								 companyName="Ortus Solutions, Corp"
 								 internalName="CommandBox"
 								 originalFilename="box.exe" />
+			</config>
+		</launch4j>
+
+        <launch4j>
+			<config headerType="console"
+					outfile="${dist.dir}/box-thin.exe"
+					jarPath="${dist.dir}/box-thin.jar"
+					errTitle="Error running CommandBox"
+					supportURL="${commandbox.supportURL}"
+					chdir="%OLDPWD%"
+					icon="${src.dir}/resources/box.ico"
+					stayAlive="true">
+					<jre path="./jre/" minVersion="1.8.0" />
+					<versionInfo fileVersion="${commandbox.version.noPrereleaseID}.0"
+								 txtFileVersion="${commandbox.version}.${build.number}"
+								 fileDescription="${commandbox.description}"
+								 copyright="Copyright since 2013 Ortus Solutions, Corp"
+								 productVersion="${commandbox.version.noPrereleaseID}.0"
+								 txtProductVersion="${commandbox.version}.${build.number}"
+								 productName="CommandBox-thin"
+								 companyName="Ortus Solutions, Corp"
+								 internalName="CommandBox-thin"
+								 originalFilename="box-thin.exe" />
 			</config>
 		</launch4j>
 
