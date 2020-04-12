@@ -172,12 +172,22 @@ External Dependencies:
    		<echo message="move core file" />
 	
  		<unzip src="${lucee.light.file}" dest="${temp.dir}/lucee-light-jar/" overwrite="true"/>
-	    <move todir="${temp.dir}/engine/cfml/cli/lucee-server/patches/">
+	    <move todir="${temp.dir}">
 			<fileset dir="${temp.dir}/lucee-light-jar/core/">
 				<include name="core.lco" />
 			</fileset>
 		</move>
-		<rename src="${temp.dir}/engine/cfml/cli/lucee-server/patches/core.lco" dest="${temp.dir}/engine/cfml/cli/lucee-server/patches/${cfml.version}.lco"/>
+ 		<unzip src="${temp.dir}/core.lco" dest="${temp.dir}/lucee-light-core/" overwrite="true"/>
+ 		<manifest file="${temp.dir}/lucee-light-core/META-INF/MANIFEST.MF" mode="update">
+			<attribute name="Require-Extension" value="${cfml.extensions}"/>
+		</manifest>
+		<!-- <concat destfile="${temp.dir}/lucee-light-core/META-INF/MANIFEST.MF">Hello, World!</concat> -->
+		
+		<zip destfile="${temp.dir}/core.lco" update="true">
+	      <fileset dir="${temp.dir}/lucee-light-core/"/>
+	    </zip>
+	    
+		<rename src="${temp.dir}/core.lco" dest="${temp.dir}/${cfml.version}.lco"/>
 
     	<delete file="${lucee.light.file}" />
     		
@@ -250,7 +260,8 @@ External Dependencies:
 		<copy todir="${temp.dir}/engine/cfml/cli/lucee-server/context/extensions/available/">
 	      <fileset dir="${extensions.dir}" includes="*.lex" />
 	    </copy>
-	    
+
+	    <move file="${temp.dir}/${cfml.version}.lco" toFile="${temp.dir}/engine/cfml/cli/lucee-server/patches/${cfml.version}.lco" />
 
 		<!-- Zip up the engine-light -->
 		<zip destfile="${temp.dir}/cli-light/engine.zip">
@@ -662,22 +673,17 @@ External Dependencies:
           <fileset file="${dist.dir}/box-thin.jar" />
         </concat>
         
-        <copy file="${src.dir}/bin/box.sh" toDir="${temp.dir}" overwrite="true" />
-		<replaceregexp
-			file="${temp.dir}/box.sh"
-			match='java_args="'
-			replace='java_args="-DLUCEE_EXTENSIONS=${cfml.extensions} '
-			flags="i"
-			encoding="UTF-8" />
-        
 		<!--  this bundles the light jar into the executable wrapper, which is a bash script -->
         <concat destfile="${dist.dir}/box-light" force="yes" binary="true">
-          <fileset file="${temp.dir}/box.sh" />
+          <fileset file="${src.dir}/bin/box.sh" />
           <fileset file="${dist.dir}/box-light.jar" />
         </concat>
         
         <!-- Change execute perm -->
         <chmod file="${dist.dir}/box" perm="755"/>
+        <chmod file="${dist.dir}/box-light" perm="755"/>
+        <chmod file="${dist.dir}/box-thin" perm="755"/>
+        
         <!-- Create distro zip -->
 		<zip destfile="${dist.dir}/${distro.name}-bin-${commandbox.version}.zip" level="9" update="false">
 	        <zipfileset file="${dist.dir}/box" filemode="711" prefix="" />
@@ -765,9 +771,7 @@ External Dependencies:
 					chdir="%OLDPWD%"
 					icon="${src.dir}/resources/box.ico"
 					stayAlive="true">
-					<jre path="./jre/" minVersion="1.8.0">
-						<opt>-DLUCEE_EXTENSIONS=${cfml.extensions}</opt>
-					</jre>
+					<jre path="./jre/" minVersion="1.8.0" />
 					<versionInfo fileVersion="${commandbox.version.noPrereleaseID}.0"
 								 txtFileVersion="${commandbox.version}.${build.number}"
 								 fileDescription="${commandbox.description}"
