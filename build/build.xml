@@ -171,26 +171,31 @@ External Dependencies:
 	    
    		<echo message="move core file" />
 	
+		<!-- Unzip the Lucee Light jar so we can pull out the core.lco file -->
  		<unzip src="${lucee.light.file}" dest="${temp.dir}/lucee-light-jar/" overwrite="true"/>
 	    <move todir="${temp.dir}">
 			<fileset dir="${temp.dir}/lucee-light-jar/core/">
 				<include name="core.lco" />
 			</fileset>
 		</move>
- 		<unzip src="${temp.dir}/core.lco" dest="${temp.dir}/lucee-light-core/" overwrite="true"/>
+		
+		<!-- unzip the core.lco file (really a jar) so we can modify the manifest to inject the extensions we need to load -->
+ 		<unzip src="${temp.dir}/core.lco" dest="${temp.dir}/lucee-light-core/" overwrite="true"/> 		
  		<manifest file="${temp.dir}/lucee-light-core/META-INF/MANIFEST.MF" mode="update">
 			<attribute name="Require-Extension" value="${cfml.extensions}"/>
 		</manifest>
-		<!-- <concat destfile="${temp.dir}/lucee-light-core/META-INF/MANIFEST.MF">Hello, World!</concat> -->
 		
+		<!-- Re-zip core file] -->
 		<zip destfile="${temp.dir}/core.lco" update="true">
 	      <fileset dir="${temp.dir}/lucee-light-core/"/>
 	    </zip>
-	    
+	    	    
+		<!-- Rename core file so it will get loaded -->
 		<rename src="${temp.dir}/core.lco" dest="${temp.dir}/${cfml.version}.lco"/>
 
     	<delete file="${lucee.light.file}" />
     		
+		<!-- re-zip the lucee-light.jar -->
 		<zip destfile="${lucee.light.file}" update="true">
 	      <fileset dir="${temp.dir}/lucee-light-jar/"/>
 	    </zip>
