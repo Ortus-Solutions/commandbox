@@ -359,13 +359,14 @@ component accessors="true" singleton {
 						if( serverDeployFolder.uCase().startsWith('/WEB-INF' ) ) {
 							serverDeployFolder = serverInfo.serverHomeDirectory & serverDeployFolder;
 						}
-						if( directoryExists( serverDeployFolder ) ) {
-							job.addWarnLog( "Current dir seems to be a Lucee server." );
-							job.addWarnLog( "Defaulting lex Install to [#serverDeployFolder#]" );
-							installDirectory = serverDeployFolder;
-							artifactDescriptor.createPackageDirectory = false;
-							ignorePatterns.append( '/box.json' );
+						if( !directoryExists( serverDeployFolder ) ) {
+							directoryCreate( serverDeployFolder, true, true );
 						}
+						job.addWarnLog( "Current dir seems to be a Lucee server." );
+						job.addWarnLog( "Defaulting lex Install to [#serverDeployFolder#]" );
+						installDirectory = serverDeployFolder;
+						artifactDescriptor.createPackageDirectory = false;
+						ignorePatterns.append( '/box.json' );
 					}
 
 				}
