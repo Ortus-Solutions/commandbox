@@ -703,8 +703,8 @@ public class LoaderCLIMain{
 						
 			// OSGI can be grumpy on upgrade with competing bundles.  Start fresh
 			if( cfmlBundlesDir.exists() ) {
-				log.info( "Cleaning old OSGI Bundles..." );
-				Util.deleteDirectory( cfmlBundlesDir );
+				//log.info( "Cleaning old OSGI Bundles..." );
+				//Util.deleteDirectory( cfmlBundlesDir );
 			}
 			// OSGI can be grumpy on upgrade with competing bundles.  Start fresh
 			if( cfmlFelixCacheDir.exists() ) {
