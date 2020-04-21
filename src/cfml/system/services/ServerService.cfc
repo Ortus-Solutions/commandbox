@@ -124,6 +124,7 @@ component accessors="true" singleton {
 			// Duplicate so onServerStart interceptors don't actually change config settings via reference.
 			'trayOptions' : duplicate( d.trayOptions ?: [] ),
 			'trayEnable' : d.trayEnable ?: true,
+			'dockEnable' : d.dockEnable ?: true,
 			'jvm' : {
 				'heapSize' : d.jvm.heapSize ?: '',
 				'minHeapSize' : d.jvm.minHeapSize ?: '',
@@ -609,6 +610,7 @@ component accessors="true" singleton {
 		serverInfo.maxRequests		= 								   serverJSON.web.maxRequests			?: defaults.web.maxRequests;
 
 		serverInfo.trayEnable	 	= serverJSON.trayEnable			?: defaults.trayEnable;
+		serverInfo.dockEnable	 	= serverJSON.dockEnable			?: defaults.dockEnable;
 
 		serverInfo.defaultBaseURL = serverInfo.SSLEnable ? 'https://#serverInfo.host#:#serverInfo.SSLPort#' : 'http://#serverInfo.host#:#serverInfo.port#';
 
@@ -907,7 +909,7 @@ component accessors="true" singleton {
 		serverInfo.consolelogPath = serverInfo.logdir & '/server.out.txt';
 		serverInfo.accessLogPath = serverInfo.logDir & '/access.txt';
 		serverInfo.rewritesLogPath = serverInfo.logDir & '/rewrites.txt';
-
+		
 		// Find the correct tray icon for this server
 		if( !len( serverInfo.trayIcon ) ) {
 			var iconSize = fileSystemUtil.isWindows() ? '-32px' : '';
@@ -1078,6 +1080,7 @@ component accessors="true" singleton {
 			.append( '--log-dir' ).append( serverInfo.logDir )
 			.append( '--server-name' ).append( serverInfo.name )
 			.append( '--tray-enable' ).append( serverInfo.trayEnable )
+			.append( '--dock-enable' ).append( serverInfo.dockEnable )
 			.append( '--directoryindex' ).append( serverInfo.directoryBrowsing )
 			.append( '--timeout' ).append( serverInfo.startTimeout )
 			.append( '--proxy-peeraddress' ).append( 'true' )
@@ -2118,6 +2121,7 @@ component accessors="true" singleton {
 			'rewritesLogEnable'	: false,
 			'trayOptions'		: {},
 			'trayEnable'		: true,
+			'dockEnable'		: true,
 			'dateLastStarted'	: '',
 			'openBrowser'		: true,
 			'openBrowserURL'	: '',
