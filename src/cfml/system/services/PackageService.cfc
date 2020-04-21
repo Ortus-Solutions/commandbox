@@ -427,6 +427,10 @@ component accessors="true" singleton {
 				if( isPackage( installDirectory ) && semanticVersion.isNew( alreadyInstalledBoxJSON.version, version  )  ) {
 					job.addLog( "Package already installed but its version [#alreadyInstalledBoxJSON.version#] is older than the new version being installed [#version#].  Forcing a reinstall." );
 					uninstallFirst = true;
+				// If a newer version exists than what was asked for, blow it away so we can get a clean downgrade.
+				 } else if( isPackage( installDirectory ) && semanticVersion.isNew( version, alreadyInstalledBoxJSON.version )  ) {
+					job.addLog( "Package already installed but its version [#alreadyInstalledBoxJSON.version#] is newer than the version being installed [#version#].  Forcing a reinstall." );
+					uninstallFirst = true;
 				// Allow if forced.
 				} else if( arguments.force ) {
 					job.addLog( "Package already installed but you forced a reinstall." );
