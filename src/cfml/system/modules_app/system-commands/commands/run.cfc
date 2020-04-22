@@ -91,7 +91,7 @@ component{
                         
 			if( interactive ) {
 				
-				var exitCode = processBuilder
+				var process = processBuilder
 					// Do you believe in magic
 					// This works great on Mac/Windows.
 					// On Linux, the standard input (keyboard) is not being piped to the background process.
@@ -99,9 +99,10 @@ component{
 					// Sets current working directory for the process
 					.directory( CWDFile )
 					// Fires process async
-					.start()
-					// waits for it to exit, returning the exit code
-					.waitFor();
+					.start();
+					
+				// waits for it to exit, returning the exit code
+				var exitCode = process.waitFor();
 	
 			} else {
 		            
