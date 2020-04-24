@@ -83,8 +83,8 @@ component accessors="true" singleton {
 
 	/**
 	 * ask the user a question and wait for response
-	 * @message.hint message to prompt the user with
-	 * @mask.hint When not empty, keyboard input is masked as that character
+	 * @message message to prompt the user with
+	 * @mask When not empty, keyboard input is masked as that character
 	 *
 	 * @return the response from the user
  	 **/
@@ -95,7 +95,7 @@ component accessors="true" singleton {
 
 	/**
 	 * Wait until the user's next keystroke
-	 * @message.hint Message to display to the user such as "Press any key to continue."
+	 * @message Message to display to the user such as "Press any key to continue."
  	 **/
 	function waitForKey( message='' ) {
 		if( len( arguments.message ) ) {
@@ -107,7 +107,7 @@ component accessors="true" singleton {
 	/**
 	 * Ask the user a question looking for a yes/no response
 	 * Accepts any boolean value, or "y".
-	 * @message.hint The message to display to the user such as "Would you like to continue?"
+	 * @message The message to display to the user such as "Would you like to continue?"
  	 **/
 	function confirm( required message ) {
 		print.toConsole();
@@ -125,22 +125,22 @@ component accessors="true" singleton {
 	/**
 	 * Run another command by name.
 	 * This is deprecated in favor of command(), which escapes parameters for you.
-	 * @command.hint The command to run. Pass the same string a user would type at the shell.
+	 * @command The command to run. Pass the same string a user would type at the shell.
  	 **/
 	function runCommand( required command, returnOutput=false ) {
 		var results = shell.callCommand( arguments.command, arguments.returnOutput );
-		
+
 		// If the previous command chain failed
 		if( shell.getExitCode() != 0 ) {
 			error( 'Command returned failing exit code (#shell.getExitCode()#)', 'Failing Command: ' & command, shell.getExitCode(), shell.getExitCode() );
 		}
-		
+
 		return results;
 	}
 
 	/**
 	 * Run another command by DSL.
-	 * @name.hint The name of the command to run.
+	 * @name The name of the command to run.
  	 **/
 	function command( required name ) {
 		return getinstance( name='CommandDSL', initArguments={ name : arguments.name } );
@@ -155,12 +155,12 @@ component accessors="true" singleton {
 
 	/**
 	* This resolves an absolute or relative path using the rules of the operating system and CLI.
-	* It doesn't follow CF mappings and will also always return a trailing slash if pointing to 
+	* It doesn't follow CF mappings and will also always return a trailing slash if pointing to
 	* an existing directory.
-	* 
+	*
 	* Resolve the incoming path from the file system
-	* @path.hint The directory to resolve
-	* @basePath.hint An expanded base path to resolve the path against. Defaults to CWD.
+	* @path The directory to resolve
+	* @basePath An expanded base path to resolve the path against. Defaults to CWD.
 	*/
 	function resolvePath( required string path, basePath=shell.pwd() ) {
 		return filesystemUtil.resolvepath( path, basePath );
@@ -182,13 +182,13 @@ component accessors="true" singleton {
  	 **/
 	function propertyFile( propertyFilePath='' ) {
 		var propertyFile = wirebox.getInstance( 'propertyFile@propertyFile' );
-		
+
 		// If the user passed a propertyFile path
 		if( propertyFilePath.len() ) {
-			
+
 			// Make relative paths resolve to the current folder that the task lives in.
 			propertyFilePath = resolvePath( propertyFilePath );
-			
+
 			// If it exists, go ahead and load it now
 			if( fileExists( propertyFilePath ) ){
 				propertyFile.load( propertyFilePath );
@@ -197,7 +197,7 @@ component accessors="true" singleton {
 				propertyFile
 					.setPath( propertyFilePath );
 			}
-			
+
 		}
 		return propertyFile;
 	}
@@ -209,8 +209,8 @@ component accessors="true" singleton {
 	 *
 	 * return error( "We're sorry, but happy hour ended 20 minutes ago." );
 	 *
-	 * @message.hint The error message to display
-	 * @clearPrintBuffer.hint Wipe out the print buffer or not, it does not by default
+	 * @message The error message to display
+	 * @clearPrintBuffer Wipe out the print buffer or not, it does not by default
  	 **/
 	function error( required message, detail='', clearPrintBuffer=false, exitCode=1 ) {
 
@@ -219,7 +219,7 @@ component accessors="true" singleton {
 			// Distance ourselves from whatever other output the command may have given so far.
 			print.line().toConsole();
 		}
-		
+
 		setExitCode( arguments.exitCode );
 		if( arguments.clearPrintBuffer ) {
 			// Wipe
@@ -299,9 +299,9 @@ component accessors="true" singleton {
 		shell.checkInterrupted( argumentCollection=arguments );
 	}
 
-	
+
 	/*
-	* Loads up Java classes into the class loader that loaded the CLI for immediate use. 
+	* Loads up Java classes into the class loader that loaded the CLI for immediate use.
 	* You can pass either an array or list of:
 	* - directories
 	* - Jar files
@@ -310,11 +310,29 @@ component accessors="true" singleton {
 	* Note, loaded jars/classes cannot be unloaded and will remain in memory until the CLI exits.
 	* On Windows, the jar/class files will also be locked on the file system.  Directories are scanned
 	* recursively for for files and everything found will be loaded.
-	* 
+	*
 	* @paths List or array of absolute paths of a jar/class files or directories of them you would like loaded
 	*/
 	function classLoad( paths ) {
 		fileSystemUtil.classLoad( paths );
+	}
+
+	/**
+	 * Get the current thread object
+	 *
+	 * @return java.lang.Thread
+	 */
+	function getCurrentThread(){
+		return createObject( "java", "java.lang.Thread" ).currentThread();
+	}
+
+	/**
+	 * Get the current thread name
+	 *
+	 * @return The thread name
+	 */
+	string function getThreadName(){
+		return getCurrentThread().getName();
 	}
 
 
