@@ -352,8 +352,13 @@ component accessors="true" singleton {
     	// *nix needs to include first folder due to Lucee bug.
     	// So /usr/brad/foo.cfc becomes /usr
     	if( !isWindows() ) {
-	    	var firstFolder = listFirst( arguments.absolutePath, '/' );
-	    	var path = listRest( arguments.absolutePath, '/' );
+    		if( listLen( arguments.absolutePath, '/' ) > 1 ) {
+		    	var firstFolder = listFirst( arguments.absolutePath, '/' );
+		    	var path = listRest( arguments.absolutePath, '/' );	
+    		} else {
+		    	var firstFolder = '';
+		    	var path = listChangeDelims( arguments.absolutePath, '/', '/' );
+    		}
 	    	var mapping = locateUnixDriveMapping( firstFolder );
 	    	return mapping & '/' & path;
     	}
@@ -400,7 +405,7 @@ component accessors="true" singleton {
     */
     string function locateUnixDriveMapping( required string rootFolder ) {
     	var mappingName = '/' & arguments.rootFolder & '_root';
-    	var mappingPath = '/' & arguments.rootFolder & '/';
+    	var mappingPath = '/' & arguments.rootFolder & ( len( arguments.rootFolder ) ? '/' : '' );
     	createMapping( mappingName, mappingPath );
    		return mappingName;
     }

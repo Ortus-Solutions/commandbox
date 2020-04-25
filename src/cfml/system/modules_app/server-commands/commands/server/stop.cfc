@@ -68,6 +68,7 @@ component aliases="stop" {
 
 			if( arguments.forget ) {
 				print.yellowLine( 'forgetting ' & serverInfo.name & '...' ).toConsole();
+				sleep( 1000 )
 				print.line( serverService.forget( serverInfo ) );
 			}
 		}
