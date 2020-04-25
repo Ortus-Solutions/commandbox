@@ -51,14 +51,14 @@ component{
 		}
 		
         var terminal = shell.getReader().getTerminal();
+		var nativeShell = fileSystemUtil.getNativeShell();
 		// Prep the command to run in the OS-specific shell
 		if( fileSystemUtil.isWindows() ) {
 			// Pass through Windows' command shell, /a outputs ANSI formatting, /c runs as a command
-			var commandArray = [ 'cmd','/a','/c', arguments.command ];
+			var commandArray = [ nativeShell,'/a','/c', arguments.command ];
 		} else {
 			// Pass through bash in interactive mode with -i to expand aliases like "ll".
 			// -c runs input as a command, "&& exits" cleanly from the shell as long as the original command ran successfully
-			var nativeShell = configService.getSetting( 'nativeShell', '/bin/bash' );
 			commandArray = [ nativeShell, '-i', '-c', arguments.command & ' 2>&1; ( exit $? > /dev/null )' ];
 		}
 		

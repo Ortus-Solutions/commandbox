@@ -1278,7 +1278,7 @@ component accessors="true" singleton {
 	    	// Use this intermediate shell script to start our server via nohup
 	    	args.prepend( expandPath( '/server-commands/bin/server_spawner.sh' ) );
 	    	// Pass script directly to bash so I don't have to worry about it being executable
-			args.prepend( expandPath( '/bin/bash' ) );
+			args.prepend( fileSystemUtil.getNativeShell() );
 	    }
 
 		// At this point all command line arguments are in place, announce this
