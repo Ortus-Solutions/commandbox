@@ -110,7 +110,7 @@ component accessors="true" singleton {
 		// pull default settings from config to mix in below.
 		// The structure of server.defaults in Config settings matches the default server.json layout here.
 		var d = ConfigService.getSetting( 'server.defaults', {} );
-
+		var nativeShell = fileSystemUtil.getNativeShell();
 		return {
 			'name' : d.name ?: '',
 			'openBrowser' : d.openBrowser ?: true,
@@ -125,7 +125,7 @@ component accessors="true" singleton {
 			'trayOptions' : duplicate( d.trayOptions ?: [] ),
 			'trayEnable' : d.trayEnable ?: true,
 			'dockEnable' : d.dockEnable ?: true,
-			'defaultShell' : d.defaultShell ?: '',
+			'defaultShell' : d.defaultShell ?: nativeShell,
 			'jvm' : {
 				'heapSize' : d.jvm.heapSize ?: '',
 				'minHeapSize' : d.jvm.minHeapSize ?: '',
