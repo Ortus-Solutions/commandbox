@@ -125,6 +125,7 @@ component accessors="true" singleton {
 			'trayOptions' : duplicate( d.trayOptions ?: [] ),
 			'trayEnable' : d.trayEnable ?: true,
 			'dockEnable' : d.dockEnable ?: true,
+			'defaultShell' : d.defaultShell ?: 'sh',
 			'jvm' : {
 				'heapSize' : d.jvm.heapSize ?: '',
 				'minHeapSize' : d.jvm.minHeapSize ?: '',
@@ -611,6 +612,7 @@ component accessors="true" singleton {
 
 		serverInfo.trayEnable	 	= serverJSON.trayEnable			?: defaults.trayEnable;
 		serverInfo.dockEnable	 	= serverJSON.dockEnable			?: defaults.dockEnable;
+		serverInfo.defaultShell		= serverJSON.defaultShell		?: defaults.defaultShell;
 
 		serverInfo.defaultBaseURL = serverInfo.SSLEnable ? 'https://#serverInfo.host#:#serverInfo.SSLPort#' : 'http://#serverInfo.host#:#serverInfo.port#';
 
@@ -1081,6 +1083,7 @@ component accessors="true" singleton {
 			.append( '--server-name' ).append( serverInfo.name )
 			.append( '--tray-enable' ).append( serverInfo.trayEnable )
 			.append( '--dock-enable' ).append( serverInfo.dockEnable )
+			.append( '--default-shell' ).append( serverInfo.defaultShell )
 			.append( '--directoryindex' ).append( serverInfo.directoryBrowsing )
 			.append( '--timeout' ).append( serverInfo.startTimeout )
 			.append( '--proxy-peeraddress' ).append( 'true' )
@@ -2122,6 +2125,7 @@ component accessors="true" singleton {
 			'trayOptions'		: {},
 			'trayEnable'		: true,
 			'dockEnable'		: true,
+			'defaultShell'		: '',
 			'dateLastStarted'	: '',
 			'openBrowser'		: true,
 			'openBrowserURL'	: '',
