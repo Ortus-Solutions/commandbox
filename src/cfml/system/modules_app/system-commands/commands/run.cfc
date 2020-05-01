@@ -148,7 +148,6 @@ component{
 				// This was non-interactive, print out the text output all at once.
 				print.text( processOutputStringBuilder.toString() );
 			}
-
 			
 			// As you were, JLine
             terminal.resume();
@@ -174,6 +173,14 @@ component{
 			if( terminal.paused() ) {
 				terminal.resume();
 			}
+
+			// Put the terminal title back on Windows
+			if( fileSystemUtil.isWindows() && nativeShell contains 'cmd' ) {
+				var commandArray = [ nativeShell,'/a','/c', 'Title CommandBox is a ColdFusion (CFML) CLI, Package Manager, Server and REPL' ];
+				createObject( "java", "java.lang.ProcessBuilder" ).init( commandArray )
+					.inheritIO()
+					.start();
+			}			
 			
 			checkInterrupted();
 		}
