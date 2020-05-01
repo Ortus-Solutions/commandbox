@@ -703,6 +703,21 @@ component accessors="true" singleton {
 		serverJSON.trayOptions = serverJSON.trayOptions.map( function( item ){
 			if( item.keyExists( 'image' ) && item.image.len() ) {
 				item.image = fileSystemUtil.resolvePath( item.image, defaultServerConfigFileDirectory );
+			}else{
+				if( item.keyExists( 'action' )){
+					switch(item.action){
+						case 'run':
+						case 'runAsync':
+						case 'runTerminal':
+						item.image = expandPath('/commandbox/system/config/server-icons/' & item.action & '.png' );
+						break;
+					}
+					//need to check if a shell has been defined for this action
+					if( !item.keyExists( 'shell' ) ){
+						var nativeShell = fileSystemUtil.getNativeShell();
+						item.shell = nativeShell;
+					}
+				}
 			}
 			return item;
 		} );
