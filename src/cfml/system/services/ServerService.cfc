@@ -699,27 +699,8 @@ component accessors="true" singleton {
 		} );
 
 		// server.json settings are relative to the folder server.json lives
-		// TODO: perform this recursivley into "items" sub arrays
 		serverJSON.trayOptions = serverJSON.trayOptions.map( function( item ){
-			if( item.keyExists( 'image' ) && item.image.len() ) {
-				item.image = fileSystemUtil.resolvePath( item.image, defaultServerConfigFileDirectory );
-			}else{
-				if( item.keyExists( 'action' )){
-					switch(item.action){
-						case 'run':
-						case 'runAsync':
-						case 'runTerminal':
-						item.image = expandPath('/commandbox/system/config/server-icons/' & item.action & '.png' );
-						break;
-					}
-					//need to check if a shell has been defined for this action
-					if( !item.keyExists( 'shell' ) ){
-						var nativeShell = fileSystemUtil.getNativeShell();
-						item.shell = nativeShell;
-					}
-				}
-			}
-			return item;
+			return prepareItems( item );
 		} );
 
 		// Global trayOptions are always added on top of server.json (but don't overwrite)
@@ -1501,6 +1482,39 @@ component accessors="true" singleton {
 			throw( message='Server process returned failing exit code [#serverInfo.exitCode#]', type="commandException", errorcode=serverInfo.exitCode );
 		}
 
+	}
+
+
+	/**
+	* allows to iterate on a tray menu item recursively
+	* and checks for the default image and default shell
+	*/
+	function prepareItems( item ) {
+		//need to check if a shell has been defined for this action
+		if(arguments.item.keyExists( 'action' ) && !arguments.item.keyExists( 'shell' ) ){
+			arguments.item[ 'shell' ] = fileSystemUtil.getNativeShell();
+		}	
+
+		if( arguments.item.keyExists( 'image' ) && arguments.item.image.len() ) {
+			arguments.item[ 'image' ] = fileSystemUtil.resolvePath( arguments.item.image, defaultServerConfigFileDirectory );
+		}else{	
+			if( arguments.item.keyExists( 'action' )){
+				switch( arguments.item.action ){
+					case 'run':
+					case 'runAsync':
+					case 'runTerminal':
+						arguments.item[ 'image' ] = expandPath('/commandbox/system/config/server-icons/' & arguments.item.action & '.png' );
+					break;
+				}
+			}
+		}	
+		if( arguments.item.keyExists( 'items' ) && arguments.item.items.len() ){
+			arguments.item.items.map( function( child ){
+				arguments.item.items = prepareItems( child );
+			} );
+			
+		}
+		return arguments.item;
 	}
 
 	/**
