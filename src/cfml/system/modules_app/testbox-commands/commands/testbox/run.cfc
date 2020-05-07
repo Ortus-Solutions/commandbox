@@ -123,7 +123,7 @@ component {
 		arguments.testboxUrl = addRunnerOptions( argumentCollection=arguments );
 
 		// Advise we are running
-		print.boldBlueLine( "Executing tests via #testboxUrl# please wait..." ).toConsole();
+		print.boldGreenLine( "Executing tests #testboxUrl# please wait..." ).toConsole();
 
 		// run it now baby!
 		try {
