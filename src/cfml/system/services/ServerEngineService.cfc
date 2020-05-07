@@ -120,6 +120,10 @@ component accessors="true" singleton="true" {
 		required string serverHomeDirectory
 		) {
 
+		if( ID == 'none' ) {
+			ID = expandPath( '/server-commands/bin/www-engine.zip' );
+		}
+
 		var job = wirebox.getInstance( 'interactiveJob' );
 		
 		var installDetails = {
