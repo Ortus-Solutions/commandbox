@@ -46,16 +46,22 @@
  * {code:bash}
  * testbox run options:opt1=value1 options:opt2=value2
  * {code}
+ * .
+ * You can run your tests and post-produce many reporting results, great for CI purposes
+ * {code:bash}
+ * testbox run outputformats=json,antjunit,simple
+ * testbox run outputformats=json,antjunit,simple outputFile=myresults
+ * {code}
  *
  **/
 component {
 
 	// DI
-	property name="packageService" inject="PackageService";
-	property name="testingService" inject="TestingService@testbox-commands";
-	property name="CLIRenderer"    inject="CLIRenderer@testbox-commands";
-	property name="serverService"  inject="ServerService";
-	property name="moduleConfig"  inject="box:moduleConfig:testbox-commands";
+	property name="packageService" 	inject="PackageService";
+	property name="testingService" 	inject="TestingService@testbox-commands";
+	property name="CLIRenderer"    	inject="CLIRenderer@testbox-commands";
+	property name="serverService"  	inject="ServerService";
+	property name="moduleConfig"  	inject="box:moduleConfig:testbox-commands";
 
 	// Default Runner Options
 	variables.RUNNER_OPTIONS = {
@@ -86,6 +92,7 @@ component {
 	 * @testSuites  A list of suite names that are the ones that will be executed ONLY!
 	 * @testSpecs   A list of test names that are the ones that will be executed ONLY!
 	 * @outputFile  We will store the results in this output file as well as presenting it to you.
+	 * @outputFormats A list of output reporter to produce using the runner's JSON results only. Available formats are: json,xml,junit,antjunit,simple,dot,doc,min,mintext,doc,text,tap,codexwiki
 	 * @verbose Display extra details inlcuding passing and skipped tests.
 	 * @testboxInstallForce For the installation of testbox again
 	 **/
