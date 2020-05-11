@@ -689,19 +689,8 @@ component accessors="true" singleton {
 		serverInfo.trayOptions = defaults.trayOptions;
 		serverJSON.trayOptions = serverJSON.trayOptions ?: [];
 
-		// global defaults are relative to web root
-		// TODO: perform this recursivley into "items" sub arrays
-		serverInfo.trayOptions = serverInfo.trayOptions.map( function( item ){
-			if( item.keyExists( 'image' ) && item.image.len() ) {
-				item.image = fileSystemUtil.resolvePath( item.image, defaultwebroot );
-			}
-			return item;
-		} );
-
 		// server.json settings are relative to the folder server.json lives
-		serverJSON.trayOptions = serverJSON.trayOptions.map( function( item ){
-			return prepareItems( item );
-		} );
+		serverJSON.trayOptions = prepareMenuItems( serverJSON.trayOptions, defaultwebroot );
 
 		// Global trayOptions are always added on top of server.json (but don't overwrite)
 		// trayOptions aren't accepted via command params due to no clean way to provide them
@@ -1489,32 +1478,45 @@ component accessors="true" singleton {
 	* allows to iterate on a tray menu item recursively
 	* and checks for the default image and default shell
 	*/
-	function prepareItems( item ) {
-		//need to check if a shell has been defined for this action
-		if(arguments.item.keyExists( 'action' ) && !arguments.item.keyExists( 'shell' ) ){
-			arguments.item[ 'shell' ] = fileSystemUtil.getNativeShell();
-		}	
-
-		if( arguments.item.keyExists( 'image' ) && arguments.item.image.len() ) {
-			arguments.item[ 'image' ] = fileSystemUtil.resolvePath( arguments.item.image, defaultServerConfigFileDirectory );
-		}else{	
-			if( arguments.item.keyExists( 'action' )){
-				switch( arguments.item.action ){
-					case 'run':
-					case 'runAsync':
-					case 'runTerminal':
-						arguments.item[ 'image' ] = expandPath('/commandbox/system/config/server-icons/' & arguments.item.action & '.png' );
-					break;
-				}
+	function prepareMenuItems( trayOptions, defaultwebroot ) {
+		arguments.trayOptions = arguments.trayOptions.map( function( menuItem ){
+			// global defaults are relative to web root
+			if( menuItem.keyExists( 'image' ) && menuItem.image.len() ) {
+				menuItem.image = fileSystemUtil.resolvePath( menuItem.image, defaultwebroot );
 			}
-		}	
-		if( arguments.item.keyExists( 'items' ) && arguments.item.items.len() ){
-			arguments.item.items.map( function( child ){
-				arguments.item.items = prepareItems( child );
-			} );
-			
-		}
-		return arguments.item;
+
+			//need to check if a shell has been defined for this action
+			if( menuItem.keyExists( 'action' ) && listFindNoCase('run,runAsync,runTerminal',menuItem.action)){
+				menuItem[ 'shell' ] = menuItem.shell ?: fileSystemUtil.getNativeShell();
+				menuItem[ 'image' ] = menuItem.image ?: expandPath('/commandbox/system/config/server-icons/' & menuItem.action & '.png' );
+			}	
+
+			if( menuItem.keyExists( 'image' ) && menuItem.image.len() && !fileExists( menuItem.image ) ) {
+				menuItem[ 'image' ] = fileSystemUtil.resolvePath( menuItem.image, defaultServerConfigFileDirectory );
+			} 	
+
+			if(menuItem.keyExists( 'action' ) && menuItem.action == 'runTerminal' ){
+				var command = "";
+				if (fileSystemUtil.isMac()) {
+					//"Executing on Mac OS X"
+					command = "osascript -e 'tell app " & '"terminal"' & " to do script "  & '"' & menuItem[ 'command' ] & '"' & "'";								
+				} else if (fileSystemUtil.isWindows()) {
+					//"Executing on Windows"
+					command = "start cmd.exe /k " & '" ' & menuItem[ 'command' ] & '"';
+				} else if (fileSystemUtil.isLinux()) {
+					//"Executing on *NIX"
+				} else {
+					writeOutput("Your OS is not currently supported to perform this action:" & menuItem[ 'command' ]);
+				}
+				menuItem[ 'command' ] = command;
+			}
+
+			if( menuItem.keyExists( 'items' ) && menuItem.items.len() ){
+				menuItem.items = prepareMenuItems( menuItem.items, defaultwebroot );
+			}
+			return menuItem;
+		} );
+		return arguments.trayOptions;
 	}
 
 	/**
