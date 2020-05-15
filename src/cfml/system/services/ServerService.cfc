@@ -1496,18 +1496,21 @@ component accessors="true" singleton {
 			} 	
 
 			if(menuItem.keyExists( 'action' ) && menuItem.action == 'runTerminal' ){
+				var nativeTerminal = "";
 				var command = "";
 				if (fileSystemUtil.isMac()) {
 					//"Executing on Mac OS X"
-					command = "osascript -e 'tell app " & '"terminal"' & " to do script "  & '"' & menuItem[ 'command' ] & '"' & "'";								
+					nativeTerminal = ConfigService.getSetting( 'nativeTerminal', "osascript -e 'tell app " & "terminal" &  " to do script " & "@@command@@" & "'"  );
 				} else if (fileSystemUtil.isWindows()) {
 					//"Executing on Windows"
-					command = "start cmd.exe /k " & '" ' & menuItem[ 'command' ] & '"';
+					nativeTerminal = ConfigService.getSetting( 'nativeTerminal', 'start cmd.exe /k "@@command@@"' );
 				} else if (fileSystemUtil.isLinux()) {
 					//"Executing on *NIX"
+					nativeTerminal = ConfigService.getSetting( 'nativeTerminal', '"@@command@@"' );				
 				} else {
 					writeOutput("Your OS is not currently supported to perform this action:" & menuItem[ 'command' ]);
 				}
+				command = replaceNoCase( nativeTerminal, '@@command@@', menuItem[ 'command' ] )
 				menuItem[ 'command' ] = command;
 			}
 
