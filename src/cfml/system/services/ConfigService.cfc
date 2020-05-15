@@ -40,6 +40,8 @@ component accessors="true" singleton {
 			'proxy.password',
 			// used in "run" command for a custom Unix shell
 			'nativeShell',
+			// used in "runTerminal" command for a custom app
+			'nativeTerminal',
 			// used in "bump" command
 			'tagVersion',
 			'tagPrefix',

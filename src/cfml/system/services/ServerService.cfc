@@ -689,23 +689,8 @@ component accessors="true" singleton {
 		serverInfo.trayOptions = defaults.trayOptions;
 		serverJSON.trayOptions = serverJSON.trayOptions ?: [];
 
-		// global defaults are relative to web root
-		// TODO: perform this recursivley into "items" sub arrays
-		serverInfo.trayOptions = serverInfo.trayOptions.map( function( item ){
-			if( item.keyExists( 'image' ) && item.image.len() ) {
-				item.image = fileSystemUtil.resolvePath( item.image, defaultwebroot );
-			}
-			return item;
-		} );
-
 		// server.json settings are relative to the folder server.json lives
-		// TODO: perform this recursivley into "items" sub arrays
-		serverJSON.trayOptions = serverJSON.trayOptions.map( function( item ){
-			if( item.keyExists( 'image' ) && item.image.len() ) {
-				item.image = fileSystemUtil.resolvePath( item.image, defaultServerConfigFileDirectory );
-			}
-			return item;
-		} );
+		serverJSON.trayOptions = prepareMenuItems( serverJSON.trayOptions, defaultwebroot );
 
 		// Global trayOptions are always added on top of server.json (but don't overwrite)
 		// trayOptions aren't accepted via command params due to no clean way to provide them
@@ -1486,6 +1471,55 @@ component accessors="true" singleton {
 			throw( message='Server process returned failing exit code [#serverInfo.exitCode#]', type="commandException", errorcode=serverInfo.exitCode );
 		}
 
+	}
+
+
+	/**
+	* allows to iterate on a tray menu item recursively
+	* and checks for the default image and default shell
+	*/
+	function prepareMenuItems( trayOptions, defaultwebroot ) {
+		arguments.trayOptions = arguments.trayOptions.map( function( menuItem ){
+			// global defaults are relative to web root
+			if( menuItem.keyExists( 'image' ) && menuItem.image.len() ) {
+				menuItem.image = fileSystemUtil.resolvePath( menuItem.image, defaultwebroot );
+			}
+
+			//need to check if a shell has been defined for this action
+			if( menuItem.keyExists( 'action' ) && listFindNoCase('run,runAsync,runTerminal',menuItem.action)){
+				menuItem[ 'shell' ] = menuItem.shell ?: fileSystemUtil.getNativeShell();
+				menuItem[ 'image' ] = menuItem.image ?: expandPath('/commandbox/system/config/server-icons/' & menuItem.action & '.png' );
+			}	
+
+			if( menuItem.keyExists( 'image' ) && menuItem.image.len() && !fileExists( menuItem.image ) ) {
+				menuItem[ 'image' ] = fileSystemUtil.resolvePath( menuItem.image, defaultServerConfigFileDirectory );
+			} 	
+
+			if(menuItem.keyExists( 'action' ) && menuItem.action == 'runTerminal' ){
+				var nativeTerminal = "";
+				var command = "";
+				if (fileSystemUtil.isMac()) {
+					//"Executing on Mac OS X"
+					nativeTerminal = ConfigService.getSetting( 'nativeTerminal', "osascript -e 'tell app " & "terminal" &  " to do script " & "@@command@@" & "'"  );
+				} else if (fileSystemUtil.isWindows()) {
+					//"Executing on Windows"
+					nativeTerminal = ConfigService.getSetting( 'nativeTerminal', 'start cmd.exe /k "@@command@@"' );
+				} else if (fileSystemUtil.isLinux()) {
+					//"Executing on *NIX"
+					nativeTerminal = ConfigService.getSetting( 'nativeTerminal', '"@@command@@"' );				
+				} else {
+					writeOutput("Your OS is not currently supported to perform this action:" & menuItem[ 'command' ]);
+				}
+				command = replaceNoCase( nativeTerminal, '@@command@@', menuItem[ 'command' ] )
+				menuItem[ 'command' ] = command;
+			}
+
+			if( menuItem.keyExists( 'items' ) && menuItem.items.len() ){
+				menuItem.items = prepareMenuItems( menuItem.items, defaultwebroot );
+			}
+			return menuItem;
+		} );
+		return arguments.trayOptions;
 	}
 
 	/**
