@@ -685,17 +685,6 @@ component accessors="true" singleton {
 		serverInfo.errorPages		= defaults.web.errorPages;
 		serverInfo.errorPages.append( serverJSON.web.errorPages ?: {} );
 
-
-		serverInfo.trayOptions = defaults.trayOptions;
-		serverJSON.trayOptions = serverJSON.trayOptions ?: [];
-
-		// server.json settings are relative to the folder server.json lives
-		serverJSON.trayOptions = prepareMenuItems( serverJSON.trayOptions, defaultwebroot );
-
-		// Global trayOptions are always added on top of server.json (but don't overwrite)
-		// trayOptions aren't accepted via command params due to no clean way to provide them
-		serverInfo.trayOptions.append( serverJSON.trayOptions, true );
-
 		serverInfo.accessLogEnable	= serverJSON.web.accessLogEnable ?: defaults.web.accessLogEnable;
 		serverInfo.GZIPEnable	= serverJSON.web.GZIPEnable ?: defaults.web.GZIPEnable;
 
@@ -953,6 +942,7 @@ component accessors="true" singleton {
 			serverInfo.minHeapSize &= 'm';
 		}
 		
+		serverInfo.trayOptions = [];
 		serverInfo.trayOptions.prepend(
 			{
 				"label":"Info",
@@ -988,6 +978,10 @@ component accessors="true" singleton {
 		// serverInfo.trayOptions.prepend( { 'label' : 'Restart Server', 'hotkey':'R', 'action' : 'restartserver', 'image': expandPath('/commandbox/system/config/server-icons/home.png' ) } );
 
 		serverInfo.trayOptions.prepend( { 'label':'Stop Server', 'action':'stopserver', 'image' : expandPath('/commandbox/system/config/server-icons/stop.png' ) } );
+
+		// Take default options, then append config defaults and server.json trayOptions on top of them (allowing nested overwrite)
+		serverInfo.trayOptions = appendMenuItems( defaults.trayOptions, defaultwebroot, serverInfo.trayOptions );
+		serverInfo.trayOptions = appendMenuItems( serverJSON.trayOptions ?: [], defaultServerConfigFileDirectory, serverInfo.trayOptions );
 
 	    // This is due to a bug in RunWar not creating the right directory for the logs
 	    directoryCreate( serverInfo.logDir, true, true );
@@ -1478,48 +1472,72 @@ component accessors="true" singleton {
 	* allows to iterate on a tray menu item recursively
 	* and checks for the default image and default shell
 	*/
-	function prepareMenuItems( trayOptions, defaultwebroot ) {
-		arguments.trayOptions = arguments.trayOptions.map( function( menuItem ){
-			// global defaults are relative to web root
-			if( menuItem.keyExists( 'image' ) && menuItem.image.len() ) {
-				menuItem.image = fileSystemUtil.resolvePath( menuItem.image, defaultwebroot );
+	array function appendMenuItems( array trayOptions, relativePath, array parentOptions ) {
+		arguments.trayOptions.each( function( menuItem ){
+			// Resolve images and massage default tray options
+			newMenuItem = prepareMenuItem( menuItem, relativePath );
+			
+			var match = parentOptions.find( (m)=>trim( m.label ) == trim( newMenuItem.label ) );
+			if( match ) {
+				parentOptions[ match ].append( newMenuItem );
+				newMenuItem = parentOptions[ match ]
+			} else {
+				parentOptions.append( newMenuItem );
 			}
-
-			//need to check if a shell has been defined for this action
-			if( menuItem.keyExists( 'action' ) && listFindNoCase('run,runAsync,runTerminal',menuItem.action)){
-				menuItem[ 'shell' ] = menuItem.shell ?: fileSystemUtil.getNativeShell();
-				menuItem[ 'image' ] = menuItem.image ?: expandPath('/commandbox/system/config/server-icons/' & menuItem.action & '.png' );
-			}	
-
-			if( menuItem.keyExists( 'image' ) && menuItem.image.len() && !fileExists( menuItem.image ) ) {
-				menuItem[ 'image' ] = fileSystemUtil.resolvePath( menuItem.image, defaultServerConfigFileDirectory );
-			} 	
-
-			if(menuItem.keyExists( 'action' ) && menuItem.action == 'runTerminal' ){
-				var nativeTerminal = "";
-				var command = "";
-				if (fileSystemUtil.isMac()) {
-					//"Executing on Mac OS X"
-					nativeTerminal = ConfigService.getSetting( 'nativeTerminal', "osascript -e 'tell app " & "terminal" &  " to do script " & "@@command@@" & "'"  );
-				} else if (fileSystemUtil.isWindows()) {
-					//"Executing on Windows"
-					nativeTerminal = ConfigService.getSetting( 'nativeTerminal', 'start cmd.exe /k "@@command@@"' );
-				} else if (fileSystemUtil.isLinux()) {
-					//"Executing on *NIX"
-					nativeTerminal = ConfigService.getSetting( 'nativeTerminal', '"@@command@@"' );				
-				} else {
-					writeOutput("Your OS is not currently supported to perform this action:" & menuItem[ 'command' ]);
-				}
-				command = replaceNoCase( nativeTerminal, '@@command@@', menuItem[ 'command' ] )
-				menuItem[ 'command' ] = command;
-			}
-
+			
 			if( menuItem.keyExists( 'items' ) && menuItem.items.len() ){
-				menuItem.items = prepareMenuItems( menuItem.items, defaultwebroot );
+				// Runwar requires "items" to be lowercase
+				newMenuItem[ 'items' ] = appendMenuItems( menuItem.items, relativePath, newMenuItem.items ?: [] );
 			}
-			return menuItem;
 		} );
-		return arguments.trayOptions;
+		return arguments.parentOptions;
+	}
+
+	/**
+	* checks for the default image and default shell
+	*/
+	function prepareMenuItem( menuItem, relativePath ) {
+		
+		menuItem.label = menuItem.label ?: '';
+		
+		// global defaults are relative to web root
+		if( menuItem.keyExists( 'image' ) && menuItem.image.len() ) {
+			menuItem.image = fileSystemUtil.resolvePath( menuItem.image, relativePath );
+		}
+
+		//need to check if a shell has been defined for this action
+		if( menuItem.keyExists( 'action' ) && listFindNoCase('run,runAsync,runTerminal',menuItem.action)){
+			menuItem[ 'shell' ] = menuItem.shell ?: fileSystemUtil.getNativeShell();
+			// Some special love for box commands
+			if( menuItem.command.lCase().reFindNoCase( '^box(\.exe)? ' )  ) {
+				menuItem[ 'image' ] = menuItem.image ?: expandPath('/commandbox/system/config/server-icons/box.png' );				
+			} else {
+				menuItem[ 'image' ] = menuItem.image ?: expandPath('/commandbox/system/config/server-icons/' & menuItem.action & '.png' );
+			}
+		}	
+
+		if( menuItem.keyExists( 'image' ) && menuItem.image.len() && !fileExists( menuItem.image ) ) {
+			menuItem[ 'image' ] = fileSystemUtil.resolvePath( menuItem.image, relativePath );
+		} 	
+
+		if(menuItem.keyExists( 'action' ) && menuItem.action == 'runTerminal' ){
+			var nativeTerminal = "";
+			
+			if (fileSystemUtil.isMac()) {
+				nativeTerminal = ConfigService.getSetting( 'nativeTerminal', "osascript -e 'tell app " & "terminal" &  " to do script " & "@@command@@" & "'"  );
+				menuItem[ 'action' ] = 'runAsync';
+			} else if (fileSystemUtil.isWindows()) {
+				nativeTerminal = ConfigService.getSetting( 'nativeTerminal', 'start cmd.exe /k "@@command@@"' );
+				menuItem[ 'action' ] = 'runAsync';
+			} else {
+				// For unsupported OS's simply run the command
+				nativeTerminal = ConfigService.getSetting( 'nativeTerminal', '"@@command@@"' );
+				menuItem[ 'action' ] = 'run';				
+			}
+			
+			menuItem[ 'command' ] = replaceNoCase( nativeTerminal, '@@command@@', menuItem[ 'command' ], 'all' );
+		}
+		return menuItem.filter( (k)=>k!='items' );
 	}
 
 	/**
