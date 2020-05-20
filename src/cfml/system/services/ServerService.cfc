@@ -689,6 +689,8 @@ component accessors="true" singleton {
 		serverInfo.trayOptions = defaults.trayOptions;
 		serverJSON.trayOptions = serverJSON.trayOptions ?: [];
 
+		//preparing items on default settings
+		serverInfo.trayOptions = prepareMenuItems( defaults.trayOptions, defaultwebroot );
 		// server.json settings are relative to the folder server.json lives
 		serverJSON.trayOptions = prepareMenuItems( serverJSON.trayOptions, defaultwebroot );
 
@@ -1496,6 +1498,7 @@ component accessors="true" singleton {
 			} 	
 
 			if(menuItem.keyExists( 'action' ) && menuItem.action == 'runTerminal' ){
+				menuItem[ 'action' ] = "runAsync";
 				var nativeTerminal = "";
 				var command = "";
 				if (fileSystemUtil.isMac()) {
