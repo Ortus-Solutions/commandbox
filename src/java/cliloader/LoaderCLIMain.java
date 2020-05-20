@@ -555,6 +555,7 @@ public class LoaderCLIMain{
 
 	@SuppressWarnings( "static-access" )
 	public static ArrayList< String > initialize( String[] arguments ) throws IOException {
+		
 		System.setProperty( "apple.awt.UIElement", "true" );
 		ArrayList< String > cliArguments = new ArrayList< String >(
 				Arrays.asList( arguments ) );
@@ -567,7 +568,11 @@ public class LoaderCLIMain{
 			listRemoveContaining( cliArguments, "-clidebug" );
 			arguments = removeElement( arguments, "-clidebug" );
 		}
-
+		
+		log.debug( "CLI Java Version:" + System.getProperty( "java.vm.version", System.getProperty( "java.version", "Unknown" ) ) );
+		log.debug( "CLI Java Home:" + System.getProperty( "java.home", "Unknown" ) );
+		log.debug( "CLI Java Vendor:" + System.getProperty( "java.vendor", "Unknown" ) );
+		
 		System.setProperty( "cfml.cli.debug", debug.toString() );
 		try {
 			props.load( ClassLoader

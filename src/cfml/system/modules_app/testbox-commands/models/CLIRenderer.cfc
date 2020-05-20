@@ -11,10 +11,10 @@ component {
 
 	variables.HEADER_CELL_CHARS = 7;
 	variables.COLOR             = {
-		PASS  : "green",
-		SKIP  : "yellow",
+		PASS  : "SpringGreen1",
+		SKIP  : "blue",
 		ERROR : "boldRed",
-		FAIL  : "boldRed"
+		FAIL  : "red"
 	};
 	variables.MAX_STACKTRACES = 5;
 
@@ -29,35 +29,6 @@ component {
 			testData.totalFail,
 			0
 		);
-		print
-			.line( "TestBox " & ( !isNull( testData.version ) ? "v#testData.version#" : "" ) )
-			.line( "---------------------------------------------------------------------------------", thisColor )
-			.line( "| Passed  | Failed  | Errored | Skipped | Time    | Bundles | Suites  | Specs   |", thisColor )
-			.line( "---------------------------------------------------------------------------------", thisColor )
-			.line(
-				"| #headerCell( testData.totalPass )# | #headerCell( testData.totalFail )# | #headerCell( testData.totalError )# | #headerCell( testData.totalSkipped )# | #headerCell( testData.totalDuration & " ms" )# | #headerCell( testData.totalBundles )# | #headerCell( testData.totalSuites )# | #headerCell( testData.totalSpecs )# |",
-				thisColor
-			)
-			.line( "---------------------------------------------------------------------------------", thisColor );
-
-		if ( arrayLen( testData.labels ) ) {
-			print.line( "Labels Applied: #arrayToList( testData.labels )#", thisColor );
-		}
-		if ( isDefined( "testData.coverage.enabled" ) && testData.coverage.enabled ) {
-			print.line(
-				"Coverage: #testData.coverage.data.stats.totalCoveredLines# / #testData.coverage.data.stats.totalExecutableLines# LOC (#numberFormat( testData.coverage.data.stats.percTotalCoverage * 100, "9.9" )#%) Covered",
-				thisColor
-			);
-			if ( len( testData.coverage.data.sonarQubeResults ) ) {
-				print.line(
-					"Coverage: SonarQube file written to [#testData.coverage.data.sonarQubeResults#]",
-					thisColor
-				);
-			}
-			if ( len( testData.coverage.data.browserResults ) ) {
-				print.line( "Coverage: Browser written to [#testData.coverage.data.browserResults#]", thisColor );
-			}
-		}
 
 		var didPrint = false;
 		for ( thisBundle in testData.bundleStats ) {
@@ -68,19 +39,27 @@ component {
 			var thisColor = getAggregatedColor(
 				thisBundle.totalError,
 				thisBundle.totalFail,
-				0
+				thisBundle.totalSkipped
 			);
+			var thisStatus = "pass";
+			if( thisBundle.totalFail > 0 || thisBundle.totalError > 0 ){
+				thisStatus = "error";
+			}
+			if( thisBundle.totalSkipped == thisBundle.totalSpecs ){
+				thisStatus = "skipped";
+			}
+
 			print
-				.line( "=================================================================================", thisColor )
+				.line()
 				.line(
-					"#thisBundle.path# (#thisBundle.totalDuration# ms) [Suites/Specs: #thisBundle.totalSuites#/#thisBundle.totalSpecs#]",
+					"#getIndicator( thisStatus )##thisBundle.path# (#thisBundle.totalDuration# ms)",
 					thisColor
 				)
 				.line(
-					"[Passed: #thisBundle.totalPass#] [Failed: #thisBundle.totalFail#] [Errors: #thisBundle.totalError#] [Skipped: #thisBundle.totalSkipped#]",
+					"[Passed: #thisBundle.totalPass#] [Failed: #thisBundle.totalFail#] [Errors: #thisBundle.totalError#] [Skipped: #thisBundle.totalSkipped#] [Suites/Specs: #thisBundle.totalSuites#/#thisBundle.totalSpecs#]",
 					thisColor
 				)
-				.line( "---------------------------------------------------------------------------------", thisColor );
+				.line()
 
 			// Check if the bundle threw a global exception
 			if ( !isSimpleValue( thisBundle.globalException ) ) {
@@ -122,29 +101,78 @@ component {
 				didPrint = genSuiteReport(
 					suiteStats  = suiteStats,
 					bundleStats = thisBundle,
-					level       = 0,
+					level       = 1,
 					print       = print,
 					verbose     = verbose
 				);
 			}
 		}
 
+		// Print Summary
+		print
+			.line()
+			.line( "╔═════════════════════════════════════════════════════════════════════╗", thisColor )
+			.line( "║ Passed  ║ Failed  ║ Errored ║ Skipped ║ Bundles ║ Suites  ║ Specs   ║", thisColor )
+			.line( "╠═════════════════════════════════════════════════════════════════════╣", thisColor )
+			.line(
+				"║ #headerCell( testData.totalPass )# ║ #headerCell( testData.totalFail )# ║ #headerCell( testData.totalError )# ║ #headerCell( testData.totalSkipped )# ║ #headerCell( testData.totalBundles )# ║ #headerCell( testData.totalSuites )# ║ #headerCell( testData.totalSpecs )# ║",
+				thisColor
+				)
+			.line( "╚═════════════════════════════════════════════════════════════════════╝", thisColor )
+			.line()
+			.line( "TestBox 	" & ( !isNull( testData.version ) ? "v#testData.version#" : "" ) )
+			.line( "CFML Engine	" & ( !isNull( testData.cfmlEngine ) ? "#testData.cfmlEngine# v#testData.cfmlEngineVersion#" : "" ) )
+			.line( "Duration 	#numberFormat( testData.totalDuration )#ms" )
+			.line( "Labels 		" & ( arrayLen( testData.labels ) ? arrayToList( testData.labels ) : "---" ) );
+
+
+		if ( isDefined( "testData.coverage.enabled" ) && testData.coverage.enabled ) {
+			print.line(
+				"Coverage 	#testData.coverage.data.stats.totalCoveredLines# / #testData.coverage.data.stats.totalExecutableLines# LOC (#numberFormat( testData.coverage.data.stats.percTotalCoverage * 100, "9.9" )#%) Covered"
+			).line();
+			if ( len( testData.coverage.data.sonarQubeResults ) ) {
+				print.blueLine(
+					"Coverage: SonarQube file written to [#testData.coverage.data.sonarQubeResults#]"
+				);
+			}
+			if ( len( testData.coverage.data.browserResults ) ) {
+				print.blueLine( "Coverage: Browser written to [#testData.coverage.data.browserResults#]" );
+			}
+		}
+
 		// Skip this redundant line if no specs printed above in the previous suite
 		if ( didPrint ) {
-			print.line( "---------------------------------------------------------------------------------", thisColor );
+			print.line();
 		}
 
 		// If verbose print the final footer report
 		if ( verbose ) {
 			print
-				.text( "Passed", COLOR.PASS )
-				.text( " || " )
-				.text( "Skipped", COLOR.SKIP )
-				.text( " || " )
-				.text( "Exception/Error", COLOR.ERROR )
-				.text( " || " )
-				.text( "Failure", COLOR.FAIL )
-				.line();
+				.text( "#getIndicator( 'passed' )#Passed", COLOR.PASS )
+				.text( "  " )
+				.text( "#getIndicator( 'skipped' )#Skipped", COLOR.SKIP )
+				.text( "  " )
+				.text( "#getIndicator( 'error' )#Exception/Error", COLOR.ERROR )
+				.text( "  " )
+				.text( "#getIndicator( 'failed' )#Failure", COLOR.FAIL )
+				.line()
+		}
+	}
+
+	/**
+	 * Get the indicator status
+	 *
+	 * @status The status to get back
+	 */
+	function getIndicator( required status ){
+		if( arguments.status == "error" ){
+			return "!! ";
+		} else if ( arguments.status == "failed" ) {
+			return "X ";
+		} else if ( arguments.status == "skipped" ) {
+			return "- ";
+		} else {
+			return "√ ";
 		}
 	}
 
@@ -171,7 +199,7 @@ component {
 		var tabs = repeatString( "    ", arguments.level );
 
 		print.line(
-			"#tabs#+#arguments.suiteStats.name# #chr( 13 )#",
+			"#tabs##getIndicator( arguments.suiteStats.status )##arguments.suiteStats.name# #chr( 13 )#",
 			getAggregatedColor(
 				arguments.suiteStats.totalError,
 				arguments.suiteStats.totalFail,
@@ -194,7 +222,7 @@ component {
 			);
 
 			print.line(
-				"#repeatString( "    ", arguments.level + 1 )##local.thisSpec.name# (#local.thisSpec.totalDuration# ms) #chr( 13 )#",
+				"#repeatString( "    ", arguments.level + 1 )##getIndicator( local.thisSpec.status )##local.thisSpec.name# (#local.thisSpec.totalDuration# ms) #chr( 13 )#",
 				thisColor
 			);
 
@@ -232,6 +260,15 @@ component {
 							"#repeatString( "    ", level + 2 )#-> at #item.template#:#item.line# #chr( 13 )##chr( 13 )#",
 							COLOR.ERROR
 						);
+
+						// code print for first stack frame if supported by the CFML engine
+						if( arguments.index == 1 && item.keyExists( "codePrintPlain" ) ){
+							print.line().line(
+								"#repeatString( "    ", level + 2 )##item.codePrintPlain.replace(
+									chr( 10 ), chr( 10 ) & repeatString( "    ", level + 2 ), "all"
+								)#"
+							);
+						}
 					}
 				} );
 			}
