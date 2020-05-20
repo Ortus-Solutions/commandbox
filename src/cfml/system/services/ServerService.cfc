@@ -1490,7 +1490,11 @@ component accessors="true" singleton {
 			//need to check if a shell has been defined for this action
 			if( menuItem.keyExists( 'action' ) && listFindNoCase('run,runAsync,runTerminal',menuItem.action)){
 				menuItem[ 'shell' ] = menuItem.shell ?: fileSystemUtil.getNativeShell();
-				menuItem[ 'image' ] = menuItem.image ?: expandPath('/commandbox/system/config/server-icons/' & menuItem.action & '.png' );
+				if( menuItem.keyExists( 'command' ) && findNoCase( 'box ', menuItem[ 'command' ], 0 ) ){
+					menuItem[ 'image' ] = menuItem.image ?: expandPath('/commandbox/system/config/server-icons/box.png' );
+				}else{
+					menuItem[ 'image' ] = menuItem.image ?: expandPath('/commandbox/system/config/server-icons/' & menuItem.action & '.png' );
+				}
 			}	
 
 			if( menuItem.keyExists( 'image' ) && menuItem.image.len() && !fileExists( menuItem.image ) ) {
