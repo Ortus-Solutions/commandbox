@@ -1068,7 +1068,7 @@ External Dependencies:
 	    <dependency groupId="net.minidev" artifactId="json-smart-mini" version="1.0.8" unzip="false" type="jar" dest="${lib.dir}"/>
 
 	    <!-- engine libs -->
-	  	<dependency groupId="org.lucee" artifactId="lucee" version="${lucee.version}" dest="${lib.dir}" unzip="false" type="jar" repoId="sonatype-repository">
+	  	<dependency groupId="org.lucee" artifactId="lucee" version="${lucee.version}" dest="${lib.dir}" unzip="false" type="jar" repoId="maven-repository">
 			<exclusions>
 				<exclusion groupId="org.apache.ant" artifactId="ant" />
 				<exclusion groupId="javax.servlet" artifactId="javax.servlet-api" />
