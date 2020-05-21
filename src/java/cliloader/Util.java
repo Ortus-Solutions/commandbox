@@ -384,6 +384,14 @@ return;
 					f.mkdir();
 					continue;
 				}
+				// Don't overwrite XML files. Specificall this is because overwriting the lucee-server.xml file screws up a lot of stuff. 
+				// If it's there, leave it.  This means we can't push Lucee setting changes in box updates.
+				if( ( je.getName().endsWith( ".xml" ) || je.getName().endsWith( ".xml.cfm" )  ) && f.isFile() && f.exists() ) {
+					if( debug ) {
+						System.out.println( "Skipping existing file: " + f.toString() );
+					}
+					continue;
+				}
 				File parentDir = new File( f.getParent() );
 				if( !parentDir.exists() ) {
 					parentDir.mkdir();

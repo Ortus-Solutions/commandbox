@@ -1,12 +1,10 @@
 component excludeFromHelp=true {
 
-	function run()  {
-
+	function run(){
 		print.line();
-		print.yellowLine( 'General help and description of how to use testbox generate' );
+		print.yellowLine( "General help and description of how to use testbox generate" );
 		print.line();
 		print.line();
-
-
 	}
+
 }

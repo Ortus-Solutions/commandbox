@@ -124,6 +124,7 @@ component accessors="true" singleton {
 			// Duplicate so onServerStart interceptors don't actually change config settings via reference.
 			'trayOptions' : duplicate( d.trayOptions ?: [] ),
 			'trayEnable' : d.trayEnable ?: true,
+			'dockEnable' : d.dockEnable ?: true,
 			'jvm' : {
 				'heapSize' : d.jvm.heapSize ?: '',
 				'minHeapSize' : d.jvm.minHeapSize ?: '',
@@ -609,6 +610,7 @@ component accessors="true" singleton {
 		serverInfo.maxRequests		= 								   serverJSON.web.maxRequests			?: defaults.web.maxRequests;
 
 		serverInfo.trayEnable	 	= serverJSON.trayEnable			?: defaults.trayEnable;
+		serverInfo.dockEnable	 	= serverJSON.dockEnable			?: defaults.dockEnable;
 
 		serverInfo.defaultBaseURL = serverInfo.SSLEnable ? 'https://#serverInfo.host#:#serverInfo.SSLPort#' : 'http://#serverInfo.host#:#serverInfo.port#';
 
@@ -683,32 +685,6 @@ component accessors="true" singleton {
 		serverInfo.errorPages		= defaults.web.errorPages;
 		serverInfo.errorPages.append( serverJSON.web.errorPages ?: {} );
 
-
-		serverInfo.trayOptions = defaults.trayOptions;
-		serverJSON.trayOptions = serverJSON.trayOptions ?: [];
-
-		// global defaults are relative to web root
-		// TODO: perform this recursivley into "items" sub arrays
-		serverInfo.trayOptions = serverInfo.trayOptions.map( function( item ){
-			if( item.keyExists( 'image' ) && item.image.len() ) {
-				item.image = fileSystemUtil.resolvePath( item.image, defaultwebroot );
-			}
-			return item;
-		} );
-
-		// server.json settings are relative to the folder server.json lives
-		// TODO: perform this recursivley into "items" sub arrays
-		serverJSON.trayOptions = serverJSON.trayOptions.map( function( item ){
-			if( item.keyExists( 'image' ) && item.image.len() ) {
-				item.image = fileSystemUtil.resolvePath( item.image, defaultServerConfigFileDirectory );
-			}
-			return item;
-		} );
-
-		// Global trayOptions are always added on top of server.json (but don't overwrite)
-		// trayOptions aren't accepted via command params due to no clean way to provide them
-		serverInfo.trayOptions.append( serverJSON.trayOptions, true );
-
 		serverInfo.accessLogEnable	= serverJSON.web.accessLogEnable ?: defaults.web.accessLogEnable;
 		serverInfo.GZIPEnable	= serverJSON.web.GZIPEnable ?: defaults.web.GZIPEnable;
 
@@ -760,7 +736,7 @@ component accessors="true" singleton {
 
 		serverInfo.restMappings		= serverProps.restMappings		?: serverJSON.app.restMappings		?: defaults.app.restMappings;
 		// relative rewrite config path in server.json is resolved relative to the server.json
-		if( isDefined( 'serverJSON.app.WARPath' ) && len( serverJSON.app.WARPath ) ) { serverJSON.app.WARPath = fileSystemUtil.resolvePath( serverJSON.app.WARPath, defaultServerConfigFileDirectory ); }
+		if( isDefined( 'serverJSON.app.WARPath' ) ) { serverJSON.app.WARPath = fileSystemUtil.resolvePath( serverJSON.app.WARPath, defaultServerConfigFileDirectory ); }
 		if( isDefined( 'defaults.app.WARPath' ) && len( defaults.app.WARPath )  ) { defaults.app.WARPath = fileSystemUtil.resolvePath( defaults.app.WARPath, defaultwebroot ); }
 		serverInfo.WARPath			= serverProps.WARPath			?: serverJSON.app.WARPath			?: defaults.app.WARPath;
 
@@ -907,7 +883,7 @@ component accessors="true" singleton {
 		serverInfo.consolelogPath = serverInfo.logdir & '/server.out.txt';
 		serverInfo.accessLogPath = serverInfo.logDir & '/access.txt';
 		serverInfo.rewritesLogPath = serverInfo.logDir & '/rewrites.txt';
-
+		
 		// Find the correct tray icon for this server
 		if( !len( serverInfo.trayIcon ) ) {
 			var iconSize = fileSystemUtil.isWindows() ? '-32px' : '';
@@ -966,6 +942,7 @@ component accessors="true" singleton {
 			serverInfo.minHeapSize &= 'm';
 		}
 		
+		serverInfo.trayOptions = [];
 		serverInfo.trayOptions.prepend(
 			{
 				"label":"Info",
@@ -1001,6 +978,10 @@ component accessors="true" singleton {
 		// serverInfo.trayOptions.prepend( { 'label' : 'Restart Server', 'hotkey':'R', 'action' : 'restartserver', 'image': expandPath('/commandbox/system/config/server-icons/home.png' ) } );
 
 		serverInfo.trayOptions.prepend( { 'label':'Stop Server', 'action':'stopserver', 'image' : expandPath('/commandbox/system/config/server-icons/stop.png' ) } );
+
+		// Take default options, then append config defaults and server.json trayOptions on top of them (allowing nested overwrite)
+		serverInfo.trayOptions = appendMenuItems( defaults.trayOptions, defaultwebroot, serverInfo.trayOptions );
+		serverInfo.trayOptions = appendMenuItems( serverJSON.trayOptions ?: [], defaultServerConfigFileDirectory, serverInfo.trayOptions );
 
 	    // This is due to a bug in RunWar not creating the right directory for the logs
 	    directoryCreate( serverInfo.logDir, true, true );
@@ -1078,6 +1059,7 @@ component accessors="true" singleton {
 			.append( '--log-dir' ).append( serverInfo.logDir )
 			.append( '--server-name' ).append( serverInfo.name )
 			.append( '--tray-enable' ).append( serverInfo.trayEnable )
+			.append( '--dock-enable' ).append( serverInfo.dockEnable )
 			.append( '--directoryindex' ).append( serverInfo.directoryBrowsing )
 			.append( '--timeout' ).append( serverInfo.startTimeout )
 			.append( '--proxy-peeraddress' ).append( 'true' )
@@ -1275,7 +1257,7 @@ component accessors="true" singleton {
 	    	// Use this intermediate shell script to start our server via nohup
 	    	args.prepend( expandPath( '/server-commands/bin/server_spawner.sh' ) );
 	    	// Pass script directly to bash so I don't have to worry about it being executable
-			args.prepend( expandPath( '/bin/bash' ) );
+			args.prepend( fileSystemUtil.getNativeShell() );
 	    }
 
 		// At this point all command line arguments are in place, announce this
@@ -1308,7 +1290,7 @@ component accessors="true" singleton {
 
         // incorporate CommandBox environment variables into the process's env
         var currentEnv = processBuilder.environment();
-        currentEnv.putAll( systemSettings.getAllEnvironmentsFlattened() );
+        currentEnv.putAll( systemSettings.getAllEnvironmentsFlattened().map( (k, v)=>toString(v) ) );
 
         // Special check to remove ConEMU vars which can screw up the sub process if it happens to run cmd, such as opening VSCode.
         if( fileSystemUtil.isWindows() && currentEnv.containsKey( 'ConEmuPID' ) ) {
@@ -1360,13 +1342,13 @@ component accessors="true" singleton {
 					// Log messages from the CF engine or app code writing direclty to std/err out strip off "runwar.context" but leave color coded severity
 					// Ex:
 					// [INFO ] runwar.context: 04/11 15:47:10 INFO Starting Flex 1.5 CF Edition
-					line = reReplaceNoCase( line, '^(#chr( 27 )#\[m\[[^]]*])( runwar\.context: )(.*)', '\1 \3' );
+					line = reReplaceNoCase( line, '^((#chr( 27 )#\[m)?\[[^]]*])( runwar\.context: )(.*)', '\1 \4' );
 
 					// Log messages from runwar itself, simplify the logging category to just "Runwar:" and leave color coded severity
 					// Ex:
 					// [DEBUG] runwar.config: Enabling Proxy Peer Address handling
 					// [DEBUG] runwar.server: Starting open browser action
-					line = reReplaceNoCase( line, '^(#chr( 27 )#\[m\[[^]]*])( runwar\.[^:]*: )(.*)', '\1 Runwar: \3' );
+					line = reReplaceNoCase( line, '^((#chr( 27 )#\[m)?\[[^]]*])( runwar\.[^:]*: )(.*)', '\1 Runwar: \4' );
 
 					// Log messages from any other 3rd party java lib tapping into Log4j will be left alone
 					// Ex:
@@ -1483,6 +1465,79 @@ component accessors="true" singleton {
 			throw( message='Server process returned failing exit code [#serverInfo.exitCode#]', type="commandException", errorcode=serverInfo.exitCode );
 		}
 
+	}
+
+
+	/**
+	* allows to iterate on a tray menu item recursively
+	* and checks for the default image and default shell
+	*/
+	array function appendMenuItems( array trayOptions, relativePath, array parentOptions ) {
+		arguments.trayOptions.each( function( menuItem ){
+			// Resolve images and massage default tray options
+			newMenuItem = prepareMenuItem( menuItem, relativePath );
+			
+			var match = parentOptions.find( (m)=>trim( m.label ) == trim( newMenuItem.label ) );
+			if( match ) {
+				parentOptions[ match ].append( newMenuItem );
+				newMenuItem = parentOptions[ match ]
+			} else {
+				parentOptions.append( newMenuItem );
+			}
+			
+			if( menuItem.keyExists( 'items' ) && menuItem.items.len() ){
+				// Runwar requires "items" to be lowercase
+				newMenuItem[ 'items' ] = appendMenuItems( menuItem.items, relativePath, newMenuItem.items ?: [] );
+			}
+		} );
+		return arguments.parentOptions;
+	}
+
+	/**
+	* checks for the default image and default shell
+	*/
+	function prepareMenuItem( menuItem, relativePath ) {
+		
+		menuItem.label = menuItem.label ?: '';
+		
+		// global defaults are relative to web root
+		if( menuItem.keyExists( 'image' ) && menuItem.image.len() ) {
+			menuItem.image = fileSystemUtil.resolvePath( menuItem.image, relativePath );
+		}
+
+		//need to check if a shell has been defined for this action
+		if( menuItem.keyExists( 'action' ) && listFindNoCase('run,runAsync,runTerminal',menuItem.action)){
+			menuItem[ 'shell' ] = menuItem.shell ?: fileSystemUtil.getNativeShell();
+			// Some special love for box commands
+			if( menuItem.command.lCase().reFindNoCase( '^box(\.exe)? ' )  ) {
+				menuItem[ 'image' ] = menuItem.image ?: expandPath('/commandbox/system/config/server-icons/box.png' );				
+			} else {
+				menuItem[ 'image' ] = menuItem.image ?: expandPath('/commandbox/system/config/server-icons/' & menuItem.action & '.png' );
+			}
+		}	
+
+		if( menuItem.keyExists( 'image' ) && menuItem.image.len() && !fileExists( menuItem.image ) ) {
+			menuItem[ 'image' ] = fileSystemUtil.resolvePath( menuItem.image, relativePath );
+		} 	
+
+		if(menuItem.keyExists( 'action' ) && menuItem.action == 'runTerminal' ){
+			var nativeTerminal = "";
+			
+			if (fileSystemUtil.isMac()) {
+				nativeTerminal = ConfigService.getSetting( 'nativeTerminal', "osascript -e 'tell app " & "terminal" &  " to do script " & "@@command@@" & "'"  );
+				menuItem[ 'action' ] = 'runAsync';
+			} else if (fileSystemUtil.isWindows()) {
+				nativeTerminal = ConfigService.getSetting( 'nativeTerminal', 'start cmd.exe /k "@@command@@"' );
+				menuItem[ 'action' ] = 'runAsync';
+			} else {
+				// For unsupported OS's simply run the command
+				nativeTerminal = ConfigService.getSetting( 'nativeTerminal', '"@@command@@"' );
+				menuItem[ 'action' ] = 'run';				
+			}
+			
+			menuItem[ 'command' ] = replaceNoCase( nativeTerminal, '@@command@@', menuItem[ 'command' ], 'all' );
+		}
+		return menuItem.filter( (k)=>k!='items' );
 	}
 
 	/**
@@ -1626,6 +1681,9 @@ component accessors="true" singleton {
 			// We need a new entry
 			serverIsNew = true;
 			serverInfo = getServerInfo( defaultwebroot, defaultName );
+			if( len( serverProps.serverConfigFile ?: '' ) ) {
+				serverInfo.serverConfigFile = serverProps.serverConfigFile
+			}
 		}
 
 		// If the user didn't provide an explicit config file and it turns out last time we started a server by this name, we used a different
@@ -1779,9 +1837,11 @@ component accessors="true" singleton {
  	 **/
 	function isPortAvailable( host="127.0.0.1", required port ){
 		try {
-			var serverSocket = java.ServerSocket.init( javaCast( "int", arguments.port ),
-													 javaCast( "int", 1 ),
-													 java.InetAddress.getByName( arguments.host ) );
+			var serverSocket = java.serverSocket
+				.init( 
+					javaCast( "int", arguments.port ),
+					javaCast( "int", 1 ),
+					java.InetAddress.getByName( arguments.host ) );
 			serverSocket.close();
 			return true;
 		} catch( java.net.UnknownHostException var e ) {
@@ -1817,7 +1877,10 @@ component accessors="true" singleton {
 		} else if( serverInfo.AJPEnable ) {
 			portToCheck = serverInfo.AJPPort;
 		}
-		return !isPortAvailable( serverInfo.host, portToCheck );
+
+		lock name="server-status-check-#portToCheck#" type="exclusive"{
+			return !isPortAvailable( serverInfo.host, portToCheck );
+		}
 	}
 
 	/**
@@ -2027,15 +2090,16 @@ component accessors="true" singleton {
 			var serverInfo 		= newServerInfoStruct();
 			serverInfo.id 		= webrootHash;
 			serverInfo.webroot 	= arguments.webroot;
-			serverInfo.name 	= listLast( arguments.webroot, "\/" );
+			serverInfo.name 	= arguments.name;
 
 			// Don't overlap an existing server name
 			var originalName = serverInfo.name;
 			var nameCounter = 1;
 			while( structCount( getServerInfoByName( serverInfo.name ) ) ) {
 				serverInfo.name = originalName & ++nameCounter;
+				webrootHash = hash( normalizedWebroot & ucase( arguments.name ) );
 			}
-
+		
 			// Store it in server struct
 			servers[ webrootHash ] = serverInfo;
 		}
@@ -2113,6 +2177,7 @@ component accessors="true" singleton {
 			'rewritesLogEnable'	: false,
 			'trayOptions'		: {},
 			'trayEnable'		: true,
+			'dockEnable'		: true,
 			'dateLastStarted'	: '',
 			'openBrowser'		: true,
 			'openBrowserURL'	: '',

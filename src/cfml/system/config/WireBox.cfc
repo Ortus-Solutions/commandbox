@@ -47,9 +47,9 @@ component extends='wirebox.system.ioc.config.Binder' {
 		var system					= createObject( 'java', 'java.lang.System' );
 		var homeDir					= isNull( system.getProperty( 'cfml.cli.home' ) ) ?
 				system.getProperty( 'user.home' ) & '/.CommandBox/' : system.getProperty( 'cfml.cli.home' );
-		var tempDir					= homedir & '/temp';
-		var artifactDir				= homedir & '/artifacts';
-		var userDir					= system.getProperty( 'user.dir' );
+		var tempDir					= homedir & '/temp/';
+		var artifactDir				= homedir & '/artifacts/';
+		var userDir					= system.getProperty( 'cfml.cli.pwd' );
 		var commandHistoryFile		= homedir & '/.history-command';
 		var REPLScriptHistoryFile 	= homedir & '/.history-repl-script';
 		var REPLTagHistoryFile 		= homedir & '/.history-repl-tag';

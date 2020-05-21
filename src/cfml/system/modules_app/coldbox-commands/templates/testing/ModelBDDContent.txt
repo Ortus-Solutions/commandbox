@@ -1,35 +1,35 @@
-<!---
-The base model test case will use the 'model' annotation as the instantiation path
-and then create it, prepare it for mocking and then place it in the variables scope as 'model'. It is your
-responsibility to update the model annotation instantiation path and init your model.
---->
-<cfcomponent extends="coldbox.system.testing.BaseModelTest" model="|modelPath|" output="false" hint="">
+/**
+* The base model test case will use the 'model' annotation as the instantiation path
+* and then create it, prepare it for mocking and then place it in the variables scope as 'model'. It is your
+* responsibility to update the model annotation instantiation path and init your model.
+*/
+component extends="coldbox.system.testing.BaseModelTest" model="|modelPath|"{
 	
-	<!--- *********************************** LIFE CYCLE Methods *********************************** --->
+	/*********************************** LIFE CYCLE Methods ***********************************/
 
-	<cffunction name="beforeAll">
-		<cfset super.beforeAll()>
-	
-		<!--- setup the model --->
-		<cfset super.setup()>
+	function beforeAll(){
+		super.beforeAll();
 		
-		<!--- init the model object --->
-		<cfset model.init()>
-	</cffunction>
+		// setup the model
+		super.setup();
+		
+		// init the model object
+		model.init();
+	}
 
-	<cffunction name="afterAll">
-		<cfset super.afterAll()>
-	</cffunction>
+	function afterAll(){
+		super.afterAll();
+	}
 
-	<!--- *********************************** BDD SUITES *********************************** --->
+	/*********************************** BDD SUITES ***********************************/
 	
-	<cffunction name="run">
-		<cfscript>
+	function run(){
+
 		describe( "|modelName| Suite", function(){
 			
 |TestCases|
 		});
-		</cfscript>
-	</cffunction>
 
-</cfcomponent>
+	}
+
+}

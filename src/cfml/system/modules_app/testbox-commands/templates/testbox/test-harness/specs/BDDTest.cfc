@@ -1,5 +1,5 @@
 /**
-* This tests the BDD functionality in TestBox. This is CF10+, Railo4+
+* This tests the BDD functionality in TestBox. This is CF10+, Lucee4.5+
 */
 component extends="testbox.system.BaseSpec"{
 
@@ -10,14 +10,14 @@ component extends="testbox.system.BaseSpec"{
 	}
 
 	function afterAll(){
-		structClear( application );	
+		structClear( application );
 	}
 
 /*********************************** BDD SUITES ***********************************/
 
 	function run(){
 
-		/** 
+		/**
 		* describe() starts a suite group of spec tests.
 		* Arguments:
 		* @title The title of the suite, Usually how you want to name the desired behavior
@@ -27,19 +27,19 @@ component extends="testbox.system.BaseSpec"{
 		* @skip A flag that tells TestBox to skip this suite group from testing if true
 		*/
 		describe( "A spec", function(){
-		
+
 			// before each spec in THIS suite group
 			beforeEach(function(){
 				coldbox = 0;
 				coldbox++;
 			});
-			
+
 			// after each spec in THIS suite group
 			afterEach(function(){
 				foo = 0;
 			});
-			
-			/** 
+
+			/**
 			* it() describes a spec to test. Usually the title is prefixed with the suite name to create an expression.
 			* Arguments:
 			* @title The title of the spec
@@ -50,7 +50,7 @@ component extends="testbox.system.BaseSpec"{
 			it("is just a closure so it can contain code", function(){
 				expect( coldbox ).toBe( 1 );
 			});
-			
+
 			// more than 1 expectation
 			it("can have more than one expectation test", function(){
 				coldbox = coldbox * 8;
@@ -74,34 +74,34 @@ component extends="testbox.system.BaseSpec"{
 				// delta ranges
 				expect( coldbox ).notToBeCloseTo( expected=10, delta=2 );
 			});
-			
+
 			// xit() skips
 			xit("can have tests that can be skipped easily like this one", function(){
-				fail( "xit() this should skip" );	
+				fail( "xit() this should skip" );
 			});
-			
-			// acf dynamic skips
-			it( title="can have tests that execute if the right environment exists (railo only)", body=function(){
-				expect( server ).toHaveKey( "railo" );
-			}, skip=( !isRailo() ));
 
-			// railo dynamic skips
+			// acf dynamic skips
+			it( title="can have tests that execute if the right environment exists (lucee only)", body=function(){
+				expect( server ).toHaveKey( "lucee" );
+			}, skip=( !isLucee() ));
+
+			// lucee dynamic skips
 			it( title="can have tests that execute if the right environment exists (acf only)", body=function(){
-				expect( server ).notToHaveKey( "railo" );
-			}, skip=( isRailo() ));
-			
+				expect( server ).notToHaveKey( "lucee" );
+			}, skip=( isLucee() ));
+
 			// specs with a random skip closure
 			it(title="can have a skip that is executed at runtime", body=function(){
 				fail( "Skipped programmatically, this should fail" );
 			},skip=function(){ return true; });
-		
+
 		});
 
 
 	}
 
-	private function isRailo(){
-		return ( structKeyExists( server, "railo" ) );
+	private function isLucee(){
+		return ( structKeyExists( server, "lucee" ) );
 	}
 
 }

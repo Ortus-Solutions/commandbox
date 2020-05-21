@@ -353,19 +353,20 @@ component accessors="true" singleton {
 					var serverDetails = serverService.resolveServerDetails( { directory = arguments.packagePathRequestingInstallation } );
 					var serverInfo = serverDetails.serverInfo;
 
-					if( !serverDetails.serverIsNew && serverInfo.engineName == 'lucee' && len( serverInfo.serverConfigDir ) ) {
+					if( !serverDetails.serverIsNew && serverInfo.engineName contains 'lucee' && len( serverInfo.serverConfigDir ) ) {
 						var serverDeployFolder = serverInfo.serverConfigDir & '/lucee-server/deploy/';
 						// Handle paths relative to the server home dir
 						if( serverDeployFolder.uCase().startsWith('/WEB-INF' ) ) {
 							serverDeployFolder = serverInfo.serverHomeDirectory & serverDeployFolder;
 						}
-						if( directoryExists( serverDeployFolder ) ) {
-							job.addWarnLog( "Current dir seems to be a Lucee server." );
-							job.addWarnLog( "Defaulting lex Install to [#serverDeployFolder#]" );
-							installDirectory = serverDeployFolder;
-							artifactDescriptor.createPackageDirectory = false;
-							ignorePatterns.append( '/box.json' );
+						if( !directoryExists( serverDeployFolder ) ) {
+							directoryCreate( serverDeployFolder, true, true );
 						}
+						job.addWarnLog( "Current dir seems to be a Lucee server." );
+						job.addWarnLog( "Defaulting lex Install to [#serverDeployFolder#]" );
+						installDirectory = serverDeployFolder;
+						artifactDescriptor.createPackageDirectory = false;
+						ignorePatterns.append( '/box.json' );
 					}
 
 				}
@@ -425,6 +426,10 @@ component accessors="true" singleton {
 				var alreadyInstalledBoxJSON = readPackageDescriptor( installDirectory );
 				if( isPackage( installDirectory ) && semanticVersion.isNew( alreadyInstalledBoxJSON.version, version  )  ) {
 					job.addLog( "Package already installed but its version [#alreadyInstalledBoxJSON.version#] is older than the new version being installed [#version#].  Forcing a reinstall." );
+					uninstallFirst = true;
+				// If a newer version exists than what was asked for, blow it away so we can get a clean downgrade.
+				 } else if( isPackage( installDirectory ) && semanticVersion.isNew( version, alreadyInstalledBoxJSON.version )  ) {
+					job.addLog( "Package already installed but its version [#alreadyInstalledBoxJSON.version#] is newer than the version being installed [#version#].  Forcing a reinstall." );
 					uninstallFirst = true;
 				// Allow if forced.
 				} else if( arguments.force ) {

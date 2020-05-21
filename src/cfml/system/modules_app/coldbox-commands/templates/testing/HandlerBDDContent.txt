@@ -1,4 +1,4 @@
-<!---
+/*******************************************************************************
 *	Integration Test as BDD (CF10+ or Railo 4.1 Plus)
 *
 *	Extends the integration class: coldbox.system.testing.BaseTestCase
@@ -13,25 +13,25 @@
 *	* prePostExempt : if the event needs to be exempt of pre post interceptors
 *	* eventArguments : The struct of args to pass to the event
 *	* renderResults : Render back the results of the event
---->
-<cfcomponent extends="coldbox.system.testing.BaseTestCase" appMapping="|appMapping|">
+*******************************************************************************/
+component extends="coldbox.system.testing.BaseTestCase" appMapping="|appMapping|"{
 	
-	<!--- *********************************** LIFE CYCLE Methods *********************************** --->
+	/*********************************** LIFE CYCLE Methods ***********************************/
 
-	<cffunction name="beforeAll">
+	function beforeAll(){
+		super.beforeAll();
+		// do your own stuff here
+	}
 
-		<cfset super.beforeAll()>
-	</cffunction>
+	function afterAll(){
+		// do your own stuff here
+		super.afterAll();
+	}
 
-	<cffunction name="afterAll">
-
-		<cfset super.afterAll()>
-	</cffunction>
-
-	<!--- *********************************** BDD SUITES *********************************** --->
+	/*********************************** BDD SUITES ***********************************/
 	
-	<cffunction name="run">
-		<cfscript>
+	function run(){
+
 		describe( "|handlerName| Suite", function(){
 
 			beforeEach(function( currentSpec ){
@@ -39,9 +39,9 @@
 				setup();
 			});
 
-|TestCases|
+|TestCases|		
 		});
-		</cfscript>
-	</cffunction>
 
-</cfcomponent>
+	}
+
+}

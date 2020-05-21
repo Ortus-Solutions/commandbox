@@ -51,14 +51,14 @@ component{
 		}
 		
         var terminal = shell.getReader().getTerminal();
+		var nativeShell = fileSystemUtil.getNativeShell();
 		// Prep the command to run in the OS-specific shell
 		if( fileSystemUtil.isWindows() ) {
 			// Pass through Windows' command shell, /a outputs ANSI formatting, /c runs as a command
-			var commandArray = [ 'cmd','/a','/c', arguments.command ];
+			var commandArray = [ nativeShell,'/a','/c', arguments.command ];
 		} else {
 			// Pass through bash in interactive mode with -i to expand aliases like "ll".
 			// -c runs input as a command, "&& exits" cleanly from the shell as long as the original command ran successfully
-			var nativeShell = configService.getSetting( 'nativeShell', '/bin/bash' );
 			commandArray = [ nativeShell, '-i', '-c', arguments.command & ' 2>&1; ( exit $? > /dev/null )' ];
 		}
 		
@@ -78,7 +78,7 @@ component{
             
             // incorporate CommandBox environment variables into the process's env
             var currentEnv = processBuilder.environment();
-            currentEnv.putAll( systemSettings.getAllEnvironmentsFlattened() );
+            currentEnv.putAll( systemSettings.getAllEnvironmentsFlattened().map( (k, v)=>toString(v) ) );
             
             // Special check to remove ConEMU vars which can screw up the sub process if it happens to run cmd, such as opening VSCode.
             if( fileSystemUtil.isWindows() && currentEnv.containsKey( 'ConEmuPID' ) ) {
@@ -91,7 +91,7 @@ component{
                         
 			if( interactive ) {
 				
-				var exitCode = processBuilder
+				var process = processBuilder
 					// Do you believe in magic
 					// This works great on Mac/Windows.
 					// On Linux, the standard input (keyboard) is not being piped to the background process.
@@ -99,9 +99,10 @@ component{
 					// Sets current working directory for the process
 					.directory( CWDFile )
 					// Fires process async
-					.start()
-					// waits for it to exit, returning the exit code
-					.waitFor();
+					.start();
+					
+				// waits for it to exit, returning the exit code
+				var exitCode = process.waitFor();
 	
 			} else {
 		            
@@ -147,7 +148,6 @@ component{
 				// This was non-interactive, print out the text output all at once.
 				print.text( processOutputStringBuilder.toString() );
 			}
-
 			
 			// As you were, JLine
             terminal.resume();
@@ -173,6 +173,14 @@ component{
 			if( terminal.paused() ) {
 				terminal.resume();
 			}
+
+			// Put the terminal title back on Windows
+			if( fileSystemUtil.isWindows() && nativeShell contains 'cmd' ) {
+				var commandArray = [ nativeShell,'/a','/c', 'Title CommandBox is a ColdFusion (CFML) CLI, Package Manager, Server and REPL' ];
+				createObject( "java", "java.lang.ProcessBuilder" ).init( commandArray )
+					.inheritIO()
+					.start();
+			}			
 			
 			checkInterrupted();
 		}

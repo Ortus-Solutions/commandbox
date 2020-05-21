@@ -20,6 +20,7 @@ component accessors="true" singleton {
 	property name="shell" inject="shell";
 	property name="logger" inject="logbox:logger:{this}";
 	property name="tempDir" inject="tempDir@constants";
+	property name="configService" inject="configService";
 
 	function init() {
 		variables.os = createObject( "java", "java.lang.System" ).getProperty( "os.name" ).toLowerCase();
@@ -35,6 +36,42 @@ component accessors="true" singleton {
         variables.String = createObject( "java", "java.lang.String" );
 
 		return this;
+	}
+
+	function getNativeShell() {
+		return configService.getSetting( 'nativeShell', getDefaultNativeShell() );
+	}
+	
+	function getDefaultNativeShell() {
+         var shells = [ "/bin/bash","/usr/bin/bash",
+            "/bin/pfbash", "/usr/bin/pfbash",
+            "/bin/csh", "/usr/bin/csh",
+            "/bin/pfcsh", "/usr/bin/pfcsh",
+            "/bin/jsh", "/usr/bin/jsh",
+            "/bin/ksh", "/usr/bin/ksh",
+            "/bin/pfksh", "/usr/bin/pfksh",
+            "/bin/ksh93", "/usr/bin/ksh93",
+            "/bin/pfksh93", "/usr/bin/pfksh93",
+            "/bin/pfsh", "/usr/bin/pfsh",
+            "/bin/tcsh", "/usr/bin/tcsh",
+            "/bin/pftcsh", "/usr/bin/pftcsh",
+            "/usr/xpg4/bin/sh", "/usr/xp4/bin/pfsh",
+            "/bin/zsh", "/usr/bin/zsh",
+            "/bin/pfzsh", "/usr/bin/pfzsh",
+            "/bin/sh", "/usr/bin/sh" ];
+		
+		if( isWindows() ) {
+			var defaultShell = 'cmd';			
+		} else {
+			var defaultShell = '/bin/bash';
+	        for( var shell in shells ) {
+	            if( createObject( 'java', 'java.io.File' ).init( shell ).canExecute() ){
+	                defaultShell = shell;
+	                break;
+	            }
+	        }	
+		}
+        return defaultShell;
 	}
 
 	/**
@@ -352,8 +389,13 @@ component accessors="true" singleton {
     	// *nix needs to include first folder due to Lucee bug.
     	// So /usr/brad/foo.cfc becomes /usr
     	if( !isWindows() ) {
-	    	var firstFolder = listFirst( arguments.absolutePath, '/' );
-	    	var path = listRest( arguments.absolutePath, '/' );
+    		if( listLen( arguments.absolutePath, '/' ) > 1 ) {
+		    	var firstFolder = listFirst( arguments.absolutePath, '/' );
+		    	var path = listRest( arguments.absolutePath, '/' );	
+    		} else {
+		    	var firstFolder = '';
+		    	var path = listChangeDelims( arguments.absolutePath, '/', '/' );
+    		}
 	    	var mapping = locateUnixDriveMapping( firstFolder );
 	    	return mapping & '/' & path;
     	}
@@ -400,7 +442,7 @@ component accessors="true" singleton {
     */
     string function locateUnixDriveMapping( required string rootFolder ) {
     	var mappingName = '/' & arguments.rootFolder & '_root';
-    	var mappingPath = '/' & arguments.rootFolder & '/';
+    	var mappingPath = '/' & arguments.rootFolder & ( len( arguments.rootFolder ) ? '/' : '' );
     	createMapping( mappingName, mappingPath );
    		return mappingName;
     }

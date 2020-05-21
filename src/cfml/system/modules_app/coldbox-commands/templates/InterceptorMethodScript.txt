@@ -1,3 +1,0 @@
-	void function |interceptionPoint|( event, interceptData, buffer, rc, prc ){
-		
-	}

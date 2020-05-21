@@ -165,7 +165,6 @@ component accessors="true" singleton {
 	 * @captureOutput Temp workaround to allow capture of run command
  	 **/
 	function runCommand( required array commandChain, required string line, string piped, boolean captureOutput=false ){
-
 		// If nothing is returned, something bad happened (like an error instatiating the CFC)
 		if( !commandChain.len() ){
 			return 'Command not run.';
@@ -268,13 +267,19 @@ component accessors="true" singleton {
 				structDelete( local, 'result', false );
 			}
 
-
 			// Reset the printBuffer
 			commandInfo.commandReference.CFC.reset();
 
+			// Tells us if we are going to capture the output of this command and pass it to another
+			// Used for our workaround to switch if the "run" command pipes to the terminal or not
+			// If there are more commands in the chain and we are going to pipe or redirect to them
+			if( arrayLen( commandChain ) > i && listFindNoCase( '|,>,>>', commandChain[ i+1 ].originalLine ) ) {
+				captureOutput = true;
+			}
+
 			// If there are currently executing commands, flush out the print buffer from the last one
 			// This will prevent the output from showing up out of order if one command nests a call to another.
-			if( instance.callStack.len() ){
+			if( instance.callStack.len() && !captureOutput ){
 				// Print anything in the buffer
 				shell.printString( instance.callStack[1].commandInfo.commandReference.CFC.getResult() );
 				// And reset it now that it's been printed.
@@ -284,6 +289,12 @@ component accessors="true" singleton {
 
 			// Add command to the top of the stack
 			instance.callStack.prepend( { commandInfo : commandInfo, environment : {} } );
+
+			if( captureOutput ) {
+				// This is really just a workaround for the fact that command output isn't naturally piped to the console.
+				// Once that is fixed, commands will no longer need to know this.
+				systemsettings.setSystemSetting( 'box_currentCommandPiped', true );
+			}
 
 			// Start the try as soon as we prepend to the call stack so any errors from here on out, even parsing the params, will
 			// correctly remove this call from the stack in the finally block.
@@ -325,13 +336,6 @@ component accessors="true" singleton {
 				validateParams( parameterInfo.namedParameters, commandParams );
 
 				interceptorService.announceInterception( 'preCommand', { commandInfo=commandInfo, parameterInfo=parameterInfo } );
-
-				// Tells us if we are going to capture the output of this command and pass it to another
-				// Used for our workaround to switch if the "run" command pipes to the terminal or not
-				// If there are more commands in the chain and we are going to pipe or redirect to them
-				if( arrayLen( commandChain ) > i && listFindNoCase( '|,>,>>', commandChain[ i+1 ].originalLine ) ) {
-					captureOutput = true;
-				}
 
 				// This is my workaround to "smartly" capture the output of the run command if we're piping it or
 				// nesting it as an expression, etc.
@@ -633,16 +637,27 @@ component accessors="true" singleton {
 				tokens2 = replace( tokens2, '+', '\+', 'all' );
 				tokens2 = replace( tokens2, '{', '\{', 'all' );
 				tokens2 = replace( tokens2, '}', '\}', 'all' );
+				tokens2 = replace( tokens2, '*', '\*', 'all' );
 
-			 	tokens = [
-			 		'run',
-			 		// Strip off "!" or "run" at the start of the raw line.
-			 		// TODO: this line will fail:
-			 		//   echo "!git status" && !git status
-			 		// Because we don't know where in the rawLine our current place in the command chain starts
-			 		// To fix it though I'd need to substantially change how tokenizing works
-			 		rawLine.reReplaceNoCase( '^(.*?)?[\s]*(run |!)[\s]*(#tokens2#.*)', '\3' )
-			 	];
+				if( rawLine.reFindNoCase( '^(.*?)?[\s]*(run |!)[\s]*(#tokens2#.*)$' ) ) {
+				 	tokens = [
+				 		'run',
+				 		// Strip off "!" or "run" at the start of the raw line.
+				 		// TODO: this line will fail:
+				 		//   echo "!git status" && !git status
+				 		// Because we don't know where in the rawLine our current place in the command chain starts
+				 		// To fix it though I'd need to substantially change how tokenizing works
+				 		rawLine.reReplaceNoCase( '^(.*?)?[\s]*(run |!)[\s]*(#tokens2#.*)', '\3' )
+				 	];	
+				} else {
+				 	tokens = [
+				 		'run',
+				 		// As a fall back, if we receive the input from the commandine as a single string AND the quotes 
+				 		// don't follow what CommandBox's parser expects, we can't use the tokens array so we make the assumption
+				 		// That the run command was the only command in the raw line.
+				 		rawLine.reReplaceNoCase( '^[\s]*(run |!)[\s]*', '' )
+				 	];
+				}
 
 			 	// The run command "eats" end entire rest of the line, so stop processing the command chain.
 				stopProcessingLine = true;

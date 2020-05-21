@@ -120,6 +120,10 @@ component accessors="true" singleton="true" {
 		required string serverHomeDirectory
 		) {
 
+		if( ID == 'none' ) {
+			ID = expandPath( '/server-commands/bin/www-engine.zip' );
+		}
+
 		var job = wirebox.getInstance( 'interactiveJob' );
 		
 		var installDetails = {
@@ -252,9 +256,7 @@ component accessors="true" singleton="true" {
 			// Spoof a WAR file.
 			var thisWebinf = installDetails.installDir & '/WEB-INF';
 			var thislib = thisWebinf & '/lib';
-			var thiServerContext = thisWebinf & '/server-context';
-			var thiWebContext = thisWebinf & '/web-context';
-
+			
 			directoryCreate( installDetails.installDir & '/WEB-INF', true, true );
 			directoryCopy( '/commandbox-home/lib', thislib, false, '*.jar' );
 			// CommandBox ships with a pack200 compressed Lucee jar. Unpack it for faster start
@@ -266,6 +268,14 @@ component accessors="true" singleton="true" {
 			fileWrite( engineTagFile, thisEngineTag );
 			
 			calcLuceeRailoContextPaths( installDetails, serverInfo );
+
+			var thiServerContext = serverInfo.serverConfigDir;
+			if( thiServerContext.startsWith( '/WEB-INF' ) ) {
+				thiServerContext = installDetails.installDir & thiServerContext;
+			}			
+			directoryCreate( thiServerContext & '/lucee-server/patches', true, true );
+			directoryCopy( '/commandbox-home/engine/cfml/cli/lucee-server/patches', thiServerContext & '/lucee-server/patches', false, '*.lco' );
+			
 			return installDetails;
 		}
 

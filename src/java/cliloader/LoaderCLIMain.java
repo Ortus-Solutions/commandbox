@@ -555,6 +555,7 @@ public class LoaderCLIMain{
 
 	@SuppressWarnings( "static-access" )
 	public static ArrayList< String > initialize( String[] arguments ) throws IOException {
+		
 		System.setProperty( "apple.awt.UIElement", "true" );
 		ArrayList< String > cliArguments = new ArrayList< String >(
 				Arrays.asList( arguments ) );
@@ -567,7 +568,11 @@ public class LoaderCLIMain{
 			listRemoveContaining( cliArguments, "-clidebug" );
 			arguments = removeElement( arguments, "-clidebug" );
 		}
-
+		
+		log.debug( "CLI Java Version:" + System.getProperty( "java.vm.version", System.getProperty( "java.version", "Unknown" ) ) );
+		log.debug( "CLI Java Home:" + System.getProperty( "java.home", "Unknown" ) );
+		log.debug( "CLI Java Vendor:" + System.getProperty( "java.vendor", "Unknown" ) );
+		
 		System.setProperty( "cfml.cli.debug", debug.toString() );
 		try {
 			props.load( ClassLoader
@@ -643,6 +648,33 @@ public class LoaderCLIMain{
 			arguments = removeElement( arguments, "-clishellpath" );
 		}
 		props.setProperty( "cfml.cli.shell", getShellPath() );
+		String cliworkingdirFinal = getCurrentDir();
+		
+		if( listContains( cliArguments, "-cliworkingdir" ) ) {
+			log.debug( "overriding user.dir from -cliworkingdir" );
+			int cliworkingdirIdx = listIndexOf( cliArguments, "-cliworkingdir" );
+			String cliworkingdir = cliArguments.get( cliworkingdirIdx );
+			
+			if( cliworkingdir.indexOf( '=' ) == -1  ) {
+				if( cliArguments.size() > cliworkingdirIdx+1 ) {
+					cliworkingdirFinal = cliArguments.get( cliworkingdirIdx + 1 );
+					cliArguments.remove( cliworkingdirIdx + 1 );	
+				}
+				cliArguments.remove( cliworkingdirIdx );
+			} else if( cliworkingdir.indexOf( '=' ) > -1 ) {
+				String[] keyVal = cliworkingdir.split( "=" );
+				if( keyVal.length > 1 ) {
+					cliworkingdirFinal = keyVal[ 1 ];
+				}
+				cliArguments.remove( cliworkingdirIdx );
+			}
+			
+			
+		//	arguments = removeElement( arguments, "-cliworkingdir" );
+		}
+
+		log.debug( "Working Dir set to " + cliworkingdirFinal );
+		props.setProperty( "cfml.cli.pwd", cliworkingdirFinal );
 
 		File libDir = getLibDir();
 		props.setProperty( "cfml.cli.lib", libDir.getAbsolutePath() );
@@ -674,13 +706,13 @@ public class LoaderCLIMain{
 			log.info( "Library path: " + libDir );
 			log.info( "Initializing libraries -- this will only happen once, and takes a few seconds..." );
 						
-			// OSGI can be grumpy on uprade with comppeting bundles.  Start fresh
+			// OSGI can be grumpy on upgrade with competing bundles.  Start fresh
 			if( cfmlBundlesDir.exists() ) {
-				log.info( "Cleaning old OSGI Bundles..." );
-				Util.deleteDirectory( cfmlBundlesDir );
+				//log.info( "Cleaning old OSGI Bundles..." );
+				//Util.deleteDirectory( cfmlBundlesDir );
 			}
-			// OSGI can be grumpy on uprade with comppeting bundles.  Start fresh
-			if( cfmlSystemDir.exists() ) {
+			// OSGI can be grumpy on upgrade with competing bundles.  Start fresh
+			if( cfmlFelixCacheDir.exists() ) {
 				log.info( "Cleaning old Felix Cache..." );
 				Util.deleteDirectory( cfmlFelixCacheDir );
 			}
@@ -765,7 +797,6 @@ public class LoaderCLIMain{
 		setLuceeCLIConfigWebDir( configCLIWebDir );
 		
 		props.setProperty( "cfml.cli.home", cli_home.getAbsolutePath() );
-		props.setProperty( "cfml.cli.pwd", getCurrentDir() );
 		props.setProperty( "cfml.server.dockicon", "" );
 		
 		for( Object name2 : props.keySet()) {
@@ -785,6 +816,7 @@ public class LoaderCLIMain{
 		listRemoveContaining( cliArguments, "-" + home );
 		listRemoveContaining( cliArguments, "-cliupdate" );
 		listRemoveContaining( cliArguments, "-clidebug" );
+		listRemoveContaining( cliArguments, "-cliworkingdir" );
 	}
 
 	private static String mapGetNoCase( Map< String, String > source,
