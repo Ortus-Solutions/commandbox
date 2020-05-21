@@ -1681,6 +1681,9 @@ component accessors="true" singleton {
 			// We need a new entry
 			serverIsNew = true;
 			serverInfo = getServerInfo( defaultwebroot, defaultName );
+			if( len( serverProps.serverConfigFile ?: '' ) ) {
+				serverInfo.serverConfigFile = serverProps.serverConfigFile
+			}
 		}
 
 		// If the user didn't provide an explicit config file and it turns out last time we started a server by this name, we used a different
@@ -2087,15 +2090,16 @@ component accessors="true" singleton {
 			var serverInfo 		= newServerInfoStruct();
 			serverInfo.id 		= webrootHash;
 			serverInfo.webroot 	= arguments.webroot;
-			serverInfo.name 	= listLast( arguments.webroot, "\/" );
+			serverInfo.name 	= arguments.name;
 
 			// Don't overlap an existing server name
 			var originalName = serverInfo.name;
 			var nameCounter = 1;
 			while( structCount( getServerInfoByName( serverInfo.name ) ) ) {
 				serverInfo.name = originalName & ++nameCounter;
+				webrootHash = hash( normalizedWebroot & ucase( arguments.name ) );
 			}
-
+		
 			// Store it in server struct
 			servers[ webrootHash ] = serverInfo;
 		}
