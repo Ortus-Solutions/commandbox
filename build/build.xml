@@ -16,8 +16,8 @@ External Dependencies:
  	<property name="distro.groupID"				value="ortussolutions" />
  	<property name="distro.name"				value="commandbox"/>
  	<!-- Special things happen when the version and stableVersion are the same value as that signifies a "stable" build.   -->
- 	<property name="commandbox.version"			value="5.0.2-alpha"/>
- 	<property name="commandbox.stableVersion"	value="5.0.1"/>
+ 	<property name="commandbox.version"			value="5.1.0"/>
+ 	<property name="commandbox.stableVersion"	value="5.1.0"/>
 
     <!-- Time Label -->
 	<tstamp prefix="start"/>
