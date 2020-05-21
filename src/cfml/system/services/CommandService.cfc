@@ -637,16 +637,27 @@ component accessors="true" singleton {
 				tokens2 = replace( tokens2, '+', '\+', 'all' );
 				tokens2 = replace( tokens2, '{', '\{', 'all' );
 				tokens2 = replace( tokens2, '}', '\}', 'all' );
+				tokens2 = replace( tokens2, '*', '\*', 'all' );
 
-			 	tokens = [
-			 		'run',
-			 		// Strip off "!" or "run" at the start of the raw line.
-			 		// TODO: this line will fail:
-			 		//   echo "!git status" && !git status
-			 		// Because we don't know where in the rawLine our current place in the command chain starts
-			 		// To fix it though I'd need to substantially change how tokenizing works
-			 		rawLine.reReplaceNoCase( '^(.*?)?[\s]*(run |!)[\s]*(#tokens2#.*)', '\3' )
-			 	];
+				if( rawLine.reFindNoCase( '^(.*?)?[\s]*(run |!)[\s]*(#tokens2#.*)$' ) ) {
+				 	tokens = [
+				 		'run',
+				 		// Strip off "!" or "run" at the start of the raw line.
+				 		// TODO: this line will fail:
+				 		//   echo "!git status" && !git status
+				 		// Because we don't know where in the rawLine our current place in the command chain starts
+				 		// To fix it though I'd need to substantially change how tokenizing works
+				 		rawLine.reReplaceNoCase( '^(.*?)?[\s]*(run |!)[\s]*(#tokens2#.*)', '\3' )
+				 	];	
+				} else {
+				 	tokens = [
+				 		'run',
+				 		// As a fall back, if we receive the input from the commandine as a single string AND the quotes 
+				 		// don't follow what CommandBox's parser expects, we can't use the tokens array so we make the assumption
+				 		// That the run command was the only command in the raw line.
+				 		rawLine.reReplaceNoCase( '^[\s]*(run |!)[\s]*', '' )
+				 	];
+				}
 
 			 	// The run command "eats" end entire rest of the line, so stop processing the command chain.
 				stopProcessingLine = true;
