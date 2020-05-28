@@ -76,6 +76,14 @@ component aliases="bump" {
 		var versionObject = semanticVersion.parseVersion( trim( boxJSON.version ?: '' ) );
 
 		if( len( arguments.version ) ) {
+			
+			if ( !arguments.force && listFind( "patch,minor,major", arguments.version ) ) {
+				print.line("Are you sure you want to set the version to: #arguments.version#?");
+				print.line("    You probably wanted to run: --#arguments.version#");
+			    if ( ask("Do you really want to do this [yes/no]:" ) != "Yes" ) {
+				    return;
+				}
+			}
 
 			// Set a specific version
 			arguments.version = semanticVersion.clean( arguments.version );
