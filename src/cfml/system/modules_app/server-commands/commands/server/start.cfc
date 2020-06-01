@@ -96,6 +96,7 @@ component aliases="start" {
 	 * @startScript.options	bash,cmd,pwsh
 	 * @startScriptFile		Optional override for the name and location of the start script. This is ignored if no startScript param is specified
 	 * @dryRun				Pass true to abort actually starting the server process, but all instalation and downloading will still be performed to "warm up" the engine installation.
+	 * @verbose				Activate extra server start information without enabling the debug mode in the actual server (which you wouldn't want in production)
 	 **/
 	function run(
 		String  name,
@@ -140,7 +141,8 @@ component aliases="start" {
 		String javaVersion,
 		String startScript,
 		String startScriptFile,
-		Boolean dryRun
+		Boolean dryRun,
+		Boolean verbose
 	){
 
 		// This is a common mis spelling
