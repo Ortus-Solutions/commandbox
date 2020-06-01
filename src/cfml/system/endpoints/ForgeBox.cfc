@@ -508,7 +508,8 @@ component accessors="true" implements="IEndpointInteractive" {
 		}
 	}
 
-	private function createZipFromPath( required string path ) {
+	function createZipFromPath( required string path ) {
+		path = fileSystemUtil.resolvePath( path );
 		if( !packageService.isPackage( arguments.path ) ) {
 			throw(
 				'Sorry but [#arguments.path#] isn''t a package.',
@@ -526,12 +527,9 @@ component accessors="true" implements="IEndpointInteractive" {
 		directoryCopy( arguments.path, tmpPath, true, function( directoryPath ){
 			// This will normalize the slashes to match
 			directoryPath = fileSystemUtil.resolvePath( directoryPath );
-			// Directories need to end in a trailing slash
-			if( directoryExists( directoryPath ) ) {
-				directoryPath &= server.separator.file;
-			}
+			
 			// cleanup path so we just get from the archive down
-			var thisPath = replacenocase( directoryPath, tmpPath, "" );
+			var thisPath = replacenocase( directoryPath, path, "" );
 			// Ignore paths that match one of our ignore patterns
 			var ignored = pathPatternMatcher.matchPatterns( ignorePatterns, thisPath );
 			// What do we do with this file/directory
@@ -563,13 +561,7 @@ component accessors="true" implements="IEndpointInteractive" {
 		arrayAppend( ignorePatterns, gitIgnores, true );
 		arrayAppend( ignorePatterns, boxJSONIgnores, true );
 
-		// make any `/` paths absolute
-		return ignorePatterns.map( function( pattern ) {
-			if ( left( pattern, 1 ) == "/" ) {
-				return fileSystemUtil.resolvePath( "" ) & pattern;
-			}
-			return pattern;
-		} );
+		return ignorePatterns;
 	}
 
 	private array function readGitIgnores() {

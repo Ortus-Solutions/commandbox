@@ -118,6 +118,7 @@ component accessors="true" singleton {
 			'startTimeout' : 240,
 			'stopsocket' : d.stopsocket ?: 0,
 			'debug' : d.debug ?: false,
+			'verbose' : d.verbose ?: false,
 			'trace' : d.trace ?: false,
 			'console' : d.console ?: false,
 			'trayicon' : d.trayicon ?: '',
@@ -256,10 +257,6 @@ component accessors="true" singleton {
 			serverProps.runwarJarPath = fileSystemUtil.resolvePath( serverProps.runwarJarPath );
 		}
 
-		if( structKeyExists( serverProps, 'trace' ) && serverProps.trace ) {
-			serverProps.debug = true;
-		}
-
 		// Look up the server that we're starting
 		var serverDetails = resolveServerDetails( arguments.serverProps );
 
@@ -342,7 +339,7 @@ component accessors="true" singleton {
 		// Save hand-entered properties in our server.json for next time
 		for( var prop in serverProps ) {
 			// Ignore null props or ones that shouldn't be saved
-			if( isNull( serverProps[ prop ] ) || listFindNoCase( 'saveSettings,serverConfigFile,debug,force,console,trace,startScript,startScriptFile,dryRun', prop ) ) {
+			if( isNull( serverProps[ prop ] ) || listFindNoCase( 'saveSettings,serverConfigFile,debug,verbose,force,console,trace,startScript,startScriptFile,dryRun', prop ) ) {
 				continue;
 			}
 	    	var configPath = replace( fileSystemUtil.resolvePath( defaultServerConfigFileDirectory ), '\', '/', 'all' );
@@ -521,12 +518,18 @@ component accessors="true" singleton {
 		// The big servers.json is only used to keep a record of the last values the server was started with
 		serverInfo.trace 			= serverProps.trace 			?: serverJSON.trace 				?: defaults.trace;
 		serverInfo.debug 			= serverProps.debug 			?: serverJSON.debug 				?: defaults.debug;
+		serverInfo.verbose 			= serverProps.verbose 			?: serverJSON.verbose 				?: defaults.verbose;
 		serverInfo.console 			= serverProps.console 			?: serverJSON.console 				?: defaults.console;
 		serverInfo.openbrowser		= serverProps.openbrowser 		?: serverJSON.openbrowser			?: defaults.openbrowser;
 		serverInfo.openbrowserURL	= serverProps.openbrowserURL	?: serverJSON.openbrowserURL		?: defaults.openbrowserURL;
 
-		if( serverInfo.debug ) {
-			job.setDumpLog( serverInfo.debug );	
+		// Trace assumes debug
+		serverInfo.debug = serverInfo.trace || serverInfo.debug;
+		// Debug assumes verbose
+		serverInfo.verbose = serverInfo.debug || serverInfo.verbose;
+
+		if( serverInfo.verbose ) {
+			job.setDumpLog( serverInfo.verbose );	
 		}
 
 		serverInfo.host				= serverProps.host 				?: serverJSON.web.host				?: defaults.web.host;
@@ -723,7 +726,7 @@ component accessors="true" singleton {
 				thisLibDir = fileSystemUtil.resolvePath( thisLibDir, defaultwebroot );
 				if( directoryExists( thisLibDir ) ) {
 					thisLibDirs.listAppend( thisLibDir );
-				} else if( serverInfo.debug ) {
+				} else if( serverInfo.verbose ) {
 					job.addLog( "Ignoring non-existant global lib dir: " & thisLibDir );
 				}
 				return thisLibDirs;
@@ -753,7 +756,7 @@ component accessors="true" singleton {
 		serverInfo.name 			= defaultName;
 		serverInfo.webroot 			= normalizeWebroot( defaultwebroot );
 
-		if( serverInfo.debug ) {
+		if( serverInfo.verbose ) {
 			job.addLog( "start server in - " & serverInfo.webroot );
 			job.addLog( "server name - " & serverInfo.name );
 			job.addLog( "server config file - " & defaultServerConfigFile );
@@ -1275,14 +1278,14 @@ component accessors="true" singleton {
 		args = interceptData.commandLineArguments;
 
 		// now we can log the *final* command line string that will be used to start the server
-	    if( serverInfo.debug ) {
+	    if( serverInfo.verbose ) {
 			var cleanedArgs = cr & '    ' & trim( reReplaceNoCase( args.toList( ' ' ), ' (-|"-)', cr & '    \1', 'all' ) );
 			job.addLog("Server start command: #cleanedargs#");
 	    }
 
 		if( serverProps.dryRun ?: false ) {
 			job.addLog( 'Dry run specified, exiting without starting server.' );
-			job.complete( serverInfo.debug );
+			job.complete( serverInfo.verbose );
 			return;
 		}
 
@@ -1309,11 +1312,11 @@ component accessors="true" singleton {
 		// She'll be coming 'round the mountain when she comes...
 		job.addWarnLog( "The server for #serverInfo.webroot# is starting on #serverInfo.openbrowserURL# ..." );
 
-	    job.complete( serverInfo.debug );
+	    job.complete( serverInfo.verbose );
 	    consoleLogger.debug( '.' );
 
-		// If the user is running a one-off command to start a server or specified the debug flag, stream the output and wait until it's finished starting.
-		var interactiveStart = ( shell.getShellType() == 'command' || serverInfo.debug || !background );
+		// If the user is running a one-off command to start a server or specified the verbose flag, stream the output and wait until it's finished starting.
+		var interactiveStart = ( shell.getShellType() == 'command' || serverInfo.verbose || !background );
 
 		// A reference to the current thread so the thread we're about to spin up can access it.
 		// This may be available as parent thread or something.
@@ -1593,7 +1596,7 @@ component accessors="true" singleton {
 	) {
 
 		var job = wirebox.getInstance( 'interactiveJob' );
-		var locDebug = serverProps.debug ?: false;
+		var locVerbose = serverProps.verbose ?: false;
 
 		// As a convenient shorcut, allow the serverConfigFile to be passed via the name parameter.
 		var tmpName = serverProps.name ?: '';
@@ -1618,7 +1621,7 @@ component accessors="true" singleton {
 
 		// Get server descriptor from default location.
 		// If starting by name and we guessed the server.json file name, this serverJSON maybe replaced later by another saved file.
-	    if( locDebug ) { consoleLogger.debug("Looking for server JSON file by convention: #defaultServerConfigFile#"); }
+	    if( locVerbose ) { consoleLogger.debug("Looking for server JSON file by convention: #defaultServerConfigFile#"); }
 		var serverJSON_rawSystemSettings = readServerJSON( defaultServerConfigFile );
 		var serverJSON = systemSettings.expandDeepSystemSettings( duplicate( serverJSON_rawSystemSettings ) );
 
@@ -1626,15 +1629,15 @@ component accessors="true" singleton {
 		// If user gave us a webroot, we use it first.
 		if( len( arguments.serverProps.directory ?: '' ) ) {
 			var defaultwebroot = arguments.serverProps.directory;
-		    if( locDebug ) { consoleLogger.debug("webroot specified by user: #defaultwebroot#"); }
+		    if( locVerbose ) { consoleLogger.debug("webroot specified by user: #defaultwebroot#"); }
 		// Get the web root out of the server.json, if specified and make it relative to the actual server.json file.
 		} else if( len( serverJSON.web.webroot ?: '' ) ) {
 			var defaultwebroot = fileSystemUtil.resolvePath( serverJSON.web.webroot, getDirectoryFromPath( defaultServerConfigFile ) );
-		    if( locDebug ) { consoleLogger.debug("webroot pulled from server's JSON: #defaultwebroot#"); }
+		    if( locVerbose ) { consoleLogger.debug("webroot pulled from server's JSON: #defaultwebroot#"); }
 		// Otherwise default to the directory the server's JSON file lives in (which defaults to the CWD)
 		} else {
 			var defaultwebroot = fileSystemUtil.resolvePath( getDirectoryFromPath( defaultServerConfigFile ) );
-		    if( locDebug ) { consoleLogger.debug("webroot defaulted to location of server's JSON file: #defaultwebroot#"); }
+		    if( locVerbose ) { consoleLogger.debug("webroot defaulted to location of server's JSON file: #defaultwebroot#"); }
 		}
 
 		// If user types a name, use that above all else
@@ -1694,25 +1697,25 @@ component accessors="true" singleton {
 			&& fileExists( serverInfo.serverConfigFile ) ) {
 
 			// Get server descriptor again
-		    if( locDebug ) { consoleLogger.debug("Switching to the last-used server JSON file for this server: #serverInfo.serverConfigFile#"); }
+		    if( locVerbose ) { consoleLogger.debug("Switching to the last-used server JSON file for this server: #serverInfo.serverConfigFile#"); }
 			var serverJSON_rawSystemSettings = readServerJSON( serverInfo.serverConfigFile );
 			var serverJSON = systemSettings.expandDeepSystemSettings( duplicate( serverJSON_rawSystemSettings ) );
 			defaultServerConfigFile = serverInfo.serverConfigFile;
 
 			// Now that we changed server JSONs, we need to recalculate the webroot.
-		    if( locDebug ) { consoleLogger.debug("Recalculating web root based on new server JSON file."); }
+		    if( locVerbose ) { consoleLogger.debug("Recalculating web root based on new server JSON file."); }
 			// If user gave us a webroot, we use it first.
 			if( len( arguments.serverProps.directory ?: '' ) ) {
 				var defaultwebroot = arguments.serverProps.directory;
-			    if( locDebug ) { consoleLogger.debug("webroot specified by user: #defaultwebroot#"); }
+			    if( locVerbose ) { consoleLogger.debug("webroot specified by user: #defaultwebroot#"); }
 			// Get the web root out of the server.json, if specified and make it relative to the actual server.json file.
 			} else if( len( serverJSON.web.webroot ?: '' ) ) {
 				var defaultwebroot = fileSystemUtil.resolvePath( serverJSON.web.webroot, getDirectoryFromPath( serverInfo.serverConfigFile ) );
-			    if( locDebug ) { consoleLogger.debug("webroot pulled from server's JSON: #defaultwebroot#"); }
+			    if( locVerbose ) { consoleLogger.debug("webroot pulled from server's JSON: #defaultwebroot#"); }
 			// Otherwise default to the directory the server's JSON file lives in (which defaults to the CWD)
 			} else {
 				var defaultwebroot = fileSystemUtil.resolvePath( getDirectoryFromPath( serverInfo.serverConfigFile ) );
-			    if( locDebug ) { consoleLogger.debug("webroot defaulted to location of server's JSON file: #defaultwebroot#"); }
+			    if( locVerbose ) { consoleLogger.debug("webroot defaulted to location of server's JSON file: #defaultwebroot#"); }
 			}
 
 		}
@@ -2118,6 +2121,7 @@ component accessors="true" singleton {
 			'host'				: "127.0.0.1",
 			'stopSocket'		: 0,
 			'debug'				: false,
+			'verbose'			: false,
 			'trace'				: false,
 			'console'			: false,
 			'status'			: "stopped",
