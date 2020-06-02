@@ -1512,6 +1512,11 @@ component accessors="true" singleton {
 		if( menuItem.keyExists( 'workingDirectory' ) ) {
 			menuItem.workingDirectory = fileSystemUtil.resolvePath( menuItem.workingDirectory, relativePath );
 		}
+		
+		// Make relative file system paths absolute
+		if( menuItem.keyExists( 'path' ) ) {
+			menuItem.path = fileSystemUtil.resolvePath( menuItem.path, relativePath );
+		}
 
 		//need to check if a shell has been defined for this action
 		if( menuItem.keyExists( 'action' ) && listFindNoCase('run,runAsync,runTerminal',menuItem.action)){
