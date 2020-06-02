@@ -1503,9 +1503,14 @@ component accessors="true" singleton {
 		
 		menuItem.label = menuItem.label ?: '';
 		
-		// global defaults are relative to web root
+		// Make relative image paths absolute
 		if( menuItem.keyExists( 'image' ) && menuItem.image.len() ) {
 			menuItem.image = fileSystemUtil.resolvePath( menuItem.image, relativePath );
+		}
+		
+		// Make relative working directory paths absolute
+		if( menuItem.keyExists( 'workingDirectory' ) ) {
+			menuItem.workingDirectory = fileSystemUtil.resolvePath( menuItem.workingDirectory, relativePath );
 		}
 
 		//need to check if a shell has been defined for this action
