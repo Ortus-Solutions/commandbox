@@ -1505,17 +1505,17 @@ component accessors="true" singleton {
 		
 		// Make relative image paths absolute
 		if( menuItem.keyExists( 'image' ) && menuItem.image.len() ) {
-			menuItem.image = fileSystemUtil.resolvePath( menuItem.image, relativePath );
+			menuItem[ 'image' ] = fileSystemUtil.resolvePath( menuItem.image, relativePath );
 		}
 		
 		// Make relative working directory paths absolute
 		if( menuItem.keyExists( 'workingDirectory' ) ) {
-			menuItem.workingDirectory = fileSystemUtil.resolvePath( menuItem.workingDirectory, relativePath );
+			menuItem[ 'workingDirectory' ] = fileSystemUtil.resolvePath( menuItem.workingDirectory, relativePath );
 		}
 		
 		// Make relative file system paths absolute
 		if( menuItem.keyExists( 'path' ) ) {
-			menuItem.path = fileSystemUtil.resolvePath( menuItem.path, relativePath );
+			menuItem[ 'path' ] = fileSystemUtil.resolvePath( menuItem.path, relativePath );
 		}
 
 		//need to check if a shell has been defined for this action
@@ -1528,10 +1528,6 @@ component accessors="true" singleton {
 				menuItem[ 'image' ] = menuItem.image ?: expandPath('/commandbox/system/config/server-icons/' & menuItem.action & '.png' );
 			}
 		}	
-
-		if( menuItem.keyExists( 'image' ) && menuItem.image.len() && !fileExists( menuItem.image ) ) {
-			menuItem[ 'image' ] = fileSystemUtil.resolvePath( menuItem.image, relativePath );
-		} 	
 
 		if(menuItem.keyExists( 'action' ) && menuItem.action == 'runTerminal' ){
 			var nativeTerminal = "";
