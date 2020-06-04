@@ -274,7 +274,7 @@ component accessors="true" singleton {
 				endpointData = endpointData,
 				artifactPath = tmpPath,
 				packagePathRequestingInstallation = packagePathRequestingInstallation,
-				skipInstall = true
+				skipInstall = false
 			};
 			interceptorService.announceInterception( 'onInstall', interceptData );
 			// Make sure these get set back into their original variables in case the interceptor changed them.
