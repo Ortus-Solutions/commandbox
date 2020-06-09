@@ -77,14 +77,24 @@ component singleton accessors=true {
 					taskCFC.getPrinter().print( runTask( taskFile, dep, taskArgs, false ) );
 				} );
 			
-			invokeLifecycleEvent( taskCFC, 'preTask', { target:target, taskargs:taskargs } );
-			invokeLifecycleEvent( taskCFC, 'pre#target#', { target:target, taskargs:taskargs } );
 			var invokeUDF = ()=>{
 				var taskArgs = taskArgs;
 				var target = target;
 				var taskCFC = taskCFC;
+			
+				//invokeLifecycleEvent( taskCFC, 'preTask', { target:target, taskargs:taskargs } );
+				invokeLifecycleEvent( taskCFC, 'pre#target#', { target:target, taskargs:taskargs } );
 				
-				return taskCFC[ target ]( argumentCollection = taskArgs );
+				var refLocal = taskCFC[ target ]( argumentCollection = taskArgs );
+				
+				invokeLifecycleEvent( taskCFC, 'post#target#', { target:target, taskargs:taskargs } );
+				//invokeLifecycleEvent( taskCFC, 'postTask', { target:target, taskargs:taskargs } );
+				
+				if( isNull( refLocal ) ) {
+					return;
+				} else {
+					return refLocal;
+				}
 			}
 			
 			invokeUDF = wrapLifecycleEvent( taskCFC, 'around#target#', { target:target, taskargs:taskargs, invokeUDF:invokeUDF } );
@@ -118,27 +128,23 @@ component singleton accessors=true {
 				var finalExitCode = taskCFC.getExitCode();
 		 	}
 			shell.setExitCode( finalExitCode );
-			if( finalExitCode == 0 ) {
-				invokeLifecycleEvent( taskCFC, 'post#target#', { target:target, taskargs:taskargs } );
-				invokeLifecycleEvent( taskCFC, 'postTask', { target:target, taskargs:taskargs } );
-				if( topLevel ) {
+			
+			if( topLevel ) {
+				if( finalExitCode == 0 ) {
 					invokeLifecycleEvent( taskCFC, 'onSuccess', { target:target, taskargs:taskargs } );
-				}
-			} else {
-				if( topLevel ) {
+				} else {
 					invokeLifecycleEvent( taskCFC, 'onFail', { target:target, taskargs:taskargs } );
 				}
-						
+				invokeLifecycleEvent( taskCFC, 'onComplete', { target:target, taskargs:taskargs } );
+			}
+			
+			if( finalExitCode != 0 ) {
 				// Dump out anything the task had printed so far
 				var result = taskCFC.getResult();
 				taskCFC.getPrinter().clear();
 				if( len( result ) ){
 					shell.printString( result );
 				}
-				
-			}
-			if( topLevel ) {
-				invokeLifecycleEvent( taskCFC, 'onComplete', { target:target, taskargs:taskargs } );
 			}
 			
 		 }
@@ -260,16 +266,31 @@ component singleton accessors=true {
 	
 	function wrapLifecycleEvent( any taskCFC, string eventName, struct args={} ) {
 
-		if( taskHasMethod( taskCFC, eventName ) && canLifecycleEventRun( taskCFC, eventName, args.target ) ) {
 			return ()=>{
 				var args = args;
 				var eventName = eventName;
 				var taskCFC = taskCFC;
-				return taskCFC[ eventName ]( argumentCollection = args );
+				
+				if( eventname == 'around#args.target#' ) {
+					invokeLifecycleEvent( taskCFC, 'preTask', { target:args.target, taskargs:args.taskargs } );
+				}
+
+				if( taskHasMethod( taskCFC, eventName ) && canLifecycleEventRun( taskCFC, eventName, args.target ) ) {
+					var refLocal = taskCFC[ eventName ]( argumentCollection = args );
+				} else {
+					var refLocal = args.invokeUDF();
+				}					
+				
+				if( eventname == 'around#args.target#' ) {
+					invokeLifecycleEvent( taskCFC, 'postTask', { target:args.target, taskargs:args.taskargs } );
+				}
+				
+				if( isNull( refLocal ) ) {
+					return;
+				} else {
+					return refLocal;
+				}				
 			}
-		} else {
-			return args.invokeUDF;
-		}
 		
 	}
 	
