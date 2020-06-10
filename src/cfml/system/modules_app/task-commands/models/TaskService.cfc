@@ -79,9 +79,6 @@ component singleton accessors=true {
 			
 			// Build our initial wrapper UDF for invoking the target.  This has embedded into it the logic for the pre<target> and post<target> lifecycle events
 			var invokeUDF = ()=>{
-				var taskArgs = taskArgs;
-				var target = target;
-				var taskCFC = taskCFC;
 			
 				invokeLifecycleEvent( taskCFC, 'pre#target#', { target:target, taskargs:taskargs } );
 
@@ -303,9 +300,6 @@ component singleton accessors=true {
 	function wrapLifecycleEvent( any taskCFC, string eventName, struct args={} ) {
 			// This higher order function returns another function reference for the caller to invoke
 			return ()=>{
-				var args = args;
-				var eventName = eventName;
-				var taskCFC = taskCFC;
 				
 				// If this is the around<target> event, fire preTask
 				if( eventname == 'around#args.target#' ) {
