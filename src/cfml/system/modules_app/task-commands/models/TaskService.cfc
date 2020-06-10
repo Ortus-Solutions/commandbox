@@ -5,7 +5,7 @@
 ********************************************************************************
 * @author Brad Wood, Luis Majano, Denny Valliant
 *
-* I handle running tasks
+* I handle excuction of Task Runners
 */
 component singleton accessors=true {
 
@@ -77,18 +77,17 @@ component singleton accessors=true {
 					taskCFC.getPrinter().print( runTask( taskFile, dep, taskArgs, false ) );
 				} );
 			
+			// Build our initial wrapper UDF for invoking the target.  This has embedded into it the logic for the pre<target> and post<target> lifecycle events
 			var invokeUDF = ()=>{
 				var taskArgs = taskArgs;
 				var target = target;
 				var taskCFC = taskCFC;
 			
-				//invokeLifecycleEvent( taskCFC, 'preTask', { target:target, taskargs:taskargs } );
 				invokeLifecycleEvent( taskCFC, 'pre#target#', { target:target, taskargs:taskargs } );
-				
+
 				var refLocal = taskCFC[ target ]( argumentCollection = taskArgs );
-				
+
 				invokeLifecycleEvent( taskCFC, 'post#target#', { target:target, taskargs:taskargs } );
-				//invokeLifecycleEvent( taskCFC, 'postTask', { target:target, taskargs:taskargs } );
 				
 				if( isNull( refLocal ) ) {
 					return;
@@ -97,8 +96,11 @@ component singleton accessors=true {
 				}
 			}
 			
+			// Since these UDF will execute from the inside out, wrap out UDF in the around<target> event first...
 			invokeUDF = wrapLifecycleEvent( taskCFC, 'around#target#', { target:target, taskargs:taskargs, invokeUDF:invokeUDF } );
+			// .. Then wrap that in our aroundTask event second
 			invokeUDF = wrapLifecycleEvent( taskCFC, 'aroundTask', { target:target, taskargs:taskargs, invokeUDF:invokeUDF } );
+			
 			// Run the task
 			local.returnedExitCode = invokeUDF();
 		 } catch( any e ) {
@@ -198,6 +200,11 @@ component singleton accessors=true {
 			.map( ( f ) => f.name );
 	}
 
+	/**
+	* Creates Task CFC instance from absolute file path
+	* 
+	* @taskFile Absolute path to task CFC to create.
+	*/
 	function createTaskCFC( required string taskFile ) {
 		// Convert to use a mapping
 		var relTaskFile = FileSystemUtil.makePathRelative( taskFile );
@@ -235,6 +242,14 @@ component singleton accessors=true {
 
 	}
 	
+	/**
+	* Convenience method to determine if a Task CFC instance has a given method name
+	* 
+	* @taskCFC The actual Task CFC instance
+	* @method Name of method to check for
+	*
+	* @returns boolean True if method exists, false if otherwise.
+	*/
 	boolean function taskHasMethod( any taskCFC, string method ) {
 		if( structKeyExists( taskCFC, method ) && isCustomFunction( taskCFC[ method ] ) ) {
 			return true;
@@ -242,6 +257,13 @@ component singleton accessors=true {
 		return false;
 	}
 	
+	/**
+	* Determines if a lifecycle event can run based on the this.XXX_only and this.XXX_except variables in the task CFC instance.
+	* 
+	* @taskCFC The actual Task CFC instance
+	* @eventname Name of the lifecycle event to check
+	* @target Name of the task target requesting the lifecycle event
+	*/
 	boolean function canLifecycleEventRun( any taskCFC, string eventName, string target ) {
 		if( listFindNoCase( 'preTask,postTask,aroundTask,onComplete,onSuccess,onFail,onError', eventName ) ) {
 			var eventOnly = listMap( taskCFC[ eventName & '_only' ] ?: '', (e)=>trim( e ) );
@@ -258,29 +280,46 @@ component singleton accessors=true {
 		return true;
 	}
 	
+	/**
+	* Optionally invokes a lifecyle event based on whether it exists and is valid to be called.
+	* 
+	* @taskCFC The actual Task CFC instance
+	* @eventname Name of the lifecycle event to call
+	* @args The args of the actual target method
+	*/
 	function invokeLifecycleEvent( any taskCFC, string eventName, struct args={} ) {
 		if( taskHasMethod( taskCFC, eventName ) && canLifecycleEventRun( taskCFC, eventName, args.target ) ) {
 			taskCFC[ eventName ]( argumentCollection=args );
 		}
 	}
 	
+	/**
+	* Accepts a UDF and wraps it in another call back that adds additional functionality to it creating a chain of callbacks.
+	* 
+	* @taskCFC The actual Task CFC instance
+	* @eventname Name of the lifecycle event to wrap
+	* @args The args of the actual target method
+	*/
 	function wrapLifecycleEvent( any taskCFC, string eventName, struct args={} ) {
-
+			// This higher order function returns another function reference for the caller to invoke
 			return ()=>{
 				var args = args;
 				var eventName = eventName;
 				var taskCFC = taskCFC;
 				
+				// If this is the around<target> event, fire preTask
 				if( eventname == 'around#args.target#' ) {
 					invokeLifecycleEvent( taskCFC, 'preTask', { target:args.target, taskargs:args.taskargs } );
 				}
 
+				// If there is no aroundXXX event in this CFC, we just call the callback up the chain
 				if( taskHasMethod( taskCFC, eventName ) && canLifecycleEventRun( taskCFC, eventName, args.target ) ) {
 					var refLocal = taskCFC[ eventName ]( argumentCollection = args );
 				} else {
 					var refLocal = args.invokeUDF();
 				}					
 				
+				// If this is the around<target> event, fire postTask
 				if( eventname == 'around#args.target#' ) {
 					invokeLifecycleEvent( taskCFC, 'postTask', { target:args.target, taskargs:args.taskargs } );
 				}
