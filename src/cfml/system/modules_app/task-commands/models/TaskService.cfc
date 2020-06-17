@@ -291,7 +291,7 @@ component singleton accessors=true {
 	}
 	
 	/**
-	* Accepts a UDF and wraps it in another call back that adds additional functionality to it creating a chain of callbacks.
+	* Accepts a UDF and wraps it in another callback that adds additional functionality to it, creating a chain of callbacks.
 	* 
 	* @taskCFC The actual Task CFC instance
 	* @eventname Name of the lifecycle event to wrap
