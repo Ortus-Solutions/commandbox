@@ -273,13 +273,18 @@ component accessors="true" singleton {
 				ignorePatterns = ignorePatterns,
 				endpointData = endpointData,
 				artifactPath = tmpPath,
-				packagePathRequestingInstallation = packagePathRequestingInstallation
+				packagePathRequestingInstallation = packagePathRequestingInstallation,
+				job = job,
+				skipInstall = false
 			};
 			interceptorService.announceInterception( 'onInstall', interceptData );
 			// Make sure these get set back into their original variables in case the interceptor changed them.
 			installDirectory = interceptData.installDirectory;
 			ignorePatterns = interceptData.ignorePatterns;
 			tmpPath = interceptData.artifactPath;
+
+			// Set variable to allow interceptor-based skipping of package install
+			var skipInstall = interceptData.skipInstall;
 
 			// Else, use package type convention
 			if( !len( installDirectory ) && len( packageType ) ) {
@@ -424,19 +429,19 @@ component accessors="true" singleton {
 
 				// Make sure the currently installed version is older than what's being requested.  If there's a new version, install it anyway.
 				var alreadyInstalledBoxJSON = readPackageDescriptor( installDirectory );
-				if( isPackage( installDirectory ) && semanticVersion.isNew( alreadyInstalledBoxJSON.version, version  )  ) {
+				if( !skipInstall && isPackage( installDirectory ) && semanticVersion.isNew( alreadyInstalledBoxJSON.version, version  )  ) {
 					job.addLog( "Package already installed but its version [#alreadyInstalledBoxJSON.version#] is older than the new version being installed [#version#].  Forcing a reinstall." );
 					uninstallFirst = true;
 				// If a newer version exists than what was asked for, blow it away so we can get a clean downgrade.
-				 } else if( isPackage( installDirectory ) && semanticVersion.isNew( version, alreadyInstalledBoxJSON.version )  ) {
+				 } else if( !skipInstall && isPackage( installDirectory ) && semanticVersion.isNew( version, alreadyInstalledBoxJSON.version )  ) {
 					job.addLog( "Package already installed but its version [#alreadyInstalledBoxJSON.version#] is newer than the version being installed [#version#].  Forcing a reinstall." );
 					uninstallFirst = true;
 				// Allow if forced.
-				} else if( arguments.force ) {
+				} else if( !skipInstall && arguments.force ) {
 					job.addLog( "Package already installed but you forced a reinstall." );
 					uninstallFirst = true;
 				// Check for empty directories that sometimes get left behind, but really shouldn't count as the package actually being there.
-				} else if( !directorylist( installDirectory ).len() ) {
+				} else if( !skipInstall && !directorylist( installDirectory ).len() ) {
 					job.addLog( "Package directory exists, but is empty so we're going to assume it's not really installed." );
 					uninstallFirst = true;
 				} else {
@@ -448,7 +453,11 @@ component accessors="true" singleton {
 						// Delete the top most directory inside the temp folder
 						directoryDelete( tempDir & '/' & pathInsideTmp.listFirst( '/\' ), true );
 					}
-					job.addWarnLog( "The package #packageName# is already installed at #installDirectory#. Skipping installation. Use --force option to force install." );
+					if( skipInstall ) {
+						job.addWarnLog( "Skipping installation of package #packageName#." );
+					} else {
+						job.addWarnLog( "The package #packageName# is already installed at #installDirectory#. Skipping installation. Use --force option to force install." );
+					}
 					job.complete( verbose );
 
 					interceptorService.announceInterception( 'postInstall', { installArgs=arguments, installDirectory=installDirectory } );
