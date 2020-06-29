@@ -77,12 +77,19 @@ component aliases="bump" {
 
 		if( len( arguments.version ) ) {
 			
-			if ( !arguments.force && listFind( "patch,minor,major", arguments.version ) ) {
-				print.line("Are you sure you want to set the version to: #arguments.version#?");
-				print.line("    You probably wanted to run: --#arguments.version#");
-			    if ( ask("Do you really want to do this [yes/no]:" ) != "Yes" ) {
-				    return;
+			var verStruct = semanticVersion.parseVersion( arguments.version );
+			
+			// The parse method above will try hard to parse anything, but if the major/minor/revision aren't a number, then it's not valid semver.
+			if ( !arguments.force && ( !isNumeric( verStruct.major ) || !isNumeric( verStruct.minor ) || !isNumeric( verStruct.revision ) ) ) {
+				print
+					.line( "The incoming version [#arguments.version#] doesn't appear to be a valid semantic version." )
+					.line( "Please make sure it is in the format major[.minor][.revision][-preReleaseID][+build] like 3.6.2 or use the --force flag." );
+				
+				// Check for this common accident where people type "bump minor" or "bump -patch"
+				if( listFind( "patch,minor,major,-patch,-minor,-major", arguments.version ) ) {
+					print.line().yellowLine("You probably wanted to use: --#arguments.version.replace( '-', '' )#");	
 				}
+				error( 'Invalid version [#arguments.version#]' );
 			}
 
 			// Set a specific version
