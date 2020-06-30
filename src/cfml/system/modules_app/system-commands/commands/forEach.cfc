@@ -46,7 +46,7 @@ component {
 	 * @itemName Name of system setting to access each item per iteration
 	 * @delimiter Delimiter Char(s) to split input,
 	 * @valueName Name of system setting to access value when iterating over struct
-	 * @continueOnError Whether to stop processing when one iteration errors
+	 * @continueOnError Continue processing even if one iteration errors
 	 * @debug Output command to be executed for each iteration
 	 **/
 	function run(

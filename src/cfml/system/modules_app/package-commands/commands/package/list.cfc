@@ -34,7 +34,7 @@ component aliases="list" {
 	/**
 	 * @verbose Outputs additional informaiton about each package
 	 * @json Outputs results as JSON
-	 * @system When true, list packages from the global CommandBox module's folder
+	 * @system List packages from the global CommandBox module's folder
 	 * @depth how deep to climb down the rabbit hole.  A value of 0 means infinite depth
 	 **/
 	function run(

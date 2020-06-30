@@ -27,9 +27,9 @@ component aliases="outdated" {
 	property name="semanticVersion" inject="semanticVersion@semver";
 
 	/**
-	 * @verbose.hint Outputs additional information about each package
-	 * @json.hint Outputs results as JSON
-	 * @system.hint When true, check the global CommandBox module's folder
+	 * @verbose.hint Output additional information about each package
+	 * @json.hint Output results as JSON
+	 * @system.hint Check the global CommandBox module's folder
 	 **/
 	function run(
 		boolean verbose=false,

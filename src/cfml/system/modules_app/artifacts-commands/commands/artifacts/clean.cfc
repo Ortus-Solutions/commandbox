@@ -19,7 +19,7 @@ component {
 	property name='artifactService' inject='artifactService';
 
 	/**
-	 * @force.hint Set to true to skip the prompt
+	 * @force.hint Clean artifacts cache without confirmation
 	 *
 	 **/
 	function run( boolean force=false ) {

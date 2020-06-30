@@ -29,7 +29,7 @@ component aliases="init" {
 	 * @name The human-readable name for this package
 	 * @slug The ForgeBox or unique slug for this package (no spaces or special chars)
 	 * @version The version for this package, please use semantic versioning - 0.0.0
-	 * @private Mark your package as private? If published to ForgeBox only you can see it.
+	 * @private Mark your package as private, so that if it is published to ForgeBox, only you can see it.
 	 * @shortDescription A short description for the package
 	 * @ignoreList Add commonly ignored files to the package's ignore list
 	 * @wizard Run the init wizard, defaults to false
@@ -94,10 +94,10 @@ component aliases="init" {
 					return;
 				} else {
 					print.redLine( "You will need to update your package slug before you can publish it." );
-					print.redLine( "Use the format [#arguments.slug#@USERNAME] and replace 'username' with your actual user." );					
+					print.redLine( "Use the format [#arguments.slug#@USERNAME] and replace 'username' with your actual user." );
 				}
 			} else {
-			
+
 				var APITokens = oEndpoint.getAPITokens();
 				var usernames = structKeyArray( APITokens );
 				var foundToken = usernames.filter( function( name ){

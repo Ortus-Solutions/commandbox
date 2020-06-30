@@ -36,7 +36,7 @@ component {
 	 * @directory The base directory to create your model in and creates the directory if it does not exist.
 	 * @description The model hint description
 	 * @open Open the file once generated
-	 * @accessors Setup accessors to be true or not in the component
+	 * @accessors Setup accessors to be true in the component
 	 * @properties Enter a list of properties to generate. You can add the type via semicolon separator. Ex: firstName,age:numeric,wheels:array
 	 **/
 	function run(

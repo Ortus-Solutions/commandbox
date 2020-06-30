@@ -49,7 +49,7 @@ component aliases="indents" {
 	* @exclude A list of globbing patterns to ignore
 	* @force Skip user confirmation of modiying files
 	* @verbose Output additional information about each file affected
-	* @roundUp Additional spaces that don't equal a tab get converted to a full tab
+	* @roundUp Convert additional spaces that don't equal a tab to a full tab
 	*/
 	public function run(
 		required Globber files,

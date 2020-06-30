@@ -17,7 +17,7 @@ component {
 
 	/**
 	* @username The ForgeBox username to switch to.
-	* @skipLogin If username isn't authenticated, return an error instead of prompting with login
+	* @skipLogin Return an error instead of prompting with login if username isn't authenticated,
 	* @endpointName  Name of custom forgebox endpoint to use
 	* @endpointName.optionsUDF endpointNameComplete
 	**/
