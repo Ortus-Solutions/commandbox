@@ -34,29 +34,39 @@ component accessors=true implements="IEndpoint" singleton {
 		var fullBoxJSONPath = folderName & '/box.json';
 		directoryCreate( folderName );
 
-		job.addLog( "Downloading [#package#]" );
+		if(fileExists(package)) {
+			try{
+				job.addLog( "Copying [#package#]" );
+				fileCopy(package, folderName);
+			} catch (any exName) {
+				directoryDelete( folderName, true );
+				throw( '#e.message##CR##e.detail#', 'endpointException' );
+			}
+		} else {
+			job.addLog( "Downloading [#package#]" );
 
-		var packageUrl = package.startsWith('s3://') ? S3Service.generateSignedURL(package, verbose) : package;
+			var packageUrl = package.startsWith('s3://') ? S3Service.generateSignedURL(package, verbose) : package;
 
-		try {
-			// Download File
-			var result = progressableDownloader.download(
-				packageUrl, // URL to package
-				fullLexPath, // Place to store it locally
-				function( status ) {
-					progressBar.update( argumentCollection = status );
-				},
-				function( newURL ) {
-					job.addLog( "Redirecting to: '#arguments.newURL#'..." );
-				}
-			);
-		} catch( UserInterruptException var e ) {
-			directoryDelete( folderName, true );
-			rethrow;
-		} catch( Any var e ) {
-			directoryDelete( folderName, true );
-			throw( '#e.message##CR##e.detail#', 'endpointException' );
-		};
+			try {
+				// Download File
+				var result = progressableDownloader.download(
+					packageUrl, // URL to package
+					fullLexPath, // Place to store it locally
+					function( status ) {
+						progressBar.update( argumentCollection = status );
+					},
+					function( newURL ) {
+						job.addLog( "Redirecting to: '#arguments.newURL#'..." );
+					}
+				);
+			} catch( UserInterruptException var e ) {
+				directoryDelete( folderName, true );
+				rethrow;
+			} catch( Any var e ) {
+				directoryDelete( folderName, true );
+				throw( '#e.message##CR##e.detail#', 'endpointException' );
+			};
+		}
 
 
 		// Spoof a box.json so this looks like a package
@@ -86,11 +96,11 @@ component accessors=true implements="IEndpoint" singleton {
 		// If we see /foo.lex or name=foo.lex or ?foo.lex
 		if( package.reFindNoCase( '[/\?=](.*\.lex)' ) ) {
 			// Then strip the name and remove extension
-			// Note the first .* is greedy so in the case of 
+			// Note the first .* is greedy so in the case of
 			// https://site.com/path/to/file.lex?name=custom.lex
 			// the regex will extract the last match, i.e. "custom"
 			return package.reReplaceNoCase( '.*[/\?=](.*\.lex).*', '\1' ).left( -4 );
-		} 
+		}
 
 		// We give up, so just make the entire URL a slug
 		return reReplaceNoCase( package, '[^a-zA-Z0-9]', '', 'all' );
