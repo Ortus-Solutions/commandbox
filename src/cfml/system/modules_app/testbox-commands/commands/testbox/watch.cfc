@@ -42,6 +42,7 @@ component {
 	 * @directory   The directory mapping to test: directory = the path to the directory using dot notation (myapp.testing.specs)
 	 * @bundles     The path or list of paths of the spec bundle CFCs to run and test
 	 * @labels      The list of labels that a suite or spec must have in order to execute.
+	 * @verbose     Display extra details inlcuding passing and skipped tests.
 	 **/
 	function run(
 		string paths,

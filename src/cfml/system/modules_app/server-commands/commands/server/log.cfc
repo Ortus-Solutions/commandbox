@@ -19,8 +19,8 @@ component {
 	 * @directory.hint web root for the server
 	 * @serverConfigFile The path to the server's JSON file.
 	 * @follow Tail the log file with the "follow" flag. Press Ctrl-C to quit.
-	 * @access Set this flag to view/tail the access log
-	 * @rewrites Set this flag to view/tail the rewrites log
+	 * @access View/tail the access log
+	 * @rewrites View/tail the rewrites log
 	 **/
 	function run(
 		string name,

@@ -48,7 +48,7 @@ component {
 	 * @model The name of the model to generate that models the resource
 	 * @persistent If true, then the model will be created as an ORM entity
 	 * @table The table name of the entity
-	 * @activeEntity Will this be a ColdBox ORM Active entity or a Normal CFML entity. Defaults to false.
+	 * @activeEntity Generate a ColdBox ORM Active entity instead of a Normal CFML entity.
 	 * @primaryKey Enter the name of the primary key, defaults to 'id'
 	 * @primaryKeyColumn Enter the name of the primary key column. Leave empty if same as the primaryKey value
 	 * @generator Enter the ORM key generator to use, defaults to 'native'

@@ -49,7 +49,7 @@ component {
 	 * @_.hint Pass any number of property names in followed by the value to set
 	 * @_.optionsUDF completeProperty
 	 * @serverConfigFile The path to the server's JSON file.
-	 * @append.hint If setting an array or struct, set to true to append instead of overwriting.
+	 * @append.hint Append struct/array setting, instead of overwriting.
 	 **/
 	function run(
 		_,

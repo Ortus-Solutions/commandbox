@@ -18,8 +18,8 @@ component aliases="stop" {
 	 * @name.optionsUDF serverNameComplete
 	 * @directory.hint web root for the server
 	 * @serverConfigFile The path to the server's JSON file.
-	 * @forget.hint if passed, this will also remove the directory information from disk
-	 * @all.hint If true, stop ALL running servers
+	 * @forget.hint Remove the directory information from disk
+	 * @all.hint Stop ALL running servers
 	 **/
 	function run(
 		string name,

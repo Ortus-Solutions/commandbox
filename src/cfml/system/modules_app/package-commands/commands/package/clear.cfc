@@ -16,7 +16,7 @@ component {
 	/**
 	 * @property.hint Name of the property to clear
 	 * @property.optionsUDF completeProperty
-	 * @system.hint When true, show box.json data in the global CommandBox folder
+	 * @system.hint Clear property from box.json in the global CommandBox folder
 	 **/
 	function run( required string property, boolean system=false ) {
 

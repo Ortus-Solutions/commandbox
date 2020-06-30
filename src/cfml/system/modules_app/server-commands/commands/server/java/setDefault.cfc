@@ -29,7 +29,7 @@ component aliases='java setDefault' {
 	/**
 	* @ID Full name of the Java install you wish to remove
 	* @ID.optionsUDF	javaVersionComplete
-	* @verbse Show verbose installation information
+	* @verbose Show verbose installation information
 	* @install Install this version of Java at the same time
 	*/
 	function run(

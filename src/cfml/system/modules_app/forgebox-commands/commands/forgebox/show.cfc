@@ -46,6 +46,7 @@ component aliases="show" {
 	* @startRow.hint Row to start returning records on
 	* @maxRows.hint Number of records to return
 	* @slug.hint Slug of a specific ForgeBox entry to show.
+	* @json.hint Display results as json
 	* @endpointName  Name of custom forgebox endpoint to use
 	* @endpointName.optionsUDF endpointNameComplete
 	*

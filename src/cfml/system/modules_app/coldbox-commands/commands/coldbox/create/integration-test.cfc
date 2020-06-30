@@ -29,8 +29,8 @@ component {
 	 * @handler Name of the handler to test
 	 * @actions A comma-delimited list of actions to generate
 	 * @appMapping The root location of the application in the web root: ex: /MyApp or / if in the root
-	 * @bdd Defaults to BDD style
-	 * @xunit You can alternatively use xUnit style
+	 * @bdd Use BDD style (default)
+	 * @xunit Use xUnit style
 	 * @open Open the file once it is created
 	 * @directory The base directory to create your test spec in and creates the directory if it does not exist. Defaults to 'tests/specs/integration'
 	 **/

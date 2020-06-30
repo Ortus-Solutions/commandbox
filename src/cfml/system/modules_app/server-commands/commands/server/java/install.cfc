@@ -29,7 +29,7 @@ component aliases='java install' {
 	/**
 	* @ID Full name of the Java install you wish to remove
 	* @id.options openjdk8,openjdk9,openjdk10,openjdk11,openjdk12,openjdk13
-	* @verbse Show verbose installation information
+	* @verbose Show verbose installation information
 	* @setDefault Set this Java install to be the default after installing
 	*/
 	function run(
