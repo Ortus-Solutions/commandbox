@@ -1293,7 +1293,7 @@ component accessors="true" singleton {
 			args.append( '--urlrewrite-file' ).append( serverInfo.rewritesConfig );
 		}
 
-		if( serverInfo.webRules.len() && false ){
+		if( serverInfo.webRules.len() ){
 			
 			var predicateFile = serverinfo.customServerFolder & '/.predicateFile.txt';
 			fileWrite( predicateFile, serverInfo.webRules.toList( CR ) );			
