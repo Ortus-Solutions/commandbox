@@ -170,7 +170,9 @@ component accessors="true" singleton {
 				'basicAuth' : {
 					'enable' : d.web.basicAuth.enable ?: true,
 					'users' : d.web.basicAuth.users ?: {}
-				}
+				},
+				'rules' : duplicate( d.web.rules ?: [] ),
+				'rulesFile' : d.web.rulesFile ?: []
 			},
 			'app' : {
 				'logDir' : d.app.logDir ?: '',
@@ -735,6 +737,58 @@ component accessors="true" singleton {
 		// Global defauls are always added on top of whatever is specified by the user or server.json
 		serverInfo.libDirs		= ( serverProps.libDirs		?: serverJSON.app.libDirs ?: '' ).listAppend( defaults.app.libDirs );
 
+		serverInfo.webRules = [];		
+		if( serverJSON.keyExists( 'web' ) && serverJSON.web.keyExists( 'rules' ) ) {
+			serverInfo.webRules.append( serverJSON.web.rules, true);
+		}
+		if( serverJSON.keyExists( 'web' ) && serverJSON.web.keyExists( 'rulesFile' ) ) {
+			if( isSimpleValue( serverJSON.web.rulesFile ) ) {
+				serverJSON.web.rulesFile = serverJSON.web.rulesFile.listToArray();
+			}
+			serverInfo.webRules.append( serverJSON.web.rulesFile.map((fg)=>{
+				fg = fileSystemUtil.resolvePath( fg, defaultServerConfigFileDirectory );
+				return wirebox.getInstance( 'Globber' ).setPattern( fg ).matches().reduce( (predicates,file)=>{
+						if( lCase( file ).endsWith( '.json' ) ) {
+							return predicates & CR & deserializeJSON( fileRead( file ) ).toList( CR )
+						} else {
+							return predicates & CR & fileRead( file )						
+						} 
+					}, '' );
+			}), true);
+		}
+		if( defaults.keyExists( 'web' ) && defaults.web.keyExists( 'rules' ) ) {
+			serverInfo.webRules.append( defaults.web.rules, true);
+		}
+		
+		if( defaults.keyExists( 'web' ) && defaults.web.keyExists( 'rulesFile' ) ) {
+			var defaultsRulesFile = defaults.web.rulesFile;
+			if( isSimpleValue( defaultsRulesFile ) ) {
+				defaultsRulesFile = defaultsRulesFile.listToArray();
+			}
+			serverInfo.webRules.append( defaultsRulesFile.map((fg)=>{
+				fg = fileSystemUtil.resolvePath( fg, defaultwebroot );
+				return wirebox.getInstance( 'Globber' ).setPattern( fg ).matches().reduce( (predicates,file)=>{
+						if( lCase( file ).endsWith( '.json' ) ) {
+							return predicates & CR & deserializeJSON( fileRead( file ) ).toList( CR )
+						} else {
+							return predicates & CR & fileRead( file )						
+						} 
+					}, '' );
+			}), true);
+		}
+		
+		// Default CommandBox rules.  TODO: Refactor this to be defined by a profile
+		serverInfo.webRules.append( [
+			// track and trace verbs can leak data in XSS attacks
+			"disallowed-methods( methods={trace,track} )",
+			// Administrators
+			//"regex(pattern='^/(CFIDE/administrator|CFIDE/adminapi|CFIDE/AIR|CFIDE/appdeployment|CFIDE/cfclient|CFIDE/classes|CFIDE/componentutils|CFIDE/debug|CFIDE/images|CFIDE/orm|CFIDE/portlets|CFIDE/scheduler|CFIDE/ServerManager|CFIDE/services|CFIDE/websocket|CFIDE/wizards|lucee/admin)/.*', case-sensitive=false) -> response-code(404)",
+			// Common config files
+			"regex(pattern='.*/(box.json|server.json|web.config|urlrewrite.xml|package.json|package-lock.json|Gulpfile.js|CFIDE/multiservermonitor-access-policy.xml|CFIDE/probe.cfm)', case-sensitive=false) -> response-code(404)",
+			// Any file or folder starting with a period
+			"regex('/\.')-> response-code( 404 )"
+		], true );
+
 		serverInfo.cfengine			= serverProps.cfengine			?: serverJSON.app.cfengine			?: defaults.app.cfengine;
 
 		serverInfo.restMappings		= serverProps.restMappings		?: serverJSON.app.restMappings		?: defaults.app.restMappings;
@@ -1238,6 +1292,14 @@ component accessors="true" singleton {
 			}
 			args.append( '--urlrewrite-file' ).append( serverInfo.rewritesConfig );
 		}
+
+		if( serverInfo.webRules.len() && false ){
+			
+			var predicateFile = serverinfo.customServerFolder & '/.predicateFile.txt';
+			fileWrite( predicateFile, serverInfo.webRules.toList( CR ) );			
+			args.append( '--predicate-file' ).append( predicateFile );
+		}
+		
 		// change status to starting + persist
 		serverInfo.dateLastStarted = now();
 		serverInfo.status = "starting";
