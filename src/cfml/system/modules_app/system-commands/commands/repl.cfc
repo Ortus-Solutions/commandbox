@@ -38,9 +38,15 @@ component {
 		var results  		= "";
 		var executor 		= wirebox.getInstance( "executor" );
 		var newHistory 		= arguments.script ? variables.REPLScriptHistoryFile : variables.REPLTagHistoryFile;
+		var dirInfo 		= "";
 
   	   arguments.directory = resolvePath( arguments.directory );
   	   
+	   dirInfo = getFileInfo( arguments.directory );
+	   if ( !dirInfo.canWrite ) {
+	        error( "Unable to start a repl in this directory because you do not have write permission to it." );
+	   }
+	   
 		// Setup REPL history file
 		shell.setHistory( newHistory );
 		shell.setHighlighter( 'REPL' );
