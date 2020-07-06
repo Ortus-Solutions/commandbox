@@ -12,7 +12,7 @@
  * {code}
  * 
  * Note, the default will be set to exactly what you type, so if you don't type a specific release version
- * then CommadnBox will still check the API for the latest version every time and download on demand.
+ * then CommandBox will still check the API for the latest version every time and download on demand.
  *
  * To set a default version of Java and have CommandBox never check again, set a very specific release version
  * .
@@ -27,7 +27,7 @@ component aliases='java install' {
 	property name="javaService" inject="JavaService";
 
 	/**
-	* @ID Full name of the Java install you wish to remove
+	* @ID Full name of the Java install you wish to install
 	* @id.options openjdk8,openjdk9,openjdk10,openjdk11,openjdk12,openjdk13
 	* @verbose Show verbose installation information
 	* @setDefault Set this Java install to be the default after installing
