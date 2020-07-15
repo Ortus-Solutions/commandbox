@@ -260,6 +260,16 @@ component accessors="true" singleton {
 	}
 
 	/**
+	* Set a CommandBox environment variable
+	*
+	* @key The name of the setting to look up.
+	* @defaultValue The default value to use if the key does not exist in the system properties
+	*/
+    function setSystemSetting( required string key, string value ) {
+		return systemSettings.setSystemSetting( key, value );
+	}
+
+	/**
 	* Retrieve a Java System property or env value by name.
 	*
 	* @key The name of the setting to look up.
