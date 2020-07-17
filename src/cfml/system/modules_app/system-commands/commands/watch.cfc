@@ -32,7 +32,7 @@ component {
 	 **/
 	function run(
 		string paths='**',
-		string command,
+		required string command,
 		number delay=500,
 		string directory=getCWD(),
 		boolean verbose=false
@@ -44,7 +44,7 @@ component {
 			"added"   : "green",
 			"removed" : "red",
 			"changed" : "yellow"
-		}
+		};
 		
 		// General Message about the globbing paths and its purpose
 		print
@@ -81,7 +81,7 @@ component {
 				setSystemSetting( "watcher_removed",  serializeJSON( changeData.removed ) );
 				setSystemSetting( "watcher_changed",  serializeJSON( changeData.changed ) );
 
-				// Runn the command
+				// Run the command
 				runCommand( command );
 			} )
 			.start();
