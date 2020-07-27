@@ -163,7 +163,7 @@ This file will stay running the entire time the shell is open
 			// Wipe out cached metadata on reload.
 			wirebox.getCacheBox().getCache( 'metadataCache' ).clearAll();
 				
-			// Shut down the shell, which includes cleaing up JLine
+			// Shut down the shell, which includes cleaning up JLine
 			shell.shutdown();
 
 			// Clear all caches: template, ...
