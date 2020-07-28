@@ -159,7 +159,7 @@ component accessors="true" singleton="true" {
 					job.addLog( "OK, [#engineName# #satisfyingVersion#] it is!");
 				} catch( any var e ) {
 
-					job.addErrorLog( "Aww man,  ForgeBox isn't feeling well.");
+					job.addErrorLog( "Aww man, we ran into an issue.");
 					job.addLog( "#e.message#  #e.detail#");
 					job.addErrorLog( "We're going to look in your local artifacts cache and see if one of those versions will work.");
 
@@ -180,7 +180,7 @@ component accessors="true" singleton="true" {
 							}
 															
 						} else {					
-							throw( 'No satisfying version found for [#version#].', 'endpointException', 'Well, we tried as hard as we can.  ForgeBox is unreachable and you don''t have a usable version in your local artifacts cache.  Please try another version.' );	
+							throw( 'No satisfying version found for [#version#].', 'endpointException', 'Well, we tried as hard as we can.  ForgeBox can''t find the package and you don''t have a usable version in your local artifacts cache.  Please try another version.' );	
 						}
 						
 					}

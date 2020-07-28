@@ -405,7 +405,7 @@ component accessors="true" singleton {
 			// Strip the \\
 			arguments.absolutePath = arguments.absolutePath.right( -2 );
 			if( arguments.absolutePath.listLen( '/\' ) < 2 ) {
-				throw( 'Can''t make relative path for [#absolutePath#].  A mapping must point ot a share name, not the root of the server name.' );
+				throw( 'Can''t make relative path for [#absolutePath#].  A mapping must point to a share name, not the root of the server name.' );
 			}
 
 			// server/share

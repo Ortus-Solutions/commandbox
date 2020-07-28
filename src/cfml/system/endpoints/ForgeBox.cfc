@@ -486,7 +486,7 @@ component accessors="true" implements="IEndpointInteractive" {
 
 		} catch( forgebox var e ) {
 
-			job.addErrorLog( "Aww man,  #getNamePrefixes()# isn't feeling well.");
+			job.addErrorLog( "Aww man,  #getNamePrefixes()# ran into an issue.");
 			job.addLog( "#e.message#  #e.detail#");
 			job.addErrorLog( "We're going to look in your local artifacts cache and see if one of those versions will work.");
 
@@ -502,7 +502,7 @@ component accessors="true" implements="IEndpointInteractive" {
 				// Defer to file endpoint
 				return fileEndpoint.resolvePackage( thisArtifactPath, arguments.verbose );
 			} else {
-				throw( 'No satisfying version found for [#version#].', 'endpointException', 'Well, we tried as hard as we can.  #getNamePrefixes()# is unreachable and you don''t have a usable version in your local artifacts cache.  Please try another version.' );
+				throw( 'No satisfying version found for [#version#].', 'endpointException', 'Well, we tried as hard as we can.  #getNamePrefixes()# can''t find the package and you don''t have a usable version in your local artifacts cache.  Please try another version.' );
 			}
 
 		}
