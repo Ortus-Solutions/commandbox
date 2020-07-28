@@ -273,7 +273,7 @@ component accessors="true" singleton {
 
 		// If the server is already running, make sure the user really wants to do this.
 		if( isServerRunning( serverInfo ) && !(serverProps.force ?: false ) && !(serverProps.dryRun ?: false ) ) {
-			job.addErrorLog( 'Server "#serverInfo.name#" (#serverInfo.webroot#) is already running!' );
+			job.addErrorLog( 'Server "#serverInfo.name#" (#serverInfo.webroot#) is already running @ #serverInfo.openbrowserURL#!' );
 			job.addErrorLog( 'Overwriting a running server means you won''t be able to use the "stop" command to stop the original one.' );
 			job.addWarnLog( 'Use the --force parameter to skip this check.' );
 			// Ask the user what they want to do
@@ -281,6 +281,7 @@ component accessors="true" singleton {
 				.setQuestion( 'What would you like to do? ' )
 				.setOptions( [
 					{ display : 'Provide a new name for this server (recommended)', value : 'newName', accessKey='N', selected=true },
+					{ display : 'Open currently running server in browser @ #serverInfo.openbrowserURL#', value : 'openinbrowser', accessKey='B'},
 					{ display : 'Just keep starting this new server and overwrite the old, running one.', value : 'overwrite', accessKey='o' },
 					{ display : 'Cancel and do not start a server right now.', value : 'stop', accessKey='s' }
 				] )
@@ -289,6 +290,10 @@ component accessors="true" singleton {
 
 			if( action == 'stop' ) {
 				job.error( 'Aborting...' );
+				return;
+			} else if( action == 'openinbrowser' ) {
+				job.addLog( "Opening...#serverInfo.openbrowserURL#" );
+				shell.callCommand( 'browse #serverInfo.openbrowserURL#', false);
 				return;
 			} else if( action == 'newname' ) {
 				job.clear();
