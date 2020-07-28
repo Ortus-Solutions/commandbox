@@ -158,6 +158,11 @@ component accessors="true" singleton="true" {
 					var satisfyingVersion = endpoint.findSatisfyingVersion( endpoint.parseSlug( arguments.ID ), version ).version;
 					job.addLog( "OK, [#engineName# #satisfyingVersion#] it is!");
 				} catch( any var e ) {
+					
+					if( e.detail contains 'The entry slug sent is invalid or does not exist' ) {
+						job.addErrorLog( "#e.message#  #e.detail#" );
+						throw( e.message, 'endpointException', e.detail );
+					}
 
 					job.addErrorLog( "Aww man, we ran into an issue.");
 					job.addLog( "#e.message#  #e.detail#");

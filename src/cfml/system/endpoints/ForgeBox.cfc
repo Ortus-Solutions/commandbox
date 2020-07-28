@@ -485,9 +485,14 @@ component accessors="true" implements="IEndpointInteractive" {
 
 
 		} catch( forgebox var e ) {
-
+					
+			if( e.detail contains 'The entry slug sent is invalid or does not exist' ) {
+				job.addErrorLog( "#e.message#  #e.detail#" );
+				throw( e.message, 'endpointException', e.detail );
+			}
+			
 			job.addErrorLog( "Aww man,  #getNamePrefixes()# ran into an issue.");
-			job.addLog( "#e.message#  #e.detail#");
+			job.addLog( "#e.message#  #e.detail#" );
 			job.addErrorLog( "We're going to look in your local artifacts cache and see if one of those versions will work.");
 
 			// See if there's something usable in the artifacts cache.  If so, we'll use that version.
