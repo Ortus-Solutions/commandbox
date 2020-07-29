@@ -8,6 +8,8 @@
  * I render TestBox data out for the CLI
  */
 component {
+	
+	processingdirective pageEncoding='UTF-8';
 
 	variables.HEADER_CELL_CHARS = 7;
 	variables.COLOR             = {
