@@ -8,7 +8,7 @@
 * I manage servers
 *
 */
-component accessors="true" singleton {
+component accessors="true" singleton extends="commandbox.system.BaseCommand" {
 
 	/**
 	* Where the server libs are located
@@ -1042,8 +1042,8 @@ component accessors="true" singleton {
 		serverInfo.trayOptions.prepend( { 'label':'Stop Server', 'action':'stopserver', 'image' : expandPath('/commandbox/system/config/server-icons/stop.png' ) } );
 
 		// Take default options, then append config defaults and server.json trayOptions on top of them (allowing nested overwrite)
-		serverInfo.trayOptions = appendMenuItems( defaults.trayOptions, defaultwebroot, serverInfo.trayOptions );
-		serverInfo.trayOptions = appendMenuItems( serverJSON.trayOptions ?: [], defaultServerConfigFileDirectory, serverInfo.trayOptions );
+		serverInfo.trayOptions = appendMenuItems( defaults.trayOptions, defaultwebroot, serverInfo.trayOptions, serverInfo.name );
+		serverInfo.trayOptions = appendMenuItems( serverJSON.trayOptions ?: [], defaultServerConfigFileDirectory, serverInfo.trayOptions, serverInfo.name );
 
 	    // This is due to a bug in RunWar not creating the right directory for the logs
 	    directoryCreate( serverInfo.logDir, true, true );
@@ -1541,10 +1541,10 @@ component accessors="true" singleton {
 	* allows to iterate on a tray menu item recursively
 	* and checks for the default image and default shell
 	*/
-	array function appendMenuItems( array trayOptions, relativePath, array parentOptions ) {
+	array function appendMenuItems( array trayOptions, relativePath, array parentOptions, name ) {
 		arguments.trayOptions.each( function( menuItem ){
 			// Resolve images and massage default tray options
-			newMenuItem = prepareMenuItem( menuItem, relativePath );
+			newMenuItem = prepareMenuItem( menuItem, relativePath, name );
 			
 			var match = parentOptions.find( (m)=>trim( m.label ) == trim( newMenuItem.label ) );
 			if( match ) {
@@ -1556,7 +1556,7 @@ component accessors="true" singleton {
 			
 			if( menuItem.keyExists( 'items' ) && menuItem.items.len() ){
 				// Runwar requires "items" to be lowercase
-				newMenuItem[ 'items' ] = appendMenuItems( menuItem.items, relativePath, newMenuItem.items ?: [] );
+				newMenuItem[ 'items' ] = appendMenuItems( menuItem.items, relativePath, newMenuItem.items ?: [], name );
 			}
 		} );
 		return arguments.parentOptions;
@@ -1565,8 +1565,7 @@ component accessors="true" singleton {
 	/**
 	* checks for the default image and default shell
 	*/
-	function prepareMenuItem( menuItem, relativePath ) {
-		
+	function prepareMenuItem( menuItem, relativePath, name ) {
 		menuItem.label = menuItem.label ?: '';
 		
 		// Make relative image paths absolute
@@ -1584,11 +1583,17 @@ component accessors="true" singleton {
 			menuItem[ 'path' ] = fileSystemUtil.resolvePath( menuItem.path, relativePath );
 		}
 
+		//checking if the action is the legacy "restartserver", it needs to be translated to a box type action
+		if( menuItem.keyExists( 'action' ) && listFindNoCase('restartserver',menuItem.action)){
+			menuItem[ 'action' ] = "box server restart " & '"#name#"';
+		}
+
 		//need to check if a shell has been defined for this action
 		if( menuItem.keyExists( 'action' ) && listFindNoCase('run,runAsync,runTerminal',menuItem.action)){
 			menuItem[ 'shell' ] = menuItem.shell ?: fileSystemUtil.getNativeShell();
 			// Some special love for box commands
 			if( menuItem.command.lCase().reFindNoCase( '^box(\.exe)? ' )  ) {
+				menuItem.command = reReplaceNoCase(menuItem.command, "^box(\.exe)? ", getSystemSetting( 'java.class.path', 'Unknown' ) & " ", "one")
 				menuItem[ 'image' ] = menuItem.image ?: expandPath('/commandbox/system/config/server-icons/box.png' );				
 			} else {
 				menuItem[ 'image' ] = menuItem.image ?: expandPath('/commandbox/system/config/server-icons/' & menuItem.action & '.png' );
