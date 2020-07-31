@@ -1037,14 +1037,14 @@ component accessors="true" singleton {
 
 		serverInfo.trayOptions.prepend( { 'label':'Open...', 'items': openItems, "image" : expandPath('/commandbox/system/config/server-icons/open.png' ) } );
 
-		serverInfo.trayOptions.prepend( { 'label' : 'Restart Server', 'hotkey':'R', 'action' : "runAsync" , "command" : systemSettings.getSystemSetting( 'java.class.path' ) & " server restart " & "'#serverInfo.name#'", 'image': expandPath('/commandbox/system/config/server-icons/home.png' ), 'workingDirectory': defaultwebroot} );
+		serverInfo.trayOptions.prepend( { 'label' : 'Restart Server', 'hotkey':'R', 'action' : "runAsync" , "command" : "box server restart " & "'#serverInfo.name#'", 'image': expandPath('/commandbox/system/config/server-icons/home.png' ), 'workingDirectory': defaultwebroot} );
 
 		serverInfo.trayOptions.prepend( { 'label':'Stop Server', 'action':'stopserver', 'image' : expandPath('/commandbox/system/config/server-icons/stop.png' ) } );
 
 		// Take default options, then append config defaults and server.json trayOptions on top of them (allowing nested overwrite)
 		serverInfo.trayOptions = appendMenuItems( defaults.trayOptions, defaultwebroot, serverInfo.trayOptions );
+		serverInfo.trayOptions = appendMenuItems( serverInfo.trayOptions, defaultwebroot, [] );
 		serverInfo.trayOptions = appendMenuItems( serverJSON.trayOptions ?: [], defaultServerConfigFileDirectory, serverInfo.trayOptions );
-
 	    // This is due to a bug in RunWar not creating the right directory for the logs
 	    directoryCreate( serverInfo.logDir, true, true );
 
@@ -1615,11 +1615,13 @@ component accessors="true" singleton {
 	}
 
 	function fixBinaryPath(command, fullPath){
-		if( command.left( 4 ) == 'box ' ){
-			command = command.replacenoCase( 'box ', fullPath & ' ', 'one' );
-		  } else if( command.left( 8 ) == 'box.exe ' ){
-			command = command.replacenoCase( 'box.exe ', fullPath & ' ', 'one' );
-		  }
+		if(!isNull(fullPath) or !isEmpty(fullPath)){
+			if( command.left( 4 ) == 'box ' ){
+				command = command.replacenoCase( 'box ', fullPath & ' ', 'one' );
+			} else if( command.left( 8 ) == 'box.exe ' ){
+				command = command.replacenoCase( 'box.exe ', fullPath & ' ', 'one' );
+			}
+		}
 		return command;
 	}
 
