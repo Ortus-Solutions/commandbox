@@ -97,6 +97,7 @@ component aliases="start" {
 	 * @startScriptFile		Optional override for the name and location of the start script. This is ignored if no startScript param is specified
 	 * @dryRun				Abort actually starting the server process, but all installation and downloading will still be performed to "warm up" the engine installation.
 	 * @verbose				Activate extra server start information without enabling the debug mode in the actual server (which you wouldn't want in production)
+	 * @trayEnable			Enable the system tray icon/menu
 	 **/
 	function run(
 		String  name,
@@ -142,7 +143,8 @@ component aliases="start" {
 		String startScript,
 		String startScriptFile,
 		Boolean dryRun,
-		Boolean verbose
+		Boolean verbose,
+		Boolean trayEnable
 	){
 
 		// This is a common mis spelling

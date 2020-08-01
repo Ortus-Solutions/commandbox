@@ -371,6 +371,9 @@ component accessors="true" singleton {
 			    	}
 					serverJSON[ 'web' ][ 'webroot' ] = thisDirectory;
 			         break;
+			    case "trayEnable":
+					serverJSON[ 'trayEnable' ] = serverProps[ prop ];
+			         break;
 			    case "trayIcon":
 			    	// This path is canonical already.
 			    	var thisFile = replace( serverProps[ 'trayIcon' ], '\', '/', 'all' );
@@ -619,7 +622,7 @@ component accessors="true" singleton {
 		serverInfo.welcomeFiles 	= serverProps.welcomeFiles		?: serverJSON.web.welcomeFiles			?: defaults.web.welcomeFiles;
 		serverInfo.maxRequests		= 								   serverJSON.web.maxRequests			?: defaults.web.maxRequests;
 
-		serverInfo.trayEnable	 	= serverJSON.trayEnable			?: defaults.trayEnable;
+		serverInfo.trayEnable	 	= serverProps.trayEnable		?: serverJSON.trayEnable			?: defaults.trayEnable;
 		serverInfo.dockEnable	 	= serverJSON.dockEnable			?: defaults.dockEnable;
 
 		serverInfo.defaultBaseURL = serverInfo.SSLEnable ? 'https://#serverInfo.host#:#serverInfo.SSLPort#' : 'http://#serverInfo.host#:#serverInfo.port#';
