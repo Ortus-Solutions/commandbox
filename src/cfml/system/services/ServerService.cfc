@@ -1038,13 +1038,16 @@ component accessors="true" singleton {
 
 		openItems.prepend( { "label" : "Webroot", "action" : "openfilesystem", "path" : serverInfo.appFileSystemPath, "image" : expandPath('/commandbox/system/config/server-icons/folder.png' ) } );
 
-		serverInfo.trayOptions.prepend( { 'label':'Open...', 'items': openItems, "image" : expandPath('/commandbox/system/config/server-icons/open.png' ) } );
+		var tempOptions.trayOptions = [];
 
-		// serverInfo.trayOptions.prepend( { 'label' : 'Restart Server', 'hotkey':'R', 'action' : 'restartserver', 'image': expandPath('/commandbox/system/config/server-icons/home.png' ) } );
+		tempOptions.trayOptions.prepend( { 'label':'Open...', 'items': openItems, "image" : expandPath('/commandbox/system/config/server-icons/open.png' ) } );
 
-		serverInfo.trayOptions.prepend( { 'label':'Stop Server', 'action':'stopserver', 'image' : expandPath('/commandbox/system/config/server-icons/stop.png' ) } );
+		tempOptions.trayOptions.prepend( { 'label' : 'Restart Server', 'hotkey':'R', 'action' : "runAsync" , "command" : "box server restart " & "'#serverInfo.name#'", 'image': expandPath('/commandbox/system/config/server-icons/restart.png' ), 'workingDirectory': defaultwebroot} );
+
+		tempOptions.trayOptions.prepend( { 'label':'Stop Server', 'action':'stopserver', 'image' : expandPath('/commandbox/system/config/server-icons/stop.png' ) } );
 
 		// Take default options, then append config defaults and server.json trayOptions on top of them (allowing nested overwrite)
+		serverInfo.trayOptions = appendMenuItems( tempOptions.trayOptions, defaultwebroot, [] );
 		serverInfo.trayOptions = appendMenuItems( defaults.trayOptions, defaultwebroot, serverInfo.trayOptions );
 		serverInfo.trayOptions = appendMenuItems( serverJSON.trayOptions ?: [], defaultServerConfigFileDirectory, serverInfo.trayOptions );
 
@@ -1569,9 +1572,7 @@ component accessors="true" singleton {
 	* checks for the default image and default shell
 	*/
 	function prepareMenuItem( menuItem, relativePath ) {
-		
 		menuItem.label = menuItem.label ?: '';
-		
 		// Make relative image paths absolute
 		if( menuItem.keyExists( 'image' ) && menuItem.image.len() ) {
 			menuItem[ 'image' ] = fileSystemUtil.resolvePath( menuItem.image, relativePath );
@@ -1592,6 +1593,7 @@ component accessors="true" singleton {
 			menuItem[ 'shell' ] = menuItem.shell ?: fileSystemUtil.getNativeShell();
 			// Some special love for box commands
 			if( menuItem.command.lCase().reFindNoCase( '^box(\.exe)? ' )  ) {
+				menuItem.command = fixBinaryPath( trim(menuItem.command), systemSettings.getSystemSetting( 'java.class.path' ));
 				menuItem[ 'image' ] = menuItem.image ?: expandPath('/commandbox/system/config/server-icons/box.png' );				
 			} else {
 				menuItem[ 'image' ] = menuItem.image ?: expandPath('/commandbox/system/config/server-icons/' & menuItem.action & '.png' );
@@ -1616,6 +1618,17 @@ component accessors="true" singleton {
 			menuItem[ 'command' ] = replaceNoCase( nativeTerminal, '@@command@@', menuItem[ 'command' ], 'all' );
 		}
 		return menuItem.filter( (k)=>k!='items' );
+	}
+
+	function fixBinaryPath(command, fullPath){
+		if(!isNull(fullPath) or !isEmpty(fullPath)){
+			if( command.left( 4 ) == 'box ' ){
+				command = command.replacenoCase( 'box ', fullPath & ' ', 'one' );
+			} else if( command.left( 8 ) == 'box.exe ' ){
+				command = command.replacenoCase( 'box.exe ', fullPath & ' ', 'one' );
+			}
+		}
+		return command;
 	}
 
 	/**

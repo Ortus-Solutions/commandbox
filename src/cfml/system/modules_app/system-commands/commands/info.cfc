@@ -21,8 +21,8 @@ component aliases="about" {
 		}
 		var javaVersion = '#server.java.version# (#server.java.vendor#)';
 		var commandboxHome = expandpath( '/commandbox-home' );
-		var binaryPath = getSystemSetting( 'java.class.path', 'Unkonwn' );
-		var userName = getSystemSetting( 'user.name', 'Unkonwn' );
+		var binaryPath = getSystemSetting( 'java.class.path', 'Unknown' );
+		var userName = getSystemSetting( 'user.name', 'Unknown' );
 		var javaBinary = fileSystemUtil.getJREExecutable();
 		var JLineTerminal = shell.getReader().getTerminal().getClass().getName();
 		var runwarVersion = 'Unknown';
