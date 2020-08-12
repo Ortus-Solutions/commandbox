@@ -512,7 +512,8 @@ component accessors="true" singleton {
 				var interceptData = {
 					setting : settingName,
 					defaultValue : defaultValue,
-					resolved : false
+					resolved : false,
+					context : parameterInfo.namedParameters
 				};
 				// Allow for custom setting resolution
 				interceptorService.announceInterception( 'onSystemSettingExpansion', interceptData );

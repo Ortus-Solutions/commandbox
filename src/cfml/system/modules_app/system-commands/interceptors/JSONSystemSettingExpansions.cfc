@@ -51,6 +51,20 @@ component {
 			// Stop processing expansions on this setting
 			interceptData.resolved=true;
 			return true;
+		
+		// ${@property.name} (Local reference to a JSON property in the same file)
+		} else if( interceptData.setting.startsWith( '@' ) ) {
+			
+			var settingName = interceptData.setting.replaceNoCase( '@', '', 'one' );
+			interceptData.setting = JSONService.show( interceptData.context, settingName, interceptData.defaultValue );
+			
+			if( !isSimpleValue( interceptData.setting ) ) {
+				interceptData.setting = serializeJSON( interceptData.setting );
+			}
+			
+			// Stop processing expansions on this setting
+			interceptData.resolved=true;
+			return true;
 		}
 		
 	}

@@ -137,7 +137,7 @@ component singleton {
 	*
 	* @text The string to do the replacement on
 	*/
-	function expandSystemSettings( required string text ) {
+	function expandSystemSettings( required string text, any context={} ) {
 		// Temporarily remove escaped ones like \${do.not.expand.me}
 		text = replaceNoCase( text, '\${', '__system_setting__', "all" );
 		// Mark all system settings
@@ -163,7 +163,8 @@ component singleton {
 			var interceptData = {
 				setting : settingName,
 				defaultValue : defaultValue,
-				resolved : false
+				resolved : false,
+				context : context
 			};
 			// Allow for custom setting resolution
 			interceptorService.announceInterception( 'onSystemSettingExpansion', interceptData );
@@ -192,13 +193,13 @@ component singleton {
 	*
 	* @dataStructure A string, struct, or array to perform deep replacement on.
 	*/
-	function expandDeepSystemSettings( required any dataStructure ) {
+	function expandDeepSystemSettings( required any dataStructure, any context=dataStructure ) {
 		// If it's a struct...
 		if( isStruct( dataStructure ) ) {
 			// Loop over and process each key
 			for( var key in dataStructure ) {
-				var expandedKey = expandSystemSettings( key );
-				dataStructure[ expandedKey ] = expandDeepSystemSettings( dataStructure[ key ] );
+				var expandedKey = expandSystemSettings( key, context );
+				dataStructure[ expandedKey ] = expandDeepSystemSettings( dataStructure[ key ], context );
 				if( expandedKey != key ) dataStructure.delete( key );
 			}
 			return dataStructure;
@@ -208,13 +209,13 @@ component singleton {
 			// Loop over and process each index
 			for( var item in dataStructure ) {
 				i++;
-				dataStructure[ i ] = expandDeepSystemSettings( item );
+				dataStructure[ i ] = expandDeepSystemSettings( item, context );
 			}
 			return dataStructure;
 		// If it's a string...
 		} else if ( isSimpleValue( dataStructure ) ) {
 			// Just do the replacement
-			return expandSystemSettings( dataStructure );
+			return expandSystemSettings( dataStructure, context );
 		}
 		// Other complex variables like XML or CFC instance would just get skipped for now.
 		return dataStructure;
