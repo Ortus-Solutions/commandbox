@@ -224,7 +224,7 @@ component singleton accessors=true {
 
 		// Create this Task CFC
 		try {
-			var mappingName = '"task-" & relTaskFile';
+			var mappingName = "task-" & relTaskFile;
 			
 			// Check if task mapped?
 			if( wirebox.getBinder().mappingExists( mappingName ) ){

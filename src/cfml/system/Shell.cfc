@@ -137,14 +137,14 @@ component accessors="true" singleton {
 		variables.reader 		= readerFactory.getInstance( argumentCollection = variables.initArgs  );
 		variables.shellPrompt 	= print.green( "CommandBox> ");
 
-		// When the shell first starts, the current working dir doesn't always containt the trailing slash
-		variables.pwd = fileSystem.resolvePath( variables.pwd );
-
 		// Create temp dir & set
 		setTempDir( variables.tempdir );
 
 		getInterceptorService().configure();
 		getModuleService().configure();
+
+		// When the shell first starts, the current working dir doesn't always containt the trailing slash
+		variables.pwd = fileSystem.resolvePath( variables.pwd );
 
 		getModuleService().activateAllModules();
 

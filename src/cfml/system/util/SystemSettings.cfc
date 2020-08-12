@@ -9,7 +9,8 @@
 *
 */
 component singleton {
-	property name='commandService' inject='CommandService';
+	property name='commandService'		inject='CommandService';
+	property name='interceptorService'	inject='interceptorService';
 
 	variables.system = createObject( "java", "java.lang.System" );
 	// Default environment for the shell
@@ -158,7 +159,23 @@ component singleton {
 				defaultValue = settingName.listRest( ':' );
 				settingName = settingName.listFirst( ':' );
 			}
-			var result = getSystemSetting( settingName, defaultValue );
+						
+			var interceptData = {
+				setting : settingName,
+				defaultValue : defaultValue,
+				resolved : false
+			};
+			// Allow for custom setting resolution
+			interceptorService.announceInterception( 'onSystemSettingExpansion', interceptData );
+			
+			settingName = interceptData.setting;
+			defaultValue = interceptData.defaultValue;
+			
+			if( interceptData.resolved ) {
+				var result = settingName;
+			} else {
+				var result = getSystemSetting( settingName, defaultValue );	
+			}
 
 			// And stick their results in their place
 			text = replaceNoCase( text, systemSetting, result, 'one' );

@@ -17,10 +17,10 @@ component accessors="true" singleton {
 	property name="coreClassLoader";
 
 	// DI
-	property name="shell" inject="shell";
-	property name="logger" inject="logbox:logger:{this}";
-	property name="tempDir" inject="tempDir@constants";
-	property name="configService" inject="configService";
+	property name="shell"				inject="shell";
+	property name="logger"				inject="logbox:logger:{this}";
+	property name="tempDir"				inject="tempDir@constants";
+	property name="configService"		inject="configService";
 
 	function init() {
 		variables.os = createObject( "java", "java.lang.System" ).getProperty( "os.name" ).toLowerCase();
