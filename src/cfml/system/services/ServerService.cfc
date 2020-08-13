@@ -1006,9 +1006,10 @@ component accessors="true" singleton {
 			// Default it to megs
 			serverInfo.minHeapSize &= 'm';
 		}
-		
+
+		var tempOptions = [];		
 		serverInfo.trayOptions = [];
-		serverInfo.trayOptions.prepend(
+		tempOptions.prepend(
 			{
 				"label":"Info",
 				"items": [
@@ -1038,16 +1039,14 @@ component accessors="true" singleton {
 
 		openItems.prepend( { "label" : "Webroot", "action" : "openfilesystem", "path" : serverInfo.appFileSystemPath, "image" : expandPath('/commandbox/system/config/server-icons/folder.png' ) } );
 
-		var tempOptions.trayOptions = [];
+		tempOptions.prepend( { 'label':'Open...', 'items': openItems, "image" : expandPath('/commandbox/system/config/server-icons/open.png' ) } );
 
-		tempOptions.trayOptions.prepend( { 'label':'Open...', 'items': openItems, "image" : expandPath('/commandbox/system/config/server-icons/open.png' ) } );
+		tempOptions.prepend( { 'label' : 'Restart Server', 'hotkey':'R', 'action' : "runAsync" , "command" : "box server restart " & "'#serverInfo.name#'", 'image': expandPath('/commandbox/system/config/server-icons/restart.png' ), 'workingDirectory': defaultwebroot} );
 
-		tempOptions.trayOptions.prepend( { 'label' : 'Restart Server', 'hotkey':'R', 'action' : "runAsync" , "command" : "box server restart " & "'#serverInfo.name#'", 'image': expandPath('/commandbox/system/config/server-icons/restart.png' ), 'workingDirectory': defaultwebroot} );
-
-		tempOptions.trayOptions.prepend( { 'label':'Stop Server', 'action':'stopserver', 'image' : expandPath('/commandbox/system/config/server-icons/stop.png' ) } );
+		tempOptions.prepend( { 'label':'Stop Server', 'action':'stopserver', 'image' : expandPath('/commandbox/system/config/server-icons/stop.png' ) } );
 
 		// Take default options, then append config defaults and server.json trayOptions on top of them (allowing nested overwrite)
-		serverInfo.trayOptions = appendMenuItems( tempOptions.trayOptions, defaultwebroot, [] );
+		serverInfo.trayOptions = appendMenuItems( tempOptions, defaultwebroot, [] );
 		serverInfo.trayOptions = appendMenuItems( defaults.trayOptions, defaultwebroot, serverInfo.trayOptions );
 		serverInfo.trayOptions = appendMenuItems( serverJSON.trayOptions ?: [], defaultServerConfigFileDirectory, serverInfo.trayOptions );
 
