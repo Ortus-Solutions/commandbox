@@ -1243,7 +1243,8 @@ component accessors="true" singleton {
 
 				// Run preXXX package script
 				runScript( 'pre#arguments.scriptName#', arguments.directory, true );
-
+				
+				systemSettings.expandDeepSystemSettings( boxJSON );
 				var thisScript = boxJSON.scripts[ arguments.scriptName ];
 				consoleLogger.debug( '.' );
 				consoleLogger.warn( 'Running package script [#arguments.scriptName#].' );
