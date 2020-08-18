@@ -168,7 +168,7 @@ component aliases="bump" {
 					print.line()
 						.boldRedLine( 'The working directory is not clean.' );
 					for( var entryDiff in diffs ) {
-						print.yellowLine( entryDiff.getChangeType() & ' ' & entryDiff.getNewPath() );
+						print.yellowLine( entryDiff.getChangeType() & ' ' & (entryDiff.getChangeType() == 'DELETE' ? entryDiff.getOldPath() : entryDiff.getNewPath() ) );
 					}
 					error( 'Cannot tag Git repo. Please commit file, or use --force flag to skip this check' );
 				}
@@ -197,8 +197,13 @@ component aliases="bump" {
 			} catch( any var e ) {
 				logger.error( 'Error tagging Git repository with new version.', e );
 				error( 'Error tagging Git repository with new version.', e.message & ' ' & e.detail );
+			} finally {
+				// Release file system locks on the repo
+				if( structKeyExists( local, 'git' ) ) {
+					git.getRepository().close();
+				}
 			}
-
+		
 		} // end is Git repo and are we tagging?
 
 		interceptorService.announceInterception( 'onRelease', { directory=arguments.directory, version=arguments.version } );
