@@ -1350,7 +1350,8 @@ component accessors="true" singleton {
 
 		// now we can log the *final* command line string that will be used to start the server
 	    if( serverInfo.verbose ) {
-			var cleanedArgs = cr & '    ' & trim( reReplaceNoCase( args.toList( ' ' ), ' (-|"-)', cr & '    \1', 'all' ) );
+	    	systemoutput( args, 1 );
+			var cleanedArgs = cr & '    ' & trim( args.map( ( arg )=>reReplaceNoCase( arg, '^(-|"-)', cr & '    \1', 'all' )  ).toList( ' ' ) );
 			job.addLog("Server start command: #cleanedargs#");
 	    }
 
