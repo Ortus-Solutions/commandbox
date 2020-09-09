@@ -794,9 +794,9 @@ component accessors="true" singleton {
 			// Administrators
 			//"regex(pattern='^/(CFIDE/administrator|CFIDE/adminapi|CFIDE/AIR|CFIDE/appdeployment|CFIDE/cfclient|CFIDE/classes|CFIDE/componentutils|CFIDE/debug|CFIDE/images|CFIDE/orm|CFIDE/portlets|CFIDE/scheduler|CFIDE/ServerManager|CFIDE/services|CFIDE/websocket|CFIDE/wizards|lucee/admin)/.*', case-sensitive=false) -> response-code(404)",
 			// Common config files
-			"regex(pattern='.*/(box.json|server.json|web.config|urlrewrite.xml|package.json|package-lock.json|Gulpfile.js|CFIDE/multiservermonitor-access-policy.xml|CFIDE/probe.cfm)', case-sensitive=false) -> send-error(404)",
+			"regex(pattern='.*/(box.json|server.json|web.config|urlrewrite.xml|package.json|package-lock.json|Gulpfile.js|CFIDE/multiservermonitor-access-policy.xml|CFIDE/probe.cfm)', case-sensitive=false) -> response-code(404)",
 			// Any file or folder starting with a period
-			"regex('/\.')-> send-error( 404 )"
+			"regex('/\.')-> response-code( 404 )"
 		], true );
 
 		serverInfo.cfengine			= serverProps.cfengine			?: serverJSON.app.cfengine			?: defaults.app.cfengine;
@@ -1353,7 +1353,7 @@ component accessors="true" singleton {
 
 		// now we can log the *final* command line string that will be used to start the server
 	    if( serverInfo.verbose ) {
-			var cleanedArgs = cr & '    ' & trim( reReplaceNoCase( args.toList( ' ' ), ' (-|"-)', cr & '    \1', 'all' ) );
+			var cleanedArgs = cr & '    ' & trim( args.map( ( arg )=>reReplaceNoCase( arg, '^(-|"-)', cr & '    \1', 'all' )  ).toList( ' ' ) );
 			job.addLog("Server start command: #cleanedargs#");
 	    }
 

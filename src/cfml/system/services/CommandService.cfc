@@ -606,7 +606,7 @@ component accessors="true" singleton {
 			// If command ends with "help", switch it around to call the root help command
 			// Ex. "coldbox help" becomes "help coldbox"
 			// Don't do this if we're already in a help command or endless recursion will ensue.
-			if( tokens.len() > 1 && listFindNoCase( helpTokens, tokens.last() ) && !inCommand( 'help' ) ){
+			if( tokens.len() > 1 && listFindNoCase( helpTokens, tokens.last() ) && !tokens[1].startsWith('!') && !inCommand( 'help' ) ){
 				// Move help to the beginning
 				tokens.deleteAt( tokens.len() );
 				tokens.prepend( 'help' );
