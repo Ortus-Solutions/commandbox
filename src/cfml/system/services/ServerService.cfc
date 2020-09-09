@@ -126,6 +126,7 @@ component accessors="true" singleton {
 			'trayOptions' : duplicate( d.trayOptions ?: [] ),
 			'trayEnable' : d.trayEnable ?: true,
 			'dockEnable' : d.dockEnable ?: true,
+			'gzipPredicate' : d.gzipPredicate ?: 'max-content-size(1500)',
 			'jvm' : {
 				'heapSize' : d.jvm.heapSize ?: '',
 				'minHeapSize' : d.jvm.minHeapSize ?: '',
@@ -624,6 +625,7 @@ component accessors="true" singleton {
 
 		serverInfo.trayEnable	 	= serverProps.trayEnable		?: serverJSON.trayEnable			?: defaults.trayEnable;
 		serverInfo.dockEnable	 	= serverJSON.dockEnable			?: defaults.dockEnable;
+		serverInfo.gzipPredicate	= serverJSON.gzipPredicate	?: defaults.gzipPredicate;
 
 		serverInfo.defaultBaseURL = serverInfo.SSLEnable ? 'https://#serverInfo.host#:#serverInfo.SSLPort#' : 'http://#serverInfo.host#:#serverInfo.port#';
 
@@ -1127,6 +1129,7 @@ component accessors="true" singleton {
 			.append( '--server-name' ).append( serverInfo.name )
 			.append( '--tray-enable' ).append( serverInfo.trayEnable )
 			.append( '--dock-enable' ).append( serverInfo.dockEnable )
+			.append( '--gzip-predicate' ).append( serverInfo.gzipPredicate )
 			.append( '--directoryindex' ).append( serverInfo.directoryBrowsing )
 			.append( '--timeout' ).append( serverInfo.startTimeout )
 			.append( '--proxy-peeraddress' ).append( 'true' )
@@ -2269,6 +2272,7 @@ component accessors="true" singleton {
 			'trayOptions'		: {},
 			'trayEnable'		: true,
 			'dockEnable'		: true,
+			'gzipPredicate'	: '',
 			'dateLastStarted'	: '',
 			'openBrowser'		: true,
 			'openBrowserURL'	: '',
