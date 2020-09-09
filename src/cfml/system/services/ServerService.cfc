@@ -1129,7 +1129,7 @@ component accessors="true" singleton {
 			.append( '--server-name' ).append( serverInfo.name )
 			.append( '--tray-enable' ).append( serverInfo.trayEnable )
 			.append( '--dock-enable' ).append( serverInfo.dockEnable )
-			.append( '--prefered-browser' ).append( serverInfo.preferedBrowser ) 
+			.append( '--prefered-browser' ).append( serverInfo.preferedBrowser )
 			.append( '--directoryindex' ).append( serverInfo.directoryBrowsing )
 			.append( '--timeout' ).append( serverInfo.startTimeout )
 			.append( '--proxy-peeraddress' ).append( 'true' )
