@@ -45,7 +45,7 @@ component accessors=true {
 		}
 
 		if( line.startsWith( '[TRACE]' ) ) {
-			return reReplaceNoCase( line, '^(\[TRACE] )(.*)', '[#printUtil.boldMagenta('TRACE ')#] \2' );
+			return reReplaceNoCase( line, '^(\[TRACE] )(.*)', '[#printUtil.boldMagenta('TRACE')#] \2' );
 		}
 
 		return line;

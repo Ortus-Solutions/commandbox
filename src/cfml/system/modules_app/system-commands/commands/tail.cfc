@@ -21,7 +21,7 @@
 	 * @lines number of lines to display.
 	 * @follow Keep outputting new lines to the file until Ctrl-C is pressed
 	 **/
-	function run( required path, numeric lines = 15, boolean follow = false ){
+	function run( required path, numeric lines = 15, boolean follow = false ){//formatServerLog
 		var rawText = false;
 		var inputAsArray = listToArray( arguments.path, chr(13) & chr(10) );
 
