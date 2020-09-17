@@ -1243,7 +1243,7 @@ component accessors="true" singleton {
 		if( serverInfo.HTTPEnable || serverInfo.SSLEnable ) {
 			args
 			 	.append( '--open-browser' ).append( serverInfo.openbrowser )
-				.append( '--open-url' ).append( serverInfo.openbrowserURL )
+				.append( '--open-url' ).append( serverInfo.openbrowserURL );
 		} else {
 			args.append( '--open-browser' ).append( false );
 		}
