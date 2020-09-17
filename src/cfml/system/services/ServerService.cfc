@@ -43,6 +43,8 @@ component accessors="true" singleton {
 	property name='parser'					inject='parser';
 	property name='systemSettings'			inject='SystemSettings';
 	property name='javaService'				inject='provider:javaService';
+	property name='ansiFormater'			inject='AnsiFormater';
+	property name="printUtil"				inject="print";
 
 	/**
 	* Constructor
@@ -1126,7 +1128,7 @@ component accessors="true" singleton {
 			.append( '--log-dir' ).append( serverInfo.logDir )
 			.append( '--server-name' ).append( serverInfo.name )
 			.append( '--tray-enable' ).append( serverInfo.trayEnable )
-			.append( '--dock-enable' ).append( serverInfo.dockEnable )
+			.append( '--dock-enable' ).append( serverInfo.dockEnable ) 
 			.append( '--directoryindex' ).append( serverInfo.directoryBrowsing )
 			.append( '--timeout' ).append( serverInfo.startTimeout )
 			.append( '--proxy-peeraddress' ).append( 'true' )
@@ -1241,7 +1243,7 @@ component accessors="true" singleton {
 		if( serverInfo.HTTPEnable || serverInfo.SSLEnable ) {
 			args
 			 	.append( '--open-browser' ).append( serverInfo.openbrowser )
-			 	.append( '--open-url' ).append( serverInfo.openbrowserURL );
+				.append( '--open-url' ).append( serverInfo.openbrowserURL );
 		} else {
 			args.append( '--open-browser' ).append( false );
 		}
@@ -1423,7 +1425,8 @@ component accessors="true" singleton {
 					// [DEBUG] runwar.config: Enabling Proxy Peer Address handling
 					// [DEBUG] runwar.server: Starting open browser action
 					line = reReplaceNoCase( line, '^((#chr( 27 )#\[m)?\[[^]]*])( runwar\.[^:]*: )(.*)', '\1 Runwar: \4' );
-
+					//consoleLogger.debug( 'LINE:' . line );
+					line = AnsiFormater.cleanLine( line );
 					// Log messages from any other 3rd party java lib tapping into Log4j will be left alone
 					// Ex:
 					// [DEBUG] org.tuckey.web.filters.urlrewrite.RuleExecutionOutput: needs to be forwarded to /index.cfm/Main
