@@ -818,7 +818,7 @@ External Dependencies:
 
 				<mkdir dir="JREs/jre_${jre.version}_linux_x64"/>
 
-				<get src="https://api.adoptopenjdk.net/v3/binary/latest/${jre.version.escaped}/ga/linux/x64/jre/hotspot/normal/adoptopenjdk"
+				<get src="https://api.adoptopenjdk.net/v3/binary/version/${jre.version.escaped}/linux/x64/jre/hotspot/normal/adoptopenjdk"
 					 dest="JREs/jre_${jre.version}_linux_x64.tar.gz"
 					 verbose="true" />
 
@@ -836,7 +836,7 @@ External Dependencies:
 
 				<mkdir dir="JREs/jre_${jre.version}_windows_x64"/>
 
-				<get src="https://api.adoptopenjdk.net/v3/binary/latest/${jre.version.escaped}/ga/windows/x64/jre/hotspot/normal/adoptopenjdk"
+				<get src="https://api.adoptopenjdk.net/v3/binary/version/${jre.version.escaped}/windows/x64/jre/hotspot/normal/adoptopenjdk"
 					 dest="JREs/jre_${jre.version}_windows_x64.zip"
 					 verbose="true" />
 				<unzip src="JREs/jre_${jre.version}_windows_x64.zip" dest="JREs\jre_${jre.version}_windows_x64/" overwrite="true"/>
@@ -851,7 +851,7 @@ External Dependencies:
 
 				<mkdir dir="JREs/jre_${jre.version}_windows_x32"/>
 						  
-				<get src="https://api.adoptopenjdk.net/v3/binary/latest/${jre.version.escaped}/ga/windows/x32/jre/hotspot/normal/adoptopenjdk"
+				<get src="https://api.adoptopenjdk.net/v3/binary/version/${jre.version.escaped}/windows/x32/jre/hotspot/normal/adoptopenjdk"
 					 dest="JREs/jre_${jre.version}_windows_x32.zip"
 					 verbose="true" />
 				<unzip src="JREs/jre_${jre.version}_windows_x32.zip" dest="JREs\jre_${jre.version}_windows_x32/" overwrite="true"/>
@@ -866,7 +866,7 @@ External Dependencies:
 
 				<mkdir dir="JREs/jre_${jre.version}_mac_x64"/>
 
-				<get src="https://api.adoptopenjdk.net/v3/binary/latest/${jre.version.escaped}/ga/mac/x64/jre/hotspot/normal/adoptopenjdk"
+				<get src="https://api.adoptopenjdk.net/v3/binary/version/${jre.version.escaped}/mac/x64/jre/hotspot/normal/adoptopenjdk"
 					 dest="JREs/jre_${jre.version}_mac_x64.tar.gz"
 					 verbose="true" />
 
