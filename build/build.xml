@@ -818,7 +818,7 @@ External Dependencies:
 
 				<mkdir dir="JREs/jre_${jre.version}_linux_x64"/>
 
-				<get src="https://api.adoptopenjdk.net/v2/binary/releases/${jre.adoptVesionr}?openjdk_impl=hotspot&amp;os=linux&amp;arch=x64&amp;release=${jre.version.escaped}&amp;type=JRE"
+				<get src="https://api.adoptopenjdk.net/v3/binary/latest/${jre.version.escaped}/ga/linux/x64/jre/hotspot/normal/adoptopenjdk"
 					 dest="JREs/jre_${jre.version}_linux_x64.tar.gz"
 					 verbose="true" />
 
@@ -836,7 +836,7 @@ External Dependencies:
 
 				<mkdir dir="JREs/jre_${jre.version}_windows_x64"/>
 
-				<get src="https://api.adoptopenjdk.net/v2/binary/releases/${jre.adoptVesionr}?openjdk_impl=hotspot&amp;os=windows&amp;arch=x64&amp;release=${jre.version.escaped}&amp;type=JRE"
+				<get src="https://api.adoptopenjdk.net/v3/binary/latest/${jre.version.escaped}/ga/windows/x64/jre/hotspot/normal/adoptopenjdk"
 					 dest="JREs/jre_${jre.version}_windows_x64.zip"
 					 verbose="true" />
 				<unzip src="JREs/jre_${jre.version}_windows_x64.zip" dest="JREs\jre_${jre.version}_windows_x64/" overwrite="true"/>
@@ -850,8 +850,8 @@ External Dependencies:
 	            <echo>Windows x32 JRE not found, downloading artifact</echo>
 
 				<mkdir dir="JREs/jre_${jre.version}_windows_x32"/>
-
-				<get src="https://api.adoptopenjdk.net/v2/binary/releases/${jre.adoptVesionr}?openjdk_impl=hotspot&amp;os=windows&amp;arch=x32&amp;release=${jre.version.escaped}&amp;type=JRE"
+						  
+				<get src="https://api.adoptopenjdk.net/v3/binary/latest/${jre.version.escaped}/ga/windows/x32/jre/hotspot/normal/adoptopenjdk"
 					 dest="JREs/jre_${jre.version}_windows_x32.zip"
 					 verbose="true" />
 				<unzip src="JREs/jre_${jre.version}_windows_x32.zip" dest="JREs\jre_${jre.version}_windows_x32/" overwrite="true"/>
@@ -866,7 +866,7 @@ External Dependencies:
 
 				<mkdir dir="JREs/jre_${jre.version}_mac_x64"/>
 
-				<get src="https://api.adoptopenjdk.net/v2/binary/releases/${jre.adoptVesionr}?openjdk_impl=hotspot&amp;os=mac&amp;arch=x64&amp;release=${jre.version.escaped}&amp;type=JRE"
+				<get src="https://api.adoptopenjdk.net/v3/binary/latest/${jre.version.escaped}/ga/mac/x64/jre/hotspot/normal/adoptopenjdk"
 					 dest="JREs/jre_${jre.version}_mac_x64.tar.gz"
 					 verbose="true" />
 

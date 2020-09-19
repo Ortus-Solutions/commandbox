@@ -498,7 +498,7 @@ component singleton {
 		startsWith = lcase( startsWith );
 		var complete = false;
 		if( lcase( name ).startsWith( startsWith ) || len( startsWith ) == 0 ) {
-			if( !name.endsWith( '=' ) ) {
+			if( !toString( name ).endsWith( '=' ) ) {
 				complete = true;
 			}
 
