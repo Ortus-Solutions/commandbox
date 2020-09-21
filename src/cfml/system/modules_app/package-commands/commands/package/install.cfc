@@ -102,6 +102,7 @@ component aliases="install" {
 	// DI
 	property name="packageService"	inject="PackageService";
 	property name="endpointService"	inject="endpointService";
+	property name='interceptorService'	inject='interceptorService';
 
 	/**
 	* @ID.hint "endpoint:package" to install. Default endpoint is "forgebox".  If no ID is passed, all dependencies in box.json will be installed.
@@ -151,6 +152,7 @@ component aliases="install" {
 		// Install this package(s).
 		// Don't pass directory unless you intend to override the box.json of the package being installed
 
+		interceptorService.announceInterception( 'preInstallAll', { installArgs=arguments } );
 
 		try {
 
@@ -173,6 +175,9 @@ component aliases="install" {
 		} catch( EndpointNotFound var e ) {
 			error( e.message, e.detail );
 		}
+		
+		
+		interceptorService.announceInterception( 'postInstallAll', { installArgs=arguments } );
 
 	}
 
