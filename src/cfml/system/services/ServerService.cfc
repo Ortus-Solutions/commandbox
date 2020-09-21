@@ -43,6 +43,8 @@ component accessors="true" singleton {
 	property name='parser'					inject='parser';
 	property name='systemSettings'			inject='SystemSettings';
 	property name='javaService'				inject='provider:javaService';
+	property name='ansiFormater'			inject='AnsiFormater';
+	property name="printUtil"				inject="print";
 
 	/**
 	* Constructor
@@ -126,6 +128,7 @@ component accessors="true" singleton {
 			'trayOptions' : duplicate( d.trayOptions ?: [] ),
 			'trayEnable' : d.trayEnable ?: true,
 			'dockEnable' : d.dockEnable ?: true,
+			'gzipPredicate' : d.gzipPredicate ?: '',
 			'jvm' : {
 				'heapSize' : d.jvm.heapSize ?: '',
 				'minHeapSize' : d.jvm.minHeapSize ?: '',
@@ -624,6 +627,7 @@ component accessors="true" singleton {
 
 		serverInfo.trayEnable	 	= serverProps.trayEnable		?: serverJSON.trayEnable			?: defaults.trayEnable;
 		serverInfo.dockEnable	 	= serverJSON.dockEnable			?: defaults.dockEnable;
+		serverInfo.gzipPredicate	= serverJSON.gzipPredicate	?: defaults.gzipPredicate;
 
 		serverInfo.defaultBaseURL = serverInfo.SSLEnable ? 'https://#serverInfo.host#:#serverInfo.SSLPort#' : 'http://#serverInfo.host#:#serverInfo.port#';
 
@@ -1131,8 +1135,13 @@ component accessors="true" singleton {
 			.append( '--timeout' ).append( serverInfo.startTimeout )
 			.append( '--proxy-peeraddress' ).append( 'true' )
 			.append( '--cookie-secure' ).append( serverInfo.sessionCookieSecure )
-			.append( '--cookie-httponly' ).append( serverInfo.sessionCookieHTTPOnly )
-			.append( serverInfo.runwarArgs.listToArray( ' ' ), true );
+			.append( '--cookie-httponly' ).append( serverInfo.sessionCookieHTTPOnly );
+			
+			if(len(trim(serverInfo.gzipPredicate))){
+				args.append( '--gzip-predicate' ).append( serverInfo.gzipPredicate );
+			}
+			
+			args.append( serverInfo.runwarArgs.listToArray( ' ' ), true );
 
 		if( serverInfo.trayEnable ) {
 			args
@@ -1241,7 +1250,7 @@ component accessors="true" singleton {
 		if( serverInfo.HTTPEnable || serverInfo.SSLEnable ) {
 			args
 			 	.append( '--open-browser' ).append( serverInfo.openbrowser )
-				.append( '--open-url' ).append( serverInfo.openbrowserURL )
+				.append( '--open-url' ).append( serverInfo.openbrowserURL );
 		} else {
 			args.append( '--open-browser' ).append( false );
 		}
@@ -1423,7 +1432,8 @@ component accessors="true" singleton {
 					// [DEBUG] runwar.config: Enabling Proxy Peer Address handling
 					// [DEBUG] runwar.server: Starting open browser action
 					line = reReplaceNoCase( line, '^((#chr( 27 )#\[m)?\[[^]]*])( runwar\.[^:]*: )(.*)', '\1 Runwar: \4' );
-
+					//consoleLogger.debug( 'LINE:' . line );
+					line = AnsiFormater.cleanLine( line );
 					// Log messages from any other 3rd party java lib tapping into Log4j will be left alone
 					// Ex:
 					// [DEBUG] org.tuckey.web.filters.urlrewrite.RuleExecutionOutput: needs to be forwarded to /index.cfm/Main
@@ -2269,6 +2279,7 @@ component accessors="true" singleton {
 			'trayOptions'		: {},
 			'trayEnable'		: true,
 			'dockEnable'		: true,
+			'gzipPredicate'		: '',
 			'dateLastStarted'	: '',
 			'openBrowser'		: true,
 			'openBrowserURL'	: '',
