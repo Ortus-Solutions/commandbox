@@ -22,6 +22,11 @@ component {
 			arguments.directory = systemSettings.getSystemSetting( 'OLDPWD', shell.pwd() );
 		}
 
+		// Shorthand expantion for going back muliple directories eg. "..." - expand mulitple dots "." to a "../" 
+		if( reMatch("^\.{2,}$", directory).len() ){
+			arguments.directory = ( replace( Left( arguments.directory, len(arguments.directory) - 1 ), '.', '../', 'All' ) );
+		}
+		
 		// This will make each directory canonical and absolute
 		arguments.directory = resolvePath( arguments.directory );
 

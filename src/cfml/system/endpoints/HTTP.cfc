@@ -13,7 +13,7 @@ component accessors=true implements="IEndpoint" singleton {
 	property name="consoleLogger"			inject="logbox:logger:console";
 	property name="tempDir" 				inject="tempDir@constants";
 	property name="artifactService" 		inject="ArtifactService";
-	property name="fileEndpoint"			inject="commandbox.system.endpoints.File";
+	property name="fileEndpoint"			inject="commandbox.system.endpoints.TempFile";
 	property name="progressableDownloader" 	inject="ProgressableDownloader";
 	property name="progressBar" 			inject="ProgressBar";
 	property name="CR" 						inject="CR@constants";
