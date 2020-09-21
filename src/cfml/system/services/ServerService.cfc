@@ -126,7 +126,7 @@ component accessors="true" singleton {
 			'trayOptions' : duplicate( d.trayOptions ?: [] ),
 			'trayEnable' : d.trayEnable ?: true,
 			'dockEnable' : d.dockEnable ?: true,
-			'gzipPredicate' : d.gzipPredicate ?: 'max-content-size(1500)',
+			'gzipPredicate' : d.gzipPredicate ?: '',
 			'jvm' : {
 				'heapSize' : d.jvm.heapSize ?: '',
 				'minHeapSize' : d.jvm.minHeapSize ?: '',
@@ -1129,13 +1129,17 @@ component accessors="true" singleton {
 			.append( '--server-name' ).append( serverInfo.name )
 			.append( '--tray-enable' ).append( serverInfo.trayEnable )
 			.append( '--dock-enable' ).append( serverInfo.dockEnable )
-			.append( '--gzip-predicate' ).append( serverInfo.gzipPredicate )
 			.append( '--directoryindex' ).append( serverInfo.directoryBrowsing )
 			.append( '--timeout' ).append( serverInfo.startTimeout )
 			.append( '--proxy-peeraddress' ).append( 'true' )
 			.append( '--cookie-secure' ).append( serverInfo.sessionCookieSecure )
-			.append( '--cookie-httponly' ).append( serverInfo.sessionCookieHTTPOnly )
-			.append( serverInfo.runwarArgs.listToArray( ' ' ), true );
+			.append( '--cookie-httponly' ).append( serverInfo.sessionCookieHTTPOnly );
+			
+			if(len(trim(serverInfo.gzipPredicate))){
+				args.append( '--gzip-predicate' ).append( serverInfo.gzipPredicate );
+			}
+			
+			args.append( serverInfo.runwarArgs.listToArray( ' ' ), true );
 
 		if( serverInfo.trayEnable ) {
 			args
@@ -2272,7 +2276,7 @@ component accessors="true" singleton {
 			'trayOptions'		: {},
 			'trayEnable'		: true,
 			'dockEnable'		: true,
-			'gzipPredicate'	: '',
+			'gzipPredicate'		: '',
 			'dateLastStarted'	: '',
 			'openBrowser'		: true,
 			'openBrowserURL'	: '',
