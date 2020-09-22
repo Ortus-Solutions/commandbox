@@ -128,7 +128,6 @@ component accessors="true" singleton {
 			'trayOptions' : duplicate( d.trayOptions ?: [] ),
 			'trayEnable' : d.trayEnable ?: true,
 			'dockEnable' : d.dockEnable ?: true,
-			'gzipPredicate' : d.gzipPredicate ?: '',
 			'jvm' : {
 				'heapSize' : d.jvm.heapSize ?: '',
 				'minHeapSize' : d.jvm.minHeapSize ?: '',
@@ -146,6 +145,7 @@ component accessors="true" singleton {
 				'errorPages' : duplicate( d.web.errorPages ?: {} ),
 				'accessLogEnable' : d.web.accessLogEnable ?: false,
 				'GZIPEnable' : d.web.GZIPEnable ?: true,
+				'gzipPredicate' : d.gzipPredicate ?: '',
 				'welcomeFiles' : d.web.welcomeFiles ?: '',
 				'maxRequests' : d.web.maxRequests ?: '',
 				'HTTP' : {
@@ -627,7 +627,6 @@ component accessors="true" singleton {
 
 		serverInfo.trayEnable	 	= serverProps.trayEnable		?: serverJSON.trayEnable			?: defaults.trayEnable;
 		serverInfo.dockEnable	 	= serverJSON.dockEnable			?: defaults.dockEnable;
-		serverInfo.gzipPredicate	= serverJSON.gzipPredicate	?: defaults.gzipPredicate;
 
 		serverInfo.defaultBaseURL = serverInfo.SSLEnable ? 'https://#serverInfo.host#:#serverInfo.SSLPort#' : 'http://#serverInfo.host#:#serverInfo.port#';
 
@@ -702,8 +701,9 @@ component accessors="true" singleton {
 		serverInfo.errorPages		= defaults.web.errorPages;
 		serverInfo.errorPages.append( serverJSON.web.errorPages ?: {} );
 
-		serverInfo.accessLogEnable	= serverJSON.web.accessLogEnable ?: defaults.web.accessLogEnable;
-		serverInfo.GZIPEnable	= serverJSON.web.GZIPEnable ?: defaults.web.GZIPEnable;
+		serverInfo.accessLogEnable	= serverJSON.web.accessLogEnable	?: defaults.web.accessLogEnable;
+		serverInfo.GZIPEnable		= serverJSON.web.GZIPEnable 		?: defaults.web.GZIPEnable;
+		serverInfo.gzipPredicate	= serverJSON.gzipPredicate			?: defaults.gzipPredicate;
 
 		serverInfo.rewriteslogEnable = serverJSON.web.rewrites.logEnable ?: defaults.web.rewrites.logEnable;
 
@@ -1137,10 +1137,6 @@ component accessors="true" singleton {
 			.append( '--cookie-secure' ).append( serverInfo.sessionCookieSecure )
 			.append( '--cookie-httponly' ).append( serverInfo.sessionCookieHTTPOnly );
 			
-			if(len(trim(serverInfo.gzipPredicate))){
-				args.append( '--gzip-predicate' ).append( serverInfo.gzipPredicate );
-			}
-			
 			args.append( serverInfo.runwarArgs.listToArray( ' ' ), true );
 
 		if( serverInfo.trayEnable ) {
@@ -1175,8 +1171,10 @@ component accessors="true" singleton {
 		}
 
 		if( serverInfo.GZIPEnable ) {
-			args
-				.append( '--gzip-enable' ).append( true )
+			args.append( '--gzip-enable' ).append( true );
+			if( len( trim( serverInfo.gzipPredicate ) ) ){
+				args.append( '--gzip-predicate' ).append( serverInfo.gzipPredicate );
+			}
 		}
 
 		if( serverInfo.accesslogenable ) {
@@ -2274,12 +2272,12 @@ component accessors="true" singleton {
 			'aliases'			: {},
 			'errorPages'		: {},
 			'accessLogEnable'	: false,
-			'GZIPEnable'		: true,
+			'GZipEnable'		: true,
+			'GZipPredicate'		: '',
 			'rewritesLogEnable'	: false,
 			'trayOptions'		: {},
 			'trayEnable'		: true,
 			'dockEnable'		: true,
-			'gzipPredicate'		: '',
 			'dateLastStarted'	: '',
 			'openBrowser'		: true,
 			'openBrowserURL'	: '',
