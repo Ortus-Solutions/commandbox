@@ -145,7 +145,7 @@ component accessors="true" singleton {
 				'errorPages' : duplicate( d.web.errorPages ?: {} ),
 				'accessLogEnable' : d.web.accessLogEnable ?: false,
 				'GZIPEnable' : d.web.GZIPEnable ?: true,
-				'gzipPredicate' : d.gzipPredicate ?: '',
+				'gzipPredicate' : d.web.gzipPredicate ?: '',
 				'welcomeFiles' : d.web.welcomeFiles ?: '',
 				'maxRequests' : d.web.maxRequests ?: '',
 				'HTTP' : {
@@ -703,7 +703,7 @@ component accessors="true" singleton {
 
 		serverInfo.accessLogEnable	= serverJSON.web.accessLogEnable	?: defaults.web.accessLogEnable;
 		serverInfo.GZIPEnable		= serverJSON.web.GZIPEnable 		?: defaults.web.GZIPEnable;
-		serverInfo.gzipPredicate	= serverJSON.gzipPredicate			?: defaults.gzipPredicate;
+		serverInfo.gzipPredicate	= serverJSON.web.gzipPredicate		?: defaults.web.gzipPredicate;
 
 		serverInfo.rewriteslogEnable = serverJSON.web.rewrites.logEnable ?: defaults.web.rewrites.logEnable;
 
