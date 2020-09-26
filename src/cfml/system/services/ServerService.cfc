@@ -128,6 +128,7 @@ component accessors="true" singleton {
 			'trayOptions' : duplicate( d.trayOptions ?: [] ),
 			'trayEnable' : d.trayEnable ?: true,
 			'dockEnable' : d.dockEnable ?: true,
+			'profile'	: d.profile ?: '',
 			'jvm' : {
 				'heapSize' : d.jvm.heapSize ?: '',
 				'minHeapSize' : d.jvm.minHeapSize ?: '',
@@ -137,7 +138,7 @@ component accessors="true" singleton {
 			},
 			'web' : {
 				'host' : d.web.host ?: '127.0.0.1',
-				'directoryBrowsing' : d.web.directoryBrowsing ?: false,
+				'directoryBrowsing' : d.web.directoryBrowsing ?: '',
 				'webroot' : d.web.webroot ?: '',
 				// Duplicate so onServerStart interceptors don't actually change config settings via reference.
 				'aliases' : duplicate( d.web.aliases ?: {} ),
@@ -175,7 +176,9 @@ component accessors="true" singleton {
 					'users' : d.web.basicAuth.users ?: {}
 				},
 				'rules' : duplicate( d.web.rules ?: [] ),
-				'rulesFile' : d.web.rulesFile ?: []
+				'rulesFile' : duplicate( d.web.rulesFile ?: [] ),
+				'blockCFAdmin' : d.web.blockCFAdmin ?: '',
+				'blockConfigPaths' :  d.web.blockConfigPaths ?: ''
 			},
 			'app' : {
 				'logDir' : d.app.logDir ?: '',
@@ -493,6 +496,9 @@ component accessors="true" singleton {
 			    	}
 					serverJSON[ 'web' ][ 'rewrites' ][ 'config' ] = thisFile;
 			         break;
+			    case "blockCFAdmin":
+					serverJSON[ 'web' ][ 'blockCFAdmin' ] = serverProps[ prop ];
+			         break;
 			    case "heapSize":
 					serverJSON[ 'JVM' ][ 'heapSize' ] = serverProps[ prop ];
 			         break;
@@ -534,6 +540,7 @@ component accessors="true" singleton {
 		serverInfo.verbose 			= serverProps.verbose 			?: serverJSON.verbose 				?: defaults.verbose;
 		serverInfo.console 			= serverProps.console 			?: serverJSON.console 				?: defaults.console;
 		serverInfo.openbrowser		= serverProps.openbrowser 		?: serverJSON.openbrowser			?: defaults.openbrowser;
+		
 		serverInfo.openbrowserURL	= serverProps.openbrowserURL	?: serverJSON.openbrowserURL		?: defaults.openbrowserURL;
 
 		// Trace assumes debug
@@ -554,6 +561,49 @@ component accessors="true" singleton {
 		if( serverInfo.port == 0 ) {
 			serverInfo.port = getRandomPort( serverInfo.host );
 		}
+		
+		// Try to set a smart profile if there's not one set
+		if( !trim( defaults.profile ).len() ) {
+			var thisIP = '';
+			// Try and get the IP we're binding to
+			try{
+				thisIP = java.InetAddress.getByName( serverInfo.host ).getHostAddress();
+			} catch( any var e ) {}
+			
+			// Look for a env var called "environment"
+			var envVarEnvironment = systemSettings.getSystemSetting( 'environment', '' );
+			
+			// Env var takes precendence.  
+			if( len( envVarEnvironment ) ) {
+				defaults.profile = envVarEnvironment;
+			// Otherwise see if we're bound to localhost.
+			} else if( listFirst( thisIP, '.' ) == '127' ) {
+				defaults.profile = 'development';
+			} else {
+				defaults.profile = 'production';
+			}
+		}
+		serverInfo.profile			= serverProps.profile	 		?: serverJSON.profile				?: defaults.profile;
+
+		if( !trim( defaults.web.blockCFAdmin ).len() ) {
+			if( serverInfo.profile == 'development' || serverInfo.profile == 'none' ) {
+				defaults.web.blockCFAdmin = 'false';
+			} else {
+				defaults.web.blockCFAdmin = 'external';
+			}
+		}
+		
+		if( !trim( defaults.web.blockConfigPaths ).len() ) {
+			if( serverInfo.profile == 'none' ) {
+				defaults.web.blockConfigPaths = false;
+			} else {
+				defaults.web.blockConfigPaths = true;
+			}
+		}
+		
+		serverInfo.blockCFAdmin		= serverProps.blockCFAdmin			?: serverJSON.web.blockCFAdmin		?: defaults.web.blockCFAdmin;
+		serverInfo.blockConfigPaths										 = serverJSON.web.blockConfigPaths	?: defaults.web.blockConfigPaths;
+
 
 		// Double check that the port in the user params or server.json isn't in use
 		if( !isPortAvailable( serverInfo.host, serverInfo.port ) ) {
@@ -689,6 +739,16 @@ component accessors="true" singleton {
 			serverInfo.javaHome = variables.javaCommand;
 		}
 
+		// If there isn't a default for this already
+		if( !isBoolean( defaults.web.directoryBrowsing ) ) {
+			// Default it according to the profile
+			if( serverInfo.profile == 'development' ) {
+				defaults.web.directoryBrowsing = true;
+			} else {
+				// secure by default even if profile is none or custom
+				defaults.web.directoryBrowsing = false;
+			}
+		}
 		serverInfo.directoryBrowsing = serverProps.directoryBrowsing ?: serverJSON.web.directoryBrowsing ?: defaults.web.directoryBrowsing;
 
 		// Global aliases are always added on top of server.json (but don't overwrite)
@@ -789,18 +849,29 @@ component accessors="true" singleton {
 			}), true);
 		}
 		
-		// Default CommandBox rules.  TODO: Refactor this to be defined by a profile
-		serverInfo.webRules.append( [
-			// track and trace verbs can leak data in XSS attacks
-			"disallowed-methods( methods={trace,track} )",
-			// Administrators
-			//"regex(pattern='^/(CFIDE/administrator|CFIDE/adminapi|CFIDE/AIR|CFIDE/appdeployment|CFIDE/cfclient|CFIDE/classes|CFIDE/componentutils|CFIDE/debug|CFIDE/images|CFIDE/orm|CFIDE/portlets|CFIDE/scheduler|CFIDE/ServerManager|CFIDE/services|CFIDE/websocket|CFIDE/wizards|lucee/admin)/.*', case-sensitive=false) -> response-code(404)",
-			// Common config files
-			"regex(pattern='.*/(box.json|server.json|web.config|urlrewrite.xml|package.json|package-lock.json|Gulpfile.js|CFIDE/multiservermonitor-access-policy.xml|CFIDE/probe.cfm)', case-sensitive=false) -> response-code(404)",
-			// Any file or folder starting with a period
-			"regex('/\.')-> response-code( 404 )"
-		], true );
-
+		// Default CommandBox rules.
+		if( serverInfo.blockConfigPaths ) {
+			serverInfo.webRules.append( [
+				// track and trace verbs can leak data in XSS attacks
+				"disallowed-methods( methods={trace,track} )",
+				// Common config files
+				"regex(pattern='.*/(box.json|server.json|web.config|urlrewrite.xml|package.json|package-lock.json|Gulpfile.js|CFIDE/multiservermonitor-access-policy.xml|CFIDE/probe.cfm)', case-sensitive=false) -> set-error(404)",
+				// Any file or folder starting with a period
+				"regex('/\.')-> set-error( 404 )"
+			], true );	
+		}
+		
+		// Administrators
+		if( serverInfo.blockCFAdmin == 'external' ) {
+			serverInfo.webRules.append( 
+				"cf-admin() -> block-external()"
+			 );
+		} else if( serverInfo.blockCFAdmin == 'true' ) {
+			serverInfo.webRules.append( 
+				"block-cf-admin()"
+			 );
+		}
+		
 		serverInfo.cfengine			= serverProps.cfengine			?: serverJSON.app.cfengine			?: defaults.app.cfengine;
 
 		serverInfo.restMappings		= serverProps.restMappings		?: serverJSON.app.restMappings		?: defaults.app.restMappings;
@@ -2281,10 +2352,15 @@ component accessors="true" singleton {
 			'dateLastStarted'	: '',
 			'openBrowser'		: true,
 			'openBrowserURL'	: '',
+			'profile'			: '',
 			'customServerFolder': '',
 			'welcomeFiles'		: '',
 			'maxRequests'		: '',
-			'exitCode'			: 0
+			'exitCode'			: 0,
+			'rules'				: [],
+			'rulesFile'			: '',
+			'blockCFAdmin'		: false,
+			'blockConfigPaths'	: false
 		};
 	}
 
@@ -2345,3 +2421,4 @@ component accessors="true" singleton {
 	}
 
 }
+
