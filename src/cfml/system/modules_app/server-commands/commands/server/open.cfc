@@ -47,8 +47,8 @@ component {
 				arguments.URI = '/' & arguments.URI;
 			}
 			var thisURL = "#serverInfo.host#:#serverInfo.port##arguments.URI#";
-			print.greenLine( "Opening...#thisURL#" );
-			openURL( thisURL );
+			print.greenLine( "Opening...#thisURL# on #serverInfo.preferedBrowser#" );
+			openURL( thisURL, serverInfo.preferedBrowser );
 
 
 		}
