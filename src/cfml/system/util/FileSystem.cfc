@@ -292,11 +292,8 @@ component accessors="true" singleton {
     		arguments.URI = "http://#arguments.uri#";
     	}
 
-		
-		rwbo.openURL(arguments.URI, arguments.browser);
-
 		try {
-			
+			rwbo.openURL(arguments.URI, arguments.browser);	
 	    } catch( any var e ) {
 	    	// Bird strike!  Log it.
 			logger.error( '#e.message# #e.detail#' );
