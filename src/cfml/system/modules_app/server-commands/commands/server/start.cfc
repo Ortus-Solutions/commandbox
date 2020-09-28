@@ -98,6 +98,10 @@ component aliases="start" {
 	 * @dryRun				Abort actually starting the server process, but all installation and downloading will still be performed to "warm up" the engine installation.
 	 * @verbose				Activate extra server start information without enabling the debug mode in the actual server (which you wouldn't want in production)
 	 * @trayEnable			Enable the system tray icon/menu
+	 * @profile				Controls default server settings.  Profiles: production, development, none
+	 * @profile.options	production,development,none
+	 * @blockCFAdmin		Block access to Lucee or ACF admin.  Valid values are true, false, external
+	 * @blockCFAdmin.options true,false,external
 	 **/
 	function run(
 		String  name,
@@ -144,7 +148,9 @@ component aliases="start" {
 		String startScriptFile,
 		Boolean dryRun,
 		Boolean verbose,
-		Boolean trayEnable
+		Boolean trayEnable,
+		String profile,
+		String blockCFAdmin
 	){
 
 		// This is a common mis spelling

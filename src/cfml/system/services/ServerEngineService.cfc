@@ -274,12 +274,12 @@ component accessors="true" singleton="true" {
 			
 			calcLuceeRailoContextPaths( installDetails, serverInfo );
 
-			var thiServerContext = serverInfo.serverConfigDir;
-			if( thiServerContext.startsWith( '/WEB-INF' ) ) {
-				thiServerContext = installDetails.installDir & thiServerContext;
+			var thisServerContext = serverInfo.serverConfigDir;
+			if( thisServerContext.startsWith( '/WEB-INF' ) ) {
+				thisServerContext = installDetails.installDir & thisServerContext;
 			}			
-			directoryCreate( thiServerContext & '/lucee-server/patches', true, true );
-			directoryCopy( '/commandbox-home/engine/cfml/cli/lucee-server/patches', thiServerContext & '/lucee-server/patches', false, '*.lco' );
+			directoryCreate( thisServerContext & '/lucee-server/patches', true, true );
+			directoryCopy( '/commandbox-home/engine/cfml/cli/lucee-server/patches', thisServerContext & '/lucee-server/patches', false, '*.lco' );
 			
 			return installDetails;
 		}
