@@ -51,12 +51,16 @@ component {
 
 	// preInstall gets package requesting the installation because dep isn't installed yet
 	function preInstall() { processScripts( 'preInstall', interceptData.packagePathRequestingInstallation, interceptData ); }
+	
+	function preInstallAll() { processScripts( 'preInstallAll', shell.pwd(), interceptData ); }
 
 	// onInstall gets package requesting the installation because dep isn't installed yet
 	function onInstall() { processScripts( 'onInstall', interceptData.packagePathRequestingInstallation, interceptData  ); }
 
 	// postInstall runs in the newly installed package
 	function postInstall() { processScripts( 'postInstall', interceptData.installDirectory, interceptData  ); }
+	
+	function postInstallAll() { processScripts( 'postInstallAll', shell.pwd(), interceptData ); }
 
 	// preUninstall runs in the package that's about to be uninstalled
 	function preUninstall() { processScripts( 'preUninstall', interceptData.uninstallDirectory, interceptData  ); }

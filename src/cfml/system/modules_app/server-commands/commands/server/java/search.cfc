@@ -8,10 +8,10 @@
  * version is required for the API to work so you can only search for builds of the same major version at a time.
  * .
  * {code:bash}
- * server java search version=openjdk8
- * server java search version=openjdk9
- * server java search version=openjdk10
- * server java search version=openjdk11
+ * server java search version=8
+ * server java search version=9
+ * server java search version=10
+ * server java search version=11
  * {code}
  *
  * version, jvm, arch, os, and type are defaulted automatically based on your local PC.
@@ -30,8 +30,8 @@ component aliases='java search' {
 	property name="java"			inject="commandbox.system.endpoints.java";
 
 	/**
-	* @version Major OpenJDK version such as "openjdk8"
-	* @version.options openjdk8,openjdk9,openjdk10,openjdk11,openjdk12,openjdk13
+	* @version Major OpenJDK version such as "11" or a maven-style semver range
+	* @version.optionsUDF versionComplete
 	* @jvm The JVM Implementation such as "hotspot" or "openj9"
 	* @jvm.options hotspot,openj9
 	* @os The operating system. Windows, linux, or mac
@@ -44,13 +44,52 @@ component aliases='java search' {
 	* @release.options latest
 	*/
 	function run(
-		version = 'openjdk11',
+		version,
 		jvm = 'hotspot',
 		os,
 		arch = server.java.archModel contains 32 ? 'x32' : 'x64',
 		type = 'jre',
 		release = 'latest'
 	){
+		
+		// If there is no version passed but we have a release, default the version based on the release. 
+		if( isNull( version ) && release.len() && release != 'latest' ) {
+			// Java 8 releases look like jdk8u265-b01
+			if( release contains 'jdk8' ) {
+				version = 8;
+			// Java 9+ releases look like jdk-11.0.8+10
+			} else {
+				version = listFirst( release.replaceNoCase( 'jdk-', '' ), '.' );
+			}
+		// If there is no version and no release, hit the API to get the latest LTS version
+		} else if( isNull( version ) ) {
+			http
+				url="https://api.adoptopenjdk.net/v3/info/available_releases"
+				throwOnError=false
+				timeout=5
+				proxyServer="#ConfigService.getSetting( 'proxy.server', '' )#"
+				proxyPort="#ConfigService.getSetting( 'proxy.port', 80 )#"
+				proxyUser="#ConfigService.getSetting( 'proxy.user', '' )#"
+				proxyPassword="#ConfigService.getSetting( 'proxy.password', '' )#"
+				result="local.artifactResult";
+	
+			var fileContent = toString( local.artifactResult.fileContent );
+			if( local.artifactResult.status_code == 200 && isJSON( fileContent ) ) {
+				var artifactJSON = deserializeJSON( fileContent );
+				version = artifactJSON.most_recent_lts;
+			// If the API didn't work, just use this
+			} else {
+				version = 11;
+			}
+		}
+				
+		// Backwards compat so 8 so the same as openjdk8
+		version = replaceNoCase( version, 'openjdk', '' );
+		// If we only have a number like 11
+		if( !reFind( '[^0-9]', version ) ) {
+			// Turn it into the maven-style semver range [11,12) which is the equiv of >= 11 && < 12 thus getting 11.x
+			version = '[#version#,#version+1#)';
+		}
 		
 		if( isNull( os) ) {
 			if( fileSystemUtil.isMac() ) {
@@ -62,22 +101,19 @@ component aliases='java search' {
 			}
 		}
 		
-		var APIURLCheck = 'https://api.adoptopenjdk.net/v2/info/releases/#version.lcase()#?';
-		
+		var APIURLCheck = 'https://api.adoptopenjdk.net/v3/assets/version/#encodeForURL(version)#?page_size=100&release_type=ga&vendor=adoptopenjdk&project=jdk&heap_size=normal';
+				
 		if( jvm.len() ) {
-			APIURLCheck &= '&openjdk_impl=#encodeForURL( jvm )#';
+			APIURLCheck &= '&jvm_impl=#encodeForURL( jvm )#';
 		}
 		if( os.len() ) {
 			APIURLCheck &= '&os=#encodeForURL( os )#';
 		}
 		if( arch.len() ) {
-			APIURLCheck &= '&arch=#encodeForURL( arch )#';
+			APIURLCheck &= '&architecture=#encodeForURL( arch )#';
 		}
 		if( type.len() ) {
-			APIURLCheck &= '&type=#encodeForURL( type )#';
-		}
-		if( release.len() ) {
-			APIURLCheck &= '&release=#encodeForURL( release )#';
+			APIURLCheck &= '&image_type=#encodeForURL( type )#';
 		}
 		
 		print
@@ -89,6 +125,7 @@ component aliases='java search' {
 			
 		http
 			url="#APIURLCheck#"
+			timeout=20
 			throwOnError=false
 			proxyServer="#ConfigService.getSetting( 'proxy.server', '' )#"
 			proxyPort="#ConfigService.getSetting( 'proxy.port', 80 )#"
@@ -96,8 +133,15 @@ component aliases='java search' {
 			proxyPassword="#ConfigService.getSetting( 'proxy.password', '' )#"
 			result="local.artifactResult";
 	
-		if( local.artifactResult.status_code == 200 && isJSON( local.artifactResult.fileContent ) ) {
-			var artifactJSON = deserializeJSON( local.artifactResult.fileContent );
+		var fileContent = toString( local.artifactResult.fileContent );
+		if( local.artifactResult.status_code == 200 && isJSON( fileContent ) ) {
+			var artifactJSON = deserializeJSON( fileContent );
+	
+	
+			// If we have a release, we need to filter it now
+			if( release.len() && release != 'latest' ) {
+				artifactJSON = artifactJSON.filter( (thisRelease)=>thisRelease.release_name==release );
+			}
 			
 			// Sometimes the API gives me back a struct, sometimes I get an array of structs. ¯\_(ツ)_/¯
 			if( isStruct( artifactJSON ) ) {
@@ -105,8 +149,6 @@ component aliases='java search' {
 			}
 			
 			for( var javaVer in artifactJSON ) {
-				
-				
 				var headerWidth = ('Release Name: ' & javaVer.release_name & '  Release Date: ' & dateFormat( javaVer.timestamp )).len()+4;
 				var colWidth = int( ( headerWidth/4 )-1 );
 				var lastColWidth = headerWidth - ( (colWidth*4)+5 ) + colWidth;
@@ -118,22 +160,25 @@ component aliases='java search' {
 					.boldLine( repeatString( '-', headerWidth ) );
 					
 				javaVer.binaries = javaVer.binaries.sort( function( a, b ) {
-					return compareNoCase( a.openjdk_impl & a.os & a.architecture & a.binary_type, b.openjdk_impl & b.os & b.architecture & b.binary_type )
+					return compareNoCase( a.jvm_impl & a.os & a.architecture & a.image_type, b.jvm_impl & b.os & b.architecture & b.image_type )
 				} );
 				for( var binary in javaVer.binaries ) {
 					print
-						.line( '|' & printColumnValue( binary.openjdk_impl, colWidth ) 
+						.line( '|' & printColumnValue( binary.jvm_impl, colWidth ) 
 							& '|' & printColumnValue( binary.os, colWidth )
 							& '|' & printColumnValue( binary.architecture, colWidth )
-							& '|' & printColumnValue( binary.binary_type, lastColWidth ) & '|' )
-						.text( '|' ).yellowText( printColumnValue( 'ID: ' & java.getDefaultNameFromStruct( { version : version, type : binary.binary_type, arch : binary.architecture, os : binary.os, 'jvm-implementation' : binary.openjdk_impl, release : javaVer.release_name } ), headerWidth-2 ) ).line( '|' )
+							& '|' & printColumnValue( binary.image_type, lastColWidth ) & '|' )
+						.text( '|' ).yellowText( printColumnValue( 'ID: ' & java.getDefaultNameFromStruct( { version : 'openjdk'&javaVer.version_data.major, type : binary.image_type, arch : binary.architecture, os : binary.os, 'jvm-implementation' : binary.jvm_impl, release : javaVer.release_name } ), headerWidth-2 ) ).line( '|' )
 						.line( repeatString( '-', headerWidth ) );
 				}
 				print.line();
+				if( release == 'latest' ) {
+					break;
+				}
 			}
 		} else {
 			print.boldRedLine( 'There was an error hitting the API.  [#local.artifactResult.status_code#]' );
-			print.redLine( local.artifactResult.fileContent.left( 100 ) );
+			print.redLine( fileContent.left( 100 ) );
 		}	
 	}
 
@@ -147,6 +192,26 @@ component aliases='java search' {
 		}
 		var space = columnWidth-len( text );
 		return repeatString( ' ', int( space/2 ) ) & text & repeatString( ' ', columnWidth - text.len() - int( space/2 ) );
+	}
+	
+	function versionComplete() {
+
+		http
+			url="https://api.adoptopenjdk.net/v3/info/available_releases"
+			throwOnError=false
+			timeout=5
+			proxyServer="#ConfigService.getSetting( 'proxy.server', '' )#"
+			proxyPort="#ConfigService.getSetting( 'proxy.port', 80 )#"
+			proxyUser="#ConfigService.getSetting( 'proxy.user', '' )#"
+			proxyPassword="#ConfigService.getSetting( 'proxy.password', '' )#"
+			result="local.artifactResult";
+
+		var fileContent = toString( local.artifactResult.fileContent );
+		if( local.artifactResult.status_code == 200 && isJSON( fileContent ) ) {
+			var artifactJSON = deserializeJSON( fileContent );
+			return artifactJSON.available_releases;
+		}
+		return [];
 	}
 
 }
