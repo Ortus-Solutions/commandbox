@@ -128,6 +128,7 @@ component accessors="true" singleton {
 			'trayOptions' : duplicate( d.trayOptions ?: [] ),
 			'trayEnable' : d.trayEnable ?: true,
 			'dockEnable' : d.dockEnable ?: true,
+			'preferedBrowser' : d.preferedBrowser ?: '',
 			'profile'	: d.profile ?: '',
 			'jvm' : {
 				'heapSize' : d.jvm.heapSize ?: '',
@@ -677,7 +678,7 @@ component accessors="true" singleton {
 
 		serverInfo.trayEnable	 	= serverProps.trayEnable		?: serverJSON.trayEnable			?: defaults.trayEnable;
 		serverInfo.dockEnable	 	= serverJSON.dockEnable			?: defaults.dockEnable;
-
+		serverInfo.preferedBrowser	 	= serverJSON.preferedBrowser			?: defaults.preferedBrowser;
 		serverInfo.defaultBaseURL = serverInfo.SSLEnable ? 'https://#serverInfo.host#:#serverInfo.SSLPort#' : 'http://#serverInfo.host#:#serverInfo.port#';
 
 		// If there's no open URL, let's create a complete one
@@ -1202,13 +1203,16 @@ component accessors="true" singleton {
 			.append( '--server-name' ).append( serverInfo.name )
 			.append( '--tray-enable' ).append( serverInfo.trayEnable )
 			.append( '--dock-enable' ).append( serverInfo.dockEnable )
-			.append( '--prefered-browser' ).append( serverInfo.preferedBrowser )
 			.append( '--directoryindex' ).append( serverInfo.directoryBrowsing )
 			.append( '--timeout' ).append( serverInfo.startTimeout )
 			.append( '--proxy-peeraddress' ).append( 'true' )
 			.append( '--cookie-secure' ).append( serverInfo.sessionCookieSecure )
 			.append( '--cookie-httponly' ).append( serverInfo.sessionCookieHTTPOnly );
 			
+			if(len(trim(serverInfo.preferedBrowser))){
+				args.append( '--prefered-browser' ).append( serverInfo.preferedBrowser )
+			}
+
 			args.append( serverInfo.runwarArgs.listToArray( ' ' ), true );
 
 		if( serverInfo.trayEnable ) {
@@ -2350,6 +2354,7 @@ component accessors="true" singleton {
 			'trayOptions'		: {},
 			'trayEnable'		: true,
 			'dockEnable'		: true,
+			'preferedBrowser'	: '',
 			'dateLastStarted'	: '',
 			'openBrowser'		: true,
 			'openBrowserURL'	: '',
