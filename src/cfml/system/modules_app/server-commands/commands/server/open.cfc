@@ -15,7 +15,7 @@ component {
 
 	// DI
 	property name="serverService" inject="ServerService";
-
+	property name='configService' inject='ConfigService';
 	/**
 	* @URI An additional URI to go to when opening the server browser, else it just opens localhost:port
 	* @URI.optionsFileComplete true
@@ -47,8 +47,8 @@ component {
 				arguments.URI = '/' & arguments.URI;
 			}
 			var thisURL = "#serverInfo.host#:#serverInfo.port##arguments.URI#";
-			print.greenLine( "Opening...#thisURL# on #serverInfo.preferedBrowser#" );
-			openURL( thisURL, serverInfo.preferedBrowser );
+			print.greenLine( "Opening...#thisURL#" );
+			openURL( thisURL, configService.getSetting( 'preferedBrowser' ) );
 
 
 		}
