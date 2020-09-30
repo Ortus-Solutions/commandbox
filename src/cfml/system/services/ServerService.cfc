@@ -1210,7 +1210,7 @@ component accessors="true" singleton {
 			.append( '--cookie-httponly' ).append( serverInfo.sessionCookieHTTPOnly );
 			
 			if(len(trim(serverInfo.preferedBrowser))){
-				args.append( '--prefered-browser' ).append( serverInfo.preferedBrowser )
+				args.append( '--prefered-browser' ).append( serverInfo.preferedBrowser );
 			}
 
 			args.append( serverInfo.runwarArgs.listToArray( ' ' ), true );
