@@ -128,7 +128,6 @@ component accessors="true" singleton {
 			'trayOptions' : duplicate( d.trayOptions ?: [] ),
 			'trayEnable' : d.trayEnable ?: true,
 			'dockEnable' : d.dockEnable ?: true,
-			'preferedBrowser' : d.preferedBrowser ?: '',
 			'profile'	: d.profile ?: '',
 			'jvm' : {
 				'heapSize' : d.jvm.heapSize ?: '',
@@ -678,7 +677,6 @@ component accessors="true" singleton {
 
 		serverInfo.trayEnable	 	= serverProps.trayEnable		?: serverJSON.trayEnable			?: defaults.trayEnable;
 		serverInfo.dockEnable	 	= serverJSON.dockEnable			?: defaults.dockEnable;
-		serverInfo.preferedBrowser	 	= serverJSON.preferedBrowser			?: defaults.preferedBrowser;
 		serverInfo.defaultBaseURL = serverInfo.SSLEnable ? 'https://#serverInfo.host#:#serverInfo.SSLPort#' : 'http://#serverInfo.host#:#serverInfo.port#';
 
 		// If there's no open URL, let's create a complete one
@@ -1209,8 +1207,8 @@ component accessors="true" singleton {
 			.append( '--cookie-secure' ).append( serverInfo.sessionCookieSecure )
 			.append( '--cookie-httponly' ).append( serverInfo.sessionCookieHTTPOnly );
 			
-			if(len(trim(serverInfo.preferedBrowser))){
-				args.append( '--prefered-browser' ).append( serverInfo.preferedBrowser );
+			if( ConfigService.settingExists( 'preferedBrowser' ) && len(trim(ConfigService.getSetting( 'preferedBrowser' )))) {
+				args.append( '--prefered-browser' ).append( ConfigService.getSetting( 'preferedBrowser' ) );
 			}
 
 			args.append( serverInfo.runwarArgs.listToArray( ' ' ), true );
@@ -2354,7 +2352,6 @@ component accessors="true" singleton {
 			'trayOptions'		: {},
 			'trayEnable'		: true,
 			'dockEnable'		: true,
-			'preferedBrowser'	: '',
 			'dateLastStarted'	: '',
 			'openBrowser'		: true,
 			'openBrowserURL'	: '',

@@ -42,6 +42,7 @@ component accessors="true" singleton {
 			'nativeShell',
 			// used in "runTerminal" command for a custom app
 			'nativeTerminal',
+			'preferedBrowser',
 			// used in "bump" command
 			'tagVersion',
 			'tagPrefix',
