@@ -1207,8 +1207,8 @@ component accessors="true" singleton {
 			.append( '--cookie-secure' ).append( serverInfo.sessionCookieSecure )
 			.append( '--cookie-httponly' ).append( serverInfo.sessionCookieHTTPOnly );
 			
-			if( ConfigService.settingExists( 'preferedBrowser' ) && len(trim(ConfigService.getSetting( 'preferedBrowser' )))) {
-				args.append( '--prefered-browser' ).append( ConfigService.getSetting( 'preferedBrowser' ) );
+			if( len( trim( ConfigService.settingExists( 'preferredBrowser', '' ) ) ) ) {
+				args.append( '--preferred-browser' ).append( ConfigService.getSetting( 'preferredBrowser' ) );
 			}
 
 			args.append( serverInfo.runwarArgs.listToArray( ' ' ), true );

@@ -255,8 +255,7 @@ component accessors="true" singleton {
 	function openURL( theURL, browser = "" ) {
 		// Defer to "browse" command.
 		command( "browse" )
-			.params( arguments.theURL )
-			.params( arguments.browser )
+			.params( arguments.theURL, arguments.browser )
 			.run();
 	}
 
