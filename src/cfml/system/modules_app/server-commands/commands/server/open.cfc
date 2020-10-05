@@ -30,8 +30,8 @@ component {
 		URI="/",
 		string name,
 		string directory,
-		String serverConfigFile,
-		String browser = ""
+		string serverConfigFile,
+		string browser = ""
 		){
 		if( !isNull( arguments.directory ) ) {
 			arguments.directory = resolvePath( arguments.directory );
@@ -51,19 +51,13 @@ component {
 			}
 			var thisURL = "#serverInfo.host#:#serverInfo.port##arguments.URI#";
 			print.greenLine( "Opening...#thisURL#" );
-			openURL( thisURL, len( arguments.browser )? arguments.browser:configService.getSetting( 'preferredBrowser', '' ) );
+			openURL( thisURL, arguments.browser );
 
 		}
 	}
 
 	array function browserList( ) {
-		if(fileSystemUtil.isWindows()){
-			return ['firefox','chrome','opera','MicrosoftEdge','explorer'];
-		}else if(fileSystemUtil.isMac()){
-			return ['Firefox','GoogleChrome','MicrosoftEdge','Safari','Opera'];
-		}else{
-			return  ['firefox','chrome','opera','konqueror','epiphany','mozilla','netscape'];
-		}
+		return fileSystemUtil.browserList();
 	}
 
 	/**

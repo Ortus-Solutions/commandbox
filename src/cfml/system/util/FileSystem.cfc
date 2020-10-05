@@ -282,7 +282,7 @@ component accessors="true" singleton {
 	* @uri.hint the URI to open
 	* @browser.hint the browser to use
     */
-    boolean function openBrowser( required URI, browser = "" ){
+    boolean function openBrowser( required URI, browser="" ){
 		var rwbo = createObject( "java", "runwar.BrowserOpener" );
 		// if binding to all IPs, swap out with localhost.
 		if( URI.find( '0.0.0.0' ) ) {
@@ -293,14 +293,25 @@ component accessors="true" singleton {
     		arguments.URI = "http://#arguments.uri#";
     	}
 
-		try {
-			rwbo.openURL(arguments.URI, browser);	
-	    } catch( any var e ) {
-	    	// Bird strike!  Log it.
-			logger.error( '#e.message# #e.detail#' );
-	    }
+		if( !len( browser ) ) {
+			browser = configService.getSetting( 'preferredBrowser', '' );
+		}
+
+		rwbo.openURL(arguments.URI, browser);
+		
 		return true;
 	}
+
+	array function browserList() {
+		if( isWindows() ){
+			return ['firefox','chrome','opera','MicrosoftEdge','explorer'];
+		}else if( isMac() ){
+			return ['Firefox','GoogleChrome','MicrosoftEdge','Safari','Opera'];
+		}else{
+			return  ['firefox','chrome','opera','konqueror','epiphany','mozilla','netscape'];
+		}
+	}	
+	
 	
     /**
     * Accepts an absolute path and returns a relative path
