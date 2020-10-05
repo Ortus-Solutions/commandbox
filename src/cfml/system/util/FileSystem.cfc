@@ -303,13 +303,15 @@ component accessors="true" singleton {
 	}
 
 	array function browserList() {
+		var browsers = ['firefox','chrome','opera'];
 		if( isWindows() ){
-			return ['firefox','chrome','opera','MicrosoftEdge','explorer'];
+			ArrayAppend(browsers, ['edge','ie'], true);
 		}else if( isMac() ){
-			return ['Firefox','GoogleChrome','MicrosoftEdge','Safari','Opera'];
+			ArrayAppend(browsers, ['edge','safari'], true);
 		}else{
-			return  ['firefox','chrome','opera','konqueror','epiphany','mozilla','netscape'];
+			ArrayAppend(browsers, ['konqueror','epiphany'], true);
 		}
+		return browsers;
 	}	
 	
 	
