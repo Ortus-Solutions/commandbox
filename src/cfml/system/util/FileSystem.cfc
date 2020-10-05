@@ -279,9 +279,10 @@ component accessors="true" singleton {
 
     /**
     * Operating system browser opener
-    * @uri.hint the URI to open
+	* @uri.hint the URI to open
+	* @browser.hint the browser to use
     */
-    boolean function openBrowser( required URI, browser ){
+    boolean function openBrowser( required URI, browser = "" ){
 		var rwbo = createObject( "java", "runwar.BrowserOpener" );
 		// if binding to all IPs, swap out with localhost.
 		if( URI.find( '0.0.0.0' ) ) {
@@ -293,7 +294,7 @@ component accessors="true" singleton {
     	}
 
 		try {
-			rwbo.openURL(arguments.URI, arguments.browser);	
+			rwbo.openURL(arguments.URI, browser);	
 	    } catch( any var e ) {
 	    	// Bird strike!  Log it.
 			logger.error( '#e.message# #e.detail#' );
