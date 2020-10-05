@@ -279,11 +279,11 @@ component accessors="true" singleton {
 
     /**
     * Operating system browser opener
-    * @uri.hint the URI to open
+	* @uri.hint the URI to open
+	* @browser.hint the browser to use
     */
-    boolean function openBrowser( required URI ){
-    	var desktop = createObject( "java", "java.awt.Desktop" );
-
+    boolean function openBrowser( required URI, browser="" ){
+		var rwbo = createObject( "java", "runwar.BrowserOpener" );
 		// if binding to all IPs, swap out with localhost.
 		if( URI.find( '0.0.0.0' ) ) {
 			URI.replace( '0.0.0.0', '127.0.0.1' );
@@ -293,44 +293,28 @@ component accessors="true" singleton {
     		arguments.URI = "http://#arguments.uri#";
     	}
 
-    	// Some openJDK distros error out above if installed headlessly.
-		try {
-	    	// open using awt class, if it fails, we are in headless mode.
-	    	if( desktop.isDesktopSupported() ){
-	    		desktop.getDesktop().browse( createObject( "java", "java.net.URI" ).init( arguments.URI ) );
-	    		return true;
-	    	}
-	    } catch( any var e ) {
-	    	// Bird strike!  Log it.
-			logger.error( '#e.message# #e.detail#' );
-	    }
-
-    	// if we get here, then we don't support desktop awt class, most likely in headless mode.
-    	var runtime = createObject( "java", "java.lang.Runtime" ).getRuntime();
-    	if( isWindows() ){
-    		// Windows Approach
-    		runtime.exec( [ "rundll32", "url.dll,FileProtocolHandler", arguments.URI ] );
-		} else if ( isMac() ) {
-			// Mac Approach
-			runtime.exec( [ "open", arguments.URI ] );
-		} else {
-			// Default to Linux
-			var browsers = [ "mozilla", "firefox", "opera", "konqueror", "epiphany" ];
-			for( var thisBrowser in browsers ){
-				// try to open them
-				if( runtime.exec( "which #thisBrowser#" ).waitFor() == 0 ){
-					// found it, open
-					runtime.exec( "#thisBrowser# " & arguments.URI );
-					return true;
-				}
-			}
-			// if we get here we could not open it.
-			return false;
+		if( !len( browser ) ) {
+			browser = configService.getSetting( 'preferredBrowser', '' );
 		}
 
+		rwbo.openURL(arguments.URI, browser);
+		
 		return true;
-    }
+	}
 
+	array function browserList() {
+		var browsers = ['firefox','chrome','opera'];
+		if( isWindows() ){
+			ArrayAppend(browsers, ['edge','ie'], true);
+		}else if( isMac() ){
+			ArrayAppend(browsers, ['edge','safari'], true);
+		}else{
+			ArrayAppend(browsers, ['konqueror','epiphany'], true);
+		}
+		return browsers;
+	}	
+	
+	
     /**
     * Accepts an absolute path and returns a relative path
     * Does NOT apply any canonicalization

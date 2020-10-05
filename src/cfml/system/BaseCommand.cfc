@@ -252,10 +252,10 @@ component accessors="true" singleton {
 	/**
 	 * This will open a URL in the user's browser
  	 **/
-	function openURL( theURL ) {
+	function openURL( theURL, browser='' ) {
 		// Defer to "browse" command.
 		command( "browse" )
-			.params( arguments.theURL )
+			.params( arguments.theURL, arguments.browser )
 			.run();
 	}
 
