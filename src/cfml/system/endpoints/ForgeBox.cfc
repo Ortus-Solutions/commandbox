@@ -555,7 +555,7 @@ component accessors="true" implements="IEndpointInteractive" {
 		var ignorePatterns = [];
 
 		var alwaysIgnores = [
-			".*.swp", "._*", ".DS_Store", ".git", "hg", ".svn",
+			".*.swp", "._*", ".DS_Store", ".git/", ".hg/", ".svn/",
 			".lock-wscript", ".wafpickle-*", "config.gypi"
 		];
 		var gitIgnores = readGitIgnores();
