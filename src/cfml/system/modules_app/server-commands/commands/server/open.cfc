@@ -15,7 +15,7 @@ component {
 
 	// DI
 	property name="serverService" inject="ServerService";
-
+	property name="fileSystemUtil" inject="FileSystem";
 	/**
 	* @URI An additional URI to go to when opening the server browser, else it just opens localhost:port
 	* @URI.optionsFileComplete true
@@ -23,12 +23,15 @@ component {
 	* @name.optionsUDF serverNameComplete
 	* @directory.hint web root for the server
 	* @serverConfigFile The path to the server's JSON file.
+	* @browser The browser to open the URI
+	* @browser.optionsUDF browserList
 	**/
 	function run(
 		URI="/",
 		string name,
 		string directory,
-		String serverConfigFile
+		String serverConfigFile,
+		String browser = ""
 		){
 		if( !isNull( arguments.directory ) ) {
 			arguments.directory = resolvePath( arguments.directory );
@@ -48,9 +51,18 @@ component {
 			}
 			var thisURL = "#serverInfo.host#:#serverInfo.port##arguments.URI#";
 			print.greenLine( "Opening...#thisURL#" );
-			openURL( thisURL );
+			openURL( thisURL, len( arguments.browser )? arguments.browser:configService.getSetting( 'preferredBrowser', '' ) );
 
+		}
+	}
 
+	array function browserList( ) {
+		if(fileSystemUtil.isWindows()){
+			return ['firefox','chrome','opera','MicrosoftEdge','explorer'];
+		}else if(fileSystemUtil.isMac()){
+			return ['Firefox','GoogleChrome','MicrosoftEdge','Safari','Opera'];
+		}else{
+			return  ['firefox','chrome','opera','konqueror','epiphany','mozilla','netscape'];
 		}
 	}
 
