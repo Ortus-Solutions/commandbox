@@ -174,6 +174,7 @@ component accessors="true" singleton {
 		// default behavior is to keep trucking
 		var previousCommandSeparator = ';';
 		var lastCommandErrored = false;
+		var captureOutputOriginal = captureOutput;
 
 		if( structKeyExists( arguments, 'piped' ) ) {
 			var result = arguments.piped;
@@ -294,6 +295,9 @@ component accessors="true" singleton {
 				// This is really just a workaround for the fact that command output isn't naturally piped to the console.
 				// Once that is fixed, commands will no longer need to know this.
 				systemsettings.setSystemSetting( 'box_currentCommandPiped', true );
+			// Override this if neccessary, but don't set it just for the fun of it
+			} else if( systemsettings.getSystemSetting( 'box_currentCommandPiped', false ) ) {
+				systemsettings.setSystemSetting( 'box_currentCommandPiped', false );
 			}
 
 			// Start the try as soon as we prepend to the call stack so any errors from here on out, even parsing the params, will
@@ -336,12 +340,6 @@ component accessors="true" singleton {
 				validateParams( parameterInfo.namedParameters, commandParams );
 
 				interceptorService.announceInterception( 'preCommand', { commandInfo=commandInfo, parameterInfo=parameterInfo } );
-
-				// This is my workaround to "smartly" capture the output of the run command if we're piping it or
-				// nesting it as an expression, etc.
-				if( commandInfo.commandReference.originalName == 'run' && captureOutput ) {
-					parameterInfo.namedParameters.interactive=false;
-				}
 
 				// Run the command
 				var result = commandInfo.commandReference.CFC.run( argumentCollection = parameterInfo.namedParameters );
@@ -405,6 +403,7 @@ component accessors="true" singleton {
 			};
 			interceptorService.announceInterception( 'postCommand', interceptData );
 			local.result = interceptData.result;
+			captureOutput = captureOutputOriginal;
 
 		} // End loop over command chain
 
@@ -597,6 +596,7 @@ component accessors="true" singleton {
 		var cmds = getCommandHierarchy();
 		var helpTokens = 'help,?,/?';
 		var stopProcessingLine = false;
+		var receivingPiped = false;
 
 		for( var commandTokens in commandsToResolve ){
 
@@ -640,7 +640,7 @@ component accessors="true" singleton {
 			* would essentially be turned into
 			* run "cmd /c dir"
 			 */
-			 if( tokens.len() > 1 && tokens.first() == 'run' ) {
+			 if( tokens.len() > 1 && tokens.first() == 'run'  ) {
 
 				var tokens2 = tokens[ 2 ];
 				// Escape any regex metacharacters in the pattern
@@ -764,6 +764,11 @@ component accessors="true" singleton {
 				break;
 			}
 
+			receivingPiped = false;
+			if( tokens[1] == '|' ) {
+				receivingPiped = true;
+			}
+			
 		} // end loop over commands to resolve
 
 		// Return command chain
