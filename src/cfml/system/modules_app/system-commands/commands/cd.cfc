@@ -10,6 +10,14 @@
  * {code:bash}
  * cd ../../tests
  * {code}
+ * .
+ * Another shortcut for going up a directoy is to add additional dots for each folder.
+ * {code:bash}
+ * cd ... => cd ../../ // back 2 directory
+ * cd .... => cd ../../../ // back 3 directory
+ * cd ..... // and so on...
+ * {code}
+ * 
  **/
 component {
 

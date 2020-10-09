@@ -10,6 +10,11 @@
  * {code:bash}
  * server open /tests/runner.cfm
  * {code}
+ * .
+ * Open a specific browser with the browser parameter
+ * {code:bash}
+ * server open URI=/admin browser=firefox 
+ * {code}
  **/
 component {
 
