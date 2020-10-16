@@ -372,7 +372,10 @@ component accessors="true" singleton="true" {
 	**/
 	public function configureWebXML( required cfengine, required version, required source, required destination, required struct serverInfo ) {
 		var webXML = XMLParse( source );
-		var servlets = xmlSearch(webXML,"//servlet-class[text()='#lcase( cfengine )#.loader.servlet.CFMLServlet']");		
+		var servlets = xmlSearch(webXML,"//:servlet-class[text()='#lcase( cfengine )#.loader.servlet.CFMLServlet']");
+		if( !servlets.len() ) {
+			var servlets = xmlSearch(webXML,"//servlet-class[text()='#lcase( cfengine )#.loader.servlet.CFMLServlet']");			
+		}
 		var initParam = xmlElemnew(webXML,"http://java.sun.com/xml/ns/javaee","init-param");
 		initParam.XmlChildren[1] = xmlElemnew(webXML,"param-name");
 		initParam.XmlChildren[1].XmlText = "#lcase( cfengine )#-web-directory";
@@ -380,7 +383,10 @@ component accessors="true" singleton="true" {
 		initParam.XmlChildren[2].XmlText = serverInfo.webConfigDir;
 		arrayInsertAt(servlets[1].XmlParent.XmlChildren,4,initParam);
 
-		var servlets = xmlSearch(webXML,"//servlet-class[text()='#lcase( cfengine )#.loader.servlet.CFMLServlet']");
+		var servlets = xmlSearch(webXML,"//:servlet-class[text()='#lcase( cfengine )#.loader.servlet.CFMLServlet']");
+		if( !servlets.len() ) {
+			var servlets = xmlSearch(webXML,"//servlet-class[text()='#lcase( cfengine )#.loader.servlet.CFMLServlet']");			
+		}
 		var initParam = xmlElemnew(webXML,"http://java.sun.com/xml/ns/javaee","init-param");
 		initParam.XmlChildren[1] = xmlElemnew(webXML,"param-name");
 		initParam.XmlChildren[1].XmlText = "#lcase( cfengine )#-server-directory";
@@ -390,7 +396,10 @@ component accessors="true" singleton="true" {
 
 		// Lucee 5+ has a LuceeServlet as well as will create the WEB-INF by default in your web root
 		if( arguments.cfengine == 'lucee' && val( listFirst( arguments.version, '.' )) >= 5 ) {
-			var servlets = xmlSearch(webXML,"//servlet-class[text()='#lcase( cfengine )#.loader.servlet.LuceeServlet']");
+			var servlets = xmlSearch(webXML,"//:servlet-class[text()='#lcase( cfengine )#.loader.servlet.LuceeServlet']");
+			if( !servlets.len() ) {
+				var servlets = xmlSearch(webXML,"//servlet-class[text()='#lcase( cfengine )#.loader.servlet.LuceeServlet']");			
+			}
 			var initParam = xmlElemnew(webXML,"http://java.sun.com/xml/ns/javaee","init-param");
 			initParam.XmlChildren[1] = xmlElemnew(webXML,"param-name");
 			initParam.XmlChildren[1].XmlText = "#lcase( cfengine )#-web-directory";
@@ -398,7 +407,10 @@ component accessors="true" singleton="true" {
 			initParam.XmlChildren[2].XmlText = serverInfo.webConfigDir;
 			arrayInsertAt(servlets[1].XmlParent.XmlChildren,4,initParam);
 
-			var servlets = xmlSearch(webXML,"//servlet-class[text()='#lcase( cfengine )#.loader.servlet.LuceeServlet']");
+			var servlets = xmlSearch(webXML,"//:servlet-class[text()='#lcase( cfengine )#.loader.servlet.LuceeServlet']");
+			if( !servlets.len() ) {
+				var servlets = xmlSearch(webXML,"//servlet-class[text()='#lcase( cfengine )#.loader.servlet.LuceeServlet']");			
+			}
 			var initParam = xmlElemnew(webXML,"http://java.sun.com/xml/ns/javaee","init-param");
 			initParam.XmlChildren[1] = xmlElemnew(webXML,"param-name");
 			initParam.XmlChildren[1].XmlText = "#lcase( cfengine )#-server-directory";
