@@ -32,6 +32,7 @@ component accessors="true" singleton {
 		variables.fileSystemUtil	= wirebox.getInstance( "FileSystem" );
 		variables.shell				= wirebox.getInstance( "shell" );
 		variables.print				= wirebox.getInstance( "PrintBuffer" );
+		variables.logBox			= wirebox.getLogBox();
 		variables.logger			= wirebox.getLogBox().getLogger( this );
 		variables.parser			= wirebox.getInstance( "Parser" );
 		variables.configService		= wirebox.getInstance( "ConfigService" );

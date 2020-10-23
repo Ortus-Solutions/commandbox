@@ -765,7 +765,7 @@ component accessors="true" singleton {
 			}
 
 			receivingPiped = false;
-			if( tokens[1] == '|' ) {
+			if( tokens.len() >= 1 && tokens[1] == '|' ) {
 				receivingPiped = true;
 			}
 			
