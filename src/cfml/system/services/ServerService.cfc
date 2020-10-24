@@ -869,7 +869,7 @@ component accessors="true" singleton {
 				"regex( pattern='.*/(box.json|server.json|web.config|urlrewrite.xml|package.json|package-lock.json|Gulpfile.js|CFIDE/multiservermonitor-access-policy.xml|CFIDE/probe.cfm|CFIDE/main/ide.cfm)', case-sensitive=false ) -> { set-error(404); done }",
 				// Any file or folder starting with a period
 				"regex('/\.') -> { set-error( 404 ); done }",
-				// Additinal serlvlet mappings in Adobe CF's web.xml
+				// Additional serlvlet mappings in Adobe CF's web.xml
 				"path-prefix( { '/JSDebugServlet','/securityanalyzer','/WSRPProducer' } ) -> { set-error( 404 ); done }",
 				// java web service (Axis) files
 				"regex( pattern='\.jws$', case-sensitive=false ) -> { set-error( 404 ); done }"
