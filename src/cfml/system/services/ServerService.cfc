@@ -879,7 +879,7 @@ component accessors="true" singleton {
 		if( serverInfo.blockFlashRemoting ) {
 			serverInfo.webRules.append( [ 
 				// These all map to web.xml servlet mappings for ACF
-				"path-prefix( { '/flex2gateway','/flex-internal','/flashservices/gateway','/cfform-internal','/CFFormGateway' } ) -> { set-error( 404 ); done }",
+				"path-prefix( { '/flex2gateway','/flex-internal','/flashservices/gateway','/cfform-internal','/CFFormGateway', '/openamf/gateway', '/messagebroker' } ) -> { set-error( 404 ); done }",
 				// Files used for flash remoting
 				"regex( pattern='\.(mxml|cfswf)$', case-sensitive=false ) -> { set-error( 404 ); done }"				
 			], true );	
