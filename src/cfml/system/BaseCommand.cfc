@@ -10,7 +10,6 @@
 */
 component accessors="true" singleton {
 
-	// DI
 	property name="CR";
 	property name="formatterUtil";
 	property name="fileSystemUtil";
@@ -21,6 +20,7 @@ component accessors="true" singleton {
 	property name="parser";
 	property name="SystemSettings";
 	property name="job";
+	property name="exitCode";
 
 	/**
 	* Constructor
@@ -32,19 +32,25 @@ component accessors="true" singleton {
 		variables.fileSystemUtil	= wirebox.getInstance( "FileSystem" );
 		variables.shell				= wirebox.getInstance( "shell" );
 		variables.print				= wirebox.getInstance( "PrintBuffer" );
+		variables.logBox			= wirebox.getLogBox();
 		variables.logger			= wirebox.getLogBox().getLogger( this );
 		variables.parser			= wirebox.getInstance( "Parser" );
 		variables.configService		= wirebox.getInstance( "ConfigService" );
 		variables.SystemSettings	= wirebox.getInstance( "SystemSettings" );
 		variables.job				= wirebox.getInstance( "interactiveJob" );
+		variables.thisThread		 = createObject( 'java', 'java.lang.Thread' ).currentThread();
 
-		hasErrored = false;
+		variables.exitCode = 0;
 		return this;
 	}
 
 	// This method needs to be overridden by the concrete class.
 	function run() {
-		return 'This command CFC has not implemented a run() method.';
+		error( 'This command CFC has not implemented a run() method.' );
+	}
+
+	function getPrinter() {
+		return variables.print;
 	}
 
 	// Convenience method for getting stuff from WireBox
@@ -52,10 +58,18 @@ component accessors="true" singleton {
 		return wirebox.getInstance( argumentCollection = arguments );
 	}
 
+	function getExitCode() {
+		return variables.exitCode;
+	}
+
+	function setExitCode( required numeric exitCode ) {
+		variables.exitCode = arguments.exitCode;
+	}
+
 	// Called prior to each execution to reset any state stored in the CFC
 	function reset() {
 		print.clear();
-		hasErrored = false;
+		variables.exitCode = 0;
 	}
 
 	// Get the result.  This will be called if the run() method doesn't return anything
@@ -70,8 +84,8 @@ component accessors="true" singleton {
 
 	/**
 	 * ask the user a question and wait for response
-	 * @message.hint message to prompt the user with
-	 * @mask.hint When not empty, keyboard input is masked as that character
+	 * @message message to prompt the user with
+	 * @mask When not empty, keyboard input is masked as that character
 	 *
 	 * @return the response from the user
  	 **/
@@ -82,7 +96,7 @@ component accessors="true" singleton {
 
 	/**
 	 * Wait until the user's next keystroke
-	 * @message.hint Message to display to the user such as "Press any key to continue."
+	 * @message Message to display to the user such as "Press any key to continue."
  	 **/
 	function waitForKey( message='' ) {
 		if( len( arguments.message ) ) {
@@ -94,7 +108,7 @@ component accessors="true" singleton {
 	/**
 	 * Ask the user a question looking for a yes/no response
 	 * Accepts any boolean value, or "y".
-	 * @message.hint The message to display to the user such as "Would you like to continue?"
+	 * @message The message to display to the user such as "Would you like to continue?"
  	 **/
 	function confirm( required message ) {
 		print.toConsole();
@@ -112,15 +126,22 @@ component accessors="true" singleton {
 	/**
 	 * Run another command by name.
 	 * This is deprecated in favor of command(), which escapes parameters for you.
-	 * @command.hint The command to run. Pass the same string a user would type at the shell.
+	 * @command The command to run. Pass the same string a user would type at the shell.
  	 **/
 	function runCommand( required command, returnOutput=false ) {
-		return shell.callCommand( arguments.command, arguments.returnOutput );
+		var results = shell.callCommand( arguments.command, arguments.returnOutput );
+
+		// If the previous command chain failed
+		if( shell.getExitCode() != 0 ) {
+			error( 'Command returned failing exit code (#shell.getExitCode()#)', 'Failing Command: ' & command, shell.getExitCode(), shell.getExitCode() );
+		}
+
+		return results;
 	}
 
 	/**
 	 * Run another command by DSL.
-	 * @name.hint The name of the command to run.
+	 * @name The name of the command to run.
  	 **/
 	function command( required name ) {
 		return getinstance( name='CommandDSL', initArguments={ name : arguments.name } );
@@ -131,6 +152,19 @@ component accessors="true" singleton {
  	 **/
 	function watch() {
 		return getinstance( 'watcher' );
+	}
+
+	/**
+	* This resolves an absolute or relative path using the rules of the operating system and CLI.
+	* It doesn't follow CF mappings and will also always return a trailing slash if pointing to
+	* an existing directory.
+	*
+	* Resolve the incoming path from the file system
+	* @path The directory to resolve
+	* @basePath An expanded base path to resolve the path against. Defaults to CWD.
+	*/
+	function resolvePath( required string path, basePath=shell.pwd() ) {
+		return filesystemUtil.resolvepath( path, basePath );
 	}
 
 	/**
@@ -149,8 +183,22 @@ component accessors="true" singleton {
  	 **/
 	function propertyFile( propertyFilePath='' ) {
 		var propertyFile = wirebox.getInstance( 'propertyFile@propertyFile' );
+
+		// If the user passed a propertyFile path
 		if( propertyFilePath.len() ) {
-			propertyFile.load( propertyFilePath );
+
+			// Make relative paths resolve to the current folder that the task lives in.
+			propertyFilePath = resolvePath( propertyFilePath );
+
+			// If it exists, go ahead and load it now
+			if( fileExists( propertyFilePath ) ){
+				propertyFile.load( propertyFilePath );
+			} else {
+				// Otherwise, just set it so it can be used later on save.
+				propertyFile
+					.setPath( propertyFilePath );
+			}
+
 		}
 		return propertyFile;
 	}
@@ -162,8 +210,8 @@ component accessors="true" singleton {
 	 *
 	 * return error( "We're sorry, but happy hour ended 20 minutes ago." );
 	 *
-	 * @message.hint The error message to display
-	 * @clearPrintBuffer.hint Wipe out the print buffer or not, it does not by default
+	 * @message The error message to display
+	 * @clearPrintBuffer Wipe out the print buffer or not, it does not by default
  	 **/
 	function error( required message, detail='', clearPrintBuffer=false, exitCode=1 ) {
 
@@ -172,9 +220,8 @@ component accessors="true" singleton {
 			// Distance ourselves from whatever other output the command may have given so far.
 			print.line().toConsole();
 		}
-		
-		setExitCode( exitCode );
-		hasErrored = true;
+
+		setExitCode( arguments.exitCode );
 		if( arguments.clearPrintBuffer ) {
 			// Wipe
 			print.clear();
@@ -182,25 +229,14 @@ component accessors="true" singleton {
 			// Distance ourselves from whatever other output the command may have given so far.
 			print.line();
 		}
-		throw( message=arguments.message, detail=arguments.detail, type="commandException");
-
+		throw( message=arguments.message, detail=arguments.detail, type="commandException", errorcode=arguments.exitCode );
 	}
 
 	/**
 	 * Tells you if the error() method has been called on this command.
  	 **/
 	function hasError() {
-		return hasErrored;
-	}
-
-	/**
-	 * Sets the OS exit code
- 	 **/
-	function setExitCode( required string exitCode ) {
-		if( arguments.exitCode != 0 ) {
-			hasErrored = true;
-		}
-		return shell.setExitCode( arguments.exitCode );
+		return variables.exitCode != 0;
 	}
 
 	/**
@@ -217,11 +253,21 @@ component accessors="true" singleton {
 	/**
 	 * This will open a URL in the user's browser
  	 **/
-	function openURL( theURL ) {
+	function openURL( theURL, browser='' ) {
 		// Defer to "browse" command.
 		command( "browse" )
-			.params( arguments.theURL )
+			.params( arguments.theURL, arguments.browser )
 			.run();
+	}
+
+	/**
+	* Set a CommandBox environment variable
+	*
+	* @key The name of the setting to look up.
+	* @defaultValue The default value to use if the key does not exist in the system properties
+	*/
+    function setSystemSetting( required string key, string value ) {
+		return systemSettings.setSystemSetting( key, value );
 	}
 
 	/**
@@ -260,13 +306,13 @@ component accessors="true" singleton {
 	* if the user has hit Ctrl-C.  This method will throw an UserInterruptException
 	* which you should not catch.  It will unroll the stack all the way back to the shell
 	*/
-	function checkInterrupted() {
-		shell.checkInterrupted();
+	function checkInterrupted( thisThread=variables.thisThread ) {
+		shell.checkInterrupted( argumentCollection=arguments );
 	}
 
-	
+
 	/*
-	* Loads up Java classes into the class loader that loaded the CLI for immediate use. 
+	* Loads up Java classes into the class loader that loaded the CLI for immediate use.
 	* You can pass either an array or list of:
 	* - directories
 	* - Jar files
@@ -275,11 +321,29 @@ component accessors="true" singleton {
 	* Note, loaded jars/classes cannot be unloaded and will remain in memory until the CLI exits.
 	* On Windows, the jar/class files will also be locked on the file system.  Directories are scanned
 	* recursively for for files and everything found will be loaded.
-	* 
+	*
 	* @paths List or array of absolute paths of a jar/class files or directories of them you would like loaded
 	*/
 	function classLoad( paths ) {
 		fileSystemUtil.classLoad( paths );
+	}
+
+	/**
+	 * Get the current thread object
+	 *
+	 * @return java.lang.Thread
+	 */
+	function getCurrentThread(){
+		return createObject( "java", "java.lang.Thread" ).currentThread();
+	}
+
+	/**
+	 * Get the current thread name
+	 *
+	 * @return The thread name
+	 */
+	string function getThreadName(){
+		return getCurrentThread().getName();
 	}
 
 

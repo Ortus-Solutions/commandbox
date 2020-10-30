@@ -10,7 +10,11 @@
 component accessors="true" singleton {
 
 	// DI
-	property name="logger" inject="logbox:logger:{this}";
+	property name="configService" inject="ConfigService";
+	property name="fileSystemUtil" inject="FileSystem";
+	property name="formatterUtil" inject="Formatter";
+	property name="logger"        inject="logbox:logger:{this}";
+	property name="print"         inject="print";
 
 	/**
 	* Constructor
@@ -203,5 +207,97 @@ component accessors="true" singleton {
 
 		return props;
 	}
+
+	/**
+	* I write JSON objects to disk after pretty printing them.
+	* (I also work for CFML objects that can be serialized to JSON.)
+	* @path.hint The file path to write to
+	* @json.hint A string containing JSON, or a complex value that can be serialized to JSON
+	* @locking.hint Set to true to have file system access wrapped in a lock
+	*/
+	function writeJSONFile( required string path, required any json, boolean locking = false ) {
+		var sortKeysIsSet = configService.settingExists( 'JSON.sortKeys' );
+		var sortKeys = configService.getSetting( 'JSON.sortKeys', 'textnocase' );
+		var oldJSON = '';
+
+		if ( fileExists( path ) ) {
+			oldJSON = locking ? fileSystemUtil.lockingFileRead( path ) : fileRead( path );
+			// if sortKeys is not explicitly set try to determine current file state
+			if ( !sortKeysIsSet && !isSortedJSON( oldJSON, sortKeys ) ) {
+				sortKeys = '';
+			}
+		}
+
+		var newJSON = formatterUtil.formatJson( json = json, sortKeys = sortKeys );
+		if ( !oldJSON.len() || oldJSON.right( 1 ) == chr( 10 ) ) {
+			newJSON &= configService.getSetting( 'JSON.lineEnding', server.separator.line );
+		}
+
+		if ( oldJSON == newJSON ) {
+			return;
+		}
+
+		// ensure we are writing to an existing directory
+		directoryCreate( getDirectoryFromPath( path ), true, true );
+
+		if ( locking ) {
+			fileSystemUtil.lockingFileWrite( path, newJSON );
+		} else {
+			fileWrite( path, newJSON );
+		}
+	}
+
+	/**
+	* I check to see if a JSON object has sorted keys.
+	* (I also work for CFML objects that can be serialized to JSON.)
+	* @json.hint A string containing JSON, or a complex value that can be serialized to JSON
+	* @sortKeys.hint The type of key sorting to check for - i.e. "text" or "textnocase"
+	*/
+	function isSortedJSON( required any json, required string sortKeys ) {
+		if ( isSimpleValue( json ) ) {
+			json = deserializeJSON( json );
+		}
+
+		var isSorted = function( obj ) {
+			if ( isStruct( obj ) ) {
+				if ( obj.keyList() != obj.keyArray().sort( sortKeys ).toList() ) {
+					return false;
+				}
+				return obj.every( ( k, v ) => isSorted( v ) );
+			}
+
+			if ( isArray( obj ) ) {
+				return obj.every( isSorted );
+			}
+
+			return true;
+		}
+
+		return isSorted( json );
+	}
+
+	/**
+	* Get ANSI colors for formatting JSON.  Returns defaults if no settings are present
+	*/
+	function getANSIColors() {
+		var ANSIColors = {
+            'constant' : configService.getSetting( 'JSON.ANSIColors.constant', 'red' ),
+            'key' : configService.getSetting( 'JSON.ANSIColors.key', 'blue' ),
+            'number' : configService.getSetting( 'JSON.ANSIColors.number', 'aqua' ),
+            'string' : configService.getSetting( 'JSON.ANSIColors.string', 'lime' )
+		};
+
+		return ANSIColors.map( function( k, v ) {
+			if( v.startsWith( chr( 27 ) ) ) {
+				return v;
+			} else {
+				// Use print helper to convert "DeepPink2" or "color203" to the escape
+				return print.text( '', v, true );
+			}
+		} );
+
+	}
+
+
 
 }

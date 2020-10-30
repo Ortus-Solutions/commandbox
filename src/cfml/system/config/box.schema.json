@@ -1,0 +1,409 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"definitions": {
+		"engine": {
+			"description": "CFML engine the package supports",
+			"type": "object",
+			"properties": {
+				"type": {
+					"title": "Engine Type",
+					"description": "The name of the engine",
+					"type": "string",
+					"enum": [
+						"railo",
+						"lucee",
+						"adobe"
+					]
+				},
+				"version": {
+					"title": "Engine Version",
+					"description": "The semantic version of the engine that is supported",
+					"type": "string",
+					"default": ""
+				}
+			}
+		},
+		"dependency": {
+			"title": "Dependency",
+			"description": "Dependencies are specified with a package name/slug to version range, local file path, URL, or Git/SVN endpoint. The version range is a string which has one or more space-separated descriptors.",
+			"type": "object",
+			"additionalProperties": {
+				"type": "string"
+			}
+		},
+		"person": {
+			"description": "A person who has been involved in creating or maintaining this package",
+			"type": [
+				"object",
+				"string"
+			],
+			"required": [
+				"name"
+			],
+			"properties": {
+				"name": {
+					"description": "Name of the person",
+					"type": "string"
+				},
+				"url": {
+					"description": "URL for the person",
+					"type": "string",
+					"format": "uri"
+				},
+				"email": {
+					"description": "Email address of the person",
+					"type": "string",
+					"format": "email"
+				}
+			}
+		}
+	},
+	"title": "Package Manifest",
+	"description": "Configuration file for a CFML package",
+	"type": "object",
+	"properties": {
+		"name": {
+			"title": "Name",
+			"description": "The name of the package",
+			"type": "string",
+			"default": ""
+		},
+		"slug": {
+			"title": "Slug",
+			"description": "ForgeBox unique slug",
+			"type": "string",
+			"pattern": "^[\\w@-]*$",
+			"maxLength": 250,
+			"default": ""
+		},
+		"version": {
+			"title": "Version",
+			"description": "Semantic version of your package",
+			"type": "string",
+			"default": ""
+		},
+		"author": {
+			"title": "Author",
+			"description": "Author of this package",
+			"type": "string",
+			"default": ""
+		},
+		"location": {
+			"title": "Location",
+			"description": "Location of where to download the package. Overrides ForgeBox location",
+			"type": "string",
+			"default": ""
+		},
+		"directory": {
+			"title": "Directory",
+			"description": "Install directory where this package should be placed once installed. If not defined, it installs were the CommandBox command was executed.",
+			"type": "string",
+			"default": ""
+		},
+		"createPackageDirectory": {
+			"title": "Create Package Directory",
+			"description": "This determines if the container directory will contain a sub-directory according to the package slug name. The default is true",
+			"type": "boolean",
+			"default": true
+		},
+		"packageDirectory": {
+			"title": "Package Directory",
+			"description": "This name will be used for the package sub-directory instead of the slug name",
+			"type": "string",
+			"default": ""
+		},
+		"homepage": {
+			"title": "Homepage",
+			"description": "Project homepage URL",
+			"type": "string",
+			"format": "uri"
+		},
+		"documentation": {
+			"title": "Documentation",
+			"description": "Documentation URL",
+			"type": "string",
+			"format": "uri"
+		},
+		"repository": {
+			"title": "Repository",
+			"description": "Source repository",
+			"type": "object",
+			"properties": {
+				"type": {
+					"title": "Repository Type",
+					"description": "The version control system. Popular examples are git, svn, or mercurial",
+					"type": "string",
+					"default": ""
+				},
+				"url": {
+					"title": "Repository URL",
+					"description": "The URL at which the repository resides",
+					"type": "string",
+					"format": "uri"
+				}
+			}
+		},
+		"bugs": {
+			"title": "Bugs",
+			"description": "Bug issue management URL",
+			"type": "string",
+			"format": "uri"
+		},
+		"shortDescription": {
+			"title": "Short Description",
+			"description": "ForgeBox short description",
+			"type": "string",
+			"default": ""
+		},
+		"description": {
+			"title": "Description",
+			"description": "ForgeBox big description. If not set, it can be taken from a Readme.md, Readme, or Readme.txt",
+			"type": "string",
+			"default": ""
+		},
+		"instructions": {
+			"title": "Instructions",
+			"description": "Install instructions. If not set, it can be taken from a instructions.md, instructions, or instructions.txt",
+			"type": "string",
+			"default": ""
+		},
+		"changelog": {
+			"title": "Change Log",
+			"description": "Change log. If not set, it can be taken from a changelog.md, changelog, or changelog.txt",
+			"type": "string",
+			"default": ""
+		},
+		"type": {
+			"title": "Type",
+			"description": "ForgeBox contribution type",
+			"type": "string",
+			"enum": [
+				"caching",
+				"cf-engines",
+				"cfbuilder-extensions",
+				"cfwheels-plugins",
+				"cms",
+				"commandbox-commands",
+				"commandbox-modules",
+				"commandbox-recipes",
+				"contentbox-modules",
+				"contentbox-themes",
+				"contentbox-widgets",
+				"demos",
+				"di",
+				"interceptors",
+				"logging",
+				"lucee-extensions",
+				"messaging-queues",
+				"modules",
+				"mvc",
+				"nosql",
+				"plugins",
+				"preside-extensions",
+				"preside-skeletons",
+				"projects",
+				"testing",
+				"wirebox-aspects",
+				"wirebox-listeners"
+			]
+		},
+		"keywords": {
+			"title": "Keywords",
+			"description": "ForgeBox keywords",
+			"type": "array",
+			"items": {
+				"title": "Keyword",
+				"description": "ForgeBox keyword",
+				"type": "string"
+			},
+			"default": []
+		},
+		"private": {
+			"title": "Private",
+			"description": "Designates the package as a private ForgeBox package. Private packages are not publicly accessible, but still offer all the benefits of ForgeBox.",
+			"type": "boolean",
+			"default": false
+		},
+		"engines": {
+			"title": "Engines",
+			"description": "CFML engines the package supports",
+			"type": "array",
+			"items": {
+				"$ref": "#/definitions/engine"
+			},
+			"default": []
+		},
+		"defaultEngine": {
+			"description": "The name of the default CFML engine for the `start` command to use.",
+			"type": "string"
+		},
+		"defaultPort": {
+			"description": "Deprecated. The HTTP port the server will be started on when you use the start command. Use `port` in `server.json` instead.",
+			"type": "number"
+		},
+		"projectURL": {
+			"title": "Project URL",
+			"description": "Default project URL if not using CommandBox start server commands",
+			"type": "string",
+			"format": "uri"
+		},
+		"license": {
+			"title": "Licenses",
+			"description": "List of licenses the package can have",
+			"type": "array",
+			"items": {
+				"title": "License",
+				"description": "A license the package can have",
+				"type": "object",
+				"properties": {
+					"type": {
+						"title": "License Type",
+						"description": "The license type. For example, MIT.",
+						"type": "string",
+						"default": ""
+					},
+					"url": {
+						"title": "License URL",
+						"description": "The URL at which the license resides",
+						"type": "string",
+						"format": "uri"
+					}
+				}
+			},
+			"default": []
+		},
+		"contributors": {
+			"title": "Contributors",
+			"description": "Contributors to the package",
+			"type": "array",
+			"items": {
+				"$ref": "#/definitions/person"
+			},
+			"default": []
+		},
+		"dependencies": {
+			"$ref": "#/definitions/dependency"
+		},
+		"devDependencies": {
+			"$ref": "#/definitions/dependency"
+		},
+		"installPaths": {
+			"title": "Install Paths",
+			"description": "Tracks install locations so uninstall can work. The key is the package name/slug and the value is the path",
+			"type": "object",
+			"additionalProperties": {
+				"type": "string"
+			},
+			"default": {}
+		},
+		"scripts": {
+			"title": "Scripts",
+			"description": "Set of script commands that correspond to the interception points in CommandBox or arbitrary names that can be run with the `run-script` command",
+			"type": "object",
+			"properties": {
+				"preInstall": {
+					"description": "Run BEFORE the package is installed",
+					"type": "string"
+				},
+				"onInstall": {
+					"description": "Run WHILE the package is installed",
+					"type": "string"
+				},
+				"postInstall": {
+					"description": "Run AFTER the package is installed",
+					"type": "string"
+				},
+				"preUninstall": {
+					"description": "Run BEFORE the package is uninstalled",
+					"type": "string"
+				},
+				"postUninstall": {
+					"description": "Run AFTER the package is uninstalled",
+					"type": "string"
+				},
+				"preVersion": {
+					"description": "Run BEFORE bump the package version",
+					"type": "string"
+				},
+				"postVersion": {
+					"description": "Run AFTER bump the package version, but BEFORE Git repo is tagged",
+					"type": "string"
+				},
+				"onRelease": {
+					"description": "Run AFTER bump the package version and AFTER Git repo is tagged",
+					"type": "string"
+				},
+				"prePublish": {
+					"description": "Run BEFORE the package is published",
+					"type": "string"
+				},
+				"postPublish": {
+					"description": "Run AFTER the package is published",
+					"type": "string"
+				}
+			},
+			"additionalProperties": {
+				"type": "string"
+			},
+			"default": {}
+		},
+		"ignore": {
+			"title": "Ignore",
+			"description": "List of file globs to ignore when installing the package similar to .gitignore patterns",
+			"type": "array",
+			"items": {
+				"description": "Ignore glob pattern",
+				"type": "string"
+			},
+			"default": []
+		},
+		"testbox": {
+			"title": "TestBox",
+			"description": "TestBox integration",
+			"type": "object",
+			"properties": {
+				"runner": {
+					"title": "TestBox Runner",
+					"description": "The URI location of the test runner for an app or several with slug names",
+					"type": [
+						"string",
+						"array"
+					],
+					"items": {
+						"description": "The runner URIs mapped to slug names",
+						"type": "object",
+						"additionalProperties": {
+							"type": "string",
+							"format": "uri"
+						}
+					},
+					"format": "uri"
+				},
+				"labels": {
+				    "title": "Labels List",
+					"description": "A list of labels to only include when running the tests",
+					"type": [
+						"string",
+						"array"
+					],
+					"items": {
+						"description": "A label a spec must have to be ran",
+						"type": "string"
+					}
+				},
+				"excludes": {
+				    "title": "Exclude List",
+					"description": "A list of labels to exclude when running the tests",
+					"type": [
+						"string",
+						"array"
+					],
+					"items": {
+						"description": "A label to be excluded from the test run",
+						"type": "string"
+					}
+				}
+			}
+		}
+	}
+}

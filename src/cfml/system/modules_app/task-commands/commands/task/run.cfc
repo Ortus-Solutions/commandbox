@@ -26,13 +26,14 @@ component {
 	/**
 	* @taskFile Path to the Task CFC that you want to run
 	* @target Method in Task CFC to run
+	* @target.optionsUDF taskTargetOptions
 	*/
 	function run(
 		string taskFile='task.cfc',
 		string target='run'
 		) {
 
-		arguments.taskFile = fileSystemUtil.resolvePath( arguments.taskFile );
+		arguments.taskFile = resolvePath( arguments.taskFile );
 		var taskArgs = {};
 
 		// Named task args will come through in a struct called args
@@ -60,9 +61,32 @@ component {
 			} );
 		}
 		
-		// Run the task!
-		// We're printing the output here so we can capture it and pipe or redirect the output from "task run"
-		return taskService.runTask( taskFile, target, taskArgs );
+		try {
+			
+			// Run the task!
+			// We're printing the output here so we can capture it and pipe or redirect the output from "task run"
+			var results = taskService.runTask( taskFile, target, taskArgs );
+			
+		} catch( any e ) {
+			rethrow;
+		} finally{
+			if( shell.getExitCode() != 0 ) {
+				setExitCode( shell.getExitCode() );
+			}	
+		}
+		
+		return results;
+	}
+
+	array function taskTargetOptions( string paramSoFar, struct passedNamedParameters ) {
+		var taskFile = resolvePath( passedNamedParameters.taskFile ?: 'task.cfc' );
+		try {
+			return taskService.getTaskMethods( taskFile );
+		} catch ( any e ) {
+			// Recover shell prompt from console error output
+			getShell().getReader().redrawLine();
+		}
+		return [];
 	}
 
 }

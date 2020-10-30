@@ -1,5 +1,4 @@
-	<cffunction name="test|point|">
-		<cfscript>
+	function test|point|(){
 		// mocks
 		var mockEvent = getMockRequestContext();
 		var mockData  = {};
@@ -9,5 +8,4 @@
 		
 		//Do your asserts below
 		
-		</cfscript>
-	</cffunction>
+	}

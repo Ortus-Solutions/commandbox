@@ -33,10 +33,10 @@ component {
 		Boolean force=false
 	){
 		if( !isNull( arguments.directory ) ) {
-			arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
+			arguments.directory = resolvePath( arguments.directory );
 		}
 		if( !isNull( arguments.serverConfigFile ) ) {
-			arguments.serverConfigFile = fileSystemUtil.resolvePath( arguments.serverConfigFile );
+			arguments.serverConfigFile = resolvePath( arguments.serverConfigFile );
 		}
 		var serverInfo = serverService.resolveServerDetails( arguments ).serverinfo;
 
@@ -105,9 +105,13 @@ component {
 			return servers[ arguments.ID ].name;
 		} );
 	}
-
+	
 	function serverNameComplete() {
-		return serverService.getServerNames();
+		return serverService
+			.getServerNames()
+			.map( ( i ) => {
+				return { name : i, group : 'Server Names' };
+			} );
 	}
 
 }

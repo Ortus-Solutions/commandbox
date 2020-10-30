@@ -24,6 +24,10 @@ tail -f -n +0 "$log_file" &
 
 # Wait for the server launcher process to end
 wait $p_name
+server_status=$?
 
 # Kill the tail
 kill $!
+
+# Pass the exit code back
+exit $server_status

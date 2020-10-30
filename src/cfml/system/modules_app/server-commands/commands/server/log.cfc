@@ -10,7 +10,7 @@ component {
 
 	property name="serverService"	inject="ServerService";
 	property name="printUtil"		inject="print";
-
+	property name='ansiFormater'	inject='AnsiFormater';
 	/**
 	 * Show server log
 	 *
@@ -19,8 +19,8 @@ component {
 	 * @directory.hint web root for the server
 	 * @serverConfigFile The path to the server's JSON file.
 	 * @follow Tail the log file with the "follow" flag. Press Ctrl-C to quit.
-	 * @access Set this flag to view/tail the access log
-	 * @rewrites Set this flag to view/tail the rewrites log
+	 * @access View/tail the access log
+	 * @rewrites View/tail the rewrites log
 	 **/
 	function run(
 		string name,
@@ -31,10 +31,10 @@ component {
 		Boolean rewrites=false
 		 ){
 		if( !isNull( arguments.directory ) ) {
-			arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
+			arguments.directory = resolvePath( arguments.directory );
 		}
 		if( !isNull( arguments.serverConfigFile ) ) {
-			arguments.serverConfigFile = fileSystemUtil.resolvePath( arguments.serverConfigFile );
+			arguments.serverConfigFile = resolvePath( arguments.serverConfigFile );
 		}
 		var serverDetails = serverService.resolveServerDetails( arguments );
 		var serverInfo = serverDetails.serverInfo;
@@ -62,7 +62,7 @@ component {
 				return fileRead( logfile )
 					.listToArray( chr( 13 ) & chr( 10 ) )
 					.map( function( line ) {
-						return cleanLine( line );
+						return ansiFormater.cleanLine( line );
 					} )
 					.toList( chr( 10 ) );
 			}
@@ -71,47 +71,21 @@ component {
 			print.boldRedLine( "No log file found for '#serverInfo.webroot#'!" )
 				.line( "#logFile#" );
 			if( access ) {
-				print.yellowLine( 'Enable accesss logging with [server set web.acessLogEnable=true]' );
+				print.yellowLine( 'Enable accesss logging with [server set web.accessLogEnable=true]' );
+			}
+			if( rewrites ) {
+				print.yellowLine( 'Enable Rewrite logging with [server set web.rewrites.logEnable=true] and ensure you are started in debug mode.' );
 			}
 		}
 	}
-
-
+	
 	function serverNameComplete() {
-		return serverService.getServerNames();
+		return serverService
+			.getServerNames()
+			.map( ( i ) => {
+				return { name : i, group : 'Server Names' };
+			} );
 	}
 
-	private function cleanLine( line ) {
-		
-		// Log messages from the CF engine or app code writing direclty to std/err out strip off "runwar.context" but leave color coded severity
-		// Ex:
-		// [INFO ] runwar.context: 04/11 15:47:10 INFO Starting Flex 1.5 CF Edition
-		line = reReplaceNoCase( line, '^(\[[^]]*])( runwar\.context: )(.*)', '\1 \3' );
-		
-		// Log messages from runwar itself, simplify the logging category to just "Runwar:" and leave color coded severity
-		// Ex:
-		// [DEBUG] runwar.config: Enabling Proxy Peer Address handling
-		// [DEBUG] runwar.server: Starting open browser action
-		line = reReplaceNoCase( line, '^(\[[^]]*])( runwar\.[^:]*: )(.*)', '\1 Runwar: \3' );
-		
-		if( line.startsWith( '[INFO ]' ) ) {
-			return reReplaceNoCase( line, '^(\[INFO ] )(.*)', '[#printUtil.boldCyan('INFO ')#] \2' );
-		}
-
-		if( line.startsWith( '[ERROR]' ) ) {
-			return reReplaceNoCase( line, '^(\[ERROR] )(.*)', '[#printUtil.boldMaroon('ERROR')#] \2' );
-		}
-
-		if( line.startsWith( '[DEBUG]' ) ) {
-			return reReplaceNoCase( line, '^(\[DEBUG] )(.*)', '[#printUtil.boldOlive('DEBUG')#] \2' );
-		}
-
-		if( line.startsWith( '[WARN ]' ) ) {
-			return reReplaceNoCase( line, '^(\[WARN ] )(.*)', '[#printUtil.boldYellow('WARN ')#] \2' );
-		}
-
-		return line;
-
-	}
 
 }

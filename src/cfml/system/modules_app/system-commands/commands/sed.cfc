@@ -40,7 +40,7 @@ component {
 	/**
 	 * @inputOrFile.hint The text to process, or a file name to read with --file
 	 * @commands.hint The command to perform on the input text.  Ex: s/replaceMe/withMe/g
-	 * @file.hint Specifiy true to treat the input as a file path to read.
+	 * @file.hint Treat the input as a file path to read.
  	 **/
 	function run(
 		required string inputOrFile,
@@ -54,7 +54,7 @@ component {
 		}
 
 		// Turn output into an array, breaking on carriage returns
-		var inputLines = listToArray( arguments.inputOrFile, CR );
+		var inputLines = listToArray( arguments.inputOrFile, chr(13)&chr(10) );
 		arguments.commands = trim( arguments.commands );
 
 		// Only support a single command right now

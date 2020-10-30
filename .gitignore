@@ -2,6 +2,7 @@
 /dist
 /build/build.number
 /build/temp
+/build/JREs
 /build/requires.txt
 /lib
 /src/cfml/box.json
@@ -11,6 +12,7 @@ tests/work
 Icon?
 src/cfml/logs
 build/launch4j-*
+build/runwar
 tests/testbox
 /mxunit
 /apidocs/CommandBox-CommandDocs/

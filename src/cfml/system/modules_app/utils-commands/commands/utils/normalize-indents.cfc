@@ -49,6 +49,7 @@ component aliases="indents" {
 	* @exclude A list of globbing patterns to ignore
 	* @force Skip user confirmation of modiying files
 	* @verbose Output additional information about each file affected
+	* @roundUp Convert additional spaces that don't equal a tab to a full tab
 	*/
 	public function run(
 		required Globber files,
@@ -56,7 +57,8 @@ component aliases="indents" {
 		Number spaceTabCount = 4,
 		String exclude = "",
 		Boolean force = false,
-		Boolean verbose = false
+		Boolean verbose = false,
+		boolean roundUp=false
 	){
 		arguments.files = filterFiles( arguments.files, arguments.exclude );
 		var count = arguments.files.len();
@@ -66,12 +68,12 @@ component aliases="indents" {
 		}
 
 		for ( var file in arguments.files ){
-			normalizeIndents( file, arguments.verbose, arguments.spacesOrTabs, arguments.spaceTabCount );
+			normalizeIndents( file, arguments.verbose, arguments.spacesOrTabs, arguments.spaceTabCount, roundUp );
 		}
 	}
 
-	private function normalizeIndents( filePath, verbose, spacesOrTabs, spaceTabCount ){
-		var trimLinesResult = fileNormalizeIndents( arguments.filePath, arguments.spacesOrTabs, arguments.spaceTabCount );
+	private function normalizeIndents( filePath, verbose, spacesOrTabs, spaceTabCount, roundUp ){
+		var trimLinesResult = fileNormalizeIndents( arguments.filePath, arguments.spacesOrTabs, arguments.spaceTabCount, roundUp );
 
 		if ( trimLinesResult.fileChanged ){
 			if ( arguments.verbose ){
@@ -84,7 +86,7 @@ component aliases="indents" {
 		}
 	}
 
-	private function fileNormalizeIndents( filePath, spacesOrTabs, spaceTabCount ){
+	private function fileNormalizeIndents( filePath, spacesOrTabs, spaceTabCount, roundUp ){
 		var fileData = fileRead( arguments.filePath );
 		var newData = javaCast( "string", fileData );
 
@@ -95,13 +97,15 @@ component aliases="indents" {
 				newData = newData.replaceAll( regex, "$1#chr(9)#$2" );
 			}
 
-			newData = newData.replaceAll( "(?m)^(\t*)[ ]+", "$1" )
-		} else {
+			newData = newData.replaceAll( "(?m)^(\t*)[ ]+", "$1#(roundUp?chr(9):'')#" )
+		} else if ( arguments.spacesOrTabs == "spaces" ) {
 			var regex = "(?m)^(\s*)[\t]{1}(\s*)";
 
 			while ( reFind( regex, newData ) != 0 ) {
 				newData = newData.replaceAll( regex, "$1" & repeatString( " ", arguments.spaceTabCount ) & "$2" );
 			}
+		} else {
+			error( '[#arguments.spacesOrTabs#] is not a valid option for spacesOrTabs.' );
 		}
 
 		return { newData: newData, fileChanged: newData != fileData };

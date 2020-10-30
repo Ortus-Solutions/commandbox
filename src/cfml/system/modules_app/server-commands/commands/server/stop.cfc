@@ -18,8 +18,8 @@ component aliases="stop" {
 	 * @name.optionsUDF serverNameComplete
 	 * @directory.hint web root for the server
 	 * @serverConfigFile The path to the server's JSON file.
-	 * @forget.hint if passed, this will also remove the directory information from disk
-	 * @all.hint If true, stop ALL running servers
+	 * @forget.hint Remove the directory information from disk
+	 * @all.hint Stop ALL running servers
 	 **/
 	function run(
 		string name,
@@ -34,13 +34,13 @@ component aliases="stop" {
 		} else {
 
 			if( !isNull( arguments.directory ) ) {
-				arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
+				arguments.directory = resolvePath( arguments.directory );
 			}
 			if( !isNull( arguments.serverConfigFile ) ) {
-				arguments.serverConfigFile = fileSystemUtil.resolvePath( arguments.serverConfigFile );
+				arguments.serverConfigFile = resolvePath( arguments.serverConfigFile );
 			}
 
-			// Look up the server that we're starting
+			// Look up the server that we're stopping
 			var servers = { id: serverService.resolveServerDetails( arguments ).serverinfo };
 
 		} // End "all" check
@@ -68,15 +68,20 @@ component aliases="stop" {
 
 			if( arguments.forget ) {
 				print.yellowLine( 'forgetting ' & serverInfo.name & '...' ).toConsole();
+				sleep( 1000 )
 				print.line( serverService.forget( serverInfo ) );
 			}
 		}
 
 
 	}
-
+	
 	function serverNameComplete() {
-		return serverService.getServerNames();
+		return serverService
+			.getServerNames()
+			.map( ( i ) => {
+				return { name : i, group : 'Server Names' };
+			} );
 	}
 
 }

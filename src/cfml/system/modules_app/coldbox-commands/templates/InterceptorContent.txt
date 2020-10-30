@@ -1,15 +1,15 @@
-<cfcomponent hint="|description|" output="false">
+/**
+ * |Description|
+ */
+component{
 
-<!------------------------------------------- CONFIGURATOR -------------------------------------------------->
+	/**
+	 * Configure the interceptor
+	 */
+	void function configure(){
 
-	<cffunction name="configure" access="public" returntype="void" output="false" hint="Interceptor config">
-		<cfscript>
-			
-		</cfscript>
-	</cffunction>
-
-<!------------------------------------------- INTERCEPTION POINTS ------------------------------------------->
+	}
 
 |interceptionPoints|
 
-</cfcomponent>
+}

@@ -13,31 +13,49 @@ component accessors="true" extends="Print"{
 
 	// DI
 	property name="shell" inject="shell";
+	
+	property name="objectID";
 
 	/**
 	* Result buffer
 	*/
-	property name="result" default="";
+	property name="result";
 
 	function init(){
+		variables.result = createObject( 'java', 'java.lang.StringBuilder' ).init( '' );
+		setObjectID( createUUID() );
 		return this;
 	}
 
 	// Force a flush
 	function toConsole(){
-		variables.shell.printString( getResult() );
-		clear();
+		// A single instance of print buffer can only dump to the console once at a time, otherwise
+		// the shared satate in "result" will get output more than once.
+		lock name='printBuffer-#getObjectID()#' type="exclusive" timeout="20" {
+			var thingToPrint = getResult();
+			clear();
+		}
+		  	
+		// Once we get the text to print above, we can release the lock while we actually print it.
+		variables.shell.printString( thingToPrint );
 	}
 
 	// Reset the result
 	function clear(){
-		variables.result = '';
+		variables.result.setLength(0);
+	}
+	
+	function getResult() {
+		return variables.result.toString();
 	}
 
 	// Proxy through any methods to the actual print helper
 	function onMissingMethod( missingMethodName, missingMethodArguments ){
-		variables.result &= super.onMissingMethod( arguments.missingMethodName, arguments.missingMethodArguments );
-		return this;
+		// Don't modify the buffer if it's being printed
+		lock name='printBuffer-#getObjectID()#' type="readonly" timeout="20" {
+			variables.result.append( super.onMissingMethod( arguments.missingMethodName, arguments.missingMethodArguments ) );
+			return this;
+		}
 	}
 
 }

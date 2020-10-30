@@ -30,9 +30,9 @@ component accessors="true" singleton {
 		// and smart auto-completion to help people set new settings.
 		setPossibleConfigSettings([
 			// Used in ModuleService
-			'ModulesExternalLocation',
+			'modulesExternalLocation',
 			'modulesInclude',
-			'ModulesExclude',
+			'modulesExclude',
 			// HTTP Proxy settings
 			'proxy.server',
 			'proxy.port',
@@ -40,23 +40,43 @@ component accessors="true" singleton {
 			'proxy.password',
 			// used in "run" command for a custom Unix shell
 			'nativeShell',
+			// used in "runTerminal" command for a custom app
+			'nativeTerminal',
+			// used to open an URL
+			'preferredBrowser',
 			// used in "bump" command
 			'tagVersion',
 			'tagPrefix',
 			// Endpoint data
 			'endpoints',
+			'endpoints.defaultForgeBoxEndpoint',
 			'endpoints.forgebox',
 			'endpoints.forgebox.APIToken',
 			'endpoints.forgebox.APIURL',
 			// Servers
 			'server',
 			'server.defaults',
+			'server.javaInstallDirectory',
 			// used in Artifactsservice
 			'artifactsDirectory',
 			// commands
 			'command',
 			'command.defaults',
-			'command.aliases'
+			'command.aliases',
+			// Interactivity
+			'nonInteractiveShell',
+			// JSON
+			'JSON.indent',
+			'JSON.lineEnding',
+			'JSON.spaceAfterColon',
+			'JSON.sortKeys',
+			'JSON.ANSIColors.constant',
+			'JSON.ANSIColors.key',
+			'JSON.ANSIColors.number',
+			'JSON.ANSIColors.string',
+			// General
+			'verboseErrors',
+			'debugNativeExecution'
 		]);
 
 		setConfigFilePath( '/commandbox-home/CommandBox.json' );
@@ -151,7 +171,7 @@ component accessors="true" singleton {
 	* Persists config settings to disk
 	*/
 	function saveConfig(){
-		fileWrite( getConfigFilePath(), formatterUtil.formatJSON( serializeJSON( getConfigSettings() ) ) );
+		JSONService.writeJSONFile( getConfigFilePath(), getConfigSettings() );
 
 		// Update ModuleService
 		ModuleService.overrideAllConfigSettings();

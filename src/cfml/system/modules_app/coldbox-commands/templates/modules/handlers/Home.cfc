@@ -1,12 +1,13 @@
-<cfcomponent output="false" hint="A normal ColdBox event handler">
+/**
+ * The main module handler
+ */
+component{
 
-	<!--- index --->
-    <cffunction name="index" output="false" hint="Index">
-    	<cfargument name="event">
-		<cfargument name="rc">
-		<cfargument name="prc">
+	/**
+	 * Module EntryPoint
+	 */
+	function index( event, rc, prc ){
+		event.setView( "home/index" );
+	}
 
-    	<cfset event.setView("home/index")>
-    </cffunction>
-
-</cfcomponent>
+}

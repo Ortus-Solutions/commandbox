@@ -1,24 +1,24 @@
 /**
-* A nice ORM Service
-*/
+ * A nice ORM Service
+ */
 component extends="cborm.models.BaseORMService" singleton{
-	
+
 	/**
 	* Constructor
 	*/
 	function init(){
-		
+
 		// init super class
 		super.init();
-		
+
 		// Use Query Caching
 	    setUseQueryCaching( |QueryCaching| );
 	    // Query Cache Region
 	    setQueryCacheRegion( "|cacheRegion|" );
 	    // EventHandling
 	    setEventHandling( |eventHandling| );
-	    
+
 	    return this;
 	}
-	
+
 }

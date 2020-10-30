@@ -23,7 +23,7 @@ component {
 		} );
 
 		var caps = createObject( 'java', 'org.jline.utils.InfoCmp$Capability' );
-		var numColors = shell.getReader().getTerminal().getNumericCapability( caps.max_colors );
+		var numColors = shell.getReader().getTerminal().getNumericCapability( caps.max_colors ) ?: 0;
 
 		if( numColors < 256 ) {
 	       	print.line();

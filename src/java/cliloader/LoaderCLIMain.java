@@ -44,11 +44,13 @@ import javax.script.ScriptEngine;
 import java.time.Instant;
 import java.nio.file.Paths;
 import java.security.Security;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 
 import net.minidev.json.JSONArray;
 
 public class LoaderCLIMain{
-	
+
 	public static class ExtFilter implements FilenameFilter{
 		private final String	ext;
 
@@ -104,6 +106,7 @@ public class LoaderCLIMain{
 		}
 	}
 
+	public static Object			FRTrans;
 	private static URLClassLoader	_classLoader;
 	private static String			CFML_VERSION_PATH		= "cliloader/cfml.version";
 	private static String			CFML_ZIP_PATH			= "cfml.zip";
@@ -186,9 +189,11 @@ public class LoaderCLIMain{
 		}
 		// Check for "box foo.cfm" or "box foo.cfm param1 ..."
 		// This is mostly just for backwards compat and to enforce consistency.
-		if( cliArguments.size() > 0 
-				&& cliArguments.get( 0 ).toLowerCase().endsWith( ".cfm" ) 
-				&& new File( cliArguments.get( 0 ) ).exists() ) {
+		if( cliArguments.size() > 0  
+				&& new File( cliArguments.get( 0 ) ).exists()
+				&& new File( cliArguments.get( 0 ) ).isFile()
+				&& ( cliArguments.get( 0 ).toLowerCase().endsWith( ".cfm" )
+					|| isShebang( new File( cliArguments.get( 0 ) ).getCanonicalPath() ) ) ) {
 			
 			log.debug( "Funneling: " + cliArguments.get( 0 ) + " through execute command." );
 			
@@ -217,6 +222,43 @@ public class LoaderCLIMain{
 			if( debug ) {
 				printStream.println( "uri: " + uri );
 			}
+		}
+		
+		try { 
+			Class FRAPIClass = classLoader.loadClass( "com.intergral.fusionreactor.api.FRAPI" );
+		    Method getInstance = FRAPIClass.getMethod("getInstance", (Class[])null);
+
+			while( getInstance.invoke( FRAPIClass, (Object[])null ) == null ) {
+				if( debug ) {
+					printStream.println( "Waiting on FusionReactor to load..." );
+				}
+				Thread.sleep( 500 );
+			}
+			Object FRAPIInstance = getInstance.invoke( FRAPIClass, (Object[])null );
+		    Method isInitialized = FRAPIInstance.getClass().getMethod("isInitialized", (Class[])null);			
+			while( !(Boolean)isInitialized.invoke( FRAPIInstance, (Object[])null ) ) {
+				if( debug ) {
+					printStream.println( "Waiting on FusionReactor to load..." );
+				}
+				Thread.sleep( 500 );
+			}
+			
+		    Method createTrackedTransaction = FRAPIInstance.getClass().getMethod("createTrackedTransaction", String.class );		
+
+		    FRTrans = createTrackedTransaction.invoke( FRAPIInstance, "CLI Java Startup" );
+
+		    Method setTransactionApplicationName = FRAPIClass.getMethod("setTransactionApplicationName", String.class );
+		    setTransactionApplicationName.invoke( FRAPIInstance, "CommandBox CLI" );
+
+		    Method setDescription = FRTrans.getClass().getMethod("setDescription", String.class );
+		    setDescription.invoke( FRTrans, "Java Code from start of JVM to CF code running" );
+		    
+		} catch( Throwable e ) {
+			if( debug ) {
+				printStream.println( e.getMessage() );
+				//throw new IOException( e );
+			}
+			
 		}
 		
 		System.setProperty( "cfml.cli.arguments", arrayToList( cliArguments.toArray( new String[ cliArguments.size() ] ), " " ) );
@@ -266,7 +308,10 @@ public class LoaderCLIMain{
 				printStream.println( "Bootstrap: " + bootstrap );
 			}
 			
-    		String CFML = "mappings = getApplicationSettings().mappings; \n"
+    		String CFML = "loader = createObject( 'java', 'cliloader.LoaderCLIMain' ); \n" 
+    				+ "if( !isNull( loader.FRTrans ) ) { loader.FRTrans.close(); } \n" 
+    				+ "\n" 
+    				+ "mappings = getApplicationSettings().mappings; \n"
     	    		+ " mappings[ '/__commandbox_root/' ] = '" + webroot + "'; \n"
     	            + " application mappings='#mappings#' action='update'; \n"
             		+ " include '/__commandbox_root" + bootstrap.replace( "'", "''" ) + "'; \n";
@@ -501,6 +546,7 @@ public class LoaderCLIMain{
 
 	@SuppressWarnings( "static-access" )
 	public static void main( String[] arguments ) throws Throwable{
+		disableAccessWarnings();
 		System.setProperty("log4j.configuration", "resource/log4j.xml");
 		Util.ensureJavaVersion();
 		execute( initialize( arguments ) );
@@ -509,6 +555,7 @@ public class LoaderCLIMain{
 
 	@SuppressWarnings( "static-access" )
 	public static ArrayList< String > initialize( String[] arguments ) throws IOException {
+		
 		System.setProperty( "apple.awt.UIElement", "true" );
 		ArrayList< String > cliArguments = new ArrayList< String >(
 				Arrays.asList( arguments ) );
@@ -521,7 +568,11 @@ public class LoaderCLIMain{
 			listRemoveContaining( cliArguments, "-clidebug" );
 			arguments = removeElement( arguments, "-clidebug" );
 		}
-
+		
+		log.debug( "CLI Java Version:" + System.getProperty( "java.vm.version", System.getProperty( "java.version", "Unknown" ) ) );
+		log.debug( "CLI Java Home:" + System.getProperty( "java.home", "Unknown" ) );
+		log.debug( "CLI Java Vendor:" + System.getProperty( "java.vendor", "Unknown" ) );
+		
 		System.setProperty( "cfml.cli.debug", debug.toString() );
 		try {
 			props.load( ClassLoader
@@ -597,11 +648,40 @@ public class LoaderCLIMain{
 			arguments = removeElement( arguments, "-clishellpath" );
 		}
 		props.setProperty( "cfml.cli.shell", getShellPath() );
+		String cliworkingdirFinal = getCurrentDir();
+		
+		if( listContains( cliArguments, "-cliworkingdir" ) ) {
+			log.debug( "overriding user.dir from -cliworkingdir" );
+			int cliworkingdirIdx = listIndexOf( cliArguments, "-cliworkingdir" );
+			String cliworkingdir = cliArguments.get( cliworkingdirIdx );
+			
+			if( cliworkingdir.indexOf( '=' ) == -1  ) {
+				if( cliArguments.size() > cliworkingdirIdx+1 ) {
+					cliworkingdirFinal = cliArguments.get( cliworkingdirIdx + 1 );
+					cliArguments.remove( cliworkingdirIdx + 1 );	
+				}
+				cliArguments.remove( cliworkingdirIdx );
+			} else if( cliworkingdir.indexOf( '=' ) > -1 ) {
+				String[] keyVal = cliworkingdir.split( "=" );
+				if( keyVal.length > 1 ) {
+					cliworkingdirFinal = keyVal[ 1 ];
+				}
+				cliArguments.remove( cliworkingdirIdx );
+			}
+			
+			
+		//	arguments = removeElement( arguments, "-cliworkingdir" );
+		}
+
+		log.debug( "Working Dir set to " + cliworkingdirFinal );
+		props.setProperty( "cfml.cli.pwd", cliworkingdirFinal );
 
 		File libDir = getLibDir();
 		props.setProperty( "cfml.cli.lib", libDir.getAbsolutePath() );
 		File cfmlDir = new File( cli_home.getPath() + "/cfml" );
 		File cfmlSystemDir = new File( cli_home.getPath() + "/cfml/system" );
+		File cfmlBundlesDir = new File( cli_home.getPath() + "/engine/cfml/cli/lucee-server/bundles" );
+		File cfmlFelixCacheDir = new File( cli_home.getPath() + "/engine/cfml/cli/lucee-server/felix-cache" );
 
 		// clean out any leftover pack files (an issue on windows)
 		Util.cleanUpUnpacked( libDir );
@@ -625,6 +705,17 @@ public class LoaderCLIMain{
 				|| updateLibs ) {
 			log.info( "Library path: " + libDir );
 			log.info( "Initializing libraries -- this will only happen once, and takes a few seconds..." );
+						
+			// OSGI can be grumpy on upgrade with competing bundles.  Start fresh
+			if( cfmlBundlesDir.exists() ) {
+				//log.info( "Cleaning old OSGI Bundles..." );
+				//Util.deleteDirectory( cfmlBundlesDir );
+			}
+			// OSGI can be grumpy on upgrade with competing bundles.  Start fresh
+			if( cfmlFelixCacheDir.exists() ) {
+				log.info( "Cleaning old Felix Cache..." );
+				Util.deleteDirectory( cfmlFelixCacheDir );
+			}
 			
 			// Try to delete the Runwar jar first since it's the most likely to be locked.  
 			// If it fails, this method will just abort before we get any farther into deleting stuff.
@@ -638,6 +729,7 @@ public class LoaderCLIMain{
 			if( cfmlSystemDir.exists() ) {
 				Util.deleteDirectory( cfmlSystemDir );
 			}
+		
 			Util.unzipInteralZip( classLoader, CFML_ZIP_PATH, cfmlDir, debug );
 			
 			Util.unzipInteralZip( classLoader, ENGINECONF_ZIP_PATH, new File(
@@ -705,7 +797,6 @@ public class LoaderCLIMain{
 		setLuceeCLIConfigWebDir( configCLIWebDir );
 		
 		props.setProperty( "cfml.cli.home", cli_home.getAbsolutePath() );
-		props.setProperty( "cfml.cli.pwd", getCurrentDir() );
 		props.setProperty( "cfml.server.dockicon", "" );
 		
 		for( Object name2 : props.keySet()) {
@@ -725,6 +816,7 @@ public class LoaderCLIMain{
 		listRemoveContaining( cliArguments, "-" + home );
 		listRemoveContaining( cliArguments, "-cliupdate" );
 		listRemoveContaining( cliArguments, "-clidebug" );
+		listRemoveContaining( cliArguments, "-cliworkingdir" );
 	}
 
 	private static String mapGetNoCase( Map< String, String > source,
@@ -757,6 +849,16 @@ public class LoaderCLIMain{
 		merged.putAll( source );
 		merged.putAll( override );
 		return merged;
+	}
+
+	private static Boolean isShebang( String uri ) throws IOException{
+		FileReader namereader = new FileReader( new File( uri ) );
+		BufferedReader in = new BufferedReader( namereader );
+		String line = in.readLine();
+		if( line != null && line.startsWith( "#!" ) ) {
+			return true;
+		}
+		return false;
 	}
 
 	private static String removeBinBash( String uri ) throws IOException{
@@ -898,4 +1000,23 @@ public class LoaderCLIMain{
 		return true;
 	}
 
+	@SuppressWarnings("unchecked")
+    public static void disableAccessWarnings() {
+        try {
+            Class unsafeClass = Class.forName("sun.misc.Unsafe");
+            Field field = unsafeClass.getDeclaredField("theUnsafe");
+            field.setAccessible(true);
+            Object unsafe = field.get(null);
+
+            Method putObjectVolatile = unsafeClass.getDeclaredMethod("putObjectVolatile", Object.class, long.class, Object.class);
+            Method staticFieldOffset = unsafeClass.getDeclaredMethod("staticFieldOffset", Field.class);
+
+            Class loggerClass = Class.forName("jdk.internal.module.IllegalAccessLogger");
+            Field loggerField = loggerClass.getDeclaredField("logger");
+            Long offset = (Long) staticFieldOffset.invoke(unsafe, loggerField);
+            putObjectVolatile.invoke(unsafe, loggerClass, offset, null);
+        } catch (Exception ignored) {
+        }
+    }
+	
 }

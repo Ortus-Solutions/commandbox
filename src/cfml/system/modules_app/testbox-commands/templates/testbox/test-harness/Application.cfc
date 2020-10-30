@@ -1,15 +1,15 @@
 /**
 * Copyright Since 2005 Ortus Solutions, Corp
-* www.coldbox.org | www.luismajano.com | www.ortussolutions.com | www.gocontentbox.org
+* www.ortussolutions.com
 **************************************************************************************
 */
 component{
-	this.name = "A TestBox Runner Suite " & hash( getCurrentTemplatePath() );
+	this.name = "A TestBox Runner Suite";
 	// any other application.cfc stuff goes below:
 	this.sessionManagement = true;
 
 	// any mappings go here, we create one that points to the root called test.
-	this.mappings[ "/test" ] = getDirectoryFromPath( getCurrentTemplatePath() );
+	this.mappings[ "/tests" ] = getDirectoryFromPath( getCurrentTemplatePath() );
 
 	// any orm definitions go here.
 

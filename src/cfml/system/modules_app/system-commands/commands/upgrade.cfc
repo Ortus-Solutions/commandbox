@@ -30,7 +30,7 @@ component {
 	property name="ConfigService"			inject="ConfigService";
 
 	/**
-	 * @latest.hint Will download bleeding edge if true, last stable version if false
+	 * @latest.hint Download bleeding edge version, instead of last stable version
 	 * @force.hint Force the update even if the version on the server is the same as locally
 	 **/
 	function run( boolean latest=false, boolean force=false ) {
@@ -84,6 +84,9 @@ component {
 
 		var boxRepoJSON = fileRead( '#temp#/box-repo.json' );
 		var loaderRepoJSON = fileRead( '#temp#/box-loader.json' );
+		
+		fileDelete( '#temp#/box-repo.json' );
+		fileDelete( '#temp#/box-loader.json' );
 
 		if( !isJSON( boxRepoJSON ) ) {
 			return error( "Oops, we expected [#boxRepoURL#] to be JSON, but it wasn't.  #cr#I'm afraid we can't upgrade right now." );
@@ -128,7 +131,7 @@ component {
 					.boldYellowLine( "CommandBox will finish the upgrade for you the first time it is run." )
 					.line()
 					.text( "Download URL: ").
-						boldLine( arguments.latest ? '#thisArtifactsURL#ortussolutions/commandbox/#repoVersionShort#/' : 'http://www.ortussolutions.com/products/commandbox/##download' )
+						boldLine( arguments.latest ? '#thisArtifactsURL###/ortussolutions/commandbox/#repoVersionShort#/' : 'http://www.ortussolutions.com/products/commandbox/##download' )
 					.line()
 					.yellowLine( "(Your CLI Loader version is #shell.getLoaderVersion()# and the latest is #LoaderVersion#)" )
 					.toConsole();

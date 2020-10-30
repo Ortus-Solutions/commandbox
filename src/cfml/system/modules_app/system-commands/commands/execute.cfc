@@ -33,7 +33,7 @@ component aliases="exec"{
 		clearTemplateCache();
 
 		// Make file canonical and absolute
-		arguments.file = fileSystemUtil.resolvePath( arguments.file );
+		arguments.file = resolvePath( arguments.file );
 
 		if( !fileExists( arguments.file ) ){
 			return error( "File: #arguments.file# does not exist!" );
@@ -66,6 +66,8 @@ component aliases="exec"{
 				if( isNumeric( argName ) ) {
 					argName--;
 				}
+				// Make incoming args avaialble to this command as env vars too
+				systemSettings.setSystemSetting( argName, args[ arg ] );
 				parsedArgs[ '$' & argName ] = args[arg];
 			}
 		}

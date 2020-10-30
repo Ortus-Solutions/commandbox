@@ -21,7 +21,6 @@ component accessors="true" singleton {
 	property name='packageService'	 	inject='PackageService';
 	property name='logger' 				inject='logbox:logger:{this}';
 	property name="semanticVersion"		inject="provider:semanticVersion@semver";
-	// COMMANDBOX-479
 	property name="configService"		inject="ConfigService";
 
 
@@ -31,7 +30,6 @@ component accessors="true" singleton {
 	function onDIComplete() {
 
 		// Create the artifacts directory if it doesn't exist
-		// COMMANDBOX-479
 		if( !directoryExists( getArtifactsDirectory() ) ) {
 			directoryCreate( getArtifactsDirectory() );
 		}
@@ -40,12 +38,13 @@ component accessors="true" singleton {
 
 	/**
 	* List the packages in the artifacts cache.
-	* @package.hint Supply a package to see only versions of this package
+	* @packageName Supply a package to see only versions of this package
 	* @returns A struct of arrays where the struct key is the package package and the array contains the versions of that package in the cache.
 	*/
 	struct function listArtifacts( packageName='' ) {
-		var result = {};
-		// COMMANDBOX-479
+		// Ordered struct
+		var result = [:];
+		
 		var dirList = directoryList( path=getArtifactsDirectory(), recurse=false, listInfo='query', sort='name asc' );
 
 		for( var dir in dirList ) {
@@ -71,7 +70,7 @@ component accessors="true" singleton {
 	* Removes all artifacts from the cache and returns the number of wiped out directories
 	*/
 	numeric function cleanArtifacts() {
-		// COMMANDBOX-479
+		
 		var qryDir = directoryList( path=getArtifactsDirectory(), recurse=false, listInfo='query' );
 		var numRemoved = 0;
 
@@ -87,8 +86,8 @@ component accessors="true" singleton {
 
 	/**
 	* Removes an artifact or an artifact package, true if removed
-	* @packageName.hint The package name to look for
-	* @version.hint The version to look for
+	* @packageName The package name to look for
+	* @version The version to look for
 	*/
 	boolean function removeArtifact( required packageName, version="" ) {
 		if( packageExists( arguments.packageName, arguments.version ) ){
@@ -101,8 +100,8 @@ component accessors="true" singleton {
 
 	/**
 	* Returns true if a package exists in the artifact cache, false if not.
-	* @packageName.hint The package name to look for
-	* @version.hint The version to look for
+	* @packageName The package name to look for
+	* @version The version to look for
 	*/
 	boolean function packageExists( required packageName, version="" ){
 		return directoryExists( getPackagePath( arguments.packageName, arguments.version ) );
@@ -110,12 +109,12 @@ component accessors="true" singleton {
 
 	/**
 	* Returns the filesystem path of the package path
-	* @packageName.hint The package name to look for
-	* @version.hint The version to look for
+	* @packageName The package name to look for
+	* @version The version to look for
 	*/
 	function getPackagePath( required packageName, version="" ){
 		// This will likely change, so I'm only going to put the code here.
-		// COMMANDBOX-479
+		
 		var path = getArtifactsDirectory() & '/' & arguments.packageName;
 		// do we have a version?
 		if( arguments.version.len() ){
@@ -126,8 +125,8 @@ component accessors="true" singleton {
 
 	/**
 	* Returns true if a package exists in the artifact cache, false if not.
-	* @packageName.hint The package name to look for
-	* @version.hint The version of the package to look for
+	* @packageName The package name to look for
+	* @version The version of the package to look for
 	*/
 	boolean function artifactExists( required packageName, required version ){
 		return fileExists( getArtifactPath( argumentCollection = arguments ) );
@@ -135,8 +134,8 @@ component accessors="true" singleton {
 
 	/**
 	* Returns the filesystem path of the artifact zip file
-	* @packageName.hint The package name to look for
-	* @version.hint The version of the package to look for
+	* @packageName The package name to look for
+	* @version The version of the package to look for
 	*/
 	function getArtifactPath( required packageName, required version ) {
 		// I'm using the package name as the zip file for lack of anything better even though it's redundant with the first folder
@@ -149,9 +148,9 @@ component accessors="true" singleton {
 	* This expects that the package is already downloaded and stored somewhere on the local filesystem.
 	* An error is thrown if the packageZip file doesn't exist or doesn't have a ".zip" extension.
 	*
-	* @packageName.hint The package name to look for
-	* @version.hint The version of the package to look for
-	* @packagePath.hint A file path to a local zip file that contains the package
+	* @packageName The package name to look for
+	* @version The version of the package to look for
+	* @packagePath A file path to a local zip file that contains the package
 	*/
 	ArtifactService function createArtifact( required packageName, required version, required packagePath ) {
 
@@ -186,11 +185,11 @@ component accessors="true" singleton {
 	* Store a package in the artifact cache.
 	* This expects that the package is already downloaded and stored somewhere on the local filesystem.
 	*
-	* @packageName.hint The package name to look for
-	* @version.hint The version of the package to look for
-	* @packageFolder.hint A file path to a local folder that contains the package
+	* @packageName The package name to look for
+	* @version The version of the package to look for
+	* @packageFolder A file path to a local folder that contains the package
 	*/
-	private function createArtifactFromFolder( required packageName, required version, required packageFolder ) {
+	function createArtifactFromFolder( required packageName, required version, required packageFolder ) {
 
 		//  Where will this artifact live?
 		var thisArtifactPath = getArtifactPath( arguments.packageName, arguments.version );
@@ -207,8 +206,8 @@ component accessors="true" singleton {
 	* Returns the descriptor file (box.json) for a packge parsed as a struct.
 	* This data will be merged with a default document to guaruntee existence of standard variables and
 	* reduce the need for "exist" checks in our code
-	* @packageName.hint The package name to look for
-	* @version.hint The version of the package to look for
+	* @packageName The package name to look for
+	* @version The version of the package to look for
 	*/
 	public struct function getArtifactDescriptor( required packageName, required version ) {
 		var thisArtifactPath = getArtifactPath( arguments.packageName, arguments.version );
@@ -267,7 +266,7 @@ component accessors="true" singleton {
 		}
 	}
 
-	// COMMANDBOX-479
+	
 	string function getArtifactsDirectory() {
 		return configService.getSetting( 'artifactsDirectory', variables.artifactDir );
 	}

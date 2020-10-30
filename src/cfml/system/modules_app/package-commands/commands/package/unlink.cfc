@@ -23,18 +23,18 @@ component aliases='unlink' {
 	property name="packageService" inject="PackageService";
 
 	/**
-	 * @moduleDrectory Path to an app's modules directory
+	 * @moduleDirectory Path to an app's modules directory
 	 **/
 	function run(
-		string moduleDrectory ) {
+		string moduleDirectory ) {
 			
 		var packageDirectory=getCWD();
 		var commandBoxCoreLinked = false;
-		if( !arguments.keyExists( 'moduleDrectory' ) ) {
-			arguments.moduleDrectory = expandPath( '/commandbox/modules' );
+		if( !arguments.keyExists( 'moduleDirectory' ) ) {
+			arguments.moduleDirectory = expandPath( '/commandbox/modules' );
 			commandBoxCoreLinked = true;
 		} else {
-			arguments.moduleDrectory = fileSystemUtil.resolvePath( arguments.moduleDrectory );
+			arguments.moduleDirectory = resolvePath( arguments.moduleDirectory );
 		}
 		
 		// package check
@@ -48,7 +48,7 @@ component aliases='unlink' {
 			error( 'Cannot unlink package with no slug.' );
 		}
 		
-		var linkTarget = moduleDrectory & '/' & boxJSON.slug;
+		var linkTarget = moduleDirectory & '/' & boxJSON.slug;
 		
 		if( directoryExists( linkTarget ) ) {
 			directoryDelete( linkTarget );
@@ -59,7 +59,7 @@ component aliases='unlink' {
 					.params( clearScreen=false )
 					.run();
 			} else {
-				print.greenLine( 'Package [#boxJSON.slug#] unlinked from [#moduleDrectory#]' );			
+				print.greenLine( 'Package [#boxJSON.slug#] unlinked from [#moduleDirectory#]' );			
 			}
 			
 		} else {

@@ -43,10 +43,12 @@ component aliases="start" {
 
 	// DI
 	property name="serverService" 	inject="ServerService";
-	property name="forgeBox" 		inject="ForgeBox";
-
+	property name="javaService" 	inject="JavaService";
+	property name="endpointService" inject="endpointService";
+	
 	/**
 	 * @name           		short name for this server or a path to the server.json file.
+	 * @name.optionsFileComplete true
 	 * @name.optionsUDF		serverNameComplete
 	 * @port           		port number
 	 * @host           		bind to a host/ip
@@ -54,7 +56,7 @@ component aliases="start" {
 	 * @directory     	 	web root for this server
 	 * @stopPort       		stop socket listener port number
 	 * @force          		force start if status is not stopped
-	 * @debug          		Turns on debug output while starting and streams server output to console.
+	 * @debug          		Turn on debug output while starting and stream server output to console.
 	 * @webConfigDir  	 	custom location for web context configuration
 	 * @serverConfigDir		custom location for server configuration
 	 * @libDirs       	 	comma-separated list of extra lib directories for the server to load
@@ -70,8 +72,9 @@ component aliases="start" {
 	 * @rewritesConfig 		optional URL rewriting config file path
 	 * @heapSize			The max heap size in megabytes you would like this server to start with, it defaults to 512mb
 	 * @minHeapSize			The min heap size in megabytes you would like this server to start with
-	 * @directoryBrowsing 	Enable/Disabled directory browsing, defaults to true
+	 * @directoryBrowsing 	Enables directory browsing (default false)
 	 * @JVMArgs 			Additional JVM args to use when starting the server. Use "server status --verbose" to debug
+	 * @runwarJarPath		path to runwar jar (overrides the default runwar location in the ~/.CommandBox/lib/ folder)
 	 * @runwarArgs 			Additional Runwar options to use when starting the server. Use "server status --verbose" to debug
 	 * @saveSettings 		Save start settings in server.json
 	 * @cfengine        	sets the cfml engine type
@@ -87,6 +90,18 @@ component aliases="start" {
 	 * @javaHomeDirectory	Path to the JRE home directory containing ./bin/java
 	 * @AJPEnable			Enable AJP
 	 * @AJPPort				AJP Port number
+	 * @javaVersion			Any endpoint ID, such as "java:openjdk11" from the Java endpoint
+	 * @javaVersion.optionsUDF	javaVersionComplete
+	 * @startScript			If you want to generate a native script to directly start the server process pass bash, cmd, or pwsh
+	 * @startScript.options	bash,cmd,pwsh
+	 * @startScriptFile		Optional override for the name and location of the start script. This is ignored if no startScript param is specified
+	 * @dryRun				Abort actually starting the server process, but all installation and downloading will still be performed to "warm up" the engine installation.
+	 * @verbose				Activate extra server start information without enabling the debug mode in the actual server (which you wouldn't want in production)
+	 * @trayEnable			Enable the system tray icon/menu
+	 * @profile				Controls default server settings.  Profiles: production, development, none
+	 * @profile.options	production,development,none
+	 * @blockCFAdmin		Block access to Lucee or ACF admin.  Valid values are true, false, external
+	 * @blockCFAdmin.options true,false,external
 	 **/
 	function run(
 		String  name,
@@ -127,7 +142,15 @@ component aliases="start" {
 		Boolean trace,
 		String javaHomeDirectory,
 		Boolean AJPEnable,
-		Numeric AJPPort
+		Numeric AJPPort,
+		String javaVersion,
+		String startScript,
+		String startScriptFile,
+		Boolean dryRun,
+		Boolean verbose,
+		Boolean trayEnable,
+		String profile,
+		String blockCFAdmin
 	){
 
 		// This is a common mis spelling
@@ -160,17 +183,30 @@ component aliases="start" {
 
 	/**
 	* Complete server names
-	*/
+	*/	
 	function serverNameComplete() {
-		return serverService.getServerNames();
+		return serverService
+			.getServerNames()
+			.map( ( i ) => {
+				return { name : i, group : 'Server Names' };
+			} );
 	}
 
 	/**
 	* Complete cfengine names
 	*/
 	function cfengineNameComplete( string paramSoFar ) {
-
-		var APIToken = configService.getSetting( 'endpoints.forgebox.APIToken', '' );
+		
+		var endpointName = configService.getSetting( 'endpoints.defaultForgeBoxEndpoint', 'forgebox' );
+		
+		try {		
+			var oEndpoint = endpointService.getEndpoint( endpointName );
+		} catch( EndpointNotFound var e ) {
+			error( e.message, e.detail ?: '' );
+		}
+		
+		var forgebox = oEndpoint.getForgebox();
+		var APIToken = oEndpoint.getAPIToken();
 
 		try {
 			// Get auto-complete options
@@ -188,4 +224,16 @@ component aliases="start" {
 		return [];
 	}
 
+	/**
+	* Complete java versions
+	*/	
+	function javaVersionComplete() {
+		return javaService
+			.listJavaInstalls()
+			.keyArray()
+			.map( ( i ) => {
+				return { name : i, group : 'Java Versions' };
+			} );
+	}	
+	
 }

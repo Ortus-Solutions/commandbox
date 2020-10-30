@@ -1,4 +1,4 @@
-﻿<!-----------------------------------------------------------------------
+<!-----------------------------------------------------------------------
 ********************************************************************************
 Copyright Since 2005 ColdBox Framework by Luis Majano and Ortus Solutions, Corp
 www.ortussolutions.com
@@ -267,9 +267,10 @@ Description :
 		<cfargument name="influence" 	required="false" 	hint="The influence closure or UDF that will receive the currently working mapping so you can influence it during the iterations"/>
 		<cfargument name="filter" 		required="false" 	hint="The filter closure or UDF that will receive the path of the CFC to process and returns TRUE to continue processing or FALSE to skip processing"/>
 		<cfargument name="namespace"	required="false"	default="" hint="Provide namespace to merge it in"/>
-    	<cfargument name="prepend"		required="false"	default="false" hint="where to attach the namespace"/>
+		<cfargument name="prepend"		required="false"	default="false" hint="where to attach the namespace"/>
+		<cfargument name="process"		required="false"	default="false" hint="If true, all mappings discovered will be automatically processed for metdata and inspections.  Default is false, everything lazy loads"/>
 		<cfscript>
-			var directory 		= expandPath("/#replace(arguments.packagePath,".","/","all")#");
+			var directory 		= expandPath( "/#replace( arguments.packagePath, ".", "/", "all" )#" );
 			var qObjects		= "";
 			var thisTargetPath 	= "";
 			var tmpCurrentMapping = [];
@@ -279,7 +280,7 @@ Description :
 		</cfscript>
 
 		<!--- check directory --->
-		<cfif NOT directoryExists(directory)>
+		<cfif NOT directoryExists( directory )>
 			<cfthrow message="Directory does not exist" detail="Directory: #directory#" type="Binder.DirectoryNotFoundException">
 		</cfif>
 
@@ -294,8 +295,8 @@ Description :
  				<cfcontinue />
  			</cfif>
 
-			<!--- Remove .cfc and /\ with . notation--->
-			<cfset thisTargetPath = reReplace( arguments.packagePath & "." & replaceNoCase( qObjects.name, ".cfc", ""), "(/|\\)", ".", "all")>
+			<!--- Eliminate leading slash, remove .cfc and /\ with . notation--->
+			<cfset thisTargetPath = reReplace( reReplace( arguments.packagePath, '^/', '' ) & "." & replaceNoCase( qObjects.name, ".cfc", ""), "(/|\\)", ".", "all")>
 
 			<!--- Include/Exclude --->
 			<cfif ( len( arguments.include ) AND reFindNoCase( arguments.include, thisTargetPath ) )
@@ -311,12 +312,14 @@ Description :
 
 				<!--- Influence --->
 				<cfif structKeyExists( arguments, "influence" )>
-					<cfset arguments.influence( this, thisTargetPath )>
+					<cfset arguments.influence( this, thisTargetPath, currentMapping[ 1 ] )>
 				</cfif>
 
 				<!--- Do this right away so aliases are picked up before this mapping potentially gets overwritten
 				This is neccessary for multuple CFCs with the same name in different folders, but with unique aliases --->
-				<cfset processMappings()>
+				<cfif arguments.process>
+					<cfset currentMapping[ 1 ].process()>
+				</cfif>
 
 				<!--- Merge the full array of mappings back together --->
 				<cfset arrayAppend( tmpCurrentMapping, currentMapping[ 1 ]  ) >
@@ -328,6 +331,15 @@ Description :
 
 		<cfreturn this>
     </cffunction>
+
+	<cffunction name="process" output="false" access="public" returntype="any" hint="Auto process a mapping once defined, this is usually done if there are critical annotations that must be read upon startup, else avoid it and let them lazy load">
+		<cfscript>
+			for( var mapping in getCurrentMapping() ) {
+				mapping.process();
+			}
+			return this;
+		</cfscript>
+	</cffunction>
 
 	<!--- map --->
     <cffunction name="map" output="false" access="public" returntype="any" hint="Create a mapping to an object">
@@ -390,7 +402,7 @@ Description :
 		<cfscript>
 			// copy parent class's memento instance, exclude alias, name and path
 			for( var mapping in getCurrentMapping() ) {
-				mapping.processMemento( getMapping( arguments.alias ).getMemento(), "alias,name,path" );
+				mapping.processMemento( getMapping( arguments.alias ).getMemento(), "alias,name" );
 			}
 			return this;
 		</cfscript>
@@ -999,7 +1011,7 @@ Description :
 	<!--- getCurrentMapping --->
     <cffunction name="getCurrentMapping" output="false" access="public" returntype="any" hint="Get the current set mapping (UTILITY method)">
     	<cfreturn variables.currentMapping>
-    </cffunction>
+	</cffunction>
 
 	<!--- processMappings --->
     <cffunction name="processMappings" output="false" access="public" returntype="any" hint="Process all registered mappings, called by injector when ready to start serving requests">
@@ -1009,12 +1021,12 @@ Description :
 				return ( !thisMapping.isDiscovered() );
 			} ).each( function( key, thisMapping ){
 				try {
-					// process the metadata
-					thisMapping.process( binder=this, injector=instance.injector );
-					// is it eager?
-					if( thisMapping.isEagerInit() ){
-						instance.injector.getInstance( thisMapping.getName() );
-					}
+				// process the metadata
+				thisMapping.process( binder=this, injector=instance.injector );
+				// is it eager?
+				if( thisMapping.isEagerInit() ){
+					instance.injector.getInstance( thisMapping.getName() );
+				}
 				} catch( any e ) {
 					// Remove bad mapping
 					instance.mappings.delete( key );

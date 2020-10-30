@@ -2,7 +2,7 @@
     "name":"",
     "version":"1.0.0",
     "author":"",
-    "location":"",
+    "location":"forgeboxStorage",
     "directory":"",
     "createPackageDirectory":true,
     "packageDirectory":"",
@@ -63,6 +63,7 @@
             }
         ],
         "labels":"",
+		"excludes":"",
         "reporter":"",
         "bundles":"",
         "recurse":true,
@@ -72,6 +73,7 @@
         "testSpecs":"",
         "verbose":true,
         "watchDelay":500,
-        "watchPaths":"**.cfc"
+        "watchPaths":"**.cfc",
+        "options":{}
     }
 }

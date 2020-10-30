@@ -36,12 +36,20 @@ component singleton {
 		var info = resolveConnection( arguments.downloadURL, arguments.redirectUDF );
 		var connection = info.connection;
 		var netURL = info.netURL;
+		
+		// Initialize status
+		var status = {
+			percent = 0,
+			speedKBps = 0,
+			totalSizeKB = -1,
+			completeSizeKB = 0
+		};
 
 		try {
 
 			var lenghtOfFile = connection.getContentLength();
 
-			var inputStream = createObject( 'java', 'java.io.BufferedInputStream' ).init( netURL.openStream() );
+			var inputStream = createObject( 'java', 'java.io.BufferedInputStream' ).init( connection.getInputStream() );
 			var outputStream = createObject( 'java', 'java.io.FileOutputStream' ).init( arguments.destinationFile );
 
 			var currentTickCount = getTickCount();
@@ -84,7 +92,7 @@ component singleton {
 						}
 
 						// Build status data to pass to closure
-						var status = {
+						status = {
 							percent = currentPercentage,
 							speedKBps = kiloBytesPerSecond,
 							totalSizeKB = ( lenghtOfFile == -1 ? -1 : lenghtOfFile/1000 ),
@@ -190,6 +198,11 @@ component singleton {
 			var connection = netURL.openConnection();
 		}
 
+		// Add user agent so proxies like Cloudflare won't be dumb and block us.
+		connection.setRequestProperty( 'User-Agent', 'Mozilla /5.0 (Compatible MSIE 9.0;Windows NT 6.1;WOW64; Trident/5.0)' );
+
+		// Add an Accept header so sources such as gitlab are willing to send files back.
+		connection.setRequestProperty( 'Accept', '*/*' );
 
 		// The reason we're following redirects manually, is because the java class
 		// won't switch between HTTP and HTTPS without erroring

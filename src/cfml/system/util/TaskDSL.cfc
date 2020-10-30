@@ -20,12 +20,14 @@ component accessors=true {
 	property name='flags';
 	property name='workingDirectory';
 	property name='rawParams';
+	property name='exitCode';
 
 
 	// DI
-	property name='parser' inject='parser';
-	property name='shell' inject='shell';
-	property name='wirebox' inject='wirebox';
+	property name='parser'	inject='parser';
+	property name='shell'	inject='shell';
+	property name='wirebox'	inject='wirebox';
+	property name="job"		inject='interactiveJob';
 
 	/**
 	 * Create a new, executable task
@@ -44,6 +46,7 @@ component accessors=true {
 		setFlags( [] );
 		setWorkingDirectory( '' );
 		setRawParams( false );
+		setExitCode( 0 );
 		return this;
 	}
 
@@ -143,7 +146,7 @@ component accessors=true {
 	/**
 	 * Run this command
   	 **/
-string function run( returnOutput=false, boolean echo=false, boolean rawParams=false ) {
+	string function run( returnOutput=false, boolean echo=false, boolean rawParams=false ) {
 
 		setRawParams( rawParams );
 
@@ -157,9 +160,11 @@ string function run( returnOutput=false, boolean echo=false, boolean rawParams=f
 		}
 		
 		try {
-			var result = shell.callCommand( getTokens(), true );
+			var result = shell.callCommand( getTokens(), true );			
 		} finally {
 	
+			setExitCode( shell.getExitCode() );
+			
 			var postCommandCWD = shell.getPWD();
 	
 			// Only change back if the executed command didn't change the CWD

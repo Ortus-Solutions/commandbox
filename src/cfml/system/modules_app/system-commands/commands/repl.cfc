@@ -38,9 +38,15 @@ component {
 		var results  		= "";
 		var executor 		= wirebox.getInstance( "executor" );
 		var newHistory 		= arguments.script ? variables.REPLScriptHistoryFile : variables.REPLTagHistoryFile;
+		var dirInfo 		= "";
 
-  	   arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
-
+  	   arguments.directory = resolvePath( arguments.directory );
+  	   
+	   dirInfo = getFileInfo( arguments.directory );
+	   if ( !dirInfo.canWrite ) {
+	        error( "Unable to start a repl in this directory because you do not have write permission to it." );
+	   }
+	   
 		// Setup REPL history file
 		shell.setHistory( newHistory );
 		shell.setHighlighter( 'REPL' );
@@ -80,6 +86,9 @@ component {
 								break;
 							}
 						}
+						
+						// Evaluate any ${} placeholders
+						command = systemSettings.expandSystemSettings( command )
 	
 						// add command to our parser
 						REPLParser.addCommandLine( command );
@@ -112,7 +121,7 @@ component {
 						// print results
 						// Make sure results is a string
 						results = REPLParser.serializeOutput( argumentCollection={ result : ( isNull( results ) ? nullValue() : results ) } );
-						print.line( results, structKeyExists( arguments, 'input' ) ? '' : 'boldRed' )
+						print.line( results, structKeyExists( arguments, 'input' ) ? '' : '' )
 	
 					} catch( any e ){
 						// flush out anything in buffer
@@ -133,6 +142,8 @@ component {
 				}
 			}
 			
+		} catch( EndOfFileException var e ) {
+			// End of input reached
 		} finally {
 			resetShell();
 		}

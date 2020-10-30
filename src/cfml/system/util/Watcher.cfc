@@ -12,7 +12,10 @@
 *	getInstance( 'watcher' )
 *		.paths( '**.cfc' )
 *		.inDirectory( getCWD() )
-*		.onChange( function() {
+*		.onChange( function( changeData ) {
+			// changeData.added
+			// changeData.removed
+			// changeData.changed
 *			command( 'testbox run' )
 *				.run();
 *		} )
@@ -24,9 +27,12 @@ component accessors=true {
 	property name='print'				inject='PrintBuffer';
 	property name='pathPatternMatcher'	inject='provider:pathPatternMatcher@globber';
 	property name='fileSystemUtil'		inject='FileSystem';
+	property name='fileSeparator'		inject='fileSeparator@constants';
 
 	// Properties
 	property name='changeHash'			type='string';
+	property name='fileIndex'			type='struct';
+	property name='changeData'			type='struct';
 	property name='watcherRun'			type='boolean';
 	property name='pathsToWatch'		type='array';
 	property name='changeUDF'			type='function';
@@ -104,7 +110,11 @@ component accessors=true {
 
 							// Fire onChange listener
 							var thisChangeUDF = getChangeUDF();
-							thisChangeUDF();
+							thisChangeUDF( getChangeData() );
+
+							// In case the change UDF modified the file system,
+							// reset our hashes so we don't end up with endless firing 
+							setChangeHash( calculateHashes() );
 
 						} else {
 							// Sleep and test again.
@@ -124,6 +134,8 @@ component accessors=true {
 					// Fire the watcher up again.
 					retry;
 				// If the thread has been interrupted
+				} catch( java.lang.InterruptedException e ) {
+					// There's nothign to do here.  Just exit the thread!
 				} catch( java.lang.ThreadDeath e ) {
 					// There's nothign to do here.  Just exit the thread!
 				} catch( any e ) {
@@ -141,6 +153,13 @@ component accessors=true {
 			} // end thread
 
 			while( true ){
+				
+				// Need to start reading the input stream or we can't detect Ctrl-C on Windows
+				var terminal = shell.getReader().getTerminal();
+				if( terminal.paused() ) {
+						terminal.resume();
+				}
+				
 				// Detect user pressing Ctrl-C
 				// Any other characters captured will be ignored
 				var line = shell.getReader().readLine();
@@ -165,7 +184,7 @@ component accessors=true {
 			setWatcherRun( false );
 			// Wait until the thread finishes its last draw
 			thread action="terminate" name=threadName;
-			
+
 		// user wants to exit the shell, they've pressed Ctrl-D
 		} catch ( org.jline.reader.EndOfFileException e ) {
 
@@ -179,7 +198,7 @@ component accessors=true {
 			// Wait until the thread finishes its last draw
 			thread action="terminate" name=threadName;
 			shell.setKeepRunning( false );
-			
+
 		// Something horrible went wrong
 		} catch ( any e ) {
 			// make sure the thread exits
@@ -220,16 +239,46 @@ component accessors=true {
 			},
 			"DateLastModified desc" );
 
+			var fileIndex = {};
+			for(file in fileListing){
+				var thisPath = replacenocase( file.directory & fileSeparator & file.name, thisBaseDir, "" );
+				fileIndex[thisPath] = file.DATELASTMODIFIED;
+			}
+
+			setFileIndex( fileIndex );
+
 		var directoryHash = hash( serializeJSON( fileListing ) );
 
 		return directoryHash;
 	}
 
 	private function changeDetected() {
+		var previousWatchList = getFileIndex();
 		var newHash = calculateHashes();
+
 		if( getChangeHash() == newHash ){
 			return false;
 		}
+		var currentWatchList = getFileIndex();
+
+		var changes = { 'added':[], 'removed':[], 'changed':[] };
+
+		//loop over new array and look for changes and adds
+		currentWatchList.each( function( filePath, fileDate ){
+			//if found check for date change, else new file
+			if(structKeyExists( previousWatchList, filePath )){
+				if( previousWatchList[ filePath ] != fileDate ){ changes.changed.append( filePath ); }
+			} else {
+				changes.added.append( filePath );
+			}
+		})
+
+		//look for deleted files that no longer exist in the list
+		previousWatchList.each( function( filePath, fileDate ){
+			if( !structKeyExists( currentWatchList, filePath ) ){ changes.removed.append( filePath ); }
+		})
+
+		setChangeData( changes );
 		setChangeHash( newHash );
 		return true;
 	}

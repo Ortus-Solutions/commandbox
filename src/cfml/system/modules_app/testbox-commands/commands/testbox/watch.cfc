@@ -31,10 +31,10 @@
 component {
 
 	// DI
-	property name="packageService" 	inject="PackageService";
+	property name="packageService" inject="PackageService";
 
-	variables.WATCH_DELAY 	= 500;
-	variables.PATHS 		= "**.cfc";
+	variables.WATCH_DELAY = 500;
+	variables.PATHS       = "**.cfc";
 
 	/**
 	 * @paths 		Command delimited list of file globbing paths to watch relative to the working directory, defaults to **.cfc
@@ -42,22 +42,22 @@ component {
 	 * @directory   The directory mapping to test: directory = the path to the directory using dot notation (myapp.testing.specs)
 	 * @bundles     The path or list of paths of the spec bundle CFCs to run and test
 	 * @labels      The list of labels that a suite or spec must have in order to execute.
+	 * @verbose     Display extra details inlcuding passing and skipped tests.
 	 **/
 	function run(
 		string paths,
-	 	number delay,
-	 	directory,
-	 	bundles,
-	 	labels,
-	 	boolean verbose=true
-	) {
-
+		number delay,
+		directory,
+		bundles,
+		labels,
+		boolean verbose
+	){
 		// Get testbox options from package descriptor
 		var boxOptions = packageService.readPackageDescriptor( getCWD() ).testbox;
 
 		var getOptionsWatchers = function(){
 			// Return to List
-			if( boxOptions.keyExists( "watchPaths" ) && boxOptions.watchPaths.len() ){
+			if ( boxOptions.keyExists( "watchPaths" ) && boxOptions.watchPaths.len() ) {
 				return ( isArray( boxOptions.watchPaths ) ? boxOptions.watchPaths.toList() : boxOptions.watchPaths );
 			}
 			// should return null if not found
@@ -67,22 +67,24 @@ component {
 		// Determine watching patterns, either from arguments or boxoptions or defaults
 		var globbingPaths = arguments.paths ?: getOptionsWatchers() ?: variables.PATHS;
 		// handle non numberic config and put a floor of 150ms
-		var delayMs = max( val( arguments.delay ?: boxOptions.watchDelay ?: variables.WATCH_DELAY ), 150 );
+		var delayMs       = max( val( arguments.delay ?: boxOptions.watchDelay ?: variables.WATCH_DELAY ), 150 );
 
 		// Tabula rasa
-		command( 'cls' ).run();
+		command( "cls" ).run();
 
 		// Prepare test args
-		var testArgs = {
-			verbose = arguments.verbose
-		};
-		if( !isNull( arguments.directory ) ){
+		var testArgs = {};
+
+		if ( !isNull( arguments.verbose ) ) {
+			testArgs.verbose = arguments.verbose;
+		}
+		if ( !isNull( arguments.directory ) ) {
 			testArgs.directory = arguments.directory;
 		}
-		if( !isNull( arguments.bundles ) ){
+		if ( !isNull( arguments.bundles ) ) {
 			testArgs.bundles = arguments.bundles;
 		}
-		if( !isNull( arguments.labels ) ){
+		if ( !isNull( arguments.labels ) ) {
 			testArgs.labels = arguments.labels;
 		}
 
@@ -91,18 +93,21 @@ component {
 			.paths( globbingPaths.listToArray() )
 			.inDirectory( getCWD() )
 			.withDelay( delayMs )
-			.onChange( function() {
-
+			.onChange( function(){
 				// Clear the screen
-				command( 'cls' )
-					.run();
+				command( "cls" ).run();
 
-				// Run the tests in the target directory
-				command( 'testbox run' )
-					.params( argumentCollection = testArgs )
-					.inWorkingDirectory( getCWD() )
-					.run();
-
+				// Ignore failing tests, don't stop the watcher
+				try {
+					// Run the tests in the target directory
+					command( "testbox run" )
+						.params( argumentCollection = testArgs )
+						.inWorkingDirectory( getCWD() )
+						.run();
+				} catch ( commandException var  e ) {
+					// Log something, just in case we need to instead of empty console
+					print.boldRedLine( left( e.message, 3000 ) ).toConsole();
+				}
 			} )
 			.start();
 	}

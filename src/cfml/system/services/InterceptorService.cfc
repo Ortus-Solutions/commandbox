@@ -29,15 +29,17 @@ component accessors=true singleton {
 			// CLI lifecycle
 			'onCLIStart','onCLIExit','prePrompt',
 			// Command execution lifecycle
-			'preCommand','postCommand','preProcessLine', 'postProcessLine',
+			'preCommand','postCommand','preProcessLine', 'postProcessLine', 'preCommandParamProcess',
 			// Module lifecycle
 			'preModuleLoad','postModuleLoad','preModuleUnLoad','postModuleUnload',
 			// Server lifecycle
-			'preServerStart','onServerStart','onServerInstall','onServerStop','preServerForget','postServerForget',
+			'preServerStart','onServerStart','onServerInstall','onServerProcessLaunch','onServerStop','preServerForget','postServerForget',
 			// Error handling
 			'onException',
 			// Package lifecycle
-			'preInstall','onInstall','postInstall','preUninstall','postUninstall','preVersion','postVersion','prePublish','postPublish','preUnpublish','postUnpublish','onRelease'
+			'preInstall','onInstall','postInstall','preUninstall','postUninstall','preVersion','postVersion','prePublish','postPublish','preUnpublish','postUnpublish','onRelease','preInstallAll','postInstallAll',
+			// Misc
+			'onSystemSettingExpansion'
 		] );
 
 		return this;

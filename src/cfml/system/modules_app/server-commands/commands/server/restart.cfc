@@ -18,8 +18,9 @@ component aliases="restart" {
 	 * @name.optionsUDF serverNameComplete
 	 * @directory.hint web root for the server
 	 * @serverConfigFile The path to the server's JSON file.
-	 * @force.hint if passed, this will force restart the server
+	 * @force.hint Force restart the server
 	 * @openbrowser.hint open a browser after restarting, defaults to false
+	 * @debug.hint Turn on debug output while starting and stream server output to console.
 	 **/
 	function run(
 		string name,
@@ -30,10 +31,10 @@ component aliases="restart" {
 		boolean debug=false
 	){
 		if( !isNull( arguments.directory ) ) {
-			arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
+			arguments.directory = resolvePath( arguments.directory );
 		}
 		if( !isNull( arguments.serverConfigFile ) ) {
-			arguments.serverConfigFile = fileSystemUtil.resolvePath( arguments.serverConfigFile );
+			arguments.serverConfigFile = resolvePath( arguments.serverConfigFile );
 		}
 		var serverDetails = serverService.resolveServerDetails( arguments );
 		var serverInfo = serverDetails.serverInfo;
@@ -78,9 +79,12 @@ component aliases="restart" {
 		print.yellowLine( '> ' & startCommand );
 		runCommand( startCommand );
 	}
-
-
+	
 	function serverNameComplete() {
-		return serverService.getServerNames();
+		return serverService
+			.getServerNames()
+			.map( ( i ) => {
+				return { name : i, group : 'Server Names' };
+			} );
 	}
 }

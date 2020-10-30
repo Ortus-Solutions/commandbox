@@ -36,6 +36,8 @@ component {
 	property name='cr'				inject='cr@constants';
 	property name='shell'			inject='shell';
 	property name='colors256Data'	inject='colors256Data@constants';
+	property name='formatterUtil'	inject='formatter';
+	property name='JSONService'		inject='JSONService';
 
 	this.tab 		= chr( 9 );
 	this.esc 		= chr( 27 );
@@ -88,6 +90,24 @@ component {
 
 		// Text needing formatting
 		var text = arrayLen(missingMethodArguments) ? missingMethodArguments[ 1 ] : '';
+		// Convert complex values to a string representation
+		if( !isSimpleValue( text ) ) {
+			
+			// Serializable types
+			if( isBinary( text ) ) {
+				// Generally speaking, leave binary alone, but if it just so hapens to be a string that happens to be JSON, let's format it!
+				// CommandBox will turn the binary to a string when it outputs anyway if we don't here.
+				if( isJSON( toString( text ) ) ) {
+					text = formatterUtil.formatJson( json=toString( text ), ANSIColors=JSONService.getANSIColors() );
+				}
+			} else if( isArray( text ) || isStruct( text ) || isQuery( text ) ) {
+				text = formatterUtil.formatJson( json=text, ANSIColors=JSONService.getANSIColors() );
+			// Yeah, I give up
+			} else {
+				text = '[#text.getClass().getName()#]';
+			}
+			
+		}
 		// Additional formatting text
 		var methodName &= arrayLen(missingMethodArguments) > 1 ? missingMethodArguments[ 2 ] : '';
 		// Don't turn off ANSI formatting at the end

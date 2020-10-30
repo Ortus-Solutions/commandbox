@@ -44,7 +44,7 @@ component aliases="rm,del" {
 							directoryDelete( thisPath, recurse );
 							print.greenLine( "Deleted #thisPath#" );
 						} catch( any e ) {
-							error( '#e.message##CR#The folder is possibly locked by another program.'  );
+							error( '#e.message# #CR#The folder is possibly locked by another program.'  );
 							logger.error( '#e.message# #e.detail#' , e.stackTrace );
 						}
 					} else {

@@ -11,12 +11,14 @@ I am a CFM because the CLI seems to need a .cfm file to call
 This file will stay running the entire time the shell is open
 --->
 
+<cfset system = createObject( "java", "java.lang.System" )>
+<cfset system.setProperty( 'exitCode', '0' )>
 <cfset mappings = getApplicationSettings().mappings>
 
 <!--- Move everything over to this mapping which is the "root" of our app --->
 <cfset CFMLRoot = expandPath( getDirectoryFromPath( getCurrentTemplatePath() ) & "../" ) >
 <cfset mappings[ '/commandbox' ]		= CFMLRoot >
-<cfset mappings[ '/commandbox-home' ]	= createObject( 'java', 'java.lang.System' ).getProperty( 'cfml.cli.home' ) >
+<cfset mappings[ '/commandbox-home' ]	= system.getProperty( 'cfml.cli.home' ) >
 <cfset mappings[ '/wirebox' ]			= CFMLRoot & 'system/wirebox' >
 	
 <cfapplication 
@@ -25,6 +27,19 @@ This file will stay running the entire time the shell is open
 	sessionmanagement 	= "false"
 	applicationTimeout = "#createTimeSpan( 999999, 0, 0, 0 )#"
 	mappings="#mappings#">
+
+<cfscript>
+	FRTransService = new commandbox.system.services.FRTransService();
+	FRTransaction = FRTransService.startTransaction( 'CLI CF Startup', 'CF Code from start of CFM bootstrap until ready to process' );
+</cfscript>
+
+
+<!--- 
+	Workaround to snuff out annoying ESAPI warnings in the console.
+	If necessary, move this to the Java loader.  Right now Lucee doesn't seem to hit any ESAPI libs until CommandBox is loaded. 
+--->
+<cfset system.setProperty( 'org.owasp.esapi.opsteam', expandPath( '/commandbox/system/config/ESAPI.properties' ) )>
+<cfset system.setProperty( 'org.owasp.esapi.devteam', expandPath( '/commandbox/system/config/ESAPI.properties' ) )>
 
 <cfset variables.wireBox = new wirebox.system.ioc.Injector( 'commandbox.system.config.WireBox' )>
 
@@ -37,7 +52,7 @@ This file will stay running the entire time the shell is open
 		var esc = chr( 27 );
 		var caps = createObject( 'java', 'org.jline.utils.InfoCmp$Capability' );
 		// See how many colors this terminal supports
-		var numColors = shell.getReader().getTerminal().getNumericCapability( caps.max_colors );
+		var numColors = shell.getReader().getTerminal().getNumericCapability( caps.max_colors ) ?: 0;
 	
 		// Windows cmd gets solid blue
 		if( !isNull( numColors ) && numColors < 256 ) {
@@ -71,18 +86,11 @@ This file will stay running the entire time the shell is open
 	<cfreturn banner>
 </cffunction>
 <cfscript>
-	system 	= createObject( "java", "java.lang.System" );
 	args 	= system.getProperty( "cfml.cli.arguments" );
 	argsArray = deserializeJSON( system.getProperty( "cfml.cli.argument.array" ) );
 
-	// System.in is usually the keyboard input, but if the output of another command or a file
-	// was piped into CommandBox, System.in will represent that input.  Wrap System.in
-	// in a buffered reader so we can check it.
-	inputStreamReader = createObject( 'java', 'java.io.InputStreamReader' ).init( system.in );
-	bufferedReader = createObject( 'java', 'java.io.BufferedReader' ).init( inputStreamReader );
-
 	// Verify if we can run CommandBox Java v. 1.7+
-	if( !findNoCase( "1.8", server.java.version ) ){
+	if( !findNoCase( "1.8", server.java.version ) && 0 ){
 		// JLine isn't loaded yet, so I have to use systemOutput() here.
 		systemOutput( "The Java Version you have (#server.java.version#) is not supported by CommandBox. Please install a Java JRE/JDK 1.8." );
 		sleep( 5000 );
@@ -98,49 +106,33 @@ This file will stay running the entire time the shell is open
 		shell.setShellType( 'command' );
 		interceptorService =  shell.getInterceptorService();
 
+		if( argsArray.len() == 1 && argsArray[ 1 ].listLen( ' ' ) > 1 ) {
+			parser = wirebox.getInstance( 'parser' );
+			argsArray = parser.tokenizeInput( argsArray[ 1 ] );
+		}
+
 		interceptData = { shellType=shell.getShellType(), args=argsArray, banner=getBanner() };
 		interceptorService.announceInterception( 'onCLIStart', interceptData );
+		
+		FRTransService.endTransaction( FRTransaction );
 
- 		piped = [];
- 		hasPiped = false;
-	 	// If data is piped to CommandBox, it will be in this buffered reader
-	 	while ( bufferedReader.ready() ) {
-	 		// Read  all the lines and append them together.
-	 		piped.append( bufferedReader.readLine() );
- 			hasPiped = true;
-	 	}
-
-	 	// If data was piped via standard input
-	 	if( hasPiped ) {
-		 	// Concat lines back together
-			piped = arrayToList( piped, chr( 10 ) );
-			shell.callCommand( command=argsArray, piped=piped, initialCommand=true );
-		} else {
-			shell.callCommand( command=argsArray, initialCommand=true );
-		}
+		shell.callCommand( command=argsArray, initialCommand=true );
 
 		// flush console
 		shell.getReader().flush();
+		
 	// "box" was called all by itself with no commands
 	} else {
-		// If the standard input has content waiting, cut the chit chat and just run the commands so we can exit.
-		silent = bufferedReader.ready();
-		inStream = system.in;
 
-		// If we're piping in data, let's grab it and treat it as commands.
-		// system.in should work directly, but Windows was blocking forever and not reading the InputStream
-		// So we'll create our own input stream with a line break at the end
-		if( silent ) {
-	 		piped = [];
-		 	// If data is piped to CommandBox, it will be in this buffered reader
-		 	while ( bufferedReader.ready() ) {
-		 		// Read  all the lines and append them together.
-		 		piped.append( bufferedReader.readLine() );
-		 	}
-		 	// Build a string with a line for each line read from the standard input.
-		 	piped = piped.toList( chr( 10 ) ) & chr( 10 );
-    		inStream = createObject("java","java.io.ByteArrayInputStream").init(piped.getBytes());
-		}
+		// System.in is usually the keyboard input, but if the output of another command or a file
+		// was piped into CommandBox, System.in will represent that input.  Wrap System.in
+		// in a buffered reader so we can check it.
+		//inputStreamReader = createObject( 'java', 'java.io.InputStreamReader' ).init( system.in );
+		//bufferedReader = createObject( 'java', 'java.io.BufferedReader' ).init( inputStreamReader );
+		
+		// If the standard input has content waiting, cut the chit chat and just run the commands so we can exit.
+		silent = false;
+		inStream = system.in;
 
 		// Create the shell
 		shell = application.wirebox.getInstance( name='Shell', initArguments={ asyncLoad=!silent, inStream=inStream, outputStream=system.out } );
@@ -150,14 +142,17 @@ This file will stay running the entire time the shell is open
 
 		interceptData = { shellType=shell.getShellType(), args=argsArray, banner=getBanner() };
 		interceptorService.announceInterception( 'onCLIStart', interceptData );
-
+	
 		if( !silent ) {
 			// Output the welcome banner
 			shell.printString( interceptData.banner );
 		}
 
+		FRTransService.endTransaction( FRTransaction );
+		
 		// Running the "reload" command will enter this while loop once
 		while( shell.run( silent=silent ) ){
+			FRTransaction = FRTransService.startTransaction( 'CLI Restart', 'Reloading CLI Shell' );
 			clearScreen = shell.getDoClearScreen();
 			
 			interceptorService.announceInterception( 'onCLIExit' );
@@ -168,7 +163,7 @@ This file will stay running the entire time the shell is open
 			// Wipe out cached metadata on reload.
 			wirebox.getCacheBox().getCache( 'metadataCache' ).clearAll();
 				
-			// Shut down the shell, which includes cleaing up JLine
+			// Shut down the shell, which includes cleaning up JLine
 			shell.shutdown();
 
 			// Clear all caches: template, ...
@@ -191,6 +186,7 @@ This file will stay running the entire time the shell is open
 				shell.printString( interceptData.banner );
 			}
 
+			FRTransService.endTransaction( FRTransaction );
 		}
 	}
 
@@ -210,7 +206,7 @@ This file will stay running the entire time the shell is open
 			} catch( any e) {
 			}
 			
-			createObject( 'java', 'java.lang.System' ).setProperty( 'cfml.cli.exitCode', '1' );
+			system.setProperty( 'cfml.cli.exitCode', '1' );
 	
 			// Try to log this to LogBox
 			try {
@@ -218,6 +214,11 @@ This file will stay running the entire time the shell is open
 				application.wireBox.getInstance( 'interceptorService' ).announceInterception( 'onException', { exception=exception } );
 	    	// If it fails no worries, LogBox just probably isn't loaded yet.
 			} catch ( Any e ) {}
+			
+			verboseErrors = true;
+			try{
+				verboseErrors = wirebox.getInstance( 'configService' ).getSetting( 'verboseErrors', false );
+			} catch( any e ) {}
 	
 			// Give nicer message to user
 			err = cfcatch;
@@ -248,13 +249,22 @@ This file will stay running the entire time the shell is open
 					}
 				}
 			}
-	    	systemOutput( '', true );
-	    	systemOutput( '#err.stacktrace#', true );
+			if( verboseErrors ) {
+		    	systemOutput( '', true );
+		    	systemOutput( '#err.stacktrace#', true );	
+			} else {
+		    	systemOutput( '', true );
+				systemOutput( 'To enable full stack trace, run "config set verboseErrors=true"', true );
+		    	systemOutput( '', true );
+			}
 	
 	    	//writeDump(var=cfcatch, output="console");
 	
-			// Give them a chance to read it
-			sleep( 30000 );
+			// ignore "sleep interrupted" exception if they hit Ctrl-C here
+			try {
+				// Give them a chance to read it
+				sleep( 30000 );
+			} catch( any e ) {}
 		</cfscript>
 	</cfcatch>
 </cftry>

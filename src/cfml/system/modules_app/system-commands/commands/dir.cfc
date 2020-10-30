@@ -5,33 +5,87 @@
  * dir samples/
  * {code}
  * .
- * Use the "recurse" paramater to show all nested files and folders.
+ * File globbing patterns can be used to filter results. Can also be a list
+ * .
+ * {code:bash}
+ * dir **.cfc,*.cfm
+ * {code}
+ * .
+ * File globbing patterns can be used to exclude results. Can also be a list
+ * .
+ * {code:bash}
+ * dir paths=modules excludePaths=**.md --recurse
+ * {code}
+ * .
+ * Use the "recurse" parameter to show all nested files and folders.
  * .
  * {code:bash}
  * dir samples/ --recurse
+ * {code}
+ * .
+ * Ordering results is in format of an ORDER BY SQL clause. Invalid sorts are ignored.
+ * .
+ * {code:bash}
+ * dir samples "directory asc, name desc"
  * {code}
  *
  **/
 component aliases="ls,ll,directory" {
 
 	/**
-	 * @directory.hint The directory to list the contents of or a file Globbing path to filter on
-	 * @recurse.hint Include nested files and folders
+	 * @paths The directory to list the contents of or a list of file Globbing path to filter on
+	 * @excludePaths A list of file glob patterns to exclude
+	 * @sort Sort columns and direction. name, directory, size, type, dateLastModified, attributes, mode
+	 * @sort.options DateLastModified,Directory,Name,Size,Type,attributes,mode
+	 * @recurse Include nested files and folders
+	 * @simple Output only path names and nothing else.
+	 * @full Output abolute file path, not just relative to current working directory
 	 **/
-	function run( Globber directory=globber( getCWD() ), Boolean recurse=false )  {
+	function run( Globber paths=globber( getCWD() ), sort='type, name', string excludePaths='', boolean recurse=false, boolean simple=false, boolean full=false )  {
+		
+		// Backwards compat for old parameter name
+		if( arguments.keyExists( 'directory' ) && arguments.directory.len() ) {
+			paths.setPattern( fileSystemUtil.resolvePath( arguments.directory ) );
+		}
 
 		// If the user gives us an existing directory foo, change it to the
 		// glob pattern foo/* or foo/** if doing a recursive listing.
-		if( directoryExists( directory.getPattern() ) ){
-			directory.setPattern( directory.getPattern() & '*' & ( recurse ? '*' : '' ) );
-		}
-
-		// TODO: Add ability to re-sort this based on user input
-		var results = directory
+		paths.setPattern(
+			paths.getPatternArray().map( (p) => {
+				if( directoryExists( p ) ){
+					return p & '*' & ( recurse ? '*' : '' );
+				}
+				return p;
+			} )
+		);
+		
+		excludePaths = excludePaths.listMap( (p) => {
+			p = fileSystemUtil.resolvePath( p )
+			if( directoryExists( p ) ){
+				return p & '*' & ( recurse ? '*' : '' );
+			}
+			return p;			
+		} );
+		
+		var results = paths
+			.setExcludePattern( excludePaths )
 			.asQuery()
+			.withSort( sort )
 			.matches();
-
+			
 		for( var x=1; x lte results.recordcount; x++ ) {
+			
+			if( simple ) {
+				
+				print.line( 
+					cleanRecursiveDir( arguments.paths.getBaseDir(), results.directory[ x ] & '/', full )
+					& results.name[ x ]
+					& ( results.type[ x ] == "Dir" ? "/" : "" )
+				);
+				
+				continue;
+			}
+			
 			var printCommand = ( results.type[ x ] eq "File" ? "green" : "white" );
 
 			print.text(
@@ -47,10 +101,7 @@ component aliases="ls,ll,directory" {
 			);
 			
 			colorPath( 
-				cleanRecursiveDir( 
-					arguments.directory.getBaseDir(),
-					results.directory[ x ]
-					)
+				cleanRecursiveDir( arguments.paths.getBaseDir(), results.directory[ x ] & '/', full )
 					& results.name[ x ]
 					& ( results.type[ x ] == "Dir" ? "/" : ""
 				),
@@ -67,9 +118,12 @@ component aliases="ls,ll,directory" {
 	/**
 	* Cleanup directory recursive nesting
 	*/
-	private function cleanRecursiveDir( required directory, required incoming, type ){
-		var prefix = ( replacenocase( expandPath( arguments.incoming ), expandPath( arguments.directory ), "" ) );
-		return ( len( prefix ) ? reReplace( prefix, "^(/|\\)", "" ) & "/" : "" );		
+	private function cleanRecursiveDir( required directory, required incoming, boolean full ){
+		if( full ) {
+			return incoming;
+		}
+		var prefix = ( replacenocase( fileSystemUtil.normalizeSlashes( arguments.incoming ), fileSystemUtil.normalizeSlashes( arguments.directory ), "" ) );
+		return ( len( prefix ) ? reReplace( prefix, "^(/|\\)", "" ) : "" );		
 	}
 	
 	private function colorPath( name, type ){

@@ -21,9 +21,20 @@ component aliases="about" {
 		}
 		var javaVersion = '#server.java.version# (#server.java.vendor#)';
 		var commandboxHome = expandpath( '/commandbox-home' );
-		var binaryPath = getSystemSetting( 'java.class.path', 'Unkonwn' );
-		var userName = getSystemSetting( 'user.name', 'Unkonwn' );
+		var binaryPath = getSystemSetting( 'java.class.path', 'Unknown' );
+		var userName = getSystemSetting( 'user.name', 'Unknown' );
 		var javaBinary = fileSystemUtil.getJREExecutable();
+		var JLineTerminal = shell.getReader().getTerminal().getClass().getName();
+		var runwarVersion = 'Unknown';
+		try {
+			var runwarClass = createObjecT( 'java', 'runwar.Server' );
+			runwarVersion = runwarClass.getVersion();
+			
+			var runwarJarPath = createObject( "java", "java.io.File" )
+				.init( runwarClass.getClass().getProtectionDomain().getCodeSource().getLocation().toURI().getSchemeSpecificPart() ).getAbsolutePath();
+				
+			runwarVersion &= ' (#runwarJarPath#)'
+		}catch( any e ) {}
 
 		print.line();
 		print.greenLine( '****************************************************************************************************' );
@@ -42,6 +53,8 @@ component aliases="about" {
 		print.green( '*' ); print.cyan( '  Java Version:       ' ); print.text( '#javaVersion##repeatString( ' ', max( 0, width - 24 - len( javaVersion ) ) )#' );	print.greenLine( '*' );
 		print.green( '*' ); print.cyan( '  Java Path:          ' ); print.text( '#javaBinary##repeatString( ' ', max( 0, width - 24 - len( javaBinary ) ) )#' );	print.greenLine( '*' );
 		print.green( '*' ); print.cyan( '  OS Username         ' ); print.text( '#userName##repeatString( ' ', max( 0, width - 24 - len( userName ) ) )#' );	print.greenLine( '*' );
+		print.green( '*' ); print.cyan( '  JLine Terminal      ' ); print.text( '#JLineTerminal##repeatString( ' ', max( 0, width - 24 - len( JLineTerminal ) ) )#' );	print.greenLine( '*' );
+		print.green( '*' ); print.cyan( '  Runwar Version      ' ); print.text( '#runwarVersion##repeatString( ' ', max( 0, width - 24 - len( runwarVersion ) ) )#' );	print.greenLine( '*' );
 		print.greenLine( '*                                                                                                  *' );
 		print.greenLine( '*                                                                                                  *' );
 		print.greenLine( '****************************************************************************************************' );

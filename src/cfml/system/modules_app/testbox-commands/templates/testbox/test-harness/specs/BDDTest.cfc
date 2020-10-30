@@ -1,7 +1,7 @@
 /**
-* This tests the BDD functionality in TestBox. This is CF10+, Railo4+
+* This tests the BDD functionality in TestBox. This is CF10+, Lucee4.5+
 */
-component extends="coldbox.system.BaseSpec"{
+component extends="testbox.system.BaseSpec"{
 
 /*********************************** LIFE CYCLE Methods ***********************************/
 
@@ -81,14 +81,14 @@ component extends="coldbox.system.BaseSpec"{
 			});
 
 			// acf dynamic skips
-			it( title="can have tests that execute if the right environment exists (railo only)", body=function(){
-				expect( server ).toHaveKey( "railo" );
-			}, skip=( !isRailo() ));
+			it( title="can have tests that execute if the right environment exists (lucee only)", body=function(){
+				expect( server ).toHaveKey( "lucee" );
+			}, skip=( !isLucee() ));
 
-			// railo dynamic skips
+			// lucee dynamic skips
 			it( title="can have tests that execute if the right environment exists (acf only)", body=function(){
-				expect( server ).notToHaveKey( "railo" );
-			}, skip=( isRailo() ));
+				expect( server ).notToHaveKey( "lucee" );
+			}, skip=( isLucee() ));
 
 			// specs with a random skip closure
 			it(title="can have a skip that is executed at runtime", body=function(){
@@ -100,8 +100,8 @@ component extends="coldbox.system.BaseSpec"{
 
 	}
 
-	private function isRailo(){
-		return ( structKeyExists( server, "railo" ) );
+	private function isLucee(){
+		return ( structKeyExists( server, "lucee" ) );
 	}
 
 }

@@ -18,7 +18,7 @@ or just add DEBUG to the root logger
 
 
 ----------------------------------------------------------------------->
-<cfcomponent hint="ForgeBox API REST Wrapper" output="false" accessors="true" singleton>
+<cfcomponent hint="ForgeBox API REST Wrapper" output="false" accessors="true">
 
 	<!--- DI --->
 	<cfproperty name="progressableDownloader" 	inject="ProgressableDownloader">
@@ -28,8 +28,9 @@ or just add DEBUG to the root logger
 
 	<!--- Properties --->
 	<cfproperty name="endpointURL">
-	<cfproperty name="apiURL">
-	<cfproperty name="installURL">
+	<cfproperty name="APIURL">
+	<!--- Really just used for error messages so they are specific to the endpoint using this CFC instance. --->
+	<cfproperty name="endpointName">
 
 <!------------------------------------------- CONSTRUCTOR ------------------------------------------>
 
@@ -49,8 +50,8 @@ or just add DEBUG to the root logger
 			// Setup Properties
 			variables.endpointURL 	= "https://www.forgebox.io";
 			variables.APIURL 		= "#variables.endpointURL#/api/v1/";
-			variables.installURL 	= "http://www.coldbox.org/forgebox/install/";
 			variables.types 		= "";
+			variables.endpointName	= 'ForgeBox';
 
 			return this;
 		</cfscript>
@@ -73,7 +74,7 @@ or just add DEBUG to the root logger
 
 		// error
 		if( results.response.error ){
-			throw("Error making ForgeBox REST Call", 'forgebox', results.response.messages.toList() );
+			throw("Error making #getEndpointName()# REST Call", 'forgebox', results.response.messages.toList() );
 		}
 
 		return results.response.data;
@@ -120,7 +121,7 @@ or just add DEBUG to the root logger
 				});
 			// error
 			if( results.response.error ){
-				throw( "Error making ForgeBox REST Call", 'forgebox', results.response.messages.toList() );
+				throw( "Error making #getEndpointName()# REST Call", 'forgebox', results.response.messages.toList() );
 			}
 
 			return results.response.data;
@@ -143,7 +144,7 @@ or just add DEBUG to the root logger
 
 			// error
 			if( results.response.error ){
-				throw( "Error getting ForgeBox entry [#arguments.slug#]", 'forgebox', results.response.messages.toList() );
+				throw( "Error getting #getEndpointName()# entry [#arguments.slug#]", 'forgebox', results.response.messages.toList() );
 			}
 
 			return results.response.data;
@@ -166,7 +167,7 @@ or just add DEBUG to the root logger
 
 			// error
 			if( results.response.error ){
-				throw( "Error making ForgeBox REST Call", 'forgebox', results.response.messages.toList() );
+				throw( "Error making #getEndpointName()# REST Call", 'forgebox', results.response.messages.toList() );
 			}
 
 			return results.response.data;
@@ -196,7 +197,7 @@ or just add DEBUG to the root logger
 
 		// error
 		if( results.response.error ){
-			throw( "Sorry, the user could not be added.", 'forgebox', arrayToList( results.response.messages ) );
+			throw( "Sorry, the user could not be added to #getEndpointName()#.", 'forgebox', arrayToList( results.response.messages ) );
 		}
 
 		return results.response.data;
@@ -233,7 +234,7 @@ or just add DEBUG to the root logger
 
 		// error
 		if( results.response.error ){
-			throw( "Sorry, the user could not be logged in.", 'forgebox', arrayToList( results.response.messages ) );
+			throw( "Sorry, the user could not be logged in to #getEndpointName()#.", 'forgebox', arrayToList( results.response.messages ) );
 		}
 
 		return results.response.data;
@@ -294,7 +295,7 @@ or just add DEBUG to the root logger
 
 		// error
 		if( results.response.error ){
-			throw( "Sorry, the package could not be published.", 'forgebox', arrayToList( results.response.messages ) );
+			throw( "Sorry, the package could not be published to #getEndpointName()#.", 'forgebox', arrayToList( results.response.messages ) );
 		}
 
 		return results.response.data;
@@ -317,7 +318,7 @@ or just add DEBUG to the root logger
 
 		// error
 		if( results.response.error ){
-			throw( "Something went wrong unplublishing.", 'forgebox', arrayToList( results.response.messages ) );
+			throw( "Something went wrong unplublishing from #getEndpointName()#.", 'forgebox', arrayToList( results.response.messages ) );
 		}
 
 		return results.response.data;
@@ -347,7 +348,7 @@ or just add DEBUG to the root logger
 
 		// error
 		if( results.response.error ){
-			throw( "Something went wrong tracking this installation.", 'forgebox', arrayToList( results.response.messages ) );
+			throw( "Something went wrong tracking this installation in #getEndpointName()#.", 'forgebox', arrayToList( results.response.messages ) );
 		}
 
 		return results.response.data;
@@ -375,7 +376,7 @@ or just add DEBUG to the root logger
 
 		// error
 		if( results.response.error ){
-			throw( "Something went wrong tracking this download.", 'forgebox', arrayToList( results.response.messages ) );
+			throw( "Something went wrong tracking this download from #getEndpointName()#.", 'forgebox', arrayToList( results.response.messages ) );
 		}
 
 		return results.response.data;
@@ -404,7 +405,7 @@ or just add DEBUG to the root logger
 
 		// error
 		if( results.response.error ){
-			throw( "Error searching for slugs", 'forgebox', arrayToList( results.response.messages ) );
+			throw( "Error searching for slugs in #getEndpointName()#", 'forgebox', arrayToList( results.response.messages ) );
 		}
 
 		var opts = results.response.data;
@@ -412,7 +413,7 @@ or just add DEBUG to the root logger
 		// If there's only one suggestion and it doesn't have an @ in it, add another suggestion with the @ at the end.
 		// This is to prevent the tab completion from adding a space after the suggestion since it thinks it's the only possible option
 		// Hitting tab will still populate the line, but won't add the space which makes it easier if the user intends to continue for a specific version.
-		if( opts.len() == 1 && !( opts[1] contains '@' ) ) {
+		if( opts.len() == 1 && ( !( opts[1] contains '@' ) || opts[1].listRest( '@' ).reFindNoCase( '^[a-z]' ) ) ) {
 			opts.append( opts[1] & '@' );
 		}
 
@@ -421,7 +422,7 @@ or just add DEBUG to the root logger
 
 	function getStorageLocation( required string slug, required string version, required string APIToken ) {
 		var results = makeRequest(
-			resource = "storage/#slug#/#version#",
+			resource = "storage/#urlEncode( slug )#/#urlEncode( version )#",
 			method = "get",
 			headers = {
 				'x-api-token' : arguments.APIToken
@@ -430,7 +431,7 @@ or just add DEBUG to the root logger
 		// error
 		if( results.response.error ){
             throw(
-                "Error getting ForgeBox storage location.",
+                "Error getting ForgeBox storage location from #getEndpointName()#.",
                 "forgebox",
                 results.response.messages.toList(),
                 results.responseheader.status_code ?: 500
@@ -458,7 +459,7 @@ or just add DEBUG to the root logger
 			var results = {error=false,response={},message="",responseheader={},rawResponse=""};
 			var HTTPResults = "";
 			var param = "";
-			var APIURL = configService.getSetting( 'endpoints.forgebox.APIURL', getAPIURL() );
+			var APIURL = getAPIURL();
 			if( APIURL.endsWith( '/' ) ) {
 				APIURL = left( APIURL, len( APIURL )-1 );
 			}
@@ -553,9 +554,9 @@ or just add DEBUG to the root logger
             	if( errorDetail != statusMessage ) {
             		errorDetail &= chr( 10 ) & statusMessage;
             	}
-            	errorDetail = ucase( arguments.method ) & ' ' &thisURL & chr( 10 ) & errorDetail;
+            	errorDetail = ucase( arguments.method ) & ' ' & thisURL & ' ' & errorDetail;
             	CommandBoxlogger.error( 'Something other than JSON returned. #errorDetail#', 'Actual HTTP Response: ' & results.rawResponse );
-				throw( 'Uh-oh, ForgeBox returned something other than JSON.  Run "system-log | open" to see the full response.', 'forgebox', errorDetail );
+				throw( 'Uh-oh, #getEndpointName()# returned something other than JSON.  Run "system-log | open" to see the full response.', 'forgebox', errorDetail );
             }
 
 			return results;

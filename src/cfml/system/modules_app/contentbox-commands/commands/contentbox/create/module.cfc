@@ -1,9 +1,9 @@
 /**
-* Create a new module in an existing ColdBox application.  Make sure you are running this command in the root
+* Create a new module in an existing ContentBox application.  Make sure you are running this command in the root
 * of your app for it to find the correct folder.
 * .
 * {code:bash}
-* coldbox create module myModule
+* contentbox create module myModule
 * {code}
 *
  **/
@@ -34,7 +34,7 @@ component {
 		boolean script=true
 	){
 		// This will make each directory canonical and absolute
-		arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
+		arguments.directory = resolvePath( arguments.directory );
 
 		// Validate directory
 		if( !directoryExists( arguments.directory ) ) {

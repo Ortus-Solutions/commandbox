@@ -1,5 +1,8 @@
 {
     "force":true,
+    "jvm":{
+        "heapSize":"1024"
+    },
     "openbrowser":"false",
     "web":{
         "http":{

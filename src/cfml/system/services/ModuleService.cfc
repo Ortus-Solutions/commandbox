@@ -24,6 +24,7 @@
 	<cfproperty name="ConfigService" inject="Configservice">
 	<cfproperty name="SystemSettings" inject="SystemSettings">
 	<cfproperty name="consoleLogger" inject="logbox:logger:console">
+	<cfproperty name="fileSystemUtil" inject="FileSystem">
 
 
 <!------------------------------------------- CONSTRUCTOR ------------------------------------------->
@@ -89,7 +90,11 @@
     		// Add the application's module's location and the system core modules
     		var modLocations   = [ '/commandbox/system/modules','/commandbox/system/modules_app', '/commandbox/modules' ];
 			// Add the application's external locations array.
-			modLocations.addAll( ConfigService.getSetting( "ModulesExternalLocation", [] ) );
+			var externalPaths = ConfigService.getSetting( "ModulesExternalLocation", [] )
+				.map( function( path ) {
+					return fileSystemUtil.makePathRelative( path );
+				} );
+			modLocations.addAll( externalPaths );
 			// iterate through locations and build the module registry in order
 			buildRegistry( modLocations );
 		</cfscript>
@@ -160,7 +165,7 @@
 			if( len( arguments.invocationPath ) ){
 				// Check if passed module name is already registered
 				if( structKeyExists( instance.moduleRegistry, arguments.moduleName ) AND !arguments.force ){
-					instance.logger.warn( "The module #arguments.moduleName# has already been registered, so skipping registration" );
+					instance.logger.debug( "The module #arguments.moduleName# has already been registered, so skipping registration" );
 					return false;
 				}
 				// register new incoming location
@@ -463,8 +468,13 @@
 														    interceptorProperties=mConfig.interceptors[ y ].properties,
 														    interceptorName=mConfig.interceptors[ y ].name);
 					// Loop over module interceptors to autowire them
-					wirebox.autowire( target=interceptorService.getInterceptor( mConfig.interceptors[ y ].name, true ),
-						     		  targetID=mConfig.interceptors[ y ].class );
+					try { 
+						wirebox.autowire( target=interceptorService.getInterceptor( mConfig.interceptors[ y ].name, true ),
+							     		  targetID=mConfig.interceptors[ y ].class );
+					} catch( EventPoolManager.ObjectNotFound var e ){
+						// This error simply means our interceptor had no states
+						// And an interceptor with no states basically ceases to exist as it has no purpose in life
+					}
 				}
 
 				// Register module routing entry point pre-pended to routes

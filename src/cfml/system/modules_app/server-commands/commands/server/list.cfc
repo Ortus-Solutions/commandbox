@@ -40,15 +40,22 @@ component {
 	// DI
 	property name="serverService" inject="ServerService";
 
+	// Map the server statuses to a color
+	variables.statusColors = {
+		running 	: 'green',
+		starting 	: 'yellow',
+		stopped 	: 'red'
+	};
+
 	/**
-	 * @name.hint Comma-delimited list of server names to show
+	 * @name Comma-delimited list of server names to show
 	 * @name.optionsUDF serverNameComplete
-	 * @running.hint Show running servers
-	 * @stopped.hint Show stopped servers
-	 * @starting.hint Show starting servers
-	 * @unknown.hint Show servers with unknown status
-	 * @verbose.hint Show detailed information
-	 * @local.hint Show servers with webroot matching the current directory
+	 * @running Show running servers
+	 * @stopped Show stopped servers
+	 * @starting Show starting servers
+	 * @unknown Show servers with unknown status
+	 * @verbose Show detailed information
+	 * @local Show servers with webroot matching the current directory
 	 **/
 	function run(
 		name='',
@@ -57,111 +64,172 @@ component {
 		boolean starting = false,
 		boolean unknown = false,
 		boolean verbose = false,
-		boolean local = false ){
+		boolean local = false 
+	){
+		var statusList = [];
+		if( arguments.running ) { statusList 	= statusList.append( 'running' ); }
+		if( arguments.stopped ) { statusList 	= statusList.append( 'stopped' ); }
+		if( arguments.starting ) { statusList 	= statusList.append( 'starting' ); }
+		if( arguments.unknown ) { statusList 	= statusList.append( 'unknown' ); }
+
+		// Local ref to avoid the `local` scope issue
+		var localOnly = arguments.local;
+
+		// Get Servers
 		var servers = serverService.getServers();
 
-		var statusList = '';
-		if( arguments.running ) { statusList = statusList.listAppend( 'running' ); }
-		if( arguments.stopped ) { statusList = statusList.listAppend( 'stopped' ); }
-		if( arguments.starting ) { statusList = statusList.listAppend( 'starting' ); }
-		if( arguments.unknown ) { statusList = statusList.listAppend( 'unknown' ); }
+		// Verbalize yourself!
+		print
+			.boldCyanLine( "Processing (#servers.count()#) servers, please wait..." )
+			.toConsole();
 
-		// Map the server statuses to a color
-		statusColors = {
-			running : 'green',
-			starting : 'yellow',
-			stopped : 'red'
-		};
-
-		for( var thisKey in servers ){
-			var thisServerInfo = servers[ thisKey ];
-			var status = serverService.isServerRunning( thisServerInfo ) ? 'running' : 'stopped';
-
-			// Check name and status filters.  By default, everything shows
-			if( ( !len( arguments.name ) || matchesName( thisServerInfo.name, arguments.name ) )
-				&& ( !len( statusList ) || listFindNoCase( statusList, status ) ) 
-				&& ( !arguments.local || getCanonicalPath(getCWD()) == getCanonicalPath(thisServerInfo.webroot) ) ) {
-
-				// Null Checks, to guarnatee correct struct.
-				structAppend( thisServerInfo, serverService.newServerInfoStruct(), false );
-
+		// Re-assign to calculate at the end
+		servers = servers
+			// filter out what we don't need
+			.filter( ( serverName, thisServerInfo ) => {
+				return ( 
+					// Name check?
+					( !len( name ) || matchesName( thisServerInfo.name, name ) ) && 
+					// Local or OS Wide (default)
+					( !localOnly || getCanonicalPath( getCWD() ) == getCanonicalPath( thisServerInfo.webroot ) )
+				);
+			}, true )
+			// Process status + Null Checks, to guarantee correct struct correctness, do this async
+			.map( ( serverName, thisServerInfo ) => { 
+				thisServerInfo.append( serverService.newServerInfoStruct(), false );
+				thisServerInfo.status = getServerStatus( thisServerInfo );
+				return thisServerInfo;
+			}, true )
+			// Filter out by status now if needed now.
+			.filter( ( serverName, thisServerInfo ) => {
+				return ( !statusList.len() || statusList.findNoCase( thisServerInfo.status ) )
+			} ) 
+			// Process output
+			.each( ( serverName, thisServerInfo ) => {
+				// Print out Header
 				print.line().boldText( thisServerInfo.name );
 				print.boldtext( ' (' )
-					.bold( status, statusColors.keyExists( status ) ? statusColors[ status ] : 'yellow' )
+					.bold( thisServerInfo.status, getStatusColor( thisServerInfo.status ) )
 					.bold( ')' )
 					.line();
 
-				if( arguments.verbose ) {
-
-					print.indentedLine( "host:             " & thisServerInfo.host );
-					if( len( thisServerInfo.engineName ) ) {
-						print.indentedLine( "CF Engine:        " & thisServerInfo.engineName & ' ' & thisServerInfo.engineVersion );
-					}
-					if( len( thisServerInfo.WARPath ) ) {
-						print.indentedLine( "WARPath:          " & thisServerInfo.WARPath );
-					} else {
-						print.indentedLine( "webroot:          " & thisServerInfo.webroot );
-					}
-					if( len( thisServerInfo.dateLastStarted ) ) {
-						print.indentedLine( 'Last Started: ' & datetimeFormat( thisServerInfo.dateLastStarted ) );
-					}
-					print.indentedLine( "HTTPEnable:       " & thisServerInfo.HTTPEnable )
-						.indentedLine( "port:             " & thisServerInfo.port )
-						.indentedLine( "SSLEnable:        " & thisServerInfo.SSLEnable )
-						.indentedLine( "SSLport:          " & thisServerInfo.SSLport )
-						.indentedLine( "rewritesEnable:   " & ( thisServerInfo.rewritesEnable ?: "false" ) )
-						.indentedLine( "stopsocket:       " & thisServerInfo.stopsocket )
-						.indentedLine( "logdir:           " & thisServerInfo.logDir )
-						.indentedLine( "debug:            " & thisServerInfo.debug )
-						.indentedLine( "ID:               " & thisServerInfo.id );
-
-					if( len( thisServerInfo.libDirs ) ) { print.indentedLine( "libDirs:          " & thisServerInfo.libDirs ); }
-					if( len( thisServerInfo.webConfigDir ) ) { print.indentedLine( "webConfigDir:     " & thisServerInfo.webConfigDir ); }
-					if( len( thisServerInfo.serverConfigDir ) ) { print.indentedLine( "serverConfigDir:  " & thisServerInfo.serverConfigDir ); }
-					if( len( thisServerInfo.webXML ) ) { print.indentedLine( "webXML:           " & thisServerInfo.webXML ); }
-					if( len( thisServerInfo.trayicon ) ) { print.indentedLine( "trayicon:         " & thisServerInfo.trayicon ); }
-					if( len( thisServerInfo.serverConfigFile ) ) { print.indentedLine( "serverConfigFile: " & thisServerInfo.serverConfigFile ); }
-
+				// Basic or verbose
+				if( verbose ) {
+					printVerboseServerInfo( thisServerInfo )
 				} else {
-					// Brief version
-					if( thisServerInfo.HTTPEnable ) {
-						print.indentedLine( 'http://' & thisServerInfo.host & ':' & thisServerInfo.port );
-					}
-					if( thisServerInfo.SSLEnable ) {
-						print.indentedLine( 'https://' & thisServerInfo.host & ':' & thisServerInfo.SSLport );
-					}
-					if( len( thisServerInfo.engineName ) ) {
-						print.indentedLine( 'CF Engine: ' & thisServerInfo.engineName & ' ' & thisServerInfo.engineVersion );
-					}
-					if( len( thisServerInfo.warPath ) ) {
-						print.indentedLine( 'WAR Path: ' & thisServerInfo.warPath );
-					} else {
-						print.indentedLine( 'Webroot: ' & thisServerInfo.webroot );
-					}
-					if( len( thisServerInfo.dateLastStarted ) ) {
-						print.indentedLine( 'Last Started: ' & datetimeFormat( thisServerInfo.dateLastStarted ) );
-					}
-				}// end verbose
-
-			} // End "filter" if
-		}
+					printServerInfo( thisServerInfo );
+				}
+			} );
 
 		// No servers found, then do nothing
-		if( structCount( servers ) eq 0 ){
-			print.boldRedLine( "No server configurations found!" );
+		if( servers.count() eq 0 ){
+			print.boldRedLine( "No server configurations found with the incoming filters!" );
 		}
 	}
 
-	function matchesName( name, searchTerm ) {
-		if( listLen( searchTerm ) > 1 ) {
-			return listFindNoCase( searchTerm, name );
+	/**
+	 * Get the server status
+	 *
+	 * @serverInfo The server info struct
+	 *
+	 * @return The status string
+	 */
+	string function getServerStatus( required serverInfo ){
+		return variables.serverService.isServerRunning( arguments.serverInfo ) ? 'running' : 'stopped';
+	}
+
+	/**
+	 * Print basic server info to the print stream
+	 * 
+	 * @serverInfo The server info struct 
+	 */
+	function printServerInfo( required serverInfo ){
+		// Brief version
+		if( serverInfo.HTTPEnable ) {
+			print.indentedLine( 'http://' & serverInfo.host & ':' & serverInfo.port );
+		}
+		if( serverInfo.SSLEnable ) {
+			print.indentedLine( 'https://' & serverInfo.host & ':' & serverInfo.SSLport );
+		}
+		if( len( serverInfo.engineName ) ) {
+			print.indentedLine( 'CF Engine: ' & serverInfo.engineName & ' ' & serverInfo.engineVersion );
+		}
+		if( len( serverInfo.warPath ) ) {
+			print.indentedLine( 'WAR Path: ' & serverInfo.warPath );
 		} else {
-			return findNoCase( searchTerm, name );
+			print.indentedLine( 'Webroot: ' & serverInfo.webroot );
+		}
+		if( len( serverInfo.dateLastStarted ) ) {
+			print.indentedLine( 'Last Started: ' & datetimeFormat( serverInfo.dateLastStarted ) );
 		}
 	}
 
+	/**
+	 * Print verbose server info to the print stream
+	 * 
+	 * @serverInfo The server info struct 
+	 */
+	function printVerboseServerInfo( required serverInfo ){
+		print.indentedLine( "host:             " & serverInfo.host );
+		if( len( serverInfo.engineName ) ) {
+			print.indentedLine( "CF Engine:        " & serverInfo.engineName & ' ' & serverInfo.engineVersion );
+		}
+		if( len( serverInfo.WARPath ) ) {
+			print.indentedLine( "WARPath:          " & serverInfo.WARPath );
+		} else {
+			print.indentedLine( "webroot:          " & serverInfo.webroot );
+		}
+		if( len( serverInfo.dateLastStarted ) ) {
+			print.indentedLine( 'Last Started:     ' & datetimeFormat( serverInfo.dateLastStarted ) );
+		}
+		print.indentedLine( "HTTPEnable:       " & serverInfo.HTTPEnable )
+			.indentedLine( "port:             " & serverInfo.port )
+			.indentedLine( "SSLEnable:        " & serverInfo.SSLEnable )
+			.indentedLine( "SSLport:          " & serverInfo.SSLport )
+			.indentedLine( "rewritesEnable:   " & ( serverInfo.rewritesEnable ?: "false" ) )
+			.indentedLine( "stopsocket:       " & serverInfo.stopsocket )
+			.indentedLine( "logdir:           " & serverInfo.logDir )
+			.indentedLine( "debug:            " & serverInfo.debug )
+			.indentedLine( "ID:               " & serverInfo.id );
+
+		if( len( serverInfo.libDirs ) ) { print.indentedLine( "libDirs:          " & serverInfo.libDirs ); }
+		if( len( serverInfo.webConfigDir ) ) { print.indentedLine( "webConfigDir:     " & serverInfo.webConfigDir ); }
+		if( len( serverInfo.serverConfigDir ) ) { print.indentedLine( "serverConfigDir:  " & serverInfo.serverConfigDir ); }
+		if( len( serverInfo.webXML ) ) { print.indentedLine( "webXML:           " & serverInfo.webXML ); }
+		if( len( serverInfo.trayicon ) ) { print.indentedLine( "trayicon:         " & serverInfo.trayicon ); }
+		if( len( serverInfo.serverConfigFile ) ) { print.indentedLine( "serverConfigFile: " & serverInfo.serverConfigFile ); }
+	}
+
+	/**
+	 * Print out a status color according to status and our status map
+	 * @status The status
+	 *
+	 * @return The status color to print
+	 */
+	function getStatusColor( required status ){
+		return variables.statusColors.keyExists( arguments.status ) ? variables.statusColors[ arguments.status ] : 'yellow';
+	}
+
+	/**
+	 * Is the incoming name matching the search term
+	 *
+	 * @name The target
+	 * @searchTerm The search term
+	 */
+	boolean function matchesName( name, searchTerm ) {
+		if( listLen( arguments.searchTerm ) > 1 ) {
+			return listFindNoCase( arguments.searchTerm, arguments.name );
+		} else {
+			return findNoCase( arguments.searchTerm, arguments.name );
+		}
+	}
+	
 	function serverNameComplete() {
-		return serverService.getServerNames();
+		return serverService
+			.getServerNames()
+			.map( ( i ) => {
+				return { name : i, group : 'Server Names' };
+			} );
 	}
 
 

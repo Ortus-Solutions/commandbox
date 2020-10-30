@@ -7,29 +7,13 @@
 * I am a JLine highighter class that attempts to highlight the command portion of the input buffer
 */
 component {
-	
+
 	// DI
 	property name='print'			inject='print';
 	property name='shell'			inject='provider:shell';
-	
+
 	function init() {
-		variables.functionList = getFunctionList()
-			.keyArray()
-			// Add in member function versions of functions
-			.reduce( function( orig, i ) {
-				orig.append( i );				
-				if( reFind( 'array|struct|query|image|spreadsheet|XML', i ) ) {
-					orig.append( i.reReplaceNoCase( '(array|struct|query|image|spreadsheet|XML)(.+)', '\2' ) );
-				}
-				return orig;
-			}, [] )
-			// Sort function names longest to shortest
-			.sort( function(a,b){
-				if( a.len() > b.len() ) return -1;
-				if( a.len() < b.len() ) return 1;
-				return 0; 
-			} );
-		
+
 		variables.reservedWords = [
 			'if',
 			'else',
@@ -48,8 +32,11 @@ component {
 			'true',
 			'false',
 			'return',
-			'in'
-		];
+			'in',
+			'function',
+			'any'
+		].toList( '|' );
+
 		variables.sets = {
 			')' : '(',
 			'}' : '{',
@@ -59,21 +46,16 @@ component {
 		};
 		return this;
 	}
-	
+
 	function highlight( reader, buffer ) {
-		
+
 		// Highlight CF function names
-		for( var func in functionList ) {
-			// Find function names that are at the line start or prepended with a space, curly, or period and ending with an opening paren
-			buffer = reReplaceNoCase( buffer, '(^|[ \.\{\}])(#func#)(\()', '\1' & print.boldCyan( '\2' ) & '\3', 'all' );
-		}
-		
+		// Find text that is at the line start or prepended with a space, curly, or period and ending with an opening paren
+		buffer = reReplaceNoCase( buffer, '(^|[ \-##\.\{\}\(\)])([^ \-##\.\{\}\(\)]*)(\()', '\1' & print.boldCyan( '\2' ) & '\3', 'all' );
+
 		// highight reserved words
-		for( var reservedWord in reservedWords ) {
-			// Find keywords, bookended by a space, curly, paren, or semicolon. Or, of course, the start/end of the line
-			buffer = reReplaceNoCase( buffer, '(^|[ \{\}\(])(#reservedWord#)($|[ ;\(\)\{\}])', '\1' & print.boldCyan( '\2' ) & '\3', 'all' );
-		}
-		
+		buffer = reReplaceNoCase( buffer, '(^|[ \{\}\(])(#reservedWords#)($|[ ;\(\)\{\}])', '\1' & print.boldCyan( '\2' ) & '\3', 'all' );
+
 		// If the last character was an ending } or ) or ] or " or ' then highlight it and the matching start character
 		// This logic is pretty basic and doesn't account for escaped stuff.  If you want, please send a pull to improve it :)
 		if( sets.keyExists( buffer.right( 1 ) ) ) {
@@ -92,8 +74,8 @@ component {
 					break;
 				}
 				pos--;
-			}			
-			
+			}
+
 			// If we found a matching start char
 			if( pos > 0 ) {
 				var originalBuffer = buffer;
@@ -104,7 +86,7 @@ component {
 				}
 				// The start char
 				buffer &= print.boldRed( startChar );
-				
+
 				// Optional text between matching chars
 				if( pos < originalBuffer.len()-1 ) {
 					buffer &= originalBuffer.mid( pos+1, originalBuffer.len()-pos-1 );
@@ -114,7 +96,7 @@ component {
 			}
 		}
 
-		return createObject("java","org.jline.utils.AttributedString").fromAnsi( buffer );	
+		return createObject("java","org.jline.utils.AttributedString").fromAnsi( buffer );
 	}
-	
+
 }

@@ -65,16 +65,16 @@ component aliases='status,server info' {
 		// Display ALL as JSON?
 		if( arguments.showALL && arguments.json ){
 			print.line(
-				formatterUtil.formatJson( serializeJSON( servers ) )
+				servers
 			);
 			return;
 		}
 
 		if( !isNull( arguments.directory ) ) {
-			arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
+			arguments.directory = resolvePath( arguments.directory );
 		}
 		if( !isNull( arguments.serverConfigFile ) ) {
-			arguments.serverConfigFile = fileSystemUtil.resolvePath( arguments.serverConfigFile );
+			arguments.serverConfigFile = resolvePath( arguments.serverConfigFile );
 		}
 		var serverDetails = serverService.resolveServerDetails( arguments );
 		var serverInfo = serverDetails.serverInfo;
@@ -114,7 +114,7 @@ component aliases='status,server info' {
 						// Format Complex values as JSON
 						} else {
 							print.line(
-								formatterUtil.formatJson( serializeJSON( thisValue ) )
+								thisValue
 							);
 						}
 
@@ -122,7 +122,7 @@ component aliases='status,server info' {
 
 						// Output the entire object
 						print.line(
-							formatterUtil.formatJson( serializeJSON( thisServerInfo ) )
+							thisServerInfo
 						);
 
 					}
@@ -153,6 +153,10 @@ component aliases='status,server info' {
 
 				if( arguments.verbose ) {
 
+					print.indentedLine( 'ID: ' & thisServerInfo.id );
+					
+					print.indentedLine( 'Server Home: ' & thisServerInfo.serverHome );
+
 					print.indentedLine( trim( thisServerInfo.statusInfo.command ) );
 					// Put each --arg or -arg on a new line
 					var args = trim( reReplaceNoCase( thisServerInfo.statusInfo.arguments, ' (-|"-)', cr & '\1', 'all' ) );
@@ -173,7 +177,11 @@ component aliases='status,server info' {
 	* AutoComplete server names
 	*/
 	function serverNameComplete() {
-		return serverService.getServerNames();
+		return serverService
+			.getServerNames()
+			.map( ( i ) => {
+				return { name : i, group : 'Server Names' };
+			} );
 	}
 
 	/**

@@ -10,13 +10,25 @@
 component {
 
 	// DI
-	property name="forgeBox" inject="ForgeBox";
+	property name="configService" inject="configService";
+	property name="endpointService" inject="endpointService";
 
 	/**
 	* Run Command
+	* @endpointName  Name of custom forgebox endpoint to use
+	* @endpointName.optionsUDF endpointNameComplete
 	*/
-	function run() {
-		var APIToken = configService.getSetting( 'endpoints.forgebox.APIToken', '' );
+	function run( string endpointName ) {
+		endpointName = endpointName ?: configService.getSetting( 'endpoints.defaultForgeBoxEndpoint', 'forgebox' );
+		
+		try {		
+			var oEndpoint = endpointService.getEndpoint( endpointName );
+		} catch( EndpointNotFound var e ) {
+			error( e.message, e.detail ?: '' );
+		}
+		
+		var forgebox = oEndpoint.getForgebox();
+		var APIToken = oEndpoint.getAPIToken();
 
 		// typetotal,typename,typeid,typeslug
 		print.line()
@@ -24,11 +36,19 @@ component {
 			.line()
 			.blackOnWhiteLine( 'Name(Number of Packages) (slug)' );
 
-		for( var type in forgeBox.getCachedTypes( APIToken=APIToken ) ) {
-			print.boldText( type.typeName & "(#type.numberOfActiveEntries#)" )
-				.line( '  (#type.typeSlug#)' );
+		try {
+			for( var type in forgeBox.getCachedTypes( APIToken=APIToken ) ) {
+				print.boldText( type.typeName & "(#type.numberOfActiveEntries#)" )
+					.line( '  (#type.typeSlug#)' );
+			}
+		} catch( forgebox var e ) {
+			error( e.message, e.detail ?: '' );
 		}
 
+	}
+	
+	function endpointNameComplete() {
+		return getInstance( 'endpointService' ).forgeboxEndpointNameComplete();
 	}
 
 }

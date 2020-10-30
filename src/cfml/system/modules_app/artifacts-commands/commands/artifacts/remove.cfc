@@ -29,9 +29,11 @@ component {
 	property name='artifactService' inject='artifactService';
 
 	/**
-	 * @package.hint Comma-delimited list of packages to remove
-	 * @version.hint If passed, it will try to remove a specific package version
-	 * @force.hint Do not confirm, just delete
+	 * @package Comma-delimited list of packages to remove
+	 * @package.optionsUDF packageComplete
+	 * @version If passed, it will try to remove a specific package version
+	 * @version.optionsUDF versionComplete
+	 * @force Delete without confirmation
 	 **/
 	function run( required string package, version="", boolean force=false ) {
 		// convert to array incoming package
@@ -57,6 +59,21 @@ component {
 			print.greenLine( "Package: #thisPackage##versionString# removed!" );
 		}
 
+	}
+	
+	function packageComplete() {
+		return artifactService.listArtifacts()
+			.keyArray();
+	}
+	
+	function versionComplete() {
+		var results = artifactService.listArtifacts( arguments.passedNamedParameters.package ?: '' );
+		
+		if( results.count() ) {
+			return results[ results.keyArray().first() ];
+		}
+			
+		return [];
 	}
 
 }

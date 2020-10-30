@@ -1,24 +1,24 @@
 /**
-* A ColdBox Enabled virtual entity service
-*/
+ * A ColdBox Enabled virtual entity service
+ */
 component extends="cborm.models.VirtualEntityService" singleton{
-	
+
 	/**
-	* Constructor
-	*/
+	 * Constructor
+	 */
 	function init(){
-		
+
 		// init super class
 		super.init( entityName="|entityName|" );
-		
+
 		// Use Query Caching
 	    setUseQueryCaching( |QueryCaching| );
 	    // Query Cache Region
 	    setQueryCacheRegion( "|cacheRegion|" );
 	    // EventHandling
 	    setEventHandling( |eventHandling| );
-	    
+
 	    return this;
 	}
-	
+
 }

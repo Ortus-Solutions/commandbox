@@ -16,7 +16,7 @@ component {
 	/**
 	 * @property.hint Name of the property to clear
 	 * @property.optionsUDF completeProperty
-	 * @system.hint When true, show box.json data in the global CommandBox folder
+	 * @system.hint Clear property from box.json in the global CommandBox folder
 	 **/
 	function run( required string property, boolean system=false ) {
 
@@ -56,7 +56,7 @@ component {
 
 	// Dynamic completion for property name based on contents of box.json
 	function completeProperty() {
-		var directory = fileSystemUtil.resolvePath( '' );
+		var directory = resolvePath( '' );
 		return packageService.completeProperty( directory );
 	}
 

@@ -7,7 +7,7 @@
 *
 * I am the ForgeBox endpoint.  I wrap CFML's coolest package repository EVER!
 */
-component accessors="true" implements="IEndpointInteractive" singleton {
+component accessors="true" implements="IEndpointInteractive" {
 
 	// DI
 	property name="CR" 					inject="CR@constants";
@@ -21,6 +21,7 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 	property name="endpointService"		inject="endpointService";
 	property name="fileSystemUtil"		inject="FileSystem";
 	property name="fileEndpoint"		inject="commandbox.system.endpoints.File";
+	property name="lexEndpoint"			inject="commandbox.system.endpoints.Lex";
 	property name='pathPatternMatcher' 	inject='provider:pathPatternMatcher@globber';
 	property name='wirebox'				inject='wirebox';
 
@@ -76,7 +77,7 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 	 * @return struct { isOutdated, version }
 	 */
 	public function getUpdate( required string package, required string version, boolean verbose=false ) {
-		var APIToken		= configService.getSetting( 'endpoints.forgebox.APIToken', '' );
+		var APIToken		= getAPIToken();
 		var slug 			= parseSlug( arguments.package );
 		var boxJSONversion 	= parseVersion( arguments.package );
 		var result 			= {
@@ -86,7 +87,8 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 
 		// Only bother checking if we have a version range.  If an exact version is stored in
 		// box.json, we're never going to update it anyway.
-		if( semanticVersion.isExactVersion( boxJSONversion ) ) {
+		// UNLESS the box.json has been udpated to have a new exact version that is different from what's installed (ignoreing buildID)
+		if( semanticVersion.isExactVersion( boxJSONversion ) && semanticVersion.compare( boxJSONversion, version, false ) == 0 ) {
 			return result;
 		}
 
@@ -144,7 +146,7 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 		required string firstName,
 		required string lastName
 	){
-		var APIToken = configService.getSetting( 'endpoints.forgebox.APIToken', '' );
+		var APIToken = getAPIToken();
 
 		try {
 
@@ -214,7 +216,7 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 		props.installInstructionsFormat = 'text';
 		props.changeLog = boxJSON.changeLog;
 		props.changeLogFormat = 'text';
-		props.APIToken = configService.getSetting( 'endpoints.forgebox.APIToken', '' );
+		props.APIToken = getAPIToken();
 		props.forceUpload = arguments.force;
 
 		// start upload stuff here
@@ -224,7 +226,7 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 			try {
 				forgebox.getStorageLocation( props.slug, props.version, props.APIToken );
 				if ( ! arguments.force ) {
-					consoleLogger.warn( "A zip for this version has already been uploaded.  If you want to override the uploaded zip, run this command with the `force` flag.  We will continue to update your package metadata." );
+					consoleLogger.error( "A zip for this version has already been uploaded.  If you want to override the uploaded zip, run this command with the `force` flag.  We will continue to update your package metadata." );
 					upload = false;
 				}
 			}
@@ -251,15 +253,15 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 				var files = directoryList( path=arguments.path, filter=function( path ){ return path contains ( item.file & ext); } );0
 				if( arrayLen( files ) && fileExists( files[ 1 ] ) ) {
 					// If found, read in the first one found.
-					props[ item.variable ] = fileRead( files[ 1 ] );
+					props[ item.variable ] = fileRead( files[ 1 ], 'UTF-8' );
 					props[ item.variable & 'Format' ] = ( ext == '.md' ? 'md' : 'text' );
 				}
 			}
 		}
 
 		try {
-			consoleLogger.warn( "Sending package information to ForgeBox, please wait..." );
-			if ( upload ) { consoleLogger.warn( "Uploading package zip to ForgeBox..." ); }
+			consoleLogger.warn( "Sending package information to #getNamePrefixes()#, please wait..." );
+			if ( upload ) { consoleLogger.warn( "Uploading package zip to #getNamePrefixes()#..." ); }
 
 			forgebox.publish( argumentCollection=props );
 
@@ -294,9 +296,9 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 		var boxJSON = packageService.readPackageDescriptor( arguments.path );
 
 		try {
-			consoleLogger.warn( "Unpublishing package [#boxJSON.slug##( len( arguments.version ) ? '@' : '' )##arguments.version#] from ForgeBox, please wait..." );
+			consoleLogger.warn( "Unpublishing package [#boxJSON.slug##( len( arguments.version ) ? '@' : '' )##arguments.version#] from #getNamePrefixes()#, please wait..." );
 
-			forgebox.unpublish( boxJSON.slug, arguments.version, configService.getSetting( 'endpoints.forgebox.APIToken', '' ) );
+			forgebox.unpublish( boxJSON.slug, arguments.version, getAPIToken() );
 
 		} catch( forgebox var e ) {
 			// This can include "expected" errors such as "User not authenticated"
@@ -311,7 +313,7 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 	* @entryData Optional struct of entryData which skips the ForgeBox call.
 	*/
 	function findSatisfyingVersion( required string slug, required string version, struct entryData ) {
-		var APIToken = configService.getSetting( 'endpoints.forgebox.APIToken', '' );
+		var APIToken = getAPIToken();
 		 try {
 			// Use passed in entrydata, or go get it from ForgeBox.
 			arguments.entryData = arguments.entryData ?: forgebox.getEntry( arguments.slug, APIToken );
@@ -353,7 +355,7 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 	* @package The full endpointID like foo@1.0.0
 	*/
 	public function parseSlug( required string package ) {
-		var matches = REFindNoCase( "^([a-zA-Z][\w\-\.]*(?:\@(?!stable\b)(?!be\b)[a-zA-Z][\w\-]*)?)(?:\@(.+))?$", package, 1, true );
+		var matches = REFindNoCase( "^([\w\-\.]+(?:\@(?!stable\b)(?!be\b)[a-zA-Z][\w\-]*)?)(?:\@(.+))?$", package, 1, true );
 		if ( arrayLen( matches.len ) < 2 ) {
 			throw(
 				type = "endpointException",
@@ -370,7 +372,7 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 	public function parseVersion( required string package ) {
 		var version = 'stable';
 		// foo@1.0.0
-		var matches = REFindNoCase( "^([a-zA-Z][\w\-\.]*(?:\@(?!stable\b)(?!be\b)[a-zA-Z][\w\-]*)?)(?:\@(.+))?$", package, 1, true );
+		var matches = REFindNoCase( "^([\w\-\.]+(?:\@(?!stable\b)(?!be\b)[a-zA-Z][\w\-]*)?)(?:\@(.+))?$", package, 1, true );
 		if ( matches.pos.len() >= 3 && matches.pos[ 3 ] != 0 ) {
 			// Note this can also be a semver range like 1.2.x, >2.0.0, or 1.0.4-2.x
 			// For now I'm assuming it's a specific version
@@ -390,11 +392,11 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 	 */
 	private function getPackage( slug, version, verbose=false ) {
 		var job = wirebox.getInstance( 'interactiveJob' );
-		var APIToken = configService.getSetting( 'endpoints.forgebox.APIToken', '' );
+		var APIToken = getAPIToken();
 
 		try {
 			// Info
-			job.addLog( "Verifying package '#slug#' in ForgeBox, please wait..." );
+			job.addLog( "Verifying package '#slug#' in #getNamePrefixes()#, please wait..." );
 
 			var entryData = forgebox.getEntry( slug, APIToken );
 
@@ -402,7 +404,7 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 			// downloads,entryid,fname,changelog,updatedate,downloadurl,title,entryrating,summary,username,description,email
 
 			if( !entryData.isActive ) {
-				throw( 'The ForgeBox entry [#entryData.title#] is inactive.', 'endpointException' );
+				throw( 'The #getNamePrefixes()# entry [#entryData.title#] is inactive.', 'endpointException' );
 			}
 
 			var satisfyingVersion = findSatisfyingVersion( slug, version, entryData );
@@ -410,7 +412,7 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 			var downloadURL = satisfyingVersion.downloadURL;
 
 			if( !len( downloadURL ) ) {
-				throw( 'No download URL provided in ForgeBox.  Manual install only.', 'endpointException' );
+				throw( 'No download URL provided in #getNamePrefixes()#.  Manual install only.', 'endpointException' );
 			}
 
 			job.addLog( "Installing version [#arguments.version#]." );
@@ -425,7 +427,7 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 			var packageType = entryData.typeSlug;
 
 			// Advice we found it
-			job.addLog( "Verified entry in ForgeBox: '#slug#'" );
+			job.addLog( "Verified entry in #getNamePrefixes()#: '#slug#'" );
 
 			var strVersion = semanticVersion.parseVersion( version );
 
@@ -435,22 +437,35 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 					downloadURL = forgebox.getStorageLocation(
 						slug, arguments.version, APIToken
 					);
-					job.addLog( "Downloading entry from ForgeBox Pro" );
+					job.addLog( "Downloading entry from #getNamePrefixes()#." );
 				}
 
 				// Test package location to see what endpoint we can refer to.
-				var endpointData = endpointService.resolveEndpoint( downloadURL, 'fakePath', arguments.slug, arguments.version );
-
-				job.addLog( "Deferring to [#endpointData.endpointName#] endpoint for ForgeBox entry [#slug#]..." );
-
-				var packagePath = endpointData.endpoint.resolvePackage( endpointData.package, arguments.verbose );
-
-				// Cheat for people who set a version, slug, or type in ForgeBox, but didn't put it in their box.json
-				var boxJSON = packageService.readPackageDescriptorRaw( packagePath );
-				if( !structKeyExists( boxJSON, 'type' ) || !len( boxJSON.type ) ) { boxJSON.type = entryData.typeslug; }
-				if( !structKeyExists( boxJSON, 'slug' ) || !len( boxJSON.slug ) ) { boxJSON.slug = entryData.slug; }
-				if( !structKeyExists( boxJSON, 'version' ) || !len( boxJSON.version ) ) { boxJSON.version = version; }
-				packageService.writePackageDescriptor( boxJSON, packagePath );
+				var endpointData = endpointService.resolveEndpoint( downloadURL, 'fakePath' );
+				
+				// Very simple check for HTTP URLs pointing to a Lex file
+				if( isInstanceOf( endpointData.endpoint, 'HTTP' ) && entryData.typeslug == 'lucee-extensions' ) {
+					job.addLog( "Deferring to [Lex] endpoint for #getNamePrefixes()# entry [#slug#]..." );
+					var packagePath = lexEndpoint.resolvePackage( downloadURL );
+					
+					var boxJSON = packageService.readPackageDescriptorRaw( packagePath );
+					boxJSON.slug = entryData.slug;
+					boxJSON.name = entryData.title;
+					boxJSON.version = version;
+					packageService.writePackageDescriptor( boxJSON, packagePath );
+					
+				} else {
+					job.addLog( "Deferring to [#endpointData.endpointName#] endpoint for #getNamePrefixes()# entry [#slug#]..." );
+					var packagePath = endpointData.endpoint.resolvePackage( endpointData.package, arguments.verbose );
+						
+					// Cheat for people who set a version, slug, or type in ForgeBox, but didn't put it in their box.json
+					var boxJSON = packageService.readPackageDescriptorRaw( packagePath );
+					if( !structKeyExists( boxJSON, 'type' ) || !len( boxJSON.type ) ) { boxJSON.type = entryData.typeslug; }
+					if( !structKeyExists( boxJSON, 'slug' ) || !len( boxJSON.slug ) ) { boxJSON.slug = entryData.slug; }
+					if( !structKeyExists( boxJSON, 'version' ) || !len( boxJSON.version ) ) { boxJSON.version = version; }
+					packageService.writePackageDescriptor( boxJSON, packagePath );
+										
+				}
 
 				job.addLog( "Storing download in artifact cache..." );
 
@@ -470,9 +485,14 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 
 
 		} catch( forgebox var e ) {
-
-			job.addErrorLog( "Aww man,  ForgeBox isn't feeling well.");
-			job.addLog( "#e.message#  #e.detail#");
+					
+			if( e.detail contains 'The entry slug sent is invalid or does not exist' ) {
+				job.addErrorLog( "#e.message#  #e.detail#" );
+				throw( e.message, 'endpointException', e.detail );
+			}
+			
+			job.addErrorLog( "Aww man,  #getNamePrefixes()# ran into an issue.");
+			job.addLog( "#e.message#  #e.detail#" );
 			job.addErrorLog( "We're going to look in your local artifacts cache and see if one of those versions will work.");
 
 			// See if there's something usable in the artifacts cache.  If so, we'll use that version.
@@ -487,13 +507,14 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 				// Defer to file endpoint
 				return fileEndpoint.resolvePackage( thisArtifactPath, arguments.verbose );
 			} else {
-				throw( 'No satisfying version found for [#version#].', 'endpointException', 'Well, we tried as hard as we can.  ForgeBox is unreachable and you don''t have a usable version in your local artifacts cache.  Please try another version.' );
+				throw( 'No satisfying version found for [#version#].', 'endpointException', 'Well, we tried as hard as we can.  #getNamePrefixes()# can''t find the package and you don''t have a usable version in your local artifacts cache.  Please try another version.' );
 			}
 
 		}
 	}
 
-	private function createZipFromPath( required string path ) {
+	function createZipFromPath( required string path ) {
+		path = fileSystemUtil.resolvePath( path );
 		if( !packageService.isPackage( arguments.path ) ) {
 			throw(
 				'Sorry but [#arguments.path#] isn''t a package.',
@@ -511,12 +532,9 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 		directoryCopy( arguments.path, tmpPath, true, function( directoryPath ){
 			// This will normalize the slashes to match
 			directoryPath = fileSystemUtil.resolvePath( directoryPath );
-			// Directories need to end in a trailing slash
-			if( directoryExists( directoryPath ) ) {
-				directoryPath &= server.separator.file;
-			}
+			
 			// cleanup path so we just get from the archive down
-			var thisPath = replacenocase( directoryPath, tmpPath, "" );
+			var thisPath = replacenocase( directoryPath, path, "" );
 			// Ignore paths that match one of our ignore patterns
 			var ignored = pathPatternMatcher.matchPatterns( ignorePatterns, thisPath );
 			// What do we do with this file/directory
@@ -537,7 +555,7 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 		var ignorePatterns = [];
 
 		var alwaysIgnores = [
-			".*.swp", "._*", ".DS_Store", ".git", "hg", ".svn",
+			".*.swp", "._*", ".DS_Store", ".git/", ".hg/", ".svn/",
 			".lock-wscript", ".wafpickle-*", "config.gypi"
 		];
 		var gitIgnores = readGitIgnores();
@@ -548,13 +566,7 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 		arrayAppend( ignorePatterns, gitIgnores, true );
 		arrayAppend( ignorePatterns, boxJSONIgnores, true );
 
-		// make any `/` paths absolute
-		return ignorePatterns.map( function( pattern ) {
-			if ( left( pattern, 1 ) == "/" ) {
-				return fileSystemUtil.resolvePath( "" ) & pattern;
-			}
-			return pattern;
-		} );
+		return ignorePatterns;
 	}
 
 	private array function readGitIgnores() {
@@ -566,5 +578,52 @@ component accessors="true" implements="IEndpointInteractive" singleton {
 			createObject( "java", "java.lang.System" ).getProperty( "line.separator" )
 		);
 	}
+
+	/**
+	* Returns the correct API token based on the name of this forgebox-based endpoint
+	*/
+	public function getAPIToken() {
+		if( getNamePrefixes() == 'forgebox' ) {
+			return configService.getSetting( 'endpoints.forgebox.APIToken', '' );	
+		} else {
+			return configService.getSetting( 'endpoints.forgebox-#getNamePrefixes()#.APIToken', '' );			
+		}
+	}
+
+	/**
+	* Set the default APIToken to be used for this forgebox-based endpoint
+	*/
+	public function setDefaultAPIToken( required string APIToken ) {
+		if( getNamePrefixes() == 'forgebox' ) {
+			configService.setSetting( 'endpoints.forgebox.APIToken', APIToken );	
+		} else {
+			configService.setSetting( 'endpoints.forgebox-#getNamePrefixes()#.APIToken', APIToken );			
+		}	
+	}
+
+	/**
+	* Returns the struct of all logged in tokens based on the name of this forgebox-based endpoint
+	*/
+	public function getAPITokens() {
+		if( getNamePrefixes() == 'forgebox' ) {
+			return configService.getSetting( 'endpoints.forgebox.tokens', {} );	
+		} else {
+			return configService.getSetting( 'endpoints.forgebox-#getNamePrefixes()#.tokens', {} );			
+		}
+	}
+
+	/**
+	* Store a new API Token
+	*/
+	public function storeAPIToken( required string username, required string APIToken ) {
+		if( getNamePrefixes() == 'forgebox' ) {
+			configService.setSetting( 'endpoints.forgebox.APIToken', APIToken );
+			configService.setSetting( 'endpoints.forgebox.tokens.#username#', APIToken );	
+		} else {
+			configService.setSetting( 'endpoints.forgebox-#getNamePrefixes()#.APIToken', APIToken );
+			configService.setSetting( 'endpoints.forgebox-#getNamePrefixes()#.tokens.#username#', APIToken );			
+		}
+	}
+
 
 }

@@ -72,6 +72,7 @@ component {
 				}
 				token &= char;
 				// We just reached the end of our quoted string
+				// This will break `foo="bar"baz` into two tokens: `foo="bar"` and `baz`
 				if( char == quoteChar && !isEscaped ) {
 					inQuotes = false;
 					// Don't break if an = is next ...
@@ -184,10 +185,12 @@ component {
 
 				// Check for negation --!flagName
 				if( flagName.startsWith( '!' ) ) {
-					// Strip !
-					flagName = right( flagName, len( flagName ) - 1 );
-					// Flag is false
-					results.flags [ flagName ] = false;
+					if( len( flagName ) > 1 ) {
+						// Strip !
+						flagName = right( flagName, len( flagName ) - 1 );
+						// Flag is false
+						results.flags [ flagName ] = false;
+					}
 				// If param name starts with "no" and matches existing param, then negate.
 				} else if( len( flagName ) > 2 && left( flagName, 2 ) == 'no' && commandParameterNameLookup.findNoCase( mid( flagName, 3, len( flagName ) ) ) ) {
 					results.flags [ mid( flagName, 3, len( flagName ) ) ] = false;
@@ -276,8 +279,16 @@ component {
 	function unwrapQuotes( theString ) {
 		// If the value is wrapped with backticks, leave them be.  That is a signal to the CommandService
 		// that the string is special and needs to be evaluated as an expression.
-		if( left( theString, 1 ) == '"' || left( theString, 1 ) == "'" ) {
-			return mid( theString, 2, len( theString ) - 2 );
+
+		// If the string begins with a matching single or double quote, strip it.
+		var startChar = left( theString, 1 );
+		if(  startChar == '"' || startChar == "'" ) {
+			theString =  mid( theString, 2, len( theString ) - 1 );
+			// Strip any matching single or double ending quote
+			// Missing ending quotes are invalid but will be ignored
+			if( right( theString, 1 ) == startChar ) {
+				return mid( theString, 1, len( theString ) - 1 );
+			}
 		}
 		return theString;
 	}
@@ -285,7 +296,7 @@ component {
 
 	// ----------------------------- Private ---------------------------------------------
 
-	private function removeEscapedChars( theString ) {
+	function removeEscapedChars( theString ) {
 		theString = replaceNoCase( theString, "\\", '__backSlash__', "all" );
 		theString = replaceNoCase( theString, "\'", '__singleQuote__', "all" );
 		theString = replaceNoCase( theString, '\"', '__doubleQuote__', "all" );
@@ -297,7 +308,7 @@ component {
 		return		replaceNoCase( theString, '\|', '__pipe__', "all" );
 	}
 
-	private function replaceEscapedChars( theString ) {
+	function replaceEscapedChars( theString ) {
 		theString = replaceNoCase( theString, '__backSlash__', "\", "all" );
 		theString = replaceNoCase( theString, '__singleQuote__', "'", "all" );
 		theString = replaceNoCase( theString, '__doubleQuote__', '"', "all" );

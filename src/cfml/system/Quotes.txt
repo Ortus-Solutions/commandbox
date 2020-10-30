@@ -53,7 +53,6 @@ Computers are good at following instructions, but not at reading your mind.
 while( ! ( succeed = try() ) );
 Talk is cheap. Show me the code. --Linus Torvalds
 In theory, theory and practice are the same. In practice, they're not.
-Did you know CFML is the 4th most used web language according to W3Techs?
 There's a box for that
 Publish your CFML projects big and small to https://www.ForgeBox.io
 Quit slouching in your chair!
@@ -140,3 +139,7 @@ Premature cleverness is the root of all evil
 You can create ad-hoc aliases for common commands or sets of commands
 A unicorn smiles each time someone downloads commandbox-bullet-train
 CommandBox makes you feel like a wizard.
+In the unlikely event of a water landing, CLI can be used as a flotation device
+Let me see those Jazz Hands!
+Have brainstorms so big they leave your hair windswept
+Hey Little Bobby Two hands, update your CLI! 

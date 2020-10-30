@@ -39,9 +39,9 @@ component aliases="update" {
 	* Update all or one outdated dependencies
 	* @slug A comma-delimmited list of slugs to update. Pass nothing to update all packages.
 	* @slug.optionsUDF slugComplete
-	* @verbose Outputs additional information about each package
-	* @force Forces an update without confirmations
-	* @system.hint When true, update packages in the global CommandBox module's folder
+	* @verbose Output additional information about each package
+	* @force Update without confirmations
+	* @system.hint Update packages in the global CommandBox module's folder
 	**/
 	function run(
 		string slug="",
@@ -65,10 +65,10 @@ component aliases="update" {
 
 		// build dependency tree
 		 var dependenciesToUpdate = packageService.getOutdatedDependencies(
-		 	directory=directory,
-		 	print=print,
-		 	verbose=arguments.verbose,
-		 	includeSlugs=arguments.slug
+		 	directory    = directory,
+		 	print        = print,
+		 	verbose      = arguments.verbose,
+		 	includeSlugs = arguments.slug
 		 );
 
 		// Advice initial notice

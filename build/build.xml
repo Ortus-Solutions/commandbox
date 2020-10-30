@@ -16,8 +16,8 @@ External Dependencies:
  	<property name="distro.groupID"				value="ortussolutions" />
  	<property name="distro.name"				value="commandbox"/>
  	<!-- Special things happen when the version and stableVersion are the same value as that signifies a "stable" build.   -->
- 	<property name="commandbox.version"			value="4.0.1-alpha"/>
- 	<property name="commandbox.stableVersion"	value="4.0.0"/>
+ 	<property name="commandbox.version"			value="5.2.0-rc.1"/>
+ 	<property name="commandbox.stableVersion"	value="5.1.1"/>
 
     <!-- Time Label -->
 	<tstamp prefix="start"/>
@@ -51,10 +51,12 @@ External Dependencies:
 	<loadproperties srcFile="build.properties"/>
 
 	<!-- Load secret properties -->
-	<property file="/root/creds/secret.properties"/>
+	<property file="/var/lib/jenkins/creds/secret.properties"/>
 	<property name="ortus.sign.keyring" value=""/>
 	<property name="ortus.sign.key.id" value=""/>
 	<property name="ortus.sign.key.passphrase" value=""/>
+
+	<echo message="ortus.sign.keyring: ${ortus.sign.keyring}" />
 
 	<!-- import cfdistro -->
 	<import file="${cfdistro.build.file}"/>
@@ -81,11 +83,14 @@ External Dependencies:
 		<delete dir="${temp.dir}" />
 		<delete dir="${build.dir}" />
 		<delete dir="${lib.dir}"/>
+		<delete dir="${lib-light.dir}"/>		
 		<delete dir="${dist.dir}"/>
 
 		<!-- init dirs -->
+		<mkdir dir="${lib-light.dir}" />
 		<mkdir dir="${dist.dir}" />
 		<mkdir dir="${build.dir}"/>
+		<mkdir dir="${temp.dir}/cli-light" />
 		<chmod file="${build.dir}/**" perm="g+wxrs" type="both" />
 
 		<!-- Increment Build Number -->
@@ -111,13 +116,13 @@ External Dependencies:
 
 	<!-- create script to run built commandbox using sources (for core cfml development) -->
 	<target name="build.runsrc" description="script to run built commandbox using sources">
-    <property name="tmpHome" location="${temp.dir}/tmpcmdboxhome" />
-    <property name="bootstrap" location="${src.dir}/cfml/system/Bootstrap.cfm" />
-    <property name="cmd" value='java -jar box.jar -CommandBox_home="${tmpHome}" "${bootstrap}"' />
-    <delete dir="${tmpHome}" />
-    <echo file="${dist.dir}/runsrc.sh" message="${cmd}" />
-    <chmod file="${dist.dir}/runsrc.sh" perm="+x" />
-    <echo file="${dist.dir}/runsrc.bat" message="${cmd}" />
+	    <property name="tmpHome" location="${temp.dir}/tmpcmdboxhome" />
+	    <property name="bootstrap" location="${src.dir}/cfml/system/Bootstrap.cfm" />
+	    <property name="cmd" value='java -jar box.jar -CommandBox_home="${tmpHome}" "${bootstrap}"' />
+	    <delete dir="${tmpHome}" />
+	    <echo file="${dist.dir}/runsrc.sh" message="${cmd}" />
+	    <chmod file="${dist.dir}/runsrc.sh" perm="+x" />
+	    <echo file="${dist.dir}/runsrc.bat" message="${cmd}" />
 	</target>
 
 	<!-- update permissions on reports -->
@@ -146,8 +151,9 @@ External Dependencies:
 					<fileset file="${dist.dir}/box" />
 					<fileset file="${dist.dir}/box.exe" />
 				</delete>
-				<!-- BE API Docs -->
+				<!-- BE API Docs
 				<unzip src="${dist.dir}/${distro.name}-apidocs-${commandbox.version}.zip" dest="${artifact.dir}/be-apidocs" overwrite="true"/>
+				-->
 			</then>
 		</antcontrib:if>
 	</target>
@@ -157,8 +163,46 @@ External Dependencies:
 
 		<!-- Copy libs to engine destination -->
 		<mkdir dir="${lucee.lib.dir}" />
+		<mkdir dir="${lucee-light.lib.dir}" />
+		
 		<copy todir="${lucee.lib.dir}">
 	      <fileset dir="${lib.dir}" includes="*.jar" />
+	    </copy>
+	    
+   		<echo message="move core file" />
+	
+		<!-- Unzip the Lucee Light jar so we can pull out the core.lco file -->
+ 		<unzip src="${lucee.light.file}" dest="${temp.dir}/lucee-light-jar/" overwrite="true"/>
+	    <move todir="${temp.dir}">
+			<fileset dir="${temp.dir}/lucee-light-jar/core/">
+				<include name="core.lco" />
+			</fileset>
+		</move>
+		
+		<!-- unzip the core.lco file (really a jar) so we can modify the manifest to inject the extensions we need to load -->
+ 		<unzip src="${temp.dir}/core.lco" dest="${temp.dir}/lucee-light-core/" overwrite="true"/> 		
+ 		<manifest file="${temp.dir}/lucee-light-core/META-INF/MANIFEST.MF" mode="update">
+			<attribute name="Require-Extension" value="${cfml.extensions}"/>
+		</manifest>
+		
+		<!-- Re-zip core file] -->
+		<zip destfile="${temp.dir}/core.lco" update="true">
+	      <fileset dir="${temp.dir}/lucee-light-core/"/>
+	    </zip>
+	    	    
+		<!-- Rename core file so it will get loaded -->
+		<rename src="${temp.dir}/core.lco" dest="${temp.dir}/${cfml.version}.lco"/>
+
+    	<delete file="${lucee.light.file}" />
+    		
+		<!-- re-zip the lucee-light.jar -->
+		<zip destfile="${lucee.light.file}" update="true">
+	      <fileset dir="${temp.dir}/lucee-light-jar/"/>
+	    </zip>
+	    
+		<copy todir="${lucee-light.lib.dir}">
+	      <fileset dir="${lib.dir}" includes="*.jar" excludes="*lucee-*.jar" />
+	      <fileset dir="${lib-light.dir}" includes="*.jar" />
 	    </copy>
 		<mkdir dir="${temp.dir}/engine" />
 
@@ -196,6 +240,14 @@ External Dependencies:
 		<lucee-error-template path="/lucee/templates/error/error-cli.cfm"
 	      configfile="${temp.dir}/engine/cfml/cli/cfml-web/lucee-web.xml.cfm" />
 
+		<!-- Turn of the default time server setting in Lucee -->
+		<replaceregexp
+			file="${temp.dir}/engine/cfml/cli/lucee-server/context/lucee-server.xml"
+			match='&lt;regional.*/&gt;'
+			replace="&lt;regional timeserver=&quot;pool.ntp.org&quot; use-timeserver=&quot;false&quot; /&gt;"
+			flags="i"
+			encoding="UTF-8" />
+
 		<!-- Copy Resources to build cli bin -->
         <copy todir="${temp.dir}/cli/bin/resource" encoding="UTF-8">
         	<fileset dir="${src.dir}/resources"/>
@@ -207,6 +259,17 @@ External Dependencies:
 
 		<!-- Zip up the engine -->
 		<zip destfile="${temp.dir}/cli/engine.zip">
+	      <fileset dir="${temp.dir}/engine"/>
+	    </zip>
+
+		<copy todir="${temp.dir}/engine/cfml/cli/lucee-server/context/extensions/available/">
+	      <fileset dir="${extensions.dir}" includes="*.lex" />
+	    </copy>
+
+	    <move file="${temp.dir}/${cfml.version}.lco" toFile="${temp.dir}/engine/cfml/cli/lucee-server/patches/${cfml.version}.lco" />
+
+		<!-- Zip up the engine-light -->
+		<zip destfile="${temp.dir}/cli-light/engine.zip">
 	      <fileset dir="${temp.dir}/engine"/>
 	    </zip>
 
@@ -235,6 +298,7 @@ External Dependencies:
       	<copy todir="${build.dir}" encoding="UTF-8">
         	<fileset dir="${src.dir}/cfml">
         		<exclude name="modules/**"/>
+        		<exclude name="system/mdCache/**"/>
         	</fileset>
         	<fileset file="../license.txt"/>
         	<fileset file="../readme.txt"/>
@@ -284,10 +348,11 @@ External Dependencies:
 		<checksum file="${dist.dir}/${distro.name}-cfml-${commandbox.version}.zip" forceoverwrite="true" algorithm="SHA-256" fileext=".sha256"/>
 
 		<!--  create the libs zip including cli loader, optionally use pack200 -->
-	    <antcontrib:if>
-	      <equals arg1="${isStable}" arg2="true" />
+	 <!--   <antcontrib:if>
+	      <equals arg1="${isStable}" arg2="sdfsdf" />
 	      <then>
 			<echo>This is a stable build, let's compress these jars!</echo>
+
 	        <delete dir="${temp.dir}/packlibs" />
 	        <mkdir dir="${temp.dir}/packlibs"/>
 	        <mkdir dir="${temp.dir}/packlibs/packed"/>
@@ -307,19 +372,32 @@ External Dependencies:
 	        </zip>
 	        <delete dir="${temp.dir}/packlibs" />
 	      </then>
-	      <else>
+	      <else> -->
 	        <zip destfile="${temp.dir}/cli/libs.zip">
 	          <fileset dir="${lucee.lib.dir}">
-	          <include name="**/*.jar"/>
-	          <exclude name="**/lucee-loader.jar"/>
-	          <exclude name="**/javax*servlet.jar"/>
-	          <exclude name="**/org*mortbay*jetty.jar"/>
+		          <include name="**/*.jar"/>
+		          <exclude name="**/lucee-loader.jar"/>
+		          <exclude name="**/javax*servlet.jar"/>
+		          <exclude name="**/org*mortbay*jetty.jar"/>
 	          </fileset>
 	          <fileset file="${temp.dir}/cli/luceecli.jar" />
 	          <fileset file="${temp.dir}/cli/ortus-jgit.jar" />
 	        </zip>
-	      </else>
-	    </antcontrib:if>
+	        
+	        
+	        <zip destfile="${temp.dir}/cli-light/libs.zip">
+	          <fileset dir="${lucee-light.lib.dir}">
+		          <include name="**/*.jar"/>
+		          <exclude name="**/lucee-loader.jar"/>
+		          <exclude name="**/javax*servlet.jar"/>
+		          <exclude name="**/org*mortbay*jetty.jar"/>
+	          </fileset>
+	          <fileset file="${temp.dir}/cli/luceecli.jar" />
+	          <fileset file="${temp.dir}/cli/ortus-jgit.jar" />
+	        </zip>
+	        
+	    <!--   </else>
+	    </antcontrib:if> -->
 	    <delete file="${temp.dir}/cli/luceecli.jar" />
 	    <delete file="${temp.dir}/cli/ortus-jgit.jar" />
 
@@ -337,11 +415,39 @@ External Dependencies:
         	<zipfileset src="${lib.dir}/json-smart-mini-1.0.8.jar" includes="**/*.class" />
         	<fileset file="${temp.dir}/cli/version"/>
 		</jar>
+		
+		<!-- Create Lucee light jar -->
+        <jar destfile="${dist.dir}/box-light.jar" filesetmanifest="mergewithoutmain" level="9">
+			<manifest>
+				<attribute name="Main-Class" value="cliloader.LoaderCLIMain" />
+			</manifest>
+	        <fileset file="${temp.dir}/cli-light/libs.zip" />
+			<fileset file="${temp.dir}/cli/cfml.zip" />
+        	<fileset file="${temp.dir}/cli-light/engine.zip" />
+			<fileset dir="${temp.dir}/cli/bin" />
+        	<zipfileset src="${lib.dir}/json-smart-mini-1.0.8.jar" includes="**/*.class" />
+        	<fileset file="${temp.dir}/cli/version"/>
+		</jar>
+		
+		<!-- Create thin jar -->
+        <jar destfile="${dist.dir}/box-thin.jar" filesetmanifest="mergewithoutmain" level="9">
+			<manifest>
+				<attribute name="Main-Class" value="cliloader.LoaderCLIMain" />
+			</manifest>
+	        <fileset dir="${temp.dir}/cli/bin" />
+        	<zipfileset src="${lib.dir}/json-smart-mini-1.0.8.jar" includes="**/*.class" />
+        	<fileset file="${temp.dir}/cli/version"/>
+		</jar>
 
         <!-- Checksum on Jar -->
         <checksum file="${dist.dir}/box.jar" forceoverwrite="true" fileext=".md5" />
         <checksum file="${dist.dir}/box.jar" forceoverwrite="true" algorithm="sha" />
 		<checksum file="${dist.dir}/box.jar" forceoverwrite="true" algorithm="SHA-256" fileext=".sha256"/>
+
+        <!-- Checksum on Jar -->
+        <checksum file="${dist.dir}/box-thin.jar" forceoverwrite="true" fileext=".md5" />
+        <checksum file="${dist.dir}/box-thin.jar" forceoverwrite="true" algorithm="sha" />
+		<checksum file="${dist.dir}/box-thin.jar" forceoverwrite="true" algorithm="SHA-256" fileext=".sha256"/>
 
 		<!-- Create box-repo.json -->
 		<box-repo location="${artifact.dir}"
@@ -448,7 +554,7 @@ External Dependencies:
 			</args>
 		</git>
 
-		<!-- Ensure write perms 
+		<!-- Ensure write perms
 		<exec executable="sudo" dir="${dist.dir}" failonerror="true">
 			<arg value="chmod" />
 			<arg value="-R" />
@@ -559,13 +665,30 @@ External Dependencies:
 
 	<!-- Build linux/mac bin -->
 	<target name="build.cli.bin" description="create linux/mac binary" depends="build.cli">
+		
 		<!--  this bundles the jar into the executable wrapper, which is a bash script -->
         <concat destfile="${dist.dir}/box" force="yes" binary="true">
           <fileset file="${src.dir}/bin/box.sh" />
           <fileset file="${dist.dir}/box.jar" />
         </concat>
+        
+		<!--  this bundles the thin jar into the executable wrapper, which is a bash script -->
+        <concat destfile="${dist.dir}/box-thin" force="yes" binary="true">
+          <fileset file="${src.dir}/bin/box.sh" />
+          <fileset file="${dist.dir}/box-thin.jar" />
+        </concat>
+        
+		<!--  this bundles the light jar into the executable wrapper, which is a bash script -->
+        <concat destfile="${dist.dir}/box-light" force="yes" binary="true">
+          <fileset file="${src.dir}/bin/box.sh" />
+          <fileset file="${dist.dir}/box-light.jar" />
+        </concat>
+        
         <!-- Change execute perm -->
         <chmod file="${dist.dir}/box" perm="755"/>
+        <chmod file="${dist.dir}/box-light" perm="755"/>
+        <chmod file="${dist.dir}/box-thin" perm="755"/>
+        
         <!-- Create distro zip -->
 		<zip destfile="${dist.dir}/${distro.name}-bin-${commandbox.version}.zip" level="9" update="false">
 	        <zipfileset file="${dist.dir}/box" filemode="711" prefix="" />
@@ -607,7 +730,7 @@ External Dependencies:
 					chdir="%OLDPWD%"
 					icon="${src.dir}/resources/box.ico"
 					stayAlive="true">
-					<jre path="./jre/" minVersion="1.8.0" maxVersion="1.8.0_999" />
+					<jre path="./jre/" minVersion="1.8.0" />
 					<versionInfo fileVersion="${commandbox.version.noPrereleaseID}.0"
 								 txtFileVersion="${commandbox.version}.${build.number}"
 								 fileDescription="${commandbox.description}"
@@ -618,6 +741,52 @@ External Dependencies:
 								 companyName="Ortus Solutions, Corp"
 								 internalName="CommandBox"
 								 originalFilename="box.exe" />
+			</config>
+		</launch4j>
+
+        <launch4j>
+			<config headerType="console"
+					outfile="${dist.dir}/box-thin.exe"
+					jarPath="${dist.dir}/box-thin.jar"
+					errTitle="Error running CommandBox"
+					supportURL="${commandbox.supportURL}"
+					chdir="%OLDPWD%"
+					icon="${src.dir}/resources/box.ico"
+					stayAlive="true">
+					<jre path="./jre/" minVersion="1.8.0" />
+					<versionInfo fileVersion="${commandbox.version.noPrereleaseID}.0"
+								 txtFileVersion="${commandbox.version}.${build.number}"
+								 fileDescription="${commandbox.description}"
+								 copyright="Copyright since 2013 Ortus Solutions, Corp"
+								 productVersion="${commandbox.version.noPrereleaseID}.0"
+								 txtProductVersion="${commandbox.version}.${build.number}"
+								 productName="CommandBox-thin"
+								 companyName="Ortus Solutions, Corp"
+								 internalName="CommandBox-thin"
+								 originalFilename="box-thin.exe" />
+			</config>
+		</launch4j>
+
+        <launch4j>
+			<config headerType="console"
+					outfile="${dist.dir}/box-light.exe"
+					jarPath="${dist.dir}/box-light.jar"
+					errTitle="Error running CommandBox"
+					supportURL="${commandbox.supportURL}"
+					chdir="%OLDPWD%"
+					icon="${src.dir}/resources/box.ico"
+					stayAlive="true">
+					<jre path="./jre/" minVersion="1.8.0" />
+					<versionInfo fileVersion="${commandbox.version.noPrereleaseID}.0"
+								 txtFileVersion="${commandbox.version}.${build.number}"
+								 fileDescription="${commandbox.description}"
+								 copyright="Copyright since 2013 Ortus Solutions, Corp"
+								 productVersion="${commandbox.version.noPrereleaseID}.0"
+								 txtProductVersion="${commandbox.version}.${build.number}"
+								 productName="CommandBox-light"
+								 companyName="Ortus Solutions, Corp"
+								 internalName="CommandBox-light"
+								 originalFilename="box-light.exe" />
 			</config>
 		</launch4j>
 
@@ -632,36 +801,102 @@ External Dependencies:
 	</target>
 
 	<!-- Build including JREs -->
- 	<target name="build.cli.jre" description="Build with JRE included" depends="build.cli.bin,build.cli.exe" if="${isStable}">
+ 	<target name="build.cli.jre" description="Build with JRE included"><!--  depends="build.cli.bin,build.cli.exe" if="${isStable}" -->
  		<echo message="Bundling ${jre.version} JRE" />
 
+		<mkdir dir="JREs"/>
+
+		<urlencode name="jre.version.escaped" value="${jre.version}" />
+
 		<!-- Get JRE Dependencies -->
-		<dependency groupId="oracle" artifactId="jre" version="${jre.version}" type="zip" classifier="win32" />
-		<dependency groupId="oracle" artifactId="jre" version="${jre.version}" type="zip" classifier="win64" />
-		<dependency groupId="oracle" artifactId="jre" version="${jre.version}" type="zip" classifier="linux32" />
-		<dependency groupId="oracle" artifactId="jre" version="${jre.version}" type="zip" classifier="linux64" />
-		<dependency groupId="oracle" artifactId="jre" version="${jre.version}" type="zip" classifier="darwin64" />
+
+		<antcontrib:if>
+	        <available file="JREs/jre_${jre.version}_linux_x64.tar.gz" />
+	        <then><echo>Linux x64 JRE found!</echo></then>
+	        <else>
+	            <echo>Linux x64 JRE not found, downloading artifact</echo>
+
+				<mkdir dir="JREs/jre_${jre.version}_linux_x64"/>
+
+				<get src="https://api.adoptopenjdk.net/v3/binary/version/${jre.version.escaped}/linux/x64/jre/hotspot/normal/adoptopenjdk"
+					 dest="JREs/jre_${jre.version}_linux_x64.tar.gz"
+					 verbose="true" />
+
+				<gunzip src="JREs/jre_${jre.version}_linux_x64.tar.gz"/>
+				<untar src="JREs/jre_${jre.version}_linux_x64.tar" dest="JREs\jre_${jre.version}_linux_x64"/>
+
+	        </else>
+	    </antcontrib:if>
+
+		<antcontrib:if>
+	        <available file="JREs/jre_${jre.version}_windows_x64.zip" />
+	        <then><echo>Windows x64 JRE found!</echo></then>
+	        <else>
+	            <echo>Windows x64 JRE not found, downloading artifact</echo>
+
+				<mkdir dir="JREs/jre_${jre.version}_windows_x64"/>
+
+				<get src="https://api.adoptopenjdk.net/v3/binary/version/${jre.version.escaped}/windows/x64/jre/hotspot/normal/adoptopenjdk"
+					 dest="JREs/jre_${jre.version}_windows_x64.zip"
+					 verbose="true" />
+				<unzip src="JREs/jre_${jre.version}_windows_x64.zip" dest="JREs\jre_${jre.version}_windows_x64/" overwrite="true"/>
+	        </else>
+	    </antcontrib:if>
+
+		<antcontrib:if>
+	        <available file="JREs/jre_${jre.version}_windows_x32.zip" />
+	        <then><echo>Windows x32 JRE found!</echo></then>
+	        <else>
+	            <echo>Windows x32 JRE not found, downloading artifact</echo>
+
+				<mkdir dir="JREs/jre_${jre.version}_windows_x32"/>
+						  
+				<get src="https://api.adoptopenjdk.net/v3/binary/version/${jre.version.escaped}/windows/x32/jre/hotspot/normal/adoptopenjdk"
+					 dest="JREs/jre_${jre.version}_windows_x32.zip"
+					 verbose="true" />
+				<unzip src="JREs/jre_${jre.version}_windows_x32.zip" dest="JREs\jre_${jre.version}_windows_x32/" overwrite="true"/>
+	        </else>
+	    </antcontrib:if>
+
+		<antcontrib:if>
+	        <available file="JREs/jre_${jre.version}_mac_x64.tar.gz" />
+	        <then><echo>Mac x64 JRE found!</echo></then>
+	        <else>
+	            <echo>Mac x64 JRE not found, downloading artifact</echo>
+
+				<mkdir dir="JREs/jre_${jre.version}_mac_x64"/>
+
+				<get src="https://api.adoptopenjdk.net/v3/binary/version/${jre.version.escaped}/mac/x64/jre/hotspot/normal/adoptopenjdk"
+					 dest="JREs/jre_${jre.version}_mac_x64.tar.gz"
+					 verbose="true" />
+
+				<gunzip src="JREs/jre_${jre.version}_mac_x64.tar.gz"/>
+				<untar src="JREs/jre_${jre.version}_mac_x64.tar" dest="JREs\jre_${jre.version}_mac_x64"/>
+	        </else>
+	    </antcontrib:if>
+
+		<!-- /Contents/Home -->
 
 		<!--Zip Box Binary With JRE -->
-		<zip destfile="${dist.dir}/${distro.name}-jre-win32-${commandbox.version}.zip" level="9" update="false">
-			<zipfileset prefix="jre" src="${maven.repo.local}/oracle/jre/${jre.version}/jre-${jre.version}-win32.zip"/>
+		<zip destfile="${dist.dir}/${distro.name}-jre-win32-${commandbox.version}.zip" level="9" update="true">
+			<zipfileset prefix="jre" dir="JREs\jre_${jre.version}_windows_x32/${jre.version}-jre/"/>
 	        <fileset file="${dist.dir}/box.exe" />
 		</zip>
-		<zip destfile="${dist.dir}/${distro.name}-jre-win64-${commandbox.version}.zip" level="9" update="false">
-			<zipfileset prefix="jre" src="${maven.repo.local}/oracle/jre/${jre.version}/jre-${jre.version}-win64.zip"/>
+		<zip destfile="${dist.dir}/${distro.name}-jre-win64-${commandbox.version}.zip" level="9" update="true">
+			<zipfileset prefix="jre" dir="JREs\jre_${jre.version}_windows_x64/${jre.version}-jre/"/>
 	        <fileset file="${dist.dir}/box.exe" />
 		</zip>
-		<zip destfile="${dist.dir}/${distro.name}-jre-linux32-${commandbox.version}.zip" level="9" update="false">
-			<zipfileset prefix="jre" src="${maven.repo.local}/oracle/jre/${jre.version}/jre-${jre.version}-linux32.zip"/>
-      <zipfileset file="${dist.dir}/box" filemode="711" prefix="" />
+		<!-- <zip destfile="${dist.dir}/${distro.name}-jre-linux32-${commandbox.version}.zip" level="9" update="true">
+			<zipfileset prefix="jre" dir="${maven.repo.local}/oracle/jre/${jre.version}/jre-${jre.version}-linux32.zip"/>
+      	    <zipfileset file="${dist.dir}/box" filemode="711" prefix="" />
+		</zip> -->
+		<zip destfile="${dist.dir}/${distro.name}-jre-linux64-${commandbox.version}.zip" level="9" update="true">
+			<zipfileset prefix="jre" dir="JREs\jre_${jre.version}_linux_x64/${jre.version}-jre/" filemode="711" />
+      	    <zipfileset file="${dist.dir}/box" filemode="711" prefix="" />
 		</zip>
-		<zip destfile="${dist.dir}/${distro.name}-jre-linux64-${commandbox.version}.zip" level="9" update="false">
-			<zipfileset prefix="jre" src="${maven.repo.local}/oracle/jre/${jre.version}/jre-${jre.version}-linux64.zip"/>
-      <zipfileset file="${dist.dir}/box" filemode="711" prefix="" />
-		</zip>
-		<zip destfile="${dist.dir}/${distro.name}-jre-darwin64-${commandbox.version}.zip" level="9" update="false">
-			<zipfileset prefix="jre" src="${maven.repo.local}/oracle/jre/${jre.version}/jre-${jre.version}-darwin64.zip"/>
-      <zipfileset file="${dist.dir}/box" filemode="711" prefix="" />
+		<zip destfile="${dist.dir}/${distro.name}-jre-darwin64-${commandbox.version}.zip" level="9" update="true">
+			<zipfileset prefix="jre" dir="JREs\jre_${jre.version}_mac_x64/${jre.version}-jre/Contents/Home/" filemode="711" />
+  		    <zipfileset file="${dist.dir}/box" filemode="711" prefix="" />
 		</zip>
 
 		<!-- Build Checksum -->
@@ -769,16 +1004,17 @@ External Dependencies:
       rpm.url="${commandbox.supportURL}" failonerror="false"
       rpm.keyring="${ortus.sign.keyring}" rpm.key="${ortus.sign.key.id}"
       rpm.passphrase="${ortus.sign.key.passphrase}">
-      <tarfileset file="${dist.dir}/box" prefix="/usr/bin" filemode="744" username="root" group="root"/>
+      <tarfileset file="${dist.dir}/box" prefix="/usr/bin" filemode="755" username="root" group="root"/>
     </rpm-create>
     <!-- Copy rpm to repo -->
     <copy file="${rpm.repo}/${distro.name}-${commandbox.version.noPrereleaseID}-1.noarch.rpm" tofile="${dist.dir}/${distro.name}-rpm-${commandbox.version.noPrereleaseID}.rpm" />
     <!-- Build Checksum -->
     <checksum file="${dist.dir}/${distro.name}-rpm-${commandbox.version.noPrereleaseID}.rpm" forceoverwrite="true" fileext=".md5" />
 
+	<rpm-repo name="${distro.name}" baseurl="${commandbox.rpm.repourl}" dir="${rpm.repo}" failonerror="false"/>
+
 	<antcall target="build.cli.rpm.stablerepo" />
 
-	<rpm-repo name="${distro.name}" baseurl="${commandbox.rpm.repourl.stable}" dir="${rpm.repo.stable}" failonerror="false"/>
   </target>
 
 	<target name="build.cli.rpm.stablerepo" if="${isStable}">
@@ -796,8 +1032,10 @@ External Dependencies:
 	      rpm.url="${commandbox.supportURL}" failonerror="false"
 	      rpm.keyring="${ortus.sign.keyring}" rpm.key="${ortus.sign.key.id}"
 	      rpm.passphrase="${ortus.sign.key.passphrase}">
-	      <tarfileset file="${dist.dir}/box" prefix="/usr/bin" filemode="744" username="root" group="root"/>
+	      <tarfileset file="${dist.dir}/box" prefix="/usr/bin" filemode="755" username="root" group="root"/>
 	    </rpm-create>
+
+		<rpm-repo name="${distro.name}" baseurl="${commandbox.rpm.repourl.stable}" dir="${rpm.repo.stable}" failonerror="false"/>
 
 	</target>
 
@@ -807,10 +1045,16 @@ External Dependencies:
 
 	<target name="resolve.libs">
 		<delete dir="${lib.dir}"/>
+		<delete dir="${extensions.dir}"/>
+		<mkdir dir="${extensions.dir}" />
+		
  		<mvn-repo id="jgit-repository" url="https://repo.eclipse.org/content/groups/releases/" />
 		<mvn-repo id="sonatype-repository" url="https://oss.sonatype.org/content/repositories/snapshots/" />
+		<mvn-repo id="maven-repository" url="https://repo1.maven.org/maven2/" />
+		
 
 		<dependency  groupId="org.jline" artifactId="jline" version="${jline.version}" dest="${lib.dir}" type="jar" unzip="false" />
+		<dependency  groupId="org.fusesource.jansi" artifactId="jansi" version="${jansi.version}" dest="${lib.dir}" type="jar" unzip="false" />
 
 		<dependency groupId="org.eclipse.jgit" artifactId="org.eclipse.jgit" version="${jgit.version}" dest="${lib.dir}" repoId="jgit-repository" unzip="false" type="jar">
 			<exclusions>
@@ -822,10 +1066,9 @@ External Dependencies:
 
 	    <dependency groupId="com.beust" artifactId="jcommander" version="1.47" dest="${lib.dir}" type="jar" unzip="false"/>
 	    <dependency groupId="net.minidev" artifactId="json-smart-mini" version="1.0.8" unzip="false" type="jar" dest="${lib.dir}"/>
-	    <dependency groupId="org.cfmlprojects" artifactId="runwar" version="${runwar.version}" dest="${lib.dir}" unzip="false" type="jar" />
 
 	    <!-- engine libs -->
-	  	<dependency groupId="org.lucee" artifactId="lucee" version="${lucee.version}" dest="${lib.dir}" unzip="false" type="jar" repoId="sonatype-repository">
+	  	<dependency groupId="org.lucee" artifactId="lucee" version="${lucee.version}" dest="${lib.dir}" unzip="false" type="jar" repoId="maven-repository">
 			<exclusions>
 				<exclusion groupId="org.apache.ant" artifactId="ant" />
 				<exclusion groupId="javax.servlet" artifactId="javax.servlet-api" />
@@ -837,10 +1080,51 @@ External Dependencies:
 			</exclusions>
 		</dependency>
 
-	    <mvn-repo id="java.repo" url="http://download.java.net/maven/2/" />
-	    <dependency groupId="javax.mail" artifactId="mail" version="1.4.4" dest="${lib.dir}" repoId="java.repo" unzip="false" type="jar" />
+        <antcall target="getrunwar" />
+
+		<get src="http://update.lucee.org/rest/update/provider/light/${lucee.version}"
+			 dest="${lib-light.dir}/lucee-light-${lucee.version}.jar"
+			 verbose="true" />
+		<property name="lucee.light.file" value="${lib-light.dir}/lucee-light-${lucee.version}.jar"/>
+				 
+		<for list="${cfml.extensions}" param="id">
+		  <sequential>
+		    <echo>Downloading extension @{id}</echo>
+		    			 
+			<get src="http://extension.lucee.org/rest/extension/provider/full/@{id}"
+				 dest="${extensions.dir}/@{id}.lex"
+				 verbose="true" />
+
+		  </sequential>
+		</for>
 
    </target>
+
+	<!-- Get runwar -->
+	<target name="getrunwar" description="Get runwar">
+		<!-- do a check -->
+		<antcontrib:if>
+		   <and>
+	       		<available file="runwar/${runwar.version}/runwar-${runwar.version}.jar" />
+	       		<not>
+		   			<contains string="${runwar.version}" substring="snapshot" casesensitive="false" />
+		   		</not>
+		   </and>
+	        <then>
+	        	<echo>Runwar Binary found!</echo>
+	        </then>
+	        <else>
+	            <echo>runwar not found or snapshot build, getting artifact from ${ortus.repoURL}</echo>
+	            <mkdir dir="runwar/${runwar.version}" />
+				<get src="${ortus.repoURL}/cfmlprojects/runwar/${runwar.version}/runwar-${runwar.version}.jar"
+					 dest="runwar/${runwar.version}/runwar-${runwar.version}.jar"
+					 verbose="true" />
+	        </else>
+	    </antcontrib:if>
+
+		<copy file="runwar/${runwar.version}/runwar-${runwar.version}.jar" tofile="${lib.dir}/runwar-${runwar.version}.jar" overwrite="true" />
+
+	</target>
 
 	<!-- Get launch4j -->
 	<target name="getlaunch4j" description="Get an OS dependent launch4j into the build directory">
@@ -942,8 +1226,8 @@ External Dependencies:
 	    	  	<if>
 	    	  		<equals arg1="${pack.resultcode}" arg2="0" />
 	    	  		<else>
-	    	  			<copy file="@{file}" todir="@{packdir}" verbose="false"/>
-	    	  			<delete file="${pack200.destdir}/${pack200.destfile}.pack.gz" quiet="true" verbose="false"/>
+	    	  			<copy file="@{file}" todir="@{packdir}" verbose="true"/>
+	    	  			<delete file="${pack200.destdir}/${pack200.destfile}.pack.gz" quiet="true" verbose="true"/>
 	    	  		</else>
 	    	  	</if>
 	    	  	<var unset="true" name="pack.resultcode" />

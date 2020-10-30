@@ -49,8 +49,8 @@ component {
 	 * The actual parameter names will be whatever property name the user wants to set
 	 * @_.hint Pass any number of property names in followed by the value to set
 	 * @_.optionsUDF completeProperty
-	 * @append.hint If setting an array or struct, set to true to append instead of overwriting.
-	 * @system.hint When true, show box.json data in the global CommandBox folder
+	 * @append.hint Append struct/array setting, instead of overwriting.
+	 * @system.hint Set property in box.json in the global CommandBox folder
 	 **/
 	function run( _, boolean append=false, boolean system=false ) {
 		var thisAppend = arguments.append;
@@ -86,7 +86,7 @@ component {
 
 	// Dynamic completion for property name based on contents of box.json
 	function completeProperty() {
-		var directory = fileSystemUtil.resolvePath( '' );
+		var directory = resolvePath( '' );
 		// all=true will cause "package set" to prompt all possible box.json properties
 		return packageService.completeProperty( directory, true, true );
 	}
