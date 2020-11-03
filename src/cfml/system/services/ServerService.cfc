@@ -178,7 +178,8 @@ component accessors="true" singleton {
 				'rules' : duplicate( d.web.rules ?: [] ),
 				'rulesFile' : duplicate( d.web.rulesFile ?: [] ),
 				'blockCFAdmin' : d.web.blockCFAdmin ?: '',
-				'blockConfigPaths' :  d.web.blockConfigPaths ?: ''
+				'blockConfigPaths' :  d.web.blockConfigPaths ?: '',
+				'allowedExt' : d.web.allowedExt ?: ''
 			},
 			'app' : {
 				'logDir' : d.app.logDir ?: '',
@@ -603,6 +604,7 @@ component accessors="true" singleton {
 		
 		serverInfo.blockCFAdmin		= serverProps.blockCFAdmin			?: serverJSON.web.blockCFAdmin		?: defaults.web.blockCFAdmin;
 		serverInfo.blockConfigPaths										 = serverJSON.web.blockConfigPaths	?: defaults.web.blockConfigPaths;
+		serverInfo.allowedExt											 = serverJSON.web.allowedExt		?: defaults.web.allowedExt;
 
 
 		// Double check that the port in the user params or server.json isn't in use
@@ -1207,11 +1209,11 @@ component accessors="true" singleton {
 			.append( '--cookie-secure' ).append( serverInfo.sessionCookieSecure )
 			.append( '--cookie-httponly' ).append( serverInfo.sessionCookieHTTPOnly );
 			
-			if( ConfigService.settingExists( 'preferredBrowser' ) ) {
-				args.append( '--preferred-browser' ).append( ConfigService.getSetting( 'preferredBrowser' ) );
-			}
+		if( ConfigService.settingExists( 'preferredBrowser' ) ) {
+			args.append( '--preferred-browser' ).append( ConfigService.getSetting( 'preferredBrowser' ) );
+		}
 
-			args.append( serverInfo.runwarArgs.listToArray( ' ' ), true );
+		args.append( serverInfo.runwarArgs.listToArray( ' ' ), true );
 
 		if( serverInfo.trayEnable ) {
 			args
@@ -1221,8 +1223,12 @@ component accessors="true" singleton {
 		
 		if( serverInfo.runwarXNIOOptions.count() ) {
 			args.append( '--xnio-options=' & serverInfo.runwarXNIOOptions.reduce( ( opts='', k, v ) => opts.listAppend( k & '=' & v ) ) );
-		} 	
+		}
 		
+		if( len( serverInfo.allowedExt ) ) {
+			args.append( '--default-servlet-allowed-ext=' & serverInfo.allowedExt );
+		} 	
+
 		if( serverInfo.runwarUndertowOptions.count() ) {
 			args.append( '--undertow-options=' & serverInfo.runwarUndertowOptions.reduce( ( opts='', k, v ) => opts.listAppend( k & '=' & v ) ) );
 		}
@@ -2363,7 +2369,8 @@ component accessors="true" singleton {
 			'rules'				: [],
 			'rulesFile'			: '',
 			'blockCFAdmin'		: false,
-			'blockConfigPaths'	: false
+			'blockConfigPaths'	: false,
+			'allowedExt'		: ''
 		};
 	}
 
