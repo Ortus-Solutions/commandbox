@@ -178,7 +178,8 @@ component accessors="true" singleton {
 				'rules' : duplicate( d.web.rules ?: [] ),
 				'rulesFile' : duplicate( d.web.rulesFile ?: [] ),
 				'blockCFAdmin' : d.web.blockCFAdmin ?: '',
-				'blockConfigPaths' :  d.web.blockConfigPaths ?: '',
+				'blockSensitivePaths' :  d.web.blockSensitivePaths ?: '',
+				'blockFlashRemoting' :  d.web.blockFlashRemoting ?: '',
 				'allowedExt' : d.web.allowedExt ?: ''
 			},
 			'app' : {
@@ -594,16 +595,25 @@ component accessors="true" singleton {
 			}
 		}
 		
-		if( !trim( defaults.web.blockConfigPaths ).len() ) {
+		if( !trim( defaults.web.blockSensitivePaths ).len() ) {
 			if( serverInfo.profile == 'none' ) {
-				defaults.web.blockConfigPaths = false;
+				defaults.web.blockSensitivePaths = false;
 			} else {
-				defaults.web.blockConfigPaths = true;
+				defaults.web.blockSensitivePaths = true;
+			}
+		}
+		
+		if( !trim( defaults.web.blockFlashRemoting ).len() ) {
+			if( serverInfo.profile == 'none' ) {
+				defaults.web.blockFlashRemoting = false;
+			} else {
+				defaults.web.blockFlashRemoting = true;
 			}
 		}
 		
 		serverInfo.blockCFAdmin		= serverProps.blockCFAdmin			?: serverJSON.web.blockCFAdmin		?: defaults.web.blockCFAdmin;
-		serverInfo.blockConfigPaths										 = serverJSON.web.blockConfigPaths	?: defaults.web.blockConfigPaths;
+		serverInfo.blockSensitivePaths									 = serverJSON.web.blockSensitivePaths	?: defaults.web.blockSensitivePaths;
+		serverInfo.blockFlashRemoting									 = serverJSON.web.blockFlashRemoting	?: defaults.web.blockFlashRemoting;
 		serverInfo.allowedExt											 = serverJSON.web.allowedExt		?: defaults.web.allowedExt;
 
 
@@ -851,14 +861,27 @@ component accessors="true" singleton {
 		}
 		
 		// Default CommandBox rules.
-		if( serverInfo.blockConfigPaths ) {
+		if( serverInfo.blockSensitivePaths ) {
 			serverInfo.webRules.append( [
 				// track and trace verbs can leak data in XSS attacks
 				"disallowed-methods( methods={trace,track} )",
 				// Common config files
-				"regex(pattern='.*/(box.json|server.json|web.config|urlrewrite.xml|package.json|package-lock.json|Gulpfile.js|CFIDE/multiservermonitor-access-policy.xml|CFIDE/probe.cfm)', case-sensitive=false) -> set-error(404)",
+				"regex( pattern='.*/(box.json|server.json|web.config|urlrewrite.xml|package.json|package-lock.json|Gulpfile.js|CFIDE/multiservermonitor-access-policy.xml|CFIDE/probe.cfm|CFIDE/main/ide.cfm)', case-sensitive=false ) -> { set-error(404); done }",
 				// Any file or folder starting with a period
-				"regex('/\.')-> set-error( 404 )"
+				"regex('/\.') -> { set-error( 404 ); done }",
+				// Additional serlvlet mappings in Adobe CF's web.xml
+				"path-prefix( { '/JSDebugServlet','/securityanalyzer','/WSRPProducer' } ) -> { set-error( 404 ); done }",
+				// java web service (Axis) files
+				"regex( pattern='\.jws$', case-sensitive=false ) -> { set-error( 404 ); done }"
+			], true );	
+		}
+		
+		if( serverInfo.blockFlashRemoting ) {
+			serverInfo.webRules.append( [ 
+				// These all map to web.xml servlet mappings for ACF
+				"path-prefix( { '/flex2gateway','/flex-internal','/flashservices/gateway','/cfform-internal','/CFFormGateway', '/openamf/gateway', '/messagebroker' } ) -> { set-error( 404 ); done }",
+				// Files used for flash remoting
+				"regex( pattern='\.(mxml|cfswf)$', case-sensitive=false ) -> { set-error( 404 ); done }"				
 			], true );	
 		}
 		
@@ -2369,7 +2392,8 @@ component accessors="true" singleton {
 			'rules'				: [],
 			'rulesFile'			: '',
 			'blockCFAdmin'		: false,
-			'blockConfigPaths'	: false,
+			'blockSensitivePaths'	: false,
+			'blockFlashRemoting'	: false,			
 			'allowedExt'		: ''
 		};
 	}

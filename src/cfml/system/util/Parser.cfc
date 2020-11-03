@@ -185,10 +185,12 @@ component {
 
 				// Check for negation --!flagName
 				if( flagName.startsWith( '!' ) ) {
-					// Strip !
-					flagName = right( flagName, len( flagName ) - 1 );
-					// Flag is false
-					results.flags [ flagName ] = false;
+					if( len( flagName ) > 1 ) {
+						// Strip !
+						flagName = right( flagName, len( flagName ) - 1 );
+						// Flag is false
+						results.flags [ flagName ] = false;
+					}
 				// If param name starts with "no" and matches existing param, then negate.
 				} else if( len( flagName ) > 2 && left( flagName, 2 ) == 'no' && commandParameterNameLookup.findNoCase( mid( flagName, 3, len( flagName ) ) ) ) {
 					results.flags [ mid( flagName, 3, len( flagName ) ) ] = false;

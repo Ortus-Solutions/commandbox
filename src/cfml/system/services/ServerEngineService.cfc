@@ -279,7 +279,9 @@ component accessors="true" singleton="true" {
 				thisServerContext = installDetails.installDir & thisServerContext;
 			}			
 			directoryCreate( thisServerContext & '/lucee-server/patches', true, true );
+			directoryCreate( thisServerContext & '/lucee-server/deploy', true, true );
 			directoryCopy( '/commandbox-home/engine/cfml/cli/lucee-server/patches', thisServerContext & '/lucee-server/patches', false, '*.lco' );
+			directoryCopy( '/commandbox-home/engine/cfml/cli/lucee-server/context/extensions/installed/', thisServerContext & '/lucee-server/deploy', false, '*.lex' );
 			
 			return installDetails;
 		}
