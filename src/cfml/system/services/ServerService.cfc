@@ -1691,6 +1691,8 @@ component accessors="true" singleton {
 		// Make relative working directory paths absolute
 		if( menuItem.keyExists( 'workingDirectory' ) ) {
 			menuItem[ 'workingDirectory' ] = fileSystemUtil.resolvePath( menuItem.workingDirectory, relativePath );
+		}else{
+			menuItem[ 'workingDirectory' ] = relativePath;
 		}
 		
 		// Make relative file system paths absolute
@@ -1714,7 +1716,7 @@ component accessors="true" singleton {
 			var nativeTerminal = "";
 			
 			if (fileSystemUtil.isMac()) {
-				nativeTerminal = ConfigService.getSetting( 'nativeTerminal', "osascript -e 'tell app " & "terminal" &  " to do script " & "@@command@@" & "'"  );
+				nativeTerminal = ConfigService.getSetting( 'nativeTerminal', "osascript -e 'tell app " & "terminal" &  " to do script " & '"' & "@@command@@" & '"' & "'"  );
 				menuItem[ 'action' ] = 'runAsync';
 			} else if (fileSystemUtil.isWindows()) {
 				nativeTerminal = ConfigService.getSetting( 'nativeTerminal', 'start cmd.exe /k "@@command@@"' );
