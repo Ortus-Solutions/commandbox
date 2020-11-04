@@ -1716,7 +1716,7 @@ component accessors="true" singleton {
 			var nativeTerminal = "";
 			
 			if (fileSystemUtil.isMac()) {
-				nativeTerminal = ConfigService.getSetting( 'nativeTerminal', "osascript -e 'tell app " & "terminal" &  " to do script " & '"' & "@@command@@" & '"' & "'"  );
+				nativeTerminal = ConfigService.getSetting( 'nativeTerminal', "osascript -e 'tell application "  & '"' & "terminal" & '"' & " to do script " & '"' & "@@command@@" & '"' & "'"  );
 				menuItem[ 'action' ] = 'runAsync';
 			} else if (fileSystemUtil.isWindows()) {
 				nativeTerminal = ConfigService.getSetting( 'nativeTerminal', 'start cmd.exe /k "@@command@@"' );
