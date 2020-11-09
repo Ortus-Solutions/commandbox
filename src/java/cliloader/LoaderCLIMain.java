@@ -846,6 +846,9 @@ public class LoaderCLIMain{
 	private static Properties mergeProperties( Properties source,
 			Properties override ){
 		Properties merged = new Properties();
+		for( Object prop : override.keySet() ) {
+			log.debug( "merging property " + prop.toString() + "=" + override.get(prop) );			
+		}
 		merged.putAll( source );
 		merged.putAll( override );
 		return merged;
