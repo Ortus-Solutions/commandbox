@@ -1178,14 +1178,16 @@ component accessors="true" singleton {
 			errorPages = errorPages.listAppend( tmp );
 		}
 
-		// Serialize tray options and write to temp file
-		var trayOptionsPath = serverinfo.customServerFolder & '/trayOptions.json';
-		var trayJSON = {
-			'title' : displayServerName,
-			'tooltip' : processName,
-			'items' : serverInfo.trayOptions
-		};
-		fileWrite( trayOptionsPath,  serializeJSON( trayJSON ) );
+		if( serverInfo.trayEnable ) {
+			// Serialize tray options and write to temp file
+			var trayOptionsPath = serverinfo.customServerFolder & '/trayOptions.json';
+			var trayJSON = {
+				'title' : displayServerName,
+				'tooltip' : processName,
+				'items' : serverInfo.trayOptions
+			};
+			fileWrite( trayOptionsPath,  serializeJSON( trayJSON ) );
+		}
 		var background = !(serverInfo.console ?: false);
 		// The java arguments to execute:  Shared server, custom web configs
 
