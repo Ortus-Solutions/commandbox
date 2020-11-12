@@ -37,7 +37,7 @@ component accessors=true {
 		}
 
 		if( line.startsWith( '[DEBUG]' ) ) {
-			return reReplaceNoCase( line, '^(\[DEBUG] )(.*)', '[#printUtil.boldOlive('DEBUG')#] \2' );
+			return reReplaceNoCase( line, '^(\[DEBUG] )(.*)', '[#printUtil.boldGreen('DEBUG')#] \2' );
 		}
 
 		if( line.startsWith( '[WARN ]' ) ) {
