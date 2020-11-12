@@ -34,7 +34,11 @@ component aliases='cfpm' {
 			error( 'cfpm not found at [#cfpmPath#]' );
 		}
 		
-		var cmd = '"#cfpmPath#"';
+		if( fileSystemUtil.isWindows() ) {
+			var cmd = '"#cfpmPath#.bat"';
+		} else {
+			var cmd = '#fileSystemUtil.getNativeShell()# "#cfpmPath#.sh"';
+		}
 		var i = 0;
 		// Lucee insists on iterating over the arguments structarray out of order, so explicitly counting up as we go.
 		while( !isNull( arguments[++i] ) ) {
