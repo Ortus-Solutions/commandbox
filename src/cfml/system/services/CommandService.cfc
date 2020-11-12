@@ -1157,7 +1157,7 @@ component accessors="true" singleton {
 	 * Match positional parameters up with their names
  	 **/
 	function convertToNamedParameters( userPositionalParams, commandParams ){
-		var results = {};
+		var results = [:];
 
 		var i = 0;
 		// For each param the user typed in

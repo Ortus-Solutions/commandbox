@@ -114,6 +114,9 @@ component {
 							// Attempt evaluation
 							results = REPLParser.evaluateCommand( executor, arguments.directory );
 						} catch (any var e) {
+							if( e.type == 'java.lang.InterruptedException' ) {
+								rethrow;
+							}
 							// execute our command using temp file
 							results = executor.runCode( cfml, arguments.script, arguments.directory );
 						}

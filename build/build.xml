@@ -1053,8 +1053,8 @@ External Dependencies:
 		<mvn-repo id="maven-repository" url="https://repo1.maven.org/maven2/" />
 		
 
-		<dependency  groupId="org.jline" artifactId="jline" version="${jline.version}" dest="${lib.dir}" type="jar" unzip="false" />
-		<dependency  groupId="org.fusesource.jansi" artifactId="jansi" version="${jansi.version}" dest="${lib.dir}" type="jar" unzip="false" />
+		<dependency  groupId="org.jline" artifactId="jline" version="${jline.version}" dest="${lib.dir}" type="jar" unzip="false" repoId="maven-repository" />
+		<dependency  groupId="org.fusesource.jansi" artifactId="jansi" version="${jansi.version}" dest="${lib.dir}" type="jar" unzip="false" repoId="maven-repository" />
 
 		<dependency groupId="org.eclipse.jgit" artifactId="org.eclipse.jgit" version="${jgit.version}" dest="${lib.dir}" repoId="jgit-repository" unzip="false" type="jar">
 			<exclusions>
