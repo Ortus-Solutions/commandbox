@@ -28,7 +28,7 @@ component aliases='cfpm' {
 		}
 		
 		var serverInfo = serverDetails.serverInfo;		
-		var cfpmPath = serverInfo.serverHomeDirectory & 'WEB-INF/cfusion/bin/cfpm';
+		var cfpmPath = resolvePath( serverInfo.serverHomeDirectory ) & 'WEB-INF/cfusion/bin/cfpm';
 		
 		if( !fileExists( cfpmPath & '.bat' ) ) {
 			error( 'cfpm not found at [#cfpmPath#]' );
