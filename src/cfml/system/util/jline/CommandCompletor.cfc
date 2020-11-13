@@ -179,7 +179,8 @@ component singleton {
 								}
 								var flagParamName = '--no' & param.name;
 								if( !len( leftOver ) || lcase( flagParamName ).startsWith( lcase( leftOver ) ) ) {
-									add( candidates, flagParamName, 'Flags', param.hint ?: '', true );
+									var negatedParamHint = !isNull( param.hint ) ? 'Not ' & param.hint.reReplace( '(^[A-Z])', '\L\1' ) : '';
+									add( candidates, flagParamName, 'Flags', negatedParamHint, true );
 								}
 							}
 						} // Does it exist yet?
@@ -206,7 +207,8 @@ component singleton {
 							// If this is a boolean param not already here, suggest the --flag version
 							if( i > passedParameters.positionalParameters.len() && param.type == 'boolean' && !structKeyExists( passedParameters.flags, param.name )  ) {
 								add( candidates, '--' & param.name, 'Flags', param.hint ?: '', true );
-								add( candidates, '--no' & param.name, 'Flags', param.hint ?: '', true );
+								var negatedParamHint = !isNull( param.hint ) ? 'Not ' & param.hint.reReplace( '(^[A-Z])', '\L\1' ) : '';
+								add( candidates, '--no' & param.name, 'Flags', negatedParamHint, true );
 							}
 						}
 
@@ -254,7 +256,8 @@ component singleton {
 									}
 									var paramFlagname = '--no' & param.name;
 									if( lcase( paramFlagname ).startsWith( lcase( partialMatch ) ) ) {
-										add( candidates, paramFlagname, 'Flags', param.hint ?: '', true );
+										var negatedParamHint = !isNull( param.hint ) ? 'Not ' & param.hint.reReplace( '(^[A-Z])', '\L\1' ) : '';
+										add( candidates, paramFlagname, 'Flags', negatedParamHint, true );
 									}
 								}
 							}
@@ -297,7 +300,8 @@ component singleton {
 							// If this param is a boolean that isn't a flag yet, sugguest the --flag version
 							var paramFlagname = '--no' & param.name;
 							if( param.type == 'boolean' && !structKeyExists( passedParameters.flags, param.name ) && lcase( paramFlagname ).startsWith( lcase( partialMatch ) ) ) {
-								add( candidates, paramFlagname, 'Flags', param.hint ?: '', true );
+								var negatedParamHint = !isNull( param.hint ) ? 'Not ' & param.hint.reReplace( '(^[A-Z])', '\L\1' ) : '';
+								add( candidates, paramFlagname, 'Flags', negatedParamHint, true );
 							}
 						}
 
@@ -457,7 +461,7 @@ component singleton {
 
 						// This is the absolute path that we matched
 						var thisCandidate = searchIn & ( right( searchIn, 1 ) == '/' ? '' : '/' ) & path.name;
-		
+
 						// ...strip it back down to what they typed
 						thisCandidate = replaceNoCase( thisCandidate, startsWith, originalStartsWith );
 
@@ -494,7 +498,7 @@ component singleton {
 		startsWith = lcase( startsWith );
 		var complete = false;
 		if( lcase( name ).startsWith( startsWith ) || len( startsWith ) == 0 ) {
-			if( !name.endsWith( '=' ) ) {
+			if( !toString( name ).endsWith( '=' ) ) {
 				complete = true;
 			}
 

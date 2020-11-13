@@ -158,8 +158,13 @@ component accessors="true" singleton="true" {
 					var satisfyingVersion = endpoint.findSatisfyingVersion( endpoint.parseSlug( arguments.ID ), version ).version;
 					job.addLog( "OK, [#engineName# #satisfyingVersion#] it is!");
 				} catch( any var e ) {
+					
+					if( e.detail contains 'The entry slug sent is invalid or does not exist' ) {
+						job.addErrorLog( "#e.message#  #e.detail#" );
+						throw( e.message, 'endpointException', e.detail );
+					}
 
-					job.addErrorLog( "Aww man,  ForgeBox isn't feeling well.");
+					job.addErrorLog( "Aww man, we ran into an issue.");
 					job.addLog( "#e.message#  #e.detail#");
 					job.addErrorLog( "We're going to look in your local artifacts cache and see if one of those versions will work.");
 
@@ -180,7 +185,7 @@ component accessors="true" singleton="true" {
 							}
 															
 						} else {					
-							throw( 'No satisfying version found for [#version#].', 'endpointException', 'Well, we tried as hard as we can.  ForgeBox is unreachable and you don''t have a usable version in your local artifacts cache.  Please try another version.' );	
+							throw( 'No satisfying version found for [#version#].', 'endpointException', 'Well, we tried as hard as we can.  ForgeBox can''t find the package and you don''t have a usable version in your local artifacts cache.  Please try another version.' );	
 						}
 						
 					}
@@ -269,12 +274,14 @@ component accessors="true" singleton="true" {
 			
 			calcLuceeRailoContextPaths( installDetails, serverInfo );
 
-			var thiServerContext = serverInfo.serverConfigDir;
-			if( thiServerContext.startsWith( '/WEB-INF' ) ) {
-				thiServerContext = installDetails.installDir & thiServerContext;
+			var thisServerContext = serverInfo.serverConfigDir;
+			if( thisServerContext.startsWith( '/WEB-INF' ) ) {
+				thisServerContext = installDetails.installDir & thisServerContext;
 			}			
-			directoryCreate( thiServerContext & '/lucee-server/patches', true, true );
-			directoryCopy( '/commandbox-home/engine/cfml/cli/lucee-server/patches', thiServerContext & '/lucee-server/patches', false, '*.lco' );
+			directoryCreate( thisServerContext & '/lucee-server/patches', true, true );
+			directoryCreate( thisServerContext & '/lucee-server/deploy', true, true );
+			directoryCopy( '/commandbox-home/engine/cfml/cli/lucee-server/patches', thisServerContext & '/lucee-server/patches', false, '*.lco' );
+			directoryCopy( '/commandbox-home/engine/cfml/cli/lucee-server/context/extensions/installed/', thisServerContext & '/lucee-server/deploy', false, '*.lex' );
 			
 			return installDetails;
 		}
@@ -368,6 +375,9 @@ component accessors="true" singleton="true" {
 	public function configureWebXML( required cfengine, required version, required source, required destination, required struct serverInfo ) {
 		var webXML = XMLParse( source );
 		var servlets = xmlSearch(webXML,"//:servlet-class[text()='#lcase( cfengine )#.loader.servlet.CFMLServlet']");
+		if( !servlets.len() ) {
+			var servlets = xmlSearch(webXML,"//servlet-class[text()='#lcase( cfengine )#.loader.servlet.CFMLServlet']");			
+		}
 		var initParam = xmlElemnew(webXML,"http://java.sun.com/xml/ns/javaee","init-param");
 		initParam.XmlChildren[1] = xmlElemnew(webXML,"param-name");
 		initParam.XmlChildren[1].XmlText = "#lcase( cfengine )#-web-directory";
@@ -376,6 +386,9 @@ component accessors="true" singleton="true" {
 		arrayInsertAt(servlets[1].XmlParent.XmlChildren,4,initParam);
 
 		var servlets = xmlSearch(webXML,"//:servlet-class[text()='#lcase( cfengine )#.loader.servlet.CFMLServlet']");
+		if( !servlets.len() ) {
+			var servlets = xmlSearch(webXML,"//servlet-class[text()='#lcase( cfengine )#.loader.servlet.CFMLServlet']");			
+		}
 		var initParam = xmlElemnew(webXML,"http://java.sun.com/xml/ns/javaee","init-param");
 		initParam.XmlChildren[1] = xmlElemnew(webXML,"param-name");
 		initParam.XmlChildren[1].XmlText = "#lcase( cfengine )#-server-directory";
@@ -386,6 +399,9 @@ component accessors="true" singleton="true" {
 		// Lucee 5+ has a LuceeServlet as well as will create the WEB-INF by default in your web root
 		if( arguments.cfengine == 'lucee' && val( listFirst( arguments.version, '.' )) >= 5 ) {
 			var servlets = xmlSearch(webXML,"//:servlet-class[text()='#lcase( cfengine )#.loader.servlet.LuceeServlet']");
+			if( !servlets.len() ) {
+				var servlets = xmlSearch(webXML,"//servlet-class[text()='#lcase( cfengine )#.loader.servlet.LuceeServlet']");			
+			}
 			var initParam = xmlElemnew(webXML,"http://java.sun.com/xml/ns/javaee","init-param");
 			initParam.XmlChildren[1] = xmlElemnew(webXML,"param-name");
 			initParam.XmlChildren[1].XmlText = "#lcase( cfengine )#-web-directory";
@@ -394,6 +410,9 @@ component accessors="true" singleton="true" {
 			arrayInsertAt(servlets[1].XmlParent.XmlChildren,4,initParam);
 
 			var servlets = xmlSearch(webXML,"//:servlet-class[text()='#lcase( cfengine )#.loader.servlet.LuceeServlet']");
+			if( !servlets.len() ) {
+				var servlets = xmlSearch(webXML,"//servlet-class[text()='#lcase( cfengine )#.loader.servlet.LuceeServlet']");			
+			}
 			var initParam = xmlElemnew(webXML,"http://java.sun.com/xml/ns/javaee","init-param");
 			initParam.XmlChildren[1] = xmlElemnew(webXML,"param-name");
 			initParam.XmlChildren[1].XmlText = "#lcase( cfengine )#-server-directory";

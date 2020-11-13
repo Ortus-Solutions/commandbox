@@ -137,14 +137,14 @@ component accessors="true" singleton {
 		variables.reader 		= readerFactory.getInstance( argumentCollection = variables.initArgs  );
 		variables.shellPrompt 	= print.green( "CommandBox> ");
 
-		// When the shell first starts, the current working dir doesn't always containt the trailing slash
-		variables.pwd = fileSystem.resolvePath( variables.pwd );
-
 		// Create temp dir & set
 		setTempDir( variables.tempdir );
 
 		getInterceptorService().configure();
 		getModuleService().configure();
+
+		// When the shell first starts, the current working dir doesn't always containt the trailing slash
+		variables.pwd = fileSystem.resolvePath( variables.pwd );
 
 		getModuleService().activateAllModules();
 
@@ -910,7 +910,45 @@ component accessors="true" singleton {
 
 		variables.reader.getTerminal().writer().print( variables.print.whiteOnRedLine( 'ERROR (#variables.version#)' ) );
 		variables.reader.getTerminal().writer().println();
-		variables.reader.getTerminal().writer().print( variables.print.boldRedText( variables.formatterUtil.HTML2ANSI( arguments.err.message, 'boldRed' ) ) );
+		variables.reader.getTerminal().writer().println( variables.print.boldRedText( variables.formatterUtil.HTML2ANSI( arguments.err.message, 'boldRed' ) ) );
+		
+		try{
+			
+			if( arguments.err.getClass().getName() == 'lucee.runtime.exp.CatchBlockImpl' ) {
+				
+				var rawJavaException = arguments.err.getPageException();
+				var cause = rawJavaException.getCause();
+				var indent = '  ';
+				var previousType = '';
+				var previousMessage = '';
+				while( !isNull( cause ) ) {
+					// If the nested exception has the same type as the outer exception and no message, there's no value in it here. (Lucee's nesting of IOExceptions can do this)
+					// Or if there are two levels of causes with the same type and Message.  (RabbitMQ's Java client does this)
+					if( (cause.getClass().getName() == arguments.err.message && isNull( cause.getMessage() ) )
+						|| ( cause.getClass().getName() == previousType && previousMessage == cause.getMessage() ?: '' ) ) {
+						// move the pointer and move on
+						cause = cause.getCause();
+						continue;
+					}
+					variables.reader.getTerminal().writer().println( variables.print.boldRedText( indent & 'caused by: ' & cause.getClass().getName() ) );
+					previousType = cause.getClass().getName();
+					// A Throwable's message can be null
+					if( !isNull( cause.getMessage() ) ) {
+						variables.reader.getTerminal().writer().println( variables.print.boldRedText( indent & cause.getMessage() ) );
+						previousMessage = cause.getMessage();
+					}
+					// move the pointer and indent further
+					cause = cause.getCause();
+					indent &= '  ';
+				}
+				
+			}
+			
+		// I don't to fubar the shell if the logic above fails.  This may never happen, but lets log it just in case it does.
+		} catch( any e ) {			
+			variables.reader.getTerminal().writer().print( variables.print.boldRedText( variables.formatterUtil.HTML2ANSI( 'Error getting root cause: #e.message# #e.detail#', 'boldRed' ) ) );
+		}
+		
 		variables.reader.getTerminal().writer().println();
 
 		if( structKeyExists( arguments.err, 'detail' ) ) {

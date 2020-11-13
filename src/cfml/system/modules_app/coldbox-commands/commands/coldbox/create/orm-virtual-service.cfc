@@ -12,8 +12,8 @@ component {
 	/**
 	 * @entityName The name of the entity this virtual service will be bound to
 	 * @directory The base directory to create your model in and creates the directory if it does not exist.
-	 * @queryCaching Will you be activating query caching or not
-	 * @eventHandling Will the virtual entity service emit events
+	 * @queryCaching Activate query caching
+	 * @eventHandling Enable the virtual entity service to emit events
 	 * @cacheRegion The cache region the virtual entity service methods will use
 	 * @tests Generate the unit test BDD component
 	 * @testsDirectory Your unit tests directory. Only used if tests is true

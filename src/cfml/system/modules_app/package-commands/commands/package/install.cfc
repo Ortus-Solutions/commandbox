@@ -102,6 +102,7 @@ component aliases="install" {
 	// DI
 	property name="packageService"	inject="PackageService";
 	property name="endpointService"	inject="endpointService";
+	property name='interceptorService'	inject='interceptorService';
 
 	/**
 	* @ID.hint "endpoint:package" to install. Default endpoint is "forgebox".  If no ID is passed, all dependencies in box.json will be installed.
@@ -109,10 +110,10 @@ component aliases="install" {
 	* @directory.hint The directory to install in and creates the directory if it does not exist. This will override the packages's box.json install dir if provided.
 	* @save.hint Save the installed package as a dependancy in box.json (if it exists), defaults to true
 	* @saveDev.hint Save the installed package as a dev dependancy in box.json (if it exists)
-	* @production.hint When calling this command with no ID to install all dependencies, set this to true to ignore devDependencies.
-	* @verbose.hint If set, it will produce much more verbose information about the package installation
-	* @force.hint When set to true, it will force dependencies to be installed whether they already exist or not
-	* @system.hint When true, install this package into the global CommandBox module's folder
+	* @production.hint Ignore devDependencies when called with no ID to install all dependencies
+	* @verbose.hint Output much more verbose information about the package installation
+	* @force.hint Force dependencies to be installed whether they already exist or not
+	* @system.hint Install this package into the global CommandBox module's folder
 	**/
 	function run(
 		string ID='',
@@ -151,6 +152,7 @@ component aliases="install" {
 		// Install this package(s).
 		// Don't pass directory unless you intend to override the box.json of the package being installed
 
+		interceptorService.announceInterception( 'preInstallAll', { installArgs=arguments } );
 
 		try {
 
@@ -173,6 +175,9 @@ component aliases="install" {
 		} catch( EndpointNotFound var e ) {
 			error( e.message, e.detail );
 		}
+		
+		
+		interceptorService.announceInterception( 'postInstallAll', { installArgs=arguments } );
 
 	}
 

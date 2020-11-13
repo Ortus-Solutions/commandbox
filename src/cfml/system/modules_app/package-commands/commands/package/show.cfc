@@ -34,7 +34,7 @@ component {
 	/**
 	 * @property.hint The name of the property to show.  Can nested to get "deep" properties
 	 * @property.optionsUDF completeProperty
-	 * @system.hint When true, show box.json data in the global CommandBox folder
+	 * @system.hint Show box.json data in the global CommandBox folder
 	 **/
 	function run( string property='', boolean system=false ) {
 

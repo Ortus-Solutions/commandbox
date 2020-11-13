@@ -51,7 +51,7 @@ component aliases="bump" {
 	/**
 	 * @version The new version to set into this package
 	 * @message The message to use when commiting the new tag
-	 * @tagVersion Whether or not to tag the repo
+	 * @tagVersion Tag the repo
 	 * @tagPrefix The tag prefix to use before the version number
 	 * @force Skip the check if to see if the Git repo is clean
 	 * @major Increment the major version number
@@ -76,6 +76,21 @@ component aliases="bump" {
 		var versionObject = semanticVersion.parseVersion( trim( boxJSON.version ?: '' ) );
 
 		if( len( arguments.version ) ) {
+			
+			var verStruct = semanticVersion.parseVersion( arguments.version );
+			
+			// The parse method above will try hard to parse anything, but if the major/minor/revision aren't a number, then it's not valid semver.
+			if ( !arguments.force && ( !isNumeric( verStruct.major ) || !isNumeric( verStruct.minor ) || !isNumeric( verStruct.revision ) ) ) {
+				print
+					.line( "The incoming version [#arguments.version#] doesn't appear to be a valid semantic version." )
+					.line( "Please make sure it is in the format major[.minor][.revision][-preReleaseID][+build] like 3.6.2 or use the --force flag." );
+				
+				// Check for this common accident where people type "bump minor" or "bump -patch"
+				if( listFind( "patch,minor,major,-patch,-minor,-major", arguments.version ) ) {
+					print.line().yellowLine("You probably wanted to use: --#arguments.version.replace( '-', '' )#");	
+				}
+				error( 'Invalid version [#arguments.version#]' );
+			}
 
 			// Set a specific version
 			arguments.version = semanticVersion.clean( arguments.version );
@@ -153,7 +168,7 @@ component aliases="bump" {
 					print.line()
 						.boldRedLine( 'The working directory is not clean.' );
 					for( var entryDiff in diffs ) {
-						print.yellowLine( entryDiff.getChangeType() & ' ' & entryDiff.getNewPath() );
+						print.yellowLine( entryDiff.getChangeType() & ' ' & (entryDiff.getChangeType() == 'DELETE' ? entryDiff.getOldPath() : entryDiff.getNewPath() ) );
 					}
 					error( 'Cannot tag Git repo. Please commit file, or use --force flag to skip this check' );
 				}
@@ -182,8 +197,13 @@ component aliases="bump" {
 			} catch( any var e ) {
 				logger.error( 'Error tagging Git repository with new version.', e );
 				error( 'Error tagging Git repository with new version.', e.message & ' ' & e.detail );
+			} finally {
+				// Release file system locks on the repo
+				if( structKeyExists( local, 'git' ) ) {
+					git.getRepository().close();
+				}
 			}
-
+		
 		} // end is Git repo and are we tagging?
 
 		interceptorService.announceInterception( 'onRelease', { directory=arguments.directory, version=arguments.version } );

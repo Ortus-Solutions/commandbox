@@ -16,8 +16,8 @@ component {
 
 	/**
 	* @thePath The path to check
-	* @file Path must be a file
-	* @directory Path must be a directory
+	* @file Validate that the path is a file
+	* @directory Validate that the path is a directory
 	**/
 	function run( string thePath='', boolean file=false, boolean directory=false )  {
 		

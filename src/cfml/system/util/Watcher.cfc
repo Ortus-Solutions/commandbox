@@ -12,7 +12,10 @@
 *	getInstance( 'watcher' )
 *		.paths( '**.cfc' )
 *		.inDirectory( getCWD() )
-*		.onChange( function() {
+*		.onChange( function( changeData ) {
+			// changeData.added
+			// changeData.removed
+			// changeData.changed
 *			command( 'testbox run' )
 *				.run();
 *		} )

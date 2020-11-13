@@ -40,7 +40,7 @@ component {
 	/**
 	 * @inputOrFile.hint The text to process, or a file name to read with --file
 	 * @commands.hint The command to perform on the input text.  Ex: s/replaceMe/withMe/g
-	 * @file.hint Specifiy true to treat the input as a file path to read.
+	 * @file.hint Treat the input as a file path to read.
  	 **/
 	function run(
 		required string inputOrFile,

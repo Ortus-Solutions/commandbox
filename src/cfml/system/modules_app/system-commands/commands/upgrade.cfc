@@ -30,7 +30,7 @@ component {
 	property name="ConfigService"			inject="ConfigService";
 
 	/**
-	 * @latest.hint Will download bleeding edge if true, last stable version if false
+	 * @latest.hint Download bleeding edge version, instead of last stable version
 	 * @force.hint Force the update even if the version on the server is the same as locally
 	 **/
 	function run( boolean latest=false, boolean force=false ) {

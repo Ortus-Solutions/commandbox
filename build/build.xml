@@ -16,8 +16,8 @@ External Dependencies:
  	<property name="distro.groupID"				value="ortussolutions" />
  	<property name="distro.name"				value="commandbox"/>
  	<!-- Special things happen when the version and stableVersion are the same value as that signifies a "stable" build.   -->
- 	<property name="commandbox.version"			value="5.1.1"/>
- 	<property name="commandbox.stableVersion"	value="5.1.1"/>
+ 	<property name="commandbox.version"			value="5.2.0"/>
+ 	<property name="commandbox.stableVersion"	value="5.2.0"/>
 
     <!-- Time Label -->
 	<tstamp prefix="start"/>
@@ -818,7 +818,7 @@ External Dependencies:
 
 				<mkdir dir="JREs/jre_${jre.version}_linux_x64"/>
 
-				<get src="https://api.adoptopenjdk.net/v2/binary/releases/${jre.adoptVesionr}?openjdk_impl=hotspot&amp;os=linux&amp;arch=x64&amp;release=${jre.version.escaped}&amp;type=JRE"
+				<get src="https://api.adoptopenjdk.net/v3/binary/version/${jre.version.escaped}/linux/x64/jre/hotspot/normal/adoptopenjdk"
 					 dest="JREs/jre_${jre.version}_linux_x64.tar.gz"
 					 verbose="true" />
 
@@ -836,7 +836,7 @@ External Dependencies:
 
 				<mkdir dir="JREs/jre_${jre.version}_windows_x64"/>
 
-				<get src="https://api.adoptopenjdk.net/v2/binary/releases/${jre.adoptVesionr}?openjdk_impl=hotspot&amp;os=windows&amp;arch=x64&amp;release=${jre.version.escaped}&amp;type=JRE"
+				<get src="https://api.adoptopenjdk.net/v3/binary/version/${jre.version.escaped}/windows/x64/jre/hotspot/normal/adoptopenjdk"
 					 dest="JREs/jre_${jre.version}_windows_x64.zip"
 					 verbose="true" />
 				<unzip src="JREs/jre_${jre.version}_windows_x64.zip" dest="JREs\jre_${jre.version}_windows_x64/" overwrite="true"/>
@@ -850,8 +850,8 @@ External Dependencies:
 	            <echo>Windows x32 JRE not found, downloading artifact</echo>
 
 				<mkdir dir="JREs/jre_${jre.version}_windows_x32"/>
-
-				<get src="https://api.adoptopenjdk.net/v2/binary/releases/${jre.adoptVesionr}?openjdk_impl=hotspot&amp;os=windows&amp;arch=x32&amp;release=${jre.version.escaped}&amp;type=JRE"
+						  
+				<get src="https://api.adoptopenjdk.net/v3/binary/version/${jre.version.escaped}/windows/x32/jre/hotspot/normal/adoptopenjdk"
 					 dest="JREs/jre_${jre.version}_windows_x32.zip"
 					 verbose="true" />
 				<unzip src="JREs/jre_${jre.version}_windows_x32.zip" dest="JREs\jre_${jre.version}_windows_x32/" overwrite="true"/>
@@ -866,7 +866,7 @@ External Dependencies:
 
 				<mkdir dir="JREs/jre_${jre.version}_mac_x64"/>
 
-				<get src="https://api.adoptopenjdk.net/v2/binary/releases/${jre.adoptVesionr}?openjdk_impl=hotspot&amp;os=mac&amp;arch=x64&amp;release=${jre.version.escaped}&amp;type=JRE"
+				<get src="https://api.adoptopenjdk.net/v3/binary/version/${jre.version.escaped}/mac/x64/jre/hotspot/normal/adoptopenjdk"
 					 dest="JREs/jre_${jre.version}_mac_x64.tar.gz"
 					 verbose="true" />
 
@@ -1053,8 +1053,8 @@ External Dependencies:
 		<mvn-repo id="maven-repository" url="https://repo1.maven.org/maven2/" />
 		
 
-		<dependency  groupId="org.jline" artifactId="jline" version="${jline.version}" dest="${lib.dir}" type="jar" unzip="false" />
-		<dependency  groupId="org.fusesource.jansi" artifactId="jansi" version="${jansi.version}" dest="${lib.dir}" type="jar" unzip="false" />
+		<dependency  groupId="org.jline" artifactId="jline" version="${jline.version}" dest="${lib.dir}" type="jar" unzip="false" repoId="maven-repository" />
+		<dependency  groupId="org.fusesource.jansi" artifactId="jansi" version="${jansi.version}" dest="${lib.dir}" type="jar" unzip="false" repoId="maven-repository" />
 
 		<dependency groupId="org.eclipse.jgit" artifactId="org.eclipse.jgit" version="${jgit.version}" dest="${lib.dir}" repoId="jgit-repository" unzip="false" type="jar">
 			<exclusions>
@@ -1079,9 +1079,6 @@ External Dependencies:
 				<exclusion groupId="org.lucee.lib" artifactId="slf4j-nop" />
 			</exclusions>
 		</dependency>
-
-	    <mvn-repo id="java.repo" url="https://download.java.net/maven/2/" />
-	    <dependency groupId="javax.mail" artifactId="mail" version="1.4.4" dest="${lib.dir}" repoId="java.repo" unzip="false" type="jar" />
 
         <antcall target="getrunwar" />
 

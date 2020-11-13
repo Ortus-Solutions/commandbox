@@ -128,6 +128,8 @@ public class LoaderCLIMain{
 	private static String			shellPath;
 
 	private static String			VERSION_PROPERTIES_PATH	= "cliloader/version.properties";
+	private static Thread			main;
+	private static Boolean			mainDone = false;
 
 	public static String arrayToList( String[] s, String separator ){
 		String result = "";
@@ -546,10 +548,37 @@ public class LoaderCLIMain{
 
 	@SuppressWarnings( "static-access" )
 	public static void main( String[] arguments ) throws Throwable{
+
+	      main = Thread.currentThread();
+	        
+		  Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {		  
+            public void run() {
+            	if( debug ) System.err.println("ShutdownHook- - SIGTERM received");                
+                main.interrupt();
+                for (int i = 1; i <= 10; i++) {
+                	if( debug ) System.err.println("ShutdownHook - checking if Main thread is dead. Try #" + i + " --> " + mainDone );
+                    if( mainDone ) {
+                    	break;
+                    }                    
+                    try {
+                        Thread.sleep(1000);
+                    } catch (Exception e) {}
+                }
+                if( debug ) {
+                	if( mainDone ) {
+                		System.err.println("ShutdownHook - main thread done");
+                	} else {
+                		System.err.println("ShutdownHook - gave up waiting on main thread");
+                	}                	
+                }                
+            }            
+        }));
+        		
 		disableAccessWarnings();
 		System.setProperty("log4j.configuration", "resource/log4j.xml");
 		Util.ensureJavaVersion();
 		execute( initialize( arguments ) );
+		mainDone = true;
 		System.exit( exitCode );
 	}
 
@@ -846,6 +875,9 @@ public class LoaderCLIMain{
 	private static Properties mergeProperties( Properties source,
 			Properties override ){
 		Properties merged = new Properties();
+		for( Object prop : override.keySet() ) {
+			log.debug( "merging property " + prop.toString() + "=" + override.get(prop) );			
+		}
 		merged.putAll( source );
 		merged.putAll( override );
 		return merged;

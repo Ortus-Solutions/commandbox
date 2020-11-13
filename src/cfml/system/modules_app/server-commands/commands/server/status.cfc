@@ -155,8 +155,43 @@ component aliases='status,server info' {
 
 					print.indentedLine( 'ID: ' & thisServerInfo.id );
 					
-					print.indentedLine( 'Server Home: ' & thisServerInfo.serverHome );
+					print.line().indentedLine( 'Server Home: ' & thisServerInfo.serverHome );
 
+					var portToCheck = 'stop socket';
+					var portToCheckValue = thisServerInfo.stopSocket;
+					if( thisServerInfo.HTTPEnable ) {
+						portToCheck = 'HTTP port';
+						portToCheckValue = thisServerInfo.port;
+					} else if( thisServerInfo.SSLEnable ) {
+						portToCheck = 'HTTPS port';
+						portToCheckValue = thisServerInfo.SSLPort;
+					} else if( thisServerInfo.AJPEnable ) {
+						portToCheck = 'AJP port';
+						portToCheckValue = thisServerInfo.AJPPort;
+					}
+
+					print.line().indentedLine( 'Host/Port used for "running" check: #portToCheck# (#thisServerInfo.host#:#portToCheckValue#)');
+
+					var bindException = '';
+					try {
+						var serverSocket = createObject( "java", "java.net.ServerSocket" )
+							.init( 
+								javaCast( "int", portToCheckValue ),
+								javaCast( "int", 1 ),
+								createObject( "java", "java.net.InetAddress" ).getByName( thisServerInfo.host ) );
+						serverSocket.close();
+					} catch( any var e ) {
+						bindException = e;
+					}
+					
+					if( !isSimpleValue( bindException ) ) {
+						print.indentedLine( 'Port bind result for "running" check: #bindException.type# #bindException.message# #bindException.detail#');
+					} else {
+						print.indentedLine( 'Port bind result for "running" check: successly bound, port not in use.');
+					}
+					
+
+					print.line().indentedLine( 'Last Command: ' );
 					print.indentedLine( trim( thisServerInfo.statusInfo.command ) );
 					// Put each --arg or -arg on a new line
 					var args = trim( reReplaceNoCase( thisServerInfo.statusInfo.arguments, ' (-|"-)', cr & '\1', 'all' ) );

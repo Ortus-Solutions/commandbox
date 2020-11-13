@@ -33,7 +33,7 @@ component {
 	 * @package.optionsUDF packageComplete
 	 * @version If passed, it will try to remove a specific package version
 	 * @version.optionsUDF versionComplete
-	 * @force Do not confirm, just delete
+	 * @force Delete without confirmation
 	 **/
 	function run( required string package, version="", boolean force=false ) {
 		// convert to array incoming package

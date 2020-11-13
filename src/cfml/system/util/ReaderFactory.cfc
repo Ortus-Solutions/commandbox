@@ -36,10 +36,10 @@ component singleton{
 			// This will make the underlying JLine logger sing... 
 			var LevelClass = createObject( 'java', 'java.util.logging.Level' );
 			var consoleHandler = createObject( 'java', 'java.util.logging.ConsoleHandler' );
-			consoleHandler.setLevel( LevelClass.FINEST );
+			consoleHandler.setLevel( LevelClass.FINE );
 			consoleHandler.setFormatter( createObject( 'java', 'java.util.logging.SimpleFormatter' ) );		
 			var jlineLogger = createObject( 'java', 'java.util.logging.Logger' ).getLogger( 'org.jline' );
-	        jlineLogger.setLevel( LevelClass.FINEST );
+	        jlineLogger.setLevel( LevelClass.FINE );
 	        jlineLogger.addHandler( consoleHandler );
 	        // And this will make the JNA lib chirp
 			systemSettings.setSystemProperty( 'jna.debug_load', true );

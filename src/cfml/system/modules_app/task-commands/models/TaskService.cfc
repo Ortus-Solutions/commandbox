@@ -5,7 +5,7 @@
 ********************************************************************************
 * @author Brad Wood, Luis Majano, Denny Valliant
 *
-* I handle running tasks
+* I handle excuction of Task Runners
 */
 component singleton accessors=true {
 
@@ -35,10 +35,11 @@ component singleton accessors=true {
 	* @taskFile Path to the Task CFC that you want to run
 	* @target Method in Task CFC to run
 	* @taskArgs Struct of arguments to pass on to the task
+	* @topLevel false for target dependecy runs
 	*
 	* @returns The output of the task.  It's up to the caller to output it.
 	*/
-	string function runTask( required string taskFile,  required string target='run', taskArgs={} ) {
+	string function runTask( required string taskFile,  required string target='run', taskArgs={}, boolean topLevel=true ) {
 
 		// This is neccessary so changes to tasks get picked up right away.
 		pagePoolClear();
@@ -57,7 +58,7 @@ component singleton accessors=true {
 		var taskCFC = createTaskCFC( taskFile );
 
 		// If target doesn't exist or isn't a UDF
-		if( !structKeyExists( taskCFC, target ) || !IsCustomFunction( taskCFC[ target ] ) ) {
+		if( !taskHasMethod( taskCFC, target ) ) {
 			throw( message="Target [#target#] doesn't exist in Task CFC.", detail=arguments.taskFile, type="commandException");
 		}
 
@@ -67,17 +68,38 @@ component singleton accessors=true {
 		}
 		commandService.ensureRequiredparams( taskargs, targetMD.parameters );
 		
-		// Check for, and run target dependencies
-		var taskDeps = targetMD.depends ?: '';
-		taskDeps.listToArray()
-			.each( function( dep ) {
-				taskCFC.getPrinter().print( runTask( taskFile, dep, taskArgs ) );
-			} );
-		
 		try {
 			
+			// Check for, and run target dependencies
+			var taskDeps = targetMD.depends ?: '';
+			taskDeps.listToArray()
+				.each( function( dep ) {
+					taskCFC.getPrinter().print( runTask( taskFile, dep, taskArgs, false ) );
+				} );
+			
+			// Build our initial wrapper UDF for invoking the target.  This has embedded into it the logic for the pre<target> and post<target> lifecycle events
+			var invokeUDF = ()=>{
+			
+				invokeLifecycleEvent( taskCFC, 'pre#target#', { target:target, taskargs:taskargs } );
+
+				var refLocal = taskCFC[ target ]( argumentCollection = taskArgs );
+
+				invokeLifecycleEvent( taskCFC, 'post#target#', { target:target, taskargs:taskargs } );
+				
+				if( isNull( refLocal ) ) {
+					return;
+				} else {
+					return refLocal;
+				}
+			}
+			
+			// Since these UDF will execute from the inside out, wrap out UDF in the around<target> event first...
+			invokeUDF = wrapLifecycleEvent( taskCFC, 'around#target#', { target:target, taskargs:taskargs, invokeUDF:invokeUDF } );
+			// .. Then wrap that in our aroundTask event second
+			invokeUDF = wrapLifecycleEvent( taskCFC, 'aroundTask', { target:target, taskargs:taskargs, invokeUDF:invokeUDF } );
+			
 			// Run the task
-			local.returnedExitCode = taskCFC[ target ]( argumentCollection = taskArgs );
+			local.returnedExitCode = invokeUDF();
 		 } catch( any e ) {
 		 	
 			// If this task didn't already set a failing exit code...
@@ -89,23 +111,50 @@ component singleton accessors=true {
 					taskCFC.setExitCode( 1 );
 				}
 			}
-			
-			// Dump out anything the task had printed so far
-			var result = taskCFC.getResult();
-			if( len( result ) ){
-				shell.printString( result & cr );
+		 	
+			if( topLevel ) {
+			 	// Was the task canceled (ctrl-C)
+			 	if( e.getPageException().getRootCause().getClass().getName() == 'java.lang.InterruptedException'
+					|| e.type.toString() == 'UserInterruptException'
+					|| e.message == 'UserInterruptException'
+					|| e.type.toString() == 'EndOfFileException' ) {
+							invokeLifecycleEvent( taskCFC, 'onCancel', { target:target, taskargs:taskargs } );
+				} else {
+					// Any other exception
+					invokeLifecycleEvent( taskCFC, 'onError', { target:target, taskargs:taskargs, exception=e } );
+				}
 			}
-			
+		 	
 			rethrow;
 			
 		 } finally {
+		 	
 			// Set task exit code into the shell
 		 	if( !isNull( local.returnedExitCode ) && isSimpleValue( local.returnedExitCode ) ) {
 		 		var finalExitCode = val( local.returnedExitCode );
 		 	} else {
-				var finalExitCode = taskCFC.getExitCode();		 		
+				var finalExitCode = taskCFC.getExitCode();
 		 	}
-			shell.setExitCode( finalExitCode );		 		
+			shell.setExitCode( finalExitCode );
+			
+			if( topLevel ) {
+				if( finalExitCode == 0 ) {
+					invokeLifecycleEvent( taskCFC, 'onSuccess', { target:target, taskargs:taskargs } );
+				} else {
+					invokeLifecycleEvent( taskCFC, 'onFail', { target:target, taskargs:taskargs } );
+				}
+				invokeLifecycleEvent( taskCFC, 'onComplete', { target:target, taskargs:taskargs } );
+			}
+			
+			if( finalExitCode != 0 ) {
+				// Dump out anything the task had printed so far
+				var result = taskCFC.getResult();
+				taskCFC.getPrinter().clear();
+				if( len( result ) ){
+					shell.printString( result );
+				}
+			}
+			
 		 }
 	 
 		// If the previous Task failed
@@ -157,6 +206,11 @@ component singleton accessors=true {
 			.map( ( f ) => f.name );
 	}
 
+	/**
+	* Creates Task CFC instance from absolute file path
+	* 
+	* @taskFile Absolute path to task CFC to create.
+	*/
 	function createTaskCFC( required string taskFile ) {
 		// Convert to use a mapping
 		var relTaskFile = FileSystemUtil.makePathRelative( taskFile );
@@ -170,7 +224,7 @@ component singleton accessors=true {
 
 		// Create this Task CFC
 		try {
-			var mappingName = '"task-" & relTaskFile';
+			var mappingName = "task-" & relTaskFile;
 			
 			// Check if task mapped?
 			if( wirebox.getBinder().mappingExists( mappingName ) ){
@@ -193,4 +247,93 @@ component singleton accessors=true {
 		}
 
 	}
+	
+	/**
+	* Convenience method to determine if a Task CFC instance has a given method name
+	* 
+	* @taskCFC The actual Task CFC instance
+	* @method Name of method to check for
+	*
+	* @returns boolean True if method exists, false if otherwise.
+	*/
+	boolean function taskHasMethod( any taskCFC, string method ) {
+		if( structKeyExists( taskCFC, method ) && isCustomFunction( taskCFC[ method ] ) ) {
+			return true;
+		}
+		return false;
+	}
+	
+	/**
+	* Determines if a lifecycle event can run based on the this.XXX_only and this.XXX_except variables in the task CFC instance.
+	* 
+	* @taskCFC The actual Task CFC instance
+	* @eventname Name of the lifecycle event to check
+	* @target Name of the task target requesting the lifecycle event
+	*/
+	boolean function canLifecycleEventRun( any taskCFC, string eventName, string target ) {
+		if( listFindNoCase( 'preTask,postTask,aroundTask,onComplete,onSuccess,onFail,onError,onCancel', eventName ) ) {
+			var eventOnly = listMap( taskCFC[ eventName & '_only' ] ?: '', (e)=>trim( e ) );
+			var eventExcept = listMap( taskCFC[ eventName & '_except' ] ?: '', (e)=>trim( e ) );
+			if(
+				( len( eventOnly ) == 0 || eventOnly.listFindNoCase( target ) )
+				&&
+				( len( eventExcept ) == 0 || !eventExcept.listFindNoCase( target ) )
+			) {
+				return true;
+			}
+			return false;
+		}
+		return true;
+	}
+	
+	/**
+	* Optionally invokes a lifecyle event based on whether it exists and is valid to be called.
+	* 
+	* @taskCFC The actual Task CFC instance
+	* @eventname Name of the lifecycle event to call
+	* @args The args of the actual target method
+	*/
+	function invokeLifecycleEvent( any taskCFC, string eventName, struct args={} ) {
+		if( taskHasMethod( taskCFC, eventName ) && canLifecycleEventRun( taskCFC, eventName, args.target ) ) {
+			taskCFC[ eventName ]( argumentCollection=args );
+		}
+	}
+	
+	/**
+	* Accepts a UDF and wraps it in another callback that adds additional functionality to it, creating a chain of callbacks.
+	* 
+	* @taskCFC The actual Task CFC instance
+	* @eventname Name of the lifecycle event to wrap
+	* @args The args of the actual target method
+	*/
+	function wrapLifecycleEvent( any taskCFC, string eventName, struct args={} ) {
+			// This higher order function returns another function reference for the caller to invoke
+			return ()=>{
+				
+				// If this is the around<target> event, fire preTask
+				if( eventname == 'around#args.target#' ) {
+					invokeLifecycleEvent( taskCFC, 'preTask', { target:args.target, taskargs:args.taskargs } );
+				}
+
+				// If there is no aroundXXX event in this CFC, we just call the callback up the chain
+				if( taskHasMethod( taskCFC, eventName ) && canLifecycleEventRun( taskCFC, eventName, args.target ) ) {
+					var refLocal = taskCFC[ eventName ]( argumentCollection = args );
+				} else {
+					var refLocal = args.invokeUDF();
+				}					
+				
+				// If this is the around<target> event, fire postTask
+				if( eventname == 'around#args.target#' ) {
+					invokeLifecycleEvent( taskCFC, 'postTask', { target:args.target, taskargs:args.taskargs } );
+				}
+				
+				if( isNull( refLocal ) ) {
+					return;
+				} else {
+					return refLocal;
+				}				
+			}
+		
+	}
+	
 }

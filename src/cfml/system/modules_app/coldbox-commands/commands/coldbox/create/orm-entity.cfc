@@ -34,7 +34,7 @@ component {
 	 * @entityName The name of the entity without .cfc
 	 * @table The name of the mapped table or empty to use the same name as the entity
 	 * @directory The base directory to create your model in and creates the directory if it does not exist.
-	 * @activeEntity Will this be a ColdBox ORM Active entity or a Normal CFML entity. Defaults to false.
+	 * @activeEntity Generate a ColdBox ORM Active entity instead of a Normal CFML entity.
 	 * @primaryKey Enter the name of the primary key, defaults to 'id'
 	 * @primaryKeyColumn Enter the name of the primary key column. Leave empty if same as the primaryKey value
 	 * @generator Enter the ORM key generator to use, defaults to 'native'

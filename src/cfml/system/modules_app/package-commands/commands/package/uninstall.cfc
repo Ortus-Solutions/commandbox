@@ -27,7 +27,8 @@ component aliases="uninstall" {
 	* @slug.optionsUDF slugComplete
 	* @directory.hint The directory the package is currently installed in including the container folder
 	* @save.hint Remove package as a dependancy in box.json (if it exists)
-	* @system.hint When true, uninstall this package from the global CommandBox module's folder
+	* @system.hint Uninstall this package from the global CommandBox module's folder
+	* @verbose.hint Output verbose uninstallation information
 	**/
 	function run(
 		required string slug='',
