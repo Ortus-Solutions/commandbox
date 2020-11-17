@@ -564,6 +564,7 @@ component accessors="true" singleton {
 			serverInfo.port = getRandomPort( serverInfo.host );
 		}
 		
+		var profileReason = 'config setting server defaults';
 		// Try to set a smart profile if there's not one set
 		if( !trim( defaults.profile ).len() ) {
 			var thisIP = '';
@@ -577,13 +578,23 @@ component accessors="true" singleton {
 			
 			// Env var takes precendence.  
 			if( len( envVarEnvironment ) ) {
+				profileReason = '"environment" env var';
 				defaults.profile = envVarEnvironment;
 			// Otherwise see if we're bound to localhost.
 			} else if( listFirst( thisIP, '.' ) == '127' ) {
+				profileReason = 'server bound to localhost';
 				defaults.profile = 'development';
 			} else {
+				profileReason = 'secure by default';
 				defaults.profile = 'production';
 			}
+		}
+		
+		if( !isNull( serverJSON.profile ) ) {
+			profileReason = 'profile property in server.json';	
+		}
+		if( !isNull( serverProps.profile ) ) {
+			profileReason = 'profile argument to server start command';	
 		}
 		serverInfo.profile			= serverProps.profile	 		?: serverJSON.profile				?: defaults.profile;
 
@@ -615,7 +626,35 @@ component accessors="true" singleton {
 		serverInfo.blockSensitivePaths									 = serverJSON.web.blockSensitivePaths	?: defaults.web.blockSensitivePaths;
 		serverInfo.blockFlashRemoting									 = serverJSON.web.blockFlashRemoting	?: defaults.web.blockFlashRemoting;
 		serverInfo.allowedExt											 = serverJSON.web.allowedExt		?: defaults.web.allowedExt;
+		
+		// If there isn't a default for this already
+		if( !isBoolean( defaults.web.directoryBrowsing ) ) {
+			// Default it according to the profile
+			if( serverInfo.profile == 'development' ) {
+				defaults.web.directoryBrowsing = true;
+			} else {
+				// secure by default even if profile is none or custom
+				defaults.web.directoryBrowsing = false;
+			}
+		}
+		serverInfo.directoryBrowsing = serverProps.directoryBrowsing ?: serverJSON.web.directoryBrowsing ?: defaults.web.directoryBrowsing;
 
+		job.start( 'Setting Server Profile to [#serverInfo.profile#]' );		
+			job.addLog( 'Profile set from #profileReason#' );		
+			if( serverInfo.blockCFAdmin == 'external' ) {
+				job.addSuccessLog( 'Block CF Admin external' );
+			} else if( serverInfo.blockCFAdmin == 'true' ) {
+				job.addSuccessLog( 'Block CF Admin enabled' );
+			} else {
+				job.addErrorLog( 'Block CF Admin disabled' );				
+			}		
+			job[ 'add#( serverInfo.blockSensitivePaths ? 'Success' : 'Error' )#Log' ]( 'Block Sensitive Paths #( serverInfo.blockSensitivePaths ? 'en' : 'dis' )#abled' );
+			job[ 'add#( serverInfo.blockFlashRemoting ? 'Success' : 'Error' )#Log' ]( 'Block Flash Remoting #( serverInfo.blockFlashRemoting ? 'en' : 'dis' )#abled' );
+			if( len( serverInfo.allowedExt ) ) {
+				job.addLog( 'Allowed Extensions: [#serverInfo.allowedExt#]' );	
+			}
+			job[ 'add#( !serverInfo.directoryBrowsing ? 'Success' : 'Error' )#Log' ]( 'Directory Browsing #( serverInfo.directoryBrowsing ? 'en' : 'dis' )#abled' );
+		job.complete( serverInfo.verbose );
 
 		// Double check that the port in the user params or server.json isn't in use
 		if( !isPortAvailable( serverInfo.host, serverInfo.port ) ) {
@@ -749,18 +788,6 @@ component accessors="true" singleton {
 		} else {
 			serverInfo.javaHome = variables.javaCommand;
 		}
-
-		// If there isn't a default for this already
-		if( !isBoolean( defaults.web.directoryBrowsing ) ) {
-			// Default it according to the profile
-			if( serverInfo.profile == 'development' ) {
-				defaults.web.directoryBrowsing = true;
-			} else {
-				// secure by default even if profile is none or custom
-				defaults.web.directoryBrowsing = false;
-			}
-		}
-		serverInfo.directoryBrowsing = serverProps.directoryBrowsing ?: serverJSON.web.directoryBrowsing ?: defaults.web.directoryBrowsing;
 
 		// Global aliases are always added on top of server.json (but don't overwrite)
 		// Aliases aren't accepted via command params due to no clean way to provide them
