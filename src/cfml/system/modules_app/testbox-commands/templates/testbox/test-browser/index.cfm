@@ -16,6 +16,9 @@
 <cfif !len( url.path )>
 	<cfset url.path = "/">
 </cfif>
+<!--- Don't allow the directory to be traversed higher than the root --->
+<cfset url.path = replaceNoCase( url.path, '../', '', 'all' )>
+<cfset url.path = replaceNoCase( url.path, '..\', '', 'all' )>
 
 <!--- Prepare TestBox --->
 <cfset testbox = new testbox.system.TestBox()>
