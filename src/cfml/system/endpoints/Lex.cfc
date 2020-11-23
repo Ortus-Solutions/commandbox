@@ -34,7 +34,7 @@ component accessors=true implements="IEndpoint" singleton {
 		var fullBoxJSONPath = folderName & '/box.json';
 		directoryCreate( folderName );
 
-		if(fileExists(package)) {
+		if(!isValid("url", package) && fileExists(package)) {
 			try{
 				job.addLog( "Copying [#package#]" );
 				fileCopy(package, folderName);

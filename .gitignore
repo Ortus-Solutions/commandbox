@@ -35,3 +35,4 @@ src/CommandBox.json
 settings.xml
 .project
 src/cfml/system/mdCache
+.history
