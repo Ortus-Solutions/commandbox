@@ -32,6 +32,7 @@ component accessors="true" singleton {
 		variables.fileSystemUtil	= wirebox.getInstance( "FileSystem" );
 		variables.shell				= wirebox.getInstance( "shell" );
 		variables.print				= wirebox.getInstance( "PrintBuffer" );
+		variables.logBox			= wirebox.getLogBox();
 		variables.logger			= wirebox.getLogBox().getLogger( this );
 		variables.parser			= wirebox.getInstance( "Parser" );
 		variables.configService		= wirebox.getInstance( "ConfigService" );
@@ -252,11 +253,21 @@ component accessors="true" singleton {
 	/**
 	 * This will open a URL in the user's browser
  	 **/
-	function openURL( theURL ) {
+	function openURL( theURL, browser='' ) {
 		// Defer to "browse" command.
 		command( "browse" )
-			.params( arguments.theURL )
+			.params( arguments.theURL, arguments.browser )
 			.run();
+	}
+
+	/**
+	* Set a CommandBox environment variable
+	*
+	* @key The name of the setting to look up.
+	* @defaultValue The default value to use if the key does not exist in the system properties
+	*/
+    function setSystemSetting( required string key, string value ) {
+		return systemSettings.setSystemSetting( key, value );
 	}
 
 	/**

@@ -46,10 +46,18 @@ component{
 	function run(
 		required command
 	){
-		if( !arguments.keyExists( 'interactive' ) ) {
-			arguments.interactive = true;
+		var interactive = !systemsettings.getSystemSetting( 'box_currentCommandPiped', false );
+
+		// Check and see if input was piped in along with a command like so:
+		// #createguid | !clip 
+		if( arguments.keyExists( '2' ) ) {
+			// If so, take the first arg as the piped data
+			// and the second param is the actual command
+			var piped = arguments.command;
+			interactive = false;
+			arguments.command = arguments[2];	
 		}
-		
+			
         var terminal = shell.getReader().getTerminal();
 		var nativeShell = fileSystemUtil.getNativeShell();
 		// Prep the command to run in the OS-specific shell
@@ -111,17 +119,27 @@ component{
 	            // A string builder to collect the output that we're also streaming to the console so it can be captured and piped to another command as well.
 	            var processOutputStringBuilder = createObject( 'java', 'java.lang.StringBuilder' ).init( '' );
 				processBuilder
-					// Keyboard pipes through to the input of the process
-					.redirectInput( redirect.INHERIT )
 					.redirectErrorStream(fileSystemUtil.isWindows())
 					// Sets current working directory for the process
 					.directory( CWDFile );
+					
+				if( isNull( piped ) ) {
+					// Keyboard pipes through to the input of the process
+					processBuilder = processBuilder.redirectInput( redirect.INHERIT );
+				}
 	
 				if(!fileSystemUtil.isWIndows()) {
 					processBuilder=processBuilder.redirectError(redirect.INHERIT);
 				}
 				// Fires process async
 				process=processBuilder.start();
+				
+				// If we have piped input, feed it into the process (remember the "output" stream is the stdin of the process!
+				if( !isNull( piped ) ) {
+					var bufferedWriter = createObject( 'java', 'java.io.BufferedWriter' ).init( createObject( 'java', 'java.io.OutputStreamWriter' ).init( process.getOutputStream() ) );
+					bufferedWriter.write( piped );
+					bufferedWriter.close();
+				}
 				
 				// Despite the name, this is the stream that the *output* of the external process is in.
 				var inputStream = process.getInputStream();

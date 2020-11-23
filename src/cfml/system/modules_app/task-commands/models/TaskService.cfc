@@ -111,11 +111,20 @@ component singleton accessors=true {
 					taskCFC.setExitCode( 1 );
 				}
 			}
-			
+		 	
 			if( topLevel ) {
-				invokeLifecycleEvent( taskCFC, 'onError', { target:target, taskargs:taskargs, exception=e } );
+			 	// Was the task canceled (ctrl-C)
+			 	if( e.getPageException().getRootCause().getClass().getName() == 'java.lang.InterruptedException'
+					|| e.type.toString() == 'UserInterruptException'
+					|| e.message == 'UserInterruptException'
+					|| e.type.toString() == 'EndOfFileException' ) {
+							invokeLifecycleEvent( taskCFC, 'onCancel', { target:target, taskargs:taskargs } );
+				} else {
+					// Any other exception
+					invokeLifecycleEvent( taskCFC, 'onError', { target:target, taskargs:taskargs, exception=e } );
+				}
 			}
-			
+		 	
 			rethrow;
 			
 		 } finally {
@@ -215,7 +224,7 @@ component singleton accessors=true {
 
 		// Create this Task CFC
 		try {
-			var mappingName = '"task-" & relTaskFile';
+			var mappingName = "task-" & relTaskFile;
 			
 			// Check if task mapped?
 			if( wirebox.getBinder().mappingExists( mappingName ) ){
@@ -262,7 +271,7 @@ component singleton accessors=true {
 	* @target Name of the task target requesting the lifecycle event
 	*/
 	boolean function canLifecycleEventRun( any taskCFC, string eventName, string target ) {
-		if( listFindNoCase( 'preTask,postTask,aroundTask,onComplete,onSuccess,onFail,onError', eventName ) ) {
+		if( listFindNoCase( 'preTask,postTask,aroundTask,onComplete,onSuccess,onFail,onError,onCancel', eventName ) ) {
 			var eventOnly = listMap( taskCFC[ eventName & '_only' ] ?: '', (e)=>trim( e ) );
 			var eventExcept = listMap( taskCFC[ eventName & '_except' ] ?: '', (e)=>trim( e ) );
 			if(

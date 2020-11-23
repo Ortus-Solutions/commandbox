@@ -38,9 +38,15 @@ component {
 		var results  		= "";
 		var executor 		= wirebox.getInstance( "executor" );
 		var newHistory 		= arguments.script ? variables.REPLScriptHistoryFile : variables.REPLTagHistoryFile;
+		var dirInfo 		= "";
 
   	   arguments.directory = resolvePath( arguments.directory );
   	   
+	   dirInfo = getFileInfo( arguments.directory );
+	   if ( !dirInfo.canWrite ) {
+	        error( "Unable to start a repl in this directory because you do not have write permission to it." );
+	   }
+	   
 		// Setup REPL history file
 		shell.setHistory( newHistory );
 		shell.setHighlighter( 'REPL' );
@@ -108,6 +114,9 @@ component {
 							// Attempt evaluation
 							results = REPLParser.evaluateCommand( executor, arguments.directory );
 						} catch (any var e) {
+							if( e.type == 'java.lang.InterruptedException' ) {
+								rethrow;
+							}
 							// execute our command using temp file
 							results = executor.runCode( cfml, arguments.script, arguments.directory );
 						}

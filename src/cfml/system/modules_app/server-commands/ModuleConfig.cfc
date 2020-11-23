@@ -8,7 +8,8 @@
 component {
 	function configure() {
 		interceptors = [
-			{ class="#moduleMapping#.interceptors.serverCommandLine" }
+			{ class="#moduleMapping#.interceptors.ServerCommandLine" },
+			{ class="#moduleMapping#.interceptors.ServerSystemSettingExpansions" }
 		];
 	}
 }

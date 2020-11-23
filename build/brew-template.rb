@@ -4,7 +4,7 @@ class Commandbox < Formula
   url "@repoPRDURL@/ortussolutions/commandbox/@stable-version@/commandbox-bin-@stable-version@.zip"
   sha256 "@stable-sha256@"
 
-  devel do
+  head do
     url "@repoURL@/ortussolutions/commandbox/@version@/commandbox-bin-@version@.zip?build=@buildnumber@"
     sha256 "@sha256@"
   end

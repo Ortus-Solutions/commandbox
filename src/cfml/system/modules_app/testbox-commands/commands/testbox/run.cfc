@@ -414,8 +414,7 @@ component {
 				print.redLine( "TestBox not installed, installing it now. This will only happen once..." );
 			}
 
-			// TODO: Change to stable once deployed
-			command( "install id='testbox@be' directory='#targetPath#' ").run();
+			command( "install id='testbox' directory='#targetPath#' ").run();
 		}
 
 		// Add our mapping

@@ -1227,8 +1227,11 @@ component accessors="true" singleton {
 
 	/**
 	* Nice wrapper to run a package script
+	*
 	* @scriptName Name of the package script to run
 	* @directory The package root
+	* @ignoreMissing Set true to ignore missing package scripts, false to throw an exception
+	* @interceptData An optional struct of data if this package script is being fired as part of an interceptor announcement.  Will be loaded into env vars
 	*/
 	function runScript( required string scriptName, string directory=shell.pwd(), boolean ignoreMissing=true, interceptData={} ) {
 			// Read the box.json from this package (if it exists)
@@ -1243,7 +1246,8 @@ component accessors="true" singleton {
 
 				// Run preXXX package script
 				runScript( 'pre#arguments.scriptName#', arguments.directory, true );
-
+				
+				systemSettings.expandDeepSystemSettings( boxJSON );
 				var thisScript = boxJSON.scripts[ arguments.scriptName ];
 				consoleLogger.debug( '.' );
 				consoleLogger.warn( 'Running package script [#arguments.scriptName#].' );

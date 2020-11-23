@@ -43,6 +43,8 @@ component accessors="true" singleton {
 	property name='parser'					inject='parser';
 	property name='systemSettings'			inject='SystemSettings';
 	property name='javaService'				inject='provider:javaService';
+	property name='ansiFormater'			inject='AnsiFormater';
+	property name="printUtil"				inject="print";
 
 	/**
 	* Constructor
@@ -126,6 +128,7 @@ component accessors="true" singleton {
 			'trayOptions' : duplicate( d.trayOptions ?: [] ),
 			'trayEnable' : d.trayEnable ?: true,
 			'dockEnable' : d.dockEnable ?: true,
+			'profile'	: d.profile ?: '',
 			'jvm' : {
 				'heapSize' : d.jvm.heapSize ?: '',
 				'minHeapSize' : d.jvm.minHeapSize ?: '',
@@ -135,7 +138,7 @@ component accessors="true" singleton {
 			},
 			'web' : {
 				'host' : d.web.host ?: '127.0.0.1',
-				'directoryBrowsing' : d.web.directoryBrowsing ?: false,
+				'directoryBrowsing' : d.web.directoryBrowsing ?: '',
 				'webroot' : d.web.webroot ?: '',
 				// Duplicate so onServerStart interceptors don't actually change config settings via reference.
 				'aliases' : duplicate( d.web.aliases ?: {} ),
@@ -143,6 +146,7 @@ component accessors="true" singleton {
 				'errorPages' : duplicate( d.web.errorPages ?: {} ),
 				'accessLogEnable' : d.web.accessLogEnable ?: false,
 				'GZIPEnable' : d.web.GZIPEnable ?: true,
+				'gzipPredicate' : d.web.gzipPredicate ?: '',
 				'welcomeFiles' : d.web.welcomeFiles ?: '',
 				'maxRequests' : d.web.maxRequests ?: '',
 				'HTTP' : {
@@ -170,7 +174,13 @@ component accessors="true" singleton {
 				'basicAuth' : {
 					'enable' : d.web.basicAuth.enable ?: true,
 					'users' : d.web.basicAuth.users ?: {}
-				}
+				},
+				'rules' : duplicate( d.web.rules ?: [] ),
+				'rulesFile' : duplicate( d.web.rulesFile ?: [] ),
+				'blockCFAdmin' : d.web.blockCFAdmin ?: '',
+				'blockSensitivePaths' :  d.web.blockSensitivePaths ?: '',
+				'blockFlashRemoting' :  d.web.blockFlashRemoting ?: '',
+				'allowedExt' : d.web.allowedExt ?: ''
 			},
 			'app' : {
 				'logDir' : d.app.logDir ?: '',
@@ -271,7 +281,7 @@ component accessors="true" singleton {
 
 		// If the server is already running, make sure the user really wants to do this.
 		if( isServerRunning( serverInfo ) && !(serverProps.force ?: false ) && !(serverProps.dryRun ?: false ) ) {
-			job.addErrorLog( 'Server "#serverInfo.name#" (#serverInfo.webroot#) is already running!' );
+			job.addErrorLog( 'Server "#serverInfo.name#" (#serverInfo.webroot#) is already running @ #serverInfo.openbrowserURL#!' );
 			job.addErrorLog( 'Overwriting a running server means you won''t be able to use the "stop" command to stop the original one.' );
 			job.addWarnLog( 'Use the --force parameter to skip this check.' );
 			// Ask the user what they want to do
@@ -279,6 +289,7 @@ component accessors="true" singleton {
 				.setQuestion( 'What would you like to do? ' )
 				.setOptions( [
 					{ display : 'Provide a new name for this server (recommended)', value : 'newName', accessKey='N', selected=true },
+					{ display : 'Open currently running server in browser @ #serverInfo.openbrowserURL#', value : 'openinbrowser', accessKey='B'},
 					{ display : 'Just keep starting this new server and overwrite the old, running one.', value : 'overwrite', accessKey='o' },
 					{ display : 'Cancel and do not start a server right now.', value : 'stop', accessKey='s' }
 				] )
@@ -287,6 +298,10 @@ component accessors="true" singleton {
 
 			if( action == 'stop' ) {
 				job.error( 'Aborting...' );
+				return;
+			} else if( action == 'openinbrowser' ) {
+				job.addLog( "Opening...#serverInfo.openbrowserURL#" );
+				shell.callCommand( 'browse #serverInfo.openbrowserURL#', false);
 				return;
 			} else if( action == 'newname' ) {
 				job.clear();
@@ -363,6 +378,9 @@ component accessors="true" singleton {
 			    		thisDirectory = replaceNoCase( thisDirectory, configPath, '' );
 			    	}
 					serverJSON[ 'web' ][ 'webroot' ] = thisDirectory;
+			         break;
+			    case "trayEnable":
+					serverJSON[ 'trayEnable' ] = serverProps[ prop ];
 			         break;
 			    case "trayIcon":
 			    	// This path is canonical already.
@@ -480,6 +498,9 @@ component accessors="true" singleton {
 			    	}
 					serverJSON[ 'web' ][ 'rewrites' ][ 'config' ] = thisFile;
 			         break;
+			    case "blockCFAdmin":
+					serverJSON[ 'web' ][ 'blockCFAdmin' ] = serverProps[ prop ];
+			         break;
 			    case "heapSize":
 					serverJSON[ 'JVM' ][ 'heapSize' ] = serverProps[ prop ];
 			         break;
@@ -521,6 +542,7 @@ component accessors="true" singleton {
 		serverInfo.verbose 			= serverProps.verbose 			?: serverJSON.verbose 				?: defaults.verbose;
 		serverInfo.console 			= serverProps.console 			?: serverJSON.console 				?: defaults.console;
 		serverInfo.openbrowser		= serverProps.openbrowser 		?: serverJSON.openbrowser			?: defaults.openbrowser;
+		
 		serverInfo.openbrowserURL	= serverProps.openbrowserURL	?: serverJSON.openbrowserURL		?: defaults.openbrowserURL;
 
 		// Trace assumes debug
@@ -541,6 +563,59 @@ component accessors="true" singleton {
 		if( serverInfo.port == 0 ) {
 			serverInfo.port = getRandomPort( serverInfo.host );
 		}
+		
+		// Try to set a smart profile if there's not one set
+		if( !trim( defaults.profile ).len() ) {
+			var thisIP = '';
+			// Try and get the IP we're binding to
+			try{
+				thisIP = java.InetAddress.getByName( serverInfo.host ).getHostAddress();
+			} catch( any var e ) {}
+			
+			// Look for a env var called "environment"
+			var envVarEnvironment = systemSettings.getSystemSetting( 'environment', '' );
+			
+			// Env var takes precendence.  
+			if( len( envVarEnvironment ) ) {
+				defaults.profile = envVarEnvironment;
+			// Otherwise see if we're bound to localhost.
+			} else if( listFirst( thisIP, '.' ) == '127' ) {
+				defaults.profile = 'development';
+			} else {
+				defaults.profile = 'production';
+			}
+		}
+		serverInfo.profile			= serverProps.profile	 		?: serverJSON.profile				?: defaults.profile;
+
+		if( !trim( defaults.web.blockCFAdmin ).len() ) {
+			if( serverInfo.profile == 'development' || serverInfo.profile == 'none' ) {
+				defaults.web.blockCFAdmin = 'false';
+			} else {
+				defaults.web.blockCFAdmin = 'external';
+			}
+		}
+		
+		if( !trim( defaults.web.blockSensitivePaths ).len() ) {
+			if( serverInfo.profile == 'none' ) {
+				defaults.web.blockSensitivePaths = false;
+			} else {
+				defaults.web.blockSensitivePaths = true;
+			}
+		}
+		
+		if( !trim( defaults.web.blockFlashRemoting ).len() ) {
+			if( serverInfo.profile == 'none' ) {
+				defaults.web.blockFlashRemoting = false;
+			} else {
+				defaults.web.blockFlashRemoting = true;
+			}
+		}
+		
+		serverInfo.blockCFAdmin		= serverProps.blockCFAdmin			?: serverJSON.web.blockCFAdmin		?: defaults.web.blockCFAdmin;
+		serverInfo.blockSensitivePaths									 = serverJSON.web.blockSensitivePaths	?: defaults.web.blockSensitivePaths;
+		serverInfo.blockFlashRemoting									 = serverJSON.web.blockFlashRemoting	?: defaults.web.blockFlashRemoting;
+		serverInfo.allowedExt											 = serverJSON.web.allowedExt		?: defaults.web.allowedExt;
+
 
 		// Double check that the port in the user params or server.json isn't in use
 		if( !isPortAvailable( serverInfo.host, serverInfo.port ) ) {
@@ -612,9 +687,8 @@ component accessors="true" singleton {
 		serverInfo.welcomeFiles 	= serverProps.welcomeFiles		?: serverJSON.web.welcomeFiles			?: defaults.web.welcomeFiles;
 		serverInfo.maxRequests		= 								   serverJSON.web.maxRequests			?: defaults.web.maxRequests;
 
-		serverInfo.trayEnable	 	= serverJSON.trayEnable			?: defaults.trayEnable;
+		serverInfo.trayEnable	 	= serverProps.trayEnable		?: serverJSON.trayEnable			?: defaults.trayEnable;
 		serverInfo.dockEnable	 	= serverJSON.dockEnable			?: defaults.dockEnable;
-
 		serverInfo.defaultBaseURL = serverInfo.SSLEnable ? 'https://#serverInfo.host#:#serverInfo.SSLPort#' : 'http://#serverInfo.host#:#serverInfo.port#';
 
 		// If there's no open URL, let's create a complete one
@@ -676,6 +750,16 @@ component accessors="true" singleton {
 			serverInfo.javaHome = variables.javaCommand;
 		}
 
+		// If there isn't a default for this already
+		if( !isBoolean( defaults.web.directoryBrowsing ) ) {
+			// Default it according to the profile
+			if( serverInfo.profile == 'development' ) {
+				defaults.web.directoryBrowsing = true;
+			} else {
+				// secure by default even if profile is none or custom
+				defaults.web.directoryBrowsing = false;
+			}
+		}
 		serverInfo.directoryBrowsing = serverProps.directoryBrowsing ?: serverJSON.web.directoryBrowsing ?: defaults.web.directoryBrowsing;
 
 		// Global aliases are always added on top of server.json (but don't overwrite)
@@ -688,8 +772,9 @@ component accessors="true" singleton {
 		serverInfo.errorPages		= defaults.web.errorPages;
 		serverInfo.errorPages.append( serverJSON.web.errorPages ?: {} );
 
-		serverInfo.accessLogEnable	= serverJSON.web.accessLogEnable ?: defaults.web.accessLogEnable;
-		serverInfo.GZIPEnable	= serverJSON.web.GZIPEnable ?: defaults.web.GZIPEnable;
+		serverInfo.accessLogEnable	= serverJSON.web.accessLogEnable	?: defaults.web.accessLogEnable;
+		serverInfo.GZIPEnable		= serverJSON.web.GZIPEnable 		?: defaults.web.GZIPEnable;
+		serverInfo.gzipPredicate	= serverJSON.web.gzipPredicate		?: defaults.web.gzipPredicate;
 
 		serverInfo.rewriteslogEnable = serverJSON.web.rewrites.logEnable ?: defaults.web.rewrites.logEnable;
 
@@ -735,6 +820,82 @@ component accessors="true" singleton {
 		// Global defauls are always added on top of whatever is specified by the user or server.json
 		serverInfo.libDirs		= ( serverProps.libDirs		?: serverJSON.app.libDirs ?: '' ).listAppend( defaults.app.libDirs );
 
+		serverInfo.webRules = [];		
+		if( serverJSON.keyExists( 'web' ) && serverJSON.web.keyExists( 'rules' ) ) {
+			serverInfo.webRules.append( serverJSON.web.rules, true);
+		}
+		if( serverJSON.keyExists( 'web' ) && serverJSON.web.keyExists( 'rulesFile' ) ) {
+			if( isSimpleValue( serverJSON.web.rulesFile ) ) {
+				serverJSON.web.rulesFile = serverJSON.web.rulesFile.listToArray();
+			}
+			serverInfo.webRules.append( serverJSON.web.rulesFile.map((fg)=>{
+				fg = fileSystemUtil.resolvePath( fg, defaultServerConfigFileDirectory );
+				return wirebox.getInstance( 'Globber' ).setPattern( fg ).matches().reduce( (predicates,file)=>{
+						if( lCase( file ).endsWith( '.json' ) ) {
+							return predicates & CR & deserializeJSON( fileRead( file ) ).toList( CR )
+						} else {
+							return predicates & CR & fileRead( file )						
+						} 
+					}, '' );
+			}), true);
+		}
+		if( defaults.keyExists( 'web' ) && defaults.web.keyExists( 'rules' ) ) {
+			serverInfo.webRules.append( defaults.web.rules, true);
+		}
+		
+		if( defaults.keyExists( 'web' ) && defaults.web.keyExists( 'rulesFile' ) ) {
+			var defaultsRulesFile = defaults.web.rulesFile;
+			if( isSimpleValue( defaultsRulesFile ) ) {
+				defaultsRulesFile = defaultsRulesFile.listToArray();
+			}
+			serverInfo.webRules.append( defaultsRulesFile.map((fg)=>{
+				fg = fileSystemUtil.resolvePath( fg, defaultwebroot );
+				return wirebox.getInstance( 'Globber' ).setPattern( fg ).matches().reduce( (predicates,file)=>{
+						if( lCase( file ).endsWith( '.json' ) ) {
+							return predicates & CR & deserializeJSON( fileRead( file ) ).toList( CR )
+						} else {
+							return predicates & CR & fileRead( file )						
+						} 
+					}, '' );
+			}), true);
+		}
+		
+		// Default CommandBox rules.
+		if( serverInfo.blockSensitivePaths ) {
+			serverInfo.webRules.append( [
+				// track and trace verbs can leak data in XSS attacks
+				"disallowed-methods( methods={trace,track} )",
+				// Common config files
+				"regex( pattern='.*/(box.json|server.json|web.config|urlrewrite.xml|package.json|package-lock.json|Gulpfile.js|CFIDE/multiservermonitor-access-policy.xml|CFIDE/probe.cfm|CFIDE/main/ide.cfm)', case-sensitive=false ) -> { set-error(404); done }",
+				// Any file or folder starting with a period
+				"regex('/\.') -> { set-error( 404 ); done }",
+				// Additional serlvlet mappings in Adobe CF's web.xml
+				"path-prefix( { '/JSDebugServlet','/securityanalyzer','/WSRPProducer' } ) -> { set-error( 404 ); done }",
+				// java web service (Axis) files
+				"regex( pattern='\.jws$', case-sensitive=false ) -> { set-error( 404 ); done }"
+			], true );	
+		}
+		
+		if( serverInfo.blockFlashRemoting ) {
+			serverInfo.webRules.append( [ 
+				// These all map to web.xml servlet mappings for ACF
+				"path-prefix( { '/flex2gateway','/flex-internal','/flashservices/gateway','/cfform-internal','/CFFormGateway', '/openamf/gateway', '/messagebroker' } ) -> { set-error( 404 ); done }",
+				// Files used for flash remoting
+				"regex( pattern='\.(mxml|cfswf)$', case-sensitive=false ) -> { set-error( 404 ); done }"				
+			], true );	
+		}
+		
+		// Administrators
+		if( serverInfo.blockCFAdmin == 'external' ) {
+			serverInfo.webRules.append( 
+				"cf-admin() -> block-external()"
+			 );
+		} else if( serverInfo.blockCFAdmin == 'true' ) {
+			serverInfo.webRules.append( 
+				"block-cf-admin()"
+			 );
+		}
+		
 		serverInfo.cfengine			= serverProps.cfengine			?: serverJSON.app.cfengine			?: defaults.app.cfengine;
 
 		serverInfo.restMappings		= serverProps.restMappings		?: serverJSON.app.restMappings		?: defaults.app.restMappings;
@@ -944,9 +1105,10 @@ component accessors="true" singleton {
 			// Default it to megs
 			serverInfo.minHeapSize &= 'm';
 		}
-		
+
+		var tempOptions = [];		
 		serverInfo.trayOptions = [];
-		serverInfo.trayOptions.prepend(
+		tempOptions.prepend(
 			{
 				"label":"Info",
 				"items": [
@@ -976,13 +1138,14 @@ component accessors="true" singleton {
 
 		openItems.prepend( { "label" : "Webroot", "action" : "openfilesystem", "path" : serverInfo.appFileSystemPath, "image" : expandPath('/commandbox/system/config/server-icons/folder.png' ) } );
 
-		serverInfo.trayOptions.prepend( { 'label':'Open...', 'items': openItems, "image" : expandPath('/commandbox/system/config/server-icons/open.png' ) } );
+		tempOptions.prepend( { 'label':'Open...', 'items': openItems, "image" : expandPath('/commandbox/system/config/server-icons/open.png' ) } );
 
-		// serverInfo.trayOptions.prepend( { 'label' : 'Restart Server', 'hotkey':'R', 'action' : 'restartserver', 'image': expandPath('/commandbox/system/config/server-icons/home.png' ) } );
+		tempOptions.prepend( { 'label' : 'Restart Server', 'hotkey':'R', 'action' : "runAsync" , "command" : "box server restart " & "'#serverInfo.name#'", 'image': expandPath('/commandbox/system/config/server-icons/restart.png' ), 'workingDirectory': defaultwebroot} );
 
-		serverInfo.trayOptions.prepend( { 'label':'Stop Server', 'action':'stopserver', 'image' : expandPath('/commandbox/system/config/server-icons/stop.png' ) } );
+		tempOptions.prepend( { 'label':'Stop Server', 'action':'stopserver', 'image' : expandPath('/commandbox/system/config/server-icons/stop.png' ) } );
 
 		// Take default options, then append config defaults and server.json trayOptions on top of them (allowing nested overwrite)
+		serverInfo.trayOptions = appendMenuItems( tempOptions, defaultwebroot, [] );
 		serverInfo.trayOptions = appendMenuItems( defaults.trayOptions, defaultwebroot, serverInfo.trayOptions );
 		serverInfo.trayOptions = appendMenuItems( serverJSON.trayOptions ?: [], defaultServerConfigFileDirectory, serverInfo.trayOptions );
 
@@ -1062,13 +1225,18 @@ component accessors="true" singleton {
 			.append( '--log-dir' ).append( serverInfo.logDir )
 			.append( '--server-name' ).append( serverInfo.name )
 			.append( '--tray-enable' ).append( serverInfo.trayEnable )
-			.append( '--dock-enable' ).append( serverInfo.dockEnable )
+			.append( '--dock-enable' ).append( serverInfo.dockEnable ) 
 			.append( '--directoryindex' ).append( serverInfo.directoryBrowsing )
 			.append( '--timeout' ).append( serverInfo.startTimeout )
 			.append( '--proxy-peeraddress' ).append( 'true' )
 			.append( '--cookie-secure' ).append( serverInfo.sessionCookieSecure )
-			.append( '--cookie-httponly' ).append( serverInfo.sessionCookieHTTPOnly )
-			.append( serverInfo.runwarArgs.listToArray( ' ' ), true );
+			.append( '--cookie-httponly' ).append( serverInfo.sessionCookieHTTPOnly );
+			
+		if( ConfigService.settingExists( 'preferredBrowser' ) ) {
+			args.append( '--preferred-browser' ).append( ConfigService.getSetting( 'preferredBrowser' ) );
+		}
+
+		args.append( serverInfo.runwarArgs.listToArray( ' ' ), true );
 
 		if( serverInfo.trayEnable ) {
 			args
@@ -1078,8 +1246,12 @@ component accessors="true" singleton {
 		
 		if( serverInfo.runwarXNIOOptions.count() ) {
 			args.append( '--xnio-options=' & serverInfo.runwarXNIOOptions.reduce( ( opts='', k, v ) => opts.listAppend( k & '=' & v ) ) );
-		} 	
+		}
 		
+		if( len( serverInfo.allowedExt ) ) {
+			args.append( '--default-servlet-allowed-ext=' & serverInfo.allowedExt );
+		} 	
+
 		if( serverInfo.runwarUndertowOptions.count() ) {
 			args.append( '--undertow-options=' & serverInfo.runwarUndertowOptions.reduce( ( opts='', k, v ) => opts.listAppend( k & '=' & v ) ) );
 		}
@@ -1102,8 +1274,10 @@ component accessors="true" singleton {
 		}
 
 		if( serverInfo.GZIPEnable ) {
-			args
-				.append( '--gzip-enable' ).append( true )
+			args.append( '--gzip-enable' ).append( true );
+			if( len( trim( serverInfo.gzipPredicate ) ) ){
+				args.append( '--gzip-predicate' ).append( serverInfo.gzipPredicate );
+			}
 		}
 
 		if( serverInfo.accesslogenable ) {
@@ -1177,7 +1351,7 @@ component accessors="true" singleton {
 		if( serverInfo.HTTPEnable || serverInfo.SSLEnable ) {
 			args
 			 	.append( '--open-browser' ).append( serverInfo.openbrowser )
-			 	.append( '--open-url' ).append( serverInfo.openbrowserURL );
+				.append( '--open-url' ).append( serverInfo.openbrowserURL );
 		} else {
 			args.append( '--open-browser' ).append( false );
 		}
@@ -1238,6 +1412,13 @@ component accessors="true" singleton {
 			}
 			args.append( '--urlrewrite-file' ).append( serverInfo.rewritesConfig );
 		}
+
+		if( serverInfo.webRules.len() ){			
+			var predicateFile = serverinfo.customServerFolder & '/.predicateFile.txt';
+			fileWrite( predicateFile, serverInfo.webRules.toList( CR ) );			
+			args.append( '--predicate-file' ).append( predicateFile );
+		}
+		
 		// change status to starting + persist
 		serverInfo.dateLastStarted = now();
 		serverInfo.status = "starting";
@@ -1279,7 +1460,7 @@ component accessors="true" singleton {
 
 		// now we can log the *final* command line string that will be used to start the server
 	    if( serverInfo.verbose ) {
-			var cleanedArgs = cr & '    ' & trim( reReplaceNoCase( args.toList( ' ' ), ' (-|"-)', cr & '    \1', 'all' ) );
+			var cleanedArgs = cr & '    ' & trim( args.map( ( arg )=>reReplaceNoCase( arg, '^(-|"-)', cr & '    \1', 'all' )  ).toList( ' ' ) );
 			job.addLog("Server start command: #cleanedargs#");
 	    }
 
@@ -1352,7 +1533,8 @@ component accessors="true" singleton {
 					// [DEBUG] runwar.config: Enabling Proxy Peer Address handling
 					// [DEBUG] runwar.server: Starting open browser action
 					line = reReplaceNoCase( line, '^((#chr( 27 )#\[m)?\[[^]]*])( runwar\.[^:]*: )(.*)', '\1 Runwar: \4' );
-
+					//consoleLogger.debug( 'LINE:' . line );
+					line = AnsiFormater.cleanLine( line );
 					// Log messages from any other 3rd party java lib tapping into Log4j will be left alone
 					// Ex:
 					// [DEBUG] org.tuckey.web.filters.urlrewrite.RuleExecutionOutput: needs to be forwarded to /index.cfm/Main
@@ -1500,9 +1682,7 @@ component accessors="true" singleton {
 	* checks for the default image and default shell
 	*/
 	function prepareMenuItem( menuItem, relativePath ) {
-		
 		menuItem.label = menuItem.label ?: '';
-		
 		// Make relative image paths absolute
 		if( menuItem.keyExists( 'image' ) && menuItem.image.len() ) {
 			menuItem[ 'image' ] = fileSystemUtil.resolvePath( menuItem.image, relativePath );
@@ -1523,6 +1703,7 @@ component accessors="true" singleton {
 			menuItem[ 'shell' ] = menuItem.shell ?: fileSystemUtil.getNativeShell();
 			// Some special love for box commands
 			if( menuItem.command.lCase().reFindNoCase( '^box(\.exe)? ' )  ) {
+				menuItem.command = fixBinaryPath( trim(menuItem.command), systemSettings.getSystemSetting( 'java.class.path' ));
 				menuItem[ 'image' ] = menuItem.image ?: expandPath('/commandbox/system/config/server-icons/box.png' );				
 			} else {
 				menuItem[ 'image' ] = menuItem.image ?: expandPath('/commandbox/system/config/server-icons/' & menuItem.action & '.png' );
@@ -1547,6 +1728,17 @@ component accessors="true" singleton {
 			menuItem[ 'command' ] = replaceNoCase( nativeTerminal, '@@command@@', menuItem[ 'command' ], 'all' );
 		}
 		return menuItem.filter( (k)=>k!='items' );
+	}
+
+	function fixBinaryPath(command, fullPath){
+		if(!isNull(fullPath) or !isEmpty(fullPath)){
+			if( command.left( 4 ) == 'box ' ){
+				command = command.replacenoCase( 'box ', fullPath & ' ', 'one' );
+			} else if( command.left( 8 ) == 'box.exe ' ){
+				command = command.replacenoCase( 'box.exe ', fullPath & ' ', 'one' );
+			}
+		}
+		return command;
 	}
 
 	/**
@@ -2183,7 +2375,8 @@ component accessors="true" singleton {
 			'aliases'			: {},
 			'errorPages'		: {},
 			'accessLogEnable'	: false,
-			'GZIPEnable'		: true,
+			'GZipEnable'		: true,
+			'GZipPredicate'		: '',
 			'rewritesLogEnable'	: false,
 			'trayOptions'		: {},
 			'trayEnable'		: true,
@@ -2191,10 +2384,17 @@ component accessors="true" singleton {
 			'dateLastStarted'	: '',
 			'openBrowser'		: true,
 			'openBrowserURL'	: '',
+			'profile'			: '',
 			'customServerFolder': '',
 			'welcomeFiles'		: '',
 			'maxRequests'		: '',
-			'exitCode'			: 0
+			'exitCode'			: 0,
+			'rules'				: [],
+			'rulesFile'			: '',
+			'blockCFAdmin'		: false,
+			'blockSensitivePaths'	: false,
+			'blockFlashRemoting'	: false,			
+			'allowedExt'		: ''
 		};
 	}
 
@@ -2255,3 +2455,4 @@ component accessors="true" singleton {
 	}
 
 }
+
