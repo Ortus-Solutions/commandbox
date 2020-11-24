@@ -1826,6 +1826,19 @@ component accessors="true" singleton {
 
 		// If CommandBox is in single server mode, just force the first (and only) server to be the one we find
 		if( ConfigService.getSetting( 'server.singleServerMode', false ) && getServers().count() ){
+			
+			// CFConfig calls this method sometimes with a path to a JSON file and needs to get no server back
+			if( serverProps.keyExists( 'name' ) && lcase( serverProps.name ).endsWith( '.json' ) && fileExists( serverProps.name ) ) {
+				return {
+					defaultName : '',
+					defaultwebroot : '',
+					defaultServerConfigFile : '',
+					serverJSON : {},
+					serverInfo : {},
+					serverIsNew : true
+				};	
+			}
+			
 			var serverInfo = getFirstServer();
 			return {
 				defaultName : serverInfo.name,
