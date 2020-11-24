@@ -604,8 +604,7 @@ public class LoaderCLIMain{
 		
 		System.setProperty( "cfml.cli.debug", debug.toString() );
 		try {
-			props.load( ClassLoader
-					.getSystemResourceAsStream( "cliloader/cli.properties" ) );
+			props.load( ClassLoader.getSystemResourceAsStream( "cliloader/cli.properties" ) );
 		} catch ( Exception e ) {
 			e.printStackTrace();
 		}
@@ -616,10 +615,14 @@ public class LoaderCLIMain{
 		setName( name );
 
 		// merge any user defined properties
-		File cliPropFile = new File( getJarDir(), getName().toLowerCase()
-				+ ".properties" );
+		File cliPropFile = new File( getJarDir(), getName().toLowerCase() + ".properties" );
+
+		log.debug( "Checking for properties file " + cliPropFile.getCanonicalPath() );
+		
 		if( !cliPropFile.isFile() ) {
+			log.debug( cliPropFile.getCanonicalPath() + " NOT FOUND" );
 			cliPropFile = new File( getJarDir(), "cli.properties" );
+			log.debug( "Checking for properties file " + cliPropFile.getCanonicalPath() );
 		}
 		if( cliPropFile.isFile() ) {
 			log.debug( "merging properties from " + cliPropFile.getCanonicalPath() );
@@ -627,6 +630,8 @@ public class LoaderCLIMain{
 			userProps.load( fi );
 			fi.close();
 			props = mergeProperties( props, userProps );
+		} else {
+			log.debug( cliPropFile.getCanonicalPath() + " NOT FOUND" );
 		}
 
 		log.debug( "cfml.cli.name: " + name );
