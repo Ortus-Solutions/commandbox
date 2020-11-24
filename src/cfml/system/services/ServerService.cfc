@@ -1356,7 +1356,7 @@ component accessors="true" singleton {
 		args.append( '-war' ).append( serverInfo.appFileSystemPath );
 
 		// Custom web.xml (doesn't work right now)
-		if ( Len( Trim( serverInfo.webXml ) ) && false ) {
+		if ( Len( Trim( serverInfo.webXml ) ) ) {
 			args.append( '--web-xml-path' ).append( serverInfo.webXml );
 		// Default is in WAR home
 		} else {
