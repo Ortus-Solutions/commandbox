@@ -1800,6 +1800,10 @@ component accessors="true" singleton {
 		throw( 'Invalid Heap size [#heapSize#]' );
 	}
 
+	function getFirstServer() {
+		return getServers()[ getServers().keyArray().first() ];
+	}
+
 	/**
 	* Unified logic to resolve a server given an optional name, directory, and server.json path.
 	* Returns resolved name, webroot, serverConfigFile, serverInfo from the last start and serverJSON
@@ -1821,8 +1825,8 @@ component accessors="true" singleton {
 	) {
 
 		// If CommandBox is in single server mode, just force the first (and only) server to be the one we find
-		if( ConfigService.getSetting( 'server.singleServerMode', false ) && getServers().len() ){
-			var serverInfo = getServers()[1];
+		if( ConfigService.getSetting( 'server.singleServerMode', false ) && getServers().count() ){
+			var serverInfo = getFirstServer();
 			return {
 				defaultName : serverInfo.name,
 				defaultwebroot : serverInfo.webroot,
@@ -2243,8 +2247,8 @@ component accessors="true" singleton {
 	*/
 	struct function getServerInfoByDiscovery( required directory="", required name="", serverConfigFile="" ){
 
-		if( ConfigService.getSetting( 'server.singleServerMode', false ) && getServers().len() ){
-			return getServers()[1];
+		if( ConfigService.getSetting( 'server.singleServerMode', false ) && getServers().count() ){
+			return getFirstServer();
 		}
 
 		if( len( arguments.serverConfigFile ) ){
@@ -2273,8 +2277,8 @@ component accessors="true" singleton {
 	*/
 	struct function getServerInfoByName( required name ){
 		
-		if( ConfigService.getSetting( 'server.singleServerMode', false ) && getServers().len() ){
-			return getServers()[1];
+		if( ConfigService.getSetting( 'server.singleServerMode', false ) && getServers().count() ){
+			return getFirstServer();
 		}
 		
 		var servers = getServers();
@@ -2293,8 +2297,8 @@ component accessors="true" singleton {
 	*/
 	struct function getServerInfoByServerConfigFile( required serverConfigFile ){
 		
-		if( ConfigService.getSetting( 'server.singleServerMode', false ) && getServers().len() ){
-			return getServers()[1];
+		if( ConfigService.getSetting( 'server.singleServerMode', false ) && getServers().count() ){
+			return getFirstServer();
 		}
 		
 		arguments.serverConfigFile = fileSystemUtil.resolvePath( arguments.serverConfigFile );
@@ -2328,8 +2332,8 @@ component accessors="true" singleton {
 	*/
 	struct function getServerInfoByWebroot( required webroot ){
 		
-		if( ConfigService.getSetting( 'server.singleServerMode', false ) && getServers().len() ){
-			return getServers()[1];
+		if( ConfigService.getSetting( 'server.singleServerMode', false ) && getServers().count() ){
+			return getFirstServer();
 		}
 		
 		arguments.webroot = fileSystemUtil.resolvePath( arguments.webroot );
