@@ -1206,7 +1206,7 @@ component accessors="true" singleton {
 		}
 
 		// Serialize tray options and write to temp file
-		var trayOptionsPath = serverinfo.customServerFolder & '/trayOptions.json';
+		var trayOptionsPath = serverinfo.serverHomeDirectory & '/.trayOptions.json';
 		var trayJSON = {
 			'title' : displayServerName,
 			'tooltip' : processName,
@@ -1441,7 +1441,7 @@ component accessors="true" singleton {
 		}
 
 		if( serverInfo.webRules.len() ){			
-			var predicateFile = serverinfo.customServerFolder & '/.predicateFile.txt';
+			var predicateFile = serverinfo.serverHomeDirectory & '/.predicateFile.txt';
 			fileWrite( predicateFile, serverInfo.webRules.toList( CR ) );			
 			args.append( '--predicate-file' ).append( predicateFile );
 		}
