@@ -55,6 +55,7 @@ component accessors="true" singleton {
 			'endpoints.forgebox.APIURL',
 			// Servers
 			'server',
+			'server.singleServerMode',
 			'server.defaults',
 			'server.javaInstallDirectory',
 			// used in Artifactsservice

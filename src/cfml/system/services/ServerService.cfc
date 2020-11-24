@@ -1820,6 +1820,19 @@ component accessors="true" singleton {
 		required struct serverProps
 	) {
 
+		// If CommandBox is in single server mode, just force the first (and only) server to be the one we find
+		if( ConfigService.getSetting( 'server.singleServerMode', false ) && getServers().len() ){
+			var serverInfo = getServers()[1];
+			return {
+				defaultName : serverInfo.name,
+				defaultwebroot : serverInfo.webroot,
+				defaultServerConfigFile : serverInfo.serverConfigFile,
+				serverJSON : readServerJSON( serverInfo.serverConfigFile ),
+				serverInfo : serverInfo,
+				serverIsNew : false
+			};
+		}
+
 		var job = wirebox.getInstance( 'interactiveJob' );
 		var locVerbose = serverProps.verbose ?: false;
 
@@ -2035,7 +2048,11 @@ component accessors="true" singleton {
 	* @serverInfo The server information
 	*/
 	function getCustomServerFolder( required struct serverInfo ){
-		return variables.customServerDirectory & arguments.serverinfo.id & "-" & arguments.serverInfo.name;
+		if( configService.getSetting( 'server.singleServerMode', false ) ){
+			return variables.customServerDirectory & 'serverHome';
+		} else {
+			return variables.customServerDirectory & arguments.serverinfo.id & "-" & arguments.serverInfo.name;	
+		}
 	}
 
 	/**
@@ -2116,20 +2133,29 @@ component accessors="true" singleton {
 	 * @serverInfo.hint struct of server info (ports, etc.)
  	 **/
 	function setServerInfo( required struct serverInfo ){
-
 		var servers 	= getServers();
-		var normalizedWebroot = normalizeWebroot( arguments.serverInfo.webroot );
-		var webrootHash = hash( normalizedWebroot & ucase( arguments.serverInfo.name ) );
-		arguments.serverInfo.id = webrootHash;
+		var serverID = calculateServerID( arguments.serverInfo.webroot, arguments.serverInfo.name );
+		
+		arguments.serverInfo.id = serverID;
 
 		if( arguments.serverInfo.webroot == "" ){
 			throw( "The webroot cannot be empty!" );
 		}
-		servers[ webrootHash ] = serverInfo;
+	
+		servers[ serverID ] = serverInfo;
+		
 		// persist back safely
-
 		setServers( servers );
 
+	}
+	
+	function calculateServerID( webroot, name ) {
+		
+		if( ConfigService.getSetting( 'server.singleServerMode', false ) ){
+			return 'serverHome';
+		}
+		var normalizedWebroot = normalizeWebroot( webroot );
+		return hash( normalizedWebroot & ucase( name ) );
 	}
 
 	function normalizeWebroot( required string webroot ) {
@@ -2176,8 +2202,7 @@ component accessors="true" singleton {
 				var thisServer = results[ thisKey ];
 				// Backwards compat-- add in server id if it doesn't exist for older versions of CommandBox
 				if( isNull( thisServer.id ) ){
-					var normalizedWebroot = normalizeWebroot( thisServer.webroot );
-					thisServer.id = hash( normalizedWebroot & ucase( thisServer.name ) );
+					thisServer.id = calculateServerID( thisServer.webroot, thisServer.name );
 					updateRequired = true;
 				}
 
@@ -2218,6 +2243,10 @@ component accessors="true" singleton {
 	*/
 	struct function getServerInfoByDiscovery( required directory="", required name="", serverConfigFile="" ){
 
+		if( ConfigService.getSetting( 'server.singleServerMode', false ) && getServers().len() ){
+			return getServers()[1];
+		}
+
 		if( len( arguments.serverConfigFile ) ){
 			var foundServer = getServerInfoByServerConfigFile( arguments.serverConfigFile );
 			if( structCount( foundServer ) ) {
@@ -2243,6 +2272,11 @@ component accessors="true" singleton {
 	* @name.hint The name to find
 	*/
 	struct function getServerInfoByName( required name ){
+		
+		if( ConfigService.getSetting( 'server.singleServerMode', false ) && getServers().len() ){
+			return getServers()[1];
+		}
+		
 		var servers = getServers();
 		for( var thisServer in servers ){
 			if( servers[ thisServer ].name == arguments.name ){
@@ -2258,6 +2292,11 @@ component accessors="true" singleton {
 	* @name.serverConfigFile The serverConfigFile to find
 	*/
 	struct function getServerInfoByServerConfigFile( required serverConfigFile ){
+		
+		if( ConfigService.getSetting( 'server.singleServerMode', false ) && getServers().len() ){
+			return getServers()[1];
+		}
+		
 		arguments.serverConfigFile = fileSystemUtil.resolvePath( arguments.serverConfigFile );
 		var servers = getServers();
 		for( var thisServer in servers ){
@@ -2288,6 +2327,11 @@ component accessors="true" singleton {
 	* @webroot.hint The webroot to find
 	*/
 	struct function getServerInfoByWebroot( required webroot ){
+		
+		if( ConfigService.getSetting( 'server.singleServerMode', false ) && getServers().len() ){
+			return getServers()[1];
+		}
+		
 		arguments.webroot = fileSystemUtil.resolvePath( arguments.webroot );
 		var servers = getServers();
 		for( var thisServer in servers ){
@@ -2305,18 +2349,17 @@ component accessors="true" singleton {
  	**/
 	struct function getServerInfo( required webroot , required name){
 		var servers 	= getServers();
-		var normalizedWebroot = normalizeWebroot( arguments.webroot );
-		var webrootHash = hash( normalizedWebroot & ucase( arguments.name ) );
+		var serverID = calculateServerID( arguments.webroot, arguments.name );
 		var statusInfo 	= {};
 
 		if( !directoryExists( arguments.webroot ) ){
 			statusInfo = { result:"Webroot does not exist, cannot start :" & arguments.webroot };
 		}
 
-		if( isNull( servers[ webrootHash ] ) ){
+		if( isNull( servers[ serverID ] ) ){
 			// prepare new server info
 			var serverInfo 		= newServerInfoStruct();
-			serverInfo.id 		= webrootHash;
+			serverInfo.id 		= serverID;
 			serverInfo.webroot 	= arguments.webroot;
 			serverInfo.name 	= arguments.name;
 
@@ -2325,15 +2368,15 @@ component accessors="true" singleton {
 			var nameCounter = 1;
 			while( structCount( getServerInfoByName( serverInfo.name ) ) ) {
 				serverInfo.name = originalName & ++nameCounter;
-				webrootHash = hash( normalizedWebroot & ucase( arguments.name ) );
+				serverID = calculateServerID( arguments.webroot, serverInfo.name );
 			}
 		
 			// Store it in server struct
-			servers[ webrootHash ] = serverInfo;
+			servers[ serverID ] = serverInfo;
 		}
 
 		// Return the new record
-		return servers[ webrootHash ];
+		return servers[ serverID ];
 	}
 
 	/**
