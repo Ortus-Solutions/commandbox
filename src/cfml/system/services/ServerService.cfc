@@ -892,8 +892,8 @@ component accessors="true" singleton {
 			serverInfo.webRules.append( [
 				// track and trace verbs can leak data in XSS attacks
 				"disallowed-methods( methods={trace,track} )",
-				// Common config files
-				"regex( pattern='.*/(box.json|server.json|web.config|urlrewrite.xml|package.json|package-lock.json|Gulpfile.js|CFIDE/multiservermonitor-access-policy.xml|CFIDE/probe.cfm|CFIDE/main/ide.cfm)', case-sensitive=false ) -> { set-error(404); done }",
+				// Common config files and sensitive paths in ACF and TestBox
+				"regex( pattern='.*/(box.json|server.json|web.config|urlrewrite.xml|package.json|package-lock.json|Gulpfile.js|CFIDE/multiservermonitor-access-policy.xml|CFIDE/probe.cfm|CFIDE/main/ide.cfm|tests/runner.cfm|testbox/system/runners/HTMLRunner.cfm)', case-sensitive=false ) -> { set-error(404); done }",
 				// Any file or folder starting with a period
 				"regex('/\.') -> { set-error( 404 ); done }",
 				// Additional serlvlet mappings in Adobe CF's web.xml
