@@ -20,6 +20,7 @@ component singleton{
 	property name="REPLScriptHistoryFile"	inject="REPLScriptHistoryFile@constants";
 	property name="REPLTagHistoryFile"		inject="REPLTagHistoryFile@constants";
 	property name="systemSettings"			inject="SystemSettings";
+	property name="configService"			inject="ConfigService";
 
 	/**
 	* Build a jline console reader instance
@@ -108,6 +109,11 @@ component singleton{
 		reader.setOpt( LineReaderOptionClass.CASE_INSENSITIVE );
 		// Makes i-search case insensitive (Ctrl-R and Ctrl-S)
 		reader.setOpt( LineReaderOptionClass.CASE_INSENSITIVE_SEARCH );
+		// Activate inline list tab completion
+		if( configService.getSetting( 'tabCompleteInline', false ) ) {
+			reader.setOpt( LineReaderOptionClass.AUTO_MENU_LIST );	
+		} 
+			
 
 		return reader;
 

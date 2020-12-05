@@ -66,6 +66,7 @@ component accessors="true" singleton {
 			'command.aliases',
 			// Interactivity
 			'nonInteractiveShell',
+			'tabCompleteInline',
 			// JSON
 			'JSON.indent',
 			'JSON.lineEnding',
