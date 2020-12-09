@@ -275,6 +275,34 @@ component accessors="true" singleton {
 	}
 
 	/**
+	* A facade to logout a user with an interactive endpoint.  Keeping this logic here so I can standardize the storage
+	* of the APIToken and make it reusable outside of the command.  Passing no username should log out all users.
+	* @endpointName The name of the endpoint
+	* @username The username
+	*/
+	function logoutEndpointUser(
+		required string endpointName,
+		required string username=''
+	) {
+		// Get all endpoints that are registered
+		var endpointRegistry = getEndpointRegistry();
+		// Confirm endpoint name exists
+		if( !endpointRegistry.keyExists( arguments.endpointName ) ) {
+			throw( "Sorry, the endpoint [#arguments.endpointName#] doesn't exist.  Valid names are [#endpointRegistry.keyList()#]", 'endpointException' );
+		}
+
+		// Get endpoint object
+		var endpoint = getEndpoint( arguments.endpointName );
+
+		// Confirm is interactive endpoint
+		if( !isInstanceOf( endpoint, 'IEndpointInteractive' ) ) {
+			throw( "Sorry, the endpoint [#arguments.endpointName#] does not support logging out users.", 'endpointException' );		}
+
+		// Logout the user
+		endpoint.logout( argumentCollection=arguments );
+	}
+
+	/**
 	* A facade to publish a package with an interactive endpoint.
 	* @endpointName The name of the endpoint to publish to
 	* @directory The directory to publish
