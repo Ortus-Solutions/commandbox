@@ -94,7 +94,10 @@ component singleton{
 			.variables( {
 				// The default file for history is set into the shell here though it's used by the DefaultHistory class
 				'#LineReaderClass.HISTORY_FILE#' : commandHistoryFile,
-				'#LineReaderClass.BLINK_MATCHING_PAREN#' : 0
+				'#LineReaderClass.BLINK_MATCHING_PAREN#' : 0,
+				// These color tweaks are to improve the default ugly "pink" color in the optional AUTO_MENU_LIST setting (activated blow)
+				'#LineReaderClass.COMPLETION_LIST_BACKGROUND_COLOR#' : 12,
+				'#LineReaderClass.COMPLETION_COLOR_DESCRIPTION#' : 8
 			} )
         	.completer( jCompletor )
         	.parser( jParser )
