@@ -86,19 +86,27 @@ component singleton{
 	        .dumb( true )
 	        .paused( true )
 			.build();
+		
+		var shellVariables = {
+			// The default file for history is set into the shell here though it's used by the DefaultHistory class
+			'#LineReaderClass.HISTORY_FILE#' : commandHistoryFile,
+			'#LineReaderClass.BLINK_MATCHING_PAREN#' : 0
+		};
+		
+		if( configService.getSetting( 'tabCompleteInline', false ) ) {
+			shellVariables.append( {
+				// These color tweaks are to improve the default ugly "pink" color in the optional AUTO_MENU_LIST setting (activated below)
+				'#LineReaderClass.COMPLETION_STYLE_LIST_BACKGROUND#' : 'bg:~grey',
+				'#LineReaderClass.COMPLETION_STYLE_LIST_DESCRIPTION#' : 'fg:blue,bg:~grey',
+				'#LineReaderClass.COMPLETION_STYLE_LIST_STARTING#' : 'inverse,bg:~grey'
+			} );
+		}
 				
 		// Build our reader instance
 		reader = createObject( "java", "org.jline.reader.LineReaderBuilder" )
 			.builder()
 			.terminal( terminal )
-			.variables( {
-				// The default file for history is set into the shell here though it's used by the DefaultHistory class
-				'#LineReaderClass.HISTORY_FILE#' : commandHistoryFile,
-				'#LineReaderClass.BLINK_MATCHING_PAREN#' : 0,
-				// These color tweaks are to improve the default ugly "pink" color in the optional AUTO_MENU_LIST setting (activated blow)
-				'#LineReaderClass.COMPLETION_LIST_BACKGROUND_COLOR#' : 12,
-				'#LineReaderClass.COMPLETION_COLOR_DESCRIPTION#' : 8
-			} )
+			.variables( shellVariables )
         	.completer( jCompletor )
         	.parser( jParser )
         	.highlighter( jHighlighter )
@@ -112,6 +120,8 @@ component singleton{
 		reader.setOpt( LineReaderOptionClass.CASE_INSENSITIVE );
 		// Makes i-search case insensitive (Ctrl-R and Ctrl-S)
 		reader.setOpt( LineReaderOptionClass.CASE_INSENSITIVE_SEARCH );
+		// Use groups in tab completion
+		reader.setOpt( LineReaderOptionClass.GROUP_PERSIST );
 		// Activate inline list tab completion
 		if( configService.getSetting( 'tabCompleteInline', false ) ) {
 			reader.setOpt( LineReaderOptionClass.AUTO_MENU_LIST );	
