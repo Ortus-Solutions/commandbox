@@ -57,7 +57,11 @@ component aliases='link' {
 		}
 		
 		if( !directoryExists( arguments.moduleDirectory ) ) {
-			error( 'The target directory [#arguments.moduleDirectory#] doesn''t exist.' );
+			// Create dir if it doesn't exist
+			directoryCreate(arguments.moduleDirectory);
+			if( !directoryExists( arguments.moduleDirectory ) ) {
+				error( 'The target directory [#arguments.moduleDirectory#] doesn''t exist.' );
+			}
 		}
 		
 		var boxJSON = packageService.readPackageDescriptor( packageDirectory );
