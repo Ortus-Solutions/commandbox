@@ -22,7 +22,19 @@ component singleton {
 	* @key The name of the setting to look up.
 	* @defaultValue The default value to use if the key does not exist in the system properties
 	*/
-    function getSystemSetting( required string key, defaultValue ) {
+    function getSystemSetting( required string key, defaultValue, any context={} ) {
+
+		// Allow for custom setting resolution
+		var interceptData = {
+			setting : key,
+			defaultValue : defaultValue ?: '',
+			resolved : false,
+			context : context
+		};
+		interceptorService.announceInterception( 'onSystemSettingExpansion', interceptData );
+		if( interceptData.resolved ) {
+			return interceptData.setting;
+		}
 
 		// See if the key exists in the current env or any of the parent envs
 		var cs = commandService.getCallStack();
@@ -160,23 +172,7 @@ component singleton {
 				settingName = settingName.listFirst( ':' );
 			}
 						
-			var interceptData = {
-				setting : settingName,
-				defaultValue : defaultValue,
-				resolved : false,
-				context : context
-			};
-			// Allow for custom setting resolution
-			interceptorService.announceInterception( 'onSystemSettingExpansion', interceptData );
-			
-			settingName = interceptData.setting;
-			defaultValue = interceptData.defaultValue;
-			
-			if( interceptData.resolved ) {
-				var result = settingName;
-			} else {
-				var result = getSystemSetting( settingName, defaultValue );	
-			}
+			var result = getSystemSetting( settingName, defaultValue, context );
 
 			// And stick their results in their place
 			text = replaceNoCase( text, systemSetting, result, 'one' );

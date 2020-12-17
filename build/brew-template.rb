@@ -9,6 +9,11 @@ class Commandbox < Formula
     sha256 "@sha256@"
   end
 
+  livecheck do
+    url :homepage
+    regex(/Download CommandBox v?(\d+(?:\.\d+)+)/i)
+  end
+
   bottle :unneeded
 
   depends_on "openjdk"

@@ -55,6 +55,7 @@ component accessors="true" singleton {
 			'endpoints.forgebox.APIURL',
 			// Servers
 			'server',
+			'server.singleServerMode',
 			'server.defaults',
 			'server.javaInstallDirectory',
 			// used in Artifactsservice
@@ -65,6 +66,7 @@ component accessors="true" singleton {
 			'command.aliases',
 			// Interactivity
 			'nonInteractiveShell',
+			'tabCompleteInline',
 			// JSON
 			'JSON.indent',
 			'JSON.lineEnding',

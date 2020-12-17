@@ -507,24 +507,8 @@ component accessors="true" singleton {
 					defaultValue = settingName.listRest( ':' );
 					settingName = settingName.listFirst( ':' );
 				}
-						
-				var interceptData = {
-					setting : settingName,
-					defaultValue : defaultValue,
-					resolved : false,
-					context : parameterInfo.namedParameters
-				};
-				// Allow for custom setting resolution
-				interceptorService.announceInterception( 'onSystemSettingExpansion', interceptData );
 				
-				settingName = interceptData.setting;
-				defaultValue = interceptData.defaultValue;
-				
-				if( interceptData.resolved ) {
-					var result = settingName;
-				} else {
-					var result = systemSettings.getSystemSetting( settingName, defaultValue );	
-				}
+				var result = systemSettings.getSystemSetting( settingName, defaultValue, parameterInfo.namedParameters );
 
 				// And stick their results in their place
 				parameterInfo.namedParameters[ paramName ] = replaceNoCase( paramValue, systemSetting, result, 'one' );
@@ -590,6 +574,7 @@ component accessors="true" singleton {
 		// This will hold the command chain. Usually just a single command,
 		// but a pipe ("|") will chain together commands and pass the output of one along as the input to the next
 		var commandsToResolve = breakTokensIntoChain( tokens );
+		rawLine = expandAliasesinRawLine( rawLine );
 		var commandChain = [];
 
 		// command hierarchy
@@ -826,7 +811,7 @@ component accessors="true" singleton {
 			var aliases = configService.getSetting( 'command.aliases', {} );
 			var matchingAlias = '';
 
-			for( alias in aliases ) {
+			for( var alias in aliases ) {
 				if( lcase( originalLine ).startsWith( lcase( alias ) ) ) {
 					matchingAlias = alias;
 					break;
@@ -838,7 +823,7 @@ component accessors="true" singleton {
 				expandedCommandsToResolve.append(
 					// Recursivley dig down. This allows aliases to alias other alises
 					breakTokensIntoChain(
-						// Re-tokenize the new strin
+						// Re-tokenize the new string
 						parser.tokenizeInput(
 							// Expand the alias with the string it aliases
 							replaceNoCase( originalLine, matchingAlias, aliases[ matchingAlias ], 'once' )
@@ -851,8 +836,34 @@ component accessors="true" singleton {
 			}
 
 		}
-
 		return expandedCommandsToResolve;
+	}
+	
+
+	/**
+	 * Replaces aliases in the raw line
+ 	 **/
+	private function expandAliasesinRawLine( string rawLine ) {
+		var aliases = configService.getSetting( 'command.aliases', {} );
+		var matchingAlias = '';
+
+		for( var alias in aliases ) {
+			if( lcase( rawLine ).startsWith( lcase( alias ) ) ) {
+				matchingAlias = alias;
+				break;
+			}
+		}
+
+		// If the start of this command matches an alias, swap it out.
+		if( matchingAlias.len() ) {
+			// Recursivley dig down. This allows aliases to alias other alises
+			return expandAliasesinRawLine(
+					// Expand the alias with the string it aliases
+					replaceNoCase( rawLine, matchingAlias, aliases[ matchingAlias ], 'once' )
+			 );
+		}
+
+		return rawLine;
 	}
 
 	/**

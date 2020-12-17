@@ -33,8 +33,10 @@ component accessors=true implements="IEndpoint" singleton {
 		var fullLexPath = folderName & '/' & getDefaultName( package ) & '.lex';
 		var fullBoxJSONPath = folderName & '/box.json';
 		directoryCreate( folderName );
+		var packageLowerCase = lcase( package );
 
-		if(fileExists(package)) {
+		// Lucee will return TRUE for fileExists( 'http://site.com/package.zip' ) so we have to be explicit here
+		if( !( packageLowerCase.startsWith( 'http://' ) || packageLowerCase.startsWith( 'https://' ) || packageLowerCase.startsWith( 's3://' ) ) && fileExists(package)) {
 			try{
 				job.addLog( "Copying [#package#]" );
 				fileCopy(package, folderName);
@@ -45,7 +47,7 @@ component accessors=true implements="IEndpoint" singleton {
 		} else {
 			job.addLog( "Downloading [#package#]" );
 
-			var packageUrl = package.startsWith('s3://') ? S3Service.generateSignedURL(package, verbose) : package;
+			var packageUrl = packageLowerCase.startsWith('s3://') ? S3Service.generateSignedURL(package, verbose) : package;
 
 			try {
 				// Download File

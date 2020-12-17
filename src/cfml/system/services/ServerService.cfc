@@ -564,6 +564,7 @@ component accessors="true" singleton {
 			serverInfo.port = getRandomPort( serverInfo.host );
 		}
 		
+		var profileReason = 'config setting server defaults';
 		// Try to set a smart profile if there's not one set
 		if( !trim( defaults.profile ).len() ) {
 			var thisIP = '';
@@ -577,13 +578,23 @@ component accessors="true" singleton {
 			
 			// Env var takes precendence.  
 			if( len( envVarEnvironment ) ) {
+				profileReason = '"environment" env var';
 				defaults.profile = envVarEnvironment;
 			// Otherwise see if we're bound to localhost.
 			} else if( listFirst( thisIP, '.' ) == '127' ) {
+				profileReason = 'server bound to localhost';
 				defaults.profile = 'development';
 			} else {
+				profileReason = 'secure by default';
 				defaults.profile = 'production';
 			}
+		}
+		
+		if( !isNull( serverJSON.profile ) ) {
+			profileReason = 'profile property in server.json';	
+		}
+		if( !isNull( serverProps.profile ) ) {
+			profileReason = 'profile argument to server start command';	
 		}
 		serverInfo.profile			= serverProps.profile	 		?: serverJSON.profile				?: defaults.profile;
 
@@ -615,7 +626,35 @@ component accessors="true" singleton {
 		serverInfo.blockSensitivePaths									 = serverJSON.web.blockSensitivePaths	?: defaults.web.blockSensitivePaths;
 		serverInfo.blockFlashRemoting									 = serverJSON.web.blockFlashRemoting	?: defaults.web.blockFlashRemoting;
 		serverInfo.allowedExt											 = serverJSON.web.allowedExt		?: defaults.web.allowedExt;
+		
+		// If there isn't a default for this already
+		if( !isBoolean( defaults.web.directoryBrowsing ) ) {
+			// Default it according to the profile
+			if( serverInfo.profile == 'development' ) {
+				defaults.web.directoryBrowsing = true;
+			} else {
+				// secure by default even if profile is none or custom
+				defaults.web.directoryBrowsing = false;
+			}
+		}
+		serverInfo.directoryBrowsing = serverProps.directoryBrowsing ?: serverJSON.web.directoryBrowsing ?: defaults.web.directoryBrowsing;
 
+		job.start( 'Setting Server Profile to [#serverInfo.profile#]' );		
+			job.addLog( 'Profile set from #profileReason#' );		
+			if( serverInfo.blockCFAdmin == 'external' ) {
+				job.addSuccessLog( 'Block CF Admin external' );
+			} else if( serverInfo.blockCFAdmin == 'true' ) {
+				job.addSuccessLog( 'Block CF Admin enabled' );
+			} else {
+				job.addErrorLog( 'Block CF Admin disabled' );				
+			}		
+			job[ 'add#( serverInfo.blockSensitivePaths ? 'Success' : 'Error' )#Log' ]( 'Block Sensitive Paths #( serverInfo.blockSensitivePaths ? 'en' : 'dis' )#abled' );
+			job[ 'add#( serverInfo.blockFlashRemoting ? 'Success' : 'Error' )#Log' ]( 'Block Flash Remoting #( serverInfo.blockFlashRemoting ? 'en' : 'dis' )#abled' );
+			if( len( serverInfo.allowedExt ) ) {
+				job.addLog( 'Allowed Extensions: [#serverInfo.allowedExt#]' );	
+			}
+			job[ 'add#( !serverInfo.directoryBrowsing ? 'Success' : 'Error' )#Log' ]( 'Directory Browsing #( serverInfo.directoryBrowsing ? 'en' : 'dis' )#abled' );
+		job.complete( serverInfo.verbose );
 
 		// Double check that the port in the user params or server.json isn't in use
 		if( !isPortAvailable( serverInfo.host, serverInfo.port ) ) {
@@ -750,18 +789,6 @@ component accessors="true" singleton {
 			serverInfo.javaHome = variables.javaCommand;
 		}
 
-		// If there isn't a default for this already
-		if( !isBoolean( defaults.web.directoryBrowsing ) ) {
-			// Default it according to the profile
-			if( serverInfo.profile == 'development' ) {
-				defaults.web.directoryBrowsing = true;
-			} else {
-				// secure by default even if profile is none or custom
-				defaults.web.directoryBrowsing = false;
-			}
-		}
-		serverInfo.directoryBrowsing = serverProps.directoryBrowsing ?: serverJSON.web.directoryBrowsing ?: defaults.web.directoryBrowsing;
-
 		// Global aliases are always added on top of server.json (but don't overwrite)
 		// Aliases aren't accepted via command params due to no clean way to provide them
 		serverInfo.aliases 			= defaults.web.aliases;
@@ -865,8 +892,8 @@ component accessors="true" singleton {
 			serverInfo.webRules.append( [
 				// track and trace verbs can leak data in XSS attacks
 				"disallowed-methods( methods={trace,track} )",
-				// Common config files
-				"regex( pattern='.*/(box.json|server.json|web.config|urlrewrite.xml|package.json|package-lock.json|Gulpfile.js|CFIDE/multiservermonitor-access-policy.xml|CFIDE/probe.cfm|CFIDE/main/ide.cfm)', case-sensitive=false ) -> { set-error(404); done }",
+				// Common config files and sensitive paths that should never be accessed, even on development
+				"regex( pattern='.*/(box.json|server.json|web.config|urlrewrite.xml|package.json|package-lock.json|Gulpfile.js)', case-sensitive=false ) -> { set-error(404); done }",
 				// Any file or folder starting with a period
 				"regex('/\.') -> { set-error( 404 ); done }",
 				// Additional serlvlet mappings in Adobe CF's web.xml
@@ -874,6 +901,14 @@ component accessors="true" singleton {
 				// java web service (Axis) files
 				"regex( pattern='\.jws$', case-sensitive=false ) -> { set-error( 404 ); done }"
 			], true );	
+			
+			if( serverInfo.profile == 'production' ) {
+				serverInfo.webRules.append( [
+					// Common config files and sensitive paths in ACF and TestBox that may be ok for dev, but not for production
+					"regex( pattern='.*/(CFIDE/multiservermonitor-access-policy.xml|CFIDE/probe.cfm|CFIDE/main/ide.cfm|tests/runner.cfm|testbox/system/runners/HTMLRunner.cfm)', case-sensitive=false ) -> { set-error(404); done }",
+				], true );
+			}
+			
 		}
 		
 		if( serverInfo.blockFlashRemoting ) {
@@ -1179,7 +1214,7 @@ component accessors="true" singleton {
 		}
 
 		// Serialize tray options and write to temp file
-		var trayOptionsPath = serverinfo.customServerFolder & '/trayOptions.json';
+		var trayOptionsPath = serverinfo.serverHomeDirectory & '/.trayOptions.json';
 		var trayJSON = {
 			'title' : displayServerName,
 			'tooltip' : processName,
@@ -1414,7 +1449,7 @@ component accessors="true" singleton {
 		}
 
 		if( serverInfo.webRules.len() ){			
-			var predicateFile = serverinfo.customServerFolder & '/.predicateFile.txt';
+			var predicateFile = serverinfo.serverHomeDirectory & '/.predicateFile.txt';
 			fileWrite( predicateFile, serverInfo.webRules.toList( CR ) );			
 			args.append( '--predicate-file' ).append( predicateFile );
 		}
@@ -1773,6 +1808,10 @@ component accessors="true" singleton {
 		throw( 'Invalid Heap size [#heapSize#]' );
 	}
 
+	function getFirstServer() {
+		return getServers()[ getServers().keyArray().first() ];
+	}
+
 	/**
 	* Unified logic to resolve a server given an optional name, directory, and server.json path.
 	* Returns resolved name, webroot, serverConfigFile, serverInfo from the last start and serverJSON
@@ -1792,6 +1831,32 @@ component accessors="true" singleton {
 	function resolveServerDetails(
 		required struct serverProps
 	) {
+
+		// If CommandBox is in single server mode, just force the first (and only) server to be the one we find
+		if( ConfigService.getSetting( 'server.singleServerMode', false ) && getServers().count() ){
+			
+			// CFConfig calls this method sometimes with a path to a JSON file and needs to get no server back
+			if( serverProps.keyExists( 'name' ) && lcase( serverProps.name ).endsWith( '.json' ) && fileExists( serverProps.name ) ) {
+				return {
+					defaultName : '',
+					defaultwebroot : '',
+					defaultServerConfigFile : '',
+					serverJSON : {},
+					serverInfo : {},
+					serverIsNew : true
+				};	
+			}
+			
+			var serverInfo = getFirstServer();
+			return {
+				defaultName : serverInfo.name,
+				defaultwebroot : serverInfo.webroot,
+				defaultServerConfigFile : serverInfo.serverConfigFile,
+				serverJSON : readServerJSON( serverInfo.serverConfigFile ),
+				serverInfo : serverInfo,
+				serverIsNew : false
+			};
+		}
 
 		var job = wirebox.getInstance( 'interactiveJob' );
 		var locVerbose = serverProps.verbose ?: false;
@@ -2008,7 +2073,11 @@ component accessors="true" singleton {
 	* @serverInfo The server information
 	*/
 	function getCustomServerFolder( required struct serverInfo ){
-		return variables.customServerDirectory & arguments.serverinfo.id & "-" & arguments.serverInfo.name;
+		if( configService.getSetting( 'server.singleServerMode', false ) ){
+			return variables.customServerDirectory & 'serverHome';
+		} else {
+			return variables.customServerDirectory & arguments.serverinfo.id & "-" & arguments.serverInfo.name;	
+		}
 	}
 
 	/**
@@ -2089,20 +2158,29 @@ component accessors="true" singleton {
 	 * @serverInfo.hint struct of server info (ports, etc.)
  	 **/
 	function setServerInfo( required struct serverInfo ){
-
 		var servers 	= getServers();
-		var normalizedWebroot = normalizeWebroot( arguments.serverInfo.webroot );
-		var webrootHash = hash( normalizedWebroot & ucase( arguments.serverInfo.name ) );
-		arguments.serverInfo.id = webrootHash;
+		var serverID = calculateServerID( arguments.serverInfo.webroot, arguments.serverInfo.name );
+		
+		arguments.serverInfo.id = serverID;
 
 		if( arguments.serverInfo.webroot == "" ){
 			throw( "The webroot cannot be empty!" );
 		}
-		servers[ webrootHash ] = serverInfo;
+	
+		servers[ serverID ] = serverInfo;
+		
 		// persist back safely
-
 		setServers( servers );
 
+	}
+	
+	function calculateServerID( webroot, name ) {
+		
+		if( ConfigService.getSetting( 'server.singleServerMode', false ) ){
+			return 'serverHome';
+		}
+		var normalizedWebroot = normalizeWebroot( webroot );
+		return hash( normalizedWebroot & ucase( name ) );
 	}
 
 	function normalizeWebroot( required string webroot ) {
@@ -2149,8 +2227,7 @@ component accessors="true" singleton {
 				var thisServer = results[ thisKey ];
 				// Backwards compat-- add in server id if it doesn't exist for older versions of CommandBox
 				if( isNull( thisServer.id ) ){
-					var normalizedWebroot = normalizeWebroot( thisServer.webroot );
-					thisServer.id = hash( normalizedWebroot & ucase( thisServer.name ) );
+					thisServer.id = calculateServerID( thisServer.webroot, thisServer.name );
 					updateRequired = true;
 				}
 
@@ -2191,6 +2268,10 @@ component accessors="true" singleton {
 	*/
 	struct function getServerInfoByDiscovery( required directory="", required name="", serverConfigFile="" ){
 
+		if( ConfigService.getSetting( 'server.singleServerMode', false ) && getServers().count() ){
+			return getFirstServer();
+		}
+
 		if( len( arguments.serverConfigFile ) ){
 			var foundServer = getServerInfoByServerConfigFile( arguments.serverConfigFile );
 			if( structCount( foundServer ) ) {
@@ -2216,6 +2297,11 @@ component accessors="true" singleton {
 	* @name.hint The name to find
 	*/
 	struct function getServerInfoByName( required name ){
+		
+		if( ConfigService.getSetting( 'server.singleServerMode', false ) && getServers().count() ){
+			return getFirstServer();
+		}
+		
 		var servers = getServers();
 		for( var thisServer in servers ){
 			if( servers[ thisServer ].name == arguments.name ){
@@ -2231,6 +2317,11 @@ component accessors="true" singleton {
 	* @name.serverConfigFile The serverConfigFile to find
 	*/
 	struct function getServerInfoByServerConfigFile( required serverConfigFile ){
+		
+		if( ConfigService.getSetting( 'server.singleServerMode', false ) && getServers().count() ){
+			return getFirstServer();
+		}
+		
 		arguments.serverConfigFile = fileSystemUtil.resolvePath( arguments.serverConfigFile );
 		var servers = getServers();
 		for( var thisServer in servers ){
@@ -2261,6 +2352,11 @@ component accessors="true" singleton {
 	* @webroot.hint The webroot to find
 	*/
 	struct function getServerInfoByWebroot( required webroot ){
+		
+		if( ConfigService.getSetting( 'server.singleServerMode', false ) && getServers().count() ){
+			return getFirstServer();
+		}
+		
 		arguments.webroot = fileSystemUtil.resolvePath( arguments.webroot );
 		var servers = getServers();
 		for( var thisServer in servers ){
@@ -2278,18 +2374,17 @@ component accessors="true" singleton {
  	**/
 	struct function getServerInfo( required webroot , required name){
 		var servers 	= getServers();
-		var normalizedWebroot = normalizeWebroot( arguments.webroot );
-		var webrootHash = hash( normalizedWebroot & ucase( arguments.name ) );
+		var serverID = calculateServerID( arguments.webroot, arguments.name );
 		var statusInfo 	= {};
 
 		if( !directoryExists( arguments.webroot ) ){
 			statusInfo = { result:"Webroot does not exist, cannot start :" & arguments.webroot };
 		}
 
-		if( isNull( servers[ webrootHash ] ) ){
+		if( isNull( servers[ serverID ] ) ){
 			// prepare new server info
 			var serverInfo 		= newServerInfoStruct();
-			serverInfo.id 		= webrootHash;
+			serverInfo.id 		= serverID;
 			serverInfo.webroot 	= arguments.webroot;
 			serverInfo.name 	= arguments.name;
 
@@ -2298,15 +2393,15 @@ component accessors="true" singleton {
 			var nameCounter = 1;
 			while( structCount( getServerInfoByName( serverInfo.name ) ) ) {
 				serverInfo.name = originalName & ++nameCounter;
-				webrootHash = hash( normalizedWebroot & ucase( arguments.name ) );
+				serverID = calculateServerID( arguments.webroot, serverInfo.name );
 			}
 		
 			// Store it in server struct
-			servers[ webrootHash ] = serverInfo;
+			servers[ serverID ] = serverInfo;
 		}
 
 		// Return the new record
-		return servers[ webrootHash ];
+		return servers[ serverID ];
 	}
 
 	/**

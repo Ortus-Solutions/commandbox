@@ -184,6 +184,29 @@ component accessors="true" implements="IEndpointInteractive" {
 			throw( e.message, 'endpointException', e.detail );
 		}
 	}
+	
+	/**
+	 * Log a user out of ForgeBox
+	 * @username The username
+	 */
+	public function logout( string userName='' ) {
+		var settingBase = 'endpoints.forgebox' & ( getNamePrefixes() == 'forgebox' ? '' : '-' & getNamePrefixes() );
+		
+		// Remove ALL login data for this endpoint
+		if( !len( userName ) ) {
+			configService.removeSetting( settingBase );
+			return;
+		}
+		
+		// If the user being logged out is the current one in use, remove the current API Token as well, otherwise leave whatever other user is set in place
+		if( configService.getSetting( settingBase & '.tokens.#userName#', '' ) == configService.getSetting( settingBase & '.APIToken', '' ) ) {
+			configService.removeSetting( settingBase & '.APIToken' );
+		}
+		
+		// Finally, remove stored token for this user
+		configService.removeSetting( settingBase & '.tokens.#userName#' );
+		
+	}
 
 	/**
 	 * Publish a package in ForgeBox

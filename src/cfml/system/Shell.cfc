@@ -547,6 +547,8 @@ component accessors="true" singleton {
 				// User hits Ctrl-D.  Murder the shell dead.
 				} catch( org.jline.reader.EndOfFileException var e ) {
 
+					// e.getPageException().getException().getPartialLine()
+
 					// Only output this if a user presses Ctrl-D, EOF can also happen if piping an actual file of input into the shell.
 					if( !arguments.silent ) {
 						variables.reader.getTerminal().writer().print( variables.print.boldGreenLine( 'Goodbye!' ) );
