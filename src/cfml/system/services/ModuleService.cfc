@@ -447,6 +447,20 @@
 						// just register with no namespace
 						wirebox.getBinder().mapDirectory( packagePath=packagePath );
 					}
+					
+					// Register Default Module Export if it exists as @moduleName, so you can do getInstance( "@moduleName" )
+					systemoutput( arguments.moduleName, 1 );
+					systemoutput( mconfig.modelsPhysicalPath & "/#arguments.moduleName#.cfc", 1 );
+					systemoutput( "", 1 );
+					if ( fileExists( mconfig.modelsPhysicalPath & "/#arguments.moduleName#.cfc" ) ) {
+						wirebox.getBinder()
+							.map( [
+								"@#arguments.moduleName#",
+								"@#mConfig.modelNamespace#"
+							] )
+							.to( packagePath & ".#arguments.moduleName#" );
+					}
+					
 					wirebox.getBinder().processMappings();
 				}
 
