@@ -449,9 +449,6 @@
 					}
 					
 					// Register Default Module Export if it exists as @moduleName, so you can do getInstance( "@moduleName" )
-					systemoutput( arguments.moduleName, 1 );
-					systemoutput( mconfig.modelsPhysicalPath & "/#arguments.moduleName#.cfc", 1 );
-					systemoutput( "", 1 );
 					if ( fileExists( mconfig.modelsPhysicalPath & "/#arguments.moduleName#.cfc" ) ) {
 						wirebox.getBinder()
 							.map( [
