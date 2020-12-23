@@ -667,9 +667,7 @@ component accessors="true" singleton {
 			} else {
 				badPortlocation = 'config server defaults';
 			}
-			job.addErrorLog( "You asked for port [#( serverProps.port ?: serverJSON.web.http.port ?: defaults.web.http.port ?: '?' )#] in your #badPortlocation# but it's already in use so I'm ignoring it and choosing a random one for you." );
-			job.addErrorLog( "" );
-			serverInfo.port = getRandomPort( serverInfo.host );
+			throw( message="You asked for port [#( serverProps.port ?: serverJSON.web.http.port ?: defaults.web.http.port ?: '?' )#] in your #badPortlocation# but it's already in use.", detail="Please choose another or use netstat to find out what process is using the port already.", type="commandException" );
 		}
 
 		serverInfo.stopsocket		= serverProps.stopsocket		?: serverJSON.stopsocket 			?: getRandomPort( serverInfo.host );
