@@ -37,7 +37,7 @@ component {
 	 * @description The model hint description
 	 * @open Open the file once generated
 	 * @accessors Setup accessors to be true in the component
-	 * @properties Enter a list of properties to generate. You can add the type via semicolon separator. Ex: firstName,age:numeric,wheels:array
+	 * @properties Enter a list of properties to generate. You can add the type via colon separator. Ex: firstName,age:numeric,wheels:array
 	 **/
 	function run(
 		required name,

@@ -94,7 +94,7 @@ component {
 	 * @outputFile  We will store the results in this output file as well as presenting it to you.
 	 * @outputFormats A list of output reporter to produce using the runner's JSON results only. Available formats are: json,xml,junit,antjunit,simple,dot,doc,min,mintext,doc,text,tap,codexwiki
 	 * @verbose Display extra details inlcuding passing and skipped tests.
-	 * @testboxInstallForce For the installation of testbox again
+	 * @testboxUseLocal When using outputformats, prefer testbox installation in current working directory over bundled version.
 	 **/
 	function run(
 		string runner = "",
@@ -111,10 +111,10 @@ component {
 		string outputFile,
 		string outputFormats="",
 		boolean verbose,
-		boolean testboxInstallForce=false
+		boolean testboxUseLocal=false
 	){
 		// Ensure TestBox For reporting and conversions
-		ensureTestBox( arguments.testboxInstallForce );
+		ensureTestBox( arguments.testboxUseLocal );
 
 		// Discover runner Url
 		arguments.testboxUrl = discoverRunnerUrl( arguments.runner );
@@ -196,7 +196,7 @@ component {
 
 			print
 				.line()
-				.blueLine( "Output formats detected(#arguments.outputFormats#), building out reports..." )
+				.blueLine( "Output formats detected (#arguments.outputFormats#), building out reports..." )
 				.toConsole();
 
 			buildOutputFormats(
@@ -402,19 +402,15 @@ component {
 	/**
 	 * Ensure that TestBox is installed
 	 */
-	private function ensureTestBox( boolean force = false ){
-		var targetPath = variables.moduleConfig.path & "/testbox";
-
-		if( !directoryExists( targetPath ) || arguments.force ){
-
-			if( arguments.force ){
-				print.redLine( "TestBox Installed Forced, re-installing again..." );
-				directoryDelete( targetPath, true );
-			} else {
-				print.redLine( "TestBox not installed, installing it now. This will only happen once..." );
+	private function ensureTestBox( boolean testboxUseLocal = false ){
+		if( testboxUseLocal ) {
+			var targetPath = resolvePath( 'testbox' );
+			if( !directoryExists( targetPath ) ) {
+				error( "Uh-oh, you've asked to use a local copy of TestBox, but [#targetPath#] doesn't exist.", "Do you need to run [box install]?");
 			}
-
-			command( "install id='testbox' directory='#targetPath#' ").run();
+		} else  {
+			var targetPath = variables.moduleConfig.path & "/testbox";
+			
 		}
 
 		// Add our mapping

@@ -1123,7 +1123,7 @@ component accessors="true" singleton {
 		for( var paramName in parameterInfo.namedParameters ) {
 
 			// If this is an expected param
-			functionIndex = commandParams.find( function( i ) {
+			var functionIndex = commandParams.find( function( i ) {
 				return i.name == paramName;
 			} );
 
