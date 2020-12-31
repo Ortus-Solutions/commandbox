@@ -33,7 +33,7 @@ component extends="wirebox.system.logging.AbstractAppender" {
 	function logMessage( required logEvent ) {
 
 		// Check for Ctrl-C
-		application.wirebox.getInstance( 'shell' ).checkInterrupted();
+		getShell().checkInterrupted();
 
 		var loge = arguments.logEvent;
 		var entry = "";
@@ -80,10 +80,18 @@ component extends="wirebox.system.logging.AbstractAppender" {
 		
 	}
 
+	function getShell() {
+		if( !structKeyExists( variables, 'shell' ) ){
+			// Appenders are created by WireBox, so we can't DI.
+			variables.Shell = wireBox.getInstance( 'shell' );
+		}
+		return variables.Shell;
+	}
+
 	function print() {
 		if( !structKeyExists( variables, 'printBuffer' ) ){
 			// Appenders are created by WireBox, so we can't DI.
-			variables.printBuffer = application.wireBox.getInstance( 'PrintBuffer' );
+			variables.printBuffer = wireBox.getInstance( 'PrintBuffer' );
 		}
 		return variables.printBuffer;
 	}
@@ -91,7 +99,7 @@ component extends="wirebox.system.logging.AbstractAppender" {
 	function job() {
 		if( !structKeyExists( variables, 'InteractiveJob' ) ){
 			// Appenders are created by WireBox, so we can't DI.
-			variables.InteractiveJob = application.wireBox.getInstance( 'InteractiveJob' );
+			variables.InteractiveJob = wireBox.getInstance( 'InteractiveJob' );
 		}
 		return variables.InteractiveJob;
 	}

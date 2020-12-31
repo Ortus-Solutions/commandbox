@@ -84,7 +84,7 @@ component accessors="true" singleton {
 			string defaultName=''
 	){
 		// Java service registers itself as an interceptor on creation so I need to force the provder to create the service before installing anything.
-		javaService.get();
+		javaService.$get();
 
 		var shellWillReload = false;
 		var job = wirebox.getInstance( 'interactiveJob' );
@@ -493,7 +493,7 @@ component accessors="true" singleton {
 
 			// This will normalize the slashes to match
 			tmpPath = fileSystemUtil.resolvePath( tmpPath );
-			var thisPathPatternMatcher = pathPatternMatcher.get();
+			var thisPathPatternMatcher = pathPatternMatcher.$get();
 
 			// Copy Assets now to destination
 			directoryCopy( tmpPath, installDirectory, true, function( path ){

@@ -26,6 +26,10 @@
 	 */
 	property name="coldbox";
 	/**
+	 * The WireBox object linkage
+	 */
+	property name="wirebox";
+	/**
 	 * The LogBox object linkage
 	 */
 	property name="logbox";
@@ -37,14 +41,28 @@
 	 * The Event Manager object linkage
 	 */
 	property name="eventManager";
+
 	/**
 	 * The array of events this factory registers
 	 */
 	property name="eventStates" type="array";
+
 	/**
 	 * The registered caches this factory keeps track of
 	 */
 	property name="caches" type="struct";
+
+	/**
+	 * The Global AsyncManager
+	 * @see wirebox.system.async.AsyncManager
+	 */
+	property name="asyncManager";
+
+	/**
+	 * The logBox task scheduler executor
+	 * @see wirebox.system.async.tasks.ScheduledExecutor
+	 */
+	property name="taskScheduler";
 
 	/**
 	 * Constructor
@@ -54,22 +72,26 @@
 	 * @coldbox A coldbox application that this instance of CacheBox can be linked to, if not using it, just ignore it.
 	 * @coldbox.doc_generic wirebox.system.web.Controller
 	 * @factoryID A unique ID or name for this factory. If not passed I will make one up for you.
+	 * @wirebox A configured wirebox instance to get logbox, asyncManager, and EventManager from.  If not passed, I will create new ones.
 	 */
 	function init(
 		config,
 		coldbox,
-		factoryId=""
+		factoryId="",
+		wirebox
 	){
 		var defaultConfigPath = "wirebox.system.cache.config.DefaultConfiguration";
 
 		// CacheBox Factory UniqueID
 		variables.factoryId = createObject( "java", "java.lang.System" ).identityHashCode( this );
 		// Version
-		variables.version = "5.6.2+1021";
+		variables.version = "6.2.1+1388";
 		// Configuration object
 		variables.config  = "";
 		// ColdBox Application Link
 		variables.coldbox = "";
+		// ColdBox Application Link
+		variables.wirebox = "";
 		// Event Manager Link
 		variables.eventManager = "";
 		// Configured Event States
@@ -114,18 +136,41 @@
 		// Check if linking ColdBox
 		if( !isNull( arguments.coldbox ) ){
 			// Link ColdBox
-			variables.coldbox = arguments.coldbox;
+			variables.coldbox = arguments.coldbox;			
+			// Link to WireBox
+			variables.wirebox = variables.coldbox.getWireBox();				
 			// link LogBox
 			variables.logBox  = variables.coldbox.getLogBox();
 			// Link Event Manager
 			variables.eventManager = variables.coldbox.getInterceptorService();
 			// Link Interception States
 			variables.coldbox.getInterceptorService().appendInterceptionPoints( variables.eventStates );
+			// Link async manager and scheduler
+			variables.asyncManager = variables.coldbox.getAsyncManager();
+			variables.taskScheduler = variables.asyncManager.getExecutor( "coldbox-tasks" );
 		} else {
-			// Running standalone, so create our own logging first
-			configureLogBox( arguments.config.getLogBoxConfig() );
-			// Running standalone, so create our own event manager
-			configureEventManager();
+			if( !isNull( arguments.wirebox ) ) {
+				// Link to WireBox
+				variables.wirebox = arguments.wirebox;
+				// If WireBox linked, get LogBox and EventManager, and asyncmanager from it
+				variables.asyncManager = variables.wirebox.getAsyncManager();
+				variables.taskScheduler = variables.wirebox.getTaskScheduler();				
+				variables.logBox = variables.wirebox.getLogBox();				
+				// link LogBox
+				variables.eventManager = variables.wirebox.getEventManager();
+				// register the points to listen to
+				variables.eventManager.appendInterceptionPoints( variables.eventStates );
+			} else {
+				
+				// Register an async manager and scheduler
+				variables.asyncManager = new wirebox.system.async.AsyncManager();
+				variables.taskScheduler = variables.asyncManager.newScheduledExecutor( name : "cachebox-tasks", threads : 20 );
+				
+				// Running standalone, so create our own logging first
+				configureLogBox( arguments.config.getLogBoxConfig() );
+				// Running standalone, so create our own event manager
+				configureEventManager();
+			}
 		}
 
 		// Configure Logging for the Cache Factory
@@ -214,7 +259,7 @@
 			}
 
 			// Announce To Listeners
-			variables.eventManager.processState( "afterCacheFactoryConfiguration", { cacheFactory = this } );
+			variables.eventManager.announce( "afterCacheFactoryConfiguration", { cacheFactory = this } );
 		}
 	}
 
@@ -299,7 +344,7 @@
 		}
 
 		// Notify Listeners
-		variables.eventManager.processState( "beforeCacheFactoryShutdown", { cacheFactory = this } );
+		variables.eventManager.announce( "beforeCacheFactoryShutdown", { cacheFactory = this } );
 
 		// safely iterate and shutdown caches
 		getCacheNames().each( function( item ){
@@ -312,13 +357,13 @@
 			}
 
 			//process listners
-			variables.eventManager.processState( "beforeCacheShutdown", { cache = cache } );
+			variables.eventManager.announce( "beforeCacheShutdown", { cache = cache } );
 
 			//Shutdown each cache
 			cache.shutdown();
 
 			//process listeners
-			variables.eventManager.processState( "afterCacheShutdown", { cache = cache } );
+			variables.eventManager.announce( "afterCacheShutdown", { cache = cache } );
 
 			// log
 			if( variables.log.canDebug() ){
@@ -332,8 +377,16 @@
 		// remove scope registration
 		removeFromScope();
 
+		// Shutdown LogBox and Executors if not in ColdBox Mode or WireBox mode
+		if( !isObject( variables.coldbox ) && !isObject( variables.wirebox ) ){
+			if( isObject( variables.logBox ) ) {
+				variables.logBox.shutdown();
+			}
+			variables.asyncManager.shutdownAllExecutors( force = true );
+		}
+		
 		// Notify Listeners
-		variables.eventManager.processState( "afterCacheFactoryShutdown", { cacheFactory = this } );
+		variables.eventManager.announce( "afterCacheFactoryShutdown", { cacheFactory = this } );
 
 		// Log shutdown complete
 		if( variables.log.canDebug() ){
@@ -370,13 +423,13 @@
 		}
 
 		// Notify Listeners
-		variables.eventManager.processState( "beforeCacheShutdown", { cache = cache } );
+		variables.eventManager.announce( "beforeCacheShutdown", { cache = cache } );
 
 		//Shutdown the cache
 		cache.shutdown();
 
 		//process listeners
-		variables.eventManager.processState( "afterCacheShutdown", { cache = cache } );
+		variables.eventManager.announce( "afterCacheShutdown", { cache = cache } );
 
 		// remove cache
 		removeCache( arguments.name );
@@ -419,7 +472,7 @@
 					var cache = variables.caches[ arguments.name ];
 
 					// Notify listeners here
-					variables.eventManager.processState( "beforeCacheRemoval", { cache = cache } );
+					variables.eventManager.announce( "beforeCacheRemoval", { cache = cache } );
 
 					// process shutdown
 					cache.shutdown();
@@ -428,7 +481,7 @@
 					structDelete( variables.caches, arguments.name );
 
 					// Announce it
-					variables.eventManager.processState( "afterCacheRemoval", { cache = arguments.name } );
+					variables.eventManager.announce( "afterCacheRemoval", { cache = arguments.name } );
 
 					// Log it
 					if( variables.log.canDebug() ){
@@ -514,7 +567,7 @@
 				newCache = arguments.decoratedCache
 			};
 
-			variables.eventManager.processState( "beforeCacheReplacement", iData	);
+			variables.eventManager.announce( "beforeCacheReplacement", iData	);
 
 			// remove old Cache
 			structDelete( variables.caches, name );
@@ -656,6 +709,10 @@
 					if( isObject( variables.coldbox ) AND structKeyExists( oCache, "setColdBox" ) ){
 						oCache.setColdBox( variables.coldbox );
 					}
+					// Link WireBox if using it
+					if( isObject( variables.wirebox ) AND structKeyExists( oCache, "setWireBox" ) ){
+						oCache.setWireBox( variables.wirebox );
+					}
 					// Link Event Manager
 					oCache.setEventManager( variables.eventManager );
 					// Call Configure it to start the cache up
@@ -663,7 +720,7 @@
 					// Store it
 					variables.caches[ name ] = oCache;
 					// Announce new cache registration now
-					variables.eventManager.processState( "afterCacheRegistration", { cache = oCache } );
+					variables.eventManager.announce( "afterCacheRegistration", { cache = oCache } );
 				}
 			}
 		}

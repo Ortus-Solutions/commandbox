@@ -44,7 +44,7 @@ component aliases="exec"{
 
 		try{
 			// we use the executor to capture output thread safely
-			var out = wirebox.getInstance( "Executor" ).runFile( arguments.file, vars );
+			var out = wirebox.getInstance( "CFMLExecutor" ).runFile( arguments.file, vars );
 		} catch( any e ){
 			print.boldGreen( "Error executing #arguments.file#: " );
 			rethrow;

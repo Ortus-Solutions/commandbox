@@ -35,7 +35,7 @@ component {
 		};
 
 		logBox.categories = {
-			"console" = { appenders="ANSIConsoleAppender" }
+			"console" : { appenders="ANSIConsoleAppender" }
 		};
 
 	}

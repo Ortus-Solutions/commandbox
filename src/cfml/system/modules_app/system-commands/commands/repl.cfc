@@ -36,7 +36,7 @@ component {
 
 		var quit 	 	= false;
 		var results  		= "";
-		var executor 		= wirebox.getInstance( "executor" );
+		var executor 		= wirebox.getInstance( "CFMLExecutor" );
 		var newHistory 		= arguments.script ? variables.REPLScriptHistoryFile : variables.REPLTagHistoryFile;
 		var dirInfo 		= "";
 
