@@ -15,11 +15,10 @@
  **/
 component {
 
-	FileUtils = createObject( 'java', 'org.apache.commons.io.FileUtils' );
 	BOMInputStream = createObject( 'java', 'org.apache.commons.io.input.BOMInputStream' );
 	FileInputStream = createObject( 'java', 'java.io.FileInputStream' );
-	File = createObject( 'java', 'java.io.File' );
-	UTF8_BOM = (chr( 239 ) & chr( 187 ) & chr( 191 )).getBytes();
+	// Assuming UTF-8 BOM
+	UTF8_BOM = javacast( 'byte[]', [ -17, -69, -65 ] );
 
 	/**
 	 * @path file(s) to replace tokens in. Globbing patters allowed such as *.txt
@@ -45,13 +44,9 @@ component {
 					}
 					var newContent = fileContents.replaceNoCase( token, replacement, 'all' );
 					if( hasBOM ) {
-						// Assuming UTF-8 BOM
-						jFile = File.init( thisPath );
-						FileUtils.writeByteArrayToFile( jFile, UTF8_BOM );
-						FileUtils.writeStringToFile( jFile, newContent, "UTF-8", true ); // true=append
-					} else {
-						fileWrite( thisPath, newContent, "UTF-8" );
+						newContent = UTF8_BOM & newContent;
 					}
+					fileWrite( thisPath, newContent, "UTF-8" );
 				}
 			}
 
