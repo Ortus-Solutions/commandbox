@@ -39,23 +39,27 @@ component singleton accessors=true {
 	*
 	* @returns The output of the task.  It's up to the caller to output it.
 	*/
-	string function runTask( required string taskFile,  required string target='run', taskArgs={}, boolean topLevel=true ) {
+	string function runTask( required string taskFile,  required string target='run', taskArgs={}, boolean topLevel=true, any taskObject ) {
 
 		// This is neccessary so changes to tasks get picked up right away.
 		pagePoolClear();
-
-		// We need the .cfc extension for the file exists check to work.
-		if( right( taskFile, 4 ) != '.cfc' ) {
-			taskFile &= '.cfc';
+		
+		if( !isNull( taskObject ) ) {
+			var taskCFC = taskObject;
+		} else {
+			// We need the .cfc extension for the file exists check to work.
+			if( right( taskFile, 4 ) != '.cfc' ) {
+				taskFile &= '.cfc';
+			}
+	
+			if( !fileExists( taskFile ) ) {
+				throw( message="Task CFC doesn't exist.", detail=arguments.taskFile, type="commandException");
+			}
+	
+			// Create an instance of the taskCFC.  To prevent caching of the actual code in the task, we're treating them as
+			// transients. Since the code is likely to change while devs are building and testing them.
+			var taskCFC = createTaskCFC( taskFile );			
 		}
-
-		if( !fileExists( taskFile ) ) {
-			throw( message="Task CFC doesn't exist.", detail=arguments.taskFile, type="commandException");
-		}
-
-		// Create an instance of the taskCFC.  To prevent caching of the actual code in the task, we're treating them as
-		// transients. Since the code is likely to change while devs are building and testing them.
-		var taskCFC = createTaskCFC( taskFile );
 
 		// If target doesn't exist or isn't a UDF
 		if( !taskHasMethod( taskCFC, target ) ) {
@@ -74,7 +78,7 @@ component singleton accessors=true {
 			var taskDeps = targetMD.depends ?: '';
 			taskDeps.listToArray()
 				.each( function( dep ) {
-					taskCFC.getPrinter().print( runTask( taskFile, dep, taskArgs, false ) );
+					taskCFC.getPrinter().print( runTask( taskFile, dep, taskArgs, false, taskCFC ) );
 				} );
 			
 			// Build our initial wrapper UDF for invoking the target.  This has embedded into it the logic for the pre<target> and post<target> lifecycle events
