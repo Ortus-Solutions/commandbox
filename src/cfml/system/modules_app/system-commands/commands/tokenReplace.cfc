@@ -36,8 +36,10 @@ component {
 
 			// It's a file
 			if( fileExists( thisPath ) ){
+				// If the file has a BOM, this will strip it!
 				var fileContents = fileRead( thisPath, "UTF-8" );
 				if( fileContents.findNoCase( token ) ) {
+					// We need to determine if the original file has a BOM, so we can put it back
 					var hasBOM = hasBOM( thispath )
 					if( verbose ) {
 						print.greenLine( thisPath & ( hasBOM ? ' (with BOM)' : '' ) );
@@ -56,6 +58,7 @@ component {
 	private boolean function hasBOM( thispath ) {
 		try {
 			var thisFile = BOMInputStream.init( FileInputStream.init( thispath ), true );
+			// There are several different byte order marks, but we're just assuming a UTF-8 BOM in this case.
 			return thisFile.hasBOM();
 		} finally {
 			thisFile.close();
