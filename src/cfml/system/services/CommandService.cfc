@@ -806,7 +806,7 @@ component accessors="true" singleton {
 		}
 
 		// Expand aliases
-		for( commandTokens in commandsToResolve ) {
+		for( var commandTokens in commandsToResolve ) {
 			var originalLine = commandTokens.toList( ' ' );
 			var aliases = configService.getSetting( 'command.aliases', {} );
 			var matchingAlias = '';
