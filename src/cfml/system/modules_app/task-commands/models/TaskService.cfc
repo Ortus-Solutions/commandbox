@@ -78,7 +78,7 @@ component singleton accessors=true {
 			var taskDeps = targetMD.depends ?: '';
 			taskDeps.listToArray()
 				.each( function( dep ) {
-					taskCFC.getPrinter().print( runTask( taskFile, dep, taskArgs, false, taskCFC ) );
+					runTask( taskFile, dep, taskArgs, false, taskCFC );
 				} );
 			
 			// Build our initial wrapper UDF for invoking the target.  This has embedded into it the logic for the pre<target> and post<target> lifecycle events
