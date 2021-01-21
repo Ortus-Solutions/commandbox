@@ -490,9 +490,11 @@ component accessors="true" singleton {
 				_classLoad( path );
 			// Is directory
 			} else if( directoryExists( path ) ) {
-				directoryList( path, true, 'array', '*.jar|*.class' )
-					.each( function( file ) {
-						_classLoad( file );
+				_classLoad( path );
+				directoryList( path, true, 'array' )
+					.filter( (p)=>p.endsWith( '/' ) || p.endsWith( '\' ) || p.lcase().endsWith( '.jar' ) )
+					.each( function( path ) {
+						_classLoad( path );
 					} );
 			// Is ????
 			} else {
