@@ -75,3 +75,7 @@ I THANK GOD FOR HIS WISDOM FOR THIS PROJECT
 ## THE DAILY BREAD
 
 "I am the way, and the truth, and the life; no one comes to the Father, but by me (JESUS)" Jn 14:1-12
+
+
+## Ortus Community
+Join us in our Ortus Community and become a valuable member of this project https://community.ortussolutions.com/c/communities/commandbox/14. We will looking forward to hearing from you!!
