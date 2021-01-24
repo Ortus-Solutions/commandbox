@@ -7,6 +7,10 @@
   \_____\___/|_| |_| |_|_| |_| |_|\__,_|_| |_|\__,_|____/ \___/_/\_\  
 ```
 
+## THE DAILY BREAD
+
+"I am the way, and the truth, and the life; no one comes to the Father, but by me (JESUS)" Jn 14:1-12
+
 # WELCOME TO COMMANDBOX 
 
 CommandBox ColdFusion (CFML) CLI, Package Manager, REPL and much more!
@@ -72,10 +76,5 @@ I have included some software from other open source projects and I have used so
 
 I THANK GOD FOR HIS WISDOM FOR THIS PROJECT
 
-## THE DAILY BREAD
-
-"I am the way, and the truth, and the life; no one comes to the Father, but by me (JESUS)" Jn 14:1-12
-
-
-## Ortus Community
-Join us in our Ortus Community and become a valuable member of this project https://community.ortussolutions.com/c/communities/commandbox/14. We will looking forward to hearing from you!!
+## Community and Support
+Join us in our Ortus Community and become a valuable member of this project [Commandbox CLI](https://community.ortussolutions.com/c/communities/commandbox/14). We will looking forward to hearing from you!!
