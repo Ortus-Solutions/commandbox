@@ -38,7 +38,8 @@ component accessors="true" singleton {
 		variables.configService		= wirebox.getInstance( "ConfigService" );
 		variables.SystemSettings	= wirebox.getInstance( "SystemSettings" );
 		variables.job				= wirebox.getInstance( "interactiveJob" );
-		variables.thisThread		 = createObject( 'java', 'java.lang.Thread' ).currentThread();
+		variables.thisThread		= createObject( 'java', 'java.lang.Thread' ).currentThread();
+		variables.asyncManager		= wirebox.getAsyncManager();
 
 		variables.exitCode = 0;
 		return this;
@@ -47,6 +48,10 @@ component accessors="true" singleton {
 	// This method needs to be overridden by the concrete class.
 	function run() {
 		error( 'This command CFC has not implemented a run() method.' );
+	}
+	
+	function async(){
+		return variables.asyncManager;
 	}
 
 	function getPrinter() {
