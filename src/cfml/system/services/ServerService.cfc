@@ -162,7 +162,8 @@ component accessors="true" singleton {
 				},
 				'AJP' : {
 					'enable' : d.web.ajp.enable ?: false,
-					'port' : d.web.ajp.port ?: 8009
+					'port' : d.web.ajp.port ?: 8009,
+					'AJPAllowedRequestAttributePattern' : d.web.ajp.AJPAllowedRequestAttributePattern ?: ''
 				},
 				'rewrites' : {
 					'enable' : d.web.rewrites.enable ?: false,
@@ -702,6 +703,7 @@ component accessors="true" singleton {
 
 		serverInfo.AJPEnable 		= serverProps.AJPEnable 		?: serverJSON.web.AJP.enable			?: defaults.web.AJP.enable;
 		serverInfo.AJPPort			= serverProps.AJPPort 			?: serverJSON.web.AJP.port				?: defaults.web.AJP.port;
+		serverInfo.AJPAllowedRequestAttributePattern	 	= serverJSON.AJPAllowedRequestAttributePattern			?: defaults.AJPAllowedRequestAttributePattern
 
 		// relative certFile in server.json is resolved relative to the server.json
 		if( isDefined( 'serverJSON.web.SSL.certFile' ) ) { serverJSON.web.SSL.certFile = fileSystemUtil.resolvePath( serverJSON.web.SSL.certFile, defaultServerConfigFileDirectory ); }
@@ -1258,7 +1260,7 @@ component accessors="true" singleton {
 			.append( '--log-dir' ).append( serverInfo.logDir )
 			.append( '--server-name' ).append( serverInfo.name )
 			.append( '--tray-enable' ).append( serverInfo.trayEnable )
-			.append( '--dock-enable' ).append( serverInfo.dockEnable ) 
+			.append( '--dock-enable' ).append( serverInfo.dockEnable )
 			.append( '--directoryindex' ).append( serverInfo.directoryBrowsing )
 			.append( '--timeout' ).append( serverInfo.startTimeout )
 			.append( '--proxy-peeraddress' ).append( 'true' )
@@ -1380,7 +1382,6 @@ component accessors="true" singleton {
 			.append( '--ssl-enable' ).append( serverInfo.SSLEnable )
 			.append( '--ajp-enable' ).append( serverInfo.AJPEnable );
 
-
 		if( serverInfo.HTTPEnable || serverInfo.SSLEnable ) {
 			args
 			 	.append( '--open-browser' ).append( serverInfo.openbrowser )
@@ -1403,6 +1404,7 @@ component accessors="true" singleton {
 		// Send AJP port if it's enabled
 		if( serverInfo.AJPEnable ){
 			args.append( '--ajp-port' ).append( serverInfo.AJPPort );
+			args.append( '--ajp-allowed-request-attribute-pattern' ).append( serverInfo.AJPAllowedRequestAttributePattern );
 		}
 
 		// Send SSL cert info if SSL is enabled and there's cert info
@@ -2439,6 +2441,7 @@ component accessors="true" singleton {
 			'SSLPort'			: 1443,
 			'AJPEnable'			: false,
 			'AJPPort'			: 8009,
+			'AJPAllowedRequestAttributePattern'	: "",
 			'SSLCertFile'		: "",
 			'SSLKeyFile'		: "",
 			'SSLKeyPass'		: "",
