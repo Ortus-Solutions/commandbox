@@ -703,7 +703,7 @@ component accessors="true" singleton {
 
 		serverInfo.AJPEnable 		= serverProps.AJPEnable 		?: serverJSON.web.AJP.enable			?: defaults.web.AJP.enable;
 		serverInfo.AJPPort			= serverProps.AJPPort 			?: serverJSON.web.AJP.port				?: defaults.web.AJP.port;
-		serverInfo.AJPAllowedRequestAttributePattern	 	= serverJSON.AJPAllowedRequestAttributePattern			?: defaults.AJPAllowedRequestAttributePattern
+		serverInfo.AJPAllowedRequestAttributePattern	 	= serverJSON.AJPAllowedRequestAttributePattern			?: defaults.web.AJP.AJPAllowedRequestAttributePattern
 
 		// relative certFile in server.json is resolved relative to the server.json
 		if( isDefined( 'serverJSON.web.SSL.certFile' ) ) { serverJSON.web.SSL.certFile = fileSystemUtil.resolvePath( serverJSON.web.SSL.certFile, defaultServerConfigFileDirectory ); }
