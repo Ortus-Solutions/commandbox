@@ -1404,7 +1404,9 @@ component accessors="true" singleton {
 		// Send AJP port if it's enabled
 		if( serverInfo.AJPEnable ){
 			args.append( '--ajp-port' ).append( serverInfo.AJPPort );
-			args.append( '--ajp-allowed-request-attribute-pattern' ).append( serverInfo.AJPAllowedRequestAttributePattern );
+			if( len( serverInfo.AJPAllowedRequestAttributePattern ) ){
+				args.append( '--ajp-allowed-request-attribute-pattern' ).append( serverInfo.AJPAllowedRequestAttributePattern );
+			}
 		}
 
 		// Send SSL cert info if SSL is enabled and there's cert info
