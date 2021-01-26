@@ -77,4 +77,4 @@ I have included some software from other open source projects and I have used so
 I THANK GOD FOR HIS WISDOM FOR THIS PROJECT
 
 ## Community and Support
-Join us in our Ortus Community and become a valuable member of this project [Commandbox CLI](https://community.ortussolutions.com/c/communities/commandbox/14). We will looking forward to hearing from you!!
+Join us in our Ortus Community and become a valuable member of this project [Commandbox CLI](https://community.ortussolutions.com/c/communities/commandbox/14). We are looking forward to hearing from you!
