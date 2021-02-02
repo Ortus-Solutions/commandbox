@@ -21,6 +21,7 @@ component aliases="coldbox create controller" {
 	 * @directory The base directory to create your handler in and creates the directory if it does not exist. Defaults to 'handlers'.
 	 * @description The handler hint description
 	 * @open Open the handler (and test(s) if applicable) once generated
+	 * @rest Make this a REST handler instead of a normal ColdBox Handler
 	 **/
 	function run(
 		required name,
@@ -32,7 +33,8 @@ component aliases="coldbox create controller" {
 		testsDirectory           = "tests/specs/integration",
 		directory                = "handlers",
 		description              = "I am a new handler",
-		boolean open             = false
+		boolean open             = false,
+		boolean rest 			 = false
 	){
 		// This will make each directory canonical and absolute
 		arguments.directory      = resolvePath( arguments.directory );
@@ -49,9 +51,13 @@ component aliases="coldbox create controller" {
 		// This help readability so the success messages aren't up against the previous command line
 		print.line();
 
-		// Read in Templates
-		var handlerContent         = fileRead( "/coldbox-commands/templates/HandlerContent.txt" );
-		var actionContent          = fileRead( "/coldbox-commands/templates/ActionContent.txt" );
+		/*******************************************************************
+		 * Read in Templates
+		 *******************************************************************/
+
+		// Rest or Normal
+		var handlerContent         = fileRead( arguments.rest ? "/coldbox-commands/templates/RestHandlerContent.txt" : "/coldbox-commands/templates/HandlerContent.txt" );
+		var actionContent          = fileRead( arguments.rest ? "/coldbox-commands/templates/RestActionContent.txt" : "/coldbox-commands/templates/ActionContent.txt" );
 		var handlerTestContent     = fileRead( "/coldbox-commands/templates/testing/HandlerBDDContent.txt" );
 		var handlerTestCaseContent = fileRead(
 			"/coldbox-commands/templates/testing/HandlerBDDCaseContent.txt"
@@ -99,8 +105,8 @@ component aliases="coldbox create controller" {
 					"all"
 				) & cr & cr;
 
-				// Are we creating views?
-				if ( arguments.views ) {
+				// Are we creating views? But only if we are NOT in rest mode
+				if ( arguments.views && !arguments.rest ) {
 					var camelCaseHandlerName = arguments.name.left( 1 ).lCase();
 					if ( arguments.name.len() > 1 ) {
 						camelCaseHandlerName &= arguments.name.right( -1 );

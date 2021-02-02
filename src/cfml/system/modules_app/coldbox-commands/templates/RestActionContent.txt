@@ -1,0 +1,8 @@
+	/**
+	 * |action|
+	 */
+	function |action|( event, rc, prc ){
+        event.getResponse()
+            .setData( {} )
+            .addMessage( "Calling |Name|/|action|" );
+	}
