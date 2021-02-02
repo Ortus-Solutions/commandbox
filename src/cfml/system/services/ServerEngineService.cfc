@@ -263,7 +263,7 @@ component accessors="true" singleton="true" {
 			var thislib = thisWebinf & '/lib';
 			
 			directoryCreate( installDetails.installDir & '/WEB-INF', true, true );
-			directoryCopy( '/commandbox-home/lib', thislib, false, '*.jar' );
+			directoryCopy( '/commandbox-home/lib', thislib, false, 'lucee-*.jar' );
 			// CommandBox ships with a pack200 compressed Lucee jar. Unpack it for faster start
 			unpackLuceeJar( thislib, installDetails.version );
 			
