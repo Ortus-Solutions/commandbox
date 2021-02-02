@@ -958,7 +958,7 @@ component accessors="true" singleton {
 
 		if( !len( serverInfo.WARPath ) && !len( serverInfo.cfengine ) ) {
 			// Turn 1.2.3.4 into 1.2.3+4
-			serverInfo.cfengine = 'lucee@' & reReplace( server.lucee.version, '([0-9]*.[0-9]*.[0-9]*)(.)([0-9]*)', '\1+\3' );
+			serverInfo.cfengine =  serverEngineService.getCLIEngineName() & '@' & reReplace( server.lucee.version, '([0-9]*.[0-9]*.[0-9]*)(.)([0-9]*)', '\1+\3' );
 		}
 
 		if( serverInfo.cfengine.endsWith( '@' ) ) {

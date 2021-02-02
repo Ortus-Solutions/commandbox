@@ -254,7 +254,7 @@ component accessors="true" singleton="true" {
 		installDetails.initialInstall = true;
 
 		// If we're starting a Lucee server whose version matches the CLI engine, then don't download anything, we're using internal jars.
-		if( listFirst( arguments.ID, '@' ) == 'lucee' && server.lucee.version == replace( installDetails.version, '+', '.', 'all' ) ) {
+		if( listFirst( arguments.ID, '@' ) == getCLIEngineName() && server.lucee.version == replace( installDetails.version, '+', '.', 'all' ) ) {
 
 			job.addLog( "Building a WAR from local jars.");
 
@@ -583,6 +583,14 @@ component accessors="true" singleton="true" {
 			fileDelete( packedFile );
 		}
 		
+	}
+
+	function getCLIEngineName() {
+		// You really can't "detect" Lucee Lite, so I'll just guess based on if there any a full list of extensions installed
+		if(  extensionList().recordCount < 5 ) {
+			return 'lucee-light';
+		}
+		return 'lucee';
 	}
 
 }
