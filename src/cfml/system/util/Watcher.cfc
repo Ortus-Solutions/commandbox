@@ -113,7 +113,7 @@ component accessors=true {
 							thisChangeUDF( getChangeData() );
 
 							// In case the change UDF modified the file system,
-							// reset our hashes so we don't end up with endless firing 
+							// reset our hashes so we don't end up with endless firing
 							setChangeHash( calculateHashes() );
 
 						} else {
@@ -153,13 +153,13 @@ component accessors=true {
 			} // end thread
 
 			while( true ){
-				
+
 				// Need to start reading the input stream or we can't detect Ctrl-C on Windows
 				var terminal = shell.getReader().getTerminal();
 				if( terminal.paused() ) {
 						terminal.resume();
 				}
-				
+
 				// Detect user pressing Ctrl-C
 				// Any other characters captured will be ignored
 				var line = shell.getReader().readLine();

@@ -7,7 +7,7 @@
         "docbox":"https://github.com/Ortus-Solutions/DocBox/archive/v2.0.4.zip"
     },
     "devDependencies":{
-        
+
     },
     "installPaths":{
         "docbox":"docbox"

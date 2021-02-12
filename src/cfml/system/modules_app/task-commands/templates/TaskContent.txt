@@ -4,7 +4,7 @@
 component {
 
 	/**
-	* 
+	*
 	*/
 	function |targetName|() {
 		print.greenLine( 'Complete!' );

@@ -29,15 +29,15 @@ component accessors=true {
 		aStr = createObject( 'java', 'org.jline.utils.AttributedString' );
 		// Currently highlighted option on the screen
 		activeOption = 1;
-		
+
 		// Default these since they're optional
-		multiple=false;		
+		multiple=false;
 		required=false;
 		question='';
-		
+
 		return this;
 	}
-	
+
 	function onDIComplete() {
 		terminal = shell.getReader().getTerminal();
 		display = createObject( 'java', 'org.jline.utils.Display' ).init( terminal, false );
@@ -46,7 +46,7 @@ component accessors=true {
 
 	/**
 	* Call this method after all options and settings have been placed. This method will block while the user interacts
-	* with the input control and will return a string containing the value of the selected option.  If "multiple" is 
+	* with the input control and will return a string containing the value of the selected option.  If "multiple" is
 	* enabled, this method will return an array of selected values.
 	*/
 	function ask(){
@@ -54,18 +54,18 @@ component accessors=true {
 		if( isNull( getOptions() ) ) {
 			throw( 'No options defined. Provde a list or array of structs (display,value,selected)' );
 		}
-		
+
 		try {
 			draw();
-			
+
 			while( ( var key = shell.waitForKey() ) != chr( 13 ) || !checkRequired() ) {
-				
+
 				if( isUp( key ) ) {
 					activeOption = max( 1, activeOption-1 );
 				} else if ( isDown( key ) ) {
 					activeOption = min( getOptions().len(), activeOption+1 );
 				} else if ( isSelect( key ) ) {
-					doSelect( activeOption );					
+					doSelect( activeOption );
 				// Access key?
 				} else {
 					var i = 0;
@@ -78,12 +78,12 @@ component accessors=true {
 						}
 					}
 				}
-				
+
 				draw();
-				
+
 			}
 		} finally {
-		
+
 			// Wipe out screen
 			display.update(
 				getOptions()
@@ -97,17 +97,17 @@ component accessors=true {
 				.append( aStr.init( ' ' ) ),
 				getQuestion().len()
 			);
-			
+
 		}
-		
+
 		// if in multiple mode
 		if( multiple ) {
-			
+
 			// Print out comma delimited list of selected option display names
 			printBuffer
 				.line()
 				.text( getQuestion() )
-				.line( 
+				.line(
 					getOptions().reduce( function( prev='', o ) {
 						if( o.selected ) {
 							prev = prev.listAppend( ' ' & o.display );
@@ -117,7 +117,7 @@ component accessors=true {
 					.trim()
 				)
 				.toConsole();
-			
+
 			// Return an array of selected option values
 			return getOptions().reduce( function( prev=[], o ) {
 				if( o.selected ) {
@@ -125,10 +125,10 @@ component accessors=true {
 				}
 				return prev;
 			} );
-			
+
 		// In single mode
-		} else { 
-			
+		} else {
+
 			// Print out the first found selected option display name
 			printBuffer
 				.line()
@@ -142,7 +142,7 @@ component accessors=true {
 					} )
 				)
 				.toConsole();
-				
+
 			// Return the first found selected option value
 			return getOptions().reduce( function( prev='', o ) {
 				if( o.selected ) {
@@ -150,16 +150,16 @@ component accessors=true {
 				}
 				return prev;
 			} );
-			
+
 		}
 	}
-	
+
 	function setOptions( options ) {
 		var opts = [];
-		
+
 		// Simple list of options
 		if( isSimpleValue( options ) ) {
-			
+
 			options.listEach( function( i ) {
 				opts.append( {
 					display : i,
@@ -168,23 +168,23 @@ component accessors=true {
 					accessKey : i.left( 1 )
 				} );
 			} );
-			
+
 		} else if( isArray( options ) ) {
-			
+
 			options.each( function( i ) {
-				
+
 				if( !isStruct( i ) ) {
 					throw( 'Option must be array of structs' );
 				}
-				
+
 				if( isnull( i.value ) && isnull( i.display ) ) {
 					throw( 'Option struct must have either a "value" key or "display" key. #serializeJSON( i )#' );
 				}
-				
+
 				if( !isBoolean( i.selected ?: false ) ) {
 					throw( 'Must pass boolean for "selected" key. Received: #serializeJSON( i.selected )#' );
 				}
-				
+
 				opts.append( {
 					display : i.display ?: i.value,
 					value : i.value?: i.display,
@@ -192,17 +192,17 @@ component accessors=true {
 					accessKey : i.accessKey ?: ( i.display ?: i.value ).left( 1 )
 				} );
 			} );
-			
+
 		} else {
 			throw( 'Invalid type of options. Requires string or array of structs (display,value,selected).' );
 		}
-		
+
 		variables.options = opts;
 		return this;
 	}
 
 	private function draw() {
-				
+
 		var lines = [];
 		// If there is a currently running job, include its output first so we don't overwrite each other
 		if( job.getActive() ) {
@@ -210,24 +210,24 @@ component accessors=true {
 		}
 		var extraLines = lines.len();
 		lines.append( generateRows(), 1 );
-		
+
 		display.update(
 				lines,
 				( ( terminal.getWidth()+1) * ( activeOption+2+extraLines ) ) + 3
 			);
 	}
-	
+
 	private function generateRows() {
 		var i = 0;
 		return getOptions()
 			.map( function( o ) {
 				var optionFormatting = ( activeOption == ++i ? 'green' : '' );
 				return aStr.fromAnsi(
-					print.text( 
+					print.text(
 						'  [' & ( o .selected ? 'X' : ' ' ) & '] ' & reReplaceNoCase( o.display, '(#o.accessKey#)', print.bold( '\1' ) & print.text( '', optionFormatting, true ), 'once' ),
 						optionFormatting
 					)
-				 );				 
+				 );
 			} )
 			.prepend( aStr.init( getQuestion() ) )
 			.prepend( aStr.init( '' ) )
@@ -248,8 +248,8 @@ component accessors=true {
 		}
 		return false;
 	}
-	
-	
+
+
 	function doSelect( optionNum ) {
 		var i = 0;
 		getOptions().each( function( o ) {
@@ -262,14 +262,14 @@ component accessors=true {
 		} );
 	}
 
-	private function isUp( key ) { 
+	private function isUp( key ) {
 		return ( key == 'key_up' || key == 'back_tab' );
 	}
-		
+
 	private function isDown( key ) {
 		return ( key == 'key_down' || key == chr( 9 ) );
 	}
-		
+
 	private function isSelect( key ) {
 		return ( key == ' ' || key == 'x' );
 	}

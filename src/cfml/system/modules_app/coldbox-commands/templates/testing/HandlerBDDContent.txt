@@ -1,9 +1,9 @@
 /**
  * 	ColdBox Integration Test
- * 
- * 	The 'appMapping' points by default to the '/root ' mapping created in  the test folder Application.cfc.  Please note that this  
- * 	Application.cfc must mimic the real one in your root, including ORM  s ettings if needed. 
- * 
+ *
+ * 	The 'appMapping' points by default to the '/root ' mapping created in  the test folder Application.cfc.  Please note that this
+ * 	Application.cfc must mimic the real one in your root, including ORM  s ettings if needed.
+ *
  *	The 'execute()' method is used to execute a ColdBox event, with the  following arguments
  *	- event : the name of the event
  *	- private : if the event is private or not
@@ -14,7 +14,7 @@
  * You can also use the HTTP executables: get(), post(), put(), path(), delete(), request()
  **/
 component extends="coldbox.system.testing.BaseTestCase" appMapping="|appMapping|"{
-	
+
 	/*********************************** LIFE CYCLE Methods ***********************************/
 
 	function beforeAll(){
@@ -28,7 +28,7 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="|appMapping|
 	}
 
 	/*********************************** BDD SUITES ***********************************/
-	
+
 	function run(){
 
 		describe( "|handlerName| Suite", function(){
@@ -38,7 +38,7 @@ component extends="coldbox.system.testing.BaseTestCase" appMapping="|appMapping|
 				setup();
 			});
 
-|TestCases|		
+|TestCases|
 		});
 
 	}

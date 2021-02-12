@@ -1,10 +1,10 @@
-<cfoutput>  _____         _   ____            
+<cfoutput>  _____         _   ____
  |_   _|__  ___| |_| __ )  _____  __
    | |/ _ \/ __| __|  _ \ / _ \ \/ /
-   | |  __/\__ \ |_| |_) | (_) >  < 
+   | |  __/\__ \ |_| |_) | (_) >  <
    |_|\___||___/\__|____/ \___/_/\_\ v#testBox.getVersion()#
 
-=============================================================                                    
+=============================================================
 Stats (#results.getTotalDuration()# ms)
 =============================================================
 ->[Bundles/Suites/Specs: #results.getTotalBundles()#/#results.getTotalSuites()#/#results.getTotalSpecs()#]
@@ -56,7 +56,7 @@ Legend:
 			case "error" : { return "X"; }
 			case "skipped" : { return "-"; }
 			default : { return "+"; }
-		}		
+		}
 	</cfscript>
 </cffunction>
 <!--- Recursive Output --->
@@ -82,7 +82,7 @@ Legend:
 	-> Failure: #local.thisSpec.failMessage##chr(13)#
 	<!--- -> Failure Origin: #local.thisSpec.failorigin.toString()# #chr(13)##chr(13)# --->
 </cfif>
-	
+
 <cfif local.thisSpec.status eq "error">
 	-> Error: #local.thisSpec.error.message##chr(13)#
 	-> Exception Trace: #local.thisSpec.error.stackTrace# #chr(13)##chr(13)#
@@ -91,7 +91,7 @@ Legend:
 
 <cfif arrayLen( arguments.suiteStats.suiteStats )>
 <cfloop array="#arguments.suiteStats.suiteStats#" index="local.nestedSuite">#genSuiteReport( local.nestedSuite, arguments.bundleStats, arguments.level++ )#</cfloop>
-</cfif>	
+</cfif>
 
 </cfoutput>
 </cfsavecontent>

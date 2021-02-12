@@ -15,17 +15,17 @@ component accessors="true" singleton {
 	property name='configService' 		inject='configService';
 	property name='interceptorService' 	inject='InterceptorService';
 	property name='fileSystemUtil' 		inject='fileSystem';
-	
+
 	property name='javaDirectory';
-	
+
 	/**
 	* DI complete
 	*/
 	function onDIComplete() {
-		interceptorService.registerInterceptor( this );		
-		
+		interceptorService.registerInterceptor( this );
+
 		variables.lastInstallDir = '';
-		
+
 		variables.javaInstallDirectory = expandPath( '/commandbox-home/serverJREs' );
 
 		// Create the java directory if it doesn't exist
@@ -51,7 +51,7 @@ component accessors="true" singleton {
 
 	/**
 	* Remove a Java install
-	* 
+	*
 	* @ID Full ID of java installation
 	*/
 	function uninstallJava( required string ID ) {
@@ -95,7 +95,7 @@ component accessors="true" singleton {
 		if( ID.left( 5 ) == 'java:' ) {
 			ID &= ':lockVersion';
 		}
-			
+
 		// Install it!
 		packageService.installPackage(
 			ID=ID,
@@ -111,7 +111,7 @@ component accessors="true" singleton {
 	string function getJavaInstallDirectory() {
 		return configService.getSetting( 'server.javaInstallDirectory', variables.javaInstallDirectory );
 	}
-	
+
 
 	/**
 	* Sort of hacky way to capture the last place we installed Java into
@@ -121,5 +121,5 @@ component accessors="true" singleton {
 			lastInstallDir = interceptData.installDirectory;
 		}
 	}
-	
+
 }

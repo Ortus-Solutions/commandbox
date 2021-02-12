@@ -26,7 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 * Access variables according to scopes instead of lookup
 * Internal data generation names to avoid method conflicts
-  
+
 ### Fixed
 
 * Access variables according to scopes
@@ -57,7 +57,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * New type: `url` : Generates a random URL with a random protocol
 * New type: `url_http` : Generates a random URL with `http` only protocol
 * New type: `url_https` : Generates a random URL with `https` only protocol
-  
+
 ### Improvements
 
 * Added new domains for more random generation

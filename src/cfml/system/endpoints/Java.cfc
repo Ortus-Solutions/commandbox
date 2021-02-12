@@ -57,18 +57,18 @@ component accessors=true implements="IEndpoint" singleton {
 		var folderName2 = tempDir & '/' & 'temp#createUUID()#';
 
 		var javaDetails = parseDetails( package );
-		
+
 		// Turn it into the maven-style semver range [11,12)  which is the equiv of >= 11 && < 12 thus getting 11.x
 		var thisVersionNum = replaceNoCase( javaDetails.version, 'openjdk', '' );
 		var thisVersion = '[#thisVersionNum#,#thisVersionNum+1#)';
 		var APIURLInfo = 'https://api.adoptopenjdk.net/v3/assets/version/#encodeForURL( thisVersion )#?page_size=1000&release_type=ga&vendor=adoptopenjdk&project=jdk&heap_size=normal&jvm_impl=#encodeForURL( javaDetails['jvm-implementation'] )#&os=#encodeForURL( javaDetails.os )#&architecture=#encodeForURL( javaDetails.arch )#&image_type=#encodeForURL( javaDetails.type )#';
-		
+
 		if( javaDetails.release.len() && javaDetails.release != 'latest' ) {
 			var APIURL = 'https://api.adoptopenjdk.net/v3/binary/version/#encodeForURL( javaDetails.release )#/#encodeForURL( javaDetails.os )#/#encodeForURL( javaDetails.arch )#/#encodeForURL( javaDetails.type )#/#encodeForURL( javaDetails['jvm-implementation'] )#/normal/adoptopenjdk';
 		} else {
 			var APIURL = 'https://api.adoptopenjdk.net/v3/binary/latest/#thisVersionNum#/ga/#encodeForURL( javaDetails.os )#/#encodeForURL( javaDetails.arch )#/#encodeForURL( javaDetails.type )#/#encodeForURL( javaDetails['jvm-implementation'] )#/normal/adoptopenjdk';
 		}
-		
+
 		job.addLog( "Installing [#package#]" );
 		job.addLog( "Java version:              #javaDetails.version#" );
 		job.addLog( "Java type:                 #javaDetails.type#" );
@@ -100,30 +100,30 @@ component accessors=true implements="IEndpoint" singleton {
 		var notFound = false;
 		if( local.artifactResult.status_code == 200 && isJSON( local.artifactResult.fileContent ) ) {
 			var artifactJSON = deserializeJSON( local.artifactResult.fileContent );
-			
+
 			// If we have a release, we need to filter it now
 			if( javaDetails.release.len() && javaDetails.release != 'latest' ) {
 				artifactJSON = artifactJSON.filter( (release)=>release.release_name==javaDetails.release );
 			}
-			
+
 			if( !artifactJSON.len() ) {
 				notFound = true;
 			}
 		} else {
 			notFound = true;
-		} 
-		
+		}
+
 		if( notFound ){
 			var validReleases = 'unknown';
 
 			try {
-				// Do a quick peek at the API to see if we can get results back without the release name.				
-				
+				// Do a quick peek at the API to see if we can get results back without the release name.
+
 				var thisVersionNum = replaceNoCase( javaDetails.version, 'openjdk', '' );
 				// Turn it into the maven-style semver range [11,12)
 				// which is the equiv of >= 11 && < 12 thus getting 11.x
 				var thisVersion = '[#thisVersionNum#,#thisVersionNum+1#)';
-				
+
 				var APIURLCheck = 'https://api.adoptopenjdk.net/v3/assets/version/#encodeForURL(thisVersion )#?release_type=ga&vendor=adoptopenjdk&project=jdk&heap_size=normal&jvm_impl=#encodeForURL( javaDetails['jvm-implementation'] )#&os=#encodeForURL( javaDetails.os )#&architecture=#encodeForURL( javaDetails.arch )#&image_type=#encodeForURL( javaDetails.type )#';
 
 				http

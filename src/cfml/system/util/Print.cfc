@@ -75,10 +75,10 @@ component {
 
 		// Check for Ctrl-C
 		shell.checkInterrupted();
-		
+
 		// Flag for if this is a line or not
 		var newLine = false;
-		
+
 		// Keep track of bold separately
 		var bold = false;
 
@@ -92,7 +92,7 @@ component {
 		var text = arrayLen(missingMethodArguments) ? missingMethodArguments[ 1 ] : '';
 		// Convert complex values to a string representation
 		if( !isSimpleValue( text ) ) {
-			
+
 			// Serializable types
 			if( isBinary( text ) ) {
 				// Generally speaking, leave binary alone, but if it just so hapens to be a string that happens to be JSON, let's format it!
@@ -106,7 +106,7 @@ component {
 			} else {
 				text = '[#text.getClass().getName()#]';
 			}
-			
+
 		}
 		// Additional formatting text
 		var methodName &= arrayLen(missingMethodArguments) > 1 ? missingMethodArguments[ 2 ] : '';
@@ -116,7 +116,7 @@ component {
 		// Carve it up until it's gone
 		while( len( methodName ) ) {
 			foundANSI = false;
-			
+
 			// 256 color support.  Denormalized into groups to reduce the amount of string manipulation
 			for( var group in colors256Data ) {
 				// Bail if the remaining string isn't even long enough to search
@@ -128,7 +128,7 @@ component {
 				if( group.colors.keyExists( thisToken ) ) {
 					// Generate the ANSI escape code
 					ANSIString &= get256Color( group.colors[ thisToken ].colorID );
-					
+
 					// Slice this bit off the method name
 					methodName  = mid( methodName, group.len+1, len( methodName ) );
 					foundANSI = true;
@@ -136,7 +136,7 @@ component {
 					break;
 				}
 				// Check for background colors
-				
+
 				// Bail if the remaining string isn't even long enough to search
 				if( methodName.len() < group.len + 2 ) {
 					continue;
@@ -146,7 +146,7 @@ component {
 				if( group.colors.keyExists( thisToken.right( -2 ) ) ) {
 					// Generate the ANSI escape code
 					ANSIString &= get256Color( group.colors[ thisToken.right( -2 ) ].colorID, false );
-					
+
 					// Slice this bit off the method name
 					methodName  = mid( methodName, group.len+3, len( methodName ) );
 					foundANSI = true;
@@ -154,7 +154,7 @@ component {
 					break;
 				}
 			}
-			
+
 			// If we matched an ANSI code, start the loop over
 			if( foundANSI ) {
 				continue;
@@ -171,7 +171,7 @@ component {
 						bold = true;
 					} else {
 						// Add that attribute to the string
-						ANSIString &= getANSIAttribute( this.ANSIAttributes[ attrib ] );						
+						ANSIString &= getANSIAttribute( this.ANSIAttributes[ attrib ] );
 					}
 					// Slice this bit off the method name
 					methodName  = mid( methodName, attribLen+1, len( methodName ) );
@@ -181,7 +181,7 @@ component {
 				}
 
 			}
-			
+
 			// If we matched an ANSI code, start the loop over
 			if( foundANSI ) {
 				continue;
@@ -220,16 +220,16 @@ component {
 				// Slice this bit off the method name
 				methodName  = mid( methodName, 6, len( methodName ) );
 				var colorID = val( methodName );
-				
+
 				if( colorID > 0 || methodname.startsWith( '0' ) ) {
-				
+
 					ANSIString &= get256Color( colorID );
-					
+
 					// Slice this bit off the method name
 					methodName  = mid( methodName, len( colorID )+1 , len( methodName ) );
-					
+
 					// Next!
-					continue;	
+					continue;
 				}
 			}
 
@@ -238,16 +238,16 @@ component {
 				// Slice this bit off the method name
 				methodName  = mid( methodName, 8, len( methodName ) );
 				var colorID = val( methodName );
-				
+
 				if( colorID > 0 || methodname.startsWith( '0' ) ) {
-				
+
 					ANSIString &= get256Color( colorID, false );
-					
+
 					// Slice this bit off the method name
 					methodName  = mid( methodName, len( colorID )+1 , len( methodName ) );
-					
+
 					// Next!
-					continue;	
+					continue;
 				}
 			}
 
@@ -263,7 +263,7 @@ component {
 			// Bold doesn't always work if it's not at the end
 			if( bold ) {
 				ANSIString &= getANSIAttribute( this.ANSIAttributes[ 'bold' ] );
-			} 
+			}
 			text = ANSIString & text;
 			if( !noEnd ) {
 				text &= getANSIAttribute( this.ANSIAttributes["off"] );
@@ -287,7 +287,7 @@ component {
     }
 
 	/**
-	* Get an 256 color ANSI 
+	* Get an 256 color ANSI
 	*/
 	private String function get256Color( required id, foreground=true ) {
 		return this.ESC & "[" & ( foreground ? 3 : 4 ) & "8;5;" & arguments.id & "m";

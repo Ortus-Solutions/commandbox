@@ -8,9 +8,9 @@
 		if( row.name == 'CommandTemplate' ) {
 			continue;
 		}
-		var command = row.command;			
+		var command = row.command;
 		var bracketPath = '';
-		// Build bracket notation 
+		// Build bracket notation
 		for( var item in listToArray( row.namespace, ' ' ) ) {
 			bracketPath &= '[ "#item#" ]';
 		}
@@ -21,7 +21,7 @@
 		if( !isNull( row.metadata.aliases ) && len( row.metadata.aliases ) ) {
 			searchList &= ',' & row.metadata.aliases;
 		}
-		
+
 		var thisTree = ( listLen( command, ' ' ) == 1 ? "topLevel" : "namespaces" );
 		evaluate( '#thisTree##bracketPath#[ "$link" ] = packageLink' );
 		if( row.name != 'help') {
@@ -29,14 +29,14 @@
 			evaluate( '#thisTree##bracketPath#[ row.name ][ "$command"].searchList = searchList' );
 		}
 	}
-	
+
 	// Recursive function to output data
 	function writeItems( struct startingLevel ) {
 		for( var item in startingLevel ) {
 			// Skip this key as it isn't a command, just the link for the namespace.
 			if( item == '$link' ) { continue; }
 			var itemValue = startingLevel[ item ];
-			
+
 			//  If this is a command, output it
 			if( structKeyExists( itemValue, '$command' ) ) {
 				writeOutput( '<li data-jstree=''{ "type" : "command" }'' linkhref="#itemValue.$command.link#" searchlist="#itemValue.$command.searchList#" thissort="2">' );
@@ -52,7 +52,7 @@
 				writeOutput( '</ul>' );
 				writeOutput( '</li>' );
 			}
-			
+
 		}
 	}
 </cfscript>
@@ -85,10 +85,10 @@
 			</li>
 		</ul>
 	</div>
-	
+
 	<script src="jstree/jstree.min.js"></script>
 	<script language="javascript">
-		$(function () { 
+		$(function () {
 			// Initialize tree
 			$('##commandTree')
 				.jstree({
@@ -104,7 +104,7 @@
 				        "icon" : "glyphicon glyphicon-cog"
 				      }
 				    },
-				    // Smart search callback to do lookups on full command name and aliases 
+				    // Smart search callback to do lookups on full command name and aliases
 				    "search" : {
 				    	"show_only_matches" : true,
 				    	"search_callback" : function( q, node ) {
@@ -130,18 +130,18 @@
 				    			// Concat sort to name and use that
 					    		var node1String = node1.li_attr.thissort + node1.text;
 					    		var node2String = node2.li_attr.thissort + node2.text;
-					    		
-								return ( node1String > node2String ? 1 : -1);						
+
+								return ( node1String > node2String ? 1 : -1);
 				    },
 				    "plugins" : [ "types", "search", "sort" ]
 				  })
 				.on("changed.jstree", function (e, data) {
 					var obj = data.instance.get_node(data.selected[0]).li_attr;
 					if( obj.linkhref ) {
-						window.parent.frames['classFrame'].location.href = obj.linkhref;				
+						window.parent.frames['classFrame'].location.href = obj.linkhref;
 					}
 			});
-			
+
 			// Bind search to text box
 			var to = false;
 			$('##commandSearch').keyup(function () {
@@ -151,7 +151,7 @@
 					$('##commandTree').jstree(true).search(v);
 				}, 250);
 			});
-			
+
 		 });
 	</script>
 </body>
