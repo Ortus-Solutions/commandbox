@@ -4,7 +4,7 @@
  * {code}
  * watch *.json "echo 'config file updated!'"
  * {code}
- * 
+ *
  * The following environment variables will be available to your command
  * - watcher_added - A JSON array of relative paths added in the watch directory
  * - watcher_removed - A JSON array of relative paths removed in the watch directory
@@ -37,7 +37,7 @@ component {
 		string directory=getCWD(),
 		boolean verbose=false
 	){
-		
+
 		// handle non numeric config and put a floor of 150ms
 		var delayMs       = max( val( arguments.delay ), 50 );
 		var statusColors  = {
@@ -45,7 +45,7 @@ component {
 			"removed" : "red",
 			"changed" : "yellow"
 		};
-		
+
 		// General Message about the globbing paths and its purpose
 		print
 			.greenLine( "---------------------------------------------------" )
@@ -55,7 +55,7 @@ component {
 			.greenLine( " Press Ctrl-C to exit " )
 			.greenLine( "---------------------------------------------------" )
 			.toConsole();
-	
+
 		// Start watcher
 		watch()
 			.paths( arguments.paths.listToArray() )

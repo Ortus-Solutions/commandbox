@@ -96,7 +96,7 @@ component accessors="true" {
 	}
 
 	/**
-	* 
+	*
 	*/
 	function getPatternArray() {
 		return variables.pattern;
@@ -138,7 +138,7 @@ component accessors="true" {
 	}
 
 	/**
-	* 
+	*
 	*/
 	function getExcludePatternArray() {
 		return variables.excludePattern;
@@ -189,12 +189,12 @@ component accessors="true" {
 	*/
 	private function process() {
 		var patterns = getPatternArray();
-		
+
 		if( !patterns.len() ) {
 			throw( 'Cannot glob empty pattern.' );
 		}
-				
-		for( var thisPattern in patterns ) {			
+
+		for( var thisPattern in patterns ) {
 			var results = processPattern( thisPattern );
 			// First one in just gets set
 			if( isNull( getMatchQuery() ) ) {
@@ -206,7 +206,7 @@ component accessors="true" {
 				cfquery( dbtype="query" ,name="local.newMatchQuery" ) {
 					writeOutput( 'SELECT * FROM results UNION SELECT * FROM previousMatch ' );
 				}
-				
+
 				// UNION isn't removing dupes on Lucee so doing second select here for that purpose.
 				cfquery( dbtype="query" ,name="local.newMatchQuery" ) {
 					writeOutput( 'SELECT DISTINCT * FROM newMatchQuery ' );
@@ -214,13 +214,13 @@ component accessors="true" {
 						writeOutput( 'ORDER BY #getCleanSort()#' );
 					}
 				}
-				
+
 				setMatchQuery( local.newMatchQuery );
 			}
 		}
-		
+
 		if( patterns.len() > 1 ) {
-			var dirs = queryColumnData( getMatchQuery(), 'directory' );						
+			var dirs = queryColumnData( getMatchQuery(), 'directory' );
 			var lookups = {};
 			dirs.each( function( dir ) {
 				// Account for *nix paths & Windows UNC network shares
@@ -241,13 +241,13 @@ component accessors="true" {
 			}
 			setBaseDir( findRoot( lookups ) );
 		}
-		
+
 	}
-	
+
 	private function processPattern( string pattern ) {
 
 		local.thisPattern = pathPatternMatcher.normalizeSlashes( arguments.pattern );
-		
+
 		// To optimize this as much as possible, we want to get a directory listing as deep as possible so we process a few files as we can.
 		// Find the deepest folder that doesn't have a wildcard in it.
 		var baseDir = '';
@@ -297,13 +297,13 @@ component accessors="true" {
 				path=baseDir,
 				sort=getSort()
 			);
-		
+
 	}
-	
+
 	/**
 	* The sort function in CFDirectory will simply ignore invalid sort columns so I'm mimicing that here, as much as I dislike it.
 	* The sort should be in the format of "col asc, col2 desc, col3, col4" like a SQL order by
-	* If any of the coluns or sort directions don't look right, just bail and return the default sort. 
+	* If any of the coluns or sort directions don't look right, just bail and return the default sort.
 	*/
 	function getCleanSort() {
 		// Loop over each sort item
@@ -316,7 +316,7 @@ component accessors="true" {
 			if( item.listLen( ' 	' ) == 2 && !listFindNoCase( 'asc,desc', trim( item.listLast( ' 	' ) ) ) ) {
 				return 'type, name';
 			}
-			// Ensure no more than 2 tokens 
+			// Ensure no more than 2 tokens
 			if( item.listLen( ' 	' ) > 2 ) {
 				return 'type, name';
 			}

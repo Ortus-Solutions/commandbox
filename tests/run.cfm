@@ -5,14 +5,14 @@
 <!--- change this! --->
 <cfset dir = expandPath(".\cfml") />
 <cfoutput><h1>
-		#dir# 
+		#dir#
 	</h1></cfoutput>
 <cfset DTS = createObject("component","mxunit.runner.DirectoryTestSuite") />
 <cfset excludes = "" />
-<cfinvoke component="#DTS#" 
+<cfinvoke component="#DTS#"
 	method="run"
-	directory="#dir#" 
-	recurse="true" 
+	directory="#dir#"
+	recurse="true"
 	excludes="#excludes#"
 	returnvariable="Results"
 	componentpath="tests.cfml">
@@ -23,7 +23,7 @@
 		<cfif NOT StructIsEmpty(DTS.getCatastrophicErrors())>
 			<cfdump var="#DTS.getCatastrophicErrors()#" expand="false" label="#StructCount(DTS.getCatastrophicErrors())# Catastrophic Errors" />
 		</cfif>
-		#results.getResultsOutput(URL.output)# 
+		#results.getResultsOutput(URL.output)#
 	</cfsavecontent>
 </cfoutput>
 <cfif NOT url.quiet>
@@ -32,7 +32,7 @@
 <cfif url.email>
 	<!--- change this 'from' email! --->
 	<cfmail from="????@????.com" to="#url.recipients#" subject="Test Results : #DateFormat(now(),'short')# @ #TimeFormat(now(),'short')#" type="html">
-		#recenthtml# 
+		#recenthtml#
 	</cfmail>
 </cfif>
 <cftry>

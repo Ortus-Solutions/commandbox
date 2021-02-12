@@ -507,7 +507,7 @@ component accessors="true" singleton {
 					defaultValue = settingName.listRest( ':' );
 					settingName = settingName.listFirst( ':' );
 				}
-				
+
 				var result = systemSettings.getSystemSetting( settingName, defaultValue, parameterInfo.namedParameters );
 
 				// And stick their results in their place
@@ -650,11 +650,11 @@ component accessors="true" singleton {
 				 		// Because we don't know where in the rawLine our current place in the command chain starts
 				 		// To fix it though I'd need to substantially change how tokenizing works
 				 		rawLine.reReplaceNoCase( '^(.*?)?[\s]*(run |!)[\s]*(#tokens2#.*)', '\3' )
-				 	];	
+				 	];
 				} else {
 				 	tokens = [
 				 		'run',
-				 		// As a fall back, if we receive the input from the commandine as a single string AND the quotes 
+				 		// As a fall back, if we receive the input from the commandine as a single string AND the quotes
 				 		// don't follow what CommandBox's parser expects, we can't use the tokens array so we make the assumption
 				 		// That the run command was the only command in the raw line.
 				 		rawLine.reReplaceNoCase( '^[\s]*(run |!)[\s]*', '' )
@@ -753,7 +753,7 @@ component accessors="true" singleton {
 			if( tokens.len() >= 1 && tokens[1] == '|' ) {
 				receivingPiped = true;
 			}
-			
+
 		} // end loop over commands to resolve
 
 		// Return command chain
@@ -838,7 +838,7 @@ component accessors="true" singleton {
 		}
 		return expandedCommandsToResolve;
 	}
-	
+
 
 	/**
 	 * Replaces aliases in the raw line

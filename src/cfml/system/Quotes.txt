@@ -20,7 +20,7 @@ CommandBox is professional supported open source software
 Pressing Ctrl-C will stop the current command
 Pressing Ctrl-D will exit the shell
 You can publish packages to ForgeBox with the "publish" command
-BUWAHAHAHAHA! MUHAHAHA!! 
+BUWAHAHAHAHA! MUHAHAHA!!
 Tomorrow will have highs in the mid 70's and a 30% chance of rain
 Run CFML functions directly from the prompt like "#now" or "#hash foo"
 CommandBox has its own "tail", "grep", and "sed" that work on Windows.
@@ -66,7 +66,7 @@ When installing from a Git repo, you can target a branch, tag, or commit
 This page intentionally left blank
 You can "cd ~" to your home directory even on Windows
 Replace your Ant builds and shell scripts with Task Runners
-Behold, the power of CFML! 
+Behold, the power of CFML!
 Take that, stupid fish.
 CFML is the answer to the Ultimate Question of Life, Universe, & Everything
 Run the "system-colors" command to see if your terminal supports 256 colors
@@ -142,5 +142,5 @@ CommandBox makes you feel like a wizard.
 In the unlikely event of a water landing, CLI can be used as a flotation device
 Let me see those Jazz Hands!
 Have brainstorms so big they leave your hair windswept
-Hey Little Bobby Two hands, update your CLI! 
+Hey Little Bobby Two hands, update your CLI!
 Your angry birds are out of cupcakes, buy more powerup gems to start a new server

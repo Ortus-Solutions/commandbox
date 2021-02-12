@@ -87,11 +87,11 @@ component accessors=true implements="IEndpoint" singleton {
 		// If we see /foo.jar or name=foo.jar or ?foo.jar
 		if( package.reFindNoCase( '[/\?=](.*\.jar)' ) ) {
 			// Then strip the name and remove extension
-			// Note the first .* is greedy so in the case of 
+			// Note the first .* is greedy so in the case of
 			// https://site.com/path/to/file.jar?name=custom.jar
 			// the regex will extract the last match, i.e. "custom"
 			return package.reReplaceNoCase( '.*[/\?=](.*\.jar).*', '\1' ).left( -4 );
-		} 
+		}
 
 		// We give up, so just make the entire URL a slug
 		return reReplaceNoCase( package, '[^a-zA-Z0-9]', '', 'all' );

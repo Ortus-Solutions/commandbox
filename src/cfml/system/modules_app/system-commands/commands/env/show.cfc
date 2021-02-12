@@ -12,7 +12,7 @@
  * env show
  * {code}
  *
- * This command does not include Java system properties or OS environment variables even though 
+ * This command does not include Java system properties or OS environment variables even though
  * they are included in the lookup order for System Setting resolution.
   **/
 component  {
@@ -23,9 +23,9 @@ component  {
 	*/
 	function run( string name='', defaultValue='' )  {
 		if( name.len() ) {
-			print.line( systemSettings.getSystemSetting( name, defaultValue ) );	
+			print.line( systemSettings.getSystemSetting( name, defaultValue ) );
 		} else {
-			print.line( systemSettings.getAllEnvironmentsFlattened() );			
+			print.line( systemSettings.getAllEnvironmentsFlattened() );
 		}
 	}
 

@@ -12,16 +12,16 @@
 component {
 
 	/**
-	* @predicate A value that is truthy or falsy.  
+	* @predicate A value that is truthy or falsy.
 	**/
 	function run( required string predicate )  {
-		
+
 		if( isBoolean( predicate ) && predicate ) {
 			// Nothing
 		} else {
 			setExitCode( 1 );
 		}
-		
+
 	}
 
 }

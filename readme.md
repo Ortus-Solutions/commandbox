@@ -1,13 +1,13 @@
 ``` bash
-   _____                                          _ ____            
-  / ____|                                        | |  _ \           
+   _____                                          _ ____
+  / ____|                                        | |  _ \
  | |     ___  _ __ ___  _ __ ___   __ _ _ __   __| | |_) | _____  __
  | |    / _ \| '_ ` _ \| '_ ` _ \ / _` | '_ \ / _` |  _ < / _ \ \/ /
- | |___| (_) | | | | | | | | | | | (_| | | | | (_| | |_) | (_) >  < 
-  \_____\___/|_| |_| |_|_| |_| |_|\__,_|_| |_|\__,_|____/ \___/_/\_\  
+ | |___| (_) | | | | | | | | | | | (_| | | | | (_| | |_) | (_) >  <
+  \_____\___/|_| |_| |_|_| |_| |_|\__,_|_| |_|\__,_|____/ \___/_/\_\
 ```
 
-# WELCOME TO COMMANDBOX 
+# WELCOME TO COMMANDBOX
 
 CommandBox ColdFusion (CFML) CLI, Package Manager, REPL and much more!
 
@@ -21,13 +21,13 @@ Official stable releases can be found at the [CommandBox Official Page](http://w
 
 **Snapshot Releases**
 
-Download from the [Ortus Download Site](https://downloads.ortussolutions.com/#/ortussolutions/commandbox/).  
+Download from the [Ortus Download Site](https://downloads.ortussolutions.com/#/ortussolutions/commandbox/).
 
 *Just please note that this contains latest bleeding edge releases that might not be stable.*
 
 **Getting Started Guide**
 
-Get going with CommandBox in a matter of minutes with our [Getting Started Guide](http://ortus.gitbooks.io/commandbox-documentation/content/getting_started_guide.html) 
+Get going with CommandBox in a matter of minutes with our [Getting Started Guide](http://ortus.gitbooks.io/commandbox-documentation/content/getting_started_guide.html)
 
 **Bug Tracker**
 

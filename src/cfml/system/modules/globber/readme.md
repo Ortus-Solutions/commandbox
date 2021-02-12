@@ -16,7 +16,7 @@ Inject the path pattern matcher service/Globber or get it from WireBox.
 
 ### Path Pattern Matcher
 
-This service is a singleton that handles path matching but doesn't actually touch the file system.  
+This service is a singleton that handles path matching but doesn't actually touch the file system.
 
 ```
 var pathPatternMatcher = wirebox.getInstance( 'PathPatternMatcher@globber' );
@@ -68,7 +68,7 @@ wirebox.getInstance( 'globber' )
 
 #### Get data as query
 
-You can get a query back instead of an array by adding `.asQuery()` to your DSL.  The also affects the datatype you `apply()` closure runs against.  
+You can get a query back instead of an array by adding `.asQuery()` to your DSL.  The also affects the datatype you `apply()` closure runs against.
 The query columns match what comes from the `directoryList()` fucntion.
 ```
 var qryResults = globber

@@ -447,7 +447,7 @@
 						// just register with no namespace
 						wirebox.getBinder().mapDirectory( packagePath=packagePath );
 					}
-					
+
 					// Register Default Module Export if it exists as @moduleName, so you can do getInstance( "@moduleName" )
 					if ( fileExists( mconfig.modelsPhysicalPath & "/#arguments.moduleName#.cfc" ) ) {
 						wirebox.getBinder()
@@ -457,7 +457,7 @@
 							] )
 							.to( packagePath & ".#arguments.moduleName#" );
 					}
-					
+
 					wirebox.getBinder().processMappings();
 				}
 
@@ -479,7 +479,7 @@
 														    interceptorProperties=mConfig.interceptors[ y ].properties,
 														    interceptorName=mConfig.interceptors[ y ].name);
 					// Loop over module interceptors to autowire them
-					try { 
+					try {
 						wirebox.autowire( target=interceptorService.getInterceptor( mConfig.interceptors[ y ].name, true ),
 							     		  targetID=mConfig.interceptors[ y ].class );
 					} catch( EventPoolManager.ObjectNotFound var e ){
