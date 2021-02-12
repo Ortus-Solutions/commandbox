@@ -139,7 +139,7 @@ component aliases="show" {
 				// numberOfRatings,boxjson,isActive,typeName,version,hits,sourceURL,slug,createdDate,typeSlug,downloads,updatedDate,entryID,
 				// ratings,versions,avgRating,downloadURL,changelog,installs,title,user,description,summary,homeURL
 				if( !entryData.isActive ) {
-					error( 'The ForgeBox entry [#entryData.title#] is inactive, we highly recommed NOT installing it or contact the author about it' );
+					error( 'The ForgeBox entry [#entryData.title#] is inactive, we highly recommend NOT installing it or contact the author about it' );
 				}
 
 				entryData.versions.sort( function( a, b ) { return semanticVersion.compare( b.version, a.version ); } );

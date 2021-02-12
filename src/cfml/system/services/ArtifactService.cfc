@@ -203,7 +203,7 @@ component accessors="true" singleton {
 	}
 
 	/**
-	* Returns the descriptor file (box.json) for a packge parsed as a struct.
+	* Returns the descriptor file (box.json) for a package parsed as a struct.
 	* This data will be merged with a default document to guaruntee existence of standard variables and
 	* reduce the need for "exist" checks in our code
 	* @packageName The package name to look for
@@ -213,7 +213,7 @@ component accessors="true" singleton {
 		var thisArtifactPath = getArtifactPath( arguments.packageName, arguments.version );
 		var boxJSONPath = 'zip://' & thisArtifactPath & '!box.json';
 
-		// If the packge has a box.json in the root...
+		// If the package has a box.json in the root...
 		if( fileExists( boxJSONPath ) ) {
 
 			// ...Read it.

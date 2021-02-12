@@ -62,14 +62,14 @@
 			// move to the end of the file
 			randomAccessFile.seek( position );
 			// Was the last character a line feed.
-			// Remeber the CRLFs will be coming in reverse order
+			// Remember the CRLFs will be coming in reverse order
 			var lastLF = false;
 
 			while( true && startingLength ){
 
 				var char = randomAccessFile.read();
 
-				// Only increment CRs that were preceeded by a LF
+				// Only increment CRs that were preceded by a LF
 				if ( char == 13 && !lastLF ) {
 					lineCounter += 1;
 				}

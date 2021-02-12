@@ -556,7 +556,7 @@ component singleton{
 
 	/**
 	* Verifies if the passed version string is in a pre-release state
-	* Pre-release is defined by the existance of a preRelease ID
+	* Pre-release is defined by the existence of a preRelease ID
 	*/
 	boolean function isPreRelease( required string version ){
 		var pVersion = parseVersion( arguments.version );

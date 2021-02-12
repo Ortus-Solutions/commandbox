@@ -68,7 +68,7 @@ component accessors="true" implements="IEndpoint" singleton {
 
 			var boxJSONPath = 'zip://' & arguments.package & '!box.json';
 
-			// If the packge has a box.json in the root...
+			// If the package has a box.json in the root...
 			if( fileExists( boxJSONPath ) ) {
 
 				// ...Read it.

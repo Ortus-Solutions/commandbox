@@ -91,7 +91,7 @@ component accessors=true implements="IEndpoint" singleton {
 		// Strip protocol and host to reveal just path and query string
 		package = package.reReplaceNoCase( '^([\w:]+)?//.*?/', '' );
 
-		// Check and see if the name of the lex appears somewhere in the URL and use that as the pacakge name
+		// Check and see if the name of the lex appears somewhere in the URL and use that as the package name
 		// https://search.maven.org/remotecontent?filepath=jline/jline/3.0.0.M1/jline-3.0.0.M1.lex
 		// https://site.com/path/to/package-1.0.0.lex
 

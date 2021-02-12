@@ -5,7 +5,7 @@
  * cat names.txt | unique
  * {code}
  * .
- *  You can also get results with the occurance count preceeding each item
+ *  You can also get results with the occurrence count preceding each item
  * .
  * {code:bash}
  * cat names.txt | unique --count

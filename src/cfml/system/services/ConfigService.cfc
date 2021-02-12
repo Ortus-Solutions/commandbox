@@ -83,7 +83,7 @@ component accessors="true" singleton {
 
 		setConfigFilePath( '/commandbox-home/CommandBox.json' );
 
-		// Create the config file if neccessary
+		// Create the config file if necessary
 		if( !fileExists( getConfigFilePath() ) ) {
 			fileWrite( getConfigFilePath(), '{}' );
 		}

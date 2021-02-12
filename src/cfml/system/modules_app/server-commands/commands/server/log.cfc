@@ -71,7 +71,7 @@ component {
 			print.boldRedLine( "No log file found for '#serverInfo.webroot#'!" )
 				.line( "#logFile#" );
 			if( access ) {
-				print.yellowLine( 'Enable accesss logging with [server set web.accessLogEnable=true]' );
+				print.yellowLine( 'Enable access logging with [server set web.accessLogEnable=true]' );
 			}
 			if( rewrites ) {
 				print.yellowLine( 'Enable Rewrite logging with [server set web.rewrites.logEnable=true] and ensure you are started in debug mode.' );

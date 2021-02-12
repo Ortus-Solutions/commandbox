@@ -143,7 +143,7 @@ component singleton {
 							var paramName = listFirst( leftOver, '=' );
 							// Everything else, is the value so far
 							var paramSoFar = '';
-							// There's only a value if somethign was typed after the =
+							// There's only a value if something was typed after the =
 							if( !leftOver.endsWith( '=' ) ) {
 								paramSoFar = listLast( leftOver, '=' );
 							}

@@ -748,7 +748,7 @@
 	    return hasFlagsProp ? regex.flags :
 	    // Explicitly using `RegExp.prototype.toString` (rather than e.g. `String` or
 	    // concatenation with an empty string) allows this to continue working predictably when
-	    // `XRegExp.proptotype.toString` is overriden
+	    // `XRegExp.proptotype.toString` is overridden
 	    nativ.exec.call(/\/([a-z]*)$/i, RegExp.prototype.toString.call(regex))[1];
 	}
 
@@ -2497,7 +2497,7 @@
 
 	/**
 	 * Checks to see if any of the matches are inside of other matches.
-	 * This process would get rid of highligted strings inside comments,
+	 * This process would get rid of highlighted strings inside comments,
 	 * keywords inside strings and so on.
 	 */
 	function removeNested(matches) {
@@ -2895,7 +2895,7 @@
 	}
 
 	/**
-	 * Removes all white space at the begining and end of a string.
+	 * Removes all white space at the beginning and end of a string.
 	 *
 	 * @param {String} str   String to trim.
 	 * @return {String}      Returns string without leading and following white space characters.
@@ -3038,7 +3038,7 @@
 	      min = Math.min(matches[0].length, min);
 	    }
 
-	    // trim minimum common number of white space from the begining of every line
+	    // trim minimum common number of white space from the beginning of every line
 	    if (min > 0) for (i = 0, l = lines.length; i < l; i++) {
 	      if (!isEmpty(lines[i])) lines[i] = lines[i].substr(min);
 	    }return lines.join('\n');
@@ -3507,7 +3507,7 @@
 	})();
 	function runTimeout(fun) {
 	    if (cachedSetTimeout === setTimeout) {
-	        //normal enviroments in sane situations
+	        //normal environments in sane situations
 	        return setTimeout(fun, 0);
 	    }
 	    // if setTimeout wasn't available but was latter defined
@@ -3530,7 +3530,7 @@
 	}
 	function runClearTimeout(marker) {
 	    if (cachedClearTimeout === clearTimeout) {
-	        //normal enviroments in sane situations
+	        //normal environments in sane situations
 	        return clearTimeout(marker);
 	    }
 	    // if clearTimeout wasn't available but was latter defined
@@ -3609,7 +3609,7 @@
 	    }
 	};
 
-	// v8 likes predictible objects
+	// v8 likes predictable objects
 	function Item(fun, array) {
 	    this.fun = fun;
 	    this.array = array;

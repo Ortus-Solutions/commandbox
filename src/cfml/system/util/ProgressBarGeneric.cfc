@@ -48,7 +48,7 @@ component singleton {
 				lines = job.getLines();
 			}
 
-			// Total space availble to progress bar.  Subtract 5 for good measure since it will wrap if you get too close
+			// Total space available to progress bar.  Subtract 5 for good measure since it will wrap if you get too close
 			var totalWidth = shell.getTermWidth()-5;
 
 			if( totalCount > 0 ) {

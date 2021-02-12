@@ -291,7 +291,7 @@ component accessors="true" singleton="true" {
 		}
 
 		// Extract engine name and version from the package.  This is required for non-ForgeBox endpoints
-		// since we don't know it until we actualy do the installation
+		// since we don't know it until we actually do the installation
 		if( packageService.isPackage( thisTempDir ) ) {
 			var boxJSON = packageService.readPackageDescriptor( thisTempDir );
 			// This ensure the CommandBox server will pick up the correct metadata

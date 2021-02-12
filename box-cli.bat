@@ -15,7 +15,7 @@ if not exist "%CFDISTRO_HOME%\build.xml" (
     echo Downloading with powershell: %FILE_URL% to %FILE_DEST%
     powershell.exe -command "$webclient = New-Object System.Net.WebClient; $url = \"%FILE_URL%\"; $file = \"%FILE_DEST%\"; $webclient.DownloadFile($url,$file);"
 	REM if error encountered, try another method to download
-	REM using file existance check as errorlevel does not get reset properly
+	REM using file existence check as errorlevel does not get reset properly
     if not exist "%FILE_DEST%" (
       echo Powershell download failed. Trying with ActiveXObject
   	  cscript /nologo build/resource/wget.js %FILE_URL% %FILE_DEST%

@@ -1,7 +1,7 @@
 /**
  *
  * Remove those pesky trailing spaces from each line that some editors add.
- * Can be run on a single file or aginst a list of files defined by a file globbing pattern.
+ * Can be run on a single file or against a list of files defined by a file globbing pattern.
  *
  * {code:bash}
  * rts **.cf*

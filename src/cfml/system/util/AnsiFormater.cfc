@@ -10,7 +10,7 @@ component accessors=true {
 	
 	function cleanLine( line ) {
 		
-		// Log messages from the CF engine or app code writing direclty to std/err out strip off "runwar.context" but leave color coded severity
+		// Log messages from the CF engine or app code writing directly to std/err out strip off "runwar.context" but leave color coded severity
 		// Ex:
 		// [INFO ] runwar.context: 04/11 15:47:10 INFO Starting Flex 1.5 CF Edition
 		line = reReplaceNoCase( line, '^(\[[^]]*])( runwar\.context: )(.*)', '\1 \3' );

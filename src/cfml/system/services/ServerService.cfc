@@ -535,7 +535,7 @@ component accessors="true" singleton {
 		systemSettings.expandDeepSystemSettings( defaults );
 
 		// Setup serverinfo according to params
-		// Hand-entered values take precendence, then settings saved in server.json, and finally defaults.
+		// Hand-entered values take precedence, then settings saved in server.json, and finally defaults.
 		// The big servers.json is only used to keep a record of the last values the server was started with
 		serverInfo.trace 			= serverProps.trace 			?: serverJSON.trace 				?: defaults.trace;
 		serverInfo.debug 			= serverProps.debug 			?: serverJSON.debug 				?: defaults.debug;
@@ -576,7 +576,7 @@ component accessors="true" singleton {
 			// Look for a env var called "environment"
 			var envVarEnvironment = systemSettings.getSystemSetting( 'environment', '' );
 
-			// Env var takes precendence.
+			// Env var takes precedence.
 			if( len( envVarEnvironment ) ) {
 				profileReason = '"environment" env var';
 				defaults.profile = envVarEnvironment;
@@ -803,19 +803,19 @@ component accessors="true" singleton {
 
 		serverInfo.rewriteslogEnable = serverJSON.web.rewrites.logEnable ?: defaults.web.rewrites.logEnable;
 
-		// Global defauls are always added on top of whatever is specified by the user or server.json
+		// Global defaults are always added on top of whatever is specified by the user or server.json
 		serverInfo.JVMargs			= ( serverProps.JVMargs			?: serverJSON.JVM.args ?: '' ) & ' ' & defaults.JVM.args;
 
-		// Global defauls are always added on top of whatever is specified by the user or server.json
+		// Global defaults are always added on top of whatever is specified by the user or server.json
 		serverInfo.runwarJarPath	= serverProps.runwarJarPath		?: serverJSON.runwar.jarPath	?: defaults.runwar.jarPath;
 
-		// Global defauls are always added on top of whatever is specified by the user or server.json
+		// Global defaults are always added on top of whatever is specified by the user or server.json
 		serverInfo.runwarArgs		= ( serverProps.runwarArgs		?: serverJSON.runwar.args ?: '' ) & ' ' & defaults.runwar.args;
 
-		// Global defauls are always added on top of whatever is specified by the user or server.json
+		// Global defaults are always added on top of whatever is specified by the user or server.json
 		serverInfo.runwarXNIOOptions	= ( serverJSON.runwar.XNIOOptions ?: {} ).append( defaults.runwar.XNIOOptions, true );
 
-		// Global defauls are always added on top of whatever is specified by the user or server.json
+		// Global defaults are always added on top of whatever is specified by the user or server.json
 		serverInfo.runwarUndertowOptions	= ( serverJSON.runwar.UndertowOptions ?: {} ).append( defaults.runwar.UndertowOptions, true );
 
 		// Server startup timeout
@@ -837,12 +837,12 @@ component accessors="true" singleton {
 				if( directoryExists( thisLibDir ) ) {
 					thisLibDirs.listAppend( thisLibDir );
 				} else if( serverInfo.verbose ) {
-					job.addLog( "Ignoring non-existant global lib dir: " & thisLibDir );
+					job.addLog( "Ignoring non-existent global lib dir: " & thisLibDir );
 				}
 				return thisLibDirs;
 			}, '' );
 		}
-		// Global defauls are always added on top of whatever is specified by the user or server.json
+		// Global defaults are always added on top of whatever is specified by the user or server.json
 		serverInfo.libDirs		= ( serverProps.libDirs		?: serverJSON.app.libDirs ?: '' ).listAppend( defaults.app.libDirs );
 
 		serverInfo.webRules = [];
@@ -1066,7 +1066,7 @@ component accessors="true" singleton {
 
 		// Doing this check here instead of the ServerEngineService so it can apply to existing installs
 		if( CFEngineName == 'adobe' ) {
-			// Work arounnd sketchy resoution of non-existant paths in Undertow
+			// Work arounnd sketchy resoution of non-existent paths in Undertow
 			// https://issues.jboss.org/browse/UNDERTOW-1413
 			var flexLogFile = serverInfo.serverHomeDirectory & "/WEB-INF/cfform/logs/flex.log";
 			if ( !fileExists( flexLogFile ) ) {
@@ -1556,7 +1556,7 @@ component accessors="true" singleton {
 				var line = bufferedReader.readLine();
 				while( !isNull( line ) ){
 
-					// Log messages from the CF engine or app code writing direclty to std/err out strip off "runwar.context" but leave color coded severity
+					// Log messages from the CF engine or app code writing directly to std/err out strip off "runwar.context" but leave color coded severity
 					// Ex:
 					// [INFO ] runwar.context: 04/11 15:47:10 INFO Starting Flex 1.5 CF Edition
 					line = reReplaceNoCase( line, '^((#chr( 27 )#\[m)?\[[^]]*])( runwar\.context: )(.*)', '\1 \4' );
@@ -1916,7 +1916,7 @@ component accessors="true" singleton {
 		var serverInfo = getServerInfoByDiscovery(
 			directory			= defaultwebroot,
 			name				= defaultName,
-			serverConfigFile	= serverProps.serverConfigFile ?: '' //  Since this takes precendence, I only want to use it if it was actually specified
+			serverConfigFile	= serverProps.serverConfigFile ?: '' //  Since this takes precedence, I only want to use it if it was actually specified
 		);
 
 		// If we found a server, set our name.

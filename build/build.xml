@@ -146,7 +146,7 @@ External Dependencies:
 		<antcontrib:if>
 			<equals arg1="${build.type}" arg2="auto" />
 			<then>
-				<!-- Remove Unecessary build files from repo, so to not confuse -->
+				<!-- Remove Unnecessary build files from repo, so to not confuse -->
 				<delete>
 					<fileset file="${dist.dir}/box" />
 					<fileset file="${dist.dir}/box.exe" />
@@ -587,7 +587,7 @@ External Dependencies:
 
 		<git command="push" dir="${dist.dir}/homebrew-boxtap" />
 
-		<!-- Ensure perms allow us to delete since GIT is runing as sudo-er
+		<!-- Ensure perms allow us to delete since GIT is running as sudo-er
 		<exec executable="sudo" dir="${dist.dir}" failonerror="true">
 			<arg value="chmod" />
 			<arg value="-R" />

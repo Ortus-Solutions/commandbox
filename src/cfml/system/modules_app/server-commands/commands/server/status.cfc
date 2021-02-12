@@ -11,7 +11,7 @@
  * server status serverName
  * {code}
  * .
- * Or specifiy the web root directory.  If name and directory are both specified, name takes precedence.
+ * Or specify the web root directory.  If name and directory are both specified, name takes precedence.
  *
  * {code:bash}
  * server status directory=C:\path\to\server

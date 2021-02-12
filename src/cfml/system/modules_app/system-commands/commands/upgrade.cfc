@@ -177,7 +177,7 @@ component {
 			// Give them a chance to read it.
 			sleep( 10000 );
 
-			// Stop executing.  Since the unzipping possbily replaced .cfm files that were
+			// Stop executing.  Since the unzipping possibly replaced .cfm files that were
 			// also cached in memory, there's no good way we've found to be able to reload and keep going.
 			abort;
 

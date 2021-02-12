@@ -9,8 +9,8 @@
  * .
  * You can also bind the recipe with arguments that will be replaced inside of your recipe.
  * Pass any arguments as additional parameters to the recipe command.
- * Named arguments will be accessable inside the recipe as system settings ${arg1Name}, ${arg2Name}, etc.
- * Positional args will be avaialble as ${1}, ${2}, etc.
+ * Named arguments will be accessible inside the recipe as system settings ${arg1Name}, ${arg2Name}, etc.
+ * Positional args will be available as ${1}, ${2}, etc.
  * .
  * Recipe will receive ${name} and ${action}
  * {code:bash}

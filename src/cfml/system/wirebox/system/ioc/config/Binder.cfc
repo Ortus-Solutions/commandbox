@@ -191,7 +191,7 @@ component accessors="true" {
 	}
 
 	/**
-	 * The main configuration method that must be overriden by a specific WireBox Binder configuration object
+	 * The main configuration method that must be overridden by a specific WireBox Binder configuration object
 	 */
 	function configure(){
 		// Implemented by concrete classes
@@ -507,7 +507,7 @@ component accessors="true" {
 
 				/**
 				 * Do this right away so aliases are picked up before this mapping potentially gets overwritten
-				 * This is neccessary for multuple CFCs with the same name in different folders, but with unique aliases
+				 * This is necessary for multuple CFCs with the same name in different folders, but with unique aliases
 				 * TODO: Move to async
 				 */
 				if ( process ) {
@@ -535,7 +535,7 @@ component accessors="true" {
 	/**
 	 * Create a mapping to an object
 	 *
-	 * @alias A single alias or a list or an array of aliases for this mapping. Remember an object can be refered by many names
+	 * @alias A single alias or a list or an array of aliases for this mapping. Remember an object can be referred by many names
 	 * @force Forces the registration of the mapping in case it already exists
 	 */
 	Binder function map( required alias, boolean force = false ){
@@ -1087,7 +1087,7 @@ component accessors="true" {
 	}
 
 	/**
-	 * Configurate CacheBox operations
+	 * Configure CacheBox operations
 	 *
 	 * @configFile The configuration file to use for loading CacheBox if creating it
 	 * @cacheFactory The CacheBox cache factory instance to link WireBox to
@@ -1117,8 +1117,8 @@ component accessors="true" {
 	 * Map an object into CacheBox
 	 *
 	 * @key You can override the key it will use for storing in cache. By default it uses the name of the mapping
-	 * @timeout Object Timeout, else defaults to whatever the default is in the choosen cache
-	 * @lastAccessTimeout Object Timeout, else defaults to whatever the default is in the choosen cache
+	 * @timeout Object Timeout, else defaults to whatever the default is in the chosen cache
+	 * @lastAccessTimeout Object Timeout, else defaults to whatever the default is in the chosen cache
 	 * @provider Uses the 'default' cache provider by default
 	 */
 	Binder function inCacheBox(

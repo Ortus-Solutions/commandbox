@@ -277,7 +277,7 @@ component singleton {
 
 
 	/**
-	* Return an array of environemnt context with the current one at the top
+	* Return an array of environment context with the current one at the top
 	*/	
 	array function getAllEnvironments() {
 		var envs = [];
@@ -300,7 +300,7 @@ component singleton {
 
 
 	/**
-	* Return a representation of the environemnt context including all parent contexts
+	* Return a representation of the environment context including all parent contexts
 	* but not including Java system props and OS env vars flattended into a single struct.
 	*/	
 	struct function getAllEnvironmentsFlattened() {

@@ -75,7 +75,7 @@ component accessors=true {
 	}
 
 	/**
-	* Pass in a UDF refernce to be executed when the watcher senses a chnage on the file system
+	* Pass in a UDF reference to be executed when the watcher senses a chnage on the file system
 	*/
 	public function onChange( changeUDF ) {
 		setChangeUDF( arguments.changeUDF );

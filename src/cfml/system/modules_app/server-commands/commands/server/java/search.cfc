@@ -1,5 +1,5 @@
 /**
- * Search for avaialble versions of java for you to use
+ * Search for available versions of java for you to use
  * .
  * {code:bash}
  * server java search
@@ -184,7 +184,7 @@ component aliases='java search' {
 
 
 	/**
-	* Pads value with spaces or truncates as neccessary
+	* Pads value with spaces or truncates as necessary
 	*/
 	private function printColumnValue( required string text, required number columnWidth ) {
 		if( len( text ) > columnWidth ) {

@@ -24,7 +24,7 @@ component {
 	/**
 	 * Tokenizes the command line entered by the user.  Returns array with command statements and arguments
 	 *
-	 * Consider making a dedicated CFC for this since some of the logic could benifit from
+	 * Consider making a dedicated CFC for this since some of the logic could benefit from
 	 * little helper methods to increase readability and reduce duplicate code.
  	 **/
 	function tokenizeInput( string line ) {

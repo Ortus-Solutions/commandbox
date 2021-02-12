@@ -87,7 +87,7 @@ component accessors="true" implements="IEndpointInteractive" {
 
 		// Only bother checking if we have a version range.  If an exact version is stored in
 		// box.json, we're never going to update it anyway.
-		// UNLESS the box.json has been udpated to have a new exact version that is different from what's installed (ignoreing buildID)
+		// UNLESS the box.json has been updated to have a new exact version that is different from what's installed (ignoreing buildID)
 		if( semanticVersion.isExactVersion( boxJSONversion ) && semanticVersion.compare( boxJSONversion, version, false ) == 0 ) {
 			return result;
 		}
@@ -270,7 +270,7 @@ component accessors="true" implements="IEndpointInteractive" {
 			{ variable : 'installInstructions', file : 'instructions' },
 			{ variable : 'changelog', file : 'changelog' }
 		] ) {
-			// Check for no ext or .txt or .md in reverse precendence.
+			// Check for no ext or .txt or .md in reverse precedence.
 			for( var ext in [ '', '.txt', '.md' ] ) {
 				// Case insensitive search for file name
 				var files = directoryList( path=arguments.path, filter=function( path ){ return path contains ( item.file & ext); } );0

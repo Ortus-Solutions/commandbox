@@ -63,7 +63,7 @@ component {
 	* This is the word the cursor is currently in - for our purposes it is always the last word.
 	* In order for quoted completions to work, this is expected to have any quotes wrapping the word
 	* stripped. (JLine also expects it to have escapes removed, but for our purposes unquoting
-	* seems sufficent.)
+	* seems sufficient.)
 	*/
 	function word() {
 		return unquote( token() );
