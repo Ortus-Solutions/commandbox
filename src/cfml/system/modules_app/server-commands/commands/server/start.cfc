@@ -29,7 +29,7 @@
  * cfengine can also be any valid Endpoint ID that points to a ForgeBox entry, HTTP URL, etc.
  * .
  * {code:bash}
- * server start cfengine=http://downloads.ortussolutions.com/adobe/coldfusion/9.0.2/cf-engine-9.0.2.zip
+ * server start cfengine=https://downloads.ortussolutions.com/adobe/coldfusion/9.0.2/cf-engine-9.0.2.zip
  * {code}
  * .
  * You can also start up a local WAR file with the WARPath parmeter.
@@ -45,7 +45,7 @@ component aliases="start" {
 	property name="serverService" 	inject="ServerService";
 	property name="javaService" 	inject="JavaService";
 	property name="endpointService" inject="endpointService";
-	
+
 	/**
 	 * @name           		short name for this server or a path to the server.json file.
 	 * @name.optionsFileComplete true
@@ -183,7 +183,7 @@ component aliases="start" {
 
 	/**
 	* Complete server names
-	*/	
+	*/
 	function serverNameComplete() {
 		return serverService
 			.getServerNames()
@@ -196,15 +196,15 @@ component aliases="start" {
 	* Complete cfengine names
 	*/
 	function cfengineNameComplete( string paramSoFar ) {
-		
+
 		var endpointName = configService.getSetting( 'endpoints.defaultForgeBoxEndpoint', 'forgebox' );
-		
-		try {		
+
+		try {
 			var oEndpoint = endpointService.getEndpoint( endpointName );
 		} catch( EndpointNotFound var e ) {
 			error( e.message, e.detail ?: '' );
 		}
-		
+
 		var forgebox = oEndpoint.getForgebox();
 		var APIToken = oEndpoint.getAPIToken();
 
@@ -226,7 +226,7 @@ component aliases="start" {
 
 	/**
 	* Complete java versions
-	*/	
+	*/
 	function javaVersionComplete() {
 		return javaService
 			.listJavaInstalls()
@@ -234,6 +234,6 @@ component aliases="start" {
 			.map( ( i ) => {
 				return { name : i, group : 'Java Versions' };
 			} );
-	}	
-	
+	}
+
 }

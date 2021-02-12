@@ -51,7 +51,7 @@ You're now ready to leverage streams!
 
 ## In-Depth Tutorial
 
-These tutorials on Java Streams are fantastic. We encourage you to read them to see the power of streams. You can also find the `cbstreams` API Docs to be a great source of information: [http://apidocs.ortussolutions.com/#/coldbox-modules/cbstreams](http://apidocs.ortussolutions.com/#/coldbox-modules/cbstreams)
+These tutorials on Java Streams are fantastic. We encourage you to read them to see the power of streams. You can also find the `cbstreams` API Docs to be a great source of information: [https://apidocs.ortussolutions.com/#/coldbox-modules/cbstreams](https://apidocs.ortussolutions.com/#/coldbox-modules/cbstreams)
 
 - [Streams Cheatsheet](http://files.zeroturnaround.com/pdf/zt_java8_streams_cheat_sheet.pdf)
 - [Java Streams Examples](http://winterbe.com/posts/2014/07/31/java8-stream-tutorial-examples/)
@@ -66,7 +66,7 @@ In order to start working with streams you must leverage WireBox and inject `Str
 - `new( any collection="", isNumeric=false, primitive=""  )` - Returns a new `Stream.cfc` according to passed arguments
 - `builder()` - Returns a Stream Builder that maps to the `Builder.cfc` so you can build a stream manually.
 
-We encourage you to learn our [API Docs](http://apidocs.ortussolutions.com/#/coldbox-modules/cbstreams) to see how to interact with streams.  We try our best to map static Java types to loose typed ColdFusion types. If you find anything that doesn't work, please create issues here: [Issues](https://github.com/coldbox-modules/cbstreams/issues)
+We encourage you to learn our [API Docs](https://apidocs.ortussolutions.com/#/coldbox-modules/cbstreams) to see how to interact with streams.  We try our best to map static Java types to loose typed ColdFusion types. If you find anything that doesn't work, please create issues here: [Issues](https://github.com/coldbox-modules/cbstreams/issues)
 
 ## Creating Streams
 

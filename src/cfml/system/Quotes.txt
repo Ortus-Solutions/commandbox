@@ -127,7 +127,7 @@ Real men test in production!
 I love Docker!  Check out the Ortus CommandBox-based Docker images
 Warning: Don't feed the variables
 CFML is a dynamic, loosely typed, multi-paradigm JVM language
-Read the CommandBox docs at http://commandbox.ortusbooks.com
+Read the CommandBox docs at https://commandbox.ortusbooks.com
 Bored at work? Type "snake" to have some ASCII fun from the past
 Help I'm trapped in a CLI factory
 Don't code like it's 1998. Or 2008 for that matter!

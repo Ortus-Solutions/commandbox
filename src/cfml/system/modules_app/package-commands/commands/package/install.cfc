@@ -41,7 +41,7 @@
  * {code}
  * .
  * Installation from endpoints other than ForgeBox is supported.
- * Additional endpoints include HTTP/HTTPS, local zip file or folder, Git repos, Github Gists, CFlib.org, and RIAForge.org
+ * Additional endpoints include HTTP/HTTPS, local zip file or folder, Git repos, GitHub Gists, CFlib.org, and RIAForge.org
  * .
  * {code:bash}
  * install C:/myZippedPackages/package.zip
@@ -175,8 +175,8 @@ component aliases="install" {
 		} catch( EndpointNotFound var e ) {
 			error( e.message, e.detail );
 		}
-		
-		
+
+
 		interceptorService.announceInterception( 'postInstallAll', { installArgs=arguments } );
 
 	}
@@ -188,19 +188,19 @@ component aliases="install" {
 			return [];
 		}
 		try {
-			
-						
+
+
 			var endpointName = configService.getSetting( 'endpoints.defaultForgeBoxEndpoint', 'forgebox' );
-			
-			try {		
+
+			try {
 				var oEndpoint = endpointService.getEndpoint( endpointName );
 			} catch( EndpointNotFound var e ) {
 				error( e.message, e.detail ?: '' );
 			}
-			
+
 			var forgebox = oEndpoint.getForgebox();
 			var APIToken = oEndpoint.getAPIToken();
-			
+
 			// Get auto-complete options
 			return forgebox.slugSearch( searchTerm=arguments.paramSoFar, APIToken=APIToken );
 		} catch( forgebox var e ) {
