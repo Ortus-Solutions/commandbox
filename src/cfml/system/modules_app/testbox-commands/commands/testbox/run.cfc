@@ -361,7 +361,7 @@ component {
 			return arguments.runner;
 		}
 
-		// Get Runner from from the box.json
+		// Get Runner from the box.json
 		var runnerUrl = variables.testingService.getTestBoxRunner( getCWD(), arguments.runner );
 
 		// Validate runner
@@ -410,7 +410,7 @@ component {
 			}
 		} else  {
 			var targetPath = variables.moduleConfig.path & "/testbox";
-			
+
 		}
 
 		// Add our mapping

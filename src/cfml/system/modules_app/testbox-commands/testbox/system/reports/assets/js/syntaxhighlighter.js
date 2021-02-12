@@ -3516,7 +3516,7 @@
 	        return setTimeout(fun, 0);
 	    }
 	    try {
-	        // when when somebody has screwed with setTimeout but no I.E. maddness
+	        // when somebody has screwed with setTimeout but no I.E. maddness
 	        return cachedSetTimeout(fun, 0);
 	    } catch (e) {
 	        try {
@@ -3539,7 +3539,7 @@
 	        return clearTimeout(marker);
 	    }
 	    try {
-	        // when when somebody has screwed with setTimeout but no I.E. maddness
+	        // when somebody has screwed with setTimeout but no I.E. maddness
 	        return cachedClearTimeout(marker);
 	    } catch (e) {
 	        try {
