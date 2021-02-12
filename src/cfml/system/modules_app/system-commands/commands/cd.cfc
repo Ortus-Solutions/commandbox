@@ -11,7 +11,7 @@
  * cd ../../tests
  * {code}
  * .
- * Another shortcut for going up a directoy is to add additional dots for each folder.
+ * Another shortcut for going up a directory is to add additional dots for each folder.
  * {code:bash}
  * cd ... => cd ../../ // back 2 directory
  * cd .... => cd ../../../ // back 3 directory
@@ -30,7 +30,7 @@ component {
 			arguments.directory = systemSettings.getSystemSetting( 'OLDPWD', shell.pwd() );
 		}
 
-		// Shorthand expantion for going back muliple directories eg. "..." - expand mulitple dots "." to a "../"
+		// Shorthand expantion for going back multiple directories eg. "..." - expand multiple dots "." to a "../"
 		if( reMatch("^\.{2,}$", directory).len() ){
 			arguments.directory = ( replace( Left( arguments.directory, len(arguments.directory) - 1 ), '.', '../', 'All' ) );
 		}

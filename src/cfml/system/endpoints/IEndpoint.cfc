@@ -5,7 +5,7 @@
 ********************************************************************************
 * @author Brad Wood, Luis Majano, Denny Valliant
 *
-* I am an endpoint.  I can retreive packages for you.
+* I am an endpoint.  I can retrieve packages for you.
 */
 interface {
 

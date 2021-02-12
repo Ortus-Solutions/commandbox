@@ -57,7 +57,7 @@ component aliases='java list' {
 		if( serverDefaultJvmJavaVersion.len() && !foundDefault ) {
 			print
 				.yellowText( 'You have a default Java version set to [' ).boldYellow( serverDefaultJvmJavaVersion ) .yellowLine( '] but it didn''t match any of your installed versions.')
-				.yellowLine( 'If you specified a partial version, it might download a new version when it comes avaialble.  If your default version' )
+				.yellowLine( 'If you specified a partial version, it might download a new version when it comes available.  If your default version' )
 				.yellowLine( 'simply isn''t installed, it will get downloaded automatically the next time you start a server.' )
 				.line();
 		}

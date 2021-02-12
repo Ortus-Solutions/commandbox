@@ -50,7 +50,7 @@ component aliases="exec"{
 			rethrow;
 		}
 
-		return ( out ?: "The file '#arguments.file#' executed succesfully!" );
+		return ( out ?: "The file '#arguments.file#' executed successfully!" );
 	}
 
 	/**
@@ -66,7 +66,7 @@ component aliases="exec"{
 				if( isNumeric( argName ) ) {
 					argName--;
 				}
-				// Make incoming args avaialble to this command as env vars too
+				// Make incoming args available to this command as env vars too
 				systemSettings.setSystemSetting( argName, args[ arg ] );
 				parsedArgs[ '$' & argName ] = args[arg];
 			}

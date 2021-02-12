@@ -93,7 +93,7 @@ component {
 	 * @testSpecs   A list of test names that are the ones that will be executed ONLY!
 	 * @outputFile  We will store the results in this output file as well as presenting it to you.
 	 * @outputFormats A list of output reporter to produce using the runner's JSON results only. Available formats are: json,xml,junit,antjunit,simple,dot,doc,min,mintext,doc,text,tap,codexwiki
-	 * @verbose Display extra details inlcuding passing and skipped tests.
+	 * @verbose Display extra details including passing and skipped tests.
 	 * @testboxUseLocal When using outputformats, prefer testbox installation in current working directory over bundled version.
 	 **/
 	function run(
@@ -143,7 +143,7 @@ component {
 		 * Output To CLI
 		 **********************************************************************************/
 
-		// Default is to template our own output based on a JSON reponse
+		// Default is to template our own output based on a JSON response
 		if ( variables.RUNNER_OPTIONS.reporter == "json" && isJSON( results.fileContent ) ) {
 			var testData = deserializeJSON( results.fileContent );
 

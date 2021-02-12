@@ -122,7 +122,7 @@
 	function writeHint( hint ) {
 
 		// Clean up lines with only a period which is my work around for the Railo bug ignoring
-		// line breaks in componenet annotations: https://issues.jboss.org/browse/RAILO-3128
+		// line breaks in component annotations: https://issues.jboss.org/browse/RAILO-3128
 		hint = reReplace( hint, '\n\s*\.\s*\n', chr( 10 )&chr( 10 ), 'all' );
 
 		// Find code blocks

@@ -155,7 +155,7 @@ component accessors=true implements="IEndpoint" singleton {
 			job.addErrorLog( message );
 
 			// Before we give up, check artifacts for a downloaded version that might work
-			// Ideally I'd only do this for catastropic errors, but the AdoptOpenJDK API doesn't really allow me to
+			// Ideally I'd only do this for catastrophic errors, but the AdoptOpenJDK API doesn't really allow me to
 			// tell the difference since it pretty much just pukes non-JSON if it can't find what I was looking for
 			var artifactJDKs = artifactService.listArtifacts( 'OpenJDK' );
 			if( artifactJDKs.keyExists( 'OpenJDK' ) ) {

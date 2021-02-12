@@ -62,7 +62,7 @@ component implements="wirebox.system.ioc.dsl.IDSLBuilder" accessors=true{
 				switch(thisLocationType){
 					case "moduleconfig"		: {
 						var moduleConfig = getInjector().getInstance( 'ModuleService' ).getModuleData();
-						// Check for module existance
+						// Check for module existence
 						if( structKeyExists(moduleConfig, thisLocationKey ) ){
 							return moduleConfig[ thisLocationKey ];
 						} else {
@@ -74,7 +74,7 @@ component implements="wirebox.system.ioc.dsl.IDSLBuilder" accessors=true{
 					}
 					case "modulesettings"		: {
 						var moduleConfig = getInjector().getInstance( 'ModuleService' ).getModuleData();
-						// Check for module existance
+						// Check for module existence
 						if( structKeyExists(moduleConfig, thisLocationKey ) ){
 							return moduleConfig[ thisLocationKey ].settings;
 						} else {
@@ -96,7 +96,7 @@ component implements="wirebox.system.ioc.dsl.IDSLBuilder" accessors=true{
 							var configService = getInjector().getInstance( 'ConfigService' );
 							var configSettings = configService.getConfigSettings();
 	
-							// Check for setting existance
+							// Check for setting existence
 							if( configService.settingExists( thisLocationKey ) ){
 								return configService.getSetting( thisLocationKey );
 							} else {								
@@ -122,16 +122,16 @@ component implements="wirebox.system.ioc.dsl.IDSLBuilder" accessors=true{
 			}
 		}
 
-		throw( message="CommandBox DSL cannot find dependency using definition: #arguments.definition.toString()#", detail="Unkonwn DSL" );
+		throw( message="CommandBox DSL cannot find dependency using definition: #arguments.definition.toString()#", detail="Unknown DSL" );
 
 	}
 
 	function getModuleSetting( definition, thisLocationKey, thisLocationToken ) {
 							
 		var moduleConfig = getInjector().getInstance( 'ModuleService' ).getModuleData();
-		// Check for module existance
+		// Check for module existence
 		if( structKeyExists(moduleConfig, thisLocationKey ) ){
-			// Check for setting existance
+			// Check for setting existence
 			if( structKeyExists( moduleConfig[ thisLocationKey ].settings, thisLocationToken ) ) {
 				return moduleConfig[ thisLocationKey ].settings[ thisLocationToken ];
 			} else {

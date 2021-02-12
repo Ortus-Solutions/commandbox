@@ -188,7 +188,7 @@ component accessors="true" singleton {
 
 
 	/**
-	 * Sets reload flag, relaoded from shell.cfm
+	 * Sets reload flag, reloaded from shell.cfm
 	 * @clear.hint clears the screen after reload
  	 **/
 	Shell function reload( Boolean clear=true ){
@@ -226,7 +226,7 @@ component accessors="true" singleton {
 	 * @message.hint message to prompt the user with
 	 * @mask.hint When not empty, keyboard input is masked as that character
 	 * @defaultResponse Text to populate the buffer with by default that will be submitted if the user presses enter without typing anything
-	 * @keepHistory True to remeber the text typed in the shell history
+	 * @keepHistory True to remember the text typed in the shell history
 	 *
 	 * @return the response from the user
  	 **/
@@ -252,7 +252,7 @@ component accessors="true" singleton {
 				terminal.resume();
 			}
 
-			// read reponse while masking input
+			// read response while masking input
 			var input = variables.reader.readLine(
 				// Prompt for the user
 				arguments.message,
@@ -500,7 +500,7 @@ component accessors="true" singleton {
 
 	/**
 	 * Runs the shell thread until exit flag is set
-	 * @silent Supress prompt
+	 * @silent Suppress prompt
   	 **/
     Boolean function run( silent=false ) {
 		// init reload to false, just in case
@@ -569,7 +569,7 @@ component accessors="true" singleton {
 
 				}
 
-	        	// If the standard input isn't avilable, bail.  This happens
+	        	// If the standard input isn't available, bail.  This happens
 	        	// when commands are piped in and we've reached the end of the piped stream
 	        	if( !isDefined( 'line' ) ) {
 	        		return false;

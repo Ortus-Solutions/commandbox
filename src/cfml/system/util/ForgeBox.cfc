@@ -130,7 +130,7 @@ or just add DEBUG to the root logger
 
 	<!--- getEntry --->
 	<cffunction name="getEntry" output="false" access="public" returntype="struct" hint="Get an entry from forgebox by slug">
-		<cfargument name="slug" type="string" required="true" default="" hint="The entry slug to retreive"/>
+		<cfargument name="slug" type="string" required="true" default="" hint="The entry slug to retrieve"/>
 		<cfargument name="APIToken" type="string" default="">
 		<cfscript>
 			var results = "";

@@ -12,7 +12,7 @@
  * artifacts remove package-name 1.2.0.0
  * {code}
  * .
- * Remove a list of packge names
+ * Remove a list of package names
  * {code:bash}
  * artifacts remove package1,package2
  * {code}

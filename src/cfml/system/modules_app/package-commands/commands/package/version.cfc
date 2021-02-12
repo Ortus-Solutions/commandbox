@@ -50,7 +50,7 @@ component aliases="bump" {
 
 	/**
 	 * @version The new version to set into this package
-	 * @message The message to use when commiting the new tag
+	 * @message The message to use when committing the new tag
 	 * @tagVersion Tag the repo
 	 * @tagPrefix The tag prefix to use before the version number
 	 * @force Skip the check if to see if the Git repo is clean

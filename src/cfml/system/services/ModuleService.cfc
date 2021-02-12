@@ -14,7 +14,7 @@
 	just mirror the CommandBox.json file and not include runtime metadata like this.  Any time
 	a config setting is updated programmatically for a module, CommandBox's ConfigService
 	will attempt to keep this runtime data in sync.  Module's will ask the ModuleService for their
-	data which will come from here, overriden at load time by any config settings if they exist.
+	data which will come from here, overridden at load time by any config settings if they exist.
 	--->
 	<cfproperty name="moduleData">
 
@@ -232,7 +232,7 @@
 					modelNamespace		= modName,
 					// Auto map models flag
 					autoMapModels		= true,
-					// when this registration ocurred
+					// when this registration occurred
 					loadTime 			= now(),
 					// Flag that denotes if the module has been activated or not
 					activated 			= false,
@@ -512,7 +512,7 @@
 
 				// Log it
 				if( instance.logger.canDebug() ){
-					instance.logger.debug( "Module #arguments.moduleName# activated sucessfully." );
+					instance.logger.debug( "Module #arguments.moduleName# activated successfully." );
 				}
 
 			} // end lock

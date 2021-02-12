@@ -69,7 +69,7 @@ wirebox.getInstance( 'globber' )
 #### Get data as query
 
 You can get a query back instead of an array by adding `.asQuery()` to your DSL.  The also affects the datatype you `apply()` closure runs against.
-The query columns match what comes from the `directoryList()` fucntion.
+The query columns match what comes from the `directoryList()` function.
 ```
 var qryResults = globber
 	.setPattern( baseDir & '/**' )

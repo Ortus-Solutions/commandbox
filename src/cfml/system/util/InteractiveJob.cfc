@@ -60,7 +60,7 @@ component accessors=true singleton {
 	* Clear from the screen, but don't reset
 	*/
 	function clear() {
-		// If Jline uses a "dumb" terminal, the width reports as zero, which throws devide by zero errors.
+		// If Jline uses a "dumb" terminal, the width reports as zero, which throws divide by zero errors.
 		// TODO: I might be able to just fake a reasonable width.
 		if( !shell.isTerminalInteractive() || terminal.getWidth() == 0 ) {
 			return;
@@ -147,7 +147,7 @@ component accessors=true singleton {
 	/**
 	* Mark job as completed.  This will print out any final permanent lines and clear the state
 	*
-	* @dumpLog Dump out all internal log lines permenantly to the console
+	* @dumpLog Dump out all internal log lines permanently to the console
 	*/
 	function complete( boolean dumpLog=variables.dumpLog ) {
 		lock name="job-queue" timeout=20 {
@@ -162,7 +162,7 @@ component accessors=true singleton {
 	/**
 	* Mark job as Failed.  This will print out any final permanent lines and clear the state
 	*
-	* @dumpLog Dump out all internal log lines permenantly to the console
+	* @dumpLog Dump out all internal log lines permanently to the console
 	*/
 	function error( string message='', boolean dumpLog=variables.dumpLog ) {
 		lock name="job-queue" timeout=20 {
@@ -241,7 +241,7 @@ component accessors=true singleton {
 	*/
 	function draw() {
 		lock name="job-draw" timeout=20 {
-			// If Jline uses a "dumb" terminal, the width reports as zero, which throws devide by zero errors.
+			// If Jline uses a "dumb" terminal, the width reports as zero, which throws divide by zero errors.
 			// TODO: I might be able to just fake a reasonable width.
 			if( !shell.isTerminalInteractive() || terminal.getWidth() == 0 ) {
 				return;

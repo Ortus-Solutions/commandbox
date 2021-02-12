@@ -943,7 +943,7 @@ component serializable="false" accessors="true" implements="wirebox.system.ioc.I
 					targetObject = arguments.targetObject
 				);
 			}
-			// else we have to have a reference ID or a nasty bug has ocurred
+			// else we have to have a reference ID or a nasty bug has occurred
 			else{
 				refLocal.dependency = getInstance( arguments.DIData[ x ].ref );
 			}

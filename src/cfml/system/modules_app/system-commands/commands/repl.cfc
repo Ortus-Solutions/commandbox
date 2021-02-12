@@ -28,7 +28,7 @@ component {
 	property name="REPLParser"		inject="REPLParser";
 
 	/**
-	* @input.hint Optional CFML to execute. If provided, the command exits immediatley.
+	* @input.hint Optional CFML to execute. If provided, the command exits immediately.
 	* @script.hint Run REPL in script or tag mode
 	* @directory.hint Directory to start the REPL in (defaults to current working directory).
 	**/

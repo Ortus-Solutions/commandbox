@@ -29,7 +29,7 @@ component accessors="true" singleton {
 	}
 
 	/**
-	* Returns an array with each line of the command seperated
+	* Returns an array with each line of the command separated
 	**/
 	function getCommandLines() {
 		return instance.CFMLCommandLines;

@@ -137,7 +137,7 @@ component{
 		arguments.arg = replaceNoCase( arguments.arg, '\f', chr(12), 'all' );
 		arguments.arg = replaceNoCase( arguments.arg, '\b', chr(8), 'all' );
 
-		// A null keyword must be preceeded by a , [ : or start of string.
+		// A null keyword must be preceded by a , [ : or start of string.
 		// TODO: This doesn't account for the word "null" inside a quoted string.  I'd need to actually parse the string to detect that.
 		arguments.arg = reReplaceNoCase( arguments.arg, '(,\s*)null', '\1nullValue()', 'all' );
 		arguments.arg = reReplaceNoCase( arguments.arg, '(\[\s*)null', '\1nullValue()', 'all' );

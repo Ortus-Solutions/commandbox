@@ -35,7 +35,7 @@ component aliases="init" {
 	 * @wizard Run the init wizard, defaults to false
 	 * @endpointName  Name of custom forgebox endpoint to use
 	 * @location Where the package is located
-	 * @type Type of pacakge (modules, etc)
+	 * @type Type of package (modules, etc)
 	 **/
 	function run(
 		name="My Package",

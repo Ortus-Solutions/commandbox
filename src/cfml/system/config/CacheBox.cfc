@@ -15,7 +15,7 @@ component{
 		cacheBox = {
 			
 			// Scope registration, automatically register the cachebox factory instance on any CF scope
-			// By default it registeres itself on server scope
+			// By default it registers itself on server scope
 			scopeRegistration = {
 				enabled = true,
 				scope   = "application", // server, cluster, session

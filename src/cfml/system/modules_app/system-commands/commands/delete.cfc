@@ -5,7 +5,7 @@
  * delete sample.html
  * {code}
  * .
- * Use the "force" param to supress the confirmation dialog.
+ * Use the "force" param to suppress the confirmation dialog.
  * .
  * {code:bash}
  * delete sample.html --force

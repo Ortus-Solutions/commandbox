@@ -1,6 +1,6 @@
 /**
  * Display CommandBox help.  Call this command with no parameters to see general help for all commands.
- * Help includes command aliases, paramters, and example syntax.
+ * Help includes command aliases, parameters, and example syntax.
  * .
  * {code:bash}
  * help
@@ -103,7 +103,7 @@ component aliases="h,/?,?,--help,-help" {
 				} else {
 					namespaces.append( node );
 				}
-			} // End loop over this level in the hierachy
+			} // End loop over this level in the hierarchy
 
 
 			// Sort each list
@@ -191,7 +191,7 @@ component aliases="h,/?,?,--help,-help" {
 		if( len( commandHint ) ) {
 
 			// Clean up lines with only a period which is my work around for the Railo bug ignoring
-			// line breaks in componenet annotations: https://issues.jboss.org/browse/RAILO-3128
+			// line breaks in components annotations: https://issues.jboss.org/browse/RAILO-3128
 			commandHint = reReplace( commandHint, '\n\s*\.\s*\n', cr&cr, 'all' );
 
 			// Find code blocks

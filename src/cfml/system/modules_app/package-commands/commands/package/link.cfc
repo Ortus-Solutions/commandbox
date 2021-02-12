@@ -1,7 +1,7 @@
 /**
  * Takes the current module directory and link it to another app's modules directory.  The current directory must be a package.
- * This is useful for live testing of a module that's under develpment without needing to install and update the installation
- * with every change.  You're operating system's local symlink capabilities will be used.  This requires a file sytem that
+ * This is useful for live testing of a module that's under development without needing to install and update the installation
+ * with every change.  You're operating system's local symlink capabilities will be used.  This requires a file system that
  * supports symlinks.
  * .
  * The target link must not be just to the root of the app, but the specific modules folder you want to link into.

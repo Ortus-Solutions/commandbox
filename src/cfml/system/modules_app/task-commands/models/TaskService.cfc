@@ -41,7 +41,7 @@ component singleton accessors=true {
 	*/
 	string function runTask( required string taskFile,  required string target='run', taskArgs={}, boolean topLevel=true, any taskObject ) {
 
-		// This is neccessary so changes to tasks get picked up right away.
+		// This is necessary so changes to tasks get picked up right away.
 		pagePoolClear();
 
 		if( !isNull( taskObject ) ) {

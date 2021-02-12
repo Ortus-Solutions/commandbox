@@ -1,6 +1,6 @@
 /**
  * Execute an operating system level command in the native shell.  The binary must be in the PATH, or you can specify the full
- * path to it.  This command will wait for the OS exectuable to complete but will flush the output as it is received.
+ * path to it.  This command will wait for the OS executable to complete but will flush the output as it is received.
  * .
  * {code:bash}
  * run myApp.exe
