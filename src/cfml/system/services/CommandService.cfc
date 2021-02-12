@@ -555,7 +555,7 @@ component accessors="true" singleton {
 	}
 
 	/**
-	 * Figure out what command to run based on the the user input string
+	 * Figure out what command to run based on the user input string
 	 * @line.hint A string containing the command and parameters that the user entered
  	 **/
 	function resolveCommand( required string line, boolean forCompletion=false ){

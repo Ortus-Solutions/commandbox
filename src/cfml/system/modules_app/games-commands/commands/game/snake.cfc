@@ -422,7 +422,7 @@ component aliases="snake" {
 
 	private function isAppleCollision( location ) {
 
-		// Check to see if this location is an an apple
+		// Check to see if this location is an apple
 		for( apple in variables.apples ) {
 			if( apple.x == location.x && apple.y == location.y ) {
 				return true;

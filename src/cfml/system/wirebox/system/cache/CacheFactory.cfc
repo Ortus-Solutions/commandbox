@@ -136,9 +136,9 @@
 		// Check if linking ColdBox
 		if( !isNull( arguments.coldbox ) ){
 			// Link ColdBox
-			variables.coldbox = arguments.coldbox;			
+			variables.coldbox = arguments.coldbox;
 			// Link to WireBox
-			variables.wirebox = variables.coldbox.getWireBox();				
+			variables.wirebox = variables.coldbox.getWireBox();
 			// link LogBox
 			variables.logBox  = variables.coldbox.getLogBox();
 			// Link Event Manager
@@ -154,18 +154,18 @@
 				variables.wirebox = arguments.wirebox;
 				// If WireBox linked, get LogBox and EventManager, and asyncmanager from it
 				variables.asyncManager = variables.wirebox.getAsyncManager();
-				variables.taskScheduler = variables.wirebox.getTaskScheduler();				
-				variables.logBox = variables.wirebox.getLogBox();				
+				variables.taskScheduler = variables.wirebox.getTaskScheduler();
+				variables.logBox = variables.wirebox.getLogBox();
 				// link LogBox
 				variables.eventManager = variables.wirebox.getEventManager();
 				// register the points to listen to
 				variables.eventManager.appendInterceptionPoints( variables.eventStates );
 			} else {
-				
+
 				// Register an async manager and scheduler
 				variables.asyncManager = new wirebox.system.async.AsyncManager();
 				variables.taskScheduler = variables.asyncManager.newScheduledExecutor( name : "cachebox-tasks", threads : 20 );
-				
+
 				// Running standalone, so create our own logging first
 				configureLogBox( arguments.config.getLogBoxConfig() );
 				// Running standalone, so create our own event manager
@@ -384,7 +384,7 @@
 			}
 			variables.asyncManager.shutdownAllExecutors( force = true );
 		}
-		
+
 		// Notify Listeners
 		variables.eventManager.announce( "afterCacheFactoryShutdown", { cacheFactory = this } );
 
@@ -647,7 +647,7 @@
 	}
 
 	/**
-	 * Create a new cache according the the arguments, register it and return it of type: wirebox.system.cache.providers.ICacheProvider
+	 * Create a new cache according the arguments, register it and return it of type: wirebox.system.cache.providers.ICacheProvider
 	 *
 	 * @name The name of the cache to create
 	 * @provider The provider class path of the cache to add

@@ -39,12 +39,12 @@ component accessors="true" singleton {
 	/**
 	* List the packages in the artifacts cache.
 	* @packageName Supply a package to see only versions of this package
-	* @returns A struct of arrays where the struct key is the package package and the array contains the versions of that package in the cache.
+	* @returns A struct of arrays where the struct key is the package and the array contains the versions of that package in the cache.
 	*/
 	struct function listArtifacts( packageName='' ) {
 		// Ordered struct
 		var result = [:];
-		
+
 		var dirList = directoryList( path=getArtifactsDirectory(), recurse=false, listInfo='query', sort='name asc' );
 
 		for( var dir in dirList ) {
@@ -70,7 +70,7 @@ component accessors="true" singleton {
 	* Removes all artifacts from the cache and returns the number of wiped out directories
 	*/
 	numeric function cleanArtifacts() {
-		
+
 		var qryDir = directoryList( path=getArtifactsDirectory(), recurse=false, listInfo='query' );
 		var numRemoved = 0;
 
@@ -114,7 +114,7 @@ component accessors="true" singleton {
 	*/
 	function getPackagePath( required packageName, version="" ){
 		// This will likely change, so I'm only going to put the code here.
-		
+
 		var path = getArtifactsDirectory() & '/' & arguments.packageName;
 		// do we have a version?
 		if( arguments.version.len() ){
@@ -266,7 +266,7 @@ component accessors="true" singleton {
 		}
 	}
 
-	
+
 	string function getArtifactsDirectory() {
 		return configService.getSetting( 'artifactsDirectory', variables.artifactDir );
 	}
