@@ -172,7 +172,7 @@ component accessors="true" {
 	* Get count of matched files
 	*/
 	function count() {
-		return matches().len();
+		return getFormat() == 'query' ? matches().recordCount : matches().len();
 	}
 
 	/**
