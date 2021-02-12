@@ -77,7 +77,7 @@ Please go to our [documentation](http://logbox.ortusbooks.com) for expanded inst
 
 **CommandBox (Recommended)**
 
-We recommend you use [CommandBox](http://www.ortussolutions.com/products/commandbox), our CFML CLI and package manager, to install LogBox.
+We recommend you use [CommandBox](https://www.ortussolutions.com/products/commandbox), our CFML CLI and package manager, to install LogBox.
 
 **Stable Release**
 

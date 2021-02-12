@@ -77,7 +77,7 @@ Please go to our [documentation](http://cachebox.ortusbooks.com) for expanded in
 
 **CommandBox (Recommended)**
 
-We recommend you use [CommandBox](http://www.ortussolutions.com/products/commandbox), our CFML CLI and package manager, to install CacheBox.
+We recommend you use [CommandBox](https://www.ortussolutions.com/products/commandbox), our CFML CLI and package manager, to install CacheBox.
 
 **Stable Release**
 
