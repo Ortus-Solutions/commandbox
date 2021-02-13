@@ -69,7 +69,7 @@ setTimeout("location.reload(true);",#url.frequency*1000#);
 	<div class="cachebox_debugContentCell">
 		#cacheBox.getScopeRegistration().toString()#
 	</div>
-	<hr />
+	<hr>
 
 	<!--- Cache Report Switcher --->
 	<h3>Performance Report For

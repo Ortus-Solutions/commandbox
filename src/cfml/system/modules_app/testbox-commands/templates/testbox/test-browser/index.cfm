@@ -69,7 +69,7 @@
 <div id="tb-runner" class="container">
 	<div class="row">
 		<div class="col-md-4 text-center mx-auto">
-			<img class="mt-3" src="https://www.ortussolutions.com/__media/testbox-185.png" alt="TestBox" id="tb-logo"/>
+			<img class="mt-3" src="https://www.ortussolutions.com/__media/testbox-185.png" alt="TestBox" id="tb-logo">
 			<br>
 			v#testbox.getVersion()#
 			<br>
@@ -98,13 +98,13 @@
 
 						<cfset dirPath = URLEncodedFormat( ( url.path neq '/' ? '#url.path#/' : '/' ) & qResults.name )>
 						<cfif qResults.type eq "Dir">
-							<a class="btn btn-secondary btn-sm my-1" href="index.cfm?path=#dirPath#"><i class="fas fa-plus"></i> #qResults.name#</a><br/>
+							<a class="btn btn-secondary btn-sm my-1" href="index.cfm?path=#dirPath#"><i class="fas fa-plus"></i> #qResults.name#</a><br>
 						<cfelseif listLast( qresults.name, ".") eq "cfm">
-							<a class="btn btn-primary btn-sm my-1" href="#executePath & qResults.name#" <cfif !url.cpu>target="_blank"</cfif>>#qResults.name#</a><br/>
+							<a class="btn btn-primary btn-sm my-1" href="#executePath & qResults.name#" <cfif !url.cpu>target="_blank"</cfif>>#qResults.name#</a><br>
 						<cfelseif listLast( qresults.name, ".") eq "cfc" and qresults.name neq "Application.cfc">
-							<a class="btn btn-primary btn-sm my-1" href="#executePath & qResults.name#?method=runRemote" <cfif !url.cpu>target="_blank"</cfif>>#qResults.name#</a><br/>
+							<a class="btn btn-primary btn-sm my-1" href="#executePath & qResults.name#?method=runRemote" <cfif !url.cpu>target="_blank"</cfif>>#qResults.name#</a><br>
 						<cfelse>
-							#qResults.name#<br/>
+							#qResults.name#<br>
 						</cfif>
 
 					</cfloop>
