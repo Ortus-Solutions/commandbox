@@ -1,0 +1,14 @@
+name: ❄️ Lint
+
+on: [pull_request]
+
+jobs:
+  trailing-whitespace:
+    name: 🌌 Trailing whitespace
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: 🧹 Check for trailing whitespace
+        run: |
+          cd utils || exit
+          sh ./check-for-trailing-whitespace.sh || exit 1
