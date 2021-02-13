@@ -16,6 +16,7 @@ component singleton accessors=true {
 	property name='wirebox'			inject='wirebox';
 	property name='shell'			inject='Shell';
 	property name='CommandService'	inject='CommandService';
+	property name='ConfigService'	inject='ConfigService';
 	property name='consoleLogger'	inject='logbox:logger:console';
 	property name='metadataCache'	inject='cachebox:metadataCache';
 	property name='job'				inject='interactiveJob';
@@ -41,8 +42,10 @@ component singleton accessors=true {
 	*/
 	string function runTask( required string taskFile,  required string target='run', taskArgs={}, boolean topLevel=true, any taskObject ) {
 
-		// This is necessary so changes to tasks get picked up right away.
-		pagePoolClear();
+		if( !ConfigService.getSetting( 'taskCaching', false ) ) {
+			// This is necessary so changes to tasks get picked up right away.
+			pagePoolClear();	
+		}
 
 		if( !isNull( taskObject ) ) {
 			var taskCFC = taskObject;
@@ -224,21 +227,25 @@ component singleton accessors=true {
 		relTaskFile = relTaskFile.listChangeDelims( '.', '/' );
 		relTaskFile = relTaskFile.listChangeDelims( '.', '\' );
 
-		metadataCache.clear( relTaskFile );
+		if( !ConfigService.getSetting( 'taskCaching', false ) ) {
+			metadataCache.clear( relTaskFile );
+		}
 
 		// Create this Task CFC
 		try {
 			var mappingName = "task-" & relTaskFile;
 
-			// Check if task mapped?
-			if( wirebox.getBinder().mappingExists( mappingName ) ){
+			if( !ConfigService.getSetting( 'taskCaching', false ) &&  wirebox.getBinder().mappingExists( mappingName ) ) {
 				// Clear it so metadata can be refreshed.
 				wirebox.getBinder().unMap( mappingName );
 			}
-
-			// feed this task to wirebox with virtual inheritance
-			wirebox.registerNewInstance( name=mappingName, instancePath=relTaskFile )
-				.setVirtualInheritance( "commandbox.system.BaseTask" );
+			
+			// Check if task mapped?
+			if( !wirebox.getBinder().mappingExists( mappingName ) ){
+				// feed this task to wirebox with virtual inheritance
+				wirebox.registerNewInstance( name=mappingName, instancePath=relTaskFile )
+					.setVirtualInheritance( "commandbox.system.BaseTask" );
+			}
 
 			// retrieve, build and wire from wirebox
 			return wireBox.getInstance( mappingName );

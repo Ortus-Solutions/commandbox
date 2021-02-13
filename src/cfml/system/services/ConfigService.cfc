@@ -78,7 +78,9 @@ component accessors="true" singleton {
 			'JSON.ANSIColors.string',
 			// General
 			'verboseErrors',
-			'debugNativeExecution'
+			'debugNativeExecution',
+			// Task Runners
+			'taskCaching'
 		]);
 
 		setConfigFilePath( '/commandbox-home/CommandBox.json' );
