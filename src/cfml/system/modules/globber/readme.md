@@ -46,7 +46,7 @@ A question mark matches a single non-slash character
 
 * `/h?t` matches `hat` but not `ham` or `h/t`
 
-### Globber	
+### Globber
 
 This transient represents a single globbing pattern and provide a fluent API to access the matching files.  Unlike the PathPatternMatcher, which only handles comparisons of patterns, this model actually interacts with the file system to resolve a pattern to a list of real file system resources.
 

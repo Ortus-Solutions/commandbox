@@ -60,19 +60,19 @@ component {
 		}
 
 	}
-	
+
 	function packageComplete() {
 		return artifactService.listArtifacts()
 			.keyArray();
 	}
-	
+
 	function versionComplete() {
 		var results = artifactService.listArtifacts( arguments.passedNamedParameters.package ?: '' );
-		
+
 		if( results.count() ) {
 			return results[ results.keyArray().first() ];
 		}
-			
+
 		return [];
 	}
 

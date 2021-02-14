@@ -158,7 +158,7 @@
 		$(".expand-collapse").click(function (event) {
 			let icon = $(this).children(".svg-inline--fa");
 			var icon_fa_icon = icon.attr('data-icon');
-	
+
 			if (icon_fa_icon === "minus-square") {
 					icon.attr('data-icon', 'plus-square');
 			} else if (icon_fa_icon === "plus-square") {

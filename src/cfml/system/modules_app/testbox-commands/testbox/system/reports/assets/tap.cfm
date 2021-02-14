@@ -14,7 +14,7 @@
 			case "error" : { return "not ok"; }
 			case "skipped" : { return "ok"; }
 			default : { return "ok"; }
-		}		
+		}
 	</cfscript>
 </cffunction>
 
@@ -48,7 +48,7 @@
 ---></cfloop><!---
 ---><cfif arrayLen( arguments.suiteStats.suiteStats )>
 <cfloop array="#arguments.suiteStats.suiteStats#" index="local.nestedSuite">#genSuiteReport( local.nestedSuite, arguments.bundleStats )#</cfloop>
-</cfif>	
+</cfif>
 </cfoutput>
 </cfsavecontent>
 <cfreturn local.report>

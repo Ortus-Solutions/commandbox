@@ -26,13 +26,13 @@ component {
 		arguments.searchText = arguments.searchText ?: '';
 
 		try {
-				
-				try {		
+
+				try {
 					var oEndpoint = endpointService.getEndpoint( endpointName );
 				} catch( EndpointNotFound var e ) {
 					error( e.message, e.detail ?: '' );
 				}
-		
+
 				var APIToken = oEndpoint.getAPIToken();
 				var forgebox = oEndpoint.getForgeBox();
 
@@ -52,7 +52,7 @@ component {
 						.boldText( '   ( #entry.user.fname# #entry.user.lname# )' )
 						.boldGreenLine( '   Rating: #repeatString( '*', val( entry.avgRating ) )#' )
 						.text( 'Versions: ' );
-						
+
 					// TODO: Consolidate this with identical logic in "forgebox show"
 					var prevMajor = 0;
 					if( entry.versions.len() ) {
@@ -65,7 +65,7 @@ component {
 					for( var ver in entry.versions ) {
 						var major = val( ver.version.listGetAt( 1, '.' ) );
 						if( major == 0 && ver.version.listlen( '.' ) > 1 ) {
-							major = val( ver.version.listGetAt( 2, '.' ) );						
+							major = val( ver.version.listGetAt( 2, '.' ) );
 						}
 						if( major != prevMajor ) {
 							if( lines > 0 ) { print.text( '          ' ); }
@@ -88,7 +88,7 @@ component {
 						print.line( versionLine & ( versionsSkipped > 0 ? ' ( #versionsSkipped# more...)' : '' ) );
 					}
 
-					
+
 					print
 						.line( 'Type: #entry.typeName#' )
 						.line( 'Slug: "#entry.slug#"' )
@@ -107,7 +107,7 @@ component {
 		}
 
 	}
-	
+
 	function endpointNameComplete() {
 		return getInstance( 'endpointService' ).forgeboxEndpointNameComplete();
 	}

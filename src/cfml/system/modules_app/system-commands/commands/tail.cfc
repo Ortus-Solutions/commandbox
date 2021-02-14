@@ -149,7 +149,7 @@
 								print
 									.line( line )
 									.toConsole();
-							
+
 								var line = randomAccessFile.readLine();
 							}
 							// Close the file every time so we don't keep it open and locked

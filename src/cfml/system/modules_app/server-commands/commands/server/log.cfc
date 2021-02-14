@@ -78,7 +78,7 @@ component {
 			}
 		}
 	}
-	
+
 	function serverNameComplete() {
 		return serverService
 			.getServerNames()

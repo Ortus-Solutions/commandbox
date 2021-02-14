@@ -76,18 +76,18 @@ component aliases="bump" {
 		var versionObject = semanticVersion.parseVersion( trim( boxJSON.version ?: '' ) );
 
 		if( len( arguments.version ) ) {
-			
+
 			var verStruct = semanticVersion.parseVersion( arguments.version );
-			
+
 			// The parse method above will try hard to parse anything, but if the major/minor/revision aren't a number, then it's not valid semver.
 			if ( !arguments.force && ( !isNumeric( verStruct.major ) || !isNumeric( verStruct.minor ) || !isNumeric( verStruct.revision ) ) ) {
 				print
 					.line( "The incoming version [#arguments.version#] doesn't appear to be a valid semantic version." )
 					.line( "Please make sure it is in the format major[.minor][.revision][-preReleaseID][+build] like 3.6.2 or use the --force flag." );
-				
+
 				// Check for this common accident where people type "bump minor" or "bump -patch"
 				if( listFind( "patch,minor,major,-patch,-minor,-major", arguments.version ) ) {
-					print.line().yellowLine("You probably wanted to use: --#arguments.version.replace( '-', '' )#");	
+					print.line().yellowLine("You probably wanted to use: --#arguments.version.replace( '-', '' )#");
 				}
 				error( 'Invalid version [#arguments.version#]' );
 			}
@@ -203,7 +203,7 @@ component aliases="bump" {
 					git.getRepository().close();
 				}
 			}
-		
+
 		} // end is Git repo and are we tagging?
 
 		interceptorService.announceInterception( 'onRelease', { directory=arguments.directory, version=arguments.version } );

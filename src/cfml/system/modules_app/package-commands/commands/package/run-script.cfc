@@ -34,7 +34,7 @@ component aliases="run-script" {
 		if( !packageService.isPackage( getCWD() ) ) {
 			error( '#getCWD()# is not a package!' );
 		}
-		
+
 		// Add any additional arguments as env vars for the script to access
 		arguments
 			.filter( ( k, v ) => k != 'scriptName' )

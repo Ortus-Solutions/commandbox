@@ -38,7 +38,7 @@ component {
 		}
 
 	}
-	
+
 	function packageComplete() {
 		return artifactService.listArtifacts()
 			.keyArray();

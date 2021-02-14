@@ -2,10 +2,10 @@
 				// mocks
 				var mockEvent = getMockRequestContext();
 				var mockData  = {};
-				
+
 				// execute |point|
 				interceptor.|point|( mockEvent, mockData );
-				
+
 				// expectations here
 				expect( false ).toBeTrue();
 			});

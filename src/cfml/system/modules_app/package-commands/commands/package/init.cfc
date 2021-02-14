@@ -49,7 +49,7 @@ component aliases="init" {
 		string endpointName,
 		boolean wizard=false
 	){
-		
+
 		// Check for wizard argument
 		if( arguments.wizard ){
 			runCommand( 'package init-wizard' );
@@ -60,15 +60,15 @@ component aliases="init" {
 		structDelete( arguments, "wizard" );
 		var endpointName = arguments.endpointName;
 		structDelete( arguments, "endpointName" );
-		
+
 		endpointName = endpointName ?: configService.getSetting( 'endpoints.defaultForgeBoxEndpoint', 'forgebox' );
-		
-		try {		
+
+		try {
 			var oEndpoint = endpointService.getEndpoint( endpointName );
 		} catch( EndpointNotFound var e ) {
 			error( e.message, e.detail ?: '' );
 		}
-		
+
 		var forgebox = oEndpoint.getForgebox();
 		var APIToken = oEndpoint.getAPIToken();
 
@@ -108,9 +108,9 @@ component aliases="init" {
 					print.redLine( "You will need to update your package slug before you can publish it." );
 					print.redLine( "Use the format [#arguments.slug#@USERNAME] and replace 'username' with your actual user." );
 				} else {
-					arguments.slug = "#arguments.slug#@#foundToken[ 1 ]#";	
+					arguments.slug = "#arguments.slug#@#foundToken[ 1 ]#";
 				}
-			}			
+			}
 		}
 
 		// Ignore List

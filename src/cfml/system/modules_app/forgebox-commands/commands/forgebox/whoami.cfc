@@ -16,23 +16,23 @@ component {
 	**/
 	function run( string endpointName ){
 		try {
-			
+
 			endpointName = endpointName ?: configService.getSetting( 'endpoints.defaultForgeBoxEndpoint', 'forgebox' );
-			
-			try {		
+
+			try {
 				var oEndpoint = endpointService.getEndpoint( endpointName );
 			} catch( EndpointNotFound var e ) {
 				error( e.message, e.detail ?: '' );
 			}
-			
+
 			var forgebox = oEndpoint.getForgebox();
 			var APIToken = oEndpoint.getAPIToken();
-			
+
 			if( !len( APIToken ) ) {
 				if( endpointName == 'forgebox' ) {
-					error( 'You don''t have a Forgebox API token set.', 'Use "forgebox login" to authenticate as a user.' );	
+					error( 'You don''t have a Forgebox API token set.', 'Use "forgebox login" to authenticate as a user.' );
 				} else {
-					error( 'You don''t have a Forgebox API token set.', 'Use "forgebox login endpointName=#endpointName#" to authenticate as a user.' );					
+					error( 'You don''t have a Forgebox API token set.', 'Use "forgebox login endpointName=#endpointName#" to authenticate as a user.' );
 				}
 			}
 			userData = forgebox.whoami( APIToken );
@@ -45,7 +45,7 @@ component {
 			error( e.message, e.detail );
 		}
 	}
-	
+
 	function endpointNameComplete() {
 		return getInstance( 'endpointService' ).forgeboxEndpointNameComplete();
 	}

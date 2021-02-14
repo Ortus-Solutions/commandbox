@@ -361,7 +361,7 @@ component accessors="true"{
 				$log( "ERROR", "Error processing log listener: #e.message# #e.detail# #e.stacktrace#" );
 				// send to standard error out
 				variables.err( "Error with log listener thread for #getName()#: " & e.message & e.detail );
-				variables.err( e.stackTrace );	
+				variables.err( e.stackTrace );
 			}
 		} finally {
 			// End Advice

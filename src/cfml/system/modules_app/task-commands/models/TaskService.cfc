@@ -44,7 +44,7 @@ component singleton accessors=true {
 
 		if( !ConfigService.getSetting( 'taskCaching', false ) ) {
 			// This is necessary so changes to tasks get picked up right away.
-			pagePoolClear();	
+			pagePoolClear();
 		}
 
 		if( !isNull( taskObject ) ) {
@@ -239,7 +239,7 @@ component singleton accessors=true {
 				// Clear it so metadata can be refreshed.
 				wirebox.getBinder().unMap( mappingName );
 			}
-			
+
 			// Check if task mapped?
 			if( !wirebox.getBinder().mappingExists( mappingName ) ){
 				// feed this task to wirebox with virtual inheritance

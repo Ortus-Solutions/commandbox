@@ -23,7 +23,7 @@ component aliases="publish" {
 	){
 		endpointName = endpointName ?: configService.getSetting( 'endpoints.defaultForgeBoxEndpoint', 'forgebox' );
 
-		try {		
+		try {
 			var APIToken = endpointService.getEndpoint( endpointName ).getAPIToken();
 		} catch( EndpointNotFound var e ) {
 			error( e.message, e.detail ?: '' );
@@ -43,7 +43,7 @@ component aliases="publish" {
 			.run();
 
 	}
-	
+
 	function endpointNameComplete() {
 		return getInstance( 'endpointService' ).forgeboxEndpointNameComplete();
 	}

@@ -318,7 +318,7 @@ component serializable="false" accessors="true" implements="wirebox.system.ioc.I
 		if( variables.log.canInfo() ){
 			variables.log.info( "Shutdown of injector: #getInjectorID()# completed." );
 		}
-		
+
 		// Shutdown LogBox last if not in ColdBox Mode
 		if( !isColdBoxLinked() ){
 			variables.logBox.shutdown();

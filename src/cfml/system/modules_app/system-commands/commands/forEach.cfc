@@ -106,10 +106,10 @@ component {
 					var thisOutput = theCommand.run( echo=debug, returnOutput=true )
 					if( len( thisOutput ) && ! ( mid( thisOutput, len( thisOutput ), 1 ) == chr( 10 ) || mid( thisOutput, len( thisOutput ), 1 ) == chr( 13 ) ) ) {
 						thisOutput &= chr( 10 );
-					}					
-					print.text( thisOutput );	
+					}
+					print.text( thisOutput );
 				} else {
-					theCommand.run( echo=debug );					
+					theCommand.run( echo=debug );
 				}
 			} catch( any var e ) {
 				if( continueOnError ) {

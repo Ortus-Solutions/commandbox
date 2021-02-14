@@ -13,7 +13,7 @@
 			<script src="#relPathToRoot#assets/js/stupidtable.min.js"></script>
 			<script src="#relPathToRoot#assets/js/syntaxhighlighter.js"></script>
 			<script src="#relPathToRoot#assets/js/fontawesome.js"></script>
-			
+
 			<script>
 				$( document ).ready( function(){
 					var lineNumbersBGColorsJSON = #lineNumbersBGColorsJSON#;
