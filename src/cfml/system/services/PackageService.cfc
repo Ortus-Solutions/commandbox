@@ -122,6 +122,14 @@ component accessors="true" singleton {
 				var packageName = endpointData.endpoint.getDefaultName( endpointData.package );
 				var version = '1.0.0';
 			}
+			
+			// Todo, consider making this part of the interface so other endpoint types can also report back
+			// if their installation ID contains a semantic version range
+			if( isInstanceOf(endpointData.endpoint, 'forgebox') ) {
+				var requestedVersionSemver = endpointData.endpoint.parseVersion( arguments.ID );
+			} else {
+				var requestedVersionSemver = version;
+			}
 
 			// If the dependency struct in box.json has a name, use it.  This is mostly for
 			// HTTP, Jar, and Lex endpoints to be able to override their package name.
@@ -194,8 +202,8 @@ component accessors="true" singleton {
 						if( isPackage( candidateInstallPath ) ) {
 							var candidateBoxJSON = readPackageDescriptor( candidateInstallPath );
 							// Does the package that we found satisfy what we need?
-							if( semanticVersion.satisfies( candidateBoxJSON.version, version ) ) {
-								job.addWarnLog( '#packageName# (#version#) is already satisfied by #candidateInstallPath# (#candidateBoxJSON.version#).  Skipping installation.' );
+							if( semanticVersion.satisfies( candidateBoxJSON.version, requestedVersionSemver ) ) {
+								job.addWarnLog( '#packageName# (#requestedVersionSemver#) is already satisfied by #candidateInstallPath# (#candidateBoxJSON.version#).  Skipping installation.' );
 								job.complete( verbose );
 
 								interceptorService.announceInterception( 'postInstall', { installArgs=arguments, installDirectory=candidateInstallPath } );
