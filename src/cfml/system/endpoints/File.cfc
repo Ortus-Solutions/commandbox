@@ -42,9 +42,9 @@ component accessors="true" implements="IEndpoint" singleton {
 		job.addLog( "Decompressing...");
 
 		zip action="unzip" file="#package#" destination="#packagePath#" overwrite="true";
-		
+
 		cleanUp( package );
-		
+
 		// Defer to folder endpoint
 		return folderEndpoint.resolvePackage( packagePath, arguments.verbose );
 

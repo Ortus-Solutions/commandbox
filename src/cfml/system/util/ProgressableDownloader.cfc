@@ -36,7 +36,7 @@ component singleton {
 		var info = resolveConnection( arguments.downloadURL, arguments.redirectUDF );
 		var connection = info.connection;
 		var netURL = info.netURL;
-		
+
 		// Initialize status
 		var status = {
 			percent = 0,
@@ -59,10 +59,10 @@ component singleton {
 			var first = true;
 
 			while ( ( var count = inputStream.read( data ) ) != -1 ) {
-				
+
 				// Has the user tried to interrupt this thread?
 				shell.checkInterrupted();
-				
+
 				total += count;
 				// This number will be worthless if content length is -1
 				currentPercentage = int( ( total * 100 ) / lenghtOfFile );
@@ -148,7 +148,7 @@ component singleton {
 			if( !isNull( inputStream ) ) {
 				inputStream.close();
 			}
-		
+
 			if( !isNull( arguments.statusUDF ) ) {
 				status.percent = 100;
 				arguments.statusUDF( status );

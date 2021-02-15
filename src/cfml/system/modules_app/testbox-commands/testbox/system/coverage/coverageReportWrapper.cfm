@@ -13,14 +13,14 @@
 		<cfif len( sonarQubeResults ) >
 			#sonarQubeResults#<br><br>
 		</cfif>
-		
+
 		<cfif len( opts.browser.outputDir ) >
 			Coverage Browser generated in #opts.browser.outputDir#<br><br>
 		</cfif>
-				
+
 		#statsHTML#
-		
-		#nestedReporterResult#	
+
+		#nestedReporterResult#
 	</body>
 </html>
 

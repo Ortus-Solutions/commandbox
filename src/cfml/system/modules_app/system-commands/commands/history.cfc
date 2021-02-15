@@ -50,7 +50,7 @@ component {
 			} else {
 				error( 'History type [#arguments.type#] is invalid.  Valid types are "command", "scriptREPL", and "tagREPL".' );
 			}
-	
+
 			// Clear the history?
 			if( arguments.clear ) {
 				shell.getReader().getHistory().purge();
@@ -63,9 +63,9 @@ component {
 				while( historyIterator.hasNext() ) {
 					print.line( listRest( historyIterator.next(), ':' ).trim() );
 				}
-	
+
 			} // end clear?
-			
+
 		// Whatever happens in Vegas, stays in Vegas
 		} finally {
 			shell.setHistory( commandHistoryFile );

@@ -77,14 +77,14 @@ Description :
     <cffunction name="clearAll" output="false" access="public" returntype="void" hint="Clear all elements of the store">
 		<cfscript>
 			directoryDelete( instance.directoryPath, true );
-			
+
 			try {
 				directoryCreate( instance.directoryPath, true, true );
 			} catch ( any e ) {
 				sleep( 500 );
 				directoryCreate( instance.directoryPath, true, true );
 			}
-			
+
 		</cfscript>
     </cffunction>
 

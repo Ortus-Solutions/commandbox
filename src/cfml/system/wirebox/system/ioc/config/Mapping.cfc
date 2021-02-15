@@ -520,9 +520,9 @@ component accessors="true"{
 			if ( structKeyExists( arguments, "metadata" ) ) {
 				md = arguments.metadata;
 			} else {
-				
+
 				var produceMetadataUDF = function() { return injector.getUtil().getInheritedMetaData(variables.path, binder.getStopRecursions()); };
-				
+
 				// Are we caching metadata? or just using it
 				if ( len( arguments.binder.getMetadataCache() ) ) {
 					// Get from cache or produce on demand

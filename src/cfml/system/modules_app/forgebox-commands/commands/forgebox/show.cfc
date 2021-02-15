@@ -61,8 +61,8 @@ component aliases="show" {
 		string endpointName
 	){
 		endpointName = endpointName ?: configService.getSetting( 'endpoints.defaultForgeBoxEndpoint', 'forgebox' );
-				
-		try {		
+
+		try {
 			var oEndpoint = endpointService.getEndpoint( endpointName );
 		} catch( EndpointNotFound var e ) {
 			error( e.message, e.detail ?: '' );
@@ -143,13 +143,13 @@ component aliases="show" {
 				}
 
 				entryData.versions.sort( function( a, b ) { return semanticVersion.compare( b.version, a.version ); } );
-				
+
 				// Display results as JSON
 				if( json ) {
 					print.text( entryData );
-					return;					
+					return;
 				}
-				
+
 				print.line();
 				print.blackOnWhite( ' #entryData.title# ' )
 					.boldText( '   ( #entryData.user.fname# #entryData.user.lname#, #entryData.user.username# )' )
@@ -183,7 +183,7 @@ component aliases="show" {
 				for( var ver in entryData.versions ) {
 					var major = val( ver.version.listGetAt( 1, '.' ) );
 					if( major == 0 && ver.version.listlen( '.' ) > 1 ) {
-						major = val( ver.version.listGetAt( 2, '.' ) );						
+						major = val( ver.version.listGetAt( 2, '.' ) );
 					}
 					if( major != prevMajor ) {
 						if( lines > 0 ) { print.text( '          ' ); }
@@ -232,7 +232,7 @@ component aliases="show" {
 				// Display results as JSON
 				if( json ) {
 					print.text( entries );
-					return;					
+					return;
 				}
 
 				print.line();
@@ -287,8 +287,8 @@ component aliases="show" {
 	// Auto-complete list of types
 	function typeComplete( result = [] ) {
 		var endpointName = configService.getSetting( 'endpoints.defaultForgeBoxEndpoint', 'forgebox' );
-				
-		try {		
+
+		try {
 			var oEndpoint = endpointService.getEndpoint( endpointName );
 		} catch( EndpointNotFound var e ) {
 			error( e.message, e.detail ?: '' );
@@ -296,7 +296,7 @@ component aliases="show" {
 
 		var forgebox = oEndpoint.getForgeBox();
 		var APIToken = oEndpoint.getAPIToken();
-			
+
 		try {
 			// Loop over types and append all active ForgeBox entries
 			for( var thistype in forgebox.getCachedTypes( APIToken=APIToken ) ) {
@@ -318,7 +318,7 @@ component aliases="show" {
 
 		return result;
 	}
-	
+
 	function endpointNameComplete() {
 		return getInstance( 'endpointService' ).forgeboxEndpointNameComplete();
 	}

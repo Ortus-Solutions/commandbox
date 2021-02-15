@@ -115,7 +115,7 @@
 						$(".arrow").addClass( "fa-arrow-up" );
 					}
 				});
-				
+
 				// Filter Bundles
 				$("#fileFilter").keyup(debounce(function() {
 					var targetText = $(this).val().toLowerCase();

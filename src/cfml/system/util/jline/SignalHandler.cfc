@@ -8,11 +8,11 @@
 */
 component {
 	property name='shell' inject='shell';
-	
+
 	function handle( signal ) {
 		if( signal.toString() == 'INT' ) {
 			shell.getMainThread().interrupt();
 		}
 	}
-	
+
 }

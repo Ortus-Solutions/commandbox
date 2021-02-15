@@ -17,7 +17,7 @@ component {
 	/**
 	 * @text.hint The text to output
 	 **/
-	function run( String text="" )  {		
+	function run( String text="" )  {
 		return arguments.text;
 	}
 

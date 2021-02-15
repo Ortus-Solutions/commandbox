@@ -913,11 +913,11 @@ component accessors="true" singleton {
 		variables.reader.getTerminal().writer().print( variables.print.whiteOnRedLine( 'ERROR (#variables.version#)' ) );
 		variables.reader.getTerminal().writer().println();
 		variables.reader.getTerminal().writer().println( variables.print.boldRedText( variables.formatterUtil.HTML2ANSI( arguments.err.message, 'boldRed' ) ) );
-		
+
 		try{
-			
+
 			if( arguments.err.getClass().getName() == 'lucee.runtime.exp.CatchBlockImpl' ) {
-				
+
 				var rawJavaException = arguments.err.getPageException();
 				var cause = rawJavaException.getCause();
 				var indent = '  ';
@@ -943,14 +943,14 @@ component accessors="true" singleton {
 					cause = cause.getCause();
 					indent &= '  ';
 				}
-				
+
 			}
-			
+
 		// I don't to fubar the shell if the logic above fails.  This may never happen, but lets log it just in case it does.
-		} catch( any e ) {			
+		} catch( any e ) {
 			variables.reader.getTerminal().writer().print( variables.print.boldRedText( variables.formatterUtil.HTML2ANSI( 'Error getting root cause: #e.message# #e.detail#', 'boldRed' ) ) );
 		}
-		
+
 		variables.reader.getTerminal().writer().println();
 
 		if( structKeyExists( arguments.err, 'detail' ) ) {

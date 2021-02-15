@@ -34,7 +34,7 @@
 		<to type="passthrough" last="true">/404.html</to>
 	</rule>
 
-	<!-- Remove this if you don't need ColdBox-style rewrites in your app, or put your custom rewrite rules here. -->	
+	<!-- Remove this if you don't need ColdBox-style rewrites in your app, or put your custom rewrite rules here. -->
 	<rule>
 		<note>Generic Front-Controller URLs</note>
 		<!-- These are paths that don't exist on disk, but shouldn't get rewritten since the CF engine treats them special. -->

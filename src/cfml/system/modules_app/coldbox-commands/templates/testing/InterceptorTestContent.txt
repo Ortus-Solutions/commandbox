@@ -4,7 +4,7 @@
 * responsibility to update the interceptor annotation instantiation path.
 */
 component extends="coldbox.system.testing.BaseInterceptorTest" interceptor="|name|"{
-	
+
 	/**
 	* You can remove this setup method if you do not have anything to setup
 	*/
@@ -15,10 +15,10 @@ component extends="coldbox.system.testing.BaseInterceptorTest" interceptor="|nam
 		super.setup();
 		// we are now ready to test this interceptor
 	}
-	
+
 	function testConfigure(){
 		// any mocking here
-		
+
 		// test configure
 		interceptor.configure();
 	}

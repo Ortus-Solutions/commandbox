@@ -4,13 +4,13 @@
 * responsibility to update the model annotation instantiation path and init your model.
 */
 component extends="coldbox.system.testing.BaseModelTest" model="models.|modelName|"{
-	
+
 	void function setup(){
 		super.setup();
-		
+
 		// init the model object
 		model.init();
-		
+
 	}
 |TestCases|
 }

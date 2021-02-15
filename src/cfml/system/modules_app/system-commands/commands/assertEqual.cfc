@@ -21,11 +21,11 @@ component {
 	* @value2 A value to be compared to value1
 	**/
 	function run( required string value1, required string value2 )  {
-		
+
 		if( value1 != value2 ) {
 			setExitCode( 1 );
 		}
-		
+
 	}
 
 }

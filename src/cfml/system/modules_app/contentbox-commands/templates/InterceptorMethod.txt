@@ -4,5 +4,5 @@
 		<cfargument name="buffer" hint="A request buffer to produce elegant output from the interceptor" />
 		<cfargument name="rc" hint="Request Context struct" />
 		<cfargument name="prc" hint="Private Request Context struct" />
-		
+
 	</cffunction>

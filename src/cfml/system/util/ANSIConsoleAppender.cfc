@@ -67,7 +67,7 @@ component extends="wirebox.system.logging.AbstractAppender" {
 		if( len( extraInfo ) ){
 			print().line( loge.getExtraInfo().toString() );
 		}
-		
+
 		// If we're inside of an active job...
 		if( job().isActive() ) {
 			// Redirect out output into that current job's log
@@ -77,7 +77,7 @@ component extends="wirebox.system.logging.AbstractAppender" {
 			// Otherwise, just send it straight to the console
 			print().toConsole();
 		}
-		
+
 	}
 
 	function getShell() {

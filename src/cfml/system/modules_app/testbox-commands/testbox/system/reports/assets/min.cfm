@@ -17,7 +17,7 @@
 			<body>
 	</cfif>
 				<div class="container-fluid my-3">
-					<!-- Header -->					
+					<!-- Header -->
 					<div class="d-flex justify-content-between align-items-end">
 						<div>
 							<img src="data:image/png;base64, #toBase64( fileReadBinary( '#ASSETS_DIR#/images/TestBoxLogo125.png' ) )#" height="75">

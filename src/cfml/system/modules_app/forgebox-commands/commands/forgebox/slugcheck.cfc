@@ -19,22 +19,22 @@ component {
 	* @endpointName.optionsUDF endpointNameComplete
 	*/
 	function run( required slug, string endpointName ) {
-		
+
 		endpointName = endpointName ?: configService.getSetting( 'endpoints.defaultForgeBoxEndpoint', 'forgebox' );
-		
-		try {		
+
+		try {
 			var oEndpoint = endpointService.getEndpoint( endpointName );
 		} catch( EndpointNotFound var e ) {
 			error( e.message, e.detail ?: '' );
 		}
-		
+
 		var forgebox = oEndpoint.getForgebox();
 		var APIToken = oEndpoint.getAPIToken();
 
 		if( !len( arguments.slug ) ) {
 			return error( "Slug cannot be an empty string" );
 		}
-		
+
 		try {
 			var exists = forgebox.isSlugAvailable( arguments.slug, APIToken );
 		} catch( forgebox var e ) {
@@ -48,7 +48,7 @@ component {
 		}
 
 	}
-	
+
 	function endpointNameComplete() {
 		return getInstance( 'endpointService' ).forgeboxEndpointNameComplete();
 	}

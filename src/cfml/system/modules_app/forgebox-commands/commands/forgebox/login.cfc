@@ -8,7 +8,7 @@
 component {
 	property name="configService" inject="configService";
 	property name="endpointService" inject="endpointService";
-	
+
 	/**
 	* @username.hint Username for this user
 	* @password.hint Password for this user
@@ -22,14 +22,14 @@ component {
 	){
 
 		endpointName = endpointName ?: configService.getSetting( 'endpoints.defaultForgeBoxEndpoint', 'forgebox' );
-		try {		
+		try {
 			var oEndpoint = endpointService.getEndpoint( endpointName );
 		} catch( EndpointNotFound var e ) {
 			error( e.message, e.detail ?: '' );
 		}
 
 		var endpointURL = oEndpoint.getForgeBox().getEndpointURL();
-		
+
 		// Ask for username if not passed
 		if( !len( arguments.username ) ) {
 
@@ -61,7 +61,7 @@ component {
 			.run();
 
 	}
-	
+
 	function endpointNameComplete() {
 		return getInstance( 'endpointService' ).forgeboxEndpointNameComplete();
 	}
