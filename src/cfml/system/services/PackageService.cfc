@@ -27,8 +27,9 @@ component accessors="true" singleton {
 	property name='JSONService'			inject='JSONService';
 	property name='systemSettings'		inject='SystemSettings';
 	property name='wirebox'				inject='wirebox';
-	property name="tempDir" 			inject="tempDir@constants";
-	property name="serverService"		inject="serverService";
+	property name='tempDir' 			inject='tempDir@constants';
+	property name='serverService'		inject='serverService';
+	property name='tablePrinter'        inject='TablePrinter';
 
 	/**
 	* Constructor
@@ -1053,16 +1054,18 @@ component accessors="true" singleton {
 	*/
 	array function getOutdatedDependencies( required directory, required print, boolean verbose=false, includeSlugs='' ){
 		// build dependency tree
+		arguments.directory = right( arguments.directory, 1 ) == "/" ?
+			left( arguments.directory, len( arguments.directory ) - 1 ) :
+			arguments.directory;
 		var tree 	= buildDependencyHierarchy( arguments.directory );
 		var fakeDir = arguments.directory & '/fake';
-		var verbose = arguments.verbose;
 
 		// Global outdated check bit
-		var aOutdatedDependencies 	= [];
-
+		var aAllDependencies = [];
+		var aOutdatedDependencies = [];
+		
 		// Outdated check closure
 		var fOutdatedCheck 	= function( slug, value ){
-
 			if( !len( includeSlugs ) || listFindNoCase( includeSlugs, arguments.slug ) ){
 
 				// If a package is not installed (possibly a dev dependency in production mode), then we skip it
@@ -1097,24 +1100,33 @@ component accessors="true" singleton {
 					return;
 				}
 
-				if( updateData.isOutdated ){
-					aOutdatedDependencies.append({
-						slug 				: arguments.slug,
-						directory 			: value.directory,
-						version 			: value.version,
-						packageVersion		: value.packageVersion,
-						newVersion 			: updateData.version,
-						shortDescription 	: value.shortDescription,
-						name 				: value.name,
-						dev 				: value.dev
-					});
+				try {
+					var latestData = endpointData.endpoint.getUpdate( arguments.slug & "@stable", value.packageVersion, verbose );
+				} catch( EndpointNotFound var e ) {
+					consoleLogger.error( e.message );
+					return;
 				}
 
-				// verbose output
-				print.yellowLine( "    * #arguments.slug# (#value.packageVersion#) -> #endpointData.endpointName# version: (#updateData.version#)" )
-					.boldRedText( updateData.isOutdated ? "        * #arguments.slug# is Outdated#chr( 10 )#" : "" )
-					.toConsole();
+				var dependencyInfo = {
+					slug 				: arguments.slug,
+					directory 			: value.directory,
+					version 			: value.version,
+					packageVersion		: value.packageVersion,
+					newVersion 			: updateData.version,
+					latestVersion       : latestData.version,
+					shortDescription 	: value.shortDescription,
+					name 				: value.name,
+					dev 				: value.dev,
+					isOutdated          : updateData.isOutdated,
+					isLatest            : !latestData.isOutdated,
+					location            : replace( value.directory, directory, "" ) & "/" & slug
+				};
 
+				aAllDependencies.append( dependencyInfo );
+
+				if( updateData.isOutdated ){
+					aOutdatedDependencies.append( dependencyInfo );
+				}
 			}
 
 			// Do we have more dependencies, go down the tree in parallel
@@ -1125,6 +1137,19 @@ component accessors="true" singleton {
 
 		// Verify outdated dependency graph in parallel
 		structEach( tree.dependencies, fOutdatedCheck, true );
+
+		variables.tablePrinter.print(
+			[ 'Slug', 'Current', 'Wanted', 'Latest', 'Location' ],
+			aAllDependencies.map( ( d ) => {
+				return [
+					d.slug,
+					d.packageVersion,
+					{ 'value': d.newVersion, 'options': d.isOutdated ? 'boldWhiteOnRed' : 'white' },
+					{ 'value': d.latestVersion, 'options': d.isLatest ? 'white' : 'boldWhiteOnOrange3' },
+					d.location
+				]
+			} )
+		);
 
 		return aOutdatedDependencies;
 	}
