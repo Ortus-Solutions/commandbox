@@ -615,7 +615,7 @@ External Dependencies:
 		</exec>
 		<!-- Startup the apidocs server, wait for a few seconds for server to start -->
 		<exec executable="${dist.dir}/box" dir="${dir.apidocs}">
-			<arg line="${cmdboxhome.arg} server start openbrowser=false --force port=${apidocs.port} --noSaveSettings --debug" />
+			<arg line="${cmdboxhome.arg} server start openbrowser=false --force port=${apidocs.port} --noSaveSettings --debug --noTrayEnable" />
 		</exec>
 		<sleep seconds="5"/>
 
