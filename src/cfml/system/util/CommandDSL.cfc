@@ -22,7 +22,9 @@ component accessors=true {
 	property name='workingDirectory';
 	property name='rawParams';
 	property name='paramsType';
-
+	property name='returnOutput';
+	property name='pipedInput';
+	property name='echo';
 
 	// DI
 	property name='parser'	inject='parser';
@@ -49,6 +51,10 @@ component accessors=true {
 		setWorkingDirectory( '' );
 		setRawParams( false );
 		setParamsType( 'none' );
+		setReturnOutput( false );
+		setPipedInput( nullValue() );
+		setEcho( false );
+		
 		return this;
 	}
 
@@ -216,11 +222,14 @@ component accessors=true {
 	/**
 	 * Run this command
   	 **/
-	string function run( returnOutput=false, string piped, boolean echo=false, boolean rawParams=false ) {
+	string function run( returnOutput, string piped, boolean echo, boolean rawParams ) {
 
-		setRawParams( rawParams );
-
-		if( arguments.echo ) {
+		if( !isNull( arguments.rawParams ) ) { setRawParams( arguments.rawParams ); }
+		if( !isNull( arguments.piped ) ) { setPipedInput( arguments.piped ); }
+		if( !isNull( arguments.echo ) ) { setEcho( arguments.echo ); }
+		if( !isNull( arguments.returnOutput ) ) { setReturnOutput( arguments.returnOutput ); }
+		
+		if( getEcho() ) {
 			shell.callCommand( 'echo "#parser.escapeArg( getCommandString() )#"' );
 		}
 
@@ -230,10 +239,10 @@ component accessors=true {
 		}
 
 		try {
-			if( structkeyExists( arguments, 'piped' ) ) {
-				var result = shell.callCommand( getTokens(), arguments.returnOutput, arguments.piped );
+			if( !isNull( getPipedInput() ) ) {
+				var result = shell.callCommand( getTokens(), getReturnOutput(), getPipedInput() );
 			} else {
-				var result = shell.callCommand( getTokens(), arguments.returnOutput );
+				var result = shell.callCommand( getTokens(), getReturnOutput() );
 			}
 
 			// If the previous command chain failed
