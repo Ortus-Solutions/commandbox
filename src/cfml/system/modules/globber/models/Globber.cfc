@@ -195,29 +195,25 @@ component accessors="true" {
 		}
 
 		for( var thisPattern in patterns ) {
-			var results = processPattern( thisPattern );
-			// First one in just gets set
-			if( isNull( getMatchQuery() ) ) {
-				setMatchQuery( results );
-			// merge remaining patterns
-			} else {
-				var previousMatch = getMatchQuery();
-
-				cfquery( dbtype="query" ,name="local.newMatchQuery" ) {
-					writeOutput( 'SELECT * FROM results UNION SELECT * FROM previousMatch ' );
-				}
-
-				// UNION isn't removing dupes on Lucee so doing second select here for that purpose.
-				cfquery( dbtype="query" ,name="local.newMatchQuery" ) {
-					writeOutput( 'SELECT DISTINCT * FROM newMatchQuery ' );
-					if( len( getSort() ) ) {
-						writeOutput( 'ORDER BY #getCleanSort()#' );
-					}
-				}
-
-				setMatchQuery( local.newMatchQuery );
-			}
+			processPattern( thisPattern );
 		}
+		
+		var matchQuery = getMatchQuery();
+		
+		if( isNull( matchQuery ) ) {
+			setMatchQuery( queryNew( 'name,size,type,dateLastModified,attributes,mode,directory' ) );
+		} else {
+			// UNION isn't removing dupes on Lucee so doing second select here for that purpose.
+			cfquery( dbtype="query" ,name="local.newMatchQuery" ) {
+				writeOutput( 'SELECT DISTINCT * FROM matchQuery ' );
+				if( len( getSort() ) ) {
+					writeOutput( 'ORDER BY #getCleanSort()#' );
+				}
+			}
+	
+			setMatchQuery( local.newMatchQuery );			
+		}
+
 
 		if( patterns.len() > 1 ) {
 			var dirs = queryColumnData( getMatchQuery(), 'directory' );
@@ -243,9 +239,25 @@ component accessors="true" {
 		}
 
 	}
+	
+	function appendMatchQuery( matchQuery ) {
+		// First one in just gets set
+		if( isNull( getMatchQuery() ) ) {
+			setMatchQuery( matchQuery );
+		// merge remaining patterns
+		} else {
+			var previousMatch = getMatchQuery();
+
+			cfquery( dbtype="query" ,name="local.newMatchQuery" ) {
+				writeOutput( 'SELECT * FROM matchQuery UNION SELECT * FROM previousMatch ' );
+			}
+
+			setMatchQuery( local.newMatchQuery );
+		}
+	}
 
 	private function processPattern( string pattern ) {
-
+		
 		local.thisPattern = pathPatternMatcher.normalizeSlashes( arguments.pattern );
 
 		// To optimize this as much as possible, we want to get a directory listing as deep as possible so we process a few files as we can.
@@ -273,31 +285,62 @@ component accessors="true" {
 		if( !baseDir.len() ) {
 			baseDir = '/';
 		}
+		
+		var everythingAfterBaseDir = thisPattern.replace( baseDir, '' );
+		
+		// If we have a partial directory next such as modules* optimize here
+		if( everythingAfterBaseDir.listLen( '/' ) > 1 && everythingAfterBaseDir.listFirst( '/' ).reFind( '[^\*^\?]' ) && !everythingAfterBaseDir.listFirst( '/' ).startsWith( '**' ) ) {
+						
+			thisPattern = baseDir & '/' & everythingAfterBaseDir.listFirst( '/' ) & '/';
+			// Manually loop over the dirs at this level that match to narrow what we're looking at
+			directoryList (
+				listInfo='query',
+				recurse=false,
+				path=baseDir,
+				type='dir',
+				sort=getSort(),
+				filter=( path )=>{
+					var thisPath = path & '/';
+					if( pathPatternMatcher.matchPattern( thisPattern, thisPath, true ) ) {
+						return true;
+					}
+					return false;
+				}
+			).each( ( folder )=>processPattern( baseDir & '/' & folder.name & '/' & everythingAfterBaseDir.listRest( '/' ) ) )
+			
+			return;
+		}
 
 		var recurse = false;
 		if( thisPattern contains '**' ) {
 			recurse = true;
 		}
 
-		setBaseDir( baseDir & ( baseDir.endsWith( '/' ) ? '' : '/' ) );
-
-		return directoryList (
-				filter=function( path ){
-					var thisPath = path & ( directoryExists( path ) ? '/' : '' );
-					if( pathPatternMatcher.matchPattern( thisPattern, thisPath, true ) ) {
-						if( getExcludePatternArray().len() && pathPatternMatcher.matchPatterns( getExcludePatternArray(), thisPath, true ) ) {
-							return false;
-						}
-						return true;
-					}
-					return false;
-				},
+		var optimizeFilter = '';
+		if( reFind( '\.[a-zA-Z0-9\?\*]{2,4}$', thisPattern ) ) {
+			optimizeFilter = '*.' & thisPattern.listLast( '.' ).replace( '?', '*', 'all' );
+		}
+		
+		var c = 0;
+		var dl = directoryList (
 				listInfo='query',
 				recurse=local.recurse,
 				path=baseDir,
-				sort=getSort()
-			);
-
+				sort=getSort(),
+				filter=optimizeFilter
+			).filter( ( path )=>{
+				c++;
+				var thisPath = path.directory & '/' & path.name & ( path.mode == 'directory' ? '/' : '' );
+				if( pathPatternMatcher.matchPattern( thisPattern, thisPath, true ) ) {
+					if( getExcludePatternArray().len() && pathPatternMatcher.matchPatterns( getExcludePatternArray(), thisPath, true ) ) {
+						return false;
+					}
+					return true;
+				}
+				return false;
+			} );
+		
+		appendMatchQuery( dl );
 	}
 
 	/**

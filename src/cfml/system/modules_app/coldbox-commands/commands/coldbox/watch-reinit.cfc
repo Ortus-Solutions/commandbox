@@ -30,7 +30,7 @@ component {
 	property name="serverService"  inject="ServerService";
 
 	variables.WATCH_DELAY = 500;
-	variables.PATHS       = "config/**.cfc,handlers/**.cfc,models/**.cfc,ModuleConfig.cfc";
+	variables.PATHS       = "/config/**.cfc,/handlers/**.cfc,/models/**.cfc,/modules_app/**/*.cfc";
 
 	/**
 	 * @paths Command delimited list of file globbing paths to watch relative to the working directory, defaults to **.cfc

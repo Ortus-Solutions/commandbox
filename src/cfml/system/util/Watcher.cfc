@@ -26,6 +26,7 @@ component accessors=true {
 	property name='shell'				inject='shell';
 	property name='print'				inject='PrintBuffer';
 	property name='pathPatternMatcher'	inject='provider:pathPatternMatcher@globber';
+	property name='globber'				inject='provider:globber@globber';
 	property name='fileSystemUtil'		inject='FileSystem';
 	property name='fileSeparator'		inject='fileSeparator@constants';
 
@@ -102,6 +103,7 @@ component accessors=true {
 		try {
 			var threadName = 'watcher#createUUID()#';
 			thread action="run" name="#threadname#" priority="HIGH"{
+				var lastRun = getTickCount();
 				try{
 					// Run until we exit out of the watcher
 					while( getWatcherRun() ){
@@ -118,7 +120,8 @@ component accessors=true {
 
 						} else {
 							// Sleep and test again.
-							sleep( getDelayMS() );
+							sleep( max( getDelayMS()-(getTickCount()-lastRun), 100 ) );
+							lastRun = getTickCount();
 						}
 					}
 				// Handle "expected" exceptions from commands
@@ -223,29 +226,25 @@ component accessors=true {
 		var globPatterns = getPathsToWatch();
 		var thisBaseDir =  fileSystemUtil.resolvePath( getBaseDirectory() );
 
-		var fileListing = directoryList(
-			thisBaseDir,
-			true,
-			"query",
-			function( path ) {
-				// This will normalize the slashes to match
-				arguments.path = fileSystemUtil.resolvePath( arguments.path );
+		var fileListing = globber
+			.setPattern( globPatterns.map( ( p )=>{
+				if( p.startsWith( '/' ) || p.startsWith( '\' ) ) {
+					return fileSystemUtil.resolvePath( p.right( -1 ), thisBaseDir )	
+				} else {
+					return fileSystemUtil.resolvePath( '**' & p, thisBaseDir )					
+				}
+			} ) )
+			.withSort( "DateLastModified desc" )
+			.asQuery()
+			.matches();
 
-				// cleanup path so we just get what's inside the base dir
-				var thisPath = replacenocase( arguments.path, thisBaseDir, "" );
+		var fileIndex = {};
+		for(file in fileListing){
+			var thisPath = replacenocase( file.directory & fileSeparator & file.name, thisBaseDir, "" );
+			fileIndex[thisPath] = file.DATELASTMODIFIED;
+		}
 
-				// Does this path match one of our glob patterns
-				return pathPatternMatcher.matchPatterns( globPatterns, thisPath );
-			},
-			"DateLastModified desc" );
-
-			var fileIndex = {};
-			for(file in fileListing){
-				var thisPath = replacenocase( file.directory & fileSeparator & file.name, thisBaseDir, "" );
-				fileIndex[thisPath] = file.DATELASTMODIFIED;
-			}
-
-			setFileIndex( fileIndex );
+		setFileIndex( fileIndex );
 
 		var directoryHash = hash( serializeJSON( fileListing ) );
 
