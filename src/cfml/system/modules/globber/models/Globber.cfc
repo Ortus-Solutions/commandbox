@@ -321,7 +321,6 @@ component accessors="true" {
 			optimizeFilter = '*.' & thisPattern.listLast( '.' ).replace( '?', '*', 'all' );
 		}
 		
-		var c = 0;
 		var dl = directoryList (
 				listInfo='query',
 				recurse=local.recurse,
@@ -329,7 +328,6 @@ component accessors="true" {
 				sort=getSort(),
 				filter=optimizeFilter
 			).filter( ( path )=>{
-				c++;
 				var thisPath = path.directory & '/' & path.name & ( path.mode == 'directory' ? '/' : '' );
 				if( pathPatternMatcher.matchPattern( thisPattern, thisPath, true ) ) {
 					if( getExcludePatternArray().len() && pathPatternMatcher.matchPatterns( getExcludePatternArray(), thisPath, true ) ) {
