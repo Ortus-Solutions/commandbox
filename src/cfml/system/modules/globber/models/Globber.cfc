@@ -339,6 +339,8 @@ component accessors="true" {
 			} );
 		
 		appendMatchQuery( dl );
+		setBaseDir( baseDir & ( baseDir.endsWith( '/' ) ? '' : '/' ) );
+
 	}
 
 	/**
