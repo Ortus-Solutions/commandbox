@@ -1225,7 +1225,8 @@ component accessors="true" singleton {
 		// This is an array of tokens to send to the process builder
 		var args = [];
 		// "borrow" the CommandBox commandline parser to tokenize the JVM args. Not perfect, but close. Handles quoted values with spaces.
-		var argTokens = parser.tokenizeInput( serverInfo.JVMargs )
+		// Escape any semicolons so the parser ignores them in a string and doesn't break the token ex: -DMY_ENV_VAR=foo;bar
+		var argTokens = parser.tokenizeInput( serverInfo.JVMargs.replace( ';', '\;', 'all' ) )
 			.map( function( i ){
 				// unwrap quotes, and unescape any special chars like \" inside the string
 				return parser.replaceEscapedChars( parser.removeEscapedChars( parser.unwrapQuotes( i ) ) );
@@ -1347,9 +1348,12 @@ component accessors="true" singleton {
 
 		// If background, wrap up JVM args to pass through to background servers.  "Real" JVM args must come before Runwar args
 		if( background ) {
-			// Escape any semi colons in the args so Runwar can process this properly
+			// Escape any semi colons or backslash literals in the args so Runwar can process this properly
 			// -Darg=one;-Darg=two
-			var argString = argTokens.map( ( token ) => token.replace( ';', '\;', 'all' ) ).toList( ';' );
+			systemoutput( argTokens, 1 );
+			var argString = argTokens
+				.map( ( token ) => token.replace( '\', '\\', 'all' ).replace( ';', '\;', 'all' ) )
+				.toList( ';' );
 			if( len( argString ) ) {
 				args.append( '--jvm-args=#trim( argString )#' );
 			}
