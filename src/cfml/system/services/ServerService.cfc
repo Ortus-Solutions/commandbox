@@ -1350,7 +1350,6 @@ component accessors="true" singleton {
 		if( background ) {
 			// Escape any semi colons or backslash literals in the args so Runwar can process this properly
 			// -Darg=one;-Darg=two
-			systemoutput( argTokens, 1 );
 			var argString = argTokens
 				.map( ( token ) => token.replace( '\', '\\', 'all' ).replace( ';', '\;', 'all' ) )
 				.toList( ';' );
