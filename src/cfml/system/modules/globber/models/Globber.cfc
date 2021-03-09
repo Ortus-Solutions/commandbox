@@ -328,7 +328,7 @@ component accessors="true" {
 				sort=getSort(),
 				filter=optimizeFilter
 			).filter( ( path )=>{
-				var thisPath = path.directory & '/' & path.name & ( path.mode == 'directory' ? '/' : '' );
+				var thisPath = path.directory & '/' & path.name & ( path.type == 'dir' ? '/' : '' );
 				if( pathPatternMatcher.matchPattern( thisPattern, thisPath, true ) ) {
 					if( getExcludePatternArray().len() && pathPatternMatcher.matchPatterns( getExcludePatternArray(), thisPath, true ) ) {
 						return false;
