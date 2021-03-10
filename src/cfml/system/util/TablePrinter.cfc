@@ -113,7 +113,7 @@ component singleton {
 
     /**
      * Prints a single row of data for the table.
-     * @row.hint A signle row of data for the table. 
+     * @row.hint A signle row of data for the table.
      * @headerData.hint The array of column headers for the table with their corresponding max widths.
      * @print.hint A reference to the CommandBox Printer that called this table printer.
      */
