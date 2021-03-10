@@ -45,7 +45,7 @@ If you want to get the properties in an iterable form, use this method:
 ```js
 var myStruct = propertyFile.getAsStruct();
 for( var prop in myStruct ) {
-	writeDump( myStruct[ prop ] );
+    writeDump( myStruct[ prop ] );
 }
 ```
 
@@ -69,8 +69,8 @@ All methods in the PropertyFile object that don't return an explicit value will 
 
 ```js
 getInstance( 'propertyFile' )
-	.load( myPath )
-	.set( 'myProp', 'myValue' )
-	.set( 'myOtherProp', 'myOtherValue' )
-	.store();
+    .load( myPath )
+    .set( 'myProp', 'myValue' )
+    .set( 'myOtherProp', 'myOtherValue' )
+    .store();
 ```

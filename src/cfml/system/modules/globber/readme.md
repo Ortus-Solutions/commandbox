@@ -53,17 +53,17 @@ This transient represents a single globbing pattern and provide a fluent API to 
 Returns an array of all text files recursively below the `myFolder` directory whose name end with `bar`.
 ```
 var results = wirebox.getInstance( 'globber' )
-	.setPattern( 'C:/myFolder/**/*bar.txt' )
-	.matches();
+    .setPattern( 'C:/myFolder/**/*bar.txt' )
+    .matches();
 ```
 
 Apply a closure to all markdown files in a directory.
 ```
 wirebox.getInstance( 'globber' )
-	.setPattern( 'C:/myFolder/*.md' )
-	.apply( function( path ) {
-		fileDelete( path );
-	} );
+    .setPattern( 'C:/myFolder/*.md' )
+    .apply( function( path ) {
+        fileDelete( path );
+    } );
 ```
 
 #### Get data as query
@@ -72,9 +72,9 @@ You can get a query back instead of an array by adding `.asQuery()` to your DSL.
 The query columns match what comes from the `directoryList()` function.
 ```
 var qryResults = globber
-	.setPattern( baseDir & '/**' )
-	.asQuery()
-	.matches();
+    .setPattern( baseDir & '/**' )
+    .asQuery()
+    .matches();
 ```
 
 #### Sort data
@@ -83,7 +83,7 @@ You may sort the data using the same column names you'd get back from the query 
 
 ```
 var qryResults = globber
-	.setPattern( baseDir & '/**' )
-	.withSort( 'type asc, name desc' )
-	.matches();
+    .setPattern( baseDir & '/**' )
+    .withSort( 'type asc, name desc' )
+    .matches();
 ```

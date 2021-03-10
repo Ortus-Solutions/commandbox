@@ -101,12 +101,12 @@ Available return types:
 // Method Call
 var data = getInstance( "MockData@MockDataCFC" )
     .mock(
-		$returnType = "struct",
-		name = "name",
-		age = "age",
-		id = "uuid",
-		email = "email"
-	);
+        $returnType = "struct",
+        name = "name",
+        age = "age",
+        id = "uuid",
+        email = "email"
+    );
 // Service call
 http://127.0.0.1:60299/MockDataCFC?$returnType=struct&name=name&age=age&id=uuid&email=email
 
@@ -187,7 +187,7 @@ You can also create your own content by using a supplier closure/lambda as your 
 
 ```js
 "name" : function( index ){
-	return "luis";
+    return "luis";
 }
 ```
 
@@ -286,7 +286,7 @@ getInstance( "MockData@MockDataCFC" )
         age         = "age",
         id          = "uuid",
         createdDate = "datetime",
-        isActive	= "oneof:true:false",
+        isActive    = "oneof:true:false",
 
         // one to many complex object definitions
         books = [
@@ -304,8 +304,8 @@ getInstance( "MockData@MockDataCFC" )
 
         // object definition
         publisher = {
-            "id" 	= "uuid",
-            "name" 	= "sentence"
+			"id"   = "uuid",
+			"name" = "sentence"
         },
 
         // array of values

@@ -95,18 +95,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ```js
 getInstance( "MockData@MockDataCFC" )
-	.mock(
-		books=[{
-			num=2,
-			"id"="uuid",
-			"title"="words:1:5"
-		}],
-		fullName="name",
-		description="sentence",
-		age="age",
-		id="uuid",
-		createdDate="datetime"
-	);
+    .mock(
+        books=[{
+            num=2,
+            "id"="uuid",
+            "title"="words:1:5"
+        }],
+        fullName="name",
+        description="sentence",
+        age="age",
+        id="uuid",
+        createdDate="datetime"
+    );
 ```
 
 This will produce top level mock data with 2 books per record.
