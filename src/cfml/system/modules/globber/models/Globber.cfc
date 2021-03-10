@@ -197,9 +197,9 @@ component accessors="true" {
 		for( var thisPattern in patterns ) {
 			processPattern( thisPattern );
 		}
-		
+
 		var matchQuery = getMatchQuery();
-		
+
 		if( isNull( matchQuery ) ) {
 			setMatchQuery( queryNew( 'name,size,type,dateLastModified,attributes,mode,directory' ) );
 		} else {
@@ -210,8 +210,8 @@ component accessors="true" {
 					writeOutput( 'ORDER BY #getCleanSort()#' );
 				}
 			}
-	
-			setMatchQuery( local.newMatchQuery );			
+
+			setMatchQuery( local.newMatchQuery );
 		}
 
 
@@ -239,7 +239,7 @@ component accessors="true" {
 		}
 
 	}
-	
+
 	function appendMatchQuery( matchQuery ) {
 		// First one in just gets set
 		if( isNull( getMatchQuery() ) ) {
@@ -257,7 +257,7 @@ component accessors="true" {
 	}
 
 	private function processPattern( string pattern ) {
-		
+
 		local.thisPattern = pathPatternMatcher.normalizeSlashes( arguments.pattern );
 
 		// To optimize this as much as possible, we want to get a directory listing as deep as possible so we process a few files as we can.
@@ -285,12 +285,12 @@ component accessors="true" {
 		if( !baseDir.len() ) {
 			baseDir = '/';
 		}
-		
+
 		var everythingAfterBaseDir = thisPattern.replace( baseDir, '' );
-		
+
 		// If we have a partial directory next such as modules* optimize here
 		if( everythingAfterBaseDir.listLen( '/' ) > 1 && everythingAfterBaseDir.listFirst( '/' ).reFind( '[^\*^\?]' ) && !everythingAfterBaseDir.listFirst( '/' ).startsWith( '**' ) ) {
-						
+
 			thisPattern = baseDir & '/' & everythingAfterBaseDir.listFirst( '/' ) & '/';
 			// Manually loop over the dirs at this level that match to narrow what we're looking at
 			directoryList (
@@ -307,7 +307,7 @@ component accessors="true" {
 					return false;
 				}
 			).each( ( folder )=>processPattern( baseDir & '/' & folder.name & '/' & everythingAfterBaseDir.listRest( '/' ) ) )
-			
+
 			return;
 		}
 
@@ -320,7 +320,7 @@ component accessors="true" {
 		if( reFind( '\.[a-zA-Z0-9\?\*]{2,4}$', thisPattern ) ) {
 			optimizeFilter = '*.' & thisPattern.listLast( '.' ).replace( '?', '*', 'all' );
 		}
-		
+
 		var dl = directoryList (
 				listInfo='query',
 				recurse=local.recurse,
@@ -337,7 +337,7 @@ component accessors="true" {
 				}
 				return false;
 			} );
-		
+
 		appendMatchQuery( dl );
 		setBaseDir( baseDir & ( baseDir.endsWith( '/' ) ? '' : '/' ) );
 

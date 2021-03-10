@@ -54,7 +54,7 @@ component accessors=true {
 		setReturnOutput( false );
 		setPipedInput( nullValue() );
 		setEcho( false );
-		
+
 		return this;
 	}
 
@@ -228,7 +228,7 @@ component accessors=true {
 		if( !isNull( arguments.piped ) ) { setPipedInput( arguments.piped ); }
 		if( !isNull( arguments.echo ) ) { setEcho( arguments.echo ); }
 		if( !isNull( arguments.returnOutput ) ) { setReturnOutput( arguments.returnOutput ); }
-		
+
 		if( getEcho() ) {
 			shell.callCommand( 'echo "#parser.escapeArg( getCommandString() )#"' );
 		}

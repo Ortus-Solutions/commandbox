@@ -229,9 +229,9 @@ component accessors=true {
 		var fileListing = globber
 			.setPattern( globPatterns.map( ( p )=>{
 				if( p.startsWith( '/' ) || p.startsWith( '\' ) ) {
-					return fileSystemUtil.resolvePath( p.right( -1 ), thisBaseDir )	
+					return fileSystemUtil.resolvePath( p.right( -1 ), thisBaseDir )
 				} else {
-					return fileSystemUtil.resolvePath( '**' & p, thisBaseDir )					
+					return fileSystemUtil.resolvePath( '**' & p, thisBaseDir )
 				}
 			} ) )
 			.withSort( "DateLastModified desc" )

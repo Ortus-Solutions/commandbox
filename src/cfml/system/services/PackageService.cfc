@@ -123,7 +123,7 @@ component accessors="true" singleton {
 				var packageName = endpointData.endpoint.getDefaultName( endpointData.package );
 				var version = '1.0.0';
 			}
-			
+
 			// Todo, consider making this part of the interface so other endpoint types can also report back
 			// if their installation ID contains a semantic version range
 			if( isInstanceOf(endpointData.endpoint, 'forgebox') ) {
@@ -1063,7 +1063,7 @@ component accessors="true" singleton {
 		// Global outdated check bit
 		var aAllDependencies = [];
 		var aOutdatedDependencies = [];
-		
+
 		// Outdated check closure
 		var fOutdatedCheck 	= function( slug, value ){
 			if( !len( includeSlugs ) || listFindNoCase( includeSlugs, arguments.slug ) ){
