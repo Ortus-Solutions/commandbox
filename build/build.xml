@@ -714,7 +714,7 @@ External Dependencies:
 
 	<!-- Build windows executable -->
 	<target name="build.cli.exe" description="create exe wrapper" depends="build.cli" >
-        <!-- Get OS version of lanuch4j -->
+        <!-- Get OS version of launch4j -->
         <antcall target="getlaunch4j" />
         <!-- Build Executable Now -->
         <taskdef name="launch4j"
