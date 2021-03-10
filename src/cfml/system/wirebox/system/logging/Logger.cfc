@@ -385,7 +385,7 @@ component accessors="true"{
 	}
 
 	/**
-	 * Checks wether a log can be made on this Logger using a passed in level
+	 * Checks whether a log can be made on this Logger using a passed in level
 	 *
 	 * @level The numeric or string level representation
 	 */

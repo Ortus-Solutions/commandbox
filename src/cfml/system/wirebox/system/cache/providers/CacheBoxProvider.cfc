@@ -9,7 +9,7 @@
  * Properties
  * - name : The cache name
  * - enabled : Boolean flag if cache is enabled
- * - reportingEnabled: Boolean falg if cache can report
+ * - reportingEnabled: Boolean flag if cache can report
  * - stats : The statistics object
  * - configuration : The configuration structure
  * - cacheFactory : The linkage to the cachebox factory

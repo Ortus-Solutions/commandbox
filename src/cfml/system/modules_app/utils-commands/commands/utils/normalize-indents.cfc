@@ -47,7 +47,7 @@ component aliases="indents" {
 	* @spacesOrTabs Convert to spaces or tabs
 	* @spaceTabCount The number of spaces per tab
 	* @exclude A list of globbing patterns to ignore
-	* @force Skip user confirmation of modiying files
+	* @force Skip user confirmation of modifying files
 	* @verbose Output additional information about each file affected
 	* @roundUp Convert additional spaces that don't equal a tab to a full tab
 	*/

@@ -27,7 +27,7 @@ component accessors=true {
 		// [TRACE] io.undertow.predicate: Path(s) [/CFIDE/main/ide.cfm] MATCH input [/CFIDE/main/ide.cfm] for HttpServerExchange{ GET /CFIDE/main/ide.cfm}.
 		line = reReplaceNoCase( line, '^(\[[^]]*])( io\.undertow\.predicate: )(.*)', '\1 Server Rules: \3' );
 
-		// Strip off redundant severities that come from wrapping LogBox apenders in Log4j appenders
+		// Strip off redundant severities that come from wrapping LogBox appenders in Log4j appenders
 		// [INFO ] DEBUG my.logger.name This rain in spain stays mainly in the plains
 		line = reReplaceNoCase( line, '^(\[(INFO |ERROR|DEBUG|WARN )] )(INFO|ERROR|DEBUG|WARN)( .*)', '[\3]\4' );
 
