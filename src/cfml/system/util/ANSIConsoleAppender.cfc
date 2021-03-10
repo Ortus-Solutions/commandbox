@@ -7,7 +7,7 @@ www.coldbox.org | www.luismajano.com | www.ortussolutions.com
 Author     :	Brad Wood, Luis Majano
 Date        :	07/22/2014
 Description :
-	A logger for outputting ANSI-formmatted text to the console
+	A logger for outputting ANSI-formatted text to the console
 	for use with CommandBox.
 
 Properties:

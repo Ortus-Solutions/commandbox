@@ -212,7 +212,7 @@ component accessors="true"{
 	}
 
 	/**
-	 * Checks wether a log can be made on this appender using a passed in level
+	 * Checks whether a log can be made on this appender using a passed in level
 	 *
 	 * @level The level to check
 	 */

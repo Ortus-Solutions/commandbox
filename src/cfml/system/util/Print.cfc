@@ -5,7 +5,7 @@
 ********************************************************************************
 * @author Brad Wood, Luis Majano, Denny Valliant
 *
-* I am a helper object for creating pretty ANSI-formmatted
+* I am a helper object for creating pretty ANSI-formatted
 * text in the shell.  I use onMissingMethod to allow for nice,
 * readable methods that contain combinations of text and background
 * colors as well as text formatting.

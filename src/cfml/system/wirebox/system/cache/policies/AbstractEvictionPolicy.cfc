@@ -94,7 +94,7 @@ component serializable=false implements="wirebox.system.cache.policies.IEviction
 	}
 
 	/**
-	* Get utiliy object
+	* Get utility object
 	* @return wirebox.system.core.util.Util
 	*/
 	private function getUtil(){
