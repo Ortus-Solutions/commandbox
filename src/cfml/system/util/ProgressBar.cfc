@@ -37,7 +37,7 @@ component singleton {
 
 		var terminal = shell.getReader().getTerminal();
 
-		// If Jline uses a "dumb" terminal, the width reports as zero, which throws devide by zero errors.
+		// If Jline uses a "dumb" terminal, the width reports as zero, which throws divide by zero errors.
 		// TODO: I might be able to just fake a reasonable width.
 		if( !shell.isTerminalInteractive() || terminal.getWidth() == 0 ) {
 			return;
@@ -71,7 +71,7 @@ component singleton {
 			// We do know the total size (show percentages)
 			} else {
 
-				// Total space availble to progress bar.  Subtract 5 for good measure since it will wrap if you get too close
+				// Total space available to progress bar.  Subtract 5 for good measure since it will wrap if you get too close
 				var totalWidth = shell.getTermWidth()-5;
 
 				var progressBarTemplate = '|@@@% |=>| $$$$$$$ / ^^^^^^^ | &&&&&&&& |';
@@ -83,7 +83,7 @@ component singleton {
 				} else {
 					progressBarTemplate &= ' ETA: -- |';
 				}
-				
+
 				// Dynamically assign the remaining width to the moving progress bar
 				var nonProgressChars = len( progressBarTemplate ) - 1;
 				// Minimum progressbar length is 5.  It will wrap if the user's console is super short, but I'm not sure I care.
@@ -126,9 +126,9 @@ component singleton {
 				lines,
 				0
 			);
-		
+
 		}
-		
+
  		// If we're done, add a line break
 		if( arguments.percent == 100 ) {
 			clear();
@@ -189,31 +189,31 @@ component singleton {
 	}
 
 	function formatExecTime( sec ) {
-		
+
 		if( sec < 1 ) {
 			sec = 1;
 		}
 
 		var hr = 0;
 		var min = 0;
-		
+
 		while( sec >= 60 ) {
-		
+
 		  sec = sec - 60
 		  min = min + 1;
 		  if (sec == 60) sec = 0;
 		  if (min >= 60) hr = hr + 1;
 		  if (min == 60) min = 0;
-		  
+
 		}
 		var outputTime = [];
-		// Output hours if they exist 
+		// Output hours if they exist
 		if( hr ) outputTime.append( '#hr#hr' );
 		// Output minutes if they exist or if we printed  hours  (2hr 0min) or (3d 0hr 0min)
 		if( min || hr ) outputTime.append( '#min#min' );
 		// Ignore seconds for times over an hour. (2hr 31min) Print zero seconds if there were minutes (3min 0sec)
 		if( ( sec || min ) && !hr ) outputTime.append( '#sec#sec' );
-		 
+
 		return outputTime.toList( ' ' );
 	}
 

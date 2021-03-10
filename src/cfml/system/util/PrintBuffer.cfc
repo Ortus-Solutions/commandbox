@@ -13,7 +13,7 @@ component accessors="true" extends="Print"{
 
 	// DI
 	property name="shell" inject="shell";
-	
+
 	property name="objectID";
 
 	/**
@@ -35,7 +35,7 @@ component accessors="true" extends="Print"{
 			var thingToPrint = getResult();
 			clear();
 		}
-		  	
+
 		// Once we get the text to print above, we can release the lock while we actually print it.
 		variables.shell.printString( thingToPrint );
 	}
@@ -44,7 +44,7 @@ component accessors="true" extends="Print"{
 	function clear(){
 		variables.result.setLength(0);
 	}
-	
+
 	function getResult() {
 		return variables.result.toString();
 	}

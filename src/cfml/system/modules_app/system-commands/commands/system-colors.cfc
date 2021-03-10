@@ -1,5 +1,5 @@
 /**
- * Outputs the colors CommandBox is capable of printing.  What you see is dependant on your terminal.  
+ * Outputs the colors CommandBox is capable of printing.  What you see is dependant on your terminal.
  * Some terminals only support 16 colors, others support all 256.
  * .
  * {code:bash}
@@ -10,9 +10,9 @@
 component {
 	property name='colors256Data'	inject='colors256Data@constants';
 	property name='printHelper'		inject='print';
-	
+
 	/**
-	 * 
+	 *
 	 **/
 	function run()  {
 		var colorsByID = {};
@@ -31,17 +31,17 @@ component {
 			print.redLine( 'The output below will be rounded down to only use #numColors# colors which likely won''t look very good.' );
 		} else {
 	       	print.line();
-			print.boldlimeLine( 'Your terminal supports #numColors# colors.' );			
+			print.boldlimeLine( 'Your terminal supports #numColors# colors.' );
 		}
 
        	print.line();
-		
+
         var i = -1;
         var c = 0;
         var line = '';
         while( ++i < 256 ) {
         	c++;
-        	var color = colorsByID[ i ]; 
+        	var color = colorsByID[ i ];
             line &= printHelper.text(  printBlock( color.name, color.colorID, ( c < 17 ? 14 : 19 ) ), '#textColor( color.hsl )#onColor#i#' );
             if( c == 16 || c == 8 || ( c > 16 && (c-16) % 6 == 0 ) ) {
                	print.line( line );
@@ -49,11 +49,11 @@ component {
                 if( c == 16 || c == 232 ) {
                 	print.line();
                 }
-                
+
             }
-            
+
         }
-        
+
        	print.line( line );
        	print.line();
 	}
@@ -74,5 +74,5 @@ component {
 			return 'white';
 		}
 	}
- 	
+
 }

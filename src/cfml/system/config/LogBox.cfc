@@ -8,7 +8,7 @@
 component {
 
 	function configure(){
-		
+
 		logBox = {};
 
 		// Define Appenders

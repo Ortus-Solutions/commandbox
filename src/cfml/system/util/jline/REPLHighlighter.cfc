@@ -40,7 +40,9 @@ component {
 		variables.sets = {
 			')' : '(',
 			'}' : '{',
-			']' : '[',
+		// This doesn't work when the first part of the string has formatting
+		// since there are [ chars in the ANSI escapes
+		//	']' : '[',
 			"'" : "'",
 			'"' : '"'
 		};
@@ -63,7 +65,7 @@ component {
 			var startChar = sets[ endChar ];
 			var depth = 1;
 			var pos = buffer.len()-1;
-			// Work backwords over the string until we find a matching start char
+			// Work backwards over the string until we find a matching start char
 			while( pos > 0 && depth > 0 ) {
 				if( buffer.mid( pos, 1 ) == endChar && startChar != endChar ) {
 					depth++;

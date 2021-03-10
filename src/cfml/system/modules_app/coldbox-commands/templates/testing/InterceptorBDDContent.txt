@@ -4,12 +4,12 @@
 * responsibility to update the interceptor annotation instantiation path.
 */
 component extends="coldbox.system.testing.BaseInterceptorTest" interceptor="|name|"{
-	
+
 	/*********************************** LIFE CYCLE Methods ***********************************/
 
 	function beforeAll(){
 		super.beforeAll();
-		
+
 		// interceptor configuration properties, if any
 		configProperties = {};
 		// init and configure interceptor
@@ -21,22 +21,22 @@ component extends="coldbox.system.testing.BaseInterceptorTest" interceptor="|nam
 		// do your own stuff here
 		super.afterAll();
 	}
-	
+
 	/*********************************** BDD SUITES ***********************************/
-	
+
 	function run(){
 
 		describe( "|name|", function(){
-			
+
 			it( "should configure correctly", function(){
 				interceptor.configure();
 				// Expectations here.
 				expect( false ).toBeTrue();
 			});
-			
-|TestCases|			
+
+|TestCases|
 		});
 
 	}
-	
+
 }

@@ -1,37 +1,34 @@
 ``` bash
-   _____                                          _ ____            
-  / ____|                                        | |  _ \           
+   _____                                          _ ____
+  / ____|                                        | |  _ \
  | |     ___  _ __ ___  _ __ ___   __ _ _ __   __| | |_) | _____  __
  | |    / _ \| '_ ` _ \| '_ ` _ \ / _` | '_ \ / _` |  _ < / _ \ \/ /
- | |___| (_) | | | | | | | | | | | (_| | | | | (_| | |_) | (_) >  < 
-  \_____\___/|_| |_| |_|_| |_| |_|\__,_|_| |_|\__,_|____/ \___/_/\_\  
+ | |___| (_) | | | | | | | | | | | (_| | | | | (_| | |_) | (_) >  <
+  \_____\___/|_| |_| |_|_| |_| |_|\__,_|_| |_|\__,_|____/ \___/_/\_\
 ```
 
-## THE DAILY BREAD
 
-"I am the way, and the truth, and the life; no one comes to the Father, but by me (JESUS)" Jn 14:1-12
-
-# WELCOME TO COMMANDBOX 
+# WELCOME TO COMMANDBOX
 
 CommandBox ColdFusion (CFML) CLI, Package Manager, REPL and much more!
 
-* Trademark + Copyright since 2014 by [Ortus Solutions, Corp](http://www.ortussolutions.com)
-* [All products by Ortus Solutions](http://www.ortussolutions.com/products)
+* Trademark + Copyright since 2014 by [Ortus Solutions, Corp](https://www.ortussolutions.com)
+* [All products by Ortus Solutions](https://www.ortussolutions.com/products)
 * HONOR GOES TO GOD ABOVE ALL FOR HIS WISDOM FOR THIS PROJECT
 
 **Official Releases**
 
-Official stable releases can be found at the [CommandBox Official Page](http://www.ortussolutions.com/products/commandbox#download)
+Official stable releases can be found at the [CommandBox Official Page](https://www.ortussolutions.com/products/commandbox#download)
 
 **Snapshot Releases**
 
-Download from the [Ortus Download Site](https://downloads.ortussolutions.com/#/ortussolutions/commandbox/).  
+Download from the [Ortus Download Site](https://downloads.ortussolutions.com/#/ortussolutions/commandbox/).
 
 *Just please note that this contains latest bleeding edge releases that might not be stable.*
 
 **Getting Started Guide**
 
-Get going with CommandBox in a matter of minutes with our [Getting Started Guide](http://ortus.gitbooks.io/commandbox-documentation/content/getting_started_guide.html) 
+Get going with CommandBox in a matter of minutes with our [Getting Started Guide](http://ortus.gitbooks.io/commandbox-documentation/content/getting_started_guide.html)
 
 **Bug Tracker**
 
@@ -41,10 +38,10 @@ Found an issue? Check out [Bug Tracker](https://ortussolutions.atlassian.net/bro
 ## DOCUMENTATION
 
 View our latest installation, usage, and development docs here:
-[General Docs](http://www.ortussolutions.com/products/commandbox/docs)
+[General Docs](https://www.ortussolutions.com/products/commandbox/docs)
 
 View our latest Command API Docs here:
-[General Docs](http://apidocs.ortussolutions.com/commandbox/current)
+[General Docs](https://apidocs.ortussolutions.com/commandbox/current)
 
 ## VERSIONING
 

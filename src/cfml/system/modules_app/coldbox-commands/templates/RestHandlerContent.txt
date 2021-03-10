@@ -1,0 +1,8 @@
+/**
+ * |Description|
+ */
+component extends="coldbox.system.RestHandler"{
+
+|EventActions|
+
+}

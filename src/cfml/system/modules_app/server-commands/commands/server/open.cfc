@@ -13,7 +13,7 @@
  * .
  * Open a specific browser with the browser parameter
  * {code:bash}
- * server open URI=/admin browser=firefox 
+ * server open URI=/admin browser=firefox
  * {code}
  **/
 component {
@@ -67,7 +67,7 @@ component {
 
 	/**
 	* Complete server names
-	*/	
+	*/
 	function serverNameComplete() {
 		return serverService
 			.getServerNames()

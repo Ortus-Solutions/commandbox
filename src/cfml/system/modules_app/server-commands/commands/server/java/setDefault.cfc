@@ -4,13 +4,13 @@
  * {code:bash}
  * server java setDefault openjdk11
  * {code}
- * 
+ *
  * install the Java version at the same time with --setDefault
  * .
  * {code:bash}
  * server java setDefault openjdk11 --install
  * {code}
- * 
+ *
  * Note, the default will be set to exactly what you type, so if you don't type a specific release version
  * then CommandBox will still check the API for the latest version every time and download on demand.
  *
@@ -25,7 +25,7 @@
  * {code:bash}
  * server java setDefault ""
  * {code}
- * 
+ *
  **/
 component aliases='java setDefault' {
 
@@ -44,28 +44,28 @@ component aliases='java setDefault' {
 		boolean install=false
 	){
 		var settingName = 'server.defaults.jvm.javaVersion';
-		
+
 		if( len( ID ) ) {
 			configService.setSetting( settingName, ID );
-			
+
 			if( install ) {
 				try {
-					javaService.installJava( ID, verbose );	
+					javaService.installJava( ID, verbose );
 				} catch( endpointException var e ) {
 					error( e.message, e.detail ?: '' );
 				}
 			}
-			
+
 		} else if( configService.settingExists( settingName ) ) {
 			configService.removeSetting( settingName )
 		}
-				
+
 		command( 'server java list' ).run();
 	}
 
 	/**
 	* Complete java versions
-	*/	
+	*/
 	function javaVersionComplete() {
 		return javaService
 			.listJavaInstalls()

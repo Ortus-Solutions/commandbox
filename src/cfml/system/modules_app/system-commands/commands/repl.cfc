@@ -28,7 +28,7 @@ component {
 	property name="REPLParser"		inject="REPLParser";
 
 	/**
-	* @input.hint Optional CFML to execute. If provided, the command exits immediatley.
+	* @input.hint Optional CFML to execute. If provided, the command exits immediately.
 	* @script.hint Run REPL in script or tag mode
 	* @directory.hint Directory to start the REPL in (defaults to current working directory).
 	**/
@@ -41,12 +41,12 @@ component {
 		var dirInfo 		= "";
 
   	   arguments.directory = resolvePath( arguments.directory );
-  	   
+
 	   dirInfo = getFileInfo( arguments.directory );
 	   if ( !dirInfo.canWrite ) {
 	        error( "Unable to start a repl in this directory because you do not have write permission to it." );
 	   }
-	   
+
 		// Setup REPL history file
 		shell.setHistory( newHistory );
 		shell.setHighlighter( 'REPL' );
@@ -58,58 +58,58 @@ component {
 		}
 
 		try {
-							
+
 			// Loop until they choose to quit
 			while( !quit ){
-	
+
 				// code provided via standard input to process.  Exit after finishing.
 				if( structKeyExists( arguments, 'input' ) ) {
 					REPLParser.startCommand();
 					REPLParser.addCommandLines( arguments.input );
 					quit = true;
-	
+
 				// Else, collect the code via a prompt
 				} else {
-	
+
 					// start new command
 					REPLParser.startCommand();
-	
+
 					do {
 						// ask repl
 						if ( arrayLen( REPLParser.getCommandLines() ) == 0 ) {
 							var command = ask( message=( arguments.script ? 'CFSCRIPT' : 'CFML' ) &  '-REPL: ', keepHistory=true, highlight=true, complete=true );
 						} else {
 							var command = ask( message=".............: ", keepHistory=true, highlight=true, complete=true );
-	
+
 							// allow ability to break out of adding additional lines
 							if ( trim(command) == 'exit' || trim(command) == '' ) {
 								break;
 							}
 						}
-						
+
 						// Evaluate any ${} placeholders
 						command = systemSettings.expandSystemSettings( command )
-	
+
 						// add command to our parser
 						REPLParser.addCommandLine( command );
-	
+
 					} while ( !REPLParser.isCommandComplete() );
-	
+
 				}
-	
+
 				// REPL command is complete. get entire command as string
 				var cfml = REPLParser.getCommandAsString();
-	
+
 				// quitting
 				if( listFindNoCase( 'quit,q,exit', cfml ) ){
 					quit = true;
 				} else {
-	
+
 					// evaluate it
 					try {
-	
+
 						results = '';
-	
+
 						try {
 							// Attempt evaluation
 							results = REPLParser.evaluateCommand( executor, arguments.directory );
@@ -120,12 +120,12 @@ component {
 							// execute our command using temp file
 							results = executor.runCode( cfml, arguments.script, arguments.directory );
 						}
-	
+
 						// print results
 						// Make sure results is a string
 						results = REPLParser.serializeOutput( argumentCollection={ result : ( isNull( results ) ? nullValue() : results ) } );
 						print.line( results, structKeyExists( arguments, 'input' ) ? '' : '' )
-	
+
 					} catch( any e ){
 						// flush out anything in buffer
 						print.toConsole();
@@ -144,7 +144,7 @@ component {
 					}
 				}
 			}
-			
+
 		} catch( EndOfFileException var e ) {
 			// End of input reached
 		} finally {
@@ -152,14 +152,14 @@ component {
 		}
 	}
 
-	private function resetShell() {	
+	private function resetShell() {
 		// flush history out
 		shell.getReader().getHistory().save();
 		// set back original history
 		shell.setHistory( commandHistoryFile );
 		shell.setHighlighter( 'command' );
 		shell.setCompletor( 'command' );
-	} 
+	}
 
 	/**
 	* Returns variable type if it can be determined

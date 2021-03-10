@@ -24,7 +24,7 @@ component accessors="true" singleton {
 	}
 
 	/**
-	* I check for the existance of a property
+	* I check for the existence of a property
 	*/
 	boolean function check( required any JSON, required string property ){
 
@@ -148,7 +148,7 @@ component accessors="true" singleton {
 			if( !isDefined( fullPropertyName ) ) {
 				throw( message='#arguments.property# does not exist.', type="JSONException");
 			}
-			// Get a refernce to the containing struct
+			// Get a reference to the containing struct
 			var propertyValue = evaluate( fullPropertyName );
 			// Remove the key
 			structDelete( propertyValue, last );

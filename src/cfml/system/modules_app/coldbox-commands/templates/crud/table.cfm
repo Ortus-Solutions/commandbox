@@ -10,7 +10,7 @@
 			<th width="150">Actions</th>
 		</tr>
 	</thead>
-	
+
 	<tbody>
 		%cfloop array="##prc.#arguments.pluralName###" index="thisRecord">
 		<tr>
@@ -24,10 +24,10 @@
 				##html.startForm( action="#arguments.pluralname#.delete" )##
 					##html.hiddenField( name="#metadata.pk#", bind=thisRecord )##
 					##html.submitButton( value="Delete", onclick="return confirm('Really Delete Record?')", class="btn btn-danger" )##
-					##html.href( 
-						href		= "#arguments.pluralName#.edit", 
-						queryString	= "#metadata.pk#=##thisRecord.get#metadata.pk#()##", 
-						text 		= "Edit", 
+					##html.href(
+						href		= "#arguments.pluralName#.edit",
+						queryString	= "#metadata.pk#=##thisRecord.get#metadata.pk#()##",
+						text 		= "Edit",
 						class		= "btn btn-info"
 					)##
 				##html.endForm()##

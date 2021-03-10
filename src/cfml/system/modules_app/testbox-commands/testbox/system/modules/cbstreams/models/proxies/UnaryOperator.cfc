@@ -7,7 +7,7 @@ component extends="BaseProxy"{
     /**
      * Constructor
      *
-     * @f a function to be applied to to the previous element to produce a new element
+     * @f a function to be applied to the previous element to produce a new element
      */
     function init( required f ){
         super.init( arguments.f );

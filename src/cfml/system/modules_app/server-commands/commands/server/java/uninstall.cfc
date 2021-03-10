@@ -24,15 +24,15 @@ component aliases='java uninstall' {
 				'Valid names are [#javaService.listJavaInstalls().keyList()#]'
 			);
 		}
-		
+
 		javaService.uninstallJava( ID );
-		
+
 		command( 'server java list' ).run();
 	}
 
 	/**
 	* Complete java versions
-	*/	
+	*/
 	function javaVersionComplete() {
 		return javaService
 			.listJavaInstalls()

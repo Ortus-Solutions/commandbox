@@ -41,7 +41,7 @@ component accessors="true" singleton {
 	function getNativeShell() {
 		return configService.getSetting( 'nativeShell', getDefaultNativeShell() );
 	}
-	
+
 	function getDefaultNativeShell() {
          var shells = [ "/bin/bash","/usr/bin/bash",
             "/bin/pfbash", "/usr/bin/pfbash",
@@ -59,9 +59,9 @@ component accessors="true" singleton {
             "/bin/zsh", "/usr/bin/zsh",
             "/bin/pfzsh", "/usr/bin/pfzsh",
             "/bin/sh", "/usr/bin/sh" ];
-		
+
 		if( isWindows() ) {
-			var defaultShell = 'cmd';			
+			var defaultShell = 'cmd';
 		} else {
 			var defaultShell = '/bin/bash';
 	        for( var shell in shells ) {
@@ -69,7 +69,7 @@ component accessors="true" singleton {
 	                defaultShell = shell;
 	                break;
 	            }
-	        }	
+	        }
 		}
         return defaultShell;
 	}
@@ -298,7 +298,7 @@ component accessors="true" singleton {
 		}
 
 		rwbo.openURL(arguments.URI, browser);
-		
+
 		return true;
 	}
 
@@ -312,9 +312,9 @@ component accessors="true" singleton {
 			ArrayAppend(browsers, ['konqueror','epiphany'], true);
 		}
 		return browsers;
-	}	
-	
-	
+	}
+
+
     /**
     * Accepts an absolute path and returns a relative path
     * Does NOT apply any canonicalization
@@ -330,9 +330,9 @@ component accessors="true" singleton {
     		var leftOver = getDirectoryFromPath( arguments.absolutePath );
     		leftOver = leftOver.replace( '\', '/', 'all' );
     		leftOver = leftOver.listChangeDelims( '/', '/' );
-    		var mappingPath = '';    		
+    		var mappingPath = '';
     		var mappingName = '';
-    		
+
     		// "eat up" the original path until we've consumed the folder containing the dot
     		while( leftOver contains '.' ) {
     			// Strip off the first folder and add it to the mapping name
@@ -340,14 +340,14 @@ component accessors="true" singleton {
     				.replace( ':', '_', 'all' )
     				.replace( '.', '_', 'all' );
     			mappingName = mappingName.listAppend( nextSegmentCleaned, '_' );
-	    			
+
 	    		// Add the non-escaped version to the matching path
 				mappingPath = mappingPath.listAppend( leftOver.listFirst( '/' ), '/' );
-				
+
 				// Reduce the left over path
 				leftOver = leftOver.listDeleteAt( 1, '/' )
     		}
-    		
+
     		// Mapping needs to be in format of /mapping_name
     		mappingName = '/' & mappingName;
 
@@ -375,7 +375,7 @@ component accessors="true" singleton {
     	if( !isWindows() ) {
     		if( listLen( arguments.absolutePath, '/' ) > 1 ) {
 		    	var firstFolder = listFirst( arguments.absolutePath, '/' );
-		    	var path = listRest( arguments.absolutePath, '/' );	
+		    	var path = listRest( arguments.absolutePath, '/' );
     		} else {
 		    	var firstFolder = '';
 		    	var path = listChangeDelims( arguments.absolutePath, '/', '/' );
@@ -471,7 +471,7 @@ component accessors="true" singleton {
 	*
 	* Note, loaded jars/classes cannot be unloaded and will remain in memory until the CLI exits.
 	* On Windows, the jar/class files will also be locked on the file system.  Directories are scanned
-	* recursively for for files and everything found will be loaded.
+	* recursively for files and everything found will be loaded.
 	*
 	* @paths List or array of absolute paths of a jar/class files or directories of them you would like loaded
 	*/

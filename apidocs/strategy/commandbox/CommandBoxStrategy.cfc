@@ -45,7 +45,7 @@ component extends="docbox.strategy.api.HTMLAPIStrategy"{
 			thisCommand 		= replaceNoCase( thisCommand, thisRow.currentMapping, '', 'one'  );
 			thisCommand 		= listChangeDelims( thisCommand, ' ', '.'  );
 			var thisNamespace 	= listDeleteAt( thisCommand, listLen( thisCommand, ' ' ), ' ' );
-			
+
 			querySetCell( arguments.qMetadata, "command", thisCommand, index );
 			querySetCell( arguments.qMetadata, "namespace", thisNamespace, index );
 			index++;
@@ -56,8 +56,8 @@ component extends="docbox.strategy.api.HTMLAPIStrategy"{
 
 		//write the index template
 		var args = {
-			path 		 = getOutputDir() & "/index.html", 
-			template 	 = "#variables.static.TEMPLATE_PATH#/index.cfm", 
+			path 		 = getOutputDir() & "/index.html",
+			template 	 = "#variables.static.TEMPLATE_PATH#/index.cfm",
 			projectTitle = getProjectTitle()
 		};
 		writeTemplate( argumentCollection=args )
@@ -121,9 +121,9 @@ component extends="docbox.strategy.api.HTMLAPIStrategy"{
 	* @qPackage the query for a specific package
 	* @qMetaData The metadata
 	*/
-	function buildClassPages( 
+	function buildClassPages(
 		required query qPackage,
-		required query qMetadata 
+		required query qMetadata
 	){
 		for( var thisRow in arguments.qPackage ){
 			var currentDir 	= variables.outputDir & "/" & replace( thisRow.package, ".", "/", "all" );
@@ -131,22 +131,22 @@ component extends="docbox.strategy.api.HTMLAPIStrategy"{
 
 			// Is this a class
 			if( safeMeta.type eq "component" ){
-				var qSubClass = getMetaSubquery( 
-					arguments.qMetaData, 
-					"UPPER( extends ) = UPPER( '#thisRow.package#.#thisRow.name#' )", 
-					"package asc, name asc" 
+				var qSubClass = getMetaSubquery(
+					arguments.qMetaData,
+					"UPPER( extends ) = UPPER( '#thisRow.package#.#thisRow.name#' )",
+					"package asc, name asc"
 				);
 				var qImplementing = QueryNew("");
 			} else {
 				//all implementing subclasses
 				var qSubClass = getMetaSubquery(
-					arguments.qMetaData, 
-					"UPPER(fullextends) LIKE UPPER('%:#thisRow.package#.#thisRow.name#:%')", 
+					arguments.qMetaData,
+					"UPPER(fullextends) LIKE UPPER('%:#thisRow.package#.#thisRow.name#:%')",
 					"package asc, name asc"
 				);
 				var qImplementing = getMetaSubquery(
-					arguments.qMetaData, 
-					"UPPER(implements) LIKE UPPER('%:#thisRow.package#.#thisRow.name#:%')", 
+					arguments.qMetaData,
+					"UPPER(implements) LIKE UPPER('%:#thisRow.package#.#thisRow.name#:%')",
 					"package asc, name asc"
 				);
 			}

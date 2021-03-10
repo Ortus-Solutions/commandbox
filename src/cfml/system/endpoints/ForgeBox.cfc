@@ -87,7 +87,7 @@ component accessors="true" implements="IEndpointInteractive" {
 
 		// Only bother checking if we have a version range.  If an exact version is stored in
 		// box.json, we're never going to update it anyway.
-		// UNLESS the box.json has been udpated to have a new exact version that is different from what's installed (ignoreing buildID)
+		// UNLESS the box.json has been updated to have a new exact version that is different from what's installed (ignoreing buildID)
 		if( semanticVersion.isExactVersion( boxJSONversion ) && semanticVersion.compare( boxJSONversion, version, false ) == 0 ) {
 			return result;
 		}
@@ -184,28 +184,28 @@ component accessors="true" implements="IEndpointInteractive" {
 			throw( e.message, 'endpointException', e.detail );
 		}
 	}
-	
+
 	/**
 	 * Log a user out of ForgeBox
 	 * @username The username
 	 */
 	public function logout( string userName='' ) {
 		var settingBase = 'endpoints.forgebox' & ( getNamePrefixes() == 'forgebox' ? '' : '-' & getNamePrefixes() );
-		
+
 		// Remove ALL login data for this endpoint
 		if( !len( userName ) ) {
 			configService.removeSetting( settingBase );
 			return;
 		}
-		
+
 		// If the user being logged out is the current one in use, remove the current API Token as well, otherwise leave whatever other user is set in place
 		if( configService.getSetting( settingBase & '.tokens.#userName#', '' ) == configService.getSetting( settingBase & '.APIToken', '' ) ) {
 			configService.removeSetting( settingBase & '.APIToken' );
 		}
-		
+
 		// Finally, remove stored token for this user
 		configService.removeSetting( settingBase & '.tokens.#userName#' );
-		
+
 	}
 
 	/**
@@ -270,7 +270,7 @@ component accessors="true" implements="IEndpointInteractive" {
 			{ variable : 'installInstructions', file : 'instructions' },
 			{ variable : 'changelog', file : 'changelog' }
 		] ) {
-			// Check for no ext or .txt or .md in reverse precendence.
+			// Check for no ext or .txt or .md in reverse precedence.
 			for( var ext in [ '', '.txt', '.md' ] ) {
 				// Case insensitive search for file name
 				var files = directoryList( path=arguments.path, filter=function( path ){ return path contains ( item.file & ext); } );0
@@ -351,13 +351,13 @@ component accessors="true" implements="IEndpointInteractive" {
 				if( semanticVersion.isEQ( version, thisVer.version, true ) ) {
 					return thisVer;
 				}
-			}			
+			}
 			throw( 'Exact version [#arguments.version#] not found for package [#arguments.slug#].', 'endpointException', 'Available versions are [#arguments.entryData.versions.map( function( i ){ return ' ' & i.version; } ).toList()#]' );
 		}
- 
+
  		// For version ranges, do a smart lookup
 		arguments.entryData.versions.sort( function( a, b ) { return semanticVersion.compare( b.version, a.version ) } );
-		
+
 		var found = false;
 		for( var thisVersion in arguments.entryData.versions ) {
 			if( semanticVersion.satisfies( thisVersion.version, arguments.version ) ) {
@@ -465,29 +465,29 @@ component accessors="true" implements="IEndpointInteractive" {
 
 				// Test package location to see what endpoint we can refer to.
 				var endpointData = endpointService.resolveEndpoint( downloadURL, 'fakePath' );
-				
+
 				// Very simple check for HTTP URLs pointing to a Lex file
 				if( isInstanceOf( endpointData.endpoint, 'HTTP' ) && entryData.typeslug == 'lucee-extensions' ) {
 					job.addLog( "Deferring to [Lex] endpoint for #getNamePrefixes()# entry [#slug#]..." );
 					var packagePath = lexEndpoint.resolvePackage( downloadURL );
-					
+
 					var boxJSON = packageService.readPackageDescriptorRaw( packagePath );
 					boxJSON.slug = entryData.slug;
 					boxJSON.name = entryData.title;
 					boxJSON.version = version;
 					packageService.writePackageDescriptor( boxJSON, packagePath );
-					
+
 				} else {
 					job.addLog( "Deferring to [#endpointData.endpointName#] endpoint for #getNamePrefixes()# entry [#slug#]..." );
 					var packagePath = endpointData.endpoint.resolvePackage( endpointData.package, arguments.verbose );
-						
+
 					// Cheat for people who set a version, slug, or type in ForgeBox, but didn't put it in their box.json
 					var boxJSON = packageService.readPackageDescriptorRaw( packagePath );
 					if( !structKeyExists( boxJSON, 'type' ) || !len( boxJSON.type ) ) { boxJSON.type = entryData.typeslug; }
 					if( !structKeyExists( boxJSON, 'slug' ) || !len( boxJSON.slug ) ) { boxJSON.slug = entryData.slug; }
 					if( !structKeyExists( boxJSON, 'version' ) || !len( boxJSON.version ) ) { boxJSON.version = version; }
 					packageService.writePackageDescriptor( boxJSON, packagePath );
-										
+
 				}
 
 				job.addLog( "Storing download in artifact cache..." );
@@ -508,12 +508,12 @@ component accessors="true" implements="IEndpointInteractive" {
 
 
 		} catch( forgebox var e ) {
-					
+
 			if( e.detail contains 'The entry slug sent is invalid or does not exist' ) {
 				job.addErrorLog( "#e.message#  #e.detail#" );
 				throw( e.message, 'endpointException', e.detail );
 			}
-			
+
 			job.addErrorLog( "Aww man,  #getNamePrefixes()# ran into an issue.");
 			job.addLog( "#e.message#  #e.detail#" );
 			job.addErrorLog( "We're going to look in your local artifacts cache and see if one of those versions will work.");
@@ -555,7 +555,7 @@ component accessors="true" implements="IEndpointInteractive" {
 		directoryCopy( arguments.path, tmpPath, true, function( directoryPath ){
 			// This will normalize the slashes to match
 			directoryPath = fileSystemUtil.resolvePath( directoryPath );
-			
+
 			// cleanup path so we just get from the archive down
 			var thisPath = replacenocase( directoryPath, path, "" );
 			// Ignore paths that match one of our ignore patterns
@@ -607,9 +607,9 @@ component accessors="true" implements="IEndpointInteractive" {
 	*/
 	public function getAPIToken() {
 		if( getNamePrefixes() == 'forgebox' ) {
-			return configService.getSetting( 'endpoints.forgebox.APIToken', '' );	
+			return configService.getSetting( 'endpoints.forgebox.APIToken', '' );
 		} else {
-			return configService.getSetting( 'endpoints.forgebox-#getNamePrefixes()#.APIToken', '' );			
+			return configService.getSetting( 'endpoints.forgebox-#getNamePrefixes()#.APIToken', '' );
 		}
 	}
 
@@ -618,10 +618,10 @@ component accessors="true" implements="IEndpointInteractive" {
 	*/
 	public function setDefaultAPIToken( required string APIToken ) {
 		if( getNamePrefixes() == 'forgebox' ) {
-			configService.setSetting( 'endpoints.forgebox.APIToken', APIToken );	
+			configService.setSetting( 'endpoints.forgebox.APIToken', APIToken );
 		} else {
-			configService.setSetting( 'endpoints.forgebox-#getNamePrefixes()#.APIToken', APIToken );			
-		}	
+			configService.setSetting( 'endpoints.forgebox-#getNamePrefixes()#.APIToken', APIToken );
+		}
 	}
 
 	/**
@@ -629,9 +629,9 @@ component accessors="true" implements="IEndpointInteractive" {
 	*/
 	public function getAPITokens() {
 		if( getNamePrefixes() == 'forgebox' ) {
-			return configService.getSetting( 'endpoints.forgebox.tokens', {} );	
+			return configService.getSetting( 'endpoints.forgebox.tokens', {} );
 		} else {
-			return configService.getSetting( 'endpoints.forgebox-#getNamePrefixes()#.tokens', {} );			
+			return configService.getSetting( 'endpoints.forgebox-#getNamePrefixes()#.tokens', {} );
 		}
 	}
 
@@ -641,10 +641,10 @@ component accessors="true" implements="IEndpointInteractive" {
 	public function storeAPIToken( required string username, required string APIToken ) {
 		if( getNamePrefixes() == 'forgebox' ) {
 			configService.setSetting( 'endpoints.forgebox.APIToken', APIToken );
-			configService.setSetting( 'endpoints.forgebox.tokens.#username#', APIToken );	
+			configService.setSetting( 'endpoints.forgebox.tokens.#username#', APIToken );
 		} else {
 			configService.setSetting( 'endpoints.forgebox-#getNamePrefixes()#.APIToken', APIToken );
-			configService.setSetting( 'endpoints.forgebox-#getNamePrefixes()#.tokens.#username#', APIToken );			
+			configService.setSetting( 'endpoints.forgebox-#getNamePrefixes()#.tokens.#username#', APIToken );
 		}
 	}
 

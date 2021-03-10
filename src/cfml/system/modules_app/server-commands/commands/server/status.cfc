@@ -11,7 +11,7 @@
  * server status serverName
  * {code}
  * .
- * Or specifiy the web root directory.  If name and directory are both specified, name takes precedence.
+ * Or specify the web root directory.  If name and directory are both specified, name takes precedence.
  *
  * {code:bash}
  * server status directory=C:\path\to\server
@@ -154,7 +154,7 @@ component aliases='status,server info' {
 				if( arguments.verbose ) {
 
 					print.indentedLine( 'ID: ' & thisServerInfo.id );
-					
+
 					print.line().indentedLine( 'Server Home: ' & thisServerInfo.serverHome );
 
 					var portToCheck = 'stop socket';
@@ -175,7 +175,7 @@ component aliases='status,server info' {
 					var bindException = '';
 					try {
 						var serverSocket = createObject( "java", "java.net.ServerSocket" )
-							.init( 
+							.init(
 								javaCast( "int", portToCheckValue ),
 								javaCast( "int", 1 ),
 								createObject( "java", "java.net.InetAddress" ).getByName( thisServerInfo.host ) );
@@ -183,13 +183,13 @@ component aliases='status,server info' {
 					} catch( any var e ) {
 						bindException = e;
 					}
-					
+
 					if( !isSimpleValue( bindException ) ) {
 						print.indentedLine( 'Port bind result for "running" check: #bindException.type# #bindException.message# #bindException.detail#');
 					} else {
 						print.indentedLine( 'Port bind result for "running" check: successly bound, port not in use.');
 					}
-					
+
 
 					print.line().indentedLine( 'Last Command: ' );
 					print.indentedLine( trim( thisServerInfo.statusInfo.command ) );

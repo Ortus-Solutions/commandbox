@@ -12,7 +12,7 @@
  * {code}
  * .
  * There are separate histories for commands, script REPL and tag REPL.
- * Use the "type" parameter to specifiy which history you want to view or clear.
+ * Use the "type" parameter to specify which history you want to view or clear.
  * .
  * {code:bash}
  * history type=command
@@ -50,7 +50,7 @@ component {
 			} else {
 				error( 'History type [#arguments.type#] is invalid.  Valid types are "command", "scriptREPL", and "tagREPL".' );
 			}
-	
+
 			// Clear the history?
 			if( arguments.clear ) {
 				shell.getReader().getHistory().purge();
@@ -63,9 +63,9 @@ component {
 				while( historyIterator.hasNext() ) {
 					print.line( listRest( historyIterator.next(), ':' ).trim() );
 				}
-	
+
 			} // end clear?
-			
+
 		// Whatever happens in Vegas, stays in Vegas
 		} finally {
 			shell.setHistory( commandHistoryFile );

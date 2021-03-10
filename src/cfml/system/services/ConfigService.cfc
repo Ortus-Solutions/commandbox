@@ -78,12 +78,14 @@ component accessors="true" singleton {
 			'JSON.ANSIColors.string',
 			// General
 			'verboseErrors',
-			'debugNativeExecution'
+			'debugNativeExecution',
+			// Task Runners
+			'taskCaching'
 		]);
 
 		setConfigFilePath( '/commandbox-home/CommandBox.json' );
 
-		// Create the config file if neccessary
+		// Create the config file if necessary
 		if( !fileExists( getConfigFilePath() ) ) {
 			fileWrite( getConfigFilePath(), '{}' );
 		}

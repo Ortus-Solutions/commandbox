@@ -31,7 +31,7 @@ component {
 		required String token,
 		required String replacement,
 		boolean verbose=false )  {
-				
+
 		path.apply( function( thisPath ) {
 
 			// It's a file
@@ -54,7 +54,7 @@ component {
 
 		} );
 	}
-	
+
 	private boolean function hasBOM( thispath ) {
 		try {
 			var thisFile = BOMInputStream.init( FileInputStream.init( thispath ), true );

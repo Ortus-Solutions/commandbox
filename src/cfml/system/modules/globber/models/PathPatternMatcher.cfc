@@ -35,13 +35,13 @@ component accessors="true" singleton {
 	/**
 	* Match a single path to a single pattern.  Returns true if the path matches the pattern, otherwise false.
 	* The "exact" param is because Globber has different use cases. For example, when used for things like ignore lists
-	* a pattern not preceded by a slash should match directories and files recursibley, any level deep.  But when used for a 
+	* a pattern not preceded by a slash should match directories and files recursibley, any level deep.  But when used for a
 	* directory listing, it's expected to use ** /pattern/ ** to match deep folder.
 	* A pattern like foo must also match the entire file or folder name, not a partial name unless explicitly passed as *foo, foo*, or *foo*
-	* 
+	*
 	* @pattern The pattern to match against the path
 	* @path The file system path to test.  Can be a file or directory.  Direcories MUST end with a trailing slash
-	* @exact True if the full path needs to match.  False to match inside a path.  
+	* @exact True if the full path needs to match.  False to match inside a path.
 	*/
 	boolean function matchPattern( required string pattern, required string path, boolean exact=false ) {
 		// Normalize slashes
@@ -105,10 +105,10 @@ component accessors="true" singleton {
 				regex &= '.*';
 			} else {
 				// Pattern can be at end of string or a slash and the anything (needs to match a whole segment)
-				regex &= '($|/.*)';	
+				regex &= '($|/.*)';
 			}
 		}
-		
+
 		return ( reFindNoCase( regex, arguments.path ) > 0 );
 	}
 
@@ -138,7 +138,7 @@ component accessors="true" singleton {
 	boolean function isExclusion( required string pattern ) {
 		return left( pattern, 1 ) == "!";
 	}
-	
+
 	/*
 	* Turns all slashes in a path to forward slashes except for \\ in a Windows UNC network share
 	*/
@@ -146,7 +146,7 @@ component accessors="true" singleton {
 		if( path.left( 2 ) == '\\' ) {
 			return '\\' & path.replace( '\', '/', 'all' ).right( -2 );
 		} else {
-			return path.replace( '\', '/', 'all' );			
+			return path.replace( '\', '/', 'all' );
 		}
 	}
 

@@ -1,5 +1,6 @@
 			it( "|action|", function(){
-				var event = execute( event="|event|", renderResults=true );
+                // Execute event or route via GET http method. Spice up accordingly
+				var event = get( "|event|" );
 				// expectations go here.
 				expect( false ).toBeTrue();
 			});

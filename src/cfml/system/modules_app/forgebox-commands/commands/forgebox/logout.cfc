@@ -14,7 +14,7 @@
 component {
 	property name="configService" inject="configService";
 	property name="endpointService" inject="endpointService";
-	
+
 	/**
 	* @username.hint Username for this user
 	* @endpointName  Name of custom forgebox endpoint to use
@@ -32,7 +32,7 @@ component {
 			.params( argumentCollection=arguments )
 			.run();
 	}
-	
+
 	function endpointNameComplete() {
 		return getInstance( 'endpointService' ).forgeboxEndpointNameComplete();
 	}

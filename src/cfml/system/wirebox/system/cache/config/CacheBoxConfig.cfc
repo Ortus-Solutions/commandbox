@@ -286,7 +286,7 @@ component accessors="true"{
 	}
 
 	/**
-	 * Get a specifed cache definition
+	 * Get a specified cache definition
 	 *
 	 * @name The cache name
 	 */

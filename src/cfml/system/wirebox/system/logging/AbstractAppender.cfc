@@ -92,7 +92,7 @@ component accessors="true"{
 	){
 		// Appender Unique ID */
 		variables._hash        = createObject( 'java', 'java.lang.System' ).identityHashCode( this );
-		// Flag denoting if the appender is inited or not. This will be set by LogBox upon succesful creation and registration.
+		// Flag denoting if the appender is inited or not. This will be set by LogBox upon successful creation and registration.
 		variables.initialized  = false;
 
 		// Appender's Name
@@ -361,7 +361,7 @@ component accessors="true"{
 				$log( "ERROR", "Error processing log listener: #e.message# #e.detail# #e.stacktrace#" );
 				// send to standard error out
 				variables.err( "Error with log listener thread for #getName()#: " & e.message & e.detail );
-				variables.err( e.stackTrace );	
+				variables.err( e.stackTrace );
 			}
 		} finally {
 			// End Advice

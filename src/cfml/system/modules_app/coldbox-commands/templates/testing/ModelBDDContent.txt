@@ -4,15 +4,15 @@
 * responsibility to update the model annotation instantiation path and init your model.
 */
 component extends="coldbox.system.testing.BaseModelTest" model="|modelPath|"{
-	
+
 	/*********************************** LIFE CYCLE Methods ***********************************/
 
 	function beforeAll(){
 		super.beforeAll();
-		
+
 		// setup the model
 		super.setup();
-		
+
 		// init the model object
 		model.init();
 	}
@@ -22,11 +22,11 @@ component extends="coldbox.system.testing.BaseModelTest" model="|modelPath|"{
 	}
 
 	/*********************************** BDD SUITES ***********************************/
-	
+
 	function run(){
 
 		describe( "|modelName| Suite", function(){
-			
+
 |TestCases|
 		});
 

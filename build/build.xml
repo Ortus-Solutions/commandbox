@@ -83,7 +83,7 @@ External Dependencies:
 		<delete dir="${temp.dir}" />
 		<delete dir="${build.dir}" />
 		<delete dir="${lib.dir}"/>
-		<delete dir="${lib-light.dir}"/>		
+		<delete dir="${lib-light.dir}"/>
 		<delete dir="${dist.dir}"/>
 
 		<!-- init dirs -->
@@ -146,7 +146,7 @@ External Dependencies:
 		<antcontrib:if>
 			<equals arg1="${build.type}" arg2="auto" />
 			<then>
-				<!-- Remove Unecessary build files from repo, so to not confuse -->
+				<!-- Remove Unnecessary build files from repo, so to not confuse -->
 				<delete>
 					<fileset file="${dist.dir}/box" />
 					<fileset file="${dist.dir}/box.exe" />
@@ -164,13 +164,13 @@ External Dependencies:
 		<!-- Copy libs to engine destination -->
 		<mkdir dir="${lucee.lib.dir}" />
 		<mkdir dir="${lucee-light.lib.dir}" />
-		
+
 		<copy todir="${lucee.lib.dir}">
 	      <fileset dir="${lib.dir}" includes="*.jar" />
 	    </copy>
-	    
+
    		<echo message="move core file" />
-	
+
 		<!-- Unzip the Lucee Light jar so we can pull out the core.lco file -->
  		<unzip src="${lucee.light.file}" dest="${temp.dir}/lucee-light-jar/" overwrite="true"/>
 	    <move todir="${temp.dir}">
@@ -178,28 +178,28 @@ External Dependencies:
 				<include name="core.lco" />
 			</fileset>
 		</move>
-		
+
 		<!-- unzip the core.lco file (really a jar) so we can modify the manifest to inject the extensions we need to load -->
- 		<unzip src="${temp.dir}/core.lco" dest="${temp.dir}/lucee-light-core/" overwrite="true"/> 		
+ 		<unzip src="${temp.dir}/core.lco" dest="${temp.dir}/lucee-light-core/" overwrite="true"/>
  		<manifest file="${temp.dir}/lucee-light-core/META-INF/MANIFEST.MF" mode="update">
 			<attribute name="Require-Extension" value="${cfml.extensions}"/>
 		</manifest>
-		
+
 		<!-- Re-zip core file] -->
 		<zip destfile="${temp.dir}/core.lco" update="true">
 	      <fileset dir="${temp.dir}/lucee-light-core/"/>
 	    </zip>
-	    	    
+
 		<!-- Rename core file so it will get loaded -->
 		<rename src="${temp.dir}/core.lco" dest="${temp.dir}/${cfml.version}.lco"/>
 
     	<delete file="${lucee.light.file}" />
-    		
+
 		<!-- re-zip the lucee-light.jar -->
 		<zip destfile="${lucee.light.file}" update="true">
 	      <fileset dir="${temp.dir}/lucee-light-jar/"/>
 	    </zip>
-	    
+
 		<copy todir="${lucee-light.lib.dir}">
 	      <fileset dir="${lib.dir}" includes="*.jar" excludes="*lucee-*.jar" />
 	      <fileset dir="${lib-light.dir}" includes="*.jar" />
@@ -383,8 +383,8 @@ External Dependencies:
 	          <fileset file="${temp.dir}/cli/luceecli.jar" />
 	          <fileset file="${temp.dir}/cli/ortus-jgit.jar" />
 	        </zip>
-	        
-	        
+
+
 	        <zip destfile="${temp.dir}/cli-light/libs.zip">
 	          <fileset dir="${lucee-light.lib.dir}">
 		          <include name="**/*.jar"/>
@@ -395,7 +395,7 @@ External Dependencies:
 	          <fileset file="${temp.dir}/cli/luceecli.jar" />
 	          <fileset file="${temp.dir}/cli/ortus-jgit.jar" />
 	        </zip>
-	        
+
 	    <!--   </else>
 	    </antcontrib:if> -->
 	    <delete file="${temp.dir}/cli/luceecli.jar" />
@@ -415,7 +415,7 @@ External Dependencies:
         	<zipfileset src="${lib.dir}/json-smart-mini-1.0.8.jar" includes="**/*.class" />
         	<fileset file="${temp.dir}/cli/version"/>
 		</jar>
-		
+
 		<!-- Create Lucee light jar -->
         <jar destfile="${dist.dir}/box-light.jar" filesetmanifest="mergewithoutmain" level="9">
 			<manifest>
@@ -428,7 +428,7 @@ External Dependencies:
         	<zipfileset src="${lib.dir}/json-smart-mini-1.0.8.jar" includes="**/*.class" />
         	<fileset file="${temp.dir}/cli/version"/>
 		</jar>
-		
+
 		<!-- Create thin jar -->
         <jar destfile="${dist.dir}/box-thin.jar" filesetmanifest="mergewithoutmain" level="9">
 			<manifest>
@@ -587,7 +587,7 @@ External Dependencies:
 
 		<git command="push" dir="${dist.dir}/homebrew-boxtap" />
 
-		<!-- Ensure perms allow us to delete since GIT is runing as sudo-er
+		<!-- Ensure perms allow us to delete since GIT is running as sudo-er
 		<exec executable="sudo" dir="${dist.dir}" failonerror="true">
 			<arg value="chmod" />
 			<arg value="-R" />
@@ -615,7 +615,7 @@ External Dependencies:
 		</exec>
 		<!-- Startup the apidocs server, wait for a few seconds for server to start -->
 		<exec executable="${dist.dir}/box" dir="${dir.apidocs}">
-			<arg line="${cmdboxhome.arg} server start openbrowser=false --force port=${apidocs.port} --noSaveSettings --debug" />
+			<arg line="${cmdboxhome.arg} server start openbrowser=false --force port=${apidocs.port} --noSaveSettings --debug --noTrayEnable" />
 		</exec>
 		<sleep seconds="5"/>
 
@@ -665,30 +665,30 @@ External Dependencies:
 
 	<!-- Build linux/mac bin -->
 	<target name="build.cli.bin" description="create linux/mac binary" depends="build.cli">
-		
+
 		<!--  this bundles the jar into the executable wrapper, which is a bash script -->
         <concat destfile="${dist.dir}/box" force="yes" binary="true">
           <fileset file="${src.dir}/bin/box.sh" />
           <fileset file="${dist.dir}/box.jar" />
         </concat>
-        
+
 		<!--  this bundles the thin jar into the executable wrapper, which is a bash script -->
         <concat destfile="${dist.dir}/box-thin" force="yes" binary="true">
           <fileset file="${src.dir}/bin/box.sh" />
           <fileset file="${dist.dir}/box-thin.jar" />
         </concat>
-        
+
 		<!--  this bundles the light jar into the executable wrapper, which is a bash script -->
         <concat destfile="${dist.dir}/box-light" force="yes" binary="true">
           <fileset file="${src.dir}/bin/box.sh" />
           <fileset file="${dist.dir}/box-light.jar" />
         </concat>
-        
+
         <!-- Change execute perm -->
         <chmod file="${dist.dir}/box" perm="755"/>
         <chmod file="${dist.dir}/box-light" perm="755"/>
         <chmod file="${dist.dir}/box-thin" perm="755"/>
-        
+
         <!-- Create distro zip -->
 		<zip destfile="${dist.dir}/${distro.name}-bin-${commandbox.version}.zip" level="9" update="false">
 	        <zipfileset file="${dist.dir}/box" filemode="711" prefix="" />
@@ -850,7 +850,7 @@ External Dependencies:
 	            <echo>Windows x32 JRE not found, downloading artifact</echo>
 
 				<mkdir dir="JREs/jre_${jre.version}_windows_x32"/>
-						  
+
 				<get src="https://api.adoptopenjdk.net/v3/binary/version/${jre.version.escaped}/windows/x32/jre/hotspot/normal/adoptopenjdk"
 					 dest="JREs/jre_${jre.version}_windows_x32.zip"
 					 verbose="true" />
@@ -1047,11 +1047,11 @@ External Dependencies:
 		<delete dir="${lib.dir}"/>
 		<delete dir="${extensions.dir}"/>
 		<mkdir dir="${extensions.dir}" />
-		
+
  		<mvn-repo id="jgit-repository" url="https://repo.eclipse.org/content/groups/releases/" />
 		<mvn-repo id="sonatype-repository" url="https://oss.sonatype.org/content/repositories/snapshots/" />
 		<mvn-repo id="maven-repository" url="https://repo1.maven.org/maven2/" />
-		
+
 
 		<dependency  groupId="org.jline" artifactId="jline" version="${jline.version}" dest="${lib.dir}" type="jar" unzip="false" repoId="maven-repository" />
 		<dependency  groupId="org.fusesource.jansi" artifactId="jansi" version="${jansi.version}" dest="${lib.dir}" type="jar" unzip="false" repoId="maven-repository" />
@@ -1086,11 +1086,11 @@ External Dependencies:
 			 dest="${lib-light.dir}/lucee-light-${lucee.version}.jar"
 			 verbose="true" />
 		<property name="lucee.light.file" value="${lib-light.dir}/lucee-light-${lucee.version}.jar"/>
-				 
+
 		<for list="${cfml.extensions}" param="id">
 		  <sequential>
 		    <echo>Downloading extension @{id}</echo>
-		    			 
+
 			<get src="http://extension.lucee.org/rest/extension/provider/full/@{id}"
 				 dest="${extensions.dir}/@{id}.lex"
 				 verbose="true" />

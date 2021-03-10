@@ -96,7 +96,7 @@ component accessors="true" {
 	}
 
 	/**
-	* 
+	*
 	*/
 	function getPatternArray() {
 		return variables.pattern;
@@ -138,7 +138,7 @@ component accessors="true" {
 	}
 
 	/**
-	* 
+	*
 	*/
 	function getExcludePatternArray() {
 		return variables.excludePattern;
@@ -172,7 +172,7 @@ component accessors="true" {
 	* Get count of matched files
 	*/
 	function count() {
-		return matches().len();
+		return getFormat() == 'query' ? matches().recordCount : matches().len();
 	}
 
 	/**
@@ -189,38 +189,34 @@ component accessors="true" {
 	*/
 	private function process() {
 		var patterns = getPatternArray();
-		
+
 		if( !patterns.len() ) {
 			throw( 'Cannot glob empty pattern.' );
 		}
-				
-		for( var thisPattern in patterns ) {			
-			var results = processPattern( thisPattern );
-			// First one in just gets set
-			if( isNull( getMatchQuery() ) ) {
-				setMatchQuery( results );
-			// merge remaining patterns
-			} else {
-				var previousMatch = getMatchQuery();
 
-				cfquery( dbtype="query" ,name="local.newMatchQuery" ) {
-					writeOutput( 'SELECT * FROM results UNION SELECT * FROM previousMatch ' );
-				}
-				
-				// UNION isn't removing dupes on Lucee so doing second select here for that purpose.
-				cfquery( dbtype="query" ,name="local.newMatchQuery" ) {
-					writeOutput( 'SELECT DISTINCT * FROM newMatchQuery ' );
-					if( len( getSort() ) ) {
-						writeOutput( 'ORDER BY #getCleanSort()#' );
-					}
-				}
-				
-				setMatchQuery( local.newMatchQuery );
-			}
+		for( var thisPattern in patterns ) {
+			processPattern( thisPattern );
 		}
 		
+		var matchQuery = getMatchQuery();
+		
+		if( isNull( matchQuery ) ) {
+			setMatchQuery( queryNew( 'name,size,type,dateLastModified,attributes,mode,directory' ) );
+		} else {
+			// UNION isn't removing dupes on Lucee so doing second select here for that purpose.
+			cfquery( dbtype="query" ,name="local.newMatchQuery" ) {
+				writeOutput( 'SELECT DISTINCT * FROM matchQuery ' );
+				if( len( getSort() ) ) {
+					writeOutput( 'ORDER BY #getCleanSort()#' );
+				}
+			}
+	
+			setMatchQuery( local.newMatchQuery );			
+		}
+
+
 		if( patterns.len() > 1 ) {
-			var dirs = queryColumnData( getMatchQuery(), 'directory' );						
+			var dirs = queryColumnData( getMatchQuery(), 'directory' );
 			var lookups = {};
 			dirs.each( function( dir ) {
 				// Account for *nix paths & Windows UNC network shares
@@ -241,13 +237,29 @@ component accessors="true" {
 			}
 			setBaseDir( findRoot( lookups ) );
 		}
-		
+
 	}
 	
-	private function processPattern( string pattern ) {
+	function appendMatchQuery( matchQuery ) {
+		// First one in just gets set
+		if( isNull( getMatchQuery() ) ) {
+			setMatchQuery( matchQuery );
+		// merge remaining patterns
+		} else {
+			var previousMatch = getMatchQuery();
 
-		local.thisPattern = pathPatternMatcher.normalizeSlashes( arguments.pattern );
+			cfquery( dbtype="query" ,name="local.newMatchQuery" ) {
+				writeOutput( 'SELECT * FROM matchQuery UNION SELECT * FROM previousMatch ' );
+			}
+
+			setMatchQuery( local.newMatchQuery );
+		}
+	}
+
+	private function processPattern( string pattern ) {
 		
+		local.thisPattern = pathPatternMatcher.normalizeSlashes( arguments.pattern );
+
 		// To optimize this as much as possible, we want to get a directory listing as deep as possible so we process a few files as we can.
 		// Find the deepest folder that doesn't have a wildcard in it.
 		var baseDir = '';
@@ -273,37 +285,68 @@ component accessors="true" {
 		if( !baseDir.len() ) {
 			baseDir = '/';
 		}
+		
+		var everythingAfterBaseDir = thisPattern.replace( baseDir, '' );
+		
+		// If we have a partial directory next such as modules* optimize here
+		if( everythingAfterBaseDir.listLen( '/' ) > 1 && everythingAfterBaseDir.listFirst( '/' ).reFind( '[^\*^\?]' ) && !everythingAfterBaseDir.listFirst( '/' ).startsWith( '**' ) ) {
+						
+			thisPattern = baseDir & '/' & everythingAfterBaseDir.listFirst( '/' ) & '/';
+			// Manually loop over the dirs at this level that match to narrow what we're looking at
+			directoryList (
+				listInfo='query',
+				recurse=false,
+				path=baseDir,
+				type='dir',
+				sort=getSort(),
+				filter=( path )=>{
+					var thisPath = path & '/';
+					if( pathPatternMatcher.matchPattern( thisPattern, thisPath, true ) ) {
+						return true;
+					}
+					return false;
+				}
+			).each( ( folder )=>processPattern( baseDir & '/' & folder.name & '/' & everythingAfterBaseDir.listRest( '/' ) ) )
+			
+			return;
+		}
 
 		var recurse = false;
 		if( thisPattern contains '**' ) {
 			recurse = true;
 		}
 
-		setBaseDir( baseDir & ( baseDir.endsWith( '/' ) ? '' : '/' ) );
-
-		return directoryList (
-				filter=function( path ){
-					var thisPath = path & ( directoryExists( path ) ? '/' : '' );
-					if( pathPatternMatcher.matchPattern( thisPattern, thisPath, true ) ) {
-						if( getExcludePatternArray().len() && pathPatternMatcher.matchPatterns( getExcludePatternArray(), thisPath, true ) ) {
-							return false;
-						}
-						return true;
-					}
-					return false;
-				},
+		var optimizeFilter = '';
+		if( reFind( '\.[a-zA-Z0-9\?\*]{2,4}$', thisPattern ) ) {
+			optimizeFilter = '*.' & thisPattern.listLast( '.' ).replace( '?', '*', 'all' );
+		}
+		
+		var dl = directoryList (
 				listInfo='query',
 				recurse=local.recurse,
 				path=baseDir,
-				sort=getSort()
-			);
+				sort=getSort(),
+				filter=optimizeFilter
+			).filter( ( path )=>{
+				var thisPath = path.directory & '/' & path.name & ( path.type == 'dir' ? '/' : '' );
+				if( pathPatternMatcher.matchPattern( thisPattern, thisPath, true ) ) {
+					if( getExcludePatternArray().len() && pathPatternMatcher.matchPatterns( getExcludePatternArray(), thisPath, true ) ) {
+						return false;
+					}
+					return true;
+				}
+				return false;
+			} );
 		
+		appendMatchQuery( dl );
+		setBaseDir( baseDir & ( baseDir.endsWith( '/' ) ? '' : '/' ) );
+
 	}
-	
+
 	/**
 	* The sort function in CFDirectory will simply ignore invalid sort columns so I'm mimicing that here, as much as I dislike it.
 	* The sort should be in the format of "col asc, col2 desc, col3, col4" like a SQL order by
-	* If any of the coluns or sort directions don't look right, just bail and return the default sort. 
+	* If any of the coluns or sort directions don't look right, just bail and return the default sort.
 	*/
 	function getCleanSort() {
 		// Loop over each sort item
@@ -316,7 +359,7 @@ component accessors="true" {
 			if( item.listLen( ' 	' ) == 2 && !listFindNoCase( 'asc,desc', trim( item.listLast( ' 	' ) ) ) ) {
 				return 'type, name';
 			}
-			// Ensure no more than 2 tokens 
+			// Ensure no more than 2 tokens
 			if( item.listLen( ' 	' ) > 2 ) {
 				return 'type, name';
 			}

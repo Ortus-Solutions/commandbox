@@ -136,14 +136,14 @@ component{
 		arguments.arg = replaceNoCase( arguments.arg, '\r', chr(13), 'all' );
 		arguments.arg = replaceNoCase( arguments.arg, '\f', chr(12), 'all' );
 		arguments.arg = replaceNoCase( arguments.arg, '\b', chr(8), 'all' );
-				
-		// A null keyword must be preceeded by a , [ : or start of string.  
+
+		// A null keyword must be preceded by a , [ : or start of string.
 		// TODO: This doesn't account for the word "null" inside a quoted string.  I'd need to actually parse the string to detect that.
 		arguments.arg = reReplaceNoCase( arguments.arg, '(,\s*)null', '\1nullValue()', 'all' );
 		arguments.arg = reReplaceNoCase( arguments.arg, '(\[\s*)null', '\1nullValue()', 'all' );
 		arguments.arg = reReplaceNoCase( arguments.arg, '(:\s*)null', '\1nullValue()', 'all' );
 		arguments.arg = reReplaceNoCase( arguments.arg, '^null', 'nullValue()', 'all' );
-		
+
 		// This doesn't work-- I'd need to do it in a loop and replace each one individually.  Meh...
 		// arguments.arg = reReplaceNoCase( arguments.arg, '\\u([0-9a-f]{4})', chr( inputBaseN( '\1', 16 ) ), 'all' );
 		arguments.arg = replaceNoCase( arguments.arg, '__double_backslash_', '\', 'all' );

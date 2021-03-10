@@ -29,10 +29,10 @@ component aliases="about" {
 		try {
 			var runwarClass = createObjecT( 'java', 'runwar.Server' );
 			runwarVersion = runwarClass.getVersion();
-			
+
 			var runwarJarPath = createObject( "java", "java.io.File" )
 				.init( runwarClass.getClass().getProtectionDomain().getCodeSource().getLocation().toURI().getSchemeSpecificPart() ).getAbsolutePath();
-				
+
 			runwarVersion &= ' (#runwarJarPath#)'
 		}catch( any e ) {}
 
@@ -80,7 +80,7 @@ component aliases="about" {
 			0
 		);
 		var padding = int( ( 100 - longestLine ) / 2 );
-		
+
 		print.line(
 			art.map( function( line ) {
 				return repeatString( ' ', padding ) & line;
@@ -99,7 +99,7 @@ component aliases="about" {
 	}
 
 	private function getArt() {
-		
+
 var images = ['
 
                             O         O
@@ -162,9 +162,9 @@ X              X              X              X              X
    t   t   t   t   t   t   t   t   t   t   t   t   t   t   t   t   t   t   t
    h  h  h  h  h  h  h  h  h  h  h  h  h  h  h  h  h  h  h  h  h  h  h  h  h
 
-','   
-   
-   X               X               X               X               X               
+','
+
+   X               X               X               X               X
 NCHgXng4<##\xfy@DNCHgXng4<##\xfy@DNCHgXng4<##\xfy@DNCHgXng4<##\xfy@DNCHgXng4<##\xfy@
 @cQguJ/-@"",{0%t@cQguJ/-@"",{0%t@cQguJ/-@"",{0%t@cQguJ/-@"",{0%t@cQguJ/-@"",{0%
 RM_.fqAMsHH(lgLXRM_.fqAMsHH(lgLXRM_.fqAMsHH(lgLXRM_.fqAMsHH(lgLXRM_.fqAMsHH(lgL
@@ -222,9 +222,9 @@ tth2$W-h.8N;5.''Ntth2$W-h.8N;5.''Ntth2$W-h.8N;5.''Ntth2$W-h.8N;5.''Ntth2$W-h.8N;
   JcPe^stE6gD1WXeJcPe^stE6gD1WXeJcPe^st6gD1WXeJcPe^st6gDD1WXeJcPe^st6gDD1WX
   ildea<''d!>m<S>gildea<''d!>m<S>gildea<''d!>mS>gildea<S''d!>mS>gildea<S''d!>mS>
   TQn##PA&{h9jKE6STQn##PA&{h9jKE6STQn##PA&{h9jKE6STQn##PA&{h9jKE6STQn##PA&{h9jKE
-  
+
   ','
-  
+
 ________________________________________________________________________
          /\       /\       /\       /\       /\       /\       /\       /
   \ 3D  /__\   3D/ _\     3D \_    / 3D__   /  \3D_  /  \  3D /  \   _3D
@@ -236,9 +236,9 @@ ________________________________________________________________________
    /   \\/_//   \ \/_/   \  \///  \   \/_/ \    //_/\    /\/_\    / \/\/
   / SIG \  /   SIG  /     SIG/     \ SIG    \  /SIG  \  /  SIG\  /    SIG
   _______\/_______\/_______\/_______\/_______\/_______\/_______\/_______\_
-  
+
 ','
-  
+
  |"""""""i"""""""""""""i"""""""""""""i"""""""""""""i"""""""""""""i"""""""|
  |""3D"""""X"""""3D"""""X"""""3D"""""X"""""3D"""""X"""""3D"""""X"""""3D""|
  |["""""""""]X["""""""""]X["""""""""]X["""""""""]X["""""""""]X["""""""""]|
@@ -258,7 +258,7 @@ b, ff ,d,  .-.  ,b, ff ,d,  .-.  ,b, ff,d, .-.   ,b,  ff,d, .-.   ,b,  ff,
 d"b  d"b  d''I''b  d"b  d"b  d''I''b  d"b d"b d''I''b   d"b  d"b d''I''b   d"b  d"
    ,D,   ,P 8 Y,    ,D,   ,P 8 Y,   ,D   ,P 8 Y,    ,D    ,P 8 Y,    ,D
   ,P P, "d'' 8 ''b"  ,P P, "d'' 8 ''b" ,P P,"d'' 8 ''b"  ,P P ,"d'' 8 ''b"  ,P P ,
- ,P   P,8gcg8gcg8 ,P   P,8gcg8gcg8,P   ,8gcg8gcg8, P   , 8gcg8gcg8, P   , 
+ ,P   P,8gcg8gcg8 ,P   P,8gcg8gcg8,P   ,8gcg8gcg8, P   , 8gcg8gcg8, P   ,
 ,8P"""8P,8P"""8P ,8P"""8P,8P"""8P,8P""8P,8P"""8P,8P"""8P, 8P"""8P,8P"""8P,
 d ,a8a, d /\ /\  d ,a8a, d /\ /\ d ,aa, d /\ /\ d ,a8a, d  /\ /\ d ,a8a, d
 8,P" "Y,8  ( )   8,P" "Y,8  ( )  8,P""Y,8  ( )  8,P" "Y,8   ( )  8,P" "Y,8
@@ -268,9 +268,9 @@ d ,a8a, d /\ /\  d ,a8a, d /\ /\ d ,aa, d /\ /\ d ,a8a, d  /\ /\ d ,a8a, d
 8.( o ).8Ya   aP 8.( o ).8Ya   aP8.(  ).8Ya   aP8.( o ).8 Ya   aP8.( o ).8
 8=-=-=-=8 "YaP"  8=-=-=-=8 "YaP" 8=-==-=8 "YaP" 8=-=-=-=8  "YaP" 8=-=-=-=8
 Y"""a"""Yaa,,,aa Y"""a"""Yaa,,,aaY""""""Yaa,,,aaY"""a"""Y aa,,,aaY"""a"""Y
- `bag,d''  ``""''''  `bag,d''  ``""'''' `bagd''  ``""'''' `b agd''   ``""'''' `b agd'' 
-  `YPY''   ,aaa,    `YPY''   ,aaa,   `YPY   ,aaa,    `YPY''   ,aaa,    `YPY''  
-  P "Y  Ya_).(_aY  P "Y  Ya_).(_aY  P"Y  Y_).(_ aY  P" Y  Y_).(_ aY  P" Y 
+ `bag,d''  ``""''''  `bag,d''  ``""'''' `bagd''  ``""'''' `b agd''   ``""'''' `b agd''
+  `YPY''   ,aaa,    `YPY''   ,aaa,   `YPY   ,aaa,    `YPY''   ,aaa,    `YPY''
+  P "Y  Ya_).(_aY  P "Y  Ya_).(_aY  P"Y  Y_).(_ aY  P" Y  Y_).(_ aY  P" Y
 "'' de `"Y_"" ""_P"'' de `"Y_"" ""_P"'' de`"Y_"" ""_P"''  de`"Y_"" ""_P"''  de`"
  swed @## sf;lks   swed @## sf;lks   swed @## sf;lks   swed @## sf;lks   swed @
 fkl*  mproot@mtuzfkl*  mproot@mtuzfkl*  mproot@mtuzfkl* mproot@mtu zfkl* mp
@@ -299,26 +299,26 @@ fkl*  mproot@mtuzfkl*  mproot@mtuzfkl*  mproot@mtuzfkl* mproot@mtu zfkl* mp
       :::    .''''   ::      :::    .''''   ::      :::    .''''   ::      :::
       :::  .:'' .  .''       :::  .:'' .  .''       :::  .:'' .  .''       :::
       ::: :::  ::::        ::: :::  ::::        ::: :::  ::::        ::: :
-      
+
 ','
-      
-    _( )          _( )         _( )          _( )        _( )   
-  _( )  )_      _( )  )_     _( )  )_      _( )  )_    _( )  )_ 
+
+    _( )          _( )         _( )          _( )        _( )
+  _( )  )_      _( )  )_     _( )  )_      _( )  )_    _( )  )_
  (____(___)    (____(___)   (____(___)    (____(___)  (____(___)
-                                                                
- 
-   /\          /\           /\          /\         /\        
-  /  \  /\    /  \  /\     /  \  /\    /  \  /\   /  \  /\   
- /    \/  \  /    \/  \   /    \/  \  /    \/  \ /    \/  \  
-           \/          \ /          \/          /          \/ 
-   ..        ..        ..         ..        ..         ..       
-"        "         "        "         "         "        "      
+
+
+   /\          /\           /\          /\         /\
+  /  \  /\    /  \  /\     /  \  /\    /  \  /\   /  \  /\
+ /    \/  \  /    \/  \   /    \/  \  /    \/  \ /    \/  \
+           \/          \ /          \/          /          \/
+   ..        ..        ..         ..        ..         ..
+"        "         "        "         "         "        "
     *       *        *       *        *       *       *       *
-  @     @      @     @      @      @     @      @     @     @   
- \|/   \|/    \|/   \|/    \|/    \|/   \|/    \|/   \|/   \|/  
- 
+  @     @      @     @      @      @     @      @     @     @
+ \|/   \|/    \|/   \|/    \|/    \|/   \|/    \|/   \|/   \|/
+
  ','
- 
+
       /^\           /^\           /^\           /^\           /^\
  ########################################################################################################################################
  ########################################################################################################################################
@@ -335,9 +335,9 @@ fkl*  mproot@mtuzfkl*  mproot@mtuzfkl*  mproot@mtuzfkl* mproot@mtu zfkl* mp
   \\\\\\\\    \\\\\\\\    \\\\\\\\    \\\\\\\\    \\\\\\\\    \\\\\\\\
    \\\\\\\\    \\\\\\\\    \\\\\\\\    \\\\\\\\    \\\\\\\\    \\\\\\\\
      \\\\\\      \\\\\\      \\\\\\      \\\\\\      \\\\\\      \\\\\\
-     
-','     
-     
+
+','
+
    YoY          YoY          YoY          YoY          YoY          YoY
 -=<{Koala}>=-=<{Koala}>=-=<{Koala}>=-=<{Koala}>=-=<{Koala}>=-=<{Koala}>=-
    | |  ___     | |   ___    | |    ___   | |     ___  | |      ___ | |
@@ -417,10 +417,10 @@ _______________________________________________________________________________
   \   ~    /~ /    \  ~     / ~ /    \    ~   /
     \  ~ / \/\  ~    \  ~ /  \/ \   ~  \   ~/
       \/       \  ~ /  \/         \  ~ / \/
-                 \/                 \/       
-                 
+                 \/                 \/
+
 ','
-                 
+
 Dr.           Dr.            Dr.            Dr.          Dr.            Dr.
  H O    *    W H O     *    W H O     *    W H O*    *  W H O  *    *  W H O
  *        *     *        *     *        *     *        *     *        *     *
@@ -433,9 +433,9 @@ Dr.           Dr.            Dr.            Dr.          Dr.            Dr.
  -----      *  -----       * -----*       *----- *       -----  *      -----
 Dr.    *       Dr.    *       Dr.    *      Dr.     *       Dr.    *       Dr.
  H O      *   W H O      *   W H O      *  W H O       *   W H O      *   W H O
- 
-',' 
- 
+
+','
+
 +------+       +------+       +------+       +------+       +------+
 |`.    |`.     |\     |\      |      |      /|     /|     .''|    .''|
 |  `+--+---+   | +----+-+     +------+     +-+----+ |   +---+--+''  |
@@ -484,9 +484,9 @@ Dr.    *       Dr.    *       Dr.    *      Dr.     *       Dr.    *       Dr.
  e  Tour | Le  Tour | Le  Tour | Le  Tour | Le  Tour | Le  Tour | Le  Tour
  ________|__________|__________|__________|__________|__________|_________
  ^~^~^~^~^~^~^~^~^~^~^~^~^~^~^~^~^~^~^~^~^~^~^~^~^~^~^~^~^~^~^~^~^~^~^~^~^
- 
+
  ','
- 
+
           /^\              /^\              /^\              /^\
       _  /   \        _   /   \       _    /   \      _     /   \     _
      / \_     \_     / \_/     \_    / \_ /     \_   / \_  /     \_  / \_
@@ -499,18 +499,18 @@ Dr.    *       Dr.    *       Dr.    *      Dr.     *       Dr.    *       Dr.
    XXxX __X      XXxX  __X     XXxX   __X    XXxX    __X   XXxX     __   XX
    XX            XX            XX            XX            XX            XX
  __XX      ______XX      ______XX      ______XX      ______XX      ______XX
- 
+
 ','
- 
- (  )            (  )           (  )            (  )           (  ) 
+
+ (  )            (  )           (  )            (  )           (  )
 (_,,_)          (_,,_)         (_,,_)          (_,,_)         (_,,_)
-  ||              ||             ||              ||             ||  
-      ____         ____          ____         ____          ____    
-   __/_o|_\_    __/_o|_\_     __/_o|_\_    __/_o|_\_     __/_o|_\_  
-  ''-o-----o-''  ''-o-----o-''   ''-o-----o-''  ''-o-----o-''   ''-o-----o-'' 
-  
+  ||              ||             ||              ||             ||
+      ____         ____          ____         ____          ____
+   __/_o|_\_    __/_o|_\_     __/_o|_\_    __/_o|_\_     __/_o|_\_
+  ''-o-----o-''  ''-o-----o-''   ''-o-----o-''  ''-o-----o-''   ''-o-----o-''
+
 ','
-  
+
 ___  .-~~''.      ___~~-_.-~~''.    ___~  ~~-.-~~''.  ___ -~  ~~-.-~~'' ___
 | ''''|`-...--'' ~'' | ''''|  `-...--''  | ''''|    `-...-- | ''''|      `-... | ''''|
 |'' ''| -''     '': _|'' ''| ..--''      |'' ''| _....--''   |'' ''| ___....--'' |'' ''|
@@ -529,9 +529,9 @@ ____  ______________  ______________  ______________  ______________  ___
 |''''|##| '' |''''''   ''|''|##| '''' |''''''   '' |##| '''''' |''''''    |##|''|'''''' |''''''   |##| ''|
 |'' |##|  ''| ''  '''' |''|##| '' ''| ''  ''''  |##|  '' ''| ''  '''' |##|''| '' ''| ''  '' |##| ''|
    |##|             |##|             |##|             |##|             |##|
-   
-','  
-   
+
+','
+
 According    to    the  According    to    the
 police      inspector,  police      inspector,
 Edward  John Billings,  Edward John  Billings,
@@ -552,7 +552,7 @@ stated that  the chaos  stated that  the chaos
 was   responsible  for  was  responsible   for
 at least  five suicide  at least  five suicide
 attempts   last   week  attempts   last   week
-alone.                  alone.                
+alone.                  alone.
 
 ','
 
@@ -586,11 +586,11 @@ ___|______|______|______|______|______|______|______|______|______|______|______
 
 ','
 
-Blue Skies  Blue Skies Blue Skies  Blue Skies  Blue Skies  Blue Skies  
+Blue Skies  Blue Skies Blue Skies  Blue Skies  Blue Skies  Blue Skies
 uds  /\  clouds  /\  clouds  /\  clouds /S\  clouds /S\ clouds e/S\ clou
 d  /(o)\ bird  /(o)\birdu  /(o)\birdu /(o)\ birdu /(o)\ birdu /(o)\ bird
- /Pyramid\   /Pyramid\   /Pyramid\  /Pyramid\i  /Pyramid\i  /Pyramid\i  
-\ Pharaon  A\ Pharaon  A\ Pharaon A\ Pharaon A\  Pharaon A\  Pharaon A\ 
+ /Pyramid\   /Pyramid\   /Pyramid\  /Pyramid\i  /Pyramid\i  /Pyramid\i
+\ Pharaon  A\ Pharaon  A\ Pharaon A\ Pharaon A\  Pharaon A\  Pharaon A\
 es\Magic0^Eyes\Magic0^Eyes\Magic^Eyes\Magic^Eyes\PMag^o^Eyes\PMag^o^Eyes
 King\M@/The King\M@/The King\M/The King\M/The King\aThe^e King\aThe^e Ki
 gypt /Of 0^Egypt /Of^h^Egypt/Of^h^Egypt/Of^h^EgyptOf^h^Eg gyptOf^h^Eg gy
@@ -604,33 +604,33 @@ _/`~-*\._/`~-*\._/`~-*\._/`~-*\._/`~-*\._/`~-*\._/`~-*\._/`~-*\._/`~-*\.
 
 ','
 
-I  (`\/`) I  (`\/`) I  (`\/`) I  (`\/`) I  (`\/`) I  (`\/`) 
+I  (`\/`) I  (`\/`) I  (`\/`) I  (`\/`) I  (`\/`) I  (`\/`)
 OVE \  / LOVE \  / LOVE \  / LOVE \  / LOVE \  / LOVE \  / L
 OU   \/  YOU   \/  YOU   \/  YOU   \/  YOU   \/  YOU   \/  Y
 /`)  I (`\/`)  I (`\/`  I (`\Y/`  I (`Y/`  I \(`Y/`  I \(`Y/
   / LOVE \  / LOVE\  / LOVE\  / `LVE\  / `LVE\  /Y `LVE\  /Y
- /  YO U   /  YOU   /  YOU   /  YOU   /  YOU   /  Y`OU   /  
+ /  YO U   /  YOU   /  YOU   /  YOU   /  YOU   /  Y`OU   /
  I (` \/`) I (`\/`) I (`\/`) I (`\/`) I(`\/`)  I(`\/ `)  I(`
 LOVE\   / LOVE\  / LOVE\  / LOVE\  / LOV\  /  LOV\  //  LOV\
-YOU   \/  YOU  \/  YOU  \/  YOU  \/  YOU \/   YOU \/    YOU 
-/`)  I (`\/`)  I(`\/`)  I(`\/`)  I(`\/`)  I(`\/`)  \I(`\/`) 
+YOU   \/  YOU  \/  YOU  \/  YOU  \/  YOU \/   YOU \/    YOU
+/`)  I (`\/`)  I(`\/`)  I(`\/`)  I(`\/`)  I(`\/`)  \I(`\/`)
  / LOVE\   / LOVE\  / LOVE\  / LOVE\  / LOVE\  / )LOVE\  / )
-    YOU \/    YOU \/   YOU \/   YOU \/   YOU \/    YOU \/   
-I  (`\/`) I  (`\/`) I (`\/`) I (`\/`) I (`\/` ) I (`\/` ) I 
+    YOU \/    YOU \/   YOU \/   YOU \/   YOU \/    YOU \/
+I  (`\/`) I  (`\/`) I (`\/`) I (`\/`) I (`\/` ) I (`\/` ) I
 OVE\   / LOVE\   / LOVE\  / LOVE\  / LOVE\ \ / LOVE\ \ / LOV
 OU  \/   YOU  \/   YOU  \/  YOU  \/  YOU E \/  YOU E \/  YOU
 /`)  I (`\/`)  I (`\/`)  I (\/`)  I (\/O`)  I (\/O`)  I (\/O
   / LOVE \  / LOVE \  / LOVE \ / LOVE( \ / LOVE( \ / LOVE( \
- /  YO U   /  YO U   /  YO U   / YO  U   / YO  U   / YO  U  
+ /  YO U   /  YO U   /  YO U   / YO  U   / YO  U   / YO  U
 I  (`\/`) I  (`\/`) I (`\/`)  I (`\/`) I  (`\/`) I  (`\/`) I
 OVE \  / LOVE \  / LOVE\  /  LOVE\  / LOVE \  / LOVE \  / LO
 OU   \/  YOU   \/  YOU  \/   YOU  \/  YOU   \/  YOU   \/  YO
-by 3Dimka by 3Dimka by 3Dimka by 3Dimka by 3Dimka by 3Dimka 
+by 3Dimka by 3Dimka by 3Dimka by 3Dimka by 3Dimka by 3Dimka
 
 ','
 
 _~*(:=$(+%_~*(:=$(+%_~*(:=$(+%_~*(:=$(+%_~*(:=$(+%
-$(+_~*:)= $(+_~*:)= $(+_~*:)= $(+_~*:)= $(+_~*:)= 
+$(+_~*:)= $(+_~*:)= $(+_~*:)= $(+_~*:)= $(+_~*:)=
 (*)~/^=$_ (*)~/^=$_ (*)/^=$_ (*)/^=$:_ (*)/^=$:_ (
 [smile] :)[smile] :)smile] :)smile] :)s(mile] :)s(
  O_o @LOL  O_o @LO  O_o @LO  O_o @LO  O_oi @LO  O_
@@ -643,7 +643,7 @@ _~*(:=$(+%_~*(:=(+%_ ~*(=(+%_ ~*(=(O+%_~*(=L(O+%_~
 $(+_~*:)= $(+_~*:= $(+*_~*:= $(+*_~*: $(+*(_~*: $(
 (*)~/^=$_ (*)~/^=$_(*)~/~^=$_(*)~/^=$_(*()~/^=$_(*
 [smile] :)[smile] :)smile] :)smile] :)s(mile] :)s(
- O_o @LOL  O_o @LOL  O_ @LOL  O_ @LO L  O_ @LO L  
+ O_o @LOL  O_o @LOL  O_ @LOL  O_ @LO L  O_ @LO L
 _~*(:=$(+%_~*(:=$(+%_~*(:=$(+%_~*(:=$(+%_~*(:=$(+%
 by 3Dimka by 3Dimka by 3Dimka by 3Dimkaby 3Dimka b
 _~*(:=$(+%_~*(:=$(+%_~*(:=$(+%_~*(:=$(+%_~*(:=$(+%
@@ -651,15 +651,15 @@ _~*(:=$(+%_~*(:=$(+%_~*(:=$(+%_~*(:=$(+%_~*(:=$(+%
 ','
 
 pyramid.A pyramid.A pyramid.A pyramid.A pyramid.A pyramid.A pyramid.A pyramid.
-ramid A PIramid A PIramid A PIramid A PIramid A PIramid A PIramid A PIramid A 
+ramid A PIramid A PIramid A PIramid A PIramid A PIramid A PIramid A PIramid A
 _~*/\=$(+)_~*/\=$(+)_~*/=$(+)_~*/=$(+)_~*/=$(+)_~*/=$(+)_~*/r=$(+)_~*/r=$(+)_~
 pyramid.A pyramid.A pyraid.A pyraid.A pyraid.A pyraid.A pyra/id.A pyra/id.A py
-ramid A PIramid A PIrami A PIami A PIami A PIami A PIam i A aPIam i A aPIam i 
+ramid A PIramid A PIrami A PIami A PIami A PIami A PIam i A aPIam i A aPIam i
 _~*/\=$(+)_~*/\=$(+)_~*/=$(+)~*/=$(+)~*/=$(+)~*/=$(+)~*m/=$( +)~*m/=$( +)~*m/=
 pyramid.A pyramid.A pyraid.A yraidA yraidA yraidA$ yrai*dA$ (yrai*dA$ (yrai*dA
 ramid A PIramid A PIrami A PIami APIami APIami APAIami iAPAI ami iAPAI ami iAP
 _~*/\=$(+)_~*/\=$(+)_~*/=$(+)~*/=$+)~*=$+)~*=i$+)P~*=i$ +)P~I*=i$ +)P~I*=i$ +)
-pyramid.A pyramid.A pyraid.A yraidA yridA yri=dA )yri=d$A )y~ri=d$A )y~ri=d$A 
+pyramid.A pyramid.A pyraid.A yraidA yridA yri=dA )yri=d$A )y~ri=d$A )y~ri=d$A
 ramid A PIramid A PIrami A PIami APIam APIam iAPI am iAdPI aym iAdPI aym iAdPI
 _~*/\=$(+)_~*/\=$(+)_~*/=$(+)~*/=$+)~*=$+)~*= $+)I~*= $A+)I~a*= $A+)I~a*= $A+)
 pyramid.A pyramid.A pyraid.A yraidA yraidA yraidA) yrai$dA) ~yrai$dA) ~yrai$dA
@@ -669,9 +669,9 @@ pyramid.A pyramid.A pyraid.A yraid.A yraid.A yraid.A yr*aid.(A yr*aid.(A yr*ai
 ramid A PIramid A PIrami A PIrami A PIrami A PIrami A PIrami. A PIrami. A PIra
 _~*/\=$(+)_~*/\=$(+)_~*/=$(+)_~*/=$(+)_~*/=$(+)_~*/=$(+)_~*/i=$(+)_~*/i=$(+)_~
 pyramid.A pyramid.A pyramid.A pyramid.A pyramid.A pyramid.A pyramid.A pyramid.
-ramid A PIramid A PIramid A PIramid A PIramid A PIramid A PIramid A PIramid A 
+ramid A PIramid A PIramid A PIramid A PIramid A PIramid A PIramid A PIramid A
 pyramid.A pyramid.A pyramid.A pyramid.A pyramid.A pyramid.A pyramid.A pyramid.
-by 3Dimka by 3Dimka by 3Dimka by 3Dimka by 3Dimka by 3Dimkaby 3Dimka by 3Dimka 
+by 3Dimka by 3Dimka by 3Dimka by 3Dimka by 3Dimka by 3Dimkaby 3Dimka by 3Dimka
 pyramid.A pyramid.A pyramid.A pyramid.A pyramid.A pyramid.A pyramid.A pyramid.
 
 ','
@@ -683,19 +683,19 @@ grandfather ma grandfather ma grandfather ma grandfather ma grandfather ma gra
 ef a handkerchief a handkerchief a handkerchief a handkerchief a handkerchief a
 essness a carelessness a carelessness a carelessness a carelessness a carelessn
 kater stop um skater stop um skate stop hum skate stop hum skate stop hum skate
-ear in wasting ear in wasting ear i wasting pear i wasting pear i wasting pear 
+ear in wasting ear in wasting ear i wasting pear i wasting pear i wasting pear
 p tablet your up tablet your up table your cup table your cup table your cup ta
 raise law time raise law time raise la time praise la time praise la time prais
 i uh not beard i uh not beard i uh not beard i uh not beard i uh not beard i u
 h get each tooth get each tooth get each tooth get each toot get peach toot get
 ger a one stranger a one stranger a one stranger a one strange a gone strange a
-top life alley top life alley top life alley top life alley to life valley to 
+top life alley top life alley top life alley top life alley to life valley to
 er do grasshopper do grasshopper do grasshopper do grasshopper do grasshopper d
 sgiving a thanksgiving a thanksgiving a thanksgiving a thanksgiving a thanksgiv
 erturn ah on overturn ah on overturn ah on overturn ah on overturn ah on overtu
-ook i noon do hook i noon do hook i noon do hook i noon do hook i noon do hook 
+ook i noon do hook i noon do hook i noon do hook i noon do hook i noon do hook
 ky cabinet whisky cabinet whisky cabinet whisky cabinet whisky cabinet whisky c
-i i a fourteen i i a fourteen i i a fourteen i i a fourteen i i a fourteen i i 
+i i a fourteen i i a fourteen i i a fourteen i i a fourteen i i a fourteen i i
 ed tin ow slipped tin ow slipped tin ow slipped tin ow slipped tin ow slipped t
 ow eve six window eve six window eve six window eve six window eve six window e
 my an campfire my an campfire my an campfire my an campfire my an campfire my a
@@ -703,7 +703,7 @@ my an campfire my an campfire my an campfire my an campfire my an campfire my a
 '];
 
 		return images[ min( day( now() ), 30 ) ];
-		
+
 	}
 
 }

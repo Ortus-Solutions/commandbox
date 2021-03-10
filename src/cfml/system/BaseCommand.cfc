@@ -38,7 +38,8 @@ component accessors="true" singleton {
 		variables.configService		= wirebox.getInstance( "ConfigService" );
 		variables.SystemSettings	= wirebox.getInstance( "SystemSettings" );
 		variables.job				= wirebox.getInstance( "interactiveJob" );
-		variables.thisThread		 = createObject( 'java', 'java.lang.Thread' ).currentThread();
+		variables.thisThread		= createObject( 'java', 'java.lang.Thread' ).currentThread();
+		variables.asyncManager		= wirebox.getAsyncManager();
 
 		variables.exitCode = 0;
 		return this;
@@ -47,6 +48,10 @@ component accessors="true" singleton {
 	// This method needs to be overridden by the concrete class.
 	function run() {
 		error( 'This command CFC has not implemented a run() method.' );
+	}
+
+	function async(){
+		return variables.asyncManager;
 	}
 
 	function getPrinter() {
@@ -204,7 +209,7 @@ component accessors="true" singleton {
 	}
 
 	/**
-	 * Use if if your command wants to give controlled feedback to the user without raising
+	 * Use if your command wants to give controlled feedback to the user without raising
 	 * an actual exception which comes with a messy stack trace.
 	 * Use clearPrintBuffer to wipe out any output accrued in the print buffer.
 	 *
@@ -320,7 +325,7 @@ component accessors="true" singleton {
 	*
 	* Note, loaded jars/classes cannot be unloaded and will remain in memory until the CLI exits.
 	* On Windows, the jar/class files will also be locked on the file system.  Directories are scanned
-	* recursively for for files and everything found will be loaded.
+	* recursively for files and everything found will be loaded.
 	*
 	* @paths List or array of absolute paths of a jar/class files or directories of them you would like loaded
 	*/

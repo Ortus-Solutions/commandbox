@@ -3,26 +3,26 @@
  * It will be your responsibility to fine tune this template, add validations, try/catch blocks, logging, etc.
  */
 component extends="coldbox.system.EventHandler"{
-	
+
 	// DI Virtual Entity Service
 	property name="ORMService" inject="entityService:|entity|";
-	
+
 	// HTTP Method Security
 	this.allowedMethods = {
-		index  = "GET", 
-		new    = "GET", 
-		edit   = "GET", 
-		delete = "POST,DELETE", 
+		index  = "GET",
+		new    = "GET",
+		edit   = "GET",
+		delete = "POST,DELETE",
 		save   = "POST,PUT"
 	};
-	
+
 	/**
 	 * Param incoming format, defaults to `html`
 	 */
 	function preHandler( event, rc, prc ){
 		event.paramValue( "format", "html" );
 	}
-		
+
 	/**
 	 * Listing
 	 */
@@ -31,17 +31,17 @@ component extends="coldbox.system.EventHandler"{
 		prc.|entityPlural| = ORMService.getAll();
 		// Multi-format rendering
 		event.renderData( data=prc.|entityPlural|, formats="xml,json,html,pdf" );
-	}	
-	
+	}
+
 	/**
 	 * New Form
 	 */
 	function new( event, rc, prc ){
 		// get new |entity|
 		prc.|entity| = ORMService.new();
-		
+
 		event.setView( "|entityPlural|/new" );
-	}	
+	}
 
 	/**
 	 * Edit Form
@@ -49,10 +49,10 @@ component extends="coldbox.system.EventHandler"{
 	function edit( event, rc, prc ){
 		// get persisted |entity|
 		prc.|entity| = ORMService.get( rc.|pk| );
-		
+
 		event.setView( "|entityPlural|/edit" );
-	}	
-	
+	}
+
 	/**
 	 * View |entity| mostly used for RESTful services only.
 	 */
@@ -70,17 +70,17 @@ component extends="coldbox.system.EventHandler"{
 	 */
 	function save( event, rc, prc ){
 		// get |entity| to persist or update and populate it with incoming form
-		prc.|entity| = populateModel( 
-			model                = ORMService.get( rc.|pk| ), 
-			exclude              = "|pk|", 
-			composeRelationships = true 
+		prc.|entity| = populateModel(
+			model                = ORMService.get( rc.|pk| ),
+			exclude              = "|pk|",
+			composeRelationships = true
 		);
-		
+
 		// Do your validations here
-		
+
 		// Save it
 		ORMService.save( prc.|entity| );
-		
+
 		// RESTful Handler
 		switch(rc.format){
 			// xml,json,jsont are by default.  Add your own or remove
@@ -96,7 +96,7 @@ component extends="coldbox.system.EventHandler"{
 				relocate( '|entityPlural|' );
 			}
 		}
-	}	
+	}
 
 	/**
 	 * Delete
@@ -104,7 +104,7 @@ component extends="coldbox.system.EventHandler"{
 	function delete( event, rc, prc ){
 		// Delete record by ID
 		var removed = ORMService.delete( ORMService.get( rc.|pk| ) );
-		
+
 		// RESTful Handler
 		switch( rc.format ){
 			// xml,json,jsont are by default.  Add your own or remove
@@ -121,6 +121,6 @@ component extends="coldbox.system.EventHandler"{
 				relocate( '|entityPlural|' );
 			}
 		}
-	}	
-	
+	}
+
 }

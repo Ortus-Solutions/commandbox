@@ -5,7 +5,7 @@
  * task create
  * {code}
  *
- * You can customize the name of the CFC and and name of the target
+ * You can customize the name of the CFC and name of the target
  *
  * {code}
  * task create build.cfc createZips
@@ -18,7 +18,7 @@ component {
 	* @target Method in Task CFC to create
 	* @directory The base directory to create your task in and creates the directory if it does not exist. Defaults to current dir.
 	* @open Open the task file once it's created
-	* @force Overwrite any existing file without asking	
+	* @force Overwrite any existing file without asking
 	*/
 	function run(
 		string name='task',
@@ -27,7 +27,7 @@ component {
 		boolean open=false,
 		boolean force=false
 		) {
-				
+
 		// This will make each directory canonical and absolute
 		arguments.directory 		= resolvePath( arguments.directory );
 

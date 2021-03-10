@@ -10,7 +10,7 @@
  * sonarQube.XMLOutputPath Absolute XML file path to write XML sunarQube file
  * browser.outputDir Absolute directory path to create html code coverage browser
  * pathToCapture Absolute path to root folder to capture coverage. Typically your web root
- * whitelist A comma-delimited list of file globbing paths relative to your pathToCapture of the ONLY files to match.  When emtpy, everything is matched by default
+ * whitelist A comma-delimited list of file globbing paths relative to your pathToCapture of the ONLY files to match.  When empty, everything is matched by default
  * blacklist A comma-delimited list of file globbing paths relative to your pathToCapture of files to ignore
  *
  */

@@ -295,7 +295,7 @@ component accessors="true" singleton {
 				// This is really just a workaround for the fact that command output isn't naturally piped to the console.
 				// Once that is fixed, commands will no longer need to know this.
 				systemsettings.setSystemSetting( 'box_currentCommandPiped', true );
-			// Override this if neccessary, but don't set it just for the fun of it
+			// Override this if necessary, but don't set it just for the fun of it
 			} else if( systemsettings.getSystemSetting( 'box_currentCommandPiped', false ) ) {
 				systemsettings.setSystemSetting( 'box_currentCommandPiped', false );
 			}
@@ -367,7 +367,7 @@ component accessors="true" singleton {
 				}
 				// This is a little hacky,  but basically if there are more commands in the chain that need to run,
 				// just print an exception and move on.  Otherwise, throw so we can unwrap the call stack all the way
-				// back up.  That is neccessary for command expressions that fail like "echo `cat noExists.txt`"
+				// back up.  That is necessary for command expressions that fail like "echo `cat noExists.txt`"
 				// since in that case I don't want to execute the "echo" command since the "cat" failed.
 				if( arrayLen( commandChain ) > i && listFindNoCase( '||,;', commandChain[ i+1 ].originalLine ) ) {
 					// These are "expected" exceptions like validation errors that can be "pretty"
@@ -507,7 +507,7 @@ component accessors="true" singleton {
 					defaultValue = settingName.listRest( ':' );
 					settingName = settingName.listFirst( ':' );
 				}
-				
+
 				var result = systemSettings.getSystemSetting( settingName, defaultValue, parameterInfo.namedParameters );
 
 				// And stick their results in their place
@@ -555,7 +555,7 @@ component accessors="true" singleton {
 	}
 
 	/**
-	 * Figure out what command to run based on the the user input string
+	 * Figure out what command to run based on the user input string
 	 * @line.hint A string containing the command and parameters that the user entered
  	 **/
 	function resolveCommand( required string line, boolean forCompletion=false ){
@@ -650,11 +650,11 @@ component accessors="true" singleton {
 				 		// Because we don't know where in the rawLine our current place in the command chain starts
 				 		// To fix it though I'd need to substantially change how tokenizing works
 				 		rawLine.reReplaceNoCase( '^(.*?)?[\s]*(run |!)[\s]*(#tokens2#.*)', '\3' )
-				 	];	
+				 	];
 				} else {
 				 	tokens = [
 				 		'run',
-				 		// As a fall back, if we receive the input from the commandine as a single string AND the quotes 
+				 		// As a fall back, if we receive the input from the commandine as a single string AND the quotes
 				 		// don't follow what CommandBox's parser expects, we can't use the tokens array so we make the assumption
 				 		// That the run command was the only command in the raw line.
 				 		rawLine.reReplaceNoCase( '^[\s]*(run |!)[\s]*', '' )
@@ -697,7 +697,7 @@ component accessors="true" singleton {
 					break;
 				}
 
-				// If this is for command tab completion, don't select the command if there are two commands at the same level that start wtih this string
+				// If this is for command tab completion, don't select the command if there are two commands at the same level that start with this string
 				// This check only runs if we've matched all the entered tokens and there is no trailing space.
 				if( forCompletion && pos == tokens.len() ) {
 					if( results.commandReference
@@ -721,7 +721,7 @@ component accessors="true" singleton {
 					// Actual command data stored in a nested struct
 					results.commandReference = results.commandReference[ '$' ];
 
-					// Create the command CFC instance if neccessary
+					// Create the command CFC instance if necessary
 					lazyLoadCommandCFC( results.commandReference );
 
 					break;
@@ -753,7 +753,7 @@ component accessors="true" singleton {
 			if( tokens.len() >= 1 && tokens[1] == '|' ) {
 				receivingPiped = true;
 			}
-			
+
 		} // end loop over commands to resolve
 
 		// Return command chain
@@ -838,7 +838,7 @@ component accessors="true" singleton {
 		}
 		return expandedCommandsToResolve;
 	}
-	
+
 
 	/**
 	 * Replaces aliases in the raw line
@@ -867,12 +867,12 @@ component accessors="true" singleton {
 	}
 
 	/**
-	 * Takes a struct of command data and lazy loads the actual CFC isntance if neccessary
+	 * Takes a struct of command data and lazy loads the actual CFC isntance if necessary
 	 * @commandData.hint Struct created by registerCommand()
  	 **/
 	private function lazyLoadCommandCFC( commandData ){
 
-		// Check for actual CFC instance, and lazy load if neccessary
+		// Check for actual CFC instance, and lazy load if necessary
 		if( !structKeyExists( commandData, 'CFC' ) ){
 			// Create this command CFC
 			try {

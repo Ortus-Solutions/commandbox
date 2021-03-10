@@ -26,7 +26,7 @@ component {
 			if( fileExists( propertyFilePath ) ){
 				var pf = propertyFile( propertyFilePath );
 			} else {
-				var pf = propertyFile();				
+				var pf = propertyFile();
 			}
 			pf
 				.set( propertyName, propertyValue )

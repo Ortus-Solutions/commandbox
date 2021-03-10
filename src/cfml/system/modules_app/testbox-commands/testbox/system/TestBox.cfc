@@ -626,7 +626,7 @@ component accessors="true" {
 
 		// Mix in the virtual methods
 		for ( var key in baseObject ) {
-			// If target has overriden method, then don't override it with mixin, simulated inheritance
+			// If target has overridden method, then don't override it with mixin, simulated inheritance
 			if ( NOT structKeyExists( bundle, key ) AND NOT listFindNoCase( excludedProperties, key ) ) {
 				bundle.injectMixin( key, baseObject[ key ] );
 			}

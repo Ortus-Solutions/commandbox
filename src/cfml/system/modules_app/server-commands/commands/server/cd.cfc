@@ -30,7 +30,7 @@ component {
 		runCommand( cdCommand );
 
 	}
-	
+
 	function serverNameComplete() {
 		return serverService
 			.getServerNames()

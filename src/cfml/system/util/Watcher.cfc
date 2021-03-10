@@ -26,6 +26,7 @@ component accessors=true {
 	property name='shell'				inject='shell';
 	property name='print'				inject='PrintBuffer';
 	property name='pathPatternMatcher'	inject='provider:pathPatternMatcher@globber';
+	property name='globber'				inject='provider:globber@globber';
 	property name='fileSystemUtil'		inject='FileSystem';
 	property name='fileSeparator'		inject='fileSeparator@constants';
 
@@ -75,7 +76,7 @@ component accessors=true {
 	}
 
 	/**
-	* Pass in a UDF refernce to be executed when the watcher senses a chnage on the file system
+	* Pass in a UDF reference to be executed when the watcher senses a chnage on the file system
 	*/
 	public function onChange( changeUDF ) {
 		setChangeUDF( arguments.changeUDF );
@@ -102,6 +103,7 @@ component accessors=true {
 		try {
 			var threadName = 'watcher#createUUID()#';
 			thread action="run" name="#threadname#" priority="HIGH"{
+				var lastRun = getTickCount();
 				try{
 					// Run until we exit out of the watcher
 					while( getWatcherRun() ){
@@ -113,12 +115,13 @@ component accessors=true {
 							thisChangeUDF( getChangeData() );
 
 							// In case the change UDF modified the file system,
-							// reset our hashes so we don't end up with endless firing 
+							// reset our hashes so we don't end up with endless firing
 							setChangeHash( calculateHashes() );
 
 						} else {
 							// Sleep and test again.
-							sleep( getDelayMS() );
+							sleep( max( getDelayMS()-(getTickCount()-lastRun), 100 ) );
+							lastRun = getTickCount();
 						}
 					}
 				// Handle "expected" exceptions from commands
@@ -153,13 +156,13 @@ component accessors=true {
 			} // end thread
 
 			while( true ){
-				
+
 				// Need to start reading the input stream or we can't detect Ctrl-C on Windows
 				var terminal = shell.getReader().getTerminal();
 				if( terminal.paused() ) {
 						terminal.resume();
 				}
-				
+
 				// Detect user pressing Ctrl-C
 				// Any other characters captured will be ignored
 				var line = shell.getReader().readLine();
@@ -223,29 +226,25 @@ component accessors=true {
 		var globPatterns = getPathsToWatch();
 		var thisBaseDir =  fileSystemUtil.resolvePath( getBaseDirectory() );
 
-		var fileListing = directoryList(
-			thisBaseDir,
-			true,
-			"query",
-			function( path ) {
-				// This will normalize the slashes to match
-				arguments.path = fileSystemUtil.resolvePath( arguments.path );
+		var fileListing = globber
+			.setPattern( globPatterns.map( ( p )=>{
+				if( p.startsWith( '/' ) || p.startsWith( '\' ) ) {
+					return fileSystemUtil.resolvePath( p.right( -1 ), thisBaseDir )	
+				} else {
+					return fileSystemUtil.resolvePath( '**' & p, thisBaseDir )					
+				}
+			} ) )
+			.withSort( "DateLastModified desc" )
+			.asQuery()
+			.matches();
 
-				// cleanup path so we just get what's inside the base dir
-				var thisPath = replacenocase( arguments.path, thisBaseDir, "" );
+		var fileIndex = {};
+		for(file in fileListing){
+			var thisPath = replacenocase( file.directory & fileSeparator & file.name, thisBaseDir, "" );
+			fileIndex[thisPath] = file.DATELASTMODIFIED;
+		}
 
-				// Does this path match one of our glob patterns
-				return pathPatternMatcher.matchPatterns( globPatterns, thisPath );
-			},
-			"DateLastModified desc" );
-
-			var fileIndex = {};
-			for(file in fileListing){
-				var thisPath = replacenocase( file.directory & fileSeparator & file.name, thisBaseDir, "" );
-				fileIndex[thisPath] = file.DATELASTMODIFIED;
-			}
-
-			setFileIndex( fileIndex );
+		setFileIndex( fileIndex );
 
 		var directoryHash = hash( serializeJSON( fileListing ) );
 

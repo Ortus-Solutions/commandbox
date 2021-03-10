@@ -1,6 +1,6 @@
 /**
  * Updates all of the packages in your project that have new versions available.  Run this command from the root of the package.
- * Package installed from HTTP(S) and Git endpoints will always be udpated.
+ * Package installed from HTTP(S) and Git endpoints will always be updated.
  * .
  * {code:bash}
  * update

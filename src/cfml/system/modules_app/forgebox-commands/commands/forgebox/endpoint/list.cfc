@@ -7,7 +7,7 @@
  **/
 component {
 	property name="configService" inject="configService";
-	
+
 	/**
 	**/
 	function run(){
@@ -16,17 +16,17 @@ component {
 
 		var defaultForgeBoxEndpoint = configService.getSetting( 'endpoints.defaultForgeBoxEndpoint', 'forgebox' );
 		var endpoints = duplicate( configService.getSetting( 'endpoints', {} ) );
-		
+
 		// Ensure the default ForgeBox endpoint is present
 		endpoints[ 'forgebox' ] = endpoints.forgebox ?: {};
 		endpoints.forgebox.APIURL = endpoints.forgebox.APIURL ?: 'https://www.forgebox.io/api/v1/';
-			
+
 		endpoints
 			.filter( function( endpointName ) {
 				return (endpointName.lcase().startsWith( 'forgebox-' ) || endpointName == 'forgebox' );
 			} )
 			.each( function( endpointName, endpointData ) {
-				endpointName = endpointName.replaceNoCase( 'forgebox-', '' ); 
+				endpointName = endpointName.replaceNoCase( 'forgebox-', '' );
 				if( isStruct( endpointData ) ) {
 					print.boldCyan( 'Endpoint: #endpointName#' );
 					if( defaultForgeBoxEndpoint == endpointName ) {
@@ -35,7 +35,7 @@ component {
 						print.line();
 					}
 					print.indentedLine( 'API URL: #( endpointData.APIURL ?: '' )#' );
-					
+
 					var APIToken = endpointData.APIToken ?: '';
 					var tokens = endpointData.tokens ?: {};
 					if( APIToken.len() ) {
@@ -45,11 +45,11 @@ component {
 							}
 						} );
 					}
-						
+
 					print.line();
 				}
 			} );
-			
+
 	}
 
 }

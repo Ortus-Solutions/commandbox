@@ -21,7 +21,7 @@ component singleton {
 	}
 
 	/**
-	* Call me to update the screen.  
+	* Call me to update the screen.
 	*/
 	public function update(
 		required numeric percent,
@@ -41,20 +41,20 @@ component singleton {
 			var display = createObject( 'java', 'org.jline.utils.Display' ).init( terminal, false );
 			display.resize( terminal.getHeight(), terminal.getWidth() );
 			var progressRendered = '';
-		
+
 			var lines = [];
 			// If there is a currently running job, include its output first so we don't overwrite each other
 			if( job.getActive() ) {
 				lines = job.getLines();
 			}
 
-			// Total space availble to progress bar.  Subtract 5 for good measure since it will wrap if you get too close
+			// Total space available to progress bar.  Subtract 5 for good measure since it will wrap if you get too close
 			var totalWidth = shell.getTermWidth()-5;
 
 			if( totalCount > 0 ) {
-				var progressBarTemplate = '|@@@% |=>| $$$$$$$ / ^^^^^^^ |';			
+				var progressBarTemplate = '|@@@% |=>| $$$$$$$ / ^^^^^^^ |';
 			} else {
-				var progressBarTemplate = '|@@@% |=> |';			
+				var progressBarTemplate = '|@@@% |=> |';
 			}
 			// Dynamically assign the remaining width to the moving progress bar
 			var nonProgressChars = len( progressBarTemplate ) - 1;
@@ -74,9 +74,9 @@ component singleton {
 
 			if( totalCount > 0 ) {
 				progressRendered = replace( progressRendered, '^^^^^^^', print.deepSkyBlue1( numberFormat( arguments.totalCount, '_______' ) ) );
-				progressRendered = replace( progressRendered, '$$$$$$$', print.deepSkyBlue1( numberFormat( arguments.currentCount, '_______' ) ) );			
+				progressRendered = replace( progressRendered, '$$$$$$$', print.deepSkyBlue1( numberFormat( arguments.currentCount, '_______' ) ) );
 			}
-			
+
 			lines.append( [
 					attr.fromAnsi( print.Grey66( repeatString( '=', totalWidth ) ) ),
 					attr.fromAnsi( progressRendered ),
@@ -92,7 +92,7 @@ component singleton {
 			);
 
 		}
-		
+
 		// If we're done, add a line break
 		if( arguments.percent == 100 ) {
 			clear();

@@ -62,7 +62,7 @@ component implements="wirebox.system.ioc.dsl.IDSLBuilder" accessors=true{
 				switch(thisLocationType){
 					case "moduleconfig"		: {
 						var moduleConfig = getInjector().getInstance( 'ModuleService' ).getModuleData();
-						// Check for module existance
+						// Check for module existence
 						if( structKeyExists(moduleConfig, thisLocationKey ) ){
 							return moduleConfig[ thisLocationKey ];
 						} else {
@@ -74,7 +74,7 @@ component implements="wirebox.system.ioc.dsl.IDSLBuilder" accessors=true{
 					}
 					case "modulesettings"		: {
 						var moduleConfig = getInjector().getInstance( 'ModuleService' ).getModuleData();
-						// Check for module existance
+						// Check for module existence
 						if( structKeyExists(moduleConfig, thisLocationKey ) ){
 							return moduleConfig[ thisLocationKey ].settings;
 						} else {
@@ -82,28 +82,28 @@ component implements="wirebox.system.ioc.dsl.IDSLBuilder" accessors=true{
 						}
 					}
 					case "setting" : case "ConfigSettings"	: {
-						
+
 						// Getting setting from module
 						if( thisLocationKey contains '@' ) {
-							
+
 							thisLocationToken  = listFirst( thisLocationKey, '@' );
 							thisLocationKey  = listRest( thisLocationKey, '@' );
-							
+
 							return getModuleSetting( definition,  thisLocationKey, thisLocationToken );
-							
+
 						} else {
-							
+
 							var configService = getInjector().getInstance( 'ConfigService' );
 							var configSettings = configService.getConfigSettings();
-	
-							// Check for setting existance
+
+							// Check for setting existence
 							if( configService.settingExists( thisLocationKey ) ){
 								return configService.getSetting( thisLocationKey );
-							} else {								
+							} else {
 								throw( message="CommandBox DSL cannot find dependency using definition: #arguments.definition.toString()#", detail="The config setting requested: #thisLocationKey# does not exist in the loaded settings. Loaded settings are #structKeyList(configSettings)#" );
 							}
 						}
-						
+
 					}
 				}
 				break;
@@ -122,16 +122,16 @@ component implements="wirebox.system.ioc.dsl.IDSLBuilder" accessors=true{
 			}
 		}
 
-		throw( message="CommandBox DSL cannot find dependency using definition: #arguments.definition.toString()#", detail="Unkonwn DSL" );
+		throw( message="CommandBox DSL cannot find dependency using definition: #arguments.definition.toString()#", detail="Unknown DSL" );
 
 	}
 
 	function getModuleSetting( definition, thisLocationKey, thisLocationToken ) {
-							
+
 		var moduleConfig = getInjector().getInstance( 'ModuleService' ).getModuleData();
-		// Check for module existance
+		// Check for module existence
 		if( structKeyExists(moduleConfig, thisLocationKey ) ){
-			// Check for setting existance
+			// Check for setting existence
 			if( structKeyExists( moduleConfig[ thisLocationKey ].settings, thisLocationToken ) ) {
 				return moduleConfig[ thisLocationKey ].settings[ thisLocationToken ];
 			} else {
@@ -140,7 +140,7 @@ component implements="wirebox.system.ioc.dsl.IDSLBuilder" accessors=true{
 		} else {
 			throw( message="CommandBox DSL cannot find dependency using definition: #arguments.definition.toString()#", detail="The module requested: #thisLocationKey# does not exist in the loaded modules. Loaded modules are #structKeyList(moduleConfig)#" );
 		}
-		
+
 	}
 
 

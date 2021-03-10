@@ -97,7 +97,7 @@ component accessors="true"{
 		variables.aspect                 = false;
 		// aspectAutoBinding
 		variables.aspectAutoBinding      = true;
-		// Virtual Inhertiance
+		// Virtual Inheritance
 		variables.virtualInheritance     = "";
 		// Extra Attributes
 		variables.extraAttributes        = {};
@@ -297,9 +297,9 @@ component accessors="true"{
 		}
 
 		// Register new constructor argument.
-		var defintion = getNewDIDefinition();
-		structAppend( defintion, arguments, true );
-		arrayAppend( variables.DIConstructorArguments, defintion );
+		var definition = getNewDIDefinition();
+		structAppend( definition, arguments, true );
+		arrayAppend( variables.DIConstructorArguments, definition );
 
 		return this;
 	}
@@ -335,9 +335,9 @@ component accessors="true"{
 		}
 
 		// Register new constructor argument.
-		var defintion = getNewDIDefinition();
-		structAppend( defintion, arguments, true );
-		arrayAppend( variables.DIMethodArguments, defintion );
+		var definition = getNewDIDefinition();
+		structAppend( definition, arguments, true );
+		arrayAppend( variables.DIMethodArguments, definition );
 
 		return this;
 	}
@@ -520,9 +520,9 @@ component accessors="true"{
 			if ( structKeyExists( arguments, "metadata" ) ) {
 				md = arguments.metadata;
 			} else {
-				
+
 				var produceMetadataUDF = function() { return injector.getUtil().getInheritedMetaData(variables.path, binder.getStopRecursions()); };
-				
+
 				// Are we caching metadata? or just using it
 				if ( len( arguments.binder.getMetadataCache() ) ) {
 					// Get from cache or produce on demand
@@ -610,7 +610,7 @@ component accessors="true"{
 				}
 			}
 
-			// eagerInit annotation only if not overriden
+			// eagerInit annotation only if not overridden
 			if ( NOT len( variables.eagerInit ) ) {
 				if ( structKeyExists( md, "eagerInit" ) ) {
 					variables.eagerInit = true;
@@ -634,14 +634,14 @@ component accessors="true"{
 				}
 			}
 
-			// mixins annotation only if not overriden
+			// mixins annotation only if not overridden
 			if ( NOT arrayLen( variables.mixins ) ) {
 				if ( structKeyExists( md, "mixins" ) ) {
 					variables.mixins = listToArray( md.mixins );
 				}
 			}
 
-			// autowire only if not overriden
+			// autowire only if not overridden
 			if ( NOT len( variables.autowire ) ) {
 				// Check if autowire annotation found or autowire already set
 				if ( structKeyExists( md, "autowire" ) and isBoolean( md.autowire ) ) {

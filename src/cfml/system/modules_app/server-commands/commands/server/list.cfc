@@ -64,7 +64,7 @@ component {
 		boolean starting = false,
 		boolean unknown = false,
 		boolean verbose = false,
-		boolean local = false 
+		boolean local = false
 	){
 		var statusList = [];
 		if( arguments.running ) { statusList 	= statusList.append( 'running' ); }
@@ -87,15 +87,15 @@ component {
 		servers = servers
 			// filter out what we don't need
 			.filter( ( serverName, thisServerInfo ) => {
-				return ( 
+				return (
 					// Name check?
-					( !len( name ) || matchesName( thisServerInfo.name, name ) ) && 
+					( !len( name ) || matchesName( thisServerInfo.name, name ) ) &&
 					// Local or OS Wide (default)
 					( !localOnly || getCanonicalPath( getCWD() ) == getCanonicalPath( thisServerInfo.webroot ) )
 				);
 			}, true )
 			// Process status + Null Checks, to guarantee correct struct correctness, do this async
-			.map( ( serverName, thisServerInfo ) => { 
+			.map( ( serverName, thisServerInfo ) => {
 				thisServerInfo.append( serverService.newServerInfoStruct(), false );
 				thisServerInfo.status = getServerStatus( thisServerInfo );
 				return thisServerInfo;
@@ -103,7 +103,7 @@ component {
 			// Filter out by status now if needed now.
 			.filter( ( serverName, thisServerInfo ) => {
 				return ( !statusList.len() || statusList.findNoCase( thisServerInfo.status ) )
-			} ) 
+			} )
 			// Process output
 			.each( ( serverName, thisServerInfo ) => {
 				// Print out Header
@@ -140,8 +140,8 @@ component {
 
 	/**
 	 * Print basic server info to the print stream
-	 * 
-	 * @serverInfo The server info struct 
+	 *
+	 * @serverInfo The server info struct
 	 */
 	function printServerInfo( required serverInfo ){
 		// Brief version
@@ -166,8 +166,8 @@ component {
 
 	/**
 	 * Print verbose server info to the print stream
-	 * 
-	 * @serverInfo The server info struct 
+	 *
+	 * @serverInfo The server info struct
 	 */
 	function printVerboseServerInfo( required serverInfo ){
 		print.indentedLine( "host:             " & serverInfo.host );
@@ -223,7 +223,7 @@ component {
 			return findNoCase( arguments.searchTerm, arguments.name );
 		}
 	}
-	
+
 	function serverNameComplete() {
 		return serverService
 			.getServerNames()

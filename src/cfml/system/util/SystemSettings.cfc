@@ -15,7 +15,7 @@ component singleton {
 	variables.system = createObject( "java", "java.lang.System" );
 	// Default environment for the shell
 	variables.environment = {};
-	
+
 	/**
 	* Retrieve a Java System property or env value by name.
 	*
@@ -43,7 +43,7 @@ component singleton {
 				return call.environment[ key ];
 			}
 		}
-		
+
 		// See if the default shell env has it
 		if ( variables.environment.keyExists( key ) ) {
 			return variables.environment[ key ];
@@ -171,7 +171,7 @@ component singleton {
 				defaultValue = settingName.listRest( ':' );
 				settingName = settingName.listFirst( ':' );
 			}
-						
+
 			var result = getSystemSetting( settingName, defaultValue, context );
 
 			// And stick their results in their place
@@ -216,7 +216,7 @@ component singleton {
 		// Other complex variables like XML or CFC instance would just get skipped for now.
 		return dataStructure;
 	}
-	
+
 
 	/**
 	* Take a struct of data and set system settings for each deep key
@@ -224,7 +224,7 @@ component singleton {
 	* @dataStructure A string, struct, or array. Initial value should be a struct.
 	*/
 	function setDeepSystemSettings( any dataStructure, string prefix='interceptData' ) {
-		
+
 		// If it's a struct...
 		if( isStruct( dataStructure ) && !isObject( dataStructure ) ) {
 			// Loop over and process each key
@@ -246,18 +246,18 @@ component singleton {
 			// Just set the setting
 			setSystemSetting( prefix, toString( dataStructure ?: '' ) );
 		}
-		
+
 	}
 
 	/**
 	* Return current environment for the shell.
 	*
 	* @parent Get the parent environment
-	*/	
+	*/
 	struct function getCurrentEnvironment( parent=false ) {
 		// If there is an executing command, use the env for that command
 		var cs = commandService.getCallStack();
-		
+
 		// Check for a parent command
 		if( parent ) {
 			if( cs.len() > 1 ) {
@@ -267,9 +267,9 @@ component singleton {
 		} else {
 			if( cs.len() ) {
 				return cs[ 1 ].environment;
-			}			
+			}
 		}
-		
+
 		// Otherwise, the default shell env
 		// We'll also hit this if getting the parent, but there is only one command level deep processing.
 		return variables.environment;
@@ -277,39 +277,39 @@ component singleton {
 
 
 	/**
-	* Return an array of environemnt context with the current one at the top
-	*/	
+	* Return an array of environment context with the current one at the top
+	*/
 	array function getAllEnvironments() {
 		var envs = [];
 		var cs = commandService.getCallStack();
-		
+
 		for( var call in cs ) {
 			envs.append( {
 				'context' : call.commandInfo.originalLine,
 				'environment' : call.environment
 			} );
 		}
-		
+
 		envs.append( {
 			'context' : 'Global Shell',
 			'environment' : variables.environment
 		} );
-		
+
 		return envs;
 	}
 
 
 	/**
-	* Return a representation of the environemnt context including all parent contexts
+	* Return a representation of the environment context including all parent contexts
 	* but not including Java system props and OS env vars flattended into a single struct.
-	*/	
+	*/
 	struct function getAllEnvironmentsFlattened() {
 		var envFlat = {};
 		getAllEnvironments().each( function( env ) {
 			envFlat.append( env.environment, false );
 		} );
-		
+
 		return envFlat;
 	}
-	
+
 }
