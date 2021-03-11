@@ -1,5 +1,5 @@
 /**
- * View configuration proprties in CommandBox. Call with no parameters to view all config properties.
+ * View configuration properties in CommandBox. Call with no parameters to view all config properties.
  * .
  * Output setting
  * {code:bash}

@@ -204,7 +204,7 @@ component accessors="true" singleton {
 
 	/**
 	* Returns the descriptor file (box.json) for a package parsed as a struct.
-	* This data will be merged with a default document to guaruntee existence of standard variables and
+	* This data will be merged with a default document to guarantee existence of standard variables and
 	* reduce the need for "exist" checks in our code
 	* @packageName The package name to look for
 	* @version The version of the package to look for

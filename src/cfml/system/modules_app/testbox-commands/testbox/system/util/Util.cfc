@@ -47,7 +47,7 @@ component {
 				getAbsolutePath( arguments.filename )
 			)
 		);
-		// Calculate adjustments fot timezone and daylightsavindtime
+		// Calculate adjustments fot timezone and daylightsavingtime
 		var offset = ( ( getTimezoneInfo().utcHourOffset ) + 1 ) * -3600;
 		// Date is returned as number of seconds since 1-1-1970
 		return dateAdd(

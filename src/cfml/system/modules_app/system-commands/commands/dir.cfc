@@ -39,7 +39,7 @@ component aliases="ls,ll,directory" {
 	 * @sort.options DateLastModified,Directory,Name,Size,Type,attributes,mode
 	 * @recurse Include nested files and folders
 	 * @simple Output only path names and nothing else.
-	 * @full Output abolute file path, not just relative to current working directory
+	 * @full Output absolute file path, not just relative to current working directory
 	 **/
 	function run( Globber paths=globber( getCWD() ), sort='type, name', string excludePaths='', boolean recurse=false, boolean simple=false, boolean full=false )  {
 
@@ -135,7 +135,7 @@ component aliases="ls,ll,directory" {
 			if( name.startsWith( '.' ) ) { ext = 'hidden'; }
 
 			switch( ext ) {
-				// Binary/exuctable
+				// Binary/executable
 			    case "exe": case "jar": case "com": case "bat": case "msi": case "lar": case "lco": case "class": case "dll": case "war": case "eot": case "svg": case "ttf": case "woff": case "woff2":
 					print.AquaLine( name );
 			         break;

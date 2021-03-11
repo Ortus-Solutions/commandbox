@@ -35,17 +35,17 @@ component accessors="true" singleton {
 	/**
 	* Match a single path to a single pattern.  Returns true if the path matches the pattern, otherwise false.
 	* The "exact" param is because Globber has different use cases. For example, when used for things like ignore lists
-	* a pattern not preceded by a slash should match directories and files recursibley, any level deep.  But when used for a
+	* a pattern not preceded by a slash should match directories and files recursively, any level deep.  But when used for a
 	* directory listing, it's expected to use ** /pattern/ ** to match deep folder.
 	* A pattern like foo must also match the entire file or folder name, not a partial name unless explicitly passed as *foo, foo*, or *foo*
 	*
 	* @pattern The pattern to match against the path
-	* @path The file system path to test.  Can be a file or directory.  Direcories MUST end with a trailing slash
+	* @path The file system path to test.  Can be a file or directory.  Directories MUST end with a trailing slash
 	* @exact True if the full path needs to match.  False to match inside a path.
 	*/
 	boolean function matchPattern( required string pattern, required string path, boolean exact=false ) {
 		// Normalize slashes
-		// This will turn a Windows UNC path into //server, but it will at least be consitent across pattern and path
+		// This will turn a Windows UNC path into //server, but it will at least be consistent across pattern and path
 		arguments.pattern = replace( arguments.pattern, '\', '/', 'all' );
 		arguments.path = replace( arguments.path, '\', '/', 'all' );
 
@@ -115,7 +115,7 @@ component accessors="true" singleton {
 	/**
 	* Match an array of patterns against a single path.  Returns true if at least one pattern matches, otherwise false.
 	* @patterns.hint An array of patterns to match against the path
-	* @path.hint The file system path to test.  Can be a file or directory.  Direcories MUST end with a trailing slash
+	* @path.hint The file system path to test.  Can be a file or directory.  Directories MUST end with a trailing slash
 	*/
 	boolean function matchPatterns( required array patterns, required string path, boolean exact=false ){
 		var matched = false;

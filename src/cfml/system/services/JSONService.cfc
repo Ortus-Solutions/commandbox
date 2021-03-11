@@ -135,7 +135,7 @@ component accessors="true" singleton {
 			// Remove the index
 			propertyValue.deleteAt( arrayIndex );
 
-		// Else see if it's a dot-delimted struct path. Ex foo.bar
+		// Else see if it's a dot-delimited struct path. Ex foo.bar
 		} else if( listLen( property, '.' ) >= 2 ) {
 			// Name of last key to remove
 			var last = listLast( property, '.' );
@@ -152,7 +152,7 @@ component accessors="true" singleton {
 			var propertyValue = evaluate( fullPropertyName );
 			// Remove the key
 			structDelete( propertyValue, last );
-		// Else just a simple propery name
+		// Else just a simple property name
 		} else {
 			// Make sure it exists
 			if( !structKeyExists( JSON, arguments.property ) ) {

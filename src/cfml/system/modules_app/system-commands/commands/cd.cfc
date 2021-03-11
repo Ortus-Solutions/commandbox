@@ -30,7 +30,7 @@ component {
 			arguments.directory = systemSettings.getSystemSetting( 'OLDPWD', shell.pwd() );
 		}
 
-		// Shorthand expantion for going back multiple directories eg. "..." - expand multiple dots "." to a "../"
+		// Shorthand explanation for going back multiple directories eg. "..." - expand multiple dots "." to a "../"
 		if( reMatch("^\.{2,}$", directory).len() ){
 			arguments.directory = ( replace( Left( arguments.directory, len(arguments.directory) - 1 ), '.', '../', 'All' ) );
 		}

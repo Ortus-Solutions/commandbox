@@ -440,7 +440,7 @@ The main ColdBox utility library, it is built with tags to allow for dumb ACF10 
 	<cffunction
 		name  ="getInheritedMetaData"
 		output="false"
-		hint  ="Returns a single-level metadata struct that includes all items inhereited from extending classes."
+		hint  ="Returns a single-level metadata struct that includes all items inherited from extending classes."
 	>
 		<cfargument name="component" type="any" required="true" hint="A component instance, or the path to one">
 		<cfargument name="stopRecursions" default="#arrayNew( 1 )#" hint="An array of classes to stop recursion">
@@ -474,7 +474,7 @@ The main ColdBox utility library, it is built with tags to allow for dumb ACF10 
 				md             = md.extends
 			)>
 			<!---
-				If we're at the end of the line, it's time to start working backwards so start with an empty struct to hold our condensesd metadata.
+				If we're at the end of the line, it's time to start working backwards so start with an empty struct to hold our condensed metadata.
 			--->
 		<cfelse>
 			<cfset loc.parent = {}>

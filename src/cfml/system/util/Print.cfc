@@ -26,7 +26,7 @@
 * print.text( 'Hello World', statusColor );
 * print.text( 'Hello World', ( status == 'running' ? 'green' : 'red' ) );
 *
-* Indent each carridge return with two spaces like so:
+* Indent each carriage return with two spaces like so:
 *
 * print.indentedLine( 'Hello World' );
 *
@@ -95,7 +95,7 @@ component {
 
 			// Serializable types
 			if( isBinary( text ) ) {
-				// Generally speaking, leave binary alone, but if it just so hapens to be a string that happens to be JSON, let's format it!
+				// Generally speaking, leave binary alone, but if it just so happens to be a string that happens to be JSON, let's format it!
 				// CommandBox will turn the binary to a string when it outputs anyway if we don't here.
 				if( isJSON( toString( text ) ) ) {
 					text = formatterUtil.formatJson( json=toString( text ), ANSIColors=JSONService.getANSIColors() );

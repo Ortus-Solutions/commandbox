@@ -189,7 +189,7 @@ component singleton{
 
 	private function buildRange( required string range ) {
 		// A character that I hope will never be part of an actual range so split easier.
-		// Comprator sets inside a range are delimited by " || "
+		// Comparator sets inside a range are delimited by " || "
 		arguments.range = replaceNoCase( arguments.range, ' || ', '•', 'all' );
 		var semverRange = listToArray( arguments.range, '•' );
 
@@ -423,7 +423,7 @@ component singleton{
 				// ~0 Same as 0.x
 				if( sComparator.sVersion.minor== 'x' || sComparator.sVersion.revision== 'x' ) {
 					sComparator.operator = '=';
-					// Recursivley handle as an X range
+					// Recursively handle as an X range
 					comparatorSet.append( expandXRanges( sComparator ), true );
 				} else {
 

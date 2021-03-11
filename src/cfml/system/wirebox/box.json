@@ -6,7 +6,7 @@
     "slug":"wirebox",
     "type":"di",
     "packageDirectory":"wirebox",
-    "keywords":"di,aop,dependeny injection,ioc",
+    "keywords":"di,aop,dependency injection,ioc",
     "homepage":"https://www.coldbox.org",
     "documentation":"https://wirebox.ortusbooks.com",
     "repository":{

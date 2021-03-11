@@ -64,7 +64,7 @@ component accessors="true" singleton {
 	* This value is either "interactive" meaning the shell stays open waiting for user input
 	* or "command" which means a single command will be run and then the shell will be exiting.
 	* This differentiation may be useful for commands who want to be careful not to leave threads running
-	* that they expect to finish since the JVM will terminiate immedatley after the command finishes.
+	* that they expect to finish since the JVM will terminate immediately after the command finishes.
 	* This could also be useful to reduce the amount of extra text that's output such as the CommandBox
 	* banner which isn't really needed for a one-off command, especially if the output of that command needs
 	* to be fed into another OS command.
@@ -143,7 +143,7 @@ component accessors="true" singleton {
 		getInterceptorService().configure();
 		getModuleService().configure();
 
-		// When the shell first starts, the current working dir doesn't always containt the trailing slash
+		// When the shell first starts, the current working dir doesn't always contain the trailing slash
 		variables.pwd = fileSystem.resolvePath( variables.pwd );
 
 		getModuleService().activateAllModules();
@@ -173,7 +173,7 @@ component accessors="true" singleton {
 	 **/
 	Shell function setExitCode( required string exitCode ) {
 		createObject( 'java', 'java.lang.System' ).setProperty( 'cfml.cli.exitCode', arguments.exitCode );
-		// Keep a more readable version in sync for people to acces via the shell
+		// Keep a more readable version in sync for people to access via the shell
 		createObject( 'java', 'java.lang.System' ).setProperty( 'exitCode', exitCode );
 		return this;
 	}
@@ -738,7 +738,7 @@ component accessors="true" singleton {
  	 * @command.hint Either a string containing a text command, or an array of tokens representing the command and parameters.
  	 * @returnOutput.hint True will return the output of the command as a string, false will send the output to the console.  If command outputs nothing, an empty string will come back.
  	 * @piped.hint Any text being piped into the command.  This will overwrite the first parameter (pushing any positional params back)
- 	 * @initialCommand.hint Since commands can recursivley call new commands via this method, this flags the first in the chain so exceptions can bubble all the way back to the beginning.
+ 	 * @initialCommand.hint Since commands can recursively call new commands via this method, this flags the first in the chain so exceptions can bubble all the way back to the beginning.
  	 * In other words, if "foo" calls "bar", which calls "baz" and baz errors, all three commands are scrapped and do not finish execution.
  	 **/
 	function callCommand(

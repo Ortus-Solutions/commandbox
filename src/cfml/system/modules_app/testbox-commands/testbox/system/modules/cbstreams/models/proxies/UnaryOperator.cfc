@@ -15,7 +15,7 @@ component extends="BaseProxy"{
     }
 
     /**
-     * Functional interface for the apply functionional interface
+     * Functional interface for the apply functional interface
      * See https://docs.oracle.com/javase/8/docs/api/java/util/function/Function.html#apply-T-
      */
     function apply( required target ){

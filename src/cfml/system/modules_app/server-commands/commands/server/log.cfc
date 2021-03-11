@@ -10,7 +10,7 @@ component {
 
 	property name="serverService"	inject="ServerService";
 	property name="printUtil"		inject="print";
-	property name='ansiFormater'	inject='AnsiFormater';
+	property name='ansiFormatter'	inject='AnsiFormatter';
 	/**
 	 * Show server log
 	 *
@@ -62,7 +62,7 @@ component {
 				return fileRead( logfile )
 					.listToArray( chr( 13 ) & chr( 10 ) )
 					.map( function( line ) {
-						return ansiFormater.cleanLine( line );
+						return ansiFormatter.cleanLine( line );
 					} )
 					.toList( chr( 10 ) );
 			}

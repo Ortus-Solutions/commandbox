@@ -691,12 +691,12 @@ component {
 	}
 
 	/**
-	 * Genereate a random data range
+	 * Generate a random data range
 	 * @from 		The date time start
 	 * @to 			The end date else defaults to today
 	 * @showTime 	Show time in the data
 	 * @dateFormat  The date formatting to use
-	 * @timeFormat 	The time formmating to use
+	 * @timeFormat 	The time formatting to use
 	 */
 	function dateRange(
 		date from  = "#createDateTime( "2010", "01", "01", "0", "0", "0" )#",

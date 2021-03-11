@@ -141,7 +141,7 @@ The available types MockDataCFC supports are:
 * `num`: By default, a number from 1 to 10. You can also use the form `num:X` for a random number between 1 and X. Or `num:X:Y` for a random number between X and Y.
 * `oneof:x:y`: Requires you to pass N values after it delimited by a colon. Example: `oneof:male:female`. Will return a random value from that list.
 * `rnd:N`, `rand:N`, `rnd:x:y`, `rand:x:y` : Generate random numbers with a specific range or range cap.
-* `sentence`: Generates a sentences. If used as `sentence:N`, returns N sentences.  If used as `sentence:X:Y`, returns a random number of sentences beetween X and Y.
+* `sentence`: Generates a sentences. If used as `sentence:N`, returns N sentences.  If used as `sentence:X:Y`, returns a random number of sentences between X and Y.
 * `ssn`: Generates a random Social Security number.
 * `string`: Generates a random string of length 10 by default.  You can increase the length by passing it `string:length`.
 * `string-alpha` : Generates a random alpha string of length 10 by default.  You can increase the length by passing it `string-alpha:length`.
@@ -155,7 +155,7 @@ The available types MockDataCFC supports are:
 * `website` : Generates a random website with random protocol
 * `website_http` : Generates a random website, `http` only protocol
 * `website_https` : Generates a random website, `https` only protocol
-* `words`: Generates a single word. If used as `word:N`, returns N words.  If used as `words:X:Y`, returns a random number of words beetween X and Y.
+* `words`: Generates a single word. If used as `word:N`, returns N words.  If used as `words:X:Y`, returns a random number of words between X and Y.
 
 ### Calling Types By Function Name
 

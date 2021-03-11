@@ -82,11 +82,11 @@ component accessors="true" singleton {
 	}
 
 	/**
-	* Returns command as string with certain charaters removed that prevent evaluation.
+	* Returns command as string with certain characters removed that prevent evaluation.
 	**/
 	function getCommandPreparedForEvaluation() {
 		var cfml = getCommandAsString();
-		// Trailing semicolons cause syntax error with evaluate() BIF so remove them and the following still work as execpted (returning the value)
+		// Trailing semicolons cause syntax error with evaluate() BIF so remove them and the following still work as expected (returning the value)
 		// REPL> foo = 'bar';
 		cfml = reReplaceNoCase( cfml, ";$", "" );
 		return cfml;

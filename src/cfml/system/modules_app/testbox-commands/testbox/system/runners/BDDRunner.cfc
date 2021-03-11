@@ -366,7 +366,7 @@ component
 	/**
 	 * Get all the test suites in the passed in bundle
 	 * @target The target to get the suites from
-	 * @targetMD The metdata of the target
+	 * @targetMD The metadata of the target
 	 */
 	private array function getTestSuites( required target, required targetMD ){
 		// get the spec suites

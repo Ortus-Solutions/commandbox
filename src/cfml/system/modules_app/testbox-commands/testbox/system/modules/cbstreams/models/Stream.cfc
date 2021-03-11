@@ -112,7 +112,7 @@ component accessors="true"{
 
 		throw(
 			message = "Cannot create stream from incoming collection",
-			type    = "InvalidColletionType",
+			type    = "InvalidCollectionType",
 			detail  = "#getMetadata( arguments.collection ).toString()#"
 		);
 	}
@@ -689,7 +689,7 @@ component accessors="true"{
 	 * May not evaluate the predicate on all elements if not necessary for determining the result.
 	 * If the stream is empty then true is returned and the predicate is not evaluated.
 	 *
-	 * This is a short-cicuiting terminal operation.
+	 * This is a short-circuiting terminal operation.
 	 *
 	 * @predicate a non-interfering, stateless predicate to apply to elements of this stream
 	 */

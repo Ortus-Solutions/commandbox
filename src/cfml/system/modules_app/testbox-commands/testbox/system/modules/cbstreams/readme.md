@@ -140,7 +140,7 @@ try{
 
 ### Generating Infinite Streams: `generate(), iterate()`
 
-You can also use the `generate(), iterate()` method to generate an infinite stream by leveraging a closure/lambda as your supplier of data. In the itreation approach, we start with a seed that is passed to the supplier method and will dictate the next element in the stream.
+You can also use the `generate(), iterate()` method to generate an infinite stream by leveraging a closure/lambda as your supplier of data. In the iteration approach, we start with a seed that is passed to the supplier method and will dictate the next element in the stream.
 
 ```js
 // Generation lambda/closure
@@ -185,7 +185,7 @@ The result of an intermediate operation is **always** a stream, so you can infin
 - `skip( n )` - Skip from the first element to `n`
 - `sorted( [comparator] )` - sort a numerical stream or sort by passing a comparator closure or lambda
 - `unordered()` - Return an unordered stream.
-- `onClose( closehandler )` - Returns a stream with the `onClose()` handler closure or lambda to be executed when the `close()` oepration is called on the stream.
+- `onClose( closehandler )` - Returns a stream with the `onClose()` handler closure or lambda to be executed when the `close()` operation is called on the stream.
 - `concat( stream1, stream2 )` - This will return a stream composed of concatenating the elements in stream 1 to stream 2
 - `peek( action )` - Allows you to peek into the elements in the order of being called. Great for debugging.
 - `map( mapper )` - transforms the stream elements into something else, it accepts a function to apply to each and every element of the stream and returns a stream of the values the parameter function produced. This is the bread and butter of the streams API, map allows you to perform a computation on the data inside a stream.

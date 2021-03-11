@@ -18,7 +18,7 @@ component accessors="true"{
 		variables.target = arguments.target;
 		variables.loadedContextHashCode = "";
 
-		// Preapre for parallel executions to enable the right fusion context
+		// Prepare for parallel executions to enable the right fusion context
 		if( server.keyExists( "lucee") ){
 			// TODO: Need lucee way to approach this
 		} else {

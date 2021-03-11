@@ -103,7 +103,7 @@ component accessors="true" {
 	property name="metadataCache";
 
 	/**
-	 * Boolean indicator if on startup all mappings will be processed for metdata inspections or
+	 * Boolean indicator if on startup all mappings will be processed for metadata inspections or
 	 * lazy loaded. We default to lazy load due to performance.
 	 */
 	property name="autoProcessMappings" type="boolean";
@@ -153,7 +153,7 @@ component accessors="true" {
 	 * Constructor
 	 *
 	 * @injector The injector this binder is bound to
-	 * @config The WireBox Injector Data Configuration CFC instance or instantiation path to it. Leave blank if using this configuration object programatically
+	 * @config The WireBox Injector Data Configuration CFC instance or instantiation path to it. Leave blank if using this configuration object programmatically
 	 * @properties A structure of binding properties to passthrough to the Binder Configuration CFC
 	 */
 	function init(
@@ -229,7 +229,7 @@ component accessors="true" {
 		variables.aspectBindings      = [];
 		// Binding Properties
 		variables.properties          = {};
-		// Meatadata cache
+		// Metadata cache
 		variables.metadataCache       = "";
 		// Auto Process Mappings
 		variables.autoProcessMappings = variables.DEFAULTS.autoProcessMappings;
@@ -415,7 +415,7 @@ component accessors="true" {
 	 * @filter The filter closure or UDF that will receive the path of the CFC to process and returns TRUE to continue processing or FALSE to skip processing
 	 * @namespace Provide namespace to merge it in
 	 * @prepend Where to attach the namespace, at the beginning of the name or end of the name. Defaults to end of name
-	 * @process If true, all mappings discovered will be automatically processed for metdata and inspections.  Default is false, everything lazy loads
+	 * @process If true, all mappings discovered will be automatically processed for metadata and inspections.  Default is false, everything lazy loads
 	 *
 	 * @throws DirectoryNotFoundException - If the requested package path does not exist.
 	 */
@@ -507,7 +507,7 @@ component accessors="true" {
 
 				/**
 				 * Do this right away so aliases are picked up before this mapping potentially gets overwritten
-				 * This is necessary for multuple CFCs with the same name in different folders, but with unique aliases
+				 * This is necessary for multiple CFCs with the same name in different folders, but with unique aliases
 				 * TODO: Move to async
 				 */
 				if ( process ) {
@@ -779,7 +779,7 @@ component accessors="true" {
 	}
 
 	/**
-	 * Used to set the current working mapping name in place for the maping DSL. An exception is thrown if the mapping does not exist yet.
+	 * Used to set the current working mapping name in place for the mapping DSL. An exception is thrown if the mapping does not exist yet.
 	 *
 	 * @alias The name of the mapping to set as the current working mapping
 	 *
@@ -1326,7 +1326,7 @@ component accessors="true" {
 	 * Add a new listener configuration
 	 *
 	 * @class The class of the listener
-	 * @properties The structure of properties for the listner
+	 * @properties The structure of properties for the listener
 	 * @name The name of the listener
 	 * @register If true, registers the listener right away
 	 */

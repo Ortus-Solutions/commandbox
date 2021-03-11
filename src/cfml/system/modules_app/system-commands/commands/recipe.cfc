@@ -53,7 +53,7 @@ component {
 	property name='parser' 	inject='Parser';
 
 	/**
-	 * @recipeFile.hint The name of the recipe file to execute including extension.  Alternatively, text comamnds to direct execute.
+	 * @recipeFile.hint The name of the recipe file to execute including extension.  Alternatively, text commands to direct execute.
 	 **/
 	function run( required recipeFile ){
 		// store original path

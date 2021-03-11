@@ -87,7 +87,7 @@ component accessors="true" implements="IEndpointInteractive" {
 
 		// Only bother checking if we have a version range.  If an exact version is stored in
 		// box.json, we're never going to update it anyway.
-		// UNLESS the box.json has been updated to have a new exact version that is different from what's installed (ignoreing buildID)
+		// UNLESS the box.json has been updated to have a new exact version that is different from what's installed (ignoring buildID)
 		if( semanticVersion.isExactVersion( boxJSONversion ) && semanticVersion.compare( boxJSONversion, version, false ) == 0 ) {
 			return result;
 		}
@@ -119,7 +119,7 @@ component accessors="true" implements="IEndpointInteractive" {
 		}
 
 		if( !found ) {
-			// If we requsted stable and all releases are pre-release, just grab the latest
+			// If we requested stable and all releases are pre-release, just grab the latest
 			if( boxJSONversion == 'stable' && arrayLen( entryData.versions ) ) {
 				result.version = entryData.versions[ 1 ].version;
 				result.isOutdated = true;
@@ -492,7 +492,7 @@ component accessors="true" implements="IEndpointInteractive" {
 
 				job.addLog( "Storing download in artifact cache..." );
 
-				// Store it locally in the artfact cache
+				// Store it locally in the artifact cache
 				artifactService.createArtifact( slug, version, packagePath );
 
 				job.addLog( "Done." );

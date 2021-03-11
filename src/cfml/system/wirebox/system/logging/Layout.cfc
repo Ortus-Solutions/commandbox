@@ -6,7 +6,7 @@
 **/
 component accessors="true"{
 	/**
-	 * The LogBox appender this layotu is linked to.
+	 * The LogBox appender this layout is linked to.
 	 */
 	property name="appender";
 

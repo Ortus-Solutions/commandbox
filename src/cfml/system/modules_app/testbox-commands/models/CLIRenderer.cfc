@@ -235,7 +235,7 @@ component {
 
 		var printedAtLeastOneLine = false;
 		for ( local.thisSpec in arguments.suiteStats.specStats ) {
-			// Continue if no eception and not in verbose mode
+			// Continue if no exception and not in verbose mode
 			if ( listFindNoCase( "failed,exception,error", local.thisSpec.status ) == 0 && !verbose ) {
 				continue;
 			}

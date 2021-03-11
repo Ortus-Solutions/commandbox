@@ -17,7 +17,7 @@ limitations under the License.
 If you find this app worthy, I have a Amazon wish list set up (www.amazon.com/o/registry/2TCL1D08EZEYE ). Gifts are always welcome. ;)
 Modifications
 Luis Majano
-- Adaptation to using a more advanced algortithm on type detections
+- Adaptation to using a more advanced algorithm on type detections
 - Ability to nest complex variables and still convert to XML.--->
 <cfcomponent hint="A utility tool that can marshall data to XML" output="false" singleton>
 	<!------------------------------------------- CONSTRUCTOR ------------------------------------------>

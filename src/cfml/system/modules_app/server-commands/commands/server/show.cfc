@@ -1,5 +1,5 @@
 /**
- * View proprties set in server.json for this server.  Command must be executed from the web root
+ * View properties set in server.json for this server.  Command must be executed from the web root
  * directory of the server where server.json lives.  Call with no parameters to view the entire server.json
  * .
  * Outputs port
@@ -33,7 +33,7 @@ component {
 		string property='',
 		String serverConfigFile='' ) {
 
-		// As a convenient shorcut, allow the serverConfigFile and propery parameter to be reversed because
+		// As a convenient shortcut, allow the serverConfigFile and property parameter to be reversed because
 		// "server show foo.json name" reads better than "server show name foo.json" but maintains backwards compat
 		// for the simple use case of no JSON file as in "server show name"
 		var tmpPropertyResolved = resolvePath( arguments.property );

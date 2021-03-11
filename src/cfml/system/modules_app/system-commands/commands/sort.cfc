@@ -23,7 +23,7 @@ component {
 
 	/**
 	 * @input The piped input to be checked.
-	 * @type Sort by "text" (case sensitive), "textnocase" (case insenstive), or "numeric"
+	 * @type Sort by "text" (case sensitive), "textnocase" (case insensitive), or "numeric"
 	 * @direction Sort "asc" (ascending), or "desc" (descending)
 	 * @type.options text,textnocase,numeric
 	 * @direction.options asc,desc

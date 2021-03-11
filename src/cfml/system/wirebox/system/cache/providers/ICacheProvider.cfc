@@ -240,7 +240,7 @@ interface{
 	boolean function clearQuiet( required objectKey );
 
 	/**
-	 * Expire all the elments in the cache (if supported by the provider)
+	 * Expire all the elements in the cache (if supported by the provider)
 	 *
 	 * @return ICacheProvider
 	 */

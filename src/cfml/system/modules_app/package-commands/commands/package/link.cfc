@@ -25,8 +25,8 @@
  * link --force
  * {code}
  *
- * Linking a package is not the same as installing it.  The target box.json will not be modified nor will any depdencies be installed.
- * You'll need to run an "install" in the local module you're developing to install its depdendencies, which will in turn be part of the link.
+ * Linking a package is not the same as installing it.  The target box.json will not be modified nor will any dependencies be installed.
+ * You'll need to run an "install" in the local module you're developing to install its dependencies, which will in turn be part of the link.
  * .
  * See also: package unlink
  *

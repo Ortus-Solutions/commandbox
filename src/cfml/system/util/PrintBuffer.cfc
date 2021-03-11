@@ -6,7 +6,7 @@
 * @author Brad Wood, Luis Majano, Denny Valliant
 *
 * I am a helper object that wraps the print helper.  Instead of returning
-* text, I accumulate it in a variable that can be retreived at the end.
+* text, I accumulate it in a variable that can be retrieved at the end.
 *
 */
 component accessors="true" extends="Print"{
@@ -30,7 +30,7 @@ component accessors="true" extends="Print"{
 	// Force a flush
 	function toConsole(){
 		// A single instance of print buffer can only dump to the console once at a time, otherwise
-		// the shared satate in "result" will get output more than once.
+		// the shared state in "result" will get output more than once.
 		lock name='printBuffer-#getObjectID()#' type="exclusive" timeout="20" {
 			var thingToPrint = getResult();
 			clear();

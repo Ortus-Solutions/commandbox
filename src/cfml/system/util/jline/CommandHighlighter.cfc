@@ -4,7 +4,7 @@
 * www.coldbox.org | www.ortussolutions.com
 ********************************************************************************
 * @author Brad Wood, Luis Majano
-* I am a JLine highighter class that attempts to highlight the command portion of the input buffer
+* I am a JLine highlighter class that attempts to highlight the command portion of the input buffer
 */
 component {
 

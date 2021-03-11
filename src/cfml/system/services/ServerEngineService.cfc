@@ -141,7 +141,7 @@ component accessors="true" singleton="true" {
 		var engineName = endpoint.getDefaultName( arguments.ID );
 		installDetails.engineName = engineName;
 
-		// In order to prevent uneccessary work, we're going to try REALLY hard to figure out exactly what engine will be installed
+		// In order to prevent unnecessary work, we're going to try REALLY hard to figure out exactly what engine will be installed
 		// before it actually happens so we can skip this whole mess if it's already in place.
 		// if our endpoint is ForgeBox, figure out what version it is going to install.
 		if( isInstanceOf(endpointData.endpoint, 'forgebox') ) {
@@ -569,17 +569,17 @@ component accessors="true" singleton="true" {
 		// This stuff 'gotta happen
 		} finally {
 			try {
-				// Close input streama
+				// Close input stream
 				in.close();
 			} catch( any var e2 ) {}
 
 			try {
-				// Flush and close output streama
+				// Flush and close output stream
 				out.flush();
 				out.close();
 			} catch( any var e2 ) {}
 
-			// Delete original packed filee
+			// Delete original packed file
 			fileDelete( packedFile );
 		}
 

@@ -98,12 +98,12 @@ component aliases='status,server info' {
 				// Are we doing JSON?
 				if( arguments.json ){
 
-					// Are we outputing a specific propery
+					// Are we outputting a specific property
 					if( len( arguments.property ) ) {
 
 						// If the key doesn't exist, give a useful error
 						if( !isDefined( 'thisServerInfo.#arguments.property#' ) ) {
-							error( "The propery [#arguments.property#] isn't defined in the JSON.", "Valid keys are: " & chr( 10 ) & "   - "  & thisServerInfo.keyList().lCase().listChangeDelims( chr( 10 ) & "   - " ) );
+							error( "The property [#arguments.property#] isn't defined in the JSON.", "Valid keys are: " & chr( 10 ) & "   - "  & thisServerInfo.keyList().lCase().listChangeDelims( chr( 10 ) & "   - " ) );
 						}
 
 						// Output a single property
@@ -187,7 +187,7 @@ component aliases='status,server info' {
 					if( !isSimpleValue( bindException ) ) {
 						print.indentedLine( 'Port bind result for "running" check: #bindException.type# #bindException.message# #bindException.detail#');
 					} else {
-						print.indentedLine( 'Port bind result for "running" check: successly bound, port not in use.');
+						print.indentedLine( 'Port bind result for "running" check: successful bound, port not in use.');
 					}
 
 

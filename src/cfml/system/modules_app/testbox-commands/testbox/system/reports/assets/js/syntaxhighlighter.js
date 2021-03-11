@@ -2760,7 +2760,7 @@
 	   * Finds all matches in the source code.
 	   * @param {String} code   Source code to process matches in.
 	   * @param {Array} matches Discovered regex matches.
-	   * @return {String} Returns formatted HTML with processed mathes.
+	   * @return {String} Returns formatted HTML with processed matches.
 	   */
 	  getMatchesHtml: function getMatchesHtml(code, matches) {
 	    function getBrushNameCss(match) {
@@ -3108,7 +3108,7 @@
 	'use strict';
 
 	/**
-	 * Finds all &lt;SCRIPT TYPE="text/syntaxhighlighter" /> elementss.
+	 * Finds all &lt;SCRIPT TYPE="text/syntaxhighlighter" /> elements.
 	 * Finds both "text/syntaxhighlighter" and "syntaxhighlighter"
 	 * ...in order to make W3C validator happy with subtype and backwardscompatible without subtype
 	 * @return {Array} Returns array of all found SyntaxHighlighter tags.
@@ -3361,7 +3361,7 @@
 	   * Pads line numbers. Possible values are:
 	   *
 	   *   false - don't pad line numbers.
-	   *   true  - automaticaly pad numbers with minimum required number of leading zeroes.
+	   *   true  - automatically pad numbers with minimum required number of leading zeroes.
 	   *   [int] - length up to which pad line numbers.
 	   */
 	  'pad-line-numbers': false,

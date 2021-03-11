@@ -61,7 +61,7 @@ component accessors="true" {
 	}
 
 	/**
-	* Override setter to ensure consistent slashe in pattern
+	* Override setter to ensure consistent slashes in pattern
 	* Can be list of patterns or array of patterns.
 	* Empty patterns will be ignored
 	*/
@@ -79,7 +79,7 @@ component accessors="true" {
 	}
 
 	/**
-	* Add addiional pattern to process
+	* Add additional pattern to process
 	*/
 	function addPattern( required string pattern ) {
 		if( len( arguments.pattern ) ) {
@@ -121,7 +121,7 @@ component accessors="true" {
 	}
 
 	/**
-	* Add addiional excludePattern to process
+	* Add additional excludePattern to process
 	*/
 	function addExcludePattern( required string excludePattern ) {
 		if( len( arguments.excludePattern ) ) {
@@ -344,9 +344,9 @@ component accessors="true" {
 	}
 
 	/**
-	* The sort function in CFDirectory will simply ignore invalid sort columns so I'm mimicing that here, as much as I dislike it.
+	* The sort function in CFDirectory will simply ignore invalid sort columns so I'm mimicking that here, as much as I dislike it.
 	* The sort should be in the format of "col asc, col2 desc, col3, col4" like a SQL order by
-	* If any of the coluns or sort directions don't look right, just bail and return the default sort.
+	* If any of the columns or sort directions don't look right, just bail and return the default sort.
 	*/
 	function getCleanSort() {
 		// Loop over each sort item

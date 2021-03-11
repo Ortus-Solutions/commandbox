@@ -15,7 +15,7 @@ component extends="BaseProxy"{
     }
 
     /**
-     * Functional interface for the apply functionional interface
+     * Functional interface for the apply functional interface
      */
     function applyAsInt( required value ){
 		loadContext();

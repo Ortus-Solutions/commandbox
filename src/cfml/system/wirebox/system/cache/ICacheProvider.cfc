@@ -166,7 +166,7 @@ Description :
 	</cffunction>
 
 	<!--- expireAll --->
-    <cffunction name="expireAll" output="false" access="public" returntype="void" hint="Expire all the elments in the cache (if supported by the provider)">
+    <cffunction name="expireAll" output="false" access="public" returntype="void" hint="Expire all the elements in the cache (if supported by the provider)">
     </cffunction>
 
 	<!--- expireObject --->

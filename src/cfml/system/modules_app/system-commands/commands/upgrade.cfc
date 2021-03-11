@@ -111,7 +111,7 @@ component {
 			var loaderVersion 	= loaderData.versioning.stableVersion;
 		}
 
-		// Is there a new version of CommandBox.  New builds consistute new BE verions.
+		// Is there a new version of CommandBox.  New builds constitute new BE versions.
 		var isNewVersion 	= semanticVersion.isNew( current=shell.getVersion(), target=repoVersion, checkBuildID=arguments.latest );
 		// Is there a new version of the CLI Loader. Ignore build number since it's sort of fake (Just a copy of the CommandBox build number)
 		var isNewLoaderVersion 	= semanticVersion.isNew( current=shell.getLoaderVersion(), target=LoaderVersion, checkBuildID=false );

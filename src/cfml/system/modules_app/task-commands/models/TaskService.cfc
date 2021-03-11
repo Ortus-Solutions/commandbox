@@ -5,7 +5,7 @@
 ********************************************************************************
 * @author Brad Wood, Luis Majano, Denny Valliant
 *
-* I handle excuction of Task Runners
+* I handle execution of Task Runners
 */
 component singleton accessors=true {
 
@@ -36,7 +36,7 @@ component singleton accessors=true {
 	* @taskFile Path to the Task CFC that you want to run
 	* @target Method in Task CFC to run
 	* @taskArgs Struct of arguments to pass on to the task
-	* @topLevel false for target dependecy runs
+	* @topLevel false for target dependency runs
 	*
 	* @returns The output of the task.  It's up to the caller to output it.
 	*/
@@ -298,7 +298,7 @@ component singleton accessors=true {
 	}
 
 	/**
-	* Optionally invokes a lifecyle event based on whether it exists and is valid to be called.
+	* Optionally invokes a lifecycle event based on whether it exists and is valid to be called.
 	*
 	* @taskCFC The actual Task CFC instance
 	* @eventname Name of the lifecycle event to call

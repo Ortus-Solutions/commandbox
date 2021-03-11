@@ -5,7 +5,7 @@
 ********************************************************************************
 * @author Brad Wood, Luis Majano, Denny Valliant
 *
-* Utilities for dealing with formmating HTML and ANSI output
+* Utilities for dealing with formatting HTML and ANSI output
 *
 */
 component singleton {
@@ -202,7 +202,7 @@ component singleton {
 						formattedText.append( '' );
 					}
 
-					// Let the next interation know we just had a section heading
+					// Let the next iteration know we just had a section heading
 					if( reFindNoCase( '^##{1,4}\s*(.*)$', line ) ) {
 						previousLineNeedsPadding = true;
 					} else {
@@ -250,7 +250,7 @@ component singleton {
 	public function formatJson( any json, string indent, string lineEnding, boolean spaceAfterColon, string sortKeys, struct ansiColors ) {
 
 		// If these settings are defined, they take over and are used
-		// ansiColors are NOT defauled here since there are cases in which we DON'T want any color coding.
+		// ansiColors are NOT defaulted here since there are cases in which we DON'T want any color coding.
 		// Therefore, ansiColors default need to be grabbed at the code which is calling this method if and
 		// only if that code needs coloring to be applied.
 		if( configService.settingExists( 'json.indent' ) ) {

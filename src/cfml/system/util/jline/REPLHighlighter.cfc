@@ -4,7 +4,7 @@
 * www.coldbox.org | www.ortussolutions.com
 ********************************************************************************
 * @author Brad Wood, Luis Majano
-* I am a JLine highighter class that attempts to highlight the command portion of the input buffer
+* I am a JLine highlighter class that attempts to highlight the command portion of the input buffer
 */
 component {
 
@@ -55,7 +55,7 @@ component {
 		// Find text that is at the line start or prepended with a space, curly, or period and ending with an opening paren
 		buffer = reReplaceNoCase( buffer, '(^|[ \-##\.\{\}\(\)])([^ \-##\.\{\}\(\)]*)(\()', '\1' & print.boldCyan( '\2' ) & '\3', 'all' );
 
-		// highight reserved words
+		// highlight reserved words
 		buffer = reReplaceNoCase( buffer, '(^|[ \{\}\(])(#reservedWords#)($|[ ;\(\)\{\}])', '\1' & print.boldCyan( '\2' ) & '\3', 'all' );
 
 		// If the last character was an ending } or ) or ] or " or ' then highlight it and the matching start character

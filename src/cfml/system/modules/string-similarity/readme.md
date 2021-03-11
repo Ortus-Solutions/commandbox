@@ -1,6 +1,6 @@
 ﻿# String Similarity
 
- This is a small library based on the Levenshtein Distance Algorithm tha compares small strings to look for the number of characters that's different between them.  It returns the longest common string (LCS), a percentage of similarity, and can also wrap the differences in HTML tags of your choice to highlight the differnces.
+ This is a small library based on the Levenshtein Distance Algorithm tha compares small strings to look for the number of characters that's different between them.  It returns the longest common string (LCS), a percentage of similarity, and can also wrap the differences in HTML tags of your choice to highlight the differences.
 
 Read more about how it works here:
 

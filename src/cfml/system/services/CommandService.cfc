@@ -78,7 +78,7 @@ component accessors="true" singleton {
 	 * Initialize the commands. This will recursively call itself for subdirectories.
 	 * @baseCommandDirectory.hint The starting directory
 	 * @commandDirectory.hint The current directory we've recursed into
-	 * @commandPath.hint The dot-delimted path so far-- only used when recursing
+	 * @commandPath.hint The dot-delimited path so far-- only used when recursing
 	 **/
 	CommandService function initCommands(
 		required string baseCommandDirectory,
@@ -165,7 +165,7 @@ component accessors="true" singleton {
 	 * @captureOutput Temp workaround to allow capture of run command
  	 **/
 	function runCommand( required array commandChain, required string line, string piped, boolean captureOutput=false ){
-		// If nothing is returned, something bad happened (like an error instatiating the CFC)
+		// If nothing is returned, something bad happened (like an error instantiating the CFC)
 		if( !commandChain.len() ){
 			return 'Command not run.';
 		}
@@ -305,7 +305,7 @@ component accessors="true" singleton {
 			try {
 				var FRTrans = FRTransService.startTransaction( commandInfo.commandString.listChangeDelims( ' ', '.' ), commandInfo.originalLine );
 
-				// If we're using postitional params, convert them to named
+				// If we're using positional params, convert them to named
 				if( arrayLen( parameterInfo.positionalParameters ) ){
 					parameterInfo.namedParameters = convertToNamedParameters( parameterInfo.positionalParameters, commandParams );
 				}
@@ -598,7 +598,7 @@ component accessors="true" singleton {
 			}
 
 			// If the first token looks like a drive letter, then it's just a Windows user trying to "cd" to a different drive
-			// A drive letter for these purposes will be defined as up to 3 letters folowed by a colon and an optional slash.
+			// A drive letter for these purposes will be defined as up to 3 letters followed by a colon and an optional slash.
 			if( tokens.len() && reFind( '^[a-z,A-Z]{1,3}:[\\,/]?$', tokens[1] ) ){
 				var drive = tokens[1];
 				// make sure the drive letter ends with a slash
@@ -654,7 +654,7 @@ component accessors="true" singleton {
 				} else {
 				 	tokens = [
 				 		'run',
-				 		// As a fall back, if we receive the input from the commandine as a single string AND the quotes
+				 		// As a fall back, if we receive the input from the commandline as a single string AND the quotes
 				 		// don't follow what CommandBox's parser expects, we can't use the tokens array so we make the assumption
 				 		// That the run command was the only command in the raw line.
 				 		rawLine.reReplaceNoCase( '^[\s]*(run |!)[\s]*', '' )
@@ -821,7 +821,7 @@ component accessors="true" singleton {
 			// If the exact tokens in this command match an alias, swap it out.
 			if( matchingAlias.len() ) {
 				expandedCommandsToResolve.append(
-					// Recursivley dig down. This allows aliases to alias other alises
+					// Recursively dig down. This allows aliases to alias other alises
 					breakTokensIntoChain(
 						// Re-tokenize the new string
 						parser.tokenizeInput(
@@ -856,7 +856,7 @@ component accessors="true" singleton {
 
 		// If the start of this command matches an alias, swap it out.
 		if( matchingAlias.len() ) {
-			// Recursivley dig down. This allows aliases to alias other alises
+			// Recursively dig down. This allows aliases to alias other alises
 			return expandAliasesinRawLine(
 					// Expand the alias with the string it aliases
 					replaceNoCase( rawLine, matchingAlias, aliases[ matchingAlias ], 'once' )
@@ -867,7 +867,7 @@ component accessors="true" singleton {
 	}
 
 	/**
-	 * Takes a struct of command data and lazy loads the actual CFC isntance if necessary
+	 * Takes a struct of command data and lazy loads the actual CFC instance if necessary
 	 * @commandData.hint Struct created by registerCommand()
  	 **/
 	private function lazyLoadCommandCFC( commandData ){
@@ -909,7 +909,7 @@ component accessors="true" singleton {
 		// If a command is provided, look for it in the call stack..
 		if( len( command ) ){
 			for( var call in instance.callStack ){
-				// CommandString is a dot-delimted path
+				// CommandString is a dot-delimited path
 				if( call.commandInfo.commandString == listChangeDelims( command, ' ', '.' ) ){
 					return true;
 				}
@@ -950,7 +950,7 @@ component accessors="true" singleton {
 	 * load command CFC
 	 * @baseCommandDirectory.hint The base directory for this command
 	 * @cfc.hint CFC name that represents the command
-	 * @commandPath.hint The relative dot-delimted path to the CFC starting in the commands dir
+	 * @commandPath.hint The relative dot-delimited path to the CFC starting in the commands dir
 	 **/
 	private function registerCommand( baseCommandDirectory, CFC, commandPath ){
 
@@ -1014,7 +1014,7 @@ component accessors="true" singleton {
 			commandMD 		= commandMD
 		};
 
-		// Fix for CFCs with no hint, they inherit this from the Lucee base compnent.
+		// Fix for CFCs with no hint, they inherit this from the Lucee base component.
 		if( commandData.hint == 'This is the Base Component' ) {
 			commandData.hint = '';
 		}
@@ -1037,8 +1037,8 @@ component accessors="true" singleton {
 							// Grab name of completor function for this param
 							commandData.completor[ param.name ][ 'optionsUDF' ] = param.optionsUDF;
 						}
-						// Check for diretory or file path completion
-						// File completion inhernently includes directories, so no need for both.
+						// Check for directory or file path completion
+						// File completion inherently includes directories, so no need for both.
 						if( structKeyExists( param, 'optionsFileComplete' ) && param.optionsFileComplete ){
 							commandData.completor[ param.name ][ 'optionsFileComplete' ] = param.optionsFileComplete;
 						} else if( structKeyExists( param, 'optionsDirectoryComplete' ) && param.optionsDirectoryComplete ){

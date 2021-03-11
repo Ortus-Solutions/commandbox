@@ -240,17 +240,17 @@ component aliases="snake" {
 
 			// Figure out where we'll be going right before this direction is used
 			if( variables.direction.len() ) {
-				var preceedingDirection = variables.direction.first();
+				var precedingDirection = variables.direction.first();
 			} else {
-				var preceedingDirection = variables.lastDirection;
+				var precedingDirection = variables.lastDirection;
 			}
 
 			// Firstly, don't add additional directions that are the same as where we're already headed
 			// so we don't stack up redundant junk in the queue that makes the snake appear unresponsive.
 			// Secondly, only obey if the new direction isn't in the opposite (since that's an annoying instant "game over")
 			// UNLESS the snake is stil a baby-- then it can go anywhere it wants
-			if( arguments.newDirection != preceedingDirection &&
-				( arguments.newDirection != variables.directionOpposites[ preceedingDirection ] || isBaby() )
+			if( arguments.newDirection != precedingDirection &&
+				( arguments.newDirection != variables.directionOpposites[ precedingDirection ] || isBaby() )
 			) {
 				variables.direction.prepend( newDirection );
 			}
