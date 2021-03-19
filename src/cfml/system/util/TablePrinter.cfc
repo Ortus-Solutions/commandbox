@@ -1,6 +1,9 @@
 component singleton {
 
+    processingdirective pageEncoding='UTF-8';
+    
     property name="print" inject="PrintBuffer";
+    property name="shell" inject="shell";
 
     variables.tableChars = {
 		"top": chr( 9552 ), // ═
@@ -13,33 +16,39 @@ component singleton {
 		"bottomRight": chr( 9565 ), // ╝
 		"left": chr( 9553 ), // ║
 		"leftMid": chr( 9567 ), // ╟
+		"headerLeftMid": chr( 9568 ), // ╠
 		"mid": chr( 9472 ), // ─
 		"midMid": chr( 9532 ), // ┼
+		"headerMidMid": chr( 9578 ), // ╪
 		"right": chr( 9553 ), // ║
 		"rightMid": chr( 9570 ), // ╢
+		"headerRightMid": chr( 9571 ), // ╣
 		"middle": chr( 9474 ) // │
 	};
+	
 
     /**
      * Outputs a table to the screen
-     * @headers.hint An array of column headers.
-     * @data.hint An array of data for the table.  Each item in the array may either be
+     * @headers An array of column headers, or a query.  When passing a query, the "data" argument is not used.
+     * @data An array of data for the table.  Each item in the array may either be
      *            an array in the correct order matching the number of headers or a struct
      *            with keys matching the headers.
-     * @print.hint A reference to the CommandBox Printer that called this table printer.
      */
     public void function print(
-        required array headers,
-        required array data
+        required any headers,
+        array data=[]
     ) {
-        processingdirective pageEncoding='UTF-8';
-		arguments.data = autoFormatData( arguments.data, arguments.headers );
-		var headerData = arguments.headers.map( ( header, index ) => {
-			return {
-				"value": header,
-				"maxWidth": calculateMaxColumnWidth( index, header, data )
-			};
-		} );
+    	// If query is sent in
+    	if( isQuery( arguments.headers ) ) {
+    		// Extract data in array of structs
+    		arguments.data = arguments.headers.reduce( (acc,row)=>{ return acc.append( row ) }, [] );
+    		// Extract column names into headers
+    		arguments.headers = arguments.headers.columnList.listToArray();
+    	}
+    	
+		arguments.data = autoFormatData( arguments.headers,arguments.data );
+		var headerData = processHeaders( arguments.headers, arguments.data )
+		
 		printHeader( headerData );
 		printData( data, headerData );
 		printTableEnd( headerData );
@@ -47,9 +56,68 @@ component singleton {
 	}
 
     /**
+     * Outputs a table to the screen
+     * @headers An array of column headers,
+     * @data An array of data for the table.
+     */
+    public array function processHeaders(
+        required array headers,
+        required array data
+    ) {
+        var headerData = arguments.headers.map( ( header, index ) => calculateColumnData( index, header, data ) );
+        var termWidth = shell.getTermWidth()-3;
+        var tableWidth = headerData.reduce( (acc=0,header)=>acc+header.maxWidth+3 )+1;
+        // Crunch time
+        if( tableWidth > termWidth ) {
+        	var overage = tableWidth-termWidth;
+        	var medianRatioTotal = headerData.reduce( (acc=0,header)=>acc+( header.medianRatio ) );
+        	
+        	for( var header in headerData ) {
+        		var charsToLose = round( overage*( header.medianRatio/medianRatioTotal ) );
+        		header.maxWidth=max( header.maxWidth-charsToLose, 3 );
+        	}
+        }
+        
+        return headerData;
+	}
+
+    /**
+     * Calculates the max width of a column across the header and all rows of data.
+     * This value is used to layout the table correctly.
+     * @index The index of the column we are calculating.
+     * @header The column header.
+     * @data The data for the table.
+     */
+	private struct function calculateColumnData( required numeric index, required string header, required array data ) {
+		var colData = arguments.data.reduce( ( acc, row, rowIndex ) => {
+			if( row.len() < index ) {
+				throw( 'Data in row #rowIndex# is missing values.  It has only #row.len()# columns, but there are at least #index# headers.' );
+			}
+			var data = row[ index ];
+			if ( isStruct( data ) ) {
+				data = data.value;
+			}
+			acc.maxWidth = max( acc.maxWidth, len( data ) );
+			acc.medianWidth.append( len( data ) );
+			return acc;
+		},
+		{
+			"value": header,
+			"maxWidth": len( arguments.header ),
+			"medianWidth": [ len( arguments.header ) ],
+			"medianRatio": 1
+		} );
+		// Finalize median calculation
+		colData.medianWidth = colData.medianWidth.sort( (a,b)=>a>b );
+		colData.medianWidth = max( colData.medianWidth[ int( colData.medianWidth.len() / 2 ) ], 0 );
+		colData.medianRatio = max( ( (colData.maxWidth-colData.medianWidth)*data.len() ), 1 )*colData.maxWidth;
+		return colData
+	}
+
+    /**
      * Prints the header row for the table.
-     * @headerData.hint The array of column headers for the table with their corresponding max widths.
-     * @print.hint A reference to the CommandBox Printer that called this table printer.
+     * @headerData The array of column headers for the table with their corresponding max widths.
+     * @print A reference to the CommandBox Printer that called this table printer.
      */
 	private void function printHeader( required array headerData ) {
 		// top bar
@@ -81,7 +149,7 @@ component singleton {
 		} );
 
 		// bottom bar
-		print.green( variables.tableChars.leftMid );
+		print.green( variables.tableChars.headerLeftMid );
 		arguments.headerData.each( ( header, index ) => {
 			print.green( variables.tableChars.top );
 			for ( var i = 1; i <= header.maxWidth; i++ ) {
@@ -89,18 +157,18 @@ component singleton {
 			}
 			print.green( variables.tableChars.top );
 			if ( index != headerData.len() ) {
-				print.green( variables.tableChars.midMid );
+				print.green( variables.tableChars.headerMidMid );
 			} else {
-				print.greenLine( variables.tableChars.rightMid );
+				print.greenLine( variables.tableChars.headerRightMid );
 			}
 		} );
 	}
 
     /**
      * Prints all the data for the table.
-     * @data.hint The data for the table.
-     * @headerData.hint The array of column headers for the table with their corresponding max widths.
-     * @print.hint A reference to the CommandBox Printer that called this table printer.
+     * @data The data for the table.
+     * @headerData The array of column headers for the table with their corresponding max widths.
+     * @print A reference to the CommandBox Printer that called this table printer.
      */
 	private void function printData( required array data, required array headerData ) {
 		arguments.data.each( ( row, index ) => {
@@ -113,9 +181,9 @@ component singleton {
 
     /**
      * Prints a single row of data for the table.
-     * @row.hint A signle row of data for the table.
-     * @headerData.hint The array of column headers for the table with their corresponding max widths.
-     * @print.hint A reference to the CommandBox Printer that called this table printer.
+     * @row A signle row of data for the table.
+     * @headerData The array of column headers for the table with their corresponding max widths.
+     * @print A reference to the CommandBox Printer that called this table printer.
      */
 	private void function printRow( required array row, required array headerData ) {
 		print.green( variables.tableChars.left );
@@ -139,8 +207,8 @@ component singleton {
 
     /**
      * Prints the separator between rows.
-     * @headerData.hint The array of column headers for the table with their corresponding max widths.
-     * @print.hint A reference to the CommandBox Printer that called this table printer.
+     * @headerData The array of column headers for the table with their corresponding max widths.
+     * @print A reference to the CommandBox Printer that called this table printer.
      */
 	private void function printRowSeparator( required array headerData ) {
 		print.green( variables.tableChars.leftMid );
@@ -160,8 +228,8 @@ component singleton {
 
     /**
      * Prints the final line of the table.
-     * @headerData.hint The array of column headers for the table with their corresponding max widths.
-     * @print.hint A reference to the CommandBox Printer that called this table printer.
+     * @headerData The array of column headers for the table with their corresponding max widths.
+     * @print A reference to the CommandBox Printer that called this table printer.
      */
 	private void function printTableEnd( required array headerData ) {
 		print.green( variables.tableChars.bottomLeft );
@@ -182,10 +250,10 @@ component singleton {
     /**
      * Formats the data into an array of arrays.
      * If the data is an array of structs, the headers will be used to convert it to an array of arrays.
-     * @data.hint The data for the table.
-     * @headers.hint The column headers for the table.  Used as the lookup keys if data is an array of structs.
+     * @data The data for the table.
+     * @headers The column headers for the table.  Used as the lookup keys if data is an array of structs.
      */
-	private array function autoFormatData( required array data, required array headers ) {
+	private array function autoFormatData( required array headers, required array data ) {
 		if ( arguments.data.isEmpty() ) {
 			return [];
 		}
@@ -200,8 +268,8 @@ component singleton {
 
     /**
      * Gets the required keys from the struct of data and returns them as an array of arrays.
-     * @item.hint The struct of data representing a single row.
-     * @headers.hint The column headers for the table used to get the needed data from the item in the correct order.
+     * @item The struct of data representing a single row.
+     * @headers The column headers for the table used to get the needed data from the item in the correct order.
      */
 	private array function getStructValues( required struct item, required array headers ) {
 		return arguments.headers.map( ( key ) => {
@@ -210,33 +278,22 @@ component singleton {
 	}
 
     /**
-     * Calculates the max width of a column across the header and all rows of data.
-     * This value is used to layout the table correctly.
-     * @index.hint The index of the column we are calculating.
-     * @header.hint The column header.
-     * @data.hint The data for the table.
-     */
-	private numeric function calculateMaxColumnWidth( required numeric index, required string header, required array data ) {
-		return arguments.data.reduce( ( acc, row ) => {
-			var data = row[ index ];
-			if ( isStruct( data ) ) {
-				data = data.value;
-			}
-			return max( acc, len( data ) );
-		}, len( arguments.header ) );
-	}
-
-    /**
      * Adds characters to the right of a string until the string reaches a certain length.
      * If the text is already greater than or equal to the maxWidth, the text is returned unchanged.
-     * @text.hint The text to pad.
-     * @maxWidth.hint The number of characters to pad up to.
-     * @padChar.hint The character to use to pad the text.
+     * @text The text to pad.
+     * @maxWidth The number of characters to pad up to.
+     * @padChar The character to use to pad the text.
      */
 	private string function padRight( required string text, required numeric maxWidth, string padChar = " " ) {
 		var textLength = len( arguments.text );
-		if ( textLength >= arguments.maxWidth ) {
+		if ( textLength == arguments.maxWidth ) {
 			return arguments.text;
+		} else if( textLength > arguments.maxWidth ) {
+			if( arguments.maxWidth < 4 ) {
+				return left( text, arguments.maxWidth );	
+			} else {
+				return left( text, arguments.maxWidth-3 )&'...';				
+			}
 		}
 
 		for ( var i = textLength; i < arguments.maxWidth; i ++ ) {

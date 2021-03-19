@@ -21,6 +21,7 @@
 component aliases="outdated" {
 
 	processingdirective pageEncoding='UTF-8';
+	property name='tablePrinter'        inject='TablePrinter';
 
 	// DI
 	property name="packageService" 	inject="PackageService";
@@ -57,16 +58,31 @@ component aliases="outdated" {
 		}
 
 		// build dependency tree
-		var aOutdatedDependencies = packageService.getOutdatedDependencies( directory=directory, print=print, verbose=arguments.verbose );
+		var aAllDependencies = packageService.getOutdatedDependencies( directory=directory, print=print, verbose=arguments.verbose );
+		var aOutdatedDependencies = aAllDependencies.filter( (d)=>d.isOutdated );
 
 		// JSON output
 		if( arguments.JSON ) {
-			print.line( aOutdatedDependencies );
+			print.line( aAllDependencies.filter( (d)=>d.isOutdated ) );
 			return;
 		}
+		variables.tablePrinter.print(
+			[ 'Package', 'Installed', 'Update', 'Latest', 'Location' ],
+			aAllDependencies.map( ( d ) => {
+				return [
+					d.slug & ( d.endpointName contains 'forgebox' ? '@' & d.version : ' (#d.endpointName#)' ),
+					d.packageVersion,
+					{ 'value': d.newVersion, 'options': d.isOutdated ? 'boldWhiteOnRed' : 'white' },
+					{ 'value': d.latestVersion, 'options': d.isLatest ? 'white' : 'boldWhiteOnOrange3' },
+					d.location
+				]
+			} )
+		);
+		print.text( 'Key: ' ).boldWhiteOnRed( 'Update Available' ).text( '   ' ).boldWhiteOnOrange3line( 'Major Update Available' ).line();
 
 		// normal output
 		if( aOutdatedDependencies.len() gt 0 ){
+
 			print.line()
 				.green( 'Found ' )
 				.boldGreen( '(#aOutdatedDependencies.len()#)' )
@@ -90,8 +106,7 @@ component aliases="outdated" {
 
 		for( var dependency in arguments.data ){
 			// print it out
-			print[ ( dependency.dev ? 'boldYellow' : 'bold' ) ]( '* #dependency.slug# (#dependency.packageVersion#)' )
-				.boldRedLine( ' ─> new version: #dependency.newVersion#' );
+			print.line( '* #dependency.slug#', ( dependency.dev ? 'boldYellow' : 'bold' ) );
 			// verbose data
 			if( arguments.verbose ) {
 				if( len( dependency.name ) ) {
