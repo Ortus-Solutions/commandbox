@@ -93,10 +93,12 @@ component {
         }
         
         var tableWidth = headerData.reduce( (acc=0,header)=>acc+header.maxWidth+3 )+1;
-        // Drastic measures
+        
+        // Table is still too big, time for drastic measures
         if( tableWidth > termWidth ) {
         	var lastCol = 1;
         	var totalWidth = 1;
+        	// Find out how many columns will fit in the terminal
         	while( totalWidth<termWidth && lastCol <= headerData.len() ) {
         		if( totalWidth + headerData[ lastCol ].maxWidth+3 > termWidth ) {
         			break;
