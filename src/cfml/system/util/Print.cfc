@@ -286,10 +286,12 @@ component {
      * @data An array of data for the table.  Each item in the array may either be
      *            an array in the correct order matching the number of headers or a struct
      *            with keys matching the headers.
+     * @includeHeaders A list of headers to include.  Used for query inputs
      */
 	function table(
         required any headers,
-        array data=[]
+        array data=[],
+        string includeHeaders
     ){
 		return tablePrinter.print( argumentCollection=arguments );
 	}

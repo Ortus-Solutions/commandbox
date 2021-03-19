@@ -32,13 +32,25 @@ component {
      * @data An array of data for the table.  Each item in the array may either be
      *            an array in the correct order matching the number of headers or a struct
      *            with keys matching the headers.
+     * @includeHeaders A list of headers to include.  Used for query inputs
      */
     public string function print(
         required any headers,
-        array data=[]
+        array data=[],
+        string includeHeaders
+        
     ) {
     	// If query is sent in
-    	if( isQuery( arguments.headers ) ) {
+    	if( isQuery( headers ) ) {
+    		
+    		if( !isNull( arguments.includeHeaders ) && len( arguments.includeHeaders ) ) {
+    			arguments.headers = queryExecute(
+    				'SELECT #arguments.includeHeaders# FROM arguments.headers',
+    				[],
+    				{ dbType : 'query' }
+    			);
+    		}
+    		
     		// Extract data in array of structs
     		arguments.data = arguments.headers.reduce( (acc,row)=>{ return acc.append( row ) }, [] );
     		// Extract column names into headers
@@ -64,7 +76,7 @@ component {
         required array data
     ) {
         var headerData = arguments.headers.map( ( header, index ) => calculateColumnData( index, header, data ) );
-        var termWidth = shell.getTermWidth()-3;
+        var termWidth = shell.getTermWidth()-1;
         var tableWidth = headerData.reduce( (acc=0,header)=>acc+header.maxWidth+3 )+1;
         
         // Crunch time-- we need to shed a few pounds
@@ -78,6 +90,33 @@ component {
         		header.maxWidth=max( header.maxWidth-charsToLose, 3 );
         		return header
         	} );
+        }
+        
+        var tableWidth = headerData.reduce( (acc=0,header)=>acc+header.maxWidth+3 )+1;
+        // Drastic measures
+        if( tableWidth > termWidth ) {
+        	var lastCol = 1;
+        	var totalWidth = 1;
+        	while( totalWidth<termWidth && lastCol <= headerData.len() ) {
+        		if( totalWidth + headerData[ lastCol ].maxWidth+3 > termWidth ) {
+        			break;
+        		}
+        		totalWidth += headerData[ lastCol ].maxWidth+3;
+        		lastCol++;
+        	}
+        	
+        	// If there's not room for our final "..." column, then back up one col
+   			if( termWidth-totalWidth < 6 ) {
+   				lastCol--;
+   			}
+        	// Just whack off the extra columns
+        	headerData = headerData.slice( 1, lastCol-1 );
+        	headerData.append( {
+        		"value":"...",
+        		"maxWidth":3,
+        		"overageCol":true
+        	} );
+   			
         }
         
         return headerData;
@@ -99,8 +138,8 @@ component {
 			if ( isStruct( data ) ) {
 				data = data.value;
 			}
-			acc.maxWidth = max( acc.maxWidth, len( data ) );
-			acc.medianWidth.append( len( data ) );
+			acc.maxWidth = max( acc.maxWidth, len( stringify( data ) ) );
+			acc.medianWidth.append( len( stringify( data ) ) );
 			return acc;
 		},
 		{
@@ -188,13 +227,19 @@ component {
 		print.green( variables.tableChars.left );
 		arguments.headerData.each( ( header, index ) => {
 			print.white( " " );
-			var data = row[ index ];
+			// If this is the last column and it is an overage indicator, just print '...'
+			if ( index == headerData.len() && ( header.overageCol ?: false ) ) {
+				var data = '...';
+			} else {
+				var data = row[ index ];	
+			}
 			var options = "white";
 			if ( isStruct( data ) ) {
 				options = data.options;
 				data = data.value;
 			}
-			print.text( padRight( data, header.maxWidth ), options );
+			
+			print.text( padRight( stringify( data ), header.maxWidth ), options );
 			print.white( " " );
 			if ( index != headerData.len() ) {
 				print.green( variables.tableChars.middle );
@@ -296,6 +341,22 @@ component {
 		}
 		arguments.text &= repeatString( arguments.padChar, arguments.maxWidth-textLength );
 		return arguments.text;
+	}
+	
+	function stringify( any data ) {
+		if( isSimpleValue( data ) ) {
+			return data;
+		} else if ( isArray( data ) ) {
+			return '[Array]';
+		} else if ( isStruct( data ) ) {
+			return '[Struct]';
+		} else if ( isXML( data ) ) {
+			return '[XML]';
+		} else if ( isBinary( data ) ) {
+			return '[Binary]';
+		} else {
+			return '[#data.getClass().getName()#]';			
+		}
 	}
 
 }
