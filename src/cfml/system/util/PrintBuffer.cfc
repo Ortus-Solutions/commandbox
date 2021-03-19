@@ -57,5 +57,23 @@ component accessors="true" extends="Print"{
 			return this;
 		}
 	}
+	
+    /**
+     * Outputs a table to the screen
+     * @headers An array of column headers, or a query.  When passing a query, the "data" argument is not used.
+     * @data An array of data for the table.  Each item in the array may either be
+     *            an array in the correct order matching the number of headers or a struct
+     *            with keys matching the headers.
+     */
+	function table(
+        required any headers,
+        array data=[]
+    ){
+		// Don't modify the buffer if it's being printed
+		lock name='printBuffer-#getObjectID()#' type="readonly" timeout="20" {
+			variables.result.append( super.table( argumentCollection=arguments ) );
+			return this;
+		}
+	}
 
 }

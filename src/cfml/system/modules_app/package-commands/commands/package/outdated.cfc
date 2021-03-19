@@ -21,7 +21,6 @@
 component aliases="outdated" {
 
 	processingdirective pageEncoding='UTF-8';
-	property name='tablePrinter'        inject='TablePrinter';
 
 	// DI
 	property name="packageService" 	inject="PackageService";
@@ -66,7 +65,7 @@ component aliases="outdated" {
 			print.line( aAllDependencies.filter( (d)=>d.isOutdated ) );
 			return;
 		}
-		variables.tablePrinter.print(
+		print.table(
 			[ 'Package', 'Installed', 'Update', 'Latest', 'Location' ],
 			aAllDependencies.map( ( d ) => {
 				return [

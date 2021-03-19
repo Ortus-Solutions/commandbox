@@ -32,7 +32,6 @@ component aliases="update" {
 
 	// DI
 	property name="packageService" 	inject="PackageService";
-	property name='tablePrinter'    inject='TablePrinter';
 
 	/**
 	* Update all or one outdated dependencies
@@ -72,7 +71,7 @@ component aliases="update" {
 		 
 		 var dependenciesToUpdate = aAllDependencies.filter( (d)=>d.isOutdated ); 
 
-		variables.tablePrinter.print(
+		print.table(
 			[ 'Package', 'Installed', 'Update', 'Latest', 'Location' ],
 			aAllDependencies.map( ( d ) => {
 				return [

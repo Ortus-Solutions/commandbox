@@ -1,4 +1,4 @@
-component singleton {
+component {
 
     processingdirective pageEncoding='UTF-8';
     
@@ -26,7 +26,6 @@ component singleton {
 		"middle": chr( 9474 ) // │
 	};
 	
-
     /**
      * Outputs a table to the screen
      * @headers An array of column headers, or a query.  When passing a query, the "data" argument is not used.
@@ -34,7 +33,7 @@ component singleton {
      *            an array in the correct order matching the number of headers or a struct
      *            with keys matching the headers.
      */
-    public void function print(
+    public string function print(
         required any headers,
         array data=[]
     ) {
@@ -52,7 +51,7 @@ component singleton {
 		printHeader( headerData );
 		printData( data, headerData );
 		printTableEnd( headerData );
-        print.toConsole();
+        return print.getResult();
 	}
 
     /**
@@ -67,15 +66,18 @@ component singleton {
         var headerData = arguments.headers.map( ( header, index ) => calculateColumnData( index, header, data ) );
         var termWidth = shell.getTermWidth()-3;
         var tableWidth = headerData.reduce( (acc=0,header)=>acc+header.maxWidth+3 )+1;
-        // Crunch time
+        
+        // Crunch time-- we need to shed a few pounds
         if( tableWidth > termWidth ) {
         	var overage = tableWidth-termWidth;
         	var medianRatioTotal = headerData.reduce( (acc=0,header)=>acc+( header.medianRatio ) );
         	
-        	for( var header in headerData ) {
+        	headerData = headerData.map( (header)=>{
+        		// Calculate how many characters to remove from each column based on their "squishable" ratio
         		var charsToLose = round( overage*( header.medianRatio/medianRatioTotal ) );
         		header.maxWidth=max( header.maxWidth-charsToLose, 3 );
-        	}
+        		return header
+        	} );
         }
         
         return headerData;
@@ -110,6 +112,7 @@ component singleton {
 		// Finalize median calculation
 		colData.medianWidth = colData.medianWidth.sort( (a,b)=>a>b );
 		colData.medianWidth = max( colData.medianWidth[ int( colData.medianWidth.len() / 2 ) ], 0 );
+		// This ratio represents how 'squishable' a column is as a function of the amount of whitespae and it's overall length
 		colData.medianRatio = max( ( (colData.maxWidth-colData.medianWidth)*data.len() ), 1 )*colData.maxWidth;
 		return colData
 	}
@@ -124,9 +127,7 @@ component singleton {
 		print.green( variables.tableChars.topLeft );
 		arguments.headerData.each( ( header, index ) => {
 			print.green( variables.tableChars.top );
-			for ( var i = 1; i <= header.maxWidth; i++ ) {
-				print.green( variables.tableChars.top );
-			}
+			print.green( repeatString( variables.tableChars.top, header.maxWidth ) );
 			print.green( variables.tableChars.top );
 			if ( index != headerData.len() ) {
 				print.green( variables.tableChars.topMid );
@@ -152,9 +153,7 @@ component singleton {
 		print.green( variables.tableChars.headerLeftMid );
 		arguments.headerData.each( ( header, index ) => {
 			print.green( variables.tableChars.top );
-			for ( var i = 1; i <= header.maxWidth; i++ ) {
-				print.green( variables.tableChars.top );
-			}
+			print.green( repeatString( variables.tableChars.top, header.maxWidth ) );
 			print.green( variables.tableChars.top );
 			if ( index != headerData.len() ) {
 				print.green( variables.tableChars.headerMidMid );
@@ -295,11 +294,7 @@ component singleton {
 				return left( text, arguments.maxWidth-3 )&'...';				
 			}
 		}
-
-		for ( var i = textLength; i < arguments.maxWidth; i ++ ) {
-			arguments.text &= arguments.padChar;
-		}
-
+		arguments.text &= repeatString( arguments.padChar, arguments.maxWidth-textLength );
 		return arguments.text;
 	}
 

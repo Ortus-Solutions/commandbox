@@ -38,6 +38,7 @@ component {
 	property name='colors256Data'	inject='colors256Data@constants';
 	property name='formatterUtil'	inject='formatter';
 	property name='JSONService'		inject='JSONService';
+	property name='tablePrinter'    inject='provider:TablePrinter';
 
 	this.tab 		= chr( 9 );
 	this.esc 		= chr( 27 );
@@ -277,6 +278,20 @@ component {
 
 		return text;
 
+	}
+	
+    /**
+     * Outputs a table to the screen
+     * @headers An array of column headers, or a query.  When passing a query, the "data" argument is not used.
+     * @data An array of data for the table.  Each item in the array may either be
+     *            an array in the correct order matching the number of headers or a struct
+     *            with keys matching the headers.
+     */
+	function table(
+        required any headers,
+        array data=[]
+    ){
+		return tablePrinter.print( argumentCollection=arguments );
 	}
 
 	/**
