@@ -75,8 +75,8 @@ component aliases="update" {
 			[ 'Package', 'Installed', 'Update', 'Latest', 'Location' ],
 			aAllDependencies.map( ( d ) => {
 				return [
-					d.slug,
 					d.slug & ( d.endpointName contains 'forgebox' ? '@' & d.version : ' (#d.endpointName#)' ),
+					d.packageVersion,
 					{ 'value': d.newVersion, 'options': d.isOutdated ? 'boldWhiteOnRed' : 'white' },
 					{ 'value': d.latestVersion, 'options': d.isLatest ? 'white' : 'boldWhiteOnOrange3' },
 					d.location
