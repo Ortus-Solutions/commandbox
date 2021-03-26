@@ -77,6 +77,9 @@ component {
     ) {
         var headerData = arguments.headers.map( ( header, index ) => calculateColumnData( index, header, data ) );
         var termWidth = shell.getTermWidth()-1;
+        if( termWidth <= 0 ) {
+        	termWidth = 100;
+        }
         var tableWidth = headerData.reduce( (acc=0,header)=>acc+header.maxWidth+3 )+1;
         
         // Crunch time-- we need to shed a few pounds
