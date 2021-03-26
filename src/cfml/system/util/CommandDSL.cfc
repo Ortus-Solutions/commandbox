@@ -30,6 +30,7 @@ component accessors=true {
 	property name='parser'	inject='parser';
 	property name='shell'	inject='shell';
 	property name="job"		inject='interactiveJob';
+	property name='ConsolePainter'	inject='ConsolePainter';
 
 	/**
 	 * Create a new, executable command
@@ -248,11 +249,9 @@ component accessors=true {
 			// If the previous command chain failed
 			if( shell.getExitCode() != 0 ) {
 
-				if( job.isActive() ) {
-					job.errorRemaining();
-					// Distance ourselves from whatever other output the command may have given so far.
-					shell.printString( chr( 10 ) );
-				}
+				ConsolePainter.forceStop();
+				// Distance ourselves from whatever other output the command may have given so far.
+				shell.printString( chr( 10 ) );
 
 				throw( message='Command returned failing exit code (#shell.getExitCode()#)', detail='Failing Command: ' & getTokens().toList( ' ' ), type="commandException", errorCode=shell.getExitCode() );
 			}

@@ -220,11 +220,8 @@ component accessors="true" singleton {
  	 **/
 	function error( required message, detail='', clearPrintBuffer=false, exitCode=1 ) {
 
-		if( job.isActive() ) {
-			job.errorRemaining( message );
-			// Distance ourselves from whatever other output the command may have given so far.
-			print.line().toConsole();
-		}
+		wirebox.getInstance( "ConsolePainter" ).forceStop( message );
+		print.line().toConsole();
 
 		setExitCode( arguments.exitCode );
 		if( arguments.clearPrintBuffer ) {

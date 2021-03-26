@@ -748,7 +748,7 @@ component accessors="true" singleton {
 		boolean initialCommand=false )  {
 
 		var job = wirebox.getInstance( 'interactiveJob' );
-		var progressBarGeneric = wirebox.getInstance( 'progressBarGeneric' );
+		var ConsolePainter = wirebox.getInstance( 'ConsolePainter' );
 
 		// Commands a loaded async in interactive mode, so this is a failsafe to ensure the CommandService
 		// is finished.  Especially useful for commands run onCLIStart.  Wait up to 5 seconds.
@@ -780,10 +780,7 @@ component accessors="true" singleton {
 				rethrow;
 			} else {
 
-				progressBarGeneric.clear();
-				if( job.isActive() ) {
-					job.errorRemaining();
-				}
+				ConsolePainter.forceStop();
 
 				printError( { message : e.message, detail: e.detail } );
 			}
@@ -794,10 +791,7 @@ component accessors="true" singleton {
 				rethrow;
 			} else {
 
-				progressBarGeneric.clear();
-				if( job.isActive() ) {
-					job.errorRemaining();
-				}
+				ConsolePainter.forceStop();
     			variables.reader.getTerminal().writer().flush();
 				variables.reader.getTerminal().writer().println();
 				variables.reader.getTerminal().writer().print( variables.print.boldRedLine( 'CANCELLED' ) );
@@ -813,10 +807,7 @@ component accessors="true" singleton {
 				|| e.message == 'UserInterruptException'
 				|| e.type.toString() == 'EndOfFileException' ) {
 
-				progressBarGeneric.clear();
-				if( job.isActive() ) {
-					job.errorRemaining();
-				}
+				ConsolePainter.forceStop();
 
     			variables.reader.getTerminal().writer().flush();
 				variables.reader.getTerminal().writer().println();
@@ -824,11 +815,8 @@ component accessors="true" singleton {
 			// Anything else is completely unexpected and means boom booms happened-- full stack please.
 			} else {
 
-				progressBarGeneric.clear();
-				if( job.isActive() ) {
-					job.errorRemaining( e.message );
-					variables.reader.getTerminal().writer().println();
-				}
+				ConsolePainter.forceStop( e.message );
+				variables.reader.getTerminal().writer().println();
 
 				printError( e );
 			}
