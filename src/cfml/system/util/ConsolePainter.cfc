@@ -86,7 +86,7 @@ component singleton accessors=true {
 		progressBarGeneric.clear();
 		progressBar.clear();
 		stop();
-	
+	}
 	
 	/**
 	* Draw the lines to the console
@@ -127,7 +127,6 @@ component singleton accessors=true {
 	
 	/**
 	* Clear the console
-	*
 	*/	
 	function clear() {
 		display.resize( terminal.getHeight(), terminal.getWidth() );
