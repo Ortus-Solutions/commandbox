@@ -380,6 +380,12 @@ component accessors="true" singleton {
 						installDirectory = serverDeployFolder;
 						artifactDescriptor.createPackageDirectory = false;
 						ignorePatterns.append( '/box.json' );
+					} else {
+						job.addWarnLog( "This package is a Lucee Extension, but no server was found in [#arguments.packagePathRequestingInstallation#]" );
+						if( !serverDetails.serverIsNew && !(serverInfo.engineName contains 'lucee') ) {
+							job.addWarnLog( "We did find a server, but the engine is [#serverInfo.engineName#] instead of 'lucee'" );
+						}
+						
 					}
 
 				}
