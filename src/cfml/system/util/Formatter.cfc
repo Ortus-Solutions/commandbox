@@ -11,7 +11,7 @@
 component singleton {
 
 	// DI
-    property name="configService" inject="ConfigService";
+    property name="configService" inject="provider:ConfigService";
 	property name="shell" inject="shell";
 	property name="print" inject="print";
 	property name="JSONPrettyPrint" inject="provider:JSONPrettyPrint";

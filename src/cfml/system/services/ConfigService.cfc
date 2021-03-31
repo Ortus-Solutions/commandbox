@@ -11,21 +11,27 @@ component accessors="true" singleton {
 
 	// Holds the config settings in memory
 	property name="configSettings";
+	// env var/sys prop overrides
+	property name="configSettingOverrides";
 	// All known config settings-- really just for tab-completion right now
 	property name="possibleConfigSettings";
 	// The physical path there config settings are persisted
 	property name="configFilePath";
+	property name="serverServiceCompletePerformed" type="boolean" default="false";
+	
 
 	// DI
 	property name='formatterUtil'		inject='formatter';
 	property name='ModuleService'		inject='ModuleService';
 	property name='JSONService'			inject='JSONService';
-	property name='ServerService'		inject='ServerService';
-
+	property name='ServerService'		inject='provider:ServerService';
+	
 	/**
 	* Constructor
 	*/
 	function init(){
+		variables.system = createObject( 'java', 'java.lang.System' );
+		
 		// These aren't stored in the actual configSettings struct-- they're more for documentation
 		// and smart auto-completion to help people set new settings.
 		setPossibleConfigSettings([
@@ -67,6 +73,7 @@ component accessors="true" singleton {
 			// Interactivity
 			'nonInteractiveShell',
 			'tabCompleteInline',
+			'colorInDumbTerminal',
 			// JSON
 			'JSON.indent',
 			'JSON.lineEnding',
@@ -90,16 +97,14 @@ component accessors="true" singleton {
 			fileWrite( getConfigFilePath(), '{}' );
 		}
 
+		// Config settings that come from the JSON file
 		loadConfig();
-
+		
 		return this;
 	}
 
 	function onDIComplete() {
-		var serverProps = serverService.completeProperty( 'fake', true );
-		for( var prop in serverProps ) {
-			variables.possibleConfigSettings.append( 'server.defaults.#prop#' );
-		}
+		loadOverrides();
 	}
 
 	function setConfigSettings( required struct configSettings ) {
@@ -113,7 +118,6 @@ component accessors="true" singleton {
 	* @defaultValue.hint The default value to use if setting does not exist
 	*/
 	function getSetting( required name, defaultValue ){
-
 		arguments.JSON = getConfigSettings();
 		arguments.property = arguments.name;
 
@@ -171,11 +175,100 @@ component accessors="true" singleton {
 		variables.configSettings = deserializeJSON( fileRead( getConfigFilePath() ) );
 	}
 
+
+	/**
+	* Return all config settings including env var/sys prop overrides
+	*/
+	function getConfigSettings( boolean noOverrides=false ) {
+		if( noOverrides ) {
+			return variables.configSettings;
+		}
+		
+		// env var/system property overrides which we want to keep seperate so we don't write them back to the JSON file.
+		return mergeData( duplicate( variables.configSettings ), getConfigSettingOverrides() );
+	}
+	
+	
+	
+	/**
+	* Merges data from source into target
+	*/
+	function mergeData( any target, any source ) {
+		
+		// If it's a struct...
+		if( isStruct( source ) && !isObject( source ) && isStruct( target ) && !isObject( target ) ) {
+			// Loop over and process each key
+			for( var key in source ) {
+				var value = source[ key ];
+				if( isSimpleValue( value ) ) {
+					target[ key ] = value;
+				} else if( isStruct( value ) ) {
+					target[ key ] = target[ key ] ?: {};
+					mergeData( target[ key ], value )
+				} else if( isArray( value ) ) {
+					target[ key ] = target[ key ] ?: [];
+					mergeData( target[ key ], value )
+				}
+			}
+		// If it's an array...
+		} else if( isArray( source ) && isArray( target ) ) {
+			var i=0;
+			for( var value in source ) {
+				i++;
+				if( !isNull( value ) ) {
+					if( isSimpleValue( value ) ) {
+						target[ i ] = value;
+					} else if( isStruct( value ) ) {
+						target[ i ] = target[ i ] ?: {};
+						mergeData( target[ i ], value )
+					} else if( isArray( value ) ) {
+						target[ i ] = target[ i ] ?: [];
+						mergeData( target[ i ], value )
+					}	
+				}
+			}
+		}
+		return target;
+
+	}
+	
+	/**
+	* Loads config settings from env vars or Java system properties
+	*/
+	function loadOverrides(){
+		var overrides={};
+		
+		// Look for individual BOX settings to import.		
+		var processVarsUDF = function( envVar, value ) {
+			// Loop over any that look like box_config_xxx
+			if( envVar.len() > 11 && left( envVar, 11 ) == 'box_config_' ) {
+				// proxy_host gets turned into proxy.host
+				// Note, the asssumption is made that no config setting will ever have a legitimate underscore in the name
+				var name = right( envVar, len( envVar ) - 11 ).replace( '_', '.', 'all' );
+				JSONService.set( JSON=overrides, properties={ '#name#' : value }, thisAppend=true );
+			}
+		};
+		
+		// Get all OS env vars
+		var envVars = system.getenv();
+		for( var envVar in envVars ) {
+			processVarsUDF( envVar, envVars[ envVar ] );
+		}
+		
+		// Get all System Properties
+		var props = system.getProperties();
+		for( var prop in props ) {
+			processVarsUDF( prop, props[ prop ] );
+		}
+	
+		setConfigSettingOverrides( overrides );
+	}
+	
 	/**
 	* Persists config settings to disk
 	*/
 	function saveConfig(){
-		JSONService.writeJSONFile( getConfigFilePath(), getConfigSettings() );
+		JSONService.writeJSONFile( getConfigFilePath(), getConfigSettings( noOverrides=true ) );
 
 		// Update ModuleService
 		ModuleService.overrideAllConfigSettings();
@@ -188,6 +281,14 @@ component accessors="true" singleton {
 	* @asSet Pass true to add = to the end of the options
 	*/
 	function completeProperty( all=false, asSet=false ) {
+		if( !getServerServiceCompletePerformed() ) {		
+			var serverProps = serverService.completeProperty( 'fake', true );
+			for( var prop in serverProps ) {
+				variables.possibleConfigSettings.append( 'server.defaults.#prop#' );
+			}
+			setServerServiceCompletePerformed( true );
+		}
+		
 		// Get all config settings currently set
 		var props = JSONService.addProp( [], '', '', getConfigSettings() );
 

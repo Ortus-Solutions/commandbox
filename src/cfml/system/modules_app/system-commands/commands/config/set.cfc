@@ -59,7 +59,7 @@ component {
 		structDelete( arguments, 'append' );
 		structDelete( arguments, 'quiet' );
 
-		var configSettings = ConfigService.getconfigSettings();
+		var configSettings = ConfigService.getconfigSettings( noOverrides=true );
 
 		var results = JSONService.set( configSettings, arguments, thisAppend );
 

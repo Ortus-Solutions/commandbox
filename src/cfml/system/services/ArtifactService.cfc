@@ -20,18 +20,17 @@ component accessors="true" singleton {
 	property name='tempDir' 			inject='tempDir@constants';
 	property name='packageService'	 	inject='PackageService';
 	property name='logger' 				inject='logbox:logger:{this}';
-	property name="semanticVersion"		inject="provider:semanticVersion@semver";
+	property name="semanticVersion"		inject="provider:semanticVersion@semver"; 	
 	property name="configService"		inject="ConfigService";
 
-
 	/**
-	* DI complete
+	* THIS CANNOT BE RUN ON DI COMPLETE due to a circular dependency with the ConfigSerivice
 	*/
-	function onDIComplete() {
-
+	function ensureArtifactsDirectory() {
+		
 		// Create the artifacts directory if it doesn't exist
 		if( !directoryExists( getArtifactsDirectory() ) ) {
-			directoryCreate( getArtifactsDirectory() );
+			directoryCreate( getArtifactsDirectory(), true, true );
 		}
 
 	}
@@ -42,6 +41,7 @@ component accessors="true" singleton {
 	* @returns A struct of arrays where the struct key is the package and the array contains the versions of that package in the cache.
 	*/
 	struct function listArtifacts( packageName='' ) {
+		ensureArtifactsDirectory();
 		// Ordered struct
 		var result = [:];
 
@@ -70,6 +70,7 @@ component accessors="true" singleton {
 	* Removes all artifacts from the cache and returns the number of wiped out directories
 	*/
 	numeric function cleanArtifacts() {
+		ensureArtifactsDirectory();
 
 		var qryDir = directoryList( path=getArtifactsDirectory(), recurse=false, listInfo='query' );
 		var numRemoved = 0;
@@ -90,6 +91,7 @@ component accessors="true" singleton {
 	* @version The version to look for
 	*/
 	boolean function removeArtifact( required packageName, version="" ) {
+		ensureArtifactsDirectory();
 		if( packageExists( arguments.packageName, arguments.version ) ){
 			directoryDelete( getPackagePath( arguments.packageName, arguments.version ), true );
 			return true;
@@ -104,6 +106,7 @@ component accessors="true" singleton {
 	* @version The version to look for
 	*/
 	boolean function packageExists( required packageName, version="" ){
+		ensureArtifactsDirectory();
 		return directoryExists( getPackagePath( arguments.packageName, arguments.version ) );
 	}
 
@@ -113,6 +116,7 @@ component accessors="true" singleton {
 	* @version The version to look for
 	*/
 	function getPackagePath( required packageName, version="" ){
+		ensureArtifactsDirectory();
 		// This will likely change, so I'm only going to put the code here.
 
 		var path = getArtifactsDirectory() & '/' & arguments.packageName;
@@ -129,6 +133,7 @@ component accessors="true" singleton {
 	* @version The version of the package to look for
 	*/
 	boolean function artifactExists( required packageName, required version ){
+		ensureArtifactsDirectory();
 		return fileExists( getArtifactPath( argumentCollection = arguments ) );
 	}
 
@@ -138,6 +143,7 @@ component accessors="true" singleton {
 	* @version The version of the package to look for
 	*/
 	function getArtifactPath( required packageName, required version ) {
+		ensureArtifactsDirectory();
 		// I'm using the package name as the zip file for lack of anything better even though it's redundant with the first folder
 		return getPackagePath( arguments.packageName, arguments.version ) & '/' & arguments.packageName & '.zip';
 
@@ -153,6 +159,7 @@ component accessors="true" singleton {
 	* @packagePath A file path to a local zip file that contains the package
 	*/
 	ArtifactService function createArtifact( required packageName, required version, required packagePath ) {
+		ensureArtifactsDirectory();
 
 		// If we were given a folder, defer to another method
 		if( directoryExists( arguments.packagePath ) ) {
@@ -190,6 +197,7 @@ component accessors="true" singleton {
 	* @packageFolder A file path to a local folder that contains the package
 	*/
 	function createArtifactFromFolder( required packageName, required version, required packageFolder ) {
+		ensureArtifactsDirectory();
 
 		//  Where will this artifact live?
 		var thisArtifactPath = getArtifactPath( arguments.packageName, arguments.version );
@@ -210,6 +218,7 @@ component accessors="true" singleton {
 	* @version The version of the package to look for
 	*/
 	public struct function getArtifactDescriptor( required packageName, required version ) {
+		ensureArtifactsDirectory();
 		var thisArtifactPath = getArtifactPath( arguments.packageName, arguments.version );
 		var boxJSONPath = 'zip://' & thisArtifactPath & '!box.json';
 
@@ -239,6 +248,7 @@ component accessors="true" singleton {
 	* @version Version range to satisfy
 	*/
 	function findSatisfyingVersion( required string slug, required string version ) {
+		ensureArtifactsDirectory();
 		var artifacts = listArtifacts( slug );
 
 		// Check to see if we even have any versions for this artifact
@@ -265,7 +275,6 @@ component accessors="true" singleton {
 			return '';
 		}
 	}
-
 
 	string function getArtifactsDirectory() {
 		return configService.getSetting( 'artifactsDirectory', variables.artifactDir );

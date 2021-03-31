@@ -30,8 +30,8 @@ component accessors="true" singleton {
 		setEndpointRegistry( {} );
 		return this;
 	}
-
-	function onDIComplete() {
+	
+	function onCLIStart() {
 		buildEndpointRegistry();
 		registerCustomForgeboxEndpoints();
 	}

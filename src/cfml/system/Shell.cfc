@@ -27,6 +27,7 @@ component accessors="true" singleton {
 	property name="REPLHighlighter"			inject="REPLHighlighter";
 	property name="configService"			inject="configService";
 	property name='systemSettings'			inject='SystemSettings';
+	property name='endpointService'			inject='endpointService';
 
 	/**
 	* The java jline reader class.
@@ -141,6 +142,12 @@ component accessors="true" singleton {
 		setTempDir( variables.tempdir );
 
 		getInterceptorService().configure();
+		
+		getInterceptorService().registerInterceptor( 
+			interceptor 	= endpointService, 
+			interceptorObject 	= endpointService,
+			interceptorName 	= "endpoint-service"
+		);
 		getModuleService().configure();
 
 		// When the shell first starts, the current working dir doesn't always containt the trailing slash
