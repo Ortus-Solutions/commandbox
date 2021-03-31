@@ -61,6 +61,7 @@ component accessors="true" singleton {
 		for( var prop in arguments.properties ) {
 
 			var fullPropertyName = 'arguments.JSON' & toBracketNotation( prop );
+			var arrays = findArrays( prop );
 
 			var propertyValue = arguments.properties[ prop ];
 			if( isJSON( propertyValue ) ) {
@@ -97,9 +98,12 @@ component accessors="true" singleton {
 				if( listFind( '",{,[', left( propertyValue, 1 ) ) ) {
 					evaluate( '#fullPropertyName# = deserializeJSON( propertyValue )' );
 				} else {
+					arrays.each( (a)=>evaluate( 'JSON#a# = JSON#a# ?: []' ) );
 					evaluate( '#fullPropertyName# = propertyValue' );
 				}
 			} else {
+				// Intialize any arrays so foo[1]=true creates an array and not a struct
+				arrays.each( (a)=>evaluate( 'JSON#a# = JSON#a# ?: []' ) );
 				evaluate( '#fullPropertyName# = propertyValue' );
 			}
 			results.append( 'Set #prop# = #propertyValue#' );
@@ -179,6 +183,24 @@ component accessors="true" singleton {
 		}
 		return fullPropertyName;
 	}
+	
+	private function findArrays( required string property ) {
+		var tmpProperty = replace( arguments.property, '[', '.[', 'all' );
+		tmpProperty = replace( tmpProperty, ']', '].', 'all' );
+		var arrays = [];
+		var fullPropertyName = '';
+		for( var item in listToArray( tmpProperty, '.' ) ) {
+			if( item.startsWith( '[' ) && item.endsWith( ']' ) && isNumeric( item.right(-1).left(-1) ) ) {
+				if( !arrays.find( fullPropertyName ) ) {
+					arrays.append( fullPropertyName );	
+				}
+				fullPropertyName &= item;
+			} else {
+				fullPropertyName &= '[ "#item#" ]';
+			}
+		}
+		return arrays;
+	}
 
 	// Recursive function to crawl struct and create a string that represents each property.
 	function addProp( props, prop, safeProp, targetStruct ) {
@@ -198,6 +220,9 @@ component accessors="true" singleton {
 			// Add all of this array's indexes
 			var i = 0;
 			while( ++i <= propValue.len() ) {
+				if( isNull( propValue[i] ) ) {
+					continue;
+				}
 				var newProp = '#prop#[#i#]';
 				var newSafeProp = '#safeProp#[#i#]';
 				props.append( newProp );
