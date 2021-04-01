@@ -339,5 +339,46 @@ component accessors="true" singleton {
 	}
 
 
+	/**
+	* Merges data from source into target
+	*/
+	function mergeData( any target, any source ) {
+		
+		// If it's a struct...
+		if( isStruct( source ) && !isObject( source ) && isStruct( target ) && !isObject( target ) ) {
+			// Loop over and process each key
+			for( var key in source ) {
+				var value = source[ key ];
+				if( isSimpleValue( value ) ) {
+					target[ key ] = value;
+				} else if( isStruct( value ) ) {
+					target[ key ] = target[ key ] ?: {};
+					mergeData( target[ key ], value )
+				} else if( isArray( value ) ) {
+					target[ key ] = target[ key ] ?: [];
+					mergeData( target[ key ], value )
+				}
+			}
+		// If it's an array...
+		} else if( isArray( source ) && isArray( target ) ) {
+			var i=0;
+			for( var value in source ) {
+				i++;
+				if( !isNull( value ) ) {
+					if( isSimpleValue( value ) ) {
+						target[ i ] = value;
+					} else if( isStruct( value ) ) {
+						target[ i ] = target[ i ] ?: {};
+						mergeData( target[ i ], value )
+					} else if( isArray( value ) ) {
+						target[ i ] = target[ i ] ?: [];
+						mergeData( target[ i ], value )
+					}	
+				}
+			}
+		}
+		return target;
+
+	}
 
 }
