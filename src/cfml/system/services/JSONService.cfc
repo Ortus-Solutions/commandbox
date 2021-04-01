@@ -15,6 +15,7 @@ component accessors="true" singleton {
 	property name="formatterUtil" inject="Formatter";
 	property name="logger"        inject="logbox:logger:{this}";
 	property name="print"         inject="print";
+	property name="parser"         inject="parser";
 
 	/**
 	* Constructor
@@ -175,8 +176,15 @@ component accessors="true" singleton {
 		tmpProperty = replace( tmpProperty, ']', '].', 'all' );
 		var fullPropertyName = '';
 		for( var item in listToArray( tmpProperty, '.' ) ) {
-			if( item.startsWith( '[' ) ) {
-				fullPropertyName &= item;
+			if( item.startsWith( '[' ) && item.endsWith( ']' ) ) {
+				var innerItem = item.right(-1).left(-1);
+				if( isNumeric( innerItem ) ) {
+					fullPropertyName &= item;	
+				} else {
+					// ensure foo[bar] becomes foo["bar"] and foo["bar"] stays that way
+					innerItem = parser.unwrapQuotes( trim( innerItem ) );
+					fullPropertyName &= '[ "#innerItem#" ]';					
+				}
 			} else {
 				fullPropertyName &= '[ "#item#" ]';
 			}
@@ -190,11 +198,18 @@ component accessors="true" singleton {
 		var arrays = [];
 		var fullPropertyName = '';
 		for( var item in listToArray( tmpProperty, '.' ) ) {
-			if( item.startsWith( '[' ) && item.endsWith( ']' ) && isNumeric( item.right(-1).left(-1) ) ) {
-				if( !arrays.find( fullPropertyName ) ) {
-					arrays.append( fullPropertyName );	
+			if( item.startsWith( '[' ) && item.endsWith( ']' ) ) {
+				var innerItem = item.right(-1).left(-1);
+				if( isNumeric( innerItem ) ) {
+					if( !arrays.find( fullPropertyName ) ) {
+						arrays.append( fullPropertyName );	
+					}
+					fullPropertyName &= item;	
+				} else {
+					// ensure foo[bar] becomes foo["bar"] and foo["bar"] stays that way
+					innerItem = parser.unwrapQuotes( trim( innerItem ) );
+					fullPropertyName &= '[ "#innerItem#" ]';					
 				}
-				fullPropertyName &= item;
 			} else {
 				fullPropertyName &= '[ "#item#" ]';
 			}
