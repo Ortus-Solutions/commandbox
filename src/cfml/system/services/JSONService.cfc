@@ -363,17 +363,9 @@ component accessors="true" singleton {
 		} else if( isArray( source ) && isArray( target ) ) {
 			var i=0;
 			for( var value in source ) {
-				i++;
 				if( !isNull( value ) ) {
-					if( isSimpleValue( value ) ) {
-						target[ i ] = value;
-					} else if( isStruct( value ) ) {
-						target[ i ] = target[ i ] ?: {};
-						mergeData( target[ i ], value )
-					} else if( isArray( value ) ) {
-						target[ i ] = target[ i ] ?: [];
-						mergeData( target[ i ], value )
-					}	
+					// For arrays, just append them into the target without overwriting existing items
+					target.append( value );	
 				}
 			}
 		}
