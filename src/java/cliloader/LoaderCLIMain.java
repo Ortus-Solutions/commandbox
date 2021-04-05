@@ -430,10 +430,13 @@ public class LoaderCLIMain{
 						userProps.load( fi );
 						fi.close();
 						if( mapGetNoCase( userProps, "cli.home" ) != null ) {
-							cli_home = new File( mapGetNoCase( userProps,
-									"cli.home" ) );
+							cli_home = new File( mapGetNoCase( userProps, "cli.home" ) );
 						} else if( mapGetNoCase( userProps, home ) != null ) {
 							cli_home = new File( mapGetNoCase( userProps, home ) );
+						}
+						// If relative path was found in commandbox.properties, make it relative to the location of the properties file
+						if( cli_home != null && !cli_home.isAbsolute() ) {
+							cli_home = new File( getJarDir(), cli_home.toString() );
 						}
 					} catch ( IOException e ) {
 						e.printStackTrace();
