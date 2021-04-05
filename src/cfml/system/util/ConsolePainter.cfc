@@ -43,7 +43,7 @@ component singleton accessors=true {
 			lock timeout="20" name="ConsolePainter" type="exclusive" {
 				if( !getActive() ) {
 					setFuture(
-						getTaskScheduler().newSchedule( ()=>paint( argumentCollection=variables ) )
+						getTaskScheduler().newSchedule( ()=>paint() )
 					        .every( 200 )
 					        .start()
 					);
@@ -105,9 +105,9 @@ component singleton accessors=true {
 			
 			var lines = [];
 			cursorPosInt = 0;
-			lines.append( arguments.job.getLines(), true );
-			lines.append( arguments.progressBar.getLines(), true );
-			lines.append( arguments.progressBarGeneric.getLines(), true );
+			lines.append( job.getLines(), true );
+			lines.append( progressBar.getLines(), true );
+			lines.append( progressBarGeneric.getLines(), true );
 			if( !isNull( multiSelect ) && multiSelect.getActive() ) {
 				var cursorPos = multiSelect.getCursorPosition();
 				cursorPosInt = terminal.getSize().cursorPos( cursorPos.row+lines.len(), cursorPos.col );
