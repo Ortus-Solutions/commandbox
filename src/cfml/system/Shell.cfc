@@ -163,6 +163,13 @@ component accessors="true" singleton {
 		} else {
 			variables.commandService.configure();
 		}
+		
+		// Ensure we have a system box.json
+		var systemBoxJSON = expandPath( '/commandbox/box.json' );
+		if( !fileExists( systemBoxJSON ) ) {
+			fileWrite( systemBoxJSON, '{ "name":"CommandBox System" }' );
+		}
+		
 	}
 
 
