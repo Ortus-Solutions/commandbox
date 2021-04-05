@@ -17,12 +17,15 @@ component accessors=true {
 	property name='multiple' type="boolean";
 	// Can the input be submitted without anything selected?
 	property name='required' type="boolean";
+	// Is this control active?
+	property name='active' type="boolean";
 
 	// DI
-	property name='shell'		inject='shell';
-	property name='printBuffer'	inject='printBuffer';
-	property name='print'		inject='print';
-	property name='job'			inject='provider:InteractiveJob';
+	property name='shell'			inject='shell';
+	property name='printBuffer'		inject='printBuffer';
+	property name='print'			inject='print';
+	property name='job'				inject='provider:InteractiveJob';
+	property name='ConsolePainter'	inject='provider:ConsolePainter';
 
 	function init() {
 		// Static reference to the class so we can create instances later
@@ -84,19 +87,9 @@ component accessors=true {
 			}
 		} finally {
 
-			// Wipe out screen
-			display.update(
-				getOptions()
-					.map( function( o ) {
-						return aStr.init( '' );
-						} )
-				.prepend( aStr.init( '' ) )
-				.prepend( aStr.init( '' ) )
-				.append( aStr.init( ' ' ) )
-				.append( aStr.init( ' ' ) )
-				.append( aStr.init( ' ' ) ),
-				getQuestion().len()
-			);
+			setActive( false );
+			ConsolePainter.setMultiSelect( nullValue() );
+			ConsolePainter.stop();			
 
 		}
 
@@ -104,19 +97,25 @@ component accessors=true {
 		if( multiple ) {
 
 			// Print out comma delimited list of selected option display names
-			printBuffer
-				.line()
-				.text( getQuestion() )
-				.line(
-					getOptions().reduce( function( prev='', o ) {
-						if( o.selected ) {
-							prev = prev.listAppend( ' ' & o.display );
-						}
-						return prev;
-					} )
-					.trim()
-				)
-				.toConsole();
+			var response = getOptions()
+				.reduce( function( prev='', o ) {
+					if( o.selected ) {
+						prev = prev.listAppend( ' ' & o.display );
+					}
+					return prev;
+				} )
+				.trim();
+				
+			if( job.getActive() ) {
+				job.addLog( getQuestion() & ': ' & response );
+			} else {
+				printBuffer
+					.line()
+					.text( getQuestion() )
+					.line( response )
+					.toConsole();				
+			}
+
 
 			// Return an array of selected option values
 			return getOptions().reduce( function( prev=[], o ) {
@@ -130,18 +129,23 @@ component accessors=true {
 		} else {
 
 			// Print out the first found selected option display name
-			printBuffer
-				.line()
-				.text( getQuestion() )
-				.line(
-					getOptions().reduce( function( prev='', o ) {
-						if( o.selected ) {
-							return o.display;
-						}
-						return prev;
-					} )
-				)
-				.toConsole();
+			var response = getOptions()
+				.reduce( function( prev='', o ) {
+				if( o.selected ) {
+					return o.display;
+				}
+				return prev;
+			} );
+			
+			if( job.getActive() ) {
+				job.addLog( getQuestion() & ': ' & response );
+			} else {
+				printBuffer
+					.line()
+					.text( getQuestion() )
+					.line( response )
+					.toConsole();				
+			}
 
 			// Return the first found selected option value
 			return getOptions().reduce( function( prev='', o ) {
@@ -202,22 +206,19 @@ component accessors=true {
 	}
 
 	private function draw() {
-
-		var lines = [];
-		// If there is a currently running job, include its output first so we don't overwrite each other
-		if( job.getActive() ) {
-			lines = job.getLines();
-		}
-		var extraLines = lines.len();
-		lines.append( generateRows(), 1 );
-
-		display.update(
-				lines,
-				( ( terminal.getWidth()+1) * ( activeOption+2+extraLines ) ) + 3
-			);
+		setActive( true );
+		ConsolePainter.setMultiSelect( this );
+		ConsolePainter.start();
+	}
+	
+	function getCursorPosition() {
+		return {
+			'row' : activeOption+2,
+			'col' : 3
+		};
 	}
 
-	private function generateRows() {
+	function getLines() {
 		var i = 0;
 		return getOptions()
 			.map( function( o ) {

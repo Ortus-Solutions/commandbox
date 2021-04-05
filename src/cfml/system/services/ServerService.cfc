@@ -303,6 +303,7 @@ component accessors="true" singleton {
 				return;
 			} else if( action == 'openinbrowser' ) {
 				job.addLog( "Opening...#serverInfo.openbrowserURL#" );
+				job.error( 'Aborting...' );
 				shell.callCommand( 'browse #serverInfo.openbrowserURL#', false);
 				return;
 			} else if( action == 'newname' ) {

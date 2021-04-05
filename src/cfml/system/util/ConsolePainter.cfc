@@ -15,6 +15,7 @@ component singleton accessors=true {
 	property name="progressBar"			inject="progressBar";
 	property name="job"					inject="InteractiveJob";
 	property name='shell'				inject='shell';
+	property name='multiSelect';
 	
 	property name='active' type='boolean' default='false';
 	property name='taskScheduler';
@@ -60,7 +61,12 @@ component singleton accessors=true {
 	function stop() {
 		
 		// Check if all jobs and progress bars are finished
-		if( progressBarGeneric.getActive() || progressBar.getActive() || job.getActive() ) {
+		if( 
+			progressBarGeneric.getActive() 
+			|| progressBar.getActive() 
+			|| job.getActive() 
+			|| ( !isNull( multiSelect ) && multiSelect.getActive() )
+		) {
 			return;
 		}
 		
@@ -94,16 +100,22 @@ component singleton accessors=true {
 	*/	
 	function paint() {
 		try {
-			var lines = [];
+			var height = terminal.getHeight()-2;
+			display.resize( terminal.getHeight(), terminal.getWidth() );
 			
+			var lines = [];
+			cursorPosInt = 0;
 			lines.append( arguments.job.getLines(), true );
 			lines.append( arguments.progressBar.getLines(), true );
 			lines.append( arguments.progressBarGeneric.getLines(), true );
+			if( !isNull( multiSelect ) && multiSelect.getActive() ) {
+				var cursorPos = multiSelect.getCursorPosition();
+				cursorPosInt = terminal.getSize().cursorPos( cursorPos.row+lines.len(), cursorPos.col );
+				lines.append( multiSelect.getLines(), true );
+			}			
 			lines.append( attr.init( ' ' ) );
 			lines.append( attr.init( ' ' ) );
 			
-			var height = terminal.getHeight()-2;			
-			display.resize( terminal.getHeight(), terminal.getWidth() );
 			
 			
 			// Trim to terminal height so the screen doesn't go all jumpy
@@ -115,7 +127,7 @@ component singleton accessors=true {
 			// Add to console and flush
 			display.update(
 				lines,
-				0
+				cursorPosInt
 			);
 			
 		} catch( any e ) {
@@ -132,7 +144,7 @@ component singleton accessors=true {
 		display.resize( terminal.getHeight(), terminal.getWidth() );
 	
 		display.update(
-			[ attr.init( ' ' ) ],
+			[ attr.init( ' ' ) ,attr.init( ' ' ) ,attr.init( ' ' ) ,attr.init( ' ' ) ],
 			0
 		);
 	
