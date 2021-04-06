@@ -140,6 +140,8 @@ component accessors="true" singleton {
 			},
 			'web' : {
 				'host' : d.web.host ?: '127.0.0.1',
+				// some browsers / os automatically support *.localhost, but java doesn't resolve them
+				'disableLocalhostLookup': false,
 				'directoryBrowsing' : d.web.directoryBrowsing ?: '',
 				'webroot' : d.web.webroot ?: '',
 				// Duplicate so onServerStart interceptors don't actually change config settings via reference.
@@ -566,7 +568,7 @@ component accessors="true" singleton {
 		serverInfo.port 			= serverProps.port 				?: serverJSON.web.http.port			?: serverInfo.port	?: defaults.web.http.port;
 		// Server default is 0 not null.
 		if( serverInfo.port == 0 ) {
-			serverInfo.port = getRandomPort( serverInfo.host );
+			serverInfo.port = getRandomPort( serverInfo.host, serverInfo );
 		}
 
 		var profileReason = 'config setting server defaults';
@@ -2097,7 +2099,7 @@ component accessors="true" singleton {
 	 * Get a random port for the specified host
 	 * @host.hint host to get port on, defaults 127.0.0.1
  	 **/
-	function getRandomPort( host="127.0.0.1" ){
+	function getRandomPort( host="127.0.0.1", required struct serverInfo ){
 		try {
 			var nextAvail  = java.ServerSocket.init( javaCast( "int", 0 ),
 													 javaCast( "int", 1 ),
@@ -2105,7 +2107,10 @@ component accessors="true" singleton {
 			var portNumber = nextAvail.getLocalPort();
 			nextAvail.close();
 		} catch( java.net.UnknownHostException var e ) {
-			throw( "The host name [#arguments.host#] can't be found. Do you need to add a host file entry?", 'serverException', e.message & ' ' & e.detail );
+			if ( arguments.serverInfo.web.disableLocalhostLookup && ListLast( arguments.host, "." ) eq "localhost" ){
+				return 	getRandomPort("127.0.0.1");
+			} else {
+				throw( "The host name [#arguments.host#] can't be found. Do you need to add a host file entry?", 'serverException', e.message & ' ' & e.detail );
 		} catch( java.net.BindException var e ) {
 			// Same as above-- the IP address/host isn't bound to any local adapters.  Probably a host file entry went missing.
 			throw( "The IP address that [#arguments.host#] resolves to can't be bound.  If you ping it, does it point to a local network adapter?", 'serverException', e.message & ' ' & e.detail );
