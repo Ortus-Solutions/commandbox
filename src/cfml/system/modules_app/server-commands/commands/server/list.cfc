@@ -56,6 +56,7 @@ component {
 	 * @unknown Show servers with unknown status
 	 * @verbose Show detailed information
 	 * @local Show servers with webroot matching the current directory
+	 * @JSON Return results in JSON
 	 **/
 	function run(
 		name='',
@@ -64,7 +65,8 @@ component {
 		boolean starting = false,
 		boolean unknown = false,
 		boolean verbose = false,
-		boolean local = false
+		boolean local = false,
+		boolean JSON = false
 	){
 		var statusList = [];
 		if( arguments.running ) { statusList 	= statusList.append( 'running' ); }
@@ -78,10 +80,12 @@ component {
 		// Get Servers
 		var servers = serverService.getServers();
 
-		// Verbalize yourself!
-		print
-			.boldCyanLine( "Processing (#servers.count()#) servers, please wait..." )
-			.toConsole();
+		if( !JSON ) {
+			// Verbalize yourself!
+			print
+				.boldCyanLine( "Processing (#servers.count()#) servers, please wait..." )
+				.toConsole();	
+		}
 
 		// Re-assign to calculate at the end
 		servers = servers
@@ -103,28 +107,36 @@ component {
 			// Filter out by status now if needed now.
 			.filter( ( serverName, thisServerInfo ) => {
 				return ( !statusList.len() || statusList.findNoCase( thisServerInfo.status ) )
-			} )
-			// Process output
-			.each( ( serverName, thisServerInfo ) => {
-				// Print out Header
-				print.line().boldText( thisServerInfo.name );
-				print.boldtext( ' (' )
-					.bold( thisServerInfo.status, getStatusColor( thisServerInfo.status ) )
-					.bold( ')' )
-					.line();
-
-				// Basic or verbose
-				if( verbose ) {
-					printVerboseServerInfo( thisServerInfo )
-				} else {
-					printServerInfo( thisServerInfo );
-				}
 			} );
+			
+			
+			// Process output
+			if( JSON ) {
+				print.line( servers );
+			} else {
+				servers.each( ( serverName, thisServerInfo ) => {
+					// Print out Header
+					print.line().boldText( thisServerInfo.name );
+					print.boldtext( ' (' )
+						.bold( thisServerInfo.status, getStatusColor( thisServerInfo.status ) )
+						.bold( ')' )
+						.line();
+	
+					// Basic or verbose
+					if( verbose ) {
+						printVerboseServerInfo( thisServerInfo )
+					} else {
+						printServerInfo( thisServerInfo );
+					}
+				} );
+				
+				// No servers found, then do nothing
+				if( servers.count() eq 0 ){
+					print.boldRedLine( "No server configurations found with the incoming filters!" );
+				}
+			}
+			
 
-		// No servers found, then do nothing
-		if( servers.count() eq 0 ){
-			print.boldRedLine( "No server configurations found with the incoming filters!" );
-		}
 	}
 
 	/**

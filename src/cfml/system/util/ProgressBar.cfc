@@ -8,16 +8,21 @@
 * Prints out a progress bar to the screen.
 *
 */
-component singleton {
+component singleton accessors=true {
 
 	// DI
-	property name='system'        inject='system@constants';
-	property name='shell'         inject='shell';
-	property name='print'         inject='Print';
-	property name='job'           inject='provider:InteractiveJob';
+	property name='system'			inject='system@constants';
+	property name='shell'			inject='shell';
+	property name='print'			inject='Print';
+	property name='job'        		inject='provider:InteractiveJob';
+	property name='ConsolePainter'	inject='provider:ConsolePainter';
+	
+	property name='active' type='boolean' default='false';
+	property name='memento' type='struct';
 
 	function init() {
 		variables.attr = createObject( 'java', 'org.jline.utils.AttributedString' );
+		setMemento( {} );
 	}
 
 	/**
@@ -35,138 +40,97 @@ component singleton {
 		required numeric speedKBps
 		) {
 
-		var terminal = shell.getReader().getTerminal();
-
-		// If Jline uses a "dumb" terminal, the width reports as zero, which throws divide by zero errors.
-		// TODO: I might be able to just fake a reasonable width.
-		if( !shell.isTerminalInteractive() || terminal.getWidth() == 0 ) {
-			return;
-		}
-
-		lock name="progress-update" {
-			var display = createObject( 'java', 'org.jline.utils.Display' ).init( terminal, false );
-			display.resize( terminal.getHeight(), terminal.getWidth() );
-			var progressRendered = '';
-
-			var lines = [];
-			// If there is a currently running job, include its output first so we don't overwrite each other
-			if( job.getActive() ) {
-				lines = job.getLines();
-			}
-
-			// We don't know the total size (all we can show is the amount downloaded thus far)
-			if( totalSizeKB == -1 ) {
-
-				var progressBarTemplate = 'Downloading: $$$$$$$ (&&&&&&&&)';
-				progressRendered = replace( progressBarTemplate, '$$$$$$$', formatSize( arguments.completeSizeKB, 7 ) );
-				progressRendered = replace( progressRendered, '&&&&&&&&', formatSize( min( arguments.speedKBps, 99000), 6 ) & 'ps' );
-
-
-				lines.append( [
-						attr.fromAnsi( progressRendered ),
-					],
-					true
-				);
-
-			// We do know the total size (show percentages)
-			} else {
-
-				// Total space available to progress bar.  Subtract 5 for good measure since it will wrap if you get too close
-				var totalWidth = shell.getTermWidth()-5;
-
-				var progressBarTemplate = '|@@@% |=>| $$$$$$$ / ^^^^^^^ | &&&&&&&& |';
-
-				if( speedKBps > 0 ) {
-					var remainingKB = totalSizeKB - completeSizeKB;
-					var remainingSec = round( remainingKB / speedKBps );
-					progressBarTemplate &= ' ETA: #formatExecTime( remainingSec )# |';
-				} else {
-					progressBarTemplate &= ' ETA: -- |';
-				}
-
-				// Dynamically assign the remaining width to the moving progress bar
-				var nonProgressChars = len( progressBarTemplate ) - 1;
-				// Minimum progressbar length is 5.  It will wrap if the user's console is super short, but I'm not sure I care.
-				var progressChars = max( totalWidth - nonProgressChars, 5 );
-
-				// Get the template
-				progressRendered = progressBarTemplate;
-
-				// Replace percent
-				progressRendered = replace( progressRendered, '@@@%', print.yellow1( numberFormat( arguments.percent, '___' ) & '%' ) );
-
-				// Replace actual progress bar
-				var progressSize = int( progressChars * (arguments.percent/100) );
-				var barChars = print.onGreen3( repeatString( ' ', progressSize ) & ' ' ) & repeatString( ' ', max( progressChars-progressSize, 0 ) );
-				progressRendered = replace( progressRendered, '=>', barChars );
-
-				// Replace sizes and speed
-				progressRendered = replace( progressRendered, '^^^^^^^', print.deepSkyBlue1( formatSize( arguments.totalSizeKB, 7 ) ) );
-				progressRendered = replace( progressRendered, '$$$$$$$', print.deepSkyBlue1( formatSize( arguments.completeSizeKB, 7 ) ) );
-				progressRendered = replace( progressRendered, '&&&&&&&&', print.orangeRed1( formatSize( min( arguments.speedKBps, 99000), 6 ) & 'ps' ) );
-
-				lines.append( [
-						attr.fromAnsi( print.Grey66( repeatString( '=', totalWidth ) ) ),
-						attr.fromAnsi( progressRendered ),
-						attr.fromAnsi( print.Grey66( repeatString( '=', totalWidth ) ) )
-					],
-					true
-				);
-			}
-
-
-			// Trim to terminal height so the screen doesn't go all jumpy
-			// If there is more output than screen, the user just doesn't get to see the rest
-			if( lines.len() > terminal.getHeight()-2 ) {
-				lines = lines.slice( 1, terminal.getHeight()-2 );
-			}
-
-			// Add to console and flush
-			display.update(
-				lines,
-				0
-			);
-
-		}
-
- 		// If we're done, add a line break
+		// If we're done, clear ourselves
 		if( arguments.percent == 100 ) {
 			clear();
-		}
-
-	}
-
-
-	function clear() {
-
-		var terminal = shell.getReader().getTerminal();
-
-		if( !shell.isTerminalInteractive() || terminal.getWidth() == 0 ) {
 			return;
 		}
+		
+		setActive( true );
+		setMemento( arguments );
+		ConsolePainter.start();
+	}
+	
+	function getLines() {
 
-		lock name="progress-update" {
-			var display = createObject( 'java', 'org.jline.utils.Display' ).init( terminal, false );
-			display.resize( terminal.getHeight(), terminal.getWidth() );
+		if( !getActive() ) {
+			return [];
+		}
+		
+		var memento = getMemento();
+		var terminal = shell.getReader().getTerminal();
 
-			var lines = [];
-			if( job.getActive() ) {
-				lines = job.getLines();
-			}
+		var progressRendered = '';
+
+		var lines = [];
+
+		// We don't know the total size (all we can show is the amount downloaded thus far)
+		if( memento.totalSizeKB == -1 ) {
+
+			var progressBarTemplate = 'Downloading: $$$$$$$ (&&&&&&&&)';
+			progressRendered = replace( progressBarTemplate, '$$$$$$$', formatSize( memento.completeSizeKB, 7 ) );
+			progressRendered = replace( progressRendered, '&&&&&&&&', formatSize( min( memento.speedKBps, 99000), 6 ) & 'ps' );
+
 
 			lines.append( [
-					attr.init( repeatString( ' ', terminal.getWidth() ) ),
-					attr.init( repeatString( ' ', terminal.getWidth() ) ),
-					attr.init( repeatString( ' ', terminal.getWidth() ) )
+					attr.fromAnsi( progressRendered ),
 				],
 				true
 			);
 
-			display.update(
-				lines,
-				0
+		// We do know the total size (show percentages)
+		} else {
+
+			// Total space available to progress bar.  Subtract 5 for good measure since it will wrap if you get too close
+			var totalWidth = shell.getTermWidth()-5;
+
+			var progressBarTemplate = '|@@@% |=>| $$$$$$$ / ^^^^^^^ | &&&&&&&& |';
+
+			if( memento.speedKBps > 0 ) {
+				var remainingKB = memento.totalSizeKB - memento.completeSizeKB;
+				var remainingSec = round( remainingKB / memento.speedKBps );
+				progressBarTemplate &= ' ETA: #formatExecTime( remainingSec )# |';
+			} else {
+				progressBarTemplate &= ' ETA: -- |';
+			}
+
+			// Dynamically assign the remaining width to the moving progress bar
+			var nonProgressChars = len( progressBarTemplate ) - 1;
+			// Minimum progressbar length is 5.  It will wrap if the user's console is super short, but I'm not sure I care.
+			var progressChars = max( totalWidth - nonProgressChars, 5 );
+
+			// Get the template
+			progressRendered = progressBarTemplate;
+
+			// Replace percent
+			progressRendered = replace( progressRendered, '@@@%', print.yellow1( numberFormat( memento.percent, '___' ) & '%' ) );
+
+			// Replace actual progress bar
+			var progressSize = int( progressChars * (memento.percent/100) );
+			var barChars = print.onGreen3( repeatString( ' ', progressSize ) & ' ' ) & repeatString( ' ', max( progressChars-progressSize, 0 ) );
+			progressRendered = replace( progressRendered, '=>', barChars );
+
+			// Replace sizes and speed
+			progressRendered = replace( progressRendered, '^^^^^^^', print.deepSkyBlue1( formatSize( memento.totalSizeKB, 7 ) ) );
+			progressRendered = replace( progressRendered, '$$$$$$$', print.deepSkyBlue1( formatSize( memento.completeSizeKB, 7 ) ) );
+			progressRendered = replace( progressRendered, '&&&&&&&&', print.orangeRed1( formatSize( min( memento.speedKBps, 99000), 6 ) & 'ps' ) );
+
+			lines.append( [
+					attr.fromAnsi( print.Grey66( repeatString( '=', totalWidth ) ) ),
+					attr.fromAnsi( progressRendered ),
+					attr.fromAnsi( print.Grey66( repeatString( '=', totalWidth ) ) )
+				],
+				true
 			);
 		}
+
+		return lines;
+	}
+
+	function clear() {
+		setActive( false );
+		setMemento( {} );
+		ConsolePainter.stop();
 	}
 
 	private function formatSize( sizeKB, numberChars ) {

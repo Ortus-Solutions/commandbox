@@ -139,7 +139,13 @@ Description :
 		<cflock name="DiskStore.#instance.storeID#.#arguments.objectKey#" type="exclusive" timeout="10" throwonTimeout="true">
 		<cfscript>
 			if( lookup( arguments.objectKey ) ){
-				return deserializeJSON( fileRead( thisFilePath ) );
+				var fileContents = fileRead( thisFilePath );
+				// If file is not JSON, it is corrupted.
+				if( isJSON( fileContents ) ) {
+					return deserializeJSON( fileContents );	
+				} else {
+					fileDelete( thisFilePath );
+				}
 			}
 		</cfscript>
 		</cflock>

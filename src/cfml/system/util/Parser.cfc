@@ -123,8 +123,8 @@ component {
 				}
 			}
 
-			// We're starting a quoted string
-			if( ( char == '"' || char == "'"  || char == "`" ) && !isEscaped ) {
+			// We're starting a quoted string and we're at the start of a token or waiting on a value
+			if( ( char == '"' || char == "'"  || char == "`" ) && !isEscaped && ( isWaitingOnValue || token == '' ) ) {
 				inQuotes = true;
 				quoteChar = char;
 			}

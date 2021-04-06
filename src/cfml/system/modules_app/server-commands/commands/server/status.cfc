@@ -95,6 +95,8 @@ component aliases='status,server info' {
 				// Null Checks, to guarantee correct struct.
 				structAppend( thisServerInfo, serverService.newServerInfoStruct(), false );
 
+				thisServerInfo.status = serverService.isServerRunning( thisServerInfo ) ? 'running' : 'stopped';
+					
 				// Are we doing JSON?
 				if( arguments.json ){
 
@@ -132,9 +134,8 @@ component aliases='status,server info' {
 
 				print.line().boldText( thisServerInfo.name );
 
-				var status = serverService.isServerRunning( thisServerInfo ) ? 'running' : 'stopped';
 				print.boldtext( ' (' )
-					.bold( status, statusColors.keyExists( status ) ? statusColors[ status ] : 'yellow' )
+					.bold( thisServerInfo.status, statusColors.keyExists( thisServerInfo.status ) ? statusColors[ thisServerInfo.status ] : 'yellow' )
 					.bold( ')' );
 
 				print.indentedLine( thisServerInfo.host & ':' & thisServerInfo.port & ' --> ' & thisServerInfo.webroot );

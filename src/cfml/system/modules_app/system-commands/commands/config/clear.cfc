@@ -18,7 +18,7 @@ component {
 	 **/
 	function run( required string property ) {
 
-		var configSettings = ConfigService.getconfigSettings();
+		var configSettings = ConfigService.getconfigSettings( noOverrides=true );
 
 		try {
 			JSONService.clear( configSettings, arguments.property );

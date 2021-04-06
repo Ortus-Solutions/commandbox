@@ -63,7 +63,10 @@ component singleton{
 		// And JNA will pick this up.
 		// https://java-native-access.github.io/jna/4.2.1/com/sun/jna/Native.html#getTempDir--
 		systemSettings.setSystemProperty( 'jna.tmpdir', JANSI_path );
-
+		
+		if( configService.getSetting( 'colorInDumbTerminal', false ) ) {
+			systemSettings.setSystemProperty( 'org.jline.terminal.dumb.color', 'true' );
+		}
 
 		// Creating static references to these so we can get at nested classes and their properties
 		var LineReaderClass = createObject( "java", "org.jline.reader.LineReader" );

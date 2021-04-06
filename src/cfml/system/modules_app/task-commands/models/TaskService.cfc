@@ -20,6 +20,7 @@ component singleton accessors=true {
 	property name='consoleLogger'	inject='logbox:logger:console';
 	property name='metadataCache'	inject='cachebox:metadataCache';
 	property name='job'				inject='interactiveJob';
+	property name='ConsolePainter'	inject='ConsolePainter';
 
 	function onDIComplete() {
 		// Check if base task class mapped?
@@ -167,11 +168,8 @@ component singleton accessors=true {
 		// If the previous Task failed
 		if( finalExitCode != 0 ) {
 
-			if( job.isActive() ) {
-				job.errorRemaining( message );
-				// Distance ourselves from whatever other output the Task may have given so far.
-				shell.printString( chr( 10 ) );
-			}
+			ConsolePainter.forceStop( message );
+			shell.printString( chr( 10 ) );
 
 			// Dump out anything the task had printed so far
 			var result = taskCFC.getResult();

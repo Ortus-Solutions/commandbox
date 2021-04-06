@@ -18,21 +18,43 @@ component accessors=true singleton {
 	property name='active' type='boolean';
 	// Should we dump the log by default when ending
 	property name='dumpLog' type='boolean';
+	property name='startTime' type='numeric';
+	property name='animation' type='numeric';
+	
 
 	// DI
 	property name='shell' inject='shell';
 	property name='printBuffer' inject='printBuffer';
 	property name='print' inject='print';
+	property name='ConsolePainter'	inject='provider:ConsolePainter';
 
 	function init() {
 		// Static reference to the class so we can create instances later
 		aStr = createObject( 'java', 'org.jline.utils.AttributedString' );
+		runningAnimationChars = [
+			[ ' - ', ' \ ', ' | ', ' / ' ],
+			[ '|  ', ' | ', '  |' ],
+			[ 'GO!','   ' ],
+			[ ' ← ', ' ↖ ', ' ↑ ', ' ↗ ', ' → ', ' ↘ ', ' ↓ ', ' ↙ ' ],
+			[ '▏  ', '▎  ', '▍  ', '▌  ', '▋  ', '▊  ', '▉  ', '▉▏ ', '▉▎ ', '▉▍ ', '▉▌ ', '▉▋ ', '▉▊ ', '▉▉ ', '▉▉▏', '▉▉▎', '▉▉▍', '▉▉▌', '▉▉▋', '▉▉▊', '▉▉▉' ],
+			[ '▁▁▁', '▂▂▂', '▃▃▃', '▄▄▄', '▅▅▅', '▆▆▆', '▇▇▇', '███', '▇▇▇', '▆▆▆', '▅▅▅', '▄▄▄', '▃▃▃', '▁▁▁' ],
+			[ ' ◐ ', ' ◓ ', ' ◑ ', ' ◒ ' ],
+			[ ' ⊙⊙', ' ⊙⊙', ' ⊙⊙', ' ◠◠' ],
+			[ ' ◢ ', ' ◣ ', ' ◤ ', ' ◥ ' ],
+			[ ' ⠁ ', ' ⠂ ', ' ⠄ ', ' ⡀ ', ' ⢀ ', ' ⠠ ', ' ⠐ ', ' ⠈ ' ],
+			[ ' ⣾ ', ' ⣽ ', ' ⣻ ', ' ⢿ ', ' ⡿ ', ' ⣟ ', ' ⣯ ', ' ⣷ ' ],
+			[ ' ┤ ',  ' ┴ ',  ' ├ ',  ' ┬ ' ],
+			[ ' ◐ ',  ' ◓ ',  ' ◑ ',  ' ◒ ' ],
+			[ '>  ', ' > ', '  >' ]
+		];
+		
+		setStartTime( 0 );
+		setAnimation( 1 )
 		return this;
 	}
 
 	function onDIComplete() {
 		terminal = shell.getReader().getTerminal();
-		display = createObject( 'java', 'org.jline.utils.Display' ).init( terminal, false );
 		safeWidth = 80;
 		reset();
 	}
@@ -43,16 +65,7 @@ component accessors=true singleton {
 	function reset() {
 		jobs = [];
 		setActive( false );
-
-
-		if( terminal.getWidth() == 0 ) {
-			safeWidth=80;
-		} else {
-			safeWidth=terminal.getWidth();
-		}
-
-		display.resize( terminal.getHeight(), safeWidth );
-
+		ConsolePainter.stop();
 		return this;
 	}
 
@@ -60,16 +73,8 @@ component accessors=true singleton {
 	* Clear from the screen, but don't reset
 	*/
 	function clear() {
-		// If Jline uses a "dumb" terminal, the width reports as zero, which throws divide by zero errors.
-		// TODO: I might be able to just fake a reasonable width.
-		if( !shell.isTerminalInteractive() || terminal.getWidth() == 0 ) {
-			return;
-		}
-
-		display.update(
-			[ aStr.init( ' ' ) ],
-			0
-		);
+		setActive( false );
+		ConsolePainter.stop();
 		return this;
 	}
 
@@ -197,6 +202,10 @@ component accessors=true singleton {
 	*/
 	function start( required string name, logSize=5 ) {
 		lock name="job-queue" timeout=20 {
+			if( !getActive() ) {
+				setStartTime( getTickCount() );
+				setAnimation( randRange( 1, runningAnimationChars.len() ) )
+			}
 			setActive( true );
 			// If there are currently jobs running...
 			if( jobs.len() ) {
@@ -220,15 +229,14 @@ component accessors=true singleton {
 	* @dumpLog Include all log messages in output regardless of logSize
 	*/
 	private function finalizeOutput( boolean dumpLog ) {
-		// Clear screen
-		clear();
-		// There are now no jobs here to see
-		setActive( false );
 		printBuffer.clear();
 		// Loop over and output each line for good
 		getLines( includeAllLogs=dumpLog, finalOutput=true ).each( function( line ) {
 			printBuffer.line( line.toAnsi() );
 		} );
+
+		// Clear screen
+		clear();
 
 		printBuffer.toConsole()
 
@@ -240,28 +248,7 @@ component accessors=true singleton {
 	* Render the information to the console
 	*/
 	function draw() {
-		lock name="job-draw" timeout=20 {
-			// If Jline uses a "dumb" terminal, the width reports as zero, which throws divide by zero errors.
-			// TODO: I might be able to just fake a reasonable width.
-			if( !shell.isTerminalInteractive() || terminal.getWidth() == 0 ) {
-				return;
-			}
-
-			var lines = getLines()
-				// Extra whitespace at the bottom
-				.append( aStr.init( ' ' ) );
-
-			// Trim to terminal height so the screen doesn't go all jumpy
-			// If there is more output than screen, the user just doesn't get to see the rest
-			if( lines.len() > terminal.getHeight()-2 ) {
-				lines = lines.slice( 1, terminal.getHeight()-2 );
-			}
-
-			display.update(
-				lines,
-				0
-			);
-		}
+		ConsolePainter.start();
 		return this;
 	}
 
@@ -273,6 +260,11 @@ component accessors=true singleton {
 	* @finalOutput True if getting final output at the completion of the job.
 	*/
 	array function getLines( job, includeAllLogs=false, finalOutput=false ) {
+		
+		if( !getActive() ) {
+			return [];
+		}
+		
 		if( isNull( arguments.job ) ) {
 			if( !getJobs().len() ) {
 				throw( 'No active job' );
@@ -354,8 +346,22 @@ component accessors=true singleton {
 			return print.text( ' √ | ' & job.name, statusColor( job ) );
 		} else {
 			// Totally ok with finding something cooler than a hyphen here...
-			return print.text( ' - | ' & job.name, statusColor( job ) );
+			return print.text( '#runningAnimation()#| ' & job.name, statusColor( job ) );
 		}
+	}
+	
+	/**
+	* Returns a character to aninmate for running jobs
+	*
+	*/
+	function runningAnimation() {
+		var thisRunningAnimationChars = runningAnimationChars[ getAnimation() ];
+		// How long has this job been running in ms?
+		var runningTime = ( getTickCount() ) - getStartTime();
+		// Removing the amount of time it takes to completely cycle through the chars an even amount of time, how much is left in the current cycle?
+		runningTime = runningTime % ( thisRunningAnimationChars.len() * 500 );		
+		// Which char are we on at 500ms per char?
+		return thisRunningAnimationChars[ ( runningTime \ 500 ) + 1 ]
 	}
 
 	/**

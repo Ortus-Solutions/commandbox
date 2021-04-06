@@ -47,8 +47,14 @@ component aliases='link' {
 		if( !arguments.keyExists( 'moduleDirectory' ) ) {
 			arguments.moduleDirectory = expandPath( '/commandbox/modules' );
 			commandBoxCoreLinked = true;
+			if( !directoryExists( arguments.moduleDirectory ) ) {
+				directoryCreate( arguments.moduleDirectory );
+			}
 		} else {
 			arguments.moduleDirectory = resolvePath( arguments.moduleDirectory );
+			if( !directoryExists( arguments.moduleDirectory ) ) {
+				error( 'The target directory [#arguments.moduleDirectory#] doesn''t exist.' );
+			}
 		}
 
 		// package check
@@ -56,9 +62,6 @@ component aliases='link' {
 			error( '#packageDirectory# is not a package!' );
 		}
 
-		if( !directoryExists( arguments.moduleDirectory ) ) {
-			error( 'The target directory [#arguments.moduleDirectory#] doesn''t exist.' );
-		}
 
 		var boxJSON = packageService.readPackageDescriptor( packageDirectory );
 

@@ -70,6 +70,8 @@ component accessors="true" singleton {
 		variables.consoleLogger 	= arguments.consoleLogger;
 		variables.logger 			= arguments.logger;
 
+		variables.system = createObject( 'java', 'java.lang.System' );
+
 		// java helpers
 		java = {
 			ServerSocket 	: createObject( "java", "java.net.ServerSocket" )
@@ -301,6 +303,7 @@ component accessors="true" singleton {
 				return;
 			} else if( action == 'openinbrowser' ) {
 				job.addLog( "Opening...#serverInfo.openbrowserURL#" );
+				job.error( 'Aborting...' );
 				shell.callCommand( 'browse #serverInfo.openbrowserURL#', false);
 				return;
 			} else if( action == 'newname' ) {
@@ -533,6 +536,8 @@ component accessors="true" singleton {
 
 		systemSettings.expandDeepSystemSettings( serverJSON );
 		systemSettings.expandDeepSystemSettings( defaults );
+		// Mix in environment variable overrides like BOX_SERVER_PROFILE
+		loadOverrides( serverJSON, serverInfo );
 
 		// Setup serverinfo according to params
 		// Hand-entered values take precedence, then settings saved in server.json, and finally defaults.
@@ -591,7 +596,11 @@ component accessors="true" singleton {
 		}
 
 		if( !isNull( serverJSON.profile ) ) {
-			profileReason = 'profile property in server.json';
+			if( serverInfo.envVarHasProfile ?: false ) {
+				profileReason = 'profile property in in "box_server_profile" env var';
+			} else {
+				profileReason = 'profile property in server.json';	
+			}
 		}
 		if( !isNull( serverProps.profile ) ) {
 			profileReason = 'profile argument to server start command';
@@ -847,6 +856,9 @@ component accessors="true" singleton {
 
 		serverInfo.webRules = [];
 		if( serverJSON.keyExists( 'web' ) && serverJSON.web.keyExists( 'rules' ) ) {
+			if( !isArray( serverJSON.web.rules ) ) {
+				throw( message="'rules' key in your box.json must be an array of strings.", type="commandException" );
+			}
 			serverInfo.webRules.append( serverJSON.web.rules, true);
 		}
 		if( serverJSON.keyExists( 'web' ) && serverJSON.web.keyExists( 'rulesFile' ) ) {
@@ -2548,6 +2560,49 @@ component accessors="true" singleton {
 		}
 
 		return props;
+	}
+	
+		
+	/**
+	* Loads config settings from env vars or Java system properties
+	*/
+	function loadOverrides( serverJSON, serverInfo ){
+		var overrides={};
+		
+		// Look for individual BOX settings to import.		
+		var processVarsUDF = function( envVar, value ) {
+			// Loop over any that look like box_server_xxx
+			if( envVar.len() > 11 && left( envVar, 11 ) == 'box_server_' ) {
+				// proxy_host gets turned into proxy.host
+				// Note, the asssumption is made that no config setting will ever have a legitimate underscore in the name
+				var name = right( envVar, len( envVar ) - 11 ).replace( '_', '.', 'all' );
+				JSONService.set( JSON=overrides, properties={ '#name#' : value }, thisAppend=true );
+			}
+		};
+		
+		// Get all OS env vars
+		var envVars = system.getenv();
+		for( var envVar in envVars ) {
+			processVarsUDF( envVar, envVars[ envVar ] );
+		}
+		
+		// Get all System Properties
+		var props = system.getProperties();
+		for( var prop in props ) {
+			processVarsUDF( prop, props[ prop ] );
+		}
+
+		// Get all box environemnt variable
+		var envVars = systemSettings.getAllEnvironmentsFlattened();
+		for( var envVar in envVars ) {
+			processVarsUDF( envVar, envVars[ envVar ] );
+		}
+	
+		if( overrides.keyExists( 'profile' ) ) {
+			serverInfo.envVarHasProfile=true
+		}
+	
+		JSONService.mergeData( serverJSON, overrides );
 	}
 
 }
