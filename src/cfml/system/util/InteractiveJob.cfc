@@ -285,9 +285,12 @@ component accessors=true singleton {
 		}
 
 		if( job.status == 'Running' || includeAllLogs || ( finalOutput && job.dumpLog ) ) {
-
-			lines.append( aStr.fromAnsi( print.text( '   |' & repeatString( '-', min( job.name.len()+15, safeWidth-5 ) ), statusColor( job ) ) ) );
-
+			
+			// If we're only showing one line of job logs, don't bother with the ------ dividers
+			if( job.logSize > 1 ) {
+				lines.append( aStr.fromAnsi( print.text( '   |' & repeatString( '-', min( job.name.len()+15, safeWidth-5 ) ), statusColor( job ) ) ) );
+			}
+			
 			var relevantLogLines = [];
 			var thisLogLines = job.logLines;
 			var thisLogSize = job.logSize;
@@ -313,7 +316,8 @@ component accessors=true singleton {
 			}
 
 			// Only print divider if we had at least one log message above
-			if( atLeastOne ) {
+			// also if we're only showing one line of job logs, don't bother with the ------ dividers
+			if( atLeastOne && job.logSize > 1 ) {
 				lines.append( aStr.fromAnsi( print.text( '   |' & repeatString( '-', min( job.name.len()+15, safeWidth-5 ) ), statusColor( job ) ) ) );
 			}
 

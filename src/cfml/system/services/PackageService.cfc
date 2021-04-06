@@ -97,8 +97,8 @@ component accessors="true" singleton {
 			arguments.production = arguments.production ?: true;
 
 			var endpointData = endpointService.resolveEndpoint( arguments.ID, arguments.currentWorkingDirectory );
-
-			job.start(  'Installing package [#endpointData.ID#]', 5 );
+			
+			job.start(  'Installing package [#endpointData.ID#]', ( shell.getTermHeight() < 20 ? 1 : 5 ) );
 
 			if( verbose ) {
 				job.setDumpLog( verbose );
