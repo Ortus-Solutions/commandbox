@@ -143,7 +143,7 @@ component accessors="true" singleton {
 	*/
 	function setSetting( required name, required value, boolean thisAppend=false ){
 
-		arguments.JSON = getConfigSettings();
+		arguments.JSON = getConfigSettings( noOverrides=true );
 		arguments.properties[ name ] = arguments.value;
 
 		JSONService.set( argumentCollection = arguments );
@@ -158,7 +158,7 @@ component accessors="true" singleton {
 	*/
 	function removeSetting( required name ){
 
-		arguments.JSON = getConfigSettings();
+		arguments.JSON = getConfigSettings( noOverrides=true );
 		arguments.property = arguments.name;
 
 		JSONService.clear( argumentCollection = arguments );
