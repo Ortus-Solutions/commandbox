@@ -195,6 +195,8 @@ component accessors="true" singleton {
 				'cfengine' : d.app.cfengine ?: '',
 				'restMappings' : d.app.cfengine ?: '',
 				'serverHomeDirectory' : d.app.serverHomeDirectory ?: '',
+				// If serverHomeDirectory isn't defined, by default, the generated serverHomeDirectory directory name includes the specific Engine Version
+				'serverHomeDirectoryVersion' : d.app.serverHomeDirectoryVersion ?: true,
 				'sessionCookieSecure' : d.app.sessionCookieSecure ?: false,
 				'sessionCookieHTTPOnly' : d.app.sessionCookieHTTPOnly ?: false
 			},

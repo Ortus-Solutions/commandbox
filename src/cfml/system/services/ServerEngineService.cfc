@@ -194,9 +194,12 @@ component accessors="true" singleton="true" {
 			// Overriding server home which is where the exploded war lives
 			if( len( arguments.serverHomeDirectory ) ) {
 				installDetails.installDir = arguments.serverHomeDirectory;
-			// Default is engine-version folder in base dir
+			} else if ( !arguments.serverInfo.app.serverHomeDirectoryVersion ){
+				// Use engine folder in base dir
+				installDetails.installDir = destination & engineName;
 			} else {
-				installDetails.installDir = destination & engineName & "-" & replace( satisfyingVersion, '+', '.', 'all' );
+				// Default is engine-version folder in base dir
+				installDetails.installDir = destination & engineName & "-" &  replace( satisfyingVersion, '+', '.', 'all' );
 			}
 			installDetails.version = satisfyingVersion;
 
