@@ -185,7 +185,7 @@ component singleton {
 	/**
 	* Expands placeholders like ${foo} in all deep struct keys and array elements with the matching java prop or env var.
 	* Will replace as many place holders that exist, but will skip escaped ones like \${do.not.expand.me}
-	* This will recursivley follow all nested structs and arrays.
+	* This will recursively follow all nested structs and arrays.
 	*
 	* @dataStructure A string, struct, or array to perform deep replacement on.
 	*/
@@ -301,7 +301,7 @@ component singleton {
 
 	/**
 	* Return a representation of the environment context including all parent contexts
-	* but not including Java system props and OS env vars flattended into a single struct.
+	* but not including Java system props and OS env vars flattened into a single struct.
 	*/
 	struct function getAllEnvironmentsFlattened() {
 		var envFlat = {};

@@ -86,7 +86,7 @@ component accessors="true" singleton {
 	*/
 	function resolvePath( required string path, basePath=shell.pwd(), boolean forceDirectory=false ) {
 
-		// The Java class will strip trailing slashses, but these are meaningful in globbing patterns
+		// The Java class will strip trailing slashes, but these are meaningful in globbing patterns
 		var trailingSlash = ( path.len() > 1 && ( path.endsWith( '/' ) || path.endsWith( '\' ) ) );
 		// java will remove trailing periods when canonicalizing a path.  I'm not sure that's correct.
 		var trailingPeriod = ( path.len() > 1 && path.endsWith( '.' ) && !path.endsWith( '..' ) );
@@ -144,7 +144,7 @@ component accessors="true" singleton {
 	* @path The path to Canonicalize
 	*/
 	string function calculateCanonicalPath( required string path ) {
-		// Trailing slashses are meaningful in globbing patterns
+		// Trailing slashes are meaningful in globbing patterns
 		var trailingSlash = ( path.len() > 1 && ( path.endsWith( '/' ) || path.endsWith( '\' ) ) );
 		var pathArr = path.listToArray( '/\' );
 
@@ -174,7 +174,7 @@ component accessors="true" singleton {
 			}
 		}
 
-		// Re-attach the drive root and turn the array back into a slash-delimted path
+		// Re-attach the drive root and turn the array back into a slash-delimited path
 		var tmpPath = newPathArr.toList( server.separator.file ) & ( trailingSlash ? server.separator.file : '' );
 
 		if( root == '\\' ) {

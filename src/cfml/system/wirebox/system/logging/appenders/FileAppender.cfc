@@ -156,7 +156,7 @@ component accessors="true" extends="wirebox.system.logging.AbstractAppender"{
 	}
 
 	/**
-	 * Fired once the listner starts queue processing
+	 * Fired once the listener starts queue processing
 	 *
 	 * @queueContext A struct of data attached to this processing queue thread
 	 */
@@ -167,7 +167,7 @@ component accessors="true" extends="wirebox.system.logging.AbstractAppender"{
 			"append",
 			this.getProperty( "fileEncoding" )
 		);
-		// The flusing interval to disk
+		// The flushing interval to disk
 		arguments.queueContext.flushInterval = 1000;
 	}
 
@@ -217,7 +217,7 @@ component accessors="true" extends="wirebox.system.logging.AbstractAppender"{
 	}
 
 	/**
-	 * Fired once the listner stops queue processing
+	 * Fired once the listener stops queue processing
 	 *
 	 * @queueContext A struct of data attached to this processing queue thread
 	 */

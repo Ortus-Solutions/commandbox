@@ -126,7 +126,7 @@ component accessors="true" {
 		var stats         = coverageData.stats;
 		var pathToCapture = getCoverageOptions().pathToCapture;
 
-		var codeBrowser = new browser.CodeBrowser( getCoverageOptions().coverageTresholds );
+		var codeBrowser = new browser.CodeBrowser( getCoverageOptions().coverageThresholds );
 
 		savecontent variable="local.statsHTML" {
 			include "/testbox/system/coverage/stats/coverageStats.cfm";
@@ -173,14 +173,14 @@ component accessors="true" {
 			}
 		}
 
-		if ( isNull( opts.coverageTresholds ) ) {
-			opts.coverageTresholds = {};
+		if ( isNull( opts.coverageThresholds ) ) {
+			opts.coverageThresholds = {};
 		}
-		if ( isNull( opts.coverageTresholds.good ) ) {
-			opts.coverageTresholds.good = 85;
+		if ( isNull( opts.coverageThresholds.good ) ) {
+			opts.coverageThresholds.good = 85;
 		}
-		if ( isNull( opts.coverageTresholds.bad ) ) {
-			opts.coverageTresholds.bad = 50;
+		if ( isNull( opts.coverageThresholds.bad ) ) {
+			opts.coverageThresholds.bad = 50;
 		}
 
 		if ( isNull( opts.pathToCapture ) ) {
@@ -281,7 +281,7 @@ component accessors="true" {
 	private function processCodeBrowser( qryCoverageData, stats, opts ){
 		// Only generate browser if there's a generation path specified
 		if ( len( opts.browser.outputDir ) ) {
-			var codeBrowser = new browser.CodeBrowser( opts.coverageTresholds );
+			var codeBrowser = new browser.CodeBrowser( opts.coverageThresholds );
 			codeBrowser.generateBrowser(
 				qryCoverageData,
 				stats,

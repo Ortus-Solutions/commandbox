@@ -199,7 +199,7 @@ component accessors="true"{
 	}
 
 	/**
-	 * Checks if the mapping needs virtual inheritace or not
+	 * Checks if the mapping needs virtual inheritance or not
 	 */
 	boolean function isVirtualInheritance(){
 		return len( variables.virtualInheritance ) GT 0;
@@ -454,8 +454,8 @@ component accessors="true"{
 	 * Process a mapping for metadata discovery and more
 	 *
 	 * @binder The binder requesting the processing
-	 * @injector The calling injector processing the mappping
-	 * @metadata The metadata of an a-la-carte processing, use instead of retrieveing again
+	 * @injector The calling injector processing the mapping
+	 * @metadata The metadata of an a-la-carte processing, use instead of retrieving again
 	 *
 	 * @return Mapping
 	 */

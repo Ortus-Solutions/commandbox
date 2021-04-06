@@ -1,5 +1,5 @@
 /**
- * Verifies versions of all dependencies of a package recursivley.  Run this command from the root of the package.
+ * Verifies versions of all dependencies of a package recursively.  Run this command from the root of the package.
  * Package installed from HTTP(S) and Git endpoints will always show as outdated.
  * .
  * {code:bash}

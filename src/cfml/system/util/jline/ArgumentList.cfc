@@ -112,7 +112,7 @@ component {
 	* @complete a boolean indicating whether this completion candidate is considered complete
 	*/
 	function escape( string candidate, boolean complete ) {
-		// check to see if we are being asked to esape the current word in the line
+		// check to see if we are being asked to escape the current word in the line
 		// if that is the case this is most likely to backspace it, so to ensure this happens
 		// correctly just return the raw last token
 		if ( candidate == word() ) {

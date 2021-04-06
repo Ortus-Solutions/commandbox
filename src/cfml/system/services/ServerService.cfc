@@ -43,7 +43,7 @@ component accessors="true" singleton {
 	property name='parser'					inject='parser';
 	property name='systemSettings'			inject='SystemSettings';
 	property name='javaService'				inject='provider:javaService';
-	property name='ansiFormater'			inject='AnsiFormater';
+	property name='ansiFormatter'			inject='AnsiFormatter';
 	property name="printUtil"				inject="print";
 
 	/**
@@ -779,7 +779,7 @@ component accessors="true" singleton {
 		// Then server defaults java home dir
 		} else if( defaults.JVM.javaHome.len() ) {
 			serverInfo.javaHome = fileSystemUtil.resolvePath( defaults.JVM.javaHome, defaultwebroot );
-		// Then server defaults java versiom
+		// Then server defaults java version
 		} else if( defaults.JVM.javaVersion.len() ) {
 			serverInfo.javaVersion = defaults.JVM.javaVersion;
 		}
@@ -840,7 +840,7 @@ component accessors="true" singleton {
 		if( defaults.keyExists( 'app' ) && defaults.app.keyExists( 'libDirs' ) && len( defaults.app.libDirs ) ) {
 			// For each lib dir in the list, resolve the path, but only keep it if the folder actually exists.
 			// This allows for "optional" global lib dirs.
-			// listReduce starts with an initial value of "" and aggregates the new list, onluy appending the items it wants to keep
+			// listReduce starts with an initial value of "" and aggregates the new list, only appending the items it wants to keep
 			defaults.app.libDirs = defaults.app.libDirs.listReduce( function( thisLibDirs, thisLibDir ){
 				thisLibDir = fileSystemUtil.resolvePath( thisLibDir, defaultwebroot );
 				if( directoryExists( thisLibDir ) ) {
@@ -1078,7 +1078,7 @@ component accessors="true" singleton {
 
 		// Doing this check here instead of the ServerEngineService so it can apply to existing installs
 		if( CFEngineName == 'adobe' ) {
-			// Work arounnd sketchy resoution of non-existent paths in Undertow
+			// Work around sketchy resolution of non-existent paths in Undertow
 			// https://issues.jboss.org/browse/UNDERTOW-1413
 			var flexLogFile = serverInfo.serverHomeDirectory & "/WEB-INF/cfform/logs/flex.log";
 			if ( !fileExists( flexLogFile ) ) {
@@ -1874,7 +1874,7 @@ component accessors="true" singleton {
 		var job = wirebox.getInstance( 'interactiveJob' );
 		var locVerbose = serverProps.verbose ?: false;
 
-		// As a convenient shorcut, allow the serverConfigFile to be passed via the name parameter.
+		// As a convenient shortcut, allow the serverConfigFile to be passed via the name parameter.
 		var tmpName = serverProps.name ?: '';
 		var tmpNameResolved = fileSystemUtil.resolvePath( tmpName );
 		// Check if there was no config file specified, but the name was specified and happens to exist as a file on disk

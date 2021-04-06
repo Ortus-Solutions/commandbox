@@ -5,7 +5,7 @@
  * echo "Hello World!"
  * {code}
  * .
- * This can be useful in CommandBox Recipies, or to pipe arbitrary text into another command.
+ * This can be useful in CommandBox Recipes, or to pipe arbitrary text into another command.
  * .
  * {code:bash}
  * echo "Step 3 complete" >> log.txt

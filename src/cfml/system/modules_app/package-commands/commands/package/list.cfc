@@ -1,5 +1,5 @@
 /**
- * Lists all dependencies of a package recursivley.  Run this command from the root of the package.
+ * Lists all dependencies of a package recursively.  Run this command from the root of the package.
  * This command lists the packages stored in each box.json even if they aren't installed.
  * Dev dependencies are shown in yellow
  * .
@@ -32,7 +32,7 @@ component aliases="list" {
 	property name="packageService" inject="PackageService";
 
 	/**
-	 * @verbose Outputs additional informaiton about each package
+	 * @verbose Outputs additional information about each package
 	 * @json Outputs results as JSON
 	 * @system List packages from the global CommandBox module's folder
 	 * @depth how deep to climb down the rabbit hole.  A value of 0 means infinite depth

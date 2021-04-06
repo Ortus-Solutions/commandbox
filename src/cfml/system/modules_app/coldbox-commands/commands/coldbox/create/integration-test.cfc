@@ -97,7 +97,7 @@ component {
 			// Loop Over actions generating their functions
 			for ( var thisAction in listToArray( arguments.actions ) ) {
 				thisAction   = trim( thisAction );
-				// genereate test case
+				// generate test case
 				thisTestCase = replaceNoCase(
 					handlerTestCaseContent,
 					"|action|",

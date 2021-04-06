@@ -224,9 +224,8 @@ component {
 
     /**
      * Prints a single row of data for the table.
-     * @row A signle row of data for the table.
+     * @row A single row of data for the table.
      * @headerData The array of column headers for the table with their corresponding max widths.
-     * @print A reference to the CommandBox Printer that called this table printer.
      */
 	private void function printRow( required array row, required array headerData ) {
 		print.green( variables.tableChars.left );

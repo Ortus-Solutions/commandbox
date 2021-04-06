@@ -140,7 +140,7 @@ component accessors="true" {
 	}
 
 	/**
-	 * Utiliy to send to output to console from a runanble
+	 * Utility to send to output to console from a runnable
 	 *
 	 * @var Variable/Message to send
 	 */
@@ -149,7 +149,7 @@ component accessors="true" {
 	}
 
 	/**
-	 * Utiliy to send to output to console from a runanble via the error stream
+	 * Utility to send to output to console from a runnable via the error stream
 	 *
 	 * @var Variable/Message to send
 	 */

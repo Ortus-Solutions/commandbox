@@ -1537,7 +1537,7 @@ component {
 	}
 
 	/**
-	 * Use MockDataCFC to mock whatever data you want.  This funnles to MocData.mock()
+	 * Use MockDataCFC to mock whatever data you want.  This funnels to MocData.mock()
 	 *
 	 * @return The mock data you desire sir!
 	 */

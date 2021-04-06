@@ -55,7 +55,7 @@ component accessors=true {
 	function ask(){
 
 		if( isNull( getOptions() ) ) {
-			throw( 'No options defined. Provde a list or array of structs (display,value,selected)' );
+			throw( 'No options defined. Provide a list or array of structs (display,value,selected)' );
 		}
 
 		try {

@@ -3,7 +3,7 @@
  * You can also filter for specific entry types such as cachebox, interceptors, modules, logbox, etc.
  * Pro Tip: The first parameter will accept a type or a slug.
  * .
- * Show details for a specifig entry
+ * Show details for a specific entry
  * {code:bash}
  * forgebox show coldbox-platform
  * {code}

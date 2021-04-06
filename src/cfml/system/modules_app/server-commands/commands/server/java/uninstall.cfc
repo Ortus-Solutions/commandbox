@@ -1,6 +1,6 @@
 /**
  * Uninstall a version of Java that you don't need any longer.
- * You must use the FULL name of the verson to remove any ambiguity.
+ * You must use the FULL name of the version to remove any ambiguity.
  * .
  * {code:bash}
  * server java uninstall openjdk9_jre_x64_windows_hotspot_jdk-9.0.4+11

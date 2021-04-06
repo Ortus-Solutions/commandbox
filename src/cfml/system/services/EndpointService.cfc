@@ -68,7 +68,7 @@ component accessors="true" singleton {
 
 
 	/**
-	* Look for custom ForgeBox endpoints that are in the config and register themm
+	* Look for custom ForgeBox endpoints that are in the config and register them
 	* These will use the same base ForgeBox.cfc endpoint but with custom data
 	*/
 	function registerCustomForgeboxEndpoints() {

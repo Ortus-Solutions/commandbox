@@ -8,7 +8,7 @@ Date                   		: April 20, 2009
 Description		:
 The Official ColdBox Mocking Factory
 ----------------------------------------------------------------------->
-<cfcomponent output="false" hint="A unit testing mocking/stubing factory for ColdFusion 7 and above and any CFML Engine">
+<cfcomponent output="false" hint="A unit testing mocking/stubbing factory for ColdFusion 7 and above and any CFML Engine">
 	<!------------------------------------------- CONSTRUCTOR ------------------------------------------>
 
 	<!--- init --->

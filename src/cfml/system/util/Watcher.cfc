@@ -43,7 +43,7 @@ component accessors=true {
 	function onDIComplete() {
 		setBaseDirectory( shell.pwd() );
 		setDelayMS( 500 );
-		// Watch all files recursivley by default
+		// Watch all files recursively by default
 		setPathsToWatch( [ '**' ] );
 	}
 
@@ -68,7 +68,7 @@ component accessors=true {
 	}
 
 	/**
-	* Pass in the number of miliseconds to wait between polls
+	* Pass in the number of milliseconds to wait between polls
 	*/
 	public function withDelay( delayMS ) {
 		setDelayMS( arguments.delayMS );
@@ -76,7 +76,7 @@ component accessors=true {
 	}
 
 	/**
-	* Pass in a UDF reference to be executed when the watcher senses a chnage on the file system
+	* Pass in a UDF reference to be executed when the watcher senses a change on the file system
 	*/
 	public function onChange( changeUDF ) {
 		setChangeUDF( arguments.changeUDF );
@@ -138,9 +138,9 @@ component accessors=true {
 					retry;
 				// If the thread has been interrupted
 				} catch( java.lang.InterruptedException e ) {
-					// There's nothign to do here.  Just exit the thread!
+					// There's nothing to do here.  Just exit the thread!
 				} catch( java.lang.ThreadDeath e ) {
-					// There's nothign to do here.  Just exit the thread!
+					// There's nothing to do here.  Just exit the thread!
 				} catch( any e ) {
 					shell.printError( e );
 

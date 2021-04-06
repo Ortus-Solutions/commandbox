@@ -7,7 +7,7 @@
  * {code}
  * .
  * You can also pull a list of all outdated packages with the "outdated" command
- * and update them one at a time by passing one or more slugs in a comma-delimted list.
+ * and update them one at a time by passing one or more slugs in a comma-delimited list.
  * .
  * {code:bash}
  * update coldbox
@@ -35,7 +35,7 @@ component aliases="update" {
 
 	/**
 	* Update all or one outdated dependencies
-	* @slug A comma-delimmited list of slugs to update. Pass nothing to update all packages.
+	* @slug A comma-delimited list of slugs to update. Pass nothing to update all packages.
 	* @slug.optionsUDF slugComplete
 	* @verbose Output additional information about each package
 	* @force Update without confirmations

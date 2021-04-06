@@ -19,7 +19,7 @@ component  {
 
 	/**
 	* @name The env var to show
-	* @defaultValue Value to return if this env var doen't exist.
+	* @defaultValue Value to return if this env var doesn't exist.
 	*/
 	function run( string name='', defaultValue='' )  {
 		if( name.len() ) {

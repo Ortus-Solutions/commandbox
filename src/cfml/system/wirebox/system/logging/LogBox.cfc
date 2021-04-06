@@ -327,7 +327,7 @@ component accessors="true"{
 
 	/**
 	 * Figure out the correct logger class for the passed alias. If it's a
-	 * system appender then pre-prend it and return it, else return intact.
+	 * system appender then pre-pend it and return it, else return intact.
 	 *
 	 * @class The full class or the shortcut of the system appenders
 	 *

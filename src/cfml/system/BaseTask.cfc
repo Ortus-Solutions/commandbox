@@ -61,7 +61,7 @@ component accessors="true" extends='commandbox.system.BaseCommand' {
 	*
 	* Resolve the incoming path from the file system
 	* @path.hint The directory to resolve
-	* @basePath.hint An expanded base path to resolve the path against. Defaults to direcory that the task lives in.
+	* @basePath.hint An expanded base path to resolve the path against. Defaults to directory that the task lives in.
 	*/
 	function resolvePath( required string path, basePath=getDirectoryFromPath( getCurrentTemplatePath() ) ) {
 		return filesystemUtil.resolvepath( path, basePath );

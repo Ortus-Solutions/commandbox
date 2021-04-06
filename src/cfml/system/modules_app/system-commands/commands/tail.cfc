@@ -14,7 +14,7 @@
  **/
  component {
 	property name="printUtil"		inject="print";
-	property name='ansiFormater'	inject='AnsiFormater';
+	property name='ansiFormatter'	inject='AnsiFormatter';
 
 	/**
 	 * @path file or directory to tail or raw input to process
@@ -106,7 +106,7 @@
 					.toList( "" )
 					.listToArray( chr( 13 ) & chr( 10 ) )
 					.map( function( line ) {
-						return ansiFormater.cleanLine( line );
+						return ansiFormatter.cleanLine( line );
 					} )
 					.toList( chr( 10 ) )
 					& chr( 10 )
@@ -145,7 +145,7 @@
 							var line = randomAccessFile.readLine();
 							while( !isnull( line ) ){
 
-								line = ansiFormater.cleanLine( line );
+								line = ansiFormatter.cleanLine( line );
 								print
 									.line( line )
 									.toConsole();

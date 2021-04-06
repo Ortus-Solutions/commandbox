@@ -13,11 +13,11 @@ component accessors=true {
 	/**
 	 * Constructor
 	 *
-	 * @coverageTresholds Options for threshold
+	 * @coverageThresholds Options for threshold
 	 */
-	function init( required struct coverageTresholds ){
+	function init( required struct coverageThresholds ){
 		variables.streamBuilder     = new testbox.system.modules.cbstreams.models.StreamBuilder();
-		variables.coverageTresholds = arguments.coverageTresholds;
+		variables.coverageThresholds = arguments.coverageThresholds;
 
 		return this;
 	}
@@ -115,11 +115,11 @@ component accessors=true {
 	 */
 	function percentToContextualClass( required percentage ){
 		percentage = percentage;
-		if ( percentage > variables.coverageTresholds.bad && percentage < variables.coverageTresholds.good ) {
+		if ( percentage > variables.coverageThresholds.bad && percentage < variables.coverageThresholds.good ) {
 			return "warning";
-		} else if ( percentage >= variables.coverageTresholds.good ) {
+		} else if ( percentage >= variables.coverageThresholds.good ) {
 			return "success";
-		} else if ( percentage <= variables.coverageTresholds.bad ) {
+		} else if ( percentage <= variables.coverageThresholds.bad ) {
 			return "danger";
 		}
 	}

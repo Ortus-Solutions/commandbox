@@ -17,7 +17,7 @@
 	property name="logBox";
 
 	/**
-	 * Logging utilty object
+	 * Logging utility object
 	 */
 	property name="log";
 

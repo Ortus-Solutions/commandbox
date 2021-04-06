@@ -22,7 +22,7 @@ component implements="wirebox.system.ioc.IProvider" accessors="true"{
 	property name="scopeRegistration";
 
 	/**
-	 * The scope storage utiloity
+	 * The scope storage utility
 	 */
 	property name="scopeStorage";
 

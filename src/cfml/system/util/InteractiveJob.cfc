@@ -5,7 +5,7 @@
 ********************************************************************************
 * @author Brad Wood, Luis Majano
 *
-* I help update the user's console with progress for a curently executing (foreground)
+* I help update the user's console with progress for a currently executing (foreground)
 * job in a nice and tidy way.
 */
 component accessors=true singleton {
@@ -91,7 +91,7 @@ component accessors=true singleton {
 
 		getCurrentJob()
 			.logLines.append(
-				// Any log lines with a line break needs to become multuple lines
+				// Any log lines with a line break needs to become multiple lines
 				toString( line )
 					// Break multiple lines into array
 					.listToArray( chr( 13 ) & chr( 10 ) )
@@ -253,7 +253,7 @@ component accessors=true singleton {
 	}
 
 	/**
-	* Returns array of AttribtuedString objects that represent this job and its children's current state
+	* Returns array of AttributedString objects that represent this job and its children's current state
 	*
 	* @job Reference to a job struct so this method can be called recursively
 	* @includeAllLogs Ignore logSize and include all log lines

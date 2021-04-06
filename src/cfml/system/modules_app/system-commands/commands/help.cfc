@@ -124,7 +124,7 @@ component aliases="h,/?,?,--help,-help" {
 
 			}
 
-			// If there are namepaces
+			// If there are namespaces
 			if( namespaces.len() ) {
 				print.line();
 
@@ -158,15 +158,15 @@ component aliases="h,/?,?,--help,-help" {
 	**/
 
 	private function printCommandHelp( required string command, required any commandInfo ) {
-		var commandRefernce = commandInfo.commandReference;
+		var commandReference = commandInfo.commandReference;
 		// Original command name, to tell if "command" is an alias
-		var originalCommandName = listChangeDelims( commandRefernce.originalName, ' ', '.');
+		var originalCommandName = listChangeDelims( commandReference.originalName, ' ', '.');
 		// CFC hint
-		var commandHint = commandRefernce.hint;
+		var commandHint = commandReference.hint;
 		// run() method's parameters
-		var commandParameters = commandRefernce.parameters;
+		var commandParameters = commandReference.parameters;
 		// A command by any other name...
-		var aliases = duplicate( commandRefernce.aliases );
+		var aliases = duplicate( commandReference.aliases );
 		// We are viewing help for an alias
 		if( originalCommandName != command ) {
 			// Swap out the original name into the alias list

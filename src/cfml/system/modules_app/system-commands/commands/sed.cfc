@@ -21,7 +21,7 @@
  * .
  * All other regex rules follow what is implemented in REReplace() CFML function.
  * .
- * The delimiter in the subsdtitute command does not have to be "/".  Whatever character
+ * The delimiter in the substitute command does not have to be "/".  Whatever character
  * that immediately follows the "s" will be used.  This can be useful where the regex
  * and/or replacement text contain a "/".
  * .

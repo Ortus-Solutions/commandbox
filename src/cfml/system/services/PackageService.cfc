@@ -55,12 +55,12 @@ component accessors="true" singleton {
 	}
 
 	/**
-	* Installs a package and its dependencies,  obeying ignors in the box.json file.  Returns a struct containing a "copied" array
+	* Installs a package and its dependencies,  obeying ignores in the box.json file.  Returns a struct containing a "copied" array
 	* and an "ignored" array containing the relative paths inside the package that were copied and ignored.
 	*
 	* @slug.ID Identifier of the package to install. If no ID is passed, all dependencies in the CDW  will be installed.
 	* @slug.optionsUDF slugComplete
-	* @directory The directory to install in. This will override the packages's box.json install dir if provided.
+	* @directory The directory to install in. This will override the packages box.json install dir if provided.
 	* @save Save the installed package as a dependency in box.json (if it exists)
 	* @saveDev Save the installed package as a dev dependency in box.json (if it exists)
 	* @production When calling this command with no slug to install all dependencies, set this to true to ignore devDependencies.
@@ -83,7 +83,7 @@ component accessors="true" singleton {
 			string packagePathRequestingInstallation = arguments.currentWorkingDirectory,
 			string defaultName=''
 	){
-		// Java service registers itself as an interceptor on creation so I need to force the provder to create the service before installing anything.
+		// Java service registers itself as an interceptor on creation so I need to force the provider to create the service before installing anything.
 		javaService.$get();
 
 		var shellWillReload = false;
@@ -228,7 +228,7 @@ component accessors="true" singleton {
 			if( structKeyExists( arguments, 'directory' ) ) {
 				installDirectory = arguments.directory;
 
-				// If this is an initial install (not a dependency) into a folder somehwere inside the CommandBox home,
+				// If this is an initial install (not a dependency) into a folder somewhere inside the CommandBox home,
 				// make sure we save correctly to CommandBox's user module box.json.
 				var commandBoxCFMLHome = fileSystemUtil.normalizeSlashes( expandPath( '/commandbox' ) );
 				installDirectory = fileSystemUtil.normalizeSlashes( installDirectory );
@@ -614,7 +614,7 @@ component accessors="true" singleton {
 				defaultName = dependency
 			};
 
-			// Recursivley install them
+			// Recursively install them
 			installPackage( argumentCollection = params );
 		}
 
@@ -669,7 +669,7 @@ component accessors="true" singleton {
 	/**
 	* Uninstalls a package and its dependencies
 	* @ID Identifier of the package to uninstall.
-	* @directory The directory to install in. This will override the packages's box.json install dir if provided.
+	* @directory The directory to install in. This will override the packages box.json install dir if provided.
 	* @save Remove package as a dependency in box.json (if it exists)
 	* @saveDev Remove package as a dev dependency in box.json (if it exists)
 	* @currentWorkingDirectory Root of the application (used for finding box.json)
@@ -731,7 +731,7 @@ component accessors="true" singleton {
 		}
 
 		// ColdBox modules are stored in a hierarchy so just removing the top one removes then all
-		// For all other packages, the depenencies are probably just in the root
+		// For all other packages, the dependencies are probably just in the root
 		if( !isPackageModule( type ) ) {
 
 			if( dependencies.count() ) {
@@ -754,7 +754,7 @@ component accessors="true" singleton {
 					params.directory = fileSystemUtil.resolvePath( installpaths[ dependency ], uninstallDirectory );
 				}
 
-				// Recursivley install them
+				// Recursively install them
 				uninstallPackage( argumentCollection = params );
 			}
 
@@ -1004,7 +1004,7 @@ component accessors="true" singleton {
 	}
 
 	/**
-	* Does everything readPackageDescriptor() does, but won't default deprecated box.json proprties.
+	* Does everything readPackageDescriptor() does, but won't default deprecated box.json properties.
 	* @directory The directory to search for the box.json
 	*/
 	struct function readPackageDescriptorTemplate( required directory ){
@@ -1049,7 +1049,7 @@ component accessors="true" singleton {
 	}
 
 	/**
-	* Return an array of all outdated depdendencies in a project.
+	* Return an array of all outdated dependencies in a project.
 	* @directory The directory of the package to start in
 	* @print The print buffer used for command operation
 	* @verbose Outputs additional information about each package as it is checked
@@ -1278,7 +1278,7 @@ component accessors="true" singleton {
 				consoleLogger.debug( '> ' & thisScript );
 
 				// Normally the shell retains the previous exit code, but in this case
-				// it's important for us to know if the scripts return a failing exit code wihtout throwing an exception
+				// it's important for us to know if the scripts return a failing exit code without throwing an exception
 				shell.setExitCode( 0 );
 
 				// ... then run the script! (in the context of the package's working directory)
