@@ -60,7 +60,9 @@ component {
 
 		// Treat input as a file path
 		if( fileExists( arguments.inputOrFile )) {
-			arguments.inputOrFile = runCommand( command="cat '#parser.escapeArg( arguments.inputOrFile )#'", returnOutput=true );
+			arguments.inputOrFile = fileRead( arguments.inputOrFile );
+		} else {
+			arguments.inputOrFile = print.unAnsi( arguments.inputOrFile );
 		}
 
 		try {
