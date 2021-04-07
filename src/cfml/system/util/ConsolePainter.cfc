@@ -100,7 +100,7 @@ component singleton accessors=true {
 	*/	
 	function paint() {
 		try {
-			var height = terminal.getHeight()-2;
+			var height = max( terminal.getHeight()-2, 0 );
 			display.resize( terminal.getHeight(), terminal.getWidth() );
 			
 			var lines = [];
