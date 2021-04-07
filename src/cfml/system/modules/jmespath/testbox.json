@@ -1,0 +1,84 @@
+{
+    "name":"ForgeBox",
+    "version":"5.4.0",
+    "author":"Ortus Solutions, Corp",
+    "slug":"forgebox",
+    "description":"ForgeBox code directory",
+    "private":true,
+    "dependencies":{
+        "coldbox":"^6.2.2+1396",
+        "cbjavaloader":"^2.0.0",
+        "cbsecurity":"^1.3.0",
+        "cborm":"^2.5.0+154",
+        "cbmarkdown":"^3.2.0",
+        "cbfeeds":"^1.1.0",
+        "BCrypt":"^2.5.0",
+        "cfcollection":"^3.6.1",
+        "cbmailservices":"^1.4.2",
+        "cbstorages":"^1.4.0",
+        "vue-helpers":"^1.0.2",
+        "qb":"^5.8.1",
+        "s3sdk":"^4.4.0+101",
+        "sentry":"^1.3.6+37",
+        "semver":"^1.2.4",
+        "stripecfml":"^2.0.2"
+    },
+    "devDependencies":{
+        "testbox":"^3.0.0",
+        "relax":"^3.1.0",
+        "route-visualizer":"^1.0.0"
+    },
+    "installPaths":{
+        "cborm":"modules/cborm/",
+        "cbmarkdown":"modules/cbmarkdown/",
+        "cbfeeds":"modules/cbfeeds/",
+        "cbsecurity":"modules/cbsecurity/",
+        "coldbox":"coldbox/",
+        "BCrypt":"modules/BCrypt/",
+        "relax":"modules/relax/",
+        "cfcollection":"modules/cfcollection/",
+        "testbox":"testbox/",
+        "cbmailservices":"modules/cbmailservices/",
+        "cbstorages":"modules/cbstorages/",
+        "cbjavaloader":"modules/cbjavaloader/",
+        "vue-helpers":"modules/vue-helpers/",
+        "route-visualizer":"modules/route-visualizer/",
+        "cbstreams":"modules/cbstreams/",
+        "qb":"modules/qb/",
+        "mementifier":"modules/mementifier/",
+        "s3sdk":"modules/s3sdk/",
+        "sentry":"modules/sentry/",
+        "semver":"modules/semver/",
+        "stripecfml":"modules/stripecfml/",
+        "cbpaginator":"modules/cbpaginator/"
+    },
+    "ignore":[
+        "**/.*",
+        "tests"
+    ],
+    "testbox":{
+        "runner":[
+            {
+                "default":"http://localhost:9095/tests/runner.cfm"
+            }
+        ]
+    },
+    "scripts":{
+        "onRelease":"!workbench/scripts/toMaster.sh",
+        "docs":"task run build/RunDocs.cfc",
+        "lint":"cflint models/**.cfc,modules_app/api-v1/**.cfc,modules_app/api-ui/**.cfc --text --html --json --!exitOnError --suppress",
+        "format":"cfformat run config,handlers,interceptors,tests/specs,modules_app/ui,modules_app/api-lucee-ext,modules_app/api-v1,modules_app/scheduler,*.cfc --overwrite",
+        "format:check":"cfformat check config,handlers,interceptors,tests/specs,modules_app/ui,modules_app/api-lucee-ext,modules_app/api-v1,modules_app/scheduler,*.cfc",
+        "format:watch":"cfformat watch config,handlers,interceptors,models,modules_app/api-v1,modules_app/scheduler,modules_app/ui/handlers,modules_app/ui/modules,*.cfc ./.cfformat.json --overwrite --timeIt"
+    },
+    "cfmigrations":{
+        "connectionInfo":{
+            "password":"${DB_PASSWORD}",
+            "connectionString":"${DB_CONNECTIONSTRING}",
+            "class":"${DB_CLI_CLASS}",
+            "username":"${DB_USER}"
+        },
+        "schema":"${DB_DATABASE}",
+        "defaultGrammar":"AutoDiscover"
+    }
+}

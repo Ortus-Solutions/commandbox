@@ -16,6 +16,7 @@ component accessors="true" singleton {
 	property name="logger"        inject="logbox:logger:{this}";
 	property name="print"         inject="print";
 	property name="parser"         inject="parser";
+	property name="jmespath" 		inject="jmespath";
 
 	/**
 	* Constructor
@@ -39,17 +40,27 @@ component accessors="true" singleton {
 	*/
 	function show( required any JSON, required string property, defaultValue ){
 
-		var fullPropertyName = 'arguments.JSON' & toBracketNotation( arguments.property );
+		var prop = toJMESNotation( arguments.property );
 
-		if( !isDefined( fullPropertyName ) ) {
-			if( structKeyExists( arguments, 'defaultValue' ) ) {
-				return arguments.defaultValue;
-			} else {
-				throw( message='Property [#arguments.property#] doesn''t exist.', type="JSONException");
+		if  (arguments.property == '') return arguments.JSON;
+        try {
+            var results = jmespath.search(arguments.JSON,arguments.property);
+            if ( !isNull(results) ){
+				return results;
 			}
-		}
+			if ( structKeyExists( arguments, 'defaultValue' ) ){
+				return arguments.defaultValue;
+			}
 
-		return evaluate( fullPropertyName );
+			throw( message='Property [#arguments.property#] doesn''t exist.', type="JSONException");
+        }
+		catch( any e ){
+			if ( structKeyExists( arguments, 'defaultValue' ) ){
+				return arguments.defaultValue;
+			}
+			throw( message=e.message, type="JSONException");
+        }
+
 	}
 
 
@@ -179,11 +190,11 @@ component accessors="true" singleton {
 			if( item.startsWith( '[' ) && item.endsWith( ']' ) ) {
 				var innerItem = item.right(-1).left(-1);
 				if( isNumeric( innerItem ) ) {
-					fullPropertyName &= item;	
+					fullPropertyName &= item;
 				} else {
 					// ensure foo[bar] becomes foo["bar"] and foo["bar"] stays that way
 					innerItem = parser.unwrapQuotes( trim( innerItem ) );
-					fullPropertyName &= '[ "#innerItem#" ]';					
+					fullPropertyName &= '[ "#innerItem#" ]';
 				}
 			} else {
 				fullPropertyName &= '[ "#item#" ]';
@@ -191,7 +202,28 @@ component accessors="true" singleton {
 		}
 		return fullPropertyName;
 	}
-	
+	private function toJMESNotation( required string property ) {
+		var tmpProperty = replace( arguments.property, '[', '.[', 'all' );
+		tmpProperty = replace( tmpProperty, ']', '].', 'all' );
+		var fullPropertyName = '';
+		for( var item in listToArray( tmpProperty, '.' ) ) {
+			if( item.startsWith( '[' ) && item.endsWith( ']' ) ) {
+				var innerItem = item.right(-1).left(-1);
+				if( isNumeric( innerItem ) ) {
+					fullPropertyName &= item;
+				} else {
+					// ensure foo[bar] becomes foo["bar"] and foo["bar"] stays that way
+					innerItem = parser.unwrapQuotes( trim( innerItem ) );
+					fullPropertyName &= '."#innerItem#"';
+				}
+			} else {
+				fullPropertyName &= '."#item#"';
+			}
+		}
+		if(left(fullPropertyName,1) == '.') fullPropertyName = right(fullPropertyName,fullPropertyName.len()-1);
+		return fullPropertyName;
+	}
+
 	private function findArrays( required string property ) {
 		var tmpProperty = replace( arguments.property, '[', '.[', 'all' );
 		tmpProperty = replace( tmpProperty, ']', '].', 'all' );
@@ -202,13 +234,13 @@ component accessors="true" singleton {
 				var innerItem = item.right(-1).left(-1);
 				if( isNumeric( innerItem ) ) {
 					if( !arrays.find( fullPropertyName ) ) {
-						arrays.append( fullPropertyName );	
+						arrays.append( fullPropertyName );
 					}
-					fullPropertyName &= item;	
+					fullPropertyName &= item;
 				} else {
 					// ensure foo[bar] becomes foo["bar"] and foo["bar"] stays that way
 					innerItem = parser.unwrapQuotes( trim( innerItem ) );
-					fullPropertyName &= '[ "#innerItem#" ]';					
+					fullPropertyName &= '[ "#innerItem#" ]';
 				}
 			} else {
 				fullPropertyName &= '[ "#item#" ]';
@@ -343,7 +375,7 @@ component accessors="true" singleton {
 	* Merges data from source into target
 	*/
 	function mergeData( any target, any source ) {
-		
+
 		// If it's a struct...
 		if( isStruct( source ) && !isObject( source ) && isStruct( target ) && !isObject( target ) ) {
 			// Loop over and process each key
@@ -365,7 +397,7 @@ component accessors="true" singleton {
 			for( var value in source ) {
 				if( !isNull( value ) ) {
 					// For arrays, just append them into the target without overwriting existing items
-					target.append( value );	
+					target.append( value );
 				}
 			}
 		}

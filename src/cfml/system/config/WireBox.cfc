@@ -83,6 +83,7 @@ component extends='wirebox.system.ioc.config.Binder' {
 		map( 'rewritesDefaultConfig@constants' ).toValue( '#homeDir#/cfml/system/config/urlrewrite.xml' );
 		map( 'colors256Data@constants' ).toValue( colors256Data );
 		map( 'semverRegex@constants' ).toValue( semverRegex );
+		map( 'jmespath' ).to( 'commandbox.system.modules.jmespath.models.jmespath' );
 
 		// Map Directories
 		mapDirectory( '/commandbox/system/services' );
