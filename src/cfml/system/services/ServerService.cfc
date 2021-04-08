@@ -2287,7 +2287,8 @@ component accessors="true" singleton {
 
 		if( len( arguments.serverConfigFile ) ){
 			var foundServer = getServerInfoByServerConfigFile( arguments.serverConfigFile );
-			if( structCount( foundServer ) ) {
+			// If another server used this server.json file but a different name, ignore it.
+			if( structCount( foundServer ) && ( !len( arguments.name ) || arguments.name == foundServer.name ) ) {
 				return foundServer;
 			}
 			return {};

@@ -100,11 +100,13 @@ component singleton accessors=true {
 	*/	
 	function paint() {
 		try {
-			var height = terminal.getHeight()-2;
+			var height = max( terminal.getHeight()-2, 0 );
 			display.resize( terminal.getHeight(), terminal.getWidth() );
 			
 			var lines = [];
 			cursorPosInt = 0;
+			
+			// Future enhancement: allow paintable things to be registered with the ConsolePainter intead of these hard coded references.
 			lines.append( job.getLines(), true );
 			lines.append( progressBar.getLines(), true );
 			lines.append( progressBarGeneric.getLines(), true );
@@ -112,12 +114,12 @@ component singleton accessors=true {
 				var cursorPos = multiSelect.getCursorPosition();
 				cursorPosInt = terminal.getSize().cursorPos( cursorPos.row+lines.len(), cursorPos.col );
 				lines.append( multiSelect.getLines(), true );
-			}			
+			}
+			// /Future enhancement
+			
 			lines.append( attr.init( ' ' ) );
 			lines.append( attr.init( ' ' ) );
-			
-			
-			
+
 			// Trim to terminal height so the screen doesn't go all jumpy
 			// If there is more output than screen, the user just doesn't get to see the rest
 			if( lines.len() > height ) {

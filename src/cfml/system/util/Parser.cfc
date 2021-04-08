@@ -124,7 +124,7 @@ component {
 			}
 
 			// We're starting a quoted string and we're at the start of a token or waiting on a value
-			if( ( char == '"' || char == "'"  || char == "`" ) && !isEscaped && ( isWaitingOnValue || token == '' ) ) {
+			if( ( char == '"' || char == "'"  || char == "`" ) && !isEscaped && ( isWaitingOnValue || prevChar == '=' || token == '' ) ) {
 				inQuotes = true;
 				quoteChar = char;
 			}
@@ -147,8 +147,7 @@ component {
 		if( len( token ) ) {
 			tokens.append( token);
 		}
-
-		return tokens;
+		return tokens;		
 	}
 
 
