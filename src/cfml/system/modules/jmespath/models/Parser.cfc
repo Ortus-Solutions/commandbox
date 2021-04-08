@@ -109,7 +109,7 @@ component displayname="Parser" {
             case TOK_QUOTEDIDENTIFIER:
                 var node = {type: 'Field', name: token.value};
                 if (this._lookahead(0) == TOK_LPAREN) {
-                    throw( type="JMESError", detail='Quoted identifier not allowed for function names.');
+                    throw( type="JMESError", message='Quoted identifier not allowed for function names.');
                 }
                 return node;
             case TOK_NOT:
@@ -252,11 +252,11 @@ component displayname="Parser" {
         } else {
             var t = this._lookaheadToken(0);
             //dump(t)
-            throw( type="JMESError", detail='Expected ' & tokenType & ', got: ' & t.type);
+            throw( type="JMESError", message='Expected ' & tokenType & ', got: ' & t.type);
         }
     }
     function _errorToken(token) {
-         throw( type="JMESError", detail= 'Invalid token (' & token.type & '): "' & token.value & '"' );
+         throw( type="JMESError", message= 'Invalid token (' & token.type & '): "' & token.value & '"' );
     }
     function _parseIndexExpression() {
         if (this._lookahead(0) == TOK_COLON || this._lookahead(1) == TOK_COLON) {
@@ -291,7 +291,7 @@ component displayname="Parser" {
                 this._advance();
             } else {
                 var t = this._lookahead(0);
-                throw( type="JMESError", detail= 'Parser Error: Syntax error, unexpected token: ' &  t.value & '(' & t.type & ')');
+                throw( type="JMESError", message= 'Parser Error: Syntax error, unexpected token: ' &  t.value & '(' & t.type & ')');
             }
             currentToken = this._lookahead(0);
         }
@@ -328,7 +328,7 @@ component displayname="Parser" {
             right = this._parseDotRHS(rbp);
         } else {
             var t = this._lookaheadToken(0);
-            throw(type="JMESError", detail= 'ParserError: Sytanx error, unexpected token: ' & t.value & '(' & t.type & ')' );
+            throw(type="JMESError", message= 'ParserError: Sytanx error, unexpected token: ' & t.value & '(' & t.type & ')' );
         }
         return right;
     }
@@ -340,7 +340,7 @@ component displayname="Parser" {
             if (this._lookahead(0) == TOK_COMMA) {
                 this._match(TOK_COMMA);
                 if (this._lookahead(0) == TOK_RBRACKET) {
-                    throw(type="JMESError", detail= 'Unexpected token Rbracket');
+                    throw(type="JMESError", message= 'Unexpected token Rbracket');
                 }
             }
         }
@@ -357,7 +357,7 @@ component displayname="Parser" {
         for (; ;) {
             keyToken = this._lookaheadToken(0);
             if (identifierTypes.indexOf(keyToken.type) < 0) {
-                throw(type="JMESError", detail= 'Expecting an identifier token, got: ' & keyToken.type);
+                throw(type="JMESError", message= 'Expecting an identifier token, got: ' & keyToken.type);
             }
             keyName = keyToken.value;
             this._advance();
