@@ -128,7 +128,7 @@ component displayname="Lexer" {
                     tokens.append({type: TOK_PIPE, value: '|', start: start});
                 }
             } else {
-                throw( message= 'Unknown character', type="JMESError", detail= 'Unknown character:(' & asc(stream[this._current]) & ')');
+                throw( type="JMESError", message= 'Unknown character:(' & asc(stream[this._current]) & ')');
             }
         }
 
@@ -283,7 +283,7 @@ component displayname="Lexer" {
         literalString = lTrim(slice(stream, start, this._current));
         literalString = replace(literalString,'\`', '`', 'all');
 
-        
+
         if (this._looksLikeJSON(literalString)) {
             literal = parseJson(literalString);
         } else {

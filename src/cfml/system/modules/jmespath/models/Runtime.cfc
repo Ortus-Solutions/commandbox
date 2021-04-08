@@ -32,12 +32,12 @@ component displayname="runtime" {
         this.functionTable = {
             // name: [function, <signature>]
             // The <signature> can be:
-            // 
+            //
             // {
             //   args: [[type1, type2], [type1, type2]],
             //   variadic: true|false
             // }
-            // 
+            //
             // Each arg in the arg list is a list of valid types
             // (if the function is overloaded and supports multiple
             // types.  If the type is "any" then no type checking
@@ -46,8 +46,16 @@ component displayname="runtime" {
             abs: {_func: this._functionAbs, _signature: [{types: [TYPE_NUMBER]}]},
             avg: {_func: this._functionAvg, _signature: [{types: [TYPE_ARRAY_NUMBER]}]},
             ceil: {_func: this._functionCeil, _signature: [{types: [TYPE_NUMBER]}]},
+            key_contains: {
+                _func: this._functionKeyContains,
+                _signature: [{types: [TYPE_OBJECT]}, {types: [TYPE_STRING]}]
+            },
             contains: {
                 _func: this._functionContains,
+                _signature: [{types: [TYPE_STRING, TYPE_ARRAY]}, {types: [TYPE_ANY]}]
+            },
+            matches: {
+                _func: this._functionMatches,
                 _signature: [{types: [TYPE_STRING, TYPE_ARRAY]}, {types: [TYPE_ANY]}]
             },
             'ends_with': {_func: this._functionEndsWith, _signature: [{types: [TYPE_STRING]}, {types: [TYPE_STRING]}]},
@@ -80,12 +88,12 @@ component displayname="runtime" {
         };
     }
 
-    
+
 
 
     function callFunction(name, resolvedArgs) {
         if (!this.functionTable.keyExists(name)) {
-            throw (type="JMESError", detail=  'Unknown function: ' &  name &  '()');
+            throw (type="JMESError", message=  'Unknown function: ' &  name &  '()');
         } else {
             var functionEntry = this.functionTable[name];
         }
@@ -103,17 +111,17 @@ component displayname="runtime" {
         if (signature[signature.len()].keyExists('variadic') && signature[signature.len()].variadic) {
             if (args.len() < signature.len()) {
                 pluralized = signature.len() == 1 ? ' argument' : ' arguments';
-                throw (type="JMESError", detail= 
-                    'ArgumentError: ' &  name &  '() ' & 
-                    'takes at least' &  signature.len() &  pluralized & 
+                throw (type="JMESError", message=
+                    'ArgumentError: ' &  name &  '() ' &
+                    'takes at least' &  signature.len() &  pluralized &
                     ' but received ' &  args.len()
                 );
             }
         } else if (args.len() != signature.len()) {
             pluralized = signature.len() == 1 ? ' argument' : ' arguments';
-            throw (type="JMESError", detail= 
-                'ArgumentError: ' &  name &  '() ' & 
-                'takes ' &  signature.len() &  pluralized & 
+            throw (type="JMESError", message=
+                'ArgumentError: ' &  name &  '() ' &
+                'takes ' &  signature.len() &  pluralized &
                 ' but received ' &  args.len()
             );
         }
@@ -136,11 +144,11 @@ component displayname="runtime" {
                         return TYPE_NAME_TABLE[typeIdentifier];
                     })
                     .toList(',');
-                throw (type="JMESError", detail= 
-                    'TypeError: ' &  name &  '() ' & 
-                    'expected argument ' &  (i +  1) & 
-                    ' to be type ' &  expected & 
-                    ' but received type ' & 
+                throw (type="JMESError", message=
+                    'TypeError: ' &  name &  '() ' &
+                    'expected argument ' &  (i +  1) &
+                    ' to be type ' &  expected &
+                    ' but received type ' &
                     TYPE_NAME_TABLE[actualType] &  ' instead.'
                 );
             }
@@ -157,7 +165,7 @@ component displayname="runtime" {
         ) {
             // The expected type can either just be array,
             // or it can require a specific subtype (array of numbers).
-            // 
+            //
             // The simplest case is if "array" with no subtype is specified.
             if (expected == TYPE_ARRAY) {
                 return actual == TYPE_ARRAY;
@@ -198,7 +206,7 @@ component displayname="runtime" {
         }
     }
 
-    
+
     function _functionStartsWith(resolvedArgs) {
         return resolvedArgs[1].lastIndexOf(resolvedArgs[2]) == 0;
     }
@@ -232,8 +240,19 @@ component displayname="runtime" {
         }
         return sum / inputArray.len();
     }
+    function _functionKeyContains(resolvedArgs) {
+		var items = {};
+		for( var i in resolvedArgs[1]){
+			if(i.find(resolvedArgs[2]) > 0) items[i] = resolvedArgs[1][i];
+		}
+        return items;
+    }
     function _functionContains(resolvedArgs) {
         return resolvedArgs[1].find(resolvedArgs[2]) > 0;
+    }
+    function _functionMatches(resolvedArgs) {
+		var regexVal  = replace(resolvedArgs[2],"\\","\","All");
+        return resolvedArgs[1].refind(regexVal) > 0;
     }
     function _functionFloor(resolvedArgs) {
         return floor(resolvedArgs[1]);
@@ -286,7 +305,7 @@ component displayname="runtime" {
                 return maxElement;
             }
         } else {
-            return nullvalue();
+            return nullValue();
         }
     }
     function _functionMin(resolvedArgs) {
@@ -305,7 +324,7 @@ component displayname="runtime" {
                 return minElement;
             }
         } else {
-            return nullvalue();
+            return nullValue();
         }
     }
     function _functionSum(resolvedArgs) {
@@ -351,7 +370,7 @@ component displayname="runtime" {
         var keys = structKeyArray(obj);
         var values = [];
         for (var i = 1; i <= keys.len(); i++) {
-            values.append({ key: keys[i], value:obj[keys[i]]});
+            values.append({ 'key': keys[i], 'value':obj[keys[i]]});
         }
         return values;
     }
@@ -386,11 +405,11 @@ component displayname="runtime" {
                     return convertedValue;
                 }
             } catch( any e){
-                // throw (type="JMESError", detail= 'ParseError: String "' & resolvedArgs[1] & '" cannot be parsed as number');
+                throw (type="JMESError", message= 'ParseError: String "' & resolvedArgs[1] & '" cannot be parsed as number');
 
             }
         }
-        return nullvalue();
+        return nullValue();
     }
     function _functionNotNull(resolvedArgs) {
         for (var i = 1; i <= resolvedArgs.len(); i++) {
@@ -398,7 +417,7 @@ component displayname="runtime" {
                 return resolvedArgs[i];
             }
         }
-        return nullvalue();
+        return nullValue();
     }
     function _functionSort(resolvedArgs) {
         var sortedArray = resolvedArgs[1];
@@ -415,7 +434,7 @@ component displayname="runtime" {
         var exprefNode = resolvedArgs[2];
         var requiredType = this._getTypeName(interpreter.visit(exprefNode, sortedArray[1]));
         if ([TYPE_NUMBER, TYPE_STRING].indexOf(requiredType) < 0) {
-            throw (type="JMESError", detail= 'TypeError');
+            throw (type="JMESError", message= 'TypeError');
         }
         var that = this;
         // In order to get a stable sort out of an unstable
@@ -433,13 +452,13 @@ component displayname="runtime" {
             var exprA = interpreter.visit(exprefNode, a[2]);
             var exprB = interpreter.visit(exprefNode, b[2]);
             if (that._getTypeName(exprA) != requiredType) {
-                throw (type="JMESError", detail= 
-                    'TypeError: expected ' &  requiredType &  ', received ' & 
+                throw (type="JMESError", message=
+                    'TypeError: expected ' &  requiredType &  ', received ' &
                     that._getTypeName(exprA)
                 );
             } else if (that._getTypeName(exprB) != requiredType) {
-                throw (type="JMESError", detail= 
-                    'TypeError: expected ' &  requiredType &  ', received ' & 
+                throw (type="JMESError", message=
+                    'TypeError: expected ' &  requiredType &  ', received ' &
                     that._getTypeName(exprB)
                 );
             }
@@ -498,9 +517,9 @@ component displayname="runtime" {
         var keyFunc = function(x) {
             var current = interpreter.visit(exprefNode, x);
             if (allowedTypes.indexOf(that._getTypeName(current)) < 0) {
-                var msg = 'TypeError: expected one of ' &  allowedTypes & 
+                var msg = 'TypeError: expected one of ' &  allowedTypes &
                 ', received ' &  that._getTypeName(current);
-                throw (type="JMESError", detail= msg);
+                throw (type="JMESError", message= msg);
             }
             return current;
         };
