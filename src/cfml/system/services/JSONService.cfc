@@ -53,12 +53,11 @@ component accessors="true" singleton {
 			}
 
 			throw( message='Property [#arguments.property#] doesn''t exist.', type="JSONException");
-        }
-		catch( any e ){
+		} catch( any e ){
 			if ( structKeyExists( arguments, 'defaultValue' ) ){
 				return arguments.defaultValue;
 			}
-			throw( message=e.message, type="JSONException");
+			throw( message='Query:[ #arguments.property# ] failed because ' & e.message, type="JSONException");
         }
 
 	}
