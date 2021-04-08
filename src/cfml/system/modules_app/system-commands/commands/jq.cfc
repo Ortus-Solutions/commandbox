@@ -48,7 +48,7 @@
 component {
 
 	// DI Properties
-	property name="JSONService" inject="JSONService";
+	property name="jmespath" 		inject="jmespath";
 
 	/**
 	 * @inputOrFile.hint The text to process, or a file name
@@ -70,12 +70,12 @@ component {
 		}
 
 		try {
-			var propertyValue = JSONService.show( deserializeJSON(arguments.inputOrFile), arguments.query );
+			var propertyValue = jmespath.search( deserializeJSON(arguments.inputOrFile), arguments.query );
 
 			print.line( propertyValue );
 
-		} catch( JSONException var e ) {
-			error( e.message );
+ 		} catch( JMESError var e ) {
+			error('Query:[ ' & arguments.query & ' ] is malformed. Error: ' & e.message)
 		} catch( any var e ) {
 			rethrow;
 		}

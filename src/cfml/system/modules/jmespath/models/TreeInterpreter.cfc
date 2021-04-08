@@ -93,7 +93,7 @@ component displayname="TreeInterpreter" {
         if(isNull(obj) ) return true;
         if(isNumeric(obj)) return false;
         if(isBoolean(obj)) return !obj;
-        
+
         if ((isSimpleValue(obj) && obj == '' && obj != 0)) {
             return true;
         } else if (isArray(obj) && obj.len() == 0) {
@@ -288,7 +288,7 @@ component displayname="TreeInterpreter" {
                         result = first <= second;
                         break;
                     default:
-                        throw (type="JMESError", detail='Unknown comparator: ' + node.name);
+                        throw (type="JMESError", message='Unknown comparator: ' + node.name);
                 }
                 return result;
             case TOK_FLATTEN:
@@ -364,7 +364,7 @@ component displayname="TreeInterpreter" {
                 refNode.jmespathType = TOK_EXPREF;
                 return refNode;
             default:
-                throw(type="JMESError", detail='Unknown node type: ' + node.type);
+                throw(type="JMESError", message='Unknown node type: ' + node.type);
         }
     }
 
@@ -376,7 +376,7 @@ component displayname="TreeInterpreter" {
         if (step === nullvalue()) {
             step = 1;
         } else if (step === 0) {
-            throw(type="RuntimeError", detail='Invalid slice, step cannot be 0');
+            throw(type="RuntimeError", message='Invalid slice, step cannot be 0');
         }
         var stepValueNegative = step < 0 ? true : false;
 
