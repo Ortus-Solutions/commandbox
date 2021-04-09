@@ -10,13 +10,13 @@
 component accessors="true" singleton {
 
 	// DI
-	property name="configService" inject="ConfigService";
-	property name="fileSystemUtil" inject="FileSystem";
-	property name="formatterUtil" inject="Formatter";
-	property name="logger"        inject="logbox:logger:{this}";
-	property name="print"         inject="print";
-	property name="parser"         inject="parser";
-	property name="jmespath" 		inject="jmespath";
+	property name="configService"	inject="ConfigService";
+	property name="fileSystemUtil"	inject="FileSystem";
+	property name="formatterUtil"	inject="Formatter";
+	property name="logger"			inject="logbox:logger:{this}";
+	property name="print"			inject="print";
+	property name="parser"			inject="parser";
+	property name="jmespath"		inject="jmespath";
 
 	/**
 	* Constructor
@@ -44,7 +44,7 @@ component accessors="true" singleton {
 
 		if  (arguments.property == '') return arguments.JSON;
         try {
-            var results = jmespath.search(arguments.JSON,arguments.property);
+            var results = jmespath.search(arguments.JSON,prop);
             if ( !isNull(results) ){
 				return results;
 			}
@@ -54,9 +54,6 @@ component accessors="true" singleton {
 
 			throw( message='Property [#arguments.property#] doesn''t exist.', type="JSONException");
 		} catch( any e ){
-			if ( structKeyExists( arguments, 'defaultValue' ) ){
-				return arguments.defaultValue;
-			}
 			throw( message='Query:[ #arguments.property# ] failed because ' & e.message, type="JSONException");
         }
 
