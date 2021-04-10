@@ -46,10 +46,6 @@ component {
 
 			var settingName = interceptData.setting.replaceNoCase( 'serverinfo.', '', 'one' );
 
-			if( callStackGet().filter( (c)=>c.function=='onSystemSettingExpansion' ).len()>2 ) {
-				throw( message='Endless recursion detected while trying to evaluate [#interceptData.setting#].', detail='Trying to reference details of a server in its own sever.json can cause this catch-22 scenario.', type='CommandException' )	
-			}
-
 			// Lookup by name
 			if( listLen( settingName, '@' ) > 1 ) {
 				var serverInfo = serverService.getServerInfoByName( listLast( settingName, '@' ) );
