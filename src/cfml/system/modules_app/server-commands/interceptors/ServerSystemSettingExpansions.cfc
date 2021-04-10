@@ -46,21 +46,19 @@ component {
 
 			var settingName = interceptData.setting.replaceNoCase( 'serverinfo.', '', 'one' );
 
+			if( callStackGet().filter( (c)=>c.function=='onSystemSettingExpansion' ).len()>2 ) {
+				throw( message='Endless recursion detected while trying to evaluate [#interceptData.setting#].', detail='Trying to reference details of a server in its own sever.json can cause this catch-22 scenario.', type='CommandException' )	
+			}
+
 			// Lookup by name
 			if( listLen( settingName, '@' ) > 1 ) {
-				var serverDetails = serverService.resolveServerDetails( { name : listLast( settingName, '@' ) } );
+				var serverInfo = serverService.getServerInfoByName( listLast( settingName, '@' ) );
 				settingName = listFirst( settingName, '@' );
 			// Lookup by current working directory
 			} else {
-				var serverDetails = serverService.resolveServerDetails( { directory : shell.pwd() } );
+				var serverInfo = serverService.getServerInfoByWebroot( shell.pwd() );
 			}
-			// If server wasn't found, use empty struct so we get empty strings instead of serverInfo default values
-			if( serverdetails.serverIsNew ) {
-				var serverInfo = {};
-			} else {
-				var serverInfo = serverDetails.serverInfo;
-			}
-
+			
 			interceptData.setting = JSONService.show( serverInfo, settingName, interceptData.defaultValue );
 
 			if( !isSimpleValue( interceptData.setting ) ) {
