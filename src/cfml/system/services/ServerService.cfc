@@ -1049,6 +1049,9 @@ component accessors="true" singleton {
 			var processName = ( serverInfo.name is "" ? "CommandBox" : serverInfo.name ) & ' [' & listFirst( serverinfo.cfengine, '@' ) & ' ' & installDetails.version & ']';
 			var displayServerName = ( serverInfo.name is "" ? "CommandBox" : serverInfo.name );
 			var displayEngineName = serverInfo.engineName & ' ' & installDetails.version;
+			serverInfo.pidfile = serverInfo.serverHomeDirectory & '/.pid.txt';
+			serverInfo.predicateFile = serverinfo.serverHomeDirectory & '/.predicateFile.txt';
+			serverInfo.trayOptionsFile = serverinfo.serverHomeDirectory & '/.trayOptions.json';
 
 		// This is a WAR
 		} else {
@@ -1072,6 +1075,9 @@ component accessors="true" singleton {
 			serverInfo.appFileSystemPath = serverInfo.serverHomeDirectory;
 			// Create a custom server folder to house the logs
 			serverInfo.logdir = serverinfo.customServerFolder & "/logs";
+			serverInfo.pidfile = serverInfo.customServerFolder & '/.pid.txt';
+			serverInfo.predicateFile = serverinfo.customServerFolder & '/.predicateFile.txt';
+			serverInfo.trayOptionsFile = serverinfo.customServerFolder & '/.trayOptions.json';
 			var displayServerName = processName;
 			var displayEngineName = 'WAR';
 		}
@@ -1092,6 +1098,7 @@ component accessors="true" singleton {
 		serverInfo.consolelogPath = serverInfo.logdir & '/server.out.txt';
 		serverInfo.accessLogPath = serverInfo.logDir & '/access.txt';
 		serverInfo.rewritesLogPath = serverInfo.logDir & '/rewrites.txt';
+		 
 
 		// Find the correct tray icon for this server
 		if( !len( serverInfo.trayIcon ) ) {
@@ -1224,13 +1231,12 @@ component accessors="true" singleton {
 		}
 
 		// Serialize tray options and write to temp file
-		var trayOptionsPath = serverinfo.serverHomeDirectory & '/.trayOptions.json';
 		var trayJSON = {
 			'title' : displayServerName,
 			'tooltip' : processName,
 			'items' : serverInfo.trayOptions
 		};
-		fileWrite( trayOptionsPath,  serializeJSON( trayJSON ) );
+		fileWrite( serverInfo.trayOptionsFile,  serializeJSON( trayJSON ) );
 		var background = !(serverInfo.console ?: false);
 		// The java arguments to execute:  Shared server, custom web configs
 
@@ -1276,7 +1282,8 @@ component accessors="true" singleton {
 			.append( '--timeout' ).append( serverInfo.startTimeout )
 			.append( '--proxy-peeraddress' ).append( 'true' )
 			.append( '--cookie-secure' ).append( serverInfo.sessionCookieSecure )
-			.append( '--cookie-httponly' ).append( serverInfo.sessionCookieHTTPOnly );
+			.append( '--cookie-httponly' ).append( serverInfo.sessionCookieHTTPOnly )
+			.append( '--pid-file').append( serverInfo.pidfile );
 
 		if( ConfigService.settingExists( 'preferredBrowser' ) ) {
 			args.append( '--preferred-browser' ).append( ConfigService.getSetting( 'preferredBrowser' ) );
@@ -1287,7 +1294,7 @@ component accessors="true" singleton {
 		if( serverInfo.trayEnable ) {
 			args
 				.append( '--tray-icon' ).append( serverInfo.trayIcon )
-				.append( '--tray-config' ).append( trayOptionsPath )
+				.append( '--tray-config' ).append( serverInfo.trayOptionsFile )
 		}
 
 		if( serverInfo.runwarXNIOOptions.count() ) {
@@ -1462,9 +1469,8 @@ component accessors="true" singleton {
 		}
 
 		if( serverInfo.webRules.len() ){
-			var predicateFile = serverinfo.serverHomeDirectory & '/.predicateFile.txt';
-			fileWrite( predicateFile, serverInfo.webRules.toList( CR ) );
-			args.append( '--predicate-file' ).append( predicateFile );
+			fileWrite( serverInfo.predicateFile, serverInfo.webRules.toList( CR ) );
+			args.append( '--predicate-file' ).append( serverInfo.predicateFile );
 		}
 
 		// change status to starting + persist
@@ -2503,7 +2509,10 @@ component accessors="true" singleton {
 			'blockCFAdmin'		: false,
 			'blockSensitivePaths'	: false,
 			'blockFlashRemoting'	: false,
-			'allowedExt'		: ''
+			'allowedExt'		: '',
+			'pidfile'			: '',
+			'predicateFile'		: '',
+			'trayOptionsFile'	: ''
 		};
 	}
 
