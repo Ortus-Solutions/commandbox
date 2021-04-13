@@ -54,6 +54,8 @@ component accessors="true" singleton {
 			}
 
 			throw( message='Property [#arguments.property#] doesn''t exist.', type="JSONException");
+		} catch( JSONException e ){
+			rethrow;
 		} catch( any e ){
 			Consolelogger.error( 'Query:[ #arguments.property# ] failed because ' & e.message );
 			rethrow;
