@@ -75,6 +75,8 @@ component accessors="true" singleton {
 			}
 
 			throw( message='Property [#arguments.property#] doesn''t exist.', type="JSONException");
+		} catch( JSONException e ){
+			rethrow;
 		} catch( any e ){
 			Consolelogger.error( 'Query:[ #arguments.property# ] failed because ' & e.message );
 			rethrow;
@@ -222,6 +224,18 @@ component accessors="true" singleton {
 		return fullPropertyName;
 	}
 
+	// ['foo']['bar-baz'][1] or ["foo"]["bar-baz"][1] --> "foo"."bar-baz"[1]
+	private function toJMESNotation(str){
+        //find bracketed items with quotes
+        //replace them with with double quotes only
+
+		//open bracket + either type of quotes + (value inside of quotes) + either type of quotes + close bracket
+        var rgx = "\[[\'\""]([^\[\]\'\""]+)[\'\""]\]";
+        var quotesWithDots = rereplace(str,rgx,'."\1"','all'); // "foo""bar-baz"[1]
+
+
+        return quotesWithDots;
+    }
 	private function findArrays( required string property ) {
 		var tmpProperty = replace( arguments.property, '[', '.[', 'all' );
 		tmpProperty = replace( tmpProperty, ']', '].', 'all' );

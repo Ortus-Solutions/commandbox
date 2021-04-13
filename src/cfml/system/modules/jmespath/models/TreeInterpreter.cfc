@@ -93,7 +93,7 @@ component displayname="TreeInterpreter" {
         if(isNull(obj) ) return true;
         if(isNumeric(obj)) return false;
         if(isBoolean(obj)) return !obj;
-        
+
         if ((isSimpleValue(obj) && obj == '' && obj != 0)) {
             return true;
         } else if (isArray(obj) && obj.len() == 0) {
@@ -161,8 +161,7 @@ component displayname="TreeInterpreter" {
                         // echo(" = structNull" & "<br/>")
                         return;
                     } else {
-                        field = value[node.name];
-                        // echo(" = " & serializeJSON(field) & "<br/>")
+						field = value[node.name];
                         return field;
                     }
                 }
