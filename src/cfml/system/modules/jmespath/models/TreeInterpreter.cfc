@@ -158,11 +158,9 @@ component displayname="TreeInterpreter" {
             case 'Field':
                 if (!isNull(value) && isStruct(value)) {
                     if (!value.keyExists(node.name)) {
-                        // echo(" = structNull" & "<br/>")
                         return nullvalue();
                     } else {
-                        field = value[node.name];
-                        // echo(" = " & serializeJSON(field) & "<br/>")
+						field = value[node.name];
                         return field;
                     }
                 }
@@ -170,11 +168,10 @@ component displayname="TreeInterpreter" {
                 return nullvalue();
             case 'Subexpression':
                 result = this.visit(node.children[1], value);
+				if (isNull(result)) return nullvalue();
                 for (i = 2; i <= node.children.len(); i++) {
-                    result = this.visit(node.children[2], result);
-                    if (isNull(result)) {
-                        return nullvalue();
-                    }
+					result = this.visit(node.children[2], result);
+					if (isNull(result)) return nullvalue();
                 }
                 return result;
             case 'IndexExpression':
