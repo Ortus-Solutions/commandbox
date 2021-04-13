@@ -14,6 +14,7 @@ component accessors="true" singleton {
 	property name="fileSystemUtil"	inject="FileSystem";
 	property name="formatterUtil"	inject="Formatter";
 	property name="logger"			inject="logbox:logger:{this}";
+	property name="Consolelogger"	inject="logbox:logger:console";
 	property name="print"			inject="print";
 	property name="parser"			inject="parser";
 	property name="jmespath"		inject="jmespath";
@@ -41,7 +42,6 @@ component accessors="true" singleton {
 	function show( required any JSON, required string property, defaultValue ){
 
 		var prop = toJMESNotation( arguments.property );
-
 		if  (arguments.property == '') return arguments.JSON;
 
         try {
@@ -55,7 +55,8 @@ component accessors="true" singleton {
 
 			throw( message='Property [#arguments.property#] doesn''t exist.', type="JSONException");
 		} catch( any e ){
-			throw( message='Query:[ #arguments.property# ] -> [ #prop# ] failed because ' & e.message, type="JSONException");
+			Consolelogger.error( 'Query:[ #arguments.property# ] failed because ' & e.message );
+			rethrow;
         }
 
 	}
