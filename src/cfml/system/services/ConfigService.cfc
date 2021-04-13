@@ -18,20 +18,20 @@ component accessors="true" singleton {
 	// The physical path there config settings are persisted
 	property name="configFilePath";
 	property name="serverServiceCompletePerformed" type="boolean" default="false";
-	
+
 
 	// DI
 	property name='formatterUtil'		inject='formatter';
 	property name='ModuleService'		inject='ModuleService';
 	property name='JSONService'			inject='JSONService';
 	property name='ServerService'		inject='provider:ServerService';
-	
+
 	/**
 	* Constructor
 	*/
 	function init(){
 		variables.system = createObject( 'java', 'java.lang.System' );
-		
+
 		// These aren't stored in the actual configSettings struct-- they're more for documentation
 		// and smart auto-completion to help people set new settings.
 		setPossibleConfigSettings([
@@ -99,7 +99,7 @@ component accessors="true" singleton {
 
 		// Config settings that come from the JSON file
 		loadConfig();
-		
+
 		return this;
 	}
 
@@ -122,6 +122,18 @@ component accessors="true" singleton {
 		arguments.property = arguments.name;
 
 		return JSONService.show( argumentCollection = arguments );
+	}
+
+	/**
+	* Get a setting from a configuration structure with JMESPath
+	* @name.hint The name of the setting.  Allows for "deep" struct/array names.
+	* @defaultValue.hint The default value to use if setting does not exist
+	*/
+	function getSettingJMES( required name, defaultValue ){
+		arguments.JSON = getConfigSettings();
+		arguments.property = arguments.name;
+
+		return JSONService.showJMES( argumentCollection = arguments );
 	}
 
 	/**
@@ -183,19 +195,19 @@ component accessors="true" singleton {
 		if( noOverrides ) {
 			return variables.configSettings;
 		}
-		
+
 		// env var/system property overrides which we want to keep seperate so we don't write them back to the JSON file.
 		return JSONService.mergeData( duplicate( variables.configSettings ), getConfigSettingOverrides() );
 	}
 
-	
+
 	/**
 	* Loads config settings from env vars or Java system properties
 	*/
 	function loadOverrides(){
 		var overrides={};
-		
-		// Look for individual BOX settings to import.		
+
+		// Look for individual BOX settings to import.
 		var processVarsUDF = function( envVar, value ) {
 			// Loop over any that look like box_config_xxx
 			if( envVar.len() > 11 && left( envVar, 11 ) == 'box_config_' ) {
@@ -205,22 +217,22 @@ component accessors="true" singleton {
 				JSONService.set( JSON=overrides, properties={ '#name#' : value }, thisAppend=true );
 			}
 		};
-		
+
 		// Get all OS env vars
 		var envVars = system.getenv();
 		for( var envVar in envVars ) {
 			processVarsUDF( envVar, envVars[ envVar ] );
 		}
-		
+
 		// Get all System Properties
 		var props = system.getProperties();
 		for( var prop in props ) {
 			processVarsUDF( prop, props[ prop ] );
 		}
-	
+
 		setConfigSettingOverrides( overrides );
 	}
-	
+
 	/**
 	* Persists config settings to disk
 	*/
@@ -238,14 +250,14 @@ component accessors="true" singleton {
 	* @asSet Pass true to add = to the end of the options
 	*/
 	function completeProperty( all=false, asSet=false ) {
-		if( !getServerServiceCompletePerformed() ) {		
+		if( !getServerServiceCompletePerformed() ) {
 			var serverProps = serverService.completeProperty( 'fake', true );
 			for( var prop in serverProps ) {
 				variables.possibleConfigSettings.append( 'server.defaults.#prop#' );
 			}
 			setServerServiceCompletePerformed( true );
 		}
-		
+
 		// Get all config settings currently set
 		var props = JSONService.addProp( [], '', '', getConfigSettings() );
 
