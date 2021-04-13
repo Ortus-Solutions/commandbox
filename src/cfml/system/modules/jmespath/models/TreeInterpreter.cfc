@@ -1,34 +1,34 @@
 component displayname="TreeInterpreter" {
 
-    variables.TOK_EOF = 'EOF';
-    variables.TOK_UNQUOTEDIDENTIFIER = 'UnquotedIdentifier';
-    variables.TOK_QUOTEDIDENTIFIER = 'QuotedIdentifier';
-    variables.TOK_RBRACKET = 'Rbracket';
-    variables.TOK_RPAREN = 'Rparen';
-    variables.TOK_COMMA = 'Comma';
-    variables.TOK_COLON = 'Colon';
-    variables.TOK_RBRACE = 'Rbrace';
-    variables.TOK_NUMBER = 'Number';
-    variables.TOK_CURRENT = 'Current';
-    variables.TOK_EXPREF = 'Expref';
-    variables.TOK_PIPE = 'Pipe';
-    variables.TOK_OR = 'Or';
-    variables.TOK_AND = 'And';
-    variables.TOK_EQ = 'EQ';
-    variables.TOK_GT = 'GT';
-    variables.TOK_LT = 'LT';
-    variables.TOK_GTE = 'GTE';
-    variables.TOK_LTE = 'LTE';
-    variables.TOK_NE = 'NE';
-    variables.TOK_FLATTEN = 'Flatten';
-    variables.TOK_STAR = 'Star';
-    variables.TOK_FILTER = 'Filter';
-    variables.TOK_DOT = 'Dot';
-    variables.TOK_NOT = 'Not';
-    variables.TOK_LBRACE = 'Lbrace';
-    variables.TOK_LBRACKET = 'Lbracket';
-    variables.TOK_LPAREN = 'Lparen';
-    variables.TOK_LITERAL = 'Literal';
+    TOK_EOF = 'EOF';
+    TOK_UNQUOTEDIDENTIFIER = 'UnquotedIdentifier';
+    TOK_QUOTEDIDENTIFIER = 'QuotedIdentifier';
+    TOK_RBRACKET = 'Rbracket';
+    TOK_RPAREN = 'Rparen';
+    TOK_COMMA = 'Comma';
+    TOK_COLON = 'Colon';
+    TOK_RBRACE = 'Rbrace';
+    TOK_NUMBER = 'Number';
+    TOK_CURRENT = 'Current';
+    TOK_EXPREF = 'Expref';
+    TOK_PIPE = 'Pipe';
+    TOK_OR = 'Or';
+    TOK_AND = 'And';
+    TOK_EQ = 'EQ';
+    TOK_GT = 'GT';
+    TOK_LT = 'LT';
+    TOK_GTE = 'GTE';
+    TOK_LTE = 'LTE';
+    TOK_NE = 'NE';
+    TOK_FLATTEN = 'Flatten';
+    TOK_STAR = 'Star';
+    TOK_FILTER = 'Filter';
+    TOK_DOT = 'Dot';
+    TOK_NOT = 'Not';
+    TOK_LBRACE = 'Lbrace';
+    TOK_LBRACKET = 'Lbracket';
+    TOK_LPAREN = 'Lparen';
+    TOK_LITERAL = 'Literal';
 
     function init(runtime) {
         if (!isNull(runtime)) this.runtime = runtime;
@@ -93,7 +93,7 @@ component displayname="TreeInterpreter" {
         if(isNull(obj) ) return true;
         if(isNumeric(obj)) return false;
         if(isBoolean(obj)) return !obj;
-
+        
         if ((isSimpleValue(obj) && obj == '' && obj != 0)) {
             return true;
         } else if (isArray(obj) && obj.len() == 0) {
@@ -158,29 +158,33 @@ component displayname="TreeInterpreter" {
             case 'Field':
                 if (!isNull(value) && isStruct(value)) {
                     if (!value.keyExists(node.name)) {
-                        return nullvalue();
+                        // echo(" = structNull" & "<br/>")
+                        return;
                     } else {
-						field = value[node.name];
+                        field = value[node.name];
+                        // echo(" = " & serializeJSON(field) & "<br/>")
                         return field;
                     }
                 }
                 // echo(" = Null" & "<br/>")
-                return nullvalue();
+                return;
             case 'Subexpression':
                 result = this.visit(node.children[1], value);
-				if (isNull(result)) return nullvalue();
+                if (isNull(result))  return;
                 for (i = 2; i <= node.children.len(); i++) {
-					result = this.visit(node.children[2], result);
-					if (isNull(result)) return nullvalue();
+                    result = this.visit(node.children[2], result);
+                    if (isNull(result))  return;
                 }
                 return result;
             case 'IndexExpression':
-                left = this.visit(node.children[1], value);
-                right = this.visit(node.children[2], left);
+                left = this.visit(node.children[1], value) ?: NullValue();
+                if(isNull(left)) return;
+                right = this.visit(node.children[2], left) ?: NullValue();
+                if(isNull(right)) return;
                 return right;
             case 'Index':
                 if (!isArray(value)) {
-                    return nullvalue();
+                    return;
                 }
                 var index = node.value;
                 if (index < 0) {
@@ -189,13 +193,13 @@ component displayname="TreeInterpreter" {
                     index++; // to account for coldfusion starting at 1
                 }
                 if (!value.indexExists(index)) {
-                    return nullvalue();
+                    return;
                 }
                 result = value[index];
                 return result;
             case 'Slice':
                 if (!isArray(value)) {
-                    return nullvalue();
+                    return;
                 }
                 var sliceParams = (node.children);
                 var computed = this.computeSliceParams(value.len(), sliceParams);
@@ -216,8 +220,8 @@ component displayname="TreeInterpreter" {
             case 'Projection':
                 // Evaluate left child.
                 var base = this.visit(node.children[1], value);
-                if (!isArray(base)) {
-                    return nullvalue();
+                if (isNull(base) || !isArray(base)) {
+                    return;
                 }
                 collected = [];
                 for (i = 1; i <= base.len(); i++) {
@@ -230,8 +234,8 @@ component displayname="TreeInterpreter" {
             case 'ValueProjection':
                 // Evaluate left child.
                 base = this.visit(node.children[1], value);
-                if (!isStruct(base)) {
-                    return nullvalue();
+                if (isNull(base) || !isStruct(base)) {
+                    return;
                 }
                 collected = [];
                 var values = objValues(base);
@@ -244,14 +248,14 @@ component displayname="TreeInterpreter" {
                 return collected;
             case 'FilterProjection':
                 base = this.visit(node.children[1], value);
-                if (!isArray(base)) {
-                    return nullvalue();
+                if (isNull(base) || !isArray(base)) {
+                    return;
                 }
                 var filtered = [];
                 var finalResults = [];
                 for (i = 1; i <= base.len(); i++) {
                     matched = this.visit(node.children[3], base[i]);
-                    if (!isFalse(matched)) {
+                    if (!isNull(matched) && !isFalse(matched)) {
                         filtered.append(base[i]);
                     }
                 }
@@ -267,10 +271,10 @@ component displayname="TreeInterpreter" {
                 second = this.visit(node.children[2], value);
                 switch (node.name) {
                     case TOK_EQ:
-                        result = strictDeepEqual(first, second);
+                        result = strictDeepEqual(first ?: NullValue(), second ?: NullValue());
                         break;
                     case TOK_NE:
-                        result = !strictDeepEqual(first, second);
+                        result = !strictDeepEqual(first ?: NullValue(), second ?: NullValue());
                         break;
                     case TOK_GT:
                         result = first > second;
@@ -285,13 +289,13 @@ component displayname="TreeInterpreter" {
                         result = first <= second;
                         break;
                     default:
-                        throw (type="JMESError", message='Unknown comparator: ' + node.name);
+                        throw (type="JMESError", detail='Unknown comparator: ' + node.name);
                 }
                 return result;
             case TOK_FLATTEN:
                 var original = this.visit(node.children[1], value);
-                if (!isArray(original)) {
-                    return nullvalue();
+                if (isNull(original) || !isArray(original)) {
+                    return;
                 }
                 var merged = [];
                 for (i = 1; i <= original.len(); i++) {
@@ -307,7 +311,7 @@ component displayname="TreeInterpreter" {
                 return value;
             case 'MultiSelectList':
                 if (isNull(value)) {
-                    return nullvalue();
+                    return;
                 }
                 collected = [];
                 for (i = 1; i <= node.children.len(); i++) {
@@ -316,7 +320,7 @@ component displayname="TreeInterpreter" {
                 return collected;
             case 'MultiSelectHash':
                 if (isNull(value)) {
-                    return nullvalue();
+                    return;
                 }
                 collected = {};
                 var child;
@@ -327,8 +331,8 @@ component displayname="TreeInterpreter" {
                 return collected;
             case 'OrExpression':
                 matched = this.visit(node.children[1], value);
-                if (isFalse(matched)) {
-                    matched = this.visit(node.children[2], value);
+                if (isNull(matched) || isFalse(matched)) {
+                    return this.visit(node.children[2], value);
                 }
                 return matched;
             case 'AndExpression':
@@ -339,11 +343,12 @@ component displayname="TreeInterpreter" {
                 return this.visit(node.children[2], value);
             case 'NotExpression':
                 first = this.visit(node.children[1], value);
-                return isFalse(first);
+                return isNull(first) || isFalse(first);
             case 'Literal':
                 return node.value;
             case TOK_PIPE:
                 left = this.visit(node.children[1], value);
+                if(isNull(left)) return;
                 return this.visit(node.children[2], left);
             case TOK_CURRENT:
                 return value;
@@ -361,29 +366,29 @@ component displayname="TreeInterpreter" {
                 refNode.jmespathType = TOK_EXPREF;
                 return refNode;
             default:
-                throw(type="JMESError", message='Unknown node type: ' + node.type);
+                throw(type="JMESError", detail='Unknown node type: ' + node.type);
         }
     }
 
     function computeSliceParams(arrayLength, sliceParams) {
-        var start = sliceParams[1];
-        var stop = sliceParams[2];
-        var step = sliceParams[3];
+        var start = sliceParams[1] ?: NullValue();
+        var stop = sliceParams[2] ?: NullValue();
+        var step = sliceParams[3] ?: NullValue();
         var computed = [nullvalue(), nullvalue(), nullvalue()];
-        if (step === nullvalue()) {
+        if (isNull(step)) {
             step = 1;
         } else if (step === 0) {
-            throw(type="RuntimeError", message='Invalid slice, step cannot be 0');
+            throw(type="RuntimeError", detail='Invalid slice, step cannot be 0');
         }
         var stepValueNegative = step < 0 ? true : false;
 
-        if (start === nullvalue()) {
+        if (isNull(start)) {
             start = stepValueNegative ? arrayLength - 1 : 0;
         } else {
             start = capSliceRange(arrayLength, start, step);
         }
 
-        if (stop === nullvalue()) {
+        if (isNull(stop)) {
             stop = stepValueNegative ? -1 : arrayLength;
         } else {
             stop = capSliceRange(arrayLength, stop, step);

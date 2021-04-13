@@ -41,11 +41,32 @@ component accessors="true" singleton {
 	*/
 	function show( required any JSON, required string property, defaultValue ){
 
-		var prop = toJMESNotation( arguments.property );
+		//pass to JMESPath search command `showJMES` if 'jq:' is found in the beginning of the search string
+		if(left(arguments.property,3) == "jq:"){
+			return showJMES(arguments.JSON, right(arguments.property,len(arguments.property)-3),arguments.defaultValue);
+		}
+
+		var fullPropertyName = 'arguments.JSON' & toBracketNotation( arguments.property );
+
+		if( !isDefined( fullPropertyName ) ) {
+			if( structKeyExists( arguments, 'defaultValue' ) ) {
+				return arguments.defaultValue;
+			} else {
+				throw( message='Property [#arguments.property#] doesn''t exist.', type="JSONException");
+			}
+		}
+
+		return evaluate( fullPropertyName );
+	}
+
+	/**
+	* I get a property from a deserialized JSON object and return it using JMESPath
+	*/
+	function showJMES( required any JSON, required string property, defaultValue ){
 		if  (arguments.property == '') return arguments.JSON;
 
         try {
-            var results = jmespath.search(arguments.JSON,prop);
+            var results = jmespath.search(arguments.JSON,arguments.property);
             if ( !isNull(results) ){
 				return results;
 			}
@@ -201,18 +222,6 @@ component accessors="true" singleton {
 		return fullPropertyName;
 	}
 
-	// ['foo']['bar-baz'][1] or ["foo"]["bar-baz"][1] --> "foo"."bar-baz"[1]
-	private function toJMESNotation(str){
-        //find bracketed items with quotes
-        //replace them with with double quotes only
-
-		//open bracket + either type of quotes + (value inside of quotes) + either type of quotes + close bracket
-        var rgx = "\[[\'\""]([^\[\]\'\""]+)[\'\""]\]";
-        var quotesWithDots = rereplace(str,rgx,'."\1"','all'); // "foo""bar-baz"[1]
-
-
-        return quotesWithDots;
-    }
 	private function findArrays( required string property ) {
 		var tmpProperty = replace( arguments.property, '[', '.[', 'all' );
 		tmpProperty = replace( tmpProperty, ']', '].', 'all' );
