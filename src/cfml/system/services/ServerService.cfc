@@ -576,7 +576,7 @@ component accessors="true" singleton {
 			var thisIP = '';
 			// Try and get the IP we're binding to
 			try{
-				thisIP = java.InetAddress.getByName( serverInfo.host ).getHostAddress();
+				thisIP = getAddressByHost( serverInfo.host ).getHostAddress();
 			} catch( any var e ) {}
 
 			// Look for a env var called "environment"
@@ -1589,7 +1589,7 @@ component accessors="true" singleton {
 					// [DEBUG] runwar.server: Starting open browser action
 					line = reReplaceNoCase( line, '^((#chr( 27 )#\[m)?\[[^]]*])( runwar\.[^:]*: )(.*)', '\1 Runwar: \4' );
 					//consoleLogger.debug( 'LINE:' . line );
-					line = AnsiFormater.cleanLine( line );
+					line = AnsiFormatter.cleanLine( line );
 					// Log messages from any other 3rd party java lib tapping into Log4j will be left alone
 					// Ex:
 					// [DEBUG] org.tuckey.web.filters.urlrewrite.RuleExecutionOutput: needs to be forwarded to /index.cfm/Main
@@ -1620,7 +1620,7 @@ component accessors="true" singleton {
 				}
 
 			} catch( any e ) {
-				logger.error( e.message & ' ' & e.detail, e.stacktrace );
+				consoleLogger.error( e.message & ' ' & e.detail, e.stacktrace );
 				serverInfo.status="unknown";
 			} finally {
 				// Make sure we always close the file or the process will never quit!
@@ -2108,7 +2108,7 @@ component accessors="true" singleton {
 		try {
 			var nextAvail  = java.ServerSocket.init( javaCast( "int", 0 ),
 													 javaCast( "int", 1 ),
-													 java.InetAddress.getByName( arguments.host ) );
+													 getAddressByHost( arguments.host ) );
 			var portNumber = nextAvail.getLocalPort();
 			nextAvail.close();
 		} catch( java.net.UnknownHostException var e ) {
@@ -2131,7 +2131,7 @@ component accessors="true" singleton {
 				.init(
 					javaCast( "int", arguments.port ),
 					javaCast( "int", 1 ),
-					java.InetAddress.getByName( arguments.host ) );
+					getAddressByHost( arguments.host ) );
 			serverSocket.close();
 			return true;
 		} catch( java.net.UnknownHostException var e ) {
@@ -2150,6 +2150,24 @@ component accessors="true" singleton {
 			// We're assuming that any other error means the address was in use.
 			// Java doesn't provide a specific message or exception type for this unfortunately.
 			return false;
+		}
+	}
+
+	/**
+	 * Find out what the IP address is for a given host
+	 * @host.hint host to test port on such as localsite.com
+ 	 **/
+	function getAddressByHost( required string host ){
+		try {
+			return java.InetAddress.getByName( arguments.host );
+		} catch( java.net.UnknownHostException var e ) {
+			// It's possible to have "fake" hosts such as mytest.localhost which aren't in DNS
+			// or your hosts file.  Browsers will resolve them to localhost, but the call above 
+			// will fail with a UnknownHostException since they aren't real
+			if( host.listLast( '.' ) == 'localhost' ) {
+				return java.InetAddress.getByName( '127.0.0.1' );
+			}
+			rethrow;
 		}
 	}
 
