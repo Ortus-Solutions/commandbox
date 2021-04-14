@@ -217,6 +217,9 @@ component displayname="Lexer" {
     function _consumeLBracket(stream,state) {
         var start = state._current;
         state._current++;
+        if( state._current > stream.len() ) {
+        	throw( type="JMESError", message='Unexpected end of query after "[".' );
+        }
         if (stream[state._current] == '?') {
             state._current++;
             return {type: TOK_FILTER, value: '[?', start: start};
