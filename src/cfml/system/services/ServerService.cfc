@@ -561,9 +561,10 @@ component accessors="true" singleton {
 
 		serverInfo.host				= serverProps.host 				?: serverJSON.web.host				?: defaults.web.host;
 		// If the last port we used is taken, remove it from consideration.
-		if( serverInfo.port == 0 || !isPortAvailable( serverInfo.host, serverInfo.port ) ) { serverInfo.delete( 'port' ); }
+		if( val( serverInfo.port ) == 0 || !isPortAvailable( serverInfo.host, serverInfo.port ) ) { serverInfo.delete( 'port' ); }
 		// Port is the only setting that automatically carries over without being specified since it's random.
 		serverInfo.port 			= serverProps.port 				?: serverJSON.web.http.port			?: serverInfo.port	?: defaults.web.http.port;
+		serverInfo.port = val( serverInfo.port );
 		// Server default is 0 not null.
 		if( serverInfo.port == 0 ) {
 			serverInfo.port = getRandomPort( serverInfo.host );
