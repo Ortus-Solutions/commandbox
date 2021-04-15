@@ -1,5 +1,5 @@
-component displayname="runtime" {
-
+component singleton  displayname="runtime" {
+	property name="jmesPathTreeInterpreter" inject="TreeInterpreter@JMESPath";
     // Type constants used to define functions.
     TOK_EXPREF = "Expref";
     TYPE_NUMBER = 1;
@@ -26,7 +26,6 @@ component displayname="runtime" {
     };
 
     function init() {
-        if(!APPLICATION.keyExists("jmesPathTreeInterpreter"))  APPLICATION.jmesPathTreeInterpreter = new TreeInterpreter();
 
         this.functionTable = {
             // name: [function, <signature>]
@@ -274,7 +273,7 @@ component displayname="runtime" {
         var exprefNode = resolvedArgs[1];
         var elements = resolvedArgs[2];
         for (var i = 1; i <= elements.len(); i++) {
-            mapped.append(application.jmesPathTreeInterpreter.visit(exprefNode, elements[i]));
+            mapped.append(jmesPathTreeInterpreter.visit(exprefNode, elements[i]));
         }
         return mapped;
     }
@@ -429,7 +428,7 @@ component displayname="runtime" {
             return sortedArray;
         }
         var exprefNode = resolvedArgs[2];
-        var requiredType = _getTypeName(application.jmesPathTreeInterpreter.visit(exprefNode, sortedArray[1]));
+        var requiredType = _getTypeName(jmesPathTreeInterpreter.visit(exprefNode, sortedArray[1]));
         if ([TYPE_NUMBER, TYPE_STRING].indexOf(requiredType) < 0) {
             throw (type="JMESError", message= 'TypeError');
         }
@@ -446,8 +445,8 @@ component displayname="runtime" {
             decorated.append([i, sortedArray[i]]);
         }
         decorated.sort(function(a, b) {
-            var exprA = application.jmesPathTreeInterpreter.visit(exprefNode, a[2]);
-            var exprB = application.jmesPathTreeInterpreter.visit(exprefNode, b[2]);
+            var exprA = jmesPathTreeInterpreter.visit(exprefNode, a[2]);
+            var exprB = jmesPathTreeInterpreter.visit(exprefNode, b[2]);
             if (that._getTypeName(exprA) != requiredType) {
                 throw (type="JMESError", message=
                     'TypeError: expected ' &  requiredType &  ', received ' &
@@ -510,7 +509,7 @@ component displayname="runtime" {
     }
     function createKeyFunction(exprefNode, allowedTypes) {
         var keyFunc = function(x) {
-            var current = application.jmesPathTreeInterpreter.visit(exprefNode, x);
+            var current = jmesPathTreeInterpreter.visit(exprefNode, x);
             if (allowedTypes.indexOf(_getTypeName(current)) < 0) {
                 var msg = 'TypeError: expected one of ' &  allowedTypes &
                 ', received ' &  _getTypeName(current);
