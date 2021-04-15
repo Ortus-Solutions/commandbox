@@ -2480,6 +2480,7 @@ component accessors="true" singleton {
 			'webroot'			: "",
 			'webXML' 			: "",
 			'HTTPEnable'		: true,
+			'HTTP2Enable'		: true,
 			'SSLEnable'			: false,
 			'SSLPort'			: 1443,
 			'AJPEnable'			: false,
