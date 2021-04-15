@@ -155,6 +155,9 @@ component accessors="true" singleton {
 					'port' : d.web.http.port ?: 0,
 					'enable' : d.web.http.enable ?: true
 				},
+				'HTTP2' : {
+					'enable' : d.web.HTTP2.enable ?: true
+				},
 				'SSL' : {
 					'enable' : d.web.ssl.enable ?: false,
 					'port' : d.web.ssl.port ?: 1443,
@@ -708,6 +711,7 @@ component accessors="true" singleton {
 
 		serverInfo.SSLEnable 		= serverProps.SSLEnable 		?: serverJSON.web.SSL.enable			?: defaults.web.SSL.enable;
 		serverInfo.HTTPEnable		= serverProps.HTTPEnable 		?: serverJSON.web.HTTP.enable			?: defaults.web.HTTP.enable;
+		serverInfo.HTTP2Enable		= serverJSON.web.HTTP2.enable	?: defaults.web.HTTP2.enable;
 		serverInfo.SSLPort			= serverProps.SSLPort 			?: serverJSON.web.SSL.port				?: defaults.web.SSL.port;
 
 		serverInfo.AJPEnable 		= serverProps.AJPEnable 		?: serverJSON.web.AJP.enable			?: defaults.web.AJP.enable;
@@ -1401,8 +1405,8 @@ component accessors="true" singleton {
 		args
 			.append( '--http-enable' ).append( serverInfo.HTTPEnable )
 			.append( '--ssl-enable' ).append( serverInfo.SSLEnable )
-			.append( '--ajp-enable' ).append( serverInfo.AJPEnable );
-
+			.append( '--ajp-enable' ).append( serverInfo.AJPEnable )
+			.append( '--http2-enable' ).append( serverInfo.HTTP2Enable );
 
 		if( serverInfo.HTTPEnable || serverInfo.SSLEnable ) {
 			args
