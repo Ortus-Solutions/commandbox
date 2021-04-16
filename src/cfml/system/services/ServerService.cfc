@@ -881,15 +881,9 @@ component accessors="true" singleton {
 
 		//ssl hsts
 		if(serverInfo.SSLEnable && serverInfo.HSTSEnable){
-			if(serverInfo.HSTSIncludeSubDomains){
-				serverInfo.webRules.append(
-					"set(attribute='%{o,Strict-Transport-Security}', value='max-age=" & serverInfo.HSTSMaxAge & "; includeSubDomains')"
-				);
-			} else {
-				serverInfo.webRules.append(
-					"set(attribute='%{o,Strict-Transport-Security}', value='max-age=" & serverInfo.HSTSMaxAge & "')"
-				);
-			}
+			serverInfo.webRules.append(
+				"set(attribute='%{o,Strict-Transport-Security}', value='max-age=#serverInfo.HSTSMaxAge##(serverInfo.HSTSIncludeSubDomains ? '; includeSubDomains' : '')#')"
+			);
 		}		
 
 		if( serverJSON.keyExists( 'web' ) && serverJSON.web.keyExists( 'rules' ) ) {
