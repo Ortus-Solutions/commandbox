@@ -163,7 +163,13 @@ component accessors="true" singleton {
 					'port' : d.web.ssl.port ?: 1443,
 					'certFile' : d.web.ssl.certFile ?: '',
 					'keyFile' : d.web.ssl.keyFile ?: '',
-					'keyPass' : d.web.ssl.keyPass ?: ''
+					'keyPass' : d.web.ssl.keyPass ?: '',
+					'forceSSLRedirect' : d.web.ssl.forceSSLRedirect ?: false,
+					'HSTS' : {
+						'enable' : d.web.ssl.hsts.enable ?: false,
+						'maxAge' : d.web.ssl.hsts.maxAge ?:  31536000,
+						'includeSubDomains' : d.web.ssl.hsts.includeSubDomains ?:  false
+					}
 				},
 				'AJP' : {
 					'enable' : d.web.ajp.enable ?: false,
@@ -729,6 +735,11 @@ component accessors="true" singleton {
 		if( len( defaults.web.SSL.keyFile ?: '' ) ) { defaults.web.SSL.keyFile = fileSystemUtil.resolvePath( defaults.web.SSL.keyFile, defaultwebroot ); }
 		serverInfo.SSLKeyFile 		= serverProps.SSLKeyFile 		?: serverJSON.web.SSL.keyFile			?: defaults.web.SSL.keyFile;
 
+		serverInfo.SSLForceRedirect			= serverJSON.web.SSL.forceSSLRedirect							?: defaults.web.SSL.forceSSLRedirect;
+		serverInfo.HSTSEnable				= serverJSON.web.SSL.HSTS.enable								?: defaults.web.SSL.HSTS.enable;
+		serverInfo.HSTSMaxAge				= serverJSON.web.SSL.HSTS.maxAge								?: defaults.web.SSL.HSTS.maxAge;
+		serverInfo.HSTSIncludeSubDomains	= serverJSON.web.SSL.HSTS.includeSubDomains						?: defaults.web.SSL.HSTS.includeSubDomains;
+
 		serverInfo.SSLKeyPass 		= serverProps.SSLKeyPass 		?: serverJSON.web.SSL.keyPass			?: defaults.web.SSL.keyPass;
 		serverInfo.rewritesEnable 	= serverProps.rewritesEnable	?: serverJSON.web.rewrites.enable		?: defaults.web.rewrites.enable;
 		serverInfo.rewritesStatusPath = 							   serverJSON.web.rewrites.statusPath	?: defaults.web.rewrites.statusPath;
@@ -860,6 +871,27 @@ component accessors="true" singleton {
 		serverInfo.libDirs		= ( serverProps.libDirs		?: serverJSON.app.libDirs ?: '' ).listAppend( defaults.app.libDirs );
 
 		serverInfo.webRules = [];
+
+		//ssl force redirect
+		if(serverInfo.SSLEnable && serverInfo.SSLForceRedirect){
+			serverInfo.webRules.append(
+				"not secure() and method(GET) -> redirect('https://%{LOCAL_SERVER_NAME}%{REQUEST_URL}%{QUERY_STRING}')"
+			);
+		}
+
+		//ssl hsts
+		if(serverInfo.SSLEnable && serverInfo.HSTSEnable){
+			if(serverInfo.HSTSIncludeSubDomains){
+				serverInfo.webRules.append(
+					"set(attribute='%{o,Strict-Transport-Security}', value='max-age=" & serverInfo.HSTSMaxAge & "; includeSubDomains')"
+				);
+			} else {
+				serverInfo.webRules.append(
+					"set(attribute='%{o,Strict-Transport-Security}', value='max-age=" & serverInfo.HSTSMaxAge & "')"
+				);
+			}
+		}		
+
 		if( serverJSON.keyExists( 'web' ) && serverJSON.web.keyExists( 'rules' ) ) {
 			if( !isArray( serverJSON.web.rules ) ) {
 				throw( message="'rules' key in your box.json must be an array of strings.", type="commandException" );
@@ -2536,7 +2568,11 @@ component accessors="true" singleton {
 			'allowedExt'		: '',
 			'pidfile'			: '',
 			'predicateFile'		: '',
-			'trayOptionsFile'	: ''
+			'trayOptionsFile'	: '',
+			'SSLForceRedirect'	: false,
+			'HSTSEnable'		: false,
+			'HSTSMaxAge'		: 0,
+			'HSTSIncludeSubDomains'	: false
 		};
 	}
 
