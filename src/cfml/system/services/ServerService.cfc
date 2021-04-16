@@ -872,19 +872,19 @@ component accessors="true" singleton {
 
 		serverInfo.webRules = [];
 
-		//ssl force redirect
-		if(serverInfo.SSLEnable && serverInfo.SSLForceRedirect){
-			serverInfo.webRules.append(
-				"not secure() and method(GET) -> redirect('https://%{LOCAL_SERVER_NAME}%{REQUEST_URL}%{QUERY_STRING}')"
-			);
-		}
-
 		//ssl hsts
 		if(serverInfo.SSLEnable && serverInfo.HSTSEnable){
 			serverInfo.webRules.append(
 				"set(attribute='%{o,Strict-Transport-Security}', value='max-age=#serverInfo.HSTSMaxAge##(serverInfo.HSTSIncludeSubDomains ? '; includeSubDomains' : '')#')"
 			);
-		}		
+		}
+
+		//ssl force redirect
+		if(serverInfo.SSLEnable && serverInfo.SSLForceRedirect){
+			serverInfo.webRules.append(
+				"not secure() and method(GET) -> { set(attribute='%{o,Location}', value='https://%{LOCAL_SERVER_NAME}:#serverinfo.SSLPort#%{REQUEST_URL}%{QUERY_STRING}'); response-code(301) }"
+			);
+		}
 
 		if( serverJSON.keyExists( 'web' ) && serverJSON.web.keyExists( 'rules' ) ) {
 			if( !isArray( serverJSON.web.rules ) ) {
