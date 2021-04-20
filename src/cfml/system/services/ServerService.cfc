@@ -204,6 +204,7 @@ component accessors="true" singleton {
 				'cfengine' : d.app.cfengine ?: '',
 				'restMappings' : d.app.cfengine ?: '',
 				'serverHomeDirectory' : d.app.serverHomeDirectory ?: '',
+				'singleServerHome' : d.app.singleServerHome ?: false,
 				'sessionCookieSecure' : d.app.sessionCookieSecure ?: false,
 				'sessionCookieHTTPOnly' : d.app.sessionCookieHTTPOnly ?: false
 			},
@@ -984,7 +985,8 @@ component accessors="true" singleton {
 		if( isDefined( 'serverJSON.app.serverHomeDirectory' ) && len( serverJSON.app.serverHomeDirectory ) ) { serverJSON.app.serverHomeDirectory = fileSystemUtil.resolvePath( serverJSON.app.serverHomeDirectory, defaultServerConfigFileDirectory ); }
 		if( isDefined( 'defaults.app.serverHomeDirectory' ) && len( defaults.app.serverHomeDirectory )  ) { defaults.app.serverHomeDirectory = fileSystemUtil.resolvePath( defaults.app.serverHomeDirectory, defaultwebroot ); }
 		serverInfo.serverHomeDirectory			= serverProps.serverHomeDirectory			?: serverJSON.app.serverHomeDirectory			?: defaults.app.serverHomeDirectory;
-
+		serverInfo.singleServerHome			= serverJSON.app.singleServerHome			?: defaults.app.singleServerHome;
+		
 		serverInfo.sessionCookieSecure			= serverJSON.app.sessionCookieSecure			?: defaults.app.sessionCookieSecure;
 		serverInfo.sessionCookieHTTPOnly			= serverJSON.app.sessionCookieHTTPOnly			?: defaults.app.sessionCookieHTTPOnly;
 
@@ -2502,6 +2504,7 @@ component accessors="true" singleton {
 			'webConfigDir' 		: "",
 			'serverConfigDir' 	: "",
 			'serverHomeDirectory' : "",
+			'singleServerHome'	: false,
 			'serverHome'		 : "",
 			'webroot'			: "",
 			'webXML' 			: "",
