@@ -499,6 +499,12 @@ component singleton{
 		// Remove preReleaseID
 		arguments.version 	= reReplace( arguments.version, "\-([^\-]*).$", "" );
 
+		// if we didn't have a +build and we have a 4-part version (1.2.3.4) then use the 4th part as a build
+		// This is for compat with Java versions like what Adobe CF and Lucee use.
+		if( results.buildID == 0 && listLen( arguments.version, '.' ) > 3 ) {
+			results.buildID = getToken( arguments.version, 4, "." );
+		}
+
 		// Get Revision
 		results.revision	= getToken( arguments.version, 3, "." );
 		if( results.revision == "" ){
