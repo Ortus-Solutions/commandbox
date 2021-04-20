@@ -17,7 +17,9 @@ component {
 		variables.sets = {
 			')' : '(',
 			'}' : '{',
-			']' : '[',
+			// This doesn't work when the first part of the string has formatting
+			// since there are [ chars in the ANSI escapes
+			//']' : '[',
 			"'" : "'",
 			'"' : '"'
 		};

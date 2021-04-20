@@ -74,9 +74,11 @@ component accessors="true" singleton {
 				return arguments.defaultValue;
 			}
 
-			throw( message='Property [#arguments.property#] doesn''t exist.', type="JSONException");
+			throw( message='Query [#arguments.property#] didn''t return anything.', type="JSONException");
 		} catch( JSONException e ){
 			rethrow;
+		} catch( JMESError e ){
+			throw( message=e.message, detail=e.detail & chr( 10 ) & e.tagContext[ 1 ].template & ':' &  e.tagContext[ 1 ].line, type="JSONException");
 		} catch( any e ){
 			Consolelogger.error( 'Query:[ #arguments.property# ] failed because ' & e.message );
 			rethrow;
