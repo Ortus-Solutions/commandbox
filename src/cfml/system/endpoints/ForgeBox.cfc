@@ -352,7 +352,20 @@ component accessors="true" implements="IEndpointInteractive" {
 					return thisVer;
 				}
 			}
-			throw( 'Exact version [#arguments.version#] not found for package [#arguments.slug#].', 'endpointException', 'Available versions are [#arguments.entryData.versions.map( function( i ){ return ' ' & i.version; } ).toList()#]' );
+			var availVersions = arguments.entryData.versions;
+			if( availVersions.len() > 20 && availVersions.find( (v)=>v.version.startsWith( version.left( 1 ) ) ) ) {
+				availVersions = availVersions.filter( (v)=>v.version.startsWith( version.left( 1 ) ) );
+			}
+			if( availVersions.len() > 20 && availVersions.find( (v)=>v.version.startsWith( version.left( 3 ) ) ) ) {
+				availVersions = availVersions.filter( (v)=>v.version.startsWith( version.left( 3 ) ) );
+			}
+			if( availVersions.len() > 20 && availVersions.find( (v)=>v.version.startsWith( version.left( 5 ) ) ) ) {
+				availVersions = availVersions.filter( (v)=>v.version.startsWith( version.left( 5 ) ) );
+			}
+			if( availVersions.len() > 20 ) {
+				availVersions = availVersions.slice( 1, 20 );
+			}
+			throw( 'Exact version [#arguments.version#] not found for package [#arguments.slug#].', 'endpointException', 'Example versions are [#availVersions.map( function( i ){ return ' ' & i.version; } ).toList()#]' );
 		}
 
  		// For version ranges, do a smart lookup
