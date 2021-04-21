@@ -173,7 +173,8 @@ component accessors="true" singleton {
 				},
 				'AJP' : {
 					'enable' : d.web.ajp.enable ?: false,
-					'port' : d.web.ajp.port ?: 8009
+					'port' : d.web.ajp.port ?: 8009,
+					'secret' : d.web.ajp.secret ?: 'YOUR_AJP_SECRET'
 				},
 				'rewrites' : {
 					'enable' : d.web.rewrites.enable ?: false,
@@ -723,6 +724,7 @@ component accessors="true" singleton {
 
 		serverInfo.AJPEnable 		= serverProps.AJPEnable 		?: serverJSON.web.AJP.enable			?: defaults.web.AJP.enable;
 		serverInfo.AJPPort			= serverProps.AJPPort 			?: serverJSON.web.AJP.port				?: defaults.web.AJP.port;
+		serverInfo.AJPSecret		= serverJSON.web.AJP.secret		?: defaults.web.AJP.secret;
 
 		// relative certFile in server.json is resolved relative to the server.json
 		if( isDefined( 'serverJSON.web.SSL.certFile' ) ) { serverJSON.web.SSL.certFile = fileSystemUtil.resolvePath( serverJSON.web.SSL.certFile, defaultServerConfigFileDirectory ); }
@@ -884,6 +886,13 @@ component accessors="true" singleton {
 		if(serverInfo.SSLEnable && serverInfo.SSLForceRedirect){
 			serverInfo.webRules.append(
 				"not secure() and method(GET) -> { set(attribute='%{o,Location}', value='https://%{LOCAL_SERVER_NAME}:#serverinfo.SSLPort#%{REQUEST_URL}%{QUERY_STRING}'); response-code(301) }"
+			);
+		}
+
+		//ajp enabled with secret
+		if( serverInfo.AJPEnable ){
+			serverInfo.webRules.append(
+				"equals(%p, #serverInfo.AJPPort#) and not equals(%{r,secret}, '#serverInfo.AJPSecret#') -> set-error(403)"
 			);
 		}
 
@@ -2569,7 +2578,8 @@ component accessors="true" singleton {
 			'SSLForceRedirect'	: false,
 			'HSTSEnable'		: false,
 			'HSTSMaxAge'		: 0,
-			'HSTSIncludeSubDomains'	: false
+			'HSTSIncludeSubDomains'	: false,
+			'AJPSecret'			: 'YOUR_AJP_SECRET'
 		};
 	}
 
