@@ -174,7 +174,7 @@ component accessors="true" singleton {
 				'AJP' : {
 					'enable' : d.web.ajp.enable ?: false,
 					'port' : d.web.ajp.port ?: 8009,
-					'secret' : d.web.ajp.secret ?: 'YOUR_AJP_SECRET'
+					'secret' : d.web.ajp.secret ?: ''
 				},
 				'rewrites' : {
 					'enable' : d.web.rewrites.enable ?: false,
@@ -890,7 +890,7 @@ component accessors="true" singleton {
 		}
 
 		//ajp enabled with secret
-		if( serverInfo.AJPEnable ){
+		if( serverInfo.AJPEnable && len(serverInfo.AJPSecret) ){
 			serverInfo.webRules.append(
 				"equals(%p, #serverInfo.AJPPort#) and not equals(%{r,secret}, '#serverInfo.AJPSecret#') -> set-error(403)"
 			);
@@ -2579,7 +2579,7 @@ component accessors="true" singleton {
 			'HSTSEnable'		: false,
 			'HSTSMaxAge'		: 0,
 			'HSTSIncludeSubDomains'	: false,
-			'AJPSecret'			: 'YOUR_AJP_SECRET'
+			'AJPSecret'			: ''
 		};
 	}
 
