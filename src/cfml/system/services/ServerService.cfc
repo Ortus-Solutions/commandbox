@@ -892,7 +892,7 @@ component accessors="true" singleton {
 		//ajp enabled with secret
 		if( serverInfo.AJPEnable && len( serverInfo.AJPSecret ) ){
 			serverInfo.webRules.append(
-				"equals(%p, #serverInfo.AJPPort#) and not equals(%{r,secret}, '#serverInfo.AJPSecret#') -> set-error(403)"
+				"equals(%p, #serverInfo.AJPPort#) and not equals(%{r,secret}, '#replace( serverInfo.AJPSecret, "'", "\'", "ALL" )#') -> set-error(403)"
 			);
 		}
 
