@@ -155,16 +155,26 @@ component accessors="true" singleton {
 					'port' : d.web.http.port ?: 0,
 					'enable' : d.web.http.enable ?: true
 				},
+				'HTTP2' : {
+					'enable' : d.web.HTTP2.enable ?: true
+				},
 				'SSL' : {
 					'enable' : d.web.ssl.enable ?: false,
 					'port' : d.web.ssl.port ?: 1443,
 					'certFile' : d.web.ssl.certFile ?: '',
 					'keyFile' : d.web.ssl.keyFile ?: '',
-					'keyPass' : d.web.ssl.keyPass ?: ''
+					'keyPass' : d.web.ssl.keyPass ?: '',
+					'forceSSLRedirect' : d.web.ssl.forceSSLRedirect ?: false,
+					'HSTS' : {
+						'enable' : d.web.ssl.hsts.enable ?: false,
+						'maxAge' : d.web.ssl.hsts.maxAge ?:  31536000,
+						'includeSubDomains' : d.web.ssl.hsts.includeSubDomains ?:  false
+					}
 				},
 				'AJP' : {
 					'enable' : d.web.ajp.enable ?: false,
-					'port' : d.web.ajp.port ?: 8009
+					'port' : d.web.ajp.port ?: 8009,
+					'secret' : d.web.ajp.secret ?: ''
 				},
 				'rewrites' : {
 					'enable' : d.web.rewrites.enable ?: false,
@@ -195,6 +205,7 @@ component accessors="true" singleton {
 				'cfengine' : d.app.cfengine ?: '',
 				'restMappings' : d.app.cfengine ?: '',
 				'serverHomeDirectory' : d.app.serverHomeDirectory ?: '',
+				'singleServerHome' : d.app.singleServerHome ?: false,
 				'sessionCookieSecure' : d.app.sessionCookieSecure ?: false,
 				'sessionCookieHTTPOnly' : d.app.sessionCookieHTTPOnly ?: false
 			},
@@ -576,7 +587,7 @@ component accessors="true" singleton {
 			var thisIP = '';
 			// Try and get the IP we're binding to
 			try{
-				thisIP = java.InetAddress.getByName( serverInfo.host ).getHostAddress();
+				thisIP = getAddressByHost( serverInfo.host ).getHostAddress();
 			} catch( any var e ) {}
 
 			// Look for a env var called "environment"
@@ -708,10 +719,12 @@ component accessors="true" singleton {
 
 		serverInfo.SSLEnable 		= serverProps.SSLEnable 		?: serverJSON.web.SSL.enable			?: defaults.web.SSL.enable;
 		serverInfo.HTTPEnable		= serverProps.HTTPEnable 		?: serverJSON.web.HTTP.enable			?: defaults.web.HTTP.enable;
+		serverInfo.HTTP2Enable		= serverJSON.web.HTTP2.enable	?: defaults.web.HTTP2.enable;
 		serverInfo.SSLPort			= serverProps.SSLPort 			?: serverJSON.web.SSL.port				?: defaults.web.SSL.port;
 
 		serverInfo.AJPEnable 		= serverProps.AJPEnable 		?: serverJSON.web.AJP.enable			?: defaults.web.AJP.enable;
 		serverInfo.AJPPort			= serverProps.AJPPort 			?: serverJSON.web.AJP.port				?: defaults.web.AJP.port;
+		serverInfo.AJPSecret		= serverJSON.web.AJP.secret		?: defaults.web.AJP.secret;
 
 		// relative certFile in server.json is resolved relative to the server.json
 		if( isDefined( 'serverJSON.web.SSL.certFile' ) ) { serverJSON.web.SSL.certFile = fileSystemUtil.resolvePath( serverJSON.web.SSL.certFile, defaultServerConfigFileDirectory ); }
@@ -724,6 +737,11 @@ component accessors="true" singleton {
 		// relative trayIcon in config setting server defaults is resolved relative to the web root
 		if( len( defaults.web.SSL.keyFile ?: '' ) ) { defaults.web.SSL.keyFile = fileSystemUtil.resolvePath( defaults.web.SSL.keyFile, defaultwebroot ); }
 		serverInfo.SSLKeyFile 		= serverProps.SSLKeyFile 		?: serverJSON.web.SSL.keyFile			?: defaults.web.SSL.keyFile;
+
+		serverInfo.SSLForceRedirect			= serverJSON.web.SSL.forceSSLRedirect							?: defaults.web.SSL.forceSSLRedirect;
+		serverInfo.HSTSEnable				= serverJSON.web.SSL.HSTS.enable								?: defaults.web.SSL.HSTS.enable;
+		serverInfo.HSTSMaxAge				= serverJSON.web.SSL.HSTS.maxAge								?: defaults.web.SSL.HSTS.maxAge;
+		serverInfo.HSTSIncludeSubDomains	= serverJSON.web.SSL.HSTS.includeSubDomains						?: defaults.web.SSL.HSTS.includeSubDomains;
 
 		serverInfo.SSLKeyPass 		= serverProps.SSLKeyPass 		?: serverJSON.web.SSL.keyPass			?: defaults.web.SSL.keyPass;
 		serverInfo.rewritesEnable 	= serverProps.rewritesEnable	?: serverJSON.web.rewrites.enable		?: defaults.web.rewrites.enable;
@@ -856,6 +874,28 @@ component accessors="true" singleton {
 		serverInfo.libDirs		= ( serverProps.libDirs		?: serverJSON.app.libDirs ?: '' ).listAppend( defaults.app.libDirs );
 
 		serverInfo.webRules = [];
+
+		//ssl hsts
+		if(serverInfo.SSLEnable && serverInfo.HSTSEnable){
+			serverInfo.webRules.append(
+				"set(attribute='%{o,Strict-Transport-Security}', value='max-age=#serverInfo.HSTSMaxAge##(serverInfo.HSTSIncludeSubDomains ? '; includeSubDomains' : '')#')"
+			);
+		}
+
+		//ssl force redirect
+		if(serverInfo.SSLEnable && serverInfo.SSLForceRedirect){
+			serverInfo.webRules.append(
+				"not secure() and method(GET) -> { set(attribute='%{o,Location}', value='https://%{LOCAL_SERVER_NAME}:#serverinfo.SSLPort#%{REQUEST_URL}%{QUERY_STRING}'); response-code(301) }"
+			);
+		}
+
+		//ajp enabled with secret
+		if( serverInfo.AJPEnable && len( serverInfo.AJPSecret ) ){
+			serverInfo.webRules.append(
+				"equals(%p, #serverInfo.AJPPort#) and not equals(%{r,secret}, '#replace( serverInfo.AJPSecret, "'", "\'", "ALL" )#') -> set-error(403)"
+			);
+		}
+
 		if( serverJSON.keyExists( 'web' ) && serverJSON.web.keyExists( 'rules' ) ) {
 			if( !isArray( serverJSON.web.rules ) ) {
 				throw( message="'rules' key in your box.json must be an array of strings.", type="commandException" );
@@ -954,7 +994,8 @@ component accessors="true" singleton {
 		if( isDefined( 'serverJSON.app.serverHomeDirectory' ) && len( serverJSON.app.serverHomeDirectory ) ) { serverJSON.app.serverHomeDirectory = fileSystemUtil.resolvePath( serverJSON.app.serverHomeDirectory, defaultServerConfigFileDirectory ); }
 		if( isDefined( 'defaults.app.serverHomeDirectory' ) && len( defaults.app.serverHomeDirectory )  ) { defaults.app.serverHomeDirectory = fileSystemUtil.resolvePath( defaults.app.serverHomeDirectory, defaultwebroot ); }
 		serverInfo.serverHomeDirectory			= serverProps.serverHomeDirectory			?: serverJSON.app.serverHomeDirectory			?: defaults.app.serverHomeDirectory;
-
+		serverInfo.singleServerHome			= serverJSON.app.singleServerHome			?: defaults.app.singleServerHome;
+		
 		serverInfo.sessionCookieSecure			= serverJSON.app.sessionCookieSecure			?: defaults.app.sessionCookieSecure;
 		serverInfo.sessionCookieHTTPOnly			= serverJSON.app.sessionCookieHTTPOnly			?: defaults.app.sessionCookieHTTPOnly;
 
@@ -1401,8 +1442,8 @@ component accessors="true" singleton {
 		args
 			.append( '--http-enable' ).append( serverInfo.HTTPEnable )
 			.append( '--ssl-enable' ).append( serverInfo.SSLEnable )
-			.append( '--ajp-enable' ).append( serverInfo.AJPEnable );
-
+			.append( '--ajp-enable' ).append( serverInfo.AJPEnable )
+			.append( '--http2-enable' ).append( serverInfo.HTTP2Enable );
 
 		if( serverInfo.HTTPEnable || serverInfo.SSLEnable ) {
 			args
@@ -1470,7 +1511,7 @@ component accessors="true" singleton {
 		}
 
 		if( serverInfo.webRules.len() ){
-			fileWrite( serverInfo.predicateFile, serverInfo.webRules.toList( CR ) );
+			fileWrite( serverInfo.predicateFile, serverInfo.webRules.filter( (r)=>!trim(r).startsWith('##') ).toList( CR ) );
 			args.append( '--predicate-file' ).append( serverInfo.predicateFile );
 		}
 
@@ -1589,7 +1630,7 @@ component accessors="true" singleton {
 					// [DEBUG] runwar.server: Starting open browser action
 					line = reReplaceNoCase( line, '^((#chr( 27 )#\[m)?\[[^]]*])( runwar\.[^:]*: )(.*)', '\1 Runwar: \4' );
 					//consoleLogger.debug( 'LINE:' . line );
-					line = AnsiFormater.cleanLine( line );
+					line = AnsiFormatter.cleanLine( line );
 					// Log messages from any other 3rd party java lib tapping into Log4j will be left alone
 					// Ex:
 					// [DEBUG] org.tuckey.web.filters.urlrewrite.RuleExecutionOutput: needs to be forwarded to /index.cfm/Main
@@ -1620,7 +1661,7 @@ component accessors="true" singleton {
 				}
 
 			} catch( any e ) {
-				logger.error( e.message & ' ' & e.detail, e.stacktrace );
+				consoleLogger.error( e.message & ' ' & e.detail, e.stacktrace );
 				serverInfo.status="unknown";
 			} finally {
 				// Make sure we always close the file or the process will never quit!
@@ -2108,7 +2149,7 @@ component accessors="true" singleton {
 		try {
 			var nextAvail  = java.ServerSocket.init( javaCast( "int", 0 ),
 													 javaCast( "int", 1 ),
-													 java.InetAddress.getByName( arguments.host ) );
+													 getAddressByHost( arguments.host ) );
 			var portNumber = nextAvail.getLocalPort();
 			nextAvail.close();
 		} catch( java.net.UnknownHostException var e ) {
@@ -2131,7 +2172,7 @@ component accessors="true" singleton {
 				.init(
 					javaCast( "int", arguments.port ),
 					javaCast( "int", 1 ),
-					java.InetAddress.getByName( arguments.host ) );
+					getAddressByHost( arguments.host ) );
 			serverSocket.close();
 			return true;
 		} catch( java.net.UnknownHostException var e ) {
@@ -2150,6 +2191,24 @@ component accessors="true" singleton {
 			// We're assuming that any other error means the address was in use.
 			// Java doesn't provide a specific message or exception type for this unfortunately.
 			return false;
+		}
+	}
+
+	/**
+	 * Find out what the IP address is for a given host
+	 * @host.hint host to test port on such as localsite.com
+ 	 **/
+	function getAddressByHost( required string host ){
+		try {
+			return java.InetAddress.getByName( arguments.host );
+		} catch( java.net.UnknownHostException var e ) {
+			// It's possible to have "fake" hosts such as mytest.localhost which aren't in DNS
+			// or your hosts file.  Browsers will resolve them to localhost, but the call above 
+			// will fail with a UnknownHostException since they aren't real
+			if( host.listLast( '.' ) == 'localhost' ) {
+				return java.InetAddress.getByName( '127.0.0.1' );
+			}
+			rethrow;
 		}
 	}
 
@@ -2454,10 +2513,12 @@ component accessors="true" singleton {
 			'webConfigDir' 		: "",
 			'serverConfigDir' 	: "",
 			'serverHomeDirectory' : "",
+			'singleServerHome'	: false,
 			'serverHome'		 : "",
 			'webroot'			: "",
 			'webXML' 			: "",
 			'HTTPEnable'		: true,
+			'HTTP2Enable'		: true,
 			'SSLEnable'			: false,
 			'SSLPort'			: 1443,
 			'AJPEnable'			: false,
@@ -2513,7 +2574,12 @@ component accessors="true" singleton {
 			'allowedExt'		: '',
 			'pidfile'			: '',
 			'predicateFile'		: '',
-			'trayOptionsFile'	: ''
+			'trayOptionsFile'	: '',
+			'SSLForceRedirect'	: false,
+			'HSTSEnable'		: false,
+			'HSTSMaxAge'		: 0,
+			'HSTSIncludeSubDomains'	: false,
+			'AJPSecret'			: ''
 		};
 	}
 

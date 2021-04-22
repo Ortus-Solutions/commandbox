@@ -196,7 +196,11 @@ component accessors="true" singleton="true" {
 				installDetails.installDir = arguments.serverHomeDirectory;
 			// Default is engine-version folder in base dir
 			} else {
-				installDetails.installDir = destination & engineName & "-" & replace( satisfyingVersion, '+', '.', 'all' );
+				if( serverInfo.singleServerHome ) {
+					installDetails.installDir = destination & engineName;
+				} else {
+					installDetails.installDir = destination & engineName & "-" & replace( satisfyingVersion, '+', '.', 'all' );	
+				}
 			}
 			installDetails.version = satisfyingVersion;
 
