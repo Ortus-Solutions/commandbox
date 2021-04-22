@@ -54,6 +54,11 @@ component {
 			} else {
 				var serverInfo = serverService.getServerInfoByWebroot( shell.pwd() );
 			}
+			// We may not be in a web root, but we may be in a folder that contains a server.json file that belongs to a server
+			var serverJSONPath = shell.pwd() & '/server.json';
+			if( !serverInfo.count() && fileExists( serverJSONPath ) ) {
+				var serverInfo = serverService.getServerInfoByServerConfigFile( serverJSONPath );
+			}
 			
 			interceptData.setting = JSONService.show( serverInfo, settingName, interceptData.defaultValue );
 
