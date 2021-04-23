@@ -12,6 +12,7 @@ component singleton  displayname="runtime" {
     TYPE_NULL = 8;
     TYPE_ARRAY_NUMBER = 9;
     TYPE_ARRAY_STRING = 10;
+    TYPE_ARRAY_OBJECT= 11;
     TYPE_NAME_TABLE = {
         1: 'number',
         2: 'any',
@@ -22,7 +23,8 @@ component singleton  displayname="runtime" {
         7: 'expression',
         8: 'null',
         9: 'Array<number>',
-        10: 'Array<string>'
+        10: 'Array<string>',
+        11: 'Array<object>'
     };
 
     function init() {
@@ -44,16 +46,9 @@ component singleton  displayname="runtime" {
             abs: {_func: this._functionAbs, _signature: [{types: [TYPE_NUMBER]}]},
             avg: {_func: this._functionAvg, _signature: [{types: [TYPE_ARRAY_NUMBER]}]},
             ceil: {_func: this._functionCeil, _signature: [{types: [TYPE_NUMBER]}]},
-            key_contains: {
-                _func: this._functionKeyContains,
-                _signature: [{types: [TYPE_OBJECT]}, {types: [TYPE_STRING]}]
-            },
+
             contains: {
                 _func: this._functionContains,
-                _signature: [{types: [TYPE_STRING, TYPE_ARRAY]}, {types: [TYPE_ANY]}]
-            },
-            matches: {
-                _func: this._functionMatches,
                 _signature: [{types: [TYPE_STRING, TYPE_ARRAY]}, {types: [TYPE_ANY]}]
             },
             'ends_with': {_func: this._functionEndsWith, _signature: [{types: [TYPE_STRING]}, {types: [TYPE_STRING]}]},
@@ -76,13 +71,27 @@ component singleton  displayname="runtime" {
             values: {_func: this._functionValues, _signature: [{types: [TYPE_OBJECT]}]},
             sort: {_func: this._functionSort, _signature: [{types: [TYPE_ARRAY_STRING, TYPE_ARRAY_NUMBER]}]},
             'sort_by': {_func: this._functionSortBy, _signature: [{types: [TYPE_ARRAY]}, {types: [TYPE_EXPREF]}]},
-            toList: {_func: this._functiontoList, _signature: [{types: [TYPE_STRING]}, {types: [TYPE_ARRAY_STRING]}]},
+            'to_list': {_func: this._functiontoList, _signature: [{types: [TYPE_ARRAY_STRING]},{types: [TYPE_STRING]}]},
             reverse: {_func: this._functionReverse, _signature: [{types: [TYPE_STRING, TYPE_ARRAY]}]},
             'to_array': {_func: this._functionToArray, _signature: [{types: [TYPE_ANY]}]},
-            'to_entries': {_func: this._functionToEntries, _signature: [{types: [TYPE_OBJECT]}]},
             'to_string': {_func: this._functionToString, _signature: [{types: [TYPE_ANY]}]},
             'to_number': {_func: this._functionToNumber, _signature: [{types: [TYPE_ANY]}]},
-            'not_null': {_func: this._functionNotNull, _signature: [{types: [TYPE_ANY], variadic: true}]}
+            'not_null': {_func: this._functionNotNull, _signature: [{types: [TYPE_ANY], variadic: true}]},
+
+            'key_contains': { _func: this._functionKeyContains, _signature: [{types: [TYPE_OBJECT]},{types: [TYPE_STRING]}]},
+            'matches': { _func: this._functionMatches, _signature: [{types: [TYPE_STRING, TYPE_ARRAY]},{types: [TYPE_ANY]}]},
+            'to_entries': {_func: this._functionToEntries, _signature: [{types: [TYPE_OBJECT, TYPE_ARRAY_OBJECT]}]},
+			'pluck': {_func: this._functionPluck, _signature: [{types: [TYPE_OBJECT,TYPE_ARRAY_OBJECT]},{types: [TYPE_STRING,TYPE_ARRAY]}]},
+			'omit': {_func: this._functionOmit, _signature: [{types: [TYPE_OBJECT,TYPE_ARRAY_OBJECT]},{types: [TYPE_ARRAY, TYPE_STRING]}]},
+			'from_entries': {_func: this._functionFromEntries, _signature: [{types: [TYPE_OBJECT,TYPE_ARRAY]}]},
+			'group_by': {_func: this._functionGroupBy, _signature: [{types: [TYPE_ARRAY_OBJECT]},{types: [TYPE_STRING]}]},
+			'split': {_func: this._functionSplit, _signature: [{types: [TYPE_ARRAY,TYPE_STRING]},{types: [TYPE_STRING]}]},
+			'unique': {_func: this._functionUnique, _signature: [{types: [TYPE_ARRAY]}]},
+			'uniq': {_func: this._functionUnique, _signature: [{types: [TYPE_ARRAY]}]},
+			'last': {_func: this._functionLast, _signature: [{types: [TYPE_ARRAY,TYPE_STRING]}]},
+			'first': {_func: this._functionFirst, _signature: [{types: [TYPE_ARRAY,TYPE_STRING]}]},
+			'to_pairs': {_func: this._functionToPairs, _signature: [{types: [TYPE_OBJECT,TYPE_ARRAY_OBJECT]}]},
+			'defaults': {_func: this._functionDefaults, _signature: [{types: [TYPE_ARRAY_OBJECT,TYPE_OBJECT]},{types: [TYPE_OBJECT,TYPE_ARRAY]}]}
         };
     }
 
@@ -91,12 +100,11 @@ component singleton  displayname="runtime" {
 
     function callFunction(name, resolvedArgs) {
         if (!this.functionTable.keyExists(name)) {
-            throw (type="JMESError", message=  'Unknown function: ' &  name &  '()');
+            throw (type="JSONExpression", message=  'Unknown function: ' &  name &  '()');
         } else {
             var functionEntry = this.functionTable[name];
         }
         this._validateArgs(name, resolvedArgs, functionEntry._signature);
-        //dump({name: functionEntry,args:        resolvedArgs});
         return functionEntry._func(resolvedArgs);
     }
     function _validateArgs(name, args, signature) {
@@ -109,7 +117,7 @@ component singleton  displayname="runtime" {
         if (signature[signature.len()].keyExists('variadic') && signature[signature.len()].variadic) {
             if (args.len() < signature.len()) {
                 pluralized = signature.len() == 1 ? ' argument' : ' arguments';
-                throw (type="JMESError", message=
+                throw (type="JSONException", message=
                     'ArgumentError: ' &  name &  '() ' &
                     'takes at least' &  signature.len() &  pluralized &
                     ' but received ' &  args.len()
@@ -117,7 +125,7 @@ component singleton  displayname="runtime" {
             }
         } else if (args.len() != signature.len()) {
             pluralized = signature.len() == 1 ? ' argument' : ' arguments';
-            throw (type="JMESError", message=
+            throw (type="JSONException", message=
                 'ArgumentError: ' &  name &  '() ' &
                 'takes ' &  signature.len() &  pluralized &
                 ' but received ' &  args.len()
@@ -143,16 +151,18 @@ component singleton  displayname="runtime" {
                         return TYPE_NAME_TABLE[typeIdentifier];
                     })
                     .toList(',');
-                throw (type="JMESError", message=
-                    'TypeError: ' &  name &  '() ' &
-                    'expected argument ' &  (i +  1) &
-                    ' to be type ' &  expected &
-                    ' but received type ' &
-                    TYPE_NAME_TABLE[actualType] &  ' instead.'
-                );
+				var msg = 'TypeError: ' &  name &  '() ' &
+				'expected argument ' &  (i +  1) &
+				' to be type ' &  expected &
+				' but received type ' &
+				TYPE_NAME_TABLE[actualType] &  ' instead.';
+
+				if(actualType == TYPE_NULL) msg &= ' This may be due to an invalid key/index';
+                throw (type="JSONException", message= msg   );
             }
         }
     }
+
     function _typeMatches(actual, expected, argValue) {
         if (expected == TYPE_ANY) {
             return true;
@@ -160,6 +170,7 @@ component singleton  displayname="runtime" {
         if (
             expected == TYPE_ARRAY_STRING ||
             expected == TYPE_ARRAY_NUMBER ||
+            expected == TYPE_ARRAY_OBJECT ||
             expected == TYPE_ARRAY
         ) {
             // The expected type can either just be array,
@@ -176,6 +187,8 @@ component singleton  displayname="runtime" {
                     subtype = TYPE_NUMBER;
                 } else if (expected == TYPE_ARRAY_STRING) {
                     subtype = TYPE_STRING;
+                } else if (expected == TYPE_ARRAY_OBJECT) {
+                    subtype = TYPE_OBJECT;
                 }
                 for (var i = 1; i <= argValue.len(); i++) {
                     if (!_typeMatches(_getTypeName(argValue[i]), subtype, argValue[i])) {
@@ -205,6 +218,117 @@ component singleton  displayname="runtime" {
         }
     }
 
+	function _functionFromEntries (resolvedArgs){
+		var orig = resolvedArgs[1];
+		if(isArray(orig) && orig.len() >= 1 &&  isArray(orig[1])) return orig.map((sub) => _functionFromEntries([sub]));
+		var data = {};
+
+		for(var i =1; i <= orig.len(); i++){
+			data[orig[i].key] = orig[i].value;
+		}
+		return data;
+	}
+
+
+    function _functionToEntries(resolvedArgs) {
+		var orig = resolvedArgs[1];
+		if(isArray(orig)) return orig.map((sub) => _functionToEntries([sub]));
+
+		var values = [];
+		var keys = structKeyArray(orig);
+		for (var i = 1; i <= keys.len(); i++) {
+			values.append({ 'key': keys[i], 'value':orig[keys[i]]});
+		}
+		return values;
+    }
+
+
+	function _functionPluck (resolvedArgs){
+		var orig = resolvedArgs[1];
+		var keyArr = resolvedArgs[2];
+		if(isArray(orig)) return orig.map((sub) => _functionPluck([sub,keyArr]));
+		if(!isArray(keyArr)) keyArr = listToArray(keyArr,',');
+		var data = {};
+		keyArr.each((x)=>{
+			data[x] = orig[x];
+		})
+		return data;
+	}
+
+	function _functionOmit (resolvedArgs){
+		var orig = resolvedArgs[1];
+		var keyArr = resolvedArgs[2];
+		if(isArray(orig)) return orig.map((sub) => _functionOmit([sub,keyArr]));
+		if(!isArray(keyArr)) keyArr = listToArray(keyArr,',');
+		keyArr.each((x)=>{
+			structDelete(orig,x);
+		})
+		return orig;
+	}
+
+
+	function _functionGroupBy (resolvedArgs){
+		var groups = {};
+		var key = resolvedArgs[2];
+		resolvedArgs[1].each((x)=>{
+			if(!groups.keyExists(x[key])) groups[x[key]] = [];
+			groups[x[key]].append(x);
+		})
+		return groups;
+	}
+
+	function _functionSplit (resolvedArgs){
+		var orig = resolvedArgs[1];
+		var delimiter = resolvedArgs[2];
+		if(isArray(orig)) return orig.map((sub) => _functionSplit([sub,delimiter]));
+		return listToArray(orig,delimiter);
+	}
+
+	function _functionUnique (resolvedArgs){
+		var orig = resolvedArgs[1];
+		if(isArray(orig) && orig.len() >= 1 &&  isArray(orig[1])) return orig.map((sub) => _functionUnique([sub]));
+		var uniqueList = [=];
+		orig.each((x)=>{
+			uniqueList[x] = true;
+		})
+		return structKeyArray(uniqueList);
+	}
+
+	function _functionLast (resolvedArgs){
+		var len = resolvedArgs[1].len();
+		if(len) return resolvedArgs[1][len];
+		return nullValue();
+	}
+
+	function _functionFirst (resolvedArgs){
+		if(resolvedArgs[1].len()) return resolvedArgs[1][1];
+		return nullValue();
+	}
+
+	function _functionToPairs (resolvedArgs){
+		var orig = resolvedArgs[1];
+		if(!isArray(orig)) orig = [orig];
+		var updated = orig.map(function(item){
+			var data = [];
+			for(var i in item){
+				data.append([i, item[i]]);
+			}
+			return data;
+		});
+		return updated.len() > 1 ? updated : updated[1];
+	}
+
+	function _functionDefaults (resolvedArgs){
+		var orig = resolvedArgs[1];
+		var defaultObj = resolvedArgs[2];
+		if(isArray(orig)) return orig.map((sub) => _functionDefaults([sub,defaultObj]));
+
+		for(var i in defaultObj){
+			if(!orig.keyExists(i)) orig[i] = defaultObj[i];
+		}
+		return orig;
+
+	}
 
     function _functionStartsWith(resolvedArgs) {
         return resolvedArgs[1].lastIndexOf(resolvedArgs[2]) == 0;
@@ -363,15 +487,6 @@ component singleton  displayname="runtime" {
         }
         return values;
     }
-    function _functionToEntries(resolvedArgs) {
-        var obj = resolvedArgs[1];
-        var keys = structKeyArray(obj);
-        var values = [];
-        for (var i = 1; i <= keys.len(); i++) {
-            values.append({ 'key': keys[i], 'value':obj[keys[i]]});
-        }
-        return values;
-    }
     function _functiontoList(resolvedArgs) {
         var toListChar = resolvedArgs[1];
         var listtoList = resolvedArgs[2];
@@ -430,7 +545,7 @@ component singleton  displayname="runtime" {
         var exprefNode = resolvedArgs[2];
         var requiredType = _getTypeName(jmesPathTreeInterpreter.visit(exprefNode, sortedArray[1]));
         if ([TYPE_NUMBER, TYPE_STRING].indexOf(requiredType) < 0) {
-            throw (type="JMESError", message= 'TypeError');
+            throw (type="JSONException", message= 'TypeError');
         }
         var that = this;
         // In order to get a stable sort out of an unstable
@@ -448,16 +563,19 @@ component singleton  displayname="runtime" {
             var exprA = jmesPathTreeInterpreter.visit(exprefNode, a[2]);
             var exprB = jmesPathTreeInterpreter.visit(exprefNode, b[2]);
             if (that._getTypeName(exprA) != requiredType) {
-                throw (type="JMESError", message=
+                throw (type="JSONException", message=
                     'TypeError: expected ' &  requiredType &  ', received ' &
                     that._getTypeName(exprA)
                 );
             } else if (that._getTypeName(exprB) != requiredType) {
-                throw (type="JMESError", message=
+                throw (type="JSONException", message=
                     'TypeError: expected ' &  requiredType &  ', received ' &
                     that._getTypeName(exprB)
                 );
             }
+			if(that._getTypeName(exprA) == TYPE_STRING && isDate(exprA)) exprA = parseDateTime(exprA)+0; //Casting for date strings
+			if(that._getTypeName(exprB) == TYPE_STRING && isDate(exprB)) exprB = parseDateTime(exprB)+0; //Casting for date strings
+
             if (exprA > exprB) {
                 return 1;
             } else if (exprA < exprB) {
@@ -484,6 +602,7 @@ component singleton  displayname="runtime" {
         var current;
         for (var i = 1; i <= resolvedArray.len(); i++) {
             current = keyFunction(resolvedArray[i]);
+			if(isDate(current)) current = parsedatetime(current)+0;
             if (current > maxNumber) {
                 maxNumber = current;
                 maxRecord = resolvedArray[i];
@@ -500,6 +619,7 @@ component singleton  displayname="runtime" {
         var current;
         for (var i = 1; i <= resolvedArray.len(); i++) {
             current = keyFunction(resolvedArray[i]);
+			if(isDate(current)) current = parsedatetime(current)+0;
             if (current < minNumber) {
                 minNumber = current;
                 minRecord = resolvedArray[i];
@@ -511,9 +631,8 @@ component singleton  displayname="runtime" {
         var keyFunc = function(x) {
             var current = jmesPathTreeInterpreter.visit(exprefNode, x);
             if (allowedTypes.indexOf(_getTypeName(current)) < 0) {
-                var msg = 'TypeError: expected one of ' &  allowedTypes &
-                ', received ' &  _getTypeName(current);
-                throw (type="JMESError", message= msg);
+                var msg = 'TypeError: expected one of ' &  allowedTypes &  ', received ' &  _getTypeName(current);
+                throw (type="JSONException", message= msg);
             }
             return current;
         };
