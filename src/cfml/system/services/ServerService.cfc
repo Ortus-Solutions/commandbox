@@ -817,8 +817,16 @@ component accessors="true" singleton {
 
 		// Global aliases are always added on top of server.json (but don't overwrite)
 		// Aliases aren't accepted via command params due to no clean way to provide them
-		serverInfo.aliases 			= defaults.web.aliases;
-		serverInfo.aliases.append( serverJSON.web.aliases ?: {} );
+		serverInfo.aliases 			= defaults.web.aliases.map( (a,p)=>fileSystemUtil.resolvePath( p, serverInfo.webroot ) );
+		// For backwards compat, expand server.json aliases to the webroot first, but if that doesn't exist
+		// fall back to the "correct" behavior of reseolving to the folder the server.json lives in.
+		serverInfo.aliases.append( ( serverJSON.web.aliases ?: {} ).map( (a,p)=>{
+			var possiblePath = fileSystemUtil.resolvePath( p, serverInfo.webroot );
+			if( directoryExists( possiblePath ) ) {
+				return possiblePath;
+			}
+			return fileSystemUtil.resolvePath( p, defaultServerConfigFileDirectory );			
+		} ) );
 
 		// Global errorPages are always added on top of server.json (but don't overwrite the full struct)
 		// Aliases aren't accepted via command params
@@ -1256,7 +1264,7 @@ component accessors="true" singleton {
 		// "/foo=C:\path,/bar=C:\another/path"
 		var CLIAliases = '';
 		for( var thisAlias in serverInfo.aliases ) {
-			CLIAliases = CLIAliases.listAppend( thisAlias & '=' & fileSystemUtil.resolvePath( serverInfo.aliases[ thisAlias ], serverInfo.webroot ) );
+			CLIAliases = CLIAliases.listAppend( thisAlias & '=' & serverInfo.aliases[ thisAlias ] );
 		}
 
 		// Turn struct of errorPages into a comma-delimited list.
