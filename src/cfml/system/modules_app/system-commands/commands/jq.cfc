@@ -1,5 +1,5 @@
 /**
- * JSON Query command for filtering data out of a JSON Object or file. jq is a query language
+ * JSON Query command for filtering data out of a JSON Object, file, or URL. jq is a query language
  * built specifically for interacting with JSON type data. More information can be found
  * at https://jmespath.org/ as well as an online version to test your query
  * Pass or pipe the text to process or a filename
@@ -7,6 +7,10 @@
  * Run query against file
  * {code:bash}
  * jq myjsonfile.json a.b.c.d
+ * {code}
+ * Run query against URL
+ * {code:bash}
+ * jq "https://official-joke-api.appspot.com/jokes/ten" [].join('.....',[setup,punchline])
  * {code}
  * Or against JSON literal
  * {code:bash}
@@ -49,6 +53,7 @@ component {
 
 	// DI Properties
 	property name="jmespath" 		inject="jmespath";
+	property name="consoleLogger"			inject="logbox:logger:console";
 
 	/**
 	 * @inputOrFile.hint The text to process, or a file name
@@ -57,7 +62,7 @@ component {
 	function run(
 		required string inputOrFile,
 		string query=''
-		)  {
+	)  {
 
 		// Treat input as a file path
 		if( fileExists( arguments.inputOrFile )) {
@@ -65,16 +70,22 @@ component {
 		} else {
 			arguments.inputOrFile = print.unAnsi( arguments.inputOrFile );
 		}
+
 		if( !isJSON( arguments.inputOrFile ) ) {
 			error( message="Input is not valid JSON", detail="#left( arguments.inputOrFile, 200 )#" );
 		}
 
+
 		try {
-			var propertyValue = jmespath.search( deserializeJSON(arguments.inputOrFile), arguments.query );
 
-			print.line( propertyValue );
+			if(isNull(arguments.query) || arguments.query == ''){
+				var propertyValue = ( deserializeJSON(arguments.inputOrFile) );
+			} else {
+				var propertyValue = jmespath.search( deserializeJSON(arguments.inputOrFile), arguments.query );
+			}
+			print.line( propertyValue ?: '' );
 
- 		} catch( JMESError var e ) {
+		} catch( JSONExpression var e ) {
 			error('Query:[ ' & arguments.query & ' ] is malformed. Error: ' & e.message)
 		} catch( any var e ) {
 			rethrow;

@@ -1,4 +1,4 @@
-component displayname="Lexer" {
+component  singleton displayname="Lexer" {
 
     TOK_EOF = 'EOF';
     TOK_UNQUOTEDIDENTIFIER = 'UnquotedIdentifier';
@@ -70,6 +70,24 @@ component displayname="Lexer" {
         ch == '_';
     }
 
+	function lookupValue(state,stream){
+		if(state._current <= stream.len()){
+			return stream[state._current];
+		} else {
+			return nullValue();
+		}
+	}
+
+	function advance(state,stream){
+		state._current++;
+		/* systemoutput(state._current & ' - ' & stream.len(),1);
+		if(state._current  < stream.len()){
+		} else {
+			throw( type="JSONException", message= 'Malformed Query :''' & (stream) & '''');
+		}
+		return; */
+	}
+
     function tokenize(stream) {
         var tokens = [];
         var state = {
@@ -78,59 +96,60 @@ component displayname="Lexer" {
         var start;
         var identifier;
         var token;
-        while (state._current <= stream.len()) {
-            if (isAlpha(stream[state._current])) {
+		var maxLength = stream.len();
+        while (state._current <= maxLength) {
+            if ( isAlpha( lookupValue(state,stream))) {
                 start = state._current;
                 identifier = _consumeUnquotedIdentifier(stream,state);
                 tokens.append({type: TOK_UNQUOTEDIDENTIFIER, value: identifier, start: start});
-            } else if (!isNull(basicTokens[stream[state._current]])) {
-                tokens.append({type: basicTokens[stream[state._current]], value: stream[state._current], start: state._current});
-                state._current++;
-            } else if (isNum(stream[state._current])) {
+            } else if (!isNull(basicTokens[ lookupValue(state,stream)])) {
+                tokens.append({type: basicTokens[ lookupValue(state,stream)], value:  lookupValue(state,stream), start: state._current});
+                advance(state,stream);
+            } else if ( isNum( lookupValue(state,stream))) {
                 token = _consumeNumber(stream,state);
                 tokens.append(token);
-            } else if (stream[state._current] == '[') {
+            } else if ( lookupValue(state,stream)== '[') {
                 // No need to increment state._current.  This happens
                 // in _consumeLBracket
                 token = _consumeLBracket(stream,state);
                 tokens.append(token);
-            } else if (stream[state._current] == '"') {
+            } else if ( lookupValue(state,stream)== '"') {
                 start = state._current;
                 identifier = _consumeQuotedIdentifier(stream,state);
                 tokens.append({type: TOK_QUOTEDIDENTIFIER, value: identifier, start: start});
-            } else if (stream[state._current] == "'") {
+            } else if ( lookupValue(state,stream)== "'") {
                 start = state._current;
                 identifier = _consumeRawStringLiteral(stream,state);
                 tokens.append({type: TOK_LITERAL, value: identifier, start: start});
-            } else if (stream[state._current] == '`') {
+            } else if ( lookupValue(state,stream)== '`') {
                 start = state._current;
                 literal = _consumeLiteral(stream,state);
                 tokens.append({type: TOK_LITERAL, value: literal, start: start});
-            } else if (operatorStartToken.keyExists(stream[state._current])) {
+            } else if (operatorStartToken.keyExists( lookupValue(state,stream) )) {
                 tokens.append(_consumeOperator(stream,state));
-            } else if (skipChars.keyExists(stream[state._current])) {
+            } else if (skipChars.keyExists( lookupValue(state,stream) )) {
                 // Ignore whitespace.
-                state._current++;
-            } else if (stream[state._current] == '&') {
+				advance(state,stream);
+            } else if ( lookupValue(state,stream) == '&') {
                 start = state._current;
-                state._current++;
-                if (stream[state._current] == '&') {
-                    state._current++;
+				advance(state,stream);
+                if ( lookupValue(state,stream) == '&') {
+                    advance(state,stream);
                     tokens.append({type: TOK_AND, value: '&&', start: start});
                 } else {
                     tokens.append({type: TOK_EXPREF, value: '&', start: start});
                 }
-            } else if (stream[state._current] == '|') {
+            } else if ( lookupValue(state,stream) == '|') {
                 start = state._current;
-                state._current++;
-                if (stream[state._current] == '|') {
-                    state._current++;
+                advance(state,stream);
+                if ( lookupValue(state,stream) == '|') {
+                    advance(state,stream);
                     tokens.append({type: TOK_OR, value: '||', start: start});
                 } else {
                     tokens.append({type: TOK_PIPE, value: '|', start: start});
                 }
             } else {
-                throw( type="JMESError", message= 'Unknown character:(' & asc(stream[state._current]) & ')');
+                throw( type="JMESError", message= 'Unknown character:(' & asc( lookupValue(state,stream)) & ')');
             }
         }
 
@@ -143,9 +162,9 @@ component displayname="Lexer" {
 
     function _consumeUnquotedIdentifier(stream,state) {
         var start = state._current;
-        state._current++;
-        while (state._current <= stream.len() && isAlphaNum(stream[state._current])) {
-            state._current++;
+        advance(state,stream);
+        while (state._current <= stream.len() && isAlphaNum( lookupValue(state,stream))) {
+            advance(state,stream);
         }
         return slice(stream, start, state._current);
     }
@@ -153,9 +172,9 @@ component displayname="Lexer" {
     function _consumeQuotedIdentifier(stream,state) {
         //echo('_consumeQuotedIdentifier ' & stream);
         var start = state._current;
-        state._current++;
+        advance(state,stream);
         var maxLength = stream.len();
-        while ( state._current <= maxLength && stream[state._current] != '"') {
+        while ( lookupValue(state,stream) != '"') {
             // You can escape a double quote and you can escape an escape.
             var current = state._current;
             if (
@@ -170,7 +189,7 @@ component displayname="Lexer" {
             }
             state._current = current;
         }
-        state._current++;
+        advance(state,stream);
         stream = slice(stream, start, state._current);
         //stream = CharsetDecode(stream, "utf-8");
 
@@ -181,9 +200,9 @@ component displayname="Lexer" {
     function _consumeRawStringLiteral(stream,state) {
         //echo('_consumeRawStringLiteral ' & stream);
         var start = state._current;
-        state._current++;
+        advance(state,stream);
         var maxLength = stream.len();
-        while (state._current <= maxLength && stream[state._current] != "'") {
+        while (lookupValue(state,stream) != "'") {
             // You can escape a single quote and you can escape an escape.
             var current = state._current;
             if (
@@ -198,17 +217,17 @@ component displayname="Lexer" {
             }
             state._current = current;
         }
-        state._current++;
+        advance(state,stream);
         var literal = slice(stream, start + 1, state._current - 1);
         return replace(literal,"\\'", "'","all");
     }
 
     function _consumeNumber(stream,state) {
         var start = state._current;
-        state._current++;
+        advance(state,stream);
         var maxLength = stream.len();
-        while (state._current <= maxLength && isNum(stream[state._current]) ) {
-            state._current++;
+        while (state._current < maxLength && isNum( lookupValue(state,stream)) ) {
+            advance(state,stream);
         }
         var value = parseNumber(slice(stream, start, state._current));
         return {type: TOK_NUMBER, value: value, start: start};
@@ -216,15 +235,12 @@ component displayname="Lexer" {
 
     function _consumeLBracket(stream,state) {
         var start = state._current;
-        state._current++;
-        if( state._current > stream.len() ) {
-        	throw( type="JMESError", message='Unexpected end of query after "[".' );
-        }
-        if (stream[state._current] == '?') {
-            state._current++;
+        advance(state,stream);
+        if ( lookupValue(state,stream) == '?') {
+            advance(state,stream);
             return {type: TOK_FILTER, value: '[?', start: start};
-        } else if (stream[state._current] == ']') {
-            state._current++;
+        } else if ( lookupValue(state,stream) == ']') {
+            advance(state,stream);
             return {type: TOK_FLATTEN, value: '[]', start: start};
         } else {
             return {type: TOK_LBRACKET, value: '[', start: start};
@@ -235,42 +251,42 @@ component displayname="Lexer" {
         var start = state._current;
         var startingChar = stream[start];
         var maxLength = stream.len()
-        state._current++;
+        advance(state,stream);
         if (startingChar == '!') {
-            if (state._current <= maxLength && stream[state._current] == '=') {
-                state._current++;
+            if (lookupValue(state,stream) == '=') {
+                advance(state,stream);
                 return {type: TOK_NE, value: '!=', start: start};
             } else {
                 return {type: TOK_NOT, value: '!', start: start};
             }
         } else if (startingChar == '<') {
-            if (state._current <= maxLength && stream[state._current] == '=') {
-                state._current++;
+            if (lookupValue(state,stream) == '=') {
+                advance(state,stream);
                 return {type: TOK_LTE, value: '<=', start: start};
             } else {
                 return {type: TOK_LT, value: '<', start: start};
             }
         } else if (startingChar == '>') {
-            if (state._current <= maxLength && stream[state._current] == '=') {
-                state._current++;
+            if (lookupValue(state,stream) == '=') {
+                advance(state,stream);
                 return {type: TOK_GTE, value: '>=', start: start};
             } else {
                 return {type: TOK_GT, value: '>', start: start};
             }
         } else if (startingChar == '=') {
-            if (state._current <= maxLength && stream[state._current] == '=') {
-                state._current++;
+            if (lookupValue(state,stream) == '=') {
+                advance(state,stream);
                 return {type: TOK_EQ, value: '==', start: start};
             }
         }
     }
 
     function _consumeLiteral(stream,state) {
-        state._current++;
+        advance(state,stream);
         var start = state._current;
         var maxLength = stream.len();
         var literal;
-        while (state._current <= maxLength && stream[state._current] != '`') {
+        while (lookupValue(state,stream)!= '`') {
             // You can escape a literal char or you can escape the escape.
             current = state._current;
             if (
@@ -300,7 +316,7 @@ component displayname="Lexer" {
             literal = parseJson(literal);
         }
         // +1 gets us to the ending "`", +1 to move on to the next char.
-        state._current++;
+        advance(state,stream);
         return literal;
     }
 
@@ -347,7 +363,7 @@ component displayname="Lexer" {
                 return token;
             }
         }
-        return value ?: NullValue(); 
+        return value ?: NullValue();
     }
 
 }

@@ -1,4 +1,5 @@
-component displayname="TreeInterpreter" {
+component singleton displayname="TreeInterpreter" {
+	property name="jmesPathRuntime" inject="Runtime@JMESPath";
 
     TOK_EOF = 'EOF';
     TOK_UNQUOTEDIDENTIFIER = 'UnquotedIdentifier';
@@ -30,9 +31,6 @@ component displayname="TreeInterpreter" {
     TOK_LPAREN = 'Lparen';
     TOK_LITERAL = 'Literal';
 
-    function init(runtime) {
-        if (!isNull(runtime)) this.runtime = runtime;
-    }
     function strictDeepEqual(first, second) {
         if(isNull(first) && isNull(second)) return true;
         if(isNull(first) || isNull(second)) return false;
@@ -356,8 +354,7 @@ component displayname="TreeInterpreter" {
                 for (i = 1; i <= node.children.len(); i++) {
                     resolvedArgs.append(this.visit(node.children[i], value));
                 }
-                if(!APPLICATION.keyExists("jmesPathRuntime"))  APPLICATION.jmesPathRuntime = new Runtime();
-                return APPLICATION.jmesPathRuntime.callFunction(node.name, resolvedArgs);
+                return jmesPathRuntime.callFunction(node.name, resolvedArgs);
             case 'ExpressionReference':
                 var refNode = node.children[1];
                 // Tag the node with a specific attribute so the type

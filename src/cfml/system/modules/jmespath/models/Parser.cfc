@@ -1,4 +1,5 @@
-component displayname="Parser" {
+component singleton  displayname="Parser" {
+	property name="jmesPathLexer" inject="Lexer@JMESPath";
 
     TOK_EOF = 'EOF';
     TOK_UNQUOTEDIDENTIFIER = 'UnquotedIdentifier';
@@ -59,6 +60,35 @@ component displayname="Parser" {
     bindingPower[TOK_LBRACKET] = 55;
     bindingPower[TOK_LPAREN] = 60;
 
+    errorName = {};
+    errorName[TOK_EOF] = 'End of query';
+    errorName[TOK_UNQUOTEDIDENTIFIER] = 'without quotes';
+    errorName[TOK_QUOTEDIDENTIFIER] = 'with quotes';
+    errorName[TOK_RBRACKET] = ']';
+    errorName[TOK_RPAREN] = ')';
+    errorName[TOK_COMMA] = ',';
+    errorName[TOK_RBRACE] = '}';
+    errorName[TOK_NUMBER] = 'Number';
+    errorName[TOK_CURRENT] = 'Current';
+    errorName[TOK_EXPREF] = 'Expression';
+    errorName[TOK_PIPE] = '|';
+    errorName[TOK_OR] = '||';
+    errorName[TOK_AND] = '&&';
+    errorName[TOK_EQ] = '=';
+    errorName[TOK_GT] = '>';
+    errorName[TOK_LT] = '<';
+    errorName[TOK_GTE] = '>=';
+    errorName[TOK_LTE] = '<=';
+    errorName[TOK_NE] = '!=';
+    errorName[TOK_FLATTEN] = '[]';
+    errorName[TOK_STAR] = '*';
+    errorName[TOK_FILTER] = '[? expression ]';
+    errorName[TOK_DOT] = '.';
+    errorName[TOK_NOT] = '!';
+    errorName[TOK_LBRACE] = '{';
+    errorName[TOK_LBRACKET] = '[';
+    errorName[TOK_LPAREN] = '(';
+
 
     function parse(expression) {
         var state = {
@@ -69,14 +99,13 @@ component displayname="Parser" {
         var ast = this.expression(0,state);
         if (this._lookahead(0,state) != TOK_EOF) {
             var t = this._lookaheadToken(0,state);
-            throw( message= 'Unexpected token type', type="JMESError", detail= 'Unexpected token type: ' & t.type & ', value: ' & t.value);
+            throw( message= 'Unexpected token type', type="JSONException", detail= 'Unexpected token type: ' & errorName[t.type] & ', value: ' & t.value);
         }
         return ast;
     }
 
     function _loadTokens(expression) {
-        if(!APPLICATION.keyExists("jmesPathLexer"))  APPLICATION.jmesPathLexer = new Lexer();
-        var tokens = APPLICATION.jmesPathLexer.tokenize(expression);
+        var tokens = jmesPathLexer.tokenize(expression);
         tokens.append({type: TOK_EOF, value: '', start: expression.len()});
         return tokens;
     }
@@ -118,7 +147,7 @@ component displayname="Parser" {
             case TOK_QUOTEDIDENTIFIER:
                 var node = {type: 'Field', name: token.value};
                 if (this._lookahead(0,state) == TOK_LPAREN) {
-                    throw( type="JMESError", message='Quoted identifier not allowed for function names.');
+                    throw( type="JSONException", message='Quoted identifier not allowed for function names:' & errorName[token.value]);
                 }
                 return node;
             case TOK_NOT:
@@ -261,11 +290,11 @@ component displayname="Parser" {
         } else {
             var t = this._lookaheadToken(0,state);
             //dump(t)
-            throw( type="JMESError", message='Expected ' & tokenType & ', got: ' & t.type);
+            throw( type="JSONException", message='Expected ' & errorName[tokenType] & ', got: ' & errorName[t.type]);
         }
     }
     function _errorToken(token, state) {
-        throw( type="JMESError", message= 'Invalid token (' & token.type & '): "' & token.value & '"' );
+        throw( type="JSONException", message= 'Invalid token (' & errorName[token.type] & '): "' & token.value & '"' );
     }
     function _parseIndexExpression(state) {
         if (this._lookahead(0,state) == TOK_COLON || this._lookahead(1,state) == TOK_COLON) {
@@ -300,7 +329,7 @@ component displayname="Parser" {
                 this._advance(state);
             } else {
                 var t = this._lookahead(0,state);
-                throw( type="JMESError", message= 'Parser Error: Syntax error, unexpected token: ' &  t.value & '(' & t.type & ')');
+                throw( type="JSONException", message= 'Parser Error: Syntax error, unexpected token: ' &  t.value & '(' & errorName[t.type] & ')');
             }
             currentToken = this._lookahead(0,state);
         }
@@ -337,7 +366,7 @@ component displayname="Parser" {
             right = this._parseDotRHS(rbp, state);
         } else {
             var t = this._lookaheadToken(0,state);
-            throw(type="JMESError", message= 'ParserError: Sytanx error, unexpected token: ' & t.value & '(' & t.type & ')' );
+            throw(type="JSONException", message= 'ParserError: Sytanx error, unexpected token: ' & t.value & '(' & errorName[t.type] & ')' );
         }
         return right;
     }
@@ -349,7 +378,7 @@ component displayname="Parser" {
             if (this._lookahead(0,state) == TOK_COMMA) {
                 this._match(TOK_COMMA,state);
                 if (this._lookahead(0,state) == TOK_RBRACKET) {
-                    throw(type="JMESError", message= 'Unexpected token Rbracket');
+                    throw(type="JSONException", message= 'Unexpected token: ]');
                 }
             }
         }
@@ -366,7 +395,7 @@ component displayname="Parser" {
         for (; ;) {
             keyToken = this._lookaheadToken(0,state);
             if (identifierTypes.indexOf(keyToken.type) < 0) {
-                throw(type="JMESError", message= 'Expecting an identifier token, got: ' & keyToken.type);
+                throw(type="JSONException", message= 'Expecting an identifier token like '' or ", got: ' & errorName[keyToken.type]);
             }
             keyName = keyToken.value;
             this._advance(state);

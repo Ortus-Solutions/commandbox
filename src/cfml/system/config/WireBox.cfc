@@ -84,6 +84,10 @@ component extends='wirebox.system.ioc.config.Binder' {
 		map( 'colors256Data@constants' ).toValue( colors256Data );
 		map( 'semverRegex@constants' ).toValue( semverRegex );
 		map( 'jmespath' ).to( 'commandbox.system.modules.jmespath.models.jmespath' );
+		map( 'Lexer@JMESPath' ).to( 'commandbox.system.modules.jmespath.models.Lexer' );
+		map( 'Parser@JMESPath' ).to( 'commandbox.system.modules.jmespath.models.Parser' );
+		map( 'Runtime@JMESPath' ).to( 'commandbox.system.modules.jmespath.models.Runtime' );
+		map( 'TreeInterpreter@JMESPath' ).to( 'commandbox.system.modules.jmespath.models.TreeInterpreter' );
 
 		// Map Directories
 		mapDirectory( '/commandbox/system/services' );
