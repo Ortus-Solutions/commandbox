@@ -1,4 +1,4 @@
-component {
+component singleton {
 	property name="jmesPathLexer" inject="Lexer@JMESPath";
 	property name="jmesPathParser" inject="Parser@JMESPath";
 	property name="jmesPathRuntime" inject="Runtime@JMESPath";

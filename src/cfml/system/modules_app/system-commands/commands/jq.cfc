@@ -54,10 +54,6 @@ component {
 	// DI Properties
 	property name="jmespath" 		inject="jmespath";
 	property name="consoleLogger"			inject="logbox:logger:console";
-	property name="tempDir" 				inject="tempDir@constants";
-	property name="progressableDownloader" 	inject="ProgressableDownloader";
-	property name="progressBar" 			inject="ProgressBar";
-	property name="CR" 						inject="CR@constants";
 
 	/**
 	 * @inputOrFile.hint The text to process, or a file name
@@ -67,28 +63,6 @@ component {
 		required string inputOrFile,
 		string query=''
 	)  {
-
-		var folderName = tempDir & '/' & 'temp#createUUID()#';
-		var fullPath = folderName & '/' & createUUID() & '.json';
-
-		directoryCreate( folderName, true, true );
-
-		if( isURL( arguments.inputOrFile )) {
-			try {
-				// Download File
-				arguments.inputOrFile = progressableDownloader.download(
-					arguments.inputOrFile,
-					fullPath,
-					function( status ) {
-						progressBar.update( argumentCollection = status );
-					}
-				);
-				arguments.inputOrFile = fullPath;
-			} catch( Any var e ) {
-				throw( '#e.message##CR##e.detail#', 'endpointException' );
-			};
-		}
-
 
 		// Treat input as a file path
 		if( fileExists( arguments.inputOrFile )) {
@@ -117,17 +91,6 @@ component {
 			rethrow;
 		}
 
-	}
-
-	function isURL( str ) {
-		if( ReFindNoCase("(https?://((((([-$_.+[:alnum:]!*'(),]|(%[[:xdigit:]]{2}))|[;?&
-			=])*)(:((([-a-zA-Z0-9$_.+!*'(),]|(%[[:xdigit:]]{2}))|[;?&=])*))?@)?((((([[:a
-			lnum:]](([[:alnum:]]|-)*[[:alnum:]])?)\.)*([[:alpha:]](([[:alnum:]]|-)*[[:al
-			num:]])?))|(([[:digit:]]+)(\.([[:digit:]]+)){3}))(:([[:digit:]]+))?))(/(((([
-			-a-zA-Z0-9$_.+!*'(),~]|(%[[:xdigit:]]{2}))|[;:@&=])*)(/((([-a-zA-Z0-9$_.+!*'
-			(),~]|(%[[:xdigit:]]{2}))|[;:@&=])*))*)(\?((([-a-zA-Z0-9$_.+!*'(),~]|(%[[:xd
-			igit:]]{2}))|[;:@&=])*))?)?)", str) ) return true;
-		return false;
 	}
 
 
