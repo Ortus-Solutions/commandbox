@@ -65,8 +65,9 @@ component {
 	)  {
 
 		// Treat input as a file path
-		if( fileExists( arguments.inputOrFile )) {
-			arguments.inputOrFile = fileRead( arguments.inputOrFile );
+		var filePath = resolvePath( arguments.inputOrFile );
+		if( fileExists( filePath )) {
+			arguments.inputOrFile = fileRead( filePath );
 		} else {
 			arguments.inputOrFile = print.unAnsi( arguments.inputOrFile );
 		}
@@ -74,7 +75,6 @@ component {
 		if( !isJSON( arguments.inputOrFile ) ) {
 			error( message="Input is not valid JSON", detail="#left( arguments.inputOrFile, 200 )#" );
 		}
-
 
 		try {
 
