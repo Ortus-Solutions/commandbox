@@ -33,15 +33,18 @@ component {
 	 * @latest.hint Download bleeding edge version, instead of last stable version
 	 * @force.hint Force the update even if the version on the server is the same as locally
 	 **/
-	function run( boolean latest=false, boolean force=false ) {
-
-		if( !latest && semanticVersion.isPreRelease( shell.getVersion() ) ) {
-			print
-				.yellowLine( 'Your version of CommandBox [#shell.getVersion()#] is a prerelease build, so defaulting to "latest".' )
-				.line();
-			latest = true;
+	function run( boolean latest, boolean force=false ) {
+		
+		if( isNull( arguments.latest ) ) {
+			if( semanticVersion.isPreRelease( shell.getVersion() ) ) {
+				print
+					.yellowLine( 'Your version of CommandBox [#shell.getVersion()#] is a prerelease build, so defaulting to "latest".' )
+					.line();
+				arguments.latest = true;
+			} else {
+				arguments.latest = false;
+			}
 		}
-
 
 		// tmp dir location
 		var temp = shell.getTempDir();
@@ -49,7 +52,7 @@ component {
 		var thisArtifactsURL = arguments.latest ? variables.ortusArtifactsURL : variables.ortusPRDArtifactsURL;
 
 		// download the box-repo from the artifacts URL
-		print.greenLine( "Getting #arguments.latest ? 'latest' : 'stable'# versioning information from #thisArtifactsURL#" ).toConsole();
+		print.greenLine( "Getting #arguments.latest ? 'latest' : 'stable'# versioning information from #thisArtifactsURL#ortussolutions/commandbox/box-repo.json" ).toConsole();
 		var boxRepoURL = '#thisArtifactsURL#ortussolutions/commandbox/box-repo.json';
 		var loaderRepoURL = '#thisArtifactsURL#ortussolutions/commandbox/box-loader.json';
 
