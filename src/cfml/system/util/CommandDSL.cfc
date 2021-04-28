@@ -22,12 +22,15 @@ component accessors=true {
 	property name='workingDirectory';
 	property name='rawParams';
 	property name='paramsType';
-
+	property name='returnOutput';
+	property name='pipedInput';
+	property name='echo';
 
 	// DI
 	property name='parser'	inject='parser';
 	property name='shell'	inject='shell';
 	property name="job"		inject='interactiveJob';
+	property name='ConsolePainter'	inject='ConsolePainter';
 
 	/**
 	 * Create a new, executable command
@@ -49,6 +52,10 @@ component accessors=true {
 		setWorkingDirectory( '' );
 		setRawParams( false );
 		setParamsType( 'none' );
+		setReturnOutput( false );
+		setPipedInput( nullValue() );
+		setEcho( false );
+
 		return this;
 	}
 
@@ -216,11 +223,14 @@ component accessors=true {
 	/**
 	 * Run this command
   	 **/
-	string function run( returnOutput=false, string piped, boolean echo=false, boolean rawParams=false ) {
+	string function run( returnOutput, string piped, boolean echo, boolean rawParams ) {
 
-		setRawParams( rawParams );
+		if( !isNull( arguments.rawParams ) ) { setRawParams( arguments.rawParams ); }
+		if( !isNull( arguments.piped ) ) { setPipedInput( arguments.piped ); }
+		if( !isNull( arguments.echo ) ) { setEcho( arguments.echo ); }
+		if( !isNull( arguments.returnOutput ) ) { setReturnOutput( arguments.returnOutput ); }
 
-		if( arguments.echo ) {
+		if( getEcho() ) {
 			shell.callCommand( 'echo "#parser.escapeArg( getCommandString() )#"' );
 		}
 
@@ -228,30 +238,28 @@ component accessors=true {
 		if( getWorkingDirectory().len() ) {
 			shell.cd( getWorkingDirectory() );
 		}
-		
+
 		try {
-			if( structkeyExists( arguments, 'piped' ) ) {
-				var result = shell.callCommand( getTokens(), arguments.returnOutput, arguments.piped );
+			if( !isNull( getPipedInput() ) ) {
+				var result = shell.callCommand( getTokens(), getReturnOutput(), getPipedInput() );
 			} else {
-				var result = shell.callCommand( getTokens(), arguments.returnOutput );
+				var result = shell.callCommand( getTokens(), getReturnOutput() );
 			}
-		
+
 			// If the previous command chain failed
 			if( shell.getExitCode() != 0 ) {
-				
-				if( job.isActive() ) {
-					job.errorRemaining();
-					// Distance ourselves from whatever other output the command may have given so far.
-					shell.printString( chr( 10 ) );
-				}
-				
+
+				ConsolePainter.forceStop();
+				// Distance ourselves from whatever other output the command may have given so far.
+				shell.printString( chr( 10 ) );
+
 				throw( message='Command returned failing exit code (#shell.getExitCode()#)', detail='Failing Command: ' & getTokens().toList( ' ' ), type="commandException", errorCode=shell.getExitCode() );
 			}
-			
+
 		} finally {
-	
+
 			var postCommandCWD = shell.getPWD();
-	
+
 			// Only change back if the executed command didn't change the CWD
 			if( getWorkingDirectory().len() && postCommandCWD == getWorkingDirectory() ) {
 				shell.cd( originalCWD );

@@ -77,7 +77,7 @@ component singleton {
 				add( candidates, parsedLine.word(), '', '', true );
 
 				return;
-			// Everything else in the buffer is a partial, unmached command
+			// Everything else in the buffer is a partial, unmatched command
 			} else if( len( buffer ) ) {
 				// This is the unmatched stuff
 				leftOver = right( buffer, len( buffer ) - matchedToHere );
@@ -125,7 +125,7 @@ component singleton {
 					passedNamedParameters = commandService.convertToNamedParameters( passedParameters.positionalParameters, definedParameters );
 				}
 
-				// For sure we are using named- suggest name or value as necceessary
+				// For sure we are using named- suggest name or value as necessary
 				if( structCount( passedParameters.namedParameters ) ) {
 
 					var leftOver = '';
@@ -143,7 +143,7 @@ component singleton {
 							var paramName = listFirst( leftOver, '=' );
 							// Everything else, is the value so far
 							var paramSoFar = '';
-							// There's only a value if somethign was typed after the =
+							// There's only a value if something was typed after the =
 							if( !leftOver.endsWith( '=' ) ) {
 								paramSoFar = listLast( leftOver, '=' );
 							}
@@ -291,13 +291,13 @@ component singleton {
 								add( candidates, param.name & '=', 'Parameters', param.hint ?: '' );
 							}
 
-							// If this param is a boolean that isn't a flag yet, sugguest the --flag version
+							// If this param is a boolean that isn't a flag yet, suggest the --flag version
 							var paramFlagname = '--' & param.name;
 							if( param.type == 'boolean' && !structKeyExists( passedParameters.flags, param.name ) && lcase( paramFlagname ).startsWith( lcase( partialMatch ) ) ) {
 								add( candidates, paramFlagname, 'Flags', param.hint ?: '', true );
 							}
 
-							// If this param is a boolean that isn't a flag yet, sugguest the --flag version
+							// If this param is a boolean that isn't a flag yet, suggest the --flag version
 							var paramFlagname = '--no' & param.name;
 							if( param.type == 'boolean' && !structKeyExists( passedParameters.flags, param.name ) && lcase( paramFlagname ).startsWith( lcase( partialMatch ) ) ) {
 								var negatedParamHint = !isNull( param.hint ) ? 'Not ' & param.hint.reReplace( '(^[A-Z])', '\L\1' ) : '';
@@ -399,7 +399,7 @@ component singleton {
 
 
 	/**
-	 * Convience method since calling addAll() directly errors if each value isn't a string
+	 * Convenience method since calling addAll() directly errors if each value isn't a string
 	 * @candidates.hint Java TreeSet object
 	 * @additions.hint array of values to add
  	 **/

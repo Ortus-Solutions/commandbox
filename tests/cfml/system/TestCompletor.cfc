@@ -85,7 +85,7 @@ component name="TestShell" extends="mxunit.framework.TestCase" {
 		assertEquals(27,cursor);
 	}
 
-	public void function testParitialBooleanParam() {
+	public void function testPartialBooleanParam() {
 		cmdline = "dir directory=blah recurse=tr";
 		cursor = completor.complete(cmdline,len(cmdline),candidates);
 		assertTrue(candidates.contains("true "));

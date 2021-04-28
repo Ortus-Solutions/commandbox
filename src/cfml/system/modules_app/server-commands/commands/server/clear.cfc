@@ -22,7 +22,7 @@ component {
 		required string property,
 		String serverConfigFile='' ) {
 
-		// As a convenient shorcut, allow the serverConfigFile and propery parameter to be reversed because
+		// As a convenient shortcut, allow the serverConfigFile and property parameter to be reversed because
 		// "server show foo.json name" reads better than "server show name foo.json" but maintains backwards compat
 		// for the simple use case of no JSON file as in "server show name"
 		var tmpPropertyResolved = resolvePath( arguments.property );
@@ -45,7 +45,7 @@ component {
 		try {
 			JSONService.clear( serverJSON, arguments.property );
 		} catch( JSONException var e ) {
-			error( e.message );
+			error( e.message, e.detail );
 		} catch( any var e ) {
 			rethrow;
 		}

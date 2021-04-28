@@ -11,14 +11,14 @@
 component {
 	property name="shell"	inject="shell";
 	property name="wirebox"	inject="wirebox";
-	
+
 	function init() {
 		// Unknown amount of work
 		variables.UNKNOWN = createOBject( 'java', 'org.eclipse.jgit.lib.ProgressMonitor' ).UNKNOWN;
 		// Last time interrupt was checked.
 		variables.lastInterrupt = 0;
 	}
-	
+
 	function onDIComplete() {
 		variables.job = wirebox.getInstance( 'interactiveJob' );
 		variables.progressBarGeneric = wirebox.getInstance( 'progressBarGeneric' );
@@ -31,14 +31,14 @@ component {
 	function start( numeric totalTasks ) {
 		// Really nothing to do here and the totalTasks seems to be a lie anyway.  Good job, JGit.
 	}
-	
+
 	/**
 	* A new task is starting
 	*/
 	function beginTask( string title, numeric totalWork ) {
 		// Sometimes endTask() never gets called when total work is unknown so always reset just in case when starting a new task
 		reset();
-		
+
 		if( totalWork == UNKNOWN ) {
 			job.addLog( '#title#'  );
 		} else {
@@ -58,7 +58,7 @@ component {
 			// Update every 1 percent to avoid extra redraws
 			if( thisPerc > lastPercent ) {
 				progressBarGeneric.update( thisPerc, currentCount, currentTotal );
-				lastPercent = thisPerc;	
+				lastPercent = thisPerc;
 			}
 		}
 	}
@@ -93,6 +93,6 @@ component {
 		currentCount = 0;
 		lastPercent = 0;
 		progressBarGeneric.clear();
-	}	
-	
+	}
+
 }

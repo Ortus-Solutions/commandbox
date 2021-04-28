@@ -9,8 +9,8 @@
  * .
  * You can also bind the recipe with arguments that will be replaced inside of your recipe.
  * Pass any arguments as additional parameters to the recipe command.
- * Named arguments will be accessable inside the recipe as system settings ${arg1Name}, ${arg2Name}, etc.
- * Positional args will be avaialble as ${1}, ${2}, etc.
+ * Named arguments will be accessible inside the recipe as system settings ${arg1Name}, ${arg2Name}, etc.
+ * Positional args will be available as ${1}, ${2}, etc.
  * .
  * Recipe will receive ${name} and ${action}
  * {code:bash}
@@ -37,7 +37,7 @@
  * {code}
  *
  * If you have one or more commands to execute which are not contained in a file, but are in a variable or being output
- * from another command, you can simply pass the commands in directly. The your input does not match a file on the 
+ * from another command, you can simply pass the commands in directly. The your input does not match a file on the
  * file system, the recipe command will attempt to execute your input directly as commands
  *
  * {code:bash}
@@ -53,7 +53,7 @@ component {
 	property name='parser' 	inject='Parser';
 
 	/**
-	 * @recipeFile.hint The name of the recipe file to execute including extension.  Alternatively, text comamnds to direct execute.
+	 * @recipeFile.hint The name of the recipe file to execute including extension.  Alternatively, text commands to direct execute.
 	 **/
 	function run( required recipeFile ){
 		// store original path
@@ -112,26 +112,26 @@ component {
 				if( isEcho ) {
 					print.line( thisCommand );
 				}
-				
+
 				// run Command
 				runCommand( thisCommand );
-																
+
 				// If the recipe ran "exit"
 				if( !shell.getKeepRunning() ) {
-					
+
 					if( shell.getExitCode() != 0 ) {
 						setExitCode( shell.getExitCode() );
 						print
 							.boldRed( "command [#thiscommand#] returned exit code [#shell.getExitCode()#], exiting recipe." )
 							.line();
 					}
-					
+
 					// Just kidding, the shell can stay....
 					shell.setKeepRunning( true );
 					// But this recipe is baked.
 					break;
 				}
-				
+
 				// If a command sets a failing exit code but doesn't throw an exception, stop where we are
 				if( shell.getExitCode() != 0 ) {
 					setExitCode( shell.getExitCode() );
@@ -140,12 +140,12 @@ component {
 						.line();
 					break;
 				}
-				
+
 
 			} catch( any e ){
-				// If we ran an exit command in the recipe, don't actually exit the shell.  
-				shell.setKeepRunning( true );	
-				
+				// If we ran an exit command in the recipe, don't actually exit the shell.
+				shell.setKeepRunning( true );
+
 				print
 					.boldRed( "Error executing command [#thiscommand#], exiting recipe." )
 					.line();

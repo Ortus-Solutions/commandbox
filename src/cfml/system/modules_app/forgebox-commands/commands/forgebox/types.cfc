@@ -20,13 +20,13 @@ component {
 	*/
 	function run( string endpointName ) {
 		endpointName = endpointName ?: configService.getSetting( 'endpoints.defaultForgeBoxEndpoint', 'forgebox' );
-		
-		try {		
+
+		try {
 			var oEndpoint = endpointService.getEndpoint( endpointName );
 		} catch( EndpointNotFound var e ) {
 			error( e.message, e.detail ?: '' );
 		}
-		
+
 		var forgebox = oEndpoint.getForgebox();
 		var APIToken = oEndpoint.getAPIToken();
 
@@ -46,7 +46,7 @@ component {
 		}
 
 	}
-	
+
 	function endpointNameComplete() {
 		return getInstance( 'endpointService' ).forgeboxEndpointNameComplete();
 	}

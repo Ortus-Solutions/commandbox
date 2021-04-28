@@ -38,9 +38,8 @@ component implements="wirebox.system.ioc.scopes.IScope" accessors="true"{
 	 * @mapping The linked WireBox injector
 	 * @mapping.doc_generic wirebox.system.ioc.config.Mapping
 	 * @initArguments The constructor struct of arguments to passthrough to initialization
-	 * @initArguments.doc_generic struct
 	 */
-	function getFromScope( required mapping, initArguments ){
+	function getFromScope( required mapping, struct initArguments ){
 		// create and return the no scope instance, no locking needed.
         var object = variables.injector.buildInstance( arguments.mapping, arguments.initArguments );
         // wire it

@@ -80,18 +80,18 @@ component accessors=true implements="IEndpoint" singleton {
 		// Strip protocol and host to reveal just path and query string
 		package = package.reReplaceNoCase( '^([\w:]+)?//.*?/', '' );
 
-		// Check and see if the name of the jar appears somewhere in the URL and use that as the pacakge name
+		// Check and see if the name of the jar appears somewhere in the URL and use that as the package name
 		// https://search.maven.org/remotecontent?filepath=jline/jline/3.0.0.M1/jline-3.0.0.M1.jar
 		// https://site.com/path/to/package-1.0.0.jar
 
 		// If we see /foo.jar or name=foo.jar or ?foo.jar
 		if( package.reFindNoCase( '[/\?=](.*\.jar)' ) ) {
 			// Then strip the name and remove extension
-			// Note the first .* is greedy so in the case of 
+			// Note the first .* is greedy so in the case of
 			// https://site.com/path/to/file.jar?name=custom.jar
 			// the regex will extract the last match, i.e. "custom"
 			return package.reReplaceNoCase( '.*[/\?=](.*\.jar).*', '\1' ).left( -4 );
-		} 
+		}
 
 		// We give up, so just make the entire URL a slug
 		return reReplaceNoCase( package, '[^a-zA-Z0-9]', '', 'all' );

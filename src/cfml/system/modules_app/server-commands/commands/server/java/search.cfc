@@ -1,5 +1,5 @@
 /**
- * Search for avaialble versions of java for you to use
+ * Search for available versions of java for you to use
  * .
  * {code:bash}
  * server java search
@@ -51,8 +51,8 @@ component aliases='java search' {
 		type = 'jre',
 		release = 'latest'
 	){
-		
-		// If there is no version passed but we have a release, default the version based on the release. 
+
+		// If there is no version passed but we have a release, default the version based on the release.
 		if( isNull( version ) && release.len() && release != 'latest' ) {
 			// Java 8 releases look like jdk8u265-b01
 			if( release contains 'jdk8' ) {
@@ -72,7 +72,7 @@ component aliases='java search' {
 				proxyUser="#ConfigService.getSetting( 'proxy.user', '' )#"
 				proxyPassword="#ConfigService.getSetting( 'proxy.password', '' )#"
 				result="local.artifactResult";
-	
+
 			var fileContent = toString( local.artifactResult.fileContent );
 			if( local.artifactResult.status_code == 200 && isJSON( fileContent ) ) {
 				var artifactJSON = deserializeJSON( fileContent );
@@ -82,7 +82,7 @@ component aliases='java search' {
 				version = 11;
 			}
 		}
-				
+
 		// Backwards compat so 8 so the same as openjdk8
 		version = replaceNoCase( version, 'openjdk', '' );
 		// If we only have a number like 11
@@ -90,7 +90,7 @@ component aliases='java search' {
 			// Turn it into the maven-style semver range [11,12) which is the equiv of >= 11 && < 12 thus getting 11.x
 			version = '[#version#,#version+1#)';
 		}
-		
+
 		if( isNull( os) ) {
 			if( fileSystemUtil.isMac() ) {
 				os = 'mac';
@@ -100,9 +100,9 @@ component aliases='java search' {
 				os = 'windows';
 			}
 		}
-		
+
 		var APIURLCheck = 'https://api.adoptopenjdk.net/v3/assets/version/#encodeForURL(version)#?page_size=100&release_type=ga&vendor=adoptopenjdk&project=jdk&heap_size=normal';
-				
+
 		if( jvm.len() ) {
 			APIURLCheck &= '&jvm_impl=#encodeForURL( jvm )#';
 		}
@@ -115,14 +115,14 @@ component aliases='java search' {
 		if( type.len() ) {
 			APIURLCheck &= '&image_type=#encodeForURL( type )#';
 		}
-		
+
 		print
 			.line()
 			.line( 'Hitting API URL:' )
 			.indentedline( APIURLCheck )
 			.line()
 			.line();
-			
+
 		http
 			url="#APIURLCheck#"
 			timeout=20
@@ -132,22 +132,22 @@ component aliases='java search' {
 			proxyUser="#ConfigService.getSetting( 'proxy.user', '' )#"
 			proxyPassword="#ConfigService.getSetting( 'proxy.password', '' )#"
 			result="local.artifactResult";
-	
+
 		var fileContent = toString( local.artifactResult.fileContent );
 		if( local.artifactResult.status_code == 200 && isJSON( fileContent ) ) {
 			var artifactJSON = deserializeJSON( fileContent );
-	
-	
+
+
 			// If we have a release, we need to filter it now
 			if( release.len() && release != 'latest' ) {
 				artifactJSON = artifactJSON.filter( (thisRelease)=>thisRelease.release_name==release );
 			}
-			
+
 			// Sometimes the API gives me back a struct, sometimes I get an array of structs. ¯\_(ツ)_/¯
 			if( isStruct( artifactJSON ) ) {
 				artifactJSON = [ artifactJSON ];
 			}
-			
+
 			for( var javaVer in artifactJSON ) {
 				var headerWidth = ('Release Name: ' & javaVer.release_name & '  Release Date: ' & dateFormat( javaVer.timestamp )).len()+4;
 				var colWidth = int( ( headerWidth/4 )-1 );
@@ -158,13 +158,13 @@ component aliases='java search' {
 					.boldLine( repeatString( '-', headerWidth ) )
 					.bold( '|' ).boldCyan(  printColumnValue( 'JVM', colWidth ) ).bold( '|' ).boldCyan( printColumnValue( 'OS', colWidth ) ).bold( '|' ).boldCyan( printColumnValue( 'Arch', colWidth ) ).bold( '|' ).boldCyan( printColumnValue( 'Type', lastColWidth ) ).boldLine( '|' )
 					.boldLine( repeatString( '-', headerWidth ) );
-					
+
 				javaVer.binaries = javaVer.binaries.sort( function( a, b ) {
 					return compareNoCase( a.jvm_impl & a.os & a.architecture & a.image_type, b.jvm_impl & b.os & b.architecture & b.image_type )
 				} );
 				for( var binary in javaVer.binaries ) {
 					print
-						.line( '|' & printColumnValue( binary.jvm_impl, colWidth ) 
+						.line( '|' & printColumnValue( binary.jvm_impl, colWidth )
 							& '|' & printColumnValue( binary.os, colWidth )
 							& '|' & printColumnValue( binary.architecture, colWidth )
 							& '|' & printColumnValue( binary.image_type, lastColWidth ) & '|' )
@@ -179,12 +179,12 @@ component aliases='java search' {
 		} else {
 			print.boldRedLine( 'There was an error hitting the API.  [#local.artifactResult.status_code#]' );
 			print.redLine( fileContent.left( 100 ) );
-		}	
+		}
 	}
 
 
 	/**
-	* Pads value with spaces or truncates as neccessary
+	* Pads value with spaces or truncates as necessary
 	*/
 	private function printColumnValue( required string text, required number columnWidth ) {
 		if( len( text ) > columnWidth ) {
@@ -193,7 +193,7 @@ component aliases='java search' {
 		var space = columnWidth-len( text );
 		return repeatString( ' ', int( space/2 ) ) & text & repeatString( ' ', columnWidth - text.len() - int( space/2 ) );
 	}
-	
+
 	function versionComplete() {
 
 		http

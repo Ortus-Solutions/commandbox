@@ -3,7 +3,7 @@
  * If the package being uninstalled has a box.json, any dependencies and devDependencies
  * will also be uninstalled as well.
  * .
- * If a directory is supplied, the package will be looked for in that directory.  Otherwise, the box.json for the packge will be
+ * If a directory is supplied, the package will be looked for in that directory.  Otherwise, the box.json for the package will be
  * inspected for an install path for that package.  Lasty, the command will look in the current directory for a folder named after the package.
  * .
  * Uninstall the feeds package
@@ -26,7 +26,7 @@ component aliases="uninstall" {
 	* @slug.hint Slug of the package to uninstall.
 	* @slug.optionsUDF slugComplete
 	* @directory.hint The directory the package is currently installed in including the container folder
-	* @save.hint Remove package as a dependancy in box.json (if it exists)
+	* @save.hint Remove package as a dependency in box.json (if it exists)
 	* @system.hint Uninstall this package from the global CommandBox module's folder
 	* @verbose.hint Output verbose uninstallation information
 	**/

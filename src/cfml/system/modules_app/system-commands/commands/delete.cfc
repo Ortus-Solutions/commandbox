@@ -5,14 +5,14 @@
  * delete sample.html
  * {code}
  * .
- * Use the "force" param to supress the confirmation dialog.
+ * Use the "force" param to suppress the confirmation dialog.
  * .
  * {code:bash}
  * delete sample.html --force
  * {code}
  * .
  * Use the "recurse" param to remove a directory which is not empty.  Trying to remove a non-empty
- * directory will throw an error.  This a safetly check to make sure you know what you are getting into.
+ * directory will throw an error.  This a safety check to make sure you know what you are getting into.
  * .
  * {code:bash}
  * delete myFolder/ --recurse

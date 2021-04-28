@@ -95,5 +95,5 @@ component accessors="true"{
 	function getInstance( name, dsl, initArguments={}, targetObject='' ) {
 		return getWirebox().getInstance( argumentCollection = arguments );
 	}
-	
+
 }

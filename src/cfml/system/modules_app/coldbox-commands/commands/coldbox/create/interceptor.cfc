@@ -49,7 +49,7 @@ component {
 		var interceptorTestContent = fileRead( "/coldbox-commands/templates/testing/InterceptorBDDContent.txt" );
 		var interceptorTestCase    = fileRead( "/coldbox-commands/templates/testing/InterceptorBDDCaseContent.txt" );
 
-		// Start Replacings
+		// Start Replacing
 		interceptorContent = replaceNoCase(
 			interceptorContent,
 			"|Name|",

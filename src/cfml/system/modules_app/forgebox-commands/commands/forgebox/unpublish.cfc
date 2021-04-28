@@ -21,16 +21,16 @@ component aliases="unpublish" {
 		boolean force=false,
 		string endpointName
 	){
-		
+
 		endpointName = endpointName ?: configService.getSetting( 'endpoints.defaultForgeBoxEndpoint', 'forgebox' );
-		
+
 		// Defer to the generic command
 		command( 'endpoint unpublish' )
 			.params( argumentCollection=arguments )
 			.run();
 
 	}
-	
+
 	function endpointNameComplete() {
 		return getInstance( 'endpointService' ).forgeboxEndpointNameComplete();
 	}

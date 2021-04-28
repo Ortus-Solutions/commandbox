@@ -10,13 +10,13 @@ component accessors="true" extends="wirebox.system.logging.AbstractAppender"{
 
 	/**
 	 * Constructor
-	 * 
+	 *
 	 * @name The unique name for this appender.
 	 * @properties A map of configuration properties for the appender"
 	 * @layout The layout class to use in this appender for custom message rendering.
 	 * @levelMin The default log level for this appender, by default it is 0. Optional. ex: LogBox.logLevels.WARN
 	 * @levelMax The default log level for this appender, by default it is 5. Optional. ex: LogBox.logLevels.WARN
-	 * 
+	 *
 	 * @throws CFAppender.InvalidLogTypeException
 	 */
 	function init(
@@ -28,7 +28,7 @@ component accessors="true" extends="wirebox.system.logging.AbstractAppender"{
 	){
 		// Init supertype
 		super.init( argumentCollection=arguments );
-		
+
 		// Verify properties
 		if( NOT propertyExists( 'logType' ) ){
 			setProperty( "logType", "file" );
@@ -36,7 +36,7 @@ component accessors="true" extends="wirebox.system.logging.AbstractAppender"{
 			// Check types
 			if( NOT reFindNoCase( "^(file|application)$", getProperty( "logType" ) ) ){
 				throw(
-					message = "Invalid logtype choosen #getProperty("logType")#",
+					message = "Invalid logtype chosen #getProperty("logType")#",
 					detail  = "Valid types are file or application",
 					type    = "CFAppender.InvalidLogTypeException"
 				);
@@ -45,13 +45,13 @@ component accessors="true" extends="wirebox.system.logging.AbstractAppender"{
 		if( NOT propertyExists( "fileName" ) ){
 			setProperty( "fileName", getName() );
 		}
-					
+
 		return this;
     }
 
     /**
 	 * Write an entry into the appender. You must implement this method yourself.
-	 * 
+	 *
 	 * @logEvent The logging event to log
 	 */
 	function logMessage( required wirebox.system.logging.LogEvent logEvent ){
@@ -79,5 +79,5 @@ component accessors="true" extends="wirebox.system.logging.AbstractAppender"{
 
 		return this;
 	}
-	
+
 }

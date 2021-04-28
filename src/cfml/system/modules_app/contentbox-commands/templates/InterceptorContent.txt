@@ -4,12 +4,12 @@
 
 	<cffunction name="configure" access="public" returntype="void" output="false" hint="Interceptor config">
 		<cfscript>
-			
+
 		</cfscript>
 	</cffunction>
 
 <!------------------------------------------- INTERCEPTION POINTS ------------------------------------------->
 
-|interceptionPoints|	
+|interceptionPoints|
 
-</cfcomponent>	
+</cfcomponent>

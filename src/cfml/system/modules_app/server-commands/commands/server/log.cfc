@@ -10,7 +10,7 @@ component {
 
 	property name="serverService"	inject="ServerService";
 	property name="printUtil"		inject="print";
-	property name='ansiFormater'	inject='AnsiFormater';
+	property name='ansiFormatter'	inject='AnsiFormatter';
 	/**
 	 * Show server log
 	 *
@@ -62,7 +62,7 @@ component {
 				return fileRead( logfile )
 					.listToArray( chr( 13 ) & chr( 10 ) )
 					.map( function( line ) {
-						return ansiFormater.cleanLine( line );
+						return ansiFormatter.cleanLine( line );
 					} )
 					.toList( chr( 10 ) );
 			}
@@ -71,14 +71,14 @@ component {
 			print.boldRedLine( "No log file found for '#serverInfo.webroot#'!" )
 				.line( "#logFile#" );
 			if( access ) {
-				print.yellowLine( 'Enable accesss logging with [server set web.accessLogEnable=true]' );
+				print.yellowLine( 'Enable access logging with [server set web.accessLogEnable=true]' );
 			}
 			if( rewrites ) {
 				print.yellowLine( 'Enable Rewrite logging with [server set web.rewrites.logEnable=true] and ensure you are started in debug mode.' );
 			}
 		}
 	}
-	
+
 	function serverNameComplete() {
 		return serverService
 			.getServerNames()

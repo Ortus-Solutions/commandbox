@@ -5,7 +5,7 @@
  * run-script myScript
  * {code}
  * .
- * Postitional parameters can be passed and will be available as environment variables inside the script as ${1}, ${2}, etc
+ * Positional parameters can be passed and will be available as environment variables inside the script as ${1}, ${2}, etc
  * .
  * {code:bash}
  * run-script myScript param1 param2
@@ -34,7 +34,7 @@ component aliases="run-script" {
 		if( !packageService.isPackage( getCWD() ) ) {
 			error( '#getCWD()# is not a package!' );
 		}
-		
+
 		// Add any additional arguments as env vars for the script to access
 		arguments
 			.filter( ( k, v ) => k != 'scriptName' )

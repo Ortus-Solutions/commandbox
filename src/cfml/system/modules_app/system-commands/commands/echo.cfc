@@ -5,7 +5,7 @@
  * echo "Hello World!"
  * {code}
  * .
- * This can be useful in CommandBox Recipies, or to pipe arbitrary text into another command.
+ * This can be useful in CommandBox Recipes, or to pipe arbitrary text into another command.
  * .
  * {code:bash}
  * echo "Step 3 complete" >> log.txt
@@ -17,8 +17,8 @@ component {
 	/**
 	 * @text.hint The text to output
 	 **/
-	function run( String text="" )  {		
-		return arguments.text;
+	function run( String text="" )  {
+		print.line( arguments.text );
 	}
 
 }

@@ -78,7 +78,7 @@ component accessors="true" singleton {
 	 * Initialize the commands. This will recursively call itself for subdirectories.
 	 * @baseCommandDirectory.hint The starting directory
 	 * @commandDirectory.hint The current directory we've recursed into
-	 * @commandPath.hint The dot-delimted path so far-- only used when recursing
+	 * @commandPath.hint The dot-delimited path so far-- only used when recursing
 	 **/
 	CommandService function initCommands(
 		required string baseCommandDirectory,
@@ -165,7 +165,7 @@ component accessors="true" singleton {
 	 * @captureOutput Temp workaround to allow capture of run command
  	 **/
 	function runCommand( required array commandChain, required string line, string piped, boolean captureOutput=false ){
-		// If nothing is returned, something bad happened (like an error instatiating the CFC)
+		// If nothing is returned, something bad happened (like an error instantiating the CFC)
 		if( !commandChain.len() ){
 			return 'Command not run.';
 		}
@@ -295,7 +295,7 @@ component accessors="true" singleton {
 				// This is really just a workaround for the fact that command output isn't naturally piped to the console.
 				// Once that is fixed, commands will no longer need to know this.
 				systemsettings.setSystemSetting( 'box_currentCommandPiped', true );
-			// Override this if neccessary, but don't set it just for the fun of it
+			// Override this if necessary, but don't set it just for the fun of it
 			} else if( systemsettings.getSystemSetting( 'box_currentCommandPiped', false ) ) {
 				systemsettings.setSystemSetting( 'box_currentCommandPiped', false );
 			}
@@ -305,7 +305,7 @@ component accessors="true" singleton {
 			try {
 				var FRTrans = FRTransService.startTransaction( commandInfo.commandString.listChangeDelims( ' ', '.' ), commandInfo.originalLine );
 
-				// If we're using postitional params, convert them to named
+				// If we're using positional params, convert them to named
 				if( arrayLen( parameterInfo.positionalParameters ) ){
 					parameterInfo.namedParameters = convertToNamedParameters( parameterInfo.positionalParameters, commandParams );
 				}
@@ -367,7 +367,7 @@ component accessors="true" singleton {
 				}
 				// This is a little hacky,  but basically if there are more commands in the chain that need to run,
 				// just print an exception and move on.  Otherwise, throw so we can unwrap the call stack all the way
-				// back up.  That is neccessary for command expressions that fail like "echo `cat noExists.txt`"
+				// back up.  That is necessary for command expressions that fail like "echo `cat noExists.txt`"
 				// since in that case I don't want to execute the "echo" command since the "cat" failed.
 				if( arrayLen( commandChain ) > i && listFindNoCase( '||,;', commandChain[ i+1 ].originalLine ) ) {
 					// These are "expected" exceptions like validation errors that can be "pretty"
@@ -507,7 +507,7 @@ component accessors="true" singleton {
 					defaultValue = settingName.listRest( ':' );
 					settingName = settingName.listFirst( ':' );
 				}
-				
+
 				var result = systemSettings.getSystemSetting( settingName, defaultValue, parameterInfo.namedParameters );
 
 				// And stick their results in their place
@@ -555,7 +555,7 @@ component accessors="true" singleton {
 	}
 
 	/**
-	 * Figure out what command to run based on the the user input string
+	 * Figure out what command to run based on the user input string
 	 * @line.hint A string containing the command and parameters that the user entered
  	 **/
 	function resolveCommand( required string line, boolean forCompletion=false ){
@@ -598,7 +598,7 @@ component accessors="true" singleton {
 			}
 
 			// If the first token looks like a drive letter, then it's just a Windows user trying to "cd" to a different drive
-			// A drive letter for these purposes will be defined as up to 3 letters folowed by a colon and an optional slash.
+			// A drive letter for these purposes will be defined as up to 3 letters followed by a colon and an optional slash.
 			if( tokens.len() && reFind( '^[a-z,A-Z]{1,3}:[\\,/]?$', tokens[1] ) ){
 				var drive = tokens[1];
 				// make sure the drive letter ends with a slash
@@ -650,11 +650,11 @@ component accessors="true" singleton {
 				 		// Because we don't know where in the rawLine our current place in the command chain starts
 				 		// To fix it though I'd need to substantially change how tokenizing works
 				 		rawLine.reReplaceNoCase( '^(.*?)?[\s]*(run |!)[\s]*(#tokens2#.*)', '\3' )
-				 	];	
+				 	];
 				} else {
 				 	tokens = [
 				 		'run',
-				 		// As a fall back, if we receive the input from the commandine as a single string AND the quotes 
+				 		// As a fall back, if we receive the input from the commandline as a single string AND the quotes
 				 		// don't follow what CommandBox's parser expects, we can't use the tokens array so we make the assumption
 				 		// That the run command was the only command in the raw line.
 				 		rawLine.reReplaceNoCase( '^[\s]*(run |!)[\s]*', '' )
@@ -697,7 +697,7 @@ component accessors="true" singleton {
 					break;
 				}
 
-				// If this is for command tab completion, don't select the command if there are two commands at the same level that start wtih this string
+				// If this is for command tab completion, don't select the command if there are two commands at the same level that start with this string
 				// This check only runs if we've matched all the entered tokens and there is no trailing space.
 				if( forCompletion && pos == tokens.len() ) {
 					if( results.commandReference
@@ -721,7 +721,7 @@ component accessors="true" singleton {
 					// Actual command data stored in a nested struct
 					results.commandReference = results.commandReference[ '$' ];
 
-					// Create the command CFC instance if neccessary
+					// Create the command CFC instance if necessary
 					lazyLoadCommandCFC( results.commandReference );
 
 					break;
@@ -753,7 +753,7 @@ component accessors="true" singleton {
 			if( tokens.len() >= 1 && tokens[1] == '|' ) {
 				receivingPiped = true;
 			}
-			
+
 		} // end loop over commands to resolve
 
 		// Return command chain
@@ -806,7 +806,7 @@ component accessors="true" singleton {
 		}
 
 		// Expand aliases
-		for( commandTokens in commandsToResolve ) {
+		for( var commandTokens in commandsToResolve ) {
 			var originalLine = commandTokens.toList( ' ' );
 			var aliases = configService.getSetting( 'command.aliases', {} );
 			var matchingAlias = '';
@@ -821,7 +821,7 @@ component accessors="true" singleton {
 			// If the exact tokens in this command match an alias, swap it out.
 			if( matchingAlias.len() ) {
 				expandedCommandsToResolve.append(
-					// Recursivley dig down. This allows aliases to alias other alises
+					// Recursively dig down. This allows aliases to alias other alises
 					breakTokensIntoChain(
 						// Re-tokenize the new string
 						parser.tokenizeInput(
@@ -838,7 +838,7 @@ component accessors="true" singleton {
 		}
 		return expandedCommandsToResolve;
 	}
-	
+
 
 	/**
 	 * Replaces aliases in the raw line
@@ -856,7 +856,7 @@ component accessors="true" singleton {
 
 		// If the start of this command matches an alias, swap it out.
 		if( matchingAlias.len() ) {
-			// Recursivley dig down. This allows aliases to alias other alises
+			// Recursively dig down. This allows aliases to alias other alises
 			return expandAliasesinRawLine(
 					// Expand the alias with the string it aliases
 					replaceNoCase( rawLine, matchingAlias, aliases[ matchingAlias ], 'once' )
@@ -867,12 +867,12 @@ component accessors="true" singleton {
 	}
 
 	/**
-	 * Takes a struct of command data and lazy loads the actual CFC isntance if neccessary
+	 * Takes a struct of command data and lazy loads the actual CFC instance if necessary
 	 * @commandData.hint Struct created by registerCommand()
  	 **/
 	private function lazyLoadCommandCFC( commandData ){
 
-		// Check for actual CFC instance, and lazy load if neccessary
+		// Check for actual CFC instance, and lazy load if necessary
 		if( !structKeyExists( commandData, 'CFC' ) ){
 			// Create this command CFC
 			try {
@@ -909,7 +909,7 @@ component accessors="true" singleton {
 		// If a command is provided, look for it in the call stack..
 		if( len( command ) ){
 			for( var call in instance.callStack ){
-				// CommandString is a dot-delimted path
+				// CommandString is a dot-delimited path
 				if( call.commandInfo.commandString == listChangeDelims( command, ' ', '.' ) ){
 					return true;
 				}
@@ -950,7 +950,7 @@ component accessors="true" singleton {
 	 * load command CFC
 	 * @baseCommandDirectory.hint The base directory for this command
 	 * @cfc.hint CFC name that represents the command
-	 * @commandPath.hint The relative dot-delimted path to the CFC starting in the commands dir
+	 * @commandPath.hint The relative dot-delimited path to the CFC starting in the commands dir
 	 **/
 	private function registerCommand( baseCommandDirectory, CFC, commandPath ){
 
@@ -1014,7 +1014,7 @@ component accessors="true" singleton {
 			commandMD 		= commandMD
 		};
 
-		// Fix for CFCs with no hint, they inherit this from the Lucee base compnent.
+		// Fix for CFCs with no hint, they inherit this from the Lucee base component.
 		if( commandData.hint == 'This is the Base Component' ) {
 			commandData.hint = '';
 		}
@@ -1037,8 +1037,8 @@ component accessors="true" singleton {
 							// Grab name of completor function for this param
 							commandData.completor[ param.name ][ 'optionsUDF' ] = param.optionsUDF;
 						}
-						// Check for diretory or file path completion
-						// File completion inhernently includes directories, so no need for both.
+						// Check for directory or file path completion
+						// File completion inherently includes directories, so no need for both.
 						if( structKeyExists( param, 'optionsFileComplete' ) && param.optionsFileComplete ){
 							commandData.completor[ param.name ][ 'optionsFileComplete' ] = param.optionsFileComplete;
 						} else if( structKeyExists( param, 'optionsDirectoryComplete' ) && param.optionsDirectoryComplete ){
@@ -1123,7 +1123,7 @@ component accessors="true" singleton {
 		for( var paramName in parameterInfo.namedParameters ) {
 
 			// If this is an expected param
-			functionIndex = commandParams.find( function( i ) {
+			var functionIndex = commandParams.find( function( i ) {
 				return i.name == paramName;
 			} );
 

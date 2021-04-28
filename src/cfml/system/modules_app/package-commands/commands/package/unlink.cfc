@@ -17,7 +17,7 @@
  * {code}
  * .
  * See also: package link
- * 
+ *
  **/
 component aliases='unlink' {
 	property name="packageService" inject="PackageService";
@@ -27,7 +27,7 @@ component aliases='unlink' {
 	 **/
 	function run(
 		string moduleDirectory ) {
-			
+
 		var packageDirectory=getCWD();
 		var commandBoxCoreLinked = false;
 		if( !arguments.keyExists( 'moduleDirectory' ) ) {
@@ -36,32 +36,32 @@ component aliases='unlink' {
 		} else {
 			arguments.moduleDirectory = resolvePath( arguments.moduleDirectory );
 		}
-		
+
 		// package check
 		if( !packageService.isPackage( packageDirectory ) ) {
 			error( '#packageDirectory# is not a package!' );
 		}
-		
+
 		var boxJSON = packageService.readPackageDescriptor( packageDirectory );
-		
+
 		if( !boxJSON.slug.len() ) {
 			error( 'Cannot unlink package with no slug.' );
 		}
-		
+
 		var linkTarget = moduleDirectory & '/' & boxJSON.slug;
-		
+
 		if( directoryExists( linkTarget ) ) {
 			directoryDelete( linkTarget );
-					
+
 			if( commandBoxCoreLinked ) {
-				print.greenLine( 'Package [#boxJSON.slug#] unlinked from CommandBox core.' );		
+				print.greenLine( 'Package [#boxJSON.slug#] unlinked from CommandBox core.' );
 				command( 'reload' )
 					.params( clearScreen=false )
 					.run();
 			} else {
-				print.greenLine( 'Package [#boxJSON.slug#] unlinked from [#moduleDirectory#]' );			
+				print.greenLine( 'Package [#boxJSON.slug#] unlinked from [#moduleDirectory#]' );
 			}
-			
+
 		} else {
 			print.line( 'Looks like the link [#linkTarget#] didn''t exist.  Nothing to see here...' );
 		}

@@ -1,7 +1,7 @@
 /**
- * Excecute a command against every item in an incoming list.  The list can be passed directly
+ * Execute a command against every item in an incoming list.  The list can be passed directly
  * or piped into this command.  The default delimiter is a new line so this works great piping
- * the output of file listings direclty in, which have a file name per line.
+ * the output of file listings directly in, which have a file name per line.
  * .
  * This powerful construct allows you to perform basic loops from the CLI over arbitrary input.
  * Most of the examples show file listings, but any input can be used that you want to iterate over.
@@ -106,10 +106,10 @@ component {
 					var thisOutput = theCommand.run( echo=debug, returnOutput=true )
 					if( len( thisOutput ) && ! ( mid( thisOutput, len( thisOutput ), 1 ) == chr( 10 ) || mid( thisOutput, len( thisOutput ), 1 ) == chr( 13 ) ) ) {
 						thisOutput &= chr( 10 );
-					}					
-					print.text( thisOutput );	
+					}
+					print.text( thisOutput );
 				} else {
-					theCommand.run( echo=debug );					
+					theCommand.run( echo=debug );
 				}
 			} catch( any var e ) {
 				if( continueOnError ) {

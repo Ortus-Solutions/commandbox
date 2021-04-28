@@ -19,7 +19,7 @@ component {
 		if( fileSystemUtil.openBrowser( arguments.URI, arguments.browser ) ){
 			print.line( "Browser opened!" );
 		} else {
-			error( "Unsopported OS" );
+			error( "Unsupported OS" );
 		};
 	}
 

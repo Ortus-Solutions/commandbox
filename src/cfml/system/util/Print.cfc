@@ -5,7 +5,7 @@
 ********************************************************************************
 * @author Brad Wood, Luis Majano, Denny Valliant
 *
-* I am a helper object for creating pretty ANSI-formmatted
+* I am a helper object for creating pretty ANSI-formatted
 * text in the shell.  I use onMissingMethod to allow for nice,
 * readable methods that contain combinations of text and background
 * colors as well as text formatting.
@@ -26,7 +26,7 @@
 * print.text( 'Hello World', statusColor );
 * print.text( 'Hello World', ( status == 'running' ? 'green' : 'red' ) );
 *
-* Indent each carridge return with two spaces like so:
+* Indent each carriage return with two spaces like so:
 *
 * print.indentedLine( 'Hello World' );
 *
@@ -38,6 +38,7 @@ component {
 	property name='colors256Data'	inject='colors256Data@constants';
 	property name='formatterUtil'	inject='formatter';
 	property name='JSONService'		inject='JSONService';
+	property name='tablePrinter'    inject='provider:TablePrinter';
 
 	this.tab 		= chr( 9 );
 	this.esc 		= chr( 27 );
@@ -75,10 +76,10 @@ component {
 
 		// Check for Ctrl-C
 		shell.checkInterrupted();
-		
+
 		// Flag for if this is a line or not
 		var newLine = false;
-		
+
 		// Keep track of bold separately
 		var bold = false;
 
@@ -92,10 +93,10 @@ component {
 		var text = arrayLen(missingMethodArguments) ? missingMethodArguments[ 1 ] : '';
 		// Convert complex values to a string representation
 		if( !isSimpleValue( text ) ) {
-			
+
 			// Serializable types
 			if( isBinary( text ) ) {
-				// Generally speaking, leave binary alone, but if it just so hapens to be a string that happens to be JSON, let's format it!
+				// Generally speaking, leave binary alone, but if it just so happens to be a string that happens to be JSON, let's format it!
 				// CommandBox will turn the binary to a string when it outputs anyway if we don't here.
 				if( isJSON( toString( text ) ) ) {
 					text = formatterUtil.formatJson( json=toString( text ), ANSIColors=JSONService.getANSIColors() );
@@ -106,7 +107,7 @@ component {
 			} else {
 				text = '[#text.getClass().getName()#]';
 			}
-			
+
 		}
 		// Additional formatting text
 		var methodName &= arrayLen(missingMethodArguments) > 1 ? missingMethodArguments[ 2 ] : '';
@@ -116,7 +117,7 @@ component {
 		// Carve it up until it's gone
 		while( len( methodName ) ) {
 			foundANSI = false;
-			
+
 			// 256 color support.  Denormalized into groups to reduce the amount of string manipulation
 			for( var group in colors256Data ) {
 				// Bail if the remaining string isn't even long enough to search
@@ -128,7 +129,7 @@ component {
 				if( group.colors.keyExists( thisToken ) ) {
 					// Generate the ANSI escape code
 					ANSIString &= get256Color( group.colors[ thisToken ].colorID );
-					
+
 					// Slice this bit off the method name
 					methodName  = mid( methodName, group.len+1, len( methodName ) );
 					foundANSI = true;
@@ -136,7 +137,7 @@ component {
 					break;
 				}
 				// Check for background colors
-				
+
 				// Bail if the remaining string isn't even long enough to search
 				if( methodName.len() < group.len + 2 ) {
 					continue;
@@ -146,7 +147,7 @@ component {
 				if( group.colors.keyExists( thisToken.right( -2 ) ) ) {
 					// Generate the ANSI escape code
 					ANSIString &= get256Color( group.colors[ thisToken.right( -2 ) ].colorID, false );
-					
+
 					// Slice this bit off the method name
 					methodName  = mid( methodName, group.len+3, len( methodName ) );
 					foundANSI = true;
@@ -154,7 +155,7 @@ component {
 					break;
 				}
 			}
-			
+
 			// If we matched an ANSI code, start the loop over
 			if( foundANSI ) {
 				continue;
@@ -171,7 +172,7 @@ component {
 						bold = true;
 					} else {
 						// Add that attribute to the string
-						ANSIString &= getANSIAttribute( this.ANSIAttributes[ attrib ] );						
+						ANSIString &= getANSIAttribute( this.ANSIAttributes[ attrib ] );
 					}
 					// Slice this bit off the method name
 					methodName  = mid( methodName, attribLen+1, len( methodName ) );
@@ -181,7 +182,7 @@ component {
 				}
 
 			}
-			
+
 			// If we matched an ANSI code, start the loop over
 			if( foundANSI ) {
 				continue;
@@ -220,16 +221,16 @@ component {
 				// Slice this bit off the method name
 				methodName  = mid( methodName, 6, len( methodName ) );
 				var colorID = val( methodName );
-				
+
 				if( colorID > 0 || methodname.startsWith( '0' ) ) {
-				
+
 					ANSIString &= get256Color( colorID );
-					
+
 					// Slice this bit off the method name
 					methodName  = mid( methodName, len( colorID )+1 , len( methodName ) );
-					
+
 					// Next!
-					continue;	
+					continue;
 				}
 			}
 
@@ -238,16 +239,16 @@ component {
 				// Slice this bit off the method name
 				methodName  = mid( methodName, 8, len( methodName ) );
 				var colorID = val( methodName );
-				
+
 				if( colorID > 0 || methodname.startsWith( '0' ) ) {
-				
+
 					ANSIString &= get256Color( colorID, false );
-					
+
 					// Slice this bit off the method name
 					methodName  = mid( methodName, len( colorID )+1 , len( methodName ) );
-					
+
 					// Next!
-					continue;	
+					continue;
 				}
 			}
 
@@ -263,7 +264,7 @@ component {
 			// Bold doesn't always work if it's not at the end
 			if( bold ) {
 				ANSIString &= getANSIAttribute( this.ANSIAttributes[ 'bold' ] );
-			} 
+			}
 			text = ANSIString & text;
 			if( !noEnd ) {
 				text &= getANSIAttribute( this.ANSIAttributes["off"] );
@@ -278,6 +279,22 @@ component {
 		return text;
 
 	}
+	
+    /**
+     * Outputs a table to the screen
+     * @headers An array of column headers, or a query.  When passing a query, the "data" argument is not used.
+     * @data An array of data for the table.  Each item in the array may either be
+     *            an array in the correct order matching the number of headers or a struct
+     *            with keys matching the headers.
+     * @includeHeaders A list of headers to include.  Used for query inputs
+     */
+	function table(
+        required any headers,
+        array data=[],
+        string includeHeaders
+    ){
+		return tablePrinter.print( argumentCollection=arguments );
+	}
 
 	/**
 	* Get an ANSI Attribute
@@ -287,7 +304,7 @@ component {
     }
 
 	/**
-	* Get an 256 color ANSI 
+	* Get an 256 color ANSI
 	*/
 	private String function get256Color( required id, foreground=true ) {
 		return this.ESC & "[" & ( foreground ? 3 : 4 ) & "8;5;" & arguments.id & "m";

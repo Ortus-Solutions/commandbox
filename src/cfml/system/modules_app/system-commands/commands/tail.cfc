@@ -14,7 +14,7 @@
  **/
  component {
 	property name="printUtil"		inject="print";
-	property name='ansiFormater'	inject='AnsiFormater';
+	property name='ansiFormatter'	inject='AnsiFormatter';
 
 	/**
 	 * @path file or directory to tail or raw input to process
@@ -62,14 +62,14 @@
 			// move to the end of the file
 			randomAccessFile.seek( position );
 			// Was the last character a line feed.
-			// Remeber the CRLFs will be coming in reverse order
+			// Remember the CRLFs will be coming in reverse order
 			var lastLF = false;
 
 			while( true && startingLength ){
 
 				var char = randomAccessFile.read();
 
-				// Only increment CRs that were preceeded by a LF
+				// Only increment CRs that were preceded by a LF
 				if ( char == 13 && !lastLF ) {
 					lineCounter += 1;
 				}
@@ -106,7 +106,7 @@
 					.toList( "" )
 					.listToArray( chr( 13 ) & chr( 10 ) )
 					.map( function( line ) {
-						return ansiFormater.cleanLine( line );
+						return ansiFormatter.cleanLine( line );
 					} )
 					.toList( chr( 10 ) )
 					& chr( 10 )
@@ -145,11 +145,11 @@
 							var line = randomAccessFile.readLine();
 							while( !isnull( line ) ){
 
-								line = ansiFormater.cleanLine( line );
+								line = ansiFormatter.cleanLine( line );
 								print
 									.line( line )
 									.toConsole();
-							
+
 								var line = randomAccessFile.readLine();
 							}
 							// Close the file every time so we don't keep it open and locked

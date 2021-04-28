@@ -1,21 +1,22 @@
 {
-    "name":"CommandBox System Core",
-    "version":"@build.version@+@build.number@",
-    "author":"Brad Wood",
-    "shortDescription":"This tracks the CommandBox core dependencies",
-    "dependencies":{
-        "string-similarity":"^1.0.0",
-        "semver":"^1.2.3",
-        "globber":"^3.0.4",
-        "JSONPrettyPrint":"^1.0.0",
-        "propertyFile":"^1.0.9"
-    },
-    "devDependencies":{},
-    "installPaths":{
-        "string-similarity":"modules\\string-similarity",
-        "semver":"modules/semver/",
-        "globber":"modules/globber/",
-        "JSONPrettyPrint":"modules\\JSONPrettyPrint",
-        "propertyFile":"modules\\propertyFile"
-    }
+	"name": "CommandBox System Core",
+	"version": "@build.version@+@build.number@",
+	"author": "Brad Wood",
+	"shortDescription": "This tracks the CommandBox core dependencies",
+	"dependencies": {
+		"string-similarity": "^1.0.0",
+		"semver": "^1.2.3",
+		"globber": "^3.0.4",
+		"JSONPrettyPrint": "^1.0.0",
+		"propertyFile": "^1.0.9",
+		"JMESPath": "^2.4.0"
+	},
+	"devDependencies": {},
+	"installPaths": {
+		"string-similarity": "modules\\string-similarity",
+		"semver": "modules/semver/",
+		"globber": "modules/globber/",
+		"JSONPrettyPrint": "modules\\JSONPrettyPrint",
+		"propertyFile": "modules\\propertyFile"
+	}
 }

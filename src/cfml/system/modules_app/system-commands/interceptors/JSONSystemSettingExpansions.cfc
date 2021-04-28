@@ -15,58 +15,58 @@ component {
 	property name="fileSystemUtil"	inject="fileSystem";
 
 	function onSystemSettingExpansion( struct interceptData ) {
-		
+
 		// ${json.property.name@file.json}
 		if( interceptData.setting.lcase().startsWith( 'json.' ) ) {
-			
+
 			var settingName = interceptData.setting.replaceNoCase( 'json.', '', 'one' );
 			var fileName = fileSystemUtil.resolvepath( settingName.listLast( '@' ) );
 			var settingName = settingName.listFirst( '@' );
-			
+
 			if( !fileExists( fileName ) ) {
 				return;
 			}
-			
+
 			var JSONRaw = fileRead( fileName );
 			if( !isJSON( JSONRaw ) ) {
 				return;
 			}
 			var JSON = deserializeJSON( JSONRaw );
 			interceptData.setting = JSONService.show( JSON, settingName, interceptData.defaultValue );
-			
+
 			// Stop processing expansions on this setting
 			interceptData.resolved=true;
 			return true;
-			
+
 		// ${configsetting.property.name}
 		} else if( interceptData.setting.lcase().startsWith( 'configsetting.' ) ) {
-			
+
 			var settingName = interceptData.setting.replaceNoCase( 'configsetting.', '', 'one' );
 			interceptData.setting = ConfigService.getSetting( settingName, interceptData.defaultValue );
-			
+
 			if( !isSimpleValue( interceptData.setting ) ) {
 				interceptData.setting = serializeJSON( interceptData.setting );
 			}
-			
+
 			// Stop processing expansions on this setting
 			interceptData.resolved=true;
 			return true;
-		
+
 		// ${@property.name} (Local reference to a JSON property in the same file)
 		} else if( interceptData.setting.startsWith( '@' ) ) {
-			
+
 			var settingName = interceptData.setting.replaceNoCase( '@', '', 'one' );
 			interceptData.setting = JSONService.show( interceptData.context, settingName, interceptData.defaultValue );
-			
+
 			if( !isSimpleValue( interceptData.setting ) ) {
 				interceptData.setting = serializeJSON( interceptData.setting );
 			}
-			
+
 			// Stop processing expansions on this setting
 			interceptData.resolved=true;
 			return true;
 		}
-		
+
 	}
-	
+
 }

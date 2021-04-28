@@ -4,7 +4,7 @@
 * www.coldbox.org | www.ortussolutions.com
 ********************************************************************************
 * @author Brad Wood, Luis Majano
-* I am a JLine highighter class that attempts to highlight the command portion of the input buffer
+* I am a JLine highlighter class that attempts to highlight the command portion of the input buffer
 */
 component {
 
@@ -40,7 +40,9 @@ component {
 		variables.sets = {
 			')' : '(',
 			'}' : '{',
-			']' : '[',
+		// This doesn't work when the first part of the string has formatting
+		// since there are [ chars in the ANSI escapes
+		//	']' : '[',
 			"'" : "'",
 			'"' : '"'
 		};
@@ -53,7 +55,7 @@ component {
 		// Find text that is at the line start or prepended with a space, curly, or period and ending with an opening paren
 		buffer = reReplaceNoCase( buffer, '(^|[ \-##\.\{\}\(\)])([^ \-##\.\{\}\(\)]*)(\()', '\1' & print.boldCyan( '\2' ) & '\3', 'all' );
 
-		// highight reserved words
+		// highlight reserved words
 		buffer = reReplaceNoCase( buffer, '(^|[ \{\}\(])(#reservedWords#)($|[ ;\(\)\{\}])', '\1' & print.boldCyan( '\2' ) & '\3', 'all' );
 
 		// If the last character was an ending } or ) or ] or " or ' then highlight it and the matching start character
@@ -63,7 +65,7 @@ component {
 			var startChar = sets[ endChar ];
 			var depth = 1;
 			var pos = buffer.len()-1;
-			// Work backwords over the string until we find a matching start char
+			// Work backwards over the string until we find a matching start char
 			while( pos > 0 && depth > 0 ) {
 				if( buffer.mid( pos, 1 ) == endChar && startChar != endChar ) {
 					depth++;

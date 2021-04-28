@@ -2,7 +2,7 @@
 * |modelDescription|
 */
 component |modelPersistence||accessors|{
-	
+
     // Properties
     |properties|
 
@@ -10,9 +10,9 @@ component |modelPersistence||accessors|{
      * Constructor
      */
 	|modelName| function init(){
-		
+
 		return this;
 	}
-	
+
 |methods|
 }

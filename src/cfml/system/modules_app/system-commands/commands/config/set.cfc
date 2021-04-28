@@ -48,7 +48,7 @@ component {
 	 * @_.hint Pass any number of property names in followed by the value to set
 	 * @_.optionsUDF completeProperty
 	 * @append.hint Append struct/array setting, instead of overwriting
-	 * @quiet.hint Supress result output
+	 * @quiet.hint Suppress result output
 	 **/
 	function run( _, boolean append=false, boolean quiet=false ) {
 		var thisAppend = arguments.append;
@@ -59,7 +59,7 @@ component {
 		structDelete( arguments, 'append' );
 		structDelete( arguments, 'quiet' );
 
-		var configSettings = ConfigService.getconfigSettings();
+		var configSettings = ConfigService.getconfigSettings( noOverrides=true );
 
 		var results = JSONService.set( configSettings, arguments, thisAppend );
 

@@ -60,8 +60,8 @@ component extends='wirebox.system.ioc.config.Binder' {
 			// This is deprecated in favor of modules, but leaving it so 'old' style commands will still load.
 			'/commandbox-home/commands'
 		];
-		var ortusArtifactsURL		= 'http://downloads.ortussolutions.com/';
-		var ortusPRDArtifactsURL	= 'http://downloads.ortussolutions.com/';
+		var ortusArtifactsURL		= 'https://downloads.ortussolutions.com/';
+		var ortusPRDArtifactsURL	= 'https://downloads.ortussolutions.com/';
 		var colors256Data			= deserializeJSON( fileRead( homedir & '/cfml/system/config/colors.json' ) );
 		var semverRegex				= '\d{1,3}(?:\.\d{1,3}){2}(?:-\w+(?:\.\w+)*)?(?:\+\w+(?:\.\w+)*)?';
 		// engine versions, first is default - for lucee, first is internal version
@@ -83,6 +83,11 @@ component extends='wirebox.system.ioc.config.Binder' {
 		map( 'rewritesDefaultConfig@constants' ).toValue( '#homeDir#/cfml/system/config/urlrewrite.xml' );
 		map( 'colors256Data@constants' ).toValue( colors256Data );
 		map( 'semverRegex@constants' ).toValue( semverRegex );
+		map( 'jmespath' ).to( 'commandbox.system.modules.jmespath.models.jmespath' );
+		map( 'Lexer@JMESPath' ).to( 'commandbox.system.modules.jmespath.models.Lexer' );
+		map( 'Parser@JMESPath' ).to( 'commandbox.system.modules.jmespath.models.Parser' );
+		map( 'Runtime@JMESPath' ).to( 'commandbox.system.modules.jmespath.models.Runtime' );
+		map( 'TreeInterpreter@JMESPath' ).to( 'commandbox.system.modules.jmespath.models.TreeInterpreter' );
 
 		// Map Directories
 		mapDirectory( '/commandbox/system/services' );

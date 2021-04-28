@@ -1,5 +1,5 @@
 /**
- * View proprties set in box.json for this package.  Command must be executed from the root
+ * View properties set in box.json for this package.  Command must be executed from the root
  * directory of the package where box.json lives.  Call with no parameters to view the entire box.json
  * .
  * Outputs package name
@@ -63,7 +63,7 @@ component {
 			}
 
 		} catch( JSONException var e ) {
-			error( e.message );
+			error( e.message, e.detail );
 		} catch( any var e ) {
 			rethrow;
 		}

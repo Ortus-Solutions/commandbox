@@ -189,7 +189,7 @@ component singleton{
 
 	private function buildRange( required string range ) {
 		// A character that I hope will never be part of an actual range so split easier.
-		// Comprator sets inside a range are delimited by " || "
+		// Comparator sets inside a range are delimited by " || "
 		arguments.range = replaceNoCase( arguments.range, ' || ', '•', 'all' );
 		var semverRange = listToArray( arguments.range, '•' );
 
@@ -423,7 +423,7 @@ component singleton{
 				// ~0 Same as 0.x
 				if( sComparator.sVersion.minor== 'x' || sComparator.sVersion.revision== 'x' ) {
 					sComparator.operator = '=';
-					// Recursivley handle as an X range
+					// Recursively handle as an X range
 					comparatorSet.append( expandXRanges( sComparator ), true );
 				} else {
 
@@ -499,6 +499,12 @@ component singleton{
 		// Remove preReleaseID
 		arguments.version 	= reReplace( arguments.version, "\-([^\-]*).$", "" );
 
+		// if we didn't have a +build and we have a 4-part version (1.2.3.4) then use the 4th part as a build
+		// This is for compat with Java versions like what Adobe CF and Lucee use.
+		if( results.buildID == 0 && listLen( arguments.version, '.' ) > 3 ) {
+			results.buildID = getToken( arguments.version, 4, "." );
+		}
+
 		// Get Revision
 		results.revision	= getToken( arguments.version, 3, "." );
 		if( results.revision == "" ){
@@ -556,7 +562,7 @@ component singleton{
 
 	/**
 	* Verifies if the passed version string is in a pre-release state
-	* Pre-release is defined by the existance of a preRelease ID
+	* Pre-release is defined by the existence of a preRelease ID
 	*/
 	boolean function isPreRelease( required string version ){
 		var pVersion = parseVersion( arguments.version );

@@ -36,7 +36,7 @@ component singleton {
 		var info = resolveConnection( arguments.downloadURL, arguments.redirectUDF );
 		var connection = info.connection;
 		var netURL = info.netURL;
-		
+
 		// Initialize status
 		var status = {
 			percent = 0,
@@ -47,7 +47,7 @@ component singleton {
 
 		try {
 
-			var lenghtOfFile = connection.getContentLength();
+			var lengthOfFile = connection.getContentLength();
 
 			var inputStream = createObject( 'java', 'java.io.BufferedInputStream' ).init( connection.getInputStream() );
 			var outputStream = createObject( 'java', 'java.io.FileOutputStream' ).init( arguments.destinationFile );
@@ -55,17 +55,17 @@ component singleton {
 			var currentTickCount = getTickCount();
 			var lastTickCount = currentTickCount;
 			var kiloBytesPerSecondRunningAverage = [];
-			var lastKiloBytesPerSeconde = 0;
+			var lastKiloBytesPerSecond = 0;
 			var first = true;
 
 			while ( ( var count = inputStream.read( data ) ) != -1 ) {
-				
+
 				// Has the user tried to interrupt this thread?
 				shell.checkInterrupted();
-				
+
 				total += count;
 				// This number will be worthless if content length is -1
-				currentPercentage = int( ( total * 100 ) / lenghtOfFile );
+				currentPercentage = int( ( total * 100 ) / lengthOfFile );
 				bytesSinceLastUpdate = total - lastTotalDownloaded;
 				outputStream.write( data, 0, count );
 
@@ -74,7 +74,7 @@ component singleton {
 
 					// Have we progressed a full percent?
 					// Or if we don't know the total length, have we at least gotten
-					if( ( lenghtOfFile == -1 && bytesSinceLastUpdate >= 250000 ) || currentPercentage >= lastPercentage + 1 || first ) {
+					if( ( lengthOfFile == -1 && bytesSinceLastUpdate >= 250000 ) || currentPercentage >= lastPercentage + 1 || first ) {
 
 						currentTickCount = getTickCount();
 						milisSinceLastUpdate = currentTickCount - lastTickCount;
@@ -85,17 +85,17 @@ component singleton {
 							kiloBytesPerSecondRunningAverage.append( round( ( bytesSinceLastUpdate / 1000 ) * ( 1000 / milisSinceLastUpdate ) ) );
 							// Average the last 5 updates
 							kiloBytesPerSecond = round( kiloBytesPerSecondRunningAverage.avg() );
-							lastKiloBytesPerSeconde = kiloBytesPerSecond;
+							lastKiloBytesPerSecond = kiloBytesPerSecond;
 						// If the last two byte were back-to-back, just reuse the last KBPS number
 						} else {
-							kiloBytesPerSecond = lastKiloBytesPerSeconde;
+							kiloBytesPerSecond = lastKiloBytesPerSecond;
 						}
 
 						// Build status data to pass to closure
 						status = {
 							percent = currentPercentage,
 							speedKBps = kiloBytesPerSecond,
-							totalSizeKB = ( lenghtOfFile == -1 ? -1 : lenghtOfFile/1000 ),
+							totalSizeKB = ( lengthOfFile == -1 ? -1 : lengthOfFile/1000 ),
 							completeSizeKB = total/1000
 						};
 
@@ -148,7 +148,7 @@ component singleton {
 			if( !isNull( inputStream ) ) {
 				inputStream.close();
 			}
-		
+
 			if( !isNull( arguments.statusUDF ) ) {
 				status.percent = 100;
 				arguments.statusUDF( status );

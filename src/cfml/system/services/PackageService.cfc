@@ -27,8 +27,8 @@ component accessors="true" singleton {
 	property name='JSONService'			inject='JSONService';
 	property name='systemSettings'		inject='SystemSettings';
 	property name='wirebox'				inject='wirebox';
-	property name="tempDir" 			inject="tempDir@constants";
-	property name="serverService"		inject="serverService";
+	property name='tempDir' 			inject='tempDir@constants';
+	property name='serverService'		inject='serverService';
 
 	/**
 	* Constructor
@@ -42,7 +42,7 @@ component accessors="true" singleton {
 	* @directory The directory to examine
 	*/
 	public function isPackage( required string directory ) {
-		// If the packge has a box.json in the root...
+		// If the package has a box.json in the root...
 		return fileExists( getDescriptorPath( arguments.directory ) );
 	}
 
@@ -55,14 +55,14 @@ component accessors="true" singleton {
 	}
 
 	/**
-	* Installs a package and its dependencies,  obeying ignors in the box.json file.  Returns a struct containing a "copied" array
+	* Installs a package and its dependencies,  obeying ignores in the box.json file.  Returns a struct containing a "copied" array
 	* and an "ignored" array containing the relative paths inside the package that were copied and ignored.
 	*
-	* @slug.ID Identifier of the packge to install. If no ID is passed, all dependencies in the CDW  will be installed.
+	* @slug.ID Identifier of the package to install. If no ID is passed, all dependencies in the CDW  will be installed.
 	* @slug.optionsUDF slugComplete
-	* @directory The directory to install in. This will override the packages's box.json install dir if provided.
-	* @save Save the installed package as a dependancy in box.json (if it exists)
-	* @saveDev Save the installed package as a dev dependancy in box.json (if it exists)
+	* @directory The directory to install in. This will override the packages box.json install dir if provided.
+	* @save Save the installed package as a dependency in box.json (if it exists)
+	* @saveDev Save the installed package as a dev dependency in box.json (if it exists)
 	* @production When calling this command with no slug to install all dependencies, set this to true to ignore devDependencies.
 	* @currentWorkingDirectory Root of the application (used for finding box.json)
 	* @verbose If set, it will produce much more verbose information about the package installation
@@ -83,8 +83,8 @@ component accessors="true" singleton {
 			string packagePathRequestingInstallation = arguments.currentWorkingDirectory,
 			string defaultName=''
 	){
-		// Java service registers itself as an interceptor on creation so I need to force the provder to create the service before installing anything.
-		javaService.get();
+		// Java service registers itself as an interceptor on creation so I need to force the provider to create the service before installing anything.
+		javaService.$get();
 
 		var shellWillReload = false;
 		var job = wirebox.getInstance( 'interactiveJob' );
@@ -97,8 +97,8 @@ component accessors="true" singleton {
 			arguments.production = arguments.production ?: true;
 
 			var endpointData = endpointService.resolveEndpoint( arguments.ID, arguments.currentWorkingDirectory );
-
-			job.start(  'Installing package [#endpointData.ID#]', 5 );
+			
+			job.start(  'Installing package [#endpointData.ID#]', ( shell.getTermHeight() < 20 ? 1 : 5 ) );
 
 			if( verbose ) {
 				job.setDumpLog( verbose );
@@ -121,6 +121,14 @@ component accessors="true" singleton {
 				var packageType = 'project';
 				var packageName = endpointData.endpoint.getDefaultName( endpointData.package );
 				var version = '1.0.0';
+			}
+
+			// Todo, consider making this part of the interface so other endpoint types can also report back
+			// if their installation ID contains a semantic version range
+			if( isInstanceOf(endpointData.endpoint, 'forgebox') ) {
+				var requestedVersionSemver = endpointData.endpoint.parseVersion( arguments.ID );
+			} else {
+				var requestedVersionSemver = version;
 			}
 
 			// If the dependency struct in box.json has a name, use it.  This is mostly for
@@ -194,8 +202,8 @@ component accessors="true" singleton {
 						if( isPackage( candidateInstallPath ) ) {
 							var candidateBoxJSON = readPackageDescriptor( candidateInstallPath );
 							// Does the package that we found satisfy what we need?
-							if( semanticVersion.satisfies( candidateBoxJSON.version, version ) ) {
-								job.addWarnLog( '#packageName# (#version#) is already satisfied by #candidateInstallPath# (#candidateBoxJSON.version#).  Skipping installation.' );
+							if( semanticVersion.satisfies( candidateBoxJSON.version, requestedVersionSemver ) ) {
+								job.addWarnLog( '#packageName# (#requestedVersionSemver#) is already satisfied by #candidateInstallPath# (#candidateBoxJSON.version#).  Skipping installation.' );
 								job.complete( verbose );
 
 								interceptorService.announceInterception( 'postInstall', { installArgs=arguments, installDirectory=candidateInstallPath } );
@@ -220,7 +228,7 @@ component accessors="true" singleton {
 			if( structKeyExists( arguments, 'directory' ) ) {
 				installDirectory = arguments.directory;
 
-				// If this is an initial install (not a dependency) into a folder somehwere inside the CommandBox home,
+				// If this is an initial install (not a dependency) into a folder somewhere inside the CommandBox home,
 				// make sure we save correctly to CommandBox's user module box.json.
 				var commandBoxCFMLHome = fileSystemUtil.normalizeSlashes( expandPath( '/commandbox' ) );
 				installDirectory = fileSystemUtil.normalizeSlashes( installDirectory );
@@ -246,7 +254,7 @@ component accessors="true" singleton {
 				// Use the last folder as the package directory in case the user wanted to override the default package name
 				packageDirectory = listLast( installDirectory, '/\' );
 
-				// Back up to the "container" folder.  The packge directory will be added back below
+				// Back up to the "container" folder.  The package directory will be added back below
 				installDirectory = listDeleteAt( installDirectory, listLen( installDirectory, '/\' ), '/\' );
 			}
 
@@ -372,6 +380,12 @@ component accessors="true" singleton {
 						installDirectory = serverDeployFolder;
 						artifactDescriptor.createPackageDirectory = false;
 						ignorePatterns.append( '/box.json' );
+					} else {
+						job.addWarnLog( "This package is a Lucee Extension, but no server was found in [#arguments.packagePathRequestingInstallation#]" );
+						if( !serverDetails.serverIsNew && !(serverInfo.engineName contains 'lucee') ) {
+							job.addWarnLog( "We did find a server, but the engine is [#serverInfo.engineName#] instead of 'lucee'" );
+						}
+						
 					}
 
 				}
@@ -481,7 +495,7 @@ component accessors="true" singleton {
 
 			}
 
-			// Create installation directory if neccesary
+			// Create installation directory if necessary
 			if( !directoryExists( installDirectory ) ) {
 				directoryCreate( installDirectory );
 			}
@@ -493,7 +507,7 @@ component accessors="true" singleton {
 
 			// This will normalize the slashes to match
 			tmpPath = fileSystemUtil.resolvePath( tmpPath );
-			var thisPathPatternMatcher = pathPatternMatcher.get();
+			var thisPathPatternMatcher = pathPatternMatcher.$get();
 
 			// Copy Assets now to destination
 			directoryCopy( tmpPath, installDirectory, true, function( path ){
@@ -600,7 +614,7 @@ component accessors="true" singleton {
 				defaultName = dependency
 			};
 
-			// Recursivley install them
+			// Recursively install them
 			installPackage( argumentCollection = params );
 		}
 
@@ -631,7 +645,7 @@ component accessors="true" singleton {
 	function findPackageRoot( packagePath ) {
 		var JSONPath = '#packagePath#/box.json';
 		if( !fileExists( JSONPath ) ) {
-			// Check for a packge in a sub folder
+			// Check for a package in a sub folder
 			var list = directoryList( absolute_path=packagePath, listInfo='query' );
 			// Look at each path inside
 			for( var row in list ) {
@@ -654,10 +668,10 @@ component accessors="true" singleton {
 
 	/**
 	* Uninstalls a package and its dependencies
-	* @ID Identifier of the packge to uninstall.
-	* @directory The directory to install in. This will override the packages's box.json install dir if provided.
-	* @save Remove package as a dependancy in box.json (if it exists)
-	* @saveDev Remove package as a dev dependancy in box.json (if it exists)
+	* @ID Identifier of the package to uninstall.
+	* @directory The directory to install in. This will override the packages box.json install dir if provided.
+	* @save Remove package as a dependency in box.json (if it exists)
+	* @saveDev Remove package as a dev dependency in box.json (if it exists)
 	* @currentWorkingDirectory Root of the application (used for finding box.json)
 	**/
 	function uninstallPackage(
@@ -716,8 +730,8 @@ component accessors="true" singleton {
 			var type = '';
 		}
 
-		// ColdBox modules are stored in a hierachy so just removing the top one removes then all
-		// For all other packages, the depenencies are probably just in the root
+		// ColdBox modules are stored in a hierarchy so just removing the top one removes then all
+		// For all other packages, the dependencies are probably just in the root
 		if( !isPackageModule( type ) ) {
 
 			if( dependencies.count() ) {
@@ -740,7 +754,7 @@ component accessors="true" singleton {
 					params.directory = fileSystemUtil.resolvePath( installpaths[ dependency ], uninstallDirectory );
 				}
 
-				// Recursivley install them
+				// Recursively install them
 				uninstallPackage( argumentCollection = params );
 			}
 
@@ -769,7 +783,7 @@ component accessors="true" singleton {
 		}
 
 
-		// Should we save this as a dependancy
+		// Should we save this as a dependency
 		// and is the current working directory a package?
 		if( arguments.save && isPackage( arguments.currentWorkingDirectory ) ) {
 			// Add it!
@@ -783,7 +797,7 @@ component accessors="true" singleton {
 	}
 
 	/**
-	* Adds a dependency to a packge
+	* Adds a dependency to a package
 	* @currentWorkingDirectory The directory that is the root of the package
 	* @packageName Package to add a a dependency
 	* @version Version of the dependency
@@ -791,7 +805,7 @@ component accessors="true" singleton {
 	* @installDirectoryIsDedicated True if the package was placed in a dedicated folder
 	* @dev True if this is a development dependency, false if it is a production dependency
 	*
-	* @returns boolean True if box.json was updated, false if update wasn't neccessary (keys already existed with correct values)
+	* @returns boolean True if box.json was updated, false if update wasn't necessary (keys already existed with correct values)
 	*/
 	public function addDependency(
 		required string currentWorkingDirectory,
@@ -840,7 +854,7 @@ component accessors="true" singleton {
 			var thisValue = endpointData.ID;
 		}
 
-		// Prevent unneccessary updates to the JSON file.
+		// Prevent unnecessary updates to the JSON file.
 		// For the comparison, we look in the non-raw version of the box.json so env vars are replaced
 		if( !dependencies.keyExists( arguments.packageName ) || dependencies[ arguments.packageName ] != thisValue ) {
 			dependenciesRaw[ arguments.packageName ] = thisValue;
@@ -876,7 +890,7 @@ component accessors="true" singleton {
 			// Just in case-- an empty install dir would be useless.
 			if( len( arguments.installDirectory ) ) {
 
-				// Prevent unneccessary updates to the JSON file.
+				// Prevent unnecessary updates to the JSON file.
 				if( !installPaths.keyExists( arguments.packageName )
 					// Resolve the install path in box.json. If it's relative like ../lib but it's still equivalent to the actual install dir, then leave it alone. The user probably wants to keep it relative!
 					|| fileSystemUtil.normalizeSlashes( fileSystemUtil.resolvePath( installPaths[ arguments.packageName ], arguments.currentWorkingDirectory ) ) != arguments.installDirectory ) {
@@ -899,7 +913,7 @@ component accessors="true" singleton {
 	}
 
 	/**
-	* Removes a dependency from a packge if it exists
+	* Removes a dependency from a package if it exists
 	* @directory The directory that is the root of the package
 	* @packageName Package to add a a dependency
 	* @dev True if this is a development dependency, false if it is a production dependency
@@ -990,7 +1004,7 @@ component accessors="true" singleton {
 	}
 
 	/**
-	* Does everything readPackageDescriptor() does, but won't default deprecated box.json proprties.
+	* Does everything readPackageDescriptor() does, but won't default deprecated box.json properties.
 	* @directory The directory to search for the box.json
 	*/
 	struct function readPackageDescriptorTemplate( required directory ){
@@ -1007,7 +1021,7 @@ component accessors="true" singleton {
 	*/
 	struct function readPackageDescriptorRaw( required directory ){
 
-		// If the packge has a box.json in the root...
+		// If the package has a box.json in the root...
 		if( isPackage( arguments.directory ) ) {
 
 			// ...Read it.
@@ -1035,7 +1049,7 @@ component accessors="true" singleton {
 	}
 
 	/**
-	* Return an array of all outdated depdendencies in a project.
+	* Return an array of all outdated dependencies in a project.
 	* @directory The directory of the package to start in
 	* @print The print buffer used for command operation
 	* @verbose Outputs additional information about each package as it is checked
@@ -1045,16 +1059,18 @@ component accessors="true" singleton {
 	*/
 	array function getOutdatedDependencies( required directory, required print, boolean verbose=false, includeSlugs='' ){
 		// build dependency tree
+		arguments.directory = fileSystemUtil.normalizeSlashes( arguments.directory );
+		arguments.directory = right( arguments.directory, 1 ) == "/" ?
+			left( arguments.directory, len( arguments.directory ) - 1 ) :
+			arguments.directory;
 		var tree 	= buildDependencyHierarchy( arguments.directory );
 		var fakeDir = arguments.directory & '/fake';
-		var verbose = arguments.verbose;
 
 		// Global outdated check bit
-		var aOutdatedDependencies 	= [];
+		var aAllDependencies = [];
 
 		// Outdated check closure
 		var fOutdatedCheck 	= function( slug, value ){
-
 			if( !len( includeSlugs ) || listFindNoCase( includeSlugs, arguments.slug ) ){
 
 				// If a package is not installed (possibly a dev dependency in production mode), then we skip it
@@ -1089,23 +1105,31 @@ component accessors="true" singleton {
 					return;
 				}
 
-				if( updateData.isOutdated ){
-					aOutdatedDependencies.append({
-						slug 				: arguments.slug,
-						directory 			: value.directory,
-						version 			: value.version,
-						packageVersion		: value.packageVersion,
-						newVersion 			: updateData.version,
-						shortDescription 	: value.shortDescription,
-						name 				: value.name,
-						dev 				: value.dev
-					});
+				try {
+					var latestData = endpointData.endpoint.getUpdate( arguments.slug & "@stable", value.packageVersion, verbose );
+				} catch( EndpointNotFound var e ) {
+					consoleLogger.error( e.message );
+					return;
 				}
 
-				// verbose output
-				print.yellowLine( "    * #arguments.slug# (#value.packageVersion#) -> #endpointData.endpointName# version: (#updateData.version#)" )
-					.boldRedText( updateData.isOutdated ? "        * #arguments.slug# is Outdated#chr( 10 )#" : "" )
-					.toConsole();
+				value.directory = fileSystemUtil.normalizeSlashes( value.directory )
+				var dependencyInfo = {
+					'slug' 				: arguments.slug,
+					'directory' 		: value.directory,
+					'version' 			: value.version,
+					'packageVersion'	: value.packageVersion,
+					'newVersion' 		: updateData.version,
+					'latestVersion'     : latestData.version,
+					'shortDescription' 	: value.shortDescription,
+					'name' 				: value.name,
+					'dev' 				: value.dev,
+					'isOutdated'        : updateData.isOutdated,
+					'isLatest'          : !latestData.isOutdated,
+					'location'          : replace( value.directory, directory, "" ) & "/" & slug,
+					'endpointName'		: endpointData.endpointName
+				};
+
+				aAllDependencies.append( dependencyInfo );
 
 			}
 
@@ -1117,8 +1141,8 @@ component accessors="true" singleton {
 
 		// Verify outdated dependency graph in parallel
 		structEach( tree.dependencies, fOutdatedCheck, true );
-
-		return aOutdatedDependencies;
+		
+		return aAllDependencies;
 	}
 
 	/**
@@ -1246,7 +1270,7 @@ component accessors="true" singleton {
 
 				// Run preXXX package script
 				runScript( 'pre#arguments.scriptName#', arguments.directory, true );
-				
+
 				systemSettings.expandDeepSystemSettings( boxJSON );
 				var thisScript = boxJSON.scripts[ arguments.scriptName ];
 				consoleLogger.debug( '.' );
@@ -1254,7 +1278,7 @@ component accessors="true" singleton {
 				consoleLogger.debug( '> ' & thisScript );
 
 				// Normally the shell retains the previous exit code, but in this case
-				// it's important for us to know if the scripts return a failing exit code wihtout throwing an exception
+				// it's important for us to know if the scripts return a failing exit code without throwing an exception
 				shell.setExitCode( 0 );
 
 				// ... then run the script! (in the context of the package's working directory)

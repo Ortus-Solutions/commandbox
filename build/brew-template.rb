@@ -3,6 +3,7 @@ class Commandbox < Formula
   homepage "https://www.ortussolutions.com/products/commandbox"
   url "@repoPRDURL@/ortussolutions/commandbox/@stable-version@/commandbox-bin-@stable-version@.zip"
   sha256 "@stable-sha256@"
+  license "LGPL-3.0-or-later"
 
   head do
     url "@repoURL@/ortussolutions/commandbox/@version@/commandbox-bin-@version@.zip?build=@buildnumber@"
@@ -24,7 +25,8 @@ class Commandbox < Formula
   end
 
   def install
-    bin.install "box"
+    (libexec/"bin").install "box"
+    (bin/"box").write_env_script libexec/"bin/box", Language::Java.overridable_java_home_env
     doc.install resource("apidocs")
   end
 

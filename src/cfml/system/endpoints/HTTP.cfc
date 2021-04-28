@@ -74,7 +74,7 @@ component accessors=true implements="IEndpoint" singleton {
 		// strip query string
 		var baseURL = listFirst( arguments.package, '?' );
 
-		// Github zip downloads tend to be called useless things like "master"
+		// GitHub zip downloads tend to be called useless things like "master"
 		// https://github.com/Ortus-Solutions/commandbox-docs/archive/master.zip
 		if( baseURL contains 'github.com' ) {
 			// Ortus-Solutions/commandbox-docs/archive/master.zip

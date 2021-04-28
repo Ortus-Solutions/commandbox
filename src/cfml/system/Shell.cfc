@@ -27,6 +27,7 @@ component accessors="true" singleton {
 	property name="REPLHighlighter"			inject="REPLHighlighter";
 	property name="configService"			inject="configService";
 	property name='systemSettings'			inject='SystemSettings';
+	property name='endpointService'			inject='endpointService';
 
 	/**
 	* The java jline reader class.
@@ -64,7 +65,7 @@ component accessors="true" singleton {
 	* This value is either "interactive" meaning the shell stays open waiting for user input
 	* or "command" which means a single command will be run and then the shell will be exiting.
 	* This differentiation may be useful for commands who want to be careful not to leave threads running
-	* that they expect to finish since the JVM will terminiate immedatley after the command finishes.
+	* that they expect to finish since the JVM will terminate immediately after the command finishes.
 	* This could also be useful to reduce the amount of extra text that's output such as the CommandBox
 	* banner which isn't really needed for a one-off command, especially if the output of that command needs
 	* to be fed into another OS command.
@@ -141,9 +142,15 @@ component accessors="true" singleton {
 		setTempDir( variables.tempdir );
 
 		getInterceptorService().configure();
+		
+		getInterceptorService().registerInterceptor( 
+			interceptor 	= endpointService, 
+			interceptorObject 	= endpointService,
+			interceptorName 	= "endpoint-service"
+		);
 		getModuleService().configure();
 
-		// When the shell first starts, the current working dir doesn't always containt the trailing slash
+		// When the shell first starts, the current working dir doesn't always contain the trailing slash
 		variables.pwd = fileSystem.resolvePath( variables.pwd );
 
 		getModuleService().activateAllModules();
@@ -156,6 +163,13 @@ component accessors="true" singleton {
 		} else {
 			variables.commandService.configure();
 		}
+		
+		// Ensure we have a system box.json
+		var systemBoxJSON = expandPath( '/commandbox/box.json' );
+		if( !fileExists( systemBoxJSON ) ) {
+			fileWrite( systemBoxJSON, '{ "name":"CommandBox System" }' );
+		}
+		
 	}
 
 
@@ -173,7 +187,7 @@ component accessors="true" singleton {
 	 **/
 	Shell function setExitCode( required string exitCode ) {
 		createObject( 'java', 'java.lang.System' ).setProperty( 'cfml.cli.exitCode', arguments.exitCode );
-		// Keep a more readable version in sync for people to acces via the shell
+		// Keep a more readable version in sync for people to access via the shell
 		createObject( 'java', 'java.lang.System' ).setProperty( 'exitCode', exitCode );
 		return this;
 	}
@@ -188,7 +202,7 @@ component accessors="true" singleton {
 
 
 	/**
-	 * Sets reload flag, relaoded from shell.cfm
+	 * Sets reload flag, reloaded from shell.cfm
 	 * @clear.hint clears the screen after reload
  	 **/
 	Shell function reload( Boolean clear=true ){
@@ -226,7 +240,7 @@ component accessors="true" singleton {
 	 * @message.hint message to prompt the user with
 	 * @mask.hint When not empty, keyboard input is masked as that character
 	 * @defaultResponse Text to populate the buffer with by default that will be submitted if the user presses enter without typing anything
-	 * @keepHistory True to remeber the text typed in the shell history
+	 * @keepHistory True to remember the text typed in the shell history
 	 *
 	 * @return the response from the user
  	 **/
@@ -252,7 +266,7 @@ component accessors="true" singleton {
 				terminal.resume();
 			}
 
-			// read reponse while masking input
+			// read response while masking input
 			var input = variables.reader.readLine(
 				// Prompt for the user
 				arguments.message,
@@ -500,7 +514,7 @@ component accessors="true" singleton {
 
 	/**
 	 * Runs the shell thread until exit flag is set
-	 * @silent Supress prompt
+	 * @silent Suppress prompt
   	 **/
     Boolean function run( silent=false ) {
 		// init reload to false, just in case
@@ -569,7 +583,7 @@ component accessors="true" singleton {
 
 				}
 
-	        	// If the standard input isn't avilable, bail.  This happens
+	        	// If the standard input isn't available, bail.  This happens
 	        	// when commands are piped in and we've reached the end of the piped stream
 	        	if( !isDefined( 'line' ) ) {
 	        		return false;
@@ -738,7 +752,7 @@ component accessors="true" singleton {
  	 * @command.hint Either a string containing a text command, or an array of tokens representing the command and parameters.
  	 * @returnOutput.hint True will return the output of the command as a string, false will send the output to the console.  If command outputs nothing, an empty string will come back.
  	 * @piped.hint Any text being piped into the command.  This will overwrite the first parameter (pushing any positional params back)
- 	 * @initialCommand.hint Since commands can recursivley call new commands via this method, this flags the first in the chain so exceptions can bubble all the way back to the beginning.
+ 	 * @initialCommand.hint Since commands can recursively call new commands via this method, this flags the first in the chain so exceptions can bubble all the way back to the beginning.
  	 * In other words, if "foo" calls "bar", which calls "baz" and baz errors, all three commands are scrapped and do not finish execution.
  	 **/
 	function callCommand(
@@ -748,7 +762,7 @@ component accessors="true" singleton {
 		boolean initialCommand=false )  {
 
 		var job = wirebox.getInstance( 'interactiveJob' );
-		var progressBarGeneric = wirebox.getInstance( 'progressBarGeneric' );
+		var ConsolePainter = wirebox.getInstance( 'ConsolePainter' );
 
 		// Commands a loaded async in interactive mode, so this is a failsafe to ensure the CommandService
 		// is finished.  Especially useful for commands run onCLIStart.  Wait up to 5 seconds.
@@ -780,10 +794,7 @@ component accessors="true" singleton {
 				rethrow;
 			} else {
 
-				progressBarGeneric.clear();
-				if( job.isActive() ) {
-					job.errorRemaining();
-				}
+				ConsolePainter.forceStop();
 
 				printError( { message : e.message, detail: e.detail } );
 			}
@@ -794,10 +805,7 @@ component accessors="true" singleton {
 				rethrow;
 			} else {
 
-				progressBarGeneric.clear();
-				if( job.isActive() ) {
-					job.errorRemaining();
-				}
+				ConsolePainter.forceStop();
     			variables.reader.getTerminal().writer().flush();
 				variables.reader.getTerminal().writer().println();
 				variables.reader.getTerminal().writer().print( variables.print.boldRedLine( 'CANCELLED' ) );
@@ -813,10 +821,7 @@ component accessors="true" singleton {
 				|| e.message == 'UserInterruptException'
 				|| e.type.toString() == 'EndOfFileException' ) {
 
-				progressBarGeneric.clear();
-				if( job.isActive() ) {
-					job.errorRemaining();
-				}
+				ConsolePainter.forceStop();
 
     			variables.reader.getTerminal().writer().flush();
 				variables.reader.getTerminal().writer().println();
@@ -824,11 +829,8 @@ component accessors="true" singleton {
 			// Anything else is completely unexpected and means boom booms happened-- full stack please.
 			} else {
 
-				progressBarGeneric.clear();
-				if( job.isActive() ) {
-					job.errorRemaining( e.message );
-					variables.reader.getTerminal().writer().println();
-				}
+				ConsolePainter.forceStop( e.message );
+				variables.reader.getTerminal().writer().println();
 
 				printError( e );
 			}
@@ -913,11 +915,11 @@ component accessors="true" singleton {
 		variables.reader.getTerminal().writer().print( variables.print.whiteOnRedLine( 'ERROR (#variables.version#)' ) );
 		variables.reader.getTerminal().writer().println();
 		variables.reader.getTerminal().writer().println( variables.print.boldRedText( variables.formatterUtil.HTML2ANSI( arguments.err.message, 'boldRed' ) ) );
-		
+
 		try{
-			
+
 			if( arguments.err.getClass().getName() == 'lucee.runtime.exp.CatchBlockImpl' ) {
-				
+
 				var rawJavaException = arguments.err.getPageException();
 				var cause = rawJavaException.getCause();
 				var indent = '  ';
@@ -943,14 +945,14 @@ component accessors="true" singleton {
 					cause = cause.getCause();
 					indent &= '  ';
 				}
-				
+
 			}
-			
+
 		// I don't to fubar the shell if the logic above fails.  This may never happen, but lets log it just in case it does.
-		} catch( any e ) {			
+		} catch( any e ) {
 			variables.reader.getTerminal().writer().print( variables.print.boldRedText( variables.formatterUtil.HTML2ANSI( 'Error getting root cause: #e.message# #e.detail#', 'boldRed' ) ) );
 		}
-		
+
 		variables.reader.getTerminal().writer().println();
 
 		if( structKeyExists( arguments.err, 'detail' ) ) {

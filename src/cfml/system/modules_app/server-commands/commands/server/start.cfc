@@ -11,7 +11,7 @@
  * server start --rewritesEnable
  * {code}
  * .
- * Start with specifc heap size
+ * Start with specific heap size
  * {code:bash}
  * server start heapSize=768
  * {code}
@@ -29,10 +29,10 @@
  * cfengine can also be any valid Endpoint ID that points to a ForgeBox entry, HTTP URL, etc.
  * .
  * {code:bash}
- * server start cfengine=http://downloads.ortussolutions.com/adobe/coldfusion/9.0.2/cf-engine-9.0.2.zip
+ * server start cfengine=https://downloads.ortussolutions.com/adobe/coldfusion/9.0.2/cf-engine-9.0.2.zip
  * {code}
  * .
- * You can also start up a local WAR file with the WARPath parmeter.
+ * You can also start up a local WAR file with the WARPath parameter.
   * .
  * {code:bash}
  * server start WARPath=/path/to/explodedWAR
@@ -45,7 +45,7 @@ component aliases="start" {
 	property name="serverService" 	inject="ServerService";
 	property name="javaService" 	inject="JavaService";
 	property name="endpointService" inject="endpointService";
-	
+
 	/**
 	 * @name           		short name for this server or a path to the server.json file.
 	 * @name.optionsFileComplete true
@@ -82,7 +82,7 @@ component aliases="start" {
 	 * @WARPath				sets the path to an existing war to use
 	 * @serverConfigFile 	The path to the server's JSON file.  Created if it doesn't exist.
 	 * @startTimeout 		The amount of time in seconds to wait for the server to start (in the background).
-	 * @console				Start this server in the forground console process and wait until Ctrl-C is pressed to stop it.
+	 * @console				Start this server in the foreground console process and wait until Ctrl-C is pressed to stop it.
 	 * @welcomeFiles		A comma-delimited list of default files to load when visiting a directory (index.cfm,index.htm,etc)
 	 * @serverHomeDirectory	The folder where the CF engine WAR should be extracted
 	 * @restMappings		A comma-delimited list of REST mappings in the form of /api/*,/rest/*.  Empty string to disable.
@@ -183,7 +183,7 @@ component aliases="start" {
 
 	/**
 	* Complete server names
-	*/	
+	*/
 	function serverNameComplete() {
 		return serverService
 			.getServerNames()
@@ -196,15 +196,15 @@ component aliases="start" {
 	* Complete cfengine names
 	*/
 	function cfengineNameComplete( string paramSoFar ) {
-		
+
 		var endpointName = configService.getSetting( 'endpoints.defaultForgeBoxEndpoint', 'forgebox' );
-		
-		try {		
+
+		try {
 			var oEndpoint = endpointService.getEndpoint( endpointName );
 		} catch( EndpointNotFound var e ) {
 			error( e.message, e.detail ?: '' );
 		}
-		
+
 		var forgebox = oEndpoint.getForgebox();
 		var APIToken = oEndpoint.getAPIToken();
 
@@ -226,7 +226,7 @@ component aliases="start" {
 
 	/**
 	* Complete java versions
-	*/	
+	*/
 	function javaVersionComplete() {
 		return javaService
 			.listJavaInstalls()
@@ -234,6 +234,6 @@ component aliases="start" {
 			.map( ( i ) => {
 				return { name : i, group : 'Java Versions' };
 			} );
-	}	
-	
+	}
+
 }

@@ -8,7 +8,7 @@
  * I render TestBox data out for the CLI
  */
 component {
-	
+
 	processingdirective pageEncoding='UTF-8';
 
 	variables.HEADER_CELL_CHARS = 7;
@@ -71,16 +71,16 @@ component {
 						"-> #thisBundle.globalException.type#:#thisBundle.globalException.message#:#thisBundle.globalException.detail#",
 						COLOR.ERROR
 					);
-					
+
 					var errorStack = [];
-	
+
 					// If there's a tag context, show the file name and line number where the error occurred
 					if (
 						isDefined( "thisBundle.globalException.tagContext" ) && isArray( thisBundle.globalException.tagContext ) && thisBundle.globalException.tagContext.len()
 					) {
 						errorStack = thisBundle.globalException.tagContext;
 					}
-	
+
 					// Show at least 5 stack origins, 1 is not enough for debugging.
 					errorStack.each( function( item, index ){
 						if ( index <= variables.MAX_STACKTRACES ) {
@@ -88,7 +88,7 @@ component {
 								"-> at #item.template#:#item.line# #chr( 13 )##chr( 13 )#",
 								COLOR.ERROR
 							);
-	
+
 							// code print for first stack frame if supported by the CFML engine
 							if( arguments.index == 1 && item.keyExists( "codePrintPlain" ) ){
 								print.line().line( item.codePrintPlain );
@@ -235,7 +235,7 @@ component {
 
 		var printedAtLeastOneLine = false;
 		for ( local.thisSpec in arguments.suiteStats.specStats ) {
-			// Continue if no eception and not in verbose mode
+			// Continue if no exception and not in verbose mode
 			if ( listFindNoCase( "failed,exception,error", local.thisSpec.status ) == 0 && !verbose ) {
 				continue;
 			}

@@ -10,11 +10,14 @@
 component accessors="true" singleton {
 
 	// DI
-	property name="configService" inject="ConfigService";
-	property name="fileSystemUtil" inject="FileSystem";
-	property name="formatterUtil" inject="Formatter";
-	property name="logger"        inject="logbox:logger:{this}";
-	property name="print"         inject="print";
+	property name="configService"	inject="ConfigService";
+	property name="fileSystemUtil"	inject="FileSystem";
+	property name="formatterUtil"	inject="Formatter";
+	property name="logger"			inject="logbox:logger:{this}";
+	property name="Consolelogger"	inject="logbox:logger:console";
+	property name="print"			inject="print";
+	property name="parser"			inject="parser";
+	property name="jmespath"		inject="jmespath";
 
 	/**
 	* Constructor
@@ -24,7 +27,7 @@ component accessors="true" singleton {
 	}
 
 	/**
-	* I check for the existance of a property
+	* I check for the existence of a property
 	*/
 	boolean function check( required any JSON, required string property ){
 
@@ -37,6 +40,11 @@ component accessors="true" singleton {
 	* I get a property from a deserialized JSON object and return it
 	*/
 	function show( required any JSON, required string property, defaultValue ){
+
+		//pass to JMESPath search command `showJMES` if 'jq:' is found in the beginning of the search string
+		if(left(arguments.property,3) == "jq:"){
+			return showJMES(arguments.JSON, right(arguments.property,len(arguments.property)-3),arguments.defaultValue);
+		}
 
 		var fullPropertyName = 'arguments.JSON' & toBracketNotation( arguments.property );
 
@@ -51,6 +59,33 @@ component accessors="true" singleton {
 		return evaluate( fullPropertyName );
 	}
 
+	/**
+	* I get a property from a deserialized JSON object and return it using JMESPath
+	*/
+	function showJMES( required any JSON, required string property, defaultValue ){
+		if  (arguments.property == '') return arguments.JSON;
+
+        try {
+            var results = jmespath.search(arguments.JSON,arguments.property);
+            if ( !isNull(results) ){
+				return results;
+			}
+			if ( structKeyExists( arguments, 'defaultValue' ) ){
+				return arguments.defaultValue;
+			}
+
+			throw( message='Query [#arguments.property#] didn''t return anything.', type="JSONException");
+		} catch( JSONException e ){
+			rethrow;
+		} catch( JMESError e ){
+			throw( message=e.message, detail=e.detail & chr( 10 ) & e.tagContext[ 1 ].template & ':' &  e.tagContext[ 1 ].line, type="JSONException");
+		} catch( any e ){
+			Consolelogger.error( 'Query:[ #arguments.property# ] failed because ' & e.message );
+			rethrow;
+        }
+
+	}
+
 
 	/**
 	* I set a property from a deserialized JSON object and returns an array of messages regarding the word that was done.
@@ -61,6 +96,7 @@ component accessors="true" singleton {
 		for( var prop in arguments.properties ) {
 
 			var fullPropertyName = 'arguments.JSON' & toBracketNotation( prop );
+			var arrays = findArrays( prop );
 
 			var propertyValue = arguments.properties[ prop ];
 			if( isJSON( propertyValue ) ) {
@@ -97,9 +133,12 @@ component accessors="true" singleton {
 				if( listFind( '",{,[', left( propertyValue, 1 ) ) ) {
 					evaluate( '#fullPropertyName# = deserializeJSON( propertyValue )' );
 				} else {
+					arrays.each( (a)=>evaluate( 'JSON#a# = JSON#a# ?: []' ) );
 					evaluate( '#fullPropertyName# = propertyValue' );
 				}
 			} else {
+				// Intialize any arrays so foo[1]=true creates an array and not a struct
+				arrays.each( (a)=>evaluate( 'JSON#a# = JSON#a# ?: []' ) );
 				evaluate( '#fullPropertyName# = propertyValue' );
 			}
 			results.append( 'Set #prop# = #propertyValue#' );
@@ -135,7 +174,7 @@ component accessors="true" singleton {
 			// Remove the index
 			propertyValue.deleteAt( arrayIndex );
 
-		// Else see if it's a dot-delimted struct path. Ex foo.bar
+		// Else see if it's a dot-delimited struct path. Ex foo.bar
 		} else if( listLen( property, '.' ) >= 2 ) {
 			// Name of last key to remove
 			var last = listLast( property, '.' );
@@ -148,11 +187,11 @@ component accessors="true" singleton {
 			if( !isDefined( fullPropertyName ) ) {
 				throw( message='#arguments.property# does not exist.', type="JSONException");
 			}
-			// Get a refernce to the containing struct
+			// Get a reference to the containing struct
 			var propertyValue = evaluate( fullPropertyName );
 			// Remove the key
 			structDelete( propertyValue, last );
-		// Else just a simple propery name
+		// Else just a simple property name
 		} else {
 			// Make sure it exists
 			if( !structKeyExists( JSON, arguments.property ) ) {
@@ -171,13 +210,57 @@ component accessors="true" singleton {
 		tmpProperty = replace( tmpProperty, ']', '].', 'all' );
 		var fullPropertyName = '';
 		for( var item in listToArray( tmpProperty, '.' ) ) {
-			if( item.startsWith( '[' ) ) {
-				fullPropertyName &= item;
+			if( item.startsWith( '[' ) && item.endsWith( ']' ) ) {
+				var innerItem = item.right(-1).left(-1);
+				if( isNumeric( innerItem ) ) {
+					fullPropertyName &= item;
+				} else {
+					// ensure foo[bar] becomes foo["bar"] and foo["bar"] stays that way
+					innerItem = parser.unwrapQuotes( trim( innerItem ) );
+					fullPropertyName &= '[ "#innerItem#" ]';
+				}
 			} else {
 				fullPropertyName &= '[ "#item#" ]';
 			}
 		}
 		return fullPropertyName;
+	}
+
+	// ['foo']['bar-baz'][1] or ["foo"]["bar-baz"][1] --> "foo"."bar-baz"[1]
+	private function toJMESNotation(str){
+        //find bracketed items with quotes
+        //replace them with with double quotes only
+
+		//open bracket + either type of quotes + (value inside of quotes) + either type of quotes + close bracket
+        var rgx = "\[[\'\""]([^\[\]\'\""]+)[\'\""]\]";
+        var quotesWithDots = rereplace(str,rgx,'."\1"','all'); // "foo""bar-baz"[1]
+
+
+        return quotesWithDots;
+    }
+	private function findArrays( required string property ) {
+		var tmpProperty = replace( arguments.property, '[', '.[', 'all' );
+		tmpProperty = replace( tmpProperty, ']', '].', 'all' );
+		var arrays = [];
+		var fullPropertyName = '';
+		for( var item in listToArray( tmpProperty, '.' ) ) {
+			if( item.startsWith( '[' ) && item.endsWith( ']' ) ) {
+				var innerItem = item.right(-1).left(-1);
+				if( isNumeric( innerItem ) ) {
+					if( !arrays.find( fullPropertyName ) ) {
+						arrays.append( fullPropertyName );
+					}
+					fullPropertyName &= item;
+				} else {
+					// ensure foo[bar] becomes foo["bar"] and foo["bar"] stays that way
+					innerItem = parser.unwrapQuotes( trim( innerItem ) );
+					fullPropertyName &= '[ "#innerItem#" ]';
+				}
+			} else {
+				fullPropertyName &= '[ "#item#" ]';
+			}
+		}
+		return arrays;
 	}
 
 	// Recursive function to crawl struct and create a string that represents each property.
@@ -198,6 +281,9 @@ component accessors="true" singleton {
 			// Add all of this array's indexes
 			var i = 0;
 			while( ++i <= propValue.len() ) {
+				if( isNull( propValue[i] ) ) {
+					continue;
+				}
 				var newProp = '#prop#[#i#]';
 				var newSafeProp = '#safeProp#[#i#]';
 				props.append( newProp );
@@ -299,5 +385,38 @@ component accessors="true" singleton {
 	}
 
 
+	/**
+	* Merges data from source into target
+	*/
+	function mergeData( any target, any source ) {
+
+		// If it's a struct...
+		if( isStruct( source ) && !isObject( source ) && isStruct( target ) && !isObject( target ) ) {
+			// Loop over and process each key
+			for( var key in source ) {
+				var value = source[ key ];
+				if( isSimpleValue( value ) ) {
+					target[ key ] = value;
+				} else if( isStruct( value ) ) {
+					target[ key ] = target[ key ] ?: {};
+					mergeData( target[ key ], value )
+				} else if( isArray( value ) ) {
+					target[ key ] = target[ key ] ?: [];
+					mergeData( target[ key ], value )
+				}
+			}
+		// If it's an array...
+		} else if( isArray( source ) && isArray( target ) ) {
+			var i=0;
+			for( var value in source ) {
+				if( !isNull( value ) ) {
+					// For arrays, just append them into the target without overwriting existing items
+					target.append( value );
+				}
+			}
+		}
+		return target;
+
+	}
 
 }

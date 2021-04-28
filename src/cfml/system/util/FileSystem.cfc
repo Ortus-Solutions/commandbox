@@ -41,7 +41,7 @@ component accessors="true" singleton {
 	function getNativeShell() {
 		return configService.getSetting( 'nativeShell', getDefaultNativeShell() );
 	}
-	
+
 	function getDefaultNativeShell() {
          var shells = [ "/bin/bash","/usr/bin/bash",
             "/bin/pfbash", "/usr/bin/pfbash",
@@ -59,9 +59,9 @@ component accessors="true" singleton {
             "/bin/zsh", "/usr/bin/zsh",
             "/bin/pfzsh", "/usr/bin/pfzsh",
             "/bin/sh", "/usr/bin/sh" ];
-		
+
 		if( isWindows() ) {
-			var defaultShell = 'cmd';			
+			var defaultShell = 'cmd';
 		} else {
 			var defaultShell = '/bin/bash';
 	        for( var shell in shells ) {
@@ -69,7 +69,7 @@ component accessors="true" singleton {
 	                defaultShell = shell;
 	                break;
 	            }
-	        }	
+	        }
 		}
         return defaultShell;
 	}
@@ -86,7 +86,7 @@ component accessors="true" singleton {
 	*/
 	function resolvePath( required string path, basePath=shell.pwd(), boolean forceDirectory=false ) {
 
-		// The Java class will strip trailing slashses, but these are meaningful in globbing patterns
+		// The Java class will strip trailing slashes, but these are meaningful in globbing patterns
 		var trailingSlash = ( path.len() > 1 && ( path.endsWith( '/' ) || path.endsWith( '\' ) ) );
 		// java will remove trailing periods when canonicalizing a path.  I'm not sure that's correct.
 		var trailingPeriod = ( path.len() > 1 && path.endsWith( '.' ) && !path.endsWith( '..' ) );
@@ -144,7 +144,7 @@ component accessors="true" singleton {
 	* @path The path to Canonicalize
 	*/
 	string function calculateCanonicalPath( required string path ) {
-		// Trailing slashses are meaningful in globbing patterns
+		// Trailing slashes are meaningful in globbing patterns
 		var trailingSlash = ( path.len() > 1 && ( path.endsWith( '/' ) || path.endsWith( '\' ) ) );
 		var pathArr = path.listToArray( '/\' );
 
@@ -174,7 +174,7 @@ component accessors="true" singleton {
 			}
 		}
 
-		// Re-attach the drive root and turn the array back into a slash-delimted path
+		// Re-attach the drive root and turn the array back into a slash-delimited path
 		var tmpPath = newPathArr.toList( server.separator.file ) & ( trailingSlash ? server.separator.file : '' );
 
 		if( root == '\\' ) {
@@ -298,7 +298,7 @@ component accessors="true" singleton {
 		}
 
 		rwbo.openURL(arguments.URI, browser);
-		
+
 		return true;
 	}
 
@@ -312,9 +312,9 @@ component accessors="true" singleton {
 			ArrayAppend(browsers, ['konqueror','epiphany'], true);
 		}
 		return browsers;
-	}	
-	
-	
+	}
+
+
     /**
     * Accepts an absolute path and returns a relative path
     * Does NOT apply any canonicalization
@@ -330,9 +330,9 @@ component accessors="true" singleton {
     		var leftOver = getDirectoryFromPath( arguments.absolutePath );
     		leftOver = leftOver.replace( '\', '/', 'all' );
     		leftOver = leftOver.listChangeDelims( '/', '/' );
-    		var mappingPath = '';    		
+    		var mappingPath = '';
     		var mappingName = '';
-    		
+
     		// "eat up" the original path until we've consumed the folder containing the dot
     		while( leftOver contains '.' ) {
     			// Strip off the first folder and add it to the mapping name
@@ -340,14 +340,14 @@ component accessors="true" singleton {
     				.replace( ':', '_', 'all' )
     				.replace( '.', '_', 'all' );
     			mappingName = mappingName.listAppend( nextSegmentCleaned, '_' );
-	    			
+
 	    		// Add the non-escaped version to the matching path
 				mappingPath = mappingPath.listAppend( leftOver.listFirst( '/' ), '/' );
-				
+
 				// Reduce the left over path
 				leftOver = leftOver.listDeleteAt( 1, '/' )
     		}
-    		
+
     		// Mapping needs to be in format of /mapping_name
     		mappingName = '/' & mappingName;
 
@@ -375,7 +375,7 @@ component accessors="true" singleton {
     	if( !isWindows() ) {
     		if( listLen( arguments.absolutePath, '/' ) > 1 ) {
 		    	var firstFolder = listFirst( arguments.absolutePath, '/' );
-		    	var path = listRest( arguments.absolutePath, '/' );	
+		    	var path = listRest( arguments.absolutePath, '/' );
     		} else {
 		    	var firstFolder = '';
 		    	var path = listChangeDelims( arguments.absolutePath, '/', '/' );
@@ -471,7 +471,7 @@ component accessors="true" singleton {
 	*
 	* Note, loaded jars/classes cannot be unloaded and will remain in memory until the CLI exits.
 	* On Windows, the jar/class files will also be locked on the file system.  Directories are scanned
-	* recursively for for files and everything found will be loaded.
+	* recursively for files and everything found will be loaded.
 	*
 	* @paths List or array of absolute paths of a jar/class files or directories of them you would like loaded
 	*/
@@ -490,9 +490,11 @@ component accessors="true" singleton {
 				_classLoad( path );
 			// Is directory
 			} else if( directoryExists( path ) ) {
-				directoryList( path, true, 'array', '*.jar|*.class' )
-					.each( function( file ) {
-						_classLoad( file );
+				_classLoad( path );
+				directoryList( path, true, 'array' )
+					.filter( (p)=>p.endsWith( '/' ) || p.endsWith( '\' ) || p.lcase().endsWith( '.jar' ) )
+					.each( function( path ) {
+						_classLoad( path );
 					} );
 			// Is ????
 			} else {

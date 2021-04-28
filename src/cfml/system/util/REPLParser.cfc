@@ -29,7 +29,7 @@ component accessors="true" singleton {
 	}
 
 	/**
-	* Returns an array with each line of the command seperated
+	* Returns an array with each line of the command separated
 	**/
 	function getCommandLines() {
 		return instance.CFMLCommandLines;
@@ -82,11 +82,11 @@ component accessors="true" singleton {
 	}
 
 	/**
-	* Returns command as string with certain charaters removed that prevent evaluation.
+	* Returns command as string with certain characters removed that prevent evaluation.
 	**/
 	function getCommandPreparedForEvaluation() {
 		var cfml = getCommandAsString();
-		// Trailing semicolons cause syntax error with evaluate() BIF so remove them and the following still work as execpted (returning the value)
+		// Trailing semicolons cause syntax error with evaluate() BIF so remove them and the following still work as expected (returning the value)
 		// REPL> foo = 'bar';
 		cfml = reReplaceNoCase( cfml, ";$", "" );
 		return cfml;
@@ -116,16 +116,16 @@ component accessors="true" singleton {
 			return '[EMPTY STRING]';
 		// string
 		} else if( isSimpleValue( result ) ) {
-			
+
 			if( isJSON( result ) ) {
 				var parsed = deserializeJSON( result );
 				if( isStruct( parsed ) || isArray( parsed ) ) {
-					return formatterUtil.formatJson( json=result, ANSIColors=JSONService.getANSIColors() );					
+					return formatterUtil.formatJson( json=result, ANSIColors=JSONService.getANSIColors() );
 				}
 			}
-			
+
 			return result;
-			
+
 		// CFC, possibly Java object too (though I think that's a bug)
 		} else if( isObject( result ) ) {
 			return '[Object #getMetaData( result ).name#]';

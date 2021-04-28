@@ -24,7 +24,7 @@ component {
 		required string firstName,
 		required string lastName,
 		string endpointName ) {
-		
+
 		endpointName = endpointName ?: configService.getSetting( 'endpoints.defaultForgeBoxEndpoint', 'forgebox' );
 
 		// Defer to the generic command
@@ -33,7 +33,7 @@ component {
 			.run();
 
 	}
-	
+
 	function endpointNameComplete() {
 		return getInstance( 'endpointService' ).forgeboxEndpointNameComplete();
 	}

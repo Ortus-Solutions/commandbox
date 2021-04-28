@@ -24,7 +24,7 @@ component {
 	/**
 	 * Tokenizes the command line entered by the user.  Returns array with command statements and arguments
 	 *
-	 * Consider making a dedicated CFC for this since some of the logic could benifit from
+	 * Consider making a dedicated CFC for this since some of the logic could benefit from
 	 * little helper methods to increase readability and reduce duplicate code.
  	 **/
 	function tokenizeInput( string line ) {
@@ -65,7 +65,7 @@ component {
 
 			// If we're in the middle of a quoted string, just keep appending
 			if( inQuotes ) {
-				// Auto-escape = in a quoted string so it doesn't screw up named-parmeter detection.
+				// Auto-escape = in a quoted string so it doesn't screw up named-parameter detection.
 				// It will be unescaped later when we parse the params.
 				if( char == '=' && !isEscaped ) {
 					token &= '\';
@@ -123,8 +123,8 @@ component {
 				}
 			}
 
-			// We're starting a quoted string
-			if( ( char == '"' || char == "'"  || char == "`" ) && !isEscaped ) {
+			// We're starting a quoted string and we're at the start of a token or waiting on a value
+			if( ( char == '"' || char == "'"  || char == "`" ) && !isEscaped && ( isWaitingOnValue || prevChar == '=' || token == '' ) ) {
 				inQuotes = true;
 				quoteChar = char;
 			}
@@ -147,8 +147,7 @@ component {
 		if( len( token ) ) {
 			tokens.append( token);
 		}
-
-		return tokens;
+		return tokens;		
 	}
 
 

@@ -8,7 +8,7 @@
 component {
 
 	function configure(){
-		
+
 		logBox = {};
 
 		// Define Appenders
@@ -35,7 +35,7 @@ component {
 		};
 
 		logBox.categories = {
-			"console" = { appenders="ANSIConsoleAppender" }
+			"console" : { appenders="ANSIConsoleAppender" }
 		};
 
 	}

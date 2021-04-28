@@ -79,7 +79,7 @@ component aliases="restart" {
 		print.yellowLine( '> ' & startCommand );
 		runCommand( startCommand );
 	}
-	
+
 	function serverNameComplete() {
 		return serverService
 			.getServerNames()

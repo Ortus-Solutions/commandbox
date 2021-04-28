@@ -44,13 +44,13 @@ component aliases="exec"{
 
 		try{
 			// we use the executor to capture output thread safely
-			var out = wirebox.getInstance( "Executor" ).runFile( arguments.file, vars );
+			var out = wirebox.getInstance( "CFMLExecutor" ).runFile( arguments.file, vars );
 		} catch( any e ){
 			print.boldGreen( "Error executing #arguments.file#: " );
 			rethrow;
 		}
 
-		return ( out ?: "The file '#arguments.file#' executed succesfully!" );
+		return ( out ?: "The file '#arguments.file#' executed successfully!" );
 	}
 
 	/**
@@ -66,7 +66,7 @@ component aliases="exec"{
 				if( isNumeric( argName ) ) {
 					argName--;
 				}
-				// Make incoming args avaialble to this command as env vars too
+				// Make incoming args available to this command as env vars too
 				systemSettings.setSystemSetting( argName, args[ arg ] );
 				parsedArgs[ '$' & argName ] = args[arg];
 			}

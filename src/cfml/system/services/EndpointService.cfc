@@ -30,8 +30,8 @@ component accessors="true" singleton {
 		setEndpointRegistry( {} );
 		return this;
 	}
-
-	function onDIComplete() {
+	
+	function onCLIStart() {
 		buildEndpointRegistry();
 		registerCustomForgeboxEndpoints();
 	}
@@ -65,10 +65,10 @@ component accessors="true" singleton {
 		}
 
 	}
-	
+
 
 	/**
-	* Look for custom ForgeBox endpoints that are in the config and register themm
+	* Look for custom ForgeBox endpoints that are in the config and register them
 	* These will use the same base ForgeBox.cfc endpoint but with custom data
 	*/
 	function registerCustomForgeboxEndpoints() {
@@ -84,28 +84,28 @@ component accessors="true" singleton {
 
 				var endpointPath = listChangeDelims( getEndpointRootPath(), '/\', '.' ) & '.ForgeBox';
 				var oEndPoint = wirebox.getInstance( endpointPath );
-				
+
 				// Set the prefix for this endpoint
 				oEndPoint.setNamePrefixes( endpointName.replaceNoCase( 'forgebox-', '' ) );
-				
+
 				// Set the API URL for this endpoint's forgebox Util
 				oEndPoint.getForgeBox().setEndpointURL( endpointData.APIURL.reReplaceNoCase( '/api/.*', '' ) );
 				oEndPoint.getForgeBox().setAPIURL( endpointData.APIURL );
 				oEndPoint.getForgeBox().setEndpointName( endpointName.replaceNoCase( 'forgebox-', '' ) );
-				
+
 				// Register it, baby!
 				registerEndpoint( oEndPoint );
-								
+
 			} else {
 				consoleLogger.warn( 'ForgeBox endpoint [#endpointName#] doesn''t have a valid APIURL, skipping...' );
 			}
 		}
 
 	}
-	
+
 	/**
 	* Register a single CFC instance as an endpoint
-	* 
+	*
 	* @oEndPoint An instance of a CFC implementing IEndPoint
 	*/
 	function registerEndpoint( required any oEndPoint ) {
@@ -124,7 +124,7 @@ component accessors="true" singleton {
 	*/
 	struct function resolveEndpointData( required string ID, required string currentWorkingDirectory ) {
 		var path = fileSystemUtil.resolvePath( arguments.ID, arguments.currentWorkingDirectory );
-		
+
 		// Is it a real zip file?
 		if( listLast( path, '.' ) == 'zip' && fileExists( path ) ) {
 			var endpointName = 'file';

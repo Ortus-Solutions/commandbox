@@ -27,7 +27,7 @@ component {
 		}
 
 		if( len( arguments.username ) ) {
-			print.greenLine( 'User [#arguments.username#] logged out successfully with [#arguments.endpointName#]' );	
+			print.greenLine( 'User [#arguments.username#] logged out successfully with [#arguments.endpointName#]' );
 		} else {
 			print.greenLine( 'All users logged out successfully with [#arguments.endpointName#]' );
 		}

@@ -4,13 +4,13 @@
  * {code:bash}
  * server java install openjdk11
  * {code}
- * 
+ *
  * Set a Java install to be the default server JRE at the same time you install with --setDefault
  * .
  * {code:bash}
  * server java install openjdk11 --setDefault
  * {code}
- * 
+ *
  * Note, the default will be set to exactly what you type, so if you don't type a specific release version
  * then CommandBox will still check the API for the latest version every time and download on demand.
  *
@@ -19,7 +19,7 @@
  * {code:bash}
  * server java install openjdk8_jdk8u192-b12 --setDefault
  * {code}
- * 
+ *
  **/
 component aliases='java install' {
 
@@ -38,15 +38,15 @@ component aliases='java install' {
 		boolean setDefault=false
 	){
 		try {
-			javaService.installJava( ID, verbose );	
+			javaService.installJava( ID, verbose );
 		} catch( endpointException var e ) {
 			error( e.message, e.detail ?: '' );
 		}
-		
+
 		if( setDefault ) {
 			configService.setSetting( 'server.defaults.jvm.javaVersion', ID );
 		}
-		
+
 		command( 'server java list' ).run();
 	}
 

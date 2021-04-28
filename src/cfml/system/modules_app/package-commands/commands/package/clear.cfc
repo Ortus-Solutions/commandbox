@@ -42,7 +42,7 @@ component {
 		try {
 			JSONService.clear( boxJSON, arguments.property );
 		} catch( JSONException var e ) {
-			error( e.message );
+			error( e.message, e.detail );
 		} catch( any var e ) {
 			rethrow;
 		}

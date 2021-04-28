@@ -63,7 +63,7 @@ component {
 	* This is the word the cursor is currently in - for our purposes it is always the last word.
 	* In order for quoted completions to work, this is expected to have any quotes wrapping the word
 	* stripped. (JLine also expects it to have escapes removed, but for our purposes unquoting
-	* seems sufficent.)
+	* seems sufficient.)
 	*/
 	function word() {
 		return unquote( token() );
@@ -112,7 +112,7 @@ component {
 	* @complete a boolean indicating whether this completion candidate is considered complete
 	*/
 	function escape( string candidate, boolean complete ) {
-		// check to see if we are being asked to esape the current word in the line
+		// check to see if we are being asked to escape the current word in the line
 		// if that is the case this is most likely to backspace it, so to ensure this happens
 		// correctly just return the raw last token
 		if ( candidate == word() ) {

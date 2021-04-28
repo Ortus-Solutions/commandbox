@@ -1,7 +1,7 @@
 /**
  *
  * Remove those pesky trailing spaces from each line that some editors add.
- * Can be run on a single file or aginst a list of files defined by a file globbing pattern.
+ * Can be run on a single file or against a list of files defined by a file globbing pattern.
  *
  * {code:bash}
  * rts **.cf*
@@ -40,7 +40,7 @@ component aliases="rts" {
 	/**
 	* @files A file globbing pattern that matches one or more files
 	* @exclude  A list of globbing patterns to ignore
-	* @force Skip user confirmation of modiying files
+	* @force Skip user confirmation of modifying files
 	* @verbose Output additional information about each file affected
 	*/
 	public function run(

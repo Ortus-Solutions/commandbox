@@ -261,7 +261,7 @@ component
 			cacheObjectTimeout 	         = arguments.timeout,
 			cacheObjectLastAccessTimeout = arguments.lastAccessTimeout
 		};
-		getEventManager().processState( "afterCacheElementInsert", iData );
+		getEventManager().announce( "afterCacheElementInsert", iData );
 
 		return this;
 	}
@@ -347,7 +347,7 @@ component
 		}
 
 		// notify listeners
-		getEventManager().processState( "afterCacheClearAll", { cache = this } );
+		getEventManager().announce( "afterCacheClearAll", { cache = this } );
 
 		return this;
 	}
@@ -366,7 +366,7 @@ component
 		}
 
 		//ColdBox events
-		getEventManager().processState( "afterCacheElementRemoved", {
+		getEventManager().announce( "afterCacheElementRemoved", {
 			cache				= this,
 			cacheObjectKey 		= arguments.objectKey
 		} );
@@ -385,7 +385,7 @@ component
 	}
 
 	/**
-	 * Expire all the elments in the cache (if supported by the provider)
+	 * Expire all the elements in the cache (if supported by the provider)
 	 * THIS FUNCTION IS NOT IMPLEMENTED IN THIS PROVIDER
 	 *
 	 * @return ICacheProvider

@@ -34,15 +34,15 @@ component {
 	 * @force.hint Force the update even if the version on the server is the same as locally
 	 **/
 	function run( boolean latest=false, boolean force=false ) {
-		
+
 		if( !latest && semanticVersion.isPreRelease( shell.getVersion() ) ) {
 			print
 				.yellowLine( 'Your version of CommandBox [#shell.getVersion()#] is a prerelease build, so defaulting to "latest".' )
-				.line(); 
+				.line();
 			latest = true;
 		}
-		
-		
+
+
 		// tmp dir location
 		var temp = shell.getTempDir();
 		// Determine artifacts location used
@@ -84,7 +84,7 @@ component {
 
 		var boxRepoJSON = fileRead( '#temp#/box-repo.json' );
 		var loaderRepoJSON = fileRead( '#temp#/box-loader.json' );
-		
+
 		fileDelete( '#temp#/box-repo.json' );
 		fileDelete( '#temp#/box-loader.json' );
 
@@ -111,7 +111,7 @@ component {
 			var loaderVersion 	= loaderData.versioning.stableVersion;
 		}
 
-		// Is there a new version of CommandBox.  New builds consistute new BE verions.
+		// Is there a new version of CommandBox.  New builds constitute new BE versions.
 		var isNewVersion 	= semanticVersion.isNew( current=shell.getVersion(), target=repoVersion, checkBuildID=arguments.latest );
 		// Is there a new version of the CLI Loader. Ignore build number since it's sort of fake (Just a copy of the CommandBox build number)
 		var isNewLoaderVersion 	= semanticVersion.isNew( current=shell.getLoaderVersion(), target=LoaderVersion, checkBuildID=false );
@@ -131,7 +131,7 @@ component {
 					.boldYellowLine( "CommandBox will finish the upgrade for you the first time it is run." )
 					.line()
 					.text( "Download URL: ").
-						boldLine( arguments.latest ? '#thisArtifactsURL###/ortussolutions/commandbox/#repoVersionShort#/' : 'http://www.ortussolutions.com/products/commandbox/##download' )
+						boldLine( arguments.latest ? '#thisArtifactsURL###/ortussolutions/commandbox/#repoVersionShort#/' : 'https://www.ortussolutions.com/products/commandbox/##download' )
 					.line()
 					.yellowLine( "(Your CLI Loader version is #shell.getLoaderVersion()# and the latest is #LoaderVersion#)" )
 					.toConsole();
@@ -177,7 +177,7 @@ component {
 			// Give them a chance to read it.
 			sleep( 10000 );
 
-			// Stop executing.  Since the unzipping possbily replaced .cfm files that were
+			// Stop executing.  Since the unzipping possibly replaced .cfm files that were
 			// also cached in memory, there's no good way we've found to be able to reload and keep going.
 			abort;
 

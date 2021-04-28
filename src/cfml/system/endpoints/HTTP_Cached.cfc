@@ -28,9 +28,9 @@ component accessors=true implements="IEndpoint" singleton extends="commandbox.sy
 		var job = wirebox.getInstance( 'interactiveJob' );
 		var artifactName = getDefaultName( package );
 
-		
+
 		if( !artifactService.artifactExists( 'HTTP_Cached', artifactName ) ) {
-			
+
 			// Store in artifacts for next time
 			artifactService.createArtifact(
 				'HTTP_Cached',
@@ -38,9 +38,9 @@ component accessors=true implements="IEndpoint" singleton extends="commandbox.sy
 				// Defer to HTTP endpoint
 				HTTPEndpoint.resolvePackageZip( package, arguments.verbose )
 			);
-			
+
 		} else {
-			job.addLog( "Lucky you, we found this version in local artifacts!" );	
+			job.addLog( "Lucky you, we found this version in local artifacts!" );
 		}
 
 		// By now it will exist in artifacts
