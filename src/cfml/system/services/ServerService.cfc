@@ -550,6 +550,11 @@ component accessors="true" singleton {
 		// Mix in environment variable overrides like BOX_SERVER_PROFILE
 		loadOverrides( serverJSON, serverInfo );
 
+		// These are already hammered out above, so no need to go through all the defaults.
+		serverInfo.serverConfigFile	= defaultServerConfigFile;
+		serverInfo.name 			= defaultName;
+		serverInfo.webroot 			= normalizeWebroot( defaultwebroot );
+
 		// Setup serverinfo according to params
 		// Hand-entered values take precedence, then settings saved in server.json, and finally defaults.
 		// The big servers.json is only used to keep a record of the last values the server was started with
@@ -1007,11 +1012,6 @@ component accessors="true" singleton {
 		
 		serverInfo.sessionCookieSecure			= serverJSON.app.sessionCookieSecure			?: defaults.app.sessionCookieSecure;
 		serverInfo.sessionCookieHTTPOnly			= serverJSON.app.sessionCookieHTTPOnly			?: defaults.app.sessionCookieHTTPOnly;
-
-		// These are already hammered out above, so no need to go through all the defaults.
-		serverInfo.serverConfigFile	= defaultServerConfigFile;
-		serverInfo.name 			= defaultName;
-		serverInfo.webroot 			= normalizeWebroot( defaultwebroot );
 
 		if( serverInfo.verbose ) {
 			job.addLog( "start server in - " & serverInfo.webroot );
