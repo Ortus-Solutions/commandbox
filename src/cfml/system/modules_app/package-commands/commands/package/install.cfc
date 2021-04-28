@@ -85,12 +85,6 @@
  * install cflib:AreaParallelogram
  * install cflib-coldbox:AreaParallelogram
  * {code}
- * .
- * Projects from RIAForge.org can be installed via the riaforge endpoint.
- * .
- * {code:bash}
- * install riaforge:iwantmylastfm
- * {code}
  **/
 component aliases="install" {
 
