@@ -1,11 +1,14 @@
+/**
+ * Outputs a table to the screen
+ */
 component {
 
 	// DI Properties
 	property name="consoleLogger"			inject="logbox:logger:console";
 
 	/**
-	 * @inputOrFile.hint The text to process, or a file name
-	 * @query.hint The command to perform on the input text.  Ex: a.b
+	 * @inputOrFile.hint The text to process, or a file name with table like data in it
+	 * @columns.hint A comma seperated list of column names
  	 **/
 	function run(
 		required string inputOrFile,
@@ -38,11 +41,17 @@ component {
 		return data.map((row) => {
 			if(isStruct(row)){
 				for(var i in columns){
-					if(!row.keyExists(i)) row[i] = "";
+					if(row.keyExists(i)){
+						if(!isSimpleValue(row[i])) row[i] = serializeJSON(row[i]);
+					} else {
+						row[i] = "";
+					}
 				}
 			} else if(isArray(row)){
-				if(row.len() < columns.len()){
-					for(var i = row.len(); i <= columns.len(); i++){
+				for(var i = 1; i <= columns.len(); i++){
+					if(arrayIndexExists(row,i)) {
+						if(!isSimpleValue(row[i])) row[i] = serializeJSON(row[i]);
+					} else {
 						row.append("");
 					}
 				}
