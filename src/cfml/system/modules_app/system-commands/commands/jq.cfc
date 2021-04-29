@@ -76,6 +76,7 @@ component {
 			error( message="Input is not valid JSON", detail="#left( arguments.inputOrFile, 200 )#" );
 		}
 
+
 		try {
 
 			if(isNull(arguments.query) || arguments.query == ''){
