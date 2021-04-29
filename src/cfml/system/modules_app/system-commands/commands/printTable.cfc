@@ -25,14 +25,20 @@ component {
 
 		if(isJSON(arguments.inputOrFile)) arguments.inputOrFile = deserializeJSON( arguments.inputOrFile );
 
-		var data = normalizeData(arguments.inputOrFile);
-		if(!data.len()) throw ( message = "No data provided" );
+		var data = arguments.inputOrFile;
+		//explicit check for a query serialized as JSON { 'COLUMNS':[], 'DATA': [] }
+		if(isStruct(data) && data.keyExists( 'COLUMNS' ) && data.keyExists( 'DATA' )){
+			columns = arguments.inputOrFile.columns;
+			data = arguments.inputOrFile.data;
+		} else {
+			data = normalizeData(data);
+			if(!data.len()) throw ( message = "No data provided" );
 
-		arguments.columns = listToArray( arguments.columns );
-		if(!arguments.columns.len()) arguments.columns = generateColumnNames(data[1]);
+			arguments.columns = listToArray( arguments.columns );
+			if(!arguments.columns.len()) arguments.columns = generateColumnNames(data[1]);
+		}
 
 		var tableSafeData = toSafeData(data,arguments.columns);
-
 		print.table(arguments.columns,tableSafeData)
 	}
 
