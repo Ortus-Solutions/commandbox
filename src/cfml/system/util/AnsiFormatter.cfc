@@ -27,6 +27,12 @@ component accessors=true {
 		// [TRACE] io.undertow.predicate: Path(s) [/CFIDE/main/ide.cfm] MATCH input [/CFIDE/main/ide.cfm] for HttpServerExchange{ GET /CFIDE/main/ide.cfm}.
 		line = reReplaceNoCase( line, '^(\[[^]]*])( io\.undertow\.predicate: )(.*)', '\1 Server Rules: \3' );
 
+		// Log messages from undertow's request dumper logger, simplify the logging category to just "Request Dump:"
+		// Ex:
+		// [TRACE] io.undertow.predicate: Predicate [secure()] resolved to false for HttpServerExchange{ GET /CFIDE/main/ide.cfm}.
+		// [TRACE] io.undertow.predicate: Path(s) [/CFIDE/main/ide.cfm] MATCH input [/CFIDE/main/ide.cfm] for HttpServerExchange{ GET /CFIDE/main/ide.cfm}.
+		line = reReplaceNoCase( line, '^(\[[^]]*])( io\.undertow\.request\.dump: )(.*)', 'Request Dump: \3' );
+
 		// Strip off redundant severities that come from wrapping LogBox appenders in Log4j appenders
 		// [INFO ] DEBUG my.logger.name This rain in spain stays mainly in the plains
 		line = reReplaceNoCase( line, '^(\[(INFO |ERROR|DEBUG|WARN )] )(INFO|ERROR|DEBUG|WARN)( .*)', '[\3]\4' );
