@@ -153,9 +153,10 @@ component {
 			"medianWidth": [ len( arguments.header ) ],
 			"medianRatio": 1
 		} );
+		
 		// Finalize median calculation
 		colData.medianWidth = colData.medianWidth.sort( (a,b)=>a>b );
-		colData.medianWidth = max( colData.medianWidth[ int( colData.medianWidth.len() / 2 ) ], 0 );
+		colData.medianWidth = max( colData.medianWidth[ max( int( colData.medianWidth.len() / 2 ), 1 ) ], 0 );
 		// This ratio represents how 'squishable' a column is as a function of the amount of whitespae and it's overall length
 		colData.medianRatio = max( ( (colData.maxWidth-colData.medianWidth)*data.len() ), 1 )*colData.maxWidth;
 		return colData
