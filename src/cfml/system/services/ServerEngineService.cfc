@@ -271,7 +271,9 @@ component accessors="true" singleton="true" {
 			// CommandBox ships with a pack200 compressed Lucee jar. Unpack it for faster start
 			unpackLuceeJar( thislib, installDetails.version );
 
-			fileCopy( expandPath( '/commandbox/system/config/web.xml' ), thisWebinf & '/web.xml');
+			if( !fileExists( thisWebinf & '/web.xml' ) ) {
+				fileCopy( expandPath( '/commandbox/system/config/web.xml' ), thisWebinf & '/web.xml');	
+			}
 
 			// Mark this WAR as being exploded already
 			fileWrite( engineTagFile, thisEngineTag );
