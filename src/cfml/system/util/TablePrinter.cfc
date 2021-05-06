@@ -1,7 +1,7 @@
 component {
 
     processingdirective pageEncoding='UTF-8';
-    
+
     property name="print" inject="PrintBuffer";
     property name="shell" inject="shell";
 
@@ -25,45 +25,120 @@ component {
 		"headerRightMid": chr( 9571 ), // ╣
 		"middle": chr( 9474 ) // │
 	};
-	
+
     /**
      * Outputs a table to the screen
      * @headers An array of column headers, or a query.  When passing a query, the "data" argument is not used.
-     * @data An array of data for the table.  Each item in the array may either be
+     * @data Any type of data for the table.  Each item in the array may either be
      *            an array in the correct order matching the number of headers or a struct
      *            with keys matching the headers.
      * @includeHeaders A list of headers to include.  Used for query inputs
      */
     public string function print(
         required any headers,
-        array data=[],
-        string includeHeaders
-        
+        any data=[],
+        string includeHeaders,
+        string queryFilter="",
+		boolean columnsOnly=false
+
     ) {
-    	// If query is sent in
-    	if( isQuery( headers ) ) {
-    		
-    		if( !isNull( arguments.includeHeaders ) && len( arguments.includeHeaders ) ) {
-    			arguments.headers = queryExecute(
-    				'SELECT #arguments.includeHeaders# FROM arguments.headers',
-    				[],
-    				{ dbType : 'query' }
-    			);
-    		}
-    		
-    		// Extract data in array of structs
-    		arguments.data = arguments.headers.reduce( (acc,row)=>{ return acc.append( row ) }, [] );
-    		// Extract column names into headers
-    		arguments.headers = arguments.headers.columnList.listToArray();
-    	}
-    	
-		arguments.data = autoFormatData( arguments.headers,arguments.data );
-		var headerData = processHeaders( arguments.headers, arguments.data )
-		
-		printHeader( headerData );
-		printData( data, headerData );
-		printTableEnd( headerData );
+
+		var runQuery = false;
+		var columns = "*";
+		var whereFilter = "";
+
+    	// Turn any data into a query
+		if( !isQuery( arguments.headers ) ) { // Scenario 1 the data is provided via the data argument
+			var dataQuery = isQuery( arguments.data ) ? arguments.data : toQuery(arguments.data);
+			//When the "data" argument is used the "headers" may contain a list of columns
+			if( isArray( arguments.headers ) && arguments.headers.len()  ) {
+				columns = arrayToList(arguments.includeHeaders);
+				runQuery = true;
+			} else if( isSimpleValue( arguments.headers ) && arguments.headers != "" ) {
+				columns = arguments.includeHeaders;
+				runQuery = true;
+			}
+		} else { // Scenario 3 a query is provided via the headers argument
+			var dataQuery = arguments.headers;
+			arguments.headers = [];
+			//When the "headers" argument is used the "includeHeaders" may contain a list of columns
+			if( !isNull( arguments.includeHeaders ) && len( arguments.includeHeaders ) ) {
+				columns = arguments.includeHeaders;
+				runQuery = true;
+			}
+		}
+
+		// if a filter is provided add it to the query of queries SQL
+		if(arguments.queryFilter != ""){
+			whereFilter = "Where " & arguments.queryFilter;
+			runQuery = true;
+		}
+
+		// if a column list or a filter is provided use it in a query of queryies to limit the table data
+		if(runQuery){
+			dataQuery = queryExecute('SELECT #columns# FROM dataQuery #whereFilter#',[],{ dbType : 'query' });
+		}
+
+		// Extract data in array of structs
+		var dataRows = [];
+		dataQuery.each( (row) =>  dataRows.append( row ), true);
+
+		// Extract column names into headers
+		var dataHeaders = queryColumnArray(dataQuery);
+		if(columnsOnly){
+			dataRows = [];
+			if(dataQuery.recordcount){
+				dataHeaders.each((x) => {
+					dataRows.append([x,dataQuery[x][1]]);
+				})
+			}
+			dataHeaders = ['Column','First Row Data'];
+
+		}
+		dataRows = autoFormatData( dataHeaders, dataRows );
+		dataHeaders = processHeaders( dataHeaders, dataRows )
+
+		printHeader( dataHeaders );
+		printData( dataRows, dataHeaders );
+		printTableEnd( dataHeaders );
         return print.getResult();
+	}
+
+	/**
+     * Take any data and convert it to a query
+     * @data Any type of data for the table.
+     */
+	public query function toQuery( required any rawData ){
+		var data = normalizeData(rawData);
+		var columns = generateColumnNames(data[1]);
+		return queryNew( columnNames=columns, data=data );
+	}
+
+	/**
+     * Take a simple value/array of values/or struct and normalize it to fit the table printer format
+     * @data Any type of data for the table.
+     */
+	public array function normalizeData(required any rawData){
+		var data = isArray(rawData) ? rawData : [rawData];
+		return data.map((x) => {
+			return (isArray(x) || isStruct(x)) ? x : [x]; // wrap simple data in an array
+		}, true)
+	}
+
+	/**
+     * Create column names from data, default to col_1 ... for simple values and arrays,
+	 * Use key names for structs
+     * @data Any type of data for the table.
+     */
+	public array function generateColumnNames (required any data){
+		if(isSimpleValue(data)){
+			return  ['col_1'];
+		} else if ( isArray(data) ){
+			return data.map((x,i) => {return 'col_' & i},true);
+		} else if ( isStruct(data) ){
+			return  structKeyArray(data);
+		}
+		return [];
 	}
 
     /**
@@ -75,18 +150,18 @@ component {
         required array headers,
         required array data
     ) {
-        var headerData = arguments.headers.map( ( header, index ) => calculateColumnData( index, header, data ) );
+        var headerData = arguments.headers.map( ( header, index ) => calculateColumnData( index, header, data ), true );
         var termWidth = shell.getTermWidth()-1;
         if( termWidth <= 0 ) {
         	termWidth = 100;
         }
         var tableWidth = headerData.reduce( (acc=0,header)=>acc+header.maxWidth+3 )+1;
-        
+
         // Crunch time-- we need to shed a few pounds
         if( tableWidth > termWidth ) {
         	var overage = tableWidth-termWidth;
         	var medianRatioTotal = headerData.reduce( (acc=0,header)=>acc+( header.medianRatio ) );
-        	
+
         	headerData = headerData.map( (header)=>{
         		// Calculate how many characters to remove from each column based on their "squishable" ratio
         		var charsToLose = round( overage*( header.medianRatio/medianRatioTotal ) );
@@ -94,9 +169,9 @@ component {
         		return header
         	} );
         }
-        
+
         var tableWidth = headerData.reduce( (acc=0,header)=>acc+header.maxWidth+3 )+1;
-        
+
         // Table is still too big, time for drastic measures
         if( tableWidth > termWidth ) {
         	var lastCol = 1;
@@ -109,7 +184,7 @@ component {
         		totalWidth += headerData[ lastCol ].maxWidth+3;
         		lastCol++;
         	}
-        	
+
         	// If there's not room for our final "..." column, then back up one col
    			if( termWidth-totalWidth < 6 ) {
    				lastCol--;
@@ -121,9 +196,9 @@ component {
         		"maxWidth":3,
         		"overageCol":true
         	} );
-   			
+
         }
-        
+
         return headerData;
 	}
 
@@ -153,7 +228,7 @@ component {
 			"medianWidth": [ len( arguments.header ) ],
 			"medianRatio": 1
 		} );
-		
+
 		// Finalize median calculation
 		colData.medianWidth = colData.medianWidth.sort( (a,b)=>a>b );
 		colData.medianWidth = max( colData.medianWidth[ max( int( colData.medianWidth.len() / 2 ), 1 ) ], 0 );
@@ -236,14 +311,14 @@ component {
 			if ( index == headerData.len() && ( header.overageCol ?: false ) ) {
 				var data = '...';
 			} else {
-				var data = row[ index ];	
+				var data = row[ index ];
 			}
 			var options = "white";
 			if ( isStruct( data ) ) {
 				options = data.options;
 				data = data.value;
 			}
-			
+
 			print.text( padRight( stringify( data ), header.maxWidth ), options );
 			print.white( " " );
 			if ( index != headerData.len() ) {
@@ -312,7 +387,7 @@ component {
 				return item;
 			}
 			return getStructValues( item, headers );
-		} );
+		}, true );
 	}
 
     /**
@@ -323,7 +398,7 @@ component {
 	private array function getStructValues( required struct item, required array headers ) {
 		return arguments.headers.map( ( key ) => {
 			return item[ key ];
-		} );
+		}, true );
 	}
 
     /**
@@ -339,28 +414,20 @@ component {
 			return arguments.text;
 		} else if( textLength > arguments.maxWidth ) {
 			if( arguments.maxWidth < 4 ) {
-				return left( text, arguments.maxWidth );	
+				return left( text, arguments.maxWidth );
 			} else {
-				return left( text, arguments.maxWidth-3 )&'...';				
+				return left( text, arguments.maxWidth-3 )&'...';
 			}
 		}
 		arguments.text &= repeatString( arguments.padChar, arguments.maxWidth-textLength );
 		return arguments.text;
 	}
-	
+
 	function stringify( any data ) {
 		if( isSimpleValue( data ) ) {
 			return data;
-		} else if ( isArray( data ) ) {
-			return '[Array]';
-		} else if ( isStruct( data ) ) {
-			return '[Struct]';
-		} else if ( isXML( data ) ) {
-			return '[XML]';
-		} else if ( isBinary( data ) ) {
-			return '[Binary]';
 		} else {
-			return '[#data.getClass().getName()#]';			
+			return SerializeJSON(data);
 		}
 	}
 
