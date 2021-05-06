@@ -61,7 +61,7 @@
  *
  * For array of structs or serialized queries, if a list of columns is given that will be all that is displayed
  * {code:bash}
- * #extensionlist | printTable "name,version"
+ * #extensionlist | printTable name,version
  * ╔══════════════════════╤═══════════════════╗
  * ║ name                 │ version           ║
  * ╠══════════════════════╪═══════════════════╣
