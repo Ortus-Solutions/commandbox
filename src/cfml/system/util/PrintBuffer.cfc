@@ -57,7 +57,7 @@ component accessors="true" extends="Print"{
 			return this;
 		}
 	}
-	
+
     /**
      * Outputs a table to the screen
      * @headers An array of column headers, or a query.  When passing a query, the "data" argument is not used.
@@ -68,7 +68,7 @@ component accessors="true" extends="Print"{
      */
 	function table(
         required any headers,
-        array data=[],
+        any data=[],
         string includeHeaders
     ){
 		// Don't modify the buffer if it's being printed

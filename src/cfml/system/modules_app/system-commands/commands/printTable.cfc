@@ -1,6 +1,6 @@
 /**
  * Prints an ASCII table to the console based on incoming JSON.  Input will be marshalled to be tabular if needed.
- * 
+ *
  * JSON data can be passed in the first param or piped into the command:
  * {code:bash}
  * printTable [1,2,3]
@@ -8,7 +8,7 @@
  * cat myfile.json | printTable
  * {code}
  *
- * The following types of data are supported, passed as JSON. 
+ * The following types of data are supported, passed as JSON.
  * If the object is a struct, a table with a single row will be printed, using the struct keys as the column names.
  * {code:bash}
  * printTable {'a':2,b:4}
@@ -18,8 +18,8 @@
  * ║ 2 │ 4 ║
  * ╚═══╧═══╝
  * {code}
- * 
- * If an array is passed, each item in the array will become a row in the table.  
+ *
+ * If an array is passed, each item in the array will become a row in the table.
  * {code:bash}
  * printTable [1,2,3] num
  * ╔═════╗
@@ -58,7 +58,7 @@
  * ║ 5     │ 6     ║
  * ╚═══════╧═══════╝
  * {code}
- * 
+ *
  * For array of structs or serialized queries, if a list of columns is given that will be all that is displayed
  * {code:bash}
  * #extensionlist | printTable name,version
@@ -84,7 +84,7 @@
  * {code}
  */
 component {
-	
+
 	processingdirective pageEncoding='UTF-8';
 
 	/**
@@ -95,85 +95,15 @@ component {
 	function run(
 		required string input,
 		string columns='',
+		string filter='',
 		boolean columnsOnly=false
 	)  {
 
 		// Treat input as a file path
 		arguments.input = print.unAnsi( arguments.input );
-		if(isJSON(arguments.input)) arguments.input = deserializeJSON( arguments.input );
+		if(isJSON(arguments.input)) arguments.input = deserializeJSON( arguments.input, false );
 
-		var data = arguments.input;
-		//explicit check for a query serialized as JSON { 'COLUMNS':[], 'DATA': [] }
-		if(isStruct(data) && data.keyExists( 'COLUMNS' ) && data.keyExists( 'DATA' )){
-			if(arguments.columns == "") arguments.columns = arrayToList(arguments.input.columns);
-			data = arguments.input.data;
-		} else {
-			data = normalizeData(data);
-			if(!data.len()) throw ( message = "No data provided" );
-		}
-
-		arguments.columns = listToArray( arguments.columns );
-		if(!arguments.columns.len()) arguments.columns = generateColumnNames(data[1]);
-
-		var tableSafeData = toSafeData(data,arguments.columns);
-
-		if(!!arguments.columnsOnly){
-			var dataset = [];
-			for(var i = 1; i <= arguments.columns.len(); i++){
-				var firstRow = tableSafeData[1];
-				var colName = arguments.columns[i];
-				dataset.append([colName,isStruct(firstRow) ? firstRow[colName] : firstRow[i]])
-			}
-			print.table(['Column','First Row Data'],dataset);
-		} else {
-			print.table(arguments.columns,tableSafeData);
-		}
+		print.table("",arguments.input, arguments.columns, arguments.filter, arguments.columnsOnly);
 	}
-
-	// fill arrays and structs with columns positions/keys to make it safe for the table printer
-	private function toSafeData(data, columns){
-		return data.map((row) => {
-			if(isStruct(row)){
-				for(var i in columns){
-					if(row.keyExists(i)){
-						if(!isSimpleValue(row[i])) row[i] = serializeJSON(row[i]);
-					} else {
-						row[i] = "";
-					}
-				}
-			} else if(isArray(row)){
-				for(var i = 1; i <= columns.len(); i++){
-					if(arrayIndexExists(row,i)) {
-						if(!isSimpleValue(row[i])) row[i] = serializeJSON(row[i]);
-					} else {
-						row.append("");
-					}
-				}
-			}
-			return row;
-
-		})
-	}
-
-	// take a simple value/array of values/or struct and normalize it to fit the table printer format
-	private function normalizeData(data){
-		var data = isArray(data) ? data : [data];
-		return data.map((x) => {
-			return (isArray(x) || isStruct(x)) ? x : [x];
-		})
-	}
-
-	// create column names from data, default to col_1 ... for simple values and arrays, use key names for structs
-	private function generateColumnNames (data){
-		if(isSimpleValue(data)){
-			return  ['col_1'];
-		} else if ( isArray(data) ){
-			return data.map((x,i) => 'col_' & i);
-		} else if ( isStruct(data) ){
-			return  structKeyArray(data);
-		}
-		return [];
-	}
-
 
 }
