@@ -131,6 +131,7 @@ component accessors="true" singleton {
 			return '[Object #getMetaData( result ).name#]';
 		// Serializable types
 		} else if( isArray( result ) || isStruct( result ) || isQuery( result ) ) {
+			result = serializeJSON( result, 'struct' );
 			return formatterUtil.formatJson( json=result, ANSIColors=JSONService.getANSIColors() );
 		// Yeah, I give up
 		} else {

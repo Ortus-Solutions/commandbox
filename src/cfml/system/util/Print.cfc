@@ -102,6 +102,7 @@ component {
 					text = formatterUtil.formatJson( json=toString( text ), ANSIColors=JSONService.getANSIColors() );
 				}
 			} else if( isArray( text ) || isStruct( text ) || isQuery( text ) ) {
+				text = serializeJSON( text, 'struct' );
 				text = formatterUtil.formatJson( json=text, ANSIColors=JSONService.getANSIColors() );
 			// Yeah, I give up
 			} else {
