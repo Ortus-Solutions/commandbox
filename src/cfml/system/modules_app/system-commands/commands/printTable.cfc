@@ -61,7 +61,7 @@
  *
  * For array of structs or serialized queries, if a list of columns is given that will be all that is displayed
  * {code:bash}
- * #extensionlist | printTable name,version
+ * #extensionlist | printTable "name,version"
  * ╔══════════════════════╤═══════════════════╗
  * ║ name                 │ version           ║
  * ╠══════════════════════╪═══════════════════╣
@@ -70,6 +70,16 @@
  * ║ Microsoft SQL Server │ 4.0.2206.100      ║
  * ╟──────────────────────┼───────────────────╢
  * ║ Ajax Extension       │ 1.0.0.3           ║
+ * ╚══════════════════════╧═══════════════════╝
+ * {code}
+ * .
+ *  The "filter" argument allows you to pass a SQL "where" statement to filter your data
+ * {code:bash}
+ * #extensionlist | printTable "name,version" "name like '%My%'"
+ * ╔══════════════════════╤═══════════════════╗
+ * ║ name                 │ version           ║
+ * ╠══════════════════════╪═══════════════════╣
+ * ║ MySQL                │ 8.0.19            ║
  * ╚══════════════════════╧═══════════════════╝
  * {code}
  * .
@@ -89,8 +99,8 @@ component {
 
 	/**
 	 * @input The text to process with table like data in it
-	 * @columns A comma seperated list of column names
-	 * @filter A where filter used in a query of queries
+	 * @columns A comma seperated list of column names, eg. "name,version"
+	 * @filter A SQL where filter used in a query of queries, eg. "name like '%My%'"
 	 * @columnsOnly Only print out the names of the columns and the first row values
  	 **/
 	function run(
@@ -107,7 +117,7 @@ component {
 		if(isJSON(arguments.input)) arguments.input = deserializeJSON( arguments.input, false );
 
 		//pass all arguments to print table
-		print.table("",arguments.input, arguments.columns, arguments.filter, arguments.columnsOnly);
+		print.table(arguments.columns,arguments.input, arguments.columns, arguments.filter, arguments.columnsOnly);
 	}
 
 }
