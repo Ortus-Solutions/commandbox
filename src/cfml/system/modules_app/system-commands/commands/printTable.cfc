@@ -90,7 +90,8 @@ component {
 	/**
 	 * @input The text to process with table like data in it
 	 * @columns A comma seperated list of column names
-	 * @columnsOnly Only print out the names of the columns for debugging
+	 * @filter A where filter used in a query of queries
+	 * @columnsOnly Only print out the names of the columns and the first row values
  	 **/
 	function run(
 		required string input,
@@ -99,10 +100,13 @@ component {
 		boolean columnsOnly=false
 	)  {
 
-		// Treat input as a file path
+		// Treat input as a potential file path
 		arguments.input = print.unAnsi( arguments.input );
+
+		//deserialize data if in a JSON format
 		if(isJSON(arguments.input)) arguments.input = deserializeJSON( arguments.input, false );
 
+		//pass all arguments to print table
 		print.table("",arguments.input, arguments.columns, arguments.filter, arguments.columnsOnly);
 	}
 

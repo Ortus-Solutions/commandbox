@@ -33,6 +33,9 @@ component {
      *            an array in the correct order matching the number of headers or a struct
      *            with keys matching the headers.
      * @includeHeaders A list of headers to include.  Used for query inputs
+ 	 * @queryFilter A where filter used in a query of queries
+	 * @columnsOnly Only print out the names of the columns and the first row values
+
      */
     public string function print(
         required any headers,
