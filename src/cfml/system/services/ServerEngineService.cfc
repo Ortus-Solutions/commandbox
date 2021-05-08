@@ -89,7 +89,7 @@ component accessors="true" singleton="true" {
 	public function installLucee( installDetails, serverInfo ) {
 
 		if( installDetails.initialInstall ) {
-			configureWebXML( cfengine="lucee", version=installDetails.version, source=serverInfo.webXML, destination=serverInfo.webXML, serverInfo=serverInfo );
+			configureWebXML( cfengine="lucee", version=installDetails.version, source=serverInfo.webXML, destination=serverInfo.webXML, serverInfo=serverInfo, installDetails=installDetails );
 		}
 		return installDetails;
 	}
@@ -101,7 +101,7 @@ component accessors="true" singleton="true" {
 	public function installRailo( installDetails, serverInfo ) {
 
 		if(  installDetails.initialInstall  ) {
-			configureWebXML( cfengine="railo", version=installDetails.version, source=serverInfo.webXML, destination=serverInfo.webXML, serverInfo=serverInfo );
+			configureWebXML( cfengine="railo", version=installDetails.version, source=serverInfo.webXML, destination=serverInfo.webXML, serverInfo=serverInfo, installDetails=installDetails );
 		}
 		return installDetails;
 	}
@@ -378,7 +378,17 @@ component accessors="true" singleton="true" {
 	* @source source web.xml
 	* @destination target web.xml
 	**/
-	public function configureWebXML( required cfengine, required version, required source, required destination, required struct serverInfo ) {
+	public function configureWebXML( required cfengine, required version, required source, required destination, required struct serverInfo, required struct installDetails ) {
+		var fullServerConfigDir = serverInfo.serverConfigDir;
+		var fullWebConfigDir = serverInfo.webConfigDir;
+
+		if( fullServerConfigDir.startsWith( '/WEB-INF' ) ) {
+			fullServerConfigDir = installDetails.installDir & fullServerConfigDir;
+		}
+		if( fullWebConfigDir.startsWith( '/WEB-INF' ) ) {
+			fullWebConfigDir = installDetails.installDir & fullWebConfigDir;
+		}
+
 		var webXML = XMLParse( source );
 		var servlets = xmlSearch(webXML,"//:servlet-class[text()='#lcase( cfengine )#.loader.servlet.CFMLServlet']");
 		if( !servlets.len() ) {
@@ -388,7 +398,7 @@ component accessors="true" singleton="true" {
 		initParam.XmlChildren[1] = xmlElemnew(webXML,"param-name");
 		initParam.XmlChildren[1].XmlText = "#lcase( cfengine )#-web-directory";
 		initParam.XmlChildren[2] = xmlElemnew(webXML,"param-value");
-		initParam.XmlChildren[2].XmlText = serverInfo.webConfigDir;
+		initParam.XmlChildren[2].XmlText = fullWebConfigDir;
 		arrayInsertAt(servlets[1].XmlParent.XmlChildren,4,initParam);
 
 		var servlets = xmlSearch(webXML,"//:servlet-class[text()='#lcase( cfengine )#.loader.servlet.CFMLServlet']");
@@ -399,7 +409,7 @@ component accessors="true" singleton="true" {
 		initParam.XmlChildren[1] = xmlElemnew(webXML,"param-name");
 		initParam.XmlChildren[1].XmlText = "#lcase( cfengine )#-server-directory";
 		initParam.XmlChildren[2] = xmlElemnew(webXML,"param-value");
-		initParam.XmlChildren[2].XmlText = serverInfo.serverConfigDir;
+		initParam.XmlChildren[2].XmlText = fullServerConfigDir;
 		arrayInsertAt(servlets[1].XmlParent.XmlChildren,4,initParam);
 
 		// Lucee 5+ has a LuceeServlet as well as will create the WEB-INF by default in your web root
@@ -412,7 +422,7 @@ component accessors="true" singleton="true" {
 			initParam.XmlChildren[1] = xmlElemnew(webXML,"param-name");
 			initParam.XmlChildren[1].XmlText = "#lcase( cfengine )#-web-directory";
 			initParam.XmlChildren[2] = xmlElemnew(webXML,"param-value");
-			initParam.XmlChildren[2].XmlText = serverInfo.webConfigDir;
+			initParam.XmlChildren[2].XmlText = fullWebConfigDir;
 			arrayInsertAt(servlets[1].XmlParent.XmlChildren,4,initParam);
 
 			var servlets = xmlSearch(webXML,"//:servlet-class[text()='#lcase( cfengine )#.loader.servlet.LuceeServlet']");
@@ -423,7 +433,7 @@ component accessors="true" singleton="true" {
 			initParam.XmlChildren[1] = xmlElemnew(webXML,"param-name");
 			initParam.XmlChildren[1].XmlText = "#lcase( cfengine )#-server-directory";
 			initParam.XmlChildren[2] = xmlElemnew(webXML,"param-value");
-			initParam.XmlChildren[2].XmlText = serverInfo.serverConfigDir;
+			initParam.XmlChildren[2].XmlText = fullServerConfigDir;
 			arrayInsertAt(servlets[1].XmlParent.XmlChildren,4,initParam);
 		}
 		writeXMLFile( webXML, destination );
