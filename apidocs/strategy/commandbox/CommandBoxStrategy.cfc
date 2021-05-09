@@ -18,8 +18,8 @@ component extends="docbox.strategy.api.HTMLAPIStrategy"{
 	property name="projectTitle" default="Untitled" type="string";
 
 	// Static variables.
-	variables.static.TEMPLATE_PATH	= "/strategy/commandbox/resources/templates";
-	variables.static.ASSETS_PATH 	= "/docbox/strategy/api/resources/static";
+	variables.TEMPLATE_PATH	= "/strategy/commandbox/resources/templates";
+	variables.ASSETS_PATH 	= "/docbox/strategy/api/resources/static";
 
 	/**
 	* Constructor
@@ -52,12 +52,12 @@ component extends="docbox.strategy.api.HTMLAPIStrategy"{
 		}
 
 		// copy over the static assets
-		directoryCopy( expandPath( variables.static.ASSETS_PATH ), getOutputDir(), true );
+		directoryCopy( expandPath( variables.ASSETS_PATH ), getOutputDir(), true );
 
 		//write the index template
 		var args = {
 			path 		 = getOutputDir() & "/index.html",
-			template 	 = "#variables.static.TEMPLATE_PATH#/index.cfm",
+			template 	 = "#variables.TEMPLATE_PATH#/index.cfm",
 			projectTitle = getProjectTitle()
 		};
 		writeTemplate( argumentCollection=args )
@@ -84,7 +84,7 @@ component extends="docbox.strategy.api.HTMLAPIStrategy"{
 		// overview summary
 		writeTemplate(
 			path			= getOutputDir() & "/overview-summary.html",
-			template		= "#variables.static.TEMPLATE_PATH#/overview-summary.cfm",
+			template		= "#variables.TEMPLATE_PATH#/overview-summary.cfm",
 			projectTitle 	= getProjectTitle(),
 			qPackages 		= qPackages
 		);
@@ -92,7 +92,7 @@ component extends="docbox.strategy.api.HTMLAPIStrategy"{
 		//overview frame
 		writeTemplate(
 			path			= getOutputDir() & "/overview-frame.html",
-			template		= "#variables.static.TEMPLATE_PATH#/overview-frame.cfm",
+			template		= "#variables.TEMPLATE_PATH#/overview-frame.cfm",
 			projectTitle	= getProjectTitle(),
 			qMetadata 		= arguments.qMetadata
 		);
@@ -111,7 +111,7 @@ component extends="docbox.strategy.api.HTMLAPIStrategy"{
 		var qInterfaces = 0;
 
 		// done this way as ACF compat. Does not support writeoutput with query grouping.
-		include "#variables.static.TEMPLATE_PATH#/packagePages.cfm";
+		include "#variables.TEMPLATE_PATH#/packagePages.cfm";
 
 		return this;
 	}
@@ -154,7 +154,7 @@ component extends="docbox.strategy.api.HTMLAPIStrategy"{
 			// write it out
 			writeTemplate(
 				path			= currentDir & "/#thisRow.name#.html",
-				template		= "#variables.static.TEMPLATE_PATH#/class.cfm",
+				template		= "#variables.TEMPLATE_PATH#/class.cfm",
 				projectTitle 	= variables.projectTitle,
 				package 		= thisRow.package,
 				name 			= thisRow.name,
