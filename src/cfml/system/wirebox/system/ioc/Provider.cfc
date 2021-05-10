@@ -98,6 +98,19 @@ component implements="wirebox.system.ioc.IProvider" accessors="true"{
 	 * @missingMethodArguments missing method arguments
 	 */
 	any function onMissingMethod( required missingMethodName, required missingMethodArguments ){
+		var target = $get();
+		
+		// Backwards compat for older WireBox versions
+		if( arguments.missingMethodName == 'get' ) {
+			// If target doesn't have a get() method, assume we meant "$get()"
+			if( !structKeyExists( target, 'get' ) ) {
+				return target;	
+			// If target get() has at least one required param and we have nothing passed in, assume we meant "$get()".  The PropertyFile CFC meets this criteria.
+			} else if( isCustomFunction( target.get ) && ( getMetadata( target.get ).parameters ?: [] ).filter( (f)=>f.required==true ).len() && !missingMethodArguments.len() ) {
+				return target;
+			}
+		}
+		
 		var results = invoke( $get(), arguments.missingMethodName, arguments.missingMethodArguments );
 
 		if ( !isNull( local.results ) ){
