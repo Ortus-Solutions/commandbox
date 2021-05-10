@@ -4,6 +4,7 @@ component {
 
     property name="print" inject="PrintBuffer";
     property name="shell" inject="shell";
+	property name="convert" inject="DataConverter";
 
     variables.tableChars = {
 		"top": chr( 9552 ), // ═
@@ -28,59 +29,26 @@ component {
 
     /**
      * Outputs a table to the screen
-     * @headers An array of column headers, or a query.  When passing a query, the "data" argument is not used.
-     * @data Any type of data for the table.  Each item in the array may either be
-     *            an array in the correct order matching the number of headers or a struct
-     *            with keys matching the headers.
-     * @includeHeaders A list of headers to include.  Used for query inputs
- 	 * @queryFilter A where filter used in a query of queries
-	 * @columnsOnly Only print out the names of the columns and the first row values
-
+	 * @data Any type of data for the table.  Each item in the array may either be
+	 *            an array in the correct order matching the number of headers or a struct
+	 *            with keys matching the headers.
+	 * @includedHeaders A list of headers to include.  Used for query inputs
+     * @headerNames An list/array of column headers to use instead of the default
+	 * @debug Only print out the names of the columns and the first row values
      */
-    public string function print(
-        required any headers,
-        any data=[],
-        string includeHeaders,
-        string queryFilter="",
-		boolean columnsOnly=false
 
+    public string function print(
+		required any data=[],
+        any includedHeaders="",
+        any headerNames="",
+		boolean debug=false
     ) {
 
-		var runQuery = false;
-		var columns = "*";
-		var whereFilter = "";
+		var dataQuery = isQuery( arguments.data ) ? arguments.data : convert.toQuery( arguments.data, arguments.headerNames );
+		var includeList = isArray( arguments.includedHeaders ) ? arrayToList( arguments.includedHeaders ) : arguments.includedHeaders;
+		var columns = includeList != "" ? includeList: "*";
 
-    	// Turn any data into a query
-		if( !isQuery( arguments.headers ) ) { // Scenario 1 the data is provided via the data argument
-			var dataQuery = isQuery( arguments.data ) ? arguments.data : toQuery(arguments.data);
-			//When the "data" argument is used the "headers" may contain a list of columns
-			if( isArray( arguments.headers ) && arguments.headers.len()  ) {
-				columns = arrayToList(arguments.includeHeaders);
-				runQuery = true;
-			} else if( isSimpleValue( arguments.headers ) && arguments.headers != "" ) {
-				columns = arguments.includeHeaders;
-				runQuery = true;
-			}
-		} else { // Scenario 3 a query is provided via the headers argument
-			var dataQuery = arguments.headers;
-			arguments.headers = [];
-			//When the "headers" argument is used the "includeHeaders" may contain a list of columns
-			if( !isNull( arguments.includeHeaders ) && len( arguments.includeHeaders ) ) {
-				columns = arguments.includeHeaders;
-				runQuery = true;
-			}
-		}
-
-		// if a filter is provided add it to the query of queries SQL
-		if(arguments.queryFilter != ""){
-			whereFilter = "Where " & arguments.queryFilter;
-			runQuery = true;
-		}
-
-		// if a column list or a filter is provided use it in a query of queryies to limit the table data
-		if(runQuery){
-			dataQuery = queryExecute('SELECT #columns# FROM dataQuery #whereFilter#',[],{ dbType : 'query' });
-		}
+		dataQuery = queryExecute('SELECT #columns# FROM dataQuery',[],{ dbType : 'query' });
 
 		// Extract data in array of structs
 		var dataRows = [];
@@ -88,7 +56,7 @@ component {
 
 		// Extract column names into headers
 		var dataHeaders = queryColumnArray(dataQuery);
-		if(columnsOnly){
+		if(arguments.debug){
 			dataRows = [];
 			if(dataQuery.recordcount){
 				dataHeaders.each((x) => {
@@ -107,42 +75,6 @@ component {
         return print.getResult();
 	}
 
-	/**
-     * Take any data and convert it to a query
-     * @data Any type of data for the table.
-     */
-	public query function toQuery( required any rawData ){
-		var data = normalizeData(rawData);
-		var columns = generateColumnNames(data[1]);
-		return queryNew( columnNames=columns, data=data );
-	}
-
-	/**
-     * Take a simple value/array of values/or struct and normalize it to fit the table printer format
-     * @data Any type of data for the table.
-     */
-	public array function normalizeData(required any rawData){
-		var data = isArray(rawData) ? rawData : [rawData];
-		return data.map((x) => {
-			return (isArray(x) || isStruct(x)) ? x : [x]; // wrap simple data in an array
-		}, true)
-	}
-
-	/**
-     * Create column names from data, default to col_1 ... for simple values and arrays,
-	 * Use key names for structs
-     * @data Any type of data for the table.
-     */
-	public array function generateColumnNames (required any data){
-		if(isSimpleValue(data)){
-			return  ['col_1'];
-		} else if ( isArray(data) ){
-			return data.map((x,i) => {return 'col_' & i},true);
-		} else if ( isStruct(data) ){
-			return  structKeyArray(data);
-		}
-		return [];
-	}
 
     /**
      * Outputs a table to the screen

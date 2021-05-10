@@ -96,28 +96,33 @@
 component {
 
 	processingdirective pageEncoding='UTF-8';
+	property name='tablePrinter'    inject='provider:TablePrinter';
 
 	/**
-	 * @input The text to process with table like data in it
-	 * @columns A comma seperated list of column names, eg. "name,version"
-	 * @filter A SQL where filter used in a query of queries, eg. "name like '%My%'"
-	 * @columnsOnly Only print out the names of the columns and the first row values
- 	 **/
-	function run(
-		required string input,
-		string columns='',
-		string filter='',
-		boolean columnsOnly=false
-	)  {
+     * Outputs a table to the screen
+	 * @data Any type of data for the table.  Each item in the array may either be
+	 *            an array in the correct order matching the number of headers or a struct
+	 *            with keys matching the headers.
+	 * @includedHeaders A list of headers to include.  Used for query inputs
+     * @headerNames An list/array of column headers to use instead of the default
+	 * @debug Only print out the names of the columns and the first row values
+     */
+
+    public string function run(
+		required any data=[],
+        any includedHeaders="",
+        any headerNames="",
+		boolean debug=false
+    ) {
 
 		// Treat input as a potential file path
-		arguments.input = print.unAnsi( arguments.input );
+		arguments.data = print.unAnsi( arguments.data );
 
 		//deserialize data if in a JSON format
-		if(isJSON(arguments.input)) arguments.input = deserializeJSON( arguments.input, false );
+		if(isJSON(arguments.data)) arguments.data = deserializeJSON( arguments.data, false );
 
 		//pass all arguments to print table
-		print.table(arguments.columns,arguments.input, arguments.columns, arguments.filter, arguments.columnsOnly);
+		return tablePrinter.print( argumentCollection=arguments );
 	}
 
 }

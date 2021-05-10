@@ -283,16 +283,18 @@ component {
 
     /**
      * Outputs a table to the screen
-     * @headers An array of column headers, or a query.  When passing a query, the "data" argument is not used.
-     * @data Any type of data for the table.  Each item in the array may either be
-     *            an array in the correct order matching the number of headers or a struct
-     *            with keys matching the headers.
-     * @includeHeaders A list of headers to include.  Used for query inputs
+	 * @data Any type of data for the table.  Each item in the array may either be
+	 *            an array in the correct order matching the number of headers or a struct
+	 *            with keys matching the headers.
+	 * @includedHeaders A list of headers to include.  Used for query inputs
+     * @headerNames An list/array of column headers to use instead of the default
+	 * @debug Only print out the names of the columns and the first row values
      */
 	function table(
-        required any headers,
-        any data=[],
-        string includeHeaders
+		required any data=[],
+        any includedHeaders="",
+        any headerNames="",
+		boolean debug=false
     ){
 		return tablePrinter.print( argumentCollection=arguments );
 	}
