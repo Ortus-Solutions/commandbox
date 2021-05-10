@@ -117,7 +117,7 @@ component accessors="true" singleton {
 			return '[EMPTY STRING]';
 		// XML doc OR XML String
 		} else if( isXML( result ) ) {
-			return formatXML( result );
+			return formatXML( XMLParse( result ) );
 		// string
 		} else if( isSimpleValue( result ) ) {
 
