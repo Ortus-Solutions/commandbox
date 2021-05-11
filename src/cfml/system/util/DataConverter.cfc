@@ -24,7 +24,7 @@ component singleton {
 	public query function toQuery( required any rawData, string columns="" ){
 		var data = normalizeData(rawData);
 		if(!data.len()) return queryNew('empty');
-		var columns = arguments.columns != '' ? arguments.columns : generateColumnNames(data[1]);
+		var columns = generateColumnNames(data[1], arguments.columns);
 		return queryNew( columnNames=columns, data=data );
 	}
 
@@ -46,15 +46,19 @@ component singleton {
 	 * Use key names for structs
      * @data Any type of data for the table.
      */
-	public array function generateColumnNames (required any data){
+	public array function generateColumnNames (required any data, string columns="" ){
+		var columnsArray = [];
 		if(isSimpleValue(data)){
-			return  ['col_1'];
+			columnsArray = ['col_1'];
 		} else if ( isArray(data) ){
-			return data.map((x,i) => {return 'col_' & i},true);
+			columnsArray = data.map((x,i) => {return 'col_' & i},true);
 		} else if ( isStruct(data) ){
-			return  structKeyArray(data);
+			columnsArray = structKeyArray(data);
 		}
-		return [];
+		arguments.columns.each(function(element,index,list) {
+			columnsArray[index] = element;
+		})
+		return columnsArray;
 	}
 
 
