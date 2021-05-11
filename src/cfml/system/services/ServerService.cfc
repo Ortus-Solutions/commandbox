@@ -2076,24 +2076,60 @@ component accessors="true" singleton {
 
 		interceptorService.announceInterception( 'onServerStop', { serverInfo=serverInfo } );
 
-		var launchUtil = java.LaunchUtil;
-		var stopsocket = arguments.serverInfo.stopsocket;
-		var args = "-jar ""#variables.jarPath#"" -stop --stop-port #val( stopsocket )# -host #arguments.serverInfo.host# --background false";
+		var args = [
+			variables.javaCommand,
+			'-jar',
+			variables.jarPath,
+			'-stop',
+			'--stop-port',
+			val( serverInfo.stopsocket ),
+			'-host',
+			arguments.serverInfo.host,
+			'--background',
+			'false'
+		];
 		var results = { error = false, messages = "" };
 
 		try{
 			// Try to stop and set status back
-			execute name=variables.javaCommand arguments=args timeout="50" variable="results.messages";
+			
+	    	var processBuilder = createObject( "java", "java.lang.ProcessBuilder" );
+	    	processBuilder.init( args );
+	    	processBuilder.redirectErrorStream( true );
+	    	var process = processBuilder.start();
+	    	var inputStream = process.getInputStream();
+	    	var exitCode = process.waitFor();
+	    	
+	    	var processOutput = toString( inputStream );
+	    	
+	    	if( exitCode > 0 ) {
+	    		throw( message='Error stopping server', detail=processOutput );
+	    	}
+	    	
+			//execute name=variables.javaCommand arguments=args timeout="50" variable="results.messages" errorVariable="errorVar";
 			serverInfo.status 		= "stopped";
-			serverInfo.statusInfo 	= { command:variables.javaCommand, arguments:args, result:results.messages };
+			serverInfo.statusInfo 	= {
+				command : variables.javaCommand,
+				arguments : args.tolist( ' ' ),
+				result : processOutput
+			};
 			setServerInfo( serverInfo );
+			results.messages = processOutput;
 			return results;
 		} catch (any e) {
 			serverInfo.status 		= "unknown";
-			serverInfo.statusInfo 	= { command:variables.javaCommand, arguments:args, result:results.messages };
+			serverInfo.statusInfo 	= {
+				command : variables.javaCommand,
+				arguments : args.tolist( ' ' ),
+				result : processOutput ?: ''
+			};
 			setServerInfo( serverInfo );
 			return { error=true, messages=e.message & e.detail };
-		}
+		} finally {
+			if( !isNull( process ) ) {
+				process.destroy();
+			}
+		} 
 	}
 
 	/**
