@@ -4,9 +4,10 @@
  *
  * JSON data can be passed in the first param or piped into the command:
  * {code:bash}
- * sql [1,2,3] select="col_1" (arrays or array of arrays, are given automatic column names)
- * #extensionlist  | sql select="id,name"
- * cat myfile.json | sql select="id,name" where="name <> ''" orderby="name" limit="5"
+ * // (arrays or array of arrays, are given automatic column names)
+ * sql data=[[1,2],[3,4]] select=col_1
+ * #extensionlist  | sql select=id,name
+ * cat myfile.json | sql select=id,name where="name <> ''" orderby=name limit=5
  * {code}
  * .
  * Example Select Statements
@@ -52,6 +53,7 @@
  */
 component {
 
+	processingdirective pageEncoding='UTF-8';
 	property name="convert" inject="DataConverter";
 
 	/**
@@ -93,13 +95,20 @@ component {
 		if(arguments.limit != ""){
 			var limitoffset = listToArray(arguments.limit);
 			if(limitoffset.len() == 1){
-				var limit = limitoffset[1];
-				var offset = 0;
+				var limit = min( limitoffset[1], dataQueryResults.len() );
+				var offset = 1;
 			} else {
-				var limit = limitoffset[2];
+				var limit = min( limitoffset[2], dataQueryResults.len() );
 				var offset = limitoffset[1];
 			}
-			dataQuery = dataQuery.slice(offset, limit);
+			if( offset > dataQueryResults.len() ) {
+				error( message="Your limit is invalid.", detail="The offset of [#offset#] is greater than the number of results [#dataQueryResults.len()#]" );
+			}
+			if( limit==0 ) {
+				dataQueryResults = [];
+			} else {
+				dataQueryResults = dataQueryResults.slice(offset, limit);	
+			}
 		};
 
 		print.line(dataQueryResults);
