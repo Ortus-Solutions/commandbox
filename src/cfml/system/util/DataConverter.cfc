@@ -23,7 +23,7 @@ component singleton {
      */
 	public query function toQuery( required any rawData, string columns="" ){
 		var data = normalizeData(rawData);
-		if(!data.len()) return queryNew('test');
+		if(!data.len()) return queryNew('empty');
 		var columns = arguments.columns != '' ? arguments.columns : generateColumnNames(data[1]);
 		return queryNew( columnNames=columns, data=data );
 	}
