@@ -21,7 +21,7 @@
  *
  * If an array is passed, each item in the array will become a row in the table.
  * {code:bash}
- * printTable [1,2,3] num
+ * printTable data=[1,2,3] headerNames=num
  * ╔═════╗
  * ║ num ║
  * ╠═════╣
@@ -50,7 +50,7 @@
  * .
  * printTable [[1,2],[3,4],[5,6]]
  * ╔═══════╤═══════╗
-   ║ col_1 │ col_2 ║
+ * ║ col_1 │ col_2 ║
  * ╠═══════╪═══════╣
  * ║ 1     │ 2     ║
  * ╟───────┼───────╢
@@ -75,8 +75,8 @@
  * {code}
  * .
  * The "headerNames" argument allows you to overwrite existing or auto created column names
- * {code:bash}
- * printTable [[1,2],[3,4],[5,6]] name,version "name,version"
+ * {code:bash} 
+ * printTable data=[[1,2],[3,4],[5,6]] headerNames=name,version
  * ╔════════╤═══════════╗
  * ║ name   │ version   ║
  * ╠════════╪═══════════╣
@@ -105,9 +105,7 @@ component {
 
 	/**
      * Outputs a table to the screen
-	 * @data Any type of data for the table.  Each item in the array may either be
-	 *            an array in the correct order matching the number of headers or a struct
-	 *            with keys matching the headers.
+	 * @data JSON serialized query, array of structs, or array of arrays to represent in table form
 	 * @includedHeaders A list of headers to include.  Used for query inputs
      * @headerNames An list/array of column headers to use instead of the default
 	 * @debug Only print out the names of the columns and the first row values
