@@ -39,9 +39,7 @@ component {
 
     /**
      * Outputs a table to the screen
-	 * @data Any type of data for the table.  Each item in the array may either be
-	 *            an array in the correct order matching the number of headers or a struct
-	 *            with keys matching the headers.
+	 * @data Any type of data for the table.  Each item in the array may either be an array in the correct order matching the number of headers or a struct with keys matching the headers.
 	 * @includedHeaders A list of headers to include.  Used for query inputs
      * @headerNames An list/array of column headers to use instead of the default
 	 * @debug Only print out the names of the columns and the first row values
