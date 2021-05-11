@@ -1,6 +1,57 @@
+/**
+ * SQL query command for filtering table like data. This command will automatically
+ * format any table like data into a query object that can be queried against
+ *
+ * JSON data can be passed in the first param or piped into the command:
+ * {code:bash}
+ * sql [1,2,3] select="col_1" (arrays or array of arrays, are given automatic column names)
+ * #extensionlist  | sql select="id,name"
+ * cat myfile.json | sql select="id,name" where="name <> ''" orderby="name" limit="5"
+ * {code}
+ * .
+ * Example Select Statements
+ * {code:bash}
+ * sql select="*"
+ * sql select="id,name"
+ * sql select="id,name, version"
+ * sql select="id,name, sum(total)"
+ * {code}
+ * .
+ * Example Where Statements
+ * {code:bash}
+ * sql where="a like "%top"
+ * sql where="a > 5"
+ * sql where="a <> 5"
+ * sql where="a <> 5 and b <> ''"
+ * {code}
+ * .
+ * Example Order By Statements
+ * {code:bash}
+ * sql orderby="a"
+ * sql orderby="a, b"
+ * sql orderby="a desc, b asc"
+ * {code}
+ * .
+ * Example Limit/Offset Statements
+ * {code:bash}
+ * sql limit="1" (eg. limit 1)
+ * sql limit="1,5" (eg. offset 1 limit 5)
+ * {code}
+ * .
+ * Advanced piping
+ * {code:bash}
+ * sql [{a:1,b:2},{a:3,b:4},{a:5,b:6}] where="a > 1" | printTable
+ * ╔═══╤═══╗
+ * ║ a │ b ║
+ * ╠═══╪═══╣
+ * ║ 3 │ 4 ║
+ * ╟───┼───╢
+ * ║ 5 │ 6 ║
+ * ╚═══╧═══╝
+ * {code}
+ */
 component {
 
-	processingdirective pageEncoding='UTF-8';
 	property name="convert" inject="DataConverter";
 
 	/**
@@ -34,6 +85,10 @@ component {
 		var whereFilter = arguments.where != "" ? "Where " & arguments.where: "";
 		var orderByFilter = arguments.orderby != "" ? "Order By " & arguments.orderby : "";
 
+		// Run query of queries
+		var sqlstatement  = 'SELECT #columnFilter# FROM dataQuery #whereFilter# #orderByFilter#';
+		dataQueryResults = queryExecute(sqlstatement,[],{ dbType : 'query', returnType : 'array' });
+
 		//Limit Data
 		if(arguments.limit != ""){
 			var limitoffset = listToArray(arguments.limit);
@@ -46,10 +101,6 @@ component {
 			}
 			dataQuery = dataQuery.slice(offset, limit);
 		};
-
-		// Run query of queries
-		var sqlstatement  = 'SELECT #columnFilter# FROM dataQuery #whereFilter# #orderByFilter#';
-		dataQueryResults = queryExecute(sqlstatement,[],{ dbType : 'query', returnType : 'array' });
 
 		print.line(dataQueryResults);
 

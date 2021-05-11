@@ -11,7 +11,7 @@
  * The following types of data are supported, passed as JSON.
  * If the object is a struct, a table with a single row will be printed, using the struct keys as the column names.
  * {code:bash}
- * printTable {'a':2,b:4}
+ * printTable {'a':2,'b':4}
  * ╔═══╤═══╗
  * ║ a │ b ║
  * ╠═══╪═══╣
@@ -36,6 +36,7 @@
  * For array and simple values, the column names will default to: col_1, col_2, etc.
  * For arrays of structs, the struct keys in the first row will be used
  * {code:bash}
+ * .
  * printTable [{a:1,b:2},{a:3,b:4},{a:5,b:6}]
  * ╔═══╤═══╗
  * ║ a │ b ║
@@ -73,19 +74,23 @@
  * ╚══════════════════════╧═══════════════════╝
  * {code}
  * .
- *  The "filter" argument allows you to pass a SQL "where" statement to filter your data
+ * The "headerNames" argument allows you to overwrite existing or auto created column names
  * {code:bash}
- * #extensionlist | printTable "name,version" "name like '%My%'"
- * ╔══════════════════════╤═══════════════════╗
- * ║ name                 │ version           ║
- * ╠══════════════════════╪═══════════════════╣
- * ║ MySQL                │ 8.0.19            ║
- * ╚══════════════════════╧═══════════════════╝
+ * printTable [[1,2],[3,4],[5,6]] name,version "name,version"
+ * ╔════════╤═══════════╗
+ * ║ name   │ version   ║
+ * ╠════════╪═══════════╣
+ * ║   1    │     2     ║
+ * ╟────────┼───────────╢
+ * ║   3    │     4     ║
+ * ╟────────┼───────────╢
+ * ║   5    │     6     ║
+ * ╚════════╧═══════════╝
  * {code}
  * .
  * The "columnsOnly" parameter will give you a list of available columns and the first row of data to help you choose the columns you want
  * {code:bash}
- * printTable "[{'a':2},{'a':4},{'a':5},{'a':8}]" --columnsOnly
+ * printTable "[{'a':2},{'a':4},{'a':5},{'a':8}]" --debug
  * ╔════════╤════════════════╗
  * ║ Column │ First Row Data ║
  * ╠════════╪════════════════╣

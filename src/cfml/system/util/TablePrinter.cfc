@@ -44,6 +44,7 @@ component {
 		boolean debug=false
     ) {
 
+		arguments.headerNames = isArray( arguments.headerNames ) ? arrayToList( arguments.headerNames ) : arguments.headerNames;
 		var dataQuery = isQuery( arguments.data ) ? arguments.data : convert.toQuery( arguments.data, arguments.headerNames );
 		var includeList = isArray( arguments.includedHeaders ) ? arrayToList( arguments.includedHeaders ) : arguments.includedHeaders;
 		var columns = includeList != "" ? includeList: "*";
@@ -361,8 +362,10 @@ component {
 	function stringify( any data ) {
 		if( isSimpleValue( data ) ) {
 			return data;
-		} else {
+		} else if (isArray(data) || isStruct(data)) {
 			return SerializeJSON(data);
+		} else {
+			return '[#data.getClass().getName()#]';
 		}
 	}
 

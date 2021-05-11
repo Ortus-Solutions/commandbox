@@ -67,9 +67,10 @@ component accessors="true" extends="Print"{
      * @includeHeaders A list of headers to include.  Used for query inputs
      */
 	function table(
-        required any headers,
-        any data=[],
-        string includeHeaders
+		required any data=[],
+        any includedHeaders="",
+        any headerNames="",
+		boolean debug=false
     ){
 		// Don't modify the buffer if it's being printed
 		lock name='printBuffer-#getObjectID()#' type="readonly" timeout="20" {
