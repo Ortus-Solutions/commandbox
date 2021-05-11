@@ -7,15 +7,14 @@
  * // (arrays or array of arrays, are given automatic column names)
  * sql data=[[1,2],[3,4]] select=col_1
  * #extensionlist  | sql select=id,name
- * cat myfile.json | sql select=id,name where="name <> ''" orderby=name limit=5
+ * cat myfile.json | sql select=id,name where="name like '%sql%'" orderby=name limit=3
  * {code}
  * .
  * Example Select Statements
  * {code:bash}
  * sql select="*"
- * sql select="id,name"
  * sql select="id,name, version"
- * sql select="id,name, sum(total)"
+ * sql select="max(name) as maxName"
  * {code}
  * .
  * Example Where Statements
@@ -35,13 +34,14 @@
  * .
  * Example Limit/Offset Statements
  * {code:bash}
- * sql limit="1" (eg. limit 1)
- * sql limit="1,5" (eg. offset 1 limit 5)
+ * sql limit=1
+ * // offset 1 limit 5
+ * sql limit=1,5
  * {code}
  * .
  * Advanced piping
  * {code:bash}
- * sql [{a:1,b:2},{a:3,b:4},{a:5,b:6}] where="a > 1" | printTable
+ * sql data=[{a:1,b:2},{a:3,b:4},{a:5,b:6}] where="a > 1" | printTable
  * ╔═══╤═══╗
  * ║ a │ b ║
  * ╠═══╪═══╣
