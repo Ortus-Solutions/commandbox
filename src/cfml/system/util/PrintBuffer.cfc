@@ -57,7 +57,7 @@ component accessors="true" extends="Print"{
 			return this;
 		}
 	}
-	
+
     /**
      * Outputs a table to the screen
      * @headers An array of column headers, or a query.  When passing a query, the "data" argument is not used.
@@ -67,9 +67,10 @@ component accessors="true" extends="Print"{
      * @includeHeaders A list of headers to include.  Used for query inputs
      */
 	function table(
-        required any headers,
-        array data=[],
-        string includeHeaders
+		required any data=[],
+        any includedHeaders="",
+        any headerNames="",
+		boolean debug=false
     ){
 		// Don't modify the buffer if it's being printed
 		lock name='printBuffer-#getObjectID()#' type="readonly" timeout="20" {

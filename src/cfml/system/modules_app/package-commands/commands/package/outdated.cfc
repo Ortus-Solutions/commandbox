@@ -65,10 +65,9 @@ component aliases="outdated" {
 			print.line( aAllDependencies.filter( (d)=>d.isOutdated ) );
 			return;
 		}
-		
+
 		if( aAllDependencies.len() ) {
 			print.table(
-				[ 'Package', 'Installed', 'Update', 'Latest', 'Location' ],
 				aAllDependencies.map( ( d ) => {
 					return [
 						d.slug & ( d.endpointName contains 'forgebox' ? '@' & d.version : ' (#d.endpointName#)' ),
@@ -76,12 +75,14 @@ component aliases="outdated" {
 						{ 'value': d.newVersion, 'options': d.isOutdated ? 'boldWhiteOnRed' : 'white' },
 						{ 'value': d.latestVersion, 'options': d.isLatest ? 'white' : 'boldWhiteOnOrange3' },
 						d.location
-					]
-				} )
+						]
+					} ),
+					"",
+					[ 'Package', 'Installed', 'Update', 'Latest', 'Location' ]
 			);
 			print.text( 'Key: ' ).boldWhiteOnRed( 'Update Available' ).text( '   ' ).boldWhiteOnOrange3line( 'Major Update Available' ).line();
 		}
-		
+
 		// normal output
 		if( aOutdatedDependencies.len() gt 0 ){
 
