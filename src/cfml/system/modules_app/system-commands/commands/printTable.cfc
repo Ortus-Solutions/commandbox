@@ -74,8 +74,8 @@
  * ╚══════════════════════╧═══════════════════╝
  * {code}
  * .
- * The "headerNames" argument allows you to overwrite existing or auto created column names
- * {code:bash} 
+ * The "headerNames" argument allows you to overwrite auto created column names specifically for array of arrays
+ * {code:bash}
  * printTable data=[[1,2],[3,4],[5,6]] headerNames=name,version
  * ╔════════╤═══════════╗
  * ║ name   │ version   ║
@@ -107,7 +107,7 @@ component {
      * Outputs a table to the screen
 	 * @data JSON serialized query, array of structs, or array of arrays to represent in table form
 	 * @includedHeaders A list of headers to include.  Used for query inputs
-     * @headerNames An list/array of column headers to use instead of the default
+     * @headerNames An list/array of column headers to use instead of the default specifically for array of arrays
 	 * @debug Only print out the names of the columns and the first row values
      */
 
