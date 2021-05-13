@@ -62,4 +62,24 @@ component singleton {
 	}
 
 
+	/**
+     * Takes query object and returns array of ORDERED structs
+     * // https://luceeserver.atlassian.net/browse/LDEV-3511
+     * 
+     * @data Any query object
+     */
+	function queryToArrayOfOrderedStructs( query data ) {
+		var result = [];
+		var columns = data.columnList.listToArray();
+		var i = 0;
+		loop query="#data#" {
+			i++;
+			// ordered struct
+			var row = [:];
+			columns.each( (c)=>row.insert( c, data[c][i] ) );
+			result.append( row )
+		}
+		return result;
+	}
+
 }

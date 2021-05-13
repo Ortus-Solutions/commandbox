@@ -63,8 +63,7 @@ component {
 		dataQuery = queryExecute('SELECT #columns# FROM dataQuery',[],{ dbType : 'query' });
 
 		// Extract data in array of structs
-		var dataRows = [];
-		dataQuery.each( (row) =>  dataRows.append( row ), true);
+		var dataRows = convert.queryToArrayOfOrderedStructs( dataQuery );
 
 		// Extract column names into headers
 		var dataHeaders = queryColumnArray(dataQuery);

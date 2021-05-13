@@ -89,7 +89,8 @@ component {
 
 		// Run query of queries
 		var sqlstatement  = 'SELECT #columnFilter# FROM dataQuery #whereFilter# #orderByFilter#';
-		dataQueryResults = queryExecute(sqlstatement,[],{ dbType : 'query', returnType : 'array' });
+		dataQueryResults = queryExecute(sqlstatement,[],{ dbType : 'query' } );
+		dataQueryResults = convert.queryToArrayOfOrderedStructs( dataQueryResults );
 
 		//Limit Data
 		if(arguments.limit != ""){
