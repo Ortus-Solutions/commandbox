@@ -52,12 +52,12 @@ component singleton {
 			columnsArray = ['col_1'];
 		} else if ( isArray(data) ){
 			columnsArray = data.map((x,i) => {return 'col_' & i},true);
+			arguments.columns.each(function(element,index,list) {
+				columnsArray[index] = element;
+			})
 		} else if ( isStruct(data) ){
 			columnsArray = structKeyArray(data);
 		}
-		arguments.columns.each(function(element,index,list) {
-			columnsArray[index] = element;
-		})
 		return columnsArray;
 	}
 
