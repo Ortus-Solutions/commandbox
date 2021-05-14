@@ -89,7 +89,11 @@ component {
 
 		// Run query of queries
 		var sqlstatement  = 'SELECT #columnFilter# FROM dataQuery #whereFilter# #orderByFilter#';
-		dataQueryResults = queryExecute(sqlstatement,[],{ dbType : 'query' } );
+		try {
+			dataQueryResults = queryExecute(sqlstatement,[],{ dbType : 'query' } );
+		} catch( any e ) {
+			error( message='Error in SQL [#sqlstatement#].', detail='#e.message# #e.detail#' )
+		}
 		dataQueryResults = convert.queryToArrayOfOrderedStructs( dataQueryResults );
 
 		//Limit Data
