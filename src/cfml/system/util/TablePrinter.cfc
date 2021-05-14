@@ -60,6 +60,11 @@ component {
 		var includeList = isArray( arguments.includedHeaders ) ? arrayToList( arguments.includedHeaders ) : arguments.includedHeaders;
 		var columns = includeList != "" ? includeList: "*";
 
+		// validate columns first since the QoQ message can be confusing
+		if( columns != '*' ) {
+			columns.listEach( (c)=>listFindNoCase( dataQuery.columnList, c ) || throw( message='Header name [#c#] not found.', detail='Valid header names are [#dataQuery.columnList#]', type='commandException' ) );
+		}
+
 		dataQuery = queryExecute('SELECT #columns# FROM dataQuery',[],{ dbType : 'query' });
 
 		// Extract data in array of structs
@@ -136,12 +141,18 @@ component {
    				lastCol--;
    			}
         	// Just whack off the extra columns
-        	headerData = headerData.slice( 1, lastCol-1 );
+        	headerData = headerData.slice( 1, max( lastCol-1, 1 ) );
         	headerData.append( {
         		"value":"...",
         		"maxWidth":3,
         		"overageCol":true
         	} );
+
+        	// This happens if the first column is still so big it won't fit and the while loop above never entered
+        	if( totalWidth == 1 ) {
+        		// Cut down that one column so it fits
+        		headerData[1].maxWidth=termWidth-11
+        	}
 
         }
 
@@ -161,7 +172,7 @@ component {
 				throw( 'Data in row #rowIndex# is missing values.  It has only #row.len()# columns, but there are at least #index# headers.' );
 			}
 			var data = row[ index ];
-			if ( isStruct( data ) ) {
+			if ( cellHasFormattingEmbedded( data ) ) {
 				data = data.value;
 			}
 			acc.maxWidth = max( acc.maxWidth, len( stringify( data ) ) );
@@ -260,7 +271,7 @@ component {
 				var data = row[ index ];
 			}
 			var options = "white";
-			if ( isStruct( data ) ) {
+			if ( cellHasFormattingEmbedded( data ) ) {
 				options = data.options;
 				data = data.value;
 			}
@@ -377,6 +388,10 @@ component {
 		} else {
 			return '[#data.getClass().getName()#]';
 		}
+	}
+	
+	function cellHasFormattingEmbedded( data ) {
+		return isStruct( data ) && data.count() == 2 && data.keyExists( 'options' ) && data.keyExists( 'value' ) && isSimpleValue( data.options );
 	}
 
 }

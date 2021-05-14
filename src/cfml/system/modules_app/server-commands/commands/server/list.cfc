@@ -112,7 +112,7 @@ component {
 			
 			// Process output
 			if( JSON ) {
-				print.line( servers );
+				print.line( servers.valueArray() );
 			} else {
 				servers.each( ( serverName, thisServerInfo ) => {
 					// Print out Header
