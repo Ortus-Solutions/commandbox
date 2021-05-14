@@ -35,10 +35,18 @@ component singleton {
 	public array function normalizeData(required any rawData){
 		var data = isArray(rawData) ? rawData : [rawData];
 		return data.map((x) => {
-			if( !isArray(x) && !isStruct(x) ) {	
-				return [x]; // wrap simple data in an array
-			}
-			return x;
+			
+			if(isArray(x)) return x.map((y) => {
+				return isSimpleValue(y) ? y : cellHasFormattingEmbedded(y) ? y : serializeJSON(y)}
+			);
+			
+			if(isStruct(x)) return x.map((k,v) => {
+				return isSimpleValue(v) ? v : cellHasFormattingEmbedded(v) ? v : serializeJSON(v)
+			});
+			
+			// wrap simple data in an array
+			return [x];
+			
 		}, true)
 	}
 
@@ -81,6 +89,10 @@ component singleton {
 			result.append( row )
 		}
 		return result;
+	}
+	
+	function cellHasFormattingEmbedded( data ) {
+		return isStruct( data ) && data.count() == 2 && data.keyExists( 'options' ) && data.keyExists( 'value' ) && isSimpleValue( data.options );
 	}
 
 }
