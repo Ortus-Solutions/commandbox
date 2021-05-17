@@ -16,8 +16,8 @@ External Dependencies:
  	<property name="distro.groupID"				value="ortussolutions" />
  	<property name="distro.name"				value="commandbox"/>
  	<!-- Special things happen when the version and stableVersion are the same value as that signifies a "stable" build.   -->
- 	<property name="commandbox.version"			value="5.3.1-alpha"/>
- 	<property name="commandbox.stableVersion"	value="5.3.0"/>
+ 	<property name="commandbox.version"			value="5.3.1"/>
+ 	<property name="commandbox.stableVersion"	value="5.3.1"/>
 
     <!-- Time Label -->
 	<tstamp prefix="start"/>
@@ -1077,7 +1077,7 @@ External Dependencies:
 
 	    <!-- engine libs -->
 	    <!-- stable builds require "maven-repository", and snapshots require "sonatype-repository" -->
-	  	<dependency groupId="org.lucee" artifactId="lucee" version="${lucee.version}" dest="${lib.dir}" unzip="false" type="jar" repoId="sonatype-repository">
+	  	<dependency groupId="org.lucee" artifactId="lucee" version="${lucee.version}" dest="${lib.dir}" unzip="false" type="jar" repoId="maven-repository">
 			<exclusions>
 				<exclusion groupId="org.apache.ant" artifactId="ant" />
 				<exclusion groupId="javax.servlet" artifactId="javax.servlet-api" />
