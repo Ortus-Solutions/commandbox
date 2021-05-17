@@ -550,6 +550,11 @@ component accessors="true" singleton {
 		// Mix in environment variable overrides like BOX_SERVER_PROFILE
 		loadOverrides( serverJSON, serverInfo );
 
+		// These are already hammered out above, so no need to go through all the defaults.
+		serverInfo.serverConfigFile	= defaultServerConfigFile;
+		serverInfo.name 			= defaultName;
+		serverInfo.webroot 			= normalizeWebroot( defaultwebroot );
+
 		// Setup serverinfo according to params
 		// Hand-entered values take precedence, then settings saved in server.json, and finally defaults.
 		// The big servers.json is only used to keep a record of the last values the server was started with
@@ -1007,11 +1012,6 @@ component accessors="true" singleton {
 		
 		serverInfo.sessionCookieSecure			= serverJSON.app.sessionCookieSecure			?: defaults.app.sessionCookieSecure;
 		serverInfo.sessionCookieHTTPOnly			= serverJSON.app.sessionCookieHTTPOnly			?: defaults.app.sessionCookieHTTPOnly;
-
-		// These are already hammered out above, so no need to go through all the defaults.
-		serverInfo.serverConfigFile	= defaultServerConfigFile;
-		serverInfo.name 			= defaultName;
-		serverInfo.webroot 			= normalizeWebroot( defaultwebroot );
 
 		if( serverInfo.verbose ) {
 			job.addLog( "start server in - " & serverInfo.webroot );
@@ -2076,24 +2076,60 @@ component accessors="true" singleton {
 
 		interceptorService.announceInterception( 'onServerStop', { serverInfo=serverInfo } );
 
-		var launchUtil = java.LaunchUtil;
-		var stopsocket = arguments.serverInfo.stopsocket;
-		var args = "-jar ""#variables.jarPath#"" -stop --stop-port #val( stopsocket )# -host #arguments.serverInfo.host# --background false";
+		var args = [
+			variables.javaCommand,
+			'-jar',
+			variables.jarPath,
+			'-stop',
+			'--stop-port',
+			val( serverInfo.stopsocket ),
+			'-host',
+			arguments.serverInfo.host,
+			'--background',
+			'false'
+		];
 		var results = { error = false, messages = "" };
 
 		try{
 			// Try to stop and set status back
-			execute name=variables.javaCommand arguments=args timeout="50" variable="results.messages";
+			
+	    	var processBuilder = createObject( "java", "java.lang.ProcessBuilder" );
+	    	processBuilder.init( args );
+	    	processBuilder.redirectErrorStream( true );
+	    	var process = processBuilder.start();
+	    	var inputStream = process.getInputStream();
+	    	var exitCode = process.waitFor();
+	    	
+	    	var processOutput = toString( inputStream );
+	    	
+	    	if( exitCode > 0 ) {
+	    		throw( message='Error stopping server', detail=processOutput );
+	    	}
+	    	
+			//execute name=variables.javaCommand arguments=args timeout="50" variable="results.messages" errorVariable="errorVar";
 			serverInfo.status 		= "stopped";
-			serverInfo.statusInfo 	= { command:variables.javaCommand, arguments:args, result:results.messages };
+			serverInfo.statusInfo 	= {
+				command : variables.javaCommand,
+				arguments : args.tolist( ' ' ),
+				result : processOutput
+			};
 			setServerInfo( serverInfo );
+			results.messages = processOutput;
 			return results;
 		} catch (any e) {
 			serverInfo.status 		= "unknown";
-			serverInfo.statusInfo 	= { command:variables.javaCommand, arguments:args, result:results.messages };
+			serverInfo.statusInfo 	= {
+				command : variables.javaCommand,
+				arguments : args.tolist( ' ' ),
+				result : processOutput ?: ''
+			};
 			setServerInfo( serverInfo );
 			return { error=true, messages=e.message & e.detail };
-		}
+		} finally {
+			if( !isNull( process ) ) {
+				process.destroy();
+			}
+		} 
 	}
 
 	/**

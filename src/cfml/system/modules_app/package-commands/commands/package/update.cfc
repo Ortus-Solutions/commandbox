@@ -68,25 +68,32 @@ component aliases="update" {
 		 	verbose      = arguments.verbose,
 		 	includeSlugs = arguments.slug
 		 );
-		 
-		 var dependenciesToUpdate = aAllDependencies.filter( (d)=>d.isOutdated ); 
 
-		print.table(
-			[ 'Package', 'Installed', 'Update', 'Latest', 'Location' ],
-			aAllDependencies.map( ( d ) => {
-				return [
-					d.slug & ( d.endpointName contains 'forgebox' ? '@' & d.version : ' (#d.endpointName#)' ),
-					d.packageVersion,
-					{ 'value': d.newVersion, 'options': d.isOutdated ? 'boldWhiteOnRed' : 'white' },
-					{ 'value': d.latestVersion, 'options': d.isLatest ? 'white' : 'boldWhiteOnOrange3' },
-					d.location
-				]
-			} )
-		);
-		print.text( 'Key: ' ).boldWhiteOnRed( 'Update Available' ).text( '   ' ).boldWhiteOnOrange3line( 'Major Update Available' ).line();
+		 if( len( slug ) && !aAllDependencies.len() ) {
+		 	error( message='Package(s) [#slug#] not found.', detail='Use "outdated" to see what packages are available to update.  Only pass the pacakge name to this command.' );
+		 }
+
+		var dependenciesToUpdate = aAllDependencies.filter( (d)=>d.isOutdated );
+
+		if( aAllDependencies.len() ) {
+			print.table(
+				aAllDependencies.map( ( d ) => {
+					return [
+						d.slug & ( d.endpointName contains 'forgebox' ? '@' & d.version : ' (#d.endpointName#)' ),
+						d.packageVersion,
+						{ 'value': d.newVersion, 'options': d.isOutdated ? 'boldWhiteOnRed' : 'white' },
+						{ 'value': d.latestVersion, 'options': d.isLatest ? 'white' : 'boldWhiteOnOrange3' },
+						d.location
+						]
+					} ),
+					"",
+					[ 'Package', 'Installed', 'Update', 'Latest', 'Location' ]
+			);
+			print.text( 'Key: ' ).boldWhiteOnRed( 'Update Available' ).text( '   ' ).boldWhiteOnOrange3line( 'Major Update Available' ).line();
+		}
 
 		// Advice initial notice
-		if( dependenciesToUpdate.len() ){			
+		if( dependenciesToUpdate.len() ){
 			print.green( 'Found ' )
 				.boldGreen( '(#dependenciesToUpdate.len()#)' )
 				.green( ' Outdated Dependenc#( dependenciesToUpdate.len()  == 1 ? 'y' : 'ies' )# ' )
@@ -97,7 +104,7 @@ component aliases="update" {
 				return;
 			}
 		} else {
-			print.boldYellowLine( 'There are no outdated dependencies!' );
+			print.blueLine( 'There are no outdated dependencies!' );
 			return;
 		}
 

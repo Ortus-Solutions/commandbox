@@ -296,6 +296,7 @@ component singleton displayname="TreeInterpreter" {
                 }
                 var merged = [];
                 for (i = 1; i <= original.len(); i++) {
+					if (isNull(original[i])) continue;
                     current = original[i];
                     if (isArray(current)) {
                         merged = merged.merge(current);

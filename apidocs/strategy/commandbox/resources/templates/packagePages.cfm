@@ -8,7 +8,7 @@
 
 		writeTemplate(
 			path			= currentDir & "/package-summary.html",
-			template		= "#variables.static.TEMPLATE_PATH#/package-summary.cfm",
+			template		= "#variables.TEMPLATE_PATH#/package-summary.cfm",
 			projectTitle 	= this.getProjectTitle(),
 			package 		= package,
 			qClasses 		= qClasses,
@@ -20,7 +20,7 @@
 		/**
 		writeTemplate(
 			path			= currentDir & "/package-frame.html",
-			template		= "#variables.static.TEMPLATE_PATH#/package-frame.cfm",
+			template		= "#variables.TEMPLATE_PATH#/package-frame.cfm",
 			projectTitle 	= this.getProjectTitle(),
 			package 		= package,
 			qClasses 		= qClasses,

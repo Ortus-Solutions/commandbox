@@ -105,6 +105,7 @@ component accessors="true" singleton {
 	* Serializes output
 	**/
 	function serializeOutput( result ) {
+
 		// null
 		if( isNull( result ) ){
 			return '[NULL]';
@@ -114,6 +115,9 @@ component accessors="true" singleton {
 		// empty string
 		} else if( isSimpleValue( result ) && !len( result ) ) {
 			return '[EMPTY STRING]';
+		// XML doc OR XML String
+		} else if( isXML( result ) ) {
+			return formatXML( XMLParse( result ) );
 		// string
 		} else if( isSimpleValue( result ) ) {
 
@@ -123,7 +127,7 @@ component accessors="true" singleton {
 					return formatterUtil.formatJson( json=result, ANSIColors=JSONService.getANSIColors() );
 				}
 			}
-
+			
 			return result;
 
 		// CFC, possibly Java object too (though I think that's a bug)
@@ -131,6 +135,7 @@ component accessors="true" singleton {
 			return '[Object #getMetaData( result ).name#]';
 		// Serializable types
 		} else if( isArray( result ) || isStruct( result ) || isQuery( result ) ) {
+			result = serializeJSON( result, 'struct' );
 			return formatterUtil.formatJson( json=result, ANSIColors=JSONService.getANSIColors() );
 		// Yeah, I give up
 		} else {
@@ -145,5 +150,16 @@ component accessors="true" singleton {
 	function stripComments( string command ) {
 		return reReplaceNoCase( arguments.command, "//[^""']*$|/\*.*\*/", "", "all" );
 	}
+
+	private function formatXML( XMLDoc ) {
+		var xlt = '<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+		<xsl:output method="xml" encoding="utf-8" indent="yes" xslt:indent-amount="2" xmlns:xslt="http://xml.apache.org/xslt" />
+		<xsl:strip-space elements="*"/>
+		<xsl:template match="node() | @*"><xsl:copy><xsl:apply-templates select="node() | @*" /></xsl:copy></xsl:template>
+		</xsl:stylesheet>';
+
+		return toString( XmlTransform( XMLDoc, xlt) );
+	}
+
 
 }

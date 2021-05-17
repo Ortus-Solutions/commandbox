@@ -15,8 +15,6 @@ class Commandbox < Formula
     regex(/Download CommandBox v?(\d+(?:\.\d+)+)/i)
   end
 
-  bottle :unneeded
-
   depends_on "openjdk"
 
   resource "apidocs" do

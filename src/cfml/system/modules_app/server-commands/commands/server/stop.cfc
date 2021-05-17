@@ -14,19 +14,21 @@ component aliases="stop" {
 	property name="serverService" inject="ServerService";
 
 	/**
-	 * @name.hint the short name of the server to stop
+	 * @name the short name of the server to stop
 	 * @name.optionsUDF serverNameComplete
-	 * @directory.hint web root for the server
+	 * @directory web root for the server
 	 * @serverConfigFile The path to the server's JSON file.
-	 * @forget.hint Remove the directory information from disk
-	 * @all.hint Stop ALL running servers
+	 * @forget Remove the directory information from disk
+	 * @all Stop ALL running servers
+	 * @verbose Show raw output of stop command
 	 **/
 	function run(
 		string name,
 		string directory,
 		String serverConfigFile,
 		boolean forget=false,
-		boolean all=false ){
+		boolean all=false,
+		boolean verbose=false ){
 
 
 		if( arguments.all ) {
@@ -63,6 +65,9 @@ component aliases="stop" {
 				print.boldWhiteOnRedLine( 'ERROR' );
 				print.boldRedLine( results.messages );
 			} else {
+				if( verbose && len( results.messages ) ) {
+					print.line( results.messages )
+				}
 				print.greenLine( 'Stopped' );
 			}
 

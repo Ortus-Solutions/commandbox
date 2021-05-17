@@ -87,10 +87,7 @@ component accessors="true" singleton="true" {
 	*
 	**/
 	public function installLucee( installDetails, serverInfo ) {
-
-		if( installDetails.initialInstall ) {
-			configureWebXML( cfengine="lucee", version=installDetails.version, source=serverInfo.webXML, destination=serverInfo.webXML, serverInfo=serverInfo );
-		}
+		configureWebXML( cfengine="lucee", version=installDetails.version, source=serverInfo.webXML, destination=serverInfo.webXML, serverInfo=serverInfo, installDetails=installDetails );
 		return installDetails;
 	}
 
@@ -99,10 +96,7 @@ component accessors="true" singleton="true" {
 	*
 	**/
 	public function installRailo( installDetails, serverInfo ) {
-
-		if(  installDetails.initialInstall  ) {
-			configureWebXML( cfengine="railo", version=installDetails.version, source=serverInfo.webXML, destination=serverInfo.webXML, serverInfo=serverInfo );
-		}
+		configureWebXML( cfengine="railo", version=installDetails.version, source=serverInfo.webXML, destination=serverInfo.webXML, serverInfo=serverInfo, installDetails=installDetails );
 		return installDetails;
 	}
 
@@ -271,7 +265,9 @@ component accessors="true" singleton="true" {
 			// CommandBox ships with a pack200 compressed Lucee jar. Unpack it for faster start
 			unpackLuceeJar( thislib, installDetails.version );
 
-			fileCopy( expandPath( '/commandbox/system/config/web.xml' ), thisWebinf & '/web.xml');
+			if( !fileExists( thisWebinf & '/web.xml' ) ) {
+				fileCopy( expandPath( '/commandbox/system/config/web.xml' ), thisWebinf & '/web.xml');	
+			}
 
 			// Mark this WAR as being exploded already
 			fileWrite( engineTagFile, thisEngineTag );
@@ -376,56 +372,76 @@ component accessors="true" singleton="true" {
 	* @source source web.xml
 	* @destination target web.xml
 	**/
-	public function configureWebXML( required cfengine, required version, required source, required destination, required struct serverInfo ) {
+	public function configureWebXML( required cfengine, required version, required source, required destination, required struct serverInfo, required struct installDetails ) {
+		var fullServerConfigDir = serverInfo.serverConfigDir;
+		var fullWebConfigDir = serverInfo.webConfigDir;
+
+		if( fullServerConfigDir.startsWith( '/WEB-INF' ) ) {
+			fullServerConfigDir = installDetails.installDir & fullServerConfigDir;
+		}
+		if( fullWebConfigDir.startsWith( '/WEB-INF' ) ) {
+			fullWebConfigDir = installDetails.installDir & fullWebConfigDir;
+		}
+
 		var webXML = XMLParse( source );
-		var servlets = xmlSearch(webXML,"//:servlet-class[text()='#lcase( cfengine )#.loader.servlet.CFMLServlet']");
-		if( !servlets.len() ) {
-			var servlets = xmlSearch(webXML,"//servlet-class[text()='#lcase( cfengine )#.loader.servlet.CFMLServlet']");
-		}
-		var initParam = xmlElemnew(webXML,"http://java.sun.com/xml/ns/javaee","init-param");
-		initParam.XmlChildren[1] = xmlElemnew(webXML,"param-name");
-		initParam.XmlChildren[1].XmlText = "#lcase( cfengine )#-web-directory";
-		initParam.XmlChildren[2] = xmlElemnew(webXML,"param-value");
-		initParam.XmlChildren[2].XmlText = serverInfo.webConfigDir;
-		arrayInsertAt(servlets[1].XmlParent.XmlChildren,4,initParam);
-
-		var servlets = xmlSearch(webXML,"//:servlet-class[text()='#lcase( cfengine )#.loader.servlet.CFMLServlet']");
-		if( !servlets.len() ) {
-			var servlets = xmlSearch(webXML,"//servlet-class[text()='#lcase( cfengine )#.loader.servlet.CFMLServlet']");
-		}
-		var initParam = xmlElemnew(webXML,"http://java.sun.com/xml/ns/javaee","init-param");
-		initParam.XmlChildren[1] = xmlElemnew(webXML,"param-name");
-		initParam.XmlChildren[1].XmlText = "#lcase( cfengine )#-server-directory";
-		initParam.XmlChildren[2] = xmlElemnew(webXML,"param-value");
-		initParam.XmlChildren[2].XmlText = serverInfo.serverConfigDir;
-		arrayInsertAt(servlets[1].XmlParent.XmlChildren,4,initParam);
-
+		var updateMade = false;
+		var package = lcase( cfengine );
+		
+		updateMade = ensurePropertServletInitParam( webXML, '#package#.loader.servlet.CFMLServlet', "#package#-web-directory", fullWebConfigDir );
+		updateMade = ensurePropertServletInitParam( webXML, '#package#.loader.servlet.CFMLServlet', "#package#-server-directory", fullServerConfigDir ) || updateMade;
+		
 		// Lucee 5+ has a LuceeServlet as well as will create the WEB-INF by default in your web root
-		if( arguments.cfengine == 'lucee' && val( listFirst( arguments.version, '.' )) >= 5 ) {
-			var servlets = xmlSearch(webXML,"//:servlet-class[text()='#lcase( cfengine )#.loader.servlet.LuceeServlet']");
-			if( !servlets.len() ) {
-				var servlets = xmlSearch(webXML,"//servlet-class[text()='#lcase( cfengine )#.loader.servlet.LuceeServlet']");
-			}
-			var initParam = xmlElemnew(webXML,"http://java.sun.com/xml/ns/javaee","init-param");
-			initParam.XmlChildren[1] = xmlElemnew(webXML,"param-name");
-			initParam.XmlChildren[1].XmlText = "#lcase( cfengine )#-web-directory";
-			initParam.XmlChildren[2] = xmlElemnew(webXML,"param-value");
-			initParam.XmlChildren[2].XmlText = serverInfo.webConfigDir;
-			arrayInsertAt(servlets[1].XmlParent.XmlChildren,4,initParam);
-
-			var servlets = xmlSearch(webXML,"//:servlet-class[text()='#lcase( cfengine )#.loader.servlet.LuceeServlet']");
-			if( !servlets.len() ) {
-				var servlets = xmlSearch(webXML,"//servlet-class[text()='#lcase( cfengine )#.loader.servlet.LuceeServlet']");
-			}
-			var initParam = xmlElemnew(webXML,"http://java.sun.com/xml/ns/javaee","init-param");
-			initParam.XmlChildren[1] = xmlElemnew(webXML,"param-name");
-			initParam.XmlChildren[1].XmlText = "#lcase( cfengine )#-server-directory";
-			initParam.XmlChildren[2] = xmlElemnew(webXML,"param-value");
-			initParam.XmlChildren[2].XmlText = serverInfo.serverConfigDir;
-			arrayInsertAt(servlets[1].XmlParent.XmlChildren,4,initParam);
+		if( arguments.cfengine == 'lucee' && val( listFirst( arguments.version, '.' )) >= 5 ) {			
+			updateMade = ensurePropertServletInitParam( webXML, '#package#.loader.servlet.LuceeServlet', "#package#-web-directory", fullWebConfigDir ) || updateMade;
+			updateMade = ensurePropertServletInitParam( webXML, '#package#.loader.servlet.LuceeServlet', "#package#-server-directory", fullServerConfigDir ) || updateMade;
 		}
-		writeXMLFile( webXML, destination );
+		if( updateMade ) {
+			writeXMLFile( webXML, destination );	
+		}
 		return true;
+	}
+	
+
+	/**
+	* Ensure a given servlet has a specific init param value
+	*
+	* @webXML XML Doc of webl.xml
+	* @servletClass Name of servlet to check
+	* @initParamName Name of init param to ensure exists
+	* @initParamValue Value init param needs to have
+	* 
+	* @returns true if changes were made, false if nothing was updated.
+	**/
+	function ensurePropertServletInitParam( webXML, string servletClass, string initParamName, string initParamValue ) {
+		var servlets = xmlSearch(webXML,"//:servlet-class[text()='#servletClass#']");
+		if( !servlets.len() ) {
+			var servlets = xmlSearch(webXML,"//servlet-class[text()='#servletClass#']");
+		}
+		if( !servlets.len() ) {
+			return false;
+		}
+		
+		// If this servlet already has an init-param of this name, ensure the value is correct
+		for( var initParam in servlets[1].XMLParent.XMLChildren.filter( (x)=>x.XMLName=='init-param' ) ) {
+			if( !isNull( initParam[ 'param-name' ].XMLText ) && initParam[ 'param-name' ].XMLText == initParamName ) {
+				if( initParam[ 'param-value' ].XMLText == initParamValue ) {
+					return false;
+				} else {
+					initParam[ 'param-value' ].XMLText = initParamValue;
+					return true;
+				}
+			}
+		}
+		
+		// if we didn't find a matching init-param above then add it now
+		var initParam = xmlElemnew(webXML,"http://java.sun.com/xml/ns/javaee","init-param");
+		initParam.XmlChildren[1] = xmlElemnew(webXML,"param-name");
+		initParam.XmlChildren[1].XmlText = initParamName;
+		initParam.XmlChildren[2] = xmlElemnew(webXML,"param-value");
+		initParam.XmlChildren[2].XmlText = initParamValue;
+		arrayInsertAt(servlets[1].XmlParent.XmlChildren,4,initParam);
+		return true;
+
 	}
 
 	/**

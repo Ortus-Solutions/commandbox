@@ -59,59 +59,65 @@ component{
 		boolean debug
 	){
 		var functionText = arguments.name & '( ';
-
-		// Additional param go into the function
-		if( arrayLen( arguments ) > 1 ) {
-
-			// Positional params
-			if( isNumeric( listGetAt( structKeyList( arguments ), 2 ) ) ) {
-
-				var i = 1;
-				while( ++i <= arrayLen( arguments ) ) {
-
-					functionText &= ( i>2 ? ', ' : '' );
-					arguments[ i ] = print.unansi( arguments[ i ] );
-
-					// If this is a struct or array function, we have at least one param, and it's JSON, just pass it in as complex data.
-					if( ( left( arguments.name, 5 ) == 'array' || left( arguments.name, 6 ) == 'struct' || arguments.name == 'isArray'  || arguments.name == 'isStruct' )
-					    && i==2 && isJSON( arguments[ i ] ) ) {
-						functionText &= '#convertJSONEscapesToCFML( arguments[ i ] )#';
-					} else {
-						functionText &= '"#escapeArg( arguments[ i ] )#"';
-					}
-
-				} // end param loop
-
-
-			// Named params
-			} else {
-
-				var i = 0;
-				for( var param in arguments ) {
-					if( param=='name' ) {
-						continue;
-					}
-					i++;
-
-					functionText &= ( i>1 ? ', ' : '' );
-
-					functionText &= '#param#="#escapeArg( print.unansi( arguments[ param ] ) )#"';
-
-				} // end param loop
-
-
-			}
-
-
-		} // end additional params?
-
-		functionText &= ' )';
-
-		// Run our function via the REPL
-		var result = command( "repl" )
-			.params( functionText )
-			.run( returnOutput=true, echo=false );
-
+		var requestID = createUUID();
+		
+		try {
+			// Additional param go into the function
+			if( arrayLen( arguments ) > 1 ) {
+	
+				// Positional params
+				if( isNumeric( listGetAt( structKeyList( arguments ), 2 ) ) ) {
+	
+					var i = 1;
+					while( ++i <= arrayLen( arguments ) ) {
+	
+						functionText &= ( i>2 ? ', ' : '' );
+						arguments[ i ] = print.unansi( arguments[ i ] );
+						request[ requestID ][ 'arg_#i#' ] = arguments[ i ];
+	
+						// If this is a struct or array function, we have at least one param, and it's JSON, just pass it in as complex data.
+						if( ( left( arguments.name, 5 ) == 'array' || left( arguments.name, 6 ) == 'struct' || arguments.name == 'isArray'  || arguments.name == 'isStruct' )
+						    && i==2 && isJSON( arguments[ i ] ) ) {
+							functionText &= "deserializeJSON( request[ '#requestID#' ][ 'arg_#i#' ] )";
+						} else {
+							functionText &= "request[ '#requestID#' ][ 'arg_#i#' ]";
+						}
+	
+					} // end param loop
+	
+	
+				// Named params
+				} else {
+	
+					var i = 0;
+					for( var param in arguments ) {
+						if( param=='name' ) {
+							continue;
+						}
+						i++;
+	
+						functionText &= ( i>1 ? ', ' : '' );
+						arguments[ param ] = print.unansi( arguments[ param ] );
+						request[ requestID ][ 'arg_#param#' ] = arguments[ param ];
+						functionText &= "#param#=request[ '#requestID#' ][ 'arg_#param#' ]";
+	
+					} // end param loop
+	
+	
+				}
+	
+	
+			} // end additional params?
+	
+			functionText &= ' )';
+			// Run our function via the REPL
+			var result = command( "repl" )
+				.params( functionText )
+				.run( returnOutput=true, echo=false );
+		} finally {
+			// Clear out temp vars in memory
+			request.delete( requestID );
+		}
 		// Print out the results
 		print.text( result );
 

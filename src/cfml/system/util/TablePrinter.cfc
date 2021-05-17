@@ -1,9 +1,20 @@
+/**
+*********************************************************************************
+* Copyright Since 2014 CommandBox by Ortus Solutions, Corp
+* www.coldbox.org | www.ortussolutions.com
+********************************************************************************
+* @author Brad Wood, Luis Majano, Scott Steinbeck
+*
+* I print tables
+*
+*/
 component {
 
     processingdirective pageEncoding='UTF-8';
-    
+
     property name="print" inject="PrintBuffer";
     property name="shell" inject="shell";
+	property name="convert" inject="DataConverter";
 
     variables.tableChars = {
 		"top": chr( 9552 ), // ═
@@ -25,46 +36,61 @@ component {
 		"headerRightMid": chr( 9571 ), // ╣
 		"middle": chr( 9474 ) // │
 	};
-	
+
     /**
      * Outputs a table to the screen
-     * @headers An array of column headers, or a query.  When passing a query, the "data" argument is not used.
-     * @data An array of data for the table.  Each item in the array may either be
-     *            an array in the correct order matching the number of headers or a struct
-     *            with keys matching the headers.
-     * @includeHeaders A list of headers to include.  Used for query inputs
+	 * @data Any type of data for the table.  Each item in the array may either be an array in the correct order matching the number of headers or a struct with keys matching the headers.
+	 * @includedHeaders A list of headers to include.  Used for query inputs
+     * @headerNames An list/array of column headers to use instead of the default
+	 * @debug Only print out the names of the columns and the first row values
      */
+
     public string function print(
-        required any headers,
-        array data=[],
-        string includeHeaders
-        
+		required any data=[],
+        any includedHeaders="",
+        any headerNames="",
+		boolean debug=false
     ) {
-    	// If query is sent in
-    	if( isQuery( headers ) ) {
-    		
-    		if( !isNull( arguments.includeHeaders ) && len( arguments.includeHeaders ) ) {
-    			arguments.headers = queryExecute(
-    				'SELECT #arguments.includeHeaders# FROM arguments.headers',
-    				[],
-    				{ dbType : 'query' }
-    			);
-    		}
-    		
-    		// Extract data in array of structs
-    		arguments.data = arguments.headers.reduce( (acc,row)=>{ return acc.append( row ) }, [] );
-    		// Extract column names into headers
-    		arguments.headers = arguments.headers.columnList.listToArray();
-    	}
-    	
-		arguments.data = autoFormatData( arguments.headers,arguments.data );
-		var headerData = processHeaders( arguments.headers, arguments.data )
-		
-		printHeader( headerData );
-		printData( data, headerData );
-		printTableEnd( headerData );
+
+		arguments.headerNames = isArray( arguments.headerNames ) ? arrayToList( arguments.headerNames ) : arguments.headerNames;
+		var dataQuery = isQuery( arguments.data ) ? arguments.data : convert.toQuery( arguments.data, arguments.headerNames );
+		if( !dataQuery.recordCount ) {
+			return 'No Data';
+		}
+		var includeList = isArray( arguments.includedHeaders ) ? arrayToList( arguments.includedHeaders ) : arguments.includedHeaders;
+		var columns = includeList != "" ? includeList: "*";
+
+		// validate columns first since the QoQ message can be confusing
+		if( columns != '*' ) {
+			columns.listEach( (c)=>listFindNoCase( dataQuery.columnList, c ) || c == '*' || throw( message='Header name [#c#] not found.', detail='Valid header names are [#dataQuery.columnList#]', type='commandException' ) );
+		}
+
+		dataQuery = queryExecute('SELECT #columns# FROM dataQuery',[],{ dbType : 'query' });
+
+		// Extract data in array of structs
+		var dataRows = convert.queryToArrayOfOrderedStructs( dataQuery );
+
+		// Extract column names into headers
+		var dataHeaders = queryColumnArray(dataQuery);
+		if(arguments.debug){
+			dataRows = [];
+			if(dataQuery.recordcount){
+				dataHeaders.each((x) => {
+					dataRows.append([x,dataQuery[x][1]]);
+				})
+			}
+			dataHeaders = ['Column','First Row Data'];
+
+		}
+		dataRows = autoFormatData( dataHeaders, dataRows );
+		dataHeaders = processHeaders( dataHeaders, dataRows )
+
+		printHeader( dataHeaders );
+		printData( dataRows, dataHeaders );
+		printTableEnd( dataHeaders );
         return print.getResult();
 	}
+
 
     /**
      * Outputs a table to the screen
@@ -75,18 +101,18 @@ component {
         required array headers,
         required array data
     ) {
-        var headerData = arguments.headers.map( ( header, index ) => calculateColumnData( index, header, data ) );
+        var headerData = arguments.headers.map( ( header, index ) => calculateColumnData( index, header, data ), true );
         var termWidth = shell.getTermWidth()-1;
         if( termWidth <= 0 ) {
         	termWidth = 100;
         }
         var tableWidth = headerData.reduce( (acc=0,header)=>acc+header.maxWidth+3 )+1;
-        
+
         // Crunch time-- we need to shed a few pounds
         if( tableWidth > termWidth ) {
         	var overage = tableWidth-termWidth;
         	var medianRatioTotal = headerData.reduce( (acc=0,header)=>acc+( header.medianRatio ) );
-        	
+
         	headerData = headerData.map( (header)=>{
         		// Calculate how many characters to remove from each column based on their "squishable" ratio
         		var charsToLose = round( overage*( header.medianRatio/medianRatioTotal ) );
@@ -94,9 +120,9 @@ component {
         		return header
         	} );
         }
-        
+
         var tableWidth = headerData.reduce( (acc=0,header)=>acc+header.maxWidth+3 )+1;
-        
+
         // Table is still too big, time for drastic measures
         if( tableWidth > termWidth ) {
         	var lastCol = 1;
@@ -109,21 +135,27 @@ component {
         		totalWidth += headerData[ lastCol ].maxWidth+3;
         		lastCol++;
         	}
-        	
+
         	// If there's not room for our final "..." column, then back up one col
    			if( termWidth-totalWidth < 6 ) {
    				lastCol--;
    			}
         	// Just whack off the extra columns
-        	headerData = headerData.slice( 1, lastCol-1 );
+        	headerData = headerData.slice( 1, max( lastCol-1, 1 ) );
         	headerData.append( {
         		"value":"...",
         		"maxWidth":3,
         		"overageCol":true
         	} );
-   			
+
+        	// This happens if the first column is still so big it won't fit and the while loop above never entered
+        	if( totalWidth == 1 ) {
+        		// Cut down that one column so it fits
+        		headerData[1].maxWidth=termWidth-11
+        	}
+
         }
-        
+
         return headerData;
 	}
 
@@ -140,7 +172,7 @@ component {
 				throw( 'Data in row #rowIndex# is missing values.  It has only #row.len()# columns, but there are at least #index# headers.' );
 			}
 			var data = row[ index ];
-			if ( isStruct( data ) ) {
+			if ( cellHasFormattingEmbedded( data ) ) {
 				data = data.value;
 			}
 			acc.maxWidth = max( acc.maxWidth, len( stringify( data ) ) );
@@ -153,9 +185,10 @@ component {
 			"medianWidth": [ len( arguments.header ) ],
 			"medianRatio": 1
 		} );
+
 		// Finalize median calculation
 		colData.medianWidth = colData.medianWidth.sort( (a,b)=>a>b );
-		colData.medianWidth = max( colData.medianWidth[ int( colData.medianWidth.len() / 2 ) ], 0 );
+		colData.medianWidth = max( colData.medianWidth[ max( int( colData.medianWidth.len() / 2 ), 1 ) ], 0 );
 		// This ratio represents how 'squishable' a column is as a function of the amount of whitespae and it's overall length
 		colData.medianRatio = max( ( (colData.maxWidth-colData.medianWidth)*data.len() ), 1 )*colData.maxWidth;
 		return colData
@@ -235,14 +268,14 @@ component {
 			if ( index == headerData.len() && ( header.overageCol ?: false ) ) {
 				var data = '...';
 			} else {
-				var data = row[ index ];	
+				var data = row[ index ];
 			}
 			var options = "white";
-			if ( isStruct( data ) ) {
+			if ( cellHasFormattingEmbedded( data ) ) {
 				options = data.options;
 				data = data.value;
 			}
-			
+
 			print.text( padRight( stringify( data ), header.maxWidth ), options );
 			print.white( " " );
 			if ( index != headerData.len() ) {
@@ -311,7 +344,7 @@ component {
 				return item;
 			}
 			return getStructValues( item, headers );
-		} );
+		}, true );
 	}
 
     /**
@@ -322,7 +355,7 @@ component {
 	private array function getStructValues( required struct item, required array headers ) {
 		return arguments.headers.map( ( key ) => {
 			return item[ key ];
-		} );
+		}, true );
 	}
 
     /**
@@ -338,29 +371,27 @@ component {
 			return arguments.text;
 		} else if( textLength > arguments.maxWidth ) {
 			if( arguments.maxWidth < 4 ) {
-				return left( text, arguments.maxWidth );	
+				return left( text, arguments.maxWidth );
 			} else {
-				return left( text, arguments.maxWidth-3 )&'...';				
+				return left( text, arguments.maxWidth-3 )&'...';
 			}
 		}
 		arguments.text &= repeatString( arguments.padChar, arguments.maxWidth-textLength );
 		return arguments.text;
 	}
-	
+
 	function stringify( any data ) {
 		if( isSimpleValue( data ) ) {
 			return data;
-		} else if ( isArray( data ) ) {
-			return '[Array]';
-		} else if ( isStruct( data ) ) {
-			return '[Struct]';
-		} else if ( isXML( data ) ) {
-			return '[XML]';
-		} else if ( isBinary( data ) ) {
-			return '[Binary]';
+		} else if (isArray(data) || isStruct(data)) {
+			return SerializeJSON(data);
 		} else {
-			return '[#data.getClass().getName()#]';			
+			return '[#data.getClass().getName()#]';
 		}
+	}
+	
+	function cellHasFormattingEmbedded( data ) {
+		return isStruct( data ) && data.count() == 2 && data.keyExists( 'options' ) && data.keyExists( 'value' ) && isSimpleValue( data.options );
 	}
 
 }

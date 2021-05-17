@@ -16,8 +16,8 @@ External Dependencies:
  	<property name="distro.groupID"				value="ortussolutions" />
  	<property name="distro.name"				value="commandbox"/>
  	<!-- Special things happen when the version and stableVersion are the same value as that signifies a "stable" build.   -->
- 	<property name="commandbox.version"			value="5.3.0"/>
- 	<property name="commandbox.stableVersion"	value="5.3.0"/>
+ 	<property name="commandbox.version"			value="5.3.1"/>
+ 	<property name="commandbox.stableVersion"	value="5.3.1"/>
 
     <!-- Time Label -->
 	<tstamp prefix="start"/>
@@ -1064,10 +1064,19 @@ External Dependencies:
 			</exclusions>
 		</dependency>
 
+		<dependency groupId="org.eclipse.jgit" artifactId="org.eclipse.jgit.ssh.jsch" version="${jgit.version}" dest="${lib.dir}" repoId="jgit-repository" unzip="false" type="jar">
+			<exclusions>
+				<!-- Lucee already includes these jars -->
+				<exclusion groupId="org.slf4j" artifactId="slf4j-api" />
+				<exclusion groupId="org.apache.httpcomponents" artifactId="httpclient" />
+			</exclusions>
+		</dependency>		
+
 	    <dependency groupId="com.beust" artifactId="jcommander" version="1.47" dest="${lib.dir}" type="jar" unzip="false"/>
 	    <dependency groupId="net.minidev" artifactId="json-smart-mini" version="1.0.8" unzip="false" type="jar" dest="${lib.dir}"/>
 
 	    <!-- engine libs -->
+	    <!-- stable builds require "maven-repository", and snapshots require "sonatype-repository" -->
 	  	<dependency groupId="org.lucee" artifactId="lucee" version="${lucee.version}" dest="${lib.dir}" unzip="false" type="jar" repoId="maven-repository">
 			<exclusions>
 				<exclusion groupId="org.apache.ant" artifactId="ant" />
