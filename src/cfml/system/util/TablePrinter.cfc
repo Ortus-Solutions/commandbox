@@ -75,7 +75,9 @@ component {
 		if(arguments.debug){
 			dataRows = [];
 			if(dataQuery.recordcount){
-				dataHeaders.each((x) => {
+				dataHeaders
+				.sort( 'textnocase' )
+				.each((x) => {
 					dataRows.append([x,dataQuery[x][1]]);
 				})
 			}
