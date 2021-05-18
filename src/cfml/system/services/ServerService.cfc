@@ -773,8 +773,7 @@ component accessors="true" singleton {
 		}
 
 		// Clean up spaces in welcome file list
-		serverInfo.welcomeFiles = serverInfo.welcomeFiles.listMap( function( i ){ return trim( i ); } );
-
+		serverInfo.welcomeFiles = serverInfo.welcomeFiles.listMap( ( i )=>trim( i ) );
 
 		// relative rewrite config path in server.json is resolved relative to the server.json
 		if( isDefined( 'serverJSON.web.rewrites.config' ) ) { serverJSON.web.rewrites.config = fileSystemUtil.resolvePath( serverJSON.web.rewrites.config, defaultServerConfigFileDirectory ); }
