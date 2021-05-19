@@ -67,10 +67,11 @@ component {
 		// validate columns first since the QoQ message can be confusing
 		if( columns != '*' ) {
 			columns.listEach( (c)=> {
+				c = trim( c );
 				// This expression will either evaluate to true or throw an exception
-				listFindNoCase( dataQuery.columnList, trim( c ) ) 
-					|| trim( c ) == '*'
-					|| throw( message='Header name [#trim( c )#] not found.', detail='Valid header names are [#dataQuery.columnList#]', type='commandException' );
+				listFindNoCase( dataQuery.columnList, c ) 
+					|| c == '*'
+					|| throw( message='Header name [#c#] not found.', detail='Valid header names are [#dataQuery.columnList#]', type='commandException' );
 			} );
 		}
 
