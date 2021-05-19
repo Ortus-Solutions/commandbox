@@ -54,7 +54,11 @@ component {
 
 		arguments.headerNames = isArray( arguments.headerNames ) ? arrayToList( arguments.headerNames ) : arguments.headerNames;
 		var dataQuery = isQuery( arguments.data ) ? arguments.data : convert.toQuery( arguments.data, arguments.headerNames );
-		if( !dataQuery.recordCount ) {
+		
+		// Check for
+		// printTable []
+		// printTable [{}]
+		if( !dataQuery.recordCount || !len( dataQuery.columnList )  ) {
 			return 'No Data';
 		}
 		var includeList = isArray( arguments.includedHeaders ) ? arrayToList( arguments.includedHeaders ) : arguments.includedHeaders;
