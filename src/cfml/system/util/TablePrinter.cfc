@@ -64,16 +64,14 @@ component {
 		var includeList = isArray( arguments.includedHeaders ) ? arrayToList( arguments.includedHeaders ) : arguments.includedHeaders;
 		var columns = includeList != "" ? includeList: "*";
 
-		// validate columns first since the QoQ message can be confusing
-		if( columns != '*' ) {
-			columns.listEach( (c)=> {
-				c = trim( c );
-				// This expression will either evaluate to true or throw an exception
-				listFindNoCase( dataQuery.columnList, c ) 
-					|| c == '*'
-					|| throw( message='Header name [#c#] not found.', detail='Valid header names are [#dataQuery.columnList#]', type='commandException' );
-			} );
-		}
+		// validate columns first and throw our own error since the QoQ error message for invalid columns can be confusing
+		columns.listEach( (c)=> {
+			c = trim( c );
+			// This expression will either evaluate to true or throw an exception
+			listFindNoCase( dataQuery.columnList, c ) 
+				|| c == '*'
+				|| throw( message='Header name [#c#] not found.', detail='Valid header names are [#dataQuery.columnList#]', type='commandException' );
+		} );
 
 		dataQuery = queryExecute('SELECT #columns# FROM dataQuery',[],{ dbType : 'query' });
 

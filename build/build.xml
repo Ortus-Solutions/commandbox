@@ -1077,7 +1077,7 @@ External Dependencies:
 
 	    <!-- engine libs -->
 	    <!-- stable builds require "maven-repository", and snapshots require "sonatype-repository" -->
-	  	<dependency groupId="org.lucee" artifactId="lucee" version="${lucee.version}" dest="${lib.dir}" unzip="false" type="jar" repoId="maven-repository">
+	  	<dependency groupId="org.lucee" artifactId="lucee" version="${lucee.version}" dest="${lib.dir}" unzip="false" type="jar" repoId="sonatype-repository">
 			<exclusions>
 				<exclusion groupId="org.apache.ant" artifactId="ant" />
 				<exclusion groupId="javax.servlet" artifactId="javax.servlet-api" />
