@@ -488,7 +488,6 @@ public class LoaderCLIMain{
 	private static String getJarDir(){
 		String path = new File( LoaderCLIMain.class.getProtectionDomain()
 				.getCodeSource().getLocation().getPath() ).getParent();
-		new java.net.URLDecoder();
 		// Decode things like spaces in folders which will be %20
 		return URLDecoder.decode( path );
 	}
