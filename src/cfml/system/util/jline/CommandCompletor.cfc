@@ -35,13 +35,19 @@ component singleton {
 		try {
 
 			var buffer = parsedLine.line();
+			var bufferEndsWithSpace = buffer.endsWith( ' ' );
 
 			// Try to resolve the command.
 			// If buffer ends in space, we don't need to worry about the partial match of a command
-			var commandChain = commandService.resolveCommand( line=buffer, forCompletion=!buffer.endsWith( ' ' ) );
+			var commandChain = commandService.resolveCommand( line=buffer, forCompletion=!bufferEndsWithSpace );
 
 			// If there are multiple commands like "help | more", we only care about the last one
 			var commandInfo = commandChain[ commandChain.len() ];
+			
+			// If we have a command chain, only worry about the last one
+			if( commandChain.len() > 1 ) {
+				buffer = commandInfo.originalLine & ( bufferEndsWithSpace ? ' ' : '' );
+			}
 
 			// Positive match up to this cursor position
 			var matchedToHere = len( commandInfo.commandString );
@@ -50,7 +56,7 @@ component singleton {
 
 			// TODO: Break REPL completion out into separate CFC
 			// Tab completion for stuff like #now if we're still on the first word
-			if( commandInfo.commandString.left( 4 ) == 'cfml' && commandInfo.originalLine.listLen( ' ' ) == 1 && !buffer.endsWith( ' ' ) ) {
+			if( commandInfo.commandString.left( 4 ) == 'cfml' && commandInfo.originalLine.listLen( ' ' ) == 1 && !bufferEndsWithSpace ) {
 
 
 				// Loop over all the possibilities at this level
@@ -131,7 +137,7 @@ component singleton {
 					var leftOver = '';
 
 					// Still typing
-					if( !buffer.endsWith( ' ' ) ) {
+					if( !bufferEndsWithSpace ) {
 
 						// grab the last word from the parsed line
 						var leftOver = parsedLine.word();
@@ -194,11 +200,11 @@ component singleton {
 				} else if(
 							passedParameters.positionalParameters.len() > 1
 							|| ( passedParameters.positionalParameters.len() == 1
-								&& ( buffer.endsWith( ' ' ) || structCount( passedParameters.flags ) ) )
+								&& ( bufferEndsWithSpace || structCount( passedParameters.flags ) ) )
 						) {
 
 					// If the buffer ends with a space, they were done typing the last param
-					if( buffer.endsWith( ' ' ) ) {
+					if( bufferEndsWithSpace ) {
 
 						// Loop over remaining possible params and suggest the boolean ones as flags
 						var i = 0;
@@ -279,7 +285,7 @@ component singleton {
 							// grab the last one as the partial match
 							partialMatch = passedParameters.positionalParameters.last();
 						// If there are flags and the buffer doesn't end with a space, then we must still be typing one
-						} else if( structCount( passedParameters.flags ) && !buffer.endsWith( ' ' ) ) {
+						} else if( structCount( passedParameters.flags ) && !bufferEndsWithSpace ) {
 							// grab the last chunk of text from the buffer
 							partialMatch = parsedLine.word();
 						}
