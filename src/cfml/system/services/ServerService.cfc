@@ -2461,14 +2461,10 @@ component accessors="true" singleton {
 	* Get all servers registered as an array of names
 	*/
 	array function getServerNames(){
-		var servers = getServers();
-		var results = [];
-
-		for( var thisServer in servers ){
-			arrayAppend( results, servers[ thisServer ].name );
-		}
-
-		return results;
+		return getServers()
+			.valueArray()
+			.map( (s)=>s.name )
+			.sort( 'textNoCase' );		
 	}
 
 	/**
@@ -2681,6 +2677,23 @@ component accessors="true" singleton {
 		}
 
 		return props;
+	}
+
+	/**
+	* Dynamic completion for server names, sorted by last started
+	*/
+	function serverNameComplete() {
+		
+		return getservers()
+			.valueArray()
+			.sort( (a,b)=>{
+				if( len( a.dateLastStarted ) && len( b.dateLastStarted ) ) {
+					return dateDiff( 's', a.dateLastStarted, b.dateLastStarted );
+				} else {
+					return len( b.dateLastStarted ) - len( a.dateLastStarted );
+				}
+			} )
+			.map( (s,i)=>return { name : s.name, group : 'Server Names', sort : i } );
 	}
 	
 		

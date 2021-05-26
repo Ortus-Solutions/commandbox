@@ -490,10 +490,12 @@ component singleton {
 			var name = match.name;
 			var group = match.group ?: 'Values';
 			var description = match.description ?: '';
+			var sort = match.sort ?: 999;
 		} else {
 			var name = match;
 			var group = 'Values';
 			var description = '';
+			var sort = 999;
 		}
 		startsWith = lcase( startsWith );
 		var complete = false;
@@ -503,9 +505,9 @@ component singleton {
 			}
 
 			if( namedParams ) {
-				add( candidates, paramName & '=' & name, group, description, complete );
+				add( candidates, paramName & '=' & name, group, description, complete, sort ?: nullValue() );
 			} else {
-				add( candidates, name, group, description, complete );
+				add( candidates, name, group, description, complete, sort );
 			}
 		}
 	}
@@ -513,7 +515,7 @@ component singleton {
 	/**
 	* JLine3 needs an array of Java objects, so convert our array of strings to that
  	**/
-	private function add( candidates, name, group='', description='', boolean complete = false ) {
+	private function add( candidates, name, group='', description='', boolean complete = false, sort=999 ) {
 		candidates.append(
 			createObject( 'java', 'org.jline.reader.Candidate' )
 				.init(
@@ -523,7 +525,8 @@ component singleton {
 					description.len() ? description : nullValue(),	// descr
 					nullValue(),									// suffix
 					nullValue(),									// key
-					complete 										// complete
+					complete//, 									// complete
+					//val( sort )									// sort
 				)
 		);
 
