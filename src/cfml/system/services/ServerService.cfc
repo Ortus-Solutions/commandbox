@@ -1805,6 +1805,7 @@ component accessors="true" singleton {
 		//need to check if a shell has been defined for this action
 		if( menuItem.keyExists( 'action' ) && listFindNoCase('run,runAsync,runTerminal',menuItem.action)){
 			menuItem[ 'shell' ] = menuItem.shell ?: fileSystemUtil.getNativeShell();
+			menuItem[ 'workingDirectory' ] = menuItem[ 'workingDirectory' ] ?: relativePath;
 			// Some special love for box commands
 			if( menuItem.command.lCase().reFindNoCase( '^box(\.exe)? ' )  ) {
 				menuItem.command = fixBinaryPath( trim(menuItem.command), systemSettings.getSystemSetting( 'java.class.path' ));
