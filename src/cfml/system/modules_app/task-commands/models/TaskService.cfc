@@ -168,7 +168,7 @@ component singleton accessors=true {
 		// If the previous Task failed
 		if( finalExitCode != 0 ) {
 
-			ConsolePainter.forceStop( message );
+			ConsolePainter.forceStop();
 			shell.printString( chr( 10 ) );
 
 			// Dump out anything the task had printed so far
