@@ -200,6 +200,7 @@ component accessors="true" singleton {
 				'webConfigDir' : d.app.webConfigDir ?: '',
 				'serverConfigDir' : d.app.serverConfigDir ?: '',
 				'webXML' : d.app.webXML ?: '',
+				'webXMLOverride' : d.app.webXMLOverride ?: '',
 				'standalone' : d.app.standalone ?: false,
 				'WARPath' : d.app.WARPath ?: '',
 				'cfengine' : d.app.cfengine ?: '',
@@ -259,6 +260,9 @@ component accessors="true" singleton {
 		}
 		if( !isNull( serverProps.webXML ) ) {
 			serverProps.webXML = fileSystemUtil.resolvePath( serverProps.webXML );
+		}
+		if( !isNull( serverProps.webXMLOverride ) ){
+			serverProps.webXMLOverride = fileSystemUtil.resolvePath( serverProps.webXMLOverride );
 		}
 		if( !isNull( serverProps.libDirs ) ) {
 			// Comma-delimited list needs each item resolved
@@ -435,6 +439,15 @@ component accessors="true" singleton {
 			    	}
 					serverJSON[ 'app' ][ 'webXML' ] = thisFile;
 			         break;
+				case "webXMLOverride":
+					// This path is canonical already.
+			    	var thisFile = replace( serverProps[ 'webXMLOverride' ], '\', '/', 'all' );
+			    	// If the webXML is south of the server's JSON, make it relative for better portability.
+			    	if( thisFile contains configPath ) {
+			    		thisFile = replaceNoCase( thisFile, configPath, '' );
+			    	}
+					serverJSON[ 'app' ][ 'webXMLOverride' ] = thisFile;
+					break;
 			    case "libDirs":
 					serverJSON[ 'app' ][ 'libDirs' ] = serverProps[ 'libDirs' ]
 						.listMap( function( thisLibDir ) {
@@ -715,6 +728,9 @@ component accessors="true" singleton {
 		// relative trayIcon in config setting server defaults is resolved relative to the web root
 		if( len( defaults.app.webXML ?: '' ) ) { defaults.app.webXML = fileSystemUtil.resolvePath( defaults.app.webXML, defaultwebroot ); }
 		serverInfo.webXML 			= serverProps.webXML 			?: serverJSON.app.webXML 			?: defaults.app.webXML;
+
+		if( len( defaults.app.webXMLOverride ?: '' ) ){ defaults.app.webXMLOverride = fileSystemUtil.resolvePath( defaults.app.webXMLOverride, defaultwebroot ); }
+		serverInfo.webXMLOverride	= serverProps.webXMLOverride	?: serverJSON.app.webXMLOverride	?: defaults.app.webXML;
 
 		// relative trayIcon in server.json is resolved relative to the server.json
 		if( serverJSON.keyExists( 'trayIcon' ) ) { serverJSON.trayIcon = fileSystemUtil.resolvePath( serverJSON.trayIcon, defaultServerConfigFileDirectory ); }
@@ -1439,6 +1455,10 @@ component accessors="true" singleton {
 		// Default is in WAR home
 		} else {
 			args.append( '--web-xml-path' ).append( '#serverInfo.serverHomeDirectory#/WEB-INF/web.xml' );
+		}
+
+		if ( Len( Trim( serverInfo.webXMLOverride ) ) ){
+			args.append( '--web-xml-override-path' ).append( serverInfo.webXMLOverride );
 		}
 
 		if( len( serverInfo.libDirs ) ) {
@@ -2558,6 +2578,7 @@ component accessors="true" singleton {
 			'serverHome'		 : "",
 			'webroot'			: "",
 			'webXML' 			: "",
+			'webXMLOverride' 	: "",
 			'HTTPEnable'		: true,
 			'HTTP2Enable'		: true,
 			'SSLEnable'			: false,
