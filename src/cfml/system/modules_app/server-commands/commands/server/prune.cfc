@@ -4,6 +4,7 @@
  * {code:bash}
  * server prune months=6
  * server prune months=6 --list
+ * server prune months=6 --force
  * {code}
  **/
 component {
@@ -19,19 +20,22 @@ component {
 	 **/    
     function run(
         string months,
-        Boolean list=false,   
+        Boolean list        = false,   
+        Boolean force       = false,
     ){
-        var serverInfo = serverService.resolveServerDetails( arguments ).serverinfo;
-        var servers = serverService.getServers();
-        var filterServers = [];
+        var serverInfo      = serverService.resolveServerDetails( arguments ).serverinfo;
+        var servers         = serverService.getServers();
+        var filterServers   = [];
 
         print.line( "prune started...", 'yellow' ).toConsole();
-        servers.each( function( ID ){ runningServerCheck( servers[ arguments.ID ] ); } );
+        if (!arguments.force){
+            servers.each( function( ID ){ runningServerCheck( servers[ arguments.ID ] ); } );
+        }
 
         if( arguments.list )
         {
             /* user wants to see the list of servers with given months */
-            print.line( "generating list of prune servers...", 'yellow' ).toConsole();
+            print.line( "generating list servers to be pruned...", 'yellow' ).toConsole();
             serverCount=0;
             data = [];
             for( currentServer in servers )
@@ -40,17 +44,17 @@ component {
                 result = dateDiff( "m", servers[ currentServer ].dateLastStarted, now() );
 
                 serverData = [];
-                if (result>=arguments.months){
+                if ( result >= arguments.months ){
                     ArrayAppend( serverData, "#servers[ currentServer ].name#" );
                     ArrayAppend( serverData, "#servers[ currentServer ].dateLastStarted#" );
                     ArrayAppend( serverData, "#result#" );  
                     ArrayAppend( data, serverData );
-                    serverCount+=1;
+                    serverCount += 1;
                 }
 
             }
 
-            print.table( data=data, headerNames=["name","last started", "months"] )
+            print.table( data=data, headerNames=[ "name", "last started", "months" ] )
             print.line( "" ).toConsole();
             print.blackOnGreenText( " total servers = #serverCount# " ).toConsole();
             print.line( "" ).toConsole();
@@ -64,22 +68,60 @@ component {
                 if ( result>=arguments.months ){
                     arrayAppend( filterServers, servers[ currentServer ] );
                 }
-            }
-    
-            for( currentServer in filterServers ){
+            }            
 
-                var askMessage = "Really forget & delete server '#currentServer.name#' forever [y/n]?";
+            if ( arguments.force ){
+
+                print.line( "using prune with force...", 'yellow' ).toConsole();
+
+                var runningServers = getRunningServers( servers );
+                /* areThereRunningServers = ( ! runningServers.isEmpty() ) */
+                /* print.line( "are there running servers: #areThereRunningServers#" ).toConsole(); */
+
+                if ( ! runningServers.isEmpty() ) {
+
+                    var stopMessage = "Stopping server #serverInfo.name# first....";
     
-                if( confirm( askMessage ) ){
+                    print.line( stopMessage )
+                        .toConsole();
+    
+                    runningServers.each( function( ID ){
+                        var stopResults = serverService.stop( runningServers[ arguments.ID ] );
+                        print.line( stopResults.messages, ( stopResults.error ? 'red' : 'green' ) )
+                            .toConsole();
+                    } );
+    
+                    // Give them a second or three to die or file locks will still be in place (on Windows, at least)
+                    // This is hacky, but there's no clean way to poll for when the process is 100% dead
+                    sleep( 3000 );
+                }
+
+                for( currentServer in filterServers ){
+
                     print.line( "server Service forget( #currentServer.name# )", 'red' )
                         .toConsole();
-                } else {
-                    print.line( "Cancelling forget '#currentServer.name#' command", 'blue' )
-                        .toConsole();
-                }        
+                }
+
+            } else {
         
-            }     
-    
+                for( currentServer in filterServers ){
+
+                    var askMessage = "Really forget & delete server '#currentServer.name#' forever [y/n]?";
+        
+                    if( confirm( askMessage ) ){
+                        print.line( "server Service forget( #currentServer.name# )", 'red' )
+                            .toConsole();
+                    } else {
+                        print.line( "Cancelling forget '#currentServer.name#' command", 'blue' )
+                            .toConsole();
+                    }        
+            
+                }     
+
+            
+            }
+
+
         }
 
 
@@ -92,6 +134,12 @@ component {
 				.line()
 				.toConsole();
 		}
-	}   
+	}
+    
+	private function getRunningServers( required struct servers ) {
+		return servers.filter( function( ID ){
+			return serverService.isServerRunning( servers[ arguments.ID ] );
+		} )
+	}    
 
 }
