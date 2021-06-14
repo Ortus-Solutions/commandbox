@@ -28,7 +28,7 @@ component {
         var filterServers   = [];
 
         print.line( "prune started...", 'yellow' ).toConsole();
-        if (!arguments.force){
+        if ( !arguments.force ){
             servers.each( function( ID ){ runningServerCheck( servers[ arguments.ID ] ); } );
         }
 
@@ -65,7 +65,7 @@ component {
 
             for( currentServer in servers ){
                 result = dateDiff( "m", servers[ currentServer ].dateLastStarted, now() );
-                if ( result>=arguments.months ){
+                if ( result >= arguments.months ){
                     arrayAppend( filterServers, servers[ currentServer ] );
                 }
             }            
@@ -78,7 +78,7 @@ component {
                 /* areThereRunningServers = ( ! runningServers.isEmpty() ) */
                 /* print.line( "are there running servers: #areThereRunningServers#" ).toConsole(); */
 
-                if ( ! runningServers.isEmpty() ) {
+                if ( !runningServers.isEmpty() ) {
 
                     var stopMessage = "Stopping server #serverInfo.name# first....";
     
@@ -98,7 +98,7 @@ component {
 
                 for( currentServer in filterServers ){
 
-                    print.line( "server Service forget( #currentServer.name# )", 'red' )
+                    print.line( serverService.forget( #currentServer.name# ), 'red' )
                         .toConsole();
                 }
 
@@ -109,7 +109,7 @@ component {
                     var askMessage = "Really forget & delete server '#currentServer.name#' forever [y/n]?";
         
                     if( confirm( askMessage ) ){
-                        print.line( "server Service forget( #currentServer.name# )", 'red' )
+                        print.line( serverService.forget( #currentServer.name# ), 'red' )
                             .toConsole();
                     } else {
                         print.line( "Cancelling forget '#currentServer.name#' command", 'blue' )
