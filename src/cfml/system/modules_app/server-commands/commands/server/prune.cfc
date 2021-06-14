@@ -42,9 +42,9 @@ component {
 
             generatePruneListServers( arguments.months, servers );
 
-            var askContinuePrune = "Prune will forget and delete this servers! Do still want to continue [y/n]?";
+            var askContinuePrune = "Prune will forget and delete this servers! Do you still want to continue [y/n]?";
 
-            if( confirm( askContinuePrune ) ){
+            if( arguments.force || confirm( askContinuePrune ) ){
 
                 for( currentServer in servers ){
                     result = dateDiff( "m", servers[ currentServer ].dateLastStarted, now() );
@@ -86,7 +86,7 @@ component {
                     }
 
                 } else {
-            
+                    
                     for( currentServer in filterServers ){
 
                         var askMessage = "Really forget & delete server '#currentServer.name#' forever [y/n]?";
