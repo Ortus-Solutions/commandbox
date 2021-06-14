@@ -34,96 +34,110 @@ component {
 
         if( arguments.list )
         {
-            /* user wants to see the list of servers with given months */
-            print.line( "generating list servers to be pruned...", 'yellow' ).toConsole();
-            serverCount=0;
-            data = [];
-            for( currentServer in servers )
-            {
-                lastStarted = servers[ currentServer ].dateLastStarted;
-                result = dateDiff( "m", servers[ currentServer ].dateLastStarted, now() );
 
-                serverData = [];
-                if ( result >= arguments.months ){
-                    ArrayAppend( serverData, "#servers[ currentServer ].name#" );
-                    ArrayAppend( serverData, "#servers[ currentServer ].dateLastStarted#" );
-                    ArrayAppend( serverData, "#result#" );  
-                    ArrayAppend( data, serverData );
-                    serverCount += 1;
-                }
-
-            }
-
-            print.table( data=data, headerNames=[ "name", "last started", "months" ] )
-            print.line( "" ).toConsole();
-            print.blackOnGreenText( " total servers = #serverCount# " ).toConsole();
-            print.line( "" ).toConsole();
-
+            generatePruneListServers( arguments.months, servers );
         }
         else
         {
 
-            for( currentServer in servers ){
-                result = dateDiff( "m", servers[ currentServer ].dateLastStarted, now() );
-                if ( result >= arguments.months ){
-                    arrayAppend( filterServers, servers[ currentServer ] );
-                }
-            }            
+            generatePruneListServers( arguments.months, servers );
 
-            if ( arguments.force ){
+            var askContinuePrune = "Prune will forget and delete this servers! Do still want to continue [y/n]?";
 
-                print.line( "using prune with force...", 'yellow' ).toConsole();
+            if( confirm( askContinuePrune ) ){
 
-                var runningServers = getRunningServers( servers );
-                /* areThereRunningServers = ( ! runningServers.isEmpty() ) */
-                /* print.line( "are there running servers: #areThereRunningServers#" ).toConsole(); */
+                for( currentServer in servers ){
+                    result = dateDiff( "m", servers[ currentServer ].dateLastStarted, now() );
+                    if ( result >= arguments.months ){
+                        arrayAppend( filterServers, servers[ currentServer ] );
+                    }
+                }            
 
-                if ( !runningServers.isEmpty() ) {
+                if ( arguments.force ){
 
-                    var stopMessage = "Stopping server #serverInfo.name# first....";
-    
-                    print.line( stopMessage )
-                        .toConsole();
-    
-                    runningServers.each( function( ID ){
-                        var stopResults = serverService.stop( runningServers[ arguments.ID ] );
-                        print.line( stopResults.messages, ( stopResults.error ? 'red' : 'green' ) )
+                    print.line( "using prune with force...", 'yellow' ).toConsole();
+
+                    var runningServers = getRunningServers( servers );
+                    /* areThereRunningServers = ( ! runningServers.isEmpty() ) */
+                    /* print.line( "are there running servers: #areThereRunningServers#" ).toConsole(); */
+
+                    if ( !runningServers.isEmpty() ) {
+
+                        var stopMessage = "Stopping server #serverInfo.name# first....";
+        
+                        print.line( stopMessage )
                             .toConsole();
-                    } );
-    
-                    // Give them a second or three to die or file locks will still be in place (on Windows, at least)
-                    // This is hacky, but there's no clean way to poll for when the process is 100% dead
-                    sleep( 3000 );
-                }
-
-                for( currentServer in filterServers ){
-
-                    print.line( serverService.forget( #currentServer.name# ), 'red' )
-                        .toConsole();
-                }
-
-            } else {
         
-                for( currentServer in filterServers ){
-
-                    var askMessage = "Really forget & delete server '#currentServer.name#' forever [y/n]?";
+                        runningServers.each( function( ID ){
+                            var stopResults = serverService.stop( runningServers[ arguments.ID ] );
+                            print.line( stopResults.messages, ( stopResults.error ? 'red' : 'green' ) )
+                                .toConsole();
+                        } );
         
-                    if( confirm( askMessage ) ){
+                        // Give them a second or three to die or file locks will still be in place (on Windows, at least)
+                        // This is hacky, but there's no clean way to poll for when the process is 100% dead
+                        sleep( 3000 );
+                    }
+
+                    for( currentServer in filterServers ){
+
                         print.line( serverService.forget( #currentServer.name# ), 'red' )
                             .toConsole();
-                    } else {
-                        print.line( "Cancelling forget '#currentServer.name#' command", 'blue' )
-                            .toConsole();
-                    }        
-            
-                }     
+                    }
 
+                } else {
             
+                    for( currentServer in filterServers ){
+
+                        var askMessage = "Really forget & delete server '#currentServer.name#' forever [y/n]?";
+            
+                        if( confirm( askMessage ) ){
+                            print.line( serverService.forget( #currentServer.name# ), 'red' )
+                                .toConsole();
+                        } else {
+                            print.line( "Cancelling forget '#currentServer.name#' command", 'blue' )
+                                .toConsole();
+                        }        
+                
+                    }     
+
+                
+                }
+
             }
-
 
         }
 
+
+    }
+
+    private function generatePruneListServers( required string months, required struct servers ){
+
+        /* user wants to see the list of servers with given months */
+        print.line( "generating list servers to be pruned...", 'yellow' ).toConsole();
+        serverCount=0;
+        data = [];
+        for( currentServer in servers )
+        {
+            lastStarted = servers[ currentServer ].dateLastStarted;
+            result = dateDiff( "m", servers[ currentServer ].dateLastStarted, now() );
+
+            serverData = [];
+            if ( result >= months ){
+                ArrayAppend( serverData, "#servers[ currentServer ].name#" );
+                ArrayAppend( serverData, "#servers[ currentServer ].dateLastStarted#" );
+                ArrayAppend( serverData, "#result#" );  
+                ArrayAppend( data, serverData );
+                serverCount += 1;
+            }
+
+        }
+
+        print.table( data=data, headerNames=[ "name", "last started", "months" ] )
+        print.line( "" ).toConsole();
+        print.blackOnGreenText( " total servers = #serverCount# " ).toConsole();
+        print.line( "" ).toConsole();
+        print.line( "" ).toConsole();
 
     }
 
