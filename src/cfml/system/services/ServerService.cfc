@@ -730,7 +730,7 @@ component accessors="true" singleton {
 		serverInfo.webXML 			= serverProps.webXML 			?: serverJSON.app.webXML 			?: defaults.app.webXML;
 
 		if( len( defaults.app.webXMLOverride ?: '' ) ){ defaults.app.webXMLOverride = fileSystemUtil.resolvePath( defaults.app.webXMLOverride, defaultwebroot ); }
-		serverInfo.webXMLOverride	= serverProps.webXMLOverride	?: serverJSON.app.webXMLOverride	?: defaults.app.webXML;
+		serverInfo.webXMLOverride	= serverProps.webXMLOverride	?: serverJSON.app.webXMLOverride	?: defaults.app.webXMLOverride;
 
 		// relative trayIcon in server.json is resolved relative to the server.json
 		if( serverJSON.keyExists( 'trayIcon' ) ) { serverJSON.trayIcon = fileSystemUtil.resolvePath( serverJSON.trayIcon, defaultServerConfigFileDirectory ); }
