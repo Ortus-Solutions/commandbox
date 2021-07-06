@@ -27,7 +27,6 @@ component {
         Boolean JSON        = false,
         Boolean force       = false,
     ){
-        var serverInfo      = serverService.resolveServerDetails( arguments ).serverinfo;
         var servers         = serverService.getServers();
         var filterServers   = [];
 
