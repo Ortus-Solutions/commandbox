@@ -35,26 +35,38 @@ component {
             servers.each( function( ID ){ runningServerCheck( servers[ arguments.ID ] ); } );
         }
 
+        /* only place where we filter out the  */
+        ArrayAppend( filterServers, structFilter(servers, function(id){
+                lastStarted = servers[ id ].dateLastStarted;
+                result = dateDiff( "d", servers[ id ].dateLastStarted, now() );
+                if ( result >= days ){
+                    StructInsert( servers[ id ], "days", result, false );
+                    return true;
+                }
+                return false;
+            }) 
+        );
+
         if( arguments.list )
         {
 
-            generatePruneListServers( arguments.days, servers, JSON);
+            generatePruneListServers( arguments.days, filterServers, JSON);
         }
         else
         {
 
-            generatePruneListServers( arguments.days, servers );
+            generatePruneListServers( arguments.days, filterServers );
 
             var askContinuePrune = "Prune will forget and delete this servers! Do you still want to continue [y/n]?";
 
             if( arguments.force || confirm( askContinuePrune ) ){
 
-                for( currentServer in servers ){
+                /* for( currentServer in servers ){
                     result = dateDiff( "d", servers[ currentServer ].dateLastStarted, now() );
                     if ( result >= arguments.days ){
                         arrayAppend( filterServers, servers[ currentServer ] );
                     }
-                }            
+                }  */           
 
                 if ( arguments.force ){
 
@@ -112,30 +124,31 @@ component {
 
     }
 
-    private function generatePruneListServers( required string days, required struct servers, required Boolean JSON  ){
+    private function generatePruneListServers( required string days, required array servers, required Boolean JSON  ){
 
         /* user wants to see the list of servers with given days */
         print.line( "generating list servers to be pruned...", 'yellow' ).toConsole();
-        filteredServers = [];
 
-        ArrayAppend( filteredServers, structFilter(servers, function(id){
-                lastStarted = servers[ id ].dateLastStarted;
-                result = dateDiff( "d", servers[ id ].dateLastStarted, now() );
-                if ( result >= days ){
-                    StructInsert( servers[ id ], "days", result, false );
-                    return true;
-                }
-                return false;
-            }) 
-        );
+        /* test={
+            "s1":{
+                "key":"alpha",
+                "value": 1
+            },
+            "s2":{
+                "key":"betha",
+                "value": 2
+            }
+        } */
 
         if( JSON ){
-            print.line( filteredServers );            
+            print.line( servers );            
         } else {
-            print.table(    
-                filteredServers
+            print.table(  
+                servers,
+                "",
+                ["name", "dateLastStarted", "days"]
             ).line()
-            .blackOnGreenText( " total servers = #arrayLen( filteredServers )# " )
+            .blackOnGreenText( " total servers = #arrayLen( servers )# " )
             .line()
             .line()
             .toConsole();
@@ -158,53 +171,5 @@ component {
 			return serverService.isServerRunning( servers[ arguments.ID ] );
 		} )
 	}
-    
-    /**
-     * Sorts an array of structures based on a key in the structures.
-     * 
-     * @param aofS      Array of structures. (Required)
-     * @param key      Key to sort by. (Required)
-     * @param sortOrder      Order to sort by, asc or desc. (Optional)
-     * @param sortType      Text, textnocase, or numeric. (Optional)
-     * @param delim      Delimiter used for temporary data storage. Must not exist in data. Defaults to a period. (Optional)
-     * @return Returns a sorted array. 
-     * @author Nathan Dintenfass (nathan@changemedia.com) 
-     * @version 1, April 4, 2013 
-     */    
-    /* function arrayOfStructsSort( aOfS, key ){
-        //by default we'll use an ascending sort
-        var sortOrder = "asc";        
-        //by default, we'll use a textnocase sort
-        var sortType = "textnocase";
-        //by default, use ascii character 30 as the delim
-        var delim = ".";
-        //make an array to hold the sort stuff
-        var sortArray = arraynew( 1 );
-        //make an array to return
-        var returnArray = arraynew( 1 );
-        //grab the number of elements in the array (used in the loops)
-        var count = arrayLen( aOfS );
-        //make a variable to use in the loop
-        var ii = 1;
-        //if there is a 3rd argument, set the sortOrder
-        if( arraylen( arguments ) GT 2 )
-            sortOrder = arguments[ 3 ];
-        //if there is a 4th argument, set the sortType
-        if( arraylen( arguments ) GT 3 )
-            sortType = arguments[ 4 ];
-        //if there is a 5th argument, set the delim
-        if( arraylen( arguments ) GT 4 )
-            delim = arguments[ 5 ];
-        //loop over the array of structs, building the sortArray
-        for( ii = 1; ii lte count; ii = ii + 1 )
-            sortArray[ii] = aOfS[ii][key] & delim & ii;
-        //now sort the array
-        arraySort( sortArray,sortType,sortOrder );
-        //now build the return array
-        for( ii = 1; ii lte count; ii = ii + 1 )
-            returnArray[ii] = aOfS[ listLast( sortArray[ii],delim ) ];
-        //return the array
-        return returnArray;
-    }     */
 
 }
