@@ -8,7 +8,6 @@
  * server forget name=serverName
  * server forget --all
  * server forget --all --force
- * server forget nameList=serverName01,serverName02,serverName03
  * {code}
  **/
 component {
@@ -23,7 +22,6 @@ component {
 	 * @name.optionsUDF serverNameComplete
 	 * @directory.hint web root for the server
 	 * @serverConfigFile The path to the server's JSON file.
-	 * @nameList comma-delimited list of server names to forget
 	 * @all.hint Forget all servers
 	 * @force.hint Skip the "are you sure" confirmation
 	 **/
@@ -31,7 +29,6 @@ component {
 		string name,
 		string directory,
 		String serverConfigFile,
-		String nameList,
 		Boolean all=false,
 		Boolean force=false
 	){
@@ -43,23 +40,6 @@ component {
 		}
 		var serverInfo = serverService.resolveServerDetails( arguments ).serverinfo;
 
-		if ( !isNull( arguments.nameList ) ) {
-			var nameArray = listToArray( arguments.nameList );
-			var servers = serverService.getServers();
-			/* for(currentServer in servers) {
-				print.line( servers[ currentServer ] )
-					.toConsole();
-			} */
-
-			for (name in nameArray){
-				filterServers = servers.filter(function(id){
-					return servers[id].name == name; 
-				});
-				print.line( filterServers )
-					.toConsole();
-			}
-		}
-		
 		var servers = arguments.all ? serverService.getServers() : { "#serverInfo.id#": serverInfo };
 		if( arguments.force ) {
 			var runningServers = getRunningServers( servers );
