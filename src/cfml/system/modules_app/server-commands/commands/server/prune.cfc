@@ -1,11 +1,11 @@
 /**
- * Forget old servers which haven't been started in a given period of time. time will be calculated in months.
+ * Forget old servers which haven't been started in a given period of time. time will be calculated in days.
  * .
  * {code:bash}
- * server prune months=6
- * server prune months=6 --list
- * server prune months=6 --force
- * server prune months=6 --list --json
+ * server prune days=30
+ * server prune days=30 --list
+ * server prune days=30 --force
+ * server prune days=30 --list --json
  * {code}
  **/
 component {
@@ -16,13 +16,13 @@ component {
 	/**
 	 * Forget old servers which haven't been started in a given period of time.
 	 *
-	 * @months.hint forget servers which last started date is greater or equal to months you set
-     * @list.hint give a list of servers which last started date is greater or equal to the months you set
+	 * @days.hint forget servers which last started date is greater or equal to days you set
+     * @list.hint give a list of servers which last started date is greater or equal to the days you set
      * @json.hint give a list of servers as --list but in the JSON format
      * @force.hint skip the "are you sure" confirmation
 	 **/    
     function run(
-        string months,
+        string days,
         Boolean list        = false,
         Boolean JSON        = false,
         Boolean force       = false,
@@ -38,20 +38,20 @@ component {
         if( arguments.list )
         {
 
-            generatePruneListServers( arguments.months, servers, JSON);
+            generatePruneListServers( arguments.days, servers, JSON);
         }
         else
         {
 
-            generatePruneListServers( arguments.months, servers );
+            generatePruneListServers( arguments.days, servers );
 
             var askContinuePrune = "Prune will forget and delete this servers! Do you still want to continue [y/n]?";
 
             if( arguments.force || confirm( askContinuePrune ) ){
 
                 for( currentServer in servers ){
-                    result = dateDiff( "m", servers[ currentServer ].dateLastStarted, now() );
-                    if ( result >= arguments.months ){
+                    result = dateDiff( "d", servers[ currentServer ].dateLastStarted, now() );
+                    if ( result >= arguments.days ){
                         arrayAppend( filterServers, servers[ currentServer ] );
                     }
                 }            
@@ -61,12 +61,10 @@ component {
                     print.line( "using prune with force...", 'yellow' ).toConsole();
 
                     var runningServers = getRunningServers( servers );
-                    /* areThereRunningServers = ( ! runningServers.isEmpty() ) */
-                    /* print.line( "are there running servers: #areThereRunningServers#" ).toConsole(); */
 
                     if ( !runningServers.isEmpty() ) {
 
-                        var stopMessage = "Stopping server #serverInfo.name# first....";
+                        var stopMessage = "Stopping servers....";
         
                         print.line( stopMessage )
                             .toConsole();
@@ -114,34 +112,30 @@ component {
 
     }
 
-    private function generatePruneListServers( required string months, required struct servers, required Boolean JSON  ){
+    private function generatePruneListServers( required string days, required struct servers, required Boolean JSON  ){
 
-        /* user wants to see the list of servers with given months */
+        /* user wants to see the list of servers with given days */
         print.line( "generating list servers to be pruned...", 'yellow' ).toConsole();
-        serverCount=0;
-        data = [];
-        for( currentServer in servers )
-        {
-            lastStarted = servers[ currentServer ].dateLastStarted;
-            result = dateDiff( "m", servers[ currentServer ].dateLastStarted, now() );
+        filteredServers = [];
 
-            if ( result >= months ){
-                StructInsert( servers[ currentServer ], "months", result, false );
-                serverStruct = servers[ currentServer ];
-                ArrayAppend( data, serverStruct );
-                serverCount += 1;
-            }
-
-        }
+        ArrayAppend( filteredServers, structFilter(servers, function(id){
+                lastStarted = servers[ id ].dateLastStarted;
+                result = dateDiff( "d", servers[ id ].dateLastStarted, now() );
+                if ( result >= days ){
+                    StructInsert( servers[ id ], "days", result, false );
+                    return true;
+                }
+                return false;
+            }) 
+        );
 
         if( JSON ){
-            print.line( data );            
+            print.line( filteredServers );            
         } else {
             print.table(    
-                arrayOfStructsSort( data, "months", "desc" ),
-                [ 'name', 'dateLastStarted', 'months' ]
+                filteredServers
             ).line()
-            .blackOnGreenText( " total servers = #serverCount# " )
+            .blackOnGreenText( " total servers = #arrayLen( filteredServers )# " )
             .line()
             .line()
             .toConsole();
@@ -177,7 +171,7 @@ component {
      * @author Nathan Dintenfass (nathan@changemedia.com) 
      * @version 1, April 4, 2013 
      */    
-    function arrayOfStructsSort( aOfS, key ){
+    /* function arrayOfStructsSort( aOfS, key ){
         //by default we'll use an ascending sort
         var sortOrder = "asc";        
         //by default, we'll use a textnocase sort
@@ -211,6 +205,6 @@ component {
             returnArray[ii] = aOfS[ listLast( sortArray[ii],delim ) ];
         //return the array
         return returnArray;
-    }    
+    }     */
 
 }
