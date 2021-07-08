@@ -3,9 +3,8 @@
  * .
  * {code:bash}
  * server prune days=30
- * server prune days=30 --list
  * server prune days=30 --force
- * server prune days=30 --list --json
+ * server prune days=30 --json
  * {code}
  **/
 component {
@@ -17,9 +16,8 @@ component {
 	 * Forget old servers which haven't been started in a given period of time.
 	 *
 	 * @days.hint forget servers which last started date is greater or equal to days you set
-     * @list.hint give a list of servers which last started date is greater or equal to the days you set
-     * @json.hint give a list of servers as --list but in the JSON format
      * @force.hint skip the "are you sure" confirmation
+     * @json.hint give a list of servers filter by days last started in the JSON format
 	 **/    
     function run(
         numeric days    = 30,
