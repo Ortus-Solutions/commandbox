@@ -257,12 +257,6 @@ component accessors="true" singleton {
 		if( !isNull( serverProps.serverConfigDir ) ) {
 			serverProps.serverConfigDir = fileSystemUtil.resolvePath( serverProps.serverConfigDir );
 		}
-		if( !isNull( serverProps.webXML ) ) {
-			serverProps.webXML = fileSystemUtil.resolvePath( serverProps.webXML );
-		}
-		if( !isNull( serverProps.webXMLOverride ) ){
-			serverProps.webXMLOverride = fileSystemUtil.resolvePath( serverProps.webXMLOverride );
-		}
 		if( !isNull( serverProps.libDirs ) ) {
 			// Comma-delimited list needs each item resolved
 			serverProps.libDirs = serverProps.libDirs
@@ -429,24 +423,6 @@ component accessors="true" singleton {
 			    	}
 					serverJSON[ 'app' ][ 'serverConfigDir' ] = thisDirectory;
 			         break;
-			    case "webXML":
-			    	// This path is canonical already.
-			    	var thisFile = replace( serverProps[ 'webXML' ], '\', '/', 'all' );
-			    	// If the webXML is south of the server's JSON, make it relative for better portability.
-			    	if( thisFile contains configPath ) {
-			    		thisFile = replaceNoCase( thisFile, configPath, '' );
-			    	}
-					serverJSON[ 'app' ][ 'webXML' ] = thisFile;
-			         break;
-				case "webXMLOverride":
-					// This path is canonical already.
-			    	var thisFile = replace( serverProps[ 'webXMLOverride' ], '\', '/', 'all' );
-			    	// If the webXML is south of the server's JSON, make it relative for better portability.
-			    	if( thisFile contains configPath ) {
-			    		thisFile = replaceNoCase( thisFile, configPath, '' );
-			    	}
-					serverJSON[ 'app' ][ 'webXMLOverride' ] = thisFile;
-					break;
 			    case "libDirs":
 					serverJSON[ 'app' ][ 'libDirs' ] = serverProps[ 'libDirs' ]
 						.listMap( function( thisLibDir ) {
@@ -724,10 +700,6 @@ component accessors="true" singleton {
 
 		// relative trayIcon in server.json is resolved relative to the server.json
 		if( serverJSON.keyExists( 'app' ) && serverJSON.app.keyExists( 'webXML' ) ) { serverJSON.app.webXML = fileSystemUtil.resolvePath( serverJSON.app.webXML, defaultServerConfigFileDirectory ); }
-		
-
-		if( len( defaults.app.webXMLOverride ?: '' ) ){ defaults.app.webXMLOverride = fileSystemUtil.resolvePath( defaults.app.webXMLOverride, defaultwebroot ); }
-		serverInfo.webXMLOverride	= serverProps.webXMLOverride	?: serverJSON.app.webXMLOverride	?: defaults.app.webXMLOverride;
 
 		// relative trayIcon in server.json is resolved relative to the server.json
 		if( serverJSON.keyExists( 'trayIcon' ) ) { serverJSON.trayIcon = fileSystemUtil.resolvePath( serverJSON.trayIcon, defaultServerConfigFileDirectory ); }
@@ -1021,10 +993,6 @@ component accessors="true" singleton {
 		if( isDefined( 'defaults.app.serverHomeDirectory' ) && len( defaults.app.serverHomeDirectory )  ) { defaults.app.serverHomeDirectory = fileSystemUtil.resolvePath( defaults.app.serverHomeDirectory, defaultwebroot ); }
 		serverInfo.serverHomeDirectory			= serverProps.serverHomeDirectory			?: serverJSON.app.serverHomeDirectory			?: defaults.app.serverHomeDirectory;
 		serverInfo.singleServerHome			= serverJSON.app.singleServerHome			?: defaults.app.singleServerHome;
-		
-		/* serverInfo.webXML 			= '#serverInfo.serverHomeDirectory#/WEB-INF/web.xml'; */
-		/* systemOutput(serverInfo.serverHomeDirectory, true);
-		systemOutput(serverInfo.webXML, true); */
 
 		if( len( serverJSON.app.webXMLOverride ?: '' ) ){ serverJSON.app.webXMLOverride = fileSystemUtil.resolvePath( serverJSON.app.webXMLOverride, defaultServerConfigFileDirectory ); }
 		if( len( defaults.app.webXMLOverride ?: '' ) ){ defaults.app.webXMLOverride = fileSystemUtil.resolvePath( defaults.app.webXMLOverride, defaultwebroot ); }
@@ -1459,7 +1427,7 @@ component accessors="true" singleton {
 			args.append( '--web-xml-override-path' ).append( serverInfo.webXMLOverride );
 		}
 
-		if ( Len( Trim( serverInfo.webXMLOverride ) ) ){
+		if ( Len( serverInfo.webXMLOverride ) ){
 			args.append( '--web-xml-override-path' ).append( serverInfo.webXMLOverride );
 		}
 
