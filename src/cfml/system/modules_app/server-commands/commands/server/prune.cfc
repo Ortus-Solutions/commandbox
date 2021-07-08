@@ -34,7 +34,7 @@ component {
             .filter( (s) => s.daysLastStarted >= days )
             .sort( (a,b) => a.daysLastStarted - b.daysLastStarted );
 
-        if( JSON and prunableServers.len() ){
+        if( JSON ){
             print.line(prunableServers)
                 .toConsole()
         }
