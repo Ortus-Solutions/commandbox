@@ -61,7 +61,6 @@ component aliases="start" {
 	 * @serverConfigDir		custom location for server configuration
 	 * @libDirs       	 	comma-separated list of extra lib directories for the server to load
 	 * @trayIconFile   		path to .png file for tray icon
-	 * @webXML         		path to web.xml file used to configure the server
 	 * @HTTPEnable     		enable HTTP
 	 * @SSLEnable      		enable SSL
 	 * @SSLPort        		SSL port number
@@ -116,7 +115,6 @@ component aliases="start" {
 		String  serverConfigDir,
 		String  libDirs,
 		String  trayIconFile,
-		String  webXML,
 		Boolean HTTPEnable,
 		Boolean SSLEnable,
 		Numeric SSLPort,
