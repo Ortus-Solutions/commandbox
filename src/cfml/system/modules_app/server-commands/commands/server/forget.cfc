@@ -76,7 +76,7 @@ component {
 		if( arguments.force || confirm( askMessage ) ){
 			servers.each( function( ID ){
 				print
-					.line( "serverService.forget( servers[ arguments.ID ] )" )
+					.line( serverService.forget( servers[ arguments.ID ] ) )
 					.toConsole();
 			 } );
 		} else {
