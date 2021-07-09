@@ -1427,10 +1427,6 @@ component accessors="true" singleton {
 			args.append( '--web-xml-override-path' ).append( serverInfo.webXMLOverride );
 		}
 
-		if ( Len( serverInfo.webXMLOverride ) ){
-			args.append( '--web-xml-override-path' ).append( serverInfo.webXMLOverride );
-		}
-
 		if( len( serverInfo.libDirs ) ) {
 			// Have to get rid of empty list elements
 			args.append( '--lib-dirs' ).append( serverInfo.libDirs.listChangeDelims( ',', ',' ) );
