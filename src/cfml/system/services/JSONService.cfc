@@ -155,6 +155,8 @@ component accessors="true" singleton {
 		// See if this string ends with array brackets containing a number greater than 1. Ex: test[3]
 		var search = reFind( "\[\s*([1-9][0-9]*)\s*\]$", property, 1, true );
 
+		var propArray = tokenizeProp( arguments.property );
+
 		// Deal with array index
 		if( search.pos[1] ) {
 			// Index to remove
@@ -166,6 +168,7 @@ component accessors="true" singleton {
 
 			var fullPropertyName = 'arguments.JSON' & toBracketNotation( arguments.property );
 			if( !isDefined( fullPropertyName ) ) {
+				
 				throw( message='#arguments.property# does not exist.', type="JSONException");
 			}
 			// Get the array reference
@@ -175,11 +178,18 @@ component accessors="true" singleton {
 			propertyValue.deleteAt( arrayIndex );
 
 		// Else see if it's a dot-delimited struct path. Ex foo.bar
-		} else if( listLen( property, '.' ) >= 2 ) {
+		} else if( propArray.len() >= 2 ) {
 			// Name of last key to remove
-			var last = listLast( property, '.' );
+			var last = propArray.last().trim();
+			// Clean up ['foo'] or 'foo'
+			last = parser.unwrapQuotes( trim( last ) );
+			if( last.startsWith( '[' ) && last.endsWith( ']' ) ) {
+				last = last.right(-1).left(-1);
+				last = parser.unwrapQuotes( trim( last ) )
+			}
+			
 			// path to containing struct
-			var everythingBut = listDeleteAt( property, listLen( property, '.' ), '.' );
+			var everythingBut = propArray.slice( 1, propArray.len()-1 );
 
 			// Confirm it exists
 			var fullPropertyName = 'arguments.JSON' & toBracketNotation( everythingBut );
@@ -205,11 +215,12 @@ component accessors="true" singleton {
 
 
 	// Convert foo.bar-baz[1] to ['foo']['bar-baz'][1]
-	private function toBracketNotation( required string property ) {
-		var tmpProperty = replace( arguments.property, '[', '.[', 'all' );
-		tmpProperty = replace( tmpProperty, ']', '].', 'all' );
+	private function toBracketNotation( required any property ) {
+		if( isSimpleValue( arguments.property ) ) {
+			arguments.property = tokenizeProp( arguments.property );
+		}
 		var fullPropertyName = '';
-		for( var item in listToArray( tmpProperty, '.' ) ) {
+		for( var item in arguments.property ) {
 			if( item.startsWith( '[' ) && item.endsWith( ']' ) ) {
 				var innerItem = item.right(-1).left(-1);
 				if( isNumeric( innerItem ) ) {
@@ -220,10 +231,100 @@ component accessors="true" singleton {
 					fullPropertyName &= '[ "#innerItem#" ]';
 				}
 			} else {
+				item = parser.unwrapQuotes( trim( item ) );
 				fullPropertyName &= '[ "#item#" ]';
 			}
 		}
 		return fullPropertyName;
+	}
+	
+	function tokenizeProp( required string str ) {
+		
+		// Holds token
+		var tokens = [];
+		// Used to build up each token
+		var token = '';
+		// Are we currently inside a quoted string
+		var inQuotes = false;
+		// Are we currently inside of []
+		var inBrackets = false;
+		// What quote character is around our current quoted string (' or ")
+		var quoteChar = '';
+		// The previous character to handle escape chars.
+		var prevChar = '';
+		// Pointer to the current character
+		var i = 0;
+
+		// Loop over each character in the line
+		while( ++i <= len( str ) ) {
+			// Current character
+			char = mid( str, i, 1 );
+			// All the remaining characters
+			remainingChars = mid( str, i+1, len( str ) );
+
+			// If we're in the middle of a quoted string, just keep appending
+			if( inQuotes ) {
+
+				token &= char;
+				// We just reached the end of our quoted string
+				if( char == quoteChar ) {
+					inQuotes = false;
+				}
+				prevChar = char;
+				continue;
+			}
+
+			if( inBrackets ) {
+
+				token &= char;
+				
+				if( char == ']' ) {
+					inBrackets = false;
+				}
+				prevChar = char;
+				continue;
+			}
+			
+			// period or break in brackets means break in token
+			if( ( char == '.' && !inBrackets ) || char == '[' ) {
+
+				// We're starting a bracketed string
+				if( ( char == '[' ) ) {
+					inBrackets = true;
+				}
+				
+				if( len( token ) ) {
+					tokens.append( token );
+					token = '';
+				}
+
+				if( char == '[' ) {
+					token &= char;
+				}
+				prevChar = char;
+				continue;
+
+			}
+
+			// We're starting a quoted string
+			if( ( char == '"' || char == "'"  ) ) {
+				inQuotes = true;
+				quoteChar = char;
+			}
+
+			// Keep appending
+			token &= char;
+
+			prevChar = char;
+
+		} // end while
+
+		// Anything left after the loop is our last token
+		if( len( token ) ) {
+			tokens.append( token );
+		}
+		
+		return tokens;
 	}
 
 	// ['foo']['bar-baz'][1] or ["foo"]["bar-baz"][1] --> "foo"."bar-baz"[1]
@@ -239,11 +340,9 @@ component accessors="true" singleton {
         return quotesWithDots;
     }
 	private function findArrays( required string property ) {
-		var tmpProperty = replace( arguments.property, '[', '.[', 'all' );
-		tmpProperty = replace( tmpProperty, ']', '].', 'all' );
 		var arrays = [];
 		var fullPropertyName = '';
-		for( var item in listToArray( tmpProperty, '.' ) ) {
+		for( var item in tokenizeProp( arguments.property ) ) {
 			if( item.startsWith( '[' ) && item.endsWith( ']' ) ) {
 				var innerItem = item.right(-1).left(-1);
 				if( isNumeric( innerItem ) ) {
@@ -270,7 +369,11 @@ component accessors="true" singleton {
 		if( isStruct( propValue ) ) {
 			// Add all of this struct's keys
 			for( var thisProp in propValue ) {
-				var newProp = listAppend( prop, thisProp, '.' );
+				if( thisProp contains '.' ) {
+					var newProp = "#prop#['#thisProp#']";
+				} else {
+					var newProp = listAppend( prop, thisProp, '.' );
+				}
 				var newSafeProp = "#safeProp#['#thisProp#']";
 				props.append( newProp );
 				props = addProp( props, newProp, newSafeProp, targetStruct );
