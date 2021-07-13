@@ -1506,7 +1506,7 @@ component accessors="true" singleton {
 
 		if( serverInfo.webRules.len() ){
 			fileWrite( serverInfo.predicateFile, serverInfo.webRules.filter( (r)=>!trim(r).startsWith('##') ).toList( CR ) );
-			throw()
+			args.append( '--predicate-file' ).append( serverInfo.predicateFile );
 		}
 
 		// change status to starting + persist
