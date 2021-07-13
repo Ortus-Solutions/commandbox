@@ -905,16 +905,16 @@ component accessors="true" singleton {
 			if( isSimpleValue( serverJSON.web.rulesFile ) ) {
 				serverJSON.web.rulesFile = serverJSON.web.rulesFile.listToArray();
 			}
-			serverInfo.webRules.append( serverJSON.web.rulesFile.map((fg)=>{
+			serverInfo.webRules.append( serverJSON.web.rulesFile.reduce((predicates,fg)=>{
 				fg = fileSystemUtil.resolvePath( fg, defaultServerConfigFileDirectory );
-				return wirebox.getInstance( 'Globber' ).setPattern( fg ).matches().reduce( (predicates,file)=>{
+				return predicates.append( wirebox.getInstance( 'Globber' ).setPattern( fg ).matches().reduce( (predicates,file)=>{
 						if( lCase( file ).endsWith( '.json' ) ) {
-							return predicates & CR & deserializeJSON( fileRead( file ) ).toList( CR )
+							return predicates.append( deserializeJSON( fileRead( file ) ), true );
 						} else {
-							return predicates & CR & fileRead( file )
+							return predicates.append( fileRead( file ).listToArray( chr(13)&chr(10) ), true );
 						}
-					}, '' );
-			}), true);
+					}, [] ), true );
+			}, []), true );
 		}
 		if( defaults.keyExists( 'web' ) && defaults.web.keyExists( 'rules' ) ) {
 			serverInfo.webRules.append( defaults.web.rules, true);
@@ -925,16 +925,16 @@ component accessors="true" singleton {
 			if( isSimpleValue( defaultsRulesFile ) ) {
 				defaultsRulesFile = defaultsRulesFile.listToArray();
 			}
-			serverInfo.webRules.append( defaultsRulesFile.map((fg)=>{
+			serverInfo.webRules.append( defaultsRulesFile.reduce((predicates,fg)=>{
 				fg = fileSystemUtil.resolvePath( fg, defaultwebroot );
-				return wirebox.getInstance( 'Globber' ).setPattern( fg ).matches().reduce( (predicates,file)=>{
+				return predicates.append( wirebox.getInstance( 'Globber' ).setPattern( fg ).matches().reduce( (predicates,file)=>{
 						if( lCase( file ).endsWith( '.json' ) ) {
-							return predicates & CR & deserializeJSON( fileRead( file ) ).toList( CR )
+							return predicates.append( deserializeJSON( fileRead( file ) ), true );
 						} else {
-							return predicates & CR & fileRead( file )
+							return predicates.append( fileRead( file ).listToArray( chr(13)&chr(10) ), true );
 						}
-					}, '' );
-			}), true);
+					}, [] ), true );
+			}, []), true);
 		}
 
 		// Default CommandBox rules.
@@ -1000,7 +1000,7 @@ component accessors="true" singleton {
 		serverInfo.webXMLOverride	= serverJSON.app.webXMLOverride	?: defaults.app.webXMLOverride;
 
 		serverInfo.webXMLOverrideForce = serverJSON.app.webXMLOverrideForce ?: defaults.app.webXMLOverrideForce;
-
+    
 		serverInfo.sessionCookieSecure			= serverJSON.app.sessionCookieSecure			?: defaults.app.sessionCookieSecure;
 		serverInfo.sessionCookieHTTPOnly			= serverJSON.app.sessionCookieHTTPOnly			?: defaults.app.sessionCookieHTTPOnly;
 
