@@ -200,6 +200,7 @@ component accessors="true" singleton {
 				'webConfigDir' : d.app.webConfigDir ?: '',
 				'serverConfigDir' : d.app.serverConfigDir ?: '',
 				'webXMLOverride' : d.app.webXMLOverride ?: '',
+				'webXMLOverrideForce' : d.app.webXMLOverrideForce ?: false,
 				'standalone' : d.app.standalone ?: false,
 				'WARPath' : d.app.WARPath ?: '',
 				'cfengine' : d.app.cfengine ?: '',
@@ -998,6 +999,8 @@ component accessors="true" singleton {
 		if( len( defaults.app.webXMLOverride ?: '' ) ){ defaults.app.webXMLOverride = fileSystemUtil.resolvePath( defaults.app.webXMLOverride, defaultwebroot ); }
 		serverInfo.webXMLOverride	= serverJSON.app.webXMLOverride	?: defaults.app.webXMLOverride;
 
+		serverInfo.webXMLOverrideForce = serverJSON.app.webXMLOverrideForce ?: defaults.app.webXMLOverrideForce;
+
 		serverInfo.sessionCookieSecure			= serverJSON.app.sessionCookieSecure			?: defaults.app.sessionCookieSecure;
 		serverInfo.sessionCookieHTTPOnly			= serverJSON.app.sessionCookieHTTPOnly			?: defaults.app.sessionCookieHTTPOnly;
 
@@ -1428,7 +1431,7 @@ component accessors="true" singleton {
 		}
 
 		if ( Len( serverInfo.webXMLOverride ) ){
-			args.append( '--web-xml-override-path' ).append( serverInfo.webXMLOverride );
+			args.append( '--web-xml-override-force' ).append( serverInfo.webXMLOverrideForce );
 		}
 
 		if( len( serverInfo.libDirs ) ) {
@@ -2549,6 +2552,7 @@ component accessors="true" singleton {
 			'webroot'			: "",
 			'webXML' 			: "",
 			'webXMLOverride' 	: "",
+			'webXMLOverrideForce' : false,
 			'HTTPEnable'		: true,
 			'HTTP2Enable'		: true,
 			'SSLEnable'			: false,
