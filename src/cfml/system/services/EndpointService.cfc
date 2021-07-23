@@ -325,7 +325,7 @@ component accessors="true" singleton {
 
 		// Confirm is interactive endpoint
 		if( !isInstanceOf( endpoint, 'IEndpointInteractive' ) ) {
-			throw( "Sorry, the endpoint [#arguments.endpointName#] does not support publishing packages users.", 'endpointException' );
+			throw( "Sorry, the endpoint [#arguments.endpointName#] does not support publishing packages.", 'endpointException' );
 		}
 		// Set the path to publish
 		arguments.path = arguments.directory;

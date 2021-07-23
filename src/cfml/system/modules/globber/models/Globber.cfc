@@ -328,7 +328,11 @@ component accessors="true" {
 				sort=getSort(),
 				filter=optimizeFilter
 			).filter( ( path )=>{
-				var thisPath = path.directory & '/' & path.name & ( path.type == 'dir' ? '/' : '' );
+				if( path.directory.endsWith( '/' ) || path.directory.endsWith( '\' ) ) {
+					var thisPath = path.directory & path.name & ( path.type == 'dir' ? '/' : '' );
+				} else {
+					var thisPath = path.directory & '/' & path.name & ( path.type == 'dir' ? '/' : '' );
+				}
 				if( pathPatternMatcher.matchPattern( thisPattern, thisPath, true ) ) {
 					if( getExcludePatternArray().len() && pathPatternMatcher.matchPatterns( getExcludePatternArray(), thisPath, true ) ) {
 						return false;

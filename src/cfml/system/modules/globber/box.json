@@ -1,13 +1,13 @@
 {
     "name":"Globber",
-    "version":"3.0.4",
+    "version":"3.0.6",
     "author":"Brad Wood",
-    "location":"Ortus-Solutions/globber#v3.0.4",
+    "location":"Ortus-Solutions/globber#v3.0.6",
     "homepage":"https://github.com/Ortus-Solutions/globber/",
     "documentation":"https://github.com/Ortus-Solutions/globber/",
     "repository":{
         "type":"Git",
-        "URL":"git@github.com:Ortus-Solutions/globber.git"
+        "URL":"https://github.com/Ortus-Solutions/globber"
     },
     "bugs":"https://github.com/Ortus-Solutions/globber/issues",
     "slug":"globber",
