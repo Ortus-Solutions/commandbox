@@ -282,6 +282,26 @@ component accessors="true" implements="IEndpointInteractive" {
 			}
 		}
 
+		// validation goes here
+		var errors = [];
+		consoleLogger.info("Start validation...");
+		if( props.slug.len() > 255 ){
+			errors.append( "[slug] must be 255 characters or shorter" );
+		}
+		if( props.version.len() > 25 ){
+			errors.append( "[version] must be 255 characters or shorter" );
+		}		
+		if( boxJSON.shortDescription.len() > 200 ){
+			errors.append( "[shortDescription] must be 200 characters or shorter" );
+		}
+		if( boxJSON.name.len() > 255 ){
+			errors.append( "[name] must be 255 characters or shorter" );
+		}
+		if( errors.len() > 0 ){
+			errors.append( "#chr(10)#Please fix the invalid data and try publishing again." );
+			throw( "There were validation errors in publishing...", "endpointException", errors.toList( chr(10) ) );
+		}
+
 		try {
 			consoleLogger.warn( "Sending package information to #getNamePrefixes()#, please wait..." );
 			if ( upload ) { consoleLogger.warn( "Uploading package zip to #getNamePrefixes()#..." ); }
