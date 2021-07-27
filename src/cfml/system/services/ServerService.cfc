@@ -1426,11 +1426,11 @@ component accessors="true" singleton {
 
 		args.append( '--web-xml-path' ).append( serverInfo.webXml );
 
-		if ( Len( serverInfo.webXMLOverride ) ){
-			args.append( '--web-xml-override-path' ).append( serverInfo.webXMLOverride );
+		if( len( serverInfo.webXMLOverrideActual ) ){
+			args.append( '--web-xml-override-path' ).append( serverInfo.webXMLOverrideActual );
 		}
 
-		if ( Len( serverInfo.webXMLOverride ) ){
+		if( len( serverInfo.webXMLOverrideActual ) ){
 			args.append( '--web-xml-override-force' ).append( serverInfo.webXMLOverrideForce );
 		}
 
@@ -2552,6 +2552,7 @@ component accessors="true" singleton {
 			'webroot'			: "",
 			'webXML' 			: "",
 			'webXMLOverride' 	: "",
+			'webXMLOverrideActual' : "",
 			'webXMLOverrideForce' : false,
 			'HTTPEnable'		: true,
 			'HTTP2Enable'		: true,

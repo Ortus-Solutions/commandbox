@@ -88,6 +88,10 @@ component accessors="true" singleton="true" {
 	**/
 	public function installLucee( installDetails, serverInfo ) {
 		configureWebXML( cfengine="lucee", version=installDetails.version, source=serverInfo.webXML, destination=serverInfo.webXML, serverInfo=serverInfo, installDetails=installDetails );
+		if( len( serverInfo.webXMLOverride ) ){
+			serverInfo.webXMLOverrideActual = serverInfo.webXML.replace( 'web.xml', 'web-override.xml' );
+			configureWebXML( cfengine="lucee", version=installDetails.version, source=serverInfo.webXMLOverride, destination=serverInfo.webXMLOverrideActual, serverInfo=serverInfo, installDetails=installDetails, forceUpdate=true );
+		}
 		return installDetails;
 	}
 
@@ -97,6 +101,10 @@ component accessors="true" singleton="true" {
 	**/
 	public function installRailo( installDetails, serverInfo ) {
 		configureWebXML( cfengine="railo", version=installDetails.version, source=serverInfo.webXML, destination=serverInfo.webXML, serverInfo=serverInfo, installDetails=installDetails );
+		if( len( serverInfo.webXMLOverride ) ){
+			serverInfo.webXMLOverrideActual = serverInfo.webXML.replace( 'web.xml', 'web-override.xml' );
+			configureWebXML( cfengine="lucee", version=installDetails.version, source=serverInfo.webXMLOverride, destination=serverInfo.webXMLOverrideActual, serverInfo=serverInfo, installDetails=installDetails, forceUpdate=true );
+		}
 		return installDetails;
 	}
 
@@ -372,7 +380,7 @@ component accessors="true" singleton="true" {
 	* @source source web.xml
 	* @destination target web.xml
 	**/
-	public function configureWebXML( required cfengine, required version, required source, required destination, required struct serverInfo, required struct installDetails ) {
+	public function configureWebXML( required cfengine, required version, required source, required destination, required struct serverInfo, required struct installDetails, boolean forceUpdate=false ) {
 		var fullServerConfigDir = serverInfo.serverConfigDir;
 		var fullWebConfigDir = serverInfo.webConfigDir;
 
@@ -395,7 +403,7 @@ component accessors="true" singleton="true" {
 			updateMade = ensurePropertServletInitParam( webXML, '#package#.loader.servlet.LuceeServlet', "#package#-web-directory", fullWebConfigDir ) || updateMade;
 			updateMade = ensurePropertServletInitParam( webXML, '#package#.loader.servlet.LuceeServlet', "#package#-server-directory", fullServerConfigDir ) || updateMade;
 		}
-		if( updateMade ) {
+		if( updateMade || !fileExists( destination ) || forceUpdate ) {
 			writeXMLFile( webXML, destination );	
 		}
 		return true;
