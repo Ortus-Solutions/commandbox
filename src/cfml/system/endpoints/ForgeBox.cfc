@@ -297,6 +297,31 @@ component accessors="true" implements="IEndpointInteractive" {
 		if( boxJSON.name.len() > 255 ){
 			errors.append( "[name] must be 255 characters or shorter" );
 		}
+		if( boxJSON.downloadURL.len() > 500 ){
+			errors.append( "[downloadURL] must be 500 characters or shorter" );
+		}
+		if( boxJSON.homeURL.len() > 500 ){
+			errors.append( "[homeURL] must be 500 characters or shorter" );
+		}
+		if( boxJSON.sourceURL.len() > 500 ){
+			errors.append( "[sourceURL] must be 500 characters or shorter" );
+		}
+		if( boxJSON.documentationURL.len() > 255 ){
+			errors.append( "[documentationURL] must be 255 characters or shorter" );
+		}
+		if( boxJSON.bugsURL.len() > 255 ){
+			errors.append( "[bugsURL] must be 255 characters or shorter" );
+		}
+		if( boxJSON.descriptionFormat.len() > 15 ){
+			errors.append( "[descriptionFormat] must be 15 characters or shorter" );
+		}
+		if( boxJSON.installInstructionsFormat.len() > 15 ){
+			errors.append( "[installInstructionsFormat] must be 15 characters or shorter" );
+		}
+		if( boxJSON.changelogFormat.len() > 15 ){
+			errors.append( "[changelogFormat] must be 15 characters or shorter" );
+		}
+		// validation message if errors show up
 		if( errors.len() > 0 ){
 			errors.append( "#chr(10)#Please fix the invalid data and try publishing again." );
 			throw( "There were validation errors in publishing...", "endpointException", errors.toList( chr(10) ) );
