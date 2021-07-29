@@ -998,6 +998,10 @@ component accessors="true" singleton {
 		if( len( serverJSON.app.webXMLOverride ?: '' ) ){ serverJSON.app.webXMLOverride = fileSystemUtil.resolvePath( serverJSON.app.webXMLOverride, defaultServerConfigFileDirectory ); }
 		if( len( defaults.app.webXMLOverride ?: '' ) ){ defaults.app.webXMLOverride = fileSystemUtil.resolvePath( defaults.app.webXMLOverride, defaultwebroot ); }
 		serverInfo.webXMLOverride	= serverJSON.app.webXMLOverride	?: defaults.app.webXMLOverride;
+		if( len( serverInfo.webXMLOverride ) && !fileExists( serverInfo.webXMLOverride ) ) {
+			job.error( 'webXMLOverride file not found [#serverInfo.webXMLOverride#]' );
+			return;
+		}
 
 		serverInfo.webXMLOverrideForce = serverJSON.app.webXMLOverrideForce ?: defaults.app.webXMLOverrideForce;
     
