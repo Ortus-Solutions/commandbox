@@ -283,44 +283,55 @@ component accessors="true" implements="IEndpointInteractive" {
 		}
 
 		// validation goes here
+		var validationData = {
+			"slug": {
+				"size": 255,
+				"required": true
+			},
+			"version": 25,
+			"shortDescription": 200,
+			"name": 255,
+			"homepage": 500,
+			"repository": {
+				"URL": 500
+			},
+			"documentation": 255,
+			"bugs": 255
+		};
+
 		var errors = [];
 		consoleLogger.info("Start validation...");
-		if( props.slug.len() > 255 ){
-			errors.append( "[slug] must be 255 characters or shorter" );
-		}
-		if( props.version.len() > 25 ){
-			errors.append( "[version] must be 255 characters or shorter" );
-		}		
-		if( boxJSON.shortDescription.len() > 200 ){
-			errors.append( "[shortDescription] must be 200 characters or shorter" );
-		}
-		if( boxJSON.name.len() > 255 ){
-			errors.append( "[name] must be 255 characters or shorter" );
-		}
-		if( boxJSON.downloadURL.len() > 500 ){
-			errors.append( "[downloadURL] must be 500 characters or shorter" );
-		}
-		if( boxJSON.homeURL.len() > 500 ){
-			errors.append( "[homeURL] must be 500 characters or shorter" );
-		}
-		if( boxJSON.sourceURL.len() > 500 ){
-			errors.append( "[sourceURL] must be 500 characters or shorter" );
-		}
-		if( boxJSON.documentationURL.len() > 255 ){
-			errors.append( "[documentationURL] must be 255 characters or shorter" );
-		}
-		if( boxJSON.bugsURL.len() > 255 ){
-			errors.append( "[bugsURL] must be 255 characters or shorter" );
-		}
-		if( boxJSON.descriptionFormat.len() > 15 ){
-			errors.append( "[descriptionFormat] must be 15 characters or shorter" );
-		}
-		if( boxJSON.installInstructionsFormat.len() > 15 ){
-			errors.append( "[installInstructionsFormat] must be 15 characters or shorter" );
-		}
-		if( boxJSON.changelogFormat.len() > 15 ){
-			errors.append( "[changelogFormat] must be 15 characters or shorter" );
-		}
+		validationData.each( (prop, maxLen) => {
+			if(prop != "repository"){
+				if( isStruct( maxLen ) ){
+					if( maxLen[ "required" ] ){
+						if( len( boxJSON[ prop ] ) == 0  ){
+							errors.append( "[#prop#] is required" );
+						}
+					}
+
+					if( len( boxJSON[ prop ] ) > maxLen[ "size" ] ){
+						errors.append( "[#prop#] must be #maxLen['size']# characters or shorter" );	
+					}
+				}
+				else if( len( boxJSON[ prop ] ) > maxLen ){
+					errors.append( "[#prop#] must be #maxLen# characters or shorter" );
+				}
+			}
+			else{
+				if( isStruct( maxLen ) ){
+					if( isStruct(boxJSON[prop]) ){
+						if( structKeyExists( boxJSON[prop], "URL" ) ){
+							if( len( boxJSON[ prop ]["URL"] ) > maxLen["URL"] ){
+								errors.append( "[#prop#.URL] must be #maxLen['URL']# characters or shorter" );	
+							}
+						}
+					}
+				}
+			}
+
+		} );
+
 		// validation message if errors show up
 		if( errors.len() > 0 ){
 			errors.append( "#chr(10)#Please fix the invalid data and try publishing again." );
