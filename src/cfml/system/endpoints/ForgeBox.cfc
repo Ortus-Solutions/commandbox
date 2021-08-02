@@ -285,51 +285,46 @@ component accessors="true" implements="IEndpointInteractive" {
 		// validation goes here
 		var validationData = {
 			"slug": {
-				"size": 255,
+				"maxLen": 255,
 				"required": true
 			},
-			"version": 25,
-			"shortDescription": 200,
-			"name": 255,
-			"homepage": 500,
-			"repository": {
-				"URL": 500
+			"version": {
+				"maxLen": 25
 			},
-			"documentation": 255,
-			"bugs": 255
+			"shortDescription": {
+				"maxLen": 200
+			},
+			"name": {
+				"maxLen": 255
+			},
+			"homepage": {
+				"maxLen": 500
+			},
+			"documentation": {
+				"maxLen": 255
+			},
+			"bugs": {
+				"maxLen": 255
+			},
+			"repository.URL": {
+				"maxLen": 500
+			}
 		};
 
 		var errors = [];
 		consoleLogger.info("Start validation...");
-		validationData.each( (prop, maxLen) => {
-			if(prop != "repository"){
-				if( isStruct( maxLen ) ){
-					if( maxLen[ "required" ] ){
-						if( len( boxJSON[ prop ] ) == 0  ){
-							errors.append( "[#prop#] is required" );
-						}
-					}
-
-					if( len( boxJSON[ prop ] ) > maxLen[ "size" ] ){
-						errors.append( "[#prop#] must be #maxLen['size']# characters or shorter" );	
-					}
-				}
-				else if( len( boxJSON[ prop ] ) > maxLen ){
-					errors.append( "[#prop#] must be #maxLen# characters or shorter" );
+		validationData.each( (prop, validData) => {
+			if(IsDefined("validData.required")){
+				if(len(Evaluate("boxJSON.#prop#"))==0){
+					errors.append( "[#prop#] is required" );
 				}
 			}
-			else{
-				if( isStruct( maxLen ) ){
-					if( isStruct(boxJSON[prop]) ){
-						if( structKeyExists( boxJSON[prop], "URL" ) ){
-							if( len( boxJSON[ prop ]["URL"] ) > maxLen["URL"] ){
-								errors.append( "[#prop#.URL] must be #maxLen['URL']# characters or shorter" );	
-							}
-						}
-					}
+			if(IsDefined("validData.maxLen")){
+				if(len(evaluate("boxJSON.#prop#")) > validData["maxLen"]){
+					errors.append( "[#prop#] must be #validData['maxLen']# characters or shorter" );
 				}
 			}
-
+			
 		} );
 
 		// validation message if errors show up
