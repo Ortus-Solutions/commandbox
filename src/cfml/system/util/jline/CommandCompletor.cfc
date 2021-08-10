@@ -43,6 +43,10 @@ component singleton {
 
 			// If there are multiple commands like "help | more", we only care about the last one
 			var commandInfo = commandChain[ commandChain.len() ];
+			var isPiped = false;
+			if( commandChain.len() > 2 && commandChain[ commandChain.len()-1 ].originalLine == '|' ) {
+				isPiped = true;
+			}
 			
 			// If we have a command chain, only worry about the last one
 			if( commandChain.len() > 1 ) {
@@ -217,12 +221,11 @@ component singleton {
 								add( candidates, '--no' & param.name, 'Flags', negatedParamHint, true );
 							}
 						}
-
 						var i = 0;
 						for( var param in definedParameters ) {
 							i++;
 							// For every param we haven't reached that doesn't exist as a flag
-							if( i > passedParameters.positionalParameters.len() && !structKeyExists( passedParameters.flags, param.name )) {
+							if( i > ( passedParameters.positionalParameters.len() + ( isPiped ? 1 : 0 ) ) && !structKeyExists( passedParameters.flags, param.name )) {
 								// Add the name of the next one in the list. The user will have to backspace and
 								// replace this with their actual param so this may not be that useful.
 
@@ -273,7 +276,7 @@ component singleton {
 					}
 
 				// Too soon to tell - suggest first param name and first param value
-				// There might me partially typed text, but there's no space at the end yet.
+				// There might be partially typed text, but there's no space at the end yet.
 				} else {
 
 					// Make sure defined params actually exist
@@ -313,6 +316,9 @@ component singleton {
 
 						// Grab first param
 						var thisParam = definedParameters[ 1 ];
+						if( isPiped && definedParameters.len() > 1 ) {
+							thisParam = definedParameters[ 2 ];
+						}
 
 						// Suggest its value
 						paramValueCompletion( commandInfo, thisParam.name, thisParam.type, partialMatch, candidates, false, passedNamedParameters );
@@ -345,9 +351,8 @@ component singleton {
 	 * @candidates.hint tree to populate with completion candidates
  	 **/
 	private function paramValueCompletion( struct commandInfo, String paramName, String paramType, String paramSoFar, required candidates, boolean namedParams, struct passedNamedParameters={} ) {
-
+		
 		var completorData = commandInfo.commandReference.completor;
-
 		if( structKeyExists( completorData, paramName )
 				&& ( structKeyExists( completorData[ paramName ], 'options' ) || structKeyExists( completorData[ paramName ], 'optionsUDF' ) )
 			) {
