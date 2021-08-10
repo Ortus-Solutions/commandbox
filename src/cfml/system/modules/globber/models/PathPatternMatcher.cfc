@@ -67,6 +67,8 @@ component accessors="true" singleton {
 		regex = replace( regex, '+', '\+', 'all' );
 		regex = replace( regex, '{', '\{', 'all' );
 		regex = replace( regex, '}', '\}', 'all' );
+		regex = replace( regex, '[', '\[', 'all' );
+		regex = replace( regex, ']', '\]', 'all' );
 
 		// /**/ matches zero or more directories (at least one /)
 		regex = replace( regex, '/**/', '__zeroOrMoreDirs_', 'all' );
@@ -108,7 +110,7 @@ component accessors="true" singleton {
 				regex &= '($|/.*)';	
 			}
 		}
-		
+
 		return ( reFindNoCase( regex, arguments.path ) > 0 );
 	}
 
