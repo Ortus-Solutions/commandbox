@@ -314,13 +314,13 @@ component accessors="true" implements="IEndpointInteractive" {
 		var errors = [];
 		consoleLogger.info( "Start validation..." );
 		validationData.each( ( prop, validData ) => {
-			if( IsDefined( "validData.required" ) ) {
+			if( validData.keyExists( 'required' ) ) {
 				if( len( Evaluate( "boxJSON.#prop#" ) ) == 0 ) {
 					errors.append( "[#prop#] is required" );
 				}
 			}
-			if( IsDefined( "validData.maxLen" ) ) {
-				if( len( Evaluate( "boxJSON.#prop#" ) ) > validData[ "maxLen" ] ) {
+			if( validData.keyExists( 'maxLen' ) ) {
+				if( isDefined( "boxJSON.#prop#" ) && len( Evaluate( "boxJSON.#prop#" ) ) > validData[ "maxLen" ] ) {
 					errors.append( "[#prop#] must be #validData[ 'maxLen' ]# characters or shorter" );
 				}
 			}
