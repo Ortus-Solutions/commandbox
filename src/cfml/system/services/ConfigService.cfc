@@ -210,7 +210,7 @@ component accessors="true" singleton {
 		// Look for individual BOX settings to import.
 		var processVarsUDF = function( envVar, value ) {
 			// Loop over any that look like box_config_xxx
-			if( envVar.len() > 11 && left( envVar, 11 ) == 'box_config_' ) {
+			if( envVar.len() > 11 && reFindNoCase('box[_\.]config[_\.]',  left( envVar, 11 ) ) ) {
 				// proxy_host gets turned into proxy.host
 				// Note, the asssumption is made that no config setting will ever have a legitimate underscore in the name
 				var name = right( envVar, len( envVar ) - 11 ).replace( '_', '.', 'all' );

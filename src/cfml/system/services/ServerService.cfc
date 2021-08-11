@@ -280,6 +280,10 @@ component accessors="true" singleton {
 
 		// Look up the server that we're starting
 		var serverDetails = resolveServerDetails( arguments.serverProps );
+		// This will allow settings in the "env" object to also refernce env vars which are already set
+		systemSettings.expandDeepSystemSettings( serverDetails.serverJSON.env ?: {} );
+		// Load up our fully-realized server.json-specific env vars into CommandBox's environment
+		systemSettings.setDeepSystemSettings( serverDetails.serverJSON.env ?: {}, '' );
 
 		interceptorService.announceInterception( 'preServerStart', { serverDetails=serverDetails, serverProps=serverProps } );
 
@@ -2707,7 +2711,7 @@ component accessors="true" singleton {
 		// Look for individual BOX settings to import.		
 		var processVarsUDF = function( envVar, value ) {
 			// Loop over any that look like box_server_xxx
-			if( envVar.len() > 11 && left( envVar, 11 ) == 'box_server_' ) {
+			if( envVar.len() > 11 && reFindNoCase( 'box[_\.]server[_\.]', left( envVar, 11 ) ) ) {
 				// proxy_host gets turned into proxy.host
 				// Note, the asssumption is made that no config setting will ever have a legitimate underscore in the name
 				var name = right( envVar, len( envVar ) - 11 ).replace( '_', '.', 'all' );
