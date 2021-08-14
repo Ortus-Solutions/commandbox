@@ -799,18 +799,6 @@ component accessors="true" singleton {
 				printError( { message : e.message, detail: e.detail } );
 			}
 		// This type of error means the user hit Ctrl-C, during a readLine() call. Duck out and move along.
-		} catch ( UserInterruptException var e) {
-			// If this is a nested command, pass the exception along to unwind the entire stack.
-			if( !initialCommand ) {
-				rethrow;
-			} else {
-
-				ConsolePainter.forceStop();
-    			variables.reader.getTerminal().writer().flush();
-				variables.reader.getTerminal().writer().println();
-				variables.reader.getTerminal().writer().print( variables.print.boldRedLine( 'CANCELLED' ) );
-			}
-
 		} catch (any e) {
 			// If this is a nested command, pass the exception along to unwind the entire stack.
 			if( !initialCommand ) {
@@ -823,9 +811,14 @@ component accessors="true" singleton {
 
 				ConsolePainter.forceStop();
 
-    			variables.reader.getTerminal().writer().flush();
-				variables.reader.getTerminal().writer().println();
-				variables.reader.getTerminal().writer().print( variables.print.boldRedLine( 'CANCELLED' ) );
+				if( job.getActive() ) {
+					job.error( 'CANCELLED' );
+				} else {
+					job.reset();
+	    			variables.reader.getTerminal().writer().flush();
+					variables.reader.getTerminal().writer().println();
+					variables.reader.getTerminal().writer().print( variables.print.boldRedLine( 'CANCELLED' ) );	
+				}
 			// Anything else is completely unexpected and means boom booms happened-- full stack please.
 			} else {
 
@@ -844,8 +837,6 @@ component accessors="true" singleton {
 				return result;
 			}
 		}
-
-		var job = wirebox.getInstance( 'interactiveJob' );
 
 		// We get to output the results ourselves
 		if( !isNull( result ) && !isSimpleValue( result ) ){
