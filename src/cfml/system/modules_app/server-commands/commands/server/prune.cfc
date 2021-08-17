@@ -34,7 +34,8 @@ component {
 
         if( JSON ){
             print.line(prunableServers)
-                .toConsole()
+                .toConsole();
+            return;
         }
 
         if( !prunableServers.len() ){
