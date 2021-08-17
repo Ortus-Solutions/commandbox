@@ -25,6 +25,7 @@ component accessors=true implements="IEndpoint" singleton {
 
 	function init() {
 		setNamePrefixes( 'jar' );
+		variables.defaultVersion = '0.0.0';
 		return this;
 	}
 
@@ -64,7 +65,7 @@ component accessors=true implements="IEndpoint" singleton {
 		var boxJSON = {
 			'name' : '#getDefaultName( package )#.jar',
 			'slug' : getDefaultName( package ),
-			'version' : '0.0.0',
+			'version' : guessVersionFromURL( package ),
 			'location' : 'jar:#package#',
 			'type' : 'jars'
 		};
@@ -98,16 +99,41 @@ component accessors=true implements="IEndpoint" singleton {
 	}
 
 	public function getUpdate( required string package, required string version, boolean verbose=false ) {
-		var result = {
-			// Jars with a semver in the name are considered to not have an update since we assume they are an exact version
-			isOutdated = !package
+		packageVersion = guessVersionFromURL( package );
+		// No version could be determined from package URL
+		if( packageVersion == defaultVersion ) {
+			return {
+				isOutdated = true,
+				version = 'unknown'
+			};
+		// Our package URL has a version and it's the same as what's installed
+		} else if( version == packageVersion ) {
+			return {
+				isOutdated = false,
+				version = packageVersion
+			};
+		// our package URL has a versiion and it's not what's installed
+		} else {
+			return {
+				isOutdated = true,
+				version = packageVersion
+			};
+		}
+	}
+	
+	private function guessVersionFromURL( required string package ) {
+		var version = package;
+		if( version contains '/' ) {
+			var version = version
 				.reReplaceNoCase( '^([\w:]+)?//', '' )
-				.listRest( '/\' )
-				.reFindNoCase( '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' ),
-			version = 'unknown'
-		};
-
-		return result;
+				.listRest( '/\' );	
+		}
+		if( version.refindNoCase( '.*([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}).*' ) ) {
+			version = version.reReplaceNoCase( '.*([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}).*', '\1' );	
+		} else {
+			version = defaultVersion;	
+		}
+		return version;
 	}
 
 }
