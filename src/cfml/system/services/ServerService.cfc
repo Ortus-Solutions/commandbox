@@ -199,7 +199,8 @@ component accessors="true" singleton {
 				'libDirs' : d.app.libDirs ?: '',
 				'webConfigDir' : d.app.webConfigDir ?: '',
 				'serverConfigDir' : d.app.serverConfigDir ?: '',
-				'webXML' : d.app.webXML ?: '',
+				'webXMLOverride' : d.app.webXMLOverride ?: '',
+				'webXMLOverrideForce' : d.app.webXMLOverrideForce ?: false,
 				'standalone' : d.app.standalone ?: false,
 				'WARPath' : d.app.WARPath ?: '',
 				'cfengine' : d.app.cfengine ?: '',
@@ -257,9 +258,6 @@ component accessors="true" singleton {
 		if( !isNull( serverProps.serverConfigDir ) ) {
 			serverProps.serverConfigDir = fileSystemUtil.resolvePath( serverProps.serverConfigDir );
 		}
-		if( !isNull( serverProps.webXML ) ) {
-			serverProps.webXML = fileSystemUtil.resolvePath( serverProps.webXML );
-		}
 		if( !isNull( serverProps.libDirs ) ) {
 			// Comma-delimited list needs each item resolved
 			serverProps.libDirs = serverProps.libDirs
@@ -282,6 +280,10 @@ component accessors="true" singleton {
 
 		// Look up the server that we're starting
 		var serverDetails = resolveServerDetails( arguments.serverProps );
+		// This will allow settings in the "env" object to also refernce env vars which are already set
+		systemSettings.expandDeepSystemSettings( serverDetails.serverJSON.env ?: {} );
+		// Load up our fully-realized server.json-specific env vars into CommandBox's environment
+		systemSettings.setDeepSystemSettings( serverDetails.serverJSON.env ?: {}, '' );
 
 		interceptorService.announceInterception( 'preServerStart', { serverDetails=serverDetails, serverProps=serverProps } );
 
@@ -425,15 +427,6 @@ component accessors="true" singleton {
 			    		thisDirectory = replaceNoCase( thisDirectory, configPath, '' );
 			    	}
 					serverJSON[ 'app' ][ 'serverConfigDir' ] = thisDirectory;
-			         break;
-			    case "webXML":
-			    	// This path is canonical already.
-			    	var thisFile = replace( serverProps[ 'webXML' ], '\', '/', 'all' );
-			    	// If the webXML is south of the server's JSON, make it relative for better portability.
-			    	if( thisFile contains configPath ) {
-			    		thisFile = replaceNoCase( thisFile, configPath, '' );
-			    	}
-					serverJSON[ 'app' ][ 'webXML' ] = thisFile;
 			         break;
 			    case "libDirs":
 					serverJSON[ 'app' ][ 'libDirs' ] = serverProps[ 'libDirs' ]
@@ -712,9 +705,6 @@ component accessors="true" singleton {
 
 		// relative trayIcon in server.json is resolved relative to the server.json
 		if( serverJSON.keyExists( 'app' ) && serverJSON.app.keyExists( 'webXML' ) ) { serverJSON.app.webXML = fileSystemUtil.resolvePath( serverJSON.app.webXML, defaultServerConfigFileDirectory ); }
-		// relative trayIcon in config setting server defaults is resolved relative to the web root
-		if( len( defaults.app.webXML ?: '' ) ) { defaults.app.webXML = fileSystemUtil.resolvePath( defaults.app.webXML, defaultwebroot ); }
-		serverInfo.webXML 			= serverProps.webXML 			?: serverJSON.app.webXML 			?: defaults.app.webXML;
 
 		// relative trayIcon in server.json is resolved relative to the server.json
 		if( serverJSON.keyExists( 'trayIcon' ) ) { serverJSON.trayIcon = fileSystemUtil.resolvePath( serverJSON.trayIcon, defaultServerConfigFileDirectory ); }
@@ -773,8 +763,7 @@ component accessors="true" singleton {
 		}
 
 		// Clean up spaces in welcome file list
-		serverInfo.welcomeFiles = serverInfo.welcomeFiles.listMap( function( i ){ return trim( i ); } );
-
+		serverInfo.welcomeFiles = serverInfo.welcomeFiles.listMap( ( i )=>trim( i ) );
 
 		// relative rewrite config path in server.json is resolved relative to the server.json
 		if( isDefined( 'serverJSON.web.rewrites.config' ) ) { serverJSON.web.rewrites.config = fileSystemUtil.resolvePath( serverJSON.web.rewrites.config, defaultServerConfigFileDirectory ); }
@@ -920,16 +909,16 @@ component accessors="true" singleton {
 			if( isSimpleValue( serverJSON.web.rulesFile ) ) {
 				serverJSON.web.rulesFile = serverJSON.web.rulesFile.listToArray();
 			}
-			serverInfo.webRules.append( serverJSON.web.rulesFile.map((fg)=>{
+			serverInfo.webRules.append( serverJSON.web.rulesFile.reduce((predicates,fg)=>{
 				fg = fileSystemUtil.resolvePath( fg, defaultServerConfigFileDirectory );
-				return wirebox.getInstance( 'Globber' ).setPattern( fg ).matches().reduce( (predicates,file)=>{
+				return predicates.append( wirebox.getInstance( 'Globber' ).setPattern( fg ).matches().reduce( (predicates,file)=>{
 						if( lCase( file ).endsWith( '.json' ) ) {
-							return predicates & CR & deserializeJSON( fileRead( file ) ).toList( CR )
+							return predicates.append( deserializeJSON( fileRead( file ) ), true );
 						} else {
-							return predicates & CR & fileRead( file )
+							return predicates.append( fileRead( file ).listToArray( chr(13)&chr(10) ), true );
 						}
-					}, '' );
-			}), true);
+					}, [] ), true );
+			}, []), true );
 		}
 		if( defaults.keyExists( 'web' ) && defaults.web.keyExists( 'rules' ) ) {
 			serverInfo.webRules.append( defaults.web.rules, true);
@@ -940,16 +929,16 @@ component accessors="true" singleton {
 			if( isSimpleValue( defaultsRulesFile ) ) {
 				defaultsRulesFile = defaultsRulesFile.listToArray();
 			}
-			serverInfo.webRules.append( defaultsRulesFile.map((fg)=>{
+			serverInfo.webRules.append( defaultsRulesFile.reduce((predicates,fg)=>{
 				fg = fileSystemUtil.resolvePath( fg, defaultwebroot );
-				return wirebox.getInstance( 'Globber' ).setPattern( fg ).matches().reduce( (predicates,file)=>{
+				return predicates.append( wirebox.getInstance( 'Globber' ).setPattern( fg ).matches().reduce( (predicates,file)=>{
 						if( lCase( file ).endsWith( '.json' ) ) {
-							return predicates & CR & deserializeJSON( fileRead( file ) ).toList( CR )
+							return predicates.append( deserializeJSON( fileRead( file ) ), true );
 						} else {
-							return predicates & CR & fileRead( file )
+							return predicates.append( fileRead( file ).listToArray( chr(13)&chr(10) ), true );
 						}
-					}, '' );
-			}), true);
+					}, [] ), true );
+			}, []), true);
 		}
 
 		// Default CommandBox rules.
@@ -1009,7 +998,17 @@ component accessors="true" singleton {
 		if( isDefined( 'defaults.app.serverHomeDirectory' ) && len( defaults.app.serverHomeDirectory )  ) { defaults.app.serverHomeDirectory = fileSystemUtil.resolvePath( defaults.app.serverHomeDirectory, defaultwebroot ); }
 		serverInfo.serverHomeDirectory			= serverProps.serverHomeDirectory			?: serverJSON.app.serverHomeDirectory			?: defaults.app.serverHomeDirectory;
 		serverInfo.singleServerHome			= serverJSON.app.singleServerHome			?: defaults.app.singleServerHome;
-		
+
+		if( len( serverJSON.app.webXMLOverride ?: '' ) ){ serverJSON.app.webXMLOverride = fileSystemUtil.resolvePath( serverJSON.app.webXMLOverride, defaultServerConfigFileDirectory ); }
+		if( len( defaults.app.webXMLOverride ?: '' ) ){ defaults.app.webXMLOverride = fileSystemUtil.resolvePath( defaults.app.webXMLOverride, defaultwebroot ); }
+		serverInfo.webXMLOverride	= serverJSON.app.webXMLOverride	?: defaults.app.webXMLOverride;
+		if( len( serverInfo.webXMLOverride ) && !fileExists( serverInfo.webXMLOverride ) ) {
+			job.error( 'webXMLOverride file not found [#serverInfo.webXMLOverride#]' );
+			return;
+		}
+
+		serverInfo.webXMLOverrideForce = serverJSON.app.webXMLOverrideForce ?: defaults.app.webXMLOverrideForce;
+    
 		serverInfo.sessionCookieSecure			= serverJSON.app.sessionCookieSecure			?: defaults.app.sessionCookieSecure;
 		serverInfo.sessionCookieHTTPOnly			= serverJSON.app.sessionCookieHTTPOnly			?: defaults.app.sessionCookieHTTPOnly;
 
@@ -1048,7 +1047,6 @@ component accessors="true" singleton {
 
 	    // As long as there's no WAR Path, let's install the engine to use.
 		if( serverInfo.WARPath == '' ){
-
 			// This will install the engine war to start, possibly downloading it first
 			var installDetails = serverEngineService.install( cfengine=serverInfo.cfengine, basedirectory=serverinfo.customServerFolder, serverInfo=serverInfo, serverHomeDirectory=serverInfo.serverHomeDirectory );
 
@@ -1434,12 +1432,14 @@ component accessors="true" singleton {
 		// Webroot for normal server, and war home for a standard war
 		args.append( '-war' ).append( serverInfo.appFileSystemPath );
 
-		// Custom web.xml (doesn't work right now)
-		if ( Len( Trim( serverInfo.webXml ) ) && false ) {
-			args.append( '--web-xml-path' ).append( serverInfo.webXml );
-		// Default is in WAR home
-		} else {
-			args.append( '--web-xml-path' ).append( '#serverInfo.serverHomeDirectory#/WEB-INF/web.xml' );
+		args.append( '--web-xml-path' ).append( serverInfo.webXml );
+
+		if( len( serverInfo.webXMLOverrideActual ) ){
+			args.append( '--web-xml-override-path' ).append( serverInfo.webXMLOverrideActual );
+		}
+
+		if( len( serverInfo.webXMLOverrideActual ) ){
+			args.append( '--web-xml-override-force' ).append( serverInfo.webXMLOverrideForce );
 		}
 
 		if( len( serverInfo.libDirs ) ) {
@@ -1806,6 +1806,7 @@ component accessors="true" singleton {
 		//need to check if a shell has been defined for this action
 		if( menuItem.keyExists( 'action' ) && listFindNoCase('run,runAsync,runTerminal',menuItem.action)){
 			menuItem[ 'shell' ] = menuItem.shell ?: fileSystemUtil.getNativeShell();
+			menuItem[ 'workingDirectory' ] = menuItem[ 'workingDirectory' ] ?: relativePath;
 			// Some special love for box commands
 			if( menuItem.command.lCase().reFindNoCase( '^box(\.exe)? ' )  ) {
 				menuItem.command = fixBinaryPath( trim(menuItem.command), systemSettings.getSystemSetting( 'java.class.path' ));
@@ -2462,14 +2463,10 @@ component accessors="true" singleton {
 	* Get all servers registered as an array of names
 	*/
 	array function getServerNames(){
-		var servers = getServers();
-		var results = [];
-
-		for( var thisServer in servers ){
-			arrayAppend( results, servers[ thisServer ].name );
-		}
-
-		return results;
+		return getServers()
+			.valueArray()
+			.map( (s)=>s.name )
+			.sort( 'textNoCase' );		
 	}
 
 	/**
@@ -2562,6 +2559,9 @@ component accessors="true" singleton {
 			'serverHome'		 : "",
 			'webroot'			: "",
 			'webXML' 			: "",
+			'webXMLOverride' 	: "",
+			'webXMLOverrideActual' : "",
+			'webXMLOverrideForce' : false,
 			'HTTPEnable'		: true,
 			'HTTP2Enable'		: true,
 			'SSLEnable'			: false,
@@ -2683,6 +2683,23 @@ component accessors="true" singleton {
 
 		return props;
 	}
+
+	/**
+	* Dynamic completion for server names, sorted by last started
+	*/
+	function serverNameComplete() {
+		
+		return getservers()
+			.valueArray()
+			.sort( (a,b)=>{
+				if( len( a.dateLastStarted ) && len( b.dateLastStarted ) ) {
+					return dateDiff( 's', a.dateLastStarted, b.dateLastStarted );
+				} else {
+					return len( b.dateLastStarted ) - len( a.dateLastStarted );
+				}
+			} )
+			.map( (s,i)=>return { name : s.name, group : 'Server Names', sort : i } );
+	}
 	
 		
 	/**
@@ -2694,7 +2711,7 @@ component accessors="true" singleton {
 		// Look for individual BOX settings to import.		
 		var processVarsUDF = function( envVar, value ) {
 			// Loop over any that look like box_server_xxx
-			if( envVar.len() > 11 && left( envVar, 11 ) == 'box_server_' ) {
+			if( envVar.len() > 11 && reFindNoCase( 'box[_\.]server[_\.]', left( envVar, 11 ) ) ) {
 				// proxy_host gets turned into proxy.host
 				// Note, the asssumption is made that no config setting will ever have a legitimate underscore in the name
 				var name = right( envVar, len( envVar ) - 11 ).replace( '_', '.', 'all' );

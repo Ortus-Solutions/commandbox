@@ -35,13 +35,23 @@ component singleton {
 		try {
 
 			var buffer = parsedLine.line();
+			var bufferEndsWithSpace = buffer.endsWith( ' ' );
 
 			// Try to resolve the command.
 			// If buffer ends in space, we don't need to worry about the partial match of a command
-			var commandChain = commandService.resolveCommand( line=buffer, forCompletion=!buffer.endsWith( ' ' ) );
+			var commandChain = commandService.resolveCommand( line=buffer, forCompletion=!bufferEndsWithSpace );
 
 			// If there are multiple commands like "help | more", we only care about the last one
 			var commandInfo = commandChain[ commandChain.len() ];
+			var isPiped = false;
+			if( commandChain.len() > 2 && commandChain[ commandChain.len()-1 ].originalLine == '|' ) {
+				isPiped = true;
+			}
+			
+			// If we have a command chain, only worry about the last one
+			if( commandChain.len() > 1 ) {
+				buffer = commandInfo.originalLine & ( bufferEndsWithSpace ? ' ' : '' );
+			}
 
 			// Positive match up to this cursor position
 			var matchedToHere = len( commandInfo.commandString );
@@ -50,7 +60,7 @@ component singleton {
 
 			// TODO: Break REPL completion out into separate CFC
 			// Tab completion for stuff like #now if we're still on the first word
-			if( commandInfo.commandString.left( 4 ) == 'cfml' && commandInfo.originalLine.listLen( ' ' ) == 1 && !buffer.endsWith( ' ' ) ) {
+			if( commandInfo.commandString.left( 4 ) == 'cfml' && commandInfo.originalLine.listLen( ' ' ) == 1 && !bufferEndsWithSpace ) {
 
 
 				// Loop over all the possibilities at this level
@@ -131,7 +141,7 @@ component singleton {
 					var leftOver = '';
 
 					// Still typing
-					if( !buffer.endsWith( ' ' ) ) {
+					if( !bufferEndsWithSpace ) {
 
 						// grab the last word from the parsed line
 						var leftOver = parsedLine.word();
@@ -194,11 +204,11 @@ component singleton {
 				} else if(
 							passedParameters.positionalParameters.len() > 1
 							|| ( passedParameters.positionalParameters.len() == 1
-								&& ( buffer.endsWith( ' ' ) || structCount( passedParameters.flags ) ) )
+								&& ( bufferEndsWithSpace || structCount( passedParameters.flags ) ) )
 						) {
 
 					// If the buffer ends with a space, they were done typing the last param
-					if( buffer.endsWith( ' ' ) ) {
+					if( bufferEndsWithSpace ) {
 
 						// Loop over remaining possible params and suggest the boolean ones as flags
 						var i = 0;
@@ -211,12 +221,11 @@ component singleton {
 								add( candidates, '--no' & param.name, 'Flags', negatedParamHint, true );
 							}
 						}
-
 						var i = 0;
 						for( var param in definedParameters ) {
 							i++;
 							// For every param we haven't reached that doesn't exist as a flag
-							if( i > passedParameters.positionalParameters.len() && !structKeyExists( passedParameters.flags, param.name )) {
+							if( i > ( passedParameters.positionalParameters.len() + ( isPiped ? 1 : 0 ) ) && !structKeyExists( passedParameters.flags, param.name )) {
 								// Add the name of the next one in the list. The user will have to backspace and
 								// replace this with their actual param so this may not be that useful.
 
@@ -267,7 +276,7 @@ component singleton {
 					}
 
 				// Too soon to tell - suggest first param name and first param value
-				// There might me partially typed text, but there's no space at the end yet.
+				// There might be partially typed text, but there's no space at the end yet.
 				} else {
 
 					// Make sure defined params actually exist
@@ -279,7 +288,7 @@ component singleton {
 							// grab the last one as the partial match
 							partialMatch = passedParameters.positionalParameters.last();
 						// If there are flags and the buffer doesn't end with a space, then we must still be typing one
-						} else if( structCount( passedParameters.flags ) && !buffer.endsWith( ' ' ) ) {
+						} else if( structCount( passedParameters.flags ) && !bufferEndsWithSpace ) {
 							// grab the last chunk of text from the buffer
 							partialMatch = parsedLine.word();
 						}
@@ -307,6 +316,9 @@ component singleton {
 
 						// Grab first param
 						var thisParam = definedParameters[ 1 ];
+						if( isPiped && definedParameters.len() > 1 ) {
+							thisParam = definedParameters[ 2 ];
+						}
 
 						// Suggest its value
 						paramValueCompletion( commandInfo, thisParam.name, thisParam.type, partialMatch, candidates, false, passedNamedParameters );
@@ -339,9 +351,8 @@ component singleton {
 	 * @candidates.hint tree to populate with completion candidates
  	 **/
 	private function paramValueCompletion( struct commandInfo, String paramName, String paramType, String paramSoFar, required candidates, boolean namedParams, struct passedNamedParameters={} ) {
-
+		
 		var completorData = commandInfo.commandReference.completor;
-
 		if( structKeyExists( completorData, paramName )
 				&& ( structKeyExists( completorData[ paramName ], 'options' ) || structKeyExists( completorData[ paramName ], 'optionsUDF' ) )
 			) {
@@ -490,10 +501,12 @@ component singleton {
 			var name = match.name;
 			var group = match.group ?: 'Values';
 			var description = match.description ?: '';
+			var sort = match.sort ?: 999;
 		} else {
 			var name = match;
 			var group = 'Values';
 			var description = '';
+			var sort = 999;
 		}
 		startsWith = lcase( startsWith );
 		var complete = false;
@@ -503,9 +516,9 @@ component singleton {
 			}
 
 			if( namedParams ) {
-				add( candidates, paramName & '=' & name, group, description, complete );
+				add( candidates, paramName & '=' & name, group, description, complete, sort ?: nullValue() );
 			} else {
-				add( candidates, name, group, description, complete );
+				add( candidates, name, group, description, complete, sort );
 			}
 		}
 	}
@@ -513,7 +526,7 @@ component singleton {
 	/**
 	* JLine3 needs an array of Java objects, so convert our array of strings to that
  	**/
-	private function add( candidates, name, group='', description='', boolean complete = false ) {
+	private function add( candidates, name, group='', description='', boolean complete = false, sort=999 ) {
 		candidates.append(
 			createObject( 'java', 'org.jline.reader.Candidate' )
 				.init(
@@ -523,7 +536,8 @@ component singleton {
 					description.len() ? description : nullValue(),	// descr
 					nullValue(),									// suffix
 					nullValue(),									// key
-					complete 										// complete
+					complete//, 									// complete
+					//val( sort )									// sort
 				)
 		);
 

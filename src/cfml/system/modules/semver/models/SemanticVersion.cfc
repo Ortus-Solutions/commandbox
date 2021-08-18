@@ -189,7 +189,7 @@ component singleton{
 
 	private function buildRange( required string range ) {
 		// A character that I hope will never be part of an actual range so split easier.
-		// Comparator sets inside a range are delimited by " || "
+		// Comprator sets inside a range are delimited by " || "
 		arguments.range = replaceNoCase( arguments.range, ' || ', '•', 'all' );
 		var semverRange = listToArray( arguments.range, '•' );
 
@@ -423,7 +423,7 @@ component singleton{
 				// ~0 Same as 0.x
 				if( sComparator.sVersion.minor== 'x' || sComparator.sVersion.revision== 'x' ) {
 					sComparator.operator = '=';
-					// Recursively handle as an X range
+					// Recursivley handle as an X range
 					comparatorSet.append( expandXRanges( sComparator ), true );
 				} else {
 
@@ -562,7 +562,7 @@ component singleton{
 
 	/**
 	* Verifies if the passed version string is in a pre-release state
-	* Pre-release is defined by the existence of a preRelease ID
+	* Pre-release is defined by the existance of a preRelease ID
 	*/
 	boolean function isPreRelease( required string version ){
 		var pVersion = parseVersion( arguments.version );

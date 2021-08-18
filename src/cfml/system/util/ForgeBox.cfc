@@ -283,7 +283,8 @@ or just add DEBUG to the root logger
 			},
 			formFields = formFields,
 			files      = {},
-			method     = "post"
+			method     = "post",
+			timeout	   = 600
 		};
 
 		if ( len( arguments.zipPath ) ) {
@@ -451,10 +452,10 @@ or just add DEBUG to the root logger
 		<cfargument name="body" 			type="any" 		required="false" default="" hint="The body content of the request if passed."/>
 		<cfargument name="headers" 			type="struct" 	required="false" default="#structNew()#" hint="An struct of HTTP headers to send"/>
 		<cfargument name="parameters"		type="struct" 	required="false" default="#structNew()#" hint="An struct of HTTP URL parameters to send in the request"/>
-		<cfargument name="timeout" 			type="numeric" 	required="false" default="20" hint="The default call timeout"/>
-		<cfargument name="formFields" 			type="struct" 	required="false" default="#structNew()#" hint="A struct of form fields to send"/>
+		<cfargument name="timeout" 			type="numeric" 	required="false" default="45" hint="The default call timeout"/>
+		<cfargument name="formFields" 		type="struct" 	required="false" default="#structNew()#" hint="A struct of form fields to send"/>
 		<cfargument name="files" 			type="struct" 	required="false" default="#structNew()#" hint="A struct of files to send"/>
-		<cfargument name="multipart" 			type="boolean" 	required="false" default="false" hint="Whether the request needs to be multipart/form-data"/>
+		<cfargument name="multipart" 		type="boolean" 	required="false" default="false" hint="Whether the request needs to be multipart/form-data"/>
 		<cfscript>
 			var results = {error=false,response={},message="",responseheader={},rawResponse=""};
 			var HTTPResults = "";

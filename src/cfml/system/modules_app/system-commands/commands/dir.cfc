@@ -66,13 +66,13 @@ component aliases="ls,ll,directory" {
 			}
 			return p;
 		} );
-
+		
 		var results = paths
 			.setExcludePattern( excludePaths )
 			.asQuery()
 			.withSort( sort )
 			.matches();
-
+			
 		for( var x=1; x lte results.recordcount; x++ ) {
 
 			if( simple ) {

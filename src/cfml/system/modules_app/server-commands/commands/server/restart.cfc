@@ -81,10 +81,6 @@ component aliases="restart" {
 	}
 
 	function serverNameComplete() {
-		return serverService
-			.getServerNames()
-			.map( ( i ) => {
-				return { name : i, group : 'Server Names' };
-			} );
+		return serverService.serverNameComplete();
 	}
 }

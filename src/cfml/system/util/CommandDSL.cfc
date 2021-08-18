@@ -123,7 +123,12 @@ component accessors=true {
 				if( runCommand ) {
 					processedParams.append( '#param#=#paramStruct[ param ] ?: ''#' );
 				} else {
-					processedParams.append( '#param#="#parser.escapeArg( paramStruct[ param ] ?: '' )#"' );
+					// Turn a struct back into arg:foo=bar arg:baz=bum
+					if( isStruct( paramStruct[ param ] ?: '' ) ) {
+						paramStruct[ param ].each( (k,v)=>processedParams.append( '#param#:#k#="#parser.escapeArg( v ?: '' )#"' ) );
+					} else {
+						processedParams.append( '#param#="#parser.escapeArg( paramStruct[ param ] ?: '' )#"' );	
+					}
 				}
 			}
 		}

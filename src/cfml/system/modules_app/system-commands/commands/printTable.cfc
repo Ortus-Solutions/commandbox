@@ -106,7 +106,7 @@ component {
 	/**
      * Outputs a table to the screen
 	 * @data JSON serialized query, array of structs, or array of arrays to represent in table form
-	 * @includedHeaders A list of headers to include.  Used for query inputs
+	 * @includedHeaders A list of headers to include.
      * @headerNames An list/array of column headers to use instead of the default specifically for array of arrays
 	 * @debug Only print out the names of the columns and the first row values
      */

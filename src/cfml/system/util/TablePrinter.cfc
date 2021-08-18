@@ -54,19 +54,27 @@ component {
 
 		arguments.headerNames = isArray( arguments.headerNames ) ? arrayToList( arguments.headerNames ) : arguments.headerNames;
 		var dataQuery = isQuery( arguments.data ) ? arguments.data : convert.toQuery( arguments.data, arguments.headerNames );
-		if( !dataQuery.recordCount ) {
+		
+		// Check for
+		// printTable []
+		// printTable [{}]
+		if( !dataQuery.recordCount || !len( dataQuery.columnList )  ) {
 			return 'No Data';
 		}
 		var includeList = isArray( arguments.includedHeaders ) ? arrayToList( arguments.includedHeaders ) : arguments.includedHeaders;
 		var columns = includeList != "" ? includeList: "*";
 
-		// validate columns first since the QoQ message can be confusing
-		if( columns != '*' ) {
-			columns.listEach( (c)=>listFindNoCase( dataQuery.columnList, c ) || c == '*' || throw( message='Header name [#c#] not found.', detail='Valid header names are [#dataQuery.columnList#]', type='commandException' ) );
-		}
+		// validate columns first and throw our own error since the QoQ error message for invalid columns can be confusing
+		columns.listEach( (c)=> {
+			c = trim( c );
+			// This expression will either evaluate to true or throw an exception
+			listFindNoCase( dataQuery.columnList, c ) 
+				|| c == '*'
+				|| throw( message='Header name [#c#] not found.', detail='Valid header names are [#dataQuery.columnList#]', type='commandException' );
+		} );
 
 		dataQuery = queryExecute('SELECT #columns# FROM dataQuery',[],{ dbType : 'query' });
-
+		
 		// Extract data in array of structs
 		var dataRows = convert.queryToArrayOfOrderedStructs( dataQuery );
 
@@ -75,7 +83,9 @@ component {
 		if(arguments.debug){
 			dataRows = [];
 			if(dataQuery.recordcount){
-				dataHeaders.each((x) => {
+				dataHeaders
+				.sort( 'textnocase' )
+				.each((x) => {
 					dataRows.append([x,dataQuery[x][1]]);
 				})
 			}
@@ -83,7 +93,7 @@ component {
 
 		}
 		dataRows = autoFormatData( dataHeaders, dataRows );
-		dataHeaders = processHeaders( dataHeaders, dataRows )
+		dataHeaders = processHeaders( dataHeaders, dataRows, headerNames.listToArray() )
 
 		printHeader( dataHeaders );
 		printData( dataRows, dataHeaders );
@@ -96,12 +106,14 @@ component {
      * Outputs a table to the screen
      * @headers An array of column headers,
      * @data An array of data for the table.
+     * @headerNames Header name overrides
      */
     public array function processHeaders(
         required array headers,
-        required array data
+        required array data,
+        headerNames=[]
     ) {
-        var headerData = arguments.headers.map( ( header, index ) => calculateColumnData( index, header, data ), true );
+        var headerData = arguments.headers.map( ( header, index ) => calculateColumnData( index, header, data, headerNames ), true );
         var termWidth = shell.getTermWidth()-1;
         if( termWidth <= 0 ) {
         	termWidth = 100;
@@ -165,8 +177,13 @@ component {
      * @index The index of the column we are calculating.
      * @header The column header.
      * @data The data for the table.
+     * @headerNames Header name overrides
      */
-	private struct function calculateColumnData( required numeric index, required string header, required array data ) {
+	private struct function calculateColumnData( required numeric index, required string header, required array data, array headerNames=[] ) {
+		var headerName = arguments.header;
+		if( headerNames.len() >= index ) {
+			headerName = headerNames[ index ];
+		}
 		var colData = arguments.data.reduce( ( acc, row, rowIndex ) => {
 			if( row.len() < index ) {
 				throw( 'Data in row #rowIndex# is missing values.  It has only #row.len()# columns, but there are at least #index# headers.' );
@@ -180,9 +197,9 @@ component {
 			return acc;
 		},
 		{
-			"value": header,
-			"maxWidth": len( arguments.header ),
-			"medianWidth": [ len( arguments.header ) ],
+			"value": headerName,
+			"maxWidth": len( headerName ),
+			"medianWidth": [ len( headerName ) ],
 			"medianRatio": 1
 		} );
 

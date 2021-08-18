@@ -282,6 +282,57 @@ component accessors="true" implements="IEndpointInteractive" {
 			}
 		}
 
+		// validation goes here
+		var validationData = {
+			"slug": {
+				"maxLen": 255,
+				"required": true
+			},
+			"version": {
+				"maxLen": 25
+			},
+			"shortDescription": {
+				"maxLen": 200
+			},
+			"name": {
+				"maxLen": 255
+			},
+			"homepage": {
+				"maxLen": 500
+			},
+			"documentation": {
+				"maxLen": 255
+			},
+			"bugs": {
+				"maxLen": 255
+			},
+			"repository.URL": {
+				"maxLen": 500
+			}
+		};
+
+		var errors = [];
+		consoleLogger.info( "Start validation..." );
+		validationData.each( ( prop, validData ) => {
+			if( validData.keyExists( 'required' ) ) {
+				if( len( Evaluate( "boxJSON.#prop#" ) ) == 0 ) {
+					errors.append( "[#prop#] is required" );
+				}
+			}
+			if( validData.keyExists( 'maxLen' ) ) {
+				if( isDefined( "boxJSON.#prop#" ) && len( Evaluate( "boxJSON.#prop#" ) ) > validData[ "maxLen" ] ) {
+					errors.append( "[#prop#] must be #validData[ 'maxLen' ]# characters or shorter" );
+				}
+			}
+
+		} );
+
+		// validation message if errors show up
+		if( errors.len() > 0 ){
+			errors.append( "#chr(10)#Please fix the invalid data and try publishing again." );
+			throw( "There were validation errors in publishing...", "endpointException", errors.toList( chr(10) ) );
+		}
+
 		try {
 			consoleLogger.warn( "Sending package information to #getNamePrefixes()#, please wait..." );
 			if ( upload ) { consoleLogger.warn( "Uploading package zip to #getNamePrefixes()#..." ); }
