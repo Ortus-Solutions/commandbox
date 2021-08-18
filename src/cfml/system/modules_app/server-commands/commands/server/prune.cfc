@@ -33,8 +33,7 @@ component {
             .sort( (a,b) => a.daysLastStarted - b.daysLastStarted );
 
         if( JSON ){
-            print.line(prunableServers)
-                .toConsole();
+            print.line(prunableServers);
             return;
         }
 
