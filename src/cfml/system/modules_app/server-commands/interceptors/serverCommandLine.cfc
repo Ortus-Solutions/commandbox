@@ -23,7 +23,7 @@ component {
 	};
 
 	function onServerProcessLaunch( struct interceptData ) {
-		if( interceptData.serverProps.keyExists( 'startScript' ) ) {
+		if( interceptData.serverProps.keyExists( 'startScript' ) && len( interceptData.serverProps.startScript ) ) {
 			if( !shellScripts.keyExists( interceptData.serverProps.startScript ) ) {
 				job.addErrorLog(
 					'Invalid target shell specified [#interceptData.serverProps.startScript#] for command line shell script. Unable to generate script.'
