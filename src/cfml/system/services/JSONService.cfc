@@ -258,9 +258,9 @@ component accessors="true" singleton {
 		// Loop over each character in the line
 		while( ++i <= len( str ) ) {
 			// Current character
-			char = mid( str, i, 1 );
+			var char = mid( str, i, 1 );
 			// All the remaining characters
-			remainingChars = mid( str, i+1, len( str ) );
+			var remainingChars = mid( str, i+1, len( str ) );
 
 			// If we're in the middle of a quoted string, just keep appending
 			if( inQuotes ) {
