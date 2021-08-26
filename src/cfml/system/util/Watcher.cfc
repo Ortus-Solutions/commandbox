@@ -36,6 +36,7 @@ component accessors=true {
 	property name='changeData'			type='struct';
 	property name='watcherRun'			type='boolean';
 	property name='pathsToWatch'		type='array';
+	property name='pathsToExclude'		type='array';
 	property name='changeUDF'			type='function';
 	property name='baseDirectory'		type='string';
 	property name='delayMS'				type='number';
@@ -45,10 +46,11 @@ component accessors=true {
 		setDelayMS( 500 );
 		// Watch all files recursively by default
 		setPathsToWatch( [ '**' ] );
+		setPathsToExclude( [] );
 	}
 
 	/**
-	* Pass in an array of file globbing paths or any numberof string globbing arguments.
+	* Pass in an array of file globbing paths or any number of string globbing arguments.
 	*/
 	public function paths() {
 		setPathsToWatch( [] );
@@ -58,6 +60,18 @@ component accessors=true {
 		}
 		return this;
 	}
+
+	/**
+	* Pass in an array of file globbing paths or any number of string globbing arguments.
+	*/
+	public function excludePaths() {
+		setPathsToExclude( [] );
+		for( var arg in arguments ) {
+				var thisPattern = arguments[ arg ];
+				pathsToExclude.append( thisPattern, isArray( thisPattern ) );
+		}
+		return this;
+	}	
 
 	/**
 	* Pass in the base directory that the globbing patterns are relative to
@@ -224,10 +238,19 @@ component accessors=true {
 
 	private function calculateHashes() {
 		var globPatterns = getPathsToWatch();
+		var globExcludePatterns = getPathsToExclude();
+		
 		var thisBaseDir =  fileSystemUtil.resolvePath( getBaseDirectory() );
 
 		var fileListing = globber
 			.setPattern( globPatterns.map( ( p )=>{
+				if( p.startsWith( '/' ) || p.startsWith( '\' ) ) {
+					return fileSystemUtil.resolvePath( p.right( -1 ), thisBaseDir )
+				} else {
+					return fileSystemUtil.resolvePath( '**' & p, thisBaseDir )
+				}
+			} ) )
+			.setExcludePattern( globExcludePatterns.map( ( p )=>{
 				if( p.startsWith( '/' ) || p.startsWith( '\' ) ) {
 					return fileSystemUtil.resolvePath( p.right( -1 ), thisBaseDir )
 				} else {
