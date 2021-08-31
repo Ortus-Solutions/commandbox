@@ -10,7 +10,7 @@ component excludeFromHelp=true {
 			.line()
 			.cyan( '#print.tab#> ' ).yellowLine( 'forgebox show popular modules' )
 			.cyan( '#print.tab#> ' ).yellowLine( 'forgebox show new interceptors' )
-			.cyan( '#print.tab#> ' ).yellowLine( 'forgebox recent' )
+			.cyan( '#print.tab#> ' ).yellowLine( 'forgebox show recent' )
 			.cyan( '#print.tab#> ' ).yellowLine( 'forgebox show "slugName"' )
 			.line()
 			.yellowLine( 'Type help before any command name to get additional information on how to call that specific command.' )
