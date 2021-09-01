@@ -348,5 +348,8 @@ component accessors="true" singleton {
 		return getCurrentThread().getName();
 	}
 
+    function compile() {
+        return getinstance( "compileDSL" );
+    }
 
 }

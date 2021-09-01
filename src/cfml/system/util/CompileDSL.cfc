@@ -14,16 +14,39 @@
 *
 */
 
-component accessors=true  {
+component accessors=true {
+
+    property name='command';
+    property name='target';
+    property name='sourceDirectory';
+    property name='resourceDirectory';
+    property name='classOutputDirectory';
 
     //DI
 	property name='shell'	inject='shell';
+    property name="job"		inject='interactiveJob';
+
+    /*
+    have a classpath
+    have a verbose flag
+    have a encoding flag option
+    */
 
     public function init(){
         return this;
     }
 
-    string function run() {
+	/**
+	 * Sets the directory to run the command in
+  	 **/
+	function inWorkingDirectory( required workingDirectory ) {
+		setWorkingDirectory( arguments.workingDirectory );
+		return this;
+	}
 
+    string function run() {
+        shell.printString( "run compile..." );
+        //shell.callCommand( 'run javac -cp D:\Javatest\greetings D:\Javatest\greetings\Hello.java -verbose' );
+        shell.callCommand( 'run javac D:\Javatest\greetings\Hello.java -verbose' );
     }
 }
