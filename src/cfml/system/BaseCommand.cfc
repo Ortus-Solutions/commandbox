@@ -349,7 +349,8 @@ component accessors="true" singleton {
 	}
 
     function compile() {
-        return getinstance( "compileDSL" );
+        return getinstance( "compileDSL" )
+            .projectRoot( resolvePath( '' ) );
     }
 
 }
