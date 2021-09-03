@@ -4,30 +4,30 @@
 * Copyright Since 2014 CommandBox by Ortus Solutions, Corp
 * www.coldbox.org | www.ortussolutions.com
 ********************************************************************************
-* @file  D:\Dev\Repos\commandbox\src\cfml\system\util\CompileDSL.cfc
-* @author  Balbino Aylagas
 * @description
 *
 * I am a helper object for executing compile actions for "javac" command and
-* jarring actions for "jar" command Create me and call my
+* jarring actions for "jar" command. Create me and call my
 * methods to compile and jar any java project, then .run() will execute me.
 *
 */
 
 component accessors=true {
 
-    property name='command';
-    property name='target';
-    property name='projectRoot';
-    property name='fileSystemUtil';
-	property name='wirebox';
-    property name='sourceDirectory';
-    property name='resourceDirectory';
-    property name='classOutputDirectory';
+    /* root folder of the project you are working with (compiling, jar) */
+    property name='projectRoot'             type="string";
+    /* folder inside root project where source files reside (.java) */
+    property name='sourceDirectory'         type='string';
+    property name='classPathDirectory'      type='string';
+    property name='classOutputDirectory'    type='string';
+    property name='verbose'                 type='boolean';
+    property name='encode'                  type='string';
 
     //DI
-	property name='shell'	inject='shell';
-    property name='job'		inject='interactiveJob';
+    property name='wirebox'         inject='wirebox';
+    property name='fileSystemUtil'  inject='FileSystem';
+	property name='shell'	        inject='shell';
+    property name='job'		        inject='interactiveJob';
 
     /*
     have a classpath
@@ -36,9 +36,10 @@ component accessors=true {
     */
 
     public function init(){
-		variables.wirebox			= application.wirebox;
-        variables.fileSystemUtil	= wirebox.getInstance( 'FileSystem' );
-        setSourceDirectory( '' )
+        setSourceDirectory( '' );
+        setClassOutputDirectory( '' );
+        setVerbose( false );
+        setEncode( '' );
         return this;
     }
 
@@ -55,34 +56,51 @@ component accessors=true {
         return this;
     }
 
+    function toClasses( required classOutputDirectory ){
+        setClassOutputDirectory( fileSystemutil.resolvePath( classOutputDirectory, getProjectRoot() ) )
+        return this;
+    }
+
+    function withVerbose() {
+        setVerbose( true );
+        return this;
+    }
+
+    function withEncoding( required encodeValue ) {
+        setEncode( encodeValue );
+        return this;
+    }
+
     string function run() {
+        var workingDirectory = getProjectRoot();
+        var classOutputString = "";
+        var verboseString = "";
+        var encodingString = "";
 
-        //shell.printString( " run compile... " );
-        var commandCWD = shell.getPWD();
-        var newCWD = '';
-
-		if( getProjectRoot().len() ) {
-			shell.cd( getProjectRoot() );
-            newCWD = shell.getPWD();
-		} else {
-            newCWD = commandCWD;
+        if( getSourceDirectory().len() ) {
+            workingDirectory = getSourceDirectory();
         }
 
-        if( getsourcedirectory().len() ) {
-            shell.printString( " srcDir-> #variables.sourceDirectory# " );
-            newCWD = variables.sourceDirectory;
+        if ( getClassOutputDirectory().len() ) {
+            classOutputString = "-d #variables.classOutputDirectory#";
         }
 
-        try{
-            shell.printString( " run javac #newCWD#*.java " );
-            shell.callCommand( "run javac #newCWD#*.java" );
-
-        } finally {
-
-			if( getProjectRoot().len() ) {
-				shell.cd( commandCWD );
-			}
-
+        if ( getVerbose() ) {
+            verboseString = "-verbose";
         }
+
+        if ( getEncode().len() ){
+            encodingString = "-encoding #variables.encode#";
+        }
+
+        var finalCommand = "run javac ";
+        finalCommand = listAppend(finalCommand, "#workingDirectory#*.java", " ");
+        finalCommand = listAppend(finalCommand, "#classOutputString#", " ");
+        finalCommand = listAppend(finalCommand, "#verboseString#", " ");
+        finalCommand = listAppend(finalCommand, "#encodingString#", " ");
+
+        shell.printString( " #finalCommand# " );
+        shell.callCommand( "#finalCommand#" );
+
     }
 }
