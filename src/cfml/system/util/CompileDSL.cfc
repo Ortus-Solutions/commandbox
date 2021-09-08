@@ -22,6 +22,7 @@ component accessors=true {
     property name='classOutputDirectory'    type='string';
     property name='verbose'                 type='boolean';
     property name='encode'                  type='string';
+	property name='source'					type='array';
 
     //DI
     property name='wirebox'         inject='wirebox';
@@ -40,6 +41,7 @@ component accessors=true {
         setClassOutputDirectory( '' );
         setVerbose( false );
         setEncode( '' );
+		setSource( [] );
         return this;
     }
 
@@ -51,10 +53,16 @@ component accessors=true {
 		return this;
 	}
 
-    function fromSource( required sourceDirectory ){
-        setSourceDirectory( fileSystemutil.resolvePath( sourceDirectory, getProjectRoot() ) )
-        return this;
-    }
+	function fromSource( required any source ) {
+		if( isSimpleValue( arguments.source ) ) {
+			arguments.source = listToArray( arguments.source );
+		}
+		arguments.source = arguments.source.map( function( s ) {
+			return fileSystemutil.resolvePath( arguments.s, getProjectRoot() );
+		} );
+		variables.source = arguments.source;
+		return this;
+	}
 
     function toClasses( required classOutputDirectory ){
         setClassOutputDirectory( fileSystemutil.resolvePath( classOutputDirectory, getProjectRoot() ) )
@@ -72,12 +80,41 @@ component accessors=true {
     }
 
     string function run() {
+        j = generateJavacCommand();
+		shell.printString( j );
+		shell.callCommand( j );
+
+    }
+
+	function generateJavacCommand() {
         var workingDirectory = getProjectRoot();
         var classOutputString = "";
         var verboseString = "";
         var encodingString = "";
 
-        if( getSourceDirectory().len() ) {
+        if ( getSource().len() == 0 ){
+            variables.source = listToArray( workingDirectory );
+        }
+
+        var currSource = getSource();
+        currSource = currSource.map( function( p ) {
+            var currFolder = fileSystemutil.resolvePath( arguments.p, getProjectRoot() );
+            if ( directoryExists( currFolder ) ) {
+                return currFolder & "*.java";
+            } else {
+                throw(
+                    message='Non-Existing Folder', detail=currFolder & ' does not exist',
+                    type="commandException"
+                );
+            }
+        } );
+        variables.source = currSource;
+
+        arrayeach( variables.source, function( p ) {
+            variables.sourceDirectory = variables.sourceDirectory & "#arguments.p# ";
+        } );
+
+        if ( getSourceDirectory().len() ) {
             workingDirectory = getSourceDirectory();
         }
 
@@ -90,17 +127,9 @@ component accessors=true {
         }
 
         if ( getEncode().len() ){
-            encodingString = "-encoding #variables.encode#";
+            encodingString = "-encoding #variables.encode# ";
         }
 
-        var finalCommand = "run javac ";
-        finalCommand = listAppend(finalCommand, "#workingDirectory#*.java", " ");
-        finalCommand = listAppend(finalCommand, "#classOutputString#", " ");
-        finalCommand = listAppend(finalCommand, "#verboseString#", " ");
-        finalCommand = listAppend(finalCommand, "#encodingString#", " ");
-
-        shell.printString( " #finalCommand# " );
-        shell.callCommand( "#finalCommand#" );
-
-    }
+		return "run javac #workingDirectory# #classOutputString# #verboseString# #encodingString#";
+	}
 }
