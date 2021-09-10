@@ -23,12 +23,16 @@ component accessors=true {
     property name='verbose'                 type='boolean';
     property name='encode'                  type='string';
 	property name='source'					type='array';
+	property name='recursive'				type='boolean';
+	property name='withJar'					type='boolean';
+	property name='defaultClassOutputDir'	type='string';
 
     //DI
     property name='wirebox'         inject='wirebox';
     property name='fileSystemUtil'  inject='FileSystem';
 	property name='shell'	        inject='shell';
     property name='job'		        inject='interactiveJob';
+	property name="tempDir" 		inject="tempDir@constants";
 
     /*
     have a classpath
@@ -42,6 +46,9 @@ component accessors=true {
         setVerbose( false );
         setEncode( '' );
 		setSource( [] );
+		setRecursive( false );
+		setWithJar( false );
+		setDefaultClassOutputDir( 'classes\java\' );
         return this;
     }
 
@@ -79,18 +86,90 @@ component accessors=true {
         return this;
     }
 
-    string function run() {
-        j = generateJavacCommand();
-		shell.printString( j );
-		shell.callCommand( j );
+	function recursive() {
+		setRecursive( true );
+		return this;
+	}
+
+	function toJar() {
+		setWithJar( true );
+	}
+
+    function run() {
+        runJavaCommands();
 
     }
 
-	function generateJavacCommand() {
-        var workingDirectory = getProjectRoot();
-        var classOutputString = "";
-        var verboseString = "";
+	function runJavaCommands() {
+
+		compileCode();
+
+		if( withJar ) {
+			creatingJar();
+		}
+
+		/* var zipFileName = "D:\Javatest\greetings\test.jar";
+		var tmpPath = "D:\Javatest\greetings\";
+		cfzip(
+			action = "zip",
+			file = zipFileName,
+			overwrite = true,
+			source = tmpPath
+		); */
+
+		/* shell.printString( " test filewrite-> " );
+		var tempSrcFileName = "D:\Javatest\greetings\temp\temp.txt";
+		var sourceDirs = "D:\Javatest\greetings\**.java";
+		var fileName = 'temp#createUUID()#.zip';
+		var fullPath = tempDir & '/' & fileName;
+		var globber = wirebox.getInstance( 'globber' );
+		fileWrite(
+			tempSrcFileName,
+			globber
+				.setPattern( sourceDirs )
+				.matches()
+				.toList( chr(10) )
+		); */
+
+		/* var globs = globber
+			.setPattern( "D:\Javatest\greetings\**.java" )
+			.matches()
+			.toList( chr(10) );
+		shell.printString( " glob out-> #serialize(globs)# " ); */
+
+	}
+
+	function compileCode() {
+		shell.printString( " entering compileCode()... " );
+		var workingDirectory = getProjectRoot();
+		var classOutputString = "";
+		var verboseString = "";
         var encodingString = "";
+		var tempSrcFileName = "";
+		var fileName = "";
+
+		if ( getRecursive() ) {
+
+			//creating the file path of the txt
+			fileName = 'temp#createUUID()#.txt';
+			var fullPath = tempDir & fileName;
+			shell.printString( " fullpath-> #fullPath# " );
+
+			tempSrcFileName = fullPath;
+			var sourceDirs = "D:\Javatest\greetings\**.java";
+			var globber = wirebox.getInstance( 'globber' );
+			fileWrite(
+				tempSrcFileName,
+				globber
+					.setPattern( sourceDirs )
+					.matches()
+					.toList( chr(10) )
+			);
+
+			//j = " run dir /s /B #workingDirectory#*.java > sources.txt ";
+			//shell.printString( j );
+			//shell.callCommand( j );
+		}
 
         if ( getSource().len() == 0 ){
             variables.source = listToArray( workingDirectory );
@@ -118,9 +197,15 @@ component accessors=true {
             workingDirectory = getSourceDirectory();
         }
 
-        if ( getClassOutputDirectory().len() ) {
-            classOutputString = "-d #variables.classOutputDirectory#";
+        if ( getSourceDirectory().len() ) {
+            workingDirectory = getSourceDirectory();
         }
+
+        if ( getClassOutputDirectory().len() ) {
+			classOutputString = "-d #variables.classOutputDirectory#";
+        } else {
+			classOutputString = "-d " & getProjectRoot() & getDefaultClassOutputDir();
+		}
 
         if ( getVerbose() ) {
             verboseString = "-verbose";
@@ -130,6 +215,40 @@ component accessors=true {
             encodingString = "-encoding #variables.encode# ";
         }
 
-		return "run javac #workingDirectory# #classOutputString# #verboseString# #encodingString#";
+		if( getRecursive() ){
+			j = 'run javac "@#tempSrcFileName#" #classOutputString#';
+			//j = 'run javac "@#testDir##fileName#"';
+		} else {
+			j = "run javac #workingDirectory# #classOutputString# #verboseString# #encodingString#";
+		}
+		shell.printString( " " & j & " " );
+		shell.callCommand( j );
+		fileDelete( tempSrcFileName );
+	}
+
+	function creatingJar() {
+		/* shell.printString( " test filewrite-> " );
+		var tempSrcFileName = "D:\Javatest\greetings\temp\temp.txt";
+		var sourceDirs = "D:\Javatest\greetings\**.java";
+		var fileName = 'temp#createUUID()#.zip';
+		var fullPath = tempDir & '/' & fileName;
+		var globber = wirebox.getInstance( 'globber' );
+		fileWrite(
+			tempSrcFileName,
+			globber
+				.setPattern( sourceDirs )
+				.matches()
+				.toList( chr(10) )
+		); */
+
+		j = "run jar ";
+		shell.printString( " " & j & " " );
+		//shell.callCommand( j );
+	}
+
+	function combiningFatJar() {
+		j = "run fat jar ";
+		shell.printString( " " & j & " " );
+		//shell.callCommand( j );
 	}
 }
