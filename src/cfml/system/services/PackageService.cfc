@@ -886,6 +886,20 @@ component accessors="true" singleton {
 					arguments.installDirectory = right( arguments.installDirectory, len( arguments.installDirectory ) - 1 );
 				}
 			}
+			
+			var existingInstallPath = '';
+			if( installPaths.keyExists( arguments.packageName ) ) {
+				existingInstallPath = fileSystemUtil.normalizeSlashes( fileSystemUtil.resolvePath( installPaths[ arguments.packageName ], arguments.currentWorkingDirectory ) );
+				// If the install location is contained within the package root...
+				if( existingInstallPath contains arguments.currentWorkingDirectory ) {
+					// Make it relative
+					existingInstallPath = replaceNoCase( existingInstallPath, arguments.currentWorkingDirectory, '' );
+					// Strip any leading slashes so Unix-based OS's don't think it's the drive root
+					if( len( existingInstallPath ) && existingInstallPath.left( 1 ) == '/' ) {
+						existingInstallPath = right( existingInstallPath, len( existingInstallPath ) - 1 );
+					}
+				}	
+			}
 
 			// Just in case-- an empty install dir would be useless.
 			if( len( arguments.installDirectory ) ) {
@@ -893,8 +907,7 @@ component accessors="true" singleton {
 				// Prevent unnecessary updates to the JSON file.
 				if( !installPaths.keyExists( arguments.packageName )
 					// Resolve the install path in box.json. If it's relative like ../lib but it's still equivalent to the actual install dir, then leave it alone. The user probably wants to keep it relative!
-					|| fileSystemUtil.normalizeSlashes( fileSystemUtil.resolvePath( installPaths[ arguments.packageName ], arguments.currentWorkingDirectory ) ) != arguments.installDirectory ) {
-
+					|| existingInstallPath != arguments.installDirectory ) {
 					installPaths[ arguments.packageName ] = arguments.installDirectory;
 					updated = true;
 

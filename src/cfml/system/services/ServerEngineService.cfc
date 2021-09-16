@@ -79,6 +79,11 @@ component accessors="true" singleton="true" {
 			}
 		}
 
+		// Users won't be able to create datasources if this file isn't created.  
+		// It needs to be different for every install, which is why we're creating it on the fly.
+		var seedPropertiesPath = installDetails.installDir & "/WEB-INF/cfusion/lib/seed.properties";
+		ensureSeedProperties( seedPropertiesPath );
+
 		return installDetails;
 	}
 
@@ -619,6 +624,19 @@ component accessors="true" singleton="true" {
 			return 'lucee-light';
 		}
 		return 'lucee';
+	}
+
+	// CFConfig does this, but that doesn't help someone manually creating datasources.
+	// Adobe used to generate this on first use, but stopped at some point.
+	private function ensureSeedProperties( required string seedPropertiesPath ) {
+		if( !fileExists( seedPropertiesPath ) ) {
+			wirebox.getInstance( 'propertyFile@propertyFile' )
+				// Take the first 16 alphanumeric characters of a UUID.
+				.set( 'seed', left( replace( createUUID(), '-', '', 'all' ), 16 ) )
+				.set( 'algorithm', 'AES/CBC/PKCS5Padding' )
+				.store( seedPropertiesPath );
+		}
+
 	}
 
 }

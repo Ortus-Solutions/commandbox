@@ -220,7 +220,7 @@ component accessors="true" singleton {
  	 **/
 	function error( required message, detail='', clearPrintBuffer=false, exitCode=1 ) {
 
-		wirebox.getInstance( "ConsolePainter" ).forceStop( message );
+		wirebox.getInstance( "ConsolePainter" ).stop( message );
 		print.line().toConsole();
 
 		setExitCode( arguments.exitCode );

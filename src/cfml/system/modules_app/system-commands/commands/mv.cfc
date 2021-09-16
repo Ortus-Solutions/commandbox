@@ -38,7 +38,6 @@ component aliases="rename" {
 		}
 
 		path.apply( function( thisPath ){
-			print.redLine( thisPath );
 			// It's a directory
 			if( directoryExists( thisPath ) ) {
 				// rename directory

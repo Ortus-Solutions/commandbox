@@ -25,6 +25,7 @@ component {
 
 	/**
 	 * @paths Command delimited list of file globbing paths to watch relative to the working directory, defaults to **
+	 * @excludePaths Command delimted list of file globbing paths to exclude relative to the working directory.
 	 * @command The command to run when the watcher fires
 	 * @delay How may milliseconds to wait before polling for changes, defaults to 500 ms
 	 * @directory Working directory to start watcher in
@@ -32,6 +33,7 @@ component {
 	 **/
 	function run(
 		string paths='**',
+		string excludePaths='',
 		required string command,
 		number delay=500,
 		string directory=getCWD(),
@@ -49,16 +51,24 @@ component {
 		// General Message about the globbing paths and its purpose
 		print
 			.greenLine( "---------------------------------------------------" )
-			.greenLine( "Watching the following files ..." )
+			.greenLine( "Watching the following paths:" )
+			.greenLine( " " & arguments.paths );
+		if( len( excludePaths ) ) {
+			print
+				.greenLine( "---------------------------------------------------" )
+				.greenLine( "Excluding the following paths:" )
+				.greenLine( " " & arguments.excludePaths );
+		}
+		print
 			.greenLine( "---------------------------------------------------" )
-			.greenLine( " " & arguments.paths )
 			.greenLine( " Press Ctrl-C to exit " )
 			.greenLine( "---------------------------------------------------" )
 			.toConsole();
 
-		// Start watcher
+		// Start watchergo
 		watch()
 			.paths( arguments.paths.listToArray() )
+			.excludePaths( arguments.excludePaths.listToArray() )
 			.inDirectory( directory )
 			.withDelay( delayMs )
 			.onChange( function( changeData ){
