@@ -444,12 +444,13 @@ component
 				}
 			} )
 			.each( function( item ){
+				var cachedObjectMD = getCachedObjectMetadata( arguments.item );
 				if(
-					variables.objectStore.lookup( item )
+					variables.objectStore.lookup( arguments.item )
 					AND
-					getCachedObjectMetadata( item ).timeout GT 0
+					cachedObjectMD.keyExists( "timeout" ) and cachedObjectMD.timeout GT 0
 				){
-					expireObject( item );
+					expireObject( arguments.item );
 				}
 			} );
 
@@ -537,7 +538,7 @@ component
 
 		lock type="exclusive" name="CacheBoxProvider.reap.#variables.cacheId#" timeout="#variables.lockTimeout#"{
 			// log it
-			variables.logger.debug( "Starting to reap CacheBoxProvider: #getName()#, id: #variables.cacheId#" );
+			variables.logger.info( "Starting to reap CacheBoxProvider: #getName()#, id: #variables.cacheId#" );
 
 			// Run Storage reaping first, before our local algorithm
 			variables.objectStore.reap();
@@ -600,7 +601,7 @@ component
 		}
 
 		// log it
-		variables.logger.debug( "Finished reap in #getTickCount()-sTime#ms for CacheBoxProvider: #getName()#, id: #variables.cacheId#" );
+		variables.logger.info( "Finished reap in #getTickCount()-sTime#ms for CacheBoxProvider: #getName()#, id: #variables.cacheId#" );
 
 		return this;
 	}

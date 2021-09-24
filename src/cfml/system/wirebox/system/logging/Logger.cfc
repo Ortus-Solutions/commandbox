@@ -362,13 +362,14 @@ component accessors="true"{
 						message="#arguments.message#"
 						severity="#arguments.severity#"
 						extraInfo="#arguments.extraInfo#"
+                        category="#arguments.category#"
 					{
 						var target = this;
 						if( !hasAppenders() ){
 							target = getRootLogger();
 						}
 						var thisAppender = target.getAppender( attributes.appenderName );
-						thread.logEvent = new wirebox.system.logging.LogEvent( message=attributes.message, severity=attributes.severity, extraInfo=attributes.extraInfo );
+						thread.logEvent = new wirebox.system.logging.LogEvent( message=attributes.message, severity=attributes.severity, extraInfo=attributes.extraInfo, category=attributes.category );
 						thisAppender.logMessage( thread.logEvent );
 					}
 
@@ -385,7 +386,7 @@ component accessors="true"{
 	}
 
 	/**
-	 * Checks whether a log can be made on this Logger using a passed in level
+	 * Checks wether a log can be made on this Logger using a passed in level
 	 *
 	 * @level The numeric or string level representation
 	 */

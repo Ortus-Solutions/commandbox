@@ -167,7 +167,7 @@ component accessors="true" extends="wirebox.system.logging.AbstractAppender"{
 			"append",
 			this.getProperty( "fileEncoding" )
 		);
-		// The flushing interval to disk
+		// The flusing interval to disk
 		arguments.queueContext.flushInterval = 1000;
 	}
 

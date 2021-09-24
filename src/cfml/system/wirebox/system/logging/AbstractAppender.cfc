@@ -212,7 +212,7 @@ component accessors="true"{
 	}
 
 	/**
-	 * Checks whether a log can be made on this appender using a passed in level
+	 * Checks wether a log can be made on this appender using a passed in level
 	 *
 	 * @level The level to check
 	 */
@@ -293,7 +293,6 @@ component accessors="true"{
 						// Usually these exceptions can be on shutdowns or when the scheduler cannot take
 						// any more tasks.
 						out( "Error scheduling log listener: #e.message# #e.detail#" );
-						out( e.stacktrace );
 					}
 
 					//out( "(#getName()#) ScheduleTask started" );
@@ -357,11 +356,11 @@ component accessors="true"{
 			if( e.message contains 'interrupted' ) {
 				// Ignore interruptions, it's just the thread pool being shutdown cleanly
 			} else {
-				// send to CF logging
-				$log( "ERROR", "Error processing log listener: #e.message# #e.detail# #e.stacktrace#" );
-				// send to standard error out
-				variables.err( "Error with log listener thread for #getName()#: " & e.message & e.detail );
-				variables.err( e.stackTrace );
+			// send to CF logging
+			$log( "ERROR", "Error processing log listener: #e.message# #e.detail# #e.stacktrace#" );
+			// send to standard error out
+			variables.err( "Error with log listener thread for #getName()#: " & e.message & e.detail );
+			variables.err( e.stackTrace );
 			}
 		} finally {
 			// End Advice

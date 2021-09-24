@@ -1,12 +1,12 @@
 {
     "name":"WireBox DI/AOP",
-    "version":"5.6.2+1021",
-    "location":"https://downloads.ortussolutions.com/ortussolutions/wirebox/5.6.2/wirebox-5.6.2.zip",
+    "version":"6.5.2+37",
+    "location":"https://downloads.ortussolutions.com/ortussolutions/wirebox/6.5.2/wirebox-6.5.2.zip",
     "author":"Ortus Solutions <info@ortussolutions.com>",
     "slug":"wirebox",
     "type":"di",
     "packageDirectory":"wirebox",
-    "keywords":"di,aop,dependency injection,ioc",
+    "keywords":"di,aop,dependeny injection,ioc",
     "homepage":"https://www.coldbox.org",
     "documentation":"https://wirebox.ortusbooks.com",
     "repository":{

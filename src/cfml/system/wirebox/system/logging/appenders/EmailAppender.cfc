@@ -96,9 +96,9 @@ component accessors="true" extends="wirebox.system.logging.AbstractAppender" {
 						<p>TimeStamp: #loge.getTimeStamp()#</p>
 						<p>Severity: #loge.getSeverity()#</p>
 						<p>Category: #loge.getCategory()#</p>
-						<hr>
+						<hr/>
 						<p>#loge.getMessage()#</p>
-						<hr>
+						<hr/>
 						<p>Extra Info Dump:</p>
 					" );
 					writeDump( loge.getExtraInfo() );

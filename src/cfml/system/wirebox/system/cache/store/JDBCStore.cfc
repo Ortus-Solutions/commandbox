@@ -143,7 +143,7 @@ component implements="wirebox.system.cache.store.IObjectStore" accessors="true"{
 			"TRUNCATE TABLE #variables.table#",
 			{},
 			{
-				datasource 	= variables.dsn,
+				datsource 	= variables.dsn,
 				username 	= variables.dsnUsername,
 				password 	= variables.dsnPassword
 			}
@@ -160,7 +160,7 @@ component implements="wirebox.system.cache.store.IObjectStore" accessors="true"{
 			"SELECT objectKey FROM #variables.table# ORDER BY objectKey ASC",
 			{},
 			{
-				datasource 	= variables.dsn,
+				datsource 	= variables.dsn,
 				username 	= variables.dsnUsername,
 				password 	= variables.dsnPassword
 			}
@@ -202,7 +202,7 @@ component implements="wirebox.system.cache.store.IObjectStore" accessors="true"{
 				",
 				[ normalizedID ],
 				{
-					datasource 	= variables.dsn,
+					datsource 	= variables.dsn,
 					username 	= variables.dsnUsername,
 					password 	= variables.dsnPassword
 				}
@@ -233,7 +233,7 @@ component implements="wirebox.system.cache.store.IObjectStore" accessors="true"{
 						created 		: { value="#now()#",		cfsqltype="timestamp" }
 					},
 					{
-						datasource 	= variables.dsn,
+						datsource 	= variables.dsn,
 						username 	= variables.dsnUsername,
 						password 	= variables.dsnPassword
 					}
@@ -261,7 +261,7 @@ component implements="wirebox.system.cache.store.IObjectStore" accessors="true"{
 			",
 			[ getNormalizedID( arguments.objectKey ) ],
 			{
-				datasource 	= variables.dsn,
+				datsource 	= variables.dsn,
 				username 	= variables.dsnUsername,
 				password 	= variables.dsnPassword
 			}
@@ -287,7 +287,7 @@ component implements="wirebox.system.cache.store.IObjectStore" accessors="true"{
 			",
 			[ 1, getNormalizedID( arguments.objectKey ) ],
 			{
-				datasource 	= variables.dsn,
+				datsource 	= variables.dsn,
 				username 	= variables.dsnUsername,
 				password 	= variables.dsnPassword
 			}
@@ -310,7 +310,7 @@ component implements="wirebox.system.cache.store.IObjectStore" accessors="true"{
 			",
 			[ getNormalizedID( arguments.objectKey ) ],
 			{
-				datasource 	= variables.dsn,
+				datsource 	= variables.dsn,
 				username 	= variables.dsnUsername,
 				password 	= variables.dsnPassword
 			}
@@ -374,7 +374,7 @@ component implements="wirebox.system.cache.store.IObjectStore" accessors="true"{
 						isSimple          	= { value="#isSimple#",                    	cfsqltype="bit" }
 					},
 					{
-						datasource 	= variables.dsn,
+						datsource 	= variables.dsn,
 						username 	= variables.dsnUsername,
 						password 	= variables.dsnPassword
 					}
@@ -409,7 +409,7 @@ component implements="wirebox.system.cache.store.IObjectStore" accessors="true"{
 					isSimple          	= { value="#isSimple#",                    	cfsqltype="bit" }
 				},
 				{
-					datasource 	= variables.dsn,
+					datsource 	= variables.dsn,
 					username 	= variables.dsnUsername,
 					password 	= variables.dsnPassword
 				}
@@ -430,7 +430,7 @@ component implements="wirebox.system.cache.store.IObjectStore" accessors="true"{
 			",
 			[ getNormalizedID( arguments.objectKey ) ],
 			{
-				datasource 	= variables.dsn,
+				datsource 	= variables.dsn,
 				username 	= variables.dsnUsername,
 				password 	= variables.dsnPassword,
 				result 		= "local.q"
@@ -450,7 +450,7 @@ component implements="wirebox.system.cache.store.IObjectStore" accessors="true"{
 			",
 			{},
 			{
-				datasource 	= variables.dsn,
+				datsource 	= variables.dsn,
 				username 	= variables.dsnUsername,
 				password 	= variables.dsnPassword
 			}
@@ -483,7 +483,7 @@ component implements="wirebox.system.cache.store.IObjectStore" accessors="true"{
 			",
 			[ getNormalizedID( arguments.objectKey ) ],
 			{
-				datasource 	= variables.dsn,
+				datsource 	= variables.dsn,
 				username 	= variables.dsnUsername,
 				password 	= variables.dsnPassword
 			}
@@ -568,7 +568,7 @@ component implements="wirebox.system.cache.store.IObjectStore" accessors="true"{
 				",
 				{},
 				{
-					datasource 	= variables.dsn,
+					datsource 	= variables.dsn,
 					username 	= variables.dsnUsername,
 					password 	= variables.dsnPassword
 				}
