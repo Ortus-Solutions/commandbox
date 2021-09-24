@@ -89,7 +89,7 @@ component accessors=true {
 
 			setActive( false );
 			ConsolePainter.setMultiSelect( nullValue() );
-			ConsolePainter.stop();			
+			ConsolePainter.stop();
 
 		}
 
@@ -105,7 +105,7 @@ component accessors=true {
 					return prev;
 				} )
 				.trim();
-				
+
 			if( job.getActive() ) {
 				job.addLog( getQuestion() & ': ' & response );
 			} else {
@@ -113,7 +113,7 @@ component accessors=true {
 					.line()
 					.text( getQuestion() )
 					.line( response )
-					.toConsole();				
+					.toConsole();
 			}
 
 
@@ -136,7 +136,7 @@ component accessors=true {
 				}
 				return prev;
 			} );
-			
+
 			if( job.getActive() ) {
 				job.addLog( getQuestion() & ': ' & response );
 			} else {
@@ -144,7 +144,7 @@ component accessors=true {
 					.line()
 					.text( getQuestion() )
 					.line( response )
-					.toConsole();				
+					.toConsole();
 			}
 
 			// Return the first found selected option value
@@ -177,24 +177,37 @@ component accessors=true {
 
 			options.each( function( i ) {
 
-				if( !isStruct( i ) ) {
-					throw( 'Option must be array of structs' );
-				}
+				if( isSimpleValue( i ) ) {
 
-				if( isnull( i.value ) && isnull( i.display ) ) {
-					throw( 'Option struct must have either a "value" key or "display" key. #serializeJSON( i )#' );
-				}
+					opts.append( {
+						display : i,
+						value : i,
+						selected : false,
+						accessKey : i.left( 1 )
+					} );
 
-				if( !isBoolean( i.selected ?: false ) ) {
-					throw( 'Must pass boolean for "selected" key. Received: #serializeJSON( i.selected )#' );
-				}
+				} else {
 
-				opts.append( {
-					display : i.display ?: i.value,
-					value : i.value?: i.display,
-					selected : i.selected ?: false,
-					accessKey : i.accessKey ?: ( i.display ?: i.value ).left( 1 )
-				} );
+					if( !isStruct( i ) ) {
+						throw( 'Option must be array of structs or array of strings' );
+					}
+
+					if( isnull( i.value ) && isnull( i.display ) ) {
+						throw( 'Option struct must have either a "value" key or "display" key. #serializeJSON( i )#' );
+					}
+
+					if( !isBoolean( i.selected ?: false ) ) {
+						throw( 'Must pass boolean for "selected" key. Received: #serializeJSON( i.selected )#' );
+					}
+
+					opts.append( {
+						display : i.display ?: i.value,
+						value : i.value?: i.display,
+						selected : i.selected ?: false,
+						accessKey : i.accessKey ?: ( i.display ?: i.value ).left( 1 )
+					} );
+
+				}
 			} );
 
 		} else {
@@ -210,7 +223,7 @@ component accessors=true {
 		ConsolePainter.setMultiSelect( this );
 		ConsolePainter.start();
 	}
-	
+
 	function getCursorPosition() {
 		return {
 			'row' : activeOption+2,
