@@ -4,11 +4,16 @@
  * {code:bash}
  * info
  * {code}
+ * .
+ * The information is available in JSON as well (sorry, no ASCII art)
+ * {code:bash}
+ * info --JSON
+ * {code}
  *
  **/
 component aliases="about" {
 
-	function run() {
+	function run( boolean JSON=false ) {
 
 		var width = 100;
 
@@ -35,6 +40,23 @@ component aliases="about" {
 
 			runwarVersion &= ' (#runwarJarPath#)'
 		}catch( any e ) {}
+
+    if( JSON ) {
+      print.line( {
+        'CLIVersion' : shellVersion,
+        'CLIAuthors' : 'Brad Wood, Luis Majano, Denny Valiant',
+        'CLIBinary' : binaryPath,
+        'CLIHome' : commandboxHome,
+        'CFMLEngine' : CFMLEngine,
+        'CFMLVersion' :CFMLVersion,
+        'JavaVersion' : javaVersion,
+        'JavaPath' : javaBinary,
+        'OSUsername' : userName,
+        'JLineTerminal' : JLineTerminal,
+        'RunwarVersion' : runwarVersion
+      } );
+      return;
+    }
 
 		print.line();
 		print.greenLine( '****************************************************************************************************' );
