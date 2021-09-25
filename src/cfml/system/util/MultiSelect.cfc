@@ -10,13 +10,13 @@
 component accessors=true {
 
 	// The question to present to the user
-	property name='question' type="string";
+	property name='thisQuestion' type="string";
 	// The options to present to the user
-	property name='options' type="array";
+	property name='theOptions' type="array";
 	// Can more than one option be selected at a time
-	property name='multiple' type="boolean";
+	property name='isMultiple' type="boolean";
 	// Can the input be submitted without anything selected?
-	property name='required' type="boolean";
+	property name='isRequired' type="boolean";
 	// Is this control active?
 	property name='active' type="boolean";
 
@@ -27,16 +27,16 @@ component accessors=true {
 	property name='job'				inject='provider:InteractiveJob';
 	property name='ConsolePainter'	inject='provider:ConsolePainter';
 
-	function init() {
+	function init( string question='' ) {
 		// Static reference to the class so we can create instances later
 		aStr = createObject( 'java', 'org.jline.utils.AttributedString' );
 		// Currently highlighted option on the screen
 		activeOption = 1;
 
 		// Default these since they're optional
-		multiple=false;
-		required=false;
-		question='';
+		isMultiple=false;
+		isRequired=false;
+		thisQuestion=arguments.question;
 
 		return this;
 	}
@@ -45,6 +45,57 @@ component accessors=true {
 		terminal = shell.getReader().getTerminal();
 		display = createObject( 'java', 'org.jline.utils.Display' ).init( terminal, false );
 		display.resize( terminal.getHeight(), terminal.getWidth() );
+	}
+
+	function required( boolean required=true ) {
+		setIsRequired( arguments.required );
+		return this;
+	}
+
+	function getRequired() {
+		return variables.IsRequired;
+	}
+
+	function setRequired( boolean required=true ) {
+		variables.IsRequired = arguments.required;
+		return this;
+	}
+
+	function multiple( boolean multiple=true ) {
+		setIsMultiple( arguments.multiple );
+		return this;
+	}
+
+	function getMultiple() {
+		return variables.isMultiple;
+	}
+
+	function setMultiple( boolean multiple=true ) {
+		variables.isMultiple = arguments.multiple;
+		return this;
+	}
+
+	function question( required string question ) {
+		setQuestion( arguments.question );
+		return this;
+	}
+
+	function getQuestion() {
+		return variables.thisQuestion;
+	}
+
+	function setQuestion( required string question ) {
+		variables.thisQuestion = arguments.question;
+		return this;
+	}
+
+	function options( required any options ) {
+		setOptions( arguments.options );
+		return this;
+	}
+
+	function getOptions() {
+		return variables.thisOptions;
 	}
 
 	/**
@@ -94,7 +145,7 @@ component accessors=true {
 		}
 
 		// if in multiple mode
-		if( multiple ) {
+		if( isMultiple ) {
 
 			// Print out comma delimited list of selected option display names
 			var response = getOptions()
@@ -214,7 +265,7 @@ component accessors=true {
 			throw( 'Invalid type of options. Requires string or array of structs (display,value,selected).' );
 		}
 
-		variables.options = opts;
+		variables.thisOptions = opts;
 		return this;
 	}
 
@@ -252,7 +303,7 @@ component accessors=true {
 	}
 
 	function checkRequired() {
-		if( !required ) {
+		if( !isRequired ) {
 			return true;
 		}
 		for( var o in getOptions() ) {
@@ -270,7 +321,7 @@ component accessors=true {
 			i++
 			if( i == activeOption ) {
 				o.selected = !o.selected;
-			} else if( !multiple ) {
+			} else if( !isMultiple ) {
 				o.selected = false;
 			}
 		} );

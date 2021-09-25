@@ -124,8 +124,8 @@ component accessors="true" singleton {
 	 * Let a user choose between several options. Can be set to multiselect, which returns array of selections
 	 * multiSelect().setQuestion( 'Please Choose: ' ).setOptions( 'one,two,three' ).ask()
 	 **/
-	function multiSelect() {
-		return getinstance( 'MultiSelect' );
+	function multiSelect( string question='' ) {
+		return getinstance( name='MultiSelect', initArguments={ question : arguments.question }  );
 	}
 
 	/**
