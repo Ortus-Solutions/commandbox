@@ -202,7 +202,7 @@ component accessors="true" singleton {
 
 
 	/**
-	 * Sets reload flag, reloaded from shell.cfm
+	 * Sets reload flag, reloaded from Bootstrap.cfm
 	 * @clear.hint clears the screen after reload
  	 **/
 	Shell function reload( Boolean clear=true ){
