@@ -41,7 +41,7 @@ component aliases="ls,ll,directory" {
 	 * @simple Output only path names and nothing else.
 	 * @full Output absolute file path, not just relative to current working directory
 	 **/
-	function run( Globber paths=globber( getCWD() ), sort='type, name', string excludePaths='', boolean recurse=false, boolean simple=false, boolean full=false )  {
+	function run( Globber paths=globber( getCWD() ), sort='directory, type, name', string excludePaths='', boolean recurse=false, boolean simple=false, boolean full=false )  {
 
 		// Backwards compat for old parameter name
 		if( arguments.keyExists( 'directory' ) && arguments.directory.len() ) {
