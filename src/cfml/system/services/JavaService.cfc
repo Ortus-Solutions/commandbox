@@ -75,9 +75,10 @@ component accessors="true" singleton {
 	* Install java version if needed, and return installation folder
 	*
 	* @ID Full ID of java installation
+	* @verbose Enable verbose output from the install command
 	*/
-	function getJavaInstallPath( required string ID ){
-		installJava( ID );
+	function getJavaInstallPath( required string ID, boolean verbose=false ){
+		installJava( ID, verbose );
 		return lastInstallDir;
 	}
 
@@ -85,6 +86,7 @@ component accessors="true" singleton {
 	* Install a java version
 	*
 	* @ID installation ID as defined by Java endpoint.  If no endpoint name space, defaults to "java:"
+	* @verbose Enable verbose output from the install command
 	*/
 	function installJava( required string ID, boolean verbose=false ) {
 		// Default to "java:" endpoint

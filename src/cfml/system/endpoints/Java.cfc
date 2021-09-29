@@ -300,12 +300,12 @@ component accessors=true implements="IEndpoint" singleton {
 			ID = ID.lCase();
 
 			var results = {
-				version : '',
-				type : 'jre',
-				arch : server.java.archModel contains 32 ? 'x32' : 'x64',
-				os : '',
+				'version' : '',
+				'type' : 'jre',
+				'arch' : server.java.archModel contains 32 ? 'x32' : 'x64',
+				'os' : '',
 				'jvm-implementation' : ( ID.findNoCase( 'openj9' ) ? 'openj9' : 'hotspot' ),
-				release : 'latest'
+				'release' : 'latest'
 			};
 
 			if( fileSystemUtil.isMac() ) {

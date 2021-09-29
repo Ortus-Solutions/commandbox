@@ -41,7 +41,7 @@ component accessors="true" singleton {
 	* Checks to see if a box.json exists in a given directory
 	* @directory The directory to examine
 	*/
-	public function isPackage( required string directory ) {
+	boolean public function isPackage( required string directory ) {
 		// If the package has a box.json in the root...
 		return fileExists( getDescriptorPath( arguments.directory ) );
 	}
@@ -632,7 +632,7 @@ component accessors="true" singleton {
 	}
 
 	// DRY
-	function isPackageModule( required string packageType ) {
+	boolean function isPackageModule( required string packageType ) {
 		// Is the package type that of a module?
 		return ( listFindNoCase( 'modules,contentbox-modules,commandbox-modules', arguments.packageType ) > 0) ;
 	}
