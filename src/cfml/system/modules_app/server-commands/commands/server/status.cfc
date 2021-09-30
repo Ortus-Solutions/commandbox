@@ -193,7 +193,6 @@ component aliases='status,server info' {
 
 
 					print.line().indentedLine( 'Last Command: ' );
-					print.indentedLine( trim( thisServerInfo.statusInfo.command ) );
 					// Put each --arg or -arg on a new line
 					var args = trim( reReplaceNoCase( thisServerInfo.statusInfo.arguments, ' (-|"-)', cr & '\1', 'all' ) );
 					print.indentedIndentedLine( args )
