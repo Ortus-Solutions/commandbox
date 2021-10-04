@@ -13,7 +13,7 @@ component accessors="true" {
 	property name="native";
 
 	// Prepare the static time unit class
-	this.$timeUnit = new wirebox.system.async.util.TimeUnit();
+	this.$timeUnit = new wirebox.system.async.time.TimeUnit();
 
 	/**
 	 * Build the ColdBox Future with the Java native class

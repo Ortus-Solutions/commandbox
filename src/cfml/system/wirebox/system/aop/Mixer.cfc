@@ -244,7 +244,7 @@ component accessors="true"{
 				}
 			}
 
-			// Build the AOP advisor with the function pointcut and matched aspects?
+			// Build the the AOP advisor with the function pointcut and matched aspects?
 			if( arrayLen( matchedMethodAspects ) ){
 				weaveAdvice(
 					target 		= arguments.target,

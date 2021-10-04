@@ -29,6 +29,8 @@ component accessors="true" singleton {
 	property name='wirebox'				inject='wirebox';
 	property name='tempDir' 			inject='tempDir@constants';
 	property name='serverService'		inject='serverService';
+	property name='moduleService'		inject='moduleService';
+	
 
 	/**
 	* Constructor
@@ -41,7 +43,7 @@ component accessors="true" singleton {
 	* Checks to see if a box.json exists in a given directory
 	* @directory The directory to examine
 	*/
-	public function isPackage( required string directory ) {
+	boolean public function isPackage( required string directory ) {
 		// If the package has a box.json in the root...
 		return fileExists( getDescriptorPath( arguments.directory ) );
 	}
@@ -307,8 +309,6 @@ component accessors="true" singleton {
 					arguments.saveDev = false;
 					ignorePatterns.append( '/box.json' );
 					// Flag the shell to reload after this command is finished.
-					job.addWarnLog( "Shell will be reloaded after installation." );
-					shell.reload( false );
 					shellWillReload = true;
 				// If this is a module
 				} else if( packageType == 'modules' ) {
@@ -395,8 +395,6 @@ component accessors="true" singleton {
 			// If this package is being installed anywhere south of the CommandBox system folder,
 			// flag the shell to reload after this command is finished.
 			if( fileSystemUtil.normalizeSlashes( installDirectory ).startsWith( fileSystemUtil.normalizeSlashes( expandPath( '/commandbox' ) ) ) ) {
-				job.addWarnLog( "Shell will be reloaded after installation." );
-				shell.reload( false );
 				shellWillReload = true;
 			}
 
@@ -622,17 +620,22 @@ component accessors="true" singleton {
 			job.addLog( "No dependencies found to install, but it's the thought that counts, right?" );
 		}
 
+		if( shellWillReload && artifactDescriptor.createPackageDirectory && fileExists( installDirectory & '/ModuleConfig.cfc' ) ) {
+			consoleLogger.warn( 'Activating your new module for instant use...' );
+			moduleService.registerAndActivateModule( installDirectory.listLast( '/\' ), fileSystemUtil.makePathRelative( installDirectory ) );
+			//shell.reload( clear=false );
+			//consoleLogger.warn( '.' );
+			//consoleLogger.warn( 'Please sit tight while your shell reloads...' );
+		}
+		
 		interceptorService.announceInterception( 'postInstall', { installArgs=arguments, installDirectory=installDirectory } );
 		job.complete( verbose );
-		if( shellWillReload ) {
-			consoleLogger.warn( '.' );
-			consoleLogger.warn( 'Please sit tight while your shell reloads...' );
-		}
+		
 		return true;
 	}
 
 	// DRY
-	function isPackageModule( required string packageType ) {
+	boolean function isPackageModule( required string packageType ) {
 		// Is the package type that of a module?
 		return ( listFindNoCase( 'modules,contentbox-modules,commandbox-modules', arguments.packageType ) > 0) ;
 	}

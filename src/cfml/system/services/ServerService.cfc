@@ -284,8 +284,10 @@ component accessors="true" singleton {
 		systemSettings.expandDeepSystemSettings( serverDetails.serverJSON.env ?: {} );
 		// Load up our fully-realized server.json-specific env vars into CommandBox's environment
 		systemSettings.setDeepSystemSettings( serverDetails.serverJSON.env ?: {}, '' );
-
-		interceptorService.announceInterception( 'preServerStart', { serverDetails=serverDetails, serverProps=serverProps } );
+		// Get defaults
+		var defaults = getDefaultServerJSON();
+		
+		interceptorService.announceInterception( 'preServerStart', { serverDetails=serverDetails, serverProps=serverProps, serverInfo=serverDetails.serverInfo, serverJSON=serverDetails.serverJSON, defaults=defaults } );
 
 		var defaultName = serverDetails.defaultName;
 		var defaultwebroot = serverDetails.defaultwebroot;
@@ -342,30 +344,6 @@ component accessors="true" singleton {
 			}
 
 		}
-
-		// *************************************************************************************
-		// Backwards compat for default port in box.json. Remove this eventually...			// *
-																							// *
-		// Get package descriptor															// *
-		var boxJSON = packageService.readPackageDescriptorRaw( defaultwebroot );			// *
-		// Get defaults																		// *
-		var defaults = getDefaultServerJSON();												// *
-																							// *
-		// Backwards compat with boxJSON default port.  Remove in a future version			// *
-		// The property in box.json is deprecated. 											// *
-		if( (boxJSON.defaultPort ?: 0) > 0 ) {												// *
-																							// *
-			// Remove defaultPort from box.json and pretend it was 							// *
-			// manually typed which will cause server.json to save it.						// *
-			serverProps.port = boxJSON.defaultPort;											// *
-																							// *
-			// Update box.json to remove defaultPort from disk								// *
-			boxJSON.delete( 'defaultPort' );												// *
-			packageService.writePackageDescriptor( boxJSON, defaultwebroot );				// *
-		}																					// *
-																							// *
-		// End backwards compat for default port in box.json.								// *
-		// *************************************************************************************
 
 		// Save hand-entered properties in our server.json for next time
 		for( var prop in serverProps ) {
@@ -1071,7 +1049,7 @@ component accessors="true" singleton {
 			// Make current settings available to package scripts
 			setServerInfo( serverInfo );
 			// This interception point can be used for additional configuration of the engine before it actually starts.
-			interceptorService.announceInterception( 'onServerInstall', { serverInfo=serverInfo, installDetails=installDetails, serverJSON=serverJSON } );
+			interceptorService.announceInterception( 'onServerInstall', { serverInfo=serverInfo, installDetails=installDetails, serverJSON=serverJSON, defaults=defaults, serverProps=serverProps, serverDetails=serverDetails } );
 
 			// If Lucee server, set the java agent
 			if( serverInfo.cfengine contains "lucee" ) {

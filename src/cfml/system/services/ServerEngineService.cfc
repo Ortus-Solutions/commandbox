@@ -230,10 +230,8 @@ component accessors="true" singleton="true" {
 
 		}
 
-		// Set default web.xml path now that we have an install dir
-		if( !len( serverInfo.webXML ) ) {
-			serverInfo.webXML = "#installDetails.installDir#/WEB-INF/web.xml";
-		}
+		// Set web.xml path now that we have an install dir
+		serverInfo.webXML = "#installDetails.installDir#/WEB-INF/web.xml";
 
 		var engineTagFile = installDetails.installDir & '/.engineInstall';
 

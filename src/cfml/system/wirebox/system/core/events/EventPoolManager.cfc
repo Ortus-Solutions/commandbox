@@ -90,7 +90,7 @@ component accessors="true" {
 			type          ="exclusive"
 			throwontimeout="true"
 			timeout       ="30" {
-			// Append Custom States
+			// Append Custom Statess
 			appendInterceptionPoints( arguments.customStates );
 
 			// Register this target's event observation states with its appropriate interceptor/observation state
@@ -118,7 +118,7 @@ component accessors="true" {
 	){
 		var eventPool = "";
 
-		// Verify if the event state doesn't exist in the event pool, else create it
+		// Verify if the event state doesn't exist in the evnet pool, else create it
 		if ( not structKeyExists( variables.eventPoolContainer, arguments.state ) ) {
 			// Create new event pool
 			eventPool                                       = new wirebox.system.core.events.EventPool( arguments.state );

@@ -24,8 +24,8 @@
 component {
 
 	/**
-	 * @paths Command delimited list of file globbing paths to watch relative to the working directory, defaults to **
-	 * @excludePaths Command delimted list of file globbing paths to exclude relative to the working directory.
+	 * @paths Comma-delimited list of file globbing paths to watch relative to the working directory, defaults to **
+	 * @excludePaths Comma-delimited list of file globbing paths to exclude relative to the working directory.
 	 * @command The command to run when the watcher fires
 	 * @delay How may milliseconds to wait before polling for changes, defaults to 500 ms
 	 * @directory Working directory to start watcher in

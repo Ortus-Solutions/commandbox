@@ -25,7 +25,6 @@ component accessors=true {
 	// DI
 	property name='shell'				inject='shell';
 	property name='print'				inject='PrintBuffer';
-	property name='pathPatternMatcher'	inject='provider:pathPatternMatcher@globber';
 	property name='globber'				inject='provider:globber@globber';
 	property name='fileSystemUtil'		inject='FileSystem';
 	property name='fileSeparator'		inject='fileSeparator@constants';

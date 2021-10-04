@@ -141,8 +141,9 @@
     	<cfargument name="moduleName" 		type="string" required="true" hint="The name of the module to load."/>
 		<cfargument name="invocationPath" 	type="string" required="false" default="" hint="The module's invocation path to its root from the webroot (the instantiation path,ex:myapp.myCustomModules), if empty we use registry location, if not we are doing a explicit name+path registration. Do not include the module name, you passed that in the first argument right"/>
 		<cfscript>
-			registerModule( arguments.moduleName, arguments.invocationPath );
-			activateModule( arguments.moduleName );
+			if( registerModule( arguments.moduleName, arguments.invocationPath ) ) {
+				activateModule( arguments.moduleName );	
+			}
 		</cfscript>
     </cffunction>
 
@@ -192,7 +193,9 @@
 
 			// Check if module config exists, or we have a module.
 			if( NOT fileExists( modLocation & "/ModuleConfig.cfc" ) && NOT isBundle ){
-				instance.logger.WARN( "The module (#modName#) cannot be loaded as it does not have a ModuleConfig.cfc in its root. Path Checked: #modLocation#" );
+				var message = "The module (#modName#) cannot be loaded as it does not have a ModuleConfig.cfc in its root. Path Checked: #modLocation#";
+				instance.logger.WARN( message );
+				consoleLogger.warn( message );
 				return false;
 			}
 
@@ -464,7 +467,7 @@
 				// Register commands if they exist
 				if( directoryExists( mconfig.commandsPhysicalPath ) ){
 					var commandPath = '/' & replace( mconfig.commandsInvocationPath, '.', '/', 'all' );
-					CommandService.initCommands( commandPath, commandPath );
+					CommandService.initCommands( commandPath );
 				}
 
 				// Register endpoints if they exist

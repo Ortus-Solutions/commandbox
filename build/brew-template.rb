@@ -4,7 +4,6 @@ class Commandbox < Formula
   url "@repoPRDURL@/ortussolutions/commandbox/@stable-version@/commandbox-bin-@stable-version@.zip"
   sha256 "@stable-sha256@"
   license "LGPL-3.0-or-later"
-  revision 1
 
   head do
     url "@repoURL@/ortussolutions/commandbox/@version@/commandbox-bin-@version@.zip?build=@buildnumber@"

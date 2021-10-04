@@ -67,7 +67,7 @@ component accessors="true" singleton {
 				directoryCreate( expandPath( commandLocation ) );
 			}
 			// Load up any commands
-			initCommands( commandLocation, commandLocation );
+			initCommands( commandLocation );
 		}
 
 		setConfigured( true );
@@ -82,7 +82,7 @@ component accessors="true" singleton {
 	 **/
 	CommandService function initCommands(
 		required string baseCommandDirectory,
-		required string commandDirectory,
+		string commandDirectory=baseCommandDirectory,
 		string commandPath=''
 	){
 		var varDirs = DirectoryList(
