@@ -23,13 +23,13 @@ component accessors=true {
     property name='verbose'                 type='boolean';
     property name='encode'                  type='string';
 	property name='sourcePaths'				type='array';
-	property name='recursive'				type='boolean';
 	property name='createJar'				type='boolean';
 	property name='jarNameString'			type='string';
 	property name='libsDir'					type='string';
 	property name='compileOptionsString'	type='string';
 	property name='jarOptionsString'		type='string';
     property name='javaBinFolder'           type='string';
+	property name='customManifest'			type='string';
 
     //DI
 	property name="packageService"	inject="PackageService";
@@ -47,16 +47,16 @@ component accessors=true {
 
     public function init() {
         setSourceDirectory( 'src\main\java\' );
-        setClassOutputDirectory( 'classes\java\main\' );
+        setClassOutputDirectory( 'classes\java\main' );
         setVerbose( false );
         setEncode( '' );
 		setSourcePaths( [''] );
-		setRecursive( false );
 		setCreateJar( false );
 		setLibsDir( 'libs' );
 		setCompileOptionsString( '' );
 		setJarOptionsString( '' );
-		setJarNameString( 'output.jar' );
+		setJarNameString( '' );
+		setCustomManifest( '' );
         return this;
     }
 
@@ -84,7 +84,7 @@ component accessors=true {
         return this;
     }
 
-    function withVerbose() {
+    function verbose() {
         setVerbose( true );
         return this;
     }
@@ -93,11 +93,6 @@ component accessors=true {
         setEncode( encodeValue );
         return this;
     }
-
-	function recursive() {
-		setRecursive( true );
-		return this;
-	}
 
 	function toJar( string jarName='' ) {
 		setJarNameString( jarName );
@@ -120,21 +115,40 @@ component accessors=true {
 		return this;
 	}
 
+	function addToManifest( required string customManifest ) {
+		setCustomManifest( fileSystemutil.resolvePath( customManifest, getProjectRoot() ) );
+		return this;
+	}
+
+	function withResources( string resourcesFolder ) {
+		//if it has a resourcefolder it uses that one
+		//if its empty then use java\main\resources
+	}
+
+	function toFatJar(  ) {
+		//if it has a jarFolder use that one
+		//if it does not have any use java\main\libs
+
+		//take all the jars in libs folder and unzip them
+		//add them to the classoutputdirectory with the rest of then
+		//make the jar
+	}
+
     function run() {
 		job.start( 'Compiling' );
 
         job.start( 'find jdk bin directory' );
 		setJavaBinFolder( findJDKBinDirectory() );
-        job.complete( getVerbose() );
+        job.complete();
 
         job.start( 'compiling the code' );
 		compileCode();
-        job.complete( getVerbose() );
+        job.complete();
 
 		if( getCreateJar() ) {
             job.start( 'creating the jar' );
     		buildJar();
-            job.complete( getVerbose() );
+            job.complete();
 		}
 
 		job.complete( getVerbose() );
@@ -180,6 +194,8 @@ component accessors=true {
 
 			writeTempSourceFile( tempSrcFileName );
 
+            //job.addLog( " gJBF-->#getJavaBinFolder()#javac<-- " );
+            //job.addLog( " cOD-> #variables.classOutputDirectory# " );
 			var javacCommand = 'run "#getJavaBinFolder()#javac" "@#tempSrcFileName#" -d #variables.classOutputDirectory# #variables.compileOptionsString#';
 
 			/* if ( getVerbose() ) {
@@ -195,7 +211,7 @@ component accessors=true {
 			command( javacCommand ).run();
 
 		} finally {
-			if ( FileExists( tempSrcFileName ) ){
+			if ( FileExists( tempSrcFileName ) ) {
 				fileDelete( tempSrcFileName );
 			}
 
@@ -239,65 +255,56 @@ component accessors=true {
 
         var tempSrcFileName = tempDir & 'temp#createUUID()#.txt';
 
-		//var currentLibsDir = fileSystemutil.resolvePath( getLibsDir(), getProjectRoot() );
-		//shell.printString( ' cLD-> ' & currentLibsDir );
+        var sourceFolders = [];
+		buildJarSourceFolders = fileSystemutil.resolvePath( variables.classOutputDirectory, getProjectRoot() );
+        sourceFolders.append( buildJarSourceFolders & "**.class" );
 
-        // if the jarname is empty
-        // we check if the current libs is a package
-        // if its a package
-        // get name from package
-        // if not get name from folder
-        // if its root
-        // give default name
+		job.addLog( "currLibsDir-> #currentLibsDir#" );
 
         job.start( ' for build jar check jarName ' );
-        if( jarName.len() == 0 ){
+        if( !jarName.len() ){
             // jarName is empty
-            //shell.printString( ' jarName is empty ' );
-            job.addLog( ' jarName is empty ' );
-            job.addLog( ' currentLibsDir-> #currentLibsDir# ' );
-            job.addLog( ' currentProjectRoot-> #currentProjectRoot# ' );
-            if( packageService.isPackage( currentProjectRoot ) ) {
-                // its a package
-                //shell.printString( ' dir is a package ' );
-                job.addLog( ' dir is a package ' );
-                job.start( ' get jarName From Package ' );
-                jarName = getJarNameFromPackage( currentProjectRoot );
-                job.complete( getVerbose() );
-            } else {
+            //job.addLog( ' jarName is empty ' );
+			job.start( ' get jarName From Package ' );
+			jarName = getJarNameFromPackage( currentProjectRoot );
+			job.complete();
+
+            if( !jarName.len() ) {
                 // it is not a package its a normal folder
-                //shell.printString( ' dir is not a package ' );
-                job.addLog( ' dir is not a package ' );
-                var word = ListLast( getProjectRoot(), "\/" );
-                if( fileSystemUtil.isWindows() ) {
-                    //filesys is windows
-                    //shell.printString( ' filesys is windows #word# ' );
-                    job.addLog( ' filesys is windows #word# ' );
-                } else {
-                    //linux or mac
-                    //shell.printString( ' filesys is linux/mac #word# ' );
-                    job.addLog( ' filesys is linux/mac #word# ' );
-                }
+				var word = '';
+				if( ListLen( getProjectRoot(), "\/" ) >= 1 ) {
+					word = ListLast( getProjectRoot(), "\/" );
+
+				} else {
+					word = "output";
+
+				}
+				jarName &= word & ".jar";
+				//job.addLog( ' jarName= #jarName# ' );
+
             }
-        } else {
-            // jarName is not empty
-            shell.printString( ' jarName not is empty ' );
-            job.addLog( ' jarName not is empty ' );
+
         }
-        job.complete( getVerbose() );
+
+        job.complete();
 
         try{
-            writeTempSourceFile( tempSrcFileName,['D:\Javatest\greetings\classes\**.class'], ".class" );
+            //writeTempSourceFile( tempSrcFileName,['D:\Javatest\greetings\classes\**.class'], ".class" );
+            writeTempSourceFile( tempSrcFileName, sourceFolders, ".class" );
 
             //j = 'run "#getJavaBinFolder()#jar" --file #currentLibsDir##jarName# #getJarOptionsString()#';
             //j = 'run "#getJavaBinFolder()#jar" --create --file #currentLibsDir#testX.jar "@#tempSrcFileName#" #getJarOptionsString()#';
-            j = 'run jar --create --file "#currentLibsDir##jarName#" "@#tempSrcFileName#" #getJarOptionsString()# ';
+			if( !getCustomManifest().len() ) {
+				j = 'run jar cf "#currentLibsDir#\#jarName#" "@#tempSrcFileName#" #getJarOptionsString()# ';
+			} else {
+            	j = 'run jar cfm "#currentLibsDir#\#jarName#" "#variables.customManifest#" "@#tempSrcFileName#" #getJarOptionsString()# ';
+			}
             //shell.printString( " " & j & " " );
             job.addLog( " " & j & " " );
-            //command( j ).run();
+            command( j ).run();
 
         } finally {
-			if ( FileExists( tempSrcFileName ) ){
+			if ( FileExists( tempSrcFileName ) ) {
 				fileDelete( tempSrcFileName );
 			}
         }
@@ -306,18 +313,34 @@ component accessors=true {
 	}
 
     function getJarNameFromPackage( string currentFolder ){
-        job.addLog( ' inside getJarNameFromPackage() ' );
-        var boxJSON = packageService.readPackageDescriptor( currentFolder );
-        var packageName = "";
-		var packageVersion = "";
-        if( len( Evaluate( "boxJSON.slug" ) ) != 0 ) {
-			packageName = boxJSON.slug;
+		//job.addLog( ' jarName is empty ' );
+		//job.addLog( ' currentProjectRoot-> #currentFolder# ' );
+		jarName = '';
+
+		if( packageService.isPackage( currentFolder ) ) {
+
+			//job.addLog( ' dir is a package ' );
+			//job.addLog( ' inside getJarNameFromPackage() ' );
+			var boxJSON = packageService.readPackageDescriptor( currentFolder );
+			var packageName = "";
+			var packageVersion = "";
+
+			if( len( boxJSON.slug ) ) {
+				packageName = boxJSON.slug;
+				jarName &= packageName;
+
+				if( len( boxJSON.version ) ) {
+					packageVersion = boxJSON.version;
+					jarName &= "-" & packageVersion;
+				}
+
+				jarName &= ".jar"
+
+			}
+
 		}
-        if( len( Evaluate( "boxJSON.version" ) ) != 0 ){
-			packageVersion = boxJSON.version;
-		}
-        jarName = packageName&"-"&packageVersion&".jar";
-        job.addLog( ' jarName for this package is: #jarName# ' );
+
+		//job.addLog( ' jarName for this package is: #jarName# ' );
         return jarName;
     }
 
