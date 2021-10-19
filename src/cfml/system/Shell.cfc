@@ -749,17 +749,19 @@ component accessors="true" singleton {
 
 	/**
 	 * Call a command
- 	 * @command.hint Either a string containing a text command, or an array of tokens representing the command and parameters.
- 	 * @returnOutput.hint True will return the output of the command as a string, false will send the output to the console.  If command outputs nothing, an empty string will come back.
- 	 * @piped.hint Any text being piped into the command.  This will overwrite the first parameter (pushing any positional params back)
- 	 * @initialCommand.hint Since commands can recursively call new commands via this method, this flags the first in the chain so exceptions can bubble all the way back to the beginning.
+ 	 * @command Either a string containing a text command, or an array of tokens representing the command and parameters.
+ 	 * @returnOutput True will return the output of the command as a string, false will send the output to the console.  If command outputs nothing, an empty string will come back.
+ 	 * @piped Any text being piped into the command.  This will overwrite the first parameter (pushing any positional params back)
+ 	 * @initialCommand Since commands can recursively call new commands via this method, this flags the first in the chain so exceptions can bubble all the way back to the beginning.
+ 	 * @line If passing an array of tokens, this is the original, unparsed line typed by the user
  	 * In other words, if "foo" calls "bar", which calls "baz" and baz errors, all three commands are scrapped and do not finish execution.
  	 **/
 	function callCommand(
 		required any command,
 		returnOutput=false,
 		string piped,
-		boolean initialCommand=false )  {
+		boolean initialCommand=false,
+		string line )  {
 
 		var job = wirebox.getInstance( 'interactiveJob' );
 		var ConsolePainter = wirebox.getInstance( 'ConsolePainter' );
@@ -778,10 +780,13 @@ component accessors="true" singleton {
 		try{
 
 			if( isArray( command ) ) {
+				if( isNull( arguments.line ) ) {
+					arguments.line = command.toList( ' ' ); 
+				}
 				if( structKeyExists( arguments, 'piped' ) ) {
-					var result = variables.commandService.runCommandTokens( arguments.command, piped, returnOutput );
+					var result = variables.commandService.runCommandTokens( arguments.command, piped, returnOutput, line );
 				} else {
-					var result = variables.commandService.runCommandTokens( tokens=arguments.command, captureOutput=returnOutput );
+					var result = variables.commandService.runCommandTokens( tokens=arguments.command, captureOutput=returnOutput, line=line );
 				}
 			} else {
 				var result = variables.commandService.runCommandLine( arguments.command, returnOutput );

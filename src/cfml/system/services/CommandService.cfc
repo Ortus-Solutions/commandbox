@@ -123,7 +123,7 @@ component accessors="true" singleton {
 
 	/**
 	 * run a command line
-	 * @line.hint line to run
+	 * @line line to run
 	 * @captureOutput Temp workaround to allow capture of run command
  	 **/
 	function runCommandline( required string line, boolean captureOutput=false ){
@@ -141,21 +141,22 @@ component accessors="true" singleton {
 
 	/**
 	 * run a command tokens
-	 * @tokens.hint tokens to run
-	 * @piped.hint Data to pipe in to the first command
+	 * @tokens tokens to run
+	 * @piped Data to pipe in to the first command
 	 * @captureOutput Temp workaround to allow capture of run command
+ 	 * @line This is the original, unparsed line typed by the user
  	 **/
-	function runCommandTokens( required array tokens, string piped, boolean captureOutput=false ){
+	function runCommandTokens( required array tokens, string piped, boolean captureOutput=false, required string line ){
 
 		// Resolve the command they are wanting to run
 		var commandChain = resolveCommandTokens( tokens );
 
 		// If there was piped input
 		if( structKeyExists( arguments, 'piped' ) ) {
-			return runCommand( commandChain, tokens.toList( ' ' ), arguments.piped, captureOutput );
+			return runCommand( commandChain, line, arguments.piped, captureOutput );
 		}
 
-		return runCommand( commandChain=commandChain, line=tokens.toList( ' ' ), captureOutput=captureOutput );
+		return runCommand( commandChain=commandChain, line=line, captureOutput=captureOutput );
 
 	}
 
@@ -626,7 +627,6 @@ component accessors="true" singleton {
 			* run "cmd /c dir"
 			 */
 			 if( tokens.len() > 1 && tokens.first() == 'run'  ) {
-
 				var tokens2 = tokens[ 2 ];
 				// Escape any regex metacharacters in the pattern
 				tokens2 = replace( tokens2, '\', '\\', 'all' );
