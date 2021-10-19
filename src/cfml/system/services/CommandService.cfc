@@ -149,7 +149,7 @@ component accessors="true" singleton {
 	function runCommandTokens( required array tokens, string piped, boolean captureOutput=false, required string line ){
 
 		// Resolve the command they are wanting to run
-		var commandChain = resolveCommandTokens( tokens );
+		var commandChain = resolveCommandTokens( tokens, line );
 
 		// If there was piped input
 		if( structKeyExists( arguments, 'piped' ) ) {

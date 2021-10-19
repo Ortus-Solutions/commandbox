@@ -222,7 +222,23 @@ component accessors=true {
 	 * Turn this CFC into a string representation
   	 **/
 	string function getCommandString() {
-		return getTokens().toList( ' ' );
+		var tokens = getCommand();
+		tokens &= ' ' & processParams().toList( ' ' );
+		tokens &= ' '& getFlags().toList( ' ' );
+
+		if( len( getOverwrite() ) ) {
+			tokens &= ' > ' & getOverwrite();
+		}
+
+		if( len( getAppend() ) ) {
+			tokens &= ' >> ' & getAppend();
+		}
+
+		for( var piperton in getPiped() ) {
+			tokens &= ' | ' & piperton.getCommandString();
+		}
+
+		return tokens;
 	}
 
 	/**
@@ -246,9 +262,9 @@ component accessors=true {
 
 		try {
 			if( !isNull( getPipedInput() ) ) {
-				var result = shell.callCommand( getTokens(), getReturnOutput(), getPipedInput() );
+				var result = shell.callCommand( getTokens(), getReturnOutput(), getPipedInput(), getCommandString() );
 			} else {
-				var result = shell.callCommand( getTokens(), getReturnOutput() );
+				var result = shell.callCommand( command=getTokens(), returnOutput=getReturnOutput(), line=getCommandString() );
 			}
 
 			// If the previous command chain failed
