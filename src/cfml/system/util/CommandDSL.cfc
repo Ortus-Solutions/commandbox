@@ -37,13 +37,13 @@ component accessors=true {
 	 *
 	 * @name.hint I am the command to execute
   	 **/
-	function init( name ) {
+	function init( command ) {
 
-		if( !structKeyExists( arguments, 'name' ) ) {
-			throw( 'Command name not provided' );
+		if( !structKeyExists( arguments, 'command' ) ) {
+			throw( 'Command not provided' );
 		}
 
-		setCommand( arguments.name );
+		setCommand( arguments.command );
 		setPiped( [] );
 		setParams( [] );
 		setFlags( [] );
