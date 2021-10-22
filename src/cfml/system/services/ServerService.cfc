@@ -1572,6 +1572,12 @@ component accessors="true" singleton {
 		if ( !currentEnv.containsKey( 'COMMANDBOX_HOME' ) ) {
 			currentEnv.put( 'COMMANDBOX_HOME', expandPath( '/commandbox-home' ) );
 		}
+		
+		// Add COMMANDBOX_VERSION env var to the server if not already there
+		if ( !currentEnv.containsKey( 'COMMANDBOX_VERSION' ) ) {
+			currentEnv.put( 'COMMANDBOX_VERSION', shell.getVersion() );
+		}
+		
 
 	    // Conjoin standard error and output for convenience.
 	    processBuilder.redirectErrorStream( true );
