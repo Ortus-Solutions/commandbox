@@ -1568,6 +1568,11 @@ component accessors="true" singleton {
             }
         }
 
+		// Add COMMANDBOX_HOME env var to the server if not already there
+		if ( !currentEnv.containsKey( 'COMMANDBOX_HOME' ) ) {
+			currentEnv.put( 'COMMANDBOX_HOME', expandPath( '/commandbox-home' ) );
+		}
+
 	    // Conjoin standard error and output for convenience.
 	    processBuilder.redirectErrorStream( true );
 	    // Kick off actual process
