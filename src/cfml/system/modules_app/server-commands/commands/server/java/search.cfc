@@ -64,7 +64,7 @@ component aliases='java search' {
 		// If there is no version and no release, hit the API to get the latest LTS version
 		} else if( isNull( version ) ) {
 			http
-				url="https://api.adoptopenjdk.net/v3/info/available_releases"
+				url="https://api.adoptium.net/v3/info/available_releases"
 				throwOnError=false
 				timeout=5
 				proxyServer="#ConfigService.getSetting( 'proxy.server', '' )#"
@@ -101,7 +101,7 @@ component aliases='java search' {
 			}
 		}
 
-		var APIURLCheck = 'https://api.adoptopenjdk.net/v3/assets/version/#encodeForURL(version)#?page_size=100&release_type=ga&vendor=adoptopenjdk&project=jdk&heap_size=normal';
+		var APIURLCheck = 'https://api.adoptium.net/v3/assets/version/#encodeForURL(version)#?page_size=100&release_type=ga&vendor=eclipse&project=jdk&heap_size=normal';
 
 		if( jvm.len() ) {
 			APIURLCheck &= '&jvm_impl=#encodeForURL( jvm )#';
@@ -197,7 +197,7 @@ component aliases='java search' {
 	function versionComplete() {
 
 		http
-			url="https://api.adoptopenjdk.net/v3/info/available_releases"
+			url="https://api.adoptium.net/v3/info/available_releases"
 			throwOnError=false
 			timeout=5
 			proxyServer="#ConfigService.getSetting( 'proxy.server', '' )#"
