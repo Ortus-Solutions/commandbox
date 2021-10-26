@@ -816,6 +816,7 @@ component accessors="true" singleton {
 					var result = variables.commandService.runCommandTokens( tokens=arguments.command, captureOutput=returnOutput, line=line );
 				}
 			} else {
+				//systemoutput("callCommand p3->");
 				var result = variables.commandService.runCommandLine( arguments.command, returnOutput );
 			}
 
