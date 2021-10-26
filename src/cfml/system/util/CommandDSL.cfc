@@ -127,7 +127,7 @@ component accessors=true {
 					if( isStruct( paramStruct[ param ] ?: '' ) ) {
 						paramStruct[ param ].each( (k,v)=>processedParams.append( '#param#:#k#="#parser.escapeArg( v ?: '' )#"' ) );
 					} else {
-						processedParams.append( '#param#="#parser.escapeArg( paramStruct[ param ] ?: '' )#"' );	
+						processedParams.append( '#param#="#parser.escapeArg( paramStruct[ param ] ?: '' )#"' );
 					}
 				}
 			}
@@ -223,8 +223,13 @@ component accessors=true {
   	 **/
 	string function getCommandString() {
 		var tokens = getCommand();
-		tokens &= ' ' & processParams().toList( ' ' );
-		tokens &= ' '& getFlags().toList( ' ' );
+		if( getParams().len() ) {
+			tokens &= ' ' & processParams().toList( ' ' );
+		}
+
+		if( getFlags().len() ) {
+			tokens &= ' '& getFlags().toList( ' ' );
+		}
 
 		if( len( getOverwrite() ) ) {
 			tokens &= ' > ' & getOverwrite();
@@ -246,6 +251,9 @@ component accessors=true {
   	 **/
 	string function run( returnOutput, string piped, boolean echo, boolean rawParams ) {
 
+		/* systemoutput( "test 01->" )
+		systemoutput( "::#getCommand()#::" );
+		systemoutput( "::#getCommandString()#::" ); */
 		if( !isNull( arguments.rawParams ) ) { setRawParams( arguments.rawParams ); }
 		if( !isNull( arguments.piped ) ) { setPipedInput( arguments.piped ); }
 		if( !isNull( arguments.echo ) ) { setEcho( arguments.echo ); }

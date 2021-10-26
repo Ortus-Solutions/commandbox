@@ -30,6 +30,7 @@ component accessors=true {
 	property name='jarOptionsString'		type='string';
     property name='javaBinFolder'           type='string';
 	property name='customManifest'			type='string';
+	property name='resourcePath'			type='string';
 
     //DI
 	property name="packageService"	inject="PackageService";
@@ -57,6 +58,7 @@ component accessors=true {
 		setJarOptionsString( '' );
 		setJarNameString( '' );
 		setCustomManifest( '' );
+		setResourcePath( 'src\main\resources\' );
         return this;
     }
 
@@ -120,9 +122,10 @@ component accessors=true {
 		return this;
 	}
 
-	function withResources( string resourcesFolder ) {
+	function withResources( string resourcesPath ) {
 		//if it has a resourcefolder it uses that one
-		//if its empty then use java\main\resources
+		//if its empty then use src\main\resources
+		setResourcePath( fileSystemutil.resolvePath( resourcePath, getProjectRoot() ) )
 	}
 
 	function toFatJar(  ) {
@@ -168,35 +171,30 @@ component accessors=true {
 
 		setSourcePaths( getSourcePaths().map( function( p ) {
 			var currentPath = fileSystemutil.resolvePath( arguments.p, getProjectRoot() );
-			if ( directoryExists( currentPath ) ) {
+            // check the path if there is one * then assume its globbing and leave it
+            // if its not a file then add the **.jav
+
+			if( Find( "*", currentPath ) ) {
+				return currentPath;
+
+			} else if( directoryExists( currentPath ) ) {
 				currentPath &= "**.java";
 				return currentPath;
 
-			} else if ( FileExists( currentPath ) ) {
-				return currentPath;
-
-			} else if ( Find("**", currentPath) ) {
-				return currentPath;
-
-			} else {
-				throw(
-					message='Non-Existing Folder', detail=currentPath & ' does not exist',
-					type="commandException"
-				);
-
 			}
+
 			return currentPath;
 
 		} ) );
 
-        job.addLog( " " & serialize( getSourcePaths() ) & " " );
+        //job.addLog( " " & serialize( getSourcePaths() ) & " " );
 		try{
 
 			writeTempSourceFile( tempSrcFileName );
 
-            //job.addLog( " gJBF-->#getJavaBinFolder()#javac<-- " );
-            //job.addLog( " cOD-> #variables.classOutputDirectory# " );
-			var javacCommand = 'run "#getJavaBinFolder()#javac" "@#tempSrcFileName#" -d #variables.classOutputDirectory# #variables.compileOptionsString#';
+			//var javacCommand = 'run ""#getJavaBinFolder()#javac" "@#tempSrcFileName#" -d "#variables.classOutputDirectory#" #variables.compileOptionsString#"';
+			var javacCommand = 'run ""#getJavaBinFolder()#javac" "@#tempSrcFileName#" -d "#variables.classOutputDirectory#""';
+			//var javacCommand = 'run ""foo why" "bar" -d "test""';
 
 			/* if ( getVerbose() ) {
 				javacCommand &= " -verbose";
@@ -206,8 +204,9 @@ component accessors=true {
 				javacCommand &= " -encoding #variables.encode#";
 			}
 
-			//shell.printString( " " & javacCommand & " " );
-            job.addLog( " " & javacCommand & " " );
+            //job.addLog( " " & javacCommand & " " );
+			//systemoutput( "test 00->" );
+			//command( javacCommand ).run(echo=true);
 			command( javacCommand ).run();
 
 		} finally {
@@ -223,7 +222,7 @@ component accessors=true {
 		var globber = wirebox.getInstance( 'globber' );
 
 		//shell.printString( " gSP-> #serialize(getSourcePaths())# " );
-        job.addLog( " gSP-> #serialize(sourcePath)# " );
+        //job.addLog( " gSP-> #serialize(sourcePath)# " );
 		var sourceList = globber
 				.setPattern( sourcePath )
 				.asQuery()
@@ -233,14 +232,10 @@ component accessors=true {
 					return listappend( acc, row.directory & "/" & row.name, chr(10) );
 				}, "")
 
-        job.addLog( " sList-> #serialize(sourceList)# " );
+        //job.addLog( " sList-> #serialize(sourceList)# " );
 		if( !sourceList.len() ) {
-			/* throw(
-				message='No java source files found in [#sourceDirs.toList()#]', detail='Check fromSource() and try again',
-				type="commandException"
-			); */
 			throw(
-				message='No java source files found in [#sourceList.len()#]', detail='Check fromSource() and try again',
+				message='No #extension# files found in [#getSourcePaths().toList()#]', detail='Check fromSource() and try again',
 				type="commandException"
 			);
 		}
@@ -280,7 +275,7 @@ component accessors=true {
 
 				}
 				jarName &= word & ".jar";
-				//job.addLog( ' jarName= #jarName# ' );
+				job.addLog( ' jarName= #jarName# ' );
 
             }
 
@@ -313,14 +308,14 @@ component accessors=true {
 	}
 
     function getJarNameFromPackage( string currentFolder ){
-		//job.addLog( ' jarName is empty ' );
-		//job.addLog( ' currentProjectRoot-> #currentFolder# ' );
+		job.addLog( ' jarName is empty ' );
+		job.addLog( ' currentProjectRoot-> #currentFolder# ' );
 		jarName = '';
 
 		if( packageService.isPackage( currentFolder ) ) {
 
-			//job.addLog( ' dir is a package ' );
-			//job.addLog( ' inside getJarNameFromPackage() ' );
+			job.addLog( ' dir is a package ' );
+			job.addLog( ' inside getJarNameFromPackage() ' );
 			var boxJSON = packageService.readPackageDescriptor( currentFolder );
 			var packageName = "";
 			var packageVersion = "";
@@ -340,7 +335,7 @@ component accessors=true {
 
 		}
 
-		//job.addLog( ' jarName for this package is: #jarName# ' );
+		job.addLog( ' jarName for this package is: #jarName# ' );
         return jarName;
     }
 
