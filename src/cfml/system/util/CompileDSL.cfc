@@ -125,7 +125,7 @@ component accessors=true {
 	function withResources( string resourcesPath ) {
 		//if it has a resourcefolder it uses that one
 		//if its empty then use src\main\resources
-		setResourcePath( fileSystemutil.resolvePath( resourcePath, getProjectRoot() ) )
+		setResourcePath( fileSystemutil.resolvePath( resourcesPath, getProjectRoot() ) )
 	}
 
 	function toFatJar(  ) {
