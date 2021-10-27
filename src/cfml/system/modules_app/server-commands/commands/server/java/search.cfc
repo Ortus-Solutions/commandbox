@@ -21,6 +21,13 @@
  * server java search jvm= arch= type= os=
  * {code}
  *
+ * Or get the raw JSON as it was returned from the API
+ * {code:bash}
+ * server java search --JSON
+ * {code}
+ *
+ * If a failing HTTP status code is received from the API, this command will return an exit code of 1
+ * 
  **/
 component aliases='java search' {
 
@@ -42,6 +49,7 @@ component aliases='java search' {
 	* @type.options jdk,jre
 	* @release A specific release name or the word "latest"
 	* @release.options latest
+	* @release.JSON Output the RAW JSON received from the remote API
 	*/
 	function run(
 		version,
@@ -49,7 +57,8 @@ component aliases='java search' {
 		os,
 		arch = server.java.archModel contains 32 ? 'x32' : 'x64',
 		type = 'jre',
-		release = 'latest'
+		release = 'latest',
+		boolean JSON = false
 	){
 
 		// If there is no version passed but we have a release, default the version based on the release.
@@ -63,6 +72,9 @@ component aliases='java search' {
 			}
 		// If there is no version and no release, hit the API to get the latest LTS version
 		} else if( isNull( version ) ) {
+			// Until Adobe and Lucee support Java 17, we'll keep this defaulting to Java 11-- the current LTS release supported by CF engines.
+			version = 11;
+			/*
 			http
 				url="https://api.adoptium.net/v3/info/available_releases"
 				throwOnError=false
@@ -81,6 +93,7 @@ component aliases='java search' {
 			} else {
 				version = 11;
 			}
+			*/
 		}
 
 		// Backwards compat so 8 so the same as openjdk8
@@ -116,13 +129,6 @@ component aliases='java search' {
 			APIURLCheck &= '&image_type=#encodeForURL( type )#';
 		}
 
-		print
-			.line()
-			.line( 'Hitting API URL:' )
-			.indentedline( APIURLCheck )
-			.line()
-			.line();
-
 		http
 			url="#APIURLCheck#"
 			timeout=20
@@ -134,51 +140,69 @@ component aliases='java search' {
 			result="local.artifactResult";
 
 		var fileContent = toString( local.artifactResult.fileContent );
-		if( local.artifactResult.status_code == 200 && isJSON( fileContent ) ) {
+		if( local.artifactResult.status_code == 404 ) {
+			var artifactJSON = [];
+		} else if( local.artifactResult.status_code == 200 && isJSON( fileContent ) ) {
 			var artifactJSON = deserializeJSON( fileContent );
-
 
 			// If we have a release, we need to filter it now
 			if( release.len() && release != 'latest' ) {
 				artifactJSON = artifactJSON.filter( (thisRelease)=>thisRelease.release_name==release );
-			}
-
-			// Sometimes the API gives me back a struct, sometimes I get an array of structs. ¯\_(ツ)_/¯
-			if( isStruct( artifactJSON ) ) {
-				artifactJSON = [ artifactJSON ];
-			}
-
-			for( var javaVer in artifactJSON ) {
-				var headerWidth = ('Release Name: ' & javaVer.release_name & '  Release Date: ' & dateFormat( javaVer.timestamp )).len()+4;
-				var colWidth = int( ( headerWidth/4 )-1 );
-				var lastColWidth = headerWidth - ( (colWidth*4)+5 ) + colWidth;
-				print
-					.boldLine( repeatString( '-', headerWidth ) )
-					.boldText( '| Release Name: ' ).boldCyanText( javaVer.release_name ).boldtext( '  Release Date: ' ).boldCyanText(  dateFormat( javaVer.timestamp ) ).boldLine( ' |' )
-					.boldLine( repeatString( '-', headerWidth ) )
-					.bold( '|' ).boldCyan(  printColumnValue( 'JVM', colWidth ) ).bold( '|' ).boldCyan( printColumnValue( 'OS', colWidth ) ).bold( '|' ).boldCyan( printColumnValue( 'Arch', colWidth ) ).bold( '|' ).boldCyan( printColumnValue( 'Type', lastColWidth ) ).boldLine( '|' )
-					.boldLine( repeatString( '-', headerWidth ) );
-
-				javaVer.binaries = javaVer.binaries.sort( function( a, b ) {
-					return compareNoCase( a.jvm_impl & a.os & a.architecture & a.image_type, b.jvm_impl & b.os & b.architecture & b.image_type )
-				} );
-				for( var binary in javaVer.binaries ) {
-					print
-						.line( '|' & printColumnValue( binary.jvm_impl, colWidth )
-							& '|' & printColumnValue( binary.os, colWidth )
-							& '|' & printColumnValue( binary.architecture, colWidth )
-							& '|' & printColumnValue( binary.image_type, lastColWidth ) & '|' )
-						.text( '|' ).yellowText( printColumnValue( 'ID: ' & java.getDefaultNameFromStruct( { version : 'openjdk'&javaVer.version_data.major, type : binary.image_type, arch : binary.architecture, os : binary.os, 'jvm-implementation' : binary.jvm_impl, release : javaVer.release_name } ), headerWidth-2 ) ).line( '|' )
-						.line( repeatString( '-', headerWidth ) );
-				}
-				print.line();
-				if( release == 'latest' ) {
-					break;
-				}
-			}
+			} 
 		} else {
-			print.boldRedLine( 'There was an error hitting the API.  [#local.artifactResult.status_code#]' );
 			print.redLine( fileContent.left( 100 ) );
+			error( 'There was an error hitting the API.  [#local.artifactResult.status_code#]' );
+		}
+	
+		// Sometimes the API gives me back a struct, sometimes I get an array of structs. ¯\_(ツ)_/¯
+		if( isStruct( artifactJSON ) ) {
+			artifactJSON = [ artifactJSON ];
+		}
+
+		if( JSON ) {
+			print.line( artifactJSON );
+			return;
+		} else {	
+			print
+				.line()
+				.line( 'Hitting API URL:' )
+				.indentedline( APIURLCheck )
+				.line()
+				.line();
+		}
+		
+		if( !artifactJSON.len() ) {
+			print.redLine( 'No matching Java versions found for your search criteria' );
+			return;
+		}
+
+		for( var javaVer in artifactJSON ) {
+			var headerWidth = ('Release Name: ' & javaVer.release_name & '  Release Date: ' & dateFormat( javaVer.timestamp )).len()+4;
+			var colWidth = int( ( headerWidth/4 )-1 );
+			var lastColWidth = headerWidth - ( (colWidth*4)+5 ) + colWidth;
+			print
+				.boldLine( repeatString( '-', headerWidth ) )
+				.boldText( '| Release Name: ' ).boldCyanText( javaVer.release_name ).boldtext( '  Release Date: ' ).boldCyanText(  dateFormat( javaVer.timestamp ) ).boldLine( ' |' )
+				.boldLine( repeatString( '-', headerWidth ) )
+				.bold( '|' ).boldCyan(  printColumnValue( 'JVM', colWidth ) ).bold( '|' ).boldCyan( printColumnValue( 'OS', colWidth ) ).bold( '|' ).boldCyan( printColumnValue( 'Arch', colWidth ) ).bold( '|' ).boldCyan( printColumnValue( 'Type', lastColWidth ) ).boldLine( '|' )
+				.boldLine( repeatString( '-', headerWidth ) );
+
+			javaVer.binaries = javaVer.binaries.sort( function( a, b ) {
+				return compareNoCase( a.jvm_impl & a.os & a.architecture & a.image_type, b.jvm_impl & b.os & b.architecture & b.image_type )
+			} );
+			for( var binary in javaVer.binaries ) {
+				print
+					.line( '|' & printColumnValue( binary.jvm_impl, colWidth )
+						& '|' & printColumnValue( binary.os, colWidth )
+						& '|' & printColumnValue( binary.architecture, colWidth )
+						& '|' & printColumnValue( binary.image_type, lastColWidth ) & '|' )
+					.text( '|' ).yellowText( printColumnValue( 'ID: ' & java.getDefaultNameFromStruct( { version : 'openjdk'&javaVer.version_data.major, type : binary.image_type, arch : binary.architecture, os : binary.os, 'jvm-implementation' : binary.jvm_impl, release : javaVer.release_name } ), headerWidth-2 ) ).line( '|' )
+					.line( repeatString( '-', headerWidth ) );
+			}
+			print.line();
+			if( release == 'latest' ) {
+				break;
+			}
 		}
 	}
 
