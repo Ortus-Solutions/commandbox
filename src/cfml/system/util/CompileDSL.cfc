@@ -155,6 +155,9 @@ component accessors=true {
 			job.start( 'move resources to jar' );
 			moveResources();
 			job.complete();
+			job.start( 'move resources to jar' );
+			updateManifestFile();
+			job.complete();
 		}
 
 		job.complete( getVerbose() );
@@ -337,6 +340,18 @@ component accessors=true {
 			job.addLog( "there are no resources to move" );
 		}
 
+	}
+
+	function updateManifestFile() {
+		/*
+		1. check if the project has a box.json (we do that lets just set a flag)
+		2. if it is a box.json
+			2.1.
+		3. if it is not a box.json
+			3.1.
+		4. independent of 2 or 3 check if we have a struct of values
+		5. check if we override the original manifest
+		*/
 	}
 
     function getJarNameFromPackage( string currentFolder ){
