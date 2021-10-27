@@ -152,6 +152,9 @@ component accessors=true {
             job.start( 'creating the jar' );
     		buildJar();
             job.complete();
+			job.start( 'move resources to jar' );
+			moveResources();
+			job.complete();
 		}
 
 		job.complete( getVerbose() );
@@ -275,7 +278,8 @@ component accessors=true {
 
 				}
 				jarName &= word & ".jar";
-				job.addLog( ' jarName= #jarName# ' );
+				setJarNameString( jarName );
+				//job.addLog( ' jarName= #jarName# ' );
 
             }
 
@@ -287,16 +291,19 @@ component accessors=true {
             //writeTempSourceFile( tempSrcFileName,['D:\Javatest\greetings\classes\**.class'], ".class" );
             writeTempSourceFile( tempSrcFileName, sourceFolders, ".class" );
 
+			if( !directoryExists( currentLibsDir ) ) {
+				directoryCreate( currentLibsDir );
+			}
+
             //j = 'run "#getJavaBinFolder()#jar" --file #currentLibsDir##jarName# #getJarOptionsString()#';
             //j = 'run "#getJavaBinFolder()#jar" --create --file #currentLibsDir#testX.jar "@#tempSrcFileName#" #getJarOptionsString()#';
 			if( !getCustomManifest().len() ) {
-				j = 'run jar cf "#currentLibsDir#\#jarName#" "@#tempSrcFileName#" #getJarOptionsString()# ';
+				j = 'run ""#getJavaBinFolder()#jar" cf "#currentLibsDir#\#jarName#" "@#tempSrcFileName#" #getJarOptionsString()#"';
 			} else {
-            	j = 'run jar cfm "#currentLibsDir#\#jarName#" "#variables.customManifest#" "@#tempSrcFileName#" #getJarOptionsString()# ';
+            	j = 'run ""#getJavaBinFolder()#jar" cfm "#currentLibsDir#\#jarName#" "#variables.customManifest#" "@#tempSrcFileName#" #getJarOptionsString()#"';
 			}
-            //shell.printString( " " & j & " " );
-            job.addLog( " " & j & " " );
-            command( j ).run();
+            job.addLog( j );
+            command( j ).run(echo=true);
 
         } finally {
 			if ( FileExists( tempSrcFileName ) ) {
@@ -304,6 +311,31 @@ component accessors=true {
 			}
         }
 
+
+	}
+
+	function moveResources() {
+		var currentResourcePath = fileSystemutil.resolvePath( getResourcePath(), getProjectRoot() );
+		//job.addLog( "moveRes resPath: #currentResourcePath#" );
+
+		if( directoryExists( currentResourcePath ) ) {
+			job.addLog( "start move resources to jar" );
+			// have to replicate this command
+			// run ""jar" uf "D:\Javatest\new-tests\libs\new-tests.jar" -C "D:\Javatest\gradle-test-resource\src\main\resources\" ."
+			var jarName = getJarNameString();
+			//job.addLog( "moveRes jarname: #jarName#" );
+			var currentLibsDir = fileSystemutil.resolvePath( getLibsDir(), getProjectRoot() );
+			//job.addLog( "moveRes currLibsDir: #currentLibsDir#" );
+
+			j = 'run ""#getJavaBinFolder()#jar" uf "#currentLibsDir##jarName#" -C #currentResourcePath# . "'
+
+			job.addLog( j );
+			//command( j ).run(echo=true);
+			command( j ).run();
+
+		} else {
+			job.addLog( "there are no resources to move" );
+		}
 
 	}
 
