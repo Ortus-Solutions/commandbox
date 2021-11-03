@@ -30,6 +30,7 @@ component accessors=true {
 	property name='jarOptionsString'		type='string';
     property name='javaBinFolder'           type='string';
 	property name='customManifest'			type='string';
+	property name='customManifestParams'	type='struct';
 	property name='resourcePath'			type='string';
 
     //DI
@@ -58,6 +59,7 @@ component accessors=true {
 		setJarOptionsString( '' );
 		setJarNameString( '' );
 		setCustomManifest( '' );
+		setCustomManifestParams( {} );
 		setResourcePath( 'src\main\resources\' );
         return this;
     }
@@ -122,6 +124,11 @@ component accessors=true {
 		return this;
 	}
 
+	function manifest( required struct customParams ) {
+		setCustomManifestParams( customParams );
+		return this;
+	}
+
 	function withResources( string resourcesPath ) {
 		//if it has a resourcefolder it uses that one
 		//if its empty then use src\main\resources
@@ -149,14 +156,14 @@ component accessors=true {
         job.complete();
 
 		if( getCreateJar() ) {
+			job.start( 'update manifest file' );
+			updateManifestFile();
+			job.complete();
             job.start( 'creating the jar' );
     		buildJar();
             job.complete();
 			job.start( 'move resources to jar' );
 			moveResources();
-			job.complete();
-			job.start( 'move resources to jar' );
-			updateManifestFile();
 			job.complete();
 		}
 
@@ -344,6 +351,18 @@ component accessors=true {
 
 	function updateManifestFile() {
 		/*
+		the original is default
+		if we want to send a struct of parameters to the manifest then use
+		.manifest({})
+		if we want to send parameters in the box.json add a "manifest"
+		take the values that exist from the box.json then set the ones in the "manifest"
+		like this:
+		"manifest" :  {
+			"Manifest-Version": "1.0",
+			"Main-Class": "foo.bar",
+			"random": "attribute"
+   		}
+
 		1. check if the project has a box.json (we do that lets just set a flag)
 		2. if it is a box.json
 			2.1.
@@ -352,17 +371,115 @@ component accessors=true {
 		4. independent of 2 or 3 check if we have a struct of values
 		5. check if we override the original manifest
 		*/
+
+		var createUpdateManifestFile = false;
+
+		// check if there are any params from a struct
+		var paramStruct = getCustomManifestParams();
+		if( paramStruct.len() ) {
+			job.addLog( "has values" );
+			createUpdateManifestFile = true;
+		} else {
+			job.addLog( "is empty" );
+		}
+
+		// check if project root is a package
+		var currentProjectRoot = getProjectRoot();
+		if( packageService.isPackage( currentProjectRoot ) ) {
+			job.addLog( "its a package" );
+			createUpdateManifestFile = true;
+			paramStruct = getParamsFromBoxJson( currentProjectRoot, paramStruct );
+		} else {
+			job.addLog( "its not a package" );
+		}
+
+		if( createUpdateManifestFile ) {
+			job.addLog( "creating the update manifest file" );
+			var useTempDir = false;
+			var tempUpdateManifestFileName;
+			if( useTempDir ) {
+				tempUpdateManifestFileName = tempDir & 'updateManifest#createUUID()#.txt';
+			} else {
+				tempUpdateManifestFileName = currentProjectRoot & 'updateManifest#createUUID()#.txt';
+			}
+
+			job.addLog( "tempUpdManiFName: #tempUpdateManifestFileName#" );
+			try {
+				writeUpdateManifestFile( tempUpdateManifestFileName, paramStruct );
+			} finally {
+				/* if ( FileExists( tempUpdateManifestFileName ) ) {
+					fileDelete( tempUpdateManifestFileName );
+				} */
+			}
+
+		} else {
+			job.addLog( "no need to create the update manifest file" );
+
+		}
+
+	}
+
+	function writeUpdateManifestFile( string filename, struct manifestParams ) {
+		//var currentManifestParams = 'foo: bar';
+		var updManifestOut = createObject( "java", "java.lang.StringBuilder" ).init('');
+		var lb = "#chr( 13 )##chr( 10 )#";
+
+		for( var itemKey in manifestParams ) {
+			//job.addLog( '#itemKey#: #manifestParams[itemKey]#' );
+			updManifestOut.append( '#itemKey#: #manifestParams[itemKey]##lb#' )
+		}
+
+		filewrite( filename, updManifestOut.toString() );
+	}
+
+	function getParamsFromBoxJson( string currentFolder, struct manifestParams ) {
+		var boxJsonParams = {};
+		var boxJSON = packageService.readPackageDescriptor( currentFolder );
+		// first check for all the regular info
+		if( len( boxJSON.name ) ) {
+			manifestParams["Bundle-Name"] = boxJSON.name;
+		}
+		if( len( boxJSON.slug ) ) {
+			manifestParams["Bundle-SymbolicName"] = boxJSON.slug;
+		}
+		if( len( boxJSON.version ) ) {
+			manifestParams["Bundle-Version"] = boxJSON.version;
+		}
+		if( len( boxJSON.author ) ) {
+			manifestParams["Built-By"] = boxJSON.author;
+		}
+		if( len( boxJSON.shortDescription ) ) {
+			manifestParams["Bundle-Description"] = boxJSON.shortDescription;
+		}
+		if( len( boxJSON.ProjectURL ) ) {
+			manifestParams["Implementation-URL"] = boxJSON.ProjectURL;
+		}
+		if( len( boxJSON.Documentation ) ) {
+			manifestParams["Bundle-DocURL"] = boxJSON.Documentation;
+		}
+		if( len( boxJSON.License[1].URL ) ) {
+			manifestParams["Bundle-License"] = boxJSON.License[1].URL;
+		}
+		// after check for the manifest portion of the box.json
+		// because if the manifest keys override the ones above in the normal box.json
+		if( len( boxJSON.manifest ) ) {
+			var boxJSonManifest = boxJSON.manifest;
+			for( var itemKey in boxJSonManifest ) {
+				manifestParams[itemKey] = boxJSonManifest[itemKey];
+			}
+		}
+		return manifestParams;
 	}
 
     function getJarNameFromPackage( string currentFolder ){
-		job.addLog( ' jarName is empty ' );
-		job.addLog( ' currentProjectRoot-> #currentFolder# ' );
+		//job.addLog( ' jarName is empty ' );
+		//job.addLog( ' currentProjectRoot-> #currentFolder# ' );
 		jarName = '';
 
 		if( packageService.isPackage( currentFolder ) ) {
 
-			job.addLog( ' dir is a package ' );
-			job.addLog( ' inside getJarNameFromPackage() ' );
+			//job.addLog( ' dir is a package ' );
+			//job.addLog( ' inside getJarNameFromPackage() ' );
 			var boxJSON = packageService.readPackageDescriptor( currentFolder );
 			var packageName = "";
 			var packageVersion = "";
