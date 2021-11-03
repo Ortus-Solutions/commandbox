@@ -671,7 +671,7 @@ component accessors="true" singleton {
 				tokens[1] = right( tokens[1], len( tokens[1] ) - 1 );
 
 				// If it looks like we have named params, convert the "name" to be named
-				if( tokens.len() > 1 && tokens[2] contains '=' ) {
+				if( tokens.len() > 1 && parser.parseParameters( [ tokens[2] ], [] ).namedParameters.count() ) {
 					tokens[1] = 'name=' & tokens[1];
 				}
 
