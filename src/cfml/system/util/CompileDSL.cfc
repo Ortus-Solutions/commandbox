@@ -99,7 +99,9 @@ component accessors=true {
     }
 
 	function toJar( string jarName='' ) {
-		setJarNameString( jarName );
+		if( jarName.len() ) {
+			setJarNameString( jarName );
+		}
 		setCreateJar( true );
 		return this;
 	}
@@ -119,10 +121,11 @@ component accessors=true {
 		return this;
 	}
 
-	function addToManifest( required string customManifest ) {
+	//no longer needed
+	/* function addToManifest( required string customManifest ) {
 		setCustomManifest( fileSystemutil.resolvePath( customManifest, getProjectRoot() ) );
 		return this;
-	}
+	} */
 
 	function manifest( required struct customParams ) {
 		setCustomManifestParams( customParams );
@@ -288,12 +291,14 @@ component accessors=true {
 
 				}
 				jarName &= word & ".jar";
-				setJarNameString( jarName );
-				//job.addLog( ' jarName= #jarName# ' );
 
             }
 
         }
+
+		setJarNameString( jarName );
+		//job.addLog( ' jarName= #jarName# ' );
+		//job.addLog( ' jarName*= #getJarNameString()# ' );
 
         job.complete();
 
@@ -308,12 +313,13 @@ component accessors=true {
             //j = 'run "#getJavaBinFolder()#jar" --file #currentLibsDir##jarName# #getJarOptionsString()#';
             //j = 'run "#getJavaBinFolder()#jar" --create --file #currentLibsDir#testX.jar "@#tempSrcFileName#" #getJarOptionsString()#';
 			if( !getCustomManifest().len() ) {
-				j = 'run ""#getJavaBinFolder()#jar" cf "#currentLibsDir#\#jarName#" "@#tempSrcFileName#" #getJarOptionsString()#"';
+				j = 'run ""#getJavaBinFolder()#jar" cf "#currentLibsDir##jarName#" "@#tempSrcFileName#" #getJarOptionsString()#"';
 			} else {
-            	j = 'run ""#getJavaBinFolder()#jar" cfm "#currentLibsDir#\#jarName#" "#variables.customManifest#" "@#tempSrcFileName#" #getJarOptionsString()#"';
+            	j = 'run ""#getJavaBinFolder()#jar" cfm "#currentLibsDir##jarName#" "#variables.customManifest#" "@#tempSrcFileName#" #getJarOptionsString()#"';
 			}
             job.addLog( j );
-            command( j ).run(echo=true);
+            //command( j ).run(echo=true);
+			command( j ).run();
 
         } finally {
 			if ( FileExists( tempSrcFileName ) ) {
@@ -339,7 +345,7 @@ component accessors=true {
 
 			j = 'run ""#getJavaBinFolder()#jar" uf "#currentLibsDir##jarName#" -C #currentResourcePath# . "'
 
-			job.addLog( j );
+			//job.addLog( j );
 			//command( j ).run(echo=true);
 			command( j ).run();
 
@@ -407,6 +413,15 @@ component accessors=true {
 			try {
 				writeUpdateManifestFile( tempUpdateManifestFileName, paramStruct );
 			} finally {
+				/*
+				if the file was created then we have to save the filename and path
+				to use it when creating the jar
+				*/
+				if( FileExists( tempUpdateManifestFileName ) ) {
+					setCustomManifest( tempUpdateManifestFileName );
+				}
+
+				// not needed here any more
 				/* if ( FileExists( tempUpdateManifestFileName ) ) {
 					fileDelete( tempUpdateManifestFileName );
 				} */
