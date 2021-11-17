@@ -280,21 +280,31 @@ component accessors="true" singleton {
 
 		// Look up the server that we're starting
 		var serverDetails = resolveServerDetails( arguments.serverProps );
-		// This will allow settings in the "env" object to also refernce env vars which are already set
-		systemSettings.expandDeepSystemSettings( serverDetails.serverJSON.env ?: {} );
-		// Load up our fully-realized server.json-specific env vars into CommandBox's environment
-		systemSettings.setDeepSystemSettings( serverDetails.serverJSON.env ?: {}, '' );
 		// Get defaults
 		var defaults = getDefaultServerJSON();
-		
-		interceptorService.announceInterception( 'preServerStart', { serverDetails=serverDetails, serverProps=serverProps, serverInfo=serverDetails.serverInfo, serverJSON=serverDetails.serverJSON, defaults=defaults } );
-
 		var defaultName = serverDetails.defaultName;
 		var defaultwebroot = serverDetails.defaultwebroot;
 		var defaultServerConfigFile = serverDetails.defaultServerConfigFile;
 		var defaultServerConfigFileDirectory = getDirectoryFromPath( defaultServerConfigFile );
 		var serverJSON = serverDetails.serverJSON;
+		var serverJSONToSave = duplicate( serverJSON );
 		var serverInfo = serverDetails.serverinfo;
+		
+		systemSettings.expandDeepSystemSettings( serverJSON );
+		systemSettings.expandDeepSystemSettings( defaults );
+		// Mix in environment variable overrides like BOX_SERVER_PROFILE
+		loadOverrides( serverJSON, serverInfo, serverProps.verbose ?: serverJSON.verbose ?: defaults.verbose ?: false );
+		
+		// Load up our fully-realized server.json-specific env vars into CommandBox's environment
+		systemSettings.setDeepSystemSettings( serverDetails.serverJSON.env ?: {}, '' );
+		
+		interceptorService.announceInterception( 'preServerStart', { serverDetails=serverDetails, serverProps=serverProps, serverInfo=serverDetails.serverInfo, serverJSON=serverDetails.serverJSON, defaults=defaults } );
+
+		// In case the interceptor changed them
+		defaultName = serverDetails.defaultName;
+		defaultwebroot = serverDetails.defaultwebroot;
+		defaultServerConfigFile = serverDetails.defaultServerConfigFile;
+		defaultServerConfigFileDirectory = getDirectoryFromPath( defaultServerConfigFile );
 
 		// If the server is already running, make sure the user really wants to do this.
 		if( isServerRunning( serverInfo ) && !(serverProps.force ?: false ) && !(serverProps.dryRun ?: false ) ) {
@@ -359,10 +369,10 @@ component accessors="true" singleton {
 			// Only need switch cases for properties that are nested or use different name
 			switch(prop) {
 			    case "port":
-					serverJSON[ 'web' ][ 'http' ][ 'port' ] = serverProps[ prop ];
+					serverJSONToSave[ 'web' ][ 'http' ][ 'port' ] = serverProps[ prop ];
 			         break;
 			    case "host":
-					serverJSON[ 'web' ][ 'host' ] = serverProps[ prop ];
+					serverJSONToSave[ 'web' ][ 'host' ] = serverProps[ prop ];
 			         break;
 			    case "directory":
 			    	// This path is canonical already.
@@ -371,10 +381,10 @@ component accessors="true" singleton {
 			    	if( thisDirectory contains configPath ) {
 			    		thisDirectory = replaceNoCase( thisDirectory, configPath, '' );
 			    	}
-					serverJSON[ 'web' ][ 'webroot' ] = thisDirectory;
+					serverJSONToSave[ 'web' ][ 'webroot' ] = thisDirectory;
 			         break;
 			    case "trayEnable":
-					serverJSON[ 'trayEnable' ] = serverProps[ prop ];
+					serverJSONToSave[ 'trayEnable' ] = serverProps[ prop ];
 			         break;
 			    case "trayIcon":
 			    	// This path is canonical already.
@@ -383,10 +393,10 @@ component accessors="true" singleton {
 			    	if( thisFile contains configPath ) {
 			    		thisFile = replaceNoCase( thisFile, configPath, '' );
 			    	}
-					serverJSON[ 'trayIcon' ] = thisFile;
+					serverJSONToSave[ 'trayIcon' ] = thisFile;
 			         break;
 			    case "stopPort":
-					serverJSON[ 'stopsocket' ] = serverProps[ prop ];
+					serverJSONToSave[ 'stopsocket' ] = serverProps[ prop ];
 			         break;
 			    case "webConfigDir":
 			    	// This path is canonical already.
@@ -395,7 +405,7 @@ component accessors="true" singleton {
 			    	if( thisDirectory contains configPath ) {
 			    		thisDirectory = replaceNoCase( thisDirectory, configPath, '' );
 			    	}
-					serverJSON[ 'app' ][ 'webConfigDir' ] = thisDirectory;
+					serverJSONToSave[ 'app' ][ 'webConfigDir' ] = thisDirectory;
 			        break;
 			    case "serverConfigDir":
 			    	// This path is canonical already.
@@ -404,10 +414,10 @@ component accessors="true" singleton {
 			    	if( thisDirectory contains configPath ) {
 			    		thisDirectory = replaceNoCase( thisDirectory, configPath, '' );
 			    	}
-					serverJSON[ 'app' ][ 'serverConfigDir' ] = thisDirectory;
+					serverJSONToSave[ 'app' ][ 'serverConfigDir' ] = thisDirectory;
 			         break;
 			    case "libDirs":
-					serverJSON[ 'app' ][ 'libDirs' ] = serverProps[ 'libDirs' ]
+					serverJSONToSave[ 'app' ][ 'libDirs' ] = serverProps[ 'libDirs' ]
 						.listMap( function( thisLibDir ) {
 							// This path is canonical already.
 					    	var thisLibDir = replace( thisLibDir, '\', '/', 'all' );
@@ -421,10 +431,10 @@ component accessors="true" singleton {
 
 			         break;
 			    case "cfengine":
-					serverJSON[ 'app' ][ 'cfengine' ] = serverProps[ prop ];
+					serverJSONToSave[ 'app' ][ 'cfengine' ] = serverProps[ prop ];
 			         break;
 			    case "restMappings":
-					serverJSON[ 'app' ][ 'restMappings' ] = serverProps[ prop ];
+					serverJSONToSave[ 'app' ][ 'restMappings' ] = serverProps[ prop ];
 			         break;
 			    case "WARPath":
 			    	// This path is canonical already.
@@ -433,7 +443,7 @@ component accessors="true" singleton {
 			    	if( thisFile contains configPath ) {
 			    		thisFile = replaceNoCase( thisFile, configPath, '' );
 			    	}
-					serverJSON[ 'app' ][ 'WARPath' ] = thisFile;
+					serverJSONToSave[ 'app' ][ 'WARPath' ] = thisFile;
 			         break;
 			    case "serverHomeDirectory":
 			    	// This path is canonical already.
@@ -442,37 +452,37 @@ component accessors="true" singleton {
 			    	if( thisDirectory contains configPath ) {
 			    		thisDirectory = replaceNoCase( thisDirectory, configPath, '' );
 			    	}
-					serverJSON[ 'app' ][ 'serverHomeDirectory' ] = thisDirectory;
+					serverJSONToSave[ 'app' ][ 'serverHomeDirectory' ] = thisDirectory;
 			        break;
 			    case "HTTPEnable":
-					serverJSON[ 'web' ][ 'HTTP' ][ 'enable' ] = serverProps[ prop ];
+					serverJSONToSave[ 'web' ][ 'HTTP' ][ 'enable' ] = serverProps[ prop ];
 			         break;
 			    case "SSLEnable":
-					serverJSON[ 'web' ][ 'SSL' ][ 'enable' ] = serverProps[ prop ];
+					serverJSONToSave[ 'web' ][ 'SSL' ][ 'enable' ] = serverProps[ prop ];
 			         break;
 			    case "SSLPort":
-					serverJSON[ 'web' ][ 'SSL' ][ 'port' ] = serverProps[ prop ];
+					serverJSONToSave[ 'web' ][ 'SSL' ][ 'port' ] = serverProps[ prop ];
 			         break;
 			    case "AJPEnable":
-					serverJSON[ 'web' ][ 'AJP' ][ 'enable' ] = serverProps[ prop ];
+					serverJSONToSave[ 'web' ][ 'AJP' ][ 'enable' ] = serverProps[ prop ];
 			         break;
 			    case "AJPPort":
-					serverJSON[ 'web' ][ 'AJP' ][ 'port' ] = serverProps[ prop ];
+					serverJSONToSave[ 'web' ][ 'AJP' ][ 'port' ] = serverProps[ prop ];
 			         break;
 			    case "SSLCertFile":
-					serverJSON[ 'web' ][ 'SSL' ][ 'certFile' ] = serverProps[ prop ];
+					serverJSONToSave[ 'web' ][ 'SSL' ][ 'certFile' ] = serverProps[ prop ];
 			         break;
 			    case "SSLKeyFile":
-					serverJSON[ 'web' ][ 'SSL' ][ 'keyFile' ] = serverProps[ prop ];
+					serverJSONToSave[ 'web' ][ 'SSL' ][ 'keyFile' ] = serverProps[ prop ];
 			         break;
 			    case "SSLKeyPass":
-					serverJSON[ 'web' ][ 'SSL' ][ 'keyPass' ] = serverProps[ prop ];
+					serverJSONToSave[ 'web' ][ 'SSL' ][ 'keyPass' ] = serverProps[ prop ];
 			         break;
 			    case "welcomeFiles":
-					serverJSON[ 'web' ][ 'welcomeFiles' ] = serverProps[ prop ];
+					serverJSONToSave[ 'web' ][ 'welcomeFiles' ] = serverProps[ prop ];
 			         break;
 			    case "rewritesEnable":
-					serverJSON[ 'web' ][ 'rewrites' ][ 'enable' ] = serverProps[ prop ];
+					serverJSONToSave[ 'web' ][ 'rewrites' ][ 'enable' ] = serverProps[ prop ];
 			         break;
 			    case "rewritesConfig":
 			    	// This path is canonical already.
@@ -481,45 +491,40 @@ component accessors="true" singleton {
 			    	if( thisFile contains configPath ) {
 			    		thisFile = replaceNoCase( thisFile, configPath, '' );
 			    	}
-					serverJSON[ 'web' ][ 'rewrites' ][ 'config' ] = thisFile;
+					serverJSONToSave[ 'web' ][ 'rewrites' ][ 'config' ] = thisFile;
 			         break;
 			    case "blockCFAdmin":
-					serverJSON[ 'web' ][ 'blockCFAdmin' ] = serverProps[ prop ];
+					serverJSONToSave[ 'web' ][ 'blockCFAdmin' ] = serverProps[ prop ];
 			         break;
 			    case "heapSize":
-					serverJSON[ 'JVM' ][ 'heapSize' ] = serverProps[ prop ];
+					serverJSONToSave[ 'JVM' ][ 'heapSize' ] = serverProps[ prop ];
 			         break;
 			    case "minHeapSize":
-					serverJSON[ 'JVM' ][ 'minHeapSize' ] = serverProps[ prop ];
+					serverJSONToSave[ 'JVM' ][ 'minHeapSize' ] = serverProps[ prop ];
 			         break;
 			    case "JVMArgs":
-					serverJSON[ 'JVM' ][ 'args' ] = serverProps[ prop ];
+					serverJSONToSave[ 'JVM' ][ 'args' ] = serverProps[ prop ];
 			         break;
 			    case "javaHomeDirectory":
-					serverJSON[ 'JVM' ][ 'javaHome' ] = serverProps[ prop ];
+					serverJSONToSave[ 'JVM' ][ 'javaHome' ] = serverProps[ prop ];
 			         break;
 			    case "javaVersion":
-					serverJSON[ 'JVM' ][ 'javaVersion' ] = serverProps[ prop ];
+					serverJSONToSave[ 'JVM' ][ 'javaVersion' ] = serverProps[ prop ];
 			         break;
 				case "runwarJarPath":
-					serverJSON[ 'runwar' ][ 'jarPath' ] = serverProps[ prop ];
+					serverJSONToSave[ 'runwar' ][ 'jarPath' ] = serverProps[ prop ];
 					 break;
 			    case "runwarArgs":
-					serverJSON[ 'runwar' ][ 'args' ] = serverProps[ prop ];
+					serverJSONToSave[ 'runwar' ][ 'args' ] = serverProps[ prop ];
 			         break;
 			    default:
-					serverJSON[ prop ] = serverProps[ prop ];
+					serverJSONToSave[ prop ] = serverProps[ prop ];
 			} // end switch
 		} // for loop
 
-		if( !serverJSON.isEmpty() && serverProps.saveSettings ) {
-			saveServerJSON( defaultServerConfigFile, serverJSON );
+		if( !serverJSONToSave.isEmpty() && serverProps.saveSettings ) {
+			saveServerJSON( defaultServerConfigFile, serverJSONToSave );
 		}
-
-		systemSettings.expandDeepSystemSettings( serverJSON );
-		systemSettings.expandDeepSystemSettings( defaults );
-		// Mix in environment variable overrides like BOX_SERVER_PROFILE
-		loadOverrides( serverJSON, serverInfo );
 
 		// These are already hammered out above, so no need to go through all the defaults.
 		serverInfo.serverConfigFile	= defaultServerConfigFile;
@@ -1045,9 +1050,7 @@ component accessors="true" singleton {
 			serverInfo.engineName = installDetails.engineName;
 			serverInfo.engineVersion = installDetails.version;
 			serverInfo.appFileSystemPath = serverInfo.webroot;
-
-			// Make current settings available to package scripts
-			setServerInfo( serverInfo );
+			
 			// This interception point can be used for additional configuration of the engine before it actually starts.
 			interceptorService.announceInterception( 'onServerInstall', { serverInfo=serverInfo, installDetails=installDetails, serverJSON=serverJSON, defaults=defaults, serverProps=serverProps, serverDetails=serverDetails } );
 
@@ -2694,16 +2697,19 @@ component accessors="true" singleton {
 	/**
 	* Loads config settings from env vars or Java system properties
 	*/
-	function loadOverrides( serverJSON, serverInfo ){
+	function loadOverrides( serverJSON, serverInfo, boolean verbose=false ){
+		var debugMessages = [];
+		var job = wirebox.getInstance( 'interactiveJob' );
 		var overrides={};
 		
 		// Look for individual BOX settings to import.		
-		var processVarsUDF = function( envVar, value ) {
+		var processVarsUDF = function( envVar, value, string source ) {
 			// Loop over any that look like box_server_xxx
 			if( envVar.len() > 11 && reFindNoCase( 'box[_\.]server[_\.]', left( envVar, 11 ) ) ) {
 				// proxy_host gets turned into proxy.host
 				// Note, the asssumption is made that no config setting will ever have a legitimate underscore in the name
 				var name = right( envVar, len( envVar ) - 11 ).replace( '_', '.', 'all' );
+				debugMessages.append( 'Overridding [#name#] with #source# [#envVar#]' );
 				JSONService.set( JSON=overrides, properties={ '#name#' : value }, thisAppend=true );
 			}
 		};
@@ -2711,23 +2717,29 @@ component accessors="true" singleton {
 		// Get all OS env vars
 		var envVars = system.getenv();
 		for( var envVar in envVars ) {
-			processVarsUDF( envVar, envVars[ envVar ] );
+			processVarsUDF( envVar, envVars[ envVar ], 'OS environment variable' );
 		}
 		
 		// Get all System Properties
 		var props = system.getProperties();
 		for( var prop in props ) {
-			processVarsUDF( prop, props[ prop ] );
+			processVarsUDF( prop, props[ prop ], 'system property' );
 		}
 
 		// Get all box environemnt variable
 		var envVars = systemSettings.getAllEnvironmentsFlattened();
 		for( var envVar in envVars ) {
-			processVarsUDF( envVar, envVars[ envVar ] );
+			processVarsUDF( envVar, envVars[ envVar ], 'box environment variable' );
 		}
 	
 		if( overrides.keyExists( 'profile' ) ) {
 			serverInfo.envVarHasProfile=true
+		}
+	
+		if( verbose && debugMessages.len() ) {
+			job.start( 'Overriding server.json values from env vars' );
+			debugMessages.each( (l)=>job.addLog( l ) );
+	    	job.complete( verbose );
 		}
 	
 		JSONService.mergeData( serverJSON, overrides );
