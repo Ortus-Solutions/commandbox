@@ -217,6 +217,12 @@ component accessors="true" singleton {
 				'XNIOOptions' : duplicate( d.runwar.XNIOOptions ?: {} ),
 				// Duplicate so onServerStart interceptors don't actually change config settings via reference.
 				'undertowOptions' : duplicate( d.runwar.undertowOptions ?: {} )
+			},
+			'ModCFML' : {
+				'enable' : d.ModCFML.enable ?: false,
+				'maxContexts' : d.ModCFML.maxContexts ?: 200,
+				'sharedKey' : d.ModCFML.sharedKey ?: '',
+				'requireSharedKey' : d.ModCFML.requireSharedKey ?: true
 			}
 		};
 	}
@@ -884,7 +890,7 @@ component accessors="true" singleton {
 
 		if( serverJSON.keyExists( 'web' ) && serverJSON.web.keyExists( 'rules' ) ) {
 			if( !isArray( serverJSON.web.rules ) ) {
-				throw( message="'rules' key in your box.json must be an array of strings.", type="commandException" );
+				throw( message="'rules' key in your server.json must be an array of strings.", type="commandException" );
 			}
 			serverInfo.webRules.append( serverJSON.web.rules, true);
 		}
@@ -980,7 +986,7 @@ component accessors="true" singleton {
 		if( isDefined( 'serverJSON.app.serverHomeDirectory' ) && len( serverJSON.app.serverHomeDirectory ) ) { serverJSON.app.serverHomeDirectory = fileSystemUtil.resolvePath( serverJSON.app.serverHomeDirectory, defaultServerConfigFileDirectory ); }
 		if( isDefined( 'defaults.app.serverHomeDirectory' ) && len( defaults.app.serverHomeDirectory )  ) { defaults.app.serverHomeDirectory = fileSystemUtil.resolvePath( defaults.app.serverHomeDirectory, defaultwebroot ); }
 		serverInfo.serverHomeDirectory			= serverProps.serverHomeDirectory			?: serverJSON.app.serverHomeDirectory			?: defaults.app.serverHomeDirectory;
-		serverInfo.singleServerHome			= serverJSON.app.singleServerHome			?: defaults.app.singleServerHome;
+		serverInfo.singleServerHome				= serverJSON.app.singleServerHome			?: defaults.app.singleServerHome;
 
 		if( len( serverJSON.app.webXMLOverride ?: '' ) ){ serverJSON.app.webXMLOverride = fileSystemUtil.resolvePath( serverJSON.app.webXMLOverride, defaultServerConfigFileDirectory ); }
 		if( len( defaults.app.webXMLOverride ?: '' ) ){ defaults.app.webXMLOverride = fileSystemUtil.resolvePath( defaults.app.webXMLOverride, defaultwebroot ); }
@@ -993,8 +999,16 @@ component accessors="true" singleton {
 		serverInfo.webXMLOverrideForce = serverJSON.app.webXMLOverrideForce ?: defaults.app.webXMLOverrideForce;
     
 		serverInfo.sessionCookieSecure			= serverJSON.app.sessionCookieSecure			?: defaults.app.sessionCookieSecure;
-		serverInfo.sessionCookieHTTPOnly			= serverJSON.app.sessionCookieHTTPOnly			?: defaults.app.sessionCookieHTTPOnly;
-
+		serverInfo.sessionCookieHTTPOnly		= serverJSON.app.sessionCookieHTTPOnly			?: defaults.app.sessionCookieHTTPOnly;
+				
+		serverInfo.ModCFMLenable				= serverJSON.ModCFML.enable						?: defaults.ModCFML.enable;
+		serverInfo.ModCFMLMaxContexts			= serverJSON.ModCFML.maxContexts				?: defaults.ModCFML.maxContexts;
+		serverInfo.ModCFMLSharedKey				= serverJSON.ModCFML.sharedKey					?: defaults.ModCFML.sharedKey;
+		serverInfo.ModCFMLRequireSharedKey		= serverJSON.ModCFML.requireSharedKey			?: defaults.ModCFML.requireSharedKey;
+		
+		// When we add native support for multiple contexts in the server.json, that will also set this to true
+		serverInfo.multiContext			= serverInfo.ModCFMLenable;
+		
 		if( serverInfo.verbose ) {
 			job.addLog( "start server in - " & serverInfo.webroot );
 			job.addLog( "server name - " & serverInfo.name );
@@ -1050,7 +1064,9 @@ component accessors="true" singleton {
 			serverInfo.engineName = installDetails.engineName;
 			serverInfo.engineVersion = installDetails.version;
 			serverInfo.appFileSystemPath = serverInfo.webroot;
-			
+
+			// Make current settings available to package scripts
+			setServerInfo( serverInfo );
 			// This interception point can be used for additional configuration of the engine before it actually starts.
 			interceptorService.announceInterception( 'onServerInstall', { serverInfo=serverInfo, installDetails=installDetails, serverJSON=serverJSON, defaults=defaults, serverProps=serverProps, serverDetails=serverDetails } );
 
@@ -1319,7 +1335,11 @@ component accessors="true" singleton {
 			args.append( '--preferred-browser' ).append( ConfigService.getSetting( 'preferredBrowser' ) );
 		}
 
-		args.append( serverInfo.runwarArgs.listToArray( ' ' ), true );
+		args.append( parser.tokenizeInput( serverInfo.runwarArgs.replace( ';', '\;', 'all' ) )
+			.map( function( i ){
+				// unwrap quotes, and unescape any special chars like \" inside the string
+				return parser.replaceEscapedChars( parser.removeEscapedChars( parser.unwrapQuotes( i ) ) );
+			}), true );
 
 		if( serverInfo.trayEnable ) {
 			args
@@ -1503,6 +1523,19 @@ component accessors="true" singleton {
 		if( serverInfo.webRules.len() ){
 			fileWrite( serverInfo.predicateFile, serverInfo.webRules.filter( (r)=>!trim(r).startsWith('##') ).toList( CR ) );
 			args.append( '--predicate-file' ).append( serverInfo.predicateFile );
+		}
+
+		if( serverInfo.ModCFMLenable ){
+			args.append( '--auto-create-contexts' ).append( serverInfo.ModCFMLenable );
+			if( len( serverInfo.ModCFMLMaxContexts ) && isNumeric( serverInfo.ModCFMLMaxContexts ) && serverInfo.ModCFMLMaxContexts > 0 ) {
+				args.append( '--auto-create-contexts-max' ).append( serverInfo.ModCFMLMaxContexts );
+			}
+			if( !len( serverInfo.ModCFMLSharedKey ) && serverInfo.ModCFMLRequireSharedKey ) {
+				throw( message='Since ModeCFML support is enabled, [ModCFML.sharedKey] is required for security.', detail='Disable IN DEVELOPMENT ONLY with [ModCFML.RequireSharedKey=false].', type="commandException" );
+			}
+			if( len( serverInfo.ModCFMLSharedKey ) ) {
+				args.append( '--auto-create-contexts-secret' ).append( serverInfo.ModCFMLSharedKey );	
+			}
 		}
 
 		// change status to starting + persist

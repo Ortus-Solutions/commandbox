@@ -398,6 +398,12 @@ component accessors="true" singleton="true" {
 		var updateMade = false;
 		var package = lcase( cfengine );
 		
+		// if we're in multi-context mode, we need to deal with more than one web context, so the path MUST be dynamic
+		// If the user wants the default Lucee behavior, they can set this to "{web-root-directory}/WEB-INF/lucee/"
+		// If the path doesn't look to already be dynamic, we'll make it so
+		if( serverInfo.multiContext && not fullWebConfigDir contains '{web-root-directory}'  && not fullWebConfigDir contains '{web-context-hash}'  ) {
+			fullWebConfigDir &= '-{web-context-hash}'
+		}
 		updateMade = ensurePropertServletInitParam( webXML, '#package#.loader.servlet.CFMLServlet', "#package#-web-directory", fullWebConfigDir );
 		updateMade = ensurePropertServletInitParam( webXML, '#package#.loader.servlet.CFMLServlet', "#package#-server-directory", fullServerConfigDir ) || updateMade;
 		
