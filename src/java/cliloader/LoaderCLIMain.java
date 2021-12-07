@@ -528,7 +528,8 @@ public class LoaderCLIMain{
 	public static int listIndexOf( ArrayList< String > argList, String text ){
 		int index = 0;
 		for( String item : argList) {
-			if( item.startsWith( text ) || item.startsWith( "-" + text ) ) {
+			if( item.toLowerCase().startsWith( text.toLowerCase() ) 
+					|| item.toLowerCase().startsWith( "-" + text.toLowerCase() ) ) {
 				return index;
 			}
 			index++;
