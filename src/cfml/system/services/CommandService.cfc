@@ -193,15 +193,16 @@ component accessors="true" singleton {
 				previousCommandSeparator = commandInfo.originalLine;
 				continue;
 			}
-
+			
 			if( previousCommandSeparator == '&&' && lastCommandErrored ) {
+				continue;
 				return result ?: '';
 			}
 
 			if( previousCommandSeparator == '||' && !lastCommandErrored ) {
+				continue;
 				return result ?: '';
 			}
-
 
 			// If nothing was found, bail out here.
 			if( !commandInfo.found ){
@@ -1134,7 +1135,19 @@ component accessors="true" singleton {
 
 					// Overwrite it with an actual Globber instance seeded with the original canonical path as the pattern.
 					var originalPath = parameterInfo.namedParameters[ paramName ];
-					var newPath = originalPath.listMap( (p) => fileSystemUtil.resolvePath( p ) );
+					var newPath = originalPath.listMap( (p) => {
+						p = fileSystemUtil.resolvePath( p );
+						// The globber won't match a dir if you include the trailing slash, so pull them off
+						// This allows 
+						// > rm tests/ 
+						// or
+						// > touch tests
+						// to affect the "tests" folder itself
+						if( p.endsWith( '/' ) || p.endsWith( '\' ) ) {
+							p = p.left(-1);
+						}
+						return p;
+					} );
 
 					parameterInfo.namedParameters[ paramName ] = wirebox.getInstance( 'Globber' )
 						.setPattern( newPath );
