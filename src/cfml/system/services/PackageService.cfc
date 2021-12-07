@@ -622,10 +622,7 @@ component accessors="true" singleton {
 
 		if( shellWillReload && artifactDescriptor.createPackageDirectory && fileExists( installDirectory & '/ModuleConfig.cfc' ) ) {
 			consoleLogger.warn( 'Activating your new module for instant use...' );
-			moduleService.registerAndActivateModule( installDirectory.listLast( '/\' ), fileSystemUtil.makePathRelative( installDirectory ) );
-			//shell.reload( clear=false );
-			//consoleLogger.warn( '.' );
-			//consoleLogger.warn( 'Please sit tight while your shell reloads...' );
+			moduleService.registerAndActivateModule( installDirectory.listLast( '/\' ), fileSystemUtil.makePathRelative( installDirectory ).listToArray( '/\' ).slice( 1, -1 ).toList( '.' ) );
 		}
 		
 		interceptorService.announceInterception( 'postInstall', { installArgs=arguments, installDirectory=installDirectory } );
