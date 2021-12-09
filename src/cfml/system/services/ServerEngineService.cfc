@@ -79,7 +79,7 @@ component accessors="true" singleton="true" {
 			}
 		}
 
-		// Users won't be able to create datasources if this file isn't created.  
+		// Users won't be able to create datasources if this file isn't created.
 		// It needs to be different for every install, which is why we're creating it on the fly.
 		var seedPropertiesPath = installDetails.installDir & "/WEB-INF/cfusion/lib/seed.properties";
 		ensureSeedProperties( seedPropertiesPath );
@@ -96,6 +96,8 @@ component accessors="true" singleton="true" {
 		if( len( serverInfo.webXMLOverride ) ){
 			serverInfo.webXMLOverrideActual = serverInfo.webXML.replace( 'web.xml', 'web-override.xml' );
 			configureWebXML( cfengine="lucee", version=installDetails.version, source=serverInfo.webXMLOverride, destination=serverInfo.webXMLOverrideActual, serverInfo=serverInfo, installDetails=installDetails, forceUpdate=true );
+		} else {
+			serverInfo.webXMLOverrideActual = '';
 		}
 		return installDetails;
 	}
@@ -109,6 +111,8 @@ component accessors="true" singleton="true" {
 		if( len( serverInfo.webXMLOverride ) ){
 			serverInfo.webXMLOverrideActual = serverInfo.webXML.replace( 'web.xml', 'web-override.xml' );
 			configureWebXML( cfengine="lucee", version=installDetails.version, source=serverInfo.webXMLOverride, destination=serverInfo.webXMLOverrideActual, serverInfo=serverInfo, installDetails=installDetails, forceUpdate=true );
+		} else {
+			serverInfo.webXMLOverrideActual = '';
 		}
 		return installDetails;
 	}
@@ -206,7 +210,7 @@ component accessors="true" singleton="true" {
 				if( serverInfo.singleServerHome ) {
 					installDetails.installDir = destination & engineName;
 				} else {
-					installDetails.installDir = destination & engineName & "-" & replace( satisfyingVersion, '+', '.', 'all' );	
+					installDetails.installDir = destination & engineName & "-" & replace( satisfyingVersion, '+', '.', 'all' );
 				}
 			}
 			installDetails.version = satisfyingVersion;
@@ -277,7 +281,7 @@ component accessors="true" singleton="true" {
 			unpackLuceeJar( thislib, installDetails.version );
 
 			if( !fileExists( thisWebinf & '/web.xml' ) ) {
-				fileCopy( expandPath( '/commandbox/system/config/web.xml' ), thisWebinf & '/web.xml');	
+				fileCopy( expandPath( '/commandbox/system/config/web.xml' ), thisWebinf & '/web.xml');
 			}
 
 			// Mark this WAR as being exploded already
@@ -397,7 +401,7 @@ component accessors="true" singleton="true" {
 		var webXML = XMLParse( source );
 		var updateMade = false;
 		var package = lcase( cfengine );
-		
+
 		// if we're in multi-context mode, we need to deal with more than one web context, so the path MUST be dynamic
 		// If the user wants the default Lucee behavior, they can set this to "{web-root-directory}/WEB-INF/lucee/"
 		// If the path doesn't look to already be dynamic, we'll make it so
@@ -406,18 +410,18 @@ component accessors="true" singleton="true" {
 		}
 		updateMade = ensurePropertServletInitParam( webXML, '#package#.loader.servlet.CFMLServlet', "#package#-web-directory", fullWebConfigDir );
 		updateMade = ensurePropertServletInitParam( webXML, '#package#.loader.servlet.CFMLServlet', "#package#-server-directory", fullServerConfigDir ) || updateMade;
-		
+
 		// Lucee 5+ has a LuceeServlet as well as will create the WEB-INF by default in your web root
-		if( arguments.cfengine == 'lucee' && val( listFirst( arguments.version, '.' )) >= 5 ) {			
+		if( arguments.cfengine == 'lucee' && val( listFirst( arguments.version, '.' )) >= 5 ) {
 			updateMade = ensurePropertServletInitParam( webXML, '#package#.loader.servlet.LuceeServlet', "#package#-web-directory", fullWebConfigDir ) || updateMade;
 			updateMade = ensurePropertServletInitParam( webXML, '#package#.loader.servlet.LuceeServlet', "#package#-server-directory", fullServerConfigDir ) || updateMade;
 		}
 		if( updateMade || !fileExists( destination ) || forceUpdate ) {
-			writeXMLFile( webXML, destination );	
+			writeXMLFile( webXML, destination );
 		}
 		return true;
 	}
-	
+
 
 	/**
 	* Ensure a given servlet has a specific init param value
@@ -426,7 +430,7 @@ component accessors="true" singleton="true" {
 	* @servletClass Name of servlet to check
 	* @initParamName Name of init param to ensure exists
 	* @initParamValue Value init param needs to have
-	* 
+	*
 	* @returns true if changes were made, false if nothing was updated.
 	**/
 	function ensurePropertServletInitParam( webXML, string servletClass, string initParamName, string initParamValue ) {
@@ -437,7 +441,7 @@ component accessors="true" singleton="true" {
 		if( !servlets.len() ) {
 			return false;
 		}
-		
+
 		// If this servlet already has an init-param of this name, ensure the value is correct
 		for( var initParam in servlets[1].XMLParent.XMLChildren.filter( (x)=>x.XMLName=='init-param' ) ) {
 			if( !isNull( initParam[ 'param-name' ].XMLText ) && initParam[ 'param-name' ].XMLText == initParamName ) {
@@ -449,7 +453,7 @@ component accessors="true" singleton="true" {
 				}
 			}
 		}
-		
+
 		// if we didn't find a matching init-param above then add it now
 		var initParam = xmlElemnew(webXML,"http://java.sun.com/xml/ns/javaee","init-param");
 		initParam.XmlChildren[1] = xmlElemnew(webXML,"param-name");
