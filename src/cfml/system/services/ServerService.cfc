@@ -222,7 +222,8 @@ component accessors="true" singleton {
 				'enable' : d.ModCFML.enable ?: false,
 				'maxContexts' : d.ModCFML.maxContexts ?: 200,
 				'sharedKey' : d.ModCFML.sharedKey ?: '',
-				'requireSharedKey' : d.ModCFML.requireSharedKey ?: true
+				'requireSharedKey' : d.ModCFML.requireSharedKey ?: true,
+				'createVirtualDirectories' : d.ModCFML.createVirtualDirectories ?: true
 			}
 		};
 	}
@@ -1005,6 +1006,7 @@ component accessors="true" singleton {
 		serverInfo.ModCFMLMaxContexts			= serverJSON.ModCFML.maxContexts				?: defaults.ModCFML.maxContexts;
 		serverInfo.ModCFMLSharedKey				= serverJSON.ModCFML.sharedKey					?: defaults.ModCFML.sharedKey;
 		serverInfo.ModCFMLRequireSharedKey		= serverJSON.ModCFML.requireSharedKey			?: defaults.ModCFML.requireSharedKey;
+		serverInfo.ModCFMLcreateVDirs			= serverJSON.ModCFML.createVirtualDirectories	?: defaults.ModCFML.createVirtualDirectories;
 		
 		// When we add native support for multiple contexts in the server.json, that will also set this to true
 		serverInfo.multiContext			= serverInfo.ModCFMLenable;
@@ -1535,6 +1537,9 @@ component accessors="true" singleton {
 			}
 			if( len( serverInfo.ModCFMLSharedKey ) ) {
 				args.append( '--auto-create-contexts-secret' ).append( serverInfo.ModCFMLSharedKey );	
+			}
+			if( serverInfo.ModCFMLcreateVDirs ) {
+				args.append( '--auto-create-contexts-vdirs' ).append( serverInfo.ModCFMLcreateVDirs );	
 			}
 		}
 
