@@ -36,6 +36,13 @@ component accessors="true" singleton="true" {
 
 		var installDetails = installEngineArchive( cfengine, arguments.baseDirectory, serverInfo, serverHomeDirectory );
 
+		if( len( serverInfo.webXMLOverride ) ){
+			serverInfo.webXMLOverrideActual = serverInfo.webXML.replace( 'web.xml', 'web-override.xml' );
+			fileCopy( serverInfo.webXMLOverride, serverInfo.webXMLOverrideActual );			
+		} else {
+			serverInfo.webXMLOverrideActual = '';
+		}
+
 		if( installDetails.engineName contains "adobe" ) {
 			return installAdobe( installDetails, serverInfo );
 		} else if ( installDetails.engineName contains "railo" ) {
@@ -93,11 +100,8 @@ component accessors="true" singleton="true" {
 	**/
 	public function installLucee( installDetails, serverInfo ) {
 		configureWebXML( cfengine="lucee", version=installDetails.version, source=serverInfo.webXML, destination=serverInfo.webXML, serverInfo=serverInfo, installDetails=installDetails );
-		if( len( serverInfo.webXMLOverride ) ){
-			serverInfo.webXMLOverrideActual = serverInfo.webXML.replace( 'web.xml', 'web-override.xml' );
-			configureWebXML( cfengine="lucee", version=installDetails.version, source=serverInfo.webXMLOverride, destination=serverInfo.webXMLOverrideActual, serverInfo=serverInfo, installDetails=installDetails, forceUpdate=true );
-		} else {
-			serverInfo.webXMLOverrideActual = '';
+		if( len( serverInfo.webXMLOverrideActual ) ){
+			configureWebXML( cfengine="lucee", version=installDetails.version, source=serverInfo.webXMLOverrideActual, destination=serverInfo.webXMLOverrideActual, serverInfo=serverInfo, installDetails=installDetails, forceUpdate=true );
 		}
 		return installDetails;
 	}
@@ -108,11 +112,8 @@ component accessors="true" singleton="true" {
 	**/
 	public function installRailo( installDetails, serverInfo ) {
 		configureWebXML( cfengine="railo", version=installDetails.version, source=serverInfo.webXML, destination=serverInfo.webXML, serverInfo=serverInfo, installDetails=installDetails );
-		if( len( serverInfo.webXMLOverride ) ){
-			serverInfo.webXMLOverrideActual = serverInfo.webXML.replace( 'web.xml', 'web-override.xml' );
-			configureWebXML( cfengine="lucee", version=installDetails.version, source=serverInfo.webXMLOverride, destination=serverInfo.webXMLOverrideActual, serverInfo=serverInfo, installDetails=installDetails, forceUpdate=true );
-		} else {
-			serverInfo.webXMLOverrideActual = '';
+		if( len( serverInfo.webXMLOverrideActual ) ){
+			configureWebXML( cfengine="railo", version=installDetails.version, source=serverInfo.webXMLOverrideActual, destination=serverInfo.webXMLOverrideActual, serverInfo=serverInfo, installDetails=installDetails, forceUpdate=true );
 		}
 		return installDetails;
 	}
