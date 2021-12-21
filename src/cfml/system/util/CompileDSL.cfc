@@ -184,6 +184,11 @@ component accessors=true {
 
 		var globber = wirebox.getInstance( 'globber' );
 		var tempSrcFileName = tempDir & 'temp#createUUID()#.txt';
+		//job.addLog( " " & serialize( getSourcePaths() ) & " " );
+
+		if( len( getSourcePaths() ) EQ 1 and getSourcePaths()[1] == "" ) {
+			setSourcePaths( [getSourceDirectory()] );
+		}
 
 		setSourcePaths( getSourcePaths().map( function( p ) {
 			var currentPath = fileSystemutil.resolvePath( arguments.p, getProjectRoot() );
@@ -203,7 +208,7 @@ component accessors=true {
 
 		} ) );
 
-        //job.addLog( " " & serialize( getSourcePaths() ) & " " );
+        job.addLog( " " & serialize( getSourcePaths() ) & " " );
 		try{
 
 			writeTempSourceFile( tempSrcFileName );
@@ -259,6 +264,55 @@ component accessors=true {
 		fileWrite( tempSrcFileName, sourceList );
 	}
 
+	function writeTempClassFiles( array sourcePath = getSourcePaths(), string extension=".class" ) {
+
+		otherPaths = getSourcePaths();
+		projectRoot = getProjectRoot();
+		classOutput = getClassOutputDirectory();
+		var globber = wirebox.getInstance( 'globber' );
+
+		job.addLog( "proyect root: " & projectRoot );
+		job.addLog( "class output: " & classOutput );
+
+		/* job.addLog( "inside writeTempClassFiles" );
+		sourcePath.each( function( path ) {
+			job.addLog( "WTCF -> " & path );
+		} ); */
+
+		var sourceList = null;
+
+		job.addLog( "other paths" );
+		otherPaths.each( function( path ) {
+			path = replaceNoCase( path, projectRoot, "" );
+			path = replaceNoCase( path, ".java", extension );
+			path = projectRoot & classOutput & "\" & path;
+			job.addLog( "OPs -> " & path );
+
+			sourceList = globber
+				.setPattern( path )
+				.asQuery()
+				.matches()
+				.filter(( row ) => row.type=="file" && row.name.endsWith( extension ))
+				.reduce(( acc, row ) => {
+					return listappend( acc, row.directory & "/" & row.name, chr(10) );
+				}, "")
+
+			if( !sourceList.len() ) {
+				throw(
+					message='No #extension# files found in [#getSourcePaths().toList()#]', detail='Check fromSource() and try again',
+					type="commandException"
+				);
+			}
+
+			job.addLog( "OPs sList -> " & serialize( sourceList ) );
+
+		} );
+
+		// first check if the source paths are folders or files
+
+		// if its a folder then add **.class and do globbing
+	}
+
 	function buildJar() {
 		var currentLibsDir = fileSystemutil.resolvePath( getLibsDir(), getProjectRoot() );
 		var jarName = getJarNameString();
@@ -270,7 +324,7 @@ component accessors=true {
 		buildJarSourceFolders = fileSystemutil.resolvePath( variables.classOutputDirectory, getProjectRoot() );
         sourceFolders.append( buildJarSourceFolders & "**.class" );
 
-		job.addLog( "currLibsDir-> #currentLibsDir#" );
+		//job.addLog( "currLibsDir-> #currentLibsDir#" );
 
         job.start( ' for build jar check jarName ' );
         if( !jarName.len() ){
@@ -290,7 +344,7 @@ component accessors=true {
 					word = "output";
 
 				}
-				jarName &= word & ".jar";
+				jarName &= "/" & word & ".jar";
 
             }
 
@@ -304,7 +358,8 @@ component accessors=true {
 
         try{
             //writeTempSourceFile( tempSrcFileName,['D:\Javatest\greetings\classes\**.class'], ".class" );
-            writeTempSourceFile( tempSrcFileName, sourceFolders, ".class" );
+            //writeTempSourceFile( tempSrcFileName, sourceFolders, ".class" );
+			writeTempClassFiles( sourceFolders, ".class" );
 
 			if( !directoryExists( currentLibsDir ) ) {
 				directoryCreate( currentLibsDir );
@@ -319,7 +374,7 @@ component accessors=true {
 			}
             job.addLog( j );
             //command( j ).run(echo=true);
-			command( j ).run();
+			//command( j ).run();
 
         } finally {
 			if ( FileExists( tempSrcFileName ) ) {
@@ -436,15 +491,31 @@ component accessors=true {
 
 	function writeUpdateManifestFile( string filename, struct manifestParams ) {
 		//var currentManifestParams = 'foo: bar';
-		var updManifestOut = createObject( "java", "java.lang.StringBuilder" ).init('');
+		/* var updManifestOut = createObject( "java", "java.lang.StringBuilder" ).init('');
 		var lb = "#chr( 13 )##chr( 10 )#";
 
 		for( var itemKey in manifestParams ) {
 			//job.addLog( '#itemKey#: #manifestParams[itemKey]#' );
 			updManifestOut.append( '#itemKey#: #manifestParams[itemKey]##lb#' )
+		} */
+
+		var manifestNames = createObject( 'java', 'java.util.jar.Attributes$Name' );
+		var manifest = createObject( 'java', 'java.util.jar.Manifest' ).init();
+		var attributes = manifest.getMainAttributes();
+
+		attributes.put( manifestNames.MANIFEST_VERSION, '3.0' );
+
+		for( var itemKey in manifestParams ) {
+			//job.addLog( '#itemKey#: #manifestParams[itemKey]#' );
+			attributes.putValue( itemKey, manifestParams[itemKey] );
 		}
 
-		filewrite( filename, updManifestOut.toString() );
+		job.addLog( "filename: " & filename );
+
+		var out = createObject( 'java', 'java.io.FileOutputStream' ).init( fileSystemUtil.getJavaFile( filename ) );
+		manifest.write( out );
+
+		//filewrite( filename, updManifestOut.toString() );
 	}
 
 	function getParamsFromBoxJson( string currentFolder, struct manifestParams ) {
