@@ -43,6 +43,11 @@ component aliases='cfpm' {
 		while( !isNull( arguments[++i] ) ) {
 			cmd &= ' #arguments[i]#';
 		}
+		
+		// The user's OS may not have a JAVA_HOME set up
+		if( systemSettings.getSystemSetting( 'JAVA_HOME', '___NOT_SET___' ) == '___NOT_SET___' ) {
+			systemSettings.setSystemSetting( 'JAVA_HOME', fileSystemUtil.getJREExecutable().reReplaceNoCase( '(/|\\)bin(/|\\)java(.exe)?', '' ) );
+		}
 
 		command( 'run' )
 			.params( cmd )
