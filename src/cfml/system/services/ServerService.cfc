@@ -826,13 +826,37 @@ component accessors="true" singleton {
 		serverInfo.rewriteslogEnable = serverJSON.web.rewrites.logEnable ?: defaults.web.rewrites.logEnable;
 
 		// Global defaults are always added on top of whatever is specified by the user or server.json
-		serverInfo.JVMargs			= ( serverProps.JVMargs			?: serverJSON.JVM.args ?: '' ) & ' ' & defaults.JVM.args;
+		serverInfo.JVMargsArray = [];
+		serverInfo.JVMargs			= serverProps.JVMargs			?: '';
+		if( !isNull( serverJSON.JVM.args ) && isArray( serverJSON.JVM.args ) ) {
+			serverInfo.JVMargsArray.append( serverJSON.JVM.args, true );
+		} else if( !isNull( serverJSON.JVM.args ) && isSimpleValue( serverJSON.JVM.args ) && len( serverJSON.JVM.args ) ) {
+			serverInfo.JVMargs &= ' ' & serverJSON.JVM.args;
+		}
+		if( !isNull( defaults.JVM.args ) && isArray( defaults.JVM.args ) ) {
+			serverInfo.JVMargsArray.append( defaults.JVM.args, true );
+		} else if( !isNull( defaults.JVM.args ) && isSimpleValue( defaults.JVM.args ) && len( defaults.JVM.args ) ) {
+			serverInfo.JVMargs &= ' ' & defaults.JVM.args;
+		}
+		
 
 		// Global defaults are always added on top of whatever is specified by the user or server.json
 		serverInfo.runwarJarPath	= serverProps.runwarJarPath		?: serverJSON.runwar.jarPath	?: defaults.runwar.jarPath;
 
 		// Global defaults are always added on top of whatever is specified by the user or server.json
-		serverInfo.runwarArgs		= ( serverProps.runwarArgs		?: serverJSON.runwar.args ?: '' ) & ' ' & defaults.runwar.args;
+		serverInfo.runwarArgsArray = [];
+		serverInfo.runwarArgs			= serverProps.runwarArgs			?: '';
+		if( !isNull( serverJSON.runwar.args ) && isArray( serverJSON.runwar.args ) ) {
+			serverInfo.runwarArgsArray.append( serverJSON.runwar.args, true );
+		} else if( !isNull( serverJSON.runwar.args ) && isSimpleValue( serverJSON.runwar.args ) && len( serverJSON.runwar.args ) ) {
+			serverInfo.runwarArgs &= ' ' & serverJSON.runwar.args;
+		}
+		if( !isNull( defaults.runwar.args ) && isArray( defaults.runwar.args ) ) {
+			serverInfo.runwarArgsArray.append( defaults.runwar.args, true );
+		} else if( !isNull( defaults.runwar.args ) && isSimpleValue( defaults.runwar.args ) && len( defaults.runwar.args ) ) {
+			serverInfo.runwarArgs &= ' ' & defaults.runwar.args;
+		}
+		
 
 		// Global defaults are always added on top of whatever is specified by the user or server.json
 		serverInfo.runwarXNIOOptions	= ( serverJSON.runwar.XNIOOptions ?: {} ).append( defaults.runwar.XNIOOptions, true );
@@ -1303,6 +1327,7 @@ component accessors="true" singleton {
 				return parser.replaceEscapedChars( parser.removeEscapedChars( parser.unwrapQuotes( i ) ) );
 			});
 
+		argTokens.append( serverInfo.JVMargsArray, true );
 
 		// Add in max heap size
 		if( len( serverInfo.heapSize ) ) {
@@ -1349,6 +1374,8 @@ component accessors="true" singleton {
 				// unwrap quotes, and unescape any special chars like \" inside the string
 				return parser.replaceEscapedChars( parser.removeEscapedChars( parser.unwrapQuotes( i ) ) );
 			}), true );
+
+		args.append( serverInfo.runwarArgsArray, true );
 
 		if( serverInfo.trayEnable ) {
 			args
@@ -2620,7 +2647,9 @@ component accessors="true" singleton {
 			'javaVersion'		: '',
 			'directoryBrowsing' : false,
 			'JVMargs'			: "",
+			'JVMargsArray'		: [],
 			'runwarArgs'		: "",
+			'runwarArgsArray'	: [],
 			'runwarXNIOOptions'	: {},
 			'runwarUndertowOptions'	: {},
 			'cfengine'			: "",
