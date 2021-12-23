@@ -53,12 +53,16 @@ component accessors=true singleton {
 		return this;
 	}
 
-	function announceInterception( required string state, struct interceptData={} ) {
+	function announce( required string state, struct interceptData={} ) {
 		getEventPoolManager().announce( state, interceptData );
 	}
 
+	function announceInterception( required string state, struct interceptData={} ) {
+		announce( state, interceptData );
+	}
+
 	function processState( required string state, struct interceptData={} ) {
-		announceInterception( state, interceptData );
+		announce( state, interceptData );
 	}
 
 	/**
