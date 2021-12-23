@@ -616,17 +616,12 @@ component accessors="true" implements="IEndpointInteractive" {
 			directoryDelete( tmpPath, true );
 		}
 		directoryCreate( tmpPath );
-		directoryCopy( arguments.path, tmpPath, true, function( directoryPath ){
-			// This will normalize the slashes to match
-			directoryPath = fileSystemUtil.resolvePath( directoryPath );
+		wirebox.getInstance( 'globber' )
+			.inDirectory( arguments.path )
+    		.setExcludePattern( ignorePatterns )
+    		.loose()
+			.copyTo( tmpPath );
 
-			// cleanup path so we just get from the archive down
-			var thisPath = replacenocase( directoryPath, path, "" );
-			// Ignore paths that match one of our ignore patterns
-			var ignored = pathPatternMatcher.matchPatterns( ignorePatterns, thisPath );
-			// What do we do with this file/directory
-			return ! ignored;
-		});
 		var zipFileName = tmpPath & ".zip";
 		cfzip(
 			action = "zip",
