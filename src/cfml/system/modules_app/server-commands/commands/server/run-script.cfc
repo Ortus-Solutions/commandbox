@@ -74,12 +74,12 @@ component aliases="run-script" {
 		}
 		
 		var serverDetails = serverService.resolveServerDetails( passedNamedParameters );
-		
+		var results = [];
 		// package check
 		if( !serverDetails.serverIsNew ) {
-			return ( serverDetails.serverJSON.scripts ?: {} ).keyArray();
+			results = ( serverDetails.serverJSON.scripts ?: {} ).keyArray();
 		}
-		return [];
+		return ( serverService.getDefaultServerJSON().scripts ?: {} ).keyArray().append( results, true );
 	}
 	
 	/**

@@ -136,7 +136,8 @@ component accessors="true" singleton {
 				'minHeapSize' : d.jvm.minHeapSize ?: '',
 				'args' : d.jvm.args ?: '',
 				'javaHome' : d.jvm.javaHome ?: '',
-				'javaVersion' : d.jvm.javaVersion ?: ''
+				'javaVersion' : d.jvm.javaVersion ?: '',
+				'properties' : d.jvm.javaVersion ?: ''
 			},
 			'web' : {
 				'host' : d.web.host ?: '127.0.0.1',
@@ -225,8 +226,7 @@ component accessors="true" singleton {
 				'requireSharedKey' : d.ModCFML.requireSharedKey ?: true,
 				'createVirtualDirectories' : d.ModCFML.createVirtualDirectories ?: true
 			},
-			'scripts' : {
-			}
+			'scripts' : d.scripts ?: {}
 		};
 	}
 
@@ -2821,9 +2821,18 @@ component accessors="true" singleton {
 				consoleLogger.warn( 'Could not find server for script [#arguments.scriptName#].' );
 				return;
 			}
-			
+			var serverJSONScripts = duplicate( serverJSON.scripts ?: {} );
+			getDefaultServerJSON().scripts.each( (k,v)=>{
+				// Append existing scripts
+				if( serverJSONScripts.keyExists( k ) ) {
+					serverJSONScripts[ k ] &= '; ' & v
+				// Merge missing ones
+				} else {
+					serverJSONScripts[ k ] = v;
+				}
+			} );
 			// If there is a scripts object with a matching key for this interceptor....
-			if( serverJSON.keyExists( 'scripts' ) && isStruct( serverJSON.scripts ) && serverJSON.scripts.keyExists( arguments.scriptName ) ) {
+			if( serverJSONScripts.keyExists( arguments.scriptName ) ) {
 
 				// Skip this if we're not in a command so we don't litter the default env var namespace
 				if( systemSettings.getAllEnvironments().len() > 1 ) {
@@ -2833,7 +2842,7 @@ component accessors="true" singleton {
 				// Run preXXX package script
 				runScript( 'pre#arguments.scriptName#', arguments.directory, true, interceptData );
 
-				var thisScript = serverJSON.scripts[ arguments.scriptName ];
+				var thisScript = serverJSONScripts[ arguments.scriptName ];
 				consoleLogger.debug( '.' );
 				consoleLogger.warn( 'Running server script [#arguments.scriptName#].' );
 				consoleLogger.debug( '> ' & thisScript );
