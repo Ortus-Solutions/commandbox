@@ -13,6 +13,7 @@ component accessors="true" extends="Print"{
 
 	// DI
 	property name="shell" inject="shell";
+	property name="job" inject="interactiveJob";
 
 	property name="objectID";
 
@@ -36,8 +37,13 @@ component accessors="true" extends="Print"{
 			clear();
 		}
 
-		// Once we get the text to print above, we can release the lock while we actually print it.
-		variables.shell.printString( thingToPrint );
+		// Once we get the text to print above, we can release the lock while we actually print it.		
+		// If there is an active job, print our output through it
+		if( job.getActive() ) {
+			job.addLog( thingToPrint );
+		} else {
+			variables.shell.printString( thingToPrint );
+		}
 	}
 
 	// Reset the result

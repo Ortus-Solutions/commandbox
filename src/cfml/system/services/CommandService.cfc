@@ -284,7 +284,13 @@ component accessors="true" singleton {
 			// This will prevent the output from showing up out of order if one command nests a call to another.
 			if( instance.callStack.len() && !captureOutput ){
 				// Print anything in the buffer
-				shell.printString( instance.callStack[1].commandInfo.commandReference.CFC.getResult() );
+				var job = wirebox.getInstance( 'interactiveJob' );
+				// If there is an active job, print our output through it
+				if( job.getActive() ) {
+					job.addLog( instance.callStack[1].commandInfo.commandReference.CFC.getResult() );
+				} else {
+					shell.printString( instance.callStack[1].commandInfo.commandReference.CFC.getResult() );
+				}
 				// And reset it now that it's been printed.
 				// This command can add more to the buffer once it's executing again.
 				instance.callStack[1].commandInfo.commandReference.CFC.reset();
