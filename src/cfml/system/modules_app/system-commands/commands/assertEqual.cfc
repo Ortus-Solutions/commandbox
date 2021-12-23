@@ -1,5 +1,5 @@
 /**
- * Returns a passing (0) or failing (1) exit code whether both parameters match.  Command outputs nothing.
+ * Returns a passing (0) or failing (1) exit code if both parameters match.  Command outputs nothing.
  * Comparison is case insensitive.
  * .
  * {code:bash}
