@@ -137,7 +137,7 @@ component accessors="true" singleton {
 				'args' : d.jvm.args ?: '',
 				'javaHome' : d.jvm.javaHome ?: '',
 				'javaVersion' : d.jvm.javaVersion ?: '',
-				'properties' : d.jvm.javaVersion ?: ''
+				'properties' : d.jvm.properties ?: {}
 			},
 			'web' : {
 				'host' : d.web.host ?: '127.0.0.1',
@@ -842,6 +842,9 @@ component accessors="true" singleton {
 
 		// Server startup timeout
 		serverInfo.startTimeout		= serverProps.startTimeout 			?: serverJSON.startTimeout 	?: defaults.startTimeout;
+		
+		serverInfo.JVMProperties =	serverJSON.JVM.properties		?: {};
+		serverInfo.JVMProperties.append( defaults.jvm.properties, false );
 
 		// relative lib dirs in server.json are resolved relative to the server.json
 		if( serverJSON.keyExists( 'app' ) && serverJSON.app.keyExists( 'libDirs' ) ) {
@@ -1314,6 +1317,8 @@ component accessors="true" singleton {
 			}
 			argTokens.append( '-Xms#serverInfo.minHeapSize#' );
 		}
+
+		serverInfo.JVMProperties.each( (k,v)=>argTokens.append( '-D#k#=#v#' ) );
 
 		// Add java agent
 		if( len( trim( javaAgent ) ) ) { argTokens.append( javaagent ); }
