@@ -18,7 +18,7 @@
  * server run-script scriptName=myScript name1=value1 name2=value2
  * {code}
   **/
-component aliases="run-script" {
+component {
 
 	property name="serverService" inject="ServerService";
 
