@@ -2844,7 +2844,7 @@ component accessors="true" singleton {
 			if( !isNull( interceptData.serverJSON ) ){
 				var serverJSON = interceptData.serverJSON;
 			} else if( !isNull( interceptData.serverInfo.name ) && len( interceptData.serverInfo.name ) ){
-				var serverDetails = serverService.resolveServerDetails( { name=interceptData.serverInfo.name } );
+				var serverDetails = resolveServerDetails( { name=interceptData.serverInfo.name } );
 				if( serverDetails.serverIsNew ) {
 					return;
 				}
