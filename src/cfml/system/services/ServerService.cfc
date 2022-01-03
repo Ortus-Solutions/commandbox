@@ -188,6 +188,11 @@ component accessors="true" singleton {
 					'enable' : d.web.basicAuth.enable ?: true,
 					'users' : d.web.basicAuth.users ?: {}
 				},
+				'fileCache' : {
+					'enable' : d.web.fileCache.enable ?: '',
+					'totalSizeMB' : d.web.fileCache.totalSizeMB ?: 50,
+					'maxFileSizeKB' : d.web.fileCache.maxFileSizeKB ?: 50
+				},
 				'rules' : duplicate( d.web.rules ?: [] ),
 				'rulesFile' : duplicate( d.web.rulesFile ?: [] ),
 				'blockCFAdmin' : d.web.blockCFAdmin ?: '',
@@ -650,6 +655,19 @@ component accessors="true" singleton {
 		}
 		serverInfo.directoryBrowsing = serverProps.directoryBrowsing ?: serverJSON.web.directoryBrowsing ?: defaults.web.directoryBrowsing;
 
+		// If there isn't a default for this already
+		if( !isBoolean( defaults.web.fileCache.enable ) ) {
+			if( serverInfo.profile == 'production' ) {
+				defaults.web.fileCache.enable = true;
+			} else {
+				defaults.web.fileCache.enable = false;
+			}
+		}
+		
+		serverInfo.fileCacheEnable	= 								   serverJSON.web.fileCache.enable		?: defaults.web.fileCache.enable;
+		serverInfo.fileCacheTotalSizeMB	= 							   serverJSON.web.fileCache.totalSizeMB	?: defaults.web.fileCache.totalSizeMB;
+		serverInfo.fileCacheMaxFileSizeKB = 						   serverJSON.web.fileCache.maxFileSizeKB ?: defaults.web.fileCache.maxFileSizeKB;
+
 		job.start( 'Setting Server Profile to [#serverInfo.profile#]' );
 			job.addLog( 'Profile set from #profileReason#' );
 			if( serverInfo.blockCFAdmin == 'external' ) {
@@ -665,6 +683,7 @@ component accessors="true" singleton {
 				job.addLog( 'Allowed Extensions: [#serverInfo.allowedExt#]' );
 			}
 			job[ 'add#( !serverInfo.directoryBrowsing ? 'Success' : 'Error' )#Log' ]( 'Directory Browsing #( serverInfo.directoryBrowsing ? 'en' : 'dis' )#abled' );
+			job[ 'add#( serverInfo.fileCacheEnable ? 'Success' : '' )#Log' ]( 'File Caching #( serverInfo.fileCacheEnable ? 'en' : 'dis' )#abled' );
 		job.complete( serverInfo.verbose );
 
 		// Double check that the port in the user params or server.json isn't in use
@@ -738,7 +757,7 @@ component accessors="true" singleton {
 		serverInfo.basicAuthUsers 	= 								   serverJSON.web.basicAuth.users		?: defaults.web.basicAuth.users;
 		serverInfo.welcomeFiles 	= serverProps.welcomeFiles		?: serverJSON.web.welcomeFiles			?: defaults.web.welcomeFiles;
 		serverInfo.maxRequests		= 								   serverJSON.web.maxRequests			?: defaults.web.maxRequests;
-
+		
 		serverInfo.trayEnable	 	= serverProps.trayEnable		?: serverJSON.trayEnable			?: defaults.trayEnable;
 		serverInfo.dockEnable	 	= serverJSON.dockEnable			?: defaults.dockEnable;
 		serverInfo.defaultBaseURL = serverInfo.SSLEnable ? 'https://#serverInfo.host#:#serverInfo.SSLPort#' : 'http://#serverInfo.host#:#serverInfo.port#';
@@ -1449,7 +1468,11 @@ component accessors="true" singleton {
 	 	if( len( CLIAliases ) ) {
 	 		 args.append( '--dirs' ).append( CLIAliases );
 	 	}
-
+	 	if( serverInfo.fileCacheEnable ) {
+	 		 args.append( '--cache-servlet-paths' ).append( true );
+	 		 args.append( '--file-cache-total-size-mb' ).append( val( serverInfo.fileCacheTotalSizeMB ) );
+	 		 args.append( '--file-cache-max-file-size-kb' ).append( val( serverInfo.fileCacheMaxFileSizeKB ) );
+	 	}
 
 		// If background, wrap up JVM args to pass through to background servers.  "Real" JVM args must come before Runwar args
 		if( background ) {
