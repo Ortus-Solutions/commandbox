@@ -985,7 +985,7 @@ component accessors="true" singleton {
 				// track and trace verbs can leak data in XSS attacks
 				"disallowed-methods( methods={trace,track} )",
 				// Common config files and sensitive paths that should never be accessed, even on development
-				"regex( pattern='.*/(box.json|server.json|web.config|urlrewrite.xml|package.json|package-lock.json|Gulpfile.js)', case-sensitive=false ) -> { set-error(404); done }",
+				"regex( pattern='.*/(box\.json|server\.json|web\.config|urlrewrite\.xml|package\.json|package-lock\.json|Gulpfile\.js)', case-sensitive=false ) -> { set-error(404); done }",
 				// Any file or folder starting with a period
 				"regex('/\.') -> { set-error( 404 ); done }",
 				// Additional serlvlet mappings in Adobe CF's web.xml
@@ -997,7 +997,7 @@ component accessors="true" singleton {
 			if( serverInfo.profile == 'production' ) {
 				serverInfo.webRules.append( [
 					// Common config files and sensitive paths in ACF and TestBox that may be ok for dev, but not for production
-					"regex( pattern='.*/(CFIDE/multiservermonitor-access-policy.xml|CFIDE/probe.cfm|CFIDE/main/ide.cfm|tests/runner.cfm|testbox/system/runners/HTMLRunner.cfm)', case-sensitive=false ) -> { set-error(404); done }",
+					"regex( pattern='.*/(CFIDE/multiservermonitor-access-policy\.xml|CFIDE/probe\.cfm|CFIDE/main/ide\.cfm|tests/runner\.cfm|testbox/system/runners/HTMLRunner\.cfm)', case-sensitive=false ) -> { set-error(404); done }",
 				], true );
 			}
 
@@ -1486,7 +1486,7 @@ component accessors="true" singleton {
 			}
 		// If foreground, just stick them in.
 		} else {
-			argTokens.each( function(i) { args.prepend( i ); } );
+			argTokens.reverse().each( function(i) { args.prepend( i ); } );
 		}
 
 		// Webroot for normal server, and war home for a standard war
