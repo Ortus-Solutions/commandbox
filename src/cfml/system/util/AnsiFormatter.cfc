@@ -33,6 +33,14 @@ component accessors=true {
 		// [TRACE] io.undertow.predicate: Path(s) [/CFIDE/main/ide.cfm] MATCH input [/CFIDE/main/ide.cfm] for HttpServerExchange{ GET /CFIDE/main/ide.cfm}.
 		line = reReplaceNoCase( line, '^(\[[^]]*])( io\.undertow\.request\.dump: )(.*)', 'Request Dump: \3' );
 
+		// Log messages from Tuckey Rewrite engine "Rewrite UrlRewriter:"
+		// Ex:
+		// [DEBUG] org.tuckey.web.filters.urlrewrite.UrlRewriter: processing request for /services/training
+		// [DEBUG] org.tuckey.web.filters.urlrewrite.RuleExecutionOutput: needs to be forwarded to /index.cfm/services/training
+		line = reReplaceNoCase( line, '^(\[[^]]*])( org\.tuckey\.web\.filters\.urlrewrite\.UrlRewriter: )(.*)', '\1 Rewrite: \3' );
+		line = reReplaceNoCase( line, '^(\[[^]]*])( org\.tuckey\.web\.filters\.urlrewrite\.RuleExecutionOutput: )(.*)', '\1 Rewrite Output: \3' );
+		line = reReplaceNoCase( line, '^(\[[^]]*])( org\.tuckey\.web\.filters\.urlrewrite\.+)([^:]*: )(.*)', '\1 Rewrite \3\4' );
+
 		// Strip off redundant severities that come from wrapping LogBox appenders in Log4j appenders
 		// [INFO ] DEBUG my.logger.name This rain in spain stays mainly in the plains
 		line = reReplaceNoCase( line, '^(\[(INFO |ERROR|DEBUG|WARN )] )(INFO|ERROR|DEBUG|WARN)( .*)', '[\3]\4' );
