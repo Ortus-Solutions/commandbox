@@ -32,6 +32,7 @@ component accessors=true {
 	property name='customManifest'			type='string';
 	property name='customManifestParams'	type='struct';
 	property name='resourcePath'			type='string';
+	property name='classTextFilePaths'		type='array';
 
     //DI
 	property name="packageService"	inject="PackageService";
@@ -61,6 +62,7 @@ component accessors=true {
 		setCustomManifest( '' );
 		setCustomManifestParams( {} );
 		setResourcePath( 'src\main\resources\' );
+		setClassTextFilePaths(['']);
         return this;
     }
 
@@ -175,9 +177,9 @@ component accessors=true {
 
 	function compileCode() {
 
-		if( directoryExists( getClassOutputDirectory() ) ){
+		/* if( directoryExists( getClassOutputDirectory() ) ){
 			directoryDelete( getClassOutputDirectory(), true )
-		}
+		} */
 
 		//shell.printString( " glob-> start... " );
         //job.addLog( " glob-> start... " );
@@ -268,25 +270,30 @@ component accessors=true {
 
 		otherPaths = getSourcePaths();
 		projectRoot = getProjectRoot();
-		classOutput = getClassOutputDirectory();
-		var globber = wirebox.getInstance( 'globber' );
+		classOutput = getClassOutputDirectory() & "\";
 
-		job.addLog( "proyect root: " & projectRoot );
-		job.addLog( "class output: " & classOutput );
+		/* job.addLog( "proyect root: " & projectRoot );
+		job.addLog( "class output: " & classOutput ); */
 
 		/* job.addLog( "inside writeTempClassFiles" );
 		sourcePath.each( function( path ) {
 			job.addLog( "WTCF -> " & path );
 		} ); */
 
-		var sourceList = null;
+		var sourceList;
+		var finalPath;
+		var classFileName;
 
-		job.addLog( "other paths" );
+		/* job.addLog( "other paths" ); */
 		otherPaths.each( function( path ) {
+			var globber = wirebox.getInstance( 'globber' );
+			classFileName = projectRoot & 'classFile#createUUID()#.txt';
+
 			path = replaceNoCase( path, projectRoot, "" );
 			path = replaceNoCase( path, ".java", extension );
-			path = projectRoot & classOutput & "\" & path;
-			job.addLog( "OPs -> " & path );
+			path = replaceNoCase( path, "**", "*" );
+			path = projectRoot & classOutput & path;
+			/* job.addLog( "OPs -> " & path ); */
 
 			sourceList = globber
 				.setPattern( path )
@@ -294,7 +301,10 @@ component accessors=true {
 				.matches()
 				.filter(( row ) => row.type=="file" && row.name.endsWith( extension ))
 				.reduce(( acc, row ) => {
-					return listappend( acc, row.directory & "/" & row.name, chr(10) );
+					row.directory = replaceNoCase( row.directory, projectRoot, "" );
+					row.directory = replaceNoCase( row.directory, classOutput, "" );
+					finalPath = fileSystemutil.normalizeSlashes( row.directory & "/" & row.name );
+					return listappend( acc, finalPath, chr(10) );
 				}, "")
 
 			if( !sourceList.len() ) {
@@ -304,13 +314,24 @@ component accessors=true {
 				);
 			}
 
-			job.addLog( "OPs sList -> " & serialize( sourceList ) );
+			/* job.addLog( "OPs sList -> " & serialize( sourceList ) ); */
+			setClassTextFilePaths( getClassTextFilePaths().append( classFileName ) );
+			job.addLog( "CTPs sList -> " & serialize( getClassTextFilePaths() ) );
+			fileWrite( classFileName, sourceList );
 
 		} );
 
 		// first check if the source paths are folders or files
 
 		// if its a folder then add **.class and do globbing
+	}
+
+	function createClassStringFromClassTextFiles() {
+		var classTextFileList = getClassTextFilePaths()
+
+		classTextFileList.each( function( file ) {
+			job.addLog( "CTFileList -> " & serialize( file ) );
+		} );
 	}
 
 	function buildJar() {
@@ -360,6 +381,8 @@ component accessors=true {
             //writeTempSourceFile( tempSrcFileName,['D:\Javatest\greetings\classes\**.class'], ".class" );
             //writeTempSourceFile( tempSrcFileName, sourceFolders, ".class" );
 			writeTempClassFiles( sourceFolders, ".class" );
+
+			var jarClassString = createClassStringFromClassTextFiles()
 
 			if( !directoryExists( currentLibsDir ) ) {
 				directoryCreate( currentLibsDir );
@@ -512,10 +535,19 @@ component accessors=true {
 
 		job.addLog( "filename: " & filename );
 
-		var out = createObject( 'java', 'java.io.FileOutputStream' ).init( fileSystemUtil.getJavaFile( filename ) );
-		manifest.write( out );
+		try{
 
-		//filewrite( filename, updManifestOut.toString() );
+			var out = createObject( 'java', 'java.io.FileOutputStream' ).init( fileSystemUtil.getJavaFile( filename ) );
+			manifest.write( out );
+			//filewrite( filename, updManifestOut.toString() );
+
+		} finally {
+
+			if( !isNull( out ) ) {
+				out.close();
+			}
+
+		}
 	}
 
 	function getParamsFromBoxJson( string currentFolder, struct manifestParams ) {
