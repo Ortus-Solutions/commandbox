@@ -95,13 +95,13 @@ component aliases="outdated" {
 			print.line()
 				.green( 'Found ' )
 				.boldGreen( '(#aOutdatedDependencies.len()#)' )
-				.green( ' Outdated Dependenc#( aOutdatedDependencies.len()  == 1 ? 'y' : 'ies' )# ' )
+				.green( ' Outdated #( system ? ' system' : '' )#Dependenc#( aOutdatedDependencies.len()  == 1 ? 'y' : 'ies' )# ' )
 				.line();
 			printDependencies( data=aOutdatedDependencies, verbose=arguments.verbose );
 			print
 				.line()
-				.cyanLine( "Run the 'update' command to update all the outdated dependencies to their latest version." )
-				.cyanLine( "Or use 'update {slug}' to update a specific dependency" );
+				.cyanLine( "Run the 'update#( system ? ' --system' : '' )#' command to update all the outdated dependencies to their latest version." )
+				.cyanLine( "Or use 'update {slug}#( system ? ' --system' : '' )#' to update a specific dependency" );
 		} else {
 			print.blueLine( 'There are no outdated dependencies!' );
 		}
