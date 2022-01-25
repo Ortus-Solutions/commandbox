@@ -266,64 +266,34 @@ component accessors=true {
 		fileWrite( tempSrcFileName, sourceList );
 	}
 
-	function writeTempClassFiles( array sourcePath = getSourcePaths(), string extension=".class" ) {
+	function writeTempClassFiles( string tempSrcFileName, array sourcePath = getSourcePaths(), string extension=".class" ) {
 
 		otherPaths = getSourcePaths();
 		projectRoot = getProjectRoot();
 		classOutput = getClassOutputDirectory() & "\";
 
-		/* job.addLog( "proyect root: " & projectRoot );
-		job.addLog( "class output: " & classOutput ); */
+		job.addLog( "otherPaths: " & serialize( otherPaths ) );
+		job.addLog( "proyect root: " & projectRoot );
+		job.addLog( "class output: " & classOutput );
+		job.addLog( "sourcePath: " & serialize( sourcePath ) );
 
-		/* job.addLog( "inside writeTempClassFiles" );
-		sourcePath.each( function( path ) {
-			job.addLog( "WTCF -> " & path );
-		} ); */
+		var globber = wirebox.getInstance( 'globber' );
 
-		var sourceList;
-		var finalPath;
-		var classFileName;
+		currentSourceList = globber
+			.setPattern( sourcePath )
+			.asQuery()
+			.matches()
+			.filter(( row ) => row.type=="file" && row.name.endsWith( extension ))
+			.reduce(( acc, row ) => {
+				return listappend( acc, row.directory & "/" & row.name, chr(10) );
+			}, "")
 
-		/* job.addLog( "other paths" ); */
-		otherPaths.each( function( path ) {
-			var globber = wirebox.getInstance( 'globber' );
-			classFileName = projectRoot & 'classFile#createUUID()#.txt';
+		job.addLog( "currentSourceList -> " & serialize( currentSourceList ) );
+		job.addLog( "currentSourceList -> " & currentSourceList.len() );
 
-			path = replaceNoCase( path, projectRoot, "" );
-			path = replaceNoCase( path, ".java", extension );
-			path = replaceNoCase( path, "**", "*" );
-			path = projectRoot & classOutput & path;
-			/* job.addLog( "OPs -> " & path ); */
+		/* job.addLog( "finalSourceList -> " & finalSourceList ); */
 
-			sourceList = globber
-				.setPattern( path )
-				.asQuery()
-				.matches()
-				.filter(( row ) => row.type=="file" && row.name.endsWith( extension ))
-				.reduce(( acc, row ) => {
-					row.directory = replaceNoCase( row.directory, projectRoot, "" );
-					row.directory = replaceNoCase( row.directory, classOutput, "" );
-					finalPath = fileSystemutil.normalizeSlashes( row.directory & "/" & row.name );
-					return listappend( acc, finalPath, chr(10) );
-				}, "")
-
-			if( !sourceList.len() ) {
-				throw(
-					message='No #extension# files found in [#getSourcePaths().toList()#]', detail='Check fromSource() and try again',
-					type="commandException"
-				);
-			}
-
-			/* job.addLog( "OPs sList -> " & serialize( sourceList ) ); */
-			setClassTextFilePaths( getClassTextFilePaths().append( classFileName ) );
-			job.addLog( "CTPs sList -> " & serialize( getClassTextFilePaths() ) );
-			fileWrite( classFileName, sourceList );
-
-		} );
-
-		// first check if the source paths are folders or files
-
-		// if its a folder then add **.class and do globbing
+		/* fileWrite( tempSrcFileName, sourceList ); */
 	}
 
 	function createClassStringFromClassTextFiles() {
@@ -339,7 +309,8 @@ component accessors=true {
 		var jarName = getJarNameString();
         var currentProjectRoot = getProjectRoot();
 
-        var tempSrcFileName = tempDir & 'temp#createUUID()#.txt';
+        /* var tempSrcFileName = tempDir & 'temp#createUUID()#.txt'; */
+		var tempSrcFileName = currentProjectRoot & 'temp#createUUID()#.txt';
 
         var sourceFolders = [];
 		buildJarSourceFolders = fileSystemutil.resolvePath( variables.classOutputDirectory, getProjectRoot() );
@@ -380,7 +351,7 @@ component accessors=true {
         try{
             //writeTempSourceFile( tempSrcFileName,['D:\Javatest\greetings\classes\**.class'], ".class" );
             //writeTempSourceFile( tempSrcFileName, sourceFolders, ".class" );
-			writeTempClassFiles( sourceFolders, ".class" );
+			writeTempClassFiles( "D:\Javatest\test-new-01\ClassFile123456.txt",sourceFolders, ".class" );
 
 			var jarClassString = createClassStringFromClassTextFiles()
 
@@ -400,9 +371,9 @@ component accessors=true {
 			//command( j ).run();
 
         } finally {
-			if ( FileExists( tempSrcFileName ) ) {
+			/* if ( FileExists( tempSrcFileName ) ) {
 				fileDelete( tempSrcFileName );
-			}
+			} */
         }
 
 
