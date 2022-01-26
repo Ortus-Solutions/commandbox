@@ -285,15 +285,20 @@ component accessors=true {
 			.matches()
 			.filter(( row ) => row.type=="file" && row.name.endsWith( extension ))
 			.reduce(( acc, row ) => {
-				return listappend( acc, row.directory & "/" & row.name, chr(10) );
+				row.directory = replaceNoCase( row.directory, projectRoot, "" );
+				row.directory = replaceNoCase( row.directory, classOutput, "" );
+				wipPath = fileSystemutil.normalizeSlashes( row.directory & "/" & row.name );
+				wipPath = "-C " & classOutput & " " & wipPath;
+				finalPath = fileSystemutil.normalizeSlashes( wipPath );
+				return listappend( acc, finalPath, chr(10) );
 			}, "")
 
-		job.addLog( "currentSourceList -> " & serialize( currentSourceList ) );
-		job.addLog( "currentSourceList -> " & currentSourceList.len() );
+		/* job.addLog( "currentSourceList -> " & serialize( currentSourceList ) );
+		job.addLog( "currentSourceList -> " & currentSourceList.len() ); */
 
 		/* job.addLog( "finalSourceList -> " & finalSourceList ); */
 
-		/* fileWrite( tempSrcFileName, sourceList ); */
+		fileWrite( tempSrcFileName, currentSourceList );
 	}
 
 	function createClassStringFromClassTextFiles() {
