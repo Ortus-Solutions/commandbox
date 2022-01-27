@@ -198,7 +198,8 @@ component accessors="true" singleton {
 				'blockCFAdmin' : d.web.blockCFAdmin ?: '',
 				'blockSensitivePaths' :  d.web.blockSensitivePaths ?: '',
 				'blockFlashRemoting' :  d.web.blockFlashRemoting ?: '',
-				'allowedExt' : d.web.allowedExt ?: ''
+				'allowedExt' : d.web.allowedExt ?: '',
+				'useProxyForwardedIP' : d.web.useProxyForwardedIP ?: false
 			},
 			'app' : {
 				'logDir' : d.app.logDir ?: '',
@@ -638,10 +639,12 @@ component accessors="true" singleton {
 			}
 		}
 
-		serverInfo.blockCFAdmin		= serverProps.blockCFAdmin			?: serverJSON.web.blockCFAdmin		?: defaults.web.blockCFAdmin;
+		serverInfo.blockCFAdmin		= serverProps.blockCFAdmin			?: serverJSON.web.blockCFAdmin			?: defaults.web.blockCFAdmin;
 		serverInfo.blockSensitivePaths									 = serverJSON.web.blockSensitivePaths	?: defaults.web.blockSensitivePaths;
 		serverInfo.blockFlashRemoting									 = serverJSON.web.blockFlashRemoting	?: defaults.web.blockFlashRemoting;
-		serverInfo.allowedExt											 = serverJSON.web.allowedExt		?: defaults.web.allowedExt;
+		serverInfo.allowedExt											 = serverJSON.web.allowedExt			?: defaults.web.allowedExt;
+		serverInfo.useProxyForwardedIP									 = serverJSON.web.useProxyForwardedIP	?: defaults.web.useProxyForwardedIP;
+		
 
 		// If there isn't a default for this already
 		if( !isBoolean( defaults.web.directoryBrowsing ) ) {
@@ -1379,7 +1382,7 @@ component accessors="true" singleton {
 			.append( '--dock-enable' ).append( serverInfo.dockEnable )
 			.append( '--directoryindex' ).append( serverInfo.directoryBrowsing )
 			.append( '--timeout' ).append( serverInfo.startTimeout )
-			.append( '--proxy-peeraddress' ).append( 'true' )
+			.append( '--proxy-peeraddress' ).append( serverInfo.useProxyForwardedIP )
 			.append( '--cookie-secure' ).append( serverInfo.sessionCookieSecure )
 			.append( '--cookie-httponly' ).append( serverInfo.sessionCookieHTTPOnly )
 			.append( '--pid-file').append( serverInfo.pidfile );
