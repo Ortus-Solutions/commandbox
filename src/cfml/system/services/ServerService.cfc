@@ -986,8 +986,8 @@ component accessors="true" singleton {
 				"disallowed-methods( methods={trace,track} )",
 				// Common config files and sensitive paths that should never be accessed, even on development
 				"regex( pattern='.*/(box\.json|server\.json|web\.config|urlrewrite\.xml|package\.json|package-lock\.json|Gulpfile\.js)', case-sensitive=false ) -> { set-error(404); done }",
-				// Any file or folder starting with a period
-				"regex('/\.') -> { set-error( 404 ); done }",
+				// Any file or folder starting with a period, unless it's called 
+				"regex('/\.') and not path-prefix(.well-known) -> { set-error( 404 ); done }",
 				// Additional serlvlet mappings in Adobe CF's web.xml
 				"path-prefix( { '/JSDebugServlet','/securityanalyzer','/WSRPProducer' } ) -> { set-error( 404 ); done }",
 				// java web service (Axis) files
