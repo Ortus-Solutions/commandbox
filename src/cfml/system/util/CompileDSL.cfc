@@ -314,8 +314,8 @@ component accessors=true {
 		var jarName = getJarNameString();
         var currentProjectRoot = getProjectRoot();
 
-        /* var tempSrcFileName = tempDir & 'temp#createUUID()#.txt'; */
-		var tempSrcFileName = currentProjectRoot & 'temp#createUUID()#.txt';
+        var tempClassFileName = tempDir & 'temp#createUUID()#.txt';
+		/* var tempClassFileName = currentProjectRoot & 'temp#createUUID()#.txt'; */
 
         var sourceFolders = [];
 		buildJarSourceFolders = fileSystemutil.resolvePath( variables.classOutputDirectory, getProjectRoot() );
@@ -355,8 +355,7 @@ component accessors=true {
 
         try{
             //writeTempSourceFile( tempSrcFileName,['D:\Javatest\greetings\classes\**.class'], ".class" );
-            //writeTempSourceFile( tempSrcFileName, sourceFolders, ".class" );
-			writeTempClassFiles( "D:\Javatest\test-new-01\ClassFile123456.txt",sourceFolders, ".class" );
+            writeTempClassFiles( tempClassFileName, sourceFolders, ".class" );
 
 			var jarClassString = createClassStringFromClassTextFiles()
 
@@ -367,18 +366,18 @@ component accessors=true {
             //j = 'run "#getJavaBinFolder()#jar" --file #currentLibsDir##jarName# #getJarOptionsString()#';
             //j = 'run "#getJavaBinFolder()#jar" --create --file #currentLibsDir#testX.jar "@#tempSrcFileName#" #getJarOptionsString()#';
 			if( !getCustomManifest().len() ) {
-				j = 'run ""#getJavaBinFolder()#jar" cf "#currentLibsDir##jarName#" "@#tempSrcFileName#" #getJarOptionsString()#"';
+				j = 'run ""#getJavaBinFolder()#jar" cf "#currentLibsDir##jarName#" "@#tempClassFileName#" #getJarOptionsString()#"';
 			} else {
-            	j = 'run ""#getJavaBinFolder()#jar" cfm "#currentLibsDir##jarName#" "#variables.customManifest#" "@#tempSrcFileName#" #getJarOptionsString()#"';
+            	j = 'run ""#getJavaBinFolder()#jar" cfm "#currentLibsDir##jarName#" "#variables.customManifest#" "@#tempClassFileName#" #getJarOptionsString()#"';
 			}
             job.addLog( j );
             //command( j ).run(echo=true);
-			//command( j ).run();
+			command( j ).run();
 
         } finally {
-			/* if ( FileExists( tempSrcFileName ) ) {
-				fileDelete( tempSrcFileName );
-			} */
+			if ( FileExists( tempClassFileName ) ) {
+				fileDelete( tempClassFileName );
+			}
         }
 
 
