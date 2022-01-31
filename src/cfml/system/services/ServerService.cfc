@@ -3,7 +3,7 @@
 * Copyright Since 2014 CommandBox by Ortus Solutions, Corp
 * www.coldbox.org | www.ortussolutions.com
 ********************************************************************************
-* @author Brad Wood, Luis Majano, Denny Valliant
+* @author Brad Wood, Luis Majano, Denny Valliant, Scott Steinbeck
 *
 * I manage servers
 *
@@ -304,15 +304,15 @@ component accessors="true" singleton {
 		var serverJSON = serverDetails.serverJSON;
 		var serverJSONToSave = duplicate( serverJSON );
 		var serverInfo = serverDetails.serverinfo;
-		
+
 		systemSettings.expandDeepSystemSettings( serverJSON );
 		systemSettings.expandDeepSystemSettings( defaults );
 		// Mix in environment variable overrides like BOX_SERVER_PROFILE
 		loadOverrides( serverJSON, serverInfo, serverProps.verbose ?: serverJSON.verbose ?: defaults.verbose ?: false );
-		
+
 		// Load up our fully-realized server.json-specific env vars into CommandBox's environment
 		systemSettings.setDeepSystemSettings( serverDetails.serverJSON.env ?: {}, '' );
-		
+
 		interceptorService.announceInterception( 'preServerStart', { serverDetails=serverDetails, serverProps=serverProps, serverInfo=serverDetails.serverInfo, serverJSON=serverDetails.serverJSON, defaults=defaults } );
 
 		// In case the interceptor changed them
@@ -607,7 +607,7 @@ component accessors="true" singleton {
 			if( serverInfo.envVarHasProfile ?: false ) {
 				profileReason = 'profile property in in "box_server_profile" env var';
 			} else {
-				profileReason = 'profile property in server.json';	
+				profileReason = 'profile property in server.json';
 			}
 		}
 		if( !isNull( serverProps.profile ) ) {
@@ -644,7 +644,7 @@ component accessors="true" singleton {
 		serverInfo.blockFlashRemoting									 = serverJSON.web.blockFlashRemoting	?: defaults.web.blockFlashRemoting;
 		serverInfo.allowedExt											 = serverJSON.web.allowedExt			?: defaults.web.allowedExt;
 		serverInfo.useProxyForwardedIP									 = serverJSON.web.useProxyForwardedIP	?: defaults.web.useProxyForwardedIP;
-		
+
 
 		// If there isn't a default for this already
 		if( !isBoolean( defaults.web.directoryBrowsing ) ) {
@@ -666,7 +666,7 @@ component accessors="true" singleton {
 				defaults.web.fileCache.enable = false;
 			}
 		}
-		
+
 		serverInfo.fileCacheEnable	= 								   serverJSON.web.fileCache.enable		?: defaults.web.fileCache.enable;
 		serverInfo.fileCacheTotalSizeMB	= 							   serverJSON.web.fileCache.totalSizeMB	?: defaults.web.fileCache.totalSizeMB;
 		serverInfo.fileCacheMaxFileSizeKB = 						   serverJSON.web.fileCache.maxFileSizeKB ?: defaults.web.fileCache.maxFileSizeKB;
@@ -760,7 +760,7 @@ component accessors="true" singleton {
 		serverInfo.basicAuthUsers 	= 								   serverJSON.web.basicAuth.users		?: defaults.web.basicAuth.users;
 		serverInfo.welcomeFiles 	= serverProps.welcomeFiles		?: serverJSON.web.welcomeFiles			?: defaults.web.welcomeFiles;
 		serverInfo.maxRequests		= 								   serverJSON.web.maxRequests			?: defaults.web.maxRequests;
-		
+
 		serverInfo.trayEnable	 	= serverProps.trayEnable		?: serverJSON.trayEnable			?: defaults.trayEnable;
 		serverInfo.dockEnable	 	= serverJSON.dockEnable			?: defaults.dockEnable;
 		serverInfo.defaultBaseURL = serverInfo.SSLEnable ? 'https://#serverInfo.host#:#serverInfo.SSLPort#' : 'http://#serverInfo.host#:#serverInfo.port#';
@@ -833,7 +833,7 @@ component accessors="true" singleton {
 			if( directoryExists( possiblePath ) ) {
 				return possiblePath;
 			}
-			return fileSystemUtil.resolvePath( p, defaultServerConfigFileDirectory );			
+			return fileSystemUtil.resolvePath( p, defaultServerConfigFileDirectory );
 		} ) );
 
 		// Global errorPages are always added on top of server.json (but don't overwrite the full struct)
@@ -860,7 +860,7 @@ component accessors="true" singleton {
 		} else if( !isNull( defaults.JVM.args ) && isSimpleValue( defaults.JVM.args ) && len( defaults.JVM.args ) ) {
 			serverInfo.JVMargs &= ' ' & defaults.JVM.args;
 		}
-		
+
 
 		// Global defaults are always added on top of whatever is specified by the user or server.json
 		serverInfo.runwarJarPath	= serverProps.runwarJarPath		?: serverJSON.runwar.jarPath	?: defaults.runwar.jarPath;
@@ -878,7 +878,7 @@ component accessors="true" singleton {
 		} else if( !isNull( defaults.runwar.args ) && isSimpleValue( defaults.runwar.args ) && len( defaults.runwar.args ) ) {
 			serverInfo.runwarArgs &= ' ' & defaults.runwar.args;
 		}
-		
+
 
 		// Global defaults are always added on top of whatever is specified by the user or server.json
 		serverInfo.runwarXNIOOptions	= ( serverJSON.runwar.XNIOOptions ?: {} ).append( defaults.runwar.XNIOOptions, true );
@@ -888,7 +888,7 @@ component accessors="true" singleton {
 
 		// Server startup timeout
 		serverInfo.startTimeout		= serverProps.startTimeout 			?: serverJSON.startTimeout 	?: defaults.startTimeout;
-		
+
 		serverInfo.JVMProperties =	serverJSON.JVM.properties		?: {};
 		serverInfo.JVMProperties.append( defaults.jvm.properties, false );
 
@@ -989,7 +989,7 @@ component accessors="true" singleton {
 				"disallowed-methods( methods={trace,track} )",
 				// Common config files and sensitive paths that should never be accessed, even on development
 				"regex( pattern='.*/(box\.json|server\.json|web\.config|urlrewrite\.xml|package\.json|package-lock\.json|Gulpfile\.js)', case-sensitive=false ) -> { set-error(404); done }",
-				// Any file or folder starting with a period, unless it's called 
+				// Any file or folder starting with a period, unless it's called
 				"regex('/\.') and not path-prefix(.well-known) -> { set-error( 404 ); done }",
 				// Additional serlvlet mappings in Adobe CF's web.xml
 				"path-prefix( { '/JSDebugServlet','/securityanalyzer','/WSRPProducer' } ) -> { set-error( 404 ); done }",
@@ -1049,19 +1049,19 @@ component accessors="true" singleton {
 		}
 
 		serverInfo.webXMLOverrideForce = serverJSON.app.webXMLOverrideForce ?: defaults.app.webXMLOverrideForce;
-    
+
 		serverInfo.sessionCookieSecure			= serverJSON.app.sessionCookieSecure			?: defaults.app.sessionCookieSecure;
 		serverInfo.sessionCookieHTTPOnly		= serverJSON.app.sessionCookieHTTPOnly			?: defaults.app.sessionCookieHTTPOnly;
-				
+
 		serverInfo.ModCFMLenable				= serverJSON.ModCFML.enable						?: defaults.ModCFML.enable;
 		serverInfo.ModCFMLMaxContexts			= serverJSON.ModCFML.maxContexts				?: defaults.ModCFML.maxContexts;
 		serverInfo.ModCFMLSharedKey				= serverJSON.ModCFML.sharedKey					?: defaults.ModCFML.sharedKey;
 		serverInfo.ModCFMLRequireSharedKey		= serverJSON.ModCFML.requireSharedKey			?: defaults.ModCFML.requireSharedKey;
 		serverInfo.ModCFMLcreateVDirs			= serverJSON.ModCFML.createVirtualDirectories	?: defaults.ModCFML.createVirtualDirectories;
-		
+
 		// When we add native support for multiple contexts in the server.json, that will also set this to true
 		serverInfo.multiContext			= serverInfo.ModCFMLenable;
-		
+
 		if( serverInfo.verbose ) {
 			job.addLog( "start server in - " & serverInfo.webroot );
 			job.addLog( "server name - " & serverInfo.name );
@@ -1197,7 +1197,7 @@ component accessors="true" singleton {
 		serverInfo.consolelogPath = serverInfo.logdir & '/server.out.txt';
 		serverInfo.accessLogPath = serverInfo.logDir & '/access.txt';
 		serverInfo.rewritesLogPath = serverInfo.logDir & '/rewrites.txt';
-		 
+
 
 		// Find the correct tray icon for this server
 		if( !len( serverInfo.trayIcon ) ) {
@@ -1596,10 +1596,10 @@ component accessors="true" singleton {
 				throw( message='Since ModeCFML support is enabled, [ModCFML.sharedKey] is required for security.', detail='Disable IN DEVELOPMENT ONLY with [ModCFML.RequireSharedKey=false].', type="commandException" );
 			}
 			if( len( serverInfo.ModCFMLSharedKey ) ) {
-				args.append( '--auto-create-contexts-secret' ).append( serverInfo.ModCFMLSharedKey );	
+				args.append( '--auto-create-contexts-secret' ).append( serverInfo.ModCFMLSharedKey );
 			}
 			if( serverInfo.ModCFMLcreateVDirs ) {
-				args.append( '--auto-create-contexts-vdirs' ).append( serverInfo.ModCFMLcreateVDirs );	
+				args.append( '--auto-create-contexts-vdirs' ).append( serverInfo.ModCFMLcreateVDirs );
 			}
 		}
 
@@ -1673,12 +1673,12 @@ component accessors="true" singleton {
 		if ( !currentEnv.containsKey( 'COMMANDBOX_HOME' ) ) {
 			currentEnv.put( 'COMMANDBOX_HOME', expandPath( '/commandbox-home' ) );
 		}
-		
+
 		// Add COMMANDBOX_VERSION env var to the server if not already there
 		if ( !currentEnv.containsKey( 'COMMANDBOX_VERSION' ) ) {
 			currentEnv.put( 'COMMANDBOX_VERSION', shell.getVersion() );
 		}
-		
+
 
 	    // Conjoin standard error and output for convenience.
 	    processBuilder.redirectErrorStream( true );
@@ -2183,20 +2183,20 @@ component accessors="true" singleton {
 
 		try{
 			// Try to stop and set status back
-			
+
 	    	var processBuilder = createObject( "java", "java.lang.ProcessBuilder" );
 	    	processBuilder.init( args );
 	    	processBuilder.redirectErrorStream( true );
 	    	var process = processBuilder.start();
 	    	var inputStream = process.getInputStream();
 	    	var exitCode = process.waitFor();
-	    	
+
 	    	var processOutput = toString( inputStream );
-	    	
+
 	    	if( exitCode > 0 ) {
 	    		throw( message='Error stopping server', detail=processOutput );
 	    	}
-	    	
+
 			//execute name=variables.javaCommand arguments=args timeout="50" variable="results.messages" errorVariable="errorVar";
 			serverInfo.status 		= "stopped";
 			serverInfo.statusInfo 	= {
@@ -2220,7 +2220,7 @@ component accessors="true" singleton {
 			if( !isNull( process ) ) {
 				process.destroy();
 			}
-		} 
+		}
 	}
 
 	/**
@@ -2303,6 +2303,8 @@ component accessors="true" singleton {
 	 * @host.hint host to test port on, defaults 127.0.0.1
  	 **/
 	function isPortAvailable( host="127.0.0.1", required port ){
+
+		var timeStart = millisecond(now());
 		try {
 			var serverSocket = java.serverSocket
 				.init(
@@ -2310,10 +2312,12 @@ component accessors="true" singleton {
 					javaCast( "int", 1 ),
 					getAddressByHost( arguments.host ) );
 			serverSocket.close();
+			consoleLogger.debug("port check in #millisecond(now()) - timeStart#ms")
 			return true;
 		} catch( java.net.UnknownHostException var e ) {
 			// In this case, the host name doesn't exist, so we really don't know about the port, but we'll say it's available
 			// otherwise, old, stopped servers who's host entries no longer exist will show up as running.
+			consoleLogger.debug("port check in #millisecond(now()) - timeStart#ms")
 			return true;
 		} catch( java.net.BindException var e ) {
 			// Same as above-- the IP address/host isn't bound to any local adapters.  Probably a host file entry went missing.
@@ -2326,6 +2330,7 @@ component accessors="true" singleton {
 			}
 			// We're assuming that any other error means the address was in use.
 			// Java doesn't provide a specific message or exception type for this unfortunately.
+			consoleLogger.debug("port check in #millisecond(now()) - timeStart#ms")
 			return false;
 		}
 	}
@@ -2339,7 +2344,7 @@ component accessors="true" singleton {
 			return java.InetAddress.getByName( arguments.host );
 		} catch( java.net.UnknownHostException var e ) {
 			// It's possible to have "fake" hosts such as mytest.localhost which aren't in DNS
-			// or your hosts file.  Browsers will resolve them to localhost, but the call above 
+			// or your hosts file.  Browsers will resolve them to localhost, but the call above
 			// will fail with a UnknownHostException since they aren't real
 			if( host.listLast( '.' ) == 'localhost' ) {
 				return java.InetAddress.getByName( '127.0.0.1' );
@@ -2348,24 +2353,44 @@ component accessors="true" singleton {
 		}
 	}
 
+	/**
+	 * Find out if a given Process ID (PID) is a running java service
+	 * @pidStr.hint PID to test on
+ 	 **/
+	  function isProcessAlive(required pidStr) {
+		var result = "";
+		var timeStart = millisecond(now());
+		try{
+			if (fileSystemUtil.isWindows() ) {
+				cfexecute(name='cmd', arguments='/c tasklist /FI "PID eq #pidStr#"', variable="result"  timeout="10");
+				consoleLogger.debug("Check alive Windows mode. Pid: #pidStr# in #millisecond(now()) - timeStart#ms");
+			} else if (fileSystemUtil.isMac() || fileSystemUtil.isLinux() ) {
+				cfexecute(name='ps', arguments='-p #pidStr#', variable="result" , timeout="10");
+				consoleLogger.debug("Check alive Linux/Unix mode. Pid: #pidStr# in #millisecond(now()) - timeStart#ms" );
+			} else {
+				consoleLogger.debug("Unsuported OS: Check alive for Pid: #pidStr# = return false");
+			}
+			if (findNoCase("java", result) > 0 && findNoCase(pidStr, result) > 0) return true;
+		} catch ( any e){
+			consoleLogger.debug(e);
+		}
+		return false;
+	}
 
 	/**
 	 * Logic to tell if a server is running
 	 * @serverInfo.hint Struct of server information
  	 **/
 	function isServerRunning( required struct serverInfo ){
-		var portToCheck = serverInfo.stopSocket;
-		if( serverInfo.HTTPEnable ) {
-			portToCheck = serverInfo.port;
-		} else if( serverInfo.SSLEnable ) {
-			portToCheck = serverInfo.SSLPort;
-		} else if( serverInfo.AJPEnable ) {
-			portToCheck = serverInfo.AJPPort;
+		if(fileExists(serverInfo.pidFile)){
+			var getPID = fileRead(serverInfo.pidFile);
+			consoleLogger.debug("Checking #serverInfo.name#")
+			thread action="run" name="check_#getPID##getTickCount()#" {
+				if(!isProcessAlive(getPID)) fileDelete(serverInfo.pidFile)
+			}
+			return true;
 		}
-
-		lock name="server-status-check-#portToCheck#" type="exclusive"{
-			return !isPortAvailable( serverInfo.host, portToCheck );
-		}
+		return false;
 	}
 
 	/**
@@ -2556,7 +2581,7 @@ component accessors="true" singleton {
 		return getServers()
 			.valueArray()
 			.map( (s)=>s.name )
-			.sort( 'textNoCase' );		
+			.sort( 'textNoCase' );
 	}
 
 	/**
@@ -2776,7 +2801,7 @@ component accessors="true" singleton {
 					'onServerStart' : '',
 					'onServerStop' : '',
 					'preServerForget' : '',
-					'postServerForget' : '' 
+					'postServerForget' : ''
 				}
 			} );
 		}
@@ -2791,7 +2816,7 @@ component accessors="true" singleton {
 	* Dynamic completion for server names, sorted by last started
 	*/
 	function serverNameComplete() {
-		
+
 		return getservers()
 			.valueArray()
 			.sort( (a,b)=>{
@@ -2803,8 +2828,8 @@ component accessors="true" singleton {
 			} )
 			.map( (s,i)=>return { name : s.name, group : 'Server Names', sort : i } );
 	}
-	
-		
+
+
 	/**
 	* Loads config settings from env vars or Java system properties
 	*/
@@ -2812,8 +2837,8 @@ component accessors="true" singleton {
 		var debugMessages = [];
 		var job = wirebox.getInstance( 'interactiveJob' );
 		var overrides={};
-		
-		// Look for individual BOX settings to import.		
+
+		// Look for individual BOX settings to import.
 		var processVarsUDF = function( envVar, value, string source ) {
 			// Loop over any that look like box_server_xxx
 			if( envVar.len() > 11 && reFindNoCase( 'box[_\.]server[_\.]', left( envVar, 11 ) ) ) {
@@ -2824,13 +2849,13 @@ component accessors="true" singleton {
 				JSONService.set( JSON=overrides, properties={ '#name#' : value }, thisAppend=true );
 			}
 		};
-		
+
 		// Get all OS env vars
 		var envVars = system.getenv();
 		for( var envVar in envVars ) {
 			processVarsUDF( envVar, envVars[ envVar ], 'OS environment variable' );
 		}
-		
+
 		// Get all System Properties
 		var props = system.getProperties();
 		for( var prop in props ) {
@@ -2842,21 +2867,21 @@ component accessors="true" singleton {
 		for( var envVar in envVars ) {
 			processVarsUDF( envVar, envVars[ envVar ], 'box environment variable' );
 		}
-	
+
 		if( overrides.keyExists( 'profile' ) ) {
 			serverInfo.envVarHasProfile=true
 		}
-	
+
 		if( verbose && debugMessages.len() ) {
 			job.start( 'Overriding server.json values from env vars' );
 			debugMessages.each( (l)=>job.addLog( l ) );
 	    	job.complete( verbose );
 		}
-	
+
 		JSONService.mergeData( serverJSON, overrides );
 	}
-	
-	
+
+
 
 	/**
 	* Nice wrapper to run a server script
@@ -2876,7 +2901,7 @@ component accessors="true" singleton {
 				}
 				var serverJSON = serverDetails.serverJSON;
 				systemSettings.expandDeepSystemSettings( serverJSON );
-				loadOverrides( serverJSON, serverDetails.serverInfo, serverDetails.serverInfo.verbose ?: false );				
+				loadOverrides( serverJSON, serverDetails.serverInfo, serverDetails.serverInfo.verbose ?: false );
 			} else {
 				consoleLogger.warn( 'Could not find server for script [#arguments.scriptName#].' );
 				return;
