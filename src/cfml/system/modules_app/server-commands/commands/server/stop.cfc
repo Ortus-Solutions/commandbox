@@ -21,6 +21,7 @@ component aliases="stop" {
 	 * @forget Remove the directory information from disk
 	 * @all Stop ALL running servers
 	 * @verbose Show raw output of stop command
+	 * @local  Stop servers with webroot matching the current directory
 	 **/
 	function run(
 		string name,
@@ -28,11 +29,20 @@ component aliases="stop" {
 		String serverConfigFile,
 		boolean forget=false,
 		boolean all=false,
-		boolean verbose=false ){
-
+		boolean verbose=false,
+		boolean local=false
+	){
+		var localOnly = arguments.local;
 
 		if( arguments.all ) {
 			var servers = serverService.getServers();
+		} else if (arguments.local) {
+			var servers = serverService.getServers().filter( ( serverName, thisServerInfo ) => {
+				return (
+					// Local or OS Wide (default)
+					( !localOnly || getCanonicalPath( getCWD() ) == getCanonicalPath( thisServerInfo.webroot ) )
+				);
+			}, true );
 		} else {
 
 			if( !isNull( arguments.directory ) ) {
