@@ -2384,7 +2384,6 @@ component accessors="true" singleton {
 	function isServerRunning( required struct serverInfo ){
 		if(fileExists(serverInfo.pidFile)){
 			var getPID = fileRead(serverInfo.pidFile);
-			consoleLogger.debug("Checking #serverInfo.name#")
 			thread action="run" name="check_#getPID##getTickCount()#" {
 				if(!isProcessAlive(getPID)) fileDelete(serverInfo.pidFile)
 			}
