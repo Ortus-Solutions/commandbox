@@ -32,16 +32,11 @@ component aliases="stop" {
 		boolean verbose=false,
 		boolean local=false
 	){
-		var localOnly = arguments.local;
-
 		if( arguments.all ) {
 			var servers = serverService.getServers();
 		} else if (arguments.local) {
 			var servers = serverService.getServers().filter( ( serverName, thisServerInfo ) => {
-				return (
-					// Local or OS Wide (default)
-					( !localOnly || getCanonicalPath( getCWD() ) == getCanonicalPath( thisServerInfo.webroot ) )
-				);
+				return getCanonicalPath( getCWD() ) == getCanonicalPath( thisServerInfo.webroot );
 			}, true );
 		} else {
 

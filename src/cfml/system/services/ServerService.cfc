@@ -2303,8 +2303,6 @@ component accessors="true" singleton {
 	 * @host.hint host to test port on, defaults 127.0.0.1
  	 **/
 	function isPortAvailable( host="127.0.0.1", required port ){
-
-		var timeStart = millisecond(now());
 		try {
 			var serverSocket = java.serverSocket
 				.init(
@@ -2312,7 +2310,6 @@ component accessors="true" singleton {
 					javaCast( "int", 1 ),
 					getAddressByHost( arguments.host ) );
 			serverSocket.close();
-			consoleLogger.debug("port check in #millisecond(now()) - timeStart#ms")
 			return true;
 		} catch( java.net.UnknownHostException var e ) {
 			// In this case, the host name doesn't exist, so we really don't know about the port, but we'll say it's available
@@ -2363,16 +2360,12 @@ component accessors="true" singleton {
 		try{
 			if (fileSystemUtil.isWindows() ) {
 				cfexecute(name='cmd', arguments='/c tasklist /FI "PID eq #pidStr#"', variable="result"  timeout="10");
-				consoleLogger.debug("Check alive Windows mode. Pid: #pidStr# in #millisecond(now()) - timeStart#ms");
 			} else if (fileSystemUtil.isMac() || fileSystemUtil.isLinux() ) {
 				cfexecute(name='ps', arguments='-p #pidStr#', variable="result" , timeout="10");
-				consoleLogger.debug("Check alive Linux/Unix mode. Pid: #pidStr# in #millisecond(now()) - timeStart#ms" );
-			} else {
-				consoleLogger.debug("Unsuported OS: Check alive for Pid: #pidStr# = return false");
 			}
 			if (findNoCase("java", result) > 0 && findNoCase(pidStr, result) > 0) return true;
-		} catch ( any e){
-			consoleLogger.debug(e);
+		} catch ( any e ){
+			consoleLogger.debug(e.message);
 		}
 		return false;
 	}
