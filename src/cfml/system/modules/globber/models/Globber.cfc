@@ -19,10 +19,14 @@ component accessors="true" {
 	property name='pattern';
 	/** The file globbing pattern NOT to match. */
 	property name='excludePattern';
+	property name='notExcludePattern';
 	/** query of real file system resources that match the pattern */
 	property name='matchQuery';
+	property name='matchQueryArray';
 	/** Return matches as a query instead of an array */
 	property name='format' default='array';
+	/** Uses Gitignore rules that match pattern anywhere inside path, not requiring explicit * at the start or end of the pattern */
+	property name='loose' default='false';
 	/** Sort to use */
 	property name='sort' default='type, name';
 	/** Directory the list was pulled from */
@@ -33,6 +37,26 @@ component accessors="true" {
 		variables.format = 'array';
 		variables.pattern = [];
 		variables.excludePattern = [];
+		variables.notExcludePattern = [];
+		variables.loose = false;
+		variables.matchQueryArray=[];
+		return this;
+	}
+
+	/**
+	* Enable loose matching
+	*/
+	function inDirectory( required string baseDirectory ) {
+		baseDirectory = pathPatternMatcher.normalizeSlashes( baseDirectory );
+		setBaseDir( baseDirectory & ( baseDirectory.endsWith( '/' ) ? '' : '/' ) );
+		return this;
+	}
+
+	/**
+	* Enable loose matching
+	*/
+	function loose( boolean loose=true ) {
+		setLoose( loose );
 		return this;
 	}
 
@@ -65,16 +89,14 @@ component accessors="true" {
 	* Can be list of patterns or array of patterns.
 	* Empty patterns will be ignored
 	*/
-	function setPattern( required any pattern ) {
-		if( isSimpleValue( arguments.pattern ) ) {
-			arguments.pattern = listToArray( arguments.pattern );
+	function setPattern( required any thisPattern ) {
+		variables.pattern = [];
+		if( isSimpleValue( arguments.thisPattern ) ) {
+			arguments.thisPattern = listToArray( arguments.thisPattern );
 		}
-		arguments.pattern = arguments.pattern.map( function( p ) {
-			return pathPatternMatcher.normalizeSlashes( arguments.p );
-		}).filter( function( p ){
-			return len( arguments.p );
-		} );
-		variables.pattern = arguments.pattern;
+		arguments.thisPattern.each( function( p ) {
+			addPattern( arguments.p );
+		});
 		return this;
 	}
 
@@ -83,6 +105,7 @@ component accessors="true" {
 	*/
 	function addPattern( required string pattern ) {
 		if( len( arguments.pattern ) ) {
+			arguments.pattern = pathPatternMatcher.normalizeSlashes( arguments.pattern );
 			variables.pattern.append( arguments.pattern  );
 		}
 		return this;
@@ -107,16 +130,14 @@ component accessors="true" {
 	* Can be list of excludePatterns or array of excludePatterns.
 	* Empty excludePatterns will be ignored
 	*/
-	function setExcludePattern( required any excludePattern ) {
-		if( isSimpleValue( arguments.excludePattern ) ) {
-			arguments.excludePattern = listToArray( arguments.excludePattern );
+	function setExcludePattern( required any thisExcludePattern ) {
+		variables.excludePattern = [];
+		if( isSimpleValue( arguments.thisExcludePattern ) ) {
+			arguments.thisExcludePattern = listToArray( arguments.thisExcludePattern );
 		}
-		arguments.excludePattern = arguments.excludePattern.map( function( p ) {
-			return pathPatternMatcher.normalizeSlashes( arguments.p );
-		}).filter( function( p ){
-			return len( arguments.p );
-		} );
-		variables.excludePattern = arguments.excludePattern;
+		arguments.thisExcludePattern.each( function( p ) {
+			addExcludePattern( p );
+		});
 		return this;
 	}
 
@@ -125,11 +146,27 @@ component accessors="true" {
 	*/
 	function addExcludePattern( required string excludePattern ) {
 		if( len( arguments.excludePattern ) ) {
-			variables.excludePattern.append( arguments.excludePattern  );
+			if ( arguments.excludePattern.startsWith( '!' ) ) {
+				addNotExcludePattern( mid( arguments.excludePattern, 2, len( arguments.excludePattern ) - 1 ) );	
+			} else {
+				arguments.excludePattern = pathPatternMatcher.normalizeSlashes( arguments.excludePattern );
+				variables.excludePattern.append( arguments.excludePattern  );	
+			}			
 		}
 		return this;
 	}
 
+	/**
+	* Add not excludePattern to process
+	*/
+	function addNotExcludePattern( required string notExcludePattern ) {
+		if( len( arguments.notExcludePattern ) ) {
+			arguments.notExcludePattern = pathPatternMatcher.normalizeSlashes( arguments.notExcludePattern );
+			variables.notExcludePattern.append( arguments.notExcludePattern  );
+		}
+		return this;
+	}
+	
 	/**
 	* Always returns a string which is a list of excludePatterns
 	*/
@@ -148,8 +185,49 @@ component accessors="true" {
 	* Pass a closure to this function to have it
 	* applied to each paths matched by the pattern.
 	*/
-	function apply( udf ) {
+	function apply( required udf ) {
 		matches().each( udf );
+		return this;
+	}
+
+	/**
+	* Copy all matched paths to a new folder
+	*/
+	function copyTo( required string targetPath ) {
+		targetPath = pathPatternMatcher.normalizeSlashes( targetPath );
+		if( !targetPath.endsWith( '/' ) ) {
+			targetPath &= '/';
+		}
+		ensureMatches();
+		var paths = getMatchQuery();
+		if( !directoryExists( targetPath ) ) {
+			directoryCreate( targetPath, true, true );
+		}
+		// Create all folders first
+		paths
+			.filter( (p)=>p.type=='dir' )
+			.sort( (a,b)=>len(a.directory&a.name )-len(b.directory&b.name ) )
+			.each( (p)=>{
+				var newDir = p.directory.listAppend( p.name, '/', false );
+				newDir = pathPatternMatcher.normalizeSlashes( newDir );
+				newDir = newDir.replace( getBaseDir(), '' )
+				directoryCreate( targetPath & newDir, true, true )	
+			} );
+		// Copy files asynch
+		paths
+			.filter( (p)=>p.type=='file' )
+			.each( (p)=>{
+				var oldFile = p.directory.listAppend( p.name, '/', false );
+				var newFile = pathPatternMatcher.normalizeSlashes( oldFile );
+				newFile = targetPath & newFile.replace( getBaseDir(), '' );
+				// Just in case
+				newDirectory = getDirectoryFromPath( newFile );
+				if( !directoryExists( newDirectory ) ) {
+					directoryCreate( newDirectory, true, true );
+				}
+				fileCopy( oldFile, newFile )	
+			}, true );
+			
 		return this;
 	}
 
@@ -190,32 +268,25 @@ component accessors="true" {
 	private function process() {
 		var patterns = getPatternArray();
 
-		if( !patterns.len() ) {
-			throw( 'Cannot glob empty pattern.' );
+		if( !patterns.len() && !getBaseDir().len() ) {
+			throw( 'Cannot glob empty pattern with no base directory.' );
+		} else if( !patterns.len() ) {
+			patterns = [ '**' ];
 		}
 
+		if( getLoose() && !len( getBaseDir() ) ) {
+			throw( 'You must use [inDirectory()] to set a base dir when using loose matching.' );
+		}
+		
 		for( var thisPattern in patterns ) {
 			processPattern( thisPattern );
 		}
 
 		var matchQuery = getMatchQuery();
+		
+		combineMatchQueries();		
 
-		if( isNull( matchQuery ) ) {
-			setMatchQuery( queryNew( 'name,size,type,dateLastModified,attributes,mode,directory' ) );
-		} else {
-			// UNION isn't removing dupes on Lucee so doing second select here for that purpose.
-			cfquery( dbtype="query" ,name="local.newMatchQuery" ) {
-				writeOutput( 'SELECT DISTINCT * FROM matchQuery ' );
-				if( len( getSort() ) ) {
-					writeOutput( 'ORDER BY #getCleanSort()#' );
-				}
-			}
-
-			setMatchQuery( local.newMatchQuery );
-		}
-
-
-		if( patterns.len() > 1 ) {
+		if( patterns.len() > 1 && !getLoose() ) {
 			var dirs = queryColumnData( getMatchQuery(), 'directory' );
 			var lookups = {};
 			dirs.each( function( dir ) {
@@ -241,109 +312,130 @@ component accessors="true" {
 	}
 
 	function appendMatchQuery( matchQuery ) {
-		// First one in just gets set
-		if( isNull( getMatchQuery() ) ) {
-			setMatchQuery( matchQuery );
-		// merge remaining patterns
-		} else {
-			var previousMatch = getMatchQuery();
-
-			cfquery( dbtype="query" ,name="local.newMatchQuery" ) {
-				writeOutput( 'SELECT * FROM matchQuery UNION SELECT * FROM previousMatch ' );
-			}
-
-			setMatchQuery( local.newMatchQuery );
-		}
+		matchQueryArray.append( matchQuery );
+		return;
 	}
 
-	private function processPattern( string pattern ) {
-
+	private function processPattern( string pattern, baseDir, skipExcludes=false ) {
 		local.thisPattern = pathPatternMatcher.normalizeSlashes( arguments.pattern );
-
-		// To optimize this as much as possible, we want to get a directory listing as deep as possible so we process a few files as we can.
-		// Find the deepest folder that doesn't have a wildcard in it.
-		var baseDir = '';
-		var i = 0;
-		// Skip last token
-		while( ++i < thisPattern.listLen( '/' ) ) {
-			var token = thisPattern.listGetAt( i, '/' );
-			if( token contains '*' || token contains '?' ) {
-				break;
+		var exactPattern = thisPattern.startsWith('/');
+		var fileFilter = '';
+		var fullPatternPath = ( getLoose() ? getBaseDir().listAppend( thisPattern, '/', false ) : thisPattern );
+							
+		// Optimization for exact file path
+		if( ( !getLoose() || exactPattern ) 
+			&& ( thisPattern does not contain '*' && thisPattern does not contain '?' && fileExists( fullPatternPath ) )
+		) {
+			arguments.baseDir = getDirectoryFromPath( fullPatternPath );
+			fileFilter = '*' & listLast( fullPatternPath, '/' )
+		} else {
+			if( isNull( arguments.baseDir ) ) {
+				// To optimize this as much as possible, we want to get a directory listing as deep as possible so we process a few files as we can.
+				// Find the deepest folder that doesn't have a wildcard in it.
+				if( getLoose() ) {
+					if( exactPattern ) {
+						arguments.baseDir = calculateBaseDir( getBaseDir() & thisPattern.right( -1 ) )	
+					} else {
+						arguments.baseDir = calculateBaseDir( getBaseDir() )
+					}
+				} else {
+					arguments.baseDir = calculateBaseDir( thisPattern );
+				}
 			}
-			baseDir = baseDir.listAppend( token, '/' );
-		}
-		// Unix paths need the leading slash put back
-		if( thisPattern.startsWith( '/' ) ) {
-			baseDir = '/' & baseDir;
 		}
 
-		// Windows drive letters need trailing slash.
-		if( baseDir.listLen( '/' ) == 1 && baseDir contains ':' ) {
-			baseDir = baseDir & '/';
-		}
-
-		if( !baseDir.len() ) {
-			baseDir = '/';
-		}
-
-		var everythingAfterBaseDir = thisPattern.replace( baseDir, '' );
-
-		// If we have a partial directory next such as modules* optimize here
-		if( everythingAfterBaseDir.listLen( '/' ) > 1 && everythingAfterBaseDir.listFirst( '/' ).reFind( '[^\*^\?]' ) && !everythingAfterBaseDir.listFirst( '/' ).startsWith( '**' ) ) {
-
-			thisPattern = baseDir & '/' & everythingAfterBaseDir.listFirst( '/' ) & '/';
-			// Manually loop over the dirs at this level that match to narrow what we're looking at
-			directoryList (
+		// Strip off the "not found" part
+		var remainingPattern = findUnmatchedPattern( thisPattern, baseDir )
+		
+		var dl = directoryList (
 				listInfo='query',
 				recurse=false,
 				path=baseDir,
-				type='dir',
-				sort=getSort(),
-				filter=( path )=>{
-					var thisPath = path & '/';
-					if( pathPatternMatcher.matchPattern( thisPattern, thisPath, true ) ) {
-						return true;
+				filter=fileFilter
+			).filter( ( path )=>{
+				// All of this nonsense is to build the full normalized path of this item WITH a trailing slash if it's a directory
+				if( arguments.path.directory.endsWith( '/' ) || arguments.path.directory.endsWith( '\' ) ) {
+					var thisPath = arguments.path.directory & arguments.path.name & ( arguments.path.type == 'dir' ? '/' : '' );
+				} else {
+					var thisPath = arguments.path.directory & '/' & arguments.path.name & ( arguments.path.type == 'dir' ? '/' : '' );
+				}
+				local.thisPath = pathPatternMatcher.normalizeSlashes( thisPath );
+				
+				var pathToMatch = local.thisPath;
+				if( getLoose() ) {
+					pathToMatch = local.thisPath.replaceNoCase( getBaseDir(), '' );
+				}
+								
+				// If we've hit an exclude pattern, we can bail now-- skipping all recursion and processing of files at this level.
+				var thisExcludePattern = this.getExcludePatternArray();
+				if( !skipExcludes && thisExcludePattern.len() && pathPatternMatcher.matchPatterns( thisExcludePattern, pathToMatch, !getLoose() ) ) {
+					// UNLESS we have a negated ignore!
+					var possiblePatterns = pathMayNotBeExcluded( pathToMatch, path.type, baseDir );
+					if( possiblePatterns.len() ) {
+						// If we're looking at a file, just check it.  No need to recurse.
+						if(  path.type == 'file' ) {
+							if( pathPatternMatcher.matchPatterns( possiblePatterns, pathToMatch, !getLoose() ) ) {
+								return true;
+							}
+						} else {
+							// For each of our possible patterns, let's recurse and check each of them.
+							// TODO: optimize this by recursing once and checking all patterns at a time, 
+							// but that will require a major refactor of processPatterns() to accept more than one pattern.
+							for( var possiblePattern in possiblePatterns) {
+								if( getLoose() ) {
+									if( possiblePattern.startsWith( '/' ) ) {
+										// Exact patterns in loose mode like /foo/bar/baz.txt we want to zoom staright down to the 
+										// deepest folder possible to reduce unnessary recursion.
+										possiblePattern = getBaseDir().listAppend( possiblePattern, '/', false );
+										var thisBaseDir = calculateBaseDir( possiblePattern );
+										possiblePattern = possiblePattern.replace( thisBaseDir, '' );
+										processPattern( possiblePattern, thisBaseDir, true );
+									} else {
+										// non-exact patters which can be in any sub directory such as foo.txt just recurse down from the current folder we're looking at
+										processPattern( possiblePattern, thisPath, true )
+									}
+								} else {
+									// For non-loose mode just grab the deepest folder we can and start there.
+									var thisBaseDir = calculateBaseDir( possiblePattern );
+									processPattern( possiblePattern, thisBaseDir, true )
+								}
+							}
+						}
 					}
 					return false;
 				}
-			).each( ( folder )=>processPattern( baseDir & '/' & folder.name & '/' & everythingAfterBaseDir.listRest( '/' ) ) )
-
-			return;
-		}
-
-		var recurse = false;
-		if( thisPattern contains '**' ) {
-			recurse = true;
-		}
-
-		var optimizeFilter = '';
-		if( reFind( '\.[a-zA-Z0-9\?\*]{2,4}$', thisPattern ) ) {
-			optimizeFilter = '*.' & thisPattern.listLast( '.' ).replace( '?', '*', 'all' );
-		}
-
-		var dl = directoryList (
-				listInfo='query',
-				recurse=local.recurse,
-				path=baseDir,
-				sort=getSort(),
-				filter=optimizeFilter
-			).filter( ( path )=>{
-				if( path.directory.endsWith( '/' ) || path.directory.endsWith( '\' ) ) {
-					var thisPath = path.directory & path.name & ( path.type == 'dir' ? '/' : '' );
-				} else {
-					var thisPath = path.directory & '/' & path.name & ( path.type == 'dir' ? '/' : '' );
-				}
-				if( pathPatternMatcher.matchPattern( thisPattern, thisPath, true ) ) {
-					if( getExcludePatternArray().len() && pathPatternMatcher.matchPatterns( getExcludePatternArray(), thisPath, true ) ) {
-						return false;
+				
+				// If we're inside a **, then we just blindly recurse forever
+				if( arguments.path.type == 'dir' && remainingPattern.startsWith( '**' ) ) {
+					processPattern( thisPattern, local.thisPath, skipExcludes )
+				// If we're in loose mode, see if the next folder is a positive match
+				} else if( arguments.path.type == 'dir' && getLoose() ) {
+					if( exactPattern ) {
+						if( pathPatternMatcher.matchPattern( '/' & remainingPattern.listFirst( '/' ), pathToMatch, !getLoose() ) ) {
+							processPattern( '/' & remainingPattern.listRest( '/' ), local.thisPath, skipExcludes );
+						}
+					} else {
+						processPattern( thisPattern, local.thisPath, skipExcludes );
 					}
+				// For all other remaining patterns, only recurse if we've found a folder that matches the next part of the pattern
+				} if( arguments.path.type == 'dir' && remainingPattern.listLen( '/' ) > 1 ) {
+					if( pathPatternMatcher.matchPattern( baseDir & remainingPattern.listFirst( '/' ) & '/**', pathToMatch, !getLoose() ) ) {
+						processPattern( local.thisPath & remainingPattern.listRest( '/' ), local.thisPath, skipExcludes );
+					}
+				}
+				
+				// This check applies to files/folders that are immediate children of the current base dir. 
+				// We've already recursed into all worthy subfolders above
+				if( pathPatternMatcher.matchPattern( thisPattern, local.pathToMatch, !getLoose() ) ) {
 					return true;
 				}
 				return false;
 			} );
 
 		appendMatchQuery( dl );
-		setBaseDir( baseDir & ( baseDir.endsWith( '/' ) ? '' : '/' ) );
+		if( !getLoose() ) {
+			setBaseDir( baseDir & ( baseDir.endsWith( '/' ) ? '' : '/' ) );	
+		}
 
 	}
 
@@ -371,5 +463,135 @@ component accessors="true" {
 		// Ok, everything passes.
 		return getSort();
 	}
+
+	private function calculateBaseDir( required string pattern ) {
+		var baseDir = '';
+		var i = 0;
+		// Skip last token
+		while( ++i <= pattern.listLen( '/' ) ) {
+			var token = pattern.listGetAt( i, '/' );
+			if( token contains '*' || token contains '?' ) {
+				break;
+			}
+			// If we have a partial name like /foo/bar we may still match /foo/barstool.
+			// Only if it's /foo/bar/ do we know we can trust that in the base path
+			if( i == pattern.listLen( '/' ) && !pattern.endsWith( '/' ) ) {
+				break;
+			}
+			baseDir = baseDir.listAppend( token, '/', false );
+		}
+		
+		// Unix paths need the leading slash put back
+		if( pattern.startsWith( '/' ) ) {
+			baseDir = '/' & baseDir;
+		}
+
+		baseDir &= '/';
+		return baseDir;
+	}
+
+	private function combineMatchQueries() {
+		if( !matchQueryArray.len() ) {
+			setMatchQuery( queryNew( 'name,size,type,dateLastModified,attributes,mode,directory' ) );
+		} else {
+			var SQL = ''
+			var i = 0;
+			for( var thisQ in matchQueryArray ) {
+				i++;
+				local[ 'thisMatchQuery#i#' ] = thisQ;
+				SQL &= ' SELECT * FROM thisMatchQuery#i# ';
+				if( i < matchQueryArray.len() ) {
+					SQL &= ' UNION ALL'
+				}				
+			}
+			
+			var newMatchQuery = queryExecute(
+				SQL,
+				[],
+				{ dbtype="query" }
+			);
+						
+			var newMatchQuery = queryExecute(
+				'SELECT * FROM newMatchQuery
+				GROUP BY directory, name '
+				& ( len( getSort() ) ? ' ORDER BY #getCleanSort()#' : '' ),
+				[],
+				{ dbtype="query" }
+			);
+
+			setMatchQuery( local.newMatchQuery );
+		}
+	}
+	
+	function pathMayNotBeExcluded( pathToMatch, type, currentBaseDir ) {
+		if( !getNotExcludePattern().len() ) {
+			return [];
+		}
+		var possiblePatterns=[];
+						
+		for( notExclude in getNotExcludePattern() ) {	
+			var exactPattern = notExclude.startsWith('/');
+			var remainingPattern = findUnmatchedPattern( notExclude, currentBaseDir )
+			
+			// Well, crumbs-- all bets are off!
+			// /temp/**
+			// !foo.txt
+			if( type == 'dir' && getLoose() && !exactPattern ) {
+				possiblePatterns.append( notExclude );
+				continue;
+			}
+			
+			// If it's a file, just check it
+			if( type == 'file' ) {
+				if( pathPatternMatcher.matchPattern( notExclude, pathToMatch, false ) ) {
+					possiblePatterns.append( notExclude );					
+				}
+				// Even if we didn't find a match, all the checks below only apply to directories
+				continue;
+			}
+			
+			// These all apply to directories.  The question is whether or not we MAY need to recurse into the dir
+			// based on whether there is a notexclude pattern that could possibly be inside the dir
+			
+			// If we're inside a **, then we just blindly recurse forever
+			if( remainingPattern.startsWith( '**' ) ) {
+				possiblePatterns.append( notExclude );
+				continue;
+			// If we're in loose mode with an exact pattern, see if the next folder is a positive match
+			} else if( getLoose() && exactPattern && pathPatternMatcher.matchPattern( '/' & remainingPattern.listFirst( '/' ), pathToMatch, !getLoose() ) ) {
+				possiblePatterns.append( notExclude );
+				continue;
+			// For all other remaining patterns, only recurse if we've found a folder that matches the next part of the pattern
+			} if( remainingPattern.listLen( '/' ) > 1 && pathPatternMatcher.matchPattern( currentBaseDir & remainingPattern.listFirst( '/' ) & '/**', pathToMatch, !getLoose() ) ) {
+				possiblePatterns.append( notExclude );
+				continue;
+			}
+			 	
+		}
+		return possiblePatterns;
+	}
+	
+	function findUnmatchedPattern( thisPattern, currentBaseDir ) {
+		var exactPattern = thisPattern.startsWith('/');		
+		if( getLoose() ) {
+			if( exactPattern ) {
+				if( currentBaseDir == getBaseDir() ) {
+					var remainingPattern = thisPattern;
+				} else {
+					var remainingPattern = thisPattern.replaceNoCase( currentBaseDir.replaceNoCase( getBaseDir(), '' ), '' );	
+				}
+			} else {
+				// A loose pattern without a leading slash can be any levels deep
+				remainingPattern = '**';
+			}	
+		} else {
+			var remainingPattern = thisPattern.replaceNoCase( currentBaseDir, '' );
+			// if our base path isn't contained inside the pattern, we have entered a ** portion and we can't short circuit anything now
+			if( remainingPattern == thisPattern ) {
+				remainingPattern = '**';
+			}	
+		}
+		return remainingPattern;
+	}		
 
 }

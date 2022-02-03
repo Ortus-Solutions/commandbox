@@ -22,7 +22,6 @@ component accessors="true" implements="IEndpointInteractive" {
 	property name="fileSystemUtil"		inject="FileSystem";
 	property name="fileEndpoint"		inject="commandbox.system.endpoints.File";
 	property name="lexEndpoint"			inject="commandbox.system.endpoints.Lex";
-	property name='pathPatternMatcher' 	inject='provider:pathPatternMatcher@globber';
 	property name='wirebox'				inject='wirebox';
 
 	// Properties

@@ -74,15 +74,23 @@ component accessors="true" singleton {
 		regex = replace( regex, '/**/', '__zeroOrMoreDirs_', 'all' );
 		// Double ** matches anything
 		regex = replace( regex, '**', '__anything_', 'all' );
-		// Single * matches anything BUT slash
-		regex = replace( regex, '*', '__anythingButSlash__', 'all' );
+		// Match a single dir
+		regex = replace( regex, '/*/', '/__anythingButSlashOneOrMore__/', 'all' );
+		
+		// Single * matches anything BUT slash one or more chars
+		if( regex.endsWith( '/*' ) ) {
+			regex = regex.left( -1 ) & '__anythingButSlashOneOrMore__';	
+		}
+		// Single * matches anything BUT slash zero or more chars
+		regex = replace( regex, '*', '__anythingButSlashZeroOrMore__', 'all' );
 		// ? matches any single non-slash character
 		regex = replace( regex, '?', '__singleNonSlash__', 'all' );
 
 		// Switch placeholders for actual regex
 		regex = replace( regex, '__zeroOrMoreDirs_', '(/.*/|/)', 'all' );
 		regex = replace( regex, '__anything_', '.*', 'all' );
-		regex = replace( regex, '__anythingButSlash__', '[^/]*', 'all' );
+		regex = replace( regex, '__anythingButSlashOneOrMore__', '[^/]+', 'all' );
+		regex = replace( regex, '__anythingButSlashZeroOrMore__', '[^/]*', 'all' );
 		regex = replace( regex, '__singleNonSlash__', '[^/]', 'all' );
 
 		// If the pattern doesn't come with an explicit ending slash, add an optional one

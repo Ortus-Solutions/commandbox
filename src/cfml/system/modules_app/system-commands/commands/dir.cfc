@@ -53,7 +53,7 @@ component aliases="ls,ll,directory" {
 		paths.setPattern(
 			paths.getPatternArray().map( (p) => {
 				if( directoryExists( p ) ){
-					return p & '*' & ( recurse ? '*' : '' );
+					return p.listAppend( '*', '/', false ) & ( recurse ? '*' : '' );
 				}
 				return p;
 			} )
@@ -62,7 +62,7 @@ component aliases="ls,ll,directory" {
 		excludePaths = excludePaths.listMap( (p) => {
 			p = fileSystemUtil.resolvePath( p )
 			if( directoryExists( p ) ){
-				return p & '*' & ( recurse ? '*' : '' );
+				return p.listAppend( '*', '/', false ) & ( recurse ? '*' : '' );
 			}
 			return p;
 		} );

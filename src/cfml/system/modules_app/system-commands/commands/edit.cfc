@@ -14,13 +14,9 @@ component aliases="open" {
 	/**
 	 * @path.hint Path to open natively.
  	 **/
-	function run( Globber path=globber( getCWD() ) )  {
+	function run( Globber path=globber( getCWD().left(-1) ) )  {
 
 		path.apply( function( thisPath ) {
-
-			if( !fileExists( thisPath ) AND !directoryExists( thisPath ) ){
-				return error( "Path: #thisPath# does not exist, cannot open it!" );
-			}
 
 			if( fileSystemUtil.openNatively( thisPath ) ){
 				print.line( "Resource Opened!" );
