@@ -485,6 +485,10 @@ component accessors="true" singleton {
 	 * @directory.hint directory to CD to.  Please verify it exists before calling.
   	 **/
 	String function cd( directory="" ){
+		// Ensure we have a trailing slash for our directory.
+		if( !(arguments.directory.endsWith( '/' ) || arguments.directory.endsWith( '\' ) ) ) {
+			arguments.directory &= '/';
+		}
 		variables.pwd = arguments.directory;
 		request.lastCWD = arguments.directory;
 		// Update prompt to reflect directory change
