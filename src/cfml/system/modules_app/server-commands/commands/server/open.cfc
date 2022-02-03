@@ -48,7 +48,7 @@ component {
 		var serverInfo = serverDetails.serverInfo;
 
 		if( serverDetails.serverIsNew ){
-			print.boldRedLine( "No server configurations found so have no clue what to open buddy!" );
+			print.boldRedLine( "No servers found." );
 		} else {
 			// myPath/file.cfm is normalized to /myMapth/file.cfm
 			if( !arguments.URI.startsWith( '/' ) ) {
