@@ -157,40 +157,26 @@ component aliases='status,server info' {
 					print.indentedLine( 'ID: ' & thisServerInfo.id );
 
 					print.line().indentedLine( 'Server Home: ' & thisServerInfo.serverHome );
-
-					var portToCheck = 'stop socket';
-					var portToCheckValue = thisServerInfo.stopSocket;
-					if( thisServerInfo.HTTPEnable ) {
-						portToCheck = 'HTTP port';
-						portToCheckValue = thisServerInfo.port;
-					} else if( thisServerInfo.SSLEnable ) {
-						portToCheck = 'HTTPS port';
-						portToCheckValue = thisServerInfo.SSLPort;
-					} else if( thisServerInfo.AJPEnable ) {
-						portToCheck = 'AJP port';
-						portToCheckValue = thisServerInfo.AJPPort;
-					}
-
-					print.line().indentedLine( 'Host/Port used for "running" check: #portToCheck# (#thisServerInfo.host#:#portToCheckValue#)');
-
-					var bindException = '';
-					try {
-						var serverSocket = createObject( "java", "java.net.ServerSocket" )
-							.init(
-								javaCast( "int", portToCheckValue ),
-								javaCast( "int", 1 ),
-								createObject( "java", "java.net.InetAddress" ).getByName( thisServerInfo.host ) );
-						serverSocket.close();
-					} catch( any var e ) {
-						bindException = e;
-					}
-
-					if( !isSimpleValue( bindException ) ) {
-						print.indentedLine( 'Port bind result for "running" check: #bindException.type# #bindException.message# #bindException.detail#');
+					
+					print.line().indentedLine( 'PID file used for "running" check: ' )
+						.indentedIndentedLine( serverInfo.pidFile );
+						
+					if( fileExists( serverInfo.pidFile ) ){
+						print.indentedIndentedLine( 'PID file exists.' );
+						try {
+							var serverPID = fileRead(serverInfo.pidFile);
+							if( serverService.isProcessAlive( serverPID, true ) ) {
+								print.indentedIndentedLine( 'PID [#serverPID#] is running' );
+							} else {
+								print.indentedIndentedLine( 'PID [#serverPID#] is NOT running' );
+							}
+						} catch( any var e ) {
+							print.indentedIndentedText( 'Error checking if server PID was running: [' ).redText( e.message & ' ' & e.detail ).line( '] Server is assumed running.' );
+						}						
 					} else {
-						print.indentedLine( 'Port bind result for "running" check: successful bound, port not in use.');
+						print.indentedIndentedLine( 'PID file does not exist.  Server is assumed stopped.' );
 					}
-
+					
 
 					print.line().indentedLine( 'Last Command: ' );
 					// Put each --arg or -arg on a new line

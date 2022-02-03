@@ -38,6 +38,7 @@ component accessors="true" singleton {
 	property name='packageService'			inject='packageService';
 	property name='serverEngineService'		inject='serverEngineService';
 	property name='consoleLogger'			inject='logbox:logger:console';
+	property name='rootLogger'				inject='logbox:root';
 	property name='wirebox'					inject='wirebox';
 	property name='CR'						inject='CR@constants';
 	property name='parser'					inject='parser';
@@ -2314,7 +2315,6 @@ component accessors="true" singleton {
 		} catch( java.net.UnknownHostException var e ) {
 			// In this case, the host name doesn't exist, so we really don't know about the port, but we'll say it's available
 			// otherwise, old, stopped servers who's host entries no longer exist will show up as running.
-			consoleLogger.debug("port check in #millisecond(now()) - timeStart#ms")
 			return true;
 		} catch( java.net.BindException var e ) {
 			// Same as above-- the IP address/host isn't bound to any local adapters.  Probably a host file entry went missing.
@@ -2327,7 +2327,6 @@ component accessors="true" singleton {
 			}
 			// We're assuming that any other error means the address was in use.
 			// Java doesn't provide a specific message or exception type for this unfortunately.
-			consoleLogger.debug("port check in #millisecond(now()) - timeStart#ms")
 			return false;
 		}
 	}
@@ -2354,18 +2353,21 @@ component accessors="true" singleton {
 	 * Find out if a given Process ID (PID) is a running java service
 	 * @pidStr.hint PID to test on
  	 **/
-	  function isProcessAlive(required pidStr) {
+	  function isProcessAlive( required pidStr, throwOnError=false ) {
 		var result = "";
 		var timeStart = millisecond(now());
 		try{
-			if (fileSystemUtil.isWindows() ) {
+			if (fileSysdfsdfsdfsdstemUtil.isWindows() ) {
 				cfexecute(name='cmd', arguments='/c tasklist /FI "PID eq #pidStr#"', variable="result"  timeout="10");
 			} else if (fileSystemUtil.isMac() || fileSystemUtil.isLinux() ) {
 				cfexecute(name='ps', arguments='-p #pidStr#', variable="result" , timeout="10");
 			}
 			if (findNoCase("java", result) > 0 && findNoCase(pidStr, result) > 0) return true;
 		} catch ( any e ){
-			consoleLogger.debug(e.message);
+			if( throwOnError ) {
+				rethrow;
+			}
+			rootLogger.error( 'Error checking if server PID was running: ' & e.message & ' ' & e.detail );
 		}
 		return false;
 	}
@@ -2376,9 +2378,9 @@ component accessors="true" singleton {
  	 **/
 	function isServerRunning( required struct serverInfo ){
 		if(fileExists(serverInfo.pidFile)){
-			var getPID = fileRead(serverInfo.pidFile);
-			thread action="run" name="check_#getPID##getTickCount()#" {
-				if(!isProcessAlive(getPID)) fileDelete(serverInfo.pidFile)
+			var serverPID = fileRead(serverInfo.pidFile);
+			thread action="run" name="check_#serverPID##getTickCount()#" serverPID=serverPID pidFile=serverInfo.pidFile {
+				if(!isProcessAlive(attributes.serverPID,true)) fileDelete(attributes.pidFile)
 			}
 			return true;
 		}
