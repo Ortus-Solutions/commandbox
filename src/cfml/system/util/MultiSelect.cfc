@@ -191,10 +191,14 @@ component accessors=true {
 			if( job.getActive() ) {
 				job.addLog( getQuestion() & ': ' & response );
 			} else {
-				printBuffer
-					.line()
-					.text( getQuestion() )
-					.line( response )
+				var pb = printBuffer.line();
+
+					if(len(getQuestion() & response) > 80) {
+						pb.line( getQuestion() );
+					} else {
+						pb.text( getQuestion() );
+					}
+					pb.line( response )
 					.toConsole();
 			}
 
