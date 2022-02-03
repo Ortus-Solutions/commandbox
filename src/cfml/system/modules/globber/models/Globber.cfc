@@ -346,7 +346,7 @@ component accessors="true" {
 
 		// Strip off the "not found" part
 		var remainingPattern = findUnmatchedPattern( thisPattern, baseDir )
-		
+
 		var dl = directoryList (
 				listInfo='query',
 				recurse=false,
@@ -484,6 +484,11 @@ component accessors="true" {
 		// Unix paths need the leading slash put back
 		if( pattern.startsWith( '/' ) ) {
 			baseDir = '/' & baseDir;
+		}
+
+		// Windows drive letters need trailing slash.
+		if( baseDir.listLen( '/' ) == 1 && baseDir contains ':' ) {
+			baseDir = baseDir & '/';
 		}
 
 		baseDir &= '/';
