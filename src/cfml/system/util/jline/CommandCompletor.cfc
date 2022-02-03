@@ -536,8 +536,8 @@ component singleton {
 					description.len() ? description : nullValue(),	// descr
 					nullValue(),									// suffix
 					nullValue(),									// key
-					complete//, 									// complete
-					//val( sort )									// sort
+					complete, 										// complete
+					val( sort )										// sort
 				)
 		);
 
