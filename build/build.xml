@@ -1086,6 +1086,8 @@ External Dependencies:
 				<exclusion groupId="org.apache.felix" artifactId="org.apache.felix.framework" />
 				<exclusion groupId="junit" artifactId="junit" />
 				<exclusion groupId="org.lucee.lib" artifactId="slf4j-nop" />
+				<exclusion groupId="org.lucee" artifactId="log4j-core" />
+				<exclusion groupId="org.lucee" artifactId="log4j-api" />
 			</exclusions>
 		</dependency>
 
