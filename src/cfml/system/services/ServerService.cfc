@@ -2357,7 +2357,7 @@ component accessors="true" singleton {
 		var result = "";
 		var timeStart = millisecond(now());
 		try{
-			if (fileSysdfsdfsdfsdstemUtil.isWindows() ) {
+			if (fileSystemUtil.isWindows() ) {
 				cfexecute(name='cmd', arguments='/c tasklist /FI "PID eq #pidStr#"', variable="result"  timeout="10");
 			} else if (fileSystemUtil.isMac() || fileSystemUtil.isLinux() ) {
 				cfexecute(name='ps', arguments='-p #pidStr#', variable="result" , timeout="10");
