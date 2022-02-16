@@ -286,18 +286,19 @@ public class LoaderCLIMain{
 			    Security.insertProviderAt( p, 1 );
 			} );
 
+			// The "webroot" is the drive root where CommandBox's home lives
 			String webroot = Paths.get( uri ).toAbsolutePath().getRoot().toString();
-            // On a *nix machine
-            if( webroot.equals( "/" ) ) {
-            	// Include first folder like /usr/
-            	webroot += Paths.get( uri ).toAbsolutePath().subpath( 0, 1 ).toString() + "/";
-            }
 
             // Escape backslash in webroot since replace uses a regular expression
+			// The bootstrap is the first .cfm file we will cfinclude from the "webroot"
 			String bootstrap = "/" + Paths.get( uri ).toAbsolutePath().toString().replaceFirst( webroot.replace( "\\", "\\\\" ), "" );
-
+			
+			// contextroot sets lucee's "webroot" inside the scripting engine to be our drive root
+			System.setProperty( "lucee.cli.contextRoot", webroot );
+			// These next two are the Lucee web context and server context homes
     		System.setProperty( "lucee.web.dir", getLuceeCLIConfigWebDir().getAbsolutePath() );
     		System.setProperty( "lucee.base.dir", getLuceeCLIConfigServerDir().getAbsolutePath() );
+    		// A couple tweaks to make Felix faster
     		System.setProperty( "felix.cache.locking", "false" );
     		System.setProperty( "felix.storage.clean", "none" );
 
@@ -313,10 +314,7 @@ public class LoaderCLIMain{
     		String CFML = "loader = createObject( 'java', 'cliloader.LoaderCLIMain' ); \n"
     				+ "if( !isNull( loader.FRTrans ) ) { loader.FRTrans.close(); } \n"
     				+ "\n"
-    				+ "mappings = getApplicationSettings().mappings; \n"
-    	    		+ " mappings[ '/__commandbox_root/' ] = '" + webroot + "'; \n"
-    	            + " application mappings='#mappings#' action='update'; \n"
-            		+ " include '/__commandbox_root" + bootstrap.replace( "'", "''" ) + "'; \n";
+    				+ " include '" + bootstrap.replace( "'", "''" ) + "'; \n";
 
 			if( debug ) {
 				printStream.println( "" );
