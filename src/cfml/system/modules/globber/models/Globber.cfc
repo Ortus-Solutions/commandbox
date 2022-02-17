@@ -241,7 +241,11 @@ component accessors="true" {
 		} else {
 			return getMatchQuery().reduce( function( arr, row ) {
 				// Turn all the slashes the right way for this OS
-				return arr.append( row.directory & '/' & row.name & ( row.type == 'Dir' ? '/' : '' ) );
+				if( row.directory == '/' ) {
+					return arr.append( row.directory & row.name & ( row.type == 'Dir' ? '/' : '' ) );
+				} else {
+					return arr.append( row.directory & '/' & row.name & ( row.type == 'Dir' ? '/' : '' ) );	
+				}
 			}, [] );
 		}
 	}
@@ -346,7 +350,6 @@ component accessors="true" {
 
 		// Strip off the "not found" part
 		var remainingPattern = findUnmatchedPattern( thisPattern, baseDir )
-
 		var dl = directoryList (
 				listInfo='query',
 				recurse=false,
@@ -490,8 +493,10 @@ component accessors="true" {
 		if( baseDir.listLen( '/' ) == 1 && baseDir contains ':' ) {
 			baseDir = baseDir & '/';
 		}
-
-		baseDir &= '/';
+		
+		if( !baseDir.endsWith( '/' ) ) {
+			baseDir &= '/';	
+		}
 		return baseDir;
 	}
 
