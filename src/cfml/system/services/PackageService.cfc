@@ -822,9 +822,16 @@ component accessors="true" singleton {
 		var boxJSON = readPackageDescriptor( arguments.currentWorkingDirectory );
 
 		// Get reference to appropriate dependency struct
-		if( arguments.dev ) {
+		// Save as dev if we have that flag OR if this is already saved as a dev dep
+		if( arguments.dev || !isNull( boxJSONRaw.devDependencies[ arguments.packageName ] ) ) {
 			boxJSONRaw[ 'devDependencies' ] = boxJSONRaw.devDependencies ?: {};
 			boxJSON[ 'devDependencies' ] = boxJSON.devDependencies ?: {};
+			
+			// If this package is also saved as a normal dev, remove it from "dependencies"
+			if( !isNull( boxJSONRaw.dependencies[ arguments.packageName ] ) ) {
+				boxJSONRaw.dependencies.delete( arguments.packageName );
+			}
+			
 			var dependenciesRaw = boxJSONRaw.devDependencies;
 			var dependencies = boxJSON.devDependencies;
 		} else {
