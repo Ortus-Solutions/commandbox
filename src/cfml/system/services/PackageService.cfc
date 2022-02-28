@@ -763,6 +763,18 @@ component accessors="true" singleton {
 		// uninstall the package
 		if( len( uninstallDirectory ) && directoryExists( uninstallDirectory ) ) {
 
+
+			// If this package is being uninstalled anywhere south of the CommandBox system folder, unload the module first
+			if( fileSystemUtil.normalizeSlashes( uninstallDirectory ).startsWith( fileSystemUtil.normalizeSlashes( expandPath( '/commandbox' ) ) ) && fileExists( uninstallDirectory & '/ModuleConfig.cfc' ) ) {
+				consoleLogger.warn( 'Unloading module...' );
+				try {
+					moduleService.unload( uninstallDirectory.listLast( '/\' ) );
+				} catch( any e ) {
+					job.addErrorLog( 'Error Unloading module: ' & e.message & ' ' & e.detail );
+					logger.error( '#e.message# #e.detail#' , e.stackTrace );
+				}
+			}
+
 			// Catch this to gracefully handle where the OS or another program
 			// has the folder locked.
 			try {

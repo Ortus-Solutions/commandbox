@@ -491,11 +491,6 @@
 					}
 				}
 
-				// Register module routing entry point pre-pended to routes
-				/*if( shell.settingExists( 'sesBaseURL' ) AND len( mConfig.entryPoint ) AND NOT find( ":", mConfig.entryPoint ) ){
-					interceptorService.getInterceptor( "SES", true ).addModuleRoutes( pattern=mConfig.entryPoint, module=arguments.moduleName, append=false );
-				}*/
-
 				// Call on module configuration object onLoad() if found
 				if( structKeyExists( instance.mConfigCache[ arguments.moduleName ], "onLoad" ) ){
 					instance.mConfigCache[ arguments.moduleName ].onLoad();
@@ -580,6 +575,8 @@
 
 			// Check if module is loaded?
 			if( NOT structKeyExists(getModuleData(),arguments.moduleName) ){ return false; }
+			var modules = getModuleData();
+			var mConfig = modules[ arguments.moduleName ];
 
 		</cfscript>
 
@@ -608,11 +605,6 @@
 			// Unregister Config object
 			interceptorService.unregister( "ModuleConfig:#arguments.moduleName#" );
 
-			// Remove SES if enabled.
-			/*if( shell.settingExists( "sesBaseURL" ) ){
-				interceptorService.getInterceptor( "SES", true ).removeModuleRoutes( arguments.moduleName );
-			}*/
-
 			// Remove the possible config names with the ConfigService for auto-completion
 			var possibleConfigSettings = [];
 			for( var settingName in ConfigService.getPossibleConfigSettings() ) {
@@ -622,11 +614,20 @@
 			}
 			ConfigService.setPossibleConfigSettings( possibleConfigSettings );
 
+			// Register commands if they exist
+			if( directoryExists( mconfig.commandsPhysicalPath ) ){
+				var commandPath = '/' & replace( mconfig.commandsInvocationPath, '.', '/', 'all' );
+				CommandService.removeCommands( commandPath );
+			}
+
 			// Remove configuration
 			structDelete( getModuleData(), arguments.moduleName );
 
 			// Remove Configuration object from Cache
 			structDelete( instance.mConfigCache, arguments.moduleName );
+			
+			// Remove from module registry
+			structDelete( instance.moduleRegistry, arguments.moduleName );
 
 			//After unloading a module interception
 			interceptorService.announceInterception( "postModuleUnload", iData );

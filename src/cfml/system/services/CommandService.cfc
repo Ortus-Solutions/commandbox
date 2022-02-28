@@ -76,9 +76,9 @@ component accessors="true" singleton {
 
 	/**
 	 * Initialize the commands. This will recursively call itself for subdirectories.
-	 * @baseCommandDirectory.hint The starting directory
-	 * @commandDirectory.hint The current directory we've recursed into
-	 * @commandPath.hint The dot-delimited path so far-- only used when recursing
+	 * @baseCommandDirectory The starting directory
+	 * @commandDirectory The current directory we've recursed into
+	 * @commandPath The dot-delimited path so far-- only used when recursing
 	 **/
 	CommandService function initCommands(
 		required string baseCommandDirectory,
@@ -105,7 +105,39 @@ component accessors="true" singleton {
 		return this;
 	}
 
+	/**
+	 * Remove commands from the CommandService. This will recursively call itself for subdirectories.
+	 * @baseCommandDirectory The starting directory
+	 * @commandDirectory The current directory we've recursed into
+	 * @commandPath The dot-delimited path so far-- only used when recursing
+	 **/
+	CommandService function removeCommands(
+		required string baseCommandDirectory,
+		string commandDirectory=baseCommandDirectory,
+		string commandPath=''
+	){
+		var varDirs = DirectoryList(
+			path		= expandPath( arguments.commandDirectory ),
+			recurse		= false,
+			listInfo	= 'query',
+			sort		= 'type desc, name asc'
+		);
+
+		for( var dir in varDirs ){
+			// For CFC files, process them as a command
+			if( dir.type  == 'File' && listLast( dir.name, '.' ) == 'cfc' ){
+				removeCommand( baseCommandDirectory, dir.name, commandPath );
+			// For folders, search them for commands
+			} else {
+				removeCommands( baseCommandDirectory, dir.directory & '\' & dir.name, listAppend( commandPath, dir.name, '.' ) );
+			}
+		}
+
+		return this;
+	}
+
 	function addToDictionary( required command, required commandPath ){
+
 		// Build bracketed string of command path to allow special characters
 		var commandPathBracket = '';
 		var commandName = '';
@@ -120,6 +152,54 @@ component accessors="true" singleton {
 		// And again here in this flat collection for help usage
 		instance.flattenedCommands[ trim(commandName) ] = command;
 	}
+
+	function removeFromDictionary( required command, required commandPath ){
+
+		// Build bracketed string of command path to allow special characters
+		var commandPathBracket = '';
+		var commandName = '';
+		
+		commandPathArray = listToArray( commandPath, '.' );
+
+		for( var item in commandPathArray ){
+			commandPathBracket &= '[ "#item#" ]';
+			commandName &= "#item# ";
+		}
+		
+		// Here in this flat collection for help usage
+		instance.flattenedCommands.delete( trim(commandName) );
+		
+		if( isDefined( "instance.commands#commandPathBracket#[ '$' ]" ) ) {
+			evaluate( "structDelete( instance.commands#commandPathBracket#, '$' )" );
+		}
+
+
+		// Remove from the leaf nodes up, removing any empty namespaces as we go. 
+		// We can't just kill the namespace, because a command that contributes a "server foobar" command would not want to remove the 'server' namespace.
+		while( commandPathArray.len() ) {
+			
+			// If there are other commands in this namespace, we're done
+			if( evaluate( "structCount( instance.commands#commandPathBracket# )" ) ) {
+				break;
+			}
+			
+			// If this namespace is empty, pop last item off the array and remove it
+			var lastItem = commandPathArray.pop();
+			
+			commandPathBracket = '';	
+			for( var item in commandPathArray ){
+				commandPathBracket &= '[ "#item#" ]';
+			}
+			
+			evaluate( "structDelete( instance.commands#commandPathBracket#, lastItem )" );
+			
+			// We'll keep climbing "up" in our while() until we run out of namespaces, or we reach a namespace that still populated
+			
+		}
+		
+
+	}
+
 
 	/**
 	 * run a command line
@@ -162,7 +242,7 @@ component accessors="true" singleton {
 
 	/**
 	 * run a command
-	 * @commandChain.hint the chain of commands to run
+	 * @commandChain the chain of commands to run
 	 * @captureOutput Temp workaround to allow capture of run command
  	 **/
 	function runCommand( required array commandChain, required string line, string piped, boolean captureOutput=false ){
@@ -555,8 +635,8 @@ component accessors="true" singleton {
 
 	/**
 	 * Take an array of parameters and parse them out as named or positional
-	 * @parameters.hint The array of params to parse.
-	 * @commandParameters.hint valid params defined by the command
+	 * @parameters The array of params to parse.
+	 * @commandParameters valid params defined by the command
  	 **/
 	function parseParameters( parameters, commandParameters ){
 		return parser.parseParameters( parameters, commandParameters );
@@ -564,7 +644,7 @@ component accessors="true" singleton {
 
 	/**
 	 * Figure out what command to run based on the user input string
-	 * @line.hint A string containing the command and parameters that the user entered
+	 * @line A string containing the command and parameters that the user entered
  	 **/
 	function resolveCommand( required string line, boolean forCompletion=false ){
 		// Turn the users input into an array of tokens
@@ -575,7 +655,7 @@ component accessors="true" singleton {
 
 	/**
 	 * Figure out what command to run based on the tokenized user input
-	 * @tokens.hint An array containing the command and parameters that the user entered
+	 * @tokens An array containing the command and parameters that the user entered
  	 **/
 	function resolveCommandTokens( required array tokens, string rawLine=tokens.toList( ' ' ), boolean forCompletion=false ){
 
@@ -875,7 +955,7 @@ component accessors="true" singleton {
 
 	/**
 	 * Takes a struct of command data and lazy loads the actual CFC instance if necessary
-	 * @commandData.hint Struct created by registerCommand()
+	 * @commandData Struct created by registerCommand()
  	 **/
 	private function lazyLoadCommandCFC( commandData ){
 
@@ -909,7 +989,7 @@ component accessors="true" singleton {
 	/**
 	 * Looks at the call stack to determine if we're currently "inside" a command.
 	 * Useful to prevent endless recursion.
-	 * @command.hint Name of the command to look for as typed from the shell.  If empty, returns true for any command
+	 * @command Name of the command to look for as typed from the shell.  If empty, returns true for any command
  	 **/
 	function inCommand( command='' ){
 
@@ -955,9 +1035,9 @@ component accessors="true" singleton {
 
 	/**
 	 * load command CFC
-	 * @baseCommandDirectory.hint The base directory for this command
-	 * @cfc.hint CFC name that represents the command
-	 * @commandPath.hint The relative dot-delimited path to the CFC starting in the commands dir
+	 * @baseCommandDirectory The base directory for this command
+	 * @cfc CFC name that represents the command
+	 * @commandPath The relative dot-delimited path to the CFC starting in the commands dir
 	 **/
 	private function registerCommand( baseCommandDirectory, CFC, commandPath ){
 
@@ -992,6 +1072,48 @@ component accessors="true" singleton {
 		for( var alias in commandData.aliases ){
 			// Alias is allowed to be anything.  This means it may even overwrite another command already loaded.
 			addToDictionary( commandData, listChangeDelims( trim( alias ), '.', ' ' ) );
+		}
+	}
+
+	/**
+	 * Remove a command from memory
+	 * @baseCommandDirectory The base directory for this command
+	 * @cfc CFC name that represents the command
+	 * @commandPath The relative dot-delimited path to the CFC starting in the commands dir
+	 **/
+	private function removeCommand( baseCommandDirectory, CFC, commandPath ){
+
+		// Strip cfc extension from filename
+		var CFCName = mid( CFC, 1, len( CFC ) - 4 );
+		var commandName = iif( len( commandPath ), de( commandPath & '.' ), '' ) & CFCName;
+		// Build CFC's path
+		var fullCFCPath = baseCommandDirectory & '.' & commandName;
+
+
+		try {
+			// Create a nice struct of command metadata
+			var commandData = createCommandData( fullCFCPath, commandName );
+		// This will catch nasty parse errors so the shell can keep loading
+		} catch( any e ){
+			shell.printString( 'Error loading command data [#fullCFCPath#]#cr#' );
+			logger.error( 'Error loading command data [#fullCFCPath#]. #e.message# #e.detail ?: ''#', e.stackTrace );
+			// pretty print the exception
+			 shell.printError( e );
+			return;
+		}
+
+		// must be CommandBox CFC, can't be Application.cfc
+		if( CFCName == 'Application' || !isCommandCFC( commandData ) ){
+			return;
+		}
+
+		// Add it to the command dictionary
+		removeFromDictionary( commandData, commandPath & '.' & CFCName );
+
+		// Register the aliases
+		for( var alias in commandData.aliases ){
+			// Alias is allowed to be anything.  This means it may even overwrite another command already loaded.
+			removeFromDictionary( commandData, listChangeDelims( trim( alias ), '.', ' ' ) );
 		}
 	}
 
