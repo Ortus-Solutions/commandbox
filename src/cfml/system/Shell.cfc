@@ -805,7 +805,7 @@ component accessors="true" singleton {
 
 				ConsolePainter.forceStop();
 
-				printError( { message : e.message, detail: e.detail } );
+				printError( { message : e.message, detail: e.detail, extendedInfo : e.extendedInfo ?: '' } );
 			}
 		// This type of error means the user hit Ctrl-C, during a readLine() call. Duck out and move along.
 		} catch (any e) {
@@ -900,6 +900,13 @@ component accessors="true" singleton {
 			setExitCode( 1 );
 		}
 
+		if( !isNull( err.extendedInfo ) && isJSON( err.extendedInfo ) ){
+			var info = deserializeJSON( err.extendedInfo );
+			if( info.keyExists( 'commandOutput' ) ) {
+				variables.reader.getTerminal().writer().print( info.commandOutput );
+			}
+		}
+
 		var verboseErrors = true;
 		try{
 			verboseErrors = configService.getSetting( 'verboseErrors', false );
@@ -912,6 +919,8 @@ component accessors="true" singleton {
 
 		variables.logger.error( '#arguments.err.message# #arguments.err.detail ?: ''#', arguments.err.stackTrace ?: '' );
 
+		variables.reader.getTerminal().writer().println();
+		variables.reader.getTerminal().writer().println();
 		variables.reader.getTerminal().writer().print( variables.print.whiteOnRedLine( 'ERROR (#variables.version#)' ) );
 		variables.reader.getTerminal().writer().println();
 		variables.reader.getTerminal().writer().println( variables.print.boldRedText( variables.formatterUtil.HTML2ANSI( arguments.err.message, 'boldRed' ) ) );

@@ -221,15 +221,15 @@ component accessors="true" singleton {
 	function error( required message, detail='', clearPrintBuffer=false, exitCode=1 ) {
 
 		wirebox.getInstance( "ConsolePainter" ).stop( message );
-		print.line().toConsole();
+		
+		if( !getSystemSetting( 'box_currentCommandPiped', false ) ) {
+			print.line().toConsole();	
+		}
 
 		setExitCode( arguments.exitCode );
 		if( arguments.clearPrintBuffer ) {
 			// Wipe
 			print.clear();
-		} else {
-			// Distance ourselves from whatever other output the command may have given so far.
-			print.line();
 		}
 		throw( message=arguments.message, detail=arguments.detail, type="commandException", errorcode=arguments.exitCode );
 	}

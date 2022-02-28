@@ -139,7 +139,7 @@ component accessors=true {
 					}
 				// Handle "expected" exceptions from commands
 				} catch( commandException e ) {
-					shell.printError( { message : e.message, detail: e.detail } );
+					shell.printError( { message : e.message, detail: e.detail, extendedInfo : e.extendedInfo ?: '' } );
 
 					print
 						.line()

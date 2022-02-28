@@ -430,10 +430,11 @@ component accessors="true" singleton {
 				interceptorService.announceInterception( 'preCommand', { commandInfo=commandInfo, parameterInfo=parameterInfo } );
 
 				// Run the command
-				var result = commandInfo.commandReference.CFC.run( argumentCollection = parameterInfo.namedParameters );
+				var result = commandInfo.commandReference.CFC.run( argumentCollection = parameterInfo.namedParameters );				
 				lastCommandErrored = commandInfo.commandReference.CFC.hasError();
 
 			} catch( any e ){
+				
 				FRTransService.errorTransaction( FRTrans, e.getPageException() );
 				lastCommandErrored = true;
 				// If this command didn't already set a failing exit code...
@@ -448,26 +449,42 @@ component accessors="true" singleton {
 
 				}
 
-				// Dump out anything the command had printed so far
 				var result = commandInfo.commandReference.CFC.getResult();
-				if( len( result ) ){
-					shell.printString( result & cr );
+				// Add the command output thus far into the exception
+				if( len( result ) ) {
+					var originalInfo = e.extendedInfo
+					e.extendedInfo=serializeJSON( {
+						'extendedInfo'=originalInfo,
+						'commandOutput'=result
+					} );
 				}
+				
 				// This is a little hacky,  but basically if there are more commands in the chain that need to run,
 				// just print an exception and move on.  Otherwise, throw so we can unwrap the call stack all the way
 				// back up.  That is necessary for command expressions that fail like "echo `cat noExists.txt`"
 				// since in that case I don't want to execute the "echo" command since the "cat" failed.
 				if( arrayLen( commandChain ) > i && listFindNoCase( '||,;', commandChain[ i+1 ].originalLine ) ) {
+					
+					// Dump out anything the command had printed so far
+					if( len( result ) ){
+						shell.printString( result & cr );
+					}
+					
 					// These are "expected" exceptions like validation errors that can be "pretty"
 					if( e.type.toString() == 'commandException' ) {
-						shell.printError( { message : e.message, detail: e.detail } );
+						shell.printError( { message : e.message, detail: e.detail, extendedInfo : e.extendedInfo ?: '' } );
 					// These are catastrophic errors that warrant a full stack trace.
 					} else {
 						shell.printError( e );
 					}
 				// Unwind the stack to the closest catch
 				} else {
-					rethrow;
+					
+					if( !captureOutput && len( result ) ) {
+						// Dump out anything the command had printed so far
+						shell.printString( result & cr );
+					}					
+					throw e;
 				}
 			} finally {
 				// Remove it from the stack
