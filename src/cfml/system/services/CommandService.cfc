@@ -166,6 +166,11 @@ component accessors="true" singleton {
 			commandName &= "#item# ";
 		}
 		
+		// This happens if a command is registered twice and we've already removed it
+		if( !isDefined( "instance.commands#commandPathBracket#" ) ) {
+			return;
+		}
+		
 		// Here in this flat collection for help usage
 		instance.flattenedCommands.delete( trim(commandName) );
 		
