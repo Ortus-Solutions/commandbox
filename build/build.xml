@@ -382,8 +382,8 @@ External Dependencies:
 	          </fileset>
 	          <fileset file="${temp.dir}/cli/luceecli.jar" />
 	          <fileset file="${temp.dir}/cli/ortus-jgit.jar" />
+	          <fileset file="${src.dir}/resources/log4j2.xml" />	          
 	        </zip>
-
 
 	        <zip destfile="${temp.dir}/cli-light/libs.zip">
 	          <fileset dir="${lucee-light.lib.dir}">
@@ -394,6 +394,7 @@ External Dependencies:
 	          </fileset>
 	          <fileset file="${temp.dir}/cli/luceecli.jar" />
 	          <fileset file="${temp.dir}/cli/ortus-jgit.jar" />
+	          <fileset file="${src.dir}/resources/log4j2.xml" />
 	        </zip>
 
 	    <!--   </else>

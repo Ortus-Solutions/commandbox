@@ -576,7 +576,6 @@ public class LoaderCLIMain{
         }));
 
 		disableAccessWarnings();
-		System.setProperty("log4j.configuration", "resource/log4j.xml");
 		Util.ensureJavaVersion();
 		execute( initialize( arguments ) );
 		mainDone = true;
@@ -712,6 +711,8 @@ public class LoaderCLIMain{
 		props.setProperty( "cfml.cli.pwd", cliworkingdirFinal );
 
 		File libDir = getLibDir();
+		// Default Log4j2 config is in the libn folder
+		System.setProperty("log4j2.configurationFile", new File( libDir, "log4j2.xml" ).toURI().toString() );
 		props.setProperty( "cfml.cli.lib", libDir.getAbsolutePath() );
 		File cfmlDir = new File( cli_home.getPath() + "/cfml" );
 		File cfmlSystemDir = new File( cli_home.getPath() + "/cfml/system" );
