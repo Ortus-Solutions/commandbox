@@ -215,11 +215,14 @@ component accessors="true" {
 			} );
 		// Copy files asynch
 		paths
-			.filter( (p)=>p.type=='file' )
+			.filter( (p)=>p.type=='file' && p.name=='Component.cfc' )
 			.each( (p)=>{
-				var oldFile = p.directory.listAppend( p.name, '/', false );
-				var newFile = pathPatternMatcher.normalizeSlashes( oldFile );
-				newFile = targetPath & newFile.replace( getBaseDir(), '' );
+				var oldDir = pathPatternMatcher.normalizeSlashes( p.directory );
+				if ( !oldDir.endsWith( '/' ) ) {
+					oldDir &= "/";
+				}
+				var oldFile = oldDir & p.name;
+				var newFile = targetPath & oldFile.replace( getBaseDir(), '' );
 				// Just in case
 				newDirectory = getDirectoryFromPath( newFile );
 				if( !directoryExists( newDirectory ) ) {
