@@ -215,7 +215,7 @@ component accessors="true" {
 			} );
 		// Copy files asynch
 		paths
-			.filter( (p)=>p.type=='file' && p.name=='Component.cfc' )
+			.filter( (p)=>p.type=='file' )
 			.each( (p)=>{
 				var oldDir = pathPatternMatcher.normalizeSlashes( p.directory );
 				if ( !oldDir.endsWith( '/' ) ) {
