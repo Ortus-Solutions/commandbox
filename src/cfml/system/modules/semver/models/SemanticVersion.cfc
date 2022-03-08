@@ -116,6 +116,7 @@ component singleton{
 	*/
 	boolean function satisfies( required string version, required string range ){
 
+		
 		arguments.version = clean( arguments.version );
 
 		if( range == 'be' ) {
@@ -136,6 +137,7 @@ component singleton{
 		for( var comparatorSet in semverRange ) {
 			// If the version we're inspecting is a pre-release, don't consider it unless at least one comparator in this
 			// set specifically mentions a pre release matching this major.minor.revision.
+			
 			if( isPreRelease( arguments.version ) && !interestedInPreReleasesOfThisVersion( comparatorSet, arguments.version ) ) {
 				continue;
 			}
@@ -178,9 +180,12 @@ component singleton{
 		for( var comparator in arguments.comparatorSet ) {
 			// And see if there is a pre release version that matches major.minor.revision
 			if( isPreRelease( comparator.version )
+				// major must match
 				&& comparator.sVersion.major == sVersion.major
-				 && comparator.sVersion.minor == sVersion.minor
-				 && comparator.sVersion.revision == sVersion.revision) {
+				 // minor needs to match OR have been x or blank in the range
+				 && ( comparator.xVersion.minor == 'x' || comparator.sVersion.minor == sVersion.minor )
+				 // revision needs to match OR have been x or blank in the range
+				 && ( comparator.xVersion.revision == 'x' || comparator.sVersion.revision == sVersion.revision ) ) {
 				 return true;
 			 }
 		}
@@ -218,7 +223,7 @@ component singleton{
 			lowerBound = replaceNoCase( lowerBound, '*', 'x', 'all' );
 			upperBound = replaceNoCase( upperBound, '*', 'x', 'all' );
 
-			sVersion = parseVersion( lowerBound, 'x' );
+			var sVersion = parseVersion( lowerBound, 'x' );
 
 			comparatorSet.append(
 				expandXRanges( {
@@ -301,6 +306,7 @@ component singleton{
 
 	private function expandXRanges( required struct sComparator ) {
 		var comparatorSet = [];
+		sComparator.xVersion = duplicate( sComparator.sVersion );
 
 		switch( sComparator.operator ) {
 			case "<":
