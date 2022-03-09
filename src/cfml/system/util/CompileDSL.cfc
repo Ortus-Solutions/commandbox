@@ -18,7 +18,7 @@ component accessors=true {
     property name='projectRoot'             type="string";
     /* folder inside root project where source files reside (.java) */
     property name='sourceDirectory'         type='string';
-    property name='classPathDirectory'      type='string';
+    property name='classPaths'      		type='array';
     property name='classOutputDirectory'    type='string';
     property name='verbose'                 type='boolean';
     property name='encode'                  type='string';
@@ -33,6 +33,9 @@ component accessors=true {
 	property name='customManifestParams'	type='struct';
 	property name='resourcePath'			type='string';
 	property name='classTextFilePaths'		type='array';
+	property name='fatJarPaths'				type='array';
+	property name='javaDocDestinationDir'	type='string';
+	property name='useJavaDoc'				type='boolean';
 
     //DI
 	property name="packageService"	inject="PackageService";
@@ -63,6 +66,8 @@ component accessors=true {
 		setCustomManifestParams( {} );
 		setResourcePath( 'src\main\resources\' );
 		setClassTextFilePaths(['']);
+		setJavaDocDestinationDir('javaDocs\main')
+		setUseJavaDoc(false);
         return this;
     }
 
@@ -123,12 +128,6 @@ component accessors=true {
 		return this;
 	}
 
-	//no longer needed
-	/* function addToManifest( required string customManifest ) {
-		setCustomManifest( fileSystemutil.resolvePath( customManifest, getProjectRoot() ) );
-		return this;
-	} */
-
 	function manifest( required struct customParams ) {
 		setCustomManifestParams( customParams );
 		return this;
@@ -138,15 +137,33 @@ component accessors=true {
 		//if it has a resourcefolder it uses that one
 		//if its empty then use src\main\resources
 		setResourcePath( fileSystemutil.resolvePath( resourcesPath, getProjectRoot() ) )
+		return this;
 	}
 
-	function toFatJar(  ) {
-		//if it has a jarFolder use that one
-		//if it does not have any use java\main\libs
+	function withJavaDocs(){
+		return this;
+	}
 
-		//take all the jars in libs folder and unzip them
-		//add them to the classoutputdirectory with the rest of then
-		//make the jar
+	function withClassPath( required any classPath ) {
+		if( isSimpleValue( arguments.classPath ) ) {
+			arguments.classPath = listToArray( arguments.classPath, ",", true );
+		}
+		arguments.classPath = arguments.classPath.reduce( function( classPaths,cp ) {
+			return classPaths.append(directorylist( fileSystemutil.resolvePath( cp, getProjectRoot() ), true, 'array', '*jar' ), true);
+		}, [] );
+		setClassPaths(  arguments.classPath );
+		return this;
+	}
+
+	function toFatJar( string jarName='', any includeJars=[] ) {
+		if( isSimpleValue( arguments.fatJarPathList ) ) {
+			arguments.fatJarPathList = listToArray( arguments.fatJarPathList, ",", true );
+		}
+		arguments.fatJarPathList = arguments.fatJarPathList.map( function( s ) {
+			return fileSystemutil.resolvePath( arguments.s, getProjectRoot() );
+		} );
+		variables.fatJarPaths = arguments.fatJarPathList;
+		return this;
 	}
 
     function run() {
@@ -164,9 +181,18 @@ component accessors=true {
 			job.start( 'update manifest file' );
 			updateManifestFile();
 			job.complete();
-            job.start( 'creating the jar' );
-    		buildJar();
-            job.complete();
+
+			job.start( 'creating the normal jar' );
+			buildJar();
+			job.complete();
+
+			job.addLog( " len :-> " & len( getFatJarPaths() ) );
+			if ( len( getFatJarPaths() ) ) {
+				job.start( 'creating the fat jar' );
+				//buildFatJar();
+				job.complete();
+ 			}
+
 			job.start( 'move resources to jar' );
 			moveResources();
 			job.complete();
@@ -183,11 +209,14 @@ component accessors=true {
 
 		//shell.printString( " glob-> start... " );
         //job.addLog( " glob-> start... " );
+		var currentProjectRoot = getProjectRoot();
 
 		var globber = wirebox.getInstance( 'globber' );
 		var tempSrcFileName = tempDir & 'temp#createUUID()#.txt';
+		/* var tempSrcFileName = currentProjectRoot & 'temp#createUUID()#.txt'; */
 		//job.addLog( " " & serialize( getSourcePaths() ) & " " );
 
+		// use only one variable
 		if( len( getSourcePaths() ) EQ 1 and getSourcePaths()[1] == "" ) {
 			setSourcePaths( [getSourceDirectory()] );
 		}
@@ -215,8 +244,13 @@ component accessors=true {
 
 			writeTempSourceFile( tempSrcFileName );
 
+			var classPathString = "";
+			if ( len(getClassPaths()) ) {
+				classPathString = '-cp "#getClassPaths().toList(';')#"';
+			}
+
 			//var javacCommand = 'run ""#getJavaBinFolder()#javac" "@#tempSrcFileName#" -d "#variables.classOutputDirectory#" #variables.compileOptionsString#"';
-			var javacCommand = 'run ""#getJavaBinFolder()#javac" "@#tempSrcFileName#" -d "#variables.classOutputDirectory#""';
+			var javacCommand = 'run ""#getJavaBinFolder()#javac" #classPathString# "@#tempSrcFileName#" -d "#variables.classOutputDirectory#""';
 			//var javacCommand = 'run ""foo why" "bar" -d "test""';
 
 			/* if ( getVerbose() ) {
@@ -287,7 +321,9 @@ component accessors=true {
 			.reduce(( acc, row ) => {
 				row.directory = replaceNoCase( row.directory, projectRoot, "" );
 				row.directory = replaceNoCase( row.directory, classOutput, "" );
-				wipPath = fileSystemutil.normalizeSlashes( row.directory & "/" & row.name );
+				filePath = row.directory & "\" & row.name;
+				filePath = replaceNoCase( filePath, classOutput, "" );
+				wipPath = fileSystemutil.normalizeSlashes( filePath );
 				wipPath = "-C " & classOutput & " " & wipPath;
 				finalPath = fileSystemutil.normalizeSlashes( wipPath );
 				return listappend( acc, finalPath, chr(10) );
@@ -314,8 +350,8 @@ component accessors=true {
 		var jarName = getJarNameString();
         var currentProjectRoot = getProjectRoot();
 
-        var tempClassFileName = tempDir & 'temp#createUUID()#.txt';
-		/* var tempClassFileName = currentProjectRoot & 'temp#createUUID()#.txt'; */
+        /* var tempClassFileName = tempDir & 'temp#createUUID()#.txt'; */
+		var tempClassFileName = currentProjectRoot & 'temp#createUUID()#.txt';
 
         var sourceFolders = [];
 		buildJarSourceFolders = fileSystemutil.resolvePath( variables.classOutputDirectory, getProjectRoot() );
@@ -357,7 +393,9 @@ component accessors=true {
             //writeTempSourceFile( tempSrcFileName,['D:\Javatest\greetings\classes\**.class'], ".class" );
             writeTempClassFiles( tempClassFileName, sourceFolders, ".class" );
 
-			var jarClassString = createClassStringFromClassTextFiles()
+			var jarClassString = createClassStringFromClassTextFiles();
+
+
 
 			if( !directoryExists( currentLibsDir ) ) {
 				directoryCreate( currentLibsDir );
@@ -375,9 +413,9 @@ component accessors=true {
 			command( j ).run();
 
         } finally {
-			if ( FileExists( tempClassFileName ) ) {
+			/* if ( FileExists( tempClassFileName ) ) {
 				fileDelete( tempClassFileName );
-			}
+			} */
         }
 
 
@@ -596,7 +634,7 @@ component accessors=true {
         return jarName;
     }
 
-	function combiningFatJar() {
+	function buildFatJar() {
 		j = "run fat jar ";
 		shell.printString( " " & j & " " );
 		//command( j ).run();
