@@ -92,7 +92,9 @@ component {
 		// Text needing formatting
 		var text = arrayLen(missingMethodArguments) ? missingMethodArguments[ 1 ] : '';
 		// Convert complex values to a string representation
-		if( !isSimpleValue( text ) ) {
+		if( isXML( text ) ) {
+			text = formatterUtil.formatXML( text );
+		} else if( !isSimpleValue( text ) ) {
 
 			// Serializable types
 			if( isBinary( text ) ) {
@@ -101,6 +103,7 @@ component {
 				if( isJSON( toString( text ) ) ) {
 					text = formatterUtil.formatJson( json=toString( text ), ANSIColors=JSONService.getANSIColors() );
 				}
+				
 			} else if( isArray( text ) || isStruct( text ) || isQuery( text ) ) {
 				text = serializeJSON( text, 'struct' );
 				text = formatterUtil.formatJson( json=text, ANSIColors=JSONService.getANSIColors() );
