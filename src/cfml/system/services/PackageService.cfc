@@ -769,6 +769,9 @@ component accessors="true" singleton {
 				consoleLogger.warn( 'Unloading module...' );
 				try {
 					moduleService.unload( uninstallDirectory.listLast( '/\' ) );
+					// Heavy-handed workaround for the fact that the module service does not unload
+					// WireBox mappings for this module so they stay in memory
+					wirebox.getCacheBox().getCache( 'metadataCache' ).clearAll();
 				} catch( any e ) {
 					job.addErrorLog( 'Error Unloading module: ' & e.message & ' ' & e.detail );
 					logger.error( '#e.message# #e.detail#' , e.stackTrace );
