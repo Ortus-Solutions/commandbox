@@ -606,7 +606,7 @@ component accessors="true" singleton {
 
 		if( !isNull( serverJSON.profile ) ) {
 			if( serverInfo.envVarHasProfile ?: false ) {
-				profileReason = 'profile property in in "box_server_profile" env var';
+				profileReason = 'profile property in "box_server_profile" env var';
 			} else {
 				profileReason = 'profile property in server.json';
 			}
