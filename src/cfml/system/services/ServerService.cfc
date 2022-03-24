@@ -129,7 +129,9 @@ component accessors="true" singleton {
 			'trayicon' : d.trayicon ?: '',
 			// Duplicate so onServerStart interceptors don't actually change config settings via reference.
 			'trayOptions' : duplicate( d.trayOptions ?: [] ),
-			'trayEnable' : d.trayEnable ?: true,
+			// Only default this on for Windows-- off for Linux and Mac due to crap unfixed bugs in the 
+			// upstream Java library. https://github.com/dorkbox/SystemTray/issues/119
+			'trayEnable' : d.trayEnable ?: fileSystemUtil.isWindows(),
 			'dockEnable' : d.dockEnable ?: true,
 			'profile'	: d.profile ?: '',
 			'jvm' : {
