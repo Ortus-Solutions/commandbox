@@ -456,8 +456,9 @@ component accessors="true" singleton {
 
 				var result = commandInfo.commandReference.CFC.getResult();
 				// Add the command output thus far into the exception
+				var originalInfo = '';
 				if( len( result ) ) {
-					var originalInfo = e.extendedInfo
+					originalInfo = e.extendedInfo
 					e.extendedInfo=serializeJSON( {
 						'extendedInfo'=originalInfo,
 						'commandOutput'=result
@@ -488,6 +489,9 @@ component accessors="true" singleton {
 					if( !captureOutput && len( result ) ) {
 						// Dump out anything the command had printed so far
 						shell.printString( result & cr );
+						// If we're printing it now, remove it from the exception so the shell doesn't double-print it.
+						e.extendedInfo=originalInfo;
+					
 					}					
 					throw e;
 				}
