@@ -136,6 +136,13 @@ component {
 				scripts  = "{}"
 			)
 			.run();
+			
+		//set the server name
+		command( "server set" )
+			.params(
+				name     = arguments.name,
+			)
+			.run();
 	}
 
 	/**
