@@ -350,7 +350,11 @@ component accessors="true" singleton {
 			// If we're not piping, output what we've got
 			} else {
 				if( structKeyExists( local, 'result' ) && len( result ) ){
-					shell.printString( result & cr );
+					if( job.getActive() ) {
+						job.addLog( result );
+					} else {
+						shell.printString( result & cr );
+					}
 				}
 				structDelete( local, 'result', false );
 			}

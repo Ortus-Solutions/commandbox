@@ -48,6 +48,8 @@ component {
 			"Simple"         : "cbtemplate-simple",
 			"SuperSimple"    : "cbtemplate-supersimple"
 		};
+		
+		variables.defaultAppName = "My ColdBox App";
 
 		return this;
 	}
@@ -62,87 +64,106 @@ component {
 	 * @initWizard Run the init creation package wizard
 	 **/
 	function run(
-		name               = "My ColdBox App",
+		name               = defaultAppName,
 		skeleton           = "AdvancedScript",
 		directory          = getCWD(),
 		boolean init       = true,
 		boolean wizard     = false,
-		boolean initWizard = false
+		boolean initWizard = false,
+		boolean verbose	   = false
 	){
 		// Check for wizard argument
 		if ( arguments.wizard ) {
-			runCommand( "coldbox create app-wizard" );
+			command( "coldbox create app-wizard" )
+				.params( verbose=arguments.verbose )
+				.run();
 			return;
 		}
-
-		// This will make the directory canonical and absolute
-		arguments.directory = resolvePath( arguments.directory );
-
-		// Validate directory, if it doesn't exist, create it.
-		if ( !directoryExists( arguments.directory ) ) {
-			directoryCreate( arguments.directory );
-		}
-
-		// If the skeleton is one of our "shortcut" names
-		if ( variables.templateMap.keyExists( arguments.skeleton ) ) {
-			// Replace it with the actual ForgeBox slug name.
-			arguments.skeleton = variables.templateMap[ arguments.skeleton ];
-		}
-
-		// Install the skeleton
-		packageService.installPackage(
-			ID                      = arguments.skeleton,
-			directory               = arguments.directory,
-			save                    = false,
-			saveDev                 = false,
-			production              = false,
-			currentWorkingDirectory = arguments.directory
-		);
-
-		// Check for the @appname@ in .project files
-		if ( fileExists( "#arguments.directory#/.project" ) ) {
-			var sProject = fileRead( "#arguments.directory#/.project" );
-			sProject     = replaceNoCase(
-				sProject,
-				"@appName@",
-				arguments.name,
-				"all"
+		
+		job.start( "Creating App [#arguments.name#]" );
+		
+			if( verbose ) {
+				job.setDumpLog( verbose );
+			}
+	
+			// This will make the directory canonical and absolute
+			arguments.directory = resolvePath( arguments.directory );
+	
+			// Validate directory, if it doesn't exist, create it.
+			if ( !directoryExists( arguments.directory ) ) {
+				directoryCreate( arguments.directory );
+			}
+	
+			// If the skeleton is one of our "shortcut" names
+			if ( variables.templateMap.keyExists( arguments.skeleton ) ) {
+				// Replace it with the actual ForgeBox slug name.
+				arguments.skeleton = variables.templateMap[ arguments.skeleton ];
+			}
+	
+			// Install the skeleton
+			packageService.installPackage(
+				ID                      = arguments.skeleton,
+				directory               = arguments.directory,
+				save                    = false,
+				saveDev                 = false,
+				production              = false,
+				currentWorkingDirectory = arguments.directory
 			);
-			file action="write" file="#arguments.directory#/.project" mode="755" output="#sProject#";
-		}
+	
+			// Check for the @appname@ in .project files
+			if ( fileExists( "#arguments.directory#/.project" ) ) {
+				var sProject = fileRead( "#arguments.directory#/.project" );
+				sProject     = replaceNoCase(
+					sProject,
+					"@appName@",
+					arguments.name,
+					"all"
+				);
+				file action="write" file="#arguments.directory#/.project" mode="755" output="#sProject#";
+			}
+	
+		job.start( "Preparing box.json" );
+		
+			// Init, if not a package as a Box Package
+			if ( arguments.init && !packageService.isPackage( arguments.directory ) ) {
+				var originalPath = getCWD();
+				// init must be run from CWD
+				shell.cd( arguments.directory );
+				command( "init" )
+					.params(
+						name   = arguments.name,
+						slug   = replace( arguments.name, " ", "", "all" ),
+						wizard = arguments.initWizard
+					)
+					.run();
+				shell.cd( originalPath );
+			}
 
-		// Init, if not a package as a Box Package
-		if ( arguments.init && !packageService.isPackage( arguments.directory ) ) {
-			var originalPath = getCWD();
-			// init must be run from CWD
-			shell.cd( arguments.directory );
-			command( "init" )
+			// Prepare defaults on box.json so we remove template based ones
+			command( "package set" )
 				.params(
-					name   = arguments.name,
-					slug   = replace( arguments.name, " ", "", "all" ),
-					wizard = arguments.initWizard
+					name     = arguments.name,
+					slug     = variables.formatterUtil.slugify( arguments.name ),
+					version  = "1.0.0",
+					location = "",
+					scripts  = "{}"
 				)
 				.run();
-			shell.cd( originalPath );
-		}
+				
+		job.complete();
 
-		// Prepare defaults on box.json so we remove template based ones
-		command( "package set" )
-			.params(
-				name     = arguments.name,
-				slug     = variables.formatterUtil.slugify( arguments.name ),
-				version  = "1.0.0",
-				location = "",
-				scripts  = "{}"
-			)
-			.run();
+		//set the server name if the user provided one
+		if( arguments.name != defaultAppName ) {
 			
-		//set the server name
-		command( "server set" )
-			.params(
-				name     = arguments.name,
-			)
-			.run();
+			job.start( "Preparing server.json" );
+				command( "server set" )
+					.params( name=arguments.name )
+					.run();
+			job.complete();	
+		}
+		
+		job.complete();
+		
 	}
 
 	/**
