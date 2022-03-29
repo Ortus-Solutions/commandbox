@@ -1161,7 +1161,8 @@ component accessors="true" singleton {
 					'isOutdated'        : updateData.isOutdated,
 					'isLatest'          : !latestData.isOutdated,
 					'location'          : replace( value.directory, directory, "" ) & "/" & slug,
-					'endpointName'		: endpointData.endpointName
+					'endpointName'		: endpointData.endpointName,
+					'depth'				: value.depth
 				};
 
 				aAllDependencies.append( dependencyInfo );
@@ -1195,7 +1196,8 @@ component accessors="true" singleton {
 			'version': boxJSON.version,
 			'packageVersion': boxJSON.version,
 			'isInstalled': true,
-			'directory': arguments.directory
+			'directory': arguments.directory,
+			'depth': 0
 		};
 		buildChildren( boxJSON, tree, arguments.directory, depth, 1 );
 		return tree;
@@ -1222,7 +1224,8 @@ component accessors="true" singleton {
 				'shortDescription' : '',
 				'packageVersion' : '',
 				'isInstalled': false,
-				'directory': ''
+				'directory': '',
+				'depth': currentlevel
 			};
 
 			if( structKeyExists( arguments.installPaths, dependency ) ) {

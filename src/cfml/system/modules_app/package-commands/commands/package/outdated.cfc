@@ -63,7 +63,7 @@ component aliases="outdated" {
 		var aOutdatedDependencies = aAllDependencies.filter( (d)=>d.isOutdated );
 
 		if( hideUpToDate ) {
-			aAllDependencies = aAllDependencies.filter( (d)=>d.isOutdated || !d.isLatest );
+			aAllDependencies = aAllDependencies.filter( (d)=>d.isOutdated || ( !d.isLatest && d.depth == 1 ) );
 		}
 
 		// JSON output
