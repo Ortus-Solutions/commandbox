@@ -549,11 +549,19 @@ component accessors="true" singleton {
 					terminal.resume();
 					}
 
-					// Shell stops on this line while waiting for user input
-			        if( arguments.silent ) {
-			        	line = variables.reader.readLine( interceptData.prompt, javacast( "char", ' ' ) );
+					param request.developerModeReloading = false;
+					param request.developerModeCommand='';
+					if( len( request.developerModeCommand) ) {
+						line = request.developerModeCommand;
+						request.developerModeReloading=true;
+						request.developerModeCommand = '';
 					} else {
-			        	line = variables.reader.readLine( interceptData.prompt );
+						// Shell stops on this line while waiting for user input
+						if( arguments.silent ) {
+							line = variables.reader.readLine( interceptData.prompt, javacast( "char", ' ' ) );
+						} else {
+							line = variables.reader.readLine( interceptData.prompt );
+						}
 					}
 
 				// User hits Ctrl-C.  Don't let them exit the shell.
@@ -602,6 +610,21 @@ component accessors="true" singleton {
 
 	            // If there's input, try to run it.
 				if( len( trim( line ) ) ) {
+
+					param request.developerModeReloaded = false;
+					if( configService.getSetting( 'developerMode', false ) && !request.developerModeReloading ){
+						// If we've never reloaded, the CLI just started, so just clear the cache
+						if( !request.developerModeReloaded ){
+							wirebox.getCacheBox().getCache( 'metadataCache' ).clearAll();
+							request.developerModeReloaded = true;
+						} else {
+							request.developerModeCommand = line;
+							reload( clear=false );
+							return true;
+						}
+					}
+					request.developerModeReloading=false;
+
 					var interceptData = {
 						line : line
 					}
