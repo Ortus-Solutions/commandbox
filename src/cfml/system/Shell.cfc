@@ -142,9 +142,9 @@ component accessors="true" singleton {
 		setTempDir( variables.tempdir );
 
 		getInterceptorService().configure();
-		
-		getInterceptorService().registerInterceptor( 
-			interceptor 	= endpointService, 
+
+		getInterceptorService().registerInterceptor(
+			interceptor 	= endpointService,
 			interceptorObject 	= endpointService,
 			interceptorName 	= "endpoint-service"
 		);
@@ -163,13 +163,13 @@ component accessors="true" singleton {
 		} else {
 			variables.commandService.configure();
 		}
-		
+
 		// Ensure we have a system box.json
 		var systemBoxJSON = expandPath( '/commandbox/box.json' );
 		if( !fileExists( systemBoxJSON ) ) {
 			fileWrite( systemBoxJSON, '{ "name":"CommandBox System" }' );
 		}
-		
+
 	}
 
 
@@ -546,7 +546,7 @@ component accessors="true" singleton {
 
 					var terminal = getReader().getTerminal();
 					if( terminal.paused() ) {
-						terminal.resume();
+					terminal.resume();
 					}
 
 					// Shell stops on this line while waiting for user input
@@ -785,7 +785,7 @@ component accessors="true" singleton {
 
 			if( isArray( command ) ) {
 				if( isNull( arguments.line ) ) {
-					arguments.line = command.toList( ' ' ); 
+					arguments.line = command.toList( ' ' );
 				}
 				if( structKeyExists( arguments, 'piped' ) ) {
 					var result = variables.commandService.runCommandTokens( arguments.command, piped, returnOutput, line );
@@ -826,7 +826,7 @@ component accessors="true" singleton {
 					job.reset();
 	    			variables.reader.getTerminal().writer().flush();
 					variables.reader.getTerminal().writer().println();
-					variables.reader.getTerminal().writer().print( variables.print.boldRedLine( 'CANCELLED' ) );	
+					variables.reader.getTerminal().writer().print( variables.print.boldRedLine( 'CANCELLED' ) );
 				}
 			// Anything else is completely unexpected and means boom booms happened-- full stack please.
 			} else {
@@ -917,13 +917,17 @@ component accessors="true" singleton {
 			getInterceptorService().announceInterception( 'onException', { exception=err } );
 		}
 
-		variables.logger.error( '#arguments.err.message# #arguments.err.detail ?: ''#', arguments.err.stackTrace ?: '' );
+		variables.logger.error( '#arguments.err.message ?: ''# #arguments.err.detail ?: ''#', arguments.err.stackTrace ?: '' );
 
 		variables.reader.getTerminal().writer().println();
 		variables.reader.getTerminal().writer().println();
 		variables.reader.getTerminal().writer().print( variables.print.whiteOnRedLine( 'ERROR (#variables.version#)' ) );
 		variables.reader.getTerminal().writer().println();
-		variables.reader.getTerminal().writer().println( variables.print.boldRedText( variables.formatterUtil.HTML2ANSI( arguments.err.message, 'boldRed' ) ) );
+		if( isNull( arguments.err.message ) ) {
+			variables.reader.getTerminal().writer().println( variables.print.boldRedText( variables.formatterUtil.HTML2ANSI( arguments.err.type, 'boldRed' ) ) );
+		} else {
+			variables.reader.getTerminal().writer().println( variables.print.boldRedText( variables.formatterUtil.HTML2ANSI( arguments.err.message, 'boldRed' ) ) );
+		}
 
 		try{
 
@@ -937,7 +941,7 @@ component accessors="true" singleton {
 				while( !isNull( cause ) ) {
 					// If the nested exception has the same type as the outer exception and no message, there's no value in it here. (Lucee's nesting of IOExceptions can do this)
 					// Or if there are two levels of causes with the same type and Message.  (RabbitMQ's Java client does this)
-					if( (cause.getClass().getName() == arguments.err.message && isNull( cause.getMessage() ) )
+					if( (cause.getClass().getName() == ( arguments.err.message ?: '' ) && isNull( cause.getMessage() ) )
 						|| ( cause.getClass().getName() == previousType && previousMessage == cause.getMessage() ?: '' ) ) {
 						// move the pointer and move on
 						cause = cause.getCause();
