@@ -439,7 +439,7 @@ component accessors="true" singleton {
 	 * Get's terminal width
   	 **/
 	function getTermWidth() {
-       	return variables.reader.getTerminal().getWidth();
+		return configService.getSetting( "terminalWidth", variables.reader.getTerminal().getWidth() );
 	}
 
 	/**

@@ -109,13 +109,15 @@ component {
 	 * @includedHeaders A list of headers to include.
      * @headerNames An list/array of column headers to use instead of the default specifically for array of arrays
 	 * @debug Only print out the names of the columns and the first row values
+	 * @width Override the terminal width
      */
 
     public string function run(
 		required any data=[],
         any includedHeaders="",
         any headerNames="",
-		boolean debug=false
+		boolean debug=false,
+		width=-1
     ) {
 
 		// Treat input as a potential file path

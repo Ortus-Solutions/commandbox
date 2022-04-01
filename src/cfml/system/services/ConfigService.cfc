@@ -74,6 +74,7 @@ component accessors="true" singleton {
 			'nonInteractiveShell',
 			'tabCompleteInline',
 			'colorInDumbTerminal',
+			'terminalWidth',
 			// JSON
 			'JSON.indent',
 			'JSON.lineEnding',
