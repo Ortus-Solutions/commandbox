@@ -158,50 +158,50 @@ component accessors="true" singleton {
 		// Build bracketed string of command path to allow special characters
 		var commandPathBracket = '';
 		var commandName = '';
-		
+
 		commandPathArray = listToArray( commandPath, '.' );
 
 		for( var item in commandPathArray ){
 			commandPathBracket &= '[ "#item#" ]';
 			commandName &= "#item# ";
 		}
-		
+
 		// This happens if a command is registered twice and we've already removed it
 		if( !isDefined( "instance.commands#commandPathBracket#" ) ) {
 			return;
 		}
-		
+
 		// Here in this flat collection for help usage
 		instance.flattenedCommands.delete( trim(commandName) );
-		
+
 		if( isDefined( "instance.commands#commandPathBracket#[ '$' ]" ) ) {
 			evaluate( "structDelete( instance.commands#commandPathBracket#, '$' )" );
 		}
 
 
-		// Remove from the leaf nodes up, removing any empty namespaces as we go. 
+		// Remove from the leaf nodes up, removing any empty namespaces as we go.
 		// We can't just kill the namespace, because a command that contributes a "server foobar" command would not want to remove the 'server' namespace.
 		while( commandPathArray.len() ) {
-			
+
 			// If there are other commands in this namespace, we're done
 			if( evaluate( "structCount( instance.commands#commandPathBracket# )" ) ) {
 				break;
 			}
-			
+
 			// If this namespace is empty, pop last item off the array and remove it
 			var lastItem = commandPathArray.pop();
-			
-			commandPathBracket = '';	
+
+			commandPathBracket = '';
 			for( var item in commandPathArray ){
 				commandPathBracket &= '[ "#item#" ]';
 			}
-			
+
 			evaluate( "structDelete( instance.commands#commandPathBracket#, lastItem )" );
-			
+
 			// We'll keep climbing "up" in our while() until we run out of namespaces, or we reach a namespace that still populated
-			
+
 		}
-		
+
 
 	}
 
@@ -278,7 +278,7 @@ component accessors="true" singleton {
 				previousCommandSeparator = commandInfo.originalLine;
 				continue;
 			}
-			
+
 			if( previousCommandSeparator == '&&' && lastCommandErrored ) {
 				continue;
 				return result ?: '';
@@ -439,11 +439,11 @@ component accessors="true" singleton {
 				interceptorService.announceInterception( 'preCommand', { commandInfo=commandInfo, parameterInfo=parameterInfo } );
 
 				// Run the command
-				var result = commandInfo.commandReference.CFC.run( argumentCollection = parameterInfo.namedParameters );				
+				var result = commandInfo.commandReference.CFC.run( argumentCollection = parameterInfo.namedParameters );
 				lastCommandErrored = commandInfo.commandReference.CFC.hasError();
 
 			} catch( any e ){
-				
+
 				FRTransService.errorTransaction( FRTrans, e.getPageException() );
 				lastCommandErrored = true;
 				// If this command didn't already set a failing exit code...
@@ -468,18 +468,18 @@ component accessors="true" singleton {
 						'commandOutput'=result
 					} );
 				}
-				
+
 				// This is a little hacky,  but basically if there are more commands in the chain that need to run,
 				// just print an exception and move on.  Otherwise, throw so we can unwrap the call stack all the way
 				// back up.  That is necessary for command expressions that fail like "echo `cat noExists.txt`"
 				// since in that case I don't want to execute the "echo" command since the "cat" failed.
 				if( arrayLen( commandChain ) > i && listFindNoCase( '||,;', commandChain[ i+1 ].originalLine ) ) {
-					
+
 					// Dump out anything the command had printed so far
 					if( len( result ) ){
 						shell.printString( result & cr );
 					}
-					
+
 					// These are "expected" exceptions like validation errors that can be "pretty"
 					if( e.type.toString() == 'commandException' ) {
 						shell.printError( { message : e.message, detail: e.detail, extendedInfo : e.extendedInfo ?: '' } );
@@ -489,14 +489,14 @@ component accessors="true" singleton {
 					}
 				// Unwind the stack to the closest catch
 				} else {
-					
+
 					if( !captureOutput && len( result ) ) {
 						// Dump out anything the command had printed so far
 						shell.printString( result & cr );
 						// If we're printing it now, remove it from the exception so the shell doesn't double-print it.
 						e.extendedInfo=originalInfo;
-					
-					}					
+
+					}
 					throw e;
 				}
 			} finally {
@@ -1145,6 +1145,8 @@ component accessors="true" singleton {
 			// Alias is allowed to be anything.  This means it may even overwrite another command already loaded.
 			removeFromDictionary( commandData, listChangeDelims( trim( alias ), '.', ' ' ) );
 		}
+		var mappingName = "command-" & fullCFCPath;
+		wirebox.getScope( 'singleton' ).getSingletons().delete( mappingName );
 	}
 
 	/**
@@ -1296,8 +1298,8 @@ component accessors="true" singleton {
 					var newPath = originalPath.listMap( (p) => {
 						p = fileSystemUtil.resolvePath( p );
 						// The globber won't match a dir if you include the trailing slash, so pull them off
-						// This allows 
-						// > rm tests/ 
+						// This allows
+						// > rm tests/
 						// or
 						// > touch tests
 						// to affect the "tests" folder itself
