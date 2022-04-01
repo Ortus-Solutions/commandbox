@@ -55,7 +55,7 @@ component aliases='unlink' {
 
 			if( commandBoxCoreLinked ) {
 				print.greenLine( 'Package [#boxJSON.slug#] unlinked from CommandBox core.  Deactivating!' );
-				moduleService.unload( boxJSON.slug );
+				moduleService.unloadAndUnregisterModule( boxJSON.slug );
 				directoryDelete( linkTarget );
 			} else {
 				directoryDelete( linkTarget );

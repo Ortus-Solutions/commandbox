@@ -30,7 +30,7 @@ component accessors="true" singleton {
 	property name='tempDir' 			inject='tempDir@constants';
 	property name='serverService'		inject='serverService';
 	property name='moduleService'		inject='moduleService';
-	
+
 
 	/**
 	* Constructor
@@ -99,7 +99,7 @@ component accessors="true" singleton {
 			arguments.production = arguments.production ?: true;
 
 			var endpointData = endpointService.resolveEndpoint( arguments.ID, arguments.currentWorkingDirectory );
-			
+
 			job.start(  'Installing package [#endpointData.ID#]', ( shell.getTermHeight() < 20 ? 1 : 5 ) );
 
 			if( verbose ) {
@@ -385,7 +385,7 @@ component accessors="true" singleton {
 						if( !serverDetails.serverIsNew && !(serverInfo.engineName contains 'lucee') ) {
 							job.addWarnLog( "We did find a server, but the engine is [#serverInfo.engineName#] instead of 'lucee'" );
 						}
-						
+
 					}
 
 				}
@@ -624,10 +624,10 @@ component accessors="true" singleton {
 			consoleLogger.warn( 'Activating your new module for instant use...' );
 			moduleService.registerAndActivateModule( installDirectory.listLast( '/\' ), fileSystemUtil.makePathRelative( installDirectory ).listToArray( '/\' ).slice( 1, -1 ).toList( '.' ) );
 		}
-		
+
 		interceptorService.announceInterception( 'postInstall', { installArgs=arguments, installDirectory=installDirectory } );
 		job.complete( verbose );
-		
+
 		return true;
 	}
 
@@ -768,7 +768,7 @@ component accessors="true" singleton {
 			if( fileSystemUtil.normalizeSlashes( uninstallDirectory ).startsWith( fileSystemUtil.normalizeSlashes( expandPath( '/commandbox' ) ) ) && fileExists( uninstallDirectory & '/ModuleConfig.cfc' ) ) {
 				consoleLogger.warn( 'Unloading module...' );
 				try {
-					moduleService.unload( uninstallDirectory.listLast( '/\' ) );
+					moduleService.unloadAndUnregisterModule( uninstallDirectory.listLast( '/\' ) );
 					// Heavy-handed workaround for the fact that the module service does not unload
 					// WireBox mappings for this module so they stay in memory
 					wirebox.getCacheBox().getCache( 'metadataCache' ).clearAll();
@@ -841,12 +841,12 @@ component accessors="true" singleton {
 		if( arguments.dev || !isNull( boxJSONRaw.devDependencies[ arguments.packageName ] ) ) {
 			boxJSONRaw[ 'devDependencies' ] = boxJSONRaw.devDependencies ?: {};
 			boxJSON[ 'devDependencies' ] = boxJSON.devDependencies ?: {};
-			
+
 			// If this package is also saved as a normal dev, remove it from "dependencies"
 			if( !isNull( boxJSONRaw.dependencies[ arguments.packageName ] ) ) {
 				boxJSONRaw.dependencies.delete( arguments.packageName );
 			}
-			
+
 			var dependenciesRaw = boxJSONRaw.devDependencies;
 			var dependencies = boxJSON.devDependencies;
 		} else {
@@ -908,7 +908,7 @@ component accessors="true" singleton {
 					arguments.installDirectory = right( arguments.installDirectory, len( arguments.installDirectory ) - 1 );
 				}
 			}
-			
+
 			var existingInstallPath = '';
 			if( installPaths.keyExists( arguments.packageName ) ) {
 				existingInstallPath = fileSystemUtil.normalizeSlashes( fileSystemUtil.resolvePath( installPaths[ arguments.packageName ], arguments.currentWorkingDirectory ) );
@@ -920,7 +920,7 @@ component accessors="true" singleton {
 					if( len( existingInstallPath ) && existingInstallPath.left( 1 ) == '/' ) {
 						existingInstallPath = right( existingInstallPath, len( existingInstallPath ) - 1 );
 					}
-				}	
+				}
 			}
 
 			// Just in case-- an empty install dir would be useless.
@@ -1177,7 +1177,7 @@ component accessors="true" singleton {
 
 		// Verify outdated dependency graph in parallel
 		structEach( tree.dependencies, fOutdatedCheck, true );
-		
+
 		return aAllDependencies;
 	}
 
