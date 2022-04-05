@@ -356,35 +356,6 @@ or just add DEBUG to the root logger
 	}
 
 	/**
-	* Tracks a download
-	*/
-	function recordDownload(
-		required string slug,
-		string version,
-		string APIToken='' ) {
-
-		var thisResource = "install/#arguments.slug#";
-		if( len( arguments.version ) ) {
-			thisResource &= "/#arguments.version#";
-		}
-
-		var results = makeRequest(
-			resource=thisResource,
-			method='post',
-			headers = {
-				'x-api-token' : arguments.APIToken
-			} );
-
-		// error
-		if( results.response.error ){
-			throw( "Something went wrong tracking this download from #getEndpointName()#.", 'forgebox', arrayToList( results.response.messages ) );
-		}
-
-		return results.response.data;
-	}
-
-
-	/**
 	* Autocomplete for slugs
 	*/
 	function slugSearch(

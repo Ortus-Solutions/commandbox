@@ -51,6 +51,15 @@ component accessors="true" implements="IEndpointInteractive" {
 			job.addLog( "Package found in local artifacts!");
 			// Install the package
 			var thisArtifactPath = artifactService.getArtifactPath( slug, version );
+
+			try {
+				var APIToken = getAPIToken();
+				forgeBox.recordInstall( slug, version, APIToken );
+			} catch( forgebox var e ) {
+				job.addLog( e.message );
+				job.addLog( e.detail );
+			}
+
 			// Defer to file endpoint
 			return fileEndpoint.resolvePackage( thisArtifactPath, arguments.verbose );
 		} else {
