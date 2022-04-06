@@ -36,6 +36,7 @@ component accessors=true implements="IEndpoint" singleton {
 	property name='filesystemUtil'			inject='fileSystem';
 	property name="folderEndpoint"			inject="commandbox.system.endpoints.Folder";
 	property name="PackageService"			inject="packageService";
+	property name='configService'			inject='configService';
 
 	// Properties
 	property name="namePrefixes" type="string";
@@ -46,6 +47,11 @@ component accessors=true implements="IEndpoint" singleton {
 	}
 
 	public string function resolvePackage( required string package, boolean verbose=false ) {
+
+		if( configService.getSetting( 'offlineMode', false ) ) {
+			throw( 'Can''t download [#getNamePrefixes()#:#package#], CommandBox is in offline mode.  Go online with [config set offlineMode=false].', 'endpointException' );	
+		}
+
 		var lockVersion = false;
 		if( package.right( 12 ) == ':lockVersion' ) {
 			var lockVersion = true;

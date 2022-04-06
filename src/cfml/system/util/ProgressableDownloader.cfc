@@ -25,6 +25,10 @@ component singleton {
 		required string destinationFile,
 		any statusUDF,
 		any redirectUDF='' ) {
+			
+		if( configService.getSetting( 'offlineMode', false ) ) {
+			throw( 'Can''t download [#downloadURL#], CommandBox is in offline mode.  Go online with [config set offlineMode=false].' );	
+		}
 
 		var data = getByteArray( 1024 );
 		var total = 0;

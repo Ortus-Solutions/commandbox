@@ -34,6 +34,7 @@ component accessors="true" implements="IEndpoint" singleton {
 	property name='wirebox'					inject='wirebox';
 	property name="semanticVersion"			inject="provider:semanticVersion@semver";
 	property name='semverRegex'				inject='semverRegex@constants';
+	property name='configService'			inject='configService';
 
 	// Properties
 	property name="namePrefixes" type="string";
@@ -44,6 +45,11 @@ component accessors="true" implements="IEndpoint" singleton {
 	}
 
 	public string function resolvePackage( required string package, boolean verbose=false ) {
+
+		if( configService.getSetting( 'offlineMode', false ) ) {
+			throw( 'Can''t clone [#getNamePrefixes()#:#package#], CommandBox is in offline mode.  Go online with [config set offlineMode=false].', 'endpointException' );	
+		}
+
 		var job = wirebox.getInstance( 'interactiveJob' );
 		var GitURL = replace( arguments.package, '//', '' );
 		GitURL = getProtocol() & GitURL;

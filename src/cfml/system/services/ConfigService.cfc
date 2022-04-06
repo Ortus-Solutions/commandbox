@@ -88,6 +88,7 @@ component accessors="true" singleton {
 			'verboseErrors',
 			'debugNativeExecution',
 			'developerMode',
+			'offlineMode',
 			// Task Runners
 			'taskCaching'
 		]);
