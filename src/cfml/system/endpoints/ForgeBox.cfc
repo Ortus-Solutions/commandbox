@@ -52,13 +52,7 @@ component accessors="true" implements="IEndpointInteractive" {
 			// Install the package
 			var thisArtifactPath = artifactService.getArtifactPath( slug, version );
 
-			try {
-				var APIToken = getAPIToken();
-				forgeBox.recordInstall( slug, version, APIToken );
-			} catch( forgebox var e ) {
-				job.addLog( e.message );
-				job.addLog( e.detail );
-			}
+			recordInstall( slug, version );
 
 			// Defer to file endpoint
 			return fileEndpoint.resolvePackage( thisArtifactPath, arguments.verbose );
@@ -512,12 +506,7 @@ component accessors="true" implements="IEndpointInteractive" {
 
 			job.addLog( "Installing version [#arguments.version#]." );
 
-			try {
-				forgeBox.recordInstall( arguments.slug, arguments.version, APIToken );
-			} catch( forgebox var e ) {
-				job.addLog( e.message );
-				job.addLog( e.detail );
-			}
+			recordInstall( arguments.slug, arguments.version );
 
 			var packageType = entryData.typeSlug;
 
@@ -586,7 +575,7 @@ component accessors="true" implements="IEndpointInteractive" {
 				throw( e.message, 'endpointException', e.detail );
 			}
 
-			job.addErrorLog( "Aww man,  #getNamePrefixes()# ran into an issue.");
+			job.addErrorLog( "Aww man, #getNamePrefixes()# ran into an issue.");
 			job.addLog( "#e.message#  #e.detail#" );
 			job.addErrorLog( "We're going to look in your local artifacts cache and see if one of those versions will work.");
 
@@ -597,6 +586,8 @@ component accessors="true" implements="IEndpointInteractive" {
 				job.addLog( "" );
 				job.addLog( "Sweet! We found a local version of [#satisfyingVersion#] that we can use in your artifacts.");
 				job.addLog( "" );
+
+				recordInstall( arguments.slug, satisfyingVersion );
 
 				var thisArtifactPath = artifactService.getArtifactPath( slug, satisfyingVersion );
 				// Defer to file endpoint
@@ -712,6 +703,16 @@ component accessors="true" implements="IEndpointInteractive" {
 		} else {
 			configService.setSetting( 'endpoints.forgebox-#getNamePrefixes()#.APIToken', APIToken );
 			configService.setSetting( 'endpoints.forgebox-#getNamePrefixes()#.tokens.#username#', APIToken );
+		}
+	}
+
+	function recordInstall( slug, version ) {
+		var job = wirebox.getInstance( 'interactiveJob' );
+		try {
+			forgeBox.recordInstall( arguments.slug, arguments.version, getAPIToken() );
+		} catch( forgebox var e ) {
+			job.addErrorLog( e.message );
+			job.addErrorLog( e.detail );
 		}
 	}
 
