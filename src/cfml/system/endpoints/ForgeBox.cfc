@@ -23,6 +23,7 @@ component accessors="true" implements="IEndpointInteractive" {
 	property name="fileEndpoint"		inject="commandbox.system.endpoints.File";
 	property name="lexEndpoint"			inject="commandbox.system.endpoints.Lex";
 	property name='wirebox'				inject='wirebox';
+	property name='logger'				inject='logbox:logger:{this}';
 
 	// Properties
 	property name="namePrefixes" type="string";
@@ -707,12 +708,12 @@ component accessors="true" implements="IEndpointInteractive" {
 	}
 
 	function recordInstall( slug, version ) {
-		var job = wirebox.getInstance( 'interactiveJob' );
-		try {
-			forgeBox.recordInstall( arguments.slug, arguments.version, getAPIToken() );
-		} catch( forgebox var e ) {
-			job.addErrorLog( e.message );
-			job.addErrorLog( e.detail );
+		thread name="#createUUID()#" slug="#arguments.slug#", version="#arguments.version#" {
+			try {
+				var foo = forgeBox.recordInstall( attributes.slug, attributes.version, getAPIToken() );
+			} catch( any e ) {
+				logger.error( 'Error recording install', e )
+			}
 		}
 	}
 
