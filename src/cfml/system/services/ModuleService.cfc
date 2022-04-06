@@ -696,9 +696,9 @@
 			oConfig.injectPropertyMixin( "log", 				shell.getLogBox().getLogger( oConfig) );
 			oConfig.injectPropertyMixin( "wirebox", 			shell.getWireBox() );
 			oConfig.injectPropertyMixin( "binder", 				shell.getWireBox().getBinder() );
-			oConfig.injectPropertyMixin( "getSystemSetting",	systemSettings.getSystemSetting );
-			oConfig.injectPropertyMixin( "getSystemProperty",	systemSettings.getSystemProperty );
-			oConfig.injectPropertyMixin( "getEnv",				systemSettings.getEnv );
+			oConfig.injectPropertyMixin( "getSystemSetting",	()=>systemSettings.getSystemSetting(argumentCollection=arguments) );
+			oConfig.injectPropertyMixin( "getSystemProperty",	()=>systemSettings.getSystemProperty(argumentCollection=arguments) );
+			oConfig.injectPropertyMixin( "getEnv",				()=>systemSettings.getEnv(argumentCollection=arguments) );
 
 			// Configure the module
 			oConfig.configure();
