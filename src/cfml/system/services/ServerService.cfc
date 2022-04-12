@@ -129,7 +129,7 @@ component accessors="true" singleton {
 			'trayicon' : d.trayicon ?: '',
 			// Duplicate so onServerStart interceptors don't actually change config settings via reference.
 			'trayOptions' : duplicate( d.trayOptions ?: [] ),
-			// Only default this on for Windows-- off for Linux and Mac due to crap unfixed bugs in the 
+			// Only default this on for Windows-- off for Linux and Mac due to crap unfixed bugs in the
 			// upstream Java library. https://github.com/dorkbox/SystemTray/issues/119
 			'trayEnable' : d.trayEnable ?: fileSystemUtil.isWindows(),
 			'dockEnable' : d.dockEnable ?: true,
@@ -1400,12 +1400,12 @@ component accessors="true" singleton {
 				return parser.replaceEscapedChars( parser.removeEscapedChars( parser.unwrapQuotes( i ) ) );
 			}), true );
 
-		args.append( serverInfo.runwarArgsArray, true );
+		args.append( serverInfo.runwarArgsArray, true )
+			// Despite the name, the MacOS Dock also uses this setting.
+			.append( '--tray-icon' ).append( serverInfo.trayIcon );
 
 		if( serverInfo.trayEnable ) {
-			args
-				.append( '--tray-icon' ).append( serverInfo.trayIcon )
-				.append( '--tray-config' ).append( serverInfo.trayOptionsFile )
+			args.append( '--tray-config' ).append( serverInfo.trayOptionsFile );
 		}
 
 		if( serverInfo.runwarXNIOOptions.count() ) {
