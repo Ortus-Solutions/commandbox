@@ -84,7 +84,8 @@ component {
 		// Tabula rasa
 		command( "cls" ).run();
 
-		// Start watcher
+		// Start watcher with passed args only.
+		var testArgs = arguments.filter( (k,v) => !isNull( v ) );
 		watch()
 			.paths( globbingPaths.listToArray() )
 			.inDirectory( getCWD() )
@@ -97,7 +98,7 @@ component {
 				try {
 					// Run the tests in the target directory
 					command( "testbox run" )
-						.params( argumentCollection = arguments )
+						.params( argumentCollection = testArgs )
 						.inWorkingDirectory( getCWD() )
 						.run();
 				} catch ( commandException var  e ) {
