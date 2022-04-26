@@ -635,6 +635,18 @@ component accessors=true {
     }
 
 	function buildFatJar() {
+		/*
+		is a self-sufficient archive which contains both classes and
+		dependencies needed to run an application
+		to make a fat jar
+		we need:
+		- Main-Class attribute in the manifest file
+		- include dependency jars
+		- it contains classes from all the libraries, on which your project depends
+			and of course the classes of the current project
+		- it has to do the same as
+			configurations.compile.collect{ it.isDirectory() ? it : zipTree( it ) }
+		*/
 		j = "run fat jar ";
 		shell.printString( " " & j & " " );
 		//command( j ).run();
