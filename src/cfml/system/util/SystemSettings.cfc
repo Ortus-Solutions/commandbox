@@ -241,14 +241,14 @@ component singleton {
 	*
 	* @dataStructure A string, struct, or array. Initial value should be a struct.
 	*/
-	function setDeepSystemSettings( any dataStructure, string prefix='interceptData' ) {
+	function setDeepSystemSettings( any dataStructure, string prefix='interceptData', delim='.' ) {
 
 		// If it's a struct...
 		if( isStruct( dataStructure ) && !isObject( dataStructure ) ) {
 			// Loop over and process each key
 			for( var key in dataStructure ) {
 				if( key != 'COMMANDREFERENCE' ) {
-					setDeepSystemSettings( dataStructure[ key ] ?: '', prefix.listAppend( key, '.' ) );
+					setDeepSystemSettings( dataStructure[ key ] ?: '', prefix.listAppend( key, delim ), delim );
 				}
 			}
 		// If it's an array...
@@ -257,7 +257,7 @@ component singleton {
 			// Loop over and process each index
 			for( var item in dataStructure ) {
 				i++;
-				setDeepSystemSettings( item ?: '', prefix & '[#i#]' );
+				setDeepSystemSettings( item ?: '', prefix & '[#i#]', delim );
 			}
 		// If it's a string...
 		} else if ( isSimpleValue( dataStructure ) ) {

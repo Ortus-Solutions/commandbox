@@ -314,7 +314,7 @@ component accessors="true" singleton {
 		loadOverrides( serverJSON, serverInfo, serverProps.verbose ?: serverJSON.verbose ?: defaults.verbose ?: false );
 
 		// Load up our fully-realized server.json-specific env vars into CommandBox's environment
-		systemSettings.setDeepSystemSettings( serverDetails.serverJSON.env ?: {}, '' );
+		systemSettings.setDeepSystemSettings( serverDetails.serverJSON.env ?: {}, '', '_' );
 
 		interceptorService.announceInterception( 'preServerStart', { serverDetails=serverDetails, serverProps=serverProps, serverInfo=serverDetails.serverInfo, serverJSON=serverDetails.serverJSON, defaults=defaults } );
 
