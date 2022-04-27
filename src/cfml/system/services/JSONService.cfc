@@ -120,7 +120,7 @@ component accessors="true" singleton {
 							}
 						// structs
 						} else {
-							targetProperty.append( complexValue, true );
+							mergeData( targetProperty, complexValue );
 						}
 						results.append( '#propertyValue# appended to #prop#' );
 						continue;

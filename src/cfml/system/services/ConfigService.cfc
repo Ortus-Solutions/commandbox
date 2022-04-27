@@ -199,7 +199,7 @@ component accessors="true" singleton {
 			return variables.configSettings;
 		}
 
-		// env var/system property overrides which we want to keep seperate so we don't write them back to the JSON file.
+		// env var/system property overrides which we want to keep separate so we don't write them back to the JSON file.
 		return JSONService.mergeData( duplicate( variables.configSettings ), getConfigSettingOverrides() );
 	}
 
