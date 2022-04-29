@@ -845,17 +845,17 @@ External Dependencies:
 	    </antcontrib:if>
 
 		<antcontrib:if>
-	        <available file="JREs/jre_${jre.version}_windows_x32.zip" />
+	        <available file="JREs/jre_jdk-11.0.14.1+1_windows_x32.zip" />
 	        <then><echo>Windows x32 JRE found!</echo></then>
 	        <else>
 	            <echo>Windows x32 JRE not found, downloading artifact</echo>
 
-				<mkdir dir="JREs/jre_${jre.version}_windows_x32"/>
+				<mkdir dir="JREs/jre_jdk-11.0.14.1+1_windows_x32"/>
 
-				<get src="https://api.adoptium.net/v3/binary/version/${jre.version.escaped}/windows/x32/jre/hotspot/normal/eclipse"
-					 dest="JREs/jre_${jre.version}_windows_x32.zip"
+				<get src="https://api.adoptium.net/v3/binary/version/jdk-11.0.14.1%2B1/windows/x32/jre/hotspot/normal/eclipse"
+					 dest="JREs/jre_jdk-11.0.14.1+1_windows_x32.zip"
 					 verbose="true" />
-				<unzip src="JREs/jre_${jre.version}_windows_x32.zip" dest="JREs\jre_${jre.version}_windows_x32/" overwrite="true"/>
+				<unzip src="JREs/jre_jdk-11.0.14.1+1_windows_x32.zip" dest="JREs\jre_jdk-11.0.14.1+1_windows_x32/" overwrite="true"/>
 	        </else>
 	    </antcontrib:if>
 
@@ -880,7 +880,7 @@ External Dependencies:
 
 		<!--Zip Box Binary With JRE -->
 		<zip destfile="${dist.dir}/${distro.name}-jre-win32-${commandbox.version}.zip" level="9" update="true">
-			<zipfileset prefix="jre" dir="JREs\jre_${jre.version}_windows_x32/${jre.version}-jre/"/>
+			<zipfileset prefix="jre" dir="JREs\jre_jdk-11.0.14.1+1_windows_x32/${jre.version}-jre/"/>
 	        <fileset file="${dist.dir}/box.exe" />
 		</zip>
 		<zip destfile="${dist.dir}/${distro.name}-jre-win64-${commandbox.version}.zip" level="9" update="true">
