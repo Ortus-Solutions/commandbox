@@ -880,7 +880,7 @@ External Dependencies:
 
 		<!--Zip Box Binary With JRE -->
 		<zip destfile="${dist.dir}/${distro.name}-jre-win32-${commandbox.version}.zip" level="9" update="true">
-			<zipfileset prefix="jre" dir="JREs\jre_jdk-11.0.14.1+1_windows_x32/${jre.version}-jre/"/>
+			<zipfileset prefix="jre" dir="JREs\jre_jdk-11.0.14.1+1_windows_x32/jdk-11.0.14.1+1-jre/"/>
 	        <fileset file="${dist.dir}/box.exe" />
 		</zip>
 		<zip destfile="${dist.dir}/${distro.name}-jre-win64-${commandbox.version}.zip" level="9" update="true">
