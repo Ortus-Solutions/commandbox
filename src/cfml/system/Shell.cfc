@@ -142,9 +142,9 @@ component accessors="true" singleton {
 		setTempDir( variables.tempdir );
 
 		getInterceptorService().configure();
-		
-		getInterceptorService().registerInterceptor( 
-			interceptor 	= endpointService, 
+
+		getInterceptorService().registerInterceptor(
+			interceptor 	= endpointService,
 			interceptorObject 	= endpointService,
 			interceptorName 	= "endpoint-service"
 		);
@@ -163,13 +163,13 @@ component accessors="true" singleton {
 		} else {
 			variables.commandService.configure();
 		}
-		
+
 		// Ensure we have a system box.json
 		var systemBoxJSON = expandPath( '/commandbox/box.json' );
 		if( !fileExists( systemBoxJSON ) ) {
 			fileWrite( systemBoxJSON, '{ "name":"CommandBox System" }' );
 		}
-		
+
 	}
 
 
@@ -439,7 +439,7 @@ component accessors="true" singleton {
 	 * Get's terminal width
   	 **/
 	function getTermWidth() {
-       	return variables.reader.getTerminal().getWidth();
+		return configService.getSetting( "terminalWidth", variables.reader.getTerminal().getWidth() );
 	}
 
 	/**
@@ -485,6 +485,10 @@ component accessors="true" singleton {
 	 * @directory.hint directory to CD to.  Please verify it exists before calling.
   	 **/
 	String function cd( directory="" ){
+		// Ensure we have a trailing slash for our directory.
+		if( !(arguments.directory.endsWith( '/' ) || arguments.directory.endsWith( '\' ) ) ) {
+			arguments.directory &= '/';
+		}
 		variables.pwd = arguments.directory;
 		request.lastCWD = arguments.directory;
 		// Update prompt to reflect directory change
@@ -542,14 +546,22 @@ component accessors="true" singleton {
 
 					var terminal = getReader().getTerminal();
 					if( terminal.paused() ) {
-						terminal.resume();
+					terminal.resume();
 					}
 
-					// Shell stops on this line while waiting for user input
-			        if( arguments.silent ) {
-			        	line = variables.reader.readLine( interceptData.prompt, javacast( "char", ' ' ) );
+					param request.developerModeReloading = false;
+					param request.developerModeCommand='';
+					if( len( request.developerModeCommand) ) {
+						line = request.developerModeCommand;
+						request.developerModeReloading=true;
+						request.developerModeCommand = '';
 					} else {
-			        	line = variables.reader.readLine( interceptData.prompt );
+						// Shell stops on this line while waiting for user input
+						if( arguments.silent ) {
+							line = variables.reader.readLine( interceptData.prompt, javacast( "char", ' ' ) );
+						} else {
+							line = variables.reader.readLine( interceptData.prompt );
+						}
 					}
 
 				// User hits Ctrl-C.  Don't let them exit the shell.
@@ -598,6 +610,21 @@ component accessors="true" singleton {
 
 	            // If there's input, try to run it.
 				if( len( trim( line ) ) ) {
+
+					param request.developerModeReloaded = false;
+					if( configService.getSetting( 'developerMode', false ) && !request.developerModeReloading ){
+						// If we've never reloaded, the CLI just started, so just clear the cache
+						if( !request.developerModeReloaded ){
+							wirebox.getCacheBox().getCache( 'metadataCache' ).clearAll();
+							request.developerModeReloaded = true;
+						} else {
+							request.developerModeCommand = line;
+							reload( clear=false );
+							return true;
+						}
+					}
+					request.developerModeReloading=false;
+
 					var interceptData = {
 						line : line
 					}
@@ -749,17 +776,19 @@ component accessors="true" singleton {
 
 	/**
 	 * Call a command
- 	 * @command.hint Either a string containing a text command, or an array of tokens representing the command and parameters.
- 	 * @returnOutput.hint True will return the output of the command as a string, false will send the output to the console.  If command outputs nothing, an empty string will come back.
- 	 * @piped.hint Any text being piped into the command.  This will overwrite the first parameter (pushing any positional params back)
- 	 * @initialCommand.hint Since commands can recursively call new commands via this method, this flags the first in the chain so exceptions can bubble all the way back to the beginning.
+ 	 * @command Either a string containing a text command, or an array of tokens representing the command and parameters.
+ 	 * @returnOutput True will return the output of the command as a string, false will send the output to the console.  If command outputs nothing, an empty string will come back.
+ 	 * @piped Any text being piped into the command.  This will overwrite the first parameter (pushing any positional params back)
+ 	 * @initialCommand Since commands can recursively call new commands via this method, this flags the first in the chain so exceptions can bubble all the way back to the beginning.
+ 	 * @line If passing an array of tokens, this is the original, unparsed line typed by the user
  	 * In other words, if "foo" calls "bar", which calls "baz" and baz errors, all three commands are scrapped and do not finish execution.
  	 **/
 	function callCommand(
 		required any command,
 		returnOutput=false,
 		string piped,
-		boolean initialCommand=false )  {
+		boolean initialCommand=false,
+		string line )  {
 
 		var job = wirebox.getInstance( 'interactiveJob' );
 		var ConsolePainter = wirebox.getInstance( 'ConsolePainter' );
@@ -778,10 +807,13 @@ component accessors="true" singleton {
 		try{
 
 			if( isArray( command ) ) {
+				if( isNull( arguments.line ) ) {
+					arguments.line = command.toList( ' ' );
+				}
 				if( structKeyExists( arguments, 'piped' ) ) {
-					var result = variables.commandService.runCommandTokens( arguments.command, piped, returnOutput );
+					var result = variables.commandService.runCommandTokens( arguments.command, piped, returnOutput, line );
 				} else {
-					var result = variables.commandService.runCommandTokens( tokens=arguments.command, captureOutput=returnOutput );
+					var result = variables.commandService.runCommandTokens( tokens=arguments.command, captureOutput=returnOutput, line=line );
 				}
 			} else {
 				var result = variables.commandService.runCommandLine( arguments.command, returnOutput );
@@ -796,7 +828,7 @@ component accessors="true" singleton {
 
 				ConsolePainter.forceStop();
 
-				printError( { message : e.message, detail: e.detail } );
+				printError( { message : e.message, detail: e.detail, extendedInfo : e.extendedInfo ?: '' } );
 			}
 		// This type of error means the user hit Ctrl-C, during a readLine() call. Duck out and move along.
 		} catch (any e) {
@@ -817,7 +849,7 @@ component accessors="true" singleton {
 					job.reset();
 	    			variables.reader.getTerminal().writer().flush();
 					variables.reader.getTerminal().writer().println();
-					variables.reader.getTerminal().writer().print( variables.print.boldRedLine( 'CANCELLED' ) );	
+					variables.reader.getTerminal().writer().print( variables.print.boldRedLine( 'CANCELLED' ) );
 				}
 			// Anything else is completely unexpected and means boom booms happened-- full stack please.
 			} else {
@@ -891,6 +923,13 @@ component accessors="true" singleton {
 			setExitCode( 1 );
 		}
 
+		if( !isNull( err.extendedInfo ) && isJSON( err.extendedInfo ) ){
+			var info = deserializeJSON( err.extendedInfo );
+			if( info.keyExists( 'commandOutput' ) ) {
+				variables.reader.getTerminal().writer().print( info.commandOutput );
+			}
+		}
+
 		var verboseErrors = true;
 		try{
 			verboseErrors = configService.getSetting( 'verboseErrors', false );
@@ -901,11 +940,17 @@ component accessors="true" singleton {
 			getInterceptorService().announceInterception( 'onException', { exception=err } );
 		}
 
-		variables.logger.error( '#arguments.err.message# #arguments.err.detail ?: ''#', arguments.err.stackTrace ?: '' );
+		variables.logger.error( '#arguments.err.message ?: ''# #arguments.err.detail ?: ''#', arguments.err.stackTrace ?: '' );
 
+		variables.reader.getTerminal().writer().println();
+		variables.reader.getTerminal().writer().println();
 		variables.reader.getTerminal().writer().print( variables.print.whiteOnRedLine( 'ERROR (#variables.version#)' ) );
 		variables.reader.getTerminal().writer().println();
-		variables.reader.getTerminal().writer().println( variables.print.boldRedText( variables.formatterUtil.HTML2ANSI( arguments.err.message, 'boldRed' ) ) );
+		if( isNull( arguments.err.message ) ) {
+			variables.reader.getTerminal().writer().println( variables.print.boldRedText( variables.formatterUtil.HTML2ANSI( arguments.err.type, 'boldRed' ) ) );
+		} else {
+			variables.reader.getTerminal().writer().println( variables.print.boldRedText( variables.formatterUtil.HTML2ANSI( arguments.err.message, 'boldRed' ) ) );
+		}
 
 		try{
 
@@ -919,7 +964,7 @@ component accessors="true" singleton {
 				while( !isNull( cause ) ) {
 					// If the nested exception has the same type as the outer exception and no message, there's no value in it here. (Lucee's nesting of IOExceptions can do this)
 					// Or if there are two levels of causes with the same type and Message.  (RabbitMQ's Java client does this)
-					if( (cause.getClass().getName() == arguments.err.message && isNull( cause.getMessage() ) )
+					if( (cause.getClass().getName() == ( arguments.err.message ?: '' ) && isNull( cause.getMessage() ) )
 						|| ( cause.getClass().getName() == previousType && previousMessage == cause.getMessage() ?: '' ) ) {
 						// move the pointer and move on
 						cause = cause.getCause();

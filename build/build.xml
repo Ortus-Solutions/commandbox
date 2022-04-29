@@ -16,8 +16,8 @@ External Dependencies:
  	<property name="distro.groupID"				value="ortussolutions" />
  	<property name="distro.name"				value="commandbox"/>
  	<!-- Special things happen when the version and stableVersion are the same value as that signifies a "stable" build.   -->
- 	<property name="commandbox.version"			value="5.4.2"/>
- 	<property name="commandbox.stableVersion"	value="5.4.2"/>
+ 	<property name="commandbox.version"			value="5.5.0"/>
+ 	<property name="commandbox.stableVersion"	value="5.5.0"/>
 
     <!-- Time Label -->
 	<tstamp prefix="start"/>
@@ -382,8 +382,8 @@ External Dependencies:
 	          </fileset>
 	          <fileset file="${temp.dir}/cli/luceecli.jar" />
 	          <fileset file="${temp.dir}/cli/ortus-jgit.jar" />
+	          <fileset file="${src.dir}/resources/log4j2.xml" />	          
 	        </zip>
-
 
 	        <zip destfile="${temp.dir}/cli-light/libs.zip">
 	          <fileset dir="${lucee-light.lib.dir}">
@@ -394,6 +394,7 @@ External Dependencies:
 	          </fileset>
 	          <fileset file="${temp.dir}/cli/luceecli.jar" />
 	          <fileset file="${temp.dir}/cli/ortus-jgit.jar" />
+	          <fileset file="${src.dir}/resources/log4j2.xml" />
 	        </zip>
 
 	    <!--   </else>
@@ -730,7 +731,7 @@ External Dependencies:
 					chdir="%OLDPWD%"
 					icon="${src.dir}/resources/box.ico"
 					stayAlive="true">
-					<jre path="./jre/" minVersion="1.8.0" />
+					<jre path="./jre/;%JAVA_HOME%;%JRE_HOME%;%JDK_HOME%;%PATH%" minVersion="1.8.0" maxVersion="15.0.0" />
 					<versionInfo fileVersion="${commandbox.version.noPrereleaseID}.0"
 								 txtFileVersion="${commandbox.version}.${build.number}"
 								 fileDescription="${commandbox.description}"
@@ -818,7 +819,7 @@ External Dependencies:
 
 				<mkdir dir="JREs/jre_${jre.version}_linux_x64"/>
 
-				<get src="https://api.adoptopenjdk.net/v3/binary/version/${jre.version.escaped}/linux/x64/jre/hotspot/normal/adoptopenjdk"
+				<get src="https://api.adoptium.net/v3/binary/version/${jre.version.escaped}/linux/x64/jre/hotspot/normal/eclipse"
 					 dest="JREs/jre_${jre.version}_linux_x64.tar.gz"
 					 verbose="true" />
 
@@ -836,7 +837,7 @@ External Dependencies:
 
 				<mkdir dir="JREs/jre_${jre.version}_windows_x64"/>
 
-				<get src="https://api.adoptopenjdk.net/v3/binary/version/${jre.version.escaped}/windows/x64/jre/hotspot/normal/adoptopenjdk"
+				<get src="https://api.adoptium.net/v3/binary/version/${jre.version.escaped}/windows/x64/jre/hotspot/normal/eclipse"
 					 dest="JREs/jre_${jre.version}_windows_x64.zip"
 					 verbose="true" />
 				<unzip src="JREs/jre_${jre.version}_windows_x64.zip" dest="JREs\jre_${jre.version}_windows_x64/" overwrite="true"/>
@@ -844,17 +845,17 @@ External Dependencies:
 	    </antcontrib:if>
 
 		<antcontrib:if>
-	        <available file="JREs/jre_${jre.version}_windows_x32.zip" />
+	        <available file="JREs/jre_jdk-11.0.14.1+1_windows_x32.zip" />
 	        <then><echo>Windows x32 JRE found!</echo></then>
 	        <else>
 	            <echo>Windows x32 JRE not found, downloading artifact</echo>
 
-				<mkdir dir="JREs/jre_${jre.version}_windows_x32"/>
+				<mkdir dir="JREs/jre_jdk-11.0.14.1+1_windows_x32"/>
 
-				<get src="https://api.adoptopenjdk.net/v3/binary/version/${jre.version.escaped}/windows/x32/jre/hotspot/normal/adoptopenjdk"
-					 dest="JREs/jre_${jre.version}_windows_x32.zip"
+				<get src="https://api.adoptium.net/v3/binary/version/jdk-11.0.14.1%2B1/windows/x32/jre/hotspot/normal/eclipse"
+					 dest="JREs/jre_jdk-11.0.14.1+1_windows_x32.zip"
 					 verbose="true" />
-				<unzip src="JREs/jre_${jre.version}_windows_x32.zip" dest="JREs\jre_${jre.version}_windows_x32/" overwrite="true"/>
+				<unzip src="JREs/jre_jdk-11.0.14.1+1_windows_x32.zip" dest="JREs\jre_jdk-11.0.14.1+1_windows_x32/" overwrite="true"/>
 	        </else>
 	    </antcontrib:if>
 
@@ -866,7 +867,7 @@ External Dependencies:
 
 				<mkdir dir="JREs/jre_${jre.version}_mac_x64"/>
 
-				<get src="https://api.adoptopenjdk.net/v3/binary/version/${jre.version.escaped}/mac/x64/jre/hotspot/normal/adoptopenjdk"
+				<get src="https://api.adoptium.net/v3/binary/version/${jre.version.escaped}/mac/x64/jre/hotspot/normal/eclipse"
 					 dest="JREs/jre_${jre.version}_mac_x64.tar.gz"
 					 verbose="true" />
 
@@ -879,7 +880,7 @@ External Dependencies:
 
 		<!--Zip Box Binary With JRE -->
 		<zip destfile="${dist.dir}/${distro.name}-jre-win32-${commandbox.version}.zip" level="9" update="true">
-			<zipfileset prefix="jre" dir="JREs\jre_${jre.version}_windows_x32/${jre.version}-jre/"/>
+			<zipfileset prefix="jre" dir="JREs\jre_jdk-11.0.14.1+1_windows_x32/jdk-11.0.14.1+1-jre/"/>
 	        <fileset file="${dist.dir}/box.exe" />
 		</zip>
 		<zip destfile="${dist.dir}/${distro.name}-jre-win64-${commandbox.version}.zip" level="9" update="true">
@@ -1077,7 +1078,7 @@ External Dependencies:
 
 	    <!-- engine libs -->
 	    <!-- stable builds require "maven-repository", and snapshots require "sonatype-repository" -->
-	  	<dependency groupId="org.lucee" artifactId="lucee" version="${lucee.version}" dest="${lib.dir}" unzip="false" type="jar" repoId="maven-repository">
+	  	<dependency groupId="org.lucee" artifactId="lucee" version="${lucee.version}" dest="${lib.dir}" unzip="false" type="jar" repoId="sonatype-repository">
 			<exclusions>
 				<exclusion groupId="org.apache.ant" artifactId="ant" />
 				<exclusion groupId="javax.servlet" artifactId="javax.servlet-api" />
@@ -1086,6 +1087,8 @@ External Dependencies:
 				<exclusion groupId="org.apache.felix" artifactId="org.apache.felix.framework" />
 				<exclusion groupId="junit" artifactId="junit" />
 				<exclusion groupId="org.lucee.lib" artifactId="slf4j-nop" />
+				<exclusion groupId="org.lucee" artifactId="log4j-core" />
+				<exclusion groupId="org.lucee" artifactId="log4j-api" />
 			</exclusions>
 		</dependency>
 

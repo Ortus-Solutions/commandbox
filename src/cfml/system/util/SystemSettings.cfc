@@ -50,13 +50,13 @@ component singleton {
 		}
 
 		// Now check Java system props
-		var value = system.getProperty( arguments.key );
+		var value = getSystemProperty( key=arguments.key, throwWhenNotFound=false );
 		if ( ! isNull( value ) ) {
 			return value;
 		}
 
 		// Finally check OS env vars.
-		value = system.getEnv( arguments.key );
+		value = getEnv( key=arguments.key, throwWhenNotFound=false );
 		if ( ! isNull( value ) ) {
 			return value;
 		}
@@ -79,21 +79,30 @@ component singleton {
 	* @key The name of the setting to look up.
 	* @defaultValue The default value to use if the key does not exist in the system properties
 	*/
-    function getSystemProperty( required string key, defaultValue ) {
+    function getSystemProperty( required string key, defaultValue, throwWhenNotFound=true ) {
 
 		var value = system.getProperty( arguments.key );
 		if ( ! isNull( value ) ) {
 			return value;
 		}
 
+		// Second case-insensitive attempt
+		for( var propKey in system.getProperties() ) {
+			if( arguments.key == propKey ) {
+				return system.getProperty( propKey );
+			}
+		}
+
 		if ( ! isNull( arguments.defaultValue ) ) {
 			return arguments.defaultValue;
 		}
 
-		throw(
-			type = "SystemSettingNotFound",
-			message = "Could not find a Java System property with key [#arguments.key#]."
-		);
+		if( throwWhenNotFound ) {
+			throw(
+				type = "SystemSettingNotFound",
+				message = "Could not find a Java System property with key [#arguments.key#]."
+			);
+		}
 	}
 
 	/**
@@ -124,21 +133,30 @@ component singleton {
 	* @key The name of the setting to look up.
 	* @defaultValue The default value to use if the key does not exist in the env
 	*/
-    function getEnv( required string key, defaultValue ) {
+    function getEnv( required string key, defaultValue, throwWhenNotFound=true ) {
 
 		var value = system.getEnv( arguments.key );
 		if ( ! isNull( value ) ) {
 			return value;
 		}
 
+		// Second case-insensitive attempt
+		for( var envKey in system.getEnv() ) {
+			if( arguments.key == envKey ) {
+				return system.getEnv( envKey );
+			}
+		}
+
 		if ( ! isNull( arguments.defaultValue ) ) {
 			return arguments.defaultValue;
 		}
 
-		throw(
-			type = "SystemSettingNotFound",
-			message = "Could not find a env property with key [#arguments.key#]."
-		);
+		if( throwWhenNotFound ) {
+			throw(
+				type = "SystemSettingNotFound",
+				message = "Could not find a env property with key [#arguments.key#]."
+			);
+		} 
 
 	}
 
@@ -223,14 +241,14 @@ component singleton {
 	*
 	* @dataStructure A string, struct, or array. Initial value should be a struct.
 	*/
-	function setDeepSystemSettings( any dataStructure, string prefix='interceptData' ) {
+	function setDeepSystemSettings( any dataStructure, string prefix='interceptData', delim='.' ) {
 
 		// If it's a struct...
 		if( isStruct( dataStructure ) && !isObject( dataStructure ) ) {
 			// Loop over and process each key
 			for( var key in dataStructure ) {
 				if( key != 'COMMANDREFERENCE' ) {
-					setDeepSystemSettings( dataStructure[ key ] ?: '', prefix.listAppend( key, '.' ) );
+					setDeepSystemSettings( dataStructure[ key ] ?: '', prefix.listAppend( key, delim ), delim );
 				}
 			}
 		// If it's an array...
@@ -239,7 +257,7 @@ component singleton {
 			// Loop over and process each index
 			for( var item in dataStructure ) {
 				i++;
-				setDeepSystemSettings( item ?: '', prefix & '[#i#]' );
+				setDeepSystemSettings( item ?: '', prefix & '[#i#]', delim );
 			}
 		// If it's a string...
 		} else if ( isSimpleValue( dataStructure ) ) {

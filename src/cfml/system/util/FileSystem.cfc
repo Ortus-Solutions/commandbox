@@ -370,18 +370,9 @@ component accessors="true" singleton {
 			}
 		}
 
-    	// *nix needs to include first folder due to Lucee bug.
-    	// So /usr/brad/foo.cfc becomes /usr
+    	// On Unix, / is both the drive root and the lucee "webroot" so nothing needs done
     	if( !isWindows() ) {
-    		if( listLen( arguments.absolutePath, '/' ) > 1 ) {
-		    	var firstFolder = listFirst( arguments.absolutePath, '/' );
-		    	var path = listRest( arguments.absolutePath, '/' );
-    		} else {
-		    	var firstFolder = '';
-		    	var path = listChangeDelims( arguments.absolutePath, '/', '/' );
-    		}
-	    	var mapping = locateUnixDriveMapping( firstFolder );
-	    	return mapping & '/' & path;
+    		return arguments.absolutePath;
     	}
 
 		// UNC network path.
@@ -416,17 +407,6 @@ component accessors="true" singleton {
     string function locateDriveMapping( required string driveLetter  ) {
     	var mappingName = '/' & arguments.driveLetter & '_drive';
     	var mappingPath = arguments.driveLetter & ':/';
-    	createMapping( mappingName, mappingPath );
-   		return mappingName;
-    }
-
-    /**
-    * Accepts a Unix root folder and returns a CF Mapping
-    * Creates the mapping if it doesn't exist
-    */
-    string function locateUnixDriveMapping( required string rootFolder ) {
-    	var mappingName = '/' & arguments.rootFolder & '_root';
-    	var mappingPath = '/' & arguments.rootFolder & ( len( arguments.rootFolder ) ? '/' : '' );
     	createMapping( mappingName, mappingPath );
    		return mappingName;
     }

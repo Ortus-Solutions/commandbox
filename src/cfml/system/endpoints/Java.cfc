@@ -36,6 +36,7 @@ component accessors=true implements="IEndpoint" singleton {
 	property name='filesystemUtil'			inject='fileSystem';
 	property name="folderEndpoint"			inject="commandbox.system.endpoints.Folder";
 	property name="PackageService"			inject="packageService";
+	property name='configService'			inject='configService';
 
 	// Properties
 	property name="namePrefixes" type="string";
@@ -46,6 +47,11 @@ component accessors=true implements="IEndpoint" singleton {
 	}
 
 	public string function resolvePackage( required string package, boolean verbose=false ) {
+
+		if( configService.getSetting( 'offlineMode', false ) ) {
+			throw( 'Can''t download [#getNamePrefixes()#:#package#], CommandBox is in offline mode.  Go online with [config set offlineMode=false].', 'endpointException' );	
+		}
+
 		var lockVersion = false;
 		if( package.right( 12 ) == ':lockVersion' ) {
 			var lockVersion = true;
@@ -61,12 +67,12 @@ component accessors=true implements="IEndpoint" singleton {
 		// Turn it into the maven-style semver range [11,12)  which is the equiv of >= 11 && < 12 thus getting 11.x
 		var thisVersionNum = replaceNoCase( javaDetails.version, 'openjdk', '' );
 		var thisVersion = '[#thisVersionNum#,#thisVersionNum+1#)';
-		var APIURLInfo = 'https://api.adoptopenjdk.net/v3/assets/version/#encodeForURL( thisVersion )#?page_size=1000&release_type=ga&vendor=adoptopenjdk&project=jdk&heap_size=normal&jvm_impl=#encodeForURL( javaDetails['jvm-implementation'] )#&os=#encodeForURL( javaDetails.os )#&architecture=#encodeForURL( javaDetails.arch )#&image_type=#encodeForURL( javaDetails.type )#';
+		var APIURLInfo = 'https://api.adoptium.net/v3/assets/version/#encodeForURL( thisVersion )#?page_size=1000&release_type=ga&vendor=eclipse&project=jdk&heap_size=normal&jvm_impl=#encodeForURL( javaDetails['jvm-implementation'] )#&os=#encodeForURL( javaDetails.os )#&architecture=#encodeForURL( javaDetails.arch )#&image_type=#encodeForURL( javaDetails.type )#';
 
 		if( javaDetails.release.len() && javaDetails.release != 'latest' ) {
-			var APIURL = 'https://api.adoptopenjdk.net/v3/binary/version/#encodeForURL( javaDetails.release )#/#encodeForURL( javaDetails.os )#/#encodeForURL( javaDetails.arch )#/#encodeForURL( javaDetails.type )#/#encodeForURL( javaDetails['jvm-implementation'] )#/normal/adoptopenjdk';
+			var APIURL = 'https://api.adoptium.net/v3/binary/version/#encodeForURL( javaDetails.release )#/#encodeForURL( javaDetails.os )#/#encodeForURL( javaDetails.arch )#/#encodeForURL( javaDetails.type )#/#encodeForURL( javaDetails['jvm-implementation'] )#/normal/eclipse';
 		} else {
-			var APIURL = 'https://api.adoptopenjdk.net/v3/binary/latest/#thisVersionNum#/ga/#encodeForURL( javaDetails.os )#/#encodeForURL( javaDetails.arch )#/#encodeForURL( javaDetails.type )#/#encodeForURL( javaDetails['jvm-implementation'] )#/normal/adoptopenjdk';
+			var APIURL = 'https://api.adoptium.net/v3/binary/latest/#thisVersionNum#/ga/#encodeForURL( javaDetails.os )#/#encodeForURL( javaDetails.arch )#/#encodeForURL( javaDetails.type )#/#encodeForURL( javaDetails['jvm-implementation'] )#/normal/eclipse';
 		}
 
 		job.addLog( "Installing [#package#]" );
@@ -82,7 +88,7 @@ component accessors=true implements="IEndpoint" singleton {
 			return serveFromArtifacts( package, packageFullName, lockVersion );
 		}
 
-		job.addLog( 'Hitting the AdoptOpenJDK API to find your download.' );
+		job.addLog( 'Hitting the Adoptium API to find your download.' );
 		job.addLog( APIURLInfo );
 
 
@@ -124,7 +130,7 @@ component accessors=true implements="IEndpoint" singleton {
 				// which is the equiv of >= 11 && < 12 thus getting 11.x
 				var thisVersion = '[#thisVersionNum#,#thisVersionNum+1#)';
 
-				var APIURLCheck = 'https://api.adoptopenjdk.net/v3/assets/version/#encodeForURL(thisVersion )#?release_type=ga&vendor=adoptopenjdk&project=jdk&heap_size=normal&jvm_impl=#encodeForURL( javaDetails['jvm-implementation'] )#&os=#encodeForURL( javaDetails.os )#&architecture=#encodeForURL( javaDetails.arch )#&image_type=#encodeForURL( javaDetails.type )#';
+				var APIURLCheck = 'https://api.adoptium.net/v3/assets/version/#encodeForURL(thisVersion )#?release_type=ga&vendor=eclipse&project=jdk&heap_size=normal&jvm_impl=#encodeForURL( javaDetails['jvm-implementation'] )#&os=#encodeForURL( javaDetails.os )#&architecture=#encodeForURL( javaDetails.arch )#&image_type=#encodeForURL( javaDetails.type )#';
 
 				http
 					url="#APIURLCheck#"
@@ -155,7 +161,7 @@ component accessors=true implements="IEndpoint" singleton {
 			job.addErrorLog( message );
 
 			// Before we give up, check artifacts for a downloaded version that might work
-			// Ideally I'd only do this for catastrophic errors, but the AdoptOpenJDK API doesn't really allow me to
+			// Ideally I'd only do this for catastrophic errors, but the Adoptium API doesn't really allow me to
 			// tell the difference since it pretty much just pukes non-JSON if it can't find what I was looking for
 			var artifactJDKs = artifactService.listArtifacts( 'OpenJDK' );
 			if( artifactJDKs.keyExists( 'OpenJDK' ) ) {
@@ -250,8 +256,8 @@ component accessors=true implements="IEndpoint" singleton {
 			'type' : 'projects',
 			'java' : artifactJSON.binaries[ 1 ],
 			'author' : 'AdoptOpenJDK',
-			'projectURL' : 'https://adoptopenjdk.net/',
-			'homepage' : 'https://adoptopenjdk.net/'
+			'projectURL' : 'https://adoptium.net/',
+			'homepage' : 'https://adoptium.net/'
 		};
 		JSONService.writeJSONFile( fullBoxJSONPath, boxJSON );
 

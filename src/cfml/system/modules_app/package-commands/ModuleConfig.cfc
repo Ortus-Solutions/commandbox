@@ -8,7 +8,7 @@
 component {
 	function configure() {
 		interceptors = [
-			{ class="#moduleMapping#.interceptors.packageScripts" },
+			{ class="#moduleMapping#.interceptors.PackageScripts" },
 			{ class="#moduleMapping#.interceptors.PackageSystemSettingExpansions" }
 		];
 	}

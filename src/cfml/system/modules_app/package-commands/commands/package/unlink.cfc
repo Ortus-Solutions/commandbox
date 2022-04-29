@@ -21,6 +21,7 @@
  **/
 component aliases='unlink' {
 	property name="packageService" inject="PackageService";
+	property name="moduleService" inject="moduleService";
 
 	/**
 	 * @moduleDirectory Path to an app's modules directory
@@ -51,14 +52,13 @@ component aliases='unlink' {
 		var linkTarget = moduleDirectory & '/' & boxJSON.slug;
 
 		if( directoryExists( linkTarget ) ) {
-			directoryDelete( linkTarget );
 
 			if( commandBoxCoreLinked ) {
-				print.greenLine( 'Package [#boxJSON.slug#] unlinked from CommandBox core.' );
-				command( 'reload' )
-					.params( clearScreen=false )
-					.run();
+				print.greenLine( 'Package [#boxJSON.slug#] unlinked from CommandBox core.  Deactivating!' );
+				moduleService.unloadAndUnregisterModule( boxJSON.slug );
+				directoryDelete( linkTarget );
 			} else {
+				directoryDelete( linkTarget );
 				print.greenLine( 'Package [#boxJSON.slug#] unlinked from [#moduleDirectory#]' );
 			}
 

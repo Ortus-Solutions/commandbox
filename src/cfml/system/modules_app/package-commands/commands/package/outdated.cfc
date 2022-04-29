@@ -34,7 +34,9 @@ component aliases="outdated" {
 	function run(
 		boolean verbose=false,
 		boolean JSON=false,
-		boolean system=false ) {
+		boolean system=false,
+		boolean hideUpToDate=false 
+		 ) {
 
 		if( arguments.JSON ) {
 			arguments.verbose = false;
@@ -53,16 +55,20 @@ component aliases="outdated" {
 
 		// echo output
 		if( !arguments.JSON ) {
-			print.yellowLine( "Resolving Dependencies, please wait..." ).toConsole();
+			print.yellowLine( "Checking for outdated #( system ? 'system ' : '' )#dependencies, please wait..." ).toConsole();
 		}
 
 		// build dependency tree
 		var aAllDependencies = packageService.getOutdatedDependencies( directory=directory, print=print, verbose=arguments.verbose );
 		var aOutdatedDependencies = aAllDependencies.filter( (d)=>d.isOutdated );
 
+		if( hideUpToDate ) {
+			aAllDependencies = aAllDependencies.filter( (d)=>d.isOutdated || ( !d.isLatest && d.depth == 1 ) );
+		}
+
 		// JSON output
 		if( arguments.JSON ) {
-			print.line( aAllDependencies.filter( (d)=>d.isOutdated ) );
+			print.line( aAllDependencies );
 			return;
 		}
 
@@ -89,13 +95,13 @@ component aliases="outdated" {
 			print.line()
 				.green( 'Found ' )
 				.boldGreen( '(#aOutdatedDependencies.len()#)' )
-				.green( ' Outdated Dependenc#( aOutdatedDependencies.len()  == 1 ? 'y' : 'ies' )# ' )
+				.green( ' Outdated #( system ? ' system' : '' )#Dependenc#( aOutdatedDependencies.len()  == 1 ? 'y' : 'ies' )# ' )
 				.line();
 			printDependencies( data=aOutdatedDependencies, verbose=arguments.verbose );
 			print
 				.line()
-				.cyanLine( "Run the 'update' command to update all the outdated dependencies to their latest version." )
-				.cyanLine( "Or use 'update {slug}' to update a specific dependency" );
+				.cyanLine( "Run the 'update#( system ? ' --system' : '' )#' command to update all the outdated dependencies to their latest version." )
+				.cyanLine( "Or use 'update {slug}#( system ? ' --system' : '' )#' to update a specific dependency" );
 		} else {
 			print.blueLine( 'There are no outdated dependencies!' );
 		}

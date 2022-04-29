@@ -19,6 +19,7 @@ component accessors=true implements="IEndpoint" singleton {
 	property name='JSONService'				inject='JSONService';
 	property name='wirebox'					inject='wirebox';
 	property name='S3Service'				inject='S3Service';
+	property name='configService'			inject='configService';
 
 	// Properties
 	property name="namePrefixes" type="string";
@@ -30,6 +31,11 @@ component accessors=true implements="IEndpoint" singleton {
 	}
 
 	public string function resolvePackage( required string package, boolean verbose=false ) {
+
+		if( configService.getSetting( 'offlineMode', false ) ) {
+			throw( 'Can''t download [#getNamePrefixes()#:#package#], CommandBox is in offline mode.  Go online with [config set offlineMode=false].', 'endpointException' );	
+		}
+
 		var job = wirebox.getInstance( 'interactiveJob' );
 		var folderName = tempDir & '/' & 'temp#createUUID()#';
 		var fullJarPath = folderName & '/' & getDefaultName( package ) & '.jar';

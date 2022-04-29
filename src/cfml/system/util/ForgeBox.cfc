@@ -356,35 +356,6 @@ or just add DEBUG to the root logger
 	}
 
 	/**
-	* Tracks a download
-	*/
-	function recordDownload(
-		required string slug,
-		string version,
-		string APIToken='' ) {
-
-		var thisResource = "install/#arguments.slug#";
-		if( len( arguments.version ) ) {
-			thisResource &= "/#arguments.version#";
-		}
-
-		var results = makeRequest(
-			resource=thisResource,
-			method='post',
-			headers = {
-				'x-api-token' : arguments.APIToken
-			} );
-
-		// error
-		if( results.response.error ){
-			throw( "Something went wrong tracking this download from #getEndpointName()#.", 'forgebox', arrayToList( results.response.messages ) );
-		}
-
-		return results.response.data;
-	}
-
-
-	/**
 	* Autocomplete for slugs
 	*/
 	function slugSearch(
@@ -457,6 +428,10 @@ or just add DEBUG to the root logger
 		<cfargument name="files" 			type="struct" 	required="false" default="#structNew()#" hint="A struct of files to send"/>
 		<cfargument name="multipart" 		type="boolean" 	required="false" default="false" hint="Whether the request needs to be multipart/form-data"/>
 		<cfscript>
+			if( configService.getSetting( 'offlineMode', false ) ) {
+				throw( 'Can''t access #getEndpointName()# resource [#resource#], CommandBox is in offline mode.  Go online with [config set offlineMode=false].', 'forgebox' );	
+			}
+				
 			var results = {error=false,response={},message="",responseheader={},rawResponse=""};
 			var HTTPResults = "";
 			var param = "";

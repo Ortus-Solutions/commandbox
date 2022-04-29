@@ -22,8 +22,8 @@ component accessors="true" implements="IEndpointInteractive" {
 	property name="fileSystemUtil"		inject="FileSystem";
 	property name="fileEndpoint"		inject="commandbox.system.endpoints.File";
 	property name="lexEndpoint"			inject="commandbox.system.endpoints.Lex";
-	property name='pathPatternMatcher' 	inject='provider:pathPatternMatcher@globber';
 	property name='wirebox'				inject='wirebox';
+	property name='logger'				inject='logbox:logger:{this}';
 
 	// Properties
 	property name="namePrefixes" type="string";
@@ -52,6 +52,9 @@ component accessors="true" implements="IEndpointInteractive" {
 			job.addLog( "Package found in local artifacts!");
 			// Install the package
 			var thisArtifactPath = artifactService.getArtifactPath( slug, version );
+
+			recordInstall( slug, version );
+
 			// Defer to file endpoint
 			return fileEndpoint.resolvePackage( thisArtifactPath, arguments.verbose );
 		} else {
@@ -504,12 +507,7 @@ component accessors="true" implements="IEndpointInteractive" {
 
 			job.addLog( "Installing version [#arguments.version#]." );
 
-			try {
-				forgeBox.recordInstall( arguments.slug, arguments.version, APIToken );
-			} catch( forgebox var e ) {
-				job.addLog( e.message );
-				job.addLog( e.detail );
-			}
+			recordInstall( arguments.slug, arguments.version );
 
 			var packageType = entryData.typeSlug;
 
@@ -578,7 +576,7 @@ component accessors="true" implements="IEndpointInteractive" {
 				throw( e.message, 'endpointException', e.detail );
 			}
 
-			job.addErrorLog( "Aww man,  #getNamePrefixes()# ran into an issue.");
+			job.addErrorLog( "Aww man, #getNamePrefixes()# ran into an issue.");
 			job.addLog( "#e.message#  #e.detail#" );
 			job.addErrorLog( "We're going to look in your local artifacts cache and see if one of those versions will work.");
 
@@ -589,6 +587,8 @@ component accessors="true" implements="IEndpointInteractive" {
 				job.addLog( "" );
 				job.addLog( "Sweet! We found a local version of [#satisfyingVersion#] that we can use in your artifacts.");
 				job.addLog( "" );
+
+				recordInstall( arguments.slug, satisfyingVersion );
 
 				var thisArtifactPath = artifactService.getArtifactPath( slug, satisfyingVersion );
 				// Defer to file endpoint
@@ -616,17 +616,12 @@ component accessors="true" implements="IEndpointInteractive" {
 			directoryDelete( tmpPath, true );
 		}
 		directoryCreate( tmpPath );
-		directoryCopy( arguments.path, tmpPath, true, function( directoryPath ){
-			// This will normalize the slashes to match
-			directoryPath = fileSystemUtil.resolvePath( directoryPath );
+		wirebox.getInstance( 'globber' )
+			.inDirectory( arguments.path )
+    		.setExcludePattern( ignorePatterns )
+    		.loose()
+			.copyTo( tmpPath );
 
-			// cleanup path so we just get from the archive down
-			var thisPath = replacenocase( directoryPath, path, "" );
-			// Ignore paths that match one of our ignore patterns
-			var ignored = pathPatternMatcher.matchPatterns( ignorePatterns, thisPath );
-			// What do we do with this file/directory
-			return ! ignored;
-		});
 		var zipFileName = tmpPath & ".zip";
 		cfzip(
 			action = "zip",
@@ -709,6 +704,16 @@ component accessors="true" implements="IEndpointInteractive" {
 		} else {
 			configService.setSetting( 'endpoints.forgebox-#getNamePrefixes()#.APIToken', APIToken );
 			configService.setSetting( 'endpoints.forgebox-#getNamePrefixes()#.tokens.#username#', APIToken );
+		}
+	}
+
+	function recordInstall( slug, version ) {
+		thread name="#createUUID()#" slug="#arguments.slug#", version="#arguments.version#" {
+			try {
+				var foo = forgeBox.recordInstall( attributes.slug, attributes.version, getAPIToken() );
+			} catch( any e ) {
+				logger.error( 'Error recording install', e )
+			}
 		}
 	}
 

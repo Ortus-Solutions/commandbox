@@ -30,7 +30,7 @@ component accessors="true" singleton {
 	property name='tempDir' 			inject='tempDir@constants';
 	property name='serverService'		inject='serverService';
 	property name='moduleService'		inject='moduleService';
-	
+
 
 	/**
 	* Constructor
@@ -99,7 +99,7 @@ component accessors="true" singleton {
 			arguments.production = arguments.production ?: true;
 
 			var endpointData = endpointService.resolveEndpoint( arguments.ID, arguments.currentWorkingDirectory );
-			
+
 			job.start(  'Installing package [#endpointData.ID#]', ( shell.getTermHeight() < 20 ? 1 : 5 ) );
 
 			if( verbose ) {
@@ -385,7 +385,7 @@ component accessors="true" singleton {
 						if( !serverDetails.serverIsNew && !(serverInfo.engineName contains 'lucee') ) {
 							job.addWarnLog( "We did find a server, but the engine is [#serverInfo.engineName#] instead of 'lucee'" );
 						}
-						
+
 					}
 
 				}
@@ -622,15 +622,12 @@ component accessors="true" singleton {
 
 		if( shellWillReload && artifactDescriptor.createPackageDirectory && fileExists( installDirectory & '/ModuleConfig.cfc' ) ) {
 			consoleLogger.warn( 'Activating your new module for instant use...' );
-			moduleService.registerAndActivateModule( installDirectory.listLast( '/\' ), fileSystemUtil.makePathRelative( installDirectory ) );
-			//shell.reload( clear=false );
-			//consoleLogger.warn( '.' );
-			//consoleLogger.warn( 'Please sit tight while your shell reloads...' );
+			moduleService.registerAndActivateModule( installDirectory.listLast( '/\' ), fileSystemUtil.makePathRelative( installDirectory ).listToArray( '/\' ).slice( 1, -1 ).toList( '.' ) );
 		}
-		
+
 		interceptorService.announceInterception( 'postInstall', { installArgs=arguments, installDirectory=installDirectory } );
 		job.complete( verbose );
-		
+
 		return true;
 	}
 
@@ -766,6 +763,21 @@ component accessors="true" singleton {
 		// uninstall the package
 		if( len( uninstallDirectory ) && directoryExists( uninstallDirectory ) ) {
 
+
+			// If this package is being uninstalled anywhere south of the CommandBox system folder, unload the module first
+			if( fileSystemUtil.normalizeSlashes( uninstallDirectory ).startsWith( fileSystemUtil.normalizeSlashes( expandPath( '/commandbox' ) ) ) && fileExists( uninstallDirectory & '/ModuleConfig.cfc' ) ) {
+				consoleLogger.warn( 'Unloading module...' );
+				try {
+					moduleService.unloadAndUnregisterModule( uninstallDirectory.listLast( '/\' ) );
+					// Heavy-handed workaround for the fact that the module service does not unload
+					// WireBox mappings for this module so they stay in memory
+					wirebox.getCacheBox().getCache( 'metadataCache' ).clearAll();
+				} catch( any e ) {
+					job.addErrorLog( 'Error Unloading module: ' & e.message & ' ' & e.detail );
+					logger.error( '#e.message# #e.detail#' , e.stackTrace );
+				}
+			}
+
 			// Catch this to gracefully handle where the OS or another program
 			// has the folder locked.
 			try {
@@ -825,9 +837,16 @@ component accessors="true" singleton {
 		var boxJSON = readPackageDescriptor( arguments.currentWorkingDirectory );
 
 		// Get reference to appropriate dependency struct
-		if( arguments.dev ) {
+		// Save as dev if we have that flag OR if this is already saved as a dev dep
+		if( arguments.dev || !isNull( boxJSONRaw.devDependencies[ arguments.packageName ] ) ) {
 			boxJSONRaw[ 'devDependencies' ] = boxJSONRaw.devDependencies ?: {};
 			boxJSON[ 'devDependencies' ] = boxJSON.devDependencies ?: {};
+
+			// If this package is also saved as a normal dev, remove it from "dependencies"
+			if( !isNull( boxJSONRaw.dependencies[ arguments.packageName ] ) ) {
+				boxJSONRaw.dependencies.delete( arguments.packageName );
+			}
+
 			var dependenciesRaw = boxJSONRaw.devDependencies;
 			var dependencies = boxJSON.devDependencies;
 		} else {
@@ -889,7 +908,7 @@ component accessors="true" singleton {
 					arguments.installDirectory = right( arguments.installDirectory, len( arguments.installDirectory ) - 1 );
 				}
 			}
-			
+
 			var existingInstallPath = '';
 			if( installPaths.keyExists( arguments.packageName ) ) {
 				existingInstallPath = fileSystemUtil.normalizeSlashes( fileSystemUtil.resolvePath( installPaths[ arguments.packageName ], arguments.currentWorkingDirectory ) );
@@ -901,7 +920,7 @@ component accessors="true" singleton {
 					if( len( existingInstallPath ) && existingInstallPath.left( 1 ) == '/' ) {
 						existingInstallPath = right( existingInstallPath, len( existingInstallPath ) - 1 );
 					}
-				}	
+				}
 			}
 
 			// Just in case-- an empty install dir would be useless.
@@ -1142,7 +1161,8 @@ component accessors="true" singleton {
 					'isOutdated'        : updateData.isOutdated,
 					'isLatest'          : !latestData.isOutdated,
 					'location'          : replace( value.directory, directory, "" ) & "/" & slug,
-					'endpointName'		: endpointData.endpointName
+					'endpointName'		: endpointData.endpointName,
+					'depth'				: value.depth
 				};
 
 				aAllDependencies.append( dependencyInfo );
@@ -1157,7 +1177,7 @@ component accessors="true" singleton {
 
 		// Verify outdated dependency graph in parallel
 		structEach( tree.dependencies, fOutdatedCheck, true );
-		
+
 		return aAllDependencies;
 	}
 
@@ -1176,7 +1196,8 @@ component accessors="true" singleton {
 			'version': boxJSON.version,
 			'packageVersion': boxJSON.version,
 			'isInstalled': true,
-			'directory': arguments.directory
+			'directory': arguments.directory,
+			'depth': 0
 		};
 		buildChildren( boxJSON, tree, arguments.directory, depth, 1 );
 		return tree;
@@ -1203,7 +1224,8 @@ component accessors="true" singleton {
 				'shortDescription' : '',
 				'packageVersion' : '',
 				'isInstalled': false,
-				'directory': ''
+				'directory': '',
+				'depth': currentlevel
 			};
 
 			if( structKeyExists( arguments.installPaths, dependency ) ) {

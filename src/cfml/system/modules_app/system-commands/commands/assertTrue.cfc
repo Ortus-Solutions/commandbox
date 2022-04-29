@@ -1,7 +1,7 @@
 /**
- * Returns a passing (0) or failing (1) exit code whether truthy parameter passed.  Command outputs nothing.
+ * Returns a passing (0) or failing (1) exit code if truthy parameter passed.  Command outputs nothing.
  * Truthy values are "yes", "true" and positive integers.
- * All other values are considered falsy
+ * All other values are considered falsey
  * .
  * {code:bash}
  * assertTrue `package show private` && run-script foo

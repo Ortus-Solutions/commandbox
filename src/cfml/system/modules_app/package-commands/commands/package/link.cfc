@@ -33,6 +33,7 @@
  **/
 component aliases='link' {
 	property name="packageService" inject="PackageService";
+	property name="moduleService" inject="moduleService";
 
 	/**
 	 * @moduleDirectory Path to an app's modules directory
@@ -100,12 +101,30 @@ component aliases='link' {
 		}
 
 		if( commandBoxCoreLinked ) {
-			print.greenLine( 'Package [#boxJSON.slug#] linked to CommandBox core.' );
-			command( 'reload' )
-				.params( clearScreen=false )
-				.run();
+			print.greenLine( 'Package [#boxJSON.slug#] linked to CommandBox core.  Activating!' );
+			loadModule( linkTarget );
 		} else {
 			print.greenLine( 'Package [#boxJSON.slug#] linked to [#moduleDirectory#]' );
 		}
 	}
+	
+	
+	function loadModule( required string moduleDirectory ) {
+		moduleDirectory = resolvePath( moduleDirectory );
+
+		// Generate a CF mapping that points to the module's folder
+		var relativeModulePath = fileSystemUtil.makePathRelative( moduleDirectory );
+
+		// A dot delimited path that points to the folder containing the module
+		var invocationPath = relativeModulePath
+			.listChangeDelims( '.', '/\' )
+			.listDeleteAt( relativeModulePath.listLen( '/\' ), '.' );
+
+		// The name of the module
+		var moduleName = relativeModulePath.listLast( '/\' );
+
+		// Load it up!!
+		moduleService.registerAndActivateModule( moduleName, invocationPath );
+	}
+	
 }

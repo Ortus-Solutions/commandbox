@@ -43,18 +43,20 @@ component {
 	 * @includedHeaders A list of headers to include.  Used for query inputs
      * @headerNames An list/array of column headers to use instead of the default
 	 * @debug Only print out the names of the columns and the first row values
+	 * @width Override the terminal width
      */
 
     public string function print(
 		required any data=[],
         any includedHeaders="",
         any headerNames="",
-		boolean debug=false
+		boolean debug=false,
+		width=-1
     ) {
 
 		arguments.headerNames = isArray( arguments.headerNames ) ? arrayToList( arguments.headerNames ) : arguments.headerNames;
 		var dataQuery = isQuery( arguments.data ) ? arguments.data : convert.toQuery( arguments.data, arguments.headerNames );
-		
+
 		// Check for
 		// printTable []
 		// printTable [{}]
@@ -68,13 +70,13 @@ component {
 		columns.listEach( (c)=> {
 			c = trim( c );
 			// This expression will either evaluate to true or throw an exception
-			listFindNoCase( dataQuery.columnList, c ) 
+			listFindNoCase( dataQuery.columnList, c )
 				|| c == '*'
 				|| throw( message='Header name [#c#] not found.', detail='Valid header names are [#dataQuery.columnList#]', type='commandException' );
 		} );
 
 		dataQuery = queryExecute('SELECT #columns# FROM dataQuery',[],{ dbType : 'query' });
-		
+
 		// Extract data in array of structs
 		var dataRows = convert.queryToArrayOfOrderedStructs( dataQuery );
 
@@ -93,7 +95,7 @@ component {
 
 		}
 		dataRows = autoFormatData( dataHeaders, dataRows );
-		dataHeaders = processHeaders( dataHeaders, dataRows, headerNames.listToArray() )
+		dataHeaders = processHeaders( dataHeaders, dataRows, headerNames.listToArray(), width )
 
 		printHeader( dataHeaders );
 		printData( dataRows, dataHeaders );
@@ -111,10 +113,14 @@ component {
     public array function processHeaders(
         required array headers,
         required array data,
-        headerNames=[]
+        headerNames=[],
+		width=-1
     ) {
         var headerData = arguments.headers.map( ( header, index ) => calculateColumnData( index, header, data, headerNames ), true );
-        var termWidth = shell.getTermWidth()-1;
+		var termWidth = arguments.width;
+        if( termWidth <= 0 ) {
+			termWidth = shell.getTermWidth()-1;
+		}
         if( termWidth <= 0 ) {
         	termWidth = 100;
         }
@@ -163,7 +169,7 @@ component {
         	// This happens if the first column is still so big it won't fit and the while loop above never entered
         	if( totalWidth == 1 ) {
         		// Cut down that one column so it fits
-        		headerData[1].maxWidth=termWidth-11
+        		headerData[1].maxWidth=max( termWidth-11, 3)
         	}
 
         }
@@ -406,7 +412,7 @@ component {
 			return '[#data.getClass().getName()#]';
 		}
 	}
-	
+
 	function cellHasFormattingEmbedded( data ) {
 		return isStruct( data ) && data.count() == 2 && data.keyExists( 'options' ) && data.keyExists( 'value' ) && isSimpleValue( data.options );
 	}

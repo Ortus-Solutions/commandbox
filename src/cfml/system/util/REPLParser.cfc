@@ -117,7 +117,7 @@ component accessors="true" singleton {
 			return '[EMPTY STRING]';
 		// XML doc OR XML String
 		} else if( isXML( result ) ) {
-			return formatXML( XMLParse( result ) );
+			return formatterUtil.formatXML( result );			
 		// string
 		} else if( isSimpleValue( result ) ) {
 
@@ -150,16 +150,5 @@ component accessors="true" singleton {
 	function stripComments( string command ) {
 		return reReplaceNoCase( arguments.command, "//[^""']*$|/\*.*\*/", "", "all" );
 	}
-
-	private function formatXML( XMLDoc ) {
-		var xlt = '<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
-		<xsl:output method="xml" encoding="utf-8" indent="yes" xslt:indent-amount="2" xmlns:xslt="http://xml.apache.org/xslt" />
-		<xsl:strip-space elements="*"/>
-		<xsl:template match="node() | @*"><xsl:copy><xsl:apply-templates select="node() | @*" /></xsl:copy></xsl:template>
-		</xsl:stylesheet>';
-
-		return toString( XmlTransform( XMLDoc, xlt) );
-	}
-
 
 }

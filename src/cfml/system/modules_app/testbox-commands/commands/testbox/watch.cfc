@@ -43,6 +43,12 @@ component {
 	 * @bundles     The path or list of paths of the spec bundle CFCs to run and test
 	 * @labels      The list of labels that a suite or spec must have in order to execute.
 	 * @verbose     Display extra details including passing and skipped tests.
+	 * @recurse     Recurse the directory mapping or not, by default it does
+	 * @reporter    The type of reporter to use for the results, by default is uses our 'simple' report. You can pass in a core reporter string type or a class path to the reporter to use.
+	 * @options     Add adhoc URL options to the runner as options:name=value options:name2=value2
+	 * @testBundles A list or array of bundle names that are the ones that will be executed ONLY!
+	 * @testSuites  A list of suite names that are the ones that will be executed ONLY!
+	 * @testSpecs   A list of test names that are the ones that will be executed ONLY!
 	 **/
 	function run(
 		string paths,
@@ -50,10 +56,16 @@ component {
 		directory,
 		bundles,
 		labels,
-		boolean verbose
+		boolean verbose,
+		boolean recurse,
+		string reporter,
+		struct options={},
+		string testBundles,
+		string testSuites,
+		string testSpecs
 	){
 		// Get testbox options from package descriptor
-		var boxOptions = packageService.readPackageDescriptor( getCWD() ).testbox;
+		var boxOptions = variables.packageService.readPackageDescriptor( getCWD() ).testbox;
 
 		var getOptionsWatchers = function(){
 			// Return to List
@@ -72,23 +84,8 @@ component {
 		// Tabula rasa
 		command( "cls" ).run();
 
-		// Prepare test args
-		var testArgs = {};
-
-		if ( !isNull( arguments.verbose ) ) {
-			testArgs.verbose = arguments.verbose;
-		}
-		if ( !isNull( arguments.directory ) ) {
-			testArgs.directory = arguments.directory;
-		}
-		if ( !isNull( arguments.bundles ) ) {
-			testArgs.bundles = arguments.bundles;
-		}
-		if ( !isNull( arguments.labels ) ) {
-			testArgs.labels = arguments.labels;
-		}
-
-		// Start watcher
+		// Start watcher with passed args only.
+		var testArgs = arguments.filter( (k,v) => !isNull( v ) );
 		watch()
 			.paths( globbingPaths.listToArray() )
 			.inDirectory( getCWD() )

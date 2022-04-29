@@ -269,4 +269,24 @@ component singleton {
 		// This is an external lib now.  Leaving here for backwards compat.
 		return JSONPrettyPrint.formatJSON( argumentCollection = arguments );
 	}
+	
+	/**
+	* Pretty print XML
+	* @XMLDoc A string containing XML or a parsed XML document
+	*/
+	function formatXML( XMLDoc ) {
+		var xlt = '<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+		<xsl:output method="xml" encoding="utf-8" indent="yes" xslt:indent-amount="2" xmlns:xslt="http://xml.apache.org/xslt" />
+		<xsl:strip-space elements="*"/>
+		<xsl:template match="node() | @*"><xsl:copy><xsl:apply-templates select="node() | @*" /></xsl:copy></xsl:template>
+		</xsl:stylesheet>';
+		var XMLDeclaration = '<?xml version="1.0" encoding="utf-8"?>';
+		
+		try {
+			return toString( XmlTransform( XMLDoc, xlt) ).replace( XMLDeclaration, '', 'once' );
+		} catch( any e ) {
+			return toString( XMLDoc ).replace( XMLDeclaration, '', 'once' );
+		}
+	}
+
 }

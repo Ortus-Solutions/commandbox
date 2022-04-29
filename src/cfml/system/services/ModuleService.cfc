@@ -142,7 +142,7 @@
 		<cfargument name="invocationPath" 	type="string" required="false" default="" hint="The module's invocation path to its root from the webroot (the instantiation path,ex:myapp.myCustomModules), if empty we use registry location, if not we are doing a explicit name+path registration. Do not include the module name, you passed that in the first argument right"/>
 		<cfscript>
 			if( registerModule( arguments.moduleName, arguments.invocationPath ) ) {
-				activateModule( arguments.moduleName );	
+				activateModule( arguments.moduleName );
 			}
 		</cfscript>
     </cffunction>
@@ -345,6 +345,22 @@
 		</cfscript>
 	</cffunction>
 
+	<cffunction name="unregisterModule" output="false" access="public" returntype="void" hint="unregisters a targeted module">
+		<cfargument name="moduleName" type="string" required="true" hint="The module to reload"/>
+		<cfscript>
+			// Remove from module registry
+			structDelete( instance.moduleRegistry, arguments.moduleName );
+		</cfscript>
+	</cffunction>
+
+	<cffunction name="unloadAndUnregisterModule" output="false" access="public" returntype="void" hint="unregisters a targeted module">
+		<cfargument name="moduleName" type="string" required="true" hint="The module to reload"/>
+		<cfscript>
+			unload( arguments.moduleName );
+			unregisterModule( arguments.moduleName );
+		</cfscript>
+	</cffunction>
+
 	<!--- loadMappings --->
     <cffunction name="loadMappings" output="false" access="public" returntype="any" hint="Load all module mappings">
     	<cfscript>
@@ -491,11 +507,6 @@
 					}
 				}
 
-				// Register module routing entry point pre-pended to routes
-				/*if( shell.settingExists( 'sesBaseURL' ) AND len( mConfig.entryPoint ) AND NOT find( ":", mConfig.entryPoint ) ){
-					interceptorService.getInterceptor( "SES", true ).addModuleRoutes( pattern=mConfig.entryPoint, module=arguments.moduleName, append=false );
-				}*/
-
 				// Call on module configuration object onLoad() if found
 				if( structKeyExists( instance.mConfigCache[ arguments.moduleName ], "onLoad" ) ){
 					instance.mConfigCache[ arguments.moduleName ].onLoad();
@@ -580,6 +591,8 @@
 
 			// Check if module is loaded?
 			if( NOT structKeyExists(getModuleData(),arguments.moduleName) ){ return false; }
+			var modules = getModuleData();
+			var mConfig = modules[ arguments.moduleName ];
 
 		</cfscript>
 
@@ -608,11 +621,6 @@
 			// Unregister Config object
 			interceptorService.unregister( "ModuleConfig:#arguments.moduleName#" );
 
-			// Remove SES if enabled.
-			/*if( shell.settingExists( "sesBaseURL" ) ){
-				interceptorService.getInterceptor( "SES", true ).removeModuleRoutes( arguments.moduleName );
-			}*/
-
 			// Remove the possible config names with the ConfigService for auto-completion
 			var possibleConfigSettings = [];
 			for( var settingName in ConfigService.getPossibleConfigSettings() ) {
@@ -621,6 +629,12 @@
 				}
 			}
 			ConfigService.setPossibleConfigSettings( possibleConfigSettings );
+
+			// Register commands if they exist
+			if( directoryExists( mconfig.commandsPhysicalPath ) ){
+				var commandPath = '/' & replace( mconfig.commandsInvocationPath, '.', '/', 'all' );
+				CommandService.removeCommands( commandPath );
+			}
 
 			// Remove configuration
 			structDelete( getModuleData(), arguments.moduleName );
@@ -682,9 +696,9 @@
 			oConfig.injectPropertyMixin( "log", 				shell.getLogBox().getLogger( oConfig) );
 			oConfig.injectPropertyMixin( "wirebox", 			shell.getWireBox() );
 			oConfig.injectPropertyMixin( "binder", 				shell.getWireBox().getBinder() );
-			oConfig.injectPropertyMixin( "getSystemSetting",	systemSettings.getSystemSetting );
-			oConfig.injectPropertyMixin( "getSystemProperty",	systemSettings.getSystemProperty );
-			oConfig.injectPropertyMixin( "getEnv",				systemSettings.getEnv );
+			oConfig.injectPropertyMixin( "getSystemSetting",	()=>systemSettings.getSystemSetting(argumentCollection=arguments) );
+			oConfig.injectPropertyMixin( "getSystemProperty",	()=>systemSettings.getSystemProperty(argumentCollection=arguments) );
+			oConfig.injectPropertyMixin( "getEnv",				()=>systemSettings.getEnv(argumentCollection=arguments) );
 
 			// Configure the module
 			oConfig.configure();
