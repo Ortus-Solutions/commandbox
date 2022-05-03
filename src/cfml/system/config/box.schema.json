@@ -210,7 +210,10 @@
 		"keywords": {
 			"title": "Keywords",
 			"description": "ForgeBox keywords",
-			"type": "array",
+			"type": [
+				"array",
+				"string"
+			],
 			"items": {
 				"title": "Keyword",
 				"description": "ForgeBox keyword",
