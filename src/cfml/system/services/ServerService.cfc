@@ -1416,7 +1416,7 @@ component accessors="true" singleton {
 		}
 
 		if( serverInfo.runwarXNIOOptions.count() ) {
-			args.append( '--xnio-options=' & serverInfo.runwarXNIOOptions.reduce( ( opts='', k, v ) => opts.listAppend( k & '=' & v ) ) );
+			args.append( '--xnio-options=' & serverInfo.runwarXNIOOptions.reduce( ( opts='', k, v ) => opts.listAppend( k & '=' & v, ';' ) ) );
 		}
 
 		if( len( serverInfo.allowedExt ) ) {
