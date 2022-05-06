@@ -74,6 +74,11 @@ component singleton accessors=true {
 			lock timeout="20" name="ConsolePainter" type="exclusive" {
 				if( getActive() ) {
 					getFuture().cancel();
+					try {
+						getFuture().get();
+					} catch(any e) {
+						// Throws CancellationException
+					}
 					setActive( false );
 					clear();
 				}		
@@ -133,9 +138,11 @@ component singleton accessors=true {
 			);
 			
 		} catch( any e ) {
-			systemoutput( e.message & ' ' & e.detail, 1 );
-			systemoutput( "#e.tagContext[1].template#: line #e.tagContext[1].line#", 1 );
-			rethrow;
+			if( !(e.type contains 'interrupted') ) {
+				systemoutput( e.message & ' ' & e.detail, 1 );
+				systemoutput( "#e.tagContext[1].template#: line #e.tagContext[1].line#", 1 );
+				rethrow;	
+			}
 		}
 	}
 	
@@ -144,7 +151,7 @@ component singleton accessors=true {
 	*/	
 	function clear() {
 		display.resize( terminal.getHeight(), terminal.getWidth() );
-	
+		sleep(100)
 		display.update(
 			[ attr.init( ' ' ) ,attr.init( ' ' ) ,attr.init( ' ' ) ,attr.init( ' ' ) ],
 			0
