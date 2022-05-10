@@ -308,14 +308,6 @@ component accessors="true" singleton {
 		var serverJSONToSave = duplicate( serverJSON );
 		var serverInfo = serverDetails.serverinfo;
 
-		systemSettings.expandDeepSystemSettings( serverJSON );
-		systemSettings.expandDeepSystemSettings( defaults );
-		// Mix in environment variable overrides like BOX_SERVER_PROFILE
-		loadOverrides( serverJSON, serverInfo, serverProps.verbose ?: serverJSON.verbose ?: defaults.verbose ?: false );
-
-		// Load up our fully-realized server.json-specific env vars into CommandBox's environment
-		systemSettings.setDeepSystemSettings( serverDetails.serverJSON.env ?: {}, '', '_' );
-
 		interceptorService.announceInterception( 'preServerStart', { serverDetails=serverDetails, serverProps=serverProps, serverInfo=serverDetails.serverInfo, serverJSON=serverDetails.serverJSON, defaults=defaults } );
 
 		// In case the interceptor changed them
@@ -323,6 +315,15 @@ component accessors="true" singleton {
 		defaultwebroot = serverDetails.defaultwebroot;
 		defaultServerConfigFile = serverDetails.defaultServerConfigFile;
 		defaultServerConfigFileDirectory = getDirectoryFromPath( defaultServerConfigFile );
+
+		systemSettings.expandDeepSystemSettings( serverJSON );
+		systemSettings.expandDeepSystemSettings( defaults );
+		
+		// Mix in environment variable overrides like BOX_SERVER_PROFILE
+		loadOverrides( serverJSON, serverInfo, serverProps.verbose ?: serverJSON.verbose ?: defaults.verbose ?: false );
+
+		// Load up our fully-realized server.json-specific env vars into CommandBox's environment
+		systemSettings.setDeepSystemSettings( serverDetails.serverJSON.env ?: {}, '', '_' );
 
 		// If the server is already running, make sure the user really wants to do this.
 		if( isServerRunning( serverInfo ) && !(serverProps.force ?: false ) && !(serverProps.dryRun ?: false ) ) {
