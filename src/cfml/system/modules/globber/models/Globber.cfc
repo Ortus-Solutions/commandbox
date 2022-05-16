@@ -208,7 +208,7 @@ component accessors="true" {
 			.filter( (p)=>p.type=='dir' )
 			.sort( (a,b)=>len(a.directory&a.name )-len(b.directory&b.name ) )
 			.each( (p)=>{
-				var newDir = p.directory.listAppend( p.name, '/', false );
+				var newDir = pathAppend( p.directory, p.name );
 				newDir = pathPatternMatcher.normalizeSlashes( newDir );
 				newDir = newDir.replace( getBaseDir(), '' )
 				directoryCreate( targetPath & newDir, true, true )	
@@ -244,11 +244,7 @@ component accessors="true" {
 		} else {
 			return getMatchQuery().reduce( function( arr, row ) {
 				// Turn all the slashes the right way for this OS
-				if( row.directory == '/' ) {
-					return arr.append( row.directory & row.name & ( row.type == 'Dir' ? '/' : '' ) );
-				} else {
-					return arr.append( row.directory & '/' & row.name & ( row.type == 'Dir' ? '/' : '' ) );	
-				}
+				return arr.append( row.directory & '/' & row.name & ( row.type == 'Dir' ? '/' : '' ) );
 			}, [] );
 		}
 	}
@@ -327,7 +323,7 @@ component accessors="true" {
 		local.thisPattern = pathPatternMatcher.normalizeSlashes( arguments.pattern );
 		var exactPattern = thisPattern.startsWith('/');
 		var fileFilter = '';
-		var fullPatternPath = ( getLoose() ? getBaseDir().listAppend( thisPattern, '/', false ) : thisPattern );
+		var fullPatternPath = ( getLoose() ? pathAppend( getBaseDir(), thisPattern ) : thisPattern );
 							
 		// Optimization for exact file path
 		if( ( !getLoose() || exactPattern ) 
@@ -353,6 +349,7 @@ component accessors="true" {
 
 		// Strip off the "not found" part
 		var remainingPattern = findUnmatchedPattern( thisPattern, baseDir )
+
 		var dl = directoryList (
 				listInfo='query',
 				recurse=false,
@@ -390,9 +387,10 @@ component accessors="true" {
 							for( var possiblePattern in possiblePatterns) {
 								if( getLoose() ) {
 									if( possiblePattern.startsWith( '/' ) ) {
-										// Exact patterns in loose mode like /foo/bar/baz.txt we want to zoom staright down to the 
+										// Exact patterns in loose mode like /foo/bar/baz.txt we want to zoom straight down to the 
 										// deepest folder possible to reduce unnessary recursion.
-										possiblePattern = getBaseDir().listAppend( possiblePattern, '/', false );
+										possiblePattern = pathAppend( getBaseDir(), possiblePattern );
+										
 										var thisBaseDir = calculateBaseDir( possiblePattern );
 										possiblePattern = possiblePattern.replace( thisBaseDir, '' );
 										processPattern( possiblePattern, thisBaseDir, true );
@@ -484,7 +482,7 @@ component accessors="true" {
 			if( i == pattern.listLen( '/' ) && !pattern.endsWith( '/' ) ) {
 				break;
 			}
-			baseDir = baseDir.listAppend( token, '/', false );
+			baseDir = pathAppend( baseDir, token );
 		}
 		
 		// Unix paths need the leading slash put back
@@ -496,10 +494,8 @@ component accessors="true" {
 		if( baseDir.listLen( '/' ) == 1 && baseDir contains ':' ) {
 			baseDir = baseDir & '/';
 		}
-		
-		if( !baseDir.endsWith( '/' ) ) {
-			baseDir &= '/';	
-		}
+
+		baseDir &= '/';
 		return baseDir;
 	}
 
@@ -605,6 +601,29 @@ component accessors="true" {
 			}	
 		}
 		return remainingPattern;
+	}
+	
+	/**
+	* Concatenate a folder or file to an existing base path, taking into account forward or backslashes 
+	* Won't remove leading slashes on *nix.
+	* If base is an empty string, path is returned untouched.
+	*
+	* @base The base path to append to
+	* @path The path segment or segments to add on to the base
+	*/
+	function pathAppend( base, path ) {
+		if( base == '' ) {
+			return path;
+		} 
+		// Ensure trailing slash on base
+		if( !base.endsWith( '/' ) && !base.endsWith( '\' ) ) {
+			base  &= '/';
+		}
+		// Remove any leading slash on path
+		if( path.startsWith( '/' ) || path.startsWith( '\' ) ) {
+			path = path.right( -1 );
+		}
+		return base & path;
 	}		
 
 }
