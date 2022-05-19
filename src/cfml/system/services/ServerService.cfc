@@ -327,6 +327,11 @@ component accessors="true" singleton {
 
 		// If the server is already running, make sure the user really wants to do this.
 		if( isServerRunning( serverInfo ) && !(serverProps.force ?: false ) && !(serverProps.dryRun ?: false ) ) {
+
+			if( !shell.isTerminalInteractive() ) {
+				throw( message="Cannot start server [#serverInfo.name#] because it is already running.", detail="Run [server info --verbose] to find out why CommandBox thinks this server is running.", type="commandException" );
+			}
+
 			job.addErrorLog( 'Server "#serverInfo.name#" (#serverInfo.webroot#) is already running @ #serverInfo.openbrowserURL#!' );
 			job.addErrorLog( 'Overwriting a running server means you won''t be able to use the "stop" command to stop the original one.' );
 			job.addWarnLog( 'Use the --force parameter to skip this check.' );
