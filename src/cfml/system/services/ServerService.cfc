@@ -80,6 +80,7 @@ component accessors="true" singleton {
 			, Socket 		: createObject( "java", "java.net.Socket" )
 			, InetAddress 	: createObject( "java", "java.net.InetAddress" )
 			, LaunchUtil 	: createObject( "java", "runwar.LaunchUtil" )
+			, TimeUnit		: createObject( "java", "java.util.concurrent.TimeUnit" )
 		};
 
 		// the home directory.
@@ -1766,7 +1767,6 @@ component accessors="true" singleton {
 					line = bufferedReader.readLine();
 				} // End of inputStream
 
-				// When we require Java 8 for CommandBox, we can pass a timeout to waitFor().
 				serverInfo.exitCode = process.waitFor();
 
 				if( serverInfo.exitCode == 0 ) {
@@ -1839,15 +1839,31 @@ component accessors="true" singleton {
 					serverInterrupted = true;
 				// Something bad happened
 				} catch ( Any e ) {
-					logger.error( '#e.message# #e.detail#' , e.stackTrace );
-					consoleLogger.error( '#e.message##chr(10)##e.detail#' );
+					// When the sleep() is interrupted, it comes as a Lucee NativeException with the message "sleep interrupted"
+					if( e.message contains 'interrupted' ){
+						consoleLogger.error( 'Stopping server...' );
+						shell.setKeepRunning( false );
+						serverInterrupted = true;
+					} else {
+						logger.error( '#e.message# #e.detail#' , e.stackTrace );
+						consoleLogger.error( '#e.message##chr(10)##e.detail#' );
+					}
+				
 				// Either way, this server is done like dinner
 				} finally {
 					variables.waitingOnConsoleStart = false;
 					shell.setPrompt();
+					// Politely ask the server to stop (async)
+					stop( serverInfo );
+					// Give it a chance to stop
+					try {
+						process.waitFor( 15, java.TimeUnit.SECONDS );
+					} catch( any e ) {
+						logger.error( '#e.message# #e.detail#' , e.stackTrace );
+						consoleLogger.error( 'Waiting for server process to stop: #e.message##chr(10)##e.detail#' );
+					}
+					// Ok, you're done NOW!
 					process.destroy();
-					// "server stop" is never run for a --console start, so make sure this fires.
-					interceptorService.announceInterception( 'onServerStop', { serverInfo=serverInfo } );
 				}
 			}
 
