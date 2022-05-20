@@ -74,12 +74,13 @@ component accessors="true" singleton {
 		variables.system = createObject( 'java', 'java.lang.System' );
 
 		// java helpers
-		java = {
-			ServerSocket 	: createObject( "java", "java.net.ServerSocket" )
-			, File 			: createObject( "java", "java.io.File" )
-			, Socket 		: createObject( "java", "java.net.Socket" )
-			, InetAddress 	: createObject( "java", "java.net.InetAddress" )
-			, LaunchUtil 	: createObject( "java", "runwar.LaunchUtil" )
+		variables.java = {
+			ServerSocket 	: createObject( "java", "java.net.ServerSocket" ),
+			File 			: createObject( "java", "java.io.File" ),
+			Socket	 		: createObject( "java", "java.net.Socket" ),
+			InetAddress 	: createObject( "java", "java.net.InetAddress" ),
+			LaunchUtil 		: createObject( "java", "runwar.LaunchUtil" ),
+			TimeUnit		: createObject( "java", "java.util.concurrent.TimeUnit" )
 		};
 
 		// the home directory.
@@ -308,14 +309,6 @@ component accessors="true" singleton {
 		var serverJSONToSave = duplicate( serverJSON );
 		var serverInfo = serverDetails.serverinfo;
 
-		systemSettings.expandDeepSystemSettings( serverJSON );
-		systemSettings.expandDeepSystemSettings( defaults );
-		// Mix in environment variable overrides like BOX_SERVER_PROFILE
-		loadOverrides( serverJSON, serverInfo, serverProps.verbose ?: serverJSON.verbose ?: defaults.verbose ?: false );
-
-		// Load up our fully-realized server.json-specific env vars into CommandBox's environment
-		systemSettings.setDeepSystemSettings( serverDetails.serverJSON.env ?: {}, '', '_' );
-
 		interceptorService.announceInterception( 'preServerStart', { serverDetails=serverDetails, serverProps=serverProps, serverInfo=serverDetails.serverInfo, serverJSON=serverDetails.serverJSON, defaults=defaults } );
 
 		// In case the interceptor changed them
@@ -324,8 +317,22 @@ component accessors="true" singleton {
 		defaultServerConfigFile = serverDetails.defaultServerConfigFile;
 		defaultServerConfigFileDirectory = getDirectoryFromPath( defaultServerConfigFile );
 
+		systemSettings.expandDeepSystemSettings( serverJSON );
+		systemSettings.expandDeepSystemSettings( defaults );
+		
+		// Mix in environment variable overrides like BOX_SERVER_PROFILE
+		loadOverrides( serverJSON, serverInfo, serverProps.verbose ?: serverJSON.verbose ?: defaults.verbose ?: false );
+
+		// Load up our fully-realized server.json-specific env vars into CommandBox's environment
+		systemSettings.setDeepSystemSettings( serverDetails.serverJSON.env ?: {}, '', '_' );
+
 		// If the server is already running, make sure the user really wants to do this.
 		if( isServerRunning( serverInfo ) && !(serverProps.force ?: false ) && !(serverProps.dryRun ?: false ) ) {
+
+			if( !shell.isTerminalInteractive() ) {
+				throw( message="Cannot start server [#serverInfo.name#] because it is already running.", detail="Run [server info --verbose] to find out why CommandBox thinks this server is running.", type="commandException" );
+			}
+
 			job.addErrorLog( 'Server "#serverInfo.name#" (#serverInfo.webroot#) is already running @ #serverInfo.openbrowserURL#!' );
 			job.addErrorLog( 'Overwriting a running server means you won''t be able to use the "stop" command to stop the original one.' );
 			job.addWarnLog( 'Use the --force parameter to skip this check.' );
@@ -1416,7 +1423,7 @@ component accessors="true" singleton {
 		}
 
 		if( serverInfo.runwarXNIOOptions.count() ) {
-			args.append( '--xnio-options=' & serverInfo.runwarXNIOOptions.reduce( ( opts='', k, v ) => opts.listAppend( k & '=' & v ) ) );
+			args.append( '--xnio-options=' & serverInfo.runwarXNIOOptions.reduce( ( opts='', k, v ) => opts.listAppend( k & '=' & v, ';' ) ) );
 		}
 
 		if( len( serverInfo.allowedExt ) ) {
@@ -1760,7 +1767,6 @@ component accessors="true" singleton {
 					line = bufferedReader.readLine();
 				} // End of inputStream
 
-				// When we require Java 8 for CommandBox, we can pass a timeout to waitFor().
 				serverInfo.exitCode = process.waitFor();
 
 				if( serverInfo.exitCode == 0 ) {
@@ -1833,16 +1839,31 @@ component accessors="true" singleton {
 					serverInterrupted = true;
 				// Something bad happened
 				} catch ( Any e ) {
-					logger.error( '#e.message# #e.detail#' , e.stackTrace );
-					consoleLogger.error( '#e.message##chr(10)##e.detail#' );
-				// Either way, this server is done like dinner
-				} finally {
-					variables.waitingOnConsoleStart = false;
-					shell.setPrompt();
-					process.destroy();
-					// "server stop" is never run for a --console start, so make sure this fires.
-					interceptorService.announceInterception( 'onServerStop', { serverInfo=serverInfo } );
+					// When the sleep() is interrupted, it comes as a Lucee NativeException with the message "sleep interrupted"
+					if( e.message contains 'interrupted' ){
+						consoleLogger.error( 'Stopping server...' );
+						shell.setKeepRunning( false );
+						serverInterrupted = true;
+					} else {
+						logger.error( '#e.message# #e.detail#' , e.stackTrace );
+						consoleLogger.error( '#e.message##chr(10)##e.detail#' );
+					}				
 				}
+				
+				// Now it's time to shut-er down
+				variables.waitingOnConsoleStart = false;
+				shell.setPrompt();
+				// Politely ask the server to stop (async)
+				stop( serverInfo );
+				// Give it a chance to stop
+				try {
+					process.waitFor( 15, java.TimeUnit.SECONDS );
+				} catch( any e ) {
+					logger.error( '#e.message# #e.detail#' , e.stackTrace );
+					consoleLogger.error( 'Waiting for server process to stop: #e.message##chr(10)##e.detail#' );
+				}
+				// Ok, you're done NOW!
+				process.destroy();
 			}
 
 			thread action="join" name="#threadName#";

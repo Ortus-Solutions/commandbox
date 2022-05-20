@@ -36,7 +36,7 @@ component aliases='cfpm' {
 		var interceptData_serverInfo_name = systemSettings.getSystemSetting( 'interceptData.SERVERINFO.name', '' );
 		
 		if( configService.getSetting( 'server.singleServerMode', false ) && serverService.getServers().count() ){
-			serverInfo = serverService.getFirstServer().serverInfo;
+			serverInfo = serverService.getFirstServer();
 		// If we're running inside of a server-related package script, use that server
 		} else if( interceptData_serverInfo_name != '' ) {
 			print.yellowLine( 'Using interceptData to load server [#interceptData_serverInfo_name#]' );

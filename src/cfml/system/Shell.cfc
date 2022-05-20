@@ -907,6 +907,9 @@ component accessors="true" singleton {
 		// Next check for an Environment Variable called "CI" that is set
 		} else if( systemSettings.getSystemSetting( 'CI', '__NOT_SET__' ) != '__NOT_SET__' ) {
 			return false;
+		// System.console() will return null is the stndin or stndout is not a TTY
+		} else if( isNull( createObject( 'java', 'java.lang.System' ).console() ) ) {
+			return false;
 		// Default to true
 		} else {
 			return true;

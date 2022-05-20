@@ -27,6 +27,7 @@ component accessors="true" singleton {
 	property name='ConfigService'		inject='ConfigService';
 	property name='metadataCache'		inject='cachebox:metadataCache';
 	property name='FRTransService'		inject='FRTransService';
+	property name='job'					inject='provider:InteractiveJob';
 
 	property name='configured' default="false" type="boolean";
 
