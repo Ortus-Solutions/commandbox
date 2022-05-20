@@ -1847,24 +1847,23 @@ component accessors="true" singleton {
 					} else {
 						logger.error( '#e.message# #e.detail#' , e.stackTrace );
 						consoleLogger.error( '#e.message##chr(10)##e.detail#' );
-					}
-				
-				// Either way, this server is done like dinner
-				} finally {
-					variables.waitingOnConsoleStart = false;
-					shell.setPrompt();
-					// Politely ask the server to stop (async)
-					stop( serverInfo );
-					// Give it a chance to stop
-					try {
-						process.waitFor( 15, java.TimeUnit.SECONDS );
-					} catch( any e ) {
-						logger.error( '#e.message# #e.detail#' , e.stackTrace );
-						consoleLogger.error( 'Waiting for server process to stop: #e.message##chr(10)##e.detail#' );
-					}
-					// Ok, you're done NOW!
-					process.destroy();
+					}				
 				}
+				
+				// Now it's time to shut-er down
+				variables.waitingOnConsoleStart = false;
+				shell.setPrompt();
+				// Politely ask the server to stop (async)
+				stop( serverInfo );
+				// Give it a chance to stop
+				try {
+					process.waitFor( 15, java.TimeUnit.SECONDS );
+				} catch( any e ) {
+					logger.error( '#e.message# #e.detail#' , e.stackTrace );
+					consoleLogger.error( 'Waiting for server process to stop: #e.message##chr(10)##e.detail#' );
+				}
+				// Ok, you're done NOW!
+				process.destroy();
 			}
 
 			thread action="join" name="#threadName#";
