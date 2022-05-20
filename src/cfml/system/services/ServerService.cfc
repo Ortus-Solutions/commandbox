@@ -74,13 +74,13 @@ component accessors="true" singleton {
 		variables.system = createObject( 'java', 'java.lang.System' );
 
 		// java helpers
-		java = {
-			ServerSocket 	: createObject( "java", "java.net.ServerSocket" )
-			, File 			: createObject( "java", "java.io.File" )
-			, Socket 		: createObject( "java", "java.net.Socket" )
-			, InetAddress 	: createObject( "java", "java.net.InetAddress" )
-			, LaunchUtil 	: createObject( "java", "runwar.LaunchUtil" )
-			, TimeUnit		: createObject( "java", "java.util.concurrent.TimeUnit" )
+		variables.java = {
+			ServerSocket 	: createObject( "java", "java.net.ServerSocket" ),
+			File 			: createObject( "java", "java.io.File" ),
+			Socket	 		: createObject( "java", "java.net.Socket" ),
+			InetAddress 	: createObject( "java", "java.net.InetAddress" ),
+			LaunchUtil 		: createObject( "java", "runwar.LaunchUtil" ),
+			TimeUnit		: createObject( "java", "java.util.concurrent.TimeUnit" )
 		};
 
 		// the home directory.
