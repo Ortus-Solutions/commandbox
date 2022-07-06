@@ -51,6 +51,7 @@ component implements="wirebox.system.ioc.dsl.IDSLBuilder" accessors=true{
 					case "ConfigSettings"	: { return getInjector().getInstance( 'ConfigService' ).getConfigSettings(); }
 					case "interceptorService"	: { return getInjector().getInstance( 'interceptorService' ); }
 					case "moduleService"	: { return getInjector().getInstance( 'moduleService' ); }
+					case "asyncManager"	: { return getInjector().getAsyncManager(); }
 				}
 
 				break;
