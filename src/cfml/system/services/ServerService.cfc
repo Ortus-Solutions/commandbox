@@ -2088,6 +2088,9 @@ component accessors="true" singleton {
 		// Get the web root out of the server.json, if specified and make it relative to the actual server.json file.
 		} else if( len( serverJSON.web.webroot ?: '' ) ) {
 			var defaultwebroot = fileSystemUtil.resolvePath( serverJSON.web.webroot, getDirectoryFromPath( defaultServerConfigFile ) );
+			// If we found a server.json by conventin and pull the web root from there, let's lock this in so we use it.
+			// Otherwise, a server.json pointing to another webroot will cause us to try and put the server.json in the external web root
+			serverProps.serverConfigFile = defaultServerConfigFile;
 		    if( locVerbose ) { consoleLogger.debug("webroot pulled from server's JSON: #defaultwebroot#"); }
 		// Otherwise default to the directory the server's JSON file lives in (which defaults to the CWD)
 		} else {
