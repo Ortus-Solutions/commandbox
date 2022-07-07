@@ -276,7 +276,7 @@ component accessors="true" implements="IEndpointInteractive" {
 			// Check for no ext or .txt or .md in reverse precedence.
 			for( var ext in [ '', '.txt', '.md' ] ) {
 				// Case insensitive search for file name
-				var files = directoryList( path=arguments.path, filter=function( path ){ return path contains ( item.file & ext); } );0
+				var files = directoryList( path=arguments.path, filter=function( path ){ return path contains ( item.file & ext); } );
 				if( arrayLen( files ) && fileExists( files[ 1 ] ) ) {
 					// If found, read in the first one found.
 					props[ item.variable ] = fileRead( files[ 1 ], 'UTF-8' );
@@ -445,7 +445,7 @@ component accessors="true" implements="IEndpointInteractive" {
 	* @package The full endpointID like foo@1.0.0
 	*/
 	public function parseSlug( required string package ) {
-		var matches = REFindNoCase( "^([\w\-\.]+(?:\@(?!stable\b)(?!be\b)[a-zA-Z][\w\-]*)?)(?:\@(.+))?$", package, 1, true );
+		var matches = REFindNoCase( "^([\w\-\.]+(?:\@(?!stable\b)(?!be\b)(?!x\b)[a-zA-Z][\w\-]*)?)(?:\@(.+))?$", package, 1, true );
 		if ( arrayLen( matches.len ) < 2 ) {
 			throw(
 				type = "endpointException",
@@ -462,7 +462,7 @@ component accessors="true" implements="IEndpointInteractive" {
 	public function parseVersion( required string package ) {
 		var version = 'stable';
 		// foo@1.0.0
-		var matches = REFindNoCase( "^([\w\-\.]+(?:\@(?!stable\b)(?!be\b)[a-zA-Z][\w\-]*)?)(?:\@(.+))?$", package, 1, true );
+		var matches = REFindNoCase( "^([\w\-\.]+(?:\@(?!stable\b)(?!be\b)(?!x\b)[a-zA-Z][\w\-]*)?)(?:\@(.+))?$", package, 1, true );
 		if ( matches.pos.len() >= 3 && matches.pos[ 3 ] != 0 ) {
 			// Note this can also be a semver range like 1.2.x, >2.0.0, or 1.0.4-2.x
 			// For now I'm assuming it's a specific version

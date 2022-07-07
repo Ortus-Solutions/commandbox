@@ -2088,6 +2088,9 @@ component accessors="true" singleton {
 		// Get the web root out of the server.json, if specified and make it relative to the actual server.json file.
 		} else if( len( serverJSON.web.webroot ?: '' ) ) {
 			var defaultwebroot = fileSystemUtil.resolvePath( serverJSON.web.webroot, getDirectoryFromPath( defaultServerConfigFile ) );
+			// If we found a server.json by conventin and pull the web root from there, let's lock this in so we use it.
+			// Otherwise, a server.json pointing to another webroot will cause us to try and put the server.json in the external web root
+			serverProps.serverConfigFile = defaultServerConfigFile;
 		    if( locVerbose ) { consoleLogger.debug("webroot pulled from server's JSON: #defaultwebroot#"); }
 		// Otherwise default to the directory the server's JSON file lives in (which defaults to the CWD)
 		} else {
@@ -2385,7 +2388,6 @@ component accessors="true" singleton {
  	 **/
 	  function isProcessAlive( required pidStr, throwOnError=false ) {
 		var result = "";
-		var timeStart = millisecond(now());
 		try{
 			if (fileSystemUtil.isWindows() ) {
 				cfexecute(name='cmd', arguments='/c tasklist /FI "PID eq #pidStr#"', variable="result"  timeout="10");
@@ -2405,12 +2407,25 @@ component accessors="true" singleton {
 	/**
 	 * Logic to tell if a server is running
 	 * @serverInfo.hint Struct of server information
+	 * @quick When set to true, only the PID file is checked for on disk. When set to false, the OS is actually asked if the process is still running.
  	 **/
-	function isServerRunning( required struct serverInfo ){
+	function isServerRunning( required struct serverInfo, boolean quick=false ){
 		if(fileExists(serverInfo.pidFile)){
 			var serverPID = fileRead(serverInfo.pidFile);
-			thread action="run" name="check_#serverPID##getTickCount()#" serverPID=serverPID pidFile=serverInfo.pidFile {
-				if(!isProcessAlive(attributes.serverPID,true)) fileDelete(attributes.pidFile)
+			if( arguments.quick ) {
+				thread action="run" name="check_#serverPID##getTickCount()#" serverPID=serverPID pidFile=serverInfo.pidFile {
+					if(!isProcessAlive(attributes.serverPID,true)) {
+						fileDelete(attributes.pidFile);
+					}
+				}	
+			} else {
+				if(!isProcessAlive(serverPID,true)) {
+					try {
+						fileDelete(serverInfo.pidFile);
+					} catch( any e ) {
+						// If the file didn't exist, ignore it.
+					}
+				}
 			}
 			return true;
 		}

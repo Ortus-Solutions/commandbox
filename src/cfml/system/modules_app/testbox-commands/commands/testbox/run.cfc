@@ -154,6 +154,7 @@ component {
 			}
 
 			// User our Renderer to publish the nice results
+			var boxOptions = packageService.readPackageDescriptor( getCWD() ).testbox;
 			CLIRenderer.render(
 				print,
 				testData,

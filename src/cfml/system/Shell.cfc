@@ -28,6 +28,7 @@ component accessors="true" singleton {
 	property name="configService"			inject="configService";
 	property name='systemSettings'			inject='SystemSettings';
 	property name='endpointService'			inject='endpointService';
+	property name='JSONService'				inject='JSONService';
 
 	/**
 	* The java jline reader class.
@@ -873,10 +874,7 @@ component accessors="true" singleton {
 
 		// We get to output the results ourselves
 		if( !isNull( result ) && !isSimpleValue( result ) ){
-			if( isArray( result ) ){
-				return variables.reader.getTerminal().writer().printColumns( result );
-			}
-			result = variables.formatterUtil.formatJson( result );
+			result = variables.formatterUtil.formatJson( JSON=result, ANSIColors=JSONService.getANSIColors() );
 			printString( result );
 		} else if( !isNull( result ) && len( result ) ) {
 			// If there is an active job, print our output through it

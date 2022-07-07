@@ -138,7 +138,7 @@ component singleton accessors=true {
 			);
 			
 		} catch( any e ) {
-			if( !(e.type contains 'interrupted') ) {
+			if( !(e.type contains 'interrupt') ) {
 				systemoutput( e.message & ' ' & e.detail, 1 );
 				systemoutput( "#e.tagContext[1].template#: line #e.tagContext[1].line#", 1 );
 				rethrow;	

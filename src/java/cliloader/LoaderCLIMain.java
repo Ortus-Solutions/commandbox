@@ -292,7 +292,7 @@ public class LoaderCLIMain{
             // Escape backslash in webroot since replace uses a regular expression
 			// The bootstrap is the first .cfm file we will cfinclude from the "webroot"
 			String bootstrap = "/" + Paths.get( uri ).toAbsolutePath().toString().replaceFirst( webroot.replace( "\\", "\\\\" ), "" );
-			
+
 			// contextroot sets lucee's "webroot" inside the scripting engine to be our drive root
 			System.setProperty( "lucee.cli.contextRoot", webroot );
 			// These next two are the Lucee web context and server context homes
@@ -526,7 +526,7 @@ public class LoaderCLIMain{
 	public static int listIndexOf( ArrayList< String > argList, String text ){
 		int index = 0;
 		for( String item : argList) {
-			if( item.toLowerCase().startsWith( text.toLowerCase() ) 
+			if( item.toLowerCase().startsWith( text.toLowerCase() )
 					|| item.toLowerCase().startsWith( "-" + text.toLowerCase() ) ) {
 				return index;
 			}

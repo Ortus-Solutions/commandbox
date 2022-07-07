@@ -382,7 +382,7 @@ External Dependencies:
 	          </fileset>
 	          <fileset file="${temp.dir}/cli/luceecli.jar" />
 	          <fileset file="${temp.dir}/cli/ortus-jgit.jar" />
-	          <fileset file="${src.dir}/resources/log4j2.xml" />	          
+	          <fileset file="${src.dir}/resources/log4j2.xml" />
 	        </zip>
 
 	        <zip destfile="${temp.dir}/cli-light/libs.zip">
@@ -1071,7 +1071,7 @@ External Dependencies:
 				<exclusion groupId="org.slf4j" artifactId="slf4j-api" />
 				<exclusion groupId="org.apache.httpcomponents" artifactId="httpclient" />
 			</exclusions>
-		</dependency>		
+		</dependency>
 
 	    <dependency groupId="com.beust" artifactId="jcommander" version="1.47" dest="${lib.dir}" type="jar" unzip="false"/>
 	    <dependency groupId="net.minidev" artifactId="json-smart-mini" version="1.0.8" unzip="false" type="jar" dest="${lib.dir}"/>

@@ -60,6 +60,8 @@ component singleton{
 		}
 		// The JANSI lib will pick this up and use it
 		systemSettings.setSystemProperty( 'library.jansi.path', JANSI_path );
+		// https://github.com/fusesource/jansi/blob/2cf446182c823a4c110411b765a1f0367eb8a913/src/main/java/org/fusesource/jansi/internal/JansiLoader.java#L80
+		systemSettings.setSystemProperty( 'jansi.tmpdir', JANSI_path );
 		// And JNA will pick this up.
 		// https://java-native-access.github.io/jna/4.2.1/com/sun/jna/Native.html#getTempDir--
 		systemSettings.setSystemProperty( 'jna.tmpdir', JANSI_path );

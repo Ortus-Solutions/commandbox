@@ -53,7 +53,13 @@ component {
 			arguments.path,
 			"all"
 		);
-
+		modelTestContent = replaceNoCase(
+			modelTestContent,
+			"|modelPath|",
+			arguments.path,
+			"all"
+		);
+		
 		// Handle Methods
 		if ( len( arguments.methods ) ) {
 			var allTestsCases = "";
