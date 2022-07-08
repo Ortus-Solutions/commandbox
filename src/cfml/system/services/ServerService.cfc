@@ -190,7 +190,8 @@ component accessors="true" singleton {
 				},
 				'basicAuth' : {
 					'enable' : d.web.basicAuth.enable ?: true,
-					'users' : d.web.basicAuth.users ?: {}
+					'users' : d.web.basicAuth.users ?: {},
+					'authPredicate' : d.web.authPredicate ?: '' 
 				},
 				'fileCache' : {
 					'enable' : d.web.fileCache.enable ?: '',
@@ -768,6 +769,8 @@ component accessors="true" singleton {
 		serverInfo.rewritesConfigReloadSeconds =					   serverJSON.web.rewrites.configReloadSeconds ?: defaults.web.rewrites.configReloadSeconds;
 		serverInfo.basicAuthEnable 	= 								   serverJSON.web.basicAuth.enable		?: defaults.web.basicAuth.enable;
 		serverInfo.basicAuthUsers 	= 								   serverJSON.web.basicAuth.users		?: defaults.web.basicAuth.users;
+		serverInfo.basicAuthPredicate 	= 							   serverJSON.web.basicAuth.authPredicate ?: defaults.web.basicAuth.authPredicate;
+		
 		serverInfo.welcomeFiles 	= serverProps.welcomeFiles		?: serverJSON.web.welcomeFiles			?: defaults.web.welcomeFiles;
 		serverInfo.maxRequests		= 								   serverJSON.web.maxRequests			?: defaults.web.maxRequests;
 
@@ -1596,6 +1599,10 @@ component accessors="true" singleton {
 			} );
 			// user=pass,user2=pass2
 			args.append( '--basicauth-users' ).append( thisBasicAuthUsers );
+			if( len( serverInfo.basicAuthPredicate ) ) {
+				args.append( '--basicauth-predicate' ).append( serverInfo.basicAuthPredicate );	
+			}
+			
 		}
 
 		if( serverInfo.rewritesEnable ){
@@ -2737,6 +2744,7 @@ component accessors="true" singleton {
 			'rewritesStatusPath': "",
 			'rewritesConfigReloadSeconds'	: "",
 			'basicAuthEnable'	: true,
+			'basicAuthPredicate': '',
 			'basicAuthUsers'	: {},
 			'heapSize'			: '',
 			'minHeapSize'		: '',
