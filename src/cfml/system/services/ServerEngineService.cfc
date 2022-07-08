@@ -144,11 +144,19 @@ component accessors="true" singleton="true" {
 			installDir : '',
 			initialInstall : false
 		};
+		
+		// If CFEngine is a relateive file path, we need to know where to look for it.
+		var currentWorkingDirectory = serverInfo.webroot;
+		if( serverInfo.cfengineSource == 'serverJSON' ) {
+			currentWorkingDirectory = getDirectoryFromPath( serverInfo.serverConfigFile );
+		} else if( serverInfo.cfengineSource == 'serverProps' ) {
+			currentWorkingDirectory = shell.pwd();
+		}
 
 		var thisTempDir = tempDir & '/' & createUUID();
 
 		// Find out what endpoint will service them and ask the endpoint what their name is.
-		var endpointData = endpointService.resolveEndpoint( ID, shell.pwd() );
+		var endpointData = endpointService.resolveEndpoint( ID, currentWorkingDirectory );
 		var endpoint = endpointData.endpoint;
 		var engineName = endpoint.getDefaultName( arguments.ID );
 		installDetails.engineName = engineName;
@@ -302,7 +310,12 @@ component accessors="true" singleton="true" {
 			return installDetails;
 		}
 
-		if( !packageService.installPackage( ID=arguments.ID, directory=thisTempDir, save=false ) ) {
+		if( !packageService.installPackage(
+				ID=arguments.ID,
+				directory=thisTempDir,
+				save=false,
+				currentWorkingDirectory=currentWorkingDirectory )
+			) {
 			throw( message='Server not installed.', type="commandException");
 		}
 

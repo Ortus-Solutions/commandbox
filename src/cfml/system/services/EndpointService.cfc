@@ -152,11 +152,23 @@ component accessors="true" singleton {
 		// Endpoint is specified as "endpoint:resource"
 		} else if( listLen( arguments.ID, ':' ) > 1 ) {
 			var endpointName = listFirst( arguments.ID, ':' );
+			var package = listRest( arguments.ID, ':' );
 			if( structKeyExists( getEndpointRegistry(), endpointName ) ) {
+				var theID = arguments.ID;
+				if( endpointName == 'file' || endpointName == 'folder' ) {
+					package = fileSystemUtil.resolvePath( package, arguments.currentWorkingDirectory );
+					if( endpointName == 'file' && !fileExists( package ) ) {
+						throw( "The file [ #package# ] does not exist.", 'endpointException' );	
+					}
+					if( endpointName == 'folder' && !directoryExists( package ) ) {
+						throw( "The folder [ #package# ] does not exist.", 'endpointException' );	
+					}
+					theID = endpointName & ':' & package;
+				}
 				return {
 					endpointName : endpointName,
-					package : listRest( arguments.ID, ':' ),
-					ID : arguments.ID
+					package : package,
+					ID : theID
 				};
 			} else {
 				if( listFindNoCase( 'C,D,E,F,G,H', endpointName ) ) {

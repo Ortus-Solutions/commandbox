@@ -1037,6 +1037,13 @@ component accessors="true" singleton {
 		}
 
 		serverInfo.cfengine			= serverProps.cfengine			?: serverJSON.app.cfengine			?: defaults.app.cfengine;
+		serverInfo.cfengineSource = 'defaults';
+		if( !isNull( serverJSON.app.cfengine ) ) {
+			serverInfo.cfengineSource = 'serverJSON';
+		}
+		if( !isNull( serverProps.cfengine ) ) {
+			serverInfo.cfengineSource = 'serverProps';
+		}
 
 		serverInfo.restMappings		= serverProps.restMappings		?: serverJSON.app.restMappings		?: defaults.app.restMappings;
 		// relative rewrite config path in server.json is resolved relative to the server.json
@@ -2743,6 +2750,7 @@ component accessors="true" singleton {
 			'runwarXNIOOptions'	: {},
 			'runwarUndertowOptions'	: {},
 			'cfengine'			: "",
+			'cfengineSource'	: 'defaults',
 			'restMappings'		: "",
 			'sessionCookieSecure'	: false,
 			'sessionCookieHTTPOnly'	: false,
