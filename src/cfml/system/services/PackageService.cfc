@@ -590,8 +590,18 @@ component accessors="true" singleton {
 			var isSaving = ( arguments.save || arguments.saveDev );
 
 			var detail = dependencies[ dependency ];
+			var endpointName = 'forgebox';
+			try {
+				var endpointData = endpointService.resolveEndpointData( detail, installDirectory );
+				endpointName = endpointData.endpointName;
+			} catch ( EndpointNotFound e ) {
+				// Ignore
+			} catch( any e ) {
+				rethrow;
+			}
+			
 			//  full ID with endpoint and package like file:/opt/files/foo.zip
-			if( detail contains ':' ) {
+			if( endpointName != 'forgebox' ) {
 				var ID = detail;
 			// Default ForgeBox endpoint of foo@1.0.0
 			} else {
