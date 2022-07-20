@@ -141,6 +141,7 @@ component accessors=true {
 	}
 
 	function withJavaDocs(){
+		setUseJavaDoc(true);
 		return this;
 	}
 
@@ -175,6 +176,12 @@ component accessors=true {
 
         job.start( 'compiling the code' );
 		compileCode();
+        job.complete();
+
+        job.start( 'generate javadocs' );
+		if( getUseJavaDoc() ) {
+			generateJavadocs();
+		}
         job.complete();
 
 		if( getCreateJar() ) {
@@ -722,6 +729,23 @@ component accessors=true {
 		var javaHome = javaService.getJavaInstallPath( 'openjdk11_jdk', getVerbose() );
 		job.addLog( 'JDK downloaded (we''ll use it again next time)' );
 		return javaHome.listAppend( 'bin/', '/' );
+	}
+
+	function generateJavadocs() {
+		var currentProjectRoot = getProjectRoot();
+		var javaDocFinalDestinationFolder = currentProjectRoot & getJavaDocDestinationDir();
+
+		try {
+
+			j = 'run #getJavaBinFolder()#javadoc -d #javaDocFinalDestinationFolder# -sourcepath src\main\java';
+			j = 'run #getJavaBinFolder()#javadoc src\main\java\Person.java -d javaDocs\main'
+
+			job.addLog( j );
+            //command( j ).run(echo=true);
+			command( j ).run();
+		} finally {
+
+		}
 	}
 
 }
