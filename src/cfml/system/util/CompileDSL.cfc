@@ -66,7 +66,7 @@ component accessors=true {
 		setCustomManifestParams( {} );
 		setResourcePath( 'src\main\resources\' );
 		setClassTextFilePaths(['']);
-		setJavaDocDestinationDir('javaDocs\main')
+		setJavaDocDestinationDir('javaDocs\main');
 		setUseJavaDoc(false);
         return this;
     }
@@ -737,12 +737,24 @@ component accessors=true {
 
 		try {
 
-			j = 'run #getJavaBinFolder()#javadoc -d #javaDocFinalDestinationFolder# -sourcepath src\main\java';
-			j = 'run #getJavaBinFolder()#javadoc src\main\java\Person.java -d javaDocs\main'
+			//j = 'run #getJavaBinFolder()#javadoc -d #javaDocFinalDestinationFolder# -sourcepath src\main\java';
+			j = 'run "#getJavaBinFolder()#javadoc" src\main\java\Person.java -d javaDocs\main'
 
 			job.addLog( j );
             //command( j ).run(echo=true);
-			command( j ).run();
+			job.addLog( command( j ).run( returnOutput=true ) );
+
+		} catch( any e ) {
+
+			if ( isJSON( e.extendedInfo ) ){
+				job.addLog( deserializeJSON( e.extendedInfo ).commandOutput );
+			}
+
+			throw(
+				message='Javadoc found errors', detail=e.message,
+				type="commandException"
+			);
+
 		} finally {
 
 		}
