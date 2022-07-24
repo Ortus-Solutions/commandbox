@@ -168,12 +168,16 @@ component accessors="true" singleton {
 					'port' : d.web.ssl.port ?: 1443,
 					'certFile' : d.web.ssl.certFile ?: '',
 					'keyFile' : d.web.ssl.keyFile ?: '',
-					'keyPass' : d.web.ssl.keyPass ?: '',
+					'keyPass' : d.web.ssl.keyPass ?: '',,
+					'CACertFiles' : d.web.ssl.clientCert.trustedCAFiles ?:  ''
 					'forceSSLRedirect' : d.web.ssl.forceSSLRedirect ?: false,
 					'HSTS' : {
 						'enable' : d.web.ssl.hsts.enable ?: false,
 						'maxAge' : d.web.ssl.hsts.maxAge ?:  31536000,
-						'includeSubDomains' : d.web.ssl.hsts.includeSubDomains ?:  false
+						'includeSubDomains' : d.web.ssl.hsts.includeSubDomains ?: false
+					},
+					'clientCert' : {
+						'mode' : d.web.ssl.clientCert.mode ?:  ''
 					}
 				},
 				'AJP' : {
@@ -2439,6 +2443,7 @@ component accessors="true" singleton {
 					} catch( any e ) {
 						// If the file didn't exist, ignore it.
 					}
+					return false;
 				}
 			}
 			return true;
