@@ -168,8 +168,8 @@ component accessors="true" singleton {
 					'port' : d.web.ssl.port ?: 1443,
 					'certFile' : d.web.ssl.certFile ?: '',
 					'keyFile' : d.web.ssl.keyFile ?: '',
-					'keyPass' : d.web.ssl.keyPass ?: '',,
-					'CACertFiles' : d.web.ssl.clientCert.trustedCAFiles ?:  ''
+					'keyPass' : d.web.ssl.keyPass ?: '',
+					'CACertFiles' : d.web.ssl.clientCert.trustedCAFiles ?:  '',
 					'forceSSLRedirect' : d.web.ssl.forceSSLRedirect ?: false,
 					'HSTS' : {
 						'enable' : d.web.ssl.hsts.enable ?: false,
@@ -195,7 +195,7 @@ component accessors="true" singleton {
 				'basicAuth' : {
 					'enable' : d.web.basicAuth.enable ?: true,
 					'users' : d.web.basicAuth.users ?: {},
-					'authPredicate' : d.web.authPredicate ?: '' 
+					'authPredicate' : d.web.authPredicate ?: ''
 				},
 				'fileCache' : {
 					'enable' : d.web.fileCache.enable ?: '',
@@ -324,7 +324,7 @@ component accessors="true" singleton {
 
 		systemSettings.expandDeepSystemSettings( serverJSON );
 		systemSettings.expandDeepSystemSettings( defaults );
-		
+
 		// Mix in environment variable overrides like BOX_SERVER_PROFILE
 		loadOverrides( serverJSON, serverInfo, serverProps.verbose ?: serverJSON.verbose ?: defaults.verbose ?: false );
 
@@ -774,7 +774,7 @@ component accessors="true" singleton {
 		serverInfo.basicAuthEnable 	= 								   serverJSON.web.basicAuth.enable		?: defaults.web.basicAuth.enable;
 		serverInfo.basicAuthUsers 	= 								   serverJSON.web.basicAuth.users		?: defaults.web.basicAuth.users;
 		serverInfo.basicAuthPredicate 	= 							   serverJSON.web.basicAuth.authPredicate ?: defaults.web.basicAuth.authPredicate;
-		
+
 		serverInfo.welcomeFiles 	= serverProps.welcomeFiles		?: serverJSON.web.welcomeFiles			?: defaults.web.welcomeFiles;
 		serverInfo.maxRequests		= 								   serverJSON.web.maxRequests			?: defaults.web.maxRequests;
 
@@ -1604,9 +1604,9 @@ component accessors="true" singleton {
 			// user=pass,user2=pass2
 			args.append( '--basicauth-users' ).append( thisBasicAuthUsers );
 			if( len( serverInfo.basicAuthPredicate ) ) {
-				args.append( '--basicauth-predicate' ).append( serverInfo.basicAuthPredicate );	
+				args.append( '--basicauth-predicate' ).append( serverInfo.basicAuthPredicate );
 			}
-			
+
 		}
 
 		if( serverInfo.rewritesEnable ){
@@ -1865,9 +1865,9 @@ component accessors="true" singleton {
 					} else {
 						logger.error( '#e.message# #e.detail#' , e.stackTrace );
 						consoleLogger.error( '#e.message##chr(10)##e.detail#' );
-					}				
+					}
 				}
-				
+
 				// Now it's time to shut-er down
 				variables.waitingOnConsoleStart = false;
 				shell.setPrompt();
@@ -2435,7 +2435,7 @@ component accessors="true" singleton {
 					if(!isProcessAlive(attributes.serverPID,true)) {
 						fileDelete(attributes.pidFile);
 					}
-				}	
+				}
 			} else {
 				if(!isProcessAlive(serverPID,true)) {
 					try {
