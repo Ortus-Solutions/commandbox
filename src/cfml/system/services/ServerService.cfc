@@ -169,7 +169,6 @@ component accessors="true" singleton {
 					'certFile' : d.web.ssl.certFile ?: '',
 					'keyFile' : d.web.ssl.keyFile ?: '',
 					'keyPass' : d.web.ssl.keyPass ?: '',
-					'CACertFiles' : d.web.ssl.clientCert.trustedCAFiles ?:  '',
 					'forceSSLRedirect' : d.web.ssl.forceSSLRedirect ?: false,
 					'HSTS' : {
 						'enable' : d.web.ssl.hsts.enable ?: false,
@@ -177,7 +176,8 @@ component accessors="true" singleton {
 						'includeSubDomains' : d.web.ssl.hsts.includeSubDomains ?: false
 					},
 					'clientCert' : {
-						'mode' : d.web.ssl.clientCert.mode ?:  ''
+						'mode' : d.web.ssl.clientCert.mode ?:  '',
+						'CACertFiles' : d.web.ssl.clientCert.CACertFiles ?: '',
 					}
 				},
 				'AJP' : {
@@ -761,6 +761,26 @@ component accessors="true" singleton {
 		// relative trayIcon in config setting server defaults is resolved relative to the web root
 		if( len( defaults.web.SSL.keyFile ?: '' ) ) { defaults.web.SSL.keyFile = fileSystemUtil.resolvePath( defaults.web.SSL.keyFile, defaultwebroot ); }
 		serverInfo.SSLKeyFile 		= serverProps.SSLKeyFile 		?: serverJSON.web.SSL.keyFile			?: defaults.web.SSL.keyFile;
+
+		// relative certFile in server.json is resolved relative to the server.json
+		if( isDefined( 'serverJSON.web.SSL.clientCert.CACertFiles' ) ) {
+			if( isSimpleValue( serverJSON.web.SSL.clientCert.CACertFiles ) ) {
+				serverJSON.web.SSL.clientCert.CACertFiles = listToArray( serverJSON.web.SSL.clientCert.CACertFiles );
+			}
+			serverJSON.web.SSL.clientCert.CACertFiles = serverJSON.web.SSL.clientCert.CACertFiles.map( (f)=>fileSystemUtil.resolvePath( f, defaultServerConfigFileDirectory ) );
+		}
+		// relative certFile in config setting server defaults is resolved relative to the web root
+		if( len( defaults.web.SSL.clientCert.CACertFiles ) ) {
+			if( isSimpleValue( defaults.web.SSL.clientCert.CACertFiles ) ) {
+				defaults.web.SSL.clientCert.CACertFiles = listToArray( defaults.web.SSL.clientCert.CACertFiles );
+			}
+			defaults.web.SSL.clientCert.CACertFiles = defaults.web.SSL.clientCert.CACertFiles.map( (f)=>fileSystemUtil.resolvePath( f, defaultwebroot ) );
+		} else {
+			defaults.web.SSL.clientCert.CACertFiles = [];
+		}
+		serverInfo.clientCertCACertFiles = serverJSON.web.SSL.clientCert.CACertFiles ?: defaults.web.SSL.clientCert.CACertFiles;
+
+		serverInfo.clientCertMode = serverJSON.web.SSL.clientCert.mode ?: defaults.web.SSL.clientCert.mode;
 
 		serverInfo.SSLForceRedirect			= serverJSON.web.SSL.forceSSLRedirect							?: defaults.web.SSL.forceSSLRedirect;
 		serverInfo.HSTSEnable				= serverJSON.web.SSL.HSTS.enable								?: defaults.web.SSL.HSTS.enable;
@@ -1573,13 +1593,21 @@ component accessors="true" singleton {
 		}
 
 		// Send SSL cert info if SSL is enabled and there's cert info
-		if( serverInfo.SSLEnable && serverInfo.SSLCertFile.len() ) {
-			args
-				.append( '--ssl-cert' ).append( serverInfo.SSLCertFile )
-				.append( '--ssl-key' ).append( serverInfo.SSLKeyFile );
-			// Not all certs require a password
-			if( serverInfo.SSLKeyPass.len() ) {
-				args.append( '--ssl-keypass' ).append( serverInfo.SSLKeyPass );
+		if( serverInfo.SSLEnable ) {
+			if( serverInfo.SSLCertFile.len() ) {
+				args
+					.append( '--ssl-cert' ).append( serverInfo.SSLCertFile )
+					.append( '--ssl-key' ).append( serverInfo.SSLKeyFile );
+				// Not all certs require a password
+				if( serverInfo.SSLKeyPass.len() ) {
+					args.append( '--ssl-keypass' ).append( serverInfo.SSLKeyPass );
+				}
+			}
+			if( len( serverInfo.clientCertMode ) ){
+				args.append( '--client-cert-negotiation' ).append( serverInfo.clientCertMode );
+			}
+			if( serverInfo.clientCertCACertFiles.len() ){
+				args.append( '--ssl-add-ca-certs' ).append( serverInfo.clientCertCACertFiles.toList() );
 			}
 		}
 
