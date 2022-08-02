@@ -158,7 +158,10 @@
 				"args": {
 					"title": "JVM Arguments",
 					"description": "Ad-hoc JVM args for the server such as -X:name",
-					"type": "string",
+					"type": [
+						"string",
+						"array"
+					],
 					"default": ""
 				},
 				"javaHome": {
