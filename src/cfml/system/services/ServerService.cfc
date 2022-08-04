@@ -194,8 +194,7 @@ component accessors="true" singleton {
 				},
 				'basicAuth' : {
 					'enable' : d.web.basicAuth.enable ?: true,
-					'users' : d.web.basicAuth.users ?: {},
-					'authPredicate' : d.web.authPredicate ?: ''
+					'users' : d.web.basicAuth.users ?: {}
 				},
 				'fileCache' : {
 					'enable' : d.web.fileCache.enable ?: '',
@@ -208,7 +207,21 @@ component accessors="true" singleton {
 				'blockSensitivePaths' :  d.web.blockSensitivePaths ?: '',
 				'blockFlashRemoting' :  d.web.blockFlashRemoting ?: '',
 				'allowedExt' : d.web.allowedExt ?: '',
-				'useProxyForwardedIP' : d.web.useProxyForwardedIP ?: false
+				'useProxyForwardedIP' : d.web.useProxyForwardedIP ?: false,
+				'security' : {
+					'realm' : d.web.security.realm ?: '',
+					'authPredicate' : d.web.security.authPredicate ?: '',
+					'basicAuth' : {
+						'enable' : d.web.security.basicAuth.enable ?: nullvalue(),
+						'users' : d.web.security.basicAuth.users ?: nullvalue()
+					},
+					'clientCert' : {
+						'enable' : d.web.security.clientCert.enable ?: false,
+						'trustUpstreamHeaders' : d.web.security.clientCert.trustUpstreamHeaders ?: false,
+						'subjectDNs' : d.web.security.clientCert.subjectDNs ?: '',
+						'issuerDNs' : d.web.security.clientCert.issuerDNs ?: ''
+					}
+				}
 			},
 			'app' : {
 				'logDir' : d.app.logDir ?: '',
@@ -791,9 +804,58 @@ component accessors="true" singleton {
 		serverInfo.rewritesEnable 	= serverProps.rewritesEnable	?: serverJSON.web.rewrites.enable		?: defaults.web.rewrites.enable;
 		serverInfo.rewritesStatusPath = 							   serverJSON.web.rewrites.statusPath	?: defaults.web.rewrites.statusPath;
 		serverInfo.rewritesConfigReloadSeconds =					   serverJSON.web.rewrites.configReloadSeconds ?: defaults.web.rewrites.configReloadSeconds;
-		serverInfo.basicAuthEnable 	= 								   serverJSON.web.basicAuth.enable		?: defaults.web.basicAuth.enable;
-		serverInfo.basicAuthUsers 	= 								   serverJSON.web.basicAuth.users		?: defaults.web.basicAuth.users;
-		serverInfo.basicAuthPredicate 	= 							   serverJSON.web.basicAuth.authPredicate ?: defaults.web.basicAuth.authPredicate;
+		
+		serverInfo.basicAuthEnable 	= 	serverJSON.web.security.basicAuth.enable	?: defaults.web.security.basicAuth.enable	?: serverJSON.web.basicAuth.enable	?: defaults.web.basicAuth.enable;
+		serverInfo.basicAuthUsers 	= 	serverJSON.web.security.basicAuth.users		?: defaults.web.security.basicAuth.users	?: serverJSON.web.basicAuth.users	?: defaults.web.basicAuth.users;
+		// If there are no users, basic auth is NOT enabled
+		if( !serverInfo.basicAuthUsers.count() ) {
+			serverInfo.basicAuthEnable = false;
+		}
+		
+		serverInfo.clientCertEnable	=				serverJSON.web.security.clientCert.enable 				?: defaults.web.security.clientCert.enable;
+		serverInfo.clientCertTrustUpstreamHeaders =	serverJSON.web.security.clientCert.trustUpstreamHeaders ?: defaults.web.security.clientCert.trustUpstreamHeaders;
+		
+		// Default missing values
+		serverJSON.web.security.clientCert.subjectDNs = serverJSON.web.security.clientCert.subjectDNs ?: '';
+		serverJSON.web.security.clientCert.issuerDNs = serverJSON.web.security.clientCert.issuerDNs ?: '';
+		
+		// Convert all strings to arrays
+		if( isSimpleValue( serverJSON.web.security.clientCert.subjectDNs ) ) {
+			if( len( serverJSON.web.security.clientCert.subjectDNs ) ) {
+				serverJSON.web.security.clientCert.subjectDNs = [ serverJSON.web.security.clientCert.subjectDNs ];	
+			} else {
+				serverJSON.web.security.clientCert.subjectDNs = [];
+			}
+		}
+		if( isSimpleValue( defaults.web.security.clientCert.subjectDNs ) ) {
+			if( len( defaults.web.security.clientCert.subjectDNs ) ) {
+				defaults.web.security.clientCert.subjectDNs = [ defaults.web.security.clientCert.subjectDNs ];	
+			} else {
+				defaults.web.security.clientCert.subjectDNs = [];
+			}
+		}
+		if( isSimpleValue( serverJSON.web.security.clientCert.issuerDNs ) ) {
+			if( len( serverJSON.web.security.clientCert.issuerDNs ) ) {
+				serverJSON.web.security.clientCert.issuerDNs = [ serverJSON.web.security.clientCert.issuerDNs ];	
+			} else {
+				serverJSON.web.security.clientCert.issuerDNs = [];
+			}
+		}
+		if( isSimpleValue( defaults.web.security.clientCert.issuerDNs ) ) {
+			if( len( defaults.web.security.clientCert.issuerDNs ) ) {
+				defaults.web.security.clientCert.issuerDNs = [ defaults.web.security.clientCert.issuerDNs ];	
+			} else {
+				defaults.web.security.clientCert.issuerDNs = [];
+			}
+		}
+		
+		// Combine server defaults AND any settings in server.json
+		serverInfo.clientCertSubjectDNs	= serverJSON.web.security.clientCert.subjectDNs.append( defaults.web.security.clientCert.subjectDNs, true );
+		serverInfo.clientCertIssuerDNs	= serverJSON.web.security.clientCert.issuerDNs.append( defaults.web.security.clientCert.issuerDNs, true );
+
+		serverInfo.authEnabled 	= 	serverInfo.basicAuthEnable || serverInfo.clientCertEnable;
+		serverInfo.securityRealm 	= 	serverJSON.web.security.realm			?: defaults.web.security.realm;
+		serverInfo.authPredicate	= 	serverJSON.web.security.authPredicate	?: defaults.web.security.authPredicate;
 
 		serverInfo.welcomeFiles 	= serverProps.welcomeFiles		?: serverJSON.web.welcomeFiles			?: defaults.web.welcomeFiles;
 		serverInfo.maxRequests		= 								   serverJSON.web.maxRequests			?: defaults.web.maxRequests;
@@ -1621,22 +1683,40 @@ component accessors="true" singleton {
 			args.append( '--urlrewrite-check' ).append( serverInfo.rewritesConfigReloadSeconds );
 		}
 
-		// Basic auth
-		if( serverInfo.basicAuthEnable && serverInfo.basicAuthUsers.count() ) {
-			// Escape commas and equals with backslash
-			var sanitizeBA = function( i ) { return i.replace( ',', '\,', 'all' ).replace( '=', '\=', 'all' ); };
-			var thisBasicAuthUsers = '';
-			serverInfo.basicAuthUsers.each( function( i ) {
-				thisBasicAuthUsers = thisBasicAuthUsers.listAppend( '#sanitizeBA( i )#=#sanitizeBA( serverInfo.basicAuthUsers[ i ] )#' );
-			} );
-			// user=pass,user2=pass2
-			args.append( '--basicauth-users' ).append( thisBasicAuthUsers );
-			if( len( serverInfo.basicAuthPredicate ) ) {
-				args.append( '--basicauth-predicate' ).append( serverInfo.basicAuthPredicate );
+		if( serverInfo.authEnabled ) {
+
+			if( len( serverInfo.authPredicate ) ) {
+				args.append( '--auth-predicate' ).append( serverInfo.authPredicate );
 			}
-
+			if( !len( serverInfo.securityRealm ) ) {
+				serverInfo.securityRealm = serverInfo.name;
+			}
+			args.append( '--security-realm' ).append( serverInfo.securityRealm );			
+					
+			// Basic auth
+			if( serverInfo.basicAuthEnable ) {
+				// Escape commas and equals with backslash
+				var sanitizeBA = function( i ) { return i.replace( ',', '\,', 'all' ).replace( '=', '\=', 'all' ); };
+				var thisBasicAuthUsers = '';
+				serverInfo.basicAuthUsers.each( function( i ) {
+					thisBasicAuthUsers = thisBasicAuthUsers.listAppend( '#sanitizeBA( i )#=#sanitizeBA( serverInfo.basicAuthUsers[ i ] )#' );
+				} );
+				// user=pass,user2=pass2
+				args.append( '--basicauth-users' ).append( thisBasicAuthUsers );
+	
+			}
+			
+			// Client cert
+			if( serverInfo.clientCertEnable ) {
+				args
+					.append( '--client-cert-enable' ).append( serverInfo.clientCertEnable )
+					.append( '--client-cert-subjectdns' ).append( serializeJSON( serverInfo.clientCertSubjectDNs ) )
+					.append( '--client-cert-issuerdns' ).append( serializeJSON( serverInfo.clientCertIssuerDNs ) );
+			}
 		}
-
+		
+		args.append( '--client-cert-trust-headers' ).append( serverInfo.clientCertTrustUpstreamHeaders )
+		
 		if( serverInfo.rewritesEnable ){
 			if( !fileExists(serverInfo.rewritesConfig) ){
 				job.error( 'URL rewrite config not found [#serverInfo.rewritesConfig#]' );
@@ -1716,6 +1796,11 @@ component accessors="true" singleton {
 			job.complete( serverInfo.verbose );
 			return;
 		}
+		
+		
+	    if( fileSystemUtil.isWindows() ) {
+	    	args = args.map( (a)=>replace( a, '"', '\"', 'all' ) );
+	    }
 
 	    processBuilder.init( args );
 
@@ -2746,90 +2831,92 @@ component accessors="true" singleton {
 				'arguments' : "",
 				'command' 	: ""
 			},
-			'name'				: "",
-			'logDir' 			: "",
-			'consolelogPath'	: "",
-			'accessLogPath'		: "",
-			'rewritesLogPath'	: "",
-			'trayicon' 			: "",
-			'libDirs' 			: "",
-			'webConfigDir' 		: "",
-			'serverConfigDir' 	: "",
-			'serverHomeDirectory' : "",
-			'singleServerHome'	: false,
-			'serverHome'		 : "",
-			'webroot'			: "",
-			'webXML' 			: "",
-			'webXMLOverride' 	: "",
-			'webXMLOverrideActual' : "",
-			'webXMLOverrideForce' : false,
-			'HTTPEnable'		: true,
-			'HTTP2Enable'		: true,
-			'SSLEnable'			: false,
-			'SSLPort'			: 1443,
-			'AJPEnable'			: false,
-			'AJPPort'			: 8009,
-			'SSLCertFile'		: "",
-			'SSLKeyFile'		: "",
-			'SSLKeyPass'		: "",
-			'rewritesEnable'	: false,
-			'rewritesConfig'	: "",
-			'rewritesStatusPath': "",
-			'rewritesConfigReloadSeconds'	: "",
-			'basicAuthEnable'	: true,
-			'basicAuthPredicate': '',
-			'basicAuthUsers'	: {},
-			'heapSize'			: '',
-			'minHeapSize'		: '',
-			'javaHome'			: '',
-			'javaVersion'		: '',
-			'directoryBrowsing' : false,
-			'JVMargs'			: "",
-			'JVMargsArray'		: [],
-			'runwarArgs'		: "",
-			'runwarArgsArray'	: [],
-			'runwarXNIOOptions'	: {},
+			'name'					: "",
+			'logDir' 				: "",
+			'consolelogPath'		: "",
+			'accessLogPath'			: "",
+			'rewritesLogPath'		: "",
+			'trayicon' 				: "",
+			'libDirs' 				: "",
+			'webConfigDir' 			: "",
+			'serverConfigDir' 		: "",
+			'serverHomeDirectory'	: "",
+			'singleServerHome'		: false,
+			'serverHome'			: "",
+			'webroot'				: "",
+			'webXML' 				: "",
+			'webXMLOverride' 		: "",
+			'webXMLOverrideActual'	: "",
+			'webXMLOverrideForce'	: false,
+			'HTTPEnable'			: true,
+			'HTTP2Enable'			: true,
+			'SSLEnable'				: false,
+			'SSLPort'				: 1443,
+			'AJPEnable'				: false,
+			'AJPPort'				: 8009,
+			'SSLCertFile'			: "",
+			'SSLKeyFile'			: "",
+			'SSLKeyPass'			: "",
+			'clientCertCACertFiles'	: '',
+			'clientCertMode'		: '',
+			'rewritesEnable'		: false,
+			'rewritesConfig'		: "",
+			'rewritesStatusPath'	: "",
+			'rewritesConfigReloadSeconds': "",
+			'basicAuthEnable'		: true,
+			'authPredicate'	: '',
+			'basicAuthUsers'		: {},
+			'heapSize'				: '',
+			'minHeapSize'			: '',
+			'javaHome'				: '',
+			'javaVersion'			: '',
+			'directoryBrowsing'		: false,
+			'JVMargs'				: "",
+			'JVMargsArray'			: [],
+			'runwarArgs'			: "",
+			'runwarArgsArray'		: [],
+			'runwarXNIOOptions'		: {},
 			'runwarUndertowOptions'	: {},
-			'cfengine'			: "",
-			'cfengineSource'	: 'defaults',
-			'restMappings'		: "",
+			'cfengine'				: "",
+			'cfengineSource'		: 'defaults',
+			'restMappings'			: "",
 			'sessionCookieSecure'	: false,
 			'sessionCookieHTTPOnly'	: false,
-			'engineName'		: "",
-			'engineVersion'		: "",
-			'WARPath'			: "",
-			'serverConfigFile'	: "",
-			'aliases'			: {},
-			'errorPages'		: {},
-			'accessLogEnable'	: false,
-			'GZipEnable'		: true,
-			'GZipPredicate'		: '',
-			'rewritesLogEnable'	: false,
-			'trayOptions'		: {},
-			'trayEnable'		: true,
-			'dockEnable'		: true,
-			'dateLastStarted'	: '',
-			'openBrowser'		: true,
-			'openBrowserURL'	: '',
-			'profile'			: '',
-			'customServerFolder': '',
-			'welcomeFiles'		: '',
-			'maxRequests'		: '',
-			'exitCode'			: 0,
-			'rules'				: [],
-			'rulesFile'			: '',
-			'blockCFAdmin'		: false,
+			'engineName'			: "",
+			'engineVersion'			: "",
+			'WARPath'				: "",
+			'serverConfigFile'		: "",
+			'aliases'				: {},
+			'errorPages'			: {},
+			'accessLogEnable'		: false,
+			'GZipEnable'			: true,
+			'GZipPredicate'			: '',
+			'rewritesLogEnable'		: false,
+			'trayOptions'			: {},
+			'trayEnable'			: true,
+			'dockEnable'			: true,
+			'dateLastStarted'		: '',
+			'openBrowser'			: true,
+			'openBrowserURL'		: '',
+			'profile'				: '',
+			'customServerFolder'	: '',
+			'welcomeFiles'			: '',
+			'maxRequests'			: '',
+			'exitCode'				: 0,
+			'rules'					: [],
+			'rulesFile'				: '',
+			'blockCFAdmin'			: false,
 			'blockSensitivePaths'	: false,
 			'blockFlashRemoting'	: false,
-			'allowedExt'		: '',
-			'pidfile'			: '',
-			'predicateFile'		: '',
-			'trayOptionsFile'	: '',
-			'SSLForceRedirect'	: false,
-			'HSTSEnable'		: false,
-			'HSTSMaxAge'		: 0,
+			'allowedExt'			: '',
+			'pidfile'				: '',
+			'predicateFile'			: '',
+			'trayOptionsFile'		: '',
+			'SSLForceRedirect'		: false,
+			'HSTSEnable'			: false,
+			'HSTSMaxAge'			: 0,
 			'HSTSIncludeSubDomains'	: false,
-			'AJPSecret'			: ''
+			'AJPSecret'				: ''
 		};
 	}
 
