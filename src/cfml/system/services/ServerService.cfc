@@ -178,6 +178,8 @@ component accessors="true" singleton {
 					'clientCert' : {
 						'mode' : d.web.ssl.clientCert.mode ?:  '',
 						'CACertFiles' : d.web.ssl.clientCert.CACertFiles ?: '',
+						'CATrustStoreFile' : d.web.ssl.clientCert.CATrustStoreFile ?: '',
+						'CATrustStorePass' : d.web.ssl.clientCert.CATrustStorePass ?: ''
 					}
 				},
 				'AJP' : {
@@ -792,6 +794,15 @@ component accessors="true" singleton {
 			defaults.web.SSL.clientCert.CACertFiles = [];
 		}
 		serverInfo.clientCertCACertFiles = serverJSON.web.SSL.clientCert.CACertFiles ?: defaults.web.SSL.clientCert.CACertFiles;
+
+		if( !isNull( serverJSON.web.SSL.clientCert.CATrustStoreFile ) ) {
+			serverJSON.web.SSL.clientCert.CATrustStoreFile = fileSystemUtil.resolvePath( serverJSON.web.SSL.clientCert.CATrustStoreFile, defaultServerConfigFileDirectory );
+		}
+		if( len( defaults.web.SSL.clientCert.CATrustStoreFile ) ) {
+			defaults.web.SSL.clientCert.CATrustStoreFile = fileSystemUtil.resolvePath( defaults.web.SSL.clientCert.CATrustStoreFile, defaultwebroot );
+		}
+		serverInfo.clientCertCATrustStoreFile = serverJSON.web.SSL.clientCert.CATrustStoreFile ?: defaults.web.SSL.clientCert.CATrustStoreFile;
+		serverInfo.clientCertCATrustStorePass = serverJSON.web.SSL.clientCert.CATrustStorePass ?: defaults.web.SSL.clientCert.CATrustStorePass;
 
 		serverInfo.clientCertMode = serverJSON.web.SSL.clientCert.mode ?: defaults.web.SSL.clientCert.mode;
 
@@ -1668,9 +1679,14 @@ component accessors="true" singleton {
 			if( len( serverInfo.clientCertMode ) ){
 				args.append( '--client-cert-negotiation' ).append( serverInfo.clientCertMode );
 			}
+			if( len( serverInfo.clientCertCATrustStoreFile ) ) {
+				args.append( '--ssl-add-ca-truststore' ).append( serverInfo.clientCertCATrustStoreFile );
+				args.append( '--ssl-add-ca-truststore-pass' ).append( serverInfo.clientCertCATrustStorePass );	
+			}
 			if( serverInfo.clientCertCACertFiles.len() ){
 				args.append( '--ssl-add-ca-certs' ).append( serverInfo.clientCertCACertFiles.toList() );
 			}
+			
 		}
 
 		// Incorporate rewrites to command
