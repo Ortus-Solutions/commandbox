@@ -219,6 +219,7 @@ component accessors="true" singleton {
 					},
 					'clientCert' : {
 						'enable' : d.web.security.clientCert.enable ?: false,
+						'SSLRenegotiationEnable' : d.web.security.clientCert.SSLRenegotiationEnable ?:  false,
 						'trustUpstreamHeaders' : d.web.security.clientCert.trustUpstreamHeaders ?: false,
 						'subjectDNs' : d.web.security.clientCert.subjectDNs ?: '',
 						'issuerDNs' : d.web.security.clientCert.issuerDNs ?: ''
@@ -805,6 +806,8 @@ component accessors="true" singleton {
 		serverInfo.clientCertCATrustStorePass = serverJSON.web.SSL.clientCert.CATrustStorePass ?: defaults.web.SSL.clientCert.CATrustStorePass;
 
 		serverInfo.clientCertMode = serverJSON.web.SSL.clientCert.mode ?: defaults.web.SSL.clientCert.mode;
+		serverInfo.clientCertSSLRenegotiationEnable = serverJSON.web.security.clientCert.SSLRenegotiationEnable ?: defaults.web.security.clientCert.SSLRenegotiationEnable;
+		
 
 		serverInfo.SSLForceRedirect			= serverJSON.web.SSL.forceSSLRedirect							?: defaults.web.SSL.forceSSLRedirect;
 		serverInfo.HSTSEnable				= serverJSON.web.SSL.HSTS.enable								?: defaults.web.SSL.HSTS.enable;
@@ -1678,6 +1681,9 @@ component accessors="true" singleton {
 			}
 			if( len( serverInfo.clientCertMode ) ){
 				args.append( '--client-cert-negotiation' ).append( serverInfo.clientCertMode );
+			}
+			if( serverInfo.clientCertSSLRenegotiationEnable ) {
+				args.append( '--client-cert-renegotiation' ).append( serverInfo.clientCertSSLRenegotiationEnable );
 			}
 			if( len( serverInfo.clientCertCATrustStoreFile ) ) {
 				args.append( '--ssl-add-ca-truststore' ).append( serverInfo.clientCertCATrustStoreFile );
@@ -2873,8 +2879,16 @@ component accessors="true" singleton {
 			'SSLCertFile'			: "",
 			'SSLKeyFile'			: "",
 			'SSLKeyPass'			: "",
-			'clientCertCACertFiles'	: '',
+			'clientCertCACertFiles'	: [],
 			'clientCertMode'		: '',
+			'clientCertSSLRenegotiationEnable': false,
+			'clientCertEnable'		: false,
+			'clientCertTrustUpstreamHeaders': false,
+			'clientCertSubjectDNs'	: [],
+			'clientCertIssuerDNs'	: [],
+			'securityRealm'			: '',
+			'clientCertCATrustStoreFile': '',
+			'clientCertCATrustStorePass': '',
 			'rewritesEnable'		: false,
 			'rewritesConfig'		: "",
 			'rewritesStatusPath'	: "",
