@@ -58,6 +58,9 @@ component accessors="true" extends='commandbox.system.BaseCommand' {
 	* Loads an array of module directories. All modules will be registered first.  Then all will be activated.
 	*/
 	function loadModules( required array moduleDirectories ) {
+		if( !moduleDirectories.len() ) {
+			return;
+		}
 		var moduleService = wirebox.getInstance( 'moduleService' );
 		
 		// Do a pass to convert the array of paths into a struct where the key is the module name and the value is the invocation path
