@@ -20,7 +20,7 @@ component accessors=true singleton {
 	property name='dumpLog' type='boolean';
 	property name='startTime' type='numeric';
 	property name='animation' type='numeric';
-	
+
 
 	// DI
 	property name='shell' inject='shell';
@@ -47,7 +47,7 @@ component accessors=true singleton {
 			[ ' ◐ ',  ' ◓ ',  ' ◑ ',  ' ◒ ' ],
 			[ '>  ', ' > ', '  >' ]
 		];
-		
+
 		setStartTime( 0 );
 		setAnimation( 1 )
 		return this;
@@ -98,13 +98,15 @@ component accessors=true singleton {
 					// Break lines longer than the current terminal width into multiples
 					.reduce( function( result, i ) {
 						// Keep breaking off chunks until we're short enough to fit
-						while( i.len() > termWidth ) {
-							result.append( i.left( termWidth ) );
-							i = i.right( -termWidth );
+						// We need to ignore ANSI formatting when rdoing this or it will throw off the widths
+						while( aStr.stripAnsi( i ).length() > termWidth ) {
+							var attributedString = aStr.fromAnsi(i);
+							result.append( attributedString.subSequence( 0, termWidth-1 ).toString() );
+							i = attributedString.subSequence( termWidth-1, attributedString.length()-1 );
 						}
 						// Add any remaining.
-						if( i.len() ) {
-							result.append( i );
+						if( i.length() ) {
+							result.append( i.toString() );
 						}
 						return result;
 					}, [] )
@@ -260,11 +262,11 @@ component accessors=true singleton {
 	* @finalOutput True if getting final output at the completion of the job.
 	*/
 	array function getLines( job, includeAllLogs=false, finalOutput=false ) {
-		
+
 		if( !getActive() ) {
 			return [];
 		}
-		
+
 		if( isNull( arguments.job ) ) {
 			if( !getJobs().len() ) {
 				throw( 'No active job' );
@@ -285,12 +287,12 @@ component accessors=true singleton {
 		}
 
 		if( job.status == 'Running' || includeAllLogs || ( finalOutput && job.dumpLog ) ) {
-			
+
 			// If we're only showing one line of job logs, don't bother with the ------ dividers
 			if( job.logSize > 1 ) {
 				lines.append( aStr.fromAnsi( print.text( '   |' & repeatString( '-', min( job.name.len()+15, safeWidth-5 ) ), statusColor( job ) ) ) );
 			}
-			
+
 			var relevantLogLines = [];
 			var thisLogLines = job.logLines;
 			var thisLogSize = job.logSize;
@@ -353,7 +355,7 @@ component accessors=true singleton {
 			return print.text( '#runningAnimation()#| ' & job.name, statusColor( job ) );
 		}
 	}
-	
+
 	/**
 	* Returns a character to aninmate for running jobs
 	*
@@ -363,7 +365,7 @@ component accessors=true singleton {
 		// How long has this job been running in ms?
 		var runningTime = ( getTickCount() ) - getStartTime();
 		// Removing the amount of time it takes to completely cycle through the chars an even amount of time, how much is left in the current cycle?
-		runningTime = runningTime % ( thisRunningAnimationChars.len() * 500 );		
+		runningTime = runningTime % ( thisRunningAnimationChars.len() * 500 );
 		// Which char are we on at 500ms per char?
 		return thisRunningAnimationChars[ ( runningTime \ 500 ) + 1 ]
 	}
@@ -434,7 +436,7 @@ component accessors=true singleton {
 	/**
 	* Get number that represents the depth of the currently executing job.
 	*/
-	private numeric function getCurrentJobDepth() {
+	numeric function getCurrentJobDepth() {
 		var pointer = getJobs();
 		var depth = 0;
 		if( !pointer.len() ) {
