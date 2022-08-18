@@ -430,7 +430,15 @@
 								"CACertFiles": {
 									"title": "CA Cert Files",
 									"description": "",
-									"type": "string",
+									"type": [
+										"string",
+										"array"
+									],
+									"items": {
+										"title": "CA Cert File",
+										"description": "",
+										"type": "string"
+									},
 									"default": ""
 								},
 								"CATrustStoreFile": {
@@ -533,31 +541,6 @@
 								"type": "string"
 							},
 							"default": {}
-						}
-					}
-				},
-				"fileCache": {
-					"title": "File Cache",
-					"description": "Configure file cache",
-					"type": "object",
-					"properties": {
-						"enable": {
-							"title": "File Cache Enable",
-							"description": "",
-							"type": "boolean",
-							"default": true
-						},
-						"totalSizeMB": {
-							"title": "File Cache Total Size (MB)",
-							"description": "",
-							"type": "number",
-							"default": 50
-						},
-						"maxFileSizeKB": {
-							"title": "File Cache Max File Size (KB)",
-							"description": "",
-							"type": "number",
-							"default": 50
 						}
 					}
 				},
@@ -682,13 +665,29 @@
 								"subjectDNs": {
 									"title": "Client Cert Subject DNs",
 									"description": "",
-									"type": "string",
+									"type": [
+										"string",
+										"array"
+									],
+									"items": {
+										"title": "Client Cert Subject DN",
+										"description": "",
+										"type": "string"
+									},
 									"default": ""
 								},
 								"issuerDNs": {
 									"title": "Client Cert Issuer DNs",
 									"description": "",
-									"type": "string",
+									"type": [
+										"string",
+										"array"
+									],
+									"items": {
+										"title": "Client Cert Issuer DN",
+										"description": "",
+										"type": "string"
+									},
 									"default": ""
 								}
 							},
