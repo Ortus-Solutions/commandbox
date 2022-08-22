@@ -1,5 +1,5 @@
 /**
- * Resstart an embedded CFML server.  Run command from the web root of the server or use
+ * Restart an embedded CFML server.  Run command from the web root of the server or use
  * the 'directory' and/or 'name' arguments.
  * .
  * {code:bash}
