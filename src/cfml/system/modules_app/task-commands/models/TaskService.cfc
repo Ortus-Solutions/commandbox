@@ -231,23 +231,36 @@ component singleton accessors=true {
 
 		// Create this Task CFC
 		try {
+			var taskCaching = ConfigService.getSetting( 'taskCaching', false );
 			var mappingName = "task-" & relTaskFile;
 
-			if( !ConfigService.getSetting( 'taskCaching', false ) &&  wirebox.getBinder().mappingExists( mappingName ) ) {
-				// Clear it so metadata can be refreshed.
-				wirebox.getBinder().unMap( mappingName );
+			// If we're not caching tasks, single thread this whole block so we don't get mapping undefined errors
+			// if running the same task concurrently.
+			lock name='create-#mappingName#' type='#taskCaching ? 'readonly' : 'exclusive'#' timeout=20 {
+
+				if( !taskCaching &&  wirebox.getBinder().mappingExists( mappingName ) ) {
+					// Clear it so metadata can be refreshed.
+					wirebox.getBinder().unMap( mappingName );
+				}
+
+				// Check if task mapped?
+				if( !wirebox.getBinder().mappingExists( mappingName ) ){
+					// Double check lock to prevent two threads from both creating the mapping
+					// This lock will be effectivley moot if task caching is disabled since we'll already be in an
+					// exclusive lock, but will be neccessary if task caching is on
+					lock name='map-#mappingName#' type='exclusive' timeout=20 {
+						if( !wirebox.getBinder().mappingExists( mappingName ) ){
+							// feed this task to wirebox with virtual inheritance
+							wirebox.registerNewInstance( name=mappingName, instancePath=relTaskFile )
+								.setVirtualInheritance( "commandbox.system.BaseTask" );
+						}
+					}
+				}
+
+				// retrieve, build and wire from wirebox
+				return wireBox.getInstance( mappingName );
+
 			}
-
-			// Check if task mapped?
-			if( !wirebox.getBinder().mappingExists( mappingName ) ){
-				// feed this task to wirebox with virtual inheritance
-				wirebox.registerNewInstance( name=mappingName, instancePath=relTaskFile )
-					.setVirtualInheritance( "commandbox.system.BaseTask" );
-			}
-
-			// retrieve, build and wire from wirebox
-			return wireBox.getInstance( mappingName );
-
 		// This will catch nasty parse errors and tell us where they happened
 		} catch( any e ){
 			// Log the full exception with stack trace
