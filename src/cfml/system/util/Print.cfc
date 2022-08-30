@@ -94,7 +94,7 @@ component {
 		// Text needing formatting
 		var text = arrayLen(missingMethodArguments) ? missingMethodArguments[ 1 ] : '';
 		// Convert complex values to a string representation
-		if( ( !isSimpleValue( text ) || ( text.left(1) == '<' || trim( text ).left(1) == '<' ) ) && isXML( text ) ) {
+		if( ( !isSimpleValue( text ) || ( left(text,1) == '<' || trim( text ).left(1) == '<' ) ) && isXML( text ) ) {
 			text = formatterUtil.formatXML( text );
 		} else if( !isSimpleValue( text ) ) {
 
