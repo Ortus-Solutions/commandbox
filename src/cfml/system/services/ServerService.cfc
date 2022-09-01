@@ -2540,14 +2540,15 @@ component accessors="true" singleton {
 	 * @pidStr.hint PID to test on
  	 **/
 	  function isProcessAlive( required pidStr, throwOnError=false ) {
-		var result = "";
 		try{
+			var result = "";
 			if (fileSystemUtil.isWindows() ) {
 				cfexecute(name='cmd', arguments='/c tasklist /FI "PID eq #pidStr#"', variable="result"  timeout="10");
 			} else if (fileSystemUtil.isMac() || fileSystemUtil.isLinux() ) {
-				cfexecute(name='ps', arguments='-p #pidStr#', variable="result" , timeout="10");
+				cfexecute(name='ps', arguments='-A -o pid,comm', variable="result" , timeout="10");
 			}
-			if (findNoCase("java", result) > 0 && findNoCase(pidStr, result) > 0) return true;
+			var matchedProcesses = reMatchNoCase("(?m)^\s*#pidStr#\s.*java",result);
+			if (matchedProcesses.len()) return true;
 		} catch ( any e ){
 			if( throwOnError ) {
 				rethrow;
