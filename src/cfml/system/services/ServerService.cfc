@@ -2544,10 +2544,12 @@ component accessors="true" singleton {
 		try{
 			if (fileSystemUtil.isWindows() ) {
 				cfexecute(name='cmd', arguments='/c tasklist /FI "PID eq #pidStr#"', variable="result"  timeout="10");
+				if (findNoCase("java", result) > 0 && findNoCase(pidStr, result) > 0) return true;
 			} else if (fileSystemUtil.isMac() || fileSystemUtil.isLinux() ) {
-				cfexecute(name='ps', arguments='-p #pidStr#', variable="result" , timeout="10");
+				cfexecute(name='ps', arguments='-A -o pid,comm', variable="result" , timeout="10");
+				var matchedProcesses = reMatchNoCase("(?m)^\s*#pidStr#\s.*java",result);
+				if (matchedProcesses.len()) return true;
 			}
-			if (findNoCase("java", result) > 0 && findNoCase(pidStr, result) > 0) return true;
 		} catch ( any e ){
 			if( throwOnError ) {
 				rethrow;
