@@ -144,7 +144,12 @@ Description :
 				if( isJSON( fileContents ) ) {
 					return deserializeJSON( fileContents );	
 				} else {
-					fileDelete( thisFilePath );
+					try {
+						fileDelete( thisFilePath );
+					} catch( any e ) {
+						// If the file didn't exist, ignore it.  This can happen 
+						// when to CommandBox instances start at the same time.
+					}
 				}
 			}
 		</cfscript>

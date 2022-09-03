@@ -173,7 +173,13 @@ component accessors="true" singleton {
 					'HSTS' : {
 						'enable' : d.web.ssl.hsts.enable ?: false,
 						'maxAge' : d.web.ssl.hsts.maxAge ?:  31536000,
-						'includeSubDomains' : d.web.ssl.hsts.includeSubDomains ?:  false
+						'includeSubDomains' : d.web.ssl.hsts.includeSubDomains ?: false
+					},
+					'clientCert' : {
+						'mode' : d.web.ssl.clientCert.mode ?:  '',
+						'CACertFiles' : d.web.ssl.clientCert.CACertFiles ?: '',
+						'CATrustStoreFile' : d.web.ssl.clientCert.CATrustStoreFile ?: '',
+						'CATrustStorePass' : d.web.ssl.clientCert.CATrustStorePass ?: ''
 					}
 				},
 				'AJP' : {
@@ -203,7 +209,22 @@ component accessors="true" singleton {
 				'blockSensitivePaths' :  d.web.blockSensitivePaths ?: '',
 				'blockFlashRemoting' :  d.web.blockFlashRemoting ?: '',
 				'allowedExt' : d.web.allowedExt ?: '',
-				'useProxyForwardedIP' : d.web.useProxyForwardedIP ?: false
+				'useProxyForwardedIP' : d.web.useProxyForwardedIP ?: false,
+				'security' : {
+					'realm' : d.web.security.realm ?: '',
+					'authPredicate' : d.web.security.authPredicate ?: '',
+					'basicAuth' : {
+						'enable' : d.web.security.basicAuth.enable ?: nullvalue(),
+						'users' : d.web.security.basicAuth.users ?: nullvalue()
+					},
+					'clientCert' : {
+						'enable' : d.web.security.clientCert.enable ?: false,
+						'SSLRenegotiationEnable' : d.web.security.clientCert.SSLRenegotiationEnable ?:  false,
+						'trustUpstreamHeaders' : d.web.security.clientCert.trustUpstreamHeaders ?: false,
+						'subjectDNs' : d.web.security.clientCert.subjectDNs ?: '',
+						'issuerDNs' : d.web.security.clientCert.issuerDNs ?: ''
+					}
+				}
 			},
 			'app' : {
 				'logDir' : d.app.logDir ?: '',
@@ -319,7 +340,7 @@ component accessors="true" singleton {
 
 		systemSettings.expandDeepSystemSettings( serverJSON );
 		systemSettings.expandDeepSystemSettings( defaults );
-		
+
 		// Mix in environment variable overrides like BOX_SERVER_PROFILE
 		loadOverrides( serverJSON, serverInfo, serverProps.verbose ?: serverJSON.verbose ?: defaults.verbose ?: false );
 
@@ -757,6 +778,37 @@ component accessors="true" singleton {
 		if( len( defaults.web.SSL.keyFile ?: '' ) ) { defaults.web.SSL.keyFile = fileSystemUtil.resolvePath( defaults.web.SSL.keyFile, defaultwebroot ); }
 		serverInfo.SSLKeyFile 		= serverProps.SSLKeyFile 		?: serverJSON.web.SSL.keyFile			?: defaults.web.SSL.keyFile;
 
+		// relative certFile in server.json is resolved relative to the server.json
+		if( isDefined( 'serverJSON.web.SSL.clientCert.CACertFiles' ) ) {
+			if( isSimpleValue( serverJSON.web.SSL.clientCert.CACertFiles ) ) {
+				serverJSON.web.SSL.clientCert.CACertFiles = listToArray( serverJSON.web.SSL.clientCert.CACertFiles );
+			}
+			serverJSON.web.SSL.clientCert.CACertFiles = serverJSON.web.SSL.clientCert.CACertFiles.map( (f)=>fileSystemUtil.resolvePath( f, defaultServerConfigFileDirectory ) );
+		}
+		// relative certFile in config setting server defaults is resolved relative to the web root
+		if( len( defaults.web.SSL.clientCert.CACertFiles ) ) {
+			if( isSimpleValue( defaults.web.SSL.clientCert.CACertFiles ) ) {
+				defaults.web.SSL.clientCert.CACertFiles = listToArray( defaults.web.SSL.clientCert.CACertFiles );
+			}
+			defaults.web.SSL.clientCert.CACertFiles = defaults.web.SSL.clientCert.CACertFiles.map( (f)=>fileSystemUtil.resolvePath( f, defaultwebroot ) );
+		} else {
+			defaults.web.SSL.clientCert.CACertFiles = [];
+		}
+		serverInfo.clientCertCACertFiles = serverJSON.web.SSL.clientCert.CACertFiles ?: defaults.web.SSL.clientCert.CACertFiles;
+
+		if( !isNull( serverJSON.web.SSL.clientCert.CATrustStoreFile ) ) {
+			serverJSON.web.SSL.clientCert.CATrustStoreFile = fileSystemUtil.resolvePath( serverJSON.web.SSL.clientCert.CATrustStoreFile, defaultServerConfigFileDirectory );
+		}
+		if( len( defaults.web.SSL.clientCert.CATrustStoreFile ) ) {
+			defaults.web.SSL.clientCert.CATrustStoreFile = fileSystemUtil.resolvePath( defaults.web.SSL.clientCert.CATrustStoreFile, defaultwebroot );
+		}
+		serverInfo.clientCertCATrustStoreFile = serverJSON.web.SSL.clientCert.CATrustStoreFile ?: defaults.web.SSL.clientCert.CATrustStoreFile;
+		serverInfo.clientCertCATrustStorePass = serverJSON.web.SSL.clientCert.CATrustStorePass ?: defaults.web.SSL.clientCert.CATrustStorePass;
+
+		serverInfo.clientCertMode = serverJSON.web.SSL.clientCert.mode ?: defaults.web.SSL.clientCert.mode;
+		serverInfo.clientCertSSLRenegotiationEnable = serverJSON.web.security.clientCert.SSLRenegotiationEnable ?: defaults.web.security.clientCert.SSLRenegotiationEnable;
+		
+
 		serverInfo.SSLForceRedirect			= serverJSON.web.SSL.forceSSLRedirect							?: defaults.web.SSL.forceSSLRedirect;
 		serverInfo.HSTSEnable				= serverJSON.web.SSL.HSTS.enable								?: defaults.web.SSL.HSTS.enable;
 		serverInfo.HSTSMaxAge				= serverJSON.web.SSL.HSTS.maxAge								?: defaults.web.SSL.HSTS.maxAge;
@@ -766,8 +818,59 @@ component accessors="true" singleton {
 		serverInfo.rewritesEnable 	= serverProps.rewritesEnable	?: serverJSON.web.rewrites.enable		?: defaults.web.rewrites.enable;
 		serverInfo.rewritesStatusPath = 							   serverJSON.web.rewrites.statusPath	?: defaults.web.rewrites.statusPath;
 		serverInfo.rewritesConfigReloadSeconds =					   serverJSON.web.rewrites.configReloadSeconds ?: defaults.web.rewrites.configReloadSeconds;
-		serverInfo.basicAuthEnable 	= 								   serverJSON.web.basicAuth.enable		?: defaults.web.basicAuth.enable;
-		serverInfo.basicAuthUsers 	= 								   serverJSON.web.basicAuth.users		?: defaults.web.basicAuth.users;
+		
+		serverInfo.basicAuthEnable 	= 	serverJSON.web.security.basicAuth.enable	?: defaults.web.security.basicAuth.enable	?: serverJSON.web.basicAuth.enable	?: defaults.web.basicAuth.enable;
+		serverInfo.basicAuthUsers 	= 	serverJSON.web.security.basicAuth.users		?: defaults.web.security.basicAuth.users	?: serverJSON.web.basicAuth.users	?: defaults.web.basicAuth.users;
+		// If there are no users, basic auth is NOT enabled
+		if( !serverInfo.basicAuthUsers.count() ) {
+			serverInfo.basicAuthEnable = false;
+		}
+		
+		serverInfo.clientCertEnable	=				serverJSON.web.security.clientCert.enable 				?: defaults.web.security.clientCert.enable;
+		serverInfo.clientCertTrustUpstreamHeaders =	serverJSON.web.security.clientCert.trustUpstreamHeaders ?: defaults.web.security.clientCert.trustUpstreamHeaders;
+		
+		// Default missing values
+		serverJSON.web.security.clientCert.subjectDNs = serverJSON.web.security.clientCert.subjectDNs ?: '';
+		serverJSON.web.security.clientCert.issuerDNs = serverJSON.web.security.clientCert.issuerDNs ?: '';
+		
+		// Convert all strings to arrays
+		if( isSimpleValue( serverJSON.web.security.clientCert.subjectDNs ) ) {
+			if( len( serverJSON.web.security.clientCert.subjectDNs ) ) {
+				serverJSON.web.security.clientCert.subjectDNs = [ serverJSON.web.security.clientCert.subjectDNs ];	
+			} else {
+				serverJSON.web.security.clientCert.subjectDNs = [];
+			}
+		}
+		if( isSimpleValue( defaults.web.security.clientCert.subjectDNs ) ) {
+			if( len( defaults.web.security.clientCert.subjectDNs ) ) {
+				defaults.web.security.clientCert.subjectDNs = [ defaults.web.security.clientCert.subjectDNs ];	
+			} else {
+				defaults.web.security.clientCert.subjectDNs = [];
+			}
+		}
+		if( isSimpleValue( serverJSON.web.security.clientCert.issuerDNs ) ) {
+			if( len( serverJSON.web.security.clientCert.issuerDNs ) ) {
+				serverJSON.web.security.clientCert.issuerDNs = [ serverJSON.web.security.clientCert.issuerDNs ];	
+			} else {
+				serverJSON.web.security.clientCert.issuerDNs = [];
+			}
+		}
+		if( isSimpleValue( defaults.web.security.clientCert.issuerDNs ) ) {
+			if( len( defaults.web.security.clientCert.issuerDNs ) ) {
+				defaults.web.security.clientCert.issuerDNs = [ defaults.web.security.clientCert.issuerDNs ];	
+			} else {
+				defaults.web.security.clientCert.issuerDNs = [];
+			}
+		}
+		
+		// Combine server defaults AND any settings in server.json
+		serverInfo.clientCertSubjectDNs	= serverJSON.web.security.clientCert.subjectDNs.append( defaults.web.security.clientCert.subjectDNs, true );
+		serverInfo.clientCertIssuerDNs	= serverJSON.web.security.clientCert.issuerDNs.append( defaults.web.security.clientCert.issuerDNs, true );
+
+		serverInfo.authEnabled 	= 	serverInfo.basicAuthEnable || serverInfo.clientCertEnable;
+		serverInfo.securityRealm 	= 	serverJSON.web.security.realm			?: defaults.web.security.realm;
+		serverInfo.authPredicate	= 	serverJSON.web.security.authPredicate	?: defaults.web.security.authPredicate;
+
 		serverInfo.welcomeFiles 	= serverProps.welcomeFiles		?: serverJSON.web.welcomeFiles			?: defaults.web.welcomeFiles;
 		serverInfo.maxRequests		= 								   serverJSON.web.maxRequests			?: defaults.web.maxRequests;
 
@@ -1037,6 +1140,13 @@ component accessors="true" singleton {
 		}
 
 		serverInfo.cfengine			= serverProps.cfengine			?: serverJSON.app.cfengine			?: defaults.app.cfengine;
+		serverInfo.cfengineSource = 'defaults';
+		if( !isNull( serverJSON.app.cfengine ) ) {
+			serverInfo.cfengineSource = 'serverJSON';
+		}
+		if( !isNull( serverProps.cfengine ) ) {
+			serverInfo.cfengineSource = 'serverProps';
+		}
 
 		serverInfo.restMappings		= serverProps.restMappings		?: serverJSON.app.restMappings		?: defaults.app.restMappings;
 		// relative rewrite config path in server.json is resolved relative to the server.json
@@ -1559,14 +1669,30 @@ component accessors="true" singleton {
 		}
 
 		// Send SSL cert info if SSL is enabled and there's cert info
-		if( serverInfo.SSLEnable && serverInfo.SSLCertFile.len() ) {
-			args
-				.append( '--ssl-cert' ).append( serverInfo.SSLCertFile )
-				.append( '--ssl-key' ).append( serverInfo.SSLKeyFile );
-			// Not all certs require a password
-			if( serverInfo.SSLKeyPass.len() ) {
-				args.append( '--ssl-keypass' ).append( serverInfo.SSLKeyPass );
+		if( serverInfo.SSLEnable ) {
+			if( serverInfo.SSLCertFile.len() ) {
+				args
+					.append( '--ssl-cert' ).append( serverInfo.SSLCertFile )
+					.append( '--ssl-key' ).append( serverInfo.SSLKeyFile );
+				// Not all certs require a password
+				if( serverInfo.SSLKeyPass.len() ) {
+					args.append( '--ssl-keypass' ).append( serverInfo.SSLKeyPass );
+				}
 			}
+			if( len( serverInfo.clientCertMode ) ){
+				args.append( '--client-cert-negotiation' ).append( serverInfo.clientCertMode );
+			}
+			if( serverInfo.clientCertSSLRenegotiationEnable ) {
+				args.append( '--client-cert-renegotiation' ).append( serverInfo.clientCertSSLRenegotiationEnable );
+			}
+			if( len( serverInfo.clientCertCATrustStoreFile ) ) {
+				args.append( '--ssl-add-ca-truststore' ).append( serverInfo.clientCertCATrustStoreFile );
+				args.append( '--ssl-add-ca-truststore-pass' ).append( serverInfo.clientCertCATrustStorePass );	
+			}
+			if( serverInfo.clientCertCACertFiles.len() ){
+				args.append( '--ssl-add-ca-certs' ).append( serverInfo.clientCertCACertFiles.toList() );
+			}
+			
 		}
 
 		// Incorporate rewrites to command
@@ -1579,18 +1705,40 @@ component accessors="true" singleton {
 			args.append( '--urlrewrite-check' ).append( serverInfo.rewritesConfigReloadSeconds );
 		}
 
-		// Basic auth
-		if( serverInfo.basicAuthEnable && serverInfo.basicAuthUsers.count() ) {
-			// Escape commas and equals with backslash
-			var sanitizeBA = function( i ) { return i.replace( ',', '\,', 'all' ).replace( '=', '\=', 'all' ); };
-			var thisBasicAuthUsers = '';
-			serverInfo.basicAuthUsers.each( function( i ) {
-				thisBasicAuthUsers = thisBasicAuthUsers.listAppend( '#sanitizeBA( i )#=#sanitizeBA( serverInfo.basicAuthUsers[ i ] )#' );
-			} );
-			// user=pass,user2=pass2
-			args.append( '--basicauth-users' ).append( thisBasicAuthUsers );
-		}
+		if( serverInfo.authEnabled ) {
 
+			if( len( serverInfo.authPredicate ) ) {
+				args.append( '--auth-predicate' ).append( serverInfo.authPredicate );
+			}
+			if( !len( serverInfo.securityRealm ) ) {
+				serverInfo.securityRealm = serverInfo.name;
+			}
+			args.append( '--security-realm' ).append( serverInfo.securityRealm );			
+					
+			// Basic auth
+			if( serverInfo.basicAuthEnable ) {
+				// Escape commas and equals with backslash
+				var sanitizeBA = function( i ) { return i.replace( ',', '\,', 'all' ).replace( '=', '\=', 'all' ); };
+				var thisBasicAuthUsers = '';
+				serverInfo.basicAuthUsers.each( function( i ) {
+					thisBasicAuthUsers = thisBasicAuthUsers.listAppend( '#sanitizeBA( i )#=#sanitizeBA( serverInfo.basicAuthUsers[ i ] )#' );
+				} );
+				// user=pass,user2=pass2
+				args.append( '--basicauth-users' ).append( thisBasicAuthUsers );
+	
+			}
+			
+			// Client cert
+			if( serverInfo.clientCertEnable ) {
+				args
+					.append( '--client-cert-enable' ).append( serverInfo.clientCertEnable )
+					.append( '--client-cert-subjectdns' ).append( serializeJSON( serverInfo.clientCertSubjectDNs ) )
+					.append( '--client-cert-issuerdns' ).append( serializeJSON( serverInfo.clientCertIssuerDNs ) );
+			}
+		}
+		
+		args.append( '--client-cert-trust-headers' ).append( serverInfo.clientCertTrustUpstreamHeaders )
+		
 		if( serverInfo.rewritesEnable ){
 			if( !fileExists(serverInfo.rewritesConfig) ){
 				job.error( 'URL rewrite config not found [#serverInfo.rewritesConfig#]' );
@@ -1670,6 +1818,11 @@ component accessors="true" singleton {
 			job.complete( serverInfo.verbose );
 			return;
 		}
+		
+		
+	    if( fileSystemUtil.isWindows() ) {
+	    	args = args.map( (a)=>replace( a, '"', '\"', 'all' ) );
+	    }
 
 	    processBuilder.init( args );
 
@@ -1847,9 +2000,9 @@ component accessors="true" singleton {
 					} else {
 						logger.error( '#e.message# #e.detail#' , e.stackTrace );
 						consoleLogger.error( '#e.message##chr(10)##e.detail#' );
-					}				
+					}
 				}
-				
+
 				// Now it's time to shut-er down
 				variables.waitingOnConsoleStart = false;
 				shell.setPrompt();
@@ -2088,6 +2241,9 @@ component accessors="true" singleton {
 		// Get the web root out of the server.json, if specified and make it relative to the actual server.json file.
 		} else if( len( serverJSON.web.webroot ?: '' ) ) {
 			var defaultwebroot = fileSystemUtil.resolvePath( serverJSON.web.webroot, getDirectoryFromPath( defaultServerConfigFile ) );
+			// If we found a server.json by conventin and pull the web root from there, let's lock this in so we use it.
+			// Otherwise, a server.json pointing to another webroot will cause us to try and put the server.json in the external web root
+			serverProps.serverConfigFile = defaultServerConfigFile;
 		    if( locVerbose ) { consoleLogger.debug("webroot pulled from server's JSON: #defaultwebroot#"); }
 		// Otherwise default to the directory the server's JSON file lives in (which defaults to the CWD)
 		} else {
@@ -2385,14 +2541,15 @@ component accessors="true" singleton {
  	 **/
 	  function isProcessAlive( required pidStr, throwOnError=false ) {
 		var result = "";
-		var timeStart = millisecond(now());
 		try{
 			if (fileSystemUtil.isWindows() ) {
 				cfexecute(name='cmd', arguments='/c tasklist /FI "PID eq #pidStr#"', variable="result"  timeout="10");
+				if (findNoCase("java", result) > 0 && findNoCase(pidStr, result) > 0) return true;
 			} else if (fileSystemUtil.isMac() || fileSystemUtil.isLinux() ) {
-				cfexecute(name='ps', arguments='-p #pidStr#', variable="result" , timeout="10");
+				cfexecute(name='ps', arguments='-A -o pid,comm', variable="result" , timeout="10");
+				var matchedProcesses = reMatchNoCase("(?m)^\s*#pidStr#\s.*java",result);
+				if (matchedProcesses.len()) return true;
 			}
-			if (findNoCase("java", result) > 0 && findNoCase(pidStr, result) > 0) return true;
 		} catch ( any e ){
 			if( throwOnError ) {
 				rethrow;
@@ -2405,12 +2562,26 @@ component accessors="true" singleton {
 	/**
 	 * Logic to tell if a server is running
 	 * @serverInfo.hint Struct of server information
+	 * @quick When set to true, only the PID file is checked for on disk. When set to false, the OS is actually asked if the process is still running.
  	 **/
-	function isServerRunning( required struct serverInfo ){
+	function isServerRunning( required struct serverInfo, boolean quick=false ){
 		if(fileExists(serverInfo.pidFile)){
 			var serverPID = fileRead(serverInfo.pidFile);
-			thread action="run" name="check_#serverPID##getTickCount()#" serverPID=serverPID pidFile=serverInfo.pidFile {
-				if(!isProcessAlive(attributes.serverPID,true)) fileDelete(attributes.pidFile)
+			if( arguments.quick ) {
+				thread action="run" name="check_#serverPID##getTickCount()#" serverPID=serverPID pidFile=serverInfo.pidFile {
+					if(!isProcessAlive(attributes.serverPID,true)) {
+						fileDelete(attributes.pidFile);
+					}
+				}
+			} else {
+				if(!isProcessAlive(serverPID,true)) {
+					try {
+						fileDelete(serverInfo.pidFile);
+					} catch( any e ) {
+						// If the file didn't exist, ignore it.
+					}
+					return false;
+				}
 			}
 			return true;
 		}
@@ -2684,88 +2855,100 @@ component accessors="true" singleton {
 				'arguments' : "",
 				'command' 	: ""
 			},
-			'name'				: "",
-			'logDir' 			: "",
-			'consolelogPath'	: "",
-			'accessLogPath'		: "",
-			'rewritesLogPath'	: "",
-			'trayicon' 			: "",
-			'libDirs' 			: "",
-			'webConfigDir' 		: "",
-			'serverConfigDir' 	: "",
-			'serverHomeDirectory' : "",
-			'singleServerHome'	: false,
-			'serverHome'		 : "",
-			'webroot'			: "",
-			'webXML' 			: "",
-			'webXMLOverride' 	: "",
-			'webXMLOverrideActual' : "",
-			'webXMLOverrideForce' : false,
-			'HTTPEnable'		: true,
-			'HTTP2Enable'		: true,
-			'SSLEnable'			: false,
-			'SSLPort'			: 1443,
-			'AJPEnable'			: false,
-			'AJPPort'			: 8009,
-			'SSLCertFile'		: "",
-			'SSLKeyFile'		: "",
-			'SSLKeyPass'		: "",
-			'rewritesEnable'	: false,
-			'rewritesConfig'	: "",
-			'rewritesStatusPath': "",
-			'rewritesConfigReloadSeconds'	: "",
-			'basicAuthEnable'	: true,
-			'basicAuthUsers'	: {},
-			'heapSize'			: '',
-			'minHeapSize'		: '',
-			'javaHome'			: '',
-			'javaVersion'		: '',
-			'directoryBrowsing' : false,
-			'JVMargs'			: "",
-			'JVMargsArray'		: [],
-			'runwarArgs'		: "",
-			'runwarArgsArray'	: [],
-			'runwarXNIOOptions'	: {},
+			'name'					: "",
+			'logDir' 				: "",
+			'consolelogPath'		: "",
+			'accessLogPath'			: "",
+			'rewritesLogPath'		: "",
+			'trayicon' 				: "",
+			'libDirs' 				: "",
+			'webConfigDir' 			: "",
+			'serverConfigDir' 		: "",
+			'serverHomeDirectory'	: "",
+			'singleServerHome'		: false,
+			'serverHome'			: "",
+			'webroot'				: "",
+			'webXML' 				: "",
+			'webXMLOverride' 		: "",
+			'webXMLOverrideActual'	: "",
+			'webXMLOverrideForce'	: false,
+			'HTTPEnable'			: true,
+			'HTTP2Enable'			: true,
+			'SSLEnable'				: false,
+			'SSLPort'				: 1443,
+			'AJPEnable'				: false,
+			'AJPPort'				: 8009,
+			'SSLCertFile'			: "",
+			'SSLKeyFile'			: "",
+			'SSLKeyPass'			: "",
+			'clientCertCACertFiles'	: [],
+			'clientCertMode'		: '',
+			'clientCertSSLRenegotiationEnable': false,
+			'clientCertEnable'		: false,
+			'clientCertTrustUpstreamHeaders': false,
+			'clientCertSubjectDNs'	: [],
+			'clientCertIssuerDNs'	: [],
+			'securityRealm'			: '',
+			'clientCertCATrustStoreFile': '',
+			'clientCertCATrustStorePass': '',
+			'rewritesEnable'		: false,
+			'rewritesConfig'		: "",
+			'rewritesStatusPath'	: "",
+			'rewritesConfigReloadSeconds': "",
+			'basicAuthEnable'		: true,
+			'authPredicate'	: '',
+			'basicAuthUsers'		: {},
+			'heapSize'				: '',
+			'minHeapSize'			: '',
+			'javaHome'				: '',
+			'javaVersion'			: '',
+			'directoryBrowsing'		: false,
+			'JVMargs'				: "",
+			'JVMargsArray'			: [],
+			'runwarArgs'			: "",
+			'runwarArgsArray'		: [],
+			'runwarXNIOOptions'		: {},
 			'runwarUndertowOptions'	: {},
-			'cfengine'			: "",
-			'restMappings'		: "",
+			'cfengine'				: "",
+			'cfengineSource'		: 'defaults',
+			'restMappings'			: "",
 			'sessionCookieSecure'	: false,
 			'sessionCookieHTTPOnly'	: false,
-			'engineName'		: "",
-			'engineVersion'		: "",
-			'WARPath'			: "",
-			'serverConfigFile'	: "",
-			'aliases'			: {},
-			'errorPages'		: {},
-			'accessLogEnable'	: false,
-			'GZipEnable'		: true,
-			'GZipPredicate'		: '',
-			'rewritesLogEnable'	: false,
-			'trayOptions'		: {},
-			'trayEnable'		: true,
-			'dockEnable'		: true,
-			'dateLastStarted'	: '',
-			'openBrowser'		: true,
-			'openBrowserURL'	: '',
-			'profile'			: '',
-			'customServerFolder': '',
-			'welcomeFiles'		: '',
-			'maxRequests'		: '',
-			'exitCode'			: 0,
-			'rules'				: [],
-			'rulesFile'			: '',
-			'blockCFAdmin'		: false,
+			'engineName'			: "",
+			'engineVersion'			: "",
+			'WARPath'				: "",
+			'serverConfigFile'		: "",
+			'aliases'				: {},
+			'errorPages'			: {},
+			'accessLogEnable'		: false,
+			'GZipEnable'			: true,
+			'GZipPredicate'			: '',
+			'rewritesLogEnable'		: false,
+			'trayOptions'			: {},
+			'trayEnable'			: true,
+			'dockEnable'			: true,
+			'dateLastStarted'		: '',
+			'openBrowser'			: true,
+			'openBrowserURL'		: '',
+			'profile'				: '',
+			'customServerFolder'	: '',
+			'welcomeFiles'			: '',
+			'maxRequests'			: '',
+			'exitCode'				: 0,
+			'rules'					: [],
+			'rulesFile'				: '',
+			'blockCFAdmin'			: false,
 			'blockSensitivePaths'	: false,
 			'blockFlashRemoting'	: false,
-			'allowedExt'		: '',
-			'pidfile'			: '',
-			'predicateFile'		: '',
-			'trayOptionsFile'	: '',
-			'SSLForceRedirect'	: false,
-			'HSTSEnable'		: false,
-			'HSTSMaxAge'		: 0,
+			'allowedExt'			: '',
+			'pidfile'				: '',
+			'predicateFile'			: '',
+			'trayOptionsFile'		: '',
+			'SSLForceRedirect'		: false,
+			'HSTSEnable'			: false,
+			'HSTSMaxAge'			: 0,
 			'HSTSIncludeSubDomains'	: false,
-			'AJPSecret'			: ''
+			'AJPSecret'				: ''
 		};
 	}
 

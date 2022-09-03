@@ -36,11 +36,18 @@ component singleton {
 		var data = isArray(rawData) ? rawData : [rawData];
 		return data.map((x) => {
 			
+			if( isNull( x ) ) {
+				return [nullValue()];
+			}
+			
 			if(isArray(x)) return x.map((y) => {
 				return isSimpleValue(y) ? y : cellHasFormattingEmbedded(y) ? y : serializeJSON(y)}
 			);
 			
 			if(isStruct(x)) return x.map((k,v) => {
+				if( isNull( v ) ) {
+					return;
+				}
 				return isSimpleValue(v) ? v : cellHasFormattingEmbedded(v) ? v : serializeJSON(v)
 			});
 			
@@ -55,13 +62,18 @@ component singleton {
 	 * Use key names for structs
      * @data Any type of data for the table.
      */
-	public array function generateColumnNames (required any data, string columns="" ){
+	public array function generateColumnNames(required any data, string columns="" ){
 		var columnsArray = [];
 		if(isSimpleValue(data)){
 			columnsArray = ['col_1'];
 		} else if ( isArray(data) ){
-			columnsArray = data.map((x,i) => {return 'col_' & i},true);
-			arguments.columns.each(function(element,index,list) {
+			var i=0;
+			for( var x in data ) {
+				i++;
+				columnsArray.append( 'col_' & i );
+			}
+			
+			arguments.columns.listEach(function(element,index,list) {
 				columnsArray[index] = element;
 			})
 		} else if ( isStruct(data) ){

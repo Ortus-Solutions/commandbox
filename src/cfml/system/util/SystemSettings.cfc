@@ -213,7 +213,11 @@ component singleton {
 			// Loop over and process each key
 			for( var key in dataStructure ) {
 				var expandedKey = expandSystemSettings( key, context );
-				dataStructure[ expandedKey ] = expandDeepSystemSettings( dataStructure[ key ], context );
+				if( isNull( dataStructure[ key ] ) ) {
+					dataStructure[ expandedKey ] = nullValue();
+				} else {
+					dataStructure[ expandedKey ] = expandDeepSystemSettings( dataStructure[ key ], context );	
+				}
 				if( expandedKey != key ) dataStructure.delete( key );
 			}
 			return dataStructure;
@@ -223,7 +227,9 @@ component singleton {
 			// Loop over and process each index
 			for( var item in dataStructure ) {
 				i++;
-				dataStructure[ i ] = expandDeepSystemSettings( item, context );
+				if( !isNull( item ) ) {
+					dataStructure[ i ] = expandDeepSystemSettings( item, context );	
+				}
 			}
 			return dataStructure;
 		// If it's a string...

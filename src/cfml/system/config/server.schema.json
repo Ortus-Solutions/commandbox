@@ -7,46 +7,59 @@
 			"type": "object",
 			"properties": {
 				"label": {
-					"title": "Label",
+					"title": "Tray Item Label",
 					"description": "Text of menu item",
 					"type": "string"
 				},
 				"action": {
-					"title": "Action",
-					"description": "Action to perform when user clicks this menu item. 'openfilesystem', 'openbrowser', or 'stopserver'",
+					"title": "Tray Item Action",
+					"description": "Action to perform when user clicks this menu item",
+					"type": "string",
+					"enum": [
+						"openfilesystem",
+						"openbrowser",
+						"stopserver",
+						"run",
+						"runAsync",
+						"runTerminal"
+					]
+				},
+				"command": {
+					"title": "Tray Item Command",
+					"description": "A command that is run relative to webroot",
 					"type": "string"
 				},
 				"url": {
-					"title": "URL",
-					"description": "Url to open for 'openbrowser' action",
+					"title": "Tray Item URL",
+					"description": "URL to open for 'openbrowser' action",
 					"type": "string"
 				},
 				"disabled": {
-					"title": "Disabled",
+					"title": "Tray Item Disabled",
 					"description": "Turn menu item grey and nothing happens when clicking on it",
 					"type": "boolean",
 					"default": false
 				},
 				"image": {
-					"title": "Image",
+					"title": "Tray Item Image",
 					"description": "Path to PNG image to display on menu item next to the label",
 					"type": "string",
 					"default": ""
 				},
 				"hotkey": {
-					"title": "Hotkey",
+					"title": "Tray Item Hotkey",
 					"description": "Keyboard shortcut to choose this menu item",
 					"type": "string",
 					"default": ""
 				},
 				"path": {
-					"title": "Path",
+					"title": "Tray Item Path",
 					"description": "Filesystem path to open for 'openfilesystem' action",
 					"type": "string",
 					"default": ""
 				},
 				"items": {
-					"title": "Items",
+					"title": "Tray Item Submenu Items",
 					"description": "Nested menu items",
 					"type": "array",
 					"minItems": 0,
@@ -63,7 +76,7 @@
 	"type": "object",
 	"properties": {
 		"name": {
-			"title": "Name",
+			"title": "Server Name",
 			"description": "The name of the server",
 			"type": "string",
 			"default": ""
@@ -81,13 +94,13 @@
 			"default": ""
 		},
 		"startTimeout": {
-			"title": "Server start timeout",
+			"title": "Server Start Timeout",
 			"description": "The length of time in seconds to wait for the server to start",
 			"type": "number",
 			"default": 240
 		},
 		"stopsocket": {
-			"title": "Stop Socket",
+			"title": "Server Stop Socket",
 			"description": "The port the server listens on to receive a stop command",
 			"type": "number",
 			"default": 0
@@ -110,6 +123,22 @@
 			"type": "boolean",
 			"default": false
 		},
+		"profile": {
+			"title": "Server Profile",
+			"description": "Profile to assign to a server when you start it to configure the default settings",
+			"type": "string",
+			"enum": [
+				"development",
+				"production",
+				"none"
+			]
+		},
+		"dockEnable": {
+			"title": "Dock Enable",
+			"description": "",
+			"type": "boolean",
+			"default": true
+		},
 		"trayEnable": {
 			"title": "Tray Enable",
 			"description": "Control whether the server has an associated icon in the system tray",
@@ -131,6 +160,16 @@
 				"$ref": "#/definitions/trayOptionsItem"
 			},
 			"default": []
+		},
+		"env": {
+			"title": "Environment Variables",
+			"description": "Ad-hoc environment variables",
+			"type": "object",
+			"additionalProperties": {
+				"title": "Environment Variable",
+				"description": "Ad-hoc environment variable"
+			},
+			"default": {}
 		},
 		"jvm": {
 			"title": "JVM",
@@ -158,7 +197,16 @@
 				"args": {
 					"title": "JVM Arguments",
 					"description": "Ad-hoc JVM args for the server such as -X:name",
-					"type": "string",
+					"type": [
+						"string",
+						"array"
+					],
+					"items": {
+						"title": "JVM Argument",
+						"description": "Ad-hoc JVM arg for the server such as -X:name",
+						"type": "string",
+						"default": ""
+					},
 					"default": ""
 				},
 				"javaHome": {
@@ -172,6 +220,12 @@
 					"description": "A Java installation ID. In its entirety, it has the form <version>_<type>_<arch>_<os>_<jvm-implementation>_<release>",
 					"type": "string",
 					"default": ""
+				},
+				"properties": {
+					"title": "JVM Properties",
+					"description": "Ad-hoc Java system properties",
+					"type": "object",
+					"default": {}
 				}
 			}
 		},
@@ -195,20 +249,25 @@
 				"directoryBrowsing": {
 					"title": "Directory Browsing",
 					"description": "Enables file listing for directories with no welcome file",
-					"type": "boolean",
-					"default": false
+					"type": "boolean"
 				},
 				"accessLogEnable": {
 					"title": "Access Log Enable",
 					"description": "Enable web server access log",
 					"type": "boolean",
-					"default": true
+					"default": false
 				},
-				"GZIPEnable": {
-					"title": "GZIP Enable",
-					"description": "Enable GZip compression in HTTP responses",
+				"gzipEnable": {
+					"title": "Gzip Enable",
+					"description": "Enable gzip compression in HTTP responses",
 					"type": "boolean",
 					"default": true
+				},
+				"gzipPredicate": {
+					"title": "Gzip Predicate",
+					"description": "A custom Undertow Predicate that, when true, will trigger gzip for the request",
+					"type": "string",
+					"default": ""
 				},
 				"welcomeFiles": {
 					"title": "Welcome Files",
@@ -216,8 +275,14 @@
 					"type": "string",
 					"default": ""
 				},
+				"maxRequests": {
+					"title": "Web Max Requests",
+					"description": "",
+					"type": "string",
+					"default": ""
+				},
 				"aliases": {
-					"title": "Aliases",
+					"title": "Web Aliases",
 					"description": "Web aliases for the web server, similar to virtual directories",
 					"type": "object",
 					"patternProperties": {
@@ -236,7 +301,7 @@
 					"type": "object",
 					"properties": {
 						"default": {
-							"title": "Default",
+							"title": "Error Page Default",
 							"description": "Path to default error page",
 							"type": "string",
 							"default": ""
@@ -258,16 +323,29 @@
 					"type": "object",
 					"properties": {
 						"enable": {
-							"title": "Enable",
+							"title": "HTTP Enable",
 							"description": "Enable HTTP for this serer",
 							"type": "boolean",
 							"default": true
 						},
 						"port": {
-							"title": "Port",
+							"title": "HTTP Port",
 							"description": "HTTP port to use",
 							"type": "number",
 							"default": 0
+						}
+					}
+				},
+				"HTTP2": {
+					"title": "HTTP2 Settings",
+					"description": "Configure HTTP2",
+					"type": "object",
+					"properties": {
+						"enable": {
+							"title": "HTTP2 Enable",
+							"description": "Enable HTTP2 for this serer",
+							"type": "boolean",
+							"default": true
 						}
 					}
 				},
@@ -277,36 +355,108 @@
 					"type": "object",
 					"properties": {
 						"enable": {
-							"title": "Enable",
+							"title": "SSL Enable",
 							"description": "Enable HTTPS for this server",
 							"type": "boolean",
 							"default": false
 						},
 						"port": {
-							"title": "Port",
+							"title": "SSL Port",
 							"description": "HTTPS port to use",
 							"type": "number",
 							"default": 1443
 						},
 						"certFile": {
-							"title": "Cert File",
+							"title": "SSL Cert File",
 							"description": "Path to SSL cert file",
 							"type": "string",
 							"default": ""
 						},
 						"keyFile": {
-							"title": "Key File",
+							"title": "SSL Key File",
 							"description": "Path to SSL key file",
 							"type": "string",
 							"default": ""
 						},
 						"keyPass": {
-							"title": "Key Pass",
+							"title": "SSL Key Pass",
 							"description": "Password for SSL key file",
 							"type": "string",
 							"default": ""
+						},
+						"forceSSLRedirect": {
+							"title": "Force SSL Redirect",
+							"description": "Whether to redirect all HTTP traffic over to HTTPS using a 301 status code",
+							"type": "boolean",
+							"default": false
+						},
+						"HSTS": {
+							"title": "HSTS",
+							"description": "HTTP Strict Transport Security configuration",
+							"type": "object",
+							"properties": {
+								"enable": {
+									"title": "HSTS Enable",
+									"description": "Whether to add a Strict-Transport-Security HTTP header",
+									"type": "boolean",
+									"default": false
+								},
+								"maxAge": {
+									"title": "HSTS Max Age",
+									"description": "How many seconds to remember to use HTTPS",
+									"type": "number",
+									"default": 31536000
+								},
+								"includeSubDomains": {
+									"title": "HSTS Include Subdomains",
+									"description": "Whether the HSTS header applies to all subdomains",
+									"type": "boolean",
+									"default": false
+								}
+							},
+							"required": [ "enable" ]
+						},
+						"clientCert": {
+							"title": "SSL Client Cert",
+							"description": "",
+							"type": "object",
+							"properties": {
+								"mode": {
+									"title": "Client Cert Mode",
+									"description": "",
+									"type": "string",
+									"default": ""
+								},
+								"CACertFiles": {
+									"title": "CA Cert Files",
+									"description": "",
+									"type": [
+										"string",
+										"array"
+									],
+									"items": {
+										"title": "CA Cert File",
+										"description": "",
+										"type": "string"
+									},
+									"default": ""
+								},
+								"CATrustStoreFile": {
+									"title": "CA Trust Store File",
+									"description": "",
+									"type": "string",
+									"default": ""
+								},
+								"CATrustStorePass": {
+									"title": "CA Trust Store Pass",
+									"description": "",
+									"type": "string",
+									"default": ""
+								}
+							}
 						}
-					}
+					},
+					"required": [ "enable" ]
 				},
 				"AJP": {
 					"title": "AJP",
@@ -314,18 +464,25 @@
 					"type": "object",
 					"properties": {
 						"enable": {
-							"title": "Enable",
+							"title": "AJP Enable",
 							"description": "Enable AJP for this server",
 							"type": "boolean",
 							"default": false
 						},
 						"port": {
-							"title": "Port",
+							"title": "AJP Port",
 							"description": "AJP port to use",
 							"type": "number",
 							"default": 8009
+						},
+						"secret": {
+							"title": "AJP Secret",
+							"description": "An AJP secret to ensure all requests coming into the AJP listener are from a trusted source",
+							"type": "string",
+							"default": ""
 						}
-					}
+					},
+					"required": [ "enable" ]
 				},
 				"rewrites": {
 					"title": "Rewrites",
@@ -333,22 +490,21 @@
 					"type": "object",
 					"properties": {
 						"enable": {
-							"title": "Enable",
+							"title": "Rewrites Enable",
 							"description": "Enable URL Rewrites on this server",
 							"type": "boolean",
 							"default": false
 						},
 						"logEnable": {
-							"title": "Log Enable",
+							"title": "Rewrites Log Enable",
 							"description": "Enable Rewrite log file",
 							"type": "boolean",
 							"default": false
 						},
 						"config": {
-							"title": "Config",
-							"description": "Path to xml config file or .htaccess",
-							"type": "string",
-							"default": ""
+							"title": "Rewrites Config",
+							"description": "Path to XML config file or .htaccess",
+							"type": "string"
 						},
 						"statusPath": {
 							"title": "Tuckey Status Path",
@@ -361,21 +517,22 @@
 							"description": "Number of seconds to check rewrite config file for changes",
 							"type": "number"
 						}
-					}
+					},
+					"required": [ "enable" ]
 				},
 				"basicAuth": {
-					"title": "Configure basic authentication",
-					"description": "",
+					"title": "Basic Authentication",
+					"description": "Configure basic authentication",
 					"type": "object",
 					"properties": {
 						"enable": {
-							"title": "Enable",
+							"title": "Basic Auth Enable",
 							"description": "Enable basic auth for this server",
 							"type": "boolean",
 							"default": true
 						},
 						"users": {
-							"title": "Users",
+							"title": "Basic Auth Users",
 							"description": "Users who can authenticate to basic auth",
 							"type": "object",
 							"additionalProperties": {
@@ -384,6 +541,157 @@
 								"type": "string"
 							},
 							"default": {}
+						}
+					}
+				},
+				"blockCFAdmin": {
+					"title": "Block CF Admin",
+					"description": "",
+					"type": [
+						"boolean",
+						"string"
+					],
+					"default": ""
+				},
+				"blockSensitivePaths":  {
+					"title": "Block Sensitive Paths",
+					"description": "",
+					"type": "boolean"
+				},
+				"blockFlashRemoting":  {
+					"title": "Block Flash Remoting",
+					"description": "",
+					"type": "boolean"
+				},
+				"rules": {
+					"title": "Web Rules",
+					"description": "Ad-hoc rules using Undertow predicates and handlers",
+					"type": "array",
+					"items": {
+						"title": "Web Rule",
+						"description": "Ad-hoc rule using Undertow predicates and handlers",
+						"type": "string"
+					},
+					"default": []
+				},
+				"rulesFile": {
+					"title": "Web Rules File",
+					"description": "A path or paths to files containing Undertow predicates and handlers",
+					"type": [
+						"string",
+						"array"
+					],
+					"items": {
+						"title": "Web Rules File",
+						"description": "A path to file containing Undertow predicates and handlers",
+						"type": "string"
+					},
+					"default": []
+				},
+				"allowedExt":  {
+					"title": "Web Allowed Ext",
+					"description": "A comma-delimited list of additional file extensions allowed by web server",
+					"type": "string",
+					"default": ""
+				},
+				"useProxyForwardedIP":  {
+					"title": "Use Proxy Forwarded IP",
+					"description": "Whether the remote IP in your CF engine's cgi scope represents the upstream IP",
+					"type": "boolean",
+					"default": false
+				},
+				"security": {
+					"title": "Web Security",
+					"description": "Configure web security",
+					"type": "object",
+					"properties": {
+						"realm":  {
+							"title": "Realm",
+							"description": "",
+							"type": "string",
+							"default": ""
+						},
+						"authPredicate":  {
+							"title": "Auth Predicate",
+							"description": "",
+							"type": "string",
+							"default": ""
+						},
+						"basicAuth": {
+							"title": "Basic Authentication",
+							"description": "Configure basic authentication",
+							"type": "object",
+							"properties": {
+								"enable": {
+									"title": "Basic Auth Enable",
+									"description": "Enable basic auth for this server",
+									"type": "boolean"
+								},
+								"users": {
+									"title": "Basic Auth Users",
+									"description": "Users who can authenticate to basic auth",
+									"type": "object",
+									"additionalProperties": {
+										"title": "User",
+										"description": "The key is the user name and the value is the password.",
+										"type": "string"
+									}
+								}
+							}
+						},
+						"clientCert": {
+							"title": "Web Security Client Cert",
+							"description": "",
+							"type": "object",
+							"properties": {
+								"enable": {
+									"title": "Client Cert Enable",
+									"description": "",
+									"type": "boolean",
+									"default": false
+								},
+								"SSLRenegotiationEnable": {
+									"title": "Client Cert SSL Renegotiation Enable",
+									"description": "",
+									"type": "boolean",
+									"default": false
+								},
+								"trustUpstreamHeaders": {
+									"title": "Client Cert Trust Upstream Headers",
+									"description": "",
+									"type": "boolean",
+									"default": false
+								},
+								"subjectDNs": {
+									"title": "Client Cert Subject DNs",
+									"description": "",
+									"type": [
+										"string",
+										"array"
+									],
+									"items": {
+										"title": "Client Cert Subject DN",
+										"description": "",
+										"type": "string"
+									},
+									"default": ""
+								},
+								"issuerDNs": {
+									"title": "Client Cert Issuer DNs",
+									"description": "",
+									"type": [
+										"string",
+										"array"
+									],
+									"items": {
+										"title": "Client Cert Issuer DN",
+										"description": "",
+										"type": "string"
+									},
+									"default": ""
+								}
+							},
+							"required": [ "enable" ]
 						}
 					}
 				}
@@ -424,9 +732,21 @@
 					"type": "string",
 					"default": ""
 				},
+				"webXMLOverride": {
+					"title": "Web XML Override",
+					"description": "Path to web-override.xml file",
+					"type": "string",
+					"default": ""
+				},
+				"webXMLOverrideForce": {
+					"title": "Web XML Override Force",
+					"description": "Whether to override any configuration explicitly provided in the override file, as opposed to just adding or updating",
+					"type": "boolean",
+					"default": false
+				},
 				"WARPath": {
 					"title": "WAR Path",
-					"description": "Path to a local WAR archive or exploded WAR folder.  Mutually exclusive with cfengine.",
+					"description": "Path to a local WAR archive or exploded WAR folder. Mutually exclusive with cfengine.",
 					"type": "string",
 					"default": ""
 				},
@@ -438,7 +758,7 @@
 				},
 				"restMappings": {
 					"title": "REST Mappings",
-					"description": "Comma delimited list of paths to map to the CF engine's REST servlet such as '/rest/*,/api/*'",
+					"description": "Comma-delimited list of paths to map to the CF engine's REST servlet such as '/rest/*,/api/*'",
 					"type": "string",
 					"default": ""
 				},
@@ -463,17 +783,131 @@
 			}
 		},
 		"runwar": {
-			"title": "Configure RunWar",
-			"description": "These settings apply to the underlying Runwar library that starts servers",
+			"title": "Configure RunWAR",
+			"description": "These settings apply to the underlying RunWAR library that starts servers",
 			"type": "object",
 			"properties": {
+				"jarPath": {
+					"title": "RunWAR JAR Path",
+					"description": "Path to RunWAR JAR",
+					"type": "string"
+				},
 				"args": {
-					"title": "Arguments",
-					"description": "Ad-hoc options for the underlying Runwar library",
-					"type": "string",
+					"title": "RunWAR Arguments",
+					"description": "Ad-hoc options for the underlying RunWAR library",
+					"type": [
+						"string",
+						"array"
+					],
+					"items": {
+						"title": "RunWAR Argument",
+						"description": "Ad-hoc option for the underlying RunWAR library",
+						"type": "string"
+					},
 					"default": ""
+				},
+				"XNIOOptions": {
+					"title": "XNIO Options",
+					"description": "Set of options that apply to the low level network transport functions it provides",
+					"type": "object",
+					"additionalProperties": {
+						"title": "XNIO Option",
+						"description": "Option that applies to the low level network transport functions it provides"
+					},
+					"default": {}
+				},
+				"undertowOptions": {
+					"title": "Undertow Options",
+					"description": "Settings that apply to the servlet and web server aspects of Undertow",
+					"type": "object",
+					"additionalProperties": {
+						"title": "Undertow Option",
+						"description": "Setting that applies to the servlet and web server aspects of Undertow"
+					},
+					"default": {}
 				}
 			}
+		},
+		"ModCFML": {
+			"title": "ModCFML",
+			"description": "Configuration around ModCFML standard",
+			"type": "object",
+			"properties": {
+				"enable": {
+					"title": "ModCFML Enable",
+					"description": "Whether to enable ModCFML",
+					"type": "boolean",
+					"default": false
+				},
+				"maxContexts": {
+					"title": "ModCFML Max Contexts",
+					"description": "Limits the number of contexts which can be created",
+					"type": "number",
+					"default": 200
+				},
+				"sharedKey": {
+					"title": "ModCFML Shared Key",
+					"description": "Key shared with the web server",
+					"type": "string",
+					"default": ""
+				},
+				"requireSharedKey": {
+					"title": "ModCFML Require Shared Key",
+					"description": "Whether to require the shared key header to be present",
+					"type": "boolean",
+					"default": true
+				},
+				"createVirtualDirectories": {
+					"title": "ModCFML Create Virtual Directories",
+					"description": "",
+					"type": "boolean",
+					"default": true
+				}
+			},
+			"required": [ "enable" ]
+		},
+		"scripts": {
+			"title": "Server Scripts",
+			"description": "",
+			"type": "object",
+			"properties": {
+				"preServerStart": {
+					"title": "Pre Server Start Script",
+					"description": "Runs before any configuration is resolved",
+					"type": "string"
+				},
+				"onServerStart": {
+					"title": "On Server Start Script",
+					"description": "Runs after configuration is resolved but before the actual server starts",
+					"type": "string"
+				},
+				"onServerInstall": {
+					"title": "On Server Install Script",
+					"description": "Runs when engine is being installed during server startup",
+					"type": "string"
+				},
+				"onServerStop": {
+					"title": "On Server Stop Script",
+					"description": "Runs before a server stop",
+					"type": "string"
+				},
+				"preServerForget": {
+					"title": "Pre Server Forget Script",
+					"description": "Runs before attempting to forget a server",
+					"type": "string"
+				},
+				"postServerForget": {
+					"title": "Post Server Forget Script",
+					"description": "Runs after a successful server forget",
+					"type": "string"
+				}
+			},
+			"additionalProperties": {
+				"title": "Server Script",
+				"description": "Ad-hoc server script",
+				"type": "string"
+			},
+			"default": {}
 		}
 	}
 }

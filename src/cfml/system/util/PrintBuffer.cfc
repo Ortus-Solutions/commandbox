@@ -57,9 +57,11 @@ component accessors="true" extends="Print"{
 
 	// Proxy through any methods to the actual print helper
 	function onMissingMethod( missingMethodName, missingMethodArguments ){
-		// Don't modify the buffer if it's being printed
-		lock name='printBuffer-#getObjectID()#' type="readonly" timeout="20" {
-			variables.result.append( super.onMissingMethod( arguments.missingMethodName, arguments.missingMethodArguments ) );
+		var result = super.onMissingMethod( arguments.missingMethodName, arguments.missingMethodArguments );
+		
+		// Don't modify the buffer if it's being printed, exclusive because StringBuilder is not thread-safe
+		lock name='printBuffer-#getObjectID()#' type="exclusive" timeout="20" {
+			variables.result.append( result );
 			return this;
 		}
 	}

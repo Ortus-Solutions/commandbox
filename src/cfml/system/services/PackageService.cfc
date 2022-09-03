@@ -590,8 +590,18 @@ component accessors="true" singleton {
 			var isSaving = ( arguments.save || arguments.saveDev );
 
 			var detail = dependencies[ dependency ];
+			var endpointName = 'forgebox';
+			try {
+				var endpointData = endpointService.resolveEndpointData( detail, installDirectory );
+				endpointName = endpointData.endpointName;
+			} catch ( EndpointNotFound e ) {
+				// Ignore
+			} catch( any e ) {
+				rethrow;
+			}
+			
 			//  full ID with endpoint and package like file:/opt/files/foo.zip
-			if( detail contains ':' ) {
+			if( endpointName != 'forgebox' ) {
 				var ID = detail;
 			// Default ForgeBox endpoint of foo@1.0.0
 			} else {
@@ -1348,7 +1358,7 @@ component accessors="true" singleton {
 	* @package The full endpointID like foo@1.0.0
 	*/
 	private function parseSlug( required string package ) {
-		var matches = REFindNoCase( "^([\w\-\.]+(?:\@(?!stable\b)(?!be\b)[a-zA-Z][\w\-]*)?)(?:\@(.+))?$", package, 1, true );
+		var matches = REFindNoCase( "^([\w\-\.]+(?:\@(?!stable\b)(?!be\b)(?!x\b)[a-zA-Z][\w\-]*)?)(?:\@(.+))?$", package, 1, true );
 		if ( arrayLen( matches.len ) < 2 ) {
 			throw(
 				type = "endpointException",
@@ -1365,7 +1375,7 @@ component accessors="true" singleton {
 	private function parseVersion( required string package ) {
 		var version = '';
 		// foo@1.0.0
-		var matches = REFindNoCase( "^([\w\-\.]+(?:\@(?!stable\b)(?!be\b)[a-zA-Z][\w\-]*)?)(?:\@(.+))?$", package, 1, true );
+		var matches = REFindNoCase( "^([\w\-\.]+(?:\@(?!stable\b)(?!be\b)(?!x\b)[a-zA-Z][\w\-]*)?)(?:\@(.+))?$", package, 1, true );
 		if ( matches.pos.len() >= 3 && matches.pos[ 3 ] != 0 ) {
 			// Note this can also be a semver range like 1.2.x, >2.0.0, or 1.0.4-2.x
 			// For now I'm assuming it's a specific version

@@ -168,7 +168,7 @@ component accessors="true" singleton {
 
 			var fullPropertyName = 'arguments.JSON' & toBracketNotation( arguments.property );
 			if( !isDefined( fullPropertyName ) ) {
-				
+
 				throw( message='#arguments.property# does not exist.', type="JSONException");
 			}
 			// Get the array reference
@@ -187,7 +187,7 @@ component accessors="true" singleton {
 				last = last.right(-1).left(-1);
 				last = parser.unwrapQuotes( trim( last ) )
 			}
-			
+
 			// path to containing struct
 			var everythingBut = propArray.slice( 1, propArray.len()-1 );
 
@@ -237,9 +237,9 @@ component accessors="true" singleton {
 		}
 		return fullPropertyName;
 	}
-	
+
 	function tokenizeProp( required string str ) {
-		
+
 		// Holds token
 		var tokens = [];
 		// Used to build up each token
@@ -277,14 +277,14 @@ component accessors="true" singleton {
 			if( inBrackets ) {
 
 				token &= char;
-				
+
 				if( char == ']' ) {
 					inBrackets = false;
 				}
 				prevChar = char;
 				continue;
 			}
-			
+
 			// period or break in brackets means break in token
 			if( ( char == '.' && !inBrackets ) || char == '[' ) {
 
@@ -292,7 +292,7 @@ component accessors="true" singleton {
 				if( ( char == '[' ) ) {
 					inBrackets = true;
 				}
-				
+
 				if( len( token ) ) {
 					tokens.append( token );
 					token = '';
@@ -323,7 +323,7 @@ component accessors="true" singleton {
 		if( len( token ) ) {
 			tokens.append( token );
 		}
-		
+
 		return tokens;
 	}
 
@@ -364,7 +364,15 @@ component accessors="true" singleton {
 
 	// Recursive function to crawl struct and create a string that represents each property.
 	function addProp( props, prop, safeProp, targetStruct ) {
-		var propValue = ( len( prop ) ? evaluate( 'targetStruct#safeProp#' ) : targetStruct );
+		if( len( prop ) ) {
+			// Handle null key
+			if( !isDefined( 'targetStruct#safeProp#' ) ) {
+				return props;
+			}
+			var propValue = evaluate( 'targetStruct#safeProp#' )
+		} else {
+			var propValue = targetStruct;
+		}
 
 		if( isStruct( propValue ) ) {
 			// Add all of this struct's keys
