@@ -37,7 +37,7 @@ component {
 	variables.PATHS       = "**.cfc";
 
 	/**
-	 * @paths 		Command delimited list of file globbing paths to watch relative to the working directory, defaults to **.cfc
+	 * @paths 		Comma-delimited list of file globbing paths to watch relative to the working directory, defaults to **.cfc
 	 * @delay 		How may milliseconds to wait before polling for changes, defaults to 500 ms
 	 * @directory   The directory mapping to test: directory = the path to the directory using dot notation (myapp.testing.specs)
 	 * @bundles     The path or list of paths of the spec bundle CFCs to run and test
