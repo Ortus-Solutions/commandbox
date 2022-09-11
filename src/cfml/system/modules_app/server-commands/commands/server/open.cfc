@@ -15,6 +15,11 @@
  * {code:bash}
  * server open URI=/admin browser=firefox
  * {code}
+ *  * .
+ * Open server administrator in browser
+ * {code:bash}
+ * server open --admin
+ * {code}
  **/
 component {
 
@@ -30,13 +35,19 @@ component {
 	* @serverConfigFile The path to the server's JSON file.
 	* @browser The browser to open the URI
 	* @browser.optionsUDF browserList
+	* @admin Open server administrator
+	* @webroot Open web root in native file browser
+	* @serverroot Open server root in native file browser
 	**/
 	function run(
 		URI="/",
 		string name,
 		string directory,
 		string serverConfigFile,
-		string browser = ""
+		string browser = "",
+		boolean admin = false,
+		boolean webroot = false,
+		boolean serverroot = false
 		){
 		if( !isNull( arguments.directory ) ) {
 			arguments.directory = resolvePath( arguments.directory );
@@ -50,6 +61,27 @@ component {
 		if( serverDetails.serverIsNew ){
 			print.boldRedLine( "No servers found." );
 		} else {
+			if ( arguments.webroot ) {
+				if ( fileSystemUtil.openNatively(serverInfo.appFileSystemPath) ) {
+					print.line( "Web Root Opened." );
+				} else {
+					error ( "Unsupported OS, cannot open path." );
+				}
+				return;
+			}
+			if ( arguments.serverroot ) {
+				if ( fileSystemUtil.openNatively(serverInfo.serverHomeDirectory) ) {
+					print.line( "Server Root Opened." );
+				} else {
+					error ( "Unsupported OS, cannot open path." );
+				}
+				return;
+			}
+			if ( arguments.admin ) {
+				arguments.URI = serverInfo.cfengine.contains('lucee') ? '/lucee/admin/server.cfm' : arguments.URI;
+				arguments.URI = serverInfo.cfengine.contains('railo') ? '/railo-context/admin/server.cfm' : arguments.URI;
+				arguments.URI = serverInfo.cfengine.contains('adobe') ? '/CFIDE/administrator/enter.cfm' : arguments.URI;				
+			}
 			// myPath/file.cfm is normalized to /myMapth/file.cfm
 			if( !arguments.URI.startsWith( '/' ) ) {
 				arguments.URI = '/' & arguments.URI;
