@@ -96,10 +96,14 @@ component accessors=true implements="IEndpoint" singleton {
 
 		// Check if its coming from an ortus S3 Domain
 		// /username/slug/version.(zip or lex)?unnecessary query_string 
-		if( package.reFindNoCase("^([\w:]+)?//ortus-forgebox-private.s3.us-east-1.amazonaws.com/(.+?)/(.+?)/(.+?)\.[zip|lex].*" ) > 0) {
-			//URL Format username/slug/version
-			return package.reReplaceNoCase("^([\w:]+)?//ortus-forgebox-private.s3.us-east-1.amazonaws.com/(.+?)/(.+?)/(.+?)\.[zip|lex].*", "\3");
-		}
+		// Regex capture group (slug)
+		var findOrtusEndpoint =  package.reFindNoCase( "^[\w:]+?//ortus-forgebox-private.s3.us-east-1.amazonaws.com/.+?/(.+?)/.+?\.[zip|lex].*", 0, true );
+
+        // /username/slug/version.(zip or lex)?unnecessary query_string 
+		// Must match 2 because the capture groups are [whole string, slug]
+        if( findOrtusEndpoint.match.len() == 2 ) {
+            return findOrtusEndpoint.match[2]; //return slug from url path
+        }
 
 		// Strip protocol and host to reveal just path and query string
 		package = package.reReplaceNoCase( '^([\w:]+)?//.*?/', '' );
