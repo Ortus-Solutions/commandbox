@@ -115,8 +115,8 @@ Everything you do w/ CommandBox servers, you can do at scale with Docker
 See what artifacts are cached on disk with "artifacts list"
 See what packages you've installed in your app with the "list" command
 Use "server cd myServer" to drop directly in the webroot of a server
-You can manage your server.json entire from the CLI with "server set"
-You can manage your box.json entire from the CLI with "server set"
+You can manage your server.json entirely from the CLI with "server set"
+You can manage your box.json entirely from the CLI with "package set"
 CommandBox servers run on JBoss Undertow for blazing fast performance
 Install the "comamndbox-chuck-norris" module for Chuck Norris facts
 Run "forgebox whoami" to see if you're logged in correctly from the CLI
