@@ -172,16 +172,16 @@ component {
 
 			// Print accordingly to results
 			if (
-				( results.responseheader[ "x-testbox-totalFail" ] ?: 0 ) eq 0 AND
-				( results.responseheader[ "x-testbox-totalError" ] ?: 0 ) eq 0
+				( results.responseheader[ "x-testbox-totalFail" ] ?: 0 ) == 0 &&
+				( results.responseheader[ "x-testbox-totalError" ] ?: 0 ) == 0
 			) {
 				// print OK report
 				print.green( " " & results.filecontent );
-			} else if ( results.responseheader[ "x-testbox-totalFail" ] gt 0 ) {
+			} else if ( results.responseheader[ "x-testbox-totalFail" ] > 0 ) {
 				// print Failure report
 				setExitCode( 1 );
 				print.yellow( " " & results.filecontent );
-			} else if ( results.responseheader[ "x-testbox-totalError" ] neq 0 ) {
+			} else if ( results.responseheader[ "x-testbox-totalError" ] != 0 ) {
 				// print Failure report
 				setExitCode( 1 );
 				print.boldRed( " " & results.filecontent );
