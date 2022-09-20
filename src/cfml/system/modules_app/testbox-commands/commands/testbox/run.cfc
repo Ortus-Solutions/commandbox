@@ -185,6 +185,9 @@ component {
 				// print Failure report
 				setExitCode( 1 );
 				print.boldRed( " " & results.filecontent );
+			} else {
+				print.yellow( " Missing 'x-testbox' result errors; cannot determine if tests are failing." );
+				print.yellow( " " & results.filecontent );
 			}
 		}
 
