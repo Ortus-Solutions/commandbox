@@ -181,12 +181,12 @@ component {
 				// print Failure report
 				setExitCode( 1 );
 				print.yellow( " " & results.filecontent );
-			} else if ( results.responseheader[ "x-testbox-totalError" ] gt 0 ) {
+			} else if ( results.responseheader[ "x-testbox-totalError" ] neq 0 ) {
 				// print Failure report
 				setExitCode( 1 );
 				print.boldRed( " " & results.filecontent );
 			} else {
-				print.yellow( " Missing 'x-testbox' result errors; cannot determine if tests are failing." );
+				print.yellow( " Missing 'x-testbox' result headers; cannot determine if tests are failing." );
 				print.yellow( " " & results.filecontent );
 			}
 		}
