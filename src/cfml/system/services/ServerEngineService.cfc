@@ -38,7 +38,7 @@ component accessors="true" singleton="true" {
 
 		if( len( serverInfo.webXMLOverride ) ){
 			serverInfo.webXMLOverrideActual = serverInfo.webXML.replace( 'web.xml', 'web-override.xml' );
-			fileCopy( serverInfo.webXMLOverride, serverInfo.webXMLOverrideActual );			
+			fileCopy( serverInfo.webXMLOverride, serverInfo.webXMLOverrideActual );
 		} else {
 			serverInfo.webXMLOverrideActual = '';
 		}
@@ -144,7 +144,7 @@ component accessors="true" singleton="true" {
 			installDir : '',
 			initialInstall : false
 		};
-		
+
 		// If CFEngine is a relateive file path, we need to know where to look for it.
 		var currentWorkingDirectory = serverInfo.webroot;
 		if( serverInfo.cfengineSource == 'serverJSON' ) {
@@ -380,6 +380,12 @@ component accessors="true" singleton="true" {
 			if( !len( serverInfo.webConfigDir ) ) {
 				serverInfo.webConfigDir = "/WEB-INF/#lcase( thisName )#-web";
 			}
+			// if we're in multi-context mode, we need to deal with more than one web context, so the path MUST be dynamic
+			// If the user wants the default Lucee behavior, they can set this to "{web-root-directory}/WEB-INF/lucee/"
+			// If the path doesn't look to already be dynamic, we'll make it so
+			if( serverInfo.multiContext && not serverInfo.webConfigDir contains '{web-root-directory}'  && not serverInfo.webConfigDir contains '{web-context-hash}'  ) {
+				serverInfo.webConfigDir &= '-{web-context-hash}'
+			}
 			// Default server context
 			if( !len( serverInfo.serverConfigDir ) ) {
 				serverInfo.serverConfigDir = "/WEB-INF";
@@ -416,12 +422,6 @@ component accessors="true" singleton="true" {
 		var updateMade = false;
 		var package = lcase( cfengine );
 
-		// if we're in multi-context mode, we need to deal with more than one web context, so the path MUST be dynamic
-		// If the user wants the default Lucee behavior, they can set this to "{web-root-directory}/WEB-INF/lucee/"
-		// If the path doesn't look to already be dynamic, we'll make it so
-		if( serverInfo.multiContext && not fullWebConfigDir contains '{web-root-directory}'  && not fullWebConfigDir contains '{web-context-hash}'  ) {
-			fullWebConfigDir &= '-{web-context-hash}'
-		}
 		updateMade = ensurePropertServletInitParam( webXML, '#package#.loader.servlet.CFMLServlet', "#package#-web-directory", fullWebConfigDir );
 		updateMade = ensurePropertServletInitParam( webXML, '#package#.loader.servlet.CFMLServlet', "#package#-server-directory", fullServerConfigDir ) || updateMade;
 
