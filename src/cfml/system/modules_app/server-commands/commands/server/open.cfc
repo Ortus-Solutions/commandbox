@@ -36,8 +36,9 @@ component {
 	* @browser The browser to open the URI
 	* @browser.optionsUDF browserList
 	* @admin Open server administrator
-	* @webroot Open web root in native file browser
-	* @serverroot Open server root in native file browser
+	* @webAdmin Open web administrator
+	* @webRoot Open web root in native file browser
+	* @serverRoot Open server root in native file browser
 	**/
 	function run(
 		URI="/",
@@ -46,9 +47,22 @@ component {
 		string serverConfigFile,
 		string browser = "",
 		boolean admin = false,
-		boolean webroot = false,
-		boolean serverroot = false
+		boolean webAdmin = false,
+		boolean webRoot = false,
+		boolean serverRoot = false
 		){
+		var argumentCount = 0;
+		if ( arguments.URI != '/' ) {
+			argumentCount++;
+		}
+		for ( var arg in ['admin','webAdmin','webRoot','serverRoot'] ) {
+			if ( arguments[arg] ) {
+				argumentCount++;
+			}
+		};
+		if ( argumentCount > 1 ) {
+			error ( "Oh my chickens! That's a lot to ask of me.  Please enter a URI or select one of the preset destinations (admin, webAdmin, webRoot, or serverRoot." );
+		}
 		if( !isNull( arguments.directory ) ) {
 			arguments.directory = resolvePath( arguments.directory );
 		}
@@ -61,7 +75,7 @@ component {
 		if( serverDetails.serverIsNew ){
 			print.boldRedLine( "No servers found." );
 		} else {
-			if ( arguments.webroot ) {
+			if ( arguments.webRoot ) {
 				if ( fileSystemUtil.openNatively(serverInfo.appFileSystemPath) ) {
 					print.line( "Web Root Opened." );
 				} else {
@@ -69,7 +83,7 @@ component {
 				}
 				return;
 			}
-			if ( arguments.serverroot ) {
+			if ( arguments.serverRoot ) {
 				if ( fileSystemUtil.openNatively(serverInfo.serverHomeDirectory) ) {
 					print.line( "Server Root Opened." );
 				} else {
@@ -80,7 +94,12 @@ component {
 			if ( arguments.admin ) {
 				arguments.URI = serverInfo.cfengine.contains('lucee') ? '/lucee/admin/server.cfm' : arguments.URI;
 				arguments.URI = serverInfo.cfengine.contains('railo') ? '/railo-context/admin/server.cfm' : arguments.URI;
-				arguments.URI = serverInfo.cfengine.contains('adobe') ? '/CFIDE/administrator/enter.cfm' : arguments.URI;				
+				arguments.URI = serverInfo.cfengine.contains('adobe') ? '/CFIDE/administrator/enter.cfm' : arguments.URI;
+			}
+			if ( arguments.webAdmin ) {
+				arguments.URI = serverInfo.cfengine.contains('lucee') ? '/lucee/admin/web.cfm' : arguments.URI;
+				arguments.URI = serverInfo.cfengine.contains('railo') ? '/railo-context/admin/web.cfm' : arguments.URI;
+				arguments.URI = serverInfo.cfengine.contains('adobe') ? '/CFIDE/administrator/enter.cfm' : arguments.URI;
 			}
 			// myPath/file.cfm is normalized to /myMapth/file.cfm
 			if( !arguments.URI.startsWith( '/' ) ) {
