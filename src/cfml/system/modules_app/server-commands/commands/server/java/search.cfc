@@ -27,7 +27,7 @@
  * {code}
  *
  * If a failing HTTP status code is received from the API, this command will return an exit code of 1
- * 
+ *
  **/
 component aliases='java search' {
 
@@ -71,7 +71,7 @@ component aliases='java search' {
 				version = listFirst( release.replaceNoCase( 'jdk-', '' ), '.' );
 			}
 		// If there is no version and no release, hit the API to get the latest LTS version
-		} else if( isNull( version ) ) {
+		} else if( isNull( version ) || !len( version ) ) {
 			// Until Adobe and Lucee support Java 17, we'll keep this defaulting to Java 11-- the current LTS release supported by CF engines.
 			version = 11;
 			/*
@@ -148,12 +148,12 @@ component aliases='java search' {
 			// If we have a release, we need to filter it now
 			if( release.len() && release != 'latest' ) {
 				artifactJSON = artifactJSON.filter( (thisRelease)=>thisRelease.release_name==release );
-			} 
+			}
 		} else {
 			print.redLine( fileContent.left( 100 ) );
 			error( 'There was an error hitting the API.  [#local.artifactResult.status_code#]' );
 		}
-	
+
 		// Sometimes the API gives me back a struct, sometimes I get an array of structs. ¯\_(ツ)_/¯
 		if( isStruct( artifactJSON ) ) {
 			artifactJSON = [ artifactJSON ];
@@ -162,7 +162,7 @@ component aliases='java search' {
 		if( JSON ) {
 			print.line( artifactJSON );
 			return;
-		} else {	
+		} else {
 			print
 				.line()
 				.line( 'Hitting API URL:' )
@@ -170,7 +170,7 @@ component aliases='java search' {
 				.line()
 				.line();
 		}
-		
+
 		if( !artifactJSON.len() ) {
 			print.redLine( 'No matching Java versions found for your search criteria' );
 			return;
