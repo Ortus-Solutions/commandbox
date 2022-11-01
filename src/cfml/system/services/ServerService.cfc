@@ -1683,13 +1683,11 @@ component accessors="true" singleton {
 		// Send SSL cert info if SSL is enabled and there's cert info
 		if( serverInfo.SSLEnable ) {
 			if( serverInfo.SSLCertFile.len() ) {
-				args
-					.append( '--ssl-cert' ).append( serverInfo.SSLCertFile )
-					.append( '--ssl-key' ).append( serverInfo.SSLKeyFile );
-				// Not all certs require a password
-				if( serverInfo.SSLKeyPass.len() ) {
-					args.append( '--ssl-keypass' ).append( serverInfo.SSLKeyPass );
+				args.append( '--ssl-cert' ).append( serverInfo.SSLCertFile );
+				if( serverInfo.SSLKeyFile.len() ) {
+					args.append( '--ssl-key' ).append( serverInfo.SSLKeyFile );
 				}
+				args.append( '--ssl-keypass' ).append( serverInfo.SSLKeyPass );
 			}
 			if( len( serverInfo.clientCertMode ) ){
 				args.append( '--client-cert-negotiation' ).append( serverInfo.clientCertMode );
