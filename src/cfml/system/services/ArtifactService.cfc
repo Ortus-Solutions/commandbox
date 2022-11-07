@@ -20,14 +20,14 @@ component accessors="true" singleton {
 	property name='tempDir' 			inject='tempDir@constants';
 	property name='packageService'	 	inject='PackageService';
 	property name='logger' 				inject='logbox:logger:{this}';
-	property name="semanticVersion"		inject="provider:semanticVersion@semver"; 	
+	property name="semanticVersion"		inject="provider:semanticVersion@semver";
 	property name="configService"		inject="ConfigService";
 
 	/**
 	* THIS CANNOT BE RUN ON DI COMPLETE due to a circular dependency with the ConfigSerivice
 	*/
 	function ensureArtifactsDirectory() {
-		
+
 		// Create the artifacts directory if it doesn't exist
 		if( !directoryExists( getArtifactsDirectory() ) ) {
 			directoryCreate( getArtifactsDirectory(), true, true );
@@ -134,6 +134,7 @@ component accessors="true" singleton {
 	*/
 	boolean function artifactExists( required packageName, required version ){
 		ensureArtifactsDirectory();
+		arguments.touch = false;
 		return fileExists( getArtifactPath( argumentCollection = arguments ) );
 	}
 
@@ -142,10 +143,18 @@ component accessors="true" singleton {
 	* @packageName The package name to look for
 	* @version The version of the package to look for
 	*/
-	function getArtifactPath( required packageName, required version ) {
+function getArtifactPath( required packageName, required version, boolean touch=true ) {
 		ensureArtifactsDirectory();
+		var theFile = getPackagePath( arguments.packageName, arguments.version ) & '/' & arguments.packageName & '.zip';
+		// This allows us to keep tabs on when artifacts are used
+		if( touch ) {
+			var oFile = createObject( "java", "java.io.File" ).init( theFile );
+			if( oFile.exists() ){
+				oFile.setLastModified( now().getTime() );
+			}
+		}
 		// I'm using the package name as the zip file for lack of anything better even though it's redundant with the first folder
-		return getPackagePath( arguments.packageName, arguments.version ) & '/' & arguments.packageName & '.zip';
+		return theFile;
 
 	}
 
