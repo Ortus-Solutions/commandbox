@@ -117,7 +117,7 @@ component accessors="true" singleton {
 			return '[EMPTY STRING]';
 		// XML doc OR XML String
 		} else if( isXML( result ) ) {
-			return formatterUtil.formatXML( result );			
+			return formatterUtil.formatXML( result );
 		// string
 		} else if( isSimpleValue( result ) ) {
 
@@ -127,12 +127,19 @@ component accessors="true" singleton {
 					return formatterUtil.formatJson( json=result, ANSIColors=JSONService.getANSIColors() );
 				}
 			}
-			
+
 			return result;
 
 		// CFC, possibly Java object too (though I think that's a bug)
 		} else if( isObject( result ) ) {
-			return '[Object #getMetaData( result ).name#]';
+			var md = getMetaData( result )
+			// Check for class is if the object is a static refence to a class and not an instance
+			// structKeyExists() is a workaround for this: https://luceeserver.atlassian.net/browse/LDEV-4259
+			if( md.getClass().getName() == 'java.lang.Class' || !structKeyExists( md, 'name' ) ) {
+				return '[Class #result.getClass().getName()#]';
+			} else {
+				return '[Object #md.name#]';
+			}
 		// Serializable types
 		} else if( isArray( result ) || isStruct( result ) || isQuery( result ) ) {
 			result = serializeJSON( result, 'struct' );
