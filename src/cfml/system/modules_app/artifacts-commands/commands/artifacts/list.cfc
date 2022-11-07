@@ -19,10 +19,20 @@ component {
 	/**
 	 * @package An optional package to filter the results by
 	 * @package.optionsUDF packageComplete
+	 * @JSON Output data as JSON
 	 **/
-	function run( package='' ) {
+	function run( package='', boolean JSON=false ) {
 		var results = artifactService.listArtifacts( arguments.package );
 
+		if( arguments.JSON ) {
+			print.line( results.map( (packageName,packageVersions)=>{
+				return packageVersions.reduce( (versions,v)=>{
+					versions[ v ] = artifactService.getArtifactPath( packageName, v, false );
+					return versions;
+				}, {} );
+			} ) );
+			return;
+		}
 		if( !results.count() ) {
 			print.yellowLine( 'No artifacts found in cache.' );
 			return;
