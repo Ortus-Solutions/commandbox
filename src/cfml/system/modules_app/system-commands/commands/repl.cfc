@@ -135,7 +135,7 @@ component {
 						logger.error( '#e.message# #e.detail#' , shortTrace );
 						if( quit ) {
 							resetShell();
-							// This will exist the command
+							// This will exit the command
 							if( configService.getSetting( 'verboseErrors', false ) ) {
 								error( '#e.message##CR##e.detail#', shortTrace );
 							} else {
