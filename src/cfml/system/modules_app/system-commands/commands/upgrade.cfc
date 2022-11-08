@@ -189,6 +189,7 @@ component {
 				file="#libsfilePath#"
 				destination="#variables.homedir#/libs-new"
 				overwrite=true;
+			fileWrite( "#variables.homedir#/libs-new/version.properties", "cli.version=#LoaderVersion#" )
 
 			wirebox.getCacheBox().getCache( 'metadataCache' ).clearAll();
 
