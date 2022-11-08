@@ -347,13 +347,6 @@ External Dependencies:
 		<checksum file="${dist.dir}/${distro.name}-cfml-${commandbox.version}.zip" forceoverwrite="true" algorithm="sha" />
 		<checksum file="${dist.dir}/${distro.name}-cfml-${commandbox.version}.zip" forceoverwrite="true" algorithm="SHA-256" fileext=".sha256"/>
 
-		<!-- Copy our libs to the dist folder -->
-		<copy file="${temp.dir}/cli/libs.zip" toFile="${dist.dir}/${distro.name}-libs-${commandbox.version}.zip" overwrite="true" />
-		<!-- Build Checksum for commandbox-libs.zip -->
-		<checksum file="${dist.dir}/${distro.name}-libs-${commandbox.version}.zip" forceoverwrite="true" fileext=".md5" />
-		<checksum file="${dist.dir}/${distro.name}-libs-${commandbox.version}.zip" forceoverwrite="true" algorithm="sha" />
-		<checksum file="${dist.dir}/${distro.name}-libs-${commandbox.version}.zip" forceoverwrite="true" algorithm="SHA-256" fileext=".sha256"/>
-
 		<!--  create the libs zip including cli loader, optionally use pack200 -->
 		<zip destfile="${temp.dir}/cli/libs.zip">
 			<fileset dir="${lucee.lib.dir}">
@@ -367,6 +360,13 @@ External Dependencies:
 			<fileset file="${src.dir}/resources/log4j2.xml" />
 		</zip>
 
+		<!-- Copy our libs to the dist folder -->
+		<copy file="${temp.dir}/cli/libs.zip" toFile="${dist.dir}/${distro.name}-libs-${commandbox.version}.zip" overwrite="true" />
+		<!-- Build Checksum for commandbox-libs.zip -->
+		<checksum file="${dist.dir}/${distro.name}-libs-${commandbox.version}.zip" forceoverwrite="true" fileext=".md5" />
+		<checksum file="${dist.dir}/${distro.name}-libs-${commandbox.version}.zip" forceoverwrite="true" algorithm="sha" />
+		<checksum file="${dist.dir}/${distro.name}-libs-${commandbox.version}.zip" forceoverwrite="true" algorithm="SHA-256" fileext=".sha256"/>
+
 		<zip destfile="${temp.dir}/cli-light/libs.zip">
 			<fileset dir="${lucee-light.lib.dir}">
 				<include name="**/*.jar"/>
@@ -378,6 +378,13 @@ External Dependencies:
 			<fileset file="${temp.dir}/cli/ortus-jgit.jar" />
 			<fileset file="${src.dir}/resources/log4j2.xml" />
 		</zip>
+
+		<!-- Copy our light libs to the dist folder -->
+		<copy file="${temp.dir}/cli-light/libs.zip" toFile="${dist.dir}/${distro.name}-libs-light-${commandbox.version}.zip" overwrite="true" />
+		<!-- Build Checksum for commandbox-libs.zip -->
+		<checksum file="${dist.dir}/${distro.name}-libs-light-${commandbox.version}.zip" forceoverwrite="true" fileext=".md5" />
+		<checksum file="${dist.dir}/${distro.name}-libs-light-${commandbox.version}.zip" forceoverwrite="true" algorithm="sha" />
+		<checksum file="${dist.dir}/${distro.name}-libs-light-${commandbox.version}.zip" forceoverwrite="true" algorithm="SHA-256" fileext=".sha256"/>
 
 	    <!--   </else>
 	    </antcontrib:if> -->
