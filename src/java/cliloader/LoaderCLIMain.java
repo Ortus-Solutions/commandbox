@@ -764,11 +764,12 @@ public class LoaderCLIMain{
 
 			for( File thisLib : newLibDir.listFiles() ) {
 				try {
-					Files.move( thisLib.toPath(), libDir.toPath(), StandardCopyOption.REPLACE_EXISTING );
+					Files.move( thisLib.toPath(), new File( libDir, thisLib.getName() ).toPath(), StandardCopyOption.REPLACE_EXISTING );
 				} catch ( Exception e ) {
 					System.err.println( "" );
 					System.err.println( "CommandBox could not move the jar [" + thisLib.getAbsolutePath() + "] to [" + libDir.getAbsolutePath() + "]" );
 					System.err.println( "Error: " + e.getMessage() );
+					e.printStackTrace();
 					System.err.println( "Please close all open consoles and stop all running servers before trying again." );
 					try { Thread.sleep( 5000 ); } catch( Throwable t ){}
 					System.exit( 1 );
