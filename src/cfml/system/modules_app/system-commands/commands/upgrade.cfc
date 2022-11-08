@@ -186,7 +186,7 @@ component {
 			directoryCreate( newLibs, true, true );
 			zip
 				action="unzip"
-				file="#newLibs#"
+				file="#libsfilePath#"
 				destination="#variables.homedir#/libs-new"
 				overwrite=true;
 
@@ -199,6 +199,10 @@ component {
 				file="#filePath#"
 				destination="#variables.homedir#/cfml"
 				overwrite=true;
+
+			print.greenLine( "Cleaning up..." ).toConsole();
+			fileDelete( filePath );
+			fileDelete( libsfilePath );
 
 			// Notify the user
 			print
