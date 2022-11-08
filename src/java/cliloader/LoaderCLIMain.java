@@ -742,11 +742,6 @@ public class LoaderCLIMain{
 
 		File newLibDir = new File( cli_home, "lib-new" ).getCanonicalFile();
 		// if lib-new exists and has files
-
-		log.info( "newLibDir " + newLibDir.toString() );
-		log.info( "newLibDir.exists() " + newLibDir.exists() );
-		log.info( "newLibDir.isDirectory() " + newLibDir.isDirectory() );
-		log.info( "newLibDir.listFiles( new ExtFilter( '.jar' ) ).length " +  newLibDir.listFiles( new ExtFilter( ".jar" ) ).length );
 		if( newLibDir.exists() && newLibDir.isDirectory() && newLibDir.listFiles( new ExtFilter( ".jar" ) ).length > 0 ) {
 			log.info( "Upgrading libraries..." );
 
@@ -775,7 +770,7 @@ public class LoaderCLIMain{
 					System.exit( 1 );
 				}
 			}
-
+			newLibDir.delete();
 			log.info( "" );
 			log.info( "Libraries upgraded" );
 		}
