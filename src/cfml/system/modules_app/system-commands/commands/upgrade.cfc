@@ -206,14 +206,15 @@ component {
 			fileDelete( libsfilePath );
 
 			// Notify the user
-			print
-				.greenLine( "Update applied successfully, installed v#repoVersion#" )
+			print.greenLine( "Update applied successfully, installed v#repoVersion#" )
 				.redLine( "CommandBox needs to exit to complete the installation." )
 				.yellowLine( "This message will self-destruct in 10 seconds" )
 				.toConsole();
 
-			// Give them a chance to read it.
-			sleep( 10000 );
+			if( !force ) {
+				// Give them a chance to read it, unless we're skipping user prompt (probably automated)
+				sleep( 10000 );
+			}
 
 			// Stop executing.  Since the unzipping possibly replaced .cfm files that were
 			// also cached in memory, there's no good way we've found to be able to reload and keep going.
