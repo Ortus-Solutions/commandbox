@@ -43,6 +43,8 @@ import javax.script.ScriptEngineManager;
 import javax.script.ScriptEngine;
 import java.time.Instant;
 import java.nio.file.Paths;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.security.Security;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -738,6 +740,40 @@ public class LoaderCLIMain{
 			}
 		}
 
+		File newLibDir = new File( cli_home, "lib-new" ).getCanonicalFile();
+		// if lib-new exists and has files
+		if( newLibDir.exists() && newLibDir.isDirectory() && newLibDir.listFiles( new ExtFilter( ".jar" ) ).length > 0 ) {
+			log.info( "Upgrading libraries..." );
+
+			// OSGI can be grumpy on upgrade with competing bundles.  Start fresh
+			if( cfmlFelixCacheDir.exists() ) {
+				log.info( "Cleaning old Felix Cache..." );
+				Util.deleteDirectory( cfmlFelixCacheDir );
+			}
+
+			// Try to delete the Runwar jar first since it's the most likely to be locked.
+			// If it fails, this method will just abort before we get any farther into deleting stuff.
+			Util.checkIfJarsLocked( libDir, "runwar" );
+			// Ok, try deleting for real.  If any of these jars fail to delete, we'll still holler at the user and abort the upgrade
+			Util.removePreviousLibs( libDir );
+
+			for( File thisLib : newLibDir.listFiles() ) {
+				try {
+					Files.move( thisLib.toPath(), libDir.toPath(), StandardCopyOption.REPLACE_EXISTING );
+				} catch ( Exception e ) {
+					System.err.println( "" );
+					System.err.println( "CommandBox could not move the jar [" + thisLib.getAbsolutePath() + "] to [" + libDir.getAbsolutePath() + "]" );
+					System.err.println( "Error: " + e.getMessage() );
+					System.err.println( "Please close all open consoles and stop all running servers before trying again." );
+					try { Thread.sleep( 5000 ); } catch( Throwable t ){}
+					System.exit( 1 );
+				}
+			}
+
+			log.info( "" );
+			log.info( "Libraries upgraded" );
+		}
+
 		if( !libDir.exists()
 				|| libDir.listFiles( new ExtFilter( ".jar" ) ).length < 2
 				|| updateLibs ) {
@@ -783,6 +819,7 @@ public class LoaderCLIMain{
 			}
 			Util.cleanUpUnpacked( libDir );
 		}
+
 		// check cfml version
 		if( cfmlDir.exists() ) {
 			File versionFile = new File( cfmlDir, ".version" );

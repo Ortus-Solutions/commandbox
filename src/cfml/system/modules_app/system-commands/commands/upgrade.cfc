@@ -36,7 +36,7 @@ component {
 	function run( boolean latest, boolean force=false ) {
 
 		if( configService.getSetting( 'offlineMode', false ) ) {
-			error( 'Can''t check for updates, CommandBox is in offline mode.  Go online with [config set offlineMode=false].' );	
+			error( 'Can''t check for updates, CommandBox is in offline mode.  Go online with [config set offlineMode=false].' );
 		}
 
 		if( isNull( arguments.latest ) ) {
@@ -163,6 +163,32 @@ component {
 					progressBar.update( argumentCollection = status );
 				}
 			);
+
+			// prepare locations
+			var libsfileURL 	= '#thisArtifactsURL#ortussolutions/commandbox/#repoversionshort#/commandbox-libs-#( extensionList().recordCount < 5 ? 'light-' : '' )##repoVersionShort#.zip';
+			var libsfilePath 	= '#temp#/commandbox-libs-#repoVersion#.zip';
+
+			// Download the update
+			print.greenLine( "Downloading #libsfileUrl#..." ).toConsole();
+			progressableDownloader.download(
+				libsfileURL,
+				libsfilePath,
+				function( status ) {
+					progressBar.update( argumentCollection = status );
+				}
+			);
+
+			print.greenLine( "Unzipping #libsfilePath#..." ).toConsole();
+			var newLibs = '#variables.homedir#/libs-new';
+			if( directoryExists( newLibs ) ) {
+				directoryDelete( newLibs, true );
+			}
+			directoryCreate( newLibs, true, true );
+			zip
+				action="unzip"
+				file="#newLibs#"
+				destination="#variables.homedir#/libs-new"
+				overwrite=true;
 
 			wirebox.getCacheBox().getCache( 'metadataCache' ).clearAll();
 
