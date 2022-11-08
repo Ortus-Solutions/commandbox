@@ -179,7 +179,7 @@ component {
 			);
 
 			print.greenLine( "Unzipping #libsfilePath#..." ).toConsole();
-			var newLibs = '#variables.homedir#/libs-new';
+			var newLibs = '#variables.homedir#/lib-new';
 			if( directoryExists( newLibs ) ) {
 				directoryDelete( newLibs, true );
 			}
@@ -187,9 +187,9 @@ component {
 			zip
 				action="unzip"
 				file="#libsfilePath#"
-				destination="#variables.homedir#/libs-new"
+				destination="#variables.homedir#/lib-new"
 				overwrite=true;
-			fileWrite( "#variables.homedir#/libs-new/version.properties", "cli.version=#LoaderVersion#" )
+			fileWrite( "#variables.homedir#/lib-new/version.properties", "cli.version=#LoaderVersion#" )
 
 			wirebox.getCacheBox().getCache( 'metadataCache' ).clearAll();
 
