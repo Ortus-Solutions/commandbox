@@ -67,9 +67,9 @@ component {
 		// Validate the file
 		if( !fileExists( tmpRecipeFile ) ){
 			// If the input is a single line ending in .boxr, it was supposed to be a file!
-			if( lcase( arguments.recipeFile ).endsWith( '.boxr' ) && listToArray( recipe, chr( 10 ) & chr( 13 ) ).len() == 1 ) {
+			if( lcase( arguments.recipeFile ).endsWith( '.boxr' ) && listToArray( arguments.recipeFile, chr( 10 ) & chr( 13 ) ).len() == 1 ) {
 				error( 'Recipe file [#tmpRecipeFile#] not found.' )
-			} 
+			}
 			// If the file doesn't exist, accept the input as commands
 			var recipe = arguments.recipeFile;
 		} else {
