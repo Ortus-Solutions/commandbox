@@ -55,7 +55,7 @@ component aliases='java search' {
 		version,
 		jvm = 'hotspot',
 		os,
-		arch = server.java.archModel contains 32 ? 'x32' : 'x64',
+		arch = javaService.getCurrentCPUArch(),
 		type = 'jre',
 		release = 'latest',
 		boolean JSON = false

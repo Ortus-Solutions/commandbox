@@ -713,7 +713,7 @@ public class LoaderCLIMain{
 		props.setProperty( "cfml.cli.pwd", cliworkingdirFinal );
 
 		File libDir = getLibDir();
-		// Default Log4j2 config is in the libn folder
+		// Default Log4j2 config is in the lib folder
 		System.setProperty("log4j2.configurationFile", new File( libDir, "log4j2.xml" ).toURI().toString() );
 		// The OSGI bundle loader is throwing an error so we need to force the default CL context selector
 		System.setProperty("Log4jContextSelector", "org.apache.logging.log4j.core.selector.ClassLoaderContextSelector" );
