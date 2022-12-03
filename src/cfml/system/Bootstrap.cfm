@@ -261,6 +261,8 @@ This file will stay running the entire time the shell is open
 			if( verboseErrors ) {
 		    	systemOutput( '', true );
 		    	systemOutput( '#err.stacktrace#', true );
+				systemOutput( 'To disable full stack trace, run "config set verboseErrors=false"', true);
+				systemOutput( '', true );
 			} else {
 		    	systemOutput( '', true );
 				systemOutput( 'To enable full stack trace, run "config set verboseErrors=true"', true );
