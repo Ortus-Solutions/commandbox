@@ -1024,6 +1024,7 @@ component accessors="true" singleton {
 			if( verboseErrors ) {
 					variables.reader.getTerminal().writer().println( '' );
 					variables.reader.getTerminal().writer().print( arguments.err.stacktrace );
+					variables.reader.getTerminal().writer().print( variables.print.whiteText( 'To disable full stack trace, run ' ) & variables.print.boldYellowText( 'config set verboseErrors=false' ) );
 			} else {
 				variables.reader.getTerminal().writer().println();
 				variables.reader.getTerminal().writer().println( variables.print.whiteText( 'To enable full stack trace, run ' ) & variables.print.boldYellowText( 'config set verboseErrors=true' ) );
