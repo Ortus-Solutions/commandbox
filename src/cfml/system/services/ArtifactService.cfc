@@ -69,20 +69,29 @@ component accessors="true" singleton {
 	/**
 	* Removes all artifacts from the cache and returns the number of wiped out directories
 	*/
-	numeric function cleanArtifacts() {
+	numeric function cleanArtifacts( numeric daysOld=-1 ) {
 		ensureArtifactsDirectory();
 
-		var qryDir = directoryList( path=getArtifactsDirectory(), recurse=false, listInfo='query' );
-		var numRemoved = 0;
+		var artifacts = listArtifacts().reduce( (artifacts,package,versions)=>{
+			versions.each( (version)=>artifacts.append( { 'package' : package, 'version' : version } ) );
+			return artifacts;
+		}, [] )
+		.filter( (artifact)=>{
+			var artifactPath = getArtifactPath( artifact.package, artifact.version, false );
 
-		for( var path in qryDir ) {
-			if( path.type == 'Dir' ) {
-				numRemoved++;
-				directoryDelete( path.directory & '/' & path.name, true );
+		application.wirebox.getInstance('printBuffer').line( "#getFileInfo( artifactPath ).lastmodified# > #dateAdd( 'd', -daysOld, now() )# --> #getFileInfo( artifactPath ).lastmodified > dateAdd( 'd', -daysOld, now() )#" ).toConsole()
+			if( fileExists( artifactPath ) && daysOld > -1 && getFileInfo( artifactPath ).lastmodified > dateAdd( 'd', -daysOld, now() ) ) {
+				return false;
+			} else {
+				return true;
 			}
-		}
+			return true;
+		} )
+		.each( (artifact)=>{
+			removeArtifact( artifact.package, artifact.version );
+		} );
 
-		return numRemoved;
+		return artifacts.len();
 	}
 
 	/**
