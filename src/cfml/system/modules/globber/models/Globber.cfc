@@ -510,7 +510,9 @@ component accessors="true" {
 		}
 
 		// Directories must always end with trailing slash
-		baseDir &= '/';
+		if( !pattern.endsWith( '/' ) ) {
+			baseDir &= '/';
+		}
 
 		return baseDir;
 	}
