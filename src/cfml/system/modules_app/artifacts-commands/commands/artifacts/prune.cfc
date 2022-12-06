@@ -25,9 +25,12 @@ component {
         boolean force   = false
 		) {
 
-		if( arguments.force || confirm( "Really wipe out all artifacts older than #days# old? [y/n]" ) ){
+		if( arguments.force || confirm( "Really wipe out all artifacts older than #days# day(s) old? [y/n]" ) ){
 			var results = artifactService.cleanArtifacts( days );
-			print.redLine( "Artifacts directory cleaned of '#results#' items." );
+			print.redLine( "Artifacts directory cleaned of '#results.len()#' items." )
+				.line();
+
+			print.table( results, 'package,version,lastModified', 'Package,Version,Last Modified Date' );
 		}
 
 	}

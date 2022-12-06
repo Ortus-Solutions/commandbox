@@ -67,31 +67,35 @@ component accessors="true" singleton {
 
 
 	/**
-	* Removes all artifacts from the cache and returns the number of wiped out directories
+	* Removes all artifacts from the cache and returns the array of removed artifacts
 	*/
-	numeric function cleanArtifacts( numeric daysOld=-1 ) {
+	array function cleanArtifacts( numeric daysOld=-1 ) {
 		ensureArtifactsDirectory();
 
 		var artifacts = listArtifacts().reduce( (artifacts,package,versions)=>{
 			versions.each( (version)=>artifacts.append( { 'package' : package, 'version' : version } ) );
 			return artifacts;
 		}, [] )
-		.filter( (artifact)=>{
-			var artifactPath = getArtifactPath( artifact.package, artifact.version, false );
-
-		application.wirebox.getInstance('printBuffer').line( "#getFileInfo( artifactPath ).lastmodified# > #dateAdd( 'd', -daysOld, now() )# --> #getFileInfo( artifactPath ).lastmodified > dateAdd( 'd', -daysOld, now() )#" ).toConsole()
-			if( fileExists( artifactPath ) && daysOld > -1 && getFileInfo( artifactPath ).lastmodified > dateAdd( 'd', -daysOld, now() ) ) {
-				return false;
-			} else {
-				return true;
-			}
-			return true;
+		// Get artifact path for each file
+		.map( (artifact)=>{
+			artifact[ 'artifactPath' ] = getArtifactPath( artifact.package, artifact.version, false );
+			return artifact;
 		} )
-		.each( (artifact)=>{
+		// Ensure files exist
+		.filter( (artifact)=>fileExists( artifact.artifactPath ) )
+		// get last modifed date for each file
+		.map( (artifact)=>{
+			artifact[ 'lastmodified' ] = ( daysOld == -1 ? '' : dateFormat( getFileInfo( artifact.artifactPath ).lastmodified, 'mm/dd/yyyy' ) );
+			return artifact;
+		} )
+		// Filter matching files
+		.filter( (artifact)=>daysOld == -1 || artifact.lastmodified <= dateAdd( 'd', -daysOld, now() ) );
+
+		artifacts.each( (artifact)=>{
 			removeArtifact( artifact.package, artifact.version );
 		} );
 
-		return artifacts.len();
+		return artifacts;
 	}
 
 	/**
@@ -103,6 +107,13 @@ component accessors="true" singleton {
 		ensureArtifactsDirectory();
 		if( packageExists( arguments.packageName, arguments.version ) ){
 			directoryDelete( getPackagePath( arguments.packageName, arguments.version ), true );
+			// If there are no more verions, remove the package folder as well
+			if( listArtifacts( packageName ).isEmpty() ) {
+				var path = getArtifactsDirectory() & arguments.packageName;
+				if( directoryExists( path ) ) {
+					directoryDelete( path, true );
+				}
+			}
 			return true;
 		}
 
@@ -128,7 +139,7 @@ component accessors="true" singleton {
 		ensureArtifactsDirectory();
 		// This will likely change, so I'm only going to put the code here.
 
-		var path = getArtifactsDirectory() & '/' & arguments.packageName;
+		var path = getArtifactsDirectory() & arguments.packageName;
 		// do we have a version?
 		if( arguments.version.len() ){
 			path &= "/" & arguments.version;
@@ -152,7 +163,7 @@ component accessors="true" singleton {
 	* @packageName The package name to look for
 	* @version The version of the package to look for
 	*/
-function getArtifactPath( required packageName, required version, boolean touch=true ) {
+	function getArtifactPath( required packageName, required version, boolean touch=true ) {
 		ensureArtifactsDirectory();
 		var theFile = getPackagePath( arguments.packageName, arguments.version ) & '/' & arguments.packageName & '.zip';
 		// This allows us to keep tabs on when artifacts are used
@@ -295,6 +306,10 @@ function getArtifactPath( required packageName, required version, boolean touch=
 	}
 
 	string function getArtifactsDirectory() {
-		return configService.getSetting( 'artifactsDirectory', variables.artifactDir );
+		var path = configService.getSetting( 'artifactsDirectory', variables.artifactDir );
+		if( !path.endsWith( '/' ) || !path.endsWith( '\' ) ) {
+			path &= '/';
+		}
+		return path;
 	}
 }
