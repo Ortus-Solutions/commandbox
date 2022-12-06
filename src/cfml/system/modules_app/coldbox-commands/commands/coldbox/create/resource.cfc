@@ -31,8 +31,17 @@ component {
 		"index",
 		"new",
 		"create",
-		"show ",
+		"show",
 		"edit",
+		"update",
+		"delete"
+	];
+
+	// STATIC Actions we use in the resources
+	variables.API_ACTIONS = [
+		"index",
+		"create",
+		"show",
 		"update",
 		"delete"
 	];
@@ -44,7 +53,6 @@ component {
 	 * @parameterName The name of the id/parameter for the resource. Defaults to `id`.
 	 * @module If passed, the module these resources will be created in.
 	 * @appMapping The root location of the application in the web root: ex: /MyApp or / if in the root
-	 *
 	 * @model The name of the model to generate that models the resource
 	 * @persistent If true, then the model will be created as an ORM entity
 	 * @table The table name of the entity
@@ -60,6 +68,7 @@ component {
 	 * @modelsDirectory The location of the models. Defaults to 'models'
 	 * @tests Generate the integration and unit tests for this generation
 	 * @specsDirectory Your specs directory. Only used if tests is true
+	 * @api If true, this will generate api resources, else normal html resources
 	 */
 	function run(
 		required resource,
@@ -81,14 +90,15 @@ component {
 		viewsDirectory       = "views",
 		modelsDirectory      = "models",
 		boolean tests        = true,
-		specsDirectory       = "tests/specs"
+		specsDirectory       = "tests/specs",
+		boolean api = false
 	){
-		// This will make each directory canonical and absolute
+		// Normalize paths
 		arguments.specsDirectory   = resolvePath( arguments.specsDirectory );
 		arguments.modulesDirectory = resolvePath( arguments.modulesDirectory );
 		var configPath             = resolvePath( "config" );
 
-		/********************** Verify Module ************************/
+		/********************** Verify Module pathing or global app pathing ************************/
 
 		var modulePath = arguments.modulesDirectory & arguments.module;
 		if ( arguments.module.len() ) {
@@ -103,8 +113,6 @@ component {
 					.params( name = arguments.module, directory = arguments.modulesDirectory )
 					.run();
 			}
-
-			// Setup new locations inside of the module for handlers and views
 			arguments.handlersDirectory = modulePath & "/" & arguments.handlersDirectory & "/";
 			arguments.viewsDirectory    = modulePath & "/" & arguments.viewsDirectory & "/";
 			arguments.modelsDirectory   = modulePath & "/" & arguments.modelsDirectory & "/";
@@ -119,7 +127,9 @@ component {
 		print.greenBoldLine( "Generating #arguments.resource# resources..." );
 
 		// Read in Template
-		var hContent = fileRead( "/coldbox-commands/templates/resources/HandlerContent.txt" );
+		var hContent = arguments.api ?
+			fileRead( "/coldbox-commands/templates/resources/ApiHandlerContent.txt" ) :
+			fileRead( "/coldbox-commands/templates/resources/HandlerContent.txt" );
 		// Token replacement
 		hContent     = replaceNoCase(
 			hContent,
@@ -139,6 +149,15 @@ component {
 			arguments.parameterName,
 			"all"
 		);
+		// Module Injection
+		if( arguments.module.len() ){
+			hContent = replaceNoCase(
+				hContent,
+				'inject="#arguments.resource#Service"',
+				'inject="#arguments.resource#Service@#arguments.module#"',
+				"all"
+			);
+		}
 
 		// Write Out Handler
 		var hpath = "#arguments.handlersDirectory#/#arguments.handler#.cfc";
@@ -163,31 +182,33 @@ component {
 
 		// ********************** generate views ************************************//
 
-		// Create Views Path
-		directoryCreate(
-			arguments.viewsDirectory & "/#arguments.resource#",
-			true,
-			true
-		);
-		var views = [ "new", "edit", "show", "index" ];
-		for ( var thisView in views ) {
-			var vContent = fileRead( "/coldbox-commands/templates/resources/#thisView#.txt" );
-			vContent     = replaceNoCase(
-				vContent,
-				"|resource|",
-				arguments.resource,
-				"all"
+		if( !arguments.api ){
+			// Create Views Path
+			directoryCreate(
+				arguments.viewsDirectory & "/#arguments.resource#",
+				true,
+				true
 			);
-			vContent = replaceNoCase(
-				vContent,
-				"|singularName|",
-				arguments.singularName,
-				"all"
-			);
-			fileWrite( arguments.viewsDirectory & "/#arguments.resource#/#thisView#.cfm", vContent );
-			print.blueLine(
-				"--> Generated (#thisView#) View: " & arguments.viewsDirectory & "#arguments.resource#/#thisView#.cfm"
-			);
+			var views = [ "new", "edit", "show", "index" ];
+			for ( var thisView in views ) {
+				var vContent = fileRead( "/coldbox-commands/templates/resources/#thisView#.txt" );
+				vContent     = replaceNoCase(
+					vContent,
+					"|resource|",
+					arguments.resource,
+					"all"
+				);
+				vContent = replaceNoCase(
+					vContent,
+					"|singularName|",
+					arguments.singularName,
+					"all"
+				);
+				fileWrite( arguments.viewsDirectory & "/#arguments.resource#/#thisView#.cfm", vContent );
+				print.blueLine(
+					"--> Generated (#thisView#) View: " & arguments.viewsDirectory & "#arguments.resource#/#thisView#.cfm"
+				);
+			}
 		}
 
 		// ********************** generate test cases ************************************//
@@ -196,7 +217,7 @@ component {
 		command( "coldbox create integration-test" )
 			.params(
 				handler    = arguments.handler,
-				actions    = variables.ACTIONS.toList(),
+				actions    = arguments.api ? variables.API_ACTIONS.toList() : variables.ACTIONS.toList(),
 				appMapping = arguments.appMapping,
 				directory  = arguments.specsDirectory & "/integration"
 			)
@@ -258,68 +279,34 @@ component {
 
 		// ********************** generate resources ************************************//
 
-		// Open the routes file.
-		if ( arguments.module.len() ) {
-			print
-				.line()
-				.greenBoldLine(
-					"Generation completed, please add the following to your (ModuleConfig.cfc), which we are opening for you as well:"
-				);
+		variables.print
+			.line()
+			.greenBoldLine(
+				"Generation completed, please add the following to your #arguments.module.len() ? 'module' : 'application'# router (config/Router.cfc), which we are opening for you as well:"
+			);
 
-			// Generate code
-			print.blueLine( "resources = [" );
-
-			if ( arguments.resource == arguments.handler ) {
-				if ( arguments.parameterName == "id" ) {
-					print.greenLine( "	{ resource=""#arguments.resource#"" }" );
-				} else {
-					print.greenLine(
-						"	{ resource=""#arguments.resource#"", parameterName=""#arguments.parameterName#"" }"
-					);
-				}
+		// Generate code
+		if ( arguments.resource == arguments.handler ) {
+			if ( arguments.parameterName == "id" ) {
+				print.greenLine( "#arguments.api ? 'apiResources' : 'resources'#( ""#arguments.resource#"" );" );
 			} else {
-				if ( arguments.parameterName == "id" ) {
-					print.greenLine( "	{ resource=""#arguments.resource#"", handler=""#arguments.handler#"" }" );
-				} else {
-					print.greenLine(
-						"	{ resource=""#arguments.resource#"", handler=""#arguments.handler#"", parameterName=""#arguments.parameterName#"" }"
-					);
-				}
+				print.greenLine(
+					"#arguments.api ? 'apiResources' : 'resources'#( resource=""#arguments.resource#"", parameterName=""#arguments.parameterName#"" );"
+				);
 			}
-
-			print.blueLine( "];" );
-			openPath( modulePath & "/ModuleConfig.cfc" );
 		} else {
-			// Instructions
-			print
-				.line()
-				.greenBoldLine(
-					"Generation completed, please add the following to your (routes.cfm), which we are opening for you as well:"
+			if ( arguments.parameterName == "id" ) {
+				print.greenLine(
+					"#arguments.api ? 'apiResources' : 'resources'#( resource=""#arguments.resource#"", handler=""#arguments.handler#"" );"
 				);
-
-			// Generate code
-			if ( arguments.resource == arguments.handler ) {
-				if ( arguments.parameterName == "id" ) {
-					print.greenLine( "resources( resource=""#arguments.resource#"" );" );
-				} else {
-					print.greenLine(
-						"resources( resource=""#arguments.resource#"", parameterName=""#arguments.parameterName#"" );"
-					);
-				}
 			} else {
-				if ( arguments.parameterName == "id" ) {
-					print.greenLine(
-						"resources( resource=""#arguments.resource#"", handler=""#arguments.handler#"" );"
-					);
-				} else {
-					print.greenLine(
-						"resources( resource=""#arguments.resource#"", handler=""#arguments.handler#"", parameterName=""#arguments.parameterName#"" );"
-					);
-				}
+				print.greenLine(
+					"#arguments.api ? 'apiResources' : 'resources'#( resource=""#arguments.resource#"", handler=""#arguments.handler#"", parameterName=""#arguments.parameterName#"" );"
+				);
 			}
-
-			openPath( configPath & "routes.cfm" );
 		}
+
+		openPath( ( arguments.module.len() ? modulePath : configPath ) & "Router.cfc" );
 	}
 
 }
