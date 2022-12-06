@@ -54,7 +54,6 @@ component {
 	 * @generator Enter the ORM key generator to use, defaults to 'native'
 	 * @generator.options increment,identity,sequence,native,assigned,foreign,seqhilo,uuid,guid,select,sequence-identity
 	 * @properties Enter a list of properties to generate. You can add the ORM type via colon separator, default type is string. Ex: firstName,age:numeric,createdate:timestamp
-	 *
 	 * @modulesDirectory The location of the modules. Defaults to 'modules'
 	 * @handlersDirectory The location of the handlers. Defaults to 'handlers'
 	 * @viewsDirectory The location of the views. Defaults to 'views'
@@ -112,7 +111,6 @@ component {
 		} else {
 			arguments.handlersDirectory = resolvePath( arguments.handlersDirectory );
 			arguments.viewsDirectory    = resolvePath( arguments.viewsDirectory );
-			var relativeModelsDirectory = arguments.modelsDirectory;
 			arguments.modelsDirectory   = resolvePath( arguments.modelsDirectory );
 		}
 
@@ -239,7 +237,7 @@ component {
 					name           = ucFirst( arguments.singularName ),
 					description    = "I model a #arguments.singularName#",
 					properties     = arguments.properties,
-					directory      = relativeModelsDirectory,
+					directory      = arguments.modelsDirectory,
 					testsDirectory = arguments.specsDirectory & "/unit"
 				)
 				.run();
@@ -252,7 +250,7 @@ component {
 					persistence    = "singleton",
 					description    = "I manage #arguments.singularName#",
 					methods        = "save,delete,list,get",
-					directory      = relativeModelsDirectory,
+					directory      = arguments.modelsDirectory,
 					testsDirectory = arguments.specsDirectory & "/unit"
 				)
 				.run();
