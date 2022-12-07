@@ -224,7 +224,8 @@ component accessors="true" singleton {
 						'subjectDNs' : d.web.security.clientCert.subjectDNs ?: '',
 						'issuerDNs' : d.web.security.clientCert.issuerDNs ?: ''
 					}
-				}
+				},
+				'mimeTypes' : duplicate( d.web.mimeTypes ?: {} )
 			},
 			'app' : {
 				'logDir' : d.app.logDir ?: '',
@@ -961,6 +962,9 @@ component accessors="true" singleton {
 			return fileSystemUtil.resolvePath( p, defaultServerConfigFileDirectory );
 		} ) );
 
+		// Combine global and server-specific mime types
+		serverInfo.mimeTypes = defaults.web.mimeTypes.append( serverJSON.web.mimeTypes ?: {}, true );
+
 		// Global errorPages are always added on top of server.json (but don't overwrite the full struct)
 		// Aliases aren't accepted via command params
 		serverInfo.errorPages		= defaults.web.errorPages;
@@ -1447,6 +1451,13 @@ component accessors="true" singleton {
 			CLIAliases = CLIAliases.listAppend( thisAlias & '=' & serverInfo.aliases[ thisAlias ] );
 		}
 
+		// Turn struct of mimeTypes into a comma-delimited list
+		// "log;text/plain,foo;content/type"
+		var mimeTypesList = '';
+		for( var thisMime in serverInfo.mimeTypes ) {
+			mimeTypesList = mimeTypesList.listAppend( thisMime & ';' & serverInfo.mimeTypes[ thisMime ] );
+		}
+
 		// Turn struct of errorPages into a comma-delimited list.
 		// --error-pages="404=/path/to/404.html,500=/path/to/500.html,1=/path/to/default.html"
 		var errorPages = '';
@@ -1609,6 +1620,9 @@ component accessors="true" singleton {
 	 	}
 	 	if( len( CLIAliases ) ) {
 	 		 args.append( '--dirs' ).append( CLIAliases );
+	 	}
+	 	if( len( mimeTypesList ) ) {
+	 		 args.append( '--mime-types' ).append( mimeTypesList );
 	 	}
 	 	if( serverInfo.fileCacheEnable ) {
 	 		 args.append( '--cache-servlet-paths' ).append( true );
@@ -2958,7 +2972,8 @@ component accessors="true" singleton {
 			'HSTSEnable'			: false,
 			'HSTSMaxAge'			: 0,
 			'HSTSIncludeSubDomains'	: false,
-			'AJPSecret'				: ''
+			'AJPSecret'				: '',
+			'mimeTypes'				: {}
 		};
 	}
 
