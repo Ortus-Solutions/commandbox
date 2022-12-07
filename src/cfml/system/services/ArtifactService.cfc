@@ -20,14 +20,14 @@ component accessors="true" singleton {
 	property name='tempDir' 			inject='tempDir@constants';
 	property name='packageService'	 	inject='PackageService';
 	property name='logger' 				inject='logbox:logger:{this}';
-	property name="semanticVersion"		inject="provider:semanticVersion@semver"; 	
+	property name="semanticVersion"		inject="provider:semanticVersion@semver";
 	property name="configService"		inject="ConfigService";
 
 	/**
 	* THIS CANNOT BE RUN ON DI COMPLETE due to a circular dependency with the ConfigSerivice
 	*/
 	function ensureArtifactsDirectory() {
-		
+
 		// Create the artifacts directory if it doesn't exist
 		if( !directoryExists( getArtifactsDirectory() ) ) {
 			directoryCreate( getArtifactsDirectory(), true, true );
@@ -67,22 +67,35 @@ component accessors="true" singleton {
 
 
 	/**
-	* Removes all artifacts from the cache and returns the number of wiped out directories
+	* Removes all artifacts from the cache and returns the array of removed artifacts
 	*/
-	numeric function cleanArtifacts() {
+	array function cleanArtifacts( numeric daysOld=-1 ) {
 		ensureArtifactsDirectory();
 
-		var qryDir = directoryList( path=getArtifactsDirectory(), recurse=false, listInfo='query' );
-		var numRemoved = 0;
+		var artifacts = listArtifacts().reduce( (artifacts,package,versions)=>{
+			versions.each( (version)=>artifacts.append( { 'package' : package, 'version' : version } ) );
+			return artifacts;
+		}, [] )
+		// Get artifact path for each file
+		.map( (artifact)=>{
+			artifact[ 'artifactPath' ] = getArtifactPath( artifact.package, artifact.version, false );
+			return artifact;
+		} )
+		// Ensure files exist
+		.filter( (artifact)=>fileExists( artifact.artifactPath ) )
+		// get last modifed date for each file
+		.map( (artifact)=>{
+			artifact[ 'lastmodified' ] = ( daysOld == -1 ? '' : dateFormat( getFileInfo( artifact.artifactPath ).lastmodified, 'mm/dd/yyyy' ) );
+			return artifact;
+		} )
+		// Filter matching files
+		.filter( (artifact)=>daysOld == -1 || artifact.lastmodified <= dateAdd( 'd', -daysOld, now() ) );
 
-		for( var path in qryDir ) {
-			if( path.type == 'Dir' ) {
-				numRemoved++;
-				directoryDelete( path.directory & '/' & path.name, true );
-			}
-		}
+		artifacts.each( (artifact)=>{
+			removeArtifact( artifact.package, artifact.version );
+		} );
 
-		return numRemoved;
+		return artifacts;
 	}
 
 	/**
@@ -94,6 +107,13 @@ component accessors="true" singleton {
 		ensureArtifactsDirectory();
 		if( packageExists( arguments.packageName, arguments.version ) ){
 			directoryDelete( getPackagePath( arguments.packageName, arguments.version ), true );
+			// If there are no more verions, remove the package folder as well
+			if( listArtifacts( packageName ).isEmpty() ) {
+				var path = getArtifactsDirectory() & arguments.packageName;
+				if( directoryExists( path ) ) {
+					directoryDelete( path, true );
+				}
+			}
 			return true;
 		}
 
@@ -119,7 +139,7 @@ component accessors="true" singleton {
 		ensureArtifactsDirectory();
 		// This will likely change, so I'm only going to put the code here.
 
-		var path = getArtifactsDirectory() & '/' & arguments.packageName;
+		var path = getArtifactsDirectory() & arguments.packageName;
 		// do we have a version?
 		if( arguments.version.len() ){
 			path &= "/" & arguments.version;
@@ -134,6 +154,7 @@ component accessors="true" singleton {
 	*/
 	boolean function artifactExists( required packageName, required version ){
 		ensureArtifactsDirectory();
+		arguments.touch = false;
 		return fileExists( getArtifactPath( argumentCollection = arguments ) );
 	}
 
@@ -142,10 +163,18 @@ component accessors="true" singleton {
 	* @packageName The package name to look for
 	* @version The version of the package to look for
 	*/
-	function getArtifactPath( required packageName, required version ) {
+	function getArtifactPath( required packageName, required version, boolean touch=true ) {
 		ensureArtifactsDirectory();
+		var theFile = getPackagePath( arguments.packageName, arguments.version ) & '/' & arguments.packageName & '.zip';
+		// This allows us to keep tabs on when artifacts are used
+		if( touch ) {
+			var oFile = createObject( "java", "java.io.File" ).init( theFile );
+			if( oFile.exists() ){
+				oFile.setLastModified( now().getTime() );
+			}
+		}
 		// I'm using the package name as the zip file for lack of anything better even though it's redundant with the first folder
-		return getPackagePath( arguments.packageName, arguments.version ) & '/' & arguments.packageName & '.zip';
+		return theFile;
 
 	}
 
@@ -277,6 +306,10 @@ component accessors="true" singleton {
 	}
 
 	string function getArtifactsDirectory() {
-		return configService.getSetting( 'artifactsDirectory', variables.artifactDir );
+		var path = configService.getSetting( 'artifactsDirectory', variables.artifactDir );
+		if( !path.endsWith( '/' ) || !path.endsWith( '\' ) ) {
+			path &= '/';
+		}
+		return path;
 	}
 }

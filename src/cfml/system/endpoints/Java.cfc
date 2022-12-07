@@ -37,6 +37,7 @@ component accessors=true implements="IEndpoint" singleton {
 	property name="folderEndpoint"			inject="commandbox.system.endpoints.Folder";
 	property name="PackageService"			inject="packageService";
 	property name='configService'			inject='configService';
+	property name='javaService'				inject='javaService';
 
 	// Properties
 	property name="namePrefixes" type="string";
@@ -49,7 +50,7 @@ component accessors=true implements="IEndpoint" singleton {
 	public string function resolvePackage( required string package, boolean verbose=false ) {
 
 		if( configService.getSetting( 'offlineMode', false ) ) {
-			throw( 'Can''t download [#getNamePrefixes()#:#package#], CommandBox is in offline mode.  Go online with [config set offlineMode=false].', 'endpointException' );	
+			throw( 'Can''t download [#getNamePrefixes()#:#package#], CommandBox is in offline mode.  Go online with [config set offlineMode=false].', 'endpointException' );
 		}
 
 		var lockVersion = false;
@@ -308,11 +309,12 @@ component accessors=true implements="IEndpoint" singleton {
 			var results = {
 				'version' : '',
 				'type' : 'jre',
-				'arch' : server.java.archModel contains 32 ? 'x32' : 'x64',
+				'arch' : javaService.getCurrentCPUArch(),
 				'os' : '',
 				'jvm-implementation' : ( ID.findNoCase( 'openj9' ) ? 'openj9' : 'hotspot' ),
 				'release' : 'latest'
 			};
+
 
 			if( fileSystemUtil.isMac() ) {
 				results.os = 'mac';

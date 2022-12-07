@@ -15,6 +15,7 @@ component accessors="true" singleton {
 	property name='configService' 		inject='configService';
 	property name='interceptorService' 	inject='InterceptorService';
 	property name='fileSystemUtil' 		inject='fileSystem';
+	property name='systemSettings'		inject='systemSettings';
 
 	property name='javaDirectory';
 
@@ -124,4 +125,20 @@ component accessors="true" singleton {
 		}
 	}
 
+
+	/**
+	 * Guess the current machine's CPU arhctecture
+	 *
+	 * TODO: detect ppc64, s390x, and ppc64le
+	 */
+	function getCurrentCPUArch() {
+		if( server.java.archModel contains 32 ) {
+			return 'x32';
+		// Detect ARM chips
+		} else if( systemSettings.getSystemSetting( 'os.arch', '' ).findNoCase( 'arm' ) || systemSettings.getSystemSetting( 'os.arch', '' ).findNoCase( 'aarch' ) ) {
+			return 'aarch64';
+		} else {
+			return 'x64';
+		}
+	}
 }

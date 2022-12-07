@@ -22,7 +22,8 @@ component {
 	// repl history file
 	property name="commandHistoryFile"		inject="commandHistoryFile@constants";
 	property name="REPLScriptHistoryFile"	inject="REPLScriptHistoryFile@constants";
-	property name="REPLTagHistoryFile"	inject="REPLTagHistoryFile@constants";
+	property name="REPLTagHistoryFile"		inject="REPLTagHistoryFile@constants";
+	property name='configService'			inject='ConfigService';
 
 	// repl parser
 	property name="REPLParser"		inject="REPLParser";
@@ -130,16 +131,25 @@ component {
 						// flush out anything in buffer
 						print.toConsole();
 						// Log it
-						logger.error( '#e.message# #e.detail#' , e.stackTrace );
+						var shortTrace =  e.stackTrace.mid( 1, e.stackTrace.find( '/commands/repl.cfc' ) + 23 );
+						logger.error( '#e.message# #e.detail#' , shortTrace );
 						if( quit ) {
 							resetShell();
-							// This will exist the command
-							error( '#e.message##CR##e.detail#' );
+							// This will exit the command
+							if( configService.getSetting( 'verboseErrors', false ) ) {
+								error( '#e.message##CR##e.detail#', shortTrace );
+							} else {
+								error( '#e.message##CR##e.detail#' );
+							}
 						} else {
 							print.whiteOnRedLine( 'ERROR' )
 								.line()
 								.boldRedLine( '#e.message##CR##e.detail#' )
 								.line();
+
+							if( configService.getSetting( 'verboseErrors', false ) ) {
+								print.redLine(  shortTrace );
+							}
 						}
 					}
 				}

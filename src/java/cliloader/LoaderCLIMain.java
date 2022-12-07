@@ -43,6 +43,8 @@ import javax.script.ScriptEngineManager;
 import javax.script.ScriptEngine;
 import java.time.Instant;
 import java.nio.file.Paths;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.security.Security;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -711,7 +713,7 @@ public class LoaderCLIMain{
 		props.setProperty( "cfml.cli.pwd", cliworkingdirFinal );
 
 		File libDir = getLibDir();
-		// Default Log4j2 config is in the libn folder
+		// Default Log4j2 config is in the lib folder
 		System.setProperty("log4j2.configurationFile", new File( libDir, "log4j2.xml" ).toURI().toString() );
 		// The OSGI bundle loader is throwing an error so we need to force the default CL context selector
 		System.setProperty("Log4jContextSelector", "org.apache.logging.log4j.core.selector.ClassLoaderContextSelector" );
@@ -736,6 +738,41 @@ public class LoaderCLIMain{
 					log.warn( "run '" + name + " -update' to install new version" );
 				}
 			}
+		}
+
+		File newLibDir = new File( cli_home, "lib-new" ).getCanonicalFile();
+		// if lib-new exists and has files
+		if( newLibDir.exists() && newLibDir.isDirectory() && newLibDir.listFiles( new ExtFilter( ".jar" ) ).length > 0 ) {
+			log.info( "Upgrading libraries..." );
+
+			// OSGI can be grumpy on upgrade with competing bundles.  Start fresh
+			if( cfmlFelixCacheDir.exists() ) {
+				log.info( "Cleaning old Felix Cache..." );
+				Util.deleteDirectory( cfmlFelixCacheDir );
+			}
+
+			// Try to delete the Runwar jar first since it's the most likely to be locked.
+			// If it fails, this method will just abort before we get any farther into deleting stuff.
+			Util.checkIfJarsLocked( libDir, "runwar" );
+			// Ok, try deleting for real.  If any of these jars fail to delete, we'll still holler at the user and abort the upgrade
+			Util.removePreviousLibs( libDir );
+
+			for( File thisLib : newLibDir.listFiles() ) {
+				try {
+					Files.move( thisLib.toPath(), new File( libDir, thisLib.getName() ).toPath(), StandardCopyOption.REPLACE_EXISTING );
+				} catch ( Exception e ) {
+					System.err.println( "" );
+					System.err.println( "CommandBox could not move the jar [" + thisLib.getAbsolutePath() + "] to [" + libDir.getAbsolutePath() + "]" );
+					System.err.println( "Error: " + e.getMessage() );
+					e.printStackTrace();
+					System.err.println( "Please close all open consoles and stop all running servers before trying again." );
+					try { Thread.sleep( 5000 ); } catch( Throwable t ){}
+					System.exit( 1 );
+				}
+			}
+			newLibDir.delete();
+			log.info( "" );
+			log.info( "Libraries upgraded" );
 		}
 
 		if( !libDir.exists()
@@ -783,6 +820,7 @@ public class LoaderCLIMain{
 			}
 			Util.cleanUpUnpacked( libDir );
 		}
+
 		// check cfml version
 		if( cfmlDir.exists() ) {
 			File versionFile = new File( cfmlDir, ".version" );

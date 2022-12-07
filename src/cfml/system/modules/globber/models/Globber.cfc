@@ -34,6 +34,7 @@ component accessors="true" {
 
 
 	function init() {
+		variables.separator = server.system.properties['file.separator'] ?: '/';
 		variables.format = 'array';
 		variables.pattern = [];
 		variables.excludePattern = [];
@@ -147,11 +148,11 @@ component accessors="true" {
 	function addExcludePattern( required string excludePattern ) {
 		if( len( arguments.excludePattern ) ) {
 			if ( arguments.excludePattern.startsWith( '!' ) ) {
-				addNotExcludePattern( mid( arguments.excludePattern, 2, len( arguments.excludePattern ) - 1 ) );	
+				addNotExcludePattern( mid( arguments.excludePattern, 2, len( arguments.excludePattern ) - 1 ) );
 			} else {
 				arguments.excludePattern = pathPatternMatcher.normalizeSlashes( arguments.excludePattern );
-				variables.excludePattern.append( arguments.excludePattern  );	
-			}			
+				variables.excludePattern.append( arguments.excludePattern  );
+			}
 		}
 		return this;
 	}
@@ -166,7 +167,7 @@ component accessors="true" {
 		}
 		return this;
 	}
-	
+
 	/**
 	* Always returns a string which is a list of excludePatterns
 	*/
@@ -211,7 +212,7 @@ component accessors="true" {
 				var newDir = pathAppend( p.directory, p.name );
 				newDir = pathPatternMatcher.normalizeSlashes( newDir );
 				newDir = newDir.replace( getBaseDir(), '' )
-				directoryCreate( targetPath & newDir, true, true )	
+				directoryCreate( targetPath & newDir, true, true )
 			} );
 		// Copy files asynch
 		paths
@@ -228,9 +229,9 @@ component accessors="true" {
 				if( !directoryExists( newDirectory ) ) {
 					directoryCreate( newDirectory, true, true );
 				}
-				fileCopy( oldFile, newFile )	
+				fileCopy( oldFile, newFile )
 			}, true );
-			
+
 		return this;
 	}
 
@@ -243,8 +244,14 @@ component accessors="true" {
 			return getMatchQuery();
 		} else {
 			return getMatchQuery().reduce( function( arr, row ) {
-				// Turn all the slashes the right way for this OS
-				return arr.append( row.directory & '/' & row.name & ( row.type == 'Dir' ? '/' : '' ) );
+				var thisPath = row.directory;
+				if( !thisPath.endsWith( '\' ) && !thisPath.endsWith( '/' ) ) {
+					thisPath &= separator;
+				}
+				if( len( row.name ) ) {
+					thisPath &= row.name & ( row.type == 'Dir' ? separator : '' );
+				}
+				return arr.append( thisPath );
 			}, [] );
 		}
 	}
@@ -280,14 +287,14 @@ component accessors="true" {
 		if( getLoose() && !len( getBaseDir() ) ) {
 			throw( 'You must use [inDirectory()] to set a base dir when using loose matching.' );
 		}
-		
+
 		for( var thisPattern in patterns ) {
 			processPattern( thisPattern );
 		}
 
 		var matchQuery = getMatchQuery();
-		
-		combineMatchQueries();		
+
+		combineMatchQueries();
 
 		if( patterns.len() > 1 && !getLoose() ) {
 			var dirs = queryColumnData( getMatchQuery(), 'directory' );
@@ -324,20 +331,33 @@ component accessors="true" {
 		var exactPattern = thisPattern.startsWith('/');
 		var fileFilter = '';
 		var fullPatternPath = ( getLoose() ? pathAppend( getBaseDir(), thisPattern ) : thisPattern );
-							
+
 		// Optimization for exact file path
-		if( ( !getLoose() || exactPattern ) 
+		if( ( !getLoose() || exactPattern )
 			&& ( thisPattern does not contain '*' && thisPattern does not contain '?' && fileExists( fullPatternPath ) )
 		) {
 			arguments.baseDir = getDirectoryFromPath( fullPatternPath );
 			fileFilter = '*' & listLast( fullPatternPath, '/' )
 		} else {
 			if( isNull( arguments.baseDir ) ) {
+				// Special handing for Windows drive letter and no folder as you can't run directoryList() and get a drive letter back!
+				// This only kicks in for C: not C:/ as the latter would list all children folders
+				if( pattern.listLen( '/' ) == 1 && pattern contains ':' && !pattern.endsWith( '/' ) ) {
+					// Spoof a directory listing that contains just the drive letter directly
+					appendMatchQuery( queryNew(
+						'name,size,type,dateLastModified,attributes,mode,directory',
+						'string,string,string,date,string,string,string',
+						['',0,'Dir',now(),'','',pattern]
+					) );
+					setBaseDir( baseDir & ( baseDir.endsWith( '/' ) ? '' : '/' ) );
+					return true;
+				}
+
 				// To optimize this as much as possible, we want to get a directory listing as deep as possible so we process a few files as we can.
 				// Find the deepest folder that doesn't have a wildcard in it.
 				if( getLoose() ) {
 					if( exactPattern ) {
-						arguments.baseDir = calculateBaseDir( getBaseDir() & thisPattern.right( -1 ) )	
+						arguments.baseDir = calculateBaseDir( getBaseDir() & thisPattern.right( -1 ) )
 					} else {
 						arguments.baseDir = calculateBaseDir( getBaseDir() )
 					}
@@ -349,7 +369,6 @@ component accessors="true" {
 
 		// Strip off the "not found" part
 		var remainingPattern = findUnmatchedPattern( thisPattern, baseDir )
-
 		var dl = directoryList (
 				listInfo='query',
 				recurse=false,
@@ -363,12 +382,12 @@ component accessors="true" {
 					var thisPath = arguments.path.directory & '/' & arguments.path.name & ( arguments.path.type == 'dir' ? '/' : '' );
 				}
 				local.thisPath = pathPatternMatcher.normalizeSlashes( thisPath );
-				
+
 				var pathToMatch = local.thisPath;
 				if( getLoose() ) {
 					pathToMatch = local.thisPath.replaceNoCase( getBaseDir(), '' );
 				}
-								
+
 				// If we've hit an exclude pattern, we can bail now-- skipping all recursion and processing of files at this level.
 				var thisExcludePattern = this.getExcludePatternArray();
 				if( !skipExcludes && thisExcludePattern.len() && pathPatternMatcher.matchPatterns( thisExcludePattern, pathToMatch, !getLoose() ) ) {
@@ -382,15 +401,15 @@ component accessors="true" {
 							}
 						} else {
 							// For each of our possible patterns, let's recurse and check each of them.
-							// TODO: optimize this by recursing once and checking all patterns at a time, 
+							// TODO: optimize this by recursing once and checking all patterns at a time,
 							// but that will require a major refactor of processPatterns() to accept more than one pattern.
 							for( var possiblePattern in possiblePatterns) {
 								if( getLoose() ) {
 									if( possiblePattern.startsWith( '/' ) ) {
-										// Exact patterns in loose mode like /foo/bar/baz.txt we want to zoom straight down to the 
+										// Exact patterns in loose mode like /foo/bar/baz.txt we want to zoom straight down to the
 										// deepest folder possible to reduce unnessary recursion.
 										possiblePattern = pathAppend( getBaseDir(), possiblePattern );
-										
+
 										var thisBaseDir = calculateBaseDir( possiblePattern );
 										possiblePattern = possiblePattern.replace( thisBaseDir, '' );
 										processPattern( possiblePattern, thisBaseDir, true );
@@ -408,7 +427,7 @@ component accessors="true" {
 					}
 					return false;
 				}
-				
+
 				// If we're inside a **, then we just blindly recurse forever
 				if( arguments.path.type == 'dir' && remainingPattern.startsWith( '**' ) ) {
 					processPattern( thisPattern, local.thisPath, skipExcludes )
@@ -427,8 +446,8 @@ component accessors="true" {
 						processPattern( local.thisPath & remainingPattern.listRest( '/' ), local.thisPath, skipExcludes );
 					}
 				}
-				
-				// This check applies to files/folders that are immediate children of the current base dir. 
+
+				// This check applies to files/folders that are immediate children of the current base dir.
 				// We've already recursed into all worthy subfolders above
 				if( pathPatternMatcher.matchPattern( thisPattern, local.pathToMatch, !getLoose() ) ) {
 					return true;
@@ -438,7 +457,7 @@ component accessors="true" {
 
 		appendMatchQuery( dl );
 		if( !getLoose() ) {
-			setBaseDir( baseDir & ( baseDir.endsWith( '/' ) ? '' : '/' ) );	
+			setBaseDir( baseDir & ( baseDir.endsWith( '/' ) ? '' : '/' ) );
 		}
 
 	}
@@ -479,23 +498,22 @@ component accessors="true" {
 			}
 			// If we have a partial name like /foo/bar we may still match /foo/barstool.
 			// Only if it's /foo/bar/ do we know we can trust that in the base path
-			if( i == pattern.listLen( '/' ) && !pattern.endsWith( '/' ) ) {
+			if( i == pattern.listLen( '/' ) && !pattern.endsWith( '/' ) && !(token contains ':' ) ) {
 				break;
 			}
 			baseDir = pathAppend( baseDir, token );
 		}
-		
+
 		// Unix paths need the leading slash put back
 		if( pattern.startsWith( '/' ) ) {
 			baseDir = '/' & baseDir;
 		}
 
-		// Windows drive letters need trailing slash.
-		if( baseDir.listLen( '/' ) == 1 && baseDir contains ':' ) {
-			baseDir = baseDir & '/';
+		// Directories must always end with trailing slash
+		if( !pattern.endsWith( '/' ) ) {
+			baseDir &= '/';
 		}
 
-		baseDir &= '/';
 		return baseDir;
 	}
 
@@ -511,15 +529,15 @@ component accessors="true" {
 				SQL &= ' SELECT * FROM thisMatchQuery#i# ';
 				if( i < matchQueryArray.len() ) {
 					SQL &= ' UNION ALL'
-				}				
+				}
 			}
-			
+
 			var newMatchQuery = queryExecute(
 				SQL,
 				[],
 				{ dbtype="query" }
 			);
-						
+
 			var newMatchQuery = queryExecute(
 				'SELECT * FROM newMatchQuery
 				GROUP BY directory, name '
@@ -531,17 +549,17 @@ component accessors="true" {
 			setMatchQuery( local.newMatchQuery );
 		}
 	}
-	
+
 	function pathMayNotBeExcluded( pathToMatch, type, currentBaseDir ) {
 		if( !getNotExcludePattern().len() ) {
 			return [];
 		}
 		var possiblePatterns=[];
-						
-		for( notExclude in getNotExcludePattern() ) {	
+
+		for( notExclude in getNotExcludePattern() ) {
 			var exactPattern = notExclude.startsWith('/');
 			var remainingPattern = findUnmatchedPattern( notExclude, currentBaseDir )
-			
+
 			// Well, crumbs-- all bets are off!
 			// /temp/**
 			// !foo.txt
@@ -549,19 +567,19 @@ component accessors="true" {
 				possiblePatterns.append( notExclude );
 				continue;
 			}
-			
+
 			// If it's a file, just check it
 			if( type == 'file' ) {
 				if( pathPatternMatcher.matchPattern( notExclude, pathToMatch, false ) ) {
-					possiblePatterns.append( notExclude );					
+					possiblePatterns.append( notExclude );
 				}
 				// Even if we didn't find a match, all the checks below only apply to directories
 				continue;
 			}
-			
+
 			// These all apply to directories.  The question is whether or not we MAY need to recurse into the dir
 			// based on whether there is a notexclude pattern that could possibly be inside the dir
-			
+
 			// If we're inside a **, then we just blindly recurse forever
 			if( remainingPattern.startsWith( '**' ) ) {
 				possiblePatterns.append( notExclude );
@@ -575,36 +593,40 @@ component accessors="true" {
 				possiblePatterns.append( notExclude );
 				continue;
 			}
-			 	
+
 		}
 		return possiblePatterns;
 	}
-	
+
 	function findUnmatchedPattern( thisPattern, currentBaseDir ) {
-		var exactPattern = thisPattern.startsWith('/');		
+		var exactPattern = thisPattern.startsWith('/');
 		if( getLoose() ) {
 			if( exactPattern ) {
 				if( currentBaseDir == getBaseDir() ) {
 					var remainingPattern = thisPattern;
 				} else {
-					var remainingPattern = thisPattern.replaceNoCase( currentBaseDir.replaceNoCase( getBaseDir(), '' ), '' );	
+					var remainingPattern = thisPattern.replaceNoCase( currentBaseDir.replaceNoCase( getBaseDir(), '' ), '' );
 				}
 			} else {
 				// A loose pattern without a leading slash can be any levels deep
 				remainingPattern = '**';
-			}	
-		} else {
+			}
+		} else {		// Windows drive letters need trailing slash.
+			if( thisPattern.listLen( '/' ) == 1 && thisPattern contains ':' && !thisPattern.endsWith( '/' ) ) {
+				thisPattern &= '/';
+			}
+
 			var remainingPattern = thisPattern.replaceNoCase( currentBaseDir, '' );
 			// if our base path isn't contained inside the pattern, we have entered a ** portion and we can't short circuit anything now
 			if( remainingPattern == thisPattern ) {
 				remainingPattern = '**';
-			}	
+			}
 		}
 		return remainingPattern;
 	}
-	
+
 	/**
-	* Concatenate a folder or file to an existing base path, taking into account forward or backslashes 
+	* Concatenate a folder or file to an existing base path, taking into account forward or backslashes
 	* Won't remove leading slashes on *nix.
 	* If base is an empty string, path is returned untouched.
 	*
@@ -614,7 +636,7 @@ component accessors="true" {
 	function pathAppend( base, path ) {
 		if( base == '' ) {
 			return path;
-		} 
+		}
 		// Ensure trailing slash on base
 		if( !base.endsWith( '/' ) && !base.endsWith( '\' ) ) {
 			base  &= '/';
@@ -624,6 +646,6 @@ component accessors="true" {
 			path = path.right( -1 );
 		}
 		return base & path;
-	}		
+	}
 
 }

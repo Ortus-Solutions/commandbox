@@ -122,7 +122,7 @@ component {
         if( termWidth <= 0 ) {
 			// If this table is going to get captured in job output, ensure it will fix based on the job depth
 			if( job.getActive() ) {
-				termWidth = shell.getTermWidth()-2-( job.getCurrentJobDepth() * 4 );
+				termWidth = shell.getTermWidth()-3-( job.getCurrentJobDepth() * 4 );
 			} else {
 				termWidth = shell.getTermWidth()-1;
 			}

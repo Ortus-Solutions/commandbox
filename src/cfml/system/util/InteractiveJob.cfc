@@ -84,7 +84,7 @@ component accessors=true singleton {
 	* @line Message to log
 	*/
 	function addLog( required string line, string color='' ) {
-		var termWidth = terminal.getWidth() - ( getCurrentJobDepth() * 4 ) - 3;
+		var termWidth = shell.getTermWidth() - ( getCurrentJobDepth() * 4 ) - 3;
 		if( termWidth <= 0 ){
 			termWidth = 70;
 		}

@@ -1,25 +1,20 @@
 /**
- * Manage |resource|
+ * Manage |resource| as an API Resource
  * It will be your responsibility to fine tune this template, add validations, try/catch blocks, logging, etc.
  */
-component extends="coldbox.system.EventHandler"{
+component extends="coldbox.system.RestHandler"{
 
 	// DI
 	property name="|resource|Service" inject="|resource|Service";
 
 	/**
-	 * Display a list of |resource|
+	 * Return the collection of |resource|
 	 */
 	function index( event, rc, prc ){
-		// Get resources here
-		event.setView( "|resource|/index" );
-	}
-
-	/**
-	 * Return an HTML form for creating one |singularName|
-	 */
-	function new( event, rc, prc ){
-		event.setView( "|resource|/new" );
+		event.getResponse()
+			.setData(
+				|resource|Service.list()
+			);
 	}
 
 	/**
@@ -33,16 +28,11 @@ component extends="coldbox.system.EventHandler"{
 	 * Show a |singularName|
 	 */
 	function show( event, rc, prc ){
-		event.paramValue( "|parameterName|", 0 );
-		event.setView( "|resource|/show" );
-	}
-
-	/**
-	 * Edit a |singularName|
-	 */
-	function edit( event, rc, prc ){
-		event.paramValue( "|parameterName|", 0 );
-		event.setView( "|resource|/edit" );
+		event.getResponse()
+			.paramValue( "|parameterName|", 0 )
+			.setData(
+				|resource|Service.get( rc.|parameterName| )
+			);
 	}
 
 	/**
@@ -50,6 +40,7 @@ component extends="coldbox.system.EventHandler"{
 	 */
 	function update( event, rc, prc ){
 		event.paramValue( "|parameterName|", 0 );
+
 	}
 
 	/**
@@ -57,6 +48,7 @@ component extends="coldbox.system.EventHandler"{
 	 */
 	function delete( event, rc, prc ){
 		event.paramValue( "|parameterName|", 0 );
+
 	}
 
 }

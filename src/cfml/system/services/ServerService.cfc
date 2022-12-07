@@ -320,6 +320,18 @@ component accessors="true" singleton {
 
 		// Look up the server that we're starting
 		var serverDetails = resolveServerDetails( arguments.serverProps );
+
+
+		var foundServer = getServerInfoByName( serverDetails.defaultName );
+		if( structCount( foundServer ) && normalizeWebroot( foundServer.webroot ) != normalizeWebroot( serverDetails.defaultwebroot ) ) {
+			throw(
+				message='You''ve asked to start a server named [#serverDetails.defaultName#] with a webroot of [#serverDetails.defaultwebroot#], but a server of this name already exists with a different webroot of [#foundServer.webroot#]',
+				detail='Server name and webroot must be unique.  Please forget the old server first.  Use "server list" to see all defined servers.',
+				type="commandException"
+			 );
+		}
+
+
 		// Get defaults
 		var defaults = getDefaultServerJSON();
 		var defaultName = serverDetails.defaultName;
@@ -807,7 +819,7 @@ component accessors="true" singleton {
 
 		serverInfo.clientCertMode = serverJSON.web.SSL.clientCert.mode ?: defaults.web.SSL.clientCert.mode;
 		serverInfo.clientCertSSLRenegotiationEnable = serverJSON.web.security.clientCert.SSLRenegotiationEnable ?: defaults.web.security.clientCert.SSLRenegotiationEnable;
-		
+
 
 		serverInfo.SSLForceRedirect			= serverJSON.web.SSL.forceSSLRedirect							?: defaults.web.SSL.forceSSLRedirect;
 		serverInfo.HSTSEnable				= serverJSON.web.SSL.HSTS.enable								?: defaults.web.SSL.HSTS.enable;
@@ -818,51 +830,51 @@ component accessors="true" singleton {
 		serverInfo.rewritesEnable 	= serverProps.rewritesEnable	?: serverJSON.web.rewrites.enable		?: defaults.web.rewrites.enable;
 		serverInfo.rewritesStatusPath = 							   serverJSON.web.rewrites.statusPath	?: defaults.web.rewrites.statusPath;
 		serverInfo.rewritesConfigReloadSeconds =					   serverJSON.web.rewrites.configReloadSeconds ?: defaults.web.rewrites.configReloadSeconds;
-		
+
 		serverInfo.basicAuthEnable 	= 	serverJSON.web.security.basicAuth.enable	?: defaults.web.security.basicAuth.enable	?: serverJSON.web.basicAuth.enable	?: defaults.web.basicAuth.enable;
 		serverInfo.basicAuthUsers 	= 	serverJSON.web.security.basicAuth.users		?: defaults.web.security.basicAuth.users	?: serverJSON.web.basicAuth.users	?: defaults.web.basicAuth.users;
 		// If there are no users, basic auth is NOT enabled
 		if( !serverInfo.basicAuthUsers.count() ) {
 			serverInfo.basicAuthEnable = false;
 		}
-		
+
 		serverInfo.clientCertEnable	=				serverJSON.web.security.clientCert.enable 				?: defaults.web.security.clientCert.enable;
 		serverInfo.clientCertTrustUpstreamHeaders =	serverJSON.web.security.clientCert.trustUpstreamHeaders ?: defaults.web.security.clientCert.trustUpstreamHeaders;
-		
+
 		// Default missing values
 		serverJSON.web.security.clientCert.subjectDNs = serverJSON.web.security.clientCert.subjectDNs ?: '';
 		serverJSON.web.security.clientCert.issuerDNs = serverJSON.web.security.clientCert.issuerDNs ?: '';
-		
+
 		// Convert all strings to arrays
 		if( isSimpleValue( serverJSON.web.security.clientCert.subjectDNs ) ) {
 			if( len( serverJSON.web.security.clientCert.subjectDNs ) ) {
-				serverJSON.web.security.clientCert.subjectDNs = [ serverJSON.web.security.clientCert.subjectDNs ];	
+				serverJSON.web.security.clientCert.subjectDNs = [ serverJSON.web.security.clientCert.subjectDNs ];
 			} else {
 				serverJSON.web.security.clientCert.subjectDNs = [];
 			}
 		}
 		if( isSimpleValue( defaults.web.security.clientCert.subjectDNs ) ) {
 			if( len( defaults.web.security.clientCert.subjectDNs ) ) {
-				defaults.web.security.clientCert.subjectDNs = [ defaults.web.security.clientCert.subjectDNs ];	
+				defaults.web.security.clientCert.subjectDNs = [ defaults.web.security.clientCert.subjectDNs ];
 			} else {
 				defaults.web.security.clientCert.subjectDNs = [];
 			}
 		}
 		if( isSimpleValue( serverJSON.web.security.clientCert.issuerDNs ) ) {
 			if( len( serverJSON.web.security.clientCert.issuerDNs ) ) {
-				serverJSON.web.security.clientCert.issuerDNs = [ serverJSON.web.security.clientCert.issuerDNs ];	
+				serverJSON.web.security.clientCert.issuerDNs = [ serverJSON.web.security.clientCert.issuerDNs ];
 			} else {
 				serverJSON.web.security.clientCert.issuerDNs = [];
 			}
 		}
 		if( isSimpleValue( defaults.web.security.clientCert.issuerDNs ) ) {
 			if( len( defaults.web.security.clientCert.issuerDNs ) ) {
-				defaults.web.security.clientCert.issuerDNs = [ defaults.web.security.clientCert.issuerDNs ];	
+				defaults.web.security.clientCert.issuerDNs = [ defaults.web.security.clientCert.issuerDNs ];
 			} else {
 				defaults.web.security.clientCert.issuerDNs = [];
 			}
 		}
-		
+
 		// Combine server defaults AND any settings in server.json
 		serverInfo.clientCertSubjectDNs	= serverJSON.web.security.clientCert.subjectDNs.append( defaults.web.security.clientCert.subjectDNs, true );
 		serverInfo.clientCertIssuerDNs	= serverJSON.web.security.clientCert.issuerDNs.append( defaults.web.security.clientCert.issuerDNs, true );
@@ -1671,13 +1683,11 @@ component accessors="true" singleton {
 		// Send SSL cert info if SSL is enabled and there's cert info
 		if( serverInfo.SSLEnable ) {
 			if( serverInfo.SSLCertFile.len() ) {
-				args
-					.append( '--ssl-cert' ).append( serverInfo.SSLCertFile )
-					.append( '--ssl-key' ).append( serverInfo.SSLKeyFile );
-				// Not all certs require a password
-				if( serverInfo.SSLKeyPass.len() ) {
-					args.append( '--ssl-keypass' ).append( serverInfo.SSLKeyPass );
+				args.append( '--ssl-cert' ).append( serverInfo.SSLCertFile );
+				if( serverInfo.SSLKeyFile.len() ) {
+					args.append( '--ssl-key' ).append( serverInfo.SSLKeyFile );
 				}
+				args.append( '--ssl-keypass' ).append( serverInfo.SSLKeyPass );
 			}
 			if( len( serverInfo.clientCertMode ) ){
 				args.append( '--client-cert-negotiation' ).append( serverInfo.clientCertMode );
@@ -1687,12 +1697,12 @@ component accessors="true" singleton {
 			}
 			if( len( serverInfo.clientCertCATrustStoreFile ) ) {
 				args.append( '--ssl-add-ca-truststore' ).append( serverInfo.clientCertCATrustStoreFile );
-				args.append( '--ssl-add-ca-truststore-pass' ).append( serverInfo.clientCertCATrustStorePass );	
+				args.append( '--ssl-add-ca-truststore-pass' ).append( serverInfo.clientCertCATrustStorePass );
 			}
 			if( serverInfo.clientCertCACertFiles.len() ){
 				args.append( '--ssl-add-ca-certs' ).append( serverInfo.clientCertCACertFiles.toList() );
 			}
-			
+
 		}
 
 		// Incorporate rewrites to command
@@ -1713,8 +1723,8 @@ component accessors="true" singleton {
 			if( !len( serverInfo.securityRealm ) ) {
 				serverInfo.securityRealm = serverInfo.name;
 			}
-			args.append( '--security-realm' ).append( serverInfo.securityRealm );			
-					
+			args.append( '--security-realm' ).append( serverInfo.securityRealm );
+
 			// Basic auth
 			if( serverInfo.basicAuthEnable ) {
 				// Escape commas and equals with backslash
@@ -1725,9 +1735,9 @@ component accessors="true" singleton {
 				} );
 				// user=pass,user2=pass2
 				args.append( '--basicauth-users' ).append( thisBasicAuthUsers );
-	
+
 			}
-			
+
 			// Client cert
 			if( serverInfo.clientCertEnable ) {
 				args
@@ -1736,9 +1746,9 @@ component accessors="true" singleton {
 					.append( '--client-cert-issuerdns' ).append( serializeJSON( serverInfo.clientCertIssuerDNs ) );
 			}
 		}
-		
+
 		args.append( '--client-cert-trust-headers' ).append( serverInfo.clientCertTrustUpstreamHeaders )
-		
+
 		if( serverInfo.rewritesEnable ){
 			if( !fileExists(serverInfo.rewritesConfig) ){
 				job.error( 'URL rewrite config not found [#serverInfo.rewritesConfig#]' );
@@ -1818,8 +1828,8 @@ component accessors="true" singleton {
 			job.complete( serverInfo.verbose );
 			return;
 		}
-		
-		
+
+
 	    if( fileSystemUtil.isWindows() ) {
 	    	args = args.map( (a)=>replace( a, '"', '\"', 'all' ) );
 	    }
@@ -2150,7 +2160,7 @@ component accessors="true" singleton {
 		if( heapSize.endsWith( 'k' ) ) {
 			return val( heapSize ) / 1024;
 		}
-		throw( 'Invalid Heap size [#heapSize#]' );
+		throw( message='Invalid Heap size [#heapSize#]', type="commandException" );
 	}
 
 	function getFirstServer() {
@@ -2599,7 +2609,7 @@ component accessors="true" singleton {
 		arguments.serverInfo.id = serverID;
 
 		if( arguments.serverInfo.webroot == "" ){
-			throw( "The webroot cannot be empty!" );
+			throw( message="The webroot cannot be empty!", type="commandException" );
 		}
 
 		servers[ serverID ] = serverInfo;

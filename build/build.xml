@@ -16,8 +16,8 @@ External Dependencies:
  	<property name="distro.groupID"				value="ortussolutions" />
  	<property name="distro.name"				value="commandbox"/>
  	<!-- Special things happen when the version and stableVersion are the same value as that signifies a "stable" build.   -->
- 	<property name="commandbox.version"			value="5.6.0"/>
- 	<property name="commandbox.stableVersion"	value="5.6.0"/>
+ 	<property name="commandbox.version"			value="5.7.0"/>
+ 	<property name="commandbox.stableVersion"	value="5.7.0"/>
 
     <!-- Time Label -->
 	<tstamp prefix="start"/>
@@ -342,60 +342,49 @@ External Dependencies:
 		</zip>
 		<copy file="${dist.dir}/${distro.name}-cfml-${commandbox.version}.zip" toFile="${temp.dir}/cli/cfml.zip" overwrite="true" />
 
-		<!-- Build Checksum for cfml.zip -->
+		<!-- Build Checksum for commandbox-cfml.zip -->
 		<checksum file="${dist.dir}/${distro.name}-cfml-${commandbox.version}.zip" forceoverwrite="true" fileext=".md5" />
 		<checksum file="${dist.dir}/${distro.name}-cfml-${commandbox.version}.zip" forceoverwrite="true" algorithm="sha" />
 		<checksum file="${dist.dir}/${distro.name}-cfml-${commandbox.version}.zip" forceoverwrite="true" algorithm="SHA-256" fileext=".sha256"/>
 
 		<!--  create the libs zip including cli loader, optionally use pack200 -->
-	 <!--   <antcontrib:if>
-	      <equals arg1="${isStable}" arg2="sdfsdf" />
-	      <then>
-			<echo>This is a stable build, let's compress these jars!</echo>
+		<zip destfile="${temp.dir}/cli/libs.zip">
+			<fileset dir="${lucee.lib.dir}">
+				<include name="**/*.jar"/>
+				<exclude name="**/lucee-loader.jar"/>
+				<exclude name="**/javax*servlet.jar"/>
+				<exclude name="**/org*mortbay*jetty.jar"/>
+			</fileset>
+			<fileset file="${temp.dir}/cli/luceecli.jar" />
+			<fileset file="${temp.dir}/cli/ortus-jgit.jar" />
+			<fileset file="${src.dir}/resources/log4j2.xml" />
+		</zip>
 
-	        <delete dir="${temp.dir}/packlibs" />
-	        <mkdir dir="${temp.dir}/packlibs"/>
-	        <mkdir dir="${temp.dir}/packlibs/packed"/>
-	        <copy todir="${temp.dir}/packlibs">
-	          <fileset dir="${lucee.lib.dir}">
-	            <include name="**/*.jar"/>
-	            <exclude name="**/lucee-loader.jar"/>
-	            <exclude name="**/javax*servlet.jar"/>
-	            <exclude name="**/org*mortbay*jetty.jar"/>
-	          </fileset>
-	          <fileset file="${temp.dir}/cli/luceecli.jar" />
-	          <fileset file="${temp.dir}/cli/ortus-jgit.jar" />
-	        </copy>
-	        <packjars dir="${temp.dir}/packlibs" packdir="${temp.dir}/packlibs/packed" excludes="ESAPI*,microsoft-*"/>
-	        <zip destfile="${temp.dir}/cli/libs.zip">
-	          <fileset dir="${temp.dir}/packlibs/packed"/>
-	        </zip>
-	        <delete dir="${temp.dir}/packlibs" />
-	      </then>
-	      <else> -->
-	        <zip destfile="${temp.dir}/cli/libs.zip">
-	          <fileset dir="${lucee.lib.dir}">
-		          <include name="**/*.jar"/>
-		          <exclude name="**/lucee-loader.jar"/>
-		          <exclude name="**/javax*servlet.jar"/>
-		          <exclude name="**/org*mortbay*jetty.jar"/>
-	          </fileset>
-	          <fileset file="${temp.dir}/cli/luceecli.jar" />
-	          <fileset file="${temp.dir}/cli/ortus-jgit.jar" />
-	          <fileset file="${src.dir}/resources/log4j2.xml" />
-	        </zip>
+		<!-- Copy our libs to the dist folder -->
+		<copy file="${temp.dir}/cli/libs.zip" toFile="${dist.dir}/${distro.name}-libs-${commandbox.version}.zip" overwrite="true" />
+		<!-- Build Checksum for commandbox-libs.zip -->
+		<checksum file="${dist.dir}/${distro.name}-libs-${commandbox.version}.zip" forceoverwrite="true" fileext=".md5" />
+		<checksum file="${dist.dir}/${distro.name}-libs-${commandbox.version}.zip" forceoverwrite="true" algorithm="sha" />
+		<checksum file="${dist.dir}/${distro.name}-libs-${commandbox.version}.zip" forceoverwrite="true" algorithm="SHA-256" fileext=".sha256"/>
 
-	        <zip destfile="${temp.dir}/cli-light/libs.zip">
-	          <fileset dir="${lucee-light.lib.dir}">
-		          <include name="**/*.jar"/>
-		          <exclude name="**/lucee-loader.jar"/>
-		          <exclude name="**/javax*servlet.jar"/>
-		          <exclude name="**/org*mortbay*jetty.jar"/>
-	          </fileset>
-	          <fileset file="${temp.dir}/cli/luceecli.jar" />
-	          <fileset file="${temp.dir}/cli/ortus-jgit.jar" />
-	          <fileset file="${src.dir}/resources/log4j2.xml" />
-	        </zip>
+		<zip destfile="${temp.dir}/cli-light/libs.zip">
+			<fileset dir="${lucee-light.lib.dir}">
+				<include name="**/*.jar"/>
+				<exclude name="**/lucee-loader.jar"/>
+				<exclude name="**/javax*servlet.jar"/>
+				<exclude name="**/org*mortbay*jetty.jar"/>
+			</fileset>
+			<fileset file="${temp.dir}/cli/luceecli.jar" />
+			<fileset file="${temp.dir}/cli/ortus-jgit.jar" />
+			<fileset file="${src.dir}/resources/log4j2.xml" />
+		</zip>
+
+		<!-- Copy our light libs to the dist folder -->
+		<copy file="${temp.dir}/cli-light/libs.zip" toFile="${dist.dir}/${distro.name}-libs-light-${commandbox.version}.zip" overwrite="true" />
+		<!-- Build Checksum for commandbox-libs.zip -->
+		<checksum file="${dist.dir}/${distro.name}-libs-light-${commandbox.version}.zip" forceoverwrite="true" fileext=".md5" />
+		<checksum file="${dist.dir}/${distro.name}-libs-light-${commandbox.version}.zip" forceoverwrite="true" algorithm="sha" />
+		<checksum file="${dist.dir}/${distro.name}-libs-light-${commandbox.version}.zip" forceoverwrite="true" algorithm="SHA-256" fileext=".sha256"/>
 
 	    <!--   </else>
 	    </antcontrib:if> -->
@@ -413,7 +402,7 @@ External Dependencies:
 			<fileset file="${temp.dir}/cli/cfml.zip" />
         	<fileset file="${temp.dir}/cli/engine.zip" />
 			<fileset dir="${temp.dir}/cli/bin" />
-        	<zipfileset src="${lib.dir}/json-smart-mini-1.0.8.jar" includes="**/*.class" />
+        	<zipfileset src="${lib.dir}/json-smart-mini-${json-smart-mini.version}.jar" includes="**/*.class" />
         	<fileset file="${temp.dir}/cli/version"/>
 		</jar>
 
@@ -426,7 +415,7 @@ External Dependencies:
 			<fileset file="${temp.dir}/cli/cfml.zip" />
         	<fileset file="${temp.dir}/cli-light/engine.zip" />
 			<fileset dir="${temp.dir}/cli/bin" />
-        	<zipfileset src="${lib.dir}/json-smart-mini-1.0.8.jar" includes="**/*.class" />
+        	<zipfileset src="${lib.dir}/json-smart-mini-${json-smart-mini.version}.jar" includes="**/*.class" />
         	<fileset file="${temp.dir}/cli/version"/>
 		</jar>
 
@@ -436,7 +425,7 @@ External Dependencies:
 				<attribute name="Main-Class" value="cliloader.LoaderCLIMain" />
 			</manifest>
 	        <fileset dir="${temp.dir}/cli/bin" />
-        	<zipfileset src="${lib.dir}/json-smart-mini-1.0.8.jar" includes="**/*.class" />
+        	<zipfileset src="${lib.dir}/json-smart-mini-${json-smart-mini.version}.jar" includes="**/*.class" />
         	<fileset file="${temp.dir}/cli/version"/>
 		</jar>
 
@@ -459,6 +448,28 @@ External Dependencies:
 				  stableVersion="${commandbox.stableVersion}"
 				  classifiers="cfml,bin,win,deb,rpm,apidocs"/>
 
+
+		<if>
+			<equals arg1="${isStable}" arg2="true"/>
+			<then>
+				<property name="previousStableVersion"	value="${cfml.loader.version}"/>
+			</then>
+			<else>
+				<property name="boxLoaderPath" location="${artifact.dir}/box-loader.json"/>
+				<get src="https://s3.amazonaws.com/downloads.ortussolutions.com/ortussolutions/commandbox/box-loader.json"
+					dest="${boxLoaderPath}"
+					verbose="true" />
+
+				<script language="javascript">//<![CDATA[
+						var json = new Packages.java.lang.String(
+							Packages.java.nio.file.Files.readAllBytes(
+								Packages.java.nio.file.Paths.get(project.getProperty("boxLoaderPath"))), "UTF-8");
+						var properties = JSON.parse(json);
+						project.setProperty('previousStableVersion', properties.versioning.stableVersion );
+				//]]></script>
+			</else>
+		</if>
+
 		<!-- Create box-loader.json -->
 		<concat destfile="${artifact.dir}/box-loader.json" overwrite="true">{
 			"artifactID" : "commandbox-loader",
@@ -467,13 +478,15 @@ External Dependencies:
 				"latestVersion" : "${cfml.loader.version}",
 				"latestBuildID" : "${build.number}",
 				"latestUpdated" : "${repo.timestamp.DSTAMP}${repo.timestamp.TSTAMP}",
-				"stableVersion" : "${cfml.loader.version}",
+				"stableVersion" : "${previousStableVersion}",
 				"versions" : [],
 				"classifiers" : ""
 			}
 		}</concat>
 
  	</target>
+
+
 
  	<!-- Build Homebrew Recipe -->
  	<target name="build.homebrew" description="Builds the Homebrew Recipe" unless="${local.build}">
@@ -1074,7 +1087,7 @@ External Dependencies:
 		</dependency>
 
 	    <dependency groupId="com.beust" artifactId="jcommander" version="1.47" dest="${lib.dir}" type="jar" unzip="false"/>
-	    <dependency groupId="net.minidev" artifactId="json-smart-mini" version="1.0.8" unzip="false" type="jar" dest="${lib.dir}"/>
+	    <dependency groupId="net.minidev" artifactId="json-smart-mini" version="${json-smart-mini.version}" unzip="false" type="jar" dest="${lib.dir}"/>
 
 	    <!-- engine libs -->
 	    <!-- stable builds require "maven-repository", and snapshots require "sonatype-repository" -->
