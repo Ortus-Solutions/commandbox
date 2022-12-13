@@ -703,6 +703,14 @@ External Dependencies:
         <chmod file="${dist.dir}/box-light" perm="755"/>
         <chmod file="${dist.dir}/box-thin" perm="755"/>
 
+		<checksum file="${dist.dir}/box-light" forceoverwrite="true" fileext=".md5" />
+		<checksum file="${dist.dir}/box-light" forceoverwrite="true" algorithm="sha" />
+		<checksum file="${dist.dir}/box-light" forceoverwrite="true" algorithm="SHA-256" fileext=".sha256"/>
+
+		<checksum file="${dist.dir}/box-thin" forceoverwrite="true" fileext=".md5" />
+		<checksum file="${dist.dir}/box-thin" forceoverwrite="true" algorithm="sha" />
+		<checksum file="${dist.dir}/box-thin" forceoverwrite="true" algorithm="SHA-256" fileext=".sha256"/>
+
         <!-- Create distro zip -->
 		<zip destfile="${dist.dir}/${distro.name}-bin-${commandbox.version}.zip" level="9" update="false">
 	        <zipfileset file="${dist.dir}/box" filemode="711" prefix="" />
