@@ -1,3 +1,4 @@
+
 /**
  * SQL query command for filtering table like data. This command will automatically
  * format any table like data into a query object that can be queried against
@@ -73,11 +74,16 @@ component {
 		string headerNames=''
 	)  {
 
-		// Treat input as a potential file path
+		// Strip any incoming ANSI formatting
 		arguments.data = print.unAnsi( arguments.data );
 
-		//deserialize data if in a JSON format
-		if(isJSON(arguments.data)) arguments.data = deserializeJSON( arguments.data, false );
+		// deserialize data if in a JSON format
+		// For very large JSON inputs, it's faster just to try than to call isJSON() which pre-parses the entire input again
+		try {
+			arguments.data = deserializeJSON( arguments.data, false );
+		} catch( any e ) {
+			error( 'Input cannot be parsed as JSON. #e.message#', e.detail );
+		}
 
 		//format inputs into valid sql parts
 		var dataQuery = isQuery( arguments.data ) ? arguments.data : convert.toQuery(arguments.data, arguments.headerNames);
@@ -112,7 +118,7 @@ component {
 			if( limit==0 ) {
 				dataQueryResults = [];
 			} else {
-				dataQueryResults = dataQueryResults.slice(offset, limit);	
+				dataQueryResults = dataQueryResults.slice(offset, limit);
 			}
 		};
 
