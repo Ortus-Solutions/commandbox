@@ -886,6 +886,11 @@
 					"description": "Runs when engine is being installed during server startup",
 					"type": "string"
 				},
+				"onServerInitialInstall": {
+					"title": "On Server Initial Install Script",
+					"description": "Runs when engine is being installed the first time during server startup",
+					"type": "string"
+				},
 				"onServerStop": {
 					"title": "On Server Stop Script",
 					"description": "Runs before a server stop",

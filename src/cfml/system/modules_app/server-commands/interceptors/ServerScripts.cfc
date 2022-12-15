@@ -18,6 +18,7 @@ component {
 
 	function preServerStart() { processScripts( 'preServerStart', shell.pwd(), interceptData ); }
 	function onServerInstall() { processScripts( 'onServerInstall', interceptData.serverinfo.webroot, interceptData ); }
+	function onServerInitialInstall() { processScripts( 'onServerInitialInstall', interceptData.serverinfo.webroot, interceptData ); }
 	function onServerStart() { processScripts( 'onServerStart', interceptData.serverinfo.webroot, interceptData ); }
 	function onServerStop() { processScripts( 'onServerStop', interceptData.serverinfo.webroot, interceptData ); }
 	function preServerForget() { processScripts( 'preServerForget', interceptData.serverinfo.webroot, interceptData ); }

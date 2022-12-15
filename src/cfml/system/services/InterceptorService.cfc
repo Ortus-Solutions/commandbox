@@ -33,7 +33,7 @@ component accessors=true singleton {
 			// Module lifecycle
 			'preModuleLoad','postModuleLoad','preModuleUnLoad','postModuleUnload',
 			// Server lifecycle
-			'preServerStart','onServerStart','onServerInstall','onServerProcessLaunch','onServerStop','preServerForget','postServerForget',
+			'preServerStart','onServerStart','onServerInstall','onServerInitialInstall','onServerProcessLaunch','onServerStop','preServerForget','postServerForget',
 			// Error handling
 			'onException',
 			// Package lifecycle

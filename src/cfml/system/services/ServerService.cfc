@@ -1258,6 +1258,9 @@ component accessors="true" singleton {
 			setServerInfo( serverInfo );
 			// This interception point can be used for additional configuration of the engine before it actually starts.
 			interceptorService.announceInterception( 'onServerInstall', { serverInfo=serverInfo, installDetails=installDetails, serverJSON=serverJSON, defaults=defaults, serverProps=serverProps, serverDetails=serverDetails } );
+			if( installDetails.initialInstall ) {
+				interceptorService.announceInterception( 'onServerInitialInstall', { serverInfo=serverInfo, installDetails=installDetails, serverJSON=serverJSON, defaults=defaults, serverProps=serverProps, serverDetails=serverDetails } );
+			}
 
 			// If Lucee server, set the java agent
 			if( serverInfo.cfengine contains "lucee" ) {
@@ -3030,6 +3033,7 @@ component accessors="true" singleton {
 				'scripts' : {
 					'preServerStart' : '',
 					'onServerInstall' : '',
+					'onServerInitialInstall' : '',
 					'onServerStart' : '',
 					'onServerStop' : '',
 					'preServerForget' : '',
