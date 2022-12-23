@@ -2139,6 +2139,9 @@ component accessors="true" singleton {
 
 	function fixBinaryPath(command, fullPath){
 		if(!isNull(fullPath) or !isEmpty(fullPath)){
+			if( fullPath contains ' ' ) {
+				fullPath = '"' & fullPath & '"';
+			}
 			if( command.left( 4 ) == 'box ' ){
 				command = command.replacenoCase( 'box ', fullPath & ' ', 'one' );
 			} else if( command.left( 8 ) == 'box.exe ' ){
