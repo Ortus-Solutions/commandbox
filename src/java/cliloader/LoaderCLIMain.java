@@ -303,6 +303,7 @@ public class LoaderCLIMain{
     		// A couple tweaks to make Felix faster
     		System.setProperty( "felix.cache.locking", "false" );
     		System.setProperty( "felix.storage.clean", "none" );
+    		System.setProperty( "felix.log.level", System.getProperty( "felix.log.level", System.getenv().getOrDefault("FELIX_LOG_LEVEL", "0" ) ) );
 
     		// Load up JSR-223!
             ScriptEngineManager engineManager = new ScriptEngineManager( cl );
