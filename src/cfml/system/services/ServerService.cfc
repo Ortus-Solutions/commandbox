@@ -147,6 +147,7 @@ component accessors="true" singleton {
 				'host' : d.web.host ?: '127.0.0.1',
 				'directoryBrowsing' : d.web.directoryBrowsing ?: '',
 				'webroot' : d.web.webroot ?: '',
+				'caseSensitivePaths' : d.web.caseSensitivePaths ?: '',
 				// Duplicate so onServerStart interceptors don't actually change config settings via reference.
 				'aliases' : duplicate( d.web.aliases ?: {} ),
 				// Duplicate so onServerStart interceptors don't actually change config settings via reference.
@@ -887,6 +888,8 @@ component accessors="true" singleton {
 		serverInfo.welcomeFiles 	= serverProps.welcomeFiles		?: serverJSON.web.welcomeFiles			?: defaults.web.welcomeFiles;
 		serverInfo.maxRequests		= 								   serverJSON.web.maxRequests			?: defaults.web.maxRequests;
 
+		serverInfo.caseSensitivePaths= 								   serverJSON.web.caseSensitivePaths	?: defaults.web.caseSensitivePaths;
+
 		serverInfo.trayEnable	 	= serverProps.trayEnable		?: serverJSON.trayEnable			?: defaults.trayEnable;
 		serverInfo.dockEnable	 	= serverJSON.dockEnable			?: defaults.dockEnable;
 		serverInfo.defaultBaseURL = serverInfo.SSLEnable ? 'https://#serverInfo.host#:#serverInfo.SSLPort#' : 'http://#serverInfo.host#:#serverInfo.port#';
@@ -1620,6 +1623,9 @@ component accessors="true" singleton {
 	 	}
 	 	if( len( serverInfo.maxRequests ) ) {
 	 		 args.append( '--worker-threads' ).append( serverInfo.maxRequests );
+	 	}
+	 	if( len( serverInfo.caseSensitivePaths ) ) {
+	 		 args.append( '--case-sensitive-web-server' ).append( serverInfo.caseSensitivePaths );
 	 	}
 	 	if( len( CLIAliases ) ) {
 	 		 args.append( '--dirs' ).append( CLIAliases );
@@ -2964,6 +2970,7 @@ component accessors="true" singleton {
 			'customServerFolder'	: '',
 			'welcomeFiles'			: '',
 			'maxRequests'			: '',
+			'caseSensitivePaths'	: '',
 			'exitCode'				: 0,
 			'rules'					: [],
 			'rulesFile'				: '',
