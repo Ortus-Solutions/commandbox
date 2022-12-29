@@ -325,7 +325,7 @@ component accessors="true" singleton {
 
 
 		var foundServer = getServerInfoByName( serverDetails.defaultName );
-		if( structCount( foundServer ) && normalizeWebroot( foundServer.webroot ) != normalizeWebroot( serverDetails.defaultwebroot ) ) {
+		if( !isSingleServerMode() && structCount( foundServer ) && normalizeWebroot( foundServer.webroot ) != normalizeWebroot( serverDetails.defaultwebroot ) ) {
 			throw(
 				message='You''ve asked to start a server named [#serverDetails.defaultName#] with a webroot of [#serverDetails.defaultwebroot#], but a server of this name already exists with a different webroot of [#foundServer.webroot#]',
 				detail='Server name and webroot must be unique.  Please forget the old server first.  Use "server list" to see all defined servers.',
@@ -2214,7 +2214,7 @@ component accessors="true" singleton {
 	) {
 
 		// If CommandBox is in single server mode, just force the first (and only) server to be the one we find
-		if( ConfigService.getSetting( 'server.singleServerMode', false ) && getServers().count() ){
+		if( isSingleServerMode() && getServers().count() ){
 
 			// CFConfig calls this method sometimes with a path to a JSON file and needs to get no server back
 			if( serverProps.keyExists( 'name' ) && lcase( serverProps.name ).endsWith( '.json' ) ) {
@@ -2227,16 +2227,6 @@ component accessors="true" singleton {
 					serverIsNew : true
 				};
 			}
-
-			var serverInfo = getFirstServer();
-			return {
-				defaultName : serverInfo.name,
-				defaultwebroot : serverInfo.webroot,
-				defaultServerConfigFile : serverInfo.serverConfigFile,
-				serverJSON : readServerJSON( serverInfo.serverConfigFile ),
-				serverInfo : serverInfo,
-				serverIsNew : false
-			};
 		}
 
 		var job = wirebox.getInstance( 'interactiveJob' );
@@ -2304,6 +2294,20 @@ component accessors="true" singleton {
 			name				= defaultName,
 			serverConfigFile	= serverProps.serverConfigFile ?: '' //  Since this takes precedence, I only want to use it if it was actually specified
 		);
+
+		// If CommandBox is in single server mode, set our current values in so the "single server" always represents the last name and web root that was used.
+		if( isSingleServerMode() && getServers().count() ){
+			if( len( defaultName ) ) {
+				serverInfo.name = defaultName;
+			} else {
+				serverInfo.name = replace( listLast( defaultwebroot, "\/" ), ':', '');
+			}
+			serverInfo.webroot = defaultwebroot;
+			if( !isNull( serverProps.serverConfigFile ) ) {
+				serverInfo.serverConfigFile = serverProps.serverConfigFile;
+			}
+			setServerInfo( serverInfo );
+		}
 
 		// If we found a server, set our name.
 		if( len( serverInfo.name ?: '' ) ) {
@@ -2493,7 +2497,7 @@ component accessors="true" singleton {
 	* @serverInfo The server information
 	*/
 	function getCustomServerFolder( required struct serverInfo ){
-		if( configService.getSetting( 'server.singleServerMode', false ) ){
+		if( isSingleServerMode() ){
 			return variables.customServerDirectory & 'serverHome';
 		} else {
 			return variables.customServerDirectory & arguments.serverinfo.id & "-" & arguments.serverInfo.name;
@@ -2647,7 +2651,7 @@ component accessors="true" singleton {
 
 	function calculateServerID( webroot, name ) {
 
-		if( ConfigService.getSetting( 'server.singleServerMode', false ) ){
+		if( isSingleServerMode() ){
 			return 'serverHome';
 		}
 		var normalizedWebroot = normalizeWebroot( webroot );
@@ -2739,7 +2743,7 @@ component accessors="true" singleton {
 	*/
 	struct function getServerInfoByDiscovery( required directory="", required name="", serverConfigFile="" ){
 
-		if( ConfigService.getSetting( 'server.singleServerMode', false ) && getServers().count() ){
+		if( isSingleServerMode() && getServers().count() ){
 			return getFirstServer();
 		}
 
@@ -2770,7 +2774,7 @@ component accessors="true" singleton {
 	*/
 	struct function getServerInfoByName( required name ){
 
-		if( ConfigService.getSetting( 'server.singleServerMode', false ) && getServers().count() ){
+		if( isSingleServerMode() && getServers().count() ){
 			return getFirstServer();
 		}
 
@@ -2790,7 +2794,7 @@ component accessors="true" singleton {
 	*/
 	struct function getServerInfoByServerConfigFile( required serverConfigFile ){
 
-		if( ConfigService.getSetting( 'server.singleServerMode', false ) && getServers().count() ){
+		if( isSingleServerMode() && getServers().count() ){
 			return getFirstServer();
 		}
 
@@ -2821,7 +2825,7 @@ component accessors="true" singleton {
 	*/
 	struct function getServerInfoByWebroot( required webroot ){
 
-		if( ConfigService.getSetting( 'server.singleServerMode', false ) && getServers().count() ){
+		if( isSingleServerMode() && getServers().count() ){
 			return getFirstServer();
 		}
 
@@ -3204,6 +3208,10 @@ component accessors="true" singleton {
 			} else if( !arguments.ignoreMissing ) {
 				consoleLogger.error( 'The script [#arguments.scriptName#] does not exist in this server.' );
 			}
+	}
+
+	function isSingleServerMode() {
+		return configService.getSetting( 'server.singleServerMode', false );
 	}
 
 
