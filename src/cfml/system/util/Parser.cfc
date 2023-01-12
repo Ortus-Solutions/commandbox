@@ -145,9 +145,9 @@ component {
 
 		// Anything left after the loop is our last token
 		if( len( token ) ) {
-			tokens.append( token);
+			tokens.append( token );
 		}
-		return tokens;		
+		return tokens;
 	}
 
 
