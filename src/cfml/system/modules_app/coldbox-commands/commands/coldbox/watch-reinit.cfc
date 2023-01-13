@@ -17,7 +17,8 @@
  *
  * {code}
  * package set reinitWatchDelay=1000
- * package set reinitWatchPaths= "config/**.cfc,handlers/**.cfc,models/**.cfc,ModuleConfig.cfc"
+ * package set reinitWatchPaths="config/**.cfc,handlers/**.cfc,models/**.cfc,ModuleConfig.cfc"
+ * package set reinitWatchDirectory="../"
  * {code}
  *
  * This command will run in the foreground until you stop it.  When you are ready to shut down the watcher, press Ctrl+C.
@@ -42,12 +43,11 @@ component {
 		string paths,
 		number delay,
 		string password = "1",
-		string directory=getCWD()
+		string directory
 	){
 		// Get watch options from package descriptor
 		var boxOptions   = packageService.readPackageDescriptor( getCWD() );
 		var initPassword = arguments.password;
-		directory = resolvePath( directory );
 
 		var getOptionsWatchers = function(){
 			// Return to List
@@ -63,9 +63,11 @@ component {
 		// Determine watching patterns, either from arguments or boxoptions or defaults
 		var globbingPaths = arguments.paths ?: getOptionsWatchers() ?: variables.PATHS;
 		var globArray = globbingPaths.listToArray();
+		var theDirectory = arguments.directory ?: boxOptions.reinitWatchDirectory ?: getCWD();
+		theDirectory = resolvePath( theDirectory );
 
-		// handle non numeric config and put a floor of 150ms
-		var delayMs       = max( val( arguments.delay ?: boxOptions.reinitWatchDelay ?: variables.WATCH_DELAY ), 150 );
+		// handle non numeric config
+		var delayMs       = max( val( arguments.delay ?: boxOptions.reinitWatchDelay ?: variables.WATCH_DELAY ), variables.WATCH_DELAY );
 		var statusColors  = {
 			"added"   : "green",
 			"removed" : "red",
@@ -96,10 +98,12 @@ component {
 		print
 			.greenLine( "---------------------------------------------------" )
 			.greenLine( "Watching the following files for a framework reinit" )
-			.greenLine( "---------------------------------------------------" );
+			.greenLine( "---------------------------------------------------" )
+			.line();
 		globArray.each( (p) => print.greenLine( " " & p ) );
 		print
-			.greenLine( " in directory: #directory#" )
+			.line()
+			.greenLine( " in directory: #theDirectory#" )
 			.greenLine( " Press Ctrl-C to exit " )
 			.greenLine( "---------------------------------------------------" )
 			.toConsole();
@@ -107,7 +111,7 @@ component {
 		// Start watcher
 		watch()
 			.paths( globArray )
-			.inDirectory( directory )
+			.inDirectory( theDirectory )
 			.withDelay( delayMs )
 			.onChange( function( changeData ){
 				// output file changes
