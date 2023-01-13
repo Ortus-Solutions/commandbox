@@ -36,15 +36,18 @@ component {
 	 * @paths Command delimited list of file globbing paths to watch relative to the working directory, defaults to **.cfc
 	 * @delay How may milliseconds to wait before polling for changes, defaults to 500 ms
 	 * @password Reinit password
+	 * @directory Working directory to start watcher in
 	 **/
 	function run(
 		string paths,
 		number delay,
-		string password = "1"
+		string password = "1",
+		string directory=getCWD()
 	){
 		// Get watch options from package descriptor
 		var boxOptions   = packageService.readPackageDescriptor( getCWD() );
 		var initPassword = arguments.password;
+		directory = resolvePath( directory );
 
 		var getOptionsWatchers = function(){
 			// Return to List
@@ -59,6 +62,8 @@ component {
 
 		// Determine watching patterns, either from arguments or boxoptions or defaults
 		var globbingPaths = arguments.paths ?: getOptionsWatchers() ?: variables.PATHS;
+		var globArray = globbingPaths.listToArray();
+
 		// handle non numeric config and put a floor of 150ms
 		var delayMs       = max( val( arguments.delay ?: boxOptions.reinitWatchDelay ?: variables.WATCH_DELAY ), 150 );
 		var statusColors  = {
@@ -91,16 +96,18 @@ component {
 		print
 			.greenLine( "---------------------------------------------------" )
 			.greenLine( "Watching the following files for a framework reinit" )
-			.greenLine( "---------------------------------------------------" )
-			.greenLine( " " & globbingPaths )
+			.greenLine( "---------------------------------------------------" );
+		globArray.each( (p) => print.greenLine( " " & p ) );
+		print
+			.greenLine( " in directory: #directory#" )
 			.greenLine( " Press Ctrl-C to exit " )
 			.greenLine( "---------------------------------------------------" )
 			.toConsole();
 
 		// Start watcher
 		watch()
-			.paths( globbingPaths.listToArray() )
-			.inDirectory( getCWD() )
+			.paths( globArray )
+			.inDirectory( directory )
 			.withDelay( delayMs )
 			.onChange( function( changeData ){
 				// output file changes
