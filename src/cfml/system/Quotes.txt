@@ -13,7 +13,7 @@ Forget a server as you stop it with "stop --forget"
 Stop all your servers at once with "stop --all"
 View the servers for a given folder with "server list --local"
 This CLI viewed best on Netscape navigator 2.0
-On WIndows? Use ConEMU, it supports 256 glorious colors!
+On Windows? Use ConEMU, it supports 256 glorious colors!
 The code name for CommandBox before it launched was "Project Gideon"
 CommandBox is a registered trademark of Ortus Solutions
 CommandBox is professional supported open source software
