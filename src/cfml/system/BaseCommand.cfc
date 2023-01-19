@@ -221,9 +221,9 @@ component accessors="true" singleton {
 	function error( required message, detail='', clearPrintBuffer=false, exitCode=1 ) {
 
 		wirebox.getInstance( "ConsolePainter" ).stop( message );
-		
+
 		if( !getSystemSetting( 'box_currentCommandPiped', false ) ) {
-			print.line().toConsole();	
+			print.line().toConsole();
 		}
 
 		setExitCode( arguments.exitCode );
@@ -232,6 +232,26 @@ component accessors="true" singleton {
 			print.clear();
 		}
 		throw( message=arguments.message, detail=arguments.detail, type="commandException", errorcode=arguments.exitCode );
+	}
+
+	/**
+	 * This method mimics a Java/Groovy assert() function, where it evaluates the target to a boolean value and it must be true
+	 * to pass and return a true to you, or throw an `AssertException`
+	 *
+	 * @target The tareget to evaluate for being true
+	 * @message The message to send in the exception
+	 *
+	 * @throws AssertException if the target is a false or null value
+	 * @return True, if the target is a non-null value. If false, then it will throw the `AssertError` exception
+	 */
+	boolean function assert( target, message="" ){
+		if( !isNull( arguments.target ) && arguments.target ){
+			return true;
+		}
+		throw(
+			type : "AssertException",
+			message : len( arguments.message ) ? arguments.message : "Assertion failed from #callStackGet()[2].toString()#"
+		);
 	}
 
 	/**
