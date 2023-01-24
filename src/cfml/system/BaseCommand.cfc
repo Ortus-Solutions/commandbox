@@ -250,7 +250,7 @@ component accessors="true" singleton {
 		// evaluate it
 		var results = isClosure( arguments.target ) || isCustomFunction( arguments.target ) ? arguments.target( this ) : arguments.target;
 		// deal it : callstack two is from where the `assert` was called.
-		return results ? true : error( "Assertion failed from #callStackGet()[ 2 ].toString()#", arguments.target );
+		return results ? true : error( "Assertion failed from #callStackGet()[ 2 ].toString()#", arguments.message );
 	}
 
 	/**
