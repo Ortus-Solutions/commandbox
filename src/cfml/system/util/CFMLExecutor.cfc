@@ -30,11 +30,14 @@ component {
 		savecontent variable="local.out"{
 			include "#arguments.template#";
 		}
+		if( !isNull( variables.__result2 ) ) {
+			return variables.__result2;
+		}
 		return local.out;
 	}
 
 	/**
-	* Execute a snipped of code in the context of a directory
+	* Execute a snippet of code in the context of a directory
 	* @code.hint CFML code to run
 	* @script.hint is the CFML code script or tags
 	* @directory.hint Absolute path to a directory context to run in
@@ -47,7 +50,7 @@ component {
 		var tmpFileAbsolute = arguments.directory & "/" & tmpFile;
 
 		// generate cfml command to write to file
-		var CFMLFileContents = ( arguments.script ? "<cfscript>" & arguments.code & "</cfscript>" : arguments.code );
+		var CFMLFileContents = ( arguments.script ? "<cfscript>variables.__result2 = " & arguments.code & "</cfscript>" : arguments.code );
 
 		// write out our cfml command
 		fileWrite( tmpFileAbsolute, CFMLFileContents );
@@ -55,7 +58,14 @@ component {
 		try {
 			return runFile( tmpFileAbsolute, arguments.vars );
 		} catch( any e ){
-			rethrow;
+
+			// generate cfml command to write to file
+			local.CFMLFileContents = ( arguments.script ? "<cfscript>" & arguments.code & "</cfscript>" : arguments.code );
+
+			// write out our cfml command
+			fileWrite( tmpFileAbsolute, CFMLFileContents );
+
+			return runFile( tmpFileAbsolute, arguments.vars );
 		} finally {
 			// cleanup
 			if( fileExists( tmpFileAbsolute ) ){
