@@ -75,6 +75,15 @@ component {
 		if( serverDetails.serverIsNew ){
 			print.boldRedLine( "No servers found." );
 		} else {
+			var serverJSON = serverService.readServerJSON( serverDetails.defaultServerConfigFile )
+			// If no explicit browser was provided to this command, but the server.json has one, use that.
+			if( !len( arguments.browser ) && len( serverJSON.preferredBrowser ?: '' ) ) {
+				arguments.browser = serverJSON.preferredBrowser;
+			}
+			if( !len( arguments.browser ) && len( serverInfo.preferredBrowser ) ) {
+				arguments.browser = serverInfo.preferredBrowser;
+			}
+
 			if ( arguments.webRoot ) {
 				if ( fileSystemUtil.openNatively(serverInfo.appFileSystemPath) ) {
 					print.line( "Web Root Opened." );

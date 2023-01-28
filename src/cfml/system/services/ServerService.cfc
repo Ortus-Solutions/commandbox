@@ -119,6 +119,7 @@ component accessors="true" singleton {
 
 		return {
 			'name' : d.name ?: '',
+			'preferredBrowser' : d.preferredBrowser ?: '',
 			'openBrowser' : d.openBrowser ?: true,
 			'openBrowserURL' : d.openBrowserURL ?: '',
 			'startTimeout' : 240,
@@ -389,7 +390,7 @@ component accessors="true" singleton {
 			} else if( action == 'openinbrowser' ) {
 				job.addLog( "Opening...#serverInfo.openbrowserURL#" );
 				job.error( 'Aborting...' );
-				shell.callCommand( 'browse #serverInfo.openbrowserURL#', false);
+				shell.callCommand( 'server open', false);
 				return;
 			} else if( action == 'newname' ) {
 				job.clear();
@@ -601,6 +602,7 @@ component accessors="true" singleton {
 		serverInfo.openbrowser		= serverProps.openbrowser 		?: serverJSON.openbrowser			?: defaults.openbrowser;
 
 		serverInfo.openbrowserURL	= serverProps.openbrowserURL	?: serverJSON.openbrowserURL		?: defaults.openbrowserURL;
+		serverInfo.preferredBrowser	= serverJSON.preferredBrowser	?: defaults.preferredBrowser;
 
 		// Trace assumes debug
 		serverInfo.debug = serverInfo.trace || serverInfo.debug;
@@ -1543,7 +1545,11 @@ component accessors="true" singleton {
 			.append( '--cookie-httponly' ).append( serverInfo.sessionCookieHTTPOnly )
 			.append( '--pid-file').append( serverInfo.pidfile );
 
-		if( ConfigService.settingExists( 'preferredBrowser' ) ) {
+		// If server.json has a default browser, use it
+		if( len( serverInfo.preferredBrowser ) ) {
+			args.append( '--preferred-browser' ).append( serverInfo.preferredBrowser );
+		// Otherwise, use the global config setting, if it exists
+		} else if( ConfigService.settingExists( 'preferredBrowser' ) ) {
 			args.append( '--preferred-browser' ).append( ConfigService.getSetting( 'preferredBrowser' ) );
 		}
 
@@ -2970,6 +2976,7 @@ component accessors="true" singleton {
 			'dateLastStarted'		: '',
 			'openBrowser'			: true,
 			'openBrowserURL'		: '',
+			'preferredBrowser'		: '',
 			'profile'				: '',
 			'customServerFolder'	: '',
 			'welcomeFiles'			: '',

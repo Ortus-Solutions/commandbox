@@ -81,6 +81,12 @@
 			"type": "string",
 			"default": ""
 		},
+		"preferredBrowser": {
+			"title": "Preferred Browser",
+			"description": "Preferred Browser to use for open commands, including 'server open' and the tray menus",
+			"type": "string",
+			"default": ""
+		},
 		"openBrowser": {
 			"title": "Open Browser",
 			"description": "Controls whether browser opens by default when starting server",
