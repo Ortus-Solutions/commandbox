@@ -407,13 +407,14 @@ or just add DEBUG to the root logger
 		string typeSlug = '',
 		string APIToken='' ) {
 
-		var thisResource = "slugs/#arguments.searchTerm#";
+		var thisResource = "slugs";
 
 		var results = makeRequest(
 			resource=thisResource,
 			method='get',
 			parameters={
-				typeSlug : arguments.typeSlug
+				typeSlug : arguments.typeSlug,
+				searchTerm : arguments.searchTerm
 			},
 			headers = {
 				'x-api-token' : arguments.APIToken
