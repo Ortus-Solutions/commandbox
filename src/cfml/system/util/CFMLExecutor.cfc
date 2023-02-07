@@ -108,4 +108,25 @@ component {
 			} );
 	}
 
+	/**
+	 * This method mimics a Java/Groovy assert() function, where it evaluates the target to a boolean value or an executable closure and it must be true
+	 * to pass and return a true to you, or throw an `AssertException`
+	 *
+	 * @target The tareget to evaluate for being true, it can also be a closure that will be evaluated at runtime
+	 * @message The message to send in the exception
+	 *
+	 * @throws AssertException if the target is a false or null value
+	 * @return True, if the target is a non-null value. If false, then it will throw the `AssertError` exception
+	 */
+	boolean function assert( target, message="" ){
+		// param against nulls
+		arguments.target = arguments.target ?: false;
+		// evaluate it
+		var results = isClosure( arguments.target ) || isCustomFunction( arguments.target ) ? arguments.target( variables ) : arguments.target;
+		// deal it : callstack two is from where the `assert` was called.
+
+
+		return results ? true : throw( message="Assertion failed", detail=arguments.message, type="commandException" );
+	}
+
 }
