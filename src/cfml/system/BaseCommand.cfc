@@ -367,5 +367,22 @@ component accessors="true" singleton {
 		return getCurrentThread().getName();
 	}
 
+	/**
+	 * Install an extension into the Lucee server instance inside the CLI.
+	 * If the extension is already installed, nothing will happen
+	 *
+	 * @extensionID The ID of the extenstion to install into the CLI
+	 * @extensionVersion The version of the extension to install into the CLI
+	 * @LuceeContextType Either "server" or "web"
+	 * @LuceeContextPassword Use this if you've changed the default Lucee context password in the CLI
+	 */
+	function installExtension(
+		required string extensionID,
+		string extensionVersion='latest',
+		string luceeContextType='server',
+		string luceeContextPassword='commandbox'
+	){
+		new Administrator( luceeContextType, luceeContextPassword ).updateExtension( extensionID, extensionVersion );
+	}
 
 }
