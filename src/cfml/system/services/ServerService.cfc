@@ -736,19 +736,6 @@ component accessors="true" singleton {
 			job[ 'add#( serverInfo.fileCacheEnable ? 'Success' : '' )#Log' ]( 'File Caching #( serverInfo.fileCacheEnable ? 'en' : 'dis' )#abled' );
 		job.complete( serverInfo.verbose );
 
-		// Double check that the port in the user params or server.json isn't in use
-		if( !isPortAvailable( serverInfo.host, serverInfo.port ) ) {
-			job.addErrorLog( "" );
-			var badPortlocation = 'config';
-			if( serverProps.keyExists( 'port' ) ) {
-				badPortlocation = 'start params';
-			} else if ( len( defaults.web.http.port ?: '' ) ) {
-				badPortlocation = 'server.json';
-			} else {
-				badPortlocation = 'config server defaults';
-			}
-			throw( message="You asked for port [#( serverProps.port ?: serverJSON.web.http.port ?: defaults.web.http.port ?: '?' )#] in your #badPortlocation# but it's already in use.", detail="Please choose another or use netstat to find out what process is using the port already.", type="commandException" );
-		}
 
 		serverInfo.stopsocket		= serverProps.stopsocket		?: serverJSON.stopsocket 			?: getRandomPort( serverInfo.host );
 
@@ -781,6 +768,21 @@ component accessors="true" singleton {
 		serverInfo.AJPEnable 		= serverProps.AJPEnable 		?: serverJSON.web.AJP.enable			?: defaults.web.AJP.enable;
 		serverInfo.AJPPort			= serverProps.AJPPort 			?: serverJSON.web.AJP.port				?: defaults.web.AJP.port;
 		serverInfo.AJPSecret		= serverJSON.web.AJP.secret		?: defaults.web.AJP.secret;
+
+
+		// Double check that the port in the user params or server.json isn't in use
+		if( serverInfo.HTTPEnable && !isPortAvailable( serverInfo.host, serverInfo.port ) ) {
+			job.addErrorLog( "" );
+			var badPortlocation = 'config';
+			if( serverProps.keyExists( 'port' ) ) {
+				badPortlocation = 'start params';
+			} else if ( len( defaults.web.http.port ?: '' ) ) {
+				badPortlocation = 'server.json';
+			} else {
+				badPortlocation = 'config server defaults';
+			}
+			throw( message="You asked for port [#serverInfo.port#] in your #badPortlocation# but it's already in use.", detail="Please choose another or use netstat to find out what process is using the port already.", type="commandException" );
+		}
 
 		// relative certFile in server.json is resolved relative to the server.json
 		if( isDefined( 'serverJSON.web.SSL.certFile' ) ) { serverJSON.web.SSL.certFile = fileSystemUtil.resolvePath( serverJSON.web.SSL.certFile, defaultServerConfigFileDirectory ); }
