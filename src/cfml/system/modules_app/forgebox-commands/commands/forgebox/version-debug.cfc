@@ -81,8 +81,7 @@ component {
 
 				if( matches.len() ) {
 					satisfyingVersion = matches[1];
-					print.line( 'Found #matches.len()# matches for our version range, so taking the latest one.' )
-					//print.line( matches );
+					print.line( 'Found #matches.len()# matches for our version range, so taking the latest one.' );
 				} else if( version == 'stable' && arrayLen( versions ) ) {
 					print.line( "The version [stable] doesn't match any avaialble versions, which means all versions are a pre-release, so we'll just grab the latest one (same as [be])." )
 					satisfyingVersion = versions[ 1 ];

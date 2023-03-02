@@ -1523,12 +1523,6 @@ component accessors="true" singleton {
 		// Add java agent
 		if( len( trim( javaAgent ) ) ) { argTokens.append( javaagent ); }
 
-		// TODOL Temp stopgap for Java regression that prevents Undertow from starting.
-		// https://issues.redhat.com/browse/UNDERTOW-2073
-		// https://bugs.openjdk.java.net/browse/JDK-8285445
-		if( !argTokens.filter( (a)=>a contains 'jdk.io.File.enableADS' ).len() ) {
-			argTokens.append( '-Djdk.io.File.enableADS=true' );
-		}
 
 		 args
 		 	.append( '-jar' ).append( serverInfo.runwarJarPath )
