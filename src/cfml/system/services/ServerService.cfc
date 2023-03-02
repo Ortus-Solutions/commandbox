@@ -251,7 +251,11 @@ component accessors="true" singleton {
 				// Duplicate so onServerStart interceptors don't actually change config settings via reference.
 				'XNIOOptions' : duplicate( d.runwar.XNIOOptions ?: {} ),
 				// Duplicate so onServerStart interceptors don't actually change config settings via reference.
-				'undertowOptions' : duplicate( d.runwar.undertowOptions ?: {} )
+				'undertowOptions' : duplicate( d.runwar.undertowOptions ?: {} ),
+				'console' : {
+					'appenderLayout' : d.runwar.console.appenderLayout ?: '',
+					'appenderLayoutOptions' : duplicate( d.runwar.console.appenderLayoutOptions ?: {} )
+				}
 			},
 			'ModCFML' : {
 				'enable' : d.ModCFML.enable ?: false,
@@ -1022,6 +1026,10 @@ component accessors="true" singleton {
 		// Global defaults are always added on top of whatever is specified by the user or server.json
 		serverInfo.runwarUndertowOptions	= ( serverJSON.runwar.UndertowOptions ?: {} ).append( defaults.runwar.UndertowOptions, true );
 
+		serverInfo.runwarAppenderLayout	= serverJSON.runwar.console.appenderLayout ?: defaults.runwar.console.appenderLayout;
+		serverInfo.runwarAppenderLayoutOptions = serverJSON.runwar.console.appenderLayoutOptions ?: defaults.runwar.console.appenderLayoutOptions;
+
+
 		// Server startup timeout
 		serverInfo.startTimeout		= serverProps.startTimeout 			?: serverJSON.startTimeout 	?: defaults.startTimeout;
 
@@ -1590,6 +1598,13 @@ component accessors="true" singleton {
 
 		if( serverInfo.runwarUndertowOptions.count() ) {
 			args.append( '--undertow-options=' & serverInfo.runwarUndertowOptions.reduce( ( opts='', k, v ) => opts.listAppend( k & '=' & v ) ) );
+		}
+
+		if( len( serverInfo.runwarAppenderLayout ) ) {
+			args.append( '--console-layout' ).append( serverInfo.runwarAppenderLayout );
+		}
+		if( serverInfo.runwarAppenderLayoutOptions.count() ) {
+			args.append( '--console-layout-options' ).append( serializeJSON( serverInfo.runwarAppenderLayoutOptions ) );
 		}
 
 		if( serverInfo.debug ) {
