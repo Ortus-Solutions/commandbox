@@ -1523,9 +1523,26 @@ component accessors="true" singleton {
 		// Add java agent
 		if( len( trim( javaAgent ) ) ) { argTokens.append( javaagent ); }
 
+		// Collect recursive list of all jars in libDirs
+		jarArray = serverInfo.libDirs
+			.listToArray()
+			.reduce( function( jarArray, path ) {
+				if( fileExists( path ) && path.lcase().endsWith( '.jar' ) ) {
+					jarArray.append( path );
+				} else if( directoryExists( path ) ) {
+					directoryList( path, true, 'array' )
+						.filter( (p)=>p.lcase().endsWith( '.jar' ) )
+						.each( function( p ) {
+							jarArray.append( p );
+						} );
+				}
+				return jarArray;
+			}, [] );
+		jarArray.append( serverInfo.runwarJarPath );
 
 		 args
-		 	.append( '-jar' ).append( serverInfo.runwarJarPath )
+		 	.append( '-cp' ).append( jarArray.toList( server.system.properties[ 'path.separator' ] ) )
+			.append( 'runwar.Start' )
 			.append( '--background=#background#' )
 			.append( '--host' ).append( serverInfo.host )
 			.append( '--stop-port' ).append( serverInfo.stopsocket )
@@ -1667,11 +1684,6 @@ component accessors="true" singleton {
 
 		if( len( serverInfo.webXMLOverrideActual ) ){
 			args.append( '--web-xml-override-force' ).append( serverInfo.webXMLOverrideForce );
-		}
-
-		if( len( serverInfo.libDirs ) ) {
-			// Have to get rid of empty list elements
-			args.append( '--lib-dirs' ).append( serverInfo.libDirs.listChangeDelims( ',', ',' ) );
 		}
 
 		// Always send the enable flag for each protocol
