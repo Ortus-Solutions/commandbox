@@ -171,6 +171,19 @@ component accessors="true" singleton {
 			fileWrite( systemBoxJSON, '{ "name":"CommandBox System" }' );
 		}
 
+		// Merge in any auto-installed modules
+		var systemBoxJSONAutoInstall = expandPath( '/commandbox/box-auto-install.json' );
+		if( fileExists( systemBoxJSONAutoInstall ) ) {
+			var boxJSON = deserializeJSON( fileRead( systemBoxJSON ) );
+			var boxJSONAuto = deserializeJSON( fileRead( systemBoxJSONAutoInstall ) );
+			boxJSON.dependencies = boxJSON.dependencies ?: {};
+			boxJSON.installPaths = boxJSON.installPaths ?: {};
+			boxJSONAuto.dependencies = boxJSONAuto.dependencies ?: {};
+			boxJSONAuto.installPaths = boxJSONAuto.installPaths ?: {};
+			boxJSONAuto.dependencies.each( (k,v)=> boxJSON.dependencies[k]=v );
+			boxJSONAuto.installPaths.each( (k,v)=> boxJSON.installPaths[k]=v );
+			fileWrite( systemBoxJSONAutoInstall, serializeJSON( boxJSON ) );
+		}
 	}
 
 

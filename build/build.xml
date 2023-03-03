@@ -421,9 +421,9 @@ External Dependencies:
 			    <exclude name="modules/**"/>
 	        </fileset>
 	        <fileset dir="${build.location}/temp/CommandBoxHome/cfml/">
-			    <include name="box.json"/>
 			    <include name="modules/**"/>
 	        </fileset>
+			<zipfileset file="${build.location}/temp/CommandBoxHome/cfml/box.json" fullpath="box-auto-install.json"/>
 			<zipfileset file="${temp.dir}/cli/bin/cliloader/cfml.version" fullpath=".version"/>
 		</zip>
 		<copy file="${dist.dir}/${distro.name}-cfml-${commandbox.version}.zip" toFile="${temp.dir}/cli/cfml.zip" overwrite="true" />
