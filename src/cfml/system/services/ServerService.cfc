@@ -369,7 +369,7 @@ component accessors="true" singleton {
 		// If the server is already running, make sure the user really wants to do this.
 		if( isServerRunning( serverInfo ) && !(serverProps.force ?: false ) && !(serverProps.dryRun ?: false ) ) {
 
-			if( !shell.isTerminalInteractive() ) {
+			if( !shell.isTerminalInteractive() || isSingleServerMode() ) {
 				throw( message="Cannot start server [#serverInfo.name#] because it is already running.", detail="Run [server info --verbose] to find out why CommandBox thinks this server is running.", type="commandException" );
 			}
 
