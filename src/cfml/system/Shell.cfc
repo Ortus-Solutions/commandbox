@@ -183,7 +183,9 @@ component accessors="true" singleton {
 			boxJSONAuto.dependencies.each( (k,v)=> boxJSON.dependencies[k]=v );
 			boxJSONAuto.installPaths.each( (k,v)=> boxJSON.installPaths[k]=v );
 			fileWrite( systemBoxJSONAutoInstall, serializeJSON( boxJSON ) );
+			fileDelete( systemBoxJSONAutoInstall );
 		}
+
 	}
 
 
