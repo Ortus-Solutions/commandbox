@@ -15,6 +15,7 @@
  **/
 component {
 
+	property name="packageService" inject="packageService";
 	property name="ConfigService" inject="ConfigService";
 	property name="JSONService" inject="JSONService";
 	property name="endpointService" inject="endpointService";
@@ -46,8 +47,20 @@ component {
 					error( 'You don''t have a Forgebox API token set.', 'Use "endpoint login endpointName=#endpointName#" to authenticate as a user.' );
 				}
 			}
+			var modules = {};
+			var directory = expandPath( '/commandbox' );
+			// package check
+			if( packageService.isPackage( directory ) ) {
+				modules = packageService
+					.buildDependencyHierarchy( directory, 1 )
+					.dependencies
+					.map( (s,p)=>p.version );
+			}
 			var userData = forgebox.whoami( APIToken );
-			var configSettings = duplicate( ConfigService.getconfigSettings( noOverrides=true ) );
+			var configSettings = {
+				'config' : duplicate( ConfigService.getconfigSettings( noOverrides=true ) ),
+				'modules' : modules
+			};
 			var remoteConfig = forgebox.getConfig( userData.username, APIToken );
 
 

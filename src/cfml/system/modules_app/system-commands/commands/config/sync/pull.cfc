@@ -15,6 +15,7 @@
  **/
 component {
 
+	property name="packageService" inject="packageService";
 	property name="ConfigService" inject="ConfigService";
 	property name="JSONService" inject="JSONService";
 	property name="endpointService" inject="endpointService";
@@ -46,9 +47,23 @@ component {
 					error( 'You don''t have a Forgebox API token set.', 'Use "endpoint login endpointName=#endpointName#" to authenticate as a user.' );
 				}
 			}
+			var modules = {};
+			var directory = expandPath( '/commandbox' );
+			// package check
+			if( packageService.isPackage( directory ) ) {
+				modules = packageService
+					.buildDependencyHierarchy( directory, 1 )
+					.dependencies
+					.map( (s,p)=>p.version );
+			}
 			var userData = forgebox.whoami( APIToken );
 			var remoteConfig = forgebox.getConfig( userData.username, APIToken );
-			var configSettings = duplicate( configService.getconfigSettings( noOverrides=true ) );
+			var configSettings = {
+				'config' : duplicate( ConfigService.getconfigSettings( noOverrides=true ) ),
+				'modules' : modules
+			};
+
+
 
 			var diffDetails = jsondiff.diff(remoteConfig, configSettings )
 				.reduce( ( diffDetails, item )=>{
@@ -79,8 +94,22 @@ component {
 				remoteConfig = JSONService.mergeData( configSettings, remoteConfig );
 			}
 
-			configService.setConfigSettings( remoteConfig );
-			print.line().greenLine( "ClI Settings imported" );
+			configService.setConfigSettings( remoteConfig.config );
+			print.line().greenLine( "ClI Settings imported" ).line();
+
+			diffDetails.remove
+				.filter( ( item )=>buildPath( item.path ).lCase().startsWith( 'modules.' ) )
+				.each( ( item )=>command( 'install' ).params( buildPath( item.path ).listRest( '.' ) & '@' & item.old ).flags( 'system' ).run() )
+
+			diffDetails.change
+				.filter( ( item )=>buildPath( item.path ).lCase().startsWith( 'modules.' ) )
+				.each( ( item )=>command( 'install' ).params( buildPath( item.path ).listRest( '.' ) & '@' & item.old ).flags( 'system' ).run() )
+
+			if( overwrite ) {
+				diffDetails.add
+					.filter( ( item )=>buildPath( item.path ).lCase().startsWith( 'modules.' ) )
+					.each( ( item )=>command( 'uninstall' ).params( buildPath( item.path ).listRest( '.' ) ).flags( 'system' ).run() )
+			}
 
 		} catch( forgebox var e ) {
 			// This can include "expected" errors such as "Email already in use"
