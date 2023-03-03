@@ -30,10 +30,13 @@ component {
 		savecontent variable="local.out"{
 			include "#arguments.template#";
 		}
+		if( len( local.out ) ) {
+			return local.out;
+		}
 		if( !isNull( variables.__result2 ) ) {
 			return variables.__result2;
 		}
-		return local.out;
+		return;
 	}
 
 	/**
