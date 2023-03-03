@@ -297,8 +297,7 @@ External Dependencies:
 		<!-- Copy CommandBox code -->
       	<copy todir="${build.dir}" encoding="UTF-8">
         	<fileset dir="${src.dir}/cfml">
-        		<exclude name="modules/**"/>
-        		<exclude name="system/mdCache/**"/>
+        		<include  name="system/**"/>
         	</fileset>
         	<fileset file="../license.txt"/>
         	<fileset file="../readme.txt"/>
@@ -337,7 +336,6 @@ External Dependencies:
 			    <exclude name="box.json"/>
 			    <exclude name="modules/**"/>
 	        </fileset>
-			<zipfileset file="${temp.dir}/version" fullpath="cli/version"/>
 			<zipfileset file="${temp.dir}/cli/bin/cliloader/cfml.version" fullpath=".version"/>
 		</zip>
 		<copy file="${dist.dir}/${distro.name}-cfml-${commandbox.version}.zip" toFile="${temp.dir}/cli/cfml.zip" overwrite="true" />
@@ -405,6 +403,45 @@ External Dependencies:
         	<zipfileset src="${lib.dir}/json-smart-mini-${json-smart-mini.version}.jar" includes="**/*.class" />
         	<fileset file="${temp.dir}/cli/version"/>
 		</jar>
+
+
+
+		<!-- Now that we have an executable jar, use it to download a few default modules and then update our CFML zip and jar -->
+ 		<property name="cmdboxhome.arg" value="-CommandBox_home=${build.location}/temp/CommandBoxHome" />
+		<delete dir="${cmdboxhome.arg}"/>
+
+		<exec executable="java" dir="${dir.apidocs}" failonerror="true">
+			<arg line="-jar ${dist.dir}/box.jar ${cmdboxhome.arg} install ${box.bunndled.modules}" />
+		</exec>
+
+		<!--  recreate the cfml distro zip -->
+		<zip destfile="${dist.dir}/${distro.name}-cfml-${commandbox.version}.zip" update="false" level="9">
+	        <fileset dir="${build.dir}">
+			    <exclude name="box.json"/>
+			    <exclude name="modules/**"/>
+	        </fileset>
+	        <fileset dir="${build.location}/temp/CommandBoxHome/cfml/">
+			    <include name="box.json"/>
+			    <include name="modules/**"/>
+	        </fileset>
+			<zipfileset file="${temp.dir}/cli/bin/cliloader/cfml.version" fullpath=".version"/>
+		</zip>
+		<copy file="${dist.dir}/${distro.name}-cfml-${commandbox.version}.zip" toFile="${temp.dir}/cli/cfml.zip" overwrite="true" />
+
+		<!-- recreate jar -->
+        <jar destfile="${dist.dir}/box.jar" filesetmanifest="mergewithoutmain" level="9">
+			<manifest>
+				<attribute name="Main-Class" value="cliloader.LoaderCLIMain" />
+			</manifest>
+	        <fileset file="${temp.dir}/cli/libs.zip" />
+			<fileset file="${temp.dir}/cli/cfml.zip" />
+        	<fileset file="${temp.dir}/cli/engine.zip" />
+			<fileset dir="${temp.dir}/cli/bin" />
+        	<zipfileset src="${lib.dir}/json-smart-mini-${json-smart-mini.version}.jar" includes="**/*.class" />
+        	<fileset file="${temp.dir}/cli/version"/>
+		</jar>
+
+
 
 		<!-- Create Lucee light jar -->
         <jar destfile="${dist.dir}/box-light.jar" filesetmanifest="mergewithoutmain" level="9">
