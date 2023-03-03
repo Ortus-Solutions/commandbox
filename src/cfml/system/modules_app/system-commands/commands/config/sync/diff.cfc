@@ -51,20 +51,20 @@ component {
 
 			if( diffDetails.remove.len() ) {
 				print.line().boldBlueLine( 'Remote-only settings:' );
-				diffDetails.remove.each( ( item )=>print.indentedLine( buildPath( item.path ) & ' = ' & serializeJSON( item.old ) ) )
+				diffDetails.remove.each( ( item )=>print.indented( buildPath( item.path ) & ' = ' ).line( item.old ) )
 			}
 
 			if( diffDetails.add.len() ) {
 				print.line().boldGreenLine( 'Local-only settings:' );
-				diffDetails.add.each( ( item )=>print.indentedLine( buildPath( item.path ) & ' = ' & serializeJSON( item.new ) ) )
+				diffDetails.add.each( ( item )=>print.indented( buildPath( item.path ) & ' = ' ).line( item.new ) )
 			}
 
 			if( diffDetails.change.len() ) {
 				print.line().boldMagentaLine( 'Changed settings:' );
 				diffDetails.change.each( ( item )=>{
 					print.indentedLine( buildPath( item.path ) & ' = ' )
-						.indentedIndentedBlue( 'Remote Value: ' ).line( serializeJSON( item.old ) )
-						.indentedIndentedGreen( 'Local Value: ' ).line(serializeJSON( item.new ) );
+						.indentedIndentedBlue( 'Remote Value: ' ).line( item.old )
+						.indentedIndentedGreen( 'Local Value: ' ).line( item.new );
 				} );
 			}
 

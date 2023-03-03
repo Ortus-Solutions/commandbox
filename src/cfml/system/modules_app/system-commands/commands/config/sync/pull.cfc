@@ -58,20 +58,20 @@ component {
 
 			if( diffDetails.remove.len() ) {
 				print.line().boldGreenLine( 'New incoming settings:' );
-				diffDetails.remove.each( ( item )=>print.indentedLine( buildPath( item.path ) & ' = ' & serializeJSON( item.old ) ) )
+				diffDetails.remove.each( ( item )=>print.indented( buildPath( item.path ) & ' = ' ).line( item.old ) )
 			}
 
 			if( diffDetails.add.len() && overwrite ) {
 				print.line().boldRedLine( 'Removed local settings:' );
-				diffDetails.add.each( ( item )=>print.indentedLine( buildPath( item.path ) & ' = ' & serializeJSON( item.new ) ) )
+				diffDetails.add.each( ( item )=>print.indented( buildPath( item.path ) & ' = ' ).line( item.new ) )
 			}
 
 			if( diffDetails.change.len() ) {
 				print.line().boldYellowLine( 'Changed settings:' );
 				diffDetails.change.each( ( item )=>{
 					print.indentedLine( buildPath( item.path ) & ' = ' )
-						.indentedIndentedRed( 'Old Value: ' ).line(serializeJSON( item.new ) )
-						.indentedIndentedGreen( 'New Value: ' ).line( serializeJSON( item.old ) );
+						.indentedIndentedRed( 'Old Value: ' ).line( item.new )
+						.indentedIndentedGreen( 'New Value: ' ).line( item.old );
 				} );
 			}
 
