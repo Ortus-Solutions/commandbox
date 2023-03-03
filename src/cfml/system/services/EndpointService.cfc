@@ -16,6 +16,7 @@ component accessors="true" singleton {
 	property name="fileSystemUtil"		inject="FileSystem";
 	property name="consoleLogger"		inject="logbox:logger:console";
 	property name="configService"		inject="configService";
+	property name='interceptorService'	inject='interceptorService';
 
 
 	// Properties
@@ -30,7 +31,7 @@ component accessors="true" singleton {
 		setEndpointRegistry( {} );
 		return this;
 	}
-	
+
 	function onCLIStart() {
 		buildEndpointRegistry();
 		registerCustomForgeboxEndpoints();
@@ -158,10 +159,10 @@ component accessors="true" singleton {
 				if( endpointName == 'file' || endpointName == 'folder' ) {
 					package = fileSystemUtil.resolvePath( package, arguments.currentWorkingDirectory );
 					if( endpointName == 'file' && !fileExists( package ) ) {
-						throw( "The file [ #package# ] does not exist.", 'endpointException' );	
+						throw( "The file [ #package# ] does not exist.", 'endpointException' );
 					}
 					if( endpointName == 'folder' && !directoryExists( package ) ) {
-						throw( "The folder [ #package# ] does not exist.", 'endpointException' );	
+						throw( "The folder [ #package# ] does not exist.", 'endpointException' );
 					}
 					theID = endpointName & ':' & package;
 				}
@@ -283,6 +284,8 @@ component accessors="true" singleton {
 
 		// Store the APIToken
 		endpoint.storeAPIToken( arguments.username, APIToken );
+
+		interceptorService.announceInterception( 'onEndpointLogin', { endpointName=endpointName, username=username, endpoint=endpoint, APIToken=APIToken } );
 
 	}
 

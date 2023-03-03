@@ -39,7 +39,7 @@ component accessors=true singleton {
 			// Package lifecycle
 			'preInstall','onInstall','postInstall','preUninstall','postUninstall','preVersion','postVersion','prePublish','postPublish','preUnpublish','postUnpublish','onRelease','preInstallAll','postInstallAll',
 			// Misc
-			'onSystemSettingExpansion'
+			'onSystemSettingExpansion','onConfigSettingSave','onEndpointLogin'
 		] );
 
 		return this;
