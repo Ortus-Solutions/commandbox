@@ -119,6 +119,7 @@ component accessors="true" singleton {
 
 		return {
 			'name' : d.name ?: '',
+			'preferredBrowser' : d.preferredBrowser ?: '',
 			'openBrowser' : d.openBrowser ?: true,
 			'openBrowserURL' : d.openBrowserURL ?: '',
 			'startTimeout' : 240,
@@ -147,6 +148,7 @@ component accessors="true" singleton {
 				'host' : d.web.host ?: '127.0.0.1',
 				'directoryBrowsing' : d.web.directoryBrowsing ?: '',
 				'webroot' : d.web.webroot ?: '',
+				'caseSensitivePaths' : d.web.caseSensitivePaths ?: '',
 				// Duplicate so onServerStart interceptors don't actually change config settings via reference.
 				'aliases' : duplicate( d.web.aliases ?: {} ),
 				// Duplicate so onServerStart interceptors don't actually change config settings via reference.
@@ -224,7 +226,8 @@ component accessors="true" singleton {
 						'subjectDNs' : d.web.security.clientCert.subjectDNs ?: '',
 						'issuerDNs' : d.web.security.clientCert.issuerDNs ?: ''
 					}
-				}
+				},
+				'mimeTypes' : duplicate( d.web.mimeTypes ?: {} )
 			},
 			'app' : {
 				'logDir' : d.app.logDir ?: '',
@@ -248,7 +251,11 @@ component accessors="true" singleton {
 				// Duplicate so onServerStart interceptors don't actually change config settings via reference.
 				'XNIOOptions' : duplicate( d.runwar.XNIOOptions ?: {} ),
 				// Duplicate so onServerStart interceptors don't actually change config settings via reference.
-				'undertowOptions' : duplicate( d.runwar.undertowOptions ?: {} )
+				'undertowOptions' : duplicate( d.runwar.undertowOptions ?: {} ),
+				'console' : {
+					'appenderLayout' : d.runwar.console.appenderLayout ?: '',
+					'appenderLayoutOptions' : duplicate( d.runwar.console.appenderLayoutOptions ?: {} )
+				}
 			},
 			'ModCFML' : {
 				'enable' : d.ModCFML.enable ?: false,
@@ -323,7 +330,7 @@ component accessors="true" singleton {
 
 
 		var foundServer = getServerInfoByName( serverDetails.defaultName );
-		if( structCount( foundServer ) && normalizeWebroot( foundServer.webroot ) != normalizeWebroot( serverDetails.defaultwebroot ) ) {
+		if( !isSingleServerMode() && structCount( foundServer ) && normalizeWebroot( foundServer.webroot ) != normalizeWebroot( serverDetails.defaultwebroot ) ) {
 			throw(
 				message='You''ve asked to start a server named [#serverDetails.defaultName#] with a webroot of [#serverDetails.defaultwebroot#], but a server of this name already exists with a different webroot of [#foundServer.webroot#]',
 				detail='Server name and webroot must be unique.  Please forget the old server first.  Use "server list" to see all defined servers.',
@@ -362,7 +369,7 @@ component accessors="true" singleton {
 		// If the server is already running, make sure the user really wants to do this.
 		if( isServerRunning( serverInfo ) && !(serverProps.force ?: false ) && !(serverProps.dryRun ?: false ) ) {
 
-			if( !shell.isTerminalInteractive() ) {
+			if( !shell.isTerminalInteractive() || isSingleServerMode() ) {
 				throw( message="Cannot start server [#serverInfo.name#] because it is already running.", detail="Run [server info --verbose] to find out why CommandBox thinks this server is running.", type="commandException" );
 			}
 
@@ -387,7 +394,7 @@ component accessors="true" singleton {
 			} else if( action == 'openinbrowser' ) {
 				job.addLog( "Opening...#serverInfo.openbrowserURL#" );
 				job.error( 'Aborting...' );
-				shell.callCommand( 'browse #serverInfo.openbrowserURL#', false);
+				shell.callCommand( 'server open', false);
 				return;
 			} else if( action == 'newname' ) {
 				job.clear();
@@ -599,6 +606,7 @@ component accessors="true" singleton {
 		serverInfo.openbrowser		= serverProps.openbrowser 		?: serverJSON.openbrowser			?: defaults.openbrowser;
 
 		serverInfo.openbrowserURL	= serverProps.openbrowserURL	?: serverJSON.openbrowserURL		?: defaults.openbrowserURL;
+		serverInfo.preferredBrowser	= serverJSON.preferredBrowser	?: defaults.preferredBrowser;
 
 		// Trace assumes debug
 		serverInfo.debug = serverInfo.trace || serverInfo.debug;
@@ -732,19 +740,6 @@ component accessors="true" singleton {
 			job[ 'add#( serverInfo.fileCacheEnable ? 'Success' : '' )#Log' ]( 'File Caching #( serverInfo.fileCacheEnable ? 'en' : 'dis' )#abled' );
 		job.complete( serverInfo.verbose );
 
-		// Double check that the port in the user params or server.json isn't in use
-		if( !isPortAvailable( serverInfo.host, serverInfo.port ) ) {
-			job.addErrorLog( "" );
-			var badPortlocation = 'config';
-			if( serverProps.keyExists( 'port' ) ) {
-				badPortlocation = 'start params';
-			} else if ( len( defaults.web.http.port ?: '' ) ) {
-				badPortlocation = 'server.json';
-			} else {
-				badPortlocation = 'config server defaults';
-			}
-			throw( message="You asked for port [#( serverProps.port ?: serverJSON.web.http.port ?: defaults.web.http.port ?: '?' )#] in your #badPortlocation# but it's already in use.", detail="Please choose another or use netstat to find out what process is using the port already.", type="commandException" );
-		}
 
 		serverInfo.stopsocket		= serverProps.stopsocket		?: serverJSON.stopsocket 			?: getRandomPort( serverInfo.host );
 
@@ -777,6 +772,21 @@ component accessors="true" singleton {
 		serverInfo.AJPEnable 		= serverProps.AJPEnable 		?: serverJSON.web.AJP.enable			?: defaults.web.AJP.enable;
 		serverInfo.AJPPort			= serverProps.AJPPort 			?: serverJSON.web.AJP.port				?: defaults.web.AJP.port;
 		serverInfo.AJPSecret		= serverJSON.web.AJP.secret		?: defaults.web.AJP.secret;
+
+
+		// Double check that the port in the user params or server.json isn't in use
+		if( serverInfo.HTTPEnable && !isPortAvailable( serverInfo.host, serverInfo.port ) ) {
+			job.addErrorLog( "" );
+			var badPortlocation = 'config';
+			if( serverProps.keyExists( 'port' ) ) {
+				badPortlocation = 'start params';
+			} else if ( len( defaults.web.http.port ?: '' ) ) {
+				badPortlocation = 'server.json';
+			} else {
+				badPortlocation = 'config server defaults';
+			}
+			throw( message="You asked for port [#serverInfo.port#] in your #badPortlocation# but it's already in use.", detail="Please choose another or use netstat to find out what process is using the port already.", type="commandException" );
+		}
 
 		// relative certFile in server.json is resolved relative to the server.json
 		if( isDefined( 'serverJSON.web.SSL.certFile' ) ) { serverJSON.web.SSL.certFile = fileSystemUtil.resolvePath( serverJSON.web.SSL.certFile, defaultServerConfigFileDirectory ); }
@@ -886,6 +896,8 @@ component accessors="true" singleton {
 		serverInfo.welcomeFiles 	= serverProps.welcomeFiles		?: serverJSON.web.welcomeFiles			?: defaults.web.welcomeFiles;
 		serverInfo.maxRequests		= 								   serverJSON.web.maxRequests			?: defaults.web.maxRequests;
 
+		serverInfo.caseSensitivePaths= 								   serverJSON.web.caseSensitivePaths	?: defaults.web.caseSensitivePaths;
+
 		serverInfo.trayEnable	 	= serverProps.trayEnable		?: serverJSON.trayEnable			?: defaults.trayEnable;
 		serverInfo.dockEnable	 	= serverJSON.dockEnable			?: defaults.dockEnable;
 		serverInfo.defaultBaseURL = serverInfo.SSLEnable ? 'https://#serverInfo.host#:#serverInfo.SSLPort#' : 'http://#serverInfo.host#:#serverInfo.port#';
@@ -961,6 +973,9 @@ component accessors="true" singleton {
 			return fileSystemUtil.resolvePath( p, defaultServerConfigFileDirectory );
 		} ) );
 
+		// Combine global and server-specific mime types
+		serverInfo.mimeTypes = defaults.web.mimeTypes.append( serverJSON.web.mimeTypes ?: {}, true );
+
 		// Global errorPages are always added on top of server.json (but don't overwrite the full struct)
 		// Aliases aren't accepted via command params
 		serverInfo.errorPages		= defaults.web.errorPages;
@@ -1010,6 +1025,10 @@ component accessors="true" singleton {
 
 		// Global defaults are always added on top of whatever is specified by the user or server.json
 		serverInfo.runwarUndertowOptions	= ( serverJSON.runwar.UndertowOptions ?: {} ).append( defaults.runwar.UndertowOptions, true );
+
+		serverInfo.runwarAppenderLayout	= serverJSON.runwar.console.appenderLayout ?: defaults.runwar.console.appenderLayout;
+		serverInfo.runwarAppenderLayoutOptions = serverJSON.runwar.console.appenderLayoutOptions ?: defaults.runwar.console.appenderLayoutOptions;
+
 
 		// Server startup timeout
 		serverInfo.startTimeout		= serverProps.startTimeout 			?: serverJSON.startTimeout 	?: defaults.startTimeout;
@@ -1254,6 +1273,9 @@ component accessors="true" singleton {
 			setServerInfo( serverInfo );
 			// This interception point can be used for additional configuration of the engine before it actually starts.
 			interceptorService.announceInterception( 'onServerInstall', { serverInfo=serverInfo, installDetails=installDetails, serverJSON=serverJSON, defaults=defaults, serverProps=serverProps, serverDetails=serverDetails } );
+			if( installDetails.initialInstall ) {
+				interceptorService.announceInterception( 'onServerInitialInstall', { serverInfo=serverInfo, installDetails=installDetails, serverJSON=serverJSON, defaults=defaults, serverProps=serverProps, serverDetails=serverDetails } );
+			}
 
 			// If Lucee server, set the java agent
 			if( serverInfo.cfengine contains "lucee" ) {
@@ -1447,6 +1469,13 @@ component accessors="true" singleton {
 			CLIAliases = CLIAliases.listAppend( thisAlias & '=' & serverInfo.aliases[ thisAlias ] );
 		}
 
+		// Turn struct of mimeTypes into a comma-delimited list
+		// "log;text/plain,foo;content/type"
+		var mimeTypesList = '';
+		for( var thisMime in serverInfo.mimeTypes ) {
+			mimeTypesList = mimeTypesList.listAppend( thisMime & ';' & serverInfo.mimeTypes[ thisMime ] );
+		}
+
 		// Turn struct of errorPages into a comma-delimited list.
 		// --error-pages="404=/path/to/404.html,500=/path/to/500.html,1=/path/to/default.html"
 		var errorPages = '';
@@ -1502,15 +1531,26 @@ component accessors="true" singleton {
 		// Add java agent
 		if( len( trim( javaAgent ) ) ) { argTokens.append( javaagent ); }
 
-		// TODOL Temp stopgap for Java regression that prevents Undertow from starting.
-		// https://issues.redhat.com/browse/UNDERTOW-2073
-		// https://bugs.openjdk.java.net/browse/JDK-8285445
-		if( !argTokens.filter( (a)=>a contains 'jdk.io.File.enableADS' ).len() ) {
-			argTokens.append( '-Djdk.io.File.enableADS=true' );
-		}
+		// Collect recursive list of all jars in libDirs
+		jarArray = serverInfo.libDirs
+			.listToArray()
+			.reduce( function( jarArray, path ) {
+				if( fileExists( path ) && path.lcase().endsWith( '.jar' ) ) {
+					jarArray.append( path );
+				} else if( directoryExists( path ) ) {
+					directoryList( path, true, 'array' )
+						.filter( (p)=>p.lcase().endsWith( '.jar' ) )
+						.each( function( p ) {
+							jarArray.append( p );
+						} );
+				}
+				return jarArray;
+			}, [] );
+		jarArray.append( serverInfo.runwarJarPath );
 
 		 args
-		 	.append( '-jar' ).append( serverInfo.runwarJarPath )
+		 	.append( '-cp' ).append( jarArray.toList( server.system.properties[ 'path.separator' ] ) )
+			.append( 'runwar.Start' )
 			.append( '--background=#background#' )
 			.append( '--host' ).append( serverInfo.host )
 			.append( '--stop-port' ).append( serverInfo.stopsocket )
@@ -1526,7 +1566,11 @@ component accessors="true" singleton {
 			.append( '--cookie-httponly' ).append( serverInfo.sessionCookieHTTPOnly )
 			.append( '--pid-file').append( serverInfo.pidfile );
 
-		if( ConfigService.settingExists( 'preferredBrowser' ) ) {
+		// If server.json has a default browser, use it
+		if( len( serverInfo.preferredBrowser ) ) {
+			args.append( '--preferred-browser' ).append( serverInfo.preferredBrowser );
+		// Otherwise, use the global config setting, if it exists
+		} else if( ConfigService.settingExists( 'preferredBrowser' ) ) {
 			args.append( '--preferred-browser' ).append( ConfigService.getSetting( 'preferredBrowser' ) );
 		}
 
@@ -1554,6 +1598,13 @@ component accessors="true" singleton {
 
 		if( serverInfo.runwarUndertowOptions.count() ) {
 			args.append( '--undertow-options=' & serverInfo.runwarUndertowOptions.reduce( ( opts='', k, v ) => opts.listAppend( k & '=' & v ) ) );
+		}
+
+		if( len( serverInfo.runwarAppenderLayout ) ) {
+			args.append( '--console-layout' ).append( serverInfo.runwarAppenderLayout );
+		}
+		if( serverInfo.runwarAppenderLayoutOptions.count() ) {
+			args.append( '--console-layout-options' ).append( serializeJSON( serverInfo.runwarAppenderLayoutOptions ) );
 		}
 
 		if( serverInfo.debug ) {
@@ -1607,8 +1658,14 @@ component accessors="true" singleton {
 	 	if( len( serverInfo.maxRequests ) ) {
 	 		 args.append( '--worker-threads' ).append( serverInfo.maxRequests );
 	 	}
+	 	if( len( serverInfo.caseSensitivePaths ) ) {
+	 		 args.append( '--case-sensitive-web-server' ).append( serverInfo.caseSensitivePaths );
+	 	}
 	 	if( len( CLIAliases ) ) {
 	 		 args.append( '--dirs' ).append( CLIAliases );
+	 	}
+	 	if( len( mimeTypesList ) ) {
+	 		 args.append( '--mime-types' ).append( mimeTypesList );
 	 	}
 	 	if( serverInfo.fileCacheEnable ) {
 	 		 args.append( '--cache-servlet-paths' ).append( true );
@@ -1642,11 +1699,6 @@ component accessors="true" singleton {
 
 		if( len( serverInfo.webXMLOverrideActual ) ){
 			args.append( '--web-xml-override-force' ).append( serverInfo.webXMLOverrideForce );
-		}
-
-		if( len( serverInfo.libDirs ) ) {
-			// Have to get rid of empty list elements
-			args.append( '--lib-dirs' ).append( serverInfo.libDirs.listChangeDelims( ',', ',' ) );
 		}
 
 		// Always send the enable flag for each protocol
@@ -2122,6 +2174,9 @@ component accessors="true" singleton {
 
 	function fixBinaryPath(command, fullPath){
 		if(!isNull(fullPath) or !isEmpty(fullPath)){
+			if( fullPath contains ' ' ) {
+				fullPath = '"' & fullPath & '"';
+			}
 			if( command.left( 4 ) == 'box ' ){
 				command = command.replacenoCase( 'box ', fullPath & ' ', 'one' );
 			} else if( command.left( 8 ) == 'box.exe ' ){
@@ -2188,7 +2243,7 @@ component accessors="true" singleton {
 	) {
 
 		// If CommandBox is in single server mode, just force the first (and only) server to be the one we find
-		if( ConfigService.getSetting( 'server.singleServerMode', false ) && getServers().count() ){
+		if( isSingleServerMode() && getServers().count() ){
 
 			// CFConfig calls this method sometimes with a path to a JSON file and needs to get no server back
 			if( serverProps.keyExists( 'name' ) && lcase( serverProps.name ).endsWith( '.json' ) ) {
@@ -2201,16 +2256,6 @@ component accessors="true" singleton {
 					serverIsNew : true
 				};
 			}
-
-			var serverInfo = getFirstServer();
-			return {
-				defaultName : serverInfo.name,
-				defaultwebroot : serverInfo.webroot,
-				defaultServerConfigFile : serverInfo.serverConfigFile,
-				serverJSON : readServerJSON( serverInfo.serverConfigFile ),
-				serverInfo : serverInfo,
-				serverIsNew : false
-			};
 		}
 
 		var job = wirebox.getInstance( 'interactiveJob' );
@@ -2278,6 +2323,20 @@ component accessors="true" singleton {
 			name				= defaultName,
 			serverConfigFile	= serverProps.serverConfigFile ?: '' //  Since this takes precedence, I only want to use it if it was actually specified
 		);
+
+		// If CommandBox is in single server mode, set our current values in so the "single server" always represents the last name and web root that was used.
+		if( isSingleServerMode() && getServers().count() ){
+			if( len( defaultName ) ) {
+				serverInfo.name = defaultName;
+			} else {
+				serverInfo.name = replace( listLast( defaultwebroot, "\/" ), ':', '');
+			}
+			serverInfo.webroot = defaultwebroot;
+			if( !isNull( serverProps.serverConfigFile ) ) {
+				serverInfo.serverConfigFile = serverProps.serverConfigFile;
+			}
+			setServerInfo( serverInfo );
+		}
 
 		// If we found a server, set our name.
 		if( len( serverInfo.name ?: '' ) ) {
@@ -2467,7 +2526,7 @@ component accessors="true" singleton {
 	* @serverInfo The server information
 	*/
 	function getCustomServerFolder( required struct serverInfo ){
-		if( configService.getSetting( 'server.singleServerMode', false ) ){
+		if( isSingleServerMode() ){
 			return variables.customServerDirectory & 'serverHome';
 		} else {
 			return variables.customServerDirectory & arguments.serverinfo.id & "-" & arguments.serverInfo.name;
@@ -2621,7 +2680,7 @@ component accessors="true" singleton {
 
 	function calculateServerID( webroot, name ) {
 
-		if( ConfigService.getSetting( 'server.singleServerMode', false ) ){
+		if( isSingleServerMode() ){
 			return 'serverHome';
 		}
 		var normalizedWebroot = normalizeWebroot( webroot );
@@ -2713,7 +2772,7 @@ component accessors="true" singleton {
 	*/
 	struct function getServerInfoByDiscovery( required directory="", required name="", serverConfigFile="" ){
 
-		if( ConfigService.getSetting( 'server.singleServerMode', false ) && getServers().count() ){
+		if( isSingleServerMode() && getServers().count() ){
 			return getFirstServer();
 		}
 
@@ -2744,7 +2803,7 @@ component accessors="true" singleton {
 	*/
 	struct function getServerInfoByName( required name ){
 
-		if( ConfigService.getSetting( 'server.singleServerMode', false ) && getServers().count() ){
+		if( isSingleServerMode() && getServers().count() ){
 			return getFirstServer();
 		}
 
@@ -2764,7 +2823,7 @@ component accessors="true" singleton {
 	*/
 	struct function getServerInfoByServerConfigFile( required serverConfigFile ){
 
-		if( ConfigService.getSetting( 'server.singleServerMode', false ) && getServers().count() ){
+		if( isSingleServerMode() && getServers().count() ){
 			return getFirstServer();
 		}
 
@@ -2795,7 +2854,7 @@ component accessors="true" singleton {
 	*/
 	struct function getServerInfoByWebroot( required webroot ){
 
-		if( ConfigService.getSetting( 'server.singleServerMode', false ) && getServers().count() ){
+		if( isSingleServerMode() && getServers().count() ){
 			return getFirstServer();
 		}
 
@@ -2940,10 +2999,12 @@ component accessors="true" singleton {
 			'dateLastStarted'		: '',
 			'openBrowser'			: true,
 			'openBrowserURL'		: '',
+			'preferredBrowser'		: '',
 			'profile'				: '',
 			'customServerFolder'	: '',
 			'welcomeFiles'			: '',
 			'maxRequests'			: '',
+			'caseSensitivePaths'	: '',
 			'exitCode'				: 0,
 			'rules'					: [],
 			'rulesFile'				: '',
@@ -2958,7 +3019,8 @@ component accessors="true" singleton {
 			'HSTSEnable'			: false,
 			'HSTSMaxAge'			: 0,
 			'HSTSIncludeSubDomains'	: false,
-			'AJPSecret'				: ''
+			'AJPSecret'				: '',
+			'mimeTypes'				: {}
 		};
 	}
 
@@ -3015,6 +3077,7 @@ component accessors="true" singleton {
 				'scripts' : {
 					'preServerStart' : '',
 					'onServerInstall' : '',
+					'onServerInitialInstall' : '',
 					'onServerStart' : '',
 					'onServerStop' : '',
 					'preServerForget' : '',
@@ -3175,6 +3238,10 @@ component accessors="true" singleton {
 			} else if( !arguments.ignoreMissing ) {
 				consoleLogger.error( 'The script [#arguments.scriptName#] does not exist in this server.' );
 			}
+	}
+
+	function isSingleServerMode() {
+		return configService.getSetting( 'server.singleServerMode', false );
 	}
 
 

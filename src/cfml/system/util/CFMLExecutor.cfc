@@ -30,11 +30,17 @@ component {
 		savecontent variable="local.out"{
 			include "#arguments.template#";
 		}
-		return local.out;
+		if( len( local.out ) ) {
+			return local.out;
+		}
+		if( !isNull( variables.__result2 ) ) {
+			return variables.__result2;
+		}
+		return;
 	}
 
 	/**
-	* Execute a snipped of code in the context of a directory
+	* Execute a snippet of code in the context of a directory
 	* @code.hint CFML code to run
 	* @script.hint is the CFML code script or tags
 	* @directory.hint Absolute path to a directory context to run in
@@ -47,7 +53,7 @@ component {
 		var tmpFileAbsolute = arguments.directory & "/" & tmpFile;
 
 		// generate cfml command to write to file
-		var CFMLFileContents = ( arguments.script ? "<cfscript>" & arguments.code & "</cfscript>" : arguments.code );
+		var CFMLFileContents = ( arguments.script ? "<cfscript>variables.__result2 = " & arguments.code & "</cfscript>" : arguments.code );
 
 		// write out our cfml command
 		fileWrite( tmpFileAbsolute, CFMLFileContents );
@@ -55,7 +61,14 @@ component {
 		try {
 			return runFile( tmpFileAbsolute, arguments.vars );
 		} catch( any e ){
-			rethrow;
+
+			// generate cfml command to write to file
+			local.CFMLFileContents = ( arguments.script ? "<cfscript>" & arguments.code & "</cfscript>" : arguments.code );
+
+			// write out our cfml command
+			fileWrite( tmpFileAbsolute, CFMLFileContents );
+
+			return runFile( tmpFileAbsolute, arguments.vars );
 		} finally {
 			// cleanup
 			if( fileExists( tmpFileAbsolute ) ){
@@ -96,6 +109,27 @@ component {
 			.map( function( i ) {
 				return i.lcase();
 			} );
+	}
+
+	/**
+	 * This method mimics a Java/Groovy assert() function, where it evaluates the target to a boolean value or an executable closure and it must be true
+	 * to pass and return a true to you, or throw an `AssertException`
+	 *
+	 * @target The tareget to evaluate for being true, it can also be a closure that will be evaluated at runtime
+	 * @message The message to send in the exception
+	 *
+	 * @throws AssertException if the target is a false or null value
+	 * @return True, if the target is a non-null value. If false, then it will throw the `AssertError` exception
+	 */
+	boolean function assert( target, message="" ){
+		// param against nulls
+		arguments.target = arguments.target ?: false;
+		// evaluate it
+		var results = isClosure( arguments.target ) || isCustomFunction( arguments.target ) ? arguments.target( variables ) : arguments.target;
+		// deal it : callstack two is from where the `assert` was called.
+
+
+		return results ? true : throw( message="Assertion failed", detail=arguments.message, type="commandException" );
 	}
 
 }

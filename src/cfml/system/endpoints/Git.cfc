@@ -47,7 +47,7 @@ component accessors="true" implements="IEndpoint" singleton {
 	public string function resolvePackage( required string package, boolean verbose=false ) {
 
 		if( configService.getSetting( 'offlineMode', false ) ) {
-			throw( 'Can''t clone [#getNamePrefixes()#:#package#], CommandBox is in offline mode.  Go online with [config set offlineMode=false].', 'endpointException' );	
+			throw( 'Can''t clone [#getNamePrefixes()#:#package#], CommandBox is in offline mode.  Go online with [config set offlineMode=false].', 'endpointException' );
 		}
 
 		var job = wirebox.getInstance( 'interactiveJob' );
@@ -103,6 +103,9 @@ component accessors="true" implements="IEndpoint" singleton {
 			if( branchList.filter( function( i ) { return i contains branch; } ).len() ) {
 				if( arguments.verbose ){ job.addLog( 'Commit-ish [#branch#] appears to be a branch.' ); }
 				branch = 'origin/' & branch;
+			} else if( branch == 'master' && branchList.filter( (b)=>b contains 'main' ).len() ) {
+				if( arguments.verbose ){ job.addLog( 'Switching to branch [main].' ); }
+				branch = 'origin/main';
 			}
 
 			// Checkout branch, tag, or commit hash.

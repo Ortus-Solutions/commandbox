@@ -12,8 +12,9 @@
  **/
 component {
 
-	property name="configService" inject="configService";
-	property name="endpointService" inject="endpointService";
+	property name="configService" 		inject="configService";
+	property name="endpointService" 	inject="endpointService";
+	property name='interceptorService'	inject='interceptorService';
 
 	/**
 	* @username The ForgeBox username to switch to.
@@ -55,6 +56,8 @@ component {
 		} else {
 			error( 'Username [#arguments.username#] isn''t authenticated.  Please use "forgebox login".' );
 		}
+
+		interceptorService.announceInterception( 'onEndpointLogin', { endpointName=endpointName, username=username, endpoint=oEndpoint, APIToken=APIToken } );
 	}
 
 	function endpointNameComplete() {

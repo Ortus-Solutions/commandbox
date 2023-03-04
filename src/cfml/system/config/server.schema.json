@@ -81,6 +81,12 @@
 			"type": "string",
 			"default": ""
 		},
+		"preferredBrowser": {
+			"title": "Preferred Browser",
+			"description": "Preferred Browser to use for open commands, including 'server open' and the tray menus",
+			"type": "string",
+			"default": ""
+		},
 		"openBrowser": {
 			"title": "Open Browser",
 			"description": "Controls whether browser opens by default when starting server",
@@ -884,6 +890,11 @@
 				"onServerInstall": {
 					"title": "On Server Install Script",
 					"description": "Runs when engine is being installed during server startup",
+					"type": "string"
+				},
+				"onServerInitialInstall": {
+					"title": "On Server Initial Install Script",
+					"description": "Runs when engine is being installed the first time during server startup",
 					"type": "string"
 				},
 				"onServerStop": {

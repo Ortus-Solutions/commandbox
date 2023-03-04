@@ -68,7 +68,14 @@ component {
 			proxyPort="#ConfigService.getSetting( 'proxy.port', 80 )#"
 			proxyUser="#ConfigService.getSetting( 'proxy.user', '' )#"
 			proxyPassword="#ConfigService.getSetting( 'proxy.password', '' )#"
-			result="local.boxRepoResult";
+			result="local.boxRepoResult" {
+				cfhttpparam(name="CLIID", type="url", value="#GetLuceeId().server.id#");
+				cfhttpparam(name="CLIVersion", type="url", value="#shell.getVersion()#");
+				cfhttpparam(name="os", type="url", value="#server.system.properties['os.name']#");
+				cfhttpparam(name="jre", type="url", value="#server.java.version#");
+				cfhttpparam(name="APIToken", type="url", value="#ConfigService.getSetting( 'endpoints.forgebox.APIToken', '' )#");
+			}
+
 
 		http
 			url="#loaderRepoURL#"
@@ -78,7 +85,14 @@ component {
 			proxyPort="#ConfigService.getSetting( 'proxy.port', 80 )#"
 			proxyUser="#ConfigService.getSetting( 'proxy.user', '' )#"
 			proxyPassword="#ConfigService.getSetting( 'proxy.password', '' )#"
-			result="local.loaderRepoResult";
+			result="local.loaderRepoResult"{
+				cfhttpparam(name="CLIID", type="url", value="#GetLuceeId().server.id#");
+				cfhttpparam(name="CLIVersion", type="url", value="#shell.getVersion()#");
+				cfhttpparam(name="os", type="url", value="#server.system.properties['os.name']#");
+				cfhttpparam(name="jre", type="url", value="#server.java.version#");
+				cfhttpparam(name="APIToken", type="url", value="#ConfigService.getSetting( 'endpoints.forgebox.APIToken', '' )#");
+			}
+
 
 		// Do some error checking
 		if( !local.boxRepoResult.statusCode contains "200" || !fileExists( '#temp#/box-repo.json' ) ||

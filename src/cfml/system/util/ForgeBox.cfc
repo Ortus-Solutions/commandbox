@@ -224,6 +224,50 @@ or just add DEBUG to the root logger
 	}
 
 	/**
+	* set user config
+	*/
+	function setConfig( required struct config, required string username, required string APIToken ) {
+
+		var results = makeRequest(
+			resource="users/#username#/clisettings",
+			method='post',
+			formFields={
+				'CLISettings' : serializeJSON( config )
+			},
+			headers = {
+				'x-api-token' : arguments.APIToken,
+				"Content-Type" = "application/x-www-form-urlencoded"
+			} );
+
+		// error
+		if( results.response.error ){
+			throw( arrayToList( results.response.messages ), 'forgebox' );
+		}
+
+		return arrayToList( results.response.messages );
+	}
+
+	/**
+	* set user config
+	*/
+	function getConfig( required string username, required string APIToken ) {
+
+		var results = makeRequest(
+			resource="users/#username#/clisettings",
+			method='get',
+			headers = {
+				'x-api-token' : arguments.APIToken
+			} );
+
+		// error
+		if( results.response.error ){
+			throw( arrayToList( results.response.messages ), 'forgebox' );
+		}
+
+		return deserializeJSON( results.response.data );
+	}
+
+	/**
 	* Authenticates a user in ForgeBox
 	*/
 	function login(
@@ -363,13 +407,14 @@ or just add DEBUG to the root logger
 		string typeSlug = '',
 		string APIToken='' ) {
 
-		var thisResource = "slugs/#arguments.searchTerm#";
+		var thisResource = "slugs";
 
 		var results = makeRequest(
 			resource=thisResource,
 			method='get',
 			parameters={
-				typeSlug : arguments.typeSlug
+				typeSlug : arguments.typeSlug,
+				searchTerm : arguments.searchTerm
 			},
 			headers = {
 				'x-api-token' : arguments.APIToken
@@ -429,9 +474,9 @@ or just add DEBUG to the root logger
 		<cfargument name="multipart" 		type="boolean" 	required="false" default="false" hint="Whether the request needs to be multipart/form-data"/>
 		<cfscript>
 			if( configService.getSetting( 'offlineMode', false ) ) {
-				throw( 'Can''t access #getEndpointName()# resource [#resource#], CommandBox is in offline mode.  Go online with [config set offlineMode=false].', 'forgebox' );	
+				throw( 'Can''t access #getEndpointName()# resource [#resource#], CommandBox is in offline mode.  Go online with [config set offlineMode=false].', 'forgebox' );
 			}
-				
+
 			var results = {error=false,response={},message="",responseheader={},rawResponse=""};
 			var HTTPResults = "";
 			var param = "";
@@ -480,7 +525,6 @@ or just add DEBUG to the root logger
 			}
 			// structDelete( arguments.headers, "Content-Type" );
 		</cfscript>
-
 		<!--- REST CAll --->
 		<cfhttp attributeCollection="#CFHTTPParams#">
 

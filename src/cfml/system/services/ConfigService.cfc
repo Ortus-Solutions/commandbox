@@ -25,6 +25,7 @@ component accessors="true" singleton {
 	property name='ModuleService'		inject='ModuleService';
 	property name='JSONService'			inject='JSONService';
 	property name='ServerService'		inject='provider:ServerService';
+	property name='interceptorService'	inject='interceptorService';
 
 	/**
 	* Constructor
@@ -244,6 +245,8 @@ component accessors="true" singleton {
 
 		// Update ModuleService
 		ModuleService.overrideAllConfigSettings();
+
+		interceptorService.announceInterception( 'onConfigSettingSave', { configFilePath=getConfigFilePath(), configSettings=getConfigSettings( noOverrides=true ) } );
 	}
 
 

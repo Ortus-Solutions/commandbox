@@ -16,8 +16,8 @@ External Dependencies:
  	<property name="distro.groupID"				value="ortussolutions" />
  	<property name="distro.name"				value="commandbox"/>
  	<!-- Special things happen when the version and stableVersion are the same value as that signifies a "stable" build.   -->
- 	<property name="commandbox.version"			value="5.7.0"/>
- 	<property name="commandbox.stableVersion"	value="5.7.0"/>
+ 	<property name="commandbox.version"			value="5.8.0"/>
+ 	<property name="commandbox.stableVersion"	value="5.8.0"/>
 
     <!-- Time Label -->
 	<tstamp prefix="start"/>
@@ -297,8 +297,7 @@ External Dependencies:
 		<!-- Copy CommandBox code -->
       	<copy todir="${build.dir}" encoding="UTF-8">
         	<fileset dir="${src.dir}/cfml">
-        		<exclude name="modules/**"/>
-        		<exclude name="system/mdCache/**"/>
+        		<include  name="system/**"/>
         	</fileset>
         	<fileset file="../license.txt"/>
         	<fileset file="../readme.txt"/>
@@ -337,7 +336,6 @@ External Dependencies:
 			    <exclude name="box.json"/>
 			    <exclude name="modules/**"/>
 	        </fileset>
-			<zipfileset file="${temp.dir}/version" fullpath="cli/version"/>
 			<zipfileset file="${temp.dir}/cli/bin/cliloader/cfml.version" fullpath=".version"/>
 		</zip>
 		<copy file="${dist.dir}/${distro.name}-cfml-${commandbox.version}.zip" toFile="${temp.dir}/cli/cfml.zip" overwrite="true" />
@@ -405,6 +403,45 @@ External Dependencies:
         	<zipfileset src="${lib.dir}/json-smart-mini-${json-smart-mini.version}.jar" includes="**/*.class" />
         	<fileset file="${temp.dir}/cli/version"/>
 		</jar>
+
+
+
+		<!-- Now that we have an executable jar, use it to download a few default modules and then update our CFML zip and jar -->
+ 		<property name="cmdboxhome.arg" value="-CommandBox_home=${build.location}/temp/CommandBoxHome" />
+		<delete dir="${cmdboxhome.arg}"/>
+
+		<exec executable="java" dir="${dir.apidocs}" failonerror="true">
+			<arg line="-jar ${dist.dir}/box.jar ${cmdboxhome.arg} install ${box.bunndled.modules}" />
+		</exec>
+
+		<!--  recreate the cfml distro zip -->
+		<zip destfile="${dist.dir}/${distro.name}-cfml-${commandbox.version}.zip" update="false" level="9">
+	        <fileset dir="${build.dir}">
+			    <exclude name="box.json"/>
+			    <exclude name="modules/**"/>
+	        </fileset>
+	        <fileset dir="${build.location}/temp/CommandBoxHome/cfml/">
+			    <include name="modules/**"/>
+	        </fileset>
+			<zipfileset file="${build.location}/temp/CommandBoxHome/cfml/box.json" fullpath="box-auto-install.json"/>
+			<zipfileset file="${temp.dir}/cli/bin/cliloader/cfml.version" fullpath=".version"/>
+		</zip>
+		<copy file="${dist.dir}/${distro.name}-cfml-${commandbox.version}.zip" toFile="${temp.dir}/cli/cfml.zip" overwrite="true" />
+
+		<!-- recreate jar -->
+        <jar destfile="${dist.dir}/box.jar" filesetmanifest="mergewithoutmain" level="9">
+			<manifest>
+				<attribute name="Main-Class" value="cliloader.LoaderCLIMain" />
+			</manifest>
+	        <fileset file="${temp.dir}/cli/libs.zip" />
+			<fileset file="${temp.dir}/cli/cfml.zip" />
+        	<fileset file="${temp.dir}/cli/engine.zip" />
+			<fileset dir="${temp.dir}/cli/bin" />
+        	<zipfileset src="${lib.dir}/json-smart-mini-${json-smart-mini.version}.jar" includes="**/*.class" />
+        	<fileset file="${temp.dir}/cli/version"/>
+		</jar>
+
+
 
 		<!-- Create Lucee light jar -->
         <jar destfile="${dist.dir}/box-light.jar" filesetmanifest="mergewithoutmain" level="9">
@@ -702,6 +739,14 @@ External Dependencies:
         <chmod file="${dist.dir}/box" perm="755"/>
         <chmod file="${dist.dir}/box-light" perm="755"/>
         <chmod file="${dist.dir}/box-thin" perm="755"/>
+
+		<checksum file="${dist.dir}/box-light" forceoverwrite="true" fileext=".md5" />
+		<checksum file="${dist.dir}/box-light" forceoverwrite="true" algorithm="sha" />
+		<checksum file="${dist.dir}/box-light" forceoverwrite="true" algorithm="SHA-256" fileext=".sha256"/>
+
+		<checksum file="${dist.dir}/box-thin" forceoverwrite="true" fileext=".md5" />
+		<checksum file="${dist.dir}/box-thin" forceoverwrite="true" algorithm="sha" />
+		<checksum file="${dist.dir}/box-thin" forceoverwrite="true" algorithm="SHA-256" fileext=".sha256"/>
 
         <!-- Create distro zip -->
 		<zip destfile="${dist.dir}/${distro.name}-bin-${commandbox.version}.zip" level="9" update="false">

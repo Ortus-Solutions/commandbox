@@ -101,6 +101,8 @@ component aliases="install" {
 	/**
 	* @ID.hint "endpoint:package" to install. Default endpoint is "forgebox".  If no ID is passed, all dependencies in box.json will be installed.
 	* @ID.optionsUDF IDComplete
+	* @ID.optionsFileComplete true
+	* @ID.optionsDirectoryComplete true
 	* @directory.hint The directory to install in and creates the directory if it does not exist. This will override the packages box.json install dir if provided.
 	* @save.hint Save the installed package as a dependency in box.json (if it exists), defaults to true
 	* @saveDev.hint Save the installed package as a dev dependency in box.json (if it exists)
