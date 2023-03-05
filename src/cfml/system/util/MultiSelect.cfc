@@ -112,6 +112,9 @@ component accessors=true {
 		try {
 			draw();
 
+			while( isOversize() ) {
+				sleep( 500 );
+			}
 			while( ( var key = shell.waitForKey() ) != chr( 13 ) || !checkRequired() ) {
 
 				if( isUp( key ) ) {
@@ -303,15 +306,39 @@ component accessors=true {
 	}
 
 	function getCursorPosition() {
+		if( isOversize() ) {
+			return {
+				'row' : 0,
+				'col' : 0
+			};
+		}
 		return {
 			'row' : activeOption-viewportStart+3,
 			'col' : 3
 		};
 	}
 
+	function isOversize() {
+		return terminal.getHeight() < 10;
+	}
+
 	function getLines() {
 		var width=terminal.getWidth();
 		var height=terminal.getHeight();
+		if( isOversize() ) {
+			viewportStart = 1;
+			lines = [ aStr.fromAnsi( print.red( 'Terminal is too small for multi-select to render!' ) ) ];
+			if( height > 3 ){
+				loop times=height-3 {
+					lines.append( aStr.init( repeatString( ' ', width ) ) );
+				}
+			}
+			return lines;
+		}
+		viewportLength=min(getOptions().len(),height-9);
+		if( viewportStart + viewportLength > getOptions().len()+1 ){
+			viewportStart = 1;
+		}
 		var i = viewportStart-1;
 		return getOptions()
 			.slice( viewportStart, viewportLength )
@@ -328,8 +355,7 @@ component accessors=true {
 			.prepend( aStr.init( getQuestion() ) )
 			.prepend( aStr.init( ' ' ) )
 			.append( aStr.fromAnsi( ( getOptions().len()+1>viewportStart+viewportLength ? print.red( '  << #getOptions().len()+1-(viewportStart+viewportLength)# more below...>>' ) : ' ' ) ) )
-			.append( aStr.fromAnsi( print.yellow( '      Use <spacebar> to toggle selections, <enter> to submit.' ) ) )
-			.append( aStr.init( ' ' ) );
+			.append( aStr.fromAnsi( print.yellow( '      Use <spacebar> to toggle selections, <enter> to submit.' ) ) );
 	}
 
 	function checkRequired() {
