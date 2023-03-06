@@ -61,21 +61,32 @@ component accessors="true" singleton {
 		}
 	}
 
+
 	/**
 	* Returns true if the command is complete and is ready to be executed.
 	**/
 	function isCommandComplete() {
-		var cfml = getCommandAsString();
-		cfml = reReplaceNoCase( cfml, "[""'].*[""']", """""", "all" );
+		var commandString = getCommandAsString();
+		var cfml = reReplaceNoCase( commandString, "[""'].*[""']", """""", "all" );
 
 		var numberOfCurlyBrackets = reMatchNoCase( "[{}]", cfml ).len();
 		var numberOfParenthesis = reMatchNoCase( "[\(\)]", cfml ).len();
-		//var numberOfDoubleQuotations = reMatchNoCase( """", cfml ).len();
+		var numberOfBrackets = reMatchNoCase( "[\[\]]", cfml ).len();
+		var numberOfDoubleQuotations = reMatchNoCase( """", commandString ).len();
 		//var numberOfSingleQuotations = reMatchNoCase( "'", cfml ).len();
 		var numberOfNonTerminatingEqualSigns = reMatchNoCase( "=\s*$", cfml ).len();
 		var numberOfMultilineCommentBlocks = reMatchNoCase( "^\s*/\*|\*/", cfml ).len();
 		var numberOfHashSigns = reMatchNoCase( "##", cfml ).len();
-		if ( numberOfCurlyBrackets % 2 == 0 && numberOfParenthesis % 2 == 0 && numberOfNonTerminatingEqualSigns == 0 && numberOfHashSigns % 2 == 0 && numberOfMultilineCommentBlocks % 2 == 0 ) {
+		
+		if (
+			numberOfDoubleQuotations % 2 == 0
+			&& numberOfBrackets % 2 == 0
+			&& numberOfCurlyBrackets % 2 == 0
+			&& numberOfParenthesis % 2 == 0
+			&& numberOfNonTerminatingEqualSigns == 0
+			&& numberOfHashSigns % 2 == 0
+			&& numberOfMultilineCommentBlocks % 2 == 0
+		) {
 			return true;
 		}
 		return false;
