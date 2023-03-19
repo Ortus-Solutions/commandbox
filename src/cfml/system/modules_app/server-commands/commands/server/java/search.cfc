@@ -54,7 +54,7 @@ component aliases='java search' {
 	function run(
 		version,
 		jvm = 'hotspot',
-		os,
+		os = javaService.getCurrentOS(),
 		arch = javaService.getCurrentCPUArch(),
 		type = 'jre',
 		release = 'latest',
@@ -102,16 +102,6 @@ component aliases='java search' {
 		if( !reFind( '[^0-9]', version ) ) {
 			// Turn it into the maven-style semver range [11,12) which is the equiv of >= 11 && < 12 thus getting 11.x
 			version = '[#version#,#version+1#)';
-		}
-
-		if( isNull( os) ) {
-			if( fileSystemUtil.isMac() ) {
-				os = 'mac';
-			} else if( fileSystemUtil.isLinux() ) {
-				os = 'linux';
-			} else {
-				os = 'windows';
-			}
 		}
 
 		var APIURLCheck = 'https://api.adoptium.net/v3/assets/version/#encodeForURL(version)#?page_size=100&release_type=ga&vendor=eclipse&project=jdk&heap_size=normal';

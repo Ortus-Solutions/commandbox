@@ -310,19 +310,10 @@ component accessors=true implements="IEndpoint" singleton {
 				'version' : '',
 				'type' : 'jre',
 				'arch' : javaService.getCurrentCPUArch(),
-				'os' : '',
+				'os' : javaService.getCurrentOS(),
 				'jvm-implementation' : ( ID.findNoCase( 'openj9' ) ? 'openj9' : 'hotspot' ),
 				'release' : 'latest'
 			};
-
-
-			if( fileSystemUtil.isMac() ) {
-				results.os = 'mac';
-			} else if( fileSystemUtil.isLinux() ) {
-				results.os = 'linux';
-			} else {
-				results.os = 'windows';
-			}
 
 			var tokens = ID.listToArray( '_' );
 			var first = true;
