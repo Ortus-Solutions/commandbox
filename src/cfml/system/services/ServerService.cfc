@@ -1946,6 +1946,9 @@ component accessors="true" singleton {
 			'java.base/javax.security.auth.x500',
 			'java.base/javax.security.cert',
 			'java.base/sun.net.www.protocol.https',
+			'java.desktop/com.sun.java.swing.plaf.nimbus',
+			'java.desktop/com.sun.java.swing.plaf.motif',
+			'java.desktop/com.sun.java.swing.plaf.nimbus',
 			'java.desktop/com.sun.java.swing.plaf.windows'
 		].reduce( (opens='',o)=>opens &= ' --add-opens=#o#=ALL-UNNAMED' );
 		currentEnv.put( 'JDK_JAVA_OPTIONS', javaOpens );
