@@ -601,9 +601,13 @@ public class LoaderCLIMain{
 			arguments = removeElement( arguments, "-clidebug" );
 		}
 
-		log.debug( "CLI Java Version:" + System.getProperty( "java.vm.version", System.getProperty( "java.version", "Unknown" ) ) );
-		log.debug( "CLI Java Home:" + System.getProperty( "java.home", "Unknown" ) );
-		log.debug( "CLI Java Vendor:" + System.getProperty( "java.vendor", "Unknown" ) );
+		if( debug ) {
+			log.debug( "CLI Java Version: " + System.getProperty( "java.vm.version", System.getProperty( "java.version", "Unknown" ) ) );
+			log.debug( "CLI Java Home: " + System.getProperty( "java.home", "Unknown" ) );
+			log.debug( "CLI Java Vendor: " + System.getProperty( "java.vendor", "Unknown" ) );
+			log.debug( "box binary version: " + Util.getResourceAsString( CFML_VERSION_PATH ) );
+			log.debug( "box binary loader version: " + Util.getResourceAsString( VERSION_PROPERTIES_PATH ).split( "=" )[1] );
+		}
 
 		System.setProperty( "cfml.cli.debug", debug.toString() );
 		try {
