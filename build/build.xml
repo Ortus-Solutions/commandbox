@@ -394,6 +394,7 @@ External Dependencies:
 		<!-- Create jar -->
         <jar destfile="${dist.dir}/box.jar" filesetmanifest="mergewithoutmain" level="9">
 			<manifest>
+				<attribute name="Add-Opens" value="${java.opens}" />
 				<attribute name="Main-Class" value="cliloader.LoaderCLIMain" />
 			</manifest>
 	        <fileset file="${temp.dir}/cli/libs.zip" />
@@ -431,6 +432,7 @@ External Dependencies:
 		<!-- recreate jar -->
         <jar destfile="${dist.dir}/box.jar" filesetmanifest="mergewithoutmain" level="9">
 			<manifest>
+				<attribute name="Add-Opens" value="${java.opens}" />
 				<attribute name="Main-Class" value="cliloader.LoaderCLIMain" />
 			</manifest>
 	        <fileset file="${temp.dir}/cli/libs.zip" />
@@ -446,6 +448,7 @@ External Dependencies:
 		<!-- Create Lucee light jar -->
         <jar destfile="${dist.dir}/box-light.jar" filesetmanifest="mergewithoutmain" level="9">
 			<manifest>
+				<attribute name="Add-Opens" value="${java.opens}" />
 				<attribute name="Main-Class" value="cliloader.LoaderCLIMain" />
 			</manifest>
 	        <fileset file="${temp.dir}/cli-light/libs.zip" />
@@ -459,6 +462,7 @@ External Dependencies:
 		<!-- Create thin jar -->
         <jar destfile="${dist.dir}/box-thin.jar" filesetmanifest="mergewithoutmain" level="9">
 			<manifest>
+				<attribute name="Add-Opens" value="${java.opens}" />
 				<attribute name="Main-Class" value="cliloader.LoaderCLIMain" />
 			</manifest>
 	        <fileset dir="${temp.dir}/cli/bin" />
