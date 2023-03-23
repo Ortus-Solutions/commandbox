@@ -4,7 +4,6 @@
  * {code:bash}
  * package show | unansi
  * {code}
- * .
  *
  **/
 component {
