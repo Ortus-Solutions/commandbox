@@ -1956,7 +1956,8 @@ component accessors="true" singleton {
 			'java.base/sun.security.x509',
 			'java.base/sun.security.util',
 			'java.base/sun.util.cldr',
-			'java.base/sun.util.locale.provider'
+			'java.base/sun.util.locale.provider',
+			'java.management/sun.management'
 		].reduce( (opens='',o)=>opens &= ' --add-opens=#o#=ALL-UNNAMED' );
 		currentEnv.put( 'JDK_JAVA_OPTIONS', javaOpens );
 
