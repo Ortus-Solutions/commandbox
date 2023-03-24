@@ -73,6 +73,10 @@ component {
 	 *
   	 **/
 	function onMissingMethod( missingMethodName, missingMethodArguments ) {
+		return _onMissingMethod( argumentCollection=arguments );
+	}
+
+	function _onMissingMethod( missingMethodName, missingMethodArguments ) {
 
 		// Check for Ctrl-C
 		shell.checkInterrupted();
@@ -88,7 +92,7 @@ component {
 
 		// TODO: Actually use a string buffer
 		var ANSIString = "";
-		
+
 		var foundANSI = false;
 
 		// Text needing formatting
@@ -326,5 +330,51 @@ component {
 	private String function indent( text ) {
 		return '  ' & replaceNoCase( arguments.text, cr, cr & '  ', 'all' );
     }
+
+	public String function columns( required array items, formatUDF=(s)=>'' ) {
+		var numItems = items.len();
+		var widestItem = items.map( (v)=>len( v ) ).max();
+		var colWdith = widestItem + 4;
+		var termWidth = shell.getTermWidth()-1;
+		var numCols = max( termWidth\colWdith, 1 );
+		var numRows = ceiling( numItems/numCols );
+		var columnText = createObject( 'java', 'java.lang.StringBuilder' ).init( '' );
+
+		loop from=1 to=numRows index="local.row" {
+			loop from=1 to=numCols index="local.col" {
+				var thisIndex = row+((col-1)*numRows);
+				if( thisIndex > numItems ) {
+					var thisItem = '';
+				} else {
+					var thisItem = items[thisIndex];
+				}
+				columnText.append( _onMissingMethod( 'text', [ padRight( thisItem, colWdith ), formatUDF( thisItem, row, col ) ] ) );
+			}
+			columnText.append( cr );
+		}
+		return columnText.toString();
+	}
+
+    /**
+     * Adds characters to the right of a string until the string reaches a certain length.
+     * If the text is already greater than or equal to the maxWidth, the text is returned unchanged.
+     * @text The text to pad.
+     * @maxWidth The number of characters to pad up to.
+     * @padChar The character to use to pad the text.
+     */
+	private string function padRight( required string text, required numeric maxWidth, string padChar = " " ) {
+		var textLength = len( arguments.text );
+		if ( textLength == arguments.maxWidth ) {
+			return arguments.text;
+		} else if( textLength > arguments.maxWidth ) {
+			if( arguments.maxWidth < 4 ) {
+				return left( text, arguments.maxWidth );
+			} else {
+				return left( text, arguments.maxWidth-3 )&'...';
+			}
+		}
+		arguments.text &= repeatString( arguments.padChar, arguments.maxWidth-textLength );
+		return arguments.text;
+	}
 
 }

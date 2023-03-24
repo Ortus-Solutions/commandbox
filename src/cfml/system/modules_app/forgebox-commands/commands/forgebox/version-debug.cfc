@@ -117,30 +117,14 @@ component {
 		var numVersions = versions.len();
 		if( numVersions ) {
 			var versions = versions.reverse()
-			var widestVersion = versions.map( (v)=>len( v ) ).max();
-			var colWdith = widestVersion + 4;
-			var termWidth = shell.getTermWidth()-1;
-			var numCols = termWidth\colWdith;
-			var numRows = ceiling( numVersions/numCols );
-
-			loop from=1 to=numRows index="local.row" {
-				loop from=1 to=numCols index="local.col" {
-					var thisIndex = row+((col-1)*numRows);
-					var format='grey';
-					if( thisIndex > numVersions ) {
-						var thisVersion = '';
-					} else {
-						var thisVersion = versions[thisIndex];
-						if( satisfyingVersion == thisVersion ) {
-							format = 'boldwhiteOnGreen';
-						} else if ( matches.find( thisVersion ) ) {
-							format = 'boldWhite';
-						}
-					}
-					print.text( padRight( thisVersion, colWdith ), format );
+			print.columns( versions, (thisVersion)=>{
+				if( satisfyingVersion == thisVersion ) {
+					return 'boldwhiteOnGreen';
+				} else if ( matches.find( thisVersion ) ) {
+					return 'boldWhite';
 				}
-				print.line()
-			}
+				return 'grey';
+			} );
 			print.line()
 				.greyLine( 'Unmatched Version' )
 				.boldWhiteLine( 'Version matching semver range' )
@@ -187,29 +171,6 @@ component {
 		}
 		// In case of error, break glass.
 		return [];
-	}
-
-
-    /**
-     * Adds characters to the right of a string until the string reaches a certain length.
-     * If the text is already greater than or equal to the maxWidth, the text is returned unchanged.
-     * @text The text to pad.
-     * @maxWidth The number of characters to pad up to.
-     * @padChar The character to use to pad the text.
-     */
-	private string function padRight( required string text, required numeric maxWidth, string padChar = " " ) {
-		var textLength = len( arguments.text );
-		if ( textLength == arguments.maxWidth ) {
-			return arguments.text;
-		} else if( textLength > arguments.maxWidth ) {
-			if( arguments.maxWidth < 4 ) {
-				return left( text, arguments.maxWidth );
-			} else {
-				return left( text, arguments.maxWidth-3 )&'...';
-			}
-		}
-		arguments.text &= repeatString( arguments.padChar, arguments.maxWidth-textLength );
-		return arguments.text;
 	}
 
 }

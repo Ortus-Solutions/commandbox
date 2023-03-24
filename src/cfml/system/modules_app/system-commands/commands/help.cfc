@@ -116,9 +116,7 @@ component aliases="h,/?,?,--help,-help" {
 				print.line();
 
 				// Show them
-				for( var command in commands ) {
-					print.line( commandRootSpaces & ' ' & command );
-				}
+				print.columns( commands.map( (command)=>commandRootSpaces & ' ' & command ) );
 
 				print.line();
 
@@ -132,9 +130,7 @@ component aliases="h,/?,?,--help,-help" {
 				print.line();
 
 				// Show them
-				for( var namespace in namespaces ) {
-					print.line( commandRootSpaces & ' ' & namespace );
-				}
+				print.columns( namespaces.map( (namespace)=>commandRootSpaces & ' ' & namespace ) );
 
 				print.line();
 
