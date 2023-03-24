@@ -94,4 +94,19 @@ component accessors="true" extends="Print"{
 			return this;
 		}
 	}
+
+	/**
+	* Print a struct of structs as a tree
+	*
+	* @data top level struct
+	* @formatUDF A UDF receiving both a string-concatenated prefix of keys, and an array of the same data.  Returns string of special formating for that node of the tree
+	*/
+	function tree( required struct data, formatUDF=()=>'' ) {
+		// Don't modify the buffer if it's being printed
+		lock name='printBuffer-#getObjectID()#' type="exclusive" timeout="20" {
+			variables.result.append( super.tree( argumentCollection=arguments ) );
+			return this;
+		}
+	}
+
 }

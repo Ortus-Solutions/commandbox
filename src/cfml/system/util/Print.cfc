@@ -33,6 +33,8 @@
 */
 component {
 
+	processingdirective pageEncoding='UTF-8';
+
 	property name='cr'				inject='cr@constants';
 	property name='shell'			inject='shell';
 	property name='colors256Data'	inject='colors256Data@constants';
@@ -76,7 +78,7 @@ component {
 		return _onMissingMethod( argumentCollection=arguments );
 	}
 
-	function _onMissingMethod( missingMethodName, missingMethodArguments ) {
+	private function _onMissingMethod( missingMethodName, missingMethodArguments ) {
 
 		// Check for Ctrl-C
 		shell.checkInterrupted();
@@ -331,7 +333,7 @@ component {
 		return '  ' & replaceNoCase( arguments.text, cr, cr & '  ', 'all' );
     }
 
-	public String function columns( required array items, formatUDF=(s)=>'' ) {
+	public String function columns( required array items, formatUDF=()=>'' ) {
 		var numItems = items.len();
 		var widestItem = items.map( (v)=>len( v ) ).max();
 		var colWdith = widestItem + 4;
@@ -377,4 +379,40 @@ component {
 		return arguments.text;
 	}
 
+	/**
+	* Print a struct of structs as a tree
+	*
+	* @data top level struct
+	* @formatUDF A UDF receiving both a string-concatenated prefix of keys, and an array of the same data.  Returns string of special formating for that node of the tree
+	*/
+	function tree( required struct data, formatUDF=()=>'' ) {
+		var treeSB = createObject( 'java', 'java.lang.StringBuilder' ).init( '' );
+		_tree( parent=data, prefix='', formatUDF=formatUDF, treeSB=treeSB );
+		return treeSB.toString();
+	}
+
+	private function _tree( required struct parent, required string prefix, required formatUDF, required any treeSB, Array keyPath=[] ) {
+		var i = 0;
+		var keyCount = structCount( arguments.parent );
+		for( var keyName in arguments.parent ) {
+			keyPath.append( keyName );
+			var child = arguments.parent[ keyName ];
+			var childKeyCount = isStruct( child ) ? structCount( child ) : 0;
+			i++;
+			var isLast = ( i == keyCount );
+			var branch = ( isLast ? '└' : '├' ) & '─' & ( childKeyCount ? '┬' : '─' );
+			var branchCont = ( isLast ? ' ' : '│' ) & ' ' & ( childKeyCount ? '│' : ' ' );
+
+			// If the key name has line breaks, output each individually
+			keyName.listToArray( chr(13)&chr(10) ).each( ( l, i )=>{
+				treeSB.append( prefix & ( i == 1 ? branch : branchCont ) & ' ' );
+				treeSB.append( _onMissingMethod( 'line', [ l, formatUDF( keyPath.toList( '' ), keyPath ) ] ) );
+			} );
+
+			if( isStruct( child ) ) {
+				_tree( parent=child, prefix=prefix & ( isLast ? '  ' : '│ ' ), formatUDF=formatUDF, treeSB=treeSB, keyPath=keyPath );
+			}
+			keyPath.deleteAt( keyPath.len() );
+		}
+	}
 }
