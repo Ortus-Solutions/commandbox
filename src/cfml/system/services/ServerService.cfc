@@ -1855,42 +1855,7 @@ component accessors="true" singleton {
 			args.prepend( fileSystemUtil.getNativeShell() );
 	    }
 
-		// At this point all command line arguments are in place, announce this
-		var interceptData = {
-			commandLineArguments=args,
-			serverInfo=serverInfo,
-			serverJSON=serverJSON,
-			defaults=defaults,
-			serverProps=serverProps,
-			serverDetails=serverDetails,
-			installDetails=installDetails ?: {}
-		};
-		interceptorService.announceInterception( 'onServerProcessLaunch', interceptData );
-		// ensure we get the updated args if they were replaced wholesale by interceptor
-		args = interceptData.commandLineArguments;
 
-		// now we can log the *final* command line string that will be used to start the server
-	    if( serverInfo.verbose ) {
-			var cleanedArgs = cr & '    ' & trim( args.map( ( arg )=>reReplaceNoCase( arg, '^(-|"-)', cr & '    \1', 'all' )  ).toList( ' ' ) );
-			job.addLog("Server start command: #cleanedargs#");
-	    }
-
-		if( serverProps.dryRun ?: false ) {
-			job.addLog( 'Dry run specified, exiting without starting server.' );
-			job.complete( serverInfo.verbose );
-			return;
-		}
-
-
-	    if( fileSystemUtil.isWindows() ) {
-	    	args = args.map( (a)=>replace( a, '"', '\"', 'all' ) );
-	    }
-
-	    processBuilder.init( args );
-
-        // incorporate CommandBox environment variables into the process's env
-        var currentEnv = processBuilder.environment();
-        currentEnv.putAll( systemSettings.getAllEnvironmentsFlattened().map( (k, v)=>toString(v) ) );
 		// Setting this via env var so it doesn't blow up Java 8 and I don't have to try and detect what version of Java the server is using.
 		var javaOpens = [
 			'java.base/sun.nio.ch',
@@ -1959,7 +1924,46 @@ component accessors="true" singleton {
 			'java.base/sun.util.locale.provider',
 			'java.management/sun.management'
 		].reduce( (opens='',o)=>opens &= ' --add-opens=#o#=ALL-UNNAMED' );
-		currentEnv.put( 'JDK_JAVA_OPTIONS', javaOpens );
+
+		systemSettings.setSystemSetting( 'JDK_JAVA_OPTIONS', systemSettings.getSystemSetting( 'JDK_JAVA_OPTIONS', javaOpens ) );
+		systemSettings.setSystemSetting( 'COMMANDBOX_HOME', systemSettings.getSystemSetting( 'COMMANDBOX_HOME', expandPath( '/commandbox-home' ) ) );
+		systemSettings.setSystemSetting( 'COMMANDBOX_VERSION', systemSettings.getSystemSetting( 'COMMANDBOX_VERSION', shell.getVersion() ) );
+
+		// At this point all command line arguments are in place, announce this
+		var interceptData = {
+			commandLineArguments=args,
+			serverInfo=serverInfo,
+			serverJSON=serverJSON,
+			defaults=defaults,
+			serverProps=serverProps,
+			serverDetails=serverDetails,
+			installDetails=installDetails ?: {}
+		};
+		interceptorService.announceInterception( 'onServerProcessLaunch', interceptData );
+		// ensure we get the updated args if they were replaced wholesale by interceptor
+		args = interceptData.commandLineArguments;
+
+		// now we can log the *final* command line string that will be used to start the server
+	    if( serverInfo.verbose ) {
+			var cleanedArgs = cr & '    ' & trim( args.map( ( arg )=>reReplaceNoCase( arg, '^(-|"-)', cr & '    \1', 'all' )  ).toList( ' ' ) );
+			job.addLog("Server start command: #cleanedargs#");
+	    }
+
+		if( serverProps.dryRun ?: false ) {
+			job.addLog( 'Dry run specified, exiting without starting server.' );
+			job.complete( serverInfo.verbose );
+			return;
+		}
+
+	    if( fileSystemUtil.isWindows() ) {
+	    	args = args.map( (a)=>replace( a, '"', '\"', 'all' ) );
+	    }
+
+	    processBuilder.init( args );
+
+        // incorporate CommandBox environment variables into the process's env
+        var currentEnv = processBuilder.environment();
+        currentEnv.putAll( systemSettings.getAllEnvironmentsFlattened().map( (k, v)=>toString(v) ) );
 
         // Special check to remove ConEMU vars which can screw up the sub process if it happens to run cmd, such as opening VSCode.
         if( fileSystemUtil.isWindows() && currentEnv.containsKey( 'ConEmuPID' ) ) {
@@ -1969,17 +1973,6 @@ component accessors="true" singleton {
             	}
             }
         }
-
-		// Add COMMANDBOX_HOME env var to the server if not already there
-		if ( !currentEnv.containsKey( 'COMMANDBOX_HOME' ) ) {
-			currentEnv.put( 'COMMANDBOX_HOME', expandPath( '/commandbox-home' ) );
-		}
-
-		// Add COMMANDBOX_VERSION env var to the server if not already there
-		if ( !currentEnv.containsKey( 'COMMANDBOX_VERSION' ) ) {
-			currentEnv.put( 'COMMANDBOX_VERSION', shell.getVersion() );
-		}
-
 
 	    // Conjoin standard error and output for convenience.
 	    processBuilder.redirectErrorStream( true );
