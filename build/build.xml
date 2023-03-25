@@ -403,9 +403,6 @@ External Dependencies:
         	<fileset file="${temp.dir}/cli/engine.zip" />
 			<fileset dir="${temp.dir}/cli/bin" />
         	<zipfileset src="${lib.dir}/json-smart-mini-${json-smart-mini.version}.jar" includes="**/*.class" />
-        	<zipfileset src="${lib.dir}/core-${burningwave.version}.jar" includes="**/*.class,**/banner.bwb" />
-        	<zipfileset src="${lib.dir}/jvm-driver-8.14.1.jar" includes="**/*.class,*.properties" />
-        	<zipfileset src="${lib.dir}/jvm-driver-9.4.3.jar" includes="**/*.class" />
         	<fileset file="${temp.dir}/cli/version"/>
 		</jar>
 
@@ -1144,7 +1141,6 @@ External Dependencies:
 
 	    <dependency groupId="com.beust" artifactId="jcommander" version="1.47" dest="${lib.dir}" type="jar" unzip="false"/>
 	    <dependency groupId="net.minidev" artifactId="json-smart-mini" version="${json-smart-mini.version}" unzip="false" type="jar" dest="${lib.dir}"/>
-	    <dependency groupId="org.burningwave" artifactId="core" version="${burningwave.version}" unzip="false" type="jar" dest="${lib.dir}"/>
 
 	    <!-- engine libs -->
 	    <!-- stable builds require "maven-repository", and snapshots require "sonatype-repository" -->
