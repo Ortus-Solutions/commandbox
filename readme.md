@@ -1,4 +1,4 @@
-``` bash
+```bash
    _____                                          _ ____
   / ____|                                        | |  _ \
  | |     ___  _ __ ___  _ __ ___   __ _ _ __   __| | |_) | _____  __
@@ -49,7 +49,7 @@ CommandBox is maintained under the Semantic Versioning guidelines as much as pos
 
 Releases will be numbered with the following format:
 
-``` bash
+```bash
 <major>.<minor>.<patch>
 ```
 
