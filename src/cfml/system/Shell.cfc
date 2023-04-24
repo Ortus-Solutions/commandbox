@@ -63,6 +63,10 @@ component accessors="true" singleton {
 	*/
 	property name="shellPrompt";
 	/**
+	* The default terminal window title
+	*/
+	property name="windowTitle";
+	/**
 	* This value is either "interactive" meaning the shell stays open waiting for user input
 	* or "command" which means a single command will be run and then the shell will be exiting.
 	* This differentiation may be useful for commands who want to be careful not to leave threads running
@@ -111,6 +115,7 @@ component accessors="true" singleton {
 		variables.pwd 			= "";
 		variables.reader 		= "";
 		variables.shellPrompt 	= "";
+		variables.windowTitle 	= "";
 		variables.userDir 	 	= arguments.userDir;
 		variables.tempDir 		= arguments.tempDir;
 
@@ -135,9 +140,13 @@ component accessors="true" singleton {
 	 * Finish configuring the shell
 	 **/
 	function onDIComplete() {
+		// When the shell first starts, the current working dir doesn't always contain the trailing slash
+		variables.pwd = fileSystem.resolvePath( variables.pwd );
+
 		// Create reader console and setup the default shell Prompt
-		variables.reader 		= readerFactory.getInstance( argumentCollection = variables.initArgs  );
-		variables.shellPrompt 	= print.green( "CommandBox> ");
+		variables.reader = readerFactory.getInstance( argumentCollection = variables.initArgs  );
+		setPrompt();
+		setWindowTitle();
 
 		// Create temp dir & set
 		setTempDir( variables.tempdir );
@@ -150,9 +159,6 @@ component accessors="true" singleton {
 			interceptorName 	= "endpoint-service"
 		);
 		getModuleService().configure();
-
-		// When the shell first starts, the current working dir doesn't always contain the trailing slash
-		variables.pwd = fileSystem.resolvePath( variables.pwd );
 
 		getModuleService().activateAllModules();
 
@@ -248,6 +254,27 @@ component accessors="true" singleton {
 			variables.shellPrompt = arguments.text;
 		}
 		//variables.reader.setPrompt( variables.shellPrompt );
+		return this;
+	}
+
+	/**
+	 * Sets the window title
+	 * @text.hint window title text to set, if empty we use the default title
+ 	 **/
+	Shell function setWindowTitle( text="" ) {
+		if( !len( arguments.text ) ){
+			var homeDir = fileSystem.normalizeSlashes( fileSystem.resolvePath( '~' ) );
+			var thisFullpath = fileSystem.normalizeSlashes( getPWD() );
+			var thisPath = thisFullpath.listLast( '\/' ) & '/';
+
+			// Shortcut for home dir
+			if( thisFullpath contains homeDir ) {
+				thisPath = thisFullpath.replaceNoCase( homeDir, '~/' );
+			}
+			variables.windowTitle = "CommandBox: #thisPath#";
+		} else {
+			variables.windowTitle = arguments.text;
+		}
 		return this;
 	}
 
@@ -509,6 +536,7 @@ component accessors="true" singleton {
 		request.lastCWD = arguments.directory;
 		// Update prompt to reflect directory change
 		setPrompt();
+		setWindowTitle();
 		return variables.pwd;
 	}
 
@@ -553,7 +581,7 @@ component accessors="true" singleton {
 
 				try {
 
-					var interceptData = { prompt : variables.shellPrompt };
+					var interceptData = { prompt : variables.shellPrompt, windowTitle: variables.windowTitle };
 					getInterceptorService().announceInterception( 'prePrompt', interceptData );
 
 					if( arguments.silent ) {
@@ -576,6 +604,8 @@ component accessors="true" singleton {
 						if( arguments.silent ) {
 							line = variables.reader.readLine( interceptData.prompt, javacast( "char", ' ' ) );
 						} else {
+							// set the window title before reading a line
+							variables.reader.getTerminal().writer().print( chr( 27 ) & ']2;' & interceptData.windowTitle & chr( 7 ) );
 							line = variables.reader.readLine( interceptData.prompt );
 						}
 					}
