@@ -192,14 +192,6 @@ component{
 				terminal.resume();
 			}
 
-			// Put the terminal title back on Windows
-			if( fileSystemUtil.isWindows() && nativeShell contains 'cmd' ) {
-				var commandArray = [ nativeShell,'/a','/c', 'Title CommandBox is a ColdFusion (CFML) CLI, Package Manager, Server and REPL' ];
-				createObject( "java", "java.lang.ProcessBuilder" ).init( commandArray )
-					.inheritIO()
-					.start();
-			}
-
 			checkInterrupted();
 		}
 
