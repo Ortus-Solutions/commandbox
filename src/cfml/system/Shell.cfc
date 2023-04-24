@@ -263,7 +263,15 @@ component accessors="true" singleton {
  	 **/
 	Shell function setWindowTitle( text="" ) {
 		if( !len( arguments.text ) ){
-			variables.windowTitle = "CommandBox:#listLast( getPWD(), "/\" )#";
+			var homeDir = fileSystem.normalizeSlashes( fileSystem.resolvePath( '~' ) );
+			var thisFullpath = fileSystem.normalizeSlashes( getPWD() );
+			var thisPath = thisFullpath.listLast( '\/' ) & '/';
+
+			// Shortcut for home dir
+			if( thisFullpath contains homeDir ) {
+				thisPath = thisFullpath.replaceNoCase( homeDir, '~/' );
+			}
+			variables.windowTitle = "CommandBox: #thisPath#";
 		} else {
 			variables.windowTitle = arguments.text;
 		}
