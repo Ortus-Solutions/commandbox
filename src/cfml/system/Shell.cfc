@@ -140,10 +140,13 @@ component accessors="true" singleton {
 	 * Finish configuring the shell
 	 **/
 	function onDIComplete() {
+		// When the shell first starts, the current working dir doesn't always contain the trailing slash
+		variables.pwd = fileSystem.resolvePath( variables.pwd );
+
 		// Create reader console and setup the default shell Prompt
-		variables.reader 		= readerFactory.getInstance( argumentCollection = variables.initArgs  );
-		variables.shellPrompt 	= print.green( "CommandBox> ");
-		variables.windowTitle 	= "CommandBox";
+		variables.reader = readerFactory.getInstance( argumentCollection = variables.initArgs  );
+		setPrompt();
+		setWindowTitle();
 
 		// Create temp dir & set
 		setTempDir( variables.tempdir );
@@ -156,9 +159,6 @@ component accessors="true" singleton {
 			interceptorName 	= "endpoint-service"
 		);
 		getModuleService().configure();
-
-		// When the shell first starts, the current working dir doesn't always contain the trailing slash
-		variables.pwd = fileSystem.resolvePath( variables.pwd );
 
 		getModuleService().activateAllModules();
 
