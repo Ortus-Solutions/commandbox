@@ -21,6 +21,22 @@ component accessors="true" singleton {
 		return this;
 	}
 
+	private boolean function hasOpenQuotes( required string command ) {
+        var charArray = arguments.command.toCharArray();
+        var isQuoteOpen = false;
+        var quoteType = "";
+        for ( var char in charArray ) {
+            if (!isQuoteOpen && ( char == "'" || char == '"' ) ) {
+                isQuoteOpen = true;
+                quoteType = char;
+            }
+            else if ( isQuoteOpen && char == quoteType ) {
+                isQuoteOpen = false;
+            }
+        }
+        return isQuoteOpen;
+    }
+
 	/**
 	* Clears existing command lines and signal we are starting a new command.
 	**/
@@ -61,21 +77,31 @@ component accessors="true" singleton {
 		}
 	}
 
+
 	/**
 	* Returns true if the command is complete and is ready to be executed.
 	**/
 	function isCommandComplete() {
-		var cfml = getCommandAsString();
-		cfml = reReplaceNoCase( cfml, "[""'].*[""']", """""", "all" );
+		var commandString = getCommandAsString();
+		var cfml = reReplaceNoCase( commandString, "[""'].*[""']", """""", "all" );
 
 		var numberOfCurlyBrackets = reMatchNoCase( "[{}]", cfml ).len();
 		var numberOfParenthesis = reMatchNoCase( "[\(\)]", cfml ).len();
-		//var numberOfDoubleQuotations = reMatchNoCase( """", cfml ).len();
-		//var numberOfSingleQuotations = reMatchNoCase( "'", cfml ).len();
+		var numberOfQuotes = reMatchNoCase( "[""']", commandString ).len();
+		var numberOfBrackets = reMatchNoCase( "[\[\]]", cfml ).len();
 		var numberOfNonTerminatingEqualSigns = reMatchNoCase( "=\s*$", cfml ).len();
 		var numberOfMultilineCommentBlocks = reMatchNoCase( "^\s*/\*|\*/", cfml ).len();
 		var numberOfHashSigns = reMatchNoCase( "##", cfml ).len();
-		if ( numberOfCurlyBrackets % 2 == 0 && numberOfParenthesis % 2 == 0 && numberOfNonTerminatingEqualSigns == 0 && numberOfHashSigns % 2 == 0 && numberOfMultilineCommentBlocks % 2 == 0 ) {
+		
+		if (
+			numberOfBrackets % 2 == 0
+			&& numberOfCurlyBrackets % 2 == 0
+			&& numberOfParenthesis % 2 == 0
+			&& numberOfNonTerminatingEqualSigns == 0
+			&& numberOfHashSigns % 2 == 0
+			&& numberOfMultilineCommentBlocks % 2 == 0
+			&& ( numberOfQuotes == 0 || !hasOpenQuotes( commandString ) )
+		) {
 			return true;
 		}
 		return false;
