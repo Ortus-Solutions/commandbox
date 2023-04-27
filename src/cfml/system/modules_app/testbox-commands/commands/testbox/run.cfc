@@ -295,13 +295,18 @@ component {
 				memento = deserializeJSON( arguments.rawResults )
 			);
 
+		arguments.outputFile = resolvePath( arguments.outputFile );
 		// Build out the output formats in async fashion
 		arguments.outputFormats
 			.listToArray()
 			.each( ( format ) => {
 				// Build out the targetFile
-				var targetFile = getCWD() & outputFile & getOutputExtension( arguments.format );
+				var targetFile = outputFile & getOutputExtension( arguments.format );
 				// write out the JSON
+				var targetDir = getDirectoryFromPath( targetFile );
+				if( !directoryExists( targetDir ) ) {
+					directoryCreate( targetDir );
+				}
 				fileWrite(
 					targetFile,
 					testbox

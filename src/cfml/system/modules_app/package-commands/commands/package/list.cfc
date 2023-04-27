@@ -30,6 +30,7 @@ component aliases="list" {
 	processingdirective pageEncoding='UTF-8';
 
 	property name="packageService" inject="PackageService";
+	property name="_print" inject="print";
 
 	/**
 	 * @verbose Outputs additional information about each package
@@ -63,41 +64,27 @@ component aliases="list" {
 		}
 		// normal output
 		print.green( 'Dependency Hierarchy for ' ).boldCyanLine( "#tree.name# (#tree.version#)" );
-		printDependencies( tree, '', arguments.verbose );
+		print.tree( buildDependencies( tree, arguments.verbose ) );
 
 	}
 
-	/**
-	* Pretty print dependencies
-	*/
-	private function printDependencies( required struct parent, string prefix, boolean verbose ) {
-		var i = 0;
-		var depCount = structCount( arguments.parent.dependencies );
+	// Massage dependency tree into just the bits we want for tree outout
+	private function buildDependencies( required struct parent, boolean verbose ) {
+		var deps = [:];
 		for( var dependencyName in arguments.parent.dependencies ) {
 			var dependency = arguments.parent.dependencies[ dependencyName ];
-			var childDepCount = structCount( dependency.dependencies );
-			i++;
-			var isLast = ( i == depCount );
-			var branch = ( isLast ? '└' : '├' ) & '─' & ( childDepCount ? '┬' : '─' );
-			var branchCont = ( isLast ? ' ' : '│' ) & ' ' & ( childDepCount ? '│' : ' ' );
-
-			print.text( prefix & branch & ' ' );
-
-			print[ ( dependency.dev ? 'boldYellowline' : 'boldLine' ) ]( '#dependencyName# (#dependency.packageVersion#)' );
-
+			var thisName = _print.bold( '#dependencyName# (#dependency.packageVersion#)', ( dependency.dev ? 'yellow' : '' ) );
 			if( arguments.verbose ) {
 				if( len( dependency.name ) ) {
-					print.text( prefix & branchCont & ' ' );
-					print[ ( dependency.dev ? 'yellowLine' : 'line' ) ]( dependency.name );
+					thisName &= chr(10) & _print.text( dependency.name, ( dependency.dev ? 'yellow' : '' ) );
 				}
 				if( len( dependency.shortDescription ) ) {
-					print.text( prefix & branchCont & ' ' );
-					print[ ( dependency.dev ? 'yellowLine' : 'line' ) ]( dependency.shortDescription );
+					thisName &= chr(10) & _print.text( dependency.shortDescription, ( dependency.dev ? 'yellow' : '' ) );
 				}
 			} // end verbose?
-
-			printDependencies( dependency, prefix & ( isLast ? '  ' : '│ ' ), arguments.verbose );
+			deps[ thisName ] = buildDependencies( dependency, arguments.verbose );
 		}
+		return deps;
 	}
 
 }

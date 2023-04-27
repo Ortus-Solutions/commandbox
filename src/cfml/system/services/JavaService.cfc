@@ -141,4 +141,25 @@ component accessors="true" singleton {
 			return 'x64';
 		}
 	}
+
+	/**
+	 * Guess the current OS
+	 */
+	function getCurrentOS() {
+		if( fileSystemUtil.isMac() ) {
+			return 'mac';
+		} else if( fileSystemUtil.isLinux() ) {
+			try {
+				if( fileRead( '/proc/version' ) contains 'alpine' ) {
+					return 'alpine-linux';
+				}
+			} catch( any e ) {
+				// /proc/version may not exist or may not have permissions
+			}
+			return 'linux';
+		} else {
+			return 'windows';
+		}
+	}
+
 }

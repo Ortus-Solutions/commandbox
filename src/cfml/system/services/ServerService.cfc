@@ -361,7 +361,7 @@ component accessors="true" singleton {
 		systemSettings.expandDeepSystemSettings( defaults );
 
 		// Mix in environment variable overrides like BOX_SERVER_PROFILE
-		loadOverrides( serverJSON, serverInfo, serverProps.verbose ?: serverJSON.verbose ?: defaults.verbose ?: false );
+		loadOverrides( serverJSON, serverInfo, serverProps.verbose ?: serverProps.debug ?: serverJSON.verbose ?: defaults.verbose ?: false );
 
 		// Load up our fully-realized server.json-specific env vars into CommandBox's environment
 		systemSettings.setDeepSystemSettings( serverDetails.serverJSON.env ?: {}, '', '_' );
@@ -1855,6 +1855,87 @@ component accessors="true" singleton {
 			args.prepend( fileSystemUtil.getNativeShell() );
 	    }
 
+
+		// Setting this via env var so it doesn't blow up Java 8 and I don't have to try and detect what version of Java the server is using.
+		var javaOpens = [
+			'java.base/sun.nio.ch',
+			'java.base/sun.nio.cs',
+			'java.base/java.io',
+			'java.base/java.lang',
+			'java.base/java.lang.annotation',
+			'java.base/java.lang.invoke',
+			'java.base/java.lang.module',
+			'java.base/java.lang.ref',
+			'java.base/java.lang.reflect',
+			'java.base/java.math',
+			'java.base/java.net',
+			'java.base/java.net.spi',
+			'java.base/java.nio',
+			'java.base/java.nio.channels',
+			'java.base/java.nio.channels.spi',
+			'java.base/java.nio.charset',
+			'java.base/java.nio.charset.spi',
+			'java.base/java.nio.file',
+			'java.base/java.nio.file.attribute',
+			'java.base/java.nio.file.spi',
+			'java.base/java.security',
+			'java.base/java.security.cert',
+			'java.base/java.security.interfaces',
+			'java.base/java.security.spec',
+			'java.base/java.text',
+			'java.base/java.text.spi',
+			'java.base/java.time',
+			'java.base/java.time.chrono',
+			'java.base/java.time.format',
+			'java.base/java.time.temporal',
+			'java.base/java.time.zone',
+			'java.base/java.util',
+			'java.base/java.util.concurrent',
+			'java.base/java.util.concurrent.atomic',
+			'java.base/java.util.concurrent.locks',
+			'java.base/java.util.function',
+			'java.base/java.util.jar',
+			'java.base/java.util.regex',
+			'java.base/java.util.spi',
+			'java.base/java.util.stream',
+			'java.base/java.util.zip',
+			'java.base/javax.crypto',
+			'java.base/javax.crypto.interfaces',
+			'java.base/javax.crypto.spec',
+			'java.base/javax.net',
+			'java.base/javax.net.ssl',
+			'java.base/javax.security.auth',
+			'java.base/javax.security.auth.callback',
+			'java.base/javax.security.auth.login',
+			'java.base/javax.security.auth.spi',
+			'java.base/javax.security.auth.x500',
+			'java.base/javax.security.cert',
+			'java.base/sun.net.www.protocol.https',
+			'java.desktop/com.sun.java.swing.plaf.nimbus',
+			'java.desktop/com.sun.java.swing.plaf.motif',
+			'java.desktop/com.sun.java.swing.plaf.nimbus',
+			'java.desktop/com.sun.java.swing.plaf.windows',
+			'java.desktop/sun.java2d',
+			'java.rmi/sun.rmi.transport',
+			'java.base/sun.security.rsa',
+			'java.base/sun.security.pkcs',
+			'java.base/sun.security.x509',
+			'java.base/sun.security.util',
+			'java.base/sun.util.cldr',
+			'java.base/sun.util',
+			'java.base/sun.util.locale.provider',
+			'java.management/sun.management'
+		].reduce( (opens='',o)=>opens &= ' --add-opens=#o#=ALL-UNNAMED' );
+
+		var javaExports = [
+			'java.desktop/sun.java2d',
+			'java.base/sun.util'
+		].reduce( (exports='',o)=>exports &= ' --add-exports=#o#=ALL-UNNAMED' );
+
+		systemSettings.setSystemSetting( 'JDK_JAVA_OPTIONS', systemSettings.getSystemSetting( 'JDK_JAVA_OPTIONS', javaOpens & ' ' & javaExports )  );
+		systemSettings.setSystemSetting( 'COMMANDBOX_HOME', systemSettings.getSystemSetting( 'COMMANDBOX_HOME', expandPath( '/commandbox-home' ) ) );
+		systemSettings.setSystemSetting( 'COMMANDBOX_VERSION', systemSettings.getSystemSetting( 'COMMANDBOX_VERSION', shell.getVersion() ) );
+
 		// At this point all command line arguments are in place, announce this
 		var interceptData = {
 			commandLineArguments=args,
@@ -1881,7 +1962,6 @@ component accessors="true" singleton {
 			return;
 		}
 
-
 	    if( fileSystemUtil.isWindows() ) {
 	    	args = args.map( (a)=>replace( a, '"', '\"', 'all' ) );
 	    }
@@ -1900,17 +1980,6 @@ component accessors="true" singleton {
             	}
             }
         }
-
-		// Add COMMANDBOX_HOME env var to the server if not already there
-		if ( !currentEnv.containsKey( 'COMMANDBOX_HOME' ) ) {
-			currentEnv.put( 'COMMANDBOX_HOME', expandPath( '/commandbox-home' ) );
-		}
-
-		// Add COMMANDBOX_VERSION env var to the server if not already there
-		if ( !currentEnv.containsKey( 'COMMANDBOX_VERSION' ) ) {
-			currentEnv.put( 'COMMANDBOX_VERSION', shell.getVersion() );
-		}
-
 
 	    // Conjoin standard error and output for convenience.
 	    processBuilder.redirectErrorStream( true );
@@ -3157,7 +3226,6 @@ component accessors="true" singleton {
 			debugMessages.each( (l)=>job.addLog( l ) );
 	    	job.complete( verbose );
 		}
-
 		JSONService.mergeData( serverJSON, overrides );
 	}
 

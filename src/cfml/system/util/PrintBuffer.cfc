@@ -37,7 +37,7 @@ component accessors="true" extends="Print"{
 			clear();
 		}
 
-		// Once we get the text to print above, we can release the lock while we actually print it.		
+		// Once we get the text to print above, we can release the lock while we actually print it.
 		// If there is an active job, print our output through it
 		if( job.getActive() ) {
 			job.addLog( thingToPrint );
@@ -58,7 +58,7 @@ component accessors="true" extends="Print"{
 	// Proxy through any methods to the actual print helper
 	function onMissingMethod( missingMethodName, missingMethodArguments ){
 		var result = super.onMissingMethod( arguments.missingMethodName, arguments.missingMethodArguments );
-		
+
 		// Don't modify the buffer if it's being printed, exclusive because StringBuilder is not thread-safe
 		lock name='printBuffer-#getObjectID()#' type="exclusive" timeout="20" {
 			variables.result.append( result );
@@ -81,8 +81,30 @@ component accessors="true" extends="Print"{
 		boolean debug=false
     ){
 		// Don't modify the buffer if it's being printed
-		lock name='printBuffer-#getObjectID()#' type="readonly" timeout="20" {
+		lock name='printBuffer-#getObjectID()#' type="exclusive" timeout="20" {
 			variables.result.append( super.table( argumentCollection=arguments ) );
+			return this;
+		}
+	}
+
+	function columns( required array items, formatUDF=(s)=>'' ) {
+		// Don't modify the buffer if it's being printed
+		lock name='printBuffer-#getObjectID()#' type="exclusive" timeout="20" {
+			variables.result.append( super.columns( argumentCollection=arguments ) );
+			return this;
+		}
+	}
+
+	/**
+	* Print a struct of structs as a tree
+	*
+	* @data top level struct
+	* @formatUDF A UDF receiving both a string-concatenated prefix of keys, and an array of the same data.  Returns string of special formating for that node of the tree
+	*/
+	function tree( required struct data, formatUDF=()=>'' ) {
+		// Don't modify the buffer if it's being printed
+		lock name='printBuffer-#getObjectID()#' type="exclusive" timeout="20" {
+			variables.result.append( super.tree( argumentCollection=arguments ) );
 			return this;
 		}
 	}

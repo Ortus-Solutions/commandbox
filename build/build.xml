@@ -16,8 +16,8 @@ External Dependencies:
  	<property name="distro.groupID"				value="ortussolutions" />
  	<property name="distro.name"				value="commandbox"/>
  	<!-- Special things happen when the version and stableVersion are the same value as that signifies a "stable" build.   -->
- 	<property name="commandbox.version"			value="5.8.0"/>
- 	<property name="commandbox.stableVersion"	value="5.8.0"/>
+ 	<property name="commandbox.version"			value="5.9.0"/>
+ 	<property name="commandbox.stableVersion"	value="5.9.0"/>
 
     <!-- Time Label -->
 	<tstamp prefix="start"/>
@@ -394,7 +394,9 @@ External Dependencies:
 		<!-- Create jar -->
         <jar destfile="${dist.dir}/box.jar" filesetmanifest="mergewithoutmain" level="9">
 			<manifest>
+				<attribute name="Add-Opens" value="${java.opens}" />
 				<attribute name="Main-Class" value="cliloader.LoaderCLIMain" />
+				<attribute name="Multi-Release" value="true" />
 			</manifest>
 	        <fileset file="${temp.dir}/cli/libs.zip" />
 			<fileset file="${temp.dir}/cli/cfml.zip" />
@@ -431,7 +433,9 @@ External Dependencies:
 		<!-- recreate jar -->
         <jar destfile="${dist.dir}/box.jar" filesetmanifest="mergewithoutmain" level="9">
 			<manifest>
+				<attribute name="Add-Opens" value="${java.opens}" />
 				<attribute name="Main-Class" value="cliloader.LoaderCLIMain" />
+				<attribute name="Multi-Release" value="true" />
 			</manifest>
 	        <fileset file="${temp.dir}/cli/libs.zip" />
 			<fileset file="${temp.dir}/cli/cfml.zip" />
@@ -446,7 +450,9 @@ External Dependencies:
 		<!-- Create Lucee light jar -->
         <jar destfile="${dist.dir}/box-light.jar" filesetmanifest="mergewithoutmain" level="9">
 			<manifest>
+				<attribute name="Add-Opens" value="${java.opens}" />
 				<attribute name="Main-Class" value="cliloader.LoaderCLIMain" />
+				<attribute name="Multi-Release" value="true" />
 			</manifest>
 	        <fileset file="${temp.dir}/cli-light/libs.zip" />
 			<fileset file="${temp.dir}/cli/cfml.zip" />
@@ -459,7 +465,9 @@ External Dependencies:
 		<!-- Create thin jar -->
         <jar destfile="${dist.dir}/box-thin.jar" filesetmanifest="mergewithoutmain" level="9">
 			<manifest>
+				<attribute name="Add-Opens" value="${java.opens}" />
 				<attribute name="Main-Class" value="cliloader.LoaderCLIMain" />
+				<attribute name="Multi-Release" value="true" />
 			</manifest>
 	        <fileset dir="${temp.dir}/cli/bin" />
         	<zipfileset src="${lib.dir}/json-smart-mini-${json-smart-mini.version}.jar" includes="**/*.class" />

@@ -16,11 +16,11 @@ component singleton accessors=true {
 	property name="job"					inject="InteractiveJob";
 	property name='shell'				inject='shell';
 	property name='multiSelect';
-	
+
 	property name='active' type='boolean' default='false';
 	property name='taskScheduler';
 	property name='future';
-	
+
 	function onDIComplete() {
 		variables.attr = createObject( 'java', 'org.jline.utils.AttributedString' );
 		setTaskScheduler( wirebox.getTaskScheduler() );
@@ -31,14 +31,14 @@ component singleton accessors=true {
 	/**
 	* Starts up the scheduled painting thread if not already started
 	*
-	*/	
+	*/
 	function start() {
-		
+
 		// If we have a dumb terminal or are running inside a CI server, skip the screen redraws all together.
 		if( !shell.isTerminalInteractive() || terminal.getWidth() == 0 ) {
 			return;
 		}
-		
+
 		if( !getActive() ) {
 			lock timeout="20" name="ConsolePainter" type="exclusive" {
 				if( !getActive() ) {
@@ -47,29 +47,29 @@ component singleton accessors=true {
 					        .every( 200 )
 					        .start()
 					);
-			        
-					setActive( true );	
-				}		
-			}  
+
+					setActive( true );
+				}
+			}
 		}
 	}
-	
+
 	/**
 	* Stops the scheduled painting thread if no jobs or progress bars are active and it's not already stopped
 	*
-	*/	
+	*/
 	function stop() {
-		
+
 		// Check if all jobs and progress bars are finished
-		if( 
-			progressBarGeneric.getActive() 
-			|| progressBar.getActive() 
-			|| job.getActive() 
+		if(
+			progressBarGeneric.getActive()
+			|| progressBar.getActive()
+			|| job.getActive()
 			|| ( !isNull( multiSelect ) && multiSelect.getActive() )
 		) {
 			return;
 		}
-		
+
 		if( getActive() ) {
 			lock timeout="20" name="ConsolePainter" type="exclusive" {
 				if( getActive() ) {
@@ -81,36 +81,36 @@ component singleton accessors=true {
 					}
 					setActive( false );
 					clear();
-				}		
-			}  
+				}
+			}
 		}
-		
-		
+
+
 	}
-	
+
 	/**
 	* Stops up the scheduled painting thread and forces any active jobs to error and any active progress bars to clear
 	*
-	*/	
+	*/
 	function forceStop( string message='' ) {
 		job.errorRemaining( message );
 		progressBarGeneric.clear();
 		progressBar.clear();
 		stop();
 	}
-	
+
 	/**
 	* Draw the lines to the console
 	*
-	*/	
+	*/
 	function paint() {
 		try {
 			var height = max( terminal.getHeight()-2, 0 );
 			display.resize( terminal.getHeight(), terminal.getWidth() );
-			
+
 			var lines = [];
 			cursorPosInt = 0;
-			
+
 			// Future enhancement: allow paintable things to be registered with the ConsolePainter intead of these hard coded references.
 			lines.append( job.getLines(), true );
 			lines.append( progressBar.getLines(), true );
@@ -121,34 +121,33 @@ component singleton accessors=true {
 				lines.append( multiSelect.getLines(), true );
 			}
 			// /Future enhancement
-			
-			lines.append( attr.init( ' ' ) );
-			lines.append( attr.init( ' ' ) );
+
+			lines.append( attr.init( repeatString( ' ', terminal.getWidth() ) ) );
 
 			// Trim to terminal height so the screen doesn't go all jumpy
 			// If there is more output than screen, the user just doesn't get to see the rest
 			if( lines.len() > height ) {
 				lines = lines.slice( lines.len()-height, lines.len()-(lines.len()-height) );
 			}
-		
+
 			// Add to console and flush
 			display.update(
 				lines,
 				cursorPosInt
 			);
-			
+
 		} catch( any e ) {
 			if( !(e.type contains 'interrupt') ) {
 				systemoutput( e.message & ' ' & e.detail, 1 );
 				systemoutput( "#e.tagContext[1].template#: line #e.tagContext[1].line#", 1 );
-				rethrow;	
-			}
+				rethrow;
+		 	}
 		}
 	}
-	
+
 	/**
 	* Clear the console
-	*/	
+	*/
 	function clear() {
 		display.resize( terminal.getHeight(), terminal.getWidth() );
 		sleep(100)
@@ -156,6 +155,6 @@ component singleton accessors=true {
 			[ attr.init( ' ' ) ,attr.init( ' ' ) ,attr.init( ' ' ) ,attr.init( ' ' ) ],
 			0
 		);
-	
+
 	}
 }

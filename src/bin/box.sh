@@ -17,14 +17,6 @@ done
 
 # Get the location of the running script
 this_script=`which "$0"`
-# Append to a class path
-cp=$this_script
-
-# Append box_classpath if set to cp
-if [ -n "$BOX_CLASSPATH" ]
-then
-	cp="$cp:$BOX_CLASSPATH"
-fi
 
 # Prepare Java arguments
 java_args="$BOX_JAVA_ARGS -client"
@@ -35,10 +27,6 @@ java_args="$BOX_JAVA_ARGS -client"
 
 # Cleanup paths for Cygwin.
 case "`uname`" in
-CYGWIN*)
-	cp=`cygpath --windows --mixed --path "$cp"`
-	;;
-# Add Java Arguments for Mac
 Darwin)
 	if [ -e /System/Library/Frameworks/JavaVM.framework ]
 	then
@@ -55,9 +43,6 @@ Darwin)
 	fi
 	;;
 esac
-
-CLASSPATH="$cp"
-export CLASSPATH
 
 ##############################################################################
 ##  JAVA DETERMINATION					                                    ##
@@ -84,5 +69,5 @@ fi
 ##  EXECUTION
 ##############################################################################
 
-exec "$java" $java_args cliloader.LoaderCLIMain "$@"
+exec "$java" $java_args -jar $this_script "$@"
 exit

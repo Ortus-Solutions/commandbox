@@ -33,6 +33,8 @@
 */
 component {
 
+	processingdirective pageEncoding='UTF-8';
+
 	property name='cr'				inject='cr@constants';
 	property name='shell'			inject='shell';
 	property name='colors256Data'	inject='colors256Data@constants';
@@ -73,6 +75,10 @@ component {
 	 *
   	 **/
 	function onMissingMethod( missingMethodName, missingMethodArguments ) {
+		return _onMissingMethod( argumentCollection=arguments );
+	}
+
+	private function _onMissingMethod( missingMethodName, missingMethodArguments ) {
 
 		// Check for Ctrl-C
 		shell.checkInterrupted();
@@ -88,7 +94,7 @@ component {
 
 		// TODO: Actually use a string buffer
 		var ANSIString = "";
-		
+
 		var foundANSI = false;
 
 		// Text needing formatting
@@ -327,4 +333,86 @@ component {
 		return '  ' & replaceNoCase( arguments.text, cr, cr & '  ', 'all' );
     }
 
+	public String function columns( required array items, formatUDF=()=>'' ) {
+		var numItems = items.len();
+		var widestItem = items.map( (v)=>len( v ) ).max();
+		var colWdith = widestItem + 4;
+		var termWidth = shell.getTermWidth()-1;
+		var numCols = max( termWidth\colWdith, 1 );
+		var numRows = ceiling( numItems/numCols );
+		var columnText = createObject( 'java', 'java.lang.StringBuilder' ).init( '' );
+
+		loop from=1 to=numRows index="local.row" {
+			loop from=1 to=numCols index="local.col" {
+				var thisIndex = row+((col-1)*numRows);
+				if( thisIndex > numItems ) {
+					var thisItem = '';
+				} else {
+					var thisItem = items[thisIndex];
+				}
+				columnText.append( _onMissingMethod( 'text', [ padRight( thisItem, colWdith ), formatUDF( thisItem, row, col ) ] ) );
+			}
+			columnText.append( cr );
+		}
+		return columnText.toString();
+	}
+
+    /**
+     * Adds characters to the right of a string until the string reaches a certain length.
+     * If the text is already greater than or equal to the maxWidth, the text is returned unchanged.
+     * @text The text to pad.
+     * @maxWidth The number of characters to pad up to.
+     * @padChar The character to use to pad the text.
+     */
+	private string function padRight( required string text, required numeric maxWidth, string padChar = " " ) {
+		var textLength = len( arguments.text );
+		if ( textLength == arguments.maxWidth ) {
+			return arguments.text;
+		} else if( textLength > arguments.maxWidth ) {
+			if( arguments.maxWidth < 4 ) {
+				return left( text, arguments.maxWidth );
+			} else {
+				return left( text, arguments.maxWidth-3 )&'...';
+			}
+		}
+		arguments.text &= repeatString( arguments.padChar, arguments.maxWidth-textLength );
+		return arguments.text;
+	}
+
+	/**
+	* Print a struct of structs as a tree
+	*
+	* @data top level struct
+	* @formatUDF A UDF receiving both a string-concatenated prefix of keys, and an array of the same data.  Returns string of special formating for that node of the tree
+	*/
+	function tree( required struct data, formatUDF=()=>'' ) {
+		var treeSB = createObject( 'java', 'java.lang.StringBuilder' ).init( '' );
+		_tree( parent=data, prefix='', formatUDF=formatUDF, treeSB=treeSB );
+		return treeSB.toString();
+	}
+
+	private function _tree( required struct parent, required string prefix, required formatUDF, required any treeSB, Array keyPath=[] ) {
+		var i = 0;
+		var keyCount = structCount( arguments.parent );
+		for( var keyName in arguments.parent ) {
+			keyPath.append( keyName );
+			var child = arguments.parent[ keyName ];
+			var childKeyCount = isStruct( child ) ? structCount( child ) : 0;
+			i++;
+			var isLast = ( i == keyCount );
+			var branch = ( isLast ? '└' : '├' ) & '─' & ( childKeyCount ? '┬' : '─' );
+			var branchCont = ( isLast ? ' ' : '│' ) & ' ' & ( childKeyCount ? '│' : ' ' );
+
+			// If the key name has line breaks, output each individually
+			keyName.listToArray( chr(13)&chr(10) ).each( ( l, i )=>{
+				treeSB.append( prefix & ( i == 1 ? branch : branchCont ) & ' ' );
+				treeSB.append( _onMissingMethod( 'line', [ l, formatUDF( keyPath.toList( '' ), keyPath ) ] ) );
+			} );
+
+			if( isStruct( child ) ) {
+				_tree( parent=child, prefix=prefix & ( isLast ? '  ' : '│ ' ), formatUDF=formatUDF, treeSB=treeSB, keyPath=keyPath );
+			}
+			keyPath.deleteAt( keyPath.len() );
+		}
+	}
 }

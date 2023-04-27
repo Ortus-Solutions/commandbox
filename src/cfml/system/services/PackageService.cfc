@@ -296,6 +296,13 @@ component accessors="true" singleton {
 			// Set variable to allow interceptor-based skipping of package install
 			var skipInstall = interceptData.skipInstall;
 
+			// See if the containing package has an override for this type
+			if( !len( installDirectory ) && len( packageType ) && containerBoxJSON.keyExists( 'installPathConventions' ) && containerBoxJSON.installPathConventions.keyExists( packageType ) ) {
+				job.addWarnLog( "Overriding install path for [#packageType#] based on box.json installPathConventions" );
+				// Can be relative or absolute
+				installDirectory = fileSystemUtil.resolvePath( containerBoxJSON.installPathConventions[ packageType ] );
+			}
+
 			// Else, use package type convention
 			if( !len( installDirectory ) && len( packageType ) ) {
 				// If this is a CommandBox command
@@ -599,7 +606,7 @@ component accessors="true" singleton {
 			} catch( any e ) {
 				rethrow;
 			}
-			
+
 			//  full ID with endpoint and package like file:/opt/files/foo.zip
 			if( endpointName != 'forgebox' ) {
 				var ID = detail;

@@ -127,7 +127,7 @@ component accessors=true {
 					if( isStruct( paramStruct[ param ] ?: '' ) ) {
 						paramStruct[ param ].each( (k,v)=>processedParams.append( '#param#:#k#="#parser.escapeArg( v ?: '' )#"' ) );
 					} else {
-						processedParams.append( '#param#="#parser.escapeArg( paramStruct[ param ] ?: '' )#"' );	
+						processedParams.append( '#param#="#parser.escapeArg( paramStruct[ param ] ?: '' )#"' );
 					}
 				}
 			}
@@ -262,7 +262,7 @@ component accessors=true {
 
 		try {
 			if( !isNull( getPipedInput() ) ) {
-				var result = shell.callCommand( getTokens(), getReturnOutput(), getPipedInput(), getCommandString() );
+				var result = shell.callCommand( command=getTokens(), returnOutput=getReturnOutput(), piped=getPipedInput(), line=getCommandString() );
 			} else {
 				var result = shell.callCommand( command=getTokens(), returnOutput=getReturnOutput(), line=getCommandString() );
 			}
