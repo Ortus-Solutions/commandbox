@@ -1915,17 +1915,24 @@ component accessors="true" singleton {
 			'java.desktop/com.sun.java.swing.plaf.motif',
 			'java.desktop/com.sun.java.swing.plaf.nimbus',
 			'java.desktop/com.sun.java.swing.plaf.windows',
+			'java.desktop/sun.java2d',
 			'java.rmi/sun.rmi.transport',
 			'java.base/sun.security.rsa',
 			'java.base/sun.security.pkcs',
 			'java.base/sun.security.x509',
 			'java.base/sun.security.util',
 			'java.base/sun.util.cldr',
+			'java.base/sun.util',
 			'java.base/sun.util.locale.provider',
 			'java.management/sun.management'
 		].reduce( (opens='',o)=>opens &= ' --add-opens=#o#=ALL-UNNAMED' );
 
-		systemSettings.setSystemSetting( 'JDK_JAVA_OPTIONS', systemSettings.getSystemSetting( 'JDK_JAVA_OPTIONS', javaOpens ) );
+		var javaExports = [
+			'java.desktop/sun.java2d',
+			'java.base/sun.util'
+		].reduce( (exports='',o)=>exports &= ' --add-exports=#o#=ALL-UNNAMED' );
+
+		systemSettings.setSystemSetting( 'JDK_JAVA_OPTIONS', systemSettings.getSystemSetting( 'JDK_JAVA_OPTIONS', javaOpens & ' ' & javaExports )  );
 		systemSettings.setSystemSetting( 'COMMANDBOX_HOME', systemSettings.getSystemSetting( 'COMMANDBOX_HOME', expandPath( '/commandbox-home' ) ) );
 		systemSettings.setSystemSetting( 'COMMANDBOX_VERSION', systemSettings.getSystemSetting( 'COMMANDBOX_VERSION', shell.getVersion() ) );
 
