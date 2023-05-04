@@ -843,16 +843,29 @@ component accessors="true" singleton {
 
 		var bindings = [];
 		// multi-site mode
-		if( serverInfo.sites.count() ) {
+		if( !isNull( serverJSON.sites ) && serverJSON.sites.count() ) {
 			// TODO: disallow bindngs in serverInfo.web
 
 			serverInfo.multiContext = true;
-			serverInfo.sites.each( ( siteName, site ) => {
+			serverInfo['sites' ] = {};
+			serverJSON.sites.each( ( siteName, site ) => {
 
 				job.start( 'Configuring site [#siteName#]' );
 
+				site.serverConfigFileDirectory = defaultServerConfigFileDirectory;
+				site.siteConfigFile = site.siteConfigFile ?: defaultServerConfigFile;
+				site.siteConfigFileDirectory = getDirectoryFromPath( site.siteConfigFile );
+
+				var siteServerInfo = newSiteInfoStruct();
+				if( !isNull( serverInfo.sites[ siteName ] ) ) {
+					siteServerInfo.append( serverInfo.sites[ siteName ] );
+				}
+				siteServerInfo.verbose = serverInfo.verbose;
+				resolveSiteSettings( siteName, siteServerInfo, serverProps, serverJSON, duplicate( defaults ) );
+				serverInfo.sites[ siteName ] = siteServerInfo;
+
 				// Default settings
-				bindings.append(  buildBindings( site ?: {} ), true )
+				//bindings.append(  buildBindings( site ?: {} ), true )
 
 				job.complete( serverInfo.verbose );
 			 } );
@@ -863,7 +876,18 @@ component accessors="true" singleton {
 			site.siteConfigFileDirectory = defaultServerConfigFileDirectory;
 			site.siteConfigFile = defaultServerConfigFile;
 			site.webroot = serverInfo.webroot;
-			resolveSiteSettings( serverInfo.name, serverInfo, serverProps, serverJSON, defaults );
+
+			var siteServerInfo = newSiteInfoStruct();
+			if( !isNull( serverInfo.sites[ serverInfo.name ] ) ) {
+				siteServerInfo.append( serverInfo.sites[ serverInfo.name ] );
+			}
+			siteServerInfo.verbose = serverInfo.verbose;
+			resolveSiteSettings( serverInfo.name, siteServerInfo, serverProps, serverJSON, defaults );
+			serverInfo['sites' ] = {
+				'#serverInfo.name#'	: siteServerInfo
+			};
+			// Append these back to the top level for backwards compat
+			serverInfo.append( siteServerInfo )
 			//bindings = buildBindings( serverInfo.web );
 		}
 
@@ -3239,6 +3263,10 @@ component accessors="true" singleton {
 			'customHTTPStatusEnable': true,
 			'processName'			: ''
 		};
+	}
+
+	struct function newSiteInfoStruct() {
+		return newServerInfoStruct().filter( (k,v)=>listFindNoCase( 'sslkeyfile,useproxyforwardedip,clientcertsubjectdns,basicauthenable,casesensitivepaths,blocksensitivepaths,basicauthusers,hstsenable,sslport,webroot,webrules,errorpages,clientcertcatruststorepass,clientcerttrustupstreamheaders,http2enable,sslcertfile,accesslogenable,securityrealm,clientcertcatruststorefile,filecachetotalsizemb,sslenable,ajpport,blockflashremoting,sslforceredirect,filecachemaxfilesizekb,ajpenable,host,welcomefiles,clientcertmode,blockcfadmin,verbose,allowedext,authpredicate,httpenable,gzipenable,hstsmaxage,aliases,authenabled,mimetypes,filecacheenable,clientcertcacertfiles,clientcertsslrenegotiationenable,clientcertenable,gzippredicate,clientcertissuerdns,hstsincludesubdomains,port,sslkeypass,directorybrowsing,ajpsecret,profile', k ) );
 	}
 
 	/**
