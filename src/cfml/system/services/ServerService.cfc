@@ -144,7 +144,7 @@ component accessors="true" singleton {
 				'javaVersion' : d.jvm.javaVersion ?: '',
 				'properties' : d.jvm.properties ?: {}
 			},
-			'sites' : duplicate( d.sites ?: {} ),
+			'sites' : duplicate( d.sites ?: [:] ),
 			'web' : {
 				'host' : d.web.host ?: '127.0.0.1',
 				'directoryBrowsing' : d.web.directoryBrowsing ?: '',
@@ -671,22 +671,8 @@ component accessors="true" singleton {
 		serverInfo.rewriteslogEnable = serverJSON.web.rewrites.logEnable ?: defaults.web.rewrites.logEnable;
 
 		serverInfo.maxRequests = serverJSON.web.maxRequests			?: defaults.web.maxRequests;
-
 		serverInfo.trayEnable	 	= serverProps.trayEnable		?: serverJSON.trayEnable			?: defaults.trayEnable;
 		serverInfo.dockEnable	 	= serverJSON.dockEnable			?: defaults.dockEnable;
-		serverInfo.defaultBaseURL = serverInfo.SSLEnable ? 'https://#serverInfo.host#:#serverInfo.SSLPort#' : 'http://#serverInfo.host#:#serverInfo.port#';
-
-		// If there's no open URL, let's create a complete one
-		if( !serverInfo.openbrowserURL.len() ) {
-			serverInfo.openbrowserURL = serverInfo.defaultBaseURL;
-		// Partial URL like /admin/login.cm
-		} else if ( left( serverInfo.openbrowserURL, 4 ) != 'http' ) {
-			if( !serverInfo.openbrowserURL.startsWith( '/' ) ) {
-				serverInfo.openbrowserURL = '/' & serverInfo.openbrowserURL;
-			}
-			serverInfo.openbrowserURL = serverInfo.defaultBaseURL & serverInfo.openbrowserURL;
-		}
-
 		serverInfo.heapSize 		= serverProps.heapSize 			?: serverJSON.JVM.heapSize			?: defaults.JVM.heapSize;
 		serverInfo.minHeapSize 		= serverProps.minHeapSize		?: serverJSON.JVM.minHeapSize		?: defaults.JVM.minHeapSize;
 
@@ -847,7 +833,7 @@ component accessors="true" singleton {
 			// TODO: disallow bindngs in serverInfo.web
 
 			serverInfo.multiContext = true;
-			serverInfo['sites' ] = {};
+			serverInfo['sites' ] = [:];
 			serverJSON.sites.each( ( siteName, site ) => {
 
 				job.start( 'Configuring site [#siteName#]' );
@@ -861,6 +847,10 @@ component accessors="true" singleton {
 					siteServerInfo.append( serverInfo.sites[ siteName ] );
 				}
 				siteServerInfo.verbose = serverInfo.verbose;
+				if( isNull( site.webroot ) ) {
+					throw( message='Site [#siteName#] is missing a "webroot" key.', type="commandException" );
+				}
+				site.webroot = fileSystemUtil.resolvePath( site.webroot, site.siteConfigFileDirectory )
 				resolveSiteSettings( siteName, siteServerInfo, serverProps, serverJSON, duplicate( defaults ) );
 				serverInfo.sites[ siteName ] = siteServerInfo;
 
@@ -871,7 +861,7 @@ component accessors="true" singleton {
 			 } );
 		} else {
 
-			var site = serverJSON.sites[ serverInfo.name ] = {};
+			var site = serverJSON.sites[ serverInfo.name ] = [:];
 			site.serverConfigFileDirectory = defaultServerConfigFileDirectory;
 			site.siteConfigFileDirectory = defaultServerConfigFileDirectory;
 			site.siteConfigFile = defaultServerConfigFile;
@@ -883,12 +873,27 @@ component accessors="true" singleton {
 			}
 			siteServerInfo.verbose = serverInfo.verbose;
 			resolveSiteSettings( serverInfo.name, siteServerInfo, serverProps, serverJSON, defaults );
-			serverInfo['sites' ] = {
+			serverInfo['sites' ] = [
 				'#serverInfo.name#'	: siteServerInfo
-			};
+			];
 			// Append these back to the top level for backwards compat
 			serverInfo.append( siteServerInfo )
 			//bindings = buildBindings( serverInfo.web );
+		}
+
+		// Base this on the "first" site for now.
+		var firstSite = serverInfo.sites[ serverInfo.sites.keyArray().last() ];
+		serverInfo.defaultBaseURL = serverInfo.SSLEnable ? 'https://#firstSite.host#:#firstSite.SSLPort#' : 'http://#firstSite.host#:#firstSite.port#';
+
+		// If there's no open URL, let's create a complete one
+		if( !serverInfo.openbrowserURL.len() ) {
+			serverInfo.openbrowserURL = serverInfo.defaultBaseURL;
+		// Partial URL like /admin/login.cm
+		} else if ( left( serverInfo.openbrowserURL, 4 ) != 'http' ) {
+			if( !serverInfo.openbrowserURL.startsWith( '/' ) ) {
+				serverInfo.openbrowserURL = '/' & serverInfo.openbrowserURL;
+			}
+			serverInfo.openbrowserURL = serverInfo.defaultBaseURL & serverInfo.openbrowserURL;
 		}
 
 		if( !len( serverInfo.WARPath ) && !len( serverInfo.cfengine ) ) {
@@ -975,7 +980,7 @@ component accessors="true" singleton {
 			var displayServerName = ( serverInfo.name is "" ? "CommandBox" : serverInfo.name );
 			var displayEngineName = serverInfo.engineName & ' ' & installDetails.version;
 			serverInfo.pidfile = serverInfo.serverHomeDirectory & '/.pid.txt';
-			serverInfo.predicateFile = serverinfo.serverHomeDirectory & '/.predicateFile.txt';
+			//serverInfo.predicateFile = serverinfo.serverHomeDirectory & '/.predicateFile.txt';
 			serverInfo.trayOptionsFile = serverinfo.serverHomeDirectory & '/.trayOptions.json';
 
 		// This is a WAR
@@ -1003,7 +1008,7 @@ component accessors="true" singleton {
 			serverInfo.accessLogBaseName = 'access';
 			serverInfo.accessLogBaseDir = serverInfo.logDir;
 			serverInfo.pidfile = serverInfo.customServerFolder & '/.pid.txt';
-			serverInfo.predicateFile = serverinfo.customServerFolder & '/.predicateFile.txt';
+			//serverInfo.predicateFile = serverinfo.customServerFolder & '/.predicateFile.txt';
 			serverInfo.trayOptionsFile = serverinfo.customServerFolder & '/.trayOptions.json';
 			var displayServerName = serverInfo.processName;
 			var displayEngineName = 'WAR';
@@ -1482,7 +1487,7 @@ component accessors="true" singleton {
 		}
 
 		if( serverInfo.webRules.len() ){
-			fileWrite( serverInfo.predicateFile, serverInfo.webRules.filter( (r)=>!trim(r).startsWith('##') ).toList( CR ) );
+//			fileWrite( serverInfo.predicateFile, serverInfo.webRules.filter( (r)=>!trim(r).startsWith('##') ).toList( CR ) );
 			args.append( '--predicate-file' ).append( serverInfo.predicateFile );
 		}
 
@@ -2284,6 +2289,7 @@ component accessors="true" singleton {
 
 		// Remove comments
 		serverInfo.webRules = serverInfo.webRules.filter( (r)=>!trim(r).startsWith('##') );
+		serverInfo.webRulesText = serverInfo.webRules.toList( CR );
 
 		if( serverInfo.verbose ) {
 			job.addLog( "Site name - " & name );
@@ -3238,7 +3244,7 @@ component accessors="true" singleton {
 			'HSTSIncludeSubDomains'	: false,
 			'AJPSecret'				: '',
 			'mimeTypes'				: {},
-			'sites'					: {},
+			'sites'					: [:],
 			'mimeTypes'				: {},
 			'RunwarAppenderLayout'	: '',
 			'RunwarAppenderLayoutOptions'	: {},
@@ -3261,12 +3267,13 @@ component accessors="true" singleton {
 			'appFileSystemPath'		: '',
 			'serverInfoJSON'		: '',
 			'customHTTPStatusEnable': true,
-			'processName'			: ''
+			'processName'			: '',
+			'webRulesText'			: ''
 		};
 	}
 
 	struct function newSiteInfoStruct() {
-		return newServerInfoStruct().filter( (k,v)=>listFindNoCase( 'sslkeyfile,useproxyforwardedip,clientcertsubjectdns,basicauthenable,casesensitivepaths,blocksensitivepaths,basicauthusers,hstsenable,sslport,webroot,webrules,errorpages,clientcertcatruststorepass,clientcerttrustupstreamheaders,http2enable,sslcertfile,accesslogenable,securityrealm,clientcertcatruststorefile,filecachetotalsizemb,sslenable,ajpport,blockflashremoting,sslforceredirect,filecachemaxfilesizekb,ajpenable,host,welcomefiles,clientcertmode,blockcfadmin,verbose,allowedext,authpredicate,httpenable,gzipenable,hstsmaxage,aliases,authenabled,mimetypes,filecacheenable,clientcertcacertfiles,clientcertsslrenegotiationenable,clientcertenable,gzippredicate,clientcertissuerdns,hstsincludesubdomains,port,sslkeypass,directorybrowsing,ajpsecret,profile', k ) );
+		return newServerInfoStruct().filter( (k,v)=>listFindNoCase( 'sslkeyfile,useproxyforwardedip,clientcertsubjectdns,basicauthenable,casesensitivepaths,blocksensitivepaths,basicauthusers,hstsenable,sslport,webroot,webrules,errorpages,clientcertcatruststorepass,clientcerttrustupstreamheaders,http2enable,sslcertfile,accesslogenable,securityrealm,clientcertcatruststorefile,filecachetotalsizemb,sslenable,ajpport,blockflashremoting,sslforceredirect,filecachemaxfilesizekb,ajpenable,host,welcomefiles,clientcertmode,blockcfadmin,verbose,allowedext,authpredicate,httpenable,gzipenable,hstsmaxage,aliases,authenabled,mimetypes,filecacheenable,clientcertcacertfiles,clientcertsslrenegotiationenable,clientcertenable,gzippredicate,clientcertissuerdns,hstsincludesubdomains,port,sslkeypass,directorybrowsing,ajpsecret,profile,webRulesText', k ) );
 	}
 
 	/**
