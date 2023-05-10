@@ -215,7 +215,7 @@ component accessors="true" singleton {
 
 
 	// Convert foo.bar-baz[1] to ['foo']['bar-baz'][1]
-	private function toBracketNotation( required any property ) {
+	public function toBracketNotation( required any property ) {
 		if( isSimpleValue( arguments.property ) ) {
 			arguments.property = tokenizeProp( arguments.property );
 		}

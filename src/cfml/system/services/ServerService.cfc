@@ -147,6 +147,7 @@ component accessors="true" singleton {
 			'sites' : duplicate( d.sites ?: [:] ),
 			'web' : {
 				'host' : d.web.host ?: '127.0.0.1',
+				'hostAlias' : d.web.hostAlias ?: '',
 				'directoryBrowsing' : d.web.directoryBrowsing ?: '',
 				'webroot' : d.web.webroot ?: '',
 				'caseSensitivePaths' : d.web.caseSensitivePaths ?: '',
@@ -159,9 +160,11 @@ component accessors="true" singleton {
 				'gzipPredicate' : d.web.gzipPredicate ?: '',
 				'welcomeFiles' : d.web.welcomeFiles ?: '',
 				'maxRequests' : d.web.maxRequests ?: '',
+				// TODO: override each binding key individually?
+				'bindings' : duplicate( d.web.bindings ?: {} ),
 				'HTTP' : {
 					'port' : d.web.http.port ?: 0,
-					'enable' : d.web.http.enable ?: true
+					'enable' : d.web.http.enable ?: nullvalue()
 				},
 				'HTTP2' : {
 					'enable' : d.web.HTTP2.enable ?: true
@@ -228,7 +231,38 @@ component accessors="true" singleton {
 						'issuerDNs' : d.web.security.clientCert.issuerDNs ?: ''
 					}
 				},
-				'mimeTypes' : duplicate( d.web.mimeTypes ?: {} )
+				'mimeTypes' : duplicate( d.web.mimeTypes ?: {} ),
+				'bindings' : duplicate( d.web.bindings ?: {
+					'HTTP' : {
+						'listen' : '',
+						'IP' : '',
+						'port' : '',
+						'host' : ''
+					},
+					'SSL' : {
+						'listen' : '',
+						'IP' : '',
+						'port' : '',
+						'host' : '',
+						// TODO: Allow multipe certs specified in the same binding
+						'certFile' : '',
+						'keyFile' : '',
+						'keyPass' : '',
+						'clientCert' : {
+							'mode' : '',
+							'CACertFiles' : '',
+							'CATrustStoreFile' : '',
+							'CATrustStorePass' : ''
+						}
+					},
+					'AJP' : {
+						'listen' : '',
+						'IP' : '',
+						'port' : '',
+						'host' : '',
+						'secret' : ''
+					}
+				} )
 			},
 			'app' : {
 				'logDir' : d.app.logDir ?: '',
@@ -827,7 +861,13 @@ component accessors="true" singleton {
 
 		serverInfo.multiContext = serverInfo.ModCFMLenable;
 
-		var bindings = [];
+		if( serverInfo.rewritesEnable ){
+			if( !fileExists(serverInfo.rewritesConfig) ){
+				job.error( 'URL rewrite config not found [#serverInfo.rewritesConfig#]' );
+				return;
+			}
+		}
+
 		// multi-site mode
 		if( !isNull( serverJSON.sites ) && serverJSON.sites.count() ) {
 			// TODO: disallow bindngs in serverInfo.web
@@ -854,9 +894,6 @@ component accessors="true" singleton {
 				resolveSiteSettings( siteName, siteServerInfo, serverProps, serverJSON, duplicate( defaults ) );
 				serverInfo.sites[ siteName ] = siteServerInfo;
 
-				// Default settings
-				//bindings.append(  buildBindings( site ?: {} ), true )
-
 				job.complete( serverInfo.verbose );
 			 } );
 		} else {
@@ -878,8 +915,13 @@ component accessors="true" singleton {
 			];
 			// Append these back to the top level for backwards compat
 			serverInfo.append( siteServerInfo )
-			//bindings = buildBindings( serverInfo.web );
 		}
+
+		if( !serverInfo.HTTPEnable && !serverInfo.SSLEnable ) {
+			serverInfo.openbrowser = false;
+		}
+
+		buildBindings( serverInfo );
 
 		// Base this on the "first" site for now.
 		var firstSite = serverInfo.sites[ serverInfo.sites.keyArray().last() ];
@@ -1228,283 +1270,9 @@ component accessors="true" singleton {
 			}, [] );
 		jarArray.append( serverInfo.runwarJarPath );
 
-		// This is an array of tokens to send to the process builder
-		var args = [];
-		 args
-		 	.append( '-cp' ).append( jarArray.toList( server.system.properties[ 'path.separator' ] ) )
-			.append( 'runwar.Start' )
-			//.append( '--background=#background#' )
-			.append( '--background=false' )
-			.append( '--host' ).append( serverInfo.host )
-			.append( '--stop-port' ).append( serverInfo.stopsocket )
-			.append( '--processname' ).append( serverInfo.processName )
-			.append( '--log-dir' ).append( serverInfo.logDir )
-			.append( '--server-name' ).append( serverInfo.name )
-			.append( '--tray-enable' ).append( serverInfo.trayEnable )
-			.append( '--dock-enable' ).append( serverInfo.dockEnable )
-			.append( '--directoryindex' ).append( serverInfo.directoryBrowsing )
-			.append( '--timeout' ).append( serverInfo.startTimeout )
-			.append( '--proxy-peeraddress' ).append( serverInfo.useProxyForwardedIP )
-			.append( '--cookie-secure' ).append( serverInfo.sessionCookieSecure )
-			.append( '--cookie-httponly' ).append( serverInfo.sessionCookieHTTPOnly )
-			.append( '--pid-file').append( serverInfo.pidfile );
-
 		// If server.json has a default browser, use it
 		if( !len( serverInfo.preferredBrowser ) && ConfigService.settingExists( 'preferredBrowser' ) ) {
 			serverInfo.preferredBrowser = ConfigService.getSetting( 'preferredBrowser' );
-		}
-
-		if( len( serverInfo.preferredBrowser ) ) {
-			args.append( '--preferred-browser' ).append( serverInfo.preferredBrowser );
-		}
-
-		// Despite the name, the MacOS Dock also uses this setting.
-		args.append( '--tray-icon' ).append( serverInfo.trayIcon );
-
-		if( serverInfo.trayEnable ) {
-			args.append( '--tray-config' ).append( serverInfo.trayOptionsFile );
-		}
-
-		if( serverInfo.runwarXNIOOptions.count() ) {
-			args.append( '--xnio-options=' & serverInfo.runwarXNIOOptions.reduce( ( opts='', k, v ) => opts.listAppend( k & '=' & v, ';' ) ) );
-		}
-
-		if( len( serverInfo.allowedExt ) ) {
-			args.append( '--default-servlet-allowed-ext=' & serverInfo.allowedExt );
-		}
-
-		if( serverInfo.runwarUndertowOptions.count() ) {
-			args.append( '--undertow-options=' & serverInfo.runwarUndertowOptions.reduce( ( opts='', k, v ) => opts.listAppend( k & '=' & v ) ) );
-		}
-
-		if( len( serverInfo.runwarAppenderLayout ) ) {
-			args.append( '--console-layout' ).append( serverInfo.runwarAppenderLayout );
-		}
-		if( serverInfo.runwarAppenderLayoutOptions.count() ) {
-			args.append( '--console-layout-options' ).append( serializeJSON( serverInfo.runwarAppenderLayoutOptions ) );
-		}
-
-		if( serverInfo.debug ) {
-			// Debug is getting turned on any time I include the --debug flag regardless of whether it's true or false.
-			args.append( '--debug' ).append( serverInfo.debug );
-		}
-
-		if( len( serverInfo.restMappings ) ) {
-			args.append( '--servlet-rest-mappings' ).append( serverInfo.restMappings );
-		}
-
-		if( serverInfo.trace ) {
-			args.append( '--log-level' ).append( 'TRACE' );
-		}
-
-		if( len( errorPages ) ) {
-			args.append( '--error-pages' ).append( errorPages );
-		}
-
-		if( serverInfo.GZIPEnable ) {
-			args.append( '--gzip-enable' ).append( true );
-			if( len( trim( serverInfo.gzipPredicate ) ) ){
-				args.append( '--gzip-predicate' ).append( serverInfo.gzipPredicate );
-			}
-		}
-
-		if( serverInfo.accesslogenable ) {
-			args
-				.append( '--logaccess-enable' ).append( true )
-			 	.append( '--logaccess-basename' ).append( 'access' )
-			 	.append( '--logaccess-dir' ).append( serverInfo.logDir );
-		}
-
-
-		if( serverInfo.rewritesLogEnable ) {
-			args.append( '--urlrewrite-log' ).append( serverInfo.rewritesLogPath );
-		}
-
-		/* 	.append( '--logrequests-enable' ).append( true )
-		 	.append( '--logrequests-basename' ).append( 'request' )
-		 	.append( '--logrequests-dir' ).append( serverInfo.logDir )
-		 	*/
-
-
-	 	if( len( serverInfo.engineName ) ) {
-	 		 args.append( '--cfengine-name' ).append( serverInfo.engineName );
-	 	}
-	 	if( len( serverInfo.welcomeFiles ) ) {
-	 		 args.append( '--welcome-files' ).append( serverInfo.welcomeFiles );
-	 	}
-	 	if( len( serverInfo.maxRequests ) ) {
-	 		 args.append( '--worker-threads' ).append( serverInfo.maxRequests );
-	 	}
-	 	if( len( serverInfo.caseSensitivePaths ) ) {
-	 		 args.append( '--case-sensitive-web-server' ).append( serverInfo.caseSensitivePaths );
-	 	}
-	 	if( len( CLIAliases ) ) {
-	 		 args.append( '--dirs' ).append( CLIAliases );
-	 	}
-	 	if( len( mimeTypesList ) ) {
-	 		 args.append( '--mime-types' ).append( mimeTypesList );
-	 	}
-	 	if( serverInfo.fileCacheEnable ) {
-	 		 args.append( '--cache-servlet-paths' ).append( true );
-	 		 args.append( '--file-cache-total-size-mb' ).append( val( serverInfo.fileCacheTotalSizeMB ) );
-	 		 args.append( '--file-cache-max-file-size-kb' ).append( val( serverInfo.fileCacheMaxFileSizeKB ) );
-	 	}
-
-		// If background, wrap up JVM args to pass through to background servers.  "Real" JVM args must come before Runwar args
-		if( background && false ) {
-			// Escape any semi colons or backslash literals in the args so Runwar can process this properly
-			// -Darg=one;-Darg=two
-			var argString = argTokens
-				.map( ( token ) => token.replace( '\', '\\', 'all' ).replace( ';', '\;', 'all' ) )
-				.toList( ';' );
-			if( len( argString ) ) {
-				args.append( '--jvm-args=#trim( argString )#' );
-			}
-		// If foreground, just stick them in.
-		} else {
-			argTokens.reverse().each( function(i) { args.prepend( i ); } );
-		}
-
-		// Webroot for normal server, and war home for a standard war
-		args.append( '-war' ).append( serverInfo.appFileSystemPath );
-
-		args.append( '--web-xml-path' ).append( serverInfo.webXml );
-
-		if( len( serverInfo.webXMLOverrideActual ) ){
-			args.append( '--web-xml-override-path' ).append( serverInfo.webXMLOverrideActual );
-		}
-
-		if( len( serverInfo.webXMLOverrideActual ) ){
-			args.append( '--web-xml-override-force' ).append( serverInfo.webXMLOverrideForce );
-		}
-
-		// Always send the enable flag for each protocol
-		args
-			.append( '--http-enable' ).append( serverInfo.HTTPEnable )
-			.append( '--ssl-enable' ).append( serverInfo.SSLEnable )
-			.append( '--ajp-enable' ).append( serverInfo.AJPEnable )
-			.append( '--http2-enable' ).append( serverInfo.HTTP2Enable );
-
-		if( serverInfo.HTTPEnable || serverInfo.SSLEnable ) {
-			args
-			 	.append( '--open-browser' ).append( serverInfo.openbrowser )
-				.append( '--open-url' ).append( serverInfo.openbrowserURL );
-		} else {
-			args.append( '--open-browser' ).append( false );
-		}
-
-
-		// Send HTTP port if it's enabled
-		if( serverInfo.HTTPEnable ){
-			args.append( '--port' ).append( serverInfo.port )
-		}
-
-		// Send SSL port if it's enabled
-		if( serverInfo.SSLEnable ){
-			args.append( '--ssl-port' ).append( serverInfo.SSLPort );
-		}
-
-		// Send AJP port if it's enabled
-		if( serverInfo.AJPEnable ){
-			args.append( '--ajp-port' ).append( serverInfo.AJPPort );
-		}
-
-		// Send SSL cert info if SSL is enabled and there's cert info
-		if( serverInfo.SSLEnable ) {
-			if( serverInfo.SSLCertFile.len() ) {
-				args.append( '--ssl-cert' ).append( serverInfo.SSLCertFile );
-				if( serverInfo.SSLKeyFile.len() ) {
-					args.append( '--ssl-key' ).append( serverInfo.SSLKeyFile );
-				}
-				args.append( '--ssl-keypass' ).append( serverInfo.SSLKeyPass );
-			}
-			if( len( serverInfo.clientCertMode ) ){
-				args.append( '--client-cert-negotiation' ).append( serverInfo.clientCertMode );
-			}
-			if( serverInfo.clientCertSSLRenegotiationEnable ) {
-				args.append( '--client-cert-renegotiation' ).append( serverInfo.clientCertSSLRenegotiationEnable );
-			}
-			if( len( serverInfo.clientCertCATrustStoreFile ) ) {
-				args.append( '--ssl-add-ca-truststore' ).append( serverInfo.clientCertCATrustStoreFile );
-				args.append( '--ssl-add-ca-truststore-pass' ).append( serverInfo.clientCertCATrustStorePass );
-			}
-			if( serverInfo.clientCertCACertFiles.len() ){
-				args.append( '--ssl-add-ca-certs' ).append( serverInfo.clientCertCACertFiles.toList() );
-			}
-
-		}
-
-		// Incorporate rewrites to command
-		args.append( '--urlrewrite-enable' ).append( serverInfo.rewritesEnable );
-		if( len( serverInfo.rewritesStatusPath ) ) {
-			args.append( '--urlrewrite-statuspath' ).append( serverInfo.rewritesStatusPath );
-		}
-		// A setting of 0 reloads on every request
-		if( len( serverInfo.rewritesConfigReloadSeconds ) ) {
-			args.append( '--urlrewrite-check' ).append( serverInfo.rewritesConfigReloadSeconds );
-		}
-
-		if( serverInfo.authEnabled ) {
-
-			if( len( serverInfo.authPredicate ) ) {
-				args.append( '--auth-predicate' ).append( serverInfo.authPredicate );
-			}
-			if( !len( serverInfo.securityRealm ) ) {
-				serverInfo.securityRealm = serverInfo.name;
-			}
-			args.append( '--security-realm' ).append( serverInfo.securityRealm );
-
-			// Basic auth
-			if( serverInfo.basicAuthEnable ) {
-				// Escape commas and equals with backslash
-				var sanitizeBA = function( i ) { return i.replace( ',', '\,', 'all' ).replace( '=', '\=', 'all' ); };
-				var thisBasicAuthUsers = '';
-				serverInfo.basicAuthUsers.each( function( i ) {
-					thisBasicAuthUsers = thisBasicAuthUsers.listAppend( '#sanitizeBA( i )#=#sanitizeBA( serverInfo.basicAuthUsers[ i ] )#' );
-				} );
-				// user=pass,user2=pass2
-				args.append( '--basicauth-users' ).append( thisBasicAuthUsers );
-
-			}
-
-			// Client cert
-			if( serverInfo.clientCertEnable ) {
-				args
-					.append( '--client-cert-enable' ).append( serverInfo.clientCertEnable )
-					.append( '--client-cert-subjectdns' ).append( serializeJSON( serverInfo.clientCertSubjectDNs ) )
-					.append( '--client-cert-issuerdns' ).append( serializeJSON( serverInfo.clientCertIssuerDNs ) );
-			}
-		}
-
-		args.append( '--client-cert-trust-headers' ).append( serverInfo.clientCertTrustUpstreamHeaders )
-
-		if( serverInfo.rewritesEnable ){
-			if( !fileExists(serverInfo.rewritesConfig) ){
-				job.error( 'URL rewrite config not found [#serverInfo.rewritesConfig#]' );
-				return;
-			}
-			args.append( '--urlrewrite-file' ).append( serverInfo.rewritesConfig );
-		}
-
-		if( serverInfo.webRules.len() ){
-//			fileWrite( serverInfo.predicateFile, serverInfo.webRules.filter( (r)=>!trim(r).startsWith('##') ).toList( CR ) );
-			args.append( '--predicate-file' ).append( serverInfo.predicateFile );
-		}
-
-		if( serverInfo.ModCFMLenable ){
-			args.append( '--auto-create-contexts' ).append( serverInfo.ModCFMLenable );
-			if( len( serverInfo.ModCFMLMaxContexts ) && isNumeric( serverInfo.ModCFMLMaxContexts ) && serverInfo.ModCFMLMaxContexts > 0 ) {
-				args.append( '--auto-create-contexts-max' ).append( serverInfo.ModCFMLMaxContexts );
-			}
-			if( !len( serverInfo.ModCFMLSharedKey ) && serverInfo.ModCFMLRequireSharedKey ) {
-				throw( message='Since ModeCFML support is enabled, [ModCFML.sharedKey] is required for security.', detail='Disable IN DEVELOPMENT ONLY with [ModCFML.RequireSharedKey=false].', type="commandException" );
-			}
-			if( len( serverInfo.ModCFMLSharedKey ) ) {
-				args.append( '--auto-create-contexts-secret' ).append( serverInfo.ModCFMLSharedKey );
-			}
-			if( serverInfo.ModCFMLcreateVDirs ) {
-				args.append( '--auto-create-contexts-vdirs' ).append( serverInfo.ModCFMLcreateVDirs );
-			}
 		}
 
 		// change status to starting + persist
@@ -1519,7 +1287,7 @@ component accessors="true" singleton {
 	    var processBuilder = createObject( "java", "java.lang.ProcessBuilder" );
 	    // Pass array of tokens comprised of command plus arguments
 
-		args=[
+		var args=[
 			'-cp',
 			jarArray.toList( server.system.properties[ 'path.separator' ] )
 		];
@@ -1850,6 +1618,37 @@ component accessors="true" singleton {
 
 		serverInfo.webroot = site.webroot;
 		serverInfo.host = serverProps.host ?: site.host ?: serverJSON.web.host ?: defaults.web.host;
+		serverInfo.hostAlias = site.hostAlias ?: serverJSON.web.hostAlias ?: defaults.web.hostAlias;
+
+		// Default all the things to make our lives easier
+		serverJSON.web = serverJSON.web ?: {};
+		defaults.web = defaults.web ?: {};
+		[ site, serverJSON.web, defaults.web ].each( (config)=>{
+			config[ 'bindings' ] = config.bindings ?: {}
+			config.bindings[ 'http' ] = config.bindings.http ?: []
+			if( isStruct( config.bindings.http ) ) {
+				config.bindings.http = [ config.bindings.http ]
+			}
+			config.bindings[ 'ssl' ] = config.bindings.ssl ?: []
+			if( isStruct( config.bindings.ssl ) ) {
+				config.bindings.ssl = [ config.bindings.ssl ]
+			}
+			config.bindings[ 'ajp' ] = config.bindings.ajp ?: []
+			if( isStruct( config.bindings.ajp ) ) {
+				config.bindings.ajp = [ config.bindings.ajp ]
+			}
+		} );
+
+		site.bindings.http.append( serverJSON.web.bindings.http, true ).append( defaults.web.bindings.http, true );
+		site.bindings.ssl.append( serverJSON.web.bindings.ssl, true ).append( defaults.web.bindings.ssl, true );
+		site.bindings.ajp.append( serverJSON.web.bindings.ajp, true ).append( defaults.web.bindings.ajp, true );
+
+
+		serverInfo.bindings = site.bindings ?: serverJSON.web.bindings ?: defaults.web.bindings;
+
+		if( isSimpleValue( serverInfo.hostAlias ) ) {
+			serverInfo.hostAlias = serverInfo.hostAlias.listToArray();
+		}
 
 		if( !isNull( site.rewrites ) ) {
 			throw( 'You cannot set "rewrites" config on a per-site basis as Tuckey Rewrite is servlet-wide. You can use Server Rules for per-site rewrites.' );
@@ -1861,16 +1660,22 @@ component accessors="true" singleton {
 		// If the last port we used is taken, remove it from consideration.
 		// TODO: if( val( serverInfo.port ) == 0 || !isPortAvailable( serverInfo.host, serverInfo.port ) ) { serverInfo.delete( 'port' ); }
 
+		// If no bindings are provided, default HTTP to enabled (compat)
+		serverInfo.HTTPEnable = serverProps.HTTPEnable ?: site.HTTP.enable ?: serverJSON.web.HTTP.enable ?: defaults.web.HTTP.enable ?: ( serverInfo.bindings.len()==0 );
+		serverInfo.HTTP2Enable = site.HTTP2.enable ?: serverJSON.web.HTTP2.enable ?: defaults.web.HTTP2.enable;
+
 		// Port is the only setting that automatically carries over without being specified since it's random.
-		serverInfo['port'] = serverProps.port ?: site.http.port ?: serverJSON.web.http.port ?: serverInfo.port	?: defaults.web.http.port;
+		serverInfo['port'] = serverProps.port ?: site.http.port ?: serverJSON.web.http.port ?: serverInfo.sites[ name ].http.port	?: defaults.web.http.port;
 		serverInfo.port = val( serverInfo.port );
 		// Server default is 0 not null.
-		if( serverInfo.port == 0 ) {
+		if( serverInfo.port == 0 && serverInfo.HTTPEnable ) {
 			serverInfo.port = getRandomPort( serverInfo.host );
+		// For backwards compat, if there is a port specified, even if bindings are in use, enable HTTP.s
+		} else if( serverInfo.port > 0 ) {
+			serverInfo.HTTPEnable = true;
 		}
+
 		serverInfo.SSLEnable = serverProps.SSLEnable ?: site.SSL.enable ?: serverJSON.web.SSL.enable ?: defaults.web.SSL.enable;
-		serverInfo.HTTPEnable = serverProps.HTTPEnable ?: site.HTTP.enable ?: serverJSON.web.HTTP.enable ?: defaults.web.HTTP.enable;
-		serverInfo.HTTP2Enable = site.HTTP2.enableHTTP2.enable ?: serverJSON.web.HTTP2.enable ?: defaults.web.HTTP2.enable;
 		serverInfo.SSLPort = serverProps.SSLPort ?: site.SSL.port ?: serverJSON.web.SSL.port ?: defaults.web.SSL.port;
 
 		serverInfo.AJPEnable = serverProps.AJPEnable ?: site.AJP.enable ?: serverJSON.web.AJP.enable ?: defaults.web.AJP.enable;
@@ -2306,9 +2111,179 @@ component accessors="true" singleton {
 	 * - port
 	 * - host
 	 * - type
+	 * - site
 	 */
-	array function buildBindings( required struct web ) {
+	function buildBindings( required struct serverInfo ) {
+		var sites = serverInfo.sites;
 
+		// clean slate per start
+		serverInfo.listeners = {
+			'http' : {},
+			'ssl' : {},
+			'ajp' : {}
+		};
+		serverInfo.bindings = {};
+		var bindingBuildBasic = ( binding, site )=>{
+			var result = {
+				hosts = binding.host ?: site.hostAlias ?: '',
+				IP = '',
+				Port = ''
+			}
+			if( !len(result.hosts) ) {
+				result.hosts = '*'
+			}
+			if( isSimpleValue(result.hosts) ) {
+				result.hosts = result.hosts.listToArray();
+			}
+			if( len( binding.listen ?: '' ) ) {
+				result.Port = listLast( binding.listen, ':' );
+				if( listLen( binding.listen, ':'  ) > 1 ) {
+					result.IP = listFirst( binding.listen, ':' );
+				} else {
+					result.IP = '0.0.0.0';
+				}
+			}
+			if( len( binding.port ?: '' ) ) {
+				result.Port = binding.port;
+			}
+			if( len( binding.IP ?: '' ) ) {
+				result.IP = binding.IP;
+			}
+			if( result.IP == '*' || result.IP == '' ) {
+				result.IP = '0.0.0.0';
+			}
+			return result;
+		};
+		var allBindings = [];
+		sites.each( (siteName,site)=>{
+			if( !len( site.hostAlias ) ) {
+				site.hostAlias.append( '*' )
+			}
+			// The legacy bindings use "host" to represent the IP for the binding.
+			var IP = getAddressByHost( site.host ).getHostAddress();
+
+			// Backwards compat bindings in web.http, web.ssl, and web.ajp
+			if( site.HTTPEnable ) {
+				allBindings.append( newBinding( site=siteName, IP=IP, port=site.port, hosts=site.hostAlias, type='http', HTTP2Enable=site.HTTP2Enable ) );
+			}
+
+			if( site.SSLEnable ) {
+				allBindings.append( newBinding( site=siteName, IP=IP, port=site.SSLPort, hosts=site.hostAlias, type='ssl', SSLCertFile=site.SSLCertFile, SSLKeyFile=site.SSLKeyFile, SSLKeyPass=site.SSLKeyPass ) );
+			}
+
+			if( site.AJPEnable ) {
+				allBindings.append( newBinding( site=siteName, IP=IP, port=site.AJPPort, hosts=site.hostAlias, type='ajp', AJPSecret=site.AJPSecret ) );
+			}
+
+			// Gather bindings of each type for this site
+			['http','ssl','ajp'].each( (type)=>{
+				// Bindings can be an array
+				site.bindings[type].each( (binding)=>{
+					var params = bindingBuildBasic( binding, site );
+					params.type = type;
+					params.site = siteName;
+					params.HTTP2Enable=site.HTTP2Enable;
+					params.SSLCertFile=binding.certFile ?: '';
+					params.SSLKeyFile=binding.keyFile ?: '';
+					params.SSLKeyPass=binding.keyPass ?: '';
+					params.AJPSecret=binding.secret ?: '';
+					if( len( params.port ) ) {
+						allBindings.append( newBinding( argumentCollection=params ) );
+					}
+				} );
+			} );
+
+		} );
+
+		[ (b)=>b.IP=='0.0.0.0', (b)=>b.IP!='0.0.0.0' ].each( (filter)=>{
+			allBindings
+				.filter( filter )
+				.each( (binding)=>{
+
+					// Aggregate de-duped listeners
+					if( serverInfo.listeners[ binding.type ].keyExists( '0.0.0.0:#binding.port#' ) ) {
+						// Use all IP binding, if exists
+						var listener = serverInfo.listeners[ binding.type ][ '0.0.0.0:#binding.port#' ];
+					} else if( serverInfo.listeners[ binding.type ].keyExists( '#binding.IP#:#binding.port#' ) ) {
+						// Use specific IP binding, if exists
+						var listener = serverInfo.listeners[ binding.type ][ '#binding.IP#:#binding.port#' ];
+					} else {
+						// Create a new bindings
+						var listener = serverInfo.listeners[ binding.type ][ '#binding.IP#:#binding.port#' ] = {
+							'IP' : binding.IP,
+							'port' : binding.port
+						};
+					}
+					if( !isNull( binding.HTTP2Enable ) && isBoolean( binding.HTTP2Enable ) ) {
+						listener[ 'HTTP2Enable' ] = ( listener.HTTP2Enable ?: false ) || binding.HTTP2Enable;
+					}
+
+					if( binding.type == 'ssl' ) {
+						listener[ 'certs' ] = [];
+						if( !isNull( binding.SSLCertFile ) && len( binding.SSLCertFile ) ) {
+							var cert = {}
+							cert[ 'certFile' ] = binding.SSLCertFile;
+
+							if( !isNull( binding.SSLKeyFile ) && len( binding.SSLKeyFile ) ) {
+								cert[ 'keyFile' ] = binding.SSLKeyFile;
+							}
+
+							if( !isNull( binding.SSLKeyPass ) && len( binding.SSLKeyPass ) ) {
+								cert[ 'keyPass' ] = binding.SSLKeyPass;
+							}
+							listener.certs.append( cert );
+						}
+					}
+
+					// Build out all possible bindings to sites
+					binding.hosts.each( (host)=>{
+						// TODO: Deal with partial hostname wildcard matches
+						var thisHost = ( host == '0.0.0.0' ? '*' : host );
+						serverInfo.bindings[ lcase( '#binding.IP#:#binding.port#:#thisHost#' ) ] = binding.filter( (k)=>'type,IP,port,AJPSecret,site'.listFindNoCase(k) ).append( { 'host' : thisHost } );
+					} );
+
+				} );
+
+		} );
+
+	}
+
+	/**
+	 * Create default binding struct, expanding a bindings for each possible host name
+	 */
+	struct function newBinding(
+			required site,
+			IP='0.0.0.0',
+			port=80,
+			hosts=['*'],
+			type='http',
+			HTTP2Enable=true,
+			SSLCertFile='',
+			SSLKeyFile='',
+			SSLKeyPass='',
+			AJPSecret=''
+		) {
+
+		if( IP == '*' ) {
+			IP = '0.0.0.0';
+		}
+		var binding = {
+			'site' : site,
+			'IP' : IP,
+			'port' : port,
+			'hosts' : hosts,
+			'type' : type,
+			'HTTP2Enable' : HTTP2Enable
+		}
+		if( type == 'ssl' ) {
+			binding[ 'SSLCertFile' ] = SSLCertFile;
+			binding[ 'SSLKeyFile' ] = SSLKeyFile;
+			binding[ 'SSLKeyPass' ] = SSLKeyPass;
+		}
+		if( type == 'ajp' ) {
+			binding[ 'AJPSecret' ] = AJPSecret;
+		}
+		return binding
 	}
 
 	/**
@@ -3134,6 +3109,7 @@ component accessors="true" singleton {
 			'id' 				: "",
 			'port'				: 0,
 			'host'				: "127.0.0.1",
+			'hostAlias'			: [],
 			'stopSocket'		: 0,
 			'debug'				: false,
 			'verbose'			: false,
@@ -3245,6 +3221,12 @@ component accessors="true" singleton {
 			'AJPSecret'				: '',
 			'mimeTypes'				: {},
 			'sites'					: [:],
+			'listeners'				: {
+										'http' : {},
+										'ssl' : {},
+										'ajp' : {}
+									},
+			'bindings'				: {},
 			'mimeTypes'				: {},
 			'RunwarAppenderLayout'	: '',
 			'RunwarAppenderLayoutOptions'	: {},
@@ -3273,7 +3255,7 @@ component accessors="true" singleton {
 	}
 
 	struct function newSiteInfoStruct() {
-		return newServerInfoStruct().filter( (k,v)=>listFindNoCase( 'sslkeyfile,useproxyforwardedip,clientcertsubjectdns,basicauthenable,casesensitivepaths,blocksensitivepaths,basicauthusers,hstsenable,sslport,webroot,webrules,errorpages,clientcertcatruststorepass,clientcerttrustupstreamheaders,http2enable,sslcertfile,accesslogenable,securityrealm,clientcertcatruststorefile,filecachetotalsizemb,sslenable,ajpport,blockflashremoting,sslforceredirect,filecachemaxfilesizekb,ajpenable,host,welcomefiles,clientcertmode,blockcfadmin,verbose,allowedext,authpredicate,httpenable,gzipenable,hstsmaxage,aliases,authenabled,mimetypes,filecacheenable,clientcertcacertfiles,clientcertsslrenegotiationenable,clientcertenable,gzippredicate,clientcertissuerdns,hstsincludesubdomains,port,sslkeypass,directorybrowsing,ajpsecret,profile,webRulesText', k ) );
+		return newServerInfoStruct().filter( (k,v)=>listFindNoCase( 'sslkeyfile,useproxyforwardedip,clientcertsubjectdns,basicauthenable,casesensitivepaths,blocksensitivepaths,basicauthusers,hstsenable,sslport,webroot,webrules,errorpages,clientcertcatruststorepass,clientcerttrustupstreamheaders,http2enable,sslcertfile,accesslogenable,securityrealm,clientcertcatruststorefile,filecachetotalsizemb,sslenable,ajpport,blockflashremoting,sslforceredirect,filecachemaxfilesizekb,ajpenable,host,welcomefiles,clientcertmode,blockcfadmin,verbose,allowedext,authpredicate,httpenable,gzipenable,hstsmaxage,aliases,authenabled,mimetypes,filecacheenable,clientcertcacertfiles,clientcertsslrenegotiationenable,clientcertenable,gzippredicate,clientcertissuerdns,hstsincludesubdomains,port,sslkeypass,directorybrowsing,ajpsecret,profile,webRulesText,hostAlias', k ) );
 	}
 
 	/**
@@ -3306,7 +3288,7 @@ component accessors="true" singleton {
 	* @all Pass false to ONLY suggest existing setting names.  True will suggest all possible settings.
 	* @asSet Pass true to add = to the end of the options
 	*/
-	function completeProperty( required directory,  all=false, asSet=false ) {
+	function completeProperty( required directory, all=false, asSet=false, paramSoFar='' ) {
 		// Get all config settings currently set
 		var props = JSONService.addProp( [], '', '', readServerJSON( arguments.directory & '/server.json' ) );
 
@@ -3336,6 +3318,27 @@ component accessors="true" singleton {
 					'postServerForget' : ''
 				}
 			} );
+
+			// Add in complete for sites
+			if( len( paramSoFar ) ) {
+				// Parse what they've typed so far
+				var bracketNotationSoFar = JSONService.toBracketNotation( paramSoFar );
+				var tokenizedSoFar = JSONService.tokenizeProp( paramSoFar );
+				// Only if they've typed sites.something so far and appear to have completed the site n
+				var siteNameSoFar = tokenizedSoFar[2] ?: '';
+				if( tokenizedSoFar.len() > 1 && lcase( bracketNotationSoFar ).startsWith( '[ "sites" ]' )
+					&& ( tokenizedSoFar.len() > 2
+					|| paramSoFar.endsWith('.')
+					|| siteNameSoFar.endsWith(']')
+						|| ( len( siteNameSoFar ) > 2 && siteNameSoFar.startsWith('"') && siteNameSoFar.endsWith('"') ) ) ) {
+					evaluate( "local.dummy#bracketNotationSoFar#=true" );
+					if( isStruct( dummy ) && dummy.keyExists( 'sites' ) && isStruct( dummy.sites )  && dummy.sites.count() ) {
+						var siteName = dummy.sites.keyArray().first();
+						var userTyped = tokenizedSoFar[1] & ( siteNameSoFar contains '[' ? '' : '.' ) & siteNameSoFar;
+						props = JSONService.addProp( props, userTyped, '[ "sites" ][ "#siteName#" ]', { 'sites' : { '#siteName#' : getDefaultServerJSON().web } } );
+					}
+				}
+			}
 		}
 		if( asSet ) {
 			props = props.map( function( i ){ return i &= '='; } );
