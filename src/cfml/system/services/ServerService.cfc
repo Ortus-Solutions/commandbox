@@ -887,11 +887,13 @@ component accessors="true" singleton {
 					siteServerInfo.append( serverInfo.sites[ siteName ] );
 				}
 				siteServerInfo.verbose = serverInfo.verbose;
+				siteServerInfo.logDir = serverInfo.logDir;
+
 				if( isNull( site.webroot ) ) {
 					throw( message='Site [#siteName#] is missing a "webroot" key.', type="commandException" );
 				}
 				site.webroot = fileSystemUtil.resolvePath( site.webroot, site.siteConfigFileDirectory )
-				resolveSiteSettings( siteName, siteServerInfo, serverProps, serverJSON, duplicate( defaults ) );
+				resolveSiteSettings( siteName, siteServerInfo, serverProps, serverJSON, duplicate( defaults ), true );
 				serverInfo.sites[ siteName ] = siteServerInfo;
 
 				job.complete( serverInfo.verbose );
@@ -909,7 +911,7 @@ component accessors="true" singleton {
 				siteServerInfo.append( serverInfo.sites[ serverInfo.name ] );
 			}
 			siteServerInfo.verbose = serverInfo.verbose;
-			resolveSiteSettings( serverInfo.name, siteServerInfo, serverProps, serverJSON, defaults );
+			resolveSiteSettings( serverInfo.name, siteServerInfo, serverProps, serverJSON, defaults, false );
 			serverInfo['sites' ] = [
 				'#serverInfo.name#'	: siteServerInfo
 			];
@@ -1047,7 +1049,6 @@ component accessors="true" singleton {
 			serverInfo.appFileSystemPath = serverInfo.serverHomeDirectory;
 			// Create a custom server folder to house the logs
 			serverInfo.logdir = serverinfo.customServerFolder & "/logs";
-			serverInfo.accessLogBaseName = 'access';
 			serverInfo.accessLogBaseDir = serverInfo.logDir;
 			serverInfo.pidfile = serverInfo.customServerFolder & '/.pid.txt';
 			//serverInfo.predicateFile = serverinfo.customServerFolder & '/.predicateFile.txt';
@@ -1055,6 +1056,7 @@ component accessors="true" singleton {
 			var displayServerName = serverInfo.processName;
 			var displayEngineName = 'WAR';
 		}
+		serverInfo.accessLogBaseName = 'access';
 
 		// Doing this check here instead of the ServerEngineService so it can apply to existing installs
 		if( serverInfo.engineName == 'adobe' ) {
@@ -1070,7 +1072,7 @@ component accessors="true" singleton {
 
 		// logdir is set above and is different for WARs and CF engines
 		serverInfo.consolelogPath = serverInfo.logdir & '/server.out.txt';
-		serverInfo.accessLogPath = serverInfo.logDir & '/access.txt';
+		serverInfo.accessLogPath = serverInfo.logDir & '/#serverInfo.accessLogBaseName#.txt';
 		serverInfo.rewritesLogPath = serverInfo.logDir & '/rewrites.txt';
 
 
@@ -1182,34 +1184,6 @@ component accessors="true" singleton {
 		setServerInfo( serverInfo );
 		// installDetails doesn't exist for a war server
 		interceptorService.announceInterception( 'onServerStart', { serverInfo=serverInfo, serverJSON=serverJSON, defaults=defaults, serverProps=serverProps, serverDetails=serverDetails, installDetails=installDetails ?: {} } );
-
-		// Turn struct of aliases into a comma-delimited list, plus resolve relative paths.
-		// "/foo=C:\path,/bar=C:\another/path"
-		var CLIAliases = '';
-		for( var thisAlias in serverInfo.aliases ) {
-			CLIAliases = CLIAliases.listAppend( thisAlias & '=' & serverInfo.aliases[ thisAlias ] );
-		}
-
-		// Turn struct of mimeTypes into a comma-delimited list
-		// "log;text/plain,foo;content/type"
-		var mimeTypesList = '';
-		for( var thisMime in serverInfo.mimeTypes ) {
-			mimeTypesList = mimeTypesList.listAppend( thisMime & ';' & serverInfo.mimeTypes[ thisMime ] );
-		}
-
-		// Turn struct of errorPages into a comma-delimited list.
-		// --error-pages="404=/path/to/404.html,500=/path/to/500.html,1=/path/to/default.html"
-		var errorPages = '';
-		for( var thisErrorPage in serverInfo.errorPages ) {
-			// "default" turns into "1"
-			var tmp = thisErrorPage == 'default' ? 1 : thisErrorPage;
-			tmp &= '=';
-			// normalize slashes
-			var thisPath = replace( serverInfo.errorPages[ thisErrorPage ], '\', '/', 'all' );
-			// Add leading slash if it doesn't exist.
-			tmp &= thisPath.startsWith( '/' ) ? thisPath : '/' & thisPath;
-			errorPages = errorPages.listAppend( tmp );
-		}
 
 		// Serialize tray options and write to temp file
 		var trayJSON = {
@@ -1612,13 +1586,21 @@ component accessors="true" singleton {
 	/**
 	 *
 	 */
-	function resolveSiteSettings( string name, struct serverInfo, struct serverProps, struct serverJSON, struct defaults ) {
+	function resolveSiteSettings( string name, struct serverInfo, struct serverProps, struct serverJSON, struct defaults, boolean multiSite ) {
 		var site = serverJSON.sites[ name ];
 		var job = wirebox.getInstance( 'interactiveJob' );
 
 		serverInfo.webroot = site.webroot;
 		serverInfo.host = serverProps.host ?: site.host ?: serverJSON.web.host ?: defaults.web.host;
 		serverInfo.hostAlias = site.hostAlias ?: serverJSON.web.hostAlias ?: defaults.web.hostAlias;
+		// TODO: Make this configurable
+		if( multiSite ) {
+			// Access log named after site.
+			serverInfo.accessLogBaseName = 'access' & '-' & name.reReplace( '[^0-9a-zA-Z-\.@]', '', 'all' );
+		} else {
+			serverInfo.accessLogBaseName = 'access';;
+		}
+		serverInfo.accessLogPath = serverInfo.logDir & '/#serverInfo.accessLogBaseName#.txt';
 
 		// Default all the things to make our lives easier
 		serverJSON.web = serverJSON.web ?: {};
