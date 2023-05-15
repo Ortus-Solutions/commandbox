@@ -145,6 +145,7 @@ component accessors="true" singleton {
 				'properties' : d.jvm.properties ?: {}
 			},
 			'sites' : duplicate( d.sites ?: [:] ),
+			'siteConfigFiles' : d.siteConfigFiles ?: '',
 			'web' : {
 				'host' : d.web.host ?: '127.0.0.1',
 				'hostAlias' : d.web.hostAlias ?: '',
@@ -868,36 +869,89 @@ component accessors="true" singleton {
 			}
 		}
 
+		serverJSON.sites = serverJSON.sites ?: {};
+		serverJSON.siteConfigFiles = serverJSON.siteConfigFiles ?: '';
+
+		// Add in any sites defined by siteConfigFiles
+		if( len( serverJSON.siteConfigFiles ) ) {
+			if( isSimpleValue( serverJSON.siteConfigFiles ) ) {
+				serverJSON.siteConfigFiles = serverJSON.siteConfigFiles.listToArray();
+			}
+			// For each globbing pattern
+			serverJSON.siteConfigFiles.each((siteConfigFileGlob)=>{
+				siteConfigFileGlob = fileSystemUtil.resolvePath( siteConfigFileGlob, defaultServerConfigFileDirectory );
+				// If the setting points to a real directory, look for JSON files in there
+				if( directoryExists( siteConfigFileGlob ) ) {
+					siteConfigFileGlob &= '*.json'
+				}
+				wirebox.getInstance( 'Globber' )
+					.setPattern( siteConfigFileGlob )
+					.apply( (siteConfigFile)=>{
+						// For each JSON file
+						if( lCase( siteConfigFile ).endsWith( '.json' ) ) {
+							var site = {};
+							site.siteConfigFile = siteConfigFile;
+							site.siteConfigFileDirectory = getDirectoryFromPath( site.siteConfigFile );
+
+							var siteName = loadSiteConfig( site );
+							serverJSON.sites[ siteName ] = site;
+						}
+					} );
+
+			} );
+		}
+
 		// multi-site mode
-		if( !isNull( serverJSON.sites ) && serverJSON.sites.count() ) {
-			// TODO: disallow bindngs in serverInfo.web
+		if( serverJSON.sites.count() ) {
 
 			serverInfo.multiContext = true;
 			serverInfo['sites' ] = [:];
 			serverJSON.sites.each( ( siteName, site ) => {
 
 				job.start( 'Configuring site [#siteName#]' );
+				if( site.keyExists( 'webroot' ) ) {
+					site.webroot = fileSystemUtil.resolvePath( site.webroot, defaultServerConfigFileDirectory );
+				}
 
 				site.serverConfigFileDirectory = defaultServerConfigFileDirectory;
-				site.siteConfigFile = site.siteConfigFile ?: defaultServerConfigFile;
-				site.siteConfigFileDirectory = getDirectoryFromPath( site.siteConfigFile );
+				// If this site points to an external site config file, load and merge its settings
+				if( len( site.siteConfigFile ?: '' ) ) {
+					// If this site came from our siteCOnfigFiles above, no need to load it again
+					if( !(site.__loaded ?: false ) ) {
+						site.siteConfigFile = fileSystemUtil.resolvePath( site.siteConfigFile, defaultServerConfigFileDirectory );
+						site.siteConfigFileDirectory = getDirectoryFromPath( site.siteConfigFile );
+						loadSiteConfig( site, siteName );
+					}
+				// Otherwise, if we have a webroot, look for a .site.json file by convention in it
+				} else if( len( site.webroot ?: '' ) ) {
+					if( fileExists( site.webroot & '.site.json' ) ) {
+						site.siteConfigFile = site.webroot & '.site.json';
+						site.siteConfigFileDirectory = getDirectoryFromPath( site.siteConfigFile );
+						loadSiteConfig( site, siteName );
+					} else {
+						// The config for this site came only from the server.json
+						site.siteConfigFile = serverInfo.serverConfigFile;
+						site.siteConfigFileDirectory = defaultServerConfigFileDirectory;
+					}
+				// Um, we have no idea what the web root for this site is!
+				} else {
+					throw( message='Site [#siteName#] is missing a "webroot" key.', type="commandException" );
+				}
 
 				var siteServerInfo = newSiteInfoStruct();
 				if( !isNull( serverInfo.sites[ siteName ] ) ) {
 					siteServerInfo.append( serverInfo.sites[ siteName ] );
 				}
+				// The two settings aren't strictly site/web-related but we need them in resolveSiteSettings()
 				siteServerInfo.verbose = serverInfo.verbose;
 				siteServerInfo.logDir = serverInfo.logDir;
 
-				if( isNull( site.webroot ) ) {
-					throw( message='Site [#siteName#] is missing a "webroot" key.', type="commandException" );
-				}
-				site.webroot = fileSystemUtil.resolvePath( site.webroot, site.siteConfigFileDirectory )
 				resolveSiteSettings( siteName, siteServerInfo, serverProps, serverJSON, duplicate( defaults ), true );
 				serverInfo.sites[ siteName ] = siteServerInfo;
 
 				job.complete( serverInfo.verbose );
 			 } );
+
 		} else {
 
 			var site = serverJSON.sites[ serverInfo.name ] = [:];
@@ -1584,6 +1638,30 @@ component accessors="true" singleton {
 	}
 
 	/**
+	 * Load site config from an external file
+	 */
+	function loadSiteConfig( site, siteName ) {
+		if( isNull( site.siteConfigFile ) || !fileExists( site.siteConfigFile ) ) {
+			throw( message='Site config file [#site.siteConfigFile ?: 'not provided'#] doesn''t exist', type="commandException" );
+		}
+
+
+		var siteJSON = readServerJSON( site.siteConfigFile );
+		// TODO: Add interception announcement so dotenv can read site-specific .env files
+		// Also, use a nested command context to encapsulate the site envs
+		siteJSON = systemSettings.expandDeepSystemSettings( siteJSON );
+		// merge in the site settings
+		JSONService.mergeData( site, siteJSON );
+
+		if( !len( site.webroot ?: '' ) ) {
+			// If there is no explicit web root, assume it's where the .site.json file lives
+			site.webroot = getDirectoryFromPath( site.siteConfigFile );
+		}
+		site.__loaded = true;
+		return arguments.siteName ?: site.name ?: getFileFromPath( site.siteConfigFile ).replaceNoCase( '.json', '' );
+	}
+
+	/**
 	 *
 	 */
 	function resolveSiteSettings( string name, struct serverInfo, struct serverProps, struct serverJSON, struct defaults, boolean multiSite ) {
@@ -1593,6 +1671,7 @@ component accessors="true" singleton {
 		serverInfo.webroot = site.webroot;
 		serverInfo.host = serverProps.host ?: site.host ?: serverJSON.web.host ?: defaults.web.host;
 		serverInfo.hostAlias = site.hostAlias ?: serverJSON.web.hostAlias ?: defaults.web.hostAlias;
+		serverInfo.default = site.default ?: false;
 		// TODO: Make this configurable
 		if( multiSite ) {
 			// Access log named after site.
@@ -2137,6 +2216,7 @@ component accessors="true" singleton {
 			return result;
 		};
 		var allBindings = [];
+		var defaultSiteName = '';
 		sites.each( (siteName,site)=>{
 			if( !len( site.hostAlias ) ) {
 				site.hostAlias.append( '*' )
@@ -2174,6 +2254,11 @@ component accessors="true" singleton {
 					}
 				} );
 			} );
+
+			// TODO: Throw error if more than one site is marked as default?
+			if( site.default ?: false && !len( defaultSiteName ) ) {
+				defaultSiteName = siteName;
+			}
 
 		} );
 
@@ -2225,6 +2310,11 @@ component accessors="true" singleton {
 					} );
 
 				} );
+
+			// If there was a site marked as "default"
+			if( len( defaultSiteName ) ) {
+				serverInfo.bindings[ lcase( 'default' ) ] = { 'site' : defaultSiteName };
+			}
 
 		} );
 
@@ -3317,7 +3407,9 @@ component accessors="true" singleton {
 					if( isStruct( dummy ) && dummy.keyExists( 'sites' ) && isStruct( dummy.sites )  && dummy.sites.count() ) {
 						var siteName = dummy.sites.keyArray().first();
 						var userTyped = tokenizedSoFar[1] & ( siteNameSoFar contains '[' ? '' : '.' ) & siteNameSoFar;
-						props = JSONService.addProp( props, userTyped, '[ "sites" ][ "#siteName#" ]', { 'sites' : { '#siteName#' : getDefaultServerJSON().web } } );
+						var siteProperties = getDefaultServerJSON().web;
+						siteProperties.default=false;
+						props = JSONService.addProp( props, userTyped, '[ "sites" ][ "#siteName#" ]', { 'sites' : { '#siteName#' : siteProperties } } );
 					}
 				}
 			}
