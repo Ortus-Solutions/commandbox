@@ -233,37 +233,7 @@ component accessors="true" singleton {
 					}
 				},
 				'mimeTypes' : duplicate( d.web.mimeTypes ?: {} ),
-				'bindings' : duplicate( d.web.bindings ?: {
-					'HTTP' : {
-						'listen' : '',
-						'IP' : '',
-						'port' : '',
-						'host' : ''
-					},
-					'SSL' : {
-						'listen' : '',
-						'IP' : '',
-						'port' : '',
-						'host' : '',
-						// TODO: Allow multipe certs specified in the same binding
-						'certFile' : '',
-						'keyFile' : '',
-						'keyPass' : '',
-						'clientCert' : {
-							'mode' : '',
-							'CACertFiles' : '',
-							'CATrustStoreFile' : '',
-							'CATrustStorePass' : ''
-						}
-					},
-					'AJP' : {
-						'listen' : '',
-						'IP' : '',
-						'port' : '',
-						'host' : '',
-						'secret' : ''
-					}
-				} )
+				'bindings' : duplicate( d.web.bindings ?: {} )
 			},
 			'app' : {
 				'logDir' : d.app.logDir ?: '',
@@ -869,131 +839,6 @@ component accessors="true" singleton {
 			}
 		}
 
-		serverJSON.sites = serverJSON.sites ?: {};
-		serverJSON.siteConfigFiles = serverJSON.siteConfigFiles ?: '';
-
-		// Add in any sites defined by siteConfigFiles
-		if( len( serverJSON.siteConfigFiles ) ) {
-			if( isSimpleValue( serverJSON.siteConfigFiles ) ) {
-				serverJSON.siteConfigFiles = serverJSON.siteConfigFiles.listToArray();
-			}
-			// For each globbing pattern
-			serverJSON.siteConfigFiles.each((siteConfigFileGlob)=>{
-				siteConfigFileGlob = fileSystemUtil.resolvePath( siteConfigFileGlob, defaultServerConfigFileDirectory );
-				// If the setting points to a real directory, look for JSON files in there
-				if( directoryExists( siteConfigFileGlob ) ) {
-					siteConfigFileGlob &= '*.json'
-				}
-				wirebox.getInstance( 'Globber' )
-					.setPattern( siteConfigFileGlob )
-					.apply( (siteConfigFile)=>{
-						// For each JSON file
-						if( lCase( siteConfigFile ).endsWith( '.json' ) ) {
-							var site = {};
-							site.siteConfigFile = siteConfigFile;
-							site.siteConfigFileDirectory = getDirectoryFromPath( site.siteConfigFile );
-
-							var siteName = loadSiteConfig( site );
-							serverJSON.sites[ siteName ] = site;
-						}
-					} );
-
-			} );
-		}
-
-		// multi-site mode
-		if( serverJSON.sites.count() ) {
-
-			serverInfo.multiContext = true;
-			serverInfo['sites' ] = [:];
-			serverJSON.sites.each( ( siteName, site ) => {
-
-				job.start( 'Configuring site [#siteName#]' );
-				if( site.keyExists( 'webroot' ) ) {
-					site.webroot = fileSystemUtil.resolvePath( site.webroot, defaultServerConfigFileDirectory );
-				}
-
-				site.serverConfigFileDirectory = defaultServerConfigFileDirectory;
-				// If this site points to an external site config file, load and merge its settings
-				if( len( site.siteConfigFile ?: '' ) ) {
-					// If this site came from our siteCOnfigFiles above, no need to load it again
-					if( !(site.__loaded ?: false ) ) {
-						site.siteConfigFile = fileSystemUtil.resolvePath( site.siteConfigFile, defaultServerConfigFileDirectory );
-						site.siteConfigFileDirectory = getDirectoryFromPath( site.siteConfigFile );
-						loadSiteConfig( site, siteName );
-					}
-				// Otherwise, if we have a webroot, look for a .site.json file by convention in it
-				} else if( len( site.webroot ?: '' ) ) {
-					if( fileExists( site.webroot & '.site.json' ) ) {
-						site.siteConfigFile = site.webroot & '.site.json';
-						site.siteConfigFileDirectory = getDirectoryFromPath( site.siteConfigFile );
-						loadSiteConfig( site, siteName );
-					} else {
-						// The config for this site came only from the server.json
-						site.siteConfigFile = serverInfo.serverConfigFile;
-						site.siteConfigFileDirectory = defaultServerConfigFileDirectory;
-					}
-				// Um, we have no idea what the web root for this site is!
-				} else {
-					throw( message='Site [#siteName#] is missing a "webroot" key.', type="commandException" );
-				}
-
-				var siteServerInfo = newSiteInfoStruct();
-				if( !isNull( serverInfo.sites[ siteName ] ) ) {
-					siteServerInfo.append( serverInfo.sites[ siteName ] );
-				}
-				// The two settings aren't strictly site/web-related but we need them in resolveSiteSettings()
-				siteServerInfo.verbose = serverInfo.verbose;
-				siteServerInfo.logDir = serverInfo.logDir;
-
-				resolveSiteSettings( siteName, siteServerInfo, serverProps, serverJSON, duplicate( defaults ), true );
-				serverInfo.sites[ siteName ] = siteServerInfo;
-
-				job.complete( serverInfo.verbose );
-			 } );
-
-		} else {
-
-			var site = serverJSON.sites[ serverInfo.name ] = [:];
-			site.serverConfigFileDirectory = defaultServerConfigFileDirectory;
-			site.siteConfigFileDirectory = defaultServerConfigFileDirectory;
-			site.siteConfigFile = defaultServerConfigFile;
-			site.webroot = serverInfo.webroot;
-
-			var siteServerInfo = newSiteInfoStruct();
-			if( !isNull( serverInfo.sites[ serverInfo.name ] ) ) {
-				siteServerInfo.append( serverInfo.sites[ serverInfo.name ] );
-			}
-			siteServerInfo.verbose = serverInfo.verbose;
-			resolveSiteSettings( serverInfo.name, siteServerInfo, serverProps, serverJSON, defaults, false );
-			serverInfo['sites' ] = [
-				'#serverInfo.name#'	: siteServerInfo
-			];
-			// Append these back to the top level for backwards compat
-			serverInfo.append( siteServerInfo )
-		}
-
-		if( !serverInfo.HTTPEnable && !serverInfo.SSLEnable ) {
-			serverInfo.openbrowser = false;
-		}
-
-		buildBindings( serverInfo );
-
-		// Base this on the "first" site for now.
-		var firstSite = serverInfo.sites[ serverInfo.sites.keyArray().last() ];
-		serverInfo.defaultBaseURL = serverInfo.SSLEnable ? 'https://#firstSite.host#:#firstSite.SSLPort#' : 'http://#firstSite.host#:#firstSite.port#';
-
-		// If there's no open URL, let's create a complete one
-		if( !serverInfo.openbrowserURL.len() ) {
-			serverInfo.openbrowserURL = serverInfo.defaultBaseURL;
-		// Partial URL like /admin/login.cm
-		} else if ( left( serverInfo.openbrowserURL, 4 ) != 'http' ) {
-			if( !serverInfo.openbrowserURL.startsWith( '/' ) ) {
-				serverInfo.openbrowserURL = '/' & serverInfo.openbrowserURL;
-			}
-			serverInfo.openbrowserURL = serverInfo.defaultBaseURL & serverInfo.openbrowserURL;
-		}
-
 		if( !len( serverInfo.WARPath ) && !len( serverInfo.cfengine ) ) {
 			// Turn 1.2.3.4 into 1.2.3+4
 			serverInfo.cfengine =  serverEngineService.getCLIEngineName() & '@' & reReplace( server.lucee.version, '([0-9]*.[0-9]*.[0-9]*)(.)([0-9]*)', '\1+\3' );
@@ -1110,7 +955,134 @@ component accessors="true" singleton {
 			var displayServerName = serverInfo.processName;
 			var displayEngineName = 'WAR';
 		}
+
 		serverInfo.accessLogBaseName = 'access';
+		serverJSON.sites = serverJSON.sites ?: {};
+		serverJSON.siteConfigFiles = serverJSON.siteConfigFiles ?: '';
+
+		// Add in any sites defined by siteConfigFiles
+		if( len( serverJSON.siteConfigFiles ) ) {
+			if( isSimpleValue( serverJSON.siteConfigFiles ) ) {
+				serverJSON.siteConfigFiles = serverJSON.siteConfigFiles.listToArray();
+			}
+			// For each globbing pattern
+			serverJSON.siteConfigFiles.each((siteConfigFileGlob)=>{
+				siteConfigFileGlob = fileSystemUtil.resolvePath( siteConfigFileGlob, defaultServerConfigFileDirectory );
+				// If the setting points to a real directory, look for JSON files in there
+				if( directoryExists( siteConfigFileGlob ) ) {
+					siteConfigFileGlob &= '*.json'
+				}
+				wirebox.getInstance( 'Globber' )
+					.setPattern( siteConfigFileGlob )
+					.apply( (siteConfigFile)=>{
+						// For each JSON file
+						if( lCase( siteConfigFile ).endsWith( '.json' ) ) {
+							var site = {};
+							site.siteConfigFile = siteConfigFile;
+							site.siteConfigFileDirectory = getDirectoryFromPath( site.siteConfigFile );
+
+							var siteName = loadSiteConfig( site );
+							serverJSON.sites[ siteName ] = site;
+						}
+					} );
+
+			} );
+		}
+
+		// multi-site mode
+		if( serverJSON.sites.count() ) {
+
+			serverInfo.multiContext = true;
+			serverInfo['sites' ] = [:];
+			serverJSON.sites.each( ( siteName, site ) => {
+
+				job.start( 'Configuring site [#siteName#]' );
+				if( site.keyExists( 'webroot' ) ) {
+					site.webroot = fileSystemUtil.resolvePath( site.webroot, defaultServerConfigFileDirectory );
+				}
+
+				site.serverConfigFileDirectory = defaultServerConfigFileDirectory;
+				// If this site points to an external site config file, load and merge its settings
+				if( len( site.siteConfigFile ?: '' ) ) {
+					// If this site came from our siteCOnfigFiles above, no need to load it again
+					if( !(site.__loaded ?: false ) ) {
+						site.siteConfigFile = fileSystemUtil.resolvePath( site.siteConfigFile, defaultServerConfigFileDirectory );
+						site.siteConfigFileDirectory = getDirectoryFromPath( site.siteConfigFile );
+						loadSiteConfig( site, siteName );
+					}
+				// Otherwise, if we have a webroot, look for a .site.json file by convention in it
+				} else if( len( site.webroot ?: '' ) ) {
+					if( fileExists( site.webroot & '.site.json' ) ) {
+						site.siteConfigFile = site.webroot & '.site.json';
+						site.siteConfigFileDirectory = getDirectoryFromPath( site.siteConfigFile );
+						loadSiteConfig( site, siteName );
+					} else {
+						// The config for this site came only from the server.json
+						site.siteConfigFile = serverInfo.serverConfigFile;
+						site.siteConfigFileDirectory = defaultServerConfigFileDirectory;
+					}
+				// Um, we have no idea what the web root for this site is!
+				} else {
+					throw( message='Site [#siteName#] is missing a "webroot" key.', type="commandException" );
+				}
+
+				var siteServerInfo = newSiteInfoStruct();
+				if( !isNull( serverInfo.sites[ siteName ] ) ) {
+					siteServerInfo.append( serverInfo.sites[ siteName ] );
+				}
+				// The two settings aren't strictly site/web-related but we need them in resolveSiteSettings()
+				siteServerInfo.verbose = serverInfo.verbose;
+				siteServerInfo.logDir = serverInfo.logDir;
+
+				resolveSiteSettings( siteName, siteServerInfo, serverProps, serverJSON, duplicate( defaults ), true );
+				serverInfo.sites[ siteName ] = siteServerInfo;
+
+				job.complete( serverInfo.verbose );
+			 } );
+
+		} else {
+
+			var site = serverJSON.sites[ serverInfo.name ] = [:];
+			site.serverConfigFileDirectory = defaultServerConfigFileDirectory;
+			site.siteConfigFileDirectory = defaultServerConfigFileDirectory;
+			site.siteConfigFile = defaultServerConfigFile;
+			site.webroot = serverInfo.webroot;
+
+			var siteServerInfo = newSiteInfoStruct();
+			if( !isNull( serverInfo.sites[ serverInfo.name ] ) ) {
+				siteServerInfo.append( serverInfo.sites[ serverInfo.name ] );
+			}
+			siteServerInfo.verbose = serverInfo.verbose;
+			siteServerInfo.logDir = serverInfo.logDir;
+			resolveSiteSettings( serverInfo.name, siteServerInfo, serverProps, serverJSON, defaults, false );
+			serverInfo['sites' ] = [
+				'#serverInfo.name#'	: siteServerInfo
+			];
+			// Append these back to the top level for backwards compat
+			serverInfo.append( siteServerInfo )
+		}
+
+		if( !serverInfo.HTTPEnable && !serverInfo.SSLEnable ) {
+			serverInfo.openbrowser = false;
+		}
+
+		buildBindings( serverInfo );
+
+		// Base this on the "first" site for now.
+		var firstSite = serverInfo.sites[ serverInfo.sites.keyArray().last() ];
+		serverInfo.defaultBaseURL = serverInfo.SSLEnable ? 'https://#firstSite.host#:#firstSite.SSLPort#' : 'http://#firstSite.host#:#firstSite.port#';
+
+		// If there's no open URL, let's create a complete one
+		if( !serverInfo.openbrowserURL.len() ) {
+			serverInfo.openbrowserURL = serverInfo.defaultBaseURL;
+		// Partial URL like /admin/login.cm
+		} else if ( left( serverInfo.openbrowserURL, 4 ) != 'http' ) {
+			if( !serverInfo.openbrowserURL.startsWith( '/' ) ) {
+				serverInfo.openbrowserURL = '/' & serverInfo.openbrowserURL;
+			}
+			serverInfo.openbrowserURL = serverInfo.defaultBaseURL & serverInfo.openbrowserURL;
+		}
+
 
 		// Doing this check here instead of the ServerEngineService so it can apply to existing installs
 		if( serverInfo.engineName == 'adobe' ) {
@@ -1642,7 +1614,7 @@ component accessors="true" singleton {
 	 */
 	function loadSiteConfig( site, siteName ) {
 		if( isNull( site.siteConfigFile ) || !fileExists( site.siteConfigFile ) ) {
-			throw( message='Site config file [#site.siteConfigFile ?: 'not provided'#] doesn''t exist', type="commandException" );
+			throw( message='Site config file [#site.siteConfigFile ?: 'not provided'#] doesn''t exist', type="commandExceptiond" );
 		}
 
 
@@ -1652,6 +1624,10 @@ component accessors="true" singleton {
 		siteJSON = systemSettings.expandDeepSystemSettings( siteJSON );
 		// merge in the site settings
 		JSONService.mergeData( site, siteJSON );
+
+		if( siteJSON.keyExists( 'webroot' ) ) {
+			site.webroot = fileSystemUtil.resolvePath( siteJSON.webroot, site.siteConfigFileDirectory );
+		}
 
 		if( !len( site.webroot ?: '' ) ) {
 			// If there is no explicit web root, assume it's where the .site.json file lives
@@ -1703,9 +1679,7 @@ component accessors="true" singleton {
 		site.bindings.http.append( serverJSON.web.bindings.http, true ).append( defaults.web.bindings.http, true );
 		site.bindings.ssl.append( serverJSON.web.bindings.ssl, true ).append( defaults.web.bindings.ssl, true );
 		site.bindings.ajp.append( serverJSON.web.bindings.ajp, true ).append( defaults.web.bindings.ajp, true );
-
-
-		serverInfo.bindings = site.bindings ?: serverJSON.web.bindings ?: defaults.web.bindings;
+		serverInfo.bindings = site.bindings;
 
 		if( isSimpleValue( serverInfo.hostAlias ) ) {
 			serverInfo.hostAlias = serverInfo.hostAlias.listToArray();
@@ -1722,11 +1696,12 @@ component accessors="true" singleton {
 		// TODO: if( val( serverInfo.port ) == 0 || !isPortAvailable( serverInfo.host, serverInfo.port ) ) { serverInfo.delete( 'port' ); }
 
 		// If no bindings are provided, default HTTP to enabled (compat)
-		serverInfo.HTTPEnable = serverProps.HTTPEnable ?: site.HTTP.enable ?: serverJSON.web.HTTP.enable ?: defaults.web.HTTP.enable ?: ( serverInfo.bindings.len()==0 );
+		var hasModernBindings = serverInfo.bindings.http.len() || serverInfo.bindings.ssl.len() || serverInfo.bindings.ajp.len();
+		serverInfo.HTTPEnable = serverProps.HTTPEnable ?: site.HTTP.enable ?: serverJSON.web.HTTP.enable ?: defaults.web.HTTP.enable ?: !hasModernBindings;
 		serverInfo.HTTP2Enable = site.HTTP2.enable ?: serverJSON.web.HTTP2.enable ?: defaults.web.HTTP2.enable;
 
 		// Port is the only setting that automatically carries over without being specified since it's random.
-		serverInfo['port'] = serverProps.port ?: site.http.port ?: serverJSON.web.http.port ?: serverInfo.sites[ name ].http.port	?: defaults.web.http.port;
+		serverInfo['port'] = serverProps.port ?: site.http.port ?: serverJSON.web.http.port ?: serverInfo.port	?: defaults.web.http.port;
 		serverInfo.port = val( serverInfo.port );
 		// Server default is 0 not null.
 		if( serverInfo.port == 0 && serverInfo.HTTPEnable ) {
@@ -3378,6 +3353,42 @@ component accessors="true" singleton {
 					}
 				}
 			} );
+			props = JSONService.addProp( props, '', '', {
+				'web' : {
+					'bindings' : {
+						'HTTP' : {
+							'listen' : '',
+							'IP' : '',
+							'port' : '',
+							'host' : ''
+						},
+						'SSL' : {
+							'listen' : '',
+							'IP' : '',
+							'port' : '',
+							'host' : '',
+							// TODO: Allow multipe certs specified in the same binding
+							'certFile' : '',
+							'keyFile' : '',
+							'keyPass' : '',
+							'clientCert' : {
+								'mode' : '',
+								'CACertFiles' : '',
+								'CATrustStoreFile' : '',
+								'CATrustStorePass' : ''
+							}
+						},
+						'AJP' : {
+							'listen' : '',
+							'IP' : '',
+							'port' : '',
+							'host' : '',
+							'secret' : ''
+						}
+					}
+				}
+			} );
+
 			// Suggest server scripts
 			props = JSONService.addProp( props, '', '', {
 				'scripts' : {
