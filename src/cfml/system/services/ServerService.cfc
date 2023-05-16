@@ -866,6 +866,116 @@ component accessors="true" singleton {
 
 		var processName = ( serverInfo.name is "" ? "CommandBox" : serverInfo.name );
 
+		serverJSON.sites = serverJSON.sites ?: {};
+		serverJSON.siteConfigFiles = serverJSON.siteConfigFiles ?: '';
+
+		// Add in any sites defined by siteConfigFiles
+		if( len( serverJSON.siteConfigFiles ) ) {
+			if( isSimpleValue( serverJSON.siteConfigFiles ) ) {
+				serverJSON.siteConfigFiles = serverJSON.siteConfigFiles.listToArray();
+			}
+			// For each globbing pattern
+			serverJSON.siteConfigFiles.each((siteConfigFileGlob)=>{
+				siteConfigFileGlob = fileSystemUtil.resolvePath( siteConfigFileGlob, defaultServerConfigFileDirectory );
+				// If the setting points to a real directory, look for JSON files in there
+				if( directoryExists( siteConfigFileGlob ) ) {
+					siteConfigFileGlob &= '*.json'
+				}
+				wirebox.getInstance( 'Globber' )
+					.setPattern( siteConfigFileGlob )
+					.apply( (siteConfigFile)=>{
+						// For each JSON file
+						if( lCase( siteConfigFile ).endsWith( '.json' ) ) {
+							var site = {};
+							site.siteConfigFile = siteConfigFile;
+							site.siteConfigFileDirectory = getDirectoryFromPath( site.siteConfigFile );
+
+							var siteName = loadSiteConfig( site );
+							serverJSON.sites[ siteName ] = site;
+						}
+					} );
+
+			} );
+		}
+
+		// multi-site mode
+		if( serverJSON.sites.count() ) {
+
+			serverInfo.multiContext = true;
+			serverInfo['sites' ] = [:];
+			serverJSON.sites.each( ( siteName, site ) => {
+
+				job.start( 'Configuring site [#siteName#]' );
+				if( site.keyExists( 'webroot' ) ) {
+					site.webroot = fileSystemUtil.resolvePath( site.webroot, defaultServerConfigFileDirectory );
+				}
+
+				site.serverConfigFileDirectory = defaultServerConfigFileDirectory;
+				// If this site points to an external site config file, load and merge its settings
+				if( len( site.siteConfigFile ?: '' ) ) {
+					// If this site came from our siteCOnfigFiles above, no need to load it again
+					if( !(site.__loaded ?: false ) ) {
+						site.siteConfigFile = fileSystemUtil.resolvePath( site.siteConfigFile, defaultServerConfigFileDirectory );
+						site.siteConfigFileDirectory = getDirectoryFromPath( site.siteConfigFile );
+						loadSiteConfig( site, siteName );
+					}
+				// Otherwise, if we have a webroot, look for a .site.json file by convention in it
+				} else if( len( site.webroot ?: '' ) ) {
+					if( fileExists( site.webroot & '.site.json' ) ) {
+						site.siteConfigFile = site.webroot & '.site.json';
+						site.siteConfigFileDirectory = getDirectoryFromPath( site.siteConfigFile );
+						loadSiteConfig( site, siteName );
+					} else {
+						// The config for this site came only from the server.json
+						site.siteConfigFile = serverInfo.serverConfigFile;
+						site.siteConfigFileDirectory = defaultServerConfigFileDirectory;
+					}
+				// Um, we have no idea what the web root for this site is!
+				} else {
+					throw( message='Site [#siteName#] is missing a "webroot" key.', type="commandException" );
+				}
+
+				var siteServerInfo = newSiteInfoStruct();
+				if( !isNull( serverInfo.sites[ siteName ] ) ) {
+					siteServerInfo.append( serverInfo.sites[ siteName ] );
+				}
+				// The two settings aren't strictly site/web-related but we need them in resolveSiteSettings()
+				siteServerInfo.verbose = serverInfo.verbose;
+
+				resolveSiteSettings( siteName, siteServerInfo, serverProps, serverJSON, duplicate( defaults ), true );
+				serverInfo.sites[ siteName ] = siteServerInfo;
+
+				job.complete( serverInfo.verbose );
+			 } );
+
+		} else {
+
+			var site = serverJSON.sites[ serverInfo.name ] = [:];
+			site.serverConfigFileDirectory = defaultServerConfigFileDirectory;
+			site.siteConfigFileDirectory = defaultServerConfigFileDirectory;
+			site.siteConfigFile = defaultServerConfigFile;
+			site.webroot = serverInfo.webroot;
+
+			var siteServerInfo = newSiteInfoStruct();
+			if( !isNull( serverInfo.sites[ serverInfo.name ] ) ) {
+				siteServerInfo.append( serverInfo.sites[ serverInfo.name ] );
+			}
+			siteServerInfo.verbose = serverInfo.verbose;
+
+			resolveSiteSettings( serverInfo.name, siteServerInfo, serverProps, serverJSON, defaults, false );
+			serverInfo['sites' ] = [
+				'#serverInfo.name#'	: siteServerInfo
+			];
+			// Append these back to the top level for backwards compat
+			serverInfo.append( siteServerInfo )
+		}
+
+		if( !serverInfo.HTTPEnable && !serverInfo.SSLEnable ) {
+			serverInfo.openbrowser = false;
+		}
+
+		buildBindings( serverInfo );
+
 	    // As long as there's no WAR Path, let's install the engine to use.
 		if( serverInfo.WARPath == '' ){
 			// This will install the engine war to start, possibly downloading it first
@@ -957,116 +1067,8 @@ component accessors="true" singleton {
 		}
 
 		serverInfo.accessLogBaseName = 'access';
-		serverJSON.sites = serverJSON.sites ?: {};
-		serverJSON.siteConfigFiles = serverJSON.siteConfigFiles ?: '';
-
-		// Add in any sites defined by siteConfigFiles
-		if( len( serverJSON.siteConfigFiles ) ) {
-			if( isSimpleValue( serverJSON.siteConfigFiles ) ) {
-				serverJSON.siteConfigFiles = serverJSON.siteConfigFiles.listToArray();
-			}
-			// For each globbing pattern
-			serverJSON.siteConfigFiles.each((siteConfigFileGlob)=>{
-				siteConfigFileGlob = fileSystemUtil.resolvePath( siteConfigFileGlob, defaultServerConfigFileDirectory );
-				// If the setting points to a real directory, look for JSON files in there
-				if( directoryExists( siteConfigFileGlob ) ) {
-					siteConfigFileGlob &= '*.json'
-				}
-				wirebox.getInstance( 'Globber' )
-					.setPattern( siteConfigFileGlob )
-					.apply( (siteConfigFile)=>{
-						// For each JSON file
-						if( lCase( siteConfigFile ).endsWith( '.json' ) ) {
-							var site = {};
-							site.siteConfigFile = siteConfigFile;
-							site.siteConfigFileDirectory = getDirectoryFromPath( site.siteConfigFile );
-
-							var siteName = loadSiteConfig( site );
-							serverJSON.sites[ siteName ] = site;
-						}
-					} );
-
-			} );
-		}
-
-		// multi-site mode
-		if( serverJSON.sites.count() ) {
-
-			serverInfo.multiContext = true;
-			serverInfo['sites' ] = [:];
-			serverJSON.sites.each( ( siteName, site ) => {
-
-				job.start( 'Configuring site [#siteName#]' );
-				if( site.keyExists( 'webroot' ) ) {
-					site.webroot = fileSystemUtil.resolvePath( site.webroot, defaultServerConfigFileDirectory );
-				}
-
-				site.serverConfigFileDirectory = defaultServerConfigFileDirectory;
-				// If this site points to an external site config file, load and merge its settings
-				if( len( site.siteConfigFile ?: '' ) ) {
-					// If this site came from our siteCOnfigFiles above, no need to load it again
-					if( !(site.__loaded ?: false ) ) {
-						site.siteConfigFile = fileSystemUtil.resolvePath( site.siteConfigFile, defaultServerConfigFileDirectory );
-						site.siteConfigFileDirectory = getDirectoryFromPath( site.siteConfigFile );
-						loadSiteConfig( site, siteName );
-					}
-				// Otherwise, if we have a webroot, look for a .site.json file by convention in it
-				} else if( len( site.webroot ?: '' ) ) {
-					if( fileExists( site.webroot & '.site.json' ) ) {
-						site.siteConfigFile = site.webroot & '.site.json';
-						site.siteConfigFileDirectory = getDirectoryFromPath( site.siteConfigFile );
-						loadSiteConfig( site, siteName );
-					} else {
-						// The config for this site came only from the server.json
-						site.siteConfigFile = serverInfo.serverConfigFile;
-						site.siteConfigFileDirectory = defaultServerConfigFileDirectory;
-					}
-				// Um, we have no idea what the web root for this site is!
-				} else {
-					throw( message='Site [#siteName#] is missing a "webroot" key.', type="commandException" );
-				}
-
-				var siteServerInfo = newSiteInfoStruct();
-				if( !isNull( serverInfo.sites[ siteName ] ) ) {
-					siteServerInfo.append( serverInfo.sites[ siteName ] );
-				}
-				// The two settings aren't strictly site/web-related but we need them in resolveSiteSettings()
-				siteServerInfo.verbose = serverInfo.verbose;
-				siteServerInfo.logDir = serverInfo.logDir;
-
-				resolveSiteSettings( siteName, siteServerInfo, serverProps, serverJSON, duplicate( defaults ), true );
-				serverInfo.sites[ siteName ] = siteServerInfo;
-
-				job.complete( serverInfo.verbose );
-			 } );
-
-		} else {
-
-			var site = serverJSON.sites[ serverInfo.name ] = [:];
-			site.serverConfigFileDirectory = defaultServerConfigFileDirectory;
-			site.siteConfigFileDirectory = defaultServerConfigFileDirectory;
-			site.siteConfigFile = defaultServerConfigFile;
-			site.webroot = serverInfo.webroot;
-
-			var siteServerInfo = newSiteInfoStruct();
-			if( !isNull( serverInfo.sites[ serverInfo.name ] ) ) {
-				siteServerInfo.append( serverInfo.sites[ serverInfo.name ] );
-			}
-			siteServerInfo.verbose = serverInfo.verbose;
-			siteServerInfo.logDir = serverInfo.logDir;
-			resolveSiteSettings( serverInfo.name, siteServerInfo, serverProps, serverJSON, defaults, false );
-			serverInfo['sites' ] = [
-				'#serverInfo.name#'	: siteServerInfo
-			];
-			// Append these back to the top level for backwards compat
-			serverInfo.append( siteServerInfo )
-		}
-
-		if( !serverInfo.HTTPEnable && !serverInfo.SSLEnable ) {
-			serverInfo.openbrowser = false;
-		}
-
-		buildBindings( serverInfo );
+		// This can't be done until the server homes are created above.
+		serverInfo.sites.each( (siteName,site)=>site.accessLogPath = serverInfo.logDir & '/#site.accessLogBaseName#.txt' );
 
 		// Base this on the "first" site for now.
 		var firstSite = serverInfo.sites[ serverInfo.sites.keyArray().last() ];
@@ -1655,7 +1657,6 @@ component accessors="true" singleton {
 		} else {
 			serverInfo.accessLogBaseName = 'access';;
 		}
-		serverInfo.accessLogPath = serverInfo.logDir & '/#serverInfo.accessLogBaseName#.txt';
 
 		// Default all the things to make our lives easier
 		serverJSON.web = serverJSON.web ?: {};
@@ -2664,15 +2665,10 @@ component accessors="true" singleton {
 
 		var args = [
 			variables.javaCommand,
-			'-jar',
+			'-cp',
 			variables.jarPath,
-			'-stop',
-			'--stop-port',
-			val( serverInfo.stopsocket ),
-			'-host',
-			arguments.serverInfo.host,
-			'--background',
-			'false'
+			'runwar.Stop',
+			serverInfo.serverInfoJSON
 		];
 		var results = { error = false, messages = "" };
 
