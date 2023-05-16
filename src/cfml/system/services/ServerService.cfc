@@ -34,6 +34,7 @@ component accessors="true" singleton {
 	property name='rewritesDefaultConfig'	inject='rewritesDefaultConfig@constants';
 	property name='interceptorService'		inject='interceptorService';
 	property name='configService'			inject='ConfigService';
+	property name='CommandService'			inject='provider:CommandService';
 	property name='JSONService'				inject='JSONService';
 	property name='packageService'			inject='packageService';
 	property name='serverEngineService'		inject='serverEngineService';
@@ -120,7 +121,7 @@ component accessors="true" singleton {
 		return {
 			'name' : d.name ?: '',
 			'preferredBrowser' : d.preferredBrowser ?: '',
-			'openBrowser' : d.openBrowser ?: true,
+			'openBrowser' : d.openBrowser ?: nullValue(),
 			'openBrowserURL' : d.openBrowserURL ?: '',
 			'startTimeout' : 240,
 			'stopsocket' : d.stopsocket ?: 0,
@@ -610,7 +611,6 @@ component accessors="true" singleton {
 		serverInfo.debug 			= serverProps.debug 			?: serverJSON.debug 				?: defaults.debug;
 		serverInfo.verbose 			= serverProps.verbose 			?: serverJSON.verbose 				?: defaults.verbose;
 		serverInfo.console 			= serverProps.console 			?: serverJSON.console 				?: defaults.console;
-		serverInfo.openbrowser		= serverProps.openbrowser 		?: serverJSON.openbrowser			?: defaults.openbrowser;
 
 		serverInfo.openbrowserURL	= serverProps.openbrowserURL	?: serverJSON.openbrowserURL		?: defaults.openbrowserURL;
 		serverInfo.preferredBrowser	= serverJSON.preferredBrowser	?: defaults.preferredBrowser;
@@ -897,9 +897,11 @@ component accessors="true" singleton {
 
 			} );
 		}
+		serverInfo.multiSite = serverJSON.sites.count() > 0;
+		serverInfo.openbrowser = serverProps.openbrowser ?: serverJSON.openbrowser ?: defaults.openbrowser ?: !serverInfo.multiSite;
 
 		// multi-site mode
-		if( serverJSON.sites.count() ) {
+		if( serverInfo.multiSite ) {
 
 			serverInfo.multiContext = true;
 			serverInfo['sites' ] = [:];
@@ -1068,7 +1070,38 @@ component accessors="true" singleton {
 
 		serverInfo.accessLogBaseName = 'access';
 		// This can't be done until the server homes are created above.
-		serverInfo.sites.each( (siteName,site)=>site.accessLogPath = serverInfo.logDir & '/#site.accessLogBaseName#.txt' );
+		serverInfo.sites.each( (siteName,site)=>{
+			site.accessLogPath = serverInfo.logDir & '/#site.accessLogBaseName#.txt'
+			site.defaultBaseURL='';
+			site.openbrowserURL='';
+			for( var bindingName in serverInfo.bindings.filter( (n,b)=>n!='default' && b.type=='ssl' && b.site==siteName ) ) {
+				var binding = serverInfo.bindings[ bindingName ];
+				site.defaultBaseURL = 'https://#(binding.host != '*' ? binding.host : binding.IP )#:#binding.port#'.replace( '0.0.0.0', '127.0.0.1' );
+				break;
+			}
+			if( !len( site.defaultBaseURL ) ) {
+				for( var bindingName in serverInfo.bindings.filter( (n,b)=>n!='default' && b.type=='http' && b.site==siteName ) ) {
+					var binding = serverInfo.bindings[ bindingName ];
+					site.defaultBaseURL = 'http://#(binding.host != '*' ? binding.host : binding.IP )#:#binding.port#'.replace( '0.0.0.0', '127.0.0.1' );
+					break;
+				}
+			}
+			// If there's no open URL, let's create a complete one
+			if( !site.openbrowserURL.len() ) {
+				site.openbrowserURL = site.defaultBaseURL;
+			// Partial URL like /admin/login.cm
+			} else if ( left( site.openbrowserURL, 4 ) != 'http' ) {
+				if( !serverInfo.openbrowserURL.startsWith( '/' ) ) {
+					site.openbrowserURL = '/' & site.openbrowserURL;
+				}
+				if( len( site.defaultBaseURL ) ) {
+					site.openbrowserURL = site.defaultBaseURL & site.openbrowserURL;
+				} else {
+					site.openbrowserURL = '';
+				}
+			}
+
+		} );
 
 		// Base this on the "first" site for now.
 		var firstSite = serverInfo.sites[ serverInfo.sites.keyArray().last() ];
@@ -1164,36 +1197,78 @@ component accessors="true" singleton {
 
 		var tempOptions = [];
 		serverInfo.trayOptions = [];
-		tempOptions.prepend(
-			{
-				"label":"Info",
-				"items": [
-					{ "label" : "Engine: " & displayEngineName, "disabled" : true },
-					{ "label" : "Webroot: " & appFileSystemPathDisplay, "action" : "openfilesystem", "path" : serverInfo.appFileSystemPath, 'image' : expandPath('/commandbox/system/config/server-icons/folder.png' ) },
-					{ "label" : "URL: " & serverInfo.defaultBaseURL, 'action':'openbrowser', 'url': serverInfo.defaultBaseURL, 'image' : expandPath('/commandbox/system/config/server-icons/home.png' ) },
-					{ "label" : "PID: ${runwar.PID}", "disabled" : true  },
-					{ "label" : "Heap: #( len( serverInfo.heapSize ) ? serverInfo.heapSize : 'Not set' )#", "disabled" : true  }
-				],
-				"image" : expandPath('/commandbox/system/config/server-icons/info.png' )
-			} );
+
+		var mEngine = { "label" : "Engine: " & displayEngineName, "disabled" : true };
+		var mWebroot = { "label" : "Webroot: " & appFileSystemPathDisplay, "action" : "openfilesystem", "path" : serverInfo.appFileSystemPath, 'image' : expandPath('/commandbox/system/config/server-icons/folder.png' ) };
+		var mURL = { "label" : "URL: " & serverInfo.defaultBaseURL, 'action':'openbrowser', 'url': serverInfo.defaultBaseURL, 'image' : expandPath('/commandbox/system/config/server-icons/home.png' ) };
+		var mPID = { "label" : "PID: ${runwar.PID}", "disabled" : true  };
+		var mHeap = { "label" : "Heap: #( len( serverInfo.heapSize ) ? serverInfo.heapSize : 'Not set' )#", "disabled" : true  };
+		if( serverInfo.multiSite ) {
+			tempOptions.prepend(
+				{
+					"label":"Info",
+					"items": [
+						mEngine,
+						mPID,
+						mHeap
+					],
+					"image" : expandPath('/commandbox/system/config/server-icons/info.png' )
+				} );
+		} else {
+			tempOptions.prepend(
+				{
+					"label":"Info",
+					"items": [
+						mEngine,
+						mWebroot,
+						mURL,
+						mPID,
+						mHeap
+					],
+					"image" : expandPath('/commandbox/system/config/server-icons/info.png' )
+				} );
+		}
 
 		var openItems = [];
 	    if( serverInfo.engineName contains "lucee" ) {
-			openItems.prepend( { 'label':'Web Admin', 'action':'openbrowser', 'url':'#serverInfo.defaultBaseURL#/lucee/admin/web.cfm', 'image' : expandPath('/commandbox/system/config/server-icons/web_settings.png' ) } );
+			if( !serverInfo.multiSite ){
+				openItems.prepend( { 'label':'Web Admin', 'action':'openbrowser', 'url':'#serverInfo.defaultBaseURL#/lucee/admin/web.cfm', 'image' : expandPath('/commandbox/system/config/server-icons/web_settings.png' ) } );
+			}
 			openItems.prepend( { 'label':'Server Admin', 'action':'openbrowser', 'url':'#serverInfo.defaultBaseURL#/lucee/admin/server.cfm', 'image' : expandPath('/commandbox/system/config/server-icons/server_settings.png' ) } );
 		} else if( serverInfo.engineName contains "railo" ) {
-			openItems.prepend( { 'label':'Web Admin', 'action':'openbrowser', 'url':'#serverInfo.defaultBaseURL#/railo-context/admin/web.cfm', 'image' : expandPath('/commandbox/system/config/server-icons/web_settings.png' ) } );
-			openItems.prepend( { 'label':'Server Admin', 'action':'openbrowser', 'url':'#serverInfo.defaultBaseURL#/railo-context/admin/server.cfm', 'image' : expandPath('/commandbox/system/config/server-icons/server_settings.png' ) } );
+			if( !serverInfo.multiSite ){
+				openItems.prepend( { 'label':'Web Admin', 'action':'openbrowser', 'url':'#serverInfo.defaultBaseURL#/railo-context/admin/web.cfm', 'image' : expandPath('/commandbox/system/config/server-icons/web_settings.png' ) } );
+			}
+				openItems.prepend( { 'label':'Server Admin', 'action':'openbrowser', 'url':'#serverInfo.defaultBaseURL#/railo-context/admin/server.cfm', 'image' : expandPath('/commandbox/system/config/server-icons/server_settings.png' ) } );
 		} else if( serverInfo.engineName contains "adobe" ) {
 			openItems.prepend( { 'label':'Server Admin', 'action':'openbrowser', 'url':'#serverInfo.defaultBaseURL#/CFIDE/administrator/enter.cfm', 'image' : expandPath('/commandbox/system/config/server-icons/server_settings.png' ) } );
 		}
-
-		openItems.prepend( { 'label':'Site Home', 'action':'openbrowser', 'url': serverInfo.openbrowserURL, 'image' : expandPath('/commandbox/system/config/server-icons/home.png' ) } );
-
+		if( !serverInfo.multiSite ){
+			openItems.prepend( { 'label':'Site Home', 'action':'openbrowser', 'url': serverInfo.openbrowserURL, 'image' : expandPath('/commandbox/system/config/server-icons/home.png' ) } );
+		}
 		openItems.prepend( { "label" : "Server Home", "action" : "openfilesystem", "path" : serverInfo.serverHomeDirectory, "image" : expandPath('/commandbox/system/config/server-icons/folder.png' ) } );
-
-		openItems.prepend( { "label" : "Webroot", "action" : "openfilesystem", "path" : serverInfo.appFileSystemPath, "image" : expandPath('/commandbox/system/config/server-icons/folder.png' ) } );
-
+		if( !serverInfo.multiSite ){
+			openItems.prepend( { "label" : "Webroot", "action" : "openfilesystem", "path" : serverInfo.appFileSystemPath, "image" : expandPath('/commandbox/system/config/server-icons/folder.png' ) } );
+		}
+		if( serverInfo.multiSite ){
+			var sitesItems = [];
+			serverInfo.sites.each( (siteName,site)=>{
+				var siteItems = { "label" : siteName, "items" : [], "image" : expandPath('/commandbox/system/config/server-icons/site.png' ) };
+				if( len( site.openbrowserURL ) ) {
+					siteItems.items.append( { 'label':'Site Home', 'action':'openbrowser', 'url': site.openbrowserURL, 'image' : expandPath('/commandbox/system/config/server-icons/home.png' ) } );
+					if( serverInfo.engineName contains "lucee" ) {
+						siteItems.items.append( { 'label':'Web Admin', 'action':'openbrowser', 'url':'#site.defaultBaseURL#/lucee/admin/web.cfm', 'image' : expandPath('/commandbox/system/config/server-icons/web_settings.png' ) } );
+					}
+					if( serverInfo.engineName contains "railo" ) {
+						siteItems.items.append( { 'label':'Web Admin', 'action':'openbrowser', 'url':'#site.defaultBaseURL#/railo-context/admin/web.cfm', 'image' : expandPath('/commandbox/system/config/server-icons/web_settings.png' ) } );
+					}
+				} else {
+					siteItems.items.append( { 'label':'Site Home (No HTTP bindings)', 'disabled' : true, 'image' : expandPath('/commandbox/system/config/server-icons/home.png' ) } );
+				}
+				siteItems.items.append( { "label" : "Webroot", "action" : "openfilesystem", "path" : site.webroot, "image" : expandPath('/commandbox/system/config/server-icons/folder.png' ) } );
+				openItems.append( siteItems );
+			} );
+		}
 		tempOptions.prepend( { 'label':'Open...', 'items': openItems, "image" : expandPath('/commandbox/system/config/server-icons/open.png' ) } );
 
 		tempOptions.prepend( { 'label' : 'Restart Server', 'hotkey':'R', 'action' : "runAsync" , "command" : "box server restart " & "'#serverInfo.name#'", 'image': expandPath('/commandbox/system/config/server-icons/restart.png' ), 'workingDirectory': defaultwebroot} );
@@ -1621,20 +1696,23 @@ component accessors="true" singleton {
 
 
 		var siteJSON = readServerJSON( site.siteConfigFile );
-		// TODO: Add interception announcement so dotenv can read site-specific .env files
-		// Also, use a nested command context to encapsulate the site envs
-		siteJSON = systemSettings.expandDeepSystemSettings( siteJSON );
-		// merge in the site settings
-		JSONService.mergeData( site, siteJSON );
-
 		if( siteJSON.keyExists( 'webroot' ) ) {
-			site.webroot = fileSystemUtil.resolvePath( siteJSON.webroot, site.siteConfigFileDirectory );
-		}
-
-		if( !len( site.webroot ?: '' ) ) {
+			siteJSON.webroot = fileSystemUtil.resolvePath( siteJSON.webroot, site.siteConfigFileDirectory );
+		} else if( !site.keyExists( 'webroot' ) ) {
 			// If there is no explicit web root, assume it's where the .site.json file lives
-			site.webroot = getDirectoryFromPath( site.siteConfigFile );
+			siteJSON.webroot = getDirectoryFromPath( site.siteConfigFile );
 		}
+		// run in a "sub-shell" so we can load env vars via dot env which only apply to this site
+		CommandService.runInEnvironment(
+			'Load server site settings',
+			()=>{
+				InterceptorService.announceInterception( 'onServerSiteConfigRead', { site=site, siteJSON=siteJSON,siteConfigFile=site.siteConfigFile } );
+				siteJSON = systemSettings.expandDeepSystemSettings( siteJSON );
+				// merge in the site settings
+				JSONService.mergeData( site, siteJSON );
+			}
+		);
+
 		site.__loaded = true;
 		return arguments.siteName ?: site.name ?: getFileFromPath( site.siteConfigFile ).replaceNoCase( '.json', '' );
 	}
@@ -1712,6 +1790,7 @@ component accessors="true" singleton {
 			serverInfo.HTTPEnable = true;
 		}
 
+		serverInfo.openbrowserURL = site.openbrowserURL ?: '';
 		serverInfo.SSLEnable = serverProps.SSLEnable ?: site.SSL.enable ?: serverJSON.web.SSL.enable ?: defaults.web.SSL.enable;
 		serverInfo.SSLPort = serverProps.SSLPort ?: site.SSL.port ?: serverJSON.web.SSL.port ?: defaults.web.SSL.port;
 
@@ -3293,7 +3372,8 @@ component accessors="true" singleton {
 			'serverInfoJSON'		: '',
 			'customHTTPStatusEnable': true,
 			'processName'			: '',
-			'webRulesText'			: ''
+			'webRulesText'			: '',
+			'multiSite'				: false
 		};
 	}
 
@@ -3339,6 +3419,10 @@ component accessors="true" singleton {
 		if( arguments.all ) {
 			// ... Then add them in
 			props = JSONService.addProp( props, '', '', getDefaultServerJSON() );
+
+			props = JSONService.addProp( props, '', '', {
+				'openbrowserURL' : ''
+			} );
 			// Suggest a couple optional web error pages
 			props = JSONService.addProp( props, '', '', {
 				'web' : {

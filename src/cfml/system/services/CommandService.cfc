@@ -1396,4 +1396,25 @@ component accessors="true" singleton {
 		return instance.callStack;
 	}
 
+	function runInEnvironment( name, udf ) {
+
+		instance.callStack.prepend( {
+			commandInfo : commandData = {
+				fullCFCPath 	= name,
+				aliases 		= [],
+				parameters 		= [],
+				completor 		= {},
+				hint 			= '',
+				originalName 	= name,
+				excludeFromHelp = false,
+				commandMD 		= {}
+			},
+			environment : {}
+		} );
+		try {
+			return udf();
+		} finally {
+			instance.callStack.deleteAt( 1 );
+		}
+	}
 }
