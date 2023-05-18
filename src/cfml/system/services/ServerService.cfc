@@ -160,6 +160,8 @@ component accessors="true" singleton {
 				'accessLogEnable' : d.web.accessLogEnable ?: false,
 				'GZIPEnable' : d.web.GZIPEnable ?: true,
 				'gzipPredicate' : d.web.gzipPredicate ?: '',
+				'resourceManagerLogging' : d.web.resourceManagerLogging ?: false,
+				'servletPassPredicate' : d.web.servletPassPredicate ?: '',
 				'welcomeFiles' : d.web.welcomeFiles ?: '',
 				'maxRequests' : d.web.maxRequests ?: '',
 				// TODO: override each binding key individually?
@@ -904,6 +906,7 @@ component accessors="true" singleton {
 		if( serverInfo.multiSite ) {
 
 			serverInfo.multiContext = true;
+			var prevSites = serverInfo['sites' ] ?: {};
 			serverInfo['sites' ] = [:];
 			serverJSON.sites.each( ( siteName, site ) => {
 
@@ -938,8 +941,8 @@ component accessors="true" singleton {
 				}
 
 				var siteServerInfo = newSiteInfoStruct();
-				if( !isNull( serverInfo.sites[ siteName ] ) ) {
-					siteServerInfo.append( serverInfo.sites[ siteName ] );
+				if( !isNull( prevSites[ siteName ] ) ) {
+					siteServerInfo.append( prevSites[ siteName ] );
 				}
 				// The two settings aren't strictly site/web-related but we need them in resolveSiteSettings()
 				siteServerInfo.verbose = serverInfo.verbose;
@@ -959,8 +962,8 @@ component accessors="true" singleton {
 			site.webroot = serverInfo.webroot;
 
 			var siteServerInfo = newSiteInfoStruct();
-			if( !isNull( serverInfo.sites[ serverInfo.name ] ) ) {
-				siteServerInfo.append( serverInfo.sites[ serverInfo.name ] );
+			if( !isNull( prevSites[ serverInfo.name ] ) ) {
+				siteServerInfo.append( prevSites[ serverInfo.name ] );
 			}
 			siteServerInfo.verbose = serverInfo.verbose;
 
@@ -1166,9 +1169,6 @@ component accessors="true" singleton {
 		// Default tray icon
 		serverInfo.trayIcon = ( len( serverInfo.trayIcon ) ? serverInfo.trayIcon : '/commandbox/system/config/server-icons/trayicon.png' );
 		serverInfo.trayIcon = expandPath( serverInfo.trayIcon );
-
-		// Set default options for all servers
-		// TODO: Don't overwrite existing options with the same label.
 
 		var appFileSystemPathDisplay = fileSystemUtil.normalizeSlashes( serverInfo.appFileSystemPath );
 		// Deal with possibly very deep folder structures which would look bad in the menu or possible reach off the screen
@@ -1728,7 +1728,7 @@ component accessors="true" singleton {
 		serverInfo.host = serverProps.host ?: site.host ?: serverJSON.web.host ?: defaults.web.host;
 		serverInfo.hostAlias = site.hostAlias ?: serverJSON.web.hostAlias ?: defaults.web.hostAlias;
 		serverInfo.default = site.default ?: false;
-		// TODO: Make this configurable
+
 		if( multiSite ) {
 			// Access log named after site.
 			serverInfo.accessLogBaseName = 'access' & '-' & name.reReplace( '[^0-9a-zA-Z-\.@]', '', 'all' );
@@ -1770,9 +1770,6 @@ component accessors="true" singleton {
 		if( !isNull( site.maxRequests ) ) {
 			throw( 'You cannot set "maxRequests" config on a per-site basis as it is servlet-wide.' );
 		}
-
-		// If the last port we used is taken, remove it from consideration.
-		// TODO: if( val( serverInfo.port ) == 0 || !isPortAvailable( serverInfo.host, serverInfo.port ) ) { serverInfo.delete( 'port' ); }
 
 		// If no bindings are provided, default HTTP to enabled (compat)
 		var hasModernBindings = serverInfo.bindings.http.len() || serverInfo.bindings.ssl.len() || serverInfo.bindings.ajp.len();
@@ -2075,6 +2072,8 @@ component accessors="true" singleton {
 		serverInfo.accessLogEnable = site.accessLogEnable ?: serverJSON.web.accessLogEnable ?: defaults.web.accessLogEnable;
 		serverInfo.GZIPEnable = site.GZIPEnable ?: serverJSON.web.GZIPEnable ?: defaults.web.GZIPEnable;
 		serverInfo.gzipPredicate = site.gzipPredicate ?: serverJSON.web.gzipPredicate ?: defaults.web.gzipPredicate;
+		serverInfo.servletPassPredicate = site.servletPassPredicate ?: serverJSON.web.servletPassPredicate ?: defaults.web.servletPassPredicate;
+		serverInfo.resourceManagerLogging = site.resourceManagerLogging ?: serverJSON.web.resourceManagerLogging ?: defaults.web.resourceManagerLogging;
 
 		serverInfo.webRules = [];
 
@@ -2310,7 +2309,7 @@ component accessors="true" singleton {
 				} );
 			} );
 
-			// TODO: Throw error if more than one site is marked as default?
+			// If more than one site is marked as default, we take the first one
 			if( site.default ?: false && !len( defaultSiteName ) ) {
 				defaultSiteName = siteName;
 			}
@@ -3373,12 +3372,14 @@ component accessors="true" singleton {
 			'customHTTPStatusEnable': true,
 			'processName'			: '',
 			'webRulesText'			: '',
-			'multiSite'				: false
+			'multiSite'				: false,
+			'resourceManagerLogging':false,
+			'servletPassPredicate':''
 		};
 	}
 
 	struct function newSiteInfoStruct() {
-		return newServerInfoStruct().filter( (k,v)=>listFindNoCase( 'sslkeyfile,useproxyforwardedip,clientcertsubjectdns,basicauthenable,casesensitivepaths,blocksensitivepaths,basicauthusers,hstsenable,sslport,webroot,webrules,errorpages,clientcertcatruststorepass,clientcerttrustupstreamheaders,http2enable,sslcertfile,accesslogenable,securityrealm,clientcertcatruststorefile,filecachetotalsizemb,sslenable,ajpport,blockflashremoting,sslforceredirect,filecachemaxfilesizekb,ajpenable,host,welcomefiles,clientcertmode,blockcfadmin,verbose,allowedext,authpredicate,httpenable,gzipenable,hstsmaxage,aliases,authenabled,mimetypes,filecacheenable,clientcertcacertfiles,clientcertsslrenegotiationenable,clientcertenable,gzippredicate,clientcertissuerdns,hstsincludesubdomains,port,sslkeypass,directorybrowsing,ajpsecret,profile,webRulesText,hostAlias', k ) );
+		return newServerInfoStruct().filter( (k,v)=>listFindNoCase( 'servletPassPredicate,sslkeyfile,resourceManagerLogging,useproxyforwardedip,clientcertsubjectdns,basicauthenable,casesensitivepaths,blocksensitivepaths,basicauthusers,hstsenable,sslport,webroot,webrules,errorpages,clientcertcatruststorepass,clientcerttrustupstreamheaders,http2enable,sslcertfile,accesslogenable,securityrealm,clientcertcatruststorefile,filecachetotalsizemb,sslenable,ajpport,blockflashremoting,sslforceredirect,filecachemaxfilesizekb,ajpenable,host,welcomefiles,clientcertmode,blockcfadmin,verbose,allowedext,authpredicate,httpenable,gzipenable,hstsmaxage,aliases,authenabled,mimetypes,filecacheenable,clientcertcacertfiles,clientcertsslrenegotiationenable,clientcertenable,gzippredicate,clientcertissuerdns,hstsincludesubdomains,port,sslkeypass,directorybrowsing,ajpsecret,profile,webRulesText,hostAlias', k ) );
 	}
 
 	/**
