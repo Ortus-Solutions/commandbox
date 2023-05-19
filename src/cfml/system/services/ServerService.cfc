@@ -1077,13 +1077,13 @@ component accessors="true" singleton {
 			site.accessLogPath = serverInfo.logDir & '/#site.accessLogBaseName#.txt'
 			site.defaultBaseURL='';
 			site.openbrowserURL='';
-			for( var bindingName in serverInfo.bindings.filter( (n,b)=>n!='default' && b.type=='ssl' && b.site==siteName ) ) {
+			for( var bindingName in serverInfo.bindings.filter( (n,b)=>n!='default' && !n.endsWith( ':endswith:' ) && !n.endsWith( ':startswith:' ) && !n.endsWith( ':regex:' ) && b.type=='ssl' && b.site==siteName ) ) {
 				var binding = serverInfo.bindings[ bindingName ];
 				site.defaultBaseURL = 'https://#(binding.host != '*' ? binding.host : binding.IP )#:#binding.port#'.replace( '0.0.0.0', '127.0.0.1' );
 				break;
 			}
 			if( !len( site.defaultBaseURL ) ) {
-				for( var bindingName in serverInfo.bindings.filter( (n,b)=>n!='default' && b.type=='http' && b.site==siteName ) ) {
+				for( var bindingName in serverInfo.bindings.filter( (n,b)=>n!='default' && !n.endsWith( ':endswith:' ) && !n.endsWith( ':startsWith:' ) && !n.endsWith( ':regex:' ) && b.type=='http' && b.site==siteName ) ) {
 					var binding = serverInfo.bindings[ bindingName ];
 					site.defaultBaseURL = 'http://#(binding.host != '*' ? binding.host : binding.IP )#:#binding.port#'.replace( '0.0.0.0', '127.0.0.1' );
 					break;
@@ -2358,9 +2358,30 @@ component accessors="true" singleton {
 
 					// Build out all possible bindings to sites
 					binding.hosts.each( (host)=>{
-						// TODO: Deal with partial hostname wildcard matches
 						var thisHost = ( host == '0.0.0.0' ? '*' : host );
-						serverInfo.bindings[ lcase( '#binding.IP#:#binding.port#:#thisHost#' ) ] = binding.filter( (k)=>'type,IP,port,AJPSecret,site'.listFindNoCase(k) ).append( { 'host' : thisHost } );
+						var bindingInfo  = binding.filter( (k)=>'type,IP,port,AJPSecret,site'.listFindNoCase(k) ).append( { 'host' : thisHost } );
+						// Match *.example.com
+						if( len( thisHost ) > 1 && thisHost.startsWith( '*' ) ) {
+							var bindingKey = lcase( '#binding.IP#:#binding.port#::endsWith:' );
+							bindingInfo[ 'endsWithMatch' ] = thisHost.right( -1 );
+							serverInfo.bindings[ bindingKey ] = serverInfo.bindings[ bindingKey ] ?: [];
+							serverInfo.bindings[ bindingKey ].append( bindingInfo );
+							// Match www.example.*
+						} else if( len( thisHost ) > 1 && thisHost.endsWith( '*' ) ) {
+							var bindingKey = lcase( '#binding.IP#:#binding.port#::startsWith:' );
+							bindingInfo[ 'startsWithMatch' ] = thisHost.left( -1 );
+							serverInfo.bindings[ bindingKey ] = serverInfo.bindings[ bindingKey ] ?: [];
+							serverInfo.bindings[ bindingKey ].append( bindingInfo );
+							// Match ~.*\.(example|foobar)[0-9]+\.com
+						} else if( thisHost.startsWith( '~' ) ) {
+							var bindingKey = lcase( '#binding.IP#:#binding.port#::regex:' );
+							bindingInfo[ 'regexMatch' ] = thisHost.right( -1 );
+							serverInfo.bindings[ bindingKey ] = serverInfo.bindings[ bindingKey ] ?: [];
+							serverInfo.bindings[ bindingKey ].append( bindingInfo );
+							// Match hostname exactly, or match any hostname
+						} else {
+							serverInfo.bindings[ lcase( '#binding.IP#:#binding.port#:#thisHost#' ) ] = bindingInfo;
+						}
 					} );
 
 				} );
