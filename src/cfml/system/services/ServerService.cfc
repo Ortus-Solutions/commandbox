@@ -258,6 +258,7 @@ component accessors="true" singleton {
 			'runwar' : {
 				'jarPath' : d.runwar.jarPath ?: variables.jarPath,
 				'args' : d.runwar.args ?: '',
+				'options' : duplicate( d.runwar.options ?: {} ),
 				// Duplicate so onServerStart interceptors don't actually change config settings via reference.
 				'XNIOOptions' : duplicate( d.runwar.XNIOOptions ?: {} ),
 				// Duplicate so onServerStart interceptors don't actually change config settings via reference.
@@ -752,11 +753,13 @@ component accessors="true" singleton {
 		} else if( !isNull( defaults.runwar.args ) && isSimpleValue( defaults.runwar.args ) && len( defaults.runwar.args ) ) {
 			serverInfo.runwarArgs &= ' ' & defaults.runwar.args;
 		}
-
+		if( len( serverInfo.runwarArgs ) || len( serverInfo.runwarArgsArray ) ) {
+			throw( message='The runwar.args setting is no longer supported.', detail='To enable experimental features in Runwar, use the runwar.options object.  Check the docs for details.', type="commandException" );
+		}
 
 		// Global defaults are always added on top of whatever is specified by the user or server.json
-		serverInfo.runwarXNIOOptions	= ( serverJSON.runwar.XNIOOptions ?: {} ).append( defaults.runwar.XNIOOptions, true );
-
+		serverInfo.runwarXNIOOptions = ( serverJSON.runwar.XNIOOptions ?: {} ).append( defaults.runwar.XNIOOptions, true );
+		serverInfo.runwarOptions = ( serverJSON.runwar.options ?: {} ).append( defaults.runwar.options, true );
 		// Global defaults are always added on top of whatever is specified by the user or server.json
 		serverInfo.runwarUndertowOptions	= ( serverJSON.runwar.UndertowOptions ?: {} ).append( defaults.runwar.UndertowOptions, true );
 
@@ -1087,6 +1090,20 @@ component accessors="true" singleton {
 					break;
 				}
 			}
+
+			// Add AJP secret for bindings
+			var ajpPorts = {};
+			serverInfo.bindings.filter( (n,b)=>n!='default' && b.type=='ajp' && b.site==siteName && b.keyExists('AJPSecret') && len( b.AJPSecret ) ).each( (n,b)=>{
+				// Only add the rule once for a given port, regardles of how many hostnames there may be
+				if( !ajpPorts.keyExists(b.port) ) {
+					ajpPorts[b.port]=true;
+					var charBlock = find( "'", b.AJPSecret ) ? '"' : "'";
+					site.webRules.prepend(
+						"equals(%p, #b.port#) and not equals(%{r,secret}, #charBlock##b.AJPSecret##charBlock#) -> set-error(403)"
+					);
+				}
+			} );
+
 			// If there's no open URL, let's create a complete one
 			if( !site.openbrowserURL.len() ) {
 				site.openbrowserURL = site.defaultBaseURL;
@@ -1354,6 +1371,9 @@ component accessors="true" singleton {
 		if( !len( serverInfo.preferredBrowser ) && ConfigService.settingExists( 'preferredBrowser' ) ) {
 			serverInfo.preferredBrowser = ConfigService.getSetting( 'preferredBrowser' );
 		}
+
+		// Add in any runwar overrides directly to the JSON
+		JSONService.mergeData( serverInfo, serverInfo.runwarOptions );
 
 		// change status to starting + persist
 		serverInfo.dateLastStarted = now();
@@ -1742,78 +1762,46 @@ component accessors="true" singleton {
 		// Default all the things to make our lives easier
 		serverJSON.web = serverJSON.web ?: {};
 		defaults.web = defaults.web ?: {};
-		[ site, serverJSON.web, defaults.web ].each( (config)=>{
-			config[ 'bindings' ] = config.bindings ?: {}
-			config.bindings[ 'http' ] = config.bindings.http ?: []
-			if( isStruct( config.bindings.http ) ) {
-				config.bindings.http = [ config.bindings.http ]
+		[
+			{ data : site, rootDir : site.siteConfigFileDirectory },
+			{ data : serverJSON.web, rootDir : site.serverConfigFileDirectory },
+			{ data : defaults.web, rootDir : serverInfo.webroot }
+		].each( (config)=>{
+			config.data[ 'bindings' ] = config.data.bindings ?: {}
+			config.data.bindings[ 'http' ] = config.data.bindings.http ?: []
+			if( isStruct( config.data.bindings.http ) ) {
+				config.data.bindings.http = [ config.data.bindings.http ]
 			}
-			config.bindings[ 'ssl' ] = config.bindings.ssl ?: []
-			if( isStruct( config.bindings.ssl ) ) {
-				config.bindings.ssl = [ config.bindings.ssl ]
+			config.data.bindings[ 'ssl' ] = config.data.bindings.ssl ?: []
+			if( isStruct( config.data.bindings.ssl ) ) {
+				config.data.bindings.ssl = [ config.data.bindings.ssl ]
 			}
-			config.bindings[ 'ajp' ] = config.bindings.ajp ?: []
-			if( isStruct( config.bindings.ajp ) ) {
-				config.bindings.ajp = [ config.bindings.ajp ]
+			config.data.bindings[ 'ajp' ] = config.data.bindings.ajp ?: []
+			if( isStruct( config.data.bindings.ajp ) ) {
+				config.data.bindings.ajp = [ config.data.bindings.ajp ]
 			}
+
+			config.data.bindings.ssl.each( (sslBinding)=>{
+				if( isDefined( 'sslBinding.certs' ) && isArray( sslBinding.certs ) ) {
+					sslBinding.certs.each( (cert)=>{
+						if( !isNull( cert.certFile ) && len( cert.certFile ) ) {
+							cert.certFile = fileSystemUtil.resolvePath( cert.certFile, config.rootDir );
+						}
+						if( !isNull( cert.keyFile ) && len( cert.keyFile ) ) {
+							cert.keyFile = fileSystemUtil.resolvePath( cert.keyFile, config.rootDir );
+						}
+					} );
+					if( !isNull( sslBinding.certFile ) && len( sslBinding.certFile ) ) {
+						sslBinding.certFile = fileSystemUtil.resolvePath( sslBinding.certFile, config.rootDir );
+					}
+					if( !isNull( sslBinding.keyFile ) && len( sslBinding.keyFile ) ) {
+						sslBinding.keyFile = fileSystemUtil.resolvePath( sslBinding.keyFile, config.rootDir );
+					}
+				}
+			} );
+
 		} );
 
-		serverJSON.web.bindings.ssl.each( (sslBinding)=>{
-			if( isDefined( 'sslBinding.certs' ) && isArray( sslBinding.certs ) ) {
-				sslBinding.certs.each( (cert)=>{
-					if( !isNull( cert.certFile ) && len( cert.certFile ) ) {
-						cert.certFile = fileSystemUtil.resolvePath( cert.certFile, site.serverConfigFileDirectory );
-					}
-					if( !isNull( cert.keyFile ) && len( cert.keyFile ) ) {
-						cert.keyFile = fileSystemUtil.resolvePath( cert.keyFile, site.serverConfigFileDirectory );
-					}
-				} );
-				if( !isNull( sslBinding.certFile ) && len( sslBinding.certFile ) ) {
-					sslBinding.certFile = fileSystemUtil.resolvePath( sslBinding.certFile, site.serverConfigFileDirectory );
-				}
-				if( !isNull( sslBinding.keyFile ) && len( sslBinding.keyFile ) ) {
-					sslBinding.keyFile = fileSystemUtil.resolvePath( sslBinding.keyFile, site.serverConfigFileDirectory );
-				}
-			}
-		} );
-
-		defaults.web.bindings.ssl.each( (sslBinding)=>{
-			if( isDefined( 'sslBinding.certs' ) && isArray( sslBinding.certs ) ) {
-				sslBinding.certs.each( (cert)=>{
-					if( !isNull( cert.certFile ) && len( cert.certFile ) ) {
-						cert.certFile = fileSystemUtil.resolvePath( cert.certFile, serverInfo.webroot );
-					}
-					if( !isNull( cert.keyFile ) && len( cert.keyFile ) ) {
-						cert.keyFile = fileSystemUtil.resolvePath( cert.keyFile, serverInfo.webroot );
-					}
-				} );
-				if( !isNull( sslBinding.certFile ) && len( sslBinding.certFile ) ) {
-					sslBinding.certFile = fileSystemUtil.resolvePath( sslBinding.certFile, serverInfo.webroot );
-				}
-				if( !isNull( sslBinding.keyFile ) && len( sslBinding.keyFile ) ) {
-					sslBinding.keyFile = fileSystemUtil.resolvePath( sslBinding.keyFile, serverInfo.webroot );
-				}
-			}
-		} );
-
-		site.bindings.ssl.each( (sslBinding)=>{
-			if( isDefined( 'sslBinding.certs' ) && isArray( sslBinding.certs ) ) {
-				sslBinding.certs.each( (cert)=>{
-					if( !isNull( cert.certFile ) && len( cert.certFile ) ) {
-						cert.certFile = fileSystemUtil.resolvePath( cert.certFile, site.siteConfigFileDirectory );
-					}
-					if( !isNull( cert.keyFile ) && len( cert.keyFile ) ) {
-						cert.keyFile = fileSystemUtil.resolvePath( cert.keyFile, site.siteConfigFileDirectory );
-					}
-				} );
-				if( !isNull( sslBinding.certFile ) && len( sslBinding.certFile ) ) {
-					sslBinding.certFile = fileSystemUtil.resolvePath( sslBinding.certFile, site.siteConfigFileDirectory );
-				}
-				if( !isNull( sslBinding.keyFile ) && len( sslBinding.keyFile ) ) {
-					sslBinding.keyFile = fileSystemUtil.resolvePath( sslBinding.keyFile, site.siteConfigFileDirectory );
-				}
-			}
-		} );
 		site.bindings.http.append( serverJSON.web.bindings.http, true ).append( defaults.web.bindings.http, true );
 		site.bindings.ssl.append( serverJSON.web.bindings.ssl, true ).append( defaults.web.bindings.ssl, true );
 		site.bindings.ajp.append( serverJSON.web.bindings.ajp, true ).append( defaults.web.bindings.ajp, true );
@@ -2183,13 +2171,6 @@ component accessors="true" singleton {
 			);
 		}
 
-		//ajp enabled with secret
-		if( serverInfo.AJPEnable && len( serverInfo.AJPSecret ) ){
-			var charBlock = find( "'", serverInfo.AJPSecret ) ? '"' : "'";
-			serverInfo.webRules.append(
-				"equals(%p, #serverInfo.AJPPort#) and not equals(%{r,secret}, #charBlock##serverInfo.AJPSecret##charBlock#) -> set-error(403)"
-			);
-		}
 
 		if( site.keyExists( 'rules' ) ) {
 			if( !isArray( site.rules ) ) {
@@ -3433,6 +3414,7 @@ component accessors="true" singleton {
 			'JVMargsArray'			: [],
 			'runwarArgs'			: "",
 			'runwarArgsArray'		: [],
+			'runwarOptions'			: {},
 			'runwarXNIOOptions'		: {},
 			'runwarUndertowOptions'	: {},
 			'cfengine'				: "",
@@ -3573,7 +3555,7 @@ component accessors="true" singleton {
 					}
 				}
 			} );
-			props = JSONService.addProp( props, '', '', {
+			var bindingsStub = {
 				'web' : {
 					'bindings' : {
 						'HTTP' : {
@@ -3607,7 +3589,8 @@ component accessors="true" singleton {
 						}
 					}
 				}
-			} );
+			};
+			props = JSONService.addProp( props, '', '', bindingsStub );
 
 			// Suggest server scripts
 			props = JSONService.addProp( props, '', '', {
@@ -3639,6 +3622,7 @@ component accessors="true" singleton {
 						var siteName = dummy.sites.keyArray().first();
 						var userTyped = tokenizedSoFar[1] & ( siteNameSoFar contains '[' ? '' : '.' ) & siteNameSoFar;
 						var siteProperties = getDefaultServerJSON().web;
+						siteProperties.bindings = bindingsStub.web.bindings;
 						siteProperties.default=false;
 						props = JSONService.addProp( props, userTyped, '[ "sites" ][ "#siteName#" ]', { 'sites' : { '#siteName#' : siteProperties } } );
 					}
