@@ -164,7 +164,6 @@ component accessors="true" singleton {
 				'servletPassPredicate' : d.web.servletPassPredicate ?: '',
 				'welcomeFiles' : d.web.welcomeFiles ?: '',
 				'maxRequests' : d.web.maxRequests ?: '',
-				// TODO: override each binding key individually?
 				'bindings' : duplicate( d.web.bindings ?: {} ),
 				'HTTP' : {
 					'port' : d.web.http.port ?: 0,
@@ -179,6 +178,7 @@ component accessors="true" singleton {
 					'certFile' : d.web.ssl.certFile ?: '',
 					'keyFile' : d.web.ssl.keyFile ?: '',
 					'keyPass' : d.web.ssl.keyPass ?: '',
+					'certs' : d.web.ssl.certs ?: [],
 					'forceSSLRedirect' : d.web.ssl.forceSSLRedirect ?: false,
 					'HSTS' : {
 						'enable' : d.web.ssl.hsts.enable ?: false,
@@ -200,7 +200,7 @@ component accessors="true" singleton {
 				'rewrites' : {
 					'enable' : d.web.rewrites.enable ?: false,
 					'logEnable' : d.web.rewrites.logEnable ?: false,
-					'config' : d.web.rewrites.config ?: variables.rewritesDefaultConfig,
+					'config' : d.web.rewrites.config ?: '',
 					'statusPath' : d.web.rewrites.statusPath ?: '',
 					'configReloadSeconds' : d.web.rewrites.configReloadSeconds ?: ''
 				},
@@ -671,11 +671,15 @@ component accessors="true" singleton {
 		serverInfo.rewritesConfigReloadSeconds =					   serverJSON.web.rewrites.configReloadSeconds ?: defaults.web.rewrites.configReloadSeconds;
 
 		// relative rewrite config path in server.json is resolved relative to the server.json
-		if( isDefined( 'serverJSON.web.rewrites.config' ) ) { serverJSON.web.rewrites.config = fileSystemUtil.resolvePath( serverJSON.web.rewrites.config, defaultServerConfigFileDirectory ); }
+		if( isDefined( 'serverJSON.web.rewrites.config' ) && len( serverJSON.web.rewrites.config ) ) { serverJSON.web.rewrites.config = fileSystemUtil.resolvePath( serverJSON.web.rewrites.config, defaultServerConfigFileDirectory ); }
 		// relative rewrite config path in config setting server defaults is resolved relative to the web root
-		if( isDefined( 'defaults.web.rewrites.config' ) ) { defaults.web.rewrites.config = fileSystemUtil.resolvePath( defaults.web.rewrites.config, defaultwebroot ); }
+		if( isDefined( 'defaults.web.rewrites.config' ) && len( defaults.web.rewrites.config ) ) { defaults.web.rewrites.config = fileSystemUtil.resolvePath( defaults.web.rewrites.config, defaultwebroot ); }
 		serverInfo.rewritesConfig 	= serverProps.rewritesConfig 	?: serverJSON.web.rewrites.config 	?: defaults.web.rewrites.config;
 		serverInfo.rewriteslogEnable = serverJSON.web.rewrites.logEnable ?: defaults.web.rewrites.logEnable;
+		// The only way Tuckey gets enabled now is with a custom urlrewrite.xml file
+		if( !len( serverInfo.rewritesConfig ) ) {
+			serverInfo.rewritesEnable=false;
+		}
 
 		serverInfo.maxRequests = serverJSON.web.maxRequests			?: defaults.web.maxRequests;
 		serverInfo.trayEnable	 	= serverProps.trayEnable		?: serverJSON.trayEnable			?: defaults.trayEnable;
@@ -1027,12 +1031,6 @@ component accessors="true" singleton {
 				javaagent = '-javaagent:#serverInfo.serverHomeDirectory#/WEB-INF/lib/railo-inst.jar';
 			}
 
-			// Add in "/cf_scripts" alias for 2016+ servers if the /cf_scripts folder exists in the war we're starting and there isn't already an alias
-			// for this.  I'm specifically not checking the engine name and version so this will work on regular Adobe wars and be future proof.
-			if( directoryExists( serverInfo.serverHomeDirectory & '/cf_scripts' ) && !serverInfo.aliases.keyExists( '/cf_scripts' )  ) {
-				serverInfo.aliases[ '/cf_scripts' ]	= serverInfo.serverHomeDirectory & '/cf_scripts';
-			}
-
 			// The process native name
 			serverInfo.processName = ( serverInfo.name is "" ? "CommandBox" : serverInfo.name ) & ' [' & listFirst( serverinfo.cfengine, '@' ) & ' ' & installDetails.version & ']';
 			var displayServerName = ( serverInfo.name is "" ? "CommandBox" : serverInfo.name );
@@ -1083,7 +1081,7 @@ component accessors="true" singleton {
 				break;
 			}
 			if( !len( site.defaultBaseURL ) ) {
-				for( var bindingName in serverInfo.bindings.filter( (n,b)=>n!='default' && !n.endsWith( ':endswith:' ) && !n.endsWith( ':startsWith:' ) && !n.endsWith( ':regex:' ) && b.type=='http' && b.site==siteName ) ) {
+				for( var bindingName in serverInfo.bindings.filter( (n,b)=>n!='default' && !n.endsWith( ':endswith:' ) && !n.endsWith( ':startswith:' ) && !n.endsWith( ':regex:' ) && b.type=='http' && b.site==siteName ) ) {
 					var binding = serverInfo.bindings[ bindingName ];
 					site.defaultBaseURL = 'http://#(binding.host != '*' ? binding.host : binding.IP )#:#binding.port#'.replace( '0.0.0.0', '127.0.0.1' );
 					break;
@@ -1104,11 +1102,16 @@ component accessors="true" singleton {
 				}
 			}
 
+			// Add in "/cf_scripts" alias for 2016+ servers if the /cf_scripts folder exists in the war we're starting and there isn't already an alias
+			// for this.  I'm specifically not checking the engine name and version so this will work on regular Adobe wars and be future proof.
+			if( directoryExists( serverInfo.serverHomeDirectory & '/cf_scripts' ) && !site.aliases.keyExists( '/cf_scripts' )  ) {
+				site.aliases[ '/cf_scripts' ]	= serverInfo.serverHomeDirectory & '/cf_scripts';
+			}
 		} );
 
 		// Base this on the "first" site for now.
 		var firstSite = serverInfo.sites[ serverInfo.sites.keyArray().last() ];
-		serverInfo.defaultBaseURL = serverInfo.SSLEnable ? 'https://#firstSite.host#:#firstSite.SSLPort#' : 'http://#firstSite.host#:#firstSite.port#';
+		serverInfo.defaultBaseURL = firstSite.defaultBaseURL;
 
 		// If there's no open URL, let's create a complete one
 		if( !serverInfo.openbrowserURL.len() ) {
@@ -1755,6 +1758,62 @@ component accessors="true" singleton {
 			}
 		} );
 
+		serverJSON.web.bindings.ssl.each( (sslBinding)=>{
+			if( isDefined( 'sslBinding.certs' ) && isArray( sslBinding.certs ) ) {
+				sslBinding.certs.each( (cert)=>{
+					if( !isNull( cert.certFile ) && len( cert.certFile ) ) {
+						cert.certFile = fileSystemUtil.resolvePath( cert.certFile, site.serverConfigFileDirectory );
+					}
+					if( !isNull( cert.keyFile ) && len( cert.keyFile ) ) {
+						cert.keyFile = fileSystemUtil.resolvePath( cert.keyFile, site.serverConfigFileDirectory );
+					}
+				} );
+				if( !isNull( sslBinding.certFile ) && len( sslBinding.certFile ) ) {
+					sslBinding.certFile = fileSystemUtil.resolvePath( sslBinding.certFile, site.serverConfigFileDirectory );
+				}
+				if( !isNull( sslBinding.keyFile ) && len( sslBinding.keyFile ) ) {
+					sslBinding.keyFile = fileSystemUtil.resolvePath( sslBinding.keyFile, site.serverConfigFileDirectory );
+				}
+			}
+		} );
+
+		defaults.web.bindings.ssl.each( (sslBinding)=>{
+			if( isDefined( 'sslBinding.certs' ) && isArray( sslBinding.certs ) ) {
+				sslBinding.certs.each( (cert)=>{
+					if( !isNull( cert.certFile ) && len( cert.certFile ) ) {
+						cert.certFile = fileSystemUtil.resolvePath( cert.certFile, serverInfo.webroot );
+					}
+					if( !isNull( cert.keyFile ) && len( cert.keyFile ) ) {
+						cert.keyFile = fileSystemUtil.resolvePath( cert.keyFile, serverInfo.webroot );
+					}
+				} );
+				if( !isNull( sslBinding.certFile ) && len( sslBinding.certFile ) ) {
+					sslBinding.certFile = fileSystemUtil.resolvePath( sslBinding.certFile, serverInfo.webroot );
+				}
+				if( !isNull( sslBinding.keyFile ) && len( sslBinding.keyFile ) ) {
+					sslBinding.keyFile = fileSystemUtil.resolvePath( sslBinding.keyFile, serverInfo.webroot );
+				}
+			}
+		} );
+
+		site.bindings.ssl.each( (sslBinding)=>{
+			if( isDefined( 'sslBinding.certs' ) && isArray( sslBinding.certs ) ) {
+				sslBinding.certs.each( (cert)=>{
+					if( !isNull( cert.certFile ) && len( cert.certFile ) ) {
+						cert.certFile = fileSystemUtil.resolvePath( cert.certFile, site.siteConfigFileDirectory );
+					}
+					if( !isNull( cert.keyFile ) && len( cert.keyFile ) ) {
+						cert.keyFile = fileSystemUtil.resolvePath( cert.keyFile, site.siteConfigFileDirectory );
+					}
+				} );
+				if( !isNull( sslBinding.certFile ) && len( sslBinding.certFile ) ) {
+					sslBinding.certFile = fileSystemUtil.resolvePath( sslBinding.certFile, site.siteConfigFileDirectory );
+				}
+				if( !isNull( sslBinding.keyFile ) && len( sslBinding.keyFile ) ) {
+					sslBinding.keyFile = fileSystemUtil.resolvePath( sslBinding.keyFile, site.siteConfigFileDirectory );
+				}
+			}
+		} );
 		site.bindings.http.append( serverJSON.web.bindings.http, true ).append( defaults.web.bindings.http, true );
 		site.bindings.ssl.append( serverJSON.web.bindings.ssl, true ).append( defaults.web.bindings.ssl, true );
 		site.bindings.ajp.append( serverJSON.web.bindings.ajp, true ).append( defaults.web.bindings.ajp, true );
@@ -1764,8 +1823,8 @@ component accessors="true" singleton {
 			serverInfo.hostAlias = serverInfo.hostAlias.listToArray();
 		}
 
-		if( !isNull( site.rewrites ) ) {
-			throw( 'You cannot set "rewrites" config on a per-site basis as Tuckey Rewrite is servlet-wide. You can use Server Rules for per-site rewrites.' );
+		if( !isNull( site.rewrites.config ) && len( site.rewrites.config ) && !isNull( site.rewrites.enabled ) && site.rewrites.enabled ) {
+			throw( 'You cannot set "rewrites" config XML on a per-site basis as Tuckey Rewrite is servlet-wide. You can use Server Rules for per-site rewrites.' );
 		}
 		if( !isNull( site.maxRequests ) ) {
 			throw( 'You cannot set "maxRequests" config on a per-site basis as it is servlet-wide.' );
@@ -1782,7 +1841,7 @@ component accessors="true" singleton {
 		// Server default is 0 not null.
 		if( serverInfo.port == 0 && serverInfo.HTTPEnable ) {
 			serverInfo.port = getRandomPort( serverInfo.host );
-		// For backwards compat, if there is a port specified, even if bindings are in use, enable HTTP.s
+		// For backwards compat, if there is a port specified, even if bindings are in use, enable HTTP.
 		} else if( serverInfo.port > 0 ) {
 			serverInfo.HTTPEnable = true;
 		}
@@ -1806,10 +1865,31 @@ component accessors="true" singleton {
 		// relative keyFile in server.json is resolved relative to the server.json
 		if( isDefined( 'serverJSON.web.SSL.keyFile' ) ) { serverJSON.web.SSL.keyFile = fileSystemUtil.resolvePath( serverJSON.web.SSL.keyFile, site.serverConfigFileDirectory ); }
 		if( isDefined( 'site.SSL.keyFile' ) ) { site.SSL.keyFile = fileSystemUtil.resolvePath( site.SSL.keyFile, site.siteConfigFileDirectory ); }
-		// relative trayIcon in config setting server defaults is resolved relative to the web root
 		if( len( defaults.web.SSL.keyFile ?: '' ) ) { defaults.web.SSL.keyFile = fileSystemUtil.resolvePath( defaults.web.SSL.keyFile, serverInfo.webroot ); }
+
+		if( isDefined( 'serverJSON.web.SSL.certs' ) && isArray( serverJSON.web.SSL.certs ) ) {
+			serverJSON.web.SSL.certs.each( (cert)=>{
+				if( !isNull( cert.certFile ) && len( cert.certFile ) ) {
+					cert.certFile = fileSystemUtil.resolvePath( cert.certFile, site.serverConfigFileDirectory );
+				}
+				if( !isNull( cert.keyFile ) && len( cert.keyFile ) ) {
+					cert.keyFile = fileSystemUtil.resolvePath( cert.keyFile, site.serverConfigFileDirectory );
+				}
+			} );
+		 }
+		 if( isDefined( 'defaults.web.SSL.certs' ) && isArray( defaults.web.SSL.certs ) ) {
+			defaults.web.SSL.certs.each( (cert)=>{
+				 if( !isNull( cert.certFile ) && len( cert.certFile ) ) {
+					 cert.certFile = fileSystemUtil.resolvePath( cert.certFile, serverInfo.webroot );
+				 }
+				 if( !isNull( cert.keyFile ) && len( cert.keyFile ) ) {
+					 cert.keyFile = fileSystemUtil.resolvePath( cert.keyFile, serverInfo.webroot );
+				 }
+			 } );
+		  }
 		serverInfo.SSLKeyFile = serverProps.SSLKeyFile ?: site.SSL.keyFile ?: serverJSON.web.SSL.keyFile ?: defaults.web.SSL.keyFile;
 		serverInfo.SSLKeyPass = serverProps.SSLKeyPass ?: site.SSL.keyPass ?: serverJSON.web.SSL.keyPass ?: defaults.web.SSL.keyPass;
+		serverInfo.SSLCerts = site.SSL.certs ?: serverJSON.web.SSL.certs ?: defaults.web.SSL.certs;
 
 		// relative certFile in server.json is resolved relative to the server.json
 		if( isDefined( 'serverJSON.web.SSL.clientCert.CACertFiles' ) ) {
@@ -2075,6 +2155,18 @@ component accessors="true" singleton {
 		serverInfo.servletPassPredicate = site.servletPassPredicate ?: serverJSON.web.servletPassPredicate ?: defaults.web.servletPassPredicate;
 		serverInfo.resourceManagerLogging = site.resourceManagerLogging ?: serverJSON.web.resourceManagerLogging ?: defaults.web.resourceManagerLogging;
 
+		serverInfo.rewritesEnable = false;
+		if( !isNull( site.rewrites.enable ) ) {
+			serverInfo.rewritesEnable = site.rewrites.enable;
+		} else {
+			// Support legacy rewrite flag, but so long as they didn't specify a custom XML
+			var topLevelEnable = serverJSON.web.rewrites.enable ?: defaults.web.rewrites.enable;
+			var topLevelConfig = serverJSON.web.rewrites.config ?: defaults.web.rewrites.config;
+			if( topLevelEnable && !len( topLevelConfig ) ) {
+				serverInfo.rewritesEnable = true;
+			}
+		}
+
 		serverInfo.webRules = [];
 
 		//ssl hsts
@@ -2207,6 +2299,14 @@ component accessors="true" singleton {
 			);
 		}
 
+		// Support legacy rewrite flag, but no Tuckey config XML files are allowed in the sites
+		if( serverInfo.rewritesEnable ) {
+			serverInfo.webRules.append(
+				// Mimic the old default Tuckey framework rewrite
+				"framework-rewrite()"
+			);
+		}
+
 		// Remove comments
 		serverInfo.webRules = serverInfo.webRules.filter( (r)=>!trim(r).startsWith('##') );
 		serverInfo.webRulesText = serverInfo.webRules.toList( CR );
@@ -2284,7 +2384,7 @@ component accessors="true" singleton {
 			}
 
 			if( site.SSLEnable ) {
-				allBindings.append( newBinding( site=siteName, IP=IP, port=site.SSLPort, hosts=site.hostAlias, type='ssl', SSLCertFile=site.SSLCertFile, SSLKeyFile=site.SSLKeyFile, SSLKeyPass=site.SSLKeyPass ) );
+				allBindings.append( newBinding( site=siteName, IP=IP, port=site.SSLPort, hosts=site.hostAlias, type='ssl', SSLCertFile=site.SSLCertFile, SSLKeyFile=site.SSLKeyFile, SSLKeyPass=site.SSLKeyPass, SSLCerts=site.SSLCerts ) );
 			}
 
 			if( site.AJPEnable ) {
@@ -2302,6 +2402,7 @@ component accessors="true" singleton {
 					params.SSLCertFile=binding.certFile ?: '';
 					params.SSLKeyFile=binding.keyFile ?: '';
 					params.SSLKeyPass=binding.keyPass ?: '';
+					params.SSLCerts=binding.certs ?: [];
 					params.AJPSecret=binding.secret ?: '';
 					if( len( params.port ) ) {
 						allBindings.append( newBinding( argumentCollection=params ) );
@@ -2340,19 +2441,28 @@ component accessors="true" singleton {
 					}
 
 					if( binding.type == 'ssl' ) {
-						listener[ 'certs' ] = [];
-						if( !isNull( binding.SSLCertFile ) && len( binding.SSLCertFile ) ) {
-							var cert = {}
-							cert[ 'certFile' ] = binding.SSLCertFile;
+						listener[ 'certs' ] = listener[ 'certs' ] ?: [];
+						// An array of additional certs can be provided
+						if( !isNull( binding.certs ) && isArray( binding.certs ) ) {
+							binding.certs.each( (c)=>{
+								if( !isNull( c.certFile ) && len( c.certFile ) ) {
+									// If we already have this cert, skip
+									if( listener.certs.find( (cert)=>cert.certFile==c.certFile ) ) {
+										return;
+									}
+									var cert = {}
+									cert[ 'certFile' ] = c.certFile;
 
-							if( !isNull( binding.SSLKeyFile ) && len( binding.SSLKeyFile ) ) {
-								cert[ 'keyFile' ] = binding.SSLKeyFile;
-							}
+									if( !isNull( c.keyFile ) && len( c.keyFile ) ) {
+										cert[ 'keyFile' ] = c.keyFile;
+									}
 
-							if( !isNull( binding.SSLKeyPass ) && len( binding.SSLKeyPass ) ) {
-								cert[ 'keyPass' ] = binding.SSLKeyPass;
-							}
-							listener.certs.append( cert );
+									if( !isNull( c.keyPass ) && len( c.keyPass ) ) {
+										cert[ 'keyPass' ] = c.keyPass;
+									}
+									listener.certs.append( cert );
+								}
+							} );
 						}
 					}
 
@@ -2408,6 +2518,7 @@ component accessors="true" singleton {
 			SSLCertFile='',
 			SSLKeyFile='',
 			SSLKeyPass='',
+			SSLCerts=[],
 			AJPSecret=''
 		) {
 
@@ -2423,11 +2534,17 @@ component accessors="true" singleton {
 			'HTTP2Enable' : HTTP2Enable
 		}
 		if( type == 'ssl' ) {
-			binding[ 'SSLCertFile' ] = SSLCertFile;
-			binding[ 'SSLKeyFile' ] = SSLKeyFile;
-			binding[ 'SSLKeyPass' ] = SSLKeyPass;
+			binding[ 'certs' ] = duplicate( arguments.SSLCerts );
+			if( len( SSLCertFile ) ) {
+				binding.certs.append( {
+					'certFile' : SSLCertFile,
+					'keyFile' : SSLKeyFile,
+					'keyPass' : SSLKeyPass
+				} );
+			}
 		}
 		if( type == 'ajp' ) {
+			// TODO: test AJP secret per binding
 			binding[ 'AJPSecret' ] = AJPSecret;
 		}
 		return binding
@@ -2765,7 +2882,7 @@ component accessors="true" singleton {
 		var args = [
 			variables.javaCommand,
 			'-cp',
-			variables.jarPath,
+			serverInfo.runwarJarPath,
 			'runwar.Stop',
 			serverInfo.serverInfoJSON
 		];
@@ -3289,6 +3406,7 @@ component accessors="true" singleton {
 			'SSLCertFile'			: "",
 			'SSLKeyFile'			: "",
 			'SSLKeyPass'			: "",
+			'SSLCerts'				: [],
 			'clientCertCACertFiles'	: [],
 			'clientCertMode'		: '',
 			'clientCertSSLRenegotiationEnable': false,
@@ -3400,7 +3518,7 @@ component accessors="true" singleton {
 	}
 
 	struct function newSiteInfoStruct() {
-		return newServerInfoStruct().filter( (k,v)=>listFindNoCase( 'servletPassPredicate,sslkeyfile,resourceManagerLogging,useproxyforwardedip,clientcertsubjectdns,basicauthenable,casesensitivepaths,blocksensitivepaths,basicauthusers,hstsenable,sslport,webroot,webrules,errorpages,clientcertcatruststorepass,clientcerttrustupstreamheaders,http2enable,sslcertfile,accesslogenable,securityrealm,clientcertcatruststorefile,filecachetotalsizemb,sslenable,ajpport,blockflashremoting,sslforceredirect,filecachemaxfilesizekb,ajpenable,host,welcomefiles,clientcertmode,blockcfadmin,verbose,allowedext,authpredicate,httpenable,gzipenable,hstsmaxage,aliases,authenabled,mimetypes,filecacheenable,clientcertcacertfiles,clientcertsslrenegotiationenable,clientcertenable,gzippredicate,clientcertissuerdns,hstsincludesubdomains,port,sslkeypass,directorybrowsing,ajpsecret,profile,webRulesText,hostAlias', k ) );
+		return newServerInfoStruct().filter( (k,v)=>listFindNoCase( 'servletPassPredicate,sslkeyfile,resourceManagerLogging,useproxyforwardedip,clientcertsubjectdns,basicauthenable,casesensitivepaths,blocksensitivepaths,basicauthusers,hstsenable,sslport,webroot,webrules,errorpages,clientcertcatruststorepass,clientcerttrustupstreamheaders,http2enable,sslcertfile,accesslogenable,securityrealm,clientcertcatruststorefile,filecachetotalsizemb,sslenable,ajpport,blockflashremoting,sslforceredirect,filecachemaxfilesizekb,ajpenable,host,welcomefiles,clientcertmode,blockcfadmin,verbose,allowedext,authpredicate,httpenable,gzipenable,hstsmaxage,aliases,authenabled,mimetypes,filecacheenable,clientcertcacertfiles,clientcertsslrenegotiationenable,clientcertenable,gzippredicate,clientcertissuerdns,hstsincludesubdomains,port,sslkeypass,SSLCerts,directorybrowsing,ajpsecret,profile,webRulesText,hostAlias,rewritesEnable', k ) );
 	}
 
 	/**
@@ -3469,10 +3587,10 @@ component accessors="true" singleton {
 							'IP' : '',
 							'port' : '',
 							'host' : '',
-							// TODO: Allow multipe certs specified in the same binding
 							'certFile' : '',
 							'keyFile' : '',
 							'keyPass' : '',
+							'certs' : [],
 							'clientCert' : {
 								'mode' : '',
 								'CACertFiles' : '',
