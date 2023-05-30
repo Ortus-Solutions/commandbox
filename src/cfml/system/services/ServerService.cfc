@@ -1004,8 +1004,6 @@ component accessors="true" singleton {
 			}
 
 			serverInfo.serverHomeDirectory = installDetails.installDir;
-			// TODO: As of 3.5 "serverHome" is for backwards compat.  Remove in later version in favor of serverHomeDirectory above
-			serverInfo[ 'serverHome' ] = installDetails.installDir;
 			serverInfo.logdir = serverInfo.serverHomeDirectory & "/logs";
 			serverInfo.engineName = installDetails.engineName;
 			serverInfo.engineVersion = installDetails.version;
@@ -2525,7 +2523,6 @@ component accessors="true" singleton {
 			}
 		}
 		if( type == 'ajp' ) {
-			// TODO: test AJP secret per binding
 			binding[ 'AJPSecret' ] = AJPSecret;
 		}
 		return binding
@@ -2786,7 +2783,6 @@ component accessors="true" singleton {
 
 			if( !len( defaultName ) ) {
 				// If there is still no name, default to the current directory
-				// TODO: I don't care for this because it creates conflicts since many servers could have the name "webroot" on one machine.
 				defaultName = replace( listLast( defaultwebroot, "\/" ), ':', '');
 
 				// Don't overlap an existing server name
@@ -3372,7 +3368,6 @@ component accessors="true" singleton {
 			'serverConfigDir' 		: "",
 			'serverHomeDirectory'	: "",
 			'singleServerHome'		: false,
-			'serverHome'			: "",
 			'webroot'				: "",
 			'webXML' 				: "",
 			'webXMLOverride' 		: "",
