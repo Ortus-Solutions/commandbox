@@ -3700,6 +3700,25 @@ component accessors="true" singleton {
 	}
 
 
+	/**
+	 * Chains an array of scripts or a single script into a single command line
+	 *
+	 * @scripts Either a string line or an array of script lines
+	 * @delimiter The delimiter to use to chain the scripts. Defaults to ';'
+	 */
+	private string function chainScripts( required any scripts, string delimiter = ";" ) {
+		var output = "";
+		if( isArray( arguments.scripts ) ) {
+			for( var i = 1; i <= arrayLen( arguments.scripts ); i++ ) {
+				if( i > 1 ) output &= arguments.delimiter & " ";
+				output &= arguments.scripts[ i ];
+			}
+		} else {
+			output = arguments.scripts;
+		}
+		return output;
+	}
+
 
 	/**
 	* Nice wrapper to run a server script
@@ -3728,10 +3747,10 @@ component accessors="true" singleton {
 			getDefaultServerJSON().scripts.each( (k,v)=>{
 				// Append existing scripts
 				if( serverJSONScripts.keyExists( k ) ) {
-					serverJSONScripts[ k ] &= '; ' & v
+					serverJSONScripts[ k ] &= '; ' & chainScripts( v );
 				// Merge missing ones
 				} else {
-					serverJSONScripts[ k ] = v;
+					serverJSONScripts[ k ] = chainScripts( v );
 				}
 			} );
 			// If there is a scripts object with a matching key for this interceptor....
@@ -3745,7 +3764,7 @@ component accessors="true" singleton {
 				// Run preXXX package script
 				runScript( 'pre#arguments.scriptName#', arguments.directory, true, interceptData );
 
-				var thisScript = serverJSONScripts[ arguments.scriptName ];
+				var thisScript = chainScripts( serverJSONScripts[ arguments.scriptName ] );
 				consoleLogger.debug( '.' );
 				consoleLogger.warn( 'Running server script [#arguments.scriptName#].' );
 				consoleLogger.debug( '> ' & thisScript );
@@ -3784,4 +3803,3 @@ component accessors="true" singleton {
 
 
 }
-
