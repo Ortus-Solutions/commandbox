@@ -1313,51 +1313,59 @@ component accessors="true" singleton {
 	* @interceptData An optional struct of data if this package script is being fired as part of an interceptor announcement.  Will be loaded into env vars
 	*/
 	function runScript( required string scriptName, string directory=shell.pwd(), boolean ignoreMissing=true, interceptData={} ) {
-			// Read the box.json from this package (if it exists)
-			var boxJSON = readPackageDescriptorRaw( arguments.directory );
-			// If there is a scripts object with a matching key for this interceptor....
-			if( boxJSON.keyExists( 'scripts' ) && isStruct( boxJSON.scripts ) && boxJSON.scripts.keyExists( arguments.scriptName ) ) {
+		// Read the box.json from this package (if it exists)
+		var boxJSON = readPackageDescriptorRaw( arguments.directory );
+		// If there is a scripts object with a matching key for this interceptor....
+		if( boxJSON.keyExists( 'scripts' ) && isStruct( boxJSON.scripts ) && boxJSON.scripts.keyExists( arguments.scriptName ) ) {
 
-				// Skip this if we're not in a command so we don't litter the default env var namespace
-				if( systemSettings.getAllEnvironments().len() > 1 ) {
-					systemSettings.setDeepSystemSettings( interceptData );
-				}
+			// Skip this if we're not in a command so we don't litter the default env var namespace
+			if( systemSettings.getAllEnvironments().len() > 1 ) {
+				systemSettings.setDeepSystemSettings( interceptData );
+			}
 
-				// Run preXXX package script
-				runScript( 'pre#arguments.scriptName#', arguments.directory, true );
+			// Run preXXX package script
+			runScript( 'pre#arguments.scriptName#', arguments.directory, true );
 
-				systemSettings.expandDeepSystemSettings( boxJSON );
-				var thisScript = boxJSON.scripts[ arguments.scriptName ];
+			systemSettings.expandDeepSystemSettings( boxJSON );
+			// get the script commands, forcing them into an array
+			var scriptNameCommands = boxJSON.scripts[ arguments.scriptName ];
+			if( isSimpleValue( scriptNameCommands ) ) {
+				scriptNameCommands = [ scriptNameCommands ];
+			}
+			if( scriptNameCommands.len() ) {
 				consoleLogger.debug( '.' );
 				consoleLogger.warn( 'Running package script [#arguments.scriptName#].' );
-				consoleLogger.debug( '> ' & thisScript );
+				for( var scriptNameCommand in scriptNameCommands ) {
+					consoleLogger.debug( '> ' & scriptNameCommand );
 
-				// Normally the shell retains the previous exit code, but in this case
-				// it's important for us to know if the scripts return a failing exit code without throwing an exception
-				shell.setExitCode( 0 );
+					// Normally the shell retains the previous exit code, but in this case
+					// it's important for us to know if the scripts return a failing exit code without throwing an exception
+					shell.setExitCode( 0 );
 
-				// ... then run the script! (in the context of the package's working directory)
-				var previousCWD = shell.pwd();
-				shell.cd( arguments.directory );
-				shell.callCommand( thisScript );
-				shell.cd( previousCWD );
+					// ... then run the script! (in the context of the package's working directory)
+					var previousCWD = shell.pwd();
+					shell.cd( arguments.directory );
+					shell.callCommand( scriptNameCommand );
+					shell.cd( previousCWD );
 
-				// If the script ran "exit"
-				if( !shell.getKeepRunning() ) {
-					// Just kidding, the shell can stay....
-					shell.setKeepRunning( true );
+					// If the script ran "exit"
+					if( !shell.getKeepRunning() ) {
+						// Just kidding, the shell can stay....
+						shell.setKeepRunning( true );
+					}
+
+					if( shell.getExitCode() != 0 ) {
+						throw( message='Package script returned failing exit code (#shell.getExitCode()#)', detail='Failing script: #arguments.scriptName#', type="commandException", errorCode=shell.getExitCode() );
+					}
 				}
-
-				if( shell.getExitCode() != 0 ) {
-					throw( message='Package script returned failing exit code (#shell.getExitCode()#)', detail='Failing script: #arguments.scriptName#', type="commandException", errorCode=shell.getExitCode() );
-				}
-
-				// Run postXXX package script
-				runScript( 'post#arguments.scriptName#', arguments.directory, true );
-
-			} else if( !arguments.ignoreMissing ) {
-				consoleLogger.error( 'The script [#arguments.scriptName#] does not exist in this package.' );
 			}
+
+			// Run postXXX package script
+			runScript( 'post#arguments.scriptName#', arguments.directory, true );
+
+		} else if( !arguments.ignoreMissing ) {
+			consoleLogger.error( 'The script [#arguments.scriptName#] does not exist in this package.' );
+		}
 	}
 
 	/**

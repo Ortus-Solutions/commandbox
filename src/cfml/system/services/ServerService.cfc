@@ -3697,7 +3697,6 @@ component accessors="true" singleton {
 	}
 
 
-
 	/**
 	* Nice wrapper to run a server script
 	*
@@ -3707,72 +3706,76 @@ component accessors="true" singleton {
 	* @interceptData An optional struct of data if this server script is being fired as part of an interceptor announcement.  Will be loaded into env vars
 	*/
 	function runScript( required string scriptName, string directory=shell.pwd(), boolean ignoreMissing=true, interceptData={} ) {
-			if( !isNull( interceptData.serverJSON ) ){
-				var serverJSON = interceptData.serverJSON;
-			} else if( !isNull( interceptData.serverInfo.name ) && len( interceptData.serverInfo.name ) ){
-				var serverDetails = resolveServerDetails( { name=interceptData.serverInfo.name } );
-				if( serverDetails.serverIsNew ) {
-					return;
-				}
-				var serverJSON = serverDetails.serverJSON;
-				systemSettings.expandDeepSystemSettings( serverJSON );
-				loadOverrides( serverJSON, serverDetails.serverInfo, serverDetails.serverInfo.verbose ?: false );
-			} else {
-				consoleLogger.warn( 'Could not find server for script [#arguments.scriptName#].' );
+		if( !isNull( arguments.interceptData.serverJSON ) ) {
+			var serverJSON = arguments.interceptData.serverJSON;
+		} else if( !isNull( arguments.interceptData.serverInfo.name ) && len( arguments.interceptData.serverInfo.name ) ) {
+			var serverDetails = resolveServerDetails( { name=arguments.interceptData.serverInfo.name } );
+			if( serverDetails.serverIsNew ) {
 				return;
 			}
-			var serverJSONScripts = duplicate( serverJSON.scripts ?: {} );
-			getDefaultServerJSON().scripts.each( (k,v)=>{
-				// Append existing scripts
-				if( serverJSONScripts.keyExists( k ) ) {
-					serverJSONScripts[ k ] &= '; ' & v
-				// Merge missing ones
-				} else {
-					serverJSONScripts[ k ] = v;
-				}
-			} );
-			// If there is a scripts object with a matching key for this interceptor....
-			if( serverJSONScripts.keyExists( arguments.scriptName ) ) {
+			var serverJSON = serverDetails.serverJSON;
+			systemSettings.expandDeepSystemSettings( serverJSON );
+			loadOverrides( serverJSON, serverDetails.serverInfo, serverDetails.serverInfo.verbose ?: false );
+		} else {
+			consoleLogger.warn( 'Could not find server for script [#arguments.scriptName#].' );
+			return;
+		}
 
-				// Skip this if we're not in a command so we don't litter the default env var namespace
-				if( systemSettings.getAllEnvironments().len() > 1 ) {
-					systemSettings.setDeepSystemSettings( interceptData );
-				}
+		// get server.json script, defaulting to empty array
+		var serverJSONScripts = duplicate( serverJSON.scripts );
+		var serverJSONScriptNameCommands =  serverJSONScripts.keyExists( arguments.scriptName ) ? serverJSONScripts[ arguments.scriptName ] : [];
+		if( isSimpleValue( serverJSONScriptNameCommands ) ) {
+			serverJSONScriptNameCommands = [ serverJSONScriptNameCommands ];
+		}
+		// get server default script, defaulting to empty array
+		var defaultServerJSONScripts = getDefaultServerJSON().scripts;
+		var serverDefaultScriptNameCommands = defaultServerJSONScripts.keyExists( arguments.scriptName ) ? defaultServerJSONScripts[ arguments.scriptName ]: [];
+		// force both to be an array, if not already
+		if( isSimpleValue( serverDefaultScriptNameCommands ) ) {
+			serverDefaultScriptNameCommands = [ serverDefaultScriptNameCommands ];
+		}
+		// Combine both arrays with the server defaults added first
+		var totalScriptNameCommands = serverDefaultScriptNameCommands.merge( serverJSONScriptNameCommands );
+		// Only set up env vars, if there's something to run
+		if( totalScriptNameCommands.len() && systemSettings.getAllEnvironments().len() > 1 ) {
+			systemSettings.setDeepSystemSettings( arguments.interceptData );
+		}
+		if( !arguments.ignoreMissing && !totalScriptNameCommands.len() ) {
+			consoleLogger.error( 'The script [#arguments.scriptName#] does not exist in this server.' );
+		}
+		// Only run any "pre" interceptors if there is a command to run to avoid an endless loop.
+		if( totalScriptNameCommands.len() ) {
+			runScript( 'pre#arguments.scriptName#', arguments.directory, true, arguments.interceptData );
+		}
+		for( var thisCommand in totalScriptNameCommands ) {
+			consoleLogger.debug( '.' );
+			consoleLogger.warn( 'Running server script [#arguments.scriptName#].' );
+			consoleLogger.debug( '> ' & thisCommand );
 
-				// Run preXXX package script
-				runScript( 'pre#arguments.scriptName#', arguments.directory, true, interceptData );
+			// Normally the shell retains the previous exit code, but in this case
+			// it's important for us to know if the scripts return a failing exit code without throwing an exception
+			shell.setExitCode( 0 );
 
-				var thisScript = serverJSONScripts[ arguments.scriptName ];
-				consoleLogger.debug( '.' );
-				consoleLogger.warn( 'Running server script [#arguments.scriptName#].' );
-				consoleLogger.debug( '> ' & thisScript );
+			// ... then run the script! (in the context of the package's working directory)
+			var previousCWD = shell.pwd();
+			shell.cd( arguments.directory );
+			shell.callCommand( thisCommand );
+			shell.cd( previousCWD );
 
-				// Normally the shell retains the previous exit code, but in this case
-				// it's important for us to know if the scripts return a failing exit code without throwing an exception
-				shell.setExitCode( 0 );
-
-				// ... then run the script! (in the context of the package's working directory)
-				var previousCWD = shell.pwd();
-				shell.cd( arguments.directory );
-				shell.callCommand( thisScript );
-				shell.cd( previousCWD );
-
-				// If the script ran "exit"
-				if( !shell.getKeepRunning() ) {
-					// Just kidding, the shell can stay....
-					shell.setKeepRunning( true );
-				}
-
-				if( shell.getExitCode() != 0 ) {
-					throw( message='Server script returned failing exit code (#shell.getExitCode()#)', detail='Failing script: #arguments.scriptName#', type="commandException", errorCode=shell.getExitCode() );
-				}
-
-				// Run postXXX package script
-				runScript( 'post#arguments.scriptName#', arguments.directory, true, interceptData );
-
-			} else if( !arguments.ignoreMissing ) {
-				consoleLogger.error( 'The script [#arguments.scriptName#] does not exist in this server.' );
+			// If the script ran "exit"
+			if( !shell.getKeepRunning() ) {
+				// Just kidding, the shell can stay....
+				shell.setKeepRunning( true );
 			}
+
+			if( shell.getExitCode() != 0 ) {
+				throw( message='Server script returned failing exit code (#shell.getExitCode()#)', detail='Failing script: #arguments.scriptName#', type="commandException", errorCode=shell.getExitCode() );
+			}
+		};
+		if( totalScriptNameCommands.len() ) {
+			// Run postXXX package script
+			runScript( 'post#arguments.scriptName#', arguments.directory, true, arguments.interceptData );
+		}
 	}
 
 	function isSingleServerMode() {
@@ -3781,4 +3784,3 @@ component accessors="true" singleton {
 
 
 }
-
