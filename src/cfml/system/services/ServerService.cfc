@@ -3701,26 +3701,6 @@ component accessors="true" singleton {
 
 
 	/**
-	 * Chains an array of scripts or a single script into a single command line
-	 *
-	 * @scripts Either a string line or an array of script lines
-	 * @delimiter The delimiter to use to chain the scripts. Defaults to ';'
-	 */
-	private string function chainScripts( required any scripts, string delimiter = ";" ) {
-		var output = "";
-		if( isArray( arguments.scripts ) ) {
-			for( var i = 1; i <= arrayLen( arguments.scripts ); i++ ) {
-				if( i > 1 ) output &= arguments.delimiter & " ";
-				output &= arguments.scripts[ i ];
-			}
-		} else {
-			output = arguments.scripts;
-		}
-		return output;
-	}
-
-
-	/**
 	* Nice wrapper to run a server script
 	*
 	* @scriptName Name of the server script to run
