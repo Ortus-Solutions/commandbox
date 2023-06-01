@@ -3660,7 +3660,14 @@ component accessors="true" singleton {
 			if( envVar.len() > 11 && reFindNoCase( 'box[_\.]server[_\.]', left( envVar, 11 ) ) ) {
 				// proxy_host gets turned into proxy.host
 				// Note, the asssumption is made that no config setting will ever have a legitimate underscore in the name
-				var name = right( envVar, len( envVar ) - 11 ).replace( '_', '.', 'all' );
+				// Special checks for undertowOptions and XNIOOptions
+				if( envVar.toLowerCase().startsWith( 'box_server_runwar_undertowoptions_' ) ) {
+					var name = 'runwar.undertowOptions.' & envVar.replaceNoCase( 'box_server_runwar_undertowoptions_', '' );
+				} else if( envVar.toLowerCase().startsWith( 'box_server_runwar_xniooptions_' ) ) {
+					var name = 'runwar.XNIOOptions.' & envVar.replaceNoCase( 'box_server_runwar_xniooptions_', '' );
+				} else {
+					var name = right( envVar, len( envVar ) - 11 ).replace( '_', '.', 'all' );
+				}
 				debugMessages.append( 'Overridding [#name#] with #source# [#envVar#]' );
 				JSONService.set( JSON=overrides, properties={ '#name#' : value }, thisAppend=true );
 			}
