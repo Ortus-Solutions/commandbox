@@ -1037,7 +1037,6 @@ component accessors="true" singleton {
 			var displayServerName = ( serverInfo.name is "" ? "CommandBox" : serverInfo.name );
 			var displayEngineName = serverInfo.engineName & ' ' & installDetails.version;
 			serverInfo.pidfile = serverInfo.serverHomeDirectory & '/.pid.txt';
-			//serverInfo.predicateFile = serverinfo.serverHomeDirectory & '/.predicateFile.txt';
 			serverInfo.trayOptionsFile = serverinfo.serverHomeDirectory & '/.trayOptions.json';
 
 		// This is a WAR
@@ -1064,7 +1063,6 @@ component accessors="true" singleton {
 			serverInfo.logdir = serverinfo.customServerFolder & "/logs";
 			serverInfo.accessLogBaseDir = serverInfo.logDir;
 			serverInfo.pidfile = serverInfo.customServerFolder & '/.pid.txt';
-			//serverInfo.predicateFile = serverinfo.customServerFolder & '/.predicateFile.txt';
 			serverInfo.trayOptionsFile = serverinfo.customServerFolder & '/.trayOptions.json';
 			var displayServerName = serverInfo.processName;
 			var displayEngineName = 'WAR';
@@ -3449,7 +3447,6 @@ component accessors="true" singleton {
 			'blockFlashRemoting'	: false,
 			'allowedExt'			: '',
 			'pidfile'				: '',
-			'predicateFile'			: '',
 			'trayOptionsFile'		: '',
 			'SSLForceRedirect'		: false,
 			'HSTSEnable'			: false,
