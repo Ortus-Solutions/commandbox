@@ -3736,45 +3736,47 @@ component accessors="true" singleton {
 		}
 		// Combine both arrays with the server defaults added first
 		var totalScriptNameCommands = serverDefaultScriptNameCommands.merge( serverJSONScriptNameCommands );
-		// Only set up env vars, if there's something to run
-		if( totalScriptNameCommands.len() && systemSettings.getAllEnvironments().len() > 1 ) {
-			systemSettings.setDeepSystemSettings( arguments.interceptData );
-		}
-		if( !arguments.ignoreMissing && !totalScriptNameCommands.len() ) {
-			consoleLogger.error( 'The script [#arguments.scriptName#] does not exist in this server.' );
-		}
-		// Only run any "pre" interceptors if there is a command to run to avoid an endless loop.
+
 		if( totalScriptNameCommands.len() ) {
+
+			// Only set up env vars, if we're in a command context
+			if( systemSettings.getAllEnvironments().len() > 1 ) {
+				systemSettings.setDeepSystemSettings( arguments.interceptData );
+			}
+
+			// run any "pre" interceptors
 			runScript( 'pre#arguments.scriptName#', arguments.directory, true, arguments.interceptData );
-		}
-		for( var thisCommand in totalScriptNameCommands ) {
+
 			consoleLogger.debug( '.' );
 			consoleLogger.warn( 'Running server script [#arguments.scriptName#].' );
-			consoleLogger.debug( '> ' & thisCommand );
+			for( var thisCommand in totalScriptNameCommands ) {
+				consoleLogger.debug( '> ' & thisCommand );
 
-			// Normally the shell retains the previous exit code, but in this case
-			// it's important for us to know if the scripts return a failing exit code without throwing an exception
-			shell.setExitCode( 0 );
+				// Normally the shell retains the previous exit code, but in this case
+				// it's important for us to know if the scripts return a failing exit code without throwing an exception
+				shell.setExitCode( 0 );
 
-			// ... then run the script! (in the context of the package's working directory)
-			var previousCWD = shell.pwd();
-			shell.cd( arguments.directory );
-			shell.callCommand( thisCommand );
-			shell.cd( previousCWD );
+				// ... then run the script! (in the context of the package's working directory)
+				var previousCWD = shell.pwd();
+				shell.cd( arguments.directory );
+				shell.callCommand( thisCommand );
+				shell.cd( previousCWD );
 
-			// If the script ran "exit"
-			if( !shell.getKeepRunning() ) {
-				// Just kidding, the shell can stay....
-				shell.setKeepRunning( true );
-			}
+				// If the script ran "exit"
+				if( !shell.getKeepRunning() ) {
+					// Just kidding, the shell can stay....
+					shell.setKeepRunning( true );
+				}
 
-			if( shell.getExitCode() != 0 ) {
-				throw( message='Server script returned failing exit code (#shell.getExitCode()#)', detail='Failing script: #arguments.scriptName#', type="commandException", errorCode=shell.getExitCode() );
-			}
-		};
-		if( totalScriptNameCommands.len() ) {
+				if( shell.getExitCode() != 0 ) {
+					throw( message='Server script returned failing exit code (#shell.getExitCode()#)', detail='Failing script: #arguments.scriptName#', type="commandException", errorCode=shell.getExitCode() );
+				}
+			};
+
 			// Run postXXX package script
 			runScript( 'post#arguments.scriptName#', arguments.directory, true, arguments.interceptData );
+		} else if( !arguments.ignoreMissing ) {
+			consoleLogger.error( 'The script [#arguments.scriptName#] does not exist in this server.' );
 		}
 	}
 
