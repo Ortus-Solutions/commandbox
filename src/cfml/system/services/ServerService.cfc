@@ -1817,10 +1817,17 @@ component accessors="true" singleton {
 		// If no bindings are provided, default HTTP to enabled (compat)
 		var hasModernBindings = serverInfo.bindings.http.len() || serverInfo.bindings.ssl.len() || serverInfo.bindings.ajp.len();
 		serverInfo.HTTPEnable = serverProps.HTTPEnable ?: site.HTTP.enable ?: serverJSON.web.HTTP.enable ?: defaults.web.HTTP.enable ?: !hasModernBindings;
+		// Don't carry over a previous HTTP port if HTTP is no longer enabled.
+		// This would applyk to a server that had a random port assigned at one point, but the had bindings added or legacy HTTP binding info removed.
+		if( !serverInfo.HTTPEnable ) {
+			serverInfo.port = 0;
+		}
+
+		// TODO: test HTTP/2
 		serverInfo.HTTP2Enable = site.HTTP2.enable ?: serverJSON.web.HTTP2.enable ?: defaults.web.HTTP2.enable;
 
 		// Port is the only setting that automatically carries over without being specified since it's random.
-		serverInfo['port'] = serverProps.port ?: site.http.port ?: serverJSON.web.http.port ?: serverInfo.port	?: defaults.web.http.port;
+		serverInfo['port'] = serverProps.port ?: site.http.port ?: serverJSON.web.http.port ?: serverInfo.port ?: defaults.web.http.port;
 		serverInfo.port = val( serverInfo.port );
 		// Server default is 0 not null.
 		if( serverInfo.port == 0 && serverInfo.HTTPEnable ) {
@@ -1911,6 +1918,7 @@ component accessors="true" singleton {
 		serverInfo.clientCertCATrustStoreFile = site.SSL.clientCert.CATrustStoreFile ?: serverJSON.web.SSL.clientCert.CATrustStoreFile ?: defaults.web.SSL.clientCert.CATrustStoreFile;
 		serverInfo.clientCertCATrustStorePass = site.SSL.clientCert.CATrustStorePass ?: serverJSON.web.SSL.clientCert.CATrustStorePass ?: defaults.web.SSL.clientCert.CATrustStorePass;
 
+		// This only captures the legacy binding syntax.  This may also get set when the process the bindings later.
 		serverInfo.clientCertMode = site.SSL.clientCert.mode ?: serverJSON.web.SSL.clientCert.mode ?: defaults.web.SSL.clientCert.mode;
 		serverInfo.clientCertSSLRenegotiationEnable = site.security.clientCert.SSLRenegotiationEnable ?: serverJSON.web.security.clientCert.SSLRenegotiationEnable ?: defaults.web.security.clientCert.SSLRenegotiationEnable;
 
@@ -2361,7 +2369,24 @@ component accessors="true" singleton {
 			}
 
 			if( site.SSLEnable ) {
-				allBindings.append( newBinding( site=siteName, IP=IP, port=site.SSLPort, hosts=site.hostAlias, type='ssl', SSLCertFile=site.SSLCertFile, SSLKeyFile=site.SSLKeyFile, SSLKeyPass=site.SSLKeyPass, SSLCerts=site.SSLCerts ) );
+				allBindings.append(
+					newBinding(
+						site=siteName,
+						IP=IP,
+						port=site.SSLPort,
+						hosts=site.hostAlias,
+						type='ssl',
+						SSLCertFile=site.SSLCertFile,
+						SSLKeyFile=site.SSLKeyFile,
+						SSLKeyPass=site.SSLKeyPass,
+						SSLCerts=site.SSLCerts,
+						clientCertMode = site.clientCertMode,
+						clientCertCACertFiles = site.clientCertCACertFiles,
+						clientCertCATrustStoreFile = site.clientCertCATrustStoreFile,
+						clientCertCATrustStorePass = site.clientCertCATrustStorePass,
+						clientCertSSLRenegotiationEnable = site.clientCertSSLRenegotiationEnable
+					)
+				);
 			}
 
 			if( site.AJPEnable ) {
@@ -2381,6 +2406,19 @@ component accessors="true" singleton {
 					params.SSLKeyPass=binding.keyPass ?: '';
 					params.SSLCerts=binding.certs ?: [];
 					params.AJPSecret=binding.secret ?: '';
+					params.clientCertMode = binding.clientCert.mode ?: '';
+					params.clientCertCACertFiles = binding.clientCert.CACertFiles ?: [];
+					params.clientCertCATrustStoreFile = binding.clientCert.CATrustStoreFile ?: '';
+					params.clientCertCATrustStorePass = binding.clientCert.CATrustStorePass ?: '';
+					// Even though this is set at the site-level, we need to track it at the binding level so we can know what
+					// SSL listeners need to allow for it by disabling TLS 1.3 and HTTP/2.
+					params.clientCertSSLRenegotiationEnable = site.clientCertSSLRenegotiationEnable ?: false;
+					// It's possible for two SSL bindings to both have differnt client cert negotiation settings.
+					// If this happens, we'll just take the first one. This site-level flag is really only used for
+					// the SSLClientCertHeaderHandler in Runwar to determine if at least one of the SSL bindings is accepting client certs
+					if( len( params.clientCertMode ) && !len( site.clientCertMode ) ) {
+						site.clientCertMode = params.clientCertMode;
+					}
 					if( len( params.port ) ) {
 						allBindings.append( newBinding( argumentCollection=params ) );
 					}
@@ -2441,12 +2479,35 @@ component accessors="true" singleton {
 								}
 							} );
 						}
+						listener[ 'clientCert' ] = listener[ 'clientCert' ] ?: {
+							'mode' : '',
+							'CACertFiles' : [],
+							'CATrustStoreFile' : '',
+							'CATrustStorePass' : '',
+							'SSLRenegotiationEnable' : false
+						};
+						// This gets turned on for the entire listener if at least one binding using this listener was associated with a site using it.
+						listener.clientCert.SSLRenegotiationEnable = listener.clientCert.SSLRenegotiationEnable || binding.clientCert.SSLRenegotiationEnable;
+						// IF this listener has a no-op mode, then take whatever the binding has.
+						if( !len( listener.clientCert.mode ) || listener.clientCert.mode == 'NOT_REQUESTED' ) {
+							listener.clientCert.mode = binding.clientCert.mode;
+						// If this listener is set to requested from a previous bindings, but this bindings is wanting requried, take the newer, more strict setting.
+						} else if( listener.clientCert.mode == 'REQUESTED' &&  binding.clientCert.mode == 'REQUIRED' ) {
+							listener.clientCert.mode = binding.clientCert.mode;
+						}
+						// Multuple bindings using client cert auth on the same listener combine CA certs into one big trust store
+						listener.clientCert.CACertFiles.append( binding.clientCert.CACertFiles, true );
+						// We only support a single keystore (any CACertFiles above will be added in), so only take the first CA trust store/pass we come across.
+						if( !len( listener.clientCert.CATrustStoreFile ) && len( binding.clientCert.CATrustStoreFile ) ) {
+							listener.clientCert.CATrustStoreFile = binding.clientCert.CATrustStoreFile;
+							listener.clientCert.CATrustStorePass = binding.clientCert.CATrustStorePass;
+						}
 					}
 
 					// Build out all possible bindings to sites
 					binding.hosts.each( (host)=>{
 						var thisHost = ( host == '0.0.0.0' ? '*' : host );
-						var bindingInfo  = binding.filter( (k)=>'type,IP,port,AJPSecret,site'.listFindNoCase(k) ).append( { 'host' : thisHost } );
+						var bindingInfo  = binding.filter( (k)=>'type,IP,port,AJPSecret,site,clientCert'.listFindNoCase(k) ).append( { 'host' : thisHost } );
 						// Match *.example.com
 						if( len( thisHost ) > 1 && thisHost.startsWith( '*' ) ) {
 							var bindingKey = lcase( '#binding.IP#:#binding.port#::endsWith:' );
@@ -2496,7 +2557,12 @@ component accessors="true" singleton {
 			SSLKeyFile='',
 			SSLKeyPass='',
 			SSLCerts=[],
-			AJPSecret=''
+			AJPSecret='',
+			clientCertMode = '',
+			clientCertCACertFiles = [],
+			clientCertCATrustStoreFile = '',
+			clientCertCATrustStorePass = '',
+			clientCertSSLRenegotiationEnable = false
 		) {
 
 		if( IP == '*' ) {
@@ -2518,6 +2584,20 @@ component accessors="true" singleton {
 					'keyFile' : SSLKeyFile,
 					'keyPass' : SSLKeyPass
 				} );
+			}
+			binding[ 'clientCert' ] = {
+				'mode' : arguments.clientCertMode,
+				'CACertFiles' : arguments.clientCertCACertFiles,
+				'CATrustStoreFile' : arguments.clientCertCATrustStoreFile,
+				'CATrustStorePass' : arguments.clientCertCATrustStorePass,
+				'SSLRenegotiationEnable' : arguments.clientCertSSLRenegotiationEnable
+			}
+			if( isSimpleValue( binding.clientCert.CACertFiles ) ) {
+				if( len( binding.clientCert.CACertFiles ) ) {
+					binding.clientCert.CACertFiles = binding.clientCert.CACertFiles.listToArray();
+				} else {
+					binding.clientCert.CACertFiles = [];
+				}
 			}
 		}
 		if( type == 'ajp' ) {
