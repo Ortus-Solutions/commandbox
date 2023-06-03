@@ -3729,7 +3729,7 @@ component accessors="true" singleton {
 		}
 
 		// get server.json script, defaulting to empty array
-		var serverJSONScripts = duplicate( serverJSON.scripts );
+		var serverJSONScripts = duplicate( serverJSON.scripts ?: {} );
 		var serverJSONScriptNameCommands =  serverJSONScripts.keyExists( arguments.scriptName ) ? serverJSONScripts[ arguments.scriptName ] : [];
 		if( isSimpleValue( serverJSONScriptNameCommands ) ) {
 			serverJSONScriptNameCommands = [ serverJSONScriptNameCommands ];
