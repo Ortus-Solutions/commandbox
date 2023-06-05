@@ -70,6 +70,7 @@ component {
 		var commandParts = parseCommandParts( arguments.command );
 		if( hasError() ) { return; }
 		var flags = parseFlags( commandParts.flags );
+		var result = createObject( 'java', 'java.lang.StringBuilder' ).init( '' );
 
 		try {
 
@@ -80,11 +81,9 @@ component {
 				} else {
 					line = REReplace( line, commandParts.regex, commandParts.replacement, ( flags.global ? 'all' : 'one' ) );
 				}
-
-				print.line( line );
-
-			} // End loop over inputLines
-
+				result.append( line & server.separator.line );
+			}
+			print.line( result.toString() );
 		} catch ( any var e ) {
 			// Any errors here are most likley from bad regex.  Control the "error" and
 			// include some additional debugging information.
