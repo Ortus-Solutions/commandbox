@@ -96,7 +96,7 @@ component aliases='status,server info' {
 				structAppend( thisServerInfo, serverService.newServerInfoStruct(), false );
 
 				thisServerInfo.status = serverService.isServerRunning( thisServerInfo ) ? 'running' : 'stopped';
-					
+
 				// Are we doing JSON?
 				if( arguments.json ){
 
@@ -138,7 +138,84 @@ component aliases='status,server info' {
 					.bold( thisServerInfo.status, statusColors.keyExists( thisServerInfo.status ) ? statusColors[ thisServerInfo.status ] : 'yellow' )
 					.bold( ')' );
 
-				print.indentedLine( thisServerInfo.host & ':' & thisServerInfo.port & ' --> ' & thisServerInfo.webroot );
+				var sortedBindings = thisServerInfo.bindings
+					.reduce( (acc,n,b)=>{
+						if( isStruct( b ) ) {
+							if( n == 'default' ) {
+								b.default = true;
+							}
+							acc.append( b );
+						} else {
+							b.each( (b)=>acc.append(b) );
+						}
+						return acc;
+					}, [] )
+					.map( (b)=>{
+						if( b.default ?: false ) {
+							b.priority = 11;
+							b.bindingName = 'Default Site';
+							return b;
+						}
+						b.priority = 0;
+						b.bindingName = b.IP & ':' & b.port & ':' & b.host;
+						if( b.ip != '0.0.0.0' && b.keyExists( 'endsWithMatch' ) ) {
+							b.priority = 2;
+						} else if( b.ip != '0.0.0.0' && b.keyExists( 'startsWithMatch' ) ) {
+							b.priority = 3;
+						} else if( b.ip != '0.0.0.0' && b.keyExists( 'regexMatch' ) ) {
+							b.priority = 4;
+						} else if( b.ip != '0.0.0.0' && b.host != '*'  ) {
+							b.priority = 1;
+						} elseif( b.ip == '0.0.0.0' && b.keyExists( 'endsWithMatch' ) ) {
+							b.priority = 6;
+						} else if( b.ip == '0.0.0.0' && b.keyExists( 'startsWithMatch' ) ) {
+							b.priority = 7;
+						} else if( b.ip == '0.0.0.0' && b.keyExists( 'regexMatch' ) ) {
+							b.priority = 8;
+						} else if( b.ip == '0.0.0.0' && b.host != '*'  ) {
+							b.priority = 5;
+						} else if( b.ip != '0.0.0.0' && b.host == '*'  ) {
+							b.priority = 9;
+						} else if( b.ip == '0.0.0.0' && b.host == '*'  ) {
+							b.priority = 10;
+						}
+						return b;
+					} )
+					.sort( (a,b)=>a.priority-b.priority );
+
+				if( thisServerInfo.sites.len() == 1 ) {
+					var site = thisServerInfo.sites[ thisServerInfo.sites.keyArray().first() ]
+					print.indentedLine( site.defaultBaseURL & ' --> ' & site.webroot );
+				} else {
+					print.line().line();
+					thisServerInfo.sites.each( (siteName, site)=>{
+						print.indentedLine( '- ' & siteName & ': ' & site.defaultBaseURL & ' --> ' & site.webroot );
+						if( verbose ) {
+							print.indentedIndentedLine( '  Bindings: ' )
+							sortedBindings.filter( (b)=>b.site == siteName ).each( (b)=>print.indentedIndentedLine( '    - ' & b.bindingName ) );
+							print.line();
+						}
+					} );
+					print.line();
+				}
+
+
+
+				print.line( '  Listeners:' );
+				if( thisServerInfo.listeners.HTTP.len() ) {
+					print.indentedLine( '  - HTTP' );
+					thisServerInfo.listeners.HTTP.each( (listen,details)=>print.indentedIndentedLine( '  - ' & listen ) )
+				}
+				if( thisServerInfo.listeners.SSL.len() ) {
+					print.indentedLine( '  - SSL' );
+					thisServerInfo.listeners.SSL.each( (listen,details)=>print.indentedIndentedLine( '  - ' & listen ) )
+				}
+				if( thisServerInfo.listeners.AJP.len() ) {
+					print.indentedLine( '  - AJP' );
+					thisServerInfo.listeners.AJP.each( (listen,details)=>print.indentedIndentedLine( '  - ' & listen ) )
+				}
+
+				print.line();
 				if( len( serverInfo.engineName ) ) {
 					print.indentedLine( 'CF Engine: ' & serverInfo.engineName & ' ' & serverInfo.engineVersion );
 				}
@@ -148,19 +225,20 @@ component aliases='status,server info' {
 				if( len( serverInfo.dateLastStarted ) ) {
 					print.indentedLine( 'Last Started: ' & datetimeFormat( serverInfo.dateLastStarted ) );
 				}
-				print.line();
-				print.indentedLine( 'Last status message: ' );
-				print.indentedLine( thisServerInfo.statusInfo.result );
 
 				if( arguments.verbose ) {
+
+					print.line();
+					print.indentedLine( 'Last status message: ' );
+					print.indentedLine( thisServerInfo.statusInfo.result );
 
 					print.indentedLine( 'ID: ' & thisServerInfo.id );
 
 					print.line().indentedLine( 'Server Home: ' & thisServerInfo.serverHome );
-					
+
 					print.line().indentedLine( 'PID file used for "running" check: ' )
 						.indentedIndentedLine( serverInfo.pidFile );
-						
+
 					if( fileExists( serverInfo.pidFile ) ){
 						print.indentedIndentedLine( 'PID file exists.' );
 						try {
@@ -172,11 +250,11 @@ component aliases='status,server info' {
 							}
 						} catch( any var e ) {
 							print.indentedIndentedText( 'Error checking if server PID was running: [' ).redText( e.message & ' ' & e.detail ).line( '] Server is assumed running.' );
-						}						
+						}
 					} else {
 						print.indentedIndentedLine( 'PID file does not exist.  Server is assumed stopped.' );
 					}
-					
+
 
 					print.line().indentedLine( 'Last Command: ' );
 					// Put each --arg or -arg on a new line

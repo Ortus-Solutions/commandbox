@@ -909,12 +909,12 @@ component accessors="true" singleton {
 		}
 		serverInfo.multiSite = serverJSON.sites.count() > 0;
 		serverInfo.openbrowser = serverProps.openbrowser ?: serverJSON.openbrowser ?: defaults.openbrowser ?: !serverInfo.multiSite;
+		var prevSites = serverInfo['sites' ] ?: {};
 
 		// multi-site mode
 		if( serverInfo.multiSite ) {
 
 			serverInfo.multiContext = true;
-			var prevSites = serverInfo['sites' ] ?: {};
 			serverInfo['sites' ] = [:];
 			serverJSON.sites.each( ( siteName, site ) => {
 
@@ -1090,15 +1090,22 @@ component accessors="true" singleton {
 
 			// Add AJP secret for bindings
 			var ajpPorts = {};
-			serverInfo.bindings.filter( (n,b)=>n!='default' && b.type=='ajp' && b.site==siteName && b.keyExists('AJPSecret') && len( b.AJPSecret ) ).each( (n,b)=>{
-				// Only add the rule once for a given port, regardles of how many hostnames there may be
-				if( !ajpPorts.keyExists(b.port) ) {
-					ajpPorts[b.port]=true;
-					var charBlock = find( "'", b.AJPSecret ) ? '"' : "'";
-					site.webRules.prepend(
-						"equals(%p, #b.port#) and not equals(%{r,secret}, #charBlock##b.AJPSecret##charBlock#) -> set-error(403)"
-					);
+			serverInfo.bindings.filter( (n,b)=>n!='default' ).each( (n,b)=>{
+				// startsWith, endsWith, and regex bindings contain an array of actual bindings
+				if( isStruct( b ) ) {
+					b = [b];
 				}
+				b.filter( (b)=>b.type=='ajp' && b.site==siteName && b.keyExists('AJPSecret') && len( b.AJPSecret ) )
+					.each( (b)=>{
+						// Only add the rule once for a given port, regardles of how many hostnames there may be
+						if( !ajpPorts.keyExists(b.port) ) {
+							ajpPorts[b.port]=true;
+							var charBlock = find( "'", b.AJPSecret ) ? '"' : "'";
+							site.webRules.prepend(
+								"equals(%p, #b.port#) and not equals(%{r,secret}, #charBlock##b.AJPSecret##charBlock#) -> set-error(403)"
+							);
+						}
+					} );
 			} );
 
 			// If there's no open URL, let's create a complete one
@@ -1818,12 +1825,11 @@ component accessors="true" singleton {
 		var hasModernBindings = serverInfo.bindings.http.len() || serverInfo.bindings.ssl.len() || serverInfo.bindings.ajp.len();
 		serverInfo.HTTPEnable = serverProps.HTTPEnable ?: site.HTTP.enable ?: serverJSON.web.HTTP.enable ?: defaults.web.HTTP.enable ?: !hasModernBindings;
 		// Don't carry over a previous HTTP port if HTTP is no longer enabled.
-		// This would applyk to a server that had a random port assigned at one point, but the had bindings added or legacy HTTP binding info removed.
+		// This would apply to a server that had a random port assigned at one point, but the had bindings added or legacy HTTP binding info removed.
 		if( !serverInfo.HTTPEnable ) {
 			serverInfo.port = 0;
 		}
 
-		// TODO: test HTTP/2
 		serverInfo.HTTP2Enable = site.HTTP2.enable ?: serverJSON.web.HTTP2.enable ?: defaults.web.HTTP2.enable;
 
 		// Port is the only setting that automatically carries over without being specified since it's random.
@@ -3697,7 +3703,7 @@ component accessors="true" singleton {
 						var userTyped = tokenizedSoFar[1] & ( siteNameSoFar contains '[' ? '' : '.' ) & siteNameSoFar;
 						var siteProperties = getDefaultServerJSON().web;
 						siteProperties.bindings = bindingsStub.web.bindings;
-						siteProperties.default=false;
+						siteProperties['default']=false;
 						props = JSONService.addProp( props, userTyped, '[ "sites" ][ "#siteName#" ]', { 'sites' : { '#siteName#' : siteProperties } } );
 					}
 				}
