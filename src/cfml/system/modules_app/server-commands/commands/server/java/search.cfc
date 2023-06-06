@@ -150,7 +150,7 @@ component aliases='java search' {
 		}
 
 		if( JSON ) {
-			print.line( artifactJSON );
+			print.text( artifactJSON );
 			return;
 		} else {
 			print

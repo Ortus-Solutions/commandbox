@@ -54,7 +54,7 @@ component {
 
 		try {
 
-			print.line( JSONService.show( boxJSON, arguments.property ) );
+			print.text( JSONService.show( boxJSON, arguments.property ) );
 
 		} catch( JSONException var e ) {
 			error( e.message, e.detail );

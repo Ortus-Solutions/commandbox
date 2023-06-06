@@ -14,7 +14,7 @@ component  {
 	*
 	*/
 	function run()  {
-		print.line( systemSettings.getAllEnvironments() );
+		print.text( systemSettings.getAllEnvironments() );
 	}
 
 }

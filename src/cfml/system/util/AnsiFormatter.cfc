@@ -21,6 +21,9 @@ component accessors=true {
 		// [DEBUG] runwar.server: Starting open browser action
 		line = reReplaceNoCase( line, '^(\[[^]]*])( runwar\.[^:]*: )(.*)', '\1 Runwar: \3' );
 
+		// [INFO ] dorkbox.systemTray.SystemTray: Successfully loaded
+		line = reReplaceNoCase( line, '^(\[[^]]*])( DorkBox\.[^:]*: )(.*)', '\1 SystemTray: \3' );
+
 		// Log messages from undertow's predicate logger, simplify the logging category to just "Server Rules:" and leave color coded severity
 		// Ex:
 		// [TRACE] io.undertow.predicate: Predicate [secure()] resolved to false for HttpServerExchange{ GET /CFIDE/main/ide.cfm}.

@@ -152,6 +152,7 @@ component accessors="true" singleton {
 				'hostAlias' : d.web.hostAlias ?: '',
 				'directoryBrowsing' : d.web.directoryBrowsing ?: '',
 				'webroot' : d.web.webroot ?: '',
+				'sendFileMinSizeKB' : d.web.sendFileMinSizeKB ?: '',
 				'caseSensitivePaths' : d.web.caseSensitivePaths ?: '',
 				// Duplicate so onServerStart interceptors don't actually change config settings via reference.
 				'aliases' : duplicate( d.web.aliases ?: {} ),
@@ -1463,10 +1464,9 @@ component accessors="true" singleton {
 			'java.base/javax.security.auth.x500',
 			'java.base/javax.security.cert',
 			'java.base/sun.net.www.protocol.https',
-			'java.desktop/com.sun.java.swing.plaf.nimbus',
 			'java.desktop/com.sun.java.swing.plaf.motif',
-			'java.desktop/com.sun.java.swing.plaf.nimbus',
 			'java.desktop/com.sun.java.swing.plaf.windows',
+			'java.desktop/javax.swing.plaf.nimbus',
 			'java.desktop/sun.java2d',
 			'java.rmi/sun.rmi.transport',
 			'java.base/sun.security.rsa',
@@ -2121,6 +2121,7 @@ component accessors="true" singleton {
 		serverInfo.welcomeFiles = serverInfo.welcomeFiles.listMap( ( i )=>trim( i ) );
 
 		serverInfo.caseSensitivePaths = site.caseSensitivePaths ?: serverJSON.web.caseSensitivePaths ?: defaults.web.caseSensitivePaths;
+		serverInfo.sendFileMinSizeKB = site.sendFileMinSizeKB ?: serverJSON.web.sendFileMinSizeKB ?: defaults.web.sendFileMinSizeKB;
 
 		// Global aliases are always added on top of server.json (but don't overwrite)
 		serverInfo.aliases = defaults.web.aliases.map( (a,p)=>fileSystemUtil.resolvePath( p, serverInfo.webroot ) );
@@ -3519,6 +3520,7 @@ component accessors="true" singleton {
 			'welcomeFiles'			: '',
 			'maxRequests'			: '',
 			'caseSensitivePaths'	: '',
+			'sendFileMinSizeKB'		: '',
 			'exitCode'				: 0,
 			'rules'					: [],
 			'rulesFile'				: '',
@@ -3572,7 +3574,7 @@ component accessors="true" singleton {
 	}
 
 	struct function newSiteInfoStruct() {
-		return newServerInfoStruct().filter( (k,v)=>listFindNoCase( 'servletPassPredicate,sslkeyfile,resourceManagerLogging,useproxyforwardedip,clientcertsubjectdns,basicauthenable,casesensitivepaths,blocksensitivepaths,basicauthusers,hstsenable,sslport,webroot,webrules,errorpages,clientcertcatruststorepass,clientcerttrustupstreamheaders,http2enable,sslcertfile,accesslogenable,securityrealm,clientcertcatruststorefile,filecachetotalsizemb,sslenable,ajpport,blockflashremoting,sslforceredirect,filecachemaxfilesizekb,ajpenable,host,welcomefiles,clientcertmode,blockcfadmin,verbose,allowedext,authpredicate,httpenable,gzipenable,hstsmaxage,aliases,authenabled,mimetypes,filecacheenable,clientcertcacertfiles,clientcertsslrenegotiationenable,clientcertenable,gzippredicate,clientcertissuerdns,hstsincludesubdomains,port,sslkeypass,SSLCerts,directorybrowsing,ajpsecret,profile,webRulesText,hostAlias,rewritesEnable', k ) );
+		return newServerInfoStruct().filter( (k,v)=>listFindNoCase( 'servletPassPredicate,sslkeyfile,resourceManagerLogging,useproxyforwardedip,clientcertsubjectdns,basicauthenable,casesensitivepaths,sendFileMinSizeKB,blocksensitivepaths,basicauthusers,hstsenable,sslport,webroot,webrules,errorpages,clientcertcatruststorepass,clientcerttrustupstreamheaders,http2enable,sslcertfile,accesslogenable,securityrealm,clientcertcatruststorefile,filecachetotalsizemb,sslenable,ajpport,blockflashremoting,sslforceredirect,filecachemaxfilesizekb,ajpenable,host,welcomefiles,clientcertmode,blockcfadmin,verbose,allowedext,authpredicate,httpenable,gzipenable,hstsmaxage,aliases,authenabled,mimetypes,filecacheenable,clientcertcacertfiles,clientcertsslrenegotiationenable,clientcertenable,gzippredicate,clientcertissuerdns,hstsincludesubdomains,port,sslkeypass,SSLCerts,directorybrowsing,ajpsecret,profile,webRulesText,hostAlias,rewritesEnable', k ) );
 	}
 
 	/**

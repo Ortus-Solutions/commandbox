@@ -119,7 +119,7 @@ component aliases='cfpm' {
 			.run( echo=true, returnOutput=( job.isActive() && arguments.count() ) );
 
 		if( job.isActive() && arguments.count() ) {
-			print.line( output );
+			print.text( output );
 		}
 
 	}

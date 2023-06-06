@@ -83,7 +83,7 @@ component {
 				}
 				result.append( line & server.separator.line );
 			}
-			print.line( result.toString() );
+			print.text( result.toString() );
 		} catch ( any var e ) {
 			// Any errors here are most likley from bad regex.  Control the "error" and
 			// include some additional debugging information.
