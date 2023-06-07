@@ -146,7 +146,10 @@ component aliases='status,server info' {
 							}
 							acc.append( b );
 						} else {
-							b.each( (b)=>acc.append(b) );
+							b.each( (b,i)=>{
+								b.origIndex = i;
+								acc.append(b)
+							} );
 						}
 						return acc;
 					}, [] )
@@ -182,7 +185,18 @@ component aliases='status,server info' {
 						}
 						return b;
 					} )
-					.sort( (a,b)=>a.priority-b.priority );
+					.sort( (a,b)=>{
+						// For bindings of the same type, regex sorts by the order they appeared in the original config, endswith and startswith sort by length of the host match desc.
+						if( a.priority == b.priority ) {
+							if( b.keyExists( 'regexMatch' ) ) {
+								return len(b.origIndex)-len(a.origIndex);
+							} else {
+								return len(b.host)-len(a.host);
+							}
+						} else {
+							return a.priority-b.priority;
+						}
+					} );
 
 				if( thisServerInfo.sites.len() == 1 ) {
 					var site = thisServerInfo.sites[ thisServerInfo.sites.keyArray().first() ]

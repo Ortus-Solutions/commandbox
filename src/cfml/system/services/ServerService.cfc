@@ -2541,6 +2541,13 @@ component accessors="true" singleton {
 
 				} );
 
+			// Sort the wildcard match bindings so longest match is first
+			serverInfo.bindings.each( (n,b)=>{
+				if( n contains ':endsWith:' || n contains ':startsWith:' ){
+					b.sort( (a,b)=>len(b.host)-len(a.host) );
+				}
+			} );
+
 			// If there was a site marked as "default"
 			if( len( defaultSiteName ) ) {
 				serverInfo.bindings[ lcase( 'default' ) ] = { 'site' : defaultSiteName };
