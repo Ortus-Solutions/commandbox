@@ -2383,6 +2383,7 @@ component accessors="true" singleton {
 						port=site.SSLPort,
 						hosts=site.hostAlias,
 						type='ssl',
+						HTTP2Enable=site.HTTP2Enable,
 						SSLCertFile=site.SSLCertFile,
 						SSLKeyFile=site.SSLKeyFile,
 						SSLKeyPass=site.SSLKeyPass,
@@ -2407,7 +2408,7 @@ component accessors="true" singleton {
 					var params = bindingBuildBasic( binding, site );
 					params.type = type;
 					params.site = siteName;
-					params.HTTP2Enable=site.HTTP2Enable;
+					params.HTTP2Enable=binding.HTTP2Enable ?: site.HTTP2Enable;
 					params.SSLCertFile=binding.certFile ?: '';
 					params.SSLKeyFile=binding.keyFile ?: '';
 					params.SSLKeyPass=binding.keyPass ?: '';
@@ -3649,7 +3650,8 @@ component accessors="true" singleton {
 							'listen' : '',
 							'IP' : '',
 							'port' : '',
-							'host' : ''
+							'host' : '',
+							'HTTP2Enable' : true
 						},
 						'SSL' : {
 							'listen' : '',
@@ -3665,14 +3667,15 @@ component accessors="true" singleton {
 								'CACertFiles' : '',
 								'CATrustStoreFile' : '',
 								'CATrustStorePass' : ''
-							}
+							},
+							'HTTP2Enable' : true
 						},
 						'AJP' : {
 							'listen' : '',
 							'IP' : '',
 							'port' : '',
 							'host' : '',
-							'secret' : ''
+							'secret' : '',
 						}
 					}
 				}
