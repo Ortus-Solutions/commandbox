@@ -150,6 +150,7 @@ component aliases='status,server info' {
 						}
 						return acc;
 					}, [] )
+					// The sorting matches the Java logic in Runwar's BindingMatcherHandler class
 					.map( (b)=>{
 						if( b.default ?: false ) {
 							b.priority = 11;
@@ -198,8 +199,6 @@ component aliases='status,server info' {
 					} );
 					print.line();
 				}
-
-
 
 				print.line( '  Listeners:' );
 				if( thisServerInfo.listeners.HTTP.len() ) {
