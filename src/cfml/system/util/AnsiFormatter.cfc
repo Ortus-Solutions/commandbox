@@ -36,6 +36,9 @@ component accessors=true {
 		// [TRACE] io.undertow.predicate: Path(s) [/CFIDE/main/ide.cfm] MATCH input [/CFIDE/main/ide.cfm] for HttpServerExchange{ GET /CFIDE/main/ide.cfm}.
 		line = reReplaceNoCase( line, '^(\[[^]]*])( io\.undertow\.request\.dump: )(.*)', 'Request Dump: \3' );
 
+		// [TRACE] io.undertow.predicate: Path(s) [/CFIDE/main/ide.cfm] MATCH input [/CFIDE/main/ide.cfm] for HttpServerExchange{ GET /CFIDE/main/ide.cfm}.
+		line = reReplaceNoCase( line, '^(\[[^]]*])( io\.undertow[^:]*: )(.*)', 'Undertow: \3' );
+
 		// Log messages from Tuckey Rewrite engine "Rewrite UrlRewriter:"
 		// Ex:
 		// [DEBUG] org.tuckey.web.filters.urlrewrite.UrlRewriter: processing request for /services/training

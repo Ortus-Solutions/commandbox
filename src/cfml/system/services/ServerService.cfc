@@ -922,8 +922,10 @@ component accessors="true" singleton {
 				if( site.keyExists( 'webroot' ) ) {
 					site.webroot = fileSystemUtil.resolvePath( site.webroot, defaultServerConfigFileDirectory );
 				}
-
 				site.serverConfigFileDirectory = defaultServerConfigFileDirectory;
+
+				expandAndDefaultConfig( { data : site, rootDir : site.serverConfigFileDirectory } );
+
 				// If this site points to an external site config file, load and merge its settings
 				if( len( site.siteConfigFile ?: '' ) ) {
 					// If this site came from our siteCOnfigFiles above, no need to load it again
@@ -1734,6 +1736,7 @@ component accessors="true" singleton {
 			()=>{
 				InterceptorService.announceInterception( 'onServerSiteConfigRead', { site=site, siteJSON=siteJSON,siteConfigFile=site.siteConfigFile } );
 				siteJSON = systemSettings.expandDeepSystemSettings( siteJSON );
+				expandAndDefaultConfig( { data : siteJSON, rootDir : site.siteConfigFileDirectory } );
 				// merge in the site settings
 				JSONService.mergeData( site, siteJSON );
 			}
@@ -1741,6 +1744,136 @@ component accessors="true" singleton {
 
 		site.__loaded = true;
 		return arguments.siteName ?: site.name ?: getFileFromPath( site.siteConfigFile ).replaceNoCase( '.json', '' );
+	}
+
+	/**
+	 * This function abstracts file system expansion and default values so it is reusabe
+	 * - .site.json -> expand paths relative to .site.json file
+	 * - server.json site block -> expand paths relative to serverjson file
+	 * - server.json web block -> expand paths relative to server.json file
+	 * - config defaults web block -> expand paths relative to webroot
+	 */
+	private function expandAndDefaultConfig(config) {
+		config.data[ 'bindings' ] = config.data.bindings ?: {}
+		config.data.bindings[ 'http' ] = config.data.bindings.http ?: []
+		if( isStruct( config.data.bindings.http ) ) {
+			config.data.bindings.http = [ config.data.bindings.http ]
+		}
+		config.data.bindings[ 'ssl' ] = config.data.bindings.ssl ?: []
+		if( isStruct( config.data.bindings.ssl ) ) {
+			config.data.bindings.ssl = [ config.data.bindings.ssl ]
+		}
+		config.data.bindings[ 'ajp' ] = config.data.bindings.ajp ?: []
+		if( isStruct( config.data.bindings.ajp ) ) {
+			config.data.bindings.ajp = [ config.data.bindings.ajp ]
+		}
+
+		config.data.bindings.ssl.each( (sslBinding)=>{
+			if( isDefined( 'sslBinding.certs' ) && isArray( sslBinding.certs ) ) {
+				sslBinding.certs.each( (cert)=>{
+					if( !isNull( cert.certFile ) && len( cert.certFile ) ) {
+						cert.certFile = fileSystemUtil.resolvePath( cert.certFile, config.rootDir );
+					}
+					if( !isNull( cert.keyFile ) && len( cert.keyFile ) ) {
+						cert.keyFile = fileSystemUtil.resolvePath( cert.keyFile, config.rootDir );
+					}
+				} );
+				if( !isNull( sslBinding.certFile ) && len( sslBinding.certFile ) ) {
+					sslBinding.certFile = fileSystemUtil.resolvePath( sslBinding.certFile, config.rootDir );
+				}
+				if( !isNull( sslBinding.keyFile ) && len( sslBinding.keyFile ) ) {
+					sslBinding.keyFile = fileSystemUtil.resolvePath( sslBinding.keyFile, config.rootDir );
+				}
+			}
+			if( isDefined( 'sslBinding.clientCert' ) && isStruct( sslBinding.clientCert ) ) {
+				sslBinding.clientCert.CACertFiles = sslBinding.clientCert.CACertFiles ?: [];
+				if( isSimpleValue( sslBinding.clientCert.CACertFiles ) ) {
+					if( len( sslBinding.clientCert.CACertFiles ) ) {
+						sslBinding.clientCert.CACertFiles = listToArray( sslBinding.clientCert.CACertFiles );
+					} else {
+						sslBinding.clientCert.CACertFiles = [];
+					}
+				}
+				sslBinding.clientCert.CACertFiles = sslBinding.clientCert.CACertFiles.map( (CACertFile)=>fileSystemUtil.resolvePath( CACertFile, config.rootDir ) );
+				if( !isNull( sslBinding.clientCert.CATrustStoreFile ) && len( sslBinding.clientCert.CATrustStoreFile ) ) {
+					sslBinding.clientCert.CATrustStoreFile = fileSystemUtil.resolvePath( sslBinding.clientCert.CATrustStoreFile, config.rootDir );
+				}
+			}
+		} );
+
+		if( isDefined( 'config.data.SSL.certFile' ) && len( config.data.SSL.certFile ) ) { config.data.SSL.certFile = fileSystemUtil.resolvePath( config.data.SSL.certFile, config.rootDir ); }
+		if( isDefined( 'config.data.SSL.keyFile' ) && len( config.data.SSL.keyFile ) ) { config.data.SSL.keyFile = fileSystemUtil.resolvePath( config.data.SSL.keyFile, config.rootDir ); }
+
+		if( isDefined( 'config.data.SSL.certs' ) && isArray( config.data.SSL.certs ) ) {
+			config.data.SSL.certs.each( (cert)=>{
+				if( !isNull( cert.certFile ) && len( cert.certFile ) ) {
+					cert.certFile = fileSystemUtil.resolvePath( cert.certFile, config.rootDir );
+				}
+				if( !isNull( cert.keyFile ) && len( cert.keyFile ) ) {
+					cert.keyFile = fileSystemUtil.resolvePath( cert.keyFile, config.rootDir );
+				}
+			} );
+		 }
+		// relative certFile in server.json is resolved relative to the server.json
+		if( isDefined( 'config.data.SSL.clientCert.CACertFiles' ) ) {
+			if( isSimpleValue( config.data.SSL.clientCert.CACertFiles ) ) {
+				if( len( config.data.SSL.clientCert.CACertFiles ) ) {
+					config.data.SSL.clientCert.CACertFiles = listToArray( config.data.SSL.clientCert.CACertFiles );
+				} else {
+					config.data.SSL.clientCert.CACertFiles = [];
+				}
+			}
+			config.data.SSL.clientCert.CACertFiles = config.data.SSL.clientCert.CACertFiles.map( (f)=>fileSystemUtil.resolvePath( f, config.rootDir ) );
+		}
+
+		if( !isNull( config.data.SSL.clientCert.CATrustStoreFile ) && len( config.data.SSL.clientCert.CATrustStoreFile ) ) {
+			config.data.SSL.clientCert.CATrustStoreFile = fileSystemUtil.resolvePath( config.data.SSL.clientCert.CATrustStoreFile, config.rootDir );
+		}
+		config.data.aliases = config.data.aliases ?: {};
+		config.data.aliases = config.data.aliases.map( (a,p)=>fileSystemUtil.resolvePath( p, config.rootDir ) );
+
+		// Default missing values
+		config.data.security.clientCert.subjectDNs = config.data.security.clientCert.subjectDNs ?: '';
+		config.data.security.clientCert.issuerDNs = config.data.security.clientCert.issuerDNs ?: '';
+
+		// Convert all strings to arrays
+		if( isSimpleValue( config.data.security.clientCert.subjectDNs ) ) {
+			if( len( config.data.security.clientCert.subjectDNs ) ) {
+				config.data.security.clientCert.subjectDNs = [ config.data.security.clientCert.subjectDNs ];
+			} else {
+				config.data.security.clientCert.subjectDNs = [];
+			}
+		}
+		if( isSimpleValue( config.data.security.clientCert.issuerDNs ) ) {
+			if( len( config.data.security.clientCert.issuerDNs ) ) {
+				config.data.security.clientCert.issuerDNs = [ config.data.security.clientCert.issuerDNs ];
+			} else {
+				config.data.security.clientCert.issuerDNs = [];
+			}
+		}
+
+		config.data.rulesFile = config.data.rulesFile ?: '';
+		if( isSimpleValue( config.data.rulesFile ) ) {
+			if( len( config.data.rulesFile ) ) {
+				config.data.rulesFile = config.data.rulesFile.listToArray();
+			} else {
+				config.data.rulesFile = [];
+			}
+		}
+
+		config.data.rules = config.data.rules ?: [];
+		config.data.rules.append( config.data.rulesFile.reduce((predicates,fg)=>{
+			fg = fileSystemUtil.resolvePath( fg, config.rootDir );
+			return predicates.append( wirebox.getInstance( 'Globber' ).setPattern( fg ).matches().reduce( (predicates,file)=>{
+					if( lCase( file ).endsWith( '.json' ) ) {
+						return predicates.append( deserializeJSON( fileRead( file ) ), true );
+					} else {
+						return predicates.append( fileRead( file ).listToArray( chr(13)&chr(10) ), true );
+					}
+				}, [] ), true );
+		}, []), true);
+
+
 	}
 
 	/**
@@ -1766,44 +1899,9 @@ component accessors="true" singleton {
 		serverJSON.web = serverJSON.web ?: {};
 		defaults.web = defaults.web ?: {};
 		[
-			{ data : site, rootDir : site.siteConfigFileDirectory },
 			{ data : serverJSON.web, rootDir : site.serverConfigFileDirectory },
 			{ data : defaults.web, rootDir : serverInfo.webroot }
-		].each( (config)=>{
-			config.data[ 'bindings' ] = config.data.bindings ?: {}
-			config.data.bindings[ 'http' ] = config.data.bindings.http ?: []
-			if( isStruct( config.data.bindings.http ) ) {
-				config.data.bindings.http = [ config.data.bindings.http ]
-			}
-			config.data.bindings[ 'ssl' ] = config.data.bindings.ssl ?: []
-			if( isStruct( config.data.bindings.ssl ) ) {
-				config.data.bindings.ssl = [ config.data.bindings.ssl ]
-			}
-			config.data.bindings[ 'ajp' ] = config.data.bindings.ajp ?: []
-			if( isStruct( config.data.bindings.ajp ) ) {
-				config.data.bindings.ajp = [ config.data.bindings.ajp ]
-			}
-
-			config.data.bindings.ssl.each( (sslBinding)=>{
-				if( isDefined( 'sslBinding.certs' ) && isArray( sslBinding.certs ) ) {
-					sslBinding.certs.each( (cert)=>{
-						if( !isNull( cert.certFile ) && len( cert.certFile ) ) {
-							cert.certFile = fileSystemUtil.resolvePath( cert.certFile, config.rootDir );
-						}
-						if( !isNull( cert.keyFile ) && len( cert.keyFile ) ) {
-							cert.keyFile = fileSystemUtil.resolvePath( cert.keyFile, config.rootDir );
-						}
-					} );
-					if( !isNull( sslBinding.certFile ) && len( sslBinding.certFile ) ) {
-						sslBinding.certFile = fileSystemUtil.resolvePath( sslBinding.certFile, config.rootDir );
-					}
-					if( !isNull( sslBinding.keyFile ) && len( sslBinding.keyFile ) ) {
-						sslBinding.keyFile = fileSystemUtil.resolvePath( sslBinding.keyFile, config.rootDir );
-					}
-				}
-			} );
-
-		} );
+		].each( expandAndDefaultConfig );
 
 		site.bindings.http.append( serverJSON.web.bindings.http, true ).append( defaults.web.bindings.http, true );
 		site.bindings.ssl.append( serverJSON.web.bindings.ssl, true ).append( defaults.web.bindings.ssl, true );
@@ -1811,7 +1909,11 @@ component accessors="true" singleton {
 		serverInfo.bindings = site.bindings;
 
 		if( isSimpleValue( serverInfo.hostAlias ) ) {
-			serverInfo.hostAlias = serverInfo.hostAlias.listToArray();
+			if( len( serverInfo.hostAlias ) ) {
+				serverInfo.hostAlias = serverInfo.hostAlias.listToArray();
+			} else {
+				serverInfo.hostAlias = [];
+			}
 		}
 
 		if( !isNull( site.rewrites.config ) && len( site.rewrites.config ) && !isNull( site.rewrites.enabled ) && site.rewrites.enabled ) {
@@ -1850,77 +1952,11 @@ component accessors="true" singleton {
 		serverInfo.AJPEnable = serverProps.AJPEnable ?: site.AJP.enable ?: serverJSON.web.AJP.enable ?: defaults.web.AJP.enable;
 		serverInfo.AJPPort = serverProps.AJPPort ?: site.AJP.port ?: serverJSON.web.AJP.port ?: defaults.web.AJP.port;
 		serverInfo.AJPSecret = site.AJP.secret ?: serverJSON.web.AJP.secret ?: defaults.web.AJP.secret;
-
-
-		// relative certFile in server.json is resolved relative to the server.json
-		if( isDefined( 'serverJSON.web.SSL.certFile' ) ) { serverJSON.web.SSL.certFile = fileSystemUtil.resolvePath( serverJSON.web.SSL.certFile, site.serverConfigFileDirectory ); }
-		if( isDefined( 'site.SSL.certFile' ) ) { site.SSL.certFile = fileSystemUtil.resolvePath( site.SSL.certFile, site.siteConfigFileDirectory ); }
-		// relative certFile in config setting server defaults is resolved relative to the web root
-		if( len( defaults.web.SSL.certFile ?: '' ) ) { defaults.web.SSL.certFile = fileSystemUtil.resolvePath( defaults.web.SSL.certFile, serverInfo.webroot ); }
 		serverInfo.SSLCertFile = serverProps.SSLCertFile ?: site.SSL.certFile ?: serverJSON.web.SSL.certFile ?: defaults.web.SSL.certFile;
-
-		// relative keyFile in server.json is resolved relative to the server.json
-		if( isDefined( 'serverJSON.web.SSL.keyFile' ) ) { serverJSON.web.SSL.keyFile = fileSystemUtil.resolvePath( serverJSON.web.SSL.keyFile, site.serverConfigFileDirectory ); }
-		if( isDefined( 'site.SSL.keyFile' ) ) { site.SSL.keyFile = fileSystemUtil.resolvePath( site.SSL.keyFile, site.siteConfigFileDirectory ); }
-		if( len( defaults.web.SSL.keyFile ?: '' ) ) { defaults.web.SSL.keyFile = fileSystemUtil.resolvePath( defaults.web.SSL.keyFile, serverInfo.webroot ); }
-
-		if( isDefined( 'serverJSON.web.SSL.certs' ) && isArray( serverJSON.web.SSL.certs ) ) {
-			serverJSON.web.SSL.certs.each( (cert)=>{
-				if( !isNull( cert.certFile ) && len( cert.certFile ) ) {
-					cert.certFile = fileSystemUtil.resolvePath( cert.certFile, site.serverConfigFileDirectory );
-				}
-				if( !isNull( cert.keyFile ) && len( cert.keyFile ) ) {
-					cert.keyFile = fileSystemUtil.resolvePath( cert.keyFile, site.serverConfigFileDirectory );
-				}
-			} );
-		 }
-		 if( isDefined( 'defaults.web.SSL.certs' ) && isArray( defaults.web.SSL.certs ) ) {
-			defaults.web.SSL.certs.each( (cert)=>{
-				 if( !isNull( cert.certFile ) && len( cert.certFile ) ) {
-					 cert.certFile = fileSystemUtil.resolvePath( cert.certFile, serverInfo.webroot );
-				 }
-				 if( !isNull( cert.keyFile ) && len( cert.keyFile ) ) {
-					 cert.keyFile = fileSystemUtil.resolvePath( cert.keyFile, serverInfo.webroot );
-				 }
-			 } );
-		  }
 		serverInfo.SSLKeyFile = serverProps.SSLKeyFile ?: site.SSL.keyFile ?: serverJSON.web.SSL.keyFile ?: defaults.web.SSL.keyFile;
 		serverInfo.SSLKeyPass = serverProps.SSLKeyPass ?: site.SSL.keyPass ?: serverJSON.web.SSL.keyPass ?: defaults.web.SSL.keyPass;
 		serverInfo.SSLCerts = site.SSL.certs ?: serverJSON.web.SSL.certs ?: defaults.web.SSL.certs;
-
-		// relative certFile in server.json is resolved relative to the server.json
-		if( isDefined( 'serverJSON.web.SSL.clientCert.CACertFiles' ) ) {
-			if( isSimpleValue( serverJSON.web.SSL.clientCert.CACertFiles ) ) {
-				serverJSON.web.SSL.clientCert.CACertFiles = listToArray( serverJSON.web.SSL.clientCert.CACertFiles );
-			}
-			serverJSON.web.SSL.clientCert.CACertFiles = serverJSON.web.SSL.clientCert.CACertFiles.map( (f)=>fileSystemUtil.resolvePath( f, site.serverConfigFileDirectory ) );
-		}
-		if( isDefined( 'site.SSL.clientCert.CACertFiles' ) ) {
-			if( isSimpleValue( site.SSL.clientCert.CACertFiles ) ) {
-				site.SSL.clientCert.CACertFiles = listToArray( site.SSL.clientCert.CACertFiles );
-			}
-			site.SSL.clientCert.CACertFiles = site.SSL.clientCert.CACertFiles.map( (f)=>fileSystemUtil.resolvePath( f, site.siteConfigFileDirectory ) );
-		}
-		// relative certFile in config setting server defaults is resolved relative to the web root
-		if( len( defaults.web.SSL.clientCert.CACertFiles ) ) {
-			if( isSimpleValue( defaults.web.SSL.clientCert.CACertFiles ) ) {
-				defaults.web.SSL.clientCert.CACertFiles = listToArray( defaults.web.SSL.clientCert.CACertFiles );
-			}
-			defaults.web.SSL.clientCert.CACertFiles = defaults.web.SSL.clientCert.CACertFiles.map( (f)=>fileSystemUtil.resolvePath( f, serverInfo.webroot ) );
-		} else {
-			defaults.web.SSL.clientCert.CACertFiles = [];
-		}
 		serverInfo.clientCertCACertFiles = site.SSL.clientCert.CACertFiles ?: serverJSON.web.SSL.clientCert.CACertFiles ?: defaults.web.SSL.clientCert.CACertFiles;
-
-		if( !isNull( serverJSON.web.SSL.clientCert.CATrustStoreFile ) ) {
-			serverJSON.web.SSL.clientCert.CATrustStoreFile = fileSystemUtil.resolvePath( serverJSON.web.SSL.clientCert.CATrustStoreFile, site.serverConfigFileDirectory );
-		}
-		if( !isNull( site.SSL.clientCert.CATrustStoreFile ) ) {
-			site.SSL.clientCert.CATrustStoreFile = fileSystemUtil.resolvePath( site.SSL.clientCert.CATrustStoreFile, site.siteConfigFileDirectory );
-		}
-		if( len( defaults.web.SSL.clientCert.CATrustStoreFile ) ) {
-			defaults.web.SSL.clientCert.CATrustStoreFile = fileSystemUtil.resolvePath( defaults.web.SSL.clientCert.CATrustStoreFile, serverInfo.webroot );
-		}
 		serverInfo.clientCertCATrustStoreFile = site.SSL.clientCert.CATrustStoreFile ?: serverJSON.web.SSL.clientCert.CATrustStoreFile ?: defaults.web.SSL.clientCert.CATrustStoreFile;
 		serverInfo.clientCertCATrustStorePass = site.SSL.clientCert.CATrustStorePass ?: serverJSON.web.SSL.clientCert.CATrustStorePass ?: defaults.web.SSL.clientCert.CATrustStorePass;
 
@@ -2060,55 +2096,6 @@ component accessors="true" singleton {
 		serverInfo.clientCertEnable	= site.security.clientCert.enable ?: serverJSON.web.security.clientCert.enable ?: defaults.web.security.clientCert.enable;
 		serverInfo.clientCertTrustUpstreamHeaders =	site.security.clientCert.trustUpstreamHeaders ?: serverJSON.web.security.clientCert.trustUpstreamHeaders ?: defaults.web.security.clientCert.trustUpstreamHeaders;
 
-		// Default missing values
-		serverJSON.web.security.clientCert.subjectDNs = serverJSON.web.security.clientCert.subjectDNs ?: '';
-		serverJSON.web.security.clientCert.issuerDNs = serverJSON.web.security.clientCert.issuerDNs ?: '';
-		site.security.clientCert.subjectDNs = site.security.clientCert.subjectDNs ?: '';
-		site.security.clientCert.issuerDNs = site.security.clientCert.issuerDNs ?: '';
-
-		// Convert all strings to arrays
-		if( isSimpleValue( serverJSON.web.security.clientCert.subjectDNs ) ) {
-			if( len( serverJSON.web.security.clientCert.subjectDNs ) ) {
-				serverJSON.web.security.clientCert.subjectDNs = [ serverJSON.web.security.clientCert.subjectDNs ];
-			} else {
-				serverJSON.web.security.clientCert.subjectDNs = [];
-			}
-		}
-		if( isSimpleValue( site.security.clientCert.subjectDNs ) ) {
-			if( len( site.security.clientCert.subjectDNs ) ) {
-				site.security.clientCert.subjectDNs = [ site.security.clientCert.subjectDNs ];
-			} else {
-				site.security.clientCert.subjectDNs = [];
-			}
-		}
-		if( isSimpleValue( defaults.web.security.clientCert.subjectDNs ) ) {
-			if( len( defaults.web.security.clientCert.subjectDNs ) ) {
-				defaults.web.security.clientCert.subjectDNs = [ defaults.web.security.clientCert.subjectDNs ];
-			} else {
-				defaults.web.security.clientCert.subjectDNs = [];
-			}
-		}
-		if( isSimpleValue( serverJSON.web.security.clientCert.issuerDNs ) ) {
-			if( len( serverJSON.web.security.clientCert.issuerDNs ) ) {
-				serverJSON.web.security.clientCert.issuerDNs = [ serverJSON.web.security.clientCert.issuerDNs ];
-			} else {
-				serverJSON.web.security.clientCert.issuerDNs = [];
-			}
-		}
-		if( isSimpleValue( site.security.clientCert.issuerDNs ) ) {
-			if( len( site.security.clientCert.issuerDNs ) ) {
-				site.security.clientCert.issuerDNs = [ site.security.clientCert.issuerDNs ];
-			} else {
-				site.security.clientCert.issuerDNs = [];
-			}
-		}
-		if( isSimpleValue( defaults.web.security.clientCert.issuerDNs ) ) {
-			if( len( defaults.web.security.clientCert.issuerDNs ) ) {
-				defaults.web.security.clientCert.issuerDNs = [ defaults.web.security.clientCert.issuerDNs ];
-			} else {
-				defaults.web.security.clientCert.issuerDNs = [];
-			}
-		}
 
 		// Combine server defaults AND any settings in server.json
 		serverInfo.clientCertSubjectDNs	= serverJSON.web.security.clientCert.subjectDNs
@@ -2129,14 +2116,9 @@ component accessors="true" singleton {
 		serverInfo.caseSensitivePaths = site.caseSensitivePaths ?: serverJSON.web.caseSensitivePaths ?: defaults.web.caseSensitivePaths;
 		serverInfo.sendFileMinSizeKB = site.sendFileMinSizeKB ?: serverJSON.web.sendFileMinSizeKB ?: defaults.web.sendFileMinSizeKB;
 
-		// Global aliases are always added on top of server.json (but don't overwrite)
-		serverInfo.aliases = defaults.web.aliases.map( (a,p)=>fileSystemUtil.resolvePath( p, serverInfo.webroot ) );
-		serverInfo.aliases.append( ( serverJSON.web.aliases ?: {} ).map( (a,p)=>{
-			return fileSystemUtil.resolvePath( p, site.serverConfigFileDirectory );
-		} ), true );
-		serverInfo.aliases.append( ( site.aliases ?: {} ).map( (a,p)=>{
-			return fileSystemUtil.resolvePath( p, site.siteConfigFileDirectory );
-		} ), true );
+		serverInfo.aliases = defaults.web.aliases;
+		serverInfo.aliases.append( serverJSON.web.aliases, true );
+		serverInfo.aliases.append( site.aliases, true );
 
 		// Combine global and server-specific mime types
 		serverInfo.mimeTypes = defaults.web.mimeTypes.append( serverJSON.web.mimeTypes ?: {}, true );
@@ -2183,69 +2165,9 @@ component accessors="true" singleton {
 		}
 
 
-		if( site.keyExists( 'rules' ) ) {
-			if( !isArray( site.rules ) ) {
-				throw( message="'site.#name#.rules' key in your server.json must be an array of strings.", type="commandException" );
-			}
-			serverInfo.webRules.append( site.rules, true);
-		}
-
-		if( serverJSON.keyExists( 'web' ) && serverJSON.web.keyExists( 'rules' ) ) {
-			if( !isArray( serverJSON.web.rules ) ) {
-				throw( message="'rules' key in your server.json must be an array of strings.", type="commandException" );
-			}
-			serverInfo.webRules.append( serverJSON.web.rules, true);
-		}
-		if( site.keyExists( 'rulesFile' ) ) {
-			if( isSimpleValue( site.rulesFile ) ) {
-				site.rulesFile = site.rulesFile.listToArray();
-			}
-			serverInfo.webRules.append( site.rulesFile.reduce((predicates,fg)=>{
-				fg = fileSystemUtil.resolvePath( fg, site.siteConfigFileDirectory );
-				return predicates.append( wirebox.getInstance( 'Globber' ).setPattern( fg ).matches().reduce( (predicates,file)=>{
-						if( lCase( file ).endsWith( '.json' ) ) {
-							return predicates.append( deserializeJSON( fileRead( file ) ), true );
-						} else {
-							return predicates.append( fileRead( file ).listToArray( chr(13)&chr(10) ), true );
-						}
-					}, [] ), true );
-			}, []), true );
-		}
-		if( serverJSON.keyExists( 'web' ) && serverJSON.web.keyExists( 'rulesFile' ) ) {
-			if( isSimpleValue( serverJSON.web.rulesFile ) ) {
-				serverJSON.web.rulesFile = serverJSON.web.rulesFile.listToArray();
-			}
-			serverInfo.webRules.append( serverJSON.web.rulesFile.reduce((predicates,fg)=>{
-				fg = fileSystemUtil.resolvePath( fg, site.serverConfigFileDirectory );
-				return predicates.append( wirebox.getInstance( 'Globber' ).setPattern( fg ).matches().reduce( (predicates,file)=>{
-						if( lCase( file ).endsWith( '.json' ) ) {
-							return predicates.append( deserializeJSON( fileRead( file ) ), true );
-						} else {
-							return predicates.append( fileRead( file ).listToArray( chr(13)&chr(10) ), true );
-						}
-					}, [] ), true );
-			}, []), true );
-		}
-		if( defaults.keyExists( 'web' ) && defaults.web.keyExists( 'rules' ) ) {
-			serverInfo.webRules.append( defaults.web.rules, true);
-		}
-
-		if( defaults.keyExists( 'web' ) && defaults.web.keyExists( 'rulesFile' ) ) {
-			var defaultsRulesFile = defaults.web.rulesFile;
-			if( isSimpleValue( defaultsRulesFile ) ) {
-				defaultsRulesFile = defaultsRulesFile.listToArray();
-			}
-			serverInfo.webRules.append( defaultsRulesFile.reduce((predicates,fg)=>{
-				fg = fileSystemUtil.resolvePath( fg, serverInfo.webroot );
-				return predicates.append( wirebox.getInstance( 'Globber' ).setPattern( fg ).matches().reduce( (predicates,file)=>{
-						if( lCase( file ).endsWith( '.json' ) ) {
-							return predicates.append( deserializeJSON( fileRead( file ) ), true );
-						} else {
-							return predicates.append( fileRead( file ).listToArray( chr(13)&chr(10) ), true );
-						}
-					}, [] ), true );
-			}, []), true);
-		}
+		serverInfo.webRules.append( site.rules, true);
+		serverInfo.webRules.append( serverJSON.web.rules, true);
+		serverInfo.webRules.append( defaults.web.rules, true);
 
 		// Default CommandBox rules.
 		if( serverInfo.blockSensitivePaths ) {
@@ -2408,6 +2330,7 @@ component accessors="true" singleton {
 					var params = bindingBuildBasic( binding, site );
 					params.type = type;
 					params.site = siteName;
+					// Undertow seems to only support this at the server level, but tracking it at the binding/listener level in case that changes
 					params.HTTP2Enable=binding.HTTP2Enable ?: site.HTTP2Enable;
 					params.SSLCertFile=binding.certFile ?: '';
 					params.SSLKeyFile=binding.keyFile ?: '';
@@ -2567,6 +2490,7 @@ component accessors="true" singleton {
 			port=80,
 			hosts=['*'],
 			type='http',
+			// Undertow seems to only support this at the server level, but tracking it at the binding/listener level in case that changes
 			HTTP2Enable=true,
 			SSLCertFile='',
 			SSLKeyFile='',

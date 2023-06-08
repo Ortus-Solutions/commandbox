@@ -369,6 +369,7 @@ component accessors="true" {
 
 		// Strip off the "not found" part
 		var remainingPattern = findUnmatchedPattern( thisPattern, baseDir )
+		sleep(1);
 		var dl = directoryList (
 				listInfo='query',
 				recurse=false,
