@@ -199,8 +199,14 @@ component aliases='status,server info' {
 					} );
 
 				if( thisServerInfo.sites.len() == 1 ) {
-					var site = thisServerInfo.sites[ thisServerInfo.sites.keyArray().first() ]
+					var siteName = thisServerInfo.sites.keyArray().first();
+					var site = thisServerInfo.sites[ siteName ]
 					print.indentedLine( site.defaultBaseURL & ' --> ' & site.webroot );
+					if( verbose ) {
+						print.indentedIndentedLine( '  Bindings: ' )
+						sortedBindings.each( (b)=>print.indentedIndentedLine( '  - ' & b.bindingName ) );
+						print.line();
+					}
 				} else {
 					print.line().line();
 					thisServerInfo.sites.each( (siteName, site)=>{
@@ -247,7 +253,7 @@ component aliases='status,server info' {
 
 					print.indentedLine( 'ID: ' & thisServerInfo.id );
 
-					print.line().indentedLine( 'Server Home: ' & thisServerInfo.serverHome );
+					print.line().indentedLine( 'Server Home: ' & thisServerInfo.serverHomeDirectory );
 
 					print.line().indentedLine( 'PID file used for "running" check: ' )
 						.indentedIndentedLine( serverInfo.pidFile );

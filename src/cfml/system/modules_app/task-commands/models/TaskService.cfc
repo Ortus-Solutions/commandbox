@@ -41,7 +41,7 @@ component singleton accessors=true {
 	*
 	* @returns The output of the task.  It's up to the caller to output it.
 	*/
-	string function runTask( required string taskFile,  required string target='run', taskArgs={}, boolean topLevel=true, any taskObject ) {
+	string function runTask( required string taskFile,  requi=ed string target='run', taskArgs={}, boolean topLevel=true, any taskObject ) {
 
 		if( !ConfigService.getSetting( 'taskCaching', false ) ) {
 			// This is necessary so changes to tasks get picked up right away.

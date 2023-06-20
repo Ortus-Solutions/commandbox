@@ -122,7 +122,7 @@ component accessors="true" singleton {
 						} else {
 							mergeData( targetProperty, complexValue );
 						}
-						results.append( '#propertyValue# appended to #prop#' );
+						results.append( '#propertyValue.toString()# appended to #prop#' );
 						continue;
 					}
 
@@ -141,7 +141,7 @@ component accessors="true" singleton {
 				arrays.each( (a)=>evaluate( 'JSON#a# = JSON#a# ?: []' ) );
 				evaluate( '#fullPropertyName# = propertyValue' );
 			}
-			results.append( 'Set #prop# = #propertyValue#' );
+			results.append( 'Set #prop# = #propertyValue.toString()#' );
 		}
 		return results;
 	}

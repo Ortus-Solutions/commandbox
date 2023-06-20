@@ -966,6 +966,7 @@ component accessors="true" singleton {
 		} else {
 
 			var site = serverJSON.sites[ serverInfo.name ] = [:];
+
 			site.serverConfigFileDirectory = defaultServerConfigFileDirectory;
 			site.siteConfigFileDirectory = defaultServerConfigFileDirectory;
 			site.siteConfigFile = defaultServerConfigFile;
@@ -976,6 +977,8 @@ component accessors="true" singleton {
 				siteServerInfo.append( prevSites[ serverInfo.name ] );
 			}
 			siteServerInfo.verbose = serverInfo.verbose;
+
+			expandAndDefaultConfig( { data : site, rootDir : site.serverConfigFileDirectory } );
 
 			resolveSiteSettings( serverInfo.name, siteServerInfo, serverProps, serverJSON, defaults, false );
 			serverInfo['sites' ] = [
@@ -1886,6 +1889,19 @@ component accessors="true" singleton {
 		serverInfo.webroot = site.webroot;
 		serverInfo.host = serverProps.host ?: site.host ?: serverJSON.web.host ?: defaults.web.host;
 		serverInfo.hostAlias = site.hostAlias ?: serverJSON.web.hostAlias ?: defaults.web.hostAlias;
+
+		if( isSimpleValue( serverInfo.hostAlias ) ) {
+			if( len( serverInfo.hostAlias ) ) {
+				serverInfo.hostAlias = serverInfo.hostAlias.listToArray();
+			} else {
+				serverInfo.hostAlias = [];
+			}
+		}
+		// If the host is not an IP, add it as a host alias
+		if( len( serverInfo.host ) && !reFind('^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$', serverInfo.host ) && !serverInfo.hostAlias.findNoCase( serverInfo.host ) ) {
+			serverInfo.hostAlias.append( serverInfo.host );
+		}
+
 		serverInfo.default = site.default ?: false;
 
 		if( multiSite ) {
@@ -1907,14 +1923,6 @@ component accessors="true" singleton {
 		site.bindings.ssl.append( serverJSON.web.bindings.ssl, true ).append( defaults.web.bindings.ssl, true );
 		site.bindings.ajp.append( serverJSON.web.bindings.ajp, true ).append( defaults.web.bindings.ajp, true );
 		serverInfo.bindings = site.bindings;
-
-		if( isSimpleValue( serverInfo.hostAlias ) ) {
-			if( len( serverInfo.hostAlias ) ) {
-				serverInfo.hostAlias = serverInfo.hostAlias.listToArray();
-			} else {
-				serverInfo.hostAlias = [];
-			}
-		}
 
 		if( !isNull( site.rewrites.config ) && len( site.rewrites.config ) && !isNull( site.rewrites.enabled ) && site.rewrites.enabled ) {
 			throw( 'You cannot set "rewrites" config XML on a per-site basis as Tuckey Rewrite is servlet-wide. You can use Server Rules for per-site rewrites.' );
@@ -3554,9 +3562,6 @@ component accessors="true" singleton {
 			// ... Then add them in
 			props = JSONService.addProp( props, '', '', getDefaultServerJSON() );
 
-			props = JSONService.addProp( props, '', '', {
-				'openbrowserURL' : ''
-			} );
 			// Suggest a couple optional web error pages
 			props = JSONService.addProp( props, '', '', {
 				'web' : {
@@ -3638,6 +3643,7 @@ component accessors="true" singleton {
 						var siteProperties = getDefaultServerJSON().web;
 						siteProperties.bindings = bindingsStub.web.bindings;
 						siteProperties['default']=false;
+						siteProperties['openbrowserURL']='';
 						props = JSONService.addProp( props, userTyped, '[ "sites" ][ "#siteName#" ]', { 'sites' : { '#siteName#' : siteProperties } } );
 					}
 				}

@@ -122,7 +122,7 @@ component {
 			}
 		};
 
-		print.line(dataQueryResults);
+		print.text(dataQueryResults);
 
 	}
 
