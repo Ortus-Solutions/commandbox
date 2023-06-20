@@ -992,7 +992,7 @@ component accessors="true" singleton {
 			serverInfo.openbrowser = false;
 		}
 
-		buildBindings( serverInfo );
+		buildBindings( serverInfo, serverJSON, defaults, serverProps, serverDetails );
 
 	    // As long as there's no WAR Path, let's install the engine to use.
 		if( serverInfo.WARPath == '' ){
@@ -1947,7 +1947,7 @@ component accessors="true" singleton {
 		serverInfo.port = val( serverInfo.port );
 		// Server default is 0 not null.
 		if( serverInfo.port == 0 && serverInfo.HTTPEnable ) {
-			serverInfo.port = getRandomPort( serverInfo.host );
+			serverInfo.port = -1;
 		// For backwards compat, if there is a port specified, even if bindings are in use, enable HTTP.
 		} else if( serverInfo.port > 0 ) {
 			serverInfo.HTTPEnable = true;
@@ -2250,7 +2250,9 @@ component accessors="true" singleton {
 	 * - type
 	 * - site
 	 */
-	function buildBindings( required struct serverInfo ) {
+	function buildBindings( required struct serverInfo, serverJSON, defaults, serverProps, serverDetails ) {
+		interceptorService.announceInterception( 'preBindingsBuild', { serverInfo=serverInfo, serverJSON=serverJSON, defaults=defaults, serverProps=serverProps, serverDetails=serverDetails } );
+
 		var sites = serverInfo.sites;
 
 		// clean slate per start
@@ -2297,19 +2299,17 @@ component accessors="true" singleton {
 			if( !len( site.hostAlias ) ) {
 				site.hostAlias.append( '*' )
 			}
-			// The legacy bindings use "host" to represent the IP for the binding.
-			var IP = getAddressByHost( site.host ).getHostAddress();
 
 			// Backwards compat bindings in web.http, web.ssl, and web.ajp
 			if( site.HTTPEnable ) {
-				allBindings.append( newBinding( site=siteName, IP=IP, port=site.port, hosts=site.hostAlias, type='http', HTTP2Enable=site.HTTP2Enable ) );
+				allBindings.append( newBinding( site=siteName, IP='', port=site.port, hosts=site.hostAlias, type='http', HTTP2Enable=site.HTTP2Enable ) );
 			}
 
 			if( site.SSLEnable ) {
 				allBindings.append(
 					newBinding(
 						site=siteName,
-						IP=IP,
+						IP='',
 						port=site.SSLPort,
 						hosts=site.hostAlias,
 						type='ssl',
@@ -2328,7 +2328,7 @@ component accessors="true" singleton {
 			}
 
 			if( site.AJPEnable ) {
-				allBindings.append( newBinding( site=siteName, IP=IP, port=site.AJPPort, hosts=site.hostAlias, type='ajp', AJPSecret=site.AJPSecret ) );
+				allBindings.append( newBinding( site=siteName, IP='', port=site.AJPPort, hosts=site.hostAlias, type='ajp', AJPSecret=site.AJPSecret ) );
 			}
 
 			// Gather bindings of each type for this site
@@ -2369,6 +2369,32 @@ component accessors="true" singleton {
 				defaultSiteName = siteName;
 			}
 
+		} );
+		interceptorService.announceInterception( 'onBindingsBuild', { serverInfo=serverInfo, serverJSON=serverJSON, defaults=defaults, serverProps=serverProps, serverDetails=serverDetails, bindings=allBindings } );
+
+		// We're waiting to select random ports and resolve IPs from hostnames until AFTER we've fired the interception point above in case hostupdater is installed.
+		allBindings = allBindings.map( (b)=>{
+			var thisSite = sites[ b.site ];
+			var aliases = thisSite.hostAlias.filter( (a)=>!a.findNoCase('*') && !a.startsWith('~') );
+			if( !len( b.IP ) ){
+				if( len( aliases ) ){
+					b.IP = getAddressByHost( aliases.first() ).getHostAddress();
+				} else {
+					b.IP = getAddressByHost( thisSite.host ).getHostAddress();
+				}
+			}
+			if(  b.port == -1 ) {
+				if( len( aliases ) ){
+					b.port = getRandomPort( aliases.first() )
+				} else {
+					b.port = getRandomPort( thisSite.host )
+				}
+				thisSite.port = b.port;
+				if( serverInfo.sites.len() == 1 ) {
+					serverInfo.port = b.port;
+				}
+ 			}
+			return b;
 		} );
 
 		[ (b)=>b.IP=='0.0.0.0', (b)=>b.IP!='0.0.0.0' ].each( (filter)=>{
@@ -2484,6 +2510,7 @@ component accessors="true" singleton {
 			if( len( defaultSiteName ) ) {
 				serverInfo.bindings[ lcase( 'default' ) ] = { 'site' : defaultSiteName };
 			}
+			interceptorService.announceInterception( 'postBindingsBuild', { serverInfo=serverInfo, serverJSON=serverJSON, defaults=defaults, serverProps=serverProps, serverDetails=serverDetails } );
 
 		} );
 
