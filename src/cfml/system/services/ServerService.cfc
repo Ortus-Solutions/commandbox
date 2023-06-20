@@ -2376,6 +2376,7 @@ component accessors="true" singleton {
 		allBindings = allBindings.map( (b)=>{
 			var thisSite = sites[ b.site ];
 			var aliases = thisSite.hostAlias.filter( (a)=>!a.findNoCase('*') && !a.startsWith('~') );
+			// Fill in any missing IPs that need resolved from hostname
 			if( !len( b.IP ) ){
 				if( len( aliases ) ){
 					b.IP = getAddressByHost( aliases.first() ).getHostAddress();
@@ -2383,6 +2384,7 @@ component accessors="true" singleton {
 					b.IP = getAddressByHost( thisSite.host ).getHostAddress();
 				}
 			}
+			// Fill in any random ports
 			if(  b.port == -1 ) {
 				if( len( aliases ) ){
 					b.port = getRandomPort( aliases.first() )
