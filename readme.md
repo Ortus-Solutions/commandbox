@@ -10,7 +10,7 @@
 
 # WELCOME TO COMMANDBOX
 
-CommandBox ColdFusion (CFML) CLI, Package Manager, REPL and much more!
+CommandBox ColdFusion (CFML) CLI, Package Manager, Embedded CFML Server, REPL and much more!
 
 * Trademark + Copyright since 2014 by [Ortus Solutions, Corp](https://www.ortussolutions.com)
 * [All products by Ortus Solutions](https://www.ortussolutions.com/products)
@@ -28,17 +28,17 @@ Download from the [Ortus Download Site](https://downloads.ortussolutions.com/#/o
 
 **Getting Started Guide**
 
-Get going with CommandBox in a matter of minutes with our [Getting Started Guide](http://ortus.gitbooks.io/commandbox-documentation/content/getting_started_guide.html)
+Get going with CommandBox in a matter of minutes with our [Getting Started Guide](https://commandbox.ortusbooks.com/getting-started-guide)
 
 **Bug Tracker**
 
-Found an issue? Check out [Bug Tracker](https://ortussolutions.atlassian.net/browse/COMMANDBOX)
+Found an issue? Check out [Bug Tracker](https://ortussolutions.atlassian.net/jira/software/c/projects/COMMANDBOX/issues)
 
 
 ## DOCUMENTATION
 
 View our latest installation, usage, and development docs here:
-[General Docs](https://www.ortussolutions.com/products/commandbox/docs)
+[General Docs](https://commandbox.ortusbooks.com/)
 
 View our latest Command API Docs here:
 [General Docs](https://apidocs.ortussolutions.com/commandbox/current)
