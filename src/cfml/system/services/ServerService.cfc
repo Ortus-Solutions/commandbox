@@ -1107,7 +1107,7 @@ component accessors="true" singleton {
 							ajpPorts[b.port]=true;
 							var charBlock = find( "'", b.AJPSecret ) ? '"' : "'";
 							site.webRules.prepend(
-								"equals(%p, #b.port#) and not equals(%{r,secret}, #charBlock##b.AJPSecret##charBlock#) -> set-error(403)"
+								"equals(%{r,__ajp_port}, #b.port#) and not equals(%{r,secret}, #charBlock##b.AJPSecret##charBlock#) -> { set-error(403); done }"
 							);
 						}
 					} );
@@ -1355,6 +1355,15 @@ component accessors="true" singleton {
 		}
 
 		serverInfo.JVMProperties.each( (k,v)=>argTokens.append( '-D#k#=#v#' ) );
+
+		// Build the text verison of the server rules.
+		serverInfo.sites.each( ( siteName, site )=>{
+			site.webRulesText = site.webRules.toList( CR );
+			if( serverInfo.sites.count() == 1 ) {
+				serverInfo.webRulesText = site.webRulesText;
+			}
+		} );
+
 
 		// Add java agent
 		if( len( trim( javaAgent ) ) ) { argTokens.append( javaagent ); }
@@ -2231,7 +2240,6 @@ component accessors="true" singleton {
 
 		// Remove comments
 		serverInfo.webRules = serverInfo.webRules.filter( (r)=>!trim(r).startsWith('##') );
-		serverInfo.webRulesText = serverInfo.webRules.toList( CR );
 
 		if( serverInfo.verbose ) {
 			job.addLog( "Site name - " & name );

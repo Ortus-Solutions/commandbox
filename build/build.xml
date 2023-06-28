@@ -797,7 +797,7 @@ External Dependencies:
 					chdir="%OLDPWD%"
 					icon="${src.dir}/resources/box.ico"
 					stayAlive="true">
-					<jre path="./jre/;%JAVA_HOME%;%JRE_HOME%;%JDK_HOME%;%PATH%" minVersion="1.8.0" maxVersion="15.0.0" />
+					<jre path="./jre/;%JAVA_HOME%;%JRE_HOME%;%JDK_HOME%;%PATH%" minVersion="1.8.0" />
 					<versionInfo fileVersion="${commandbox.version.noPrereleaseID}.0"
 								 txtFileVersion="${commandbox.version}.${build.number}"
 								 fileDescription="${commandbox.description}"

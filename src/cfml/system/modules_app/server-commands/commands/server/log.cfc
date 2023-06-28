@@ -47,7 +47,7 @@ component {
 
 		var logfile = serverInfo.logdir & "/server.out.txt";
 		if( access ) {
-			if( serverInfo.sites.count() ) {
+			if( serverInfo.sites.count()>1 ) {
 				if( len( site ) && serverInfo.sites.keyExists( site ) ) {
 					logfile = serverInfo.sites[site].accessLogPath;
 				} else if( len( site ) ) {
