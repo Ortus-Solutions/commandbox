@@ -237,7 +237,8 @@ component accessors="true" singleton {
 					}
 				},
 				'mimeTypes' : duplicate( d.web.mimeTypes ?: {} ),
-				'bindings' : duplicate( d.web.bindings ?: {} )
+				'bindings' : duplicate( d.web.bindings ?: {} ),
+				'adobeScriptsAlias' : d.web.adobeScriptsAlias ?: nullValue()
 			},
 			'app' : {
 				'logDir' : d.app.logDir ?: '',
@@ -1128,10 +1129,16 @@ component accessors="true" singleton {
 				}
 			}
 
-			// Add in "/cf_scripts" alias for 2016+ servers if the /cf_scripts folder exists in the war we're starting and there isn't already an alias
+			// Add in "/cf_scripts/scripts/" alias for 2016+ servers if the /cf_scripts//scripts/ folder exists in the war we're starting and there isn't already an alias
 			// for this.  I'm specifically not checking the engine name and version so this will work on regular Adobe wars and be future proof.
-			if( directoryExists( serverInfo.serverHomeDirectory & '/cf_scripts' ) && !site.aliases.keyExists( '/cf_scripts' )  ) {
-				site.aliases[ '/cf_scripts' ]	= serverInfo.serverHomeDirectory & '/cf_scripts';
+			if( directoryExists( serverInfo.serverHomeDirectory & '/cf_scripts/scripts/' ) ) {
+				// Account for different alias name as recommended in the lockdown guide.  If CFConfig is being used to set a non-standard alias,
+				// it will set this in the onServerInstall interceptor for us.
+				var thisAdobeScriptsAlias = site.adobeScriptsAlias ?: serverInfo.adobeScriptsAlias ?: '/cf_scripts/scripts/';
+				// Empty string means don't add an alis at all!
+				if( len( thisAdobeScriptsAlias ) && !site.aliases.keyExists( thisAdobeScriptsAlias ) ) {
+					site.aliases[ thisAdobeScriptsAlias ] = serverInfo.serverHomeDirectory & '/cf_scripts/scripts/';
+				}
 			}
 		} );
 
@@ -1898,6 +1905,7 @@ component accessors="true" singleton {
 		serverInfo.webroot = site.webroot;
 		serverInfo.host = serverProps.host ?: site.host ?: serverJSON.web.host ?: defaults.web.host;
 		serverInfo.hostAlias = site.hostAlias ?: serverJSON.web.hostAlias ?: defaults.web.hostAlias;
+		serverInfo.adobeScriptsAlias = site.adobeScriptsAlias ?: serverJSON.web.adobeScriptsAlias ?: defaults.web.adobeScriptsAlias ?: nullValue();
 
 		if( isSimpleValue( serverInfo.hostAlias ) ) {
 			if( len( serverInfo.hostAlias ) ) {
@@ -3541,8 +3549,8 @@ component accessors="true" singleton {
 			'ModCFMLRequireSharedKey' : '',
 			'JVMProperties'			: [],
 			'fileCacheEnable'		: false,
-			'fileCacheMaxFileSizeKB' : 0,
-			'fileCacheTotalSizeMB' : 0,
+			'fileCacheMaxFileSizeKB': 0,
+			'fileCacheTotalSizeMB'	: 0,
 			'defaultBaseURL'		: '',
 			'authEnabled'			: '',
 			'appFileSystemPath'		: '',
@@ -3552,12 +3560,13 @@ component accessors="true" singleton {
 			'webRulesText'			: '',
 			'multiSite'				: false,
 			'resourceManagerLogging':false,
-			'servletPassPredicate':''
+			'servletPassPredicate'	: '',
+			'adobeScriptsAlias'		: ''
 		};
 	}
 
 	struct function newSiteInfoStruct() {
-		return newServerInfoStruct().filter( (k,v)=>listFindNoCase( 'servletPassPredicate,sslkeyfile,resourceManagerLogging,useproxyforwardedip,clientcertsubjectdns,basicauthenable,casesensitivepaths,sendFileMinSizeKB,blocksensitivepaths,basicauthusers,hstsenable,sslport,webroot,webrules,errorpages,clientcertcatruststorepass,clientcerttrustupstreamheaders,http2enable,sslcertfile,accesslogenable,securityrealm,clientcertcatruststorefile,filecachetotalsizemb,sslenable,ajpport,blockflashremoting,sslforceredirect,filecachemaxfilesizekb,ajpenable,host,welcomefiles,clientcertmode,blockcfadmin,verbose,allowedext,authpredicate,httpenable,gzipenable,hstsmaxage,aliases,authenabled,mimetypes,filecacheenable,clientcertcacertfiles,clientcertsslrenegotiationenable,clientcertenable,gzippredicate,clientcertissuerdns,hstsincludesubdomains,port,sslkeypass,SSLCerts,directorybrowsing,ajpsecret,profile,webRulesText,hostAlias,rewritesEnable', k ) );
+		return newServerInfoStruct().filter( (k,v)=>listFindNoCase( 'servletPassPredicate,sslkeyfile,resourceManagerLogging,useproxyforwardedip,clientcertsubjectdns,basicauthenable,casesensitivepaths,sendFileMinSizeKB,blocksensitivepaths,basicauthusers,hstsenable,sslport,webroot,webrules,errorpages,clientcertcatruststorepass,clientcerttrustupstreamheaders,http2enable,sslcertfile,accesslogenable,securityrealm,clientcertcatruststorefile,filecachetotalsizemb,sslenable,ajpport,blockflashremoting,sslforceredirect,filecachemaxfilesizekb,ajpenable,host,welcomefiles,clientcertmode,blockcfadmin,verbose,allowedext,authpredicate,httpenable,gzipenable,hstsmaxage,aliases,authenabled,mimetypes,filecacheenable,clientcertcacertfiles,clientcertsslrenegotiationenable,clientcertenable,gzippredicate,clientcertissuerdns,hstsincludesubdomains,port,sslkeypass,SSLCerts,directorybrowsing,ajpsecret,profile,webRulesText,hostAlias,rewritesEnable,adobeScriptsAlias', k ) );
 	}
 
 	/**
