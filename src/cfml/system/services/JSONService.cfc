@@ -460,7 +460,7 @@ component accessors="true" singleton {
 				if ( obj.keyList() != obj.keyArray().sort( sortKeys ).toList() ) {
 					return false;
 				}
-				return obj.every( ( k, v ) => isSorted( v ) );
+				return obj.every( ( k, v ) => isNull( v ) || isSorted( v ) );
 			}
 
 			if ( isArray( obj ) ) {
