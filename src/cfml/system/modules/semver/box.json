@@ -1,6 +1,6 @@
 {
     "name":"Semantic Version",
-    "version":"1.2.6",
+    "version":"1.2.7",
     "author":"Brad Wood",
     "homepage":"https://github.com/Ortus-Solutions/semanticVersion/",
     "documentation":"https://github.com/Ortus-Solutions/semanticVersion/",
@@ -17,7 +17,7 @@
         "postPublish":"!git push --follow-tags"
     },
     "devDependencies":{
-        "testbox":"^2.8.0+191"
+        "testbox":"^5.1.0+2"
     },
     "installPaths":{
         "testbox":"testbox/"
