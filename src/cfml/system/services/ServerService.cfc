@@ -958,7 +958,7 @@ component accessors="true" singleton {
 				// The two settings aren't strictly site/web-related but we need them in resolveSiteSettings()
 				siteServerInfo.verbose = serverInfo.verbose;
 
-				resolveSiteSettings( siteName, siteServerInfo, serverProps, serverJSON, duplicate( defaults ), true );
+				resolveSiteSettings( siteName, siteServerInfo, serverProps, duplicate( serverJSON ), duplicate( defaults ), true );
 				serverInfo.sites[ siteName ] = siteServerInfo;
 
 				job.complete( serverInfo.verbose );
@@ -1873,11 +1873,7 @@ component accessors="true" singleton {
 
 		config.data.rulesFile = config.data.rulesFile ?: '';
 		if( isSimpleValue( config.data.rulesFile ) ) {
-			if( len( config.data.rulesFile ) ) {
-				config.data.rulesFile = config.data.rulesFile.listToArray();
-			} else {
-				config.data.rulesFile = [];
-			}
+			config.data.rulesFile = config.data.rulesFile.listToArray();
 		}
 
 		config.data.rules = config.data.rules ?: [];
@@ -1908,11 +1904,7 @@ component accessors="true" singleton {
 		serverInfo.adobeScriptsAlias = site.adobeScriptsAlias ?: serverJSON.web.adobeScriptsAlias ?: defaults.web.adobeScriptsAlias ?: nullValue();
 
 		if( isSimpleValue( serverInfo.hostAlias ) ) {
-			if( len( serverInfo.hostAlias ) ) {
-				serverInfo.hostAlias = serverInfo.hostAlias.listToArray();
-			} else {
-				serverInfo.hostAlias = [];
-			}
+			serverInfo.hostAlias = serverInfo.hostAlias.listToArray();
 		}
 		// If the host is not an IP, add it as a host alias
 		if( len( serverInfo.host ) && !reFind('^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$', serverInfo.host ) && !serverInfo.hostAlias.findNoCase( serverInfo.host ) ) {
@@ -2189,7 +2181,6 @@ component accessors="true" singleton {
 			);
 		}
 
-
 		serverInfo.webRules.append( site.rules, true);
 		serverInfo.webRules.append( serverJSON.web.rules, true);
 		serverInfo.webRules.append( defaults.web.rules, true);
@@ -2212,7 +2203,7 @@ component accessors="true" singleton {
 			if( serverInfo.profile == 'production' ) {
 				serverInfo.webRules.append( [
 					// Common config files and sensitive paths in ACF and TestBox that may be ok for dev, but not for production
-					"regex( pattern='.*/(CFIDE/multiservermonitor-access-policy\.xml|CFIDE/probe\.cfm|CFIDE/main/ide\.cfm|tests/runner\.cfm|testbox/system/runners/HTMLRunner\.cfm)', case-sensitive=false ) -> { set-error(404); done }",
+					"regex( pattern='.*[/]+(CFIDE[/]+multiservermonitor-access-policy\.xml|CFIDE[/]+probe\.cfm|CFIDE[/]+main[/]+ide\.cfm|tests[/]+runner\.cfm|testbox[/]+system[/]+runners[/]+HTMLRunner\.cfm)', case-sensitive=false ) -> { set-error(404); done }",
 				], true );
 			}
 
@@ -2585,11 +2576,7 @@ component accessors="true" singleton {
 				'SSLRenegotiationEnable' : arguments.clientCertSSLRenegotiationEnable
 			}
 			if( isSimpleValue( binding.clientCert.CACertFiles ) ) {
-				if( len( binding.clientCert.CACertFiles ) ) {
-					binding.clientCert.CACertFiles = binding.clientCert.CACertFiles.listToArray();
-				} else {
-					binding.clientCert.CACertFiles = [];
-				}
+				binding.clientCert.CACertFiles = binding.clientCert.CACertFiles.listToArray();
 			}
 		}
 		if( type == 'ajp' ) {
