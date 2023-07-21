@@ -1797,12 +1797,12 @@ component accessors="true" singleton {
 						cert.keyFile = fileSystemUtil.resolvePath( cert.keyFile, config.rootDir );
 					}
 				} );
-				if( !isNull( sslBinding.certFile ) && len( sslBinding.certFile ) ) {
-					sslBinding.certFile = fileSystemUtil.resolvePath( sslBinding.certFile, config.rootDir );
-				}
-				if( !isNull( sslBinding.keyFile ) && len( sslBinding.keyFile ) ) {
-					sslBinding.keyFile = fileSystemUtil.resolvePath( sslBinding.keyFile, config.rootDir );
-				}
+			}
+			if( !isNull( sslBinding.certFile ) && len( sslBinding.certFile ) ) {
+				sslBinding.certFile = fileSystemUtil.resolvePath( sslBinding.certFile, config.rootDir );
+			}
+			if( !isNull( sslBinding.keyFile ) && len( sslBinding.keyFile ) ) {
+				sslBinding.keyFile = fileSystemUtil.resolvePath( sslBinding.keyFile, config.rootDir );
 			}
 			if( isDefined( 'sslBinding.clientCert' ) && isStruct( sslBinding.clientCert ) ) {
 				sslBinding.clientCert.CACertFiles = sslBinding.clientCert.CACertFiles ?: [];
@@ -2307,16 +2307,20 @@ component accessors="true" singleton {
 				site.hostAlias.append( '*' )
 			}
 
+			var legacyIP = '';
+			if( reFind( '^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$', site.host ) ){
+				legacyIP = site.host;
+			}
 			// Backwards compat bindings in web.http, web.ssl, and web.ajp
 			if( site.HTTPEnable ) {
-				allBindings.append( newBinding( site=siteName, IP='', port=site.port, hosts=site.hostAlias, type='http', HTTP2Enable=site.HTTP2Enable ) );
+				allBindings.append( newBinding( site=siteName, IP=legacyIP, port=site.port, hosts=site.hostAlias, type='http', HTTP2Enable=site.HTTP2Enable ) );
 			}
 
 			if( site.SSLEnable ) {
 				allBindings.append(
 					newBinding(
 						site=siteName,
-						IP='',
+						IP=legacyIP,
 						port=site.SSLPort,
 						hosts=site.hostAlias,
 						type='ssl',
@@ -2335,7 +2339,7 @@ component accessors="true" singleton {
 			}
 
 			if( site.AJPEnable ) {
-				allBindings.append( newBinding( site=siteName, IP='', port=site.AJPPort, hosts=site.hostAlias, type='ajp', AJPSecret=site.AJPSecret ) );
+				allBindings.append( newBinding( site=siteName, IP=legacyIP, port=site.AJPPort, hosts=site.hostAlias, type='ajp', AJPSecret=site.AJPSecret ) );
 			}
 
 			// Gather bindings of each type for this site
