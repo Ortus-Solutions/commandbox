@@ -14,6 +14,7 @@ component accessors="true" extends="Print"{
 	// DI
 	property name="shell" inject="shell";
 	property name="job" inject="interactiveJob";
+	property name='SystemSettings'		inject='SystemSettings';
 
 	property name="objectID";
 
@@ -30,6 +31,11 @@ component accessors="true" extends="Print"{
 
 	// Force a flush
 	function toConsole(){
+
+		if( systemsettings.getSystemSetting( 'box_currentCommandPiped', false ) ) {
+			return;
+		}
+
 		// A single instance of print buffer can only dump to the console once at a time, otherwise
 		// the shared state in "result" will get output more than once.
 		lock name='printBuffer-#getObjectID()#' type="exclusive" timeout="20" {

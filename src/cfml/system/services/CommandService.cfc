@@ -1407,7 +1407,8 @@ component accessors="true" singleton {
 				hint 			= '',
 				originalName 	= name,
 				excludeFromHelp = false,
-				commandMD 		= {}
+				commandMD 		= {},
+				originalLine	= name
 			},
 			environment : {}
 		} );
