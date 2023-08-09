@@ -46,14 +46,13 @@ component {
 
 			var settingName = interceptData.setting.replaceNoCase( 'serverinfo.', '', 'one' );
 			var interceptData_serverInfo_name = systemSettings.getSystemSetting( 'interceptData.SERVERINFO.name', '' );
-
 			// Lookup by name
 			if( listLen( settingName, '@' ) > 1 ) {
 				var serverInfo = serverService.getServerInfoByName( listLast( settingName, '@' ) );
 				settingName = listFirst( settingName, '@' );
 			// If we're running inside of a server-related package script, use that server
 			} else if( interceptData_serverInfo_name != '' ) {
-				var serverInfo = serverService.resolveServerDetails( { name=interceptData_serverInfo_name } ).serverInfo;
+				var serverInfo = serverService.getServerInfoByName( interceptData_serverInfo_name );
 			// Lookup by current working directory
 			} else {
 				var serverInfo = serverService.getServerInfoByWebroot( shell.pwd() );
