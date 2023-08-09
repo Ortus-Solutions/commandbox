@@ -257,10 +257,19 @@ External Dependencies:
 	      <filterchain><expandproperties/><deletecharacters chars="\n"/><trim/><ignoreblank/></filterchain>
 	    </copy>
 
+		<mkdir dir="${temp.dir}/engine/cfml/cli/lucee-server/deploy/" />
+
+		<!-- Ortus ORM Extension.  The URL has the entryID, the file is the actual extension ID -->
+		<get src="https://forgebox.io/download/8a808d4c880b35a101880bbaccf90003"
+			dest="${temp.dir}/engine/cfml/cli/lucee-server/deploy/D062D72F-F8A2-46F0-8CBC91325B2F067B.lex"
+			verbose="true" />
+
 		<!-- Zip up the engine -->
 		<zip destfile="${temp.dir}/cli/engine.zip">
 	      <fileset dir="${temp.dir}/engine"/>
 	    </zip>
+
+		<delete dir="${temp.dir}/engine/cfml/cli/lucee-server/context/extensions/available/"/>
 
 		<copy todir="${temp.dir}/engine/cfml/cli/lucee-server/context/extensions/available/">
 	      <fileset dir="${extensions.dir}" includes="*.lex" />
@@ -1146,6 +1155,10 @@ External Dependencies:
 	    <!-- stable builds require "maven-repository", and snapshots require "sonatype-repository" -->
 	  	<dependency groupId="org.lucee" artifactId="lucee" version="${lucee.version}" dest="${lib.dir}" unzip="false" type="jar" repoId="maven-repository">
 			<exclusions>
+				<exclusion groupId="commons-io" artifactId="commons-io" />
+				<exclusion groupId="commons-lang" artifactId="commons-lang" />
+				<exclusion groupId="org.apache.commons" artifactId="commons-lang3" />
+				<exclusion groupId="org.apache.commons" artifactId="commons-text" />
 				<exclusion groupId="org.apache.ant" artifactId="ant" />
 				<exclusion groupId="javax.servlet" artifactId="javax.servlet-api" />
 				<exclusion groupId="javax.servlet.jsp" artifactId="jsp-api" />
@@ -1155,6 +1168,7 @@ External Dependencies:
 				<exclusion groupId="org.lucee.lib" artifactId="slf4j-nop" />
 				<exclusion groupId="org.lucee" artifactId="log4j-core" />
 				<exclusion groupId="org.lucee" artifactId="log4j-api" />
+				<exclusion groupId="org.lucee" artifactId="argon2" />
 			</exclusions>
 		</dependency>
 
