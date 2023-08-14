@@ -1,4 +1,0 @@
-<cfoutput>
-<h1>|resource|</h1>
-
-</cfoutput>

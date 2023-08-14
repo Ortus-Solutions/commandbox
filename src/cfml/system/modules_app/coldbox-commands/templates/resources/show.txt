@@ -1,4 +1,0 @@
-<cfoutput>
-<h1>|singularName|</h1>
-
-</cfoutput>
