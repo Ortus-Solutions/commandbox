@@ -20,6 +20,10 @@ This file will stay running the entire time the shell is open
 <cfset mappings[ '/commandbox' ]		= CFMLRoot >
 <cfset mappings[ '/commandbox-home' ]	= system.getProperty( 'cfml.cli.home' ) >
 <cfset mappings[ '/wirebox' ]			= CFMLRoot & 'system/wirebox' >
+<cfset xmlFeatures={
+	externalGeneralEntities: false,
+	disallowDoctypeDecl: false
+}>
 
 <cfapplication
 	action="update"
@@ -27,13 +31,7 @@ This file will stay running the entire time the shell is open
 	sessionmanagement 	= "false"
 	applicationTimeout = "#createTimeSpan( 999999, 0, 0, 0 )#"
 	mappings="#mappings#"
-	xmlFeatures={
-		secure: false,
-		externalGeneralEntities: false,
-		disallowDoctypeDecl: false
-	}>
-
-	<Cfset systemotuput( getApplicationMetadat().xmlFeatures,1 )>
+	xmlFeatures="#xmlFeatures#">
 
 <cfscript>
 	FRTransService = new commandbox.system.services.FRTransService();
