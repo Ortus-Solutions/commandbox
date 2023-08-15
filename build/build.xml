@@ -256,14 +256,14 @@ External Dependencies:
 		<copy todir="${temp.dir}/cli/bin/cliloader" file="${src.dir}/java/cliloader/version.properties">
 	      <filterchain><expandproperties/><deletecharacters chars="\n"/><trim/><ignoreblank/></filterchain>
 	    </copy>
-
+<!--
 		<mkdir dir="${temp.dir}/engine/cfml/cli/lucee-server/deploy/" />
 
-		<!-- Ortus ORM Extension.  The URL has the entryID, the file is the actual extension ID -->
+		 Ortus ORM Extension.  The URL has the entryID, the file is the actual extension ID
 		<get src="https://forgebox.io/download/8a808d4c880b35a101880bbaccf90003"
 			dest="${temp.dir}/engine/cfml/cli/lucee-server/deploy/D062D72F-F8A2-46F0-8CBC91325B2F067B.lex"
 			verbose="true" />
-
+-->
 		<!-- Zip up the engine -->
 		<zip destfile="${temp.dir}/cli/engine.zip">
 	      <fileset dir="${temp.dir}/engine"/>
