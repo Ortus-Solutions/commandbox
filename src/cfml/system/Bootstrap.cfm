@@ -26,7 +26,14 @@ This file will stay running the entire time the shell is open
 	name 				= "CommandBox CLI"
 	sessionmanagement 	= "false"
 	applicationTimeout = "#createTimeSpan( 999999, 0, 0, 0 )#"
-	mappings="#mappings#">
+	mappings="#mappings#"
+	xmlFeatures={
+		secure: false,
+		externalGeneralEntities: false,
+		disallowDoctypeDecl: false
+	}>
+
+	<Cfset systemotuput( getApplicationMetadat().xmlFeatures,1 )>
 
 <cfscript>
 	FRTransService = new commandbox.system.services.FRTransService();
@@ -120,11 +127,11 @@ This file will stay running the entire time the shell is open
 
 		// flush console
 		shell.getReader().flush();
-		
+
 		// If we installed a system module in a one-off command, we still need to nuke the wirebox metadata cache.
 		if( shell.getReloadshell() ) {
 			// Wipe out cached metadata on reload.
-			wirebox.getCacheBox().getCache( 'metadataCache' ).clearAll();	
+			wirebox.getCacheBox().getCache( 'metadataCache' ).clearAll();
 		}
 
 	// "box" was called all by itself with no commands
