@@ -30,10 +30,10 @@ component accessors=true implements="IEndpoint" singleton {
 		return this;
 	}
 
-	public string function resolvePackage( required string package, boolean verbose=false ) {
+	public string function resolvePackage( required string package, string currentWorkingDirectory="", boolean verbose=false ) {
 
 		if( configService.getSetting( 'offlineMode', false ) ) {
-			throw( 'Can''t download [#getNamePrefixes()#:#package#], CommandBox is in offline mode.  Go online with [config set offlineMode=false].', 'endpointException' );	
+			throw( 'Can''t download [#getNamePrefixes()#:#package#], CommandBox is in offline mode.  Go online with [config set offlineMode=false].', 'endpointException' );
 		}
 
 		var job = wirebox.getInstance( 'interactiveJob' );
@@ -126,18 +126,18 @@ component accessors=true implements="IEndpoint" singleton {
 			};
 		}
 	}
-	
+
 	private function guessVersionFromURL( required string package ) {
 		var version = package;
 		if( version contains '/' ) {
 			var version = version
 				.reReplaceNoCase( '^([\w:]+)?//', '' )
-				.listRest( '/\' );	
+				.listRest( '/\' );
 		}
 		if( version.refindNoCase( '.*([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}).*' ) ) {
-			version = version.reReplaceNoCase( '.*([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}).*', '\1' );	
+			version = version.reReplaceNoCase( '.*([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}).*', '\1' );
 		} else {
-			version = defaultVersion;	
+			version = defaultVersion;
 		}
 		return version;
 	}

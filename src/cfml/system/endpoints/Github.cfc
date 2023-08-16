@@ -17,11 +17,11 @@ component accessors="true" implements="IEndpoint" extends="commandbox.system.end
 		return this;
 	}
 
-	public string function resolvePackage( required string package, boolean verbose=false ) {
+	public string function resolvePackage( required string package, string currentWorkingDirectory="", boolean verbose=false ) {
 		if( listLen( arguments.package, '##' ) == 2 ) {
-			return super.resolvePackage( '//github.com/' & listFirst( arguments.package, '##' ) & '.git' & '##' & listLast( arguments.package, '##' ), arguments.verbose );
+			return super.resolvePackage( '//github.com/' & listFirst( arguments.package, '##' ) & '.git' & '##' & listLast( arguments.package, '##' ), currentWorkingDirectory, arguments.verbose );
 		} else {
-			return super.resolvePackage( '//github.com/' & arguments.package & '.git', arguments.verbose );
+			return super.resolvePackage( '//github.com/' & arguments.package & '.git', currentWorkingDirectory, arguments.verbose );
 		}
 	}
 

@@ -26,7 +26,7 @@ component accessors="true" implements="IEndpoint" singleton {
 		return this;
 	}
 
-	public string function resolvePackage( required string package, boolean verbose=false ) {
+	public string function resolvePackage( required string package, string currentWorkingDirectory="", boolean verbose=false ) {
 		var job = wirebox.getInstance( 'interactiveJob' );
 
 
@@ -46,7 +46,7 @@ component accessors="true" implements="IEndpoint" singleton {
 		cleanUp( package );
 
 		// Defer to folder endpoint
-		return folderEndpoint.resolvePackage( packagePath, arguments.verbose );
+		return folderEndpoint.resolvePackage( packagePath, currentWorkingDirectory, arguments.verbose );
 
 	}
 

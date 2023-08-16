@@ -94,11 +94,11 @@ component accessors="true" singleton {
 
 		// If there is a package to install, install it
 		if( len( arguments.ID ) ) {
-
+			var updateBoxJSONDependency = true;
 			// By default, a specific package install doesn't include dev dependencies
 			arguments.production = arguments.production ?: true;
 
-			var endpointData = endpointService.resolveEndpoint( arguments.ID, arguments.currentWorkingDirectory );
+			var endpointData = endpointService.resolveEndpoint( arguments.ID, arguments.packagePathRequestingInstallation );
 
 			job.start(  'Installing package [#endpointData.ID#]', ( shell.getTermHeight() < 20 ? 1 : 5 ) );
 
@@ -106,7 +106,20 @@ component accessors="true" singleton {
 				job.setDumpLog( verbose );
 			}
 
-			var tmpPath = endpointData.endpoint.resolvePackage( endpointData.package, arguments.verbose );
+			// If this is a ForgeBox endpoint and the incoming install ID has no version associated
+			job.addLog( 'endpointData.package: #endpointData.package#' )
+			job.addLog( 'endpointData.endpoint.parseVersion( endpointData.package, "__DEFAULT__" ): #endpointData.endpoint.parseVersion( endpointData.package, "__DEFAULT__" )#' )
+			if( endpointData.endpointName == 'forgebox' && endpointData.endpoint.parseVersion( endpointData.package, "__DEFAULT__" ) == '__DEFAULT__' ) {
+				var thisBoxJSON = readPackageDescriptor( packagePathRequestingInstallation );
+				var slug = endpointData.endpoint.parseSlug( endpointData.package );
+				// If there is an existing version in the box.json for this package
+				if( len( thisBoxJSON.dependencies[slug] ?: thisBoxJSON.devDependencies[slug] ?: '' ) ) {
+					job.addLog( 'updateBoxJSONDependency = false' )
+					// Then leave the box.json alone!
+					updateBoxJSONDependency = false;
+				}
+			}
+			var tmpPath = endpointData.endpoint.resolvePackage( endpointData.package, arguments.currentWorkingDirectory, arguments.verbose );
 
 			// Support box.json in the root OR in a subfolder (NPM-style!)
 			tmpPath = findPackageRoot( tmpPath );
@@ -433,7 +446,7 @@ component accessors="true" singleton {
 			// Assert: At this point, all paths are finalized and we are ready to install.
 
 			// Should we save this as a dependency. Save the install even though the package may already be there
-			if( ( arguments.save || arguments.saveDev ) ) {
+			if( ( arguments.save || arguments.saveDev ) && updateBoxJSONDependency ) {
 				// Add it!
 				if( addDependency( packagePathRequestingInstallation, packageName, version, installDirectory, artifactDescriptor.createPackageDirectory,  arguments.saveDev, endpointData ) ) {
 					// Tell the user...
@@ -610,9 +623,10 @@ component accessors="true" singleton {
 			//  full ID with endpoint and package like file:/opt/files/foo.zip
 			if( endpointName != 'forgebox' ) {
 				var ID = detail;
-			// Default ForgeBox endpoint of foo@1.0.0
+			// Default ForgeBox endpoint of foo
+			// We don't pass the version because it will get picked up automatically
 			} else {
-				var ID = dependency & '@' & detail;
+				var ID = dependency;
 			}
 
 			var params = {

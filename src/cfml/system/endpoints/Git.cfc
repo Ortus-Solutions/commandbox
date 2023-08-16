@@ -44,7 +44,7 @@ component accessors="true" implements="IEndpoint" singleton {
 		return this;
 	}
 
-	public string function resolvePackage( required string package, boolean verbose=false ) {
+	public string function resolvePackage( required string package, string currentWorkingDirectory="", boolean verbose=false ) {
 
 		if( configService.getSetting( 'offlineMode', false ) ) {
 			throw( 'Can''t clone [#getNamePrefixes()#:#package#], CommandBox is in offline mode.  Go online with [config set offlineMode=false].', 'endpointException' );
@@ -146,7 +146,7 @@ component accessors="true" implements="IEndpoint" singleton {
 		}
 
 		// Defer to file endpoint
-		return folderEndpoint.resolvePackage( localPath.getPath(), arguments.verbose );
+		return folderEndpoint.resolvePackage( localPath.getPath(), currentWorkingDirectory, arguments.verbose );
 
 	}
 

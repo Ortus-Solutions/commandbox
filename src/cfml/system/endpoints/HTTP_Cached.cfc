@@ -24,7 +24,7 @@ component accessors=true implements="IEndpoint" singleton extends="commandbox.sy
 		return this;
 	}
 
-	public string function resolvePackage( required string package, boolean verbose=false ) {
+	public string function resolvePackage( required string package, string currentWorkingDirectory="", boolean verbose=false ) {
 		var job = wirebox.getInstance( 'interactiveJob' );
 		var artifactName = getDefaultName( package );
 

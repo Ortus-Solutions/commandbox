@@ -18,7 +18,7 @@ component accessors="true" implements="IEndpoint" extends="commandbox.system.end
 		return this;
 	}
 
-	public string function resolvePackage( required string package, boolean verbose=false ) {
+	public string function resolvePackage( required string package, string currentWorkingDirectory="", boolean verbose=false ) {
 		// Retrieve the UDF in a single .cfm file
 		var tempFolder = super.resolvePackage( argumentCollection = arguments );
 		var tempFile = tempFolder & '/' & package & '.cfm';
