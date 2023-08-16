@@ -224,6 +224,29 @@ or just add DEBUG to the root logger
 	}
 
 	/**
+	* Get pre-signed uploaed URL
+	*/
+	function storeUrl(
+		required string slug,
+		required string version,
+		required string APIToken ) {
+
+		var results = makeRequest(
+			resource="/storage/storeURL/#arguments.slug#/#arguments.version#",
+			method='get',
+			headers = {
+				'x-api-token' : arguments.APIToken
+			} );
+
+		// error
+		if( results.response.error ){
+			throw( arrayToList( results.response.messages ), 'forgebox' );
+		}
+
+		return results.response.data;
+	}
+
+	/**
 	* set user config
 	*/
 	function setConfig( required struct config, required string username, required string APIToken ) {

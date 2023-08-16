@@ -263,10 +263,6 @@ component accessors="true" implements="IEndpointInteractive" {
 			}
 		}
 
-		if ( upload ) {
-			props.zipPath = createZipFromPath( arguments.path );
-		}
-
 		// Look for readme, instruction, and changelog files
 		for( var item in [
 			{ variable : 'description', file : 'readme' },
@@ -337,16 +333,48 @@ component accessors="true" implements="IEndpointInteractive" {
 		}
 
 		try {
-			consoleLogger.warn( "Sending package information to #getNamePrefixes()#, please wait..." );
-			if ( upload ) { consoleLogger.warn( "Uploading package zip to #getNamePrefixes()#..." ); }
+			if ( upload ) {
+				consoleLogger.warn( "Creating zip artifact from local files..." );
+				var zipPath = createZipFromPath( arguments.path );
+				var zipSizeB = getfileInfo( zipPath ).size;
+				var zipSizeKB = int( zipSizeB/1024 );
+				if( zipSizeB < 1024 ) {
+					var readableSize = zipSizeB & " Bytes";
+				} else if( zipSizeKB > 1024 ) {
+					var readableSize = numberFormat( zipSizeKB/1024, "0.0" ) & " MB";
+				} else {
+					var readableSize = zipSizeKB & " KB";
+				}
+				consoleLogger.warn( "Uploading package zip [#readableSize#] to #getNamePrefixes()#..." );
+				var storeURL = forgebox.storeURL( props.slug, props.version, props.APIToken );
 
+				http
+					url="#storeURL#"
+					throwOnError=false
+					method="PUT"
+					proxyServer="#ConfigService.getSetting( 'proxy.server', '' )#"
+					proxyPort="#ConfigService.getSetting( 'proxy.port', 80 )#"
+					proxyUser="#ConfigService.getSetting( 'proxy.user', '' )#"
+					proxyPassword="#ConfigService.getSetting( 'proxy.password', '' )#"
+					result="local.storeResult"{
+						httpparam type="header" name="Content-Type" value="application/zip";
+						httpparam type="body" value="#fileReadBinary( zipPath )#";
+					}
+
+				if( fileExists( zipPath ) ){
+					fileDelete( zipPath );
+				}
+
+				if( local.storeResult.status_code != 200 ) {
+					consoleLogger.error( "Error uploading zip file to #getNamePrefixes()# [#local.storeResult.statusCode#]..." );
+					throw( local.storeResult.fileContent, "endpointException" )
+				}
+				consoleLogger.info( "Success!" );
+			}
+
+			consoleLogger.warn( "Sending package information to #getNamePrefixes()#..." );
 			forgebox.publish( argumentCollection=props );
 
-			if( ! isNull( props.zipPath ) ){
-				if( fileExists( props.zipPath ) ){
-					fileDelete( props.zipPath );
-				}
-			}
 
 			consoleLogger.info( "Package is alive, you can visit it here: #forgebox.getEndpointURL()#/view/#boxJSON.slug#" );
 		} catch( forgebox var e ) {
