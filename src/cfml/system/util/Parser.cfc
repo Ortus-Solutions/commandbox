@@ -147,7 +147,7 @@ component {
 		if( len( token ) ) {
 			tokens.append( token);
 		}
-		return tokens;		
+		return tokens;
 	}
 
 
@@ -206,6 +206,7 @@ component {
 
 				// Unwrap quotes from value if used
 				name = unwrapQuotes( name );
+				name = markColonParams( name );
 				value = unwrapQuotes( value );
 
 				// Mark expressions and system settings now while escaped chars are removed
@@ -234,6 +235,13 @@ component {
 
 		return results;
 
+	}
+
+	/**
+	* Find any param names with a colon indicating a struct of args
+	*/
+	function markColonParams( required argName ) {
+		return replaceNoCase( argName, ':', '__colonParam__', 'once' );
 	}
 
 	/**
@@ -302,6 +310,7 @@ component {
 		theString = replaceNoCase( theString, '\`', '__backtick__', "all" );
 		theString = replaceNoCase( theString, '\=', '__equalSign__', "all" );
 		theString = replaceNoCase( theString, '\;', '__semiColon__', "all" );
+		theString = replaceNoCase( theString, '\:', '__colon__', "all" );
 		theString = replaceNoCase( theString, '\&', '__ampersand__', "all" );
 		theString = replaceNoCase( theString, '\${', '__system_setting__', "all" );
 		return		replaceNoCase( theString, '\|', '__pipe__', "all" );
@@ -314,6 +323,7 @@ component {
 		theString = replaceNoCase( theString, '__backtick__', '`', "all" );
 		theString = replaceNoCase( theString, '__equalSign__', '=', "all" );
 		theString = replaceNoCase( theString, '__semiColon__', ';', "all" );
+		theString = replaceNoCase( theString, '__colon__', ':', "all" );
 		theString = replaceNoCase( theString, '__ampersand__', '&', "all" );
 		theString = replaceNoCase( theString, '__system_setting__', '${', "all" );
 		return		replaceNoCase( theString, '__pipe__', '|', "all" );
