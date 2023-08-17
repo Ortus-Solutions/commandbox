@@ -107,14 +107,11 @@ component accessors="true" singleton {
 			}
 
 			// If this is a ForgeBox endpoint and the incoming install ID has no version associated
-			job.addLog( 'endpointData.package: #endpointData.package#' )
-			job.addLog( 'endpointData.endpoint.parseVersion( endpointData.package, "__DEFAULT__" ): #endpointData.endpoint.parseVersion( endpointData.package, "__DEFAULT__" )#' )
 			if( endpointData.endpointName == 'forgebox' && endpointData.endpoint.parseVersion( endpointData.package, "__DEFAULT__" ) == '__DEFAULT__' ) {
 				var thisBoxJSON = readPackageDescriptor( packagePathRequestingInstallation );
 				var slug = endpointData.endpoint.parseSlug( endpointData.package );
 				// If there is an existing version in the box.json for this package
 				if( len( thisBoxJSON.dependencies[slug] ?: thisBoxJSON.devDependencies[slug] ?: '' ) ) {
-					job.addLog( 'updateBoxJSONDependency = false' )
 					// Then leave the box.json alone!
 					updateBoxJSONDependency = false;
 				}
