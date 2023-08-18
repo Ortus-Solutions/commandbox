@@ -18,6 +18,7 @@ component {
 
 	/**
 	* @username The ForgeBox username to switch to.
+	* @username.optionsUDF usernameComplete
 	* @skipLogin Return an error instead of prompting with login if username isn't authenticated,
 	* @endpointName  Name of custom forgebox endpoint to use
 	* @endpointName.optionsUDF endpointNameComplete
@@ -48,6 +49,9 @@ component {
 			// Set the active token
 			oEndpoint.setDefaultAPIToken( tokens[ arguments.username ] );
 			print.greenLine( 'Active Forgebox user set to [#arguments.username#]' );
+
+			interceptorService.announceInterception( 'onEndpointLogin', { endpointName=endpointName, username=username, endpoint=oEndpoint, APIToken=APIToken } );
+
 		} else if( !skipLogin ) {
 			// Otherwise, prompt them to login
 			command( 'forgebox login' )
@@ -57,11 +61,25 @@ component {
 			error( 'Username [#arguments.username#] isn''t authenticated.  Please use "forgebox login".' );
 		}
 
-		interceptorService.announceInterception( 'onEndpointLogin', { endpointName=endpointName, username=username, endpoint=oEndpoint, APIToken=APIToken } );
 	}
 
 	function endpointNameComplete() {
 		return getInstance( 'endpointService' ).forgeboxEndpointNameComplete();
 	}
+
+	function usernameComplete( paramSoFar, passedNamedParameters ) {
+
+		endpointName = arguments.passedNamedParameters.endpointName ?: configService.getSetting( 'endpoints.defaultForgeBoxEndpoint', 'forgebox' );
+
+		try {
+			var oEndpoint = endpointService.getEndpoint( endpointName );
+			var tokens = oEndpoint.getAPITokens();
+			return tokens.keyArray();
+		} catch( EndpointNotFound var e ) {
+		}
+
+
+	}
+
 
 }

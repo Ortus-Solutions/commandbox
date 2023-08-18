@@ -411,8 +411,10 @@ component accessors="true" singleton {
 	* @path.hint The file path to write to
 	* @json.hint A string containing JSON, or a complex value that can be serialized to JSON
 	* @locking.hint Set to true to have file system access wrapped in a lock
+	*
+	* @returns True if the file was written, false if there was no change in the JSON
 	*/
-	function writeJSONFile( required string path, required any json, boolean locking = false ) {
+	boolean function writeJSONFile( required string path, required any json, boolean locking = false ) {
 		var sortKeysIsSet = configService.settingExists( 'JSON.sortKeys' );
 		var sortKeys = configService.getSetting( 'JSON.sortKeys', 'textnocase' );
 		var oldJSON = '';
@@ -431,7 +433,7 @@ component accessors="true" singleton {
 		}
 
 		if ( oldJSON == newJSON ) {
-			return;
+			return false;
 		}
 
 		// ensure we are writing to an existing directory
@@ -442,6 +444,7 @@ component accessors="true" singleton {
 		} else {
 			fileWrite( path, newJSON );
 		}
+		return true;
 	}
 
 	/**

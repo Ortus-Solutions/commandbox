@@ -218,7 +218,7 @@ component accessors="true" singleton {
 								job.addWarnLog( '#packageName# (#requestedVersionSemver#) is already satisfied by #candidateInstallPath# (#candidateBoxJSON.version#).  Skipping installation.' );
 								job.complete( verbose );
 
-								interceptorService.announceInterception( 'postInstall', { installArgs=arguments, installDirectory=candidateInstallPath } );
+								interceptorService.announceInterception( 'postInstall', { installArgs=arguments, installDirectory=candidateInstallPath, system=shellWillReload } );
 
 								return true;
 							}
@@ -489,7 +489,7 @@ component accessors="true" singleton {
 					}
 					job.complete( verbose );
 
-					interceptorService.announceInterception( 'postInstall', { installArgs=arguments, installDirectory=installDirectory } );
+					interceptorService.announceInterception( 'postInstall', { installArgs=arguments, installDirectory=installDirectory, system=shellWillReload } );
 
 					return true;
 				}
@@ -653,7 +653,7 @@ component accessors="true" singleton {
 			moduleService.registerAndActivateModule( installDirectory.listLast( '/\' ), fileSystemUtil.makePathRelative( installDirectory ).listToArray( '/\' ).slice( 1, -1 ).toList( '.' ) );
 		}
 
-		interceptorService.announceInterception( 'postInstall', { installArgs=arguments, installDirectory=installDirectory } );
+		interceptorService.announceInterception( 'postInstall', { installArgs=arguments, installDirectory=installDirectory, system=shellWillReload } );
 		job.complete( verbose );
 
 		return true;
@@ -787,7 +787,7 @@ component accessors="true" singleton {
 			}
 
 		} // end is not module
-
+		var systemModule = false;
 		// uninstall the package
 		if( len( uninstallDirectory ) && directoryExists( uninstallDirectory ) ) {
 
@@ -795,6 +795,7 @@ component accessors="true" singleton {
 			// If this package is being uninstalled anywhere south of the CommandBox system folder, unload the module first
 			if( fileSystemUtil.normalizeSlashes( uninstallDirectory ).startsWith( fileSystemUtil.normalizeSlashes( expandPath( '/commandbox' ) ) ) && fileExists( uninstallDirectory & '/ModuleConfig.cfc' ) ) {
 				consoleLogger.warn( 'Unloading module...' );
+				systemModule = true;
 				try {
 					moduleService.unloadAndUnregisterModule( uninstallDirectory.listLast( '/\' ) );
 					// Heavy-handed workaround for the fact that the module service does not unload
@@ -835,7 +836,7 @@ component accessors="true" singleton {
 			job.addLog( "Dependency removed from box.json." );
 		}
 
-		interceptorService.announceInterception( 'postUninstall', { uninstallArgs=arguments } );
+		interceptorService.announceInterception( 'postUninstall', { uninstallArgs=arguments, system=systemModule } );
 		job.complete();
 	}
 

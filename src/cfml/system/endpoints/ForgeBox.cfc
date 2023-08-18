@@ -711,9 +711,9 @@ component accessors="true" implements="IEndpointInteractive" {
 	*/
 	public function setDefaultAPIToken( required string APIToken ) {
 		if( getNamePrefixes() == 'forgebox' ) {
-			configService.setSetting( 'endpoints.forgebox.APIToken', APIToken );
+			configService.setSetting( 'endpoints.forgebox.APIToken', APIToken, false, true );
 		} else {
-			configService.setSetting( 'endpoints.forgebox-#getNamePrefixes()#.APIToken', APIToken );
+			configService.setSetting( 'endpoints.forgebox-#getNamePrefixes()#.APIToken', APIToken, false, true );
 		}
 	}
 

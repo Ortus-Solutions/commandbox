@@ -17,9 +17,8 @@ component {
 	/**
 	 * @endpointName  Name of custom forgebox endpoint to use
 	 * @endpointName.optionsUDF endpointNameComplete
-	 * @overwrite Overwrite local settings entirely with remote settings
 	 **/
-	function run( string endpointName, boolean overwrite=false ) {
+	function run( string endpointName ) {
 		try {
 
 			endpointName = endpointName ?: configService.getSetting( 'endpoints.defaultForgeBoxEndpoint', 'forgebox' );
