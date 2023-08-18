@@ -115,10 +115,10 @@ component accessors="true" singleton {
 		loadOverrides();
 	}
 
-	function setConfigSettings( required struct configSettings ) {
+	function setConfigSettings( required struct configSettings, boolean quiet=false ) {
 		variables.configSettings = arguments.configSettings;
 
-		saveConfig();
+		saveConfig( quiet );
 	}
 
 	/**
