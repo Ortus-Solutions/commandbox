@@ -212,7 +212,8 @@ component accessors="true" singleton {
 				'fileCache' : {
 					'enable' : d.web.fileCache.enable ?: '',
 					'totalSizeMB' : d.web.fileCache.totalSizeMB ?: 50,
-					'maxFileSizeKB' : d.web.fileCache.maxFileSizeKB ?: 50
+					'maxFileSizeKB' : d.web.fileCache.maxFileSizeKB ?: 50,
+					'fileSystemWatcherEnable' : d.web.fileCache.fileSystemWatcherEnable ?: false
 				},
 				'rules' : duplicate( d.web.rules ?: [] ),
 				'rulesFile' : duplicate( d.web.rulesFile ?: [] ),
@@ -679,10 +680,8 @@ component accessors="true" singleton {
 		if( isDefined( 'defaults.web.rewrites.config' ) && len( defaults.web.rewrites.config ) ) { defaults.web.rewrites.config = fileSystemUtil.resolvePath( defaults.web.rewrites.config, defaultwebroot ); }
 		serverInfo.rewritesConfig 	= serverProps.rewritesConfig 	?: serverJSON.web.rewrites.config 	?: defaults.web.rewrites.config;
 		serverInfo.rewriteslogEnable = serverJSON.web.rewrites.logEnable ?: defaults.web.rewrites.logEnable;
-		// The only way Tuckey gets enabled now is with a custom urlrewrite.xml file
-		if( !len( serverInfo.rewritesConfig ) ) {
-			serverInfo.rewritesEnable=false;
-		}
+		serverInfo.rewritesEnable 	= serverProps.rewritesEnable 	?: serverJSON.web.rewrites.enable 	?: defaults.web.rewrites.enable;
+		serverInfo.tuckeyRewritesEnable = serverInfo.rewritesEnable && len( serverInfo.rewritesConfig );
 
 		serverInfo.maxRequests = serverJSON.web.maxRequests			?: defaults.web.maxRequests;
 		serverInfo.trayEnable	 	= serverProps.trayEnable		?: serverJSON.trayEnable			?: defaults.trayEnable;
@@ -843,7 +842,7 @@ component accessors="true" singleton {
 
 		serverInfo.multiContext = serverInfo.ModCFMLenable;
 
-		if( serverInfo.rewritesEnable ){
+		if( serverInfo.tuckeyRewritesEnable ){
 			if( !fileExists(serverInfo.rewritesConfig) ){
 				job.error( 'URL rewrite config not found [#serverInfo.rewritesConfig#]' );
 				return;
@@ -2079,6 +2078,7 @@ component accessors="true" singleton {
 		serverInfo.fileCacheEnable	= site.fileCache.enable ?: serverJSON.web.fileCache.enable ?: defaults.web.fileCache.enable;
 		serverInfo.fileCacheTotalSizeMB	= site.fileCache.totalSizeMB ?:serverJSON.web.fileCache.totalSizeMB ?: defaults.web.fileCache.totalSizeMB;
 		serverInfo.fileCacheMaxFileSizeKB = site.fileCache.maxFileSizeKB ?:serverJSON.web.fileCache.maxFileSizeKB ?: defaults.web.fileCache.maxFileSizeKB;
+		serverInfo.fileCacheFileSystemWatcherEnable = site.fileCache.fileSystemWatcherEnable ?:serverJSON.web.fileCache.fileSystemWatcherEnable ?: defaults.web.fileCache.fileSystemWatcherEnable;
 
 		job.start( 'Setting site [#name#] Profile to [#serverInfo.profile#]' );
 			job.addLog( 'Profile set from #profileReason#' );
@@ -2158,8 +2158,8 @@ component accessors="true" singleton {
 			serverInfo.rewritesEnable = site.rewrites.enable;
 		} else {
 			// Support legacy rewrite flag, but so long as they didn't specify a custom XML
-			var topLevelEnable = serverJSON.web.rewrites.enable ?: defaults.web.rewrites.enable;
-			var topLevelConfig = serverJSON.web.rewrites.config ?: defaults.web.rewrites.config;
+			var topLevelEnable = serverProps.rewritesEnable ?: serverJSON.web.rewrites.enable ?: defaults.web.rewrites.enable;
+			var topLevelConfig = serverProps.rewritesConfig ?: serverJSON.web.rewrites.config ?: defaults.web.rewrites.config;
 			if( topLevelEnable && !len( topLevelConfig ) ) {
 				serverInfo.rewritesEnable = true;
 			}
@@ -3454,6 +3454,7 @@ component accessors="true" singleton {
 			'securityRealm'			: '',
 			'clientCertCATrustStoreFile': '',
 			'clientCertCATrustStorePass': '',
+			'tuckeyRewritesEnable'	: false,
 			'rewritesEnable'		: false,
 			'rewritesConfig'		: "",
 			'rewritesStatusPath'	: "",
@@ -3541,6 +3542,7 @@ component accessors="true" singleton {
 			'JVMProperties'			: [],
 			'fileCacheEnable'		: false,
 			'fileCacheMaxFileSizeKB': 0,
+			'fileCacheFileSystemWatcherEnable': false,
 			'fileCacheTotalSizeMB'	: 0,
 			'defaultBaseURL'		: '',
 			'authEnabled'			: '',
@@ -3557,7 +3559,7 @@ component accessors="true" singleton {
 	}
 
 	struct function newSiteInfoStruct() {
-		return newServerInfoStruct().filter( (k,v)=>listFindNoCase( 'servletPassPredicate,sslkeyfile,resourceManagerLogging,useproxyforwardedip,clientcertsubjectdns,basicauthenable,casesensitivepaths,sendFileMinSizeKB,blocksensitivepaths,basicauthusers,hstsenable,sslport,webroot,webrules,errorpages,clientcertcatruststorepass,clientcerttrustupstreamheaders,http2enable,sslcertfile,accesslogenable,securityrealm,clientcertcatruststorefile,filecachetotalsizemb,sslenable,ajpport,blockflashremoting,sslforceredirect,filecachemaxfilesizekb,ajpenable,host,welcomefiles,clientcertmode,blockcfadmin,verbose,allowedext,authpredicate,httpenable,gzipenable,hstsmaxage,aliases,authenabled,mimetypes,filecacheenable,clientcertcacertfiles,clientcertsslrenegotiationenable,clientcertenable,gzippredicate,clientcertissuerdns,hstsincludesubdomains,port,sslkeypass,SSLCerts,directorybrowsing,ajpsecret,profile,webRulesText,hostAlias,rewritesEnable,adobeScriptsAlias', k ) );
+		return newServerInfoStruct().filter( (k,v)=>listFindNoCase( 'servletPassPredicate,sslkeyfile,resourceManagerLogging,useproxyforwardedip,clientcertsubjectdns,basicauthenable,casesensitivepaths,sendFileMinSizeKB,blocksensitivepaths,basicauthusers,hstsenable,sslport,webroot,webrules,errorpages,clientcertcatruststorepass,clientcerttrustupstreamheaders,http2enable,sslcertfile,accesslogenable,securityrealm,clientcertcatruststorefile,filecachetotalsizemb,sslenable,ajpport,blockflashremoting,sslforceredirect,filecachemaxfilesizekb,fileCacheFileSystemWatcherEnable,ajpenable,host,welcomefiles,clientcertmode,blockcfadmin,verbose,allowedext,authpredicate,httpenable,gzipenable,hstsmaxage,aliases,authenabled,mimetypes,filecacheenable,clientcertcacertfiles,clientcertsslrenegotiationenable,clientcertenable,gzippredicate,clientcertissuerdns,hstsincludesubdomains,port,sslkeypass,SSLCerts,directorybrowsing,ajpsecret,profile,webRulesText,hostAlias,rewritesEnable,adobeScriptsAlias', k ) );
 	}
 
 	/**
