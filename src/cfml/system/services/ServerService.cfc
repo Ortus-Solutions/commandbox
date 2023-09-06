@@ -683,6 +683,11 @@ component accessors="true" singleton {
 		serverInfo.rewritesEnable 	= serverProps.rewritesEnable 	?: serverJSON.web.rewrites.enable 	?: defaults.web.rewrites.enable;
 		serverInfo.tuckeyRewritesEnable = serverInfo.rewritesEnable && len( serverInfo.rewritesConfig );
 
+		// If there is a custom legacy Tuckey rewrite file and no custom servletPassPredicate, set the server to send all static files to the servlet so Tuckey can work.
+		if( serverInfo.tuckeyRewritesEnable && !len( defaults.web.servletPassPredicate ) ) {
+			defaults.web.servletPassPredicate = true;
+		}
+
 		serverInfo.maxRequests = serverJSON.web.maxRequests			?: defaults.web.maxRequests;
 		serverInfo.trayEnable	 	= serverProps.trayEnable		?: serverJSON.trayEnable			?: defaults.trayEnable;
 		serverInfo.dockEnable	 	= serverJSON.dockEnable			?: defaults.dockEnable;
