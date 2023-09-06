@@ -685,6 +685,7 @@ component accessors="true" singleton {
 
 		// If there is a custom legacy Tuckey rewrite file and no custom servletPassPredicate, set the server to send all static files to the servlet so Tuckey can work.
 		if( serverInfo.tuckeyRewritesEnable && !len( defaults.web.servletPassPredicate ) ) {
+			job.addWarnLog( "You're using a custom Tuckey rewrites file (deprecated).  This will put CommandBox in 'legacy' mode where static files will bypass the Resource handler and all be served by the servlet." );
 			defaults.web.servletPassPredicate = true;
 		}
 
