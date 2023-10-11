@@ -1137,10 +1137,13 @@ component accessors="true" singleton {
 			// Add in "/cf_scripts/scripts/" alias for 2016+ servers if the /cf_scripts//scripts/ folder exists in the war we're starting and there isn't already an alias
 			// for this.  I'm specifically not checking the engine name and version so this will work on regular Adobe wars and be future proof.
 			if( directoryExists( serverInfo.serverHomeDirectory & '/cf_scripts/scripts/' ) ) {
+				if( !isNull( serverInfo.adobeScriptsAlias ) && !len( serverInfo.adobeScriptsAlias ) ) {
+					serverInfo.delete( 'adobeScriptsAlias' );
+				}
 				// Account for different alias name as recommended in the lockdown guide.  If CFConfig is being used to set a non-standard alias,
 				// it will set this in the onServerInstall interceptor for us.
 				var thisAdobeScriptsAlias = site.adobeScriptsAlias ?: serverInfo.adobeScriptsAlias ?: '/cf_scripts/scripts/';
-				// Empty string means don't add an alis at all!
+				// Empty string means don't add an alias at all!
 				if( len( thisAdobeScriptsAlias ) && !site.aliases.keyExists( thisAdobeScriptsAlias ) ) {
 					site.aliases[ thisAdobeScriptsAlias ] = serverInfo.serverHomeDirectory & '/cf_scripts/scripts/';
 				}
