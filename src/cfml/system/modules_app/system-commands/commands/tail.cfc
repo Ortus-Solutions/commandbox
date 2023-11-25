@@ -177,13 +177,17 @@
 			}
 
 			while( true ) {
-				// Detect user pressing Ctrl-C
-				// Any other characters captured will be ignored
-				var line = shell.getReader().readLine();
-				if( line == 'q' ) {
-					break;
+				if( terminal.getClass().getName() contains 'dumb' ) {
+					sleep( 500 );
 				} else {
-					print.boldRedLine( 'To exit press Ctrl-C or "q" followed the enter key.' ).toConsole();
+					// Detect user pressing Ctrl-C
+					// Any other characters captured will be ignored
+					var line = shell.getReader().readLine();
+					if( line == 'q' ) {
+						break;
+					} else {
+						print.boldRedLine( 'To exit press Ctrl-C or "q" followed the enter key.' ).toConsole();
+					}
 				}
 			}
 
