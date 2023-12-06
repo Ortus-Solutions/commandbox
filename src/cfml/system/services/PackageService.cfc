@@ -480,7 +480,15 @@ component accessors="true" singleton {
 					if( tmpPath contains tempDir ) {
 						var pathInsideTmp = tmpPath.replaceNoCase( tempDir, '' );
 						// Delete the top most directory inside the temp folder
-						directoryDelete( tempDir & '/' & pathInsideTmp.listFirst( '/\' ), true );
+						// Catch this to gracefully handle where the OS or another program
+						// has the folder locked.
+						try{
+							directoryDelete( tempDir & '/' & pathInsideTmp.listFirst( '/\' ), true );
+						} catch( any e ) {
+							job.addErrorLog( e.message );
+							job.addErrorLog( 'The folder is possibly locked by another program.' );
+							logger.error( '#e.message# #e.detail#' , e.stackTrace );
+						}
 					}
 					if( skipInstall ) {
 						job.addWarnLog( "Skipping installation of package #packageName#." );
