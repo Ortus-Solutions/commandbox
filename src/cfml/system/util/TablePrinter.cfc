@@ -82,7 +82,7 @@ component {
 		var dataRows = convert.queryToArrayOfOrderedStructs( dataQuery );
 
 		// Extract column names into headers
-		var dataHeaders = queryColumnArray(dataQuery);
+		var dataHeaders = arguments.headerNames.len() ? arguments.headerNames.listToArray() : queryColumnArray(dataQuery);
 		if(arguments.debug){
 			dataRows = [];
 			if(dataQuery.recordcount){
