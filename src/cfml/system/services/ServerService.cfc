@@ -987,9 +987,12 @@ component accessors="true" singleton {
 			expandAndDefaultConfig( { data : site, rootDir : site.serverConfigFileDirectory } );
 
 			resolveSiteSettings( serverInfo.name, siteServerInfo, serverProps, serverJSON, defaults, false );
-			serverInfo['sites' ] = [
+			serverInfo[ 'sites' ] = [
 				'#serverInfo.name#'	: siteServerInfo
 			];
+			// In single site mode, there is no sites struct in server.json, so don't let the empty string defaulted in siteServerInfo
+			// overwrite any actual setting in top level serverInfo
+			siteServerInfo.delete( 'openbrowserURL');
 			// Append these back to the top level for backwards compat
 			serverInfo.append( siteServerInfo )
 		}
@@ -1084,8 +1087,8 @@ component accessors="true" singleton {
 		// This can't be done until the server homes are created above.
 		serverInfo.sites.each( (siteName,site)=>{
 			site.accessLogPath = serverInfo.logDir & '/#site.accessLogBaseName#.txt'
-			site.defaultBaseURL='';
-			site.openbrowserURL='';
+			site.defaultBaseURL = '';
+			site.openbrowserURL = site.openbrowserURL ?: '';
 			for( var bindingName in serverInfo.bindings.filter( (n,b)=>n!='default' && !n.endsWith( ':endswith:' ) && !n.endsWith( ':startswith:' ) && !n.endsWith( ':regex:' ) && b.type=='ssl' && b.site==siteName ) ) {
 				var binding = serverInfo.bindings[ bindingName ];
 				site.defaultBaseURL = 'https://#(binding.host != '*' ? binding.host : binding.IP )#:#binding.port#'.replace( '0.0.0.0', '127.0.0.1' );
