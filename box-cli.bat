@@ -1,7 +1,7 @@
 @echo off
 set CFDISTRO_HOME=%userprofile%\cfdistro
-set JAVA_HOME=C:\Users\brad\.CommandBox\serverJREs\openjdk8_jdk_x64_windows_hotspot_jdk8u402-b06
-REM set FILE_URL="http://cfmlprojects.org/artifacts/cfdistro/latest/cfdistro.zip"
+REM set JAVA_HOME=C:\Users\brad\.CommandBox\serverJREs\openjdk8_jdk_x64_windows_hotspot_jdk8u402-b06
+set FILE_URL="http://cfmlprojects.org/artifacts/cfdistro/latest/cfdistro.zip"
 set FILE_DEST=%CFDISTRO_HOME%\cfdistro.zip
 set buildfile=build/build.xml
 set ANT_HOME=%CFDISTRO_HOME%\ant
