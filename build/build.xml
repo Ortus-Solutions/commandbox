@@ -417,8 +417,6 @@ External Dependencies:
 			</fileset>
 			<fileset dir="${build.location}/temp/CommandBoxHome/cfml/">
 				<include name="modules/**"/>
-				<!-- temp fix until Luis fixes the build -->
-				<exclude name="modules/contentbox-cli/box.zip"/>
 			</fileset>
 			<zipfileset file="${build.location}/temp/CommandBoxHome/cfml/box.json" fullpath="box-auto-install.json"/>
 			<zipfileset file="${temp.dir}/cli/bin/cliloader/cfml.version" fullpath=".version"/>
@@ -492,7 +490,7 @@ External Dependencies:
 				<property name="boxLoaderPath" location="${artifact.dir}/box-loader.json"/>
 				<get src="https://s3.amazonaws.com/downloads.ortussolutions.com/ortussolutions/commandbox/box-loader.json" dest="${boxLoaderPath}" verbose="true" />
 
-				<script language="javascript">//															<![CDATA[
+				<script language="javascript">//																																			<![CDATA[
 						var json = new Packages.java.lang.String(
 							Packages.java.nio.file.Files.readAllBytes(
 								Packages.java.nio.file.Paths.get(project.getProperty("boxLoaderPath"))), "UTF-8");
