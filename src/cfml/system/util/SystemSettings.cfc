@@ -118,6 +118,16 @@ component singleton {
 	}
 
 	/**
+	* Set a struct of System Settings into the current environment
+	*
+	* @env Struct of system settings to set
+	* @inParent Pass true to set the variable in the parent environment
+	*/
+    function setSystemSettings( required struct env, inParent=false ) {
+    	env.each( (k,v)=>setSystemSetting( k, v,inParent  ) );
+	}
+
+	/**
 	* Set a Java System property.
 	*
 	* @key The name of the setting to set.
@@ -156,7 +166,7 @@ component singleton {
 				type = "SystemSettingNotFound",
 				message = "Could not find a env property with key [#arguments.key#]."
 			);
-		} 
+		}
 
 	}
 
@@ -216,7 +226,7 @@ component singleton {
 				if( isNull( dataStructure[ key ] ) ) {
 					dataStructure[ expandedKey ] = nullValue();
 				} else {
-					dataStructure[ expandedKey ] = expandDeepSystemSettings( dataStructure[ key ], context );	
+					dataStructure[ expandedKey ] = expandDeepSystemSettings( dataStructure[ key ], context );
 				}
 				if( expandedKey != key ) dataStructure.delete( key );
 			}
@@ -228,7 +238,7 @@ component singleton {
 			for( var item in dataStructure ) {
 				i++;
 				if( !isNull( item ) ) {
-					dataStructure[ i ] = expandDeepSystemSettings( item, context );	
+					dataStructure[ i ] = expandDeepSystemSettings( item, context );
 				}
 			}
 			return dataStructure;

@@ -84,7 +84,7 @@ component {
 			} else {
 				var propertyValue = jmespath.search( deserializeJSON(arguments.inputOrFile), arguments.query );
 			}
-			print.line( propertyValue ?: '' );
+			print.text( propertyValue ?: '' );
 
 		} catch( JSONExpression var e ) {
 			error('Query:[ ' & arguments.query & ' ] is malformed. Error: ' & e.message)

@@ -13,7 +13,7 @@ component aliases="set" {
 	function run()  {
 		for( var arg in arguments ) {
 			systemSettings.setSystemSetting( arg, arguments[ arg ], true );
-			print.line( '#arg#=#arguments[ arg ]#' );
+			print.text( '#arg#=#arguments[ arg ]#' );
 		}
 	}
 

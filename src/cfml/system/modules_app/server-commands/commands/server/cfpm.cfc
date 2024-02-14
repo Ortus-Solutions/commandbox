@@ -40,7 +40,7 @@ component aliases='cfpm' {
 		// If we're running inside of a server-related package script, use that server
 		} else if( interceptData_serverInfo_name != '' ) {
 			print.yellowLine( 'Using interceptData to load server [#interceptData_serverInfo_name#]' );
-			serverInfo = serverService.resolveServerDetails( { name=interceptData_serverInfo_name } ).serverInfo;
+			serverInfo = serverService.getServerInfoByName( interceptData_serverInfo_name );
 			if( !(serverInfo.engineName contains 'adobe' && val( listFirst( serverInfo.engineVersion, '.' ) ) >= 2021  ) ){
 				print.redLine( 'Server [#interceptData_serverInfo_name#] is of type [#serverInfo.cfengine#] and not an Adobe 2021+ server.  Ignoring.' );
 				return;
@@ -49,12 +49,11 @@ component aliases='cfpm' {
 		// CFPM_SERVER=servername
 		} else if( cfpm_server != '' ) {
 			print.yellowLine( 'Using CFPM_SERVER environment variable to load server [#cfpm_server#]' );
-			var serverDetails = serverService.resolveServerDetails( { name=cfpm_server } );
-			if( serverDetails.serverIsNew ) {
+			serverInfo = serverService.getServerInfoByName( cfpm_server );
+			if( !serverInfo.count() ) {
 				error( 'Server [#cfpm_server#] specified in CFPM_SERVER environment variable does not exist.' );
 				return;
 			}
-			serverInfo = serverDetails.serverInfo;
 			if( !(serverInfo.engineName contains 'adobe' && val( listFirst( serverInfo.engineVersion, '.' ) ) >= 2021  ) ){
 				print.redLine( 'Server [#cfpm_server#] is of type [#serverInfo.cfengine#] and not an Adobe 2021+ server.  Ignoring.' );
 				return;
@@ -119,7 +118,7 @@ component aliases='cfpm' {
 			.run( echo=true, returnOutput=( job.isActive() && arguments.count() ) );
 
 		if( job.isActive() && arguments.count() ) {
-			print.line( output );
+			print.text( output );
 		}
 
 	}

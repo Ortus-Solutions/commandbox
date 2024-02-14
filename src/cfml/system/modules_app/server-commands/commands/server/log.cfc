@@ -28,7 +28,8 @@ component {
 		String serverConfigFile,
 		Boolean follow=false,
 		Boolean access=false,
-		Boolean rewrites=false
+		Boolean rewrites=false,
+		String site=''
 		 ){
 		if( !isNull( arguments.directory ) ) {
 			arguments.directory = resolvePath( arguments.directory );
@@ -46,7 +47,17 @@ component {
 
 		var logfile = serverInfo.logdir & "/server.out.txt";
 		if( access ) {
-			logfile = serverInfo.accessLogPath;
+			if( serverInfo.sites.count()>1 ) {
+				if( len( site ) && serverInfo.sites.keyExists( site ) ) {
+					logfile = serverInfo.sites[site].accessLogPath;
+				} else if( len( site ) ) {
+					error( 'Site [#site#] doesn''t exist in server [#serverInfo.name#].', 'Valid site names are [#serverInfo.sites.keyList()#]' );
+				} else {
+					error( 'Server [#serverInfo.name#] is in multi-site mode.  Please specify a site name in the "site" parameter.', 'Valid site names are [#serverInfo.sites.keyList()#]' );
+				}
+			} else {
+				logfile = serverInfo.accessLogPath;
+			}
 		}
 		if( rewrites ) {
 			logfile = serverInfo.rewritesLogPath;

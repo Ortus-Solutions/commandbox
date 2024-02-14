@@ -645,14 +645,15 @@ component accessors="true" singleton {
 		// Check each param
 		for( var key in parameters.namedParameters.keyArray() ) {
 			// If the name contains a colon, then break it out into a struct
-			if( key contains ':' ) {
+			var search = findNoCase( '__colonParam__', key );
+			if( search ) {
 				// Default struct name for :foo=bar
-				if( key.listLen( ':' ) > 1 ) {
-					var prefix = key.listFirst( ':' );
-					var nestedKey = key.listRest( ':' );
-				} else {
+				if( search == 1 ) {
 					var prefix = 'args';
-					var nestedKey = mid( key, 2, len( key ) );
+					var nestedKey = key.replaceNoCase( '__colonParam__', '' );
+				} else {
+					var prefix = key.mid( 1, search-1 );
+					var nestedKey = key.mid( search+14, len( key ) );
 				}
 				// Default to empty struct if this is the first param with this prefix
 				parameters.namedParameters[ prefix ] = parameters.namedParameters[ prefix ] ?: {};
@@ -1396,4 +1397,26 @@ component accessors="true" singleton {
 		return instance.callStack;
 	}
 
+	function runInEnvironment( name, udf ) {
+
+		instance.callStack.prepend( {
+			commandInfo : commandData = {
+				fullCFCPath 	= name,
+				aliases 		= [],
+				parameters 		= [],
+				completor 		= {},
+				hint 			= '',
+				originalName 	= name,
+				excludeFromHelp = false,
+				commandMD 		= {},
+				originalLine	= name
+			},
+			environment : {}
+		} );
+		try {
+			return udf();
+		} finally {
+			instance.callStack.deleteAt( 1 );
+		}
+	}
 }

@@ -15,6 +15,7 @@ component singleton accessors=true {
 	property name="progressBar"			inject="progressBar";
 	property name="job"					inject="InteractiveJob";
 	property name='shell'				inject='shell';
+	property name='SystemSettings'		inject='SystemSettings';
 	property name='multiSelect';
 
 	property name='active' type='boolean' default='false';
@@ -35,7 +36,7 @@ component singleton accessors=true {
 	function start() {
 
 		// If we have a dumb terminal or are running inside a CI server, skip the screen redraws all together.
-		if( !shell.isTerminalInteractive() || terminal.getWidth() == 0 ) {
+		if( systemsettings.getSystemSetting( 'box_currentCommandPiped', false ) || !shell.isTerminalInteractive() || terminal.getWidth() == 0 ) {
 			return;
 		}
 

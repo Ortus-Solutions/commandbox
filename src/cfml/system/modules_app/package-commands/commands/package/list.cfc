@@ -59,7 +59,7 @@ component aliases="list" {
 
 		// JSON output
 		if( arguments.JSON ) {
-			print.line( tree );
+			print.text( tree );
 			return;
 		}
 		// normal output

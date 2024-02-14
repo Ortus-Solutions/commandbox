@@ -130,8 +130,19 @@ component {
 					} catch( any e ){
 						// flush out anything in buffer
 						print.toConsole();
+						// Trim the stack trace to here, if the error happened inside the CFMLExecutor
+						if( e.stackTrace.find( 'util/CFMLExecutor.cfc' ) ) {
+							var shortTrace =  e.stackTrace.mid( 1, e.stackTrace.find( '/util/CFMLExecutor.cfc' ) + 27 );
+						// Fallback, trim to here...
+						} else {
+							var shortTrace =  e.stackTrace.mid( 1, e.stackTrace.find( '/commands/repl.cfc' ) + 23 );
+						}
+						// If there was a root cause, then add that back in
+						var causedByLocation = e.stackTrace.findNoCase( 'caused by' );
+						if( causedByLocation ) {
+							shortTrace &= '        ...' & chr(10) & e.stackTrace.mid( causedByLocation );
+						}
 						// Log it
-						var shortTrace =  e.stackTrace.mid( 1, e.stackTrace.find( '/commands/repl.cfc' ) + 23 );
 						logger.error( '#e.message# #e.detail#' , shortTrace );
 						if( quit ) {
 							resetShell();

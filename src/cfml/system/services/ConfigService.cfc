@@ -90,6 +90,10 @@ component accessors="true" singleton {
 			'debugNativeExecution',
 			'developerMode',
 			'offlineMode',
+			// autosync
+			'configAutoSync.enable',
+			'configAutoSync.endpoint',
+			'configAutoSync.overwrite',
 			// Task Runners
 			'taskCaching'
 		]);
@@ -111,9 +115,10 @@ component accessors="true" singleton {
 		loadOverrides();
 	}
 
-	function setConfigSettings( required struct configSettings ) {
+	function setConfigSettings( required struct configSettings, boolean quiet=false ) {
 		variables.configSettings = arguments.configSettings;
-		saveConfig();
+
+		saveConfig( quiet );
 	}
 
 	/**
@@ -157,14 +162,14 @@ component accessors="true" singleton {
 	* @value.hint The value to set
 	* @thisAppend.hint Append an array or struct to existing
 	*/
-	function setSetting( required name, required value, boolean thisAppend=false ){
+	function setSetting( required name, required value, boolean thisAppend=false, boolean quiet=false ){
 
 		arguments.JSON = getConfigSettings( noOverrides=true );
 		arguments.properties[ name ] = arguments.value;
 
 		JSONService.set( argumentCollection = arguments );
 
-		saveConfig();
+		saveConfig( quiet );
 		return this;
 	}
 
@@ -172,14 +177,14 @@ component accessors="true" singleton {
 	* Remove a value in the application configuration settings
 	* @name.hint The name of the setting.  Allows for "deep" struct/array names.
 	*/
-	function removeSetting( required name ){
+	function removeSetting( required name, boolean quiet=false ){
 
 		arguments.JSON = getConfigSettings( noOverrides=true );
 		arguments.property = arguments.name;
 
 		JSONService.clear( argumentCollection = arguments );
 
-		saveConfig();
+		saveConfig( quiet );
 		return this;
 	}
 
@@ -240,13 +245,16 @@ component accessors="true" singleton {
 	/**
 	* Persists config settings to disk
 	*/
-	function saveConfig(){
-		JSONService.writeJSONFile( getConfigFilePath(), getConfigSettings( noOverrides=true ) );
+	function saveConfig( boolean quiet=false ){
+		if( !JSONService.writeJSONFile( getConfigFilePath(), getConfigSettings( noOverrides=true ) ) ) {
+			return;
+		}
 
 		// Update ModuleService
 		ModuleService.overrideAllConfigSettings();
-
-		interceptorService.announceInterception( 'onConfigSettingSave', { configFilePath=getConfigFilePath(), configSettings=getConfigSettings( noOverrides=true ) } );
+		if( !quiet ) {
+			interceptorService.announceInterception( 'onConfigSettingSave', { configFilePath=getConfigFilePath(), configSettings=getConfigSettings( noOverrides=true ) } );
+		}
 	}
 
 

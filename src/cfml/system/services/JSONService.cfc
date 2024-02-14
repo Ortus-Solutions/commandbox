@@ -122,7 +122,7 @@ component accessors="true" singleton {
 						} else {
 							mergeData( targetProperty, complexValue );
 						}
-						results.append( '#propertyValue# appended to #prop#' );
+						results.append( '#propertyValue.toString()# appended to #prop#' );
 						continue;
 					}
 
@@ -141,7 +141,7 @@ component accessors="true" singleton {
 				arrays.each( (a)=>evaluate( 'JSON#a# = JSON#a# ?: []' ) );
 				evaluate( '#fullPropertyName# = propertyValue' );
 			}
-			results.append( 'Set #prop# = #propertyValue#' );
+			results.append( 'Set #prop# = #propertyValue.toString()#' );
 		}
 		return results;
 	}
@@ -215,7 +215,7 @@ component accessors="true" singleton {
 
 
 	// Convert foo.bar-baz[1] to ['foo']['bar-baz'][1]
-	private function toBracketNotation( required any property ) {
+	public function toBracketNotation( required any property ) {
 		if( isSimpleValue( arguments.property ) ) {
 			arguments.property = tokenizeProp( arguments.property );
 		}
@@ -411,8 +411,10 @@ component accessors="true" singleton {
 	* @path.hint The file path to write to
 	* @json.hint A string containing JSON, or a complex value that can be serialized to JSON
 	* @locking.hint Set to true to have file system access wrapped in a lock
+	*
+	* @returns True if the file was written, false if there was no change in the JSON
 	*/
-	function writeJSONFile( required string path, required any json, boolean locking = false ) {
+	boolean function writeJSONFile( required string path, required any json, boolean locking = false ) {
 		var sortKeysIsSet = configService.settingExists( 'JSON.sortKeys' );
 		var sortKeys = configService.getSetting( 'JSON.sortKeys', 'textnocase' );
 		var oldJSON = '';
@@ -431,7 +433,7 @@ component accessors="true" singleton {
 		}
 
 		if ( oldJSON == newJSON ) {
-			return;
+			return false;
 		}
 
 		// ensure we are writing to an existing directory
@@ -442,6 +444,7 @@ component accessors="true" singleton {
 		} else {
 			fileWrite( path, newJSON );
 		}
+		return true;
 	}
 
 	/**
@@ -460,7 +463,7 @@ component accessors="true" singleton {
 				if ( obj.keyList() != obj.keyArray().sort( sortKeys ).toList() ) {
 					return false;
 				}
-				return obj.every( ( k, v ) => isSorted( v ) );
+				return obj.every( ( k, v ) => isNull( v ) || isSorted( v ) );
 			}
 
 			if ( isArray( obj ) ) {

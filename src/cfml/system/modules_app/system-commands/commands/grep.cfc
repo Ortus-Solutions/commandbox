@@ -27,6 +27,7 @@ component excludeFromHelp=true {
 	function run( input='', expression='', boolean count=false ) {
 		// Turn output into an array, breaking on carriage returns
 		var content = listToArray( arguments.input, chr(13)&chr(10) );
+		var result = createObject( 'java', 'java.lang.StringBuilder' ).init( '' );
 		var numMatches = 0;
 
 		// Loop over content
@@ -37,14 +38,16 @@ component excludeFromHelp=true {
 				if( count ) {
 					numMatches++;
 				} else {
-					print.line( line );
+					result.append( line & server.separator.line );
 				}
 			}
 
 		}
 
 		if( count ) {
-			print.line( numMatches );
+			print.text( numMatches );
+		} else {
+			print.text( result.toString() );
 		}
 	}
 

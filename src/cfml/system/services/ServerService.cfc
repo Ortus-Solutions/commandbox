@@ -34,6 +34,7 @@ component accessors="true" singleton {
 	property name='rewritesDefaultConfig'	inject='rewritesDefaultConfig@constants';
 	property name='interceptorService'		inject='interceptorService';
 	property name='configService'			inject='ConfigService';
+	property name='CommandService'			inject='provider:CommandService';
 	property name='JSONService'				inject='JSONService';
 	property name='packageService'			inject='packageService';
 	property name='serverEngineService'		inject='serverEngineService';
@@ -120,7 +121,7 @@ component accessors="true" singleton {
 		return {
 			'name' : d.name ?: '',
 			'preferredBrowser' : d.preferredBrowser ?: '',
-			'openBrowser' : d.openBrowser ?: true,
+			'openBrowser' : d.openBrowser ?: nullValue(),
 			'openBrowserURL' : d.openBrowserURL ?: '',
 			'startTimeout' : 240,
 			'stopsocket' : d.stopsocket ?: 0,
@@ -144,10 +145,14 @@ component accessors="true" singleton {
 				'javaVersion' : d.jvm.javaVersion ?: '',
 				'properties' : d.jvm.properties ?: {}
 			},
+			'sites' : duplicate( d.sites ?: [:] ),
+			'siteConfigFiles' : d.siteConfigFiles ?: '',
 			'web' : {
 				'host' : d.web.host ?: '127.0.0.1',
+				'hostAlias' : d.web.hostAlias ?: '',
 				'directoryBrowsing' : d.web.directoryBrowsing ?: '',
 				'webroot' : d.web.webroot ?: '',
+				'sendFileMinSizeKB' : d.web.sendFileMinSizeKB ?: '',
 				'caseSensitivePaths' : d.web.caseSensitivePaths ?: '',
 				// Duplicate so onServerStart interceptors don't actually change config settings via reference.
 				'aliases' : duplicate( d.web.aliases ?: {} ),
@@ -156,11 +161,14 @@ component accessors="true" singleton {
 				'accessLogEnable' : d.web.accessLogEnable ?: false,
 				'GZIPEnable' : d.web.GZIPEnable ?: true,
 				'gzipPredicate' : d.web.gzipPredicate ?: '',
+				'resourceManagerLogging' : d.web.resourceManagerLogging ?: false,
+				'servletPassPredicate' : d.web.servletPassPredicate ?: '',
 				'welcomeFiles' : d.web.welcomeFiles ?: '',
 				'maxRequests' : d.web.maxRequests ?: '',
+				'bindings' : duplicate( d.web.bindings ?: {} ),
 				'HTTP' : {
 					'port' : d.web.http.port ?: 0,
-					'enable' : d.web.http.enable ?: true
+					'enable' : d.web.http.enable ?: nullvalue()
 				},
 				'HTTP2' : {
 					'enable' : d.web.HTTP2.enable ?: true
@@ -171,6 +179,7 @@ component accessors="true" singleton {
 					'certFile' : d.web.ssl.certFile ?: '',
 					'keyFile' : d.web.ssl.keyFile ?: '',
 					'keyPass' : d.web.ssl.keyPass ?: '',
+					'certs' : d.web.ssl.certs ?: [],
 					'forceSSLRedirect' : d.web.ssl.forceSSLRedirect ?: false,
 					'HSTS' : {
 						'enable' : d.web.ssl.hsts.enable ?: false,
@@ -192,7 +201,7 @@ component accessors="true" singleton {
 				'rewrites' : {
 					'enable' : d.web.rewrites.enable ?: false,
 					'logEnable' : d.web.rewrites.logEnable ?: false,
-					'config' : d.web.rewrites.config ?: variables.rewritesDefaultConfig,
+					'config' : d.web.rewrites.config ?: '',
 					'statusPath' : d.web.rewrites.statusPath ?: '',
 					'configReloadSeconds' : d.web.rewrites.configReloadSeconds ?: ''
 				},
@@ -203,7 +212,8 @@ component accessors="true" singleton {
 				'fileCache' : {
 					'enable' : d.web.fileCache.enable ?: '',
 					'totalSizeMB' : d.web.fileCache.totalSizeMB ?: 50,
-					'maxFileSizeKB' : d.web.fileCache.maxFileSizeKB ?: 50
+					'maxFileSizeKB' : d.web.fileCache.maxFileSizeKB ?: 50,
+					'fileSystemWatcherEnable' : d.web.fileCache.fileSystemWatcherEnable ?: false
 				},
 				'rules' : duplicate( d.web.rules ?: [] ),
 				'rulesFile' : duplicate( d.web.rulesFile ?: [] ),
@@ -227,7 +237,9 @@ component accessors="true" singleton {
 						'issuerDNs' : d.web.security.clientCert.issuerDNs ?: ''
 					}
 				},
-				'mimeTypes' : duplicate( d.web.mimeTypes ?: {} )
+				'mimeTypes' : duplicate( d.web.mimeTypes ?: {} ),
+				'bindings' : duplicate( d.web.bindings ?: {} ),
+				'adobeScriptsAlias' : d.web.adobeScriptsAlias ?: nullValue()
 			},
 			'app' : {
 				'logDir' : d.app.logDir ?: '',
@@ -243,11 +255,13 @@ component accessors="true" singleton {
 				'serverHomeDirectory' : d.app.serverHomeDirectory ?: '',
 				'singleServerHome' : d.app.singleServerHome ?: false,
 				'sessionCookieSecure' : d.app.sessionCookieSecure ?: false,
-				'sessionCookieHTTPOnly' : d.app.sessionCookieHTTPOnly ?: false
+				'sessionCookieHTTPOnly' : d.app.sessionCookieHTTPOnly ?: false,
+				'customHTTPStatusEnable' : d.app.customHTTPStatusEnable ?: true
 			},
 			'runwar' : {
 				'jarPath' : d.runwar.jarPath ?: variables.jarPath,
 				'args' : d.runwar.args ?: '',
+				'options' : duplicate( d.runwar.options ?: {} ),
 				// Duplicate so onServerStart interceptors don't actually change config settings via reference.
 				'XNIOOptions' : duplicate( d.runwar.XNIOOptions ?: {} ),
 				// Duplicate so onServerStart interceptors don't actually change config settings via reference.
@@ -369,7 +383,7 @@ component accessors="true" singleton {
 		// If the server is already running, make sure the user really wants to do this.
 		if( isServerRunning( serverInfo ) && !(serverProps.force ?: false ) && !(serverProps.dryRun ?: false ) ) {
 
-			if( !shell.isTerminalInteractive() || isSingleServerMode() ) {
+			if( systemsettings.getSystemSetting( 'box_currentCommandPiped', false ) || !shell.isTerminalInteractive() || isSingleServerMode() ) {
 				throw( message="Cannot start server [#serverInfo.name#] because it is already running.", detail="Run [server info --verbose] to find out why CommandBox thinks this server is running.", type="commandException" );
 			}
 
@@ -603,7 +617,6 @@ component accessors="true" singleton {
 		serverInfo.debug 			= serverProps.debug 			?: serverJSON.debug 				?: defaults.debug;
 		serverInfo.verbose 			= serverProps.verbose 			?: serverJSON.verbose 				?: defaults.verbose;
 		serverInfo.console 			= serverProps.console 			?: serverJSON.console 				?: defaults.console;
-		serverInfo.openbrowser		= serverProps.openbrowser 		?: serverJSON.openbrowser			?: defaults.openbrowser;
 
 		serverInfo.openbrowserURL	= serverProps.openbrowserURL	?: serverJSON.openbrowserURL		?: defaults.openbrowserURL;
 		serverInfo.preferredBrowser	= serverJSON.preferredBrowser	?: defaults.preferredBrowser;
@@ -616,130 +629,6 @@ component accessors="true" singleton {
 		if( serverInfo.verbose ) {
 			job.setDumpLog( serverInfo.verbose );
 		}
-
-		serverInfo.host				= serverProps.host 				?: serverJSON.web.host				?: defaults.web.host;
-		// If the last port we used is taken, remove it from consideration.
-		if( val( serverInfo.port ) == 0 || !isPortAvailable( serverInfo.host, serverInfo.port ) ) { serverInfo.delete( 'port' ); }
-		// Port is the only setting that automatically carries over without being specified since it's random.
-		serverInfo.port 			= serverProps.port 				?: serverJSON.web.http.port			?: serverInfo.port	?: defaults.web.http.port;
-		serverInfo.port = val( serverInfo.port );
-		// Server default is 0 not null.
-		if( serverInfo.port == 0 ) {
-			serverInfo.port = getRandomPort( serverInfo.host );
-		}
-
-		var profileReason = 'config setting server defaults';
-		// Try to set a smart profile if there's not one set
-		if( !trim( defaults.profile ).len() ) {
-			var thisIP = '';
-			// Try and get the IP we're binding to
-			try{
-				thisIP = getAddressByHost( serverInfo.host ).getHostAddress();
-			} catch( any var e ) {}
-
-			// Look for a env var called "environment"
-			var envVarEnvironment = systemSettings.getSystemSetting( 'environment', '' );
-
-			// Env var takes precedence.
-			if( len( envVarEnvironment ) ) {
-				profileReason = '"environment" env var';
-				defaults.profile = envVarEnvironment;
-			// Otherwise see if we're bound to localhost.
-			} else if( listFirst( thisIP, '.' ) == '127' ) {
-				profileReason = 'server bound to localhost';
-				defaults.profile = 'development';
-			} else {
-				profileReason = 'secure by default';
-				defaults.profile = 'production';
-			}
-		}
-
-		if( !isNull( serverJSON.profile ) ) {
-			if( serverInfo.envVarHasProfile ?: false ) {
-				profileReason = 'profile property in "box_server_profile" env var';
-			} else {
-				profileReason = 'profile property in server.json';
-			}
-		}
-		if( !isNull( serverProps.profile ) ) {
-			profileReason = 'profile argument to server start command';
-		}
-		serverInfo.profile			= serverProps.profile	 		?: serverJSON.profile				?: defaults.profile;
-
-		if( !trim( defaults.web.blockCFAdmin ).len() ) {
-			if( serverInfo.profile == 'development' || serverInfo.profile == 'none' ) {
-				defaults.web.blockCFAdmin = 'false';
-			} else {
-				defaults.web.blockCFAdmin = 'external';
-			}
-		}
-
-		if( !trim( defaults.web.blockSensitivePaths ).len() ) {
-			if( serverInfo.profile == 'none' ) {
-				defaults.web.blockSensitivePaths = false;
-			} else {
-				defaults.web.blockSensitivePaths = true;
-			}
-		}
-
-		if( !trim( defaults.web.blockFlashRemoting ).len() ) {
-			if( serverInfo.profile == 'none' ) {
-				defaults.web.blockFlashRemoting = false;
-			} else {
-				defaults.web.blockFlashRemoting = true;
-			}
-		}
-
-		serverInfo.blockCFAdmin		= serverProps.blockCFAdmin			?: serverJSON.web.blockCFAdmin			?: defaults.web.blockCFAdmin;
-		serverInfo.blockSensitivePaths									 = serverJSON.web.blockSensitivePaths	?: defaults.web.blockSensitivePaths;
-		serverInfo.blockFlashRemoting									 = serverJSON.web.blockFlashRemoting	?: defaults.web.blockFlashRemoting;
-		serverInfo.allowedExt											 = serverJSON.web.allowedExt			?: defaults.web.allowedExt;
-		serverInfo.useProxyForwardedIP									 = serverJSON.web.useProxyForwardedIP	?: defaults.web.useProxyForwardedIP;
-
-
-		// If there isn't a default for this already
-		if( !isBoolean( defaults.web.directoryBrowsing ) ) {
-			// Default it according to the profile
-			if( serverInfo.profile == 'development' ) {
-				defaults.web.directoryBrowsing = true;
-			} else {
-				// secure by default even if profile is none or custom
-				defaults.web.directoryBrowsing = false;
-			}
-		}
-		serverInfo.directoryBrowsing = serverProps.directoryBrowsing ?: serverJSON.web.directoryBrowsing ?: defaults.web.directoryBrowsing;
-
-		// If there isn't a default for this already
-		if( !isBoolean( defaults.web.fileCache.enable ) ) {
-			if( serverInfo.profile == 'production' ) {
-				defaults.web.fileCache.enable = true;
-			} else {
-				defaults.web.fileCache.enable = false;
-			}
-		}
-
-		serverInfo.fileCacheEnable	= 								   serverJSON.web.fileCache.enable		?: defaults.web.fileCache.enable;
-		serverInfo.fileCacheTotalSizeMB	= 							   serverJSON.web.fileCache.totalSizeMB	?: defaults.web.fileCache.totalSizeMB;
-		serverInfo.fileCacheMaxFileSizeKB = 						   serverJSON.web.fileCache.maxFileSizeKB ?: defaults.web.fileCache.maxFileSizeKB;
-
-		job.start( 'Setting Server Profile to [#serverInfo.profile#]' );
-			job.addLog( 'Profile set from #profileReason#' );
-			if( serverInfo.blockCFAdmin == 'external' ) {
-				job.addSuccessLog( 'Block CF Admin external' );
-			} else if( serverInfo.blockCFAdmin == 'true' ) {
-				job.addSuccessLog( 'Block CF Admin enabled' );
-			} else {
-				job.addErrorLog( 'Block CF Admin disabled' );
-			}
-			job[ 'add#( serverInfo.blockSensitivePaths ? 'Success' : 'Error' )#Log' ]( 'Block Sensitive Paths #( serverInfo.blockSensitivePaths ? 'en' : 'dis' )#abled' );
-			job[ 'add#( serverInfo.blockFlashRemoting ? 'Success' : 'Error' )#Log' ]( 'Block Flash Remoting #( serverInfo.blockFlashRemoting ? 'en' : 'dis' )#abled' );
-			if( len( serverInfo.allowedExt ) ) {
-				job.addLog( 'Allowed Extensions: [#serverInfo.allowedExt#]' );
-			}
-			job[ 'add#( !serverInfo.directoryBrowsing ? 'Success' : 'Error' )#Log' ]( 'Directory Browsing #( serverInfo.directoryBrowsing ? 'en' : 'dis' )#abled' );
-			job[ 'add#( serverInfo.fileCacheEnable ? 'Success' : '' )#Log' ]( 'File Caching #( serverInfo.fileCacheEnable ? 'en' : 'dis' )#abled' );
-		job.complete( serverInfo.verbose );
-
 
 		serverInfo.stopsocket		= serverProps.stopsocket		?: serverJSON.stopsocket 			?: getRandomPort( serverInfo.host );
 
@@ -764,16 +653,8 @@ component accessors="true" singleton {
 		if( defaults.keyExists( 'trayIcon' ) && len( defaults.trayIcon ) ) { defaults.trayIcon = fileSystemUtil.resolvePath( defaults.trayIcon, defaultwebroot ); }
 		serverInfo.trayIcon			= serverProps.trayIcon 			?: serverJSON.trayIcon 				?: defaults.trayIcon;
 
-		serverInfo.SSLEnable 		= serverProps.SSLEnable 		?: serverJSON.web.SSL.enable			?: defaults.web.SSL.enable;
-		serverInfo.HTTPEnable		= serverProps.HTTPEnable 		?: serverJSON.web.HTTP.enable			?: defaults.web.HTTP.enable;
-		serverInfo.HTTP2Enable		= serverJSON.web.HTTP2.enable	?: defaults.web.HTTP2.enable;
-		serverInfo.SSLPort			= serverProps.SSLPort 			?: serverJSON.web.SSL.port				?: defaults.web.SSL.port;
 
-		serverInfo.AJPEnable 		= serverProps.AJPEnable 		?: serverJSON.web.AJP.enable			?: defaults.web.AJP.enable;
-		serverInfo.AJPPort			= serverProps.AJPPort 			?: serverJSON.web.AJP.port				?: defaults.web.AJP.port;
-		serverInfo.AJPSecret		= serverJSON.web.AJP.secret		?: defaults.web.AJP.secret;
-
-
+/*
 		// Double check that the port in the user params or server.json isn't in use
 		if( serverInfo.HTTPEnable && !isPortAvailable( serverInfo.host, serverInfo.port ) ) {
 			job.addErrorLog( "" );
@@ -787,141 +668,30 @@ component accessors="true" singleton {
 			}
 			throw( message="You asked for port [#serverInfo.port#] in your #badPortlocation# but it's already in use.", detail="Please choose another or use netstat to find out what process is using the port already.", type="commandException" );
 		}
+*/
 
-		// relative certFile in server.json is resolved relative to the server.json
-		if( isDefined( 'serverJSON.web.SSL.certFile' ) ) { serverJSON.web.SSL.certFile = fileSystemUtil.resolvePath( serverJSON.web.SSL.certFile, defaultServerConfigFileDirectory ); }
-		// relative certFile in config setting server defaults is resolved relative to the web root
-		if( len( defaults.web.SSL.certFile ?: '' ) ) { defaults.web.SSL.certFile = fileSystemUtil.resolvePath( defaults.web.SSL.certFile, defaultwebroot ); }
-		serverInfo.SSLCertFile 		= serverProps.SSLCertFile 		?: serverJSON.web.SSL.certFile			?: defaults.web.SSL.certFile;
-
-		// relative keyFile in server.json is resolved relative to the server.json
-		if( isDefined( 'serverJSON.web.SSL.keyFile' ) ) { serverJSON.web.SSL.keyFile = fileSystemUtil.resolvePath( serverJSON.web.SSL.keyFile, defaultServerConfigFileDirectory ); }
-		// relative trayIcon in config setting server defaults is resolved relative to the web root
-		if( len( defaults.web.SSL.keyFile ?: '' ) ) { defaults.web.SSL.keyFile = fileSystemUtil.resolvePath( defaults.web.SSL.keyFile, defaultwebroot ); }
-		serverInfo.SSLKeyFile 		= serverProps.SSLKeyFile 		?: serverJSON.web.SSL.keyFile			?: defaults.web.SSL.keyFile;
-
-		// relative certFile in server.json is resolved relative to the server.json
-		if( isDefined( 'serverJSON.web.SSL.clientCert.CACertFiles' ) ) {
-			if( isSimpleValue( serverJSON.web.SSL.clientCert.CACertFiles ) ) {
-				serverJSON.web.SSL.clientCert.CACertFiles = listToArray( serverJSON.web.SSL.clientCert.CACertFiles );
-			}
-			serverJSON.web.SSL.clientCert.CACertFiles = serverJSON.web.SSL.clientCert.CACertFiles.map( (f)=>fileSystemUtil.resolvePath( f, defaultServerConfigFileDirectory ) );
-		}
-		// relative certFile in config setting server defaults is resolved relative to the web root
-		if( len( defaults.web.SSL.clientCert.CACertFiles ) ) {
-			if( isSimpleValue( defaults.web.SSL.clientCert.CACertFiles ) ) {
-				defaults.web.SSL.clientCert.CACertFiles = listToArray( defaults.web.SSL.clientCert.CACertFiles );
-			}
-			defaults.web.SSL.clientCert.CACertFiles = defaults.web.SSL.clientCert.CACertFiles.map( (f)=>fileSystemUtil.resolvePath( f, defaultwebroot ) );
-		} else {
-			defaults.web.SSL.clientCert.CACertFiles = [];
-		}
-		serverInfo.clientCertCACertFiles = serverJSON.web.SSL.clientCert.CACertFiles ?: defaults.web.SSL.clientCert.CACertFiles;
-
-		if( !isNull( serverJSON.web.SSL.clientCert.CATrustStoreFile ) ) {
-			serverJSON.web.SSL.clientCert.CATrustStoreFile = fileSystemUtil.resolvePath( serverJSON.web.SSL.clientCert.CATrustStoreFile, defaultServerConfigFileDirectory );
-		}
-		if( len( defaults.web.SSL.clientCert.CATrustStoreFile ) ) {
-			defaults.web.SSL.clientCert.CATrustStoreFile = fileSystemUtil.resolvePath( defaults.web.SSL.clientCert.CATrustStoreFile, defaultwebroot );
-		}
-		serverInfo.clientCertCATrustStoreFile = serverJSON.web.SSL.clientCert.CATrustStoreFile ?: defaults.web.SSL.clientCert.CATrustStoreFile;
-		serverInfo.clientCertCATrustStorePass = serverJSON.web.SSL.clientCert.CATrustStorePass ?: defaults.web.SSL.clientCert.CATrustStorePass;
-
-		serverInfo.clientCertMode = serverJSON.web.SSL.clientCert.mode ?: defaults.web.SSL.clientCert.mode;
-		serverInfo.clientCertSSLRenegotiationEnable = serverJSON.web.security.clientCert.SSLRenegotiationEnable ?: defaults.web.security.clientCert.SSLRenegotiationEnable;
-
-
-		serverInfo.SSLForceRedirect			= serverJSON.web.SSL.forceSSLRedirect							?: defaults.web.SSL.forceSSLRedirect;
-		serverInfo.HSTSEnable				= serverJSON.web.SSL.HSTS.enable								?: defaults.web.SSL.HSTS.enable;
-		serverInfo.HSTSMaxAge				= serverJSON.web.SSL.HSTS.maxAge								?: defaults.web.SSL.HSTS.maxAge;
-		serverInfo.HSTSIncludeSubDomains	= serverJSON.web.SSL.HSTS.includeSubDomains						?: defaults.web.SSL.HSTS.includeSubDomains;
-
-		serverInfo.SSLKeyPass 		= serverProps.SSLKeyPass 		?: serverJSON.web.SSL.keyPass			?: defaults.web.SSL.keyPass;
 		serverInfo.rewritesEnable 	= serverProps.rewritesEnable	?: serverJSON.web.rewrites.enable		?: defaults.web.rewrites.enable;
 		serverInfo.rewritesStatusPath = 							   serverJSON.web.rewrites.statusPath	?: defaults.web.rewrites.statusPath;
 		serverInfo.rewritesConfigReloadSeconds =					   serverJSON.web.rewrites.configReloadSeconds ?: defaults.web.rewrites.configReloadSeconds;
 
-		serverInfo.basicAuthEnable 	= 	serverJSON.web.security.basicAuth.enable	?: defaults.web.security.basicAuth.enable	?: serverJSON.web.basicAuth.enable	?: defaults.web.basicAuth.enable;
-		serverInfo.basicAuthUsers 	= 	serverJSON.web.security.basicAuth.users		?: defaults.web.security.basicAuth.users	?: serverJSON.web.basicAuth.users	?: defaults.web.basicAuth.users;
-		// If there are no users, basic auth is NOT enabled
-		if( !serverInfo.basicAuthUsers.count() ) {
-			serverInfo.basicAuthEnable = false;
+		// relative rewrite config path in server.json is resolved relative to the server.json
+		if( isDefined( 'serverJSON.web.rewrites.config' ) && len( serverJSON.web.rewrites.config ) ) { serverJSON.web.rewrites.config = fileSystemUtil.resolvePath( serverJSON.web.rewrites.config, defaultServerConfigFileDirectory ); }
+		// relative rewrite config path in config setting server defaults is resolved relative to the web root
+		if( isDefined( 'defaults.web.rewrites.config' ) && len( defaults.web.rewrites.config ) ) { defaults.web.rewrites.config = fileSystemUtil.resolvePath( defaults.web.rewrites.config, defaultwebroot ); }
+		serverInfo.rewritesConfig 	= serverProps.rewritesConfig 	?: serverJSON.web.rewrites.config 	?: defaults.web.rewrites.config;
+		serverInfo.rewriteslogEnable = serverJSON.web.rewrites.logEnable ?: defaults.web.rewrites.logEnable;
+		serverInfo.rewritesEnable 	= serverProps.rewritesEnable 	?: serverJSON.web.rewrites.enable 	?: defaults.web.rewrites.enable;
+		serverInfo.tuckeyRewritesEnable = serverInfo.rewritesEnable && len( serverInfo.rewritesConfig );
+
+		// If there is a custom legacy Tuckey rewrite file and no custom servletPassPredicate, set the server to send all static files to the servlet so Tuckey can work.
+		if( serverInfo.tuckeyRewritesEnable && !len( defaults.web.servletPassPredicate ) ) {
+			job.addWarnLog( "You're using a custom Tuckey rewrites file (deprecated).  This will put CommandBox in 'legacy' mode where static files will bypass the Resource handler and all be served by the servlet." );
+			defaults.web.servletPassPredicate = true;
 		}
 
-		serverInfo.clientCertEnable	=				serverJSON.web.security.clientCert.enable 				?: defaults.web.security.clientCert.enable;
-		serverInfo.clientCertTrustUpstreamHeaders =	serverJSON.web.security.clientCert.trustUpstreamHeaders ?: defaults.web.security.clientCert.trustUpstreamHeaders;
-
-		// Default missing values
-		serverJSON.web.security.clientCert.subjectDNs = serverJSON.web.security.clientCert.subjectDNs ?: '';
-		serverJSON.web.security.clientCert.issuerDNs = serverJSON.web.security.clientCert.issuerDNs ?: '';
-
-		// Convert all strings to arrays
-		if( isSimpleValue( serverJSON.web.security.clientCert.subjectDNs ) ) {
-			if( len( serverJSON.web.security.clientCert.subjectDNs ) ) {
-				serverJSON.web.security.clientCert.subjectDNs = [ serverJSON.web.security.clientCert.subjectDNs ];
-			} else {
-				serverJSON.web.security.clientCert.subjectDNs = [];
-			}
-		}
-		if( isSimpleValue( defaults.web.security.clientCert.subjectDNs ) ) {
-			if( len( defaults.web.security.clientCert.subjectDNs ) ) {
-				defaults.web.security.clientCert.subjectDNs = [ defaults.web.security.clientCert.subjectDNs ];
-			} else {
-				defaults.web.security.clientCert.subjectDNs = [];
-			}
-		}
-		if( isSimpleValue( serverJSON.web.security.clientCert.issuerDNs ) ) {
-			if( len( serverJSON.web.security.clientCert.issuerDNs ) ) {
-				serverJSON.web.security.clientCert.issuerDNs = [ serverJSON.web.security.clientCert.issuerDNs ];
-			} else {
-				serverJSON.web.security.clientCert.issuerDNs = [];
-			}
-		}
-		if( isSimpleValue( defaults.web.security.clientCert.issuerDNs ) ) {
-			if( len( defaults.web.security.clientCert.issuerDNs ) ) {
-				defaults.web.security.clientCert.issuerDNs = [ defaults.web.security.clientCert.issuerDNs ];
-			} else {
-				defaults.web.security.clientCert.issuerDNs = [];
-			}
-		}
-
-		// Combine server defaults AND any settings in server.json
-		serverInfo.clientCertSubjectDNs	= serverJSON.web.security.clientCert.subjectDNs.append( defaults.web.security.clientCert.subjectDNs, true );
-		serverInfo.clientCertIssuerDNs	= serverJSON.web.security.clientCert.issuerDNs.append( defaults.web.security.clientCert.issuerDNs, true );
-
-		serverInfo.authEnabled 	= 	serverInfo.basicAuthEnable || serverInfo.clientCertEnable;
-		serverInfo.securityRealm 	= 	serverJSON.web.security.realm			?: defaults.web.security.realm;
-		serverInfo.authPredicate	= 	serverJSON.web.security.authPredicate	?: defaults.web.security.authPredicate;
-
-		serverInfo.welcomeFiles 	= serverProps.welcomeFiles		?: serverJSON.web.welcomeFiles			?: defaults.web.welcomeFiles;
-		serverInfo.maxRequests		= 								   serverJSON.web.maxRequests			?: defaults.web.maxRequests;
-
-		serverInfo.caseSensitivePaths= 								   serverJSON.web.caseSensitivePaths	?: defaults.web.caseSensitivePaths;
-
+		serverInfo.maxRequests = serverJSON.web.maxRequests			?: defaults.web.maxRequests;
 		serverInfo.trayEnable	 	= serverProps.trayEnable		?: serverJSON.trayEnable			?: defaults.trayEnable;
 		serverInfo.dockEnable	 	= serverJSON.dockEnable			?: defaults.dockEnable;
-		serverInfo.defaultBaseURL = serverInfo.SSLEnable ? 'https://#serverInfo.host#:#serverInfo.SSLPort#' : 'http://#serverInfo.host#:#serverInfo.port#';
-
-		// If there's no open URL, let's create a complete one
-		if( !serverInfo.openbrowserURL.len() ) {
-			serverInfo.openbrowserURL = serverInfo.defaultBaseURL;
-		// Partial URL like /admin/login.cm
-		} else if ( left( serverInfo.openbrowserURL, 4 ) != 'http' ) {
-			if( !serverInfo.openbrowserURL.startsWith( '/' ) ) {
-				serverInfo.openbrowserURL = '/' & serverInfo.openbrowserURL;
-			}
-			serverInfo.openbrowserURL = serverInfo.defaultBaseURL & serverInfo.openbrowserURL;
-		}
-
-		// Clean up spaces in welcome file list
-		serverInfo.welcomeFiles = serverInfo.welcomeFiles.listMap( ( i )=>trim( i ) );
-
-		// relative rewrite config path in server.json is resolved relative to the server.json
-		if( isDefined( 'serverJSON.web.rewrites.config' ) ) { serverJSON.web.rewrites.config = fileSystemUtil.resolvePath( serverJSON.web.rewrites.config, defaultServerConfigFileDirectory ); }
-		// relative rewrite config path in config setting server defaults is resolved relative to the web root
-		if( isDefined( 'defaults.web.rewrites.config' ) ) { defaults.web.rewrites.config = fileSystemUtil.resolvePath( defaults.web.rewrites.config, defaultwebroot ); }
-		serverInfo.rewritesConfig 	= serverProps.rewritesConfig 	?: serverJSON.web.rewrites.config 	?: defaults.web.rewrites.config;
-
 		serverInfo.heapSize 		= serverProps.heapSize 			?: serverJSON.JVM.heapSize			?: defaults.JVM.heapSize;
 		serverInfo.minHeapSize 		= serverProps.minHeapSize		?: serverJSON.JVM.minHeapSize		?: defaults.JVM.minHeapSize;
 
@@ -960,33 +730,6 @@ component accessors="true" singleton {
 			serverInfo.javaHome = variables.javaCommand;
 		}
 
-		// Global aliases are always added on top of server.json (but don't overwrite)
-		// Aliases aren't accepted via command params due to no clean way to provide them
-		serverInfo.aliases 			= defaults.web.aliases.map( (a,p)=>fileSystemUtil.resolvePath( p, serverInfo.webroot ) );
-		// For backwards compat, expand server.json aliases to the webroot first, but if that doesn't exist
-		// fall back to the "correct" behavior of reseolving to the folder the server.json lives in.
-		serverInfo.aliases.append( ( serverJSON.web.aliases ?: {} ).map( (a,p)=>{
-			var possiblePath = fileSystemUtil.resolvePath( p, serverInfo.webroot );
-			if( directoryExists( possiblePath ) ) {
-				return possiblePath;
-			}
-			return fileSystemUtil.resolvePath( p, defaultServerConfigFileDirectory );
-		} ) );
-
-		// Combine global and server-specific mime types
-		serverInfo.mimeTypes = defaults.web.mimeTypes.append( serverJSON.web.mimeTypes ?: {}, true );
-
-		// Global errorPages are always added on top of server.json (but don't overwrite the full struct)
-		// Aliases aren't accepted via command params
-		serverInfo.errorPages		= defaults.web.errorPages;
-		serverInfo.errorPages.append( serverJSON.web.errorPages ?: {} );
-
-		serverInfo.accessLogEnable	= serverJSON.web.accessLogEnable	?: defaults.web.accessLogEnable;
-		serverInfo.GZIPEnable		= serverJSON.web.GZIPEnable 		?: defaults.web.GZIPEnable;
-		serverInfo.gzipPredicate	= serverJSON.web.gzipPredicate		?: defaults.web.gzipPredicate;
-
-		serverInfo.rewriteslogEnable = serverJSON.web.rewrites.logEnable ?: defaults.web.rewrites.logEnable;
-
 		// Global defaults are always added on top of whatever is specified by the user or server.json
 		serverInfo.JVMargsArray = [];
 		serverInfo.JVMargs			= serverProps.JVMargs			?: '';
@@ -1000,7 +743,6 @@ component accessors="true" singleton {
 		} else if( !isNull( defaults.JVM.args ) && isSimpleValue( defaults.JVM.args ) && len( defaults.JVM.args ) ) {
 			serverInfo.JVMargs &= ' ' & defaults.JVM.args;
 		}
-
 
 		// Global defaults are always added on top of whatever is specified by the user or server.json
 		serverInfo.runwarJarPath	= serverProps.runwarJarPath		?: serverJSON.runwar.jarPath	?: defaults.runwar.jarPath;
@@ -1018,11 +760,13 @@ component accessors="true" singleton {
 		} else if( !isNull( defaults.runwar.args ) && isSimpleValue( defaults.runwar.args ) && len( defaults.runwar.args ) ) {
 			serverInfo.runwarArgs &= ' ' & defaults.runwar.args;
 		}
-
+		if( len( serverInfo.runwarArgs ) || len( serverInfo.runwarArgsArray ) ) {
+			throw( message='The runwar.args setting is no longer supported.', detail='To enable experimental features in Runwar, use the runwar.options object.  Check the docs for details.', type="commandException" );
+		}
 
 		// Global defaults are always added on top of whatever is specified by the user or server.json
-		serverInfo.runwarXNIOOptions	= ( serverJSON.runwar.XNIOOptions ?: {} ).append( defaults.runwar.XNIOOptions, true );
-
+		serverInfo.runwarXNIOOptions = ( serverJSON.runwar.XNIOOptions ?: {} ).append( defaults.runwar.XNIOOptions, true );
+		serverInfo.runwarOptions = ( serverJSON.runwar.options ?: {} ).append( defaults.runwar.options, true );
 		// Global defaults are always added on top of whatever is specified by the user or server.json
 		serverInfo.runwarUndertowOptions	= ( serverJSON.runwar.UndertowOptions ?: {} ).append( defaults.runwar.UndertowOptions, true );
 
@@ -1060,115 +804,6 @@ component accessors="true" singleton {
 		// Global defaults are always added on top of whatever is specified by the user or server.json
 		serverInfo.libDirs		= ( serverProps.libDirs		?: serverJSON.app.libDirs ?: '' ).listAppend( defaults.app.libDirs );
 
-		serverInfo.webRules = [];
-
-		//ssl hsts
-		if(serverInfo.SSLEnable && serverInfo.HSTSEnable){
-			serverInfo.webRules.append(
-				"set(attribute='%{o,Strict-Transport-Security}', value='max-age=#serverInfo.HSTSMaxAge##(serverInfo.HSTSIncludeSubDomains ? '; includeSubDomains' : '')#')"
-			);
-		}
-
-		//ssl force redirect
-		if(serverInfo.SSLEnable && serverInfo.SSLForceRedirect){
-			serverInfo.webRules.append(
-				"not secure() and method(GET) -> { set(attribute='%{o,Location}', value='https://%{LOCAL_SERVER_NAME}:#serverinfo.SSLPort#%{REQUEST_URL}%{QUERY_STRING}'); response-code(301) }"
-			);
-		}
-
-		//ajp enabled with secret
-		if( serverInfo.AJPEnable && len( serverInfo.AJPSecret ) ){
-			var charBlock = find( "'", serverInfo.AJPSecret ) ? '"' : "'";
-			serverInfo.webRules.append(
-				"equals(%p, #serverInfo.AJPPort#) and not equals(%{r,secret}, #charBlock##serverInfo.AJPSecret##charBlock#) -> set-error(403)"
-			);
-		}
-
-		if( serverJSON.keyExists( 'web' ) && serverJSON.web.keyExists( 'rules' ) ) {
-			if( !isArray( serverJSON.web.rules ) ) {
-				throw( message="'rules' key in your server.json must be an array of strings.", type="commandException" );
-			}
-			serverInfo.webRules.append( serverJSON.web.rules, true);
-		}
-		if( serverJSON.keyExists( 'web' ) && serverJSON.web.keyExists( 'rulesFile' ) ) {
-			if( isSimpleValue( serverJSON.web.rulesFile ) ) {
-				serverJSON.web.rulesFile = serverJSON.web.rulesFile.listToArray();
-			}
-			serverInfo.webRules.append( serverJSON.web.rulesFile.reduce((predicates,fg)=>{
-				fg = fileSystemUtil.resolvePath( fg, defaultServerConfigFileDirectory );
-				return predicates.append( wirebox.getInstance( 'Globber' ).setPattern( fg ).matches().reduce( (predicates,file)=>{
-						if( lCase( file ).endsWith( '.json' ) ) {
-							return predicates.append( deserializeJSON( fileRead( file ) ), true );
-						} else {
-							return predicates.append( fileRead( file ).listToArray( chr(13)&chr(10) ), true );
-						}
-					}, [] ), true );
-			}, []), true );
-		}
-		if( defaults.keyExists( 'web' ) && defaults.web.keyExists( 'rules' ) ) {
-			serverInfo.webRules.append( defaults.web.rules, true);
-		}
-
-		if( defaults.keyExists( 'web' ) && defaults.web.keyExists( 'rulesFile' ) ) {
-			var defaultsRulesFile = defaults.web.rulesFile;
-			if( isSimpleValue( defaultsRulesFile ) ) {
-				defaultsRulesFile = defaultsRulesFile.listToArray();
-			}
-			serverInfo.webRules.append( defaultsRulesFile.reduce((predicates,fg)=>{
-				fg = fileSystemUtil.resolvePath( fg, defaultwebroot );
-				return predicates.append( wirebox.getInstance( 'Globber' ).setPattern( fg ).matches().reduce( (predicates,file)=>{
-						if( lCase( file ).endsWith( '.json' ) ) {
-							return predicates.append( deserializeJSON( fileRead( file ) ), true );
-						} else {
-							return predicates.append( fileRead( file ).listToArray( chr(13)&chr(10) ), true );
-						}
-					}, [] ), true );
-			}, []), true);
-		}
-
-		// Default CommandBox rules.
-		if( serverInfo.blockSensitivePaths ) {
-			serverInfo.webRules.append( [
-				// track and trace verbs can leak data in XSS attacks
-				"disallowed-methods( methods={trace,track} )",
-				// Common config files and sensitive paths that should never be accessed, even on development
-				"regex( pattern='.*/(box\.json|server\.json|web\.config|urlrewrite\.xml|package\.json|package-lock\.json|Gulpfile\.js)', case-sensitive=false ) -> { set-error(404); done }",
-				// Any file or folder starting with a period, unless it's called
-				"regex('/\.') and not path-prefix(.well-known) -> { set-error( 404 ); done }",
-				// Additional serlvlet mappings in Adobe CF's web.xml
-				"path-prefix( { '/JSDebugServlet','/securityanalyzer','/WSRPProducer' } ) -> { set-error( 404 ); done }",
-				// java web service (Axis) files
-				"regex( pattern='\.jws$', case-sensitive=false ) -> { set-error( 404 ); done }"
-			], true );
-
-			if( serverInfo.profile == 'production' ) {
-				serverInfo.webRules.append( [
-					// Common config files and sensitive paths in ACF and TestBox that may be ok for dev, but not for production
-					"regex( pattern='.*/(CFIDE/multiservermonitor-access-policy\.xml|CFIDE/probe\.cfm|CFIDE/main/ide\.cfm|tests/runner\.cfm|testbox/system/runners/HTMLRunner\.cfm)', case-sensitive=false ) -> { set-error(404); done }",
-				], true );
-			}
-
-		}
-
-		if( serverInfo.blockFlashRemoting ) {
-			serverInfo.webRules.append( [
-				// These all map to web.xml servlet mappings for ACF
-				"path-prefix( { '/flex2gateway','/flex-internal','/flashservices/gateway','/cfform-internal','/CFFormGateway', '/openamf/gateway', '/messagebroker' } ) -> { set-error( 404 ); done }",
-				// Files used for flash remoting
-				"regex( pattern='\.(mxml|cfswf)$', case-sensitive=false ) -> { set-error( 404 ); done }"
-			], true );
-		}
-
-		// Administrators
-		if( serverInfo.blockCFAdmin == 'external' ) {
-			serverInfo.webRules.append(
-				"cf-admin() -> block-external()"
-			 );
-		} else if( serverInfo.blockCFAdmin == 'true' ) {
-			serverInfo.webRules.append(
-				"block-cf-admin()"
-			 );
-		}
 
 		serverInfo.cfengine			= serverProps.cfengine			?: serverJSON.app.cfengine			?: defaults.app.cfengine;
 		serverInfo.cfengineSource = 'defaults';
@@ -1203,6 +838,7 @@ component accessors="true" singleton {
 
 		serverInfo.sessionCookieSecure			= serverJSON.app.sessionCookieSecure			?: defaults.app.sessionCookieSecure;
 		serverInfo.sessionCookieHTTPOnly		= serverJSON.app.sessionCookieHTTPOnly			?: defaults.app.sessionCookieHTTPOnly;
+		serverInfo.customHTTPStatusEnable		= serverJSON.app.customHTTPStatusEnable			?: defaults.app.customHTTPStatusEnable;
 
 		serverInfo.ModCFMLenable				= serverJSON.ModCFML.enable						?: defaults.ModCFML.enable;
 		serverInfo.ModCFMLMaxContexts			= serverJSON.ModCFML.maxContexts				?: defaults.ModCFML.maxContexts;
@@ -1210,13 +846,13 @@ component accessors="true" singleton {
 		serverInfo.ModCFMLRequireSharedKey		= serverJSON.ModCFML.requireSharedKey			?: defaults.ModCFML.requireSharedKey;
 		serverInfo.ModCFMLcreateVDirs			= serverJSON.ModCFML.createVirtualDirectories	?: defaults.ModCFML.createVirtualDirectories;
 
-		// When we add native support for multiple contexts in the server.json, that will also set this to true
-		serverInfo.multiContext			= serverInfo.ModCFMLenable;
+		serverInfo.multiContext = serverInfo.ModCFMLenable;
 
-		if( serverInfo.verbose ) {
-			job.addLog( "start server in - " & serverInfo.webroot );
-			job.addLog( "server name - " & serverInfo.name );
-			job.addLog( "server config file - " & defaultServerConfigFile );
+		if( serverInfo.tuckeyRewritesEnable ){
+			if( !fileExists(serverInfo.rewritesConfig) ){
+				job.error( 'URL rewrite config not found [#serverInfo.rewritesConfig#]' );
+				return;
+			}
 		}
 
 		if( !len( serverInfo.WARPath ) && !len( serverInfo.cfengine ) ) {
@@ -1238,13 +874,134 @@ component accessors="true" singleton {
 	    directoryCreate( serverinfo.customServerFolder, true, true );
 
 	    // Not sure what Runwar does with this, but it wants to know what CFEngine we're starting (if we know)
-	    var CFEngineName = '';
-	    CFEngineName = serverinfo.cfengine contains 'lucee' ? 'lucee' : CFEngineName;
-	    CFEngineName = serverinfo.cfengine contains 'railo' ? 'railo' : CFEngineName;
-	    CFEngineName = serverinfo.cfengine contains 'adobe' ? 'adobe' : CFEngineName;
-	    CFEngineName = serverinfo.warPath contains 'adobe' ? 'adobe' : CFEngineName;
+	    var serverInfo.engineName = '';
+	    serverInfo.engineName = serverinfo.cfengine contains 'lucee' ? 'lucee' : serverInfo.engineName;
+	    serverInfo.engineName = serverinfo.cfengine contains 'railo' ? 'railo' : serverInfo.engineName;
+	    serverInfo.engineName = serverinfo.cfengine contains 'adobe' ? 'adobe' : serverInfo.engineName;
+	    serverInfo.engineName = serverinfo.warPath contains 'adobe' ? 'adobe' : serverInfo.engineName;
 
 		var processName = ( serverInfo.name is "" ? "CommandBox" : serverInfo.name );
+
+		serverJSON.sites = serverJSON.sites ?: {};
+		serverJSON.siteConfigFiles = serverJSON.siteConfigFiles ?: '';
+
+		// Add in any sites defined by siteConfigFiles
+		if( len( serverJSON.siteConfigFiles ) ) {
+			if( isSimpleValue( serverJSON.siteConfigFiles ) ) {
+				serverJSON.siteConfigFiles = serverJSON.siteConfigFiles.listToArray();
+			}
+			// For each globbing pattern
+			serverJSON.siteConfigFiles.each((siteConfigFileGlob)=>{
+				siteConfigFileGlob = fileSystemUtil.resolvePath( siteConfigFileGlob, defaultServerConfigFileDirectory );
+				// If the setting points to a real directory, look for JSON files in there
+				if( directoryExists( siteConfigFileGlob ) ) {
+					siteConfigFileGlob &= '*.json'
+				}
+				wirebox.getInstance( 'Globber' )
+					.setPattern( siteConfigFileGlob )
+					.apply( (siteConfigFile)=>{
+						// For each JSON file
+						if( lCase( siteConfigFile ).endsWith( '.json' ) ) {
+							var site = {};
+							site.siteConfigFile = siteConfigFile;
+							site.siteConfigFileDirectory = getDirectoryFromPath( site.siteConfigFile );
+
+							var siteName = loadSiteConfig( site );
+							serverJSON.sites[ siteName ] = site;
+						}
+					} );
+
+			} );
+		}
+		serverInfo.multiSite = serverJSON.sites.count() > 0;
+		serverInfo.openbrowser = serverProps.openbrowser ?: serverJSON.openbrowser ?: defaults.openbrowser ?: !serverInfo.multiSite;
+		var prevSites = serverInfo['sites' ] ?: {};
+
+		// multi-site mode
+		if( serverInfo.multiSite ) {
+
+			serverInfo.multiContext = true;
+			serverInfo['sites' ] = [:];
+			serverJSON.sites.each( ( siteName, site ) => {
+
+				job.start( 'Configuring site [#siteName#]' );
+				if( site.keyExists( 'webroot' ) ) {
+					site.webroot = fileSystemUtil.resolvePath( site.webroot, defaultServerConfigFileDirectory );
+				}
+				site.serverConfigFileDirectory = defaultServerConfigFileDirectory;
+
+				expandAndDefaultConfig( { data : site, rootDir : site.serverConfigFileDirectory } );
+
+				// If this site points to an external site config file, load and merge its settings
+				if( len( site.siteConfigFile ?: '' ) ) {
+					// If this site came from our siteCOnfigFiles above, no need to load it again
+					if( !(site.__loaded ?: false ) ) {
+						site.siteConfigFile = fileSystemUtil.resolvePath( site.siteConfigFile, defaultServerConfigFileDirectory );
+						site.siteConfigFileDirectory = getDirectoryFromPath( site.siteConfigFile );
+						loadSiteConfig( site, siteName );
+					}
+				// Otherwise, if we have a webroot, look for a .site.json file by convention in it
+				} else if( len( site.webroot ?: '' ) ) {
+					if( fileExists( site.webroot & '.site.json' ) ) {
+						site.siteConfigFile = site.webroot & '.site.json';
+						site.siteConfigFileDirectory = getDirectoryFromPath( site.siteConfigFile );
+						loadSiteConfig( site, siteName );
+					} else {
+						// The config for this site came only from the server.json
+						site.siteConfigFile = serverInfo.serverConfigFile;
+						site.siteConfigFileDirectory = defaultServerConfigFileDirectory;
+					}
+				// Um, we have no idea what the web root for this site is!
+				} else {
+					throw( message='Site [#siteName#] is missing a "webroot" key.', type="commandException" );
+				}
+
+				var siteServerInfo = newSiteInfoStruct();
+				if( !isNull( prevSites[ siteName ] ) ) {
+					siteServerInfo.append( prevSites[ siteName ] );
+				}
+				// The two settings aren't strictly site/web-related but we need them in resolveSiteSettings()
+				siteServerInfo.verbose = serverInfo.verbose;
+
+				resolveSiteSettings( siteName, siteServerInfo, serverProps, duplicate( serverJSON ), duplicate( defaults ), true );
+				serverInfo.sites[ siteName ] = siteServerInfo;
+
+				job.complete( serverInfo.verbose );
+			 } );
+
+		} else {
+
+			var site = serverJSON.sites[ serverInfo.name ] = [:];
+
+			site.serverConfigFileDirectory = defaultServerConfigFileDirectory;
+			site.siteConfigFileDirectory = defaultServerConfigFileDirectory;
+			site.siteConfigFile = defaultServerConfigFile;
+			site.webroot = serverInfo.webroot;
+
+			var siteServerInfo = newSiteInfoStruct();
+			if( !isNull( prevSites[ serverInfo.name ] ) ) {
+				siteServerInfo.append( prevSites[ serverInfo.name ] );
+			}
+			siteServerInfo.verbose = serverInfo.verbose;
+
+			expandAndDefaultConfig( { data : site, rootDir : site.serverConfigFileDirectory } );
+
+			resolveSiteSettings( serverInfo.name, siteServerInfo, serverProps, serverJSON, defaults, false );
+			serverInfo[ 'sites' ] = [
+				'#serverInfo.name#'	: siteServerInfo
+			];
+			// In single site mode, there is no sites struct in server.json, so don't let the empty string defaulted in siteServerInfo
+			// overwrite any actual setting in top level serverInfo
+			siteServerInfo.delete( 'openbrowserURL');
+			// Append these back to the top level for backwards compat
+			serverInfo.append( siteServerInfo )
+		}
+
+		if( !serverInfo.HTTPEnable && !serverInfo.SSLEnable ) {
+			serverInfo.openbrowser = false;
+		}
+
+		buildBindings( serverInfo, serverJSON, defaults, serverProps, serverDetails );
 
 	    // As long as there's no WAR Path, let's install the engine to use.
 		if( serverInfo.WARPath == '' ){
@@ -1255,15 +1012,13 @@ component accessors="true" singleton {
 			// This happens then starting like so
 			// start cfengine=http://hostname/rest/update/provider/forgebox/5.3.4.54-rc
 			// Because the cfengine value doesn't actually contain "lucee" but the box.json in the download will tell us
-			if( !len( CFEngineName ) ) {
-			    CFEngineName = installDetails.engineName contains 'lucee' ? 'lucee' : CFEngineName;
-			    CFEngineName = installDetails.engineName contains 'railo' ? 'railo' : CFEngineName;
-			    CFEngineName = installDetails.engineName contains 'adobe' ? 'adobe' : CFEngineName;
+			if( !len( serverInfo.engineName ) ) {
+			    serverInfo.engineName = installDetails.engineName contains 'lucee' ? 'lucee' : serverInfo.engineName;
+			    serverInfo.engineName = installDetails.engineName contains 'railo' ? 'railo' : serverInfo.engineName;
+			    serverInfo.engineName = installDetails.engineName contains 'adobe' ? 'adobe' : serverInfo.engineName;
 			}
 
 			serverInfo.serverHomeDirectory = installDetails.installDir;
-			// TODO: As of 3.5 "serverHome" is for backwards compat.  Remove in later version in favor of serverHomeDirectory above
-			serverInfo[ 'serverHome' ] = installDetails.installDir;
 			serverInfo.logdir = serverInfo.serverHomeDirectory & "/logs";
 			serverInfo.engineName = installDetails.engineName;
 			serverInfo.engineVersion = installDetails.version;
@@ -1292,18 +1047,11 @@ component accessors="true" singleton {
 				javaagent = '-javaagent:#serverInfo.serverHomeDirectory#/WEB-INF/lib/railo-inst.jar';
 			}
 
-			// Add in "/cf_scripts" alias for 2016+ servers if the /cf_scripts folder exists in the war we're starting and there isn't already an alias
-			// for this.  I'm specifically not checking the engine name and version so this will work on regular Adobe wars and be future proof.
-			if( directoryExists( serverInfo.serverHomeDirectory & '/cf_scripts' ) && !serverInfo.aliases.keyExists( '/cf_scripts' )  ) {
-				serverInfo.aliases[ '/cf_scripts' ]	= serverInfo.serverHomeDirectory & '/cf_scripts';
-			}
-
 			// The process native name
-			var processName = ( serverInfo.name is "" ? "CommandBox" : serverInfo.name ) & ' [' & listFirst( serverinfo.cfengine, '@' ) & ' ' & installDetails.version & ']';
+			serverInfo.processName = ( serverInfo.name is "" ? "CommandBox" : serverInfo.name ) & ' [' & listFirst( serverinfo.cfengine, '@' ) & ' ' & installDetails.version & ']';
 			var displayServerName = ( serverInfo.name is "" ? "CommandBox" : serverInfo.name );
 			var displayEngineName = serverInfo.engineName & ' ' & installDetails.version;
 			serverInfo.pidfile = serverInfo.serverHomeDirectory & '/.pid.txt';
-			serverInfo.predicateFile = serverinfo.serverHomeDirectory & '/.predicateFile.txt';
 			serverInfo.trayOptionsFile = serverinfo.serverHomeDirectory & '/.trayOptions.json';
 
 		// This is a WAR
@@ -1328,15 +1076,101 @@ component accessors="true" singleton {
 			serverInfo.appFileSystemPath = serverInfo.serverHomeDirectory;
 			// Create a custom server folder to house the logs
 			serverInfo.logdir = serverinfo.customServerFolder & "/logs";
+			serverInfo.accessLogBaseDir = serverInfo.logDir;
 			serverInfo.pidfile = serverInfo.customServerFolder & '/.pid.txt';
-			serverInfo.predicateFile = serverinfo.customServerFolder & '/.predicateFile.txt';
 			serverInfo.trayOptionsFile = serverinfo.customServerFolder & '/.trayOptions.json';
-			var displayServerName = processName;
+			var displayServerName = serverInfo.processName;
 			var displayEngineName = 'WAR';
 		}
 
+		serverInfo.accessLogBaseName = 'access';
+		// This can't be done until the server homes are created above.
+		serverInfo.sites.each( (siteName,site)=>{
+			site.accessLogPath = serverInfo.logDir & '/#site.accessLogBaseName#.txt'
+			site.defaultBaseURL = '';
+			site.openbrowserURL = site.openbrowserURL ?: '';
+			for( var bindingName in serverInfo.bindings.filter( (n,b)=>n!='default' && !n.endsWith( ':endswith:' ) && !n.endsWith( ':startswith:' ) && !n.endsWith( ':regex:' ) && b.type=='ssl' && b.site==siteName ) ) {
+				var binding = serverInfo.bindings[ bindingName ];
+				site.defaultBaseURL = 'https://#(binding.host != '*' ? binding.host : binding.IP )#:#binding.port#'.replace( '0.0.0.0', '127.0.0.1' );
+				break;
+			}
+			if( !len( site.defaultBaseURL ) ) {
+				for( var bindingName in serverInfo.bindings.filter( (n,b)=>n!='default' && !n.endsWith( ':endswith:' ) && !n.endsWith( ':startswith:' ) && !n.endsWith( ':regex:' ) && b.type=='http' && b.site==siteName ) ) {
+					var binding = serverInfo.bindings[ bindingName ];
+					site.defaultBaseURL = 'http://#(binding.host != '*' ? binding.host : binding.IP )#:#binding.port#'.replace( '0.0.0.0', '127.0.0.1' );
+					break;
+				}
+			}
+
+			// Add AJP secret for bindings
+			var ajpPorts = {};
+			serverInfo.bindings.filter( (n,b)=>n!='default' ).each( (n,b)=>{
+				// startsWith, endsWith, and regex bindings contain an array of actual bindings
+				if( isStruct( b ) ) {
+					b = [b];
+				}
+				b.filter( (b)=>b.type=='ajp' && b.site==siteName && b.keyExists('AJPSecret') && len( b.AJPSecret ) )
+					.each( (b)=>{
+						// Only add the rule once for a given port, regardles of how many hostnames there may be
+						if( !ajpPorts.keyExists(b.port) ) {
+							ajpPorts[b.port]=true;
+							var charBlock = find( "'", b.AJPSecret ) ? '"' : "'";
+							site.webRules.prepend(
+								"equals(%{r,__ajp_port}, #b.port#) and not equals(%{r,secret}, #charBlock##b.AJPSecret##charBlock#) -> { set-error(403); done }"
+							);
+						}
+					} );
+			} );
+
+			// If there's no open URL, let's create a complete one
+			if( !site.openbrowserURL.len() ) {
+				site.openbrowserURL = site.defaultBaseURL;
+			// Partial URL like /admin/login.cm
+			} else if ( left( site.openbrowserURL, 4 ) != 'http' ) {
+				if( !serverInfo.openbrowserURL.startsWith( '/' ) ) {
+					site.openbrowserURL = '/' & site.openbrowserURL;
+				}
+				if( len( site.defaultBaseURL ) ) {
+					site.openbrowserURL = site.defaultBaseURL & site.openbrowserURL;
+				} else {
+					site.openbrowserURL = '';
+				}
+			}
+
+			// Add in "/cf_scripts/scripts/" alias for 2016+ servers if the /cf_scripts//scripts/ folder exists in the war we're starting and there isn't already an alias
+			// for this.  I'm specifically not checking the engine name and version so this will work on regular Adobe wars and be future proof.
+			if( directoryExists( serverInfo.serverHomeDirectory & '/cf_scripts/scripts/' ) ) {
+				if( !isNull( serverInfo.adobeScriptsAlias ) && !len( serverInfo.adobeScriptsAlias ) ) {
+					serverInfo.delete( 'adobeScriptsAlias' );
+				}
+				// Account for different alias name as recommended in the lockdown guide.  If CFConfig is being used to set a non-standard alias,
+				// it will set this in the onServerInstall interceptor for us.
+				var thisAdobeScriptsAlias = site.adobeScriptsAlias ?: serverInfo.adobeScriptsAlias ?: '/cf_scripts/scripts/';
+				// Empty string means don't add an alias at all!
+				if( len( thisAdobeScriptsAlias ) && !site.aliases.keyExists( thisAdobeScriptsAlias ) ) {
+					site.aliases[ thisAdobeScriptsAlias ] = serverInfo.serverHomeDirectory & '/cf_scripts/scripts/';
+				}
+			}
+		} );
+
+		// Base this on the "first" site for now.
+		var firstSite = serverInfo.sites[ serverInfo.sites.keyArray().last() ];
+		serverInfo.defaultBaseURL = firstSite.defaultBaseURL;
+
+		// If there's no open URL, let's create a complete one
+		if( !serverInfo.openbrowserURL.len() ) {
+			serverInfo.openbrowserURL = serverInfo.defaultBaseURL;
+		// Partial URL like /admin/login.cm
+		} else if ( left( serverInfo.openbrowserURL, 4 ) != 'http' ) {
+			if( !serverInfo.openbrowserURL.startsWith( '/' ) ) {
+				serverInfo.openbrowserURL = '/' & serverInfo.openbrowserURL;
+			}
+			serverInfo.openbrowserURL = serverInfo.defaultBaseURL & serverInfo.openbrowserURL;
+		}
+
+
 		// Doing this check here instead of the ServerEngineService so it can apply to existing installs
-		if( CFEngineName == 'adobe' ) {
+		if( serverInfo.engineName == 'adobe' ) {
 			// Work around sketchy resolution of non-existent paths in Undertow
 			// https://issues.jboss.org/browse/UNDERTOW-1413
 			var flexLogFile = serverInfo.serverHomeDirectory & "/WEB-INF/cfform/logs/flex.log";
@@ -1349,18 +1183,18 @@ component accessors="true" singleton {
 
 		// logdir is set above and is different for WARs and CF engines
 		serverInfo.consolelogPath = serverInfo.logdir & '/server.out.txt';
-		serverInfo.accessLogPath = serverInfo.logDir & '/access.txt';
+		serverInfo.accessLogPath = serverInfo.logDir & '/#serverInfo.accessLogBaseName#.txt';
 		serverInfo.rewritesLogPath = serverInfo.logDir & '/rewrites.txt';
 
 
 		// Find the correct tray icon for this server
 		if( !len( serverInfo.trayIcon ) ) {
 			var iconSize = fileSystemUtil.isWindows() ? '-32px' : '';
-		    if( CFEngineName contains "lucee" ) {
+		    if( serverInfo.engineName contains "lucee" ) {
 		    	serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-lucee#iconSize#.png';
-			} else if( CFEngineName contains "railo" ) {
+			} else if( serverInfo.engineName contains "railo" ) {
 		    	serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-railo#iconSize#.png';
-			} else if( CFEngineName contains "adobe" ) {
+			} else if( serverInfo.engineName contains "adobe" ) {
 
 				if( listFirst( serverInfo.engineVersion, '.' ) == 9 ) {
 					serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-cf09#iconSize#.png';
@@ -1382,9 +1216,6 @@ component accessors="true" singleton {
 		// Default tray icon
 		serverInfo.trayIcon = ( len( serverInfo.trayIcon ) ? serverInfo.trayIcon : '/commandbox/system/config/server-icons/trayicon.png' );
 		serverInfo.trayIcon = expandPath( serverInfo.trayIcon );
-
-		// Set default options for all servers
-		// TODO: Don't overwrite existing options with the same label.
 
 		var appFileSystemPathDisplay = fileSystemUtil.normalizeSlashes( serverInfo.appFileSystemPath );
 		// Deal with possibly very deep folder structures which would look bad in the menu or possible reach off the screen
@@ -1413,36 +1244,78 @@ component accessors="true" singleton {
 
 		var tempOptions = [];
 		serverInfo.trayOptions = [];
-		tempOptions.prepend(
-			{
-				"label":"Info",
-				"items": [
-					{ "label" : "Engine: " & displayEngineName, "disabled" : true },
-					{ "label" : "Webroot: " & appFileSystemPathDisplay, "action" : "openfilesystem", "path" : serverInfo.appFileSystemPath, 'image' : expandPath('/commandbox/system/config/server-icons/folder.png' ) },
-					{ "label" : "URL: " & serverInfo.defaultBaseURL, 'action':'openbrowser', 'url': serverInfo.defaultBaseURL, 'image' : expandPath('/commandbox/system/config/server-icons/home.png' ) },
-					{ "label" : "PID: ${runwar.PID}", "disabled" : true  },
-					{ "label" : "Heap: #( len( serverInfo.heapSize ) ? serverInfo.heapSize : 'Not set' )#", "disabled" : true  }
-				],
-				"image" : expandPath('/commandbox/system/config/server-icons/info.png' )
-			} );
 
-		var openItems = [];
-	    if( CFEngineName contains "lucee" ) {
-			openItems.prepend( { 'label':'Web Admin', 'action':'openbrowser', 'url':'#serverInfo.defaultBaseURL#/lucee/admin/web.cfm', 'image' : expandPath('/commandbox/system/config/server-icons/web_settings.png' ) } );
-			openItems.prepend( { 'label':'Server Admin', 'action':'openbrowser', 'url':'#serverInfo.defaultBaseURL#/lucee/admin/server.cfm', 'image' : expandPath('/commandbox/system/config/server-icons/server_settings.png' ) } );
-		} else if( CFEngineName contains "railo" ) {
-			openItems.prepend( { 'label':'Web Admin', 'action':'openbrowser', 'url':'#serverInfo.defaultBaseURL#/railo-context/admin/web.cfm', 'image' : expandPath('/commandbox/system/config/server-icons/web_settings.png' ) } );
-			openItems.prepend( { 'label':'Server Admin', 'action':'openbrowser', 'url':'#serverInfo.defaultBaseURL#/railo-context/admin/server.cfm', 'image' : expandPath('/commandbox/system/config/server-icons/server_settings.png' ) } );
-		} else if( CFEngineName contains "adobe" ) {
-			openItems.prepend( { 'label':'Server Admin', 'action':'openbrowser', 'url':'#serverInfo.defaultBaseURL#/CFIDE/administrator/enter.cfm', 'image' : expandPath('/commandbox/system/config/server-icons/server_settings.png' ) } );
+		var mEngine = { "label" : "Engine: " & displayEngineName, "disabled" : true };
+		var mWebroot = { "label" : "Webroot: " & appFileSystemPathDisplay, "action" : "openfilesystem", "path" : serverInfo.appFileSystemPath, 'image' : expandPath('/commandbox/system/config/server-icons/folder.png' ) };
+		var mURL = { "label" : "URL: " & serverInfo.defaultBaseURL, 'action':'openbrowser', 'url': serverInfo.defaultBaseURL, 'image' : expandPath('/commandbox/system/config/server-icons/home.png' ) };
+		var mPID = { "label" : "PID: ${runwar.PID}", "disabled" : true  };
+		var mHeap = { "label" : "Heap: #( len( serverInfo.heapSize ) ? serverInfo.heapSize : 'Not set' )#", "disabled" : true  };
+		if( serverInfo.multiSite ) {
+			tempOptions.prepend(
+				{
+					"label":"Info",
+					"items": [
+						mEngine,
+						mPID,
+						mHeap
+					],
+					"image" : expandPath('/commandbox/system/config/server-icons/info.png' )
+				} );
+		} else {
+			tempOptions.prepend(
+				{
+					"label":"Info",
+					"items": [
+						mEngine,
+						mWebroot,
+						mURL,
+						mPID,
+						mHeap
+					],
+					"image" : expandPath('/commandbox/system/config/server-icons/info.png' )
+				} );
 		}
 
-		openItems.prepend( { 'label':'Site Home', 'action':'openbrowser', 'url': serverInfo.openbrowserURL, 'image' : expandPath('/commandbox/system/config/server-icons/home.png' ) } );
-
+		var openItems = [];
+	    if( serverInfo.engineName contains "lucee" ) {
+			if( !serverInfo.multiSite ){
+				openItems.prepend( { 'label':'Web Admin', 'action':'openbrowser', 'url':'#serverInfo.defaultBaseURL#/lucee/admin/web.cfm', 'image' : expandPath('/commandbox/system/config/server-icons/web_settings.png' ) } );
+			}
+			openItems.prepend( { 'label':'Server Admin', 'action':'openbrowser', 'url':'#serverInfo.defaultBaseURL#/lucee/admin/server.cfm', 'image' : expandPath('/commandbox/system/config/server-icons/server_settings.png' ) } );
+		} else if( serverInfo.engineName contains "railo" ) {
+			if( !serverInfo.multiSite ){
+				openItems.prepend( { 'label':'Web Admin', 'action':'openbrowser', 'url':'#serverInfo.defaultBaseURL#/railo-context/admin/web.cfm', 'image' : expandPath('/commandbox/system/config/server-icons/web_settings.png' ) } );
+			}
+				openItems.prepend( { 'label':'Server Admin', 'action':'openbrowser', 'url':'#serverInfo.defaultBaseURL#/railo-context/admin/server.cfm', 'image' : expandPath('/commandbox/system/config/server-icons/server_settings.png' ) } );
+		} else if( serverInfo.engineName contains "adobe" ) {
+			openItems.prepend( { 'label':'Server Admin', 'action':'openbrowser', 'url':'#serverInfo.defaultBaseURL#/CFIDE/administrator/enter.cfm', 'image' : expandPath('/commandbox/system/config/server-icons/server_settings.png' ) } );
+		}
+		if( !serverInfo.multiSite ){
+			openItems.prepend( { 'label':'Site Home', 'action':'openbrowser', 'url': serverInfo.openbrowserURL, 'image' : expandPath('/commandbox/system/config/server-icons/home.png' ) } );
+		}
 		openItems.prepend( { "label" : "Server Home", "action" : "openfilesystem", "path" : serverInfo.serverHomeDirectory, "image" : expandPath('/commandbox/system/config/server-icons/folder.png' ) } );
-
-		openItems.prepend( { "label" : "Webroot", "action" : "openfilesystem", "path" : serverInfo.appFileSystemPath, "image" : expandPath('/commandbox/system/config/server-icons/folder.png' ) } );
-
+		if( !serverInfo.multiSite ){
+			openItems.prepend( { "label" : "Webroot", "action" : "openfilesystem", "path" : serverInfo.appFileSystemPath, "image" : expandPath('/commandbox/system/config/server-icons/folder.png' ) } );
+		}
+		if( serverInfo.multiSite ){
+			var sitesItems = [];
+			serverInfo.sites.each( (siteName,site)=>{
+				var siteItems = { "label" : siteName, "items" : [], "image" : expandPath('/commandbox/system/config/server-icons/site.png' ) };
+				if( len( site.openbrowserURL ) ) {
+					siteItems.items.append( { 'label':'Site Home', 'action':'openbrowser', 'url': site.openbrowserURL, 'image' : expandPath('/commandbox/system/config/server-icons/home.png' ) } );
+					if( serverInfo.engineName contains "lucee" ) {
+						siteItems.items.append( { 'label':'Web Admin', 'action':'openbrowser', 'url':'#site.defaultBaseURL#/lucee/admin/web.cfm', 'image' : expandPath('/commandbox/system/config/server-icons/web_settings.png' ) } );
+					}
+					if( serverInfo.engineName contains "railo" ) {
+						siteItems.items.append( { 'label':'Web Admin', 'action':'openbrowser', 'url':'#site.defaultBaseURL#/railo-context/admin/web.cfm', 'image' : expandPath('/commandbox/system/config/server-icons/web_settings.png' ) } );
+					}
+				} else {
+					siteItems.items.append( { 'label':'Site Home (No HTTP bindings)', 'disabled' : true, 'image' : expandPath('/commandbox/system/config/server-icons/home.png' ) } );
+				}
+				siteItems.items.append( { "label" : "Webroot", "action" : "openfilesystem", "path" : site.webroot, "image" : expandPath('/commandbox/system/config/server-icons/folder.png' ) } );
+				openItems.append( siteItems );
+			} );
+		}
 		tempOptions.prepend( { 'label':'Open...', 'items': openItems, "image" : expandPath('/commandbox/system/config/server-icons/open.png' ) } );
 
 		tempOptions.prepend( { 'label' : 'Restart Server', 'hotkey':'R', 'action' : "runAsync" , "command" : "box server restart " & "'#serverInfo.name#'", 'image': expandPath('/commandbox/system/config/server-icons/restart.png' ), 'workingDirectory': defaultwebroot} );
@@ -1462,46 +1335,19 @@ component accessors="true" singleton {
 		// installDetails doesn't exist for a war server
 		interceptorService.announceInterception( 'onServerStart', { serverInfo=serverInfo, serverJSON=serverJSON, defaults=defaults, serverProps=serverProps, serverDetails=serverDetails, installDetails=installDetails ?: {} } );
 
-		// Turn struct of aliases into a comma-delimited list, plus resolve relative paths.
-		// "/foo=C:\path,/bar=C:\another/path"
-		var CLIAliases = '';
-		for( var thisAlias in serverInfo.aliases ) {
-			CLIAliases = CLIAliases.listAppend( thisAlias & '=' & serverInfo.aliases[ thisAlias ] );
-		}
-
-		// Turn struct of mimeTypes into a comma-delimited list
-		// "log;text/plain,foo;content/type"
-		var mimeTypesList = '';
-		for( var thisMime in serverInfo.mimeTypes ) {
-			mimeTypesList = mimeTypesList.listAppend( thisMime & ';' & serverInfo.mimeTypes[ thisMime ] );
-		}
-
-		// Turn struct of errorPages into a comma-delimited list.
-		// --error-pages="404=/path/to/404.html,500=/path/to/500.html,1=/path/to/default.html"
-		var errorPages = '';
-		for( var thisErrorPage in serverInfo.errorPages ) {
-			// "default" turns into "1"
-			var tmp = thisErrorPage == 'default' ? 1 : thisErrorPage;
-			tmp &= '=';
-			// normalize slashes
-			var thisPath = replace( serverInfo.errorPages[ thisErrorPage ], '\', '/', 'all' );
-			// Add leading slash if it doesn't exist.
-			tmp &= thisPath.startsWith( '/' ) ? thisPath : '/' & thisPath;
-			errorPages = errorPages.listAppend( tmp );
-		}
-
 		// Serialize tray options and write to temp file
 		var trayJSON = {
 			'title' : displayServerName,
-			'tooltip' : processName,
+			'tooltip' : serverInfo.processName,
 			'items' : serverInfo.trayOptions
 		};
 		fileWrite( serverInfo.trayOptionsFile,  serializeJSON( trayJSON ) );
 		var background = !(serverInfo.console ?: false);
-		// The java arguments to execute:  Shared server, custom web configs
 
-		// This is an array of tokens to send to the process builder
-		var args = [];
+		if( serverInfo.ModCFMLenable && serverInfo.ModCFMLRequireSharedKey && !len( serverInfo.ModCFMLSharedKey ) ){
+			throw( message='Since ModeCFML support is enabled, [ModCFML.sharedKey] is required for security.', detail='Disable IN DEVELOPMENT ONLY with [ModCFML.RequireSharedKey=false].', type="commandException" );
+		}
+
 		// "borrow" the CommandBox commandline parser to tokenize the JVM args. Not perfect, but close. Handles quoted values with spaces.
 		// Escape any semicolons so the parser ignores them in a string and doesn't break the token ex: -DMY_ENV_VAR=foo;bar
 		var argTokens = parser.tokenizeInput( serverInfo.JVMargs.replace( ';', '\;', 'all' ) )
@@ -1528,6 +1374,15 @@ component accessors="true" singleton {
 
 		serverInfo.JVMProperties.each( (k,v)=>argTokens.append( '-D#k#=#v#' ) );
 
+		// Build the text verison of the server rules.
+		serverInfo.sites.each( ( siteName, site )=>{
+			site.webRulesText = site.webRules.toList( CR );
+			if( serverInfo.sites.count() == 1 ) {
+				serverInfo.webRulesText = site.webRulesText;
+			}
+		} );
+
+
 		// Add java agent
 		if( len( trim( javaAgent ) ) ) { argTokens.append( javaagent ); }
 
@@ -1548,299 +1403,36 @@ component accessors="true" singleton {
 			}, [] );
 		jarArray.append( serverInfo.runwarJarPath );
 
-		 args
-		 	.append( '-cp' ).append( jarArray.toList( server.system.properties[ 'path.separator' ] ) )
-			.append( 'runwar.Start' )
-			.append( '--background=#background#' )
-			.append( '--host' ).append( serverInfo.host )
-			.append( '--stop-port' ).append( serverInfo.stopsocket )
-			.append( '--processname' ).append( processName )
-			.append( '--log-dir' ).append( serverInfo.logDir )
-			.append( '--server-name' ).append( serverInfo.name )
-			.append( '--tray-enable' ).append( serverInfo.trayEnable )
-			.append( '--dock-enable' ).append( serverInfo.dockEnable )
-			.append( '--directoryindex' ).append( serverInfo.directoryBrowsing )
-			.append( '--timeout' ).append( serverInfo.startTimeout )
-			.append( '--proxy-peeraddress' ).append( serverInfo.useProxyForwardedIP )
-			.append( '--cookie-secure' ).append( serverInfo.sessionCookieSecure )
-			.append( '--cookie-httponly' ).append( serverInfo.sessionCookieHTTPOnly )
-			.append( '--pid-file').append( serverInfo.pidfile );
-
 		// If server.json has a default browser, use it
-		if( len( serverInfo.preferredBrowser ) ) {
-			args.append( '--preferred-browser' ).append( serverInfo.preferredBrowser );
-		// Otherwise, use the global config setting, if it exists
-		} else if( ConfigService.settingExists( 'preferredBrowser' ) ) {
-			args.append( '--preferred-browser' ).append( ConfigService.getSetting( 'preferredBrowser' ) );
+		if( !len( serverInfo.preferredBrowser ) && ConfigService.settingExists( 'preferredBrowser' ) ) {
+			serverInfo.preferredBrowser = ConfigService.getSetting( 'preferredBrowser' );
 		}
 
-		args.append( parser.tokenizeInput( serverInfo.runwarArgs.replace( ';', '\;', 'all' ) )
-			.map( function( i ){
-				// unwrap quotes, and unescape any special chars like \" inside the string
-				return parser.replaceEscapedChars( parser.removeEscapedChars( parser.unwrapQuotes( i ) ) );
-			}), true );
-
-		args.append( serverInfo.runwarArgsArray, true )
-			// Despite the name, the MacOS Dock also uses this setting.
-			.append( '--tray-icon' ).append( serverInfo.trayIcon );
-
-		if( serverInfo.trayEnable ) {
-			args.append( '--tray-config' ).append( serverInfo.trayOptionsFile );
-		}
-
-		if( serverInfo.runwarXNIOOptions.count() ) {
-			args.append( '--xnio-options=' & serverInfo.runwarXNIOOptions.reduce( ( opts='', k, v ) => opts.listAppend( k & '=' & v, ';' ) ) );
-		}
-
-		if( len( serverInfo.allowedExt ) ) {
-			args.append( '--default-servlet-allowed-ext=' & serverInfo.allowedExt );
-		}
-
-		if( serverInfo.runwarUndertowOptions.count() ) {
-			args.append( '--undertow-options=' & serverInfo.runwarUndertowOptions.reduce( ( opts='', k, v ) => opts.listAppend( k & '=' & v ) ) );
-		}
-
-		if( len( serverInfo.runwarAppenderLayout ) ) {
-			args.append( '--console-layout' ).append( serverInfo.runwarAppenderLayout );
-		}
-		if( serverInfo.runwarAppenderLayoutOptions.count() ) {
-			args.append( '--console-layout-options' ).append( serializeJSON( serverInfo.runwarAppenderLayoutOptions ) );
-		}
-
-		if( serverInfo.debug ) {
-			// Debug is getting turned on any time I include the --debug flag regardless of whether it's true or false.
-			args.append( '--debug' ).append( serverInfo.debug );
-		}
-
-		if( len( serverInfo.restMappings ) ) {
-			args.append( '--servlet-rest-mappings' ).append( serverInfo.restMappings );
-		}
-
-		if( serverInfo.trace ) {
-			args.append( '--log-level' ).append( 'TRACE' );
-		}
-
-		if( len( errorPages ) ) {
-			args.append( '--error-pages' ).append( errorPages );
-		}
-
-		if( serverInfo.GZIPEnable ) {
-			args.append( '--gzip-enable' ).append( true );
-			if( len( trim( serverInfo.gzipPredicate ) ) ){
-				args.append( '--gzip-predicate' ).append( serverInfo.gzipPredicate );
-			}
-		}
-
-		if( serverInfo.accesslogenable ) {
-			args
-				.append( '--logaccess-enable' ).append( true )
-			 	.append( '--logaccess-basename' ).append( 'access' )
-			 	.append( '--logaccess-dir' ).append( serverInfo.logDir );
-		}
-
-
-		if( serverInfo.rewritesLogEnable ) {
-			args.append( '--urlrewrite-log' ).append( serverInfo.rewritesLogPath );
-		}
-
-		/* 	.append( '--logrequests-enable' ).append( true )
-		 	.append( '--logrequests-basename' ).append( 'request' )
-		 	.append( '--logrequests-dir' ).append( serverInfo.logDir )
-		 	*/
-
-
-	 	if( len( CFEngineName ) ) {
-	 		 args.append( '--cfengine-name' ).append( CFEngineName );
-	 	}
-	 	if( len( serverInfo.welcomeFiles ) ) {
-	 		 args.append( '--welcome-files' ).append( serverInfo.welcomeFiles );
-	 	}
-	 	if( len( serverInfo.maxRequests ) ) {
-	 		 args.append( '--worker-threads' ).append( serverInfo.maxRequests );
-	 	}
-	 	if( len( serverInfo.caseSensitivePaths ) ) {
-	 		 args.append( '--case-sensitive-web-server' ).append( serverInfo.caseSensitivePaths );
-	 	}
-	 	if( len( CLIAliases ) ) {
-	 		 args.append( '--dirs' ).append( CLIAliases );
-	 	}
-	 	if( len( mimeTypesList ) ) {
-	 		 args.append( '--mime-types' ).append( mimeTypesList );
-	 	}
-	 	if( serverInfo.fileCacheEnable ) {
-	 		 args.append( '--cache-servlet-paths' ).append( true );
-	 		 args.append( '--file-cache-total-size-mb' ).append( val( serverInfo.fileCacheTotalSizeMB ) );
-	 		 args.append( '--file-cache-max-file-size-kb' ).append( val( serverInfo.fileCacheMaxFileSizeKB ) );
-	 	}
-
-		// If background, wrap up JVM args to pass through to background servers.  "Real" JVM args must come before Runwar args
-		if( background ) {
-			// Escape any semi colons or backslash literals in the args so Runwar can process this properly
-			// -Darg=one;-Darg=two
-			var argString = argTokens
-				.map( ( token ) => token.replace( '\', '\\', 'all' ).replace( ';', '\;', 'all' ) )
-				.toList( ';' );
-			if( len( argString ) ) {
-				args.append( '--jvm-args=#trim( argString )#' );
-			}
-		// If foreground, just stick them in.
-		} else {
-			argTokens.reverse().each( function(i) { args.prepend( i ); } );
-		}
-
-		// Webroot for normal server, and war home for a standard war
-		args.append( '-war' ).append( serverInfo.appFileSystemPath );
-
-		args.append( '--web-xml-path' ).append( serverInfo.webXml );
-
-		if( len( serverInfo.webXMLOverrideActual ) ){
-			args.append( '--web-xml-override-path' ).append( serverInfo.webXMLOverrideActual );
-		}
-
-		if( len( serverInfo.webXMLOverrideActual ) ){
-			args.append( '--web-xml-override-force' ).append( serverInfo.webXMLOverrideForce );
-		}
-
-		// Always send the enable flag for each protocol
-		args
-			.append( '--http-enable' ).append( serverInfo.HTTPEnable )
-			.append( '--ssl-enable' ).append( serverInfo.SSLEnable )
-			.append( '--ajp-enable' ).append( serverInfo.AJPEnable )
-			.append( '--http2-enable' ).append( serverInfo.HTTP2Enable );
-
-		if( serverInfo.HTTPEnable || serverInfo.SSLEnable ) {
-			args
-			 	.append( '--open-browser' ).append( serverInfo.openbrowser )
-				.append( '--open-url' ).append( serverInfo.openbrowserURL );
-		} else {
-			args.append( '--open-browser' ).append( false );
-		}
-
-
-		// Send HTTP port if it's enabled
-		if( serverInfo.HTTPEnable ){
-			args.append( '--port' ).append( serverInfo.port )
-		}
-
-		// Send SSL port if it's enabled
-		if( serverInfo.SSLEnable ){
-			args.append( '--ssl-port' ).append( serverInfo.SSLPort );
-		}
-
-		// Send AJP port if it's enabled
-		if( serverInfo.AJPEnable ){
-			args.append( '--ajp-port' ).append( serverInfo.AJPPort );
-		}
-
-		// Send SSL cert info if SSL is enabled and there's cert info
-		if( serverInfo.SSLEnable ) {
-			if( serverInfo.SSLCertFile.len() ) {
-				args.append( '--ssl-cert' ).append( serverInfo.SSLCertFile );
-				if( serverInfo.SSLKeyFile.len() ) {
-					args.append( '--ssl-key' ).append( serverInfo.SSLKeyFile );
-				}
-				args.append( '--ssl-keypass' ).append( serverInfo.SSLKeyPass );
-			}
-			if( len( serverInfo.clientCertMode ) ){
-				args.append( '--client-cert-negotiation' ).append( serverInfo.clientCertMode );
-			}
-			if( serverInfo.clientCertSSLRenegotiationEnable ) {
-				args.append( '--client-cert-renegotiation' ).append( serverInfo.clientCertSSLRenegotiationEnable );
-			}
-			if( len( serverInfo.clientCertCATrustStoreFile ) ) {
-				args.append( '--ssl-add-ca-truststore' ).append( serverInfo.clientCertCATrustStoreFile );
-				args.append( '--ssl-add-ca-truststore-pass' ).append( serverInfo.clientCertCATrustStorePass );
-			}
-			if( serverInfo.clientCertCACertFiles.len() ){
-				args.append( '--ssl-add-ca-certs' ).append( serverInfo.clientCertCACertFiles.toList() );
-			}
-
-		}
-
-		// Incorporate rewrites to command
-		args.append( '--urlrewrite-enable' ).append( serverInfo.rewritesEnable );
-		if( len( serverInfo.rewritesStatusPath ) ) {
-			args.append( '--urlrewrite-statuspath' ).append( serverInfo.rewritesStatusPath );
-		}
-		// A setting of 0 reloads on every request
-		if( len( serverInfo.rewritesConfigReloadSeconds ) ) {
-			args.append( '--urlrewrite-check' ).append( serverInfo.rewritesConfigReloadSeconds );
-		}
-
-		if( serverInfo.authEnabled ) {
-
-			if( len( serverInfo.authPredicate ) ) {
-				args.append( '--auth-predicate' ).append( serverInfo.authPredicate );
-			}
-			if( !len( serverInfo.securityRealm ) ) {
-				serverInfo.securityRealm = serverInfo.name;
-			}
-			args.append( '--security-realm' ).append( serverInfo.securityRealm );
-
-			// Basic auth
-			if( serverInfo.basicAuthEnable ) {
-				// Escape commas and equals with backslash
-				var sanitizeBA = function( i ) { return i.replace( ',', '\,', 'all' ).replace( '=', '\=', 'all' ); };
-				var thisBasicAuthUsers = '';
-				serverInfo.basicAuthUsers.each( function( i ) {
-					thisBasicAuthUsers = thisBasicAuthUsers.listAppend( '#sanitizeBA( i )#=#sanitizeBA( serverInfo.basicAuthUsers[ i ] )#' );
-				} );
-				// user=pass,user2=pass2
-				args.append( '--basicauth-users' ).append( thisBasicAuthUsers );
-
-			}
-
-			// Client cert
-			if( serverInfo.clientCertEnable ) {
-				args
-					.append( '--client-cert-enable' ).append( serverInfo.clientCertEnable )
-					.append( '--client-cert-subjectdns' ).append( serializeJSON( serverInfo.clientCertSubjectDNs ) )
-					.append( '--client-cert-issuerdns' ).append( serializeJSON( serverInfo.clientCertIssuerDNs ) );
-			}
-		}
-
-		args.append( '--client-cert-trust-headers' ).append( serverInfo.clientCertTrustUpstreamHeaders )
-
-		if( serverInfo.rewritesEnable ){
-			if( !fileExists(serverInfo.rewritesConfig) ){
-				job.error( 'URL rewrite config not found [#serverInfo.rewritesConfig#]' );
-				return;
-			}
-			args.append( '--urlrewrite-file' ).append( serverInfo.rewritesConfig );
-		}
-
-		if( serverInfo.webRules.len() ){
-			fileWrite( serverInfo.predicateFile, serverInfo.webRules.filter( (r)=>!trim(r).startsWith('##') ).toList( CR ) );
-			args.append( '--predicate-file' ).append( serverInfo.predicateFile );
-		}
-
-		if( serverInfo.ModCFMLenable ){
-			args.append( '--auto-create-contexts' ).append( serverInfo.ModCFMLenable );
-			if( len( serverInfo.ModCFMLMaxContexts ) && isNumeric( serverInfo.ModCFMLMaxContexts ) && serverInfo.ModCFMLMaxContexts > 0 ) {
-				args.append( '--auto-create-contexts-max' ).append( serverInfo.ModCFMLMaxContexts );
-			}
-			if( !len( serverInfo.ModCFMLSharedKey ) && serverInfo.ModCFMLRequireSharedKey ) {
-				throw( message='Since ModeCFML support is enabled, [ModCFML.sharedKey] is required for security.', detail='Disable IN DEVELOPMENT ONLY with [ModCFML.RequireSharedKey=false].', type="commandException" );
-			}
-			if( len( serverInfo.ModCFMLSharedKey ) ) {
-				args.append( '--auto-create-contexts-secret' ).append( serverInfo.ModCFMLSharedKey );
-			}
-			if( serverInfo.ModCFMLcreateVDirs ) {
-				args.append( '--auto-create-contexts-vdirs' ).append( serverInfo.ModCFMLcreateVDirs );
-			}
-		}
+		// Add in any runwar overrides directly to the JSON
+		JSONService.mergeData( serverInfo, serverInfo.runwarOptions );
 
 		// change status to starting + persist
 		serverInfo.dateLastStarted = now();
 		serverInfo.status = "starting";
+		serverInfo.serverInfoJSON = serverInfo.serverHomeDirectory & '/serverInfo.json';
 		setServerInfo( serverInfo );
-
+		JSONService.writeJSONFile( serverInfo.serverInfoJSON, serverInfo, true );
 	    // needs to be unique in each run to avoid errors
 		var threadName = 'server#hash( serverInfo.webroot )##createUUID()#';
 		// Construct a new process object
 	    var processBuilder = createObject( "java", "java.lang.ProcessBuilder" );
 	    // Pass array of tokens comprised of command plus arguments
-	    args.prepend( serverInfo.javaHome );
+
+		var args=[
+			'-cp',
+			jarArray.toList( server.system.properties[ 'path.separator' ] )
+		];
+
+		argTokens.reverse().each( function(i) { args.prepend( i ); } );
+
+		args.prepend( serverInfo.javaHome )
+			.append( 'runwar.Start' )
+			.append( serverInfo.serverInfoJSON );
 
 	    // In *nix OS's we need to separate the server process from the CLI process
 	    // so SIGINTs from Ctrl-C won't also kill previously started servers
@@ -1911,10 +1503,9 @@ component accessors="true" singleton {
 			'java.base/javax.security.auth.x500',
 			'java.base/javax.security.cert',
 			'java.base/sun.net.www.protocol.https',
-			'java.desktop/com.sun.java.swing.plaf.nimbus',
 			'java.desktop/com.sun.java.swing.plaf.motif',
-			'java.desktop/com.sun.java.swing.plaf.nimbus',
 			'java.desktop/com.sun.java.swing.plaf.windows',
+			'java.desktop/javax.swing.plaf.nimbus',
 			'java.desktop/sun.java2d',
 			'java.rmi/sun.rmi.transport',
 			'java.base/sun.security.rsa',
@@ -2002,11 +1593,11 @@ component accessors="true" singleton {
 		variables.internalInterrupt = false;
 		serverInfo.exitCode = 0;
 		// Spin up a thread to capture the standard out and error from the server
-		thread name="#threadName#" interactiveStart=interactiveStart serverInfo=serverInfo args=args startTimeout=serverInfo.startTimeout parentThread=thisThread {
+		thread name="#threadName#" interactiveStart=interactiveStart serverInfo=serverInfo args=args startTimeout=serverInfo.startTimeout parentThread=thisThread background=background {
 			try{
 
 				// save server info and persist
-				serverInfo.statusInfo = { command:serverInfo.javaHome, arguments:attributes.args.toList( ' ' ), result:'' };
+				serverInfo.statusInfo = { 'command':serverInfo.javaHome, 'arguments':attributes.args.toList( ' ' ), 'result':'' };
 				serverInfo.status="starting";
 				setServerInfo( serverInfo );
 
@@ -2018,45 +1609,36 @@ component accessors="true" singleton {
 
 				var line = bufferedReader.readLine();
 				while( !isNull( line ) ){
-
-					// Log messages from the CF engine or app code writing directly to std/err out strip off "runwar.context" but leave color coded severity
-					// Ex:
-					// [INFO ] runwar.context: 04/11 15:47:10 INFO Starting Flex 1.5 CF Edition
-					line = reReplaceNoCase( line, '^((#chr( 27 )#\[m)?\[[^]]*])( runwar\.context: )(.*)', '\1 \4' );
-
-					// Log messages from runwar itself, simplify the logging category to just "Runwar:" and leave color coded severity
-					// Ex:
-					// [DEBUG] runwar.config: Enabling Proxy Peer Address handling
-					// [DEBUG] runwar.server: Starting open browser action
-					line = reReplaceNoCase( line, '^((#chr( 27 )#\[m)?\[[^]]*])( runwar\.[^:]*: )(.*)', '\1 Runwar: \4' );
-					//consoleLogger.debug( 'LINE:' . line );
 					line = AnsiFormatter.cleanLine( line );
-					// Log messages from any other 3rd party java lib tapping into Log4j will be left alone
-					// Ex:
-					// [DEBUG] org.tuckey.web.filters.urlrewrite.RuleExecutionOutput: needs to be forwarded to /index.cfm/Main
 
 					// Build up our output.  Limit the size of this so a console server running for a month doesn't fill up memory.
 					// We only use this for the server info result anyway.
-					if( startOutput.length() < 1000 ) {
+					if( startOutput.length() < 5000 && !(line contains 'Picked up JDK_JAVA_OPTIONS:' ) ) {
 						startOutput.append( line & chr( 13 ) & chr( 10 ) );
 					}
 
 					// output it if we're being interactive
-					if( attributes.interactiveStart ) {
+					if( attributes.interactiveStart && !line.startsWith( 'NOTE: Picked up JDK_JAVA_OPTIONS:' ) ) {
 						print
 							.line( line )
 							.toConsole();
 					}
 
+					if( attributes.background && line contains 'Server is up' ) {
+						serverInfo.status="running";
+						break;
+					}
 					line = bufferedReader.readLine();
 				} // End of inputStream
 
-				serverInfo.exitCode = process.waitFor();
+				if( !attributes.background ) {
+					serverInfo.exitCode = process.waitFor();
 
-				if( serverInfo.exitCode == 0 ) {
-					serverInfo.status="running";
-				} else {
-					serverInfo.status="unknown";
+					if( serverInfo.exitCode == 0 ) {
+						serverInfo.status="running";
+					} else {
+						serverInfo.status="unknown";
+					}
 				}
 
 			} catch( any e ) {
@@ -2162,6 +1744,862 @@ component accessors="true" singleton {
 
 	}
 
+	/**
+	 * Load site config from an external file
+	 */
+	function loadSiteConfig( site, siteName ) {
+		if( isNull( site.siteConfigFile ) || !fileExists( site.siteConfigFile ) ) {
+			throw( message='Site config file [#site.siteConfigFile ?: 'not provided'#] doesn''t exist', type="commandExceptiond" );
+		}
+
+
+		var siteJSON = readServerJSON( site.siteConfigFile );
+		if( siteJSON.keyExists( 'webroot' ) ) {
+			siteJSON.webroot = fileSystemUtil.resolvePath( siteJSON.webroot, site.siteConfigFileDirectory );
+		} else if( !site.keyExists( 'webroot' ) ) {
+			// If there is no explicit web root, assume it's where the .site.json file lives
+			siteJSON.webroot = getDirectoryFromPath( site.siteConfigFile );
+		}
+		// run in a "sub-shell" so we can load env vars via dot env which only apply to this site
+		CommandService.runInEnvironment(
+			'Load server site settings',
+			()=>{
+				InterceptorService.announceInterception( 'onServerSiteConfigRead', { site=site, siteJSON=siteJSON,siteConfigFile=site.siteConfigFile } );
+				siteJSON = systemSettings.expandDeepSystemSettings( siteJSON );
+				expandAndDefaultConfig( { data : siteJSON, rootDir : site.siteConfigFileDirectory } );
+				// merge in the site settings
+				JSONService.mergeData( site, siteJSON );
+			}
+		);
+
+		site.__loaded = true;
+		return arguments.siteName ?: site.name ?: getFileFromPath( site.siteConfigFile ).replaceNoCase( '.json', '' );
+	}
+
+	/**
+	 * This function abstracts file system expansion and default values so it is reusabe
+	 * - .site.json -> expand paths relative to .site.json file
+	 * - server.json site block -> expand paths relative to serverjson file
+	 * - server.json web block -> expand paths relative to server.json file
+	 * - config defaults web block -> expand paths relative to webroot
+	 */
+	private function expandAndDefaultConfig(config) {
+		config.data[ 'bindings' ] = config.data.bindings ?: {}
+		config.data.bindings[ 'http' ] = config.data.bindings.http ?: []
+		if( isStruct( config.data.bindings.http ) ) {
+			config.data.bindings.http = [ config.data.bindings.http ]
+		}
+		config.data.bindings[ 'ssl' ] = config.data.bindings.ssl ?: []
+		if( isStruct( config.data.bindings.ssl ) ) {
+			config.data.bindings.ssl = [ config.data.bindings.ssl ]
+		}
+		config.data.bindings[ 'ajp' ] = config.data.bindings.ajp ?: []
+		if( isStruct( config.data.bindings.ajp ) ) {
+			config.data.bindings.ajp = [ config.data.bindings.ajp ]
+		}
+
+		config.data.bindings.ssl.each( (sslBinding)=>{
+			if( isDefined( 'sslBinding.certs' ) && isArray( sslBinding.certs ) ) {
+				sslBinding.certs.each( (cert)=>{
+					if( !isNull( cert.certFile ) && len( cert.certFile ) ) {
+						cert.certFile = fileSystemUtil.resolvePath( cert.certFile, config.rootDir );
+					}
+					if( !isNull( cert.keyFile ) && len( cert.keyFile ) ) {
+						cert.keyFile = fileSystemUtil.resolvePath( cert.keyFile, config.rootDir );
+					}
+				} );
+			}
+			if( !isNull( sslBinding.certFile ) && len( sslBinding.certFile ) ) {
+				sslBinding.certFile = fileSystemUtil.resolvePath( sslBinding.certFile, config.rootDir );
+			}
+			if( !isNull( sslBinding.keyFile ) && len( sslBinding.keyFile ) ) {
+				sslBinding.keyFile = fileSystemUtil.resolvePath( sslBinding.keyFile, config.rootDir );
+			}
+			if( isDefined( 'sslBinding.clientCert' ) && isStruct( sslBinding.clientCert ) ) {
+				sslBinding.clientCert.CACertFiles = sslBinding.clientCert.CACertFiles ?: [];
+				if( isSimpleValue( sslBinding.clientCert.CACertFiles ) ) {
+					if( len( sslBinding.clientCert.CACertFiles ) ) {
+						sslBinding.clientCert.CACertFiles = listToArray( sslBinding.clientCert.CACertFiles );
+					} else {
+						sslBinding.clientCert.CACertFiles = [];
+					}
+				}
+				sslBinding.clientCert.CACertFiles = sslBinding.clientCert.CACertFiles.map( (CACertFile)=>fileSystemUtil.resolvePath( CACertFile, config.rootDir ) );
+				if( !isNull( sslBinding.clientCert.CATrustStoreFile ) && len( sslBinding.clientCert.CATrustStoreFile ) ) {
+					sslBinding.clientCert.CATrustStoreFile = fileSystemUtil.resolvePath( sslBinding.clientCert.CATrustStoreFile, config.rootDir );
+				}
+			}
+		} );
+
+		if( isDefined( 'config.data.SSL.certFile' ) && len( config.data.SSL.certFile ) ) { config.data.SSL.certFile = fileSystemUtil.resolvePath( config.data.SSL.certFile, config.rootDir ); }
+		if( isDefined( 'config.data.SSL.keyFile' ) && len( config.data.SSL.keyFile ) ) { config.data.SSL.keyFile = fileSystemUtil.resolvePath( config.data.SSL.keyFile, config.rootDir ); }
+
+		if( isDefined( 'config.data.SSL.certs' ) && isArray( config.data.SSL.certs ) ) {
+			config.data.SSL.certs.each( (cert)=>{
+				if( !isNull( cert.certFile ) && len( cert.certFile ) ) {
+					cert.certFile = fileSystemUtil.resolvePath( cert.certFile, config.rootDir );
+				}
+				if( !isNull( cert.keyFile ) && len( cert.keyFile ) ) {
+					cert.keyFile = fileSystemUtil.resolvePath( cert.keyFile, config.rootDir );
+				}
+			} );
+		 }
+		// relative certFile in server.json is resolved relative to the server.json
+		if( isDefined( 'config.data.SSL.clientCert.CACertFiles' ) ) {
+			if( isSimpleValue( config.data.SSL.clientCert.CACertFiles ) ) {
+				if( len( config.data.SSL.clientCert.CACertFiles ) ) {
+					config.data.SSL.clientCert.CACertFiles = listToArray( config.data.SSL.clientCert.CACertFiles );
+				} else {
+					config.data.SSL.clientCert.CACertFiles = [];
+				}
+			}
+			config.data.SSL.clientCert.CACertFiles = config.data.SSL.clientCert.CACertFiles.map( (f)=>fileSystemUtil.resolvePath( f, config.rootDir ) );
+		}
+
+		if( !isNull( config.data.SSL.clientCert.CATrustStoreFile ) && len( config.data.SSL.clientCert.CATrustStoreFile ) ) {
+			config.data.SSL.clientCert.CATrustStoreFile = fileSystemUtil.resolvePath( config.data.SSL.clientCert.CATrustStoreFile, config.rootDir );
+		}
+		config.data.aliases = config.data.aliases ?: {};
+		config.data.aliases = config.data.aliases.map( (a,p)=>fileSystemUtil.resolvePath( p, config.rootDir ) );
+
+		// Default missing values
+		config.data.security.clientCert.subjectDNs = config.data.security.clientCert.subjectDNs ?: '';
+		config.data.security.clientCert.issuerDNs = config.data.security.clientCert.issuerDNs ?: '';
+
+		// Convert all strings to arrays
+		if( isSimpleValue( config.data.security.clientCert.subjectDNs ) ) {
+			if( len( config.data.security.clientCert.subjectDNs ) ) {
+				config.data.security.clientCert.subjectDNs = [ config.data.security.clientCert.subjectDNs ];
+			} else {
+				config.data.security.clientCert.subjectDNs = [];
+			}
+		}
+		if( isSimpleValue( config.data.security.clientCert.issuerDNs ) ) {
+			if( len( config.data.security.clientCert.issuerDNs ) ) {
+				config.data.security.clientCert.issuerDNs = [ config.data.security.clientCert.issuerDNs ];
+			} else {
+				config.data.security.clientCert.issuerDNs = [];
+			}
+		}
+
+		config.data.rulesFile = config.data.rulesFile ?: '';
+		if( isSimpleValue( config.data.rulesFile ) ) {
+			config.data.rulesFile = config.data.rulesFile.listToArray();
+		}
+
+		config.data.rules = config.data.rules ?: [];
+		config.data.rules.append( config.data.rulesFile.reduce((predicates,fg)=>{
+			fg = fileSystemUtil.resolvePath( fg, config.rootDir );
+			return predicates.append( wirebox.getInstance( 'Globber' ).setPattern( fg ).matches().reduce( (predicates,file)=>{
+					if( lCase( file ).endsWith( '.json' ) ) {
+						return predicates.append( deserializeJSON( fileRead( file ) ), true );
+					} else {
+						return predicates.append( fileRead( file ).listToArray( chr(13)&chr(10) ), true );
+					}
+				}, [] ), true );
+		}, []), true);
+
+
+	}
+
+	/**
+	 *
+	 */
+	function resolveSiteSettings( string name, struct serverInfo, struct serverProps, struct serverJSON, struct defaults, boolean multiSite ) {
+		var site = serverJSON.sites[ name ];
+		var job = wirebox.getInstance( 'interactiveJob' );
+
+		serverInfo.webroot = site.webroot;
+		serverInfo.host = serverProps.host ?: site.host ?: serverJSON.web.host ?: defaults.web.host;
+		serverInfo.hostAlias = site.hostAlias ?: serverJSON.web.hostAlias ?: defaults.web.hostAlias;
+		serverInfo.adobeScriptsAlias = site.adobeScriptsAlias ?: serverJSON.web.adobeScriptsAlias ?: defaults.web.adobeScriptsAlias ?: nullValue();
+
+		if( isSimpleValue( serverInfo.hostAlias ) ) {
+			serverInfo.hostAlias = serverInfo.hostAlias.listToArray();
+		}
+		// If the host is not an IP, add it as a host alias
+		if( len( serverInfo.host ) && !reFind('^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$', serverInfo.host ) && !serverInfo.hostAlias.findNoCase( serverInfo.host ) ) {
+			serverInfo.hostAlias.append( serverInfo.host );
+		}
+
+		serverInfo.default = site.default ?: false;
+
+		if( multiSite ) {
+			// Access log named after site.
+			serverInfo.accessLogBaseName = 'access' & '-' & name.reReplace( '[^0-9a-zA-Z-\.@]', '', 'all' );
+		} else {
+			serverInfo.accessLogBaseName = 'access';;
+		}
+
+		// Default all the things to make our lives easier
+		serverJSON.web = serverJSON.web ?: {};
+		defaults.web = defaults.web ?: {};
+		[
+			{ data : serverJSON.web, rootDir : site.serverConfigFileDirectory },
+			{ data : defaults.web, rootDir : serverInfo.webroot }
+		].each( expandAndDefaultConfig );
+
+		site.bindings.http.append( serverJSON.web.bindings.http, true ).append( defaults.web.bindings.http, true );
+		site.bindings.ssl.append( serverJSON.web.bindings.ssl, true ).append( defaults.web.bindings.ssl, true );
+		site.bindings.ajp.append( serverJSON.web.bindings.ajp, true ).append( defaults.web.bindings.ajp, true );
+		serverInfo.bindings = site.bindings;
+
+		if( !isNull( site.rewrites.config ) && len( site.rewrites.config ) && !isNull( site.rewrites.enabled ) && site.rewrites.enabled ) {
+			throw( 'You cannot set "rewrites" config XML on a per-site basis as Tuckey Rewrite is servlet-wide. You can use Server Rules for per-site rewrites.' );
+		}
+		if( !isNull( site.maxRequests ) ) {
+			throw( 'You cannot set "maxRequests" config on a per-site basis as it is servlet-wide.' );
+		}
+
+		// If no bindings are provided, default HTTP to enabled (compat)
+		var hasModernBindings = serverInfo.bindings.http.len() || serverInfo.bindings.ssl.len() || serverInfo.bindings.ajp.len();
+		serverInfo.HTTPEnable = serverProps.HTTPEnable ?: site.HTTP.enable ?: serverJSON.web.HTTP.enable ?: defaults.web.HTTP.enable ?: !hasModernBindings;
+		// Don't carry over a previous HTTP port if HTTP is no longer enabled.
+		// This would apply to a server that had a random port assigned at one point, but the had bindings added or legacy HTTP binding info removed.
+		if( !serverInfo.HTTPEnable ) {
+			serverInfo.port = 0;
+		}
+
+		serverInfo.HTTP2Enable = site.HTTP2.enable ?: serverJSON.web.HTTP2.enable ?: defaults.web.HTTP2.enable;
+
+		// Port is the only setting that automatically carries over without being specified since it's random.
+		serverInfo['port'] = serverProps.port ?: site.http.port ?: serverJSON.web.http.port ?: serverInfo.port ?: defaults.web.http.port;
+		serverInfo.port = val( serverInfo.port );
+		// Server default is 0 not null.
+		if( serverInfo.port == 0 && serverInfo.HTTPEnable ) {
+			serverInfo.port = -1;
+		// For backwards compat, if there is a port specified, even if bindings are in use, enable HTTP.
+		} else if( serverInfo.port > 0 ) {
+			serverInfo.HTTPEnable = true;
+		}
+
+		serverInfo.openbrowserURL = site.openbrowserURL ?: '';
+		serverInfo.SSLEnable = serverProps.SSLEnable ?: site.SSL.enable ?: serverJSON.web.SSL.enable ?: defaults.web.SSL.enable;
+		serverInfo.SSLPort = serverProps.SSLPort ?: site.SSL.port ?: serverJSON.web.SSL.port ?: defaults.web.SSL.port;
+
+		serverInfo.AJPEnable = serverProps.AJPEnable ?: site.AJP.enable ?: serverJSON.web.AJP.enable ?: defaults.web.AJP.enable;
+		serverInfo.AJPPort = serverProps.AJPPort ?: site.AJP.port ?: serverJSON.web.AJP.port ?: defaults.web.AJP.port;
+		serverInfo.AJPSecret = site.AJP.secret ?: serverJSON.web.AJP.secret ?: defaults.web.AJP.secret;
+		serverInfo.SSLCertFile = serverProps.SSLCertFile ?: site.SSL.certFile ?: serverJSON.web.SSL.certFile ?: defaults.web.SSL.certFile;
+		serverInfo.SSLKeyFile = serverProps.SSLKeyFile ?: site.SSL.keyFile ?: serverJSON.web.SSL.keyFile ?: defaults.web.SSL.keyFile;
+		serverInfo.SSLKeyPass = serverProps.SSLKeyPass ?: site.SSL.keyPass ?: serverJSON.web.SSL.keyPass ?: defaults.web.SSL.keyPass;
+		serverInfo.SSLCerts = site.SSL.certs ?: serverJSON.web.SSL.certs ?: defaults.web.SSL.certs;
+		serverInfo.clientCertCACertFiles = site.SSL.clientCert.CACertFiles ?: serverJSON.web.SSL.clientCert.CACertFiles ?: defaults.web.SSL.clientCert.CACertFiles;
+		serverInfo.clientCertCATrustStoreFile = site.SSL.clientCert.CATrustStoreFile ?: serverJSON.web.SSL.clientCert.CATrustStoreFile ?: defaults.web.SSL.clientCert.CATrustStoreFile;
+		serverInfo.clientCertCATrustStorePass = site.SSL.clientCert.CATrustStorePass ?: serverJSON.web.SSL.clientCert.CATrustStorePass ?: defaults.web.SSL.clientCert.CATrustStorePass;
+
+		// This only captures the legacy binding syntax.  This may also get set when the process the bindings later.
+		serverInfo.clientCertMode = site.SSL.clientCert.mode ?: serverJSON.web.SSL.clientCert.mode ?: defaults.web.SSL.clientCert.mode;
+		serverInfo.clientCertSSLRenegotiationEnable = site.security.clientCert.SSLRenegotiationEnable ?: serverJSON.web.security.clientCert.SSLRenegotiationEnable ?: defaults.web.security.clientCert.SSLRenegotiationEnable;
+
+
+		var profileReason = 'config setting server defaults';
+		// Try to set a smart profile if there's not one set
+		if( !trim( defaults.profile ).len() ) {
+			var thisIP = '';
+			// Try and get the IP we're binding to
+			try{
+				thisIP = getAddressByHost( serverInfo.host ).getHostAddress();
+			} catch( any var e ) {}
+
+			// Look for a env var called "environment"
+			var envVarEnvironment = systemSettings.getSystemSetting( 'environment', '' );
+
+			// Env var takes precedence.
+			if( len( envVarEnvironment ) ) {
+				profileReason = '"environment" env var';
+				defaults.profile = envVarEnvironment;
+			// Otherwise see if we're bound to localhost.
+			} else if( listFirst( thisIP, '.' ) == '127' ) {
+				profileReason = 'server bound to localhost';
+				defaults.profile = 'development';
+			} else {
+				profileReason = 'secure by default';
+				defaults.profile = 'production';
+			}
+		}
+
+		if( !isNull( serverJSON.profile ) ) {
+			if( serverInfo.envVarHasProfile ?: false ) {
+				profileReason = 'profile property in "box_server_profile" env var';
+			} else {
+				profileReason = 'profile property in server.json';
+			}
+		}
+
+		if( len( site.profile ?: '' ) ) {
+			profileReason = 'site config';
+		}
+
+		if( !isNull( serverProps.profile ) ) {
+			profileReason = 'profile argument to server start command';
+		}
+		serverInfo.profile = serverProps.profile ?: site.profile ?: serverJSON.profile ?: defaults.profile;
+
+		if( !trim( defaults.web.blockCFAdmin ).len() ) {
+			if( serverInfo.profile == 'development' || serverInfo.profile == 'none' ) {
+				defaults.web.blockCFAdmin = 'false';
+			} else {
+				defaults.web.blockCFAdmin = 'external';
+			}
+		}
+
+		if( !trim( defaults.web.blockSensitivePaths ).len() ) {
+			if( serverInfo.profile == 'none' ) {
+				defaults.web.blockSensitivePaths = false;
+			} else {
+				defaults.web.blockSensitivePaths = true;
+			}
+		}
+
+		if( !trim( defaults.web.blockFlashRemoting ).len() ) {
+			if( serverInfo.profile == 'none' ) {
+				defaults.web.blockFlashRemoting = false;
+			} else {
+				defaults.web.blockFlashRemoting = true;
+			}
+		}
+
+		serverInfo.blockCFAdmin = serverProps.blockCFAdmin ?: site.blockCFAdmin ?: serverJSON.web.blockCFAdmin ?: defaults.web.blockCFAdmin;
+		serverInfo.blockSensitivePaths = site.blockSensitivePaths ?: serverJSON.web.blockSensitivePaths ?: defaults.web.blockSensitivePaths;
+		serverInfo.blockFlashRemoting = site.blockFlashRemoting ?: serverJSON.web.blockFlashRemoting ?: defaults.web.blockFlashRemoting;
+		serverInfo.allowedExt = site.allowedExt ?: serverJSON.web.allowedExt ?: defaults.web.allowedExt;
+		serverInfo.useProxyForwardedIP = site.useProxyForwardedIP ?: serverJSON.web.useProxyForwardedIP ?: defaults.web.useProxyForwardedIP;
+
+		// If there isn't a default for this already
+		if( !isBoolean( defaults.web.directoryBrowsing ) ) {
+			// Default it according to the profile
+			if( serverInfo.profile == 'development' ) {
+				defaults.web.directoryBrowsing = true;
+			} else {
+				// secure by default even if profile is none or custom
+				defaults.web.directoryBrowsing = false;
+			}
+		}
+		serverInfo.directoryBrowsing = serverProps.directoryBrowsing ?: site.directoryBrowsing ?: serverJSON.web.directoryBrowsing ?: defaults.web.directoryBrowsing;
+
+		// If there isn't a default for this already
+		if( !isBoolean( defaults.web.fileCache.enable ) ) {
+			if( serverInfo.profile == 'production' ) {
+				defaults.web.fileCache.enable = true;
+			} else {
+				defaults.web.fileCache.enable = false;
+			}
+		}
+
+		serverInfo.fileCacheEnable	= site.fileCache.enable ?: serverJSON.web.fileCache.enable ?: defaults.web.fileCache.enable;
+		serverInfo.fileCacheTotalSizeMB	= site.fileCache.totalSizeMB ?:serverJSON.web.fileCache.totalSizeMB ?: defaults.web.fileCache.totalSizeMB;
+		serverInfo.fileCacheMaxFileSizeKB = site.fileCache.maxFileSizeKB ?:serverJSON.web.fileCache.maxFileSizeKB ?: defaults.web.fileCache.maxFileSizeKB;
+		serverInfo.fileCacheFileSystemWatcherEnable = site.fileCache.fileSystemWatcherEnable ?:serverJSON.web.fileCache.fileSystemWatcherEnable ?: defaults.web.fileCache.fileSystemWatcherEnable;
+
+		job.start( 'Setting site [#name#] Profile to [#serverInfo.profile#]' );
+			job.addLog( 'Profile set from #profileReason#' );
+			if( serverInfo.blockCFAdmin == 'external' ) {
+				job.addSuccessLog( 'Block CF Admin external' );
+			} else if( serverInfo.blockCFAdmin == 'true' ) {
+				job.addSuccessLog( 'Block CF Admin enabled' );
+			} else {
+				job.addErrorLog( 'Block CF Admin disabled' );
+			}
+			job[ 'add#( serverInfo.blockSensitivePaths ? 'Success' : 'Error' )#Log' ]( 'Block Sensitive Paths #( serverInfo.blockSensitivePaths ? 'en' : 'dis' )#abled' );
+			job[ 'add#( serverInfo.blockFlashRemoting ? 'Success' : 'Error' )#Log' ]( 'Block Flash Remoting #( serverInfo.blockFlashRemoting ? 'en' : 'dis' )#abled' );
+			if( len( serverInfo.allowedExt ) ) {
+				job.addLog( 'Allowed Extensions: [#serverInfo.allowedExt#]' );
+			}
+			job[ 'add#( !serverInfo.directoryBrowsing ? 'Success' : 'Error' )#Log' ]( 'Directory Browsing #( serverInfo.directoryBrowsing ? 'en' : 'dis' )#abled' );
+			job[ 'add#( serverInfo.fileCacheEnable ? 'Success' : '' )#Log' ]( 'File Caching #( serverInfo.fileCacheEnable ? 'en' : 'dis' )#abled' );
+		job.complete( serverInfo.verbose );
+
+		serverInfo.SSLForceRedirect = site.SSL.forceSSLRedirect ?: serverJSON.web.SSL.forceSSLRedirect ?: defaults.web.SSL.forceSSLRedirect;
+		serverInfo.HSTSEnable = site.SSL.HSTS.enab ?: serverJSON.web.SSL.HSTS.enable ?: defaults.web.SSL.HSTS.enable;
+		serverInfo.HSTSMaxAge = site.SSL.HSTS.maxAge ?: serverJSON.web.SSL.HSTS.maxAge ?: defaults.web.SSL.HSTS.maxAge;
+		serverInfo.HSTSIncludeSubDomains = site.SSL.HSTS.includeSubDomains ?: serverJSON.web.SSL.HSTS.includeSubDomains ?: defaults.web.SSL.HSTS.includeSubDomains;
+
+		serverInfo.basicAuthEnable = site.security.basicAuth.enable ?: serverJSON.web.security.basicAuth.enable ?: defaults.web.security.basicAuth.enable ?: serverJSON.web.basicAuth.enable ?: defaults.web.basicAuth.enable;
+		serverInfo.basicAuthUsers = site.security.basicAuth.users ?: serverJSON.web.security.basicAuth.users ?: defaults.web.security.basicAuth.users ?: serverJSON.web.basicAuth.users ?: defaults.web.basicAuth.users;
+		// If there are no users, basic auth is NOT enabled
+		if( !serverInfo.basicAuthUsers.count() ) {
+			serverInfo.basicAuthEnable = false;
+		}
+
+		serverInfo.clientCertEnable	= site.security.clientCert.enable ?: serverJSON.web.security.clientCert.enable ?: defaults.web.security.clientCert.enable;
+		serverInfo.clientCertTrustUpstreamHeaders =	site.security.clientCert.trustUpstreamHeaders ?: serverJSON.web.security.clientCert.trustUpstreamHeaders ?: defaults.web.security.clientCert.trustUpstreamHeaders;
+
+
+		// Combine server defaults AND any settings in server.json
+		serverInfo.clientCertSubjectDNs	= serverJSON.web.security.clientCert.subjectDNs
+			.append( site.security.clientCert.subjectDNs, true )
+			.append( defaults.web.security.clientCert.subjectDNs, true );
+		serverInfo.clientCertIssuerDNs = serverJSON.web.security.clientCert.issuerDNs
+			.append( site.security.clientCert.issuerDNs, true )
+			.append( defaults.web.security.clientCert.issuerDNs, true );
+
+		serverInfo.authEnabled = serverInfo.basicAuthEnable || serverInfo.clientCertEnable;
+		serverInfo.securityRealm = site.security.realm ?: serverJSON.web.security.realm ?: defaults.web.security.realm;
+		serverInfo.authPredicate = site.security.authPredicate ?: serverJSON.web.security.authPredicate ?: defaults.web.security.authPredicate;
+
+		serverInfo.welcomeFiles = serverProps.welcomeFiles ?: site.welcomeFiles ?: serverJSON.web.welcomeFiles ?: defaults.web.welcomeFiles;
+		// Clean up spaces in welcome file list
+		serverInfo.welcomeFiles = serverInfo.welcomeFiles.listMap( ( i )=>trim( i ) );
+
+		serverInfo.caseSensitivePaths = site.caseSensitivePaths ?: serverJSON.web.caseSensitivePaths ?: defaults.web.caseSensitivePaths;
+		serverInfo.sendFileMinSizeKB = site.sendFileMinSizeKB ?: serverJSON.web.sendFileMinSizeKB ?: defaults.web.sendFileMinSizeKB;
+
+		serverInfo.aliases = defaults.web.aliases;
+		serverInfo.aliases.append( serverJSON.web.aliases, true );
+		serverInfo.aliases.append( site.aliases, true );
+
+		// Combine global and server-specific mime types
+		serverInfo.mimeTypes = defaults.web.mimeTypes.append( serverJSON.web.mimeTypes ?: {}, true );
+		serverInfo.mimeTypes = defaults.web.mimeTypes.append( site.mimeTypes ?: {}, true );
+
+		// Global errorPages are always added on top of server.json (but don't overwrite the full struct)
+		// Aliases aren't accepted via command params
+		serverInfo.errorPages = defaults.web.errorPages;
+		serverInfo.errorPages.append( serverJSON.web.errorPages ?: {} );
+		serverInfo.errorPages.append( site.errorPages ?: {} );
+
+		serverInfo.accessLogEnable = site.accessLogEnable ?: serverJSON.web.accessLogEnable ?: defaults.web.accessLogEnable;
+		serverInfo.GZIPEnable = site.GZIPEnable ?: serverJSON.web.GZIPEnable ?: defaults.web.GZIPEnable;
+		serverInfo.gzipPredicate = site.gzipPredicate ?: serverJSON.web.gzipPredicate ?: defaults.web.gzipPredicate;
+		serverInfo.servletPassPredicate = site.servletPassPredicate ?: serverJSON.web.servletPassPredicate ?: defaults.web.servletPassPredicate;
+		serverInfo.resourceManagerLogging = site.resourceManagerLogging ?: serverJSON.web.resourceManagerLogging ?: defaults.web.resourceManagerLogging;
+
+		serverInfo.rewritesEnable = false;
+		if( !isNull( site.rewrites.enable ) ) {
+			serverInfo.rewritesEnable = site.rewrites.enable;
+		} else {
+			// Support legacy rewrite flag, but so long as they didn't specify a custom XML
+			var topLevelEnable = serverProps.rewritesEnable ?: serverJSON.web.rewrites.enable ?: defaults.web.rewrites.enable;
+			var topLevelConfig = serverProps.rewritesConfig ?: serverJSON.web.rewrites.config ?: defaults.web.rewrites.config;
+			if( topLevelEnable && !len( topLevelConfig ) ) {
+				serverInfo.rewritesEnable = true;
+			}
+		}
+
+		serverInfo.webRules = [];
+
+		//ssl hsts
+		if(serverInfo.SSLEnable && serverInfo.HSTSEnable){
+			serverInfo.webRules.append(
+				"set(attribute='%{o,Strict-Transport-Security}', value='max-age=#serverInfo.HSTSMaxAge##(serverInfo.HSTSIncludeSubDomains ? '; includeSubDomains' : '')#')"
+			);
+		}
+
+		//ssl force redirect
+		if(serverInfo.SSLEnable && serverInfo.SSLForceRedirect){
+			serverInfo.webRules.append(
+				"not secure() and method(GET) -> { set(attribute='%{o,Location}', value='https://%{LOCAL_SERVER_NAME}:#serverinfo.SSLPort#%{REQUEST_URL}%{QUERY_STRING}'); response-code(301) }"
+			);
+		}
+
+		serverInfo.webRules.append( site.rules, true);
+		serverInfo.webRules.append( serverJSON.web.rules, true);
+		serverInfo.webRules.append( defaults.web.rules, true);
+
+		// Default CommandBox rules.
+		if( serverInfo.blockSensitivePaths ) {
+			serverInfo.webRules.append( [
+				// track and trace verbs can leak data in XSS attacks
+				"disallowed-methods( methods={trace,track} )",
+				// Common config files and sensitive paths that should never be accessed, even on development
+				"regex( pattern='.*/(box\.json|server\.json|web\.config|urlrewrite\.xml|package\.json|package-lock\.json|Gulpfile\.js)', case-sensitive=false ) -> { set-error(404); done }",
+				// Any file or folder starting with a period, unless it's called
+				"regex('/\.') and not path-prefix(.well-known) -> { set-error( 404 ); done }",
+				// Additional serlvlet mappings in Adobe CF's web.xml
+				"path-prefix( { '/JSDebugServlet','/securityanalyzer','/WSRPProducer' } ) -> { set-error( 404 ); done }",
+				// java web service (Axis) files
+				"regex( pattern='\.jws$', case-sensitive=false ) -> { set-error( 404 ); done }"
+			], true );
+
+			if( serverInfo.profile == 'production' ) {
+				serverInfo.webRules.append( [
+					// Common config files and sensitive paths in ACF and TestBox that may be ok for dev, but not for production
+					"regex( pattern='.*[/]+(CFIDE[/]+multiservermonitor-access-policy\.xml|CFIDE[/]+probe\.cfm|CFIDE[/]+main[/]+ide\.cfm|tests[/]+runner\.cfm|testbox[/]+system[/]+runners[/]+HTMLRunner\.cfm)', case-sensitive=false ) -> { set-error(404); done }",
+				], true );
+			}
+
+		}
+
+		if( serverInfo.blockFlashRemoting ) {
+			serverInfo.webRules.append( [
+				// These all map to web.xml servlet mappings for ACF
+				"path-prefix( { '/flex2gateway','/flex-internal','/flashservices/gateway','/cfform-internal','/CFFormGateway', '/openamf/gateway', '/messagebroker' } ) -> { set-error( 404 ); done }",
+				// Files used for flash remoting
+				"regex( pattern='\.(mxml|cfswf)$', case-sensitive=false ) -> { set-error( 404 ); done }"
+			], true );
+		}
+
+		// Administrators
+		if( serverInfo.blockCFAdmin == 'external' ) {
+			serverInfo.webRules.append(
+				"cf-admin() -> block-external()"
+			);
+		} else if( serverInfo.blockCFAdmin == 'true' ) {
+			serverInfo.webRules.append(
+				"block-cf-admin()"
+			);
+		}
+
+		// Support legacy rewrite flag, but no Tuckey config XML files are allowed in the sites
+		if( serverInfo.rewritesEnable ) {
+			serverInfo.webRules.append(
+				// Mimic the old default Tuckey framework rewrite
+				"framework-rewrite()"
+			);
+		}
+
+		// Remove comments
+		serverInfo.webRules = serverInfo.webRules.filter( (r)=>!trim(r).startsWith('##') );
+
+		if( serverInfo.verbose ) {
+			job.addLog( "Site name - " & name );
+			job.addLog( "Webroot - " & serverInfo.webroot );
+			job.addLog( "Site config file - " & site.siteConfigFile );
+		}
+
+	}
+
+	/**
+	 * Build out all bindings for a site, expanding all possible hosts and defaulting values.
+	 * Bindings are array of structs having these keys.
+	 * - IP
+	 * - port
+	 * - host
+	 * - type
+	 * - site
+	 */
+	function buildBindings( required struct serverInfo, serverJSON, defaults, serverProps, serverDetails ) {
+		interceptorService.announceInterception( 'preBindingsBuild', { serverInfo=serverInfo, serverJSON=serverJSON, defaults=defaults, serverProps=serverProps, serverDetails=serverDetails } );
+
+		var sites = serverInfo.sites;
+
+		// clean slate per start
+		serverInfo.listeners = {
+			'http' : {},
+			'ssl' : {},
+			'ajp' : {}
+		};
+		serverInfo.bindings = {};
+		var bindingBuildBasic = ( binding, site )=>{
+			var result = {
+				hosts = binding.host ?: site.hostAlias ?: '',
+				IP = '',
+				Port = ''
+			}
+			if( !len(result.hosts) ) {
+				result.hosts = '*'
+			}
+			if( isSimpleValue(result.hosts) ) {
+				result.hosts = result.hosts.listToArray();
+			}
+			if( len( binding.listen ?: '' ) ) {
+				result.Port = listLast( binding.listen, ':' );
+				if( listLen( binding.listen, ':'  ) > 1 ) {
+					result.IP = listFirst( binding.listen, ':' );
+				} else {
+					result.IP = '0.0.0.0';
+				}
+			}
+			if( len( binding.port ?: '' ) ) {
+				result.Port = binding.port;
+			}
+			if( len( binding.IP ?: '' ) ) {
+				result.IP = binding.IP;
+			}
+			if( result.IP == '*' || result.IP == '' ) {
+				result.IP = '0.0.0.0';
+			}
+			return result;
+		};
+		var allBindings = [];
+		var defaultSiteName = '';
+		sites.each( (siteName,site)=>{
+			if( !len( site.hostAlias ) ) {
+				site.hostAlias.append( '*' )
+			}
+
+			var legacyIP = '';
+			if( reFind( '^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$', site.host ) ){
+				legacyIP = site.host;
+			}
+			// Backwards compat bindings in web.http, web.ssl, and web.ajp
+			if( site.HTTPEnable ) {
+				allBindings.append( newBinding( site=siteName, IP=legacyIP, port=site.port, hosts=site.hostAlias, type='http', HTTP2Enable=site.HTTP2Enable ) );
+			}
+
+			if( site.SSLEnable ) {
+				allBindings.append(
+					newBinding(
+						site=siteName,
+						IP=legacyIP,
+						port=site.SSLPort,
+						hosts=site.hostAlias,
+						type='ssl',
+						HTTP2Enable=site.HTTP2Enable,
+						SSLCertFile=site.SSLCertFile,
+						SSLKeyFile=site.SSLKeyFile,
+						SSLKeyPass=site.SSLKeyPass,
+						SSLCerts=site.SSLCerts,
+						clientCertMode = site.clientCertMode,
+						clientCertCACertFiles = site.clientCertCACertFiles,
+						clientCertCATrustStoreFile = site.clientCertCATrustStoreFile,
+						clientCertCATrustStorePass = site.clientCertCATrustStorePass,
+						clientCertSSLRenegotiationEnable = site.clientCertSSLRenegotiationEnable
+					)
+				);
+			}
+
+			if( site.AJPEnable ) {
+				allBindings.append( newBinding( site=siteName, IP=legacyIP, port=site.AJPPort, hosts=site.hostAlias, type='ajp', AJPSecret=site.AJPSecret ) );
+			}
+
+			// Gather bindings of each type for this site
+			['http','ssl','ajp'].each( (type)=>{
+				// Bindings can be an array
+				site.bindings[type].each( (binding)=>{
+					var params = bindingBuildBasic( binding, site );
+					params.type = type;
+					params.site = siteName;
+					// Undertow seems to only support this at the server level, but tracking it at the binding/listener level in case that changes
+					params.HTTP2Enable=binding.HTTP2Enable ?: site.HTTP2Enable;
+					params.SSLCertFile=binding.certFile ?: '';
+					params.SSLKeyFile=binding.keyFile ?: '';
+					params.SSLKeyPass=binding.keyPass ?: '';
+					params.SSLCerts=binding.certs ?: [];
+					params.AJPSecret=binding.secret ?: '';
+					params.clientCertMode = binding.clientCert.mode ?: '';
+					params.clientCertCACertFiles = binding.clientCert.CACertFiles ?: [];
+					params.clientCertCATrustStoreFile = binding.clientCert.CATrustStoreFile ?: '';
+					params.clientCertCATrustStorePass = binding.clientCert.CATrustStorePass ?: '';
+					// Even though this is set at the site-level, we need to track it at the binding level so we can know what
+					// SSL listeners need to allow for it by disabling TLS 1.3 and HTTP/2.
+					params.clientCertSSLRenegotiationEnable = site.clientCertSSLRenegotiationEnable ?: false;
+					// It's possible for two SSL bindings to both have differnt client cert negotiation settings.
+					// If this happens, we'll just take the first one. This site-level flag is really only used for
+					// the SSLClientCertHeaderHandler in Runwar to determine if at least one of the SSL bindings is accepting client certs
+					if( len( params.clientCertMode ) && !len( site.clientCertMode ) ) {
+						site.clientCertMode = params.clientCertMode;
+					}
+					if( len( params.port ) ) {
+						allBindings.append( newBinding( argumentCollection=params ) );
+					}
+				} );
+			} );
+
+			// If more than one site is marked as default, we take the first one
+			if( site.default ?: false && !len( defaultSiteName ) ) {
+				defaultSiteName = siteName;
+			}
+
+		} );
+		interceptorService.announceInterception( 'onBindingsBuild', { serverInfo=serverInfo, serverJSON=serverJSON, defaults=defaults, serverProps=serverProps, serverDetails=serverDetails, bindings=allBindings } );
+
+		// We're waiting to select random ports and resolve IPs from hostnames until AFTER we've fired the interception point above in case hostupdater is installed.
+		allBindings = allBindings.map( (b)=>{
+			var thisSite = sites[ b.site ];
+			var aliases = thisSite.hostAlias.filter( (a)=>!a.findNoCase('*') && !a.startsWith('~') );
+			// Fill in any missing IPs that need resolved from hostname
+			if( !len( b.IP ) ){
+				if( len( aliases ) ){
+					b.IP = getAddressByHost( aliases.first() ).getHostAddress();
+				} else {
+					b.IP = getAddressByHost( thisSite.host ).getHostAddress();
+				}
+			}
+			// Fill in any random ports
+			if(  b.port == -1 ) {
+				if( len( aliases ) ){
+					b.port = getRandomPort( aliases.first() )
+				} else {
+					b.port = getRandomPort( thisSite.host )
+				}
+				thisSite.port = b.port;
+				if( serverInfo.sites.len() == 1 ) {
+					serverInfo.port = b.port;
+				}
+ 			}
+			return b;
+		} );
+
+		[ (b)=>b.IP=='0.0.0.0', (b)=>b.IP!='0.0.0.0' ].each( (filter)=>{
+			allBindings
+				.filter( filter )
+				.each( (binding)=>{
+
+					// Aggregate de-duped listeners
+					if( serverInfo.listeners[ binding.type ].keyExists( '0.0.0.0:#binding.port#' ) ) {
+						// Use all IP binding, if exists
+						var listener = serverInfo.listeners[ binding.type ][ '0.0.0.0:#binding.port#' ];
+					} else if( serverInfo.listeners[ binding.type ].keyExists( '#binding.IP#:#binding.port#' ) ) {
+						// Use specific IP binding, if exists
+						var listener = serverInfo.listeners[ binding.type ][ '#binding.IP#:#binding.port#' ];
+					} else {
+						// Create a new bindings
+						var listener = serverInfo.listeners[ binding.type ][ '#binding.IP#:#binding.port#' ] = {
+							'IP' : binding.IP,
+							'port' : binding.port
+						};
+					}
+					if( !isNull( binding.HTTP2Enable ) && isBoolean( binding.HTTP2Enable ) ) {
+						listener[ 'HTTP2Enable' ] = ( listener.HTTP2Enable ?: false ) || binding.HTTP2Enable;
+					}
+
+					if( binding.type == 'ssl' ) {
+						listener[ 'certs' ] = listener[ 'certs' ] ?: [];
+						// An array of additional certs can be provided
+						if( !isNull( binding.certs ) && isArray( binding.certs ) ) {
+							binding.certs.each( (c)=>{
+								if( !isNull( c.certFile ) && len( c.certFile ) ) {
+									// If we already have this cert, skip
+									if( listener.certs.find( (cert)=>cert.certFile==c.certFile ) ) {
+										return;
+									}
+									var cert = {}
+									cert[ 'certFile' ] = c.certFile;
+
+									if( !isNull( c.keyFile ) && len( c.keyFile ) ) {
+										cert[ 'keyFile' ] = c.keyFile;
+									}
+
+									if( !isNull( c.keyPass ) && len( c.keyPass ) ) {
+										cert[ 'keyPass' ] = c.keyPass;
+									}
+									listener.certs.append( cert );
+								}
+							} );
+						}
+						listener[ 'clientCert' ] = listener[ 'clientCert' ] ?: {
+							'mode' : '',
+							'CACertFiles' : [],
+							'CATrustStoreFile' : '',
+							'CATrustStorePass' : '',
+							'SSLRenegotiationEnable' : false
+						};
+						// This gets turned on for the entire listener if at least one binding using this listener was associated with a site using it.
+						listener.clientCert.SSLRenegotiationEnable = listener.clientCert.SSLRenegotiationEnable || binding.clientCert.SSLRenegotiationEnable;
+						// IF this listener has a no-op mode, then take whatever the binding has.
+						if( !len( listener.clientCert.mode ) || listener.clientCert.mode == 'NOT_REQUESTED' ) {
+							listener.clientCert.mode = binding.clientCert.mode;
+						// If this listener is set to requested from a previous bindings, but this bindings is wanting requried, take the newer, more strict setting.
+						} else if( listener.clientCert.mode == 'REQUESTED' &&  binding.clientCert.mode == 'REQUIRED' ) {
+							listener.clientCert.mode = binding.clientCert.mode;
+						}
+						// Multuple bindings using client cert auth on the same listener combine CA certs into one big trust store
+						listener.clientCert.CACertFiles.append( binding.clientCert.CACertFiles, true );
+						// We only support a single keystore (any CACertFiles above will be added in), so only take the first CA trust store/pass we come across.
+						if( !len( listener.clientCert.CATrustStoreFile ) && len( binding.clientCert.CATrustStoreFile ) ) {
+							listener.clientCert.CATrustStoreFile = binding.clientCert.CATrustStoreFile;
+							listener.clientCert.CATrustStorePass = binding.clientCert.CATrustStorePass;
+						}
+					}
+
+					// Build out all possible bindings to sites
+					binding.hosts.each( (host)=>{
+						var thisHost = ( host == '0.0.0.0' ? '*' : host );
+						var bindingInfo  = binding.filter( (k)=>'type,IP,port,AJPSecret,site,clientCert'.listFindNoCase(k) ).append( { 'host' : thisHost } );
+						// Match *.example.com
+						if( len( thisHost ) > 1 && thisHost.startsWith( '*' ) ) {
+							var bindingKey = lcase( '#binding.IP#:#binding.port#::endsWith:' );
+							bindingInfo[ 'endsWithMatch' ] = thisHost.right( -1 );
+							serverInfo.bindings[ bindingKey ] = serverInfo.bindings[ bindingKey ] ?: [];
+							serverInfo.bindings[ bindingKey ].append( bindingInfo );
+							// Match www.example.*
+						} else if( len( thisHost ) > 1 && thisHost.endsWith( '*' ) ) {
+							var bindingKey = lcase( '#binding.IP#:#binding.port#::startsWith:' );
+							bindingInfo[ 'startsWithMatch' ] = thisHost.left( -1 );
+							serverInfo.bindings[ bindingKey ] = serverInfo.bindings[ bindingKey ] ?: [];
+							serverInfo.bindings[ bindingKey ].append( bindingInfo );
+							// Match ~.*\.(example|foobar)[0-9]+\.com
+						} else if( thisHost.startsWith( '~' ) ) {
+							var bindingKey = lcase( '#binding.IP#:#binding.port#::regex:' );
+							bindingInfo[ 'regexMatch' ] = thisHost.right( -1 );
+							serverInfo.bindings[ bindingKey ] = serverInfo.bindings[ bindingKey ] ?: [];
+							serverInfo.bindings[ bindingKey ].append( bindingInfo );
+							// Match hostname exactly, or match any hostname
+						} else {
+							serverInfo.bindings[ lcase( '#binding.IP#:#binding.port#:#thisHost#' ) ] = bindingInfo;
+						}
+					} );
+
+				} );
+
+			// Sort the wildcard match bindings so longest match is first
+			serverInfo.bindings.each( (n,b)=>{
+				if( n contains ':endsWith:' || n contains ':startsWith:' ){
+					b.sort( (a,b)=>len(b.host)-len(a.host) );
+				}
+			} );
+
+			// If there was a site marked as "default"
+			if( len( defaultSiteName ) ) {
+				serverInfo.bindings[ lcase( 'default' ) ] = { 'site' : defaultSiteName };
+			}
+			interceptorService.announceInterception( 'postBindingsBuild', { serverInfo=serverInfo, serverJSON=serverJSON, defaults=defaults, serverProps=serverProps, serverDetails=serverDetails } );
+
+		} );
+
+	}
+
+	/**
+	 * Create default binding struct, expanding a bindings for each possible host name
+	 */
+	struct function newBinding(
+			required site,
+			IP='0.0.0.0',
+			port=80,
+			hosts=['*'],
+			type='http',
+			// Undertow seems to only support this at the server level, but tracking it at the binding/listener level in case that changes
+			HTTP2Enable=true,
+			SSLCertFile='',
+			SSLKeyFile='',
+			SSLKeyPass='',
+			SSLCerts=[],
+			AJPSecret='',
+			clientCertMode = '',
+			clientCertCACertFiles = [],
+			clientCertCATrustStoreFile = '',
+			clientCertCATrustStorePass = '',
+			clientCertSSLRenegotiationEnable = false
+		) {
+
+		if( IP == '*' ) {
+			IP = '0.0.0.0';
+		}
+		var binding = {
+			'site' : site,
+			'IP' : IP,
+			'port' : port,
+			'hosts' : hosts,
+			'type' : type,
+			'HTTP2Enable' : HTTP2Enable
+		}
+		if( type == 'ssl' ) {
+			binding[ 'certs' ] = duplicate( arguments.SSLCerts );
+			if( len( SSLCertFile ) ) {
+				binding.certs.append( {
+					'certFile' : SSLCertFile,
+					'keyFile' : SSLKeyFile,
+					'keyPass' : SSLKeyPass
+				} );
+			}
+			binding[ 'clientCert' ] = {
+				'mode' : arguments.clientCertMode,
+				'CACertFiles' : arguments.clientCertCACertFiles,
+				'CATrustStoreFile' : arguments.clientCertCATrustStoreFile,
+				'CATrustStorePass' : arguments.clientCertCATrustStorePass,
+				'SSLRenegotiationEnable' : arguments.clientCertSSLRenegotiationEnable
+			}
+			if( isSimpleValue( binding.clientCert.CACertFiles ) ) {
+				binding.clientCert.CACertFiles = binding.clientCert.CACertFiles.listToArray();
+			}
+		}
+		if( type == 'ajp' ) {
+			binding[ 'AJPSecret' ] = AJPSecret;
+		}
+		return binding
+	}
 
 	/**
 	* allows to iterate on a tray menu item recursively
@@ -2418,7 +2856,6 @@ component accessors="true" singleton {
 
 			if( !len( defaultName ) ) {
 				// If there is still no name, default to the current directory
-				// TODO: I don't care for this because it creates conflicts since many servers could have the name "webroot" on one machine.
 				defaultName = replace( listLast( defaultwebroot, "\/" ), ':', '');
 
 				// Don't overlap an existing server name
@@ -2494,15 +2931,10 @@ component accessors="true" singleton {
 
 		var args = [
 			variables.javaCommand,
-			'-jar',
-			variables.jarPath,
-			'-stop',
-			'--stop-port',
-			val( serverInfo.stopsocket ),
-			'-host',
-			arguments.serverInfo.host,
-			'--background',
-			'false'
+			'-cp',
+			serverInfo.runwarJarPath,
+			'runwar.Stop',
+			serverInfo.serverInfoJSON
 		];
 		var results = { error = false, messages = "" };
 
@@ -2525,9 +2957,9 @@ component accessors="true" singleton {
 			//execute name=variables.javaCommand arguments=args timeout="50" variable="results.messages" errorVariable="errorVar";
 			serverInfo.status 		= "stopped";
 			serverInfo.statusInfo 	= {
-				command : variables.javaCommand,
-				arguments : args.tolist( ' ' ),
-				result : processOutput
+				'command' : variables.javaCommand,
+				'arguments' : args.tolist( ' ' ),
+				'result' : processOutput
 			};
 			setServerInfo( serverInfo );
 			results.messages = processOutput;
@@ -2535,9 +2967,9 @@ component accessors="true" singleton {
 		} catch (any e) {
 			serverInfo.status 		= "unknown";
 			serverInfo.statusInfo 	= {
-				command : variables.javaCommand,
-				arguments : args.tolist( ' ' ),
-				result : processOutput ?: ''
+				'command' : variables.javaCommand,
+				'arguments' : args.tolist( ' ' ),
+				'result' : processOutput ?: ''
 			};
 			setServerInfo( serverInfo );
 			return { error=true, messages=e.message & e.detail };
@@ -2945,10 +3377,14 @@ component accessors="true" singleton {
 	struct function getServerInfo( required webroot , required name){
 		var servers 	= getServers();
 		var serverID = calculateServerID( arguments.webroot, arguments.name );
-		var statusInfo 	= {};
+		var statusInfo 	= {
+			'command' : '',
+			'arguments' : '',
+			'result' : ''
+		};
 
 		if( !directoryExists( arguments.webroot ) ){
-			statusInfo = { result:"Webroot does not exist, cannot start :" & arguments.webroot };
+			statusInfo = { 'result':"Webroot does not exist, cannot start :" & arguments.webroot };
 		}
 
 		if( isNull( servers[ serverID ] ) ){
@@ -2982,6 +3418,7 @@ component accessors="true" singleton {
 			'id' 				: "",
 			'port'				: 0,
 			'host'				: "127.0.0.1",
+			'hostAlias'			: [],
 			'stopSocket'		: 0,
 			'debug'				: false,
 			'verbose'			: false,
@@ -3004,7 +3441,6 @@ component accessors="true" singleton {
 			'serverConfigDir' 		: "",
 			'serverHomeDirectory'	: "",
 			'singleServerHome'		: false,
-			'serverHome'			: "",
 			'webroot'				: "",
 			'webXML' 				: "",
 			'webXMLOverride' 		: "",
@@ -3019,6 +3455,7 @@ component accessors="true" singleton {
 			'SSLCertFile'			: "",
 			'SSLKeyFile'			: "",
 			'SSLKeyPass'			: "",
+			'SSLCerts'				: [],
 			'clientCertCACertFiles'	: [],
 			'clientCertMode'		: '',
 			'clientCertSSLRenegotiationEnable': false,
@@ -3029,6 +3466,7 @@ component accessors="true" singleton {
 			'securityRealm'			: '',
 			'clientCertCATrustStoreFile': '',
 			'clientCertCATrustStorePass': '',
+			'tuckeyRewritesEnable'	: false,
 			'rewritesEnable'		: false,
 			'rewritesConfig'		: "",
 			'rewritesStatusPath'	: "",
@@ -3045,6 +3483,7 @@ component accessors="true" singleton {
 			'JVMargsArray'			: [],
 			'runwarArgs'			: "",
 			'runwarArgsArray'		: [],
+			'runwarOptions'			: {},
 			'runwarXNIOOptions'		: {},
 			'runwarUndertowOptions'	: {},
 			'cfengine'				: "",
@@ -3059,6 +3498,8 @@ component accessors="true" singleton {
 			'aliases'				: {},
 			'errorPages'			: {},
 			'accessLogEnable'		: false,
+			'accessLogBaseName'		: '',
+			'accessLogBaseDir'		: '',
 			'GZipEnable'			: true,
 			'GZipPredicate'			: '',
 			'rewritesLogEnable'		: false,
@@ -3074,6 +3515,7 @@ component accessors="true" singleton {
 			'welcomeFiles'			: '',
 			'maxRequests'			: '',
 			'caseSensitivePaths'	: '',
+			'sendFileMinSizeKB'		: '',
 			'exitCode'				: 0,
 			'rules'					: [],
 			'rulesFile'				: '',
@@ -3082,15 +3524,54 @@ component accessors="true" singleton {
 			'blockFlashRemoting'	: false,
 			'allowedExt'			: '',
 			'pidfile'				: '',
-			'predicateFile'			: '',
 			'trayOptionsFile'		: '',
 			'SSLForceRedirect'		: false,
 			'HSTSEnable'			: false,
 			'HSTSMaxAge'			: 0,
 			'HSTSIncludeSubDomains'	: false,
 			'AJPSecret'				: '',
-			'mimeTypes'				: {}
+			'mimeTypes'				: {},
+			'sites'					: [:],
+			'listeners'				: {
+										'http' : {},
+										'ssl' : {},
+										'ajp' : {}
+									},
+			'bindings'				: {},
+			'mimeTypes'				: {},
+			'RunwarAppenderLayout'	: '',
+			'RunwarAppenderLayoutOptions'	: {},
+			'startTimeout'			: 0,
+			'useProxyForwardedIP'	: false,
+			'webRules'				: [],
+			'runwarJarPath'			: '',
+			'multiContext'			: false,
+			'ModCFMLSharedKey'		: '',
+			'ModCFMLEnable'			: '',
+			'ModCFMLCreateVDirs'	: '',
+			'ModCFMLMaxContexts'	: '',
+			'ModCFMLRequireSharedKey' : '',
+			'JVMProperties'			: [],
+			'fileCacheEnable'		: false,
+			'fileCacheMaxFileSizeKB': 0,
+			'fileCacheFileSystemWatcherEnable': false,
+			'fileCacheTotalSizeMB'	: 0,
+			'defaultBaseURL'		: '',
+			'authEnabled'			: '',
+			'appFileSystemPath'		: '',
+			'serverInfoJSON'		: '',
+			'customHTTPStatusEnable': true,
+			'processName'			: '',
+			'webRulesText'			: '',
+			'multiSite'				: false,
+			'resourceManagerLogging':false,
+			'servletPassPredicate'	: '',
+			'adobeScriptsAlias'		: ''
 		};
+	}
+
+	struct function newSiteInfoStruct() {
+		return newServerInfoStruct().filter( (k,v)=>listFindNoCase( 'servletPassPredicate,sslkeyfile,resourceManagerLogging,useproxyforwardedip,clientcertsubjectdns,basicauthenable,casesensitivepaths,sendFileMinSizeKB,blocksensitivepaths,basicauthusers,hstsenable,sslport,webroot,webrules,errorpages,clientcertcatruststorepass,clientcerttrustupstreamheaders,http2enable,sslcertfile,accesslogenable,securityrealm,clientcertcatruststorefile,filecachetotalsizemb,sslenable,ajpport,blockflashremoting,sslforceredirect,filecachemaxfilesizekb,fileCacheFileSystemWatcherEnable,ajpenable,host,welcomefiles,clientcertmode,blockcfadmin,verbose,allowedext,authpredicate,httpenable,gzipenable,hstsmaxage,aliases,authenabled,mimetypes,filecacheenable,clientcertcacertfiles,clientcertsslrenegotiationenable,clientcertenable,gzippredicate,clientcertissuerdns,hstsincludesubdomains,port,sslkeypass,SSLCerts,directorybrowsing,ajpsecret,profile,webRulesText,hostAlias,rewritesEnable,adobeScriptsAlias', k ) );
 	}
 
 	/**
@@ -3123,7 +3604,7 @@ component accessors="true" singleton {
 	* @all Pass false to ONLY suggest existing setting names.  True will suggest all possible settings.
 	* @asSet Pass true to add = to the end of the options
 	*/
-	function completeProperty( required directory,  all=false, asSet=false ) {
+	function completeProperty( required directory, all=false, asSet=false, paramSoFar='' ) {
 		// Get all config settings currently set
 		var props = JSONService.addProp( [], '', '', readServerJSON( arguments.directory & '/server.json' ) );
 
@@ -3131,6 +3612,7 @@ component accessors="true" singleton {
 		if( arguments.all ) {
 			// ... Then add them in
 			props = JSONService.addProp( props, '', '', getDefaultServerJSON() );
+
 			// Suggest a couple optional web error pages
 			props = JSONService.addProp( props, '', '', {
 				'web' : {
@@ -3141,6 +3623,45 @@ component accessors="true" singleton {
 					}
 				}
 			} );
+			var bindingsStub = {
+				'web' : {
+					'bindings' : {
+						'HTTP' : {
+							'listen' : '',
+							'IP' : '',
+							'port' : '',
+							'host' : '',
+							'HTTP2Enable' : true
+						},
+						'SSL' : {
+							'listen' : '',
+							'IP' : '',
+							'port' : '',
+							'host' : '',
+							'certFile' : '',
+							'keyFile' : '',
+							'keyPass' : '',
+							'certs' : [],
+							'clientCert' : {
+								'mode' : '',
+								'CACertFiles' : '',
+								'CATrustStoreFile' : '',
+								'CATrustStorePass' : ''
+							},
+							'HTTP2Enable' : true
+						},
+						'AJP' : {
+							'listen' : '',
+							'IP' : '',
+							'port' : '',
+							'host' : '',
+							'secret' : '',
+						}
+					}
+				}
+			};
+			props = JSONService.addProp( props, '', '', bindingsStub );
+
 			// Suggest server scripts
 			props = JSONService.addProp( props, '', '', {
 				'scripts' : {
@@ -3153,6 +3674,31 @@ component accessors="true" singleton {
 					'postServerForget' : ''
 				}
 			} );
+
+			// Add in complete for sites
+			if( len( paramSoFar ) ) {
+				// Parse what they've typed so far
+				var bracketNotationSoFar = JSONService.toBracketNotation( paramSoFar );
+				var tokenizedSoFar = JSONService.tokenizeProp( paramSoFar );
+				// Only if they've typed sites.something so far and appear to have completed the site n
+				var siteNameSoFar = tokenizedSoFar[2] ?: '';
+				if( tokenizedSoFar.len() > 1 && lcase( bracketNotationSoFar ).startsWith( '[ "sites" ]' )
+					&& ( tokenizedSoFar.len() > 2
+					|| paramSoFar.endsWith('.')
+					|| siteNameSoFar.endsWith(']')
+						|| ( len( siteNameSoFar ) > 2 && siteNameSoFar.startsWith('"') && siteNameSoFar.endsWith('"') ) ) ) {
+					evaluate( "local.dummy#bracketNotationSoFar#=true" );
+					if( isStruct( dummy ) && dummy.keyExists( 'sites' ) && isStruct( dummy.sites )  && dummy.sites.count() ) {
+						var siteName = dummy.sites.keyArray().first();
+						var userTyped = tokenizedSoFar[1] & ( siteNameSoFar contains '[' ? '' : '.' ) & siteNameSoFar;
+						var siteProperties = getDefaultServerJSON().web;
+						siteProperties.bindings = bindingsStub.web.bindings;
+						siteProperties['default']=false;
+						siteProperties['openbrowserURL']='';
+						props = JSONService.addProp( props, userTyped, '[ "sites" ][ "#siteName#" ]', { 'sites' : { '#siteName#' : siteProperties } } );
+					}
+				}
+			}
 		}
 		if( asSet ) {
 			props = props.map( function( i ){ return i &= '='; } );
@@ -3193,7 +3739,14 @@ component accessors="true" singleton {
 			if( envVar.len() > 11 && reFindNoCase( 'box[_\.]server[_\.]', left( envVar, 11 ) ) ) {
 				// proxy_host gets turned into proxy.host
 				// Note, the asssumption is made that no config setting will ever have a legitimate underscore in the name
-				var name = right( envVar, len( envVar ) - 11 ).replace( '_', '.', 'all' );
+				// Special checks for undertowOptions and XNIOOptions
+				if( envVar.toLowerCase().startsWith( 'box_server_runwar_undertowoptions_' ) ) {
+					var name = 'runwar.undertowOptions.' & envVar.replaceNoCase( 'box_server_runwar_undertowoptions_', '' );
+				} else if( envVar.toLowerCase().startsWith( 'box_server_runwar_xniooptions_' ) ) {
+					var name = 'runwar.XNIOOptions.' & envVar.replaceNoCase( 'box_server_runwar_xniooptions_', '' );
+				} else {
+					var name = right( envVar, len( envVar ) - 11 ).replace( '_', '.', 'all' );
+				}
 				debugMessages.append( 'Overridding [#name#] with #source# [#envVar#]' );
 				JSONService.set( JSON=overrides, properties={ '#name#' : value }, thisAppend=true );
 			}
@@ -3230,7 +3783,6 @@ component accessors="true" singleton {
 	}
 
 
-
 	/**
 	* Nice wrapper to run a server script
 	*
@@ -3240,45 +3792,51 @@ component accessors="true" singleton {
 	* @interceptData An optional struct of data if this server script is being fired as part of an interceptor announcement.  Will be loaded into env vars
 	*/
 	function runScript( required string scriptName, string directory=shell.pwd(), boolean ignoreMissing=true, interceptData={} ) {
-			if( !isNull( interceptData.serverJSON ) ){
-				var serverJSON = interceptData.serverJSON;
-			} else if( !isNull( interceptData.serverInfo.name ) && len( interceptData.serverInfo.name ) ){
-				var serverDetails = resolveServerDetails( { name=interceptData.serverInfo.name } );
-				if( serverDetails.serverIsNew ) {
-					return;
-				}
-				var serverJSON = serverDetails.serverJSON;
-				systemSettings.expandDeepSystemSettings( serverJSON );
-				loadOverrides( serverJSON, serverDetails.serverInfo, serverDetails.serverInfo.verbose ?: false );
-			} else {
-				consoleLogger.warn( 'Could not find server for script [#arguments.scriptName#].' );
+		if( !isNull( arguments.interceptData.serverJSON ) ) {
+			var serverJSON = arguments.interceptData.serverJSON;
+		} else if( !isNull( arguments.interceptData.serverInfo.name ) && len( arguments.interceptData.serverInfo.name ) ) {
+			var serverDetails = resolveServerDetails( { name=arguments.interceptData.serverInfo.name } );
+			if( serverDetails.serverIsNew ) {
 				return;
 			}
-			var serverJSONScripts = duplicate( serverJSON.scripts ?: {} );
-			getDefaultServerJSON().scripts.each( (k,v)=>{
-				// Append existing scripts
-				if( serverJSONScripts.keyExists( k ) ) {
-					serverJSONScripts[ k ] &= '; ' & v
-				// Merge missing ones
-				} else {
-					serverJSONScripts[ k ] = v;
-				}
-			} );
-			// If there is a scripts object with a matching key for this interceptor....
-			if( serverJSONScripts.keyExists( arguments.scriptName ) ) {
+			var serverJSON = serverDetails.serverJSON;
+			systemSettings.expandDeepSystemSettings( serverJSON );
+			loadOverrides( serverJSON, serverDetails.serverInfo, serverDetails.serverInfo.verbose ?: false );
+		} else {
+			consoleLogger.warn( 'Could not find server for script [#arguments.scriptName#].' );
+			return;
+		}
 
-				// Skip this if we're not in a command so we don't litter the default env var namespace
-				if( systemSettings.getAllEnvironments().len() > 1 ) {
-					systemSettings.setDeepSystemSettings( interceptData );
-				}
+		// get server.json script, defaulting to empty array
+		var serverJSONScripts = duplicate( serverJSON.scripts ?: {} );
+		var serverJSONScriptNameCommands =  serverJSONScripts.keyExists( arguments.scriptName ) ? serverJSONScripts[ arguments.scriptName ] : [];
+		if( isSimpleValue( serverJSONScriptNameCommands ) ) {
+			serverJSONScriptNameCommands = [ serverJSONScriptNameCommands ];
+		}
+		// get server default script, defaulting to empty array
+		var defaultServerJSONScripts = getDefaultServerJSON().scripts;
+		var serverDefaultScriptNameCommands = defaultServerJSONScripts.keyExists( arguments.scriptName ) ? defaultServerJSONScripts[ arguments.scriptName ]: [];
+		// force both to be an array, if not already
+		if( isSimpleValue( serverDefaultScriptNameCommands ) ) {
+			serverDefaultScriptNameCommands = [ serverDefaultScriptNameCommands ];
+		}
+		// Combine both arrays with the server defaults added first
+		var totalScriptNameCommands = serverDefaultScriptNameCommands.merge( serverJSONScriptNameCommands );
 
-				// Run preXXX package script
-				runScript( 'pre#arguments.scriptName#', arguments.directory, true, interceptData );
+		if( totalScriptNameCommands.len() ) {
 
-				var thisScript = serverJSONScripts[ arguments.scriptName ];
-				consoleLogger.debug( '.' );
-				consoleLogger.warn( 'Running server script [#arguments.scriptName#].' );
-				consoleLogger.debug( '> ' & thisScript );
+			// Only set up env vars, if we're in a command context
+			if( systemSettings.getAllEnvironments().len() > 1 ) {
+				systemSettings.setDeepSystemSettings( arguments.interceptData );
+			}
+
+			// run any "pre" interceptors
+			runScript( 'pre#arguments.scriptName#', arguments.directory, true, arguments.interceptData );
+
+			consoleLogger.debug( '.' );
+			consoleLogger.warn( 'Running server script [#arguments.scriptName#].' );
+			for( var thisCommand in totalScriptNameCommands ) {
+				consoleLogger.debug( '> ' & thisCommand );
 
 				// Normally the shell retains the previous exit code, but in this case
 				// it's important for us to know if the scripts return a failing exit code without throwing an exception
@@ -3287,7 +3845,7 @@ component accessors="true" singleton {
 				// ... then run the script! (in the context of the package's working directory)
 				var previousCWD = shell.pwd();
 				shell.cd( arguments.directory );
-				shell.callCommand( thisScript );
+				shell.callCommand( thisCommand );
 				shell.cd( previousCWD );
 
 				// If the script ran "exit"
@@ -3299,13 +3857,13 @@ component accessors="true" singleton {
 				if( shell.getExitCode() != 0 ) {
 					throw( message='Server script returned failing exit code (#shell.getExitCode()#)', detail='Failing script: #arguments.scriptName#', type="commandException", errorCode=shell.getExitCode() );
 				}
+			};
 
-				// Run postXXX package script
-				runScript( 'post#arguments.scriptName#', arguments.directory, true, interceptData );
-
-			} else if( !arguments.ignoreMissing ) {
-				consoleLogger.error( 'The script [#arguments.scriptName#] does not exist in this server.' );
-			}
+			// Run postXXX package script
+			runScript( 'post#arguments.scriptName#', arguments.directory, true, arguments.interceptData );
+		} else if( !arguments.ignoreMissing ) {
+			consoleLogger.error( 'The script [#arguments.scriptName#] does not exist in this server.' );
+		}
 	}
 
 	function isSingleServerMode() {
@@ -3314,4 +3872,3 @@ component accessors="true" singleton {
 
 
 }
-

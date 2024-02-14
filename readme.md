@@ -10,7 +10,7 @@
 
 # WELCOME TO COMMANDBOX
 
-CommandBox ColdFusion (CFML) CLI, Package Manager, REPL and much more!
+CommandBox ColdFusion (CFML) CLI, Package Manager, Embedded CFML Server, REPL and much more!
 
 * Trademark + Copyright since 2014 by [Ortus Solutions, Corp](https://www.ortussolutions.com)
 * [All products by Ortus Solutions](https://www.ortussolutions.com/products)
@@ -28,17 +28,17 @@ Download from the [Ortus Download Site](https://downloads.ortussolutions.com/#/o
 
 **Getting Started Guide**
 
-Get going with CommandBox in a matter of minutes with our [Getting Started Guide](http://ortus.gitbooks.io/commandbox-documentation/content/getting_started_guide.html)
+Get going with CommandBox in a matter of minutes with our [Getting Started Guide](https://commandbox.ortusbooks.com/getting-started-guide)
 
 **Bug Tracker**
 
-Found an issue? Check out [Bug Tracker](https://ortussolutions.atlassian.net/browse/COMMANDBOX)
+Found an issue? Check out [Bug Tracker](https://ortussolutions.atlassian.net/jira/software/c/projects/COMMANDBOX/issues)
 
 
 ## DOCUMENTATION
 
 View our latest installation, usage, and development docs here:
-[General Docs](https://www.ortussolutions.com/products/commandbox/docs)
+[General Docs](https://commandbox.ortusbooks.com/)
 
 View our latest Command API Docs here:
 [General Docs](https://apidocs.ortussolutions.com/commandbox/current)
@@ -61,11 +61,11 @@ And constructed with the following guidelines:
 
 ## COMMANDBOX LICENSE
 
-CommandBox is open source and bound to the LGPL v3 GNU LESSER GENERAL PUBLIC LICENSE Copyright & TradeMark since 2014, Ortus Solutions, Corp
+CommandBox is open source and bound to the Apache License, Version 2.0 Copyright & TradeMark since 2014, Ortus Solutions, Corp
 
-This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+This program is free software: you can redistribute it and/or modify it under the terms of the Apache License as published by the Apache Software Foundation.
 
-This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the APACHE LICENSE for more details.
 
 ## CREDITS & CONTRIBUTIONS
 

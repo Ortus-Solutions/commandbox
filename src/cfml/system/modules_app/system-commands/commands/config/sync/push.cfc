@@ -93,7 +93,13 @@ component {
 			if( !overwrite ) {
 				configSettings = JSONService.mergeData( remoteConfig, configSettings );
 			}
-			print.line().greenLine( forgebox.setConfig( configSettings, userData.username, APIToken ) );
+
+			if( ( diffDetails.remove.len() && overwrite ) || diffDetails.add.len() || diffDetails.change.len() ) {
+				print.line().greenLine( forgebox.setConfig( configSettings, userData.username, APIToken ) );
+			} else {
+				print.greenLine( "All up to date!" ).line();
+			}
+
 
 		} catch( forgebox var e ) {
 			// This can include "expected" errors such as "Email already in use"

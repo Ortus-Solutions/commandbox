@@ -94,8 +94,12 @@ component {
 				remoteConfig = JSONService.mergeData( configSettings, remoteConfig );
 			}
 
-			configService.setConfigSettings( remoteConfig.config );
-			print.line().greenLine( "ClI Settings imported" ).line();
+			if( diffDetails.remove.len() || ( diffDetails.add.len() && overwrite ) ||  diffDetails.change.len() ) {
+				configService.setConfigSettings( remoteConfig.config );
+				print.line().greenLine( "ClI Settings imported" ).line();
+			} else {
+				print.greenLine( "All up to to date!").line();
+			}
 
 			diffDetails.remove
 				.filter( ( item )=>buildPath( item.path ).lCase().startsWith( 'modules.' ) )

@@ -94,11 +94,11 @@ component accessors="true" singleton {
 
 		// If there is a package to install, install it
 		if( len( arguments.ID ) ) {
-
+			var updateBoxJSONDependency = true;
 			// By default, a specific package install doesn't include dev dependencies
 			arguments.production = arguments.production ?: true;
 
-			var endpointData = endpointService.resolveEndpoint( arguments.ID, arguments.currentWorkingDirectory );
+			var endpointData = endpointService.resolveEndpoint( arguments.ID, arguments.packagePathRequestingInstallation );
 
 			job.start(  'Installing package [#endpointData.ID#]', ( shell.getTermHeight() < 20 ? 1 : 5 ) );
 
@@ -106,7 +106,17 @@ component accessors="true" singleton {
 				job.setDumpLog( verbose );
 			}
 
-			var tmpPath = endpointData.endpoint.resolvePackage( endpointData.package, arguments.verbose );
+			// If this is a ForgeBox endpoint and the incoming install ID has no version associated
+			if( endpointData.endpointName == 'forgebox' && endpointData.endpoint.parseVersion( endpointData.package, "__DEFAULT__" ) == '__DEFAULT__' ) {
+				var thisBoxJSON = readPackageDescriptor( packagePathRequestingInstallation );
+				var slug = endpointData.endpoint.parseSlug( endpointData.package );
+				// If there is an existing version in the box.json for this package
+				if( len( thisBoxJSON.dependencies[slug] ?: thisBoxJSON.devDependencies[slug] ?: '' ) ) {
+					// Then leave the box.json alone!
+					updateBoxJSONDependency = false;
+				}
+			}
+			var tmpPath = endpointData.endpoint.resolvePackage( endpointData.package, arguments.currentWorkingDirectory, arguments.verbose );
 
 			// Support box.json in the root OR in a subfolder (NPM-style!)
 			tmpPath = findPackageRoot( tmpPath );
@@ -208,7 +218,7 @@ component accessors="true" singleton {
 								job.addWarnLog( '#packageName# (#requestedVersionSemver#) is already satisfied by #candidateInstallPath# (#candidateBoxJSON.version#).  Skipping installation.' );
 								job.complete( verbose );
 
-								interceptorService.announceInterception( 'postInstall', { installArgs=arguments, installDirectory=candidateInstallPath } );
+								interceptorService.announceInterception( 'postInstall', { installArgs=arguments, installDirectory=candidateInstallPath, system=shellWillReload } );
 
 								return true;
 							}
@@ -433,7 +443,7 @@ component accessors="true" singleton {
 			// Assert: At this point, all paths are finalized and we are ready to install.
 
 			// Should we save this as a dependency. Save the install even though the package may already be there
-			if( ( arguments.save || arguments.saveDev ) ) {
+			if( ( arguments.save || arguments.saveDev ) && updateBoxJSONDependency ) {
 				// Add it!
 				if( addDependency( packagePathRequestingInstallation, packageName, version, installDirectory, artifactDescriptor.createPackageDirectory,  arguments.saveDev, endpointData ) ) {
 					// Tell the user...
@@ -470,7 +480,15 @@ component accessors="true" singleton {
 					if( tmpPath contains tempDir ) {
 						var pathInsideTmp = tmpPath.replaceNoCase( tempDir, '' );
 						// Delete the top most directory inside the temp folder
-						directoryDelete( tempDir & '/' & pathInsideTmp.listFirst( '/\' ), true );
+						// Catch this to gracefully handle where the OS or another program
+						// has the folder locked.
+						try{
+							directoryDelete( tempDir & '/' & pathInsideTmp.listFirst( '/\' ), true );
+						} catch( any e ) {
+							job.addErrorLog( e.message );
+							job.addErrorLog( 'The folder is possibly locked by another program.' );
+							logger.error( '#e.message# #e.detail#' , e.stackTrace );
+						}
 					}
 					if( skipInstall ) {
 						job.addWarnLog( "Skipping installation of package #packageName#." );
@@ -479,7 +497,7 @@ component accessors="true" singleton {
 					}
 					job.complete( verbose );
 
-					interceptorService.announceInterception( 'postInstall', { installArgs=arguments, installDirectory=installDirectory } );
+					interceptorService.announceInterception( 'postInstall', { installArgs=arguments, installDirectory=installDirectory, system=shellWillReload } );
 
 					return true;
 				}
@@ -610,9 +628,10 @@ component accessors="true" singleton {
 			//  full ID with endpoint and package like file:/opt/files/foo.zip
 			if( endpointName != 'forgebox' ) {
 				var ID = detail;
-			// Default ForgeBox endpoint of foo@1.0.0
+			// Default ForgeBox endpoint of foo
+			// We don't pass the version because it will get picked up automatically
 			} else {
-				var ID = dependency & '@' & detail;
+				var ID = dependency;
 			}
 
 			var params = {
@@ -642,7 +661,7 @@ component accessors="true" singleton {
 			moduleService.registerAndActivateModule( installDirectory.listLast( '/\' ), fileSystemUtil.makePathRelative( installDirectory ).listToArray( '/\' ).slice( 1, -1 ).toList( '.' ) );
 		}
 
-		interceptorService.announceInterception( 'postInstall', { installArgs=arguments, installDirectory=installDirectory } );
+		interceptorService.announceInterception( 'postInstall', { installArgs=arguments, installDirectory=installDirectory, system=shellWillReload } );
 		job.complete( verbose );
 
 		return true;
@@ -776,7 +795,7 @@ component accessors="true" singleton {
 			}
 
 		} // end is not module
-
+		var systemModule = false;
 		// uninstall the package
 		if( len( uninstallDirectory ) && directoryExists( uninstallDirectory ) ) {
 
@@ -784,6 +803,7 @@ component accessors="true" singleton {
 			// If this package is being uninstalled anywhere south of the CommandBox system folder, unload the module first
 			if( fileSystemUtil.normalizeSlashes( uninstallDirectory ).startsWith( fileSystemUtil.normalizeSlashes( expandPath( '/commandbox' ) ) ) && fileExists( uninstallDirectory & '/ModuleConfig.cfc' ) ) {
 				consoleLogger.warn( 'Unloading module...' );
+				systemModule = true;
 				try {
 					moduleService.unloadAndUnregisterModule( uninstallDirectory.listLast( '/\' ) );
 					// Heavy-handed workaround for the fact that the module service does not unload
@@ -824,7 +844,7 @@ component accessors="true" singleton {
 			job.addLog( "Dependency removed from box.json." );
 		}
 
-		interceptorService.announceInterception( 'postUninstall', { uninstallArgs=arguments } );
+		interceptorService.announceInterception( 'postUninstall', { uninstallArgs=arguments, system=systemModule } );
 		job.complete();
 	}
 
@@ -1313,51 +1333,59 @@ component accessors="true" singleton {
 	* @interceptData An optional struct of data if this package script is being fired as part of an interceptor announcement.  Will be loaded into env vars
 	*/
 	function runScript( required string scriptName, string directory=shell.pwd(), boolean ignoreMissing=true, interceptData={} ) {
-			// Read the box.json from this package (if it exists)
-			var boxJSON = readPackageDescriptorRaw( arguments.directory );
-			// If there is a scripts object with a matching key for this interceptor....
-			if( boxJSON.keyExists( 'scripts' ) && isStruct( boxJSON.scripts ) && boxJSON.scripts.keyExists( arguments.scriptName ) ) {
+		// Read the box.json from this package (if it exists)
+		var boxJSON = readPackageDescriptorRaw( arguments.directory );
+		// If there is a scripts object with a matching key for this interceptor....
+		if( boxJSON.keyExists( 'scripts' ) && isStruct( boxJSON.scripts ) && boxJSON.scripts.keyExists( arguments.scriptName ) ) {
 
-				// Skip this if we're not in a command so we don't litter the default env var namespace
-				if( systemSettings.getAllEnvironments().len() > 1 ) {
-					systemSettings.setDeepSystemSettings( interceptData );
-				}
+			// Skip this if we're not in a command so we don't litter the default env var namespace
+			if( systemSettings.getAllEnvironments().len() > 1 ) {
+				systemSettings.setDeepSystemSettings( interceptData );
+			}
 
-				// Run preXXX package script
-				runScript( 'pre#arguments.scriptName#', arguments.directory, true );
+			// Run preXXX package script
+			runScript( 'pre#arguments.scriptName#', arguments.directory, true );
 
-				systemSettings.expandDeepSystemSettings( boxJSON );
-				var thisScript = boxJSON.scripts[ arguments.scriptName ];
+			systemSettings.expandDeepSystemSettings( boxJSON );
+			// get the script commands, forcing them into an array
+			var scriptNameCommands = boxJSON.scripts[ arguments.scriptName ];
+			if( isSimpleValue( scriptNameCommands ) ) {
+				scriptNameCommands = [ scriptNameCommands ];
+			}
+			if( scriptNameCommands.len() ) {
 				consoleLogger.debug( '.' );
 				consoleLogger.warn( 'Running package script [#arguments.scriptName#].' );
-				consoleLogger.debug( '> ' & thisScript );
+				for( var scriptNameCommand in scriptNameCommands ) {
+					consoleLogger.debug( '> ' & scriptNameCommand );
 
-				// Normally the shell retains the previous exit code, but in this case
-				// it's important for us to know if the scripts return a failing exit code without throwing an exception
-				shell.setExitCode( 0 );
+					// Normally the shell retains the previous exit code, but in this case
+					// it's important for us to know if the scripts return a failing exit code without throwing an exception
+					shell.setExitCode( 0 );
 
-				// ... then run the script! (in the context of the package's working directory)
-				var previousCWD = shell.pwd();
-				shell.cd( arguments.directory );
-				shell.callCommand( thisScript );
-				shell.cd( previousCWD );
+					// ... then run the script! (in the context of the package's working directory)
+					var previousCWD = shell.pwd();
+					shell.cd( arguments.directory );
+					shell.callCommand( scriptNameCommand );
+					shell.cd( previousCWD );
 
-				// If the script ran "exit"
-				if( !shell.getKeepRunning() ) {
-					// Just kidding, the shell can stay....
-					shell.setKeepRunning( true );
+					// If the script ran "exit"
+					if( !shell.getKeepRunning() ) {
+						// Just kidding, the shell can stay....
+						shell.setKeepRunning( true );
+					}
+
+					if( shell.getExitCode() != 0 ) {
+						throw( message='Package script returned failing exit code (#shell.getExitCode()#)', detail='Failing script: #arguments.scriptName#', type="commandException", errorCode=shell.getExitCode() );
+					}
 				}
-
-				if( shell.getExitCode() != 0 ) {
-					throw( message='Package script returned failing exit code (#shell.getExitCode()#)', detail='Failing script: #arguments.scriptName#', type="commandException", errorCode=shell.getExitCode() );
-				}
-
-				// Run postXXX package script
-				runScript( 'post#arguments.scriptName#', arguments.directory, true );
-
-			} else if( !arguments.ignoreMissing ) {
-				consoleLogger.error( 'The script [#arguments.scriptName#] does not exist in this package.' );
 			}
+
+			// Run postXXX package script
+			runScript( 'post#arguments.scriptName#', arguments.directory, true );
+
+		} else if( !arguments.ignoreMissing ) {
+			consoleLogger.error( 'The script [#arguments.scriptName#] does not exist in this package.' );
+		}
 	}
 
 	/**

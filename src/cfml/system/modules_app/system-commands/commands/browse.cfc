@@ -16,7 +16,7 @@ component {
 	function run( required URI, browser='' )  {
 
 		if( fileSystemUtil.openBrowser( arguments.URI, arguments.browser ) ){
-			print.line( "Browser opened!" );
+			print.text( "Browser opened!" );
 		} else {
 			error( "Unsupported OS" );
 		};

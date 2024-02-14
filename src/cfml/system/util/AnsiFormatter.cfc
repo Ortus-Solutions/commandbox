@@ -21,6 +21,9 @@ component accessors=true {
 		// [DEBUG] runwar.server: Starting open browser action
 		line = reReplaceNoCase( line, '^(\[[^]]*])( runwar\.[^:]*: )(.*)', '\1 Runwar: \3' );
 
+		// [INFO ] dorkbox.systemTray.SystemTray: Successfully loaded
+		line = reReplaceNoCase( line, '^(\[[^]]*])( DorkBox\.[^:]*: )(.*)', '\1 SystemTray: \3' );
+
 		// Log messages from undertow's predicate logger, simplify the logging category to just "Server Rules:" and leave color coded severity
 		// Ex:
 		// [TRACE] io.undertow.predicate: Predicate [secure()] resolved to false for HttpServerExchange{ GET /CFIDE/main/ide.cfm}.
@@ -32,6 +35,9 @@ component accessors=true {
 		// [TRACE] io.undertow.predicate: Predicate [secure()] resolved to false for HttpServerExchange{ GET /CFIDE/main/ide.cfm}.
 		// [TRACE] io.undertow.predicate: Path(s) [/CFIDE/main/ide.cfm] MATCH input [/CFIDE/main/ide.cfm] for HttpServerExchange{ GET /CFIDE/main/ide.cfm}.
 		line = reReplaceNoCase( line, '^(\[[^]]*])( io\.undertow\.request\.dump: )(.*)', 'Request Dump: \3' );
+
+		// [TRACE] io.undertow.predicate: Path(s) [/CFIDE/main/ide.cfm] MATCH input [/CFIDE/main/ide.cfm] for HttpServerExchange{ GET /CFIDE/main/ide.cfm}.
+		line = reReplaceNoCase( line, '^(\[[^]]*])( io\.undertow[^:]*: )(.*)', 'Undertow: \3' );
 
 		// Log messages from Tuckey Rewrite engine "Rewrite UrlRewriter:"
 		// Ex:

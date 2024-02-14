@@ -23,9 +23,9 @@ component  {
 	*/
 	function run( string name='', defaultValue='' )  {
 		if( name.len() ) {
-			print.line( systemSettings.getSystemSetting( name, defaultValue ) );
+			print.text( systemSettings.getSystemSetting( name, defaultValue ) );
 		} else {
-			print.line( systemSettings.getAllEnvironmentsFlattened() );
+			print.text( systemSettings.getAllEnvironmentsFlattened() );
 		}
 	}
 

@@ -116,7 +116,7 @@ component singleton{
 	*/
 	boolean function satisfies( required string version, required string range ){
 
-		
+
 		arguments.version = clean( arguments.version );
 
 		if( range == 'be' ) {
@@ -137,7 +137,7 @@ component singleton{
 		for( var comparatorSet in semverRange ) {
 			// If the version we're inspecting is a pre-release, don't consider it unless at least one comparator in this
 			// set specifically mentions a pre release matching this major.minor.revision.
-			
+
 			if( isPreRelease( arguments.version ) && !interestedInPreReleasesOfThisVersion( comparatorSet, arguments.version ) ) {
 				continue;
 			}
@@ -497,11 +497,11 @@ component singleton{
 		var results = getDefaultsVersion();
 
 		// Get build ID first
-		results.buildID		= find( "+", arguments.version ) ? listLast( arguments.version, "+" ) : '0';
+		results.buildID		= find( "+", arguments.version ) ? listRest( arguments.version, "+" ) : '0';
 		// Remove build ID
 		arguments.version 	= reReplace( arguments.version, "\+([^\+]*).$", "" );
 		// Get preReleaseID Formalized Now we have major.minor.revision-alpha.1
-		results.preReleaseID = find( "-", arguments.version ) ? listLast( arguments.version, "-" ) : '';
+		results.preReleaseID = find( "-", arguments.version ) ? listRest( arguments.version, "-" ) : '';
 		// Remove preReleaseID
 		arguments.version 	= reReplace( arguments.version, "\-([^\-]*).$", "" );
 

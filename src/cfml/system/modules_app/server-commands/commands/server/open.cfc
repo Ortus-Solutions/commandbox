@@ -41,8 +41,9 @@ component {
 	* @serverRoot Open server root in native file browser
 	**/
 	function run(
-		URI="/",
+		URI="",
 		string name,
+		string siteName='',
 		string directory,
 		string serverConfigFile,
 		string browser = "",
@@ -52,7 +53,7 @@ component {
 		boolean serverRoot = false
 		){
 		var argumentCount = 0;
-		if ( arguments.URI != '/' ) {
+		if ( arguments.URI != '' ) {
 			argumentCount++;
 		}
 		for ( var arg in ['admin','webAdmin','webRoot','serverRoot'] ) {
@@ -71,6 +72,29 @@ component {
 		}
 		var serverDetails = serverService.resolveServerDetails( arguments );
 		var serverInfo = serverDetails.serverInfo;
+		var siteInfo = serverInfo;
+		if( serverInfo.sites.len() > 1 ) {
+			if( len( arguments.siteName ) ) {
+				if( serverInfo.sites.keyExists( siteName ) ) {
+					siteInfo = serverInfo.sites[ siteName ];
+				} else {
+					error( 'Site name [#siteName#] not found in server [#serverInfo.name#].' )
+				}
+			} else if( shell.isTerminalInteractive() ) {
+				siteName = multiSelect( 'Which site would you like to open? ' )
+					.options( serverInfo.sites.reduce( (sites,siteName,site)=>{
+							sites.append( {
+								display : '#siteName# (#site.webroot#)',
+								value : siteName
+							} ); return sites;
+						}, [] ) )
+					.required()
+					.ask();
+				siteInfo = serverInfo.sites[ siteName ];
+			} else {
+				error( 'Server [#serverInfo.name#] has more than one site. Please choose the one to open with the [siteName] parameter.' );
+			}
+		}
 
 		if( serverDetails.serverIsNew ){
 			print.boldRedLine( "No servers found." );
@@ -85,7 +109,7 @@ component {
 			}
 
 			if ( arguments.webRoot ) {
-				if ( fileSystemUtil.openNatively(serverInfo.appFileSystemPath) ) {
+				if ( fileSystemUtil.openNatively(siteInfo.webroot) ) {
 					print.line( "Web Root Opened." );
 				} else {
 					error ( "Unsupported OS, cannot open path." );
@@ -111,10 +135,14 @@ component {
 				arguments.URI = serverInfo.cfengine.contains('adobe') ? '/CFIDE/administrator/enter.cfm' : arguments.URI;
 			}
 			// myPath/file.cfm is normalized to /myMapth/file.cfm
-			if( !arguments.URI.startsWith( '/' ) ) {
+			if( len( arguments.URI ) && !arguments.URI.startsWith( '/' ) ) {
 				arguments.URI = '/' & arguments.URI;
 			}
-			var thisURL = "#serverInfo.host#:#serverInfo.port##arguments.URI#";
+			if( arguments.URI == '' ) {
+				var thisURL = "#siteInfo.openBrowserURL#";
+			} else {
+				var thisURL = "#siteInfo.defaultBaseURL##arguments.URI#";
+			}
 			print.greenLine( "Opening...#thisURL#" );
 			openURL( thisURL, arguments.browser );
 

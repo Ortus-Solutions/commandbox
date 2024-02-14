@@ -25,7 +25,7 @@ component {
 		var results = artifactService.listArtifacts( arguments.package );
 
 		if( arguments.JSON ) {
-			print.line( results.map( (packageName,packageVersions)=>{
+			print.text( results.map( (packageName,packageVersions)=>{
 				return packageVersions.reduce( (versions,v)=>{
 					versions[ v ] = artifactService.getArtifactPath( packageName, v, false );
 					return versions;
@@ -34,7 +34,7 @@ component {
 			return;
 		}
 		if( !results.count() ) {
-			print.yellowLine( 'No artifacts found in cache.' );
+			print.yellowText( 'No artifacts found in cache.' );
 			return;
 		}
 
