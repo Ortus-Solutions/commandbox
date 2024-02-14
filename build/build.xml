@@ -254,6 +254,8 @@ External Dependencies:
 
 		<delete dir="${temp.dir}/engine/cfml/cli/lucee-server/context/extensions/available/"/>
 
+		<delete dir="${temp.dir}/engine/cfml/cli/lucee-server/context/extensions/available/"/>
+
 		<copy todir="${temp.dir}/engine/cfml/cli/lucee-server/context/extensions/available/">
 			<fileset dir="${extensions.dir}" includes="*.lex" />
 		</copy>
