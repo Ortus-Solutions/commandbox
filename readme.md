@@ -61,11 +61,11 @@ And constructed with the following guidelines:
 
 ## COMMANDBOX LICENSE
 
-CommandBox is open source and bound to the LGPL v3 GNU LESSER GENERAL PUBLIC LICENSE Copyright & TradeMark since 2014, Ortus Solutions, Corp
+CommandBox is open source and bound to the Apache License, Version 2.0 Copyright & TradeMark since 2014, Ortus Solutions, Corp
 
-This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+This program is free software: you can redistribute it and/or modify it under the terms of the Apache License as published by the Apache Software Foundation.
 
-This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the APACHE LICENSE for more details.
 
 ## CREDITS & CONTRIBUTIONS
 

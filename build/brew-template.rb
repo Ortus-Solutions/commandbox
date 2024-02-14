@@ -3,7 +3,7 @@ class Commandbox < Formula
   homepage "https://www.ortussolutions.com/products/commandbox"
   url "@repoPRDURL@/ortussolutions/commandbox/@stable-version@/commandbox-bin-@stable-version@.zip"
   sha256 "@stable-sha256@"
-  license "LGPL-3.0-or-later"
+  license "Apache-2.0"
 
   head do
     url "@repoURL@/ortussolutions/commandbox/@version@/commandbox-bin-@version@.zip?build=@buildnumber@"
