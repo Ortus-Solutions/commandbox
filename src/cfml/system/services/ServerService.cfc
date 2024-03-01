@@ -1021,6 +1021,10 @@ component accessors="true" singleton {
 			serverInfo.serverHomeDirectory = installDetails.installDir;
 			serverInfo.logdir = serverInfo.serverHomeDirectory & "/logs";
 			serverInfo.engineName = installDetails.engineName;
+			// re-validate what we got back, since only lucee, railo, adobe, and "" are allowed
+			if( !listFindNoCase( 'lucee,railo,adobe', serverInfo.engineName ) && serverInfo.engineName != "" ) {
+				serverInfo.engineName = "";
+			}
 			serverInfo.engineVersion = installDetails.version;
 			serverInfo.appFileSystemPath = serverInfo.webroot;
 
