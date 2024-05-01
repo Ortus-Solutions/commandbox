@@ -59,7 +59,7 @@ component {
 				print.line( 'Requested version [#version#] is an exact version, so no semantic version ranges are begin used, just a direct match.' )
 				for( var thisVer in versions ) {
 					if( semanticVersion.isEQ( version, thisVer, true ) ) {
-						matches.append( thisVer.version );
+						matches.append( thisVer );
 						print.line( 'Exact match [#thisVer#] found.' )
 						satisfyingVersion = thisVer;
 						break;
