@@ -19,6 +19,7 @@ component accessors="true" singleton="true" {
 	property name="semanticVersion"		inject="provider:semanticVersion@semver";
 	property name="artifactService"		inject="artifactService";
 	property name="wirebox"				inject="wirebox";
+	property name="fileSystemUtil"		inject="fileSystem";
 
 
 	/**
@@ -334,7 +335,10 @@ component accessors="true" singleton="true" {
 
 		// Look for a war or zip archive inside the package
 		var theArchive = '';
+		var filesFound = "";
+		thisTempDir = fileSystemUtil.normalizeSlashes( thisTempDir );
 		for( var thisFile in directoryList( thisTempDir ) ) {
+			filesFound &= fileSystemUtil.normalizeSlashes( thisFile ).replace( thisTempDir, '' ) & chr(10);
 			if( listFindNoCase( 'war,zip', listLast( thisFile, '.' ) ) ) {
 				theArchive = thisFile;
 				break;
@@ -343,7 +347,7 @@ component accessors="true" singleton="true" {
 
 		// If there's no archive, we don't know what to do!
 		if( theArchive == '' ) {
-			throw( "Package didn't contain a war or zip archive." );
+			throw( message="Package didn't contain a war or zip archive.", detail="Files found: " & chr(10) & filesFound, type="commandException" );
 		}
 
 		job.addLog( "Exploding WAR/zip archive...");

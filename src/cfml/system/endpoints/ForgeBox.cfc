@@ -551,7 +551,7 @@ component accessors="true" implements="IEndpointInteractive" {
 			var strVersion = semanticVersion.parseVersion( version );
 
 			// If the local artifact doesn't exist or it's a snapshot build, download and create it
-			if( !artifactService.artifactExists( slug, version ) || ( strVersion.preReleaseID == 'snapshot' && slug == 'lucee' ) ) {
+			if( !artifactService.artifactExists( slug, version ) || ( strVersion.preReleaseID == 'snapshot' && slug != 'lucee' ) ) {
 				if( downloadURL == "forgeboxStorage" ){
 					downloadURL = forgebox.getStorageLocation(
 						slug, arguments.version, APIToken
