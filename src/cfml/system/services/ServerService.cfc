@@ -3365,13 +3365,18 @@ component accessors="true" singleton {
 
 		arguments.webroot = fileSystemUtil.resolvePath( arguments.webroot );
 		var servers = getServers();
+		var dateLastStarted = '1/1/1900';
+		var foundServer = {};
 		for( var thisServer in servers ){
 			if( fileSystemUtil.resolvePath( path=servers[ thisServer ].webroot, forceDirectory=true ) == arguments.webroot ){
-				return servers[ thisServer ];
+				if( dateCompare ( servers[ thisServer ].dateLastStarted, dateLastStarted ) == 1 ){
+					dateLastStarted = servers[ thisServer ].dateLastStarted;
+					foundServer = servers[ thisServer ];
+				}
 			}
 		}
 
-		return {};
+		return foundServer;
 	}
 
 	/**
