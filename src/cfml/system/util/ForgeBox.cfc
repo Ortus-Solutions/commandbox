@@ -386,7 +386,7 @@ or just add DEBUG to the root logger
 
 		// error
 		if( results.response.error ){
-			throw( "Something went wrong unplublishing from #getEndpointName()#.", 'forgebox', arrayToList( results.response.messages ) );
+			throw( "Something went wrong unpublishing from #getEndpointName()#.", 'forgebox', arrayToList( results.response.messages ) );
 		}
 
 		return results.response.data;
