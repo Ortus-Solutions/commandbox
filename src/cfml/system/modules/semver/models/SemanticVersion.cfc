@@ -666,7 +666,7 @@ component singleton{
 		if ( isNumeric( targetSegment ) && isNumeric( currentSegment ) ) {
 			return targetSegment > currentSegment ? 1 : -1;
 		} else {
-			return compare( targetSegment, currentSegment );
+			return compareNoCase( targetSegment, currentSegment );
 		}
 	}
 

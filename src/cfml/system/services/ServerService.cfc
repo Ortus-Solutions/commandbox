@@ -3369,7 +3369,7 @@ component accessors="true" singleton {
 		var foundServer = {};
 		for( var thisServer in servers ){
 			if( fileSystemUtil.resolvePath( path=servers[ thisServer ].webroot, forceDirectory=true ) == arguments.webroot ){
-				if( dateCompare ( servers[ thisServer ].dateLastStarted, dateLastStarted ) == 1 ){
+				if( len( servers[ thisServer ].dateLastStarted) && dateCompare ( servers[ thisServer ].dateLastStarted, dateLastStarted ) == 1 ){
 					dateLastStarted = servers[ thisServer ].dateLastStarted;
 					foundServer = servers[ thisServer ];
 				}
