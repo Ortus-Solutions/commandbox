@@ -150,7 +150,7 @@ component accessors="true" singleton {
 			return 'mac';
 		} else if( fileSystemUtil.isLinux() ) {
 			try {
-				if( fileRead( '/proc/version' ) contains 'alpine' ) {
+				if( fileRead( '/etc/os-release' ) contains 'Alpine' ) {
 					return 'alpine-linux';
 				}
 			} catch( any e ) {
