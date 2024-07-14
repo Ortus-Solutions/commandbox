@@ -25,7 +25,7 @@ component accessors="true" singleton="true" {
 	/**
 	* install the server if not already installed to the target directory
 	*
-	* @cfengine	CFML Engine name (lucee, adobe, railo)
+	* @cfengine	CFML Engine name (lucee, adobe, railo, boxlang)
 	* @baseDirectory base directory for server install
 	* @serverInfo The struct of server settings
 	* @serverHomeDirectory Override where the server's home with be
@@ -50,6 +50,8 @@ component accessors="true" singleton="true" {
 			return installRailo( installDetails, serverInfo );
 		} else if ( installDetails.engineName contains "lucee" ) {
 			return installLucee( installDetails, serverInfo );
+		} else if ( installDetails.engineName contains "boxlang" ) {
+			return installBoxlang( installDetails, serverInfo );
 		} else {
 			return installDetails;
 		}
@@ -92,6 +94,52 @@ component accessors="true" singleton="true" {
 		var seedPropertiesPath = installDetails.installDir & "/WEB-INF/cfusion/lib/seed.properties";
 		ensureSeedProperties( seedPropertiesPath );
 
+		return installDetails;
+	}
+
+	/**
+	* install BoxLang
+	*
+	**/
+	public function installBoxlang( installDetails, serverInfo ) {
+		var version=installDetails.version;
+		// default web.xml
+		var source=serverInfo.webXML;
+		var destination=serverInfo.webXML;
+		// web.xml override
+		if( trim( serverInfo.webXMLOverrideActual ) != '' ) {
+			source=serverInfo.webXMLOverrideActual;
+			destination=serverInfo.webXMLOverrideActual;
+		}
+		
+		var fullServerConfigDir = serverInfo.serverConfigDir;
+
+		if( fullServerConfigDir.startsWith( '/WEB-INF' ) ) {
+			fullServerConfigDir = installDetails.installDir & fullServerConfigDir;
+		}
+
+		var webXML = XMLParse( source );
+		var updateMade = false;
+
+		// always set home and debug mode
+		updateMade = ensurePropertServletInitParam( webXML, 'ortus.boxlang.servlet.BoxLangServlet', "boxlang-home", fullServerConfigDir );
+		updateMade = ensurePropertServletInitParam( webXML, 'ortus.boxlang.servlet.BoxLangServlet', "boxlang-debug", serverInfo.debug ) || updateMade;
+		// Only override the config file if set
+		if( serverInfo.engineConfigFile != '' ) {
+			// Config file must exist...
+			if( !fileExists( serverInfo.engineConfigFile ) ) {
+				throw( message='Engine config file not found: #serverInfo.engineConfigFile#', type="commandException" );
+			}
+			// ... and be a JSON file
+			if( !lCase( serverInfo.engineConfigFile ).endsWith('.json')) {
+				throw( message='Engine config file must be a JSON file: #serverInfo.engineConfigFile#', type="commandException" );
+			}
+			updateMade = ensurePropertServletInitParam( webXML, 'ortus.boxlang.servlet.BoxLangServlet', "boxlang-config-path", serverInfo.engineConfigFile ) || updateMade;
+		}
+
+		if( updateMade || !fileExists( destination ) ) {
+			writeXMLFile( webXML, destination );
+		}
 		return installDetails;
 	}
 
@@ -269,7 +317,7 @@ component accessors="true" singleton="true" {
 				installDetails.version = previousEngineTag.listLast( '@' );
 			}
 
-			calcLuceeRailoContextPaths( installDetails, serverInfo );
+			calcEngineContextPaths( installDetails, serverInfo );
 			return installDetails;
 		}
 
@@ -297,7 +345,7 @@ component accessors="true" singleton="true" {
 			// Mark this WAR as being exploded already
 			fileWrite( engineTagFile, thisEngineTag );
 
-			calcLuceeRailoContextPaths( installDetails, serverInfo );
+			calcEngineContextPaths( installDetails, serverInfo );
 
 			var thisServerContext = serverInfo.serverConfigDir;
 			if( thisServerContext.startsWith( '/WEB-INF' ) ) {
@@ -331,7 +379,7 @@ component accessors="true" singleton="true" {
 			thisEngineTag = boxJSON.slug & '@' & boxJSON.version;
 		}
 
-		calcLuceeRailoContextPaths( installDetails, serverInfo );
+		calcEngineContextPaths( installDetails, serverInfo );
 
 		// Look for a war or zip archive inside the package
 		var theArchive = '';
@@ -369,7 +417,7 @@ component accessors="true" singleton="true" {
 		return installDetails;
 	}
 
-	private function calcLuceeRailoContextPaths( installDetails, serverInfo ) {
+	private function calcEngineContextPaths( installDetails, serverInfo ) {
 
 		// Set up server and web context dirs if Railo or Lucee
 		if( installDetails.engineName contains 'lucee' || installDetails.engineName contains 'railo' ) {
@@ -400,6 +448,15 @@ component accessors="true" singleton="true" {
 			installDetails.installDir = replace( installDetails.installDir, '\', '/', 'all' );
 
 			serverInfo.webConfigDir = replace( serverInfo.webConfigDir, installDetails.installDir, '' );
+			serverInfo.serverConfigDir = replace( serverInfo.serverConfigDir, installDetails.installDir, '' );
+		} else if( installDetails.engineName contains 'boxlang' ) {
+			if( !len( serverInfo.serverConfigDir ) ) {
+				serverInfo.serverConfigDir = "/WEB-INF/boxlang/";
+			}
+			// Make relative to WEB-INF if possible
+			serverInfo.serverConfigDir = replace( serverInfo.serverConfigDir, '\', '/', 'all' );
+			installDetails.installDir = replace( installDetails.installDir, '\', '/', 'all' );
+
 			serverInfo.serverConfigDir = replace( serverInfo.serverConfigDir, installDetails.installDir, '' );
 		}
 	}

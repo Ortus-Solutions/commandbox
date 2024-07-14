@@ -246,6 +246,7 @@ component accessors="true" singleton {
 				'libDirs' : d.app.libDirs ?: '',
 				'webConfigDir' : d.app.webConfigDir ?: '',
 				'serverConfigDir' : d.app.serverConfigDir ?: '',
+				'engineConfigFile' : d.app.engineConfigFile ?: '',
 				'webXMLOverride' : d.app.webXMLOverride ?: '',
 				'webXMLOverrideForce' : d.app.webXMLOverrideForce ?: false,
 				'standalone' : d.app.standalone ?: false,
@@ -644,6 +645,11 @@ component accessors="true" singleton {
 		if( len( defaults.app.serverConfigDir ?: '' ) ) { defaults.app.serverConfigDir = fileSystemUtil.resolvePath( defaults.app.serverConfigDir, defaultwebroot ); }
 		serverInfo.serverConfigDir 	= serverProps.serverConfigDir 	?: serverJSON.app.serverConfigDir 	?: defaults.app.serverConfigDir;
 
+		// engineConfigFile (only used for BoxLang)
+		if( serverJSON.keyExists( 'app' ) && serverJSON.app.keyExists( 'engineConfigFile' ) ) { serverJSON.app.engineConfigFile = fileSystemUtil.resolvePath( serverJSON.app.engineConfigFile, defaultServerConfigFileDirectory ); }
+		if( len( defaults.app.engineConfigFile ?: '' ) ) { defaults.app.engineConfigFile = fileSystemUtil.resolvePath( defaults.app.engineConfigFile, defaultwebroot ); }
+		serverInfo.engineConfigFile = serverJSON.app.engineConfigFile ?: defaults.app.engineConfigFile;
+
 		// relative trayIcon in server.json is resolved relative to the server.json
 		if( serverJSON.keyExists( 'app' ) && serverJSON.app.keyExists( 'webXML' ) ) { serverJSON.app.webXML = fileSystemUtil.resolvePath( serverJSON.app.webXML, defaultServerConfigFileDirectory ); }
 
@@ -879,6 +885,7 @@ component accessors="true" singleton {
 	    serverInfo.engineName = serverinfo.cfengine contains 'railo' ? 'railo' : serverInfo.engineName;
 	    serverInfo.engineName = serverinfo.cfengine contains 'adobe' ? 'adobe' : serverInfo.engineName;
 	    serverInfo.engineName = serverinfo.warPath contains 'adobe' ? 'adobe' : serverInfo.engineName;
+	    serverInfo.engineName = serverinfo.warPath contains 'boxlang' ? 'boxlang' : serverInfo.engineName;
 
 		var processName = ( serverInfo.name is "" ? "CommandBox" : serverInfo.name );
 
@@ -1016,13 +1023,14 @@ component accessors="true" singleton {
 			    serverInfo.engineName = installDetails.engineName contains 'lucee' ? 'lucee' : serverInfo.engineName;
 			    serverInfo.engineName = installDetails.engineName contains 'railo' ? 'railo' : serverInfo.engineName;
 			    serverInfo.engineName = installDetails.engineName contains 'adobe' ? 'adobe' : serverInfo.engineName;
+			    serverInfo.engineName = installDetails.engineName contains 'boxlang' ? 'boxlang' : serverInfo.engineName;
 			}
 
 			serverInfo.serverHomeDirectory = installDetails.installDir;
 			serverInfo.logdir = serverInfo.serverHomeDirectory & "/logs";
 			serverInfo.engineName = installDetails.engineName;
 			// re-validate what we got back, since only lucee, railo, adobe, and "" are allowed
-			if( !listFindNoCase( 'lucee,railo,adobe', serverInfo.engineName ) && serverInfo.engineName != "" ) {
+			if( !listFindNoCase( 'lucee,railo,adobe,boxlang', serverInfo.engineName ) && serverInfo.engineName != "" ) {
 				serverInfo.engineName = "";
 			}
 			serverInfo.engineVersion = installDetails.version;
@@ -1194,8 +1202,10 @@ component accessors="true" singleton {
 		// Find the correct tray icon for this server
 		if( !len( serverInfo.trayIcon ) ) {
 			var iconSize = fileSystemUtil.isWindows() ? '-32px' : '';
-		    if( serverInfo.engineName contains "lucee" ) {
-		    	serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-lucee#iconSize#.png';
+		    if( serverInfo.engineName contains "boxlang" ) {
+		    	serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-boxlang#iconSize#.png';
+			} else if( serverInfo.engineName contains "lucee" ) {
+				serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-lucee#iconSize#.png';
 			} else if( serverInfo.engineName contains "railo" ) {
 		    	serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-railo#iconSize#.png';
 			} else if( serverInfo.engineName contains "adobe" ) {
@@ -1204,7 +1214,7 @@ component accessors="true" singleton {
 					serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-cf09#iconSize#.png';
 				} else if( listFirst( serverInfo.engineVersion, '.' ) == 10 ) {
 					serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-cf10#iconSize#.png';
-				} else if( listFirst( serverInfo.engineVersion, '.' ) == 11 ) {
+				} else if( listFirst( serverInfo.engineVersion, '.' ) == 11 ) {	
 					serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-cf11#iconSize#.png';
 				} else if( listFirst( serverInfo.engineVersion, '.' ) == 2016 ) {
 					serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-cf2016#iconSize#.png';
@@ -1768,7 +1778,7 @@ component accessors="true" singleton {
 		CommandService.runInEnvironment(
 			'Load server site settings',
 			()=>{
-				InterceptorService.announceInterception( 'onServerSiteConfigRead', { site=site, siteJSON=siteJSON,siteConfigFile=site.siteConfigFile } );
+				InterceptorService.announceinterception( 'onServerSiteConfigRead', { site=site, siteJSON=siteJSON,siteConfigFile=site.siteConfigFile } );
 				siteJSON = systemSettings.expandDeepSystemSettings( siteJSON );
 				expandAndDefaultConfig( { data : siteJSON, rootDir : site.siteConfigFileDirectory } );
 				// merge in the site settings
@@ -3117,10 +3127,10 @@ component accessors="true" singleton {
 		var result = "";
 		try{
 			if (fileSystemUtil.isWindows() ) {
-				cfexecute(name='cmd', arguments='/c tasklist /FI "PID eq #pidStr#"', variable="result"  timeout="10");
+				cfexecute(name='cmd', arguments='/c tasklist /FI "PID eq #pidStr#"', variable="result", timeout="10");
 				if (findNoCase("java", result) > 0 && findNoCase(pidStr, result) > 0) return true;
 			} else if (fileSystemUtil.isMac() || fileSystemUtil.isLinux() ) {
-				cfexecute(name='ps', arguments='-A -o pid,comm', variable="result" , timeout="10");
+				cfexecute(name='ps', arguments='-A -o pid,comm', variable="result", timeout="10");
 				var matchedProcesses = reMatchNoCase("(?m)^\s*#pidStr#\s.*java",result);
 				if (matchedProcesses.len()) return true;
 			}
@@ -3448,6 +3458,7 @@ component accessors="true" singleton {
 			'libDirs' 				: "",
 			'webConfigDir' 			: "",
 			'serverConfigDir' 		: "",
+			'engineConfigFile'		: "",
 			'serverHomeDirectory'	: "",
 			'singleServerHome'		: false,
 			'webroot'				: "",
