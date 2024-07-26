@@ -168,8 +168,8 @@ component accessors="true" singleton {
 	* @path The directory to resolve
 	* @basePath An expanded base path to resolve the path against. Defaults to CWD.
 	*/
-	function resolvePath( required string path, basePath=shell.pwd() ) {
-		return filesystemUtil.resolvepath( path, basePath );
+	function resolvePath( required string path, basePath=shell.pwd(), forceDirectory=false ) {
+		return filesystemUtil.resolvepath( path, basePath, forceDirectory );
 	}
 
 	/**
