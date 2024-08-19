@@ -250,6 +250,7 @@ component accessors="true" implements="IEndpointInteractive" {
 		props.changeLogFormat = 'text';
 		props.APIToken = getAPIToken();
 		props.forceUpload = arguments.force;
+		props.binaryHash = '';
 
 		// start upload stuff here
 		var upload = boxJSON.location == "forgeboxStorage";
@@ -353,6 +354,7 @@ component accessors="true" implements="IEndpointInteractive" {
 				}
 				consoleLogger.warn( "Uploading package zip [#readableSize#] to #getNamePrefixes()#..." );
 				var storeURL = forgebox.storeURL( props.slug, props.version, props.APIToken );
+				var binary = fileReadBinary( zipPath );
 
 				http
 					url="#storeURL#"
@@ -364,8 +366,10 @@ component accessors="true" implements="IEndpointInteractive" {
 					proxyPassword="#ConfigService.getSetting( 'proxy.password', '' )#"
 					result="local.storeResult"{
 						httpparam type="header" name="Content-Type" value="application/zip";
-						httpparam type="body" value="#fileReadBinary( zipPath )#";
+						httpparam type="body" value="#binary#";
 					}
+
+				props.binaryHash = hash( binary, "MD5" );
 
 				if( fileExists( zipPath ) ){
 					fileDelete( zipPath );
