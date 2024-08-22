@@ -31,6 +31,18 @@ component accessors=true implements="IEndpoint" singleton {
 	}
 
 	public string function resolvePackage( required string package, string currentWorkingDirectory="", boolean verbose=false ) {
+		var binaryHash = '';
+		//  Check if a hash is in the URL and if so, strip it out
+		if( arguments.package contains '##' ) {
+			binaryHash = arguments.package.listLast( '##' );
+			arguments.package = arguments.package.listFirst( '##' );
+		}
+		
+		// Double check that the hash is not empty and return it if found
+		if( binaryHash.len() ) {
+			return hash( fileReadBinary( binaryHash ), "MD5" );
+		}
+
 		// Defer to file endpoint
 		return fileEndpoint.resolvePackage(
 			resolvePackageZip( package, arguments.verbose ),
