@@ -543,6 +543,11 @@ component accessors="true" implements="IEndpointInteractive" {
 				throw( 'No download URL provided in #getNamePrefixes()#.  Manual install only.', 'endpointException' );
 			}
 
+			// Validate the binary hash
+			if( len( satisfyingVersion.binaryHash ) && satisfyingVersion.binaryHash != hash( fileReadBinary( downloadURL ), "MD5" ) ) {
+				throw( 'The binary hash of the downloaded file does not match the expected hash.', 'endpointException' );
+			}
+
 			job.addLog( "Installing version [#arguments.version#]." );
 
 			recordInstall( arguments.slug, arguments.version );
