@@ -31,18 +31,6 @@ component accessors=true implements="IEndpoint" singleton {
 	}
 
 	public string function resolvePackage( required string package, string currentWorkingDirectory="", boolean verbose=false ) {
-		var binaryHash = '';
-		//  Check if a hash is in the URL and if so, strip it out
-		if( arguments.package contains '##' ) {
-			binaryHash = arguments.package.listLast( '##' );
-			arguments.package = arguments.package.listFirst( '##' );
-		}
-		
-		// Double check that the hash is not empty and return it if found
-		if( binaryHash.len() ) {
-			return hash( fileReadBinary( binaryHash ), "MD5" );
-		}
-
 		// Defer to file endpoint
 		return fileEndpoint.resolvePackage(
 			resolvePackageZip( package, arguments.verbose ),
@@ -53,6 +41,12 @@ component accessors=true implements="IEndpoint" singleton {
 	}
 
 	public string function resolvePackageZip( required string package, boolean verbose=false ) {
+		var binaryHash = '';
+		//  Check if a hash is in the URL and if so, strip it out
+		if( package contains '##' ) {
+			package = package.listFirst( '##' );
+			binaryHash = package.listLast( '##' );
+		}
 
 		if( configService.getSetting( 'offlineMode', false ) ) {
 			throw( 'Can''t download [#getNamePrefixes()#:#package#], CommandBox is in offline mode.  Go online with [config set offlineMode=false].', 'endpointException' );
@@ -77,6 +71,11 @@ component accessors=true implements="IEndpoint" singleton {
 					job.addLog( "Redirecting to: '#arguments.newURL#'..." );
 				}
 			);
+			
+			// Validate the binary hash
+			if( len( binaryHash ) && binaryHash != hash( fileReadBinary( fullPath ), "MD5" ) ) {
+				throw( 'The binary hash of the downloaded file does not match the expected hash.', 'endpointException' );
+			}
 		} catch( UserInterruptException var e ) {
 			if( fileExists( fullPath ) ) { fileDelete( fullPath ); }
 			rethrow;
