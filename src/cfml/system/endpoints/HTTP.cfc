@@ -71,11 +71,6 @@ component accessors=true implements="IEndpoint" singleton {
 					job.addLog( "Redirecting to: '#arguments.newURL#'..." );
 				}
 			);
-			
-			// Validate the binary hash
-			if( len( binaryHash ) && binaryHash != hash( fileReadBinary( fullPath ), "MD5" ) ) {
-				throw( 'The binary hash of the downloaded file does not match the expected hash.', 'endpointException' );
-			}
 		} catch( UserInterruptException var e ) {
 			if( fileExists( fullPath ) ) { fileDelete( fullPath ); }
 			rethrow;
@@ -83,6 +78,11 @@ component accessors=true implements="IEndpoint" singleton {
 			if( fileExists( fullPath ) ) { fileDelete( fullPath ); }
 			throw( '#e.message##CR##e.detail#', 'endpointException' );
 		};
+
+		// Validate the binary hash
+		if( len( binaryHash ) && binaryHash != hash( fileReadBinary( fullPath ), "MD5" ) ) {
+			throw( 'The binary hash of the downloaded file does not match the expected hash.', 'endpointException' );
+		}
 
 		return fullPath;
 	}
