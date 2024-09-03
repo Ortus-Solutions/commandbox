@@ -250,7 +250,7 @@ component accessors="true" implements="IEndpointInteractive" {
 		props.changeLogFormat = 'text';
 		props.APIToken = getAPIToken();
 		props.forceUpload = arguments.force;
-		props.binaryHash = '';
+		props.binaryHash = boxJSON?.binaryHash ?: '';
 
 		// start upload stuff here
 		var upload = boxJSON.location == "forgeboxStorage";

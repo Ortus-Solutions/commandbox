@@ -44,8 +44,8 @@ component accessors=true implements="IEndpoint" singleton {
 		var binaryHash = '';
 		//  Check if a hash is in the URL and if so, strip it out
 		if( package contains '##' ) {
-			package = package.listFirst( '##' );
 			binaryHash = package.listLast( '##' );
+			package = package.listFirst( '##' );
 		}
 
 		if( configService.getSetting( 'offlineMode', false ) ) {
@@ -81,7 +81,7 @@ component accessors=true implements="IEndpoint" singleton {
 
 		// Validate the binary hash
 		if( len( binaryHash ) && binaryHash != hash( fileReadBinary( fullPath ), "MD5" ) ) {
-			throw( 'The binary hash of the downloaded file does not match the expected hash.', 'endpointException' );
+			throw( 'The hash of the downloaded file [#hash( fileReadBinary( fullPath ))#] doesn''t match the excepted hash [#binaryHash#] #fullPath#', 'endpointException' );
 		}
 
 		return fullPath;
