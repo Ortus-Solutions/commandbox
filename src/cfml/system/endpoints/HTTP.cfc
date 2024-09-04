@@ -80,8 +80,11 @@ component accessors=true implements="IEndpoint" singleton {
 		};
 
 		// Validate the binary hash
-		if( len( binaryHash ) && binaryHash != hash( fileReadBinary( fullPath ), "MD5" ) ) {
-			throw( 'The hash of the downloaded file [#hash( fileReadBinary( fullPath ))#] doesn''t match the excepted hash [#binaryHash#] #fullPath#', 'endpointException' );
+		if( len( binaryHash ) ) {
+			var downloadedBinaryHash = hash( fileReadBinary( fullPath ), "MD5" );
+			if( binaryHash != downloadedBinaryHash ) {
+				throw( 'The hash of the downloaded file [#downloadedBinaryHash#] doesn''t match the excepted hash [#binaryHash#] #fullPath#', 'endpointException' );
+			}
 		}
 
 		return fullPath;
