@@ -201,7 +201,7 @@ component aliases='status,server info' {
 				if( thisServerInfo.sites.len() == 1 ) {
 					var siteName = thisServerInfo.sites.keyArray().first();
 					var site = thisServerInfo.sites[ siteName ]
-					print.indentedLine( site.defaultBaseURL & ' --> ' & site.webroot );
+					print.indentedLine( site.defaultBaseURL ?: '' & ' --> ' & site.webroot );
 					if( verbose ) {
 						print.indentedIndentedLine( '  Bindings: ' )
 						sortedBindings.each( (b)=>print.indentedIndentedLine( '  - ' & b.bindingName ) );

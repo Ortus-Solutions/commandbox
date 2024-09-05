@@ -123,7 +123,11 @@ component accessors="true" singleton="true" {
 
 		// always set home and debug mode
 		updateMade = ensurePropertServletInitParam( webXML, 'ortus.boxlang.servlet.BoxLangServlet', "boxlang-home", fullServerConfigDir );
-		updateMade = ensurePropertServletInitParam( webXML, 'ortus.boxlang.servlet.BoxLangServlet', "boxlang-debug", serverInfo.debug ) || updateMade;
+		if( serverInfo.debug ) {
+			updateMade = ensurePropertServletInitParam( webXML, 'ortus.boxlang.servlet.BoxLangServlet', "boxlang-debug", serverInfo.debug ) || updateMade;
+		} else {
+			updateMade = removeServletInitParam( webXML, 'ortus.boxlang.servlet.BoxLangServlet', "boxlang-debug" ) || updateMade;
+		}
 		// Only override the config file if set
 		if( serverInfo.engineConfigFile != '' ) {
 			// Config file must exist...
@@ -537,6 +541,37 @@ component accessors="true" singleton="true" {
 		initParam.XmlChildren[2].XmlText = initParamValue;
 		arrayInsertAt(servlets[1].XmlParent.XmlChildren,4,initParam);
 		return true;
+
+	}
+
+
+	/**
+	* Ensure a given servlet has a specific init param value
+	*
+	* @webXML XML Doc of webl.xml
+	* @servletClass Name of servlet to check
+	* @initParamName Name of init param to ensure exists
+	*
+	* @returns true if changes were made, false if nothing was updated.
+	**/
+	function removeServletInitParam( webXML, string servletClass, string initParamName ) {
+		var servlets = xmlSearch(webXML,"//:servlet-class[text()='#servletClass#']");
+		if( !servlets.len() ) {
+			var servlets = xmlSearch(webXML,"//servlet-class[text()='#servletClass#']");
+		}
+		if( !servlets.len() ) {
+			return false;
+		}
+
+		// If this servlet already has an init-param of this name, ensure the value is correct
+		for( var initParam in servlets[1].XMLParent.XMLChildren.filter( (x)=>x.XMLName=='init-param' ) ) {
+			if( !isNull( initParam[ 'param-name' ].XMLText ) && initParam[ 'param-name' ].XMLText == initParamName ) {
+				arrayDeleteAt( servlets[1].XmlParent.XmlChildren, arrayFind( servlets[1].XmlParent.XmlChildren, initParam ) );
+				return true;
+			}
+		}
+
+		return false;
 
 	}
 

@@ -3307,7 +3307,6 @@ component accessors="true" singleton {
 			}
 			return {};
 		}
-
 		var webroot = arguments.directory is "" ? shell.pwd() : arguments.directory;
 		return getServerInfoByWebroot( fileSystemUtil.resolvePath( webroot ) );
 	}
@@ -3378,11 +3377,12 @@ component accessors="true" singleton {
 		var dateLastStarted = '1/1/1900';
 		var foundServer = {};
 		for( var thisServer in servers ){
+			
 			if( fileSystemUtil.resolvePath( path=servers[ thisServer ].webroot, forceDirectory=true ) == arguments.webroot ){
 				if( len( servers[ thisServer ].dateLastStarted) && dateCompare ( servers[ thisServer ].dateLastStarted, dateLastStarted ) == 1 ){
 					dateLastStarted = servers[ thisServer ].dateLastStarted;
-					foundServer = servers[ thisServer ];
 				}
+				foundServer = servers[ thisServer ];
 			}
 		}
 
