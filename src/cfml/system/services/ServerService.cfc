@@ -198,6 +198,11 @@ component accessors="true" singleton {
 					'port' : d.web.ajp.port ?: 8009,
 					'secret' : d.web.ajp.secret ?: ''
 				},
+				'websocket' : {
+					'enable' : d.web.websocket.enable ?: false,
+					'URI' : d.web.websocket.URI ?: '/ws',
+					'listener' : d.web.websocket.listener ?: '/WebSocket.cfc'
+				},
 				'rewrites' : {
 					'enable' : d.web.rewrites.enable ?: false,
 					'logEnable' : d.web.rewrites.logEnable ?: false,
@@ -2006,6 +2011,9 @@ component accessors="true" singleton {
 		serverInfo.clientCertMode = site.SSL.clientCert.mode ?: serverJSON.web.SSL.clientCert.mode ?: defaults.web.SSL.clientCert.mode;
 		serverInfo.clientCertSSLRenegotiationEnable = site.security.clientCert.SSLRenegotiationEnable ?: serverJSON.web.security.clientCert.SSLRenegotiationEnable ?: defaults.web.security.clientCert.SSLRenegotiationEnable;
 
+		serverInfo.websocketEnable = site.websocket.enable ?: serverJSON.web.websocket.enable ?: defaults.web.websocket.enable;
+		serverInfo.webSocketURI = site.websocket.uri ?: serverJSON.web.websocket.uri ?: defaults.web.websocket.uri;
+		serverInfo.webSocketListener = site.websocket.listener ?: serverJSON.web.websocket.listener ?: defaults.web.websocket.listener;
 
 		var profileReason = 'config setting server defaults';
 		// Try to set a smart profile if there's not one set
@@ -3586,12 +3594,15 @@ component accessors="true" singleton {
 			'multiSite'				: false,
 			'resourceManagerLogging':false,
 			'servletPassPredicate'	: '',
-			'adobeScriptsAlias'		: ''
+			'adobeScriptsAlias'		: '',
+			'webSocketURI'			: '',
+			'webSocketListener'		: '',
+			'webSocketEnable'		: false
 		};
 	}
 
 	struct function newSiteInfoStruct() {
-		return newServerInfoStruct().filter( (k,v)=>listFindNoCase( 'servletPassPredicate,sslkeyfile,resourceManagerLogging,useproxyforwardedip,clientcertsubjectdns,basicauthenable,casesensitivepaths,sendFileMinSizeKB,blocksensitivepaths,basicauthusers,hstsenable,sslport,webroot,webrules,errorpages,clientcertcatruststorepass,clientcerttrustupstreamheaders,http2enable,sslcertfile,accesslogenable,securityrealm,clientcertcatruststorefile,filecachetotalsizemb,sslenable,ajpport,blockflashremoting,sslforceredirect,filecachemaxfilesizekb,fileCacheFileSystemWatcherEnable,ajpenable,host,welcomefiles,clientcertmode,blockcfadmin,verbose,allowedext,authpredicate,httpenable,gzipenable,hstsmaxage,aliases,authenabled,mimetypes,filecacheenable,clientcertcacertfiles,clientcertsslrenegotiationenable,clientcertenable,gzippredicate,clientcertissuerdns,hstsincludesubdomains,port,sslkeypass,SSLCerts,directorybrowsing,ajpsecret,profile,webRulesText,hostAlias,rewritesEnable,adobeScriptsAlias', k ) );
+		return newServerInfoStruct().filter( (k,v)=>listFindNoCase( 'servletPassPredicate,sslkeyfile,resourceManagerLogging,useproxyforwardedip,clientcertsubjectdns,basicauthenable,casesensitivepaths,sendFileMinSizeKB,blocksensitivepaths,basicauthusers,hstsenable,sslport,webroot,webrules,errorpages,clientcertcatruststorepass,clientcerttrustupstreamheaders,http2enable,sslcertfile,accesslogenable,securityrealm,clientcertcatruststorefile,filecachetotalsizemb,sslenable,ajpport,blockflashremoting,sslforceredirect,filecachemaxfilesizekb,fileCacheFileSystemWatcherEnable,ajpenable,host,welcomefiles,clientcertmode,blockcfadmin,verbose,allowedext,authpredicate,httpenable,gzipenable,hstsmaxage,aliases,authenabled,mimetypes,filecacheenable,clientcertcacertfiles,clientcertsslrenegotiationenable,clientcertenable,gzippredicate,clientcertissuerdns,hstsincludesubdomains,port,sslkeypass,SSLCerts,directorybrowsing,ajpsecret,profile,webRulesText,hostAlias,rewritesEnable,adobeScriptsAlias,webSocketEnable,webSocketURI,webSocketListener', k ) );
 	}
 
 	/**
