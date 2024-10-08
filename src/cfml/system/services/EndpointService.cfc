@@ -150,6 +150,14 @@ component accessors="true" singleton {
 				package : arguments.ID,
 				ID : endpointName & ':' & arguments.ID
 			};
+		// Is it a maven package?
+		} else if( findNoCase( 'maven:', arguments.ID ) ) {
+			var endpointName =  'maven';
+			return {
+				endpointName : endpointName,
+				package : arguments.ID,
+				ID : endpointName & ':' & arguments.ID
+			};
 		// Endpoint is specified as "endpoint:resource"
 		} else if( listLen( arguments.ID, ':' ) > 1 ) {
 			var endpointName = listFirst( arguments.ID, ':' );
