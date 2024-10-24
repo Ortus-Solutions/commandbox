@@ -86,7 +86,7 @@ component {
 					print.line( "The version [stable] doesn't match any avaialble versions, which means all versions are a pre-release, so we'll just grab the latest one (same as [be])." )
 					satisfyingVersion = versions[ 1 ];
 
-					matches = v
+					matches = versions
 				} else {
 					print.redLine( 'Version [#version#] not found for package [#slug#].' );
 				}
