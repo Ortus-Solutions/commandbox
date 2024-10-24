@@ -250,7 +250,7 @@ component accessors="true" implements="IEndpointInteractive" {
 		props.changeLogFormat = 'text';
 		props.APIToken = getAPIToken();
 		props.forceUpload = arguments.force;
-		props.binaryHash = '';
+		props.binaryHash = boxJSON?.binaryHash ?: '';
 
 		// start upload stuff here
 		var upload = boxJSON.location == "forgeboxStorage";
@@ -579,6 +579,10 @@ component accessors="true" implements="IEndpointInteractive" {
 
 				} else {
 					job.addLog( "Deferring to [#endpointData.endpointName#] endpoint for #getNamePrefixes()# entry [#slug#]..." );
+
+					if( len( satisfyingVersion.binaryHash ) && isInstanceOf( endpointData.endpoint, 'HTTP' ) ) {
+						endpointData.package = endpointData.package & "##" & satisfyingVersion.binaryHash;
+					}
 					var packagePath = endpointData.endpoint.resolvePackage( endpointData.package, currentWorkingDirectory, arguments.verbose );
 
 					// Cheat for people who set a version, slug, or type in ForgeBox, but didn't put it in their box.json
