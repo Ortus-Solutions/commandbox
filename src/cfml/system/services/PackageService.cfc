@@ -296,6 +296,7 @@ component accessors="true" singleton {
 				ignorePatterns = ignorePatterns,
 				endpointData = endpointData,
 				artifactPath = tmpPath,
+				currentWorkingDirectory = currentWorkingDirectory,
 				packagePathRequestingInstallation = packagePathRequestingInstallation,
 				job = job,
 				skipInstall = false
@@ -303,7 +304,9 @@ component accessors="true" singleton {
 			interceptorService.announceInterception( 'onInstall', interceptData );
 			// Make sure these get set back into their original variables in case the interceptor changed them.
 			installDirectory = interceptData.installDirectory;
-			ignorePatterns = interceptData.ignorePatterns;
+			ignorePatterns = interceptData.ignorePatterns;			
+			arguments.currentWorkingDirectory = interceptData.currentWorkingDirectory;
+			arguments.packagePathRequestingInstallation = interceptData.packagePathRequestingInstallation;
 			tmpPath = interceptData.artifactPath;
 
 			// Set variable to allow interceptor-based skipping of package install
