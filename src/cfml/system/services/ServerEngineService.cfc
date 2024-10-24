@@ -560,15 +560,18 @@ component accessors="true" singleton="true" {
 			var servlets = xmlSearch(webXML,"//servlet-class[text()='#servletClass#']");
 		}
 		if( !servlets.len() ) {
+			systemoutput( "servlet not found", 1)
 			return false;
 		}
 
 		// If this servlet already has an init-param of this name, ensure the value is correct
-		for( var initParam in servlets[1].XMLParent.XMLChildren.filter( (x)=>x.XMLName=='init-param' ) ) {
-			if( !isNull( initParam[ 'param-name' ].XMLText ) && initParam[ 'param-name' ].XMLText == initParamName ) {
-				arrayDeleteAt( servlets[1].XmlParent.XmlChildren, arrayFind( servlets[1].XmlParent.XmlChildren, initParam ) );
+		var i = 1;
+		for( var child in servlets[1].XMLParent.XMLChildren ) {
+			if( child.XMLName=='init-param' && !isNull( child[ 'param-name' ].XMLText ) && child[ 'param-name' ].XMLText == initParamName ) {
+				arrayDeleteAt( servlets[1].XmlParent.XmlChildren, i );
 				return true;
 			}
+			i++;
 		}
 
 		return false;
