@@ -132,10 +132,11 @@ component accessors="true" singleton {
 	 * TODO: detect ppc64, s390x, and ppc64le
 	 */
 	function getCurrentCPUArch() {
-		if( server.java.archModel contains 32 ) {
+		var osArch = systemSettings.getSystemSetting( 'os.arch', '' );
+		if( osArch contains 32 || osArch contains 'x86' ) {
 			return 'x32';
 		// Detect ARM chips
-		} else if( systemSettings.getSystemSetting( 'os.arch', '' ).findNoCase( 'arm' ) || systemSettings.getSystemSetting( 'os.arch', '' ).findNoCase( 'aarch' ) ) {
+		} else if( osArch.findNoCase( 'arm' ) || osArch.findNoCase( 'aarch' ) ) {
 			return 'aarch64';
 		} else {
 			return 'x64';
