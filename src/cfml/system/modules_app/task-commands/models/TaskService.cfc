@@ -135,8 +135,19 @@ component singleton accessors=true {
 
 			rethrow;
 
+		 } catch( any e ) {
+				var result = taskCFC.getResult();
+				// Add the command output thus far into the exception
+				var originalInfo = '';
+				if( len( result ) ) {
+					originalInfo = e.extendedInfo
+					e.extendedInfo=serializeJSON( {
+						'extendedInfo'=originalInfo,
+						'commandOutput'=result
+					} );
+				}
+				throw e;
 		 } finally {
-
 			// Set task exit code into the shell
 		 	if( !isNull( local.returnedExitCode ) && isSimpleValue( local.returnedExitCode ) ) {
 		 		var finalExitCode = val( local.returnedExitCode );
@@ -154,15 +165,6 @@ component singleton accessors=true {
 				invokeLifecycleEvent( taskCFC, 'onComplete', { target:target, taskargs:taskargs } );
 			}
 
-			if( finalExitCode != 0 ) {
-				// Dump out anything the task had printed so far
-				var result = taskCFC.getResult();
-				taskCFC.getPrinter().clear();
-				if( len( result ) ){
-					shell.printString( result );
-				}
-			}
-
 		 }
 
 		// If the previous Task failed
@@ -171,13 +173,15 @@ component singleton accessors=true {
 			ConsolePainter.forceStop();
 			shell.printString( chr( 10 ) );
 
-			// Dump out anything the task had printed so far
 			var result = taskCFC.getResult();
-			if( len( result ) ){
-				shell.printString( result & cr );
+			var extendedInfo='';
+			if( len( result ) ) {
+				extendedInfo=serializeJSON( {
+					'extendedInfo'='',
+					'commandOutput'=result
+				} );
 			}
-
-			throw( message='Task returned failing exit code (#finalExitCode#)', detail='Failing Task: #taskFile# #target#', type="commandException", errorCode=finalExitCode );
+			throw( message='Task returned failing exit code (#finalExitCode#)', detail='Failing Task: #taskFile# #target#', type="commandException", errorCode=finalExitCode, extendedInfo=extendedInfo );
 		}
 
 
