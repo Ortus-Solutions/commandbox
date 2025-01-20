@@ -1106,9 +1106,13 @@ component accessors="true" singleton {
 			site.accessLogPath = serverInfo.logDir & '/#site.accessLogBaseName#.txt'
 			site.defaultBaseURL = '';
 			site.openbrowserURL = site.openbrowserURL ?: '';
+			var SSLPort = '';
+			var SSLHost = '';
 			for( var bindingName in serverInfo.bindings.filter( (n,b)=>n!='default' && !n.endsWith( ':endswith:' ) && !n.endsWith( ':startswith:' ) && !n.endsWith( ':regex:' ) && b.type=='ssl' && b.site==siteName ) ) {
 				var binding = serverInfo.bindings[ bindingName ];
-				site.defaultBaseURL = 'https://#(binding.host != '*' ? binding.host : binding.IP )#:#binding.port#'.replace( '0.0.0.0', '127.0.0.1' );
+				SSLPort = binding.port;
+				SSLHost = (binding.host != '*' ? binding.host : binding.IP ).replace( '0.0.0.0', '127.0.0.1' );
+				site.defaultBaseURL = 'https://#SSLHost#:#SSLPort#';
 				break;
 			}
 			if( !len( site.defaultBaseURL ) ) {
@@ -1118,6 +1122,26 @@ component accessors="true" singleton {
 					break;
 				}
 			}
+
+			// Process SSL redirect and HSTS here, now that we have all the bindings assembled
+			// Only if there was at lest one SSL binding. (Use the first one found)
+			if( SSLPort.len() ) {
+				//ssl force redirect
+				if(site.SSLForceRedirect){
+					site.webRules.prepend(
+						// We're assuming that the SSL port is going to be bound to the same host as the HTTP port.  This is a safe assumption for most cases.
+						"not secure() and method(GET) -> { set(attribute='%{o,Location}', value='https://%{LOCAL_SERVER_NAME}:#SSLPort#%{REQUEST_URL}%{QUERY_STRING}'); response-code(301) }"
+					);
+				}
+
+				//ssl hsts
+				if(site.HSTSEnable){
+					site.webRules.prepend(
+						"set(attribute='%{o,Strict-Transport-Security}', value='max-age=#site.HSTSMaxAge##(site.HSTSIncludeSubDomains ? '; includeSubDomains' : '')#')"
+					);
+				}
+			}
+
 
 			// Add AJP secret for bindings
 			var ajpPorts = {};
@@ -2200,20 +2224,6 @@ component accessors="true" singleton {
 		}
 
 		serverInfo.webRules = [];
-
-		//ssl hsts
-		if(serverInfo.SSLEnable && serverInfo.HSTSEnable){
-			serverInfo.webRules.append(
-				"set(attribute='%{o,Strict-Transport-Security}', value='max-age=#serverInfo.HSTSMaxAge##(serverInfo.HSTSIncludeSubDomains ? '; includeSubDomains' : '')#')"
-			);
-		}
-
-		//ssl force redirect
-		if(serverInfo.SSLEnable && serverInfo.SSLForceRedirect){
-			serverInfo.webRules.append(
-				"not secure() and method(GET) -> { set(attribute='%{o,Location}', value='https://%{LOCAL_SERVER_NAME}:#serverinfo.SSLPort#%{REQUEST_URL}%{QUERY_STRING}'); response-code(301) }"
-			);
-		}
 
 		serverInfo.webRules.append( site.rules, true);
 		serverInfo.webRules.append( serverJSON.web.rules, true);
