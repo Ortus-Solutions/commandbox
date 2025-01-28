@@ -124,7 +124,7 @@ component singleton {
 	* @inParent Pass true to set the variable in the parent environment
 	*/
     function setSystemSettings( required struct env, inParent=false ) {
-    	env.each( (k,v)=>setSystemSetting( k, v,inParent  ) );
+    	env.each( (k,v)=>setSystemSetting( k, v, inParent ) );
 	}
 
 	/**

@@ -362,6 +362,8 @@ component accessors="true" singleton {
 		// Get defaults
 		var defaults = getDefaultServerJSON();
 		var defaultName = serverDetails.defaultName;
+		// Set this now so it's available to any commands or system setting expansions to know what server is being started
+		systemSettings.setSystemSetting( 'interceptData.SERVERINFO.name', defaultName );
 		var defaultwebroot = serverDetails.defaultwebroot;
 		var defaultServerConfigFile = serverDetails.defaultServerConfigFile;
 		var defaultServerConfigFileDirectory = getDirectoryFromPath( defaultServerConfigFile );
@@ -373,6 +375,8 @@ component accessors="true" singleton {
 
 		// In case the interceptor changed them
 		defaultName = serverDetails.defaultName;
+		// Set again in case it changed
+		systemSettings.setSystemSetting( 'interceptData.SERVERINFO.name', defaultName );
 		defaultwebroot = serverDetails.defaultwebroot;
 		defaultServerConfigFile = serverDetails.defaultServerConfigFile;
 		defaultServerConfigFileDirectory = getDirectoryFromPath( defaultServerConfigFile );
@@ -1104,7 +1108,7 @@ component accessors="true" singleton {
 		// This can't be done until the server homes are created above.
 		serverInfo.sites.each( (siteName,site)=>{
 			site.accessLogPath = serverInfo.logDir & '/#site.accessLogBaseName#.txt'
-			site.defaultBaseURL = '';
+			site['defaultBaseURL'] = '';
 			site.openbrowserURL = site.openbrowserURL ?: '';
 			var SSLPort = '';
 			var SSLHost = '';
@@ -1196,7 +1200,7 @@ component accessors="true" singleton {
 
 		// Base this on the "first" site for now.
 		var firstSite = serverInfo.sites[ serverInfo.sites.keyArray().last() ];
-		serverInfo.defaultBaseURL = firstSite.defaultBaseURL;
+		serverInfo['defaultBaseURL'] = firstSite.defaultBaseURL;
 
 		// If there's no open URL, let's create a complete one
 		if( !serverInfo.openbrowserURL.len() ) {
