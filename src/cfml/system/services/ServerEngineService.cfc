@@ -371,7 +371,7 @@ component accessors="true" singleton="true" {
 			) {
 			throw( message='Server not installed.', type="commandException");
 		}
-
+		serverInfo.isJakartaEE = false;
 		// Extract engine name and version from the package.  This is required for non-ForgeBox endpoints
 		// since we don't know it until we actually do the installation
 		if( packageService.isPackage( thisTempDir ) ) {
@@ -381,6 +381,8 @@ component accessors="true" singleton="true" {
 			installDetails.engineName = boxJSON.slug;
 			// This file is so we know the correct version of our server on disk
 			thisEngineTag = boxJSON.slug & '@' & boxJSON.version;
+			// BoxLang beta27+ and ACF 2025+ are Jakarta EE
+			serverInfo.isJakartaEE = boxJSON.JakartaEE ?: false;
 		}
 
 		calcEngineContextPaths( installDetails, serverInfo );

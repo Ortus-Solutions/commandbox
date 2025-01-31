@@ -1104,6 +1104,34 @@ component accessors="true" singleton {
 			var displayEngineName = 'WAR';
 		}
 
+		// This will get set into serverInfo on first install, taken from the box.json in the CFEngine
+		if( serverInfo.isJakartaEE ) {
+			// Ensure Runwar 6.x with Jakarta support
+			var runwarJakartaVersion = '6.0.0-SNAPSHOT';
+			var runwarJarURL         = "https://s3.amazonaws.com/downloads.ortussolutions.com/cfmlprojects/runwar/#runwarJakartaVersion#/runwar-#runwarJakartaVersion#.jar";
+			var runwarJarLocal       = expandPath( "/commandbox/libExt/runwar-jakarta-#runwarJakartaVersion#.jar" );
+			var runwarJarFolderLocal = getDirectoryFromPath( runwarJarLocal );
+			if ( !directoryExists( runwarJarFolderLocal ) ) {
+				directoryCreate( runwarJarFolderLocal );
+			}
+			consoleLogger.warn( "Runwar 6.x with Jakarta support is required for #serverInfo.engineName#@#serverInfo.engineVersion#." );
+			if ( !fileExists( runwarJarLocal ) ) {
+				consoleLogger.warn( "Downloading from #runwarJarURL#" );
+				try {
+					http url="#runwarJarURL#" file="#runwarJarLocal#" timeout="200";
+				} catch ( any e ) {
+					consoleLogger.error( "Error downloading Runwar 6.x: #e.message#" );
+					consoleLogger.warn( "Please download it manually and place it in #runwarJarLocal#" );
+					rthrow;
+				}
+			} else {
+				consoleLogger.info( "Runwar 6.x with Jakarta support is already installed." );
+			}
+			consoleLogger.info( "Overriding serverInfo.runwarJarPath to [#runwarJarLocal#]" );
+
+			serverInfo.runwarJarPath = runwarJarLocal;
+		}
+
 		serverInfo.accessLogBaseName = 'access';
 		// This can't be done until the server homes are created above.
 		serverInfo.sites.each( (siteName,site)=>{
@@ -3611,7 +3639,8 @@ component accessors="true" singleton {
 			'adobeScriptsAlias'		: '',
 			'webSocketURI'			: '',
 			'webSocketListener'		: '',
-			'webSocketEnable'		: false
+			'webSocketEnable'		: false,
+			'isJakartaEE'			: false
 		};
 	}
 
