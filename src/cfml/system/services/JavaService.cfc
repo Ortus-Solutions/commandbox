@@ -133,7 +133,7 @@ component accessors="true" singleton {
 	 */
 	function getCurrentCPUArch() {
 		var osArch = systemSettings.getSystemSetting( 'os.arch', '' );
-		if( osArch contains 32 || osArch contains 'x86' ) {
+		if( osArch contains 32 ) {
 			return 'x32';
 		// Detect ARM chips
 		} else if( osArch.findNoCase( 'arm' ) || osArch.findNoCase( 'aarch' ) ) {
