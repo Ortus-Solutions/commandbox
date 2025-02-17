@@ -5,7 +5,7 @@
  ********************************************************************************
  * @author Brad Wood, Luis Majano, Denny Valliant
  *
- * I am the maven endpoint.  I get packages from the maven repository
+ * I am the maven endpoint. I get artifacts from the maven repository
  */
 component
 	accessors ="true"
@@ -15,21 +15,30 @@ component
 
 	// DI
 	property name="jarEndpoint"     inject="commandbox.system.endpoints.Jar";
+	property name="fileEndpoint"    inject="commandbox.system.endpoints.File";
 	property name="artifactService" inject="ArtifactService";
-	// property name="semanticVersion"        inject="provider:semanticVersion@semver";
+	property name="semanticVersion" inject="provider:semanticVersion@semver";
 	property name="JSONService"     inject="JSONService";
 	property name="configService"   inject="configService";
 	property name="wirebox"         inject="wirebox";
 
 	// Properties
-	property name="namePrefixes"      type="string";
-	property name="repositoryBaseURL" type="string";
+	property name="namePrefixes" type="string";
+	property name="globalRepos"  type="struct";
 
 	// Constructor
 	function init(){
 		setNamePrefixes( "maven" );
-		setRepositoryBaseURL( "https://maven-central.storage.googleapis.com/maven2/" );
-		variables.defaultVersion = "0.0.0";
+		var orderedStruct                  = structNew( "ordered" );
+		orderedStruct[ "mavenCentral" ]    = "https://maven-central.storage.googleapis.com/maven2/";
+		orderedStruct[ "sonatype" ]        = "https://oss.sonatype.org/content/repositories/releases/";
+		orderedStruct[ "jitpack" ]         = "https://jitpack.io/";
+		orderedStruct[ "google" ]          = "https://maven.google.com/";
+		orderedStruct[ "spring" ]          = "https://repo.spring.io/release/";
+		orderedStruct[ "jboss" ]           = "https://repository.jboss.org/nexus/content/repositories/releases/";
+		orderedStruct[ "apacheSnapshots" ] = "https://repository.apache.org/snapshots/";
+		orderedStruct[ "gradlePlugins" ]   = "https://plugins.gradle.org/m2/";
+		setGlobalRepos( orderedStruct );
 		return this;
 	}
 
@@ -45,105 +54,133 @@ component
 		string currentWorkingDirectory = "",
 		boolean verbose                = false
 	){
-		var job          = wirebox.getInstance( "interactiveJob" );
-		var packageParts = getPackageParts( package );
-		var jarFileURL   = "";
+		var job   = wirebox.getInstance( "interactiveJob" );
+		var repos = getGlobalRepos(); // Global linked struct of repos
+		// var projectRepos = {}; // TODO: Local overrides from box.json
+		// var repos = structAppend(globalRepos, projectRepos, false); // Preserve order
+
+		var artifactParts = getArtifactParts( package );
+		var jarFileURL    = "";
+		var artifact      = {
+			"jarFileURL"       : "",
+			"artifactMetadata" : {}
+		};
 
 		// If the local artifact exists, serve it
 		if (
-			artifactService.artifactExists( packageParts.artifactId, packageParts.version ) && packageParts.version != "LATEST"
+			artifactService.artifactExists( artifactParts.artifactId, artifactParts.version ) && artifactParts.version != "STABLE" && !semanticVersion.isExactVersion(
+				artifactParts.version,
+				true
+			)
 		) {
 			job.addLog( "Lucky you, we found this version in local artifacts!" );
-			var thisArtifactPath = artifactService.getArtifactPath( packageParts.artifactId, packageParts.version );
+			var thisArtifactPath = artifactService.getArtifactPath( artifactParts.artifactId, artifactParts.version );
 
-			// Return folder path
-			return getDirectoryFromPath( thisArtifactPath );
-		}
-
-		// get artifact metadata to make sure it exists
-		try {
-			var artifactMetadata = getArtifactMetadata(
-				packageParts.groupId,
-				packageParts.artifactId,
-				packageParts.repoURL
-			);
-		} catch ( Any e ) {
-			throw(
-				"Could not find artifact metadata for [#packageParts.groupId#:#packageParts.artifactId#] in repository [#packageParts.repoURL#]",
-				"endpointException",
-				e.detail
+			// Return the path to the artifact
+			return fileEndpoint.resolvePackage(
+				thisArtifactPath,
+				currentWorkingDirectory,
+				arguments.verbose
 			);
 		}
 
-		// Get latest version if not specified
-		if ( packageParts.version eq "LATEST" ) {
-			latestVersion = getLatestVersion(
-				packageParts.groupId,
-				packageParts.artifactId,
-				packageParts.repoURL
+		// Check only the explicitly defined repo, if any
+		if ( len( artifactParts.repo ) ) {
+			artifact = getArtifactFromRepo(
+				artifactParts.repo,
+				artifactParts.groupId,
+				artifactParts.artifactId,
+				artifactParts.version
 			);
-			jarFileURL = getJarFileURL(
-				packageParts.groupId,
-				packageParts.artifactId,
-				latestVersion
-			);
-			packageParts.version = latestVersion;
-		} else {
-			// Get artifact for the passed in version
-			jarFileURL = getJarFileURL(
-				packageParts.groupId,
-				packageParts.artifactId,
-				packageParts.version
-			);
+			jarFileURL = artifact.jarFileURL;
+		}
+		// Otherwise, check each registered repo sequentially
+		else {
+			for ( var alias in repos ) {
+				artifact = getArtifactFromRepo(
+					repos[ alias ],
+					artifactParts.groupId,
+					artifactParts.artifactId,
+					artifactParts.version
+				);
+				jarFileURL = artifact.jarFileURL;
+				// If we found the artifact, break out of the loop
+				if ( jarFileURL.len() ) {
+					break;
+				}
+			}
 		}
 
 		// Defer to jar endpoint
 		var folderName = jarEndpoint.resolvePackage(
-			jarFileURL,
+			artifact.jarFileURL,
 			currentWorkingDirectory,
 			arguments.verbose
 		);
 
-		job.addLog( "Storing download in artifact cache..." );
+		if ( artifactParts.version eq "STABLE" ) {
+			artifactParts.version = getLatestVersion( artifactParts.groupId, artifactParts.artifactId );
+		}
 
-		// store it locally in the artifact cache
-		artifactService.createArtifact(
-			packageParts.artifactId,
-			packageParts.version,
-			folderName
-		);
-
-		job.addLog( "Done." );
+		// Update artifact version if it's a range
+		else if ( !semanticVersion.isExactVersion( artifactParts.version, true ) ) {
+			if (
+				artifact.artifactMetadata.keyExists( "versioning" ) && artifact.artifactMetadata.versioning.keyExists( "versions" ) && artifact.artifactMetadata.versioning.versions.len()
+			) {
+				var sortedVersions = artifact.artifactMetadata.versioning.versions.sort( ( a, b ) => variables.semanticVersion.compare( b, a ) );
+				// Get the latest version that matches the range
+				for ( var thisVersion in sortedVersions ) {
+					if ( semanticVersion.satisfies( thisVersion, artifactParts.version ) ) {
+						artifactParts.version = thisVersion;
+						break;
+					}
+				}
+			}
+		}
 
 		// get dependencies
 		var artifactDependencies = getArtifactAndDependencyJarURLs(
-			packageParts.groupId,
-			packageParts.artifactId,
-			packageParts.version
+			artifactParts.groupId,
+			artifactParts.artifactId,
+			artifactParts.version
 		);
+
 		var installPaths = {};
 		var dependencies = {};
 
 		for ( var dependency in artifactDependencies ) {
-			if ( dependency.artifactId == packageParts.artifactId ) {
+			if ( dependency.artifactId == artifactParts.artifactId ) {
 				continue;
 			}
-			dependencies[ dependency.artifactId ] = dependency.download;
+			dependencies[ dependency.artifactId ] = getNamePrefixes() & (
+				artifactParts.repo.len() ? artifactParts.repo & "|" : ""
+			) & dependency.groupId & ":" & dependency.artifactId & ":" & dependency.version;
 			installPaths[ dependency.artifactId ] = "lib/" & dependency.artifactId;
 		}
 
 		// override the box.json with the actual version and dependencies
 		var boxJSON = {
-			"name"         : "#packageParts.artifactId#.jar",
-			"slug"         : packageParts.artifactId,
-			"version"      : packageParts.version,
-			"location"     : package,
+			"name"         : "#artifactParts.groupId & "-" & artifactParts.artifactId#.jar",
+			"slug"         : artifactParts.artifactId,
+			"version"      : artifactParts.version,
+			"location"     : "maven:" & arguments.package,
 			"type"         : "jars",
 			"dependencies" : dependencies,
 			"installPaths" : installPaths
 		};
 
 		JSONService.writeJSONFile( folderName & "/box.json", boxJSON );
+
+		job.addLog( "Storing download in artifact cache..." );
+
+		// store it locally in the artifact cache
+		artifactService.createArtifact(
+			artifactParts.artifactId,
+			artifactParts.version,
+			folderName
+		);
+
+		job.addLog( "Done." );
 
 		// Here is where our alleged so-called "package" lives.
 		return folderName;
@@ -154,7 +191,7 @@ component
 	 * @package The package to get the default name for
 	 */
 	public function getDefaultName( required string package ){
-		var packageParts = getPackageParts( package );
+		var packageParts = getArtifactParts( package );
 
 		if ( packageParts.artifactId.len() ) {
 			return packageParts.artifactId;
@@ -166,6 +203,108 @@ component
 			"",
 			"all"
 		);
+	}
+
+	/**
+	 * checks if an artifact exists in the given repository and gets it
+	 * @repo The repository to check (URL or alias)
+	 * @groupId The group ID of the artifact
+	 * @artifactId The artifact ID
+	 * @version The version of the artifact
+	 */
+	private struct function getArtifactFromRepo(
+		string repo,
+		string groupId,
+		string artifactId,
+		string version
+	){
+		switch ( repo ) {
+			case "https://maven-central.storage.googleapis.com/maven2/":
+			case "mavenCentral":
+			case "maven":
+				return getArtifactFromMavenCentral( groupId, artifactId, version );
+			case "https://oss.sonatype.org/content/repositories/releases/":
+			case "https://jitpack.io/":
+			case "https://maven.google.com/":
+			case "https://repo.spring.io/release/":
+			case "https://repository.jboss.org/nexus/content/repositories/releases/":
+			case "https://repository.apache.org/snapshots/":
+			case "https://plugins.gradle.org/m2/":
+				throw "Repo not implemented yet: " & repo;
+				break;
+			default:
+				throw "Unsupported repository: " & repo;
+		}
+	}
+
+	/**
+	 * Get an artifact from Maven Central
+	 * @groupId The group ID of the artifact
+	 * @artifactId The artifact ID
+	 * @version The version of the artifact
+	 */
+	private function getArtifactFromMavenCentral(
+		string groupId,
+		string artifactId,
+		string version
+	){
+		var artifact = {
+			"jarFileURL"       : "",
+			"artifactMetadata" : {}
+		}
+		// get artifact metadata to make sure it exists
+		try {
+			var artifact.artifactMetadata = getArtifactMetadataFromMaven( arguments.groupId, arguments.artifactId );
+		} catch ( Any e ) {
+			throw(
+				"Could not find artifact metadata for [#arguments.groupId#:#arguments.artifactId#] in maven central repository",
+				"endpointException",
+				e.detail
+			);
+		}
+
+		// Get latest version if not specified
+		if ( arguments.version eq "STABLE" ) {
+			latestVersion       = getLatestVersion( arguments.groupId, arguments.artifactId );
+			artifact.jarFileURL = getJarFileURL(
+				arguments.groupId,
+				arguments.artifactId,
+				latestVersion
+			);
+			return artifact;
+		} else {
+			// Check if the version is a range
+			if ( !semanticVersion.isExactVersion( arguments.version ) ) {
+				if (
+					artifact.artifactMetadata.keyExists( "versioning" ) && artifact.artifactMetadata.versioning.keyExists( "versions" ) && artifact.artifactMetadata.versioning.versions.len()
+				) {
+					var sortedVersions = artifact.artifactMetadata.versioning.versions.sort( ( a, b ) => variables.semanticVersion.compare( b, a ) );
+					// Get the latest version that matches the range
+					for ( var thisVersion in sortedVersions ) {
+						if ( semanticVersion.satisfies( thisVersion, arguments.version ) ) {
+							artifact.jarFileURL = getJarFileURL(
+								arguments.groupId,
+								arguments.artifactId,
+								thisVersion
+							);
+							return artifact;
+						}
+					}
+					// If no version was found, throw an error
+					throw( "Could not find a version that satisfies the range: #arguments.version#" );
+				} else {
+					throw( "Could not find versions in artifact metadata" );
+				}
+			}
+			// Get artifact for the passed in version
+			artifact.jarFileURL = getJarFileURL(
+				arguments.groupId,
+				arguments.artifactId,
+				arguments.version
+			);
+
+			return artifact;
+		}
 	}
 
 	/**
@@ -181,97 +320,78 @@ component
 		required string version,
 		boolean verbose = false
 	){
-		// Review this logic and use semver for version comparison
-		packageVersion = guessVersionFromURL( package );
-		// No version could be determined from package URL
-		if ( packageVersion == defaultVersion ) {
-			return {
-				isOutdated : true,
-				version    : "unknown"
-			};
-			// Our package URL has a version and it's the same as what's installed
-		} else if ( packageVersion == version ) {
-			return {
-				isOutdated : false,
-				version    : version
-			};
-			// our package URL has a version and it's not what's installed
-		} else {
-			return { isOutdated : true, version : version };
-		}
+		return {
+			isOutdated : false,
+			version    : "unknown"
+		};
 	}
 
-	// Helper function to get the latest version of an artifact
-	private function getLatestVersion(
-		string groupId,
-		string artifactId,
-		string repoURL = getRepositoryBaseURL()
-	){
-		var metadata = getArtifactMetadata( groupId, artifactId, repoURL );
+	/**
+	 * Get the latest version of an artifact
+	 * @groupId The group ID of the artifact
+	 * @artifactId The artifact ID
+	 */
+	private function getLatestVersion( string groupId, string artifactId ){
+		var metadata = getArtifactMetadataFromMaven( groupId, artifactId );
 
-		if ( metadata.keyExists( "versioning" ) && metadata.versioning.keyExists( "latest" ) ) {
-			return metadata.versioning.latest;
+		if ( metadata.keyExists( "versioning" ) && metadata.versioning.keyExists( "release" ) ) {
+			return metadata.versioning.release;
 		} else {
 			return "unknown";
 		}
 	}
 
-	// Helper function to get the parts of a package string
-	private function getPackageParts( string package ){
+	/**
+	 * Get the parts of a Maven package string
+	 * @package The package string
+	 */
+	private function getArtifactParts( string package ){
 		var response = {
-			"repoURL"    : getRepositoryBaseURL(),
+			"repo"       : "",
 			"groupId"    : "",
 			"artifactId" : "",
 			"version"    : ""
 		};
 
 		// Remove the 'maven:' prefix from the package
-		package = replace( package, "maven:", "", "one" );
+		var packageId = replace(
+			arguments.package,
+			"maven:",
+			"",
+			"one"
+		);
 
 		// Split the package string by '|' to separate the repo and package
-		var parts = package.split( "|" );
+		var parts = listToArray( packageId, "|" );
 
 		// Determine if a custom repo is provided
-		if ( arrayLen( parts ) == 2 ) {
-			response.repoURL = parts[ 1 ]; // Use custom repo URL
-			package          = parts[ 2 ]; // The actual package
+		if ( arrayLen( parts ) > 1 ) {
+			response.repo = parts[ 1 ]; // Use custom repo
+			packageId     = parts[ 2 ]; // The actual package
 		}
 
 		// Split the package into its components
-		var packageParts = package.split( ":" );
+		var packageParts = listToArray( packageId, ":" );
 
-		// Make sure we have at least a groupId and artifactId
+		// Make sure we have at least the groupId and artifactId
 		if ( arrayLen( packageParts ) < 2 ) {
-			throw( "Invalid Maven package string: #package#" );
+			throw( "Invalid Maven package string: #packageId#" );
 		} else {
 			response.groupId    = packageParts[ 1 ];
 			response.artifactId = packageParts[ 2 ];
-			response.version    = packageParts[ 3 ] ?: "LATEST"; // Default to LATEST if not provided
+			response.version    = packageParts[ 3 ] ?: "STABLE"; // Default to STABLE if not provided
 		}
 
 		return response;
 	}
 
-	// Helper function to get the parts of a package string
-	private function guessVersionFromURL( required string package ){
-		var version = package;
-		if ( version contains "/" ) {
-			var version = version.reReplaceNoCase( "^([\w:]+)?//", "" ).listRest( "/\" );
-		}
-		if ( version.refindNoCase( ".*([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}).*" ) ) {
-			version = version.reReplaceNoCase( ".*([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}).*", "\1" );
-		} else {
-			version = defaultVersion;
-		}
-		return version;
-	}
-
-	// Helper function to get the artifact metadata
-	private function getArtifactMetadata(
-		groupId,
-		artifactId,
-		repoURL = getRepositoryBaseURL()
-	){
+	/**
+	 * Get the metadata for an artifact from Maven Central
+	 * @groupId The group ID of the artifact
+	 * @artifactId The artifact ID
+	 */
+	private function getArtifactMetadataFromMaven( groupId, artifactId ){
+		var repoURL    = getGlobalRepos().mavenCentral;
 		var addr       = repoURL & replace( groupId, ".", "/", "ALL" ) & "/" & artifactId & "/";
 		var httpResult = "";
 		var metaData   = "";
@@ -304,7 +424,12 @@ component
 				metaData      = xmlParse( httpResult.fileContent );
 				md.groupId    = metaData.xmlRoot.groupId.XmlText;
 				md.artifactId = metaData.xmlRoot.artifactId.XmlText;
-				if ( structKeyExists( metaData.xmlRoot, "versioning" ) ) {
+				if (
+					structKeyExists( metaData.xmlRoot, "versioning" ) && structKeyExists(
+						metaData.xmlRoot.versioning,
+						"latest"
+					) && structKeyExists( metaData.xmlRoot.versioning, "release" )
+				) {
 					md.versioning.latest  = metaData.xmlRoot.versioning.latest.XmlText;
 					md.versioning.release = metaData.xmlRoot.versioning.release.XmlText;
 					for ( local.version in metaData.xmlRoot.versioning.versions.XmlChildren ) {
@@ -320,13 +445,16 @@ component
 		return md;
 	}
 
-	// Helper function to get the artifact version
+	/**
+	 * Get the version of an artifact from Maven Central
+	 * @groupId The group ID of the artifact
+	 * @artifactId The artifact ID
+	 * @version The version of the artifact
+	 */
 	private function getArtifactVersion( groupId, artifactId, version ){
-		var addr       = getRepositoryBaseURL() & replace( groupId, ".", "/", "ALL" ) & "/" & artifactId & "/" & version & "/" & artifactId & "-" & version & ".pom";
+		var job        = wirebox.getInstance( "interactiveJob" );
+		var addr       = getGlobalRepos().mavenCentral & replace( groupId, ".", "/", "ALL" ) & "/" & artifactId & "/" & version & "/" & artifactId & "-" & version & ".pom";
 		var httpResult = "";
-
-		var job = wirebox.getInstance( "interactiveJob" );
-		job.addLog( "Address: [#addr#]" );
 
 		if ( configService.getSetting( "offlineMode", false ) ) {
 			throw(
@@ -349,7 +477,14 @@ component
 		}
 	}
 
-	// Helper function to get the artifact and dependency jar URLs
+	/**
+	 * Get the URLs for the artifact and its dependencies
+	 * @groupId The group ID of the artifact
+	 * @artifactId The artifact ID
+	 * @version The version of the artifact
+	 * @scopes The scopes to include
+	 * @depth The depth of the dependencies
+	 */
 	private function getArtifactAndDependencyJarURLs(
 		groupId,
 		artifactId,
@@ -382,7 +517,7 @@ component
 				continue;
 			}
 			if ( !cache.keyExists( dep.groupId & "/" & dep.artifactId ) ) {
-				d = getArtifactMetadata( dep.groupId, dep.artifactId );
+				d = getArtifactMetadataFromMaven( dep.groupId, dep.artifactId );
 				if ( len( dep.version ) ) {
 					d.wantedVersion = [ dep.version ];
 				}
@@ -435,14 +570,22 @@ component
 		return result;
 	}
 
-	// Helper function to get the jar file URL
+	/**
+	 * Get the URL for a JAR file
+	 * @groupId The group ID of the artifact
+	 * @artifactId The artifact ID
+	 * @version The version of the artifact
+	 */
 	private function getJarFileURL( groupId, artifactId, version ){
-		var addr = getRepositoryBaseURL() & replace( groupId, ".", "/", "ALL" ) & "/" & artifactId & "/" & version & "/" & artifactId & "-" & version & ".jar";
+		var addr = getGlobalRepos().mavenCentral & replace( groupId, ".", "/", "ALL" ) & "/" & artifactId & "/" & version & "/" & artifactId & "-" & version & ".jar";
 		return addr;
 	}
 
-	// Helper function to parse the POM XML
-	public function parsePOM( xmlString ){
+	/**
+	 * Parse a POM file
+	 * @xmlString The XML string to parse
+	 */
+	private function parsePOM( xmlString ){
 		var pom = {
 			"name"         : "",
 			"packaging"    : "",
@@ -480,7 +623,11 @@ component
 		return pom;
 	}
 
-	// Helper function to parse the dependencies
+	/**
+	 * Parse the dependencies from a POM file
+	 * @rootXml The root XML object
+	 * @node The node to parse
+	 */
 	private function parseDependencies( rootXml, node ){
 		var dep  = "";
 		var d    = "";
@@ -530,7 +677,10 @@ component
 		return deps;
 	}
 
-	// Helper function to determine if XML is safe
+	/**
+	 * Check if an XML string is safe
+	 * @xml The XML string to check
+	 */
 	private function isSafeXML( xml ){
 		if ( findNoCase( "!doctype", arguments.xml ) ) {
 			return false;
