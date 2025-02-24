@@ -23,22 +23,14 @@ component
 	property name="wirebox"         inject="wirebox";
 
 	// Properties
-	property name="namePrefixes" type="string";
-	property name="globalRepos"  type="struct";
+	property name="namePrefixes"    type="string";
+	property name="defaultRepo"     type="struct";
+	property name="registeredRepos" type="struct";
 
 	// Constructor
 	function init(){
 		setNamePrefixes( "maven" );
-		var orderedStruct                  = structNew( "ordered" );
-		orderedStruct[ "mavenCentral" ]    = "https://maven-central.storage.googleapis.com/maven2/";
-		orderedStruct[ "sonatype" ]        = "https://oss.sonatype.org/content/repositories/releases/";
-		orderedStruct[ "jitpack" ]         = "https://jitpack.io/";
-		orderedStruct[ "google" ]          = "https://maven.google.com/";
-		orderedStruct[ "spring" ]          = "https://repo.spring.io/release/";
-		orderedStruct[ "jboss" ]           = "https://repository.jboss.org/nexus/content/repositories/releases/";
-		orderedStruct[ "apacheSnapshots" ] = "https://repository.apache.org/snapshots/";
-		orderedStruct[ "gradlePlugins" ]   = "https://plugins.gradle.org/m2/";
-		setGlobalRepos( orderedStruct );
+		setDefaultRepo( { "mavenCentral" : "https://maven-central.storage.googleapis.com/maven2/" } );
 		return this;
 	}
 
@@ -54,27 +46,38 @@ component
 		string currentWorkingDirectory = "",
 		boolean verbose                = false
 	){
-		var job   = wirebox.getInstance( "interactiveJob" );
-		var repos = getGlobalRepos(); // Global linked struct of repos
-		// var projectRepos = {}; // TODO: Local overrides from box.json
-		// var repos = structAppend(globalRepos, projectRepos, false); // Preserve order
+		var job = wirebox.getInstance( "interactiveJob" );
 
-		var artifactParts = getArtifactParts( package );
-		var jarFileURL    = "";
-		var artifact      = {
-			"jarFileURL"       : "",
-			"artifactMetadata" : {}
+		variables.registeredRepos = variables.configService.getSetting( "endpoints.maven", getDefaultRepo() );
+		// Preserve order and allow overrides
+		structAppend(
+			variables.registeredRepos,
+			getProjectRepos( currentWorkingDirectory ),
+			true
+		);
+
+		var artifact = {
+			"parts"      : getArtifactParts( package ),
+			"jarFileURL" : "",
+			"metadata"   : {}
 		};
+
+		// If the repo is empty, default it to mavenCentral
+		if ( !artifact.parts.repo.len() ) {
+			artifact.parts.repo = "mavenCentral";
+		}
+
+		job.addLog( "Resolving Maven artifact: #artifact.parts.repo#" );
 
 		// If the local artifact exists, serve it
 		if (
-			artifactService.artifactExists( artifactParts.artifactId, artifactParts.version ) && artifactParts.version != "STABLE" && !semanticVersion.isExactVersion(
-				artifactParts.version,
+			artifactService.artifactExists( artifact.parts.repo & artifact.parts.groupId & artifact.parts.artifactId, artifact.parts.version ) && artifact.parts.version != "STABLE" && !semanticVersion.isExactVersion(
+				artifact.parts.version,
 				true
 			)
 		) {
 			job.addLog( "Lucky you, we found this version in local artifacts!" );
-			var thisArtifactPath = artifactService.getArtifactPath( artifactParts.artifactId, artifactParts.version );
+			var thisArtifactPath = artifactService.getArtifactPath( artifact.parts.repo & artifact.parts.groupId & artifact.parts.artifactId, artifact.parts.version );
 
 			// Return the path to the artifact
 			return fileEndpoint.resolvePackage(
@@ -85,27 +88,29 @@ component
 		}
 
 		// Check only the explicitly defined repo, if any
-		if ( len( artifactParts.repo ) ) {
-			artifact = getArtifactFromRepo(
-				artifactParts.repo,
-				artifactParts.groupId,
-				artifactParts.artifactId,
-				artifactParts.version
+		if ( len( artifact.parts.repo ) ) {
+			var returnedArtifact = getArtifactFromRepo(
+				artifact.parts.repo,
+				artifact.parts.groupId,
+				artifact.parts.artifactId,
+				artifact.parts.version
 			);
-			jarFileURL = artifact.jarFileURL;
+			artifact.metadata   = returnedArtifact.metadata;
+			artifact.jarFileURL = returnedArtifact.jarFileURL;
 		}
 		// Otherwise, check each registered repo sequentially
 		else {
-			for ( var alias in repos ) {
-				artifact = getArtifactFromRepo(
-					repos[ alias ],
-					artifactParts.groupId,
-					artifactParts.artifactId,
-					artifactParts.version
+			for ( var alias in getRegisteredRepos() ) {
+				var returnedArtifact = getArtifactFromRepo(
+					getRegisteredRepos()[ alias ],
+					artifact.parts.groupId,
+					artifact.parts.artifactId,
+					artifact.parts.version
 				);
-				jarFileURL = artifact.jarFileURL;
+				artifact.metadata   = returnedArtifact.metadata;
+				artifact.jarFileURL = returnedArtifact.jarFileURL;
 				// If we found the artifact, break out of the loop
-				if ( jarFileURL.len() ) {
+				if ( artifact.jarFileURL.len() ) {
 					break;
 				}
 			}
@@ -118,52 +123,63 @@ component
 			arguments.verbose
 		);
 
-		if ( artifactParts.version eq "STABLE" ) {
-			artifactParts.version = getLatestVersion( artifactParts.groupId, artifactParts.artifactId );
+		if ( artifact.parts.version eq "STABLE" ) {
+			artifact.parts.version = getLatestVersion(
+				artifact.parts.repo,
+				artifact.parts.groupId,
+				artifact.parts.artifactId
+			);
 		}
 
 		// Update artifact version if it's a range
-		else if ( !semanticVersion.isExactVersion( artifactParts.version, true ) ) {
+		else if ( !semanticVersion.isExactVersion( artifact.parts.version, true ) ) {
+			job.addLog( "It's a range: #artifact.parts.version#" );
 			if (
-				artifact.artifactMetadata.keyExists( "versioning" ) && artifact.artifactMetadata.versioning.keyExists( "versions" ) && artifact.artifactMetadata.versioning.versions.len()
+				artifact.metadata.keyExists( "versioning" ) && artifact.metadata.versioning.keyExists( "versions" ) && artifact.metadata.versioning.versions.len()
 			) {
-				var sortedVersions = artifact.artifactMetadata.versioning.versions.sort( ( a, b ) => variables.semanticVersion.compare( b, a ) );
+				var sortedVersions = artifact.metadata.versioning.versions.sort( ( a, b ) => variables.semanticVersion.compare( b, a ) );
 				// Get the latest version that matches the range
 				for ( var thisVersion in sortedVersions ) {
-					if ( semanticVersion.satisfies( thisVersion, artifactParts.version ) ) {
-						artifactParts.version = thisVersion;
+					if ( semanticVersion.satisfies( thisVersion, artifact.parts.version ) ) {
+						job.addLog( "VERSION FOUND: #thisVersion#" );
+						artifact.parts.version = thisVersion;
 						break;
 					}
 				}
 			}
 		}
 
-		// get dependencies
+		job.addLog( "VERSION: #artifact.parts.version#" );
+
+		// Get dependencies
 		var artifactDependencies = getArtifactAndDependencyJarURLs(
-			artifactParts.groupId,
-			artifactParts.artifactId,
-			artifactParts.version
+			artifact.parts.repo,
+			artifact.parts.groupId,
+			artifact.parts.artifactId,
+			artifact.parts.version
 		);
 
 		var installPaths = {};
 		var dependencies = {};
 
 		for ( var dependency in artifactDependencies ) {
-			if ( dependency.artifactId == artifactParts.artifactId ) {
+			if ( dependency.artifactId == artifact.parts.artifactId ) {
 				continue;
 			}
-			dependencies[ dependency.artifactId ] = getNamePrefixes() & (
-				artifactParts.repo.len() ? artifactParts.repo & "|" : ""
-			) & dependency.groupId & ":" & dependency.artifactId & ":" & dependency.version;
+			dependencies[ dependency.artifactId ] = getNamePrefixes() & ":" & (
+				artifact.parts.repo.len() && artifact.parts.repo neq "mavenCentral" ? artifact.parts.repo & "|" : ""
+			) & dependency.groupId & ":" & dependency.artifactId & ":" & convertMavenToNpmVersionRange(
+				dependency.version
+			);
 			installPaths[ dependency.artifactId ] = "lib/" & dependency.artifactId;
 		}
 
-		// override the box.json with the actual version and dependencies
+		// Override the box.json with the actual version and dependencies
 		var boxJSON = {
-			"name"         : "#artifactParts.groupId & "-" & artifactParts.artifactId#.jar",
-			"slug"         : artifactParts.artifactId,
-			"version"      : artifactParts.version,
-			"location"     : "maven:" & arguments.package,
+			"name"         : "#artifact.parts.groupId & "-" & artifact.parts.artifactId#.jar",
+			"slug"         : artifact.parts.groupId & "-" & artifact.parts.artifactId,
+			"version"      : artifact.parts.version,
+			"location"     : getNamePrefixes() & ":" & arguments.package,
 			"type"         : "jars",
 			"dependencies" : dependencies,
 			"installPaths" : installPaths
@@ -173,10 +189,10 @@ component
 
 		job.addLog( "Storing download in artifact cache..." );
 
-		// store it locally in the artifact cache
+		// Store it locally in the artifact cache
 		artifactService.createArtifact(
-			artifactParts.artifactId,
-			artifactParts.version,
+			artifact.parts.repo & artifact.parts.groupId & artifact.parts.artifactId,
+			artifact.parts.version,
 			folderName
 		);
 
@@ -206,7 +222,25 @@ component
 	}
 
 	/**
-	 * checks if an artifact exists in the given repository and gets it
+	 * Get the project repositories from the box.json file
+	 * @currentWorkingDirectory The directory to get the repositories from
+	 */
+	function getProjectRepos( string currentWorkingDirectory ){
+		var boxJSONPath = currentWorkingDirectory & "/box.json";
+
+		if ( fileExists( boxJSONPath ) ) {
+			var boxJSON = deserializeJSON( fileRead( boxJSONPath ) );
+
+			if ( structKeyExists( boxJSON, "mavenRepositories" ) ) {
+				return boxJSON.mavenRepositories;
+			}
+		}
+
+		return {};
+	}
+
+	/**
+	 * Checks if an artifact exists in the given repository and gets it
 	 * @repo The repository to check (URL or alias)
 	 * @groupId The group ID of the artifact
 	 * @artifactId The artifact ID
@@ -218,46 +252,17 @@ component
 		string artifactId,
 		string version
 	){
-		switch ( repo ) {
-			case "https://maven-central.storage.googleapis.com/maven2/":
-			case "mavenCentral":
-			case "maven":
-				return getArtifactFromMavenCentral( groupId, artifactId, version );
-			case "https://oss.sonatype.org/content/repositories/releases/":
-			case "https://jitpack.io/":
-			case "https://maven.google.com/":
-			case "https://repo.spring.io/release/":
-			case "https://repository.jboss.org/nexus/content/repositories/releases/":
-			case "https://repository.apache.org/snapshots/":
-			case "https://plugins.gradle.org/m2/":
-				throw "Repo not implemented yet: " & repo;
-				break;
-			default:
-				throw "Unsupported repository: " & repo;
-		}
-	}
-
-	/**
-	 * Get an artifact from Maven Central
-	 * @groupId The group ID of the artifact
-	 * @artifactId The artifact ID
-	 * @version The version of the artifact
-	 */
-	private function getArtifactFromMavenCentral(
-		string groupId,
-		string artifactId,
-		string version
-	){
-		var artifact = {
-			"jarFileURL"       : "",
-			"artifactMetadata" : {}
-		}
+		var artifact = { "jarFileURL" : "", "metadata" : {} }
 		// get artifact metadata to make sure it exists
 		try {
-			var artifact.artifactMetadata = getArtifactMetadataFromMaven( arguments.groupId, arguments.artifactId );
+			var artifact.metadata = getArtifactMetadataFromMaven(
+				arguments.repo,
+				arguments.groupId,
+				arguments.artifactId
+			);
 		} catch ( Any e ) {
 			throw(
-				"Could not find artifact metadata for [#arguments.groupId#:#arguments.artifactId#] in maven central repository",
+				"Could not find artifact metadata for [#arguments.groupId#:#arguments.artifactId#] in #arguments.repo# repository",
 				"endpointException",
 				e.detail
 			);
@@ -265,8 +270,13 @@ component
 
 		// Get latest version if not specified
 		if ( arguments.version eq "STABLE" ) {
-			latestVersion       = getLatestVersion( arguments.groupId, arguments.artifactId );
+			latestVersion = getLatestVersion(
+				arguments.repo,
+				arguments.groupId,
+				arguments.artifactId
+			);
 			artifact.jarFileURL = getJarFileURL(
+				arguments.repo,
 				arguments.groupId,
 				arguments.artifactId,
 				latestVersion
@@ -276,13 +286,14 @@ component
 			// Check if the version is a range
 			if ( !semanticVersion.isExactVersion( arguments.version ) ) {
 				if (
-					artifact.artifactMetadata.keyExists( "versioning" ) && artifact.artifactMetadata.versioning.keyExists( "versions" ) && artifact.artifactMetadata.versioning.versions.len()
+					artifact.metadata.keyExists( "versioning" ) && artifact.metadata.versioning.keyExists( "versions" ) && artifact.metadata.versioning.versions.len()
 				) {
-					var sortedVersions = artifact.artifactMetadata.versioning.versions.sort( ( a, b ) => variables.semanticVersion.compare( b, a ) );
+					var sortedVersions = artifact.metadata.versioning.versions.sort( ( a, b ) => variables.semanticVersion.compare( b, a ) );
 					// Get the latest version that matches the range
 					for ( var thisVersion in sortedVersions ) {
 						if ( semanticVersion.satisfies( thisVersion, arguments.version ) ) {
 							artifact.jarFileURL = getJarFileURL(
+								arguments.repo,
 								arguments.groupId,
 								arguments.artifactId,
 								thisVersion
@@ -298,6 +309,7 @@ component
 			}
 			// Get artifact for the passed in version
 			artifact.jarFileURL = getJarFileURL(
+				arguments.repo,
 				arguments.groupId,
 				arguments.artifactId,
 				arguments.version
@@ -328,11 +340,20 @@ component
 
 	/**
 	 * Get the latest version of an artifact
+	 * @repo The repository to check (URL or alias)
 	 * @groupId The group ID of the artifact
 	 * @artifactId The artifact ID
 	 */
-	private function getLatestVersion( string groupId, string artifactId ){
-		var metadata = getArtifactMetadataFromMaven( groupId, artifactId );
+	private function getLatestVersion(
+		string repo,
+		string groupId,
+		string artifactId
+	){
+		var metadata = getArtifactMetadataFromMaven(
+			arguments.repo,
+			arguments.groupId,
+			arguments.artifactId
+		);
 
 		if ( metadata.keyExists( "versioning" ) && metadata.versioning.keyExists( "release" ) ) {
 			return metadata.versioning.release;
@@ -387,11 +408,12 @@ component
 
 	/**
 	 * Get the metadata for an artifact from Maven Central
+	 * @repo The repository to check (URL or alias)
 	 * @groupId The group ID of the artifact
 	 * @artifactId The artifact ID
 	 */
-	private function getArtifactMetadataFromMaven( groupId, artifactId ){
-		var repoURL    = getGlobalRepos().mavenCentral;
+	private function getArtifactMetadataFromMaven( repo, groupId, artifactId ){
+		var repoURL    = getRepoURL( arguments.repo );
 		var addr       = repoURL & replace( groupId, ".", "/", "ALL" ) & "/" & artifactId & "/";
 		var httpResult = "";
 		var metaData   = "";
@@ -446,14 +468,34 @@ component
 	}
 
 	/**
+	 * Get the URL type of a repo
+	 * @repo The repository to check (URL or alias)
+	 */
+	function getRepoURL( required string repo ){
+		// Check if the repo is a known alias
+		if ( listFindNoCase( getRegisteredRepos().keyList(), arguments.repo ) ) {
+			return getRegisteredRepos()[ "#arguments.repo#" ];
+		}
+
+		// Check if it's a valid URL (starting with http:// or https://)
+		if ( reFindNoCase( "^(https?://)", arguments.repo ) ) {
+			return arguments.repo;
+		}
+
+		// If it's neither an alias nor a valid URL, throw an error
+		throw "Invalid repository URL or alias: #arguments.repo#";
+	}
+
+	/**
 	 * Get the version of an artifact from Maven Central
+	 * @repo The repository URL to check
 	 * @groupId The group ID of the artifact
 	 * @artifactId The artifact ID
 	 * @version The version of the artifact
 	 */
-	private function getArtifactVersion( groupId, artifactId, version ){
+	private function getArtifactVersion( repo, groupId, artifactId, version ){
 		var job        = wirebox.getInstance( "interactiveJob" );
-		var addr       = getGlobalRepos().mavenCentral & replace( groupId, ".", "/", "ALL" ) & "/" & artifactId & "/" & version & "/" & artifactId & "-" & version & ".pom";
+		var addr       = repo & replace( groupId, ".", "/", "ALL" ) & "/" & artifactId & "/" & version & "/" & artifactId & "-" & version & ".pom";
 		var httpResult = "";
 
 		if ( configService.getSetting( "offlineMode", false ) ) {
@@ -479,6 +521,7 @@ component
 
 	/**
 	 * Get the URLs for the artifact and its dependencies
+	 * @repo The repository to check (URL or alias)
 	 * @groupId The group ID of the artifact
 	 * @artifactId The artifact ID
 	 * @version The version of the artifact
@@ -486,99 +529,153 @@ component
 	 * @depth The depth of the dependencies
 	 */
 	private function getArtifactAndDependencyJarURLs(
-		groupId,
-		artifactId,
-		version,
-		scopes = "runtime,compile",
-		depth  = 0
+		repository,
+		groupIdentifier,
+		artifactIdentifier,
+		versionNumber,
+		scopes     = "runtime,compile",
+		depthLevel = 0
 	){
-		var meta   = getArtifactVersion( groupId, artifactId, version );
-		var cache  = {};
-		var result = [];
-		var dep    = "";
-		var d      = "";
-		var v      = "";
-		if ( meta.packaging IS "jar" ) {
-			result = [
+		var job              = wirebox.getInstance( "interactiveJob" );
+		var artifactMetadata = getArtifactVersion(
+			getRepoURL( arguments.repository ),
+			groupIdentifier,
+			artifactIdentifier,
+			versionNumber
+		);
+		var dependencyCache    = {};
+		var jarDownloadList    = [];
+		var dependency         = "";
+		var dependencyMetadata = "";
+		var selectedVersion    = "";
+
+		if ( artifactMetadata.packaging IS "jar" ) {
+			jarDownloadList = [
 				{
-					"download"   : getJarFileURL( groupId, artifactId, version ),
-					"groupId"    : arguments.groupId,
-					"artifactId" : arguments.artifactId,
-					"version"    : arguments.version
+					"download" : getJarFileURL(
+						arguments.repository,
+						groupIdentifier,
+						artifactIdentifier,
+						versionNumber
+					),
+					"groupId"    : arguments.groupIdentifier,
+					"artifactId" : arguments.artifactIdentifier,
+					"version"    : arguments.versionNumber
 				}
 			];
 		}
-		for ( dep in meta.dependencies ) {
-			if ( !listFindNoCase( arguments.scopes, dep.scope ) ) {
-				// skip
+
+		for ( dependency in artifactMetadata.dependencies ) {
+			if ( !listFindNoCase( arguments.scopes, dependency.scope ) ) {
+				// Skip dependencies that are not in the specified scopes
 				continue;
 			}
-			if ( dep.optional ) {
+			if ( dependency.optional ) {
 				continue;
 			}
-			if ( !cache.keyExists( dep.groupId & "/" & dep.artifactId ) ) {
-				d = getArtifactMetadataFromMaven( dep.groupId, dep.artifactId );
-				if ( len( dep.version ) ) {
-					d.wantedVersion = [ dep.version ];
+			if ( !dependencyCache.keyExists( dependency.groupId & "/" & dependency.artifactId ) ) {
+				dependencyMetadata = getArtifactMetadataFromMaven(
+					arguments.repository,
+					dependency.groupId,
+					dependency.artifactId
+				);
+				if ( len( dependency.version ) ) {
+					dependencyMetadata.wantedVersion = [ dependency.version ];
 				}
-				cache[ dep.groupId & "/" & dep.artifactId ] = d;
-			} else if ( len( dep.version ) ) {
-				// add as a wanted version
-				arrayAppend( cache[ dep.groupId & "/" & dep.artifactId ].wantedVersion, dep.version );
+				dependencyCache[ dependency.groupId & "/" & dependency.artifactId ] = dependencyMetadata;
+			} else if ( len( dependency.version ) ) {
+				// Add the specified version as a wanted version
+				arrayAppend(
+					dependencyCache[ dependency.groupId & "/" & dependency.artifactId ].wantedVersion,
+					dependency.version
+				);
 			}
 		}
 
-		for ( dep in cache ) {
-			dep = cache[ dep ];
-			if ( !dep.keyExists( "wantedVersion" ) ) {
-				v = dep.versioning.release;
+		for ( dependency in dependencyCache ) {
+			dependency = dependencyCache[ dependency ];
+			if ( !dependency.keyExists( "wantedVersion" ) ) {
+				selectedVersion = dependency.versioning.release;
 			} else {
-				// todo pick highest version
-				v = dep.wantedVersion[ 1 ];
+				// TODO: Pick the highest version
+				selectedVersion = dependency.wantedVersion[ 1 ];
 			}
-			if ( dep.artifactId == arguments.artifactId && dep.groupId == arguments.groupId ) {
+			if ( dependency.artifactId == arguments.artifactIdentifier && dependency.groupId == arguments.groupIdentifier ) {
 				continue;
 			}
-			if ( meta.packaging IS "pom" && dep.scope IS "import" ) {
-				if ( depth > 10 ) {
+			if ( artifactMetadata.packaging IS "pom" && dependency.scope IS "import" ) {
+				if ( depthLevel > 10 ) {
 					throw( message = "Maximum depth of 10 reached" );
 				}
-				d = getArtifactAndDependencyJarURLs(
-					dep.groupId,
-					dep.artifactId,
-					v,
+				dependencyMetadata = getArtifactAndDependencyJarURLs(
+					repository,
+					dependency.groupId,
+					dependency.artifactId,
+					selectedVersion,
 					scopes,
-					depth++
+					depthLevel++
 				);
-				for ( v in d ) {
-					if ( !arrayFind( result, v ) ) {
-						arrayAppend( result, v );
+				for ( selectedVersion in dependencyMetadata ) {
+					if ( !arrayFind( jarDownloadList, selectedVersion ) ) {
+						arrayAppend( jarDownloadList, selectedVersion );
 					}
 				}
 			} else {
 				arrayAppend(
-					result,
+					jarDownloadList,
 					{
-						"download"   : getJarFileURL( dep.groupId, dep.artifactId, v ),
-						"groupId"    : dep.groupId,
-						"artifactId" : dep.artifactId,
-						"version"    : v
+						"download" : getJarFileURL(
+							repository,
+							dependency.groupId,
+							dependency.artifactId,
+							selectedVersion
+						),
+						"groupId"    : dependency.groupId,
+						"artifactId" : dependency.artifactId,
+						"version"    : selectedVersion
 					}
 				);
 			}
 		}
-		return result;
+		return jarDownloadList;
 	}
 
 	/**
 	 * Get the URL for a JAR file
+	 * @repo The repository to check (URL or alias)
 	 * @groupId The group ID of the artifact
 	 * @artifactId The artifact ID
 	 * @version The version of the artifact
 	 */
-	private function getJarFileURL( groupId, artifactId, version ){
-		var addr = getGlobalRepos().mavenCentral & replace( groupId, ".", "/", "ALL" ) & "/" & artifactId & "/" & version & "/" & artifactId & "-" & version & ".jar";
+	private function getJarFileURL( repo, groupId, artifactId, version ){
+		var addr = getRepoURL( arguments.repo ) & replace( groupId, ".", "/", "ALL" ) & "/" & artifactId & "/" & version & "/" & artifactId & "-" & version & ".jar";
 		return addr;
+	}
+
+	/**
+	 * Converts a Maven-style version range to NPM-style semantic version constraints.
+	 * @param range The Maven version range as a string (e.g., "[1.2.0,2.0.0)").
+	 * @return The equivalent NPM-style constraint (e.g., ">=1.2.0 <2.0.0").
+	 */
+	function convertMavenToNpmVersionRange( required string range ){
+		// If the range is an exact version, return it as-is
+		if ( semanticVersion.isExactVersion( range ) ) {
+			return range;
+		}
+
+		var pattern = "([\[\(])([\d\.]+),([\d\.]+)([\]\)])";
+		var matches = reFind( pattern, range, 1, true );
+
+		if ( !matches.len() ) {
+			throw( message = "Invalid version range format: #range#", type = "InvalidVersionRangeException" );
+		}
+
+		var lowerBoundSymbol = matches[ 2 ] EQ "[" ? ">=" : ">";
+		var lowerVersion     = matches[ 3 ];
+		var upperVersion     = matches[ 4 ];
+		var upperBoundSymbol = matches[ 5 ] EQ "]" ? "<=" : "<";
+
+		return lowerBoundSymbol & lowerVersion & " " & upperBoundSymbol & upperVersion;
 	}
 
 	/**
