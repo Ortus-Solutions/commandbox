@@ -1079,7 +1079,7 @@ External Dependencies:
 		<!-- do a check -->
 		<antcontrib:if>
 			<and>
-				<available file="runwar/${runwar.version}/runwar-${runwar.version}.jar" />
+				<available file="runwar-legacy/${runwar.version}/runwar-legacy-${runwar.version}.jar" />
 				<not>
 					<contains string="${runwar.version}" substring="snapshot" casesensitive="false" />
 				</not>
@@ -1089,12 +1089,12 @@ External Dependencies:
 			</then>
 			<else>
 				<echo>runwar not found or snapshot build, getting artifact from ${ortus.repoURL}</echo>
-				<mkdir dir="runwar/${runwar.version}" />
-				<get src="${ortus.repoURL}/cfmlprojects/runwar/${runwar.version}/runwar-${runwar.version}.jar" dest="runwar/${runwar.version}/runwar-${runwar.version}.jar" verbose="true" />
+				<mkdir dir="runwar-legacy/${runwar.version}" />
+				<get src="${ortus.repoURL}/cfmlprojects/runwar/legacy-${runwar.version}/runwar-${runwar.version}.jar" dest="runwar-legacy/${runwar.version}/runwar-legacy-${runwar.version}.jar" verbose="true" />
 			</else>
 		</antcontrib:if>
 
-		<copy file="runwar/${runwar.version}/runwar-${runwar.version}.jar" tofile="${lib.dir}/runwar-${runwar.version}.jar" overwrite="true" />
+		<copy file="runwar-legacy/${runwar.version}/runwar-legacy-${runwar.version}.jar" tofile="${lib.dir}/runwar-legacy-${runwar.version}.jar" overwrite="true" />
 
 	</target>
 

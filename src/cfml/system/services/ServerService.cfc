@@ -1106,7 +1106,7 @@ component accessors="true" singleton {
 		// This will get set into serverInfo on first install, taken from the box.json in the CFEngine
 		if( serverInfo.isJakartaEE ) {
 			// Ensure Runwar 6.x with Jakarta support
-			var runwarJakartaVersion = '6.0.0-SNAPSHOT';
+			var runwarJakartaVersion = '6.0.0';
 			var runwarJarURL         = "https://s3.amazonaws.com/downloads.ortussolutions.com/cfmlprojects/runwar/#runwarJakartaVersion#/runwar-#runwarJakartaVersion#.jar";
 			var runwarJarLocal       = expandPath( "/commandbox/libExt/runwar-jakarta-#runwarJakartaVersion#.jar" );
 			var runwarJarFolderLocal = getDirectoryFromPath( runwarJarLocal );
