@@ -250,6 +250,7 @@ component accessors="true" implements="IEndpointInteractive" {
 		props.changeLogFormat = 'text';
 		props.APIToken = getAPIToken();
 		props.forceUpload = arguments.force;
+		props.binaryHash = boxJSON?.binaryHash ?: '';
 
 		// start upload stuff here
 		var upload = boxJSON.location == "forgeboxStorage";
@@ -353,6 +354,7 @@ component accessors="true" implements="IEndpointInteractive" {
 				}
 				consoleLogger.warn( "Uploading package zip [#readableSize#] to #getNamePrefixes()#..." );
 				var storeURL = forgebox.storeURL( props.slug, props.version, props.APIToken );
+				var binary = fileReadBinary( zipPath );
 
 				http
 					url="#storeURL#"
@@ -364,8 +366,10 @@ component accessors="true" implements="IEndpointInteractive" {
 					proxyPassword="#ConfigService.getSetting( 'proxy.password', '' )#"
 					result="local.storeResult"{
 						httpparam type="header" name="Content-Type" value="application/zip";
-						httpparam type="body" value="#fileReadBinary( zipPath )#";
+						httpparam type="body" value="#binary#";
 					}
+
+				props.binaryHash = hash( binary, "MD5" );
 
 				if( fileExists( zipPath ) ){
 					fileDelete( zipPath );
@@ -551,7 +555,7 @@ component accessors="true" implements="IEndpointInteractive" {
 			var strVersion = semanticVersion.parseVersion( version );
 
 			// If the local artifact doesn't exist or it's a snapshot build, download and create it
-			if( !artifactService.artifactExists( slug, version ) || ( strVersion.preReleaseID == 'snapshot' && slug == 'lucee' ) ) {
+			if( !artifactService.artifactExists( slug, version ) || ( strVersion.preReleaseID == 'snapshot' && slug != 'lucee' ) ) {
 				if( downloadURL == "forgeboxStorage" ){
 					downloadURL = forgebox.getStorageLocation(
 						slug, arguments.version, APIToken
@@ -575,6 +579,10 @@ component accessors="true" implements="IEndpointInteractive" {
 
 				} else {
 					job.addLog( "Deferring to [#endpointData.endpointName#] endpoint for #getNamePrefixes()# entry [#slug#]..." );
+
+					if( len( satisfyingVersion.binaryHash ) && isInstanceOf( endpointData.endpoint, 'HTTP' ) ) {
+						endpointData.package = endpointData.package & "##" & satisfyingVersion.binaryHash;
+					}
 					var packagePath = endpointData.endpoint.resolvePackage( endpointData.package, currentWorkingDirectory, arguments.verbose );
 
 					// Cheat for people who set a version, slug, or type in ForgeBox, but didn't put it in their box.json

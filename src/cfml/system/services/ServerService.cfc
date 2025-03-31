@@ -198,6 +198,11 @@ component accessors="true" singleton {
 					'port' : d.web.ajp.port ?: 8009,
 					'secret' : d.web.ajp.secret ?: ''
 				},
+				'websocket' : {
+					'enable' : d.web.websocket.enable ?: false,
+					'URI' : d.web.websocket.URI ?: '/ws',
+					'listener' : d.web.websocket.listener ?: '/WebSocket.cfc'
+				},
 				'rewrites' : {
 					'enable' : d.web.rewrites.enable ?: false,
 					'logEnable' : d.web.rewrites.logEnable ?: false,
@@ -246,6 +251,7 @@ component accessors="true" singleton {
 				'libDirs' : d.app.libDirs ?: '',
 				'webConfigDir' : d.app.webConfigDir ?: '',
 				'serverConfigDir' : d.app.serverConfigDir ?: '',
+				'engineConfigFile' : d.app.engineConfigFile ?: '',
 				'webXMLOverride' : d.app.webXMLOverride ?: '',
 				'webXMLOverrideForce' : d.app.webXMLOverrideForce ?: false,
 				'standalone' : d.app.standalone ?: false,
@@ -356,6 +362,8 @@ component accessors="true" singleton {
 		// Get defaults
 		var defaults = getDefaultServerJSON();
 		var defaultName = serverDetails.defaultName;
+		// Set this now so it's available to any commands or system setting expansions to know what server is being started
+		systemSettings.setSystemSetting( 'interceptData.SERVERINFO.name', defaultName );
 		var defaultwebroot = serverDetails.defaultwebroot;
 		var defaultServerConfigFile = serverDetails.defaultServerConfigFile;
 		var defaultServerConfigFileDirectory = getDirectoryFromPath( defaultServerConfigFile );
@@ -367,6 +375,8 @@ component accessors="true" singleton {
 
 		// In case the interceptor changed them
 		defaultName = serverDetails.defaultName;
+		// Set again in case it changed
+		systemSettings.setSystemSetting( 'interceptData.SERVERINFO.name', defaultName );
 		defaultwebroot = serverDetails.defaultwebroot;
 		defaultServerConfigFile = serverDetails.defaultServerConfigFile;
 		defaultServerConfigFileDirectory = getDirectoryFromPath( defaultServerConfigFile );
@@ -644,6 +654,11 @@ component accessors="true" singleton {
 		if( len( defaults.app.serverConfigDir ?: '' ) ) { defaults.app.serverConfigDir = fileSystemUtil.resolvePath( defaults.app.serverConfigDir, defaultwebroot ); }
 		serverInfo.serverConfigDir 	= serverProps.serverConfigDir 	?: serverJSON.app.serverConfigDir 	?: defaults.app.serverConfigDir;
 
+		// engineConfigFile (only used for BoxLang)
+		if( serverJSON.keyExists( 'app' ) && serverJSON.app.keyExists( 'engineConfigFile' ) ) { serverJSON.app.engineConfigFile = fileSystemUtil.resolvePath( serverJSON.app.engineConfigFile, defaultServerConfigFileDirectory ); }
+		if( len( defaults.app.engineConfigFile ?: '' ) ) { defaults.app.engineConfigFile = fileSystemUtil.resolvePath( defaults.app.engineConfigFile, defaultwebroot ); }
+		serverInfo.engineConfigFile = serverJSON.app.engineConfigFile ?: defaults.app.engineConfigFile;
+
 		// relative trayIcon in server.json is resolved relative to the server.json
 		if( serverJSON.keyExists( 'app' ) && serverJSON.app.keyExists( 'webXML' ) ) { serverJSON.app.webXML = fileSystemUtil.resolvePath( serverJSON.app.webXML, defaultServerConfigFileDirectory ); }
 
@@ -879,6 +894,7 @@ component accessors="true" singleton {
 	    serverInfo.engineName = serverinfo.cfengine contains 'railo' ? 'railo' : serverInfo.engineName;
 	    serverInfo.engineName = serverinfo.cfengine contains 'adobe' ? 'adobe' : serverInfo.engineName;
 	    serverInfo.engineName = serverinfo.warPath contains 'adobe' ? 'adobe' : serverInfo.engineName;
+	    serverInfo.engineName = serverinfo.warPath contains 'boxlang' ? 'boxlang' : serverInfo.engineName;
 
 		var processName = ( serverInfo.name is "" ? "CommandBox" : serverInfo.name );
 
@@ -1016,11 +1032,15 @@ component accessors="true" singleton {
 			    serverInfo.engineName = installDetails.engineName contains 'lucee' ? 'lucee' : serverInfo.engineName;
 			    serverInfo.engineName = installDetails.engineName contains 'railo' ? 'railo' : serverInfo.engineName;
 			    serverInfo.engineName = installDetails.engineName contains 'adobe' ? 'adobe' : serverInfo.engineName;
+			    serverInfo.engineName = installDetails.engineName contains 'boxlang' ? 'boxlang' : serverInfo.engineName;
 			}
 
 			serverInfo.serverHomeDirectory = installDetails.installDir;
 			serverInfo.logdir = serverInfo.serverHomeDirectory & "/logs";
-			serverInfo.engineName = installDetails.engineName;
+			// re-validate what we got back, since only lucee, railo, adobe, and "" are allowed
+			if( !listFindNoCase( 'lucee,railo,adobe,boxlang', serverInfo.engineName ) && serverInfo.engineName != "" ) {
+				serverInfo.engineName = "";
+			}
 			serverInfo.engineVersion = installDetails.version;
 			serverInfo.appFileSystemPath = serverInfo.webroot;
 
@@ -1083,15 +1103,47 @@ component accessors="true" singleton {
 			var displayEngineName = 'WAR';
 		}
 
+		// This will get set into serverInfo on first install, taken from the box.json in the CFEngine
+		if( serverInfo.isJakartaEE ) {
+			// Ensure Runwar 6.x with Jakarta support
+			var runwarJakartaVersion = '6.0.0';
+			var runwarJarURL         = "https://s3.amazonaws.com/downloads.ortussolutions.com/cfmlprojects/runwar/#runwarJakartaVersion#/runwar-#runwarJakartaVersion#.jar";
+			var runwarJarLocal       = expandPath( "/commandbox/libExt/runwar-jakarta-#runwarJakartaVersion#.jar" );
+			var runwarJarFolderLocal = getDirectoryFromPath( runwarJarLocal );
+			if ( !directoryExists( runwarJarFolderLocal ) ) {
+				directoryCreate( runwarJarFolderLocal );
+			}
+			consoleLogger.warn( "Runwar 6.x with Jakarta support is required for #serverInfo.engineName#@#serverInfo.engineVersion#." );
+			if ( !fileExists( runwarJarLocal ) ) {
+				consoleLogger.warn( "Downloading from #runwarJarURL#" );
+				try {
+					http url="#runwarJarURL#" file="#runwarJarLocal#" timeout="200";
+				} catch ( any e ) {
+					consoleLogger.error( "Error downloading Runwar 6.x: #e.message#" );
+					consoleLogger.warn( "Please download it manually and place it in #runwarJarLocal#" );
+					rthrow;
+				}
+			} else {
+				consoleLogger.info( "Runwar 6.x with Jakarta support is already installed." );
+			}
+			consoleLogger.info( "Overriding serverInfo.runwarJarPath to [#runwarJarLocal#]" );
+
+			serverInfo.runwarJarPath = runwarJarLocal;
+		}
+
 		serverInfo.accessLogBaseName = 'access';
 		// This can't be done until the server homes are created above.
 		serverInfo.sites.each( (siteName,site)=>{
 			site.accessLogPath = serverInfo.logDir & '/#site.accessLogBaseName#.txt'
-			site.defaultBaseURL = '';
+			site['defaultBaseURL'] = '';
 			site.openbrowserURL = site.openbrowserURL ?: '';
+			var SSLPort = '';
+			var SSLHost = '';
 			for( var bindingName in serverInfo.bindings.filter( (n,b)=>n!='default' && !n.endsWith( ':endswith:' ) && !n.endsWith( ':startswith:' ) && !n.endsWith( ':regex:' ) && b.type=='ssl' && b.site==siteName ) ) {
 				var binding = serverInfo.bindings[ bindingName ];
-				site.defaultBaseURL = 'https://#(binding.host != '*' ? binding.host : binding.IP )#:#binding.port#'.replace( '0.0.0.0', '127.0.0.1' );
+				SSLPort = binding.port;
+				SSLHost = (binding.host != '*' ? binding.host : binding.IP ).replace( '0.0.0.0', '127.0.0.1' );
+				site.defaultBaseURL = 'https://#SSLHost#:#SSLPort#';
 				break;
 			}
 			if( !len( site.defaultBaseURL ) ) {
@@ -1101,6 +1153,26 @@ component accessors="true" singleton {
 					break;
 				}
 			}
+
+			// Process SSL redirect and HSTS here, now that we have all the bindings assembled
+			// Only if there was at lest one SSL binding. (Use the first one found)
+			if( SSLPort.len() ) {
+				//ssl force redirect
+				if(site.SSLForceRedirect){
+					site.webRules.prepend(
+						// We're assuming that the SSL port is going to be bound to the same host as the HTTP port.  This is a safe assumption for most cases.
+						"not secure() and method(GET) -> { set(attribute='%{o,Location}', value='https://%{LOCAL_SERVER_NAME}:#SSLPort#%{REQUEST_URL}%{QUERY_STRING}'); response-code(301) }"
+					);
+				}
+
+				//ssl hsts
+				if(site.HSTSEnable){
+					site.webRules.prepend(
+						"set(attribute='%{o,Strict-Transport-Security}', value='max-age=#site.HSTSMaxAge##(site.HSTSIncludeSubDomains ? '; includeSubDomains' : '')#')"
+					);
+				}
+			}
+
 
 			// Add AJP secret for bindings
 			var ajpPorts = {};
@@ -1155,7 +1227,7 @@ component accessors="true" singleton {
 
 		// Base this on the "first" site for now.
 		var firstSite = serverInfo.sites[ serverInfo.sites.keyArray().last() ];
-		serverInfo.defaultBaseURL = firstSite.defaultBaseURL;
+		serverInfo['defaultBaseURL'] = firstSite.defaultBaseURL;
 
 		// If there's no open URL, let's create a complete one
 		if( !serverInfo.openbrowserURL.len() ) {
@@ -1190,8 +1262,10 @@ component accessors="true" singleton {
 		// Find the correct tray icon for this server
 		if( !len( serverInfo.trayIcon ) ) {
 			var iconSize = fileSystemUtil.isWindows() ? '-32px' : '';
-		    if( serverInfo.engineName contains "lucee" ) {
-		    	serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-lucee#iconSize#.png';
+		    if( serverInfo.engineName contains "boxlang" ) {
+		    	serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-boxlang#iconSize#.png';
+			} else if( serverInfo.engineName contains "lucee" ) {
+				serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-lucee#iconSize#.png';
 			} else if( serverInfo.engineName contains "railo" ) {
 		    	serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-railo#iconSize#.png';
 			} else if( serverInfo.engineName contains "adobe" ) {
@@ -1200,7 +1274,7 @@ component accessors="true" singleton {
 					serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-cf09#iconSize#.png';
 				} else if( listFirst( serverInfo.engineVersion, '.' ) == 10 ) {
 					serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-cf10#iconSize#.png';
-				} else if( listFirst( serverInfo.engineVersion, '.' ) == 11 ) {
+				} else if( listFirst( serverInfo.engineVersion, '.' ) == 11 ) {	
 					serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-cf11#iconSize#.png';
 				} else if( listFirst( serverInfo.engineVersion, '.' ) == 2016 ) {
 					serverInfo.trayIcon = '/commandbox/system/config/server-icons/trayicon-cf2016#iconSize#.png';
@@ -1764,7 +1838,7 @@ component accessors="true" singleton {
 		CommandService.runInEnvironment(
 			'Load server site settings',
 			()=>{
-				InterceptorService.announceInterception( 'onServerSiteConfigRead', { site=site, siteJSON=siteJSON,siteConfigFile=site.siteConfigFile } );
+				InterceptorService.announceinterception( 'onServerSiteConfigRead', { site=site, siteJSON=siteJSON,siteConfigFile=site.siteConfigFile } );
 				siteJSON = systemSettings.expandDeepSystemSettings( siteJSON );
 				expandAndDefaultConfig( { data : siteJSON, rootDir : site.siteConfigFileDirectory } );
 				// merge in the site settings
@@ -1992,6 +2066,9 @@ component accessors="true" singleton {
 		serverInfo.clientCertMode = site.SSL.clientCert.mode ?: serverJSON.web.SSL.clientCert.mode ?: defaults.web.SSL.clientCert.mode;
 		serverInfo.clientCertSSLRenegotiationEnable = site.security.clientCert.SSLRenegotiationEnable ?: serverJSON.web.security.clientCert.SSLRenegotiationEnable ?: defaults.web.security.clientCert.SSLRenegotiationEnable;
 
+		serverInfo.websocketEnable = site.websocket.enable ?: serverJSON.web.websocket.enable ?: defaults.web.websocket.enable;
+		serverInfo.webSocketURI = site.websocket.uri ?: serverJSON.web.websocket.uri ?: defaults.web.websocket.uri;
+		serverInfo.webSocketListener = site.websocket.listener ?: serverJSON.web.websocket.listener ?: defaults.web.websocket.listener;
 
 		var profileReason = 'config setting server defaults';
 		// Try to set a smart profile if there's not one set
@@ -2178,20 +2255,6 @@ component accessors="true" singleton {
 		}
 
 		serverInfo.webRules = [];
-
-		//ssl hsts
-		if(serverInfo.SSLEnable && serverInfo.HSTSEnable){
-			serverInfo.webRules.append(
-				"set(attribute='%{o,Strict-Transport-Security}', value='max-age=#serverInfo.HSTSMaxAge##(serverInfo.HSTSIncludeSubDomains ? '; includeSubDomains' : '')#')"
-			);
-		}
-
-		//ssl force redirect
-		if(serverInfo.SSLEnable && serverInfo.SSLForceRedirect){
-			serverInfo.webRules.append(
-				"not secure() and method(GET) -> { set(attribute='%{o,Location}', value='https://%{LOCAL_SERVER_NAME}:#serverinfo.SSLPort#%{REQUEST_URL}%{QUERY_STRING}'); response-code(301) }"
-			);
-		}
 
 		serverInfo.webRules.append( site.rules, true);
 		serverInfo.webRules.append( serverJSON.web.rules, true);
@@ -3113,10 +3176,10 @@ component accessors="true" singleton {
 		var result = "";
 		try{
 			if (fileSystemUtil.isWindows() ) {
-				cfexecute(name='cmd', arguments='/c tasklist /FI "PID eq #pidStr#"', variable="result"  timeout="10");
+				cfexecute(name='cmd', arguments='/c tasklist /FI "PID eq #pidStr#"', variable="result", timeout="10");
 				if (findNoCase("java", result) > 0 && findNoCase(pidStr, result) > 0) return true;
 			} else if (fileSystemUtil.isMac() || fileSystemUtil.isLinux() ) {
-				cfexecute(name='ps', arguments='-A -o pid,comm', variable="result" , timeout="10");
+				cfexecute(name='ps', arguments='-A -o pid,comm', variable="result", timeout="10");
 				var matchedProcesses = reMatchNoCase("(?m)^\s*#pidStr#\s.*java",result);
 				if (matchedProcesses.len()) return true;
 			}
@@ -3293,7 +3356,6 @@ component accessors="true" singleton {
 			}
 			return {};
 		}
-
 		var webroot = arguments.directory is "" ? shell.pwd() : arguments.directory;
 		return getServerInfoByWebroot( fileSystemUtil.resolvePath( webroot ) );
 	}
@@ -3361,13 +3423,19 @@ component accessors="true" singleton {
 
 		arguments.webroot = fileSystemUtil.resolvePath( arguments.webroot );
 		var servers = getServers();
+		var dateLastStarted = '1/1/1900';
+		var foundServer = {};
 		for( var thisServer in servers ){
+			
 			if( fileSystemUtil.resolvePath( path=servers[ thisServer ].webroot, forceDirectory=true ) == arguments.webroot ){
-				return servers[ thisServer ];
+				if( len( servers[ thisServer ].dateLastStarted) && dateCompare ( servers[ thisServer ].dateLastStarted, dateLastStarted ) == 1 ){
+					dateLastStarted = servers[ thisServer ].dateLastStarted;
+				}
+				foundServer = servers[ thisServer ];
 			}
 		}
 
-		return {};
+		return foundServer;
 	}
 
 	/**
@@ -3439,6 +3507,7 @@ component accessors="true" singleton {
 			'libDirs' 				: "",
 			'webConfigDir' 			: "",
 			'serverConfigDir' 		: "",
+			'engineConfigFile'		: "",
 			'serverHomeDirectory'	: "",
 			'singleServerHome'		: false,
 			'webroot'				: "",
@@ -3566,12 +3635,16 @@ component accessors="true" singleton {
 			'multiSite'				: false,
 			'resourceManagerLogging':false,
 			'servletPassPredicate'	: '',
-			'adobeScriptsAlias'		: ''
+			'adobeScriptsAlias'		: '',
+			'webSocketURI'			: '',
+			'webSocketListener'		: '',
+			'webSocketEnable'		: false,
+			'isJakartaEE'			: false
 		};
 	}
 
 	struct function newSiteInfoStruct() {
-		return newServerInfoStruct().filter( (k,v)=>listFindNoCase( 'servletPassPredicate,sslkeyfile,resourceManagerLogging,useproxyforwardedip,clientcertsubjectdns,basicauthenable,casesensitivepaths,sendFileMinSizeKB,blocksensitivepaths,basicauthusers,hstsenable,sslport,webroot,webrules,errorpages,clientcertcatruststorepass,clientcerttrustupstreamheaders,http2enable,sslcertfile,accesslogenable,securityrealm,clientcertcatruststorefile,filecachetotalsizemb,sslenable,ajpport,blockflashremoting,sslforceredirect,filecachemaxfilesizekb,fileCacheFileSystemWatcherEnable,ajpenable,host,welcomefiles,clientcertmode,blockcfadmin,verbose,allowedext,authpredicate,httpenable,gzipenable,hstsmaxage,aliases,authenabled,mimetypes,filecacheenable,clientcertcacertfiles,clientcertsslrenegotiationenable,clientcertenable,gzippredicate,clientcertissuerdns,hstsincludesubdomains,port,sslkeypass,SSLCerts,directorybrowsing,ajpsecret,profile,webRulesText,hostAlias,rewritesEnable,adobeScriptsAlias', k ) );
+		return newServerInfoStruct().filter( (k,v)=>listFindNoCase( 'servletPassPredicate,sslkeyfile,resourceManagerLogging,useproxyforwardedip,clientcertsubjectdns,basicauthenable,casesensitivepaths,sendFileMinSizeKB,blocksensitivepaths,basicauthusers,hstsenable,sslport,webroot,webrules,errorpages,clientcertcatruststorepass,clientcerttrustupstreamheaders,http2enable,sslcertfile,accesslogenable,securityrealm,clientcertcatruststorefile,filecachetotalsizemb,sslenable,ajpport,blockflashremoting,sslforceredirect,filecachemaxfilesizekb,fileCacheFileSystemWatcherEnable,ajpenable,host,welcomefiles,clientcertmode,blockcfadmin,verbose,allowedext,authpredicate,httpenable,gzipenable,hstsmaxage,aliases,authenabled,mimetypes,filecacheenable,clientcertcacertfiles,clientcertsslrenegotiationenable,clientcertenable,gzippredicate,clientcertissuerdns,hstsincludesubdomains,port,sslkeypass,SSLCerts,directorybrowsing,ajpsecret,profile,webRulesText,hostAlias,rewritesEnable,adobeScriptsAlias,webSocketEnable,webSocketURI,webSocketListener', k ) );
 	}
 
 	/**

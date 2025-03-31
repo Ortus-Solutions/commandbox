@@ -19,12 +19,13 @@ component accessors="true" singleton="true" {
 	property name="semanticVersion"		inject="provider:semanticVersion@semver";
 	property name="artifactService"		inject="artifactService";
 	property name="wirebox"				inject="wirebox";
+	property name="fileSystemUtil"		inject="fileSystem";
 
 
 	/**
 	* install the server if not already installed to the target directory
 	*
-	* @cfengine	CFML Engine name (lucee, adobe, railo)
+	* @cfengine	CFML Engine name (lucee, adobe, railo, boxlang)
 	* @baseDirectory base directory for server install
 	* @serverInfo The struct of server settings
 	* @serverHomeDirectory Override where the server's home with be
@@ -49,6 +50,8 @@ component accessors="true" singleton="true" {
 			return installRailo( installDetails, serverInfo );
 		} else if ( installDetails.engineName contains "lucee" ) {
 			return installLucee( installDetails, serverInfo );
+		} else if ( installDetails.engineName contains "boxlang" ) {
+			return installBoxlang( installDetails, serverInfo );
 		} else {
 			return installDetails;
 		}
@@ -91,6 +94,56 @@ component accessors="true" singleton="true" {
 		var seedPropertiesPath = installDetails.installDir & "/WEB-INF/cfusion/lib/seed.properties";
 		ensureSeedProperties( seedPropertiesPath );
 
+		return installDetails;
+	}
+
+	/**
+	* install BoxLang
+	*
+	**/
+	public function installBoxlang( installDetails, serverInfo ) {
+		var version=installDetails.version;
+		// default web.xml
+		var source=serverInfo.webXML;
+		var destination=serverInfo.webXML;
+		// web.xml override
+		if( trim( serverInfo.webXMLOverrideActual ) != '' ) {
+			source=serverInfo.webXMLOverrideActual;
+			destination=serverInfo.webXMLOverrideActual;
+		}
+		
+		var fullServerConfigDir = serverInfo.serverConfigDir;
+
+		if( fullServerConfigDir.startsWith( '/WEB-INF' ) ) {
+			fullServerConfigDir = installDetails.installDir & fullServerConfigDir;
+		}
+
+		var webXML = XMLParse( source );
+		var updateMade = false;
+
+		// always set home and debug mode
+		updateMade = ensurePropertServletInitParam( webXML, 'ortus.boxlang.servlet.BoxLangServlet', "boxlang-home", fullServerConfigDir );
+		if( serverInfo.debug ) {
+			updateMade = ensurePropertServletInitParam( webXML, 'ortus.boxlang.servlet.BoxLangServlet', "boxlang-debug", serverInfo.debug ) || updateMade;
+		} else {
+			updateMade = removeServletInitParam( webXML, 'ortus.boxlang.servlet.BoxLangServlet', "boxlang-debug" ) || updateMade;
+		}
+		// Only override the config file if set
+		if( serverInfo.engineConfigFile != '' ) {
+			// Config file must exist...
+			if( !fileExists( serverInfo.engineConfigFile ) ) {
+				throw( message='Engine config file not found: #serverInfo.engineConfigFile#', type="commandException" );
+			}
+			// ... and be a JSON file
+			if( !lCase( serverInfo.engineConfigFile ).endsWith('.json')) {
+				throw( message='Engine config file must be a JSON file: #serverInfo.engineConfigFile#', type="commandException" );
+			}
+			updateMade = ensurePropertServletInitParam( webXML, 'ortus.boxlang.servlet.BoxLangServlet', "boxlang-config-path", serverInfo.engineConfigFile ) || updateMade;
+		}
+
+		if( updateMade || !fileExists( destination ) ) {
+			writeXMLFile( webXML, destination );
+		}
 		return installDetails;
 	}
 
@@ -268,7 +321,7 @@ component accessors="true" singleton="true" {
 				installDetails.version = previousEngineTag.listLast( '@' );
 			}
 
-			calcLuceeRailoContextPaths( installDetails, serverInfo );
+			calcEngineContextPaths( installDetails, serverInfo );
 			return installDetails;
 		}
 
@@ -296,7 +349,7 @@ component accessors="true" singleton="true" {
 			// Mark this WAR as being exploded already
 			fileWrite( engineTagFile, thisEngineTag );
 
-			calcLuceeRailoContextPaths( installDetails, serverInfo );
+			calcEngineContextPaths( installDetails, serverInfo );
 
 			var thisServerContext = serverInfo.serverConfigDir;
 			if( thisServerContext.startsWith( '/WEB-INF' ) ) {
@@ -318,7 +371,7 @@ component accessors="true" singleton="true" {
 			) {
 			throw( message='Server not installed.', type="commandException");
 		}
-
+		serverInfo.isJakartaEE = false;
 		// Extract engine name and version from the package.  This is required for non-ForgeBox endpoints
 		// since we don't know it until we actually do the installation
 		if( packageService.isPackage( thisTempDir ) ) {
@@ -328,13 +381,18 @@ component accessors="true" singleton="true" {
 			installDetails.engineName = boxJSON.slug;
 			// This file is so we know the correct version of our server on disk
 			thisEngineTag = boxJSON.slug & '@' & boxJSON.version;
+			// BoxLang beta27+ and ACF 2025+ are Jakarta EE
+			serverInfo.isJakartaEE = boxJSON.JakartaEE ?: false;
 		}
 
-		calcLuceeRailoContextPaths( installDetails, serverInfo );
+		calcEngineContextPaths( installDetails, serverInfo );
 
 		// Look for a war or zip archive inside the package
 		var theArchive = '';
+		var filesFound = "";
+		thisTempDir = fileSystemUtil.normalizeSlashes( thisTempDir );
 		for( var thisFile in directoryList( thisTempDir ) ) {
+			filesFound &= fileSystemUtil.normalizeSlashes( thisFile ).replace( thisTempDir, '' ) & chr(10);
 			if( listFindNoCase( 'war,zip', listLast( thisFile, '.' ) ) ) {
 				theArchive = thisFile;
 				break;
@@ -343,7 +401,7 @@ component accessors="true" singleton="true" {
 
 		// If there's no archive, we don't know what to do!
 		if( theArchive == '' ) {
-			throw( "Package didn't contain a war or zip archive." );
+			throw( message="Package didn't contain a war or zip archive.", detail="Files found: " & chr(10) & filesFound, type="commandException" );
 		}
 
 		job.addLog( "Exploding WAR/zip archive...");
@@ -365,7 +423,7 @@ component accessors="true" singleton="true" {
 		return installDetails;
 	}
 
-	private function calcLuceeRailoContextPaths( installDetails, serverInfo ) {
+	private function calcEngineContextPaths( installDetails, serverInfo ) {
 
 		// Set up server and web context dirs if Railo or Lucee
 		if( installDetails.engineName contains 'lucee' || installDetails.engineName contains 'railo' ) {
@@ -396,6 +454,15 @@ component accessors="true" singleton="true" {
 			installDetails.installDir = replace( installDetails.installDir, '\', '/', 'all' );
 
 			serverInfo.webConfigDir = replace( serverInfo.webConfigDir, installDetails.installDir, '' );
+			serverInfo.serverConfigDir = replace( serverInfo.serverConfigDir, installDetails.installDir, '' );
+		} else if( installDetails.engineName contains 'boxlang' ) {
+			if( !len( serverInfo.serverConfigDir ) ) {
+				serverInfo.serverConfigDir = "/WEB-INF/boxlang/";
+			}
+			// Make relative to WEB-INF if possible
+			serverInfo.serverConfigDir = replace( serverInfo.serverConfigDir, '\', '/', 'all' );
+			installDetails.installDir = replace( installDetails.installDir, '\', '/', 'all' );
+
 			serverInfo.serverConfigDir = replace( serverInfo.serverConfigDir, installDetails.installDir, '' );
 		}
 	}
@@ -476,6 +543,40 @@ component accessors="true" singleton="true" {
 		initParam.XmlChildren[2].XmlText = initParamValue;
 		arrayInsertAt(servlets[1].XmlParent.XmlChildren,4,initParam);
 		return true;
+
+	}
+
+
+	/**
+	* Ensure a given servlet has a specific init param value
+	*
+	* @webXML XML Doc of webl.xml
+	* @servletClass Name of servlet to check
+	* @initParamName Name of init param to ensure exists
+	*
+	* @returns true if changes were made, false if nothing was updated.
+	**/
+	function removeServletInitParam( webXML, string servletClass, string initParamName ) {
+		var servlets = xmlSearch(webXML,"//:servlet-class[text()='#servletClass#']");
+		if( !servlets.len() ) {
+			var servlets = xmlSearch(webXML,"//servlet-class[text()='#servletClass#']");
+		}
+		if( !servlets.len() ) {
+			systemoutput( "servlet not found", 1)
+			return false;
+		}
+
+		// If this servlet already has an init-param of this name, ensure the value is correct
+		var i = 1;
+		for( var child in servlets[1].XMLParent.XMLChildren ) {
+			if( child.XMLName=='init-param' && !isNull( child[ 'param-name' ].XMLText ) && child[ 'param-name' ].XMLText == initParamName ) {
+				arrayDeleteAt( servlets[1].XmlParent.XmlChildren, i );
+				return true;
+			}
+			i++;
+		}
+
+		return false;
 
 	}
 

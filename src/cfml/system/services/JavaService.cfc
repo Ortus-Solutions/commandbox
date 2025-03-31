@@ -132,10 +132,11 @@ component accessors="true" singleton {
 	 * TODO: detect ppc64, s390x, and ppc64le
 	 */
 	function getCurrentCPUArch() {
-		if( server.java.archModel contains 32 ) {
+		var osArch = systemSettings.getSystemSetting( 'os.arch', '' );
+		if( osArch contains 32 ) {
 			return 'x32';
 		// Detect ARM chips
-		} else if( systemSettings.getSystemSetting( 'os.arch', '' ).findNoCase( 'arm' ) || systemSettings.getSystemSetting( 'os.arch', '' ).findNoCase( 'aarch' ) ) {
+		} else if( osArch.findNoCase( 'arm' ) || osArch.findNoCase( 'aarch' ) ) {
 			return 'aarch64';
 		} else {
 			return 'x64';
@@ -150,7 +151,14 @@ component accessors="true" singleton {
 			return 'mac';
 		} else if( fileSystemUtil.isLinux() ) {
 			try {
-				if( fileRead( '/proc/version' ) contains 'alpine' ) {
+				if( fileExists( '/etc/os-release' ) ) {
+					if( fileRead( '/etc/os-release' ) contains 'alpine' ) {
+						return 'alpine-linux';
+					}
+				// only look in this file if /etc/os-release doesn't exist
+				// In certain docker environments, /proc/version incorrectly lists alpine even though it isn't
+				// so we want to favor the /etc/os-release file
+				} else if( fileRead( '/proc/version' ) contains 'alpine' ) {
 					return 'alpine-linux';
 				}
 			} catch( any e ) {

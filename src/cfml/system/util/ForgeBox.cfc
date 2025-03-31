@@ -324,7 +324,8 @@ or just add DEBUG to the root logger
 		string changeLogFormat='text',
 		required string APIToken,
 		string zipPath = "",
-		boolean forceUpload = false
+		boolean forceUpload = false,
+		string binaryHash = ""
 	) {
 
 		var formFields = {
@@ -339,7 +340,8 @@ or just add DEBUG to the root logger
 			installInstructionsFormat = arguments.installInstructionsFormat,
 			changeLog                 = arguments.changeLog,
 			changeLogFormat           = arguments.changeLogFormat,
-			forceUpload               = arguments.forceUpload
+			forceUpload               = arguments.forceUpload,
+			binaryHash                = arguments.binaryHash
 		};
 
 		var requestArguments = {
@@ -386,7 +388,7 @@ or just add DEBUG to the root logger
 
 		// error
 		if( results.response.error ){
-			throw( "Something went wrong unplublishing from #getEndpointName()#.", 'forgebox', arrayToList( results.response.messages ) );
+			throw( "Something went wrong unpublishing from #getEndpointName()#.", 'forgebox', arrayToList( results.response.messages ) );
 		}
 
 		return results.response.data;

@@ -111,9 +111,12 @@ component accessors="true" singleton {
 				var thisBoxJSON = readPackageDescriptor( packagePathRequestingInstallation );
 				var slug = endpointData.endpoint.parseSlug( endpointData.package );
 				// If there is an existing version in the box.json for this package
-				if( len( thisBoxJSON.dependencies[slug] ?: thisBoxJSON.devDependencies[slug] ?: '' ) ) {
+				var existingVersion = thisBoxJSON.dependencies[slug] ?: thisBoxJSON.devDependencies[slug] ?: '';
+				if( len( existingVersion ) ) {
+					job.addLog( "Defaulting [#endpointData.package#] version to [#existingVersion#] from your box.json." );
 					// Then leave the box.json alone!
 					updateBoxJSONDependency = false;
+					endpointData.package &= "@#existingVersion#";
 				}
 			}
 			var tmpPath = endpointData.endpoint.resolvePackage( endpointData.package, arguments.currentWorkingDirectory, arguments.verbose );
@@ -126,7 +129,7 @@ component accessors="true" singleton {
 				var boxJSON = readPackageDescriptor( tmpPath );
 				var packageType = boxJSON.type;
 				var packageName = boxJSON.slug;
-				var version = boxJSON.version;
+				var version = updateBoxJSONDependency ? boxJSON.version : existingVersion;
 			} else {
 				job.addErrorLog( "box.json is missing so this isn't really a package! I'll install it anyway, but I'm not happy about it" );
 				job.addWarnLog( "I'm just guessing what the package name, version and type are.  Please ask the package owner to add a box.json." );
@@ -293,6 +296,7 @@ component accessors="true" singleton {
 				ignorePatterns = ignorePatterns,
 				endpointData = endpointData,
 				artifactPath = tmpPath,
+				currentWorkingDirectory = currentWorkingDirectory,
 				packagePathRequestingInstallation = packagePathRequestingInstallation,
 				job = job,
 				skipInstall = false
@@ -300,7 +304,9 @@ component accessors="true" singleton {
 			interceptorService.announceInterception( 'onInstall', interceptData );
 			// Make sure these get set back into their original variables in case the interceptor changed them.
 			installDirectory = interceptData.installDirectory;
-			ignorePatterns = interceptData.ignorePatterns;
+			ignorePatterns = interceptData.ignorePatterns;			
+			arguments.currentWorkingDirectory = interceptData.currentWorkingDirectory;
+			arguments.packagePathRequestingInstallation = interceptData.packagePathRequestingInstallation;
 			tmpPath = interceptData.artifactPath;
 
 			// Set variable to allow interceptor-based skipping of package install
@@ -443,7 +449,7 @@ component accessors="true" singleton {
 			// Assert: At this point, all paths are finalized and we are ready to install.
 
 			// Should we save this as a dependency. Save the install even though the package may already be there
-			if( ( arguments.save || arguments.saveDev ) && updateBoxJSONDependency ) {
+			if( ( arguments.save || arguments.saveDev ) ) {
 				// Add it!
 				if( addDependency( packagePathRequestingInstallation, packageName, version, installDirectory, artifactDescriptor.createPackageDirectory,  arguments.saveDev, endpointData ) ) {
 					// Tell the user...

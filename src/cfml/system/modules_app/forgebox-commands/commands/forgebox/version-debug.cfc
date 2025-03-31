@@ -59,7 +59,7 @@ component {
 				print.line( 'Requested version [#version#] is an exact version, so no semantic version ranges are begin used, just a direct match.' )
 				for( var thisVer in versions ) {
 					if( semanticVersion.isEQ( version, thisVer, true ) ) {
-						matches.append( thisVer.version );
+						matches.append( thisVer );
 						print.line( 'Exact match [#thisVer#] found.' )
 						satisfyingVersion = thisVer;
 						break;
@@ -86,7 +86,7 @@ component {
 					print.line( "The version [stable] doesn't match any avaialble versions, which means all versions are a pre-release, so we'll just grab the latest one (same as [be])." )
 					satisfyingVersion = versions[ 1 ];
 
-					matches = v
+					matches = versions
 				} else {
 					print.redLine( 'Version [#version#] not found for package [#slug#].' );
 				}
