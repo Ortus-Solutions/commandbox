@@ -80,7 +80,7 @@
 				} else {
 					lastLF=false;
 				}
-				if ( char != -1 ) buffer.append( chr( char ) );
+				if ( char != -1 ) buffer.append( char );
 
 				position--;
 
@@ -96,14 +96,18 @@
 
 			if( buffer.len() ) {
 				// Strip any CR or LF from the last (first really) line to eliminate leading line breaks in console output
-				buffer[ buffer.len() ] = listChangeDelims( buffer[ buffer.len() ], '', chr(13) & chr( 10 ) );
+				loop times=2 {
+					if( buffer[ buffer.len() ] == 10 || buffer[ buffer.len() ] == 13 ) {
+						buffer.deleteAt( buffer.len() );
+					}
+				}
 			}
+			buffer = createObject("java", "java.lang.String").init(buffer.reverse(), "UTF-8");
+
 
 			// print our file to console
 			print
-				.text( buffer
-					.reverse()
-					.toList( "" )
+				.text( buffer					
 					.listToArray( chr( 13 ) & chr( 10 ) )
 					.map( function( line ) {
 						return ansiFormatter.cleanLine( line );
@@ -137,24 +141,41 @@
 			threadName = 'tail#createUUID()#';
 			thread action="run" name=threadName priority="HIGH" {
 				try{
+					var buffer = [];
 					// Only keep drawing as long as the main thread is active
 					while( variables.tailRun ) {
+							if( isNull( randomAccessFile ) ) {
+								var randomAccessFile = createObject( "java", "java.io.RandomAccessFile" ).init( file, "r" );
+								randomAccessFile.seek( position );
+							}						
 
-							var randomAccessFile = createObject( "java", "java.io.RandomAccessFile" ).init( file, "r" );
-							randomAccessFile.seek( position );
-							var line = randomAccessFile.readLine();
-							while( !isnull( line ) ){
+							// Don't convert to chars yet, just read the bytes							
+							var byte = randomAccessFile.read();
 
+							if ( byte != -1 ) buffer.append( byte );
+						
+							// If we reached the end of a line or the end of the file (and there are bytes in the buffer), print it out
+							if( byte == 13 || byte == 10 || ( byte == -1 && buffer.len() ) ) {
+								// Convert byte array to UTF-8 encoded string
+								var line = createObject("java", "java.lang.String").init(buffer, "UTF-8");
+								buffer.clear();
 								line = ansiFormatter.cleanLine( line );
 								print
-									.line( line )
+									.text( line )
 									.toConsole();
-
-								var line = randomAccessFile.readLine();
 							}
+							
+							// If we aren't at the end of the file, keep reading
+							if( byte != -1) {
+								continue;
+							}
+
+							// At the end of the file, let's close it, wait a few ms and try again
+
 							// Close the file every time so we don't keep it open and locked
 							position = randomAccessFile.getFilePointer();
 							randomAccessFile.close();
+							structDelete( local, 'randomAccessFile' );
 
 						// Decrease this to speed up the Tail
 						sleep( 300 );
