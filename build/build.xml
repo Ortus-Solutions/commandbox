@@ -177,9 +177,11 @@ External Dependencies:
 		</move>
 
 		<!-- unzip the core.lco file (really a jar) so we can modify the manifest to inject the extensions we need to load -->
+		<propertyregex property="cfml.extensions.modified" input="${cfml.extensions}" regexp="\?" replace=";" />
+
 		<unzip src="${temp.dir}/core.lco" dest="${temp.dir}/lucee-light-core/" overwrite="true"/>
 		<manifest file="${temp.dir}/lucee-light-core/META-INF/MANIFEST.MF" mode="update">
-			<attribute name="Require-Extension" value="${cfml.extensions}"/>
+			<attribute name="Require-Extension" value="${cfml.extensions.modified}"/>
 		</manifest>
 
 		<!-- Re-zip core file] -->
@@ -1065,9 +1067,11 @@ External Dependencies:
 
 		<for list="${cfml.extensions}" param="id">
 			<sequential>
+		        <propertyregex property="id.noVersion" input="@{id}" regexp="\?version=.*" replace="" />
+
 				<echo>Downloading extension @{id}</echo>
 
-				<get src="http://extension.lucee.org/rest/extension/provider/full/@{id}" dest="${extensions.dir}/@{id}.lex" verbose="true" />
+				<get src="http://extension.lucee.org/rest/extension/provider/full/@{id}" dest="${extensions.dir}/@{id.noVersion}.lex" verbose="true" />
 
 			</sequential>
 		</for>
