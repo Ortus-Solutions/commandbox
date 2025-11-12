@@ -64,6 +64,11 @@ component aliases="uninstall" {
 			arguments.currentWorkingDirectory = getCWD();
 		}
 
+		arguments.lockFile = {};
+		if ( fileExists( arguments.currentWorkingDirectory & '/box-lock.json' ) ) {
+			arguments.lockFile = deserializeJSON( fileRead( expandPath( arguments.currentWorkingDirectory & '/box-lock.json' ) ) );
+		}
+
 		// Convert slug to array
 		arguments.slug = listToArray( arguments.slug );
 		// iterate and uninstall.
@@ -73,6 +78,8 @@ component aliases="uninstall" {
 			// Don't pass directory unless you intend to override the box.json of the package being uninstalled
 			packageService.uninstallPackage( argumentCollection = arguments );
 		}
+
+		JSONService.writeJSONFile( arguments.currentWorkingDirectory & '/box-lock.json', arguments.lockFile );
 	}
 
 	// Auto-complete list of slugs
