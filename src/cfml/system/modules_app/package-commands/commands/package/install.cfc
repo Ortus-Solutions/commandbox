@@ -147,32 +147,12 @@ component aliases="install" {
 		// Make ID an array
 		arguments.IDArray = listToArray( arguments.ID );
 
-		arguments.lockFile = {};
-		arguments.lock = arguments.lock || fileExists( arguments.currentWorkingDirectory & '/box-lock.json' );
-		if ( arguments.lock ) {
-			// ensure lock file exists
-			if ( !fileExists( arguments.currentWorkingDirectory & '/box-lock.json' ) ) {
-				print.greenLine( "No lock file exists, creating one..." ).toConsole();
-				var thisBoxJSON = packageService.readPackageDescriptor( arguments.currentWorkingDirectory );
-				arguments.lockFile = {
-					"name": thisBoxJSON.name,
-					"version": thisBoxJSON.version,
-					"lockVersion": 1,
-					"dependencies": {}
-				};
-			} else {
-				print.greenLine( "Loading box-lock.json..." ).toConsole();
-				arguments.lockFile = deserializeJSON( fileRead( expandPath( arguments.currentWorkingDirectory & '/box-lock.json' ) ) );
-			}
-		}
-
 		// Install this package(s).
 		// Don't pass directory unless you intend to override the box.json of the package being installed
 
 		interceptorService.announceInterception( 'preInstallAll', { installArgs=arguments } );
 
 		try {
-
 			// One or more IDs
 			if( arguments.IDArray.len() ) {
 				for( var thisID in arguments.IDArray ){
@@ -191,11 +171,6 @@ component aliases="install" {
 			error( e.message, e.detail );
 		} catch( EndpointNotFound var e ) {
 			error( e.message, e.detail );
-		}
-
-		if ( !arguments.lockFile.isEmpty() ) {
-			JSONService.writeJSONFile( arguments.currentWorkingDirectory & '/box-lock.json', arguments.lockFile );
-			print.greenLine( "box-lock.json written to disk." ).toConsole();
 		}
 
 		interceptorService.announceInterception( 'postInstallAll', { installArgs=arguments } );

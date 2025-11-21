@@ -31,7 +31,6 @@ component accessors="true" singleton {
 	property name='serverService'		inject='serverService';
 	property name='moduleService'		inject='moduleService';
 
-
 	/**
 	* Constructor
 	*/
@@ -85,16 +84,42 @@ component accessors="true" singleton {
 		boolean force=false,
 		string packagePathRequestingInstallation = arguments.currentWorkingDirectory,
 		string defaultName='',
+		boolean lock=false,
 		struct lockFile={}
 	){
 		// Java service registers itself as an interceptor on creation so I need to force the provider to create the service before installing anything.
 		javaService.$get();
 
-		var lockFilePackagesToNotSaveVersions = {};
-
 		var shellWillReload = false;
-		var job = wirebox.getInstance( 'interactiveJob' );
 		interceptorService.announceInterception( 'preInstall', { installArgs=arguments, packagePathRequestingInstallation=packagePathRequestingInstallation } );
+
+		var lockFilePackagesToNotSaveVersions = {};
+		arguments.lock = arguments.lock || fileExists( arguments.currentWorkingDirectory & '/box-lock.json' );
+		var shouldSaveLockFile = false;
+		if ( arguments.lock && arguments.lockFile.isEmpty() ) {
+			var loadLockFileJob = wirebox.getInstance( 'interactiveJob' );
+			loadLockFileJob.start( "Loading lock file..." );
+			if ( arguments.verbose ) {
+				loadLockFileJob.setDumpLog( arguments.verbose );
+			}
+			if ( !fileExists( arguments.currentWorkingDirectory & '/box-lock.json' ) ) {
+				loadLockFileJob.addLog( "No lock file exists, creating one..." );
+				var thisBoxJSON = packageService.readPackageDescriptor( arguments.currentWorkingDirectory );
+				arguments.lockFile = {
+					"name": thisBoxJSON.name,
+					"version": thisBoxJSON.version,
+					"lockVersion": 1,
+					"dependencies": {}
+				};
+			} else {
+				loadLockFileJob.addLog( "Loading box-lock.json..." );
+				arguments.lockFile = deserializeJSON( fileRead( expandPath( arguments.currentWorkingDirectory & '/box-lock.json' ) ) );
+			}
+			loadLockFileJob.complete( arguments.verbose );
+			shouldSaveLockFile = true;
+		}
+
+		var job = wirebox.getInstance( 'interactiveJob' );
 
 		// If there is a package to install, install it
 		if( len( arguments.ID ) ) {
@@ -123,28 +148,34 @@ component accessors="true" singleton {
 				}
 			}
 
-			if ( !arguments.lockFile.isEmpty() && endpointData.endpointName == 'forgebox' ) {
-				var slug = endpointData.endpoint.parseSlug( endpointData.package );
-				if ( arguments.lockFile.dependencies.keyExists( slug ) ) {
-					var lockedDependency = arguments.lockFile.dependencies[ slug ];
-					var requestedVersion = endpointData.endpoint.parseVersion( endpointData.package );
-					if ( arguments.force ) {
-						arguments.lockFile.dependencies.delete( slug );
-						job.addLog( "Ignoring lock file version [#lockedDependency.version#] for [#slug#] due to `force` flag." );
-						arguments.save = true; // turn on save when forcing an update of a locked version
-					} else if ( semanticVersion.satisfies( lockedDependency.version, requestedVersion ) ) {
-						// our lock file version satisfies the requested version range, so use the locked version
-						lockFilePackagesToNotSaveVersions[ slug ] = true;
-						endpointData.package = slug & '@' & lockedDependency.version;
-						job.addLog( "Lock file version [#lockedDependency.version#] satisfies requested version range [#requestedVersion#] for [#slug#]. Using locked version." );
-					} else {
-						// the version requested is not satisfied by the lock file
-						// so update the lock file to the requested version
-						// we do this by deleting the entry from the lock file.
-						arguments.lockFile.dependencies.delete( slug );
-						job.addLog( "Lock file version [#lockedDependency.version#] does NOT satisfy requested version range [#requestedVersion#] for [#slug#]. Updating to requested version and re-locking." );
+			// TODO: consider making this part of the interface so other endpoint types can also report back
+			// if their installation ID contains a semantic version range
+			if( isInstanceOf(endpointData.endpoint, 'forgebox') ) {
+				if ( !arguments.lockFile.isEmpty() ) {
+					var slug = endpointData.endpoint.parseSlug( endpointData.package );
+					if ( arguments.lockFile.dependencies.keyExists( slug ) ) {
+						var lockedDependency = arguments.lockFile.dependencies[ slug ];
+						var requestedVersion = endpointData.endpoint.parseVersion( endpointData.package );
+						if ( arguments.force ) {
+							arguments.lockFile.dependencies.delete( slug );
+							job.addLog( "Ignoring lock file version [#lockedDependency.version#] for [#slug#] due to `force` flag." );
+						} else if ( semanticVersion.satisfies( lockedDependency.version, requestedVersion ) ) {
+							// our lock file version satisfies the requested version range, so use the locked version
+							lockFilePackagesToNotSaveVersions[ slug ] = true;
+							endpointData.package = slug & '@' & lockedDependency.version;
+							job.addLog( "Lock file version [#lockedDependency.version#] satisfies requested version range [#requestedVersion#] for [#slug#]. Using locked version." );
+						} else {
+							// the version requested is not satisfied by the lock file
+							// so update the lock file to the requested version
+							// we do this by deleting the entry from the lock file.
+							arguments.lockFile.dependencies.delete( slug );
+							job.addLog( "Lock file version [#lockedDependency.version#] does NOT satisfy requested version range [#requestedVersion#] for [#slug#]. Updating to requested version and re-locking." );
+						}
 					}
 				}
+				var requestedVersionSemver = endpointData.endpoint.parseVersion( arguments.ID );
+			} else {
+				var requestedVersionSemver = version;
 			}
 
 			var tmpPath = endpointData.endpoint.resolvePackage( endpointData.package, arguments.currentWorkingDirectory, arguments.verbose );
@@ -165,14 +196,6 @@ component accessors="true" singleton {
 				var packageType = 'project';
 				var packageName = endpointData.endpoint.getDefaultName( endpointData.package );
 				var version = '1.0.0';
-			}
-
-			// TODO: consider making this part of the interface so other endpoint types can also report back
-			// if their installation ID contains a semantic version range
-			if( isInstanceOf(endpointData.endpoint, 'forgebox') ) {
-				var requestedVersionSemver = endpointData.endpoint.parseVersion( arguments.ID );
-			} else {
-				var requestedVersionSemver = version;
 			}
 
 			// If the dependency struct in box.json has a name, use it.  This is mostly for
@@ -477,6 +500,8 @@ component accessors="true" singleton {
 
 			// Assert: At this point, all paths are finalized and we are ready to install.
 
+			updateLockedDependencies( arguments.lockFile, packageName, installedVersion, job );
+
 			// Should we save this as a dependency. Save the install even though the package may already be there
 			if( ( arguments.save || arguments.saveDev ) && !lockFilePackagesToNotSaveVersions.keyExists( slug ) ) {
 				// Add it!
@@ -488,7 +513,7 @@ component accessors="true" singleton {
 				// we only update the lock file if we were saving
 				if (
 					!arguments.lockFile.isEmpty() &&
-					endpointData.endpointName == 'forgebox' &&
+					isInstanceOf( endpointData.endpoint, 'forgebox' ) &&
 					!arguments.lockFile.dependencies.keyExists( packageName )
 				) {
 					arguments.lockFile.dependencies[ packageName ] = {
@@ -714,6 +739,13 @@ component accessors="true" singleton {
 
 		interceptorService.announceInterception( 'postInstall', { installArgs=arguments, installDirectory=installDirectory, system=shellWillReload } );
 		job.complete( verbose );
+
+		if ( shouldSaveLockFile ) {
+			JSONService.writeJSONFile( arguments.currentWorkingDirectory & '/box-lock.json', arguments.lockFile );
+			var saveLockFileJob = wirebox.getInstance( 'InteractiveJob' );
+			saveLockFileJob.start( 'Saving box-lock.json file to disk' );
+			saveLockFileJob.complete();
+		}
 
 		return true;
 	}
@@ -1474,4 +1506,25 @@ component accessors="true" singleton {
 		}
 		return version;
 	}
+
+	private void function updateLockedDependencies(
+		required struct lockSlice,
+		required string packageName,
+		required any newVersion,
+		required job
+	) {
+		if ( !arguments.lockSlice.keyExists( "dependencies" ) || !isStruct( arguments.lockSlice.dependencies ) ) {
+			return;
+		}
+
+		if ( arguments.lockSlice.dependencies.keyExists( arguments.packageName ) ) {
+			arguments.lockSlice.dependencies[ arguments.packageName ].version = arguments.newVersion;
+			job.addLog( "Updated locked version for [#arguments.packageName#] to [#arguments.newVersion#]." );
+		}
+
+		for ( var depName in arguments.lockSlice.dependencies ) {
+			updateLockedDependencies( arguments.lockSlice.dependencies[ depName ], arguments.packageName, arguments.newVersion, job );
+		}
+	}
+
 }
