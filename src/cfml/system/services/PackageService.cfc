@@ -1539,7 +1539,7 @@ component accessors="true" singleton {
 		required struct lockSlice,
 		required string packageName,
 		required any newVersion,
-		required job
+		required any job
 	) {
 		if ( !arguments.lockSlice.keyExists( "dependencies" ) || !isStruct( arguments.lockSlice.dependencies ) ) {
 			return;
