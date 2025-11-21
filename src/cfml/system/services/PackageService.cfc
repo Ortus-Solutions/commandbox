@@ -73,7 +73,7 @@ component accessors="true" singleton {
 	*
 	* @returns True if no errors encountered, false if things went boom.
 	**/
-	any function installPackage(
+	boolean function installPackage(
 		required string ID,
 		string directory,
 		boolean save=false,
