@@ -522,7 +522,7 @@ component accessors="true" singleton {
 						"dependencies": {}
 					};
 					// write out updated lock file
-					job.addLog( "box-lock.json updated with locked version [#installedVersion#] for [#slug#]." );
+					job.addLog( "box-lock.json updated with locked version [#installedVersion#] for [#packageName#]." );
 				}
 			}
 
