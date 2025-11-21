@@ -531,7 +531,7 @@ component accessors="true" singleton {
 			updateLockedDependencies( arguments.lockFile, packageName, installedVersion, job );
 
 			// Should we save this as a dependency. Save the install even though the package may already be there
-			if( ( arguments.save || arguments.saveDev ) && !lockFilePackagesToNotSaveVersions.keyExists( slug ) ) {
+			if( ( arguments.save || arguments.saveDev ) && !lockFilePackagesToNotSaveVersions.keyExists( packageName ) ) {
 				// Add it!
 				if( addDependency( packagePathRequestingInstallation, packageName, version, installDirectory, artifactDescriptor.createPackageDirectory,  arguments.saveDev, endpointData ) ) {
 					// Tell the user...
