@@ -931,7 +931,7 @@ component accessors="true" singleton {
 			// Tell the user...
 			job.addLog( "Dependency removed from box.json." );
 
-			if ( arguments.lockFile.dependencies.keyExists( packageName ) ) {
+			if ( !arguments.lockFile.isEmpty() && arguments.lockFile.keyExists( "dependencies" ) && arguments.lockFile.dependencies.keyExists( packageName ) ) {
 				arguments.lockFile.dependencies.delete( packageName );
 				job.addLog( "box-lock.json updated to remove locked version for [#packageName#]." );
 			}
