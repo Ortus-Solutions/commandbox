@@ -175,7 +175,7 @@ component accessors="true" singleton {
 				}
 				var requestedVersionSemver = endpointData.endpoint.parseVersion( arguments.ID );
 			} else {
-				var requestedVersionSemver = version;
+				var requestedVersionSemver = nullValue();
 			}
 
 			var tmpPath = endpointData.endpoint.resolvePackage( endpointData.package, arguments.currentWorkingDirectory, arguments.verbose );
@@ -196,6 +196,10 @@ component accessors="true" singleton {
 				var packageType = 'project';
 				var packageName = endpointData.endpoint.getDefaultName( endpointData.package );
 				var version = '1.0.0';
+			}
+
+			if ( isNull( requestedVersionSemver ) ) {
+				requestedVersionSemver = version;
 			}
 
 			// If the dependency struct in box.json has a name, use it.  This is mostly for
