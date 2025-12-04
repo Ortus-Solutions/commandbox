@@ -20,6 +20,7 @@
 component aliases="uninstall" {
 
 	// DI
+	property name='JSONService'	    inject='JSONService';
 	property name="packageService" 	inject="PackageService";
 
 	/**
