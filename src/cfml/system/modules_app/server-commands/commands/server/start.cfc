@@ -71,6 +71,7 @@ component aliases="start" {
 	 * @SSLKeyPass     		SSL key passphrase
 	 * @rewritesEnable 		enable URL rewriting (default false)
 	 * @rewritesConfig 		optional URL rewriting config file path
+	 * @rewritesFile       The target file for URL rewrites, defaults to index.cfm if it's a CFML engine, or index.bxm if its BoxLang
 	 * @heapSize			The max heap size in megabytes you would like this server to start with, it defaults to 512mb
 	 * @minHeapSize			The min heap size in megabytes you would like this server to start with
 	 * @directoryBrowsing 	Enables directory browsing (default false)
@@ -125,6 +126,7 @@ component aliases="start" {
 		String  SSLKeyPass,
 		Boolean rewritesEnable,
 		String  rewritesConfig,
+		String rewritesFile,
 		Numeric heapSize,
 		Numeric minHeapSize,
 		Boolean directoryBrowsing,

@@ -122,9 +122,9 @@ component accessors="true" singleton="true" {
 		var updateMade = false;
 
 		// always set home and debug mode
-		updateMade = ensurePropertServletInitParam( webXML, 'ortus.boxlang.servlet.BoxLangServlet', "boxlang-home", fullServerConfigDir );
+		updateMade = ensureProperServletInitParam( webXML, 'ortus.boxlang.servlet.BoxLangServlet', "boxlang-home", fullServerConfigDir );
 		if( serverInfo.debug ) {
-			updateMade = ensurePropertServletInitParam( webXML, 'ortus.boxlang.servlet.BoxLangServlet', "boxlang-debug", serverInfo.debug ) || updateMade;
+			updateMade = ensureProperServletInitParam( webXML, 'ortus.boxlang.servlet.BoxLangServlet', "boxlang-debug", serverInfo.debug ) || updateMade;
 		} else {
 			updateMade = removeServletInitParam( webXML, 'ortus.boxlang.servlet.BoxLangServlet', "boxlang-debug" ) || updateMade;
 		}
@@ -138,7 +138,7 @@ component accessors="true" singleton="true" {
 			if( !lCase( serverInfo.engineConfigFile ).endsWith('.json')) {
 				throw( message='Engine config file must be a JSON file: #serverInfo.engineConfigFile#', type="commandException" );
 			}
-			updateMade = ensurePropertServletInitParam( webXML, 'ortus.boxlang.servlet.BoxLangServlet', "boxlang-config-path", serverInfo.engineConfigFile ) || updateMade;
+			updateMade = ensureProperServletInitParam( webXML, 'ortus.boxlang.servlet.BoxLangServlet', "boxlang-config-path", serverInfo.engineConfigFile ) || updateMade;
 		}
 
 		if( updateMade || !fileExists( destination ) ) {
@@ -489,13 +489,13 @@ component accessors="true" singleton="true" {
 		var updateMade = false;
 		var package = lcase( cfengine );
 
-		updateMade = ensurePropertServletInitParam( webXML, '#package#.loader.servlet.CFMLServlet', "#package#-web-directory", fullWebConfigDir );
-		updateMade = ensurePropertServletInitParam( webXML, '#package#.loader.servlet.CFMLServlet', "#package#-server-directory", fullServerConfigDir ) || updateMade;
+		updateMade = ensureProperServletInitParam( webXML, '#package#.loader.servlet.CFMLServlet', "#package#-web-directory", fullWebConfigDir );
+		updateMade = ensureProperServletInitParam( webXML, '#package#.loader.servlet.CFMLServlet', "#package#-server-directory", fullServerConfigDir ) || updateMade;
 
 		// Lucee 5+ has a LuceeServlet as well as will create the WEB-INF by default in your web root
 		if( arguments.cfengine == 'lucee' && val( listFirst( arguments.version, '.' )) >= 5 ) {
-			updateMade = ensurePropertServletInitParam( webXML, '#package#.loader.servlet.LuceeServlet', "#package#-web-directory", fullWebConfigDir ) || updateMade;
-			updateMade = ensurePropertServletInitParam( webXML, '#package#.loader.servlet.LuceeServlet', "#package#-server-directory", fullServerConfigDir ) || updateMade;
+			updateMade = ensureProperServletInitParam( webXML, '#package#.loader.servlet.LuceeServlet', "#package#-web-directory", fullWebConfigDir ) || updateMade;
+			updateMade = ensureProperServletInitParam( webXML, '#package#.loader.servlet.LuceeServlet', "#package#-server-directory", fullServerConfigDir ) || updateMade;
 		}
 		if( updateMade || !fileExists( destination ) || forceUpdate ) {
 			writeXMLFile( webXML, destination );
@@ -514,14 +514,18 @@ component accessors="true" singleton="true" {
 	*
 	* @returns true if changes were made, false if nothing was updated.
 	**/
-	function ensurePropertServletInitParam( webXML, string servletClass, string initParamName, string initParamValue ) {
+	function ensureProperServletInitParam( webXML, string servletClass, string initParamName, string initParamValue ) {
 		var servlets = xmlSearch(webXML,"//:servlet-class[text()='#servletClass#']");
 		if( !servlets.len() ) {
 			var servlets = xmlSearch(webXML,"//servlet-class[text()='#servletClass#']");
 		}
 		if( !servlets.len() ) {
+			var servlets = xmlSearch(webXML,"//*[local-name()='servlet-class'][text()='#servletClass#']");
+		}
+		if( !servlets.len() ) {
 			return false;
 		}
+		
 
 		// If this servlet already has an init-param of this name, ensure the value is correct
 		for( var initParam in servlets[1].XMLParent.XMLChildren.filter( (x)=>x.XMLName=='init-param' ) ) {
@@ -533,15 +537,37 @@ component accessors="true" singleton="true" {
 					return true;
 				}
 			}
+		}   
+		
+		// Detect the namespace from the root element
+		var namespaceURI = webXML.XMLRoot.XMLNsURI;
+		if( !len( namespaceURI ) ) {
+			// Fallback to old Java EE namespace for older web.xml files
+			namespaceURI = "http://java.sun.com/xml/ns/javaee";
 		}
 
 		// if we didn't find a matching init-param above then add it now
-		var initParam = xmlElemnew(webXML,"http://java.sun.com/xml/ns/javaee","init-param");
+		var initParam = xmlElemnew(webXML,namespaceURI,"init-param");
 		initParam.XmlChildren[1] = xmlElemnew(webXML,"param-name");
 		initParam.XmlChildren[1].XmlText = initParamName;
 		initParam.XmlChildren[2] = xmlElemnew(webXML,"param-value");
 		initParam.XmlChildren[2].XmlText = initParamValue;
-		arrayInsertAt(servlets[1].XmlParent.XmlChildren,4,initParam);
+		
+
+		// Find the right position - after init-params but before load-on-startup, async-supported, etc.
+		var insertPosition = servlets[ 1 ].XmlParent.XmlChildren.len() + 1;
+		
+		// Look for elements that should come AFTER init-param and insert before the first one we find
+		for( var i = 1; i <= servlets[ 1 ].XmlParent.XmlChildren.len(); i++ ) {
+			var childName = servlets[ 1 ].XmlParent.XmlChildren[ i ].XMLName;
+			if( listFindNoCase( "load-on-startup,run-as,security-role-ref,multipart-config,async-supported,enabled", childName ) ) {
+				insertPosition = i;
+				break;
+			}
+		}
+		
+		arrayInsertAt( servlets[ 1 ].XmlParent.XmlChildren, insertPosition, initParam );
+		
 		return true;
 
 	}
@@ -562,7 +588,9 @@ component accessors="true" singleton="true" {
 			var servlets = xmlSearch(webXML,"//servlet-class[text()='#servletClass#']");
 		}
 		if( !servlets.len() ) {
-			systemoutput( "servlet not found", 1)
+			var servlets = xmlSearch(webXML,"//*[local-name()='servlet-class'][text()='#servletClass#']");
+		}
+		if( !servlets.len() ) {
 			return false;
 		}
 

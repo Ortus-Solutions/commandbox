@@ -1,5 +1,5 @@
 class Commandbox < Formula
-  desc "CFML embedded server, package manager, and app scaffolding tools"
+  desc "CLI, Package Manager, and Embedded Server for BoxLang, Java, and CFML applications"
   homepage "https://www.ortussolutions.com/products/commandbox"
   url "@repoPRDURL@/ortussolutions/commandbox/@stable-version@/commandbox-bin-@stable-version@.zip"
   sha256 "@stable-sha256@"

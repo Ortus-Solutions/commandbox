@@ -1246,6 +1246,13 @@ component accessors="true" singleton {
 		for( var param in commandParams ){
 			// If it's required and hasn't been supplied...
 			if( param.required && !structKeyExists( userNamedParams, param.name ) ){
+				// Don't bother asking for required params if we're not in an interactive terminal
+				// Otherwise, we'll just hang waiting for input
+				if( !shell.isTerminalInteractive() ) {
+					// If not interactive, we can't ask for input
+					throw( message='Missing required parameter [#param.name#].', type="commandException");
+				}
+
 				// ... Ask the user
 				var message = 'Enter #param.name# ';
 				var value  	= "";
