@@ -532,7 +532,9 @@ component accessors="true" singleton {
 
 			// Assert: At this point, all paths are finalized and we are ready to install.
 
-			updateLockedDependencies( arguments.lockFile, packageName, installedVersion, job );
+			if ( !isNull( installedVersion ) ) {
+				updateLockedDependencies( arguments.lockFile, packageName, installedVersion, job );
+			}
 
 			// Should we save this as a dependency. Save the install even though the package may already be there
 			if( ( arguments.save || arguments.saveDev ) && !lockFilePackagesToNotSaveVersions.keyExists( packageName ) ) {
@@ -544,6 +546,7 @@ component accessors="true" singleton {
 
 				// we only update the lock file if we were saving
 				if (
+					!isNull( installedVersion ) &&
 					!arguments.lockFile.isEmpty() &&
 					isInstanceOf( endpointData.endpoint, 'forgebox' ) &&
 					!arguments.lockFile.dependencies.keyExists( packageName )
