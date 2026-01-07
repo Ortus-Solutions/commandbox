@@ -1450,7 +1450,7 @@ component accessors="true" singleton {
 		if( len( trim( javaAgent ) ) ) { argTokens.append( javaagent ); }
 
 		// Collect recursive list of all jars in libDirs
-		jarArray = serverInfo.libDirs
+		var jarArray = serverInfo.libDirs
 			.listToArray()
 			.reduce( function( jarArray, path ) {
 				if( fileExists( path ) && path.lcase().endsWith( '.jar' ) ) {
