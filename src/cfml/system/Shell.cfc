@@ -441,7 +441,7 @@ component accessors="true" singleton {
 			var binding = bindingReader.readBinding( keys );
 
 		} catch (any e) {
-			if( e.getPageException().getRootCause().getClass().getName() == 'java.io.InterruptedIOException' ) {
+			if( !isNull( e.getCause() ) && e.getCause().getClass().getName() == 'java.io.InterruptedIOException' ) {
 				throw( message='CANCELLED', type="UserInterruptException");
 			}
 			rethrow;
@@ -882,7 +882,7 @@ component accessors="true" singleton {
 			if( !initialCommand ) {
 				rethrow;
 			// This type of error means the user hit Ctrl-C, when not in a readLine() call (and hit my custom signal handler).  Duck out and move along.
-			} else if( e.getPageException().getRootCause().getClass().getName() == 'java.lang.InterruptedException'
+			} else if( (!isNull( e.getCause() ) && e.getCause().getClass().getName() == 'java.lang.InterruptedException')
 				|| e.type.toString() == 'UserInterruptException'
 				|| e.message == 'UserInterruptException'
 				|| e.type.toString() == 'EndOfFileException' ) {
@@ -1002,7 +1002,7 @@ component accessors="true" singleton {
 
 			if( arguments.err.getClass().getName() == 'lucee.runtime.exp.CatchBlockImpl' ) {
 
-				var rawJavaException = arguments.err.getPageException();
+				var rawJavaException = arguments.err;
 				var cause = rawJavaException.getCause();
 				var indent = '  ';
 				var previousType = '';

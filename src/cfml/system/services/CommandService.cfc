@@ -445,7 +445,7 @@ component accessors="true" singleton {
 
 			} catch( any e ){
 
-				FRTransService.errorTransaction( FRTrans, e.getPageException() );
+				FRTransService.errorTransaction( FRTrans, e );
 				lastCommandErrored = true;
 				// If this command didn't already set a failing exit code...
 				if( commandInfo.commandReference.CFC.getExitCode() == 0 ) {
@@ -1075,7 +1075,7 @@ component accessors="true" singleton {
 
 		// Strip cfc extension from filename
 		var CFCName = mid( CFC, 1, len( CFC ) - 4 );
-		var commandName = iif( len( commandPath ), de( commandPath & '.' ), '' ) & CFCName;
+		var commandName = (len( commandPath ) ? commandPath & '.' : '') & CFCName;
 		// Build CFC's path
 		var fullCFCPath = baseCommandDirectory & '.' & commandName;
 
@@ -1117,7 +1117,7 @@ component accessors="true" singleton {
 
 		// Strip cfc extension from filename
 		var CFCName = mid( CFC, 1, len( CFC ) - 4 );
-		var commandName = iif( len( commandPath ), de( commandPath & '.' ), '' ) & CFCName;
+		var commandName = (len( commandPath ) ? ( commandPath & '.' ) : '') & CFCName;
 		// Build CFC's path
 		var fullCFCPath = baseCommandDirectory & '.' & commandName;
 

@@ -110,6 +110,25 @@ External Dependencies:
 		<!-- Mark as init -->
 		<property name="src.isInit" value="true" />
 	</target>
+	<!-- Init Build -->
+	<target name="init.simple" description="Init build" unless="src.isInit">
+		
+		<!-- Increment Build Number -->
+		<propertyfile file="build.number" comment="Build Number for ANT. Edit not!">
+			<entry key="build.number" type="int" operation="+" pattern="00000" default="1" />
+		</propertyfile>
+		<!-- Retrieve Build Number -->
+		<property file="build.number"/>
+
+		<!-- Create version file -->
+		<echo file="${build.dir}/.version" append="false">${commandbox.version}+${build.number}</echo>
+
+		<!-- If stg, change perms and owners -->
+		<antcall target="update.permissions" />
+
+		<!-- Mark as init -->
+		<property name="src.isInit" value="true" />
+	</target>
 
 	<!-- create script to run built commandbox using sources (for core cfml development) -->
 	<target name="build.runsrc" description="script to run built commandbox using sources">
@@ -519,6 +538,58 @@ External Dependencies:
 		}</concat>
 
 	</target>
+
+
+	<target name="build.cli.jar" description="builds box.jar" depends="init.simple">
+
+		<!-- Prepare Compile Path -->
+		<path id="classpath">
+			<!-- <fileset dir="${lucee.lib.dir}"/> -->
+			<fileset dir="${lib.dir}"/>
+		</path>
+
+		<echo message="lucee.lib.dir: ${lucee.lib.dir}" />
+		<echo message="lib.dir: ${lib.dir}" />
+		<!-- Compile java source -->
+		<mkdir dir="${temp.dir}/cli/bin" />
+		<echo message="classpath: ${toString:classpath}" />
+		<javac srcdir="${src.dir}/java" destdir="${temp.dir}/cli/bin" source="${java.compiler}" target="${java.compiler}" classpath="${toString:classpath}" debug="${java.debug}" />
+
+		<!-- Copy Resources to build cli bin -->
+		<copy todir="${temp.dir}/cli/bin/resource" encoding="UTF-8">
+			<fileset dir="${src.dir}/resources"/>
+		</copy>
+		<copy file="${src.dir}/java/cliloader/cli.properties" todir="${temp.dir}/cli/bin/cliloader" />
+		<copy todir="${temp.dir}/cli/bin/cliloader" file="${src.dir}/java/cliloader/version.properties">
+			<filterchain>
+				<expandproperties/>
+				<deletecharacters chars="\n"/>
+				<trim/>
+				<ignoreblank/>
+			</filterchain>
+		</copy>
+
+		<!-- Create jar -->
+		<jar destfile="${dist.dir}/box.jar" filesetmanifest="mergewithoutmain" level="9">
+			<manifest>
+				<attribute name="Add-Opens" value="${java.opens}" />
+				<attribute name="Main-Class" value="cliloader.LoaderCLIMain" />
+				<attribute name="Multi-Release" value="true" />
+			</manifest>
+			<!-- <fileset file="${temp.dir}/cli/libs.zip" />
+			<fileset file="${temp.dir}/cli/cfml.zip" />
+			<fileset file="${temp.dir}/cli/engine.zip" /> -->
+			<fileset dir="${temp.dir}/cli/bin" />
+			<zipfileset src="${lib.dir}/json-smart-mini-${json-smart-mini.version}.jar" includes="**/*.class" />
+			<fileset file="${temp.dir}/cli/version"/>
+		</jar>
+
+		<!-- copy jar to C:\Users\brad\Downloads\commandbox-win-6.3.0-alpha/ overwriting -->
+		<copy file="${dist.dir}/box.jar" tofile="C:\Users\brad\Downloads\commandbox-win-6.3.0-alpha/box.jar" overwrite="true" />
+
+
+	</target>
+
 
 
 

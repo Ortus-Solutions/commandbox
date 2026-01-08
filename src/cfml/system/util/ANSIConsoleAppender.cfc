@@ -50,32 +50,32 @@ component extends="wirebox.system.logging.AbstractAppender" {
 		// Log message
 		switch( loge.getseverity() ) {
 		    case logLevels.FATAL: case logLevels.ERROR:
-				print().boldRedLine( entry );
+				this.print().boldRedLine( entry );
 		         break;
 		    case logLevels.WARN:
-				print().yellowLine( entry );
+				this.print().yellowLine( entry );
 		         break;
 		    case logLevels.INFO:
-				print().greenLine( entry );
+				this.print().greenLine( entry );
 		         break;
 		    default:
-				print().line( entry );
+				this.print().line( entry );
 		}
 
 		// Log Extra Info as a string
 		var extraInfo = loge.getExtraInfoAsString();
 		if( len( extraInfo ) ){
-			print().line( loge.getExtraInfo().toString() );
+			this.print().line( loge.getExtraInfo().toString() );
 		}
 
 		// If we're inside of an active job...
 		if( job().isActive() ) {
 			// Redirect out output into that current job's log
-			job().addLog( print().getResult() );
-			print().clear();
+			job().addLog( this.print().getResult() );
+			this.print().clear();
 		} else {
 			// Otherwise, just send it straight to the console
-			print().toConsole();
+			this.print().toConsole();
 		}
 
 	}

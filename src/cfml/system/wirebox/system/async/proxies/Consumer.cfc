@@ -19,17 +19,13 @@ component extends="BaseProxy" {
 	 * See https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/function/Consumer.html#accept-T-U-
 	 */
 	function accept( required t ){
-		loadContext();
-		try {
-			lock name="#getConcurrentEngineLockName()#" type="exclusive" timeout="60" {
-				variables.target( arguments.t );
-			}
-		} finally {
-			unLoadContext();
-		}
-	}
-
-	function andThen( required after ){
+		return execute(
+			( struct args ) => {
+				variables.target( args.t );
+			},
+			"Consumer",
+			arguments
+		);
 	}
 
 }

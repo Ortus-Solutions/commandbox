@@ -315,7 +315,8 @@ public class LoaderCLIMain {
 
 			// Load up JSR-223!
 			ScriptEngineManager engineManager = new ScriptEngineManager(cl);
-			ScriptEngine engine = engineManager.getEngineByName("CFML");
+			ScriptEngine engine = engineManager.getEngineByName("BoxLang");
+			engine.eval( "getBoxContext().getRuntime().getConfiguration().registerMapping( '/', '" + webroot + "' )" );
 
 			if (debug) {
 				printStream.println("Webroot: " + webroot);

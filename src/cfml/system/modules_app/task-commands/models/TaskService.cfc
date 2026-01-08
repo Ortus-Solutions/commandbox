@@ -122,7 +122,7 @@ component singleton accessors=true {
 
 			if( topLevel ) {
 			 	// Was the task canceled (ctrl-C)
-			 	if( e.getPageException().getRootCause().getClass().getName() == 'java.lang.InterruptedException'
+			 	if( (!isNull( e.getCause() ) && e.getCause().getClass().getName() == 'java.lang.InterruptedException')
 					|| e.type.toString() == 'UserInterruptException'
 					|| e.message == 'UserInterruptException'
 					|| e.type.toString() == 'EndOfFileException' ) {

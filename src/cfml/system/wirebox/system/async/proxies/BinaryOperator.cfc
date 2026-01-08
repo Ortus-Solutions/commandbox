@@ -1,18 +1,8 @@
 /**
- * Functional interface that maps to java.util.function.BiFunction
- * See https://docs.oracle.com/javase/8/docs/api/java/util/function/BiFunction.html
+ * Functional interface that maps to java.util.function.BinaryOperator
+ * See https://docs.oracle.com/javase/8/docs/api/java/util/function/BinaryOperator.html
  */
-component extends="BaseProxy" {
-
-	/**
-	 * Constructor
-	 *
-	 * @f a function to be applied to to the previous element to produce a new element
-	 */
-	function init( required f ){
-		super.init( arguments.f );
-		return this;
-	}
+component extends="BiFunction" {
 
 	/**
 	 * Functional interface for the apply functional interface
@@ -26,7 +16,7 @@ component extends="BaseProxy" {
 					isNull( args.u ) ? javacast( "null", "" ) : args.u
 				);
 			},
-			"BiFunction",
+			"BinaryOperator",
 			arguments
 		);
 	}

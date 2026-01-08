@@ -92,11 +92,10 @@ component singleton{
 	        .paused( true )
 			.build();
 
-		var shellVariables = {
-			// The default file for history is set into the shell here though it's used by the DefaultHistory class
-			'#LineReaderClass.HISTORY_FILE#' : commandHistoryFile,
-			'#LineReaderClass.BLINK_MATCHING_PAREN#' : 0
-		};
+		var shellVariables = createObject( "java", "java.util.HashMap" ).init();
+		// The default file for history is set into the shell here though it's used by the DefaultHistory class
+		shellVariables.put('#LineReaderClass.HISTORY_FILE#', commandHistoryFile );
+		shellVariables.put( '#LineReaderClass.BLINK_MATCHING_PAREN#', 0 );
 
 		if( configService.getSetting( 'tabCompleteInline', false ) ) {
 			shellVariables.append( {

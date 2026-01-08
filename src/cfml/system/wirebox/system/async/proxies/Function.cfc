@@ -7,8 +7,8 @@ component extends="BaseProxy" {
 	/**
 	 * Constructor
 	 *
-	 * @f The lambda or closure to be used in the <code>apply()</code> method
-	 * @debug Add debugging or not
+	 * @f              The lambda or closure to be used in the <code>apply()</code> method
+	 * @debug          Add debugging or not
 	 * @loadAppContext By default, we load the Application context into the running thread. If you don't need it, then don't load it.
 	 */
 	function init(
@@ -28,26 +28,16 @@ component extends="BaseProxy" {
 	 * Represents a function that accepts one argument and produces a result.
 	 */
 	function apply( t ){
-		loadContext();
-		try {
-			lock name="#getConcurrentEngineLockName()#" type="exclusive" timeout="60" {
-				if( isNull( arguments.t ) ){
+		return execute(
+			( struct args ) => {
+				if ( isNull( args.t ) ) {
 					return variables.target();
 				}
-				return variables.target( arguments.t );
-			}
-		} finally {
-			unLoadContext();
-		}
-	}
-
-	function andThen( after ){
-	}
-
-	function compose( before ){
-	}
-
-	function identity(){
+				return variables.target( args.t );
+			},
+			"Function",
+			arguments
+		);
 	}
 
 }
