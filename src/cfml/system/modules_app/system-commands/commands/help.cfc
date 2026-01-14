@@ -219,7 +219,7 @@ component aliases="h,/?,?,--help,-help" {
 				print.cyanText( '#param.name# ' );
 				// Default value
 				if( !isNull(param.default) && param.default!= '[runtime expression]' )  {
-					print.text( '= "#param.default#" ' );
+					print.text( '= "#param.default.toString()#" ' );
 				}
 				// param Hint
 				if( !isNull(param.hint))  {

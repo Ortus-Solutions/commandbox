@@ -61,7 +61,7 @@ component {
 			} else {
 				var historyIterator = shell.getReader().getHistory().iterator();
 				while( historyIterator.hasNext() ) {
-					print.line( listRest( historyIterator.next(), ':' ).trim() );
+					print.line( listRest( historyIterator.next().toString(), ':' ).trim() );
 				}
 
 			} // end clear?

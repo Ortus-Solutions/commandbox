@@ -172,7 +172,7 @@ component accessors="true" singleton {
 		}
 
 		// Ensure we have a system box.json
-		var systemBoxJSON = expandPath( '/commandbox/box.json' );
+		var systemBoxJSON = expandPath( '/commandbox-home/cfml/box.json' );
 		if( !fileExists( systemBoxJSON ) ) {
 			fileWrite( systemBoxJSON, '{ "name":"CommandBox System" }' );
 		}
@@ -783,7 +783,7 @@ component accessors="true" singleton {
 			variables.reader.setCompleter( thisCompletor );
 
 		} else if( completorName == 'dummy' ) {
-			variables.reader.setCompleter( createObject( 'java', 'org.jline.reader.impl.completer.NullCompleter' ) );
+			variables.reader.setCompleter( createObject( 'java', 'org.jline.reader.impl.completer.NullCompleter' ).init() );
 		} else {
 			throw( 'Invalid completor name [#completorName#].  Valid names are "command", "repl", or "dummy".' );
 		}
@@ -814,7 +814,7 @@ component accessors="true" singleton {
 		} else if( highlighterName == 'repl' ) {
 			variables.reader.setHighlighter( createDynamicProxy( REPLHighlighter, [ 'org.jline.reader.Highlighter' ] ) );
 		} else if( highlighterName == 'dummy' ) {
-			variables.reader.setHighlighter( createObject( 'java', 'org.jline.reader.impl.DefaultHighlighter' ) );
+			variables.reader.setHighlighter( createObject( 'java', 'org.jline.reader.impl.DefaultHighlighter' ).init() );
 		} else {
 			throw( 'Invalid highlighter name [#highlighterName#].  Valid names are "command", "repl", or "dummy".' );
 		}

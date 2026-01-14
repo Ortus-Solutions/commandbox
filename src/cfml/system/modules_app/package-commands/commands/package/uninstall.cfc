@@ -59,7 +59,7 @@ component aliases="uninstall" {
 		var isSystemPackageOnly = systemPackageSlugs.containsnocase( arguments.slug ) && !localPackageSlugs.containsnocase( arguments.slug );
 
 		if( arguments.system || isSystemPackageOnly ) {
-			arguments.currentWorkingDirectory = expandPath( '/commandbox' );
+			arguments.currentWorkingDirectory = expandPath( '/commandbox-home/cfml' );
 		} else {
 			arguments.currentWorkingDirectory = getCWD();
 		}
@@ -103,7 +103,7 @@ component aliases="uninstall" {
 	/**
 	* If no directory is provided, it defaults to the system directory to be the system directory
 	*/
-	private array function returnPackageSlugs( string directory = expandPath( '/commandbox' ) ) {
+	private array function returnPackageSlugs( string directory = expandPath( '/commandbox-home/cfml' ) ) {
 		var BoxJSON = packageService.readPackageDescriptor( arguments.directory );
 		return BoxJSON.installPaths.keyArray();
 	}

@@ -88,7 +88,7 @@
     <cffunction name="rebuildModuleRegistry" output="false" access="public" returntype="any" hint="Rescan the module locations directories and re-register all located modules, this method does NOT register or activate any modules, it just reloads the found registry">
     	<cfscript>
     		// Add the application's module's location and the system core modules
-    		var modLocations   = [ '/commandbox/system/modules','/commandbox/system/modules_app', '/commandbox/modules' ];
+    		var modLocations   = [ '/commandbox/system/modules','/commandbox/system/modules_app', '/commandbox-home/cfml/modules' ];
 			// Add the application's external locations array.
 			var externalPaths = ConfigService.getSetting( "ModulesExternalLocation", [] )
 				.map( function( path ) {

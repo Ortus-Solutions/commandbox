@@ -140,7 +140,7 @@ component aliases="install" {
 
 
 		if( arguments.system ) {
-			arguments.currentWorkingDirectory = expandPath( '/commandbox' );
+			arguments.currentWorkingDirectory = expandPath( '/commandbox-home/cfml' );
 		} else {
 			arguments.currentWorkingDirectory = getCWD();
 		}

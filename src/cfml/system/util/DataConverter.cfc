@@ -25,7 +25,7 @@ component singleton {
 		var data = normalizeData(rawData);
 		if(!data.len()) return queryNew('empty');
 		var columns = generateColumnNames(data[1], arguments.columns);
-		return queryNew( columnNames=columns, data=data );
+		return queryNew( columnList=columns, rowData=data );
 	}
 
 	/**

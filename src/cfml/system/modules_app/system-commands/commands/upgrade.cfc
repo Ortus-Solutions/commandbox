@@ -69,7 +69,7 @@ component {
 			proxyUser="#ConfigService.getSetting( 'proxy.user', '' )#"
 			proxyPassword="#ConfigService.getSetting( 'proxy.password', '' )#"
 			result="local.boxRepoResult" {
-				cfhttpparam(name="CLIID", type="url", value="#GetLuceeId().server.id#");
+				cfhttpparam(name="CLIID", type="url", value="#server.boxlang.boxlangId#");
 				cfhttpparam(name="CLIVersion", type="url", value="#shell.getVersion()#");
 				cfhttpparam(name="os", type="url", value="#server.system.properties['os.name']#");
 				cfhttpparam(name="jre", type="url", value="#server.java.version#");
@@ -86,7 +86,7 @@ component {
 			proxyUser="#ConfigService.getSetting( 'proxy.user', '' )#"
 			proxyPassword="#ConfigService.getSetting( 'proxy.password', '' )#"
 			result="local.loaderRepoResult"{
-				cfhttpparam(name="CLIID", type="url", value="#GetLuceeId().server.id#");
+				cfhttpparam(name="CLIID", type="url", value="#server.boxlang.boxlangId#");
 				cfhttpparam(name="CLIVersion", type="url", value="#shell.getVersion()#");
 				cfhttpparam(name="os", type="url", value="#server.system.properties['os.name']#");
 				cfhttpparam(name="jre", type="url", value="#server.java.version#");

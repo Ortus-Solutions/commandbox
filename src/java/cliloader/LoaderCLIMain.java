@@ -729,6 +729,10 @@ public class LoaderCLIMain {
 			// arguments = removeElement( arguments, "-cliworkingdir" );
 		}
 
+		// If cliworkingdirFinal doesn't end with file separator, add it
+		if (!cliworkingdirFinal.endsWith(File.separator)) {
+			cliworkingdirFinal += File.separator;
+		}
 		log.debug("Working Dir set to " + cliworkingdirFinal);
 		props.setProperty("cfml.cli.pwd", cliworkingdirFinal);
 

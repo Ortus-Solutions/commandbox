@@ -56,7 +56,7 @@ component {
 		var thisAppend = arguments.append;
 
 		if( arguments.system ) {
-			var directory = expandPath( '/commandbox' );
+			var directory = expandPath( '/commandbox-home/cfml' );
 		} else {
 			var directory = getCWD();
 		}
