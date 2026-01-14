@@ -40,3 +40,4 @@ lib-light/**
 src/cfml/license.txt
 /src/cfml/libExt
 /src/cfml/_modules
+/src/cfml/modules

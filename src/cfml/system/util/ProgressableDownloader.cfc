@@ -126,8 +126,8 @@ component singleton {
 			inputStream.close();
 
 			var returnStruct = {
-				responseCode = connection.responseCode,
-				responseMessage = connection.responseMessage,
+				responseCode = connection.getResponseCode(),
+				responseMessage = connection.getResponseMessage(),
 				headers = {}
 			};
 			var headerMapSize = connection.getHeaderFields().size();

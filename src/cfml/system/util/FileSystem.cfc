@@ -524,7 +524,7 @@ component accessors="true" singleton {
 	function lockingFileRead( required string path ) {
 		// CFLock to prevent two threads on the same JVM from trying to lock the same file.
 		// That will throw an overlappinglock exception since the file lock is JVM-wide
-		lock name=path type="exclusive" {
+		lock name=path type="exclusive" timeout=20 {
 			try {
 		        var file = createObject( "java", "java.io.File" ).init( path );
 				var fch=FileChannel.open( file.toPath(), [ StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.READ ] );

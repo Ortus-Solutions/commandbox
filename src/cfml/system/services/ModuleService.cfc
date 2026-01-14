@@ -382,6 +382,7 @@
 					try {
 						activateModule( moduleName );
 					} catch( any var e ) {
+						e.printStackTrace();
 						consoleLogger.error( 'Module [#moduleName#] failed to load!  Check the logs for more info ( system-log | open ).' );
 						consoleLogger.error( '>    ' & e.message );
 						if( (e.detail ?: '').len() ) {

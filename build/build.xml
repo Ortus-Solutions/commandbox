@@ -555,6 +555,7 @@ External Dependencies:
 		<echo message="classpath: ${toString:classpath}" />
 		<javac srcdir="${src.dir}/java" destdir="${temp.dir}/cli/bin" source="${java.compiler}" target="${java.compiler}" classpath="${toString:classpath}" debug="${java.debug}" />
 
+		<echo file="${temp.dir}/cli/bin/cliloader/cfml.version" message="${commandbox.version}"/>
 		<!-- Copy Resources to build cli bin -->
 		<copy todir="${temp.dir}/cli/bin/resource" encoding="UTF-8">
 			<fileset dir="${src.dir}/resources"/>

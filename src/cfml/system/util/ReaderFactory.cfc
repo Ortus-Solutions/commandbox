@@ -38,7 +38,7 @@ component singleton{
 			var LevelClass = createObject( 'java', 'java.util.logging.Level' );
 			var consoleHandler = createObject( 'java', 'java.util.logging.ConsoleHandler' );
 			consoleHandler.setLevel( LevelClass.FINE );
-			consoleHandler.setFormatter( createObject( 'java', 'java.util.logging.SimpleFormatter' ) );
+			consoleHandler.setFormatter( createObject( 'java', 'java.util.logging.SimpleFormatter' ).init() );
 			var jlineLogger = createObject( 'java', 'java.util.logging.Logger' ).getLogger( 'org.jline' );
 	        jlineLogger.setLevel( LevelClass.FINE );
 	        jlineLogger.addHandler( consoleHandler );
