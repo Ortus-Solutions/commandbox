@@ -1000,7 +1000,7 @@ component accessors="true" singleton {
 
 		try{
 
-			if( arguments.err.getClass().getName() == 'lucee.runtime.exp.CatchBlockImpl' ) {
+			if( isinstanceOf( arguments.err, 'Throwable' ) ) {
 
 				var rawJavaException = arguments.err;
 				var cause = rawJavaException.getCause();

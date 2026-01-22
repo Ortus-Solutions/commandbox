@@ -382,7 +382,8 @@ component accessors="true" singleton {
 		string luceeContextType='server',
 		string luceeContextPassword='commandbox'
 	){
-		new Administrator( luceeContextType, luceeContextPassword ).updateExtension( extensionID, extensionVersion );
+		throw( "Not implemented in BoxLang CLI yet" );
+	//	new Administrator( luceeContextType, luceeContextPassword ).updateExtension( extensionID, extensionVersion );
 	}
 
 }

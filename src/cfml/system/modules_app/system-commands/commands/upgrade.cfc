@@ -179,7 +179,7 @@ component {
 			);
 
 			// prepare locations
-			var libsfileURL 	= '#thisArtifactsURL#ortussolutions/commandbox/#repoversionshort#/commandbox-libs-#( extensionList().recordCount < 5 ? 'light-' : '' )##repoVersionShort#.zip';
+			var libsfileURL 	= '#thisArtifactsURL#ortussolutions/commandbox/#repoversionshort#/commandbox-libs#repoVersionShort#.zip';
 			var libsfilePath 	= '#temp#/commandbox-libs-#repoVersion#.zip';
 
 			// Download the update

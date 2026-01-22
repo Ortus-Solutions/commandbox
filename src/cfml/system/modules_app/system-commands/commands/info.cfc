@@ -18,12 +18,8 @@ component aliases="about" {
 		var width = 100;
 
 		var shellVersion = shell.getVersion();
-		var CFMLEngine = server.coldfusion.productName;
-		if( structKeyExists( server, CFMLEngine ) ) {
-			var CFMLVersion = '#server[ CFMLEngine ].version# #server[ CFMLEngine ].state# (#server[ CFMLEngine ].versionName#)';
-		} else {
-			var CFMLVersion = server.coldfusion.productVersion;
-		}
+		var CFMLEngine = "BoxLang";
+		var CFMLVersion = server.boxlang.version;
 		var javaVersion = '#server.java.version# (#server.java.vendor#)';
 		var commandboxHome = expandpath( '/commandbox-home' );
 		var binaryPath = getSystemSetting( 'java.class.path', 'Unknown' );

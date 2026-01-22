@@ -2,7 +2,7 @@
 <cfsavecontent variable="CLIErrorOutput">
 <cfsetting enableCFoutputOnly = "true"/>
 <cfparam name="addClosingHTMLTags" default="#true#" type="boolean">
-<cfoutput>Lucee #server.lucee.version# Error (#catch.type#)
+<cfoutput>BoxLang #server.boxlang.version# Error (#catch.type#)
 <cfparam name="catch.message" default=""><cfparam name="catch.detail" default="">
 Message: #replace( HTMLEditFormat( trim( catch.message ) ), chr(10), '<br>', 'all' )#
 <cfif len( catch.detail )>
