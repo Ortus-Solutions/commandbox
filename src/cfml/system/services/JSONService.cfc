@@ -231,7 +231,7 @@ component accessors="true" singleton {
 					fullPropertyName &= '[ "#innerItem#" ]';
 				}
 			} else {
-				item = parser.unwrapQuotes( trim( item ) );
+				var item = parser.unwrapQuotes( trim( item ) );
 				fullPropertyName &= '[ "#item#" ]';
 			}
 		}

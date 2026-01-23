@@ -51,9 +51,9 @@ component {
 		// Loop over each character in the line
 		while( ++i <= len( line ) ) {
 			// Current character
-			char = mid( line, i, 1 );
+			var char = mid( line, i, 1 );
 			// All the remaining characters
-			remainingChars = mid( line, i+1, len( line ) );
+			var remainingChars = mid( line, i+1, len( line ) );
 
 			// Reset this every time
 			isEscaped = false;

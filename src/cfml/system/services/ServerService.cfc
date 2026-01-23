@@ -2699,7 +2699,7 @@ component accessors="true" singleton {
 	array function appendMenuItems( array trayOptions, relativePath, array parentOptions ) {
 		arguments.trayOptions.each( function( menuItem ){
 			// Resolve images and massage default tray options
-			newMenuItem = prepareMenuItem( menuItem, relativePath );
+			var newMenuItem = prepareMenuItem( menuItem, relativePath );
 
 			var match = parentOptions.find( (m)=>trim( m.label ) == trim( newMenuItem.label ) );
 			if( match ) {

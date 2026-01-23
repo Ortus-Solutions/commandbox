@@ -434,17 +434,14 @@ component accessors="true" singleton {
 
 		try {
 			// Next 3 lines required for this to work on *nix
-			attr = terminal.enterRawMode();
+			var attr = terminal.enterRawMode();
 			terminal.puts( capability.keypad_xmit, [] );
 			terminal.flush();
 
 			var binding = bindingReader.readBinding( keys );
 
-		} catch (any e) {
-			if( !isNull( e.getCause() ) && e.getCause().getClass().getName() == 'java.io.InterruptedIOException' ) {
-				throw( message='CANCELLED', type="UserInterruptException");
-			}
-			rethrow;
+		} catch (java.io.InterruptedIOException e) {
+			throw( message='CANCELLED', type="UserInterruptException");
 		} finally {
 			// Undo the rawmode stuff above
 			if( !isNull( attr ) ) {

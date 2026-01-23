@@ -225,7 +225,7 @@ component accessors="true" {
 				var oldFile = oldDir & p.name;
 				var newFile = targetPath & oldFile.replace( getBaseDir(), '' );
 				// Just in case
-				newDirectory = getDirectoryFromPath( newFile );
+				var newDirectory = getDirectoryFromPath( newFile );
 				if( !directoryExists( newDirectory ) ) {
 					directoryCreate( newDirectory, true, true );
 				}

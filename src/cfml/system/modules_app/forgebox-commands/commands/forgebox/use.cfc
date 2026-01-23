@@ -69,7 +69,7 @@ component {
 
 	function usernameComplete( paramSoFar, passedNamedParameters ) {
 
-		endpointName = arguments.passedNamedParameters.endpointName ?: configService.getSetting( 'endpoints.defaultForgeBoxEndpoint', 'forgebox' );
+		var endpointName = arguments.passedNamedParameters.endpointName ?: configService.getSetting( 'endpoints.defaultForgeBoxEndpoint', 'forgebox' );
 
 		try {
 			var oEndpoint = endpointService.getEndpoint( endpointName );

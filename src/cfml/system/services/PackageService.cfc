@@ -209,7 +209,7 @@ component accessors="true" singleton {
 					}
 
 					// What does this package need installed?
-					targetBoxJSON = readPackageDescriptor( movingTarget );
+					var targetBoxJSON = readPackageDescriptor( movingTarget );
 
 					// This ancestor package has a candidate installed that might satisfy our dependency
 					if( structKeyExists( targetBoxJSON.installPaths, packageName ) ) {
@@ -1103,7 +1103,7 @@ component accessors="true" singleton {
 		if( isPackage( arguments.directory ) ) {
 
 			// ...Read it.
-			boxJSON = fileRead( getDescriptorPath( arguments.directory ) );
+			var boxJSON = fileRead( getDescriptorPath( arguments.directory ) );
 
 			// Validate the file is valid JSON
 			if( isJSON( boxJSON ) ) {

@@ -25,11 +25,11 @@ component {
 	function postServerForget() { processScripts( 'postServerForget', interceptData.serverinfo.webroot, interceptData ); }
 
 	function processScripts( required string interceptionPoint, string directory=shell.pwd(), interceptData={} ) {
-		inScript=true;
+		variables.inScript=true;
 		try {
 			serverService.runScript( arguments.interceptionPoint, arguments.directory, true, interceptData );
 		} finally {
-			inScript=false;
+			variables.inScript=false;
 		}
 	}
 

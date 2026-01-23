@@ -160,7 +160,7 @@ component accessors="true" singleton {
 		var commandPathBracket = '';
 		var commandName = '';
 
-		commandPathArray = listToArray( commandPath, '.' );
+		var commandPathArray = listToArray( commandPath, '.' );
 
 		for( var item in commandPathArray ){
 			commandPathBracket &= '[ "#item#" ]';

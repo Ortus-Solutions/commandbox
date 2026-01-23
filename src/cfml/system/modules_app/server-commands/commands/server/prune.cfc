@@ -25,7 +25,7 @@ component {
         Boolean JSON    = false
     )
     {
-        prunableServers = serverService
+        var prunableServers = serverService
             .getServers()
             .valueArray()
             .map( (s) => { s.daysLastStarted=isDate( s.dateLastStarted ?: '' ) ? dateDiff( 'd', s.dateLastStarted, now() ) : 999; return s } )
