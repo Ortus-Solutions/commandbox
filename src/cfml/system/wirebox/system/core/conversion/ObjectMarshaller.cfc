@@ -2,7 +2,9 @@
  * Copyright Since 2005 ColdBox Framework by Luis Majano and Ortus Solutions, Corp
  * www.ortussolutions.com
  * ---
- * Allows you to serialize/deserialize objects
+ * Allows you to serialize/deserialize objects according to the engine
+ * ColdBox is running on.  It uses objectSave() and objectLoad() for CFML engines
+ * and objectSerialize() and objectDeserialize() for BoxLang engines.
  */
 component accessors="true" {
 
@@ -16,7 +18,7 @@ component accessors="true" {
 	/**
 	 * Serialize an object and optionally save it into a file.
 	 *
-	 * @target The complex object, such as a query or CFC, that will be serialized.
+	 * @target   The complex object, such as a query or CFC, that will be serialized.
 	 * @filePath The path of the file in which to save the serialized data.
 	 *
 	 * @return Binary data
@@ -36,7 +38,7 @@ component accessors="true" {
 	/**
 	 * Deserialize an object using a binary object or a filepath
 	 *
-	 * @target The binary object to inflate
+	 * @target   The binary object to inflate
 	 * @filePath The location of the file that has the binary object to inflate
 	 *
 	 * @return Loaded Object
@@ -52,9 +54,15 @@ component accessors="true" {
 
 	/**
 	 * Serialize via objectSave()
+	 *
 	 * @target The complex object, such as a query or CFC, that will be serialized.
 	 */
 	function serializeWithObjectSave( any target ){
+		// Check if BoxLang Prime
+		if ( server.keyExists( "boxlang" ) ) {
+			return toBase64( objectSerialize( arguments.target ) );
+		}
+
 		return toBase64( objectSave( arguments.target ) );
 	}
 
@@ -67,6 +75,11 @@ component accessors="true" {
 		// check if string
 		if ( not isBinary( arguments.binaryObject ) ) {
 			arguments.binaryObject = toBinary( arguments.binaryObject );
+		}
+
+		// Check if BoxLang
+		if ( server.keyExists( "boxlang" ) ) {
+			return objectDeserialize( arguments.binaryObject );
 		}
 
 		return objectLoad( arguments.binaryObject );

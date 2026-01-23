@@ -20,7 +20,7 @@
 		<tr <cfif x mod 2 eq 0>class="even"</cfif> id="cbox_cache_tr_#urlEncodedFormat(thisKey)#">
 	  	<!--- Link --->
 		<td align="left">
-		  	<a href="javascript:cachebox_openwindow('#URLBase##iif(Find("?", URLBase), DE('&'), DE('?'))#debugpanel=cacheviewer&cbox_cacheName=#arguments.cacheName#&cbox_cacheEntry=#urlEncodedFormat( thisKey )#','CacheViewer',650,375,'resizable,scrollbars,status')"
+		  	<a href="javascript:cachebox_openwindow('#URLBase##(Find("?", URLBase) ? '&' : '?')#debugpanel=cacheviewer&cbox_cacheName=#arguments.cacheName#&cbox_cacheEntry=#encodeForJavascript( thisKey )#','CacheViewer',650,375,'resizable,scrollbars,status')"
 			   title="#thisKey#">
 		  	#thisKey#
 			</a>
@@ -34,14 +34,14 @@
 		<!--- Created --->
 		<td align="center" >
 			<cfif !isNull( cacheMetadata[thisKey][ cacheMDKeyLookup.Created ] )>
-			#dateformat( cacheMetadata[thisKey][ cacheMDKeyLookup.Created ], "mmm-dd" )# <br/>
+			#dateformat( cacheMetadata[thisKey][ cacheMDKeyLookup.Created ], "MMM-dd" )# <br/>
 			#timeformat( cacheMetadata[thisKey][ cacheMDKeyLookup.created ], "hh:mm:ss tt" )#
 			</cfif>
 		</td>
 		<!--- Last Accessed --->
 		<td align="center">
 			<cfif !isNull( cacheMetadata[thisKey][ cacheMDKeyLookup.LastAccessed ] )>
-			#dateformat(cacheMetadata[thisKey][ cacheMDKeyLookup.LastAccessed ],"mmm-dd")# <br/>
+			#dateformat(cacheMetadata[thisKey][ cacheMDKeyLookup.LastAccessed ],"MMM-dd")# <br/>
 			#timeformat(cacheMetadata[thisKey][ cacheMDKeyLookup.LastAccessed ],"hh:mm:ss tt")#
 			</cfif>
 		</td>

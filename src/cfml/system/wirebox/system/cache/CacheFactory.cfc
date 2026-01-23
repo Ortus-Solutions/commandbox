@@ -2,41 +2,49 @@
  * Copyright Since 2005 ColdBox Framework by Luis Majano and Ortus Solutions, Corp
  * www.ortussolutions.com
  * ----
- * @author Luis Majano
  *
  * The main CacheBox factory and configuration of caches. From this factory
  * is where you will get all the caches you need to work with or register more caches.
- **/
+ *
+ * @author Luis Majano
+ */
 component accessors=true serializable=false {
 
 	/**
 	 * The unique factory id
 	 */
 	property name="factoryId";
+
 	/**
 	 * The factory version
 	 */
 	property name="version";
+
 	/**
 	 * The CacheBox Configuration object linkage
 	 */
 	property name="config";
+
 	/**
 	 * The ColdBox object linkage
 	 */
 	property name="coldbox";
+
 	/**
 	 * The WireBox object linkage
 	 */
 	property name="wirebox";
+
 	/**
 	 * The LogBox object linkage
 	 */
 	property name="logbox";
+
 	/**
 	 * A configured log class
 	 */
 	property name="log";
+
 	/**
 	 * The Event Manager object linkage
 	 */
@@ -54,35 +62,47 @@ component accessors=true serializable=false {
 
 	/**
 	 * The Global AsyncManager
+	 *
 	 * @see wirebox.system.async.AsyncManager
 	 */
 	property name="asyncManager";
 
 	/**
 	 * The logBox task scheduler executor
+	 *
 	 * @see wirebox.system.async.executors.ScheduledExecutor
 	 */
 	property name="taskScheduler";
 
 	/**
+	 * The default configuration class to use when no configuration is passed to the init method.
+	 */
+	variables.DEFAULT_CONFIG = "wirebox.system.cache.config.DefaultConfiguration";
+
+	/**
 	 * Constructor
 	 *
-	 * @config The CacheBoxConfig object or path to use to configure this instance of CacheBox. If not passed then CacheBox will instantiate the default configuration.
-	 * @config.doc_generic wirebox.system.cache.config.CacheBoxConfig
-	 * @coldbox A coldbox application that this instance of CacheBox can be linked to, if not using it, just ignore it.
+	 * @config              The CacheBoxConfig object or path to use to configure this instance of CacheBox. If not passed then CacheBox will instantiate the default configuration.
+	 * @config.doc_generic  wirebox.system.cache.config.CacheBoxConfig
+	 * @coldbox             A coldbox application that this instance of CacheBox can be linked to, if not using it, just ignore it.
 	 * @coldbox.doc_generic wirebox.system.web.Controller
-	 * @factoryID A unique ID or name for this factory. If not passed I will make one up for you.
-	 * @wirebox A configured wirebox instance to get logbox, asyncManager, and EventManager from.  If not passed, I will create new ones.
+	 * @factoryID           A unique ID or name for this factory. If not passed I will make one up for you.
+	 * @wirebox             A configured wirebox instance to get logbox, asyncManager, and EventManager from.  If not passed, I will create new ones.
 	 */
-	function init( config, coldbox, factoryId = "", wirebox ){
-		var defaultConfigPath = "wirebox.system.cache.config.DefaultConfiguration";
-
+	function init(
+		config = variables.DEFAULT_CONFIG,
+		coldbox,
+		factoryId = createUUID(),
+		wirebox
+	){
 		// CacheBox Factory UniqueID
-		variables.factoryId    = createObject( "java", "java.lang.System" ).identityHashCode( this );
+		variables.factoryId = arguments.factoryId;
 		// Version
-		variables.version      = "6.5.2+37";
-		// Configuration object
-		variables.config       = "";
+		variables.version   = "8.0.5+33";
+		// Default Config Checks
+		if ( isSimpleValue( arguments.config ) AND NOT len( trim( arguments.config ) ) ) {
+			arguments.config = variables.DEFAULT_CONFIG;
+		}
 		// ColdBox Application Link
 		variables.coldbox      = "";
 		// ColdBox Application Link
@@ -107,26 +127,20 @@ component accessors=true serializable=false {
 			"afterCacheShutdown"
 		];
 		// LogBox Links
-		variables.logBox = "";
-		variables.log    = "";
-		// Caches
-		variables.caches = {};
-
-		// Did we send a factoryID in?
-		if ( len( arguments.factoryID ) ) {
-			variables.factoryID = arguments.factoryID;
-		}
-
+		variables.logBox          = "";
+		variables.log             = "";
+		// Cache Map
+		variables.caches          = {};
 		// Prepare Lock Info
-		variables.lockName = "CacheFactory.#variables.factoryID#";
-
-		// Passed in configuration?
-		if ( isNull( arguments.config ) ) {
-			// Create default configuration
-			arguments.config = new wirebox.system.cache.config.CacheBoxConfig( CFCConfigPath = defaultConfigPath );
-		} else if ( isSimpleValue( arguments.config ) ) {
-			arguments.config = new wirebox.system.cache.config.CacheBoxConfig( CFCConfigPath = arguments.config );
-		}
+		variables.lockName        = "CacheFactory.#variables.factoryID#";
+		// Registered system cache providers
+		variables.systemProviders = directoryList(
+			expandPath( "/wirebox/system/cache/providers" ),
+			false, // don't recurse
+			"name", // only names
+			"*.cfc" // only cfcs
+		).filter( ( thisProvider ) => left( thisProvider, 1 ) != "I" )
+			.map( ( thisProvider ) => listFirst( thisProvider, "." ) );
 
 		// Check if linking ColdBox
 		if ( !isNull( arguments.coldbox ) ) {
@@ -162,21 +176,79 @@ component accessors=true serializable=false {
 					name   : "cachebox-tasks",
 					threads: 20
 				);
-
-				// Running standalone, so create our own logging first
-				configureLogBox( arguments.config.getLogBoxConfig() );
 				// Running standalone, so create our own event manager
-				configureEventManager();
+				variables.eventManager = new wirebox.system.core.events.EventPoolManager( variables.eventStates );
 			}
 		}
-
-		// Configure Logging for the Cache Factory
-		variables.log = variables.logBox.getLogger( this );
 
 		// Configure the Cache Factory
 		configure( arguments.config );
 
+		// Configure Logging for the Cache Factory
+		variables.log = variables.logBox.getLogger( this );
+
 		return this;
+	}
+
+	/**
+	 * Configure the cache factory for operation, called by the init().
+	 * You can also re-configure CacheBox programmatically.
+	 *
+	 * @config A CacheBox Config object, path or struct to configure LogBox with.
+	 */
+	function configure( required config ){
+		// Check if just a plain CFC path and build it
+		if ( isSimpleValue( arguments.config ) ) {
+			arguments.config = new wirebox.system.cache.config.CacheBoxConfig( CFCConfigPath: arguments.config );
+		}
+
+		// Check if it's a struct literal config
+		if ( !isObject( arguments.config ) && isStruct( arguments.config ) ) {
+			arguments.config = new wirebox.system.cache.config.CacheBoxConfig().loadDataDSL( arguments.config );
+		}
+
+		// Store config object with validation
+		variables.config = arguments.config.validate();
+
+		// Reset Registries
+		variables.caches = {};
+
+		// Running standalone, so create our own logging first
+		if ( !isObject( variables.coldbox ) && !isObject( variables.wirebox ) ) {
+			variables.logBox = new wirebox.system.logging.LogBox( arguments.config.getLogBoxConfig() );
+		}
+
+		// Register Listeners if not using ColdBox
+		if ( !isObject( variables.coldbox ) ) {
+			registerListeners();
+		}
+
+		// Register default cache first
+		var defaultCacheConfig = variables.config.getDefaultCache();
+		createCache(
+			name      : "default",
+			provider  : defaultCacheConfig.provider,
+			properties: defaultCacheConfig
+		);
+
+		// Register named caches
+		variables.config
+			.getCaches()
+			.each( ( key, def ) => {
+				createCache(
+					name      : key,
+					provider  : def.provider,
+					properties: def.properties
+				);
+			} );
+
+		// Scope registrations
+		if ( variables.config.getScopeRegistration().enabled ) {
+			doScopeRegistration();
+		}
+
+		// Announce To Listeners
+		variables.eventManager.announce( "afterCacheFactoryConfiguration", { cacheFactory : this } );
 	}
 
 	/**
@@ -208,55 +280,6 @@ component accessors=true serializable=false {
 		return this;
 	}
 
-	/**
-	 * Configure the cache factory for operation, called by the init(). You can also re-configure CacheBox programmatically.
-	 *
-	 * @config The CacheBox config object
-	 * @config.doc_generic wirebox.system.cache.config.CacheBoxConfig
-	 */
-	function configure( required config ){
-		lock name="#variables.lockName#" type="exclusive" timeout="30" throwontimeout="true" {
-			// Store config object
-			variables.config = arguments.config;
-			// Validate configuration
-			variables.config.validate();
-			// Reset Registries
-			variables.caches = {};
-
-			// Register Listeners if not using ColdBox
-			if ( not isObject( variables.coldbox ) ) {
-				registerListeners();
-			}
-
-			// Register default cache first
-			var defaultCacheConfig = variables.config.getDefaultCache();
-			createCache(
-				name       = "default",
-				provider   = defaultCacheConfig.provider,
-				properties = defaultCacheConfig
-			);
-
-			// Register named caches
-			variables.config
-				.getCaches()
-				.each( function( key, def ){
-					createCache(
-						name       = key,
-						provider   = def.provider,
-						properties = def.properties
-					);
-				} );
-
-			// Scope registrations
-			if ( variables.config.getScopeRegistration().enabled ) {
-				doScopeRegistration();
-			}
-
-			// Announce To Listeners
-			variables.eventManager.announce( "afterCacheFactoryConfiguration", { cacheFactory : this } );
-		}
-	}
-
 	/********************************* PUBLIC CACHE FACTORY OPERATIONS *********************************/
 
 	/**
@@ -264,8 +287,9 @@ component accessors=true serializable=false {
 	 *
 	 * @name The cache name to get
 	 *
-	 * @throws CacheFactory.CacheNotFoundException
 	 * @return wirebox.system.cache.providers.ICacheProvider
+	 *
+	 * @throws CacheFactory.CacheNotFoundException
 	 */
 	function getCache( required name ){
 		lock name="#variables.lockName#" type="readonly" timeout="20" throwontimeout="true" {
@@ -283,7 +307,7 @@ component accessors=true serializable=false {
 	/**
 	 * Register a new instantiated cache with this cache factory
 	 *
-	 * @cache The cache to register
+	 * @cache             The cache to register
 	 * @cache.doc_generic wirebox.system.cache.providers.ICacheProvider
 	 */
 	CacheFactory function addCache( required cache ){
@@ -294,9 +318,9 @@ component accessors=true serializable=false {
 	/**
 	 * Add a default named cache to our registry, create it, config it, register it and return it of type: wirebox.system.cache.providers.ICacheProvider
 	 *
-	 * @name The name of the default cache to create
-	 *
+	 * @name  The name of the default cache to create
 	 * @throw CacheFactory.InvalidNameException,CacheFactory.CacheExistsException
+	 *
 	 * @return wirebox.system.cache.providers.ICacheProvider
 	 */
 	function addDefaultCache( required name ){
@@ -333,12 +357,16 @@ component accessors=true serializable=false {
 	 */
 	CacheFactory function shutdown(){
 		// Log startup
-		if ( variables.log.canDebug() ) {
-			variables.log.debug( "Shutdown of cache factory: #getFactoryID()# requested and started." );
+		if ( !isNull( variables.log ) ) {
+			if ( variables.log.canDebug() ) {
+				variables.log.debug( "Shutdown of cache factory: #getFactoryID()# requested and started." );
+			}
 		}
 
 		// Notify Listeners
-		variables.eventManager.announce( "beforeCacheFactoryShutdown", { cacheFactory : this } );
+		if ( !isNull( variables.eventManager ) ) {
+			variables.eventManager.announce( "beforeCacheFactoryShutdown", { cacheFactory : this } );
+		}
 
 		// safely iterate and shutdown caches
 		getCacheNames().each( function( item ){
@@ -346,8 +374,10 @@ component accessors=true serializable=false {
 			var cache = getCache( item );
 
 			// Log it
-			if ( variables.log.canDebug() ) {
-				variables.log.debug( "Shutting down cache: #item# on factoryID: #getFactoryID()#." );
+			if ( !isNull( variables.log ) ) {
+				if ( variables.log.canDebug() ) {
+					variables.log.debug( "Shutting down cache: #item# on factoryID: #getFactoryID()#." );
+				}
 			}
 
 			// process listeners
@@ -360,8 +390,10 @@ component accessors=true serializable=false {
 			variables.eventManager.announce( "afterCacheShutdown", { cache : cache } );
 
 			// log
-			if ( variables.log.canDebug() ) {
-				variables.log.debug( "Cache: #item# was shut down on factoryID: #getFactoryID()#." );
+			if ( !isNull( variables.log ) ) {
+				if ( variables.log.canDebug() ) {
+					variables.log.debug( "Cache: #item# was shut down on factoryID: #getFactoryID()#." );
+				}
 			}
 		} );
 
@@ -372,7 +404,11 @@ component accessors=true serializable=false {
 		removeFromScope();
 
 		// Shutdown LogBox and Executors if not in ColdBox Mode or WireBox mode
-		if ( !isObject( variables.coldbox ) && !isObject( variables.wirebox ) ) {
+		if (
+			!isNull( variables.coldbox ) && !isObject( variables.coldbox ) && !isNull( variables.wirebox ) && !isObject(
+				variables.wirebox
+			)
+		) {
 			if ( isObject( variables.logBox ) ) {
 				variables.logBox.shutdown();
 			}
@@ -380,11 +416,15 @@ component accessors=true serializable=false {
 		}
 
 		// Notify Listeners
-		variables.eventManager.announce( "afterCacheFactoryShutdown", { cacheFactory : this } );
+		if ( !isNull( variables.eventManager ) ) {
+			variables.eventManager.announce( "afterCacheFactoryShutdown", { cacheFactory : this } );
+		}
 
 		// Log shutdown complete
-		if ( variables.log.canDebug() ) {
-			variables.log.debug( "Shutdown of cache factory: #getFactoryID()# completed." );
+		if ( !isNull( variables.log ) ) {
+			if ( variables.log.canDebug() ) {
+				variables.log.debug( "Shutdown of cache factory: #getFactoryID()# completed." );
+			}
 		}
 
 		return this;
@@ -421,7 +461,9 @@ component accessors=true serializable=false {
 		}
 
 		// Notify Listeners
-		variables.eventManager.announce( "beforeCacheShutdown", { cache : cache } );
+		if ( !isNull( variables.eventManager ) ) {
+			variables.eventManager.announce( "beforeCacheShutdown", { cache : cache } );
+		}
 
 		// Shutdown the cache
 		cache.shutdown();
@@ -446,6 +488,10 @@ component accessors=true serializable=false {
 	 * Remove the cache factory from scope registration if enabled, else does nothing
 	 */
 	CacheFactory function removeFromScope(){
+		if ( isNull( variables.config ) ) {
+			return this;
+		}
+
 		var scopeInfo = variables.config.getScopeRegistration();
 		if ( scopeInfo.enabled ) {
 			new wirebox.system.core.collections.ScopeStorage().delete( scopeInfo.key, scopeInfo.scope );
@@ -507,8 +553,10 @@ component accessors=true serializable=false {
 	 * Remove all the registered caches in this factory, this triggers individual cache shutdowns
 	 */
 	CacheFactory function removeAll(){
-		if ( variables.log.canDebug() ) {
-			variables.log.debug( "Removal of all caches requested on factoryID: #getFactoryID()#" );
+		if ( !isNull( variables.log ) ) {
+			if ( variables.log.canDebug() ) {
+				variables.log.debug( "Removal of all caches requested on factoryID: #getFactoryID()#" );
+			}
 		}
 
 		getCacheNames().each( function( item ){
@@ -516,8 +564,10 @@ component accessors=true serializable=false {
 		} );
 
 
-		if ( variables.log.canDebug() ) {
-			variables.log.debug( "All caches removed." );
+		if ( !isNull( variables.log ) ) {
+			if ( variables.log.canDebug() ) {
+				variables.log.debug( "All caches removed." );
+			}
 		}
 
 		return this;
@@ -550,9 +600,9 @@ component accessors=true serializable=false {
 	/**
 	 * Replace a registered named cache with a new decorated cache of the same name.
 	 *
-	 * @cache The name of the cache to replace or the actual instance of the cache to replace
-	 * @cache.doc_generic wirebox.system.cache.providers.ICacheProvider or string
-	 * @decoratedCache The decorated cache manager instance to replace with of type wirebox.system.cache.providers.ICacheProvider
+	 * @cache                      The name of the cache to replace or the actual instance of the cache to replace
+	 * @cache.doc_generic          wirebox.system.cache.providers.ICacheProvider or string
+	 * @decoratedCache             The decorated cache manager instance to replace with of type wirebox.system.cache.providers.ICacheProvider
 	 * @decoratedCache.doc_generic wirebox.system.cache.providers.ICacheProvider
 	 */
 	CacheFactory function replaceCache( required cache, required decoratedCache ){
@@ -623,8 +673,14 @@ component accessors=true serializable=false {
 	 * Get the array of caches registered with this factory
 	 */
 	array function getCacheNames(){
-		lock name="#variables.lockName#" type="readonly" timeout="20" throwontimeout="true" {
+		if ( !isNull( variables.lockName ) ) {
+			lock name="#variables.lockName#" type="readonly" timeout="20" throwontimeout="true" {
+				return structKeyArray( variables.caches );
+			}
+		} else if ( !isNull( variables.caches ) ) {
 			return structKeyArray( variables.caches );
+		} else {
+			return [];
 		}
 	}
 
@@ -654,8 +710,8 @@ component accessors=true serializable=false {
 	/**
 	 * Create a new cache according the the arguments, register it and return it of type: wirebox.system.cache.providers.ICacheProvider
 	 *
-	 * @name The name of the cache to create
-	 * @provider The provider class path of the cache to add
+	 * @name       The name of the cache to create
+	 * @provider   The provider class path of the cache to add
 	 * @properties The configuration properties of the cache
 	 *
 	 * @return wirebox.system.cache.providers.ICacheProvider
@@ -691,7 +747,7 @@ component accessors=true serializable=false {
 	/**
 	 * Register a new cache on this cache factory
 	 *
-	 * @cache The cache instance to register with this factory of type: wirebox.system.cache.providers.ICacheProvider
+	 * @cache             The cache instance to register with this factory of type: wirebox.system.cache.providers.ICacheProvider
 	 * @cache.doc_generic wirebox.system.cache.providers.ICacheProvider
 	 *
 	 * @throws CacheFactory.CacheExistsException
@@ -731,37 +787,6 @@ component accessors=true serializable=false {
 		}
 
 		return this;
-	}
-
-	/**
-	 * Configure a standalone version of logBox for logging
-	 *
-	 * @configPath The LogBox configuration CFC path
-	 */
-	private CacheFactory function configureLogBox( required configPath ){
-		// Create config object
-		var oConfig      = new wirebox.system.logging.config.LogBoxConfig( CFCConfigPath = arguments.configPath );
-		// Create LogBox standalone and store it
-		variables.logBox = new wirebox.system.logging.LogBox( oConfig );
-		return this;
-	}
-
-	/**
-	 * Configure a standalone version of a ColdBox Event Manager
-	 */
-	private CacheFactory function configureEventManager(){
-		// create event manager
-		variables.eventManager = new wirebox.system.core.events.EventPoolManager( variables.eventStates );
-		// register the points to listen to
-		variables.eventManager.appendInterceptionPoints( variables.eventStates );
-		return this;
-	}
-
-	/**
-	 * Get a new utility object
-	 */
-	function getUtil(){
-		return new wirebox.system.core.util.Util();
 	}
 
 }

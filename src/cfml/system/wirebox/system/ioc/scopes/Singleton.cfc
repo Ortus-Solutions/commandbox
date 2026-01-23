@@ -1,10 +1,12 @@
 ﻿/**
-* Copyright Since 2005 ColdBox Framework by Luis Majano and Ortus Solutions, Corp
-* www.ortussolutions.com
-* ---
-* Tracking of single instance objects: Singletons
-**/
-component implements="wirebox.system.ioc.scopes.IScope" accessors="true"{
+ * Copyright Since 2005 ColdBox Framework by Luis Majano and Ortus Solutions, Corp
+ * www.ortussolutions.com
+ * ---
+ * Tracking of single instance objects: Singletons
+ *
+ * @see wirebox.system.ioc.scopes.IScope
+ **/
+component accessors="true" {
 
 	/**
 	 * Injector linkage
@@ -22,99 +24,149 @@ component implements="wirebox.system.ioc.scopes.IScope" accessors="true"{
 	property name="log";
 
 	/**
+	 * These are keys we use internally in ColdBox, so we don't want to clear them when doing clearAppOnly() calls
+	 */
+	variables.RESERVED_KEYS = [
+		"@coldbox",
+		"interceptor-",
+		"cbscheduler",
+		"@coreDelegates",
+		"@cbdelegates"
+	];
+
+	/**
 	 * Configure the scope for operation and returns itself
 	 *
-	 *
-	 * @injector The linked WireBox injector
+	 * @injector             The linked WireBox injector
 	 * @injector.doc_generic wirebox.system.ioc.Injector
 	 *
 	 * @return wirebox.system.ioc.scopes.IScope
 	 */
 	function init( required injector ){
-		variables.injector 		= arguments.injector;
-		variables.singletons 	= createObject( "java", "java.util.concurrent.ConcurrentHashMap" ).init();
-		variables.log			= arguments.injector.getLogBox().getLogger( this );
+		variables.injector   = arguments.injector;
+		variables.singletons = createObject( "java", "java.util.concurrent.ConcurrentHashMap" ).init();
+		variables.log        = arguments.injector.getLogBox().getLogger( this );
 		return this;
 	}
 
 	/**
 	 * Retrieve an object from scope or create it if not found in scope
 	 *
-	 *
-	 * @mapping The linked WireBox injector
+	 * @mapping             The linked WireBox injector
 	 * @mapping.doc_generic wirebox.system.ioc.config.Mapping
-	 * @initArguments The constructor struct of arguments to passthrough to initialization
+	 * @initArguments       The constructor struct of arguments to passthrough to initialization
 	 */
 	function getFromScope( required mapping, struct initArguments ){
-		var cacheKey = lcase( arguments.mapping.getName() );
+		var cacheKey = lCase( arguments.mapping.getName() );
 
 		// Verify in Singleton Cache
-		if( NOT variables.singletons.containsKey(cacheKey) ){
-
+		if ( NOT variables.singletons.containsKey( cacheKey ) ) {
 			// Lock it
-			lock 	name="WireBox.#variables.injector.getInjectorID()#.Singleton.#cacheKey#"
-					type="exclusive"
-					timeout="30"
-					throwontimeout="true"{
-
-						// double lock it
-				if( NOT variables.singletons.containsKey(cacheKey) ){
-
+			lock
+				name          ="WireBox.#variables.injector.getInjectorID()#.Singleton.#cacheKey#"
+				type          ="exclusive"
+				timeout       ="30"
+				throwontimeout="true" {
+				// double lock it
+				if ( NOT variables.singletons.containsKey( cacheKey ) ) {
 					// some nice debug info.
-					if( variables.log.canDebug() ){
-						variables.log.debug("Object: (#cacheKey#) not found in singleton cache, beginning construction.");
+					if ( variables.log.canDebug() ) {
+						variables.log.debug(
+							"Object: (#cacheKey#) not found in singleton cache, beginning construction by (#variables.injector.getName()#) injector"
+						);
 					}
 
 					// construct the singleton object
-					var tmpSingleton = variables.injector.buildInstance( arguments.mapping, arguments.initArguments);
+					var tmpSingleton = variables.injector.buildInstance(
+						arguments.mapping,
+						arguments.initArguments
+					);
 
 					// If not in wiring thread safety, store in singleton cache to satisfy circular dependencies
-					if( NOT arguments.mapping.getThreadSafe() ){
-						variables.singletons.put(cacheKey, tmpSingleton);
+					if ( NOT arguments.mapping.getThreadSafe() ) {
+						variables.singletons.put( cacheKey, tmpSingleton );
 					}
 
-					// wire up dependencies on the singleton object
-					variables.injector.autowire( target=tmpSingleton, mapping=arguments.mapping );
+					try {
+						// wire up dependencies on the singleton object
+						variables.injector.autowire( target = tmpSingleton, mapping = arguments.mapping );
+					} catch ( any e ) {
+						variables.singletons.remove( cacheKey );
+						rethrow;
+					}
 
 					// If thread safe, then now store it in the singleton cache, as all dependencies are now safely wired
-					if( arguments.mapping.getThreadSafe() ){
-						variables.singletons.put(cacheKey, tmpSingleton);
+					if ( arguments.mapping.getThreadSafe() ) {
+						variables.singletons.put( cacheKey, tmpSingleton );
 					}
 
 					// log it
-					if( variables.log.canDebug() ){
-						variables.log.debug( "Object: (#cacheKey#) constructed and stored in singleton cache. ThreadSafe=#arguments.mapping.getThreadSafe()#" );
+					if ( variables.log.canDebug() ) {
+						variables.log.debug(
+							"Object: (#cacheKey#) constructed and stored in singleton cache. ThreadSafe=#arguments.mapping.getThreadSafe()# by (#variables.injector.getName()#) injector"
+						);
 					}
 
 					// return it
-					return variables.singletons.get(cacheKey);
+					return variables.singletons.get( cacheKey );
 				}
-
-			} // end lock
+			}
+			// end lock
 		}
 
 		// return singleton
-		return variables.singletons.get(cacheKey);
+		return variables.singletons.get( cacheKey );
 	}
 
 	/**
 	 * Indicates whether an object exists in scope
 	 *
-	 * @mapping The linked WireBox injector
+	 * @mapping             The linked WireBox injector
 	 * @mapping.doc_generic wirebox.system.ioc.config.Mapping
 	 *
-	 * @return wirebox.system.ioc.scopes.IScope
+	 * @return True if the mapping exists in the singleton cache
 	 */
 	boolean function exists( required mapping ){
-		return variables.singletons.containsKey(lcase( arguments.mapping.getName() ));
+		return variables.singletons.containsKey( lCase( arguments.mapping.getName() ) );
 	}
 
 	/**
 	 * Clear the singletons scopes
+	 *
+	 * @key If passed, we will try to remove that key from the singleton cache instead of every key
 	 */
-	function clear(){
-		variables.singletons = createObject( "java", "java.util.concurrent.ConcurrentHashMap" ).init();
+	Singleton function clear( string key ){
+		if ( !isNull( arguments.key ) ) {
+			variables.singletons.remove( lCase( arguments.key ) );
+		} else {
+			variables.singletons.clear();
+		}
 		return this;
+	}
+
+	/**
+	 * Clear application only singletons
+	 */
+	function clearAppOnly(){
+		var keys = variables.singletons.keySet().toArray();
+		for ( var key in keys ) {
+			// They key must NOT match any pattern in our reserved keys, so we can clear it
+			if ( !inReservedKeys( key ) ) {
+				variables.singletons.remove( key );
+			}
+		}
+		return this;
+	}
+
+	/**
+	 * Discover if a key is in our reserved keys
+	 *
+	 * @key The key to check
+	 *
+	 * @return boolean
+	 */
+	private boolean function inReservedKeys( String key ){
+		return variables.RESERVED_KEYS.some( ( reservedKey ) => findNoCase( reservedKey, key ) );
 	}
 
 }

@@ -53,12 +53,14 @@ component accessors="true" {
 
 	/**
 	 * The Global AsyncManager
+	 *
 	 * @see wirebox.system.async.AsyncManager
 	 */
 	property name="asyncManager";
 
 	/**
 	 * The logBox task scheduler executor
+	 *
 	 * @see wirebox.system.async.executors.ScheduledExecutor
 	 */
 	property name="taskScheduler";
@@ -67,21 +69,29 @@ component accessors="true" {
 	this.logLevels = new wirebox.system.logging.LogLevels();
 
 	/**
+	 * The default configuration class to use when no configuration is passed to the init method.
+	 */
+	variables.DEFAULT_CONFIG = "wirebox.system.logging.config.DefaultConfig";
+	// BoxLang Detection
+	variables.IS_BOXLANG     = server.keyExists( "boxlang" );
+	variables.IS_CLI         = variables.IS_BOXLANG && server.boxlang.cliMode ? true : false;
+
+	/**
 	 * Constructor
 	 *
-	 * @config The LogBoxConfig object to use to configure this instance of LogBox or a path to your configuration object
+	 * @config  A LogBox Config object, path or struct to configure LogBox with.
 	 * @coldbox A coldbox application that this instance of logbox can be linked to.
 	 * @wirebox A wirebox injector that this instance of logbox can be linked to.
 	 *
 	 * @return A configured and loaded LogBox instance
 	 */
 	function init(
-		config  = "wirebox.system.logging.config.DefaultConfig",
+		config  = variables.DEFAULT_CONFIG,
 		coldbox = "",
 		wirebox = ""
 	){
 		// LogBox Unique ID
-		variables.logboxID          = createObject( "java", "java.lang.System" ).identityHashCode( this );
+		variables.logboxID          = createUUID();
 		// Appenders
 		variables.appenderRegistry  = structNew();
 		// Loggers
@@ -89,13 +99,11 @@ component accessors="true" {
 		// Category Appenders
 		variables.categoryAppenders = "";
 		// Version
-		variables.version           = "6.5.2+37";
-
+		variables.version           = "8.0.5+33";
 		// Link incoming ColdBox instance
-		variables.coldbox = arguments.coldbox;
+		variables.coldbox           = arguments.coldbox;
 		// Link incoming WireBox instance
-		variables.wirebox = arguments.wirebox;
-
+		variables.wirebox           = arguments.wirebox;
 
 		// Registered system appenders
 		variables.systemAppenders = directoryList(
@@ -123,6 +131,11 @@ component accessors="true" {
 			);
 		}
 
+		// Default Config Checks
+		if ( isSimpleValue( arguments.config ) AND NOT len( trim( arguments.config ) ) ) {
+			arguments.config = variables.DEFAULT_CONFIG;
+		}
+
 		// Configure LogBox
 		configure( arguments.config );
 
@@ -130,48 +143,51 @@ component accessors="true" {
 	}
 
 	/**
-	 * Configure logbox for operation. You can also re-configure LogBox programmatically. Basically we register all appenders here and all categories
+	 * Configure LogBox for operation.
+	 * You can also re-configure LogBox programmatically.
+	 * Basically we register all appenders here and all categories
 	 *
-	 * @config The LogBoxConfig object to use to configure this instance of LogBox or the path to your configuration object
-	 * @config.doc_generic wirebox.system.logging.config.LogBoxConfig
+	 * @config A LogBox Config object, path or struct to configure LogBox with.
 	 */
 	function configure( required config ){
-		lock name="#variables.logBoxID#.logbox.config" type="exclusive" timeout="30" throwOnTimeout=true {
-			// Do we need to build the config object?
-			if ( isSimpleValue( arguments.config ) ) {
-				arguments.config = new wirebox.system.logging.config.LogBoxConfig(
-					CFCConfigPath: arguments.config
-				);
-			}
-
-			// Store config object with validation
-			variables.config = arguments.config.validate();
-
-			// Reset Registries
-			variables.appenderRegistry = structNew();
-			variables.loggerRegistry   = structNew();
-
-			// Get appender definitions
-			var appenders = variables.config.getAllAppenders();
-
-			// Register All Appenders configured
-			for ( var key in appenders ) {
-				registerAppender( argumentCollection = appenders[ key ] );
-			}
-
-			// Get Root def
-			var rootConfig = variables.config.getRoot();
-			// Create Root Logger
-			var args       = {
-				category  : "ROOT",
-				levelMin  : rootConfig.levelMin,
-				levelMax  : rootConfig.levelMax,
-				appenders : getAppendersMap( rootConfig.appenders )
-			};
-
-			// Save in Registry
-			variables.loggerRegistry = { "ROOT" : new wirebox.system.logging.Logger( argumentCollection = args ) };
+		// Check if just a plain CFC path and build it
+		if ( isSimpleValue( arguments.config ) ) {
+			arguments.config = new wirebox.system.logging.config.LogBoxConfig( CFCConfigPath: arguments.config );
 		}
+
+		// Check if it's a struct literal config
+		if ( !isObject( arguments.config ) && isStruct( arguments.config ) ) {
+			arguments.config = new wirebox.system.logging.config.LogBoxConfig().loadDataDSL( arguments.config );
+		}
+
+		// Store config object with validation
+		variables.config = arguments.config.validate();
+
+		// Reset Registries
+		variables.appenderRegistry = structNew();
+		variables.loggerRegistry   = structNew();
+
+		// Get appender definitions
+		var appenders = variables.config.getAllAppenders();
+
+		// Register All Appenders configured
+		for ( var key in appenders ) {
+			registerAppender( argumentCollection = appenders[ key ] );
+		}
+
+		// Get Root def
+		var rootConfig = variables.config.getRoot();
+		// Create Root Logger
+		var args       = {
+			category           : "ROOT",
+			levelMin           : rootConfig.levelMin,
+			levelMax           : rootConfig.levelMax,
+			appenders          : getAppendersMap( rootConfig.appenders ),
+			serializeExtraInfo : variables.config.getSerializeExtraInfo()
+		};
+
+		// Save in Registry
+		variables.loggerRegistry = { "ROOT" : new wirebox.system.logging.Logger( argumentCollection = args ) };
 	}
 
 	/**
@@ -183,15 +199,15 @@ component accessors="true" {
 			variables.config.onShutdown( this );
 		}
 
-		// Shutdown Executors if not in ColdBox Mode or WireBox mode
-		if ( !isObject( variables.coldbox ) && !isObject( variables.wirebox ) ) {
-			variables.asyncManager.shutdownAllExecutors( force = true );
-		}
-
 		// Shutdown appenders
 		variables.appenderRegistry.each( function( key, appender ){
 			arguments.appender.shutdown();
 		} );
+
+		// Shutdown Executors if not in ColdBox Mode or WireBox mode
+		if ( !isObject( variables.coldbox ) && !isObject( variables.wirebox ) ) {
+			variables.asyncManager.shutdownAllExecutors( force = true );
+		}
 	}
 
 	/**
@@ -232,19 +248,21 @@ component accessors="true" {
 			var categoryConfig = variables.config.getCategory( arguments.category );
 			// Setup creation arguments
 			args               = {
-				category  : categoryConfig.name,
-				levelMin  : categoryConfig.levelMin,
-				levelMax  : categoryConfig.levelMax,
-				appenders : getAppendersMap( categoryConfig.appenders )
+				category           : categoryConfig.name,
+				levelMin           : categoryConfig.levelMin,
+				levelMax           : categoryConfig.levelMax,
+				appenders          : getAppendersMap( categoryConfig.appenders ),
+				serializeExtraInfo : variables.config.getSerializeExtraInfo()
 			};
 		} else {
 			// Do Category Inheritance? or else just return the root logger.
 			root = locateCategoryParentLogger( arguments.category );
 			// Build it out as per Root logger
 			args = {
-				category : arguments.category,
-				levelMin : root.getLevelMin(),
-				levelMax : root.getLevelMax()
+				category           : arguments.category,
+				levelMin           : root.getLevelMin(),
+				levelMax           : root.getLevelMax(),
+				serializeExtraInfo : variables.config.getSerializeExtraInfo()
 			};
 		}
 
@@ -284,12 +302,12 @@ component accessors="true" {
 	/**
 	 * Register a new appender object in the appender registry.
 	 *
-	 * @name A unique name for the appender to register. Only unique names can be registered per variables.
-	 * @class The appender's class to register. We will create, init it and register it for you.
+	 * @name       A unique name for the appender to register. Only unique names can be registered per variables.
+	 * @class      The appender's class to register. We will create, init it and register it for you.
 	 * @properties The structure of properties to configure this appender with.
-	 * @layout The layout class to use in this appender for custom message rendering
-	 * @levelMin The default log level for this appender, by default it is 0. Optional. ex: LogBox.logLevels.WARN
-	 * @levelMax The default log level for this appender, by default it is 4. Optional. ex: LogBox.logLevels.WARN
+	 * @layout     The layout class to use in this appender for custom message rendering
+	 * @levelMin   The default log level for this appender, by default it is 0. Optional. ex: LogBox.logLevels.WARN
+	 * @levelMax   The default log level for this appender, by default it is 4. Optional. ex: LogBox.logLevels.WARN
 	 */
 	LogBox function registerAppender(
 		required name,
@@ -394,20 +412,13 @@ component accessors="true" {
 
 				if ( !variables.appenderRegistry.keyExists( item ) )
 					// In the event that an appender was added after the initial config load
-					registerAppender( argumentCollection: variables.config.getAllAppenders()[ item ] );
+				registerAppender( argumentCollection: variables.config.getAllAppenders()[ item ] );
 
 				target[ item ] = variables.appenderRegistry[ item ];
 				return target;
 			} );
 
 		return ( isNull( local.results ) ? structNew() : results );
-	}
-
-	/**
-	 * Get Utility Object
-	 */
-	private function getUtil(){
-		return new wirebox.system.core.util.Util();
 	}
 
 }

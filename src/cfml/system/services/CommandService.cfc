@@ -1161,7 +1161,7 @@ component accessors="true" singleton {
 		var commandMD = metadataCache.getOrSet(
 			fullCFCPath,
 			function() {
-				return wirebox.getUtil().getInheritedMetaData( fullCFCPath );
+				return wirebox.getUtility().getInheritedMetaData( fullCFCPath );
 			}
 		);
 

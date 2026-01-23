@@ -4,17 +4,17 @@
  * ---
  * A scope enum CFC that gives you the scopes that WireBox uses by default
  **/
-component{
+component {
 
 	// DECLARED SCOPES
-	this.NOSCOPE 		= "NoScope";
-	this.PROTOTYPE  	= "NoScope";
-	this.SINGLETON 		= "singleton";
-	this.SESSION		= "session";
-	this.APPLICATION	= "application";
-	this.REQUEST		= "request";
-	this.SERVER			= "server";
-	this.CACHEBOX		= "cachebox";
+	this.NOSCOPE     = "NoScope";
+	this.PROTOTYPE   = "NoScope";
+	this.SINGLETON   = "singleton";
+	this.SESSION     = "session";
+	this.APPLICATION = "application";
+	this.REQUEST     = "request";
+	this.SERVER      = "server";
+	this.CACHEBOX    = "cachebox";
 
 	/**
 	 * Verify if an incoming scope is valid
@@ -22,25 +22,18 @@ component{
 	 * @scope The scope to check
 	 */
 	boolean function isValidScope( required scope ){
-		for( var key in this ){
-			if( isSimpleValue( this[ key ] ) and this[ key ] eq arguments.scope ){
-				return true;
-			}
-		}
-		return false;
+		return structKeyArray( this ).findNoCase( arguments.scope ) ? true : false;
 	}
 
 	/**
 	 * Get all valid scopes as an array
 	 */
 	array function getValidScopes(){
-		var scopes = {};
-		for( var key in this){
-			if( isSimpleValue( this[ key ] ) ){
-				scopes[ key ] = this[ key ];
-			}
-		}
-		return structKeyArray( scopes );
+		return this
+			.filter( function( key, value ){
+				return isSimpleValue( arguments.value );
+			} )
+			.keyArray();
 	}
 
 }

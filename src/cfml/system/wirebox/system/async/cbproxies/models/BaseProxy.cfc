@@ -122,56 +122,47 @@ component accessors="true" {
 	}
 
 	private function executeAdobe( required Function callback ){
-		/*
-		 * Engine-specific lock name. For Adobe, lock is shared for this CFC instance.  On Lucee, it is random (i.e. not locked).
-		 * This singlethreading on Adobe is to workaround a thread safety issue in the PageContext that needs fixed.
-		 * Amend this check once Adobe fixes this in a later update
-		 */
-		lock name="#variables.UUID#" type="exclusive" timeout="60" {
-			if ( !performContextManagement() ) {
-				return callback();
+		if ( !performContextManagement() ) {
+			return callback();
+		}
+		try {
+			// Set the current thread's class loader from the CF space to avoid
+			// No class defined issues in thread land.
+			getCurrentThread().setContextClassLoader( variables.originalFusionContext.getClass().getClassLoader() );
+
+			// Prepare a new context in ACF for the thread
+			var fusionContext = variables.originalFusionContext.clone();
+			variables.fusionContextStatic.setCurrent( fusionContext );
+			// Create a new page context for the thread
+			var pageContext = variables.originalPageContext.clone();
+			// Reset it's scopes, else bad things happen
+			pageContext.resetLocalScopes();
+			// Set the cf context into it
+			pageContext.setFusionContext( fusionContext );
+			fusionContext.pageContext = pageContext;
+			if ( !isNull( variables.originalAppScope ) ) {
+				fusionContext.SymTab_setApplicationScope( variables.originalAppScope );
 			}
-			try {
-				// Set the current thread's class loader from the CF space to avoid
-				// No class defined issues in thread land.
-				getCurrentThread().setContextClassLoader(
-					variables.originalFusionContext.getClass().getClassLoader()
-				);
 
-				// Prepare a new context in ACF for the thread
-				var fusionContext = variables.originalFusionContext.clone();
-				variables.fusionContextStatic.setCurrent( fusionContext );
-				// Create a new page context for the thread
-				var pageContext = variables.originalPageContext.clone();
-				// Reset it's scopes, else bad things happen
-				pageContext.resetLocalScopes();
-				// Set the cf context into it
-				pageContext.setFusionContext( fusionContext );
-				fusionContext.pageContext = pageContext;
-				if ( !isNull( variables.originalAppScope ) ) {
-					fusionContext.SymTab_setApplicationScope( variables.originalAppScope );
-				}
+			// Create a fake page to run this thread in and link it to the fake page context and fusion context
+			var page             = variables.originalPage._clone();
+			page.pageContext     = pageContext;
+			fusionContext.parent = page;
 
-				// Create a fake page to run this thread in and link it to the fake page context and fusion context
-				var page             = variables.originalPage._clone();
-				page.pageContext     = pageContext;
-				fusionContext.parent = page;
+			// Set the current context of execution now
+			pageContext.setPage( page );
+			pageContext.initializeWith(
+				page,
+				pageContext,
+				pageContext.getVariableScope()
+			);
+			fusionContext.setAsyncThread( true );
 
-				// Set the current context of execution now
-				pageContext.setPage( page );
-				pageContext.initializeWith(
-					page,
-					pageContext,
-					pageContext.getVariableScope()
-				);
-				fusionContext.setAsyncThread( true );
-
-				return callback();
-			} finally {
-				// Ensure any DB connections used get returned to the connection pool. Without clearSqlProxy an executor will hold onto any connections it touched while running and they will not timeout/close, and no other code can use the connection except for the executor that last touched it.   Credit to Brad Wood for finding this!
-				variables.DataSrcImplStatic.clearSqlProxy();
-				variables.fusionContextStatic.setCurrent( javacast( "null", "" ) );
-			}
+			return callback();
+		} finally {
+			// Ensure any DB connections used get returned to the connection pool. Without clearSqlProxy an executor will hold onto any connections it touched while running and they will not timeout/close, and no other code can use the connection except for the executor that last touched it.   Credit to Brad Wood for finding this!
+			variables.DataSrcImplStatic.clearSqlProxy();
+			variables.fusionContextStatic.setCurrent( javacast( "null", "" ) );
 		}
 	}
 

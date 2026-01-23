@@ -34,6 +34,8 @@ component extends='wirebox.system.ioc.config.Binder' {
 			configFile = 'commandbox.system.config.CacheBox'
 		};
 
+		wirebox.transientInjectionCache = false;
+
 		wirebox.metadataCache='metadataCache';
 
 		// Register CommandBox DSL for special injection namespaces

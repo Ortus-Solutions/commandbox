@@ -2,12 +2,18 @@
  * Copyright Since 2005 ColdBox Framework by Luis Majano and Ortus Solutions, Corp
  * www.ortussolutions.com
  * ---
- * @author Luis Majano
  *
  * This is a utility object that helps object stores keep their elements indexed
  * and stored nicely.  It is also a nice way to give back metadata results.
+ *
+ * @author Luis Majano
  */
-component extends="wirebox.system.cache.store.indexers.MetadataIndexer" accessors="true"{
+component accessors="true" {
+
+	/**
+	 * The fields indexed
+	 */
+	property name="fields";
 
 	/**
 	 * The SQL Type: Defaults to MySQL
@@ -29,26 +35,52 @@ component extends="wirebox.system.cache.store.indexers.MetadataIndexer" accessor
 	 *
 	 * @fields The list or array of fields to bind this index on
 	 * @config JDBC Configuration structure
-	 * @store The associated storage
+	 * @store  The associated storage
 	 */
-	function init( required fields, required struct config, required store ){
-
-		// Super init
-		super.init( arguments.fields );
+	function init(
+		required fields,
+		required struct config,
+		required store
+	){
+		// Store fields
+		variables.fields = arguments.fields;
 
 		// Get db data
-		cfdbinfo( type="version", datasource="#arguments.config.dsn#", name="local.DBData" );
+		cfdbinfo(
+			type       = "version",
+			datasource = "#arguments.config.dsn#",
+			name       = "local.DBData"
+		);
 
 		// store db sql compatibility type: used mostly for pagination
 		variables.sqlType = ( findNoCase( "Microsoft SQL", DBData.database_productName ) ? "MSSQL" : "MySQL" );
 
-		// store jdbc configuration
-		variables.config = arguments.config;
+		// store jdbc configuration + params
+		param name      ="arguments.config.dsnUsername"     default="";
+		param name      ="arguments.config.dsnPassword"     default="";
+		param name      ="arguments.config.queryIncludeDsn" default="true";
+		variables.config= arguments.config;
 
 		// store storage reference
 		variables.store = arguments.store;
 
+		// lucee marker
 		variables.isLucee = server.keyExists( "lucee" );
+
+		// this struct will contain the dsn and credentials if passed into the config. Otherwise queryExecute will default
+		// to the datasource set in application.cfc
+		variables.queryOptions = {};
+
+		// if DSN username or password were passed, include them in the query options
+		if ( len( variables.config.dsnUsername ) || len( variables.config.dsnPassword ) ) {
+			variables.queryOptions[ "username" ] = variables.config.dsnUsername;
+			variables.queryOptions[ "password" ] = variables.config.dsnPassword;
+		}
+
+		// if we should include the dsn in the query options, add it
+		if ( variables.config.queryIncludeDsn ) {
+			variables.queryOptions[ "datasource" ] = variables.config.dsn;
+		}
 
 		return this;
 	}
@@ -64,44 +96,45 @@ component extends="wirebox.system.cache.store.indexers.MetadataIndexer" accessor
 			  FROM #variables.config.table#
 			 WHERE id = ?",
 			[ variables.store.getNormalizedID( arguments.objectKey ) ],
-			{
-				datasource 	: variables.config.dsn,
-				username 	: variables.config.dsnUsername,
-				password 	: variables.config.dsnPassword
-			}
+			variables.queryOptions
 		).recordCount eq 1;
 	}
 
 	/**
 	 * Get the top 100 pool of metadata elements
+	 *
+	 * @max The number of records to get, defaults to 100
+	 *
+	 * @return Struct of { hits, timeout, lastAccessTimeout, created, lastAccessed, isExpired, isSimple }
+	 *
+	 * @throws InvalidMaxRecords - When the max argument is not an integer
 	 */
-	boolean function getPoolMetadata( numeric max = 100 ){
+	struct function getPoolMetadata( numeric max = 100 ){
 		var results = {};
+		var params  = [ arguments.max ];
+
+		// make sure the max argument is a valid integer
+		if ( !isValid( "integer", arguments.max ) ) {
+			throw( type: "InvalidMaxRecords", message: "Invalid max records specified - it must be an integer" );
+		}
 
 		// MySQL Default
 		var sql = "SELECT #variables.fields# FROM #variables.config.table# ORDER BY objectKey LIMIT ?";
 		// MSSQL
-		if( variables.sqlType == "MSSQL" ){
-			sql = "SELECT TOP ? #variables.fields# FROM #variables.config.table# ORDER BY objectKey";
+		if ( variables.sqlType == "MSSQL" ) {
+			sql    = "SELECT TOP #arguments.max# #variables.fields# FROM #variables.config.table# ORDER BY objectKey";
+			params = [];
 		}
 
-		queryExecute(
-			sql,
-			[ arguments.max ],
-			{
-				datasource 	: variables.config.dsn,
-				username 	: variables.config.dsnUsername,
-				password 	: variables.config.dsnPassword
-			}
-		).each( function( row ){
+		queryExecute( sql, params, variables.queryOptions ).each( function( row ){
 			results[ row.objectKey ] = {
-				hits              	= row.hits,
-				timeout           	= row.timeout,
-				lastAccessTimeout 	= row.lastAccessTimeout,
-				created           	= row.created,
-				LastAccessed      	= row.lastAccessed,
-				isExpired         	= row.isExpired,
-				isSimple         	= row.isSimple
+				"hits"              : row.hits,
+				"timeout"           : row.timeout,
+				"lastAccessTimeout" : row.lastAccessTimeout,
+				"created"           : row.created,
+				"lastAccessed"      : row.lastAccessed,
+				"isExpired"         : row.isExpired,
+				"isSimple"          : row.isSimple
 			};
 		} );
 
@@ -119,11 +152,7 @@ component extends="wirebox.system.cache.store.indexers.MetadataIndexer" accessor
 			  FROM #variables.config.table#
 			 WHERE id = ?",
 			[ variables.store.getNormalizedID( arguments.objectKey ) ],
-			{
-				datasource 	: variables.config.dsn,
-				username 	: variables.config.dsnUsername,
-				password 	: variables.config.dsnPassword
-			}
+			variables.queryOptions
 		);
 
 		return variables.fields.listReduce( function( accumulator, target ){
@@ -135,35 +164,35 @@ component extends="wirebox.system.cache.store.indexers.MetadataIndexer" accessor
 	/**
 	 * Get a metadata entry for a specific entry. Exception if key not found
 	 *
-	 * @objectKey The key to get
-	 * @property The metadata property to get
+	 * @objectKey    The key to get
+	 * @property     The metadata property to get
 	 * @defaultValue The default value if property doesn't exist
 	 */
-	function getObjectMetadataProperty( required objectKey, required property, defaultValue ){
+	function getObjectMetadataProperty(
+		required objectKey,
+		required property,
+		defaultValue
+	){
 		var metadata = queryExecute(
 			"SELECT #variables.fields#
 			  FROM #variables.config.table#
 			 WHERE id = ?",
 			[ variables.store.getNormalizedID( arguments.objectKey ) ],
-			{
-				datasource 	: variables.config.dsn,
-				username 	: variables.config.dsnUsername,
-				password 	: variables.config.dsnPassword
-			}
+			variables.queryOptions
 		);
 
-		if( structKeyExists( metadata, arguments.property ) ){
+		if ( structKeyExists( metadata, arguments.property ) ) {
 			return metadata[ arguments.property ];
 		}
 
-		if( !isNull( arguments.defaultValue ) ){
+		if ( !isNull( arguments.defaultValue ) ) {
 			return arguments.defaultValue;
 		}
 
 		throw(
-			type 		= "InvalidProperty",
-			message 	= "Invalid property requested: #arguments.property#",
-			detail 		= "Valid properties are: #variables.fields#"
+			type    = "InvalidProperty",
+			message = "Invalid property requested: #arguments.property#",
+			detail  = "Valid properties are: #variables.fields#"
 		);
 	}
 
@@ -178,27 +207,29 @@ component extends="wirebox.system.cache.store.indexers.MetadataIndexer" accessor
 	/**
 	 * Get an array of sorted keys for this indexer according to parameters
 	 *
-	 * @objectKey
-	 * @property
-	 * @value
+	 * @property  The property to order the keys with
+	 * @sortType  The sorting type, not used by this indexer
+	 * @sortOrder Either `asc` or `desc` for sorting the keys
+	 *
+	 * @return Sorted keys
 	 */
-	array function getSortedKeys( required property, sortType="text", sortOrder="asc" ){
+	array function getSortedKeys(
+		required property,
+		sortType  = "text",
+		sortOrder = "asc"
+	){
 		var qResults = queryExecute(
 			"SELECT id, objectKey
 			FROM #variables.config.table#
 		    ORDER BY #arguments.property# #arguments.sortOrder#",
-			[ variables.store.getNormalizedID( arguments.objectKey ) ],
-			{
-				datasource 	: variables.config.dsn,
-				username 	: variables.config.dsnUsername,
-				password 	: variables.config.dsnPassword
-			}
+			[],
+			variables.queryOptions
 		);
 
 		return (
-			variables.isLucee ?
-			queryColumnData( qResults, "objectKey" ) :
-			listToArray( valueList( qResults.objectKey ) )
+			variables.isLucee ? queryColumnData( qResults, "objectKey" ) : listToArray(
+				valueList( qResults.objectKey )
+			)
 		);
 	}
 
