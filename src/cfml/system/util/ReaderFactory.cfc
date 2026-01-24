@@ -54,7 +54,7 @@ component singleton{
 
 		// Work around for lockdown STIGs on govt machines.
 		// By default JANSI tries to write files into a locked down folder under appData
-		var JANSI_path = expandPath( '/commandbox-home/lib/jansi' );
+		var JANSI_path = expandPath( '/bxcliRoot/lib/jansi' );
 		if( !directoryExists( JANSI_path ) ){
 			directoryCreate( JANSI_path );
 		}

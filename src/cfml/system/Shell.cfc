@@ -76,6 +76,10 @@ component accessors="true" singleton {
 	* to be fed into another OS command.
 	*/
 	property name="shellType" default="interactive";
+	/**
+	 * Needs to initizliaze auto-installed modules
+	 */
+	property name="initSystemModules" type="boolean" default="false";
 
 
 	/**
@@ -174,7 +178,12 @@ component accessors="true" singleton {
 		// Ensure we have a system box.json
 		var systemBoxJSON = expandPath( '/commandbox-home/cfml/box.json' );
 		if( !fileExists( systemBoxJSON ) ) {
+			var thisDir = getDirectoryFromPath( systemBoxJSON );
+			if( !directoryExists( thisDir ) ) {
+				directoryCreate( thisDir, true );
+			}
 			fileWrite( systemBoxJSON, '{ "name":"CommandBox System" }' );
+			variables.initSystemModules = true;
 		}
 
 		// Merge in any auto-installed modules
@@ -192,6 +201,16 @@ component accessors="true" singleton {
 			fileDelete( systemBoxJSONAutoInstall );
 		}
 
+	}
+
+	/**
+	 * I can't be called until onCLIStart has fired
+	 */
+	function ensureSystemModules() {
+		if( variables.initSystemModules && !configService.getSetting( 'offlineMode', false ) ) {
+			variables.initSystemModules = false;
+			callCommand( command="install commandbox-update-check,commandbox-cfconfig,commandbox-dotenv,contentbox-cli,coldbox-cli,testbox-cli,commandbox-boxlang", initialCommand=true );
+		}
 	}
 
 

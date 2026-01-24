@@ -64,7 +64,7 @@ component extends='wirebox.system.ioc.config.Binder' {
 		];
 		var ortusArtifactsURL		= 'https://downloads.ortussolutions.com/';
 		var ortusPRDArtifactsURL	= 'https://downloads.ortussolutions.com/';
-		var colors256Data			= deserializeJSON( fileRead( homedir & '/cfml/system/config/colors.json' ) );
+		var colors256Data			= deserializeJSON( fileRead( '/commandbox/system/config/colors.json' ) );
 		var semverRegex				= '\d{1,3}(?:\.\d{1,3}){2}(?:-\w+(?:\.\w+)*)?(?:\+\w+(?:\.\w+)*)?';
 		// engine versions, first is default - for lucee, first is internal version
 

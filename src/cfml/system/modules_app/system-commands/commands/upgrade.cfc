@@ -34,6 +34,9 @@ component {
 	 * @force.hint Force the update even if the version on the server is the same as locally
 	 **/
 	function run( boolean latest, boolean force=false ) {
+		print.line( "The upgrade command doesn't curently work with bx-cli" );
+		return;
+		
 
 		if( configService.getSetting( 'offlineMode', false ) ) {
 			error( 'Can''t check for updates, CommandBox is in offline mode.  Go online with [config set offlineMode=false].' );

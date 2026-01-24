@@ -118,7 +118,7 @@ This file will stay running the entire time the shell is open
 
 		interceptData = { shellType=shell.getShellType(), args=argsArray, banner=getBanner() };
 		interceptorService.announceInterception( 'onCLIStart', interceptData );
-
+		shell.ensureSystemModules();
 		FRTransService.endTransaction( FRTransaction );
 
 		shell.callCommand( command=argsArray, initialCommand=true );
@@ -153,6 +153,7 @@ This file will stay running the entire time the shell is open
 
 		interceptData = { shellType=shell.getShellType(), args=argsArray, banner=getBanner() };
 		interceptorService.announceInterception( 'onCLIStart', interceptData );
+		shell.ensureSystemModules();
 
 		if( !silent ) {
 			// Output the welcome banner
