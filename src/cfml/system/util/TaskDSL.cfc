@@ -16,7 +16,6 @@ component accessors=true {
 	property name='taskFile';
 	property name='target';
 	property name='params';
-	property name='target';
 	property name='flags';
 	property name='workingDirectory';
 	property name='rawParams';

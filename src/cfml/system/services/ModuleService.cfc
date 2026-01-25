@@ -307,8 +307,11 @@
 
 				// Register CFML Mapping if it exists, for loading purposes
 				if( len( trim( mConfig.cfMapping ) ) ){
+					var legacyMapping = 'commandbox/modules/' & modName;
 					shell.getUtil().addMapping( name=mConfig.cfMapping, path=mConfig.path );
+					shell.getUtil().addMapping( name=legacyMapping, path=mConfig.path );
 					instance.cfmappingRegistry[ mConfig.cfMapping ] = mConfig.path;
+					instance.cfmappingRegistry[ legacyMapping ] = mConfig.path;
 				}
 				// Register Custom Interception Points
 				shell.getInterceptorService().appendInterceptionPoints( mConfig.interceptorSettings.customInterceptionPoints );

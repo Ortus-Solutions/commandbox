@@ -18,7 +18,6 @@ component accessors="true" singleton {
 	property name='cr' 					inject='cr@constants';
 	property name='logger' 				inject='logbox:logger:{this}';
 	property name='consoleLogger'		inject='logbox:logger:console';
-	property name='wirebox' 			inject='wirebox';
 	property name='commandLocations'	inject='commandLocations@constants';
 	property name='interceptorService'	inject='interceptorService';
 	// Using provider since CommandService is created before modules are loaded
@@ -140,15 +139,16 @@ component accessors="true" singleton {
 	function addToDictionary( required command, required commandPath ){
 
 		// Build bracketed string of command path to allow special characters
-		var commandPathBracket = '';
+		//var commandPathBracket = '';
 		var commandName = '';
+		var ref = instance.commands;
 		for( var item in listToArray( commandPath, '.' ) ){
-			commandPathBracket &= '[ "#item#" ]';
+			ref = ref[ item ] ?: ( ref[ item ] = {} );
 			commandName &= "#item# ";
 		}
 
 		// Register the command in our command dictionary
-		evaluate( "instance.commands#commandPathBracket#[ '$' ] = command" );
+		ref[ '$' ] = command;
 
 		// And again here in this flat collection for help usage
 		instance.flattenedCommands[ trim(commandName) ] = command;
@@ -160,9 +160,11 @@ component accessors="true" singleton {
 		var commandPathBracket = '';
 		var commandName = '';
 
+		//println( "commandPath: " & commandPath )
 		var commandPathArray = listToArray( commandPath, '.' );
-
+		var ref = instance.commands;
 		for( var item in commandPathArray ){
+			ref = ref[ item ] ?: ( ref[ item ] = {} );
 			commandPathBracket &= '[ "#item#" ]';
 			commandName &= "#item# ";
 		}
@@ -176,7 +178,7 @@ component accessors="true" singleton {
 		instance.flattenedCommands.delete( trim(commandName) );
 
 		if( isDefined( "instance.commands#commandPathBracket#[ '$' ]" ) ) {
-			evaluate( "structDelete( instance.commands#commandPathBracket#, '$' )" );
+			structDelete( ref, '$' );
 		}
 
 
@@ -185,7 +187,7 @@ component accessors="true" singleton {
 		while( commandPathArray.len() ) {
 
 			// If there are other commands in this namespace, we're done
-			if( evaluate( "structCount( instance.commands#commandPathBracket# )" ) ) {
+			if( structCount( ref ) ) {
 				break;
 			}
 
@@ -193,19 +195,19 @@ component accessors="true" singleton {
 			var lastItem = commandPathArray.pop();
 
 			commandPathBracket = '';
+			ref = instance.commands;
 			for( var item in commandPathArray ){
+				ref = ref[ item ] ?: ( ref[ item ] = {} );
 				commandPathBracket &= '[ "#item#" ]';
 			}
 
-			evaluate( "structDelete( instance.commands#commandPathBracket#, lastItem )" );
+			structDelete( ref, lastItem );
 
 			// We'll keep climbing "up" in our while() until we run out of namespaces, or we reach a namespace that still populated
 
 		}
 
-
 	}
-
 
 	/**
 	 * run a command line
@@ -1164,11 +1166,14 @@ component accessors="true" singleton {
 				return wirebox.getUtility().getInheritedMetaData( fullCFCPath );
 			}
 		);
-
+			var commandAliases = commandMD.aliases ?: '' ;
+			if( commandAliases.startsWith( '"' ) && commandAliases.endsWith( '"' ) ){
+				commandAliases = mid( commandAliases, 2, len( commandAliases ) - 2 );
+			}
 		// Set up of command data
 		var commandData = {
 			fullCFCPath 	= arguments.fullCFCPath,
-			aliases 		= listToArray( commandMD.aliases ?: '' ),
+			aliases 		= listToArray( commandAliases),
 			parameters 		= [],
 			completor 		= {},
 			hint 			= commandMD.hint ?: '',
