@@ -59,25 +59,29 @@ This file will stay running the entire time the shell is open
 		// See how many colors this terminal supports
 		var numColors = shell.getReader().getTerminal().getNumericCapability( caps.max_colors ) ?: 0;
 
-		// Windows cmd gets solid blue
+		// Windows cmd gets solid color
 		if( !isNull( numColors ) && numColors < 256 ) {
-			l1 = l2 = l3 = l4 = l5 = '#esc#[38;5;14m';
-		// Terminals with 256 color support get pretty colors
+			var w1 = y1 = b1 = b2 = o1 = o2 = o3 = o4 = o5 = '#esc#[38;5;9m';
+		// Terminals with 256 color support get candle flame colors (yellow outside, blue core)
 		} else {
-			l1 = '#esc#[38;5;45m';
-			l2 = '#esc#[38;5;39m';
-			l3 = '#esc#[38;5;33m';
-			l4 = '#esc#[38;5;27m';
-			l5 = '#esc#[38;5;21m';
+			var w1 = '#esc#[38;5;15m';
+			var y1 = '#esc#[38;5;226m';
+			var o1 = '#esc#[38;5;202m';
+			var o2 = '#esc#[38;5;208m';
+			var o3 = '#esc#[38;5;214m';
+			var o4 = '#esc#[38;5;220m';
+			var o5 = '#esc#[38;5;226m';
+			var b1 = '#esc#[38;5;33m';
+			var b2 = '#esc#[38;5;27m';
 		}
 
 	</cfscript>
 <cfoutput><cfsavecontent variable="banner">
-#l1##esc#[1m   ______                                          ______
-#l2##esc#[1m  / ____/___  ____ ___  ____ ___  ____ _____  ____/ / __ )____  _  __
-#l3##esc#[1m / /   / __ \/ __ `__ \/ __ `__ \/ __ `/ __ \/ __  / __  / __ \| |/_/
-#l4##esc#[1m/ /___/ /_/ / / / / / / / / / / / /_/ / / / / /_/ / /_/ / /_/ />  <
-#l5##esc#[1m\____/\____/_/ /_/ /_/_/ /_/ /_/\__,_/_/ /_/\__,_/_____/\____/_/|_| (R)  #esc#[0m#esc#[1mv@@version@@
+#w1#    ▄▄▄▄#y1#████▄▄▄▄    #esc#[0m#o5##esc#[1m______                                          ______
+#w1#  ▄▓#o4#▓▓#o3#████#o2#███#o1#███   #esc#[0m#o4##esc#[1m/ ____/___  ____ ___  ____ ___  ____ _____  ____/ / __ )____  _  __
+#w1#▓#o4#▓▓▓#o3#███#o2#███#o1#███#b2#███  #esc#[0m#o3##esc#[1m/ /   / __ \/ __ `__ \/ __ `__ \/ __ `/ __ \/ __  / __  / __ \| |/_/
+#w1#  ▀▓#o4#▓▓#o3#████#o2#███#o1#███ #esc#[0m#o2##esc#[1m/ /___/ /_/ / / / / / / / / / / / /_/ / / / / /_/ / /_/ / /_/ />  <
+#w1#    ▀▀▀▀#y1#████▀▀▀▀ #esc#[0m#o1##esc#[1m\____/\____/_/ /_/ /_/_/ /_/ /_/\__,_/_/ /_/\__,_/_____/\____/_/|_| (R)  #esc#[0m#esc#[1mv@@version@@
 
 #esc#[0m#esc#[38;5;196m@@quote@@
 
