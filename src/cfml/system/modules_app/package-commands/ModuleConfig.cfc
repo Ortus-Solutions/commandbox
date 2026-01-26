@@ -9,7 +9,8 @@ component {
 	function configure() {
 		variables.interceptors = [
 			{ class="#moduleMapping#.interceptors.PackageScripts" },
-			{ class="#moduleMapping#.interceptors.PackageSystemSettingExpansions" }
+			{ class="#moduleMapping#.interceptors.PackageSystemSettingExpansions" },
+			{ class="#moduleMapping#.interceptors.ExecutablePackages" }
 		];
 	}
 }

@@ -680,18 +680,18 @@ component accessors="true" singleton {
 	 * Figure out what command to run based on the user input string
 	 * @line A string containing the command and parameters that the user entered
  	 **/
-	function resolveCommand( required string line, boolean forCompletion=false ){
+	function resolveCommand( required string line, boolean forCompletion=false, forHighlighting=false ){
 		// Turn the users input into an array of tokens
 		var tokens = parser.tokenizeInput( line );
 
-		return resolveCommandTokens( tokens, line, forCompletion );
+		return resolveCommandTokens( tokens, line, forCompletion, forHighlighting );
 	}
 
 	/**
 	 * Figure out what command to run based on the tokenized user input
 	 * @tokens An array containing the command and parameters that the user entered
  	 **/
-	function resolveCommandTokens( required array tokens, string rawLine=tokens.toList( ' ' ), boolean forCompletion=false ){
+	function resolveCommandTokens( required array tokens, string rawLine=tokens.toList( ' ' ), boolean forCompletion=false, forHighlighting=false ){
 
 		// This will hold the command chain. Usually just a single command,
 		// but a pipe ("|") will chain together commands and pass the output of one along as the input to the next
@@ -856,9 +856,21 @@ component accessors="true" singleton {
 
 			} // end for loop
 
-			// If we found a command, carve the parameters off the end
 			var commandLength = listLen( results.commandString, '.' );
 			var tokensLength = arrayLen( tokens );
+			// If we matched a namespace, but not a command, then show the namepace help
+			if(  !results.found && len( results.commandString ) && commandLength == tokensLength && !inCommand( 'help' ) && !forHighlighting ){
+				results.commandString = "help";
+				results.originalLine = 'help ' & results.originalLine;
+				tokens.prepend( 'help' );
+				results.commandReference = cmds["help"]["$"];
+				lazyLoadCommandCFC( results.commandReference );
+				tokensLength++;
+				commandLength = 1;
+				results.found = true;
+			}
+
+			// If we found a command, carve the parameters off the end
 			if( results.found && commandLength < tokensLength ){
 				results.parameters = tokens.slice( commandLength+1 );
 			}

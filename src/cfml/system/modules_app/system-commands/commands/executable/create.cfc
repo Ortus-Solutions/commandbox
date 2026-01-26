@@ -17,19 +17,22 @@ component {
 		required string alias,
 		required string commandText
 		) {
-		var scriptLocation = executableService.createAlias( alias, commandText );
-		print.line(  "Created executable alias [#alias#] for command [#commandText#] at location [#scriptLocation#]" );
+
 		try {
 			var location = command( "!" & (fileSystemUtil.isWindows() ? "where" : "which") ).params( alias ).run( returnOutput=true );
 			location = trim( location );
 			location = getCanonicalPath( location );
-			scriptLocation = getCanonicalPath( scriptLocation );
-			if( location neq scriptLocation ) {
-				print.redLine( "NOTE: Executable alias [#alias#] already exists at [#location#]!  Your module executable alias may not work!" );
-			}
 		} catch ( any e ) {
 			location = "";
 		}
+
+		var scriptLocation = executableService.createAlias( alias, commandText );
+		
+		if( len( location ) ) {
+			print.redLine( "NOTE: Executable alias [#alias#] already exists at [#location#]!  Your module executable alias may not work!" );
+		}
+
+		print.line(  "Created executable alias [#alias#] for command [#commandText#] at location [#scriptLocation#]" );
 	}
 
 }

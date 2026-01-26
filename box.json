@@ -1,6 +1,6 @@
 {
 	"name": "BoxLang CommandBox Module",
-	"version": "7.0.0-alpha",
+	"version": "7.0.1-alpha",
 	"author": "Ortus Solutions",
 	"homepage": "https://commandbox.ortusbooks.com/",
 	"documentation": "https://commandbox.ortusbooks.com/",
@@ -23,6 +23,7 @@
 	],
 	"boxlang": {
 		"moduleName": "cli",
-		"minimumVersion": "1.10.0"
+		"minimumVersion": "1.10.0",
+		"executable" : "box"
 	}
 }

@@ -1071,9 +1071,9 @@ component accessors="true" singleton {
 						variables.reader.getTerminal().writer().print( print.boldCyanText( "called from " ) );
 					}
 					if( verboseErrors ) {
-						variables.reader.getTerminal().writer().print( variables.print.boldCyanText( "#tc.template#: line #tc.line##variables.cr#" ));
+						variables.reader.getTerminal().writer().print( variables.print.boldCyanText( "#tc.template#:#tc.line##variables.cr#" ));
 					} else {
-						variables.reader.getTerminal().writer().print( variables.print.boldCyanText( "#tc.template.replaceNoCase( expandPath( '/CommandBox' ), '' )#: line #tc.line##variables.cr#" ));
+						variables.reader.getTerminal().writer().print( variables.print.boldCyanText( "#tc.template.replaceNoCase( expandPath( '/CommandBox' ), '' )#:#tc.line##variables.cr#" ));
 					}
 					if( len( tc.codeprinthtml ) && idx == 1 ){
 						variables.reader.getTerminal().writer().print( variables.print.text( variables.formatterUtil.HTML2ANSI( tc.codeprinthtml ) ) );

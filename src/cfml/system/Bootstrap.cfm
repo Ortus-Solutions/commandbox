@@ -259,7 +259,7 @@ This file will stay running the entire time the shell is open
 							if( idx > 1 ) {
 	    						systemOutput( 'called from ' );
 							}
-	   						systemOutput( '#tc.template#: line #tc.line#', true );
+	   						systemOutput( '#tc.template#:#tc.line#', true );
 						}
 					}
 				}

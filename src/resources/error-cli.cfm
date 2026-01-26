@@ -30,10 +30,10 @@ The Error Occurred in
 			<cfparam name="tc.codeprinthtml" default="">
 			<cfif len( tc.codeprinthtml )>
 				<cfset isFirst = ( idx == 1 )>
-					#isFirst ? "<b>#tc.template#: line #tc.line#</b>" : "<b>called from</b> #tc.template#: line #tc.line#"#
+					#isFirst ? "<b>#tc.template##tc.line#</b>" : "<b>called from</b> #tc.template##tc.line#"#
 					#tc.codeprinthtml#
 			<cfelse>
-				#idx == 1 ? "<b>#tc.template#: line #tc.line#</b>" : "<b>called from</b> #tc.template#: line #tc.line#"#
+				#idx == 1 ? "<b>#tc.template##tc.line#</b>" : "<b>called from</b> #tc.template##tc.line#"#
 			</cfif>
 		</cfloop>
 	</cfif>
