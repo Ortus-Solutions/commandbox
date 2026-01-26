@@ -1343,7 +1343,7 @@ component accessors="true" singleton {
 				&& !isValid( param.type, userNamedParams[ param.name ] ) ){
 
 				shell.setExitCode( 1 );
-				throw( message='Parameter [#param.name#] has a value of [#serialize( userNamedParams[ param.name ] )#] which is not of type [#param.type#].', type="commandException");
+				throw( message='Parameter [#param.name#] has a value of [#toString( userNamedParams[ param.name ] )#] which is not of type [#param.type#].', type="commandException");
 			}
 		} // end for loop
 
