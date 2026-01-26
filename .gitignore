@@ -41,3 +41,6 @@ src/cfml/license.txt
 /src/cfml/libExt
 /src/cfml/_modules
 /src/cfml/modules
+/bx-cli/libs
+/bx-cli/modules
+/bx-cli/src
