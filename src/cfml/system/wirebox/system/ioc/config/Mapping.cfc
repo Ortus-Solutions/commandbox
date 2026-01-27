@@ -603,20 +603,7 @@ component accessors="true" {
 			if ( !isNull( arguments.metadata ) ) {
 				md = arguments.metadata;
 			} else {
-				var produceMetadataUDF = function(){
-					return injector.getUtility().getInheritedMetaData( variables.path, binder.getStopRecursions() );
-				};
-
-				// Are we caching metadata? or just using it
-				if ( len( arguments.binder.getMetadataCache() ) ) {
-					// Get from cache or produce on demand
-					md = arguments.injector
-						.getCacheBox()
-						.getCache( arguments.binder.getMetadataCache() )
-						.getOrSet( variables.path, produceMetadataUDF );
-				} else {
-					md = produceMetadataUDF();
-				}
+				md = injector.getUtility().getInheritedMetaData( variables.path, binder.getStopRecursions() );
 			}
 
 			// Store Metadata

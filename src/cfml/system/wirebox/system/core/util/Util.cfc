@@ -409,6 +409,45 @@ component {
 		array stopRecursions = [],
 		struct md            = {}
 	){
+		var cacheKey = arguments.component;
+		if( !isSimpleValue( cacheKey ) ){
+			cacheKey = cacheKey.$bx.$class.getName() 	
+		}
+		var produceMetadataUDF = function(){
+			return _getInheritedMetaData( 
+				component      = component,
+				stopRecursions = stopRecursions,
+				md             = md
+				);
+		};
+
+		// Are we caching metadata? or just using it
+		if ( len( application.wirebox.getBinder().getMetadataCache() ) ) {
+			// Get from cache or produce on demand
+			md = application.wirebox
+				.getCacheBox()
+				.getCache( application.wirebox.getBinder().getMetadataCache() )
+				.getOrSet( cacheKey, produceMetadataUDF );
+		} else {
+			md = produceMetadataUDF();
+		}
+		return md;
+	}
+
+	/**
+	 * Returns a single-level metadata struct that includes all items inhereited from extending classes.
+	 *
+	 * @component      The component instance or path to get the metadata from
+	 * @stopRecursions An array of classes to stop processing for during inheritance trails
+	 * @md             A structure containing a copy of the metadata for this level of recursion.
+	 *
+	 * @return struct of metadata
+	 */
+	function _getInheritedMetaData(
+		required component,
+		array stopRecursions = [],
+		struct md            = {}
+	){
 		var loc = {};
 
 		// First time through, get metaData of component by path or instance

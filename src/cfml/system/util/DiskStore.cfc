@@ -15,6 +15,8 @@ component implements="wirebox.system.cache.store.IObjectStore" {
 	 * @cacheProvider.doc_generic wirebox.system.cache.ICacheProvider
 	 */
 	public DiskStore function init( required any cacheProvider ) {
+		server.memoryCache = server.memoryCache ?: {};
+
 		// Store Fields
 		var fields = "hits,timeout,lastAccessTimeout,created,LastAccessed,isExpired,isSimple";
 		var config = arguments.cacheProvider.getConfiguration();
@@ -81,6 +83,7 @@ component implements="wirebox.system.cache.store.IObjectStore" {
 	 */
 	public void function clearAll() {
 		directoryDelete( instance.directoryPath, true );
+		server.memoryCache = {};
 
 		try {
 			directoryCreate( instance.directoryPath, true, true );
@@ -119,13 +122,16 @@ component implements="wirebox.system.cache.store.IObjectStore" {
 	 * @objectKey The key of the object
 	 */
 	public any function lookup( required any objectKey ) {
-		lock name="DiskStore.#instance.storeID#.#arguments.objectKey#" type="readonly" timeout="10" throwonTimeout="true" {
+		if( server.memoryCache.keyExists( arguments.objectKey ) ) {
+			return true;
+		}
+		//lock name="DiskStore.#instance.storeID#.#arguments.objectKey#" type="readonly" timeout="10" throwonTimeout="true" {
 			// Check if object on disk, on indexer and NOT expired
 			if( fileExists( getCacheFilePath( arguments.objectKey ) ) ) {
 				return true;
 			}
 			return false;
-		}
+		//}
 	}
 
 	/**
@@ -134,11 +140,7 @@ component implements="wirebox.system.cache.store.IObjectStore" {
 	 * @objectKey The key of the object
 	 */
 	public any function get( required any objectKey ) {
-		lock name="DiskStore.#instance.storeID#.#arguments.objectKey#" type="exclusive" timeout="10" throwonTimeout="true" {
-			if( lookup( arguments.objectKey ) ) {
-				return getQuiet( arguments.objectKey );
-			}
-		}
+		return getQuiet( arguments.objectKey );
 	}
 
 	/**
@@ -147,14 +149,26 @@ component implements="wirebox.system.cache.store.IObjectStore" {
 	 * @objectKey The key of the object
 	 */
 	public any function getQuiet( required any objectKey ) {
+		var tmp = server.memoryCache[arguments.objectKey] ?: null;
+		if( !isNull( tmp ) ) {
+			return tmp;
+		}
+
 		var thisFilePath = getCacheFilePath( arguments.objectKey );
 
-		lock name="DiskStore.#instance.storeID#.#arguments.objectKey#" type="exclusive" timeout="10" throwonTimeout="true" {
-			if( lookup( arguments.objectKey ) ) {
-				var fileContents = fileRead( thisFilePath );
+		//lock name="DiskStore.#instance.storeID#.#arguments.objectKey#" type="readonly" timeout="10" throwonTimeout="true" {
+			//if( lookup( arguments.objectKey ) ) {
+				try {
+					var fileContents = fileRead( thisFilePath );
+				} catch( any e ) {
+					return null;
+				}
+
 				// If file is not JSON, it is corrupted.
 				if( isJSON( fileContents ) ) {
-					return deserializeJSON( fileContents );
+					var JSON = deserializeJSON( fileContents );
+					server.memoryCache[arguments.objectKey] = JSON;
+					return JSON;
 				} else {
 					try {
 						fileDelete( thisFilePath );
@@ -163,8 +177,8 @@ component implements="wirebox.system.cache.store.IObjectStore" {
 						// when two CommandBox instances start at the same time.
 					}
 				}
-			}
-		}
+			//}
+		//}
 	}
 
 	/**
@@ -173,9 +187,9 @@ component implements="wirebox.system.cache.store.IObjectStore" {
 	 * @objectKey The object key
 	 */
 	public void function expireObject( required any objectKey ) {
-		lock name="DiskStore.#instance.storeID#.#arguments.objectKey#" type="exclusive" timeout="10" throwonTimeout="true" {
+		//lock name="DiskStore.#instance.storeID#.#arguments.objectKey#" type="exclusive" timeout="10" throwonTimeout="true" {
 			instance.indexer.setObjectMetadataProperty( arguments.objectKey, "isExpired", true );
-		}
+		//}
 	}
 
 	/**
@@ -184,9 +198,9 @@ component implements="wirebox.system.cache.store.IObjectStore" {
 	 * @objectKey The object key
 	 */
 	public any function isExpired( required any objectKey ) {
-		lock name="DiskStore.#instance.storeID#.#arguments.objectKey#" type="readonly" timeout="10" throwonTimeout="true" {
+		//lock name="DiskStore.#instance.storeID#.#arguments.objectKey#" type="readonly" timeout="10" throwonTimeout="true" {
 			return instance.indexer.getObjectMetadataProperty( arguments.objectKey, "isExpired" );
-		}
+		//}
 	}
 
 	/**
@@ -206,10 +220,11 @@ component implements="wirebox.system.cache.store.IObjectStore" {
 		any extras            = {}
 	) {
 		var thisFilePath = getCacheFilePath( arguments.objectKey );
-
-		lock name="DiskStore.#instance.storeID#.#arguments.objectKey#" type="exclusive" timeout="10" throwonTimeout="true" {
-			fileWrite( thisFilePath, serializeJSON( arguments.object ) );
-		}
+		var JSON = serializeJSON( arguments.object );
+		server.memoryCache[arguments.objectKey] = arguments.object;
+		//lock name="DiskStore.#instance.storeID#.#arguments.objectKey#" type="exclusive" timeout="10" throwonTimeout="true" {
+			fileWrite( thisFilePath, JSON );
+		//}
 	}
 
 	/**
@@ -220,16 +235,18 @@ component implements="wirebox.system.cache.store.IObjectStore" {
 	public any function clear( required any objectKey ) {
 		var thisFilePath = getCacheFilePath( arguments.objectKey );
 
-		lock name="DiskStore.#instance.storeID#.#arguments.objectKey#" type="exclusive" timeout="10" throwonTimeout="true" {
+		//lock name="DiskStore.#instance.storeID#.#arguments.objectKey#" type="exclusive" timeout="10" throwonTimeout="true" {
 			// check it
+			
 			if( !fileExists( thisFilePath ) ) {
 				return false;
 			}
 			// Remove it
 			fileDelete( thisFilePath );
+			server.memoryCache.delete( arguments.objectKey );
 
 			return true;
-		}
+		//}
 	}
 
 	/**

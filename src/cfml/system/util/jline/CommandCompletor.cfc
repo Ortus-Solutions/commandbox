@@ -98,7 +98,6 @@ component singleton {
 				}
 			}
 
-
 			// Didn't match an exact command, but might have matched part of one.
 			if( !commandInfo.found ) {
 
@@ -204,7 +203,7 @@ component singleton {
 				} else if(
 							passedParameters.positionalParameters.len() > 1
 							|| ( passedParameters.positionalParameters.len() == 1
-								&& ( bufferEndsWithSpace || structCount( passedParameters.flags ) ) )
+								&& !buffer.endsWith( passedParameters.positionalParameters[1] ) )
 						) {
 
 					// If the buffer ends with a space, they were done typing the last param

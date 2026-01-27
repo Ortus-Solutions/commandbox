@@ -59,17 +59,16 @@ component singleton accessors="true" {
 	 **/
 	private function getScriptContent( required string command ) {
 		if ( fileSystemUtil.isWindows() ) {
-			// Windows batch file
-			// @echo off - Suppresses command echoing
-			// %* - Passes all arguments to the command
-			return "@echo off" & chr( 13 ) & chr( 10 ) &
-				command & " %*";
+			// Windows batch file - simple single line
+			// @ suppresses echo, %* passes all arguments
+			return "@" & command & " %*";
 		} else {
 			// Unix shell script (Mac and Linux)
-			// #!/bin/bash - Shebang for bash shell
+			// #!/bin/sh - POSIX shell for maximum portability (works on bash, zsh, dash, etc.)
+			// exec - Replaces shell process with command (cleaner signal handling, no "shell" parent)
 			// "$@" - Passes all arguments to the command (properly quoted)
-			return "##!/bin/bash" & chr( 10 ) &
-				command & ' "$@"';
+			return "##!/bin/sh" & chr( 10 ) &
+				"exec " & command & ' "$@"';
 		}
 	}
 
@@ -146,16 +145,17 @@ component singleton accessors="true" {
 	 **/
 	private function parseCommandFromScript( required string scriptContent ) {
 		if ( fileSystemUtil.isWindows() ) {
-			// Windows: extract command from second line, remove trailing %*
-			var lines = scriptContent.listToArray( chr( 10 ) );
-			if ( lines.len() >= 2 ) {
-				return lines[ 2 ].trim().reReplaceNoCase( "\s*%\*$", "" );
-			}
+			// Windows: single line format "@command %*"
+			return scriptContent.trim()
+				.reReplaceNoCase( "^@", "" )
+				.reReplaceNoCase( "\s*%\*$", "" );
 		} else {
-			// Unix: extract command from second line, remove trailing "$@"
+			// Unix: extract command from second line, remove "exec " prefix and trailing "$@"
 			var lines = scriptContent.listToArray( chr( 10 ) );
 			if ( lines.len() >= 2 ) {
-				return lines[ 2 ].trim().reReplaceNoCase( '\s*"\$@"$', "" );
+				return lines[ 2 ].trim()
+					.reReplaceNoCase( "^exec\s+", "" )
+					.reReplaceNoCase( '\s*"\$@"$', "" );
 			}
 		}
 		return "";
