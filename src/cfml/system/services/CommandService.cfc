@@ -859,7 +859,7 @@ component accessors="true" singleton {
 			var commandLength = listLen( results.commandString, '.' );
 			var tokensLength = arrayLen( tokens );
 			// If we matched a namespace, but not a command, then show the namepace help
-			if(  !results.found && len( results.commandString ) && commandLength == tokensLength && !inCommand( 'help' ) && !forHighlighting ){
+			if(  !results.found && len( results.commandString ) && commandLength == tokensLength && !inCommand( 'help' ) && !forHighlighting && !forCompletion ){
 				results.commandString = "help";
 				results.originalLine = 'help ' & results.originalLine;
 				tokens.prepend( 'help' );

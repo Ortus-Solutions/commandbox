@@ -39,7 +39,7 @@ component singleton {
 
 			// Try to resolve the command.
 			// If buffer ends in space, we don't need to worry about the partial match of a command
-			var commandChain = commandService.resolveCommand( line=buffer, forCompletion=!bufferEndsWithSpace );
+			var commandChain = commandService.resolveCommand( line=buffer, forCompletion=true );
 
 			// If there are multiple commands like "help | more", we only care about the last one
 			var commandInfo = commandChain[ commandChain.len() ];
