@@ -68,7 +68,7 @@
     <cffunction name="onShutdown" output="false" access="public" returntype="void" hint="Called when the application stops">
     	<cfscript>
     		// Unload all modules
-			unloadAll();
+			//unloadAll();
     	</cfscript>
     </cffunction>
 

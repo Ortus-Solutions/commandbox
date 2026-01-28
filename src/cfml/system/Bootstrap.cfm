@@ -188,7 +188,7 @@ This file will stay running the entire time the shell is open
 			shell = javacast( "null", "" );
 
 			// reload wirebox
-			wireBox.getInstance( dsl='box:ModuleService' ).onShutdown();
+			wireBox.getInstance( dsl='box:ModuleService' ).unloadAll();
 			wireBox.shutdown();
 			variables.wireBox = new wirebox.system.ioc.Injector( 'commandbox.system.config.WireBox' );
 
@@ -210,10 +210,10 @@ This file will stay running the entire time the shell is open
 
 	interceptorService.announceInterception( 'onCLIExit' );
 
-	wireBox.getInstance( dsl='box:ModuleService' ).onShutdown();
-	wireBox.shutdown();
-    system.runFinalization();
-    system.gc();
+	//wireBox.getInstance( dsl='box:ModuleService' ).onShutdown();
+	//wireBox.shutdown();
+    //system.runFinalization();
+    //system.gc();
 </cfscript>
 
 	<cfcatch type="any">

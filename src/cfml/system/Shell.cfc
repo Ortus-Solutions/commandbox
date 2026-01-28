@@ -209,7 +209,7 @@ component accessors="true" singleton {
 	function ensureSystemModules() {
 		if( variables.initSystemModules && !configService.getSetting( 'offlineMode', false ) ) {
 			variables.initSystemModules = false;
-			callCommand( command="install commandbox-update-check,commandbox-cfconfig,commandbox-dotenv,contentbox-cli,coldbox-cli,testbox-cli,commandbox-boxlang", initialCommand=true );
+			callCommand( command="install commandbox-update-check,commandbox-cfconfig,commandbox-dotenv,contentbox-cli,coldbox-cli,testbox-cli,commandbox-boxlang,commandbox-bullet-train", initialCommand=true );
 		}
 	}
 

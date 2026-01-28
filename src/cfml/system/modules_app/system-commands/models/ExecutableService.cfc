@@ -48,7 +48,8 @@ component singleton accessors="true" {
 		if ( fileSystemUtil.isWindows() ) {
 			return ".bat";
 		} else {
-			return ".sh";
+			// Unix executables typically have no extension
+			return "";
 		}
 	}
 
