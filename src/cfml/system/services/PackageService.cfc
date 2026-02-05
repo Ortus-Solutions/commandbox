@@ -104,7 +104,7 @@ component accessors="true" singleton {
 			}
 			if ( !fileExists( arguments.currentWorkingDirectory & '/box-lock.json' ) ) {
 				loadLockFileJob.addLog( "No lock file exists, creating one..." );
-				var thisBoxJSON = packageService.readPackageDescriptor( arguments.currentWorkingDirectory );
+				var thisBoxJSON = readPackageDescriptor( arguments.currentWorkingDirectory );
 				arguments.lockFile = {
 					"name": thisBoxJSON.name,
 					"version": thisBoxJSON.version,
