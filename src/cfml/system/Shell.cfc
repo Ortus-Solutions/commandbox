@@ -127,9 +127,9 @@ component accessors="true" singleton {
 		variables.initArgs = arguments;
 
 		// If reloading the shell
-		if( structKeyExists( request, 'lastCWD' ) ) {
+		if( structKeyExists( server, 'lastCWD' ) ) {
 			// Go back where we were
-			variables.pwd= request.lastCWD;
+			variables.pwd= server.lastCWD;
 		} else {
 			// Store incoming current directory
 			variables.pwd = variables.userDir;
@@ -549,7 +549,7 @@ component accessors="true" singleton {
 			arguments.directory &= '/';
 		}
 		variables.pwd = arguments.directory;
-		request.lastCWD = arguments.directory;
+		server.lastCWD = arguments.directory;
 		// Update prompt to reflect directory change
 		setPrompt();
 		setWindowTitle();
@@ -609,12 +609,12 @@ component accessors="true" singleton {
 					terminal.resume();
 					}
 
-					param request.developerModeReloading = false;
-					param request.developerModeCommand='';
-					if( len( request.developerModeCommand) ) {
-						line = request.developerModeCommand;
-						request.developerModeReloading=true;
-						request.developerModeCommand = '';
+					param server.developerModeReloading = false;
+					param server.developerModeCommand='';
+					if( len( server.developerModeCommand) ) {
+						line = server.developerModeCommand;
+						server.developerModeReloading=true;
+						server.developerModeCommand = '';
 					} else {
 						// Shell stops on this line while waiting for user input
 						if( arguments.silent ) {
@@ -673,19 +673,19 @@ component accessors="true" singleton {
 	            // If there's input, try to run it.
 				if( len( trim( line ) ) ) {
 
-					param request.developerModeReloaded = false;
-					if( configService.getSetting( 'developerMode', false ) && !request.developerModeReloading ){
+					param server.developerModeReloaded = false;
+					if( configService.getSetting( 'developerMode', false ) && !server.developerModeReloading ){
 						// If we've never reloaded, the CLI just started, so just clear the cache
-						if( !request.developerModeReloaded ){
+						if( !server.developerModeReloaded ){
 							wirebox.getCacheBox().getCache( 'metadataCache' ).clearAll();
-							request.developerModeReloaded = true;
+							server.developerModeReloaded = true;
 						} else {
-							request.developerModeCommand = line;
+							server.developerModeCommand = line;
 							reload( clear=false );
 							return true;
 						}
 					}
-					request.developerModeReloading=false;
+					server.developerModeReloading=false;
 
 					var interceptData = {
 						line : line

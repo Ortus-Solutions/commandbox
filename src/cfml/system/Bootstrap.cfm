@@ -10,7 +10,6 @@ I bootstrap CommandBox up, create the shell and get it running.
 I am a CFM because the CLI seems to need a .cfm file to call
 This file will stay running the entire time the shell is open
 --->
-
 <cfset system = createObject( "java", "java.lang.System" )>
 <cfset system.setProperty( 'exitCode', '0' )>
 <cfset mappings = getApplicationSettings().mappings>
@@ -57,7 +56,7 @@ This file will stay running the entire time the shell is open
 		var esc = chr( 27 );
 		var caps = createObject( 'java', 'org.jline.utils.InfoCmp$Capability' );
 		// See how many colors this terminal supports
-		var numColors = shell.getReader().getTerminal().getNumericCapability( caps.max_colors ) ?: 0;
+		var numColors = isNull( shell ) ? 256 : (shell.getReader().getTerminal().getNumericCapability( caps.max_colors ) ?: 0);
 
 		// Windows cmd gets solid color
 		if( !isNull( numColors ) && numColors < 256 ) {
@@ -76,19 +75,18 @@ This file will stay running the entire time the shell is open
 		}
 
 	</cfscript>
-<cfoutput><cfsavecontent variable="banner">
+<cfoutput><cfsavecontent variable="local.banner">
 #w1#          ▄▄▄▄#y1#████████▄▄▄▄
 #w1#       ▄▓#o4#▓▓▓#o3#████#o2#████#o1#██████    #esc#[0m#o5##esc#[1m______                                          ______
 #w1#   ▄▓#o4#▓▓▓#o3#████#o2#████#o1#████#b1#██████   #esc#[0m#o4##esc#[1m/ ____/___  ____ ___  ____ ___  ____ _____  ____/ / __ )____  _  __
 #w1#▓#o4#▓▓▓#o3#████#o2#████#o1#████#b1#████#b2#██████  #esc#[0m#o3##esc#[1m/ /   / __ \/ __ `__ \/ __ `__ \/ __ `/ __ \/ __  / __  / __ \| |/_/
 #w1#   ▀▓#o4#▓▓▓#o3#████#o2#████#o1#████#b1#██████ #esc#[0m#o2##esc#[1m/ /___/ /_/ / / / / / / / / / / / /_/ / / / / /_/ / /_/ / /_/ />  <
-#w1#       ▀▓#o4#▓▓▓#o3#████#o2#████#o1#██████ #esc#[0m#o1##esc#[1m\____/\____/_/ /_/ /_/_/ /_/ /_/\__,_/_/ /_/\__,_/_____/\____/_/|_| (R)  #esc#[0m#esc#[1mv@@version@@
+#w1#       ▀▓#o4#▓▓▓#o3#████#o2#████#o1#██████ #esc#[0m#o1##esc#[1m\____/\____/_/ /_/ /_/_/ /_/ /_/\__,_/_/ /_/\__,_/_____/\____/_/|_| (R)  #esc#[0m#esc#[1mv@build.version@
 #w1#          ▀▀▀▀#y1#████████▀▀▀▀
 #esc#[0m#esc#[38;5;196m@@quote@@
 
 #esc#[38;5;15mWelcome to CommandBox!
 </cfsavecontent></cfoutput>
-	<cfset var banner = replace( banner, '@@version@@', shell.getVersion().replace( '@build' & '.version@+@build' & '.number@', '1.2.3' ) )>
 	<cfset var quotes = fileRead( 'Quotes.txt' ).listToArray( chr( 13 ) & chr( 10 ) )>
 	<cfset var quote = quotes[ randRange( 1, quotes.len() ) ]>
 	<cfset banner = replace( banner, '@@quote@@', repeatString( ' ', max( 77-quote.len(), 1 ) ) & quote )>
@@ -149,6 +147,7 @@ This file will stay running the entire time the shell is open
 		// If the standard input has content waiting, cut the chit chat and just run the commands so we can exit.
 		silent = false;
 		inStream = system.in;
+		println( getBanner() );
 
 		// Create the shell
 		shell = application.wirebox.getInstance( name='Shell', initArguments={ asyncLoad=!silent, inStream=inStream, outputStream=system.out } );
@@ -156,14 +155,9 @@ This file will stay running the entire time the shell is open
 		shell.setShellType( 'interactive' );
 		interceptorService =  shell.getInterceptorService();
 
-		interceptData = { shellType=shell.getShellType(), args=argsArray, banner=getBanner() };
+		interceptData = { shellType=shell.getShellType(), args=argsArray, banner="" };
 		interceptorService.announceInterception( 'onCLIStart', interceptData );
 		shell.ensureSystemModules();
-
-		if( !silent ) {
-			// Output the welcome banner
-			shell.printString( interceptData.banner );
-		}
 
 		FRTransService.endTransaction( FRTransaction );
 

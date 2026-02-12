@@ -690,14 +690,14 @@ component accessors="true" singleton="true" {
 
 							// Delete the old lex and replace with the new unpacked one
 							fileDelete( extFile );
-							zip action='zip' source=extTmpDir file=extFile;
+							zip action='zip' source=extTmpDir file=extFile overwrite=true;
 
 							directoryDelete( extTmpDir, true );
 						} );
 					}
 
 					fileDelete( luceeJarPath );
-					zip action='zip' source=explodedJarDir file=luceeUnpackedJarPath;
+					zip action='zip' source=explodedJarDir file=luceeUnpackedJarPath overwrite=true;
 
 					// Place in artifacts
 					fileCopy( luceeUnpackedJarPath, tempDir & 'temp.zip' );

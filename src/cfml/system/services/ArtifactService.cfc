@@ -234,7 +234,7 @@ component accessors="true" singleton {
 		// Create dir if it doesn't exist
 		directorycreate( getDirectoryFromPath( thisArtifactPath ), true, true );
 
-		zip action='zip' source=arguments.packageFolder file=thisArtifactPath;
+		zip action='zip' source=arguments.packageFolder file=thisArtifactPath overwrite=true;
 
 		return this;
 	}
