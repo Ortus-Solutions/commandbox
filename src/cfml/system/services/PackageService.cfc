@@ -92,6 +92,34 @@ component accessors="true" singleton {
 		var job = wirebox.getInstance( 'interactiveJob' );
 		interceptorService.announceInterception( 'preInstall', { installArgs=arguments, packagePathRequestingInstallation=packagePathRequestingInstallation } );
 
+		var lockFilePackagesToNotSaveVersions = {};
+		arguments.lock = arguments.lock || fileExists( arguments.currentWorkingDirectory & '/box-lock.json' );
+		var shouldSaveLockFile = false;
+		if ( arguments.lock && arguments.lockFile.isEmpty() ) {
+			var loadLockFileJob = wirebox.getInstance( 'interactiveJob' );
+			loadLockFileJob.start( "Loading lock file..." );
+			if ( arguments.verbose ) {
+				loadLockFileJob.setDumpLog( arguments.verbose );
+			}
+			if ( !fileExists( arguments.currentWorkingDirectory & '/box-lock.json' ) ) {
+				loadLockFileJob.addLog( "No lock file exists, creating one..." );
+				var thisBoxJSON = readPackageDescriptor( arguments.currentWorkingDirectory );
+				arguments.lockFile = {
+					"name": thisBoxJSON.name,
+					"version": thisBoxJSON.version,
+					"lockVersion": 1,
+					"dependencies": {}
+				};
+			} else {
+				loadLockFileJob.addLog( "Loading box-lock.json..." );
+				arguments.lockFile = deserializeJSON( fileRead( expandPath( arguments.currentWorkingDirectory & '/box-lock.json' ) ) );
+			}
+			loadLockFileJob.complete( arguments.verbose );
+			shouldSaveLockFile = true;
+		}
+
+		var job = wirebox.getInstance( 'interactiveJob' );
+
 		// If there is a package to install, install it
 		if( len( arguments.ID ) ) {
 			var updateBoxJSONDependency = true;

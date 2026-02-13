@@ -1823,7 +1823,7 @@ component accessors="true" singleton {
 		if( serverInfo.isJakartaEE ) {
 			consoleLogger.warn( "Runwar 6.x with Jakarta support is required for #serverInfo.engineName#@#serverInfo.engineVersion#." );
 			// Ensure Runwar 6.x with Jakarta support
-			var runwarJakartaVersion = '6.1.3';
+			var runwarJakartaVersion = '6.1.4';
 			var runwarJarURL         = "https://s3.amazonaws.com/downloads.ortussolutions.com/cfmlprojects/runwar/#runwarJakartaVersion#/runwar-#runwarJakartaVersion#.jar";
 			var runwarJarLocal       = expandPath( "/commandbox/libExt/runwar-jakarta-#runwarJakartaVersion#.jar" );
 			var runwarJarFolderLocal = getDirectoryFromPath( runwarJarLocal );
