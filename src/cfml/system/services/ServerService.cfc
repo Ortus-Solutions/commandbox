@@ -1830,7 +1830,7 @@ component accessors="true" singleton {
 
 		} else {
 			// Ensure Runwar 5.x with javax namespace
-			var runwarVersion = '5.2.2';
+			var runwarVersion = '5.2.3';
 			var runwarJarURL         = "https://s3.amazonaws.com/downloads.ortussolutions.com/cfmlprojects/runwar/legacy-#runwarVersion#/runwar-legacy-#runwarVersion#.jar";
 			var runwarJarLocal       = expandPath( "/commandbox/libExt/runwar-legacy-#runwarVersion#.jar" );
 			var runwarJarFolderLocal = getDirectoryFromPath( runwarJarLocal );
