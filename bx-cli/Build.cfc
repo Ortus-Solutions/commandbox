@@ -17,6 +17,6 @@ component {
 		// TODO: get bx modules
 
 		command( "forgebox use" ).params( "ortus" ).run();
-		command( "publish" ).run();
+		command( "publish" ).flags( "force" ).run();
 	}
 }
