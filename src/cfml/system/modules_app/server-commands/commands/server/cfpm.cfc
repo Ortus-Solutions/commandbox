@@ -107,9 +107,17 @@ component aliases='cfpm' {
 			cmd &= ' #arguments[i]#';
 		}
 
+		// Use this server's java home, if there is one defined.  This ensures the correct Java version is used.
+		var javaHome = serverInfo.javaHome ?: '';
 		// The user's OS may not have a JAVA_HOME set up
-		if( systemSettings.getSystemSetting( 'JAVA_HOME', '' ) == '' ) {
-			systemSettings.setSystemSetting( 'JAVA_HOME', fileSystemUtil.getJREExecutable().reReplaceNoCase( '(/|\\)bin(/|\\)java(.exe)?', '' ) );
+		if( !len( javaHome ) && !len( systemSettings.getSystemSetting( 'JAVA_HOME', '' ) ) ) {
+			// Default back to the JRE used by the CLI.
+			javaHome = fileSystemUtil.getJREExecutable();
+		}
+		// If there is no server java home, but there IS a system-wide JAVA_HOME, then we'll just let it be.  
+		// But if neither exist, then the Java install our CLI is using is better than nothing.
+		if( len( javaHome ) ) {
+			systemSettings.setSystemSetting( 'JAVA_HOME', javaHome.reReplaceNoCase( '(/|\\)bin(/|\\)java(.exe)?', '' ) );
 		}
 		print.toConsole();
 		var output = command( 'run' )
