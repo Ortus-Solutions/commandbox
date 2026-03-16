@@ -10,7 +10,7 @@ component {
 		}
 		directoryCreate( moduleSrcPath );
 		directoryCopy( repoSrcPath, moduleSrcPath, true );
-		command( "tokenReplace" ).params( moduleSrcPath & "Shell.cfc", "@build.version@", boxJSON.version, true );
+		command( "tokenReplace" ).params( moduleSrcPath & "Shell.cfc", "@build.version@", boxJSON.version, true ).run();
 
 		// TODO: get libs
 
