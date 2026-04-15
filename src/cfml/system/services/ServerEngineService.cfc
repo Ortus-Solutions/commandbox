@@ -102,23 +102,23 @@ component accessors="true" singleton="true" {
 	*
 	**/
 	public function installBoxlang( installDetails, serverInfo ) {
-		var version=installDetails.version;
 		// default web.xml
-		var source=serverInfo.webXML;
-		var destination=serverInfo.webXML;
+		_installBoxlang( installDetails, serverInfo, serverInfo.webXML );
 		// web.xml override
 		if( trim( serverInfo.webXMLOverrideActual ) != '' ) {
-			source=serverInfo.webXMLOverrideActual;
-			destination=serverInfo.webXMLOverrideActual;
+			_installBoxlang( installDetails, serverInfo, serverInfo.webXMLOverrideActual );
 		}
 		
+		return installDetails;
+	}
+	public function _installBoxlang( installDetails, serverInfo, WebXMLPath ) {
 		var fullServerConfigDir = serverInfo.serverConfigDir;
 
 		if( fullServerConfigDir.startsWith( '/WEB-INF' ) ) {
 			fullServerConfigDir = installDetails.installDir & fullServerConfigDir;
 		}
 
-		var webXML = XMLParse( source );
+		var webXML = XMLParse( WebXMLPath );
 		var updateMade = false;
 
 		// always set home and debug mode
@@ -141,8 +141,8 @@ component accessors="true" singleton="true" {
 			updateMade = ensureProperServletInitParam( webXML, 'ortus.boxlang.servlet.BoxLangServlet', "boxlang-config-path", serverInfo.engineConfigFile ) || updateMade;
 		}
 
-		if( updateMade || !fileExists( destination ) ) {
-			writeXMLFile( webXML, destination );
+		if( updateMade ) {
+			writeXMLFile( webXML, WebXMLPath );
 		}
 		return installDetails;
 	}
