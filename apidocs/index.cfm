@@ -5,10 +5,10 @@
 try{
 	docName = "CommandBox-CommandDocs";
 	docbox = new docbox.DocBox()
-    .addStrategy( "HTML", {
+    .addStrategy( "CommandBox", {
         projectTitle : "CommandBox v#url.version#",
-        outputDir    : expandPath( "/#docName#" ),
-        theme        : "default"  // or "frames"
+        outputDir    : url.path,
+		theme : "default"
     });
 	baseDir = expandPath( '/commandbox' );
 	commandDirs = directoryList(path='/commandbox/system/modules_app', recurse=true, filter=function(path){ return reFindNoCase( '.*[/\\]commands$', arguments.path ); } );
