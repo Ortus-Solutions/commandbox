@@ -261,7 +261,7 @@ component accessors="true" singleton {
 				'standalone' : d.app.standalone ?: false,
 				'WARPath' : d.app.WARPath ?: '',
 				'cfengine' : d.app.cfengine ?: '',
-				'restMappings' : d.app.cfengine ?: '',
+				'restMappings' : d.app.restMappings ?: '',
 				'serverHomeDirectory' : d.app.serverHomeDirectory ?: '',
 				'singleServerHome' : d.app.singleServerHome ?: false,
 				'sessionCookieSecure' : d.app.sessionCookieSecure ?: false,
