@@ -102,23 +102,23 @@ component accessors="true" singleton="true" {
 	*
 	**/
 	public function installBoxlang( installDetails, serverInfo ) {
-		var version=installDetails.version;
 		// default web.xml
-		var source=serverInfo.webXML;
-		var destination=serverInfo.webXML;
+		_installBoxlang( installDetails, serverInfo, serverInfo.webXML );
 		// web.xml override
 		if( trim( serverInfo.webXMLOverrideActual ) != '' ) {
-			source=serverInfo.webXMLOverrideActual;
-			destination=serverInfo.webXMLOverrideActual;
+			_installBoxlang( installDetails, serverInfo, serverInfo.webXMLOverrideActual );
 		}
 		
+		return installDetails;
+	}
+	public function _installBoxlang( installDetails, serverInfo, WebXMLPath ) {
 		var fullServerConfigDir = serverInfo.serverConfigDir;
 
 		if( fullServerConfigDir.startsWith( '/WEB-INF' ) ) {
 			fullServerConfigDir = installDetails.installDir & fullServerConfigDir;
 		}
 
-		var webXML = XMLParse( source );
+		var webXML = XMLParse( WebXMLPath );
 		var updateMade = false;
 
 		// always set home and debug mode
@@ -141,8 +141,8 @@ component accessors="true" singleton="true" {
 			updateMade = ensureProperServletInitParam( webXML, 'ortus.boxlang.servlet.BoxLangServlet', "boxlang-config-path", serverInfo.engineConfigFile ) || updateMade;
 		}
 
-		if( updateMade || !fileExists( destination ) ) {
-			writeXMLFile( webXML, destination );
+		if( updateMade ) {
+			writeXMLFile( webXML, WebXMLPath );
 		}
 		return installDetails;
 	}
@@ -515,12 +515,10 @@ component accessors="true" singleton="true" {
 	* @returns true if changes were made, false if nothing was updated.
 	**/
 	function ensureProperServletInitParam( webXML, string servletClass, string initParamName, string initParamValue ) {
-		var servlets = xmlSearch(webXML,"//:servlet-class[text()='#servletClass#']");
+		// Try most portable XPath first (works regardless of namespace)
+		var servlets = xmlSearch(webXML,"//*[local-name()='servlet-class'][text()='#servletClass#']");
 		if( !servlets.len() ) {
 			var servlets = xmlSearch(webXML,"//servlet-class[text()='#servletClass#']");
-		}
-		if( !servlets.len() ) {
-			var servlets = xmlSearch(webXML,"//*[local-name()='servlet-class'][text()='#servletClass#']");
 		}
 		if( !servlets.len() ) {
 			return false;
@@ -583,12 +581,10 @@ component accessors="true" singleton="true" {
 	* @returns true if changes were made, false if nothing was updated.
 	**/
 	function removeServletInitParam( webXML, string servletClass, string initParamName ) {
-		var servlets = xmlSearch(webXML,"//:servlet-class[text()='#servletClass#']");
+		// Try most portable XPath first (works regardless of namespace)
+		var servlets = xmlSearch(webXML,"//*[local-name()='servlet-class'][text()='#servletClass#']");
 		if( !servlets.len() ) {
 			var servlets = xmlSearch(webXML,"//servlet-class[text()='#servletClass#']");
-		}
-		if( !servlets.len() ) {
-			var servlets = xmlSearch(webXML,"//*[local-name()='servlet-class'][text()='#servletClass#']");
 		}
 		if( !servlets.len() ) {
 			return false;
@@ -694,14 +690,14 @@ component accessors="true" singleton="true" {
 
 							// Delete the old lex and replace with the new unpacked one
 							fileDelete( extFile );
-							zip action='zip' source=extTmpDir file=extFile;
+							zip action='zip' source=extTmpDir file=extFile overwrite=true;
 
 							directoryDelete( extTmpDir, true );
 						} );
 					}
 
 					fileDelete( luceeJarPath );
-					zip action='zip' source=explodedJarDir file=luceeUnpackedJarPath;
+					zip action='zip' source=explodedJarDir file=luceeUnpackedJarPath overwrite=true;
 
 					// Place in artifacts
 					fileCopy( luceeUnpackedJarPath, tempDir & 'temp.zip' );
