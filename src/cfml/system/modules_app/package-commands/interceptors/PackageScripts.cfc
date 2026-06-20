@@ -78,7 +78,8 @@ component {
 	function processScripts( required string interceptionPoint, string directory=shell.pwd(), interceptData={} ) {
 		inScript=true;
 		try {
-			packageService.runScript( arguments.interceptionPoint, arguments.directory, true, interceptData );
+			// automatic=true so install-lifecycle scripts can be gated behind a confirmation prompt
+			packageService.runScript( arguments.interceptionPoint, arguments.directory, true, interceptData, true );
 		} finally {
 			inScript=false;
 		}

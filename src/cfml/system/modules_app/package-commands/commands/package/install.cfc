@@ -112,6 +112,7 @@ component aliases="install" {
 	* @force.hint Force dependencies to be installed whether they already exist or not
 	* @system.hint Install this package into the global CommandBox module's folder
 	* @lock.hint Flag to lock the version in the lock file
+	* @trustScripts.hint Automatically allow the installed package(s) install-lifecycle scripts to run without a confirmation prompt
 	**/
 	function run(
 		string ID='',
@@ -122,8 +123,17 @@ component aliases="install" {
 		boolean verbose=false,
 		boolean force=false,
 		boolean system=false,
-		boolean lock=false
+		boolean lock=false,
+		boolean trustScripts=false
 	){
+
+		// When asked to trust scripts, set the trust env var into this command's environment so the
+		// install-lifecycle script confirmation is bypassed (works in interactive and non-interactive
+		// shells). The setting lives in this command's environment frame and is discarded once the
+		// install completes, so it does not leak to later commands.
+		if( arguments.trustScripts ) {
+			systemSettings.setSystemSetting( 'COMMANDBOX_TRUST_INSTALL_SCRIPTS', 'true' );
+		}
 
 		// Don't default the dir param since we need to differentiate whether the user actually
 		// specifically typed in a param or not since it overrides the package's box.json install dir.
