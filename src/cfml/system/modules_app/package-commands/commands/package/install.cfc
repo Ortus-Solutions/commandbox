@@ -124,16 +124,8 @@ component aliases="install" {
 		boolean force=false,
 		boolean system=false,
 		boolean lock=false,
-		boolean trustScripts=false
+		boolean trustScripts=configService.getSetting( 'scripts.trustInstallScripts', false )
 	){
-
-		// When asked to trust scripts, set the trust env var into this command's environment so the
-		// install-lifecycle script confirmation is bypassed (works in interactive and non-interactive
-		// shells). The setting lives in this command's environment frame and is discarded once the
-		// install completes, so it does not leak to later commands.
-		if( arguments.trustScripts ) {
-			systemSettings.setSystemSetting( 'COMMANDBOX_TRUST_INSTALL_SCRIPTS', 'true' );
-		}
 
 		// Don't default the dir param since we need to differentiate whether the user actually
 		// specifically typed in a param or not since it overrides the package's box.json install dir.

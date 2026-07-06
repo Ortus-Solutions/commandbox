@@ -86,7 +86,8 @@ component accessors="true" singleton {
 		string packagePathRequestingInstallation = arguments.currentWorkingDirectory,
 		string defaultName='',
 		boolean lock=false,
-		struct lockFile={}
+		struct lockFile={},
+		boolean trustScripts=configService.getSetting( 'scripts.trustInstallScripts', false )
 	){
 		// Java service registers itself as an interceptor on creation so I need to force the provider to create the service before installing anything.
 		javaService.$get();
@@ -729,6 +730,7 @@ component accessors="true" singleton {
 				currentWorkingDirectory = arguments.currentWorkingDirectory, // Original dir
 				packagePathRequestingInstallation = installDirectory, // directory for smart dependencies to use
 				defaultName = dependency,
+				trustScripts = arguments.trustScripts,
 				lockFile = arguments.lockFile.isEmpty() ? {} : ( isNull( packageName ) || !arguments.lockFile.dependencies.keyExists( packageName ) ? arguments.lockFile : arguments.lockFile.dependencies[ packageName ] )
 			};
 
@@ -1455,7 +1457,7 @@ component accessors="true" singleton {
 			if( scriptNameCommands.len()
 				&& arguments.automatic
 				&& isRiskyInstallScript( arguments.scriptName )
-				&& !confirmRiskyScript( arguments.scriptName, arguments.directory, scriptNameCommands ) ) {
+				&& !confirmScriptExecution( arguments.scriptName, arguments.directory, scriptNameCommands, arguments.interceptData ) ) {
 				consoleLogger.warn( 'Skipped package script [#arguments.scriptName#] — not approved.' );
 			} else if( scriptNameCommands.len() ) {
 				consoleLogger.debug( '.' );
@@ -1510,25 +1512,29 @@ component accessors="true" singleton {
 	* Ask the user (human-in-the-loop) whether a potentially risky, automatically-fired install script
 	* should be allowed to run.  Returns true to run the script, false to skip it.
 	*
-	* Behavior:
-	*  - If the master switch "scripts.confirmInstallScripts" is false, scripts run without prompting.
-	*  - In a non-interactive shell (CI / no TTY) the script is denied unless explicitly trusted via the
-	*    config setting "scripts.trustInstallScriptsNonInteractive" or the environment variable
-	*    "COMMANDBOX_TRUST_INSTALL_SCRIPTS".
+	* Trust is granted per-install via the "trustScripts" arg (carried in interceptData.installArgs),
+	* which itself defaults to the "scripts.trustInstallScripts" config setting.  The
+	* "box_config_scripts_trustInstallScripts" environment variable overrides that config setting
+	* automatically via ConfigService, so we never read env vars directly here.
+	*
+	* Behavior when not trusted:
+	*  - In a non-interactive shell (CI / no TTY) the script is denied since we can't prompt.
 	*  - Otherwise the exact commands are shown and the user is asked a yes/no question.
 	*
 	* @scriptName Name of the package script / interception point
 	* @directory The package root the script will run in
 	* @commands An array of the command strings that will be executed
+	* @interceptData The interception data for this event (carries installArgs.trustScripts when present)
 	*/
-	private boolean function confirmRiskyScript( required string scriptName, required string directory, required array commands ) {
-		// Master switch — when disabled, preserve the original auto-run behavior.
-		if( !configService.getSetting( 'scripts.confirmInstallScripts', true ) ) {
+	private boolean function confirmScriptExecution( required string scriptName, required string directory, required array commands, struct interceptData={} ) {
+		// Trust may be granted for this install via the trustScripts arg; otherwise fall back to the
+		// config setting (which the box_config_scripts_trustInstallScripts env var overrides for free).
+		var trusted = arguments.interceptData.installArgs.trustScripts ?: configService.getSetting( 'scripts.trustInstallScripts', false );
+		if( trusted ) {
 			return true;
 		}
 
-		// Show the user exactly what is about to run so they can make an informed decision
-		// (also leaves an audit trail in CI logs when trust is granted).
+		// Show the user exactly what is about to run so they can make an informed decision.
 		consoleLogger.warn( '.' );
 		consoleLogger.warn( 'SECURITY: The package script [#arguments.scriptName#] wants to automatically run the following command(s):' );
 		consoleLogger.warn( '  Package location: #arguments.directory#' );
@@ -1536,30 +1542,13 @@ component accessors="true" singleton {
 			consoleLogger.error( '  > ' & thisCommand );
 		}
 
-		// Explicit trust escape hatch (e.g. "install --trustScripts" or CI) bypasses the prompt in any shell.
-		if( isTruthy( systemSettings.getSystemSetting( 'COMMANDBOX_TRUST_INSTALL_SCRIPTS', false ) ) ) {
-			return true;
-		}
-
-		// Non-interactive shells (CI, piped input, no TTY) can't answer a prompt.  Deny by default
-		// unless the user has explicitly opted in via config setting.
+		// Non-interactive shells (CI, piped input, no TTY) can't answer a prompt, so deny.
 		if( !shell.isTerminalInteractive() ) {
-			if( configService.getSetting( 'scripts.trustInstallScriptsNonInteractive', false ) ) {
-				return true;
-			}
-			consoleLogger.warn( 'Refusing to auto-run install script in a non-interactive shell. Set config setting [scripts.trustInstallScriptsNonInteractive=true], environment variable [COMMANDBOX_TRUST_INSTALL_SCRIPTS=true], or pass [--trustScripts] to allow.' );
+			consoleLogger.warn( 'Refusing to auto-run install script in a non-interactive shell. Set config setting [scripts.trustInstallScripts=true] or pass [--trustScripts] to allow.' );
 			return false;
 		}
 
 		return shell.confirm( 'Do you want to allow this script to run? [y/n]' );
-	}
-
-	/**
-	* Loose truthiness check for a setting/env var value that may be a boolean, "true"/"false", "1"/"0", etc.
-	* @value The value to evaluate
-	*/
-	private boolean function isTruthy( required any value ) {
-		return isBoolean( arguments.value ) && arguments.value;
 	}
 
 	/**
