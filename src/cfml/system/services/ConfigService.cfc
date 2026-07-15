@@ -96,7 +96,9 @@ component accessors="true" singleton {
 			'configAutoSync.endpoint',
 			'configAutoSync.overwrite',
 			// Task Runners
-			'taskCaching'
+			'taskCaching',
+			// Package install script security
+			'scripts.trustInstallScripts'
 		]);
 
 		setConfigFilePath( '/commandbox-home/CommandBox.json' );
