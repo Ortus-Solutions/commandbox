@@ -21,6 +21,7 @@ component accessors="true" singleton {
 	property name="logger"				inject="logbox:logger:{this}";
 	property name="tempDir"				inject="tempDir@constants";
 	property name="configService"		inject="configService";
+	property name="browserOpener"		inject="BrowserOpener";
 
 	function init() {
 		variables.os = createObject( "java", "java.lang.System" ).getProperty( "os.name" ).toLowerCase();
@@ -283,7 +284,6 @@ component accessors="true" singleton {
 	* @browser.hint the browser to use
     */
     boolean function openBrowser( required URI, browser="" ){
-		var rwbo = createObject( "java", "runwar.BrowserOpener" );
 		// if binding to all IPs, swap out with localhost.
 		if( URI.find( '0.0.0.0' ) ) {
 			URI.replace( '0.0.0.0', '127.0.0.1' );
@@ -297,7 +297,7 @@ component accessors="true" singleton {
 			browser = configService.getSetting( 'preferredBrowser', '' );
 		}
 
-		rwbo.openURL(arguments.URI, browser);
+		browserOpener.openURL( arguments.URI, browser );
 
 		return true;
 	}
