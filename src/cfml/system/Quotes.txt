@@ -1,11 +1,11 @@
 # CommandBox CLI Quotes with Real Tips (75 characters max)
 
-Your friendly neighborhood CFML superhero is here!
+Your friendly neighborhood BoxLang superhero is here!
 Powered by caffeine and questionable life choices
 Use "server start --debug --console" to see why servers won't start
 May cause excessive productivity and jazz hands
 Press Ctrl-C to stop streaming server console logs
-CFML devs are wizards with better syntax highlighting
+Boxlang devs are wizards with better syntax highlighting
 Use "server cd myServer" to jump to any server's webroot
 73% of CLI statistics are made up on the spot
 Use "server log --follow" to tail your running server logs
@@ -35,7 +35,7 @@ More reliable than your Wi-Fi connection
 Use "testbox watch" for live feedback from unit tests
 Side effects: confidence and spontaneous high-fives
 Install TestBox as dev dependency with "--saveDev"
-CFML makes Java developers secretly jealous
+Boxlang makes Java developers secretly jealous
 Use "history" command to remember yesterday's work
 Your localhost is showing, zip it up
 Commands support file globbing: "rm *.txt" works great
@@ -70,14 +70,14 @@ Replace Ant builds with Task Runners - "task create"
 Deploy like a ninja: silent, efficient, stylish
 Use "propertyfile set" to script property changes
 Your localhost is my cloud, we're connected
-Run CFML functions directly: "#now" or "#hash foo"
+Run Boxlang functions directly: "#now" or "#hash foo"
 "Works on localhost" actually means something
 CommandBox has built-in tail, grep, sed for Windows
 Seen merge conflicts on fire off GitHub's shoulder
 Use "forgebox whoami" to check login status
 Startup faster than your attention span
 Publish packages to ForgeBox with "publish" command
-CFML feels like the cool programming language kid
+Boxlang feels like the cool programming language kid
 Set default parameters for commonly-used commands
 Set default server settings for all new servers
 Eating soup with a fork without CommandBox
@@ -86,7 +86,7 @@ Your repo called, wants to know when you're home
 Enable URL rewrites easily with --rewriteEnable
 Clicking restart 47 times isn't deployment strategy
 Enable web server access logs on your servers
-Speak binary but prefer CFML - more expressive
+Speak binary but prefer Boxlang - more expressive
 Enable URL rewriting logs for debugging
 Workflow smoother than fresh peanut butter
 Click tray icon to open server web administrator
@@ -141,6 +141,6 @@ Speak server: frustrated dev with hints of hope
 Servers continue running after CLI exits
 Package manager more organized than your life
 Right-click tray to stop servers
-CFML deployment feels like good cheating
+Boxlang deployment feels like good cheating
 Use CommandBox service manager to auto-start on boot
 Health checks are wellness visits for digital pets

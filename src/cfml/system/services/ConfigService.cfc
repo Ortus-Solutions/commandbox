@@ -61,6 +61,9 @@ component accessors="true" singleton {
 			'endpoints.forgebox',
 			'endpoints.forgebox.APIToken',
 			'endpoints.forgebox.APIURL',
+			// Maven endpoints
+			'endpoints.maven',
+			'endpoints.maven.repositories',
 			// Servers
 			'server',
 			'server.singleServerMode',
@@ -96,7 +99,9 @@ component accessors="true" singleton {
 			'configAutoSync.endpoint',
 			'configAutoSync.overwrite',
 			// Task Runners
-			'taskCaching'
+			'taskCaching',
+			// Package install script security
+			'scripts.trustInstallScripts'
 		]);
 
 		setConfigFilePath( '/commandbox-home/CommandBox.json' );

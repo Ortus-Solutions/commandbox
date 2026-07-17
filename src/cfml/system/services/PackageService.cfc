@@ -30,6 +30,7 @@ component accessors="true" singleton {
 	property name='tempDir' 			inject='tempDir@constants';
 //	property name='serverService'		inject='serverService';
 	property name='moduleService'		inject='moduleService';
+	property name='configService'		inject='ConfigService';
 
 	/**
 	* Constructor
@@ -85,7 +86,8 @@ component accessors="true" singleton {
 		string packagePathRequestingInstallation = arguments.currentWorkingDirectory,
 		string defaultName='',
 		boolean lock=false,
-		struct lockFile={}
+		struct lockFile={},
+		boolean trustScripts=configService.getSetting( 'scripts.trustInstallScripts', false )
 	){
 		// Java service registers itself as an interceptor on creation so I need to force the provider to create the service before installing anything.
 		javaService.$get();
@@ -756,6 +758,7 @@ component accessors="true" singleton {
 				currentWorkingDirectory = arguments.currentWorkingDirectory, // Original dir
 				packagePathRequestingInstallation = installDirectory, // directory for smart dependencies to use
 				defaultName = dependency,
+				trustScripts = arguments.trustScripts,
 				lockFile = arguments.lockFile.isEmpty() ? {} : ( isNull( packageName ) || !arguments.lockFile.dependencies.keyExists( packageName ) ? arguments.lockFile : arguments.lockFile.dependencies[ packageName ] )
 			};
 
@@ -1454,8 +1457,9 @@ component accessors="true" singleton {
 	* @directory The package root
 	* @ignoreMissing Set true to ignore missing package scripts, false to throw an exception
 	* @interceptData An optional struct of data if this package script is being fired as part of an interceptor announcement.  Will be loaded into env vars
+	* @automatic Set true when this script is being fired automatically by an interceptor (not explicitly invoked by the user).  Used to gate potentially risky install-lifecycle scripts behind a confirmation prompt.
 	*/
-	function runScript( required string scriptName, string directory=shell.pwd(), boolean ignoreMissing=true, interceptData={} ) {
+	function runScript( required string scriptName, string directory=shell.pwd(), boolean ignoreMissing=true, interceptData={}, boolean automatic=false ) {
 		// Read the box.json from this package (if it exists)
 		var boxJSON = readPackageDescriptorRaw( arguments.directory );
 		// If there is a scripts object with a matching key for this interceptor....
@@ -1475,7 +1479,15 @@ component accessors="true" singleton {
 			if( isSimpleValue( scriptNameCommands ) ) {
 				scriptNameCommands = [ scriptNameCommands ];
 			}
-			if( scriptNameCommands.len() ) {
+			// Gate automatically-fired install-lifecycle scripts behind a human-in-the-loop confirmation.
+			// This is the classic supply-chain risk: installing a third party package can silently run
+			// arbitrary commands via its install scripts.  Explicit "run-script" invocations are not gated.
+			if( scriptNameCommands.len()
+				&& arguments.automatic
+				&& isRiskyInstallScript( arguments.scriptName )
+				&& !confirmScriptExecution( arguments.scriptName, arguments.directory, scriptNameCommands, arguments.interceptData ) ) {
+				consoleLogger.warn( 'Skipped package script [#arguments.scriptName#] — not approved.' );
+			} else if( scriptNameCommands.len() ) {
 				consoleLogger.debug( '.' );
 				consoleLogger.warn( 'Running package script [#arguments.scriptName#].' );
 				for( var scriptNameCommand in scriptNameCommands ) {
@@ -1509,6 +1521,62 @@ component accessors="true" singleton {
 		} else if( !arguments.ignoreMissing ) {
 			consoleLogger.error( 'The script [#arguments.scriptName#] does not exist in this package.' );
 		}
+	}
+
+	/**
+	* Is this script name one of the install-lifecycle interception points that runs code originating
+	* from a package being added or removed?  These are the points worth confirming with a human since
+	* they can run arbitrary commands defined by a (potentially untrusted) third party package.
+	* The recursive pre.../post... wrapper names that runScript derives (e.g. prepostInstall) are
+	* intentionally excluded so a single event prompts at most once.
+	* @scriptName Name of the package script / interception point
+	*/
+	private boolean function isRiskyInstallScript( required string scriptName ) {
+		var riskyEvents = 'preInstall,preInstallAll,onInstall,postInstall,postInstallAll,preUninstall,postUninstall';
+		return riskyEvents.listFindNoCase( arguments.scriptName ) > 0;
+	}
+
+	/**
+	* Ask the user (human-in-the-loop) whether a potentially risky, automatically-fired install script
+	* should be allowed to run.  Returns true to run the script, false to skip it.
+	*
+	* Trust is granted per-install via the "trustScripts" arg (carried in interceptData.installArgs),
+	* which itself defaults to the "scripts.trustInstallScripts" config setting.  The
+	* "box_config_scripts_trustInstallScripts" environment variable overrides that config setting
+	* automatically via ConfigService, so we never read env vars directly here.
+	*
+	* Behavior when not trusted:
+	*  - In a non-interactive shell (CI / no TTY) the script is denied since we can't prompt.
+	*  - Otherwise the exact commands are shown and the user is asked a yes/no question.
+	*
+	* @scriptName Name of the package script / interception point
+	* @directory The package root the script will run in
+	* @commands An array of the command strings that will be executed
+	* @interceptData The interception data for this event (carries installArgs.trustScripts when present)
+	*/
+	private boolean function confirmScriptExecution( required string scriptName, required string directory, required array commands, struct interceptData={} ) {
+		// Trust may be granted for this install via the trustScripts arg; otherwise fall back to the
+		// config setting (which the box_config_scripts_trustInstallScripts env var overrides for free).
+		var trusted = arguments.interceptData.installArgs.trustScripts ?: configService.getSetting( 'scripts.trustInstallScripts', false );
+		if( trusted ) {
+			return true;
+		}
+
+		// Show the user exactly what is about to run so they can make an informed decision.
+		consoleLogger.warn( '.' );
+		consoleLogger.warn( 'SECURITY: The package script [#arguments.scriptName#] wants to automatically run the following command(s):' );
+		consoleLogger.warn( '  Package location: #arguments.directory#' );
+		for( var thisCommand in arguments.commands ) {
+			consoleLogger.error( '  > ' & thisCommand );
+		}
+
+		// Non-interactive shells (CI, piped input, no TTY) can't answer a prompt, so deny.
+		if( !shell.isTerminalInteractive() ) {
+			consoleLogger.warn( 'Refusing to auto-run install script in a non-interactive shell. Set config setting [scripts.trustInstallScripts=true] or pass [--trustScripts] to allow.' );
+			return false;
+		}
+
+		return shell.confirm( 'Do you want to allow this script to run? [y/n]' );
 	}
 
 	/**

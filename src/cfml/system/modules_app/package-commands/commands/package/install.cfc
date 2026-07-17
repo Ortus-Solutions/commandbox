@@ -112,6 +112,7 @@ component aliases="install" {
 	* @force.hint Force dependencies to be installed whether they already exist or not
 	* @system.hint Install this package into the global CommandBox module's folder
 	* @lock.hint Flag to lock the version in the lock file
+	* @trustScripts.hint Automatically allow the installed package(s) install-lifecycle scripts to run without a confirmation prompt
 	* @lock.hint Flag to lock the version in the lock file
 	**/
 	function run(
@@ -124,6 +125,7 @@ component aliases="install" {
 		boolean force=false,
 		boolean system=false,
 		boolean lock=false,
+		boolean trustScripts=configService.getSetting( 'scripts.trustInstallScripts', false )
 		boolean lock=false
 	){
 
