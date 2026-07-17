@@ -1,0 +1,41 @@
+{
+    "name":"BoxLang CommandBox Module",
+    "version":"7.0.12-alpha",
+    "author":"Ortus Solutions",
+    "homepage":"https://commandbox.ortusbooks.com/",
+    "documentation":"https://commandbox.ortusbooks.com/",
+    "repository":{
+        "type":"git",
+        "URL":"https://github.com/Ortus-Solutions/commandbox"
+    },
+    "slug":"bx-cli",
+    "shortDescription":"CommandBox CLI for BoxLang",
+    "type":"boxlang-modules",
+    "private":false,
+    "license":[
+        {
+            "type":"Apache-2.0",
+            "URL":"https://www.apache.org/licenses/LICENSE-2.0"
+        }
+    ],
+    "ignores":[
+        "/libs/jansi"
+    ],
+    "boxlang":{
+        "moduleName":"cli",
+        "minimumVersion":"1.10.0",
+        "executable":"box"
+    },
+    "dependencies":{
+        "bx-compat-cfml":"^1.34.0+50",
+        "bx-esapi":"^1.9.0+13",
+        "bx-unsafe-evaluate":"^1.0.0+2",
+        "bx-wddx":"^1.5.5+12"
+    },
+    "installPaths":{
+        "bx-compat-cfml":"modules/bx-compat-cfml/",
+        "bx-esapi":"modules/bx-esapi/",
+        "bx-unsafe-evaluate":"modules/bx-unsafe-evaluate/",
+        "bx-wddx":"modules/bx-wddx/"
+    }
+}

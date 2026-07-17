@@ -39,7 +39,7 @@ component singleton {
 
 			// Try to resolve the command.
 			// If buffer ends in space, we don't need to worry about the partial match of a command
-			var commandChain = commandService.resolveCommand( line=buffer, forCompletion=!bufferEndsWithSpace );
+			var commandChain = commandService.resolveCommand( line=buffer, forCompletion=true );
 
 			// If there are multiple commands like "help | more", we only care about the last one
 			var commandInfo = commandChain[ commandChain.len() ];
@@ -97,7 +97,6 @@ component singleton {
 					matchedToHere++;
 				}
 			}
-
 
 			// Didn't match an exact command, but might have matched part of one.
 			if( !commandInfo.found ) {
@@ -204,7 +203,7 @@ component singleton {
 				} else if(
 							passedParameters.positionalParameters.len() > 1
 							|| ( passedParameters.positionalParameters.len() == 1
-								&& ( bufferEndsWithSpace || structCount( passedParameters.flags ) ) )
+								&& !buffer.endsWith( passedParameters.positionalParameters[1] ) )
 						) {
 
 					// If the buffer ends with a space, they were done typing the last param

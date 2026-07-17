@@ -1,0 +1,71 @@
+
+import java.lang.System;
+import java.nio.file.Paths;
+
+class {
+
+	function configure() {
+		variables.settings = {
+			commandboxHome : System.getProperty( 'user.home' ) & "/.CommandBox/"
+		}
+	}
+
+	function main( required Array args  ) {
+		debug = false;
+		moduleRoot = getDirectoryFromPath( getCurrentTemplatePath() );
+		// Load up our dependencies
+		boxRuntime.getModuleService().loadModules( Paths.get( moduleRoot, ["modules"] ) );
+
+		server.unlock();
+		boxAnnounce( "onServerScopeCreation", { scope : server } );
+
+		commandboxHome = variables.settings.commandboxHome;
+
+		// This needs to be the drive root where the CF bootstrap lives
+		rootMapping = Paths.get( moduleRoot ).toAbsolutePath().getRoot().toString();
+		bootstrap = "/" & Paths.get( moduleRoot, [ "src/system/Bootstrap.cfm" ] ).toAbsolutePath().toString().replace( rootMapping , "" ).replace( "\", "/", "all"	 );
+		
+		boxRuntime.getConfiguration().registerMapping( "/", rootMapping );
+		boxRuntime.getConfiguration().registerMapping( "/bxcliRoot", moduleRoot );
+		
+		// TODO: rename cfml.cli.* to boxlang.cli.*
+		System.setProperty( "cfml.cli.debug", false.toString() );
+		System.setProperty( "cfml.cli.home", commandboxHome );
+		System.setProperty( "cfml.cli.moduleRoot", moduleRoot );
+		System.setProperty( "cfml.cli.arguments", args.toList( " " ) );
+		System.setProperty( "cfml.cli.argument.array", JSONSerialize( args ) );
+		System.setProperty( "cfml.cli.pwd", System.getProperty( "user.dir" ) );
+
+		if ( debug ) {
+			println( "Root Mapping: " & rootMapping );
+			println( "Bootstrap: " & bootstrap );
+		}
+
+		bootstrapSrc = "
+			// loader = createObject( 'java', 'cliloader.LoaderCLIMain' );
+			// if( !isNull( loader.FRTrans ) ) { loader.FRTrans.close(); }
+			
+			include '" & bootstrap.replace( "'", "''" ) & "';
+		";
+
+		if ( debug ) {
+			println( "" );
+			println( bootstrapSrc );
+			println( "" );
+		}
+
+		try {
+			// Kick off the box bootstrap
+			boxRuntime.executeSource( bootstrapSrc );
+			exitCode = val( System.getProperty( "cfml.cli.exitCode", "0" ) );
+		} catch( any e ) {
+			e.printStackTrace();
+			exitCode = 1;
+		}
+
+		// Control the exit so we can set the exit code
+		if( exitCode != 0 ) {
+			System.exit( exitCode );
+		}
+	}
+}

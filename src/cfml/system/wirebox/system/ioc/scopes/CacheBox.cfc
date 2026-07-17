@@ -1,10 +1,12 @@
 ﻿/**
-* Copyright Since 2005 ColdBox Framework by Luis Majano and Ortus Solutions, Corp
-* www.ortussolutions.com
-* ---
-* A scope that interfaces with CacheBox
-**/
-component implements="wirebox.system.ioc.scopes.IScope" accessors="true"{
+ * Copyright Since 2005 ColdBox Framework by Luis Majano and Ortus Solutions, Corp
+ * www.ortussolutions.com
+ * ---
+ * A scope that interfaces with CacheBox
+ *
+ * @see wirebox.system.ioc.scopes.IScope
+ **/
+component accessors="true" {
 
 	/**
 	 * Injector linkage
@@ -24,92 +26,102 @@ component implements="wirebox.system.ioc.scopes.IScope" accessors="true"{
 	/**
 	 * Configure the scope for operation and returns itself
 	 *
-	 *
-	 * @injector The linked WireBox injector
+	 * @injector             The linked WireBox injector
 	 * @injector.doc_generic wirebox.system.ioc.Injector
 	 *
 	 * @return wirebox.system.ioc.scopes.IScope
 	 */
 	function init( required injector ){
-		variables.injector 	= arguments.injector;
-		variables.cacheBox 	= arguments.injector.getCacheBox();
-		variables.log		= arguments.injector.getLogBox().getLogger( this );
+		variables.injector = arguments.injector;
+		variables.cacheBox = arguments.injector.getCacheBox();
+		variables.log      = arguments.injector.getLogBox().getLogger( this );
 		return this;
 	}
 
 	/**
 	 * Retrieve an object from scope or create it if not found in scope
 	 *
-	 *
-	 * @mapping The linked WireBox injector
+	 * @mapping             The linked WireBox injector
 	 * @mapping.doc_generic wirebox.system.ioc.config.Mapping
-	 * @initArguments The constructor struct of arguments to passthrough to initialization
+	 * @initArguments       The constructor struct of arguments to passthrough to initialization
 	 */
 	function getFromScope( required mapping, struct initArguments ){
 		var cacheProperties = arguments.mapping.getCacheProperties();
-		var refLocal		= {};
-		var cacheProvider	= variables.cacheBox.getCache( cacheProperties.provider );
-		var cacheKey		= "#cacheProperties.key#";
+		var refLocal        = {};
+		var cacheProvider   = variables.cacheBox.getCache( cacheProperties.provider );
+		var cacheKey        = "#cacheProperties.key#";
 
 		// Get From Cache
 		refLocal.target = cacheProvider.get( cacheKey );
 
 		// Verify it
-		if( isNull( refLocal.target ) ){
+		if ( isNull( local.refLocal.target ) ) {
 			// Lock it
-			lock	name="WireBox.#variables.injector.getInjectorID()#.CacheBoxScope.#arguments.mapping.getName()#"
-					type="exclusive"
-					timeout="30"
-					throwontimeout="true"{
-
+			lock
+				name                 ="WireBox.#variables.injector.getInjectorID()#.CacheBoxScope.#arguments.mapping.getName()#"
+				type                 ="exclusive"
+				timeout              ="30"
+				throwontimeout       ="true" {
 				// Double get just in case of race conditions
-				refLocal.target = cacheProvider.get( cacheKey );
-				if( !isNull( refLocal.target ) ){
-					return refLocal.target;
+				local.refLocal.target= cacheProvider.get( cacheKey );
+				if ( !isNull( local.refLocal.target ) ) {
+					return local.refLocal.target;
 				}
 
 				// some nice debug info.
-				if( variables.log.canDebug() ){
-					variables.log.debug("Object: (#cacheProperties.toString()#) not found in cacheBox, beginning construction.");
+				if ( variables.log.canDebug() ) {
+					variables.log.debug(
+						"Object: (#cacheProperties.toString()#) not found in cacheBox, beginning construction by (#variables.injector.getName()#) injector"
+					);
 				}
 
 				// construct it
-				refLocal.target = variables.injector.buildInstance( arguments.mapping, arguments.initArguments );
+				local.refLocal.target = variables.injector.buildInstance(
+					arguments.mapping,
+					arguments.initArguments
+				);
 
 				// If not in wiring thread safety, store in singleton cache to satisfy circular dependencies
-				if( NOT arguments.mapping.getThreadSafe() ){
+				if ( NOT arguments.mapping.getThreadSafe() ) {
 					cacheProvider.set(
 						cacheKey,
-						refLocal.target,
+						local.refLocal.target,
 						cacheProperties.timeout,
 						cacheProperties.lastAccessTimeout
 					);
 				}
 
-				// wire up dependencies on the object
-				variables.injector.autowire( target=refLocal.target, mapping=arguments.mapping );
+				try {
+					// wire up dependencies on the object
+					variables.injector.autowire( target = local.refLocal.target, mapping = arguments.mapping );
+				} catch ( any e ) {
+					cacheProvider.clear( cacheKey );
+					rethrow;
+				}
 
 				// If thread safe, then now store it in the cache, as all dependencies are now safely wired
-				if( arguments.mapping.getThreadSafe() ){
+				if ( arguments.mapping.getThreadSafe() ) {
 					cacheProvider.set(
 						cacheKey,
-						refLocal.target,
+						local.refLocal.target,
 						cacheProperties.timeout,
 						cacheProperties.lastAccessTimeout
 					);
 				}
 
 				// log it
-				if( variables.log.canDebug() ){
-					variables.log.debug( "Object: (#cacheProperties.toString()#) constructed and stored in cacheBox. ThreadSafe=#arguments.mapping.getThreadSafe()#" );
+				if ( variables.log.canDebug() ) {
+					variables.log.debug(
+						"Object: (#cacheProperties.toString()#) constructed and stored in cacheBox. ThreadSafe=#arguments.mapping.getThreadSafe()# by (#variables.injector.getName()#) injector"
+					);
 				}
 
 				// return it
-				return refLocal.target;
-
-			}// end lock
+				return local.refLocal.target;
+			}
+			// end lock
 		} else {
-			return refLocal.target;
+			return local.refLocal.target;
 		}
 	}
 
@@ -117,10 +129,10 @@ component implements="wirebox.system.ioc.scopes.IScope" accessors="true"{
 	/**
 	 * Indicates whether an object exists in scope
 	 *
-	 * @mapping The linked WireBox injector
+	 * @mapping             The linked WireBox injector
 	 * @mapping.doc_generic wirebox.system.ioc.config.Mapping
 	 *
-	 * @return wirebox.system.ioc.scopes.IScope
+	 * @return True if the mapping exists in the singleton cache
 	 */
 	boolean function exists( required mapping ){
 		return variables.cacheProvider.lookupQuiet( arguments.mapping.getCacheProperties().key );

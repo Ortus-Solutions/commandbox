@@ -19,7 +19,7 @@ component accessors="true" implements="IEndpoint" extends="commandbox.system.end
 
 	private function secureCloneCommand( required any cloneCommand, string GitURL ) {
 		// Parse the URL parts
-		jURL = createOBject( 'java', 'java.net.URL' ).init( GitURL );
+		var jURL = createOBject( 'java', 'java.net.URL' ).init( GitURL );
 		/*
 			Check for a format like
 			https://username@domain.com

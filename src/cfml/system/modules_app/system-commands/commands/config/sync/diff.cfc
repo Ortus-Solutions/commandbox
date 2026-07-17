@@ -41,7 +41,7 @@ component {
 			}
 
 			var modules = {};
-			var directory = expandPath( '/commandbox' );
+			var directory = expandPath( '/commandbox-home/cfml' );
 			// package check
 			if( packageService.isPackage( directory ) ) {
 				modules = packageService

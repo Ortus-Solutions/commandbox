@@ -68,7 +68,7 @@
     <cffunction name="onShutdown" output="false" access="public" returntype="void" hint="Called when the application stops">
     	<cfscript>
     		// Unload all modules
-			unloadAll();
+			//unloadAll();
     	</cfscript>
     </cffunction>
 
@@ -88,7 +88,7 @@
     <cffunction name="rebuildModuleRegistry" output="false" access="public" returntype="any" hint="Rescan the module locations directories and re-register all located modules, this method does NOT register or activate any modules, it just reloads the found registry">
     	<cfscript>
     		// Add the application's module's location and the system core modules
-    		var modLocations   = [ '/commandbox/system/modules','/commandbox/system/modules_app', '/commandbox/modules' ];
+    		var modLocations   = [ '/commandbox/system/modules','/commandbox/system/modules_app', '/commandbox-home/cfml/modules' ];
 			// Add the application's external locations array.
 			var externalPaths = ConfigService.getSetting( "ModulesExternalLocation", [] )
 				.map( function( path ) {
@@ -307,8 +307,11 @@
 
 				// Register CFML Mapping if it exists, for loading purposes
 				if( len( trim( mConfig.cfMapping ) ) ){
+					var legacyMapping = 'commandbox/modules/' & modName;
 					shell.getUtil().addMapping( name=mConfig.cfMapping, path=mConfig.path );
+					shell.getUtil().addMapping( name=legacyMapping, path=mConfig.path );
 					instance.cfmappingRegistry[ mConfig.cfMapping ] = mConfig.path;
+					instance.cfmappingRegistry[ legacyMapping ] = mConfig.path;
 				}
 				// Register Custom Interception Points
 				shell.getInterceptorService().appendInterceptionPoints( mConfig.interceptorSettings.customInterceptionPoints );
@@ -382,6 +385,7 @@
 					try {
 						activateModule( moduleName );
 					} catch( any var e ) {
+						e.printStackTrace();
 						consoleLogger.error( 'Module [#moduleName#] failed to load!  Check the logs for more info ( system-log | open ).' );
 						consoleLogger.error( '>    ' & e.message );
 						if( (e.detail ?: '').len() ) {

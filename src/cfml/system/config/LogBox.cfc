@@ -9,7 +9,7 @@ component {
 
 	function configure(){
 
-		logBox = {};
+		variables.logBox = {};
 
 		// Define Appenders
 		logBox.appenders = {

@@ -28,7 +28,7 @@ component accessors="true" singleton {
 	property name='systemSettings'		inject='SystemSettings';
 	property name='wirebox'				inject='wirebox';
 	property name='tempDir' 			inject='tempDir@constants';
-	property name='serverService'		inject='serverService';
+//	property name='serverService'		inject='serverService';
 	property name='moduleService'		inject='moduleService';
 	property name='configService'		inject='ConfigService';
 
@@ -43,7 +43,7 @@ component accessors="true" singleton {
 	* Checks to see if a box.json exists in a given directory
 	* @directory The directory to examine
 	*/
-	boolean public function isPackage( required string directory ) {
+	public boolean function isPackage( required string directory ) {
 		// If the package has a box.json in the root...
 		return fileExists( getDescriptorPath( arguments.directory ) );
 	}
@@ -94,6 +94,34 @@ component accessors="true" singleton {
 
 		var shellWillReload = false;
 		interceptorService.announceInterception( 'preInstall', { installArgs=arguments, packagePathRequestingInstallation=packagePathRequestingInstallation } );
+
+		var lockFilePackagesToNotSaveVersions = {};
+		arguments.lock = arguments.lock || fileExists( arguments.currentWorkingDirectory & '/box-lock.json' );
+		var shouldSaveLockFile = false;
+		if ( arguments.lock && arguments.lockFile.isEmpty() ) {
+			var loadLockFileJob = wirebox.getInstance( 'interactiveJob' );
+			loadLockFileJob.start( "Loading lock file..." );
+			if ( arguments.verbose ) {
+				loadLockFileJob.setDumpLog( arguments.verbose );
+			}
+			if ( !fileExists( arguments.currentWorkingDirectory & '/box-lock.json' ) ) {
+				loadLockFileJob.addLog( "No lock file exists, creating one..." );
+				var thisBoxJSON = readPackageDescriptor( arguments.currentWorkingDirectory );
+				arguments.lockFile = {
+					"name": thisBoxJSON.name,
+					"version": thisBoxJSON.version,
+					"lockVersion": 1,
+					"dependencies": {}
+				};
+			} else {
+				loadLockFileJob.addLog( "Loading box-lock.json..." );
+				arguments.lockFile = deserializeJSON( fileRead( expandPath( arguments.currentWorkingDirectory & '/box-lock.json' ) ) );
+			}
+			loadLockFileJob.complete( arguments.verbose );
+			shouldSaveLockFile = true;
+		}
+
+		var job = wirebox.getInstance( 'interactiveJob' );
 
 		var lockFilePackagesToNotSaveVersions = {};
 		arguments.lock = arguments.lock || fileExists( arguments.currentWorkingDirectory & '/box-lock.json' );
@@ -267,7 +295,7 @@ component accessors="true" singleton {
 					}
 
 					// What does this package need installed?
-					targetBoxJSON = readPackageDescriptor( movingTarget );
+					var targetBoxJSON = readPackageDescriptor( movingTarget );
 
 					// This ancestor package has a candidate installed that might satisfy our dependency
 					if( structKeyExists( targetBoxJSON.installPaths, packageName ) ) {
@@ -303,7 +331,7 @@ component accessors="true" singleton {
 
 				// If this is an initial install (not a dependency) into a folder somewhere inside the CommandBox home,
 				// make sure we save correctly to CommandBox's user module box.json.
-				var commandBoxCFMLHome = fileSystemUtil.normalizeSlashes( expandPath( '/commandbox' ) );
+				var commandBoxCFMLHome = fileSystemUtil.normalizeSlashes( expandPath( '/commandbox-home' ) );
 				installDirectory = fileSystemUtil.normalizeSlashes( installDirectory );
 
 				// If we're already in the CommandBox (a submodule of a commandbox module, most likely)
@@ -409,7 +437,7 @@ component accessors="true" singleton {
 					installDirectory = arguments.packagePathRequestingInstallation & '/modules/contentbox/modules_user';
 				// CommandBox Modules
 				} else if( packageType == 'commandbox-modules' ) {
-					var commandBoxCFMLHome = fileSystemUtil.normalizeSlashes( expandPath( '/commandbox' ) );
+					var commandBoxCFMLHome = fileSystemUtil.normalizeSlashes( expandPath( '/commandbox-home/cfml' ) );
 					arguments.packagePathRequestingInstallation = fileSystemUtil.normalizeSlashes( arguments.packagePathRequestingInstallation );
 
 					// If we're already in the CommandBox (a submodule of a commandbox module, most likely)
@@ -420,7 +448,7 @@ component accessors="true" singleton {
 						// Override the install directories to the CommandBox CFML root
 						arguments.currentWorkingDirectory = commandBoxCFMLHome;
 						arguments.packagePathRequestingInstallation = commandBoxCFMLHome;
-						installDirectory = expandPath( '/commandbox/modules' );
+						installDirectory = expandPath( '/commandbox-home/cfml/modules' );
 					}
 
 				// If this is a plugin
@@ -475,7 +503,7 @@ component accessors="true" singleton {
 
 			// If this package is being installed anywhere south of the CommandBox system folder,
 			// flag the shell to reload after this command is finished.
-			if( fileSystemUtil.normalizeSlashes( installDirectory ).startsWith( fileSystemUtil.normalizeSlashes( expandPath( '/commandbox' ) ) ) ) {
+			if( fileSystemUtil.normalizeSlashes( installDirectory ).startsWith( fileSystemUtil.normalizeSlashes( expandPath( '/commandbox-home' ) ) ) ) {
 				shellWillReload = true;
 			}
 
@@ -895,7 +923,7 @@ component accessors="true" singleton {
 
 
 			// If this package is being uninstalled anywhere south of the CommandBox system folder, unload the module first
-			if( fileSystemUtil.normalizeSlashes( uninstallDirectory ).startsWith( fileSystemUtil.normalizeSlashes( expandPath( '/commandbox' ) ) ) && fileExists( uninstallDirectory & '/ModuleConfig.cfc' ) ) {
+			if( fileSystemUtil.normalizeSlashes( uninstallDirectory ).startsWith( fileSystemUtil.normalizeSlashes( expandPath( '/commandbox-home' ) ) ) && fileExists( uninstallDirectory & '/ModuleConfig.cfc' ) ) {
 				consoleLogger.warn( 'Unloading module...' );
 				systemModule = true;
 				try {
@@ -1195,7 +1223,7 @@ component accessors="true" singleton {
 		if( isPackage( arguments.directory ) ) {
 
 			// ...Read it.
-			boxJSON = fileRead( getDescriptorPath( arguments.directory ) );
+			var boxJSON = fileRead( getDescriptorPath( arguments.directory ) );
 
 			// Validate the file is valid JSON
 			if( isJSON( boxJSON ) ) {

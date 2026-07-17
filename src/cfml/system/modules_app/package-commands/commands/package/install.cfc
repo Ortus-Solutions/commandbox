@@ -113,6 +113,7 @@ component aliases="install" {
 	* @system.hint Install this package into the global CommandBox module's folder
 	* @lock.hint Flag to lock the version in the lock file
 	* @trustScripts.hint Automatically allow the installed package(s) install-lifecycle scripts to run without a confirmation prompt
+	* @lock.hint Flag to lock the version in the lock file
 	**/
 	function run(
 		string ID='',
@@ -125,6 +126,7 @@ component aliases="install" {
 		boolean system=false,
 		boolean lock=false,
 		boolean trustScripts=configService.getSetting( 'scripts.trustInstallScripts', false )
+		boolean lock=false
 	){
 
 		// Don't default the dir param since we need to differentiate whether the user actually
@@ -142,12 +144,30 @@ component aliases="install" {
 
 
 		if( arguments.system ) {
-			arguments.currentWorkingDirectory = expandPath( '/commandbox' );
+			arguments.currentWorkingDirectory = expandPath( '/commandbox-home/cfml' );
 		} else {
 			arguments.currentWorkingDirectory = getCWD();
 		}
 		// Make ID an array
 		arguments.IDArray = listToArray( arguments.ID );
+		arguments.lockFile = {};
+		arguments.lock = arguments.lock || fileExists( arguments.currentWorkingDirectory & '/box-lock.json' );
+		if ( arguments.lock ) {
+			// ensure lock file exists
+			if ( !fileExists( arguments.currentWorkingDirectory & '/box-lock.json' ) ) {
+				print.greenLine( "No lock file exists, creating one..." ).toConsole();
+				var thisBoxJSON = packageService.readPackageDescriptor( arguments.currentWorkingDirectory );
+				arguments.lockFile = {
+					"name": thisBoxJSON.name,
+					"version": thisBoxJSON.version,
+					"lockVersion": 1,
+					"dependencies": {}
+				};
+			} else {
+				print.greenLine( "Loading box-lock.json..." ).toConsole();
+				arguments.lockFile = deserializeJSON( fileRead( expandPath( arguments.currentWorkingDirectory & '/box-lock.json' ) ) );
+			}
+		}
 
 		// Install this package(s).
 		// Don't pass directory unless you intend to override the box.json of the package being installed
@@ -173,6 +193,10 @@ component aliases="install" {
 			error( e.message, e.detail );
 		} catch( EndpointNotFound var e ) {
 			error( e.message, e.detail );
+		}
+		if ( !arguments.lockFile.isEmpty() ) {
+			JSONService.writeJSONFile( arguments.currentWorkingDirectory & '/box-lock.json', arguments.lockFile );
+			print.greenLine( "box-lock.json written to disk." ).toConsole();
 		}
 
 		interceptorService.announceInterception( 'postInstallAll', { installArgs=arguments } );

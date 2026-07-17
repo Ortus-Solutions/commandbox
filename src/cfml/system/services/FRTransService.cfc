@@ -21,12 +21,12 @@ component accessors=true singleton {
 	function init() {
 
 		try{
-			FrapiClass = createObject("java","com.intergral.fusionreactor.api.FRAPI");
+			variables.FrapiClass = createObject("java","com.intergral.fusionreactor.api.FRAPI");
 			// FR loads async, wait for it to be done.
-			while( isNull( FrapiClass.getInstance() ) || !FrapiClass.getInstance().isInitialized() ) {
+			while( isNull( variables.FrapiClass.getInstance() ) || !variables.FrapiClass.getInstance().isInitialized() ) {
 				sleep( 500 );
 			}
-			setFRAPI( FrapiClass.getInstance() );
+			setFRAPI( variables.FrapiClass.getInstance() );
 			setFREnabled( true );
 		} catch( any e ) {
 			// If FR isn't present, this will hit the catch and this entire service will be "disabled"

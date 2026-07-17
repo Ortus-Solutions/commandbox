@@ -132,13 +132,13 @@
 			return;
 		}
 
-		position = startingLength;
+		var position = startingLength;
 		// This lets the thread know we're still running
 		variables.tailRun = true;
 
 		try {
 			// This thread will keep redrawing the screen while the main thread waits for user input
-			threadName = 'tail#createUUID()#';
+			var threadName = 'tail#createUUID()#';
 			thread action="run" name=threadName priority="HIGH" {
 				try{
 					var buffer = [];

@@ -1,5 +1,5 @@
 # Auto detect text files and perform LF normalization
-.sh eol=lf
+*.sh eol=lf
 * text=auto
 
 # Custom for Visual Studio

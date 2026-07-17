@@ -60,7 +60,7 @@ component aliases="exec"{
 		var parsedArgs = {};
 
 		for( var arg in args ) {
-			argName = arg;
+			var argName = arg;
 			if( !isNull( args[arg] ) && arg != 'file' ) {
 				// If positional args, decrement so they start at 1
 				if( isNumeric( argName ) ) {

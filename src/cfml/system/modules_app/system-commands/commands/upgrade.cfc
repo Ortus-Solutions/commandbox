@@ -34,6 +34,9 @@ component {
 	 * @force.hint Force the update even if the version on the server is the same as locally
 	 **/
 	function run( boolean latest, boolean force=false ) {
+		print.line( "The upgrade command doesn't curently work with bx-cli" );
+		return;
+		
 
 		if( configService.getSetting( 'offlineMode', false ) ) {
 			error( 'Can''t check for updates, CommandBox is in offline mode.  Go online with [config set offlineMode=false].' );
@@ -69,7 +72,7 @@ component {
 			proxyUser="#ConfigService.getSetting( 'proxy.user', '' )#"
 			proxyPassword="#ConfigService.getSetting( 'proxy.password', '' )#"
 			result="local.boxRepoResult" {
-				cfhttpparam(name="CLIID", type="url", value="#GetLuceeId().server.id#");
+				cfhttpparam(name="CLIID", type="url", value="#server.boxlang.boxlangId#");
 				cfhttpparam(name="CLIVersion", type="url", value="#shell.getVersion()#");
 				cfhttpparam(name="os", type="url", value="#server.system.properties['os.name']#");
 				cfhttpparam(name="jre", type="url", value="#server.java.version#");
@@ -86,7 +89,7 @@ component {
 			proxyUser="#ConfigService.getSetting( 'proxy.user', '' )#"
 			proxyPassword="#ConfigService.getSetting( 'proxy.password', '' )#"
 			result="local.loaderRepoResult"{
-				cfhttpparam(name="CLIID", type="url", value="#GetLuceeId().server.id#");
+				cfhttpparam(name="CLIID", type="url", value="#server.boxlang.boxlangId#");
 				cfhttpparam(name="CLIVersion", type="url", value="#shell.getVersion()#");
 				cfhttpparam(name="os", type="url", value="#server.system.properties['os.name']#");
 				cfhttpparam(name="jre", type="url", value="#server.java.version#");
@@ -179,7 +182,7 @@ component {
 			);
 
 			// prepare locations
-			var libsfileURL 	= '#thisArtifactsURL#ortussolutions/commandbox/#repoversionshort#/commandbox-libs-#( extensionList().recordCount < 5 ? 'light-' : '' )##repoVersionShort#.zip';
+			var libsfileURL 	= '#thisArtifactsURL#ortussolutions/commandbox/#repoversionshort#/commandbox-libs#repoVersionShort#.zip';
 			var libsfilePath 	= '#temp#/commandbox-libs-#repoVersion#.zip';
 
 			// Download the update

@@ -46,7 +46,7 @@ component aliases='link' {
 		var packageDirectory=getCWD();
 		var commandBoxCoreLinked = false;
 		if( !arguments.keyExists( 'moduleDirectory' ) ) {
-			arguments.moduleDirectory = expandPath( '/commandbox/modules' );
+			arguments.moduleDirectory = expandPath( '/commandbox-home/cfml/modules' );
 			commandBoxCoreLinked = true;
 			if( !directoryExists( arguments.moduleDirectory ) ) {
 				directoryCreate( arguments.moduleDirectory );

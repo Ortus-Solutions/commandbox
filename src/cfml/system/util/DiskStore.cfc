@@ -1,239 +1,284 @@
-﻿<!-----------------------------------------------------------------------
-********************************************************************************
-Copyright Since 2005 ColdBox Framework by Luis Majano and Ortus Solutions, Corp
-www.ortussolutions.com
-********************************************************************************
-Author 	    :	Luis Majano
-Description :
-	I am a disk store, I am not that fancy as I am slower.
+﻿/**
+ * ********************************************************************************
+ * Copyright Since 2005 ColdBox Framework by Luis Majano and Ortus Solutions, Corp
+ * www.ortussolutions.com
+ * ********************************************************************************
+ * Author      : Luis Majano
+ * Description : I am a disk store, I am not that fancy as I am slower.
+ */
+component implements="wirebox.system.cache.store.IObjectStore" {
 
------------------------------------------------------------------------>
-<cfcomponent hint="I am a disk store, I am not that fancy as I am slower." output="false" implements="wirebox.system.cache.store.IObjectStore">
+	/**
+	 * Constructor
+	 *
+	 * @cacheProvider The associated cache provider as wirebox.system.cache.ICacheProvider
+	 * @cacheProvider.doc_generic wirebox.system.cache.ICacheProvider
+	 */
+	public DiskStore function init( required any cacheProvider ) {
+		server.memoryCache = server.memoryCache ?: {};
 
-<!------------------------------------------- CONSTRUCTOR ------------------------------------------->
+		// Store Fields
+		var fields = "hits,timeout,lastAccessTimeout,created,LastAccessed,isExpired,isSimple";
+		var config = arguments.cacheProvider.getConfiguration();
 
-	<!--- init --->
-	<cffunction name="init" access="public" output="false" returntype="DiskStore" hint="Constructor">
-		<cfargument name="cacheProvider" type="any" required="true" hint="The associated cache provider as wirebox.system.cache.ICacheProvider" doc_generic="wirebox.system.cache.ICacheProvider"/>
-		<cfscript>
-			// Store Fields
-			var fields = "hits,timeout,lastAccessTimeout,created,LastAccessed,isExpired,isSimple";
-			var config = arguments.cacheProvider.getConfiguration();
+		// Prepare instance
+		variables.instance = {
+			cacheProvider : arguments.cacheProvider,
+			storeID       : createObject( "java", "java.lang.System" ).identityHashCode( this ),
+			indexer       : createObject( "component", "commandbox.system.util.MetadataIndexer" ).init( fields )//,
+			//converter     : createObject( "component", "wirebox.system.core.conversion.ObjectMarshaller" ).init()
+		};
 
-			// Prepare instance
-			instance = {
-				cacheProvider   = arguments.cacheProvider,
-				storeID 		= createObject('java','java.lang.System').identityHashCode(this),
-				indexer    		= createObject("component","wirebox.system.cache.store.indexers.MetadataIndexer").init(fields),
-				converter 		= createObject("component","wirebox.system.core.conversion.ObjectMarshaller").init()
-			};
+		// Get extra configuration details from cacheProvider's configuration for this diskstore
+		// Auto Expand
+		if( !structKeyExists( config, "autoExpandPath" ) ) {
+			config.autoExpandPath = true;
+		}
 
-			// Get extra configuration details from cacheProvider's configuration for this diskstore
-			// Auto Expand
-			if( NOT structKeyExists(config, "autoExpandPath") ){
-				config.autoExpandPath = true;
-			}
+		// Check directory path
+		if( !structKeyExists( config, "directoryPath" ) ) {
+			throw(
+				message = "The 'directoryPath' configuration property was not found in the cache configuration",
+				detail  = "Please check the cache configuration and add the 'directoryPath' property. Current Configuration: #config.toString()#",
+				type    = "DiskStore.InvalidConfigurationException"
+			);
+		}
 
-			// Check directory path
-			if( NOT structKeyExists(config,"directoryPath") ){
-				throw(message="The 'directoryPath' configuration property was not found in the cache configuration",
-					  detail="Please check the cache configuration and add the 'directoryPath' property. Current Configuration: #config.toString()#",
-					  type="DiskStore.InvalidConfigurationException");
-			}
+		// AutoExpand
+		if( config.autoExpandPath ) {
+			instance.directoryPath = expandPath( config.directoryPath );
+		} else {
+			instance.directoryPath = config.directoryPath;
+		}
 
-			//AutoExpand
-			if( config.autoExpandPath ){
-				instance.directoryPath = expandPath( config.directoryPath );
-			}
-			else{
-				instance.directoryPath = config.directoryPath;
-			}
+		// Check if directory exists else create it
+		if( !directoryExists( instance.directoryPath ) ) {
+			directoryCreate( instance.directoryPath );
+		}
 
-			//Check if directory exists else create it
-			if( NOT directoryExists( instance.directoryPath ) ){
-				directoryCreate( instance.directoryPath );
-			}
+		return this;
+	}
 
-			return this;
-		</cfscript>
-	</cffunction>
+	/**
+	 * Flush the store to a permanent storage
+	 */
+	public void function flush() {
+	}
 
-<!------------------------------------------- INTERFACE PUBLIC METHODS ------------------------------------------->
+	/**
+	 * Reap the storage, clean it from old stuff
+	 */
+	public void function reap() {
+	}
 
-	<!--- flush --->
-    <cffunction name="flush" output="false" access="public" returntype="void" hint="Flush the store to a permanent storage">
-    </cffunction>
+	/**
+	 * Get this storage's ID
+	 */
+	public any function getStoreID() {
+		return instance.storeID;
+	}
 
-	<!--- reap --->
-    <cffunction name="reap" output="false" access="public" returntype="void" hint="Reap the storage, clean it from old stuff">
-    </cffunction>
+	/**
+	 * Clear all elements of the store
+	 */
+	public void function clearAll() {
+		directoryDelete( instance.directoryPath, true );
+		server.memoryCache = {};
 
-	<!--- getStoreID --->
-    <cffunction name="getStoreID" output="false" access="public" returntype="any" hint="Get this storage's ID">
-    	<cfreturn instance.storeID>
-    </cffunction>
+		try {
+			directoryCreate( instance.directoryPath, true, true );
+		} catch( any e ) {
+			sleep( 500 );
+			directoryCreate( instance.directoryPath, true, true );
+		}
+	}
 
-	<!--- clearAll --->
-    <cffunction name="clearAll" output="false" access="public" returntype="void" hint="Clear all elements of the store">
-		<cfscript>
-			directoryDelete( instance.directoryPath, true );
+	/**
+	 * Get the store's pool metadata indexer structure
+	 */
+	public any function getIndexer() {
+		return instance.indexer;
+	}
 
-			try {
-				directoryCreate( instance.directoryPath, true, true );
-			} catch ( any e ) {
-				sleep( 500 );
-				directoryCreate( instance.directoryPath, true, true );
-			}
+	/**
+	 * Get all the store's object keys
+	 */
+	public any function getKeys() {
+		return instance.indexer.getKeys();
+	}
 
-		</cfscript>
-    </cffunction>
-
-	<!--- getIndexer --->
-	<cffunction name="getIndexer" access="public" returntype="any" output="false" hint="Get the store's pool metadata indexer structure">
-		<cfreturn instance.indexer >
-	</cffunction>
-
-	<!--- getKeys --->
-	<cffunction name="getKeys" output="false" access="public" returntype="any" hint="Get all the store's object keys">
-		<cfreturn instance.indexer.getKeys()>
-	</cffunction>
-
-	<!--- lookup --->
-	<cffunction name="lookup" access="public" output="false" returntype="any" hint="Check if an object is in cache.">
-		<cfargument name="objectKey" type="any" required="true" hint="The key of the object">
-
-		<cflock name="DiskStore.#instance.storeID#.#arguments.objectKey#" type="readonly" timeout="10" throwonTimeout="true">
-		<cfscript>
-
+	/**
+	 * Get all the store's object keys sorted
+	 * @sortType The type of sorting: text, numeric, date
+	 * @sortOrder The order of sorting: asc, desc
+	 */
+	public Array function getSortedKeys(required Any property, Any sortType = text, Any sortOrder = asc) {
+		return instance.indexer.getSortedKeys( arguments.property, arguments.sortType, arguments.sortOrder );
+	}
+	
+	/**
+	 * Check if an object is in cache.
+	 *
+	 * @objectKey The key of the object
+	 */
+	public any function lookup( required any objectKey ) {
+		if( server.memoryCache.keyExists( arguments.objectKey ) ) {
+			return true;
+		}
+		//lock name="DiskStore.#instance.storeID#.#arguments.objectKey#" type="readonly" timeout="10" throwonTimeout="true" {
 			// Check if object on disk, on indexer and NOT expired
-			if( fileExists( getCacheFilePath( arguments.objectKey ) ) ){
+			if( fileExists( getCacheFilePath( arguments.objectKey ) ) ) {
 				return true;
 			}
-
 			return false;
-		</cfscript>
-		</cflock>
+		//}
+	}
 
-	</cffunction>
+	/**
+	 * Get an object from cache
+	 *
+	 * @objectKey The key of the object
+	 */
+	public any function get( required any objectKey ) {
+		return getQuiet( arguments.objectKey );
+	}
 
-	<!--- get --->
-	<cffunction name="get" access="public" output="false" returntype="any" hint="Get an object from cache">
-		<cfargument name="objectKey" type="any" required="true" hint="The key of the object">
+	/**
+	 * Get an object from cache with no stats
+	 *
+	 * @objectKey The key of the object
+	 */
+	public any function getQuiet( required any objectKey ) {
+		var tmp = server.memoryCache[arguments.objectKey] ?: null;
+		if( !isNull( tmp ) ) {
+			return tmp;
+		}
 
-		<cflock name="DiskStore.#instance.storeID#.#arguments.objectKey#" type="exclusive" timeout="10" throwonTimeout="true">
-		<cfscript>
-			if( lookup(arguments.objectKey) ){
-				return getQuiet( arguments.objectKey );
-			}
-		</cfscript>
-		</cflock>
+		var thisFilePath = getCacheFilePath( arguments.objectKey );
 
-	</cffunction>
+		//lock name="DiskStore.#instance.storeID#.#arguments.objectKey#" type="readonly" timeout="10" throwonTimeout="true" {
+			//if( lookup( arguments.objectKey ) ) {
+				try {
+					var fileContents = fileRead( thisFilePath );
+				} catch( any e ) {
+					return null;
+				}
 
-	<!--- getQuiet --->
-	<cffunction name="getQuiet" access="public" output="false" returntype="any" hint="Get an object from cache with no stats">
-		<cfargument name="objectKey" type="any" required="true" hint="The key of the object">
-
-		<cfset var thisFilePath = getCacheFilePath(arguments.objectKey)>
-
-		<cflock name="DiskStore.#instance.storeID#.#arguments.objectKey#" type="exclusive" timeout="10" throwonTimeout="true">
-		<cfscript>
-			if( lookup( arguments.objectKey ) ){
-				var fileContents = fileRead( thisFilePath );
 				// If file is not JSON, it is corrupted.
 				if( isJSON( fileContents ) ) {
-					return deserializeJSON( fileContents );	
+					var JSON = deserializeJSON( fileContents );
+					server.memoryCache[arguments.objectKey] = JSON;
+					return JSON;
 				} else {
 					try {
 						fileDelete( thisFilePath );
 					} catch( any e ) {
-						// If the file didn't exist, ignore it.  This can happen 
-						// when to CommandBox instances start at the same time.
+						// If the file didn't exist, ignore it. This can happen
+						// when two CommandBox instances start at the same time.
 					}
 				}
-			}
-		</cfscript>
-		</cflock>
+			//}
+		//}
+	}
 
-	</cffunction>
+	/**
+	 * Mark an object for expiration
+	 *
+	 * @objectKey The object key
+	 */
+	public void function expireObject( required any objectKey ) {
+		//lock name="DiskStore.#instance.storeID#.#arguments.objectKey#" type="exclusive" timeout="10" throwonTimeout="true" {
+			instance.indexer.setObjectMetadataProperty( arguments.objectKey, "isExpired", true );
+		//}
+	}
 
-	<!--- expireObject --->
-	<cffunction name="expireObject" output="false" access="public" returntype="void" hint="Mark an object for expiration">
-		<cfargument name="objectKey" type="any"  required="true" hint="The object key">
+	/**
+	 * Test if an object in the store has expired or not
+	 *
+	 * @objectKey The object key
+	 */
+	public any function isExpired( required any objectKey ) {
+		//lock name="DiskStore.#instance.storeID#.#arguments.objectKey#" type="readonly" timeout="10" throwonTimeout="true" {
+			return instance.indexer.getObjectMetadataProperty( arguments.objectKey, "isExpired" );
+		//}
+	}
 
-		<cflock name="DiskStore.#instance.storeID#.#arguments.objectKey#" type="exclusive" timeout="10" throwonTimeout="true">
-			<cfset instance.indexer.setObjectMetadataProperty(arguments.objectKey,"isExpired", true)>
-		</cflock>
+	/**
+	 * Sets an object in the storage.
+	 *
+	 * @objectKey         The object key
+	 * @object            The object to save
+	 * @timeout           Timeout in minutes
+	 * @lastAccessTimeout Timeout in minutes
+	 * @extras            A map of extra name-value pairs
+	 */
+	public void function set(
+		required any objectKey,
+		required any object,
+		any timeout           = "",
+		any lastAccessTimeout = "",
+		any extras            = {}
+	) {
+		var thisFilePath = getCacheFilePath( arguments.objectKey );
+		var JSON = serializeJSON( arguments.object );
+		server.memoryCache[arguments.objectKey] = arguments.object;
+		//lock name="DiskStore.#instance.storeID#.#arguments.objectKey#" type="exclusive" timeout="10" throwonTimeout="true" {
+			fileWrite( thisFilePath, JSON );
+		//}
+	}
 
-	</cffunction>
+	/**
+	 * Clears an object from the storage pool
+	 *
+	 * @objectKey The object key
+	 */
+	public any function clear( required any objectKey ) {
+		var thisFilePath = getCacheFilePath( arguments.objectKey );
 
-	<!--- isExpired --->
-    <cffunction name="isExpired" output="false" access="public" returntype="any" hint="Test if an object in the store has expired or not">
-    	<cfargument name="objectKey" type="any"  required="true" hint="The object key">
-
-		<cflock name="DiskStore.#instance.storeID#.#arguments.objectKey#" type="readonly" timeout="10" throwonTimeout="true">
-			<cfreturn instance.indexer.getObjectMetadataProperty(arguments.objectKey,"isExpired")>
-		</cflock>
-
-    </cffunction>
-
-	<!--- Set an Object in the pool --->
-	<cffunction name="set" access="public" output="false" returntype="void" hint="sets an object in the storage.">
-		<!--- ************************************************************* --->
-		<cfargument name="objectKey" 			type="any"  required="true" hint="The object key">
-		<cfargument name="object"				type="any" 	required="true" hint="The object to save">
-		<cfargument name="timeout"				type="any"  required="false" default="" hint="Timeout in minutes">
-		<cfargument name="lastAccessTimeout"	type="any"  required="false" default="" hint="Timeout in minutes">
-		<cfargument name="extras" 				type="any" default="#structnew()#" hint="A map of extra name-value pairs"/>
-		<!--- ************************************************************* --->
-
-		<cfset var thisFilePath = getCacheFilePath(arguments.objectKey)>
-
-		<cflock name="DiskStore.#instance.storeID#.#arguments.objectKey#" type="exclusive" timeout="10" throwonTimeout="true">
-		<cfscript>
-			fileWrite( thisFilePath, serializeJSON( arguments.object ) );
-		</cfscript>
-		</cflock>
-	</cffunction>
-
-	<!--- Clear an object from the pool --->
-	<cffunction name="clear" access="public" output="false" returntype="any" hint="Clears an object from the storage pool">
-		<cfargument name="objectKey" 			type="any"  required="true" hint="The object key">
-
-		<cfset var thisFilePath = getCacheFilePath(arguments.objectKey)>
-
-		<cflock name="DiskStore.#instance.storeID#.#arguments.objectKey#" type="exclusive" timeout="10" throwonTimeout="true">
-			<cfscript>
+		//lock name="DiskStore.#instance.storeID#.#arguments.objectKey#" type="exclusive" timeout="10" throwonTimeout="true" {
 			// check it
-			if( NOT fileExists( thisFilePath ) ){
+			
+			if( !fileExists( thisFilePath ) ) {
 				return false;
 			}
 			// Remove it
 			fileDelete( thisFilePath );
+			server.memoryCache.delete( arguments.objectKey );
 
 			return true;
-			</cfscript>
-		</cflock>
-	</cffunction>
+		//}
+	}
 
-	<!--- Get the size of the pool --->
-	<cffunction name="getSize" access="public" output="false" returntype="any" hint="Get the cache's size in items">
-		<cfreturn instance.indexer.getSize()>
-	</cffunction>
+	/**
+	 * Get the cache's size in items
+	 */
+	public any function getSize() {
+		return instance.indexer.getSize();
+	}
 
-<!------------------------------------------- PRIVATE ------------------------------------------->
+	/**
+	 * Get the cached file path
+	 *
+	 * @objectKey The key of the object
+	 */
+	private any function getCacheFilePath( required any objectKey ) {
+		return instance.directoryPath & "/" & hash( arguments.objectKey ) & ".cachebox";
+	}
 
-	<!--- getCacheFilePath --->
-    <cffunction name="getCacheFilePath" output="false" access="private" returntype="any" hint="Get the cached file path">
-    	<cfargument name="objectKey" type="any" required="true" hint="The key of the object">
-		<cfscript>
-			return instance.directoryPath & "/" & hash(arguments.objectKey) & ".cachebox";
-		</cfscript>
-    </cffunction>
+	/**
+	 * Create and return a util object
+	 */
+	private any function getUtil() {
+		return createObject( "component", "wirebox.system.core.util.Util" );
+	}
 
-	<!--- Get ColdBox Util --->
-	<cffunction name="getUtil" access="private" output="false" returntype="any" hint="Create and return a util object">
-		<cfreturn createObject("component","wirebox.system.core.util.Util")/>
-	</cffunction>
+	/**
+	 * Get cached object metadata struct
+	 *
+	 * @objectKey The key of the object
+	 */
+	public Struct function getCachedObjectMetadata(required Any objectKey) {
+		return instance.indexer.getObjectMetadata( arguments.objectKey );
+	}
 
-</cfcomponent>
+}

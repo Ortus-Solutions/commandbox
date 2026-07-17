@@ -105,7 +105,7 @@ component accessors=true implements="IEndpoint" singleton {
 	}
 
 	public function getUpdate( required string package, required string version, boolean verbose=false ) {
-		packageVersion = guessVersionFromURL( package );
+		var packageVersion = guessVersionFromURL( package );
 		// No version could be determined from package URL
 		if( packageVersion == defaultVersion ) {
 			return {

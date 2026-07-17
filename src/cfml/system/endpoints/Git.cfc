@@ -136,13 +136,23 @@ component accessors="true" implements="IEndpoint" singleton {
 			// Release file system locks on the repo
 			if( structKeyExists( local, 'result' ) ) {
 				result.getRepository().close();
+				// Force JGit's WindowCache to release memory-mapped pack files (Windows file locking issue)
+				var WindowCache = createObject( 'java', 'org.eclipse.jgit.internal.storage.file.WindowCache' );
+				var WindowCacheConfig = createObject( 'java', 'org.eclipse.jgit.storage.file.WindowCacheConfig' );
+				WindowCache.reconfigure( WindowCacheConfig.init() );
 			}
 		}
 
-		// Clean up a bit
+		// Clean up .git folder using JGit's FileUtils which has Windows file locking retry logic
 		var gitFolder = localPath.getPath() & '/.git';
 		if( directoryExists( gitFolder ) ) {
-			directoryDelete( gitFolder, true );
+			var JGitFileUtils = createObject( 'java', 'org.eclipse.jgit.util.FileUtils' );
+			var RECURSIVE = JGitFileUtils.RECURSIVE;
+			var RETRY = JGitFileUtils.RETRY;
+			JGitFileUtils.delete(
+				createObject( 'java', 'java.io.File' ).init( gitFolder ),
+				bitOr( RECURSIVE, RETRY )
+			);
 		}
 
 		// Defer to file endpoint

@@ -99,8 +99,8 @@ component accessors=true singleton {
 					.reduce( function( result, i ) {
 						// Keep breaking off chunks until we're short enough to fit
 						// We need to ignore ANSI formatting when rdoing this or it will throw off the widths
-						while( aStr.stripAnsi( i ).length() > termWidth ) {
-							var attributedString = aStr.fromAnsi(i);
+						while( aStr.stripAnsi( i.toString() ).length() > termWidth ) {
+							var attributedString = aStr.fromAnsi(i.toString());
 							result.append( attributedString.subSequence( 0, termWidth-1 ).toString() );
 							i = attributedString.subSequence( termWidth-1, attributedString.length()-1 );
 						}

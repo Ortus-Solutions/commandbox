@@ -2,7 +2,7 @@
 <cfsavecontent variable="CLIErrorOutput">
 <cfsetting enableCFoutputOnly = "true"/>
 <cfparam name="addClosingHTMLTags" default="#true#" type="boolean">
-<cfoutput>Lucee #server.lucee.version# Error (#catch.type#)
+<cfoutput>BoxLang #server.boxlang.version# Error (#catch.type#)
 <cfparam name="catch.message" default=""><cfparam name="catch.detail" default="">
 Message: #replace( HTMLEditFormat( trim( catch.message ) ), chr(10), '<br>', 'all' )#
 <cfif len( catch.detail )>
@@ -30,10 +30,10 @@ The Error Occurred in
 			<cfparam name="tc.codeprinthtml" default="">
 			<cfif len( tc.codeprinthtml )>
 				<cfset isFirst = ( idx == 1 )>
-					#isFirst ? "<b>#tc.template#: line #tc.line#</b>" : "<b>called from</b> #tc.template#: line #tc.line#"#
+					#isFirst ? "<b>#tc.template##tc.line#</b>" : "<b>called from</b> #tc.template##tc.line#"#
 					#tc.codeprinthtml#
 			<cfelse>
-				#idx == 1 ? "<b>#tc.template#: line #tc.line#</b>" : "<b>called from</b> #tc.template#: line #tc.line#"#
+				#idx == 1 ? "<b>#tc.template##tc.line#</b>" : "<b>called from</b> #tc.template##tc.line#"#
 			</cfif>
 		</cfloop>
 	</cfif>

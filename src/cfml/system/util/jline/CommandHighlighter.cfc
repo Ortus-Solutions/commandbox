@@ -30,7 +30,7 @@ component {
 
 		try {
 			// Call CommandBox parser to parse the line.
-			var commandChain = CommandService.resolveCommand( buffer );
+			var commandChain = CommandService.resolveCommand( line=buffer, forHighlighting=true );
 		} catch( any var e ) {
 			return createObject("java","org.jline.utils.AttributedString").fromAnsi( buffer );
 		}
@@ -55,7 +55,7 @@ component {
 					buffer = reReplaceNoCase( buffer, '(\?|help)(.*)$', print.yellowBold( '\1' ) & '\2' );
 
 					// See if the rest of the text they typed in resolves to a command or not
-					var helloCommandChain = CommandService.resolveCommand( command.parameters.toList( ' ' ) );
+					var helloCommandChain = CommandService.resolveCommand( line=command.parameters.toList( ' ' ), forHighlighting=true );
 					var helloCommand = helloCommandChain[1].commandstring.listChangeDelims( ' ', '.' );
 					// If so, let's highlight the command part of it
 					if( helloCommand.len() ) {

@@ -97,7 +97,7 @@ component {
 				_s2_deviation = "";
 				// Loop for as long as allowed by our offset
 				// to see if we can match up again
-				for (i = 0; i lt maxOffset; i=i+1){
+				for (var i = 0; i lt maxOffset; i=i+1){
 					next_s1 = mid(s1,c + offset1 + i+1,3); // Increments each time through.
 					len_next_s1 = len(next_s1);
 					bookmarked_s1 = mid(s1,c + offset1+1,3); // stays the same
@@ -170,7 +170,7 @@ component {
 		// Distance is the average string length minus the longest common string
 		distance = (len(s1) + len(s2))/2 - lcs;
 		// Which string was longest?
-		maxLen = iif(len(s1) gt len(s2),de(len(s1)),de(len(s2)));
+		var maxLen = iif(len(s1) gt len(s2),de(len(s1)),de(len(s2)));
 		// Similarity is the distance divided by the max length
 		similarity = iif(maxLen eq 0,1,1-(distance/maxLen));
 		// Return what we found.

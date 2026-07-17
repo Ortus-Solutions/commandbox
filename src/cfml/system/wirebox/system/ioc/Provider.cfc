@@ -3,8 +3,10 @@
  * www.ortussolutions.com
  * ---
  * A WireBox provider object that retrieves objects by using the provider pattern.
+ *
+ * @see wirebox.system.ioc.IProvider
  **/
-component implements="wirebox.system.ioc.IProvider" accessors="true"{
+component accessors="true" {
 
 	/**
 	 * The name of the mapping this provider is binded to, MUTEX with name
@@ -35,29 +37,21 @@ component implements="wirebox.system.ioc.IProvider" accessors="true"{
 	 * Constructor
 	 *
 	 * @scopeRegistration The injector scope registration structure
-	 * @scopeRegistration.doc_generic struct
-	 * @scopeStorage The scope storage utility
-	 * @scopeStorage.doc_generic wirebox.system.core.collections.ScopeStorage
-	 * @name The name of the mapping this provider is binded to, MUTEX with name
-	 * @dsl The DSL string this provider is binded to, MUTEX with name
-	 * @targetObject The target object that requested the provider.
+	 * @name              The name of the mapping this provider is binded to
+	 * @targetObject      The target object that requested the provider.
+	 * @injectorName      The name of the injector requesting the dependency
 	 */
 	Provider function init(
-		required scopeRegistration,
-		required scopeStorage,
+		required struct scopeRegistration,
 		name,
-		dsl,
-		required targetObject
+		required targetObject,
+		required injectorName
 	){
-		variables.name              = "";
-		variables.dsl               = "";
+		variables.scopeStorage      = new wirebox.system.core.collections.ScopeStorage();
 		variables.scopeRegistration = arguments.scopeRegistration;
-		variables.scopeStorage      = arguments.scopeStorage;
 		variables.targetObject      = arguments.targetObject;
-
-		// Verify incoming name or DSL
-		if( structKeyExists( arguments, "name" ) ){ variables.name = arguments.name; }
-		if( structKeyExists( arguments, "dsl" ) ){ variables.dsl = arguments.dsl; }
+		variables.injectorName      = arguments.injectorName;
+		variables.name              = arguments.name;
 
 		return this;
 	}
@@ -65,23 +59,19 @@ component implements="wirebox.system.ioc.IProvider" accessors="true"{
 	/**
 	 * Get the provided object
 	 */
-	any function $get() {
+	any function $get(){
 		var scopeInfo = variables.scopeRegistration;
 
 		// Return if scope exists, else throw exception
-		if( variables.scopeStorage.exists( scopeInfo.key, scopeInfo.scope ) ){
-			// retrieve by name or DSL
-			if( len( variables.name ) ){
-				return variables.scopeStorage
-					.get( scopeInfo.key, scopeInfo.scope )
-					.getInstance( name=variables.name, targetObject=variables.targetObject );
+		if ( variables.scopeStorage.exists( scopeInfo.key, scopeInfo.scope ) ) {
+			// Get root injector
+			var injector = variables.scopeStorage.get( scopeInfo.key, scopeInfo.scope );
+			// Do we need a specific injector
+			if ( variables.injectorName != "root" ) {
+				injector = injector.getInjectorReference( variables.injectorName );
 			}
 
-			if( len( variables.dsl ) ){
-				return variables.scopeStorage
-					.get( scopeInfo.key, scopeInfo.scope )
-					.getInstance( dsl=variables.dsl, targetObject=variables.targetObject );
-			}
+			return injector.getInstance( name = variables.name, targetObject = variables.targetObject );
 		}
 
 		throw(
@@ -94,13 +84,17 @@ component implements="wirebox.system.ioc.IProvider" accessors="true"{
 	/**
 	 * Proxy calls to provided element
 	 *
-	 * @missingMethodName missing method name
+	 * @missingMethodName      missing method name
 	 * @missingMethodArguments missing method arguments
 	 */
 	any function onMissingMethod( required missingMethodName, required missingMethodArguments ){
-		var results = invoke( $get(), arguments.missingMethodName, arguments.missingMethodArguments );
+		var results = invoke(
+			$get(),
+			arguments.missingMethodName,
+			arguments.missingMethodArguments
+		);
 
-		if ( !isNull( local.results ) ){
+		if ( !isNull( local.results ) ) {
 			return results;
 		}
 	}

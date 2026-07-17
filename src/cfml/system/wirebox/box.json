@@ -1,7 +1,7 @@
 {
     "name":"WireBox DI/AOP",
-    "version":"6.5.2+37",
-    "location":"https://downloads.ortussolutions.com/ortussolutions/wirebox/6.5.2/wirebox-6.5.2.zip",
+    "version":"8.0.5+33",
+    "location":"https://downloads.ortussolutions.com/ortussolutions/wirebox/8.0.5/wirebox-8.0.5.zip",
     "author":"Ortus Solutions <info@ortussolutions.com>",
     "slug":"wirebox",
     "type":"di",
@@ -29,6 +29,13 @@
         "**/.*",
         "tests",
         "apidocs",
+        "testbox",
         "*/.md"
-    ]
+    ],
+    "dependencies":{
+        "cbproxies":"^1"
+    },
+    "installPaths":{
+        "cbproxies":"system/async/cbproxies/"
+    }
 }

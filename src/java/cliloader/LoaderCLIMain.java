@@ -304,9 +304,12 @@ public class LoaderCLIMain {
 			// contextroot sets lucee's "webroot" inside the scripting engine to be our
 			// drive root
 			System.setProperty("lucee.cli.contextRoot", webroot);
+			System.setProperty("boxlang.rootmapping", webroot);
+			System.setProperty("boxlang.debug", debug.toString());
 			// These next two are the Lucee web context and server context homes
 			System.setProperty("lucee.web.dir", getLuceeCLIConfigWebDir().getAbsolutePath());
 			System.setProperty("lucee.base.dir", getLuceeCLIConfigServerDir().getAbsolutePath());
+			
 			// A couple tweaks to make Felix faster
 			System.setProperty("felix.cache.locking", "false");
 			System.setProperty("org.osgi.framework.storage.clean", "none");
@@ -315,7 +318,7 @@ public class LoaderCLIMain {
 
 			// Load up JSR-223!
 			ScriptEngineManager engineManager = new ScriptEngineManager(cl);
-			ScriptEngine engine = engineManager.getEngineByName("CFML");
+			ScriptEngine engine = engineManager.getEngineByName("BoxLang");
 
 			if (debug) {
 				printStream.println("Webroot: " + webroot);
@@ -726,6 +729,10 @@ public class LoaderCLIMain {
 			// arguments = removeElement( arguments, "-cliworkingdir" );
 		}
 
+		// If cliworkingdirFinal doesn't end with file separator, add it
+		if (!cliworkingdirFinal.endsWith(File.separator)) {
+			cliworkingdirFinal += File.separator;
+		}
 		log.debug("Working Dir set to " + cliworkingdirFinal);
 		props.setProperty("cfml.cli.pwd", cliworkingdirFinal);
 
@@ -898,13 +905,14 @@ public class LoaderCLIMain {
 
 		File configCLIServerDir = new File(libDir.getParentFile(), "engine/cfml/cli/");
 		File configCLIWebDir = new File(libDir.getParentFile(), "engine/cfml/cli/cfml-web");
+		File configCLIBoxLangHome = new File(libDir.getParentFile(), "engine/boxlang");
 
 		setLuceeCLIConfigServerDir(configCLIServerDir);
 		setLuceeCLIConfigWebDir(configCLIWebDir);
 
 		props.setProperty("cfml.cli.home", cli_home.getAbsolutePath());
 		props.setProperty("cfml.server.dockicon", "");
-
+		props.setProperty("boxlang.home", configCLIBoxLangHome.getAbsolutePath());
 		for (Object name2 : props.keySet()) {
 			String key = (String) name2;
 			String value = props.get(key).toString();

@@ -96,7 +96,7 @@ component {
 		// Run query of queries
 		var sqlstatement  = 'SELECT #columnFilter# FROM dataQuery #whereFilter# #orderByFilter#';
 		try {
-			dataQueryResults = queryExecute(sqlstatement,[],{ dbType : 'query' } );
+			var dataQueryResults = queryExecute(sqlstatement,[],{ dbType : 'query' } );
 		} catch( any e ) {
 			error( message='Error in SQL [#sqlstatement#].', detail='#e.message# #e.detail#' )
 		}

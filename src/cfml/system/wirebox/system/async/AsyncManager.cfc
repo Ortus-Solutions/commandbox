@@ -64,18 +64,21 @@ component accessors="true" singleton {
 	 * scheduled executor then actually execute scheduled tasks.
 	 *
 	 * Types of Executors:
-	 * - fixed : By default it will build one with 20 threads on it. Great for multiple task execution and worker processing
-	 * - single : A great way to control that submitted tasks will execute in the order of submission: FIFO
 	 * - cached : An unbounded pool where the number of threads will grow according to the tasks it needs to service. The threads are killed by a default 60 second timeout if not used and the pool shrinks back
+	 * - fixed : By default it will build one with 20 threads on it. Great for multiple task execution and worker processing
+	 * - fork_join : A pool that uses the ForkJoinPool.commonPool() by default, it is great for parallel tasks and recursive tasks
+	 * - single : A great way to control that submitted tasks will execute in the order of submission: FIFO
 	 * - scheduled : A pool to use for scheduled tasks that can run one time or periodically
+	 * - work_stealing : A pool that allows you to run parallel tasks, it will use the ForkJoinPool.commonPool() by default
+	 * - virtual : A pool that uses the VirtualThreadPerTaskExecutor, it is great for IO bound tasks and can run many tasks in parallel without blocking, requires Java 19+.
 	 *
-	 * @see https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/ExecutorService.html
-	 *
-	 * @name The name of the executor used for registration
-	 * @type The type of executor to build fixed, cached, single, scheduled
-	 * @threads How many threads to assign to the thread scheduler, default is 20
-	 * @debug Add output debugging
+	 * @see            https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/ExecutorService.html
+	 * @name           The name of the executor used for registration
+	 * @type           The type of executor to build fixed, cached, single, scheduled, work_stealing, virtual
+	 * @threads        How many threads to assign to the thread scheduler, default is 20
+	 * @debug          Add output debugging
 	 * @loadAppContext Load the CFML App contexts or not, disable if not used
+	 * @parallelism    The number of parallel tasks to run at the same time, default is 0 which means no parallelism, only applies to work stealing executors
 	 *
 	 * @return The ColdBox Schedule class to work with the schedule: wirebox.system.async.executors.Executor
 	 */
@@ -84,7 +87,8 @@ component accessors="true" singleton {
 		type                   = "fixed",
 		numeric threads        = this.$executors.DEFAULT_THREADS,
 		boolean debug          = false,
-		boolean loadAppContext = true
+		boolean loadAppContext = true,
+		numeric parallelism    = 0
 	){
 		// Build it if not found
 		if ( !variables.executors.keyExists( arguments.name ) ) {
@@ -98,38 +102,51 @@ component accessors="true" singleton {
 
 	/**
 	 * Build a Java executor according to passed type and threads
-	 * @see https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/Executors.html
 	 *
-	 * @type Available types are: fixed, cached, single, scheduled, {WireBoxID}
-	 * @threads The number of threads to seed the executor with, if it allows it
-	 * @debug Add output debugging
+	 * @see            https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/concurrent/Executors.html
+	 * @type           Available types are: fixed, fork_join, cached, single, scheduled, work_stealing, virtual, {WireBoxID}
+	 * @threads        The number of threads to seed the executor with, if it allows it
+	 * @debug          Add output debugging
 	 * @loadAppContext Load the CFML App contexts or not, disable if not used
 	 *
-	 * @return A Java ExecutorService: https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/ExecutorService.html
+	 * @return A Java ExecutorService wrapped in a ColdBox Executor object
 	 */
-	private function buildExecutor(
+	Executor function buildExecutor(
 		required type,
 		numeric threads,
 		boolean debug          = false,
-		boolean loadAppContext = true
+		boolean loadAppContext = true,
+		numeric parallelism    = 0
 	){
 		// Factory to build the right executor
 		switch ( arguments.type ) {
-			case "fixed": {
-				arguments.executor = this.$executors.newFixedThreadPool( arguments.threads );
-				return new executors.Executor( argumentCollection = arguments );
-			}
 			case "cached": {
 				arguments.executor = this.$executors.newCachedThreadPool();
 				return new executors.Executor( argumentCollection = arguments );
 			}
-			case "single": {
-				arguments.executor = this.$executors.newFixedThreadPool( 1 );
+			case "fixed": {
+				arguments.executor = this.$executors.newFixedThreadPool( arguments.threads );
+				return new executors.Executor( argumentCollection = arguments );
+			}
+			case "fork_join": {
+				arguments.executor = this.$executors.newForkJoinPool( arguments.threads );
 				return new executors.Executor( argumentCollection = arguments );
 			}
 			case "scheduled": {
 				arguments.executor = this.$executors.newScheduledThreadPool( arguments.threads );
 				return new executors.ScheduledExecutor( argumentCollection = arguments );
+			}
+			case "single": {
+				arguments.executor = this.$executors.newFixedThreadPool( 1 );
+				return new executors.Executor( argumentCollection = arguments );
+			}
+			case "work_stealing": {
+				arguments.executor = this.$executors.newWorkStealingPoolExecutor( arguments.parallelism );
+				return new executors.Executor( argumentCollection = arguments );
+			}
+			case "virtual": {
+				arguments.executor = this.$executors.newVirtualThreadExecutor();
+				return new executors.Executor( argumentCollection = arguments );
 			}
 			default: {
 			}
@@ -137,7 +154,7 @@ component accessors="true" singleton {
 		throw(
 			type    = "InvalidExecutorType",
 			message = "The executor you requested :#arguments.type# does not exist.",
-			detail  = "Valid executors are: fixed, cached, single, scheduled"
+			detail  = "Valid executors are: fixed, fork_join, cached, single, scheduled, virtual, work_stealing, {WireBoxID}"
 		);
 	}
 
@@ -184,8 +201,9 @@ component accessors="true" singleton {
 	 *
 	 * @name The executor name
 	 *
-	 * @throws ExecutorNotFoundException
 	 * @return The executor object: wirebox.system.async.executors.Executor
+	 *
+	 * @throws ExecutorNotFoundException
 	 */
 	Executor function getExecutor( required name ){
 		if ( hasExecutor( arguments.name ) ) {
@@ -236,32 +254,39 @@ component accessors="true" singleton {
 	 * Shutdown an executor or force it to shutdown, you can also do this from the Executor themselves.
 	 * If an un-registered executor name is passed, it will ignore it
 	 *
-	 * @force Use the shutdownNow() instead of the shutdown() method
+	 * @name    The name of the executor to shutdown
+	 * @force   Use the shutdownNow() instead of the shutdown() method
+	 * @timeout The timeout to use when force=false, to make sure all tasks finish gracefully. Deafult is 30 seconds.
 	 */
-	AsyncManager function shutdownExecutor( required name, boolean force = false ){
+	AsyncManager function shutdownExecutor(
+		required name,
+		boolean force   = false,
+		numeric timeout = 30
+	){
 		if ( hasExecutor( arguments.name ) ) {
 			if ( arguments.force ) {
 				variables.executors[ arguments.name ].shutdownNow();
 			} else {
-				variables.executors[ arguments.name ].shutdown();
+				variables.executors[ arguments.name ].shutdownAndAwaitTermination( arguments.timeout );
 			}
 		}
 		return this;
 	}
 
 	/**
-	 * Shutdown all registered executors in the system
+	 * Shutdown all registered executors in the system gracefully or not by using force = true
 	 *
-	 * @force By default (false) it gracefully shuts them down, else uses the shutdownNow() methods
+	 * @force   By default (false) it gracefully shuts them down, else uses the shutdownNow() methods
+	 * @timeout The timeout to use when force=false, to make sure all tasks finish gracefully. Deafult is 30 seconds.
 	 *
 	 * @return AsyncManager
 	 */
-	AsyncManager function shutdownAllExecutors( boolean force = false ){
+	AsyncManager function shutdownAllExecutors( boolean force = false, numeric timeout = 30 ){
 		variables.executors.each( function( key, schedule ){
 			if ( force ) {
 				arguments.schedule.shutdownNow();
 			} else {
-				arguments.schedule.shutdown();
+				arguments.schedule.shutdownAndAwaitTermination( timeout );
 			}
 		} );
 		return this;
@@ -292,9 +317,9 @@ component accessors="true" singleton {
 	/**
 	 * Create a new ColdBox future backed by a Java completable future
 	 *
-	 * @value The actual closure/lambda/udf to run with or a completed value to seed the future with
-	 * @executor A custom executor to use with the future, else use the default
-	 * @debug Add debugging to system out or not, defaults is false
+	 * @value          The actual closure/lambda/udf to run with or a completed value to seed the future with
+	 * @executor       A custom executor to use with the future, else use the default
+	 * @debug          Add debugging to system out or not, defaults is false
 	 * @loadAppContext Load the CFML engine context into the async threads or not, default is yes.
 	 *
 	 * @return ColdBox Future completed or new
@@ -311,8 +336,8 @@ component accessors="true" singleton {
 	/**
 	 * Create a completed ColdBox future backed by a Java Completable Future
 	 *
-	 * @value The value to complete the future with
-	 * @debug Add debugging to system out or not, defaults is false
+	 * @value          The value to complete the future with
+	 * @debug          Add debugging to system out or not, defaults is false
 	 * @loadAppContext Load the CFML engine context into the async threads or not, default is yes.
 	 *
 	 * @return ColdBox Future completed
@@ -390,7 +415,7 @@ component accessors="true" singleton {
 	 * </pre>
 	 *
 	 * @from The initial index, defaults to 1 or you can use the {start}..{end} notation
-	 * @to The last index item
+	 * @to   The last index item
 	 */
 	array function arrayRange( any from = 1, numeric to ){
 		// shortcut notation
@@ -406,7 +431,7 @@ component accessors="true" singleton {
 
 		// build it up
 		var javaArray = createObject( "java", "java.util.stream.IntStream" )
-			.rangeClosed( arguments.from, arguments.to )
+			.rangeClosed( javacast( "int", arguments.from ), javacast( "int", arguments.to ) )
 			.toArray();
 		var cfArray = [];
 		cfArray.append( javaArray, true );

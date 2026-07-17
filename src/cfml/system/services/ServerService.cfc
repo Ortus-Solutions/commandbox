@@ -30,10 +30,6 @@ component accessors="true" singleton {
 	*/
 	property name="javaCommand";
 
-	/**
-	* Where the Run War jar path is
-	*/
-	property name="jarPath";
 	property name='interceptorService'		inject='interceptorService';
 	property name='configService'			inject='ConfigService';
 	property name='CommandService'			inject='provider:CommandService';
@@ -83,7 +79,6 @@ component accessors="true" singleton {
 			File 			: createObject( "java", "java.io.File" ),
 			Socket	 		: createObject( "java", "java.net.Socket" ),
 			InetAddress 	: createObject( "java", "java.net.InetAddress" ),
-			LaunchUtil 		: createObject( "java", "runwar.LaunchUtil" ),
 			TimeUnit		: createObject( "java", "java.util.concurrent.TimeUnit" )
 		};
 
@@ -97,9 +92,6 @@ component accessors="true" singleton {
 		variables.customServerDirectory = arguments.homeDir & "/server/";
 		// The JRE executable command
 		variables.javaCommand = arguments.fileSystem.getJREExecutable();
-		// The runwar jar path
-		variables.jarPath = java.File.init( java.launchUtil.getClass().getProtectionDomain().getCodeSource()
-				.getLocation().toURI().getSchemeSpecificPart() ).getAbsolutePath();
 
 		// Init server config if not found
 		if( !fileExists( variables.serverConfig ) ){
@@ -269,7 +261,7 @@ component accessors="true" singleton {
 				'customHTTPStatusEnable' : d.app.customHTTPStatusEnable ?: true
 			},
 			'runwar' : {
-				'jarPath' : d.runwar.jarPath ?: variables.jarPath,
+				'jarPath' : d.runwar.jarPath ?: null,
 				'args' : d.runwar.args ?: '',
 				'options' : duplicate( d.runwar.options ?: {} ),
 				// Duplicate so onServerStart interceptors don't actually change config settings via reference.
@@ -298,7 +290,6 @@ component accessors="true" singleton {
 	 * @serverProps A struct of settings to influence how to start the server. Params not provided by the user are null.
 	 **/
 	function start( Struct serverProps = {} ) {
-
 		var job = wirebox.getInstance( 'interactiveJob' );
 		job.start( 'Starting Server', 10 );
 
@@ -859,14 +850,12 @@ component accessors="true" singleton {
 
 		if( !len( serverInfo.WARPath ) && !len( serverInfo.cfengine ) ) {
 			// Turn 1.2.3.4 into 1.2.3+4
-			serverInfo.cfengine =  serverEngineService.getCLIEngineName() & '@' & reReplace( server.lucee.version, '([0-9]*.[0-9]*.[0-9]*)(.)([0-9]*)', '\1+\3' );
+			serverInfo.cfengine =  'boxlang';
 		}
 
 		if( serverInfo.cfengine.endsWith( '@' ) ) {
 			serverInfo.cfengine = left( serverInfo.cfengine, len( serverInfo.cfengine ) - 1 );
 		}
-
-		var launchUtil 	= java.LaunchUtil;
 
 	    // Default java agent
 	    var javaagent = '';
@@ -1093,32 +1082,7 @@ component accessors="true" singleton {
 		}
 
 		// This will get set into serverInfo on first install, taken from the box.json in the CFEngine
-		if( serverInfo.isJakartaEE ) {
-			// Ensure Runwar 6.x with Jakarta support
-			var runwarJakartaVersion = '6.1.6';
-			var runwarJarURL         = "https://s3.amazonaws.com/downloads.ortussolutions.com/cfmlprojects/runwar/#runwarJakartaVersion#/runwar-#runwarJakartaVersion#.jar";
-			var runwarJarLocal       = expandPath( "/commandbox/libExt/runwar-jakarta-#runwarJakartaVersion#.jar" );
-			var runwarJarFolderLocal = getDirectoryFromPath( runwarJarLocal );
-			if ( !directoryExists( runwarJarFolderLocal ) ) {
-				directoryCreate( runwarJarFolderLocal );
-			}
-			consoleLogger.warn( "Runwar 6.x with Jakarta support is required for #serverInfo.engineName#@#serverInfo.engineVersion#." );
-			if ( !fileExists( runwarJarLocal ) ) {
-				consoleLogger.warn( "Downloading from #runwarJarURL#" );
-				try {
-					http url="#runwarJarURL#" file="#runwarJarLocal#" timeout="200";
-				} catch ( any e ) {
-					consoleLogger.error( "Error downloading Runwar 6.x: #e.message#" );
-					consoleLogger.warn( "Please download it manually and place it in #runwarJarLocal#" );
-					rthrow;
-				}
-			} else {
-				consoleLogger.info( "Runwar 6.x with Jakarta support is already installed." );
-			}
-			consoleLogger.info( "Overriding serverInfo.runwarJarPath to [#runwarJarLocal#]" );
-
-			serverInfo.runwarJarPath = runwarJarLocal;
-		}
+		resolveRunwarJar( serverInfo );
 
 		serverInfo.accessLogBaseName = 'access';
 		// This can't be done until the server homes are created above.
@@ -1628,7 +1592,7 @@ component accessors="true" singleton {
 
         // incorporate CommandBox environment variables into the process's env
         var currentEnv = processBuilder.environment();
-        currentEnv.putAll( systemSettings.getAllEnvironmentsFlattened().map( (k, v)=>toString(v) ) );
+		systemSettings.getAllEnvironmentsFlattened().each( (k, v)=>currentEnv.put( k, v.toString() ) );
 
         // Special check to remove ConEMU vars which can screw up the sub process if it happens to run cmd, such as opening VSCode.
         if( fileSystemUtil.isWindows() && currentEnv.containsKey( 'ConEmuPID' ) ) {
@@ -1849,6 +1813,47 @@ component accessors="true" singleton {
 
 		site.__loaded = true;
 		return arguments.siteName ?: site.name ?: getFileFromPath( site.siteConfigFile ).replaceNoCase( '.json', '' );
+	}
+
+	function resolveRunwarJar( Struct serverInfo ) {
+		if( !isNull( serverInfo.runwarJarPath ) && len( serverInfo.runwarJarPath ) && fileExists( serverInfo.runwarJarPath ) ) {
+			return;
+		}
+
+		if( serverInfo.isJakartaEE ) {
+			consoleLogger.warn( "Runwar 6.x with Jakarta support is required for #serverInfo.engineName#@#serverInfo.engineVersion#." );
+			// Ensure Runwar 6.x with Jakarta support
+			var runwarJakartaVersion = '6.1.5';
+			var runwarJarURL         = "https://s3.amazonaws.com/downloads.ortussolutions.com/cfmlprojects/runwar/#runwarJakartaVersion#/runwar-#runwarJakartaVersion#.jar";
+			var runwarJarLocal       = expandPath( "/commandbox/libExt/runwar-jakarta-#runwarJakartaVersion#.jar" );
+			var runwarJarFolderLocal = getDirectoryFromPath( runwarJarLocal );
+
+		} else {
+			// Ensure Runwar 5.x with javax namespace
+			var runwarVersion = '5.2.5';
+			var runwarJarURL         = "https://s3.amazonaws.com/downloads.ortussolutions.com/cfmlprojects/runwar/legacy-#runwarVersion#/runwar-legacy-#runwarVersion#.jar";
+			var runwarJarLocal       = expandPath( "/commandbox/libExt/runwar-legacy-#runwarVersion#.jar" );
+			var runwarJarFolderLocal = getDirectoryFromPath( runwarJarLocal );
+		}
+
+		if ( !directoryExists( runwarJarFolderLocal ) ) {
+			directoryCreate( runwarJarFolderLocal );
+		}
+		if ( !fileExists( runwarJarLocal ) ) {
+			consoleLogger.warn( "Downloading from #runwarJarURL#" );
+			try {
+				http url="#runwarJarURL#" file="#runwarJarLocal#" timeout="200";
+			} catch ( any e ) {
+				consoleLogger.error( "Error downloading Runwar: #e.message#" );
+				consoleLogger.warn( "Please download it manually and place it in #runwarJarLocal#" );
+				rthrow;
+			}
+		} else {
+			consoleLogger.info( "Runwar is already installed." );
+		}
+		consoleLogger.info( "Overriding serverInfo.runwarJarPath to [#runwarJarLocal#]" );
+
+		serverInfo.runwarJarPath = runwarJarLocal;
 	}
 
 	/**
@@ -2700,7 +2705,7 @@ component accessors="true" singleton {
 	array function appendMenuItems( array trayOptions, relativePath, array parentOptions ) {
 		arguments.trayOptions.each( function( menuItem ){
 			// Resolve images and massage default tray options
-			newMenuItem = prepareMenuItem( menuItem, relativePath );
+			var newMenuItem = prepareMenuItem( menuItem, relativePath );
 
 			var match = parentOptions.find( (m)=>trim( m.label ) == trim( newMenuItem.label ) );
 			if( match ) {

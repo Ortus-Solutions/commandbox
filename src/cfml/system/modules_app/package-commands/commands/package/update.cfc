@@ -48,7 +48,7 @@ component aliases="update" {
 		boolean system=false ) {
 
 		if( arguments.system ) {
-			var directory = expandPath( '/commandbox' );
+			var directory = expandPath( '/commandbox-home/cfml' );
 		} else {
 			var directory = getCWD();
 		}

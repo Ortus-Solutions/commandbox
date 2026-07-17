@@ -18,7 +18,6 @@ component accessors="true" singleton {
 	property name='cr' 					inject='cr@constants';
 	property name='logger' 				inject='logbox:logger:{this}';
 	property name='consoleLogger'		inject='logbox:logger:console';
-	property name='wirebox' 			inject='wirebox';
 	property name='commandLocations'	inject='commandLocations@constants';
 	property name='interceptorService'	inject='interceptorService';
 	// Using provider since CommandService is created before modules are loaded
@@ -140,15 +139,16 @@ component accessors="true" singleton {
 	function addToDictionary( required command, required commandPath ){
 
 		// Build bracketed string of command path to allow special characters
-		var commandPathBracket = '';
+		//var commandPathBracket = '';
 		var commandName = '';
+		var ref = instance.commands;
 		for( var item in listToArray( commandPath, '.' ) ){
-			commandPathBracket &= '[ "#item#" ]';
+			ref = ref[ item ] ?: ( ref[ item ] = {} );
 			commandName &= "#item# ";
 		}
 
 		// Register the command in our command dictionary
-		evaluate( "instance.commands#commandPathBracket#[ '$' ] = command" );
+		ref[ '$' ] = command;
 
 		// And again here in this flat collection for help usage
 		instance.flattenedCommands[ trim(commandName) ] = command;
@@ -160,9 +160,11 @@ component accessors="true" singleton {
 		var commandPathBracket = '';
 		var commandName = '';
 
-		commandPathArray = listToArray( commandPath, '.' );
-
+		//println( "commandPath: " & commandPath )
+		var commandPathArray = listToArray( commandPath, '.' );
+		var ref = instance.commands;
 		for( var item in commandPathArray ){
+			ref = ref[ item ] ?: ( ref[ item ] = {} );
 			commandPathBracket &= '[ "#item#" ]';
 			commandName &= "#item# ";
 		}
@@ -176,7 +178,7 @@ component accessors="true" singleton {
 		instance.flattenedCommands.delete( trim(commandName) );
 
 		if( isDefined( "instance.commands#commandPathBracket#[ '$' ]" ) ) {
-			evaluate( "structDelete( instance.commands#commandPathBracket#, '$' )" );
+			structDelete( ref, '$' );
 		}
 
 
@@ -185,7 +187,7 @@ component accessors="true" singleton {
 		while( commandPathArray.len() ) {
 
 			// If there are other commands in this namespace, we're done
-			if( evaluate( "structCount( instance.commands#commandPathBracket# )" ) ) {
+			if( structCount( ref ) ) {
 				break;
 			}
 
@@ -193,19 +195,19 @@ component accessors="true" singleton {
 			var lastItem = commandPathArray.pop();
 
 			commandPathBracket = '';
+			ref = instance.commands;
 			for( var item in commandPathArray ){
+				ref = ref[ item ] ?: ( ref[ item ] = {} );
 				commandPathBracket &= '[ "#item#" ]';
 			}
 
-			evaluate( "structDelete( instance.commands#commandPathBracket#, lastItem )" );
+			structDelete( ref, lastItem );
 
 			// We'll keep climbing "up" in our while() until we run out of namespaces, or we reach a namespace that still populated
 
 		}
 
-
 	}
-
 
 	/**
 	 * run a command line
@@ -445,7 +447,7 @@ component accessors="true" singleton {
 
 			} catch( any e ){
 
-				FRTransService.errorTransaction( FRTrans, e.getPageException() );
+				FRTransService.errorTransaction( FRTrans, e );
 				lastCommandErrored = true;
 				// If this command didn't already set a failing exit code...
 				if( commandInfo.commandReference.CFC.getExitCode() == 0 ) {
@@ -678,18 +680,18 @@ component accessors="true" singleton {
 	 * Figure out what command to run based on the user input string
 	 * @line A string containing the command and parameters that the user entered
  	 **/
-	function resolveCommand( required string line, boolean forCompletion=false ){
+	function resolveCommand( required string line, boolean forCompletion=false, forHighlighting=false ){
 		// Turn the users input into an array of tokens
 		var tokens = parser.tokenizeInput( line );
 
-		return resolveCommandTokens( tokens, line, forCompletion );
+		return resolveCommandTokens( tokens, line, forCompletion, forHighlighting );
 	}
 
 	/**
 	 * Figure out what command to run based on the tokenized user input
 	 * @tokens An array containing the command and parameters that the user entered
  	 **/
-	function resolveCommandTokens( required array tokens, string rawLine=tokens.toList( ' ' ), boolean forCompletion=false ){
+	function resolveCommandTokens( required array tokens, string rawLine=tokens.toList( ' ' ), boolean forCompletion=false, forHighlighting=false ){
 
 		// This will hold the command chain. Usually just a single command,
 		// but a pipe ("|") will chain together commands and pass the output of one along as the input to the next
@@ -854,9 +856,21 @@ component accessors="true" singleton {
 
 			} // end for loop
 
-			// If we found a command, carve the parameters off the end
 			var commandLength = listLen( results.commandString, '.' );
 			var tokensLength = arrayLen( tokens );
+			// If we matched a namespace, but not a command, then show the namepace help
+			if(  !results.found && len( results.commandString ) && commandLength == tokensLength && !inCommand( 'help' ) && !forHighlighting && !forCompletion ){
+				results.commandString = "help";
+				results.originalLine = 'help ' & results.originalLine;
+				tokens.prepend( 'help' );
+				results.commandReference = cmds["help"]["$"];
+				lazyLoadCommandCFC( results.commandReference );
+				tokensLength++;
+				commandLength = 1;
+				results.found = true;
+			}
+
+			// If we found a command, carve the parameters off the end
 			if( results.found && commandLength < tokensLength ){
 				results.parameters = tokens.slice( commandLength+1 );
 			}
@@ -1075,7 +1089,7 @@ component accessors="true" singleton {
 
 		// Strip cfc extension from filename
 		var CFCName = mid( CFC, 1, len( CFC ) - 4 );
-		var commandName = iif( len( commandPath ), de( commandPath & '.' ), '' ) & CFCName;
+		var commandName = (len( commandPath ) ? commandPath & '.' : '') & CFCName;
 		// Build CFC's path
 		var fullCFCPath = baseCommandDirectory & '.' & commandName;
 
@@ -1117,7 +1131,7 @@ component accessors="true" singleton {
 
 		// Strip cfc extension from filename
 		var CFCName = mid( CFC, 1, len( CFC ) - 4 );
-		var commandName = iif( len( commandPath ), de( commandPath & '.' ), '' ) & CFCName;
+		var commandName = (len( commandPath ) ? ( commandPath & '.' ) : '') & CFCName;
 		// Build CFC's path
 		var fullCFCPath = baseCommandDirectory & '.' & commandName;
 
@@ -1161,14 +1175,17 @@ component accessors="true" singleton {
 		var commandMD = metadataCache.getOrSet(
 			fullCFCPath,
 			function() {
-				return wirebox.getUtil().getInheritedMetaData( fullCFCPath );
+				return wirebox.getUtility().getInheritedMetaData( fullCFCPath );
 			}
 		);
-
+			var commandAliases = commandMD.aliases ?: '' ;
+			if( commandAliases.startsWith( '"' ) && commandAliases.endsWith( '"' ) ){
+				commandAliases = mid( commandAliases, 2, len( commandAliases ) - 2 );
+			}
 		// Set up of command data
 		var commandData = {
 			fullCFCPath 	= arguments.fullCFCPath,
-			aliases 		= listToArray( commandMD.aliases ?: '' ),
+			aliases 		= listToArray( commandAliases),
 			parameters 		= [],
 			completor 		= {},
 			hint 			= commandMD.hint ?: '',
@@ -1338,7 +1355,7 @@ component accessors="true" singleton {
 				&& !isValid( param.type, userNamedParams[ param.name ] ) ){
 
 				shell.setExitCode( 1 );
-				throw( message='Parameter [#param.name#] has a value of [#serialize( userNamedParams[ param.name ] )#] which is not of type [#param.type#].', type="commandException");
+				throw( message='Parameter [#param.name#] has a value of [#toString( userNamedParams[ param.name ] )#] which is not of type [#param.type#].', type="commandException");
 			}
 		} // end for loop
 

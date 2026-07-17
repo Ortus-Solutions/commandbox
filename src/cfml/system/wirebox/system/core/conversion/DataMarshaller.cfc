@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Copyright Since 2005 ColdBox Framework by Luis Majano and Ortus Solutions, Corp
  * www.ortussolutions.com
  * ---
@@ -7,8 +7,9 @@
 component accessors="true" singleton {
 
 	// DI
-	property name="xmlConverter"   inject="XMLConverter@coldbox";
+	property name="xmlConverter"   inject="provider:XMLConverter@coldbox";
 	property name="requestService" inject="coldbox:requestService";
+	property name="coldbox"        inject="coldbox";
 
 	/**
 	 * Constructor
@@ -20,31 +21,30 @@ component accessors="true" singleton {
 	/**
 	 * Marshall data according to types or conventions on data objects
 	 *
-	 * @type The type to marshal to. Valid values are JSON, XML, WDDX, PLAIN, HTML, TEXT
-	 * @data The data to marshall
-	 * @encoding The default character encoding to use, defaults to UTF-8
-	 * @jsonCallback Only needed when using JSONP, this is the callback to add to the JSON packet
-	 * @jsonQueryFormat JSON Only: This parameter can be a Boolean value that specifies how to serialize ColdFusion queries or a string with possible values row, column, or struct
-	 * @xmlColumnList XML Only: Choose which columns to inspect, by default it uses all the columns in the query, if using a query
-	 * @xmlUseCDATA XML Only: Use CDATA content for ALL values. The default is false
+	 * @type             The type to marshal to. Valid values are JSON, XML, WDDX, PLAIN, HTML, TEXT
+	 * @data             The data to marshall
+	 * @encoding         The default character encoding to use, defaults to UTF-8
+	 * @jsonCallback     Only needed when using JSONP, this is the callback to add to the JSON packet
+	 * @xmlColumnList    XML Only: Choose which columns to inspect, by default it uses all the columns in the query, if using a query
+	 * @xmlUseCDATA      XML Only: Use CDATA content for ALL values. The default is false
 	 * @xmlListDelimiter XML Only: The delimiter in the list. Comma by default
-	 * @xmlRootName XML Only: The name of the initial root element of the XML packet
-	 * @pdfArgs All the PDF arguments to pass along to the CFDocument tag.
+	 * @xmlRootName      XML Only: The name of the initial root element of the XML packet
+	 * @pdfArgs          All the PDF arguments to pass along to the CFDocument tag.
+	 *
+	 * @return Marshalled content according to type and arguments
 	 *
 	 * @throws InvalidMarshallingType - When an invalid rendering type is detected
-	 * @returns Marshalled content according to type and arguments
 	 */
 	function marshallData(
 		required type,
 		required data,
-		encoding                = "UTF-8",
-		jsonCallback            = "",
-		jsonQueryFormat 				= true,
-		xmlColumnList           = "",
-		boolean xmlUseCDATA     = false,
-		xmlListDelimiter        = ",",
-		xmlRootName             = "",
-		struct pdfArgs          = {}
+		encoding            = "UTF-8",
+		jsonCallback        = "",
+		xmlColumnList       = "",
+		boolean xmlUseCDATA = false,
+		xmlListDelimiter    = ",",
+		xmlRootName         = "",
+		struct pdfArgs      = {}
 	){
 		// Validation Types
 		if ( !reFindNoCase( "^(JSON|JSONP|JSONT|WDDX|XML|PLAIN|HTML|TEXT|PDF)$", arguments.type ) ) {
@@ -66,7 +66,7 @@ component accessors="true" singleton {
 			case "JSON":
 			case "JSONP": {
 				// marshall to JSON
-				results = serializeJSON( arguments.data, arguments.jsonQueryFormat );
+				results = variables.coldbox.getUtil().toJson( arguments.data );
 				// wrap results in callback function for JSONP
 				if ( len( arguments.jsonCallback ) > 0 ) {
 					results = "#arguments.jsonCallback#(#results#)";
@@ -94,7 +94,7 @@ component accessors="true" singleton {
 					args.columnlist = arguments.xmlColumnList;
 				}
 				// Marshal to xml
-				results = xmlConverter.toXML( argumentCollection = args );
+				results = variables.xmlConverter.toXML( argumentCollection = args );
 				break;
 			}
 
@@ -107,6 +107,7 @@ component accessors="true" singleton {
 					// Convert to PDF
 					include "CFDocument.cfm";
 				}
+				break;
 			}
 
 			// Plaint TEXT, HTML, CUSTOM Data
@@ -122,10 +123,10 @@ component accessors="true" singleton {
 	/**
 	 * Render content out using cfcontent
 	 *
-	 * @type The content type to use for rendering
+	 * @type     The content type to use for rendering
 	 * @variable The variable to render the content from, could be null
 	 * @encoding The page encoding
-	 * @reset Reset the content at the end or not
+	 * @reset    Reset the content at the end or not
 	 */
 	function renderContent(
 		required type,

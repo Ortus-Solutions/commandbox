@@ -11,34 +11,37 @@ component accessors="true" {
 	 * Mapping Properties
 	 */
 
-	property name="name";
-	property name="alias" type="array";
-	property name="type";
-	property name="value";
-	property name="path";
-	property name="method";
-	property name="constructor";
-	property name="autoWire";
-	property name="autoInit" type="boolean";
-	property name="eagerInit";
-	property name="scope";
-	property name="dsl";
-	property name="cache" type="struct";
-	property name="DIConstructorArguments";
-	property name="DIProperties"      type="array";
-	property name="DISetters"         type="array";
-	property name="DIMethodArguments" type="array";
-	property name="onDIComplete"      type="array";
-	property name="discovered"        type="boolean";
-	property name="objectMetadata"    type="struct";
-	property name="providerMethods"   type="array";
+	property name="alias"             type="array";
 	property name="aspect"            type="boolean";
 	property name="aspectAutoBinding" type="boolean";
-	property name="virtualInheritance";
+	property name="autoInit"          type="boolean";
+	property name="autoWire";
+	property name="cache" type="struct";
+	property name="constructor";
+	property name="delegates";
+	property name="DIConstructorArguments";
+	property name="DIMethodArguments" type="array";
+	property name="DIProperties"      type="array";
+	property name="discovered"        type="boolean";
+	property name="DISetters"         type="array";
+	property name="dsl";
+	property name="eagerInit";
 	property name="extraAttributes" type="struct";
-	property name="mixins"          type="array";
-	property name="threadSafe";
 	property name="influenceClosure";
+	property name="method";
+	property name="mixins" type="array";
+	property name="name";
+	property name="objectMetadata" type="struct";
+	property name="onDIComplete"   type="array";
+	property name="path";
+	property name="providerMethods" type="array";
+	property name="scope";
+	property name="threadSafe";
+	property name="type";
+	property name="value";
+	property name="virtualInheritance";
+	property name="lazyProperties";
+	property name="observedProperties";
 
 	/**
 	 * Constructor
@@ -107,8 +110,55 @@ component accessors="true" {
 		variables.threadSafe             = "";
 		// A closure that can influence the creation of the mapping
 		variables.influenceClosure       = "";
+		// Delegates syntax
+		variables.delegates              = "";
+		// Lazy Properties
+		variables.lazyProperties         = [];
+		// Observed Properties
+		variables.observedProperties     = [];
+
+		// Core Delegation Exclusions
+		variables.CORE_DELEGATE_EXCLUSIONS = [
+			"init",
+			"$init",
+			"onDIComplete",
+			"setInjector",
+			"setBeanFactory",
+			"setColdBox",
+			"$wbAOPInvokeProxy",
+			"$wbAOPInclude",
+			"$wbAOPMixed",
+			"$wbAOPRemove",
+			"$wbAOPStoreJointPoint",
+			"$wbAOPTargetMapping",
+			"$wbAOPTargets",
+			"$wbBinder",
+			"$wbDelegateMap",
+			"$wbInjector",
+			"$wbLazyProperties",
+			"$wbMixer",
+			"$wbObservedProperties",
+			"$wbProviders",
+			"removeMixin",
+			"injectMixin",
+			"invokerMixin",
+			"injectPropertyMixin",
+			"removePropertyMixin",
+			"includeitMixin",
+			"getPropertyMixin",
+			"exposeMixin",
+			"methodProxy",
+			"getVariablesMixin"
+		];
 
 		return this;
+	}
+
+	/**
+	 * Verify if this is a transient object
+	 */
+	boolean function isTransient(){
+		return getScope() == "noscope";
 	}
 
 	/**
@@ -121,9 +171,16 @@ component accessors="true" {
 	}
 
 	/**
+	 * Verify if the influence closure has been seeded.
+	 */
+	boolean function hasInfluenceClosure(){
+		return !isSimpleValue( variables.influenceClosure );
+	}
+
+	/**
 	 * Process a mapping memento. Basically takes in a struct of data to process the mapping's data with.
 	 *
-	 * @memento The data memento to process
+	 * @memento  The data memento to process
 	 * @excludes List of memento keys to not process
 	 */
 	Mapping function processMemento( required memento, excludes = "" ){
@@ -243,12 +300,19 @@ component accessors="true" {
 	}
 
 	/**
+	 * Do we have any delegates declared explicitly
+	 */
+	boolean function hasDelegates(){
+		return variables.delegates.len();
+	}
+
+	/**
 	 * Set the cache properties for this mapping
 	 *
-	 * @key Cache key to use
-	 * @timeout Object Timeout
+	 * @key               Cache key to use
+	 * @timeout           Object Timeout
 	 * @lastAccessTimeout Object Last Access Timeout
-	 * @provider The Cache Provider to use
+	 * @provider          The Cache Provider to use
 	 */
 	function setCacheProperties(
 		required key,
@@ -270,13 +334,13 @@ component accessors="true" {
 	/**
 	 * Add a new constructor argument to this mapping
 	 *
-	 * @name The name of the constructor argument (Not used for: JAVA,WEBSERVICE)
-	 * @ref The reference mapping id this constructor argument maps to
-	 * @dsl The construction dsl this argument references. If used, the name value must be used.
-	 * @value The explicit value of the constructor argument, if passed.
+	 * @name     The name of the constructor argument (Not used for: JAVA,WEBSERVICE)
+	 * @ref      The reference mapping id this constructor argument maps to
+	 * @dsl      The construction dsl this argument references. If used, the name value must be used.
+	 * @value    The explicit value of the constructor argument, if passed.
 	 * @javaCast The type of javaCast() to use on the value of the argument. Only used if using dsl or ref arguments
 	 * @required If the argument is required or not, by default we assume required DI arguments
-	 * @type The type of the argument
+	 * @type     The type of the argument
 	 */
 	Mapping function addDIConstructorArgument(
 		name,
@@ -290,7 +354,7 @@ component accessors="true" {
 		// check if already registered, if it is, just return
 		for ( var x = 1; x lte arrayLen( variables.DIConstructorArguments ); x++ ) {
 			if (
-				structKeyExists( arguments, "name" ) AND
+				!isNull( arguments.name ) AND
 				structKeyExists( variables.DIConstructorArguments[ x ], "name" ) AND
 				variables.DIConstructorArguments[ x ].name == arguments.name
 			) {
@@ -309,13 +373,13 @@ component accessors="true" {
 	/**
 	 * Add a new method argument to this mapping
 	 *
-	 * @name The name of the method argument (Not used for: JAVA,WEBSERVICE)
-	 * @ref The reference mapping id this method argument maps to
-	 * @dsl The construction dsl this argument references. If used, the name value must be used.
-	 * @value The explicit value of the method argument, if passed.
+	 * @name     The name of the method argument (Not used for: JAVA,WEBSERVICE)
+	 * @ref      The reference mapping id this method argument maps to
+	 * @dsl      The construction dsl this argument references. If used, the name value must be used.
+	 * @value    The explicit value of the method argument, if passed.
 	 * @javaCast The type of javaCast() to use on the value of the argument. Only used if using dsl or ref arguments
 	 * @required If the argument is required or not, by default we assume required DI arguments
-	 * @type The type of the argument
+	 * @type     The type of the argument
 	 */
 	Mapping function addDIMethodArgument(
 		name,
@@ -345,16 +409,21 @@ component accessors="true" {
 	}
 
 	/**
-	 * Add a new property di definition
+	 * Add a new property injection definition
 	 *
-	 * @name The name of the property to inject
-	 * @ref The reference mapping id this property maps to
-	 * @dsl The construction dsl this property references. If used, the name value must be used.
-	 * @value The explicit value of the property, if passed.
-	 * @javaCast The type of javaCast() to use on the value of the value. Only used if using dsl or ref arguments
-	 * @scope The scope in the CFC to inject the property to. By default it will inject it to the variables scope
-	 * @required If the property is required or not, by default we assume required DI
-	 * @type The type of the property
+	 * @name             The name of the property to inject
+	 * @ref              The reference mapping id this property maps to
+	 * @dsl              The construction dsl this property references. If used, the name value must be used.
+	 * @value            The explicit value of the property, if passed.
+	 * @javaCast         The type of javaCast() to use on the value of the value. Only used if using dsl or ref arguments
+	 * @scope            The scope in the CFC to inject the property to. By default it will inject it to the variables scope
+	 * @required         If the property is required or not, by default we assume required DI
+	 * @type             The type of the property
+	 * @delegate         If the property is an object delegate
+	 * @delegatePrefix   If the property has a delegate prefix
+	 * @delegateSuffix   If the property has a delegate suffix
+	 * @delegateExcludes If the property has a delegate exclusion list
+	 * @delegateIncludes If the property has a delegate inclusion list
 	 */
 	Mapping function addDIProperty(
 		required name,
@@ -363,19 +432,32 @@ component accessors="true" {
 		value,
 		javaCast,
 		scope            = "variables",
-		required required=true,
-		type             = "any"
+		boolean required = true,
+		type             = "any",
+		boolean delegate = false,
+		delegatePrefix   = "",
+		delegateSuffix   = "",
+		delegateExcludes = [],
+		delegateIncludes = []
 	){
 		// check if already registered, if it is, just return
-		for ( var x = 1; x lte arrayLen( variables.DIProperties ); x++ ) {
-			if ( variables.DIProperties[ x ].name eq arguments.name ) {
+		for ( var thisProperty in variables.DIProperties ) {
+			if ( thisProperty.name eq arguments.name ) {
 				return this;
 			}
 		}
 
-		var definition = getNewDIDefinition();
-		structAppend( definition, arguments, true );
-		arrayAppend( variables.DIProperties, definition );
+		// Add core delegation exclusions
+		if ( arguments.delegate ) {
+			arrayAppend(
+				arguments.delegateExcludes,
+				variables.CORE_DELEGATE_EXCLUSIONS,
+				true
+			);
+		}
+
+		// store it
+		arrayAppend( variables.DIProperties, getNewDIDefinition().append( arguments, true ) );
 
 		return this;
 	}
@@ -383,12 +465,12 @@ component accessors="true" {
 	/**
 	 * Add a new DI Setter Definition
 	 *
-	 * @name The name of the setter to inject
-	 * @ref The reference mapping id this setter maps to
-	 * @dsl The construction dsl this setter references. If used, the name value must be used.
-	 * @value The explicit value of the setter, if passed.
+	 * @name     The name of the setter to inject
+	 * @ref      The reference mapping id this setter maps to
+	 * @dsl      The construction dsl this setter references. If used, the name value must be used.
+	 * @value    The explicit value of the setter, if passed.
 	 * @javaCast The type of javaCast() to use on the value of the value. Only used if using dsl or ref arguments
-	 * @argName The name of the argument to use, if not passed, we default it to the setter name
+	 * @argName  The name of the argument to use, if not passed, we default it to the setter name
 	 */
 	Mapping function addDISetter(
 		required name,
@@ -410,7 +492,10 @@ component accessors="true" {
 		// Remove scope for setter injection
 		definition.scope = "";
 		// Verify argument name, if not default it to setter name
-		if ( NOT structKeyExists( arguments, "argName" ) OR len( arguments.argName ) EQ 0 ) {
+		if (
+			isNull( arguments.argName ) OR
+			len( arguments.argName ) EQ 0
+		) {
 			arguments.argName = arguments.name;
 		}
 		// save incoming params
@@ -438,7 +523,7 @@ component accessors="true" {
 	/**
 	 * Add a new provider method to this mapping
 	 *
-	 * @method The provided method to override as a provider
+	 * @method  The provided method to override as a provider
 	 * @mapping The mapping to provide via the selected method
 	 */
 	Mapping function addProviderMethod( required method, required mapping ){
@@ -455,28 +540,24 @@ component accessors="true" {
 	/**
 	 * Process a mapping for metadata discovery and more
 	 *
-	 * @binder The binder requesting the processing
+	 * @binder   The binder requesting the processing
 	 * @injector The calling injector processing the mapping
 	 * @metadata The metadata of an a-la-carte processing, use instead of retrieving again
 	 *
 	 * @return Mapping
 	 */
 	Mapping function process( required binder, required injector, metadata ){
-		var md              = variables.objectMetadata;
-		var eventManager    = arguments.injector.getEventManager();
-		var cacheProperties = {};
-
 		// Short circuit, if mapping already discovered, then just exit out.
 		if ( variables.discovered ) {
 			return this;
 		}
 
+		var md              = variables.objectMetadata;
+		var eventManager    = arguments.injector.getEventManager();
+		var cacheProperties = {};
+
 		// Generate a lock token
-		if ( isSimpleValue( variables.path ) ) {
-			var lockToken = variables.path;
-		} else {
-			var lockToken = createUUID();
-		}
+		var lockToken = isSimpleValue( variables.path ) ? variables.path : variables.name;
 
 		// Lock for discovery based on path location, only done once per mapping
 		lock
@@ -484,8 +565,13 @@ component accessors="true" {
 			type          ="exclusive"
 			timeout       ="20"
 			throwOnTimeout="true" {
+			// Race Condition Lock
+			if ( variables.discovered ) {
+				return this;
+			}
+
 			// announce inspection
-			var iData     = {
+			var iData = {
 				mapping  : this,
 				binder   : arguments.binder,
 				injector : arguments.binder.getInjector()
@@ -494,16 +580,16 @@ component accessors="true" {
 
 			// Processing only done for CFC's,rest just mark and return
 			if ( variables.type neq arguments.binder.TYPES.CFC ) {
-				if ( NOT len( variables.scope ) ) {
+				if ( !len( variables.scope ) ) {
 					variables.scope = "noscope";
 				}
-				if ( NOT len( variables.autowire ) ) {
+				if ( !len( variables.autowire ) ) {
 					variables.autowire = true;
 				}
-				if ( NOT len( variables.eagerInit ) ) {
+				if ( !len( variables.eagerInit ) ) {
 					variables.eagerInit = false;
 				}
-				if ( NOT len( variables.threadSafe ) ) {
+				if ( !len( variables.threadSafe ) ) {
 					variables.threadSafe = false;
 				}
 				// finished processing mark as discovered
@@ -517,46 +603,35 @@ component accessors="true" {
 			if ( !isNull( arguments.metadata ) ) {
 				md = arguments.metadata;
 			} else {
-				var produceMetadataUDF = function(){
-					return injector.getUtil().getInheritedMetaData( variables.path, binder.getStopRecursions() );
-				};
-
-				// Are we caching metadata? or just using it
-				if ( len( arguments.binder.getMetadataCache() ) ) {
-					// Get from cache or produce on demand
-					md = arguments.injector
-						.getCacheBox()
-						.getCache( arguments.binder.getMetadataCache() )
-						.getOrSet( variables.path, produceMetadataUDF );
-				} else {
-					md = produceMetadataUDF();
-				}
+				md = injector.getUtility().getInheritedMetaData( variables.path, binder.getStopRecursions() );
 			}
 
 			// Store Metadata
 			variables.objectMetadata = md;
 
 			// Process persistence if not set already by configuration as it takes precedence
-			if ( NOT len( variables.scope ) ) {
+			if ( !len( variables.scope ) ) {
 				// Singleton Processing
-				if ( structKeyExists( md, "singleton" ) ) {
+				if ( hasAnnotationValue( md, "singleton" ) ) {
 					variables.scope = arguments.binder.SCOPES.SINGLETON;
 				}
 				// Registered Scope Processing
-				if ( structKeyExists( md, "scope" ) ) {
-					variables.scope = md.scope;
+				if ( hasAnnotationValue( md, "scope" ) ) {
+					variables.scope = getAnnotationValue( md, "scope" );
 				}
 				// CacheBox scope processing if cachebox annotation found, or cache annotation found
 				if (
-					structKeyExists( md, "cacheBox" ) OR (
-						structKeyExists( md, "cache" ) AND isBoolean( md.cache ) AND md.cache
+					hasAnnotationValue( md, "cacheBox" ) OR (
+						hasAnnotationValue( md, "cache" ) AND isBoolean( getAnnotationValue( md, "cache", "" ) ) AND getAnnotationValue(
+							md,
+							"cache"
+						)
 					)
 				) {
 					variables.scope = arguments.binder.SCOPES.CACHEBOX;
 				}
-
 				// check if scope found? If so, then set it to no scope.
-				if ( NOT len( variables.scope ) ) {
+				else if ( !len( variables.scope ) ) {
 					variables.scope = "noscope";
 				}
 			}
@@ -565,37 +640,45 @@ component accessors="true" {
 			// Cachebox Persistence Processing
 			if ( variables.scope EQ arguments.binder.SCOPES.CACHEBOX ) {
 				// Check if we already have a key, maybe added via configuration
-				if ( NOT len( variables.cache.key ) ) {
+				if ( !len( variables.cache.key ) ) {
 					variables.cache.key = "wirebox-#variables.name#";
 				}
 				// Check the default provider now to see if set by configuration
-				if ( NOT len( variables.cache.provider ) ) {
+				if ( !len( variables.cache.provider ) ) {
 					// default it first
 					variables.cache.provider = "default";
 					// Now check the annotations for the provider
-					if ( structKeyExists( md, "cacheBox" ) AND len( md.cacheBox ) ) {
-						variables.cache.provider = md.cacheBox;
+					if ( hasAnnotationValue( md, "cacheBox" ) AND len( getAnnotationValue( md, "cacheBox", "" ) ) ) {
+						variables.cache.provider = getAnnotationValue( md, "cacheBox" );
 					}
 				}
 				// Check if timeouts set by configuration or discovery
-				if ( NOT len( variables.cache.timeout ) ) {
+				if ( !len( variables.cache.timeout ) ) {
 					// Discovery by annocations
-					if ( structKeyExists( md, "cachetimeout" ) AND isNumeric( md.cacheTimeout ) ) {
-						variables.cache.timeout = md.cacheTimeout;
+					if (
+						hasAnnotationValue( md, "cachetimeout" ) AND isNumeric(
+							getAnnotationValue( md, "cacheTimeout", "" )
+						)
+					) {
+						variables.cache.timeout = getAnnotationValue( md, "cacheTimeout" );
 					}
 				}
 				// Check if lastAccessTimeout set by configuration or discovery
-				if ( NOT len( variables.cache.lastAccessTimeout ) ) {
+				if ( !len( variables.cache.lastAccessTimeout ) ) {
 					// Discovery by annocations
-					if ( structKeyExists( md, "cacheLastAccessTimeout" ) AND isNumeric( md.cacheLastAccessTimeout ) ) {
-						variables.cache.lastAccessTimeout = md.cacheLastAccessTimeout;
+					if (
+						hasAnnotationValue( md, "cacheLastAccessTimeout" ) AND isNumeric(
+							getAnnotationValue( md, "cacheLastAccessTimeout", "" )
+						)
+					) {
+						variables.cache.lastAccessTimeout = getAnnotationValue( md, "cacheLastAccessTimeout" );
 					}
 				}
 			}
 
 			// Alias annotations if found, then append them as aliases.
-			if ( structKeyExists( md, "alias" ) ) {
-				var thisAliases = listToArray( md.alias );
+			if ( hasAnnotationValue( md, "alias" ) ) {
+				var thisAliases = listToArray( getAnnotationValue( md, "alias", "" ) );
 				variables.alias.addAll( thisAliases );
 				// register alias references on binder
 				var mappings = arguments.binder.getMappings();
@@ -605,8 +688,8 @@ component accessors="true" {
 			}
 
 			// eagerInit annotation only if not overridden
-			if ( NOT len( variables.eagerInit ) ) {
-				if ( structKeyExists( md, "eagerInit" ) ) {
+			if ( !len( variables.eagerInit ) ) {
+				if ( hasAnnotationValue( md, "eagerInit" ) ) {
 					variables.eagerInit = true;
 				} else {
 					// defaults to lazy loading
@@ -615,11 +698,19 @@ component accessors="true" {
 			}
 
 			// threadSafe wiring annotation
-			if ( NOT len( variables.threadSafe ) ) {
-				if ( structKeyExists( md, "threadSafe" ) AND NOT len( md.threadSafe ) ) {
+			if ( !len( variables.threadSafe ) ) {
+				if (
+					hasAnnotationValue( md, "threadSafe" ) AND NOT len(
+						getAnnotationValue( md, "threadSafe", "" )
+					)
+				) {
 					variables.threadSafe = true;
-				} else if ( structKeyExists( md, "threadSafe" ) AND len( md.threadSafe ) AND isBoolean( md.threadSafe ) ) {
-					variables.threadSafe = md.threadSafe;
+				} else if (
+					hasAnnotationValue( md, "threadSafe" ) AND len( getAnnotationValue( md, "threadSafe", "" ) ) AND isBoolean(
+						getAnnotationValue( md, "threadSafe", "" )
+					)
+				) {
+					variables.threadSafe = getAnnotationValue( md, "threadSafe" );
 				} else {
 					// defaults to non thread safe wiring
 					variables.threadSafe = false;
@@ -628,16 +719,24 @@ component accessors="true" {
 
 			// mixins annotation only if not overridden
 			if ( NOT arrayLen( variables.mixins ) ) {
-				if ( structKeyExists( md, "mixins" ) ) {
-					variables.mixins = listToArray( md.mixins );
+				if ( hasAnnotationValue( md, "mixins" ) ) {
+					variables.mixins = listToArray( getAnnotationValue( md, "mixins", "" ) );
 				}
 			}
 
+			// Delegates by Metadata and by Explicit Definition
+			if ( hasAnnotationValue( md, "delegates" ) && len( getAnnotationValue( md, "delegates" ).trim() ) ) {
+				processComponentDelegates( getAnnotationValue( md, "delegates" ).trim() );
+			}
+			if ( hasDelegates() ) {
+				processComponentDelegates( variables.delegates );
+			}
+
 			// autowire only if not overridden
-			if ( NOT len( variables.autowire ) ) {
+			if ( !len( variables.autowire ) ) {
 				// Check if autowire annotation found or autowire already set
-				if ( structKeyExists( md, "autowire" ) and isBoolean( md.autowire ) ) {
-					variables.autoWire = md.autowire;
+				if ( hasAnnotationValue( md, "autowire" ) and isBoolean( getAnnotationValue( md, "autowire", "" ) ) ) {
+					variables.autoWire = getAnnotationValue( md, "autowire" );
 				} else {
 					// default to true
 					variables.autoWire = true;
@@ -646,8 +745,8 @@ component accessors="true" {
 
 			// look for parent metadata referring to an abstract parent (by alias) to copy
 			// dependencies and definitions from
-			if ( structKeyExists( md, "parent" ) and len( trim( md.parent ) ) ) {
-				arguments.binder.parent( alias: md.parent );
+			if ( hasAnnotationValue( md, "parent" ) and len( trim( getAnnotationValue( md, "parent" ) ) ) ) {
+				arguments.binder.parent( alias: getAnnotationValue( md, "parent" ) );
 			}
 
 			// Only process if autowiring
@@ -658,7 +757,7 @@ component accessors="true" {
 
 			// AOP AutoBinding only if both @classMatcher and @methodMatcher exist
 			if (
-				isAspectAutoBinding() AND structKeyExists( md, "classMatcher" ) AND structKeyExists(
+				isAspectAutoBinding() AND hasAnnotationValue( md, "classMatcher" ) AND hasAnnotationValue(
 					md,
 					"methodMatcher"
 				)
@@ -678,6 +777,66 @@ component accessors="true" {
 	}
 
 	/**
+	 * Process all the component delegates using WireBox delegate syntax expression
+	 *
+	 * @expression The CFC delegates annotation string expression
+	 */
+	private function processComponentDelegates( required expression ){
+		arguments.expression
+			.listToArray()
+			// Parse the delegate expression into a struct of raw data
+			.map( function( item ){
+				arguments.item = arguments.item.trim();
+				var model      = reReplaceNoCase(
+					arguments.item.getToken( 1, "=" ), // remove only methods if any
+					"^(.*)(>|<)",
+					"",
+					"all"
+				);
+				return {
+					"name"             : "wbDelegate_#listLast( model, "." ).replace( "@", "_" )#_#hash( arguments.item )#",
+					"ref"              : model,
+					"delegate"         : true,
+					"delegateIncludes" : getToken( arguments.item, 2, "=" ).listToArray(),
+					"raw"              : arguments.item
+				};
+			} )
+			// Map Prefixes
+			.map( function( item ){
+				if ( reFind( "^>", arguments.item.raw ) ) {
+					arguments.item.delegatePrefix = arguments.item.ref;
+				} else if ( reFind( "^(.*)(>)", arguments.item.raw ) ) {
+					arguments.item.delegatePrefix = getToken( arguments.item.raw, 1, ">" );
+				}
+				return arguments.item;
+			} )
+			// Map Suffixes
+			.map( function( item ){
+				if ( reFind( "^<", arguments.item.raw ) ) {
+					arguments.item.delegateSuffix = arguments.item.ref;
+				} else if ( reFind( "^(.*)(<)", arguments.item.raw ) ) {
+					arguments.item.delegateSuffix = getToken( arguments.item.raw, 1, "<" )
+				}
+				return arguments.item;
+			} )
+			.each( function( item ){
+				addDIProperty( argumentCollection = arguments.item );
+			} );
+	}
+
+	/**
+	 * Get the component annotation metadata by key
+	 *
+	 * @key          The annotation to look for in the component
+	 * @defaultValue Default value to return if not found
+	 *
+	 * @return any
+	 */
+	function getComponentAnnotation( required key, defaultValue = "" ){
+		return variables.objectMetadata.keyExists( arguments.key ) ? variables.objectMetadata[ arguments.key ] : arguments.defaultValue;
+	}
+
+	/**
 	 * ---------------------------------------------------
 	 * Private Methods
 	 * ---------------------------------------------------
@@ -686,7 +845,7 @@ component accessors="true" {
 	/**
 	 * Process the AOP self binding aspects
 	 *
-	 * @binder The binder requesting the processing
+	 * @binder   The binder requesting the processing
 	 * @metadata The metadata to process
 	 *
 	 * @return Mapping
@@ -808,10 +967,210 @@ component accessors="true" {
 	}
 
 	/**
+	 * Process a property metadata for use in WireBox
+	 *
+	 * @property The property metadata to process
+	 */
+	private function processPropertyMetadata( required metadata ){
+		// Injection / Delegation Definition
+		if ( hasAnnotationValue( arguments.metadata, "inject" ) ) {
+			addDIProperty(
+				name: arguments.metadata.name,
+				dsl : (
+					len( getAnnotationValue( arguments.metadata, "inject" ) ) ? getAnnotationValue(
+						arguments.metadata,
+						"inject"
+					) : "model"
+				),
+				scope         : getAnnotationValue( arguments.metadata, "scope", "variables" ),
+				required      : getAnnotationValue( arguments.metadata, "required", true ),
+				type          : getAnnotationValue( arguments.metadata, "type", "any" ),
+				delegate      : hasAnnotationValue( arguments.metadata, "delegate" ),
+				delegatePrefix: (
+					// Verify it exists, if it does and no length then use the property name by convention
+					hasAnnotationValue( arguments.metadata, "delegatePrefix" ) ? (
+						len( getAnnotationValue( arguments.metadata, "delegatePrefix" ) ) ? getAnnotationValue(
+							arguments.metadata,
+							"delegatePrefix"
+						) : arguments.metadata.name
+					)
+					 : ""
+				),
+				delegateSuffix: (
+					// Verify it exists, if it does and no length then use the property name by convention
+					hasAnnotationValue( arguments.metadata, "delegateSuffix" ) ? (
+						len( getAnnotationValue( arguments.metadata, "delegateSuffix" ) ) ? getAnnotationValue(
+							arguments.metadata,
+							"delegateSuffix"
+						) : arguments.metadata.name
+					)
+					 : ""
+				),
+				delegateExcludes: getAnnotationValue( arguments.metadata, "delegateExcludes", "" ).listToArray(),
+				delegateIncludes: getAnnotationValue( arguments.metadata, "delegate", "" ).listToArray()
+			);
+		}
+		// end injection processing
+
+		// Lazy processes
+		var isLazy         = hasAnnotationValue( arguments.metadata, "lazy" );
+		var isLazyUnlocked = hasAnnotationValue( arguments.metadata, "lazyNoLock" )
+		if ( isLazy || isLazyUnlocked ) {
+			// Detect Builder Name
+			var builderName = "";
+			if ( isLazy && len( getAnnotationValue( arguments.metadata, "lazy" ) ) ) {
+				builderName &= getAnnotationValue( arguments.metadata, "lazy" );
+			} else if ( isLazyUnlocked && len( getAnnotationValue( arguments.metadata, "lazyNoLock" ) ) ) {
+				builderName &= getAnnotationValue( arguments.metadata, "lazyNoLock" );
+			} else {
+				// By convention build{propertyName}
+				builderName &= "build#arguments.metadata.name#";
+			}
+			// Register it
+			variables.lazyProperties.append( {
+				"name"    : arguments.metadata.name,
+				"builder" : builderName,
+				"useLock" : isLazyUnlocked ? false : true
+			} );
+		}
+
+		// Observer Properties
+		if ( hasAnnotationValue( arguments.metadata, "observed" ) ) {
+			// Register it
+			variables.observedProperties.append( {
+				"name"     : arguments.metadata.name,
+				"observer" : len( getAnnotationValue( arguments.metadata, "observed", "" ) ) ? getAnnotationValue(
+					arguments.metadata,
+					"observed",
+					""
+				) : "#arguments.metadata.name#Observer"
+			} );
+		}
+	}
+
+	/**
+	 * Checks if the property has an annotation value for the key
+	 *
+	 * @metadata The metadata to check
+	 * @key      The key to look for in the annotations or documentation
+	 *
+	 * @return boolean
+	 */
+	private boolean function hasAnnotationValue( required struct metadata, required string key ){
+		var annotations   = arguments.metadata.keyExists( "annotations" ) ? arguments.metadata.annotations : arguments.metadata;
+		var documentation = arguments.metadata.keyExists( "documentation" ) ? arguments.metadata.documentation : arguments.metadata;
+
+		// Check in the annotations struct first
+		if ( structKeyExists( annotations, key ) ) {
+			return true;
+		}
+
+		// Check in the documentation struct second, to support CFML engines
+		if ( structKeyExists( documentation, key ) ) {
+			return true;
+		}
+
+		return false;
+	}
+
+	/**
+	 * Get the annotation value for a given key in the metadata
+	 *
+	 * @metadata     The metadata to check
+	 * @key          The key to look for in the annotations or documentation
+	 * @defaultValue The default value to return if the key is not found
+	 *
+	 * @return any
+	 */
+	private any function getAnnotationValue(
+		required struct metadata,
+		required string key,
+		any defaultValue
+	){
+		var annotations   = arguments.metadata.keyExists( "annotations" ) ? arguments.metadata.annotations : arguments.metadata;
+		var documentation = arguments.metadata.keyExists( "documentation" ) ? arguments.metadata.documentation : arguments.metadata;
+
+		// Check if the property has an annotations struct
+		if ( structKeyExists( annotations, key ) ) {
+			return annotations[ key ];
+		}
+
+		// Check if the property has an documentation struct
+		if ( structKeyExists( documentation, key ) ) {
+			return documentation[ key ];
+		}
+
+		// Return default value
+		return defaultValue;
+	}
+
+	/**
+	 * Process a function's metadata for DI Injection
+	 *
+	 * @metadata The Function metadata to process
+	 */
+	function processFunctionMetadata( required metadata ){
+		// Constructor Processing if found
+		if ( arguments.metadata.name eq variables.constructor ) {
+			// Process parameters for constructor injection
+			for ( var thisParam in arguments.metadata.parameters ) {
+				// Check injection annotation, if not found then no injection
+				if ( hasAnnotationValue( thisParam, "inject" ) ) {
+					// ADD Constructor argument
+					addDIConstructorArgument(
+						name: thisParam.name,
+						dsl : (
+							len( getAnnotationValue( thisParam, "inject" ) ) ? getAnnotationValue(
+								thisParam,
+								"inject"
+							) : "model"
+						),
+						required: getAnnotationValue( thisParam, "required", false ),
+						type    : getAnnotationValue( thisParam, "type", "any" )
+					);
+				}
+			}
+			// add constructor to found list, so it is processed only once in recursions
+			dependencies[ arguments.metadata.name ] = "constructor";
+		}
+
+		// Setter discovery, MUST be inject annotation marked to be processed.
+		if ( left( arguments.metadata.name, 3 ) eq "set" AND hasAnnotationValue( arguments.metadata, "inject" ) ) {
+			// Add to setter to mappings and recursion lookup
+			addDISetter(
+				name: right( arguments.metadata.name, len( arguments.metadata.name ) - 3 ),
+				dsl : (
+					len( getAnnotationValue( arguments.metadata, "inject" ) ) ? getAnnotationValue(
+						arguments.metadata,
+						"inject"
+					) : "model"
+				)
+			);
+			dependencies[ arguments.metadata.name ] = "setter";
+		}
+
+		// Provider Methods Discovery
+		if (
+			hasAnnotationValue( arguments.metadata, "provider" ) AND len(
+				getAnnotationValue( arguments.metadata, "provider" )
+			)
+		) {
+			addProviderMethod( arguments.metadata.name, getAnnotationValue( arguments.metadata, "provider" ) );
+			dependencies[ arguments.metadata.name ] = "provider";
+		}
+
+		// onDIComplete Method Discovery
+		if ( hasAnnotationValue( arguments.metadata, "onDIComplete" ) ) {
+			arrayAppend( variables.onDIComplete, arguments.metadata.name );
+			dependencies[ arguments.metadata.name ] = "onDIComplete";
+		}
+	}
+
+	/**
 	 * Process methods/properties for dependency injection
 	 *
-	 * @binder The binder requesting the processing
-	 * @metadata The metadata to process
+	 * @binder       The binder requesting the processing
+	 * @metadata     The metadata to process
 	 * @dependencies The dependencies structure
 	 *
 	 * @return Mapping
@@ -821,81 +1180,28 @@ component accessors="true" {
 		required metadata,
 		dependencies = {}
 	){
-		// Shortcut
-		var md = arguments.metadata;
-
 		// Look For properties for annotation injections and register them with the mapping
-		param md.properties = [];
-		md.properties
-			// Only process injectable properties
+		param arguments.metadata.properties = [];
+		arguments.metadata.properties
+			// Only process wirebox properties
 			.filter( function( thisProperty ){
-				return structKeyExists( thisProperty, "inject" );
+				return hasAnnotationValue( thisProperty, "inject" ) ||
+				hasAnnotationValue( thisProperty, "lazyNoLock" ) ||
+				hasAnnotationValue( thisProperty, "observed" ) ||
+				( hasAnnotationValue( thisProperty, "lazy" ) && !hasAnnotationValue( thisProperty, "fieldType" ) )
 			} )
 			// Process each property
-			.each( function( thisProperty ){
-				addDIProperty(
-					name : arguments.thisProperty.name,
-					dsl  : ( len( arguments.thisProperty.inject ) ? arguments.thisProperty.inject : "model" ),
-					scope: (
-						structKeyExists( arguments.thisProperty, "scope" ) ? arguments.thisProperty.scope : "variables"
-					),
-					required: (
-						structKeyExists( arguments.thisProperty, "required" ) ? arguments.thisProperty.required : true
-					),
-					type: ( structKeyExists( arguments.thisProperty, "type" ) ? arguments.thisProperty.type : "any" )
-				);
-			} );
+			.each( processPropertyMetadata );
 
 		// Look For functions for setter injections and more and register them with the mapping
-		param md.functions = [];
-		md.functions
+		param arguments.metadata.functions = [];
+		arguments.metadata.functions
 			// Verify Processing or do we continue to next iteration for processing
 			// This is to avoid overriding by parent trees in inheritance chains
 			.filter( function( thisFunction ){
 				return !structKeyExists( dependencies, thisFunction.name );
 			} )
-			.each( function( thisFunction ){
-				// Constructor Processing if found
-				if ( thisFunction.name eq variables.constructor ) {
-					// Process parameters for constructor injection
-					for ( var thisParam in thisFunction.parameters ) {
-						// Check injection annotation, if not found then no injection
-						if ( structKeyExists( thisParam, "inject" ) ) {
-							// ADD Constructor argument
-							addDIConstructorArgument(
-								name    : thisParam.name,
-								dsl     : ( len( thisParam.inject ) ? thisParam.inject : "model" ),
-								required: ( structKeyExists( thisParam, "required" ) ? thisParam.required : false ),
-								type    : ( structKeyExists( thisParam, "type" ) ? thisParam.type : "any" )
-							);
-						}
-					}
-					// add constructor to found list, so it is processed only once in recursions
-					dependencies[ thisFunction.name ] = "constructor";
-				}
-
-				// Setter discovery, MUST be inject annotation marked to be processed.
-				if ( left( thisFunction.name, 3 ) eq "set" AND structKeyExists( thisFunction, "inject" ) ) {
-					// Add to setter to mappings and recursion lookup
-					addDISetter(
-						name: right( thisFunction.name, len( thisFunction.name ) - 3 ),
-						dsl : ( len( thisFunction.inject ) ? thisFunction.inject : "model" )
-					);
-					dependencies[ thisFunction.name ] = "setter";
-				}
-
-				// Provider Methods Discovery
-				if ( structKeyExists( thisFunction, "provider" ) AND len( thisFunction.provider ) ) {
-					addProviderMethod( thisFunction.name, thisFunction.provider );
-					dependencies[ thisFunction.name ] = "provider";
-				}
-
-				// onDIComplete Method Discovery
-				if ( structKeyExists( thisFunction, "onDIComplete" ) ) {
-					arrayAppend( variables.onDIComplete, thisFunction.name );
-					dependencies[ thisFunction.name ] = "onDIComplete";
-				}
-			} ); // End function processing
+			.each( processFunctionMetadata );
 
 		return this;
 	}
@@ -905,15 +1211,20 @@ component accessors="true" {
 	 */
 	private struct function getNewDIDefinition(){
 		return {
-			"name"     : "",
-			"value"    : javacast( "null", "" ),
-			"dsl"      : javacast( "null", "" ),
-			"scope"    : "variables",
-			"javaCast" : javacast( "null", "" ),
-			"ref"      : javacast( "null", "" ),
-			"required" : false,
-			"argName"  : "",
-			"type"     : "any"
+			"name"             : "",
+			"value"            : javacast( "null", "" ),
+			"dsl"              : javacast( "null", "" ),
+			"scope"            : "variables",
+			"javaCast"         : javacast( "null", "" ),
+			"ref"              : javacast( "null", "" ),
+			"required"         : false,
+			"argName"          : "",
+			"type"             : "any",
+			"delegate"         : false,
+			"delegatePrefix"   : "",
+			"delegateSuffix"   : "",
+			"delegateExcludes" : [],
+			"delegateIncludes" : []
 		};
 	}
 

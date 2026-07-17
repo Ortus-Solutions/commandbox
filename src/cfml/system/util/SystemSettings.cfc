@@ -16,6 +16,23 @@ component singleton {
 	// Default environment for the shell
 	variables.environment = {};
 
+	function init() {
+		// TODO: try catch for backwards compat.  Remove before releasing bx-cli.
+		try {
+			getBoxRuntime().getConfiguration().registerSystemSettingProvider( "", name => {
+				// I can't pass null as the default, or it won't be used.
+				var notFoundValue = "_____NOT FOUND ______";
+				var result = variables.getSystemSetting( name, notFoundValue );
+				if( result == notFoundValue ) {
+					return null;
+				}
+				return result;
+			});
+		} catch( any e ) {
+
+		}
+	}
+
 	/**
 	* Retrieve a Java System property or env value by name.
 	*

@@ -121,7 +121,7 @@ component accessors="true" singleton {
 	*/
 	function postInstall() {
 		if( fileSystemUtil.normalizeSlashes( interceptData.installDirectory ) contains fileSystemUtil.normalizeSlashes( getJavaInstallDirectory() ) ) {
-			lastInstallDir = interceptData.installDirectory;
+			variables.lastInstallDir = interceptData.installDirectory;
 		}
 	}
 

@@ -45,11 +45,11 @@ component aliases="list" {
 		depth=0 ) {
 
 		if( arguments.system ) {
-			var directory = expandPath( '/commandbox' );
+			var directory = expandPath( '/commandbox-home/cfml' );
 		} else {
 			var directory = getCWD();
 		}
-
+		
 		// package check
 		if( !packageService.isPackage( directory ) ) {
 			return error( '#directory# is not a package!' );

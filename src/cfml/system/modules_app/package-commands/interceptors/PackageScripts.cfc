@@ -25,13 +25,13 @@ component {
 	function postProcessLine() { processScripts( 'postProcessLine', shell.pwd(), interceptData ); }
 	function preCommand() {
 		// quick check to prevent nasty recursion
-		if( !inScript ) {
+		if( !variables.inScript ) {
 			processScripts( 'preCommand', shell.pwd(), interceptData );
 		}
 	}
 	function postCommand() {
 		// quick check to prevent nasty recursion
-		if( !inScript ) {
+		if( !variables.inScript ) {
 			processScripts( 'postCommand', shell.pwd(), interceptData );
 		}
 	}
@@ -76,12 +76,12 @@ component {
 	function postPublish() { processScripts( 'postPublish', shell.pwd(), interceptData ); }
 
 	function processScripts( required string interceptionPoint, string directory=shell.pwd(), interceptData={} ) {
-		inScript=true;
+		variables.inScript=true;
 		try {
 			// automatic=true so install-lifecycle scripts can be gated behind a confirmation prompt
 			packageService.runScript( arguments.interceptionPoint, arguments.directory, true, interceptData, true );
 		} finally {
-			inScript=false;
+			variables.inScript=false;
 		}
 	}
 
