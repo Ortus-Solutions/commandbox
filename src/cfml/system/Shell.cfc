@@ -890,7 +890,7 @@ component accessors="true" singleton {
 
 				ConsolePainter.forceStop();
 
-				printError( { message : e.message, detail: e.detail, extendedInfo : e.extendedInfo ?: '' } );
+				printError( e, true );
 			}
 		// This type of error means the user hit Ctrl-C, during a readLine() call. Duck out and move along.
 		} catch (any e) {
@@ -979,7 +979,7 @@ component accessors="true" singleton {
 	 * print an error to the console
 	 * @err.hint Error object to print (only message is required)
   	 **/
-	Shell function printError( required err ){
+	Shell function printError( required err, boolean simple=false ){
 		// Don't override a non-1 exit code.
 		if( getExitCode() == 0 ) {
 			setExitCode( 1 );
@@ -1062,7 +1062,7 @@ component accessors="true" singleton {
 			}
 			variables.reader.getTerminal().writer().println();
 		}
-		if( structKeyExists( arguments.err, 'tagcontext' ) ){
+		if( !simple && structKeyExists( arguments.err, 'tagcontext' ) ){
 			var lines = arrayLen( arguments.err.tagcontext );
 			if( lines != 0 ){
 				for( var idx=1; idx <= lines; idx++) {
@@ -1081,7 +1081,7 @@ component accessors="true" singleton {
 				}
 			}
 		}
-		if( structKeyExists( arguments.err, 'stacktrace' ) ) {
+		if( !simple && structKeyExists( arguments.err, 'stacktrace' ) ) {
 			if( verboseErrors ) {
 					variables.reader.getTerminal().writer().println( '' );
 					variables.reader.getTerminal().writer().print( arguments.err.stacktrace );

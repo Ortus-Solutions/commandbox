@@ -63,6 +63,7 @@ component accessors="true" singleton {
 			'endpoints.forgebox.APIURL',
 			// Maven endpoints
 			'endpoints.maven',
+			'endpoints.maven.repositories',
 			// Servers
 			'server',
 			'server.singleServerMode',
