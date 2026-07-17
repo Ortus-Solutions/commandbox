@@ -95,7 +95,7 @@ component {
 			dataHeaders = ['Column','First Row Data'];
 
 		}
-		dataRows = autoFormatData( dataHeaders, dataRows );
+		dataRows = autoFormatData( dataQuery.columnList.listToArray(), dataRows );
 		dataHeaders = processHeaders( dataHeaders, dataRows, headerNames.listToArray(), width )
 
 		printHeader( dataHeaders );

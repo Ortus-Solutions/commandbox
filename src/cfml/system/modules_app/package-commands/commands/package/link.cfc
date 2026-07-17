@@ -69,7 +69,7 @@ component aliases='link' {
 		if( !boxJSON.slug.len() ) {
 			error( 'Cannot link package with no slug.' );
 		}
-		if( !packageService.isPackageModule( boxJSON.type ) ) {
+		if( !packageService.isPackageModule( boxJSON.type ) && boxJSON.type != 'boxlang-modules' ) {
 			error( 'Package type [#boxJSON.type#] is invalid for linking.  Needs to be a module type.' );
 		}
 

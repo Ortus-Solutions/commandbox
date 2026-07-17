@@ -2,7 +2,7 @@
  * Watch the files in a directory and run a custom command of your choice
  *
  * {code}
- * watch *.json "echo 'config file updated!'"
+ * watch paths=*.json command="echo 'config file updated!'"
  * {code}
  *
  * The following environment variables will be available to your command

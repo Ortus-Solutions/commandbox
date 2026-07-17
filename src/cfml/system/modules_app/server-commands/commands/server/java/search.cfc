@@ -119,6 +119,12 @@ component aliases='java search' {
 			APIURLCheck &= '&image_type=#encodeForURL( type )#';
 		}
 
+		if( !JSON ) {
+			print.line()
+				.line( 'Hitting API URL:' )
+				.indentedline( APIURLCheck );
+		}
+
 		http
 			url="#APIURLCheck#"
 			timeout=20
@@ -153,12 +159,7 @@ component aliases='java search' {
 			print.text( artifactJSON );
 			return;
 		} else {
-			print
-				.line()
-				.line( 'Hitting API URL:' )
-				.indentedline( APIURLCheck )
-				.line()
-				.line();
+			print.line().line();
 		}
 
 		if( !artifactJSON.len() ) {

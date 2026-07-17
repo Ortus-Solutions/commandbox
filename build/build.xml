@@ -16,8 +16,8 @@ External Dependencies:
 	<property name="distro.groupID" value="ortussolutions" />
 	<property name="distro.name" value="commandbox"/>
 	<!-- Special things happen when the version and stableVersion are the same value as that signifies a "stable" build.   -->
-	<property name="commandbox.version" value="6.1.0-rc"/>
-	<property name="commandbox.stableVersion" value="6.0.0"/>
+	<property name="commandbox.version" value="6.4.0-alpha"/>
+	<property name="commandbox.stableVersion" value="6.3.3"/>
 
 	<!-- Time Label -->
 	<tstamp prefix="start"/>
@@ -177,9 +177,11 @@ External Dependencies:
 		</move>
 
 		<!-- unzip the core.lco file (really a jar) so we can modify the manifest to inject the extensions we need to load -->
+		<propertyregex property="cfml.extensions.modified" input="${cfml.extensions}" regexp="\?" replace=";" />
+
 		<unzip src="${temp.dir}/core.lco" dest="${temp.dir}/lucee-light-core/" overwrite="true"/>
 		<manifest file="${temp.dir}/lucee-light-core/META-INF/MANIFEST.MF" mode="update">
-			<attribute name="Require-Extension" value="${cfml.extensions}"/>
+			<attribute name="Require-Extension" value="${cfml.extensions.modified}"/>
 		</manifest>
 
 		<!-- Re-zip core file] -->
@@ -1065,9 +1067,11 @@ External Dependencies:
 
 		<for list="${cfml.extensions}" param="id">
 			<sequential>
+		        <propertyregex property="id.noVersion" input="@{id}" regexp="\?version=.*" replace="" />
+
 				<echo>Downloading extension @{id}</echo>
 
-				<get src="http://extension.lucee.org/rest/extension/provider/full/@{id}" dest="${extensions.dir}/@{id}.lex" verbose="true" />
+				<get src="http://extension.lucee.org/rest/extension/provider/full/@{id}" dest="${extensions.dir}/@{id.noVersion}.lex" verbose="true" />
 
 			</sequential>
 		</for>
@@ -1079,7 +1083,7 @@ External Dependencies:
 		<!-- do a check -->
 		<antcontrib:if>
 			<and>
-				<available file="runwar/${runwar.version}/runwar-${runwar.version}.jar" />
+				<available file="runwar-legacy/${runwar.version}/runwar-legacy-${runwar.version}.jar" />
 				<not>
 					<contains string="${runwar.version}" substring="snapshot" casesensitive="false" />
 				</not>
@@ -1089,12 +1093,12 @@ External Dependencies:
 			</then>
 			<else>
 				<echo>runwar not found or snapshot build, getting artifact from ${ortus.repoURL}</echo>
-				<mkdir dir="runwar/${runwar.version}" />
-				<get src="${ortus.repoURL}/cfmlprojects/runwar/${runwar.version}/runwar-${runwar.version}.jar" dest="runwar/${runwar.version}/runwar-${runwar.version}.jar" verbose="true" />
+				<mkdir dir="runwar-legacy/${runwar.version}" />
+				<get src="${ortus.repoURL}/cfmlprojects/runwar/legacy-${runwar.version}/runwar-legacy-${runwar.version}.jar" dest="runwar-legacy/${runwar.version}/runwar-legacy-${runwar.version}.jar" verbose="true" />
 			</else>
 		</antcontrib:if>
 
-		<copy file="runwar/${runwar.version}/runwar-${runwar.version}.jar" tofile="${lib.dir}/runwar-${runwar.version}.jar" overwrite="true" />
+		<copy file="runwar-legacy/${runwar.version}/runwar-legacy-${runwar.version}.jar" tofile="${lib.dir}/runwar-legacy-${runwar.version}.jar" overwrite="true" />
 
 	</target>
 

@@ -41,6 +41,12 @@ component accessors=true implements="IEndpoint" singleton {
 	}
 
 	public string function resolvePackageZip( required string package, boolean verbose=false ) {
+		var binaryHash = '';
+		//  Check if a hash is in the URL and if so, strip it out
+		if( package contains '##' ) {
+			binaryHash = package.listLast( '##' );
+			package = package.listFirst( '##' );
+		}
 
 		if( configService.getSetting( 'offlineMode', false ) ) {
 			throw( 'Can''t download [#getNamePrefixes()#:#package#], CommandBox is in offline mode.  Go online with [config set offlineMode=false].', 'endpointException' );
@@ -72,6 +78,14 @@ component accessors=true implements="IEndpoint" singleton {
 			if( fileExists( fullPath ) ) { fileDelete( fullPath ); }
 			throw( '#e.message##CR##e.detail#', 'endpointException' );
 		};
+
+		// Validate the binary hash
+		if( len( binaryHash ) ) {
+			var downloadedBinaryHash = hash( fileReadBinary( fullPath ), "MD5" );
+			if( binaryHash != downloadedBinaryHash ) {
+				throw( 'The hash of the downloaded file [#downloadedBinaryHash#] doesn''t match the excepted hash [#binaryHash#] #fullPath#', 'endpointException' );
+			}
+		}
 
 		return fullPath;
 	}

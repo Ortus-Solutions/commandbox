@@ -800,8 +800,8 @@
 	<cffunction name="overrideConfigSettings" output="false" access="public">
 		<cfargument name="moduleSettings" 		type="struct" required="true" hint="The module setting structure">
 		<cfargument name="moduleName"	type="string" required="true" hint="The module name">
+		<cfargument name="configSettings"	type="struct" required="true" default="#ConfigService.getConfigSettings()#"> 
 		<cfscript>
-			configSettings = ConfigService.getConfigSettings();
 			if( structKeyExists( configSettings, 'modules' ) && structKeyExists( configSettings.modules, arguments.moduleName ) ) {
 				arguments.moduleSettings.append( configSettings.modules[ arguments.moduleName ] );
 			}
@@ -810,9 +810,10 @@
 
 	<!--- overrideAllConfigSettings --->
 	<cffunction name="overrideAllConfigSettings" output="false" access="public">
+		<cfargument name="configSettings"	type="struct" required="true" default="#ConfigService.getConfigSettings()#"> 
 		<cfscript>
 			for( var moduleName in getLoadedModules() ) {
-				overrideConfigSettings( getModuleData()[ moduleName ].settings, moduleName );
+				overrideConfigSettings( getModuleData()[ moduleName ].settings, moduleName, configSettings );
 			}
 		</cfscript>
 	</cffunction>

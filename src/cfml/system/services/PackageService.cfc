@@ -30,7 +30,7 @@ component accessors="true" singleton {
 	property name='tempDir' 			inject='tempDir@constants';
 	property name='serverService'		inject='serverService';
 	property name='moduleService'		inject='moduleService';
-
+	property name='configService'		inject='ConfigService';
 
 	/**
 	* Constructor
@@ -70,27 +70,58 @@ component accessors="true" singleton {
 	* @verbose If set, it will produce much more verbose information about the package installation
 	* @force When set to true, it will force dependencies to be installed whether they already exist or not
 	* @packagePathRequestingInstallation If installing smart dependencies packages (like ColdBox modules) that are capable of being nested, this is our current level
+	* @lock Flag to lock the version in the lock file
 	*
 	* @returns True if no errors encountered, false if things went boom.
 	**/
 	boolean function installPackage(
-			required string ID,
-			string directory,
-			boolean save=false,
-			boolean saveDev=false,
-			boolean production,
-			string currentWorkingDirectory=shell.pwd(),
-			boolean verbose=false,
-			boolean force=false,
-			string packagePathRequestingInstallation = arguments.currentWorkingDirectory,
-			string defaultName=''
+		required string ID,
+		string directory,
+		boolean save=false,
+		boolean saveDev=false,
+		boolean production,
+		string currentWorkingDirectory=shell.pwd(),
+		boolean verbose=false,
+		boolean force=false,
+		string packagePathRequestingInstallation = arguments.currentWorkingDirectory,
+		string defaultName='',
+		boolean lock=false,
+		struct lockFile={},
+		boolean trustScripts=configService.getSetting( 'scripts.trustInstallScripts', false )
 	){
 		// Java service registers itself as an interceptor on creation so I need to force the provider to create the service before installing anything.
 		javaService.$get();
 
 		var shellWillReload = false;
-		var job = wirebox.getInstance( 'interactiveJob' );
 		interceptorService.announceInterception( 'preInstall', { installArgs=arguments, packagePathRequestingInstallation=packagePathRequestingInstallation } );
+
+		var lockFilePackagesToNotSaveVersions = {};
+		arguments.lock = arguments.lock || fileExists( arguments.currentWorkingDirectory & '/box-lock.json' );
+		var shouldSaveLockFile = false;
+		if ( arguments.lock && arguments.lockFile.isEmpty() ) {
+			var loadLockFileJob = wirebox.getInstance( 'interactiveJob' );
+			loadLockFileJob.start( "Loading lock file..." );
+			if ( arguments.verbose ) {
+				loadLockFileJob.setDumpLog( arguments.verbose );
+			}
+			if ( !fileExists( arguments.currentWorkingDirectory & '/box-lock.json' ) ) {
+				loadLockFileJob.addLog( "No lock file exists, creating one..." );
+				var thisBoxJSON = readPackageDescriptor( arguments.currentWorkingDirectory );
+				arguments.lockFile = {
+					"name": thisBoxJSON.name,
+					"version": thisBoxJSON.version,
+					"lockVersion": 1,
+					"dependencies": {}
+				};
+			} else {
+				loadLockFileJob.addLog( "Loading box-lock.json..." );
+				arguments.lockFile = deserializeJSON( fileRead( expandPath( arguments.currentWorkingDirectory & '/box-lock.json' ) ) );
+			}
+			loadLockFileJob.complete( arguments.verbose );
+			shouldSaveLockFile = true;
+		}
+
+		var job = wirebox.getInstance( 'interactiveJob' );
 
 		// If there is a package to install, install it
 		if( len( arguments.ID ) ) {
@@ -99,7 +130,6 @@ component accessors="true" singleton {
 			arguments.production = arguments.production ?: true;
 
 			var endpointData = endpointService.resolveEndpoint( arguments.ID, arguments.packagePathRequestingInstallation );
-
 			job.start(  'Installing package [#endpointData.ID#]', ( shell.getTermHeight() < 20 ? 1 : 5 ) );
 
 			if( verbose ) {
@@ -119,6 +149,37 @@ component accessors="true" singleton {
 					endpointData.package &= "@#existingVersion#";
 				}
 			}
+
+			// TODO: consider making this part of the interface so other endpoint types can also report back
+			// if their installation ID contains a semantic version range
+			if( isInstanceOf(endpointData.endpoint, 'forgebox') ) {
+				if ( !arguments.lockFile.isEmpty() ) {
+					var slug = endpointData.endpoint.parseSlug( endpointData.package );
+					if ( arguments.lockFile.dependencies.keyExists( slug ) ) {
+						var lockedDependency = arguments.lockFile.dependencies[ slug ];
+						var requestedVersion = endpointData.endpoint.parseVersion( endpointData.package );
+						if ( arguments.force ) {
+							arguments.lockFile.dependencies.delete( slug );
+							job.addLog( "Ignoring lock file version [#lockedDependency.version#] for [#slug#] due to `force` flag." );
+						} else if ( semanticVersion.satisfies( lockedDependency.version, requestedVersion ) ) {
+							// our lock file version satisfies the requested version range, so use the locked version
+							lockFilePackagesToNotSaveVersions[ slug ] = true;
+							endpointData.package = slug & '@' & lockedDependency.version;
+							job.addLog( "Lock file version [#lockedDependency.version#] satisfies requested version range [#requestedVersion#] for [#slug#]. Using locked version." );
+						} else {
+							// the version requested is not satisfied by the lock file
+							// so update the lock file to the requested version
+							// we do this by deleting the entry from the lock file.
+							arguments.lockFile.dependencies.delete( slug );
+							job.addLog( "Lock file version [#lockedDependency.version#] does NOT satisfy requested version range [#requestedVersion#] for [#slug#]. Updating to requested version and re-locking." );
+						}
+					}
+				}
+				var requestedVersionSemver = endpointData.endpoint.parseVersion( arguments.ID );
+			} else {
+				var requestedVersionSemver = nullValue();
+			}
+
 			var tmpPath = endpointData.endpoint.resolvePackage( endpointData.package, arguments.currentWorkingDirectory, arguments.verbose );
 
 			// Support box.json in the root OR in a subfolder (NPM-style!)
@@ -129,6 +190,7 @@ component accessors="true" singleton {
 				var boxJSON = readPackageDescriptor( tmpPath );
 				var packageType = boxJSON.type;
 				var packageName = boxJSON.slug;
+				var installedVersion = boxJSON.version;
 				var version = updateBoxJSONDependency ? boxJSON.version : existingVersion;
 			} else {
 				job.addErrorLog( "box.json is missing so this isn't really a package! I'll install it anyway, but I'm not happy about it" );
@@ -138,12 +200,8 @@ component accessors="true" singleton {
 				var version = '1.0.0';
 			}
 
-			// Todo, consider making this part of the interface so other endpoint types can also report back
-			// if their installation ID contains a semantic version range
-			if( isInstanceOf(endpointData.endpoint, 'forgebox') ) {
-				var requestedVersionSemver = endpointData.endpoint.parseVersion( arguments.ID );
-			} else {
-				var requestedVersionSemver = version;
+			if ( isNull( requestedVersionSemver ) ) {
+				requestedVersionSemver = version;
 			}
 
 			// If the dependency struct in box.json has a name, use it.  This is mostly for
@@ -296,6 +354,7 @@ component accessors="true" singleton {
 				ignorePatterns = ignorePatterns,
 				endpointData = endpointData,
 				artifactPath = tmpPath,
+				currentWorkingDirectory = currentWorkingDirectory,
 				packagePathRequestingInstallation = packagePathRequestingInstallation,
 				job = job,
 				skipInstall = false
@@ -304,6 +363,8 @@ component accessors="true" singleton {
 			// Make sure these get set back into their original variables in case the interceptor changed them.
 			installDirectory = interceptData.installDirectory;
 			ignorePatterns = interceptData.ignorePatterns;
+			arguments.currentWorkingDirectory = interceptData.currentWorkingDirectory;
+			arguments.packagePathRequestingInstallation = interceptData.packagePathRequestingInstallation;
 			tmpPath = interceptData.artifactPath;
 
 			// Set variable to allow interceptor-based skipping of package install
@@ -445,12 +506,32 @@ component accessors="true" singleton {
 
 			// Assert: At this point, all paths are finalized and we are ready to install.
 
+			if ( !isNull( installedVersion ) ) {
+				updateLockedDependencies( arguments.lockFile, packageName, installedVersion, job );
+			}
+
 			// Should we save this as a dependency. Save the install even though the package may already be there
-			if( ( arguments.save || arguments.saveDev ) ) {
+			if( ( arguments.save || arguments.saveDev ) && !lockFilePackagesToNotSaveVersions.keyExists( packageName ) ) {
 				// Add it!
 				if( addDependency( packagePathRequestingInstallation, packageName, version, installDirectory, artifactDescriptor.createPackageDirectory,  arguments.saveDev, endpointData ) ) {
 					// Tell the user...
 					job.addLog( "#packagePathRequestingInstallation#/box.json updated with #( arguments.saveDev ? 'dev ': '' )#dependency." );
+				}
+
+				// we only update the lock file if we were saving
+				if (
+					!isNull( installedVersion ) &&
+					!arguments.lockFile.isEmpty() &&
+					isInstanceOf( endpointData.endpoint, 'forgebox' ) &&
+					!arguments.lockFile.dependencies.keyExists( packageName )
+				) {
+					arguments.lockFile.dependencies[ packageName ] = {
+						"version": installedVersion,
+						"dev": arguments.saveDev,
+						"dependencies": {}
+					};
+					// write out updated lock file
+					job.addLog( "box-lock.json updated with locked version [#installedVersion#] for [#packageName#]." );
 				}
 			}
 
@@ -648,7 +729,9 @@ component accessors="true" singleton {
 				production = true,
 				currentWorkingDirectory = arguments.currentWorkingDirectory, // Original dir
 				packagePathRequestingInstallation = installDirectory, // directory for smart dependencies to use
-				defaultName = dependency
+				defaultName = dependency,
+				trustScripts = arguments.trustScripts,
+				lockFile = arguments.lockFile.isEmpty() ? {} : ( isNull( packageName ) || !arguments.lockFile.dependencies.keyExists( packageName ) ? arguments.lockFile : arguments.lockFile.dependencies[ packageName ] )
 			};
 
 			// Recursively install them
@@ -666,6 +749,13 @@ component accessors="true" singleton {
 
 		interceptorService.announceInterception( 'postInstall', { installArgs=arguments, installDirectory=installDirectory, system=shellWillReload } );
 		job.complete( verbose );
+
+		if ( shouldSaveLockFile ) {
+			JSONService.writeJSONFile( arguments.currentWorkingDirectory & '/box-lock.json', arguments.lockFile );
+			var saveLockFileJob = wirebox.getInstance( 'InteractiveJob' );
+			saveLockFileJob.start( 'Saving box-lock.json file to disk' );
+			saveLockFileJob.complete();
+		}
 
 		return true;
 	}
@@ -714,12 +804,13 @@ component accessors="true" singleton {
 	* @currentWorkingDirectory Root of the application (used for finding box.json)
 	**/
 	function uninstallPackage(
-			required string ID,
-			string directory,
-			boolean save=false,
-			required string currentWorkingDirectory,
-			string packagePathRequestingUninstallation = arguments.currentWorkingDirectory,
-			boolean verbose = false
+		required string ID,
+		string directory,
+		boolean save=false,
+		required string currentWorkingDirectory,
+		string packagePathRequestingUninstallation = arguments.currentWorkingDirectory,
+		boolean verbose = false,
+		struct lockFile = {}
 	){
 
 		var job = wirebox.getInstance( 'interactiveJob' );
@@ -845,6 +936,11 @@ component accessors="true" singleton {
 			removeDependency( currentWorkingDirectory, packageName );
 			// Tell the user...
 			job.addLog( "Dependency removed from box.json." );
+
+			if ( !arguments.lockFile.isEmpty() && arguments.lockFile.keyExists( "dependencies" ) && arguments.lockFile.dependencies.keyExists( packageName ) ) {
+				arguments.lockFile.dependencies.delete( packageName );
+				job.addLog( "box-lock.json updated to remove locked version for [#packageName#]." );
+			}
 		}
 
 		interceptorService.announceInterception( 'postUninstall', { uninstallArgs=arguments, system=systemModule } );
@@ -1075,7 +1171,6 @@ component accessors="true" singleton {
 			systemSettings.expandDeepSystemSettings( results );
 		}
 		return results;
-
 	}
 
 	/**
@@ -1334,8 +1429,9 @@ component accessors="true" singleton {
 	* @directory The package root
 	* @ignoreMissing Set true to ignore missing package scripts, false to throw an exception
 	* @interceptData An optional struct of data if this package script is being fired as part of an interceptor announcement.  Will be loaded into env vars
+	* @automatic Set true when this script is being fired automatically by an interceptor (not explicitly invoked by the user).  Used to gate potentially risky install-lifecycle scripts behind a confirmation prompt.
 	*/
-	function runScript( required string scriptName, string directory=shell.pwd(), boolean ignoreMissing=true, interceptData={} ) {
+	function runScript( required string scriptName, string directory=shell.pwd(), boolean ignoreMissing=true, interceptData={}, boolean automatic=false ) {
 		// Read the box.json from this package (if it exists)
 		var boxJSON = readPackageDescriptorRaw( arguments.directory );
 		// If there is a scripts object with a matching key for this interceptor....
@@ -1355,7 +1451,15 @@ component accessors="true" singleton {
 			if( isSimpleValue( scriptNameCommands ) ) {
 				scriptNameCommands = [ scriptNameCommands ];
 			}
-			if( scriptNameCommands.len() ) {
+			// Gate automatically-fired install-lifecycle scripts behind a human-in-the-loop confirmation.
+			// This is the classic supply-chain risk: installing a third party package can silently run
+			// arbitrary commands via its install scripts.  Explicit "run-script" invocations are not gated.
+			if( scriptNameCommands.len()
+				&& arguments.automatic
+				&& isRiskyInstallScript( arguments.scriptName )
+				&& !confirmScriptExecution( arguments.scriptName, arguments.directory, scriptNameCommands, arguments.interceptData ) ) {
+				consoleLogger.warn( 'Skipped package script [#arguments.scriptName#] — not approved.' );
+			} else if( scriptNameCommands.len() ) {
 				consoleLogger.debug( '.' );
 				consoleLogger.warn( 'Running package script [#arguments.scriptName#].' );
 				for( var scriptNameCommand in scriptNameCommands ) {
@@ -1392,6 +1496,62 @@ component accessors="true" singleton {
 	}
 
 	/**
+	* Is this script name one of the install-lifecycle interception points that runs code originating
+	* from a package being added or removed?  These are the points worth confirming with a human since
+	* they can run arbitrary commands defined by a (potentially untrusted) third party package.
+	* The recursive pre.../post... wrapper names that runScript derives (e.g. prepostInstall) are
+	* intentionally excluded so a single event prompts at most once.
+	* @scriptName Name of the package script / interception point
+	*/
+	private boolean function isRiskyInstallScript( required string scriptName ) {
+		var riskyEvents = 'preInstall,preInstallAll,onInstall,postInstall,postInstallAll,preUninstall,postUninstall';
+		return riskyEvents.listFindNoCase( arguments.scriptName ) > 0;
+	}
+
+	/**
+	* Ask the user (human-in-the-loop) whether a potentially risky, automatically-fired install script
+	* should be allowed to run.  Returns true to run the script, false to skip it.
+	*
+	* Trust is granted per-install via the "trustScripts" arg (carried in interceptData.installArgs),
+	* which itself defaults to the "scripts.trustInstallScripts" config setting.  The
+	* "box_config_scripts_trustInstallScripts" environment variable overrides that config setting
+	* automatically via ConfigService, so we never read env vars directly here.
+	*
+	* Behavior when not trusted:
+	*  - In a non-interactive shell (CI / no TTY) the script is denied since we can't prompt.
+	*  - Otherwise the exact commands are shown and the user is asked a yes/no question.
+	*
+	* @scriptName Name of the package script / interception point
+	* @directory The package root the script will run in
+	* @commands An array of the command strings that will be executed
+	* @interceptData The interception data for this event (carries installArgs.trustScripts when present)
+	*/
+	private boolean function confirmScriptExecution( required string scriptName, required string directory, required array commands, struct interceptData={} ) {
+		// Trust may be granted for this install via the trustScripts arg; otherwise fall back to the
+		// config setting (which the box_config_scripts_trustInstallScripts env var overrides for free).
+		var trusted = arguments.interceptData.installArgs.trustScripts ?: configService.getSetting( 'scripts.trustInstallScripts', false );
+		if( trusted ) {
+			return true;
+		}
+
+		// Show the user exactly what is about to run so they can make an informed decision.
+		consoleLogger.warn( '.' );
+		consoleLogger.warn( 'SECURITY: The package script [#arguments.scriptName#] wants to automatically run the following command(s):' );
+		consoleLogger.warn( '  Package location: #arguments.directory#' );
+		for( var thisCommand in arguments.commands ) {
+			consoleLogger.error( '  > ' & thisCommand );
+		}
+
+		// Non-interactive shells (CI, piped input, no TTY) can't answer a prompt, so deny.
+		if( !shell.isTerminalInteractive() ) {
+			consoleLogger.warn( 'Refusing to auto-run install script in a non-interactive shell. Set config setting [scripts.trustInstallScripts=true] or pass [--trustScripts] to allow.' );
+			return false;
+		}
+
+		return shell.confirm( 'Do you want to allow this script to run? [y/n]' );
+	}
+
+	/**
 	* Parses just the slug portion out of an endpoint ID
 	* @package The full endpointID like foo@1.0.0
 	*/
@@ -1421,4 +1581,25 @@ component accessors="true" singleton {
 		}
 		return version;
 	}
+
+	private void function updateLockedDependencies(
+		required struct lockSlice,
+		required string packageName,
+		required any newVersion,
+		required any job
+	) {
+		if ( !arguments.lockSlice.keyExists( "dependencies" ) || !isStruct( arguments.lockSlice.dependencies ) ) {
+			return;
+		}
+
+		if ( arguments.lockSlice.dependencies.keyExists( arguments.packageName ) ) {
+			arguments.lockSlice.dependencies[ arguments.packageName ].version = arguments.newVersion;
+			job.addLog( "Updated locked version for [#arguments.packageName#] to [#arguments.newVersion#]." );
+		}
+
+		for ( var depName in arguments.lockSlice.dependencies ) {
+			updateLockedDependencies( arguments.lockSlice.dependencies[ depName ], arguments.packageName, arguments.newVersion, job );
+		}
+	}
+
 }

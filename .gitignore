@@ -38,3 +38,5 @@ src/cfml/system/mdCache
 extensions/**
 lib-light/**
 src/cfml/license.txt
+/src/cfml/libExt
+/bx-cli

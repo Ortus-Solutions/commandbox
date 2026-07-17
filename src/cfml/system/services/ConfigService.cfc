@@ -26,6 +26,7 @@ component accessors="true" singleton {
 	property name='JSONService'			inject='JSONService';
 	property name='ServerService'		inject='provider:ServerService';
 	property name='interceptorService'	inject='interceptorService';
+	property name='systemSettings'		inject='SystemSettings';
 
 	/**
 	* Constructor
@@ -97,7 +98,9 @@ component accessors="true" singleton {
 			'configAutoSync.endpoint',
 			'configAutoSync.overwrite',
 			// Task Runners
-			'taskCaching'
+			'taskCaching',
+			// Package install script security
+			'scripts.trustInstallScripts'
 		]);
 
 		setConfigFilePath( '/commandbox-home/CommandBox.json' );
@@ -241,7 +244,16 @@ component accessors="true" singleton {
 			processVarsUDF( prop, props[ prop ] );
 		}
 
+		var boxEnvVars = systemSettings.getAllEnvironmentsFlattened();
+		for( var envVar in boxEnvVars ) {
+			processVarsUDF( envVar, boxEnvVars[ envVar ] );
+		}
+
 		setConfigSettingOverrides( overrides );
+
+		if( overrides.keyExists( 'modules' ) ) {
+			ModuleService.overrideAllConfigSettings( overrides );
+		}
 	}
 
 	/**

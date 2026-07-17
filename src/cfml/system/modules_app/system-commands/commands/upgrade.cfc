@@ -6,7 +6,7 @@
  * {code}
  * .
  * Use the "latest" parameter to download the bleeding edge version
- * .x
+ * .
  * {code:bash}
  * upgrade --latest
  * {code}

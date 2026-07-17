@@ -94,8 +94,9 @@ component aliases="install" {
 	property name="entries";
 
 	// DI
-	property name="packageService"	inject="PackageService";
-	property name="endpointService"	inject="endpointService";
+	property name='JSONService'			inject='JSONService';
+	property name="packageService"	    inject="PackageService";
+	property name="endpointService"	    inject="endpointService";
 	property name='interceptorService'	inject='interceptorService';
 
 	/**
@@ -110,6 +111,8 @@ component aliases="install" {
 	* @verbose.hint Output much more verbose information about the package installation
 	* @force.hint Force dependencies to be installed whether they already exist or not
 	* @system.hint Install this package into the global CommandBox module's folder
+	* @lock.hint Flag to lock the version in the lock file
+	* @trustScripts.hint Automatically allow the installed package(s) install-lifecycle scripts to run without a confirmation prompt
 	**/
 	function run(
 		string ID='',
@@ -119,7 +122,9 @@ component aliases="install" {
 		boolean production,
 		boolean verbose=false,
 		boolean force=false,
-		boolean system=false
+		boolean system=false,
+		boolean lock=false,
+		boolean trustScripts=configService.getSetting( 'scripts.trustInstallScripts', false )
 	){
 
 		// Don't default the dir param since we need to differentiate whether the user actually
@@ -144,14 +149,12 @@ component aliases="install" {
 		// Make ID an array
 		arguments.IDArray = listToArray( arguments.ID );
 
-
 		// Install this package(s).
 		// Don't pass directory unless you intend to override the box.json of the package being installed
 
 		interceptorService.announceInterception( 'preInstallAll', { installArgs=arguments } );
 
 		try {
-
 			// One or more IDs
 			if( arguments.IDArray.len() ) {
 				for( var thisID in arguments.IDArray ){
@@ -172,9 +175,7 @@ component aliases="install" {
 			error( e.message, e.detail );
 		}
 
-
 		interceptorService.announceInterception( 'postInstallAll', { installArgs=arguments } );
-
 	}
 
 	// Auto-complete list of IDs

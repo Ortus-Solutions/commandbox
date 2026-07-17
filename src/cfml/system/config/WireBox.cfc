@@ -80,7 +80,6 @@ component extends='wirebox.system.ioc.config.Binder' {
 		map( 'commandLocations@constants' ).toValue( commandLocations );
 		map( 'ortusArtifactsURL@constants' ).toValue( ortusArtifactsURL );
 		map( 'ortusPRDArtifactsURL@constants' ).toValue( ortusPRDArtifactsURL );
-		map( 'rewritesDefaultConfig@constants' ).toValue( '#homeDir#/cfml/system/config/urlrewrite.xml' );
 		map( 'colors256Data@constants' ).toValue( colors256Data );
 		map( 'semverRegex@constants' ).toValue( semverRegex );
 		map( 'jmespath' ).to( 'commandbox.system.modules.jmespath.models.jmespath' );
