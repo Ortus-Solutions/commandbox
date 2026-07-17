@@ -4,12 +4,10 @@
     "slug":"commandbox-apidocs",
     "private":true,
     "dependencies":{
-        "docbox":"https://github.com/Ortus-Solutions/DocBox/archive/v2.0.4.zip"
+        "docbox":"^5.0.2"
     },
-    "devDependencies":{
-
-    },
+    "devDependencies":{},
     "installPaths":{
-        "docbox":"docbox"
+        "docbox":"docbox/"
     }
 }
