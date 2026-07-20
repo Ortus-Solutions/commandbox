@@ -22,9 +22,16 @@ component {
 			directoryDelete( modulesPath, true );
 		}
 		// now install!
-		command( "install" ).params( bxModuleSlugs, modulesPath ).run();
+		command( "install" ).params( bxModuleSlugs, modulesPath ).flags( "!save" ).run();
 
-		// TODO: get libs
+		// Get libs (specified in box.json)
+		// clear libs folder
+		var libsPath = resolvePath( "libs" );
+		if( directoryExists( libsPath ) ) {
+			directoryDelete( libsPath, true );
+		}
+		directoryCreate( libsPath );
+		command( "install" ).run();
 
 		command( "forgebox use" ).params( "ortus" ).run();
 		command( "publish" ).flags( "force" ).run();

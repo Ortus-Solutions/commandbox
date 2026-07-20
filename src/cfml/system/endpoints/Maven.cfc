@@ -31,6 +31,9 @@ component
 	property name="registeredRepos" type="struct";
 
 	// Constructor
+	/**
+	 * Initializes the Maven endpoint defaults.
+	 */
 	function init(){
 		setNamePrefixes( "maven" );
 		setDefaultRepo( { "mavenCentral" : "https://maven-central.storage.googleapis.com/maven2/" } );
@@ -50,6 +53,10 @@ component
 		boolean verbose                = false
 	){
 		var job = wirebox.getInstance( "interactiveJob" );
+		var projectMaven = packageService.readPackageDescriptor( currentWorkingDirectory ).maven;
+		var artifactParts = getArtifactParts( package );
+		artifactParts.flags.installMode = resolveInstallMode( artifactParts.flags.installMode, projectMaven.installMode ?: "" );
+		var installDirectory = resolveInstallDirectory( projectMaven.installDirectory ?: "" );
 
 		// Build the registered repo list by layering three sources, with later sources overwriting
 		// earlier ones on key collision (a project box.json can redefine a global alias, and a global
@@ -65,12 +72,12 @@ component
 		);
 		structAppend(
 			variables.registeredRepos,
-			getProjectRepos( currentWorkingDirectory ),
+			getProjectRepos( projectMaven ),
 			true
 		);
 
 		var artifact = {
-			"parts"           : getArtifactParts( package ),
+			"parts"           : artifactParts,
 			"jarFileURL"      : "",
 			"metadata"        : {},
 			"resolvedVersion" : ""
@@ -80,11 +87,7 @@ component
 		// Non-empty means "the user asked for this specific repo — use only it".
 		var requestedRepo = artifact.parts.repo;
 
-		job.addLog(
-			requestedRepo.len()
-				? "Resolving Maven artifact from requested repo: #requestedRepo#"
-				: "Resolving Maven artifact from registered repos"
-		);
+		job.addLog( "Checking the Maven artifact cache." );
 
 		// If the local artifact exists AND we have an exact version, serve it from cache.
 		// Exact versions are immutable in Maven, so a cache hit is safe.  STABLE and version ranges
@@ -97,21 +100,36 @@ component
 		// artifact is cached from a trusted repo, a later untrusted/rogue repo entry can't shadow it.
 		// The "maven-" prefix keeps our keys from colliding with other endpoints (ForgeBox, GitHub, etc.)
 		// that share the same artifact cache.
-		var cacheKey = "maven-" & artifact.parts.groupId & "--" & artifact.parts.artifactId;
+		var cacheKey = "maven-" & artifact.parts.groupId & "--" & artifact.parts.artifactId
+			& ( artifact.parts.flags.classifier.len() ? "--" & artifact.parts.flags.classifier : "" );
 		if (
 			artifact.parts.version != "STABLE"
-			&& semanticVersion.isExactVersion( artifact.parts.version )
+			&& isExactMavenVersion( artifact.parts.version )
 			&& artifactService.artifactExists( cacheKey, artifact.parts.version )
 		) {
-			job.addLog( "Lucky you, we found this version in local artifacts!" );
-			var thisArtifactPath = artifactService.getArtifactPath( cacheKey, artifact.parts.version );
-
-			// Return the path to the artifact
-			return fileEndpoint.resolvePackage(
-				thisArtifactPath,
-				currentWorkingDirectory,
-				arguments.verbose
+			job.addLog( "Using the Maven artifact already stored in the local artifact cache." );
+			var thisArtifactPath = prepareCachedPackageForInstall(
+				artifactService.getArtifactPath( cacheKey, artifact.parts.version ),
+				artifact.parts.flags.installMode,
+				installDirectory
 			);
+			if ( configService.getSetting( "offlineMode", false ) ) {
+				job.addWarnLog( "Offline mode is enabled; skipping Maven JAR hash validation." );
+			} else {
+				verifyArtifactChecksum(
+					findJarInPackage( thisArtifactPath ),
+					getJarFileURL(
+						requestedRepo.len() ? requestedRepo : "mavenCentral",
+						artifact.parts.groupId,
+						artifact.parts.artifactId,
+						artifact.parts.version,
+						artifact.parts.flags.classifier
+					)
+				);
+			}
+
+			// Return the rehydrated package directory directly.
+			return thisArtifactPath;
 		}
 
 		// If the user explicitly requested a repo, use ONLY that one.  Otherwise walk the registered
@@ -127,7 +145,8 @@ component
 				artifact.parts.groupId,
 				artifact.parts.artifactId,
 				artifact.parts.version,
-				artifact.parts.flags.snapshots
+				artifact.parts.flags.snapshots,
+				artifact.parts.flags.classifier
 			);
 			artifact.metadata        = returnedArtifact.metadata;
 			artifact.jarFileURL      = returnedArtifact.jarFileURL;
@@ -143,7 +162,8 @@ component
 						artifact.parts.groupId,
 						artifact.parts.artifactId,
 						artifact.parts.version,
-						artifact.parts.flags.snapshots
+						artifact.parts.flags.snapshots,
+						artifact.parts.flags.classifier
 					);
 				} catch ( endpointException e ) {
 					// Artifact not found in this repo (404 / metadata missing / range not satisfied) —
@@ -177,16 +197,21 @@ component
 		var localM2JarPath = getLocalM2JarPath(
 			artifact.parts.groupId,
 			artifact.parts.artifactId,
-			artifact.resolvedVersion
+			artifact.resolvedVersion,
+			artifact.parts.flags.classifier
 		);
 
 		var folderName = "";
 		if ( localM2JarPath.len() ) {
 			job.addLog( "Found in local Maven repository cache (~/.m2/repository) - skipping download: #localM2JarPath#" );
+			if ( !configService.getSetting( "offlineMode", false ) ) {
+				verifyArtifactChecksum( localM2JarPath, artifact.jarFileURL );
+			}
 			folderName = buildPackageFromLocalJar(
 				localM2JarPath,
 				artifact.parts.artifactId,
-				artifact.resolvedVersion
+				artifact.resolvedVersion,
+				artifact.parts.flags.classifier
 			);
 		} else {
 			// Defer to jar endpoint
@@ -195,6 +220,9 @@ component
 				currentWorkingDirectory,
 				arguments.verbose
 			);
+			if ( !configService.getSetting( "offlineMode", false ) ) {
+				verifyArtifactChecksum( findJarInPackage( folderName ), artifact.jarFileURL );
+			}
 		}
 
 		if ( artifact.parts.version eq "STABLE" ) {
@@ -207,8 +235,8 @@ component
 		}
 
 		// Update artifact version if it's a range
-		else if ( !semanticVersion.isExactVersion( artifact.parts.version ) ) {
-			job.addLog( "It's a range: #artifact.parts.version#" );
+		else if ( !isExactMavenVersion( artifact.parts.version ) ) {
+			job.addLog( "Resolving Maven version range [#artifact.parts.version#]." );
 			if (
 				artifact.metadata.keyExists( "versioning" ) && artifact.metadata.versioning.keyExists( "versions" ) && artifact.metadata.versioning.versions.len()
 			) {
@@ -220,7 +248,7 @@ component
 				// Get the latest version that matches the range
 				for ( var thisVersion in sortedVersions ) {
 					if ( semanticVersion.satisfies( thisVersion, artifact.parts.version ) ) {
-						job.addLog( "VERSION FOUND: #thisVersion#" );
+						job.addLog( "Selected Maven version [#thisVersion#] for the requested range." );
 						artifact.parts.version = thisVersion;
 						break;
 					}
@@ -228,21 +256,22 @@ component
 			}
 		}
 
-		job.addLog( "VERSION: #artifact.parts.version#" );
+		job.addLog( "Using Maven version [#artifact.parts.version#]." );
 
 		// After resolving STABLE/range to a concrete version, check the cache again before
 		// downloading and reprocessing dependencies.  This is the common case for repeat installs.
 		if (
-			semanticVersion.isExactVersion( artifact.parts.version )
+			isExactMavenVersion( artifact.parts.version )
 			&& artifactService.artifactExists( cacheKey, artifact.parts.version )
 		) {
 			job.addLog( "Resolved version [#artifact.parts.version#] already in local artifacts, using cache." );
-			var thisArtifactPath = artifactService.getArtifactPath( cacheKey, artifact.parts.version );
-			return fileEndpoint.resolvePackage(
-				thisArtifactPath,
-				currentWorkingDirectory,
-				arguments.verbose
+			var thisArtifactPath = prepareCachedPackageForInstall(
+				artifactService.getArtifactPath( cacheKey, artifact.parts.version ),
+				artifact.parts.flags.installMode,
+				installDirectory
 			);
+			verifyArtifactChecksum( findJarInPackage( thisArtifactPath ), artifact.jarFileURL );
+			return thisArtifactPath;
 		}
 
 		// Get dependencies — use the repo that actually served the parent artifact.  If the user
@@ -267,8 +296,9 @@ component
 			if ( dependency.artifactId == artifact.parts.artifactId && dependency.groupId == artifact.parts.groupId ) {
 				continue;
 			}
-			// Use "groupId:artifactId" as the dependency key.  A bare artifactId is not globally unique —
-			// two different groups can publish the same artifactId (e.g. com.foo:util vs com.bar:util).
+			// Use the same slug format as the generated package descriptor. PackageService uses the
+			// descriptor slug as the dependency key when saving the installed package, so using a
+			// different key here would cause a second entry to be added for the same dependency.
 			var depKey = dependency.groupId & ":" & dependency.artifactId;
 			// Merge the exclude set that should apply to THIS child's own subtree:
 			//   - Whatever the user/parent already had in effect (`?exclude=` on this artifact's own
@@ -286,33 +316,50 @@ component
 			if ( childExcludes.len() ) {
 				dependencies[ depKey ] &= "?exclude=" & childExcludes;
 			}
-			// Install path uses the group+artifact combination as well so it's globally unique on disk.
-			installPaths[ depKey ] = "lib/" & dependency.groupId & "-" & dependency.artifactId;
+			if ( artifact.parts.flags.installMode.len() ) {
+				dependencies[ depKey ] &= ( find( "?", dependencies[ depKey ] ) ? "&" : "?" ) & "installMode=" & artifact.parts.flags.installMode;
+			}
+			// Shared installs bundle all Maven JARs into the caller's destination. Dedicated installs
+			// keep each transitive dependency isolated directly under the parent package directory.
+			installPaths[ depKey ] = artifact.parts.flags.installMode == "shared"
+				? "."
+				: dependency.groupId & "-" & dependency.artifactId;
 		}
 
 		// Override the box.json with the actual version and dependencies
 		var boxJSON = {
-			"name"         : "#artifact.parts.groupId & "-" & artifact.parts.artifactId#.jar",
-			"slug"         : artifact.parts.groupId & "-" & artifact.parts.artifactId,
+			"name"         : "#artifact.parts.groupId & ":" & artifact.parts.artifactId#.jar",
+			"slug"         : artifact.parts.groupId & ":" & artifact.parts.artifactId,
+			"packageDirectory" : artifact.parts.groupId & "-" & artifact.parts.artifactId,
 			"version"      : artifact.parts.version,
 			"location"     : getNamePrefixes() & ":" & arguments.package,
 			"type"         : "jars",
+			"directory"    : installDirectory,
+			"createPackageDirectory" : artifact.parts.flags.installMode != "shared",
+			"installPathIsPackageDirectory" : artifact.parts.flags.installMode != "shared",
+			"ignore"       : artifact.parts.flags.installMode == "shared" ? [ "/box.json" ] : [],
+			"persistDependencies" : artifact.parts.flags.installMode != "shared",
+			"maven"        : { "installMode" : artifact.parts.flags.installMode },
 			"dependencies" : dependencies,
 			"installPaths" : installPaths
 		};
 
 		JSONService.writeJSONFile( folderName & "/box.json", boxJSON );
 
-		job.addLog( "Storing download in artifact cache..." );
+		if ( !artifactService.artifactExists( cacheKey, artifact.parts.version ) ) {
+			job.addLog( "Caching Maven artifact for future installs." );
+			var cacheFolder = tempDir & "/maven-cache-" & createUUID();
+			directoryCopy( folderName, cacheFolder, true );
+			writeCachePackageDescriptor( cacheFolder );
 
-		// Store it locally in the artifact cache using the same separator format as the lookup above.
-		artifactService.createArtifact(
-			cacheKey,
-			artifact.parts.version,
-			folderName
-		);
+			// Store it locally in the artifact cache using the same separator format as the lookup above.
+			artifactService.createArtifact(
+				cacheKey,
+				artifact.parts.version,
+				cacheFolder
+			);
 
-		job.addLog( "Done." );
+		}
 
 		// Here is where our alleged so-called "package" lives.
 		return folderName;
@@ -341,11 +388,8 @@ component
 	 * Get the project repositories from the box.json file
 	 * @currentWorkingDirectory The directory to get the repositories from
 	 */
-	function getProjectRepos( string currentWorkingDirectory ){
-		// readPackageDescriptor() merges with box.json.txt defaults (so maven.repositories always
-		// exists, no existence checks needed) and expands ${...} system-setting placeholders in
-		// values (e.g. an env var holding a private repo URL/credentials).
-		return packageService.readPackageDescriptor( currentWorkingDirectory ).maven.repositories;
+	function getProjectRepos( required struct projectMaven ){
+		return arguments.projectMaven.keyExists( "repositories" ) ? arguments.projectMaven.repositories : {};
 	}
 
 	/**
@@ -360,18 +404,20 @@ component
 		string groupId,
 		string artifactId,
 		string version,
-		boolean allowSnapshots = false
+		boolean allowSnapshots = false,
+		string classifier = ""
 	){
 		var artifact = { "jarFileURL" : "", "metadata" : {}, "resolvedVersion" : "" }
 
 		// Fast path: for an exact version we don't need to fetch metadata — the URL is fully deterministic.
 		// STABLE and version ranges require metadata to know which concrete version to pick.
-		if ( arguments.version != "STABLE" && semanticVersion.isExactVersion( arguments.version ) ) {
+		if ( arguments.version != "STABLE" && isExactMavenVersion( arguments.version ) ) {
 			artifact.jarFileURL = getJarFileURL(
 				arguments.repo,
 				arguments.groupId,
 				arguments.artifactId,
-				arguments.version
+				arguments.version,
+				arguments.classifier
 			);
 			artifact.resolvedVersion = arguments.version;
 			return artifact;
@@ -405,7 +451,8 @@ component
 				arguments.repo,
 				arguments.groupId,
 				arguments.artifactId,
-				latestVersion
+				latestVersion,
+				arguments.classifier
 			);
 			artifact.resolvedVersion = latestVersion;
 			return artifact;
@@ -428,7 +475,8 @@ component
 						arguments.repo,
 						arguments.groupId,
 						arguments.artifactId,
-						thisVersion
+						thisVersion,
+						arguments.classifier
 					);
 					artifact.resolvedVersion = thisVersion;
 					return artifact;
@@ -553,7 +601,9 @@ component
 				"snapshots"  : false,
 				"optional"   : false,
 				"transitive" : true,
-				"exclude"    : ""
+				"exclude"    : "",
+				"installMode": "",
+				"classifier" : ""
 			}
 		};
 
@@ -645,9 +695,51 @@ component
 						arguments.flags[ key ] = !!val;
 					}
 					break;
+				case "installmode":
+					if ( listFindNoCase( "dedicated,shared", val ) ) {
+						arguments.flags.installMode = lCase( val );
+					}
+					break;
+				case "classifier":
+					if ( reFindNoCase( "^[a-z0-9][a-z0-9._-]*$", val ) ) {
+						arguments.flags.classifier = val;
+					} else if ( val.len() ) {
+						throw( message = "Invalid Maven classifier [#val#]. Classifiers may contain letters, numbers, dots, underscores, and hyphens.", type = "endpointException" );
+					}
+					break;
 				// Unknown key — ignore (forward compatible).
 			}
 		}
+	}
+
+	/**
+	 * Resolves the install mode from endpoint flags, project settings, and global configuration.
+	 * @requestedMode The install mode requested by the endpoint ID.
+	 * @projectMode The install mode configured in the current project's box.json.
+	 */
+	private string function resolveInstallMode( required string requestedMode, required string projectMode ) {
+		if ( arguments.requestedMode.len() ) {
+			return arguments.requestedMode;
+		}
+
+		if ( listFindNoCase( "dedicated,shared", arguments.projectMode ) ) {
+			return lCase( arguments.projectMode );
+		}
+
+		var globalMode = configService.getSetting( "endpoints.maven.installMode", "dedicated" );
+		return listFindNoCase( "dedicated,shared", globalMode ) ? lCase( globalMode ) : "dedicated";
+	}
+
+	/**
+	 * Resolves the install directory from project settings or global configuration.
+	 * @projectDirectory The install directory configured in the current project's box.json.
+	 */
+	private string function resolveInstallDirectory( required string projectDirectory ) {
+		if ( arguments.projectDirectory.len() ) {
+			return arguments.projectDirectory;
+		}
+
+		return configService.getSetting( "endpoints.maven.installDirectory", "" );
 	}
 
 	/**
@@ -694,16 +786,17 @@ component
 				metaData      = xmlParse( httpResult.fileContent );
 				md.groupId    = metaData.xmlRoot.groupId.XmlText;
 				md.artifactId = metaData.xmlRoot.artifactId.XmlText;
-				if (
-					structKeyExists( metaData.xmlRoot, "versioning" ) && structKeyExists(
-						metaData.xmlRoot.versioning,
-						"latest"
-					) && structKeyExists( metaData.xmlRoot.versioning, "release" )
-				) {
-					md.versioning.latest  = metaData.xmlRoot.versioning.latest.XmlText;
-					md.versioning.release = metaData.xmlRoot.versioning.release.XmlText;
-					for ( local.version in metaData.xmlRoot.versioning.versions.XmlChildren ) {
-						arrayAppend( md.versioning.versions, local.version.XmlText );
+				if ( structKeyExists( metaData.xmlRoot, "versioning" ) ) {
+					if ( structKeyExists( metaData.xmlRoot.versioning, "latest" ) ) {
+						md.versioning.latest = metaData.xmlRoot.versioning.latest.XmlText;
+					}
+					if ( structKeyExists( metaData.xmlRoot.versioning, "release" ) ) {
+						md.versioning.release = metaData.xmlRoot.versioning.release.XmlText;
+					}
+					if ( structKeyExists( metaData.xmlRoot.versioning, "versions" ) ) {
+						for ( local.version in metaData.xmlRoot.versioning.versions.XmlChildren ) {
+							arrayAppend( md.versioning.versions, local.version.XmlText );
+						}
 					}
 				}
 			} else {
@@ -916,9 +1009,224 @@ component
 	 * @artifactId The artifact ID
 	 * @version The version of the artifact
 	 */
-	private function getJarFileURL( repo, groupId, artifactId, version ){
-		var addr = getRepoURL( arguments.repo ) & replace( groupId, ".", "/", "ALL" ) & "/" & artifactId & "/" & version & "/" & artifactId & "-" & version & ".jar";
+	private function getJarFileURL( repo, groupId, artifactId, version, string classifier = "" ){
+		var classifierSuffix = arguments.classifier.len() ? "-" & arguments.classifier : "";
+		var addr = getRepoURL( arguments.repo ) & replace( groupId, ".", "/", "ALL" ) & "/" & artifactId & "/" & version & "/" & artifactId & "-" & version & classifierSuffix & ".jar";
 		return addr;
+	}
+
+	/**
+	 * Copies or extracts a cached package and updates its descriptor for the requested installation.
+	 * @cachedPackage The cached package directory or ZIP archive.
+	 * @installMode The selected Maven installation mode.
+	 * @installDirectory The destination directory configured for installation.
+	 */
+	private string function prepareCachedPackageForInstall(
+		required string cachedPackage,
+		required string installMode,
+		required string installDirectory
+	) {
+		var installPackage = tempDir & "/maven-install-" & createUUID();
+		if ( fileExists( arguments.cachedPackage ) && arguments.cachedPackage.endsWith( ".zip" ) ) {
+			extractCachedPackage( arguments.cachedPackage, installPackage );
+		} else {
+			directoryCopy( arguments.cachedPackage, installPackage, true );
+		}
+		var descriptorPath = installPackage & "/box.json";
+		var descriptor = deserializeJSON( fileRead( descriptorPath ) );
+		descriptor.createPackageDirectory = arguments.installMode != "shared";
+		descriptor.packageDirectory = replace( descriptor.slug, ":", "-", "all" );
+		descriptor.directory = arguments.installDirectory;
+		descriptor.installPathIsPackageDirectory = arguments.installMode != "shared";
+		descriptor.ignore = arguments.installMode == "shared" ? [ "/box.json" ] : [];
+		descriptor.persistDependencies = arguments.installMode != "shared";
+		descriptor.maven = { "installMode" : arguments.installMode };
+		for ( var dependency in descriptor.dependencies ) {
+			descriptor.dependencies[ dependency ] = setInstallModeFlag(
+				descriptor.dependencies[ dependency ],
+				arguments.installMode
+			);
+			descriptor.installPaths[ dependency ] = arguments.installMode == "shared"
+				? "."
+				: replace( dependency, ":", "-", "all" );
+		}
+		JSONService.writeJSONFile( descriptorPath, descriptor );
+		return installPackage;
+	}
+
+	/**
+	 * Replaces the installMode flag on a Maven package endpoint ID.
+	 * @packageID The Maven package endpoint ID.
+	 * @installMode The install mode to include in the endpoint ID.
+	 */
+	private string function setInstallModeFlag( required string packageID, required string installMode ) {
+		var queryStart = find( "?", arguments.packageID );
+		var packageCoordinates = queryStart
+			? left( arguments.packageID, queryStart - 1 )
+			: arguments.packageID;
+		var flags = queryStart
+			? listToArray( mid( arguments.packageID, queryStart + 1, len( arguments.packageID ) - queryStart ), "&" )
+			: [];
+		var updatedFlags = [];
+
+		for ( var flag in flags ) {
+			if ( !flag.lCase().startsWith( "installmode=" ) ) {
+				updatedFlags.append( flag );
+			}
+		}
+
+		updatedFlags.append( "installMode=" & arguments.installMode );
+		return packageCoordinates & "?" & updatedFlags.toList( "&" );
+	}
+
+	/**
+	 * Extracts a cached ZIP package archive to a destination directory.
+	 * @archivePath The ZIP archive to extract.
+	 * @destination The directory where the archive contents are written.
+	 */
+	private void function extractCachedPackage( required string archivePath, required string destination ) {
+		directoryCreate( arguments.destination );
+		var zipFile = createObject( "java", "java.util.zip.ZipFile" ).init( arguments.archivePath );
+		var entries = zipFile.entries();
+		while ( entries.hasMoreElements() ) {
+			var entry = entries.nextElement();
+			var outputPath = arguments.destination & "/" & entry.getName();
+			if ( entry.isDirectory() ) {
+				directoryCreate( outputPath, true );
+			} else {
+				var parentPath = getDirectoryFromPath( outputPath );
+				if ( !directoryExists( parentPath ) ) {
+					directoryCreate( parentPath, true );
+				}
+				var inputStream = zipFile.getInputStream( entry );
+				createObject( "java", "java.nio.file.Files" ).copy(
+					inputStream,
+					createObject( "java", "java.nio.file.Paths" ).get( outputPath ),
+					[ createObject( "java", "java.nio.file.StandardCopyOption" ).REPLACE_EXISTING ]
+				);
+				inputStream.close();
+			}
+		}
+		zipFile.close();
+	}
+
+	/**
+	 * Updates a cached package descriptor with dedicated-install defaults.
+	 * @cacheFolder The cached package directory containing box.json.
+	 */
+	private void function writeCachePackageDescriptor( required string cacheFolder ) {
+		var descriptorPath = arguments.cacheFolder & "/box.json";
+		var descriptor = deserializeJSON( fileRead( descriptorPath ) );
+		descriptor.createPackageDirectory = true;
+		descriptor.packageDirectory = replace( descriptor.slug, ":", "-", "all" );
+		descriptor.directory = "";
+		descriptor.installPathIsPackageDirectory = true;
+		descriptor.ignore = [];
+		descriptor.persistDependencies = true;
+		descriptor.maven = { "installMode" : "dedicated" };
+		JSONService.writeJSONFile( descriptorPath, descriptor );
+	}
+
+	/**
+	 * Determines whether a Maven version identifies one immutable concrete artifact.
+	 * @version The Maven version to evaluate.
+	 */
+	private boolean function isExactMavenVersion( required string version ) {
+		return !reFindNoCase( "[\[\]\(\)\*xX~^<>= ]", arguments.version )
+			&& reFindNoCase( "^[0-9]+(?:\.[0-9]+)*(?:[-+][0-9A-Za-z.-]+)?$", arguments.version );
+	}
+
+	/**
+	 * Finds the first JAR in a package directory or cached ZIP archive.
+	 * @packageDirectory The package directory or ZIP archive to inspect.
+	 */
+	private string function findJarInPackage( required string packageDirectory ) {
+		var jars = directoryList( arguments.packageDirectory, false, "path", "*.jar" );
+		if ( !jars.len() && fileExists( arguments.packageDirectory ) && arguments.packageDirectory.endsWith( ".zip" ) ) {
+			var zipFile = createObject( "java", "java.util.zip.ZipFile" ).init( arguments.packageDirectory );
+			var entries = zipFile.entries();
+			while ( entries.hasMoreElements() ) {
+				var entry = entries.nextElement();
+				if ( !entry.isDirectory() && entry.getName().endsWith( ".jar" ) ) {
+					var extractedJar = getTempDirectory() & "/maven-checksum-#createUUID()#.jar";
+					var inputStream = zipFile.getInputStream( entry );
+					var outputStream = createObject( "java", "java.nio.file.Files" ).newOutputStream(
+						createObject( "java", "java.nio.file.Paths" ).get( extractedJar )
+					);
+					inputStream.transferTo( outputStream );
+					inputStream.close();
+					outputStream.close();
+					zipFile.close();
+					return extractedJar;
+				}
+			}
+			zipFile.close();
+		}
+		if ( !jars.len() ) {
+			throw( message = "Maven artifact package contains no JAR: #arguments.packageDirectory#", type = "endpointException" );
+		}
+		return jars[ 1 ];
+	}
+
+	/**
+	 * Validates a JAR against the SHA-256 or SHA-1 checksum published by its Maven repository.
+	 * @jarPath The local JAR file to validate.
+	 * @jarURL The Maven repository URL for the JAR.
+	 */
+	private void function verifyArtifactChecksum( required string jarPath, required string jarURL ) {
+		if ( configService.getSetting( "offlineMode", false ) ) {
+			wirebox.getInstance( "interactiveJob" ).addWarnLog( "Offline mode is enabled; skipping Maven JAR hash validation for [#arguments.jarURL#]." );
+			return;
+		}
+
+		var checksumResult = getRemoteChecksum( arguments.jarURL & ".sha256", "SHA-256" );
+		var checksum = checksumResult.value;
+		var algorithm = "SHA-256";
+		if ( !checksum.len() ) {
+			checksumResult = getRemoteChecksum( arguments.jarURL & ".sha1", "SHA-1" );
+			checksum = checksumResult.value;
+			algorithm = "SHA-1";
+		}
+		if ( !checksum.len() ) {
+			if ( checksumResult.networkError ) {
+				wirebox.getInstance( "interactiveJob" ).addWarnLog( "Unable to reach the Maven checksum service; skipping JAR hash validation for [#arguments.jarURL#]." );
+				return;
+			}
+			throw( message = "Maven repository did not provide a SHA-256 or SHA-1 checksum for [#arguments.jarURL#]", type = "endpointException" );
+		}
+		wirebox.getInstance( "interactiveJob" ).addLog( "Verifying Maven JAR with #algorithm# checksum." );
+		var actualChecksum = hash( fileReadBinary( arguments.jarPath ), algorithm );
+		if ( compareNoCase( actualChecksum, checksum ) != 0 ) {
+			throw( message = "Maven checksum mismatch for [#arguments.jarURL#]. Expected [#checksum#], received [#actualChecksum#].", type = "endpointException" );
+		}
+	}
+
+	/**
+	 * Retrieves and validates a remote Maven checksum file.
+	 * @checksumURL The URL of the checksum file.
+	 * @algorithm The checksum algorithm expected from the file.
+	 */
+	private struct function getRemoteChecksum( required string checksumURL, required string algorithm ) {
+		var httpResult = "";
+		try {
+			cfhttp(
+				url = arguments.checksumURL,
+				method = "get",
+				redirect = true,
+				timeout = 20,
+				result = "httpResult"
+			);
+		} catch ( any e ) {
+			return { "value" : "", "networkError" : true };
+		}
+		if ( !httpResult.statusCode contains "200" ) {
+			return { "value" : "", "networkError" : false };
+		}
+		var checksum = trim( listFirst( trim( httpResult.fileContent ), " " & chr( 9 ) ) );
+		return {
+			"value"       : reFindNoCase( "^[0-9a-f]{#algorithm == 'SHA-256' ? 64 : 40#}$", checksum ) ? checksum : "",
+			"networkError": false
+		};
 	}
 
 	/**
@@ -959,7 +1267,8 @@ component
 	private string function getLocalM2JarPath(
 		required string groupId,
 		required string artifactId,
-		required string version
+		required string version,
+		string classifier = ""
 	){
 		try {
 			if ( !arguments.version.len() ) {
@@ -976,6 +1285,7 @@ component
 				& arguments.artifactId
 				& "-"
 				& arguments.version
+				& ( arguments.classifier.len() ? "-" & arguments.classifier : "" )
 				& ".jar";
 			if ( fileExists( m2JarPath ) ) {
 				return m2JarPath;
@@ -997,11 +1307,12 @@ component
 	private string function buildPackageFromLocalJar(
 		required string jarPath,
 		required string artifactId,
-		required string version
+		required string version,
+		string classifier = ""
 	){
 		var folderName = tempDir & "/" & "temp" & createUUID();
 		directoryCreate( folderName );
-		fileCopy( arguments.jarPath, folderName & "/" & arguments.artifactId & "-" & arguments.version & ".jar" );
+		fileCopy( arguments.jarPath, folderName & "/" & arguments.artifactId & "-" & arguments.version & ( arguments.classifier.len() ? "-" & arguments.classifier : "" ) & ".jar" );
 		return folderName;
 	}
 

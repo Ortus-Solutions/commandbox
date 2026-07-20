@@ -27,8 +27,10 @@ component {
 		}
 
 		var scriptLocation = executableService.createAlias( alias, commandText );
-		
-		if( len( location ) ) {
+		var normalizedLocation = fileSystemUtil.normalizeSlashes( location );
+		var normalizedScriptLocation = fileSystemUtil.normalizeSlashes( getCanonicalPath( scriptLocation ) );
+
+		if( len( location ) && normalizedLocation != normalizedScriptLocation ) {
 			print.redLine( "NOTE: Executable alias [#alias#] already exists at [#location#]!  Your module executable alias may not work!" );
 		}
 

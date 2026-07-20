@@ -268,6 +268,9 @@ component accessors="true" singleton {
 			// Now that we have resolved the directory where our package lives, read the box.json out of it.
 			var artifactDescriptor = readPackageDescriptor( tmpPath );
 			var ignorePatterns = ( isArray( artifactDescriptor.ignore ) ? artifactDescriptor.ignore : [] );
+			var installPathIsPackageDirectory = artifactDescriptor.keyExists( "installPathIsPackageDirectory" )
+				? artifactDescriptor.installPathIsPackageDirectory
+				: artifactDescriptor.createPackageDirectory;
 
 
 			// Assert: At this point we know what we're installing and we've acquired it, but we don't know where it will install to yet.
@@ -352,11 +355,13 @@ component accessors="true" singleton {
 				// Get the resolved installation path for this package
 				installDirectory = fileSystemUtil.resolvePath( containerBoxJSON.installPaths[ packageName ], arguments.packagePathRequestingInstallation );
 
-				// Use the last folder as the package directory in case the user wanted to override the default package name
-				packageDirectory = listLast( installDirectory, '/\' );
+				if( installPathIsPackageDirectory ) {
+					// Use the last folder as the package directory in case the user wanted to override the default package name
+					packageDirectory = listLast( installDirectory, '/\\' );
 
-				// Back up to the "container" folder.  The package directory will be added back below
-				installDirectory = listDeleteAt( installDirectory, listLen( installDirectory, '/\' ), '/\' );
+					// Back up to the "container" folder.  The package directory will be added back below
+					installDirectory = listDeleteAt( installDirectory, listLen( installDirectory, '/\\' ), '/\\' );
+				}
 			}
 
 			// Else, use directory in the target package's box.json if it exists
@@ -467,7 +472,9 @@ component accessors="true" singleton {
 					ignorePatterns.append( '/box.json' );
 				// This is a jar.
 				} else if( packageType == 'jars' ) {
-					installDirectory = arguments.packagePathRequestingInstallation & '/lib';
+					installDirectory = installPathIsPackageDirectory
+						? arguments.packagePathRequestingInstallation & '/lib'
+						: arguments.packagePathRequestingInstallation;
 				} else if( packageType == 'lucee-extensions' ) {
 					// This is making several assumption, but if the directory of the installation is a Lucee server, then
 					// assume the user wants this lex to be dropped in their server context's deploy folder.  To override this
@@ -524,7 +531,7 @@ component accessors="true" singleton {
 
 			// Some packages may just want to be dumped in their destination without being contained in a subfolder
 			// If the box.json had an explicit override for the install directory, then we're just going to use it directly
-			if( artifactDescriptor.createPackageDirectory || structKeyExists( containerBoxJSON.installPaths, packageName ) ) {
+			if( artifactDescriptor.createPackageDirectory || ( installPathIsPackageDirectory && structKeyExists( containerBoxJSON.installPaths, packageName ) ) ) {
 				installDirectory &= '/#packageDirectory#';
 			// If we're dumping in the root and the install dir is already another package then ignore box.json or it will overwrite the existing one
 			// If the directory wasn't already a package, still save so our box.json gets install paths added
@@ -565,7 +572,12 @@ component accessors="true" singleton {
 
 			// Check to see if package has already been installed.  This check can only be performed for packages that get installed in their own directory.
 			// OR if the install dir has a box.json that is the package being installed.
-			if( directoryExists( installDirectory ) && ( artifactDescriptor.createPackageDirectory || readPackageDescriptor( installDirectory ).slug == packageName ) ){
+			var packageOwnsInstallDirectory = installPathIsPackageDirectory || (
+				!structKeyExists( artifactDescriptor, "createPackageDirectory" )
+				&& !structKeyExists( containerBoxJSON.installPaths, packageName )
+				&& readPackageDescriptor( installDirectory ).slug == packageName
+			);
+			if( directoryExists( installDirectory ) && packageOwnsInstallDirectory ){
 				var uninstallFirst = false;
 
 				// Make sure the currently installed version is older than what's being requested.  If there's a new version, install it anyway.
@@ -724,7 +736,9 @@ component accessors="true" singleton {
 		// Loop over this package's dependencies
 		for( var dependency in dependencies ) {
 			var isDev = structKeyExists( artifactDescriptor.devDependencies, dependency );
-			var isSaving = ( arguments.save || arguments.saveDev );
+			var isSaving = ( arguments.save || arguments.saveDev ) && (
+				!artifactDescriptor.keyExists( "persistDependencies" ) || artifactDescriptor.persistDependencies
+			);
 
 			var detail = dependencies[ dependency ];
 			var endpointName = 'forgebox';
@@ -761,6 +775,9 @@ component accessors="true" singleton {
 				trustScripts = arguments.trustScripts,
 				lockFile = arguments.lockFile.isEmpty() ? {} : ( isNull( packageName ) || !arguments.lockFile.dependencies.keyExists( packageName ) ? arguments.lockFile : arguments.lockFile.dependencies[ packageName ] )
 			};
+			if( !artifactDescriptor.createPackageDirectory && artifactDescriptor.installPaths.keyExists( dependency ) ) {
+				params.directory = fileSystemUtil.resolvePath( artifactDescriptor.installPaths[ dependency ], installDirectory );
+			}
 
 			// Recursively install them
 			installPackage( argumentCollection = params );
@@ -1394,8 +1411,10 @@ component accessors="true" singleton {
 			if( structKeyExists( arguments.installPaths, dependency ) ) {
 
 				var fullPackageInstallPath = fileSystemUtil.resolvePath( arguments.installPaths[ dependency ], arguments.basePath );
+				var normalizedBasePath = fileSystemUtil.normalizeSlashes( fileSystemUtil.resolvePath( arguments.basePath ) );
+				var normalizedInstallPath = fileSystemUtil.normalizeSlashes( fullPackageInstallPath );
 
-				if( directoryExists( fullPackageInstallPath ) ) {
+				if( normalizedInstallPath != normalizedBasePath && directoryExists( fullPackageInstallPath ) ) {
 					var boxJSON = readPackageDescriptor( fullPackageInstallPath );
 					thisDeps[ dependency ][ 'name'  ] = boxJSON.name;
 					thisDeps[ dependency ][ 'shortDescription'  ] = boxJSON.shortDescription;

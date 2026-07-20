@@ -64,6 +64,8 @@ component accessors="true" singleton {
 			// Maven endpoints
 			'endpoints.maven',
 			'endpoints.maven.repositories',
+			'endpoints.maven.installMode',
+			'endpoints.maven.installDirectory',
 			// Servers
 			'server',
 			'server.singleServerMode',

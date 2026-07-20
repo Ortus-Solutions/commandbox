@@ -51,6 +51,8 @@
 
     },
     "maven":{
+		"installMode":"",
+		"installDirectory":"",
         "repositories":{
 
         }

@@ -27,15 +27,18 @@
         "executable":"box"
     },
     "dependencies":{
-        "bx-compat-cfml":"^1.34.0+50",
-        "bx-esapi":"^1.9.0+13",
-        "bx-unsafe-evaluate":"^1.0.0+2",
-        "bx-wddx":"^1.5.5+12"
+        "org.jline:jline":"maven:org.jline:jline:3.21.0",
+        "org.fusesource.jansi:jansi":"maven:org.fusesource.jansi:jansi:2.4.1",
+        "org.eclipse.jgit:org.eclipse.jgit":"maven:org.eclipse.jgit:org.eclipse.jgit:5.13.3.202401111512-r?exclude=org.slf4j:slf4j-api,org.apache.httpcomponents:httpclient",
+        "org.eclipse.jgit:org.eclipse.jgit.ssh.jsch":"maven:org.eclipse.jgit:org.eclipse.jgit.ssh.jsch:5.13.3.202401111512-r?exclude=org.slf4j:slf4j-api,org.apache.httpcomponents:httpclient",
+        "com.beust:jcommander":"maven:com.beust:jcommander:1.47",
+        "net.minidev:json-smart-mini":"maven:net.minidev:json-smart-mini:1.3.2?transitive=false"
     },
-    "installPaths":{
-        "bx-compat-cfml":"modules/bx-compat-cfml/",
-        "bx-esapi":"modules/bx-esapi/",
-        "bx-unsafe-evaluate":"modules/bx-unsafe-evaluate/",
-        "bx-wddx":"modules/bx-wddx/"
+    "maven":{
+        "installMode":"shared",
+        "installDirectory":"libs",
+        "repositories":{
+            "jgit":"https://repo.eclipse.org/content/groups/releases/"
+        }
     }
 }
