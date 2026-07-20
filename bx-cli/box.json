@@ -1,0 +1,43 @@
+{
+    "name":"BoxLang CommandBox Module",
+    "version":"7.0.12-alpha",
+    "author":"Ortus Solutions",
+    "homepage":"https://commandbox.ortusbooks.com/",
+    "documentation":"https://commandbox.ortusbooks.com/",
+    "repository":{
+        "type":"git",
+        "URL":"https://github.com/Ortus-Solutions/commandbox"
+    },
+    "slug":"bx-cli",
+    "shortDescription":"CommandBox CLI for BoxLang",
+    "type":"boxlang-modules",
+    "private":false,
+    "license":[
+        {
+            "type":"Apache-2.0",
+            "URL":"https://www.apache.org/licenses/LICENSE-2.0"
+        }
+    ],
+    "ignores":[
+        "/libs/jansi"
+    ],
+    "boxlang":{
+        "moduleName":"cli",
+        "minimumVersion":"1.10.0",
+        "executable":"box"
+    },
+    "dependencies":{
+        "org.jline:jline":"maven:org.jline:jline:3.21.0",
+        "org.fusesource.jansi:jansi":"maven:org.fusesource.jansi:jansi:2.4.1",
+        "org.eclipse.jgit:org.eclipse.jgit":"maven:org.eclipse.jgit:org.eclipse.jgit:5.13.3.202401111512-r?exclude=org.slf4j:slf4j-api,org.apache.httpcomponents:httpclient",
+        "org.eclipse.jgit:org.eclipse.jgit.ssh.jsch":"maven:org.eclipse.jgit:org.eclipse.jgit.ssh.jsch:5.13.3.202401111512-r?exclude=org.slf4j:slf4j-api,org.apache.httpcomponents:httpclient",
+        "com.beust:jcommander":"maven:com.beust:jcommander:1.47"
+    },
+    "maven":{
+        "installMode":"shared",
+        "installDirectory":"libs",
+        "repositories":{
+            "jgit":"https://repo.eclipse.org/content/groups/releases/"
+        }
+    }
+}

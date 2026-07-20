@@ -23,7 +23,7 @@ component {
 
 		var logFilePath = expandpath( '/commandbox-home' ) & "/logs/commandbox.log";
 
-		print.line( logFilePath );
+		print.text( logFilePath );
 
 	}
 

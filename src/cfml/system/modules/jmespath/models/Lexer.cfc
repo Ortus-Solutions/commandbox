@@ -123,7 +123,7 @@ component  singleton displayname="Lexer" {
                 tokens.append({type: TOK_LITERAL, value: identifier, start: start});
             } else if ( lookupValue(state,stream)== '`') {
                 start = state._current;
-                literal = _consumeLiteral(stream,state);
+                var literal = _consumeLiteral(stream,state);
                 tokens.append({type: TOK_LITERAL, value: literal, start: start});
             } else if (operatorStartToken.keyExists( lookupValue(state,stream) )) {
                 tokens.append(_consumeOperator(stream,state));
@@ -288,7 +288,7 @@ component  singleton displayname="Lexer" {
         var literal;
         while (lookupValue(state,stream)!= '`') {
             // You can escape a literal char or you can escape the escape.
-            current = state._current;
+            var current = state._current;
             if (
                 stream[current] == '\' && (
                     stream[current + 1] == '\' ||
@@ -301,7 +301,7 @@ component  singleton displayname="Lexer" {
             }
             state._current = current;
         }
-        literalString = lTrim(slice(stream, start, state._current));
+        var literalString = lTrim(slice(stream, start, state._current));
         literalString = replace(literalString,'\`', '`', 'all');
 
 
@@ -352,7 +352,7 @@ component  singleton displayname="Lexer" {
      */
     private function parseJson(token) {
         try {
-            value = deserializeJSON(token);
+           var value = deserializeJSON(token);
         } catch (any e) {
             //echo(token & " -> Error: " & e.message & "<br/>");
             //return token;

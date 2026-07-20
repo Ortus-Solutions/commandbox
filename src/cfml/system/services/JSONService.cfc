@@ -122,7 +122,7 @@ component accessors="true" singleton {
 						} else {
 							mergeData( targetProperty, complexValue );
 						}
-						results.append( '#propertyValue# appended to #prop#' );
+						results.append( '#propertyValue.toString()# appended to #prop#' );
 						continue;
 					}
 
@@ -141,7 +141,7 @@ component accessors="true" singleton {
 				arrays.each( (a)=>evaluate( 'JSON#a# = JSON#a# ?: []' ) );
 				evaluate( '#fullPropertyName# = propertyValue' );
 			}
-			results.append( 'Set #prop# = #propertyValue#' );
+			results.append( 'Set #prop# = #propertyValue.toString()#' );
 		}
 		return results;
 	}
@@ -168,7 +168,7 @@ component accessors="true" singleton {
 
 			var fullPropertyName = 'arguments.JSON' & toBracketNotation( arguments.property );
 			if( !isDefined( fullPropertyName ) ) {
-				
+
 				throw( message='#arguments.property# does not exist.', type="JSONException");
 			}
 			// Get the array reference
@@ -187,7 +187,7 @@ component accessors="true" singleton {
 				last = last.right(-1).left(-1);
 				last = parser.unwrapQuotes( trim( last ) )
 			}
-			
+
 			// path to containing struct
 			var everythingBut = propArray.slice( 1, propArray.len()-1 );
 
@@ -215,7 +215,7 @@ component accessors="true" singleton {
 
 
 	// Convert foo.bar-baz[1] to ['foo']['bar-baz'][1]
-	private function toBracketNotation( required any property ) {
+	public function toBracketNotation( required any property ) {
 		if( isSimpleValue( arguments.property ) ) {
 			arguments.property = tokenizeProp( arguments.property );
 		}
@@ -231,15 +231,15 @@ component accessors="true" singleton {
 					fullPropertyName &= '[ "#innerItem#" ]';
 				}
 			} else {
-				item = parser.unwrapQuotes( trim( item ) );
+				var item = parser.unwrapQuotes( trim( item ) );
 				fullPropertyName &= '[ "#item#" ]';
 			}
 		}
 		return fullPropertyName;
 	}
-	
+
 	function tokenizeProp( required string str ) {
-		
+
 		// Holds token
 		var tokens = [];
 		// Used to build up each token
@@ -277,14 +277,14 @@ component accessors="true" singleton {
 			if( inBrackets ) {
 
 				token &= char;
-				
+
 				if( char == ']' ) {
 					inBrackets = false;
 				}
 				prevChar = char;
 				continue;
 			}
-			
+
 			// period or break in brackets means break in token
 			if( ( char == '.' && !inBrackets ) || char == '[' ) {
 
@@ -292,7 +292,7 @@ component accessors="true" singleton {
 				if( ( char == '[' ) ) {
 					inBrackets = true;
 				}
-				
+
 				if( len( token ) ) {
 					tokens.append( token );
 					token = '';
@@ -323,7 +323,7 @@ component accessors="true" singleton {
 		if( len( token ) ) {
 			tokens.append( token );
 		}
-		
+
 		return tokens;
 	}
 
@@ -364,7 +364,15 @@ component accessors="true" singleton {
 
 	// Recursive function to crawl struct and create a string that represents each property.
 	function addProp( props, prop, safeProp, targetStruct ) {
-		var propValue = ( len( prop ) ? evaluate( 'targetStruct#safeProp#' ) : targetStruct );
+		if( len( prop ) ) {
+			// Handle null key
+			if( !isDefined( 'targetStruct#safeProp#' ) ) {
+				return props;
+			}
+			var propValue = evaluate( 'targetStruct#safeProp#' )
+		} else {
+			var propValue = targetStruct;
+		}
 
 		if( isStruct( propValue ) ) {
 			// Add all of this struct's keys
@@ -403,8 +411,10 @@ component accessors="true" singleton {
 	* @path.hint The file path to write to
 	* @json.hint A string containing JSON, or a complex value that can be serialized to JSON
 	* @locking.hint Set to true to have file system access wrapped in a lock
+	*
+	* @returns True if the file was written, false if there was no change in the JSON
 	*/
-	function writeJSONFile( required string path, required any json, boolean locking = false ) {
+	boolean function writeJSONFile( required string path, required any json, boolean locking = false ) {
 		var sortKeysIsSet = configService.settingExists( 'JSON.sortKeys' );
 		var sortKeys = configService.getSetting( 'JSON.sortKeys', 'textnocase' );
 		var oldJSON = '';
@@ -423,7 +433,7 @@ component accessors="true" singleton {
 		}
 
 		if ( oldJSON == newJSON ) {
-			return;
+			return false;
 		}
 
 		// ensure we are writing to an existing directory
@@ -434,6 +444,7 @@ component accessors="true" singleton {
 		} else {
 			fileWrite( path, newJSON );
 		}
+		return true;
 	}
 
 	/**
@@ -452,7 +463,7 @@ component accessors="true" singleton {
 				if ( obj.keyList() != obj.keyArray().sort( sortKeys ).toList() ) {
 					return false;
 				}
-				return obj.every( ( k, v ) => isSorted( v ) );
+				return obj.every( ( k, v ) => isNull( v ) || isSorted( v ) );
 			}
 
 			if ( isArray( obj ) ) {

@@ -32,7 +32,7 @@ component aliases='unlink' {
 		var packageDirectory=getCWD();
 		var commandBoxCoreLinked = false;
 		if( !arguments.keyExists( 'moduleDirectory' ) ) {
-			arguments.moduleDirectory = expandPath( '/commandbox/modules' );
+			arguments.moduleDirectory = expandPath( '/commandbox-home/cfml/modules' );
 			commandBoxCoreLinked = true;
 		} else {
 			arguments.moduleDirectory = resolvePath( arguments.moduleDirectory );

@@ -21,6 +21,22 @@ component accessors="true" singleton {
 		return this;
 	}
 
+	private boolean function hasOpenQuotes( required string command ) {
+        var charArray = arguments.command.toCharArray();
+        var isQuoteOpen = false;
+        var quoteType = "";
+        for ( var char in charArray ) {
+            if (!isQuoteOpen && ( char == "'" || char == '"' ) ) {
+                isQuoteOpen = true;
+                quoteType = char;
+            }
+            else if ( isQuoteOpen && char == quoteType ) {
+                isQuoteOpen = false;
+            }
+        }
+        return isQuoteOpen;
+    }
+
 	/**
 	* Clears existing command lines and signal we are starting a new command.
 	**/
@@ -61,21 +77,31 @@ component accessors="true" singleton {
 		}
 	}
 
+
 	/**
 	* Returns true if the command is complete and is ready to be executed.
 	**/
 	function isCommandComplete() {
-		var cfml = getCommandAsString();
-		cfml = reReplaceNoCase( cfml, "[""'].*[""']", """""", "all" );
+		var commandString = getCommandAsString();
+		var cfml = reReplaceNoCase( commandString, "[""'].*[""']", """""", "all" );
 
 		var numberOfCurlyBrackets = reMatchNoCase( "[{}]", cfml ).len();
 		var numberOfParenthesis = reMatchNoCase( "[\(\)]", cfml ).len();
-		//var numberOfDoubleQuotations = reMatchNoCase( """", cfml ).len();
-		//var numberOfSingleQuotations = reMatchNoCase( "'", cfml ).len();
+		var numberOfQuotes = reMatchNoCase( "[""']", commandString ).len();
+		var numberOfBrackets = reMatchNoCase( "[\[\]]", cfml ).len();
 		var numberOfNonTerminatingEqualSigns = reMatchNoCase( "=\s*$", cfml ).len();
 		var numberOfMultilineCommentBlocks = reMatchNoCase( "^\s*/\*|\*/", cfml ).len();
 		var numberOfHashSigns = reMatchNoCase( "##", cfml ).len();
-		if ( numberOfCurlyBrackets % 2 == 0 && numberOfParenthesis % 2 == 0 && numberOfNonTerminatingEqualSigns == 0 && numberOfHashSigns % 2 == 0 && numberOfMultilineCommentBlocks % 2 == 0 ) {
+		
+		if (
+			numberOfBrackets % 2 == 0
+			&& numberOfCurlyBrackets % 2 == 0
+			&& numberOfParenthesis % 2 == 0
+			&& numberOfNonTerminatingEqualSigns == 0
+			&& numberOfHashSigns % 2 == 0
+			&& numberOfMultilineCommentBlocks % 2 == 0
+			&& ( numberOfQuotes == 0 || !hasOpenQuotes( commandString ) )
+		) {
 			return true;
 		}
 		return false;
@@ -117,7 +143,7 @@ component accessors="true" singleton {
 			return '[EMPTY STRING]';
 		// XML doc OR XML String
 		} else if( isXML( result ) ) {
-			return formatterUtil.formatXML( result );			
+			return formatterUtil.formatXML( result );
 		// string
 		} else if( isSimpleValue( result ) ) {
 
@@ -127,12 +153,19 @@ component accessors="true" singleton {
 					return formatterUtil.formatJson( json=result, ANSIColors=JSONService.getANSIColors() );
 				}
 			}
-			
+
 			return result;
 
 		// CFC, possibly Java object too (though I think that's a bug)
 		} else if( isObject( result ) ) {
-			return '[Object #getMetaData( result ).name#]';
+			var md = getMetaData( result )
+			// Check for class is if the object is a static refence to a class and not an instance
+			// structKeyExists() is a workaround for this: https://luceeserver.atlassian.net/browse/LDEV-4259
+			if( md.getClass().getName() == 'java.lang.Class' || !structKeyExists( md, 'name' ) ) {
+				return '[Class #result.getClass().getName()#]';
+			} else {
+				return '[Object #md.name#]';
+			}
 		// Serializable types
 		} else if( isArray( result ) || isStruct( result ) || isQuery( result ) ) {
 			result = serializeJSON( result, 'struct' );

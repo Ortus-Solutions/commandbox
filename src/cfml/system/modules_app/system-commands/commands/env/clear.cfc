@@ -17,7 +17,7 @@ component  {
 	function run( required string name )  {
 		var env = systemSettings.getCurrentEnvironment( true );
 		env.delete( name, false );
-		print.line( '#name# cleared' );
+		print.text( '#name# cleared' );
 	}
 
 	function nameComplete() {

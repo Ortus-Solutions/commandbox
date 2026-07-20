@@ -38,7 +38,7 @@ component singleton{
 			var LevelClass = createObject( 'java', 'java.util.logging.Level' );
 			var consoleHandler = createObject( 'java', 'java.util.logging.ConsoleHandler' );
 			consoleHandler.setLevel( LevelClass.FINE );
-			consoleHandler.setFormatter( createObject( 'java', 'java.util.logging.SimpleFormatter' ) );
+			consoleHandler.setFormatter( createObject( 'java', 'java.util.logging.SimpleFormatter' ).init() );
 			var jlineLogger = createObject( 'java', 'java.util.logging.Logger' ).getLogger( 'org.jline' );
 	        jlineLogger.setLevel( LevelClass.FINE );
 	        jlineLogger.addHandler( consoleHandler );
@@ -54,7 +54,7 @@ component singleton{
 
 		// Work around for lockdown STIGs on govt machines.
 		// By default JANSI tries to write files into a locked down folder under appData
-		var JANSI_path = expandPath( '/commandbox-home/lib/jansi' );
+		var JANSI_path = expandPath( '/bxcliRoot/libs/jansi' );
 		if( !directoryExists( JANSI_path ) ){
 			directoryCreate( JANSI_path );
 		}
@@ -92,11 +92,10 @@ component singleton{
 	        .paused( true )
 			.build();
 
-		var shellVariables = {
-			// The default file for history is set into the shell here though it's used by the DefaultHistory class
-			'#LineReaderClass.HISTORY_FILE#' : commandHistoryFile,
-			'#LineReaderClass.BLINK_MATCHING_PAREN#' : 0
-		};
+		var shellVariables = createObject( "java", "java.util.HashMap" ).init();
+		// The default file for history is set into the shell here though it's used by the DefaultHistory class
+		shellVariables.put('#LineReaderClass.HISTORY_FILE#', commandHistoryFile );
+		shellVariables.put( '#LineReaderClass.BLINK_MATCHING_PAREN#', 0 );
 
 		if( configService.getSetting( 'tabCompleteInline', false ) ) {
 			shellVariables.append( {

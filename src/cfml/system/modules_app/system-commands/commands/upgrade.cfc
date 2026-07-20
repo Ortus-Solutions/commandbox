@@ -6,7 +6,7 @@
  * {code}
  * .
  * Use the "latest" parameter to download the bleeding edge version
- * .x
+ * .
  * {code:bash}
  * upgrade --latest
  * {code}
@@ -34,9 +34,12 @@ component {
 	 * @force.hint Force the update even if the version on the server is the same as locally
 	 **/
 	function run( boolean latest, boolean force=false ) {
+		print.line( "The upgrade command doesn't curently work with bx-cli" );
+		return;
+		
 
 		if( configService.getSetting( 'offlineMode', false ) ) {
-			error( 'Can''t check for updates, CommandBox is in offline mode.  Go online with [config set offlineMode=false].' );	
+			error( 'Can''t check for updates, CommandBox is in offline mode.  Go online with [config set offlineMode=false].' );
 		}
 
 		if( isNull( arguments.latest ) ) {
@@ -68,7 +71,14 @@ component {
 			proxyPort="#ConfigService.getSetting( 'proxy.port', 80 )#"
 			proxyUser="#ConfigService.getSetting( 'proxy.user', '' )#"
 			proxyPassword="#ConfigService.getSetting( 'proxy.password', '' )#"
-			result="local.boxRepoResult";
+			result="local.boxRepoResult" {
+				cfhttpparam(name="CLIID", type="url", value="#server.boxlang.boxlangId#");
+				cfhttpparam(name="CLIVersion", type="url", value="#shell.getVersion()#");
+				cfhttpparam(name="os", type="url", value="#server.system.properties['os.name']#");
+				cfhttpparam(name="jre", type="url", value="#server.java.version#");
+				cfhttpparam(name="APIToken", type="url", value="#ConfigService.getSetting( 'endpoints.forgebox.APIToken', '' )#");
+			}
+
 
 		http
 			url="#loaderRepoURL#"
@@ -78,7 +88,14 @@ component {
 			proxyPort="#ConfigService.getSetting( 'proxy.port', 80 )#"
 			proxyUser="#ConfigService.getSetting( 'proxy.user', '' )#"
 			proxyPassword="#ConfigService.getSetting( 'proxy.password', '' )#"
-			result="local.loaderRepoResult";
+			result="local.loaderRepoResult"{
+				cfhttpparam(name="CLIID", type="url", value="#server.boxlang.boxlangId#");
+				cfhttpparam(name="CLIVersion", type="url", value="#shell.getVersion()#");
+				cfhttpparam(name="os", type="url", value="#server.system.properties['os.name']#");
+				cfhttpparam(name="jre", type="url", value="#server.java.version#");
+				cfhttpparam(name="APIToken", type="url", value="#ConfigService.getSetting( 'endpoints.forgebox.APIToken', '' )#");
+			}
+
 
 		// Do some error checking
 		if( !local.boxRepoResult.statusCode contains "200" || !fileExists( '#temp#/box-repo.json' ) ||
@@ -164,6 +181,33 @@ component {
 				}
 			);
 
+			// prepare locations
+			var libsfileURL 	= '#thisArtifactsURL#ortussolutions/commandbox/#repoversionshort#/commandbox-libs#repoVersionShort#.zip';
+			var libsfilePath 	= '#temp#/commandbox-libs-#repoVersion#.zip';
+
+			// Download the update
+			print.greenLine( "Downloading #libsfileUrl#..." ).toConsole();
+			progressableDownloader.download(
+				libsfileURL,
+				libsfilePath,
+				function( status ) {
+					progressBar.update( argumentCollection = status );
+				}
+			);
+
+			print.greenLine( "Unzipping #libsfilePath#..." ).toConsole();
+			var newLibs = '#variables.homedir#/lib-new';
+			if( directoryExists( newLibs ) ) {
+				directoryDelete( newLibs, true );
+			}
+			directoryCreate( newLibs, true, true );
+			zip
+				action="unzip"
+				file="#libsfilePath#"
+				destination="#variables.homedir#/lib-new"
+				overwrite=true;
+			fileWrite( "#variables.homedir#/lib-new/version.properties", "cli.version=#LoaderVersion#" )
+
 			wirebox.getCacheBox().getCache( 'metadataCache' ).clearAll();
 
 			// Tell user what's going on
@@ -174,15 +218,20 @@ component {
 				destination="#variables.homedir#/cfml"
 				overwrite=true;
 
+			print.greenLine( "Cleaning up..." ).toConsole();
+			fileDelete( filePath );
+			fileDelete( libsfilePath );
+
 			// Notify the user
-			print
-				.greenLine( "Update applied successfully, installed v#repoVersion#" )
+			print.greenLine( "Update applied successfully, installed v#repoVersion#" )
 				.redLine( "CommandBox needs to exit to complete the installation." )
 				.yellowLine( "This message will self-destruct in 10 seconds" )
 				.toConsole();
 
-			// Give them a chance to read it.
-			sleep( 10000 );
+			if( !force ) {
+				// Give them a chance to read it, unless we're skipping user prompt (probably automated)
+				sleep( 10000 );
+			}
 
 			// Stop executing.  Since the unzipping possibly replaced .cfm files that were
 			// also cached in memory, there's no good way we've found to be able to reload and keep going.

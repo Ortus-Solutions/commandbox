@@ -122,7 +122,7 @@ component singleton accessors=true {
 
 			if( topLevel ) {
 			 	// Was the task canceled (ctrl-C)
-			 	if( e.getPageException().getRootCause().getClass().getName() == 'java.lang.InterruptedException'
+			 	if( (!isNull( e.getCause() ) && e.getCause().getClass().getName() == 'java.lang.InterruptedException')
 					|| e.type.toString() == 'UserInterruptException'
 					|| e.message == 'UserInterruptException'
 					|| e.type.toString() == 'EndOfFileException' ) {
@@ -135,8 +135,19 @@ component singleton accessors=true {
 
 			rethrow;
 
+		 } catch( any e ) {
+				var result = taskCFC.getResult();
+				// Add the command output thus far into the exception
+				var originalInfo = '';
+				if( len( result ) ) {
+					originalInfo = e.extendedInfo
+					e.extendedInfo=serializeJSON( {
+						'extendedInfo'=originalInfo,
+						'commandOutput'=result
+					} );
+				}
+				throw e;
 		 } finally {
-
 			// Set task exit code into the shell
 		 	if( !isNull( local.returnedExitCode ) && isSimpleValue( local.returnedExitCode ) ) {
 		 		var finalExitCode = val( local.returnedExitCode );
@@ -154,15 +165,6 @@ component singleton accessors=true {
 				invokeLifecycleEvent( taskCFC, 'onComplete', { target:target, taskargs:taskargs } );
 			}
 
-			if( finalExitCode != 0 ) {
-				// Dump out anything the task had printed so far
-				var result = taskCFC.getResult();
-				taskCFC.getPrinter().clear();
-				if( len( result ) ){
-					shell.printString( result );
-				}
-			}
-
 		 }
 
 		// If the previous Task failed
@@ -171,13 +173,15 @@ component singleton accessors=true {
 			ConsolePainter.forceStop();
 			shell.printString( chr( 10 ) );
 
-			// Dump out anything the task had printed so far
 			var result = taskCFC.getResult();
-			if( len( result ) ){
-				shell.printString( result & cr );
+			var extendedInfo='';
+			if( len( result ) ) {
+				extendedInfo=serializeJSON( {
+					'extendedInfo'='',
+					'commandOutput'=result
+				} );
 			}
-
-			throw( message='Task returned failing exit code (#finalExitCode#)', detail='Failing Task: #taskFile# #target#', type="commandException", errorCode=finalExitCode );
+			throw( message='Task returned failing exit code (#finalExitCode#)', detail='Failing Task: #taskFile# #target#', type="commandException", errorCode=finalExitCode, extendedInfo=extendedInfo );
 		}
 
 
@@ -231,23 +235,36 @@ component singleton accessors=true {
 
 		// Create this Task CFC
 		try {
+			var taskCaching = ConfigService.getSetting( 'taskCaching', false );
 			var mappingName = "task-" & relTaskFile;
 
-			if( !ConfigService.getSetting( 'taskCaching', false ) &&  wirebox.getBinder().mappingExists( mappingName ) ) {
-				// Clear it so metadata can be refreshed.
-				wirebox.getBinder().unMap( mappingName );
+			// If we're not caching tasks, single thread this whole block so we don't get mapping undefined errors
+			// if running the same task concurrently.
+			lock name='create-#mappingName#' type='#taskCaching ? 'readonly' : 'exclusive'#' timeout=20 {
+
+				if( !taskCaching &&  wirebox.getBinder().mappingExists( mappingName ) ) {
+					// Clear it so metadata can be refreshed.
+					wirebox.getBinder().unMap( mappingName );
+				}
+
+				// Check if task mapped?
+				if( !wirebox.getBinder().mappingExists( mappingName ) ){
+					// Double check lock to prevent two threads from both creating the mapping
+					// This lock will be effectivley moot if task caching is disabled since we'll already be in an
+					// exclusive lock, but will be neccessary if task caching is on
+					lock name='map-#mappingName#' type='exclusive' timeout=20 {
+						if( !wirebox.getBinder().mappingExists( mappingName ) ){
+							// feed this task to wirebox with virtual inheritance
+							wirebox.registerNewInstance( name=mappingName, instancePath=relTaskFile )
+								.setVirtualInheritance( "commandbox.system.BaseTask" );
+						}
+					}
+				}
+
+				// retrieve, build and wire from wirebox
+				return wireBox.getInstance( mappingName );
+
 			}
-
-			// Check if task mapped?
-			if( !wirebox.getBinder().mappingExists( mappingName ) ){
-				// feed this task to wirebox with virtual inheritance
-				wirebox.registerNewInstance( name=mappingName, instancePath=relTaskFile )
-					.setVirtualInheritance( "commandbox.system.BaseTask" );
-			}
-
-			// retrieve, build and wire from wirebox
-			return wireBox.getInstance( mappingName );
-
 		// This will catch nasty parse errors and tell us where they happened
 		} catch( any e ){
 			// Log the full exception with stack trace

@@ -18,7 +18,7 @@ component {
 	 * @text.hint The text to output
 	 **/
 	function run( String text="" )  {
-		print.line( arguments.text );
+		print.text( arguments.text );
 	}
 
 }

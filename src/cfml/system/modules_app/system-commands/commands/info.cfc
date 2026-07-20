@@ -18,29 +18,16 @@ component aliases="about" {
 		var width = 100;
 
 		var shellVersion = shell.getVersion();
-		var CFMLEngine = server.coldfusion.productName;
-		if( structKeyExists( server, CFMLEngine ) ) {
-			var CFMLVersion = '#server[ CFMLEngine ].version# #server[ CFMLEngine ].state# (#server[ CFMLEngine ].versionName#)';
-		} else {
-			var CFMLVersion = server.coldfusion.productVersion;
-		}
+		var CFMLEngine = "BoxLang";
+		var CFMLVersion = server.boxlang.version;
 		var javaVersion = '#server.java.version# (#server.java.vendor#)';
 		var commandboxHome = expandpath( '/commandbox-home' );
+    var bxCLIHome = createObject( "java", "java.lang.System" ).getProperty( "cfml.cli.moduleRoot" );
 		var binaryPath = getSystemSetting( 'java.class.path', 'Unknown' );
 		var userName = getSystemSetting( 'user.name', 'Unknown' );
 		var javaBinary = fileSystemUtil.getJREExecutable();
 		var JLineTerminal = shell.getReader().getTerminal().getClass().getName();
-		var runwarVersion = 'Unknown';
-		try {
-			var runwarClass = createObjecT( 'java', 'runwar.Server' );
-			runwarVersion = runwarClass.getVersion();
-
-			var runwarJarPath = createObject( "java", "java.io.File" )
-				.init( runwarClass.getClass().getProtectionDomain().getCodeSource().getLocation().toURI().getSchemeSpecificPart() ).getAbsolutePath();
-
-			runwarVersion &= ' (#runwarJarPath#)'
-		}catch( any e ) {}
-
+		
     if( JSON ) {
       print.line( {
         'CLIVersion' : shellVersion,
@@ -53,7 +40,7 @@ component aliases="about" {
         'JavaPath' : javaBinary,
         'OSUsername' : userName,
         'JLineTerminal' : JLineTerminal,
-        'RunwarVersion' : runwarVersion
+        'BXCLIHome' : bxCLIHome
       } );
       return;
     }
@@ -70,13 +57,13 @@ component aliases="about" {
 		print.green( '*' ); print.cyan( '  CommandBox Authors: ' ); print.text( 'Brad Wood, Luis Majano, Denny Valiant                                       ' );	print.greenLine( '*' );
 		print.green( '*' ); print.cyan( '  CommandBox Binary   ' ); print.text( '#binaryPath##repeatString( ' ', max( 0, width - 24 - len( binaryPath ) ) )#' );	print.greenLine( '*' );
 		print.green( '*' ); print.cyan( '  CommandBox Home     ' ); print.text( '#commandboxHome##repeatString( ' ', max( 0, width - 24 - len( commandboxHome ) ) )#' );	print.greenLine( '*' );
-		print.green( '*' ); print.cyan( '  CFML Engine:        ' ); print.text( '#CFMLEngine##repeatString( ' ', max( 0, width - 24 - len( CFMLEngine ) ) )#' );		print.greenLine( '*' );
-		print.green( '*' ); print.cyan( '  CFML Version:       ' ); print.text( '#CFMLVersion##repeatString( ' ', max( 0, width - 24 - len( CFMLVersion ) ) )#' );	print.greenLine( '*' );
+    print.green( '*' ); print.cyan( '  bx-cli Home         ' ); print.text( '#bxCLIHome##repeatString( ' ', max( 0, width - 24 - len( bxCLIHome ) ) )#' );	print.greenLine( '*' );
+		print.green( '*' ); print.cyan( '  Engine:             ' ); print.text( '#CFMLEngine##repeatString( ' ', max( 0, width - 24 - len( CFMLEngine ) ) )#' );		print.greenLine( '*' );
+		print.green( '*' ); print.cyan( '  Version:            ' ); print.text( '#CFMLVersion##repeatString( ' ', max( 0, width - 24 - len( CFMLVersion ) ) )#' );	print.greenLine( '*' );
 		print.green( '*' ); print.cyan( '  Java Version:       ' ); print.text( '#javaVersion##repeatString( ' ', max( 0, width - 24 - len( javaVersion ) ) )#' );	print.greenLine( '*' );
 		print.green( '*' ); print.cyan( '  Java Path:          ' ); print.text( '#javaBinary##repeatString( ' ', max( 0, width - 24 - len( javaBinary ) ) )#' );	print.greenLine( '*' );
 		print.green( '*' ); print.cyan( '  OS Username         ' ); print.text( '#userName##repeatString( ' ', max( 0, width - 24 - len( userName ) ) )#' );	print.greenLine( '*' );
 		print.green( '*' ); print.cyan( '  JLine Terminal      ' ); print.text( '#JLineTerminal##repeatString( ' ', max( 0, width - 24 - len( JLineTerminal ) ) )#' );	print.greenLine( '*' );
-		print.green( '*' ); print.cyan( '  Runwar Version      ' ); print.text( '#runwarVersion##repeatString( ' ', max( 0, width - 24 - len( runwarVersion ) ) )#' );	print.greenLine( '*' );
 		print.greenLine( '*                                                                                                  *' );
 		print.greenLine( '*                                                                                                  *' );
 		print.greenLine( '****************************************************************************************************' );

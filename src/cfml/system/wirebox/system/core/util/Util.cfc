@@ -1,5 +1,5 @@
 ﻿/**
- * The main ColdBox utility library, it is built with tags to allow for dumb ACF10 compatibility
+ * The main ColdBox utility library.
  */
 component {
 
@@ -7,25 +7,42 @@ component {
 	 * SERVER/USER/CFML ENGINE HELPERS *
 	 ****************************************************************/
 
+	private function getEngineMappingHelper(){
+		// Lazy load the helper
+		if ( isNull( variables.engineMappingHelper ) ) {
+			if ( server.keyExists( "boxlang" ) ) {
+				variables.engineMappingHelper = new BoxLangMappingHelper();
+			} else if ( listFindNoCase( "Lucee", server.coldfusion.productname ) ) {
+				variables.engineMappingHelper = new LuceeMappingHelper();
+			} else {
+				variables.engineMappingHelper = new CFMappingHelper();
+			}
+		}
+		return variables.engineMappingHelper;
+	}
+
+	/**
+	 * Add a path to the application's custom tag path
+	 *
+	 * @path The absolute path to the directory containing tags
+	 */
+	Util function addCustomTagPath( required path ){
+		getEngineMappingHelper().addCustomTagPath( arguments.path );
+		return this;
+	}
+
 	/**
 	 * Add a CFML Mapping to the running engine
 	 *
-	 * @name The name of the mapping
-	 * @path The path of the mapping
+	 * @name     The name of the mapping
+	 * @path     The path of the mapping
 	 * @mappings A struct of mappings to incorporate instead of one-offs
 	 */
 	Util function addMapping( string name, string path, struct mappings ){
-		var mappingHelper = "";
-
-		// Detect server
-		if ( listFindNoCase( "Lucee", server.coldfusion.productname ) ) {
-			mappingHelper = new LuceeMappingHelper();
-		} else {
-			mappingHelper = new CFMappingHelper();
-		}
+		var engineMappingHelper = getEngineMappingHelper();
 
 		if ( !isNull( arguments.mappings ) ) {
-			mappingHelper.addMappings( arguments.mappings );
+			engineMappingHelper.addMappings( arguments.mappings );
 		} else {
 			// Add / registration
 			if ( left( arguments.name, 1 ) != "/" ) {
@@ -33,7 +50,7 @@ component {
 			}
 
 			// Add mapping
-			mappingHelper.addMapping( arguments.name, arguments.path );
+			engineMappingHelper.addMapping( arguments.name, arguments.path );
 		}
 
 		return this;
@@ -47,7 +64,9 @@ component {
 	boolean function inThread(){
 		var engine = "ADOBE";
 
-		if ( server.coldfusion.productname eq "Lucee" ) {
+		if ( server.keyExists( "boxlang" ) ) {
+			engine = "BOXLANG";
+		} else if ( server.coldfusion.productname eq "Lucee" ) {
 			engine = "LUCEE";
 		}
 
@@ -66,6 +85,7 @@ component {
 				}
 				break;
 			}
+			case "BOXLANG":
 			case "LUCEE": {
 				return isInThread();
 			}
@@ -78,7 +98,7 @@ component {
 	 */
 	function discoverInetHost(){
 		try {
-			return createObject( "java", "java.net.InetAddress" ).getLocalHost().getHostName();
+			return getInetAddress().getLocalHost().getHostName();
 		} catch ( any e ) {
 			return cgi.SERVER_NAME;
 		}
@@ -87,37 +107,24 @@ component {
 	/**
 	 * Get the server IP Address
 	 */
-	function getServerIp(){
-		return ( isNull( cgi.local_addr ) ? "0.0.0.0" : cgi.local_addr );
+	string function getServerIp(){
+		try {
+			return getInetAddress().getLocalHost().getHostAddress();
+		} catch ( any e ) {
+			return "0.0.0.0";
+		}
 	}
 
 	/**
-	 * Builds the unique Session Key of a user request and returns it to you.
+	 * Get the Java InetAddress object
+	 *
+	 * @return java.net.InetAddress
 	 */
-	string function getSessionIdentifier(){
-		var isSessionDefined = getApplicationMetadata().sessionManagement;
-
-		// Check jsession id First
-		if ( isSessionDefined && structKeyExists( session, "sessionid" ) ) {
-			return session.sessionid;
+	private function getInetAddress(){
+		if ( isNull( variables.inetAddress ) ) {
+			variables.inetAddress = createObject( "java", "java.net.InetAddress" );
 		}
-		// Check normal cfid and cftoken in cookie
-		else if ( structKeyExists( cookie, "CFID" ) && structKeyExists( cookie, "CFTOKEN" ) ) {
-			return hash( cookie.cfid & cookie.cftoken );
-		}
-		// Check normal cfid and cftoken in URL
-		else if ( structKeyExists( URL, "CFID" ) && structKeyExists( URL, "CFTOKEN" ) ) {
-			return hash( URL.cfid & URL.cftoken );
-		}
-		// check session URL Token
-		else if ( isSessionDefined && structKeyExists( session, "URLToken" ) ) {
-			return session.URLToken;
-		} else {
-			throw(
-				message = "Cannot find a jsessionid, URLToken or cfid/cftoken in any scope. Please verify",
-				type    = "UniqueKeyException"
-			);
-		}
+		return variables.inetAddress;
 	}
 
 	/****************************************************************
@@ -175,9 +182,70 @@ component {
 	 ****************************************************************/
 
 	/**
+	 * Format an incoming json string to a pretty version
+	 *
+	 * @target The target json to prettify
+	 *
+	 * @return The prettified json
+	 */
+	string function prettyJson( string target = "" ){
+		var newLine = chr( 13 ) & chr( 10 );
+		var tab     = chr( 9 );
+		var padding = 0;
+		return arguments.target
+			.reReplace(
+				"([\{|\}|\[|\]|\(|\)|,])",
+				"\1#newLine#",
+				"all"
+			)
+			.reReplace( "(\]|\})#newLine#", "#newLine#\1", "all" )
+			.listToArray( newLine )
+			.map( ( token ) => {
+				if ( token.reFind( "[\}|\)|\]]" ) && padding > 0 ) {
+					padding--;
+				};
+				var newToken = repeatString( tab, padding ) & token.trim();
+				if ( token.reFind( "[\{|\(|\[]" ) ) {
+					padding++;
+				};
+				return newToken;
+			} )
+			.toList( newLine );
+	}
+
+	/**
+	 * Opinionated method that serializes json in a more digetstible way:
+	 * - queries as array of structs
+	 * - no dumb secure prefixes
+	 * And it also prettifies the output
+	 *
+	 * @obj The object to be serialized and prettified
+	 */
+	string function toPrettyJson( required any obj ){
+		return prettyJson( toJson( arguments.obj ) );
+	}
+
+	/**
+	 * Opinionated method that serializes json in a more digetstible way:
+	 * - queries as array of structs
+	 * - no dumb secure prefixes
+	 *
+	 * @obj The object to be serialized
+	 */
+	string function toJson( required any obj ){
+		// https://cfdocs.org/serializejson
+		// We default to "struct" serialization for queries.  The CFML defaults are dumb and just nasty!
+		return serializeJSON(
+			arguments.obj,
+			"struct",
+			!server.keyExists( "boxlang" ) && listFindNoCase( "Lucee", server.coldfusion.productname ) ? "utf-8" : false
+		);
+	}
+
+	/**
 	 * PlaceHolder Replacer for strings containing <code>${}</code> patterns
 	 *
-	 * @str The string target
+	 * @str      The string target
 	 * @settings The structure of settings to use in the replacements
 	 *
 	 * @return The string with the replacements
@@ -219,107 +287,15 @@ component {
 		return returnString;
 	}
 
-	/****************************************************************
-	 * ENVIRONMENT METHODS *
-	 ****************************************************************/
-
-	/**
-	 * Retrieve a Java System property or env value by name. It looks at properties first then environment variables
-	 *
-	 * @key The name of the setting to look up.
-	 * @defaultValue The default value to use if the key does not exist in the system properties or the env
-	 *
-	 * @throws SystemSettingNotFound When the java system property or env is not found
-	 */
-	function getSystemSetting( required key, defaultValue ){
-		var value = getJavaSystem().getProperty( arguments.key );
-		if ( !isNull( local.value ) ) {
-			return value;
-		}
-
-		value = getJavaSystem().getEnv( arguments.key );
-		if ( !isNull( local.value ) ) {
-			return value;
-		}
-
-		if ( !isNull( arguments.defaultValue ) ) {
-			return arguments.defaultValue;
-		}
-
-		throw(
-			type   : "SystemSettingNotFound",
-			message: "Could not find a Java System property or Env setting with key [#arguments.key#]."
-		);
-	}
-
-	/**
-	 * Retrieve a Java System property value by key
-	 *
-	 * @key The name of the setting to look up.
-	 * @defaultValue The default value to use if the key does not exist in the system properties or the env
-	 *
-	 * @throws SystemSettingNotFound When the java system property is not found
-	 */
-	function getSystemProperty( required key, defaultValue ){
-		var value = getJavaSystem().getProperty( arguments.key );
-		if ( !isNull( local.value ) ) {
-			return value;
-		}
-
-		if ( !isNull( arguments.defaultValue ) ) {
-			return arguments.defaultValue;
-		}
-
-		throw(
-			type    = "SystemSettingNotFound",
-			message = "Could not find a Java System property with key [#arguments.key#]."
-		);
-	}
-
-	/**
-	 * Retrieve a Java System environment value by name
-	 *
-	 * @key The name of the setting to look up.
-	 * @defaultValue The default value to use if the key does not exist in the system properties or the env
-	 *
-	 * @throws SystemSettingNotFound When the java system property is not found
-	 */
-	function getEnv( required key, defaultValue ){
-		var value = getJavaSystem().getEnv( arguments.key );
-		if ( !isNull( local.value ) ) {
-			return value;
-		}
-
-		if ( !isNull( arguments.defaultValue ) ) {
-			return arguments.defaultValue;
-		}
-
-		throw(
-			type    = "SystemSettingNotFound",
-			message = "Could not find a environment variable with key [#arguments.key#]."
-		);
-	}
-
-	/**
-	 * Retrieve an instance of Java System
-	 */
-	function getJavaSystem(){
-		if ( !structKeyExists( variables, "javaSystem" ) ) {
-			variables.javaSystem = createObject( "java", "java.lang.System" );
-		}
-		return variables.javaSystem;
-	}
-
 	/**
 	 * Get the mixer utility
 	 *
 	 * @return wirebox.system.core.dynamic.MixerUtil
 	 */
 	function getMixerUtil(){
-		if ( structKeyExists( variables, "mixerUtil" ) ) {
-			return variables.mixerUtil;
+		if ( isNull( variables.mixerUtil ) ) {
+			variables.mixerUtil = new wirebox.system.core.dynamic.MixerUtil();
 		}
-		variables.mixerUtil = new wirebox.system.core.dynamic.MixerUtil();
 		return variables.mixerUtil;
 	}
 
@@ -406,7 +382,7 @@ component {
 	/**
 	 * Should we stop recursion or not due to class name found: Boolean
 	 *
-	 * @className The class name to check
+	 * @className      The class name to check
 	 * @stopRecursions An array of classes to stop processing for during inheritance trails
 	 */
 	private boolean function stopClassRecursion( required classname, required stopRecursions ){
@@ -422,9 +398,9 @@ component {
 	/**
 	 * Returns a single-level metadata struct that includes all items inhereited from extending classes.
 	 *
-	 * @component The component instance or path to get the metadata from
+	 * @component      The component instance or path to get the metadata from
 	 * @stopRecursions An array of classes to stop processing for during inheritance trails
-	 * @md A structure containing a copy of the metadata for this level of recursion.
+	 * @md             A structure containing a copy of the metadata for this level of recursion.
 	 *
 	 * @return struct of metadata
 	 */
@@ -433,22 +409,65 @@ component {
 		array stopRecursions = [],
 		struct md            = {}
 	){
+		var cacheKey = arguments.component;
+		if( !isSimpleValue( cacheKey ) ){
+			cacheKey = cacheKey.$bx.$class.getName() 	
+		}
+		var produceMetadataUDF = function(){
+			return _getInheritedMetaData( 
+				component      = component,
+				stopRecursions = stopRecursions,
+				md             = md
+				);
+		};
+
+		// Are we caching metadata? or just using it
+		if ( len( application.wirebox.getBinder().getMetadataCache() ) ) {
+			// Get from cache or produce on demand
+			md = application.wirebox
+				.getCacheBox()
+				.getCache( application.wirebox.getBinder().getMetadataCache() )
+				.getOrSet( cacheKey, produceMetadataUDF );
+		} else {
+			md = produceMetadataUDF();
+		}
+		return md;
+	}
+
+	/**
+	 * Returns a single-level metadata struct that includes all items inhereited from extending classes.
+	 *
+	 * @component      The component instance or path to get the metadata from
+	 * @stopRecursions An array of classes to stop processing for during inheritance trails
+	 * @md             A structure containing a copy of the metadata for this level of recursion.
+	 *
+	 * @return struct of metadata
+	 */
+	function _getInheritedMetaData(
+		required component,
+		array stopRecursions = [],
+		struct md            = {}
+	){
 		var loc = {};
 
 		// First time through, get metaData of component by path or instance
 		if ( arguments.md.isEmpty() ) {
-			arguments.md = (
-				isObject( arguments.component ) ? getMetadata( arguments.component ) : getComponentMetadata(
+			if ( isObject( arguments.component ) ) {
+				arguments.md = getMetadata( arguments.component );
+			} else {
+				// BoxLang prime uses getClassMetadata(), but non BoxLang or Boxlang in compat mode uses getComponentMetadata()
+				arguments.md = server.keyExists( "boxlang" ) && !server.keyExists( "coldfusion" ) ? getClassMetadata( arguments.component ) : getComponentMetadata(
 					arguments.component
-				)
-			);
+				);
+			}
 		}
 
 		// If it has a parent, stop and calculate it first, unless of course, we've reached a class we shouldn't recurse into.
 		if (
-			structKeyExists( arguments.md, "extends" ) &&
-			arguments.md.type eq "component" &&
-			stopClassRecursion( md.extends.name, arguments.stopRecursions ) EQ FALSE
+			arguments.md.keyExists( "extends" ) AND
+			!arguments.md.extends.isEmpty() AND
+			listFindNoCase( "class,component", arguments.md.extends.type ) AND
+			!stopClassRecursion( arguments.md.extends.name, arguments.stopRecursions )
 		) {
 			loc.parent = getInheritedMetaData(
 				component      = arguments.component,
@@ -462,6 +481,10 @@ component {
 
 		// Override ourselves into parent
 		for ( var thisKey in arguments.md ) {
+			// https://luceeserver.atlassian.net/browse/LDEV-4421
+			if ( arrayContains( [ "sub", "subname" ], thisKey ) ) {
+				continue;
+			}
 			// Functions and properties are an array of structs keyed on name, so I can treat them the same
 			if ( listFindNoCase( "functions,properties", thisKey ) ) {
 				if ( !structKeyExists( loc.parent, thisKey ) ) {
@@ -491,6 +514,12 @@ component {
 			// Add in anything that's not inheritance or implementation
 			else if ( NOT listFindNoCase( "extends,implements", thisKey ) ) {
 				loc.parent[ thisKey ] = arguments.md[ thisKey ];
+				// TODO: Remove this once we go full BoxLang only source
+				// I will have to merge the annotations to normalize them, to make it easier for ColdBox to deal with
+				// CFML + BoxLang.
+				if ( loc.parent.keyExists( "annotations" ) ) {
+					loc.parent.append( loc.parent.annotations, true );
+				}
 			}
 		}
 
@@ -502,9 +531,15 @@ component {
 	}
 
 	/**
-	 * Get the Hibernate version string from Hibernate or Hibernate bundle version
+	 * Get the Hibernate version string from the running engine
 	 */
 	public string function getHibernateVersion(){
+		// BoxLang Detection
+		if ( server.keyExists( "boxlang" ) ) {
+			return ORMGetHibernateVersion();
+		}
+
+		// Adobe + Lucee Convuluted ways
 		var version = createObject( "java", "org.hibernate.Version" );
 
 		if ( version.getVersionString() != "[WORKING]" ) {

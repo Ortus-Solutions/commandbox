@@ -20,7 +20,7 @@ component singleton {
 	 * Constructor
 	 */
 	function init(){
-		variables.stringEscapeUtils = createObject( "java", "org.apache.commons.lang.StringEscapeUtils" );
+		//variables.stringEscapeUtils = createObject( "java", "org.apache.commons.lang.StringEscapeUtils" );
 		variables.CR = chr( 13 );
 		variables.LF = chr( 10 );
 		variables.CRLF = CR & LF;
@@ -52,8 +52,8 @@ component singleton {
 	 * @html HTML to convert
   	 **/
 	function unescapeHTML( required html ){
-    	var text = StringEscapeUtils.unescapeHTML( html );
-    	//text = replace(text,"<" & "br" & ">","","all");
+    	//var text = StringEscapeUtils.unescapeHTML( html );
+    	var text = replace(html,"<" & "br" & ">","","all");
        	return text;
 	}
 

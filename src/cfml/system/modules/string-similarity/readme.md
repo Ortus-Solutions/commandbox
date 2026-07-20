@@ -6,7 +6,7 @@ Read more about how it works here:
 
 http://www.codersrevolution.com/blog/ColdFusion-Levenshtein-Distance-String-comparison-and-highlighting
 
-``` html
+```html
 <cfset string1 = "The rain in Spain stays mainly on the plains
 				The rain in Spain stays mainly on the plains
 				The rain in Spain stays mainly on the plains

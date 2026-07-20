@@ -15,17 +15,17 @@ component {
 	/**
 	 * Forget old servers which haven't been started in a given period of time.
 	 *
-	 * @days.hint forget servers which last started date is greater or equal to days you set
-     * @force.hint skip the "are you sure" confirmation
-     * @json.hint give a list of servers filter by days last started in the JSON format
-	 **/    
+	 * @days forget servers which last started date is greater or equal to days you set
+     * @force skip the "are you sure" confirmation
+     * @json give a list of servers filter by days last started in the JSON format
+	 **/
     function run(
         numeric days    = 30,
         Boolean force   = false,
-        Boolean JSON    = false,
+        Boolean JSON    = false
     )
     {
-        prunableServers = serverService
+        var prunableServers = serverService
             .getServers()
             .valueArray()
             .map( (s) => { s.daysLastStarted=isDate( s.dateLastStarted ?: '' ) ? dateDiff( 'd', s.dateLastStarted, now() ) : 999; return s } )

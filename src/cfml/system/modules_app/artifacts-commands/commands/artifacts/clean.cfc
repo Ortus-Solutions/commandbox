@@ -26,7 +26,7 @@ component {
 
 		if( arguments.force || confirm( "Really wipe out the entire artifacts cache? [y/n]" ) ){
 			var results = artifactService.cleanArtifacts();
-			print.redLine( "Artifacts directory cleaned of '#results#' items." );
+			print.redLine( "Artifacts directory cleaned of '#results.len()#' items." );
 		}
 
 	}

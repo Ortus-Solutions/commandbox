@@ -44,10 +44,10 @@ component accessors="true" implements="IEndpoint" singleton {
 		return this;
 	}
 
-	public string function resolvePackage( required string package, boolean verbose=false ) {
+	public string function resolvePackage( required string package, string currentWorkingDirectory="", boolean verbose=false ) {
 
 		if( configService.getSetting( 'offlineMode', false ) ) {
-			throw( 'Can''t clone [#getNamePrefixes()#:#package#], CommandBox is in offline mode.  Go online with [config set offlineMode=false].', 'endpointException' );	
+			throw( 'Can''t clone [#getNamePrefixes()#:#package#], CommandBox is in offline mode.  Go online with [config set offlineMode=false].', 'endpointException' );
 		}
 
 		var job = wirebox.getInstance( 'interactiveJob' );
@@ -103,6 +103,9 @@ component accessors="true" implements="IEndpoint" singleton {
 			if( branchList.filter( function( i ) { return i contains branch; } ).len() ) {
 				if( arguments.verbose ){ job.addLog( 'Commit-ish [#branch#] appears to be a branch.' ); }
 				branch = 'origin/' & branch;
+			} else if( branch == 'master' && branchList.filter( (b)=>b contains 'main' ).len() ) {
+				if( arguments.verbose ){ job.addLog( 'Switching to branch [main].' ); }
+				branch = 'origin/main';
 			}
 
 			// Checkout branch, tag, or commit hash.
@@ -133,17 +136,27 @@ component accessors="true" implements="IEndpoint" singleton {
 			// Release file system locks on the repo
 			if( structKeyExists( local, 'result' ) ) {
 				result.getRepository().close();
+				// Force JGit's WindowCache to release memory-mapped pack files (Windows file locking issue)
+				var WindowCache = createObject( 'java', 'org.eclipse.jgit.internal.storage.file.WindowCache' );
+				var WindowCacheConfig = createObject( 'java', 'org.eclipse.jgit.storage.file.WindowCacheConfig' );
+				WindowCache.reconfigure( WindowCacheConfig.init() );
 			}
 		}
 
-		// Clean up a bit
+		// Clean up .git folder using JGit's FileUtils which has Windows file locking retry logic
 		var gitFolder = localPath.getPath() & '/.git';
 		if( directoryExists( gitFolder ) ) {
-			directoryDelete( gitFolder, true );
+			var JGitFileUtils = createObject( 'java', 'org.eclipse.jgit.util.FileUtils' );
+			var RECURSIVE = JGitFileUtils.RECURSIVE;
+			var RETRY = JGitFileUtils.RETRY;
+			JGitFileUtils.delete(
+				createObject( 'java', 'java.io.File' ).init( gitFolder ),
+				bitOr( RECURSIVE, RETRY )
+			);
 		}
 
 		// Defer to file endpoint
-		return folderEndpoint.resolvePackage( localPath.getPath(), arguments.verbose );
+		return folderEndpoint.resolvePackage( localPath.getPath(), currentWorkingDirectory, arguments.verbose );
 
 	}
 

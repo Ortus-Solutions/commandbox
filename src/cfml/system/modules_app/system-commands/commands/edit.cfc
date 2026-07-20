@@ -19,7 +19,7 @@ component aliases="open" {
 		path.apply( function( thisPath ) {
 
 			if( fileSystemUtil.openNatively( thisPath ) ){
-				print.line( "Resource Opened!" );
+				print.text( "Resource Opened!" );
 			} else {
 				error( "Unsupported OS, cannot open path." );
 			};

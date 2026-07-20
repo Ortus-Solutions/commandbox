@@ -60,20 +60,19 @@ component aliases="stop" {
 				if( structCount( servers ) == 1 ) {
 					print.yellowLine( serverInfo.name & ' already stopped.' ).toConsole();
 				}
-				continue;
-			}
-
-			print.yellowLine( 'Stopping ' & serverInfo.name & '...' ).toConsole();
-
-			var results = serverService.stop( serverInfo );
-			if( results.error ){
-				print.boldWhiteOnRedLine( 'ERROR' );
-				print.boldRedLine( results.messages );
 			} else {
-				if( verbose && len( results.messages ) ) {
-					print.line( results.messages )
+				print.yellowLine( 'Stopping ' & serverInfo.name & '...' ).toConsole();
+
+				var results = serverService.stop( serverInfo );
+				if( results.error ){
+					print.boldWhiteOnRedLine( 'ERROR' );
+					print.boldRedLine( results.messages );
+				} else {
+					if( verbose && len( results.messages ) ) {
+						print.line( results.messages )
+					}
+					print.greenLine( 'Stopped' );
 				}
-				print.greenLine( 'Stopped' );
 			}
 
 			if( arguments.forget ) {

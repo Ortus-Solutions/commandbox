@@ -27,7 +27,7 @@
  * {code}
  *
  * If a failing HTTP status code is received from the API, this command will return an exit code of 1
- * 
+ *
  **/
 component aliases='java search' {
 
@@ -54,8 +54,8 @@ component aliases='java search' {
 	function run(
 		version,
 		jvm = 'hotspot',
-		os,
-		arch = server.java.archModel contains 32 ? 'x32' : 'x64',
+		os = javaService.getCurrentOS(),
+		arch = javaService.getCurrentCPUArch(),
 		type = 'jre',
 		release = 'latest',
 		boolean JSON = false
@@ -71,7 +71,7 @@ component aliases='java search' {
 				version = listFirst( release.replaceNoCase( 'jdk-', '' ), '.' );
 			}
 		// If there is no version and no release, hit the API to get the latest LTS version
-		} else if( isNull( version ) ) {
+		} else if( isNull( version ) || !len( version ) ) {
 			// Until Adobe and Lucee support Java 17, we'll keep this defaulting to Java 11-- the current LTS release supported by CF engines.
 			version = 11;
 			/*
@@ -104,16 +104,6 @@ component aliases='java search' {
 			version = '[#version#,#version+1#)';
 		}
 
-		if( isNull( os) ) {
-			if( fileSystemUtil.isMac() ) {
-				os = 'mac';
-			} else if( fileSystemUtil.isLinux() ) {
-				os = 'linux';
-			} else {
-				os = 'windows';
-			}
-		}
-
 		var APIURLCheck = 'https://api.adoptium.net/v3/assets/version/#encodeForURL(version)#?page_size=100&release_type=ga&vendor=eclipse&project=jdk&heap_size=normal';
 
 		if( jvm.len() ) {
@@ -127,6 +117,12 @@ component aliases='java search' {
 		}
 		if( type.len() ) {
 			APIURLCheck &= '&image_type=#encodeForURL( type )#';
+		}
+
+		if( !JSON ) {
+			print.line()
+				.line( 'Hitting API URL:' )
+				.indentedline( APIURLCheck );
 		}
 
 		http
@@ -148,29 +144,24 @@ component aliases='java search' {
 			// If we have a release, we need to filter it now
 			if( release.len() && release != 'latest' ) {
 				artifactJSON = artifactJSON.filter( (thisRelease)=>thisRelease.release_name==release );
-			} 
+			}
 		} else {
 			print.redLine( fileContent.left( 100 ) );
 			error( 'There was an error hitting the API.  [#local.artifactResult.status_code#]' );
 		}
-	
+
 		// Sometimes the API gives me back a struct, sometimes I get an array of structs. ¯\_(ツ)_/¯
 		if( isStruct( artifactJSON ) ) {
 			artifactJSON = [ artifactJSON ];
 		}
 
 		if( JSON ) {
-			print.line( artifactJSON );
+			print.text( artifactJSON );
 			return;
-		} else {	
-			print
-				.line()
-				.line( 'Hitting API URL:' )
-				.indentedline( APIURLCheck )
-				.line()
-				.line();
+		} else {
+			print.line().line();
 		}
-		
+
 		if( !artifactJSON.len() ) {
 			print.redLine( 'No matching Java versions found for your search criteria' );
 			return;

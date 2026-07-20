@@ -2,11 +2,12 @@
  * Copyright Since 2005 ColdBox Framework by Luis Majano and Ortus Solutions, Corp
  * www.ortussolutions.com
  * ---
- * @author Luis Majano
  *
  * I am the fastest way to cache objects. I am so fast because I don't do anything. I'm really a tool to use when working on caching strategies. When I am in use nothing is cached. It just vanishes.
+ *
+ * @author Luis Majano
  */
-component implements="wirebox.system.cache.store.IObjectStore" accessors=true{
+component implements="wirebox.system.cache.store.IObjectStore" accessors=true {
 
 	/**
 	 * The cache provider reference
@@ -21,26 +22,24 @@ component implements="wirebox.system.cache.store.IObjectStore" accessors=true{
 	/**
 	 * Constructor
 	 *
-	 * @cacheProvider The associated cache provider as wirebox.system.cache.providers.ICacheProvider
+	 * @cacheProvider             The associated cache provider as wirebox.system.cache.providers.ICacheProvider
 	 * @cacheprovider.doc_generic wirebox.system.cache.providers.ICacheProvider
 	 */
 	function init( required cacheProvider ){
-		// Store Fields
-        var fields = "hits,timeout,lastAccessTimeout,created,LastAccessed,isExpired,isSimple";
-        var config = arguments.cacheProvider.getConfiguration();
+		var config = arguments.cacheProvider.getConfiguration();
 
-        // Prepare instance
-        variables.cacheProvider     = arguments.cacheProvider;
-        variables.storeID 		    = 'blackhole';
+		// Prepare instance
+		variables.cacheProvider = arguments.cacheProvider;
+		variables.storeID       = "blackhole";
 
-        return this;
+		return this;
 	}
 
-    /**
-     * Flush the store to a permanent storage
-     */
-    void function flush(){
-        return;
+	/**
+	 * Flush the store to a permanent storage
+	 */
+	void function flush(){
+		return;
 	}
 
 	/**
@@ -48,32 +47,23 @@ component implements="wirebox.system.cache.store.IObjectStore" accessors=true{
 	 */
 	void function reap(){
 		return;
-    }
+	}
 
 	/**
 	 * Clear all the elements in the store
 	 */
 	void function clearAll(){
-        return;
+		return;
 	}
 
-    /**
-     * Get the store's pool metadata indexer structure
-	 *
-	 * @return wirebox.system.cache.store.indexers.MetadataIndexer
-     */
-    function getIndexer(){
-        return;
-    }
-
-     /**
-     * Get all the store's object keys array
+	/**
+	 * Get all the store's object keys array
 	 *
 	 * @return array
-     */
-    function getKeys(){
-        return [];
-    }
+	 */
+	function getKeys(){
+		return [];
+	}
 
 	/**
 	 * Check if an object is in the store
@@ -102,18 +92,18 @@ component implements="wirebox.system.cache.store.IObjectStore" accessors=true{
 	 */
 	function getQuiet( required objectKey ){
 		return;
-    }
+	}
 
-    /**
+	/**
 	 * Expire an object
 	 *
 	 * @objectKey The key to expire
 	 */
 	void function expireObject( required objectKey ){
 		return;
-    }
+	}
 
-    /**
+	/**
 	 * Expire check
 	 *
 	 * @objectKey The key to check
@@ -127,18 +117,18 @@ component implements="wirebox.system.cache.store.IObjectStore" accessors=true{
 	/**
 	 * Sets an object in the storage
 	 *
-	 * @objectKey The object key
-	 * @object The object to save
-	 * @timeout Timeout in minutes
+	 * @objectKey         The object key
+	 * @object            The object to save
+	 * @timeout           Timeout in minutes
 	 * @lastAccessTimeout Idle Timeout in minutes
-	 * @extras A map of extra name-value pairs to store alongside the object
+	 * @extras            A map of extra name-value pairs to store alongside the object
 	 */
 	void function set(
 		required objectKey,
 		required object,
-		timeout=0,
-		lastAccessTimeout=0,
-		extras={}
+		timeout           = 0,
+		lastAccessTimeout = 0,
+		extras            = {}
 	){
 		return;
 	}
@@ -149,14 +139,38 @@ component implements="wirebox.system.cache.store.IObjectStore" accessors=true{
 	 * @objectKey The object key to clear
 	 */
 	function clear( required objectKey ){
-        return;
-    }
+		return;
+	}
 
-    /**
+	/**
 	 * Get the size of the store
 	 */
 	function getSize(){
-        return 0;
+		return 0;
+	}
+
+	/**
+	 * This method sorts the pool keys by a property in the metadata, for example: hits, created, lastAccessed
+	 *
+	 * @property  The property to sort by: hits, created, lastAccessed
+	 * @sortType  The sort type: text, numeric, date
+	 * @sortOrder The sort order: asc, desc
+	 */
+	array function getSortedKeys(
+		required property,
+		sortType  = "text",
+		sortOrder = "asc"
+	){
+		return [];
+	}
+
+	/**
+	 * Get the metadata of an object
+	 *
+	 * @objectKey The key to retrieve
+	 */
+	struct function getCachedObjectMetadata( required objectKey ){
+		return {};
 	}
 
 }

@@ -22,7 +22,8 @@ component {
 	// repl history file
 	property name="commandHistoryFile"		inject="commandHistoryFile@constants";
 	property name="REPLScriptHistoryFile"	inject="REPLScriptHistoryFile@constants";
-	property name="REPLTagHistoryFile"	inject="REPLTagHistoryFile@constants";
+	property name="REPLTagHistoryFile"		inject="REPLTagHistoryFile@constants";
+	property name='configService'			inject='ConfigService';
 
 	// repl parser
 	property name="REPLParser"		inject="REPLParser";
@@ -129,17 +130,37 @@ component {
 					} catch( any e ){
 						// flush out anything in buffer
 						print.toConsole();
+						// Trim the stack trace to here, if the error happened inside the CFMLExecutor
+						if( e.stackTrace.find( 'util/CFMLExecutor.cfc' ) ) {
+							var shortTrace =  e.stackTrace.mid( 1, e.stackTrace.find( '/util/CFMLExecutor.cfc' ) + 27 );
+						// Fallback, trim to here...
+						} else {
+							var shortTrace =  e.stackTrace.mid( 1, e.stackTrace.find( '/commands/repl.cfc' ) + 23 );
+						}
+						// If there was a root cause, then add that back in
+						var causedByLocation = e.stackTrace.findNoCase( 'caused by' );
+						if( causedByLocation ) {
+							shortTrace &= '        ...' & chr(10) & e.stackTrace.mid( causedByLocation );
+						}
 						// Log it
-						logger.error( '#e.message# #e.detail#' , e.stackTrace );
+						logger.error( '#e.message# #e.detail#' , shortTrace );
 						if( quit ) {
 							resetShell();
-							// This will exist the command
-							error( '#e.message##CR##e.detail#' );
+							// This will exit the command
+							if( configService.getSetting( 'verboseErrors', false ) ) {
+								error( '#e.message##CR##e.detail#', shortTrace );
+							} else {
+								error( '#e.message##CR##e.detail#' );
+							}
 						} else {
 							print.whiteOnRedLine( 'ERROR' )
 								.line()
 								.boldRedLine( '#e.message##CR##e.detail#' )
 								.line();
+
+							if( configService.getSetting( 'verboseErrors', false ) ) {
+								print.redLine(  shortTrace );
+							}
 						}
 					}
 				}

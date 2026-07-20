@@ -94,13 +94,16 @@ component aliases="install" {
 	property name="entries";
 
 	// DI
-	property name="packageService"	inject="PackageService";
-	property name="endpointService"	inject="endpointService";
+	property name='JSONService'			inject='JSONService';
+	property name="packageService"	    inject="PackageService";
+	property name="endpointService"	    inject="endpointService";
 	property name='interceptorService'	inject='interceptorService';
 
 	/**
 	* @ID.hint "endpoint:package" to install. Default endpoint is "forgebox".  If no ID is passed, all dependencies in box.json will be installed.
 	* @ID.optionsUDF IDComplete
+	* @ID.optionsFileComplete true
+	* @ID.optionsDirectoryComplete true
 	* @directory.hint The directory to install in and creates the directory if it does not exist. This will override the packages box.json install dir if provided.
 	* @save.hint Save the installed package as a dependency in box.json (if it exists), defaults to true
 	* @saveDev.hint Save the installed package as a dev dependency in box.json (if it exists)
@@ -108,6 +111,9 @@ component aliases="install" {
 	* @verbose.hint Output much more verbose information about the package installation
 	* @force.hint Force dependencies to be installed whether they already exist or not
 	* @system.hint Install this package into the global CommandBox module's folder
+	* @lock.hint Flag to lock the version in the lock file
+	* @trustScripts.hint Automatically allow the installed package(s) install-lifecycle scripts to run without a confirmation prompt
+	* @lock.hint Flag to lock the version in the lock file
 	**/
 	function run(
 		string ID='',
@@ -117,7 +123,10 @@ component aliases="install" {
 		boolean production,
 		boolean verbose=false,
 		boolean force=false,
-		boolean system=false
+		boolean system=false,
+		boolean lock=false,
+		boolean trustScripts=configService.getSetting( 'scripts.trustInstallScripts', false )
+		boolean lock=false
 	){
 
 		// Don't default the dir param since we need to differentiate whether the user actually
@@ -135,13 +144,30 @@ component aliases="install" {
 
 
 		if( arguments.system ) {
-			arguments.currentWorkingDirectory = expandPath( '/commandbox' );
+			arguments.currentWorkingDirectory = expandPath( '/commandbox-home/cfml' );
 		} else {
 			arguments.currentWorkingDirectory = getCWD();
 		}
 		// Make ID an array
 		arguments.IDArray = listToArray( arguments.ID );
-
+		arguments.lockFile = {};
+		arguments.lock = arguments.lock || fileExists( arguments.currentWorkingDirectory & '/box-lock.json' );
+		if ( arguments.lock ) {
+			// ensure lock file exists
+			if ( !fileExists( arguments.currentWorkingDirectory & '/box-lock.json' ) ) {
+				print.greenLine( "No lock file exists, creating one..." ).toConsole();
+				var thisBoxJSON = packageService.readPackageDescriptor( arguments.currentWorkingDirectory );
+				arguments.lockFile = {
+					"name": thisBoxJSON.name,
+					"version": thisBoxJSON.version,
+					"lockVersion": 1,
+					"dependencies": {}
+				};
+			} else {
+				print.greenLine( "Loading box-lock.json..." ).toConsole();
+				arguments.lockFile = deserializeJSON( fileRead( expandPath( arguments.currentWorkingDirectory & '/box-lock.json' ) ) );
+			}
+		}
 
 		// Install this package(s).
 		// Don't pass directory unless you intend to override the box.json of the package being installed
@@ -149,7 +175,6 @@ component aliases="install" {
 		interceptorService.announceInterception( 'preInstallAll', { installArgs=arguments } );
 
 		try {
-
 			// One or more IDs
 			if( arguments.IDArray.len() ) {
 				for( var thisID in arguments.IDArray ){
@@ -169,10 +194,12 @@ component aliases="install" {
 		} catch( EndpointNotFound var e ) {
 			error( e.message, e.detail );
 		}
-
+		if ( !arguments.lockFile.isEmpty() ) {
+			JSONService.writeJSONFile( arguments.currentWorkingDirectory & '/box-lock.json', arguments.lockFile );
+			print.greenLine( "box-lock.json written to disk." ).toConsole();
+		}
 
 		interceptorService.announceInterception( 'postInstallAll', { installArgs=arguments } );
-
 	}
 
 	// Auto-complete list of IDs

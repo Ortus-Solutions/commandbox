@@ -15,7 +15,7 @@
  * cfpm install feed
  * {code}
  * .
- * If there is more than one Adobe 2021+ server started in a given directory, you can specific the server you want 
+ * If there is more than one Adobe 2021+ server started in a given directory, you can specific the server you want
  * by setting the server name into the CFPM_SERVER environment variable.  Note this works from any directory.
  * Make sure to clear the env var afterwards so it doesn't surprise you on later usage of this command in the same shell.
  * .
@@ -34,13 +34,13 @@ component aliases='cfpm' {
 		var serverInfo = {};
 		var cfpm_server = systemSettings.getSystemSetting( 'CFPM_SERVER', '' );
 		var interceptData_serverInfo_name = systemSettings.getSystemSetting( 'interceptData.SERVERINFO.name', '' );
-		
+
 		if( configService.getSetting( 'server.singleServerMode', false ) && serverService.getServers().count() ){
 			serverInfo = serverService.getFirstServer();
 		// If we're running inside of a server-related package script, use that server
 		} else if( interceptData_serverInfo_name != '' ) {
 			print.yellowLine( 'Using interceptData to load server [#interceptData_serverInfo_name#]' );
-			serverInfo = serverService.resolveServerDetails( { name=interceptData_serverInfo_name } ).serverInfo;
+			serverInfo = serverService.getServerInfoByName( interceptData_serverInfo_name );
 			if( !(serverInfo.engineName contains 'adobe' && val( listFirst( serverInfo.engineVersion, '.' ) ) >= 2021  ) ){
 				print.redLine( 'Server [#interceptData_serverInfo_name#] is of type [#serverInfo.cfengine#] and not an Adobe 2021+ server.  Ignoring.' );
 				return;
@@ -49,12 +49,11 @@ component aliases='cfpm' {
 		// CFPM_SERVER=servername
 		} else if( cfpm_server != '' ) {
 			print.yellowLine( 'Using CFPM_SERVER environment variable to load server [#cfpm_server#]' );
-			var serverDetails = serverService.resolveServerDetails( { name=cfpm_server } );
-			if( serverDetails.serverIsNew ) {
+			serverInfo = serverService.getServerInfoByName( cfpm_server );
+			if( !serverInfo.count() ) {
 				error( 'Server [#cfpm_server#] specified in CFPM_SERVER environment variable does not exist.' );
 				return;
 			}
-			serverInfo = serverDetails.serverInfo;
 			if( !(serverInfo.engineName contains 'adobe' && val( listFirst( serverInfo.engineVersion, '.' ) ) >= 2021  ) ){
 				print.redLine( 'Server [#cfpm_server#] is of type [#serverInfo.cfengine#] and not an Adobe 2021+ server.  Ignoring.' );
 				return;
@@ -74,13 +73,24 @@ component aliases='cfpm' {
 				}
 			}
 			if( !serverInfo.count() ) {
-				print.redLine( 'No Adobe 2021+ server found in [#getCWD()#]', 'Specify the server you want by setting the name of your server into the CFPM_SERVER environment variable.' );
-				return;
+				var serverDetails = serverService.resolveServerDetails( {} );
+
+				if( serverDetails.serverIsNew ) {
+					print.redLine( 'No Adobe 2021+ server found in [#getCWD()#]', 'Specify the server you want by setting the name of your server into the CFPM_SERVER environment variable.' );
+					return;
+				}
+
+				serverInfo = serverDetails.serverInfo;
+				if( !(serverInfo.engineName contains 'adobe' && val( listFirst( serverInfo.engineVersion, '.' ) ) >= 2021  ) ){
+					print.redLine( 'Server [#serverInfo.name#] in [#getCWD()#] is of type [#serverInfo.cfengine#] and not an Adobe 2021+ server.  Ignoring.' );
+					return;
+				}
 			}
+
 		}
-		
+
 		// ASSERT: At this point, we've found a specific Adobe 2021 server via env var, intercept data, or web root convention.
-		
+
 		var cfpmPath = resolvePath( serverInfo.serverHomeDirectory ) & 'WEB-INF/cfusion/bin/cfpm';
 
 		if( !fileExists( cfpmPath & '.bat' ) ) {
@@ -96,19 +106,27 @@ component aliases='cfpm' {
 		while( !isNull( arguments[++i] ) ) {
 			cmd &= ' #arguments[i]#';
 		}
-		
+
+		// Use this server's java home, if there is one defined.  This ensures the correct Java version is used.
+		var javaHome = serverInfo.javaHome ?: '';
 		// The user's OS may not have a JAVA_HOME set up
-		if( systemSettings.getSystemSetting( 'JAVA_HOME', '' ) == '' ) {
-			systemSettings.setSystemSetting( 'JAVA_HOME', fileSystemUtil.getJREExecutable().reReplaceNoCase( '(/|\\)bin(/|\\)java(.exe)?', '' ) );
+		if( !len( javaHome ) && !len( systemSettings.getSystemSetting( 'JAVA_HOME', '' ) ) ) {
+			// Default back to the JRE used by the CLI.
+			javaHome = fileSystemUtil.getJREExecutable();
+		}
+		// If there is no server java home, but there IS a system-wide JAVA_HOME, then we'll just let it be.  
+		// But if neither exist, then the Java install our CLI is using is better than nothing.
+		if( len( javaHome ) ) {
+			systemSettings.setSystemSetting( 'JAVA_HOME', javaHome.reReplaceNoCase( '(/|\\)bin(/|\\)java(.exe)?', '' ) );
 		}
 		print.toConsole();
 		var output = command( 'run' )
 			.params( cmd )
 			// Try to contain the output if we're in an interactive job and there are arguments (no args opens the cfpm shell)
 			.run( echo=true, returnOutput=( job.isActive() && arguments.count() ) );
-			
+
 		if( job.isActive() && arguments.count() ) {
-			print.line( output );
+			print.text( output );
 		}
 
 	}

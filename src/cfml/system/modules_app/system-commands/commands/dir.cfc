@@ -40,8 +40,14 @@ component aliases="ls,ll,directory" {
 	 * @recurse Include nested files and folders
 	 * @simple Output only path names and nothing else.
 	 * @full Output absolute file path, not just relative to current working directory
+	 * @tree Output ASCII file tree
 	 **/
-	function run( Globber paths=globber( getCWD() ), sort='directory, type, name', string excludePaths='', boolean recurse=false, boolean simple=false, boolean full=false )  {
+	function run( Globber paths=globber( getCWD() ), sort='directory, type, name', string excludePaths='', boolean recurse=false, boolean simple=false, boolean full=false, boolean tree=false )  {
+
+		// If we're doign a tree view, then recurse is sort of assumed, otherwse it would be a very boring tree!
+		if( tree ) {
+			recurse = true;
+		}
 
 		// Backwards compat for old parameter name
 		if( arguments.keyExists( 'directory' ) && arguments.directory.len() ) {
@@ -67,18 +73,53 @@ component aliases="ls,ll,directory" {
 			if( directoryExists( p ) ){
 				if( !p.endsWith( '/' ) && !p.endsWith( '\' ) ) {
 					p &= '/';
-				}	
+				}
 				return p &= '*' & ( recurse ? '*' : '' );
 			}
 			return p;
 		} );
-		
+
 		var results = paths
 			.setExcludePattern( excludePaths )
 			.asQuery()
 			.withSort( sort )
 			.matches();
-			
+
+		if( tree ) {
+			var treeData = [:];
+			results = results.reduce( (acc,p)=>acc.append(p), [] );
+			results = results.map( (p)=>{
+				var name = p.name & ( p.type == "Dir" ? "/" : "" );
+				var path = cleanRecursiveDir( paths.getBaseDir(), p.directory & '/', full );
+				var segmentLength = 0;
+				if( len( path ) ) {
+					path = '["' & path.listChangeDelims( '/"]["', '/' ) & '/"]';
+					segmentLength = path.listLen( '/' )
+				}
+				return { 'segmentLength' : ++segmentLength, 'path' : path & '["#name#"]' }
+			} );
+			// We must add the keys to our ordered structs from the bottom level up to preserve the original sorting of the globber
+			loop from=1 to=results.reduce( (max,p)=>max(max,p.segmentLength), 0 ) index="local.thisLen" {
+				results
+					.filter( (p)=>p.segmentLength==thisLen )
+					.each( (p)=>{
+						evaluate( 'treeData#p.path#=[:]' );
+					} );
+			}
+
+			var treeFormatUDF = (s,a)=>{
+				if( s.endsWith( '/' ) ) {
+					return getPathColor( '', 'dir' )
+				} else {
+					return getPathColor( a.last(), 'file' )
+				}
+			};
+
+			print.tree( treeData, treeFormatUDF );
+
+			return;
+		}
+
 		for( var x=1; x lte results.recordcount; x++ ) {
 
 			if( simple ) {
@@ -126,16 +167,20 @@ component aliases="ls,ll,directory" {
 	*/
 	private function cleanRecursiveDir( required directory, required incoming, boolean full ){
 		if( full ) {
-			return incoming;
+			return fileSystemUtil.normalizeSlashes( incoming );
 		}
 		var prefix = ( replacenocase( fileSystemUtil.normalizeSlashes( arguments.incoming ), fileSystemUtil.normalizeSlashes( arguments.directory ), "" ) );
 		return ( len( prefix ) ? reReplace( prefix, "^(/|\\)", "" ) : "" );
 	}
 
 	private function colorPath( name, type ){
+		print.line( name, getPathColor( name, type ) );
+	}
+
+	private function getPathColor( name, type ){
 
 		if( type == 'Dir' ) {
-			print.BlueLine( name );
+			return 'Blue';
 		} else {
 			var ext = name.listLast( '.' );
 			if( name.startsWith( '.' ) ) { ext = 'hidden'; }
@@ -143,42 +188,35 @@ component aliases="ls,ll,directory" {
 			switch( ext ) {
 				// Binary/executable
 			    case "exe": case "jar": case "com": case "bat": case "msi": case "lar": case "lco": case "class": case "dll": case "war": case "eot": case "svg": case "ttf": case "woff": case "woff2":
-					print.AquaLine( name );
-			         break;
+					return 'Aqua';
 			    // Compressed
 			    case "zip": case "tar": case "gz":
-					print.Gold3Line( name );
-			         break;
+					return 'Gold3';
 		        // Code
 			    case "cfml": case "cfm": case "cfc": case "html": case "htm": case "js": case "css": case "java": case "boxr": case "sh": case "sql":
-					print.CyanLine( name );
-			         break;
+					return 'Cyan';
 		       // Images
 			    case "gif": case "jpg": case "bmp": case "jpeg": case "png": case "ico":
-					print.YellowLine( name );
-			         break;
+					return 'Yellow';
 			    // Design/browser assets
 			    case "js": case "css": case "less": case "sass":
-					print.OliveLine( name );
-			         break;
+					return 'Olive';
 			    // Plain text/data
 			    case "json": case "txt": case "properties": case "yml": case "yaml": case "xml": case "xsd": case "log": case "ini": case "conf":
-					print.LimeLine( name );
-			         break;
+					return 'Lime';
 			    // Documents
 			    case "pdf": case "doc": case "docx": case "xls": case "csv": case "md": case "ppt": case "pptx": case "xlsx": case "odp": case "ods": case "rtf":
-					print.RedLine( name );
-			         break;
+					return 'Red';
 			    // Hidden files
 			    case "hidden":
-					print.MaroonLine( name );
-			         break;
+					return 'Maroon';
 			    default:
-					print.Line( name );
+					return '';
 			}
 
 		}
 	}
+
 
 	/**
 	* Returns file size in either b, kb, mb, gb, or tb

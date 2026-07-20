@@ -28,10 +28,10 @@ component accessors=true implements="IEndpoint" singleton {
 		return this;
 	}
 
-	public string function resolvePackage( required string package, boolean verbose=false ) {
+	public string function resolvePackage( required string package, string currentWorkingDirectory="", boolean verbose=false ) {
 
 		if( configService.getSetting( 'offlineMode', false ) ) {
-			throw( 'Can''t download [#getNamePrefixes()#:#package#], CommandBox is in offline mode.  Go online with [config set offlineMode=false].', 'endpointException' );	
+			throw( 'Can''t download [#getNamePrefixes()#:#package#], CommandBox is in offline mode.  Go online with [config set offlineMode=false].', 'endpointException' );
 		}
 
 		var job = wirebox.getInstance( 'interactiveJob' );
@@ -94,6 +94,17 @@ component accessors=true implements="IEndpoint" singleton {
 
 	public function getDefaultName( required string package ) {
 
+		// Check if its coming from an ortus S3 Domain
+		// /username/slug/version.(zip or lex)?unnecessary query_string
+		// Regex capture group (slug)
+		var findOrtusEndpoint =  package.reFindNoCase( "^[\w:]+?//ortus-forgebox-private.s3.us-east-1.amazonaws.com/.+?/(.+?)/.+?\.[zip|lex].*", 0, true );
+
+        // /username/slug/version.(zip or lex)?unnecessary query_string
+		// Must match 2 because the capture groups are [whole string, slug]
+        if( findOrtusEndpoint.match.len() == 2 ) {
+            return findOrtusEndpoint.match[2]; //return slug from url path
+        }
+
 		// Strip protocol and host to reveal just path and query string
 		package = package.reReplaceNoCase( '^([\w:]+)?//.*?/', '' );
 
@@ -102,12 +113,12 @@ component accessors=true implements="IEndpoint" singleton {
 		// https://site.com/path/to/package-1.0.0.lex
 
 		// If we see /foo.lex or name=foo.lex or ?foo.lex
-		if( package.reFindNoCase( '[/\?=](.*\.lex)' ) ) {
+		if( package.reFindNoCase( '[/\?=](.*\.[lex|zip])' ) ) {
 			// Then strip the name and remove extension
 			// Note the first .* is greedy so in the case of
 			// https://site.com/path/to/file.lex?name=custom.lex
 			// the regex will extract the last match, i.e. "custom"
-			return package.reReplaceNoCase( '.*[/\?=](.*\.lex).*', '\1' ).left( -4 );
+			return package.reReplaceNoCase( '.*[/\?=](.*\.[lex|zip]).*', '\1' ).left( -4 );
 		}
 
 		// We give up, so just make the entire URL a slug

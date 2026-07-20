@@ -86,7 +86,7 @@ component{
 
             // incorporate CommandBox environment variables into the process's env
             var currentEnv = processBuilder.environment();
-            currentEnv.putAll( systemSettings.getAllEnvironmentsFlattened().map( (k, v)=>toString(v) ) );
+			systemSettings.getAllEnvironmentsFlattened().each( (k, v)=>currentEnv.put( k, v.toString() ) );
 
             // Special check to remove ConEMU vars which can screw up the sub process if it happens to run cmd, such as opening VSCode.
             if( fileSystemUtil.isWindows() && currentEnv.containsKey( 'ConEmuPID' ) ) {
@@ -190,14 +190,6 @@ component{
 			// As you were, JLine
 			if( terminal.paused() ) {
 				terminal.resume();
-			}
-
-			// Put the terminal title back on Windows
-			if( fileSystemUtil.isWindows() && nativeShell contains 'cmd' ) {
-				var commandArray = [ nativeShell,'/a','/c', 'Title CommandBox is a ColdFusion (CFML) CLI, Package Manager, Server and REPL' ];
-				createObject( "java", "java.lang.ProcessBuilder" ).init( commandArray )
-					.inheritIO()
-					.start();
 			}
 
 			checkInterrupted();

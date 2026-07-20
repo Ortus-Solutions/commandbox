@@ -1,7 +1,6 @@
 /**
  * Open a browser to the passed URI.
  * .
- * Concatenate two files and output them to the screen
  * {code:bash}
  * browse localhost:8116
  * {code}
@@ -17,7 +16,7 @@ component {
 	function run( required URI, browser='' )  {
 
 		if( fileSystemUtil.openBrowser( arguments.URI, arguments.browser ) ){
-			print.line( "Browser opened!" );
+			print.text( "Browser opened!" );
 		} else {
 			error( "Unsupported OS" );
 		};

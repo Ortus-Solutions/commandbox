@@ -270,7 +270,7 @@ component accessors=true {
 
 		try {
 			if( !isNull( getPipedInput() ) ) {
-				var result = shell.callCommand( getTokens(), getReturnOutput(), getPipedInput(), getCommandString() );
+				var result = shell.callCommand( command=getTokens(), returnOutput=getReturnOutput(), piped=getPipedInput(), line=getCommandString() );
 			} else {
 				var result = shell.callCommand( command=getTokens(), returnOutput=getReturnOutput(), line=getCommandString() );
 			}

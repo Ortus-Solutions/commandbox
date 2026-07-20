@@ -34,12 +34,7 @@ component {
 		try {
 
 			var propertyValue = JSONService.show( configSettings, arguments.property );
-
-			if( isSimpleValue( propertyValue ) ) {
-				print.line( propertyValue );
-			} else {
-				print.line( propertyValue );
-			}
+			print.text( propertyValue );
 
 		} catch( JSONException var e ) {
 			error( e.message, e.detail );

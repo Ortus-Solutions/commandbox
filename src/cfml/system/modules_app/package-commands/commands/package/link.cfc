@@ -46,7 +46,7 @@ component aliases='link' {
 		var packageDirectory=getCWD();
 		var commandBoxCoreLinked = false;
 		if( !arguments.keyExists( 'moduleDirectory' ) ) {
-			arguments.moduleDirectory = expandPath( '/commandbox/modules' );
+			arguments.moduleDirectory = expandPath( '/commandbox-home/cfml/modules' );
 			commandBoxCoreLinked = true;
 			if( !directoryExists( arguments.moduleDirectory ) ) {
 				directoryCreate( arguments.moduleDirectory );
@@ -69,7 +69,7 @@ component aliases='link' {
 		if( !boxJSON.slug.len() ) {
 			error( 'Cannot link package with no slug.' );
 		}
-		if( !packageService.isPackageModule( boxJSON.type ) ) {
+		if( !packageService.isPackageModule( boxJSON.type ) && boxJSON.type != 'boxlang-modules' ) {
 			error( 'Package type [#boxJSON.type#] is invalid for linking.  Needs to be a module type.' );
 		}
 

@@ -67,9 +67,9 @@ component {
 		// Validate the file
 		if( !fileExists( tmpRecipeFile ) ){
 			// If the input is a single line ending in .boxr, it was supposed to be a file!
-			if( lcase( arguments.recipeFile ).endsWith( '.boxr' ) && listToArray( recipe, chr( 10 ) & chr( 13 ) ).len() == 1 ) {
+			if( lcase( arguments.recipeFile ).endsWith( '.boxr' ) && listToArray( arguments.recipeFile, chr( 10 ) & chr( 13 ) ).len() == 1 ) {
 				error( 'Recipe file [#tmpRecipeFile#] not found.' )
-			} 
+			}
 			// If the file doesn't exist, accept the input as commands
 			var recipe = arguments.recipeFile;
 		} else {
@@ -92,7 +92,7 @@ component {
 
 		// iterate and execute.
 		for( var thisCommand in commands ){
-			thisCommand = trim( thisCommand );
+			var thisCommand = trim( thisCommand );
 
 			// Ignore blank lines and comments.
 			// Comments are any line that starts with a hash followed by some form of whitespace.
@@ -167,7 +167,7 @@ component {
 	private string function bindArgs( required commands, required struct args ){
 		// iterate and bind.
 		for( var thisArg in arguments.args ){
-			argValue = parser.escapeArg( arguments.args[ thisArg ] );
+			var argValue = parser.escapeArg( arguments.args[ thisArg ] );
 			arguments.commands = replaceNoCase( arguments.commands, thisArg, argValue, "all" );
 		}
 		return arguments.commands;
@@ -180,7 +180,7 @@ component {
 		var parsedArgs = {};
 
 		for( var arg in args ) {
-			argName = arg;
+			var argName = arg;
 			if( !isNull( args[arg] ) && arg != 'recipeFile' ) {
 				// If positional args, decrement so they start at 1
 				if( isNumeric( argName ) ) {

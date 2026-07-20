@@ -19,12 +19,13 @@ component accessors="true" singleton="true" {
 	property name="semanticVersion"		inject="provider:semanticVersion@semver";
 	property name="artifactService"		inject="artifactService";
 	property name="wirebox"				inject="wirebox";
+	property name="fileSystemUtil"		inject="fileSystem";
 
 
 	/**
 	* install the server if not already installed to the target directory
 	*
-	* @cfengine	CFML Engine name (lucee, adobe, railo)
+	* @cfengine	CFML Engine name (lucee, adobe, railo, boxlang)
 	* @baseDirectory base directory for server install
 	* @serverInfo The struct of server settings
 	* @serverHomeDirectory Override where the server's home with be
@@ -38,7 +39,7 @@ component accessors="true" singleton="true" {
 
 		if( len( serverInfo.webXMLOverride ) ){
 			serverInfo.webXMLOverrideActual = serverInfo.webXML.replace( 'web.xml', 'web-override.xml' );
-			fileCopy( serverInfo.webXMLOverride, serverInfo.webXMLOverrideActual );			
+			fileCopy( serverInfo.webXMLOverride, serverInfo.webXMLOverrideActual );
 		} else {
 			serverInfo.webXMLOverrideActual = '';
 		}
@@ -49,6 +50,8 @@ component accessors="true" singleton="true" {
 			return installRailo( installDetails, serverInfo );
 		} else if ( installDetails.engineName contains "lucee" ) {
 			return installLucee( installDetails, serverInfo );
+		} else if ( installDetails.engineName contains "boxlang" ) {
+			return installBoxlang( installDetails, serverInfo );
 		} else {
 			return installDetails;
 		}
@@ -91,6 +94,56 @@ component accessors="true" singleton="true" {
 		var seedPropertiesPath = installDetails.installDir & "/WEB-INF/cfusion/lib/seed.properties";
 		ensureSeedProperties( seedPropertiesPath );
 
+		return installDetails;
+	}
+
+	/**
+	* install BoxLang
+	*
+	**/
+	public function installBoxlang( installDetails, serverInfo ) {
+		// default web.xml
+		_installBoxlang( installDetails, serverInfo, serverInfo.webXML );
+		// web.xml override
+		if( trim( serverInfo.webXMLOverrideActual ) != '' ) {
+			_installBoxlang( installDetails, serverInfo, serverInfo.webXMLOverrideActual );
+		}
+		
+		return installDetails;
+	}
+	public function _installBoxlang( installDetails, serverInfo, WebXMLPath ) {
+		var fullServerConfigDir = serverInfo.serverConfigDir;
+
+		if( fullServerConfigDir.startsWith( '/WEB-INF' ) ) {
+			fullServerConfigDir = installDetails.installDir & fullServerConfigDir;
+		}
+
+		var webXML = XMLParse( WebXMLPath );
+		var updateMade = false;
+
+		// always set home and debug mode
+		updateMade = ensureProperServletInitParam( webXML, 'ortus.boxlang.servlet.BoxLangServlet', "boxlang-home", fullServerConfigDir );
+		if( serverInfo.debug ) {
+			updateMade = ensureProperServletInitParam( webXML, 'ortus.boxlang.servlet.BoxLangServlet', "boxlang-debug", serverInfo.debug ) || updateMade;
+		} else {
+			updateMade = removeServletInitParam( webXML, 'ortus.boxlang.servlet.BoxLangServlet', "boxlang-debug" ) || updateMade;
+		}
+		// Only override the config file if set
+		if( serverInfo.engineConfigFile != '' ) {
+			// Config file must exist...
+			if( !fileExists( serverInfo.engineConfigFile ) ) {
+				throw( message='Engine config file not found: #serverInfo.engineConfigFile#', type="commandException" );
+			}
+			// ... and be a JSON file
+			if( !lCase( serverInfo.engineConfigFile ).endsWith('.json')) {
+				throw( message='Engine config file must be a JSON file: #serverInfo.engineConfigFile#', type="commandException" );
+			}
+			updateMade = ensureProperServletInitParam( webXML, 'ortus.boxlang.servlet.BoxLangServlet', "boxlang-config-path", serverInfo.engineConfigFile ) || updateMade;
+		}
+
+		if( updateMade ) {
+			writeXMLFile( webXML, WebXMLPath );
+		}
 		return installDetails;
 	}
 
@@ -145,10 +198,18 @@ component accessors="true" singleton="true" {
 			initialInstall : false
 		};
 
+		// If CFEngine is a relateive file path, we need to know where to look for it.
+		var currentWorkingDirectory = serverInfo.webroot;
+		if( serverInfo.cfengineSource == 'serverJSON' ) {
+			currentWorkingDirectory = getDirectoryFromPath( serverInfo.serverConfigFile );
+		} else if( serverInfo.cfengineSource == 'serverProps' ) {
+			currentWorkingDirectory = shell.pwd();
+		}
+
 		var thisTempDir = tempDir & '/' & createUUID();
 
 		// Find out what endpoint will service them and ask the endpoint what their name is.
-		var endpointData = endpointService.resolveEndpoint( ID, shell.pwd() );
+		var endpointData = endpointService.resolveEndpoint( ID, currentWorkingDirectory );
 		var endpoint = endpointData.endpoint;
 		var engineName = endpoint.getDefaultName( arguments.ID );
 		installDetails.engineName = engineName;
@@ -260,7 +321,7 @@ component accessors="true" singleton="true" {
 				installDetails.version = previousEngineTag.listLast( '@' );
 			}
 
-			calcLuceeRailoContextPaths( installDetails, serverInfo );
+			calcEngineContextPaths( installDetails, serverInfo );
 			return installDetails;
 		}
 
@@ -268,7 +329,7 @@ component accessors="true" singleton="true" {
 		installDetails.initialInstall = true;
 
 		// If we're starting a Lucee server whose version matches the CLI engine, then don't download anything, we're using internal jars.
-		if( listFirst( arguments.ID, '@' ) == getCLIEngineName() && server.lucee.version == replace( installDetails.version, '+', '.', 'all' ) ) {
+		/* if( listFirst( arguments.ID, '@' ) == 'boxlang' && server.boxlang.version == installDetails.version ) {
 
 			job.addLog( "Building a WAR from local jars.");
 
@@ -277,7 +338,7 @@ component accessors="true" singleton="true" {
 			var thislib = thisWebinf & '/lib';
 
 			directoryCreate( installDetails.installDir & '/WEB-INF', true, true );
-			directoryCopy( '/commandbox-home/lib', thislib, false, 'lucee-*.jar' );
+			directoryCopy( '/commandbox-home/lib', thislib, false, 'boxlang-*.jar' );
 			// CommandBox ships with a pack200 compressed Lucee jar. Unpack it for faster start
 			unpackLuceeJar( thislib, installDetails.version );
 
@@ -288,7 +349,7 @@ component accessors="true" singleton="true" {
 			// Mark this WAR as being exploded already
 			fileWrite( engineTagFile, thisEngineTag );
 
-			calcLuceeRailoContextPaths( installDetails, serverInfo );
+			calcEngineContextPaths( installDetails, serverInfo );
 
 			var thisServerContext = serverInfo.serverConfigDir;
 			if( thisServerContext.startsWith( '/WEB-INF' ) ) {
@@ -301,11 +362,16 @@ component accessors="true" singleton="true" {
 
 			return installDetails;
 		}
-
-		if( !packageService.installPackage( ID=arguments.ID, directory=thisTempDir, save=false ) ) {
+ */
+		if( !packageService.installPackage(
+				ID=arguments.ID,
+				directory=thisTempDir,
+				save=false,
+				currentWorkingDirectory=currentWorkingDirectory )
+			) {
 			throw( message='Server not installed.', type="commandException");
 		}
-
+		serverInfo.isJakartaEE = false;
 		// Extract engine name and version from the package.  This is required for non-ForgeBox endpoints
 		// since we don't know it until we actually do the installation
 		if( packageService.isPackage( thisTempDir ) ) {
@@ -315,13 +381,18 @@ component accessors="true" singleton="true" {
 			installDetails.engineName = boxJSON.slug;
 			// This file is so we know the correct version of our server on disk
 			thisEngineTag = boxJSON.slug & '@' & boxJSON.version;
+			// BoxLang beta27+ and ACF 2025+ are Jakarta EE
+			serverInfo.isJakartaEE = boxJSON.JakartaEE ?: false;
 		}
 
-		calcLuceeRailoContextPaths( installDetails, serverInfo );
+		calcEngineContextPaths( installDetails, serverInfo );
 
 		// Look for a war or zip archive inside the package
 		var theArchive = '';
+		var filesFound = "";
+		thisTempDir = fileSystemUtil.normalizeSlashes( thisTempDir );
 		for( var thisFile in directoryList( thisTempDir ) ) {
+			filesFound &= fileSystemUtil.normalizeSlashes( thisFile ).replace( thisTempDir, '' ) & chr(10);
 			if( listFindNoCase( 'war,zip', listLast( thisFile, '.' ) ) ) {
 				theArchive = thisFile;
 				break;
@@ -330,7 +401,7 @@ component accessors="true" singleton="true" {
 
 		// If there's no archive, we don't know what to do!
 		if( theArchive == '' ) {
-			throw( "Package didn't contain a war or zip archive." );
+			throw( message="Package didn't contain a war or zip archive.", detail="Files found: " & chr(10) & filesFound, type="commandException" );
 		}
 
 		job.addLog( "Exploding WAR/zip archive...");
@@ -352,7 +423,7 @@ component accessors="true" singleton="true" {
 		return installDetails;
 	}
 
-	private function calcLuceeRailoContextPaths( installDetails, serverInfo ) {
+	private function calcEngineContextPaths( installDetails, serverInfo ) {
 
 		// Set up server and web context dirs if Railo or Lucee
 		if( installDetails.engineName contains 'lucee' || installDetails.engineName contains 'railo' ) {
@@ -367,6 +438,12 @@ component accessors="true" singleton="true" {
 			if( !len( serverInfo.webConfigDir ) ) {
 				serverInfo.webConfigDir = "/WEB-INF/#lcase( thisName )#-web";
 			}
+			// if we're in multi-context mode, we need to deal with more than one web context, so the path MUST be dynamic
+			// If the user wants the default Lucee behavior, they can set this to "{web-root-directory}/WEB-INF/lucee/"
+			// If the path doesn't look to already be dynamic, we'll make it so
+			if( serverInfo.multiContext && not serverInfo.webConfigDir contains '{web-root-directory}'  && not serverInfo.webConfigDir contains '{web-context-hash}'  ) {
+				serverInfo.webConfigDir &= '-{web-context-hash}'
+			}
 			// Default server context
 			if( !len( serverInfo.serverConfigDir ) ) {
 				serverInfo.serverConfigDir = "/WEB-INF";
@@ -377,6 +454,15 @@ component accessors="true" singleton="true" {
 			installDetails.installDir = replace( installDetails.installDir, '\', '/', 'all' );
 
 			serverInfo.webConfigDir = replace( serverInfo.webConfigDir, installDetails.installDir, '' );
+			serverInfo.serverConfigDir = replace( serverInfo.serverConfigDir, installDetails.installDir, '' );
+		} else if( installDetails.engineName contains 'boxlang' ) {
+			if( !len( serverInfo.serverConfigDir ) ) {
+				serverInfo.serverConfigDir = "/WEB-INF/boxlang/";
+			}
+			// Make relative to WEB-INF if possible
+			serverInfo.serverConfigDir = replace( serverInfo.serverConfigDir, '\', '/', 'all' );
+			installDetails.installDir = replace( installDetails.installDir, '\', '/', 'all' );
+
 			serverInfo.serverConfigDir = replace( serverInfo.serverConfigDir, installDetails.installDir, '' );
 		}
 	}
@@ -403,19 +489,13 @@ component accessors="true" singleton="true" {
 		var updateMade = false;
 		var package = lcase( cfengine );
 
-		// if we're in multi-context mode, we need to deal with more than one web context, so the path MUST be dynamic
-		// If the user wants the default Lucee behavior, they can set this to "{web-root-directory}/WEB-INF/lucee/"
-		// If the path doesn't look to already be dynamic, we'll make it so
-		if( serverInfo.multiContext && not fullWebConfigDir contains '{web-root-directory}'  && not fullWebConfigDir contains '{web-context-hash}'  ) {
-			fullWebConfigDir &= '-{web-context-hash}'
-		}
-		updateMade = ensurePropertServletInitParam( webXML, '#package#.loader.servlet.CFMLServlet', "#package#-web-directory", fullWebConfigDir );
-		updateMade = ensurePropertServletInitParam( webXML, '#package#.loader.servlet.CFMLServlet', "#package#-server-directory", fullServerConfigDir ) || updateMade;
+		updateMade = ensureProperServletInitParam( webXML, '#package#.loader.servlet.CFMLServlet', "#package#-web-directory", fullWebConfigDir );
+		updateMade = ensureProperServletInitParam( webXML, '#package#.loader.servlet.CFMLServlet', "#package#-server-directory", fullServerConfigDir ) || updateMade;
 
 		// Lucee 5+ has a LuceeServlet as well as will create the WEB-INF by default in your web root
 		if( arguments.cfengine == 'lucee' && val( listFirst( arguments.version, '.' )) >= 5 ) {
-			updateMade = ensurePropertServletInitParam( webXML, '#package#.loader.servlet.LuceeServlet', "#package#-web-directory", fullWebConfigDir ) || updateMade;
-			updateMade = ensurePropertServletInitParam( webXML, '#package#.loader.servlet.LuceeServlet', "#package#-server-directory", fullServerConfigDir ) || updateMade;
+			updateMade = ensureProperServletInitParam( webXML, '#package#.loader.servlet.LuceeServlet', "#package#-web-directory", fullWebConfigDir ) || updateMade;
+			updateMade = ensureProperServletInitParam( webXML, '#package#.loader.servlet.LuceeServlet', "#package#-server-directory", fullServerConfigDir ) || updateMade;
 		}
 		if( updateMade || !fileExists( destination ) || forceUpdate ) {
 			writeXMLFile( webXML, destination );
@@ -434,14 +514,16 @@ component accessors="true" singleton="true" {
 	*
 	* @returns true if changes were made, false if nothing was updated.
 	**/
-	function ensurePropertServletInitParam( webXML, string servletClass, string initParamName, string initParamValue ) {
-		var servlets = xmlSearch(webXML,"//:servlet-class[text()='#servletClass#']");
+	function ensureProperServletInitParam( webXML, string servletClass, string initParamName, string initParamValue ) {
+		// Try most portable XPath first (works regardless of namespace)
+		var servlets = xmlSearch(webXML,"//*[local-name()='servlet-class'][text()='#servletClass#']");
 		if( !servlets.len() ) {
 			var servlets = xmlSearch(webXML,"//servlet-class[text()='#servletClass#']");
 		}
 		if( !servlets.len() ) {
 			return false;
 		}
+		
 
 		// If this servlet already has an init-param of this name, ensure the value is correct
 		for( var initParam in servlets[1].XMLParent.XMLChildren.filter( (x)=>x.XMLName=='init-param' ) ) {
@@ -453,16 +535,72 @@ component accessors="true" singleton="true" {
 					return true;
 				}
 			}
+		}   
+		
+		// Detect the namespace from the root element
+		var namespaceURI = webXML.XMLRoot.XMLNsURI;
+		if( !len( namespaceURI ) ) {
+			// Fallback to old Java EE namespace for older web.xml files
+			namespaceURI = "http://java.sun.com/xml/ns/javaee";
 		}
 
 		// if we didn't find a matching init-param above then add it now
-		var initParam = xmlElemnew(webXML,"http://java.sun.com/xml/ns/javaee","init-param");
+		var initParam = xmlElemnew(webXML,namespaceURI,"init-param");
 		initParam.XmlChildren[1] = xmlElemnew(webXML,"param-name");
 		initParam.XmlChildren[1].XmlText = initParamName;
 		initParam.XmlChildren[2] = xmlElemnew(webXML,"param-value");
 		initParam.XmlChildren[2].XmlText = initParamValue;
-		arrayInsertAt(servlets[1].XmlParent.XmlChildren,4,initParam);
+		
+
+		// Find the right position - after init-params but before load-on-startup, async-supported, etc.
+		var insertPosition = servlets[ 1 ].XmlParent.XmlChildren.len() + 1;
+		
+		// Look for elements that should come AFTER init-param and insert before the first one we find
+		for( var i = 1; i <= servlets[ 1 ].XmlParent.XmlChildren.len(); i++ ) {
+			var childName = servlets[ 1 ].XmlParent.XmlChildren[ i ].XMLName;
+			if( listFindNoCase( "load-on-startup,run-as,security-role-ref,multipart-config,async-supported,enabled", childName ) ) {
+				insertPosition = i;
+				break;
+			}
+		}
+		
+		arrayInsertAt( servlets[ 1 ].XmlParent.XmlChildren, insertPosition, initParam );
+		
 		return true;
+
+	}
+
+
+	/**
+	* Ensure a given servlet has a specific init param value
+	*
+	* @webXML XML Doc of webl.xml
+	* @servletClass Name of servlet to check
+	* @initParamName Name of init param to ensure exists
+	*
+	* @returns true if changes were made, false if nothing was updated.
+	**/
+	function removeServletInitParam( webXML, string servletClass, string initParamName ) {
+		// Try most portable XPath first (works regardless of namespace)
+		var servlets = xmlSearch(webXML,"//*[local-name()='servlet-class'][text()='#servletClass#']");
+		if( !servlets.len() ) {
+			var servlets = xmlSearch(webXML,"//servlet-class[text()='#servletClass#']");
+		}
+		if( !servlets.len() ) {
+			return false;
+		}
+
+		// If this servlet already has an init-param of this name, ensure the value is correct
+		var i = 1;
+		for( var child in servlets[1].XMLParent.XMLChildren ) {
+			if( child.XMLName=='init-param' && !isNull( child[ 'param-name' ].XMLText ) && child[ 'param-name' ].XMLText == initParamName ) {
+				arrayDeleteAt( servlets[1].XmlParent.XmlChildren, i );
+				return true;
+			}
+			i++;
+		}
+
+		return false;
 
 	}
 
@@ -552,14 +690,14 @@ component accessors="true" singleton="true" {
 
 							// Delete the old lex and replace with the new unpacked one
 							fileDelete( extFile );
-							zip action='zip' source=extTmpDir file=extFile;
+							zip action='zip' source=extTmpDir file=extFile overwrite=true;
 
 							directoryDelete( extTmpDir, true );
 						} );
 					}
 
 					fileDelete( luceeJarPath );
-					zip action='zip' source=explodedJarDir file=luceeUnpackedJarPath;
+					zip action='zip' source=explodedJarDir file=luceeUnpackedJarPath overwrite=true;
 
 					// Place in artifacts
 					fileCopy( luceeUnpackedJarPath, tempDir & 'temp.zip' );
@@ -625,14 +763,6 @@ component accessors="true" singleton="true" {
 			fileDelete( packedFile );
 		}
 
-	}
-
-	function getCLIEngineName() {
-		// You really can't "detect" Lucee Lite, so I'll just guess based on if there any a full list of extensions installed
-		if(  extensionList().recordCount < 5 ) {
-			return 'lucee-light';
-		}
-		return 'lucee';
 	}
 
 	// CFConfig does this, but that doesn't help someone manually creating datasources.

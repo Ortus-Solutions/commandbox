@@ -168,23 +168,27 @@ component accessors=true {
 				}
 			} // end thread
 
+			// Need to start reading the input stream or we can't detect Ctrl-C on Windows
+			var terminal = shell.getReader().getTerminal();
+			if( terminal.paused() ) {
+					terminal.resume();
+			}
+			
 			while( true ){
 
-				// Need to start reading the input stream or we can't detect Ctrl-C on Windows
-				var terminal = shell.getReader().getTerminal();
-				if( terminal.paused() ) {
-						terminal.resume();
-				}
-
-				// Detect user pressing Ctrl-C
-				// Any other characters captured will be ignored
-				var line = shell.getReader().readLine();
-				if( line == 'q' ) {
-					break;
+				if( terminal.getClass().getName() contains 'dumb' ) {
+					sleep( 500 );
 				} else {
-					print
-						.boldGreenLine( 'To exit press Ctrl-C or "q" followed the enter key.' )
-						.toConsole();
+					// Detect user pressing Ctrl-C
+					// Any other characters captured will be ignored
+					var line = shell.getReader().readLine();
+					if( line == 'q' ) {
+						break;
+					} else {
+						print
+							.boldGreenLine( 'To exit press Ctrl-C or "q" followed the enter key.' )
+							.toConsole();
+					}
 				}
 			}
 

@@ -12,7 +12,7 @@ component{
 	function configure(){
 
 		// The CacheBox configuration structure DSL
-		cacheBox = {
+		variables.cacheBox = {
 
 			// Scope registration, automatically register the cachebox factory instance on any CF scope
 			// By default it registers itself on server scope

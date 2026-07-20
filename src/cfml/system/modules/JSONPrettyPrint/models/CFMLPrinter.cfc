@@ -52,7 +52,8 @@ component accessors="true" {
             }
             var strs = [ ];
             for ( var key in keys ) {
-                var str = baseIndent & settings.indent & ( settings.ansi ? ANSIPrint.wrap( '"#key#"', 'key', settings.ansiColors ) : '"#key#"' ) & settings.colon;
+                var jsonKey = serializeJSON( key );
+                var str = baseIndent & settings.indent & ( settings.ansi ? ANSIPrint.wrap( jsonKey, 'key', settings.ansiColors ) : jsonKey ) & settings.colon;
                 if ( !structKeyExists( json, key ) || isNull( json[ key ] ) ) {
                     str &= settings.ansi ? ANSIPrint.wrap( 'null', 'value', settings.ansiColors ) : 'null';
                 } else {

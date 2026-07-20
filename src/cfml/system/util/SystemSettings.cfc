@@ -16,6 +16,23 @@ component singleton {
 	// Default environment for the shell
 	variables.environment = {};
 
+	function init() {
+		// TODO: try catch for backwards compat.  Remove before releasing bx-cli.
+		try {
+			getBoxRuntime().getConfiguration().registerSystemSettingProvider( "", name => {
+				// I can't pass null as the default, or it won't be used.
+				var notFoundValue = "_____NOT FOUND ______";
+				var result = variables.getSystemSetting( name, notFoundValue );
+				if( result == notFoundValue ) {
+					return null;
+				}
+				return result;
+			});
+		} catch( any e ) {
+
+		}
+	}
+
 	/**
 	* Retrieve a Java System property or env value by name.
 	*
@@ -118,6 +135,16 @@ component singleton {
 	}
 
 	/**
+	* Set a struct of System Settings into the current environment
+	*
+	* @env Struct of system settings to set
+	* @inParent Pass true to set the variable in the parent environment
+	*/
+    function setSystemSettings( required struct env, inParent=false ) {
+    	env.each( (k,v)=>setSystemSetting( k, v, inParent ) );
+	}
+
+	/**
 	* Set a Java System property.
 	*
 	* @key The name of the setting to set.
@@ -156,7 +183,7 @@ component singleton {
 				type = "SystemSettingNotFound",
 				message = "Could not find a env property with key [#arguments.key#]."
 			);
-		} 
+		}
 
 	}
 
@@ -213,7 +240,11 @@ component singleton {
 			// Loop over and process each key
 			for( var key in dataStructure ) {
 				var expandedKey = expandSystemSettings( key, context );
-				dataStructure[ expandedKey ] = expandDeepSystemSettings( dataStructure[ key ], context );
+				if( isNull( dataStructure[ key ] ) ) {
+					dataStructure[ expandedKey ] = nullValue();
+				} else {
+					dataStructure[ expandedKey ] = expandDeepSystemSettings( dataStructure[ key ], context );
+				}
 				if( expandedKey != key ) dataStructure.delete( key );
 			}
 			return dataStructure;
@@ -223,7 +254,9 @@ component singleton {
 			// Loop over and process each index
 			for( var item in dataStructure ) {
 				i++;
-				dataStructure[ i ] = expandDeepSystemSettings( item, context );
+				if( !isNull( item ) ) {
+					dataStructure[ i ] = expandDeepSystemSettings( item, context );
+				}
 			}
 			return dataStructure;
 		// If it's a string...

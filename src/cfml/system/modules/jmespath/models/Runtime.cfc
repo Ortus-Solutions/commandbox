@@ -208,8 +208,8 @@ component singleton  displayname="runtime" {
         if(getMetaData(obj).getName() == 'java.lang.String') return TYPE_STRING;
         if(getMetaData(obj).getName() == 'java.lang.Boolean') return TYPE_BOOLEAN;
         if(getMetaData(obj).getName() == 'java.lang.Double') return TYPE_NUMBER;
-        if(getMetaData(obj).getName() == 'lucee.runtime.type.ArrayImpl') return TYPE_ARRAY;
-        if(getMetaData(obj).getName() == 'lucee.runtime.type.StructImpl'){
+        if(getMetaData(obj).getName() == 'ortus.boxlang.runtime.types.Array') return TYPE_ARRAY;
+        if(getMetaData(obj).getName() == 'ortus.boxlang.runtime.types.Struct'){
             if (structKeyExists(obj,'jmespathType') && obj.jmespathType == TOK_EXPREF) {
                 return TYPE_EXPREF;
             } else {

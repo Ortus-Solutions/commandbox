@@ -39,7 +39,7 @@ component {
 	function run( string property='', boolean system=false ) {
 
 		if( arguments.system ) {
-			var directory = expandPath( '/commandbox' );
+			var directory = expandPath( '/commandbox-home/cfml' );
 		} else {
 			var directory = getCWD();
 		}
@@ -54,7 +54,7 @@ component {
 
 		try {
 
-			print.line( JSONService.show( boxJSON, arguments.property ) );
+			print.text( JSONService.show( boxJSON, arguments.property ) );
 
 		} catch( JSONException var e ) {
 			error( e.message, e.detail );

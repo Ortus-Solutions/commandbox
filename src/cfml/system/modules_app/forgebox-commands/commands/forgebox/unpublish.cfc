@@ -9,7 +9,7 @@ component aliases="unpublish" {
 	property name="configService" inject="configService";
 
 	/**
-	* @version The directory to publish
+	* @version The version to publish
 	* @directory The directory to publish
 	* @force Skip the prompt
 	* @endpointName  Name of custom forgebox endpoint to use

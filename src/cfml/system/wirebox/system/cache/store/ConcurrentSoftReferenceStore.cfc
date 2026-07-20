@@ -2,12 +2,13 @@
  * Copyright Since 2005 ColdBox Framework by Luis Majano and Ortus Solutions, Corp
  * www.ortussolutions.com
  * ---
- * @author Luis Majano
  *
  * I am a concurrent soft reference object store. In other words, I am fancy!
  * This store is case-sensitive
+ *
+ * @author Luis Majano
  */
-component extends="wirebox.system.cache.store.ConcurrentStore" accessors=true{
+component extends="wirebox.system.cache.store.ConcurrentStore" accessors=true {
 
 	/**
 	 * The reverse lookup map for soft references
@@ -22,19 +23,16 @@ component extends="wirebox.system.cache.store.ConcurrentStore" accessors=true{
 	/**
 	 * Constructor
 	 *
-	 * @cacheProvider The associated cache provider as wirebox.system.cache.providers.ICacheProvider
+	 * @cacheProvider             The associated cache provider as wirebox.system.cache.providers.ICacheProvider
 	 * @cacheprovider.doc_generic wirebox.system.cache.providers.ICacheProvider
 	 */
 	function init( required cacheProvider ){
 		// Super size me
 		super.init( arguments.cacheProvider );
 
-		// Override Fields
-		variables.indexer.setFields( variables.indexer.getFields() & ",isSoftReference" );
-
 		// Prepare soft reference lookup maps
-		variables.softRefKeyMap	 	= createObject( "java", "java.util.concurrent.ConcurrentHashMap" ).init();
-		variables.referenceQueue  	= createObject( "java", "java.lang.ref.ReferenceQueue" ).init();
+		variables.softRefKeyMap  = createObject( "java", "java.util.concurrent.ConcurrentHashMap" ).init();
+		variables.referenceQueue = createObject( "java", "java.lang.ref.ReferenceQueue" ).init();
 
 		return this;
 	}
@@ -51,23 +49,16 @@ component extends="wirebox.system.cache.store.ConcurrentStore" accessors=true{
 	 * Reap the storage, clean it from old stuff
 	 */
 	void function reap(){
-		lock
-			name="ConcurrentSoftReferenceStore.reap.#variables.storeID#"
-			type="exclusive"
-			timeout="20"{
-
+		lock name="ConcurrentSoftReferenceStore.reap.#variables.storeID#" type="exclusive" timeout="20" {
 			// Init Ref Key Vars
 			var collected = variables.referenceQueue.poll();
 
 			// Let's reap the garbage collected soft references
-			while( !isNull( local.collected ) ){
-
+			while ( !isNull( local.collected ) ) {
 				// Clean if it still exists
-				if( softRefLookup( collected ) ){
-
+				if ( softRefLookup( collected ) ) {
 					// expire it
 					expireObject( getSoftRefKey( collected ) );
-
 					// GC Collection Hit
 					variables.cacheProvider.getStats().gcHit();
 				}
@@ -87,17 +78,12 @@ component extends="wirebox.system.cache.store.ConcurrentStore" accessors=true{
 	 */
 	function lookup( required objectKey ){
 		// check existence via super, if not found, check as it might be a soft reference
-		if( NOT super.lookup( arguments.objectKey ) ){
+		if ( NOT super.lookup( arguments.objectKey ) ) {
 			return false;
 		}
 
 		// get quiet to test it as it might be a soft reference
-		if( isNull( getQuiet( arguments.objectKey ) ) ){
-			return false;
-		}
-
-		// if we get here, it is found
-		return true;
+		return isNull( getQuiet( arguments.objectKey ) ) ? false : true;
 	}
 
 	/**
@@ -108,13 +94,11 @@ component extends="wirebox.system.cache.store.ConcurrentStore" accessors=true{
 	function get( required objectKey ){
 		// Get via concurrent store
 		var target = super.get( arguments.objectKey );
-		if( !isNull( local.target ) ){
-
+		if ( !isNull( target ) ) {
 			// Validate if SR or normal object
-			if( isInstanceOf( target, "java.lang.ref.SoftReference" ) ){
+			if ( isInstanceOf( target, "java.lang.ref.SoftReference" ) ) {
 				return target.get();
 			}
-
 			return target;
 		}
 	}
@@ -125,15 +109,12 @@ component extends="wirebox.system.cache.store.ConcurrentStore" accessors=true{
 	 * @objectKey The key to retrieve
 	 */
 	function getQuiet( required objectKey ){
-		// Get via concurrent store
 		var target = super.getQuiet( arguments.objectKey );
-		if( !isNull( local.target ) ){
-
+		if ( !isNull( local.target ) ) {
 			// Validate if SR or normal object
-			if( isInstanceOf( target, "java.lang.ref.SoftReference" ) ){
+			if ( isInstanceOf( target, "java.lang.ref.SoftReference" ) ) {
 				return target.get();
 			}
-
 			return target;
 		}
 	}
@@ -141,41 +122,41 @@ component extends="wirebox.system.cache.store.ConcurrentStore" accessors=true{
 	/**
 	 * Sets an object in the storage
 	 *
-	 * @objectKey The object key"
-	 * @object The object to save"
-	 * @timeout Timeout in minutes"
+	 * @objectKey         The object key"
+	 * @object            The object to save"
+	 * @timeout           Timeout in minutes"
 	 * @lastAccessTimeout Idle Timeout in minutes"
-	 * @extras A map of extra name-value pairs"
+	 * @extras            A map of extra name-value pairs"
 	 */
 	void function set(
 		required objectKey,
 		required object,
-		timeout="",
-		lastAccessTimeout="",
-		extras={}
+		timeout           = "",
+		lastAccessTimeout = "",
+		extras            = {}
 	){
-		var target 	= 0;
-		var isSR	= ( arguments.timeout GT 0 );
+		var target = 0;
+		var isSR   = ( arguments.timeout GT 0 );
 
 		// Check for eternal object
-		if( isSR ){
+		if ( isSR ) {
 			// Cache as soft reference not an eternal object
 			target = createSoftReference( arguments.objectKey, arguments.object );
 		} else {
 			target = arguments.object;
 		}
 
-		// Store it
-		super.set(
-			objectKey         = arguments.objectKey,
-			object            = target,
-			timeout           = arguments.timeout,
-			lastAccessTimeout = arguments.lastAccessTimeout,
-			extras            = arguments.extras
-		);
-
-		// Set extra md in indexer
-		variables.indexer.setObjectMetadataProperty( arguments.objectKey, "isSoftReference", isSR );
+		var data = {
+			"object"            : target,
+			"hits"              : 1,
+			"timeout"           : arguments.timeout,
+			"lastAccessTimeout" : arguments.lastAccessTimeout,
+			"created"           : now(),
+			"lastAccessed"      : now(),
+			"isExpired"         : false,
+			"isSoftReference"   : isSR
+		};
+		variables.pool.put( arguments.objectKey, data );
 	}
 
 	/**
@@ -185,7 +166,7 @@ component extends="wirebox.system.cache.store.ConcurrentStore" accessors=true{
 	 */
 	function clear( required objectKey ){
 		// Check if it exists
-		if( NOT variables.pool.containsKey( arguments.objectKey ) ){
+		if ( NOT variables.pool.containsKey( arguments.objectKey ) ) {
 			return false;
 		}
 
@@ -193,11 +174,32 @@ component extends="wirebox.system.cache.store.ConcurrentStore" accessors=true{
 		var softRef = variables.pool.get( arguments.objectKey );
 
 		// Removal of Soft Ref Lookup
-		if( !isNull( local.softRef ) && variables.indexer.getObjectMetadataProperty( arguments.objectKey, "isSoftReference" ) ){
+		if ( !isNull( local.softRef ) ) {
 			variables.softRefKeyMap.remove( softRef.hashCode() );
 		}
 
 		return super.clear( arguments.objectKey );
+	}
+
+	/**
+	 * Get the metadata of an object
+	 *
+	 * @objectKey The key to retrieve
+	 */
+	struct function getCachedObjectMetadata( required objectKey ){
+		var results = variables.pool.get( arguments.objectKey );
+		if ( isNull( local.results ) ) {
+			return {};
+		}
+		return {
+			"hits"              : results.hits,
+			"timeout"           : results.timeout,
+			"lastAccessTimeout" : results.lastAccessTimeout,
+			"created"           : results.created,
+			"lastAccessed"      : results.lastAccessed,
+			"isExpired"         : results.isExpired,
+			"isSoftReference"   : results.isSoftReference
+		}
 	}
 
 	/****************************************************************************************/
@@ -228,14 +230,16 @@ component extends="wirebox.system.cache.store.ConcurrentStore" accessors=true{
 	 * Create SR, register cached object and reference
 	 *
 	 * @objectKey The value of the key to store
-	 * @target The target to wrap
+	 * @target    The target to wrap
 	 *
 	 * @return A java soft reference `java.lang.ref.SoftReference`
 	 */
 	private function createSoftReference( required objectKey, required target ){
 		// Create Soft Reference Wrapper and register with Queue
-		var softRef = createObject( "java", "java.lang.ref.SoftReference" )
-			.init( arguments.target, variables.referenceQueue );
+		var softRef = createObject( "java", "java.lang.ref.SoftReference" ).init(
+			arguments.target,
+			variables.referenceQueue
+		);
 
 		// Create Reverse Mapping, using CF approach or ACF blows up.
 		variables.softRefKeyMap.put( "hc-#softRef.hashCode()#", arguments.objectKey );

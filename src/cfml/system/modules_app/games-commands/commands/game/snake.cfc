@@ -57,7 +57,7 @@ component aliases="snake" {
 		// For each row...
 		while( ++i <= variables.height ) {
 			// Initialize it as an array of characters for each column
-			//variables.gameSurface[ i ] = [];
+			variables.gameSurface[ i ] = [];
 			loop from=1 to=variables.width index='j' {
 				variables.gameSurface[ i ][ j ] = ' ';
 			}

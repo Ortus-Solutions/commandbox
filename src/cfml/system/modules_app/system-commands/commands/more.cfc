@@ -9,12 +9,19 @@
 component excludeFromHelp=true {
 
 	/**
-	 * @input.hint The piped input to be displayed.
+	* @input The piped input to be displayed or a file path to output.
+	* @input.optionsFileComplete true
 	 **/
 	function run( input='' ) {
+
+		// If the input is a small-ish string with no line breaks, test it to see if it's a file path
+		if( len( input ) < 1000 && !find( input, chr(10) ) && !find( input, chr(13) ) && fileExists(  resolvePath( input ) ) ) {
+			input = fileRead( resolvePath( input ) );
+		}
 		// Get terminal height
 		var termHeight = shell.getTermHeight()-2;
 		// Turn output into an array, breaking on carriage returns
+		input = input.replace( chr(13) & chr(10), chr(10), 'all' );
 		var content = listToArray( arguments.input, chr(13) & chr(10), true );
 		var key= '';
 		var i = 0;
@@ -27,10 +34,10 @@ component excludeFromHelp=true {
 				// pause for user input
 				key = shell.waitForKey();
 				// If space, advance one line
-				if( key == 32 ) {
+				if( key == ' ' ) {
 					StopAtLine++;
-				// If Ctrl+c, abort, ESC and q
-				} else if( key == 3 || key == 27 || key == 113 ){
+				// If ESC or q
+				} else if( key == 'escape' || key == 'q' ){
 					print.redLine( 'Cancelled...' );
 					return;
 				// Everything else is one page

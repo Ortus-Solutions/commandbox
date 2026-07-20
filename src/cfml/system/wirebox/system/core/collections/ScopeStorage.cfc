@@ -2,7 +2,7 @@
  * Copyright Since 2005 ColdBox Framework by Luis Majano and Ortus Solutions, Corp
  * www.ortussolutions.com
  * ---
- * A utility Facade to help in storing data in multiple CF Storages
+ * A utility Facade to help in storing data in multiple engine storages
  */
 component {
 
@@ -18,15 +18,12 @@ component {
 
 	/**
 	 * Store a value in a scope
-	 * @key The key
+	 *
+	 * @key   The key
 	 * @value The value
 	 * @scope The ColdFusion Scope
 	 */
-	function put(
-		required key,
-		required value,
-		required scope
-	){
+	function put( required key, required value, required scope ){
 		var scopePointer              = getScope( arguments.scope );
 		scopePointer[ arguments.key ] = arguments.value;
 		return this;
@@ -34,7 +31,8 @@ component {
 
 	/**
 	 * Delete a value in a scope
-	 * @key The key
+	 *
+	 * @key   The key
 	 * @scope The ColdFusion Scope
 	 */
 	boolean function delete( required key, required scope ){
@@ -47,44 +45,52 @@ component {
 
 	/**
 	 * Get a value in a scope
-	 * @key The key
-	 * @scope The CF Scope
+	 *
+	 * @key          The key
+	 * @scope        The CF Scope
 	 * @defaultValue The default value
+	 *
+	 * @return The value if exists, or the default value if provided
+	 *
+	 * @throws ScopeStorage.KeyNotFound if the key does not exist and no default value is provided
 	 */
-	function get(
-		required key,
-		required scope,
-		defaultValue
-	){
-		// Do stupid ACF Hack due to choking on `default` argument.
-		if ( structKeyExists( arguments, "default" ) ) {
-			arguments.defaultValue = arguments.default;
-		}
-
+	function get( required key, required scope, defaultValue ){
 		if ( exists( arguments.key, arguments.scope ) ) {
 			return structFind( getscope( arguments.scope ), arguments.key );
-		} else if ( structKeyExists( arguments, "defaultValue" ) ) {
+		} else if ( !isNull( arguments.defaultValue ) ) {
 			return arguments.defaultValue;
 		}
 
 		throw(
 			type    = "ScopeStorage.KeyNotFound",
-			message = "The key #arguments.key# does not exist in the #arguments.scope# scope."
+			message = "The key [#arguments.key#] does not exist in the [#arguments.scope#] scope."
 		);
 	}
 
 	/**
-	 * Check if a key exists
-	 * @key The key
+	 * Check if a key exists and it's not null in a scope
+	 *
+	 * @key   The key
 	 * @scope The CF Scope
+	 *
+	 * @return true if exists and not null, false otherwise
+	 *
+	 * @throws ScopeStorage.KeyNotFound if the key does not exist
 	 */
 	boolean function exists( required key, required scope ){
-		return structKeyExists( getScope( arguments.scope ), arguments.key );
+		var targetScope = getScope( arguments.scope );
+		if ( targetScope.keyExists( arguments.key ) && !isNull( targetScope[ arguments.key ] ) ) {
+			return true;
+		}
+		return false;
 	}
 
 	/**
 	 * Get a scope reference
+	 *
 	 * @scope The CF Scope
+	 *
+	 * @return The scope reference
 	 */
 	any function getScope( required scope ){
 		scopeCheck( arguments.scope );
@@ -144,6 +150,7 @@ component {
 
 	/**
 	 * Check if a scope is valid, else throws exception
+	 *
 	 * @scope The CF Scope
 	 */
 	any function scopeCheck( required scope ){

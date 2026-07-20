@@ -7,8 +7,9 @@
 */
 component {
 	function configure() {
-		interceptors = [
-			{ class="#moduleMapping#.interceptors.JSONSystemSettingExpansions" }
+		variables.interceptors = [
+			{ class="#moduleMapping#.interceptors.JSONSystemSettingExpansions" },
+			{ class="#moduleMapping#.interceptors.ConfigForgeBoxSync" }
 		];
 	}
 }

@@ -44,9 +44,9 @@ component accessors="true" {
 	/**
 	 * Construct a new ColdBox Future backed by a Java Completable Future
 	 *
-	 * @value The actual closure/lambda/udf to run with or a completed value to seed the future with
-	 * @executor A custom executor to use with the future, else use the default
-	 * @debug Add output debugging
+	 * @value          The actual closure/lambda/udf to run with or a completed value to seed the future with
+	 * @executor       A custom executor to use with the future, else use the default
+	 * @debug          Add output debugging
 	 * @loadAppContext Load the CFML App contexts or not, disable if not used
 	 */
 	Future function init(
@@ -91,7 +91,7 @@ component accessors="true" {
 	 * If not already completed, completes this Future with a CancellationException.
 	 * Dependent Futures that have not already completed will also complete exceptionally, with a CompletionException caused by this CancellationException.
 	 *
-	 * @returns true if this task is now cancelled
+	 * @return true if this task is now cancelled
 	 */
 	boolean function cancel( boolean mayInterruptIfRunning = true ){
 		return variables.native.cancel( javacast( "boolean", arguments.mayInterruptIfRunning ) );
@@ -111,8 +111,8 @@ component accessors="true" {
 	/**
 	 * Completes this CompletableFuture with the given value if not otherwise completed before the given timeout.
 	 *
-	 * @value The value to use upon timeout
-	 * @timeout how long to wait before completing normally with the given value, in units of unit
+	 * @value    The value to use upon timeout
+	 * @timeout  how long to wait before completing normally with the given value, in units of unit
 	 * @timeUnit The time unit to use, available units are: days, hours, microseconds, milliseconds, minutes, nanoseconds, and seconds. The default is milliseconds
 	 */
 	Future function completeOnTimeout(
@@ -131,7 +131,7 @@ component accessors="true" {
 	/**
 	 * Exceptionally completes this CompletableFuture with a TimeoutException if not otherwise completed before the given timeout.
 	 *
-	 * @timeout how long to wait before completing normally with the given value, in units of unit
+	 * @timeout  how long to wait before completing normally with the given value, in units of unit
 	 * @timeUnit The time unit to use, available units are: days, hours, microseconds, milliseconds, minutes, nanoseconds, and seconds. The default is milliseconds
 	 */
 	Future function orTimeout( required timeout, timeUnit = "milliseconds" ){
@@ -160,7 +160,7 @@ component accessors="true" {
 	 *
 	 * @message An optional message to add to the exception to be thrown.
 	 *
-	 * @returns The same Future
+	 * @return The same Future
 	 */
 	Future function completeExceptionally( message = "Future operation completed with manual exception" ){
 		variables.native.completeExceptionally(
@@ -185,19 +185,19 @@ component accessors="true" {
 	 *
 	 * @defaultValue If the returned value is null, then we can pass a default value to return
 	 *
-	 * @throws CompletionException - if this future completed exceptionally or a completion computation threw an exception
-	 * @throws CancellationException - if the computation was cancelled
-	 *
 	 * @return The result value
+	 *
+	 * @throws CompletionException   - if this future completed exceptionally or a completion computation threw an exception
+	 * @throws CancellationException - if the computation was cancelled
 	 */
 	any function join( defaultValue ){
 		var results = variables.native.join();
 
-		if ( !isNull( results ) ) {
-			return results;
+		if ( !isNull( local.results ) ) {
+			return local.results;
 		}
 
-		if ( isNull( results ) && !isNull( arguments.defaultValue ) ) {
+		if ( isNull( local.results ) && !isNull( arguments.defaultValue ) ) {
 			return arguments.defaultValue;
 		}
 	}
@@ -206,12 +206,13 @@ component accessors="true" {
 	 * Waits if necessary for at most the given time for this future to complete, and then returns its result, if available.
 	 * If the result is null, then you can pass the defaultValue argument to return it.
 	 *
-	 * @timeout The timeout value to use, defaults to forever
-	 * @timeUnit The time unit to use, available units are: days, hours, microseconds, milliseconds, minutes, nanoseconds, and seconds. The default is milliseconds
+	 * @timeout      The timeout value to use, defaults to forever
+	 * @timeUnit     The time unit to use, available units are: days, hours, microseconds, milliseconds, minutes, nanoseconds, and seconds. The default is milliseconds
 	 * @defaultValue If the Future did not produce a value, then it will return this default value.
 	 *
-	 * @returns The result value
-	 * @throws CancellationException, ExecutionException, InterruptedException, TimeoutException
+	 * @return The result value
+	 *
+	 * @throws CancellationException , ExecutionException, InterruptedException, TimeoutException
 	 */
 	any function get(
 		numeric timeout = 0,
@@ -239,8 +240,8 @@ component accessors="true" {
 		}
 
 		// If we have results, return them
-		if ( !isNull( results ) ) {
-			return results;
+		if ( !isNull( local.results ) ) {
+			return local.results;
 		}
 
 		// If we didn't, do we have a default value
@@ -255,9 +256,9 @@ component accessors="true" {
 	 *
 	 * @defaultValue The value to return if not completed
 	 *
-	 * @returns The result value, if completed, else the given defaultValue
+	 * @return The result value, if completed, else the given defaultValue
 	 *
-	 * @throws CancellationException, CompletionException
+	 * @throws CancellationException , CompletionException
 	 */
 	function getNow( required defaultValue ){
 		return variables.native.getNow( arguments.defaultValue );
@@ -307,7 +308,7 @@ component accessors="true" {
 	Future function exceptionally( required target ){
 		variables.native = variables.native.exceptionally(
 			createDynamicProxy(
-				new wirebox.system.async.proxies.Function(
+				new wirebox.system.async.cbproxies.models.Function(
 					arguments.target,
 					variables.debug,
 					variables.loadAppContext
@@ -332,7 +333,7 @@ component accessors="true" {
 	 * - This future is asynchronously completed by a task running in the ForkJoinPool.commonPool() with the value obtained by calling the given Supplier.
 	 *
 	 * @supplier A CFC instance or closure or lambda or udf to execute and return the value to be used in the future
-	 * @method If the supplier is a CFC, then it executes a method on the CFC for you. Defaults to the `run()` method
+	 * @method   If the supplier is a CFC, then it executes a method on the CFC for you. Defaults to the `run()` method
 	 * @executor An optional executor to use for asynchronous execution of the task
 	 *
 	 * @return The new completion stage (Future)
@@ -343,7 +344,7 @@ component accessors="true" {
 		any executor = variables.executor
 	){
 		var jSupplier = createDynamicProxy(
-			new wirebox.system.async.proxies.Supplier(
+			new wirebox.system.async.cbproxies.models.Supplier(
 				arguments.supplier,
 				arguments.method,
 				variables.debug,
@@ -411,7 +412,7 @@ component accessors="true" {
 	 */
 	Future function handle( required action ){
 		var biFunction = createDynamicProxy(
-			new wirebox.system.async.proxies.BiFunction(
+			new wirebox.system.async.cbproxies.models.BiFunction(
 				arguments.action,
 				variables.debug,
 				variables.loadAppContext
@@ -442,14 +443,14 @@ component accessors="true" {
 	 * handleAsync( (input, exception) => {}, asyncManager.$executors.newFixedThreadPool() )
 	 * </pre>
 	 *
-	 * @action the function to use to compute the value of the returned CompletionStage
+	 * @action   the function to use to compute the value of the returned CompletionStage
 	 * @executor the java executor to use for asynchronous execution, can be empty
 	 *
 	 * @return The new completion stage
 	 */
 	Future function handleAsync( required action, executor ){
 		var biFunction = createDynamicProxy(
-			new wirebox.system.async.proxies.BiFunction(
+			new wirebox.system.async.cbproxies.models.BiFunction(
 				arguments.action,
 				variables.debug,
 				variables.loadAppContext
@@ -486,7 +487,7 @@ component accessors="true" {
 	 */
 	Future function whenComplete( required action ){
 		var biConsumer = createDynamicProxy(
-			new wirebox.system.async.proxies.BiConsumer(
+			new wirebox.system.async.cbproxies.models.BiConsumer(
 				arguments.action,
 				variables.debug,
 				variables.loadAppContext
@@ -516,14 +517,14 @@ component accessors="true" {
 	 * whenCompleteAsync( (input, exception) => {}, asyncManager.$executors.newFixedThreadPool() )
 	 * </pre>
 	 *
-	 * @action the action to perform
+	 * @action   the action to perform
 	 * @executor the java executor to use for asynchronous execution, can be empty
 	 *
 	 * @return The new completion stage
 	 */
 	Future function whenCompleteAsync( required action, executor ){
 		var biConsumer = createDynamicProxy(
-			new wirebox.system.async.proxies.BiConsumer(
+			new wirebox.system.async.cbproxies.models.BiConsumer(
 				arguments.action,
 				variables.debug,
 				variables.loadAppContext
@@ -560,7 +561,7 @@ component accessors="true" {
 	 */
 	Future function then( required target ){
 		var apply = createDynamicProxy(
-			new wirebox.system.async.proxies.Function(
+			new wirebox.system.async.cbproxies.models.Function(
 				arguments.target,
 				variables.debug,
 				variables.loadAppContext
@@ -607,7 +608,7 @@ component accessors="true" {
 	 */
 	Future function thenAsync( required target, executor ){
 		var apply = createDynamicProxy(
-			new wirebox.system.async.proxies.Function(
+			new wirebox.system.async.cbproxies.models.Function(
 				arguments.target,
 				variables.debug,
 				variables.loadAppContext
@@ -650,7 +651,7 @@ component accessors="true" {
 	 */
 	Future function thenRun( required target ){
 		var fConsumer = createDynamicProxy(
-			new wirebox.system.async.proxies.Consumer(
+			new wirebox.system.async.cbproxies.models.Consumer(
 				arguments.target,
 				variables.debug,
 				variables.loadAppContext
@@ -685,14 +686,14 @@ component accessors="true" {
 	 * thenRunAsync( (result) => systemOutput( result ), myExecutor )
 	 * </pre>
 	 *
-	 * @target The action to perform before completing the returned CompletionStage
+	 * @target   The action to perform before completing the returned CompletionStage
 	 * @executor If passed, the executor to use to run the target
 	 *
 	 * @return The new completion stage (Future)
 	 */
 	Future function thenRunAsync( required target, executor ){
 		var fConsumer = createDynamicProxy(
-			new wirebox.system.async.proxies.Consumer(
+			new wirebox.system.async.cbproxies.models.Consumer(
 				arguments.target,
 				variables.debug,
 				variables.loadAppContext
@@ -730,7 +731,7 @@ component accessors="true" {
 	Future function thenCompose( required fn ){
 		variables.native = variables.native.thenCompose(
 			createDynamicProxy(
-				new wirebox.system.async.proxies.FutureFunction(
+				new wirebox.system.async.cbproxies.models.FutureFunction(
 					arguments.fn,
 					variables.debug,
 					variables.loadAppContext
@@ -746,13 +747,13 @@ component accessors="true" {
 	 * both are complete.
 	 *
 	 * @future The ColdBox Future to combine
-	 * @fn The closure that will combine them: ( r1, r2 ) =>
+	 * @fn     The closure that will combine them: ( r1, r2 ) =>
 	 */
 	Future function thenCombine( required future, fn ){
 		variables.native = variables.native.thenCombine(
 			arguments.future.getNative(),
 			createDynamicProxy(
-				new wirebox.system.async.proxies.BiFunction(
+				new wirebox.system.async.cbproxies.models.BiFunction(
 					arguments.fn,
 					variables.debug,
 					variables.loadAppContext
@@ -788,7 +789,6 @@ component accessors="true" {
 		return this.thenAsync( function(){
 			// return back the completed array results
 			return jFutures.map( function( jFuture ){
-				// writeDump( var=arguments.jFuture.get(), output="console" );
 				return arguments.jFuture.get();
 			} );
 		} );
@@ -806,16 +806,25 @@ component accessors="true" {
 	 * allApply( data, ( item ) => item.key & item.value.toString() )
 	 * </pre>
 	 *
-	 * @items An array or struct to process in parallel
-	 * @fn The function that will be applied to each of the collection's items
-	 * @executor The custom executor to use if passed, else the forkJoin Pool
-	 * @timeout The timeout to use when waiting for each item to be processed
-	 * @timeUnit The time unit to use, available units are: days, hours, microseconds, milliseconds, minutes, nanoseconds, and seconds. The default is milliseconds
+	 * @items        An array or struct to process in parallel
+	 * @fn           The function that will be applied to each of the collection's items
+	 * @executor     The custom executor to use if passed, else the forkJoin Pool
+	 * @timeout      The timeout to use when waiting for each item to be processed
+	 * @timeUnit     The time unit to use, available units are: days, hours, microseconds, milliseconds, minutes, nanoseconds, and seconds. The default is milliseconds
+	 * @errorHandler The error handler to use if any of the items fail to process: Closure or UDF
+	 *
+	 * @return An array or struct with the items processed in parallel
 	 *
 	 * @throws UnsupportedCollectionException - When something other than an array or struct is passed as items
-	 * @return An array or struct with the items processed in parallel
 	 */
-	any function allApply( items, fn, executor, timeout, timeUnit ){
+	any function allApply(
+		items,
+		fn,
+		executor,
+		timeout,
+		timeUnit,
+		errorHandler
+	){
 		var incomingExecutor = arguments.executor ?: "";
 		// Boolean indicator to avoid `isObject()` calls on iterations
 		var usingExecutor    = isObject( incomingExecutor );
@@ -825,7 +834,7 @@ component accessors="true" {
 
 		// Create the function proxy once instead of many times during iterations
 		var jApply = createDynamicProxy(
-			new wirebox.system.async.proxies.Function(
+			new wirebox.system.async.cbproxies.models.Function(
 				arguments.fn,
 				variables.debug,
 				variables.loadAppContext
@@ -841,6 +850,11 @@ component accessors="true" {
 				.map( function( thisItem ){
 					// Create a new completed future
 					var f = new Future( arguments.thisItem );
+
+					// Error Handler?
+					if ( !isNull( errorHandler ) ) {
+						f = f.onException( errorHandler );
+					}
 
 					// Execute it on a custom executor or core
 					if ( usingExecutor ) {
@@ -908,10 +922,10 @@ component accessors="true" {
 	 *
 	 * - allApply()
 	 *
-	 * @timeout The timeout value to use, defaults to forever
+	 * @timeout  The timeout value to use, defaults to forever
 	 * @timeUnit The time unit to use, available units are: days, hours, microseconds, milliseconds, minutes, nanoseconds, and seconds. The default is milliseconds
 	 *
-	 * @returns This future
+	 * @return This future
 	 */
 	Future function withTimeout( numeric timeout = 0, string timeUnit = "milliseconds" ){
 		variables.futureTimeout = arguments;

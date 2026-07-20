@@ -48,7 +48,7 @@ component aliases="update" {
 		boolean system=false ) {
 
 		if( arguments.system ) {
-			var directory = expandPath( '/commandbox' );
+			var directory = expandPath( '/commandbox-home/cfml' );
 		} else {
 			var directory = getCWD();
 		}
@@ -70,7 +70,7 @@ component aliases="update" {
 		 );
 
 		 if( len( slug ) && !aAllDependencies.len() ) {
-		 	error( message='Package(s) [#slug#] not found.', detail='Use "outdated" to see what packages are available to update.  Only pass the pacakge name to this command.' );
+		 	error( message='Package(s) [#slug#] not found.', detail='Use "outdated" to see what packages are available to update.  Only pass the package name to this command.' );
 		 }
 
 		var dependenciesToUpdate = aAllDependencies.filter( (d)=>d.isOutdated );

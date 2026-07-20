@@ -50,6 +50,13 @@
     "installPaths":{
 
     },
+    "maven":{
+		"installMode":"",
+		"installDirectory":"",
+        "repositories":{
+
+        }
+    },
     "scripts":{
 
     },
@@ -75,5 +82,8 @@
         "watchDelay":500,
         "watchPaths":"**.cfc",
         "options":{}
-    }
+    },
+    "reinitWatchDirectory" : "",
+    "reinitWatchDelay" : 500,
+    "reinitWatchPaths" : "",
 }

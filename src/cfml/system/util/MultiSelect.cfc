@@ -112,12 +112,31 @@ component accessors=true {
 		try {
 			draw();
 
+			while( isOversize() ) {
+				sleep( 500 );
+			}
 			while( ( var key = shell.waitForKey() ) != chr( 13 ) || !checkRequired() ) {
 
 				if( isUp( key ) ) {
 					activeOption = max( 1, activeOption-1 );
+					if( activeOption < viewportStart ) {
+						viewportStart--;
+					}
 				} else if ( isDown( key ) ) {
 					activeOption = min( getOptions().len(), activeOption+1 );
+					if( activeOption+1 > viewportStart+viewportLength ) {
+						viewportStart++;
+					}
+				} else if ( isPageUp( key ) ) {
+					activeOption = max( 1, activeOption-viewportLength );
+					if( activeOption < viewportStart ) {
+						viewportStart = max( 1, viewportStart-viewportLength );
+					}
+				} else if ( isPageDown( key ) ) {
+					activeOption = min( getOptions().len(), activeOption+viewportLength );
+					if( activeOption+1 > viewportStart+viewportLength ) {
+						viewportStart = min( getOptions().len()-viewportLength+1, viewportStart+viewportLength );
+					}
 				} else if ( isSelect( key ) ) {
 					doSelect( activeOption );
 				// Access key?
@@ -128,6 +147,11 @@ component accessors=true {
 						if( key == o.accessKey ) {
 							activeOption = i;
 							doSelect( activeOption );
+							if( activeOption < viewportStart ) {
+								viewportStart=activeOption;
+							} else if( activeOption+1 > viewportStart+viewportLength ) {
+								viewportStart=activeOption-viewportLength+1;
+							}
 							break;
 						}
 					}
@@ -270,6 +294,8 @@ component accessors=true {
 		}
 
 		variables.thisOptions = opts;
+		viewportStart=1;
+		viewportLength=min(opts.len(),terminal.getHeight()-9)
 		return this;
 	}
 
@@ -280,30 +306,56 @@ component accessors=true {
 	}
 
 	function getCursorPosition() {
+		if( isOversize() ) {
+			return {
+				'row' : 0,
+				'col' : 0
+			};
+		}
 		return {
-			'row' : activeOption+2,
+			'row' : activeOption-viewportStart+3,
 			'col' : 3
 		};
 	}
 
+	function isOversize() {
+		return terminal.getHeight() < 10;
+	}
+
 	function getLines() {
-		var i = 0;
+		var width=terminal.getWidth();
+		var height=terminal.getHeight();
+		if( isOversize() ) {
+			viewportStart = 1;
+			lines = [ aStr.fromAnsi( print.red( 'Terminal is too small for multi-select to render!' ) ) ];
+			if( height > 3 ){
+				loop times=height-3 {
+					lines.append( aStr.init( repeatString( ' ', width ) ) );
+				}
+			}
+			return lines;
+		}
+		viewportLength=min(getOptions().len(),height-9);
+		if( viewportStart + viewportLength > getOptions().len()+1 ){
+			viewportStart = 1;
+		}
+		var i = viewportStart-1;
 		return getOptions()
+			.slice( viewportStart, viewportLength )
 			.map( function( o ) {
 				var optionFormatting = ( activeOption == ++i ? 'green' : '' );
 				return aStr.fromAnsi(
 					print.text(
-						'  [' & ( o .selected ? 'X' : ' ' ) & '] ' & reReplaceNoCase( o.display, '(#o.accessKey#)', print.bold( '\1' ) & print.text( '', optionFormatting, true ), 'once' ),
+						'  [' & ( o .selected ? 'X' : ' ' ) & '] ' & reReplaceNoCase( left( o.display, width-6), '(#o.accessKey#)', print.bold( '\1' ) & print.text( '', optionFormatting, true ), 'once' ),
 						optionFormatting
 					)
 				 );
 			} )
+			.prepend( aStr.fromAnsi( ( viewportStart>1 ? print.red( '  << #viewportStart-1# more above...>>' ) : ' ' ) ) )
 			.prepend( aStr.init( getQuestion() ) )
-			.prepend( aStr.init( '' ) )
-			.prepend( aStr.init( '' ) )
-			.append( aStr.init( ' ' ) )
-			.append( aStr.fromAnsi( print.yellow( '      Use <spacebar> to toggle selections, <enter> to submit.' ) ) )
-			.append( aStr.init( ' ' ) );
+			.prepend( aStr.init( ' ' ) )
+			.append( aStr.fromAnsi( ( getOptions().len()+1>viewportStart+viewportLength ? print.red( '  << #getOptions().len()+1-(viewportStart+viewportLength)# more below...>>' ) : ' ' ) ) )
+			.append( aStr.fromAnsi( print.yellow( '      Use <spacebar> to toggle selections, <enter> to submit.' ) ) );
 	}
 
 	function checkRequired() {
@@ -337,6 +389,14 @@ component accessors=true {
 
 	private function isDown( key ) {
 		return ( key == 'key_down' || key == chr( 9 ) );
+	}
+
+	private function isPageUp( key ) {
+		return ( key == 'key_ppage' );
+	}
+
+	private function isPageDown( key ) {
+		return ( key == 'key_npage' );
 	}
 
 	private function isSelect( key ) {

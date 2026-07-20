@@ -29,7 +29,7 @@ component implements="wirebox.system.ioc.dsl.IDSLBuilder" accessors=true{
 	* @definition.hint The injection dsl definition structure to process. Keys: name, dsl
 	* @targetObject.hint The target object we are building the DSL dependency for. If empty, means we are just requesting building
 	*/
-    public any function process( required definition, targetObject ) output=false {
+    public any function process( required definition, targetObject, Any targetID ) output=false {
 
 		var thisName 			= arguments.definition.name;
 		var thisType 			= arguments.definition.dsl;

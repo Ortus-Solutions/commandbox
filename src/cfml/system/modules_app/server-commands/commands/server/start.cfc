@@ -21,15 +21,17 @@
  * Specify an engine version after an @ sign like you would on package installation.
   * .
  * {code:bash}
- * server start cfengine=railo
  * server start cfengine=adobe
- * server start cfengine=adobe@11.0
+ * server start cfengine=adobe@2023.0
+ * server start cfengine=lucee
+ * server start cfengine=lucee@5.4
+ * server start cfengine=railo
  * {code}
  * .
  * cfengine can also be any valid Endpoint ID that points to a ForgeBox entry, HTTP URL, etc.
  * .
  * {code:bash}
- * server start cfengine=https://downloads.ortussolutions.com/adobe/coldfusion/9.0.2/cf-engine-9.0.2.zip
+ * server start cfengine=https://downloads.ortussolutions.com/adobe/coldfusion/2023.0.0/cf-engine-2023.0.0.zip
  * {code}
  * .
  * You can also start up a local WAR file with the WARPath parameter.
@@ -69,6 +71,7 @@ component aliases="start" {
 	 * @SSLKeyPass     		SSL key passphrase
 	 * @rewritesEnable 		enable URL rewriting (default false)
 	 * @rewritesConfig 		optional URL rewriting config file path
+	 * @rewritesFile       The target file for URL rewrites, defaults to index.cfm if it's a CFML engine, or index.bxm if its BoxLang
 	 * @heapSize			The max heap size in megabytes you would like this server to start with, it defaults to 512mb
 	 * @minHeapSize			The min heap size in megabytes you would like this server to start with
 	 * @directoryBrowsing 	Enables directory browsing (default false)
@@ -123,6 +126,7 @@ component aliases="start" {
 		String  SSLKeyPass,
 		Boolean rewritesEnable,
 		String  rewritesConfig,
+		String rewritesFile,
 		Numeric heapSize,
 		Numeric minHeapSize,
 		Boolean directoryBrowsing,

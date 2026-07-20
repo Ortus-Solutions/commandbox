@@ -15,6 +15,7 @@ component {
     property name="print" inject="PrintBuffer";
     property name="shell" inject="shell";
 	property name="convert" inject="DataConverter";
+	property name="job" inject="InteractiveJob";
 
     variables.tableChars = {
 		"top": chr( 9552 ), // ═
@@ -81,7 +82,7 @@ component {
 		var dataRows = convert.queryToArrayOfOrderedStructs( dataQuery );
 
 		// Extract column names into headers
-		var dataHeaders = queryColumnArray(dataQuery);
+		var dataHeaders = arguments.headerNames.len() ? arguments.headerNames.listToArray() : queryColumnArray(dataQuery);
 		if(arguments.debug){
 			dataRows = [];
 			if(dataQuery.recordcount){
@@ -94,7 +95,7 @@ component {
 			dataHeaders = ['Column','First Row Data'];
 
 		}
-		dataRows = autoFormatData( dataHeaders, dataRows );
+		dataRows = autoFormatData( dataQuery.columnList.listToArray(), dataRows );
 		dataHeaders = processHeaders( dataHeaders, dataRows, headerNames.listToArray(), width )
 
 		printHeader( dataHeaders );
@@ -119,7 +120,12 @@ component {
         var headerData = arguments.headers.map( ( header, index ) => calculateColumnData( index, header, data, headerNames ), true );
 		var termWidth = arguments.width;
         if( termWidth <= 0 ) {
-			termWidth = shell.getTermWidth()-1;
+			// If this table is going to get captured in job output, ensure it will fix based on the job depth
+			if( job.getActive() ) {
+				termWidth = shell.getTermWidth()-3-( job.getCurrentJobDepth() * 4 );
+			} else {
+				termWidth = shell.getTermWidth()-1;
+			}
 		}
         if( termWidth <= 0 ) {
         	termWidth = 100;
