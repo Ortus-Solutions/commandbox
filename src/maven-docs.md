@@ -145,7 +145,7 @@ is treated as immutable and short-circuits directly to the artifact cache when p
 
 ### Semver ranges
 
-Use the same syntax as ForgeBox / npm. All of the following are tested and working:
+Use the same syntax as ForgeBox / npm. All the following are tested and working:
 
 ```
 2.3.x                    # x-range — highest 2.3.*
@@ -218,6 +218,78 @@ maven:sonatype|org.example:foo:1.0?scopes=runtime,compile,test
 | `optional`   | `false`             | Include `<optional>true</optional>` transitive dependencies.        |
 | `transitive` | `true`              | Set `false` to install just the requested jar, skipping dep resolution. |
 | `exclude`    | (none)              | Comma-separated `groupId:artifactId` pairs to exclude from transitive resolution. |
+| `installMode` | `dedicated`       | Use `shared` to bundle the artifact and its transitives into the caller's shared install directory. |
+| `classifier` | (none)             | Select a JAR variant such as `sources`, `javadoc`, `tests`, or `debug`. |
+
+### JAR classifiers
+
+Use `classifier` to request a published JAR variant:
+
+```json
+{
+  "dependencies": {
+    "undertow-sources": "maven:io.undertow:undertow-core:2.3.18.Final?classifier=sources&transitive=false"
+  }
+}
+```
+
+This resolves `undertow-core-2.3.18.Final-sources.jar`. If the requested classifier is not
+published for the selected version, installation fails; CommandBox does not silently fall back to
+the unclassified JAR.
+
+### Maven install modes
+
+Maven installs use `dedicated` mode by default. In dedicated mode, each artifact is installed in
+its own package directory with its generated `box.json`, allowing normal package version tracking,
+dependency trees, and updates.
+
+Use `shared` mode when several JARs should be bundled into one directory such as `libs/`:
+
+```json
+{
+  "maven": {
+    "installMode": "shared",
+    "installDirectory": "libs/"
+  }
+}
+```
+
+`maven.installDirectory` overrides the normal JAR install convention for every Maven artifact,
+including transitives. It applies to both `shared` and `dedicated` installs. In shared mode, all
+JARs are placed directly in that directory. In dedicated mode, it is the base directory for the
+artifact's package directory and its nested dependencies.
+
+Install-mode precedence is:
+
+1. Endpoint flag: `?installMode=shared`
+2. Project `box.json`: `maven.installMode`
+3. Global configuration: `endpoints.maven.installMode`
+4. Default: `dedicated`
+
+Configure the global default with:
+
+```bash
+config set endpoints.maven.installMode=shared
+```
+
+Configure a global Maven JAR destination with:
+
+```bash
+config set endpoints.maven.installDirectory=libs
+```
+
+Project `maven.installDirectory` takes precedence over `endpoints.maven.installDirectory`. When
+neither setting is present, Maven leaves the directory unset and lets the normal JAR convention
+apply: shared installs use the caller's directory, while dedicated installs use `lib/`.
+
+Shared mode still creates temporary package metadata, so Maven transitives can be resolved and
+installed through the normal CommandBox dependency flow. The generated `box.json` is not copied
+to the shared destination, and transitive dependencies are not persisted into that destination's
+`box.json`.
+
+For shared installs, each generated transitive resolves to the same shared destination. Dedicated
+installs instead give each transitive its own `groupId-artifactId` directory beneath its parent
+artifact directory.
 
 ### Flag examples
 
@@ -286,17 +358,19 @@ ever picking the latest non-snapshot release:
 ```json
 {
   "dependencies": {
-    "my-lib": "maven:sonatype|com.example:my-lib:STABLE?snapshots=true"
+    "spring-core": "maven:springSnapshots|org.springframework:spring-core:STABLE?snapshots=true&transitive=false"
+  },
+  "maven": {
+    "repositories": {
+      "springSnapshots": "https://repo.spring.io/snapshot/"
+    }
   }
 }
 ```
 
-⚠️ Note: this syntax is correct and the flag is fully wired into `getLatestVersion()`/range
-resolution (same code path validated by every other flag above), but it wasn't independently
-verified against a *live* SNAPSHOT-publishing repo in this pass — several public snapshot repos
-were tried and none happened to host a snapshot for the specific test artifacts used. Point
-`sonatype`/your own registered repo at a project that actually publishes SNAPSHOTs to validate
-in your own environment.
+This registers Spring's snapshot repository and resolves `spring-core` to its latest available
+snapshot. `transitive=false` keeps the example focused on snapshot version selection by installing
+only the requested JAR.
 
 ### Combining flags
 
@@ -363,6 +437,10 @@ raw JSON string values:
 
 ## Artifact cache
 
+Maven JARs are verified against the repository's `.sha256` checksum when available, falling back
+to `.sha1`. This verification applies to network downloads and artifacts copied from the local
+Maven repository. Installation fails if a checksum is missing or does not match.
+
 Downloaded artifacts are stored under `~/.CommandBox/artifacts/`. The cache key is:
 
 ```
@@ -376,6 +454,11 @@ publishing rules guarantee a given GAV is immutable and byte-identical everywher
 cached from a trusted repo, a later untrusted/rogue repo entry can't silently shadow it on a
 repeat install. The `maven-` prefix namespaces our cache keys against other endpoints (ForgeBox,
 GitHub, etc.) that share the same artifact cache directory.
+
+The cache stores the resolved artifact, not a permanent installation layout. On every cache hit,
+CommandBox rehydrates its generated descriptor with the current install mode and install directory,
+including its transitive dependency paths. A previous dedicated install therefore cannot cause a
+later shared install to create nested artifact directories, and vice versa.
 
 **Cache is only used for exact versions** — `STABLE` and ranges always consult the remote
 `maven-metadata.xml` to know which concrete version to resolve to (then re-check the cache
@@ -451,7 +534,7 @@ elsewhere in the same POM.
 ## Network behavior
 
 - All XML metadata/POM fetches (`maven-metadata.xml`, `.pom` files, parent POMs) use a
-  20-second timeout so a hung repo doesn't stall an install indefinitely.
+  20-second timeout, so a hung repo doesn't stall an install indefinitely.
 - Every network call checks `offlineMode` first and fails fast with a clear message
   (`config set offlineMode=false` to go back online) rather than timing out.
 - The endpoint still works fully offline for already-cached exact versions — no network
@@ -482,8 +565,10 @@ downloads, POM parent walks, and dependency resolution.
   are not fully processed yet — CommandBox does not fetch imported BOMs to merge their
   `<dependencyManagement>` into the current resolution. Most real-world artifacts still
   resolve correctly because their direct dependencies carry their own versions.
-- **Classifier and type** on dependencies (e.g. `<classifier>sources</classifier>`,
-  `<type>war</type>`) are parsed but not yet honored during download — CommandBox always
-  fetches the primary `.jar`.
-- **Only the primary artifact JAR is fetched.** Additional artifacts (sources, javadoc,
-  test-jar) are not currently downloadable via this endpoint.
+- **Classifier and type on transitive dependencies** (e.g. `<classifier>sources</classifier>`,
+  `<type>war</type>`) are parsed but not yet honored during download — transitive resolution
+  fetches the primary `.jar`. The endpoint-level `classifier` flag remains supported for a
+  requested artifact.
+- **Only one JAR is fetched per endpoint ID.** CommandBox does not automatically download
+  associated sources, javadocs, or test artifacts; request one explicitly with the `classifier`
+  flag when it is published.
