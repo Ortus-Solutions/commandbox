@@ -661,9 +661,6 @@ External Dependencies:
 		</exec>
 		<sleep seconds="5"/>
 
-		<!-- Ensure output directory for apidocs exists -->
-		<!-- <mkdir dir="${temp.dir.absolute}/apidocs/CommandBox-CommandDocs"/> -->
-
 		<!-- Get the apidocs now -->
 		<property name="temp.dir.absolute" location="${temp.dir}"/>
 		<get dest="${temp.dir}/docbox.html" src="${url.apidocs}/index.cfm?version=${commandbox.version}&amp;path=${temp.dir.absolute}/apidocs" verbose="true" retries="5"/>
