@@ -181,6 +181,7 @@ component {
 			if( param.startsWith( '--' ) && len( param ) >= 3 ) {
 				// Strip off --
 				var flagName = right( param, len( param ) - 2 );
+				flagName = markColonParams( flagName );
 
 				// Check for negation --!flagName
 				if( flagName.startsWith( '!' ) ) {

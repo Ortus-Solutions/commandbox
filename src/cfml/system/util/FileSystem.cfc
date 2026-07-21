@@ -492,30 +492,24 @@ component accessors="true" singleton {
 	*/
 	function _classLoad( string path ) {
 		path = normalizeSlashes( path );
-		var jURL = createObject( 'java', 'java.io.File' ).init( path ).toURI().toURL();
 		var cl = getCoreClassLoader();
 
 		// Don't add it if it's already there.
 		for( var lib in cl.getURLs() ) {
-			if( lib.File contains jURL.getFile() ) {
+			// prolly something like file:///C:/path/to/file.jar
+			if( normalizeSlashes( lib.toString() ) contains normalizeSlashes( path ) ) {
 				return;
 			}
 		}
 
-		var method = cl.getClass().getDeclaredMethod("addURL", [ jURL.getClass() ] );
-		method.setAccessible(true);
-		method.invoke( cl, [ jURL ] );
+		cl.addPaths( path )
 	}
 
 	/*
 	* Get the Lucee core class loader
 	*/
 	function getCoreClassLoader( string path ) {
-
-		if( isNull( coreClassLoader ) ) {
-			coreClassLoader = createObject( 'java', 'cliloader.LoaderCLIMain' ).getClassLoader();
-		}
-		return coreClassLoader;
+		return getBoxRuntime().getRuntimeLoader();
 	}
 
 	/*

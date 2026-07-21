@@ -367,10 +367,16 @@ component accessors="true" singleton {
 		return getCurrentThread().getName();
 	}
 
+	/**
+	 * Compile the current project using the CompileDSL.
+	 *
+	 * @return An instance of the CompileDSL for further configuration.
+	 */
     function compile() {
         return getinstance( "compileDSL" )
             .projectRoot( resolvePath( '' ) );
     }
+
 	/**
 	 * Install an extension into the Lucee server instance inside the CLI.
 	 * If the extension is already installed, nothing will happen

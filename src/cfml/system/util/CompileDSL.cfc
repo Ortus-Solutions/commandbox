@@ -25,15 +25,19 @@ component accessors=true {
 	property name='sourcePaths'				type='array';
 	property name='createJar'				type='boolean';
 	property name='jarNameString'			type='string';
+	property name='generatedJarPath'			type='string';
 	property name='libsDir'					type='string';
 	property name='compileOptionsString'	type='string';
 	property name='jarOptionsString'		type='string';
+	property name='jarOptionArguments'		type='string';
     property name='javaBinFolder'           type='string';
 	property name='customManifest'			type='string';
 	property name='customManifestParams'	type='struct';
+	property name='generatedManifestFile'	type='string';
 	property name='resourcePath'			type='string';
 	property name='classTextFilePaths'		type='array';
 	property name='fatJarPaths'				type='array';
+	property name='fatJarOptions'			type='struct';
 	property name='javaDocDestinationDir'	type='string';
 	property name='useJavaDoc'				type='boolean';
 
@@ -56,16 +60,26 @@ component accessors=true {
         setClassOutputDirectory( 'classes\java\main' );
         setVerbose( false );
         setEncode( '' );
+		setClassPaths( [] );
 		setSourcePaths( [''] );
 		setCreateJar( false );
 		setLibsDir( 'libs' );
 		setCompileOptionsString( '' );
 		setJarOptionsString( '' );
+		setJarOptionArguments( '' );
 		setJarNameString( '' );
+		setGeneratedJarPath( '' );
 		setCustomManifest( '' );
 		setCustomManifestParams( {} );
+		setGeneratedManifestFile( '' );
 		setResourcePath( 'src\main\resources\' );
 		setClassTextFilePaths(['']);
+		setFatJarPaths( [] );
+		setFatJarOptions( {
+			"mergeServiceDescriptors" : true,
+			"excludeSignatures"       : true,
+			"duplicatePolicy"         : "last"
+		} );
 		setJavaDocDestinationDir('javaDocs\main');
 		setUseJavaDoc(false);
         return this;
@@ -100,11 +114,6 @@ component accessors=true {
         return this;
     }
 
-    function withEncoding( required encodeValue ) {
-        setEncode( encodeValue );
-        return this;
-    }
-
 	function toJar( string jarName='' ) {
 		if( jarName.len() ) {
 			setJarNameString( jarName );
@@ -118,13 +127,102 @@ component accessors=true {
 		return this;
 	}
 
-	function compileOptions( required string options ) {
-		setCompileOptionsString( options );
+	function compileOptions( required struct options ) {
+		var supportedOptions = [
+			"release", "source", "target", "encoding", "debug", "deprecation", "enablePreview",
+			"nowarn", "parameters", "werror", "lint", "maxErrors", "maxWarnings",
+			"proc", "implicit", "processors", "processorPath", "sourcePath", "modulePath",
+			"addModules", "limitModules", "moduleSourcePath"
+		];
+		var commandOptions = [];
+
+		for( var optionName in arguments.options ) {
+			if( !supportedOptions.findNoCase( optionName ) ) {
+				throw( message="Unsupported compiler option: #optionName#", type="commandException" );
+			}
+		}
+
+		if( arguments.options.keyExists( "encoding" ) ) {
+			setEncode( arguments.options.encoding );
+		}
+		for( var valueOption in [ "release", "source", "target", "proc", "implicit" ] ) {
+			if( arguments.options.keyExists( valueOption ) ) {
+				var optionName = valueOption == "proc" || valueOption == "implicit" ? "-#valueOption#" : "--#valueOption#";
+				commandOptions.append( optionName.startsWith( "--" ) ? "#optionName#=#arguments.options[valueOption]#" : "#optionName#:#arguments.options[valueOption]#" );
+			}
+		}
+		for( var flag in [ "deprecation", "enablePreview", "nowarn", "parameters", "werror" ] ) {
+			if( arguments.options[ flag ] ?: false ) {
+				commandOptions.append( flag == "enablePreview" ? "--enable-preview" : "-#flag#" );
+			}
+		}
+		if( arguments.options.keyExists( "debug" ) ) {
+			if( isBoolean( arguments.options.debug ) && arguments.options.debug ) {
+				commandOptions.append( "-g" );
+			} else if( isArray( arguments.options.debug ) ) {
+				commandOptions.append( "-g:#arguments.options.debug.toList( ',' )#" );
+			}
+		}
+		if( arguments.options.keyExists( "lint" ) ) {
+			commandOptions.append( "-Xlint:#isArray( arguments.options.lint ) ? arguments.options.lint.toList( ',' ) : arguments.options.lint#" );
+		}
+		var numericMappings = { "maxErrors" : "-Xmaxerrs", "maxWarnings" : "-Xmaxwarns" };
+		for( var numericOption in numericMappings ) {
+			if( arguments.options.keyExists( numericOption ) ) {
+				commandOptions.append( "#numericMappings[numericOption]# #arguments.options[numericOption]#" );
+			}
+		}
+		for( var pathOption in [ "processorPath", "sourcePath", "modulePath", "moduleSourcePath" ] ) {
+			if( arguments.options.keyExists( pathOption ) ) {
+				var pathValue = isArray( arguments.options[pathOption] ) ? arguments.options[pathOption].toList( "," ) : arguments.options[pathOption];
+				commandOptions.append( "--#pathOption# #pathValue#" );
+			}
+		}
+		for( var moduleOption in [ "addModules", "limitModules" ] ) {
+			if( arguments.options.keyExists( moduleOption ) ) {
+				var moduleValue = isArray( arguments.options[moduleOption] ) ? arguments.options[moduleOption].toList( "," ) : arguments.options[moduleOption];
+				commandOptions.append( "--#moduleOption# #moduleValue#" );
+			}
+		}
+		setCompileOptionsString( commandOptions.toList( " " ) );
 		return this;
 	}
 
-	function jarOptions( required string options) {
-		setJarOptionsString( options );
+	function jarOptions( required struct options ) {
+		var supportedOptions = [ "compress", "mainClass", "date", "moduleVersion", "release", "hashModules", "modulePath", "noManifest" ];
+		for( var optionName in arguments.options ) {
+			if( !supportedOptions.findNoCase( optionName ) ) {
+				throw( message="Unsupported JAR option: #optionName#", type="commandException" );
+			}
+		}
+		var modeFlags = "";
+		if( arguments.options.keyExists( "compress" ) && !arguments.options.compress ) {
+			modeFlags &= "0";
+		}
+		if( arguments.options.noManifest ?: false ) {
+			modeFlags &= "M";
+		}
+		setJarOptionsString( modeFlags );
+		var optionArguments = [];
+		var valueMappings = {
+			"mainClass" : "--main-class",
+			"date" : "--date",
+			"moduleVersion" : "--module-version",
+			"release" : "--release",
+			"hashModules" : "--hash-modules",
+			"modulePath" : "--module-path"
+		};
+		for( var key in valueMappings ) {
+			if( arguments.options.keyExists( key ) ) {
+				var optionName = valueMappings[ key ];
+				var optionValue = arguments.options[ key ];
+				if( key == "date" && isDate( optionValue ) ) {
+					optionValue = dateTimeFormat( optionValue, "yyyy-mm-dd'T'HH:nn:ss'Z'" );
+				}
+				optionArguments.append( optionName & '="' & optionValue & '"' );
+			}
+		}
+		setJarOptionArguments( optionArguments.toList( " " ) );
 		return this;
 	}
 
@@ -150,62 +248,109 @@ component accessors=true {
 			arguments.classPath = listToArray( arguments.classPath, ",", true );
 		}
 		arguments.classPath = arguments.classPath.reduce( function( classPaths,cp ) {
-			return classPaths.append(directorylist( fileSystemutil.resolvePath( cp, getProjectRoot() ), true, 'array', '*jar' ), true);
+			var resolvedPath = fileSystemutil.resolvePath( cp, getProjectRoot() );
+			if( fileExists( resolvedPath ) ) {
+				return classPaths.append( resolvedPath );
+			}
+			return classPaths.append(directorylist( resolvedPath, true, 'array', '*jar' ), true);
 		}, [] );
 		setClassPaths(  arguments.classPath );
 		return this;
 	}
 
-	function toFatJar( string jarName='', any includeJars=[] ) {
-		if( isSimpleValue( arguments.fatJarPathList ) ) {
-			arguments.fatJarPathList = listToArray( arguments.fatJarPathList, ",", true );
+	function toFatJar( string jarName='', any includeJars=[], struct options={} ) {
+		if( isSimpleValue( arguments.includeJars ) ) {
+			arguments.includeJars = listToArray( arguments.includeJars, ",", true );
 		}
-		arguments.fatJarPathList = arguments.fatJarPathList.map( function( s ) {
-			return fileSystemutil.resolvePath( arguments.s, getProjectRoot() );
+		arguments.includeJars = arguments.includeJars.map( function( jarPath ) {
+			return fileSystemutil.resolvePath( arguments.jarPath, getProjectRoot() );
 		} );
-		variables.fatJarPaths = arguments.fatJarPathList;
+		setFatJarPaths( arguments.includeJars );
+		if( arguments.options.len() ) {
+			configureFatJar( arguments.options );
+		}
+		return toJar( arguments.jarName );
+	}
+
+	function configureFatJar( required struct options ) {
+		var supportedOptions = [ "mergeServiceDescriptors", "excludeSignatures", "duplicatePolicy" ];
+		for( var optionName in arguments.options ) {
+			if( !supportedOptions.findNoCase( optionName ) ) {
+				throw(
+					message="Unsupported fat JAR option: #optionName#",
+					type="commandException"
+				);
+			}
+		}
+
+		var mergedOptions = duplicate( getFatJarOptions() );
+		structAppend( mergedOptions, arguments.options, true );
+		mergedOptions.duplicatePolicy = lCase( mergedOptions.duplicatePolicy );
+		if( ![ "last", "first", "error" ].find( mergedOptions.duplicatePolicy ) ) {
+			throw(
+				message="Invalid fat JAR duplicate policy: #mergedOptions.duplicatePolicy#",
+				detail="Supported policies are: last, first, error.",
+				type="commandException"
+			);
+		}
+		setFatJarOptions( mergedOptions );
 		return this;
 	}
 
-    function run() {
-		job.start( 'Compiling' );
+	struct function run() {
+		job.start( 'Compile Task' );
 
-        job.start( 'find jdk bin directory' );
+		job.addLog( 'Resolving Java Development Kit.' );
 		setJavaBinFolder( findJDKBinDirectory() );
-        job.complete();
 
-        job.start( 'compiling the code' );
+		job.start( 'Compile Java Sources' );
 		compileCode();
-        job.complete();
+		job.complete();
 
-        job.start( 'generate javadocs' );
 		if( getUseJavaDoc() ) {
+			job.start( 'Generate Javadocs' );
 			generateJavadocs();
+			job.complete();
 		}
-        job.complete();
 
 		if( getCreateJar() ) {
-			job.start( 'update manifest file' );
+			job.addLog( 'Preparing JAR manifest.' );
 			updateManifestFile();
-			job.complete();
 
-			job.start( 'creating the normal jar' );
+			job.start( 'Build JAR' );
 			buildJar();
 			job.complete();
 
-			job.addLog( " len :-> " & len( getFatJarPaths() ) );
 			if ( len( getFatJarPaths() ) ) {
-				job.start( 'creating the fat jar' );
-				//buildFatJar();
+				job.start( 'Build Fat JAR' );
+				buildFatJar();
 				job.complete();
  			}
 
-			job.start( 'move resources to jar' );
+			job.addLog( 'Adding JAR resources when available.' );
 			moveResources();
-			job.complete();
 		}
 
 		job.complete( getVerbose() );
+
+		return {
+			"projectRoot"           : getProjectRoot(),
+			"jdkBinDirectory"       : getJavaBinFolder(),
+			"sourcePaths"           : getSourcePaths(),
+			"classOutputDirectory"  : fileSystemutil.resolvePath( getClassOutputDirectory(), getProjectRoot() ),
+			"libsDirectory"         : fileSystemutil.resolvePath( getLibsDir(), getProjectRoot() ),
+			"jarPath"               : getGeneratedJarPath(),
+			"javaDocsPath"          : getUseJavaDoc()
+				? fileSystemutil.resolvePath( getJavaDocDestinationDir(), getProjectRoot() )
+				: "",
+			"resourcePath"          : fileSystemutil.resolvePath( getResourcePath(), getProjectRoot() ),
+			"classPaths"            : getClassPaths(),
+			"fatJarPaths"           : getFatJarPaths(),
+			"compileOptions"        : getCompileOptionsString(),
+			"jarOptions"            : getJarOptionsString(),
+			"encoding"              : getEncode(),
+			"manifest"              : getCustomManifestParams()
+		};
     }
 
 	function compileCode() {
@@ -246,7 +391,11 @@ component accessors=true {
 
 		} ) );
 
-        job.addLog( " " & serialize( getSourcePaths() ) & " " );
+		job.addLog(
+			"Compiling source files from: #getSourcePaths().map( function( sourcePath ) {
+				return replaceNoCase( sourcePath, getProjectRoot(), "" );
+			} ).toList( ', ' )#"
+		);
 		try{
 
 			writeTempSourceFile( tempSrcFileName );
@@ -256,22 +405,25 @@ component accessors=true {
 				classPathString = '-cp "#getClassPaths().toList(';')#"';
 			}
 
-			//var javacCommand = 'run ""#getJavaBinFolder()#javac" "@#tempSrcFileName#" -d "#variables.classOutputDirectory#" #variables.compileOptionsString#"';
-			var javacCommand = 'run ""#getJavaBinFolder()#javac" #classPathString# "@#tempSrcFileName#" -d "#variables.classOutputDirectory#""';
-			//var javacCommand = 'run ""foo why" "bar" -d "test""';
-
-			/* if ( getVerbose() ) {
-				javacCommand &= " -verbose";
-			} */
-
-			if ( getEncode().len() ){
-				javacCommand &= " -encoding #variables.encode#";
+			var additionalOptions = "";
+			if( getCompileOptionsString().len() ) {
+				additionalOptions &= " #getCompileOptionsString()#";
 			}
+			if( getEncode().len() ) {
+				additionalOptions &= " -encoding #getEncode()#";
+			}
+			if( getVerbose() ) {
+				additionalOptions &= " -verbose";
+			}
+			var javacCommand = 'run ""#getJavaBinFolder()#javac" #classPathString# "@#tempSrcFileName#" -d "#variables.classOutputDirectory#"#additionalOptions#"';
 
-            //job.addLog( " " & javacCommand & " " );
-			//systemoutput( "test 00->" );
-			//command( javacCommand ).run(echo=true);
-			command( javacCommand ).run();
+			if( getVerbose() ) {
+				job.addLog( javacCommand );
+			}
+			var javacOutput = command( javacCommand ).run( returnOutput=true );
+			if( javacOutput.len() ) {
+				job.addLog( javacOutput );
+			}
 
 		} finally {
 			if ( FileExists( tempSrcFileName ) ) {
@@ -309,14 +461,9 @@ component accessors=true {
 
 	function writeTempClassFiles( string tempSrcFileName, array sourcePath = getSourcePaths(), string extension=".class" ) {
 
-		otherPaths = getSourcePaths();
-		projectRoot = getProjectRoot();
-		classOutput = getClassOutputDirectory() & "\";
-
-		job.addLog( "otherPaths: " & serialize( otherPaths ) );
-		job.addLog( "proyect root: " & projectRoot );
-		job.addLog( "class output: " & classOutput );
-		job.addLog( "sourcePath: " & serialize( sourcePath ) );
+		var classOutput = fileSystemutil.normalizeSlashes(
+			fileSystemutil.resolvePath( getClassOutputDirectory(), getProjectRoot() )
+		);
 
 		var globber = wirebox.getInstance( 'globber' );
 
@@ -326,14 +473,14 @@ component accessors=true {
 			.matches()
 			.filter(( row ) => row.type=="file" && row.name.endsWith( extension ))
 			.reduce(( acc, row ) => {
-				row.directory = replaceNoCase( row.directory, projectRoot, "" );
-				row.directory = replaceNoCase( row.directory, classOutput, "" );
-				filePath = row.directory & "\" & row.name;
-				filePath = replaceNoCase( filePath, classOutput, "" );
-				wipPath = fileSystemutil.normalizeSlashes( filePath );
-				wipPath = "-C " & classOutput & " " & wipPath;
-				finalPath = fileSystemutil.normalizeSlashes( wipPath );
-				return listappend( acc, finalPath, chr(10) );
+				var relativeDirectory = replaceNoCase(
+					fileSystemutil.normalizeSlashes( row.directory ),
+					classOutput,
+					""
+				);
+				relativeDirectory = reReplace( relativeDirectory, "^/+", "" );
+				var relativePath = relativeDirectory.len() ? relativeDirectory & "/" & row.name : row.name;
+				return listappend( acc, "-C #classOutput# #relativePath#", chr(10) );
 			}, "")
 
 		/* job.addLog( "currentSourceList -> " & serialize( currentSourceList ) );
@@ -344,35 +491,31 @@ component accessors=true {
 		fileWrite( tempSrcFileName, currentSourceList );
 	}
 
-	function createClassStringFromClassTextFiles() {
-		var classTextFileList = getClassTextFilePaths()
-
-		classTextFileList.each( function( file ) {
-			job.addLog( "CTFileList -> " & serialize( file ) );
-		} );
-	}
-
 	function buildJar() {
-		var currentLibsDir = fileSystemutil.resolvePath( getLibsDir(), getProjectRoot() );
+		var currentLibsDir = reReplace(
+			fileSystemutil.normalizeSlashes( fileSystemutil.resolvePath( getLibsDir(), getProjectRoot() ) ),
+			"/+$",
+			""
+		) & "/";
 		var jarName = getJarNameString();
         var currentProjectRoot = getProjectRoot();
 
-        /* var tempClassFileName = tempDir & 'temp#createUUID()#.txt'; */
-		var tempClassFileName = currentProjectRoot & 'temp#createUUID()#.txt';
+		var tempClassFileName = tempDir & 'temp#createUUID()#.txt';
 
         var sourceFolders = [];
-		buildJarSourceFolders = fileSystemutil.resolvePath( variables.classOutputDirectory, getProjectRoot() );
-        sourceFolders.append( buildJarSourceFolders & "**.class" );
+		buildJarSourceFolders = reReplace(
+			fileSystemutil.normalizeSlashes(
+				fileSystemutil.resolvePath( getClassOutputDirectory(), getProjectRoot() )
+			),
+			"/+$",
+			""
+		);
+		sourceFolders.append( buildJarSourceFolders & "/**.class" );
 
 		//job.addLog( "currLibsDir-> #currentLibsDir#" );
 
-        job.start( ' for build jar check jarName ' );
         if( !jarName.len() ){
-            // jarName is empty
-            //job.addLog( ' jarName is empty ' );
-			job.start( ' get jarName From Package ' );
 			jarName = getJarNameFromPackage( currentProjectRoot );
-			job.complete();
 
             if( !jarName.len() ) {
                 // it is not a package its a normal folder
@@ -391,18 +534,14 @@ component accessors=true {
         }
 
 		setJarNameString( jarName );
+		var outputJarPath = currentLibsDir & jarName;
+		setGeneratedJarPath( outputJarPath );
 		//job.addLog( ' jarName= #jarName# ' );
 		//job.addLog( ' jarName*= #getJarNameString()# ' );
-
-        job.complete();
 
         try{
             //writeTempSourceFile( tempSrcFileName,['D:\Javatest\greetings\classes\**.class'], ".class" );
             writeTempClassFiles( tempClassFileName, sourceFolders, ".class" );
-
-			var jarClassString = createClassStringFromClassTextFiles();
-
-
 
 			if( !directoryExists( currentLibsDir ) ) {
 				directoryCreate( currentLibsDir );
@@ -410,19 +549,48 @@ component accessors=true {
 
             //j = 'run "#getJavaBinFolder()#jar" --file #currentLibsDir##jarName# #getJarOptionsString()#';
             //j = 'run "#getJavaBinFolder()#jar" --create --file #currentLibsDir#testX.jar "@#tempSrcFileName#" #getJarOptionsString()#';
-			if( !getCustomManifest().len() ) {
-				j = 'run ""#getJavaBinFolder()#jar" cf "#currentLibsDir##jarName#" "@#tempClassFileName#" #getJarOptionsString()#"';
-			} else {
-            	j = 'run ""#getJavaBinFolder()#jar" cfm "#currentLibsDir##jarName#" "#variables.customManifest#" "@#tempClassFileName#" #getJarOptionsString()#"';
+			var jarMode = "c#getJarOptionsString()#f";
+			if( getVerbose() ) {
+				jarMode &= "v";
 			}
-            job.addLog( j );
+			if( getJarOptionArguments().len() ) {
+				var jarCommandOptions = "--create --file=" & chr(34) & outputJarPath & chr(34) & " " & getJarOptionArguments();
+				if( getJarOptionsString().find( "0" ) ) {
+					jarCommandOptions &= " --no-compress";
+				}
+				if( getJarOptionsString().find( "v" ) ) {
+					jarCommandOptions &= " --verbose";
+				}
+				if( getJarOptionsString().find( "M" ) ) {
+					jarCommandOptions &= " --no-manifest";
+				}
+				if( getVerbose() ) {
+					jarCommandOptions &= " --verbose";
+				}
+				if( getCustomManifest().len() ) {
+					jarCommandOptions &= " --manifest=\"#variables.customManifest#\"";
+				}
+				j = 'run ""#getJavaBinFolder()#jar" #jarCommandOptions# "@#tempClassFileName#"';
+			} else if( !getCustomManifest().len() ) {
+				j = 'run ""#getJavaBinFolder()#jar" #jarMode# "#outputJarPath#" "@#tempClassFileName#"';
+			} else {
+				j = 'run ""#getJavaBinFolder()#jar" #jarMode#m #getJarOptionArguments()# "#outputJarPath#" "#variables.customManifest#" "@#tempClassFileName#"';
+			}
+			if( getVerbose() ) {
+				job.addLog( j );
+			}
             //command( j ).run(echo=true);
 			command( j ).run();
+			job.addLog( "Created JAR: #getGeneratedJarPath()#" );
 
         } finally {
-			/* if ( FileExists( tempClassFileName ) ) {
+			if( fileExists( tempClassFileName ) ) {
 				fileDelete( tempClassFileName );
-			} */
+			}
+			if( getGeneratedManifestFile().len() && fileExists( getGeneratedManifestFile() ) ) {
+				fileDelete( getGeneratedManifestFile() );
+				setGeneratedManifestFile( '' );
+			}
         }
 
 
@@ -433,7 +601,7 @@ component accessors=true {
 		//job.addLog( "moveRes resPath: #currentResourcePath#" );
 
 		if( directoryExists( currentResourcePath ) ) {
-			job.addLog( "start move resources to jar" );
+			job.addLog( "Including resources from: #replaceNoCase( currentResourcePath, getProjectRoot(), "" )#" );
 			// have to replicate this command
 			// run ""jar" uf "D:\Javatest\new-tests\libs\new-tests.jar" -C "D:\Javatest\gradle-test-resource\src\main\resources\" ."
 			var jarName = getJarNameString();
@@ -447,8 +615,6 @@ component accessors=true {
 			//command( j ).run(echo=true);
 			command( j ).run();
 
-		} else {
-			job.addLog( "there are no resources to move" );
 		}
 
 	}
@@ -481,33 +647,19 @@ component accessors=true {
 		// check if there are any params from a struct
 		var paramStruct = getCustomManifestParams();
 		if( paramStruct.len() ) {
-			job.addLog( "has values" );
 			createUpdateManifestFile = true;
-		} else {
-			job.addLog( "is empty" );
 		}
 
 		// check if project root is a package
 		var currentProjectRoot = getProjectRoot();
 		if( packageService.isPackage( currentProjectRoot ) ) {
-			job.addLog( "its a package" );
 			createUpdateManifestFile = true;
 			paramStruct = getParamsFromBoxJson( currentProjectRoot, paramStruct );
-		} else {
-			job.addLog( "its not a package" );
 		}
 
 		if( createUpdateManifestFile ) {
-			job.addLog( "creating the update manifest file" );
-			var useTempDir = false;
-			var tempUpdateManifestFileName;
-			if( useTempDir ) {
-				tempUpdateManifestFileName = tempDir & 'updateManifest#createUUID()#.txt';
-			} else {
-				tempUpdateManifestFileName = currentProjectRoot & 'updateManifest#createUUID()#.txt';
-			}
-
-			job.addLog( "tempUpdManiFName: #tempUpdateManifestFileName#" );
+			job.addLog( "Creating JAR manifest." );
+			var tempUpdateManifestFileName = tempDir & 'updateManifest#createUUID()#.txt';
 			try {
 				writeUpdateManifestFile( tempUpdateManifestFileName, paramStruct );
 			} finally {
@@ -517,16 +669,9 @@ component accessors=true {
 				*/
 				if( FileExists( tempUpdateManifestFileName ) ) {
 					setCustomManifest( tempUpdateManifestFileName );
+					setGeneratedManifestFile( tempUpdateManifestFileName );
 				}
-
-				// not needed here any more
-				/* if ( FileExists( tempUpdateManifestFileName ) ) {
-					fileDelete( tempUpdateManifestFileName );
-				} */
 			}
-
-		} else {
-			job.addLog( "no need to create the update manifest file" );
 
 		}
 
@@ -552,8 +697,6 @@ component accessors=true {
 			//job.addLog( '#itemKey#: #manifestParams[itemKey]#' );
 			attributes.putValue( itemKey, manifestParams[itemKey] );
 		}
-
-		job.addLog( "filename: " & filename );
 
 		try{
 
@@ -637,26 +780,178 @@ component accessors=true {
 
 		}
 
-		job.addLog( ' jarName for this package is: #jarName# ' );
         return jarName;
     }
 
 	function buildFatJar() {
-		/*
-		is a self-sufficient archive which contains both classes and
-		dependencies needed to run an application
-		to make a fat jar
-		we need:
-		- Main-Class attribute in the manifest file
-		- include dependency jars
-		- it contains classes from all the libraries, on which your project depends
-			and of course the classes of the current project
-		- it has to do the same as
-			configurations.compile.collect{ it.isDirectory() ? it : zipTree( it ) }
-		*/
-		j = "run fat jar ";
-		shell.printString( " " & j & " " );
-		//command( j ).run();
+		var options = getFatJarOptions();
+		var mergedDependencyEntries = {};
+		var currentLibsDir = reReplace(
+			fileSystemutil.normalizeSlashes( fileSystemutil.resolvePath( getLibsDir(), getProjectRoot() ) ),
+			"/+$",
+			""
+		) & "/";
+		var outputJar = currentLibsDir & getJarNameString();
+
+		for( var dependencyJar in getFatJarPaths() ) {
+			if( !fileExists( dependencyJar ) ) {
+				throw(
+					message="Fat JAR dependency does not exist: #dependencyJar#",
+					type="commandException"
+				);
+			}
+
+			var extractDirectory = tempDir & 'fatJar#createUUID()#';
+			if( !directoryExists( extractDirectory ) ) {
+				directoryCreate( extractDirectory, true );
+			}
+			if( !directoryExists( extractDirectory ) ) {
+				throw(
+					message="Unable to create fat JAR extraction directory: #extractDirectory#",
+					type="commandException"
+				);
+			}
+
+			try {
+				zip action="unzip" file="#dependencyJar#" destination="#extractDirectory#" overwrite="true";
+
+				removeDependencyManifest( extractDirectory );
+				if( options.excludeSignatures ) {
+					removeDependencySignatures( extractDirectory );
+				}
+				if( options.mergeServiceDescriptors ) {
+					mergeServiceDescriptors( outputJar, extractDirectory );
+				}
+				applyDuplicatePolicy( extractDirectory, mergedDependencyEntries, options.duplicatePolicy );
+
+				var mergeCommand = 'run ""#getJavaBinFolder()#jar" uf "#outputJar#" -C "#extractDirectory#" ."';
+				if( getVerbose() ) {
+					job.addLog( mergeCommand );
+				}
+				command( mergeCommand ).run();
+			} finally {
+				if( directoryExists( extractDirectory ) ) {
+					directoryDelete( extractDirectory, true );
+				}
+			}
+		}
+	}
+
+	private function removeDependencyManifest( required string extractDirectory ) {
+		var metaInfDirectory = arguments.extractDirectory & "/META-INF";
+		if( !directoryExists( metaInfDirectory ) ) {
+			return;
+		}
+
+		var manifestFile = metaInfDirectory & "/MANIFEST.MF";
+		if( fileExists( manifestFile ) ) {
+			fileDelete( manifestFile );
+		}
+	}
+
+	private function removeDependencySignatures( required string extractDirectory ) {
+		var metaInfDirectory = arguments.extractDirectory & "/META-INF";
+		if( !directoryExists( metaInfDirectory ) ) {
+			return;
+		}
+
+		for( var filePath in directoryList( metaInfDirectory, true, "array" ) ) {
+			if(
+				fileExists( filePath )
+				&& reFindNoCase( "(^|[\\/])META-INF[\\/].*\.(SF|RSA|DSA)$", filePath )
+			) {
+				fileDelete( filePath );
+			}
+		}
+	}
+
+	private function applyDuplicatePolicy(
+		required string extractDirectory,
+		required struct mergedDependencyEntries,
+		required string duplicatePolicy
+	) {
+		for( var filePath in directoryList( arguments.extractDirectory, true, "array" ) ) {
+			if( !fileExists( filePath ) ) {
+				continue;
+			}
+
+			var entryName = replaceNoCase(
+				fileSystemutil.normalizeSlashes( filePath ),
+				fileSystemutil.normalizeSlashes( arguments.extractDirectory ),
+				""
+			);
+			entryName = reReplace( entryName, "^/+", "" );
+
+			if( !arguments.mergedDependencyEntries.keyExists( entryName ) ) {
+				arguments.mergedDependencyEntries[ entryName ] = true;
+				continue;
+			}
+
+			switch( arguments.duplicatePolicy ) {
+				case "first":
+					fileDelete( filePath );
+					break;
+				case "error":
+					throw(
+						message="Duplicate fat JAR entry: #entryName#",
+						type="commandException"
+					);
+			}
+		}
+	}
+
+	private function mergeServiceDescriptors( required string outputJar, required string extractDirectory ) {
+		var servicesDirectory = arguments.extractDirectory & "/META-INF/services";
+		if( !directoryExists( servicesDirectory ) ) {
+			return;
+		}
+
+		var outputDirectory = tempDir & "fatJarOutput#createUUID()#";
+		directoryCreate( outputDirectory, true );
+
+		try {
+			zip action="unzip" file="#arguments.outputJar#" destination="#outputDirectory#" overwrite="true";
+
+			for( var serviceFile in directoryList( servicesDirectory, true, "array" ) ) {
+				if( !fileExists( serviceFile ) ) {
+					continue;
+				}
+
+				var relativePath = replaceNoCase(
+					fileSystemutil.normalizeSlashes( serviceFile ),
+					fileSystemutil.normalizeSlashes( servicesDirectory ),
+					""
+				);
+				relativePath = reReplace( relativePath, "^/+", "" );
+				var outputServiceFile = outputDirectory & "/META-INF/services/" & relativePath;
+				var outputServiceDirectory = getDirectoryFromPath( outputServiceFile );
+				if( !directoryExists( outputServiceDirectory ) ) {
+					directoryCreate( outputServiceDirectory, true );
+				}
+
+				var providers = [];
+				if( fileExists( outputServiceFile ) ) {
+					providers.append( fileRead( outputServiceFile ).listToArray( chr(10), true ), true );
+				}
+				providers.append( fileRead( serviceFile ).listToArray( chr(10), true ), true );
+				fileWrite( outputServiceFile, providers.map( ( provider ) => trim( provider ) ).filter( ( provider ) => provider.len() ).toList( chr(10) ) );
+			}
+
+			var mergedJarZip = arguments.outputJar & ".zip";
+			if( fileExists( mergedJarZip ) ) {
+				fileDelete( mergedJarZip );
+			}
+			zip action="zip" file="#arguments.outputJar#" source="#outputDirectory#" overwrite="true";
+			if( fileExists( arguments.outputJar ) ) {
+				fileDelete( arguments.outputJar );
+			}
+			fileMove( mergedJarZip, arguments.outputJar );
+			directoryDelete( servicesDirectory, true );
+		} finally {
+			if( directoryExists( outputDirectory ) ) {
+				directoryDelete( outputDirectory, true );
+			}
+		}
 	}
 
 	/**
@@ -680,7 +975,7 @@ component accessors=true {
 		var CLIBinPath = getDirectoryFromPath( fileSystemUtil.getJREExecutable() );
 
 		if( fileExists( CLIBinPath & 'javac' & OSExecSuffix ) ) {
-			job.addLog( 'JDK found in the Java installation CommandBox is using.' );
+			job.addLog( 'Using JDK from CommandBox: #CLIBinPath#' );
 			return CLIBinPath;
 		}
 
@@ -688,7 +983,7 @@ component accessors=true {
 		try {
 			var OSBinPath = command( OSPathSearch & ' javac' ).run( returnOutput=true ).listToArray( chr(13)&chr(10) ).first()
 			OSBinPath = getDirectoryFromPath( OSBinPath );
-			job.addLog( 'JDK found your OS path.' );
+			job.addLog( 'Using JDK from the OS path: #OSBinPath#' );
 			return OSBinPath;
 		} catch( any var e ) {
 			// Error is raised if binary is not found on path
@@ -720,29 +1015,37 @@ component accessors=true {
 
 			// Assert: If we made it here, the current version we're looping over is a qualifying JDK!
 
-			job.addLog( 'JDK found in a pre-downloaded server JRE.' );
-			return javaInstall.directory.listAppend( installID, '/' ) & '/bin/';
+			var installedJDKBinPath = javaInstall.directory.listAppend( installID, '/' ) & '/bin/';
+			job.addLog( 'Using pre-downloaded JDK: #installedJDKBinPath#' );
+			return installedJDKBinPath;
 		}
 
 		// Fourth attempt: Install something to use:
 		job.addLog( 'JDK not found, let''s download one!' );
 		var javaHome = javaService.getJavaInstallPath( 'openjdk11_jdk', getVerbose() );
-		job.addLog( 'JDK downloaded (we''ll use it again next time)' );
-		return javaHome.listAppend( 'bin/', '/' );
+		var downloadedJDKBinPath = javaHome.listAppend( 'bin/', '/' );
+		job.addLog( 'Using downloaded JDK: #downloadedJDKBinPath#' );
+		return downloadedJDKBinPath;
 	}
 
 	function generateJavadocs() {
-		var currentProjectRoot = getProjectRoot();
-		var javaDocFinalDestinationFolder = currentProjectRoot & getJavaDocDestinationDir();
+		var javaDocFinalDestinationFolder = fileSystemutil.resolvePath(
+			getJavaDocDestinationDir(),
+			getProjectRoot()
+		);
+		var tempSourceFileName = tempDir & 'javadocs#createUUID()#.txt';
 
 		try {
-
-			//j = 'run #getJavaBinFolder()#javadoc -d #javaDocFinalDestinationFolder# -sourcepath src\main\java';
-			j = 'run "#getJavaBinFolder()#javadoc" src\main\java\Person.java -d javaDocs\main'
-
-			job.addLog( j );
-            //command( j ).run(echo=true);
-			job.addLog( command( j ).run( returnOutput=true ) );
+			writeTempSourceFile( tempSourceFileName );
+			var j = 'run ""#getJavaBinFolder()#javadoc" "@#tempSourceFileName#" -d "#javaDocFinalDestinationFolder#""';
+			if( getVerbose() ) {
+				job.addLog( j );
+			}
+			var javaDocOutput = command( j ).run( returnOutput=true );
+			if( javaDocOutput.len() ) {
+				job.addLog( javaDocOutput );
+			}
+			job.addLog( "Generated Javadocs: #javaDocFinalDestinationFolder#" );
 
 		} catch( any e ) {
 
@@ -756,7 +1059,9 @@ component accessors=true {
 			);
 
 		} finally {
-
+			if( fileExists( tempSourceFileName ) ) {
+				fileDelete( tempSourceFileName );
+			}
 		}
 	}
 

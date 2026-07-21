@@ -1,0 +1,8 @@
+{
+    "name" : "Compile DSL Package",
+    "slug" : "compile-dsl-package",
+    "version" : "1.2.3",
+    "manifest" : {
+        "Implementation-Title" : "Package Manifest Override"
+    }
+}
