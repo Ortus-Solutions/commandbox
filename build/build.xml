@@ -662,7 +662,7 @@ External Dependencies:
 		<sleep seconds="5"/>
 
 		<!-- Ensure output directory for apidocs exists -->
-		<mkdir dir="${temp.dir.absolute}/apidocs/CommandBox-CommandDocs"/>
+		<!-- <mkdir dir="${temp.dir.absolute}/apidocs/CommandBox-CommandDocs"/> -->
 
 		<!-- Get the apidocs now -->
 		<property name="temp.dir.absolute" location="${temp.dir}"/>
@@ -670,7 +670,7 @@ External Dependencies:
 		<delete file="${temp.dir}/docbox.html" />
 
 		<!-- Zip API Docs -->
-		<zip destfile="${dist.dir}/${distro.name}-apidocs-${commandbox.version}.zip" basedir="${temp.dir}/apidocs/CommandBox-CommandDocs"></zip>
+		<zip destfile="${dist.dir}/${distro.name}-apidocs-${commandbox.version}.zip" basedir="${temp.dir}/apidocs"></zip>
 		<!-- Build Checksum -->
 		<checksum forceoverwrite="true" fileext=".md5" file="${dist.dir}/${distro.name}-apidocs-${commandbox.version}.zip" />
 		<checksum forceoverwrite="true" algorithm="sha" file="${dist.dir}/${distro.name}-apidocs-${commandbox.version}.zip" />
