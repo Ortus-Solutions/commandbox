@@ -103,6 +103,30 @@ compile()
 	.run();
 ```
 
+When the compile project contains a `box.json`, package metadata is also used
+to populate the JAR manifest automatically. The DSL maps package fields such as
+`name`, `slug`, `version`, `author`, `shortDescription`, `homepage`,
+`documentation`, and the first license URL to manifest attributes. An optional
+`box.json` `manifest` struct is applied last, so those values override the
+generated package metadata.
+
+For example:
+
+```json
+{
+	"name" : "Example",
+	"slug" : "example",
+	"version" : "1.0.0",
+	"manifest" : {
+		"Main-Class" : "example.App",
+		"Implementation-Version" : "1.0.0"
+	}
+}
+```
+
+The explicit `.manifest()` call takes precedence over values loaded from
+`box.json`.
+
 ## Compiler Options
 
 `.compileOptions()` accepts a typed struct. See the [Oracle `javac` documentation](https://docs.oracle.com/en/java/javase/21/docs/specs/man/javac.html)

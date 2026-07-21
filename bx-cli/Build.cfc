@@ -33,7 +33,15 @@ component {
 		directoryCreate( libsPath );
 		command( "install" ).run();
 
+		compile()
+			.fromSource( "../src/java/com" )
+			.toClasses( "../temp/cli/jgit-classes" )
+			.withClassPath( [ "libs" ] )
+			.toJar( "ortus-jgit.jar" )
+			.run();
+
 		command( "forgebox use" ).params( "ortus" ).run();
-		command( "publish" ).flags( "force" ).run();
+		//command( "publish" ).flags( "force" ).run();
 	}
+
 }

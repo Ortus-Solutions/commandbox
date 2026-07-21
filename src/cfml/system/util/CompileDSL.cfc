@@ -55,7 +55,12 @@ component accessors=true {
     have a encoding flag option
     */
 
-    public function init() {
+	/**
+	 * Initializes the Compile DSL with its default paths and options.
+	 *
+	 * @returns The initialized DSL instance.
+	 */
+	public function init() {
         setSourceDirectory( 'src\main\java\' );
         setClassOutputDirectory( 'classes\java\main' );
         setVerbose( false );
@@ -88,11 +93,23 @@ component accessors=true {
 	/**
 	 * Sets the directory to run the command in
   	 **/
+	/**
+	 * Sets the project root used to resolve source, class, resource, and JAR paths.
+	 *
+	 * @projectRoot The project directory to use as the path-resolution root.
+	 * @returns The current DSL instance.
+	 */
 	function projectRoot( required projectRoot ) {
 		setProjectRoot( fileSystemutil.resolvePath( projectRoot ) );
 		return this;
 	}
 
+	/**
+	 * Sets the Java source directories, files, globs, or comma-delimited source paths.
+	 *
+	 * @sourcePaths A source directory, file, glob, comma-delimited string, or array of paths.
+	 * @returns The current DSL instance.
+	 */
 	function fromSource( required any sourcePaths ) {
 		if( isSimpleValue( arguments.sourcePaths ) ) {
 			arguments.sourcePaths = listToArray( arguments.sourcePaths, ",", true );
@@ -104,16 +121,33 @@ component accessors=true {
 		return this;
 	}
 
-    function toClasses( required classOutputDirectory ){
+	/**
+	 * Sets the directory where compiled Java classes are written.
+	 *
+	 * @classOutputDirectory The class output directory.
+	 * @returns The current DSL instance.
+	 */
+	function toClasses( required classOutputDirectory ){
         setClassOutputDirectory( fileSystemutil.resolvePath( classOutputDirectory, getProjectRoot() ) )
         return this;
     }
 
-    function verbose() {
+	/**
+	 * Enables verbose compiler and JAR command output.
+	 *
+	 * @returns The current DSL instance.
+	 */
+	function verbose() {
         setVerbose( true );
         return this;
     }
 
+	/**
+	 * Enables JAR creation and optionally sets the JAR filename.
+	 *
+	 * @jarName The output JAR filename.
+	 * @returns The current DSL instance.
+	 */
 	function toJar( string jarName='' ) {
 		if( jarName.len() ) {
 			setJarNameString( jarName );
@@ -122,11 +156,23 @@ component accessors=true {
 		return this;
 	}
 
+	/**
+	 * Sets the directory where generated JAR files are written.
+	 *
+	 * @libsDir The directory where generated JAR files are written.
+	 * @returns The current DSL instance.
+	 */
 	function libsDir( required libsDir ) {
 		setLibsDir(libsDir);
 		return this;
 	}
 
+	/**
+	 * Configures supported javac compiler options.
+	 *
+	 * @options A struct of supported javac option names and values.
+	 * @returns The current DSL instance.
+	 */
 	function compileOptions( required struct options ) {
 		var supportedOptions = [
 			"release", "source", "target", "encoding", "debug", "deprecation", "enablePreview",
@@ -188,6 +234,12 @@ component accessors=true {
 		return this;
 	}
 
+	/**
+	 * Configures supported JAR tool options.
+	 *
+	 * @options A struct of supported JAR option names and values.
+	 * @returns The current DSL instance.
+	 */
 	function jarOptions( required struct options ) {
 		var supportedOptions = [ "compress", "mainClass", "date", "moduleVersion", "release", "hashModules", "modulePath", "noManifest" ];
 		for( var optionName in arguments.options ) {
@@ -226,11 +278,23 @@ component accessors=true {
 		return this;
 	}
 
+	/**
+	 * Sets explicit manifest attributes for the generated JAR.
+	 *
+	 * @customParams A struct of manifest attribute names and values.
+	 * @returns The current DSL instance.
+	 */
 	function manifest( required struct customParams ) {
 		setCustomManifestParams( customParams );
 		return this;
 	}
 
+	/**
+	 * Sets the resource directory whose contents are added to the generated JAR.
+	 *
+	 * @resourcesPath The resource directory path.
+	 * @returns The current DSL instance.
+	 */
 	function withResources( string resourcesPath ) {
 		//if it has a resourcefolder it uses that one
 		//if its empty then use src\main\resources
@@ -238,11 +302,22 @@ component accessors=true {
 		return this;
 	}
 
+	/**
+	 * Enables Javadoc generation.
+	 *
+	 * @returns The current DSL instance.
+	 */
 	function withJavaDocs(){
 		setUseJavaDoc(true);
 		return this;
 	}
 
+	/**
+	 * Sets compiler classpath JARs or directories containing JARs.
+	 *
+	 * @classPath A JAR, JAR directory, comma-delimited value, or array of paths.
+	 * @returns The current DSL instance.
+	 */
 	function withClassPath( required any classPath ) {
 		if( isSimpleValue( arguments.classPath ) ) {
 			arguments.classPath = listToArray( arguments.classPath, ",", true );
@@ -258,6 +333,14 @@ component accessors=true {
 		return this;
 	}
 
+	/**
+	 * Enables JAR creation and merges the supplied dependency JARs.
+	 *
+	 * @jarName The output fat JAR filename.
+	 * @includeJars Dependency JAR paths or directories to merge.
+	 * @options Fat JAR configuration options.
+	 * @returns The current DSL instance.
+	 */
 	function toFatJar( string jarName='', any includeJars=[], struct options={} ) {
 		if( isSimpleValue( arguments.includeJars ) ) {
 			arguments.includeJars = listToArray( arguments.includeJars, ",", true );
@@ -272,6 +355,12 @@ component accessors=true {
 		return toJar( arguments.jarName );
 	}
 
+	/**
+	 * Configures duplicate, signature, and service-descriptor handling for fat JARs.
+	 *
+	 * @options Fat JAR options including duplicatePolicy, excludeSignatures, and mergeServiceDescriptors.
+	 * @returns The current DSL instance.
+	 */
 	function configureFatJar( required struct options ) {
 		var supportedOptions = [ "mergeServiceDescriptors", "excludeSignatures", "duplicatePolicy" ];
 		for( var optionName in arguments.options ) {
@@ -297,6 +386,7 @@ component accessors=true {
 		return this;
 	}
 
+	/** Compiles sources and performs the requested JAR or Javadoc operations. */
 	struct function run() {
 		job.start( 'Compile Task' );
 
@@ -353,6 +443,11 @@ component accessors=true {
 		};
     }
 
+	/**
+	 * Compiles the resolved Java source paths with javac.
+	 *
+	 * @returns Nothing. Compiled classes are written to the configured output directory.
+	 */
 	function compileCode() {
 
 		/* if( directoryExists( getClassOutputDirectory() ) ){
@@ -415,16 +510,33 @@ component accessors=true {
 			if( getVerbose() ) {
 				additionalOptions &= " -verbose";
 			}
-			var javacCommand = 'run ""#getJavaBinFolder()#javac" #classPathString# "@#tempSrcFileName#" -d "#variables.classOutputDirectory#"#additionalOptions#"';
+			var classOutputDirectory = reReplace(
+				fileSystemutil.normalizeSlashes( variables.classOutputDirectory ),
+				"/+$",
+				""
+			);
+			var javacCommand = 'run ""#getJavaBinFolder()#javac" #classPathString# "@#tempSrcFileName#" -d "#classOutputDirectory#"#additionalOptions#"';
 
 			if( getVerbose() ) {
 				job.addLog( javacCommand );
 			}
-			var javacOutput = command( javacCommand ).run( returnOutput=true );
-			if( javacOutput.len() ) {
-				job.addLog( javacOutput );
-			}
+			runCompileCommand( javacCommand, "Java compilation" );
 
+		} catch( any e ) {
+			job.addLog( "Compilation failed: #e.message#" );
+			if( len( e.detail ?: "" ) ) {
+				job.addLog( e.detail );
+			}
+			var exceptionInfo = e.extendedInfo ?: "";
+			if( isJSON( exceptionInfo ) ) {
+				exceptionInfo = deserializeJSON( exceptionInfo );
+			}
+			if( isStruct( exceptionInfo ) ) {
+				if( exceptionInfo.keyExists( "commandOutput" ) && len( exceptionInfo.commandOutput ) ) {
+					job.addLog( exceptionInfo.commandOutput );
+				}
+			}
+			throw( message="Compilation failed: #e.message#", detail=e.detail, type="commandException" );
 		} finally {
 			if ( FileExists( tempSrcFileName ) ) {
 				fileDelete( tempSrcFileName );
@@ -434,6 +546,14 @@ component accessors=true {
 
 	}
 
+	/**
+	 * Writes matching source file paths to a javac response file.
+	 *
+	 * @tempSrcFileName The response file to write.
+	 * @sourcePath The source paths to scan.
+	 * @extension The source file extension to include.
+	 * @returns Nothing. The response file is written to disk.
+	 */
 	function writeTempSourceFile( string tempSrcFileName , array sourcePath=getSourcePaths() , string extension=".java" ) {
 		var globber = wirebox.getInstance( 'globber' );
 
@@ -459,6 +579,14 @@ component accessors=true {
 		fileWrite( tempSrcFileName, sourceList );
 	}
 
+	/**
+	 * Writes matching compiled class paths to a JAR tool response file.
+	 *
+	 * @tempSrcFileName The response file to write.
+	 * @sourcePath The compiled class paths to scan.
+	 * @extension The class file extension to include.
+	 * @returns Nothing. The response file is written to disk.
+	 */
 	function writeTempClassFiles( string tempSrcFileName, array sourcePath = getSourcePaths(), string extension=".class" ) {
 
 		var classOutput = fileSystemutil.normalizeSlashes(
@@ -491,6 +619,11 @@ component accessors=true {
 		fileWrite( tempSrcFileName, currentSourceList );
 	}
 
+	/**
+	 * Creates the configured JAR from compiled classes.
+	 *
+	 * @returns Nothing. The generated JAR path is stored in the result metadata.
+	 */
 	function buildJar() {
 		var currentLibsDir = reReplace(
 			fileSystemutil.normalizeSlashes( fileSystemutil.resolvePath( getLibsDir(), getProjectRoot() ) ),
@@ -580,7 +713,7 @@ component accessors=true {
 				job.addLog( j );
 			}
             //command( j ).run(echo=true);
-			command( j ).run();
+			runCompileCommand( j, "JAR creation" );
 			job.addLog( "Created JAR: #getGeneratedJarPath()#" );
 
         } finally {
@@ -596,6 +729,11 @@ component accessors=true {
 
 	}
 
+	/**
+	 * Adds configured resources to the generated JAR.
+	 *
+	 * @returns Nothing. Resources are added to the generated JAR when configured.
+	 */
 	function moveResources() {
 		var currentResourcePath = fileSystemutil.resolvePath( getResourcePath(), getProjectRoot() );
 		//job.addLog( "moveRes resPath: #currentResourcePath#" );
@@ -613,12 +751,17 @@ component accessors=true {
 
 			//job.addLog( j );
 			//command( j ).run(echo=true);
-			command( j ).run();
+			runCompileCommand( j, "Resource inclusion" );
 
 		}
 
 	}
 
+	/**
+	 * Builds a temporary manifest from explicit and package metadata.
+	 *
+	 * @returns Nothing. The temporary manifest is used during JAR creation.
+	 */
 	function updateManifestFile() {
 		/*
 		the original is default
@@ -677,6 +820,13 @@ component accessors=true {
 
 	}
 
+	/**
+	 * Writes manifest attributes to a temporary manifest file.
+	 *
+	 * @filename The file to write.
+	 * @manifestParams The manifest attribute names and values.
+	 * @returns Nothing. The manifest file is written to disk.
+	 */
 	function writeUpdateManifestFile( string filename, struct manifestParams ) {
 		//var currentManifestParams = 'foo: bar';
 		/* var updManifestOut = createObject( "java", "java.lang.StringBuilder" ).init('');
@@ -713,6 +863,13 @@ component accessors=true {
 		}
 	}
 
+	/**
+	 * Adds package metadata and optional box.json manifest overrides to manifest attributes.
+	 *
+	 * @currentFolder The package directory containing box.json.
+	 * @manifestParams The manifest attributes to populate and override.
+	 * @returns The populated manifest attributes.
+	 */
 	function getParamsFromBoxJson( string currentFolder, struct manifestParams ) {
 		var boxJsonParams = {};
 		var boxJSON = packageService.readPackageDescriptor( currentFolder );
@@ -743,7 +900,7 @@ component accessors=true {
 		}
 		// after check for the manifest portion of the box.json
 		// because if the manifest keys override the ones above in the normal box.json
-		if( len( boxJSON.manifest ) ) {
+		if( boxJSON.keyExists( "manifest" ) && len( boxJSON.manifest ) ) {
 			var boxJSonManifest = boxJSON.manifest;
 			for( var itemKey in boxJSonManifest ) {
 				manifestParams[itemKey] = boxJSonManifest[itemKey];
@@ -752,7 +909,13 @@ component accessors=true {
 		return manifestParams;
 	}
 
-    function getJarNameFromPackage( string currentFolder ){
+    /**
+	 * Derives a JAR filename from the package slug and version.
+	 *
+	 * @currentFolder The package directory containing box.json.
+	 * @returns The derived JAR filename, or an empty string when unavailable.
+	 */
+	function getJarNameFromPackage( string currentFolder ){
 		//job.addLog( ' jarName is empty ' );
 		//job.addLog( ' currentProjectRoot-> #currentFolder# ' );
 		jarName = '';
@@ -783,6 +946,11 @@ component accessors=true {
         return jarName;
     }
 
+	/**
+	 * Merges dependency JAR contents into the generated JAR.
+	 *
+	 * @returns Nothing. Dependency contents are merged according to the configured options.
+	 */
 	function buildFatJar() {
 		var options = getFatJarOptions();
 		var mergedDependencyEntries = {};
@@ -828,7 +996,7 @@ component accessors=true {
 				if( getVerbose() ) {
 					job.addLog( mergeCommand );
 				}
-				command( mergeCommand ).run();
+				runCompileCommand( mergeCommand, "Fat JAR dependency merge" );
 			} finally {
 				if( directoryExists( extractDirectory ) ) {
 					directoryDelete( extractDirectory, true );
@@ -837,6 +1005,12 @@ component accessors=true {
 		}
 	}
 
+	/**
+	 * Removes a dependency manifest before merging its contents.
+	 *
+	 * @extractDirectory The extracted dependency directory.
+	 * @returns Nothing.
+	 */
 	private function removeDependencyManifest( required string extractDirectory ) {
 		var metaInfDirectory = arguments.extractDirectory & "/META-INF";
 		if( !directoryExists( metaInfDirectory ) ) {
@@ -849,6 +1023,12 @@ component accessors=true {
 		}
 	}
 
+	/**
+	 * Removes dependency signature files before merging archive contents.
+	 *
+	 * @extractDirectory The extracted dependency directory.
+	 * @returns Nothing.
+	 */
 	private function removeDependencySignatures( required string extractDirectory ) {
 		var metaInfDirectory = arguments.extractDirectory & "/META-INF";
 		if( !directoryExists( metaInfDirectory ) ) {
@@ -865,6 +1045,14 @@ component accessors=true {
 		}
 	}
 
+	/**
+	 * Applies the configured duplicate-entry policy to extracted dependency files.
+	 *
+	 * @extractDirectory The extracted dependency directory.
+	 * @mergedDependencyEntries The entries already merged from dependencies.
+	 * @duplicatePolicy The duplicate policy: first, last, or error.
+	 * @returns Nothing.
+	 */
 	private function applyDuplicatePolicy(
 		required string extractDirectory,
 		required struct mergedDependencyEntries,
@@ -900,6 +1088,13 @@ component accessors=true {
 		}
 	}
 
+	/**
+	 * Combines service provider descriptors from a dependency into the output JAR.
+	 *
+	 * @outputJar The output JAR path.
+	 * @extractDirectory The extracted dependency directory.
+	 * @returns Nothing.
+	 */
 	private function mergeServiceDescriptors( required string outputJar, required string extractDirectory ) {
 		var servicesDirectory = arguments.extractDirectory & "/META-INF/services";
 		if( !directoryExists( servicesDirectory ) ) {
@@ -958,10 +1153,57 @@ component accessors=true {
 	 * Run another command by DSL.
 	 * @name The name of the command to run.
  	 **/
+	/**
+	 * Creates a Command DSL instance for an internal shell command.
+	 *
+	 * @name The command name or command line to execute.
+	 * @returns CommandDSL The command DSL instance.
+	 */
 	function command( required name ) {
 		return wirebox.getinstance( name='CommandDSL', initArguments={ name : arguments.name } );
 	}
 
+	/**
+	 * Runs an internal command, logs output, and reports failures with command context.
+	 *
+	 * @commandLine The command line to execute.
+	 * @operation The human-readable operation name used in errors.
+	 * @returns The captured command output.
+	 */
+	private any function runCompileCommand(
+		required string commandLine,
+		required string operation
+	) {
+		try {
+			var commandOutput = command( arguments.commandLine ).run( returnOutput=true );
+			if( len( commandOutput ?: "" ) ) {
+				job.addLog( commandOutput );
+			}
+			return commandOutput;
+		} catch( any e ) {
+			var exceptionInfo = e.extendedInfo ?: "";
+			if( isJSON( exceptionInfo ) ) {
+				exceptionInfo = deserializeJSON( exceptionInfo );
+			}
+			if( isStruct( exceptionInfo ) && exceptionInfo.keyExists( "commandOutput" ) ) {
+				if( len( exceptionInfo.commandOutput ?: "" ) ) {
+					job.addLog( exceptionInfo.commandOutput );
+				}
+			}
+			throw(
+				message="#arguments.operation# failed: #e.message#",
+				detail=e.detail,
+				type="commandException",
+				extendedInfo=e.extendedInfo ?: ""
+			);
+		}
+	}
+
+	/**
+	 * Finds or installs a JDK and returns its bin directory.
+	 *
+	 * @returns The absolute JDK bin directory path.
+	 */
 	string function findJDKBinDirectory() {
 		var OSExecSuffix = '';
 		var OSPathSearch = '!which';
@@ -981,7 +1223,7 @@ component accessors=true {
 
 		// Second attempt: Check and see if the OS path has a JDK
 		try {
-			var OSBinPath = command( OSPathSearch & ' javac' ).run( returnOutput=true ).listToArray( chr(13)&chr(10) ).first()
+			var OSBinPath = runCompileCommand( OSPathSearch & ' javac', "JDK lookup" ).listToArray( chr(13)&chr(10) ).first()
 			OSBinPath = getDirectoryFromPath( OSBinPath );
 			job.addLog( 'Using JDK from the OS path: #OSBinPath#' );
 			return OSBinPath;
@@ -1028,6 +1270,11 @@ component accessors=true {
 		return downloadedJDKBinPath;
 	}
 
+	/**
+	 * Generates Javadocs for the resolved Java source paths.
+	 *
+	 * @returns Nothing. Javadocs are written to the configured destination directory.
+	 */
 	function generateJavadocs() {
 		var javaDocFinalDestinationFolder = fileSystemutil.resolvePath(
 			getJavaDocDestinationDir(),
@@ -1041,10 +1288,7 @@ component accessors=true {
 			if( getVerbose() ) {
 				job.addLog( j );
 			}
-			var javaDocOutput = command( j ).run( returnOutput=true );
-			if( javaDocOutput.len() ) {
-				job.addLog( javaDocOutput );
-			}
+			runCompileCommand( j, "Javadoc generation" );
 			job.addLog( "Generated Javadocs: #javaDocFinalDestinationFolder#" );
 
 		} catch( any e ) {
