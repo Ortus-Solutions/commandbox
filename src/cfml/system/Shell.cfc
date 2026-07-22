@@ -900,10 +900,12 @@ component accessors="true" singleton {
 			// This type of error means the user hit Ctrl-C, when not in a readLine() call (and hit my custom signal handler).  Duck out and move along.
 			} else if( (!isNull( e.getCause() ) && e.getCause().getClass().getName() == 'java.lang.InterruptedException')
 				|| e.type.toString() == 'UserInterruptException'
+				|| e.type contains "interrupted"
 				|| e.message == 'UserInterruptException'
 				|| e.type.toString() == 'EndOfFileException' ) {
-
-				ConsolePainter.forceStop();
+				
+				// Consume and clear the current thread's interrupt flag.
+				createObject( "java", "java.lang.Thread" ).interrupted();
 
 				if( job.getActive() ) {
 					job.error( 'CANCELLED' );
@@ -913,6 +915,8 @@ component accessors="true" singleton {
 					variables.reader.getTerminal().writer().println();
 					variables.reader.getTerminal().writer().print( variables.print.boldRedLine( 'CANCELLED' ) );
 				}
+
+				ConsolePainter.forceStop();
 			// Anything else is completely unexpected and means boom booms happened-- full stack please.
 			} else {
 

@@ -125,6 +125,7 @@ component singleton accessors=true {
 			 	if( (!isNull( e.getCause() ) && e.getCause().getClass().getName() == 'java.lang.InterruptedException')
 					|| e.type.toString() == 'UserInterruptException'
 					|| e.message == 'UserInterruptException'
+					|| e.type contains "interrupted"
 					|| e.type.toString() == 'EndOfFileException' ) {
 							invokeLifecycleEvent( taskCFC, 'onCancel', { target:target, taskargs:taskargs } );
 				} else {

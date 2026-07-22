@@ -41,7 +41,7 @@ component {
 			.run();
 
 		command( "forgebox use" ).params( "ortus" ).run();
-		//command( "publish" ).flags( "force" ).run();
+		command( "publish" ).flags( "force" ).run();
 	}
 
 }
