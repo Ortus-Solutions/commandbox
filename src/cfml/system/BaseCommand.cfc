@@ -370,11 +370,12 @@ component accessors="true" singleton {
 	/**
 	 * Compile the current project using the CompileDSL.
 	 *
+	 * @projectRoot Project root to compile. Defaults to the current working directory.
 	 * @return An instance of the CompileDSL for further configuration.
 	 */
-    function compile() {
-        return getinstance( "compileDSL" )
-            .projectRoot( resolvePath( '' ) );
+    function compile( string projectRoot="" ) {
+		return getinstance( "compileDSL" )
+			.projectRoot( len( arguments.projectRoot ) ? resolvePath( arguments.projectRoot ) : resolvePath( "" ) );
     }
 
 	/**

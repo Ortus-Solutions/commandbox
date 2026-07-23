@@ -1,4 +1,3 @@
-
 /**
 *********************************************************************************
 * Copyright Since 2014 CommandBox by Ortus Solutions, Corp
@@ -25,6 +24,7 @@ component accessors=true {
 	property name='sourcePaths'				type='array';
 	property name='createJar'				type='boolean';
 	property name='jarNameString'			type='string';
+	property name='fatJarNameString'		type='string';
 	property name='generatedJarPath'			type='string';
 	property name='libsDir'					type='string';
 	property name='compileOptionsString'	type='string';
@@ -47,6 +47,8 @@ component accessors=true {
     property name='fileSystemUtil'  inject='FileSystem';
 	property name='shell'	        inject='shell';
     property name='job'		        inject='interactiveJob';
+    property name='endpointService'	inject='endpointService';
+    property name='javaService'		inject='javaService';
 	property name="tempDir" 		inject="tempDir@constants";
 
     /*
@@ -73,6 +75,7 @@ component accessors=true {
 		setJarOptionsString( '' );
 		setJarOptionArguments( '' );
 		setJarNameString( '' );
+		setFatJarNameString( '' );
 		setGeneratedJarPath( '' );
 		setCustomManifest( '' );
 		setCustomManifestParams( {} );
@@ -349,10 +352,14 @@ component accessors=true {
 			return fileSystemutil.resolvePath( arguments.jarPath, getProjectRoot() );
 		} );
 		setFatJarPaths( arguments.includeJars );
+		if( arguments.jarName.len() ) {
+			setFatJarNameString( arguments.jarName );
+		}
 		if( arguments.options.len() ) {
 			configureFatJar( arguments.options );
 		}
-		return toJar( arguments.jarName );
+		setCreateJar( true );
+		return this;
 	}
 
 	/**
@@ -515,7 +522,10 @@ component accessors=true {
 				"/+$",
 				""
 			);
-			var javacCommand = 'run ""#getJavaBinFolder()#javac" #classPathString# "@#tempSrcFileName#" -d "#classOutputDirectory#"#additionalOptions#"';
+			var javacCommand = nativeRunCommand(
+				getJavaBinFolder() & "javac",
+				'#classPathString# "@#tempSrcFileName#" -d "#classOutputDirectory#"#additionalOptions#'
+			);
 
 			if( getVerbose() ) {
 				job.addLog( javacCommand );
@@ -703,11 +713,11 @@ component accessors=true {
 				if( getCustomManifest().len() ) {
 					jarCommandOptions &= " --manifest=\"#variables.customManifest#\"";
 				}
-				j = 'run ""#getJavaBinFolder()#jar" #jarCommandOptions# "@#tempClassFileName#"';
+				j = nativeRunCommand( getJavaBinFolder() & "jar", '#jarCommandOptions# "@#tempClassFileName#"' );
 			} else if( !getCustomManifest().len() ) {
-				j = 'run ""#getJavaBinFolder()#jar" #jarMode# "#outputJarPath#" "@#tempClassFileName#"';
+				j = nativeRunCommand( getJavaBinFolder() & "jar", '#jarMode# "#outputJarPath#" "@#tempClassFileName#"' );
 			} else {
-				j = 'run ""#getJavaBinFolder()#jar" #jarMode#m #getJarOptionArguments()# "#outputJarPath#" "#variables.customManifest#" "@#tempClassFileName#"';
+				j = nativeRunCommand( getJavaBinFolder() & "jar", '#jarMode#m #getJarOptionArguments()# "#outputJarPath#" "#variables.customManifest#" "@#tempClassFileName#"' );
 			}
 			if( getVerbose() ) {
 				job.addLog( j );
@@ -747,7 +757,7 @@ component accessors=true {
 			var currentLibsDir = fileSystemutil.resolvePath( getLibsDir(), getProjectRoot() );
 			//job.addLog( "moveRes currLibsDir: #currentLibsDir#" );
 
-			j = 'run ""#getJavaBinFolder()#jar" uf "#currentLibsDir##jarName#" -C #currentResourcePath# . "'
+			j = nativeRunCommand( getJavaBinFolder() & "jar", 'uf "#currentLibsDir##jarName#" -C #currentResourcePath# .' );
 
 			//job.addLog( j );
 			//command( j ).run(echo=true);
@@ -959,7 +969,16 @@ component accessors=true {
 			"/+$",
 			""
 		) & "/";
-		var outputJar = currentLibsDir & getJarNameString();
+		var fatJarName = getFatJarNameString();
+		if( !fatJarName.len() ) {
+			fatJarName = getJarNameString();
+		}
+		var thinJarPath = currentLibsDir & getJarNameString();
+		var outputJar = currentLibsDir & fatJarName;
+		if( outputJar != thinJarPath && !fileExists( outputJar ) ) {
+			fileCopy( thinJarPath, outputJar, true );
+		}
+		setGeneratedJarPath( outputJar );
 
 		for( var dependencyJar in getFatJarPaths() ) {
 			if( !fileExists( dependencyJar ) ) {
@@ -992,7 +1011,7 @@ component accessors=true {
 				}
 				applyDuplicatePolicy( extractDirectory, mergedDependencyEntries, options.duplicatePolicy );
 
-				var mergeCommand = 'run ""#getJavaBinFolder()#jar" uf "#outputJar#" -C "#extractDirectory#" ."';
+				var mergeCommand = nativeRunCommand( getJavaBinFolder() & "jar", 'uf "#outputJar#" -C "#extractDirectory#" .' );
 				if( getVerbose() ) {
 					job.addLog( mergeCommand );
 				}
@@ -1170,12 +1189,22 @@ component accessors=true {
 	 * @operation The human-readable operation name used in errors.
 	 * @returns The captured command output.
 	 */
+	private string function nativeRunCommand( required string executable, required string argumentsString ) {
+		if( fileSystemUtil.isWindows() ) {
+			return '""#arguments.executable#" ' & arguments.argumentsString & '"';
+		}
+		return '"#arguments.executable#" ' & arguments.argumentsString;
+	}
+
 	private any function runCompileCommand(
 		required string commandLine,
 		required string operation
 	) {
 		try {
-			var commandOutput = command( arguments.commandLine ).run( returnOutput=true );
+			var commandOutput = wirebox
+				.getInstance( name="CommandDSL", initArguments={ "name" : "run" } )
+				.params( arguments.commandLine )
+				.run( returnOutput=true );
 			if( len( commandOutput ?: "" ) ) {
 				job.addLog( commandOutput );
 			}
@@ -1284,7 +1313,7 @@ component accessors=true {
 
 		try {
 			writeTempSourceFile( tempSourceFileName );
-			var j = 'run ""#getJavaBinFolder()#javadoc" "@#tempSourceFileName#" -d "#javaDocFinalDestinationFolder#""';
+			var j = nativeRunCommand( getJavaBinFolder() & "javadoc", '"@#tempSourceFileName#" -d #javaDocFinalDestinationFolder#' );
 			if( getVerbose() ) {
 				job.addLog( j );
 			}

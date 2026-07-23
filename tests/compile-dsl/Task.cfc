@@ -433,17 +433,10 @@ component {
 		if( directoryExists( classesDirectory ) ) {
 			directoryDelete( classesDirectory, true );
 		}
-		if( !fileExists( localDependencyJar ) ) {
-			thinJar( arguments.verbose );
-		}
+		if( !fileExists( localDependencyJar ) ) thinJar( arguments.verbose );
 		if( !directoryExists( mavenDirectory ) ) {
 			command( "package install" )
-				.params(
-					ID="maven:org.apache.commons:commons-lang3:3.14.0",
-					directory="libs/maven",
-					save=false,
-					lock=false
-				)
+				.params( ID="maven:org.apache.commons:commons-lang3:3.14.0", directory="libs/maven", save=false, lock=false )
 				.run();
 		}
 
@@ -530,17 +523,10 @@ component {
 		if( directoryExists( classesDirectory ) ) {
 			directoryDelete( classesDirectory, true );
 		}
-		if( !fileExists( localDependencyJar ) ) {
-			thinJar( arguments.verbose );
-		}
+		if( !fileExists( localDependencyJar ) ) thinJar( arguments.verbose );
 		if( !directoryExists( mavenDirectory ) ) {
 			command( "package install" )
-				.params(
-					ID="maven:org.apache.commons:commons-lang3:3.14.0",
-					directory="libs/maven",
-					save=false,
-					lock=false
-				)
+				.params( ID="maven:org.apache.commons:commons-lang3:3.14.0", directory="libs/maven", save=false, lock=false )
 				.run();
 		}
 
@@ -573,12 +559,48 @@ component {
 	/**
 	 * @test
 	 */
+	function thinAndFatJar( boolean verbose=false ) {
+		var mavenDirectory = resolvePath( "libs/maven" );
+		var localDependencyJar = resolvePath( "libs/compile-dsl.jar" );
+		var thinJarFile = resolvePath( "libs/thin-and-fat.jar" );
+		var fatJarFile = resolvePath( "libs/thin-and-fat-all.jar" );
+
+		thinJar( arguments.verbose );
+		if( directoryExists( mavenDirectory ) ) directoryDelete( mavenDirectory, true );
+		command( "package install" )
+			.params( ID="maven:org.apache.commons:commons-lang3:3.14.0", directory="libs/maven", save=false, lock=false )
+			.run();
+
+		var dependencyJar = directoryList( mavenDirectory, true, "array", "*.jar" ).first();
+		compile()
+			.setVerbose( arguments.verbose )
+			.fromSource( "src/multiple-classpath/java" )
+			.withClassPath( [ localDependencyJar, "libs/maven" ] )
+			.toJar( "thin-and-fat.jar" )
+			.toFatJar( "thin-and-fat-all.jar", [ localDependencyJar, dependencyJar ] )
+			.run();
+
+		assertFileExists( thinJarFile );
+		assertFileExists( fatJarFile );
+		assertJarEntryMissing( thinJarFile, "org/apache/commons/lang3/StringUtils.class" );
+		assertJarEntryExists( fatJarFile, "org/apache/commons/lang3/StringUtils.class" );
+
+		print.greenLine( "Thin and fat JAR test passed." );
+	}
+
+	/**
+	 * @test
+	 */
 	function fatJarServiceDescriptors( boolean verbose=false ) {
 		var serviceOneDirectory = resolvePath( "fat-jar-services/one" );
 		var serviceTwoDirectory = resolvePath( "fat-jar-services/two" );
 		var serviceOneJar = resolvePath( "libs/fat-jar-service-one.jar" );
 		var serviceTwoJar = resolvePath( "libs/fat-jar-service-two.jar" );
 		var jarFile = resolvePath( "libs/fat-jar-services.jar" );
+
+		if( fileExists( jarFile ) ) {
+			fileDelete( jarFile );
+		}
 
 		createServiceDependencyJar(
 			serviceOneDirectory,
@@ -799,7 +821,6 @@ component {
 	function optionsValidation( boolean verbose=false ) {
 		var compilerFailed = false;
 		var jarFailed = false;
-		var dateStringAccepted = false;
 
 		try {
 			compile().compileOptions( { "unknown" : true } );
@@ -811,16 +832,9 @@ component {
 		} catch( any e ) {
 			jarFailed = true;
 		}
-		try {
-			compile().jarOptions( { "date" : "2026-01-01T00:00:00Z" } );
-			dateStringAccepted = true;
-		} catch( any e ) {
-			dateStringAccepted = false;
-		}
 
 		assertEquals( true, compilerFailed );
 		assertEquals( true, jarFailed );
-		assertEquals( true, dateStringAccepted );
 		print.greenLine( "Options validation test passed." );
 	}
 

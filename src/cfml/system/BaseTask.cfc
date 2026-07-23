@@ -13,6 +13,23 @@ component accessors="true" extends='commandbox.system.BaseCommand' {
 	// Tasks mostly just do everything commands do
 
 	/**
+	 * Compile the task project using the CompileDSL.
+	 *
+	 * Relative project roots are resolved from the task CFC directory.
+	 *
+	 * @projectRoot Project root to compile. Defaults to the task CFC directory.
+	 * @return An instance of the CompileDSL for further configuration.
+	 */
+	function compile( string projectRoot="" ) {
+		return getinstance( "compileDSL" )
+			.projectRoot(
+				len( arguments.projectRoot )
+					? resolvePath( arguments.projectRoot )
+					: resolvePath( "" )
+			);
+	}
+
+	/**
 	 * Run another task by DSL.
 	 * @taskFile The name of the task to run.
  	 **/

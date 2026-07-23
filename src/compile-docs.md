@@ -1,5 +1,21 @@
 # Compile DSL
 
+The DSL is also available through the `java compile` command. The command
+returns the same result metadata as the DSL and prints a short operation
+summary. Use `--JSON` to print and return the result struct without the
+summary.
+
+```bash
+java compile --jar jarName=example.jar source=src/main/java
+java compile compileOptions:release=8 compileOptions:debug=lines,source
+java compile jarOptions:mainClass=example.App manifest:Main-Class=example.App
+java compile --JSON
+```
+
+Repeated `manifest:`, `compileOptions:`, `jarOptions:`, and `fatJarOptions:`
+arguments are collected into structs. Comma-delimited values are converted to
+arrays for options that accept lists.
+
 The Compile DSL compiles Java source and optionally creates JAR files, Javadocs,
 and fat JARs from CommandBox commands and task runners.
 
@@ -27,6 +43,12 @@ written to `classes/java/main`.
 compile().run();
 ```
 
+Equivalent command:
+
+```bash
+java compile
+```
+
 ## Create a JAR
 
 Call `.toJar()` to create a JAR in `libs`.
@@ -37,12 +59,24 @@ var result = compile()
 	.run();
 ```
 
+Equivalent command:
+
+```bash
+java compile --jar
+```
+
 Provide a name for a specific filename:
 
 ```js
 var result = compile()
 	.toJar( "example.jar" )
 	.run();
+```
+
+Equivalent command:
+
+```bash
+java compile --jar jarName=example.jar
 ```
 
 The returned `result.jarPath` contains the generated JAR path.
@@ -58,6 +92,12 @@ var result = compile()
 	.run();
 ```
 
+Equivalent command:
+
+```bash
+java compile source=src/custom/java classes=build/classes libsDir=build/libs --jar jarName=example.jar
+```
+
 `.fromSource()` accepts a directory, source-file glob, comma-delimited string,
 or array of source paths.
 
@@ -66,6 +106,12 @@ compile()
 	.fromSource( [ "src/main/java", "src/generated/java" ] )
 	.toJar( "example.jar" )
 	.run();
+```
+
+Equivalent command:
+
+```bash
+java compile source=src/main/java,src/generated/java --jar jarName=example.jar
 ```
 
 ## Resources
@@ -79,6 +125,12 @@ compile()
 	.run();
 ```
 
+Equivalent command:
+
+```bash
+java compile --jar jarName=example.jar
+```
+
 Use `.withResources()` for another resource directory:
 
 ```js
@@ -86,6 +138,12 @@ compile()
 	.withResources( "src/resources" )
 	.toJar( "example.jar" )
 	.run();
+```
+
+Equivalent command:
+
+```bash
+java compile resources=src/resources --jar jarName=example.jar
 ```
 
 ## Manifest Entries
@@ -101,6 +159,12 @@ compile()
 	} )
 	.toJar( "example.jar" )
 	.run();
+```
+
+Equivalent command:
+
+```bash
+java compile --jar jarName=example.jar manifest:Implementation-Title="Example Application" manifest:Implementation-Version=1.2.3 manifest:Main-Class=example.App
 ```
 
 When the compile project contains a `box.json`, package metadata is also used
@@ -184,6 +248,12 @@ compile()
 	.run();
 ```
 
+Equivalent command:
+
+```bash
+java compile --jar jarName=example.jar compileOptions:release=8 compileOptions:source=8 compileOptions:target=8 compileOptions:encoding=UTF-8 compileOptions:debug=lines,source compileOptions:deprecation=true compileOptions:parameters=true compileOptions:lint=deprecation,unchecked compileOptions:maxErrors=50 compileOptions:maxWarnings=50 compileOptions:proc=full compileOptions:implicit=class compileOptions:processors=com.example.Processor compileOptions:processorPath=libs/processors compileOptions:sourcePath=src/generated compileOptions:modulePath=libs/modules compileOptions:moduleSourcePath=src/modules compileOptions:addModules=java.sql,java.naming compileOptions:limitModules=java.base,java.sql
+```
+
 The top-level `.setVerbose( true )` controls verbose compiler output. Verbosity
 is not configured inside the compiler options struct.
 
@@ -214,6 +284,12 @@ compile()
 	.run();
 ```
 
+Equivalent command:
+
+```bash
+java compile --jar jarName=example.jar jarOptions:compress=false jarOptions:mainClass=example.App jarOptions:date=2026-01-01T00:00:00Z jarOptions:moduleVersion=1.0.0 jarOptions:hashModules=com.example.* jarOptions:modulePath=libs/modules jarOptions:noManifest=false
+```
+
 The `date` option accepts either a CFML date value, such as `now()`, or a date
 string. CFML date values are formatted for the JAR tool; date strings are passed
 through in the format supplied. If no date is provided, the JAR tool uses its
@@ -227,6 +303,12 @@ Call `.withJavaDocs()` to generate documentation in `javaDocs/main`.
 var result = compile()
 	.withJavaDocs()
 	.run();
+```
+
+Equivalent command:
+
+```bash
+java compile --javaDocs --JSON
 ```
 
 The returned `result.javaDocsPath` contains the generated documentation path.
@@ -243,6 +325,12 @@ var result = compile()
 	.run();
 ```
 
+Equivalent command:
+
+```bash
+java compile classPath=libs --jar jarName=example.jar
+```
+
 ## Fat JARs
 
 `.toFatJar()` creates the project JAR and merges supplied dependency JARs into
@@ -253,6 +341,12 @@ var result = compile()
 	.withClassPath( "libs/dependencies" )
 	.toFatJar( "example-all.jar", [ "libs/dependencies" ] )
 	.run();
+```
+
+Equivalent command:
+
+```bash
+java compile classPath=libs/dependencies --fatJar fatJarName=example-all.jar fatJarJars=libs/dependencies
 ```
 
 Configure merge behavior with `configureFatJar()`:
@@ -269,6 +363,12 @@ compile()
 	} )
 	.toFatJar( "example-all.jar", [ "libs/dependency-one.jar", "libs/dependency-two.jar" ] )
 	.run();
+```
+
+Equivalent command:
+
+```bash
+java compile --fatJar fatJarName=example-all.jar fatJarJars=libs/dependency-one.jar,libs/dependency-two.jar fatJarOptions:mergeServiceDescriptors=true fatJarOptions:excludeSignatures=true fatJarOptions:duplicatePolicy=last
 ```
 
 `duplicatePolicy` accepts `last`, `first`, or `error`. Dependencies are applied
@@ -289,6 +389,12 @@ var result = compile()
 
 print.line( result.jarPath );
 print.line( result.classOutputDirectory );
+```
+
+Equivalent command:
+
+```bash
+java compile --jar jarName=example.jar --JSON
 ```
 
 The result includes `projectRoot`, `jdkBinDirectory`, `sourcePaths`,

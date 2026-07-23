@@ -614,7 +614,7 @@ component accessors="true" singleton {
 			}
 
 			// Extract tar file into our folder
-			extract( format='tar', source=tmpFile, target=targetFolder );
+			extract( format='tar', source=tmpFile, destination=targetFolder );
 
 		} finally {
 
