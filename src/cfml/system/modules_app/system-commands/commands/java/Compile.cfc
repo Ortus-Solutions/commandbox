@@ -8,6 +8,10 @@
  * java compile manifest:Main-Class=example.App --JSON
  * {code}
  *
+ * Compilation uses any available JDK unless a `release`, `source`, or `target`
+ * option requires a specific minimum version. Java 21 is downloaded as the
+ * fallback when no suitable JDK is available.
+ *
  * Complex options use the `name:key=value` syntax. Repeated entries are merged
  * into a struct. Comma-delimited values are converted to arrays for options that
  * accept lists.

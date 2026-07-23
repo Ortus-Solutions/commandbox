@@ -64,6 +64,12 @@ component {
 		assertEquals( "Command Compile Test", result.manifest[ "Implementation-Title" ] );
 	}
 
+	/** @test */
+	function compileOptionsAllowCompatibleJDK() {
+		var result = runCompile( { compileOptions={ "release" : 8 } }, [ "JSON" ] );
+		assertEquals( true, result.jdkBinDirectory.len() > 0 );
+	}
+
 	/**
 	 * @test
 	 */

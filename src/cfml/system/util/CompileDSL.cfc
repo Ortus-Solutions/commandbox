@@ -1245,7 +1245,7 @@ component accessors=true {
 		// First attempt: See if CommandBox CLI is using a JDK to run
 		var CLIBinPath = getDirectoryFromPath( fileSystemUtil.getJREExecutable() );
 
-		if( fileExists( CLIBinPath & 'javac' & OSExecSuffix ) ) {
+		if( fileExists( CLIBinPath & 'javac' & OSExecSuffix ) && isJDKCompatible( CLIBinPath ) ) {
 			job.addLog( 'Using JDK from CommandBox: #CLIBinPath#' );
 			return CLIBinPath;
 		}
@@ -1254,8 +1254,10 @@ component accessors=true {
 		try {
 			var OSBinPath = runCompileCommand( OSPathSearch & ' javac', "JDK lookup" ).listToArray( chr(13)&chr(10) ).first()
 			OSBinPath = getDirectoryFromPath( OSBinPath );
-			job.addLog( 'Using JDK from the OS path: #OSBinPath#' );
-			return OSBinPath;
+			if( isJDKCompatible( OSBinPath ) ) {
+				job.addLog( 'Using JDK from the OS path: #OSBinPath#' );
+				return OSBinPath;
+			}
 		} catch( any var e ) {
 			// Error is raised if binary is not found on path
 		}
@@ -1281,10 +1283,10 @@ component accessors=true {
 				continue;
 			}
 
-			// TODO: Check if the version of the JDK matches what we need.
-			// TODO: For ex: you can't compile with a target of Java 11 when using JDK 8.
-
-			// Assert: If we made it here, the current version we're looping over is a qualifying JDK!
+			var installedJDKVersion = val( replaceNoCase( javaDetails.version, 'openjdk', '' ) );
+			if( installedJDKVersion < getRequiredJDKVersion() ) {
+				continue;
+			}
 
 			var installedJDKBinPath = javaInstall.directory.listAppend( installID, '/' ) & '/bin/';
 			job.addLog( 'Using pre-downloaded JDK: #installedJDKBinPath#' );
@@ -1292,11 +1294,47 @@ component accessors=true {
 		}
 
 		// Fourth attempt: Install something to use:
-		job.addLog( 'JDK not found, let''s download one!' );
-		var javaHome = javaService.getJavaInstallPath( 'openjdk11_jdk', getVerbose() );
+		var requiredJDKVersion = getRequiredJDKVersion();
+		var downloadJDKVersion = requiredJDKVersion ?: 21;
+		job.addLog( 'Compatible JDK not found, let''s download Java #downloadJDKVersion#!' );
+		var javaHome = javaService.getJavaInstallPath( 'openjdk#downloadJDKVersion#_jdk', getVerbose() );
 		var downloadedJDKBinPath = javaHome.listAppend( 'bin/', '/' );
 		job.addLog( 'Using downloaded JDK: #downloadedJDKBinPath#' );
 		return downloadedJDKBinPath;
+	}
+
+	/**
+	 * Returns the minimum JDK version needed by this compile task. A zero return
+	 * value means that any available JDK can be used. Java 21 is only used when
+	 * a fallback JDK must be downloaded.
+	 */
+	private numeric function getRequiredJDKVersion() {
+		var requiredVersion = 0;
+		var compileOptions = getCompileOptionsString();
+		var optionMatches = reMatch( "--(?:release|source|target)=(\\d+)", compileOptions );
+
+		for( var optionMatch in optionMatches ) {
+			requiredVersion = max( requiredVersion, val( reReplace( optionMatch, "^.*=", "" ) ) );
+		}
+
+		return requiredVersion;
+	}
+
+	/**
+	 * Checks whether a JDK is new enough for this compile task.
+	 */
+	private boolean function isJDKCompatible( required string binPath ) {
+		try {
+			var executableSuffix = fileSystemUtil.isWindows() ? '.exe' : '';
+			var versionOutput = runCompileCommand(
+				nativeRunCommand( arguments.binPath & 'javac' & executableSuffix, '-version' ),
+				'JDK version lookup'
+			);
+			var versionNumber = reReplace( versionOutput, '(?s).*?(?:javac|java) ([0-9]+).*', '\\1' );
+			return isNumeric( versionNumber ) && val( versionNumber ) >= getRequiredJDKVersion();
+		} catch( any e ) {
+			return false;
+		}
 	}
 
 	/**
