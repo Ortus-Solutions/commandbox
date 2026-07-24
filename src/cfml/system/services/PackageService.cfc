@@ -777,6 +777,8 @@ component accessors="true" singleton {
 			};
 			if( !artifactDescriptor.createPackageDirectory && artifactDescriptor.installPaths.keyExists( dependency ) ) {
 				params.directory = fileSystemUtil.resolvePath( artifactDescriptor.installPaths[ dependency ], installDirectory );
+			} else if( artifactDescriptor.type == 'boxlang-modules' && !isNull( arguments.directory ) ) {
+				params.directory = arguments.directory;
 			}
 
 			// Recursively install them
