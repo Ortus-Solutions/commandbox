@@ -437,6 +437,15 @@ component accessors="true" singleton {
 				// ContentBox themes/layouts
 				} else if( packageType == 'contentbox-themes' || packageType == 'contentbox-layouts' ) {
 					installDirectory = arguments.packagePathRequestingInstallation & '/modules/contentbox/themes';
+				// Boxlang Modules
+				} else if( packageType == 'boxlang-modules' ) {
+					var tmpinstallDirectory = fileSystemUtil.normalizeSlashes( installDirectory );
+					if( installDirectory contains '/' ) {
+						tmpinstallDirectory = listDeleteAt( tmpinstallDirectory, listLen( tmpinstallDirectory, '/', true ), '/', true );
+						// Always use the box.json in the BoxLang home, regardless of where the user is installing from.
+						packagePathRequestingInstallation = tmpinstallDirectory;
+						job.addLog( packagePathRequestingInstallation: packagePathRequestingInstallation )
+					}
 				// ContentBox Modules
 				} else if( packageType == 'contentbox-modules' ) {
 					installDirectory = arguments.packagePathRequestingInstallation & '/modules/contentbox/modules_user';
