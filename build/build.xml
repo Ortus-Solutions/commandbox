@@ -681,12 +681,8 @@ External Dependencies:
 					<arg value="--silent" />
 					<arg value="--show-error" />
 					<arg value="--include" />
-					<arg value="--output" />
-					<arg value="${temp.dir}/docbox-response.txt" />
 					<arg value="${url.apidocs}/index.cfm?version=${commandbox.version}&amp;path=${temp.dir.absolute}/apidocs" />
 				</exec>
-				<loadfile property="docbox.response" srcFile="${temp.dir}/docbox-response.txt" failonerror="false" />
-				<echo message="${docbox.response}" />
 				<fail message="Unable to generate API docs. See the server log and HTTP response above for details." />
 			</then>
 		</if>
