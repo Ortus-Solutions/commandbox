@@ -22,7 +22,7 @@ component {
 			directoryDelete( modulesPath, true );
 		}
 		// now install!
-		command( "install" ).params( bxModuleSlugs, modulesPath ).flags( "!save" ).run();
+		command( "install" ).params( bxModuleSlugs, modulesPath ).flags( "!save", "force" ).run();
 
 		// Get libs (specified in box.json)
 		// clear libs folder
