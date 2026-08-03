@@ -52,7 +52,7 @@ component singleton accessors=true {
 			var taskCFC = taskObject;
 		} else {
 			// We need the .cfc extension for the file exists check to work.
-			if( right( taskFile, 4 ) != '.cfc' ) {
+			if( !reFindNoCase( '\.(cfc|bx)$', taskFile ) ) {
 				taskFile &= '.cfc';
 			}
 
@@ -202,7 +202,7 @@ component singleton accessors=true {
 	array function getTaskMethods( required string taskFile ) {
 		pagePoolClear();
 
-		if( right( taskFile, 4 ) != '.cfc' ) {
+		if( !reFindNoCase( '\.(cfc|bx)$', taskFile ) ) {
 			taskFile &= '.cfc';
 		}
 
@@ -226,7 +226,7 @@ component singleton accessors=true {
 		var relTaskFile = FileSystemUtil.makePathRelative( taskFile );
 
 		// Strip .cfc back off
-		relTaskFile = mid( relTaskFile, 1, len( relTaskFile ) - 4 );
+		relTaskFile = reReplaceNoCase( relTaskFile, '\.(cfc|bx)$', '' );
 		relTaskFile = relTaskFile.listChangeDelims( '.', '/' );
 		relTaskFile = relTaskFile.listChangeDelims( '.', '\' );
 
