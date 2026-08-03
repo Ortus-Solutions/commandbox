@@ -93,8 +93,8 @@ component accessors="true" singleton {
 		);
 
 		for( var dir in varDirs ){
-			// For CFC files, process them as a command
-			if( dir.type  == 'File' && listLast( dir.name, '.' ) == 'cfc' ){
+			// For CFC and BoxLang files, process them as commands
+			if( dir.type == 'File' && listFindNoCase( 'cfc,bx', listLast( dir.name, '.' ) ) ){
 				registerCommand( baseCommandDirectory, dir.name, commandPath );
 			// For folders, search them for commands
 			} else {
@@ -124,8 +124,8 @@ component accessors="true" singleton {
 		);
 
 		for( var dir in varDirs ){
-			// For CFC files, process them as a command
-			if( dir.type  == 'File' && listLast( dir.name, '.' ) == 'cfc' ){
+			// For CFC and BoxLang files, process them as commands
+			if( dir.type == 'File' && listFindNoCase( 'cfc,bx', listLast( dir.name, '.' ) ) ){
 				removeCommand( baseCommandDirectory, dir.name, commandPath );
 			// For folders, search them for commands
 			} else {
@@ -1087,8 +1087,8 @@ component accessors="true" singleton {
 	 **/
 	private function registerCommand( baseCommandDirectory, CFC, commandPath ){
 
-		// Strip cfc extension from filename
-		var CFCName = mid( CFC, 1, len( CFC ) - 4 );
+		// Strip the supported component extension from the filename
+		var CFCName = reReplaceNoCase( CFC, '\.(cfc|bx)$', '' );
 		var commandName = (len( commandPath ) ? commandPath & '.' : '') & CFCName;
 		// Build CFC's path
 		var fullCFCPath = baseCommandDirectory & '.' & commandName;
@@ -1129,8 +1129,8 @@ component accessors="true" singleton {
 	 **/
 	private function removeCommand( baseCommandDirectory, CFC, commandPath ){
 
-		// Strip cfc extension from filename
-		var CFCName = mid( CFC, 1, len( CFC ) - 4 );
+		// Strip the supported component extension from the filename
+		var CFCName = reReplaceNoCase( CFC, '\.(cfc|bx)$', '' );
 		var commandName = (len( commandPath ) ? ( commandPath & '.' ) : '') & CFCName;
 		// Build CFC's path
 		var fullCFCPath = baseCommandDirectory & '.' & commandName;
