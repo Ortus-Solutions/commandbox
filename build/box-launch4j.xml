@@ -1,0 +1,25 @@
+<launch4jConfig>
+	<headerType>console</headerType>
+	<outfile>@EXECUTABLE_PATH@</outfile>
+	<jar>@JAR_PATH@</jar>
+	<errTitle>Error running CommandBox</errTitle>
+	<supportUrl>https://www.ortussolutions.com/services/support</supportUrl>
+	<chdir>%OLDPWD%</chdir>
+	<stayAlive>true</stayAlive>
+	<jre>
+		<path>./jre/;%JAVA_HOME%;%JRE_HOME%;%JDK_HOME%;%PATH%</path>
+		<minVersion>1.8.0</minVersion>
+	</jre>
+	<versionInfo>
+		<fileVersion>@FILE_VERSION@</fileVersion>
+		<txtFileVersion>@TEXT_VERSION@</txtFileVersion>
+		<fileDescription>CommandBox CLI for BoxLang</fileDescription>
+		<copyright>Copyright since 2013 Ortus Solutions, Corp</copyright>
+		<productVersion>@PRODUCT_VERSION@</productVersion>
+		<txtProductVersion>@TEXT_PRODUCT_VERSION@</txtProductVersion>
+		<productName>CommandBox</productName>
+		<companyName>Ortus Solutions, Corp</companyName>
+		<internalName>CommandBox</internalName>
+		<originalFilename>box.exe</originalFilename>
+	</versionInfo>
+</launch4jConfig>

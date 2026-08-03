@@ -1,0 +1,176 @@
+import java.io.FileOutputStream;
+import java.lang.System;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+
+class {
+	property name='packageService' inject='packageService';
+
+	/**
+	 * Packages the bx-cli module and its supporting Java libraries.
+	 */
+	function run() {
+		var boxJSON = packageService.readPackageDescriptor( resolvePath( "bx-cli" ) );
+		var moduleSrcPath = resolvePath( "bx-cli/src/system" );
+		var repoSrcPath = resolvePath( "src/cfml/system" );
+		if( directoryExists( moduleSrcPath ) ) {
+			directoryDelete( moduleSrcPath, true );
+		}
+		directoryCreate( moduleSrcPath );
+		directoryCopy( repoSrcPath, moduleSrcPath, true );
+		command( "tokenReplace" ).params( moduleSrcPath & "Shell.cfc", "@build.version@", boxJSON.version, true ).run();
+		command( "tokenReplace" ).params( moduleSrcPath & "Bootstrap.cfm", "@build.version@", boxJSON.version, true ).run();
+
+		var libsPath = resolvePath( "bx-cli/libs" );
+		if( directoryExists( libsPath ) ) {
+			directoryDelete( libsPath, true );
+		}
+		directoryCreate( libsPath );
+
+		command( "install" )
+			.inWorkingDirectory( resolvePath( "bx-cli" ) )
+			.flags( "!save", "force" )
+			.run();
+
+		compile()
+			.fromSource( "src/java/com" )
+			.toClasses( "build/temp/classes/jgit" )
+			.withClassPath( [ resolvePath( "bx-cli/libs" ) ] )
+			.toJar( "../bx-cli/libs/ortus-jgit.jar" )
+			.run();
+
+		command( "forgebox use" ).params( "ortus" ).run();
+		//command( "publish" ).flags( "force" ).run();
+	}
+
+	/**
+	 * Builds the executable CLI launcher JAR and copies the pinned BoxLang runtime beside it.
+	 */
+	function buildCliJar() {
+		var classesPath = resolvePath( "build/temp/classes/cli-bootstrap" );
+		var jarPath = resolvePath( "build/dist/box.jar" );
+		var boxLangSource = "C:/Users/brad/Documents/GitHub/boxlang/build/libs/boxlang-1.17.0-snapshot.jar";
+		var boxLangDestination = resolvePath( "build/dist/boxlang.jar" );
+
+		if( !fileExists( boxLangSource ) ) {
+			throw( message="The pinned BoxLang JAR does not exist.", detail=boxLangSource, type="commandException" );
+		}
+
+		ensureBuildDirectories();
+		if( directoryExists( classesPath ) ) {
+			directoryDelete( classesPath, true );
+		}
+		directoryCreate( classesPath, true );
+
+		compile()
+			.projectRoot( resolvePath( "build/temp/cli-bootstrap" ) )
+			.fromSource( resolvePath( "build/src/cli-bootstrap/java/cliloader" ) )
+			.toClasses( classesPath )
+			.libsDir( "." )
+			.jarOptions( { "mainClass" : "cliloader.CommandBoxCLIMain" } )
+			.toJar( "box.jar" )
+			.run();
+		fileCopy( resolvePath( "build/temp/cli-bootstrap/box.jar" ), jarPath, true );
+		fileCopy( boxLangSource, boxLangDestination, true );
+
+		print.greenLine( "Created #jarPath#" );
+		print.greenLine( "Copied #boxLangDestination#" );
+	}
+
+	/**
+	 * Builds the Unix launcher by appending the CLI JAR to the standard shell wrapper.
+	 */
+	function buildCliBinary() {
+		var jarPath = resolvePath( "build/dist/box.jar" );
+		var boxLangJarPath = resolvePath( "build/dist/boxlang.jar" );
+		var binaryPath = resolvePath( "build/dist/box" );
+
+		if( !fileExists( jarPath ) || !fileExists( boxLangJarPath ) ) {
+			throw( message="The CLI runtime files do not exist. Run buildCliJar first.", type="commandException" );
+		}
+
+		fileCopy( resolvePath( "src/bin/box.sh" ), binaryPath );
+		appendBinaryFile( binaryPath, jarPath );
+		if( !System.getProperty( "os.name" ).toLowerCase().contains( "windows" ) ) {
+			fileSetAccessMode( binaryPath, "755" );
+		}
+
+		print.greenLine( "Created #binaryPath#" );
+	}
+
+	/**
+	 * Builds the Windows executable wrapper around the CLI launcher JAR.
+	 */
+	function buildCliExe() {
+		var boxJSON = packageService.readPackageDescriptor( resolvePath( "bx-cli" ) );
+		var jarPath = resolvePath( "build/dist/box.jar" );
+		var boxLangJarPath = resolvePath( "build/dist/boxlang.jar" );
+		var executablePath = resolvePath( "build/dist/box.exe" );
+		var launch4jPath = resolvePath( "build/launch4j-3.50/launch4j/launch4jc.exe" );
+		var configPath = resolvePath( "build/temp/cli-bootstrap/box-launch4j.xml" );
+		var configTemplatePath = resolvePath( "build/box-launch4j.xml" );
+		var buildNumber = reReplace( fileRead( resolvePath( "build/build.number" ) ), "(?s).*build.number=([0-9]+).*", "\1" );
+		var numericVersion = reReplace( boxJSON.version, "[^0-9.].*$", "", "all" );
+		var fileVersion = numericVersion & ".0";
+		var textVersion = boxJSON.version & "." & buildNumber;
+
+		if( !fileExists( jarPath ) || !fileExists( boxLangJarPath ) ) {
+			throw( message="The CLI runtime files do not exist. Run buildCliJar first.", type="commandException" );
+		}
+		if( !fileExists( launch4jPath ) ) {
+			throw( message="The Launch4j compiler does not exist.", detail=launch4jPath, type="commandException" );
+		}
+		if( !fileExists( configTemplatePath ) ) {
+			throw( message="The Launch4j configuration template does not exist.", detail=configTemplatePath, type="commandException" );
+		}
+
+		var configTemplate = fileRead( configTemplatePath );
+		configTemplate = replace( configTemplate, "@EXECUTABLE_PATH@", xmlFormat( executablePath ), "all" );
+		configTemplate = replace( configTemplate, "@JAR_PATH@", xmlFormat( jarPath ), "all" );
+		configTemplate = replace( configTemplate, "@FILE_VERSION@", fileVersion, "all" );
+		configTemplate = replace( configTemplate, "@TEXT_VERSION@", textVersion, "all" );
+		configTemplate = replace( configTemplate, "@PRODUCT_VERSION@", fileVersion, "all" );
+		configTemplate = replace( configTemplate, "@TEXT_PRODUCT_VERSION@", textVersion, "all" );
+		fileWrite( configPath, configTemplate );
+
+		systemExecute( '"' & launch4jPath & '" "' & configPath & '"' );
+
+		print.greenLine( "Created #executablePath#" );
+	}
+
+	/**
+	 * Creates the build workbench and final distribution directories.
+	 */
+	private function ensureBuildDirectories() {
+		if( !directoryExists( resolvePath( "build/dist" ) ) ) {
+			directoryCreate( resolvePath( "build/dist" ), true );
+		}
+		if( !directoryExists( resolvePath( "build/temp" ) ) ) {
+			directoryCreate( resolvePath( "build/temp" ), true );
+		}
+		if( !directoryExists( resolvePath( "build/temp/classes" ) ) ) {
+			directoryCreate( resolvePath( "build/temp/classes" ), true );
+		}
+		if( !directoryExists( resolvePath( "build/temp/cli-bootstrap" ) ) ) {
+			directoryCreate( resolvePath( "build/temp/cli-bootstrap" ), true );
+		}
+	}
+
+	/**
+	 * Appends the bytes from one file to another file.
+	 *
+	 * @param destination The file that receives the appended bytes.
+	 * @param source The file whose bytes are appended.
+	 */
+	private function appendBinaryFile( required string destination, required string source ) {
+		var destinationPath = resolvePath( arguments.destination );
+		var sourcePath = resolvePath( arguments.source );
+		var outputStream = new FileOutputStream( destinationPath, true );
+
+		try {
+			outputStream.write( Files.readAllBytes( Paths.get( sourcePath ) ) );
+		} finally {
+			outputStream.close();
+		}
+	}
+}

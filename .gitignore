@@ -45,3 +45,4 @@ src/cfml/license.txt
 /bx-cli/modules
 /bx-cli/src
 /temp
+/build/dist
