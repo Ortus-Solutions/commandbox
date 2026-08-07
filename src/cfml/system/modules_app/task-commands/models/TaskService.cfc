@@ -51,13 +51,23 @@ component singleton accessors=true {
 		if( !isNull( taskObject ) ) {
 			var taskCFC = taskObject;
 		} else {
-			// We need the .cfc extension for the file exists check to work.
-			if( !reFindNoCase( '\.(cfc|bx)$', taskFile ) ) {
-				taskFile &= '.cfc';
-			}
-
-			if( !fileExists( taskFile ) ) {
-				throw( message="Task CFC doesn't exist.", detail=arguments.taskFile, type="commandException");
+			// Strip trailing path separators in case resolvePath returned a directory path
+			taskFile = reReplaceNoCase( taskFile, '[/\\]+$', '' );
+			// We need the .cfc or .bx extension for the file exists check to work.
+			if( reFindNoCase( '\.(cfc|bx)$', taskFile ) ) {
+				// File already has an extension, just check it
+				if( !fileExists( taskFile ) ) {
+					throw( message="Task CFC doesn't exist.", detail=arguments.taskFile, type="commandException");
+				}
+			} else {
+				// Try .cfc first, then .bx
+				if( fileExists( taskFile & '.cfc' ) ) {
+					taskFile &= '.cfc';
+				} else if( fileExists( taskFile & '.bx' ) ) {
+					taskFile &= '.bx';
+				} else {
+					throw( message="Task CFC doesn't exist.", detail=arguments.taskFile, type="commandException");
+				}
 			}
 
 			// Create an instance of the taskCFC.  To prevent caching of the actual code in the task, we're treating them as
@@ -202,12 +212,23 @@ component singleton accessors=true {
 	array function getTaskMethods( required string taskFile ) {
 		pagePoolClear();
 
-		if( !reFindNoCase( '\.(cfc|bx)$', taskFile ) ) {
-			taskFile &= '.cfc';
-		}
+		// Strip trailing path separators in case resolvePath returned a directory path
+		taskFile = reReplaceNoCase( taskFile, '[/\\]+$', '' );
 
-		if( !fileExists( taskFile ) ) {
-			return [];
+		if( reFindNoCase( '\.(cfc|bx)$', taskFile ) ) {
+			// File already has an extension, just check it
+			if( !fileExists( taskFile ) ) {
+				return [];
+			}
+		} else {
+			// Try .cfc first, then .bx
+			if( fileExists( taskFile & '.cfc' ) ) {
+				taskFile &= '.cfc';
+			} else if( fileExists( taskFile & '.bx' ) ) {
+				taskFile &= '.bx';
+			} else {
+				return [];
+			}
 		}
 
 		var taskCFC = createTaskCFC( taskFile );

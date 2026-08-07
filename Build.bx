@@ -5,6 +5,9 @@ import java.nio.file.Paths;
 
 class {
 	property name='packageService' inject='packageService';
+	property name='progressableDownloader' inject='ProgressableDownloader';
+	property name='artifactService' inject='ArtifactService';
+	property name='installerBaseURL' default='https://downloads.ortussolutions.com/ortussolutions/boxlang-quick-installer';
 
 	/**
 	 * Packages the bx-cli module and its supporting Java libraries.
@@ -44,49 +47,93 @@ class {
 	}
 
 	/**
-	 * Builds the executable CLI launcher JAR and copies the pinned BoxLang runtime beside it.
+	 * Builds the executable CLI launcher JAR and embeds the snapshot installer archive.
 	 */
-	function buildCliJar() {
+	function buildCliJar( boolean installerSnapshot=true ) {
 		var classesPath = resolvePath( "build/temp/classes/cli-bootstrap" );
 		var jarPath = resolvePath( "build/dist/box.jar" );
-		var boxLangSource = "C:/Users/brad/Documents/GitHub/boxlang/build/libs/boxlang-1.17.0-snapshot.jar";
-		var boxLangDestination = resolvePath( "build/dist/boxlang.jar" );
-
-		if( !fileExists( boxLangSource ) ) {
-			throw( message="The pinned BoxLang JAR does not exist.", detail=boxLangSource, type="commandException" );
+		var installerResourcesPath = resolvePath( "build/temp/cli-bootstrap/installer" );
+		var systemModulesPath = resolvePath( "build/temp/cli-bootstrap/system-modules" );
+		var installerURLPrefix = installerSnapshot ? installerBaseURL & "/snapshot" : installerBaseURL;
+		var installerURL = installerURLPrefix & "/boxlang-installer.zip";
+		if( installerSnapshot ) {
+			installerURL &= "?cacheBust=" & createUUID();
 		}
 
 		ensureBuildDirectories();
 		if( directoryExists( classesPath ) ) {
 			directoryDelete( classesPath, true );
 		}
+		if( directoryExists( installerResourcesPath ) ) {
+			directoryDelete( installerResourcesPath, true );
+		}
+		if( directoryExists( systemModulesPath ) ) {
+			directoryDelete( systemModulesPath, true );
+		}
 		directoryCreate( classesPath, true );
+		directoryCreate( installerResourcesPath, true );
+		directoryCreate( systemModulesPath & "/cfml", true );
+		progressableDownloader.download(
+			installerURL,
+			resolvePath( installerResourcesPath & "/boxlang-installer.zip" ),
+			function( status ) {},
+			function( redirectURL ) {}
+		);
+
+		var bxCliBoxJSON = packageService.readPackageDescriptor( resolvePath( "bx-cli" ) );
+		var bxCliVersion = bxCliBoxJSON.version;
+		var apiURL = "https://forgebox.io/api/v1/storage/bx-cli/#bxCliVersion#";
+		bx:http url="#apiURL#" result="local.apiResult";
+		var apiJSON    = JSONdeserialize( local.apiResult.fileContent );
+		var downloadURL = apiJSON.data ?: throw( "Missing data in ForgeBox API response- [#apiJSON.tostring()#]" );
+		progressableDownloader.download(
+			downloadURL,
+			resolvePath( installerResourcesPath & "/bx-cli.zip" ),
+			function( status ) {},
+			function( redirectURL ) {}
+		);
+		var originalDirectory = getCWD();
+		command( "cd" ).params( systemModulesPath & "/cfml" ).run();
+		try {
+			command( "install" )
+				.params(
+					ID="commandbox-update-check,commandbox-cfconfig,commandbox-dotenv,contentbox-cli,coldbox-cli,testbox-cli,commandbox-boxlang,commandbox-bullet-train",
+					directory=systemModulesPath & "/cfml/modules"
+				)
+				.run();
+		} finally {
+			command( "cd" ).params( originalDirectory ).run();
+		}
+		bx:zip
+			action="zip"
+			source="#systemModulesPath#/cfml"
+			file="#installerResourcesPath#/commandbox-system-modules.zip"
+			recurse="true"
+			overwrite="true";
 
 		compile()
 			.projectRoot( resolvePath( "build/temp/cli-bootstrap" ) )
 			.fromSource( resolvePath( "build/src/cli-bootstrap/java/cliloader" ) )
 			.toClasses( classesPath )
 			.libsDir( "." )
+			.withResources( installerResourcesPath )
 			.jarOptions( { "mainClass" : "cliloader.CommandBoxCLIMain" } )
 			.toJar( "box.jar" )
 			.run();
 		fileCopy( resolvePath( "build/temp/cli-bootstrap/box.jar" ), jarPath, true );
-		fileCopy( boxLangSource, boxLangDestination, true );
 
 		print.greenLine( "Created #jarPath#" );
-		print.greenLine( "Copied #boxLangDestination#" );
 	}
 
 	/**
 	 * Builds the Unix launcher by appending the CLI JAR to the standard shell wrapper.
 	 */
-	function buildCliBinary() {
+	function buildCliBinary() depends="buildCliJar" {
 		var jarPath = resolvePath( "build/dist/box.jar" );
-		var boxLangJarPath = resolvePath( "build/dist/boxlang.jar" );
 		var binaryPath = resolvePath( "build/dist/box" );
 
-		if( !fileExists( jarPath ) || !fileExists( boxLangJarPath ) ) {
-			throw( message="The CLI runtime files do not exist. Run buildCliJar first.", type="commandException" );
+		if( !fileExists( jarPath ) ) {
+			throw( message="The CLI launcher JAR does not exist. Run buildCliJar first.", type="commandException" );
 		}
 
 		fileCopy( resolvePath( "src/bin/box.sh" ), binaryPath );
@@ -104,7 +151,6 @@ class {
 	function buildCliExe() {
 		var boxJSON = packageService.readPackageDescriptor( resolvePath( "bx-cli" ) );
 		var jarPath = resolvePath( "build/dist/box.jar" );
-		var boxLangJarPath = resolvePath( "build/dist/boxlang.jar" );
 		var executablePath = resolvePath( "build/dist/box.exe" );
 		var launch4jPath = resolvePath( "build/launch4j-3.50/launch4j/launch4jc.exe" );
 		var configPath = resolvePath( "build/temp/cli-bootstrap/box-launch4j.xml" );
@@ -114,8 +160,8 @@ class {
 		var fileVersion = numericVersion & ".0";
 		var textVersion = boxJSON.version & "." & buildNumber;
 
-		if( !fileExists( jarPath ) || !fileExists( boxLangJarPath ) ) {
-			throw( message="The CLI runtime files do not exist. Run buildCliJar first.", type="commandException" );
+		if( !fileExists( jarPath ) ) {
+			throw( message="The CLI launcher JAR does not exist. Run buildCliJar first.", type="commandException" );
 		}
 		if( !fileExists( launch4jPath ) ) {
 			throw( message="The Launch4j compiler does not exist.", detail=launch4jPath, type="commandException" );
@@ -136,6 +182,125 @@ class {
 		systemExecute( '"' & launch4jPath & '" "' & configPath & '"' );
 
 		print.greenLine( "Created #executablePath#" );
+	}
+
+	/**
+	 * Runs the launcher installation and detection scenarios for the current platform.
+	 * Windows scenarios run directly; Unix scenarios run inside Ubuntu and Alpine Docker containers.
+	 */
+	function testCliBootstrap() {
+		buildCliJar();
+		if( System.getProperty( "os.name" ).toLowerCase().contains( "windows" ) ) {
+			buildCliExe();
+			runTestProcess( [
+				"powershell",
+				"-NoProfile",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-File",
+				resolvePath( "build/test-cli-bootstrap-windows.ps1" )
+			] );
+			return;
+		}
+
+		buildCliBinary();
+		runTestProcess( [ "sh", resolvePath( "build/test-cli-bootstrap-ubuntu.sh" ) ] );
+		runTestProcess( [ "sh", resolvePath( "build/test-cli-bootstrap-alpine.sh" ) ] );
+	}
+
+	/**
+	 * Ubuntu: default install location, no env overrides.
+	 */
+	function testCliBootstrapUbuntuDefault() depends="buildCliBinary" {
+		linuxDockerTest(
+			"Ubuntu default",
+			"ubuntu:24.04",
+			'apt-get update >/dev/null && '
+			& 'apt-get install -y --no-install-recommends openjdk-21-jre-headless curl unzip jq >/dev/null && '
+			& 'cp /mnt/box /usr/local/bin/box && chmod 755 /usr/local/bin/box && '
+			& '/usr/local/bin/box -clidebug version && '
+			& 'test -f /usr/local/boxlang/bin/boxlang && '
+			& 'test -f /root/.CommandBox/cfml/box.json && '
+			& 'test -d /root/.CommandBox/cfml/modules/commandbox-update-check'
+		);
+	}
+
+	/**
+	 * Ubuntu: custom BOXLANG_INSTALL_HOME set via environment variable.
+	 */
+	function testCliBootstrapUbuntuCustomHome() depends="buildCliBinary" {
+		linuxDockerTest(
+			"Ubuntu custom BOXLANG_INSTALL_HOME",
+			"ubuntu:24.04",
+			'apt-get update >/dev/null && '
+			& 'apt-get install -y --no-install-recommends openjdk-21-jre-headless curl unzip jq >/dev/null && '
+			& 'cp /mnt/box /usr/local/bin/box && chmod 755 /usr/local/bin/box && '
+			& 'export BOXLANG_INSTALL_HOME=/tmp/custom-boxlang && rm -rf $BOXLANG_INSTALL_HOME && '
+			& '/usr/local/bin/box -clidebug version && '
+			& 'test -f /tmp/custom-boxlang/bin/boxlang'
+		);
+	}
+
+	/**
+	 * Ubuntu: pre-install BoxLang via BVM, then verify box detects the existing installation.
+	 */
+	function testCliBootstrapUbuntuPreinstall() depends="buildCliBinary" {
+		linuxDockerTest(
+			"Ubuntu pre-install",
+			"ubuntu:24.04",
+			'apt-get update >/dev/null && '
+			& 'apt-get install -y --no-install-recommends openjdk-21-jre-headless curl unzip jq >/dev/null && '
+			& 'cp /mnt/box /usr/local/bin/box && chmod 755 /usr/local/bin/box && '
+			& 'curl -fsSL https://install-bvm.boxlang.io | bash && '
+			& 'export PATH=/root/.bvm/bin:$PATH && '
+			& 'export TERM=dumb && '
+			& 'bvm install snapshot && '
+			& '/usr/local/bin/box -clidebug version && '
+			& 'test -f /root/.bvm/bin/boxlang'
+		);
+	}
+
+	/**
+	 * Alpine: default install location, no env overrides.
+	 */
+	function testCliBootstrapAlpine() depends="buildCliBinary" {
+		linuxDockerTest(
+			"Alpine default",
+			"alpine:3.20",
+			'apk add --no-cache openjdk21 curl unzip jq bash >/dev/null && '
+			& 'cp /mnt/box /usr/local/bin/box && chmod 755 /usr/local/bin/box && '
+			& '/usr/local/bin/box -clidebug version && '
+			& 'test -f /usr/local/boxlang/bin/boxlang'
+		);
+	}
+
+	/**
+	 * Runs all Linux bootstrap tests via Docker.
+	 */
+	function testCliBootstrapLinux() depends="buildCliBinary" {
+		testCliBootstrapUbuntuDefault();
+		testCliBootstrapUbuntuCustomHome();
+		testCliBootstrapUbuntuPreinstall();
+		testCliBootstrapAlpine();
+	}
+
+	/**
+	 * Helper that builds and runs a Docker-based Linux smoke test.
+	 *
+	 * @label Test label for log output.
+	 * @image Docker image.
+	 * @setup Inline shell commands that install dependencies, copy the launcher, and run the test.
+	 */
+	private function linuxDockerTest( required string label, required string image, required string setup ) {
+		var boxPath       = replace( resolvePath( "build/dist/box" ), "\", "/", "all" );
+		var artifactsPath = replace( resolvePath( expandPath( "~/.CommandBox/artifacts" ) ), "\", "/", "all" );
+
+		command( "run" ).params(
+			'docker run --rm '
+			& '-v "#boxPath#:/mnt/box:ro" '
+			& '-v "#artifactsPath#:/root/.CommandBox/artifacts" '
+			& '#image# sh -c "echo [#label#] && #setup# && echo PASS: #label#"'
+		).run();
 	}
 
 	/**
