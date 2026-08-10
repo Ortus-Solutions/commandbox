@@ -39,4 +39,11 @@ extensions/**
 lib-light/**
 src/cfml/license.txt
 /src/cfml/libExt
-/bx-cli
+/src/cfml/_modules
+/src/cfml/modules
+/bx-cli/libs
+/bx-cli/modules
+/bx-cli/src
+/temp
+/build/dist
+/tests/compile-dsl
