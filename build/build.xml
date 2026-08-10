@@ -16,8 +16,8 @@ External Dependencies:
 	<property name="distro.groupID" value="ortussolutions" />
 	<property name="distro.name" value="commandbox"/>
 	<!-- Special things happen when the version and stableVersion are the same value as that signifies a "stable" build.   -->
-	<property name="commandbox.version" value="6.3.1"/>
-	<property name="commandbox.stableVersion" value="6.3.1"/>
+	<property name="commandbox.version" value="6.3.4"/>
+	<property name="commandbox.stableVersion" value="6.3.4"/>
 
 	<!-- Time Label -->
 	<tstamp prefix="start"/>
@@ -663,7 +663,29 @@ External Dependencies:
 
 		<!-- Get the apidocs now -->
 		<property name="temp.dir.absolute" location="${temp.dir}"/>
-		<get dest="${temp.dir}/docbox.html" src="${url.apidocs}/index.cfm?version=${commandbox.version}&amp;path=${temp.dir.absolute}/apidocs" verbose="true" retries="5"/>
+		<get dest="${temp.dir}/docbox.html" src="${url.apidocs}/index.cfm?version=${commandbox.version}&amp;path=${temp.dir.absolute}/apidocs" verbose="true" retries="5" ignoreerrors="true"/>
+
+		<!-- On failure, include the server log and response body in the build output before failing. -->
+		<if>
+			<not>
+				<available file="${temp.dir}/docbox.html" />
+			</not>
+			<then>
+				<echo message="API docs request failed. Dumping the apidocs server log:" />
+				<exec executable="${dist.dir}/box" dir="${dir.apidocs}" failonerror="false">
+					<arg line="${cmdboxhome.arg} server log" />
+				</exec>
+
+				<echo message="Fetching the complete API docs HTTP response:" />
+				<exec executable="curl" dir="${dir.apidocs}" failonerror="false" failifexecutionfails="false">
+					<arg value="--silent" />
+					<arg value="--show-error" />
+					<arg value="--include" />
+					<arg value="${url.apidocs}/index.cfm?version=${commandbox.version}&amp;path=${temp.dir.absolute}/apidocs" />
+				</exec>
+				<fail message="Unable to generate API docs. See the server log and HTTP response above for details." />
+			</then>
+		</if>
 		<delete file="${temp.dir}/docbox.html" />
 
 		<!-- Zip API Docs -->
