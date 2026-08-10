@@ -445,7 +445,8 @@ public class CommandBoxCLIMain {
 		var cfmlDirectory = commandBoxHome.resolve( "cfml" );
 		try ( var input = CommandBoxCLIMain.class.getClassLoader().getResourceAsStream( SYSTEM_MODULES_ARCHIVE ) ) {
 			if ( input == null ) {
-				throw new IOException( "Missing bundled resource: " + SYSTEM_MODULES_ARCHIVE );
+				debug( "Optional system modules archive was not bundled: " + SYSTEM_MODULES_ARCHIVE );
+				return;
 			}
 			try ( var zip = new ZipInputStream( input ) ) {
 				ZipEntry entry;
