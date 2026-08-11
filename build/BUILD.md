@@ -39,6 +39,30 @@ ORTUS_SIGN_KEY_ID=
 ORTUS_SIGN_KEY_PASSPHRASE=
 ```
 
+## Debian Packages and Repositories
+
+Build the Debian package with Docker and stage its repository metadata with:
+
+```powershell
+box task run taskFile=Build.bx target=buildCliDeb
+box task run taskFile=Build.bx target=updateDebRepo
+```
+
+`buildCliDeb` uses `debian:bookworm-slim` and `dpkg-deb`, producing
+`build/dist/commandbox-debian-<version>.deb`. `updateDebRepo` always stages the BE
+repository at `build/dist/debs-be/noarch`. Stable semantic versions also stage the
+stable repository at `build/dist/debs/noarch`; pre-release versions do not.
+
+repository staging downloads only `Packages`, `Packages.gz`, `Release`, and any
+existing signatures from S3. It copies in the current package, retains existing
+package entries, appends the new entry, and regenerates the Debian metadata with `dpkg-scanpackages`,
+`gzip`, and `apt-ftparchive`. Historical `.deb` files are not downloaded, and the
+staged repositories are not uploaded.
+
+Repository signing uses the same `.env` values documented above. When all three
+values point to a valid keyring, `updateDebRepo` creates `Release.gpg`; otherwise,
+it stages unsigned metadata for local validation.
+
 ## Overview
 
 CommandBox uses Apache Ant for its build system with a sophisticated multi-target build process that creates various distribution formats including JAR files, native executables, Linux packages, and embedded JRE distributions.
@@ -157,9 +181,10 @@ build/
 #### `build.cli.deb`
 
 - **Purpose**: Create Debian/Ubuntu package
-- **Dependencies**: `build.cli.bin`
-- **Output**: `.deb` package for Debian-based systems
-- **Repositories**: Creates both testing and stable repositories
+- **Implementation**: `Build.bx` target `buildCliDeb`, using Docker `debian:bookworm-slim` and `dpkg-deb`
+- **Output**: `build/dist/commandbox-debian-<version>.deb`
+
+Use `updateDebRepo` to stage BE and, for stable versions, stable Debian repository metadata.
 
 #### `build.cli.rpm`
 

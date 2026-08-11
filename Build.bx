@@ -285,6 +285,161 @@ class {
 	}
 
 	/**
+	 * Builds the bundled CommandBox Debian package with dpkg-deb in Docker.
+	 */
+	function buildCliDeb() depends="buildCliBinary" {
+		var boxJSON = packageService.readPackageDescriptor( resolvePath( "bx-cli" ) );
+		var sourcePath = resolvePath( "build/dist/box" );
+		var packagePath = resolvePath( "build/temp/deb-package" );
+		var debPath = resolvePath( "build/dist/commandbox-debian-#boxJSON.version#.deb" );
+		var dockerPackagePath = replace( packagePath, "\\", "/", "all" );
+		var dockerDistPath = replace( resolvePath( "build/dist" ), "\\", "/", "all" );
+		var newLine = System.lineSeparator();
+
+		if( directoryExists( packagePath ) ) {
+			directoryDelete( packagePath, true );
+		}
+		directoryCreate( packagePath & "/DEBIAN", true );
+		directoryCreate( packagePath & "/usr/local/bin", true );
+		fileCopy( sourcePath, packagePath & "/usr/local/bin/box", true );
+		fileWrite(
+			packagePath & "/DEBIAN/control",
+			"Package: commandbox#newLine#"
+			& "Version: #boxJSON.version#-1#newLine#"
+			& "Section: web#newLine#"
+			& "Priority: extra#newLine#"
+			& "Architecture: all#newLine#"
+			& "Depends: java-common#newLine#"
+			& "Maintainer: ortussolutions.com <info@ortussolutions.com>#newLine#"
+			& "Description: CommandBox is a ColdFusion (CFML) CLI, Package Manager, Server and REPL.#newLine#"
+			& " CommandBox Version: #boxJSON.version#.#newLine#"
+		);
+		command( "run" ).params(
+			'docker run --rm -v "#dockerPackagePath#:/package" -v "#dockerDistPath#:/output" '
+			& 'debian:bookworm-slim sh -c "chmod 755 /package/DEBIAN /package/usr /package/usr/local /package/usr/local/bin /package/usr/local/bin/box && chmod 644 /package/DEBIAN/control && dpkg-deb --build /package /output/commandbox-debian-#boxJSON.version#.deb"'
+		).run();
+
+		print.greenLine( "Created #debPath#" );
+	}
+
+	/**
+	 * Stages Debian repository metadata and the current package for one repository.
+	 */
+	private function updateDebRepository(
+		required string repoS3Path,
+		required string repoPath,
+		required string debPath,
+		required string packageVersion,
+		string signingKeyring="",
+		string signingKeyId="",
+		string signingKeyPassphrase=""
+	) {
+		var stagingPath = resolvePath( arguments.repoPath );
+		var packageFileName = "commandbox_#arguments.packageVersion#-1_all.deb";
+		var changesFileName = "commandbox_#arguments.packageVersion#-1_all.changes";
+		var changesDate = dateTimeFormat( now(), "ddd, dd mmm yyyy HH:mm:ss" ) & " +0000";
+		var passphrasePath = resolvePath( "build/temp/deb-signing-passphrase" );
+		var dockerRepoPath = replace( stagingPath, "\\", "/", "all" );
+		var dockerKeyringPath = replace( arguments.signingKeyring, "\\", "/", "all" );
+		var dockerPassphrasePath = replace( passphrasePath, "\\", "/", "all" );
+		var signingDockerArgs = "";
+		var canSign = len( arguments.signingKeyring )
+			&& len( arguments.signingKeyId )
+			&& len( arguments.signingKeyPassphrase )
+			&& fileExists( arguments.signingKeyring );
+		var signingEnabled = canSign ? "1" : "0";
+
+		if( directoryExists( stagingPath ) ) {
+			directoryDelete( stagingPath, true );
+		}
+		directoryCreate( stagingPath, true );
+		command( "run" ).params(
+			'docker run --rm -v "#dockerRepoPath#:/repo" amazon/aws-cli:latest '
+			& 's3 sync --no-sign-request "#arguments.repoS3Path#" /repo '
+			& '--exclude "*" --include "Packages" --include "Packages.gz" '
+			& '--include "Release" --include "Release.gpg" --include "InRelease"'
+		).run();
+		fileCopy( arguments.debPath, stagingPath & "/" & packageFileName, true );
+
+		if( canSign ) {
+			fileWrite( passphrasePath, arguments.signingKeyPassphrase );
+			signingDockerArgs = '-v "#dockerKeyringPath#:/signing/keyring:ro" '
+				& '-v "#dockerPassphrasePath#:/signing/passphrase:ro" '
+				& '-e SIGNING_KEY_ID="#arguments.signingKeyId#"';
+		}
+
+		command( "run" ).params(
+			'docker run --rm -e SIGNING_ENABLED="#signingEnabled#" -v "#dockerRepoPath#:/repo" #signingDockerArgs# '
+			& 'debian:bookworm-slim sh -c "'
+			& 'set -eu; apt-get update -qq; apt-get install -y -qq dpkg-dev apt-utils gnupg >/dev/null; '
+			& 'cd /repo; '
+			& 'if [ ! -f Packages ]; then : > Packages; fi; '
+			& 'mkdir -p .new-package; cp #packageFileName# .new-package/; '
+			& 'cd .new-package; dpkg-scanpackages . /dev/null > Packages.new; cd ..; cat .new-package/Packages.new >> Packages; '
+			& 'package_size=$(stat -c %s #packageFileName#); package_sha256=$(sha256sum #packageFileName# | cut -d '' '' -f 1); package_sha512=$(sha512sum #packageFileName# | cut -d '' '' -f 1); '
+			& 'printf ''Format: 1.8\nDate: #changesDate#\nSource: commandbox\nBinary: commandbox\nArchitecture: all\nVersion: #arguments.packageVersion#-1\nDistribution: unknown\nUrgency: low\nMaintainer: ortussolutions.com <info@ortussolutions.com>\nChanged-By: ortussolutions.com <info@ortussolutions.com>\nDescription:\n commandbox - CommandBox is a ColdFusion (CFML) CLI, Package Manager, Server and REPL\nChanges:\n commandbox (#arguments.packageVersion#-1) unknown; urgency=low\n\nChecksums-Sha256:\n %s %s %s\nChecksums-Sha512:\n %s %s %s\n'' "$package_sha256" "$package_size" "#packageFileName#" "$package_sha512" "$package_size" "#packageFileName#" > #changesFileName#.unsigned; '
+			& 'gzip -9c Packages > Packages.gz; '
+			& 'rm -rf .new-package; '
+			& 'apt-ftparchive release . > Release.full; '
+			& 'awk ''BEGIN { keep=1 } /^MD5Sum:$/ { keep=0 } /^SHA1:$/ { keep=0 } /^SHA256:$/ { keep=1 } { if ( keep ) print }'' Release.full > Release; '
+			& 'rm -f Release.full; '
+			& 'if [ "$SIGNING_ENABLED" = "1" ]; then gpg --batch --yes --pinentry-mode loopback --digest-algo SHA256 '
+			& '--passphrase-file /signing/passphrase --no-default-keyring '
+			& '--secret-keyring /signing/keyring --keyring /signing/keyring '
+			& '--local-user "$SIGNING_KEY_ID" --clearsign --output #changesFileName# #changesFileName#.unsigned; '
+			& 'gpg --batch --yes --pinentry-mode loopback --digest-algo SHA256 '
+			& '--passphrase-file /signing/passphrase --no-default-keyring '
+			& '--secret-keyring /signing/keyring --keyring /signing/keyring '
+			& '--local-user "$SIGNING_KEY_ID" --detach-sign --output Release.gpg Release; '
+			& 'rm -f #changesFileName#.unsigned; '
+			& 'else mv #changesFileName#.unsigned #changesFileName#; rm -f Release.gpg InRelease; fi"'
+		).run();
+
+		if( fileExists( passphrasePath ) ) {
+			fileDelete( passphrasePath );
+		}
+		print.greenLine( "Updated staged Debian repository #stagingPath#" );
+	}
+
+	/**
+	 * Builds the Debian package and stages BE, plus stable when the version is stable.
+	 */
+	function updateDebRepo(
+		string repoS3Path="s3://downloads.ortussolutions.com/debs-be/noarch/",
+		string repoPath="build/dist/debs-be/noarch",
+		string stableRepoS3Path="s3://downloads.ortussolutions.com/debs/noarch/",
+		string stableRepoPath="build/dist/debs/noarch"
+	) depends="buildCliDeb" {
+		var boxJSON = packageService.readPackageDescriptor( resolvePath( "bx-cli" ) );
+		var debPath = resolvePath( "build/dist/commandbox-debian-#boxJSON.version#.deb" );
+		var signingKeyring = getSystemSetting( "ORTUS_SIGN_KEYRING", "" );
+		var signingKeyId = getSystemSetting( "ORTUS_SIGN_KEY_ID", "" );
+		var signingKeyPassphrase = getSystemSetting( "ORTUS_SIGN_KEY_PASSPHRASE", "" );
+
+		updateDebRepository(
+			arguments.repoS3Path,
+			arguments.repoPath,
+			debPath,
+			boxJSON.version,
+			signingKeyring,
+			signingKeyId,
+			signingKeyPassphrase
+		);
+
+		if( !semanticVersion.isPreRelease( boxJSON.version ) ) {
+			updateDebRepository(
+				arguments.stableRepoS3Path,
+				arguments.stableRepoPath,
+				debPath,
+				boxJSON.version,
+				signingKeyring,
+				signingKeyId,
+				signingKeyPassphrase
+			);
+		}
+	}
+
+	/**
 	 * Stages an RPM repository and updates its metadata for the current CommandBox RPM.
 	 */
 	function updateRpmRepo(
