@@ -4,6 +4,7 @@
 /build/temp
 /build/JREs
 /build/requires.txt
+/build/*.log
 /lib
 /src/cfml/box.json
 WEB-INF
@@ -28,6 +29,7 @@ jmimemagic.log
 
 # CommandBox config
 src/CommandBox.json
+.env
 .classpath
 
 # IDE

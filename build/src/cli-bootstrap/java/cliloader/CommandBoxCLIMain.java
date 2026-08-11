@@ -21,8 +21,11 @@ import java.util.zip.ZipInputStream;
 public class CommandBoxCLIMain {
 
 	private static final String INSTALLER_ARCHIVE = "boxlang-installer.zip";
+	private static final String BOXLANG_VERSION = "boxlang-version";
+	private static final String BOXLANG_JAR = "boxlang.jar";
+	private static final String MINISERVER_JAR = "boxlang-miniserver.jar";
 	private static final String SYSTEM_MODULES_ARCHIVE = "commandbox-system-modules.zip";
-	private static final String COMMAND_BOX_HOME_PROPERTY = "CommandBox_home";
+	private static final String COMMANDBOX_HOME_PROPERTY = "CommandBox_home";
 	private static final String BOXLANG_HOME_PROPERTY = "boxlang.home";
 	private static final String BOXLANG_INSTALL_HOME_PROPERTY = "boxlang.install.home";
 	private static final String BOXLANG_HOME_ENVIRONMENT = "BOXLANG_HOME";
@@ -55,6 +58,9 @@ public class CommandBoxCLIMain {
 		debug( "Launcher directory: " + launcherDirectory.getAbsolutePath() );
 		var commandBoxHome = resolveCommandBoxHome( arguments, launcherDirectory );
 		debug( "CommandBox home: " + commandBoxHome.getAbsolutePath() );
+		System.setProperty( COMMANDBOX_HOME_PROPERTY, commandBoxHome.getAbsolutePath() );
+		arguments = removeArgument( arguments, COMMANDBOX_HOME_PROPERTY );
+		debug( "Arguments after bootstrap options: " + Arrays.toString( arguments ) );
 		var systemBoxJson = commandBoxHome.toPath().resolve( "cfml/box.json" );
 		if ( Files.notExists( systemBoxJson ) ) {
 			if ( !commandBoxHome.mkdirs() ) {
@@ -71,12 +77,11 @@ public class CommandBoxCLIMain {
 			var boxLangInstallHome = resolveInstallerInstallHome( launcherDirectory );
 			debug( "BoxLang was not detected; installing to: " + boxLangInstallHome.getAbsolutePath() );
 			installBoxLang( boxLangInstallHome, boxLangHome );
-			extractBxCliModule( boxLangHome.toPath() );
 			boxLang = new BoxLangInstallation( getExecutable( boxLangInstallHome ), "installer default" );
-		} else {
-			extractBxCliModule( boxLangHome.toPath() );
 		}
-		launchBoxLang( boxLang.executable(), boxLangHome, arguments, boxLang.source() );
+		extractBxCliModule( boxLangHome.toPath(), boxLang.executable() );
+		createBoxLauncher( boxLang.executable() );
+		launchBoxLang( boxLang.executable(), boxLangHome, commandBoxHome, arguments, boxLang.source() );
 	}
 
 	/**
@@ -108,7 +113,7 @@ public class CommandBoxCLIMain {
 	 * @throws IOException If adjacent properties cannot be read.
 	 */
 	private static File resolveCommandBoxHome( String[] arguments, File launcherDirectory ) throws IOException {
-		var commandLineHome = findArgumentValue( arguments, COMMAND_BOX_HOME_PROPERTY );
+		var commandLineHome = findArgumentValue( arguments, COMMANDBOX_HOME_PROPERTY );
 		debug( "CommandBox home command-line value: " + commandLineHome );
 		if ( commandLineHome != null ) {
 			return resolveHome( commandLineHome, launcherDirectory );
@@ -118,18 +123,18 @@ public class CommandBoxCLIMain {
 		debug( "Adjacent properties: " + adjacentProperties );
 		var propertiesHome = getPropertyIgnoreCase( adjacentProperties, "cli.home" );
 		if ( propertiesHome == null ) {
-			propertiesHome = getPropertyIgnoreCase( adjacentProperties, COMMAND_BOX_HOME_PROPERTY );
+			propertiesHome = getPropertyIgnoreCase( adjacentProperties, COMMANDBOX_HOME_PROPERTY );
 		}
 		if ( propertiesHome != null ) {
 			return resolveHome( propertiesHome, launcherDirectory );
 		}
 
-		var environmentHome = getEnvironmentIgnoreCase( COMMAND_BOX_HOME_PROPERTY );
+		var environmentHome = getEnvironmentIgnoreCase( COMMANDBOX_HOME_PROPERTY );
 		debug( "CommandBox home environment value: " + environmentHome );
 		if ( environmentHome != null ) {
 			return resolveHome( environmentHome, launcherDirectory );
 		}
-		var systemHome = getPropertyIgnoreCase( System.getProperties(), COMMAND_BOX_HOME_PROPERTY );
+		var systemHome = getPropertyIgnoreCase( System.getProperties(), COMMANDBOX_HOME_PROPERTY );
 		debug( "CommandBox home JVM property value: " + systemHome );
 		if ( systemHome != null ) {
 			return resolveHome( systemHome, launcherDirectory );
@@ -336,6 +341,20 @@ public class CommandBoxCLIMain {
 	}
 
 	/**
+	 * Removes an equals-form bootstrap option before forwarding arguments to CommandBox.
+	 *
+	 * @param arguments Launcher arguments.
+	 * @param name Option name without the leading dash.
+	 * @return Arguments without the named option.
+	 */
+	private static String[] removeArgument( String[] arguments, String name ) {
+		var prefix = "-" + name.toLowerCase( Locale.ROOT ) + "=";
+		return Arrays.stream( arguments )
+			.filter( argument -> !argument.toLowerCase( Locale.ROOT ).startsWith( prefix ) )
+			.toArray( String[]::new );
+	}
+
+	/**
 	 * Reads an environment variable without regard to case.
 	 *
 	 * @param name Environment variable name.
@@ -386,9 +405,28 @@ public class CommandBoxCLIMain {
 			if ( Files.notExists( installerPath ) ) {
 				throw new IOException( "Missing installer script in archive: " + resourceName );
 			}
-			var command = isWindows()
-				? List.of( "powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", installerPath.toString(), "snapshot", "--non-interactive", "--without-jre", "--without-commandbox" )
-				: List.of( "bash", installerPath.toString(), "snapshot", "--non-interactive", "--without-jre", "--without-commandbox" );
+			var boxLangJar = extractOptionalResource( BOXLANG_JAR, temporaryDirectory );
+			var miniServerJar = extractOptionalResource( MINISERVER_JAR, temporaryDirectory );
+			var command = new java.util.ArrayList<String>();
+			if ( isWindows() ) {
+				command.addAll( List.of( "powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", installerPath.toString() ) );
+			} else {
+				command.addAll( List.of( "bash", installerPath.toString() ) );
+			}
+			if ( boxLangJar != null && miniServerJar != null ) {
+				command.addAll( List.of(
+					"--force", "--non-interactive", "--without-jre", "--without-commandbox",
+					"--boxlang-path", boxLangJar.toString(),
+					"--miniserver-path", miniServerJar.toString(),
+					"--installer-scripts-path", installerDirectory.toString()
+				) );
+				debug( "Using bundled BoxLang runtime artifacts for offline installation." );
+			} else {
+				command.addAll( List.of(
+					getBoxLangVersion(), "--non-interactive", "--without-jre", "--without-commandbox",
+					"--installer-scripts-path", installerDirectory.toString()
+				) );
+			}
 			var processBuilder = new ProcessBuilder( command ).inheritIO();
 			debug( "Installer command: " + command );
 			debug( "Installer BOXLANG_INSTALL_HOME: " + boxLangInstallHome.getAbsolutePath() );
@@ -406,16 +444,55 @@ public class CommandBoxCLIMain {
 	}
 
 	/**
-	 * Extracts the bundled bx-cli module zip into BoxLang's module directory.
+	 * Reads the BoxLang version selected when the launcher was built.
+	 *
+	 * @return The BoxLang version.
+	 * @throws IOException If the bundled version resource cannot be read.
+	 */
+	private static String getBoxLangVersion() throws IOException {
+		try ( var input = CommandBoxCLIMain.class.getClassLoader().getResourceAsStream( BOXLANG_VERSION ) ) {
+			if ( input == null ) {
+				return "latest";
+			}
+			return new String( input.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8 ).trim();
+		}
+	}
+
+	/**
+	 * Copies an optional bundled resource into the installer temporary directory.
+	 *
+	 * @param resourceName Classpath resource name.
+	 * @param destinationDirectory Temporary installer directory.
+	 * @return Extracted path, or null when the resource is not bundled.
+	 * @throws IOException If the resource cannot be copied.
+	 */
+	private static Path extractOptionalResource( String resourceName, Path destinationDirectory ) throws IOException {
+		try ( var input = CommandBoxCLIMain.class.getClassLoader().getResourceAsStream( resourceName ) ) {
+			if ( input == null ) {
+				debug( "Optional installer resource was not bundled: " + resourceName );
+				return null;
+			}
+			var destination = destinationDirectory.resolve( resourceName );
+			Files.copy( input, destination, StandardCopyOption.REPLACE_EXISTING );
+			debug( "Extracted optional installer resource: " + destination );
+			return destination;
+		}
+	}
+
+	/**
+	 * Extracts the bundled bx-cli module zip or installs it with BoxLang's module installer.
 	 *
 	 * @param boxLangHome BoxLang runtime home directory.
+	 * @param boxLangExecutable Resolved BoxLang executable used to locate its installed scripts.
 	 * @throws IOException If the JAR resource cannot be read or files cannot be written.
+	 * @throws InterruptedException If the module installer process is interrupted.
 	 */
-	private static void extractBxCliModule( Path boxLangHome ) throws IOException {
+	private static void extractBxCliModule( Path boxLangHome, File boxLangExecutable ) throws IOException, InterruptedException {
 		var moduleDir = boxLangHome.resolve( "modules/bx-cli" );
 		try ( var input = CommandBoxCLIMain.class.getClassLoader().getResourceAsStream( "bx-cli.zip" ) ) {
 			if ( input == null ) {
-				throw new IOException( "Missing bundled resource: bx-cli.zip" );
+				installBxCliModule( boxLangHome, boxLangExecutable );
+				return;
 			}
 			try ( var zip = new ZipInputStream( input ) ) {
 				ZipEntry entry;
@@ -433,6 +510,63 @@ public class CommandBoxCLIMain {
 			}
 		}
 		debug( "bx-cli module extracted to: " + moduleDir );
+	}
+
+	/**
+	 * Installs bx-cli through the scripts installed with BoxLang for thin launchers.
+	 */
+	private static void installBxCliModule( Path boxLangHome, File boxLangExecutable ) throws IOException, InterruptedException {
+		var installHome = boxLangExecutable.toPath().toRealPath().getParent().getParent();
+		var scriptDirectory = isWindows() ? installHome.resolve( "bin" ) : installHome.resolve( "scripts" );
+		var script = scriptDirectory.resolve( isWindows() ? "install-bx-module.ps1" : "install-bx-module.sh" );
+		if ( Files.notExists( script ) ) {
+			throw new IOException( "BoxLang module installer was not installed: " + script );
+		}
+		var command = isWindows()
+			? List.of( "powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", script.toString(), "bx-cli" )
+			: List.of( "sh", script.toString(), "bx-cli" );
+		var processBuilder = new ProcessBuilder( command ).inheritIO();
+		processBuilder.environment().put( "BOXLANG_HOME", boxLangHome.toString() );
+		processBuilder.environment().put( "BOXLANG_INSTALL_HOME", installHome.toString() );
+		var exitCode = processBuilder.start().waitFor();
+		if ( exitCode != 0 ) {
+			throw new IOException( "BoxLang module installer failed with exit code " + exitCode );
+		}
+		debug( "bx-cli module installed to: " + boxLangHome.resolve( "modules/bx-cli" ) );
+	}
+
+	/**
+	 * Creates the CommandBox executable beside the BoxLang executable exposed on PATH.
+	 *
+	 * @param boxLangExecutable The resolved BoxLang executable.
+	 * @throws IOException If the launcher cannot be written.
+	 * @throws InterruptedException If PATH lookup is interrupted.
+	 */
+	private static void createBoxLauncher( File boxLangExecutable ) throws IOException, InterruptedException {
+		var boxLangPath = boxLangExecutable.toPath().toRealPath();
+		var launcher = boxLangPath.getParent().resolve( isWindows() ? "box.bat" : "box" );
+		var executablePath = boxLangPath.toString();
+		var contents = isWindows()
+			? "@echo off\r\n\"" + executablePath + "\" cli %*\r\n"
+			: "#!/bin/sh\nexec \"" + executablePath + "\" cli \"$@\"\n";
+		Files.writeString( launcher, contents, java.nio.charset.StandardCharsets.UTF_8 );
+		if ( !isWindows() && !launcher.toFile().setExecutable( true, false ) ) {
+			throw new IOException( "Unable to make CommandBox launcher executable: " + launcher );
+		}
+		if ( isWindows() ) {
+			debug( "CommandBox launcher created at: " + launcher );
+			return;
+		}
+		var pathInstallation = findOnPath();
+		if ( pathInstallation != null ) {
+			var systemLauncher = pathInstallation.executable().toPath().getParent().resolve( "box" );
+			if ( !systemLauncher.equals( launcher ) ) {
+				Files.deleteIfExists( systemLauncher );
+				Files.createSymbolicLink( systemLauncher, launcher );
+				debug( "CommandBox system link created at: " + systemLauncher );
+			}
+		}
+		debug( "CommandBox launcher created at: " + launcher );
 	}
 
 	/**
@@ -472,12 +606,13 @@ public class CommandBoxCLIMain {
 	 *
 	 * @param executable BoxLang executable to invoke.
 	 * @param boxLangHome Runtime home for BoxLang configuration and user data.
+	 * @param commandBoxHome CommandBox home resolved by the launcher.
 	 * @param arguments Arguments forwarded to CommandBox.
 	 * @param source Source used to detect the executable.
 	 * @throws IOException If the executable cannot be found or exits unsuccessfully.
 	 * @throws InterruptedException If the process is interrupted.
 	 */
-	private static void launchBoxLang( File executable, File boxLangHome, String[] arguments, String source ) throws IOException, InterruptedException {
+	private static void launchBoxLang( File executable, File boxLangHome, File commandBoxHome, String[] arguments, String source ) throws IOException, InterruptedException {
 		debug( "BoxLang executable candidate: " + executable.getAbsolutePath() );
 		debug( "BoxLang executable source: " + source );
 		if ( !executable.isFile() ) {
@@ -493,7 +628,9 @@ public class CommandBoxCLIMain {
 		var processBuilder = new ProcessBuilder( command ).inheritIO();
 		debug( "BoxLang command: " + command );
 		debug( "BoxLang BOXLANG_HOME: " + boxLangHome.getAbsolutePath() );
+		debug( "BoxLang CommandBox_home: " + commandBoxHome.getAbsolutePath() );
 		processBuilder.environment().put( "BOXLANG_HOME", boxLangHome.getAbsolutePath() );
+		processBuilder.environment().put( COMMANDBOX_HOME_PROPERTY, commandBoxHome.getAbsolutePath() );
 		var exitCode = processBuilder.start().waitFor();
 		debug( "BoxLang exit code: " + exitCode );
 		if ( exitCode != 0 ) {

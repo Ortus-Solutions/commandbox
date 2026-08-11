@@ -5,6 +5,7 @@ import java.nio.file.Paths;
 
 class {
 	property name='packageService' inject='packageService';
+	property name='semanticVersion' inject='provider:semanticVersion@semver';
 	property name='progressableDownloader' inject='ProgressableDownloader';
 	property name='artifactService' inject='ArtifactService';
 	property name='installerBaseURL' default='https://downloads.ortussolutions.com/ortussolutions/boxlang-quick-installer';
@@ -43,19 +44,27 @@ class {
 			.run();
 
 		command( "forgebox use" ).params( "ortus" ).run();
-		//command( "publish" ).flags( "force" ).run();
+		command( "publish" ).inWorkingDirectory( resolvePath( "bx-cli" ) ).flags( "force" ).run();
 	}
 
 	/**
-	 * Builds the executable CLI launcher JAR and embeds the snapshot installer archive.
+
+	* Builds the executable CLI launcher JAR.
 	 */
-	function buildCliJar( boolean installerSnapshot=true ) {
+	function buildCliJar( boolean installerSnapshot=true, boolean thin=false, string artifactName="box" ) {
 		var classesPath = resolvePath( "build/temp/classes/cli-bootstrap" );
-		var jarPath = resolvePath( "build/dist/box.jar" );
+		var jarPath = resolvePath( "build/dist/#artifactName#.jar" );
 		var installerResourcesPath = resolvePath( "build/temp/cli-bootstrap/installer" );
+		var runtimeArtifactsPath = resolvePath( "build/temp/cli-bootstrap/runtime-artifacts" );
 		var systemModulesPath = resolvePath( "build/temp/cli-bootstrap/system-modules" );
 		var installerURLPrefix = installerSnapshot ? installerBaseURL & "/snapshot" : installerBaseURL;
 		var installerURL = installerURLPrefix & "/boxlang-installer.zip";
+		var boxLangURL = installerSnapshot
+			? "https://downloads.ortussolutions.com/ortussolutions/boxlang/boxlang-snapshot.zip"
+			: "https://downloads.ortussolutions.com/ortussolutions/boxlang/boxlang-latest.zip";
+		var miniServerURL = installerSnapshot
+			? "https://downloads.ortussolutions.com/ortussolutions/boxlang-runtimes/boxlang-miniserver/boxlang-miniserver-snapshot.zip"
+			: "https://downloads.ortussolutions.com/ortussolutions/boxlang-runtimes/boxlang-miniserver/boxlang-miniserver-latest.zip";
 		if( installerSnapshot ) {
 			installerURL &= "?cacheBust=" & createUUID();
 		}
@@ -67,49 +76,74 @@ class {
 		if( directoryExists( installerResourcesPath ) ) {
 			directoryDelete( installerResourcesPath, true );
 		}
+		if( directoryExists( runtimeArtifactsPath ) ) {
+			directoryDelete( runtimeArtifactsPath, true );
+		}
 		if( directoryExists( systemModulesPath ) ) {
 			directoryDelete( systemModulesPath, true );
 		}
 		directoryCreate( classesPath, true );
 		directoryCreate( installerResourcesPath, true );
-		directoryCreate( systemModulesPath & "/cfml", true );
+		directoryCreate( runtimeArtifactsPath, true );
 		progressableDownloader.download(
 			installerURL,
 			resolvePath( installerResourcesPath & "/boxlang-installer.zip" ),
 			function( status ) {},
 			function( redirectURL ) {}
 		);
+		if( !thin ) {
+			directoryCreate( systemModulesPath & "/cfml", true );
+			fileWrite( installerResourcesPath & "/boxlang-version", installerSnapshot ? "snapshot" : "latest" );
+			progressableDownloader.download(
+				boxLangURL,
+				resolvePath( runtimeArtifactsPath & "/boxlang.zip" ),
+				function( status ) {},
+				function( redirectURL ) {}
+			);
+			progressableDownloader.download(
+				miniServerURL,
+				resolvePath( runtimeArtifactsPath & "/boxlang-miniserver.zip" ),
+				function( status ) {},
+				function( redirectURL ) {}
+			);
+			bx:zip action="unzip" file="#runtimeArtifactsPath#/boxlang.zip" destination="#runtimeArtifactsPath#/boxlang" overwrite="true";
+			bx:zip action="unzip" file="#runtimeArtifactsPath#/boxlang-miniserver.zip" destination="#runtimeArtifactsPath#/miniserver" overwrite="true";
+			var boxLangJar = directoryList( runtimeArtifactsPath & "/boxlang/lib", false, "path", "*.jar" )[ 1 ];
+			var miniServerJar = directoryList( runtimeArtifactsPath & "/miniserver/lib", false, "path", "*.jar" )[ 1 ];
+			fileCopy( boxLangJar, installerResourcesPath & "/boxlang.jar", true );
+			fileCopy( miniServerJar, installerResourcesPath & "/boxlang-miniserver.jar", true );
 
-		var bxCliBoxJSON = packageService.readPackageDescriptor( resolvePath( "bx-cli" ) );
-		var bxCliVersion = bxCliBoxJSON.version;
-		var apiURL = "https://forgebox.io/api/v1/storage/bx-cli/#bxCliVersion#";
-		bx:http url="#apiURL#" result="local.apiResult";
-		var apiJSON    = JSONdeserialize( local.apiResult.fileContent );
-		var downloadURL = apiJSON.data ?: throw( "Missing data in ForgeBox API response- [#apiJSON.tostring()#]" );
-		progressableDownloader.download(
-			downloadURL,
-			resolvePath( installerResourcesPath & "/bx-cli.zip" ),
-			function( status ) {},
-			function( redirectURL ) {}
-		);
-		var originalDirectory = getCWD();
-		command( "cd" ).params( systemModulesPath & "/cfml" ).run();
-		try {
-			command( "install" )
-				.params(
-					ID="commandbox-update-check,commandbox-cfconfig,commandbox-dotenv,contentbox-cli,coldbox-cli,testbox-cli,commandbox-boxlang,commandbox-bullet-train",
-					directory=systemModulesPath & "/cfml/modules"
-				)
-				.run();
-		} finally {
-			command( "cd" ).params( originalDirectory ).run();
+			var bxCliBoxJSON = packageService.readPackageDescriptor( resolvePath( "bx-cli" ) );
+			var bxCliVersion = bxCliBoxJSON.version;
+			var apiURL = "https://forgebox.io/api/v1/storage/bx-cli/#bxCliVersion#";
+			bx:http url="#apiURL#" result="local.apiResult";
+			var apiJSON    = JSONdeserialize( local.apiResult.fileContent );
+			var downloadURL = apiJSON.data ?: throw( "Missing data in ForgeBox API response- [#apiJSON.tostring()#]" );
+			progressableDownloader.download(
+				downloadURL,
+				resolvePath( installerResourcesPath & "/bx-cli.zip" ),
+				function( status ) {},
+				function( redirectURL ) {}
+			);
+			var originalDirectory = getCWD();
+			command( "cd" ).params( systemModulesPath & "/cfml" ).run();
+			try {
+				command( "install" )
+					.params(
+						ID="commandbox-update-check,commandbox-cfconfig,commandbox-dotenv,contentbox-cli,coldbox-cli,testbox-cli,commandbox-boxlang,commandbox-bullet-train",
+						directory=systemModulesPath & "/cfml/modules"
+					)
+					.run();
+			} finally {
+				command( "cd" ).params( originalDirectory ).run();
+			}
+			bx:zip
+				action="zip"
+				source="#systemModulesPath#/cfml"
+				file="#installerResourcesPath#/commandbox-system-modules.zip"
+				recurse="true"
+				overwrite="true";
 		}
-		bx:zip
-			action="zip"
-			source="#systemModulesPath#/cfml"
-			file="#installerResourcesPath#/commandbox-system-modules.zip"
-			recurse="true"
-			overwrite="true";
 
 		compile()
 			.projectRoot( resolvePath( "build/temp/cli-bootstrap" ) )
@@ -128,9 +162,9 @@ class {
 	/**
 	 * Builds the Unix launcher by appending the CLI JAR to the standard shell wrapper.
 	 */
-	function buildCliBinary() depends="buildCliJar" {
-		var jarPath = resolvePath( "build/dist/box.jar" );
-		var binaryPath = resolvePath( "build/dist/box" );
+	function buildCliBinary( string artifactName="box" ) depends="buildCliJar" {
+		var jarPath = resolvePath( "build/dist/#artifactName#.jar" );
+		var binaryPath = resolvePath( "build/dist/#artifactName#" );
 
 		if( !fileExists( jarPath ) ) {
 			throw( message="The CLI launcher JAR does not exist. Run buildCliJar first.", type="commandException" );
@@ -148,12 +182,12 @@ class {
 	/**
 	 * Builds the Windows executable wrapper around the CLI launcher JAR.
 	 */
-	function buildCliExe() {
+	function buildCliExe( string artifactName="box" ) {
 		var boxJSON = packageService.readPackageDescriptor( resolvePath( "bx-cli" ) );
-		var jarPath = resolvePath( "build/dist/box.jar" );
-		var executablePath = resolvePath( "build/dist/box.exe" );
+		var jarPath = resolvePath( "build/dist/#artifactName#.jar" );
+		var executablePath = resolvePath( "build/dist/#artifactName#.exe" );
 		var launch4jPath = resolvePath( "build/launch4j-3.50/launch4j/launch4jc.exe" );
-		var configPath = resolvePath( "build/temp/cli-bootstrap/box-launch4j.xml" );
+		var configPath = resolvePath( "build/temp/cli-bootstrap/#artifactName#-launch4j.xml" );
 		var configTemplatePath = resolvePath( "build/box-launch4j.xml" );
 		var buildNumber = reReplace( fileRead( resolvePath( "build/build.number" ) ), "(?s).*build.number=([0-9]+).*", "\1" );
 		var numericVersion = reReplace( boxJSON.version, "[^0-9.].*$", "", "all" );
@@ -182,6 +216,135 @@ class {
 		systemExecute( '"' & launch4jPath & '" "' & configPath & '"' );
 
 		print.greenLine( "Created #executablePath#" );
+	}
+
+	/**
+	 * Builds the bundled CommandBox Linux RPM with Redline.
+	 */
+	function buildCliRpm() {
+		var boxJSON = packageService.readPackageDescriptor( resolvePath( "bx-cli" ) );
+		var version = reReplace( boxJSON.version, "^([0-9]+\.[0-9]+\.[0-9]+).*$", "\1" );
+		var sourcePath = resolvePath( "build/dist/box" );
+		var rpmPath = resolvePath( "build/dist/commandbox-rpm-#version#.rpm" );
+		var redlineURL = "https://s3.amazonaws.com/downloads.ortussolutions.com/ortussolutions/redline/1.2.12/redline-1.2.12.jar";
+		var redlineInstallPath = resolvePath( "build/temp/redline" );
+		var redlineJar = redlineInstallPath & "/redline-1.2.12/redline-1.2.12.jar";
+		var rpmLibsPath = resolvePath( "build/temp/rpm-libs" );
+		var packager = "ortussolutions.com info@ortussolutions.com";
+		var supportURL = "https://www.ortussolutions.com/services/support";
+		var signingKeyring = getSystemSetting( "ORTUS_SIGN_KEYRING", "" );
+		var signingKeyId = getSystemSetting( "ORTUS_SIGN_KEY_ID", "" );
+		var signingKeyPassphrase = getSystemSetting( "ORTUS_SIGN_KEY_PASSPHRASE", "" );
+
+		if( !fileExists( sourcePath ) ) {
+			throw( message="The bundled Unix launcher does not exist. Run buildCliBinary first.", type="commandException" );
+		}
+		if( directoryExists( redlineInstallPath ) ) {
+			directoryDelete( redlineInstallPath, true );
+		}
+		directoryCreate( redlineInstallPath, true );
+		command( "install" )
+			.params( ID="jar:#redlineURL#", directory=redlineInstallPath, save=false, force=true )
+			.run();
+		if( directoryExists( rpmLibsPath ) ) {
+			directoryDelete( rpmLibsPath, true );
+		}
+		directoryCreate( rpmLibsPath, true );
+		command( "install" )
+			.params(
+				ID="maven:org.apache.commons:commons-compress:1.21,maven:org.tukaani:xz:1.4,maven:org.bouncycastle:bcpg-jdk15on:1.50",
+				directory=rpmLibsPath,
+				save=false
+			)
+			.run();
+
+		classLoad( [ redlineJar, rpmLibsPath ] );
+		var builder = createObject( "java", "org.redline_rpm.Builder" ).init();
+		builder.setPackage( "commandbox", version, "1" );
+		builder.setPlatform(
+			createObject( "java", "org.redline_rpm.header.Architecture" ).NOARCH,
+			createObject( "java", "org.redline_rpm.header.Os" ).LINUX
+		);
+		builder.setSummary( "CommandBox CLI for BoxLang" );
+		builder.setDescription( "CommandBox CLI, package manager, server manager, and REPL." );
+		builder.setGroup( "com.ortussolutions" );
+		builder.setPackager( packager );
+		builder.setUrl( supportURL );
+		builder.addFile( "/usr/bin/box", createObject( "java", "java.io.File" ).init( sourcePath ), 0755, 0755, "root", "root" );
+
+		if( len( signingKeyring ) && len( signingKeyId ) && len( signingKeyPassphrase ) ) {
+			builder.setPrivateKeyRingFile( createObject( "java", "java.io.File" ).init( signingKeyring ) );
+			builder.setPrivateKeyId( signingKeyId );
+			builder.setPrivateKeyPassphrase( signingKeyPassphrase );
+		}
+
+		builder.build( createObject( "java", "java.io.File" ).init( getDirectoryFromPath( rpmPath ) ) );
+		fileMove( getDirectoryFromPath( rpmPath ) & "commandbox-#version#-1.noarch.rpm", rpmPath );
+
+		print.greenLine( "Created #rpmPath#" );
+	}
+
+	/**
+	 * Stages an RPM repository and updates its metadata for the current CommandBox RPM.
+	 */
+	function updateRpmRepo(
+		string repoS3Path="s3://downloads.ortussolutions.com/RPMS-be/noarch/",
+		string repoPath="build/dist/RPMS-be/noarch",
+		string stableRepoS3Path="s3://downloads.ortussolutions.com/RPMS/noarch/",
+		string stableRepoPath="build/dist/RPMS/noarch"
+	) depends="buildCliRpm" {
+		var boxJSON = packageService.readPackageDescriptor( resolvePath( "bx-cli" ) );
+		var version = reReplace( boxJSON.version, "^([0-9]+\.[0-9]+\.[0-9]+).*$", "\1" );
+		var rpmPath = resolvePath( "build/dist/commandbox-rpm-#version#.rpm" );
+		updateRpmRepository( arguments.repoS3Path, arguments.repoPath, rpmPath );
+
+		if( !semanticVersion.isPreRelease( boxJSON.version ) ) {
+			updateRpmRepository( arguments.stableRepoS3Path, arguments.stableRepoPath, rpmPath );
+		}
+	}
+
+	/**
+	 * Stages one RPM repository and updates its metadata for the current CommandBox RPM.
+	 */
+	private function updateRpmRepository(
+		required string repoS3Path,
+		required string repoPath,
+		required string rpmPath
+	) {
+		var stagingPath = resolvePath( arguments.repoPath );
+
+		if( directoryExists( stagingPath ) ) {
+			directoryDelete( stagingPath, true );
+		}
+		directoryCreate( stagingPath, true );
+
+		var dockerRepoPath = replace( stagingPath, "\", "/", "all" );
+		command( "run" ).params(
+			'docker run --rm -v "#dockerRepoPath#:/repo" amazon/aws-cli:latest '
+			& 's3 sync --no-sign-request "#arguments.repoS3Path#" /repo '
+			& '--exclude "*" --include "repodata/*"'
+		).run();
+		fileCopy( rpmPath, stagingPath & "/" & getFileFromPath( rpmPath ), true );
+		command( "run" ).params(
+			'docker run --rm -v "#dockerRepoPath#:/repo" rockylinux:8 '
+			& 'sh -c "dnf -qy install createrepo && createrepo --update --recycle-pkglist '
+			& '--skip-stat --includepkg #getFileFromPath( rpmPath )# /repo"'
+		).run();
+
+		print.greenLine( "Updated staged RPM repository #stagingPath#" );
+	}
+
+	/**
+	 * Builds bundled and thin CLI launcher JARs and both platform-specific installer binaries.
+	 */
+	function buildInstallers( boolean installerSnapshot=true ) {
+		buildCliJar( installerSnapshot, false, "box" );
+		buildCliBinary( "box" );
+		buildCliExe( "box" );
+		buildCliRpm();
+		buildCliJar( installerSnapshot, true, "box-thin" );
+		buildCliBinary( "box-thin" );
+		buildCliExe( "box-thin" );
 	}
 
 	/**

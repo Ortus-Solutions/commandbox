@@ -6,7 +6,9 @@ class {
 
 	function configure() {
 		variables.settings = {
-			commandboxHome : System.getProperty( 'user.home' ) & "/.CommandBox/"
+			commandboxHome : System.getenv( "CommandBox_home" )
+				?: System.getProperty( "CommandBox_home" )
+				?: System.getProperty( "user.home" ) & "/.CommandBox/"
 		}
 	}
 

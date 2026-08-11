@@ -1,6 +1,43 @@
 # CommandBox Build Process Documentation
 
-This document provides a comprehensive overview of CommandBox's Ant-based build system, including all targets, dependencies, and the complete build workflow.
+This document provides a comprehensive overview of CommandBox build targets, dependencies, and workflows.
+
+## Bootstrap Installers
+
+Build bootstrap installers with `Build.bx`:
+
+```powershell
+box task run taskFile=Build.bx target=buildInstallers
+```
+
+This produces bundled and thin `box` JAR, Unix, and Windows artifacts in `build/dist`, plus a bundled Linux RPM.
+
+`buildCliRpm` installs generated Redline `1.2.12` output into `build/temp/redline` and resolves its dependencies into `build/temp/rpm-libs`. The repository's existing Ant build libraries remain in `build/lib`.
+
+Stage and update RPM repository metadata for the current RPM with:
+
+```powershell
+box task run taskFile=Build.bx target=updateRpmRepo
+```
+
+By default, the task downloads only `repodata` from
+`s3://downloads.ortussolutions.com/RPMS-be/noarch/` into `build/dist/RPMS-be/noarch`. Rocky 8 uses the existing metadata and parses only the current RPM to produce production-compatible `repodata`; historical RPMs and `.repo` convenience files are not downloaded or modified. Stable semantic versions also update `s3://downloads.ortussolutions.com/RPMS/noarch/` in `build/dist/RPMS/noarch`. Pre-release versions update only BE. The task does not upload the staged repositories.
+
+Corrected downloadable Yum/DNF convenience files are kept separately in `build/dist/rpm-repo-files/stable` and `build/dist/rpm-repo-files/be`. The repository update task does not manage these files.
+
+Pass `repoS3Path` and `repoPath` to target another repository when its URL is available:
+
+```powershell
+box task run taskFile=Build.bx target=updateRpmRepo repoS3Path=s3://downloads.ortussolutions.com/RPMS-be/noarch/ repoPath=build/dist/RPMS-be/noarch stableRepoS3Path=s3://downloads.ortussolutions.com/RPMS/noarch/ stableRepoPath=build/dist/RPMS/noarch
+```
+
+`task run` automatically loads local values from `.env`. Use the following variables locally or provide them from CI:
+
+```text
+ORTUS_SIGN_KEYRING=
+ORTUS_SIGN_KEY_ID=
+ORTUS_SIGN_KEY_PASSPHRASE=
+```
 
 ## Overview
 

@@ -38,10 +38,11 @@ component singleton accessors=true {
 	* @target Method in Task CFC to run
 	* @taskArgs Struct of arguments to pass on to the task
 	* @topLevel false for target dependency runs
+	* @completedTargets Targets already scheduled in this task run
 	*
 	* @returns The output of the task.  It's up to the caller to output it.
 	*/
-	string function runTask( required string taskFile,  required string target='run', taskArgs={}, boolean topLevel=true, any taskObject ) {
+	string function runTask( required string taskFile, required string target='run', taskArgs={}, boolean topLevel=true, any taskObject, Set completedTargets=setNew() ) {
 
 		if( !ConfigService.getSetting( 'taskCaching', false ) ) {
 			// This is necessary so changes to tasks get picked up right away.
@@ -87,12 +88,16 @@ component singleton accessors=true {
 		commandService.ensureRequiredparams( taskargs, targetMD.parameters );
 
 		try {
+			if( completedTargets.contains( target ) ) {
+				return "";
+			}
+			completedTargets.add( target );
 
 			// Check for, and run target dependencies
 			var taskDeps = targetMD.depends ?: '';
 			taskDeps.listToArray()
 				.each( function( dep ) {
-					runTask( taskFile, dep, taskArgs, false, taskCFC );
+					runTask( taskFile, dep, taskArgs, false, taskCFC, completedTargets );
 				} );
 
 			// Build our initial wrapper UDF for invoking the target.  This has embedded into it the logic for the pre<target> and post<target> lifecycle events

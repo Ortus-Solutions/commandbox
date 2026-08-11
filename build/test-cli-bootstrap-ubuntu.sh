@@ -28,9 +28,8 @@ chmod 755 /usr/local/bin/box
 export BOXLANG_INSTALL_HOME=/tmp/boxlang-test-install
 rm -rf "$BOXLANG_INSTALL_HOME"
 echo "[ubuntu] Running real installer smoke test..."
-if ! /usr/local/bin/box -clidebug version; then
-	exit 1
-fi
+/usr/local/bin/box -clidebug version | tee /tmp/box-output
+! grep -q '\[clidebug\] BoxLang command:.*-clidebug' /tmp/box-output
 test -x "$BOXLANG_INSTALL_HOME/bin/boxlang"
 echo "PASS: Ubuntu real installer"
 CONTAINER_SCRIPT
