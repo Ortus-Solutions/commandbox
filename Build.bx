@@ -2,12 +2,14 @@ import java.io.FileOutputStream;
 import java.lang.System;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.security.MessageDigest;
 
 class {
 	property name='packageService' inject='packageService';
 	property name='semanticVersion' inject='provider:semanticVersion@semver';
 	property name='progressableDownloader' inject='ProgressableDownloader';
 	property name='artifactService' inject='ArtifactService';
+	property name='fileSystemUtil' inject='FileSystem';
 	property name='installerBaseURL' default='https://downloads.ortussolutions.com/ortussolutions/boxlang-quick-installer';
 
 	/**
@@ -48,8 +50,11 @@ class {
 	}
 
 	/**
-
-	* Builds the executable CLI launcher JAR.
+	 * Builds the executable CLI launcher JAR.
+	 *
+	 * @installerSnapshot Whether to use snapshot installer resources.
+	 * @thin Whether to build a thin launcher without bundled runtime resources.
+	 * @artifactName The output artifact base name.
 	 */
 	function buildCliJar( boolean installerSnapshot=true, boolean thin=false, string artifactName="box" ) {
 		var classesPath = resolvePath( "build/temp/classes/cli-bootstrap" );
@@ -155,14 +160,23 @@ class {
 			.toJar( "box.jar" )
 			.run();
 		fileCopy( resolvePath( "build/temp/cli-bootstrap/box.jar" ), jarPath, true );
+		createArtifactChecksums( jarPath );
+		if( artifactName == "box-thin" ) {
+			var lightJarPath = resolvePath( "build/dist/box-light.jar" );
+			fileCopy( jarPath, lightJarPath, true );
+			createArtifactChecksums( lightJarPath );
+		}
 
 		print.greenLine( "Created #jarPath#" );
 	}
 
 	/**
 	 * Builds the Unix launcher by appending the CLI JAR to the standard shell wrapper.
+	 *
+	 * @artifactName The output artifact base name.
 	 */
 	function buildCliBinary( string artifactName="box" ) depends="buildCliJar" {
+		var boxJSON = packageService.readPackageDescriptor( resolvePath( "bx-cli" ) );
 		var jarPath = resolvePath( "build/dist/#artifactName#.jar" );
 		var binaryPath = resolvePath( "build/dist/#artifactName#" );
 
@@ -172,15 +186,47 @@ class {
 
 		fileCopy( resolvePath( "src/bin/box.sh" ), binaryPath );
 		appendBinaryFile( binaryPath, jarPath );
-		if( !System.getProperty( "os.name" ).toLowerCase().contains( "windows" ) ) {
+		if( !fileSystemUtil.isWindows() ) {
 			fileSetAccessMode( binaryPath, "755" );
 		}
 
+		if( artifactName == "box" ) {
+			var distributionPath = resolvePath( "build/dist" );
+			var zipStagePath = resolvePath( "build/temp/distribution-zips" );
+			var binStagePath = zipStagePath & "/bin";
+			var sdkStagePath = zipStagePath & "/sdk/commandbox-#boxJSON.version#/bin";
+
+			if( directoryExists( zipStagePath ) ) {
+				directoryDelete( zipStagePath, true );
+			}
+			directoryCreate( binStagePath, true );
+			directoryCreate( sdkStagePath, true );
+			fileCopy( binaryPath, binStagePath & "/box", true );
+			fileCopy( binaryPath, sdkStagePath & "/box", true );
+			var binZipPath = distributionPath & "/commandbox-bin-#boxJSON.version#.zip";
+			var sdkZipPath = distributionPath & "/commandbox-sdk-bin-#boxJSON.version#.zip";
+			bx:zip action="zip" source="#binStagePath#" file="#binZipPath#" recurse="true" overwrite="true";
+			createArtifactChecksums( binZipPath );
+			bx:zip action="zip" source="#zipStagePath#/sdk" file="#sdkZipPath#" recurse="true" overwrite="true";
+			createArtifactChecksums( sdkZipPath );
+		}
+		if( artifactName == "box-thin" ) {
+			var lightBinaryPath = resolvePath( "build/dist/box-light" );
+			fileCopy( binaryPath, lightBinaryPath, true );
+			createArtifactChecksums( lightBinaryPath );
+			if( !fileSystemUtil.isWindows() ) {
+				fileSetAccessMode( lightBinaryPath, "755" );
+			}
+		}
+
+		createArtifactChecksums( binaryPath );
 		print.greenLine( "Created #binaryPath#" );
 	}
 
 	/**
 	 * Builds the Windows executable wrapper around the CLI launcher JAR.
+	 *
+	 * @artifactName The output artifact base name.
 	 */
 	function buildCliExe( string artifactName="box" ) {
 		var boxJSON = packageService.readPackageDescriptor( resolvePath( "bx-cli" ) );
@@ -214,72 +260,229 @@ class {
 		fileWrite( configPath, configTemplate );
 
 		systemExecute( '"' & launch4jPath & '" "' & configPath & '"' );
+		if( artifactName == "box" ) {
+			var distributionPath = resolvePath( "build/dist" );
+			var zipStagePath = resolvePath( "build/temp/distribution-zips/win" );
+			var winZipPath = distributionPath & "/commandbox-win-#boxJSON.version#.zip";
+			if( directoryExists( zipStagePath ) ) {
+				directoryDelete( zipStagePath, true );
+			}
+			directoryCreate( zipStagePath, true );
+			fileCopy( executablePath, zipStagePath & "/box.exe", true );
+			bx:zip action="zip" source="#zipStagePath#" file="#winZipPath#" recurse="true" overwrite="true";
+			createArtifactChecksums( winZipPath );
+		}
+		if( artifactName == "box-thin" ) {
+			var lightExecutablePath = resolvePath( "build/dist/box-light.exe" );
+			fileCopy( executablePath, lightExecutablePath, true );
+			createArtifactChecksums( lightExecutablePath );
+		}
+		createArtifactChecksums( executablePath );
 
 		print.greenLine( "Created #executablePath#" );
 	}
 
 	/**
-	 * Builds the bundled CommandBox Linux RPM with Redline.
+	 * Builds the bundled Java 21 JRE distributions for Linux, macOS, and Windows x64.
+	 */
+	function buildCliJREs() {
+		var boxJSON = packageService.readPackageDescriptor( resolvePath( "bx-cli" ) );
+		var distributionPath = resolvePath( "build/dist" );
+		var workPath = resolvePath( "build/temp/jre" );
+		var versionResult = {};
+		var versionResponse = [];
+
+		ensureBuildDirectories();
+		if( !fileExists( resolvePath( "build/dist/box" ) ) || !fileExists( resolvePath( "build/dist/box.exe" ) ) ) {
+			throw( message="The bundled CLI launchers do not exist. Run buildCliBinary and buildCliExe first.", type="commandException" );
+		}
+
+		bx:http
+			url="https://api.bell-sw.com/v1/liberica/versions/21"
+			result="versionResult";
+		versionResponse = JSONDeserialize( versionResult.fileContent );
+		var javaVersion = versionResponse[ 1 ].version ?: throw( "Liberica did not return a Java 21 version." );
+
+		var platforms = [
+			{
+				name : "linux64",
+				os : "linux",
+				packageType : "tar.gz",
+				launcher : "box",
+				extension : "tar.gz"
+			},
+			{
+				name : "darwin64",
+				os : "macos",
+				packageType : "zip",
+				launcher : "box",
+				extension : "zip"
+			},
+			{
+				name : "win64",
+				os : "windows",
+				packageType : "zip",
+				launcher : "box.exe",
+				extension : "zip"
+			}
+		];
+
+		platforms.each( function( platform ) {
+			var releaseResult = {};
+			var releaseResponse = [];
+			var archivePath = workPath & "/" & platform.name & "." & platform.extension;
+			var extractPath = workPath & "/" & platform.name & "/extract";
+			var stagePath = workPath & "/" & platform.name & "/stage";
+			var releaseURL = "https://api.bell-sw.com/v1/liberica/releases?version=#urlEncodedFormat( javaVersion )#&bitness=64&os=#platform.os#&arch=x86&package-type=#platform.packageType#&bundle-type=jre";
+
+			if( directoryExists( workPath & "/" & platform.name ) ) {
+				directoryDelete( workPath & "/" & platform.name, true );
+			}
+			directoryCreate( extractPath, true );
+			directoryCreate( stagePath, true );
+
+			bx:http url="#releaseURL#" result="releaseResult";
+			releaseResponse = JSONDeserialize( releaseResult.fileContent );
+			var downloadURL = releaseResponse[ 1 ].downloadUrl ?: throw( "Liberica did not return a #platform.name# Java 21 JRE download." );
+			progressableDownloader.download(
+				downloadURL,
+				archivePath,
+				function( status ) {},
+				function( redirectURL ) {}
+			);
+
+			if( platform.packageType == "tar.gz" ) {
+				command( "run" ).params( 'tar -xzf "#archivePath#" -C "#extractPath#"' ).run();
+			} else {
+				bx:zip action="unzip" file="#archivePath#" destination="#extractPath#" overwrite="true";
+			}
+			var javaFiles = directoryList(
+				path=extractPath,
+				recurse=true,
+				listInfo="path",
+				filter=function( path ) {
+					var fileName = getFileFromPath( path );
+					return fileName == ( platform.os == "windows" ? "java.exe" : "java" );
+				}
+			);
+			if( !javaFiles.len() ) {
+				throw( "Liberica archive did not contain a Java executable for #platform.name#." );
+			}
+
+			var runtimePath = Paths.get( javaFiles[ 1 ] ).getParent().getParent().toString();
+			directoryCopy( runtimePath, stagePath & "/jre", true );
+			if( !directoryExists( stagePath & "/jre/bin" ) ) {
+				throw( "Liberica runtime staging failed for #platform.name#: missing jre/bin." );
+			}
+			fileCopy( resolvePath( "build/dist/#platform.launcher#" ), stagePath & "/#platform.launcher#", true );
+			if( !fileSystemUtil.isWindows() ) {
+				fileSetAccessMode( stagePath & "/#platform.launcher#", "755" );
+				fileSetAccessMode( stagePath & "/jre/bin/java", "755" );
+			}
+
+			var jreZipPath = distributionPath & "/commandbox-jre-#platform.name#-#boxJSON.version#.zip";
+			bx:zip
+				action="zip"
+				source="#stagePath#"
+				file="#jreZipPath#"
+				recurse="true"
+				overwrite="true";
+			createArtifactChecksums( jreZipPath );
+			print.greenLine( "Created commandbox-jre-#platform.name#-#boxJSON.version#.zip using Liberica #javaVersion#" );
+		} );
+	}
+
+	/**
+	 * Builds the bundled CommandBox Linux RPM with rpmbuild in Docker.
 	 */
 	function buildCliRpm() {
 		var boxJSON = packageService.readPackageDescriptor( resolvePath( "bx-cli" ) );
 		var version = reReplace( boxJSON.version, "^([0-9]+\.[0-9]+\.[0-9]+).*$", "\1" );
 		var sourcePath = resolvePath( "build/dist/box" );
 		var rpmPath = resolvePath( "build/dist/commandbox-rpm-#version#.rpm" );
-		var redlineURL = "https://s3.amazonaws.com/downloads.ortussolutions.com/ortussolutions/redline/1.2.12/redline-1.2.12.jar";
-		var redlineInstallPath = resolvePath( "build/temp/redline" );
-		var redlineJar = redlineInstallPath & "/redline-1.2.12/redline-1.2.12.jar";
-		var rpmLibsPath = resolvePath( "build/temp/rpm-libs" );
+		var rpmBuildPath = resolvePath( "build/temp/rpm-build" );
+		var specPath = rpmBuildPath & "/SPECS/commandbox.spec";
 		var packager = "ortussolutions.com info@ortussolutions.com";
 		var supportURL = "https://www.ortussolutions.com/services/support";
-		var signingKeyring = getSystemSetting( "ORTUS_SIGN_KEYRING", "" );
+		var signingKeyring = resolveSigningKeyring( getSystemSetting( "ORTUS_SIGN_KEYRING_BASE64", "" ) );
 		var signingKeyId = getSystemSetting( "ORTUS_SIGN_KEY_ID", "" );
 		var signingKeyPassphrase = getSystemSetting( "ORTUS_SIGN_KEY_PASSPHRASE", "" );
+		var passphrasePath = resolvePath( "build/temp/rpm-signing-passphrase" );
+		var dockerSourcePath = replace( sourcePath, "\\", "/", "all" );
+		var dockerBuildPath = replace( rpmBuildPath, "\\", "/", "all" );
+		var dockerOutputPath = replace( getDirectoryFromPath( rpmPath ), "\\", "/", "all" );
+		var dockerKeyringPath = replace( signingKeyring, "\\", "/", "all" );
+		var dockerPassphrasePath = replace( passphrasePath, "\\", "/", "all" );
+		var signingDockerArgs = "";
+		var newLine = System.lineSeparator();
+		var canSign = len( signingKeyring )
+			&& len( signingKeyId )
+			&& len( signingKeyPassphrase )
+			&& fileExists( signingKeyring );
+		var signingEnabled = canSign ? "1" : "0";
 
 		if( !fileExists( sourcePath ) ) {
 			throw( message="The bundled Unix launcher does not exist. Run buildCliBinary first.", type="commandException" );
 		}
-		if( directoryExists( redlineInstallPath ) ) {
-			directoryDelete( redlineInstallPath, true );
+		if( directoryExists( rpmBuildPath ) ) {
+			directoryDelete( rpmBuildPath, true );
 		}
-		directoryCreate( redlineInstallPath, true );
-		command( "install" )
-			.params( ID="jar:#redlineURL#", directory=redlineInstallPath, save=false, force=true )
-			.run();
-		if( directoryExists( rpmLibsPath ) ) {
-			directoryDelete( rpmLibsPath, true );
-		}
-		directoryCreate( rpmLibsPath, true );
-		command( "install" )
-			.params(
-				ID="maven:org.apache.commons:commons-compress:1.21,maven:org.tukaani:xz:1.4,maven:org.bouncycastle:bcpg-jdk15on:1.50",
-				directory=rpmLibsPath,
-				save=false
-			)
-			.run();
-
-		classLoad( [ redlineJar, rpmLibsPath ] );
-		var builder = createObject( "java", "org.redline_rpm.Builder" ).init();
-		builder.setPackage( "commandbox", version, "1" );
-		builder.setPlatform(
-			createObject( "java", "org.redline_rpm.header.Architecture" ).NOARCH,
-			createObject( "java", "org.redline_rpm.header.Os" ).LINUX
+		directoryCreate( rpmBuildPath & "/SPECS", true );
+		fileWrite(
+			specPath,
+			"Name: commandbox#newLine#"
+			& "Version: #version##newLine#"
+			& "Release: 1#newLine#"
+			& "Summary: CommandBox CLI for BoxLang#newLine#"
+			& "License: Commercial#newLine#"
+			& "Group: com.ortussolutions#newLine#"
+			& "Packager: #packager##newLine#"
+			& "URL: #supportURL##newLine#"
+			& "BuildArch: noarch#newLine#"
+			& "AutoReqProv: no#newLine##newLine#"
+			& "%description#newLine#"
+			& "CommandBox CLI, package manager, server manager, and REPL.#newLine##newLine#"
+			& "%install#newLine#"
+			& "mkdir -p %{buildroot}/usr/bin#newLine#"
+			& "install -m 0755 /input/box %{buildroot}/usr/bin/box#newLine##newLine#"
+			& "%files#newLine#"
+			& "%attr(0755,root,root) /usr/bin/box#newLine#"
 		);
-		builder.setSummary( "CommandBox CLI for BoxLang" );
-		builder.setDescription( "CommandBox CLI, package manager, server manager, and REPL." );
-		builder.setGroup( "com.ortussolutions" );
-		builder.setPackager( packager );
-		builder.setUrl( supportURL );
-		builder.addFile( "/usr/bin/box", createObject( "java", "java.io.File" ).init( sourcePath ), 0755, 0755, "root", "root" );
 
-		if( len( signingKeyring ) && len( signingKeyId ) && len( signingKeyPassphrase ) ) {
-			builder.setPrivateKeyRingFile( createObject( "java", "java.io.File" ).init( signingKeyring ) );
-			builder.setPrivateKeyId( signingKeyId );
-			builder.setPrivateKeyPassphrase( signingKeyPassphrase );
+		if( canSign ) {
+			fileWrite( passphrasePath, signingKeyPassphrase );
+			signingDockerArgs = '-v "#dockerKeyringPath#:/signing/keyring:ro" '
+				& '-v "#dockerPassphrasePath#:/signing/passphrase:ro" '
+				& '-e SIGNING_KEY_ID="#signingKeyId#"';
 		}
 
-		builder.build( createObject( "java", "java.io.File" ).init( getDirectoryFromPath( rpmPath ) ) );
-		fileMove( getDirectoryFromPath( rpmPath ) & "commandbox-#version#-1.noarch.rpm", rpmPath );
+		var dockerRpmScript = "set -eu; "
+			& "dnf -qy install rpm-build rpm-sign gnupg >/dev/null; "
+			& 'sed -i ''s/\r$//'' /build/SPECS/commandbox.spec; '
+			& 'rpmbuild --define ''_topdir /build'' -bb /build/SPECS/commandbox.spec; '
+			& 'cp /build/RPMS/noarch/commandbox-#version#-1.noarch.rpm '
+			& '/output/commandbox-rpm-#version#.rpm; '
+			& 'if [ "#signingEnabled#" = "1" ]; then '
+			& 'mkdir -m 700 /tmp/gnupg; export GNUPGHOME=/tmp/gnupg; '
+			& 'gpg2 --batch --import /signing/keyring >/dev/null 2>&1; '
+			& 'rpmsign --addsign '
+			& '--define ''_gpg_name #signingKeyId#'' '
+			& '--define ''_gpg_sign_cmd_extra_args --batch --pinentry-mode loopback --passphrase-file /signing/passphrase'' '
+			& '/output/commandbox-rpm-#version#.rpm; fi';
+
+		command( "run" ).params(
+			'docker run --rm -v "#dockerSourcePath#:/input/box:ro" '
+			& '-v "#dockerBuildPath#:/build" -v "#dockerOutputPath#:/output" #signingDockerArgs# '
+			& 'rockylinux:8 sh -c "#dockerRpmScript#"'
+		).run();
+		createArtifactChecksums( rpmPath );
+
+		if( fileExists( passphrasePath ) ) {
+			fileDelete( passphrasePath );
+		}
+		if( signingKeyring == resolvePath( "build/temp/signing-keyring.gpg" ) && fileExists( signingKeyring ) ) {
+			fileDelete( signingKeyring );
+		}
 
 		print.greenLine( "Created #rpmPath#" );
 	}
@@ -318,12 +521,65 @@ class {
 			'docker run --rm -v "#dockerPackagePath#:/package" -v "#dockerDistPath#:/output" '
 			& 'debian:bookworm-slim sh -c "chmod 755 /package/DEBIAN /package/usr /package/usr/local /package/usr/local/bin /package/usr/local/bin/box && chmod 644 /package/DEBIAN/control && dpkg-deb --build /package /output/commandbox-debian-#boxJSON.version#.deb"'
 		).run();
+		createArtifactChecksums( debPath );
 
 		print.greenLine( "Created #debPath#" );
 	}
 
 	/**
+	 * Resolves a signing keyring path, decoding a base64 keyring to a temporary file when needed.
+	 */
+	private string function resolveSigningKeyring( string keyringBase64="" ) {
+		if( !len( arguments.keyringBase64 ) ) {
+			return "";
+		}
+		var temporaryKeyringPath = resolvePath( "build/temp/signing-keyring.gpg" );
+		directoryCreate( getDirectoryFromPath( temporaryKeyringPath ), true, true );
+		Files.write(
+			Paths.get( temporaryKeyringPath ),
+			binaryDecode( reReplace( arguments.keyringBase64, "\s", "", "all" ), "base64" )
+		);
+		return temporaryKeyringPath;
+	}
+
+	/**
+	 * Writes the release checksum sidecars for a generated artifact.
+	 *
+	 * TODO: Once the next BoxLang release is available, remove the temporary
+	 * MessageDigest implementation and uncomment the direct hash() version below.
+	 */
+	private function createArtifactChecksums( required string artifactPath ) {
+		var artifactBytes = Files.readAllBytes( Paths.get( arguments.artifactPath ) );
+		fileWrite( arguments.artifactPath & ".md5", calculateArtifactHash( artifactBytes, "MD5" ) );
+		fileWrite( arguments.artifactPath & ".sha", calculateArtifactHash( artifactBytes, "SHA-1" ) );
+		fileWrite( arguments.artifactPath & ".sha256", calculateArtifactHash( artifactBytes, "SHA-256" ) );
+
+		/*
+		var artifactBytes = fileReadBinary( arguments.artifactPath );
+		fileWrite( arguments.artifactPath & ".md5", hash( artifactBytes, "MD5" ) );
+		fileWrite( arguments.artifactPath & ".sha", hash( artifactBytes, "SHA-1" ) );
+		fileWrite( arguments.artifactPath & ".sha256", hash( artifactBytes, "SHA-256" ) );
+		*/
+	}
+
+	/**
+	 * Temporary checksum implementation until the next BoxLang release.
+	 */
+	private string function calculateArtifactHash( required any artifactBytes, required string algorithm ) {
+		var digest = MessageDigest.getInstance( arguments.algorithm );
+		return lCase( binaryEncode( digest.digest( arguments.artifactBytes ), "hex" ) );
+	}
+
+	/**
 	 * Stages Debian repository metadata and the current package for one repository.
+	 *
+	 * @repoS3Path The source S3 repository path.
+	 * @repoPath The local repository staging path.
+	 * @debPath The Debian package to add to the repository.
+	 * @packageVersion The package version used in generated metadata.
+	 * @signingKeyring The local temporary signing keyring path.
+	 * @signingKeyId The signing key ID.
+	 * @signingKeyPassphrase The signing key passphrase.
 	 */
 	private function updateDebRepository(
 		required string repoS3Path,
@@ -383,13 +639,13 @@ class {
 			& 'apt-ftparchive release . > Release.full; '
 			& 'awk ''BEGIN { keep=1 } /^MD5Sum:$/ { keep=0 } /^SHA1:$/ { keep=0 } /^SHA256:$/ { keep=1 } { if ( keep ) print }'' Release.full > Release; '
 			& 'rm -f Release.full; '
-			& 'if [ "$SIGNING_ENABLED" = "1" ]; then gpg --batch --yes --pinentry-mode loopback --digest-algo SHA256 '
-			& '--passphrase-file /signing/passphrase --no-default-keyring '
-			& '--secret-keyring /signing/keyring --keyring /signing/keyring '
+			& 'if [ "$SIGNING_ENABLED" = "1" ]; then mkdir -m 700 /tmp/gnupg; export GNUPGHOME=/tmp/gnupg; '
+			& 'gpg --batch --import /signing/keyring >/dev/null 2>&1; '
+			& 'gpg --batch --yes --pinentry-mode loopback --digest-algo SHA256 '
+			& '--passphrase-file /signing/passphrase '
 			& '--local-user "$SIGNING_KEY_ID" --clearsign --output #changesFileName# #changesFileName#.unsigned; '
 			& 'gpg --batch --yes --pinentry-mode loopback --digest-algo SHA256 '
-			& '--passphrase-file /signing/passphrase --no-default-keyring '
-			& '--secret-keyring /signing/keyring --keyring /signing/keyring '
+			& '--passphrase-file /signing/passphrase '
 			& '--local-user "$SIGNING_KEY_ID" --detach-sign --output Release.gpg Release; '
 			& 'rm -f #changesFileName#.unsigned; '
 			& 'else mv #changesFileName#.unsigned #changesFileName#; rm -f Release.gpg InRelease; fi"'
@@ -403,6 +659,11 @@ class {
 
 	/**
 	 * Builds the Debian package and stages BE, plus stable when the version is stable.
+	 *
+	 * @repoS3Path The BE S3 repository path.
+	 * @repoPath The local BE repository staging path.
+	 * @stableRepoS3Path The stable S3 repository path.
+	 * @stableRepoPath The local stable repository staging path.
 	 */
 	function updateDebRepo(
 		string repoS3Path="s3://downloads.ortussolutions.com/debs-be/noarch/",
@@ -412,7 +673,7 @@ class {
 	) depends="buildCliDeb" {
 		var boxJSON = packageService.readPackageDescriptor( resolvePath( "bx-cli" ) );
 		var debPath = resolvePath( "build/dist/commandbox-debian-#boxJSON.version#.deb" );
-		var signingKeyring = getSystemSetting( "ORTUS_SIGN_KEYRING", "" );
+		var signingKeyring = resolveSigningKeyring( getSystemSetting( "ORTUS_SIGN_KEYRING_BASE64", "" ) );
 		var signingKeyId = getSystemSetting( "ORTUS_SIGN_KEY_ID", "" );
 		var signingKeyPassphrase = getSystemSetting( "ORTUS_SIGN_KEY_PASSPHRASE", "" );
 
@@ -437,6 +698,11 @@ class {
 				signingKeyPassphrase
 			);
 		}
+
+		var temporaryKeyringPath = resolvePath( "build/temp/signing-keyring.gpg" );
+		if( signingKeyring == temporaryKeyringPath && fileExists( temporaryKeyringPath ) ) {
+			fileDelete( temporaryKeyringPath );
+		}
 	}
 
 	/**
@@ -460,6 +726,10 @@ class {
 
 	/**
 	 * Stages one RPM repository and updates its metadata for the current CommandBox RPM.
+	 *
+	 * @repoS3Path The source S3 repository path.
+	 * @repoPath The local repository staging path.
+	 * @rpmPath The RPM package to add to the repository.
 	 */
 	private function updateRpmRepository(
 		required string repoS3Path,
@@ -491,15 +761,171 @@ class {
 
 	/**
 	 * Builds bundled and thin CLI launcher JARs and both platform-specific installer binaries.
+	 * Also builds the Debian package, stages the BE repositories, and stages stable
+	 * repositories only when the package version is stable. Repository updates remain local.
+	 *
+	 * @installerSnapshot Whether to use snapshot installer resources.
 	 */
-	function buildInstallers( boolean installerSnapshot=true ) {
+	function buildInstallers( boolean installerSnapshot=true ) depends="cleanBuildDist" {
+		// box.jar
 		buildCliJar( installerSnapshot, false, "box" );
+		// *unix box
 		buildCliBinary( "box" );
+		// box.exe
 		buildCliExe( "box" );
-		buildCliRpm();
+		// bundled Java 21 runtimes
+		buildCliJREs();
+		// API documentation
+		buildApiDocs();
+
+		// same as above, but "thin" versions
 		buildCliJar( installerSnapshot, true, "box-thin" );
 		buildCliBinary( "box-thin" );
 		buildCliExe( "box-thin" );
+
+		// rpms
+		buildCliRpm();
+		updateRpmRepo();
+
+		// debs
+		buildCliDeb();
+		updateDebRepo();
+	}
+
+	/**
+	 * Generates the CommandBox command and core API documentation archives.
+	 */
+	function buildApiDocs() {
+		var boxJSON = packageService.readPackageDescriptor( resolvePath( "bx-cli" ) );
+		var docsRoot = resolvePath( "build/temp/apidocs" );
+		var commandDocsPath = docsRoot & "/CommandBox-CommandDocs";
+		var coreDocsPath = docsRoot & "/CommandBox-APIDocs";
+		var commandDocsZip = resolvePath( "build/dist/commandbox-apidocs-#boxJSON.version#.zip" );
+		var coreDocsZip = resolvePath( "build/dist/commandbox-core-apidocs-#boxJSON.version#.zip" );
+		var commandSources = {};
+		var commandBasePath = resolvePath( "src/cfml" );
+		var systemModulesBasePath = resolvePath( "build/temp/cli-bootstrap/system-modules/cfml/modules" );
+		var commandDirs = directoryList(
+			path=resolvePath( "src/cfml/system/modules_app" ),
+			recurse=true,
+			listInfo="path",
+			filter=function( path ) {
+				return reFindNoCase( ".*[/\\]commands$", arguments.path );
+			}
+		);
+
+		if( directoryExists( docsRoot ) ) {
+			directoryDelete( docsRoot, true );
+		}
+		directoryCreate( docsRoot, true );
+		directoryCreate( commandDocsPath, true );
+		installDocBoxModule();
+
+		for( var commandDir in commandDirs ) {
+			var relativeCommandPath = replaceNoCase( commandDir, commandBasePath, "", "one" );
+			relativeCommandPath = reReplace( relativeCommandPath, "^[/\\]+", "", "all" );
+			var mapping = "commandbox." & reReplace( relativeCommandPath, "[/\\]+", ".", "all" );
+			commandSources[ mapping ] = commandDir;
+		}
+		if( directoryExists( systemModulesBasePath ) ) {
+			var systemModuleCommandDirs = directoryList(
+				path=systemModulesBasePath,
+				recurse=true,
+				listInfo="path",
+				filter=function( path ) {
+					return reFindNoCase( ".*[/\\]commands$", arguments.path );
+				}
+			);
+			for( var commandDir in systemModuleCommandDirs ) {
+				var relativeCommandPath = replaceNoCase( commandDir, systemModulesBasePath, "", "one" );
+				relativeCommandPath = reReplace( relativeCommandPath, "^[/\\]+", "", "all" );
+				var mapping = "commandbox.system.modules." & reReplace( relativeCommandPath, "[/\\]+", ".", "all" );
+				commandSources[ mapping ] = commandDir;
+			}
+		}
+
+		command( "docbox generate" )
+			.params(
+				argumentCollection={
+					strategy="CommandBox",
+					mappings=commandSources,
+					"strategy-outputDir"=commandDocsPath,
+					"strategy-projectTitle"="CommandBox v#boxJSON.version#",
+					"strategy-theme"="default"
+				}
+			)
+			.run();
+		bx:zip action="zip" source="#commandDocsPath#" file="#commandDocsZip#" recurse="true" overwrite="true";
+		createArtifactChecksums( commandDocsZip );
+		directoryDelete( docsRoot, true );
+		directoryCreate( docsRoot, true );
+		if( directoryExists( coreDocsPath ) ) {
+			directoryDelete( coreDocsPath, true );
+		}
+		directoryCreate( coreDocsPath, true );
+
+		command( "docbox generate" )
+			.params(
+				argumentCollection={
+					source=resolvePath( "src/cfml/system" ),
+					mapping="commandbox.system",
+					excludes="system\\/(modules),system\\/(modules_app)",
+					"strategy-outputDir"=coreDocsPath,
+					"strategy-projectTitle"="CommandBox Internal v#boxJSON.version#"
+				}
+			)
+			.run();
+		bx:zip action="zip" source="#coreDocsPath#" file="#coreDocsZip#" recurse="true" overwrite="true";
+		createArtifactChecksums( coreDocsZip );
+
+		print.greenLine( "Created #commandDocsZip#" );
+		print.greenLine( "Created #coreDocsZip#" );
+	}
+
+	/**
+	 * Installs and loads the DocBox CommandBox module into the ignored build workspace.
+	 */
+	private function installDocBoxModule() {
+		var moduleRoot = resolvePath( "build/temp/docbox-task" );
+		if( directoryExists( moduleRoot ) ) {
+			directoryDelete( moduleRoot, true );
+		}
+		directoryCreate( moduleRoot, true );
+		command( "install" )
+			.params( ID="commandbox-docbox", directory=moduleRoot, save=false, force=true )
+			.run();
+
+		// TEMPORARY: remove once commandbox-docbox includes DocBox PR #33 commit 0f48bfe.
+		// The core DocBox strategy dereferences linkData for empty $command structs.
+		var strategyPath = moduleRoot & "/commandbox-docbox/docbox/strategy/AbstractTemplateStrategy.cfc";
+		var strategySource = fileRead( strategyPath );
+		var tab = char( 9 );
+		var newLine = System.lineSeparator();
+		var quote = char( 34 );
+		var classKeyExpression = "$" & char( 35 ) & "arguments.classTerm" & char( 35 );
+		var linkDataLine = tab & tab & tab & "var linkData = itemValue[ " & quote & classKeyExpression & quote & " ];";
+		if( !find( linkDataLine, strategySource ) ) {
+			throw(
+				type="DocBoxStopgapNotApplicable",
+				message="The DocBox AbstractTemplateStrategy linkData line was not found."
+			);
+		}
+		strategySource = replace(
+			strategySource,
+			linkDataLine,
+			tab & tab & tab & "if( structIsEmpty( itemValue[ " & quote & classKeyExpression & quote & " ] ) ){" & newLine
+				& tab & tab & tab & tab & "continue;" & newLine
+				& tab & tab & tab & "}" & newLine
+				& linkDataLine,
+			"one"
+		);
+		fileWrite( strategyPath, strategySource );
+		var moduleService = wirebox.getInstance( "moduleService" );
+		if( structKeyExists( moduleService.getModuleData(), "commandbox-docbox" ) ) {
+			moduleService.unloadAndUnregisterModule( "commandbox-docbox" );
+		}
+		loadModule( moduleRoot & "/commandbox-docbox" );
+		// END TEMPORARY DOCBOX STOPGAP.
 	}
 
 	/**
@@ -508,7 +934,7 @@ class {
 	 */
 	function testCliBootstrap() {
 		buildCliJar();
-		if( System.getProperty( "os.name" ).toLowerCase().contains( "windows" ) ) {
+		if( fileSystemUtil.isWindows() ) {
 			buildCliExe();
 			runTestProcess( [
 				"powershell",
@@ -640,10 +1066,21 @@ class {
 	}
 
 	/**
+	 * Removes final distribution artifacts before a complete installer build.
+	 */
+	function cleanBuildDist() {
+		var distributionPath = resolvePath( "build/dist" );
+		if( directoryExists( distributionPath ) ) {
+			directoryDelete( distributionPath, true );
+		}
+		directoryCreate( distributionPath, true );
+	}
+
+	/**
 	 * Appends the bytes from one file to another file.
 	 *
-	 * @param destination The file that receives the appended bytes.
-	 * @param source The file whose bytes are appended.
+	 * @destination The file that receives the appended bytes.
+	 * @source The file whose bytes are appended.
 	 */
 	private function appendBinaryFile( required string destination, required string source ) {
 		var destinationPath = resolvePath( arguments.destination );

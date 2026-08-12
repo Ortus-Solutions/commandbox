@@ -12,7 +12,7 @@ box task run taskFile=Build.bx target=buildInstallers
 
 This produces bundled and thin `box` JAR, Unix, and Windows artifacts in `build/dist`, plus a bundled Linux RPM.
 
-`buildCliRpm` installs generated Redline `1.2.12` output into `build/temp/redline` and resolves its dependencies into `build/temp/rpm-libs`. The repository's existing Ant build libraries remain in `build/lib`.
+`buildCliRpm` uses native `rpmbuild` inside the Rocky Linux 8 Docker image. The RPM is built from a generated spec, with the bundled launcher installed as `/usr/bin/box` with `0755` permissions. RPM signing, when configured, also runs inside Docker.
 
 Stage and update RPM repository metadata for the current RPM with:
 
@@ -34,7 +34,7 @@ box task run taskFile=Build.bx target=updateRpmRepo repoS3Path=s3://downloads.or
 `task run` automatically loads local values from `.env`. Use the following variables locally or provide them from CI:
 
 ```text
-ORTUS_SIGN_KEYRING=
+ORTUS_SIGN_KEYRING_BASE64=
 ORTUS_SIGN_KEY_ID=
 ORTUS_SIGN_KEY_PASSPHRASE=
 ```
@@ -59,9 +59,10 @@ package entries, appends the new entry, and regenerates the Debian metadata with
 `gzip`, and `apt-ftparchive`. Historical `.deb` files are not downloaded, and the
 staged repositories are not uploaded.
 
-Repository signing uses the same `.env` values documented above. When all three
-values point to a valid keyring, `updateDebRepo` creates `Release.gpg`; otherwise,
-it stages unsigned metadata for local validation.
+Repository signing uses the same `.env` values documented above. The base64 keyring
+is decoded to `build/temp/signing-keyring.gpg` for the Docker signing step and removed
+afterward. When all three values are present, `updateDebRepo` creates `Release.gpg`;
+otherwise, it stages unsigned metadata for local validation.
 
 ## Overview
 
@@ -98,7 +99,7 @@ build/
 - `runwar.version`: Runwar JAR version (5.1.3)
 - `jline.version`: JLine terminal library (3.21.0)
 - `jgit.version`: JGit library version (5.13.3.202401111512-r)
-- `jre.version`: Bundled JRE version (jdk-11.0.26+4)
+- `jre.version`: Legacy Ant JRE version setting; the active `Build.bx` resolves the latest Liberica Java 21 release at build time.
 
 ### Build Locations
 
@@ -189,8 +190,8 @@ Use `updateDebRepo` to stage BE and, for stable versions, stable Debian reposito
 #### `build.cli.rpm`
 
 - **Purpose**: Create Red Hat/CentOS package
-- **Dependencies**: `build.cli.bin`
-- **Output**: `.rpm` package for Red Hat-based systems
+- **Implementation**: `Build.bx` target `buildCliRpm`, using Rocky Linux 8 Docker and `rpmbuild`
+- **Output**: `build/dist/commandbox-rpm-<version>.rpm`
 
 ### Documentation and API Targets
 
@@ -342,10 +343,10 @@ Create environment-specific property files:
 
 ### GPG Signing
 
-Production builds include GPG signing using properties:
-- `ortus.sign.keyring`: Path to GPG keyring
-- `ortus.sign.key.id`: GPG key identifier
-- `ortus.sign.key.passphrase`: Key passphrase
+Production builds use these `.env` values for GPG signing:
+- `ORTUS_SIGN_KEYRING_BASE64`: Base64-encoded binary GPG keyring
+- `ORTUS_SIGN_KEY_ID`: GPG key identifier
+- `ORTUS_SIGN_KEY_PASSPHRASE`: Key passphrase
 
 ### Checksum Generation
 

@@ -34,8 +34,8 @@ component singleton accessors=true {
 	/**
 	* Runs a task
 	*
-	* @taskFile Path to the Task CFC that you want to run
-	* @target Method in Task CFC to run
+	* @taskFile Path to the Task class that you want to run
+	* @target Method in Task class to run
 	* @taskArgs Struct of arguments to pass on to the task
 	* @topLevel false for target dependency runs
 	* @completedTargets Targets already scheduled in this task run
@@ -58,7 +58,7 @@ component singleton accessors=true {
 			if( reFindNoCase( '\.(cfc|bx)$', taskFile ) ) {
 				// File already has an extension, just check it
 				if( !fileExists( taskFile ) ) {
-					throw( message="Task CFC doesn't exist.", detail=arguments.taskFile, type="commandException");
+					throw( message="Task class doesn't exist.", detail=arguments.taskFile, type="commandException");
 				}
 			} else {
 				// Try .cfc first, then .bx
@@ -67,7 +67,7 @@ component singleton accessors=true {
 				} else if( fileExists( taskFile & '.bx' ) ) {
 					taskFile &= '.bx';
 				} else {
-					throw( message="Task CFC doesn't exist.", detail=arguments.taskFile, type="commandException");
+					throw( message="Task class doesn't exist.", detail=arguments.taskFile, type="commandException");
 				}
 			}
 
@@ -78,7 +78,7 @@ component singleton accessors=true {
 
 		// If target doesn't exist or isn't a UDF
 		if( !taskHasMethod( taskCFC, target ) ) {
-			throw( message="Target [#target#] doesn't exist in Task CFC.", detail=arguments.taskFile, type="commandException");
+			throw( message="Target [#target#] doesn't exist in Task class.", detail=arguments.taskFile, type="commandException");
 		}
 
 		var targetMD = getMetadata( taskCFC[ target ] );
@@ -210,7 +210,7 @@ component singleton accessors=true {
 	/**
 	* Returns the public methods in a task component
 	*
-	* @taskFile Path to the Task CFC
+	* @taskFile Path to the Task class
 	*
 	* @returns An array of public method names
 	*/
@@ -243,9 +243,9 @@ component singleton accessors=true {
 	}
 
 	/**
-	* Creates Task CFC instance from absolute file path
+	* Creates Task class instance from absolute file path
 	*
-	* @taskFile Absolute path to task CFC to create.
+	* @taskFile Absolute path to task class to create.
 	*/
 	function createTaskCFC( required string taskFile ) {
 		// Convert to use a mapping
@@ -260,7 +260,7 @@ component singleton accessors=true {
 			metadataCache.clear( relTaskFile );
 		}
 
-		// Create this Task CFC
+		// Create this Task class
 		try {
 			var taskCaching = ConfigService.getSetting( 'taskCaching', false );
 			var mappingName = "task-" & relTaskFile;
@@ -302,9 +302,9 @@ component singleton accessors=true {
 	}
 
 	/**
-	* Convenience method to determine if a Task CFC instance has a given method name
+	* Convenience method to determine if a Task class instance has a given method name
 	*
-	* @taskCFC The actual Task CFC instance
+	* @taskCFC The actual Task class instance
 	* @method Name of method to check for
 	*
 	* @returns boolean True if method exists, false if otherwise.
@@ -317,9 +317,9 @@ component singleton accessors=true {
 	}
 
 	/**
-	* Determines if a lifecycle event can run based on the this.XXX_only and this.XXX_except variables in the task CFC instance.
+	* Determines if a lifecycle event can run based on the this.XXX_only and this.XXX_except variables in the task class instance.
 	*
-	* @taskCFC The actual Task CFC instance
+	* @taskCFC The actual Task class instance
 	* @eventname Name of the lifecycle event to check
 	* @target Name of the task target requesting the lifecycle event
 	*/
@@ -342,7 +342,7 @@ component singleton accessors=true {
 	/**
 	* Optionally invokes a lifecycle event based on whether it exists and is valid to be called.
 	*
-	* @taskCFC The actual Task CFC instance
+	* @taskCFC The actual Task class instance
 	* @eventname Name of the lifecycle event to call
 	* @args The args of the actual target method
 	*/
@@ -355,7 +355,7 @@ component singleton accessors=true {
 	/**
 	* Accepts a UDF and wraps it in another callback that adds additional functionality to it, creating a chain of callbacks.
 	*
-	* @taskCFC The actual Task CFC instance
+	* @taskCFC The actual Task class instance
 	* @eventname Name of the lifecycle event to wrap
 	* @args The args of the actual target method
 	*/
