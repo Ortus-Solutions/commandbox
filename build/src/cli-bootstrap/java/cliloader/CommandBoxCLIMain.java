@@ -54,6 +54,9 @@ public class CommandBoxCLIMain {
 		debug( "Operating system: " + System.getProperty( "os.name", "Unknown" ) + " (Windows: " + isWindows() + ")" );
 		debug( "Initial arguments: " + Arrays.toString( arguments ) );
 		arguments = removeDebugFlag( arguments );
+		String workingDirectory = resolveWorkingDir( arguments );
+		arguments = removeWorkingDir( arguments );
+		debug( "Working directory: " + workingDirectory );
 		debug( "Forwarded arguments: " + Arrays.toString( arguments ) );
 		verifyJavaVersion();
 		applyJavaProperties();
@@ -91,7 +94,7 @@ public class CommandBoxCLIMain {
 		}
 		extractBxCliModule( boxLangHome.toPath(), boxLang.getExecutable() );
 		createBoxLauncher( boxLang.getExecutable() );
-		launchBoxLang( boxLang.getExecutable(), boxLangHome, commandBoxHome, arguments, boxLang.getSource() );
+		launchBoxLang( boxLang.getExecutable(), boxLangHome, commandBoxHome, arguments, boxLang.getSource(), workingDirectory );
 	}
 
 	/**
@@ -885,7 +888,7 @@ public class CommandBoxCLIMain {
 	 * @throws IOException If the executable cannot be found or exits unsuccessfully.
 	 * @throws InterruptedException If the process is interrupted.
 	 */
-	private static void launchBoxLang( File executable, File boxLangHome, File commandBoxHome, String[] arguments, String source ) throws IOException, InterruptedException {
+	private static void launchBoxLang( File executable, File boxLangHome, File commandBoxHome, String[] arguments, String source, String workingDirectory ) throws IOException, InterruptedException {
 		debug( "BoxLang executable candidate: " + executable.getAbsolutePath() );
 		debug( "BoxLang executable source: " + source );
 		if ( !executable.isFile() ) {
@@ -904,6 +907,15 @@ public class CommandBoxCLIMain {
 		debug( "BoxLang CommandBox_home: " + commandBoxHome.getAbsolutePath() );
 		processBuilder.environment().put( "BOXLANG_HOME", boxLangHome.getAbsolutePath() );
 		processBuilder.environment().put( COMMANDBOX_HOME_PROPERTY, commandBoxHome.getAbsolutePath() );
+		processBuilder.environment().put( "cfml.cli.pwd", workingDirectory );
+		processBuilder.environment().put( "COMMANDBOX_INSTALLER_BOOTSTRAP", "true" );
+		// ProcessBuilder.directory() requires the directory to exist, so only set it when
+		// present and fall back to the current directory otherwise. cfml.cli.pwd is still
+		// set above so CommandBox sees the requested working dir either way.
+		File workingDirFile = new File( workingDirectory );
+		if ( workingDirFile.isDirectory() ) {
+			processBuilder.directory( workingDirFile );
+		}
 		int exitCode = processBuilder.start().waitFor();
 		debug( "BoxLang exit code: " + exitCode );
 		if ( exitCode != 0 ) {
@@ -985,6 +997,55 @@ public class CommandBoxCLIMain {
 	}
 
 	/**
+	 * Resolves the working directory from a {@code -cliworkingdir} flag or defaults to {@code user.dir}.
+	 * Supports both {@code -cliworkingdir=/path} and {@code -cliworkingdir /path} forms.
+	 *
+	 * @param arguments Launcher arguments.
+	 * @return Resolved working directory with a trailing file separator.
+	 */
+	private static String resolveWorkingDir( String[] arguments ) {
+		String workingDir = System.getProperty( "user.dir" );
+		for ( int i = 0; i < arguments.length; i++ ) {
+			String arg = arguments[ i ];
+			if ( arg.equalsIgnoreCase( "-cliworkingdir" ) ) {
+				if ( i + 1 < arguments.length && !arguments[ i + 1 ].startsWith( "-" ) ) {
+					workingDir = arguments[ i + 1 ];
+				}
+			} else if ( arg.toLowerCase( Locale.ROOT ).startsWith( "-cliworkingdir=" ) ) {
+				workingDir = arg.substring( "-cliworkingdir=".length() );
+			}
+		}
+		if ( !workingDir.endsWith( File.separator ) ) {
+			workingDir += File.separator;
+		}
+		return workingDir;
+	}
+
+	/**
+	 * Removes the bootstrap-only working directory flag before forwarding arguments to BoxLang.
+	 *
+	 * @param arguments Launcher arguments.
+	 * @return Arguments without {@code -cliworkingdir}.
+	 */
+	private static String[] removeWorkingDir( String[] arguments ) {
+		List<String> remainingArguments = new ArrayList<String>();
+		for ( int i = 0; i < arguments.length; i++ ) {
+			String arg = arguments[ i ];
+			if ( arg.equalsIgnoreCase( "-cliworkingdir" ) ) {
+				// Also skip the next argument if it's the value (not another flag)
+				if ( i + 1 < arguments.length && !arguments[ i + 1 ].startsWith( "-" ) ) {
+					i++;
+				}
+			} else if ( arg.toLowerCase( Locale.ROOT ).startsWith( "-cliworkingdir=" ) ) {
+				// Skip this argument entirely
+			} else {
+				remainingArguments.add( arg );
+			}
+		}
+		return remainingArguments.toArray( new String[ remainingArguments.size() ] );
+	}
+
+	/**
 	 * Writes diagnostic information when CLI debugging is enabled.
 	 *
 	 * @param message Diagnostic message.
@@ -1041,7 +1102,7 @@ public class CommandBoxCLIMain {
 		private final File executable;
 		private final String source;
 
-		private BoxLangInstallation( File executable, String source ) {
+		BoxLangInstallation( File executable, String source ) {
 			this.executable = executable;
 			this.source = source;
 		}

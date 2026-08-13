@@ -6,14 +6,52 @@ class {
 
 	function configure() {
 		variables.settings = {
-			commandboxHome : System.getenv( "CommandBox_home" )
-				?: System.getProperty( "CommandBox_home" )
-				?: System.getProperty( "user.home" ) & "/.CommandBox/"
-		}
+			// We're not looking for a commandbox.properties file in this module boostrap since there's no real file system convention
+			// for where we'd look since direct module invocation doesn't use box.exe.  
+			commandboxHome : getSystemSetting( "commandBox_home", System.getProperty( "user.home" ) & "/.CommandBox/" )
+		};
 	}
 
 	function main( required Array args  ) {
-		debug = false;
+		// Detect if invoked by the CommandBox installer bootstrap (checks env var OR system prop, case-insensitive)
+		calledByInstaller = getSystemSetting( "COMMANDBOX_INSTALLER_BOOTSTRAP", "" ) == "true";
+
+		// Always handle -clidebug flag (strip it from args regardless of bootstrap source)
+		// Note: args is unmodifiable, so we must use filter() instead of deleteAt()
+		if( args.find( "-clidebug" ) ) {
+			debug = true;
+			args = args.filter( function( arg ) { return arg != "-clidebug"; } );
+		} else if( calledByInstaller ) {
+			debug = getSystemSetting( "cfml.cli.debug", "false" ) == "true";
+		} else {
+			debug = false;
+		}
+
+		// Always handle -cliworkingdir flag (strip it from args regardless of bootstrap source)
+		if( calledByInstaller ) {
+			workingDir = getSystemSetting( "cfml.cli.pwd", getSystemSetting( "user.dir", "" ) );
+		} else {
+			workingDir = resolveWorkingDir( args );
+		}
+		// Strip -cliworkingdir from args in the caller's scope (filter inside resolveWorkingDir
+		// only reassigns the function's local copy, so do it here where args is actually used)
+		args = args.filter( function( arg ) {
+			return ! arg.startsWith( "-cliworkingdir" );
+		} );
+
+		System.setProperty( "cfml.cli.debug", debug.toString() );
+		System.setProperty( "cfml.cli.pwd", workingDir );
+
+		// Only output bootstrap debug info when the Java bootstrap didn't already
+		if( debug && !calledByInstaller ) {
+			println( "[clidebug] Java Version: " & getSystemSetting( "java.version", "Unknown" ) );
+			println( "[clidebug] Java Home: " & getSystemSetting( "java.home", "Unknown" ) );
+			println( "[clidebug] BoxLang Home: " & getSystemSetting( "boxlang.home", "Unknown" ) );
+			println( "[clidebug] CommandBox Home: " & variables.settings.commandboxHome );
+			println( "[clidebug] Working Directory: " & workingDir );
+			println( "[clidebug] Arguments: " & args.toList( " " ) );
+		}
+
 		moduleRoot = getDirectoryFromPath( getCurrentTemplatePath() );
 		// Load up our dependencies
 		boxRuntime.getModuleService().loadModules( Paths.get( moduleRoot, ["modules"] ) );
@@ -31,12 +69,10 @@ class {
 		boxRuntime.getConfiguration().registerMapping( "/bxcliRoot", moduleRoot );
 		
 		// TODO: rename cfml.cli.* to boxlang.cli.*
-		System.setProperty( "cfml.cli.debug", false.toString() );
 		System.setProperty( "cfml.cli.home", commandboxHome );
 		System.setProperty( "cfml.cli.moduleRoot", moduleRoot );
 		System.setProperty( "cfml.cli.arguments", args.toList( " " ) );
 		System.setProperty( "cfml.cli.argument.array", JSONSerialize( args ) );
-		System.setProperty( "cfml.cli.pwd", System.getProperty( "user.dir" ) );
 
 		if ( debug ) {
 			println( "Root Mapping: " & rootMapping );
@@ -69,5 +105,39 @@ class {
 		if( exitCode != 0 ) {
 			System.exit( exitCode );
 		}
+	}
+
+	/**
+	 * Resolves the working directory from args or defaults to user.dir.
+	 * Supports -cliworkingdir=/path and -cliworkingdir /path forms.
+	 * Removes the flag from args. Always returns with a trailing separator.
+	 */
+	private function resolveWorkingDir( required Array args ) {
+		separator = getSystemSetting( "file.separator", "/" );
+		// Use filter to strip -cliworkingdir (args may be unmodifiable)
+		workingDir = "";
+		for( arg in args ) {
+			if( arg.startsWith( "-cliworkingdir" ) ) {
+				if( arg.find( "=" ) ) {
+					workingDir = arg.listLast( "=" );
+				}
+				// If no =, the next arg is the value (handled below the loop)
+			}
+		}
+		args = args.filter( function( arg ) {
+			return ! arg.startsWith( "-cliworkingdir" );
+		} );
+		// If we found -cliworkingdir with a space separator, grab the next arg that was the value
+		// (filter already removed the flag, but the value arg might still be there)
+		if( workingDir == "" ) {
+			// Re-scan for space-separated form by checking if any arg looked like a path after a removed flag
+			// The value would have been after -cliworkingdir in original args
+			// Since we can't easily detect that, just use user.dir
+			workingDir = getSystemSetting( "user.dir", "" );
+		}
+		if( ! workingDir.endsWith( separator ) && ! workingDir.endsWith( "/" ) ) {
+			workingDir &= separator;
+		}
+		return workingDir;
 	}
 }

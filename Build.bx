@@ -85,9 +85,6 @@ class {
 		if( directoryExists( runtimeArtifactsPath ) ) {
 			directoryDelete( runtimeArtifactsPath, true );
 		}
-		if( directoryExists( systemModulesPath ) ) {
-			directoryDelete( systemModulesPath, true );
-		}
 		directoryCreate( classesPath, true );
 		directoryCreate( installerResourcesPath, true );
 		directoryCreate( runtimeArtifactsPath, true );
@@ -98,6 +95,9 @@ class {
 			function( redirectURL ) {}
 		);
 		if( !thin ) {
+			if( directoryExists( systemModulesPath ) ) {
+				directoryDelete( systemModulesPath, true );
+			}
 			directoryCreate( systemModulesPath & "/cfml", true );
 			fileWrite( installerResourcesPath & "/boxlang-version", installerSnapshot ? "snapshot" : "latest" );
 			progressableDownloader.download(
