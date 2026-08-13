@@ -52,16 +52,17 @@ class {
 	/**
 	 * Builds the executable CLI launcher JAR.
 	 *
-	 * @installerSnapshot Whether to use snapshot installer resources.
 	 * @thin Whether to build a thin launcher without bundled runtime resources.
 	 * @artifactName The output artifact base name.
 	 */
-	function buildCliJar( boolean installerSnapshot=true, boolean thin=false, string artifactName="box" ) {
+	function buildCliJar( boolean thin=false, string artifactName="box" ) {
 		var classesPath = resolvePath( "build/temp/classes/cli-bootstrap" );
 		var jarPath = resolvePath( "build/dist/#artifactName#.jar" );
 		var installerResourcesPath = resolvePath( "build/temp/cli-bootstrap/installer" );
 		var runtimeArtifactsPath = resolvePath( "build/temp/cli-bootstrap/runtime-artifacts" );
 		var systemModulesPath = resolvePath( "build/temp/cli-bootstrap/system-modules" );
+		// Swap this to false to use latest release resources instead of snapshot
+		var installerSnapshot = true;
 		var installerURLPrefix = installerSnapshot ? installerBaseURL & "/snapshot" : installerBaseURL;
 		var installerURL = installerURLPrefix & "/boxlang-installer.zip";
 		var boxLangURL = installerSnapshot
@@ -130,6 +131,7 @@ class {
 				function( status ) {},
 				function( redirectURL ) {}
 			);
+			fileWrite( installerResourcesPath & "/bx-cli-version", bxCliVersion );
 			var originalDirectory = getCWD();
 			command( "cd" ).params( systemModulesPath & "/cfml" ).run();
 			try {
@@ -172,11 +174,27 @@ class {
 	}
 
 	/**
+	 * Builds the bundled CLI launcher JAR with embedded runtime resources.
+	 */
+	function buildCliJarBundled() {
+		buildCliJar( false, "box" );
+	}
+
+	/**
+	 * Builds the thin CLI launcher JAR without embedded runtime resources.
+	 */
+	function buildCliJarThin() {
+		buildCliJar( true, "box-thin" );
+	}
+
+	/**
 	 * Builds the Unix launcher by appending the CLI JAR to the standard shell wrapper.
+	 *
+	 * For the thin launcher, use buildCliBinaryThin instead.
 	 *
 	 * @artifactName The output artifact base name.
 	 */
-	function buildCliBinary( string artifactName="box" ) depends="buildCliJar" {
+	function buildCliBinary( string artifactName="box" ) depends="buildCliJarBundled" {
 		var boxJSON = packageService.readPackageDescriptor( resolvePath( "bx-cli" ) );
 		var jarPath = resolvePath( "build/dist/#artifactName#.jar" );
 		var binaryPath = resolvePath( "build/dist/#artifactName#" );
@@ -222,6 +240,14 @@ class {
 
 		createArtifactChecksums( binaryPath );
 		print.greenLine( "Created #binaryPath#" );
+	}
+
+	/**
+	 * Builds the thin Unix launcher by appending the thin CLI JAR to the standard shell wrapper.
+	 * Also produces the box-light copy.
+	 */
+	function buildCliBinaryThin() depends="buildCliJarThin" {
+		buildCliBinary( "box-thin" );
 	}
 
 	/**
@@ -774,12 +800,10 @@ class {
 	 * Builds bundled and thin CLI launcher JARs and both platform-specific installer binaries.
 	 * Also builds the Debian package, stages the BE repositories, and stages stable
 	 * repositories only when the package version is stable. Repository updates remain local.
-	 *
-	 * @installerSnapshot Whether to use snapshot installer resources.
 	 */
-	function buildInstallers( boolean installerSnapshot=true ) depends="cleanBuildDist" {
+	function buildInstallers() depends="cleanBuildDist" {
 		// box.jar
-		buildCliJar( installerSnapshot, false, "box" );
+		buildCliJarBundled();
 		// *unix box
 		buildCliBinary( "box" );
 		// box.exe
@@ -790,8 +814,8 @@ class {
 		buildApiDocs();
 
 		// same as above, but "thin" versions
-		buildCliJar( installerSnapshot, true, "box-thin" );
-		buildCliBinary( "box-thin" );
+		buildCliJarThin();
+		buildCliBinaryThin();
 		buildCliExe( "box-thin" );
 
 		// rpms
@@ -802,6 +826,7 @@ class {
 		buildCliDeb();
 		updateDebRepo();
 		syncDistToS3();
+		syncApiDocsToS3();
 	}
 
 	/**
@@ -818,6 +843,8 @@ class {
 		var bucketName = "downloads.ortussolutions.com";
 		var versionPrefix = "ortussolutions/commandbox/#version#";
 		var moduleRoot = resolvePath( "build/temp/s3sdk-task" );
+		// API docs are uploaded to the apidocs bucket by the syncApiDocsToS3 task.
+		var apidocsDistPath = resolvePath( "build/dist/apidocs" );
 
 		if( !len( accessKey ) || !len( accessSecret ) ) {
 			print.line( "Skipping S3 sync: AWS_ACCESS_KEY and AWS_ACCESS_SECRET are not configured." ).toConsole();
@@ -839,7 +866,7 @@ class {
 			recurse=true,
 			listInfo="path",
 			filter=function( path ) {
-				return fileExists( path );
+				return fileExists( path ) && left( path, len( apidocsDistPath ) ) != apidocsDistPath;
 			}
 		);
 
@@ -857,6 +884,84 @@ class {
 				filepath=filePath,
 				uri=objectKey,
 				contentType="auto"
+			);
+			print.line( " Done!" ).toConsole();
+		}
+	}
+
+	/**
+	 * Uploads the unzipped API documentation to the apidocs S3 bucket.
+	 *
+	 * The generated HTML for the current version is uploaded below a versioned folder in the
+	 * `commandbox` and `commandbox-core` doc sets. When the version is stable, a redirect
+	 * `index.html` is also uploaded to the `current` folder of each doc set so the docs site
+	 * can always point at the latest stable release.
+	 */
+	function syncApiDocsToS3() {
+		var accessKey = getSystemSetting( "AWS_ACCESS_KEY", "" );
+		var accessSecret = getSystemSetting( "AWS_ACCESS_SECRET", "" );
+		var apidocsDistPath = resolvePath( "build/dist/apidocs" );
+		var boxJSON = packageService.readPackageDescriptor( resolvePath( "bx-cli" ) );
+		var version = boxJSON.version;
+		var bucketName = "apidocs.ortussolutions.com";
+		var moduleRoot = resolvePath( "build/temp/s3sdk-task" );
+		var commandboxIndexTemplate = resolvePath( "build/resource/apidocs-commandbox-current-index.html" );
+		var coreIndexTemplate = resolvePath( "build/resource/apidocs-commandbox-core-current-index.html" );
+
+		if( !len( accessKey ) || !len( accessSecret ) ) {
+			print.line( "Skipping API docs S3 sync: AWS_ACCESS_KEY and AWS_ACCESS_SECRET are not configured." ).toConsole();
+			return;
+		}
+		if( !directoryExists( apidocsDistPath ) ) {
+			throw( message="The API docs distribution directory does not exist.", detail=apidocsDistPath, type="commandException" );
+		}
+		installS3SDKModule( moduleRoot );
+		var s3 = new s3sdk.models.AmazonS3(
+			accessKey=accessKey,
+			secretKey=accessSecret,
+			awsRegion="us-east-1",
+			autoContentType=true,
+			defaultACL="public-read"
+		);
+		var artifactFiles = directoryList(
+			path=apidocsDistPath,
+			recurse=true,
+			listInfo="path",
+			filter=function( path ) {
+				return fileExists( path );
+			}
+		);
+
+		artifactFiles.each( function( filePath ) {
+			var relativePath = replaceNoCase( filePath, apidocsDistPath, "", "one" );
+			relativePath = reReplace( relativePath, "^[/\\\\]+", "", "all" );
+			relativePath = replace( relativePath, "\", "/", "all" );
+			s3.putObjectFile(
+				bucketName=bucketName,
+				filepath=filePath,
+				uri=relativePath,
+				contentType="auto"
+			);
+			print.line( "Uploaded #relativePath#" ).toConsole();
+		}, true );
+
+		if( semanticVersion.isPreRelease( version ) ) {
+			print.line( "Skipping stable docs redirect: #version# is a pre-release." ).toConsole();
+			return;
+		}
+		var redirectTargets = {
+			"commandbox/current/index.html": commandboxIndexTemplate,
+			"commandbox-core/current/index.html": coreIndexTemplate
+		};
+		for( var objectKey in redirectTargets ) {
+			var templatePath = redirectTargets[ objectKey ];
+			var redirectHTML = replace( fileRead( templatePath ), "@VERSION@", version, "all" );
+			print.text( "Uploading #objectKey# ..." ).toConsole();
+			s3.putObject(
+				bucketName=bucketName,
+				uri=objectKey,
+				data=redirectHTML,
+				contentType="text/html"
 			);
 			print.line( " Done!" ).toConsole();
 		}
@@ -895,6 +1000,9 @@ class {
 		var coreDocsPath = docsRoot & "/CommandBox-APIDocs";
 		var commandDocsZip = resolvePath( "build/dist/commandbox-apidocs-#boxJSON.version#.zip" );
 		var coreDocsZip = resolvePath( "build/dist/commandbox-core-apidocs-#boxJSON.version#.zip" );
+		var apidocsDistPath = resolvePath( "build/dist/apidocs" );
+		var commandDocsDistPath = apidocsDistPath & "/commandbox/#boxJSON.version#";
+		var coreDocsDistPath = apidocsDistPath & "/commandbox-core/#boxJSON.version#";
 		var commandSources = {};
 		var commandBasePath = resolvePath( "src/cfml" );
 		var systemModulesBasePath = resolvePath( "build/temp/cli-bootstrap/system-modules/cfml/modules" );
@@ -950,6 +1058,7 @@ class {
 			.run();
 		bx:zip action="zip" source="#commandDocsPath#" file="#commandDocsZip#" recurse="true" overwrite="true";
 		createArtifactChecksums( commandDocsZip );
+		directoryCopy( commandDocsPath, commandDocsDistPath, true );
 		directoryDelete( docsRoot, true );
 		directoryCreate( docsRoot, true );
 		if( directoryExists( coreDocsPath ) ) {
@@ -970,6 +1079,7 @@ class {
 			.run();
 		bx:zip action="zip" source="#coreDocsPath#" file="#coreDocsZip#" recurse="true" overwrite="true";
 		createArtifactChecksums( coreDocsZip );
+		directoryCopy( coreDocsPath, coreDocsDistPath, true );
 
 		print.greenLine( "Created #commandDocsZip#" );
 		print.greenLine( "Created #coreDocsZip#" );

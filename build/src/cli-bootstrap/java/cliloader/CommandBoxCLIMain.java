@@ -30,6 +30,7 @@ public class CommandBoxCLIMain {
 	private static final String BOXLANG_VERSION = "boxlang-version";
 	private static final String BOXLANG_JAR = "boxlang.jar";
 	private static final String MINISERVER_JAR = "boxlang-miniserver.jar";
+	private static final String BOXLANG_VERSION_PROPERTIES = "version.properties";
 	private static final String SYSTEM_MODULES_ARCHIVE = "commandbox-system-modules.zip";
 	private static final String COMMANDBOX_HOME_PROPERTY = "CommandBox_home";
 	private static final String BOXLANG_HOME_PROPERTY = "boxlang.home";
@@ -80,6 +81,11 @@ public class CommandBoxCLIMain {
 		if ( boxLang == null ) {
 			File boxLangInstallHome = resolveInstallerInstallHome( launcherDirectory );
 			debug( "BoxLang was not detected; installing to: " + boxLangInstallHome.getAbsolutePath() );
+			installBoxLang( boxLangInstallHome, boxLangHome );
+			boxLang = new BoxLangInstallation( getExecutable( boxLangInstallHome ), "installer default" );
+		} else if ( shouldUpdateBoxLang( boxLangHome ) ) {
+			debug( "Installed BoxLang is older than the bundled version; updating." );
+			File boxLangInstallHome = boxLang.getExecutable().toPath().toRealPath().getParent().getParent().toFile();
 			installBoxLang( boxLangInstallHome, boxLangHome );
 			boxLang = new BoxLangInstallation( getExecutable( boxLangInstallHome ), "installer default" );
 		}
@@ -501,6 +507,104 @@ public class CommandBoxCLIMain {
 	}
 
 	/**
+	 * Determines whether the installed BoxLang should be updated to the bundled version.
+	 *
+	 * The installed version is read from version.properties in the BoxLang home. When the
+	 * launcher bundles a BoxLang runtime jar, its manifest implementation version is the update
+	 * target. An update is needed only when the installed version is older than the bundled one.
+	 *
+	 * @param boxLangHome BoxLang home directory containing user configuration and version data.
+	 * @return True when the installed BoxLang is older than the bundled version.
+	 */
+	private static boolean shouldUpdateBoxLang( File boxLangHome ) {
+		String bundledVersion = getBundledBoxLangVersion();
+		if ( bundledVersion == null ) {
+			debug( "No bundled BoxLang version; skipping update check." );
+			return false;
+		}
+		String installedVersion = getInstalledBoxLangVersion( boxLangHome );
+		debug( "BoxLang installed version: " + installedVersion + ", bundled version: " + bundledVersion );
+		if ( installedVersion == null ) {
+			return true;
+		}
+		return compareVersions( installedVersion, bundledVersion ) < 0;
+	}
+
+	/**
+	 * Reads the installed BoxLang version from version.properties in the BoxLang home.
+	 *
+	 * @param boxLangHome BoxLang home directory.
+	 * @return Installed version, or null when the version file is absent or unreadable.
+	 */
+	private static String getInstalledBoxLangVersion( File boxLangHome ) {
+		try {
+			Path versionProperties = boxLangHome.toPath().resolve( BOXLANG_VERSION_PROPERTIES );
+			if ( !Files.isRegularFile( versionProperties ) ) {
+				debug( "BoxLang version.properties not found: " + versionProperties );
+				return null;
+			}
+			Properties properties = new Properties();
+			try ( InputStream input = Files.newInputStream( versionProperties ) ) {
+				properties.load( input );
+			}
+			String version = properties.getProperty( "version" );
+			return version == null || version.trim().isEmpty() ? null : version.trim();
+		} catch ( IOException exception ) {
+			debug( "Unable to read installed BoxLang version: " + exception.getMessage() );
+			return null;
+		}
+	}
+
+	/**
+	 * Reads the BoxLang version bundled in this launcher from the runtime jar manifest.
+	 *
+	 * @return Bundled implementation version, or null when the jar is not bundled or unreadable.
+	 */
+	private static String getBundledBoxLangVersion() {
+		Path bundledJar = extractOptionalResourceToTemp( BOXLANG_JAR );
+		if ( bundledJar == null ) {
+			return null;
+		}
+		try ( java.util.jar.JarFile jar = new java.util.jar.JarFile( bundledJar.toFile() ) ) {
+			java.util.jar.Manifest manifest = jar.getManifest();
+			if ( manifest == null ) {
+				return null;
+			}
+			return manifest.getMainAttributes().getValue( "Implementation-Version" );
+		} catch ( IOException exception ) {
+			debug( "Unable to read bundled BoxLang version: " + exception.getMessage() );
+			return null;
+		} finally {
+			try {
+				Files.deleteIfExists( bundledJar );
+			} catch ( IOException exception ) {
+				debug( "Unable to remove temporary bundled jar: " + exception.getMessage() );
+			}
+		}
+	}
+
+	/**
+	 * Extracts a bundled classpath resource to a temporary file.
+	 *
+	 * @param resourceName Classpath resource name.
+	 * @return Extracted temporary path, or null when the resource is absent.
+	 */
+	private static Path extractOptionalResourceToTemp( String resourceName ) {
+		try ( InputStream input = CommandBoxCLIMain.class.getClassLoader().getResourceAsStream( resourceName ) ) {
+			if ( input == null ) {
+				debug( "Optional resource was not bundled: " + resourceName );
+				return null;
+			}
+			Path temporary = Files.createTempFile( "commandbox-", ".tmp" );
+			Files.copy( input, temporary, StandardCopyOption.REPLACE_EXISTING );
+			return temporary;
+		} catch ( IOException exception ) {
+			debug( "Unable to extract bundled resource: " + exception.getMessage() );
+			return null;
+		}
+	}
+
+	/**
 	 * Copies an optional bundled resource into the installer temporary directory.
 	 *
 	 * @param resourceName Classpath resource name.
@@ -531,6 +635,10 @@ public class CommandBoxCLIMain {
 	 */
 	private static void extractBxCliModule( Path boxLangHome, File boxLangExecutable ) throws IOException, InterruptedException {
 		Path moduleDir = boxLangHome.resolve( "modules/bx-cli" );
+		if ( isModuleCurrent( moduleDir ) ) {
+			debug( "bx-cli module is current; skipping extraction: " + moduleDir );
+			return;
+		}
 		try ( InputStream input = CommandBoxCLIMain.class.getClassLoader().getResourceAsStream( "bx-cli.zip" ) ) {
 			if ( input == null ) {
 				installBxCliModule( boxLangHome, boxLangExecutable );
@@ -552,6 +660,129 @@ public class CommandBoxCLIMain {
 			}
 		}
 		debug( "bx-cli module extracted to: " + moduleDir );
+	}
+
+	/**
+	 * Determines whether the installed bx-cli module meets the bundled version.
+	 *
+	 * The module's box.json version is compared against the version bundled in this launcher.
+	 * The module is current when its version is equal to or newer than the bundled version.
+	 *
+	 * @param moduleDir Installed bx-cli module directory.
+	 * @return True when the module exists and is not older than the bundled version.
+	 */
+	private static boolean isModuleCurrent( Path moduleDir ) {
+		Path moduleBoxJson = moduleDir.resolve( "box.json" );
+		if ( !Files.isRegularFile( moduleBoxJson ) ) {
+			debug( "bx-cli module box.json not found: " + moduleBoxJson );
+			return false;
+		}
+		String installedVersion = readBoxJsonVersion( moduleBoxJson );
+		String bundledVersion = getBundledBxCliVersion();
+		debug( "bx-cli installed version: " + installedVersion + ", bundled version: " + bundledVersion );
+		if ( installedVersion == null ) {
+			return false;
+		}
+		if ( bundledVersion == null ) {
+			return true;
+		}
+		return compareVersions( installedVersion, bundledVersion ) >= 0;
+	}
+
+	/**
+	 * Reads the version field from a module box.json without a JSON library.
+	 *
+	 * @param boxJsonPath Module box.json path.
+	 * @return Version value, or null when absent or unreadable.
+	 */
+	private static String readBoxJsonVersion( Path boxJsonPath ) {
+		try {
+			String content = new String( readAllBytes( Files.newInputStream( boxJsonPath ) ), StandardCharsets.UTF_8 );
+			int versionIndex = content.indexOf( "\"version\"" );
+			if ( versionIndex < 0 ) {
+				versionIndex = content.indexOf( "'version'" );
+			}
+			if ( versionIndex < 0 ) {
+				return null;
+			}
+			int colonIndex = content.indexOf( ':', versionIndex );
+			if ( colonIndex < 0 ) {
+				return null;
+			}
+			int quoteIndex = content.indexOf( '"', colonIndex + 1 );
+			if ( quoteIndex < 0 ) {
+				return null;
+			}
+			int endQuoteIndex = content.indexOf( '"', quoteIndex + 1 );
+			if ( endQuoteIndex < 0 ) {
+				return null;
+			}
+			return content.substring( quoteIndex + 1, endQuoteIndex ).trim();
+		} catch ( IOException exception ) {
+			debug( "Unable to read module box.json: " + boxJsonPath );
+			return null;
+		}
+	}
+
+	/**
+	 * Reads the bx-cli version bundled in this launcher.
+	 *
+	 * @return Bundled version, or null when the resource is unavailable.
+	 */
+	private static String getBundledBxCliVersion() {
+		try ( InputStream input = CommandBoxCLIMain.class.getClassLoader().getResourceAsStream( "bx-cli-version" ) ) {
+			if ( input == null ) {
+				return null;
+			}
+			return new String( readAllBytes( input ), StandardCharsets.UTF_8 ).trim();
+		} catch ( IOException exception ) {
+			return null;
+		}
+	}
+
+	/**
+	 * Compares two semantic version strings numerically per dot-separated segment.
+	 *
+	 * @param left Left version.
+	 * @param right Right version.
+	 * @return Negative when left is older, zero when equal, positive when left is newer.
+	 */
+	private static int compareVersions( String left, String right ) {
+		String[] leftParts = left.split( "[.\\-]" );
+		String[] rightParts = right.split( "[.\\-]" );
+		int length = Math.max( leftParts.length, rightParts.length );
+		for ( int index = 0; index < length; index++ ) {
+			int leftValue = index < leftParts.length ? parseVersionSegment( leftParts[ index ] ) : 0;
+			int rightValue = index < rightParts.length ? parseVersionSegment( rightParts[ index ] ) : 0;
+			if ( leftValue != rightValue ) {
+				return leftValue - rightValue;
+			}
+		}
+		return 0;
+	}
+
+	/**
+	 * Parses a version segment into an integer, treating non-numeric segments as zero.
+	 *
+	 * @param segment Version segment.
+	 * @return Numeric value.
+	 */
+	private static int parseVersionSegment( String segment ) {
+		StringBuilder digits = new StringBuilder();
+		for ( int index = 0; index < segment.length(); index++ ) {
+			char character = segment.charAt( index );
+			if ( Character.isDigit( character ) ) {
+				digits.append( character );
+			}
+		}
+		if ( digits.length() == 0 ) {
+			return 0;
+		}
+		try {
+			return Integer.parseInt( digits.toString() );
+		} catch ( NumberFormatException exception ) {
+			return 0;
+		}
 	}
 
 	/**

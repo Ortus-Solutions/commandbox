@@ -64,6 +64,42 @@ is decoded to `build/temp/signing-keyring.gpg` for the Docker signing step and r
 afterward. When all three values are present, `updateDebRepo` creates `Release.gpg`;
 otherwise, it stages unsigned metadata for local validation.
 
+## API Documentation
+
+Generate the API documentation with:
+
+```powershell
+box task run taskFile=Build.bx target=buildApiDocs
+```
+
+`buildApiDocs` generates two documentation sets via DocBox into
+`build/dist/apidocs/`:
+
+- `commandbox/{version}/`: Public command documentation
+- `commandbox-core/{version}/`: Internal core API documentation
+
+Both sets are also zipped into `build/dist/commandbox-apidocs-{version}.zip` and
+`build/dist/commandbox-core-apidocs-{version}.zip` with checksums. The unzipped
+HTML is preserved under `build/dist/apidocs/` so it can be synced to the
+`apidocs.ortussolutions.com` S3 bucket.
+
+Sync the generated HTML to S3 with:
+
+```powershell
+box task run taskFile=Build.bx target=syncApiDocsToS3
+```
+
+This uploads the versioned doc folders to the `apidocs.ortussolutions.com` bucket.
+When the current version is a stable release, it also uploads the redirect
+`index.html` files to `commandbox/current/` and `commandbox-core/current/` so the
+docs site always points at the latest stable version. The redirect templates live
+in `build/resource/apidocs-commandbox-current-index.html` and
+`build/resource/apidocs-commandbox-core-current-index.html` and contain an
+`@VERSION@` placeholder that is replaced with the build version before upload.
+Pre-release versions (e.g. `6.4.0-alpha`) skip the `current` redirect upload.
+
+Both tasks require `AWS_ACCESS_KEY` and `AWS_ACCESS_SECRET` to be configured.
+
 ## Overview
 
 CommandBox uses Apache Ant for its build system with a sophisticated multi-target build process that creates various distribution formats including JAR files, native executables, Linux packages, and embedded JRE distributions.
@@ -306,6 +342,8 @@ ant -f build/build.xml build.cli.all
 
 - `commandbox-apidocs-{version}.zip`: Public API documentation
 - `commandbox-core-apidocs-{version}.zip`: Internal API documentation
+- `apidocs/commandbox/{version}/`: Unzipped public API documentation for the apidocs S3 bucket
+- `apidocs/commandbox-core/{version}/`: Unzipped internal API documentation for the apidocs S3 bucket
 
 ### Repository Artifacts
 

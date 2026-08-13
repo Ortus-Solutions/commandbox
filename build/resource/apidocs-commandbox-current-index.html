@@ -1,0 +1,13 @@
+<html>
+<head>
+<title>CommandBox Docs</title>
+</head>
+<script>
+var query = window.location.search.slice(1);
+if( query.length ){
+	window.location.href = '../@VERSION@/' + query;
+} else {
+	window.location.href = '../@VERSION@/index.html';
+}
+</script>
+</html>
