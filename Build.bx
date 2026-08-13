@@ -156,6 +156,7 @@ class {
 			.toClasses( classesPath )
 			.libsDir( "." )
 			.withResources( installerResourcesPath )
+			.compileOptions( { "release" : 8 } )
 			.jarOptions( { "mainClass" : "cliloader.CommandBoxCLIMain" } )
 			.toJar( "box.jar" )
 			.run();
@@ -439,7 +440,8 @@ class {
 			& "Packager: #packager##newLine#"
 			& "URL: #supportURL##newLine#"
 			& "BuildArch: noarch#newLine#"
-			& "AutoReqProv: no#newLine##newLine#"
+			& "AutoReqProv: no#newLine#"
+			& "Recommends: java-21-openjdk#newLine##newLine#"
 			& "%description#newLine#"
 			& "CommandBox CLI, package manager, server manager, and REPL.#newLine##newLine#"
 			& "%install#newLine#"
@@ -513,6 +515,7 @@ class {
 			& "Priority: extra#newLine#"
 			& "Architecture: all#newLine#"
 			& "Depends: java-common#newLine#"
+			& "Recommends: openjdk-21-jre#newLine#"
 			& "Maintainer: ortussolutions.com <info@ortussolutions.com>#newLine#"
 			& "Description: CommandBox is a ColdFusion (CFML) CLI, Package Manager, Server and REPL.#newLine#"
 			& " CommandBox Version: #boxJSON.version#.#newLine#"
@@ -631,7 +634,15 @@ class {
 			& 'cd /repo; '
 			& 'if [ ! -f Packages ]; then : > Packages; fi; '
 			& 'mkdir -p .new-package; cp #packageFileName# .new-package/; '
-			& 'cd .new-package; dpkg-scanpackages . /dev/null > Packages.new; cd ..; cat .new-package/Packages.new >> Packages; '
+			& 'cd .new-package; apt-ftparchive packages #packageFileName# > Packages.new; cd ..; '
+			& 'perl -MDpkg::Control -e ''my ( $package, $version ) = @ARGV; '
+			& 'open( my $input, q{<}, q{Packages} ) or die $!; '
+			& 'open( my $output, q{>}, q{Packages.updated} ) or die $!; '
+			& 'while( 1 ) { my $control = Dpkg::Control->new(); last unless $control->parse( $input ); '
+			& 'next if $control->{Package} eq $package && $control->{Version} eq $version; '
+			& '$control->output( $output ); print $output qq{\n}; }'' '
+			& 'commandbox #arguments.packageVersion#-1; '
+			& 'mv Packages.updated Packages; cat .new-package/Packages.new >> Packages; '
 			& 'package_size=$(stat -c %s #packageFileName#); package_sha256=$(sha256sum #packageFileName# | cut -d '' '' -f 1); package_sha512=$(sha512sum #packageFileName# | cut -d '' '' -f 1); '
 			& 'printf ''Format: 1.8\nDate: #changesDate#\nSource: commandbox\nBinary: commandbox\nArchitecture: all\nVersion: #arguments.packageVersion#-1\nDistribution: unknown\nUrgency: low\nMaintainer: ortussolutions.com <info@ortussolutions.com>\nChanged-By: ortussolutions.com <info@ortussolutions.com>\nDescription:\n commandbox - CommandBox is a ColdFusion (CFML) CLI, Package Manager, Server and REPL\nChanges:\n commandbox (#arguments.packageVersion#-1) unknown; urgency=low\n\nChecksums-Sha256:\n %s %s %s\nChecksums-Sha512:\n %s %s %s\n'' "$package_sha256" "$package_size" "#packageFileName#" "$package_sha512" "$package_size" "#packageFileName#" > #changesFileName#.unsigned; '
 			& 'gzip -9c Packages > Packages.gz; '
@@ -646,7 +657,7 @@ class {
 			& '--local-user "$SIGNING_KEY_ID" --clearsign --output #changesFileName# #changesFileName#.unsigned; '
 			& 'gpg --batch --yes --pinentry-mode loopback --digest-algo SHA256 '
 			& '--passphrase-file /signing/passphrase '
-			& '--local-user "$SIGNING_KEY_ID" --detach-sign --output Release.gpg Release; '
+			& '--local-user "$SIGNING_KEY_ID" --armor --detach-sign --output Release.gpg Release; '
 			& 'rm -f #changesFileName#.unsigned; '
 			& 'else mv #changesFileName#.unsigned #changesFileName#; rm -f Release.gpg InRelease; fi"'
 		).run();
@@ -790,11 +801,93 @@ class {
 		// debs
 		buildCliDeb();
 		updateDebRepo();
+		syncDistToS3();
 	}
 
 	/**
-	 * Generates the CommandBox command and core API documentation archives.
+	 * Uploads the generated distribution files to the downloads S3 bucket.
+	 *
+	 * RPM and Debian artifacts remain at the bucket root so repository paths are stable. All other
+	 * artifacts are uploaded below the versioned CommandBox release path.
 	 */
+	function syncDistToS3() {
+		var accessKey = getSystemSetting( "AWS_ACCESS_KEY", "" );
+		var accessSecret = getSystemSetting( "AWS_ACCESS_SECRET", "" );
+		var distPath = resolvePath( "build/dist" );
+		var version = packageService.readPackageDescriptor( resolvePath( "bx-cli" ) ).version;
+		var bucketName = "downloads.ortussolutions.com";
+		var versionPrefix = "ortussolutions/commandbox/#version#";
+		var moduleRoot = resolvePath( "build/temp/s3sdk-task" );
+
+		if( !len( accessKey ) || !len( accessSecret ) ) {
+			print.line( "Skipping S3 sync: AWS_ACCESS_KEY and AWS_ACCESS_SECRET are not configured." ).toConsole();
+			return;
+		}
+		if( !directoryExists( distPath ) ) {
+			throw( message="The distribution directory does not exist.", detail=distPath, type="commandException" );
+		}
+		installS3SDKModule( moduleRoot );
+		var s3 = new s3sdk.models.AmazonS3(
+			accessKey=accessKey,
+			secretKey=accessSecret,
+			awsRegion="us-east-1",
+			autoContentType=true,
+			defaultACL="public-read"
+		);
+		var artifactFiles = directoryList(
+			path=distPath,
+			recurse=true,
+			listInfo="path",
+			filter=function( path ) {
+				return fileExists( path );
+			}
+		);
+
+		for( var filePath in artifactFiles ) {
+			var relativePath = replaceNoCase( filePath, distPath, "", "one" );
+			relativePath = reReplace( relativePath, "^[/\\\\]+", "", "all" );
+			relativePath = replace( relativePath, "\", "/", "all" );
+			var objectKey = isRootDistributionArtifact( relativePath )
+				? relativePath
+				: versionPrefix & "/" & relativePath;
+
+			print.text( "Uploading #objectKey# ..." ).toConsole();
+			s3.putObjectFile(
+				bucketName=bucketName,
+				filepath=filePath,
+				uri=objectKey,
+				contentType="auto"
+			);
+			print.line( " Done!" ).toConsole();
+		}
+	}
+
+	/**
+	 * Installs and loads the S3 SDK into the ignored build workspace for the current task run.
+	 */
+	private function installS3SDKModule( required string moduleRoot ) {
+		if( directoryExists( arguments.moduleRoot ) ) {
+			directoryDelete( arguments.moduleRoot, true );
+		}
+		directoryCreate( arguments.moduleRoot, true );
+		command( "install" )
+			.params( ID="s3sdk", directory=arguments.moduleRoot )
+			.flags( "force", "nosave" )
+			.run();
+		loadModule( arguments.moduleRoot & "/s3sdk" );
+	}
+
+	/**
+	 * Determines whether an artifact belongs at the downloads bucket root.
+	 *
+	 * @relativePath The path relative to build/dist.
+	 */
+	private boolean function isRootDistributionArtifact( required string relativePath ) {
+		var normalizedPath = replace( arguments.relativePath, "\", "/", "all" );
+		var firstPathPart = lCase( listFirst( normalizedPath, "/" ) );
+		return listFindNoCase( "RPMS,RPMS-be,debs,debs-be", firstPathPart ) > 0;
+	}
+
 	function buildApiDocs() {
 		var boxJSON = packageService.readPackageDescriptor( resolvePath( "bx-cli" ) );
 		var docsRoot = resolvePath( "build/temp/apidocs" );

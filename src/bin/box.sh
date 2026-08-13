@@ -15,8 +15,14 @@ do
 	esac
 done
 
-# Get the location of the running script
-this_script=`which "$0"`
+# Get the location of the running script without relying on `which` or `dirname`
+SCRIPT_PATH="$0"
+case "$SCRIPT_PATH" in
+	/*) ;;
+	*/*) SCRIPT_PATH="$(pwd)/$SCRIPT_PATH" ;;
+	*) SCRIPT_PATH="$(command -v -- "$SCRIPT_PATH" 2>/dev/null || echo "$SCRIPT_PATH")" ;;
+esac
+this_script=$SCRIPT_PATH
 
 # Prepare Java arguments
 java_args="$BOX_JAVA_ARGS -client"
@@ -59,7 +65,7 @@ then
 fi
 
 # Verify if we have an embedded version, if we do use that instead.
-JRE=$(dirname $this_script)/jre
+JRE="${this_script%/*}/jre"
 if [ -d "$JRE" ]
 then
 	java="$JRE/bin/java"
