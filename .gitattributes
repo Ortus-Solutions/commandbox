@@ -2,6 +2,11 @@
 *.sh eol=lf
 * text=auto
 
+# Test fixtures: keep LF so zip operations don't shift line endings
+tests/compile-dsl/fat-jar-options/**/*.Service text eol=lf
+tests/compile-dsl/fat-jar-options/**/*.SF text eol=lf
+tests/compile-dsl/fat-jar-policies/**/*.txt text eol=lf
+
 # Custom for Visual Studio
 *.cs     diff=csharp
 *.sln    merge=union

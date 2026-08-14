@@ -1235,11 +1235,11 @@ component accessors=true {
 	 */
 	string function findJDKBinDirectory() {
 		var OSExecSuffix = '';
-		var OSPathSearch = '!which';
+		var OSPathSearch = 'which';
 
 		if( fileSystemUtil.isWindows() ) {
 			OSExecSuffix = '.exe';
-			OSPathSearch = '!where';
+			OSPathSearch = 'where';
 		}
 
 		// First attempt: See if CommandBox CLI is using a JDK to run
