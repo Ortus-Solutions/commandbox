@@ -63,8 +63,8 @@ component accessors=true {
 	 * @returns The initialized DSL instance.
 	 */
 	public function init() {
-        setSourceDirectory( 'src\main\java\' );
-        setClassOutputDirectory( 'classes\java\main' );
+        setSourceDirectory( 'src/main/java/' );
+        setClassOutputDirectory( 'classes/java/main' );
         setVerbose( false );
         setEncode( '' );
 		setClassPaths( [] );
@@ -80,7 +80,7 @@ component accessors=true {
 		setCustomManifest( '' );
 		setCustomManifestParams( {} );
 		setGeneratedManifestFile( '' );
-		setResourcePath( 'src\main\resources\' );
+		setResourcePath( 'src/main/resources/' );
 		setClassTextFilePaths(['']);
 		setFatJarPaths( [] );
 		setFatJarOptions( {
@@ -88,7 +88,7 @@ component accessors=true {
 			"excludeSignatures"       : true,
 			"duplicatePolicy"         : "last"
 		} );
-		setJavaDocDestinationDir('javaDocs\main');
+		setJavaDocDestinationDir('javaDocs/main');
 		setUseJavaDoc(false);
         return this;
     }
@@ -504,7 +504,8 @@ component accessors=true {
 
 			var classPathString = "";
 			if ( len(getClassPaths()) ) {
-				classPathString = '-cp "#getClassPaths().toList(';')#"';
+				var cpSeparator = fileSystemUtil.isWindows() ? ';' : ':';
+				classPathString = '-cp "#getClassPaths().toList( cpSeparator )#"';
 			}
 
 			var additionalOptions = "";
@@ -1330,7 +1331,7 @@ component accessors=true {
 				nativeRunCommand( arguments.binPath & 'javac' & executableSuffix, '-version' ),
 				'JDK version lookup'
 			);
-			var versionNumber = reReplace( versionOutput, '(?s).*?(?:javac|java) ([0-9]+).*', '\\1' );
+			var versionNumber = reReplace( versionOutput, '(?s).*?(?:javac|java) ([0-9]+).*', '\1' );
 			return isNumeric( versionNumber ) && val( versionNumber ) >= getRequiredJDKVersion();
 		} catch( any e ) {
 			return false;
