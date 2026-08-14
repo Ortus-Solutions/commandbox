@@ -523,7 +523,7 @@ component {
 		if( directoryExists( classesDirectory ) ) {
 			directoryDelete( classesDirectory, true );
 		}
-		if( !fileExists( localDependencyJar ) ) thinJar( arguments.verbose );
+		thinJar( arguments.verbose );
 		if( !directoryExists( mavenDirectory ) ) {
 			command( "package install" )
 				.params( ID="maven:org.apache.commons:commons-lang3:3.14.0", directory="libs/maven", save=false, lock=false )
@@ -541,6 +541,7 @@ component {
 			.fromSource( "src/multiple-classpath/java" )
 			.withClassPath( [ localDependencyJar, "libs/maven" ] )
 			.toClasses( "classes/fat-jar" )
+			.toJar( "fat-jar-src.jar" )
 			.toFatJar( "fat-jar.jar", [ localDependencyJar, dependencyJar ] )
 			.run();
 
