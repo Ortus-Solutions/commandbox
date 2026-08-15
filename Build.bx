@@ -47,7 +47,7 @@ class {
 			.run();
 
 		command( "forgebox use" ).params( "ortus" ).run();
-	//	command( "publish" ).inWorkingDirectory( resolvePath( "bx-cli" ) ).flags( "force" ).run();
+		command( "publish" ).inWorkingDirectory( resolvePath( "bx-cli" ) ).flags( "force" ).run();
 	}
 
 	/**
