@@ -131,6 +131,10 @@ component aliases="init" {
 			print.cyanLine( '- Set #arg# = #arguments[ arg ]#' );
 		}
 
+		// The `java` compile configuration is opt-in. Keep it out of fresh
+		// packages; add it later with `java init`.
+		structDelete( boxJSON, "java" );
+
 		// Write the file back out
 		PackageService.writePackageDescriptor( boxJSON, directory );
 

@@ -60,6 +60,35 @@
     "scripts":{
 
     },
+    "java":{
+        "source":"src/main/java",
+        "classes":"build/classes/java/main",
+        "libsDir":"build/libs",
+        "resources":"src/main/resources",
+        "javaDocsDir":"build/docs/javadoc",
+        "classPath":[],
+        "jar":false,
+        "jarName":"",
+        "fatJar":false,
+        "fatJarName":"",
+        "fatJarJars":[],
+        "compileOptions":{
+
+        },
+        "jarOptions":{
+
+        },
+        "fatJarOptions":{
+            "mergeServiceDescriptors":true,
+            "excludeSignatures":true,
+            "duplicatePolicy":"last"
+        },
+        "manifest":{
+
+        },
+        "javaDocs":false,
+        "verbose":false
+    },
     "ignore":[
 
     ],

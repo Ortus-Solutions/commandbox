@@ -28,8 +28,10 @@ component accessors=true {
 	property name='generatedJarPath'			type='string';
 	property name='libsDir'					type='string';
 	property name='compileOptionsString'	type='string';
+	property name='compileOptionsParams'	type='struct';
 	property name='jarOptionsString'		type='string';
 	property name='jarOptionArguments'		type='string';
+	property name='jarOptionsParams'		type='struct';
     property name='javaBinFolder'           type='string';
 	property name='customManifest'			type='string';
 	property name='customManifestParams'	type='struct';
@@ -64,16 +66,18 @@ component accessors=true {
 	 */
 	public function init() {
         setSourceDirectory( 'src/main/java/' );
-        setClassOutputDirectory( 'classes/java/main' );
+        setClassOutputDirectory( 'build/classes/java/main' );
         setVerbose( false );
         setEncode( '' );
 		setClassPaths( [] );
 		setSourcePaths( [''] );
 		setCreateJar( false );
-		setLibsDir( 'libs' );
+		setLibsDir( 'build/libs' );
 		setCompileOptionsString( '' );
+		setCompileOptionsParams( {} );
 		setJarOptionsString( '' );
 		setJarOptionArguments( '' );
+		setJarOptionsParams( {} );
 		setJarNameString( '' );
 		setFatJarNameString( '' );
 		setGeneratedJarPath( '' );
@@ -88,7 +92,7 @@ component accessors=true {
 			"excludeSignatures"       : true,
 			"duplicatePolicy"         : "last"
 		} );
-		setJavaDocDestinationDir('javaDocs/main');
+		setJavaDocDestinationDir('build/docs/javadoc');
 		setUseJavaDoc(false);
         return this;
     }
@@ -99,12 +103,71 @@ component accessors=true {
 	/**
 	 * Sets the project root used to resolve source, class, resource, and JAR paths.
 	 *
+	 * Any `java` configuration in the project's box.json is applied here as the
+	 * baseline defaults. Explicit DSL calls made after projectRoot() always
+	 * override those values.
+	 *
 	 * @projectRoot The project directory to use as the path-resolution root.
 	 * @returns The current DSL instance.
 	 */
 	function projectRoot( required projectRoot ) {
 		setProjectRoot( fileSystemutil.resolvePath( projectRoot ) );
+		applyBoxJsonDefaults();
 		return this;
+	}
+
+	/**
+	 * Applies the `java` configuration from the project's box.json as baseline
+	 * defaults. Keys use the same names as the `java compile` command parameters
+	 * so there is one vocabulary across box.json, the CLI, and the DSL.
+	 *
+	 * @returns The current DSL instance.
+	 */
+	private function applyBoxJsonDefaults() {
+		if( !packageService.isPackage( getProjectRoot() ) ) {
+			return this;
+		}
+		var boxJSON = packageService.readPackageDescriptor( getProjectRoot() );
+		var javaConfig = boxJSON.java ?: {};
+		if( !isStruct( javaConfig ) || !structCount( javaConfig ) ) {
+			return this;
+		}
+
+		if( structKeyExists( javaConfig, "source" ) && hasValue( javaConfig.source ) ) fromSource( javaConfig.source );
+		if( structKeyExists( javaConfig, "classes" ) && hasValue( javaConfig.classes ) ) toClasses( javaConfig.classes );
+		if( structKeyExists( javaConfig, "libsDir" ) && hasValue( javaConfig.libsDir ) ) setLibsDir( javaConfig.libsDir );
+		if( structKeyExists( javaConfig, "resources" ) && hasValue( javaConfig.resources ) ) withResources( javaConfig.resources );
+		if( structKeyExists( javaConfig, "javaDocsDir" ) && hasValue( javaConfig.javaDocsDir ) ) setJavaDocDestinationDir( javaConfig.javaDocsDir );
+		if( structKeyExists( javaConfig, "classPath" ) && hasValue( javaConfig.classPath ) ) withClassPath( javaConfig.classPath );
+		if( structKeyExists( javaConfig, "compileOptions" ) && structCount( javaConfig.compileOptions ?: {} ) ) compileOptions( javaConfig.compileOptions );
+		if( structKeyExists( javaConfig, "jarOptions" ) && structCount( javaConfig.jarOptions ?: {} ) ) jarOptions( javaConfig.jarOptions );
+		if( structKeyExists( javaConfig, "fatJarOptions" ) && structCount( javaConfig.fatJarOptions ?: {} ) ) configureFatJar( javaConfig.fatJarOptions );
+		if( structKeyExists( javaConfig, "verbose" ) && isBoolean( javaConfig.verbose ) ) setVerbose( javaConfig.verbose );
+		if( structKeyExists( javaConfig, "javaDocs" ) && isBoolean( javaConfig.javaDocs ) ) setUseJavaDoc( javaConfig.javaDocs );
+		if( structKeyExists( javaConfig, "jar" ) && isBoolean( javaConfig.jar ) && javaConfig.jar ) {
+			toJar( javaConfig.jarName ?: "" );
+		}
+		if( structKeyExists( javaConfig, "fatJar" ) && isBoolean( javaConfig.fatJar ) && javaConfig.fatJar ) {
+			toFatJar( javaConfig.fatJarName ?: "", javaConfig.fatJarJars ?: [] );
+		}
+
+		return this;
+	}
+
+	/**
+	 * Checks whether a string or array value is non-empty.
+	 *
+	 * @value The value to inspect.
+	 * @returns True when the value is a non-empty string or array.
+	 */
+	private boolean function hasValue( required any value ) {
+		if( isSimpleValue( arguments.value ) ) {
+			return len( arguments.value ) > 0;
+		}
+		if( isArray( arguments.value ) ) {
+			return arrayLen( arguments.value ) > 0;
+		}
+		return false;
 	}
 
 	/**
@@ -183,7 +246,6 @@ component accessors=true {
 			"proc", "implicit", "processors", "processorPath", "sourcePath", "modulePath",
 			"addModules", "limitModules", "moduleSourcePath"
 		];
-		var commandOptions = [];
 
 		for( var optionName in arguments.options ) {
 			if( !supportedOptions.findNoCase( optionName ) ) {
@@ -191,45 +253,51 @@ component accessors=true {
 			}
 		}
 
-		if( arguments.options.keyExists( "encoding" ) ) {
-			setEncode( arguments.options.encoding );
+		// Merge with any previously applied options (such as box.json defaults).
+		// Later calls win for any keys they both define.
+		structAppend( variables.compileOptionsParams, arguments.options, true );
+		var options = variables.compileOptionsParams;
+		var commandOptions = [];
+
+		if( options.keyExists( "encoding" ) ) {
+			setEncode( options.encoding );
 		}
 		for( var valueOption in [ "release", "source", "target", "proc", "implicit" ] ) {
-			if( arguments.options.keyExists( valueOption ) ) {
+			if( options.keyExists( valueOption ) ) {
 				var optionName = valueOption == "proc" || valueOption == "implicit" ? "-#valueOption#" : "--#valueOption#";
-				commandOptions.append( optionName.startsWith( "--" ) ? "#optionName#=#arguments.options[valueOption]#" : "#optionName#:#arguments.options[valueOption]#" );
+				commandOptions.append( optionName.startsWith( "--" ) ? "#optionName#=#options[valueOption]#" : "#optionName#:#options[valueOption]#" );
 			}
 		}
 		for( var flag in [ "deprecation", "enablePreview", "nowarn", "parameters", "werror" ] ) {
-			if( arguments.options[ flag ] ?: false ) {
+			if( options[ flag ] ?: false ) {
 				commandOptions.append( flag == "enablePreview" ? "--enable-preview" : "-#flag#" );
 			}
 		}
-		if( arguments.options.keyExists( "debug" ) ) {
-			if( isBoolean( arguments.options.debug ) && arguments.options.debug ) {
+		if( options.keyExists( "debug" ) ) {
+			if( isBoolean( options.debug ) && options.debug ) {
 				commandOptions.append( "-g" );
-			} else if( isArray( arguments.options.debug ) ) {
-				commandOptions.append( "-g:#arguments.options.debug.toList( ',' )#" );
+			} else if( isArray( options.debug ) ) {
+				commandOptions.append( "-g:#options.debug.toList( ',' )#" );
 			}
 		}
-		if( arguments.options.keyExists( "lint" ) ) {
-			commandOptions.append( "-Xlint:#isArray( arguments.options.lint ) ? arguments.options.lint.toList( ',' ) : arguments.options.lint#" );
+		if( options.keyExists( "lint" ) ) {
+			commandOptions.append( "-Xlint:#isArray( options.lint ) ? options.lint.toList( ',' ) : options.lint#" );
 		}
 		var numericMappings = { "maxErrors" : "-Xmaxerrs", "maxWarnings" : "-Xmaxwarns" };
 		for( var numericOption in numericMappings ) {
-			if( arguments.options.keyExists( numericOption ) ) {
-				commandOptions.append( "#numericMappings[numericOption]# #arguments.options[numericOption]#" );
+			if( options.keyExists( numericOption ) ) {
+				commandOptions.append( "#numericMappings[numericOption]# #options[numericOption]#" );
 			}
 		}
 		for( var pathOption in [ "processorPath", "sourcePath", "modulePath", "moduleSourcePath" ] ) {
-			if( arguments.options.keyExists( pathOption ) ) {
-				var pathValue = isArray( arguments.options[pathOption] ) ? arguments.options[pathOption].toList( "," ) : arguments.options[pathOption];
+			if( options.keyExists( pathOption ) ) {
+				var pathValue = isArray( options[pathOption] ) ? options[pathOption].toList( "," ) : options[pathOption];
 				commandOptions.append( "--#pathOption# #pathValue#" );
 			}
 		}
 		for( var moduleOption in [ "addModules", "limitModules" ] ) {
-			if( arguments.options.keyExists( moduleOption ) ) {
-				var moduleValue = isArray( arguments.options[moduleOption] ) ? arguments.options[moduleOption].toList( "," ) : arguments.options[moduleOption];
+			if( options.keyExists( moduleOption ) ) {
+				var moduleValue = isArray( options[moduleOption] ) ? options[moduleOption].toList( "," ) : options[moduleOption];
 				commandOptions.append( "--#moduleOption# #moduleValue#" );
 			}
 		}
@@ -250,11 +318,16 @@ component accessors=true {
 				throw( message="Unsupported JAR option: #optionName#", type="commandException" );
 			}
 		}
+
+		// Merge with any previously applied options (such as box.json defaults).
+		// Later calls win for any keys they both define.
+		structAppend( variables.jarOptionsParams, arguments.options, true );
+		var options = variables.jarOptionsParams;
 		var modeFlags = "";
-		if( arguments.options.keyExists( "compress" ) && !arguments.options.compress ) {
+		if( options.keyExists( "compress" ) && !options.compress ) {
 			modeFlags &= "0";
 		}
-		if( arguments.options.noManifest ?: false ) {
+		if( options.noManifest ?: false ) {
 			modeFlags &= "M";
 		}
 		setJarOptionsString( modeFlags );
@@ -268,9 +341,9 @@ component accessors=true {
 			"modulePath" : "--module-path"
 		};
 		for( var key in valueMappings ) {
-			if( arguments.options.keyExists( key ) ) {
+			if( options.keyExists( key ) ) {
 				var optionName = valueMappings[ key ];
-				var optionValue = arguments.options[ key ];
+				var optionValue = options[ key ];
 				if( key == "date" && isDate( optionValue ) ) {
 					optionValue = dateTimeFormat( optionValue, "yyyy-mm-dd'T'HH:nn:ss'Z'" );
 				}
@@ -282,13 +355,18 @@ component accessors=true {
 	}
 
 	/**
-	 * Sets explicit manifest attributes for the generated JAR.
+	 * Adds or overrides manifest attributes for the generated JAR.
+	 *
+	 * Manifest attributes from box.json's `java.manifest` are applied first, so
+	 * values passed here take precedence. Repeated calls merge together.
 	 *
 	 * @customParams A struct of manifest attribute names and values.
 	 * @returns The current DSL instance.
 	 */
 	function manifest( required struct customParams ) {
-		setCustomManifestParams( customParams );
+		var mergedParams = duplicate( getCustomManifestParams() );
+		structAppend( mergedParams, arguments.customParams, true );
+		setCustomManifestParams( mergedParams );
 		return this;
 	}
 
@@ -712,7 +790,7 @@ component accessors=true {
 					jarCommandOptions &= " --verbose";
 				}
 				if( getCustomManifest().len() ) {
-					jarCommandOptions &= " --manifest=\"#variables.customManifest#\"";
+					jarCommandOptions &= ' --manifest="#variables.customManifest#"';
 				}
 				j = nativeRunCommand( getJavaBinFolder() & "jar", '#jarCommandOptions# "@#tempClassFileName#"' );
 			} else if( !getCustomManifest().len() ) {
@@ -885,36 +963,44 @@ component accessors=true {
 		var boxJsonParams = {};
 		var boxJSON = packageService.readPackageDescriptor( currentFolder );
 		// first check for all the regular info
-		if( len( boxJSON.name ) ) {
+		// These only fill keys that are not already present so that explicit
+		// `.manifest()` calls always take precedence over box.json values.
+		if( len( boxJSON.name ) && !manifestParams.keyExists( "Bundle-Name" ) ) {
 			manifestParams["Bundle-Name"] = boxJSON.name;
 		}
-		if( len( boxJSON.slug ) ) {
+		if( len( boxJSON.slug ) && !manifestParams.keyExists( "Bundle-SymbolicName" ) ) {
 			manifestParams["Bundle-SymbolicName"] = boxJSON.slug;
 		}
-		if( len( boxJSON.version ) ) {
+		if( len( boxJSON.version ) && !manifestParams.keyExists( "Bundle-Version" ) ) {
 			manifestParams["Bundle-Version"] = boxJSON.version;
 		}
-		if( len( boxJSON.author ) ) {
+		if( len( boxJSON.author ) && !manifestParams.keyExists( "Built-By" ) ) {
 			manifestParams["Built-By"] = boxJSON.author;
 		}
-		if( len( boxJSON.shortDescription ) ) {
+		if( len( boxJSON.shortDescription ) && !manifestParams.keyExists( "Bundle-Description" ) ) {
 			manifestParams["Bundle-Description"] = boxJSON.shortDescription;
 		}
-		if( len( boxJSON.ProjectURL ) ) {
+		if( len( boxJSON.ProjectURL ) && !manifestParams.keyExists( "Implementation-URL" ) ) {
 			manifestParams["Implementation-URL"] = boxJSON.ProjectURL;
 		}
-		if( len( boxJSON.Documentation ) ) {
+		if( len( boxJSON.Documentation ) && !manifestParams.keyExists( "Bundle-DocURL" ) ) {
 			manifestParams["Bundle-DocURL"] = boxJSON.Documentation;
 		}
-		if( len( boxJSON.License[1].URL ) ) {
+		if( structKeyExists( boxJSON, "License" ) && arrayLen( boxJSON.License ) && len( boxJSON.License[1].URL ) && !manifestParams.keyExists( "Bundle-License" ) ) {
 			manifestParams["Bundle-License"] = boxJSON.License[1].URL;
 		}
 		// after check for the manifest portion of the box.json
 		// because if the manifest keys override the ones above in the normal box.json
-		if( boxJSON.keyExists( "manifest" ) && len( boxJSON.manifest ) ) {
-			var boxJSonManifest = boxJSON.manifest;
-			for( var itemKey in boxJSonManifest ) {
-				manifestParams[itemKey] = boxJSonManifest[itemKey];
+		// The manifest now lives under the `java` object: box.json -> java.manifest
+		var boxJSONManifest = {};
+		if( isStruct( boxJSON.java ?: {} ) && structKeyExists( boxJSON.java, "manifest" ) && isStruct( boxJSON.java.manifest ?: {} ) ) {
+			boxJSONManifest = boxJSON.java.manifest;
+		}
+		if( structCount( boxJSONManifest ) ) {
+			for( var itemKey in boxJSONManifest ) {
+				if( !manifestParams.keyExists( itemKey ) ) {
+					manifestParams[itemKey] = boxJSONManifest[itemKey];
+				}
 			}
 		}
 		return manifestParams;

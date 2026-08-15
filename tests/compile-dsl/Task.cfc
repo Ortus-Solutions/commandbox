@@ -25,14 +25,11 @@ component {
 	 * @test
 	 */
 	function thinJar( boolean verbose=false ) {
-		var classesDirectory = resolvePath( "classes/java/main" );
-		var jarFile = resolvePath( "libs/compile-dsl.jar" );
+		var classesDirectory = resolvePath( "build/classes/java/main" );
+		var jarFile = resolvePath( "build/libs/compile-dsl.jar" );
 
-		if( directoryExists( resolvePath( "classes" ) ) ) {
-			directoryDelete( resolvePath( "classes" ), true );
-		}
-		if( directoryExists( resolvePath( "libs" ) ) ) {
-			directoryDelete( resolvePath( "libs" ), true );
+		if( directoryExists( resolvePath( "build" ) ) ) {
+			directoryDelete( resolvePath( "build" ), true );
 		}
 
 		var result = compile()
@@ -90,8 +87,8 @@ component {
 	 * @test
 	 */
 	function nonStandardSourcePath( boolean verbose=false ) {
-		var classesDirectory = resolvePath( "classes/java/main" );
-		var jarFile = resolvePath( "libs/non-standard-source.jar" );
+		var classesDirectory = resolvePath( "build/classes/java/main" );
+		var jarFile = resolvePath( "build/libs/non-standard-source.jar" );
 
 		compile()
 			.setVerbose( arguments.verbose )
@@ -114,7 +111,7 @@ component {
 	 */
 	function multipleSourcePaths( boolean verbose=false ) {
 		var classesDirectory = resolvePath( "classes/multiple-sources" );
-		var jarFile = resolvePath( "libs/multiple-sources.jar" );
+		var jarFile = resolvePath( "build/libs/multiple-sources.jar" );
 
 		if( directoryExists( classesDirectory ) ) {
 			directoryDelete( classesDirectory, true );
@@ -148,7 +145,7 @@ component {
 	 */
 	function sourceGlob( boolean verbose=false ) {
 		var classesDirectory = resolvePath( "classes/source-glob" );
-		var jarFile = resolvePath( "libs/source-glob.jar" );
+		var jarFile = resolvePath( "build/libs/source-glob.jar" );
 
 		if( directoryExists( classesDirectory ) ) {
 			directoryDelete( classesDirectory, true );
@@ -176,7 +173,7 @@ component {
 	 * @test
 	 */
 	function defaultResources( boolean verbose=false ) {
-		var jarFile = resolvePath( "libs/default-resources.jar" );
+		var jarFile = resolvePath( "build/libs/default-resources.jar" );
 
 		compile()
 			.setVerbose( arguments.verbose )
@@ -195,13 +192,10 @@ component {
 	 */
 	function packageMetadata( boolean verbose=false ) {
 		var packageRoot = resolvePath( "package-fixture" );
-		var jarFile = resolvePath( "package-fixture/libs/compile-dsl-package-1.2.3.jar" );
+		var jarFile = resolvePath( "package-fixture/build/libs/compile-dsl-package-1.2.3.jar" );
 
-		if( directoryExists( packageRoot & "/classes" ) ) {
-			directoryDelete( packageRoot & "/classes", true );
-		}
-		if( directoryExists( packageRoot & "/libs" ) ) {
-			directoryDelete( packageRoot & "/libs", true );
+		if( directoryExists( packageRoot & "/build" ) ) {
+			directoryDelete( packageRoot & "/build", true );
 		}
 
 		var result = getInstance( "compileDSL" )
@@ -225,7 +219,7 @@ component {
 	 */
 	function customClassOutput( boolean verbose=false ) {
 		var classesDirectory = resolvePath( "classes/custom-output" );
-		var jarFile = resolvePath( "libs/custom-class-output.jar" );
+		var jarFile = resolvePath( "build/libs/custom-class-output.jar" );
 
 		if( directoryExists( classesDirectory ) ) {
 			directoryDelete( classesDirectory, true );
@@ -276,7 +270,7 @@ component {
 	 * @test
 	 */
 	function resources( boolean verbose=false ) {
-		var jarFile = resolvePath( "libs/resources.jar" );
+		var jarFile = resolvePath( "build/libs/resources.jar" );
 
 		compile()
 			.setVerbose( arguments.verbose )
@@ -294,7 +288,7 @@ component {
 	 * @test
 	 */
 	function customManifest( boolean verbose=false ) {
-		var jarFile = resolvePath( "libs/custom-manifest.jar" );
+		var jarFile = resolvePath( "build/libs/custom-manifest.jar" );
 
 		compile()
 			.setVerbose( arguments.verbose )
@@ -314,7 +308,7 @@ component {
 	function compilerOptions( boolean verbose=false ) {
 		var classesDirectory = resolvePath( "classes/compiler-options" );
 		var classFile = classesDirectory & "/example/App.class";
-		var jarFile = resolvePath( "libs/compiler-options.jar" );
+		var jarFile = resolvePath( "build/libs/compiler-options.jar" );
 
 		if( directoryExists( classesDirectory ) ) {
 			directoryDelete( classesDirectory, true );
@@ -346,7 +340,7 @@ component {
 	 * @test
 	 */
 	function jarOptionValues( boolean verbose=false ) {
-		var jarFile = resolvePath( "libs/jar-option-values.jar" );
+		var jarFile = resolvePath( "build/libs/jar-option-values.jar" );
 
 		compile()
 			.setVerbose( arguments.verbose )
@@ -355,12 +349,18 @@ component {
 				"mainClass" : "example.App",
 				"date" : now()
 			} )
+			// A custom manifest combined with jar options exercises the
+			// --create --file=... --manifest=... branch of buildJar().
+			.manifest( {
+				"Implementation-Title" : "JAR Option Values"
+			} )
 			.toJar( "jar-option-values.jar" )
 			.run();
 
 		assertFileExists( jarFile );
 		assertJarEntryCompression( jarFile, "example/App.class", 0 );
 		assertJarManifestValue( jarFile, "Main-Class", "example.App" );
+		assertJarManifestValue( jarFile, "Implementation-Title", "JAR Option Values" );
 
 		print.greenLine( "JAR option values test passed." );
 	}
@@ -371,7 +371,7 @@ component {
 	function classPath( boolean verbose=false ) {
 		var classesDirectory = resolvePath( "classes/classpath" );
 		var mavenDirectory = resolvePath( "libs/maven" );
-		var jarFile = resolvePath( "libs/classpath.jar" );
+		var jarFile = resolvePath( "build/libs/classpath.jar" );
 
 		if( directoryExists( classesDirectory ) ) {
 			directoryDelete( classesDirectory, true );
@@ -427,8 +427,8 @@ component {
 	function multipleClassPaths( boolean verbose=false ) {
 		var classesDirectory = resolvePath( "classes/multiple-classpaths" );
 		var mavenDirectory = resolvePath( "libs/maven" );
-		var localDependencyJar = resolvePath( "libs/compile-dsl.jar" );
-		var jarFile = resolvePath( "libs/multiple-classpaths.jar" );
+		var localDependencyJar = resolvePath( "build/libs/compile-dsl.jar" );
+		var jarFile = resolvePath( "build/libs/multiple-classpaths.jar" );
 
 		if( directoryExists( classesDirectory ) ) {
 			directoryDelete( classesDirectory, true );
@@ -470,7 +470,7 @@ component {
 	function classPathList( boolean verbose=false ) {
 		var classesDirectory = resolvePath( "classes/classpath-list" );
 		var mavenDirectory = resolvePath( "libs/maven" );
-		var jarFile = resolvePath( "libs/classpath-list.jar" );
+		var jarFile = resolvePath( "build/libs/classpath-list.jar" );
 
 		if( directoryExists( classesDirectory ) ) {
 			directoryDelete( classesDirectory, true );
@@ -479,7 +479,7 @@ component {
 		compile()
 			.setVerbose( arguments.verbose )
 			.fromSource( "src/multiple-classpath/java" )
-			.withClassPath( "libs,libs/maven" )
+			.withClassPath( "build/libs,libs/maven" )
 			.toClasses( "classes/classpath-list" )
 			.toJar( "classpath-list.jar" )
 			.run();
@@ -494,7 +494,7 @@ component {
 	 * @test
 	 */
 	function javaDocs( boolean verbose=false ) {
-		var javaDocsDirectory = resolvePath( "javaDocs/main" );
+		var javaDocsDirectory = resolvePath( "build/docs/javadoc" );
 
 		if( directoryExists( javaDocsDirectory ) ) {
 			directoryDelete( javaDocsDirectory, true );
@@ -506,7 +506,10 @@ component {
 			.run();
 
 		assertFileExists( javaDocsDirectory & "/index.html" );
-		assertEquals( javaDocsDirectory, result.javaDocsPath );
+		assertEquals(
+			reReplace( javaDocsDirectory, "[\\/]+$", "" ),
+			reReplace( result.javaDocsPath, "[\\/]+$", "" )
+		);
 
 		print.greenLine( "Javadocs test passed." );
 	}
@@ -517,13 +520,13 @@ component {
 	function fatJar( boolean verbose=false ) {
 		var classesDirectory = resolvePath( "classes/fat-jar" );
 		var mavenDirectory = resolvePath( "libs/maven" );
-		var localDependencyJar = resolvePath( "libs/compile-dsl.jar" );
-		var jarFile = resolvePath( "libs/fat-jar.jar" );
+		var localDependencyJar = resolvePath( "build/libs/compile-dsl.jar" );
+		var jarFile = resolvePath( "build/libs/fat-jar.jar" );
 
 		if( directoryExists( classesDirectory ) ) {
 			directoryDelete( classesDirectory, true );
 		}
-		thinJar( arguments.verbose );
+		if( !fileExists( localDependencyJar ) ) thinJar( arguments.verbose );
 		if( !directoryExists( mavenDirectory ) ) {
 			command( "package install" )
 				.params( ID="maven:org.apache.commons:commons-lang3:3.14.0", directory="libs/maven", save=false, lock=false )
@@ -562,15 +565,16 @@ component {
 	 */
 	function thinAndFatJar( boolean verbose=false ) {
 		var mavenDirectory = resolvePath( "libs/maven" );
-		var localDependencyJar = resolvePath( "libs/compile-dsl.jar" );
-		var thinJarFile = resolvePath( "libs/thin-and-fat.jar" );
-		var fatJarFile = resolvePath( "libs/thin-and-fat-all.jar" );
+		var localDependencyJar = resolvePath( "build/libs/compile-dsl.jar" );
+		var thinJarFile = resolvePath( "build/libs/thin-and-fat.jar" );
+		var fatJarFile = resolvePath( "build/libs/thin-and-fat-all.jar" );
 
-		thinJar( arguments.verbose );
-		if( directoryExists( mavenDirectory ) ) directoryDelete( mavenDirectory, true );
-		command( "package install" )
-			.params( ID="maven:org.apache.commons:commons-lang3:3.14.0", directory="libs/maven", save=false, lock=false )
-			.run();
+		if( !fileExists( localDependencyJar ) ) thinJar( arguments.verbose );
+		if( !directoryExists( mavenDirectory ) ) {
+			command( "package install" )
+				.params( ID="maven:org.apache.commons:commons-lang3:3.14.0", directory="libs/maven", save=false, lock=false )
+				.run();
+		}
 
 		var dependencyJar = directoryList( mavenDirectory, true, "array", "*.jar" ).first();
 		compile()
@@ -597,12 +601,11 @@ component {
 		var serviceTwoDirectory = resolvePath( "fat-jar-services/two" );
 		var serviceOneJar = resolvePath( "libs/fat-jar-service-one.jar" );
 		var serviceTwoJar = resolvePath( "libs/fat-jar-service-two.jar" );
-		var jarFile = resolvePath( "libs/fat-jar-services.jar" );
+		var jarFile = resolvePath( "build/libs/fat-jar-services.jar" );
 
 		if( fileExists( jarFile ) ) {
 			fileDelete( jarFile );
 		}
-
 		createServiceDependencyJar(
 			serviceOneDirectory,
 			serviceOneJar,
@@ -617,6 +620,7 @@ component {
 
 		compile()
 			.setVerbose( arguments.verbose )
+			.toJar( "fat-jar-services-src.jar" )
 			.toFatJar( "fat-jar-services.jar", [ serviceOneJar, serviceTwoJar ] )
 			.run();
 
@@ -639,13 +643,14 @@ component {
 		var secondDirectory = resolvePath( "fat-jar-duplicates/second" );
 		var firstJar = resolvePath( "libs/fat-jar-duplicate-first.jar" );
 		var secondJar = resolvePath( "libs/fat-jar-duplicate-second.jar" );
-		var jarFile = resolvePath( "libs/fat-jar-duplicates.jar" );
+		var jarFile = resolvePath( "build/libs/fat-jar-duplicates.jar" );
 
 		createResourceDependencyJar( firstDirectory, firstJar, "first dependency" );
 		createResourceDependencyJar( secondDirectory, secondJar, "second dependency" );
 
 		compile()
 			.setVerbose( arguments.verbose )
+			.toJar( "fat-jar-duplicates-src.jar" )
 			.toFatJar( "fat-jar-duplicates.jar", [ firstJar, secondJar ] )
 			.run();
 
@@ -663,7 +668,7 @@ component {
 		var serviceTwoDirectory = resolvePath( "fat-jar-options/two" );
 		var serviceOneJar = resolvePath( "libs/fat-jar-options-one.jar" );
 		var serviceTwoJar = resolvePath( "libs/fat-jar-options-two.jar" );
-		var jarFile = resolvePath( "libs/fat-jar-options.jar" );
+		var jarFile = resolvePath( "build/libs/fat-jar-options.jar" );
 
 		createServiceDependencyJar(
 			serviceOneDirectory,
@@ -679,6 +684,7 @@ component {
 
 		compile()
 			.setVerbose( arguments.verbose )
+			.toJar( "fat-jar-options-src.jar" )
 			.toFatJar(
 				"fat-jar-options.jar",
 				[ serviceOneJar, serviceTwoJar ],
@@ -703,8 +709,8 @@ component {
 		var secondDirectory = resolvePath( "fat-jar-policies/second" );
 		var firstJar = resolvePath( "libs/fat-jar-policy-first.jar" );
 		var secondJar = resolvePath( "libs/fat-jar-policy-second.jar" );
-		var firstJarFile = resolvePath( "libs/fat-jar-policy-first-wins.jar" );
-		var errorJarFile = resolvePath( "libs/fat-jar-policy-error.jar" );
+		var firstJarFile = resolvePath( "build/libs/fat-jar-policy-first-wins.jar" );
+		var errorJarFile = resolvePath( "build/libs/fat-jar-policy-error.jar" );
 		var duplicateFailed = false;
 
 		createResourceDependencyJar( firstDirectory, firstJar, "first dependency" );
@@ -713,9 +719,10 @@ component {
 		compile()
 			.setVerbose( arguments.verbose )
 			.configureFatJar( { "duplicatePolicy" : "first" } )
+			.toJar( "fat-jar-policy-first-wins-src.jar" )
 			.toFatJar(
 				"fat-jar-policy-first-wins.jar",
-				[ firstJar, secondJar ],
+				[ firstJar, secondJar ]
 			)
 			.run();
 		assertEquals( "first dependency", readJarEntry( firstJarFile, "duplicate-resource.txt" ) );
@@ -723,6 +730,7 @@ component {
 		try {
 			compile()
 				.setVerbose( arguments.verbose )
+				.toJar( "fat-jar-policy-error-src.jar" )
 				.toFatJar(
 					"fat-jar-policy-error.jar",
 					[ firstJar, secondJar ],
@@ -773,7 +781,7 @@ component {
 	 * @test
 	 */
 	function jarOptions( boolean verbose=false ) {
-		var jarFile = resolvePath( "libs/jar-options.jar" );
+		var jarFile = resolvePath( "build/libs/jar-options.jar" );
 
 		compile()
 			.setVerbose( arguments.verbose )
@@ -792,7 +800,7 @@ component {
 	 */
 	function sourceEncoding( boolean verbose=false ) {
 		var classesDirectory = resolvePath( "classes/source-encoding" );
-		var jarFile = resolvePath( "libs/source-encoding.jar" );
+		var jarFile = resolvePath( "build/libs/source-encoding.jar" );
 
 		if( directoryExists( classesDirectory ) ) {
 			directoryDelete( classesDirectory, true );
@@ -839,9 +847,97 @@ component {
 		print.greenLine( "Options validation test passed." );
 	}
 
+	/**
+	 * @test
+	 */
+	function boxJsonDefaults( boolean verbose=false ) {
+		var projectRoot = resolvePath( "boxjson-fixture" );
+		var classesDirectory = projectRoot & "/custom-classes";
+		var jarFile = projectRoot & "/custom-libs/boxjson-app.jar";
+
+		if( directoryExists( projectRoot & "/custom-classes" ) ) {
+			directoryDelete( projectRoot & "/custom-classes", true );
+		}
+		if( directoryExists( projectRoot & "/custom-libs" ) ) {
+			directoryDelete( projectRoot & "/custom-libs", true );
+		}
+		if( directoryExists( projectRoot & "/build" ) ) {
+			directoryDelete( projectRoot & "/build", true );
+		}
+
+		// No DSL config at all — everything comes from box.json -> java
+		compile( "boxjson-fixture" )
+			.setVerbose( arguments.verbose )
+			.run();
+
+		assertFileExists( classesDirectory & "/example/boxjson/BoxJsonApp.class" );
+		assertFileExists( jarFile );
+		assertJarManifestValue( jarFile, "Bundle-Name", "BoxJSON Compile Test" );
+		assertJarManifestValue( jarFile, "Bundle-Version", "2.0.0" );
+		assertJarManifestValue( jarFile, "Implementation-Title", "BoxJSON Override" );
+		assertFileExists( projectRoot & "/build/docs/javadoc/index.html" );
+
+		print.greenLine( "Box.json defaults test passed." );
+	}
+
+	/**
+	 * @test
+	 */
+	function boxJsonDslOverride( boolean verbose=false ) {
+		var projectRoot = resolvePath( "boxjson-fixture" );
+		var jarFile = projectRoot & "/custom-libs/dsl-override.jar";
+
+		if( fileExists( jarFile ) ) {
+			fileDelete( jarFile );
+		}
+		if( fileExists( projectRoot & "/custom-libs/boxjson-app.jar" ) ) {
+			fileDelete( projectRoot & "/custom-libs/boxjson-app.jar" );
+		}
+
+		compile( "boxjson-fixture" )
+			.setVerbose( arguments.verbose )
+			.toJar( "dsl-override.jar" )
+			.run();
+
+		assertFileExists( jarFile );
+		assertFileMissing( projectRoot & "/custom-libs/boxjson-app.jar" );
+
+		print.greenLine( "Box.json DSL override test passed." );
+	}
+
+	/**
+	 * @test
+	 */
+	function boxJsonDslDisable( boolean verbose=false ) {
+		var projectRoot = resolvePath( "boxjson-fixture" );
+		var classesDirectory = projectRoot & "/custom-classes";
+		var jarFile = projectRoot & "/custom-libs/boxjson-app.jar";
+
+		if( fileExists( jarFile ) ) {
+			fileDelete( jarFile );
+		}
+
+		compile( "boxjson-fixture" )
+			.setVerbose( arguments.verbose )
+			.setCreateJar( false )
+			.setUseJavaDoc( false )
+			.run();
+
+		assertFileExists( classesDirectory & "/example/boxjson/BoxJsonApp.class" );
+		assertFileMissing( jarFile );
+
+		print.greenLine( "Box.json DSL disable test passed." );
+	}
+
 	private function assertFileExists( required string filePath ) {
 		if( !fileExists( arguments.filePath ) ) {
 			error( "Expected file was not created: #arguments.filePath#" );
+		}
+	}
+
+	private function assertFileMissing( required string filePath ) {
+		if( fileExists( arguments.filePath ) ) {
+			error( "Expected file to be missing: #arguments.filePath#" );
 		}
 	}
 

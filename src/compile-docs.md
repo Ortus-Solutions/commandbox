@@ -28,16 +28,16 @@ this resolves from the directory containing `Task.cfc`.
 | Setting | Default |
 | --- | --- |
 | Java sources | `src/main/java` |
-| Compiled classes | `classes/java/main` |
-| JAR directory | `libs` |
+| Compiled classes | `build/classes/java/main` |
+| JAR directory | `build/libs` |
 | Resources | `src/main/resources` |
-| Javadocs | `javaDocs/main` |
+| Javadocs | `build/docs/javadoc` |
 
 
 ## Basic Compilation
 
 Java source is expected in `src/main/java` by default. Compiled classes are
-written to `classes/java/main`.
+written to `build/classes/java/main`.
 
 ```js
 compile().run();
@@ -51,7 +51,7 @@ java compile
 
 ## Create a JAR
 
-Call `.toJar()` to create a JAR in `libs`.
+Call `.toJar()` to create a JAR in `build/libs`.
 
 ```js
 var result = compile()
@@ -86,8 +86,8 @@ The returned `result.jarPath` contains the generated JAR path.
 ```js
 var result = compile()
 	.fromSource( "src/custom/java" )
-	.toClasses( "build/classes" )
-	.libsDir( "build/libs" )
+	.toClasses( "target/classes" )
+	.libsDir( "target/libs" )
 	.toJar( "example.jar" )
 	.run();
 ```
@@ -95,7 +95,7 @@ var result = compile()
 Equivalent command:
 
 ```bash
-java compile source=src/custom/java classes=build/classes libsDir=build/libs --jar jarName=example.jar
+java compile source=src/custom/java classes=target/classes libsDir=target/libs --jar jarName=example.jar
 ```
 
 `.fromSource()` accepts a directory, source-file glob, comma-delimited string,
@@ -171,8 +171,8 @@ When the compile project contains a `box.json`, package metadata is also used
 to populate the JAR manifest automatically. The DSL maps package fields such as
 `name`, `slug`, `version`, `author`, `shortDescription`, `homepage`,
 `documentation`, and the first license URL to manifest attributes. An optional
-`box.json` `manifest` struct is applied last, so those values override the
-generated package metadata.
+`java.manifest` struct is applied last, so those values override the generated
+package metadata.
 
 For example:
 
@@ -181,15 +181,176 @@ For example:
 	"name" : "Example",
 	"slug" : "example",
 	"version" : "1.0.0",
-	"manifest" : {
-		"Main-Class" : "example.App",
-		"Implementation-Version" : "1.0.0"
+	"java" : {
+		"manifest" : {
+			"Main-Class" : "example.App",
+			"Implementation-Version" : "1.0.0"
+		}
 	}
 }
 ```
 
 The explicit `.manifest()` call takes precedence over values loaded from
 `box.json`.
+
+## box.json Configuration
+
+A project's `box.json` can supply any compile setting under a top-level `java`
+object. The keys use the same names as the `java compile` command parameters.
+Values in `box.json` act as the baseline defaults, applied when the DSL or
+command is created:
+
+```json
+{
+	"java" : {
+		"source"         : [ "src/main/java", "src/generated/java" ],
+		"classes"        : "build/classes/java/main",
+		"libsDir"        : "build/libs",
+		"resources"      : "src/main/resources",
+		"javaDocsDir"    : "build/docs/javadoc",
+		"classPath"      : [ "libs", "libs/dependencies" ],
+		"jar"            : true,
+		"jarName"        : "my-app.jar",
+		"fatJar"         : true,
+		"fatJarName"     : "my-app-all.jar",
+		"fatJarJars"     : [ "libs/dependencies" ],
+		"compileOptions" : { "release" : 8, "parameters" : true },
+		"jarOptions"     : { "mainClass" : "example.App" },
+		"fatJarOptions"  : { "duplicatePolicy" : "last" },
+		"manifest"       : { "Implementation-Title" : "My App" },
+		"javaDocs"       : true,
+		"verbose"        : false
+	}
+}
+```
+
+`java.manifest` is the home for manifest entries in `box.json`. The top-level
+`manifest` key is no longer read.
+
+Precedence, from lowest to highest:
+
+1. Built-in defaults
+2. `box.json` `java` configuration
+3. Explicit DSL calls or command-line flags
+
+That means a project can configure everything in `box.json` and run a bare
+`java compile` — while a flag like `java compile --jar jarName=override.jar`
+still wins when needed.
+
+Nested structs are merged, not replaced. `compileOptions`, `jarOptions`, and
+`manifest` values from `box.json` are combined with values passed to the DSL
+or command, with the explicit values winning per-key:
+
+```js
+// box.json -> java.compileOptions = { "release" : 8 }
+compile()
+	.compileOptions( { "parameters" : true } )
+	.toJar( "example.jar" )
+	.run();
+```
+
+Both `release=8` and `parameters=true` apply. The same merge applies to the
+manifest: `box.json` -> `java.manifest` fills in any attributes not already
+set by an explicit `.manifest()` call.
+
+The `jar`, `fatJar`, `javaDocs`, and `verbose` booleans are tri-state. Omitted
+entirely, box.json (or the default) is used. On the command line, pass
+`jar=true` to force it on or `jar=false` to force it off. In the DSL, the
+generated accessors do the same, e.g. `compile().setCreateJar( false )`,
+`.setUseJavaDoc( false )`, or `.setVerbose( false )`.
+
+## java init
+
+The `java init` command adds the `java` configuration object to a project's
+box.json and creates the convention folders:
+
+```bash
+java init
+```
+
+If the project has no box.json yet, `package init` is run for you first. All
+convention folder paths can be overridden:
+
+```bash
+java init source=src/custom/java classes=build/classes libsDir=dist
+```
+
+Folders that do not exist are created. When the source folder is newly
+created, a sample `example/Example.java` is stubbed in that prints
+"Hello, World!":
+
+```bash
+java init --force
+```
+
+`--force` overwrites an existing `java` configuration in box.json.
+
+When the source folder is newly created, `jar` is set to true and the JAR's
+entry point is pointed at the stubbed class, so `java run` works with zero
+arguments.
+
+## java run
+
+The `java run` command executes the compiled output of the project. It does
+not compile — run `java compile` first, or follow the full flow
+`java init` -> `java compile` -> `java run`.
+
+```bash
+java run
+```
+
+box.json supplies the defaults (which JAR or main class to run, the classpath,
+the Java version). Everything can be overridden with named parameters, using
+the standard CommandBox parameter syntax:
+
+```bash
+java run mainClass=example.App
+java run jarFile=dist/my-app.jar
+java run javaVersion=openjdk17
+java run :1=arg1 :2=arg2
+```
+
+| Param | What it does |
+| --- | --- |
+| `mainClass` | The class to execute. Overrides box.json `java.jarOptions.mainClass`. Errors if no main class exists anywhere. |
+| `jarFile` | The JAR file to run. Overrides box.json `java.jarName`. |
+| `libsDirectory` | Libs directory(ies) to add to the classpath. Comma-delimited, searched recursively for JARs. Overrides box.json `java.libsDir`. |
+| `classesDirectory` | Compiled classes directory to add to the classpath. Overrides box.json `java.classes`. |
+| `javaVersion` | Java install ID to use, like `openjdk17` or `21`. Defaults to the CLI's Java, or a version matching box.json `java.minJVM` (downloaded if needed, like the compile DSL). |
+| `args` | Java program arguments. Either a struct of `:N=value` dynamic params (ordered by numeric key) or a space-delimited string. |
+| `--verbose` | Show verbose output including the exact command executed. |
+
+### How the run target is resolved
+
+- If box.json `java.jar` is true (or `jarFile` is passed), the JAR is always
+  the target. When `jarName` is empty, the name is derived from the package
+  like the compile DSL does: `<slug>-<version>.jar` in the libs directory.
+- Otherwise the main class is run from the classes directory + any JARs found
+  recursively in the libs directory(ies).
+- If the JAR is missing, or the classes directory is missing or empty, the
+  command errors and tells you to run `java compile` first.
+
+### Java program arguments
+
+Program arguments are passed two ways, matching CommandBox's dynamic
+parameter syntax:
+
+```bash
+# Ordered via dynamic params (numeric keys)
+java run :1=arg1 :2=arg2
+
+# Simple space-delimited string
+java run args="arg1 arg2"
+```
+
+Both are collected into the command's `args` parameter and forwarded to
+`main()` in order.
+
+### Execution
+
+The command is executed through the `run` command so output is streamed live
+(not captured) and console input is passed through for interactive Java
+programs. The Java process exit code becomes the command's exit code.
 
 ## Compiler Options
 
@@ -297,7 +458,7 @@ normal timestamp behavior.
 
 ## Javadocs
 
-Call `.withJavaDocs()` to generate documentation in `javaDocs/main`.
+Call `.withJavaDocs()` to generate documentation in `build/docs/javadoc`.
 
 ```js
 var result = compile()

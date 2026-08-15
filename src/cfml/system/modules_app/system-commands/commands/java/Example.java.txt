@@ -1,0 +1,34 @@
+package example;
+
+/**
+ * Example class that provides a simple greeting functionality.
+ */
+public class Example {
+
+	public Example() {
+	}
+
+	/**
+	 * Main method that prints a greeting message to the console.
+	 * @param args command line arguments, where the first argument is the name to greet
+	 */
+	public static void main( String[] args ) {
+		String name;
+		if ( args.length > 0 ) {
+			name = args[0];
+		} else {
+			name = "World";
+		}
+		System.out.println( new Example().sayHello( name ) );
+	}
+
+	/**
+	 * Instance method that returns a greeting message for the given name.
+	 * @param name the name to greet
+	 * @return a greeting message
+	 */
+	public String sayHello( String name ) {
+		return "Hello " + name + "!";
+	}
+
+}

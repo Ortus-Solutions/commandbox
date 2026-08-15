@@ -8,11 +8,11 @@
  * java compile manifest:Main-Class=example.App --JSON
  * {code}
  *
- * Compilation uses any available JDK unless a `release`, `source`, or `target`
+ * Compilation uses any available JDK unless a release, source, or target
  * option requires a specific minimum version. Java 21 is downloaded as the
  * fallback when no suitable JDK is available.
  *
- * Complex options use the `name:key=value` syntax. Repeated entries are merged
+ * Complex options use the name:key=value syntax. Repeated entries are merged
  * into a struct. Comma-delimited values are converted to arrays for options that
  * accept lists.
  **/
@@ -30,24 +30,26 @@ component extends="commandbox.system.BaseCommand" {
 	 * @libsDir.optionsDirectoryComplete true
 	 * @resources Resource directory to include in a JAR
 	 * @resources.optionsDirectoryComplete true
+	 * @javaDocsDir Javadoc output directory
+	 * @javaDocsDir.optionsDirectoryComplete true
 	 * @manifest Manifest entries supplied as manifest:Name=value
 	 * @compileOptions Javac options supplied as compileOptions:Name=value
 	 * @jarOptions Jar options supplied as jarOptions:Name=value
 	 * @classPath JAR, JAR directory, or comma-delimited list
 	 * @classPath.optionsFileComplete true
 	 * @classPath.optionsDirectoryComplete true
-	 * @jar Create a JAR
+	 * @jar Create a JAR. Omitted, box.json (or the default) is used; false disables it.
 	 * @jarName JAR filename
 	 * @jarName.optionsFileComplete true
-	 * @fatJar Create a fat JAR
+	 * @fatJar Create a fat JAR. Omitted, box.json (or the default) is used; false disables it.
 	 * @fatJarName Fat JAR filename
 	 * @fatJarName.optionsFileComplete true
 	 * @fatJarJars Dependency JARs or directories for a fat JAR
 	 * @fatJarJars.optionsFileComplete true
 	 * @fatJarJars.optionsDirectoryComplete true
 	 * @fatJarOptions Fat JAR options supplied as fatJarOptions:Name=value
-	 * @javaDocs Generate Javadocs
-	 * @verbose Show verbose compiler and JAR output
+	 * @javaDocs Generate Javadocs. Omitted, box.json (or the default) is used; false disables it.
+	 * @verbose Show verbose compiler and JAR output. Omitted, box.json (or the default) is used; false disables it.
 	 * @JSON Return the compile result without the text overview
 	 */
 	function run(
@@ -56,18 +58,19 @@ component extends="commandbox.system.BaseCommand" {
 		string classes="",
 		string libsDir="",
 		string resources="",
+		string javaDocsDir="",
 		struct manifest={},
 		struct compileOptions={},
 		struct jarOptions={},
 		string classPath="",
-		boolean jar=false,
+		boolean jar,
 		string jarName="",
-		boolean fatJar=false,
+		boolean fatJar,
 		string fatJarName="",
 		string fatJarJars="",
 		struct fatJarOptions={},
-		boolean javaDocs=false,
-		boolean verbose=false,
+		boolean javaDocs,
+		boolean verbose,
 		boolean JSON=false
 	) {
 		var dsl = compile( arguments.projectRoot );
@@ -75,17 +78,35 @@ component extends="commandbox.system.BaseCommand" {
 		if( len( arguments.classes ) ) dsl.toClasses( arguments.classes );
 		if( len( arguments.libsDir ) ) dsl.libsDir( arguments.libsDir );
 		if( len( arguments.resources ) ) dsl.withResources( arguments.resources );
+		if( len( arguments.javaDocsDir ) ) dsl.setJavaDocDestinationDir( arguments.javaDocsDir );
 		if( !isNull( arguments.classPath ) && len( arguments.classPath & "" ) ) dsl.withClassPath( arguments.classPath );
 		if( structCount( arguments.compileOptions ) ) dsl.compileOptions( normalizeOptions( arguments.compileOptions ) );
 		if( structCount( arguments.jarOptions ) ) dsl.jarOptions( normalizeOptions( arguments.jarOptions ) );
 		if( structCount( arguments.manifest ) ) dsl.manifest( arguments.manifest );
-		if( arguments.javaDocs ) dsl.withJavaDocs();
-		if( arguments.verbose ) dsl.setVerbose( true );
+		// The jar, fatJar, javaDocs, and verbose booleans are tri-state:
+		// omitted leaves box.json (or the defaults) untouched, true forces it
+		// on, and false turns it off. This lets a bare `java compile` honor a
+		// project's box.json while still being overridable at the shell.
+		if( !isNull( arguments.javaDocs ) ) dsl.setUseJavaDoc( arguments.javaDocs );
+		if( !isNull( arguments.verbose ) ) dsl.setVerbose( arguments.verbose );
 
-		if( arguments.jar || len( arguments.jarName ) ) {
+		if( !isNull( arguments.jar ) ) {
+			if( arguments.jar ) {
+				dsl.toJar( arguments.jarName );
+			} else {
+				dsl.setCreateJar( false );
+			}
+		} else if( len( arguments.jarName ) ) {
 			dsl.toJar( arguments.jarName );
 		}
-		if( arguments.fatJar || len( arguments.fatJarName ) ) {
+
+		if( !isNull( arguments.fatJar ) ) {
+			if( arguments.fatJar ) {
+				dsl.toFatJar( arguments.fatJarName, arguments.fatJarJars, arguments.fatJarOptions );
+			} else {
+				dsl.setFatJarPaths( [] );
+			}
+		} else if( len( arguments.fatJarName ) ) {
 			dsl.toFatJar( arguments.fatJarName, arguments.fatJarJars, arguments.fatJarOptions );
 		}
 

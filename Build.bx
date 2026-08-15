@@ -42,11 +42,20 @@ class {
 			.fromSource( "src/java/com" )
 			.toClasses( "build/temp/classes/jgit" )
 			.withClassPath( [ resolvePath( "bx-cli/libs" ) ] )
-			.toJar( "../bx-cli/libs/ortus-jgit.jar" )
+			.libsDir( "bx-cli/libs" )
+			.toJar( "ortus-jgit.jar" )
 			.run();
 
 		command( "forgebox use" ).params( "ortus" ).run();
-		command( "publish" ).inWorkingDirectory( resolvePath( "bx-cli" ) ).flags( "force" ).run();
+	//	command( "publish" ).inWorkingDirectory( resolvePath( "bx-cli" ) ).flags( "force" ).run();
+	}
+
+	/**
+	 * Runs the full build: package the module, then build all installers.
+	 */
+	function all() {
+		run();
+		buildInstallers();
 	}
 
 	/**
@@ -870,7 +879,7 @@ class {
 			}
 		);
 
-		for( var filePath in artifactFiles ) {
+		artifactFiles.each( function( filePath ) {
 			var relativePath = replaceNoCase( filePath, distPath, "", "one" );
 			relativePath = reReplace( relativePath, "^[/\\\\]+", "", "all" );
 			relativePath = replace( relativePath, "\", "/", "all" );
@@ -878,14 +887,51 @@ class {
 				? relativePath
 				: versionPrefix & "/" & relativePath;
 
-			print.text( "Uploading #objectKey# ..." ).toConsole();
 			s3.putObjectFile(
 				bucketName=bucketName,
 				filepath=filePath,
 				uri=objectKey,
 				contentType="auto"
 			);
-			print.line( " Done!" ).toConsole();
+			print.line( "Uploaded #objectKey#" ).toConsole();
+		}, true );
+
+		// After a successful upload, prune stale RPM repo metadata from S3.
+		// The local repomd.xml references only the current generation; any other
+		// file left in the local repodata folder is an orphan from a previous
+		// build. Delete only those exact objects so the repo stops accumulating.
+		var rpmRepositories = [ "RPMS-be/noarch", "RPMS/noarch" ];
+		for( var repositoryPath in rpmRepositories ) {
+			var localRepodataPath = resolvePath( "build/dist/#repositoryPath#/repodata" );
+			var repomdFile = localRepodataPath & "/repomd.xml";
+			if( !fileExists( repomdFile ) ) {
+				continue;
+			}
+
+			// Extract the filenames referenced by the current repomd.xml
+			var referencedFiles = [];
+			var hrefMatches = reMatch( 'href="repodata/([^"]+)"', fileRead( repomdFile ) );
+			for( var hrefMatch in hrefMatches ) {
+				var referencedFile = reReplace( hrefMatch, 'href="repodata/([^"]+)"', "\1" );
+				if( !referencedFiles.find( referencedFile ) ) {
+					referencedFiles.append( referencedFile );
+				}
+			}
+
+			// Delete any local repodata file that is not referenced, in parallel.
+			// This runs only after the upload loop completes, so an upload error
+			// can never wipe the repo before the new metadata is safely in place.
+			var staleFiles = [];
+			for( var localFile in directoryList( localRepodataPath, false, "name" ) ) {
+				if( localFile != "repomd.xml" && !referencedFiles.find( localFile ) ) {
+					staleFiles.append( localFile );
+				}
+			}
+			staleFiles.each( function( localFile ) {
+				var staleObjectKey = "#repositoryPath#/repodata/#localFile#";
+				s3.deleteObject( bucketName=bucketName, uri=staleObjectKey );
+				print.line( "Deleted stale S3 object #staleObjectKey#" ).toConsole();
+			}, true );
 		}
 	}
 

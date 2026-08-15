@@ -1,0 +1,19 @@
+{
+    "name" : "BoxJSON Compile Test",
+    "slug" : "boxjson-compile-test",
+    "version" : "2.0.0",
+    "java" : {
+        "source"    : "src/custom/java",
+        "classes"   : "custom-classes",
+        "libsDir"   : "custom-libs",
+        "jar"       : true,
+        "jarName"   : "boxjson-app.jar",
+        "javaDocs"  : true,
+        "compileOptions" : {
+            "release" : 8
+        },
+        "manifest" : {
+            "Implementation-Title" : "BoxJSON Override"
+        }
+    }
+}

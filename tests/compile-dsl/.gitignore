@@ -1,8 +1,17 @@
 /classes/
 /javaDocs/
+/javaDocsmain/
 /libs/
 /custom-libs/
+/build/
 /fat-jar-services/
 /fat-jar-duplicates/
+/package-fixture/build/
 /package-fixture/classes/
 /package-fixture/libs/
+/boxjson-fixture/build/
+/boxjson-fixture/custom-classes/
+/boxjson-fixture/custom-libs/
+/java-init-fixture/
+/java-init-custom-fixture/
+/run-fixture/build/
