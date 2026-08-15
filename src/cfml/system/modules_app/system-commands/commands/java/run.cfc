@@ -50,10 +50,22 @@ component extends="commandbox.system.BaseCommand" {
 		// Resolve the Java version to use (arg -> box.json -> CLI default)
 		var javaBin = resolveJavaBin( arguments.javaVersion, boxJSON, arguments.verbose );
 
+		// box.json java.runArgs provides default args (string or array). A
+		// string is split on spaces; an array is used as-is. The user-provided
+		// args are appended after them.
+		var combinedArgs = [];
+		var defaultRunArgs = boxJSON.java.runArgs ?: "";
+		if( isSimpleValue( defaultRunArgs ) && len( defaultRunArgs ) ) {
+			combinedArgs.append( listToArray( defaultRunArgs, " " ), true );
+		} else if( isArray( defaultRunArgs ) ) {
+			combinedArgs.append( defaultRunArgs, true );
+		}
+		combinedArgs.append( resolveProgramArgs( arguments.args ), true );
+
 		// Split the args into JVM args and program args. JVM args are the ones
 		// that look like JVM flags (leading single hyphen, e.g. -Xmx512m,
 		// -Dfoo=bar); everything else is forwarded to main().
-		var argsSplit = splitJvmArgs( resolveProgramArgs( arguments.args ) );
+		var argsSplit = splitJvmArgs( combinedArgs );
 		var jvmArgs = argsSplit.jvmArgs;
 		var programArgs = argsSplit.programArgs;
 
@@ -263,15 +275,18 @@ component extends="commandbox.system.BaseCommand" {
 	}
 
 	/**
-	 * Formats the program args into a shell command string.
+	 * Formats args into a shell command string. Args are quote-wrapped only
+	 * when they contain a space, so the shell keeps the value together; simple
+	 * args (flags, single words) pass through unquoted.
 	 */
-	private string function formatArgs( required array programArgs ) {
-		if( !arguments.programArgs.len() ) {
+	private string function formatArgs( required array args ) {
+		if( !arguments.args.len() ) {
 			return "";
 		}
-		return " " & arguments.programArgs.map( function( arg ) {
-			return '"#arguments.arg#"';
-		} ).toList( " " );
+		var formatted = arguments.args.map( function( arg ) {
+			return arguments.arg.find( " " ) ? '"#arguments.arg#"' : arguments.arg;
+		} );
+		return " " & formatted.toList( " " );
 	}
 
 	/**

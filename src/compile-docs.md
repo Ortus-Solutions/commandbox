@@ -317,7 +317,7 @@ java run :1=arg1 :2=arg2
 | `libsDirectory` | Libs directory(ies) to add to the classpath. Comma-delimited, searched recursively for JARs. Overrides box.json `java.libsDir`. |
 | `classesDirectory` | Compiled classes directory to add to the classpath. Overrides box.json `java.classes`. |
 | `javaVersion` | Java install ID to use, like `openjdk17` or `21`. Defaults to the CLI's Java, or a version matching box.json `java.minJVM` (downloaded if needed, like the compile DSL). |
-| `args` | Java program arguments. Either a struct of `:N=value` dynamic params (ordered by numeric key) or a space-delimited string. |
+| `args` | Arguments for the run. Either a struct of `:N=value` dynamic params (ordered by numeric key) or a space-delimited string. JVM-style flags (leading single hyphen, e.g. `-Xmx512m`, `-Dfoo=bar`) are routed to the JVM; everything else is forwarded to `main()`. |
 | `--verbose` | Show verbose output including the exact command executed. |
 
 ### How the run target is resolved

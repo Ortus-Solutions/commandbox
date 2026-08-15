@@ -63,6 +63,7 @@ component extends="commandbox.system.BaseCommand" {
 				"duplicatePolicy"         : "last"
 			},
 			"manifest"       : {},
+			"runArgs"        : [],
 			"javaDocs"       : false,
 			"verbose"        : false
 		};

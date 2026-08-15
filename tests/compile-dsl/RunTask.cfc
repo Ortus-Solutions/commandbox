@@ -71,6 +71,43 @@ component {
 	}
 
 	/**
+	 * box.json java.runArgs provides default args that are merged in before
+	 * the user-provided args.
+	 *
+	 * @test
+	 */
+	function runWithConfigArgs() {
+		cleanFixture();
+		// run-fixture box.json has runArgs: [ "from-config" ]
+		runJavaRun();
+		print.greenLine( "Run config args test passed." );
+	}
+
+	/**
+	 * A string runArgs is split on spaces and each arg is routed correctly -
+	 * JVM flags to the JVM, everything else to main(). Four args alternating
+	 * between JVM and program args.
+	 *
+	 * @test
+	 */
+	function runWithStringConfigArgs() {
+		cleanFixture();
+		// Temporarily set a string runArgs that alternates JVM/user args
+		var boxJsonPath = resolvePath( "run-fixture/box.json" );
+		var boxJSON = deserializeJSON( fileRead( boxJsonPath ) );
+		boxJSON.java.runArgs = "one -Dtest.prop=works two -Xmx256m";
+		fileWrite( boxJsonPath, serializeJSON( boxJSON, true ) );
+		try {
+			runJavaRun();
+		} finally {
+			// Restore the array form
+			boxJSON.java.runArgs = [ "from-config" ];
+			fileWrite( boxJsonPath, serializeJSON( boxJSON, true ) );
+		}
+		print.greenLine( "Run string config args test passed." );
+	}
+
+	/**
 	 * @test
 	 */
 	function runWithJavaVersion() {
