@@ -346,6 +346,43 @@ java run args="arg1 arg2"
 Both are collected into the command's `args` parameter and forwarded to
 `main()` in order.
 
+### JVM args
+
+JVM-style flags passed in `args` are detected by their leading single hyphen
+and routed to the java executable, before `-jar`/`-cp`. Everything else goes
+to `main()`. A value containing a space is quoted so the shell keeps it
+together:
+
+```bash
+# -Xmx512m and -Dtest.prop=works go to the JVM; arg1 and arg2 go to main()
+java run args="-Xmx512m -Dtest.prop=works arg1 arg2"
+
+# A property value with a space stays intact
+java run args="-Dname=brad wood"
+```
+
+### box.json java.runArgs
+
+Default args can be configured in box.json under `java.runArgs` as either a
+string or an array. They are merged in before any args the user passes to
+`java run`:
+
+```json
+{
+	"java" : {
+		"runArgs" : [ "-Xmx512m", "-Dtest.prop=works" ]
+	}
+}
+```
+
+```bash
+java run             # uses runArgs from box.json
+java run args=extra  # box.json runArgs first, then "extra"
+```
+
+The same JVM-arg routing applies to `runArgs`: leading-single-hyphen flags go
+to the JVM, everything else to `main()`.
+
 ### Execution
 
 The command is executed through the `run` command so output is streamed live
