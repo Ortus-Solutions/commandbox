@@ -59,6 +59,18 @@ component {
 	}
 
 	/**
+	 * JVM args (leading single hyphen) are split out of args and routed to
+	 * the java executable, while the rest go to main().
+	 *
+	 * @test
+	 */
+	function runWithJvmArgs() {
+		cleanFixture();
+		runJavaRun( { "args" = "-Xmx512m -Dtest.prop=works arg1 arg2" } );
+		print.greenLine( "Run JVM args test passed." );
+	}
+
+	/**
 	 * @test
 	 */
 	function runWithJavaVersion() {

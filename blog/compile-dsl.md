@@ -290,6 +290,26 @@ java run javaVersion=17
 java run :1=arg1 :2=arg2
 ```
 
+### box.json is the whole config
+
+The `java` object in box.json controls *everything* the compile DSL does. Point it at custom source folders, pin compiler options, declare manifest entries, turn JARs or Javadocs on — and a bare `java compile` (or `java run`) picks it all up with zero flags:
+
+```json
+{
+    "java" : {
+        "source"         : "src/custom/java",
+        "classes"        : "build/classes",
+        "libsDir"        : "dist",
+        "jar"            : true,
+        "jarName"        : "my-app.jar",
+        "compileOptions" : { "release" : 8 },
+        "manifest"       : { "Implementation-Title" : "My App" }
+    }
+}
+```
+
+That's the whole point: a project can be fully customized and still run `java compile` with no arguments — the conventions live in box.json, not in your muscle memory.
+
 ## Next Steps
 
 - Run `java compile --help` inside CommandBox for the full list of options

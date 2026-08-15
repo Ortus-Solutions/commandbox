@@ -50,8 +50,12 @@ component extends="commandbox.system.BaseCommand" {
 		// Resolve the Java version to use (arg -> box.json -> CLI default)
 		var javaBin = resolveJavaBin( arguments.javaVersion, boxJSON, arguments.verbose );
 
-		// Resolve the program arguments
-		var programArgs = resolveProgramArgs( arguments.args );
+		// Split the args into JVM args and program args. JVM args are the ones
+		// that look like JVM flags (leading single hyphen, e.g. -Xmx512m,
+		// -Dfoo=bar); everything else is forwarded to main().
+		var argsSplit = splitJvmArgs( resolveProgramArgs( arguments.args ) );
+		var jvmArgs = argsSplit.jvmArgs;
+		var programArgs = argsSplit.programArgs;
 
 		// Resolve the run target. jar=true (or an explicit jarFile) means the
 		// JAR is always the target - never fall back to class files.
@@ -85,7 +89,7 @@ component extends="commandbox.system.BaseCommand" {
 			if( !fileExists( jarPath ) ) {
 				error( "JAR file not found: [#jarPath#]. Run `java compile` to build the project first." );
 			}
-			var cmd = '"#javaExecutable#" -jar "#jarPath#"#formatArgs( programArgs )#';
+			var cmd = '"#javaExecutable#"#formatArgs( jvmArgs )# -jar "#jarPath#"#formatArgs( programArgs )#';
 			return runJavaProcess( cmd, verbose );
 		}
 
@@ -106,7 +110,7 @@ component extends="commandbox.system.BaseCommand" {
 		}
 
 		var classPath = buildClassPath( arguments.classesDirectory, arguments.libsDirectory, boxJSON );
-		var cmd = '"#javaExecutable#" -cp "#classPath#" #mainClass##formatArgs( programArgs )#';
+		var cmd = '"#javaExecutable#"#formatArgs( jvmArgs )# -cp "#classPath#" #mainClass##formatArgs( programArgs )#';
 		return runJavaProcess( cmd, verbose );
 	}
 
@@ -207,6 +211,26 @@ component extends="commandbox.system.BaseCommand" {
 		}
 		// Simple string: split on spaces
 		return listToArray( arguments.args, " " );
+	}
+
+	/**
+	 * Splits resolved args into JVM args and program args.
+	 *
+	 * JVM args are the ones that look like JVM flags - a leading single hyphen
+	 * such as -Xmx512m or -Dfoo=bar. Everything else is a program arg. The
+	 * split is an implementation detail of building the java command line.
+	 */
+	private struct function splitJvmArgs( required array allArgs ) {
+		var jvmArgs = [];
+		var programArgs = [];
+		for( var arg in arguments.allArgs ) {
+			if( left( arg, 1 ) == "-" && left( arg, 2 ) != "--" ) {
+				jvmArgs.append( arg );
+			} else {
+				programArgs.append( arg );
+			}
+		}
+		return { "jvmArgs" : jvmArgs, "programArgs" : programArgs };
 	}
 
 	/**
