@@ -5,6 +5,9 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Method;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -878,49 +881,55 @@ public class CommandBoxCLIMain {
 	}
 
 	/**
-	 * Launches the installed BoxLang executable in CLI mode.
+	 * Loads the installed BoxLang runtime JARs into this JVM and invokes the BoxLang
+	 * runtime directly with the CommandBox CLI module.
 	 *
-	 * @param executable BoxLang executable to invoke.
+	 * @param executable BoxLang executable used to locate the installed runtime.
 	 * @param boxLangHome Runtime home for BoxLang configuration and user data.
 	 * @param commandBoxHome CommandBox home resolved by the launcher.
 	 * @param arguments Arguments forwarded to CommandBox.
 	 * @param source Source used to detect the executable.
-	 * @throws IOException If the executable cannot be found or exits unsuccessfully.
-	 * @throws InterruptedException If the process is interrupted.
+	 * @param workingDirectory Working directory for the CommandBox session.
+	 * @throws Exception If the runtime cannot be loaded or invoked.
 	 */
-	private static void launchBoxLang( File executable, File boxLangHome, File commandBoxHome, String[] arguments, String source, String workingDirectory ) throws IOException, InterruptedException {
+	private static void launchBoxLang( File executable, File boxLangHome, File commandBoxHome, String[] arguments, String source, String workingDirectory ) throws Exception {
 		debug( "BoxLang executable candidate: " + executable.getAbsolutePath() );
 		debug( "BoxLang executable source: " + source );
-		if ( !executable.isFile() ) {
-			throw new IOException( "BoxLang executable was not installed: " + executable );
+		// The executable lives in installRoot/bin, so the runtime JARs live in installRoot/lib.
+		File installRoot = executable.getParentFile() == null ? null : executable.getParentFile().getParentFile();
+		File libraryDirectory = installRoot == null ? null : new File( installRoot, "lib" );
+		File boxLangJar = libraryDirectory == null ? null : new File( libraryDirectory, BOXLANG_JAR );
+		debug( "BoxLang install root: " + ( installRoot == null ? "unresolved" : installRoot.getAbsolutePath() ) );
+		debug( "BoxLang library directory: " + ( libraryDirectory == null ? "unresolved" : libraryDirectory.getAbsolutePath() ) );
+		if ( boxLangJar == null || !boxLangJar.isFile() ) {
+			throw new IOException( "BoxLang runtime was not installed: " + boxLangJar );
 		}
-		List<String> command = new ArrayList<String>();
-		if ( isWindows() ) {
-			command.addAll( Arrays.asList( "cmd", "/c", executable.getAbsolutePath(), "cli" ) );
-		} else {
-			command.addAll( Arrays.asList( executable.getAbsolutePath(), "cli" ) );
+		// Settings previously passed to a child process environment now configure the
+		// in-process runtime as system properties.
+		System.setProperty( BOXLANG_HOME_PROPERTY, boxLangHome.getAbsolutePath() );
+		System.setProperty( COMMANDBOX_HOME_PROPERTY, commandBoxHome.getAbsolutePath() );
+		System.setProperty( "cfml.cli.pwd", workingDirectory );
+		System.setProperty( "COMMANDBOX_INSTALLER_BOOTSTRAP", "true" );
+		// Load every JAR in the library directory so the runtime and its dependencies are
+		// available inside this JVM, then invoke BoxRunner directly with the cli module.
+		List<URL> jarUrls = new ArrayList<URL>();
+		File[] libraryJars = libraryDirectory.listFiles();
+		if ( libraryJars != null ) {
+			for ( File libraryJar : libraryJars ) {
+				if ( libraryJar.isFile() && libraryJar.getName().endsWith( ".jar" ) ) {
+					jarUrls.add( libraryJar.toURI().toURL() );
+				}
+			}
 		}
-		command.addAll( Arrays.asList( arguments ) );
-		ProcessBuilder processBuilder = new ProcessBuilder( command ).inheritIO();
-		debug( "BoxLang command: " + command );
-		debug( "BoxLang BOXLANG_HOME: " + boxLangHome.getAbsolutePath() );
-		debug( "BoxLang CommandBox_home: " + commandBoxHome.getAbsolutePath() );
-		processBuilder.environment().put( "BOXLANG_HOME", boxLangHome.getAbsolutePath() );
-		processBuilder.environment().put( COMMANDBOX_HOME_PROPERTY, commandBoxHome.getAbsolutePath() );
-		processBuilder.environment().put( "cfml.cli.pwd", workingDirectory );
-		processBuilder.environment().put( "COMMANDBOX_INSTALLER_BOOTSTRAP", "true" );
-		// ProcessBuilder.directory() requires the directory to exist, so only set it when
-		// present and fall back to the current directory otherwise. cfml.cli.pwd is still
-		// set above so CommandBox sees the requested working dir either way.
-		File workingDirFile = new File( workingDirectory );
-		if ( workingDirFile.isDirectory() ) {
-			processBuilder.directory( workingDirFile );
-		}
-		int exitCode = processBuilder.start().waitFor();
-		debug( "BoxLang exit code: " + exitCode );
-		if ( exitCode != 0 ) {
-			throw new IOException( "BoxLang exited with code " + exitCode );
-		}
+		debug( "BoxLang runtime JARs: " + jarUrls );
+		URLClassLoader boxLangLoader = new URLClassLoader( jarUrls.toArray( new URL[ jarUrls.size() ] ), CommandBoxCLIMain.class.getClassLoader() );
+		Class<?> boxRunner = Class.forName( "ortus.boxlang.runtime.BoxRunner", true, boxLangLoader );
+		Method main = boxRunner.getMethod( "main", String[].class );
+		String[] forwardedArguments = new String[ arguments.length + 1 ];
+		forwardedArguments[ 0 ] = "module:cli";
+		System.arraycopy( arguments, 0, forwardedArguments, 1, arguments.length );
+		debug( "Invoking BoxRunner in-process with: " + Arrays.toString( forwardedArguments ) );
+		main.invoke( null, (Object) forwardedArguments );
 	}
 
 	/**

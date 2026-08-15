@@ -1382,7 +1382,7 @@ component accessors=true {
 
 		// Fourth attempt: Install something to use:
 		var requiredJDKVersion = getRequiredJDKVersion();
-		var downloadJDKVersion = requiredJDKVersion ?: 21;
+		var downloadJDKVersion = requiredJDKVersion > 0 ? requiredJDKVersion : 21;
 		job.addLog( 'Compatible JDK not found, let''s download Java #downloadJDKVersion#!' );
 		var javaHome = javaService.getJavaInstallPath( 'openjdk#downloadJDKVersion#_jdk', getVerbose() );
 		var downloadedJDKBinPath = javaHome.listAppend( 'bin/', '/' );
