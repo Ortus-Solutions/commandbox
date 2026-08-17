@@ -227,6 +227,70 @@ component accessors="true" singleton {
     	return createObject( "java", "java.io.File" ).init( arguments.file );
     }
 
+	/**
+	* Return the unique top-level files and folders from a list of relative paths.
+	* The paths may use forward slashes or backslashes.
+	* Leading and trailing slashes do not affect the result.
+	* Example: [ '/box.json', '/models/', '/models/foo.cfc' ] returns [ 'box.json', 'models' ].
+	*
+	* @relativePaths.hint Paths relative to the same base folder.
+	*/
+	array function getTopLevelPaths( required array relativePaths ) {
+		var topLevelPaths = [];
+		for( var thisPath in arguments.relativePaths ) {
+			// listFirst() skips leading slashes. For example, '/models/foo.cfc' returns 'models'.
+			var topLevel = listFirst( thisPath, '/\' );
+			if( len( topLevel ) && !arrayFindNoCase( topLevelPaths, topLevel ) ) {
+				topLevelPaths.append( topLevel );
+			}
+		}
+		return topLevelPaths;
+	}
+
+	/**
+	* Reset Windows permissions on the given files and folders.
+	* Copied files can keep permissions from their old folder.
+	* For each relative path, this method selects the first file or folder under basePath.
+	* This method uses the Windows icacls command, which manages file permissions.
+	* The command resets each selected path and everything inside it.
+	* Each selected path then inherits permissions from the base folder.
+	* This method does nothing on other operating systems.
+	* If icacls fails, this method logs a warning and lets the caller continue.
+	* The copied files are already in place, so a permission error should not stop the install.
+	*
+	* @basePath.hint Full path to the folder that contains the paths to reset.
+	* @relativePaths.hint File and folder paths relative to basePath.
+	*/
+	function resetWindowsPermissions( required string basePath, required array relativePaths ) {
+		if( !isWindows() ) {
+			return;
+		}
+		var TimeUnit = createObject( 'java', 'java.util.concurrent.TimeUnit' );
+		for( var thisPath in getTopLevelPaths( arguments.relativePaths ) ) {
+			var fullPath = resolvePath( arguments.basePath & '/' & thisPath );
+			try {
+				// Write command output to a temp file.
+				// Otherwise, the command can stop when its output buffer is full.
+				var outputFile = createObject( 'java', 'java.io.File' ).createTempFile( 'icacls-reset', '.log' );
+				var icaclsProcess = createObject( 'java', 'java.lang.ProcessBuilder' )
+					.init( [ 'icacls', fullPath, '/reset', '/T', '/C', '/Q' ] )
+					.redirectErrorStream( true )
+					.redirectOutput( outputFile )
+					.start();
+				// Give icacls up to 60 seconds to finish. Most packages finish in less than one second.
+				if( !icaclsProcess.waitFor( 60, TimeUnit.SECONDS ) ) {
+					icaclsProcess.destroyForcibly();
+					logger.warn( 'Timed out resetting NTFS permissions on [#fullPath#]' );
+				} else if( icaclsProcess.exitValue() != 0 ) {
+					logger.warn( 'icacls exited with code [#icaclsProcess.exitValue()#] while resetting NTFS permissions on [#fullPath#]. #fileRead( outputFile.getAbsolutePath() )#' );
+				}
+				outputFile.delete();
+			} catch( any e ) {
+				logger.warn( 'Error resetting NTFS permissions on [#fullPath#]. #e.message# #e.detail#' );
+			}
+		}
+	}
+
     /**
     * Operating system open files or directories natively
     * @file.hint the file/directory to open

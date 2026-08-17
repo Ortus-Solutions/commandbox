@@ -649,6 +649,17 @@ component accessors="true" singleton {
 
 			}
 
+			// On Windows, installed files may keep permissions from the temp folder.
+			// For each copied path, reset the first file or folder under the install folder.
+			// A folder reset also resets all files and folders inside that folder.
+			// Each reset path then inherits permissions from the install folder.
+			// This lets the Windows account used by IIS (IUSR) read the installed files.
+			// See COMMANDBOX-1692.
+			if( fileSystemUtil.isWindows() && results.copied.len() ) {
+				job.addLog( 'Resetting Windows NTFS permissions so installed files inherit from the destination' );
+				fileSystemUtil.resetWindowsPermissions( installDirectory, results.copied );
+			}
+
 			// Catch this to gracefully handle where the OS or another program
 			// has the folder locked.
 			try {
