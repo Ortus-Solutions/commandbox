@@ -268,26 +268,49 @@ component accessors="true" singleton {
 		}
 		var TimeUnit = createObject( 'java', 'java.util.concurrent.TimeUnit' );
 		for( var thisPath in getTopLevelPaths( arguments.relativePaths ) ) {
-			var fullPath = resolvePath( arguments.basePath & '/' & thisPath );
+			// Remove trailing slashes.
+			// A trailing slash can make icacls read a path with spaces incorrectly.
+			var fullPath = reReplace( resolvePath( arguments.basePath & '/' & thisPath ), '[\\/]+$', '' );
+			// Skip missing paths.
+			// icacls treats a missing path as a search pattern.
+			// This search can reset permissions on other files in the folder tree.
+			var isDirectory = directoryExists( fullPath );
+			if( !isDirectory && !fileExists( fullPath ) ) {
+				continue;
+			}
+			// Use /T only for folders.
+			// The /T option resets everything inside a folder.
+			// With a file path, /T can also reset files with the same name in subfolders.
+			var icaclsArgs = isDirectory ? [ 'icacls', fullPath, '/reset', '/T', '/C', '/Q' ] : [ 'icacls', fullPath, '/reset', '/C', '/Q' ];
+			// Write command output to a temp file.
+			// Otherwise, the command can stop when its output buffer is full.
+			// Each log file needs a unique name.
+			// More than one CommandBox process can use this temp folder at the same time.
+			var outputFilePath = tempDir & '/icacls-reset-#createUUID()#.log';
 			try {
-				// Write command output to a temp file.
-				// Otherwise, the command can stop when its output buffer is full.
-				var outputFile = createObject( 'java', 'java.io.File' ).createTempFile( 'icacls-reset', '.log' );
 				var icaclsProcess = createObject( 'java', 'java.lang.ProcessBuilder' )
-					.init( [ 'icacls', fullPath, '/reset', '/T', '/C', '/Q' ] )
+					.init( icaclsArgs )
 					.redirectErrorStream( true )
-					.redirectOutput( outputFile )
+					.redirectOutput( createObject( 'java', 'java.io.File' ).init( outputFilePath ) )
 					.start();
 				// Give icacls up to 60 seconds to finish. Most packages finish in less than one second.
 				if( !icaclsProcess.waitFor( 60, TimeUnit.SECONDS ) ) {
 					icaclsProcess.destroyForcibly();
 					logger.warn( 'Timed out resetting NTFS permissions on [#fullPath#]' );
 				} else if( icaclsProcess.exitValue() != 0 ) {
-					logger.warn( 'icacls exited with code [#icaclsProcess.exitValue()#] while resetting NTFS permissions on [#fullPath#]. #fileRead( outputFile.getAbsolutePath() )#' );
+					logger.warn( 'icacls exited with code [#icaclsProcess.exitValue()#] while resetting NTFS permissions on [#fullPath#]. #fileRead( outputFilePath )#' );
 				}
-				outputFile.delete();
 			} catch( any e ) {
 				logger.warn( 'Error resetting NTFS permissions on [#fullPath#]. #e.message# #e.detail#' );
+			} finally {
+				// Ignore errors when deleting the log file.
+				// A cleanup error must not stop this method.
+				// Windows may keep the file locked for a short time after icacls is stopped.
+				try {
+					if( fileExists( outputFilePath ) ) {
+						fileDelete( outputFilePath );
+					}
+				} catch( any e ) {}
 			}
 		}
 	}
