@@ -1466,14 +1466,86 @@ component accessors="true" singleton {
 		var props = [];
 
 		// Check and see if box.json exists
-		if( isPackage( arguments.directory ) ) {
-			if( arguments.all ) {
-				var boxJSON = readPackageDescriptor( arguments.directory );
-			} else {
-				var boxJSON = readPackageDescriptorRaw( arguments.directory );
-			}
-			props = JSONService.addProp( props, '', '', boxJSON );
+		if( arguments.all ) {
+			var boxJSON = readPackageDescriptor( arguments.directory );
+		} else {
+			var boxJSON = readPackageDescriptorRaw( arguments.directory );
 		}
+		props = JSONService.addProp( props, '', '', boxJSON );
+
+		// If we want all possible options...
+		if( arguments.all ) {
+			// Suggest likely javac compile options
+			props = JSONService.addProp( props, '', '', {
+				"java" : {
+					"compileOptions" : {
+						"release"               : "",
+						"source"                : "",
+						"target"                : "",
+						"encoding"              : "",
+						"debug"                 : "",
+						"deprecation"           : "",
+						"enablePreview"         : "",
+						"nowarn"                : "",
+						"parameters"            : "",
+						"werror"                : "",
+						"lint"                  : "",
+						"maxErrors"             : "",
+						"maxWarnings"           : "",
+						"proc"                  : "",
+						"implicit"              : "",
+						"processors"            : "",
+						"processorPath"         : "",
+						"sourcePath"            : "",
+						"modulePath"            : "",
+						"moduleSourcePath"      : "",
+						"addModules"            : "",
+						"limitModules"          : ""
+					}
+				}
+			} );
+
+			// Suggest likely JAR options
+			props = JSONService.addProp( props, '', '', {
+				"java" : {
+					"jarOptions" : {
+						"compress"      : "",
+						"mainClass"     : "",
+						"date"          : "",
+						"moduleVersion" : "",
+						"hashModules"   : "",
+						"modulePath"    : "",
+						"noManifest"    : ""
+					}
+				}
+			} );
+
+			// Suggest likely manifest entries
+			props = JSONService.addProp( props, '', '', {
+				"java" : {
+					"manifest" : {
+						"Main-Class"               : "",
+						"Manifest-Version"         : "",
+						"Class-Path"               : "",
+						"Implementation-Title"     : "",
+						"Implementation-Version"   : "",
+						"Implementation-Vendor"    : "",
+						"Implementation-Vendor-Id" : "",
+						"Specification-Title"      : "",
+						"Specification-Version"    : "",
+						"Specification-Vendor"     : "",
+						"Sealed"                   : "",
+						"Multi-Release"            : "",
+						"Automatic-Module-Name"    : "",
+						"Created-By"               : "",
+						"Build-Jdk-Spec"           : "",
+						"Add-Opens"                : "",
+						"Add-Exports"              : ""
+					}
+				}
+			} );
+		}
+
 		if( asSet ) {
 			props = props.map( function( i ){ return i &= '='; } );
 		}
