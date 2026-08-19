@@ -1050,13 +1050,13 @@ External Dependencies:
 			</exclusions>
 		</dependency>
 
-		<dependency groupId="org.eclipse.jgit" artifactId="org.eclipse.jgit.ssh.jsch" version="${jgit.version}" dest="${lib.dir}" repoId="jgit-repository" unzip="false" type="jar">
-			<exclusions>
-				<!-- Lucee already includes these jars -->
-				<exclusion groupId="org.slf4j" artifactId="slf4j-api" />
-				<exclusion groupId="org.apache.httpcomponents" artifactId="httpclient" />
-			</exclusions>
-		</dependency>
+               <dependency groupId="org.eclipse.jgit" artifactId="org.eclipse.jgit.ssh.apache" version="${jgit.version}" dest="${lib.dir}" repoId="jgit-repository" unzip="false" type="jar">
+                       <exclusions>
+                               <!-- Lucee already includes these jars -->
+                               <exclusion groupId="org.slf4j" artifactId="slf4j-api" />
+                               <exclusion groupId="org.apache.httpcomponents" artifactId="httpclient" />
+                       </exclusions>
+               </dependency>
 
 		<dependency groupId="com.beust" artifactId="jcommander" version="1.47" dest="${lib.dir}" type="jar" unzip="false"/>
 		<dependency groupId="net.minidev" artifactId="json-smart-mini" version="${json-smart-mini.version}" unzip="false" type="jar" dest="${lib.dir}"/>

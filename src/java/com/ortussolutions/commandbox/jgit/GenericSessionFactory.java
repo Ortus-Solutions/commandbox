@@ -9,19 +9,17 @@
 */
 package com.ortussolutions.commandbox.jgit;
 
-import org.eclipse.jgit.transport.JschConfigSessionFactory;
-import org.eclipse.jgit.transport.OpenSshConfig;
-import com.jcraft.jsch.Session;
+import org.eclipse.jgit.transport.sshd.SshdSessionFactory;
 
-public class GenericSessionFactory extends JschConfigSessionFactory {
+public class GenericSessionFactory extends SshdSessionFactory {
 
-	@Override
-	protected void configure( OpenSshConfig.Host host, Session session ) {
-		// This prevents users from having the host in "~/.ssh/known_hosts"
-		java.util.Properties config = new java.util.Properties();
-		config.put("StrictHostKeyChecking", "no");
-		session.setConfig( config );
-	}
+       /**
+        * Construct a session factory using the Apache MINA implementation.
+        * The default configuration matches the previous JSCH behavior of JGit.
+        */
+       public GenericSessionFactory() {
+               super();
+       }
 
 
 }
