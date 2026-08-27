@@ -34,8 +34,33 @@ class {
 		directoryCreate( libsPath );
 
 		command( "install" )
+			.params( "maven:org.jline:jline:3.21.0" )
 			.inWorkingDirectory( resolvePath( "bx-cli" ) )
-			.flags( "!save", "force" )
+			.flags( "noSave", "force" )
+			.run();
+
+		command( "install" )
+			.params( "maven:org.fusesource.jansi:jansi:2.4.1" )
+			.inWorkingDirectory( resolvePath( "bx-cli" ) )
+			.flags( "noSave", "force" )
+			.run();
+
+		command( "install" )
+			.params( "maven:org.eclipse.jgit:org.eclipse.jgit:5.13.3.202401111512-r?exclude=org.slf4j:slf4j-api,org.apache.httpcomponents:httpclient" )
+			.inWorkingDirectory( resolvePath( "bx-cli" ) )
+			.flags( "noSave", "force" )
+			.run();
+
+		command( "install" )
+			.params( "maven:org.eclipse.jgit:org.eclipse.jgit.ssh.jsch:5.13.3.202401111512-r?exclude=org.slf4j:slf4j-api,org.apache.httpcomponents:httpclient" )
+			.inWorkingDirectory( resolvePath( "bx-cli" ) )
+			.flags( "noSave", "force" )
+			.run();
+
+		command( "install" )
+			.params( "maven:com.beust:jcommander:1.47" )
+			.inWorkingDirectory( resolvePath( "bx-cli" ) )
+			.flags( "noSave", "force" )
 			.run();
 
 		compile()
@@ -47,7 +72,7 @@ class {
 			.run();
 
 		command( "forgebox use" ).params( "ortus" ).run();
-		command( "publish" ).inWorkingDirectory( resolvePath( "bx-cli" ) ).flags( "force" ).run();
+		//command( "publish" ).inWorkingDirectory( resolvePath( "bx-cli" ) ).flags( "force" ).run();
 	}
 
 	/**
@@ -337,8 +362,13 @@ class {
 			url="https://api.bell-sw.com/v1/liberica/versions/21"
 			result="versionResult";
 		versionResponse = JSONDeserialize( versionResult.fileContent );
-		var javaVersion = versionResponse[ 1 ].version ?: throw( "Liberica did not return a Java 21 version." );
-
+		var javaVersion = versionResponse
+			.filter( function( entry ) { return entry.bundleTypes.find( "jre" ); } )
+			.reduce( function( result, entry ) { return len( result ) ? result : entry.version; }, "" );
+		if( !len( javaVersion ) ) {
+			throw( "Liberica did not return a Java 21 version with a jre bundle. #versionResult.fileContent#" );
+		}
+		print.line( "Using Java Version: " & javaVersion ).toConsole();
 		var platforms = [
 			{
 				name : "linux64",
@@ -376,10 +406,10 @@ class {
 			}
 			directoryCreate( extractPath, true );
 			directoryCreate( stagePath, true );
-
+			print.line( "ReleaseURL: " & releaseURL ).toConsole();
 			bx:http url="#releaseURL#" result="releaseResult";
 			releaseResponse = JSONDeserialize( releaseResult.fileContent );
-			var downloadURL = releaseResponse[ 1 ].downloadUrl ?: throw( "Liberica did not return a #platform.name# Java 21 JRE download." );
+			var downloadURL = releaseResponse[ 1 ].downloadUrl ?: error( "Liberica did not return a #platform.name# Java 21 JRE download. #releaseResult.fileContent#" );
 			progressableDownloader.download(
 				downloadURL,
 				archivePath,

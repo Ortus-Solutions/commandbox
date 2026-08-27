@@ -149,7 +149,12 @@ component aliases="install" {
 			arguments.currentWorkingDirectory = getCWD();
 		}
 		// Make ID an array
-		arguments.IDArray = listToArray( arguments.ID );
+		// Except for Maven endpints, split the ID into an array by commas.
+		if( !(arguments.ID.trim() contains 'maven:') ) {
+			arguments.IDArray = listToArray( arguments.ID );
+		} else {
+			arguments.IDArray = [ arguments.ID ];
+		}
 		arguments.lockFile = {};
 		arguments.lock = arguments.lock || fileExists( arguments.currentWorkingDirectory & '/box-lock.json' );
 		if ( arguments.lock ) {

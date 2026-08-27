@@ -1,6 +1,6 @@
 {
     "name":"BoxLang CommandBox Module",
-    "version":"7.0.21-beta",
+    "version":"7.0.22-beta",
     "author":"Ortus Solutions",
     "homepage":"https://commandbox.ortusbooks.com/",
     "documentation":"https://commandbox.ortusbooks.com/",
@@ -25,13 +25,6 @@
         "moduleName":"cli",
         "minimumVersion":"1.10.0",
         "executable":"box"
-    },
-    "dependencies":{
-        "org.jline:jline":"maven:org.jline:jline:3.21.0",
-        "org.fusesource.jansi:jansi":"maven:org.fusesource.jansi:jansi:2.4.1",
-        "org.eclipse.jgit:org.eclipse.jgit":"maven:org.eclipse.jgit:org.eclipse.jgit:5.13.3.202401111512-r?exclude=org.slf4j:slf4j-api,org.apache.httpcomponents:httpclient",
-        "org.eclipse.jgit:org.eclipse.jgit.ssh.jsch":"maven:org.eclipse.jgit:org.eclipse.jgit.ssh.jsch:5.13.3.202401111512-r?exclude=org.slf4j:slf4j-api,org.apache.httpcomponents:httpclient",
-        "com.beust:jcommander":"maven:com.beust:jcommander:1.47"
     },
     "maven":{
         "installMode":"shared",

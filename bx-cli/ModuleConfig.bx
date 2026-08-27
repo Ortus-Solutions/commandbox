@@ -54,7 +54,7 @@ class {
 
 		moduleRoot = getDirectoryFromPath( getCurrentTemplatePath() );
 		// Load up our dependencies
-		boxRuntime.getModuleService().loadModules( Paths.get( moduleRoot, ["modules"] ) );
+		boxRuntime.getModuleService().loadModules( Paths.get( moduleRoot, ["cli_modules"] ) );
 
 		server.unlock();
 		boxAnnounce( "onServerScopeCreation", { scope : server } );
@@ -103,6 +103,7 @@ class {
 
 		// Control the exit so we can set the exit code
 		if( exitCode != 0 ) {
+			boxRuntime.shutdown();
 			System.exit( exitCode );
 		}
 	}
