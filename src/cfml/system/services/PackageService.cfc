@@ -830,7 +830,7 @@ component accessors="true" singleton {
 	// DRY
 	boolean function isPackageModule( required string packageType ) {
 		// Is the package type that of a module?
-		return ( listFindNoCase( 'modules,contentbox-modules,commandbox-modules', arguments.packageType ) > 0) ;
+		return ( listFindNoCase( 'modules,boxlang-modules,contentbox-modules,commandbox-modules', arguments.packageType ) > 0) ;
 	}
 
 
