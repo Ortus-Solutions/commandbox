@@ -24,20 +24,16 @@ component {
 	property name="homedir" 				inject="homedir@constants";
 	property name="ortusArtifactsURL" 		inject="ortusArtifactsURL@constants";
 	property name="ortusPRDArtifactsURL" 	inject="ortusPRDArtifactsURL@constants";
-	property name="progressableDownloader"	inject="ProgressableDownloader";
-	property name="progressBar" 			inject="ProgressBar";
 	property name="semanticVersion"			inject="semanticVersion@semver";
 	property name="ConfigService"			inject="ConfigService";
+	property name="forgeBox"				inject="ForgeBox";
+	property name="packageService"			inject="PackageService";
 
 	/**
 	 * @latest.hint Download bleeding edge version, instead of last stable version
 	 * @force.hint Force the update even if the version on the server is the same as locally
 	 **/
 	function run( boolean latest, boolean force=false ) {
-		print.line( "The upgrade command doesn't curently work with bx-cli" );
-		return;
-		
-
 		if( configService.getSetting( 'offlineMode', false ) ) {
 			error( 'Can''t check for updates, CommandBox is in offline mode.  Go online with [config set offlineMode=false].' );
 		}
@@ -53,193 +49,178 @@ component {
 			}
 		}
 
-		// tmp dir location
-		var temp = shell.getTempDir();
-		// Determine artifacts location used
-		var thisArtifactsURL = arguments.latest ? variables.ortusArtifactsURL : variables.ortusPRDArtifactsURL;
-
-		// download the box-repo from the artifacts URL
-		print.greenLine( "Getting #arguments.latest ? 'latest' : 'stable'# versioning information from #thisArtifactsURL#ortussolutions/commandbox/box-repo.json" ).toConsole();
-		var boxRepoURL = '#thisArtifactsURL#ortussolutions/commandbox/box-repo.json';
-		var loaderRepoURL = '#thisArtifactsURL#ortussolutions/commandbox/box-loader.json';
-
-		http
-			url="#boxRepoURL#"
-			file="#temp#/box-repo.json"
-			throwOnError=false
-			proxyServer="#ConfigService.getSetting( 'proxy.server', '' )#"
-			proxyPort="#ConfigService.getSetting( 'proxy.port', 80 )#"
-			proxyUser="#ConfigService.getSetting( 'proxy.user', '' )#"
-			proxyPassword="#ConfigService.getSetting( 'proxy.password', '' )#"
-			result="local.boxRepoResult" {
-				cfhttpparam(name="CLIID", type="url", value="#server.boxlang.boxlangId#");
-				cfhttpparam(name="CLIVersion", type="url", value="#shell.getVersion()#");
-				cfhttpparam(name="os", type="url", value="#server.system.properties['os.name']#");
-				cfhttpparam(name="jre", type="url", value="#server.java.version#");
-				cfhttpparam(name="APIToken", type="url", value="#ConfigService.getSetting( 'endpoints.forgebox.APIToken', '' )#");
-			}
-
-
-		http
-			url="#loaderRepoURL#"
-			file="#temp#/box-loader.json"
-			throwOnError=false
-			proxyServer="#ConfigService.getSetting( 'proxy.server', '' )#"
-			proxyPort="#ConfigService.getSetting( 'proxy.port', 80 )#"
-			proxyUser="#ConfigService.getSetting( 'proxy.user', '' )#"
-			proxyPassword="#ConfigService.getSetting( 'proxy.password', '' )#"
-			result="local.loaderRepoResult"{
-				cfhttpparam(name="CLIID", type="url", value="#server.boxlang.boxlangId#");
-				cfhttpparam(name="CLIVersion", type="url", value="#shell.getVersion()#");
-				cfhttpparam(name="os", type="url", value="#server.system.properties['os.name']#");
-				cfhttpparam(name="jre", type="url", value="#server.java.version#");
-				cfhttpparam(name="APIToken", type="url", value="#ConfigService.getSetting( 'endpoints.forgebox.APIToken', '' )#");
-			}
-
-
-		// Do some error checking
-		if( !local.boxRepoResult.statusCode contains "200" || !fileExists( '#temp#/box-repo.json' ) ||
-			!local.loaderRepoResult.statusCode contains "200" || !fileExists( '#temp#/box-loader.json' ) ) {
-			error(
-				"Sorry, we're having troubles accessing the interwebs now or the update site is down. Please try again later",
-				"Box Repo: [#local.boxRepoResult.statusCode#] Loader Repo: [#local.loaderRepoResult.statusCode#]"
-			);
-		}
-
-		var boxRepoJSON = fileRead( '#temp#/box-repo.json' );
-		var loaderRepoJSON = fileRead( '#temp#/box-loader.json' );
-
-		fileDelete( '#temp#/box-repo.json' );
-		fileDelete( '#temp#/box-loader.json' );
-
-		if( !isJSON( boxRepoJSON ) ) {
-			return error( "Oops, we expected [#boxRepoURL#] to be JSON, but it wasn't.  #cr#I'm afraid we can't upgrade right now." );
-		}
-		if( !isJSON( loaderRepoJSON ) ) {
-			return error( "Oops, we expected [#loaderRepoURL#] to be JSON, but it wasn't.  #cr#I'm afraid we can't upgrade right now." );
-		}
-
-		// read and deserialize the repo
-		var repoData = deserializeJSON( boxRepoJSON );
-		var loaderData = deserializeJSON( loaderRepoJSON );
-
-		// Assemble the available version numbers based on whether we're checking the bleeding edge or stable repo
-		if( arguments.latest ) {
-			var repoVersionShort= repoData.versioning.latestVersion;
-			var repoVersion 	= '#repoVersionShort#+#repoData.versioning.latestBuildID#';
-			var loaderVersion 	= '#loaderData.versioning.latestVersion#+#loaderData.versioning.latestBuildID#';
-		} else {
-			// We don't store build numbers for stable versions in box-repo.json
-			var repoVersionShort= repoData.versioning.stableVersion;
-			var repoVersion 	= repoVersionShort;
-			var loaderVersion 	= loaderData.versioning.stableVersion;
-		}
-
-		// Is there a new version of CommandBox.  New builds constitute new BE versions.
-		var isNewVersion 	= semanticVersion.isNew( current=shell.getVersion(), target=repoVersion, checkBuildID=arguments.latest );
-		// Is there a new version of the CLI Loader. Ignore build number since it's sort of fake (Just a copy of the CommandBox build number)
-		var isNewLoaderVersion 	= semanticVersion.isNew( current=shell.getLoaderVersion(), target=LoaderVersion, checkBuildID=false );
-
-		// If the local install is old, or we're forcing.
-		if( isNewVersion || force ) {
-			// Inform User about update
-			print.boldCyanLine( "Ohh Goody Goody, an update has been found (#repoVersion#) for your installation (#shell.getVersion()#)!" )
+		if( shell.getVersion() == "@build.version@" ) {
+			print
+				.yellowLine( "Upgrade is not supported for local dev symlinked installs of the commandbox repo." )
+				.yellowLine( "This shell reports @build.version@, so please upgrade by updating your local source/build instead." )
 				.toConsole();
+			return;
+		}
 
-			if( isNewLoaderVersion ) {
-				// We can't handle this kind of update from CFML
-				// so instruct the user to do a manual update with a new binary
-				print.line()
-					.boldYellowLine( "This update affects the core underpinnings of CommandBox so we can't automate it for you." )
-					.boldYellowLine( "Please download the latest version of CommandBox and replace the binary on your OS." )
-					.boldYellowLine( "CommandBox will finish the upgrade for you the first time it is run." )
-					.line()
-					.text( "Download URL: ").
-						boldLine( arguments.latest ? '#thisArtifactsURL###/ortussolutions/commandbox/#repoVersionShort#/' : 'https://www.ortussolutions.com/products/commandbox/##download' )
-					.line()
-					.yellowLine( "(Your CLI Loader version is #shell.getLoaderVersion()# and the latest is #LoaderVersion#)" )
-					.toConsole();
-					return;
+		var slug = "bx-cli";
+		var APIToken = configService.getSetting( "endpoints.forgebox.APIToken", "" );
+		var targetRange = arguments.latest ? "be" : "stable";
+		var updateChannel = arguments.latest ? "latest" : "stable";
+
+		print.greenLine( "Checking ForgeBox for #updateChannel# #slug# version..." ).toConsole();
+
+		try {
+			var entryData = forgeBox.getEntry( slug, APIToken );
+		} catch( forgebox var e ) {
+			error( e.message, e.detail ?: "Unable to read release data from ForgeBox." );
+		}
+
+		if( !entryData.isActive ) {
+			error( "The ForgeBox entry [#slug#] is inactive." );
+		}
+
+		entryData.versions.sort( function( a, b ) { return semanticVersion.compare( b.version, a.version ) } );
+
+		var targetVersionData = {};
+		for( var thisVersion in entryData.versions ) {
+			if( semanticVersion.satisfies( thisVersion.version, targetRange ) ) {
+				targetVersionData = thisVersion;
+				break;
 			}
+		}
 
-			// Confirm installation
-			if( !force && !confirm( "Do you wish to apply this update? [y/n]" ) ){
+		if( structIsEmpty( targetVersionData ) ) {
+			if( targetRange == "stable" && arrayLen( entryData.versions ) ) {
+				targetVersionData = entryData.versions[ 1 ];
+			} else {
+				error( "No #targetRange# version was found for [#slug#] in ForgeBox." );
+			}
+		}
+
+		var targetVersion = targetVersionData.version;
+		print.greenLine( "Found version for #updateChannel# channel: #targetVersion#" ).toConsole();
+
+		var isNewVersion = semanticVersion.isNew( current=shell.getVersion(), target=targetVersion, checkBuildID=arguments.latest );
+
+		if( !isNewVersion && !force ) {
+			print.yellowLine( "Your version of CommandBox (#shell.getVersion()#) is already current (#targetVersion#)." );
+			return;
+		}
+
+		if( force ) {
+			print.boldCyanLine( "Preparing forced upgrade package for CommandBox #targetVersion#..." ).toConsole();
+		} else {
+			print.boldCyanLine( "Preparing upgrade package for CommandBox #shell.getVersion()# -> #targetVersion#..." ).toConsole();
+			if( !confirm( "Do you wish to apply this update? [y/n]" ) ) {
+				print.yellowLine( "Upgrade canceled." ).toConsole();
 				return;
 			}
+		}
 
-			// prepare locations
-			var fileURL 	= '#thisArtifactsURL#ortussolutions/commandbox/#repoversionshort#/commandbox-cfml-#repoVersionShort#.zip';
-			var filePath 	= '#temp#/commandbox-cfml-#repoVersion#.zip';
+		var installID = "forgebox:#slug#@#targetVersion#";
+		var fileVersion = targetVersion.reReplace( "[^0-9A-Za-z\._-]", "-", "all" );
+		var installDir = "#shell.getTempDir()#bx-cli-#fileVersion#-#lCase( createUUID() )#";
+		var upgradeApplied = false;
 
-			// Download the update
-			print.greenLine( "Downloading #fileUrl#..." ).toConsole();
-			progressableDownloader.download(
-				fileURL,
-				filePath,
-				function( status ) {
-					progressBar.update( argumentCollection = status );
-				}
-			);
+		try {
+			directoryCreate( installDir, true, true );
 
-			// prepare locations
-			var libsfileURL 	= '#thisArtifactsURL#ortussolutions/commandbox/#repoversionshort#/commandbox-libs#repoVersionShort#.zip';
-			var libsfilePath 	= '#temp#/commandbox-libs-#repoVersion#.zip';
-
-			// Download the update
-			print.greenLine( "Downloading #libsfileUrl#..." ).toConsole();
-			progressableDownloader.download(
-				libsfileURL,
-				libsfilePath,
-				function( status ) {
-					progressBar.update( argumentCollection = status );
-				}
-			);
-
-			print.greenLine( "Unzipping #libsfilePath#..." ).toConsole();
-			var newLibs = '#variables.homedir#/lib-new';
-			if( directoryExists( newLibs ) ) {
-				directoryDelete( newLibs, true );
+			print.greenLine( "Staging upgrade package..." ).toConsole();
+			if( !packageService.installPackage(
+				ID = installID,
+				directory = installDir,
+				save = false,
+				saveDev = false,
+				currentWorkingDirectory = installDir,
+				verbose = false,
+				force = true
+			) ) {
+				error( "Unable to stage upgrade package [#installID#]." );
 			}
-			directoryCreate( newLibs, true, true );
-			zip
-				action="unzip"
-				file="#libsfilePath#"
-				destination="#variables.homedir#/lib-new"
-				overwrite=true;
-			fileWrite( "#variables.homedir#/lib-new/version.properties", "cli.version=#LoaderVersion#" )
 
-			wirebox.getCacheBox().getCache( 'metadataCache' ).clearAll();
+			var moduleHome = createObject( "java", "java.lang.System" ).getProperty( "cfml.cli.moduleRoot", "" );
+			if( !len( moduleHome ) ) {
+				error( "Unable to determine bx-cli home from cfml.cli.moduleRoot." );
+			}
+			moduleHome = moduleHome.reReplace( "[/\\]+$", "" );
+			if( !directoryExists( moduleHome ) ) {
+				error( "bx-cli home does not exist: #moduleHome#" );
+			}
 
-			// Tell user what's going on
-			print.greenLine( "Unzipping #filePath#..." ).toConsole();
-			zip
-				action="unzip"
-				file="#filePath#"
-				destination="#variables.homedir#/cfml"
-				overwrite=true;
+			var stagedModuleHome = resolveStagedModuleHome( installDir );
+			var stagedBoxJSON = deserializeJSON( fileRead( "#stagedModuleHome#/box.json" ) );
+			var minimumBoxLangVersion = stagedBoxJSON.boxlang.minimumVersion ?: "";
+			if( len( minimumBoxLangVersion ) ) {
+				var currentBoxLangVersion = server.boxlang.version;
+				if( semanticVersion.isNew( current=currentBoxLangVersion, target=minimumBoxLangVersion, checkBuildID=false ) ) {
+					error(
+						"This bx-cli upgrade requires BoxLang #minimumBoxLangVersion# or higher.",
+						"Current BoxLang version is #currentBoxLangVersion#."
+					);
+				}
+			}
 
-			print.greenLine( "Cleaning up..." ).toConsole();
-			fileDelete( filePath );
-			fileDelete( libsfilePath );
+			print.greenLine( "Installing module metadata..." ).toConsole();
+			fileCopy( "#stagedModuleHome#/box.json", "#moduleHome#/box.json" );
+			fileCopy( "#stagedModuleHome#/ModuleConfig.bx", "#moduleHome#/ModuleConfig.bx" );
 
-			// Notify the user
-			print.greenLine( "Update applied successfully, installed v#repoVersion#" )
+			for( var folderName in [ "libs", "cli_modules", "src" ] ) {
+				var sourceFolder = "#stagedModuleHome#/#folderName#";
+				var targetFolder = "#moduleHome#/#folderName#";
+
+				if( !directoryExists( sourceFolder ) ) {
+					error( "Expected folder [#folderName#] not found in staged package: #sourceFolder#" );
+				}
+
+				if( directoryExists( targetFolder ) ) {
+					print.greenLine( "Removing old #folderName#..." ).toConsole();
+					directoryDelete( targetFolder, true );
+				}
+
+				print.greenLine( "Installing new #folderName#..." ).toConsole();
+				directoryCopy( sourceFolder, targetFolder, true );
+			}
+
+			upgradeApplied = true;
+		} finally {
+			if( directoryExists( installDir ) ) {
+				directoryDelete( installDir, true );
+			}
+		}
+
+		if( upgradeApplied ) {
+			print.greenLine( "Update applied successfully, installed v#targetVersion#" )
 				.redLine( "CommandBox needs to exit to complete the installation." )
 				.yellowLine( "This message will self-destruct in 10 seconds" )
 				.toConsole();
 
 			if( !force ) {
-				// Give them a chance to read it, unless we're skipping user prompt (probably automated)
 				sleep( 10000 );
 			}
 
-			// Stop executing.  Since the unzipping possibly replaced .cfm files that were
-			// also cached in memory, there's no good way we've found to be able to reload and keep going.
 			abort;
-
-		} else {
-			print.yellowLine( "Your version of CommandBox (#shell.getVersion()#) is already current (#repoVersion#)." );
 		}
+
+		return;
+	}
+
+	private string function resolveStagedModuleHome( required string installDir ) {
+		var candidatePaths = [
+			arguments.installDir,
+			"#arguments.installDir#/bx-cli",
+			"#arguments.installDir#/modules/bx-cli"
+		];
+
+		for( var candidatePath in candidatePaths ) {
+			if( fileExists( "#candidatePath#/box.json" ) && fileExists( "#candidatePath#/ModuleConfig.bx" ) ) {
+				return candidatePath;
+			}
+		}
+
+		var boxJSONFiles = directoryList( arguments.installDir, true, "path", "box.json" );
+		for( var boxJSONFile in boxJSONFiles ) {
+			var candidatePath = reReplace( getDirectoryFromPath( boxJSONFile ), "[/\\]$", "" );
+			if( fileExists( "#candidatePath#/ModuleConfig.bx" ) ) {
+				return candidatePath;
+			}
+		}
+
+		error( "Could not locate staged bx-cli module home in [#arguments.installDir#]." );
 	}
 
 

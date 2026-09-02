@@ -53,8 +53,8 @@ component singleton{
 		upgradeHistoryFile( REPLTagHistoryFile );
 
 		// Work around for lockdown STIGs on govt machines.
-		// By default JANSI tries to write files into a locked down folder under appData
-		var JANSI_path = expandPath( '/bxcliRoot/libs/jansi' );
+		// Keep JANSI/JNA temp extraction out of the bx-cli module install so upgrades can replace module libs.
+		var JANSI_path = expandPath( '/commandbox-home/temp/jansi' );
 		if( !directoryExists( JANSI_path ) ){
 			directoryCreate( JANSI_path );
 		}
