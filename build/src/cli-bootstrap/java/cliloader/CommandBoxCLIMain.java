@@ -901,6 +901,17 @@ public class CommandBoxCLIMain {
 		File boxLangJar = libraryDirectory == null ? null : new File( libraryDirectory, BOXLANG_JAR );
 		debug( "BoxLang install root: " + ( installRoot == null ? "unresolved" : installRoot.getAbsolutePath() ) );
 		debug( "BoxLang library directory: " + ( libraryDirectory == null ? "unresolved" : libraryDirectory.getAbsolutePath() ) );
+		if ( ( boxLangJar == null || !boxLangJar.isFile() ) && libraryDirectory != null ) {
+			File[] versionedBoxLangJars = libraryDirectory.listFiles( ( directory, name ) ->
+				name.startsWith( "boxlang-" )
+					&& name.endsWith( ".jar" )
+					&& !name.startsWith( "boxlang-miniserver-" )
+			);
+			if ( versionedBoxLangJars != null && versionedBoxLangJars.length > 0 ) {
+				Arrays.sort( versionedBoxLangJars, Comparator.comparing( File::getName ) );
+				boxLangJar = versionedBoxLangJars[ versionedBoxLangJars.length - 1 ];
+			}
+		}
 		if ( boxLangJar == null || !boxLangJar.isFile() ) {
 			throw new IOException( "BoxLang runtime was not installed: " + boxLangJar );
 		}
