@@ -12,19 +12,25 @@ box task run taskFile=Build.bx target=buildInstallers
 
 This produces bundled and thin `box` JAR, Unix, and Windows artifacts in `build/dist`, plus a bundled Linux RPM.
 
-Test the Sign4j signing path against a disposable copy of a Windows executable with:
+Windows executables are signed automatically during `buildInstallers` when `SIGN_WINDOWS_EXE=true` (the default) and signing credentials are configured. Set these environment variables before building:
 
 ```powershell
+$env:SIGN_WINDOWS_EXE="true"
 $env:DIGICERT_API_KEY="YOUR_API_KEY"
 $env:DIGICERT_CLIENT_CERTIFICATE_BASE64="BASE64_ENCODED_CLIENT_CERTIFICATE"
+$env:DIGICERT_CLIENT_CERTIFICATE_PASSWORD="YOUR_CERTIFICATE_PASSWORD"
 $env:DIGICERT_KEY_ALIAS="YOUR_KEY_ALIAS"
-$env:DIGICERT_HOST="https://clientauth.one.digicert.com"
-box task run taskFile=Build.bx target=testSign4jPath binaryPath=build/dist/box.exe sign4jPath=build/launch4j-3.50/launch4j/sign4j/sign4j.exe
 ```
 
-`testSign4jPath` copies the input binary to `build/temp/sign4j-test/`, decodes the client certificate from `DIGICERT_CLIENT_CERTIFICATE_BASE64` into a temporary runtime file, then runs Sign4j with the bundled Jsign signer. The temporary certificate file is removed after signing. Jsign uses the DigiCert API key, client certificate, host, and key alias to sign the executable. The task verifies the resulting Authenticode status on Windows. A custom `SIGNER_COMMAND` or `signerCommand` may be supplied instead.
+Signing uses Sign4j -> Jsign -> DigiCert KeyLocker. The client certificate is decoded from `DIGICERT_CLIENT_CERTIFICATE_BASE64` into a temporary file and removed after signing. If `DIGICERT_API_KEY` is not configured, signing is skipped even when `SIGN_WINDOWS_EXE=true`.
 
-On Linux, if `sign4jPath` and `SIGN4J_PATH` are not provided and the default bundled `build/launch4j-3.50/launch4j/sign4j/sign4j` is missing, the build task auto-downloads `launch4j-3.50-linux-x64.tgz` from SourceForge and provisions the `sign4j` binary there.
+To sign an already-built executable directly:
+
+```powershell
+box task run taskFile=Build.bx target=signCliBinary binaryPath=build/dist/box.exe
+```
+
+If the bundled Sign4j binary (`build/launch4j-3.50/launch4j/sign4j/sign4j` on Unix or `sign4j.exe` on Windows) is missing, the build task auto-downloads the matching `launch4j-3.50-*.{zip,tgz}` archive from `downloads.ortussolutions.com` and provisions it.
 
 `buildCliRpm` uses native `rpmbuild` inside the Rocky Linux 8 Docker image. The RPM is built from a generated spec, with the bundled launcher installed as `/usr/bin/box` with `0755` permissions. RPM signing, when configured, also runs inside Docker.
 

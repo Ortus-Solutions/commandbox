@@ -10,6 +10,8 @@ class {
 	property name='progressableDownloader' inject='ProgressableDownloader';
 	property name='artifactService' inject='ArtifactService';
 	property name='fileSystemUtil' inject='FileSystem';
+
+	// Config
 	property name='launch4jVersion' default='3.50';
 	property name='jsignVersion' default='7.5';
 	property name='installerBaseURL' default='https://downloads.ortussolutions.com/ortussolutions/boxlang-quick-installer';
@@ -291,12 +293,11 @@ class {
 	 *
 	 * @artifactName The output artifact base name.
 	 */
-	function buildCliExe( string artifactName="box", boolean signArtifact=false ) {
+	function buildCliExe( string artifactName="box" ) {
 		var boxJSON = packageService.readPackageDescriptor( resolvePath( "bx-cli" ) );
 		var jarPath = resolvePath( "build/dist/#artifactName#.jar" );
 		var executablePath = resolvePath( "build/dist/#artifactName#.exe" );
-		var launch4jPath = resolvePath( "build/launch4j-#launch4jVersion#/launch4j/launch4jc.exe" );
-		var launch4jJarPath = resolvePath( "build/launch4j-#launch4jVersion#/launch4j/launch4j.jar" );
+		var launch4jJarPath = "";
 		var configPath = resolvePath( "build/temp/cli-bootstrap/#artifactName#-launch4j.xml" );
 		var configTemplatePath = resolvePath( "build/box-launch4j.xml" );
 		var buildNumber = reReplace( fileRead( resolvePath( "build/build.number" ) ), "(?s).*build.number=([0-9]+).*", "\1" );
@@ -307,24 +308,11 @@ class {
 		if( !fileExists( jarPath ) ) {
 			throw( message="The CLI launcher JAR does not exist. Run buildCliJar first.", type="commandException" );
 		}
-		if( fileSystemUtil.isWindows() ) {
-			if( !fileExists( launch4jPath ) ) {
-				launch4jPath = provisionLaunch4jWin32Binary( launch4jPath );
-			}
-			if( !fileExists( launch4jPath ) ) {
-				throw( message="The Launch4j compiler does not exist.", detail=launch4jPath, type="commandException" );
-			}
-		} else {
-			if( !fileExists( launch4jJarPath ) ) {
-				launch4jJarPath = provisionLaunch4jUnixBinary( launch4jJarPath );
-			}
-			if( !fileExists( launch4jJarPath ) ) {
-				throw( message="The Launch4j JAR does not exist.", detail=launch4jJarPath, type="commandException" );
-			}
-		}
 		if( !fileExists( configTemplatePath ) ) {
 			throw( message="The Launch4j configuration template does not exist.", detail=configTemplatePath, type="commandException" );
 		}
+		ensureLaunch4j();
+		launch4jJarPath = resolvePath( "build/launch4j-#launch4jVersion#/launch4j/launch4j.jar" );
 
 		var configTemplate = fileRead( configTemplatePath );
 		configTemplate = replace( configTemplate, "@EXECUTABLE_PATH@", xmlFormat( executablePath ), "all" );
@@ -334,13 +322,9 @@ class {
 		configTemplate = replace( configTemplate, "@PRODUCT_VERSION@", fileVersion, "all" );
 		configTemplate = replace( configTemplate, "@TEXT_PRODUCT_VERSION@", textVersion, "all" );
 		fileWrite( configPath, configTemplate );
-		var launch4jCommand = fileSystemUtil.isWindows()
-			? '"' & launch4jPath & '" "' & configPath & '"'
-			: 'java -jar "#launch4jJarPath#" "#configPath#"';
-		systemExecute( launch4jCommand );
-		var shouldSign = arguments.signArtifact || getSystemSetting( "SIGN_WINDOWS_EXE", true );
-		if( shouldSign ) {
-			signLaunch4jBinaryWithSign4j( executablePath = executablePath, verbose = true );
+		systemExecute( "java", [ "-jar", launch4jJarPath, configPath ] );
+		if( getSystemSetting( "SIGN_WINDOWS_EXE", true ) ) {
+			signCliBinary( executablePath );
 		}
 		if( artifactName == "box" ) {
 			var distributionPath = resolvePath( "build/dist" );
@@ -365,311 +349,126 @@ class {
 	}
 
 	/**
-	 * Resolves the Launch4j archive name, URL, and platform folder for the current OS.
+	 * Ensures a full Launch4j distribution is available, downloading and extracting the
+	 * archive for the current OS when missing. `launch4j.jar` and the `sign4j` tool are
+	 * used directly from their extracted location.
 	 */
-	private struct function resolveLaunch4jArchive( boolean windows=false ) {
-		var osName = lCase( System.getProperty( "os.name" ) );
-		var archiveFileName = arguments.windows
-			? "launch4j-#launch4jVersion#-win32.zip"
-			: ( findNoCase( "mac", osName ) ? "launch4j-#launch4jVersion#-macosx.tgz" : "launch4j-#launch4jVersion#-linux.tgz" );
-		var platformFolder = arguments.windows ? "win32" : ( findNoCase( "mac", osName ) ? "macosx" : "linux" );
+	private function ensureLaunch4j() {
+		var launch4jJarPath = resolvePath( "build/launch4j-#launch4jVersion#/launch4j/launch4j.jar" );
+		if( fileExists( launch4jJarPath ) ) {
+			return;
+		}
+
+		if( fileSystemUtil.isWindows() ) {
+			var archiveFileName = "launch4j-#launch4jVersion#-win32.zip";
+		} else if( fileSystemUtil.isMac() ) {
+			var archiveFileName = "launch4j-#launch4jVersion#-macosx.tgz";
+		} else {
+			var archiveFileName = "launch4j-#launch4jVersion#-linux.tgz";
+		}
+		var launch4jRoot = resolvePath( "build/launch4j-#launch4jVersion#" );
+		var archivePath = resolvePath( "build/temp/#archiveFileName#" );
 		var archiveURL = "https://downloads.ortussolutions.com/launch4j/#launch4jVersion#/#archiveFileName#";
 
-		return {
-			"archiveFileName" : archiveFileName,
-			"platformFolder" : platformFolder,
-			"archiveURL" : archiveURL
-		};
-	}
-
-	/**
-	 * Downloads and extracts a Launch4j archive into a temporary workspace.
-	 */
-	private struct function stageLaunch4jArchive(
-		required struct launch4jArchive,
-		required string workPath,
-		required string label
-	) {
-		var archivePath = arguments.workPath & "/#arguments.launch4jArchive.archiveFileName#";
-		var extractPath = arguments.workPath & "/extract";
-
-		if( directoryExists( arguments.workPath ) ) {
-			directoryDelete( arguments.workPath, true );
-		}
-		directoryCreate( extractPath, true );
-		print.line( "Downloading #arguments.label#..." ).toConsole();
+		directoryCreate( launch4jRoot, true );
+		print.line( "Downloading Launch4j #launch4jVersion# (#archiveFileName#)..." ).toConsole();
 		progressableDownloader.download(
-			arguments.launch4jArchive.archiveURL,
+			archiveURL,
 			archivePath,
 			function( status ) {},
 			function( redirectURL ) {}
 		);
-		bx:zip action="unzip" file="#archivePath#" destination="#extractPath#" overwrite="true";
 
-		return {
-			"archivePath" : archivePath,
-			"extractPath" : extractPath
-		};
-	}
-
-	/**
-	 * Downloads and provisions launch4jc.exe from Launch4j win32 zip when missing.
-	 */
-	private string function provisionLaunch4jWin32Binary( required string targetPath ) {
-		var launch4jArchive = resolveLaunch4jArchive( true );
-		var workPath = resolvePath( "build/temp/launch4j-download/#launch4jArchive.platformFolder#" );
-		var stagedArchive = {};
-		var launch4jCandidates = [];
-
-		directoryCreate( getDirectoryFromPath( arguments.targetPath ), true, true );
-		stagedArchive = stageLaunch4jArchive( launch4jArchive, workPath, "Launch4j #launch4jArchive.platformFolder# package" );
-		launch4jCandidates = directoryList(
-			path=stagedArchive.extractPath,
-			recurse=true,
-			listInfo="path",
-			filter=function( path ) {
-				return fileExists( path ) && getFileFromPath( path ) == "launch4jc.exe";
-			}
-		);
-		if( !launch4jCandidates.len() ) {
-			throw(
-				message="Could not find launch4jc.exe in downloaded Launch4j archive.",
-				detail="Archive: #stagedArchive.archivePath#",
-				type="commandException"
-			);
+		if( fileSystemUtil.isWindows() ) {
+			bx:zip action="unzip" file="#archivePath#" destination="#launch4jRoot#" overwrite="true";
+		} else {
+			fileSystemUtil.extractTarGz( archivePath, launch4jRoot );
 		}
+		fileDelete( archivePath );
 
-		var extractedLaunch4jDirectory = getDirectoryFromPath( launch4jCandidates[ 1 ] );
-		var targetLaunch4jDirectory = getDirectoryFromPath( arguments.targetPath );
-		if( directoryExists( targetLaunch4jDirectory ) ) {
-			directoryDelete( targetLaunch4jDirectory, true );
-		}
-		directoryCopy( extractedLaunch4jDirectory, targetLaunch4jDirectory, true );
-		print.greenLine( "Provisioned Launch4j compiler: #arguments.targetPath#" );
-		return arguments.targetPath;
-	}
-
-	/**
-	 * Downloads and provisions launch4j.jar from a Unix Launch4j archive when missing.
-	 */
-	private string function provisionLaunch4jUnixBinary( required string targetPath ) {
-		var launch4jArchive = resolveLaunch4jArchive( false );
-		var workPath = resolvePath( "build/temp/launch4j-download/#launch4jArchive.platformFolder#" );
-		var stagedArchive = {};
-		var launch4jJarCandidates = [];
-
-		directoryCreate( getDirectoryFromPath( arguments.targetPath ), true, true );
-		stagedArchive = stageLaunch4jArchive( launch4jArchive, workPath, "Launch4j #launch4jArchive.platformFolder# package" );
-		launch4jJarCandidates = directoryList(
-			path=stagedArchive.extractPath,
-			recurse=true,
-			listInfo="path",
-			filter=function( path ) {
-				return fileExists( path ) && getFileFromPath( path ) == "launch4j.jar";
-			}
-		);
-		if( !launch4jJarCandidates.len() ) {
+		if( !fileExists( launch4jJarPath ) ) {
 			throw(
 				message="Could not find launch4j.jar in downloaded Launch4j archive.",
-				detail="Archive: #stagedArchive.archivePath#",
+				detail="Archive: #archiveFileName#",
 				type="commandException"
 			);
 		}
-
-		var extractedLaunch4jDirectory = getDirectoryFromPath( launch4jJarCandidates[ 1 ] );
-		var targetLaunch4jDirectory = getDirectoryFromPath( arguments.targetPath );
-		if( directoryExists( targetLaunch4jDirectory ) ) {
-			directoryDelete( targetLaunch4jDirectory, true );
+		if( !fileSystemUtil.isWindows() ) {
+			fileSetAccessMode( resolvePath( "build/launch4j-#launch4jVersion#/launch4j/bin/ld" ), "755" );
+			fileSetAccessMode( resolvePath( "build/launch4j-#launch4jVersion#/launch4j/bin/windres" ), "755" );
+			fileSetAccessMode( resolvePath( "build/launch4j-#launch4jVersion#/launch4j/sign4j/sign4j" ), "755" );
 		}
-		directoryCopy( extractedLaunch4jDirectory, targetLaunch4jDirectory, true );
-		print.greenLine( "Provisioned Launch4j jar: #arguments.targetPath#" );
-		return arguments.targetPath;
 	}
 
 	/**
-	 * Signs a Windows executable using the Sign4j signing path.
+	 * Signs a Windows executable using Sign4j -> Jsign -> DigiCert KeyLocker.
+	 *
+	 * Signing is skipped silently when no credentials are configured, even if the
+	 * caller requested signing.
 	 *
 	 * @binaryPath The executable path to sign.
 	 */
 	function signCliBinary( required string binaryPath ) {
-		signLaunch4jBinaryWithSign4j( executablePath = arguments.binaryPath, verbose = true );
-	}
-
-	/**
-	 * Tests the Sign4j signing path against a disposable copy of a binary.
-	 *
-	 * @sign4jPath Optional explicit Sign4j path. Defaults to the bundled Launch4j Sign4j.
-	 * @signerCommand Optional signer command and arguments. Defaults to SIGNER_COMMAND or provisioned Jsign.
-	 * @signerInputArg Optional additional signer argument placed before the executable path.
-	 */
-	function testSign4jPath(
-		string binaryPath="build/dist/box.exe",
-		string sign4jPath="",
-		string signerCommand="",
-		string signerInputArg=""
-	) {
-		var resolvedBinaryPath = resolvePath( arguments.binaryPath );
-		var testDirectory = resolvePath( "build/temp/sign4j-test" );
-		var sourceFileName = getFileFromPath( resolvedBinaryPath );
-		var testFileName = reReplaceNoCase( sourceFileName, "\\.exe$", "-sign4j-test.exe" );
-		var testBinaryPath = testDirectory & "/" & testFileName;
-
-		if( !fileExists( resolvedBinaryPath ) ) {
-			throw( message="The executable to test does not exist.", detail=resolvedBinaryPath, type="commandException" );
-		}
-		if( testFileName == sourceFileName ) {
-			testFileName &= ".signed";
-			testBinaryPath = testDirectory & "/" & testFileName;
-		}
-
-		if( directoryExists( testDirectory ) ) {
-			directoryDelete( testDirectory, true );
-		}
-		directoryCreate( testDirectory, true );
-		fileCopy( resolvedBinaryPath, testBinaryPath, true );
-
-		var result = signLaunch4jBinaryWithSign4j(
-			executablePath = testBinaryPath,
-			sign4jPath = arguments.sign4jPath,
-			signerCommand = arguments.signerCommand,
-			signerInputArg = arguments.signerInputArg,
-			verbose = true
-		);
-
-		print.greenLine( "Sign4j test completed for #testBinaryPath#" );
-		print.line( "Original size: #result.originalSize#" ).toConsole();
-		print.line( "Final size: #result.finalSize#" ).toConsole();
-		var signatureStatus = verifyAuthenticodeSignature( testBinaryPath );
-		print.greenLine( "Authenticode status: #signatureStatus#" );
-
-	}
-
-	/**
-	 * Signs a Launch4j binary using Sign4j with a caller-provided signer command.
-	 */
-	private struct function signLaunch4jBinaryWithSign4j(
-		required string executablePath,
-		string sign4jPath="",
-		string signerCommand="",
-		string signerInputArg="",
-		boolean verbose=true
-	) {
-		var resolvedBinaryPath = resolvePath( arguments.executablePath );
-		var envSignerCommand = getSystemSetting( "SIGNER_COMMAND", "" );
-		var resolvedSignerCommand = len( arguments.signerCommand )
-			? arguments.signerCommand
-			: envSignerCommand;
-		var defaultSign4jPath = resolvePath( "build/launch4j-#launch4jVersion#/launch4j/sign4j/sign4j.exe" );
-		var defaultLinuxSign4jPath = resolvePath( "build/launch4j-#launch4jVersion#/launch4j/sign4j/sign4j" );
-		var defaultJsignPath = resolvePath( "build/temp/jsign/jsign-#jsignVersion#.jar" );
 		var digicertApiKey = getSystemSetting( "DIGICERT_API_KEY", "" );
+		if( !len( digicertApiKey ) ) {
+			print.line( "Skipping Windows binary signing: DIGICERT_API_KEY is not configured." ).toConsole();
+			return;
+		}
+
+		var resolvedBinaryPath = resolvePath( arguments.binaryPath );
+		var sign4jPath = resolvePath( "build/launch4j-#launch4jVersion#/launch4j/sign4j/sign4j" & ( fileSystemUtil.isWindows() ? ".exe" : "" ) );
+		var defaultJsignPath = resolvePath( "build/temp/jsign/jsign-#jsignVersion#.jar" );
 		var digicertClientCertificateBase64 = getSystemSetting( "DIGICERT_CLIENT_CERTIFICATE_BASE64", "" );
 		var digicertClientCertificatePassword = getSystemSetting( "DIGICERT_CLIENT_CERTIFICATE_PASSWORD", "" );
 		var digicertKeyAlias = getSystemSetting( "DIGICERT_KEY_ALIAS", "" );
-		var resolvedSign4jPath = "";
-		var originalSize = 0;
-		var finalSize = 0;
-		var verboseFlag = arguments.verbose ? "--verbose" : "";
-		var signerInputArg = len( arguments.signerInputArg ) ? " " & arguments.signerInputArg : "";
 		var temporaryClientCertificate = "";
-		var signingResult = {};
-
-		if( len( arguments.sign4jPath ) ) {
-			resolvedSign4jPath = resolvePath( arguments.sign4jPath );
-		} else if( fileSystemUtil.isWindows() ) {
-			resolvedSign4jPath = defaultSign4jPath;
-		} else {
-			resolvedSign4jPath = defaultLinuxSign4jPath;
-		}
-		if( !fileExists( resolvedSign4jPath ) && !len( arguments.sign4jPath ) ) {
-			resolvedSign4jPath = provisionSign4jBinary( resolvedSign4jPath, fileSystemUtil.isWindows() );
-		}
 
 		if( !fileExists( resolvedBinaryPath ) ) {
 			throw( message="The executable to sign does not exist.", detail=resolvedBinaryPath, type="commandException" );
 		}
-		if( !fileExists( resolvedSign4jPath ) ) {
+		ensureLaunch4j();
+		if( !fileExists( sign4jPath ) ) {
 			throw(
 				message="Sign4j executable was not found.",
-				detail="Looked for: #resolvedSign4jPath#",
-				type="commandException"
-			);
-		}
-		if(
-			!len( resolvedSignerCommand )
-			&& len( digicertApiKey )
-			&& len( digicertClientCertificateBase64 )
-			&& len( digicertKeyAlias )
-		) {
-			if( !fileExists( defaultJsignPath ) ) {
-				defaultJsignPath = provisionJsignBinary( defaultJsignPath );
-			}
-			temporaryClientCertificate = provisionDigiCertClientCertificate( digicertClientCertificateBase64 );
-			var digicertStorePass = digicertApiKey & "|" & temporaryClientCertificate & "|" & digicertClientCertificatePassword;
-			resolvedSignerCommand = 'java -jar "#defaultJsignPath#" --storetype DIGICERTONE --storepass "#digicertStorePass#" --alias "#digicertKeyAlias#"';
-		}
-		if( !len( resolvedSignerCommand ) ) {
-			throw(
-				message="Signer command is required.",
-				detail="Set SIGNER_COMMAND or set DIGICERT_API_KEY, DIGICERT_CLIENT_CERTIFICATE_BASE64, and DIGICERT_KEY_ALIAS for Jsign.",
+				detail="Looked for: #sign4jPath#",
 				type="commandException"
 			);
 		}
 
+		if( !fileExists( defaultJsignPath ) ) {
+			defaultJsignPath = provisionJsignBinary( defaultJsignPath );
+		}
+		temporaryClientCertificate = provisionDigiCertClientCertificate( digicertClientCertificateBase64 );
+		var digicertStorePass = digicertApiKey & "|" & temporaryClientCertificate & "|" & digicertClientCertificatePassword;
+
 		try {
-			originalSize = getFileInfo( resolvedBinaryPath ).size;
-			var signingCommand = '"#resolvedSign4jPath#" #verboseFlag# #resolvedSignerCommand##signerInputArg# "#resolvedBinaryPath#"';
-			signingResult = systemExecute( signingCommand );
+			var signingResult = systemExecute( sign4jPath, [
+				"--verbose",
+				"java",
+				"-jar",
+				defaultJsignPath,
+				"--storetype",
+				"DIGICERTONE",
+				"--storepass",
+				digicertStorePass,
+				"--alias",
+				digicertKeyAlias,
+				resolvedBinaryPath
+			] );
 			if( ( signingResult.exitCode ?: 0 ) != 0 ) {
 				print.redLine( "Sign4j output: " & ( signingResult.output ?: "" ) ).toConsole();
 				print.redLine( "Sign4j error: " & ( signingResult.error ?: "" ) ).toConsole();
 				print.redLine( "Sign4j exit code: " & ( signingResult.exitCode ?: "unknown" ) ).toConsole();
-				print.redLine( "Sign4j result: " & JSONSerialize( signingResult ) ).toConsole();
 				throw(
 					message="Sign4j failed to sign the executable: #signingResult.error ?: signingResult.output ?: 'No signer output was returned.'#",
 					type="commandException"
 				);
 			}
-			finalSize = getFileInfo( resolvedBinaryPath ).size;
 		} finally {
 			if( len( temporaryClientCertificate ) && fileExists( temporaryClientCertificate ) ) {
 				fileDelete( temporaryClientCertificate );
 			}
 		}
-
-		return {
-			"executablePath" : resolvedBinaryPath,
-			"originalSize" : originalSize,
-			"finalSize" : finalSize
-		};
-	}
-
-	/**
-	 * Verifies the Authenticode status of a Windows executable with PowerShell.
-	 */
-	private string function verifyAuthenticodeSignature( required string executablePath ) {
-		if( !fileSystemUtil.isWindows() ) {
-			throw(
-				message="Authenticode verification is only supported on Windows.",
-				type="commandException"
-			);
-		}
-
-		var escapedPath = replace( arguments.executablePath, "'", "''", "all" );
-		var verificationResult = systemExecute(
-			"powershell",
-			[ "-NoProfile", "-NonInteractive", "-Command", "(Get-AuthenticodeSignature -LiteralPath '#escapedPath#').Status" ]
-		);
-		var status = trim( verificationResult.output ?: "" );
-		if( status != "Valid" ) {
-			throw(
-				message="Sign4j did not produce a valid Authenticode signature.",
-				detail="Status: #status#; File: #arguments.executablePath#",
-				type="commandException"
-			);
-		}
-
-		return status;
 	}
 
 	/**
@@ -682,46 +481,6 @@ class {
 			binaryDecode( reReplace( arguments.certificateBase64, "\s", "", "all" ), "base64" )
 		);
 		return certificatePath;
-	}
-
-	/**
-	 * Downloads the Sign4j binary from Launch4j for the requested platform.
-	 */
-	private string function provisionSign4jBinary( required string targetPath, boolean windows=fileSystemUtil.isWindows() ) {
-		var launch4jArchive = resolveLaunch4jArchive( arguments.windows );
-		var platformFolder = arguments.windows ? "win32" : launch4jArchive.platformFolder;
-		var workPath = resolvePath( "build/temp/launch4j-download/#platformFolder#-sign4j" );
-		var sign4jFileName = arguments.windows ? "sign4j.exe" : "sign4j";
-		var sign4jPathPattern = arguments.windows ? "[/\\]sign4j[/\\]sign4j\.exe$" : "[/\\]sign4j[/\\]sign4j$";
-		var stagedArchive = {};
-		var sign4jCandidates = [];
-
-		directoryCreate( getDirectoryFromPath( arguments.targetPath ), true, true );
-		stagedArchive = stageLaunch4jArchive( launch4jArchive, workPath, "#platformFolder# Sign4j from Launch4j" );
-		sign4jCandidates = directoryList(
-			path=stagedArchive.extractPath,
-			recurse=true,
-			listInfo="path",
-			filter=function( path ) {
-				return fileExists( path )
-					&& getFileFromPath( path ) == sign4jFileName
-					&& reFindNoCase( sign4jPathPattern, path );
-			}
-		);
-		if( !sign4jCandidates.len() ) {
-			throw(
-				message="Could not find Sign4j binary in Launch4j archive.",
-				detail="Archive: #stagedArchive.archivePath#",
-				type="commandException"
-			);
-		}
-
-		fileCopy( sign4jCandidates[ 1 ], arguments.targetPath, true );
-		if( !arguments.windows ) {
-			fileSetAccessMode( arguments.targetPath, "755" );
-		}
-		print.greenLine( "Provisioned #arguments.windows ? 'Windows' : 'Unix'# Sign4j: #arguments.targetPath#" );
-		return arguments.targetPath;
 	}
 
 	/**
@@ -1253,7 +1012,7 @@ class {
 		// same as above, but "thin" versions
 		buildCliJarThin();
 		buildCliBinaryThin();
-				// Build and sign box-thin.exe once; buildCliExe copies it to box-light.exe.
+		// Build and sign box-thin.exe once; buildCliExe copies it to box-light.exe.
 		buildCliExe( "box-thin" );
 
 		// rpms
