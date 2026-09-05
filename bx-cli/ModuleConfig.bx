@@ -49,7 +49,7 @@ class {
 			println( "[clidebug] BoxLang Home: " & getSystemSetting( "boxlang.home", "Unknown" ) );
 			println( "[clidebug] CommandBox Home: " & variables.settings.commandboxHome );
 			println( "[clidebug] Working Directory: " & workingDir );
-			println( "[clidebug] Arguments: " & args.toList( " " ) );
+			println( "[clidebug] Arguments: " & JSONSerialize( args ) );
 		}
 
 		moduleRoot = getDirectoryFromPath( getCurrentTemplatePath() );
