@@ -27,8 +27,23 @@ Signing uses Sign4j -> Jsign -> DigiCert KeyLocker. The client certificate is de
 To sign an already-built executable directly:
 
 ```powershell
-box task run taskFile=Build.bx target=signCliBinary binaryPath=build/dist/box.exe
+box task run taskFile=Build.bx target=signCliBinary :binaryPath=build/dist/box.exe
 ```
+
+The `:binaryPath` prefix is required for a parameter passed to `Build.bx`. Do not use
+`binaryPath=...` without the colon, and do not mix positional task-file or target arguments
+with named arguments.
+
+When signing release ZIPs outside `build/dist`:
+
+1. Extract each Windows ZIP to a temporary directory.
+2. Sign every `.exe` in the extracted tree with the command above.
+3. The archive-root `box.exe` is identical in the three Windows ZIPs. Sign one copy once and
+  reuse that signed copy in the other archives.
+4. Repack each ZIP, then regenerate its `.md5`, `.sha`, and `.sha256` files as lowercase,
+  filename-free digests with no trailing newline.
+5. Verify every executable with `Get-AuthenticodeSignature` and verify each SHA-256 sidecar
+  against the repacked ZIP before distributing the files.
 
 If the bundled Sign4j binary (`build/launch4j-3.50/launch4j/sign4j/sign4j` on Unix or `sign4j.exe` on Windows) is missing, the build task auto-downloads the matching `launch4j-3.50-*.{zip,tgz}` archive from `downloads.ortussolutions.com` and provisions it.
 
