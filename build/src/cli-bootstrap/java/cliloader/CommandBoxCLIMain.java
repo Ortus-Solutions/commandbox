@@ -144,7 +144,7 @@ public class CommandBoxCLIMain {
 	 * Applies semicolon-delimited JVM properties supplied through BOX_JAVA_PROPS.
 	 */
 	private static void applyJavaProperties() {
-		String javaProperties = System.getenv("BOX_JAVA_PROPS");
+		String javaProperties = getEnvironmentIgnoreCase("BOX_JAVA_PROPS");
 		debug("BOX_JAVA_PROPS: " + (javaProperties == null ? "<not set>" : javaProperties));
 		if (javaProperties == null || javaProperties.trim().isEmpty()) {
 			return;
