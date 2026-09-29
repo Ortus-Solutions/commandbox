@@ -46,7 +46,7 @@ class {
 		if( debug && !calledByInstaller ) {
 			println( "[clidebug] Java Version: " & getSystemSetting( "java.version", "Unknown" ) );
 			println( "[clidebug] Java Home: " & getSystemSetting( "java.home", "Unknown" ) );
-			println( "[clidebug] BoxLang Home: " & getSystemSetting( "boxlang.home", "Unknown" ) );
+			println( "[clidebug] BoxLang Home: " & boxRuntime.getRuntimeHome() );
 			println( "[clidebug] CommandBox Home: " & variables.settings.commandboxHome );
 			println( "[clidebug] Working Directory: " & workingDir );
 			println( "[clidebug] Arguments: " & JSONSerialize( args ) );

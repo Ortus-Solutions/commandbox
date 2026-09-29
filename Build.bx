@@ -132,12 +132,15 @@ class {
 			function( status ) {},
 			function( redirectURL ) {}
 		);
+		// This version marker drives the BoxLang version that the installed launcher fetches.
+		// It must be bundled for thin builds too, since they download the runtime at first run
+		// instead of bundling the JARs (see CommandBoxCLIMain#getBoxLangVersion).
+		fileWrite( installerResourcesPath & "/boxlang-version", installerSnapshot ? "snapshot" : "latest" );
 		if( !thin ) {
 			if( directoryExists( systemModulesPath ) ) {
 				directoryDelete( systemModulesPath, true );
 			}
 			directoryCreate( systemModulesPath & "/cfml", true );
-			fileWrite( installerResourcesPath & "/boxlang-version", installerSnapshot ? "snapshot" : "latest" );
 			progressableDownloader.download(
 				boxLangURL,
 				resolvePath( runtimeArtifactsPath & "/boxlang.zip" ),
