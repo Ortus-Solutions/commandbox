@@ -1682,7 +1682,7 @@ component accessors="true" singleton {
 		try {
 			// Show the user exactly what is about to run so they can make an informed decision.
 			consoleLogger.warn( '.' );
-			consoleLogger.warn( 'SECURITY: The package script [#arguments.scriptName#] wants to automatically run the following command(s):' );
+			consoleLogger.warn( '🔒 SECURITY: The package script [#arguments.scriptName#] wants to automatically run the following command(s):' );
 			consoleLogger.warn( '  Package location: #arguments.directory#' );
 			for( var thisCommand in arguments.commands ) {
 				consoleLogger.error( '  > ' & thisCommand );
