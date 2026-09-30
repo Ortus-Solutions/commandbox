@@ -79,6 +79,37 @@ component accessors=true singleton {
 	}
 
 	/**
+	* Temporarily stop painting the job so something else (a prompt, a notice) can own the console.
+	* The job state is kept so resume() can pick up where it left off.
+	* While suspended, isActive() is false, so logger output goes straight to the console instead of the job log.
+	*
+	* @return True if a running job was suspended and resume() should be called, false if there was nothing to suspend.
+	*/
+	boolean function suspend() {
+		lock name="job-queue" timeout=20 {
+			if( !getActive() ) {
+				return false;
+			}
+			setActive( false );
+			ConsolePainter.stop();
+		}
+		return true;
+	}
+
+	/**
+	* Start painting a job that was previously suspended.
+	*/
+	function resume() {
+		lock name="job-queue" timeout=20 {
+			setActive( true );
+		}
+		// The console was written to while we were away, so the painter's idea of what is on screen is stale
+		ConsolePainter.resetDisplay();
+		draw();
+		return this;
+	}
+
+	/**
 	* Add a line of logging.  Feel free to use ANSI formatting
 	*
 	* @line Message to log

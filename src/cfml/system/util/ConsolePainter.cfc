@@ -147,6 +147,14 @@ component singleton accessors=true {
 	}
 
 	/**
+	* Forget what was last painted so the next paint starts fresh at the current cursor position.
+	* Call this after writing to the console outside of the painter.
+	*/
+	function resetDisplay() {
+		display.reset();
+	}
+
+	/**
 	* Clear the console
 	*/
 	function clear() {

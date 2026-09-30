@@ -1675,21 +1675,31 @@ component accessors="true" singleton {
 			return true;
 		}
 
-		// Show the user exactly what is about to run so they can make an informed decision.
-		consoleLogger.warn( '.' );
-		consoleLogger.warn( 'SECURITY: The package script [#arguments.scriptName#] wants to automatically run the following command(s):' );
-		consoleLogger.warn( '  Package location: #arguments.directory#' );
-		for( var thisCommand in arguments.commands ) {
-			consoleLogger.error( '  > ' & thisCommand );
-		}
+		// The install is usually still drawing its progress tree.  Pause it so the notice and the prompt
+		// print together at the bottom of the console instead of being buried in (and overwritten by) the job display.
+		var job = wirebox.getInstance( 'interactiveJob' );
+		var jobSuspended = job.suspend();
+		try {
+			// Show the user exactly what is about to run so they can make an informed decision.
+			consoleLogger.warn( '.' );
+			consoleLogger.warn( 'SECURITY: The package script [#arguments.scriptName#] wants to automatically run the following command(s):' );
+			consoleLogger.warn( '  Package location: #arguments.directory#' );
+			for( var thisCommand in arguments.commands ) {
+				consoleLogger.error( '  > ' & thisCommand );
+			}
 
-		// Non-interactive shells (CI, piped input, no TTY) can't answer a prompt, so deny.
-		if( !shell.isTerminalInteractive() ) {
-			consoleLogger.warn( 'Refusing to auto-run install script in a non-interactive shell. Set config setting [scripts.trustInstallScripts=true] or pass [--trustScripts] to allow.' );
-			return false;
-		}
+			// Non-interactive shells (CI, piped input, no TTY) can't answer a prompt, so deny.
+			if( !shell.isTerminalInteractive() ) {
+				consoleLogger.warn( 'Refusing to auto-run install script in a non-interactive shell. Set config setting [scripts.trustInstallScripts=true] or pass [--trustScripts] to allow.' );
+				return false;
+			}
 
-		return shell.confirm( 'Do you want to allow this script to run? [y/n]' );
+			return shell.confirm( 'Do you want to allow this script to run? [y/n]' );
+		} finally {
+			if( jobSuspended ) {
+				job.resume();
+			}
+		}
 	}
 
 	/**
