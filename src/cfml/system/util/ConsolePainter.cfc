@@ -147,6 +147,24 @@ component singleton accessors=true {
 	}
 
 	/**
+	* Forget what was last painted so the next paint starts fresh at the current cursor position.
+	* Call this after writing to the console outside of the painter.
+	*/
+	function resetDisplay() {
+		display.reset();
+	}
+
+	/**
+	* Erase everything from the cursor to the bottom of the screen.
+	* After the painter stops, the cursor sits at the top of the area it was painting,
+	* so this wipes out any lines of a tall job tree that clear() left behind.
+	*/
+	function eraseBelow() {
+		terminal.puts( createObject( 'java', 'org.jline.utils.InfoCmp$Capability' ).clr_eos );
+		terminal.flush();
+	}
+
+	/**
 	* Clear the console
 	*/
 	function clear() {
