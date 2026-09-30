@@ -32,7 +32,7 @@
  * ║ 3   ║
  * ╚═════╝
  * {code}
- * Represent tabular data as an array of arrays or an arary of structs.  The number of columns will be based on the first row's data.
+ * Represent tabular data as an array of arrays or an array of structs.  The number of columns will be based on the first row's data.
  * For array and simple values, the column names will default to: col_1, col_2, etc.
  * For arrays of structs, the struct keys in the first row will be used
  * {code:bash}
