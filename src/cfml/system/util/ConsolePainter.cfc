@@ -155,6 +155,16 @@ component singleton accessors=true {
 	}
 
 	/**
+	* Erase everything from the cursor to the bottom of the screen.
+	* After the painter stops, the cursor sits at the top of the area it was painting,
+	* so this wipes out any lines of a tall job tree that clear() left behind.
+	*/
+	function eraseBelow() {
+		terminal.puts( createObject( 'java', 'org.jline.utils.InfoCmp$Capability' ).clr_eos );
+		terminal.flush();
+	}
+
+	/**
 	* Clear the console
 	*/
 	function clear() {

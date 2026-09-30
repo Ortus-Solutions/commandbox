@@ -92,6 +92,10 @@ component accessors=true singleton {
 			}
 			setActive( false );
 			ConsolePainter.stop();
+			// A job tree taller than the terminal leaves lines behind when the painter stops.  Wipe them so the prompt has a clean screen.
+			if( !ConsolePainter.getActive() ) {
+				ConsolePainter.eraseBelow();
+			}
 		}
 		return true;
 	}
