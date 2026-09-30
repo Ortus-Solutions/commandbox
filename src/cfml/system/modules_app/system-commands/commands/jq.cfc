@@ -36,8 +36,8 @@
  * jq {inner:{foo:'apples',bar:true}} inner.{newKey:foo,bar:bar}
  * { "newKey":"apples", "bar":true }
  * {code}
- * You can filter values. Here we take the arary inside "foo" and filter only the objects where the "age" is greater thgan 25
- * Note backticks are used for a litearl value, but we need to escape them in our string so the shell doesn't try to evaluate them.
+ * You can filter values. Here we take the array inside "foo" and filter only the objects where the "age" is greater thgan 25
+ * Note backticks are used for a literal value, but we need to escape them in our string so the shell doesn't try to evaluate them.
  * {code:bash}
  * jq '{"foo":[{"age":20},{"age":25},{"age":30}]}' 'foo[?age > \`25\`]'
  * [ { "age":30 } ]
