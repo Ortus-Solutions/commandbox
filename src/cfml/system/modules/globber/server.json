@@ -1,0 +1,11 @@
+{
+    "app":{
+        "cfengine":"boxlang"
+    },
+    "web":{
+        "host":"127.0.0.1",
+        "http":{
+            "port":55230
+        }
+    }
+}

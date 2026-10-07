@@ -1,6 +1,6 @@
 {
     "name":"Globber",
-    "version":"3.1.5",
+    "version":"3.2.0",
     "author":"Brad Wood",
     "homepage":"https://github.com/Ortus-Solutions/globber/",
     "documentation":"https://github.com/Ortus-Solutions/globber/",
@@ -14,8 +14,8 @@
     "type":"modules",
     "dependencies":{},
     "devDependencies":{
-        "testbox":"^4.4.0-snapshot",
-        "coldbox":"^4.3.0+188"
+        "testbox":"stable",
+        "coldbox":"stable"
     },
     "installPaths":{
         "coldbox":"tests/resources/app/coldbox/",

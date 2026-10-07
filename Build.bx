@@ -31,6 +31,15 @@ class {
 		command( "tokenReplace" ).params( moduleSrcPath & "Shell.cfc", "@build.version@", boxJSON.version, true ).run();
 		command( "tokenReplace" ).params( moduleSrcPath & "Bootstrap.cfm", "@build.version@", boxJSON.version, true ).run();
 
+		// Get bx modules
+		// TODO: remove need for evaluate, compat, etc
+		var bxModuleSlugs = "bx-compat-cfml,bx-esapi,bx-unsafe-evaluate,bx-wddx";
+		var cliModulesPath = resolvePath( "bx-cli/cli_modules" );
+		if( directoryExists( cliModulesPath ) ) {
+			directoryDelete( cliModulesPath, true );
+		}
+		command( "install" ).params( bxModuleSlugs, cliModulesPath ).flags( "noSave", "force" ).run();
+
 		var libsPath = resolvePath( "bx-cli/libs" );
 		if( directoryExists( libsPath ) ) {
 			directoryDelete( libsPath, true );

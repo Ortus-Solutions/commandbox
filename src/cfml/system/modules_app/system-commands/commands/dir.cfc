@@ -23,6 +23,13 @@
  * dir samples/ --recurse
  * {code}
  * .
+ * Use the "depth" parameter to limit how many levels of directories deep to return.
+ * A depth of 0 returns nothing, 1 returns the immediate children, 2 adds a level, etc.
+ * .
+ * {code:bash}
+ * dir samples/ --recurse depth=2
+ * {code}
+ * .
  * Ordering results is in format of an ORDER BY SQL clause. Invalid sorts are ignored.
  * .
  * {code:bash}
@@ -38,15 +45,21 @@ component aliases="ls,ll,directory" {
 	 * @sort Sort columns and direction. name, directory, size, type, dateLastModified, attributes, mode
 	 * @sort.options DateLastModified,Directory,Name,Size,Type,attributes,mode
 	 * @recurse Include nested files and folders
+	 * @depth How many levels of directories deep to return. -1 means unlimited. 0 returns nothing, 1 returns the immediate children, etc.
 	 * @simple Output only path names and nothing else.
 	 * @full Output absolute file path, not just relative to current working directory
 	 * @tree Output ASCII file tree
 	 **/
-	function run( Globber paths=globber( getCWD() ), sort='directory, type, name', string excludePaths='', boolean recurse=false, boolean simple=false, boolean full=false, boolean tree=false )  {
+	function run( Globber paths=globber( getCWD() ), sort='directory, type, name', string excludePaths='', boolean recurse=false, numeric depth=-1, boolean simple=false, boolean full=false, boolean tree=false )  {
 
 		// If we're doign a tree view, then recurse is sort of assumed, otherwse it would be a very boring tree!
 		if( tree ) {
 			recurse = true;
+		}
+
+		// Limit recursion depth, but only kicks in if we're recursing
+		if( recurse ) {
+			paths.withDepth( depth );
 		}
 
 		// Backwards compat for old parameter name

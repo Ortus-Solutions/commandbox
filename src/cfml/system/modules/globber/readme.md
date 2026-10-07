@@ -1,6 +1,6 @@
-﻿[![Build Status](https://travis-ci.org/Ortus-Solutions/globber.svg?branch=master)](https://travis-ci.org/Ortus-Solutions/globber)
+﻿I am a utility to match file system path patterns (globbing) in a similar manner as Unix file systems or `.gitignore` syntax.
 
-I am a utility to match file system path patterns (globbing) in a similar manner as Unix file systems or `.gitignore` syntax.
+I work on Lucee 7+ and BoxLang 1+
 
 ## Installation
 
@@ -85,5 +85,17 @@ You may sort the data using the same column names you'd get back from the query 
 var qryResults = globber
 	.setPattern( baseDir & '/**' )
 	.withSort( 'type asc, name desc' )
+	.matches();
+```
+
+#### Limit recursion depth
+
+You may limit how many levels of directories deep the globber will return using the `withDepth()` function.  The default value is `-1` which means no limit.  A value of `0` returns nothing at all.  A value of `1` returns only the immediate children of the base directory, a value of `2` adds one level of nesting, and so on.
+
+```
+// Only return matches up to 2 levels below the base dir
+var qryResults = globber
+	.setPattern( baseDir & '/**' )
+	.withDepth( 2 )
 	.matches();
 ```

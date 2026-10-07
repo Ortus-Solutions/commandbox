@@ -31,6 +31,8 @@ component accessors="true" {
 	property name='sort' default='type, name';
 	/** Directory the list was pulled from */
 	property name='baseDir' default='';
+	/** How many levels of directories deep to recurse. -1 means unlimited. */
+	property name='depth' default='-1';
 
 
 	function init() {
@@ -40,6 +42,7 @@ component accessors="true" {
 		variables.excludePattern = [];
 		variables.notExcludePattern = [];
 		variables.loose = false;
+		variables.depth = -1;
 		variables.matchQueryArray=[];
 		return this;
 	}
@@ -82,6 +85,19 @@ component accessors="true" {
 	*/
 	function withSort( thisSort ) {
 		setSort( thisSort );
+		return this;
+	}
+
+	/**
+	* Limit the number of levels of directories deep the globber will return.
+	* A value of -1 (the default) means unlimited. A value of 0 returns nothing.
+	* A value of 1 returns only the immediate children of the base directory,
+	* a value of 2 adds one level of nesting, and so on.
+	*
+	* @thisDepth How many directory levels deep to return. -1 means unlimited.
+	*/
+	function withDepth( numeric thisDepth ) {
+		setDepth( arguments.thisDepth );
 		return this;
 	}
 
@@ -225,7 +241,7 @@ component accessors="true" {
 				var oldFile = oldDir & p.name;
 				var newFile = targetPath & oldFile.replace( getBaseDir(), '' );
 				// Just in case
-				var newDirectory = getDirectoryFromPath( newFile );
+				newDirectory = getDirectoryFromPath( newFile );
 				if( !directoryExists( newDirectory ) ) {
 					directoryCreate( newDirectory, true, true );
 				}
@@ -307,7 +323,25 @@ component accessors="true" {
 				} else if( dir.startsWith( '\\' ) ) {
 					prefix = '//';
 				}
-				evaluate( 'lookups["#prefix##dir.listChangeDelims( '"]["', '/\' )#"]={}' );
+				// Build the nested lookup struct one path segment at a time.
+				// This replicates what the old evaluate() call did, minus eval:
+				// walk (and auto-create) each intermediate segment, then always
+				// reset the leaf segment to an empty struct.
+				var segments = dir.listToArray( '/\' ).filter( ( s )=>len( s ) );
+				if( len( prefix ) && segments.len() ) {
+					segments[ 1 ] = prefix & segments[ 1 ];
+				}
+				var thisLookup = lookups;
+				var segmentCount = segments.len();
+				for( var i=1; i <= segmentCount; i++ ) {
+					var segment = segments[ i ];
+					if( i == segmentCount ) {
+						thisLookup[ segment ] = {};
+					} else if( !thisLookup.keyExists( segment ) ) {
+						thisLookup[ segment ] = {};
+					}
+					thisLookup = thisLookup[ segment ];
+				}
 			} );
 			var findRoot = function( lookups ){
 				if( lookups.count() == 1 ) {
@@ -326,11 +360,26 @@ component accessors="true" {
 		return;
 	}
 
-	private function processPattern( string pattern, baseDir, skipExcludes=false ) {
+	private function processPattern( string pattern, baseDir, skipExcludes=false, depth=0 ) {
+		// BoxLang defaults an omitted optional arg to null (ACF/Lucee in compat mode
+		// default it to an empty string). The top-level call never passes baseDir, so
+		// normalize a null here to '' to behave the same on every engine.
+		if( isNull( arguments.baseDir ) ) {
+			arguments.baseDir = '';
+		}
 		local.thisPattern = pathPatternMatcher.normalizeSlashes( arguments.pattern );
 		var exactPattern = thisPattern.startsWith('/');
 		var fileFilter = '';
 		var fullPatternPath = ( getLoose() ? pathAppend( getBaseDir(), thisPattern ) : thisPattern );
+
+		// Depth controls how many levels of directories below the base directory
+		// are returned. A depth of -1 means unlimited. A depth of 0 returns
+		// nothing. A depth of 1 returns only the immediate children of the base
+		// directory, a depth of 2 adds one level of nesting, and so on.
+		var thisDepth = arguments.depth;
+		var maxRecursionDepth = getDepth() == -1 ? 999999 : getDepth();
+		var shouldDisplay = thisDepth < maxRecursionDepth;
+		var canRecurse = ( thisDepth + 1 ) < maxRecursionDepth;
 
 		// Optimization for exact file path
 		if( ( !getLoose() || exactPattern )
@@ -339,17 +388,19 @@ component accessors="true" {
 			arguments.baseDir = getDirectoryFromPath( fullPatternPath );
 			fileFilter = '*' & listLast( fullPatternPath, '/' )
 		} else {
-			if( isNull( arguments.baseDir ) ) {
+			if( !len( arguments.baseDir ) ) {
 				// Special handing for Windows drive letter and no folder as you can't run directoryList() and get a drive letter back!
 				// This only kicks in for C: not C:/ as the latter would list all children folders
 				if( pattern.listLen( '/' ) == 1 && pattern contains ':' && !pattern.endsWith( '/' ) ) {
 					// Spoof a directory listing that contains just the drive letter directly
-					appendMatchQuery( queryNew(
-						'name,size,type,dateLastModified,attributes,mode,directory',
-						'string,string,string,date,string,string,string',
-						['',0,'Dir',now(),'','',pattern]
-					) );
-					setBaseDir( baseDir & ( baseDir.endsWith( '/' ) ? '' : '/' ) );
+					if( shouldDisplay ) {
+						appendMatchQuery( queryNew(
+							'name,size,type,dateLastModified,attributes,mode,directory',
+							'string,string,string,date,string,string,string',
+							['',0,'Dir',now(),'','',pattern]
+						) );
+						setBaseDir( baseDir & ( baseDir.endsWith( '/' ) ? '' : '/' ) );
+					}
 					return true;
 				}
 
@@ -369,7 +420,6 @@ component accessors="true" {
 
 		// Strip off the "not found" part
 		var remainingPattern = findUnmatchedPattern( thisPattern, baseDir )
-		sleep(1);
 		var dl = directoryList (
 				listInfo='query',
 				recurse=false,
@@ -397,7 +447,7 @@ component accessors="true" {
 					if( possiblePatterns.len() ) {
 						// If we're looking at a file, just check it.  No need to recurse.
 						if(  path.type == 'file' ) {
-							if( pathPatternMatcher.matchPatterns( possiblePatterns, pathToMatch, !getLoose() ) ) {
+						if( shouldDisplay && pathPatternMatcher.matchPatterns( possiblePatterns, pathToMatch, !getLoose() ) ) {
 								return true;
 							}
 						} else {
@@ -413,15 +463,17 @@ component accessors="true" {
 
 										var thisBaseDir = calculateBaseDir( possiblePattern );
 										possiblePattern = possiblePattern.replace( thisBaseDir, '' );
-										processPattern( possiblePattern, thisBaseDir, true );
+										processPattern( possiblePattern, thisBaseDir, true, thisDepth + 1 );
 									} else {
 										// non-exact patters which can be in any sub directory such as foo.txt just recurse down from the current folder we're looking at
-										processPattern( possiblePattern, thisPath, true )
+										if( canRecurse ) {
+											processPattern( possiblePattern, thisPath, true, thisDepth + 1 )
+										}
 									}
 								} else {
 									// For non-loose mode just grab the deepest folder we can and start there.
 									var thisBaseDir = calculateBaseDir( possiblePattern );
-									processPattern( possiblePattern, thisBaseDir, true )
+									processPattern( possiblePattern, thisBaseDir, true, thisDepth + 1 )
 								}
 							}
 						}
@@ -431,26 +483,30 @@ component accessors="true" {
 
 				// If we're inside a **, then we just blindly recurse forever
 				if( arguments.path.type == 'dir' && remainingPattern.startsWith( '**' ) ) {
-					processPattern( thisPattern, local.thisPath, skipExcludes )
+					if( canRecurse ) {
+						processPattern( thisPattern, local.thisPath, skipExcludes, thisDepth + 1 )
+					}
 				// If we're in loose mode, see if the next folder is a positive match
 				} else if( arguments.path.type == 'dir' && getLoose() ) {
 					if( exactPattern ) {
 						if( pathPatternMatcher.matchPattern( '/' & remainingPattern.listFirst( '/' ), pathToMatch, !getLoose() ) ) {
-							processPattern( '/' & remainingPattern.listRest( '/' ), local.thisPath, skipExcludes );
+							processPattern( '/' & remainingPattern.listRest( '/' ), local.thisPath, skipExcludes, thisDepth + 1 );
 						}
 					} else {
-						processPattern( thisPattern, local.thisPath, skipExcludes );
+						if( canRecurse ) {
+							processPattern( thisPattern, local.thisPath, skipExcludes, thisDepth + 1 );
+						}
 					}
 				// For all other remaining patterns, only recurse if we've found a folder that matches the next part of the pattern
 				} if( arguments.path.type == 'dir' && remainingPattern.listLen( '/' ) > 1 ) {
 					if( pathPatternMatcher.matchPattern( baseDir & remainingPattern.listFirst( '/' ) & '/**', pathToMatch, !getLoose() ) ) {
-						processPattern( local.thisPath & remainingPattern.listRest( '/' ), local.thisPath, skipExcludes );
+						processPattern( local.thisPath & remainingPattern.listRest( '/' ), local.thisPath, skipExcludes, thisDepth + 1 );
 					}
 				}
 
 				// This check applies to files/folders that are immediate children of the current base dir.
 				// We've already recursed into all worthy subfolders above
-				if( pathPatternMatcher.matchPattern( thisPattern, local.pathToMatch, !getLoose() ) ) {
+				if( shouldDisplay && pathPatternMatcher.matchPattern( thisPattern, local.pathToMatch, !getLoose() ) ) {
 					return true;
 				}
 				return false;
@@ -540,8 +596,8 @@ component accessors="true" {
 			);
 
 			var newMatchQuery = queryExecute(
-				'SELECT * FROM newMatchQuery
-				GROUP BY directory, name '
+				'SELECT directory, name, size, type, dateLastModified, attributes, mode FROM newMatchQuery
+				GROUP BY directory, name, size, type, dateLastModified, attributes, mode '
 				& ( len( getSort() ) ? ' ORDER BY #getCleanSort()#' : '' ),
 				[],
 				{ dbtype="query" }
