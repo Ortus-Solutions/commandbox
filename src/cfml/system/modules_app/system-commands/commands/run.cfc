@@ -62,6 +62,11 @@ component{
 		var nativeShell = fileSystemUtil.getNativeShell();
 		// Prep the command to run in the OS-specific shell
 		if( fileSystemUtil.isWindows() ) {
+			// The check is backwards compat from places where we already have wrapped additional quotes around the command
+			if( !arguments.command.startsWith( '""' ) ) {
+				// This is required due to a stupid behavior where cmd /c will strip leading/trailing quotes from the string
+				arguments.command = '"' & arguments.command & '"';
+			}
 			// Pass through Windows' command shell, /a outputs ANSI formatting, /c runs as a command
 			var commandArray = [ nativeShell,'/a','/c', arguments.command ];
 		} else {
