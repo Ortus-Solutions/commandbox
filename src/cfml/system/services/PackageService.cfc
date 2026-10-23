@@ -795,9 +795,7 @@ component accessors="true" singleton {
 				trustScripts = arguments.trustScripts,
 				lockFile = arguments.lockFile.isEmpty() ? {} : ( isNull( packageName ) || !arguments.lockFile.dependencies.keyExists( packageName ) ? arguments.lockFile : arguments.lockFile.dependencies[ packageName ] )
 			};
-			if( !artifactDescriptor.createPackageDirectory && artifactDescriptor.installPaths.keyExists( dependency ) ) {
-				params.directory = fileSystemUtil.resolvePath( artifactDescriptor.installPaths[ dependency ], installDirectory );
-			} else if( artifactDescriptor.type == 'boxlang-modules' && !isNull( arguments.directory ) ) {
+			if( artifactDescriptor.type == 'boxlang-modules' && !isNull( arguments.directory ) ) {
 				params.directory = arguments.directory;
 			}
 
