@@ -573,58 +573,28 @@ downloads, POM parent walks, and dependency resolution.
   associated sources, javadocs, or test artifacts; request one explicitly with the `classifier`
   flag when it is published.
 
-## Known broken behaviors
+## Test coverage
 
-Found by the Maven endpoint test suite (`tests/maven/Task.cfc`) while converting the documented
-behavior above into assertions. Each item is documented behavior that does **not** hold today.
+Each behavior documented above is exercised by the Maven endpoint suite in `tests/maven/`
+(`box task run taskFile=Task.cfc` from that directory; add `target=<testName>` to run one case).
 
-- **A cache hit ignores the resolution flags.** `scopes`, `optional` and `exclude` change what the
-  generated descriptor resolves to, but a cache hit rebuilds the descriptor from the cached copy
-  and only refreshes the install mode and directory (`prepareCachedPackageForInstall()` in
-  `src/cfml/system/endpoints/Maven.cfc`). Observed: `org.jboss.threads:jboss-threads:3.9.2?exclude=org.jboss.logging:jboss-logging`
-  still lists `org.jboss.logging:jboss-logging`, `?scopes=runtime,compile,test` on the same artifact
-  still omits the test-scoped `org.junit.jupiter:junit-jupiter`, and
-  `ch.qos.logback:logback-classic:1.2.13?optional=true` still omits `javax.mail:mail` — in each case
-  because the GAV had already been cached by an earlier resolve with different flags. Since the
-  cache is keyed purely by GAV, whichever flag combination is cached first defines the dependency
-  set from then on. The test suite deletes the cache entry before each flag test to work around
-  this. `transitive` and `classifier` are subject to the same mechanism (not separately reproduced).
-- **Repo fall-through does not happen for exact versions.** "A `404` (or any lookup failure) on one
-  repo just moves us to the next" only holds for STABLE and version-range resolution. For an exact
-  version `getArtifactFromRepo()` builds the JAR URL without checking whether it exists, so the
-  first registered repo always wins and a bad repo in the list fails the install at download time
-  instead of moving on. Reproduced with a per-project `mavenCentral` override pointing at a bad
-  path (`404 Not Found` for the JAR).
-- **A connection failure is not a fall-back signal.** Only `endpointException` is caught while
-  walking the registered repos, so an unreachable repo aborts resolution instead of trying the next
-  one. The "pointing `mavenCentral` at a bogus URL ... then correctly fell through to the next
-  registered repo" example above does not reproduce with an unresolvable host; a not-found response
-  is required, and even then only on the metadata path.
-- **Single-version bracket ranges are rejected.** The translation table above lists `[1.0]` →
-  "(exact) `1.0`", but `convertMavenToNpmVersionRange()` requires a comma in the range, so a POM
-  declaring `<version>[1.0]</version>` on a dependency throws
-  `Invalid version range format: [1.0]` instead of resolving that dependency. Only two-sided ranges
-  (`[1.0,2.0)`, `(1.0,2.0]`) are translated.
-- **Repeat `STABLE`/range installs re-download the JAR.** "Cache is only used for exact versions"
-  says a repeat install of an already-resolved `STABLE`/range "costs only one metadata fetch, not a
-  re-download", because the cache is re-checked against the concrete version before downloading. In
-  practice the JAR is downloaded *before* the concrete version is assigned
-  (`resolvePackage()` fetches the artifact, then resolves the range from metadata), so every repeat
-  range/`STABLE` install fetches both the metadata **and** the JAR again — and fails outright if the
-  JAR is no longer published, even though it is sitting in the cache. The re-check does work for
-  exact versions, which short-circuit before any network call.
+Behaviors that were broken when the suite was written, now fixed and covered by regression tests:
 
-Each item above has a failing test in `tests/maven/Task.cfc` that asserts the **documented** behavior,
-so the suite stays red until the bug is fixed:
+- **Cache hits ignoring resolution flags.** `scopes`, `optional` and `exclude` now select their own
+  cache entry instead of reusing whichever flag combination happened to be cached first
+  (`cacheHitHonorsResolutionFlags`, `cacheHitHonorsOptionalFlag`, `cacheHitHonorsScopesFlag`).
+- **No repo fall-through for exact versions.** The exact-version fast path now verifies that the JAR
+  is published in the repo it is about to use, so a 404 in one registered repo moves on to the next
+  (`exactVersionFallsThroughToNextRegisteredRepo`).
+- **Connection failures not treated as fall-back signals.** An unreachable repo now counts as "not
+  here" and the walk continues (`unreachableRepoFallsThroughToNextRepo`).
+- **`[1.0]` single-version bracket rejected.** It now translates to the exact version `1.0`
+  (`bracketExactRangeTranslatesToExactVersion`).
+- **Repeat `STABLE`/range installs re-downloading the JAR.** The cache is now re-checked against the
+  resolved concrete version before downloading, so a repeat install costs only the metadata fetch and
+  still works when the repository no longer serves the JAR (`rangeResolutionReusesCachedJar`,
+  `repeatRangeInstallSurvivesUnpublishedJar`).
 
-- `cacheHitHonorsResolutionFlags` — a cache hit must still honor `exclude` (and the other
-  resolution flags).
-- `cacheHitHonorsOptionalFlag` — a cache hit must still honor `optional`.
-- `cacheHitHonorsScopesFlag` — a cache hit must still honor `scopes`.
-- `exactVersionFallsThroughToNextRegisteredRepo` — a 404 in the first registered repo must fall
-  through to the next one for an exact version.
-- `unreachableRepoFallsThroughToNextRepo` — an unreachable repo must fall through to the next one.
-- `bracketExactRangeTranslatesToExactVersion` — `[1.0]` must translate to the exact version `1.0`.
-- `rangeResolutionReusesCachedJar` — a repeat range/`STABLE` install must reuse the cached JAR.
-- `repeatRangeInstallSurvivesUnpublishedJar` — a repeat range install must work from the cache when
-  the repository no longer serves the JAR.
+Not covered by the suite (needs infrastructure outside this repo): `snapshots` (requires a
+third-party snapshot repository), POM `<repositories>`/BOM imports (documented as not implemented),
+the 20-second network timeout, and `\=` escaping on a real shell command line.

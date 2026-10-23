@@ -407,13 +407,13 @@ component {
 	 */
 	function offlineModeServesCachedExactVersion( boolean verbose=false ) {
 		// Prime the artifact cache so the offline run has something to serve.
-		resolvePackage( "maven:org.apache.commons:commons-lang3:3.14.0?transitive=false", "", arguments.verbose );
+		resolvePackage( "maven:org.apache.commons:commons-lang3:3.14.0", "", arguments.verbose );
 
 		var configService = getInstance( "configService" );
 		var originalOfflineMode = configService.getSetting( "offlineMode", false );
 		try {
 			configService.setSetting( "offlineMode", true, false, true );
-			var result = resolvePackage( "maven:org.apache.commons:commons-lang3:3.14.0?transitive=false", "", arguments.verbose );
+			var result = resolvePackage( "maven:org.apache.commons:commons-lang3:3.14.0", "", arguments.verbose );
 			assertEquals( "3.14.0", result.descriptor.version, "an already-cached exact version must resolve while offline" );
 		} finally {
 			configService.setSetting( "offlineMode", originalOfflineMode, false, true );
@@ -742,7 +742,7 @@ component {
 	 */
 	function cacheKeyIgnoresServingRepo( boolean verbose=false ) {
 		clearArtifactCache( "org.apache.commons", "commons-lang3", "3.14.0" );
-		var fromCentral = resolvePackage( "maven:org.apache.commons:commons-lang3:3.14.0?transitive=false", "", arguments.verbose );
+		var fromCentral = resolvePackage( "maven:org.apache.commons:commons-lang3:3.14.0", "", arguments.verbose );
 		var cachedHash = fileHash( jarInDirectory( fromCentral.path ) );
 		var cachedJarBytes = jarBytesFromCache( "org.apache.commons", "commons-lang3", "3.14.0" );
 		assertEquals( cachedHash, hash( cachedJarBytes, "SHA-256" ), "the resolved JAR should match the cached one" );
@@ -760,7 +760,7 @@ component {
 			);
 
 			var fromLocalRepo = resolvePackage(
-				"maven:#repo.url#|org.apache.commons:commons-lang3:3.14.0?transitive=false",
+				"maven:#repo.url#|org.apache.commons:commons-lang3:3.14.0",
 				"",
 				arguments.verbose
 			);
@@ -833,13 +833,13 @@ component {
 				writeMavenMetadata( repo, "org.example", "rangedemo", [ "2.0.0" ] );
 				clearArtifactCache( "org.example", "rangedemo", "2.0.0" );
 
-				var first = resolvePackage( "maven:#repo.url#|org.example:rangedemo:2.0.x?transitive=false", "", arguments.verbose );
+				var first = resolvePackage( "maven:#repo.url#|org.example:rangedemo:2.0.x", "", arguments.verbose );
 				assertEquals( "2.0.0", first.descriptor.version, "the range must resolve to the concrete version" );
 				assertTrue( artifactIsCached( "org.example", "rangedemo", "2.0.0" ), "the resolved artifact must be cached" );
 
 				var afterFirst = servedRequests( repo ).len();
 
-				var second = resolvePackage( "maven:#repo.url#|org.example:rangedemo:2.0.x?transitive=false", "", arguments.verbose );
+				var second = resolvePackage( "maven:#repo.url#|org.example:rangedemo:2.0.x", "", arguments.verbose );
 				assertEquals( "2.0.0", second.descriptor.version, "the repeat resolve must still resolve the range" );
 
 				var allRequests = servedRequests( repo );
@@ -875,7 +875,7 @@ component {
 			configService.setSetting( "endpoints.maven.installMode", "shared", false, true );
 			configService.setSetting( "endpoints.maven.installDirectory", "global-libs", false, true );
 
-			var boxJSON = resolvePackage( "maven:org.apache.commons:commons-lang3:3.14.0?transitive=false", "", arguments.verbose ).descriptor;
+			var boxJSON = resolvePackage( "maven:org.apache.commons:commons-lang3:3.14.0", "", arguments.verbose ).descriptor;
 
 			assertEquals( "shared", boxJSON.maven.installMode, "the global endpoints.maven.installMode must be honored" );
 			assertEquals( "global-libs", boxJSON.directory, "the global endpoints.maven.installDirectory must be honored" );
@@ -964,6 +964,11 @@ component {
 			clearArtifactCache( "org.example", "trail", "1.0.0" );
 
 			var job = getInstance( "interactiveJob" );
+			// Drain any job left active by an earlier test: a new job would otherwise be created as a
+			// child of it and getLines() would return the parent's stale lines.
+			while( job.isActive() ) {
+				job.complete( false );
+			}
 			job.start( "Resolving maven:org.example:trail:1.0.0", 1 );
 			var lines = [];
 			try {
@@ -1125,7 +1130,7 @@ component {
 			writeMavenMetadata( repo, "org.example", "gone", [ "3.0.0" ] );
 			clearArtifactCache( "org.example", "gone", "3.0.0" );
 
-			var first = resolvePackage( "maven:#repo.url#|org.example:gone:3.0.x?transitive=false", "", arguments.verbose );
+			var first = resolvePackage( "maven:#repo.url#|org.example:gone:3.0.x", "", arguments.verbose );
 			assertEquals( "3.0.0", first.descriptor.version, "the range must resolve to the concrete version" );
 			assertTrue( artifactIsCached( "org.example", "gone", "3.0.0" ), "the resolved artifact must be cached" );
 
@@ -1133,7 +1138,7 @@ component {
 			fileDelete( repo.dir & "/org/example/gone/3.0.0/gone-3.0.0.jar" );
 
 			var message = catchThrown( function() {
-				resolvePackage( "maven:#repo.url#|org.example:gone:3.0.x?transitive=false", "", verbose );
+				resolvePackage( "maven:#repo.url#|org.example:gone:3.0.x", "", verbose );
 			} );
 
 			assertEquals(
@@ -1177,7 +1182,7 @@ component {
 			} );
 
 			var message = catchThrown( function() {
-				resolvePackage( "maven:org.example:fallthrough:1.0.0?transitive=false", projectPath, verbose );
+				resolvePackage( "maven:org.example:fallthrough:1.0.0", projectPath, verbose );
 			} );
 
 			assertEquals(
@@ -1222,7 +1227,7 @@ component {
 			} );
 
 			var message = catchThrown( function() {
-				resolvePackage( "maven:org.example:unreachable:1.0.0?transitive=false", projectPath, verbose );
+				resolvePackage( "maven:org.example:unreachable:1.0.0", projectPath, verbose );
 			} );
 
 			assertEquals(
@@ -1398,13 +1403,36 @@ component {
 	}
 
 	/**
-	 * Whether an exact GAV is present in CommandBox's artifact cache.
+	 * Every artifact-cache directory for a GA, regardless of the flag suffix the endpoint derived.
+	 */
+	private array function cacheDirectoriesFor( required string groupId, required string artifactId ) {
+		var prefix = "maven-" & arguments.groupId & "--" & arguments.artifactId;
+		var artifactsDirectory = getInstance( "artifactService" ).getArtifactsDirectory();
+		var matches = [];
+
+		for( var cacheDirectory in directoryList( artifactsDirectory, false, "array" ) ) {
+			if( !directoryExists( cacheDirectory ) ) {
+				continue;
+			}
+			var cacheName = cacheDirectory.replace( chr( 92 ), "/", "all" ).listLast( "/" );
+			if( cacheName == prefix || ( cacheName.startsWith( prefix ) && cacheName.mid( prefix.len() + 1, 2 ) == "--" ) ) {
+				matches.append( cacheDirectory );
+			}
+		}
+
+		return matches;
+	}
+
+	/**
+	 * Whether an exact GAV is present in CommandBox's artifact cache (any flag variant).
 	 */
 	private boolean function artifactIsCached( required string groupId, required string artifactId, required string version ) {
-		return getInstance( "artifactService" ).artifactExists(
-			"maven-" & arguments.groupId & "--" & arguments.artifactId,
-			arguments.version
-		);
+		for( var cacheDirectory in cacheDirectoriesFor( arguments.groupId, arguments.artifactId ) ) {
+			if( directoryExists( cacheDirectory & "/" & arguments.version ) ) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**
@@ -1551,16 +1579,13 @@ component {
 	 * removing it is safe — it is simply re-downloaded.
 	 */
 	private void function clearArtifactCache( required string groupId, required string artifactId, required string version ) {
-		var artifactService = getInstance( "artifactService" );
-		var cacheKey = "maven-" & arguments.groupId & "--" & arguments.artifactId;
-		if( !artifactService.artifactExists( cacheKey, arguments.version ) ) {
-			return;
-		}
-
-		var artifactPath = artifactService.getArtifactPath( packageName=cacheKey, version=arguments.version, touch=false );
-		var versionDirectory = getDirectoryFromPath( artifactPath );
-		if( directoryExists( versionDirectory ) ) {
-			directoryDelete( versionDirectory, true );
+		// The endpoint suffixes cache entries with a hash of the resolution flags, so clear every
+		// variant for this GA rather than trying to reproduce its key derivation here.
+		for( var cacheDirectory in cacheDirectoriesFor( arguments.groupId, arguments.artifactId ) ) {
+			var versionDirectory = cacheDirectory & "/" & arguments.version;
+			if( directoryExists( versionDirectory ) ) {
+				directoryDelete( versionDirectory, true );
+			}
 		}
 	}
 

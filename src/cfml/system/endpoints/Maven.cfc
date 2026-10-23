@@ -102,6 +102,16 @@ component
 		// that share the same artifact cache.
 		var cacheKey = "maven-" & artifact.parts.groupId & "--" & artifact.parts.artifactId
 			& ( artifact.parts.flags.classifier.len() ? "--" & artifact.parts.flags.classifier : "" );
+		// Resolution flags change the generated dependency set, so each flag combination gets its own
+		// cache entry.  The artifact bytes are still keyed by GAV (never by repo); only the descriptor
+		// variant differs, so a flagged install still gets a zero-network cache hit next time.
+		var resolutionFlags = "scopes=#lCase( replace( artifact.parts.flags.scopes, " ", "", "all" ) )#"
+			& "|optional=#( artifact.parts.flags.optional ? 1 : 0 )#"
+			& "|exclude=#lCase( replace( artifact.parts.flags.exclude, " ", "", "all" ) )#"
+			& "|transitive=#( artifact.parts.flags.transitive ? 1 : 0 )#";
+		if ( resolutionFlags != "scopes=runtime,compile|optional=0|exclude=|transitive=1" ) {
+			cacheKey &= "--" & hash( resolutionFlags, "MD5" );
+		}
 		if (
 			artifact.parts.version != "STABLE"
 			&& isExactMavenVersion( artifact.parts.version )
@@ -187,6 +197,26 @@ component
 					type    = "endpointException"
 				);
 			}
+		}
+
+		// For STABLE/ranges the repo walk has already resolved a concrete version.  If that exact
+		// artifact is cached, reuse it: the metadata fetch above is all a repeat install should cost.
+		if (
+			artifact.resolvedVersion.len()
+			&& isExactMavenVersion( artifact.resolvedVersion )
+			&& artifactService.artifactExists( cacheKey, artifact.resolvedVersion )
+		) {
+			job.addLog( "Resolved version [#artifact.resolvedVersion#] already in local artifacts, using cache." );
+			artifact.parts.version = artifact.resolvedVersion;
+			var cachedArtifactPath = prepareCachedPackageForInstall(
+				artifactService.getArtifactPath( cacheKey, artifact.resolvedVersion ),
+				artifact.parts.flags.installMode,
+				installDirectory
+			);
+			if ( !configService.getSetting( "offlineMode", false ) ) {
+				verifyArtifactChecksum( findJarInPackage( cachedArtifactPath ), artifact.jarFileURL );
+			}
+			return cachedArtifactPath;
 		}
 
 		// Before hitting the network, check the user's local Maven repository (~/.m2/repository).
@@ -393,6 +423,27 @@ component
 	}
 
 	/**
+	 * Whether a JAR URL is actually published in a repo.  Any failure (404, connection error, timeout)
+	 * counts as "not here" so the repo walk can move on to the next registered repo.
+	 * @jarURL The JAR URL to check
+	 */
+	private boolean function jarExistsInRepo( required string jarURL ) {
+		var httpResult = "";
+		try {
+			cfhttp(
+				url      = arguments.jarURL,
+				method   = "head",
+				redirect = true,
+				timeout  = 20,
+				result   = "httpResult"
+			);
+		} catch( any e ) {
+			return false;
+		}
+		return httpResult.statusCode contains "200";
+	}
+
+	/**
 	 * Checks if an artifact exists in the given repository and gets it
 	 * @repo The repository to check (URL or alias)
 	 * @groupId The group ID of the artifact
@@ -420,6 +471,14 @@ component
 				arguments.classifier
 			);
 			artifact.resolvedVersion = arguments.version;
+			// Confirm the JAR is actually published here, so a missing artifact in one registered repo
+			// fails as an endpointException and the caller can move on to the next repo.
+			if ( !jarExistsInRepo( artifact.jarFileURL ) ) {
+				throw(
+					message = "Could not find artifact [#arguments.groupId#:#arguments.artifactId#:#arguments.version#] in #arguments.repo# repository.",
+					type    = "endpointException"
+				);
+			}
 			return artifact;
 		}
 
@@ -1328,6 +1387,12 @@ component
 		// (e.g. "1.1", "2") which isExactVersion() doesn't consider "exact" (it expects x.y.z).
 		if ( !reFind( "^[\[\(]", range ) ) {
 			return range;
+		}
+
+		// Single-version bracket range, e.g. "[1.0]" — Maven's notation for an exact version.
+		var exactRange = reFind( "^\[([\d\.]+)\]$", range, 1, true );
+		if ( arrayLen( exactRange.pos ) && exactRange.pos[ 1 ] != 0 ) {
+			return mid( range, exactRange.pos[ 2 ], exactRange.len[ 2 ] );
 		}
 
 		var pattern = "([\[\(])([\d\.]+),([\d\.]+)([\]\)])";
