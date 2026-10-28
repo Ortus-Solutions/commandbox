@@ -46,14 +46,19 @@ class {
 		}
 		directoryCreate( libsPath );
 
+		// JLine is only the monolithic jar; it does not need the split
+		// jline-terminal-* artifacts, because those classes are already bundled
+		// (jansi provider included). jansi stays as a separate dependency since it
+		// is an optional dependency of JLine and is what provides the Windows
+		// terminal implementation (2.4.3 is the latest 2.x and adds arm64 natives).
 		command( "install" )
-			.params( "maven:org.jline:jline:3.21.0" )
+			.params( "maven:org.jline:jline:3.30.17" )
 			.inWorkingDirectory( resolvePath( "bx-cli" ) )
 			.flags( "noSave", "force" )
 			.run();
 
 		command( "install" )
-			.params( "maven:org.fusesource.jansi:jansi:2.4.1" )
+			.params( "maven:org.fusesource.jansi:jansi:2.4.3" )
 			.inWorkingDirectory( resolvePath( "bx-cli" ) )
 			.flags( "noSave", "force" )
 			.run();

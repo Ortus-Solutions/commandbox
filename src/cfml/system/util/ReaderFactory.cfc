@@ -80,17 +80,40 @@ component singleton{
 		var jHighlighter = createDynamicProxy( CommandHighlighter, [ 'org.jline.reader.Highlighter' ] );
 		var jSignalHandler = createDynamicProxy( SignalHandler, [ 'org.jline.terminal.Terminal$SignalHandler' ] );
 
-		// Build our terminal instance
-		var terminal = createObject( "java", "org.jline.terminal.TerminalBuilder" )
-			.builder()
-	        .system( true )
-	       // .streams( createObject( 'java', 'java.lang.System' ).in, createObject( 'java', 'java.lang.System' ).out )
-	        .nativeSignals( true )
-	        .signalHandler( jSignalHandler )
-	        // This hides the warning when JLine defaults to a dumb terminal on CI builds
-	        .dumb( true )
-	        .paused( true )
-			.build();
+		// JLine 3.30+ locates its terminal providers by reading
+		// META-INF/jline/providers/{name} through the Thread Context Class Loader.
+		//
+		// WORKAROUND for a BoxLang defect: the TCCL inside a module is the *runtime*
+		// class loader, and BoxLang only bridges module delegation for class lookups
+		// (DynamicClassLoader.findClass -> ClassLocator.findFromAllModules), not for
+		// resource lookups.  The runtime loader can't see the module's libs/*.jar, so
+		// every provider lookup fails and JLine silently falls back to a DumbTerminal
+		// (no colours on Windows).
+		//
+		// Point the TCCL at JLine's own class loader - which does see the module's
+		// libs - for the duration of the build, then restore it.  Remove this once
+		// BoxLang resolves resources across modules.
+		var jlineLoader = createObject( "java", "org.jline.terminal.TerminalBuilder" ).getClass().getClassLoader();
+		var currentThread = createObject( "java", "java.lang.Thread" ).currentThread();
+		var originalClassLoader = currentThread.getContextClassLoader();
+
+		var terminal = "";
+		currentThread.setContextClassLoader( jlineLoader );
+		try {
+			// Build our terminal instance
+			terminal = createObject( "java", "org.jline.terminal.TerminalBuilder" )
+				.builder()
+		        .system( true )
+		       // .streams( createObject( 'java', 'java.lang.System' ).in, createObject( 'java', 'java.lang.System' ).out )
+		        .nativeSignals( true )
+		        .signalHandler( jSignalHandler )
+		        // This hides the warning when JLine defaults to a dumb terminal on CI builds
+		        .dumb( true )
+		        .paused( true )
+				.build();
+		} finally {
+			currentThread.setContextClassLoader( originalClassLoader );
+		}
 
 		var shellVariables = createObject( "java", "java.util.HashMap" ).init();
 		// The default file for history is set into the shell here though it's used by the DefaultHistory class
