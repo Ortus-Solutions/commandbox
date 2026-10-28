@@ -3,7 +3,7 @@
  * You can also filter for specific entry types such as cachebox, interceptors, modules, logbox, etc.
  * Pro Tip: The first parameter will accept a type or a slug.
  * .
- * Show details for a specifig entry
+ * Show details for a specific entry
  * {code:bash}
  * forgebox show coldbox-platform
  * {code}
@@ -34,12 +34,9 @@
 component aliases="show" {
 
 	// DI
-	property name="forgeBox" 			inject="ForgeBox";
 	property name="semanticVersion"		inject="semanticVersion@semver";
-
-	function onDIComplete() {
-		variables.forgeboxOrders = forgebox.ORDER;
-	}
+	property name="configService" inject="configService";
+	property name="endpointService" inject="endpointService";
 
 	/**
 	* @orderBy.hint How to order results. Possible values are popular, new, installs, recent or a specific ForgeBox type
@@ -49,6 +46,9 @@ component aliases="show" {
 	* @startRow.hint Row to start returning records on
 	* @maxRows.hint Number of records to return
 	* @slug.hint Slug of a specific ForgeBox entry to show.
+	* @json.hint Display results as json
+	* @endpointName  Name of custom forgebox endpoint to use
+	* @endpointName.optionsUDF endpointNameComplete
 	*
 	**/
 	function run(
@@ -57,11 +57,24 @@ component aliases="show" {
 		number startRow,
 		number maxRows,
 		slug,
-		boolean json=false
+		boolean json=false,
+		string endpointName
 	){
-		var APIToken = configService.getSetting( 'endpoints.forgebox.APIToken', '' );
+		endpointName = endpointName ?: configService.getSetting( 'endpoints.defaultForgeBoxEndpoint', 'forgebox' );
 
-		print.yellowLine( "Contacting ForgeBox, please wait..." ).toConsole();
+		try {
+			var oEndpoint = endpointService.getEndpoint( endpointName );
+		} catch( EndpointNotFound var e ) {
+			error( e.message, e.detail ?: '' );
+		}
+
+		var APIToken = oEndpoint.getAPIToken();
+		var forgebox = oEndpoint.getForgeBox();
+		var forgeboxOrders = forgebox.ORDER;
+
+		if( !json ) {
+			print.yellowLine( "Contacting ForgeBox, please wait..." ).toConsole();
+		}
 
 		// Default parameters
 		arguments.type 		= arguments.type ?: '';
@@ -79,7 +92,7 @@ component aliases="show" {
 			// Maybe they entered a type as the first param
 			} else {
 				// See if it's a type
-				typeLookup = lookupType( orderBy );
+				typeLookup = lookupType( orderBy, APIToken, forgebox );
 				// Nope, keep searching
 				if( !len( typeLookup ) ) {
 					// If there's not a slug supplied, see if that works
@@ -101,7 +114,7 @@ component aliases="show" {
 
 		// Validate Type if we got one
 		if( len( type ) ) {
-			typeLookup = lookupType( type );
+			typeLookup = lookupType( type, APIToken, forgebox );
 
 			// Were we able to resolve what they typed in?
 			if( !len( typeLookup ) ) {
@@ -126,17 +139,17 @@ component aliases="show" {
 				// numberOfRatings,boxjson,isActive,typeName,version,hits,sourceURL,slug,createdDate,typeSlug,downloads,updatedDate,entryID,
 				// ratings,versions,avgRating,downloadURL,changelog,installs,title,user,description,summary,homeURL
 				if( !entryData.isActive ) {
-					error( 'The ForgeBox entry [#entryData.title#] is inactive, we highly recommed NOT installing it or contact the author about it' );
+					error( 'The ForgeBox entry [#entryData.title#] is inactive, we highly recommend NOT installing it or contact the author about it' );
 				}
 
 				entryData.versions.sort( function( a, b ) { return semanticVersion.compare( b.version, a.version ); } );
-				
+
 				// Display results as JSON
 				if( json ) {
-					print.text( formatterUtil.formatJSON( entryData ) );
-					return;					
+					print.text( entryData );
+					return;
 				}
-				
+
 				print.line();
 				print.blackOnWhite( ' #entryData.title# ' )
 					.boldText( '   ( #entryData.user.fname# #entryData.user.lname#, #entryData.user.username# )' )
@@ -158,6 +171,7 @@ component aliases="show" {
 					.line( 'Summary: #entryData.summary#' )
 					.text( 'Versions: ' );
 
+				// TODO: Consolidate this with identical logic in "forgebox search"
 				var prevMajor = 0;
 				if( entryData.versions.len() ) {
 					prevMajor = val( entryData.versions[ 1 ].version.listGetAt( 1, '.' ) );
@@ -168,6 +182,9 @@ component aliases="show" {
 				var versionsSkipped = 0;
 				for( var ver in entryData.versions ) {
 					var major = val( ver.version.listGetAt( 1, '.' ) );
+					if( major == 0 && ver.version.listlen( '.' ) > 1 ) {
+						major = val( ver.version.listGetAt( 2, '.' ) );
+					}
 					if( major != prevMajor ) {
 						if( lines > 0 ) { print.text( '          ' ); }
 						print.line( versionLine & ( versionsSkipped > 0 ? ' ( #versionsSkipped# more...)' : '' ) );
@@ -214,8 +231,8 @@ component aliases="show" {
 
 				// Display results as JSON
 				if( json ) {
-					print.text( formatterUtil.formatJSON( entries ) );
-					return;					
+					print.text( entries );
+					return;
 				}
 
 				print.line();
@@ -247,16 +264,19 @@ component aliases="show" {
 	}
 
 	// Auto-complete
-	function lookupType( type ) {
-		var APIToken = configService.getSetting( 'endpoints.forgebox.APIToken', '' );
+	function lookupType( type, APIToken, forgebox ) {
 		var typeLookup = '';
 
-		// See if they entered a type name or slug
-		for( var thistype in forgebox.getCachedTypes( APIToken=APIToken ) ) {
-			if( thisType.typeName == type || thisType.typeSlug == type ) {
-				typeLookup = thisType.typeSlug;
-				break;
+		try {
+			// See if they entered a type name or slug
+			for( var thistype in forgebox.getCachedTypes( APIToken=APIToken ) ) {
+				if( thisType.typeName == type || thisType.typeSlug == type ) {
+					typeLookup = thisType.typeSlug;
+					break;
+				}
 			}
+		} catch( forgebox var e ) {
+			error( e.message, e.detail ?: '' );
 		}
 
 		// This will be empty if not found
@@ -266,12 +286,23 @@ component aliases="show" {
 
 	// Auto-complete list of types
 	function typeComplete( result = [] ) {
-		var APIToken = configService.getSetting( 'endpoints.forgebox.APIToken', '' );
+		var endpointName = configService.getSetting( 'endpoints.defaultForgeBoxEndpoint', 'forgebox' );
 
-		// Loop over types and append all active ForgeBox entries
-		for( var thistype in forgebox.getCachedTypes( APIToken=APIToken ) ) {
-			arguments.result.append( thisType.typeSlug );
+		try {
+			var oEndpoint = endpointService.getEndpoint( endpointName );
+		} catch( EndpointNotFound var e ) {
+			error( e.message, e.detail ?: '' );
 		}
+
+		var forgebox = oEndpoint.getForgeBox();
+		var APIToken = oEndpoint.getAPIToken();
+
+		try {
+			// Loop over types and append all active ForgeBox entries
+			for( var thistype in forgebox.getCachedTypes( APIToken=APIToken ) ) {
+				arguments.result.append( thisType.typeSlug );
+			}
+		} catch( forgebox var e ) {}
 
 		return arguments.result;
 	}
@@ -286,6 +317,10 @@ component aliases="show" {
 		// For now, I'm not going to add slugs since it will always be too many to display without prompting the user
 
 		return result;
+	}
+
+	function endpointNameComplete() {
+		return getInstance( 'endpointService' ).forgeboxEndpointNameComplete();
 	}
 
 }

@@ -22,7 +22,7 @@ component {
 		boolean force = false
 	){
 		// This will make each directory canonical and absolute
-		arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
+		arguments.directory = resolvePath( arguments.directory );
 		var boxJSON = packageService.readPackageDescriptor( arguments.directory );
 
 		interceptorService.announceInterception( 'prePublish', { publishArgs=arguments, boxJSON=boxJSON } );
@@ -37,7 +37,7 @@ component {
 		}
 
 		interceptorService.announceInterception( 'postPublish', { publishArgs=arguments, boxJSON=boxJSON } );
-		
+
 		print.greenLine( 'Package published successfully in [#arguments.endpointName#]' );
 	}
 

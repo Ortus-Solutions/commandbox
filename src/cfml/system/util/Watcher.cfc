@@ -12,7 +12,10 @@
 *	getInstance( 'watcher' )
 *		.paths( '**.cfc' )
 *		.inDirectory( getCWD() )
-*		.onChange( function() {
+*		.onChange( function( changeData ) {
+			// changeData.added
+			// changeData.removed
+			// changeData.changed
 *			command( 'testbox run' )
 *				.run();
 *		} )
@@ -22,13 +25,17 @@ component accessors=true {
 	// DI
 	property name='shell'				inject='shell';
 	property name='print'				inject='PrintBuffer';
-	property name='pathPatternMatcher'	inject='provider:pathPatternMatcher@globber';
+	property name='globber'				inject='provider:globber@globber';
 	property name='fileSystemUtil'		inject='FileSystem';
+	property name='fileSeparator'		inject='fileSeparator@constants';
 
 	// Properties
 	property name='changeHash'			type='string';
+	property name='fileIndex'			type='struct';
+	property name='changeData'			type='struct';
 	property name='watcherRun'			type='boolean';
 	property name='pathsToWatch'		type='array';
+	property name='pathsToExclude'		type='array';
 	property name='changeUDF'			type='function';
 	property name='baseDirectory'		type='string';
 	property name='delayMS'				type='number';
@@ -36,12 +43,13 @@ component accessors=true {
 	function onDIComplete() {
 		setBaseDirectory( shell.pwd() );
 		setDelayMS( 500 );
-		// Watch all files recursivley by default
+		// Watch all files recursively by default
 		setPathsToWatch( [ '**' ] );
+		setPathsToExclude( [] );
 	}
 
 	/**
-	* Pass in an array of file globbing paths or any numberof string globbing arguments.
+	* Pass in an array of file globbing paths or any number of string globbing arguments.
 	*/
 	public function paths() {
 		setPathsToWatch( [] );
@@ -53,6 +61,18 @@ component accessors=true {
 	}
 
 	/**
+	* Pass in an array of file globbing paths or any number of string globbing arguments.
+	*/
+	public function excludePaths() {
+		setPathsToExclude( [] );
+		for( var arg in arguments ) {
+				var thisPattern = arguments[ arg ];
+				pathsToExclude.append( thisPattern, isArray( thisPattern ) );
+		}
+		return this;
+	}	
+
+	/**
 	* Pass in the base directory that the globbing patterns are relative to
 	*/
 	public function inDirectory( baseDirectory ) {
@@ -61,7 +81,7 @@ component accessors=true {
 	}
 
 	/**
-	* Pass in the number of miliseconds to wait between polls
+	* Pass in the number of milliseconds to wait between polls
 	*/
 	public function withDelay( delayMS ) {
 		setDelayMS( arguments.delayMS );
@@ -69,7 +89,7 @@ component accessors=true {
 	}
 
 	/**
-	* Pass in a UDF refernce to be executed when the watcher senses a chnage on the file system
+	* Pass in a UDF reference to be executed when the watcher senses a change on the file system
 	*/
 	public function onChange( changeUDF ) {
 		setChangeUDF( arguments.changeUDF );
@@ -96,6 +116,7 @@ component accessors=true {
 		try {
 			var threadName = 'watcher#createUUID()#';
 			thread action="run" name="#threadname#" priority="HIGH"{
+				var lastRun = getTickCount();
 				try{
 					// Run until we exit out of the watcher
 					while( getWatcherRun() ){
@@ -104,16 +125,21 @@ component accessors=true {
 
 							// Fire onChange listener
 							var thisChangeUDF = getChangeUDF();
-							thisChangeUDF();
+							thisChangeUDF( getChangeData() );
+
+							// In case the change UDF modified the file system,
+							// reset our hashes so we don't end up with endless firing
+							setChangeHash( calculateHashes() );
 
 						} else {
 							// Sleep and test again.
-							sleep( getDelayMS() );
+							sleep( max( getDelayMS()-(getTickCount()-lastRun), 100 ) );
+							lastRun = getTickCount();
 						}
 					}
 				// Handle "expected" exceptions from commands
 				} catch( commandException e ) {
-					shell.printError( { message : e.message, detail: e.detail } );
+					shell.printError( { message : e.message, detail: e.detail, extendedInfo : e.extendedInfo ?: '' } );
 
 					print
 						.line()
@@ -124,8 +150,10 @@ component accessors=true {
 					// Fire the watcher up again.
 					retry;
 				// If the thread has been interrupted
+				} catch( java.lang.InterruptedException e ) {
+					// There's nothing to do here.  Just exit the thread!
 				} catch( java.lang.ThreadDeath e ) {
-					// There's nothign to do here.  Just exit the thread!
+					// There's nothing to do here.  Just exit the thread!
 				} catch( any e ) {
 					shell.printError( e );
 
@@ -140,16 +168,27 @@ component accessors=true {
 				}
 			} // end thread
 
+			// Need to start reading the input stream or we can't detect Ctrl-C on Windows
+			var terminal = shell.getReader().getTerminal();
+			if( terminal.paused() ) {
+					terminal.resume();
+			}
+			
 			while( true ){
-				// Detect user pressing Ctrl-C
-				// Any other characters captured will be ignored
-				var line = shell.getReader().readLine();
-				if( line == 'q' ) {
-					break;
+
+				if( terminal.getClass().getName() contains 'dumb' ) {
+					sleep( 500 );
 				} else {
-					print
-						.boldGreenLine( 'To exit press Ctrl-C or "q" followed the enter key.' )
-						.toConsole();
+					// Detect user pressing Ctrl-C
+					// Any other characters captured will be ignored
+					var line = shell.getReader().readLine();
+					if( line == 'q' ) {
+						break;
+					} else {
+						print
+							.boldGreenLine( 'To exit press Ctrl-C or "q" followed the enter key.' )
+							.toConsole();
+					}
 				}
 			}
 
@@ -165,7 +204,7 @@ component accessors=true {
 			setWatcherRun( false );
 			// Wait until the thread finishes its last draw
 			thread action="terminate" name=threadName;
-			
+
 		// user wants to exit the shell, they've pressed Ctrl-D
 		} catch ( org.jline.reader.EndOfFileException e ) {
 
@@ -179,7 +218,7 @@ component accessors=true {
 			// Wait until the thread finishes its last draw
 			thread action="terminate" name=threadName;
 			shell.setKeepRunning( false );
-			
+
 		// Something horrible went wrong
 		} catch ( any e ) {
 			// make sure the thread exits
@@ -202,23 +241,36 @@ component accessors=true {
 
 	private function calculateHashes() {
 		var globPatterns = getPathsToWatch();
+		var globExcludePatterns = getPathsToExclude();
+		
 		var thisBaseDir =  fileSystemUtil.resolvePath( getBaseDirectory() );
 
-		var fileListing = directoryList(
-			thisBaseDir,
-			true,
-			"query",
-			function( path ) {
-				// This will normalize the slashes to match
-				arguments.path = fileSystemUtil.resolvePath( arguments.path );
+		var fileListing = globber
+			.setPattern( globPatterns.map( ( p )=>{
+				if( p.startsWith( '/' ) || p.startsWith( '\' ) ) {
+					return fileSystemUtil.resolvePath( p.right( -1 ), thisBaseDir )
+				} else {
+					return fileSystemUtil.resolvePath( '**' & p, thisBaseDir )
+				}
+			} ) )
+			.setExcludePattern( globExcludePatterns.map( ( p )=>{
+				if( p.startsWith( '/' ) || p.startsWith( '\' ) ) {
+					return fileSystemUtil.resolvePath( p.right( -1 ), thisBaseDir )
+				} else {
+					return fileSystemUtil.resolvePath( '**' & p, thisBaseDir )
+				}
+			} ) )
+			.withSort( "DateLastModified desc" )
+			.asQuery()
+			.matches();
 
-				// cleanup path so we just get what's inside the base dir
-				var thisPath = replacenocase( arguments.path, thisBaseDir, "" );
+		var fileIndex = {};
+		for(file in fileListing){
+			var thisPath = replacenocase( file.directory & fileSeparator & file.name, thisBaseDir, "" );
+			fileIndex[thisPath] = file.DATELASTMODIFIED;
+		}
 
-				// Does this path match one of our glob patterns
-				return pathPatternMatcher.matchPatterns( globPatterns, thisPath );
-			},
-			"DateLastModified desc" );
+		setFileIndex( fileIndex );
 
 		var directoryHash = hash( serializeJSON( fileListing ) );
 
@@ -226,10 +278,32 @@ component accessors=true {
 	}
 
 	private function changeDetected() {
+		var previousWatchList = getFileIndex();
 		var newHash = calculateHashes();
+
 		if( getChangeHash() == newHash ){
 			return false;
 		}
+		var currentWatchList = getFileIndex();
+
+		var changes = { 'added':[], 'removed':[], 'changed':[] };
+
+		//loop over new array and look for changes and adds
+		currentWatchList.each( function( filePath, fileDate ){
+			//if found check for date change, else new file
+			if(structKeyExists( previousWatchList, filePath )){
+				if( previousWatchList[ filePath ] != fileDate ){ changes.changed.append( filePath ); }
+			} else {
+				changes.added.append( filePath );
+			}
+		})
+
+		//look for deleted files that no longer exist in the list
+		previousWatchList.each( function( filePath, fileDate ){
+			if( !structKeyExists( currentWatchList, filePath ) ){ changes.removed.append( filePath ); }
+		})
+
+		setChangeData( changes );
 		setChangeHash( newHash );
 		return true;
 	}

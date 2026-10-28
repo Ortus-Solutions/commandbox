@@ -25,7 +25,7 @@ component {
 		boolean force=false
 	){
 		// This will make each directory canonical and absolute
-		arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
+		arguments.directory = resolvePath( arguments.directory );
 		var boxJSON = packageService.readPackageDescriptor( arguments.directory );
 
 		if( !arguments.force && !confirm( 'Are you sure you want to unpublish? This is destructive and can''t be undone. (y/n)' ) ) {

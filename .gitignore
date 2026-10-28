@@ -2,6 +2,7 @@
 /dist
 /build/build.number
 /build/temp
+/build/JREs
 /build/requires.txt
 /lib
 /src/cfml/box.json
@@ -11,6 +12,7 @@ tests/work
 Icon?
 src/cfml/logs
 build/launch4j-*
+build/runwar
 tests/testbox
 /mxunit
 /apidocs/CommandBox-CommandDocs/
@@ -33,3 +35,17 @@ src/CommandBox.json
 settings.xml
 .project
 src/cfml/system/mdCache
+extensions/**
+lib-light/**
+src/cfml/license.txt
+/src/cfml/libExt
+/src/cfml/_modules
+/src/cfml/modules
+/bx-cli/libs
+/bx-cli/modules
+/bx-cli/src
+/temp
+/build/dist
+/tests/compile-dsl
+/bx-cli
+.env

@@ -22,13 +22,13 @@ component aliases="copy" {
 	/**
 	 * @path.hint The file or directory source
 	 * @newPath.hint The new name file or directory location
-	 * @recurse.hint If true, copies the subdirectories, otherwise only the files in the source directory.
+	 * @recurse.hint Include subdirectories as well.
 	 * @filter.hint A directory copy filter string that uses "*" as a wildcard, for example, "*.cfm"
 	 **/
 	function run( required Globber path, required newPath, boolean recurse=false, string filter="*" )  {
 
 		// Make path canonical and absolute
-		var thisNewPath = fileSystemUtil.resolvePath( arguments.newPath );
+		var thisNewPath = resolvePath( arguments.newPath );
 
 		if( path.count() > 1 && !directoryExists( thisNewPath ) ) {
 			error( '[#thisNewPath#] is not a directory.' );

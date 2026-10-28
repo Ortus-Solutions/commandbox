@@ -12,9 +12,9 @@ component extends = "wirebox.system.cache.policies.AbstractEvictionPolicy"{
 
 	/**
 	* Constructor
-	* @cacheProvider The associated cache provider of type: wirebox.system.cache.ICacheProvider" doc_generic="wirebox.system.cache.ICacheProvider
+	* @cacheProvider The associated cache provider of type: wirebox.system.cache.providers.ICacheProvider" doc_generic="wirebox.system.cache.providers.ICacheProvider
 	*/
-	public LFU function init( required any cacheProvider ){
+	LFU function init( required any cacheProvider ){
 		super.init( arguments.cacheProvider );
 
 		return this;
@@ -23,12 +23,10 @@ component extends = "wirebox.system.cache.policies.AbstractEvictionPolicy"{
 	/**
 	* Execute the policy
 	*/
-	public void function execute(){
-		var index = "";
-
+	void function execute(){
 		// Get searchable index
 		try {
-			index = getAssociatedCache()
+			var index = getAssociatedCache()
 				.getObjectStore()
 				.getIndexer()
 				.getSortedKeys( "hits", "numeric", "asc" );

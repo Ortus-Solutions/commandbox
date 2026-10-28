@@ -16,7 +16,7 @@ component name="TestShell" extends="mxunit.framework.TestCase" {
     	var n = chr(10);
     	var line = "ls" &n& "q" & n;
     	var inStream = createObject("java","java.io.ByteArrayInputStream").init(line.getBytes());
-		shell = application.wirebox.getInstance( name='Shell', initArguments={ inStream=inStream, outputStream=baos } ); 	
+		shell = application.wirebox.getInstance( name='Shell', initArguments={ inStream=inStream, outputStream=baos } );
 		//shell.run();
 		//debug(baos.toString());
 

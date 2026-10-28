@@ -27,7 +27,9 @@ component excludeFromHelp=true {
 	function run( required contents='', required string file )  {
 
 		// This will make the file path canonical and absolute
-		arguments.file = fileSystemUtil.resolvePath( arguments.file );
+		arguments.file = resolvePath( arguments.file );
+
+		directoryCreate( getDirectoryFromPath( file ), true, true );
 
 		// Clean out any ANI escape codes from the text
 		arguments.contents = print.unansi( arguments.contents );

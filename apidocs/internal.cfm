@@ -7,14 +7,14 @@ This will produce the internal API Docs for CommandBox.
 <cfscript>
 try{
 	docName = "CommandBox-APIDocs";
-	docbox 	= new docBox.DocBox( 
+	docbox 	= new docBox.DocBox(
 		properties = {
 			projectTitle 	= "CommandBox Internal v#url.version#",
-			outputDir 		= url.path 
-		} 
+			outputDir 		= url.path
+		}
 	);
-	docbox.generate( 
-		source 		= expandPath( "/commandbox/system" ), 
+	docbox.generate(
+		source 		= expandPath( "/commandbox/system" ),
 		mapping 	= "commandbox.system",
 		excludes 	= "system\/(modules),system\/(modules_app)"
 	);

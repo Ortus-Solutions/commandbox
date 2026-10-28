@@ -26,6 +26,8 @@ component accessors="true" singleton {
 	property name='SystemSettings'		inject='SystemSettings';
 	property name='ConfigService'		inject='ConfigService';
 	property name='metadataCache'		inject='cachebox:metadataCache';
+	property name='FRTransService'		inject='FRTransService';
+	property name='job'					inject='provider:InteractiveJob';
 
 	property name='configured' default="false" type="boolean";
 
@@ -66,7 +68,7 @@ component accessors="true" singleton {
 				directoryCreate( expandPath( commandLocation ) );
 			}
 			// Load up any commands
-			initCommands( commandLocation, commandLocation );
+			initCommands( commandLocation );
 		}
 
 		setConfigured( true );
@@ -75,13 +77,13 @@ component accessors="true" singleton {
 
 	/**
 	 * Initialize the commands. This will recursively call itself for subdirectories.
-	 * @baseCommandDirectory.hint The starting directory
-	 * @commandDirectory.hint The current directory we've recursed into
-	 * @commandPath.hint The dot-delimted path so far-- only used when recursing
+	 * @baseCommandDirectory The starting directory
+	 * @commandDirectory The current directory we've recursed into
+	 * @commandPath The dot-delimited path so far-- only used when recursing
 	 **/
 	CommandService function initCommands(
 		required string baseCommandDirectory,
-		required string commandDirectory,
+		string commandDirectory=baseCommandDirectory,
 		string commandPath=''
 	){
 		var varDirs = DirectoryList(
@@ -90,7 +92,7 @@ component accessors="true" singleton {
 			listInfo	= 'query',
 			sort		= 'type desc, name asc'
 		);
-		
+
 		for( var dir in varDirs ){
 			// For CFC files, process them as a command
 			if( dir.type  == 'File' && listLast( dir.name, '.' ) == 'cfc' ){
@@ -104,7 +106,39 @@ component accessors="true" singleton {
 		return this;
 	}
 
+	/**
+	 * Remove commands from the CommandService. This will recursively call itself for subdirectories.
+	 * @baseCommandDirectory The starting directory
+	 * @commandDirectory The current directory we've recursed into
+	 * @commandPath The dot-delimited path so far-- only used when recursing
+	 **/
+	CommandService function removeCommands(
+		required string baseCommandDirectory,
+		string commandDirectory=baseCommandDirectory,
+		string commandPath=''
+	){
+		var varDirs = DirectoryList(
+			path		= expandPath( arguments.commandDirectory ),
+			recurse		= false,
+			listInfo	= 'query',
+			sort		= 'type desc, name asc'
+		);
+
+		for( var dir in varDirs ){
+			// For CFC files, process them as a command
+			if( dir.type  == 'File' && listLast( dir.name, '.' ) == 'cfc' ){
+				removeCommand( baseCommandDirectory, dir.name, commandPath );
+			// For folders, search them for commands
+			} else {
+				removeCommands( baseCommandDirectory, dir.directory & '\' & dir.name, listAppend( commandPath, dir.name, '.' ) );
+			}
+		}
+
+		return this;
+	}
+
 	function addToDictionary( required command, required commandPath ){
+
 		// Build bracketed string of command path to allow special characters
 		var commandPathBracket = '';
 		var commandName = '';
@@ -120,9 +154,62 @@ component accessors="true" singleton {
 		instance.flattenedCommands[ trim(commandName) ] = command;
 	}
 
+	function removeFromDictionary( required command, required commandPath ){
+
+		// Build bracketed string of command path to allow special characters
+		var commandPathBracket = '';
+		var commandName = '';
+
+		commandPathArray = listToArray( commandPath, '.' );
+
+		for( var item in commandPathArray ){
+			commandPathBracket &= '[ "#item#" ]';
+			commandName &= "#item# ";
+		}
+
+		// This happens if a command is registered twice and we've already removed it
+		if( !isDefined( "instance.commands#commandPathBracket#" ) ) {
+			return;
+		}
+
+		// Here in this flat collection for help usage
+		instance.flattenedCommands.delete( trim(commandName) );
+
+		if( isDefined( "instance.commands#commandPathBracket#[ '$' ]" ) ) {
+			evaluate( "structDelete( instance.commands#commandPathBracket#, '$' )" );
+		}
+
+
+		// Remove from the leaf nodes up, removing any empty namespaces as we go.
+		// We can't just kill the namespace, because a command that contributes a "server foobar" command would not want to remove the 'server' namespace.
+		while( commandPathArray.len() ) {
+
+			// If there are other commands in this namespace, we're done
+			if( evaluate( "structCount( instance.commands#commandPathBracket# )" ) ) {
+				break;
+			}
+
+			// If this namespace is empty, pop last item off the array and remove it
+			var lastItem = commandPathArray.pop();
+
+			commandPathBracket = '';
+			for( var item in commandPathArray ){
+				commandPathBracket &= '[ "#item#" ]';
+			}
+
+			evaluate( "structDelete( instance.commands#commandPathBracket#, lastItem )" );
+
+			// We'll keep climbing "up" in our while() until we run out of namespaces, or we reach a namespace that still populated
+
+		}
+
+
+	}
+
+
 	/**
 	 * run a command line
-	 * @line.hint line to run
+	 * @line line to run
 	 * @captureOutput Temp workaround to allow capture of run command
  	 **/
 	function runCommandline( required string line, boolean captureOutput=false ){
@@ -140,32 +227,32 @@ component accessors="true" singleton {
 
 	/**
 	 * run a command tokens
-	 * @tokens.hint tokens to run
-	 * @piped.hint Data to pipe in to the first command
+	 * @tokens tokens to run
+	 * @piped Data to pipe in to the first command
 	 * @captureOutput Temp workaround to allow capture of run command
+ 	 * @line This is the original, unparsed line typed by the user
  	 **/
-	function runCommandTokens( required array tokens, string piped, boolean captureOutput=false ){
+	function runCommandTokens( required array tokens, string piped, boolean captureOutput=false, required string line ){
 
 		// Resolve the command they are wanting to run
-		var commandChain = resolveCommandTokens( tokens );
+		var commandChain = resolveCommandTokens( tokens, line );
 
 		// If there was piped input
 		if( structKeyExists( arguments, 'piped' ) ) {
-			return runCommand( commandChain, tokens.toList( ' ' ), arguments.piped, captureOutput );
+			return runCommand( commandChain, line, arguments.piped, captureOutput );
 		}
 
-		return runCommand( commandChain=commandChain, line=tokens.toList( ' ' ), captureOutput=captureOutput );
+		return runCommand( commandChain=commandChain, line=line, captureOutput=captureOutput );
 
 	}
 
 	/**
 	 * run a command
-	 * @commandChain.hint the chain of commands to run
+	 * @commandChain the chain of commands to run
 	 * @captureOutput Temp workaround to allow capture of run command
  	 **/
 	function runCommand( required array commandChain, required string line, string piped, boolean captureOutput=false ){
-
-		// If nothing is returned, something bad happened (like an error instatiating the CFC)
+		// If nothing is returned, something bad happened (like an error instantiating the CFC)
 		if( !commandChain.len() ){
 			return 'Command not run.';
 		}
@@ -174,6 +261,7 @@ component accessors="true" singleton {
 		// default behavior is to keep trucking
 		var previousCommandSeparator = ';';
 		var lastCommandErrored = false;
+		var captureOutputOriginal = captureOutput;
 
 		if( structKeyExists( arguments, 'piped' ) ) {
 			var result = arguments.piped;
@@ -193,13 +281,14 @@ component accessors="true" singleton {
 			}
 
 			if( previousCommandSeparator == '&&' && lastCommandErrored ) {
+				continue;
 				return result ?: '';
 			}
 
 			if( previousCommandSeparator == '||' && !lastCommandErrored ) {
+				continue;
 				return result ?: '';
 			}
-
 
 			// If nothing was found, bail out here.
 			if( !commandInfo.found ){
@@ -230,7 +319,8 @@ component accessors="true" singleton {
 			// Parameters need to be ALL positional or ALL named
 			if( arrayLen( parameterInfo.positionalParameters ) && structCount( parameterInfo.namedParameters ) ){
 				shell.setExitCode( 1 );
-				throw( message='Please don''t mix named and positional parameters, it makes me dizzy.', detail=line, type="commandException");
+				var detail = "You specified named parameters: #structKeyList(parameterInfo.namedParameters)# but you did not specify a name for: #parameterInfo.positionalParameters[1]# #chr(10)##chr(9)#" & line;
+				throw( message='Please don''t mix named and positional parameters, it makes me dizzy.', detail=detail, type="commandException");
 			}
 
 			// These are the parameters declared by the command CFC
@@ -261,62 +351,17 @@ component accessors="true" singleton {
 			// If we're not piping, output what we've got
 			} else {
 				if( structKeyExists( local, 'result' ) && len( result ) ){
-					shell.printString( result & cr );
+					if( job.getActive() ) {
+						job.addLog( result );
+					} else {
+						shell.printString( result & cr );
+					}
 				}
 				structDelete( local, 'result', false );
 			}
 
-			// If we're using postitional params, convert them to named
-			if( arrayLen( parameterInfo.positionalParameters ) ){
-				parameterInfo.namedParameters = convertToNamedParameters( parameterInfo.positionalParameters, commandParams );
-			}
-
-			// Merge flags into named params
-			mergeFlagParameters( parameterInfo );
-
-			// Add in defaults for every possible alias of this command
-			[]
-				.append( commandInfo.commandReference.originalName )
-				.append( commandInfo.commandReference.aliases, true )
-				.each( function( thisName ) {
-					addDefaultParameters( thisName, parameterInfo );
-				} );
-
-			// Make sure we have all required params.
-			parameterInfo.namedParameters = ensureRequiredParams( parameterInfo.namedParameters, commandParams );
-
-			// Evaluate parameter expressions and system settings
-			evaluateExpressions( parameterInfo );
-			evaluateSystemSettings( parameterInfo );
-			combineColonParams( parameterInfo );
-
-			// Create globbing patterns
-			createGlobs( parameterInfo, commandParams );
-
-			// Ensure supplied params match the correct type
-			validateParams( parameterInfo.namedParameters, commandParams );
-
 			// Reset the printBuffer
 			commandInfo.commandReference.CFC.reset();
-
-			// If there are currently executing commands, flush out the print buffer from the last one
-			// This will prevent the output from showing up out of order if one command nests a call to another.
-			if( instance.callStack.len() ){
-				// Print anything in the buffer
-				shell.printString( instance.callStack[1].commandReference.CFC.getResult() );
-				// And reset it now that it's been printed.
-				// This command can add more to the buffer once it's executing again.
-				instance.callStack[1].commandReference.CFC.reset();
-			}
-
-			// Add command to the top of the stack
-			instance.callStack.prepend( commandInfo );
-
-			interceptorService.announceInterception( 'preCommand', { commandInfo=commandInfo, parameterInfo=parameterInfo } );
-
-			// Successful command execution resets exit code to 0.  Set this prior to running the command since the command
-			// may explicitly set the exit code to 1 but not call the error() method.
-			shell.setExitCode( 0 );
 
 			// Tells us if we are going to capture the output of this command and pass it to another
 			// Used for our workaround to switch if the "run" command pipes to the terminal or not
@@ -324,50 +369,151 @@ component accessors="true" singleton {
 			if( arrayLen( commandChain ) > i && listFindNoCase( '|,>,>>', commandChain[ i+1 ].originalLine ) ) {
 				captureOutput = true;
 			}
-			
-			// This is my workaround to "smartly" capture the output of the run command if we're piping it or 
-			// nesting it as an expression, etc.
-			if( commandInfo.commandReference.originalName == 'run' && captureOutput ) {
-				parameterInfo.namedParameters.interactive=false;
-			} 
-			
-			
-			// Run the command
-			try {				
+
+			// If there are currently executing commands, flush out the print buffer from the last one
+			// This will prevent the output from showing up out of order if one command nests a call to another.
+			if( instance.callStack.len() && !captureOutput ){
+				// Print anything in the buffer
+				var job = wirebox.getInstance( 'interactiveJob' );
+				// If there is an active job, print our output through it
+				if( job.getActive() ) {
+					job.addLog( instance.callStack[1].commandInfo.commandReference.CFC.getResult() );
+				} else {
+					shell.printString( instance.callStack[1].commandInfo.commandReference.CFC.getResult() );
+				}
+				// And reset it now that it's been printed.
+				// This command can add more to the buffer once it's executing again.
+				instance.callStack[1].commandInfo.commandReference.CFC.reset();
+			}
+
+			// Add command to the top of the stack
+			instance.callStack.prepend( { commandInfo : commandInfo, environment : {} } );
+
+			if( captureOutput ) {
+				// This is really just a workaround for the fact that command output isn't naturally piped to the console.
+				// Once that is fixed, commands will no longer need to know this.
+				systemsettings.setSystemSetting( 'box_currentCommandPiped', true );
+			// Override this if necessary, but don't set it just for the fun of it
+			} else if( systemsettings.getSystemSetting( 'box_currentCommandPiped', false ) ) {
+				systemsettings.setSystemSetting( 'box_currentCommandPiped', false );
+			}
+
+			// Start the try as soon as we prepend to the call stack so any errors from here on out, even parsing the params, will
+			// correctly remove this call from the stack in the finally block.
+			try {
+				var FRTrans = FRTransService.startTransaction( commandInfo.commandString.listChangeDelims( ' ', '.' ), commandInfo.originalLine );
+
+				// If we're using positional params, convert them to named
+				if( arrayLen( parameterInfo.positionalParameters ) ){
+					parameterInfo.namedParameters = convertToNamedParameters( parameterInfo.positionalParameters, commandParams );
+				}
+
+				// Merge flags into named params
+				mergeFlagParameters( parameterInfo );
+
+				// Add in defaults for every possible alias of this command
+				[]
+					.append( commandInfo.commandReference.originalName.replace( '.', ' ', 'all' ) )
+					.append( commandInfo.commandReference.aliases, true )
+					.each( function( thisName ) {
+						addDefaultParameters( thisName, parameterInfo );
+					} );
+
+				// Make sure we have all required params.
+				parameterInfo.namedParameters = ensureRequiredParams( parameterInfo.namedParameters, commandParams );
+
+				interceptorService.announceInterception( 'preCommandParamProcess', { commandInfo=commandInfo, parameterInfo=parameterInfo } );
+
+				// System settings need evaluated prior to expressions!
+				evaluateSystemSettings( parameterInfo );
+				evaluateExpressions( parameterInfo );
+
+				// Combine params like command foo:bar=1 foo:baz=2 foo:bum=3
+				combineColonParams( parameterInfo );
+
+				// Create globbing patterns
+				createGlobs( parameterInfo, commandParams );
+
+				// Ensure supplied params match the correct type
+				validateParams( parameterInfo.namedParameters, commandParams );
+
+				interceptorService.announceInterception( 'preCommand', { commandInfo=commandInfo, parameterInfo=parameterInfo } );
+
+				// Run the command
 				var result = commandInfo.commandReference.CFC.run( argumentCollection = parameterInfo.namedParameters );
 				lastCommandErrored = commandInfo.commandReference.CFC.hasError();
-			} catch( any e ){
-				lastCommandErrored = true;
 
-				// Dump out anything the command had printed so far
-				var result = commandInfo.commandReference.CFC.getResult();
-				if( len( result ) ){
-					shell.printString( result & cr );
+			} catch( any e ){
+
+				FRTransService.errorTransaction( FRTrans, e.getPageException() );
+				lastCommandErrored = true;
+				// If this command didn't already set a failing exit code...
+				if( commandInfo.commandReference.CFC.getExitCode() == 0 ) {
+
+					// Go ahead and set one for it.  The shell will inherit it below in the finally block.
+					if( val( e.errorCode ?: 0 ) > 0 ) {
+						commandInfo.commandReference.CFC.setExitCode( e.errorCode );
+					} else {
+						commandInfo.commandReference.CFC.setExitCode( 1 );
+					}
+
 				}
+
+				var result = commandInfo.commandReference.CFC.getResult();
+				// Add the command output thus far into the exception
+				var originalInfo = '';
+				if( len( result ) ) {
+					originalInfo = e.extendedInfo
+					e.extendedInfo=serializeJSON( {
+						'extendedInfo'=originalInfo,
+						'commandOutput'=result
+					} );
+				}
+
 				// This is a little hacky,  but basically if there are more commands in the chain that need to run,
 				// just print an exception and move on.  Otherwise, throw so we can unwrap the call stack all the way
-				// back up.  That is neccessary for command expressions that fail like "echo `cat noExists.txt`"
+				// back up.  That is necessary for command expressions that fail like "echo `cat noExists.txt`"
 				// since in that case I don't want to execute the "echo" command since the "cat" failed.
 				if( arrayLen( commandChain ) > i && listFindNoCase( '||,;', commandChain[ i+1 ].originalLine ) ) {
+
+					// Dump out anything the command had printed so far
+					if( len( result ) ){
+						shell.printString( result & cr );
+					}
+
 					// These are "expected" exceptions like validation errors that can be "pretty"
-					if( e.type == 'commandException' ) {
-						shell.printError( { message : e.message, detail: e.detail } );
+					if( e.type.toString() == 'commandException' ) {
+						shell.printError( { message : e.message, detail: e.detail, extendedInfo : e.extendedInfo ?: '' } );
 					// These are catastrophic errors that warrant a full stack trace.
 					} else {
 						shell.printError( e );
 					}
 				// Unwind the stack to the closest catch
 				} else {
-					rethrow;
+
+					if( !captureOutput && len( result ) ) {
+						// Dump out anything the command had printed so far
+						shell.printString( result & cr );
+						// If we're printing it now, remove it from the exception so the shell doesn't double-print it.
+						e.extendedInfo=originalInfo;
+
+					}
+					throw e;
 				}
 			} finally {
 				// Remove it from the stack
 				instance.callStack.deleteAt( 1 );
+				// Set command exit code into the shell
+				shell.setExitCode( commandInfo.commandReference.CFC.getExitCode() );
+
+				FRTransService.endTransaction( FRTrans );
 			}
 
 			// If the command didn't return anything, grab its print buffer value
 			if( isNull( result ) ){
 				local.result = commandInfo.commandReference.CFC.getResult();
+				// Wipe out what's in there now that we have it
+				commandInfo.commandReference.CFC.reset();
 			}
 			var interceptData = {
 				commandInfo=commandInfo,
@@ -376,9 +522,10 @@ component accessors="true" singleton {
 			};
 			interceptorService.announceInterception( 'postCommand', interceptData );
 			local.result = interceptData.result;
+			captureOutput = captureOutputOriginal;
 
 		} // End loop over command chain
-		
+
 		return local.result;
 
 	}
@@ -479,7 +626,8 @@ component accessors="true" singleton {
 					defaultValue = settingName.listRest( ':' );
 					settingName = settingName.listFirst( ':' );
 				}
-				var result = systemSettings.getSystemSetting( settingName, defaultValue );
+
+				var result = systemSettings.getSystemSetting( settingName, defaultValue, parameterInfo.namedParameters );
 
 				// And stick their results in their place
 				parameterInfo.namedParameters[ paramName ] = replaceNoCase( paramValue, systemSetting, result, 'one' );
@@ -497,14 +645,15 @@ component accessors="true" singleton {
 		// Check each param
 		for( var key in parameters.namedParameters.keyArray() ) {
 			// If the name contains a colon, then break it out into a struct
-			if( key contains ':' ) {
+			var search = findNoCase( '__colonParam__', key );
+			if( search ) {
 				// Default struct name for :foo=bar
-				if( key.listLen( ':' ) > 1 ) {
-					var prefix = key.listFirst( ':' );
-					var nestedKey = key.listRest( ':' );
-				} else {
+				if( search == 1 ) {
 					var prefix = 'args';
-					var nestedKey = mid( key, 2, len( key ) );
+					var nestedKey = key.replaceNoCase( '__colonParam__', '' );
+				} else {
+					var prefix = key.mid( 1, search-1 );
+					var nestedKey = key.mid( search+14, len( key ) );
 				}
 				// Default to empty struct if this is the first param with this prefix
 				parameters.namedParameters[ prefix ] = parameters.namedParameters[ prefix ] ?: {};
@@ -518,38 +667,41 @@ component accessors="true" singleton {
 
 	/**
 	 * Take an array of parameters and parse them out as named or positional
-	 * @parameters.hint The array of params to parse.
-	 * @commandParameters.hint valid params defined by the command
+	 * @parameters The array of params to parse.
+	 * @commandParameters valid params defined by the command
  	 **/
 	function parseParameters( parameters, commandParameters ){
 		return parser.parseParameters( parameters, commandParameters );
 	}
 
 	/**
-	 * Figure out what command to run based on the the user input string
-	 * @line.hint A string containing the command and parameters that the user entered
+	 * Figure out what command to run based on the user input string
+	 * @line A string containing the command and parameters that the user entered
  	 **/
-	function resolveCommand( required string line ){
+	function resolveCommand( required string line, boolean forCompletion=false ){
 		// Turn the users input into an array of tokens
 		var tokens = parser.tokenizeInput( line );
 
-		return resolveCommandTokens( tokens );
+		return resolveCommandTokens( tokens, line, forCompletion );
 	}
 
 	/**
 	 * Figure out what command to run based on the tokenized user input
-	 * @tokens.hint An array containing the command and parameters that the user entered
+	 * @tokens An array containing the command and parameters that the user entered
  	 **/
-	function resolveCommandTokens( required array tokens ){
+	function resolveCommandTokens( required array tokens, string rawLine=tokens.toList( ' ' ), boolean forCompletion=false ){
 
 		// This will hold the command chain. Usually just a single command,
 		// but a pipe ("|") will chain together commands and pass the output of one along as the input to the next
 		var commandsToResolve = breakTokensIntoChain( tokens );
+		rawLine = expandAliasesinRawLine( rawLine );
 		var commandChain = [];
 
 		// command hierarchy
 		var cmds = getCommandHierarchy();
 		var helpTokens = 'help,?,/?';
+		var stopProcessingLine = false;
+		var receivingPiped = false;
 
 		for( var commandTokens in commandsToResolve ){
 
@@ -559,14 +711,14 @@ component accessors="true" singleton {
 			// If command ends with "help", switch it around to call the root help command
 			// Ex. "coldbox help" becomes "help coldbox"
 			// Don't do this if we're already in a help command or endless recursion will ensue.
-			if( tokens.len() > 1 && listFindNoCase( helpTokens, tokens.last() ) && !inCommand( 'help' ) ){
+			if( tokens.len() > 1 && listFindNoCase( helpTokens, tokens.last() ) && !tokens[1].startsWith('!') && !inCommand( 'help' ) ){
 				// Move help to the beginning
 				tokens.deleteAt( tokens.len() );
 				tokens.prepend( 'help' );
 			}
 
 			// If the first token looks like a drive letter, then it's just a Windows user trying to "cd" to a different drive
-			// A drive letter for these purposes will be defined as up to 3 letters folowed by a colon and an optional slash.
+			// A drive letter for these purposes will be defined as up to 3 letters followed by a colon and an optional slash.
 			if( tokens.len() && reFind( '^[a-z,A-Z]{1,3}:[\\,/]?$', tokens[1] ) ){
 				var drive = tokens[1];
 				// make sure the drive letter ends with a slash
@@ -593,11 +745,43 @@ component accessors="true" singleton {
 			* would essentially be turned into
 			* run "cmd /c dir"
 			 */
-			 if( tokens.len() > 2 && tokens.first() == 'run' ) {
-			 	tokens = [
-			 		'run',
-			 		tokens.slice( 2, tokens.len()-1 ).toList( ' ' )
-			 	];
+			 if( tokens.len() > 1 && tokens.first() == 'run'  ) {
+				var tokens2 = tokens[ 2 ];
+				// Escape any regex metacharacters in the pattern
+				tokens2 = replace( tokens2, '\', '\\', 'all' );
+				tokens2 = replace( tokens2, '.', '\.', 'all' );
+				tokens2 = replace( tokens2, '(', '\(', 'all' );
+				tokens2 = replace( tokens2, ')', '\)', 'all' );
+				tokens2 = replace( tokens2, '^', '\^', 'all' );
+				tokens2 = replace( tokens2, '$', '\$', 'all' );
+				tokens2 = replace( tokens2, '|', '\|', 'all' );
+				tokens2 = replace( tokens2, '+', '\+', 'all' );
+				tokens2 = replace( tokens2, '{', '\{', 'all' );
+				tokens2 = replace( tokens2, '}', '\}', 'all' );
+				tokens2 = replace( tokens2, '*', '\*', 'all' );
+
+				if( rawLine.reFindNoCase( '^(.*?)?[\s]*(run |!)[\s]*(#tokens2#.*)$' ) ) {
+				 	tokens = [
+				 		'run',
+				 		// Strip off "!" or "run" at the start of the raw line.
+				 		// TODO: this line will fail:
+				 		//   echo "!git status" && !git status
+				 		// Because we don't know where in the rawLine our current place in the command chain starts
+				 		// To fix it though I'd need to substantially change how tokenizing works
+				 		rawLine.reReplaceNoCase( '^(.*?)?[\s]*(run |!)[\s]*(#tokens2#.*)', '\3' )
+				 	];
+				} else {
+				 	tokens = [
+				 		'run',
+				 		// As a fall back, if we receive the input from the commandline as a single string AND the quotes
+				 		// don't follow what CommandBox's parser expects, we can't use the tokens array so we make the assumption
+				 		// That the run command was the only command in the raw line.
+				 		rawLine.reReplaceNoCase( '^[\s]*(run |!)[\s]*', '' )
+				 	];
+				}
+
+			 	// The run command "eats" end entire rest of the line, so stop processing the command chain.
+				stopProcessingLine = true;
 			 }
 
 			// Shortcut for "cfml" command if first token starts with #
@@ -606,7 +790,7 @@ component accessors="true" singleton {
 				tokens[1] = right( tokens[1], len( tokens[1] ) - 1 );
 
 				// If it looks like we have named params, convert the "name" to be named
-				if( tokens.len() > 1 && tokens[2] contains '=' ) {
+				if( tokens.len() > 1 && parser.parseParameters( [ tokens[2] ], [] ).namedParameters.count() ) {
 					tokens[1] = 'name=' & tokens[1];
 				}
 
@@ -623,11 +807,26 @@ component accessors="true" singleton {
 				closestHelpCommand = 'help'
 			};
 
+			var pos = 0;
 			for( var token in tokens ){
+				pos++;
 
 				// If we hit a dead end, then quit looking
 				if( !structKeyExists( results.commandReference, token ) ){
 					break;
+				}
+
+				// If this is for command tab completion, don't select the command if there are two commands at the same level that start with this string
+				// This check only runs if we've matched all the entered tokens and there is no trailing space.
+				if( forCompletion && pos == tokens.len() ) {
+					if( results.commandReference
+						.keyArray()
+						.filter( function( i ){
+							return i.lcase().startsWith( token.lcase() );
+						} )
+						.len() > 1 ) {
+							break;
+						}
 				}
 
 				// Move the pointer
@@ -641,7 +840,7 @@ component accessors="true" singleton {
 					// Actual command data stored in a nested struct
 					results.commandReference = results.commandReference[ '$' ];
 
-					// Create the command CFC instance if neccessary
+					// Create the command CFC instance if necessary
 					lazyLoadCommandCFC( results.commandReference );
 
 					break;
@@ -663,6 +862,16 @@ component accessors="true" singleton {
 			}
 
 			commandChain.append( results );
+
+			// Quit here if we're done with this command line
+			if( stopProcessingLine ) {
+				break;
+			}
+
+			receivingPiped = false;
+			if( tokens.len() >= 1 && tokens[1] == '|' ) {
+				receivingPiped = true;
+			}
 
 		} // end loop over commands to resolve
 
@@ -716,12 +925,12 @@ component accessors="true" singleton {
 		}
 
 		// Expand aliases
-		for( commandTokens in commandsToResolve ) {
+		for( var commandTokens in commandsToResolve ) {
 			var originalLine = commandTokens.toList( ' ' );
 			var aliases = configService.getSetting( 'command.aliases', {} );
 			var matchingAlias = '';
 
-			for( alias in aliases ) {
+			for( var alias in aliases ) {
 				if( lcase( originalLine ).startsWith( lcase( alias ) ) ) {
 					matchingAlias = alias;
 					break;
@@ -731,9 +940,9 @@ component accessors="true" singleton {
 			// If the exact tokens in this command match an alias, swap it out.
 			if( matchingAlias.len() ) {
 				expandedCommandsToResolve.append(
-					// Recursivley dig down. This allows aliases to alias other alises
+					// Recursively dig down. This allows aliases to alias other alises
 					breakTokensIntoChain(
-						// Re-tokenize the new strin
+						// Re-tokenize the new string
 						parser.tokenizeInput(
 							// Expand the alias with the string it aliases
 							replaceNoCase( originalLine, matchingAlias, aliases[ matchingAlias ], 'once' )
@@ -746,17 +955,43 @@ component accessors="true" singleton {
 			}
 
 		}
-
 		return expandedCommandsToResolve;
 	}
 
+
 	/**
-	 * Takes a struct of command data and lazy loads the actual CFC isntance if neccessary
-	 * @commandData.hint Struct created by registerCommand()
+	 * Replaces aliases in the raw line
+ 	 **/
+	private function expandAliasesinRawLine( string rawLine ) {
+		var aliases = configService.getSetting( 'command.aliases', {} );
+		var matchingAlias = '';
+
+		for( var alias in aliases ) {
+			if( lcase( rawLine ).startsWith( lcase( alias ) ) ) {
+				matchingAlias = alias;
+				break;
+			}
+		}
+
+		// If the start of this command matches an alias, swap it out.
+		if( matchingAlias.len() ) {
+			// Recursively dig down. This allows aliases to alias other alises
+			return expandAliasesinRawLine(
+					// Expand the alias with the string it aliases
+					replaceNoCase( rawLine, matchingAlias, aliases[ matchingAlias ], 'once' )
+			 );
+		}
+
+		return rawLine;
+	}
+
+	/**
+	 * Takes a struct of command data and lazy loads the actual CFC instance if necessary
+	 * @commandData Struct created by registerCommand()
  	 **/
 	private function lazyLoadCommandCFC( commandData ){
 
-		// Check for actual CFC instance, and lazy load if neccessary
+		// Check for actual CFC instance, and lazy load if necessary
 		if( !structKeyExists( commandData, 'CFC' ) ){
 			// Create this command CFC
 			try {
@@ -786,15 +1021,15 @@ component accessors="true" singleton {
 	/**
 	 * Looks at the call stack to determine if we're currently "inside" a command.
 	 * Useful to prevent endless recursion.
-	 * @command.hint Name of the command to look for as typed from the shell.  If empty, returns true for any command
+	 * @command Name of the command to look for as typed from the shell.  If empty, returns true for any command
  	 **/
 	function inCommand( command='' ){
 
 		// If a command is provided, look for it in the call stack..
 		if( len( command ) ){
 			for( var call in instance.callStack ){
-				// CommandString is a dot-delimted path
-				if( call.commandString == listChangeDelims( command, ' ', '.' ) ){
+				// CommandString is a dot-delimited path
+				if( call.commandInfo.commandString == listChangeDelims( command, ' ', '.' ) ){
 					return true;
 				}
 			}
@@ -832,9 +1067,9 @@ component accessors="true" singleton {
 
 	/**
 	 * load command CFC
-	 * @baseCommandDirectory.hint The base directory for this command
-	 * @cfc.hint CFC name that represents the command
-	 * @commandPath.hint The relative dot-delimted path to the CFC starting in the commands dir
+	 * @baseCommandDirectory The base directory for this command
+	 * @cfc CFC name that represents the command
+	 * @commandPath The relative dot-delimited path to the CFC starting in the commands dir
 	 **/
 	private function registerCommand( baseCommandDirectory, CFC, commandPath ){
 
@@ -873,11 +1108,55 @@ component accessors="true" singleton {
 	}
 
 	/**
+	 * Remove a command from memory
+	 * @baseCommandDirectory The base directory for this command
+	 * @cfc CFC name that represents the command
+	 * @commandPath The relative dot-delimited path to the CFC starting in the commands dir
+	 **/
+	private function removeCommand( baseCommandDirectory, CFC, commandPath ){
+
+		// Strip cfc extension from filename
+		var CFCName = mid( CFC, 1, len( CFC ) - 4 );
+		var commandName = iif( len( commandPath ), de( commandPath & '.' ), '' ) & CFCName;
+		// Build CFC's path
+		var fullCFCPath = baseCommandDirectory & '.' & commandName;
+
+
+		try {
+			// Create a nice struct of command metadata
+			var commandData = createCommandData( fullCFCPath, commandName );
+		// This will catch nasty parse errors so the shell can keep loading
+		} catch( any e ){
+			shell.printString( 'Error loading command data [#fullCFCPath#]#cr#' );
+			logger.error( 'Error loading command data [#fullCFCPath#]. #e.message# #e.detail ?: ''#', e.stackTrace );
+			// pretty print the exception
+			 shell.printError( e );
+			return;
+		}
+
+		// must be CommandBox CFC, can't be Application.cfc
+		if( CFCName == 'Application' || !isCommandCFC( commandData ) ){
+			return;
+		}
+
+		// Add it to the command dictionary
+		removeFromDictionary( commandData, commandPath & '.' & CFCName );
+
+		// Register the aliases
+		for( var alias in commandData.aliases ){
+			// Alias is allowed to be anything.  This means it may even overwrite another command already loaded.
+			removeFromDictionary( commandData, listChangeDelims( trim( alias ), '.', ' ' ) );
+		}
+		var mappingName = "command-" & fullCFCPath;
+		wirebox.getScope( 'singleton' ).getSingletons().delete( mappingName );
+	}
+
+	/**
 	* Create command metadata
 	* @fullCFCPath the full CFC path
 	* @commandName the command name
 	*/
-	private struct function createCommandData( required fullCFCPath, required commandName ){	
+	private struct function createCommandData( required fullCFCPath, required commandName ){
 		// Get from cache or produce on demand
 		var commandMD = metadataCache.getOrSet(
 			fullCFCPath,
@@ -885,7 +1164,7 @@ component accessors="true" singleton {
 				return wirebox.getUtil().getInheritedMetaData( fullCFCPath );
 			}
 		);
-		
+
 		// Set up of command data
 		var commandData = {
 			fullCFCPath 	= arguments.fullCFCPath,
@@ -897,6 +1176,12 @@ component accessors="true" singleton {
 			excludeFromHelp = commandMD.excludeFromHelp ?: false,
 			commandMD 		= commandMD
 		};
+
+		// Fix for CFCs with no hint, they inherit this from the Lucee base component.
+		if( commandData.hint == 'This is the Base Component' ) {
+			commandData.hint = '';
+		}
+
 		// check functions
 		if( structKeyExists( commandMD, 'functions' ) ){
 			// Capture the command's parameters
@@ -914,6 +1199,13 @@ component accessors="true" singleton {
 						if( structKeyExists( param, 'optionsUDF' ) ){
 							// Grab name of completor function for this param
 							commandData.completor[ param.name ][ 'optionsUDF' ] = param.optionsUDF;
+						}
+						// Check for directory or file path completion
+						// File completion inherently includes directories, so no need for both.
+						if( structKeyExists( param, 'optionsFileComplete' ) && param.optionsFileComplete ){
+							commandData.completor[ param.name ][ 'optionsFileComplete' ] = param.optionsFileComplete;
+						} else if( structKeyExists( param, 'optionsDirectoryComplete' ) && param.optionsDirectoryComplete ){
+							commandData.completor[ param.name ][ 'optionsDirectoryComplete' ] = param.optionsDirectoryComplete;
 						}
 					}
 
@@ -954,6 +1246,13 @@ component accessors="true" singleton {
 		for( var param in commandParams ){
 			// If it's required and hasn't been supplied...
 			if( param.required && !structKeyExists( userNamedParams, param.name ) ){
+				// Don't bother asking for required params if we're not in an interactive terminal
+				// Otherwise, we'll just hang waiting for input
+				if( !shell.isTerminalInteractive() ) {
+					// If not interactive, we can't ask for input
+					throw( message='Missing required parameter [#param.name#].', type="commandException");
+				}
+
 				// ... Ask the user
 				var message = 'Enter #param.name# ';
 				var value  	= "";
@@ -994,7 +1293,7 @@ component accessors="true" singleton {
 		for( var paramName in parameterInfo.namedParameters ) {
 
 			// If this is an expected param
-			functionIndex = commandParams.find( function( i ) {
+			var functionIndex = commandParams.find( function( i ) {
 				return i.name == paramName;
 			} );
 
@@ -1005,8 +1304,20 @@ component accessors="true" singleton {
 
 					// Overwrite it with an actual Globber instance seeded with the original canonical path as the pattern.
 					var originalPath = parameterInfo.namedParameters[ paramName ];
-					var newPath = fileSystemUtil.resolvePath( originalPath );
-					
+					var newPath = originalPath.listMap( (p) => {
+						p = fileSystemUtil.resolvePath( p );
+						// The globber won't match a dir if you include the trailing slash, so pull them off
+						// This allows
+						// > rm tests/
+						// or
+						// > touch tests
+						// to affect the "tests" folder itself
+						if( p.endsWith( '/' ) || p.endsWith( '\' ) ) {
+							p = p.left(-1);
+						}
+						return p;
+					} );
+
 					parameterInfo.namedParameters[ paramName ] = wirebox.getInstance( 'Globber' )
 						.setPattern( newPath );
 				}
@@ -1027,7 +1338,7 @@ component accessors="true" singleton {
 				&& !isValid( param.type, userNamedParams[ param.name ] ) ){
 
 				shell.setExitCode( 1 );
-				throw( message='Parameter [#param.name#] has a value of [#userNamedParams[ param.name ]#] which is not of type [#param.type#].', type="commandException");
+				throw( message='Parameter [#param.name#] has a value of [#serialize( userNamedParams[ param.name ] )#] which is not of type [#param.type#].', type="commandException");
 			}
 		} // end for loop
 
@@ -1038,8 +1349,8 @@ component accessors="true" singleton {
 	/**
 	 * Match positional parameters up with their names
  	 **/
-	private function convertToNamedParameters( userPositionalParams, commandParams ){
-		var results = {};
+	function convertToNamedParameters( userPositionalParams, commandParams ){
+		var results = [:];
 
 		var i = 0;
 		// For each param the user typed in
@@ -1084,4 +1395,35 @@ component accessors="true" singleton {
 
 	}
 
+
+	/**
+	 * Get the array of commands being executed.
+	 * This may be empty.
+ 	 **/
+	array function getCallStack() {
+		return instance.callStack;
+	}
+
+	function runInEnvironment( name, udf ) {
+
+		instance.callStack.prepend( {
+			commandInfo : commandData = {
+				fullCFCPath 	= name,
+				aliases 		= [],
+				parameters 		= [],
+				completor 		= {},
+				hint 			= '',
+				originalName 	= name,
+				excludeFromHelp = false,
+				commandMD 		= {},
+				originalLine	= name
+			},
+			environment : {}
+		} );
+		try {
+			return udf();
+		} finally {
+			instance.callStack.deleteAt( 1 );
+		}
+	}
 }

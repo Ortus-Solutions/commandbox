@@ -32,7 +32,7 @@ component {
 	}
 
 	function serverNameComplete() {
-		return serverService.getServerNames();
+		return serverService.serverNameComplete();
 	}
 
 }

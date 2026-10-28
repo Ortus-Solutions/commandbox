@@ -71,7 +71,7 @@ component {
 		// Examine the strings, one character at a time, anding at the shortest string
 		// The offset adjusts for extra characters in either string.
 		while ((c + offset1 lt len(s1)) and (c + offset2 lt len(s2))){
-			// Pull the next charactes out of s1 anbd s2
+			// Pull the next characters out of s1 and s2
 			next_s1 = mid(s1,c + offset1+1,iif(not c,3,1)); // First time through check the first three
 			next_s2 = mid(s2,c + offset2+1,iif(not c,3,1)); // First time through check the first three
 			// If they are equal
@@ -84,7 +84,7 @@ component {
 					_s2.append(left(next_s2,1));
 				}
 			}
-			// The next two charactes did not match
+			// The next two characters did not match
 			// Now we will go into a sub-loop while we attempt to
 			// find our place again.  We will only search as long as
 			// our maxOffset allows us to.
@@ -169,7 +169,7 @@ component {
 		}
 		// Distance is the average string length minus the longest common string
 		distance = (len(s1) + len(s2))/2 - lcs;
-		// Whcih string was longest?
+		// Which string was longest?
 		maxLen = iif(len(s1) gt len(s2),de(len(s1)),de(len(s2)));
 		// Similarity is the distance divided by the max length
 		similarity = iif(maxLen eq 0,1,1-(distance/maxLen));

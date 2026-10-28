@@ -40,20 +40,22 @@ component aliases="type" {
 
 				if( isSimpleValue( file ) ) {
 					// Make file canonical and absolute
-					file = fileSystemUtil.resolvePath( file );
+					file = resolvePath( file );
 
 					if( !fileExists( file ) ){
 						return error( "File: #file# does not exist!" );
 					}
 
 					if( buffer.len() ) { buffer &= CR }
-					buffer &= fileRead( file );
+					buffer &= fileRead( file, 'utf-8' );
 
 				} else {
 
 					file.apply( function( thisFile ) {
-						if( buffer.len() ) { buffer &= CR }
-						buffer &= fileRead( thisFile );
+						if( fileExists( thisFile ) ){
+							if( buffer.len() ) { buffer &= CR }
+							buffer &= fileRead( thisFile, 'utf-8' );
+						}
 					} );
 
 				}

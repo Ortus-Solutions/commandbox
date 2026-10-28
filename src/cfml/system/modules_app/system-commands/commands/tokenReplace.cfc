@@ -15,6 +15,11 @@
  **/
 component {
 
+	BOMInputStream = createObject( 'java', 'org.apache.commons.io.input.BOMInputStream' );
+	FileInputStream = createObject( 'java', 'java.io.FileInputStream' );
+	// Assuming UTF-8 BOM
+	UTF8_BOM = javacast( 'byte[]', [ -17, -69, -65 ] );
+
 	/**
 	 * @path file(s) to replace tokens in. Globbing patters allowed such as *.txt
 	 * @token The token to search for
@@ -31,16 +36,33 @@ component {
 
 			// It's a file
 			if( fileExists( thisPath ) ){
-				if( verbose ) {
-					print.greenLine( thisPath );
-				}
-				var fileContents = fileRead( thisPath );
+				// If the file has a BOM, this will strip it!
+				var fileContents = fileRead( thisPath, "UTF-8" );
 				if( fileContents.findNoCase( token ) ) {
-					fileWrite( thisPath, fileContents.replaceNoCase( token, replacement, 'all' ) );
+					// We need to determine if the original file has a BOM, so we can put it back
+					var hasBOM = hasBOM( thispath )
+					if( verbose ) {
+						print.greenLine( thisPath & ( hasBOM ? ' (with BOM)' : '' ) );
+					}
+					var newContent = fileContents.replaceNoCase( token, replacement, 'all' );
+					if( hasBOM ) {
+						newContent = UTF8_BOM & newContent;
+					}
+					fileWrite( thisPath, newContent, "UTF-8" );
 				}
 			}
 
 		} );
+	}
+
+	private boolean function hasBOM( thispath ) {
+		try {
+			var thisFile = BOMInputStream.init( FileInputStream.init( thispath ), true );
+			// There are several different byte order marks, but we're just assuming a UTF-8 BOM in this case.
+			return thisFile.hasBOM();
+		} finally {
+			thisFile.close();
+		}
 	}
 
 }

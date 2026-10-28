@@ -1,3 +1,0 @@
-<cfoutput>
-#renderView( view="|entityPlural|/editor", args={ title="Create |entity|" } )#
-</cfoutput>

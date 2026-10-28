@@ -1,6 +1,6 @@
 /**
  * Forget an embedded CFML server from persistent disk.  Run command from the web root of the server, or use the short name.
- * This command will remove all of the engine files for the server as well as all CF configuration as well. If you don't 
+ * This command will remove all of the engine files for the server as well as all CF configuration as well. If you don't
  * want to lose your settings, back them up first with the CFConfig tool.
  * .
  * {code:bash}
@@ -33,10 +33,10 @@ component {
 		Boolean force=false
 	){
 		if( !isNull( arguments.directory ) ) {
-			arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
+			arguments.directory = resolvePath( arguments.directory );
 		}
 		if( !isNull( arguments.serverConfigFile ) ) {
-			arguments.serverConfigFile = fileSystemUtil.resolvePath( arguments.serverConfigFile );
+			arguments.serverConfigFile = resolvePath( arguments.serverConfigFile );
 		}
 		var serverInfo = serverService.resolveServerDetails( arguments ).serverinfo;
 
@@ -44,22 +44,22 @@ component {
 		if( arguments.force ) {
 			var runningServers = getRunningServers( servers );
 			if ( ! runningServers.isEmpty() ) {
-				
+
 				var stopMessage = arguments.all ?
 					"Stopping all running servers (#getServerNames( runningServers ).toList()#) first...." :
 					"Stopping server #serverInfo.name# first....";
-					
+
 				print
 					.line( stopMessage )
 					.toConsole();
-				
+
 				runningServers.each( function( ID ){
 					var stopResults = serverService.stop( runningServers[ arguments.ID ] );
 					print
 						.line( stopResults.messages, ( stopResults.error ? 'red' : 'green' ) )
 						.toConsole();
 				} );
-				
+
 				// Give them a second or three to die or file locks will still be in place (on Windows, at least)
 				// This is hacky, but there's no clean way to poll for when the process is 100% dead
 				sleep( 3000 );
@@ -107,7 +107,8 @@ component {
 	}
 
 	function serverNameComplete() {
-		return serverService.getServerNames();
+		return serverService
+			.serverNameComplete();
 	}
 
 }

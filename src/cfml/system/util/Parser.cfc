@@ -24,7 +24,7 @@ component {
 	/**
 	 * Tokenizes the command line entered by the user.  Returns array with command statements and arguments
 	 *
-	 * Consider making a dedicated CFC for this since some of the logic could benifit from
+	 * Consider making a dedicated CFC for this since some of the logic could benefit from
 	 * little helper methods to increase readability and reduce duplicate code.
  	 **/
 	function tokenizeInput( string line ) {
@@ -65,13 +65,14 @@ component {
 
 			// If we're in the middle of a quoted string, just keep appending
 			if( inQuotes ) {
-				// Auto-escape = in a quoted string so it doesn't screw up named-parmeter detection.
+				// Auto-escape = in a quoted string so it doesn't screw up named-parameter detection.
 				// It will be unescaped later when we parse the params.
 				if( char == '=' && !isEscaped ) {
 					token &= '\';
 				}
 				token &= char;
 				// We just reached the end of our quoted string
+				// This will break `foo="bar"baz` into two tokens: `foo="bar"` and `baz`
 				if( char == quoteChar && !isEscaped ) {
 					inQuotes = false;
 					// Don't break if an = is next ...
@@ -122,8 +123,8 @@ component {
 				}
 			}
 
-			// We're starting a quoted string
-			if( ( char == '"' || char == "'"  || char == "`" ) && !isEscaped ) {
+			// We're starting a quoted string and we're at the start of a token or waiting on a value
+			if( ( char == '"' || char == "'"  || char == "`" ) && !isEscaped && ( isWaitingOnValue || prevChar == '=' || token == '' ) ) {
 				inQuotes = true;
 				quoteChar = char;
 			}
@@ -146,7 +147,6 @@ component {
 		if( len( token ) ) {
 			tokens.append( token);
 		}
-
 		return tokens;
 	}
 
@@ -184,10 +184,12 @@ component {
 
 				// Check for negation --!flagName
 				if( flagName.startsWith( '!' ) ) {
-					// Strip !
-					flagName = right( flagName, len( flagName ) - 1 );
-					// Flag is false
-					results.flags [ flagName ] = false;
+					if( len( flagName ) > 1 ) {
+						// Strip !
+						flagName = right( flagName, len( flagName ) - 1 );
+						// Flag is false
+						results.flags [ flagName ] = false;
+					}
 				// If param name starts with "no" and matches existing param, then negate.
 				} else if( len( flagName ) > 2 && left( flagName, 2 ) == 'no' && commandParameterNameLookup.findNoCase( mid( flagName, 3, len( flagName ) ) ) ) {
 					results.flags [ mid( flagName, 3, len( flagName ) ) ] = false;
@@ -204,6 +206,7 @@ component {
 
 				// Unwrap quotes from value if used
 				name = unwrapQuotes( name );
+				name = markColonParams( name );
 				value = unwrapQuotes( value );
 
 				// Mark expressions and system settings now while escaped chars are removed
@@ -232,6 +235,13 @@ component {
 
 		return results;
 
+	}
+
+	/**
+	* Find any param names with a colon indicating a struct of args
+	*/
+	function markColonParams( required argName ) {
+		return replaceNoCase( argName, ':', '__colonParam__', 'once' );
 	}
 
 	/**
@@ -276,8 +286,16 @@ component {
 	function unwrapQuotes( theString ) {
 		// If the value is wrapped with backticks, leave them be.  That is a signal to the CommandService
 		// that the string is special and needs to be evaluated as an expression.
-		if( left( theString, 1 ) == '"' || left( theString, 1 ) == "'" ) {
-			return mid( theString, 2, len( theString ) - 2 );
+
+		// If the string begins with a matching single or double quote, strip it.
+		var startChar = left( theString, 1 );
+		if(  startChar == '"' || startChar == "'" ) {
+			theString =  mid( theString, 2, len( theString ) - 1 );
+			// Strip any matching single or double ending quote
+			// Missing ending quotes are invalid but will be ignored
+			if( right( theString, 1 ) == startChar ) {
+				return mid( theString, 1, len( theString ) - 1 );
+			}
 		}
 		return theString;
 	}
@@ -285,25 +303,27 @@ component {
 
 	// ----------------------------- Private ---------------------------------------------
 
-	private function removeEscapedChars( theString ) {
+	function removeEscapedChars( theString ) {
 		theString = replaceNoCase( theString, "\\", '__backSlash__', "all" );
 		theString = replaceNoCase( theString, "\'", '__singleQuote__', "all" );
 		theString = replaceNoCase( theString, '\"', '__doubleQuote__', "all" );
 		theString = replaceNoCase( theString, '\`', '__backtick__', "all" );
 		theString = replaceNoCase( theString, '\=', '__equalSign__', "all" );
 		theString = replaceNoCase( theString, '\;', '__semiColon__', "all" );
+		theString = replaceNoCase( theString, '\:', '__colon__', "all" );
 		theString = replaceNoCase( theString, '\&', '__ampersand__', "all" );
 		theString = replaceNoCase( theString, '\${', '__system_setting__', "all" );
 		return		replaceNoCase( theString, '\|', '__pipe__', "all" );
 	}
 
-	private function replaceEscapedChars( theString ) {
+	function replaceEscapedChars( theString ) {
 		theString = replaceNoCase( theString, '__backSlash__', "\", "all" );
 		theString = replaceNoCase( theString, '__singleQuote__', "'", "all" );
 		theString = replaceNoCase( theString, '__doubleQuote__', '"', "all" );
 		theString = replaceNoCase( theString, '__backtick__', '`', "all" );
 		theString = replaceNoCase( theString, '__equalSign__', '=', "all" );
 		theString = replaceNoCase( theString, '__semiColon__', ';', "all" );
+		theString = replaceNoCase( theString, '__colon__', ':', "all" );
 		theString = replaceNoCase( theString, '__ampersand__', '&', "all" );
 		theString = replaceNoCase( theString, '__system_setting__', '${', "all" );
 		return		replaceNoCase( theString, '__pipe__', '|', "all" );

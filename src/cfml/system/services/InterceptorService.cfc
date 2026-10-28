@@ -29,15 +29,17 @@ component accessors=true singleton {
 			// CLI lifecycle
 			'onCLIStart','onCLIExit','prePrompt',
 			// Command execution lifecycle
-			'preCommand','postCommand','preProcessLine', 'postProcessLine',
+			'preCommand','postCommand','preProcessLine', 'postProcessLine', 'preCommandParamProcess',
 			// Module lifecycle
 			'preModuleLoad','postModuleLoad','preModuleUnLoad','postModuleUnload',
 			// Server lifecycle
-			'preServerStart','onServerStart','onServerInstall','onServerStop','preServerForget','postServerForget',
+			'preServerStart','onServerStart','onServerInstall','onServerInitialInstall','onServerProcessLaunch','onServerStop','preServerForget','postServerForget','onServerSiteConfigRead','preBindingsBuild','onBindingsBuild','postBindingsBuild',
 			// Error handling
 			'onException',
 			// Package lifecycle
-			'preInstall','onInstall','postInstall','preUninstall','postUninstall','preVersion','postVersion','prePublish','postPublish','preUnpublish','postUnpublish','onRelease'
+			'preInstall','onInstall','postInstall','preUninstall','postUninstall','preVersion','postVersion','prePublish','postPublish','preUnpublish','postUnpublish','onRelease','preInstallAll','postInstallAll',
+			// Misc
+			'onSystemSettingExpansion','onConfigSettingSave','onEndpointLogin'
 		] );
 
 		return this;
@@ -51,19 +53,23 @@ component accessors=true singleton {
 		return this;
 	}
 
+	function announce( required string state, struct interceptData={} ) {
+		getEventPoolManager().announce( state, interceptData );
+	}
+
 	function announceInterception( required string state, struct interceptData={} ) {
-		getEventPoolManager().processState( state, interceptData );
+		announce( state, interceptData );
 	}
 
 	function processState( required string state, struct interceptData={} ) {
-		announceInterception( state, interceptData );
+		announce( state, interceptData );
 	}
 
 	/**
 	* @interceptor.hint The qualified class of the interceptor to register or an already instantiated object as an interceptor.
 	* @interceptorProperties.hint The structure of properties to register this interceptor with.
 	* @interceptorProperties.colddoc:generic struct
-	* @customPoints.hint A comma delimmited list or array of custom interception points, if the object or class sent in observes them.
+	* @customPoints.hint A comma delimited list or array of custom interception points, if the object or class sent in observes them.
 	* @interceptorName.hint The name to use for the interceptor when stored. If not used, we will use the name found in the object's class
 	*/
 	function registerInterceptor(
@@ -163,7 +169,7 @@ component accessors=true singleton {
 
 	/**
 	* Append a list of custom interception points to the CORE interception points and returns itself
-	* @customPoints.hint A comma delimmited list or array of custom interception points to append. If they already exists, then they will not be added again.
+	* @customPoints.hint A comma delimited list or array of custom interception points to append. If they already exists, then they will not be added again.
 	*/
 	function appendInterceptionPoints( required customPoints='' ) {
 		getEventPoolManager().appendInterceptionPoints( customPoints );

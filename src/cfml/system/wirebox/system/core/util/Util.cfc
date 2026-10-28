@@ -1,379 +1,523 @@
-﻿<!-----------------------------------------------------------------------
-********************************************************************************
-Copyright Since 2005 ColdBox Framework by Luis Majano and Ortus Solutions, Corp
-www.ortussolutions.com
-********************************************************************************
+﻿/**
+ * The main ColdBox utility library, it is built with tags to allow for dumb ACF10 compatibility
+ */
+component {
 
-Author     :	Luis Majano
-Description :
-	The main ColdBox utility library, it is built with tags to allow for dumb ACF10 compatibility
------------------------------------------------------------------------>
-<cfcomponent output="false" hint="The main ColdBox utility library filled with lots of nice goodies.">
+	/****************************************************************
+	 * SERVER/USER/CFML ENGINE HELPERS *
+	 ****************************************************************/
 
-	<!--- getMixerUtil --->
-    <cffunction name="getMixerUtil" output="false" access="public" returntype="any" hint="Get the mixer utility" doc_generic="wirebox.system.core.dynamic.MixerUtil">
-    	<cfscript>
-    		if( structKeyExists( variables, "mixerUtil" ) ){
-				return variables.mixerUtil;
-			}
-			variables.mixerUtil = new wirebox.system.core.dynamic.MixerUtil();
-			return variables.mixerUtil;
-		</cfscript>
-    </cffunction>
+	/**
+	 * Add a CFML Mapping to the running engine
+	 *
+	 * @name The name of the mapping
+	 * @path The path of the mapping
+	 * @mappings A struct of mappings to incorporate instead of one-offs
+	 */
+	Util function addMapping( string name, string path, struct mappings ){
+		var mappingHelper = "";
 
-	<!--- arrayToStruct --->
-	<cffunction name="arrayToStruct" output="false" access="public" returntype="struct" hint="Convert an array to struct argument notation">
-		<cfargument name="in" type="array" required="true" hint="The array to convert"/>
-		<cfscript>
-			return arguments.in.reduce( function( result, item, index ){
-				var target = result ?: structNew();
-				target[ index ] = item;
-				return target;
-			} );
-		</cfscript>
-	</cffunction>
+		// Detect server
+		if ( listFindNoCase( "Lucee", server.coldfusion.productname ) ) {
+			mappingHelper = new LuceeMappingHelper();
+		} else {
+			mappingHelper = new CFMappingHelper();
+		}
 
-	<!--- fileLastModified --->
-	<cffunction name="fileLastModified" access="public" returntype="string" output="false" hint="Get the last modified date of a file">
-		<cfargument name="filename" required="true">
-		<cfscript>
-			return getFileInfo( getAbsolutePath( arguments.filename ) ).lastModified;
-		</cfscript>
-	</cffunction>
-
-	<!--- ripExtension --->
-	<cffunction name="ripExtension" access="public" returntype="string" output="false" hint="Rip the extension of a filename.">
-		<cfargument name="filename" required="true">
-		<cfreturn reReplace( arguments.filename, "\.[^.]*$", "" )>
-	</cffunction>
-
-	<!--- getAbsolutePath --->
-	<cffunction name="getAbsolutePath" access="public" output="false" returntype="string" hint="Turn any system path, either relative or absolute, into a fully qualified one">
-		<cfargument name="path" required="true">
-		<cfscript>
-			if( fileExists( arguments.path ) ){
-				return arguments.path;
-			}
-			return expandpath( arguments.path );
-		</cfscript>
-	</cffunction>
-
-	<!--- inThread --->
-	<cffunction name="inThread" output="false" access="public" returntype="boolean" hint="Check if you are in cfthread or not for any CFML Engine">
-		<cfscript>
-			var engine = "ADOBE";
-
-			if ( server.coldfusion.productname eq "Lucee" ){ engine = "LUCEE"; }
-
-			switch( engine ){
-				case "ADOBE"	: {
-					if( findNoCase( "cfthread", createObject( "java", "java.lang.Thread" ).currentThread().getThreadGroup().getName() ) ){
-						return true;
-					}
-					break;
-				}
-				case "LUCEE" 	: {
-
-					var version = listFirst( server.lucee.version, "." );
-
-					if( version == 5 ){
-						return isInThread();
-					}
-
-					if( findNoCase( "cfthread", createObject( "java", "java.lang.Thread" ).currentThread().getThreadGroup().getName() ) ){
-						return true;
-					}
-					break;
-				}
-			} //end switch statement.
-
-			return false;
-		</cfscript>
-	</cffunction>
-
-	<!--- placeHolderReplacer --->
-	<cffunction name="placeHolderReplacer" access="public" returntype="any" hint="PlaceHolder Replacer for strings containing ${} patterns" output="false" >
-		<cfargument name="str" 		required="true" hint="The string variable to look for replacements">
-		<cfargument name="settings" required="true" hint="The structure of settings to use in replacing">
-		<cfscript>
-			var returnString = arguments.str;
-			var regex        = "\$\{([0-9a-z\-\.\_]+)\}";
-			var lookup       = 0;
-			var varName      = 0;
-			var varValue     = 0;
-
-			// Loop and Replace
-			while( true ){
-				// Search For Pattern
-				var lookup = reFindNocase( regex, returnString, 1, true );
-				// Found?
-				if( lookup.pos[ 1 ] ){
-					//Get Variable Name From Pattern
-					var varName 	= mid( returnString, lookup.pos[ 2 ], lookup.len[ 2 ] );
-					var varValue 	= "VAR_NOT_FOUND";
-
-					// Lookup Value
-					if( structKeyExists( arguments.settings, varname ) ){
-						varValue = arguments.settings[ varname ];
-					}
-					// Lookup Nested Value
-					else if( isDefined( "arguments.settings.#varName#" ) ){
-						varValue = structFindKey( arguments.settings, varName )[ 1 ].value;
-					}
-					// Remove PlaceHolder Entirely
-					returnString = removeChars( returnString, lookup.pos[ 1 ], lookup.len[ 1 ] );
-					// Insert Var Value
-					returnString = insert(varValue, returnString, lookup.pos[ 1 ] - 1 );
-				} else {
-					break;
-				}
-			}
-
-			return returnString;
-		</cfscript>
-	</cffunction>
-
-    <!--- getSystemSetting --->
-    <cffunction name="getSystemSetting" output="false" access="public" returntype="any" hint="Retrieve a Java System property or env value by name. It looks at properties first then environment variables">
-    	<cfargument name="key" required="true" type="string" hint="The name of the setting to look up."/>
-		<cfargument name="defaultValue" required="false" hint="The default value to use if the key does not exist in the system properties or the env" />
-		<cfscript>
-			var value = getJavaSystem().getProperty( arguments.key );
-			if ( ! isNull( value ) ) {
-				return value;
-			}
-
-			value = getJavaSystem().getEnv( arguments.key );
-			if ( ! isNull( value ) ) {
-				return value;
-			}
-
-			if ( ! isNull( arguments.defaultValue ) ) {
-				return arguments.defaultValue;
-			}
-
-			throw(
-				type = "SystemSettingNotFound",
-				message = "Could not find a Java System property or Env setting with key [#arguments.key#]."
-			);
-		</cfscript>
-    </cffunction>
-
-    <!--- getSystemProperty --->
-    <cffunction name="getSystemProperty" output="false" access="public" returntype="any" hint="Retrieve a Java System property value by name.">
-    	<cfargument name="key" required="true" type="string" hint="The name of the java property to look up."/>
-        <cfargument name="defaultValue" required="false" hint="The default value to use if the key does not exist in the system properties" />
-		<cfscript>
-			var value = getJavaSystem().getProperty( arguments.key );
-			if ( ! isNull( value ) ) {
-				return value;
-			}
-
-			if ( ! isNull( arguments.defaultValue ) ) {
-				return arguments.defaultValue;
-			}
-
-			throw(
-				type = "SystemSettingNotFound",
-				message = "Could not find a Java System property with key [#arguments.key#]."
-			);
-		</cfscript>
-    </cffunction>
-
-    <!--- getEnv --->
-    <cffunction name="getEnv" output="false" access="public" returntype="any" hint="Retrieve a Java System environment value by name.">
-    	<cfargument name="key" required="true" type="string" hint="The name of the environment variable to look up."/>
-        <cfargument name="defaultValue" required="false" hint="The default value to use if the key does not exist in the env" />
-		<cfscript>
-			var value = getJavaSystem().getEnv( arguments.key );
-			if ( ! isNull( value ) ) {
-				return value;
-			}
-
-			if ( ! isNull( arguments.defaultValue ) ) {
-				return arguments.defaultValue;
-			}
-
-			throw(
-				type = "SystemSettingNotFound",
-				message = "Could not find a environment variable with key [#arguments.key#]."
-			);
-		</cfscript>
-    </cffunction>
-
-    <!--- getJavaSystem --->
-    <cffunction name="getJavaSystem" output="false" access="public" returntype="any" hint="Retrieve an instance of Java System">
-        <cfscript>
-            if ( ! structKeyExists( variables, "javaSystem" ) ) {
-                variables.javaSystem = createObject( "java", "java.lang.System" );
-            }
-            return variables.javaSystem;
-        </cfscript>
-    </cffunction>
-
-<!------------------------------------------- Taxonomy Utility Methods ------------------------------------------>
-
-	<!--- isFamilyType --->
-    <cffunction name="isFamilyType" output="false" access="public" returntype="boolean" hint="Checks if an object is of the passed in family type">
-    	<cfargument name="family" required="true" hint="The family to covert it to: handler, interceptor"/>
-		<cfargument name="target" required="true" hint="The target object"/>
-		<cfscript>
-			var familyPath = "";
-
-			switch( arguments.family ){
-				case "handler" 		: { familyPath = "wirebox.system.EventHandler"; break; }
-				case "interceptor"  : { familyPath = "wirebox.system.Interceptor"; break; }
-				default:{
-					throw( 'Invalid family sent #arguments.family#' );
-				}
-			}
-
-			return isInstanceOf( arguments.target, familyPath );
-		</cfscript>
-    </cffunction>
-
-	<!--- convertToColdBox --->
-    <cffunction name="convertToColdBox" output="false" access="public" returntype="void" hint="Decorate an object as a ColdBox Family object">
-    	<cfargument name="family" required="true" hint="The family to covert it to: handler, interceptor"/>
-		<cfargument name="target" required="true" hint="The target object"/>
-		<cfscript>
-			var familyPath = "";
-
-			switch( arguments.family ){
-				case "handler" 		: { familyPath = "wirebox.system.EventHandler"; break; }
-				case "interceptor"  : { familyPath = "wirebox.system.Interceptor"; break; }
-				default:{
-					throw( 'Invalid family sent #arguments.family#' );
-				}
-			}
-
-			// Mix it up baby
-			arguments.target.$injectUDF = getMixerUtil().injectMixin;
-
-			// Create base family object
-			var baseObject = createObject( "component", familyPath );
-
-			// Check if init already exists?
-			if( structKeyExists( arguments.target, "init" ) ){
-				arguments.target.$cbInit = baseObject.init;
-			}
-
-			// Mix in methods
-			for( var key in baseObject ){
-				// If handler has overriden method, then don't override it with mixin, simulated inheritance
-				if( NOT structKeyExists( arguments.target, key ) ){
-					arguments.target.$injectUDF( key, baseObject[ key ] );
-				}
-			}
-
-			// Mix in fake super class
-			arguments.target.$super = baseObject;
-		</cfscript>
-    </cffunction>
-
-	<!--- getInheritedMetaData --->
-	<cffunction name="getInheritedMetaData" output="false" hint="Returns a single-level metadata struct that includes all items inhereited from extending classes.">
-		<cfargument name="component" type="any" required="true" hint="A component instance, or the path to one">
-		<cfargument name="stopRecursions" default="#arraynew(1)#" hint="An array of classes to stop recursion">
-		<cfargument name="md" default="#structNew()#" hint="A structure containing a copy of the metadata for this level of recursion.">
-
-		<cfset var loc = {}>
-
-		<!--- First time through, get metaData of component.  --->
-		<cfif structIsEmpty( md )>
-			<cfif isObject( component )>
-				<cfset md = getMetaData( component )>
-			<cfelse>
-				<cfset md = getComponentMetaData( component )>
-			</cfif>
-		</cfif>
-
-		<!--- If it has a parent, stop and calculate it first, unless of course, we've reached a class we shouldn't recurse into. --->
-
-		<cfif 	structKeyExists( md, "extends" ) AND
-				md.type eq "component" AND
-				stopClassRecursion( md.extends.name, arguments.stopRecursions ) EQ FALSE
-		>
-			<cfset loc.parent = getInheritedMetaData( component=component, stopRecursions=stopRecursions, md=md.extends )>
-		<!--- If we're at the end of the line, it's time to start working backwards so start with an empty struct to hold our condensesd metadata. --->
-		<cfelse>
-			<cfset loc.parent = {}>
-			<cfset loc.parent.inheritancetrail = []>
-		</cfif>
-
-		<!--- Override ourselves into parent --->
-		<cfloop collection="#md#" item="loc.key">
-			<!--- Functions and properties are an array of structs keyed on name, so I can treat them the same --->
-			<cfif listFindNoCase( "functions,properties", loc.key )>
-				<cfif not structKeyExists( loc.parent, loc.key )>
-					<cfset loc.parent[ loc.key ] = []>
-				</cfif>
-				<!--- For each function/property in me... --->
-				<cfloop array="#md[ loc.key ]#" index="loc.item">
-					<cfset loc.parentItemCounter = 0>
-					<cfset loc.foundInParent = false>
-					<!--- ...Look for an item of the same name in my parent... --->
-					<cfloop array="#loc.parent[ loc.key ]#" index="loc.parentItem">
-						<cfset loc.parentItemCounter++>
-						<!--- ...And override it --->
-						<cfif compareNoCase( loc.item.name, loc.parentItem.name ) eq 0>
-							<cfset loc.parent[ loc.key ][ loc.parentItemCounter ] = loc.item>
-							<cfset loc.foundInParent = true>
-							<cfbreak>
-						</cfif>
-					</cfloop>
-					<!--- ...Or add it --->
-					<cfif not loc.foundInParent>
-						<cfset arrayAppend( loc.parent[ loc.key ], loc.item )>
-					</cfif>
-				</cfloop>
-			<cfelseif NOT listFindNoCase( "extends,implements", loc.key )>
-				<cfset loc.parent[ loc.key ] = md[ loc.key ]>
-			</cfif>
-		</cfloop>
-		<cfset arrayPrePend( loc.parent.inheritanceTrail, loc.parent.name )>
-		<cfreturn loc.parent>
-	</cffunction>
-
-	<!--- stopClassRecursion --->
-	<cffunction name="stopClassRecursion" access="private" returntype="any" hint="Should we stop recursion or not due to class name found: Boolean" output="false" doc_generic="Boolean">
-		<cfargument name="classname" 	required="true" hint="The class name to check">
-		<cfargument name="stopRecursions"	required="true" hint="An array of classes to stop processing at"/>
-		<cfscript>
-			// Try to find a match
-			for( var thisClass in arguments.stopRecursions ){
-				if( compareNoCase( thisClass, arguments.classname) eq 0 ){
-					return true;
-				}
-			}
-			return false;
-		</cfscript>
-	</cffunction>
-
-	<!--- addMapping --->
-    <cffunction name="addMapping" output="false" access="public" returntype="Util" hint="Add a CFML Mapping">
-    	<cfargument name="name" type="string" required="true" hint="The name of the mapping"/>
-    	<cfargument name="path" type="string" required="true" hint="The path to the mapping"/>
-    	<cfscript>
-    		var mappingHelper = "";
-
-    		// Detect server
-			if( listFindNoCase( "Lucee", server.coldfusion.productname ) ) {
-				mappingHelper = new LuceeMappingHelper();
-			} else {
-				mappingHelper = new CFMappingHelper();
-			}
-
+		if ( !isNull( arguments.mappings ) ) {
+			mappingHelper.addMappings( arguments.mappings );
+		} else {
 			// Add / registration
-			if( left( arguments.name, 1 ) != "/" ){
+			if ( left( arguments.name, 1 ) != "/" ) {
 				arguments.name = "/#arguments.name#";
 			}
 
 			// Add mapping
 			mappingHelper.addMapping( arguments.name, arguments.path );
+		}
 
-			return this;
-    	</cfscript>
-    </cffunction>
+		return this;
+	}
 
-</cfcomponent>
+	/**
+	 * Check if you are in cfthread or not for any CFML Engine
+	 *
+	 * @path The file target
+	 */
+	boolean function inThread(){
+		var engine = "ADOBE";
+
+		if ( server.coldfusion.productname eq "Lucee" ) {
+			engine = "LUCEE";
+		}
+
+		switch ( engine ) {
+			case "ADOBE": {
+				if (
+					findNoCase(
+						"cfthread",
+						createObject( "java", "java.lang.Thread" )
+							.currentThread()
+							.getThreadGroup()
+							.getName()
+					)
+				) {
+					return true;
+				}
+				break;
+			}
+			case "LUCEE": {
+				return isInThread();
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Get the hostname of the executing machine.
+	 */
+	function discoverInetHost(){
+		try {
+			return createObject( "java", "java.net.InetAddress" ).getLocalHost().getHostName();
+		} catch ( any e ) {
+			return cgi.SERVER_NAME;
+		}
+	}
+
+	/**
+	 * Get the server IP Address
+	 */
+	function getServerIp(){
+		return ( isNull( cgi.local_addr ) ? "0.0.0.0" : cgi.local_addr );
+	}
+
+	/**
+	 * Builds the unique Session Key of a user request and returns it to you.
+	 */
+	string function getSessionIdentifier(){
+		var isSessionDefined = getApplicationMetadata().sessionManagement;
+
+		// Check jsession id First
+		if ( isSessionDefined && structKeyExists( session, "sessionid" ) ) {
+			return session.sessionid;
+		}
+		// Check normal cfid and cftoken in cookie
+		else if ( structKeyExists( cookie, "CFID" ) && structKeyExists( cookie, "CFTOKEN" ) ) {
+			return hash( cookie.cfid & cookie.cftoken );
+		}
+		// Check normal cfid and cftoken in URL
+		else if ( structKeyExists( URL, "CFID" ) && structKeyExists( URL, "CFTOKEN" ) ) {
+			return hash( URL.cfid & URL.cftoken );
+		}
+		// check session URL Token
+		else if ( isSessionDefined && structKeyExists( session, "URLToken" ) ) {
+			return session.URLToken;
+		} else {
+			throw(
+				message = "Cannot find a jsessionid, URLToken or cfid/cftoken in any scope. Please verify",
+				type    = "UniqueKeyException"
+			);
+		}
+	}
+
+	/****************************************************************
+	 * CONVERSTION METHODS *
+	 ****************************************************************/
+
+	/**
+	 * Convert an array to struct argument notation
+	 *
+	 * @target The array to convert
+	 */
+	struct function arrayToStruct( required array target ){
+		return arguments.target.reduce( function( result, item, index ){
+			arguments.result[ arguments.index ] = arguments.item;
+			return arguments.result;
+		}, {} );
+	}
+
+	/****************************************************************
+	 * FILE HELPERS *
+	 ****************************************************************/
+
+	/**
+	 * Get the last modified date of a file
+	 *
+	 * @filename The file target
+	 */
+	function fileLastModified( required filename ){
+		return getFileInfo( getAbsolutePath( arguments.filename ) ).lastModified;
+	}
+
+	/**
+	 * Rip the extension of a filename.
+	 *
+	 * @filename The file target
+	 */
+	function ripExtension( required filename ){
+		return reReplace( arguments.filename, "\.[^.]*$", "" );
+	}
+
+	/**
+	 * Turn any system path, either relative or absolute, into a fully qualified one
+	 *
+	 * @path The file target
+	 */
+	function getAbsolutePath( required path ){
+		if ( fileExists( arguments.path ) ) {
+			return arguments.path;
+		}
+		return expandPath( arguments.path );
+	}
+
+	/****************************************************************
+	 * STRING HELPERS *
+	 ****************************************************************/
+
+	/**
+	 * PlaceHolder Replacer for strings containing <code>${}</code> patterns
+	 *
+	 * @str The string target
+	 * @settings The structure of settings to use in the replacements
+	 *
+	 * @return The string with the replacements
+	 */
+	function placeHolderReplacer( required str, required settings ){
+		var returnString = arguments.str;
+		var regex        = "\$\{([0-9a-z\-\.\_]+)\}";
+		var lookup       = 0;
+		var varName      = 0;
+		var varValue     = 0;
+
+		// Loop and Replace
+		while ( true ) {
+			// Search For Pattern
+			var lookup = reFindNoCase( regex, returnString, 1, true );
+			// Found?
+			if ( lookup.pos[ 1 ] ) {
+				// Get Variable Name From Pattern
+				var varName  = mid( returnString, lookup.pos[ 2 ], lookup.len[ 2 ] );
+				var varValue = "VAR_NOT_FOUND";
+
+				// Lookup Value
+				if ( structKeyExists( arguments.settings, varname ) ) {
+					varValue = arguments.settings[ varname ];
+				}
+				// Lookup Nested Value
+				else if ( isDefined( "arguments.settings.#varName#" ) ) {
+					varValue = structFindKey( arguments.settings, varName )[ 1 ].value;
+				}
+				// Remove PlaceHolder Entirely
+				returnString = removeChars( returnString, lookup.pos[ 1 ], lookup.len[ 1 ] );
+				// Insert Var Value
+				returnString = insert( varValue, returnString, lookup.pos[ 1 ] - 1 );
+			} else {
+				break;
+			}
+		}
+
+		return returnString;
+	}
+
+	/****************************************************************
+	 * ENVIRONMENT METHODS *
+	 ****************************************************************/
+
+	/**
+	 * Retrieve a Java System property or env value by name. It looks at properties first then environment variables
+	 *
+	 * @key The name of the setting to look up.
+	 * @defaultValue The default value to use if the key does not exist in the system properties or the env
+	 *
+	 * @throws SystemSettingNotFound When the java system property or env is not found
+	 */
+	function getSystemSetting( required key, defaultValue ){
+		var value = getJavaSystem().getProperty( arguments.key );
+		if ( !isNull( local.value ) ) {
+			return value;
+		}
+
+		value = getJavaSystem().getEnv( arguments.key );
+		if ( !isNull( local.value ) ) {
+			return value;
+		}
+
+		if ( !isNull( arguments.defaultValue ) ) {
+			return arguments.defaultValue;
+		}
+
+		throw(
+			type   : "SystemSettingNotFound",
+			message: "Could not find a Java System property or Env setting with key [#arguments.key#]."
+		);
+	}
+
+	/**
+	 * Retrieve a Java System property value by key
+	 *
+	 * @key The name of the setting to look up.
+	 * @defaultValue The default value to use if the key does not exist in the system properties or the env
+	 *
+	 * @throws SystemSettingNotFound When the java system property is not found
+	 */
+	function getSystemProperty( required key, defaultValue ){
+		var value = getJavaSystem().getProperty( arguments.key );
+		if ( !isNull( local.value ) ) {
+			return value;
+		}
+
+		if ( !isNull( arguments.defaultValue ) ) {
+			return arguments.defaultValue;
+		}
+
+		throw(
+			type    = "SystemSettingNotFound",
+			message = "Could not find a Java System property with key [#arguments.key#]."
+		);
+	}
+
+	/**
+	 * Retrieve a Java System environment value by name
+	 *
+	 * @key The name of the setting to look up.
+	 * @defaultValue The default value to use if the key does not exist in the system properties or the env
+	 *
+	 * @throws SystemSettingNotFound When the java system property is not found
+	 */
+	function getEnv( required key, defaultValue ){
+		var value = getJavaSystem().getEnv( arguments.key );
+		if ( !isNull( local.value ) ) {
+			return value;
+		}
+
+		if ( !isNull( arguments.defaultValue ) ) {
+			return arguments.defaultValue;
+		}
+
+		throw(
+			type    = "SystemSettingNotFound",
+			message = "Could not find a environment variable with key [#arguments.key#]."
+		);
+	}
+
+	/**
+	 * Retrieve an instance of Java System
+	 */
+	function getJavaSystem(){
+		if ( !structKeyExists( variables, "javaSystem" ) ) {
+			variables.javaSystem = createObject( "java", "java.lang.System" );
+		}
+		return variables.javaSystem;
+	}
+
+	/**
+	 * Get the mixer utility
+	 *
+	 * @return wirebox.system.core.dynamic.MixerUtil
+	 */
+	function getMixerUtil(){
+		if ( structKeyExists( variables, "mixerUtil" ) ) {
+			return variables.mixerUtil;
+		}
+		variables.mixerUtil = new wirebox.system.core.dynamic.MixerUtil();
+		return variables.mixerUtil;
+	}
+
+	/****************************************************************
+	 * COLDBOX TAXONOMY Methods *
+	 ****************************************************************/
+
+	/**
+	 * Checks if an object is of the passed in family type
+	 *
+	 * @family The family to covert it to: handler, interceptor
+	 * @target The target object
+	 */
+	boolean function isFamilyType( required family, required target ){
+		var familyPath = "";
+
+		switch ( arguments.family ) {
+			case "handler": {
+				familyPath = "wirebox.system.EventHandler";
+				break;
+			}
+			case "interceptor": {
+				familyPath = "wirebox.system.Interceptor";
+				break;
+			}
+			default: {
+				throw( "Invalid family sent #arguments.family#" );
+			}
+		}
+
+		return isInstanceOf( arguments.target, familyPath );
+	}
+
+	/**
+	 * Decorate an object as a ColdBox Family object
+	 *
+	 * @family The family to convert it to
+	 * @target The target object
+	 *
+	 * @return The same target object
+	 */
+	function convertToColdBox( required family, required target ){
+		var familyPath = "";
+
+		switch ( arguments.family ) {
+			case "handler": {
+				familyPath = "wirebox.system.EventHandler";
+				break;
+			}
+			case "interceptor": {
+				familyPath = "wirebox.system.Interceptor";
+				break;
+			}
+			default: {
+				throw( "Invalid family sent #arguments.family#" );
+			}
+		}
+
+		// Mix it up baby
+		arguments.target.$injectUDF = getMixerUtil().injectMixin;
+
+		// Create base family object
+		var baseObject = createObject( "component", familyPath );
+
+		// Check if init already exists?
+		if ( structKeyExists( arguments.target, "init" ) ) {
+			arguments.target.$cbInit = baseObject.init;
+		}
+
+		// Mix in methods
+		for ( var key in baseObject ) {
+			// If handler has overridden method, then don't override it with mixin, simulated inheritance
+			if ( NOT structKeyExists( arguments.target, key ) ) {
+				arguments.target.$injectUDF( key, baseObject[ key ] );
+			}
+		}
+
+		// Mix in fake super class
+		arguments.target.$super = baseObject;
+
+		return arguments.target;
+	}
+
+	/**
+	 * Should we stop recursion or not due to class name found: Boolean
+	 *
+	 * @className The class name to check
+	 * @stopRecursions An array of classes to stop processing for during inheritance trails
+	 */
+	private boolean function stopClassRecursion( required classname, required stopRecursions ){
+		// Try to find a match
+		for ( var thisClass in arguments.stopRecursions ) {
+			if ( compareNoCase( thisClass, arguments.classname ) eq 0 ) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Returns a single-level metadata struct that includes all items inhereited from extending classes.
+	 *
+	 * @component The component instance or path to get the metadata from
+	 * @stopRecursions An array of classes to stop processing for during inheritance trails
+	 * @md A structure containing a copy of the metadata for this level of recursion.
+	 *
+	 * @return struct of metadata
+	 */
+	function getInheritedMetaData(
+		required component,
+		array stopRecursions = [],
+		struct md            = {}
+	){
+		var loc = {};
+
+		// First time through, get metaData of component by path or instance
+		if ( arguments.md.isEmpty() ) {
+			arguments.md = (
+				isObject( arguments.component ) ? getMetadata( arguments.component ) : getComponentMetadata(
+					arguments.component
+				)
+			);
+		}
+
+		// If it has a parent, stop and calculate it first, unless of course, we've reached a class we shouldn't recurse into.
+		if (
+			structKeyExists( arguments.md, "extends" ) &&
+			arguments.md.type eq "component" &&
+			stopClassRecursion( md.extends.name, arguments.stopRecursions ) EQ FALSE
+		) {
+			loc.parent = getInheritedMetaData(
+				component      = arguments.component,
+				stopRecursions = arguments.stopRecursions,
+				md             = arguments.md.extends
+			);
+			// If we're at the end of the line, it's time to start working backwards so start with an empty struct to hold our condensesd metadata.
+		} else {
+			loc.parent = { "inheritanceTrail" : [] };
+		}
+
+		// Override ourselves into parent
+		for ( var thisKey in arguments.md ) {
+			// Functions and properties are an array of structs keyed on name, so I can treat them the same
+			if ( listFindNoCase( "functions,properties", thisKey ) ) {
+				if ( !structKeyExists( loc.parent, thisKey ) ) {
+					loc.parent[ thisKey ] = [];
+				}
+
+				// For each function/property in me...
+				for ( var thisItem in arguments.md[ thisKey ] ) {
+					loc.parentItemCounter = 0;
+					loc.foundInParent     = false;
+					// ...Look for an item of the same name in my parent...
+					for ( var thisParentItem in loc.parent[ thisKey ] ) {
+						loc.parentItemCounter++;
+						// ...And override it
+						if ( compareNoCase( thisItem.name, thisParentItem.name ) eq 0 ) {
+							loc.parent[ thisKey ][ loc.parentItemCounter ] = thisItem;
+							loc.foundInParent                              = true;
+							break;
+						}
+					}
+					// ..Or add it
+					if ( not loc.foundInParent ) {
+						arrayAppend( loc.parent[ thisKey ], thisItem );
+					}
+				}
+			}
+			// Add in anything that's not inheritance or implementation
+			else if ( NOT listFindNoCase( "extends,implements", thisKey ) ) {
+				loc.parent[ thisKey ] = arguments.md[ thisKey ];
+			}
+		}
+
+		// Store away the inheritance trail
+		arrayPrepend( loc.parent.inheritanceTrail, loc.parent.name );
+
+		// Return our results
+		return loc.parent;
+	}
+
+	/**
+	 * Get the Hibernate version string from Hibernate or Hibernate bundle version
+	 */
+	public string function getHibernateVersion(){
+		var version = createObject( "java", "org.hibernate.Version" );
+
+		if ( version.getVersionString() != "[WORKING]" ) {
+			return version.getVersionString();
+		} else {
+			// Due to the insanity of a broken `MANIFEST.MF` in the Lucee Hibernate bundle, we need to pull the `Bundle-Version` instead
+			return version
+				.getClass()
+				.getClassLoader()
+				.getBundle()
+				.getVersion()
+				.toString();
+		}
+	}
+
+}

@@ -14,33 +14,40 @@ component aliases="stop" {
 	property name="serverService" inject="ServerService";
 
 	/**
-	 * @name.hint the short name of the server to stop
+	 * @name the short name of the server to stop
 	 * @name.optionsUDF serverNameComplete
-	 * @directory.hint web root for the server
+	 * @directory web root for the server
 	 * @serverConfigFile The path to the server's JSON file.
-	 * @forget.hint if passed, this will also remove the directory information from disk
-	 * @all.hint If true, stop ALL running servers
+	 * @forget Remove the directory information from disk
+	 * @all Stop ALL running servers
+	 * @verbose Show raw output of stop command
+	 * @local  Stop servers with webroot matching the current directory
 	 **/
 	function run(
 		string name,
 		string directory,
 		String serverConfigFile,
 		boolean forget=false,
-		boolean all=false ){
-
-
+		boolean all=false,
+		boolean verbose=false,
+		boolean local=false
+	){
 		if( arguments.all ) {
 			var servers = serverService.getServers();
+		} else if (arguments.local) {
+			var servers = serverService.getServers().filter( ( serverName, thisServerInfo ) => {
+				return getCanonicalPath( getCWD() ) == getCanonicalPath( thisServerInfo.webroot );
+			}, true );
 		} else {
 
 			if( !isNull( arguments.directory ) ) {
-				arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
+				arguments.directory = resolvePath( arguments.directory );
 			}
 			if( !isNull( arguments.serverConfigFile ) ) {
-				arguments.serverConfigFile = fileSystemUtil.resolvePath( arguments.serverConfigFile );
+				arguments.serverConfigFile = resolvePath( arguments.serverConfigFile );
 			}
 
-			// Look up the server that we're starting
+			// Look up the server that we're stopping
 			var servers = { id: serverService.resolveServerDetails( arguments ).serverinfo };
 
 		} // End "all" check
@@ -53,21 +60,24 @@ component aliases="stop" {
 				if( structCount( servers ) == 1 ) {
 					print.yellowLine( serverInfo.name & ' already stopped.' ).toConsole();
 				}
-				continue;
-			}
-
-			print.yellowLine( 'Stopping ' & serverInfo.name & '...' ).toConsole();
-
-			var results = serverService.stop( serverInfo );
-			if( results.error ){
-				print.boldWhiteOnRedLine( 'ERROR' );
-				print.boldRedLine( results.messages );
 			} else {
-				print.greenLine( 'Stopped' );
+				print.yellowLine( 'Stopping ' & serverInfo.name & '...' ).toConsole();
+
+				var results = serverService.stop( serverInfo );
+				if( results.error ){
+					print.boldWhiteOnRedLine( 'ERROR' );
+					print.boldRedLine( results.messages );
+				} else {
+					if( verbose && len( results.messages ) ) {
+						print.line( results.messages )
+					}
+					print.greenLine( 'Stopped' );
+				}
 			}
 
 			if( arguments.forget ) {
 				print.yellowLine( 'forgetting ' & serverInfo.name & '...' ).toConsole();
+				sleep( 1000 )
 				print.line( serverService.forget( serverInfo ) );
 			}
 		}
@@ -76,7 +86,7 @@ component aliases="stop" {
 	}
 
 	function serverNameComplete() {
-		return serverService.getServerNames();
+		return serverService.serverNameComplete();
 	}
 
 }

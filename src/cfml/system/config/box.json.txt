@@ -2,7 +2,7 @@
     "name":"",
     "version":"1.0.0",
     "author":"",
-    "location":"",
+    "location":"forgeboxStorage",
     "directory":"",
     "createPackageDirectory":true,
     "packageDirectory":"",
@@ -20,7 +20,7 @@
     "changelog":"",
     "type":"",
     "keywords":[
-        
+
     ],
     "private":false,
     "engines":[
@@ -39,22 +39,22 @@
         }
     ],
     "contributors":[
-        
+
     ],
     "dependencies":{
-        
+
     },
     "devDependencies":{
-        
+
     },
     "installPaths":{
-        
+
     },
     "scripts":{
-        
+
     },
     "ignore":[
-        
+
     ],
     "testbox":{
         "runner":[
@@ -63,6 +63,7 @@
             }
         ],
         "labels":"",
+		"excludes":"",
         "reporter":"",
         "bundles":"",
         "recurse":true,
@@ -72,6 +73,10 @@
         "testSpecs":"",
         "verbose":true,
         "watchDelay":500,
-        "watchPaths":"**.cfc"
-    }
+        "watchPaths":"**.cfc",
+        "options":{}
+    },
+    "reinitWatchDirectory" : "",
+    "reinitWatchDelay" : 500,
+    "reinitWatchPaths" : "",
 }

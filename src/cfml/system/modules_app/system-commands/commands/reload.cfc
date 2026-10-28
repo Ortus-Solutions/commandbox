@@ -10,7 +10,7 @@
 component aliases="r" excludeFromHelp=true {
 
 	/**
-	 * @clearScreen.hint Clears the screen after reload
+	 * @clearScreen.hint Clear the screen after reload
   	 **/
 	function run( Boolean clearScreen=true )  {
 		print.boldLine( 'Reloading shell...' );

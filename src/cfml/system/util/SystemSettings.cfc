@@ -9,8 +9,12 @@
 *
 */
 component singleton {
+	property name='commandService'		inject='CommandService';
+	property name='interceptorService'	inject='interceptorService';
 
 	variables.system = createObject( "java", "java.lang.System" );
+	// Default environment for the shell
+	variables.environment = {};
 
 	/**
 	* Retrieve a Java System property or env value by name.
@@ -18,22 +22,51 @@ component singleton {
 	* @key The name of the setting to look up.
 	* @defaultValue The default value to use if the key does not exist in the system properties
 	*/
-    function getSystemSetting( required string key, defaultValue ) {
+    function getSystemSetting( required string key, defaultValue, any context={} ) {
 
-		var value = system.getProperty( arguments.key );
+		// Allow for custom setting resolution
+		var interceptData = {
+			setting : key,
+			defaultValue : defaultValue ?: '',
+			resolved : false,
+			context : context
+		};
+		interceptorService.announceInterception( 'onSystemSettingExpansion', interceptData );
+		if( interceptData.resolved ) {
+			return interceptData.setting;
+		}
+
+		// See if the key exists in the current env or any of the parent envs
+		var cs = commandService.getCallStack();
+		for( var call in cs ) {
+			if ( call.environment.keyExists( key ) ) {
+				return call.environment[ key ];
+			}
+		}
+
+		// See if the default shell env has it
+		if ( variables.environment.keyExists( key ) ) {
+			return variables.environment[ key ];
+		}
+
+		// Now check Java system props
+		var value = getSystemProperty( key=arguments.key, throwWhenNotFound=false );
 		if ( ! isNull( value ) ) {
 			return value;
 		}
 
-		value = system.getEnv( arguments.key );
+		// Finally check OS env vars.
+		value = getEnv( key=arguments.key, throwWhenNotFound=false );
 		if ( ! isNull( value ) ) {
 			return value;
 		}
 
+		// Umm, is there a default?
 		if ( ! isNull( arguments.defaultValue ) ) {
 			return arguments.defaultValue;
 		}
 
+		// Yeah, I give up.
 		throw(
 			type = "SystemSettingNotFound",
 			message = "Could not find a Java System property or Env setting with key [#arguments.key#]."
@@ -46,21 +79,52 @@ component singleton {
 	* @key The name of the setting to look up.
 	* @defaultValue The default value to use if the key does not exist in the system properties
 	*/
-    function getSystemProperty( required string key, defaultValue ) {
+    function getSystemProperty( required string key, defaultValue, throwWhenNotFound=true ) {
 
 		var value = system.getProperty( arguments.key );
 		if ( ! isNull( value ) ) {
 			return value;
 		}
 
+		// Second case-insensitive attempt
+		for( var propKey in system.getProperties() ) {
+			if( arguments.key == propKey ) {
+				return system.getProperty( propKey );
+			}
+		}
+
 		if ( ! isNull( arguments.defaultValue ) ) {
 			return arguments.defaultValue;
 		}
 
-		throw(
-			type = "SystemSettingNotFound",
-			message = "Could not find a Java System property with key [#arguments.key#]."
-		);
+		if( throwWhenNotFound ) {
+			throw(
+				type = "SystemSettingNotFound",
+				message = "Could not find a Java System property with key [#arguments.key#]."
+			);
+		}
+	}
+
+	/**
+	* Set a System Setting into the current environment
+	*
+	* @key The name of the setting to set.
+	* @value The value to use
+	* @inParent Pass true to set the variable in the parent environment
+	*/
+    function setSystemSetting( required string key, required string value, inParent=false ) {
+    	var env = getCurrentEnvironment( inParent );
+		env[ arguments.key ] = arguments.value;
+	}
+
+	/**
+	* Set a struct of System Settings into the current environment
+	*
+	* @env Struct of system settings to set
+	* @inParent Pass true to set the variable in the parent environment
+	*/
+    function setSystemSettings( required struct env, inParent=false ) {
+    	env.each( (k,v)=>setSystemSetting( k, v, inParent ) );
 	}
 
 	/**
@@ -79,21 +143,30 @@ component singleton {
 	* @key The name of the setting to look up.
 	* @defaultValue The default value to use if the key does not exist in the env
 	*/
-    function getEnv( required string key, defaultValue ) {
+    function getEnv( required string key, defaultValue, throwWhenNotFound=true ) {
 
 		var value = system.getEnv( arguments.key );
 		if ( ! isNull( value ) ) {
 			return value;
 		}
 
+		// Second case-insensitive attempt
+		for( var envKey in system.getEnv() ) {
+			if( arguments.key == envKey ) {
+				return system.getEnv( envKey );
+			}
+		}
+
 		if ( ! isNull( arguments.defaultValue ) ) {
 			return arguments.defaultValue;
 		}
 
-		throw(
-			type = "SystemSettingNotFound",
-			message = "Could not find a env property with key [#arguments.key#]."
-		);
+		if( throwWhenNotFound ) {
+			throw(
+				type = "SystemSettingNotFound",
+				message = "Could not find a env property with key [#arguments.key#]."
+			);
+		}
 
 	}
 
@@ -104,7 +177,7 @@ component singleton {
 	*
 	* @text The string to do the replacement on
 	*/
-	function expandSystemSettings( required string text ) {
+	function expandSystemSettings( required string text, any context={} ) {
 		// Temporarily remove escaped ones like \${do.not.expand.me}
 		text = replaceNoCase( text, '\${', '__system_setting__', "all" );
 		// Mark all system settings
@@ -126,7 +199,8 @@ component singleton {
 				defaultValue = settingName.listRest( ':' );
 				settingName = settingName.listFirst( ':' );
 			}
-			var result = getSystemSetting( settingName, defaultValue );
+
+			var result = getSystemSetting( settingName, defaultValue, context );
 
 			// And stick their results in their place
 			text = replaceNoCase( text, systemSetting, result, 'one' );
@@ -139,16 +213,22 @@ component singleton {
 	/**
 	* Expands placeholders like ${foo} in all deep struct keys and array elements with the matching java prop or env var.
 	* Will replace as many place holders that exist, but will skip escaped ones like \${do.not.expand.me}
-	* This will recursivley follow all nested structs and arrays.
+	* This will recursively follow all nested structs and arrays.
 	*
 	* @dataStructure A string, struct, or array to perform deep replacement on.
 	*/
-	function expandDeepSystemSettings( required any dataStructure ) {
+	function expandDeepSystemSettings( required any dataStructure, any context=dataStructure ) {
 		// If it's a struct...
 		if( isStruct( dataStructure ) ) {
 			// Loop over and process each key
 			for( var key in dataStructure ) {
-				dataStructure[ key ] = expandDeepSystemSettings( dataStructure[ key ] );
+				var expandedKey = expandSystemSettings( key, context );
+				if( isNull( dataStructure[ key ] ) ) {
+					dataStructure[ expandedKey ] = nullValue();
+				} else {
+					dataStructure[ expandedKey ] = expandDeepSystemSettings( dataStructure[ key ], context );
+				}
+				if( expandedKey != key ) dataStructure.delete( key );
 			}
 			return dataStructure;
 		// If it's an array...
@@ -157,16 +237,113 @@ component singleton {
 			// Loop over and process each index
 			for( var item in dataStructure ) {
 				i++;
-				dataStructure[ i ] = expandDeepSystemSettings( item );
+				if( !isNull( item ) ) {
+					dataStructure[ i ] = expandDeepSystemSettings( item, context );
+				}
 			}
 			return dataStructure;
 		// If it's a string...
 		} else if ( isSimpleValue( dataStructure ) ) {
 			// Just do the replacement
-			return expandSystemSettings( dataStructure );
+			return expandSystemSettings( dataStructure, context );
 		}
 		// Other complex variables like XML or CFC instance would just get skipped for now.
 		return dataStructure;
+	}
+
+
+	/**
+	* Take a struct of data and set system settings for each deep key
+	*
+	* @dataStructure A string, struct, or array. Initial value should be a struct.
+	*/
+	function setDeepSystemSettings( any dataStructure, string prefix='interceptData', delim='.' ) {
+
+		// If it's a struct...
+		if( isStruct( dataStructure ) && !isObject( dataStructure ) ) {
+			// Loop over and process each key
+			for( var key in dataStructure ) {
+				if( key != 'COMMANDREFERENCE' ) {
+					setDeepSystemSettings( dataStructure[ key ] ?: '', prefix.listAppend( key, delim ), delim );
+				}
+			}
+		// If it's an array...
+		} else if( isArray( dataStructure ) ) {
+			var i = 0;
+			// Loop over and process each index
+			for( var item in dataStructure ) {
+				i++;
+				setDeepSystemSettings( item ?: '', prefix & '[#i#]', delim );
+			}
+		// If it's a string...
+		} else if ( isSimpleValue( dataStructure ) ) {
+			// Just set the setting
+			setSystemSetting( prefix, toString( dataStructure ?: '' ) );
+		}
+
+	}
+
+	/**
+	* Return current environment for the shell.
+	*
+	* @parent Get the parent environment
+	*/
+	struct function getCurrentEnvironment( parent=false ) {
+		// If there is an executing command, use the env for that command
+		var cs = commandService.getCallStack();
+
+		// Check for a parent command
+		if( parent ) {
+			if( cs.len() > 1 ) {
+				return cs[ 2 ].environment;
+			}
+		// Fall back to current command if not getting parent
+		} else {
+			if( cs.len() ) {
+				return cs[ 1 ].environment;
+			}
+		}
+
+		// Otherwise, the default shell env
+		// We'll also hit this if getting the parent, but there is only one command level deep processing.
+		return variables.environment;
+	}
+
+
+	/**
+	* Return an array of environment context with the current one at the top
+	*/
+	array function getAllEnvironments() {
+		var envs = [];
+		var cs = commandService.getCallStack();
+
+		for( var call in cs ) {
+			envs.append( {
+				'context' : call.commandInfo.originalLine,
+				'environment' : call.environment
+			} );
+		}
+
+		envs.append( {
+			'context' : 'Global Shell',
+			'environment' : variables.environment
+		} );
+
+		return envs;
+	}
+
+
+	/**
+	* Return a representation of the environment context including all parent contexts
+	* but not including Java system props and OS env vars flattened into a single struct.
+	*/
+	struct function getAllEnvironmentsFlattened() {
+		var envFlat = {};
+		getAllEnvironments().each( function( env ) {
+			envFlat.append( env.environment, false );
+		} );
+
+		return envFlat;
 	}
 
 }

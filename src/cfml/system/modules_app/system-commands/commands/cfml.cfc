@@ -59,58 +59,65 @@ component{
 		boolean debug
 	){
 		var functionText = arguments.name & '( ';
-
-		// Additional param go into the function
-		if( arrayLen( arguments ) > 1 ) {
-
-			// Positional params
-			if( isNumeric( listGetAt( structKeyList( arguments ), 2 ) ) ) {
-
-				var i = 1;
-				while( ++i <= arrayLen( arguments ) ) {
-
-					functionText &= ( i>2 ? ', ' : '' );
-
-					// If this is a struct or array function, we have at least one param, and it's JSON, just pass it in as complex data.
-					if( ( left( arguments.name, 5 ) == 'array' || left( arguments.name, 6 ) == 'struct' )
-					    && i==2 && isJSON( arguments[ i ] ) ) {
-						functionText &= '#convertJSONEscapesToCFML( arguments[ i ] )#';
-					} else {
-						functionText &= '"#escapeArg( arguments[ i ] )#"';
-					}
-
-				} // end param loop
-
-
-			// Named params
-			} else {
-
-				var i = 0;
-				for( var param in arguments ) {
-					if( param=='name' ) {
-						continue;
-					}
-					i++;
-
-					functionText &= ( i>1 ? ', ' : '' );
-
-					functionText &= '#param#="#escapeArg( arguments[ param ] )#"';
-
-				} // end param loop
-
-
-			}
-
-
-		} // end additional params?
-
-		functionText &= ' )';
-
-		// Run our function via the REPL
-		var result = command( "repl" )
-			.params( functionText )
-			.run( returnOutput=true, echo=false );
-
+		var requestID = createUUID();
+		
+		try {
+			// Additional param go into the function
+			if( arrayLen( arguments ) > 1 ) {
+	
+				// Positional params
+				if( isNumeric( listGetAt( structKeyList( arguments ), 2 ) ) ) {
+	
+					var i = 1;
+					while( ++i <= arrayLen( arguments ) ) {
+	
+						functionText &= ( i>2 ? ', ' : '' );
+						arguments[ i ] = print.unansi( arguments[ i ] );
+						request[ requestID ][ 'arg_#i#' ] = arguments[ i ];
+	
+						// If this is a struct or array function, we have at least one param, and it's JSON, just pass it in as complex data.
+						if( ( left( arguments.name, 5 ) == 'array' || left( arguments.name, 6 ) == 'struct' || arguments.name == 'isArray'  || arguments.name == 'isStruct' )
+						    && i==2 && isJSON( arguments[ i ] ) ) {
+							functionText &= "deserializeJSON( request[ '#requestID#' ][ 'arg_#i#' ] )";
+						} else {
+							functionText &= "request[ '#requestID#' ][ 'arg_#i#' ]";
+						}
+	
+					} // end param loop
+	
+	
+				// Named params
+				} else {
+	
+					var i = 0;
+					for( var param in arguments ) {
+						if( param=='name' ) {
+							continue;
+						}
+						i++;
+	
+						functionText &= ( i>1 ? ', ' : '' );
+						arguments[ param ] = print.unansi( arguments[ param ] );
+						request[ requestID ][ 'arg_#param#' ] = arguments[ param ];
+						functionText &= "#param#=request[ '#requestID#' ][ 'arg_#param#' ]";
+	
+					} // end param loop
+	
+	
+				}
+	
+	
+			} // end additional params?
+	
+			functionText &= ' )';
+			// Run our function via the REPL
+			var result = command( "repl" )
+				.params( functionText )
+				.run( returnOutput=true, echo=false );
+		} finally {
+			// Clear out temp vars in memory
+			request.delete( requestID );
+		}
 		// Print out the results
 		print.text( result );
 
@@ -135,14 +142,14 @@ component{
 		arguments.arg = replaceNoCase( arguments.arg, '\r', chr(13), 'all' );
 		arguments.arg = replaceNoCase( arguments.arg, '\f', chr(12), 'all' );
 		arguments.arg = replaceNoCase( arguments.arg, '\b', chr(8), 'all' );
-				
-		// A null keyword must be preceeded by a , [ : or start of string.  
+
+		// A null keyword must be preceded by a , [ : or start of string.
 		// TODO: This doesn't account for the word "null" inside a quoted string.  I'd need to actually parse the string to detect that.
 		arguments.arg = reReplaceNoCase( arguments.arg, '(,\s*)null', '\1nullValue()', 'all' );
 		arguments.arg = reReplaceNoCase( arguments.arg, '(\[\s*)null', '\1nullValue()', 'all' );
 		arguments.arg = reReplaceNoCase( arguments.arg, '(:\s*)null', '\1nullValue()', 'all' );
 		arguments.arg = reReplaceNoCase( arguments.arg, '^null', 'nullValue()', 'all' );
-		
+
 		// This doesn't work-- I'd need to do it in a loop and replace each one individually.  Meh...
 		// arguments.arg = reReplaceNoCase( arguments.arg, '\\u([0-9a-f]{4})', chr( inputBaseN( '\1', 16 ) ), 'all' );
 		arguments.arg = replaceNoCase( arguments.arg, '__double_backslash_', '\', 'all' );

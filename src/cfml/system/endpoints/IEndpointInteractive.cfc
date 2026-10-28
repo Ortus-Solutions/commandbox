@@ -21,6 +21,8 @@ interface extends="IEndpoint" {
 	// Returns access token
 	public string function login( required string userName, required string password );
 
+	public function logout( string userName='' );
+
 	public function publish( required string path, string zipPath, boolean force );
 
 	public function unpublish( required string path, string version='' );

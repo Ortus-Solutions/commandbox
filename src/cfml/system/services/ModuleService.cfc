@@ -14,7 +14,7 @@
 	just mirror the CommandBox.json file and not include runtime metadata like this.  Any time
 	a config setting is updated programmatically for a module, CommandBox's ConfigService
 	will attempt to keep this runtime data in sync.  Module's will ask the ModuleService for their
-	data which will come from here, overriden at load time by any config settings if they exist.
+	data which will come from here, overridden at load time by any config settings if they exist.
 	--->
 	<cfproperty name="moduleData">
 
@@ -24,6 +24,7 @@
 	<cfproperty name="ConfigService" inject="Configservice">
 	<cfproperty name="SystemSettings" inject="SystemSettings">
 	<cfproperty name="consoleLogger" inject="logbox:logger:console">
+	<cfproperty name="fileSystemUtil" inject="FileSystem">
 
 
 <!------------------------------------------- CONSTRUCTOR ------------------------------------------->
@@ -89,7 +90,11 @@
     		// Add the application's module's location and the system core modules
     		var modLocations   = [ '/commandbox/system/modules','/commandbox/system/modules_app', '/commandbox/modules' ];
 			// Add the application's external locations array.
-			modLocations.addAll( ConfigService.getSetting( "ModulesExternalLocation", [] ) );
+			var externalPaths = ConfigService.getSetting( "ModulesExternalLocation", [] )
+				.map( function( path ) {
+					return fileSystemUtil.makePathRelative( path );
+				} );
+			modLocations.addAll( externalPaths );
 			// iterate through locations and build the module registry in order
 			buildRegistry( modLocations );
 		</cfscript>
@@ -136,8 +141,9 @@
     	<cfargument name="moduleName" 		type="string" required="true" hint="The name of the module to load."/>
 		<cfargument name="invocationPath" 	type="string" required="false" default="" hint="The module's invocation path to its root from the webroot (the instantiation path,ex:myapp.myCustomModules), if empty we use registry location, if not we are doing a explicit name+path registration. Do not include the module name, you passed that in the first argument right"/>
 		<cfscript>
-			registerModule( arguments.moduleName, arguments.invocationPath );
-			activateModule( arguments.moduleName );
+			if( registerModule( arguments.moduleName, arguments.invocationPath ) ) {
+				activateModule( arguments.moduleName );
+			}
 		</cfscript>
     </cffunction>
 
@@ -160,7 +166,7 @@
 			if( len( arguments.invocationPath ) ){
 				// Check if passed module name is already registered
 				if( structKeyExists( instance.moduleRegistry, arguments.moduleName ) AND !arguments.force ){
-					instance.logger.warn( "The module #arguments.moduleName# has already been registered, so skipping registration" );
+					instance.logger.debug( "The module #arguments.moduleName# has already been registered, so skipping registration" );
 					return false;
 				}
 				// register new incoming location
@@ -187,7 +193,9 @@
 
 			// Check if module config exists, or we have a module.
 			if( NOT fileExists( modLocation & "/ModuleConfig.cfc" ) && NOT isBundle ){
-				instance.logger.WARN( "The module (#modName#) cannot be loaded as it does not have a ModuleConfig.cfc in its root. Path Checked: #modLocation#" );
+				var message = "The module (#modName#) cannot be loaded as it does not have a ModuleConfig.cfc in its root. Path Checked: #modLocation#";
+				instance.logger.WARN( message );
+				consoleLogger.warn( message );
 				return false;
 			}
 
@@ -227,7 +235,7 @@
 					modelNamespace		= modName,
 					// Auto map models flag
 					autoMapModels		= true,
-					// when this registration ocurred
+					// when this registration occurred
 					loadTime 			= now(),
 					// Flag that denotes if the module has been activated or not
 					activated 			= false,
@@ -337,6 +345,22 @@
 		</cfscript>
 	</cffunction>
 
+	<cffunction name="unregisterModule" output="false" access="public" returntype="void" hint="unregisters a targeted module">
+		<cfargument name="moduleName" type="string" required="true" hint="The module to reload"/>
+		<cfscript>
+			// Remove from module registry
+			structDelete( instance.moduleRegistry, arguments.moduleName );
+		</cfscript>
+	</cffunction>
+
+	<cffunction name="unloadAndUnregisterModule" output="false" access="public" returntype="void" hint="unregisters a targeted module">
+		<cfargument name="moduleName" type="string" required="true" hint="The module to reload"/>
+		<cfscript>
+			unload( arguments.moduleName );
+			unregisterModule( arguments.moduleName );
+		</cfscript>
+	</cffunction>
+
 	<!--- loadMappings --->
     <cffunction name="loadMappings" output="false" access="public" returntype="any" hint="Load all module mappings">
     	<cfscript>
@@ -442,13 +466,24 @@
 						// just register with no namespace
 						wirebox.getBinder().mapDirectory( packagePath=packagePath );
 					}
+
+					// Register Default Module Export if it exists as @moduleName, so you can do getInstance( "@moduleName" )
+					if ( fileExists( mconfig.modelsPhysicalPath & "/#arguments.moduleName#.cfc" ) ) {
+						wirebox.getBinder()
+							.map( [
+								"@#arguments.moduleName#",
+								"@#mConfig.modelNamespace#"
+							] )
+							.to( packagePath & ".#arguments.moduleName#" );
+					}
+
 					wirebox.getBinder().processMappings();
 				}
 
 				// Register commands if they exist
 				if( directoryExists( mconfig.commandsPhysicalPath ) ){
 					var commandPath = '/' & replace( mconfig.commandsInvocationPath, '.', '/', 'all' );
-					CommandService.initCommands( commandPath, commandPath );
+					CommandService.initCommands( commandPath );
 				}
 
 				// Register endpoints if they exist
@@ -463,14 +498,14 @@
 														    interceptorProperties=mConfig.interceptors[ y ].properties,
 														    interceptorName=mConfig.interceptors[ y ].name);
 					// Loop over module interceptors to autowire them
-					wirebox.autowire( target=interceptorService.getInterceptor( mConfig.interceptors[ y ].name, true ),
-						     		  targetID=mConfig.interceptors[ y ].class );
+					try {
+						wirebox.autowire( target=interceptorService.getInterceptor( mConfig.interceptors[ y ].name, true ),
+							     		  targetID=mConfig.interceptors[ y ].class );
+					} catch( EventPoolManager.ObjectNotFound var e ){
+						// This error simply means our interceptor had no states
+						// And an interceptor with no states basically ceases to exist as it has no purpose in life
+					}
 				}
-
-				// Register module routing entry point pre-pended to routes
-				/*if( shell.settingExists( 'sesBaseURL' ) AND len( mConfig.entryPoint ) AND NOT find( ":", mConfig.entryPoint ) ){
-					interceptorService.getInterceptor( "SES", true ).addModuleRoutes( pattern=mConfig.entryPoint, module=arguments.moduleName, append=false );
-				}*/
 
 				// Call on module configuration object onLoad() if found
 				if( structKeyExists( instance.mConfigCache[ arguments.moduleName ], "onLoad" ) ){
@@ -491,7 +526,7 @@
 
 				// Log it
 				if( instance.logger.canDebug() ){
-					instance.logger.debug( "Module #arguments.moduleName# activated sucessfully." );
+					instance.logger.debug( "Module #arguments.moduleName# activated successfully." );
 				}
 
 			} // end lock
@@ -556,6 +591,8 @@
 
 			// Check if module is loaded?
 			if( NOT structKeyExists(getModuleData(),arguments.moduleName) ){ return false; }
+			var modules = getModuleData();
+			var mConfig = modules[ arguments.moduleName ];
 
 		</cfscript>
 
@@ -584,11 +621,6 @@
 			// Unregister Config object
 			interceptorService.unregister( "ModuleConfig:#arguments.moduleName#" );
 
-			// Remove SES if enabled.
-			/*if( shell.settingExists( "sesBaseURL" ) ){
-				interceptorService.getInterceptor( "SES", true ).removeModuleRoutes( arguments.moduleName );
-			}*/
-
 			// Remove the possible config names with the ConfigService for auto-completion
 			var possibleConfigSettings = [];
 			for( var settingName in ConfigService.getPossibleConfigSettings() ) {
@@ -597,6 +629,12 @@
 				}
 			}
 			ConfigService.setPossibleConfigSettings( possibleConfigSettings );
+
+			// Register commands if they exist
+			if( directoryExists( mconfig.commandsPhysicalPath ) ){
+				var commandPath = '/' & replace( mconfig.commandsInvocationPath, '.', '/', 'all' );
+				CommandService.removeCommands( commandPath );
+			}
 
 			// Remove configuration
 			structDelete( getModuleData(), arguments.moduleName );
@@ -658,9 +696,9 @@
 			oConfig.injectPropertyMixin( "log", 				shell.getLogBox().getLogger( oConfig) );
 			oConfig.injectPropertyMixin( "wirebox", 			shell.getWireBox() );
 			oConfig.injectPropertyMixin( "binder", 				shell.getWireBox().getBinder() );
-			oConfig.injectPropertyMixin( "getSystemSetting",	systemSettings.getSystemSetting );
-			oConfig.injectPropertyMixin( "getSystemProperty",	systemSettings.getSystemProperty );
-			oConfig.injectPropertyMixin( "getEnv",				systemSettings.getEnv );
+			oConfig.injectPropertyMixin( "getSystemSetting",	()=>systemSettings.getSystemSetting(argumentCollection=arguments) );
+			oConfig.injectPropertyMixin( "getSystemProperty",	()=>systemSettings.getSystemProperty(argumentCollection=arguments) );
+			oConfig.injectPropertyMixin( "getEnv",				()=>systemSettings.getEnv(argumentCollection=arguments) );
 
 			// Configure the module
 			oConfig.configure();
@@ -762,8 +800,8 @@
 	<cffunction name="overrideConfigSettings" output="false" access="public">
 		<cfargument name="moduleSettings" 		type="struct" required="true" hint="The module setting structure">
 		<cfargument name="moduleName"	type="string" required="true" hint="The module name">
+		<cfargument name="configSettings"	type="struct" required="true" default="#ConfigService.getConfigSettings()#"> 
 		<cfscript>
-			configSettings = ConfigService.getConfigSettings();
 			if( structKeyExists( configSettings, 'modules' ) && structKeyExists( configSettings.modules, arguments.moduleName ) ) {
 				arguments.moduleSettings.append( configSettings.modules[ arguments.moduleName ] );
 			}
@@ -772,9 +810,10 @@
 
 	<!--- overrideAllConfigSettings --->
 	<cffunction name="overrideAllConfigSettings" output="false" access="public">
+		<cfargument name="configSettings"	type="struct" required="true" default="#ConfigService.getConfigSettings()#"> 
 		<cfscript>
 			for( var moduleName in getLoadedModules() ) {
-				overrideConfigSettings( getModuleData()[ moduleName ].settings, moduleName );
+				overrideConfigSettings( getModuleData()[ moduleName ].settings, moduleName, configSettings );
 			}
 		</cfscript>
 	</cffunction>

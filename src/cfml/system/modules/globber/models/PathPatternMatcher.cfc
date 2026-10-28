@@ -34,11 +34,16 @@ component accessors="true" singleton {
 
 	/**
 	* Match a single path to a single pattern.  Returns true if the path matches the pattern, otherwise false.
+	* The "exact" param is because Globber has different use cases. For example, when used for things like ignore lists
+	* a pattern not preceded by a slash should match directories and files recursibley, any level deep.  But when used for a 
+	* directory listing, it's expected to use ** /pattern/ ** to match deep folder.
+	* A pattern like foo must also match the entire file or folder name, not a partial name unless explicitly passed as *foo, foo*, or *foo*
+	* 
 	* @pattern The pattern to match against the path
 	* @path The file system path to test.  Can be a file or directory.  Direcories MUST end with a trailing slash
-	* @exact True if the full path needs to match.  False to match inside a path
+	* @exact True if the full path needs to match.  False to match inside a path.  
 	*/
-	boolean function matchPattern( required string pattern, required string path, boolean exact=false) {
+	boolean function matchPattern( required string pattern, required string path, boolean exact=false ) {
 		// Normalize slashes
 		// This will turn a Windows UNC path into //server, but it will at least be consitent across pattern and path
 		arguments.pattern = replace( arguments.pattern, '\', '/', 'all' );
@@ -62,20 +67,30 @@ component accessors="true" singleton {
 		regex = replace( regex, '+', '\+', 'all' );
 		regex = replace( regex, '{', '\{', 'all' );
 		regex = replace( regex, '}', '\}', 'all' );
+		regex = replace( regex, '[', '\[', 'all' );
+		regex = replace( regex, ']', '\]', 'all' );
 
 		// /**/ matches zero or more directories (at least one /)
 		regex = replace( regex, '/**/', '__zeroOrMoreDirs_', 'all' );
 		// Double ** matches anything
 		regex = replace( regex, '**', '__anything_', 'all' );
-		// Single * matches anything BUT slash
-		regex = replace( regex, '*', '__anythingButSlash__', 'all' );
+		// Match a single dir
+		regex = replace( regex, '/*/', '/__anythingButSlashOneOrMore__/', 'all' );
+		
+		// Single * matches anything BUT slash one or more chars
+		if( regex.endsWith( '/*' ) ) {
+			regex = regex.left( -1 ) & '__anythingButSlashOneOrMore__';	
+		}
+		// Single * matches anything BUT slash zero or more chars
+		regex = replace( regex, '*', '__anythingButSlashZeroOrMore__', 'all' );
 		// ? matches any single non-slash character
 		regex = replace( regex, '?', '__singleNonSlash__', 'all' );
 
 		// Switch placeholders for actual regex
 		regex = replace( regex, '__zeroOrMoreDirs_', '(/.*/|/)', 'all' );
 		regex = replace( regex, '__anything_', '.*', 'all' );
-		regex = replace( regex, '__anythingButSlash__', '[^/]*', 'all' );
+		regex = replace( regex, '__anythingButSlashOneOrMore__', '[^/]+', 'all' );
+		regex = replace( regex, '__anythingButSlashZeroOrMore__', '[^/]*', 'all' );
 		regex = replace( regex, '__singleNonSlash__', '[^/]', 'all' );
 
 		// If the pattern doesn't come with an explicit ending slash, add an optional one
@@ -89,16 +104,21 @@ component accessors="true" singleton {
 			// add a ^ to match start of string
 			regex = '^' & regex;
 		} else {
-			// Otherwise, anything can precede this pattern
-			regex = '.*' & regex;
+			// Otherwise, the pattern can be preceded by the start of the string or a slash (needs to match a whole segment)
+			regex = '(^|.*/)' & regex;
 		}
 		if( exact ) {
 			regex &= '$';
 		// Anything can follow this pattern
 		} else {
-			regex &= '.*';
+			if( regex.endsWith( '/' ) ) {
+				regex &= '.*';
+			} else {
+				// Pattern can be at end of string or a slash and the anything (needs to match a whole segment)
+				regex &= '($|/.*)';	
+			}
 		}
-		
+
 		return ( reFindNoCase( regex, arguments.path ) > 0 );
 	}
 
@@ -107,17 +127,17 @@ component accessors="true" singleton {
 	* @patterns.hint An array of patterns to match against the path
 	* @path.hint The file system path to test.  Can be a file or directory.  Direcories MUST end with a trailing slash
 	*/
-	boolean function matchPatterns( required array patterns, required string path ){
+	boolean function matchPatterns( required array patterns, required string path, boolean exact=false ){
 		var matched = false;
 		for( var pattern in arguments.patterns ) {
 			if ( isExclusion( pattern ) ) {
 				var patternWithoutBang = mid( pattern, 2, len( pattern ) - 1 );
-				if ( matchPattern( patternWithoutBang, arguments.path ) ) {
+				if ( matchPattern( patternWithoutBang, arguments.path, arguments.exact ) ) {
 					matched = false;
 				}
 			}
 			else {
-				if ( matchPattern( pattern, arguments.path ) ) {
+				if ( matchPattern( pattern, arguments.path, arguments.exact ) ) {
 					matched = true;
 				}
 			}

@@ -21,11 +21,16 @@ component accessors=true {
 	property name='overwrite';
 	property name='workingDirectory';
 	property name='rawParams';
-
+	property name='paramsType';
+	property name='returnOutput';
+	property name='pipedInput';
+	property name='echo';
 
 	// DI
-	property name='parser' inject='parser';
-	property name='shell' inject='shell';
+	property name='parser'	inject='parser';
+	property name='shell'	inject='shell';
+	property name="job"		inject='interactiveJob';
+	property name='ConsolePainter'	inject='ConsolePainter';
 
 	/**
 	 * Create a new, executable command
@@ -46,6 +51,11 @@ component accessors=true {
 		setOverwrite( '' );
 		setWorkingDirectory( '' );
 		setRawParams( false );
+		setParamsType( 'none' );
+		setReturnOutput( false );
+		setPipedInput( nullValue() );
+		setEcho( false );
+
 		return this;
 	}
 
@@ -53,8 +63,29 @@ component accessors=true {
 	 * Add params to the command
   	 **/
 	function params() {
-
-		setParams( arguments );
+		// Positional params
+		if ( isNumeric( listFirst( structKeyList( arguments ) ) ) ) {
+			if ( getParamsType() == 'named' ) {
+				throw(
+					message = 'You have passed both named and positional params to the command DSL. Named and positional params cannot be mixed.',
+					type = 'commandException'
+				);
+			}
+			setParamsType( 'positional' );
+		// Named params
+		} else {
+			if ( getParamsType() == 'positional' ) {
+				throw(
+					message = 'You have passed both named and positional params to the command DSL. Named and positional params cannot be mixed.',
+					type = 'commandException'
+				);
+			}
+			if ( getParamsType() == 'none' ) {
+				setParams( {} );
+			}
+			setParamsType( 'named' );
+		}
+		getParams().append( arguments, true );
 		return this;
 	}
 
@@ -64,28 +95,40 @@ component accessors=true {
 	private array function processParams() {
 		var runCommand = ( getCommand().startsWith( '!' ) || getCommand().left( 3 ) == 'run' );
 		var processedParams = [];
-		if( !arraylen( getParams() ) ) {
+		if( getParamsType() == 'none' ) {
 			return processedParams;
 		}
 
 		// Positional params
-		if( isNumeric( listFirst( structKeyList( getParams() ) ) ) ) {
+		if( getParamsType() == 'positional' ) {
 			for( var param in getParams() ) {
 				if( runCommand ) {
-					processedParams.append( getParams()[ param ] );					
+					processedParams.append( param );
 				} else if( getRawParams() ) {
-					processedParams.append( '"#getParams()[ param ]#"' );
+					// The tokenizing process escapes any unescaped = signs in quotes as \= as a convenience so it doesn't look like a named param
+					// We're skipping the tokenzier since we're going to directly pass an array of tokes, but we still need to handle
+					// any = signs inside of quotes or the param processor will think it is a named parameter since we don't re-processes quote at that time
+					param = replace( param, "\=", "__escaped_equals__", "all" );
+					param = replace( param, "=", "\=", "all" );
+					param = replace( param, "__escaped_equals__", "\=", "all" );
+					processedParams.append( '"#param#"' );
 				} else {
-					processedParams.append( '"#parser.escapeArg( getParams()[ param ] )#"' );					
+					processedParams.append( '"#parser.escapeArg( param )#"' );
 				}
 			}
 		// Named params
 		} else {
-			for( var param in getParams() ) {
+			var paramStruct = getParams();
+			for( var param in paramStruct ) {
 				if( runCommand ) {
-					processedParams.append( '#param#=#getParams()[ param ]#' );	
+					processedParams.append( '#param#=#paramStruct[ param ] ?: ''#' );
 				} else {
-					processedParams.append( '#param#="#parser.escapeArg( getParams()[ param ] )#"' );					
+					// Turn a struct back into arg:foo=bar arg:baz=bum
+					if( isStruct( paramStruct[ param ] ?: '' ) ) {
+						paramStruct[ param ].each( (k,v)=>processedParams.append( '#param#:#k#="#parser.escapeArg( v ?: '' )#"' ) );
+					} else {
+						processedParams.append( '#param#="#parser.escapeArg( paramStruct[ param ] ?: '' )#"' );
+					}
 				}
 			}
 		}
@@ -153,7 +196,7 @@ component accessors=true {
 	array function getTokens() {
 		var tokens = [];
 		// Break the command name on the spaces
-		tokens.append( listToArray( getCommand(), ' ' ), true );
+		tokens.append( parser.tokenizeInput( getCommand() ), true );
 		tokens.append( processParams(), true );
 		tokens.append( getFlags(), true );
 
@@ -179,17 +222,36 @@ component accessors=true {
 	 * Turn this CFC into a string representation
   	 **/
 	string function getCommandString() {
-		return getTokens().toList( ' ' );
+		var tokens = getCommand();
+		tokens &= ' ' & processParams().toList( ' ' );
+		tokens &= ' '& getFlags().toList( ' ' );
+
+		if( len( getOverwrite() ) ) {
+			tokens &= ' > ' & getOverwrite();
+		}
+
+		if( len( getAppend() ) ) {
+			tokens &= ' >> ' & getAppend();
+		}
+
+		for( var piperton in getPiped() ) {
+			tokens &= ' | ' & piperton.getCommandString();
+		}
+
+		return tokens;
 	}
 
 	/**
 	 * Run this command
   	 **/
-	string function run( returnOutput=false, string piped, boolean echo=false, boolean rawParams=false ) {
+	string function run( returnOutput, string piped, boolean echo, boolean rawParams ) {
 
-		setRawParams( rawParams );
+		if( !isNull( arguments.rawParams ) ) { setRawParams( arguments.rawParams ); }
+		if( !isNull( arguments.piped ) ) { setPipedInput( arguments.piped ); }
+		if( !isNull( arguments.echo ) ) { setEcho( arguments.echo ); }
+		if( !isNull( arguments.returnOutput ) ) { setReturnOutput( arguments.returnOutput ); }
 
-		if( arguments.echo ) {
+		if( getEcho() ) {
 			shell.callCommand( 'echo "#parser.escapeArg( getCommandString() )#"' );
 		}
 
@@ -197,17 +259,28 @@ component accessors=true {
 		if( getWorkingDirectory().len() ) {
 			shell.cd( getWorkingDirectory() );
 		}
-		
+
 		try {
-			if( structkeyExists( arguments, 'piped' ) ) {
-				var result = shell.callCommand( getTokens(), arguments.returnOutput, arguments.piped );
+			if( !isNull( getPipedInput() ) ) {
+				var result = shell.callCommand( command=getTokens(), returnOutput=getReturnOutput(), piped=getPipedInput(), line=getCommandString() );
 			} else {
-				var result = shell.callCommand( getTokens(), arguments.returnOutput );
+				var result = shell.callCommand( command=getTokens(), returnOutput=getReturnOutput(), line=getCommandString() );
 			}
+
+			// If the previous command chain failed
+			if( shell.getExitCode() != 0 ) {
+
+				ConsolePainter.forceStop();
+				// Distance ourselves from whatever other output the command may have given so far.
+				shell.printString( chr( 10 ) );
+
+				throw( message='Command returned failing exit code (#shell.getExitCode()#)', detail='Failing Command: ' & getTokens().toList( ' ' ), type="commandException", errorCode=shell.getExitCode() );
+			}
+
 		} finally {
-	
+
 			var postCommandCWD = shell.getPWD();
-	
+
 			// Only change back if the executed command didn't change the CWD
 			if( getWorkingDirectory().len() && postCommandCWD == getWorkingDirectory() ) {
 				shell.cd( originalCWD );

@@ -21,8 +21,8 @@
  * .
  * All other regex rules follow what is implemented in REReplace() CFML function.
  * .
- * The delimiter in the subsdtitute command does not have to be "/".  Whatever character
- * that immediatley follows the "s" will be used.  This can be useful where the regex
+ * The delimiter in the substitute command does not have to be "/".  Whatever character
+ * that immediately follows the "s" will be used.  This can be useful where the regex
  * and/or replacement text contain a "/".
  * .
  * This example uses a tilde (~) as the delimiter.  It reads a file, replaces all instances
@@ -40,7 +40,7 @@ component {
 	/**
 	 * @inputOrFile.hint The text to process, or a file name to read with --file
 	 * @commands.hint The command to perform on the input text.  Ex: s/replaceMe/withMe/g
-	 * @file.hint Specifiy true to treat the input as a file path to read.
+	 * @file.hint Treat the input as a file path to read.
  	 **/
 	function run(
 		required string inputOrFile,
@@ -54,7 +54,7 @@ component {
 		}
 
 		// Turn output into an array, breaking on carriage returns
-		var inputLines = listToArray( arguments.inputOrFile, CR );
+		var inputLines = listToArray( arguments.inputOrFile, chr(13)&chr(10) );
 		arguments.commands = trim( arguments.commands );
 
 		// Only support a single command right now
@@ -70,6 +70,7 @@ component {
 		var commandParts = parseCommandParts( arguments.command );
 		if( hasError() ) { return; }
 		var flags = parseFlags( commandParts.flags );
+		var result = createObject( 'java', 'java.lang.StringBuilder' ).init( '' );
 
 		try {
 
@@ -80,11 +81,9 @@ component {
 				} else {
 					line = REReplace( line, commandParts.regex, commandParts.replacement, ( flags.global ? 'all' : 'one' ) );
 				}
-
-				print.line( line );
-
-			} // End loop over inputLines
-
+				result.append( line & server.separator.line );
+			}
+			print.text( result.toString() );
 		} catch ( any var e ) {
 			// Any errors here are most likley from bad regex.  Control the "error" and
 			// include some additional debugging information.

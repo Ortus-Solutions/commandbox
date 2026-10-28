@@ -18,8 +18,8 @@ component extends="docbox.strategy.api.HTMLAPIStrategy"{
 	property name="projectTitle" default="Untitled" type="string";
 
 	// Static variables.
-	variables.static.TEMPLATE_PATH	= "/strategy/commandbox/resources/templates";
-	variables.static.ASSETS_PATH 	= "/docbox/strategy/api/resources/static";
+	variables.TEMPLATE_PATH	= "/strategy/commandbox/resources/templates";
+	variables.ASSETS_PATH 	= "/docbox/strategy/api/resources/static";
 
 	/**
 	* Constructor
@@ -45,19 +45,19 @@ component extends="docbox.strategy.api.HTMLAPIStrategy"{
 			thisCommand 		= replaceNoCase( thisCommand, thisRow.currentMapping, '', 'one'  );
 			thisCommand 		= listChangeDelims( thisCommand, ' ', '.'  );
 			var thisNamespace 	= listDeleteAt( thisCommand, listLen( thisCommand, ' ' ), ' ' );
-			
+
 			querySetCell( arguments.qMetadata, "command", thisCommand, index );
 			querySetCell( arguments.qMetadata, "namespace", thisNamespace, index );
 			index++;
 		}
 
 		// copy over the static assets
-		directoryCopy( expandPath( variables.static.ASSETS_PATH ), getOutputDir(), true );
+		directoryCopy( expandPath( variables.ASSETS_PATH ), getOutputDir(), true );
 
 		//write the index template
 		var args = {
-			path 		 = getOutputDir() & "/index.html", 
-			template 	 = "#variables.static.TEMPLATE_PATH#/index.cfm", 
+			path 		 = getOutputDir() & "/index.html",
+			template 	 = "#variables.TEMPLATE_PATH#/index.cfm",
 			projectTitle = getProjectTitle()
 		};
 		writeTemplate( argumentCollection=args )
@@ -84,7 +84,7 @@ component extends="docbox.strategy.api.HTMLAPIStrategy"{
 		// overview summary
 		writeTemplate(
 			path			= getOutputDir() & "/overview-summary.html",
-			template		= "#variables.static.TEMPLATE_PATH#/overview-summary.cfm",
+			template		= "#variables.TEMPLATE_PATH#/overview-summary.cfm",
 			projectTitle 	= getProjectTitle(),
 			qPackages 		= qPackages
 		);
@@ -92,7 +92,7 @@ component extends="docbox.strategy.api.HTMLAPIStrategy"{
 		//overview frame
 		writeTemplate(
 			path			= getOutputDir() & "/overview-frame.html",
-			template		= "#variables.static.TEMPLATE_PATH#/overview-frame.cfm",
+			template		= "#variables.TEMPLATE_PATH#/overview-frame.cfm",
 			projectTitle	= getProjectTitle(),
 			qMetadata 		= arguments.qMetadata
 		);
@@ -111,7 +111,7 @@ component extends="docbox.strategy.api.HTMLAPIStrategy"{
 		var qInterfaces = 0;
 
 		// done this way as ACF compat. Does not support writeoutput with query grouping.
-		include "#variables.static.TEMPLATE_PATH#/packagePages.cfm";
+		include "#variables.TEMPLATE_PATH#/packagePages.cfm";
 
 		return this;
 	}
@@ -121,9 +121,9 @@ component extends="docbox.strategy.api.HTMLAPIStrategy"{
 	* @qPackage the query for a specific package
 	* @qMetaData The metadata
 	*/
-	function buildClassPages( 
+	function buildClassPages(
 		required query qPackage,
-		required query qMetadata 
+		required query qMetadata
 	){
 		for( var thisRow in arguments.qPackage ){
 			var currentDir 	= variables.outputDir & "/" & replace( thisRow.package, ".", "/", "all" );
@@ -131,22 +131,22 @@ component extends="docbox.strategy.api.HTMLAPIStrategy"{
 
 			// Is this a class
 			if( safeMeta.type eq "component" ){
-				var qSubClass = getMetaSubquery( 
-					arguments.qMetaData, 
-					"UPPER( extends ) = UPPER( '#thisRow.package#.#thisRow.name#' )", 
-					"package asc, name asc" 
+				var qSubClass = getMetaSubquery(
+					arguments.qMetaData,
+					"UPPER( extends ) = UPPER( '#thisRow.package#.#thisRow.name#' )",
+					"package asc, name asc"
 				);
 				var qImplementing = QueryNew("");
 			} else {
 				//all implementing subclasses
 				var qSubClass = getMetaSubquery(
-					arguments.qMetaData, 
-					"UPPER(fullextends) LIKE UPPER('%:#thisRow.package#.#thisRow.name#:%')", 
+					arguments.qMetaData,
+					"UPPER(fullextends) LIKE UPPER('%:#thisRow.package#.#thisRow.name#:%')",
 					"package asc, name asc"
 				);
 				var qImplementing = getMetaSubquery(
-					arguments.qMetaData, 
-					"UPPER(implements) LIKE UPPER('%:#thisRow.package#.#thisRow.name#:%')", 
+					arguments.qMetaData,
+					"UPPER(implements) LIKE UPPER('%:#thisRow.package#.#thisRow.name#:%')",
 					"package asc, name asc"
 				);
 			}
@@ -154,7 +154,7 @@ component extends="docbox.strategy.api.HTMLAPIStrategy"{
 			// write it out
 			writeTemplate(
 				path			= currentDir & "/#thisRow.name#.html",
-				template		= "#variables.static.TEMPLATE_PATH#/class.cfm",
+				template		= "#variables.TEMPLATE_PATH#/class.cfm",
 				projectTitle 	= variables.projectTitle,
 				package 		= thisRow.package,
 				name 			= thisRow.name,

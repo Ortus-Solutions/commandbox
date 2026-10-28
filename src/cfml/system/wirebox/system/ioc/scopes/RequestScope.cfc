@@ -18,11 +18,11 @@ component implements="wirebox.system.ioc.scopes.IScope" accessors="true"{
 
 	/**
 	 * Configure the scope for operation and returns itself
-	 * 
-	 * 
+	 *
+	 *
 	 * @injector The linked WireBox injector
 	 * @injector.doc_generic wirebox.system.ioc.Injector
-	 * 
+	 *
 	 * @return wirebox.system.ioc.scopes.IScope
 	 */
 	function init( required injector ){
@@ -33,30 +33,29 @@ component implements="wirebox.system.ioc.scopes.IScope" accessors="true"{
 
 	/**
 	 * Retrieve an object from scope or create it if not found in scope
-	 * 
-	 * 
+	 *
+	 *
 	 * @mapping The linked WireBox injector
 	 * @mapping.doc_generic wirebox.system.ioc.config.Mapping
 	 * @initArguments The constructor struct of arguments to passthrough to initialization
-	 * @initArguments.doc_generic struct
 	 */
-	function getFromScope( required mapping, initArguments ){
+	function getFromScope( required mapping, struct initArguments ){
 		var cacheKey    = "wirebox:#arguments.mapping.getName()#";
 
         // Check if already in request scope
         if( NOT structKeyExists( request, cacheKey ) ){
             // some nice debug info.
             if( variables.log.canDebug() ){
-                variables.log.debug( "Object: (#arguments.mapping.getName()#) not found in request scope, beggining construction." );
+                variables.log.debug( "Object: (#arguments.mapping.getName()#) not found in request scope, beginning construction." );
             }
-            
+
             // construct it and store it, to satisfy circular dependencies
             var target = variables.injector.buildInstance( arguments.mapping, arguments.initArguments );
             request[ cacheKey ] = target;
-            
+
             // wire it
             variables.injector.autowire( target=target, mapping=arguments.mapping );
-            
+
             // log it
             if( variables.log.canDebug() ){
                 variables.log.debug( "Object: (#arguments.mapping.getName()#) constructed and stored in Request scope." );
@@ -71,10 +70,10 @@ component implements="wirebox.system.ioc.scopes.IScope" accessors="true"{
 
 	/**
 	 * Indicates whether an object exists in scope
-	 * 
+	 *
 	 * @mapping The linked WireBox injector
 	 * @mapping.doc_generic wirebox.system.ioc.config.Mapping
-	 * 
+	 *
 	 * @return wirebox.system.ioc.scopes.IScope
 	 */
 	boolean function exists( required mapping ){

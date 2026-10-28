@@ -1,64 +1,101 @@
 ﻿/**
-* Copyright Since 2005 ColdBox Framework by Luis Majano and Ortus Solutions, Corp
-* www.ortussolutions.com
-* ---
-* Console Appender
-*/
-component extends="wirebox.system.logging.AbstractAppender"{
+ * Copyright Since 2005 ColdBox Framework by Luis Majano and Ortus Solutions, Corp
+ * www.ortussolutions.com
+ * ---
+ * Console Appender
+ */
+component accessors="true" extends="wirebox.system.logging.AbstractAppender" {
 
 	/**
-	* Constructor
-	*
-	* @name        The unique name for this appender.
-	* @properties  A map of configuration properties for the appender.
-	* @layout      The layout class to use in this appender for custom message rendering.
-	* @levelMin    The default log level for this appender, by default it is 0. Optional. ex: LogBox.logLevels.WARN
-	* @levelMax    The default log level for this appender, by default it is 4. Optional. ex: LogBox.logLevels.WARN
-	*/
-	public ConsoleAppender function init(
-	  	required string name,
+	 * Constructor
+	 *
+	 * @name The unique name for this appender.
+	 * @properties A map of configuration properties for the appender"
+	 * @layout The layout class to use in this appender for custom message rendering.
+	 * @levelMin The default log level for this appender, by default it is 0. Optional. ex: LogBox.logLevels.WARN
+	 * @levelMax The default log level for this appender, by default it is 5. Optional. ex: LogBox.logLevels.WARN
+	 */
+	function init(
+		required name,
 		struct properties = {},
-		string layout     = "",
-		string levelMin   = 0,
-		string levelMax   = 4
+		layout            = "",
+		levelMin          = 0,
+		levelMax          = 4
 	){
-		super.init( argumentCollection=arguments );
-		variables.out 	= createObject( "java", "java.lang.System" ).out;
-		variables.error = createObject( "java", "java.lang.System" ).err;
-    	return this;
+		super.init( argumentCollection = arguments );
+
+		// Output Streams
+		variables.stdout = createObject( "java", "java.lang.System" ).out;
+		variables.stderr = createObject( "java", "java.lang.System" ).err;
+
+		return this;
 	}
 
 	/**
-	* Write entry into the appender
-	*
-	* @logEvent The logging event.
-	*/
-	function logMessage( required any logEvent ) {
-		var entry = "";
-		if( hasCustomLayout() ){
-			entry = getCustomLayout().format( logEvent );
+	 * Write an entry into the appender.
+	 *
+	 * @logEvent The logging event to log
+	 */
+	function logMessage( required wirebox.system.logging.LogEvent logEvent ){
+		var loge      = arguments.logEvent;
+		var timestamp = loge.getTimestamp();
+		var message   = loge.getMessage();
+		var entry     = "";
+
+		// Message Layout
+		if ( hasCustomLayout() ) {
+			entry = getCustomLayout().format( loge );
 		} else {
-		  	entry = severityToString( logEvent.getseverity() ) & " " &
-		  		logEvent.getCategory() & " " &
-		  		logEvent.getmessage() & " ExtraInfo: " &
-		  		logEvent.getextraInfoAsString();
+			// Cleanup main message
+			if ( len( loge.getExtraInfoAsString() ) ) {
+				message &= " ExtraInfo: " & loge.getExtraInfoAsString();
+			}
+
+			// Entry string
+			entry = "#dateFormat( timestamp, "yyyy-mm-dd" )# #timeFormat( timestamp, "HH:MM:SS" )# #loge.getCategory()# #message#";
 		}
-		switch( logEvent.getSeverity() ){
+
+		// Log it
+		switch ( logEvent.getSeverity() ) {
 			// Fatal + Error go to error stream
-			case "0" : case "1" : {
+			case "0":
+			case "1": {
 				// log message
-				variables.error.println( entry );
+				queueMessage( {
+					message : entry,
+					isError : true
+				} );
 				break;
 			}
 			// Warning and above go to info stream
-			default : {
+			default: {
 				// log message
-				variables.out.println( entry );
+				queueMessage( {
+					message : entry,
+					isError : false
+				} );
 				break;
 			}
 		}
 
+		return this;
+	}
 
+	/**
+	 * Processes a queue element to a destination
+	 * This method is called by the log listeners asynchronously.
+	 *
+	 * @data The data element the queue needs processing
+	 * @queueContext The queue context in process
+	 *
+	 * @return ConsoleAppender
+	 */
+	function processQueueElement( required data, required queueContext ){
+		if ( arguments.data.isError ) {
+			variables.stderr.println( arguments.data.message );
+		} else {
+			variables.stdout.println( arguments.data.message );
+		}
 		return this;
 	}
 

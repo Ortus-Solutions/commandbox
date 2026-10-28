@@ -47,7 +47,7 @@
 			<strong>Aliases:&nbsp;</strong>
 			<cfloop array="#aliases#" index="local.alias">
 				<li class="label label-danger label-annotations">
-					#local.alias# 
+					#local.alias#
 				</li>
 				&nbsp;
 			</cfloop>
@@ -55,16 +55,16 @@
 	</div>
 </cfif>
 
-<cfscript>	
+<cfscript>
 	// All we care about is the "run()" method
 	local.qFunctions = buildFunctionMetaData(arguments.metadata);
-	local.qFunctions = getMetaSubQuery(local.qFunctions, "UPPER(name)='RUN'");	
+	local.qFunctions = getMetaSubQuery(local.qFunctions, "UPPER(name)='RUN'");
 </cfscript>
 
 <cfif local.qFunctions.recordCount>
 	<cfset local.func = local.qFunctions.metadata>
 	<cfset local.params = local.func.parameters>
-					
+
 	<cfif arrayLen( local.params )>
 		<div class="panel panel-default">
 			<div class="panel-heading"><strong>Parameters:</strong></div>
@@ -103,7 +103,7 @@
 			</div>
 		</div>
 	</cfif>
-	
+
 </cfif>
 
 <hr>
@@ -120,21 +120,21 @@
 </cfoutput>
 <cfscript>
 	function writeHint( hint ) {
-		
-		// Clean up lines with only a period which is my work around for the Railo bug ignoring 
-		// line breaks in componenet annotations: https://issues.jboss.org/browse/RAILO-3128
+
+		// Clean up lines with only a period which is my work around for the Railo bug ignoring
+		// line breaks in component annotations: https://issues.jboss.org/browse/RAILO-3128
 		hint = reReplace( hint, '\n\s*\.\s*\n', chr( 10 )&chr( 10 ), 'all' );
-		
+
 		// Find code blocks
-		// A {code} block on it's own line with an optional ":brush" inside it 
+		// A {code} block on it's own line with an optional ":brush" inside it
 		// followed by any amount of text
 		// followed by another {code} block on it's own line
 		var codeRegex = '(\n?\s*{\s*code\s*(:.*?)?\s*}\s*\n)(.*?)(\n\s*{\s*code\s*}\s*\n?)';
 		hint = reReplaceNoCase( hint, codeRegex, '<pre class="brush\2">\3</pre>', 'all' );
-		
+
 		// Fix line breaks
 		hint = reReplace( hint, '\n', '#chr(10)#<br>', 'all' );
-		
+
 		return hint;
 	}
 </cfscript>

@@ -11,28 +11,36 @@ component accessors="true" singleton {
 
 	// Holds the config settings in memory
 	property name="configSettings";
+	// env var/sys prop overrides
+	property name="configSettingOverrides";
 	// All known config settings-- really just for tab-completion right now
 	property name="possibleConfigSettings";
 	// The physical path there config settings are persisted
 	property name="configFilePath";
+	property name="serverServiceCompletePerformed" type="boolean" default="false";
+
 
 	// DI
 	property name='formatterUtil'		inject='formatter';
 	property name='ModuleService'		inject='ModuleService';
 	property name='JSONService'			inject='JSONService';
-	property name='ServerService'		inject='ServerService';
+	property name='ServerService'		inject='provider:ServerService';
+	property name='interceptorService'	inject='interceptorService';
+	property name='systemSettings'		inject='SystemSettings';
 
 	/**
 	* Constructor
 	*/
 	function init(){
+		variables.system = createObject( 'java', 'java.lang.System' );
+
 		// These aren't stored in the actual configSettings struct-- they're more for documentation
 		// and smart auto-completion to help people set new settings.
 		setPossibleConfigSettings([
 			// Used in ModuleService
-			'ModulesExternalLocation',
+			'modulesExternalLocation',
 			'modulesInclude',
-			'ModulesExclude',
+			'modulesExclude',
 			// HTTP Proxy settings
 			'proxy.server',
 			'proxy.port',
@@ -40,47 +48,80 @@ component accessors="true" singleton {
 			'proxy.password',
 			// used in "run" command for a custom Unix shell
 			'nativeShell',
+			// used in "runTerminal" command for a custom app
+			'nativeTerminal',
+			// used to open an URL
+			'preferredBrowser',
 			// used in "bump" command
 			'tagVersion',
 			'tagPrefix',
 			// Endpoint data
 			'endpoints',
+			'endpoints.defaultForgeBoxEndpoint',
 			'endpoints.forgebox',
 			'endpoints.forgebox.APIToken',
 			'endpoints.forgebox.APIURL',
 			// Servers
 			'server',
+			'server.singleServerMode',
 			'server.defaults',
+			'server.javaInstallDirectory',
 			// used in Artifactsservice
 			'artifactsDirectory',
 			// commands
 			'command',
 			'command.defaults',
-			'command.aliases'
+			'command.aliases',
+			// Interactivity
+			'nonInteractiveShell',
+			'tabCompleteInline',
+			'colorInDumbTerminal',
+			'terminalWidth',
+			// JSON
+			'JSON.indent',
+			'JSON.lineEnding',
+			'JSON.spaceAfterColon',
+			'JSON.sortKeys',
+			'JSON.ANSIColors.constant',
+			'JSON.ANSIColors.key',
+			'JSON.ANSIColors.number',
+			'JSON.ANSIColors.string',
+			// General
+			'verboseErrors',
+			'debugNativeExecution',
+			'developerMode',
+			'offlineMode',
+			// autosync
+			'configAutoSync.enable',
+			'configAutoSync.endpoint',
+			'configAutoSync.overwrite',
+			// Task Runners
+			'taskCaching',
+			// Package install script security
+			'scripts.trustInstallScripts'
 		]);
 
 		setConfigFilePath( '/commandbox-home/CommandBox.json' );
 
-		// Create the config file if neccessary
+		// Create the config file if necessary
 		if( !fileExists( getConfigFilePath() ) ) {
 			fileWrite( getConfigFilePath(), '{}' );
 		}
 
+		// Config settings that come from the JSON file
 		loadConfig();
 
 		return this;
 	}
 
 	function onDIComplete() {
-		var serverProps = serverService.completeProperty( 'fake', true );
-		for( var prop in serverProps ) {
-			variables.possibleConfigSettings.append( 'server.defaults.#prop#' );
-		}
+		loadOverrides();
 	}
 
-	function setConfigSettings( required struct configSettings ) {
+	function setConfigSettings( required struct configSettings, boolean quiet=false ) {
 		variables.configSettings = arguments.configSettings;
-		saveConfig();
+
+		saveConfig( quiet );
 	}
 
 	/**
@@ -89,11 +130,22 @@ component accessors="true" singleton {
 	* @defaultValue.hint The default value to use if setting does not exist
 	*/
 	function getSetting( required name, defaultValue ){
-
 		arguments.JSON = getConfigSettings();
 		arguments.property = arguments.name;
 
 		return JSONService.show( argumentCollection = arguments );
+	}
+
+	/**
+	* Get a setting from a configuration structure with JMESPath
+	* @name.hint The name of the setting.  Allows for "deep" struct/array names.
+	* @defaultValue.hint The default value to use if setting does not exist
+	*/
+	function getSettingJMES( required name, defaultValue ){
+		arguments.JSON = getConfigSettings();
+		arguments.property = arguments.name;
+
+		return JSONService.showJMES( argumentCollection = arguments );
 	}
 
 	/**
@@ -113,14 +165,14 @@ component accessors="true" singleton {
 	* @value.hint The value to set
 	* @thisAppend.hint Append an array or struct to existing
 	*/
-	function setSetting( required name, required value, boolean thisAppend=false ){
+	function setSetting( required name, required value, boolean thisAppend=false, boolean quiet=false ){
 
-		arguments.JSON = getConfigSettings();
+		arguments.JSON = getConfigSettings( noOverrides=true );
 		arguments.properties[ name ] = arguments.value;
 
 		JSONService.set( argumentCollection = arguments );
 
-		saveConfig();
+		saveConfig( quiet );
 		return this;
 	}
 
@@ -128,14 +180,14 @@ component accessors="true" singleton {
 	* Remove a value in the application configuration settings
 	* @name.hint The name of the setting.  Allows for "deep" struct/array names.
 	*/
-	function removeSetting( required name ){
+	function removeSetting( required name, boolean quiet=false ){
 
-		arguments.JSON = getConfigSettings();
+		arguments.JSON = getConfigSettings( noOverrides=true );
 		arguments.property = arguments.name;
 
 		JSONService.clear( argumentCollection = arguments );
 
-		saveConfig();
+		saveConfig( quiet );
 		return this;
 	}
 
@@ -147,14 +199,74 @@ component accessors="true" singleton {
 		variables.configSettings = deserializeJSON( fileRead( getConfigFilePath() ) );
 	}
 
+
+	/**
+	* Return all config settings including env var/sys prop overrides
+	*/
+	function getConfigSettings( boolean noOverrides=false ) {
+		if( noOverrides ) {
+			return variables.configSettings;
+		}
+
+		// env var/system property overrides which we want to keep separate so we don't write them back to the JSON file.
+		return JSONService.mergeData( duplicate( variables.configSettings ), getConfigSettingOverrides() );
+	}
+
+
+	/**
+	* Loads config settings from env vars or Java system properties
+	*/
+	function loadOverrides(){
+		var overrides={};
+
+		// Look for individual BOX settings to import.
+		var processVarsUDF = function( envVar, value ) {
+			// Loop over any that look like box_config_xxx
+			if( envVar.len() > 11 && reFindNoCase('box[_\.]config[_\.]',  left( envVar, 11 ) ) ) {
+				// proxy_host gets turned into proxy.host
+				// Note, the asssumption is made that no config setting will ever have a legitimate underscore in the name
+				var name = right( envVar, len( envVar ) - 11 ).replace( '_', '.', 'all' );
+				JSONService.set( JSON=overrides, properties={ '#name#' : value }, thisAppend=true );
+			}
+		};
+
+		// Get all OS env vars
+		var envVars = system.getenv();
+		for( var envVar in envVars ) {
+			processVarsUDF( envVar, envVars[ envVar ] );
+		}
+
+		// Get all System Properties
+		var props = system.getProperties();
+		for( var prop in props ) {
+			processVarsUDF( prop, props[ prop ] );
+		}
+
+		var boxEnvVars = systemSettings.getAllEnvironmentsFlattened();
+		for( var envVar in boxEnvVars ) {
+			processVarsUDF( envVar, boxEnvVars[ envVar ] );
+		}
+
+		setConfigSettingOverrides( overrides );
+
+		if( overrides.keyExists( 'modules' ) ) {
+			ModuleService.overrideAllConfigSettings( overrides );
+		}
+	}
+
 	/**
 	* Persists config settings to disk
 	*/
-	function saveConfig(){
-		fileWrite( getConfigFilePath(), formatterUtil.formatJSON( serializeJSON( getConfigSettings() ) ) );
+	function saveConfig( boolean quiet=false ){
+		if( !JSONService.writeJSONFile( getConfigFilePath(), getConfigSettings( noOverrides=true ) ) ) {
+			return;
+		}
 
 		// Update ModuleService
 		ModuleService.overrideAllConfigSettings();
+		if( !quiet ) {
+			interceptorService.announceInterception( 'onConfigSettingSave', { configFilePath=getConfigFilePath(), configSettings=getConfigSettings( noOverrides=true ) } );
+		}
 	}
 
 
@@ -164,6 +276,14 @@ component accessors="true" singleton {
 	* @asSet Pass true to add = to the end of the options
 	*/
 	function completeProperty( all=false, asSet=false ) {
+		if( !getServerServiceCompletePerformed() ) {
+			var serverProps = serverService.completeProperty( 'fake', true );
+			for( var prop in serverProps ) {
+				variables.possibleConfigSettings.append( 'server.defaults.#prop#' );
+			}
+			setServerServiceCompletePerformed( true );
+		}
+
 		// Get all config settings currently set
 		var props = JSONService.addProp( [], '', '', getConfigSettings() );
 

@@ -1,13 +1,13 @@
 /**
  * Updates all of the packages in your project that have new versions available.  Run this command from the root of the package.
- * Package installed from HTTP(S) and Git endpoints will always be udpated.
+ * Package installed from HTTP(S) and Git endpoints will always be updated.
  * .
  * {code:bash}
  * update
  * {code}
  * .
  * You can also pull a list of all outdated packages with the "outdated" command
- * and update them one at a time by passing one or more slugs in a comma-delimted list.
+ * and update them one at a time by passing one or more slugs in a comma-delimited list.
  * .
  * {code:bash}
  * update coldbox
@@ -32,16 +32,14 @@ component aliases="update" {
 
 	// DI
 	property name="packageService" 	inject="PackageService";
-	property name="semanticVersion" inject="semanticVersion@semver";
-	property name='parser'			inject='Parser';
 
 	/**
 	* Update all or one outdated dependencies
-	* @slug A comma-delimmited list of slugs to update. Pass nothing to update all packages.
+	* @slug A comma-delimited list of slugs to update. Pass nothing to update all packages.
 	* @slug.optionsUDF slugComplete
-	* @verbose Outputs additional information about each package
-	* @force Forces an update without confirmations
-	* @system.hint When true, update packages in the global CommandBox module's folder
+	* @verbose Output additional information about each package
+	* @force Update without confirmations
+	* @system.hint Update packages in the global CommandBox module's folder
 	**/
 	function run(
 		string slug="",
@@ -64,12 +62,35 @@ component aliases="update" {
 		print.yellowLine( "Resolving Dependencies, please wait..." ).toConsole();
 
 		// build dependency tree
-		 var dependenciesToUpdate = packageService.getOutdatedDependencies(
-		 	directory=directory,
-		 	print=print,
-		 	verbose=arguments.verbose,
-		 	includeSlugs=arguments.slug
+		 var aAllDependencies = packageService.getOutdatedDependencies(
+		 	directory    = directory,
+		 	print        = print,
+		 	verbose      = arguments.verbose,
+		 	includeSlugs = arguments.slug
 		 );
+
+		 if( len( slug ) && !aAllDependencies.len() ) {
+		 	error( message='Package(s) [#slug#] not found.', detail='Use "outdated" to see what packages are available to update.  Only pass the package name to this command.' );
+		 }
+
+		var dependenciesToUpdate = aAllDependencies.filter( (d)=>d.isOutdated );
+
+		if( aAllDependencies.len() ) {
+			print.table(
+				aAllDependencies.map( ( d ) => {
+					return [
+						d.slug & ( d.endpointName contains 'forgebox' ? '@' & d.version : ' (#d.endpointName#)' ),
+						d.packageVersion,
+						{ 'value': d.newVersion, 'options': d.isOutdated ? 'boldWhiteOnRed' : 'white' },
+						{ 'value': d.latestVersion, 'options': d.isLatest ? 'white' : 'boldWhiteOnOrange3' },
+						d.location
+						]
+					} ),
+					"",
+					[ 'Package', 'Installed', 'Update', 'Latest', 'Location' ]
+			);
+			print.text( 'Key: ' ).boldWhiteOnRed( 'Update Available' ).text( '   ' ).boldWhiteOnOrange3line( 'Major Update Available' ).line();
+		}
 
 		// Advice initial notice
 		if( dependenciesToUpdate.len() ){
@@ -83,7 +104,7 @@ component aliases="update" {
 				return;
 			}
 		} else {
-			print.boldYellowLine( 'There are no outdated dependencies!' );
+			print.blueLine( 'There are no outdated dependencies!' );
 			return;
 		}
 
@@ -118,9 +139,7 @@ component aliases="update" {
 
 		for( var dependency in arguments.data ){
 			// print it out
-			print[ ( dependency.dev ? 'boldYellow' : 'bold' ) ]( '* #dependency.slug# (#dependency.version#)' )
-				.boldRedLine( ' ─> new version: #dependency.newVersion#' )
-				.toConsole();
+			print.line( '* #dependency.slug#', ( dependency.dev ? 'boldYellow' : 'bold' ) );
 			// verbose data
 			if( arguments.verbose ) {
 				if( len( dependency.name ) ) {

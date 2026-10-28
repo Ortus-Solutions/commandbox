@@ -1,11 +1,11 @@
 /**
  * Takes the current module directory and link it to another app's modules directory.  The current directory must be a package.
- * This is useful for live testing of a module that's under develpment without needing to install and update the installation 
- * with every change.  You're operating system's local symlink capabilities will be used.  This requires a file sytem that 
+ * This is useful for live testing of a module that's under development without needing to install and update the installation
+ * with every change.  You're operating system's local symlink capabilities will be used.  This requires a file system that
  * supports symlinks.
  * .
  * The target link must not be just to the root of the app, but the specific modules folder you want to link into.
- * The package's slug will be used as the name of the target link.  
+ * The package's slug will be used as the name of the target link.
  * .
  * {code:bash}
  * link path/to/app/modules
@@ -25,67 +25,71 @@
  * link --force
  * {code}
  *
- * Linking a package is not the same as installing it.  The target box.json will not be modified nor will any depdencies be installed.
- * You'll need to run an "install" in the local module you're developing to install its depdendencies, which will in turn be part of the link.
+ * Linking a package is not the same as installing it.  The target box.json will not be modified nor will any dependencies be installed.
+ * You'll need to run an "install" in the local module you're developing to install its dependencies, which will in turn be part of the link.
  * .
  * See also: package unlink
- * 
+ *
  **/
 component aliases='link' {
 	property name="packageService" inject="PackageService";
+	property name="moduleService" inject="moduleService";
 
 	/**
-	 * @moduleDrectory Path to an app's modules directory
+	 * @moduleDirectory Path to an app's modules directory
 	 * @force Overwrite any existing module or link.
 	 **/
 	function run(
-		string moduleDrectory,
+		string moduleDirectory,
 		boolean force=false ) {
-			
+
 		var packageDirectory=getCWD();
 		var commandBoxCoreLinked = false;
-		if( !arguments.keyExists( 'moduleDrectory' ) ) {
-			arguments.moduleDrectory = expandPath( '/commandbox/modules' );
+		if( !arguments.keyExists( 'moduleDirectory' ) ) {
+			arguments.moduleDirectory = expandPath( '/commandbox/modules' );
 			commandBoxCoreLinked = true;
+			if( !directoryExists( arguments.moduleDirectory ) ) {
+				directoryCreate( arguments.moduleDirectory );
+			}
 		} else {
-			arguments.moduleDrectory = fileSystemUtil.resolvePath( arguments.moduleDrectory );
+			arguments.moduleDirectory = resolvePath( arguments.moduleDirectory );
+			if( !directoryExists( arguments.moduleDirectory ) ) {
+				error( 'The target directory [#arguments.moduleDirectory#] doesn''t exist.' );
+			}
 		}
-		
+
 		// package check
 		if( !packageService.isPackage( packageDirectory ) ) {
 			error( '#packageDirectory# is not a package!' );
 		}
-		
-		if( !directoryExists( arguments.moduleDrectory ) ) {
-			error( 'The target directory [#arguments.moduleDrectory#] doesn''t exist.' );
-		}
-		
+
+
 		var boxJSON = packageService.readPackageDescriptor( packageDirectory );
-		
+
 		if( !boxJSON.slug.len() ) {
 			error( 'Cannot link package with no slug.' );
 		}
-		if( !packageService.isPackageModule( boxJSON.type ) ) {
+		if( !packageService.isPackageModule( boxJSON.type ) && boxJSON.type != 'boxlang-modules' ) {
 			error( 'Package type [#boxJSON.type#] is invalid for linking.  Needs to be a module type.' );
 		}
-		
-		var linkTarget = moduleDrectory & '/' & boxJSON.slug;
+
+		var linkTarget = moduleDirectory & '/' & boxJSON.slug;
 		// Check to see if link or module already exists
 		if( directoryExists( linkTarget ) ) {
 			if( force ) {
 				print
 					.yellowLine( 'Deleting old folder/link...' )
 					.toConsole();
-					
+
 				directoryDelete( linkTarget );
 				// Sometimes I get errors that I think are due to the actual delete happening async by my disk subsystem.
 				// Let's give it a second to complete.
 				sleep( 1000 );
 			} else {
-				error( 'Target folder [#linkTarget#] already exists.  Use --force to override.' );				
-			}		
+				error( 'Target folder [#linkTarget#] already exists.  Use --force to override.' );
+			}
 		}
-		
+
 		var oFiles = createObject( 'java', 'java.nio.file.Files' );
 		var oFileTarget = fileSystemUtil.getJavaFile( linkTarget );
 		var oFileSource = fileSystemUtil.getJavaFile( packageDirectory );
@@ -97,12 +101,30 @@ component aliases='link' {
 		}
 
 		if( commandBoxCoreLinked ) {
-			print.greenLine( 'Package [#boxJSON.slug#] linked to CommandBox core.' );		
-			command( 'reload' )
-				.params( clearScreen=false )
-				.run();
+			print.greenLine( 'Package [#boxJSON.slug#] linked to CommandBox core.  Activating!' );
+			loadModule( linkTarget );
 		} else {
-			print.greenLine( 'Package [#boxJSON.slug#] linked to [#moduleDrectory#]' );			
+			print.greenLine( 'Package [#boxJSON.slug#] linked to [#moduleDirectory#]' );
 		}
 	}
+	
+	
+	function loadModule( required string moduleDirectory ) {
+		moduleDirectory = resolvePath( moduleDirectory );
+
+		// Generate a CF mapping that points to the module's folder
+		var relativeModulePath = fileSystemUtil.makePathRelative( moduleDirectory );
+
+		// A dot delimited path that points to the folder containing the module
+		var invocationPath = relativeModulePath
+			.listChangeDelims( '.', '/\' )
+			.listDeleteAt( relativeModulePath.listLen( '/\' ), '.' );
+
+		// The name of the module
+		var moduleName = relativeModulePath.listLast( '/\' );
+
+		// Load it up!!
+		moduleService.registerAndActivateModule( moduleName, invocationPath );
+	}
+	
 }

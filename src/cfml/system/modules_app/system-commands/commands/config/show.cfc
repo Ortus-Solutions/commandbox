@@ -1,5 +1,5 @@
 /**
- * View configuration proprties in CommandBox. Call with no parameters to view all config properties.
+ * View configuration properties in CommandBox. Call with no parameters to view all config properties.
  * .
  * Output setting
  * {code:bash}
@@ -34,15 +34,10 @@ component {
 		try {
 
 			var propertyValue = JSONService.show( configSettings, arguments.property );
-
-			if( isSimpleValue( propertyValue ) ) {
-				print.line( propertyValue );
-			} else {
-				print.line( formatterUtil.formatJson( propertyValue ) );
-			}
+			print.text( propertyValue );
 
 		} catch( JSONException var e ) {
-			error( e.message );
+			error( e.message, e.detail );
 		} catch( any var e ) {
 			rethrow;
 		}

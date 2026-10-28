@@ -1,17 +1,26 @@
 class Commandbox < Formula
-  desc "CFML embedded server, package manager, and app scaffolding tools"
+  desc "CLI, Package Manager, and Embedded Server for BoxLang, Java, and CFML applications"
   homepage "https://www.ortussolutions.com/products/commandbox"
   url "@repoPRDURL@/ortussolutions/commandbox/@stable-version@/commandbox-bin-@stable-version@.zip"
   sha256 "@stable-sha256@"
+  license "Apache-2.0"
 
-  devel do
+  head do
     url "@repoURL@/ortussolutions/commandbox/@version@/commandbox-bin-@version@.zip?build=@buildnumber@"
     sha256 "@sha256@"
   end
 
-  bottle :unneeded
+  livecheck do
+    url :homepage
+    regex(/Download CommandBox v?(\d+(?:\.\d+)+)/i)
+  end
 
-  depends_on :java => "1.8"
+  bottle do
+    sha256 cellar: :any_skip_relocation, all: "45b01d0263bf8842d6b060ed23202a77ab6b33d2a3c1c2a89be80eb4c50324ba"
+  end
+
+  # not yet compatible with Java 17 on ARM
+  depends_on "openjdk@11"
 
   resource "apidocs" do
     url "@repoPRDURL@/ortussolutions/commandbox/@stable-version@/commandbox-apidocs-@stable-version@.zip"
@@ -19,8 +28,8 @@ class Commandbox < Formula
   end
 
   def install
-    libexec.install "box"
-    (bin/"box").write_env_script libexec/"box", Language::Java.java_home_env("1.8")
+    (libexec/"bin").install "box"
+    (bin/"box").write_env_script libexec/"bin/box", Language::Java.java_home_env("11")
     doc.install resource("apidocs")
   end
 

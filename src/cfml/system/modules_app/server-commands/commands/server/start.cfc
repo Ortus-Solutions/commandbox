@@ -11,7 +11,7 @@
  * server start --rewritesEnable
  * {code}
  * .
- * Start with specifc heap size
+ * Start with specific heap size
  * {code:bash}
  * server start heapSize=768
  * {code}
@@ -21,18 +21,20 @@
  * Specify an engine version after an @ sign like you would on package installation.
   * .
  * {code:bash}
- * server start cfengine=railo
  * server start cfengine=adobe
- * server start cfengine=adobe@11.0
+ * server start cfengine=adobe@2023.0
+ * server start cfengine=lucee
+ * server start cfengine=lucee@5.4
+ * server start cfengine=railo
  * {code}
  * .
  * cfengine can also be any valid Endpoint ID that points to a ForgeBox entry, HTTP URL, etc.
  * .
  * {code:bash}
- * server start cfengine=http://downloads.ortussolutions.com/adobe/coldfusion/9.0.2/cf-engine-9.0.2.zip
+ * server start cfengine=https://downloads.ortussolutions.com/adobe/coldfusion/2023.0.0/cf-engine-2023.0.0.zip
  * {code}
  * .
- * You can also start up a local WAR file with the WARPath parmeter.
+ * You can also start up a local WAR file with the WARPath parameter.
   * .
  * {code:bash}
  * server start WARPath=/path/to/explodedWAR
@@ -43,10 +45,12 @@ component aliases="start" {
 
 	// DI
 	property name="serverService" 	inject="ServerService";
-	property name="forgeBox" 		inject="ForgeBox";
+	property name="javaService" 	inject="JavaService";
+	property name="endpointService" inject="endpointService";
 
 	/**
 	 * @name           		short name for this server or a path to the server.json file.
+	 * @name.optionsFileComplete true
 	 * @name.optionsUDF		serverNameComplete
 	 * @port           		port number
 	 * @host           		bind to a host/ip
@@ -54,12 +58,11 @@ component aliases="start" {
 	 * @directory     	 	web root for this server
 	 * @stopPort       		stop socket listener port number
 	 * @force          		force start if status is not stopped
-	 * @debug          		Turns on debug output while starting and streams server output to console.
+	 * @debug          		Turn on debug output while starting and stream server output to console.
 	 * @webConfigDir  	 	custom location for web context configuration
 	 * @serverConfigDir		custom location for server configuration
 	 * @libDirs       	 	comma-separated list of extra lib directories for the server to load
 	 * @trayIconFile   		path to .png file for tray icon
-	 * @webXML         		path to web.xml file used to configure the server
 	 * @HTTPEnable     		enable HTTP
 	 * @SSLEnable      		enable SSL
 	 * @SSLPort        		SSL port number
@@ -68,10 +71,12 @@ component aliases="start" {
 	 * @SSLKeyPass     		SSL key passphrase
 	 * @rewritesEnable 		enable URL rewriting (default false)
 	 * @rewritesConfig 		optional URL rewriting config file path
+	 * @rewritesFile       The target file for URL rewrites, defaults to index.cfm if it's a CFML engine, or index.bxm if its BoxLang
 	 * @heapSize			The max heap size in megabytes you would like this server to start with, it defaults to 512mb
 	 * @minHeapSize			The min heap size in megabytes you would like this server to start with
-	 * @directoryBrowsing 	Enable/Disabled directory browsing, defaults to true
+	 * @directoryBrowsing 	Enables directory browsing (default false)
 	 * @JVMArgs 			Additional JVM args to use when starting the server. Use "server status --verbose" to debug
+	 * @runwarJarPath		path to runwar jar (overrides the default runwar location in the ~/.CommandBox/lib/ folder)
 	 * @runwarArgs 			Additional Runwar options to use when starting the server. Use "server status --verbose" to debug
 	 * @saveSettings 		Save start settings in server.json
 	 * @cfengine        	sets the cfml engine type
@@ -79,7 +84,7 @@ component aliases="start" {
 	 * @WARPath				sets the path to an existing war to use
 	 * @serverConfigFile 	The path to the server's JSON file.  Created if it doesn't exist.
 	 * @startTimeout 		The amount of time in seconds to wait for the server to start (in the background).
-	 * @console				Start this server in the forground console process and wait until Ctrl-C is pressed to stop it.
+	 * @console				Start this server in the foreground console process and wait until Ctrl-C is pressed to stop it.
 	 * @welcomeFiles		A comma-delimited list of default files to load when visiting a directory (index.cfm,index.htm,etc)
 	 * @serverHomeDirectory	The folder where the CF engine WAR should be extracted
 	 * @restMappings		A comma-delimited list of REST mappings in the form of /api/*,/rest/*.  Empty string to disable.
@@ -87,6 +92,18 @@ component aliases="start" {
 	 * @javaHomeDirectory	Path to the JRE home directory containing ./bin/java
 	 * @AJPEnable			Enable AJP
 	 * @AJPPort				AJP Port number
+	 * @javaVersion			Any endpoint ID, such as "java:openjdk11" from the Java endpoint
+	 * @javaVersion.optionsUDF	javaVersionComplete
+	 * @startScript			If you want to generate a native script to directly start the server process pass bash, cmd, or pwsh
+	 * @startScript.options	bash,cmd,pwsh
+	 * @startScriptFile		Optional override for the name and location of the start script. This is ignored if no startScript param is specified
+	 * @dryRun				Abort actually starting the server process, but all installation and downloading will still be performed to "warm up" the engine installation.
+	 * @verbose				Activate extra server start information without enabling the debug mode in the actual server (which you wouldn't want in production)
+	 * @trayEnable			Enable the system tray icon/menu
+	 * @profile				Controls default server settings.  Profiles: production, development, none
+	 * @profile.options	production,development,none
+	 * @blockCFAdmin		Block access to Lucee or ACF admin.  Valid values are true, false, external
+	 * @blockCFAdmin.options true,false,external
 	 **/
 	function run(
 		String  name,
@@ -101,7 +118,6 @@ component aliases="start" {
 		String  serverConfigDir,
 		String  libDirs,
 		String  trayIconFile,
-		String  webXML,
 		Boolean HTTPEnable,
 		Boolean SSLEnable,
 		Numeric SSLPort,
@@ -110,6 +126,7 @@ component aliases="start" {
 		String  SSLKeyPass,
 		Boolean rewritesEnable,
 		String  rewritesConfig,
+		String rewritesFile,
 		Numeric heapSize,
 		Numeric minHeapSize,
 		Boolean directoryBrowsing,
@@ -127,7 +144,15 @@ component aliases="start" {
 		Boolean trace,
 		String javaHomeDirectory,
 		Boolean AJPEnable,
-		Numeric AJPPort
+		Numeric AJPPort,
+		String javaVersion,
+		String startScript,
+		String startScriptFile,
+		Boolean dryRun,
+		Boolean verbose,
+		Boolean trayEnable,
+		String profile,
+		String blockCFAdmin
 	){
 
 		// This is a common mis spelling
@@ -162,7 +187,7 @@ component aliases="start" {
 	* Complete server names
 	*/
 	function serverNameComplete() {
-		return serverService.getServerNames();
+		return serverService.serverNameComplete();
 	}
 
 	/**
@@ -170,7 +195,16 @@ component aliases="start" {
 	*/
 	function cfengineNameComplete( string paramSoFar ) {
 
-		var APIToken = configService.getSetting( 'endpoints.forgebox.APIToken', '' );
+		var endpointName = configService.getSetting( 'endpoints.defaultForgeBoxEndpoint', 'forgebox' );
+
+		try {
+			var oEndpoint = endpointService.getEndpoint( endpointName );
+		} catch( EndpointNotFound var e ) {
+			error( e.message, e.detail ?: '' );
+		}
+
+		var forgebox = oEndpoint.getForgebox();
+		var APIToken = oEndpoint.getAPIToken();
 
 		try {
 			// Get auto-complete options
@@ -186,6 +220,18 @@ component aliases="start" {
 		}
 		// In case of error, break glass.
 		return [];
+	}
+
+	/**
+	* Complete java versions
+	*/
+	function javaVersionComplete() {
+		return javaService
+			.listJavaInstalls()
+			.keyArray()
+			.map( ( i ) => {
+				return { name : i, group : 'Java Versions' };
+			} );
 	}
 
 }

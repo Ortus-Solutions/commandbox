@@ -26,7 +26,7 @@ component {
 		}
 
 		// This will make each directory canonical and absolute
-		arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
+		arguments.directory = resolvePath( arguments.directory );
 
 		// Create dir.  Ignore if it exists and also create parent folders if missing
 		directorycreate( arguments.directory, true, true );

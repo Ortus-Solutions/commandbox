@@ -6,7 +6,7 @@ component extends="commandbox.system.config.WireBox"{
 		var testString = "";
 		var bain = createObject( "java", "java.io.ByteArrayInputStream" ).init( testString.getBytes() );
 		var baos = createObject( "java", "java.io.ByteArrayOutputStream" ).init();
-    	
+
 
 		// map Shell
 		unmap( "Shell" );

@@ -41,7 +41,7 @@ component aliases="line-endings" {
 	* @files A file globbing pattern that matches one or more files
 	* @type Which type of line ending to use, options: [unix, windows, mac]
 	* @exclude  A list of globbing patterns to ignore
-	* @force Skip user confirmation of modiying files
+	* @force Skip user confirmation of modifying files
 	* @verbose Output additional information about each file affected
 	*/
 	public function run(

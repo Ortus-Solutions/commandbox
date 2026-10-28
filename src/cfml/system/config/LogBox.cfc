@@ -8,7 +8,7 @@
 component {
 
 	function configure(){
-		
+
 		logBox = {};
 
 		// Define Appenders
@@ -19,8 +19,7 @@ component {
 					fileMaxArchives = 5,
 					filename = "commandbox",
 					filepath = expandpath( '/commandbox-home' ) & "/logs",
-					autoExpand=false,
-					async=true
+					autoExpand=false
 				}
 			},
 			ANSIConsoleAppender = {
@@ -36,7 +35,7 @@ component {
 		};
 
 		logBox.categories = {
-			"console" = { appenders="ANSIConsoleAppender" }
+			"console" : { appenders="ANSIConsoleAppender" }
 		};
 
 	}

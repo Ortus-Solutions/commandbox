@@ -23,7 +23,7 @@ component aliases="new" {
 
 	/**
 	 * @file File or globbing pattern. Creates if not existing, otherwise updates timestamp
-	 * @force If forced, then file will be recreated even if it exists
+	 * @force Recreate the file even if it exists
 	 * @open Open the file after creating it
  	 **/
 	function run(
@@ -56,10 +56,10 @@ component aliases="new" {
 					directoryCreate( thisDir );
 				}
 				oFile.createNewFile();
-				print.line( "#fileName# created!" );
+				print.line( "#theFile# created!" );
 			} else {
 				oFile.setLastModified( now().getTime() );
-				print.line( "#fileName# last modified bit updated!" );
+				print.line( "#theFile# last modified bit updated!" );
 			}
 
 			// Open file for the user

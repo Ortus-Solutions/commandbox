@@ -31,14 +31,13 @@ component aliases="rename" {
 	function run( required Globber path, required newPath )  {
 
 		// Make path canonical and absolute
-		var thisNewPath 	= fileSystemUtil.resolvePath( arguments.newPath );
+		var thisNewPath 	= resolvePath( arguments.newPath );
 
 		if( path.count() > 1 && !directoryExists( thisNewPath ) ) {
 			error( '[#thisNewPath#] is not a directory.' );
 		}
 
 		path.apply( function( thisPath ){
-			print.redLine( thisPath );
 			// It's a directory
 			if( directoryExists( thisPath ) ) {
 				// rename directory

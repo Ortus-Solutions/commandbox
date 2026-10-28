@@ -13,6 +13,9 @@ component accessors="true" singleton {
 	property name='CR' 					inject='CR@constants';
 	property name='formatterUtil'		inject='formatter';
 	property name='artifactService' 	inject='ArtifactService';
+	// Using provider since javaService registers itself as an interceptor and I get errors from that happening before
+	// the interceptor service is read so I need to delay the registration
+	property name='javaService'     	inject='provider:JavaService';
 	property name='fileSystemUtil'		inject='FileSystem';
 	property name='pathPatternMatcher' 	inject='provider:pathPatternMatcher@globber';
 	property name='shell' 				inject='Shell';
@@ -24,6 +27,10 @@ component accessors="true" singleton {
 	property name='JSONService'			inject='JSONService';
 	property name='systemSettings'		inject='SystemSettings';
 	property name='wirebox'				inject='wirebox';
+	property name='tempDir' 			inject='tempDir@constants';
+	property name='serverService'		inject='serverService';
+	property name='moduleService'		inject='moduleService';
+	property name='configService'		inject='ConfigService';
 
 	/**
 	* Constructor
@@ -36,8 +43,8 @@ component accessors="true" singleton {
 	* Checks to see if a box.json exists in a given directory
 	* @directory The directory to examine
 	*/
-	public function isPackage( required string directory ) {
-		// If the packge has a box.json in the root...
+	boolean public function isPackage( required string directory ) {
+		// If the package has a box.json in the root...
 		return fileExists( getDescriptorPath( arguments.directory ) );
 	}
 
@@ -50,49 +57,130 @@ component accessors="true" singleton {
 	}
 
 	/**
-	* Installs a package and its dependencies,  obeying ignors in the box.json file.  Returns a struct containing a "copied" array
+	* Installs a package and its dependencies,  obeying ignores in the box.json file.  Returns a struct containing a "copied" array
 	* and an "ignored" array containing the relative paths inside the package that were copied and ignored.
 	*
-	* @slug.ID Identifier of the packge to install. If no ID is passed, all dependencies in the CDW  will be installed.
+	* @slug.ID Identifier of the package to install. If no ID is passed, all dependencies in the CDW  will be installed.
 	* @slug.optionsUDF slugComplete
-	* @directory The directory to install in. This will override the packages's box.json install dir if provided.
-	* @save Save the installed package as a dependancy in box.json (if it exists)
-	* @saveDev Save the installed package as a dev dependancy in box.json (if it exists)
+	* @directory The directory to install in. This will override the packages box.json install dir if provided.
+	* @save Save the installed package as a dependency in box.json (if it exists)
+	* @saveDev Save the installed package as a dev dependency in box.json (if it exists)
 	* @production When calling this command with no slug to install all dependencies, set this to true to ignore devDependencies.
 	* @currentWorkingDirectory Root of the application (used for finding box.json)
 	* @verbose If set, it will produce much more verbose information about the package installation
 	* @force When set to true, it will force dependencies to be installed whether they already exist or not
 	* @packagePathRequestingInstallation If installing smart dependencies packages (like ColdBox modules) that are capable of being nested, this is our current level
+	* @lock Flag to lock the version in the lock file
 	*
 	* @returns True if no errors encountered, false if things went boom.
 	**/
 	boolean function installPackage(
-			required string ID,
-			string directory,
-			boolean save=false,
-			boolean saveDev=false,
-			boolean production,
-			string currentWorkingDirectory=shell.pwd(),
-			boolean verbose=false,
-			boolean force=false,
-			string packagePathRequestingInstallation = arguments.currentWorkingDirectory,
-			string defaultName=''
+		required string ID,
+		string directory,
+		boolean save=false,
+		boolean saveDev=false,
+		boolean production,
+		string currentWorkingDirectory=shell.pwd(),
+		boolean verbose=false,
+		boolean force=false,
+		string packagePathRequestingInstallation = arguments.currentWorkingDirectory,
+		string defaultName='',
+		boolean lock=false,
+		struct lockFile={},
+		boolean trustScripts=configService.getSetting( 'scripts.trustInstallScripts', false )
 	){
+		// Java service registers itself as an interceptor on creation so I need to force the provider to create the service before installing anything.
+		javaService.$get();
+
 		var shellWillReload = false;
-		var job = wirebox.getInstance( 'interactiveJob' );
 		interceptorService.announceInterception( 'preInstall', { installArgs=arguments, packagePathRequestingInstallation=packagePathRequestingInstallation } );
+
+		var lockFilePackagesToNotSaveVersions = {};
+		arguments.lock = arguments.lock || fileExists( arguments.currentWorkingDirectory & '/box-lock.json' );
+		var shouldSaveLockFile = false;
+		if ( arguments.lock && arguments.lockFile.isEmpty() ) {
+			var loadLockFileJob = wirebox.getInstance( 'interactiveJob' );
+			loadLockFileJob.start( "Loading lock file..." );
+			if ( arguments.verbose ) {
+				loadLockFileJob.setDumpLog( arguments.verbose );
+			}
+			if ( !fileExists( arguments.currentWorkingDirectory & '/box-lock.json' ) ) {
+				loadLockFileJob.addLog( "No lock file exists, creating one..." );
+				var thisBoxJSON = readPackageDescriptor( arguments.currentWorkingDirectory );
+				arguments.lockFile = {
+					"name": thisBoxJSON.name,
+					"version": thisBoxJSON.version,
+					"lockVersion": 1,
+					"dependencies": {}
+				};
+			} else {
+				loadLockFileJob.addLog( "Loading box-lock.json..." );
+				arguments.lockFile = deserializeJSON( fileRead( expandPath( arguments.currentWorkingDirectory & '/box-lock.json' ) ) );
+			}
+			loadLockFileJob.complete( arguments.verbose );
+			shouldSaveLockFile = true;
+		}
+
+		var job = wirebox.getInstance( 'interactiveJob' );
 
 		// If there is a package to install, install it
 		if( len( arguments.ID ) ) {
-
+			var updateBoxJSONDependency = true;
 			// By default, a specific package install doesn't include dev dependencies
 			arguments.production = arguments.production ?: true;
 
-			var endpointData = endpointService.resolveEndpoint( arguments.ID, arguments.currentWorkingDirectory );
+			var endpointData = endpointService.resolveEndpoint( arguments.ID, arguments.packagePathRequestingInstallation );
+			job.start(  'Installing package [#endpointData.ID#]', ( shell.getTermHeight() < 20 ? 1 : 5 ) );
 
-			job.start(  'Installing package [#endpointData.ID#]', 5 );
+			if( verbose ) {
+				job.setDumpLog( verbose );
+			}
 
-			var tmpPath = endpointData.endpoint.resolvePackage( endpointData.package, arguments.verbose );
+			// If this is a ForgeBox endpoint and the incoming install ID has no version associated
+			if( endpointData.endpointName == 'forgebox' && endpointData.endpoint.parseVersion( endpointData.package, "__DEFAULT__" ) == '__DEFAULT__' ) {
+				var thisBoxJSON = readPackageDescriptor( packagePathRequestingInstallation );
+				var slug = endpointData.endpoint.parseSlug( endpointData.package );
+				// If there is an existing version in the box.json for this package
+				var existingVersion = thisBoxJSON.dependencies[slug] ?: thisBoxJSON.devDependencies[slug] ?: '';
+				if( len( existingVersion ) ) {
+					job.addLog( "Defaulting [#endpointData.package#] version to [#existingVersion#] from your box.json." );
+					// Then leave the box.json alone!
+					updateBoxJSONDependency = false;
+					endpointData.package &= "@#existingVersion#";
+				}
+			}
+
+			// TODO: consider making this part of the interface so other endpoint types can also report back
+			// if their installation ID contains a semantic version range
+			if( isInstanceOf(endpointData.endpoint, 'forgebox') ) {
+				if ( !arguments.lockFile.isEmpty() ) {
+					var slug = endpointData.endpoint.parseSlug( endpointData.package );
+					if ( arguments.lockFile.dependencies.keyExists( slug ) ) {
+						var lockedDependency = arguments.lockFile.dependencies[ slug ];
+						var requestedVersion = endpointData.endpoint.parseVersion( endpointData.package );
+						if ( arguments.force ) {
+							arguments.lockFile.dependencies.delete( slug );
+							job.addLog( "Ignoring lock file version [#lockedDependency.version#] for [#slug#] due to `force` flag." );
+						} else if ( semanticVersion.satisfies( lockedDependency.version, requestedVersion ) ) {
+							// our lock file version satisfies the requested version range, so use the locked version
+							lockFilePackagesToNotSaveVersions[ slug ] = true;
+							endpointData.package = slug & '@' & lockedDependency.version;
+							job.addLog( "Lock file version [#lockedDependency.version#] satisfies requested version range [#requestedVersion#] for [#slug#]. Using locked version." );
+						} else {
+							// the version requested is not satisfied by the lock file
+							// so update the lock file to the requested version
+							// we do this by deleting the entry from the lock file.
+							arguments.lockFile.dependencies.delete( slug );
+							job.addLog( "Lock file version [#lockedDependency.version#] does NOT satisfy requested version range [#requestedVersion#] for [#slug#]. Updating to requested version and re-locking." );
+						}
+					}
+				}
+				var requestedVersionSemver = endpointData.endpoint.parseVersion( arguments.ID );
+			} else {
+				var requestedVersionSemver = nullValue();
+			}
+
+			var tmpPath = endpointData.endpoint.resolvePackage( endpointData.package, arguments.currentWorkingDirectory, arguments.verbose );
 
 			// Support box.json in the root OR in a subfolder (NPM-style!)
 			tmpPath = findPackageRoot( tmpPath );
@@ -102,18 +190,25 @@ component accessors="true" singleton {
 				var boxJSON = readPackageDescriptor( tmpPath );
 				var packageType = boxJSON.type;
 				var packageName = boxJSON.slug;
-				var version = boxJSON.version;
+				var installedVersion = boxJSON.version;
+				var version = updateBoxJSONDependency ? boxJSON.version : existingVersion;
 			} else {
 				job.addErrorLog( "box.json is missing so this isn't really a package! I'll install it anyway, but I'm not happy about it" );
 				job.addWarnLog( "I'm just guessing what the package name, version and type are.  Please ask the package owner to add a box.json." );
 				var packageType = 'project';
-				if( defaultName.len() ) {
-					job.addWarnLog( "Package name guessed to be [#defaultName#] from your box.json." );
-					var packageName = defaultName;
-				} else {
-					var packageName = endpointData.endpoint.getDefaultName( endpointData.package );
-				}
+				var packageName = endpointData.endpoint.getDefaultName( endpointData.package );
 				var version = '1.0.0';
+			}
+
+			if ( isNull( requestedVersionSemver ) ) {
+				requestedVersionSemver = version;
+			}
+
+			// If the dependency struct in box.json has a name, use it.  This is mostly for
+			// HTTP, Jar, and Lex endpoints to be able to override their package name.
+			if( defaultName.len() && packageName != defaultName ) {
+				job.addWarnLog( "Package named [#defaultName#] from your box.json." );
+				packageName = defaultName;
 			}
 
 
@@ -180,9 +275,12 @@ component accessors="true" singleton {
 						if( isPackage( candidateInstallPath ) ) {
 							var candidateBoxJSON = readPackageDescriptor( candidateInstallPath );
 							// Does the package that we found satisfy what we need?
-							if( semanticVersion.satisfies( candidateBoxJSON.version, version ) ) {
-								job.addWarnLog( '#packageName# (#version#) is already satisfied by #candidateInstallPath# (#candidateBoxJSON.version#).  Skipping installation.' );
+							if( semanticVersion.satisfies( candidateBoxJSON.version, requestedVersionSemver ) ) {
+								job.addWarnLog( '#packageName# (#requestedVersionSemver#) is already satisfied by #candidateInstallPath# (#candidateBoxJSON.version#).  Skipping installation.' );
 								job.complete( verbose );
+
+								interceptorService.announceInterception( 'postInstall', { installArgs=arguments, installDirectory=candidateInstallPath, system=shellWillReload } );
+
 								return true;
 							}
 						}
@@ -203,7 +301,7 @@ component accessors="true" singleton {
 			if( structKeyExists( arguments, 'directory' ) ) {
 				installDirectory = arguments.directory;
 
-				// If this is an initial install (not a dependency) into a folder somehwere inside the CommandBox home,
+				// If this is an initial install (not a dependency) into a folder somewhere inside the CommandBox home,
 				// make sure we save correctly to CommandBox's user module box.json.
 				var commandBoxCFMLHome = fileSystemUtil.normalizeSlashes( expandPath( '/commandbox' ) );
 				installDirectory = fileSystemUtil.normalizeSlashes( installDirectory );
@@ -219,7 +317,7 @@ component accessors="true" singleton {
 
 			// Initialize as empty.  We try to populate this with the option that has the highest precedence first but stop once it has a value set.
 			var packageDirectory = '';
-			
+
 			// Next, see if the containing project has an install path configured for this dependency already.
 			var containerBoxJSON = readPackageDescriptor( arguments.packagePathRequestingInstallation );
 			if( !len( installDirectory ) && structKeyExists( containerBoxJSON.installPaths, packageName ) ) {
@@ -229,7 +327,7 @@ component accessors="true" singleton {
 				// Use the last folder as the package directory in case the user wanted to override the default package name
 				packageDirectory = listLast( installDirectory, '/\' );
 
-				// Back up to the "container" folder.  The packge directory will be added back below
+				// Back up to the "container" folder.  The package directory will be added back below
 				installDirectory = listDeleteAt( installDirectory, listLen( installDirectory, '/\' ), '/\' );
 			}
 
@@ -256,13 +354,28 @@ component accessors="true" singleton {
 				ignorePatterns = ignorePatterns,
 				endpointData = endpointData,
 				artifactPath = tmpPath,
-				packagePathRequestingInstallation = packagePathRequestingInstallation
+				currentWorkingDirectory = currentWorkingDirectory,
+				packagePathRequestingInstallation = packagePathRequestingInstallation,
+				job = job,
+				skipInstall = false
 			};
 			interceptorService.announceInterception( 'onInstall', interceptData );
 			// Make sure these get set back into their original variables in case the interceptor changed them.
 			installDirectory = interceptData.installDirectory;
 			ignorePatterns = interceptData.ignorePatterns;
+			arguments.currentWorkingDirectory = interceptData.currentWorkingDirectory;
+			arguments.packagePathRequestingInstallation = interceptData.packagePathRequestingInstallation;
 			tmpPath = interceptData.artifactPath;
+
+			// Set variable to allow interceptor-based skipping of package install
+			var skipInstall = interceptData.skipInstall;
+
+			// See if the containing package has an override for this type
+			if( !len( installDirectory ) && len( packageType ) && containerBoxJSON.keyExists( 'installPathConventions' ) && containerBoxJSON.installPathConventions.keyExists( packageType ) ) {
+				job.addWarnLog( "Overriding install path for [#packageType#] based on box.json installPathConventions" );
+				// Can be relative or absolute
+				installDirectory = fileSystemUtil.resolvePath( containerBoxJSON.installPathConventions[ packageType ] );
+			}
 
 			// Else, use package type convention
 			if( !len( installDirectory ) && len( packageType ) ) {
@@ -277,8 +390,6 @@ component accessors="true" singleton {
 					arguments.saveDev = false;
 					ignorePatterns.append( '/box.json' );
 					// Flag the shell to reload after this command is finished.
-					job.addWarnLog( "Shell will be reloaded after installation." );
-					shell.reload( false );
 					shellWillReload = true;
 				// If this is a module
 				} else if( packageType == 'modules' ) {
@@ -312,10 +423,6 @@ component accessors="true" singleton {
 						installDirectory = expandPath( '/commandbox/modules' );
 					}
 
-					// Flag the shell to reload after this command is finished.
-					job.addWarnLog( "Shell will be reloaded after installation." );
-					shell.reload( false );
-					shellWillReload = true;
 				// If this is a plugin
 				} else if( packageType == 'plugins' ) {
 					installDirectory = arguments.packagePathRequestingInstallation & '/plugins';
@@ -333,7 +440,43 @@ component accessors="true" singleton {
 				// This is a jar.
 				} else if( packageType == 'jars' ) {
 					installDirectory = arguments.packagePathRequestingInstallation & '/lib';
+				} else if( packageType == 'lucee-extensions' ) {
+					// This is making several assumption, but if the directory of the installation is a Lucee server, then
+					// assume the user wants this lex to be dropped in their server context's deploy folder.  To override this
+					// behavior, specify a custom install directory in your box.json or in the "install" params.
+					var serverDetails = serverService.resolveServerDetails( { directory = arguments.packagePathRequestingInstallation } );
+					var serverInfo = serverDetails.serverInfo;
+
+					if( !serverDetails.serverIsNew && serverInfo.engineName contains 'lucee' && len( serverInfo.serverConfigDir ) ) {
+						var serverDeployFolder = serverInfo.serverConfigDir & '/lucee-server/deploy/';
+						// Handle paths relative to the server home dir
+						if( serverDeployFolder.uCase().startsWith('/WEB-INF' ) ) {
+							serverDeployFolder = serverInfo.serverHomeDirectory & serverDeployFolder;
+						}
+						if( !directoryExists( serverDeployFolder ) ) {
+							directoryCreate( serverDeployFolder, true, true );
+						}
+						job.addWarnLog( "Current dir seems to be a Lucee server." );
+						job.addWarnLog( "Defaulting lex Install to [#serverDeployFolder#]" );
+						installDirectory = serverDeployFolder;
+						artifactDescriptor.createPackageDirectory = false;
+						ignorePatterns.append( '/box.json' );
+					} else {
+						job.addWarnLog( "This package is a Lucee Extension, but no server was found in [#arguments.packagePathRequestingInstallation#]" );
+						if( !serverDetails.serverIsNew && !(serverInfo.engineName contains 'lucee') ) {
+							job.addWarnLog( "We did find a server, but the engine is [#serverInfo.engineName#] instead of 'lucee'" );
+						}
+
+					}
+
 				}
+			}
+
+
+			// If this package is being installed anywhere south of the CommandBox system folder,
+			// flag the shell to reload after this command is finished.
+			if( fileSystemUtil.normalizeSlashes( installDirectory ).startsWith( fileSystemUtil.normalizeSlashes( expandPath( '/commandbox' ) ) ) ) {
+				shellWillReload = true;
 			}
 
 			// I give up, just stick it in the CWD
@@ -345,58 +488,107 @@ component accessors="true" singleton {
 			if( len( artifactDescriptor.packageDirectory ) && !packageDirectory.len() ) {
 				packageDirectory = artifactDescriptor.packageDirectory;
 			}
-			
+
 			// Still empty?  Use a default value of the package name
 			if( !packageDirectory.len() ) {
 				packageDirectory = packageName;
 			}
 
 			// Some packages may just want to be dumped in their destination without being contained in a subfolder
-			if( artifactDescriptor.createPackageDirectory ) {
+			// If the box.json had an explicit override for the install directory, then we're just going to use it directly
+			if( artifactDescriptor.createPackageDirectory || structKeyExists( containerBoxJSON.installPaths, packageName ) ) {
 				installDirectory &= '/#packageDirectory#';
-			// If we're dumping in the root and the install dir is already a package then ignore box.json or it will overwrite the existing one
+			// If we're dumping in the root and the install dir is already another package then ignore box.json or it will overwrite the existing one
 			// If the directory wasn't already a package, still save so our box.json gets install paths added
-			} else if( isPackage( installDirectory ) ) {
+			} else if( isPackage( installDirectory ) && readPackageDescriptor( installDirectory ).slug != packageName ) {
 				ignorePatterns.append( '/box.json' );
 			}
 
 			// Assert: At this point, all paths are finalized and we are ready to install.
 
+			if ( !isNull( installedVersion ) ) {
+				updateLockedDependencies( arguments.lockFile, packageName, installedVersion, job );
+			}
+
 			// Should we save this as a dependency. Save the install even though the package may already be there
-			if( ( arguments.save || arguments.saveDev ) ) {
+			if( ( arguments.save || arguments.saveDev ) && !lockFilePackagesToNotSaveVersions.keyExists( packageName ) ) {
 				// Add it!
 				if( addDependency( packagePathRequestingInstallation, packageName, version, installDirectory, artifactDescriptor.createPackageDirectory,  arguments.saveDev, endpointData ) ) {
 					// Tell the user...
-					job.addLog( "#packagePathRequestingInstallation#/box.json updated with #( arguments.saveDev ? 'dev ': '' )#dependency." );	
+					job.addLog( "#packagePathRequestingInstallation#/box.json updated with #( arguments.saveDev ? 'dev ': '' )#dependency." );
+				}
+
+				// we only update the lock file if we were saving
+				if (
+					!isNull( installedVersion ) &&
+					!arguments.lockFile.isEmpty() &&
+					isInstanceOf( endpointData.endpoint, 'forgebox' ) &&
+					!arguments.lockFile.dependencies.keyExists( packageName )
+				) {
+					arguments.lockFile.dependencies[ packageName ] = {
+						"version": installedVersion,
+						"dev": arguments.saveDev,
+						"dependencies": {}
+					};
+					// write out updated lock file
+					job.addLog( "box-lock.json updated with locked version [#installedVersion#] for [#packageName#]." );
 				}
 			}
 
 			// Check to see if package has already been installed.  This check can only be performed for packages that get installed in their own directory.
-			if( artifactDescriptor.createPackageDirectory && directoryExists( installDirectory ) ){
+			// OR if the install dir has a box.json that is the package being installed.
+			if( directoryExists( installDirectory ) && ( artifactDescriptor.createPackageDirectory || readPackageDescriptor( installDirectory ).slug == packageName ) ){
 				var uninstallFirst = false;
-				
+
 				// Make sure the currently installed version is older than what's being requested.  If there's a new version, install it anyway.
 				var alreadyInstalledBoxJSON = readPackageDescriptor( installDirectory );
-				if( isPackage( installDirectory ) && semanticVersion.isNew( alreadyInstalledBoxJSON.version, version  )  ) {
+				if( !skipInstall && isPackage( installDirectory ) && semanticVersion.isNew( alreadyInstalledBoxJSON.version, version  )  ) {
 					job.addLog( "Package already installed but its version [#alreadyInstalledBoxJSON.version#] is older than the new version being installed [#version#].  Forcing a reinstall." );
 					uninstallFirst = true;
+				// If a newer version exists than what was asked for, blow it away so we can get a clean downgrade.
+				 } else if( !skipInstall && isPackage( installDirectory ) && semanticVersion.isNew( version, alreadyInstalledBoxJSON.version )  ) {
+					job.addLog( "Package already installed but its version [#alreadyInstalledBoxJSON.version#] is newer than the version being installed [#version#].  Forcing a reinstall." );
+					uninstallFirst = true;
 				// Allow if forced.
-				} else if( arguments.force ) {
+				} else if( !skipInstall && arguments.force ) {
 					job.addLog( "Package already installed but you forced a reinstall." );
-					uninstallFirst = true;					
+					uninstallFirst = true;
+				// Check for empty directories that sometimes get left behind, but really shouldn't count as the package actually being there.
+				} else if( !skipInstall && !directorylist( installDirectory ).len() ) {
+					job.addLog( "Package directory exists, but is empty so we're going to assume it's not really installed." );
+					uninstallFirst = true;
 				} else {
 					// cleanup tmp
-					if( endpointData.endpointName != 'folder' ) {
-						directoryDelete( tmpPath, true );
+					tempDir = fileSystemUtil.resolvePath( tempDir );
+					tmpPath = fileSystemUtil.resolvePath( tmpPath );
+					if( tmpPath contains tempDir ) {
+						var pathInsideTmp = tmpPath.replaceNoCase( tempDir, '' );
+						// Delete the top most directory inside the temp folder
+						// Catch this to gracefully handle where the OS or another program
+						// has the folder locked.
+						try{
+							directoryDelete( tempDir & '/' & pathInsideTmp.listFirst( '/\' ), true );
+						} catch( any e ) {
+							job.addErrorLog( e.message );
+							job.addErrorLog( 'The folder is possibly locked by another program.' );
+							logger.error( '#e.message# #e.detail#' , e.stackTrace );
+						}
 					}
-					job.addWarnLog( "The package #packageName# is already installed at #installDirectory#. Skipping installation. Use --force option to force install." );
+					if( skipInstall ) {
+						job.addWarnLog( "Skipping installation of package #packageName#." );
+					} else {
+						job.addWarnLog( "The package #packageName# is already installed at #installDirectory#. Skipping installation. Use --force option to force install." );
+					}
 					job.complete( verbose );
+
+					interceptorService.announceInterception( 'postInstall', { installArgs=arguments, installDirectory=installDirectory, system=shellWillReload } );
+
 					return true;
 				}
-				
-				if( uninstallFirst ) {
+
+				if( uninstallFirst && artifactDescriptor.createPackageDirectory ) {
 					job.addWarnLog( "Uninstalling first to get a fresh slate..." );
-					
+
 					var params = {
 						id : packageName,
 						save : false,
@@ -404,13 +596,13 @@ component accessors="true" singleton {
 						currentWorkingDirectory : currentWorkingDirectory,
 						packagePathRequestingUninstallation : packagePathRequestingInstallation
 					};
-							
+
 					uninstallPackage( argumentCollection=params );
 				}
-				
+
 			}
 
-			// Create installation directory if neccesary
+			// Create installation directory if necessary
 			if( !directoryExists( installDirectory ) ) {
 				directoryCreate( installDirectory );
 			}
@@ -422,7 +614,7 @@ component accessors="true" singleton {
 
 			// This will normalize the slashes to match
 			tmpPath = fileSystemUtil.resolvePath( tmpPath );
-			var thisPathPatternMatcher = pathPatternMatcher.get();
+			var thisPathPatternMatcher = pathPatternMatcher.$get();
 
 			// Copy Assets now to destination
 			directoryCopy( tmpPath, installDirectory, true, function( path ){
@@ -446,12 +638,37 @@ component accessors="true" singleton {
 				}
 			});
 
+			// Stupid annoying fix For *nix file systems because Lucee LOSES the executable bit on files when zipping or copying them
+			// I'm detecting JRE/JDK installations and attempting to make the files executable again.
+			if( !fileSystemUtil.isWindows() && artifactDescriptor.createPackageDirectory && fileExists( installDirectory & '/bin/java' ) ) {
+				job.addWarnLog( 'Fixing *nix file permissions on java' );
+
+				directoryList( installDirectory , true ).each( function( path ) {
+					fileSetAccessMode( path, 755 );
+				} );
+
+			}
+
+			// On Windows, installed files may keep permissions from the temp folder.
+			// For each copied path, reset the first file or folder under the install folder.
+			// A folder reset also resets all files and folders inside that folder.
+			// Each reset path then inherits permissions from the install folder.
+			// This lets the Windows account used by IIS (IUSR) read the installed files.
+			// See COMMANDBOX-1692.
+			if( fileSystemUtil.isWindows() && results.copied.len() ) {
+				job.addLog( 'Resetting Windows NTFS permissions so installed files inherit from the destination' );
+				fileSystemUtil.resetWindowsPermissions( installDirectory, results.copied );
+			}
+
 			// Catch this to gracefully handle where the OS or another program
 			// has the folder locked.
 			try {
 				// cleanup unzip
-				if( endpointData.endpointName != 'folder' ) {
-					directoryDelete( tmpPath, true );
+				tempDir = fileSystemUtil.resolvePath( tempDir );
+				if( tmpPath contains tempDir ) {
+					var pathInsideTmp = tmpPath.replaceNoCase( tempDir, '' );
+					// Delete the top most directory inside the temp folder
+					directoryDelete( tempDir & '/' & pathInsideTmp.listFirst( '/\' ), true );
 				}
 			} catch( any e ) {
 				job.addErrorLog( e.message );
@@ -493,12 +710,23 @@ component accessors="true" singleton {
 			var isSaving = ( arguments.save || arguments.saveDev );
 
 			var detail = dependencies[ dependency ];
+			var endpointName = 'forgebox';
+			try {
+				var endpointData = endpointService.resolveEndpointData( detail, installDirectory );
+				endpointName = endpointData.endpointName;
+			} catch ( EndpointNotFound e ) {
+				// Ignore
+			} catch( any e ) {
+				rethrow;
+			}
+
 			//  full ID with endpoint and package like file:/opt/files/foo.zip
-			if( detail contains ':' ) {
+			if( endpointName != 'forgebox' ) {
 				var ID = detail;
-			// Default ForgeBox endpoint of foo@1.0.0
+			// Default ForgeBox endpoint of foo
+			// We don't pass the version because it will get picked up automatically
 			} else {
-				var ID = dependency & '@' & detail;
+				var ID = dependency;
 			}
 
 			var params = {
@@ -512,10 +740,12 @@ component accessors="true" singleton {
 				production = true,
 				currentWorkingDirectory = arguments.currentWorkingDirectory, // Original dir
 				packagePathRequestingInstallation = installDirectory, // directory for smart dependencies to use
-				defaultName = dependency
+				defaultName = dependency,
+				trustScripts = arguments.trustScripts,
+				lockFile = arguments.lockFile.isEmpty() ? {} : ( isNull( packageName ) || !arguments.lockFile.dependencies.keyExists( packageName ) ? arguments.lockFile : arguments.lockFile.dependencies[ packageName ] )
 			};
 
-			// Recursivley install them
+			// Recursively install them
 			installPackage( argumentCollection = params );
 		}
 
@@ -523,17 +753,26 @@ component accessors="true" singleton {
 			job.addLog( "No dependencies found to install, but it's the thought that counts, right?" );
 		}
 
-		interceptorService.announceInterception( 'postInstall', { installArgs=arguments, installDirectory=installDirectory } );
-		job.complete( verbose );
-		if( shellWillReload ) {
-			consoleLogger.warn( '.' );
-			consoleLogger.warn( 'Please sit tight while your shell reloads...' );
+		if( shellWillReload && artifactDescriptor.createPackageDirectory && fileExists( installDirectory & '/ModuleConfig.cfc' ) ) {
+			consoleLogger.warn( 'Activating your new module for instant use...' );
+			moduleService.registerAndActivateModule( installDirectory.listLast( '/\' ), fileSystemUtil.makePathRelative( installDirectory ).listToArray( '/\' ).slice( 1, -1 ).toList( '.' ) );
 		}
+
+		interceptorService.announceInterception( 'postInstall', { installArgs=arguments, installDirectory=installDirectory, system=shellWillReload } );
+		job.complete( verbose );
+
+		if ( shouldSaveLockFile ) {
+			JSONService.writeJSONFile( arguments.currentWorkingDirectory & '/box-lock.json', arguments.lockFile );
+			var saveLockFileJob = wirebox.getInstance( 'InteractiveJob' );
+			saveLockFileJob.start( 'Saving box-lock.json file to disk' );
+			saveLockFileJob.complete();
+		}
+
 		return true;
 	}
 
 	// DRY
-	function isPackageModule( required string packageType ) {
+	boolean function isPackageModule( required string packageType ) {
 		// Is the package type that of a module?
 		return ( listFindNoCase( 'modules,contentbox-modules,commandbox-modules', arguments.packageType ) > 0) ;
 	}
@@ -546,7 +785,7 @@ component accessors="true" singleton {
 	function findPackageRoot( packagePath ) {
 		var JSONPath = '#packagePath#/box.json';
 		if( !fileExists( JSONPath ) ) {
-			// Check for a packge in a sub folder
+			// Check for a package in a sub folder
 			var list = directoryList( absolute_path=packagePath, listInfo='query' );
 			// Look at each path inside
 			for( var row in list ) {
@@ -569,24 +808,29 @@ component accessors="true" singleton {
 
 	/**
 	* Uninstalls a package and its dependencies
-	* @slug.ID Identifier of the packge to uninstall.
-	* @slug.optionsUDF slugComplete
-	* @directory The directory to install in. This will override the packages's box.json install dir if provided.
-	* @save Remove package as a dependancy in box.json (if it exists)
-	* @saveDev Remove package as a dev dependancy in box.json (if it exists)
+	* @ID Identifier of the package to uninstall.
+	* @directory The directory to install in. This will override the packages box.json install dir if provided.
+	* @save Remove package as a dependency in box.json (if it exists)
+	* @saveDev Remove package as a dev dependency in box.json (if it exists)
 	* @currentWorkingDirectory Root of the application (used for finding box.json)
 	**/
 	function uninstallPackage(
-			required string ID,
-			string directory,
-			boolean save=false,
-			required string currentWorkingDirectory,
-			string packagePathRequestingUninstallation = arguments.currentWorkingDirectory
+		required string ID,
+		string directory,
+		boolean save=false,
+		required string currentWorkingDirectory,
+		string packagePathRequestingUninstallation = arguments.currentWorkingDirectory,
+		boolean verbose = false,
+		struct lockFile = {}
 	){
+
 		var job = wirebox.getInstance( 'interactiveJob' );
-		var packageName = parseSlug( arguments.ID );
+		var packageName = arguments.ID;
 
 		job.start( 'Uninstalling package: #packageName#' );
+		if( verbose ) {
+			job.setDumpLog( verbose );
+		}
 
 		var uninstallDirectory = '';
 
@@ -627,8 +871,8 @@ component accessors="true" singleton {
 			var type = '';
 		}
 
-		// ColdBox modules are stored in a hierachy so just removing the top one removes then all
-		// For all other packages, the depenencies are probably just in the root
+		// ColdBox modules are stored in a hierarchy so just removing the top one removes then all
+		// For all other packages, the dependencies are probably just in the root
 		if( !isPackageModule( type ) ) {
 
 			if( dependencies.count() ) {
@@ -651,14 +895,30 @@ component accessors="true" singleton {
 					params.directory = fileSystemUtil.resolvePath( installpaths[ dependency ], uninstallDirectory );
 				}
 
-				// Recursivley install them
+				// Recursively install them
 				uninstallPackage( argumentCollection = params );
 			}
 
 		} // end is not module
-
+		var systemModule = false;
 		// uninstall the package
 		if( len( uninstallDirectory ) && directoryExists( uninstallDirectory ) ) {
+
+
+			// If this package is being uninstalled anywhere south of the CommandBox system folder, unload the module first
+			if( fileSystemUtil.normalizeSlashes( uninstallDirectory ).startsWith( fileSystemUtil.normalizeSlashes( expandPath( '/commandbox' ) ) ) && fileExists( uninstallDirectory & '/ModuleConfig.cfc' ) ) {
+				consoleLogger.warn( 'Unloading module...' );
+				systemModule = true;
+				try {
+					moduleService.unloadAndUnregisterModule( uninstallDirectory.listLast( '/\' ) );
+					// Heavy-handed workaround for the fact that the module service does not unload
+					// WireBox mappings for this module so they stay in memory
+					wirebox.getCacheBox().getCache( 'metadataCache' ).clearAll();
+				} catch( any e ) {
+					job.addErrorLog( 'Error Unloading module: ' & e.message & ' ' & e.detail );
+					logger.error( '#e.message# #e.detail#' , e.stackTrace );
+				}
+			}
 
 			// Catch this to gracefully handle where the OS or another program
 			// has the folder locked.
@@ -680,29 +940,34 @@ component accessors="true" singleton {
 		}
 
 
-		// Should we save this as a dependancy
+		// Should we save this as a dependency
 		// and is the current working directory a package?
 		if( arguments.save && isPackage( arguments.currentWorkingDirectory ) ) {
 			// Add it!
 			removeDependency( currentWorkingDirectory, packageName );
 			// Tell the user...
 			job.addLog( "Dependency removed from box.json." );
+
+			if ( !arguments.lockFile.isEmpty() && arguments.lockFile.keyExists( "dependencies" ) && arguments.lockFile.dependencies.keyExists( packageName ) ) {
+				arguments.lockFile.dependencies.delete( packageName );
+				job.addLog( "box-lock.json updated to remove locked version for [#packageName#]." );
+			}
 		}
 
-		interceptorService.announceInterception( 'postUninstall', { uninstallArgs=arguments } );
+		interceptorService.announceInterception( 'postUninstall', { uninstallArgs=arguments, system=systemModule } );
 		job.complete();
 	}
 
 	/**
-	* Adds a dependency to a packge
+	* Adds a dependency to a package
 	* @currentWorkingDirectory The directory that is the root of the package
 	* @packageName Package to add a a dependency
 	* @version Version of the dependency
 	* @installDirectory The location that the package is installed to including the container folder.
 	* @installDirectoryIsDedicated True if the package was placed in a dedicated folder
-	* @dev True if this is a development depenency, false if it is a production dependency
-	* 
-	* @returns boolean True if box.json was updated, false if update wasn't neccessary (keys already existed with correct values)
+	* @dev True if this is a development dependency, false if it is a production dependency
+	*
+	* @returns boolean True if box.json was updated, false if update wasn't necessary (keys already existed with correct values)
 	*/
 	public function addDependency(
 		required string currentWorkingDirectory,
@@ -714,21 +979,34 @@ component accessors="true" singleton {
 		struct endpointData
 		) {
 		// Get box.json, create empty if it doesn't exist
-		var boxJSON = readPackageDescriptorRaw( arguments.currentWorkingDirectory );
+		var boxJSONRaw = readPackageDescriptorRaw( arguments.currentWorkingDirectory );
+		// Reading the non-raw version purely for the purpose of comparisons with the env vars replaced.
+		var boxJSON = readPackageDescriptor( arguments.currentWorkingDirectory );
 
 		// Get reference to appropriate dependency struct
-		if( arguments.dev ) {
+		// Save as dev if we have that flag OR if this is already saved as a dev dep
+		if( arguments.dev || !isNull( boxJSONRaw.devDependencies[ arguments.packageName ] ) ) {
+			boxJSONRaw[ 'devDependencies' ] = boxJSONRaw.devDependencies ?: {};
 			boxJSON[ 'devDependencies' ] = boxJSON.devDependencies ?: {};
+
+			// If this package is also saved as a normal dev, remove it from "dependencies"
+			if( !isNull( boxJSONRaw.dependencies[ arguments.packageName ] ) ) {
+				boxJSONRaw.dependencies.delete( arguments.packageName );
+			}
+
+			var dependenciesRaw = boxJSONRaw.devDependencies;
 			var dependencies = boxJSON.devDependencies;
 		} else {
+			boxJSONRaw[ 'dependencies' ] = boxJSONRaw.dependencies ?: {};
 			boxJSON[ 'dependencies' ] = boxJSON.dependencies ?: {};
+			var dependenciesRaw = boxJSONRaw.dependencies;
 			var dependencies = boxJSON.dependencies;
 		}
 		var updated = false;
 
-		// Add/overwrite this dependency
-
-		if( endpointData.endpointName == 'forgebox' ) {
+		// If this is a ForgeBox-based endpoint, add the version as ^1.2.3 if the
+		// user didn't specify a version, otherwise, just use what they typed
+		if( isInstanceOf(endpointData.endpoint, 'forgebox') ) {
             var parsedVersion = parseVersion( endpointData.package );
 			if( len( parsedVersion ) ) {
 				var thisValue = parsedVersion;
@@ -736,13 +1014,19 @@ component accessors="true" singleton {
 				// caret version range (^1.2.3) allows updates that don't bump the major version.
 				var thisValue = '^' & arguments.version;
 			}
+			// If not the default forgebox endpoint, include the endpoint name and package name as
+			// myEndpoing:mypackage@^1.2.3
+			if( endpointData.endpointName != 'forgebox' ) {
+				thisValue = '#endpointData.endpointName#:#arguments.packageName#@#thisValue#';
+			}
 		} else {
 			var thisValue = endpointData.ID;
 		}
-		
-		// Prevent unneccessary updates to the JSON file.
+
+		// Prevent unnecessary updates to the JSON file.
+		// For the comparison, we look in the non-raw version of the box.json so env vars are replaced
 		if( !dependencies.keyExists( arguments.packageName ) || dependencies[ arguments.packageName ] != thisValue ) {
-			dependencies[ arguments.packageName ] = thisValue;
+			dependenciesRaw[ arguments.packageName ] = thisValue;
 			updated = true;
 		}
 
@@ -750,12 +1034,17 @@ component accessors="true" singleton {
 		// so don't save this if they were just dumped somewhere like the package root amongst
 		// other unrelated files and folders.
 		if( arguments.installDirectoryIsDedicated ) {
-			boxJSON[ 'installPaths' ] = boxJSON.installPaths ?: {};
-			var installPaths = boxJSON.installPaths;
+			boxJSONRaw[ 'installPaths' ] = boxJSONRaw.installPaths ?: {};
+			var installPaths = boxJSONRaw.installPaths;
 
 			// normalize slashes and make them all "/"
 			arguments.currentWorkingDirectory = fileSystemUtil.normalizeSlashes( fileSystemUtil.resolvePath( arguments.currentWorkingDirectory ) );
 			arguments.installDirectory = fileSystemUtil.normalizeSlashes( fileSystemUtil.resolvePath( arguments.installDirectory ) );
+
+			// If the folder doesn't exist yet, make sure we still have a trailing slash on the path.
+			if( !installDirectory.endsWith( '/' ) ) {
+				installDirectory &= '/';
+			}
 
 			// If the install location is contained within the package root...
 			if( arguments.installDirectory contains arguments.currentWorkingDirectory ) {
@@ -767,32 +1056,49 @@ component accessors="true" singleton {
 				}
 			}
 
+			var existingInstallPath = '';
+			if( installPaths.keyExists( arguments.packageName ) ) {
+				existingInstallPath = fileSystemUtil.normalizeSlashes( fileSystemUtil.resolvePath( installPaths[ arguments.packageName ], arguments.currentWorkingDirectory ) );
+				// If the install location is contained within the package root...
+				if( existingInstallPath contains arguments.currentWorkingDirectory ) {
+					// Make it relative
+					existingInstallPath = replaceNoCase( existingInstallPath, arguments.currentWorkingDirectory, '' );
+					// Strip any leading slashes so Unix-based OS's don't think it's the drive root
+					if( len( existingInstallPath ) && existingInstallPath.left( 1 ) == '/' ) {
+						existingInstallPath = right( existingInstallPath, len( existingInstallPath ) - 1 );
+					}
+				}
+			}
+
 			// Just in case-- an empty install dir would be useless.
 			if( len( arguments.installDirectory ) ) {
-			
-				// Prevent unneccessary updates to the JSON file.
-				if( !installPaths.keyExists( arguments.packageName ) || installPaths[ arguments.packageName ] != arguments.installDirectory ) {
+
+				// Prevent unnecessary updates to the JSON file.
+				if( !installPaths.keyExists( arguments.packageName )
+					// Resolve the install path in box.json. If it's relative like ../lib but it's still equivalent to the actual install dir, then leave it alone. The user probably wants to keep it relative!
+					|| existingInstallPath != arguments.installDirectory ) {
 					installPaths[ arguments.packageName ] = arguments.installDirectory;
 					updated = true;
+
 				}
-				
+
 			}
 
 		} // end installDirectoryIsDedicated
 
 		// Write the box.json back out
 		if( updated ) {
-			writePackageDescriptor( boxJSON, arguments.currentWorkingDirectory );
+			writePackageDescriptor( boxJSONRaw, arguments.currentWorkingDirectory );
 			return true;
 		}
 		return false;
 	}
 
 	/**
-	* Removes a dependency from a packge if it exists
+	* Removes a dependency from a package if it exists
 	* @directory The directory that is the root of the package
 	* @packageName Package to add a a dependency
-	* @dev True if this is a development depenency, false if it is a production dependency
+	* @dev True if this is a development dependency, false if it is a production dependency
 	*/
 	public function removeDependency( required string directory, required string packageName ) {
 		// Get box.json, create empty if it doesn't exist
@@ -876,11 +1182,10 @@ component accessors="true" singleton {
 			systemSettings.expandDeepSystemSettings( results );
 		}
 		return results;
-
 	}
 
 	/**
-	* Does everything readPackageDescriptor() does, but won't default deprecated box.json proprties.
+	* Does everything readPackageDescriptor() does, but won't default deprecated box.json properties.
 	* @directory The directory to search for the box.json
 	*/
 	struct function readPackageDescriptorTemplate( required directory ){
@@ -897,7 +1202,7 @@ component accessors="true" singleton {
 	*/
 	struct function readPackageDescriptorRaw( required directory ){
 
-		// If the packge has a box.json in the root...
+		// If the package has a box.json in the root...
 		if( isPackage( arguments.directory ) ) {
 
 			// ...Read it.
@@ -921,16 +1226,11 @@ component accessors="true" singleton {
 	* @directory The directory to write the box.json
 	*/
 	function writePackageDescriptor( required any JSONData, required directory ){
-
-		if( !isSimpleValue( JSONData ) ) {
-			JSONData = serializeJSON( JSONData );
-		}
-
-		fileWrite( getDescriptorPath( arguments.directory ), formatterUtil.formatJSON( JSONData ) );
+		JSONService.writeJSONFile( getDescriptorPath( arguments.directory ), JSONData );
 	}
 
 	/**
-	* Return an array of all outdated depdendencies in a project.
+	* Return an array of all outdated dependencies in a project.
 	* @directory The directory of the package to start in
 	* @print The print buffer used for command operation
 	* @verbose Outputs additional information about each package as it is checked
@@ -940,17 +1240,19 @@ component accessors="true" singleton {
 	*/
 	array function getOutdatedDependencies( required directory, required print, boolean verbose=false, includeSlugs='' ){
 		// build dependency tree
-		var tree = buildDependencyHierarchy( arguments.directory );
+		arguments.directory = fileSystemUtil.normalizeSlashes( arguments.directory );
+		arguments.directory = right( arguments.directory, 1 ) == "/" ?
+			left( arguments.directory, len( arguments.directory ) - 1 ) :
+			arguments.directory;
+		var tree 	= buildDependencyHierarchy( arguments.directory );
 		var fakeDir = arguments.directory & '/fake';
-		var verbose = arguments.verbose;
 
 		// Global outdated check bit
-		var aOutdatedDependencies = [];
+		var aAllDependencies = [];
+
 		// Outdated check closure
 		var fOutdatedCheck 	= function( slug, value ){
-
-			// Only check slugs we're supposed to
-			if( !len( includeSlugs ) || listFindNoCase( includeSlugs, arguments.slug ) ) {
+			if( !len( includeSlugs ) || listFindNoCase( includeSlugs, arguments.slug ) ){
 
 				// If a package is not installed (possibly a dev dependency in production mode), then we skip it
 				if( !value.isInstalled ) {
@@ -984,44 +1286,53 @@ component accessors="true" singleton {
 					return;
 				}
 
-				if( updateData.isOutdated ){
-					aOutdatedDependencies.append({
-						slug 				: arguments.slug,
-						directory 			: value.directory,
-						version 			: value.version,
-						packageVersion		: value.packageVersion,
-						newVersion 			: updateData.version,
-						shortDescription 	: value.shortDescription,
-						name 				: value.name,
-						dev 				: value.dev
-					});
+				try {
+					var latestData = endpointData.endpoint.getUpdate( arguments.slug & "@stable", value.packageVersion, verbose );
+				} catch( EndpointNotFound var e ) {
+					consoleLogger.error( e.message );
+					return;
 				}
-				// verbose output
-				if( verbose ){
-					print.yellowLine( "    * #arguments.slug# (#value.packageVersion#) -> #endpointData.endpointName# version: (#updateData.version#)" )
-						.boldRedText( updateData.isOutdated ? "        * #arguments.slug# is Outdated#chr( 10 )#" : "" )
-						.toConsole();
-				}
+
+				value.directory = fileSystemUtil.normalizeSlashes( value.directory )
+				var dependencyInfo = {
+					'slug' 				: arguments.slug,
+					'directory' 		: value.directory,
+					'version' 			: value.version,
+					'packageVersion'	: value.packageVersion,
+					'newVersion' 		: updateData.version,
+					'latestVersion'     : latestData.version,
+					'shortDescription' 	: value.shortDescription,
+					'name' 				: value.name,
+					'dev' 				: value.dev,
+					'isOutdated'        : updateData.isOutdated,
+					'isLatest'          : !latestData.isOutdated,
+					'location'          : replace( value.directory, directory, "" ) & "/" & slug,
+					'endpointName'		: endpointData.endpointName,
+					'depth'				: value.depth
+				};
+
+				aAllDependencies.append( dependencyInfo );
 
 			}
 
 			// Do we have more dependencies, go down the tree in parallel
 			if( structCount( value.dependencies ) ){
-				structEach( value.dependencies, fOutdatedCheck );
+				structEach( value.dependencies, fOutdatedCheck, true );
 			}
 		};
 
 		// Verify outdated dependency graph in parallel
-		structEach( tree.dependencies, fOutdatedCheck );
+		structEach( tree.dependencies, fOutdatedCheck, true );
 
-		return aOutdatedDependencies;
+		return aAllDependencies;
 	}
 
 	/**
 	* Builds a struct of structs that represents the dependency hierarchy
 	* @directory The directory of the package to start in
+	* @depth how deep to climb down the rabbit hole.  A value of 0 means infinite depth
 	*/
-	function buildDependencyHierarchy( required directory ){
+	function buildDependencyHierarchy( required directory, depth=0 ){
 
 		var boxJSON = readPackageDescriptor( arguments.directory );
 		var tree = {
@@ -1031,18 +1342,24 @@ component accessors="true" singleton {
 			'version': boxJSON.version,
 			'packageVersion': boxJSON.version,
 			'isInstalled': true,
-			'directory': arguments.directory
+			'directory': arguments.directory,
+			'depth': 0
 		};
-		buildChildren( boxJSON, tree, arguments.directory);
+		buildChildren( boxJSON, tree, arguments.directory, depth, 1 );
 		return tree;
 	}
 
-	private function buildChildren( required struct boxJSON, required struct parent, required string basePath ) {
-		parent[ 'dependencies' ] = processDependencies( boxJSON.dependencies, boxJSON.installPaths, false, arguments.basePath );
-		parent[ 'dependencies' ].append( processDependencies( boxJSON.devDependencies, boxJSON.installPaths, true, arguments.basePath ) );
+	private function buildChildren( required struct boxJSON, required struct parent, required string basePath, depth=0, currentlevel ) {
+		// If we've reached our depth stop here
+		if( depth > 0 && currentLevel > depth ) {
+			parent[ 'dependencies' ] = {};
+			return;
+		}
+		parent[ 'dependencies' ] = processDependencies( boxJSON.dependencies, boxJSON.installPaths, false, arguments.basePath, depth, currentlevel );
+		parent[ 'dependencies' ].append( processDependencies( boxJSON.devDependencies, boxJSON.installPaths, true, arguments.basePath, depth, currentlevel ) );
 	}
 
-	private function processDependencies( dependencies, installPaths, dev=false, basePath ) {
+	private function processDependencies( dependencies, installPaths, dev=false, basePath, depth=0, currentlevel ) {
 		var thisDeps = {};
 
 		for( var dependency in arguments.dependencies ) {
@@ -1053,7 +1370,8 @@ component accessors="true" singleton {
 				'shortDescription' : '',
 				'packageVersion' : '',
 				'isInstalled': false,
-				'directory': ''
+				'directory': '',
+				'depth': currentlevel
 			};
 
 			if( structKeyExists( arguments.installPaths, dependency ) ) {
@@ -1075,7 +1393,7 @@ component accessors="true" singleton {
 					}
 
 					// Down the rabbit hole
-					buildChildren( boxJSON, thisDeps[ dependency ], fullPackageInstallPath );
+					buildChildren( boxJSON, thisDeps[ dependency ], fullPackageInstallPath, depth, currentlevel+1 );
 
 				} else {
 					thisDeps[ dependency ][ 'isInstalled'  ] = false;
@@ -1117,36 +1435,131 @@ component accessors="true" singleton {
 
 	/**
 	* Nice wrapper to run a package script
+	*
 	* @scriptName Name of the package script to run
 	* @directory The package root
+	* @ignoreMissing Set true to ignore missing package scripts, false to throw an exception
+	* @interceptData An optional struct of data if this package script is being fired as part of an interceptor announcement.  Will be loaded into env vars
+	* @automatic Set true when this script is being fired automatically by an interceptor (not explicitly invoked by the user).  Used to gate potentially risky install-lifecycle scripts behind a confirmation prompt.
 	*/
-	function runScript( required string scriptName, string directory=shell.pwd(), boolean ignoreMissing=true ) {
+	function runScript( required string scriptName, string directory=shell.pwd(), boolean ignoreMissing=true, interceptData={}, boolean automatic=false ) {
+		// Read the box.json from this package (if it exists)
+		var boxJSON = readPackageDescriptorRaw( arguments.directory );
+		// If there is a scripts object with a matching key for this interceptor....
+		if( boxJSON.keyExists( 'scripts' ) && isStruct( boxJSON.scripts ) && boxJSON.scripts.keyExists( arguments.scriptName ) ) {
 
-			// Read the box.json from this package (if it exists)
-			var boxJSON = readPackageDescriptor( arguments.directory );
-			// If there is a scripts object with a matching key for this interceptor....
-			if( boxJSON.keyExists( 'scripts' ) && isStruct( boxJSON.scripts ) && boxJSON.scripts.keyExists( arguments.scriptName ) ) {
+			// Skip this if we're not in a command so we don't litter the default env var namespace
+			if( systemSettings.getAllEnvironments().len() > 1 ) {
+				systemSettings.setDeepSystemSettings( interceptData );
+			}
 
-				// Run preXXX package script
-				runScript( 'pre#arguments.scriptName#', arguments.directory, true );
+			// Run preXXX package script
+			runScript( 'pre#arguments.scriptName#', arguments.directory, true );
 
-				var thisScript = boxJSON.scripts[ arguments.scriptName ];
+			systemSettings.expandDeepSystemSettings( boxJSON );
+			// get the script commands, forcing them into an array
+			var scriptNameCommands = boxJSON.scripts[ arguments.scriptName ];
+			if( isSimpleValue( scriptNameCommands ) ) {
+				scriptNameCommands = [ scriptNameCommands ];
+			}
+			// Gate automatically-fired install-lifecycle scripts behind a human-in-the-loop confirmation.
+			// This is the classic supply-chain risk: installing a third party package can silently run
+			// arbitrary commands via its install scripts.  Explicit "run-script" invocations are not gated.
+			if( scriptNameCommands.len()
+				&& arguments.automatic
+				&& isRiskyInstallScript( arguments.scriptName )
+				&& !confirmScriptExecution( arguments.scriptName, arguments.directory, scriptNameCommands, arguments.interceptData ) ) {
+				consoleLogger.warn( 'Skipped package script [#arguments.scriptName#] — not approved.' );
+			} else if( scriptNameCommands.len() ) {
 				consoleLogger.debug( '.' );
 				consoleLogger.warn( 'Running package script [#arguments.scriptName#].' );
-				consoleLogger.debug( '> ' & thisScript );
+				for( var scriptNameCommand in scriptNameCommands ) {
+					consoleLogger.debug( '> ' & scriptNameCommand );
 
-				// ... then run the script! (in the context of the package's working directory)
-				var previousCWD = shell.pwd();
-				shell.cd( arguments.directory );
-				shell.callCommand( thisScript );
-				shell.cd( previousCWD );
+					// Normally the shell retains the previous exit code, but in this case
+					// it's important for us to know if the scripts return a failing exit code without throwing an exception
+					shell.setExitCode( 0 );
 
-				// Run postXXX package script
-				runScript( 'post#arguments.scriptName#', arguments.directory, true );
+					// ... then run the script! (in the context of the package's working directory)
+					var previousCWD = shell.pwd();
+					shell.cd( arguments.directory );
+					shell.callCommand( scriptNameCommand );
+					shell.cd( previousCWD );
 
-			} else if( !arguments.ignoreMissing ) {
-				consoleLogger.error( 'The script [#arguments.scriptName#] does not exist in this package.' );
+					// If the script ran "exit"
+					if( !shell.getKeepRunning() ) {
+						// Just kidding, the shell can stay....
+						shell.setKeepRunning( true );
+					}
+
+					if( shell.getExitCode() != 0 ) {
+						throw( message='Package script returned failing exit code (#shell.getExitCode()#)', detail='Failing script: #arguments.scriptName#', type="commandException", errorCode=shell.getExitCode() );
+					}
+				}
 			}
+
+			// Run postXXX package script
+			runScript( 'post#arguments.scriptName#', arguments.directory, true );
+
+		} else if( !arguments.ignoreMissing ) {
+			consoleLogger.error( 'The script [#arguments.scriptName#] does not exist in this package.' );
+		}
+	}
+
+	/**
+	* Is this script name one of the install-lifecycle interception points that runs code originating
+	* from a package being added or removed?  These are the points worth confirming with a human since
+	* they can run arbitrary commands defined by a (potentially untrusted) third party package.
+	* The recursive pre.../post... wrapper names that runScript derives (e.g. prepostInstall) are
+	* intentionally excluded so a single event prompts at most once.
+	* @scriptName Name of the package script / interception point
+	*/
+	private boolean function isRiskyInstallScript( required string scriptName ) {
+		var riskyEvents = 'preInstall,preInstallAll,onInstall,postInstall,postInstallAll,preUninstall,postUninstall';
+		return riskyEvents.listFindNoCase( arguments.scriptName ) > 0;
+	}
+
+	/**
+	* Ask the user (human-in-the-loop) whether a potentially risky, automatically-fired install script
+	* should be allowed to run.  Returns true to run the script, false to skip it.
+	*
+	* Trust is granted per-install via the "trustScripts" arg (carried in interceptData.installArgs),
+	* which itself defaults to the "scripts.trustInstallScripts" config setting.  The
+	* "box_config_scripts_trustInstallScripts" environment variable overrides that config setting
+	* automatically via ConfigService, so we never read env vars directly here.
+	*
+	* Behavior when not trusted:
+	*  - In a non-interactive shell (CI / no TTY) the script is denied since we can't prompt.
+	*  - Otherwise the exact commands are shown and the user is asked a yes/no question.
+	*
+	* @scriptName Name of the package script / interception point
+	* @directory The package root the script will run in
+	* @commands An array of the command strings that will be executed
+	* @interceptData The interception data for this event (carries installArgs.trustScripts when present)
+	*/
+	private boolean function confirmScriptExecution( required string scriptName, required string directory, required array commands, struct interceptData={} ) {
+		// Trust may be granted for this install via the trustScripts arg; otherwise fall back to the
+		// config setting (which the box_config_scripts_trustInstallScripts env var overrides for free).
+		var trusted = arguments.interceptData.installArgs.trustScripts ?: configService.getSetting( 'scripts.trustInstallScripts', false );
+		if( trusted ) {
+			return true;
+		}
+
+		// Show the user exactly what is about to run so they can make an informed decision.
+		consoleLogger.warn( '.' );
+		consoleLogger.warn( 'SECURITY: The package script [#arguments.scriptName#] wants to automatically run the following command(s):' );
+		consoleLogger.warn( '  Package location: #arguments.directory#' );
+		for( var thisCommand in arguments.commands ) {
+			consoleLogger.error( '  > ' & thisCommand );
+		}
+
+		// Non-interactive shells (CI, piped input, no TTY) can't answer a prompt, so deny.
+		if( !shell.isTerminalInteractive() ) {
+			consoleLogger.warn( 'Refusing to auto-run install script in a non-interactive shell. Set config setting [scripts.trustInstallScripts=true] or pass [--trustScripts] to allow.' );
+			return false;
+		}
+
+		return shell.confirm( 'Do you want to allow this script to run? [y/n]' );
 	}
 
 	/**
@@ -1154,11 +1567,11 @@ component accessors="true" singleton {
 	* @package The full endpointID like foo@1.0.0
 	*/
 	private function parseSlug( required string package ) {
-		var matches = REFindNoCase( "^([a-zA-Z][\w\-\.]*(?:\@(?!stable\b)(?!be\b)[a-zA-Z][\w\-]*)?)(?:\@(.+))?$", package, 1, true );
+		var matches = REFindNoCase( "^([\w\-\.]+(?:\@(?!stable\b)(?!be\b)(?!x\b)[a-zA-Z][\w\-]*)?)(?:\@(.+))?$", package, 1, true );
 		if ( arrayLen( matches.len ) < 2 ) {
 			throw(
 				type = "endpointException",
-				message = "Invalid slug detected.  Slugs can only contain letters, numbers, underscores, and hyphens. They may also be prepended with an @ sign for private packages"
+				message = "Invalid slug detected.  Slugs can only contain letters, numbers, underscores, and hyphens. They may also contain an @ sign for private packages"
 			);
 		}
 		return mid( package, matches.pos[ 2 ], matches.len[ 2 ] );
@@ -1171,7 +1584,7 @@ component accessors="true" singleton {
 	private function parseVersion( required string package ) {
 		var version = '';
 		// foo@1.0.0
-		var matches = REFindNoCase( "^([a-zA-Z][\w\-\.]*(?:\@(?!stable\b)(?!be\b)[a-zA-Z][\w\-]*)?)(?:\@(.+))?$", package, 1, true );
+		var matches = REFindNoCase( "^([\w\-\.]+(?:\@(?!stable\b)(?!be\b)(?!x\b)[a-zA-Z][\w\-]*)?)(?:\@(.+))?$", package, 1, true );
 		if ( matches.pos.len() >= 3 && matches.pos[ 3 ] != 0 ) {
 			// Note this can also be a semver range like 1.2.x, >2.0.0, or 1.0.4-2.x
 			// For now I'm assuming it's a specific version
@@ -1179,4 +1592,25 @@ component accessors="true" singleton {
 		}
 		return version;
 	}
+
+	private void function updateLockedDependencies(
+		required struct lockSlice,
+		required string packageName,
+		required any newVersion,
+		required any job
+	) {
+		if ( !arguments.lockSlice.keyExists( "dependencies" ) || !isStruct( arguments.lockSlice.dependencies ) ) {
+			return;
+		}
+
+		if ( arguments.lockSlice.dependencies.keyExists( arguments.packageName ) ) {
+			arguments.lockSlice.dependencies[ arguments.packageName ].version = arguments.newVersion;
+			job.addLog( "Updated locked version for [#arguments.packageName#] to [#arguments.newVersion#]." );
+		}
+
+		for ( var depName in arguments.lockSlice.dependencies ) {
+			updateLockedDependencies( arguments.lockSlice.dependencies[ depName ], arguments.packageName, arguments.newVersion, job );
+		}
+	}
+
 }

@@ -21,7 +21,7 @@ component accessors="true" implements="IEndpoint" singleton {
 		return this;
 	}
 
-	public string function resolvePackage( required string package, boolean verbose=false ) {
+	public string function resolvePackage( required string package, string currentWorkingDirectory="", boolean verbose=false ) {
 
 		package = packageService.findPackageRoot( package );
 

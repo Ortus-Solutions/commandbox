@@ -5,138 +5,181 @@
 ********************************************************************************
 * @author Brad Wood, Luis Majano
 *
-* I help update the user's console with progress for a curently executing (foreground)
+* I help update the user's console with progress for a currently executing (foreground)
 * job in a nice and tidy way.
 */
 component accessors=true singleton {
 
 	processingdirective pageEncoding='UTF-8';
-	
+
 	// An array of possibly-nested job details
 	property name='jobs' type='array';
 	// Is job currently running
 	property name='active' type='boolean';
+	// Should we dump the log by default when ending
+	property name='dumpLog' type='boolean';
+	property name='startTime' type='numeric';
+	property name='animation' type='numeric';
+
 
 	// DI
 	property name='shell' inject='shell';
 	property name='printBuffer' inject='printBuffer';
 	property name='print' inject='print';
+	property name='ConsolePainter'	inject='provider:ConsolePainter';
 
 	function init() {
 		// Static reference to the class so we can create instances later
 		aStr = createObject( 'java', 'org.jline.utils.AttributedString' );
+		runningAnimationChars = [
+			[ ' - ', ' \ ', ' | ', ' / ' ],
+			[ '|  ', ' | ', '  |' ],
+			[ 'GO!','   ' ],
+			[ ' ← ', ' ↖ ', ' ↑ ', ' ↗ ', ' → ', ' ↘ ', ' ↓ ', ' ↙ ' ],
+			[ '▏  ', '▎  ', '▍  ', '▌  ', '▋  ', '▊  ', '▉  ', '▉▏ ', '▉▎ ', '▉▍ ', '▉▌ ', '▉▋ ', '▉▊ ', '▉▉ ', '▉▉▏', '▉▉▎', '▉▉▍', '▉▉▌', '▉▉▋', '▉▉▊', '▉▉▉' ],
+			[ '▁▁▁', '▂▂▂', '▃▃▃', '▄▄▄', '▅▅▅', '▆▆▆', '▇▇▇', '███', '▇▇▇', '▆▆▆', '▅▅▅', '▄▄▄', '▃▃▃', '▁▁▁' ],
+			[ ' ◐ ', ' ◓ ', ' ◑ ', ' ◒ ' ],
+			[ ' ⊙⊙', ' ⊙⊙', ' ⊙⊙', ' ◠◠' ],
+			[ ' ◢ ', ' ◣ ', ' ◤ ', ' ◥ ' ],
+			[ ' ⠁ ', ' ⠂ ', ' ⠄ ', ' ⡀ ', ' ⢀ ', ' ⠠ ', ' ⠐ ', ' ⠈ ' ],
+			[ ' ⣾ ', ' ⣽ ', ' ⣻ ', ' ⢿ ', ' ⡿ ', ' ⣟ ', ' ⣯ ', ' ⣷ ' ],
+			[ ' ┤ ',  ' ┴ ',  ' ├ ',  ' ┬ ' ],
+			[ ' ◐ ',  ' ◓ ',  ' ◑ ',  ' ◒ ' ],
+			[ '>  ', ' > ', '  >' ]
+		];
+
+		setStartTime( 0 );
+		setAnimation( 1 )
 		return this;
 	}
-	
+
 	function onDIComplete() {
 		terminal = shell.getReader().getTerminal();
-		display = createObject( 'java', 'org.jline.utils.Display' ).init( terminal, false );
 		safeWidth = 80;
 		reset();
 	}
-	
+
 	/**
 	* Reset the internal state of this job
 	*/
 	function reset() {
 		jobs = [];
 		setActive( false );
-		
-		if( terminal.getWidth() == 0 ) {
-			safeWidth=80;
-		} else {
-			safeWidth=terminal.getWidth();
-		}
-		
-		display.resize( terminal.getHeight(), safeWidth );
-		
+		ConsolePainter.stop();
 		return this;
 	}
-	
+
 	/**
 	* Clear from the screen, but don't reset
 	*/
 	function clear() {
-		
-		// If Jline uses a "dumb" terminal, the width reports as zero, which throws devide by zero errors.
-		// TODO: I might be able to just fake a reasonable width.
-		if( terminal.getWidth() == 0 ) {
-			return;
-		}
-		
-		display.update(
-			[ aStr.init( ' ' ) ],
-			0
-		);
+		setActive( false );
+		ConsolePainter.stop();
 		return this;
 	}
-	
+
 	/**
 	* Add a line of logging.  Feel free to use ANSI formatting
-	* 
+	*
 	* @line Message to log
 	*/
-	function addLog( required string line ) {
+	function addLog( required string line, string color='' ) {
+		var termWidth = shell.getTermWidth() - ( getCurrentJobDepth() * 4 ) - 3;
+		if( termWidth <= 0 ){
+			termWidth = 70;
+		}
+
 		getCurrentJob()
-			.logLines.append( 
-				// Any log lines with a line break needs to become multuple lines
-				line.listToArray( chr( 13 ) & chr( 10 ) )
+			.logLines.append(
+				// Any log lines with a line break needs to become multiple lines
+				toString( line )
+					// Break multiple lines into array
+					.listToArray( chr( 13 ) & chr( 10 ) )
+					// Break lines longer than the current terminal width into multiples
+					.reduce( function( result, i ) {
+						// Keep breaking off chunks until we're short enough to fit
+						// We need to ignore ANSI formatting when rdoing this or it will throw off the widths
+						while( aStr.stripAnsi( i ).length() > termWidth ) {
+							var attributedString = aStr.fromAnsi(i);
+							result.append( attributedString.subSequence( 0, termWidth-1 ).toString() );
+							i = attributedString.subSequence( termWidth-1, attributedString.length()-1 );
+						}
+						// Add any remaining.
+						if( i.length() ) {
+							result.append( i.toString() );
+						}
+						return result;
+					}, [] )
+					// Apply coloring to all lines if there is a color.
+					.map( function( i ) {
+						if( color.len() ) {
+							return print.text( i, color );
+						} else {
+							return i;
+						}
+					} )
 				,true
 			);
 		draw();
 		return this;
 	}
-	
+
 	/**
 	* Convenience method to log a red message
-	* 
+	*
 	* @line Message to log
 	*/
 	function addErrorLog( required string line ) {
-		return addLog( print.red( line ) );
+		return addLog( line, 'red' );
 	}
-	
+
 	/**
 	* Convenience method to log a yellow message
-	* 
+	*
 	* @line Message to log
 	*/
 	function addWarnLog( required string line ) {
-		return addLog( print.yellow( line ) );
+		return addLog( line, 'yellow' );
 	}
-	
+
 	/**
 	* Convenience method to log a green message
-	* 
+	*
 	* @line Message to log
 	*/
 	function addSuccessLog( required string line ) {
-		return addLog( print.green( line ) );
+		return addLog( line, 'green' );
 	}
-	
+
 	/**
 	* Mark job as completed.  This will print out any final permanent lines and clear the state
-	* 
-	* @dumpLog Dump out all internal log lines permenantly to the console
+	*
+	* @dumpLog Dump out all internal log lines permanently to the console
 	*/
-	function complete( boolean dumpLog=false ) {
-		getCurrentJob().status = 'Complete';
-		if( jobs.last().status != 'Running' ) {
-			finalizeOutput( dumpLog );	
+	function complete( boolean dumpLog=variables.dumpLog ) {
+		lock name="job-queue" timeout=20 {
+			getCurrentJob().status = 'Complete';
+			if( jobs.last().status != 'Running' ) {
+				finalizeOutput( dumpLog );
+			}
 		}
 		return this;
 	}
-	
+
 	/**
 	* Mark job as Failed.  This will print out any final permanent lines and clear the state
-	* 
-	* @dumpLog Dump out all internal log lines permenantly to the console
+	*
+	* @dumpLog Dump out all internal log lines permanently to the console
 	*/
-	function error( string message='', boolean dumpLog=false ) {
-		getCurrentJob().errorMessage = message;
-		getCurrentJob().status = 'Error';
-		if( jobs.last().status != 'Running' ) {
-			finalizeOutput( dumpLog );	
+	function error( string message='', boolean dumpLog=variables.dumpLog ) {
+		lock name="job-queue" timeout=20 {
+			var currentJob = getCurrentJob();
+			currentJob.dumpLog = true;
+			currentJob.errorMessage = message;
+			currentJob.status = 'Error';
+			if( jobs.last().status != 'Running' ) {
+				finalizeOutput( dumpLog );
+			}
 		}
 		return this;
 	}
@@ -145,7 +188,7 @@ component accessors=true singleton {
 	* Cancel all remaining jobs and mark with error
 	*
 	* @message Error message to be applied to the current job
-	*/	
+	*/
 	function errorRemaining( message='' ) {
 		while( isActive() ) {
 			error( message );
@@ -153,21 +196,28 @@ component accessors=true singleton {
 		}
 		return this;
 	}
-	
+
 	/**
 	* Kick off a job.  Clears any previous state and starts drawing
-	* 
+	*
 	* @name Name of the job
 	*/
 	function start( required string name, logSize=5 ) {
-		setActive( true );
-		// If there are currently jobs running...
-		if( jobs.len() ) {
-			// ... make this a child of he currently active one
-			getCurrentJob().children.append( newJob( name, logSize ) );
-		} else {
-			// ... otherwise just add this as a top level job
-			jobs.append( newJob( name, logSize ) );	
+		lock name="job-queue" timeout=20 {
+			if( !getActive() ) {
+				setStartTime( getTickCount() );
+				setAnimation( randRange( 1, runningAnimationChars.len() ) )
+			}
+			setActive( true );
+			// If there are currently jobs running...
+			if( jobs.len() ) {
+				// ... make this a child of he currently active one
+				getCurrentJob().children.append( newJob( name, logSize ) );
+			} else {
+				// ... otherwise just add this as a top level job
+				setDumpLog( false );
+				jobs.append( newJob( name, logSize ) );
+			}
 		}
 		draw();
 		return this;
@@ -181,18 +231,17 @@ component accessors=true singleton {
 	* @dumpLog Include all log messages in output regardless of logSize
 	*/
 	private function finalizeOutput( boolean dumpLog ) {
-		// Clear screen
-		clear();
-		// There are now no jobs here to see
-		setActive( false );
 		printBuffer.clear();
 		// Loop over and output each line for good
-		getLines( includeAllLogs=dumpLog ).each( function( line ) {
+		getLines( includeAllLogs=dumpLog, finalOutput=true ).each( function( line ) {
 			printBuffer.line( line.toAnsi() );
 		} );
-		
+
+		// Clear screen
+		clear();
+
 		printBuffer.toConsole()
-				
+
 		// Reset internal state
 		reset();
 	}
@@ -201,37 +250,23 @@ component accessors=true singleton {
 	* Render the information to the console
 	*/
 	function draw() {
-		
-		// If Jline uses a "dumb" terminal, the width reports as zero, which throws devide by zero errors.
-		// TODO: I might be able to just fake a reasonable width.
-		if( terminal.getWidth() == 0 ) {
-			return;
-		}
-		
-		var lines = getLines()
-			// Extra whitespace at the bottom
-			.append( aStr.init( ' ' ) );
-			
-		// Trim to terminal height so the screen doesn't go all jumpy
-		// If there is more output than screen, the user just doesn't get to see the rest
-		if( lines.len() > terminal.getHeight()-2 ) {
-			lines = lines.slice( 1, terminal.getHeight()-2 );
-		}
-			
-		display.update(
-			lines,
-			0
-		);
+		ConsolePainter.start();
 		return this;
 	}
 
 	/**
-	* Returns array of AttribtuedString objects that represent this job and its children's current state
-	* 
+	* Returns array of AttributedString objects that represent this job and its children's current state
+	*
 	* @job Reference to a job struct so this method can be called recursively
 	* @includeAllLogs Ignore logSize and include all log lines
+	* @finalOutput True if getting final output at the completion of the job.
 	*/
-	array function getLines( job, includeAllLogs=false ) {
+	array function getLines( job, includeAllLogs=false, finalOutput=false ) {
+
+		if( !getActive() ) {
+			return [];
+		}
+
 		if( isNull( arguments.job ) ) {
 			if( !getJobs().len() ) {
 				throw( 'No active job' );
@@ -241,27 +276,32 @@ component accessors=true singleton {
 		}
 		// Display job title
 		var lines = [
-			aStr.fromAnsi( getJobTitle( job ) )	
+			aStr.fromAnsi( getJobTitle( job ) )
 		];
-		
+
 		// Add error message if it exists
 		if( job.errorMessage.len() ) {
-			lines.append( aStr.fromAnsi( print.redText( '   | > ' & job.errorMessage ) ) );
+			toString( job.errorMessage ).listToArray( chr( 13 ) & chr( 10 ) ).each( function( thisErrorLine) {
+				lines.append( aStr.fromAnsi( print.redText( '   | > ' & thisErrorLine ) ) );
+			} );
 		}
-		
-		if( job.status == 'Running' || includeAllLogs ) {
-		
-			lines.append( aStr.fromAnsi( print.text( '   |' & repeatString( '-', min( job.name.len()+15, safeWidth-5 ) ), statusColor( job ) ) ) );
-		
+
+		if( job.status == 'Running' || includeAllLogs || ( finalOutput && job.dumpLog ) ) {
+
+			// If we're only showing one line of job logs, don't bother with the ------ dividers
+			if( job.logSize > 1 ) {
+				lines.append( aStr.fromAnsi( print.text( '   |' & repeatString( '-', min( job.name.len()+15, safeWidth-5 ) ), statusColor( job ) ) ) );
+			}
+
 			var relevantLogLines = [];
 			var thisLogLines = job.logLines;
 			var thisLogSize = job.logSize;
-			if( includeAllLogs ) {
+			if( includeAllLogs || ( finalOutput && job.dumpLog ) ) {
 				thisLogSize = thisLogLines.len();
 			}
 			// These are the lines that are going to be printed
 			if( thisLogLines.len() && thisLogSize > 0 ) {
-				relevantLogLines = thisLogLines.slice( max( thisLogLines.len() - thisLogSize + 1, 1 ), min( thisLogLines.len(), thisLogSize ) ); 	
+				relevantLogLines = thisLogLines.slice( max( thisLogLines.len() - thisLogSize + 1, 1 ), min( thisLogLines.len(), thisLogSize ) );
 			}
 			var i = 0;
 			var atLeastOne = false;
@@ -276,18 +316,19 @@ component accessors=true singleton {
 					//lines.append( aStr.fromAnsi( print.text( '   |  ', statusColor( job ) ) ) );
 				}
 			}
-			
+
 			// Only print divider if we had at least one log message above
-			if( atLeastOne ) {
-				lines.append( aStr.fromAnsi( print.text( '   |' & repeatString( '-', min( job.name.len()+15, safeWidth-5 ) ), statusColor( job ) ) ) );	
+			// also if we're only showing one line of job logs, don't bother with the ------ dividers
+			if( atLeastOne && job.logSize > 1 ) {
+				lines.append( aStr.fromAnsi( print.text( '   |' & repeatString( '-', min( job.name.len()+15, safeWidth-5 ) ), statusColor( job ) ) ) );
 			}
-			
+
 		} // End is job running
-		
+
 		// Add in children
 		for( var child in job.children ) {
 			lines.append(
-				getLines( child, includeAllLogs )
+				getLines( child, includeAllLogs, finalOutput )
 					// Indent our children inside of our own "box"
 					.map( function( line ){
 						return aStr.fromAnsi( print.text( '   |', statusColor( job ) ) & line.toAnsi() );
@@ -295,29 +336,43 @@ component accessors=true singleton {
 				true
 			);
 		}
-		
+
 		return lines;
 	}
-	
+
 	/**
 	* Returns colored and formatted job title
-	* 
+	*
 	* @job Job struct to use
 	*/
 	private string function getJobTitle( job ) {
 		if( job.status == 'Error' ) {
-			return print.text( ' ✘ | ' & job.name, statusColor( job ) );
+			return print.text( ' × | ' & job.name, statusColor( job ) );
 		} else if( job.status == 'complete' ) {
-			return print.text( ' ✓ | ' & job.name, statusColor( job ) );
+			return print.text( ' √ | ' & job.name, statusColor( job ) );
 		} else {
 			// Totally ok with finding something cooler than a hyphen here...
-			return print.text( ' - | ' & job.name, statusColor( job ) );
+			return print.text( '#runningAnimation()#| ' & job.name, statusColor( job ) );
 		}
 	}
-	
+
+	/**
+	* Returns a character to aninmate for running jobs
+	*
+	*/
+	function runningAnimation() {
+		var thisRunningAnimationChars = runningAnimationChars[ getAnimation() ];
+		// How long has this job been running in ms?
+		var runningTime = ( getTickCount() ) - getStartTime();
+		// Removing the amount of time it takes to completely cycle through the chars an even amount of time, how much is left in the current cycle?
+		runningTime = runningTime % ( thisRunningAnimationChars.len() * 500 );
+		// Which char are we on at 500ms per char?
+		return thisRunningAnimationChars[ ( runningTime \ 500 ) + 1 ]
+	}
+
 	/**
 	* Returns name of color for current job status
-	* 
+	*
 	* @job Job struct to use
 	*/
 	private string function statusColor( job ) {
@@ -328,36 +383,38 @@ component accessors=true singleton {
 		} else {
 			return 'yellow';
 		}
-		
+
 	}
-	
+
 	/**
 	* Returns empty struct of default job details
-	* 
+	*
 	* @name Name of job
 	* @logSize Size of the log to display
 	*/
 	private struct function newJob( name, logSize ) {
-		
+
 		return {
 			// The current status of the job
 			// Running, Complete, Error
-			status = 'Running',
+			status : 'Running',
 			// Message that goes along with a failed job.
 			errorMessage = '',
 			// Name of the job
-			name = arguments.name ?: '',
+			name : arguments.name ?: '',
 			// Array of potentially-ANSI-formatted message from this job
-			logLines = [],
+			logLines : [],
 			// Number of recent log lines to show on the console
-			logSize = arguments.logSize ?: 5,
+			logSize : arguments.logSize ?: 5,
+			// Should log lines for this job only be dumped on completion. Can be overridden by main dumpLog setting
+			dumpLog : false,
 			// Children jobs
-			children = []
+			children : []
 		};
 	}
-	
+
 	/**
-	* Get struct that represents the currentlly executing job.
+	* Get struct that represents the currently executing job.
 	*/
 	private struct function getCurrentJob() {
 		var pointer = getJobs();
@@ -375,7 +432,30 @@ component accessors=true singleton {
 		// Climb down the rabbit hole until we find the last running job
 		return getLastChild( pointer.last() );
 	}
-	
+
+	/**
+	* Get number that represents the depth of the currently executing job.
+	*/
+	numeric function getCurrentJobDepth() {
+		var pointer = getJobs();
+		var depth = 0;
+		if( !pointer.len() ) {
+			throw( 'No active job' );
+		}
+		// Declare a closure here for easy recursion
+		var getLastChild = function( job ) {
+			depth++;
+			if( job.children.len() && job.children.last().status=='Running' ) {
+				return getLastChild( job.children.last() );
+			} else {
+				return job;
+			}
+		}
+		// Climb down the rabbit hole until we find the last running job
+		getLastChild( pointer.last() );
+		return depth;
+	}
+
 	/**
 	* Is there an active job?
 	*/

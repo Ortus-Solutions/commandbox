@@ -49,7 +49,7 @@ component {
 	 * @_.hint Pass any number of property names in followed by the value to set
 	 * @_.optionsUDF completeProperty
 	 * @serverConfigFile The path to the server's JSON file.
-	 * @append.hint If setting an array or struct, set to true to append instead of overwriting.
+	 * @append.hint Append struct/array setting, instead of overwriting.
 	 **/
 	function run(
 		_,
@@ -59,7 +59,7 @@ component {
 		var thisAppend = arguments.append;
 
 		if( len( arguments.serverConfigFile ) ) {
-			arguments.serverConfigFile = fileSystemUtil.resolvePath( arguments.serverConfigFile );
+			arguments.serverConfigFile = resolvePath( arguments.serverConfigFile );
 		}
 		var thisServerConfigFile = ( len( arguments.serverConfigFile ) ? arguments.serverConfigFile : getCWD() & '/server.json' );
 
@@ -82,8 +82,8 @@ component {
 	}
 
 	// Dynamic completion for property name based on contents of server.json
-	function completeProperty() {
+	function completeProperty( string paramSoFar ) {
 		// all=true will cause "server set" to prompt all possible server.json properties
-		return ServerService.completeProperty( getCWD(), true, true );
+		return ServerService.completeProperty( getCWD(), true, true, arguments.paramSoFar );
 	}
 }

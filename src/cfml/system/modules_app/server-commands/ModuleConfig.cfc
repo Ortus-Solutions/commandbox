@@ -7,5 +7,10 @@
 */
 component {
 	function configure() {
+		interceptors = [
+			{ class="#moduleMapping#.interceptors.ServerScripts" },
+			{ class="#moduleMapping#.interceptors.ServerCommandLine" },
+			{ class="#moduleMapping#.interceptors.ServerSystemSettingExpansions" }
+		];
 	}
 }

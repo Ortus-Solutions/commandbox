@@ -20,13 +20,13 @@ component {
 		) {
 
 			// This will make each directory canonical and absolute
-			propertyFilePath = fileSystemUtil.resolvePath( propertyFilePath );
+			propertyFilePath = resolvePath( propertyFilePath );
 
 			// Create and load property file object
 			if( fileExists( propertyFilePath ) ){
 				var pf = propertyFile( propertyFilePath );
 			} else {
-				var pf = propertyFile();				
+				var pf = propertyFile();
 			}
 			pf
 				.set( propertyName, propertyValue )

@@ -16,6 +16,7 @@ component accessors="true" singleton {
 	property name="fileSystemUtil"		inject="FileSystem";
 	property name="consoleLogger"		inject="logbox:logger:console";
 	property name="configService"		inject="configService";
+	property name='interceptorService'	inject='interceptorService';
 
 
 	// Properties
@@ -31,8 +32,9 @@ component accessors="true" singleton {
 		return this;
 	}
 
-	function onDIComplete() {
+	function onCLIStart() {
 		buildEndpointRegistry();
+		registerCustomForgeboxEndpoints();
 	}
 
 	/**
@@ -51,13 +53,68 @@ component accessors="true" singleton {
 
 				var endpointPath = listChangeDelims( arguments.rootDirectory, '/\', '.' ) & '.' & endpointName;
 				var oEndPoint = wirebox.getInstance( endpointPath );
-				var namePrefixs = listToArray( oEndPoint.getNamePrefixes() );
-				for( var prefix in namePrefixs ) {
-					endpointRegistry[ prefix ] = oEndPoint;
+				if( endPointName == 'forgebox' ) {
+					var customForgeBoxAPIURL = configService.getSetting( 'endpoints.forgebox.apiURL', '' );
+					if( customForgeBoxAPIURL.len() ) {
+						oEndPoint.getForgeBox().setEndpointURL( customForgeBoxAPIURL.reReplaceNoCase( '/api/.*', '' ) );
+						oEndPoint.getForgeBox().setAPIURL( customForgeBoxAPIURL );
+						oEndPoint.getForgeBox().setEndpointName( endpointName );
+					}
 				}
+				registerEndpoint( oEndPoint );
 			}
 		}
 
+	}
+
+
+	/**
+	* Look for custom ForgeBox endpoints that are in the config and register them
+	* These will use the same base ForgeBox.cfc endpoint but with custom data
+	*/
+	function registerCustomForgeboxEndpoints() {
+		var endpointConfigs = configService
+			.getSetting( 'endpoints', {} )
+			.filter( function( endpointName ) {
+				return endpointName.lcase().startsWith( 'forgebox-' );
+			} );
+
+		for( var endpointName in endpointConfigs ) {
+			var endpointData = endpointConfigs[ endpointName ];
+			if( endpointData.keyExists( 'APIURL' ) && endpointData.APIURL.len() ) {
+
+				var endpointPath = listChangeDelims( getEndpointRootPath(), '/\', '.' ) & '.ForgeBox';
+				var oEndPoint = wirebox.getInstance( endpointPath );
+
+				// Set the prefix for this endpoint
+				oEndPoint.setNamePrefixes( endpointName.replaceNoCase( 'forgebox-', '' ) );
+
+				// Set the API URL for this endpoint's forgebox Util
+				oEndPoint.getForgeBox().setEndpointURL( endpointData.APIURL.reReplaceNoCase( '/api/.*', '' ) );
+				oEndPoint.getForgeBox().setAPIURL( endpointData.APIURL );
+				oEndPoint.getForgeBox().setEndpointName( endpointName.replaceNoCase( 'forgebox-', '' ) );
+
+				// Register it, baby!
+				registerEndpoint( oEndPoint );
+
+			} else {
+				consoleLogger.warn( 'ForgeBox endpoint [#endpointName#] doesn''t have a valid APIURL, skipping...' );
+			}
+		}
+
+	}
+
+	/**
+	* Register a single CFC instance as an endpoint
+	*
+	* @oEndPoint An instance of a CFC implementing IEndPoint
+	*/
+	function registerEndpoint( required any oEndPoint ) {
+		var namePrefixs = listToArray( oEndPoint.getNamePrefixes() );
+		for( var prefix in namePrefixs ) {
+			endpointRegistry[ prefix ] = oEndPoint;
+		}
+		return oEndPoint;
 	}
 
 	/**
@@ -66,8 +123,9 @@ component accessors="true" singleton {
 	* @ID The id of the endpoint
 	* @currentWorkingDirectory Where we are working from
 	*/
-	struct function resolveEndpointData( required string ID, required string currentWorkingDirectory, string slug = "", string version = "" ) {
+	struct function resolveEndpointData( required string ID, required string currentWorkingDirectory ) {
 		var path = fileSystemUtil.resolvePath( arguments.ID, arguments.currentWorkingDirectory );
+
 		// Is it a real zip file?
 		if( listLast( path, '.' ) == 'zip' && fileExists( path ) ) {
 			var endpointName = 'file';
@@ -76,8 +134,8 @@ component accessors="true" singleton {
 				package : path,
 				ID : endpointName & ':' & path
 			};
-		// Is it a real folder?
-		} else if( directoryExists( path ) ) {
+		// Does the ID contain at least one slash and is it a real folder path?
+		} else if( listLen( arguments.ID, '\/' ) > 1 && directoryExists( path ) ) {
 			var endpointName = 'folder';
 			return {
 				endpointName : endpointName,
@@ -95,11 +153,23 @@ component accessors="true" singleton {
 		// Endpoint is specified as "endpoint:resource"
 		} else if( listLen( arguments.ID, ':' ) > 1 ) {
 			var endpointName = listFirst( arguments.ID, ':' );
+			var package = listRest( arguments.ID, ':' );
 			if( structKeyExists( getEndpointRegistry(), endpointName ) ) {
+				var theID = arguments.ID;
+				if( endpointName == 'file' || endpointName == 'folder' ) {
+					package = fileSystemUtil.resolvePath( package, arguments.currentWorkingDirectory );
+					if( endpointName == 'file' && !fileExists( package ) ) {
+						throw( "The file [ #package# ] does not exist.", 'endpointException' );
+					}
+					if( endpointName == 'folder' && !directoryExists( package ) ) {
+						throw( "The folder [ #package# ] does not exist.", 'endpointException' );
+					}
+					theID = endpointName & ':' & package;
+				}
 				return {
 					endpointName : endpointName,
-					package : listRest( arguments.ID, ':' ),
-					ID : arguments.ID
+					package : package,
+					ID : theID
 				};
 			} else {
 				if( listFindNoCase( 'C,D,E,F,G,H', endpointName ) ) {
@@ -109,7 +179,7 @@ component accessors="true" singleton {
 			}
 		// I give up, let's check ForgeBox (default endpoint)
 		} else {
-			var endpointName = 'forgebox';
+			var endpointName = configService.getSetting( 'endpoints.defaultForgeBoxEndpoint', 'forgebox' );
 			return {
 				endpointName : endpointName,
 				package : arguments.ID,
@@ -138,7 +208,7 @@ component accessors="true" singleton {
 	* @ID The id of the endpoint
 	* @currentWorkingDirectory Where we are working from
 	*/
-	struct function resolveEndpoint( required string ID, required string currentWorkingDirectory, string slug = "", string version = "" ) {
+	struct function resolveEndpoint( required string ID, required string currentWorkingDirectory ) {
 		var endpointData = resolveEndpointData(  argumentCollection = arguments  );
 		endpointData[ 'endpoint' ] = getEndpoint( endpointData.endpointName );
 		return endpointData;
@@ -180,9 +250,7 @@ component accessors="true" singleton {
 		var APIToken = endpoint.createUser( argumentCollection=arguments );
 
 		// Store the APIToken
-		configService.setSetting( 'endpoints.#endpointName#.APIToken', APIToken );
-		configService.setSetting( 'endpoints.#endpointName#.tokens.#arguments.username#', APIToken );
-
+		endpoint.storeAPIToken( arguments.username, APIToken );
 	}
 
 	/**
@@ -215,9 +283,38 @@ component accessors="true" singleton {
 		var APIToken = endpoint.login( argumentCollection=arguments );
 
 		// Store the APIToken
-		configService.setSetting( 'endpoints.#endpointName#.APIToken', APIToken );
-		configService.setSetting( 'endpoints.#endpointName#.tokens.#arguments.username#', APIToken );
+		endpoint.storeAPIToken( arguments.username, APIToken );
 
+		interceptorService.announceInterception( 'onEndpointLogin', { endpointName=endpointName, username=username, endpoint=endpoint, APIToken=APIToken } );
+
+	}
+
+	/**
+	* A facade to logout a user with an interactive endpoint.  Keeping this logic here so I can standardize the storage
+	* of the APIToken and make it reusable outside of the command.  Passing no username should log out all users.
+	* @endpointName The name of the endpoint
+	* @username The username
+	*/
+	function logoutEndpointUser(
+		required string endpointName,
+		required string username=''
+	) {
+		// Get all endpoints that are registered
+		var endpointRegistry = getEndpointRegistry();
+		// Confirm endpoint name exists
+		if( !endpointRegistry.keyExists( arguments.endpointName ) ) {
+			throw( "Sorry, the endpoint [#arguments.endpointName#] doesn't exist.  Valid names are [#endpointRegistry.keyList()#]", 'endpointException' );
+		}
+
+		// Get endpoint object
+		var endpoint = getEndpoint( arguments.endpointName );
+
+		// Confirm is interactive endpoint
+		if( !isInstanceOf( endpoint, 'IEndpointInteractive' ) ) {
+			throw( "Sorry, the endpoint [#arguments.endpointName#] does not support logging out users.", 'endpointException' );		}
+
+		// Logout the user
+		endpoint.logout( argumentCollection=arguments );
 	}
 
 	/**
@@ -243,7 +340,7 @@ component accessors="true" singleton {
 
 		// Confirm is interactive endpoint
 		if( !isInstanceOf( endpoint, 'IEndpointInteractive' ) ) {
-			throw( "Sorry, the endpoint [#arguments.endpointName#] does not support publishing packages users.", 'endpointException' );
+			throw( "Sorry, the endpoint [#arguments.endpointName#] does not support publishing packages.", 'endpointException' );
 		}
 		// Set the path to publish
 		arguments.path = arguments.directory;
@@ -282,6 +379,20 @@ component accessors="true" singleton {
 		arguments.path = arguments.directory;
 		// Publish the package
 		endpoint.unpublish( argumentCollection=arguments );
+	}
+
+
+
+	function forgeboxEndpointNameComplete() {
+		return configService
+			.getSetting( 'endpoints', {} )
+			.filter( function( endpointName ) {
+				return (endpointName.lcase().startsWith( 'forgebox-' ) || endpointName == 'forgebox' );
+			} )
+			.reduce( function( endpoints, endpointName ) {
+				endpoints.append( endpointName.replaceNoCase( 'forgebox-', '' ) );
+				return endpoints;
+			}, [] );
 	}
 
 }

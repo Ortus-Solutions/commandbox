@@ -1,0 +1,39 @@
+{
+    "name":"JMESPath",
+    "slug":"jmespath",
+    "version":"2.4.0",
+    "author":"Scott Steinbeck <scottsteinbeck@gmail.com>",
+    "location":"https://github.com/scottsteinbeck/jmespath",
+    "Documentation":"https://jmespath.org/tutorial.html",
+    "Repository":{
+        "type":"git",
+        "URL":"https://github.com/scottsteinbeck/jmespath"
+    },
+    "Bugs":"https://github.com/scottsteinbeck/jmespath/issues",
+    "shortDescription":"An JMESPath port for Coldfusion. A query language for JSON",
+    "keywords":[
+        "json query language",
+        "jql",
+        "james path",
+        "jmes path",
+        "json query",
+        "jq"
+    ],
+    "private":"false",
+    "engines":[
+        {
+            "type":"lucee",
+            "version":">=4.5.x"
+        }
+    ],
+    "Contributors":[
+        "Scott Steinbeck <scottsteinbeck@gmail.com>"
+    ],
+    "DevDependencies":{
+        "testbox":"^4.2.1+400"
+    },
+    "installPaths":{
+        "testbox":"testbox/"
+    },
+    "type":"modules"
+}

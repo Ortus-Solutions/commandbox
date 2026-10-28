@@ -6,7 +6,7 @@
  * {code}
  * .
  * Use the "latest" parameter to download the bleeding edge version
- * .x
+ * .
  * {code:bash}
  * upgrade --latest
  * {code}
@@ -30,26 +30,33 @@ component {
 	property name="ConfigService"			inject="ConfigService";
 
 	/**
-	 * @latest.hint Will download bleeding edge if true, last stable version if false
+	 * @latest.hint Download bleeding edge version, instead of last stable version
 	 * @force.hint Force the update even if the version on the server is the same as locally
 	 **/
-	function run( boolean latest=false, boolean force=false ) {
-		
-		if( !latest && semanticVersion.isPreRelease( shell.getVersion() ) ) {
-			print
-				.yellowLine( 'Your version of CommandBox [#shell.getVersion()#] is a prerelease build, so defaulting to "latest".' )
-				.line(); 
-			latest = true;
+	function run( boolean latest, boolean force=false ) {
+
+		if( configService.getSetting( 'offlineMode', false ) ) {
+			error( 'Can''t check for updates, CommandBox is in offline mode.  Go online with [config set offlineMode=false].' );
 		}
-		
-		
+
+		if( isNull( arguments.latest ) ) {
+			if( semanticVersion.isPreRelease( shell.getVersion() ) ) {
+				print
+					.yellowLine( 'Your version of CommandBox [#shell.getVersion()#] is a prerelease build, so defaulting to "latest".' )
+					.line();
+				arguments.latest = true;
+			} else {
+				arguments.latest = false;
+			}
+		}
+
 		// tmp dir location
 		var temp = shell.getTempDir();
 		// Determine artifacts location used
 		var thisArtifactsURL = arguments.latest ? variables.ortusArtifactsURL : variables.ortusPRDArtifactsURL;
 
 		// download the box-repo from the artifacts URL
-		print.greenLine( "Getting #arguments.latest ? 'latest' : 'stable'# versioning information from #thisArtifactsURL#" ).toConsole();
+		print.greenLine( "Getting #arguments.latest ? 'latest' : 'stable'# versioning information from #thisArtifactsURL#ortussolutions/commandbox/box-repo.json" ).toConsole();
 		var boxRepoURL = '#thisArtifactsURL#ortussolutions/commandbox/box-repo.json';
 		var loaderRepoURL = '#thisArtifactsURL#ortussolutions/commandbox/box-loader.json';
 
@@ -61,7 +68,14 @@ component {
 			proxyPort="#ConfigService.getSetting( 'proxy.port', 80 )#"
 			proxyUser="#ConfigService.getSetting( 'proxy.user', '' )#"
 			proxyPassword="#ConfigService.getSetting( 'proxy.password', '' )#"
-			result="local.boxRepoResult";
+			result="local.boxRepoResult" {
+				cfhttpparam(name="CLIID", type="url", value="#GetLuceeId().server.id#");
+				cfhttpparam(name="CLIVersion", type="url", value="#shell.getVersion()#");
+				cfhttpparam(name="os", type="url", value="#server.system.properties['os.name']#");
+				cfhttpparam(name="jre", type="url", value="#server.java.version#");
+				cfhttpparam(name="APIToken", type="url", value="#ConfigService.getSetting( 'endpoints.forgebox.APIToken', '' )#");
+			}
+
 
 		http
 			url="#loaderRepoURL#"
@@ -71,7 +85,14 @@ component {
 			proxyPort="#ConfigService.getSetting( 'proxy.port', 80 )#"
 			proxyUser="#ConfigService.getSetting( 'proxy.user', '' )#"
 			proxyPassword="#ConfigService.getSetting( 'proxy.password', '' )#"
-			result="local.loaderRepoResult";
+			result="local.loaderRepoResult"{
+				cfhttpparam(name="CLIID", type="url", value="#GetLuceeId().server.id#");
+				cfhttpparam(name="CLIVersion", type="url", value="#shell.getVersion()#");
+				cfhttpparam(name="os", type="url", value="#server.system.properties['os.name']#");
+				cfhttpparam(name="jre", type="url", value="#server.java.version#");
+				cfhttpparam(name="APIToken", type="url", value="#ConfigService.getSetting( 'endpoints.forgebox.APIToken', '' )#");
+			}
+
 
 		// Do some error checking
 		if( !local.boxRepoResult.statusCode contains "200" || !fileExists( '#temp#/box-repo.json' ) ||
@@ -84,6 +105,9 @@ component {
 
 		var boxRepoJSON = fileRead( '#temp#/box-repo.json' );
 		var loaderRepoJSON = fileRead( '#temp#/box-loader.json' );
+
+		fileDelete( '#temp#/box-repo.json' );
+		fileDelete( '#temp#/box-loader.json' );
 
 		if( !isJSON( boxRepoJSON ) ) {
 			return error( "Oops, we expected [#boxRepoURL#] to be JSON, but it wasn't.  #cr#I'm afraid we can't upgrade right now." );
@@ -108,7 +132,7 @@ component {
 			var loaderVersion 	= loaderData.versioning.stableVersion;
 		}
 
-		// Is there a new version of CommandBox.  New builds consistute new BE verions.
+		// Is there a new version of CommandBox.  New builds constitute new BE versions.
 		var isNewVersion 	= semanticVersion.isNew( current=shell.getVersion(), target=repoVersion, checkBuildID=arguments.latest );
 		// Is there a new version of the CLI Loader. Ignore build number since it's sort of fake (Just a copy of the CommandBox build number)
 		var isNewLoaderVersion 	= semanticVersion.isNew( current=shell.getLoaderVersion(), target=LoaderVersion, checkBuildID=false );
@@ -128,7 +152,7 @@ component {
 					.boldYellowLine( "CommandBox will finish the upgrade for you the first time it is run." )
 					.line()
 					.text( "Download URL: ").
-						boldLine( arguments.latest ? '#thisArtifactsURL#ortussolutions/commandbox/#repoVersionShort#/' : 'http://www.ortussolutions.com/products/commandbox/##download' )
+						boldLine( arguments.latest ? '#thisArtifactsURL###/ortussolutions/commandbox/#repoVersionShort#/' : 'https://www.ortussolutions.com/products/commandbox/##download' )
 					.line()
 					.yellowLine( "(Your CLI Loader version is #shell.getLoaderVersion()# and the latest is #LoaderVersion#)" )
 					.toConsole();
@@ -154,6 +178,33 @@ component {
 				}
 			);
 
+			// prepare locations
+			var libsfileURL 	= '#thisArtifactsURL#ortussolutions/commandbox/#repoversionshort#/commandbox-libs-#( extensionList().recordCount < 5 ? 'light-' : '' )##repoVersionShort#.zip';
+			var libsfilePath 	= '#temp#/commandbox-libs-#repoVersion#.zip';
+
+			// Download the update
+			print.greenLine( "Downloading #libsfileUrl#..." ).toConsole();
+			progressableDownloader.download(
+				libsfileURL,
+				libsfilePath,
+				function( status ) {
+					progressBar.update( argumentCollection = status );
+				}
+			);
+
+			print.greenLine( "Unzipping #libsfilePath#..." ).toConsole();
+			var newLibs = '#variables.homedir#/lib-new';
+			if( directoryExists( newLibs ) ) {
+				directoryDelete( newLibs, true );
+			}
+			directoryCreate( newLibs, true, true );
+			zip
+				action="unzip"
+				file="#libsfilePath#"
+				destination="#variables.homedir#/lib-new"
+				overwrite=true;
+			fileWrite( "#variables.homedir#/lib-new/version.properties", "cli.version=#LoaderVersion#" )
+
 			wirebox.getCacheBox().getCache( 'metadataCache' ).clearAll();
 
 			// Tell user what's going on
@@ -164,17 +215,22 @@ component {
 				destination="#variables.homedir#/cfml"
 				overwrite=true;
 
+			print.greenLine( "Cleaning up..." ).toConsole();
+			fileDelete( filePath );
+			fileDelete( libsfilePath );
+
 			// Notify the user
-			print
-				.greenLine( "Update applied successfully, installed v#repoVersion#" )
+			print.greenLine( "Update applied successfully, installed v#repoVersion#" )
 				.redLine( "CommandBox needs to exit to complete the installation." )
 				.yellowLine( "This message will self-destruct in 10 seconds" )
 				.toConsole();
 
-			// Give them a chance to read it.
-			sleep( 10000 );
+			if( !force ) {
+				// Give them a chance to read it, unless we're skipping user prompt (probably automated)
+				sleep( 10000 );
+			}
 
-			// Stop executing.  Since the unzipping possbily replaced .cfm files that were
+			// Stop executing.  Since the unzipping possibly replaced .cfm files that were
 			// also cached in memory, there's no good way we've found to be able to reload and keep going.
 			abort;
 

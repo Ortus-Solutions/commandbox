@@ -41,7 +41,7 @@
  * {code}
  * .
  * Installation from endpoints other than ForgeBox is supported.
- * Additional endpoints include HTTP/HTTPS, local zip file or folder, Git repos, CFlib.org, and RIAForge.org
+ * Additional endpoints include HTTP/HTTPS, local zip file or folder, Git repos, GitHub Gists, CFlib.org, and RIAForge.org
  * .
  * {code:bash}
  * install C:/myZippedPackages/package.zip
@@ -71,17 +71,19 @@
  * install mygithubuser/myproject
  * {code}
  * .
+ * The Gist endpoint will install a package from gist.github.com. The username is optional but the gist ID is required.
+ * You can also use a commit-ish to target a specific commit.
+ * .
+ * {code:bash}
+ * install gist:b6cfe92a08c742bab78dd15fc2c1b2bb
+ * install gist:b6cfe92a08c742bab78dd15fc2c1b2bb#37348a126f1f410120785be0d84ad7a2148c3e9f
+ * {code}
+ * .
  * UDFs from CFLib.org can be installed via the cflib endpoint.  Install UDFs into a ColdBox app with the cflib-coldbox endpoint.
  * .
  * {code:bash}
  * install cflib:AreaParallelogram
  * install cflib-coldbox:AreaParallelogram
- * {code}
- * .
- * Projects from RIAForge.org can be installed via the riaforge endpoint.
- * .
- * {code:bash}
- * install riaforge:iwantmylastfm
  * {code}
  **/
 component aliases="install" {
@@ -92,19 +94,25 @@ component aliases="install" {
 	property name="entries";
 
 	// DI
-	property name="forgeBox" 		inject="ForgeBox";
-	property name="packageService" 	inject="PackageService";
+	property name='JSONService'			inject='JSONService';
+	property name="packageService"	    inject="PackageService";
+	property name="endpointService"	    inject="endpointService";
+	property name='interceptorService'	inject='interceptorService';
 
 	/**
 	* @ID.hint "endpoint:package" to install. Default endpoint is "forgebox".  If no ID is passed, all dependencies in box.json will be installed.
 	* @ID.optionsUDF IDComplete
-	* @directory.hint The directory to install in and creates the directory if it does not exist. This will override the packages's box.json install dir if provided.
-	* @save.hint Save the installed package as a dependancy in box.json (if it exists), defaults to true
-	* @saveDev.hint Save the installed package as a dev dependancy in box.json (if it exists)
-	* @production.hint When calling this command with no ID to install all dependencies, set this to true to ignore devDependencies.
-	* @verbose.hint If set, it will produce much more verbose information about the package installation
-	* @force.hint When set to true, it will force dependencies to be installed whether they already exist or not
-	* @system.hint When true, install this package into the global CommandBox module's folder
+	* @ID.optionsFileComplete true
+	* @ID.optionsDirectoryComplete true
+	* @directory.hint The directory to install in and creates the directory if it does not exist. This will override the packages box.json install dir if provided.
+	* @save.hint Save the installed package as a dependency in box.json (if it exists), defaults to true
+	* @saveDev.hint Save the installed package as a dev dependency in box.json (if it exists)
+	* @production.hint Ignore devDependencies when called with no ID to install all dependencies
+	* @verbose.hint Output much more verbose information about the package installation
+	* @force.hint Force dependencies to be installed whether they already exist or not
+	* @system.hint Install this package into the global CommandBox module's folder
+	* @lock.hint Flag to lock the version in the lock file
+	* @trustScripts.hint Automatically allow the installed package(s) install-lifecycle scripts to run without a confirmation prompt
 	**/
 	function run(
 		string ID='',
@@ -114,14 +122,16 @@ component aliases="install" {
 		boolean production,
 		boolean verbose=false,
 		boolean force=false,
-		boolean system=false
+		boolean system=false,
+		boolean lock=false,
+		boolean trustScripts=configService.getSetting( 'scripts.trustInstallScripts', false )
 	){
 
 		// Don't default the dir param since we need to differentiate whether the user actually
 		// specifically typed in a param or not since it overrides the package's box.json install dir.
 		if( structKeyExists( arguments, 'directory' ) ) {
 
-			arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
+			arguments.directory = resolvePath( arguments.directory );
 
 			// Validate directory
 			if( !directoryExists( arguments.directory ) ) {
@@ -139,13 +149,12 @@ component aliases="install" {
 		// Make ID an array
 		arguments.IDArray = listToArray( arguments.ID );
 
-
 		// Install this package(s).
 		// Don't pass directory unless you intend to override the box.json of the package being installed
 
+		interceptorService.announceInterception( 'preInstallAll', { installArgs=arguments } );
 
 		try {
-
 			// One or more IDs
 			if( arguments.IDArray.len() ) {
 				for( var thisID in arguments.IDArray ){
@@ -162,8 +171,11 @@ component aliases="install" {
 		// but I don't want to "blow up" the console with a full error.
 		} catch( endpointException var e ) {
 			error( e.message, e.detail );
+		} catch( EndpointNotFound var e ) {
+			error( e.message, e.detail );
 		}
-		
+
+		interceptorService.announceInterception( 'postInstallAll', { installArgs=arguments } );
 	}
 
 	// Auto-complete list of IDs
@@ -173,7 +185,19 @@ component aliases="install" {
 			return [];
 		}
 		try {
-			var APIToken = configService.getSetting( 'endpoints.forgebox.APIToken', '' );
+
+
+			var endpointName = configService.getSetting( 'endpoints.defaultForgeBoxEndpoint', 'forgebox' );
+
+			try {
+				var oEndpoint = endpointService.getEndpoint( endpointName );
+			} catch( EndpointNotFound var e ) {
+				error( e.message, e.detail ?: '' );
+			}
+
+			var forgebox = oEndpoint.getForgebox();
+			var APIToken = oEndpoint.getAPIToken();
+
 			// Get auto-complete options
 			return forgebox.slugSearch( searchTerm=arguments.paramSoFar, APIToken=APIToken );
 		} catch( forgebox var e ) {

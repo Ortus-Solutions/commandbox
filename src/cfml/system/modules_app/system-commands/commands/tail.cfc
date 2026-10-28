@@ -14,13 +14,14 @@
  **/
  component {
 	property name="printUtil"		inject="print";
+	property name='ansiFormatter'	inject='AnsiFormatter';
 
 	/**
 	 * @path file or directory to tail or raw input to process
 	 * @lines number of lines to display.
 	 * @follow Keep outputting new lines to the file until Ctrl-C is pressed
 	 **/
-	function run( required path, numeric lines = 15, boolean follow = false ){
+	function run( required path, numeric lines = 15, boolean follow = false ){//formatServerLog
 		var rawText = false;
 		var inputAsArray = listToArray( arguments.path, chr(13) & chr(10) );
 
@@ -28,7 +29,7 @@
 		if( inputAsArray.len() > 1 ) {
 			var rawText = true;
 		}
-		var filePath = fileSystemUtil.resolvePath( arguments.path );
+		var filePath = resolvePath( arguments.path );
 
 		if( !fileExists( filePath ) ){
 			var rawText = true;
@@ -61,14 +62,14 @@
 			// move to the end of the file
 			randomAccessFile.seek( position );
 			// Was the last character a line feed.
-			// Remeber the CRLFs will be coming in reverse order
+			// Remember the CRLFs will be coming in reverse order
 			var lastLF = false;
 
 			while( true && startingLength ){
 
 				var char = randomAccessFile.read();
 
-				// Only increment CRs that were preceeded by a LF
+				// Only increment CRs that were preceded by a LF
 				if ( char == 13 && !lastLF ) {
 					lineCounter += 1;
 				}
@@ -79,7 +80,7 @@
 				} else {
 					lastLF=false;
 				}
-				if ( char != -1 ) buffer.append( chr( char ) );
+				if ( char != -1 ) buffer.append( char );
 
 				position--;
 
@@ -95,19 +96,24 @@
 
 			if( buffer.len() ) {
 				// Strip any CR or LF from the last (first really) line to eliminate leading line breaks in console output
-				buffer[ buffer.len() ] = listChangeDelims( buffer[ buffer.len() ], '', chr(13) & chr( 10 ) );
+				loop times=2 {
+					if( buffer[ buffer.len() ] == 10 || buffer[ buffer.len() ] == 13 ) {
+						buffer.deleteAt( buffer.len() );
+					}
+				}
 			}
+			buffer = createObject("java", "java.lang.String").init(buffer.reverse(), "UTF-8");
+
 
 			// print our file to console
 			print
-				.text( buffer
-					.reverse()
-					.toList( "" )
+				.text( buffer					
 					.listToArray( chr( 13 ) & chr( 10 ) )
 					.map( function( line ) {
-						return cleanLine( line );
+						return ansiFormatter.cleanLine( line );
 					} )
 					.toList( chr( 10 ) )
+					& chr( 10 )
 				)
 				.toConsole();
 
@@ -135,24 +141,41 @@
 			threadName = 'tail#createUUID()#';
 			thread action="run" name=threadName priority="HIGH" {
 				try{
+					var buffer = [];
 					// Only keep drawing as long as the main thread is active
 					while( variables.tailRun ) {
+							if( isNull( randomAccessFile ) ) {
+								var randomAccessFile = createObject( "java", "java.io.RandomAccessFile" ).init( file, "r" );
+								randomAccessFile.seek( position );
+							}						
 
-							var randomAccessFile = createObject( "java", "java.io.RandomAccessFile" ).init( file, "r" );
-							randomAccessFile.seek( position );
-							var line = randomAccessFile.readLine();
-							while( !isnull( line ) ){
+							// Don't convert to chars yet, just read the bytes							
+							var byte = randomAccessFile.read();
 
-								line = cleanLine( line );
+							if ( byte != -1 ) buffer.append( byte );
+						
+							// If we reached the end of a line or the end of the file (and there are bytes in the buffer), print it out
+							if( byte == 13 || byte == 10 || ( byte == -1 && buffer.len() ) ) {
+								// Convert byte array to UTF-8 encoded string
+								var line = createObject("java", "java.lang.String").init(buffer, "UTF-8");
+								buffer.clear();
+								line = ansiFormatter.cleanLine( line );
 								print
-									.line( line )
+									.text( line )
 									.toConsole();
-							
-								var line = randomAccessFile.readLine();
 							}
+							
+							// If we aren't at the end of the file, keep reading
+							if( byte != -1) {
+								continue;
+							}
+
+							// At the end of the file, let's close it, wait a few ms and try again
+
 							// Close the file every time so we don't keep it open and locked
 							position = randomAccessFile.getFilePointer();
 							randomAccessFile.close();
+							structDelete( local, 'randomAccessFile' );
 
 						// Decrease this to speed up the Tail
 						sleep( 300 );
@@ -168,14 +191,24 @@
 
 			}   // End thread
 
+			// Need to start reading the input stream or we can't detect Ctrl-C on Windows
+			var terminal = shell.getReader().getTerminal();
+			if( terminal.paused() ) {
+					terminal.resume();
+			}
+
 			while( true ) {
-				// Detect user pressing Ctrl-C
-				// Any other characters captured will be ignored
-				var line = shell.getReader().readLine();
-				if( line == 'q' ) {
-					break;
+				if( terminal.getClass().getName() contains 'dumb' ) {
+					sleep( 500 );
 				} else {
-					print.boldRedLine( 'To exit press Ctrl-C or "q" followed the enter key.' ).toConsole();
+					// Detect user pressing Ctrl-C
+					// Any other characters captured will be ignored
+					var line = shell.getReader().readLine();
+					if( line == 'q' ) {
+						break;
+					} else {
+						print.boldRedLine( 'To exit press Ctrl-C or "q" followed the enter key.' ).toConsole();
+					}
 				}
 			}
 
@@ -262,39 +295,6 @@
 
 		randomAccessFile.close();
 		return startPos;
-	}
-
-	private function cleanLine( line ) {
-		
-		// Log messages from the CF engine or app code writing direclty to std/err out strip off "runwar.context" but leave color coded severity
-		// Ex:
-		// [INFO ] runwar.context: 04/11 15:47:10 INFO Starting Flex 1.5 CF Edition
-		line = reReplaceNoCase( line, '^(\[[^]]*])( runwar\.context: )(.*)', '\1 \3' );
-		
-		// Log messages from runwar itself, simplify the logging category to just "Runwar:" and leave color coded severity
-		// Ex:
-		// [DEBUG] runwar.config: Enabling Proxy Peer Address handling
-		// [DEBUG] runwar.server: Starting open browser action
-		line = reReplaceNoCase( line, '^(\[[^]]*])( runwar\.[^:]*: )(.*)', '\1 Runwar: \3' );
-		
-		if( line.startsWith( '[INFO ]' ) ) {
-			return reReplaceNoCase( line, '^(\[INFO ] )(.*)', '[#printUtil.boldCyan('INFO ')#] \2' );
-		}
-
-		if( line.startsWith( '[ERROR]' ) ) {
-			return reReplaceNoCase( line, '^(\[ERROR] )(.*)', '[#printUtil.boldMaroon('ERROR')#] \2' );
-		}
-
-		if( line.startsWith( '[DEBUG]' ) ) {
-			return reReplaceNoCase( line, '^(\[DEBUG] )(.*)', '[#printUtil.boldOlive('DEBUG')#] \2' );
-		}
-
-		if( line.startsWith( '[WARN ]' ) ) {
-			return reReplaceNoCase( line, '^(\[WARN ] )(.*)', '[#printUtil.boldYellow('WARN ')#] \2' );
-		}
-
-		return line;
-
 	}
 
 }

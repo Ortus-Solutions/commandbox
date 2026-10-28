@@ -1,8 +1,7 @@
 {
     "name":"JSONPrettyPrint",
-    "version":"1.2.6",
+    "version":"1.4.2",
     "author":"",
-    "location":"Ortus-Solutions/JSONPrettyPrint#v1.2.6",
     "homepage":"https://github.com/Ortus-Solutions/JSONPrettyPrint",
     "documentation":"https://github.com/Ortus-Solutions/JSONPrettyPrint",
     "repository":{
@@ -21,12 +20,11 @@
     },
     "installPaths":{
         "testbox":"testbox",
-        "coldbox":"tests/resources/app/coldbox/"
+        "coldbox":"tests/resources/app/coldbox"
     },
     "scripts":{
-        "postVersion":"package set location='Ortus-Solutions/JSONPrettyPrint#v`package version`'",
         "onRelease":"forgebox use ortus && publish",
-        "postPublish":"!git push && !git push --tags"
+        "postPublish":"!git push --tags"
     },
     "ignore":[
         "**/.*",

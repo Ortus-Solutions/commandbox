@@ -3,7 +3,7 @@
  * If the package being uninstalled has a box.json, any dependencies and devDependencies
  * will also be uninstalled as well.
  * .
- * If a directory is supplied, the package will be looked for in that directory.  Otherwise, the box.json for the packge will be
+ * If a directory is supplied, the package will be looked for in that directory.  Otherwise, the box.json for the package will be
  * inspected for an install path for that package.  Lasty, the command will look in the current directory for a folder named after the package.
  * .
  * Uninstall the feeds package
@@ -20,28 +20,30 @@
 component aliases="uninstall" {
 
 	// DI
-	property name="forgeBox" 		inject="ForgeBox";
+	property name='JSONService'	    inject='JSONService';
 	property name="packageService" 	inject="PackageService";
 
 	/**
 	* @slug.hint Slug of the package to uninstall.
 	* @slug.optionsUDF slugComplete
 	* @directory.hint The directory the package is currently installed in including the container folder
-	* @save.hint Remove package as a dependancy in box.json (if it exists)
-	* @system.hint When true, uninstall this package from the global CommandBox module's folder
+	* @save.hint Remove package as a dependency in box.json (if it exists)
+	* @system.hint Uninstall this package from the global CommandBox module's folder
+	* @verbose.hint Output verbose uninstallation information
 	**/
 	function run(
 		required string slug='',
 		string directory,
 		boolean save=true,
-		boolean system=false
+		boolean system=false,
+		boolean verbose=false
 	){
 
 		// Don't default the dir param since we need to differentiate whether the user actually
 		// specifically typed in a param or not since it overrides the package's box.json install dir.
 		if( structKeyExists( arguments, 'directory' ) ) {
 
-			arguments.directory = fileSystemUtil.resolvePath( arguments.directory );
+			arguments.directory = resolvePath( arguments.directory );
 
 			// Validate directory
 			if( !directoryExists( arguments.directory ) ) {
@@ -50,7 +52,13 @@ component aliases="uninstall" {
 
 		}
 
-		if( arguments.system ) {
+		// account for system slugs
+		var systemPackageSlugs = returnPackageSlugs();
+		var localPackageSlugs = returnPackageSlugs( getCWD() );
+		// exists as system package and not as local package
+		var isSystemPackageOnly = systemPackageSlugs.containsnocase( arguments.slug ) && !localPackageSlugs.containsnocase( arguments.slug );
+
+		if( arguments.system || isSystemPackageOnly ) {
 			arguments.currentWorkingDirectory = expandPath( '/commandbox' );
 		} else {
 			arguments.currentWorkingDirectory = getCWD();
@@ -73,11 +81,31 @@ component aliases="uninstall" {
 		var directory = getCWD();
 
 		if( packageService.isPackage( directory ) ) {
-			var BoxJSON = packageService.readPackageDescriptor( directory );
-			results.append( BoxJSON.installPaths.keyArray(), true );
+			var directoryPackages = returnPackageSlugs( directory ).map(
+				function( item, index ){
+					return { 'name' = item, 'group' = 'Packages' };
+				}
+			);
+			results.append( directoryPackages, true );
 		}
 
+		// account for system slugs
+		var systemPackages = returnPackageSlugs().map(
+			function( item, index ){
+				return { 'name' = item, 'group' = 'Packages (--system)' };
+			}
+		);
+		results.append( systemPackages, true );
+
 		return results;
+	}
+
+	/**
+	* If no directory is provided, it defaults to the system directory to be the system directory
+	*/
+	private array function returnPackageSlugs( string directory = expandPath( '/commandbox' ) ) {
+		var BoxJSON = packageService.readPackageDescriptor( arguments.directory );
+		return BoxJSON.installPaths.keyArray();
 	}
 
 }

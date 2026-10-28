@@ -1,6 +1,0 @@
-	/**
-	* |method|
-	*/
-	function |method|(){
-		
-	}

@@ -4,12 +4,12 @@
 <cfscript>
 try{
 	docName = "CommandBox-CommandDocs";
-	docbox 	= new docBox.DocBox( 
+	docbox 	= new docBox.DocBox(
 		strategy = "strategy.commandbox.CommandBoxStrategy",
 		properties = {
 			projectTitle 	= "CommandBox v#url.version#",
-			outputDir 		= url.path 
-		} 
+			outputDir 		= url.path
+		}
 	);
 	baseDir = expandPath( '/commandbox' );
 	commandDirs = directoryList(path='/commandbox/system/modules_app', recurse=true, filter=function(path){ return reFindNoCase( '.*[/\\]commands$', arguments.path ); } );

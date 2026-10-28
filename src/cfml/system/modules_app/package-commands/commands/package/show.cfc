@@ -1,5 +1,5 @@
 /**
- * View proprties set in box.json for this package.  Command must be executed from the root
+ * View properties set in box.json for this package.  Command must be executed from the root
  * directory of the package where box.json lives.  Call with no parameters to view the entire box.json
  * .
  * Outputs package name
@@ -34,7 +34,7 @@ component {
 	/**
 	 * @property.hint The name of the property to show.  Can nested to get "deep" properties
 	 * @property.optionsUDF completeProperty
-	 * @system.hint When true, show box.json data in the global CommandBox folder
+	 * @system.hint Show box.json data in the global CommandBox folder
 	 **/
 	function run( string property='', boolean system=false ) {
 
@@ -54,16 +54,10 @@ component {
 
 		try {
 
-			var propertyValue = JSONService.show( boxJSON, arguments.property );
-
-			if( isSimpleValue( propertyValue ) ) {
-				print.line( propertyValue );
-			} else {
-				print.line( formatterUtil.formatJson( propertyValue ) );
-			}
+			print.text( JSONService.show( boxJSON, arguments.property ) );
 
 		} catch( JSONException var e ) {
-			error( e.message );
+			error( e.message, e.detail );
 		} catch( any var e ) {
 			rethrow;
 		}
@@ -72,7 +66,7 @@ component {
 
 	// Dynamic completion for property name based on contents of box.json
 	function completeProperty() {
-		var directory = fileSystemUtil.resolvePath( '' );
+		var directory = resolvePath( '' );
 		return packageService.completeProperty( directory );
 	}
 }

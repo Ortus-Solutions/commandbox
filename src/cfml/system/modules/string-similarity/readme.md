@@ -1,12 +1,12 @@
 ﻿# String Similarity
 
- This is a small library based on the Levenshtein Distance Algorithm tha compares small strings to look for the number of characters that's different between them.  It returns the longest common string (LCS), a percentage of similarity, and can also wrap the differences in HTML tags of your choice to highlight the differnces.
+ This is a small library based on the Levenshtein Distance Algorithm tha compares small strings to look for the number of characters that's different between them.  It returns the longest common string (LCS), a percentage of similarity, and can also wrap the differences in HTML tags of your choice to highlight the differences.
 
 Read more about how it works here:
 
 http://www.codersrevolution.com/blog/ColdFusion-Levenshtein-Distance-String-comparison-and-highlighting
 
-``` html
+```html
 <cfset string1 = "The rain in Spain stays mainly on the plains
 				The rain in Spain stays mainly on the plains
 				The rain in Spain stays mainly on the plains

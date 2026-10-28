@@ -26,7 +26,7 @@ component accessors="true" implements="IEndpoint" singleton {
 		return this;
 	}
 
-	public string function resolvePackage( required string package, boolean verbose=false ) {
+	public string function resolvePackage( required string package, string currentWorkingDirectory="", boolean verbose=false ) {
 		var job = wirebox.getInstance( 'interactiveJob' );
 
 
@@ -43,8 +43,10 @@ component accessors="true" implements="IEndpoint" singleton {
 
 		zip action="unzip" file="#package#" destination="#packagePath#" overwrite="true";
 
+		cleanUp( package );
+
 		// Defer to folder endpoint
-		return folderEndpoint.resolvePackage( packagePath, arguments.verbose );
+		return folderEndpoint.resolvePackage( packagePath, currentWorkingDirectory, arguments.verbose );
 
 	}
 
@@ -66,7 +68,7 @@ component accessors="true" implements="IEndpoint" singleton {
 
 			var boxJSONPath = 'zip://' & arguments.package & '!box.json';
 
-			// If the packge has a box.json in the root...
+			// If the package has a box.json in the root...
 			if( fileExists( boxJSONPath ) ) {
 
 				// ...Read it.
@@ -83,6 +85,9 @@ component accessors="true" implements="IEndpoint" singleton {
 		} // zip exists
 
 		return result;
+	}
+
+	function cleanUp( package ) {
 	}
 
 }

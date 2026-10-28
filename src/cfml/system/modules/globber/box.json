@@ -1,13 +1,12 @@
 {
     "name":"Globber",
-    "version":"2.1.2",
+    "version":"3.1.5",
     "author":"Brad Wood",
-    "location":"Ortus-Solutions/globber#v2.1.2",
     "homepage":"https://github.com/Ortus-Solutions/globber/",
     "documentation":"https://github.com/Ortus-Solutions/globber/",
     "repository":{
         "type":"Git",
-        "URL":"git@github.com:Ortus-Solutions/globber.git"
+        "URL":"https://github.com/Ortus-Solutions/globber"
     },
     "bugs":"https://github.com/Ortus-Solutions/globber/issues",
     "slug":"globber",
@@ -15,17 +14,16 @@
     "type":"modules",
     "dependencies":{},
     "devDependencies":{
-        "coldbox":"^4.3.0+188",
-        "testbox":"^2.4.0+80"
+        "testbox":"^4.4.0-snapshot",
+        "coldbox":"^4.3.0+188"
     },
     "installPaths":{
-        "testbox":"testbox",
-        "coldbox":"tests\\resources\\app\\coldbox"
+        "coldbox":"tests/resources/app/coldbox/",
+        "testbox":"testbox/"
     },
     "scripts":{
-        "postVersion":"package set location='Ortus-Solutions/globber#v`package version`'",
         "onRelease":"forgebox use ortus && publish",
-        "postPublish":"!git push && !git push --tags"
+        "postPublish":"!git push --follow-tags"
     },
     "ignore":[
         "**/.*",

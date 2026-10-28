@@ -17,51 +17,51 @@
  * {code}
  * .
  * See also: package link
- * 
+ *
  **/
 component aliases='unlink' {
 	property name="packageService" inject="PackageService";
+	property name="moduleService" inject="moduleService";
 
 	/**
-	 * @moduleDrectory Path to an app's modules directory
+	 * @moduleDirectory Path to an app's modules directory
 	 **/
 	function run(
-		string moduleDrectory ) {
-			
+		string moduleDirectory ) {
+
 		var packageDirectory=getCWD();
 		var commandBoxCoreLinked = false;
-		if( !arguments.keyExists( 'moduleDrectory' ) ) {
-			arguments.moduleDrectory = expandPath( '/commandbox/modules' );
+		if( !arguments.keyExists( 'moduleDirectory' ) ) {
+			arguments.moduleDirectory = expandPath( '/commandbox/modules' );
 			commandBoxCoreLinked = true;
 		} else {
-			arguments.moduleDrectory = fileSystemUtil.resolvePath( arguments.moduleDrectory );
+			arguments.moduleDirectory = resolvePath( arguments.moduleDirectory );
 		}
-		
+
 		// package check
 		if( !packageService.isPackage( packageDirectory ) ) {
 			error( '#packageDirectory# is not a package!' );
 		}
-		
+
 		var boxJSON = packageService.readPackageDescriptor( packageDirectory );
-		
+
 		if( !boxJSON.slug.len() ) {
 			error( 'Cannot unlink package with no slug.' );
 		}
-		
-		var linkTarget = moduleDrectory & '/' & boxJSON.slug;
-		
+
+		var linkTarget = moduleDirectory & '/' & boxJSON.slug;
+
 		if( directoryExists( linkTarget ) ) {
-			directoryDelete( linkTarget );
-					
+
 			if( commandBoxCoreLinked ) {
-				print.greenLine( 'Package [#boxJSON.slug#] unlinked from CommandBox core.' );		
-				command( 'reload' )
-					.params( clearScreen=false )
-					.run();
+				print.greenLine( 'Package [#boxJSON.slug#] unlinked from CommandBox core.  Deactivating!' );
+				moduleService.unloadAndUnregisterModule( boxJSON.slug );
+				directoryDelete( linkTarget );
 			} else {
-				print.greenLine( 'Package [#boxJSON.slug#] unlinked from [#moduleDrectory#]' );			
+				directoryDelete( linkTarget );
+				print.greenLine( 'Package [#boxJSON.slug#] unlinked from [#moduleDirectory#]' );
 			}
-			
+
 		} else {
 			print.line( 'Looks like the link [#linkTarget#] didn''t exist.  Nothing to see here...' );
 		}

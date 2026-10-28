@@ -56,7 +56,7 @@ component {
 	 * @format Format to write hash in. checksum, md5sum, or sfv
 	 * @format.optionsUDF formatComplete
 	 * @verify A hash to verify to a file. Error will be thrown if checksums don't match.
-	 * @write Set true to write checksum to a file instead of outputting to console
+	 * @write Write checksum to a file instead of outputting to console
 	 **/
 	function run(
 		required Globber path,

@@ -16,30 +16,40 @@ component accessors=true implements="IEndpoint" singleton {
 	property name="progressableDownloader" 	inject="ProgressableDownloader";
 	property name="progressBar" 			inject="ProgressBar";
 	property name="CR" 						inject="CR@constants";
-	property name='formatterUtil'			inject='formatter';
+	property name='JSONService'				inject='JSONService';
 	property name='wirebox'					inject='wirebox';
+	property name='S3Service'				inject='S3Service';
+	property name='configService'			inject='configService';
 
 	// Properties
 	property name="namePrefixes" type="string";
 
 	function init() {
 		setNamePrefixes( 'jar' );
+		variables.defaultVersion = '0.0.0';
 		return this;
 	}
 
-	public string function resolvePackage( required string package, boolean verbose=false ) {
+	public string function resolvePackage( required string package, string currentWorkingDirectory="", boolean verbose=false ) {
+
+		if( configService.getSetting( 'offlineMode', false ) ) {
+			throw( 'Can''t download [#getNamePrefixes()#:#package#], CommandBox is in offline mode.  Go online with [config set offlineMode=false].', 'endpointException' );
+		}
+
 		var job = wirebox.getInstance( 'interactiveJob' );
-		var folderName = tempDir & '/' & 'temp#randRange( 1, 1000 )#';
-		directoryCreate( folderName );
+		var folderName = tempDir & '/' & 'temp#createUUID()#';
 		var fullJarPath = folderName & '/' & getDefaultName( package ) & '.jar';
 		var fullBoxJSONPath = folderName & '/box.json';
+		directoryCreate( folderName );
 
 		job.addLog( "Downloading [#package#]" );
+
+		var packageUrl = package.startsWith('s3://') ? S3Service.generateSignedURL(package, verbose) : package;
 
 		try {
 			// Download File
 			var result = progressableDownloader.download(
-				package, // URL to package
+				packageUrl, // URL to package
 				fullJarPath, // Place to store it locally
 				function( status ) {
 					progressBar.update( argumentCollection = status );
@@ -48,19 +58,24 @@ component accessors=true implements="IEndpoint" singleton {
 					job.addLog( "Redirecting to: '#arguments.newURL#'..." );
 				}
 			);
+		} catch( UserInterruptException var e ) {
+			directoryDelete( folderName, true );
+			rethrow;
 		} catch( Any var e ) {
+			directoryDelete( folderName, true );
 			throw( '#e.message##CR##e.detail#', 'endpointException' );
 		};
+
 
 		// Spoof a box.json so this looks like a package
 		var boxJSON = {
 			'name' : '#getDefaultName( package )#.jar',
 			'slug' : getDefaultName( package ),
-			'version' : '0.0.0',
+			'version' : guessVersionFromURL( package ),
 			'location' : 'jar:#package#',
 			'type' : 'jars'
 		};
-		fileWrite( fullBoxJSONPath, formatterUtil.formatJSON( boxJSON ) );
+		JSONService.writeJSONFile( fullBoxJSONPath, boxJSON );
 
 		// Here is where our alleged so-called "package" lives.
 		return folderName;
@@ -69,37 +84,62 @@ component accessors=true implements="IEndpoint" singleton {
 
 	public function getDefaultName( required string package ) {
 
-		var baseURL = arguments.package;
+		// Strip protocol and host to reveal just path and query string
+		package = package.reReplaceNoCase( '^([\w:]+)?//.*?/', '' );
 
-		// strip query string, unless it possibly contains .jar like so:
+		// Check and see if the name of the jar appears somewhere in the URL and use that as the package name
 		// https://search.maven.org/remotecontent?filepath=jline/jline/3.0.0.M1/jline-3.0.0.M1.jar
-		if( !right( arguments.package, 4 ) == '.jar' ) {
-			baseURL = listFirst( arguments.package, '?' );
+		// https://site.com/path/to/package-1.0.0.jar
+
+		// If we see /foo.jar or name=foo.jar or ?foo.jar
+		if( package.reFindNoCase( '[/\?=](.*\.jar)' ) ) {
+			// Then strip the name and remove extension
+			// Note the first .* is greedy so in the case of
+			// https://site.com/path/to/file.jar?name=custom.jar
+			// the regex will extract the last match, i.e. "custom"
+			return package.reReplaceNoCase( '.*[/\?=](.*\.jar).*', '\1' ).left( -4 );
 		}
 
-		// Find last segment of URL (may or may not be a file)
-		var fileName = listLast( baseURL, '/' );
-
-		// Check for file extension in URL
-		var fileNameListLen = listLen( fileName, '.' );
-		if( fileNameListLen > 1 && listLast( fileName, '.' ) == 'jar' ) {
-			return listDeleteAt( fileName, fileNameListLen, '.' );
-		}
 		// We give up, so just make the entire URL a slug
-		return reReplaceNoCase( baseURL, '[^a-zA-Z0-9]', '', 'all' );
+		return reReplaceNoCase( package, '[^a-zA-Z0-9]', '', 'all' );
 	}
 
 	public function getUpdate( required string package, required string version, boolean verbose=false ) {
-		var result = {
-			// Jars with a semver in the name are considered to not have an update since we assume they are an exact version
-			isOutdated = !package
-				.reReplaceNoCase( 'http(s)?://', '' )
-				.listRest( '/\' )
-				.reFindNoCase( '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' ),
-			version = 'unknown'
-		};
+		packageVersion = guessVersionFromURL( package );
+		// No version could be determined from package URL
+		if( packageVersion == defaultVersion ) {
+			return {
+				isOutdated = true,
+				version = 'unknown'
+			};
+		// Our package URL has a version and it's the same as what's installed
+		} else if( version == packageVersion ) {
+			return {
+				isOutdated = false,
+				version = packageVersion
+			};
+		// our package URL has a versiion and it's not what's installed
+		} else {
+			return {
+				isOutdated = true,
+				version = packageVersion
+			};
+		}
+	}
 
-		return result;
+	private function guessVersionFromURL( required string package ) {
+		var version = package;
+		if( version contains '/' ) {
+			var version = version
+				.reReplaceNoCase( '^([\w:]+)?//', '' )
+				.listRest( '/\' );
+		}
+		if( version.refindNoCase( '.*([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}).*' ) ) {
+			version = version.reReplaceNoCase( '.*([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}).*', '\1' );
+		} else {
+			version = defaultVersion;
+		}
+		return version;
 	}
 
 }

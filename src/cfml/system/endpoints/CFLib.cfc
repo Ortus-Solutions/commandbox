@@ -17,6 +17,7 @@ component accessors="true" implements="IEndpoint" singleton {
 	property name="progressBar" 			inject="ProgressBar";
 	property name="CR" 						inject="CR@constants";
 	property name='wirebox'					inject='wirebox';
+	property name='configService'		    inject='configService';
 
 	// Properties
 	property name="namePrefixes" type="string";
@@ -26,9 +27,14 @@ component accessors="true" implements="IEndpoint" singleton {
 		return this;
 	}
 
-	public string function resolvePackage( required string package, boolean verbose=false ) {
+	public string function resolvePackage( required string package, string currentWorkingDirectory="", boolean verbose=false ) {
+
+		if( configService.getSetting( 'offlineMode', false ) ) {
+			throw( 'Can''t download [#getNamePrefixes()#:#package#], CommandBox is in offline mode.  Go online with [config set offlineMode=false].', 'endpointException' );
+		}
+
 		var job = wirebox.getInstance( 'interactiveJob' );
-		var folderName = tempDir & '/' & 'temp#randRange( 1, 1000 )#';
+		var folderName = tempDir & '/' & 'temp#createUUID()#';
 		var fullPath = folderName & '/' & package & '.cfm';
 
 		directoryCreate( folderName, true, true );

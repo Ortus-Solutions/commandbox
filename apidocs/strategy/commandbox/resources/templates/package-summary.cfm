@@ -18,14 +18,14 @@
 	<h2>
 	<span class="label label-success">#arguments.namespace#</span>
 	</h2>
-	
+
 	<cfset namespaces = {}>
 	<cfloop query="arguments.qMetadata">
 		<cfif reFind( '#arguments.namespace# [\S]*', arguments.qMetadata.namespace ) >
 			<cfset namespaces[ arguments.qMetadata.namespace ] = replace( replace( arguments.qMetadata.package, arguments.package & '.', '' ), ".", "/", "all") & '/package-summary.html'>
 		</cfif>
 	</cfloop>
-	
+
 	<div class="table-responsive">
 	<cfif structCount( namespaces )>
 		<table class="table table-striped table-hover table-bordered">
@@ -43,7 +43,7 @@
 					<td>&nbsp;</td>
 				</tr>
 			</cfloop>
-	
+
 		</table>
 	</cfif>
 	<cfif arguments.qClasses.recordCount>
@@ -54,7 +54,7 @@
 					<b>Commands</b></font></th>
 				</tr>
 			</thead>
-	
+
 			<cfloop query="arguments.qclasses">
 				<tr>
 					<td width="15%" nowrap=true><b><a href="#name#.html">#command#</a></b></td>
@@ -66,7 +66,7 @@
 					</td>
 				</tr>
 			</cfloop>
-	
+
 		</table>
 	</cfif>
 	</div>
