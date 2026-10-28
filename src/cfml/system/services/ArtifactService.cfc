@@ -10,6 +10,11 @@
 * Artifacts are stored in this format:
 * <artifactdir>/packageName/version/packageName.zip
 *
+* A new artifact is written to a sibling staging file in that same directory, then
+* renamed onto packageName.zip. The rename is atomic, so a concurrent reader either
+* sees the previous zip or the completed new one. If this filesystem cannot rename
+* atomically, CommandBox warns and copies the finished file into place instead.
+*
 * We are not currently using a group ID, but we may need to in the future
 *
 */
@@ -20,6 +25,7 @@ component accessors="true" singleton {
 	property name='tempDir' 			inject='tempDir@constants';
 	property name='packageService'	 	inject='PackageService';
 	property name='logger' 				inject='logbox:logger:{this}';
+	property name='consoleLogger'		inject='logbox:logger:console';
 	property name="semanticVersion"		inject="provider:semanticVersion@semver";
 	property name="configService"		inject="ConfigService";
 
@@ -50,12 +56,13 @@ component accessors="true" singleton {
 		for( var dir in dirList ) {
 			if( dir.type == 'dir' && ( !arguments.packageName.len() || arguments.packageName == dir.name ) ) {
 				var verList = directoryList( path=dir.directory & '\' & dir.name, recurse=false, listInfo='query', sort='name asc' );
-				// Ignore package dirs with no actual versions in them
-				if( verList.recordCount ) {
-					result[ dir.name ] = [];
-				}
+				// A version counts only once its zip is published. A staging file must not
+				// make an in-progress write look like a cached version.
 				for( var ver in verList ) {
-					if( ver.type == 'dir' ) {
+					if( ver.type == 'dir' && artifactExists( dir.name, ver.name ) ) {
+						if( !structKeyExists( result, dir.name ) ) {
+							result[ dir.name ] = [];
+						}
 						result[ dir.name ].append( ver.name );
 					}
 				}
@@ -205,14 +212,10 @@ component accessors="true" singleton {
 			throw( 'Cannot create artifact [#arguments.packageName#], the file isn''t a zip', arguments.packagePath );
 		}
 
-		//  Where will this artifact live?
-		var thisArtifactPath = getArtifactPath( arguments.packageName, arguments.version );
-
-		// Create dir if it doesn't exist
-		directorycreate( getDirectoryFromPath( thisArtifactPath ), true, true );
-
-		// Here's your new home
-		fileCopy( arguments.packagePath, thisArtifactPath );
+		publishArtifactFile(
+			sourcePath = arguments.packagePath,
+			artifactPath = getArtifactPath( arguments.packageName, arguments.version )
+		);
 
 		return this;
 	}
@@ -228,15 +231,107 @@ component accessors="true" singleton {
 	function createArtifactFromFolder( required packageName, required version, required packageFolder ) {
 		ensureArtifactsDirectory();
 
-		//  Where will this artifact live?
-		var thisArtifactPath = getArtifactPath( arguments.packageName, arguments.version );
-
-		// Create dir if it doesn't exist
-		directorycreate( getDirectoryFromPath( thisArtifactPath ), true, true );
-
-		zip action='zip' source=arguments.packageFolder file=thisArtifactPath overwrite=true;
+		publishArtifactFolder(
+			packageFolder = arguments.packageFolder,
+			artifactPath = getArtifactPath( arguments.packageName, arguments.version )
+		);
 
 		return this;
+	}
+
+	/**
+	* Copy a zip into the artifact cache without exposing a partial file to readers.
+	*/
+	private function publishArtifactFile( required string sourcePath, required string artifactPath ) {
+		var stagingPath = getStagingArtifactPath( arguments.artifactPath );
+
+		directoryCreate( getDirectoryFromPath( arguments.artifactPath ), true, true );
+
+		try {
+			fileCopy( arguments.sourcePath, stagingPath );
+			moveArtifactAtomically( stagingPath, arguments.artifactPath );
+		} catch( any e ) {
+			deleteStagingArtifact( stagingPath );
+			rethrow;
+		}
+	}
+
+	/**
+	* Zip a package folder into the artifact cache without exposing a partial file to readers.
+	*/
+	private function publishArtifactFolder( required string packageFolder, required string artifactPath ) {
+		var stagingPath = getStagingArtifactPath( arguments.artifactPath );
+
+		directoryCreate( getDirectoryFromPath( arguments.artifactPath ), true, true );
+
+		try {
+			zip action='zip' source=arguments.packageFolder file=stagingPath overwrite=true;
+			moveArtifactAtomically( stagingPath, arguments.artifactPath );
+		} catch( any e ) {
+			deleteStagingArtifact( stagingPath );
+			rethrow;
+		}
+	}
+
+	/**
+	* Staging file lives beside the final zip so the publish can be a same-directory rename.
+	*/
+	private string function getStagingArtifactPath( required string artifactPath ) {
+		return getDirectoryFromPath( arguments.artifactPath ) & '.' & createUUID() & '.partial';
+	}
+
+	/**
+	* Publish a finished staging file. ATOMIC_MOVE replaces an existing zip in one step
+	* on filesystems that support atomic rename, including a shared runner cache.
+	* A filesystem that cannot rename atomically gets one console warning and a copy.
+	*/
+	private function moveArtifactAtomically( required string sourcePath, required string targetPath ) {
+		try {
+			performAtomicMove( arguments.sourcePath, arguments.targetPath );
+		} catch( any e ) {
+			if( !isAtomicMoveUnsupported( e ) ) {
+				rethrow;
+			}
+			warnArtifactPublishIsNotAtomic( arguments.targetPath );
+			copyArtifactNonAtomically( arguments.sourcePath, arguments.targetPath );
+		}
+	}
+
+	private function performAtomicMove( required string sourcePath, required string targetPath ) {
+		var files = createObject( 'java', 'java.nio.file.Files' );
+		var copyOption = createObject( 'java', 'java.nio.file.StandardCopyOption' );
+		var source = createObject( 'java', 'java.io.File' ).init( arguments.sourcePath ).toPath();
+		var target = createObject( 'java', 'java.io.File' ).init( arguments.targetPath ).toPath();
+
+		files.move( source, target, [ copyOption.ATOMIC_MOVE, copyOption.REPLACE_EXISTING ] );
+	}
+
+	private function copyArtifactNonAtomically( required string sourcePath, required string targetPath ) {
+		fileCopy( arguments.sourcePath, arguments.targetPath );
+		fileDelete( arguments.sourcePath );
+	}
+
+	private function warnArtifactPublishIsNotAtomic( required string artifactPath ) {
+		if( structKeyExists( variables, 'warnedAboutNonAtomicArtifactPublish' ) ) {
+			return;
+		}
+		variables.warnedAboutNonAtomicArtifactPublish = true;
+		consoleLogger.warn(
+			'The artifacts directory [#getDirectoryFromPath( arguments.artifactPath )#] does not support atomic file renames. '
+			& 'CommandBox will copy artifacts into place. Two installs writing the same package version at the same time can corrupt that cached file.'
+		);
+	}
+
+	private boolean function isAtomicMoveUnsupported( required any exception ) {
+		var details = arguments.exception.type & ' ' & arguments.exception.message & ' ' & ( arguments.exception.detail ?: '' );
+		return details contains 'AtomicMoveNotSupportedException'
+			|| details contains 'Invalid cross-device link';
+	}
+
+	private function deleteStagingArtifact( required string stagingPath ) {
+		if( fileExists( arguments.stagingPath ) ) {
+			fileDelete( arguments.stagingPath );
+		}
 	}
 
 	/**
