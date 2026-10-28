@@ -73,10 +73,6 @@ component accessors="true" implements="IEndpoint" singleton {
 		// Temporary location to place the repo
 		var localPath = createObject( 'java', 'java.io.File' ).init( "#tempDir#/git_#createUUID()#" );
 
-		// This will trap the full java exceptions to work around this annoying behavior:
-		// https://luceeserver.atlassian.net/browse/LDEV-454
-		var CommandCaller = createObject( 'java', 'com.ortussolutions.commandbox.jgit.CommandCaller' ).init();
-
 		try {
 
 			// Clone the repo locally into a temp folder
@@ -88,13 +84,12 @@ component accessors="true" implements="IEndpoint" singleton {
 
 			// Conditionally apply security
 			var command = secureCloneCommand( cloneCommand, GitURL );
-			// call with our special java wrapper
-			local.result = CommandCaller.call( command );
+			local.result = command.call();
 
 			// Get a list of all branches
 			var branchListCommand = local.result.branchList();
 			var listModeAll = createObject( 'java', 'org.eclipse.jgit.api.ListBranchCommand$ListMode' ).ALL;
-			var branchList = [].append( CommandCaller.call( branchListCommand.setListMode( listModeAll ) ), true );
+			var branchList = [].append( branchListCommand.setListMode( listModeAll ).call(), true );
 			branchList = branchList.map( function( ref ){ return ref.getName(); } );
 
 			if( arguments.verbose ){ job.addLog( 'Available branches are #branchList.toList()#' ); }
@@ -109,28 +104,24 @@ component accessors="true" implements="IEndpoint" singleton {
 			}
 
 			// Checkout branch, tag, or commit hash.
-			CommandCaller.call( local.result.checkout().setName( branch ) );
+			local.result.checkout().setName( branch ).call();
 
 		} catch( any var e ) {
 			// Check for Ctrl-C
 			shell.checkInterrupted();
 
-			// If the exception came from the Java call, this exception won't be null
-			var theRealJavaException = CommandCaller.getException();
+			// BoxLang surfaces the underlying Java Throwable in e.cause, so walk down the
+			// cause chain to the root cause to build a useful error message. This replaces
+			// the CommandCaller Java wrapper that worked around LDEV-454 on Lucee.
+			var deepMessage = structKeyExists( e, 'message' ) ? e.message : 'Unknown error';
+			var currentCause = structKeyExists( e, 'cause' ) ? e.cause : '';
 
-			// If it's null, that just means some other CFML code must have blown chunks above.
-			if( isNull( theRealJavaException ) ) {
-				throw( message="Error Cloning Git repository", detail="#e.message#",  type="endpointException");
-			} else {
-				var deepMessage = '';
-				// Start at the top level and work around way down to the root cause.
-				do {
-					deepMessage &= '#theRealJavaException.toString()# #chr( 10 )#';
-					theRealJavaException = theRealJavaException.getCause()
-				} while( !isNull( theRealJavaException ) )
-
-				throw( message="Error cloning #getNamePrefixes()# repository", detail="#deepMessage#",  type="endpointException");
+			while( !isNull( currentCause ) && isObject( currentCause ) ) {
+				deepMessage &= chr( 10 ) & currentCause.toString();
+				currentCause = currentCause.getCause();
 			}
+
+			throw( message="Error cloning #getNamePrefixes()# repository", detail="#deepMessage#", type="endpointException" );
 
 		} finally {
 			// Release file system locks on the repo

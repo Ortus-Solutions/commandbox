@@ -19,9 +19,12 @@ component accessors="true" implements="IEndpoint" extends="commandbox.system.end
 
 	// Set SSH listener
 	private function secureCloneCommand( required any cloneCommand, string GitURL ) {
-		// This is our custom SSH callback
-		var SSHCallback = createObject( 'java', 'com.ortussolutions.commandbox.jgit.SSHCallback' ).init();
-		cloneCommand.setTransportConfigCallback( SSHCallback );
+		// Our CFML transport callback attaches the MINA sshd session factory
+		var transportCallback = createDynamicProxy(
+			new commandbox.system.util.JGitSSHCallback(),
+			[ 'org.eclipse.jgit.api.TransportConfigCallback' ]
+		);
+		cloneCommand.setTransportConfigCallback( transportCallback );
 		return cloneCommand;
 	}
 }

@@ -205,8 +205,13 @@ box run-script format:watch
 **Java Components** (`src/java/`):
 - **CLI Loader** (`cliloader/LoaderCLIMain.java`): Bootstrap loader that initializes CFML engine
 - **Authentication** (`com/ortussolutions/commandbox/authentication/`): Security components
-- **JGit Integration** (`com/ortussolutions/commandbox/jgit/`): Git operations
 - **Utilities**: Stream handling, version comparison, BOM detection
+
+**JGit Integration** (CFML, not Java): JGit itself ships as Maven libs in the `bx-cli` module.
+The integration points are CFML:
+- `src/cfml/system/endpoints/Git.cfc` / `Git_HTTPS.cfc` / `Git_SSH.cfc`: clone/checkout endpoints
+- `src/cfml/system/util/JGitSSHCallback.cfc`: `TransportConfigCallback` for `git+ssh`
+- `src/cfml/system/modules_app/package-commands/models/JGitProgressMonitor.cfc`: progress reporting
 
 **Java Usage in CFML**:
 - Extensive Java object creation for file I/O, networking, process management

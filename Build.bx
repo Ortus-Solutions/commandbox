@@ -59,29 +59,32 @@ class {
 			.run();
 
 		command( "install" )
-			.params( "maven:org.eclipse.jgit:org.eclipse.jgit:5.13.3.202401111512-r?exclude=org.slf4j:slf4j-api,org.apache.httpcomponents:httpclient" )
+			.params( "maven:org.eclipse.jgit:org.eclipse.jgit:7.3.0.202506031305-r?exclude=org.slf4j:slf4j-api,org.apache.httpcomponents:httpclient" )
 			.inWorkingDirectory( resolvePath( "bx-cli" ) )
 			.flags( "noSave", "force" )
 			.run();
 
+		// JGit's SSH support runs on Apache MINA sshd rather than JSch. JSch's last
+		// release was 2018 and cannot read the OpenSSH private key format or negotiate
+		// modern algorithms (ed25519, rsa-sha2-*, curve25519). sshd-sftp is excluded
+		// because CommandBox does not support sftp:// URLs and sshd-osgi (pulled in by
+		// jgit.ssh.apache) already bundles sshd-core and sshd-common.
 		command( "install" )
-			.params( "maven:org.eclipse.jgit:org.eclipse.jgit.ssh.jsch:5.13.3.202401111512-r?exclude=org.slf4j:slf4j-api,org.apache.httpcomponents:httpclient" )
+			.params( "maven:org.eclipse.jgit:org.eclipse.jgit.ssh.apache:7.3.0.202506031305-r?exclude=org.slf4j:slf4j-api,org.apache.httpcomponents:httpclient,org.apache.sshd:sshd-sftp" )
 			.inWorkingDirectory( resolvePath( "bx-cli" ) )
 			.flags( "noSave", "force" )
 			.run();
 
-		command( "install" )
-			.params( "maven:com.beust:jcommander:1.47" )
-			.inWorkingDirectory( resolvePath( "bx-cli" ) )
-			.flags( "noSave", "force" )
-			.run();
-
+		// Compiles our remaining Java helper classes (currently just the HTTP proxy
+		// authenticator) into the bx-cli module. There is no JGit code in here anymore:
+		// the JGit progress monitor, SSH transport callback and exception handling are
+		// all implemented in CFML.
 		compile()
 			.fromSource( "src/java/com" )
-			.toClasses( "build/temp/classes/jgit" )
+			.toClasses( "build/temp/classes/ortus-java" )
 			.withClassPath( [ resolvePath( "bx-cli/libs" ) ] )
 			.libsDir( "bx-cli/libs" )
-			.toJar( "ortus-jgit.jar" )
+			.toJar( "ortus-java.jar" )
 			.run();
 
 		command( "forgebox use" ).params( "ortus" ).run();
