@@ -91,6 +91,42 @@ component extends="mxunit.framework.TestCase" {
 		assertEquals( 0, countPartialFiles( artifactsRoot ) );
 	}
 
+	public void function testUnsupportedAtomicMoveCopiesTheArtifactAndWarnsOnce() {
+		var sourceZip = artifactsRoot & "source.zip";
+		zipFolder( writePackageFolder( "seed", "replacement" ), sourceZip );
+		request.artifactWarnings = [];
+		service.setConsoleLogger( {
+			warn = function( required string message ) {
+				request.artifactWarnings.append( arguments.message );
+			}
+		} );
+		injectMethod(
+			receiver = service,
+			giver = this,
+			functionName = "refuseAtomicMove",
+			functionNameInReceiver = "performAtomicMove"
+		);
+
+		service.createArtifact( "mypackage", "1.0.0", sourceZip );
+		service.createArtifact( "mypackage", "1.0.0", sourceZip );
+
+		assertEquals( "replacement", readHello( service.getArtifactPath( "mypackage", "1.0.0", false ) ) );
+		assertEquals( 0, countPartialFiles( artifactsRoot ) );
+		assertEquals( 1, arrayLen( request.artifactWarnings ) );
+		assertTrue( request.artifactWarnings[ 1 ] contains "does not support atomic file renames" );
+	}
+
+	/**
+	* Stand-in for a filesystem that refuses an atomic rename. The service catches this
+	* and copies the staging file into place.
+	*/
+	public void function refuseAtomicMove( required string sourcePath, required string targetPath ) {
+		throw(
+			type = "java.nio.file.AtomicMoveNotSupportedException",
+			message = "AtomicMoveNotSupportedException: Invalid cross-device link"
+		);
+	}
+
 	/**
 	* Stand-in for a filesystem that refuses the publish step. This runs on the service,
 	* so it records what it saw and lets the test method assert it.

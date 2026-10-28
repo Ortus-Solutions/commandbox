@@ -12,7 +12,8 @@
 *
 * A new artifact is written to a sibling staging file in that same directory, then
 * renamed onto packageName.zip. The rename is atomic, so a concurrent reader either
-* sees the previous zip or the completed new one.
+* sees the previous zip or the completed new one. If this filesystem cannot rename
+* atomically, CommandBox warns and copies the finished file into place instead.
 *
 * We are not currently using a group ID, but we may need to in the future
 *
@@ -24,6 +25,7 @@ component accessors="true" singleton {
 	property name='tempDir' 			inject='tempDir@constants';
 	property name='packageService'	 	inject='PackageService';
 	property name='logger' 				inject='logbox:logger:{this}';
+	property name='consoleLogger'		inject='logbox:logger:console';
 	property name="semanticVersion"		inject="provider:semanticVersion@semver";
 	property name="configService"		inject="ConfigService";
 
@@ -281,26 +283,43 @@ component accessors="true" singleton {
 	/**
 	* Publish a finished staging file. ATOMIC_MOVE replaces an existing zip in one step
 	* on filesystems that support atomic rename, including a shared runner cache.
+	* A filesystem that cannot rename atomically gets one console warning and a copy.
 	*/
 	private function moveArtifactAtomically( required string sourcePath, required string targetPath ) {
+		try {
+			performAtomicMove( arguments.sourcePath, arguments.targetPath );
+		} catch( any e ) {
+			if( !isAtomicMoveUnsupported( e ) ) {
+				rethrow;
+			}
+			warnArtifactPublishIsNotAtomic( arguments.targetPath );
+			copyArtifactNonAtomically( arguments.sourcePath, arguments.targetPath );
+		}
+	}
+
+	private function performAtomicMove( required string sourcePath, required string targetPath ) {
 		var files = createObject( 'java', 'java.nio.file.Files' );
 		var copyOption = createObject( 'java', 'java.nio.file.StandardCopyOption' );
 		var source = createObject( 'java', 'java.io.File' ).init( arguments.sourcePath ).toPath();
 		var target = createObject( 'java', 'java.io.File' ).init( arguments.targetPath ).toPath();
 
-		try {
-			files.move( source, target, [ copyOption.ATOMIC_MOVE, copyOption.REPLACE_EXISTING ] );
-		} catch( any e ) {
-			if( isAtomicMoveUnsupported( e ) ) {
-				throw(
-					type = 'artifactException',
-					message = 'Cannot store the artifact because "#getDirectoryFromPath( arguments.targetPath )#" does not support an atomic rename. '
-						& 'Point artifactsDirectory at a filesystem that can atomically rename files within the same directory.',
-					detail = e.message
-				);
-			}
-			rethrow;
+		files.move( source, target, [ copyOption.ATOMIC_MOVE, copyOption.REPLACE_EXISTING ] );
+	}
+
+	private function copyArtifactNonAtomically( required string sourcePath, required string targetPath ) {
+		fileCopy( arguments.sourcePath, arguments.targetPath );
+		fileDelete( arguments.sourcePath );
+	}
+
+	private function warnArtifactPublishIsNotAtomic( required string artifactPath ) {
+		if( structKeyExists( variables, 'warnedAboutNonAtomicArtifactPublish' ) ) {
+			return;
 		}
+		variables.warnedAboutNonAtomicArtifactPublish = true;
+		consoleLogger.warn(
+			'The artifacts directory [#getDirectoryFromPath( arguments.artifactPath )#] does not support atomic file renames. '
+			& 'CommandBox will copy artifacts into place. Two installs writing the same package version at the same time can corrupt that cached file.'
+		);
 	}
 
 	private boolean function isAtomicMoveUnsupported( required any exception ) {
