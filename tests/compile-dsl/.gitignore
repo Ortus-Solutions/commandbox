@@ -1,4 +1,4 @@
-/classes/
+﻿/classes/
 /javaDocs/
 /javaDocsmain/
 /libs/
@@ -6,6 +6,8 @@
 /build/
 /fat-jar-services/
 /fat-jar-duplicates/
+/fat-jar-many/
+/fat-jar-index/
 /package-fixture/build/
 /package-fixture/classes/
 /package-fixture/libs/

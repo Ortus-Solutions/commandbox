@@ -117,7 +117,8 @@ java compile source=src/main/java,src/generated/java --jar jarName=example.jar
 ## Resources
 
 Resources are taken from `src/main/resources` by default and copied into the
-JAR with their directory structure preserved.
+JAR with their directory structure preserved. When a fat JAR is configured, the
+resources are added to the fat JAR since that is the artifact `run()` produces.
 
 ```js
 compile()
@@ -572,7 +573,18 @@ java compile --fatJar fatJarName=example-all.jar fatJarJars=libs/dependency-one.
 `duplicatePolicy` accepts `last`, `first`, or `error`. Dependencies are applied
 in the order supplied. Service providers are combined line by line when
 `mergeServiceDescriptors` is enabled. Dependency signature files are excluded
-when `excludeSignatures` is enabled.
+when `excludeSignatures` is enabled. A dependency's `META-INF/MANIFEST.MF` and
+`META-INF/INDEX.LIST` are never copied, because neither describes the merged
+archive.
+
+Duplicate entries resolved by `duplicatePolicy` are reported with their source
+JARs in verbose output, and are available as a list of structs from
+`getFatJarDuplicateReport()` (`entry`, `policy`, `keptJar`, `skippedJar`).
+
+All dependencies, plus the project JAR, are expanded into a single staging
+directory and the fat JAR is written once, so merge time grows with the number
+of dependencies rather than with the size of the growing archive. Resources are
+added to the fat JAR, which is the artifact `run()` reports as `jarPath`.
 
 ## Result Metadata
 

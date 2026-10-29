@@ -1,4 +1,4 @@
-/**
+﻿/**
 *********************************************************************************
 * Copyright Since 2014 CommandBox by Ortus Solutions, Corp
 * www.coldbox.org | www.ortussolutions.com
@@ -40,6 +40,7 @@ component accessors=true {
 	property name='classTextFilePaths'		type='array';
 	property name='fatJarPaths'				type='array';
 	property name='fatJarOptions'			type='struct';
+	property name='fatJarDuplicateReport'	type='array';
 	property name='javaDocDestinationDir'	type='string';
 	property name='useJavaDoc'				type='boolean';
 
@@ -87,6 +88,7 @@ component accessors=true {
 		setResourcePath( 'src/main/resources/' );
 		setClassTextFilePaths(['']);
 		setFatJarPaths( [] );
+		setFatJarDuplicateReport( [] );
 		setFatJarOptions( {
 			"mergeServiceDescriptors" : true,
 			"excludeSignatures"       : true,
@@ -821,6 +823,9 @@ component accessors=true {
 	/**
 	 * Adds configured resources to the generated JAR.
 	 *
+	 * Resources always go into the artifact produced by this run, which is the
+	 * fat JAR when one is configured.
+	 *
 	 * @returns Nothing. Resources are added to the generated JAR when configured.
 	 */
 	function moveResources() {
@@ -831,12 +836,18 @@ component accessors=true {
 			job.addLog( "Including resources from: #replaceNoCase( currentResourcePath, getProjectRoot(), "" )#" );
 			// have to replicate this command
 			// run ""jar" uf "D:\Javatest\new-tests\libs\new-tests.jar" -C "D:\Javatest\gradle-test-resource\src\main\resources\" ."
-			var jarName = getJarNameString();
-			//job.addLog( "moveRes jarname: #jarName#" );
-			var currentLibsDir = fileSystemutil.resolvePath( getLibsDir(), getProjectRoot() );
-			//job.addLog( "moveRes currLibsDir: #currentLibsDir#" );
+			var outputJar = getGeneratedJarPath();
+			if( !outputJar.len() ) {
+				var currentLibsDir = reReplace(
+					fileSystemutil.normalizeSlashes( fileSystemutil.resolvePath( getLibsDir(), getProjectRoot() ) ),
+					"/+$",
+					""
+				) & "/";
+				outputJar = currentLibsDir & getJarNameString();
+			}
+			//job.addLog( "moveRes jarname: #outputJar#" );
 
-			j = nativeRunCommand( getJavaBinFolder() & "jar", 'uf "#currentLibsDir##jarName#" -C #currentResourcePath# .' );
+			j = nativeRunCommand( getJavaBinFolder() & "jar", 'uf "#outputJar#" -C #currentResourcePath# .' );
 
 			//job.addLog( j );
 			//command( j ).run(echo=true);
@@ -1046,11 +1057,17 @@ component accessors=true {
 	/**
 	 * Merges dependency JAR contents into the generated JAR.
 	 *
+	 * Entries are streamed straight from the dependency archives into the output
+	 * archive. One pass indexes the entries so the duplicate policy and the
+	 * service descriptor merging can be applied, then one pass copies the
+	 * surviving entries. Nothing is expanded to disk and no external JAR tool is
+	 * spawned, so the merge is linear in the amount of content being merged and
+	 * reports progress for every archive it touches.
+	 *
 	 * @returns Nothing. Dependency contents are merged according to the configured options.
 	 */
 	function buildFatJar() {
 		var options = getFatJarOptions();
-		var mergedDependencyEntries = {};
 		var currentLibsDir = reReplace(
 			fileSystemutil.normalizeSlashes( fileSystemutil.resolvePath( getLibsDir(), getProjectRoot() ) ),
 			"/+$",
@@ -1062,197 +1079,525 @@ component accessors=true {
 		}
 		var thinJarPath = currentLibsDir & getJarNameString();
 		var outputJar = currentLibsDir & fatJarName;
-		if( outputJar != thinJarPath && !fileExists( outputJar ) ) {
-			fileCopy( thinJarPath, outputJar, true );
-		}
-		setGeneratedJarPath( outputJar );
+		var mergedJarPath = outputJar & ".tmp";
+		var dependencyJars = getFatJarPaths();
 
-		for( var dependencyJar in getFatJarPaths() ) {
+		if( !fileExists( thinJarPath ) ) {
+			throw(
+				message="Fat JAR source JAR does not exist: #thinJarPath#",
+				type="commandException"
+			);
+		}
+		for( var dependencyJar in dependencyJars ) {
 			if( !fileExists( dependencyJar ) ) {
 				throw(
 					message="Fat JAR dependency does not exist: #dependencyJar#",
 					type="commandException"
 				);
 			}
-
-			var extractDirectory = tempDir & 'fatJar#createUUID()#';
-			if( !directoryExists( extractDirectory ) ) {
-				directoryCreate( extractDirectory, true );
-			}
-			if( !directoryExists( extractDirectory ) ) {
-				throw(
-					message="Unable to create fat JAR extraction directory: #extractDirectory#",
-					type="commandException"
-				);
-			}
-
-			try {
-				zip action="unzip" file="#dependencyJar#" destination="#extractDirectory#" overwrite="true";
-
-				removeDependencyManifest( extractDirectory );
-				if( options.excludeSignatures ) {
-					removeDependencySignatures( extractDirectory );
-				}
-				if( options.mergeServiceDescriptors ) {
-					mergeServiceDescriptors( outputJar, extractDirectory );
-				}
-				applyDuplicatePolicy( extractDirectory, mergedDependencyEntries, options.duplicatePolicy );
-
-				var mergeCommand = nativeRunCommand( getJavaBinFolder() & "jar", 'uf "#outputJar#" -C "#extractDirectory#" .' );
-				if( getVerbose() ) {
-					job.addLog( mergeCommand );
-				}
-				runCompileCommand( mergeCommand, "Fat JAR dependency merge" );
-			} finally {
-				if( directoryExists( extractDirectory ) ) {
-					directoryDelete( extractDirectory, true );
-				}
-			}
-		}
-	}
-
-	/**
-	 * Removes a dependency manifest before merging its contents.
-	 *
-	 * @extractDirectory The extracted dependency directory.
-	 * @returns Nothing.
-	 */
-	private function removeDependencyManifest( required string extractDirectory ) {
-		var metaInfDirectory = arguments.extractDirectory & "/META-INF";
-		if( !directoryExists( metaInfDirectory ) ) {
-			return;
 		}
 
-		var manifestFile = metaInfDirectory & "/MANIFEST.MF";
-		if( fileExists( manifestFile ) ) {
-			fileDelete( manifestFile );
-		}
-	}
+		job.addLog( "Scanning #getJarNameString()# and #dependencyJars.len()# dependency JAR(s)." );
+		setFatJarDuplicateReport( [] );
+		var mergePlan = buildFatJarMergePlan( thinJarPath, dependencyJars, options );
 
-	/**
-	 * Removes dependency signature files before merging archive contents.
-	 *
-	 * @extractDirectory The extracted dependency directory.
-	 * @returns Nothing.
-	 */
-	private function removeDependencySignatures( required string extractDirectory ) {
-		var metaInfDirectory = arguments.extractDirectory & "/META-INF";
-		if( !directoryExists( metaInfDirectory ) ) {
-			return;
-		}
-
-		for( var filePath in directoryList( metaInfDirectory, true, "array" ) ) {
-			if(
-				fileExists( filePath )
-				&& reFindNoCase( "(^|[\\/])META-INF[\\/].*\.(SF|RSA|DSA)$", filePath )
-			) {
-				fileDelete( filePath );
-			}
-		}
-	}
-
-	/**
-	 * Applies the configured duplicate-entry policy to extracted dependency files.
-	 *
-	 * @extractDirectory The extracted dependency directory.
-	 * @mergedDependencyEntries The entries already merged from dependencies.
-	 * @duplicatePolicy The duplicate policy: first, last, or error.
-	 * @returns Nothing.
-	 */
-	private function applyDuplicatePolicy(
-		required string extractDirectory,
-		required struct mergedDependencyEntries,
-		required string duplicatePolicy
-	) {
-		for( var filePath in directoryList( arguments.extractDirectory, true, "array" ) ) {
-			if( !fileExists( filePath ) ) {
-				continue;
-			}
-
-			var entryName = replaceNoCase(
-				fileSystemutil.normalizeSlashes( filePath ),
-				fileSystemutil.normalizeSlashes( arguments.extractDirectory ),
-				""
+		setFatJarDuplicateReport( mergePlan.duplicates );
+		if( mergePlan.duplicates.len() ) {
+			job.addLog(
+				"Resolved #mergePlan.duplicates.len()# duplicate entries using the '#options.duplicatePolicy#' duplicate policy."
 			);
-			entryName = reReplace( entryName, "^/+", "" );
+		}
 
-			if( !arguments.mergedDependencyEntries.keyExists( entryName ) ) {
-				arguments.mergedDependencyEntries[ entryName ] = true;
-				continue;
-			}
-
-			switch( arguments.duplicatePolicy ) {
-				case "first":
-					fileDelete( filePath );
-					break;
-				case "error":
-					throw(
-						message="Duplicate fat JAR entry: #entryName#",
-						type="commandException"
-					);
+		job.addLog( "Writing #mergePlan.entryCount# entries into #fatJarName#." );
+		try {
+			writeFatJarArchive( mergedJarPath, mergePlan, options );
+			moveIntoPlace( mergedJarPath, outputJar );
+		} finally {
+			if( fileExists( mergedJarPath ) ) {
+				fileDelete( mergedJarPath );
 			}
 		}
+
+		job.addLog( "Created Fat JAR: #outputJar# (#getJarSizeLabel( outputJar )#)." );
+		setGeneratedJarPath( outputJar );
 	}
 
 	/**
-	 * Combines service provider descriptors from a dependency into the output JAR.
+	 * Indexes the project JAR and every dependency so the duplicate policy and the
+	 * service descriptor merging can be applied before a single byte is written.
 	 *
-	 * @outputJar The output JAR path.
-	 * @extractDirectory The extracted dependency directory.
-	 * @returns Nothing.
+	 * @thinJarPath The project JAR the fat JAR starts from.
+	 * @dependencyJars The dependency JARs in the order they must be applied.
+	 * @options The configured fat JAR options.
+	 * @returns The merge plan holding the winning source for every entry.
 	 */
-	private function mergeServiceDescriptors( required string outputJar, required string extractDirectory ) {
-		var servicesDirectory = arguments.extractDirectory & "/META-INF/services";
-		if( !directoryExists( servicesDirectory ) ) {
-			return;
-		}
+	private struct function buildFatJarMergePlan(
+		required string thinJarPath,
+		required array dependencyJars,
+		required struct options
+	) {
+		var plan = {
+			"thinJarPath"    : arguments.thinJarPath,
+			"manifestEntry"  : "",
+			"services"       : [],
+			"sourceJars"     : [],
+			"winningSources" : {},
+			"duplicates"     : [],
+			"entryCount"     : 0
+		};
+		var serviceIndex = {};
+		var mergedDependencyEntries = {};
 
-		var outputDirectory = tempDir & "fatJarOutput#createUUID()#";
-		directoryCreate( outputDirectory, true );
-
+		// The project JAR provides the base entries, including the manifest
+		var thinJar = createObject( "java", "java.util.jar.JarFile" ).init( arguments.thinJarPath );
 		try {
-			zip action="unzip" file="#arguments.outputJar#" destination="#outputDirectory#" overwrite="true";
-
-			for( var serviceFile in directoryList( servicesDirectory, true, "array" ) ) {
-				if( !fileExists( serviceFile ) ) {
+			var thinEntries = [];
+			var thinJarEntries = thinJar.entries();
+			while( thinJarEntries.hasMoreElements() ) {
+				var thinEntry = thinJarEntries.nextElement();
+				if( thinEntry.isDirectory() ) {
 					continue;
 				}
-
-				var relativePath = replaceNoCase(
-					fileSystemutil.normalizeSlashes( serviceFile ),
-					fileSystemutil.normalizeSlashes( servicesDirectory ),
-					""
-				);
-				relativePath = reReplace( relativePath, "^/+", "" );
-				var outputServiceFile = outputDirectory & "/META-INF/services/" & relativePath;
-				var outputServiceDirectory = getDirectoryFromPath( outputServiceFile );
-				if( !directoryExists( outputServiceDirectory ) ) {
-					directoryCreate( outputServiceDirectory, true );
+				var thinEntryName = thinEntry.getName();
+				if( thinEntryName.equalsIgnoreCase( "META-INF/MANIFEST.MF" ) ) {
+					plan.manifestEntry = thinEntryName;
+					continue;
 				}
-
-				var providers = [];
-				if( fileExists( outputServiceFile ) ) {
-					providers.append( fileRead( outputServiceFile ).listToArray( chr(10), true ), true );
+				// A JarIndex describes the archive it was written for and never the merged result
+				if( thinEntryName.equalsIgnoreCase( "META-INF/INDEX.LIST" ) ) {
+					if( getVerbose() ) {
+						job.addLog( "Skipping [META-INF/INDEX.LIST] from #getFileFromPath( arguments.thinJarPath )#." );
+					}
+					continue;
 				}
-				providers.append( fileRead( serviceFile ).listToArray( chr(10), true ), true );
-				fileWrite( outputServiceFile, providers.map( ( provider ) => trim( provider ) ).filter( ( provider ) => provider.len() ).toList( chr(10) ) );
+				plan.winningSources[ thinEntryName ] = arguments.thinJarPath;
+				thinEntries.append( thinEntryName );
 			}
-
-			var mergedJarZip = arguments.outputJar & ".zip";
-			if( fileExists( mergedJarZip ) ) {
-				fileDelete( mergedJarZip );
-			}
-			zip action="zip" file="#arguments.outputJar#" source="#outputDirectory#" overwrite="true";
-			if( fileExists( arguments.outputJar ) ) {
-				fileDelete( arguments.outputJar );
-			}
-			fileMove( mergedJarZip, arguments.outputJar );
-			directoryDelete( servicesDirectory, true );
+			plan.sourceJars.append( { "jarPath" : arguments.thinJarPath, "entryNames" : thinEntries } );
 		} finally {
-			if( directoryExists( outputDirectory ) ) {
-				directoryDelete( outputDirectory, true );
-			}
+			thinJar.close();
 		}
+
+		var dependencyNumber = 0;
+		for( var dependencyJar in arguments.dependencyJars ) {
+			dependencyNumber++;
+			var dependencyEntries = [];
+			var dependencyJarFile = createObject( "java", "java.util.jar.JarFile" ).init( dependencyJar );
+			try {
+				var jarEntries = dependencyJarFile.entries();
+				while( jarEntries.hasMoreElements() ) {
+					var entry = jarEntries.nextElement();
+					if( entry.isDirectory() ) {
+						continue;
+					}
+					var entryName = entry.getName();
+					// The project manifest wins, dependency manifests never ship
+					if( entryName.equalsIgnoreCase( "META-INF/MANIFEST.MF" ) ) {
+						continue;
+					}
+					// JarIndex data from a dependency only describes that dependency's layout
+					if( entryName.equalsIgnoreCase( "META-INF/INDEX.LIST" ) ) {
+						if( getVerbose() ) {
+							job.addLog( "Skipping [META-INF/INDEX.LIST] from #getFileFromPath( dependencyJar )#." );
+						}
+						continue;
+					}
+					if( arguments.options.excludeSignatures && isJarSignatureEntry( entryName ) ) {
+						continue;
+					}
+					if(
+						arguments.options.mergeServiceDescriptors
+						&& entryName.startsWith( "META-INF/services/" )
+					) {
+						if( !serviceIndex.keyExists( entryName ) ) {
+							serviceIndex[ entryName ] = { "name" : entryName, "sourceJars" : [] };
+							plan.services.append( serviceIndex[ entryName ] );
+						}
+						serviceIndex[ entryName ].sourceJars.append( dependencyJar );
+						continue;
+					}
+
+					if( mergedDependencyEntries.keyExists( entryName ) ) {
+						var previousSource = plan.winningSources[ entryName ];
+						if( arguments.options.duplicatePolicy == "first" ) {
+							recordDuplicateResolution( plan, entryName, "first", previousSource, dependencyJar );
+							continue;
+						}
+						if( arguments.options.duplicatePolicy == "error" ) {
+							throw(
+								message="Duplicate fat JAR entry: #entryName#",
+								type="commandException"
+							);
+						}
+						recordDuplicateResolution( plan, entryName, "last", dependencyJar, previousSource );
+					} else {
+						mergedDependencyEntries[ entryName ] = true;
+					}
+
+					plan.winningSources[ entryName ] = dependencyJar;
+					dependencyEntries.append( entryName );
+				}
+			} finally {
+				dependencyJarFile.close();
+			}
+
+			plan.sourceJars.append( { "jarPath" : dependencyJar, "entryNames" : dependencyEntries } );
+			job.addLog(
+				"Scanned [#dependencyNumber#/#arguments.dependencyJars.len()#] #getFileFromPath( dependencyJar )# (#dependencyEntries.len()# entries)"
+			);
+		}
+
+		plan.entryCount = structCount( plan.winningSources ) + plan.services.len();
+		return plan;
+	}
+
+	/**
+	 * Records a duplicate entry resolved by the duplicate policy and reports it
+	 * when verbose output is enabled.
+	 *
+	 * @plan The merge plan being built.
+	 * @entryName The duplicated archive entry.
+	 * @duplicatePolicy The policy that resolved the duplicate.
+	 * @keptJar The dependency JAR that supplies the entry in the merged archive.
+	 * @skippedJar The dependency JAR whose copy of the entry is dropped.
+	 * @returns Nothing.
+	 */
+	private function recordDuplicateResolution(
+		required struct plan,
+		required string entryName,
+		required string duplicatePolicy,
+		required string keptJar,
+		required string skippedJar
+	) {
+		arguments.plan.duplicates.append( {
+			"entry"      : arguments.entryName,
+			"policy"     : arguments.duplicatePolicy,
+			"keptJar"    : arguments.keptJar,
+			"skippedJar" : arguments.skippedJar
+		} );
+
+		// Keep verbose output readable when a merge resolves a very large number of duplicates
+		if( !getVerbose() || arguments.plan.duplicates.len() > 100 ) {
+			return;
+		}
+
+		job.addLog(
+			"Duplicate entry [#arguments.entryName#] resolved by policy [#arguments.duplicatePolicy#]: "
+			& "keeping [#getFileFromPath( arguments.keptJar )#], skipping [#getFileFromPath( arguments.skippedJar )#]"
+		);
+	}
+
+	/**
+	 * Checks whether an archive entry is a JAR signature file.
+	 *
+	 * @entryName The archive entry name.
+	 * @returns True when the entry is a signature file under META-INF.
+	 */
+	private boolean function isJarSignatureEntry( required string entryName ) {
+		return reFindNoCase( "^META-INF/.*\.(SF|RSA|DSA)$", arguments.entryName ) > 0;
+	}
+
+	/**
+	 * Writes the merged archive from a merge plan.
+	 *
+	 * @jarPath The archive file to write.
+	 * @mergePlan The plan produced by buildFatJarMergePlan().
+	 * @options The configured fat JAR options.
+	 * @returns Nothing.
+	 */
+	private function writeFatJarArchive( required string jarPath, required struct mergePlan, required struct options ) {
+		var storeEntries = getJarOptionsString().find( "0" ) > 0;
+		var writeManifestEntry = arguments.mergePlan.manifestEntry.len() && !getJarOptionsString().find( "M" );
+		var writtenDirectories = {};
+		var jarOut = createObject( "java", "java.util.jar.JarOutputStream" ).init(
+			createObject( "java", "java.io.BufferedOutputStream" ).init(
+				createObject( "java", "java.io.FileOutputStream" ).init( arguments.jarPath )
+			)
+		);
+
+		try {
+			if( writeManifestEntry ) {
+				var thinJar = createObject( "java", "java.util.jar.JarFile" ).init( arguments.mergePlan.thinJarPath );
+				try {
+					writeJarEntry(
+						jarOut,
+						thinJar,
+						thinJar.getJarEntry( arguments.mergePlan.manifestEntry ),
+						arguments.mergePlan.manifestEntry,
+						storeEntries,
+						writtenDirectories
+					);
+				} finally {
+					thinJar.close();
+				}
+			}
+
+			for( var service in arguments.mergePlan.services ) {
+				writeJarEntryContent(
+					jarOut,
+					service.name,
+					buildMergedServiceContent( arguments.mergePlan.thinJarPath, service ),
+					storeEntries,
+					writtenDirectories
+				);
+			}
+
+			var sourceNumber = 0;
+			for( var sourceJar in arguments.mergePlan.sourceJars ) {
+				sourceNumber++;
+				var sourceJarPath = sourceJar.jarPath;
+				var writtenEntryCount = 0;
+				var sourceJarFile = createObject( "java", "java.util.jar.JarFile" ).init( sourceJarPath );
+				try {
+					for( var entryName in sourceJar.entryNames ) {
+						// A later dependency may have won this entry, only its winner writes it
+						if( arguments.mergePlan.winningSources[ entryName ] != sourceJarPath ) {
+							continue;
+						}
+						var sourceEntry = sourceJarFile.getJarEntry( entryName );
+						if( isNull( sourceEntry ) ) {
+							continue;
+						}
+						writtenEntryCount++;
+						writeJarEntry( jarOut, sourceJarFile, sourceEntry, entryName, storeEntries, writtenDirectories );
+					}
+				} finally {
+					sourceJarFile.close();
+				}
+				job.addLog(
+					"Wrote [#sourceNumber#/#arguments.mergePlan.sourceJars.len()#] #getFileFromPath( sourceJarPath )# (#writtenEntryCount# entries)"
+				);
+			}
+		} finally {
+			jarOut.close();
+		}
+	}
+
+	/**
+	 * Copies one entry from a source archive into the output archive.
+	 *
+	 * @jarOut The archive being written.
+	 * @sourceJar The open source archive.
+	 * @sourceEntry The entry to copy.
+	 * @entryName The entry name to write.
+	 * @storeEntry True to write the entry without compression.
+	 * @writtenDirectories The directory entries already written to the output.
+	 * @returns Nothing.
+	 */
+	private function writeJarEntry(
+		required any jarOut,
+		required any sourceJar,
+		required any sourceEntry,
+		required string entryName,
+		required boolean storeEntry,
+		required struct writtenDirectories
+	) {
+		writeParentDirectoryEntries(
+			arguments.jarOut,
+			arguments.entryName,
+			arguments.storeEntry,
+			arguments.writtenDirectories
+		);
+
+		var newEntry = createObject( "java", "java.util.jar.JarEntry" ).init( arguments.entryName );
+		if( arguments.sourceEntry.getTime() > 0 ) {
+			newEntry.setTime( javaCast( "long", arguments.sourceEntry.getTime() ) );
+		}
+		if( arguments.storeEntry ) {
+			newEntry.setMethod( createObject( "java", "java.util.zip.ZipEntry" ).STORED );
+			newEntry.setSize( javaCast( "long", arguments.sourceEntry.getSize() ) );
+			newEntry.setCrc( javaCast( "long", arguments.sourceEntry.getCrc() ) );
+		}
+
+		arguments.jarOut.putNextEntry( newEntry );
+		var inputStream = arguments.sourceJar.getInputStream( arguments.sourceEntry );
+		try {
+			inputStream.transferTo( arguments.jarOut );
+		} finally {
+			inputStream.close();
+		}
+		arguments.jarOut.closeEntry();
+	}
+
+	/**
+	 * Writes a generated entry into the output archive.
+	 *
+	 * @jarOut The archive being written.
+	 * @entryName The entry name to write.
+	 * @content The entry content.
+	 * @storeEntry True to write the entry without compression.
+	 * @writtenDirectories The directory entries already written to the output.
+	 * @returns Nothing.
+	 */
+	private function writeJarEntryContent(
+		required any jarOut,
+		required string entryName,
+		required string content,
+		required boolean storeEntry,
+		required struct writtenDirectories
+	) {
+		writeParentDirectoryEntries(
+			arguments.jarOut,
+			arguments.entryName,
+			arguments.storeEntry,
+			arguments.writtenDirectories
+		);
+
+		var contentBytes = createObject( "java", "java.lang.String" ).init( arguments.content ).getBytes( "UTF-8" );
+		var newEntry = createObject( "java", "java.util.jar.JarEntry" ).init( arguments.entryName );
+		if( arguments.storeEntry ) {
+			var crc = createObject( "java", "java.util.zip.CRC32" ).init();
+			crc.update( contentBytes );
+			newEntry.setMethod( createObject( "java", "java.util.zip.ZipEntry" ).STORED );
+			newEntry.setSize( javaCast( "long", contentBytes.length ) );
+			newEntry.setCrc( crc.getValue() );
+		}
+
+		arguments.jarOut.putNextEntry( newEntry );
+		arguments.jarOut.write( contentBytes );
+		arguments.jarOut.closeEntry();
+	}
+
+	/**
+	 * Writes the directory entries a file entry needs before the file itself.
+	 *
+	 * @jarOut The archive being written.
+	 * @entryName The file entry name.
+	 * @storeEntry True to write the entries without compression.
+	 * @writtenDirectories The directory entries already written to the output.
+	 * @returns Nothing.
+	 */
+	private function writeParentDirectoryEntries(
+		required any jarOut,
+		required string entryName,
+		required boolean storeEntry,
+		required struct writtenDirectories
+	) {
+		var pathParts = arguments.entryName.listToArray( "/" );
+		if( pathParts.len() < 2 ) {
+			return;
+		}
+
+		var directoryName = "";
+		for( var i = 1; i < pathParts.len(); i++ ) {
+			directoryName &= pathParts[ i ] & "/";
+			if( arguments.writtenDirectories.keyExists( directoryName ) ) {
+				continue;
+			}
+
+			var directoryEntry = createObject( "java", "java.util.zip.ZipEntry" ).init( directoryName );
+			if( arguments.storeEntry ) {
+				directoryEntry.setMethod( createObject( "java", "java.util.zip.ZipEntry" ).STORED );
+				directoryEntry.setSize( 0 );
+				directoryEntry.setCrc( 0 );
+			}
+			arguments.jarOut.putNextEntry( directoryEntry );
+			arguments.jarOut.closeEntry();
+			arguments.writtenDirectories[ directoryName ] = true;
+		}
+	}
+
+	/**
+	 * Combines the service provider lines from the project JAR and every
+	 * dependency that ships the same descriptor.
+	 *
+	 * @thinJarPath The project JAR path.
+	 * @service The service descriptor being merged.
+	 * @returns The merged provider list, one provider per line.
+	 */
+	private string function buildMergedServiceContent( required string thinJarPath, required struct service ) {
+		var providers = [];
+		providers.append( readJarEntryLines( arguments.thinJarPath, arguments.service.name ), true );
+		for( var sourceJarPath in arguments.service.sourceJars ) {
+			providers.append( readJarEntryLines( sourceJarPath, arguments.service.name ), true );
+		}
+
+		return providers
+			.map( ( provider ) => trim( provider ) )
+			.filter( ( provider ) => provider.len() )
+			.toList( chr( 10 ) );
+	}
+
+	/**
+	 * Reads an archive entry as a list of lines.
+	 *
+	 * @jarPath The archive to read.
+	 * @entryName The entry to read.
+	 * @returns The entry lines, or an empty array when the entry is missing.
+	 */
+	private array function readJarEntryLines( required string jarPath, required string entryName ) {
+		var jarFile = createObject( "java", "java.util.jar.JarFile" ).init( arguments.jarPath );
+		try {
+			var entry = jarFile.getJarEntry( arguments.entryName );
+			if( isNull( entry ) ) {
+				return [];
+			}
+			var inputStream = jarFile.getInputStream( entry );
+			try {
+				var outputStream = createObject( "java", "java.io.ByteArrayOutputStream" ).init();
+				inputStream.transferTo( outputStream );
+				return createObject( "java", "java.lang.String" )
+					.init( outputStream.toByteArray(), "UTF-8" )
+					.listToArray( chr( 10 ), true );
+			} finally {
+				inputStream.close();
+			}
+		} finally {
+			jarFile.close();
+		}
+	}
+	/**
+	 * Replaces a file with a completed one without ever leaving the destination
+	 * missing, so an interrupted merge cannot destroy the previous JAR.
+	 *
+	 * @sourcePath The fully written replacement file.
+	 * @destinationPath The file to replace.
+	 * @returns Nothing.
+	 */
+	private function moveIntoPlace( required string sourcePath, required string destinationPath ) {
+		var files = createObject( "java", "java.nio.file.Files" );
+		var copyOption = createObject( "java", "java.nio.file.StandardCopyOption" );
+		var source = createObject( "java", "java.io.File" ).init( arguments.sourcePath ).toPath();
+		var destination = createObject( "java", "java.io.File" ).init( arguments.destinationPath ).toPath();
+
+		try {
+			files.move( source, destination, [ copyOption.ATOMIC_MOVE, copyOption.REPLACE_EXISTING ] );
+			return;
+		} catch( any e ) {
+			// Not every file system supports atomic renames, a plain replace still never leaves the target missing
+		}
+
+		try {
+			files.move( source, destination, [ copyOption.REPLACE_EXISTING ] );
+			return;
+		} catch( any e ) {
+			// Fall back to the platform file helpers when NIO cannot move the file
+			if( fileExists( arguments.destinationPath ) ) {
+				fileDelete( arguments.destinationPath );
+			}
+			fileMove( arguments.sourcePath, arguments.destinationPath );
+		}
+	}
+
+	/**
+	 * Formats a JAR file size for job output.
+	 *
+	 * @jarPath The JAR file to measure.
+	 * @returns A human readable size such as `1.8 MB`.
+	 */
+	private string function getJarSizeLabel( required string jarPath ) {
+		if( !fileExists( arguments.jarPath ) ) {
+			return "missing";
+		}
+
+		var sizeInBytes = getFileInfo( arguments.jarPath ).size;
+		if( sizeInBytes < 1024 ) {
+			return "#sizeInBytes# bytes";
+		}
+		if( sizeInBytes < 1024 * 1024 ) {
+			return "#numberFormat( sizeInBytes / 1024, "0.0" )# KB";
+		}
+		return "#numberFormat( sizeInBytes / 1024 / 1024, "0.0" )# MB";
 	}
 
 	/**

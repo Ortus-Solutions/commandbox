@@ -1188,11 +1188,34 @@ component
 
 	/**
 	 * Determines whether a Maven version identifies one immutable concrete artifact.
+	 *
+	 * Versions such as `2.3.26.Final`, `1.0.0.RELEASE`, or `3.0.0.GA` are concrete
+	 * releases even though they carry a dot separated qualifier, so they must be
+	 * treated as exact or every install re-resolves them remotely instead of using
+	 * the local artifact cache. Only real range syntax, wildcard segments, and the
+	 * remote lookup keywords are non-exact.
+	 *
 	 * @version The Maven version to evaluate.
 	 */
 	private boolean function isExactMavenVersion( required string version ) {
-		return !reFindNoCase( "[\[\]\(\)\*xX~^<>= ]", arguments.version )
-			&& reFindNoCase( "^[0-9]+(?:\.[0-9]+)*(?:[-+][0-9A-Za-z.-]+)?$", arguments.version );
+		var value = trim( arguments.version );
+		if ( !value.len() ) {
+			return false;
+		}
+		// Range syntax and version comparisons need the remote metadata to resolve
+		if ( reFindNoCase( "[\[\]\(\),<>=~^ ]", value ) ) {
+			return false;
+		}
+		// Wildcard segments such as 1.2.x, 1.2.X or 1.2.* are ranges as well
+		if ( reFindNoCase( "(^|\.)[xX*](\.|$)", value ) ) {
+			return false;
+		}
+		// These keywords resolve to whatever the remote repository publishes right now
+		return !(
+			value.equalsIgnoreCase( "LATEST" )
+			|| value.equalsIgnoreCase( "RELEASE" )
+			|| value.equalsIgnoreCase( "STABLE" )
+		);
 	}
 
 	/**

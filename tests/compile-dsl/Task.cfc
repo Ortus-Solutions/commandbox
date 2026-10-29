@@ -749,6 +749,179 @@ component {
 	}
 
 	/**
+	 * Merging a large number of dependencies must keep the documented merge
+	 * semantics, put resources in the fat JAR even when the thin JAR has another
+	 * name, and stay linear instead of rewriting the output once per dependency.
+	 *
+	 * @test
+	 */
+	function fatJarManyDependencies( boolean verbose=false ) {
+		var dependencyCount = 40;
+		var fixtureRoot = resolvePath( "fat-jar-many" );
+		var thinJarFile = resolvePath( "build/libs/fat-jar-many-thin.jar" );
+		var jarFile = resolvePath( "build/libs/fat-jar-many-all.jar" );
+		var firstPolicyJarFile = resolvePath( "build/libs/fat-jar-many-first.jar" );
+		var inPlaceJarFile = resolvePath( "build/libs/fat-jar-many-inplace.jar" );
+		var guardedJarFile = resolvePath( "build/libs/fat-jar-many-guarded.jar" );
+		var dependencyJars = [];
+		var expectedProviders = [];
+
+		if( directoryExists( fixtureRoot ) ) {
+			directoryDelete( fixtureRoot, true );
+		}
+		for( var jarPath in [ thinJarFile, jarFile, firstPolicyJarFile, inPlaceJarFile, guardedJarFile ] ) {
+			if( fileExists( jarPath ) ) {
+				fileDelete( jarPath );
+			}
+		}
+
+		for( var i = 1; i <= dependencyCount; i++ ) {
+			var dependencyJar = resolvePath( "libs/fat-jar-many-#i#.jar" );
+			createManyDependencyJar( fixtureRoot & "/dependency-#i#", dependencyJar, i );
+			dependencyJars.append( dependencyJar );
+			if( i % 5 == 0 ) {
+				expectedProviders.append( "example.provider.Provider#i#" );
+			}
+		}
+
+		var startedAt = getTickCount();
+		var result = compile()
+			.setVerbose( arguments.verbose )
+			.toJar( "fat-jar-many-thin.jar" )
+			.toFatJar( "fat-jar-many-all.jar", dependencyJars )
+			.run();
+		var elapsedSeconds = ( getTickCount() - startedAt ) / 1000;
+
+		assertFileExists( result.jarPath );
+		assertEquals( "fat-jar-many-all.jar", getFileFromPath( result.jarPath ) );
+		assertFileExists( thinJarFile );
+		assertFileExists( jarFile );
+		assertJarEntryMissing( thinJarFile, "many/unique-1.txt" );
+		assertJarEntryExists( jarFile, "many/unique-1.txt" );
+		assertJarEntryExists( jarFile, "many/unique-#dependencyCount#.txt" );
+		// Signature files from dependencies are excluded by default
+		assertJarEntryMissing( jarFile, "META-INF/SIGNATURE.SF" );
+
+		// Service descriptors are merged line by line, in the supplied dependency order
+		assertEquals(
+			expectedProviders.toList( chr(10) ),
+			readJarEntry( jarFile, "META-INF/services/example.ManyService" )
+		);
+		// The default duplicate policy keeps the last dependency supplied
+		assertEquals( "dependency #dependencyCount#", readJarEntry( jarFile, "many/duplicate.txt" ) );
+		// Resources belong in the fat JAR when the thin JAR has another name
+		assertJarEntryExists( jarFile, "default-resource.txt" );
+		assertJarEntryExists( jarFile, "nested/default-nested-resource.txt" );
+
+		compile()
+			.setVerbose( arguments.verbose )
+			.configureFatJar( { "duplicatePolicy" : "first" } )
+			.toJar( "fat-jar-many-thin-first.jar" )
+			.toFatJar( "fat-jar-many-first.jar", dependencyJars )
+			.run();
+
+		assertEquals( "dependency 1", readJarEntry( firstPolicyJarFile, "many/duplicate.txt" ) );
+
+		// A JAR left behind by a previous run must be replaced, not merged into
+		compile()
+			.setVerbose( arguments.verbose )
+			.toJar( "fat-jar-many-thin.jar" )
+			.toFatJar( "fat-jar-many-all.jar", [ dependencyJars.first() ] )
+			.run();
+
+		assertJarEntryExists( jarFile, "many/unique-1.txt" );
+		assertJarEntryMissing( jarFile, "many/unique-#dependencyCount#.txt" );
+
+		// The fat JAR may be written in place over the thin JAR name
+		compile()
+			.setVerbose( arguments.verbose )
+			.toJar( "fat-jar-many-inplace.jar" )
+			.toFatJar( "fat-jar-many-inplace.jar", dependencyJars )
+			.run();
+
+		assertJarEntryExists( inPlaceJarFile, "many/unique-1.txt" );
+		assertJarEntryExists( inPlaceJarFile, "default-resource.txt" );
+		assertEquals(
+			expectedProviders.toList( chr(10) ),
+			readJarEntry( inPlaceJarFile, "META-INF/services/example.ManyService" )
+		);
+
+		// A failed merge must leave the previous JAR untouched and drop no temp file next to it
+		compile()
+			.setVerbose( arguments.verbose )
+			.toJar( "fat-jar-many-guarded-thin.jar" )
+			.toFatJar( "fat-jar-many-guarded.jar", [ dependencyJars.first() ] )
+			.run();
+		var duplicateBeforeFailure = readJarEntry( guardedJarFile, "many/duplicate.txt" );
+		var mergeFailed = false;
+		try {
+			compile()
+				.setVerbose( arguments.verbose )
+				.toJar( "fat-jar-many-guarded-thin.jar" )
+				.toFatJar( "fat-jar-many-guarded.jar", dependencyJars, { "duplicatePolicy" : "error" } )
+				.run();
+		} catch( any e ) {
+			mergeFailed = true;
+		}
+		assertEquals( true, mergeFailed );
+		job.reset();
+		setExitCode( 0 );
+
+		assertFileExists( guardedJarFile );
+		assertFileMissing( guardedJarFile & ".tmp" );
+		assertEquals( duplicateBeforeFailure, readJarEntry( guardedJarFile, "many/duplicate.txt" ) );
+		assertJarEntryMissing( guardedJarFile, "many/unique-#dependencyCount#.txt" );
+
+		// A linear merge of the whole dependency set must not blow up into a multi-minute build
+		if( elapsedSeconds > 60 ) {
+			error( "Merging #dependencyCount# dependency JARs took #elapsedSeconds# seconds." );
+		}
+
+		print.greenLine( "Fat-JAR many dependency test passed in #elapsedSeconds# seconds." );
+	}
+
+	/**
+	 * A dependency JarIndex must never reach the merged archive, and duplicate
+	 * entries must be reported with the source JARs that produced them.
+	 *
+	 * @test
+	 */
+	function fatJarIndexListAndDuplicates( boolean verbose=false ) {
+		var firstDirectory = resolvePath( "fat-jar-index/first" );
+		var secondDirectory = resolvePath( "fat-jar-index/second" );
+		var firstJar = resolvePath( "libs/fat-jar-index-first.jar" );
+		var secondJar = resolvePath( "libs/fat-jar-index-second.jar" );
+		var jarFile = resolvePath( "build/libs/fat-jar-index.jar" );
+
+		createIndexedDependencyJar( firstDirectory, firstJar, "first dependency" );
+		createIndexedDependencyJar( secondDirectory, secondJar, "second dependency" );
+
+		var dsl = compile()
+			.setVerbose( arguments.verbose )
+			.toJar( "fat-jar-index-src.jar" )
+			.toFatJar( "fat-jar-index.jar", [ firstJar, secondJar ] );
+		dsl.run();
+
+		// A JarIndex only describes the archive it was written for
+		assertJarEntryMissing( jarFile, "META-INF/INDEX.LIST" );
+		// The last dependency applied wins the shared entry
+		assertEquals( "second dependency", readJarEntry( jarFile, "indexed-resource.txt" ) );
+
+		// The resolved duplicate is reported with both source JARs
+		var duplicates = dsl.getFatJarDuplicateReport();
+		assertEquals( 2, duplicates.len() );
+		var classDuplicates = duplicates.filter(
+			( duplicate ) => duplicate.entry == "example/shared/Duplicate.class"
+		);
+		assertEquals( 1, classDuplicates.len() );
+		assertEquals( "last", classDuplicates.first().policy );
+		assertEquals( true, classDuplicates.first().keptJar.endsWith( "fat-jar-index-second.jar" ) );
+		assertEquals( true, classDuplicates.first().skippedJar.endsWith( "fat-jar-index-first.jar" ) );
+
+		print.greenLine( "Fat-JAR index list and duplicate report test passed." );
+	}
+
+	/**
 	 * @test
 	 */
 	function failedCompileCleanup( boolean verbose=false ) {
@@ -1039,6 +1212,80 @@ component {
 
 		directoryCreate( arguments.directory, true );
 		fileWrite( arguments.directory & "/duplicate-resource.txt", arguments.resourceContents & chr(10) );
+
+		var zipFile = arguments.jarFile & ".zip";
+		if( fileExists( zipFile ) ) {
+			fileDelete( zipFile );
+		}
+		zip action="zip" file="#arguments.jarFile#" source="#arguments.directory#" overwrite="true";
+		fileMove( zipFile, arguments.jarFile );
+	}
+
+	/**
+	 * Builds one dependency JAR for the many-dependency merge test. Every fifth
+	 * JAR also ships a service provider descriptor and the first JAR carries a
+	 * signature file.
+	 */
+	private function createManyDependencyJar(
+		required string directory,
+		required string jarFile,
+		required numeric index
+	) {
+		if( directoryExists( arguments.directory ) ) {
+			directoryDelete( arguments.directory, true );
+		}
+		if( fileExists( arguments.jarFile ) ) {
+			fileDelete( arguments.jarFile );
+		}
+
+		directoryCreate( arguments.directory & "/many", true );
+		fileWrite( arguments.directory & "/many/unique-#arguments.index#.txt", "dependency #arguments.index#" & chr(10) );
+		fileWrite( arguments.directory & "/many/duplicate.txt", "dependency #arguments.index#" & chr(10) );
+
+		if( arguments.index == 1 ) {
+			directoryCreate( arguments.directory & "/META-INF", true );
+			fileWrite( arguments.directory & "/META-INF/SIGNATURE.SF", "invalid signature" );
+		}
+		if( arguments.index % 5 == 0 ) {
+			directoryCreate( arguments.directory & "/META-INF/services", true );
+			fileWrite(
+				arguments.directory & "/META-INF/services/example.ManyService",
+				"example.provider.Provider#arguments.index#" & chr(10)
+			);
+		}
+
+		var zipFile = arguments.jarFile & ".zip";
+		if( fileExists( zipFile ) ) {
+			fileDelete( zipFile );
+		}
+		zip action="zip" file="#arguments.jarFile#" source="#arguments.directory#" overwrite="true";
+		fileMove( zipFile, arguments.jarFile );
+	}
+
+	/**
+	 * Builds a dependency JAR that ships a JarIndex, a shared class, and a unique
+	 * resource, used by the index list and duplicate reporting test.
+	 */
+	private function createIndexedDependencyJar(
+		required string directory,
+		required string jarFile,
+		required string resourceContents
+	) {
+		if( directoryExists( arguments.directory ) ) {
+			directoryDelete( arguments.directory, true );
+		}
+		if( fileExists( arguments.jarFile ) ) {
+			fileDelete( arguments.jarFile );
+		}
+
+		directoryCreate( arguments.directory & "/META-INF", true );
+		directoryCreate( arguments.directory & "/example/shared", true );
+		fileWrite(
+			arguments.directory & "/META-INF/INDEX.LIST",
+			"JarIndex-Version: 1.0" & chr( 10 ) & chr( 10 ) & arguments.jarFile & chr( 10 )
+		);
+		fileWrite( arguments.directory & "/example/shared/Duplicate.class", "shared class placeholder" );
+		fileWrite( arguments.directory & "/indexed-resource.txt", arguments.resourceContents & chr( 10 ) );
 
 		var zipFile = arguments.jarFile & ".zip";
 		if( fileExists( zipFile ) ) {
