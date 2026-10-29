@@ -28,6 +28,14 @@ class {
 		}
 		directoryCreate( moduleSrcPath );
 		directoryCopy( repoSrcPath, moduleSrcPath, true );
+
+		// The metadata cache is a runtime artifact that is regenerated on first start
+		// and must never ship with the module.
+		var mdCachePath = moduleSrcPath & "mdCache";
+		if( directoryExists( mdCachePath ) ) {
+			directoryDelete( mdCachePath, true );
+		}
+
 		command( "tokenReplace" ).params( moduleSrcPath & "Shell.cfc", "@build.version@", boxJSON.version, true ).run();
 		command( "tokenReplace" ).params( moduleSrcPath & "Bootstrap.cfm", "@build.version@", boxJSON.version, true ).run();
 
