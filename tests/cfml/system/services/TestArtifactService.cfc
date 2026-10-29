@@ -37,7 +37,10 @@ component extends="mxunit.framework.TestCase" {
 
 		service.createArtifactFromFolder( "mypackage", "3.4.5", packageFolder );
 
-		assertEquals( "from folder", readHello( service.getArtifactPath( "mypackage", "3.4.5", false ) ) );
+		var artifactPath = service.getArtifactPath( "mypackage", "3.4.5", false );
+		assertEquals( "from folder", readHello( artifactPath ) );
+		// Nothing but the published zip may be left in the version directory
+		assertEquals( "mypackage.zip", arrayToList( directoryList( getDirectoryFromPath( artifactPath ), false, "name" ) ) );
 		assertEquals( 0, countPartialFiles( artifactsRoot ) );
 	}
 
@@ -167,7 +170,7 @@ component extends="mxunit.framework.TestCase" {
 			path = arguments.directory,
 			recurse = true,
 			listInfo = "path",
-			filter = "*.partial"
+			filter = "*.partial*"
 		);
 		return arrayLen( partials );
 	}

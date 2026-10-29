@@ -275,9 +275,12 @@ component accessors="true" singleton {
 
 	/**
 	* Staging file lives beside the final zip so the publish can be a same-directory rename.
+	* The staging name must end in .zip. The zip command appends a .zip extension to any
+	* destination that doesn't already end in .zip (BoxLang does this), which would leave
+	* the finished archive under a name we don't know about.
 	*/
 	private string function getStagingArtifactPath( required string artifactPath ) {
-		return getDirectoryFromPath( arguments.artifactPath ) & '.' & createUUID() & '.partial';
+		return getDirectoryFromPath( arguments.artifactPath ) & '.' & createUUID() & '.partial.zip';
 	}
 
 	/**
