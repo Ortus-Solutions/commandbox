@@ -64,7 +64,7 @@ class {
 			.run();
 
 		command( "install" )
-			.params( "maven:org.eclipse.jgit:org.eclipse.jgit:7.3.0.202506031305-r?exclude=org.slf4j:slf4j-api,org.apache.httpcomponents:httpclient" )
+			.params( "maven:org.eclipse.jgit:org.eclipse.jgit:7.8.0.202609011348-r?exclude=org.slf4j:slf4j-api,org.apache.httpcomponents:httpclient" )
 			.inWorkingDirectory( resolvePath( "bx-cli" ) )
 			.flags( "noSave", "force" )
 			.run();
@@ -75,7 +75,7 @@ class {
 		// because CommandBox does not support sftp:// URLs and sshd-osgi (pulled in by
 		// jgit.ssh.apache) already bundles sshd-core and sshd-common.
 		command( "install" )
-			.params( "maven:org.eclipse.jgit:org.eclipse.jgit.ssh.apache:7.3.0.202506031305-r?exclude=org.slf4j:slf4j-api,org.apache.httpcomponents:httpclient,org.apache.sshd:sshd-sftp" )
+			.params( "maven:org.eclipse.jgit:org.eclipse.jgit.ssh.apache:7.8.0.202609011348-r?exclude=org.slf4j:slf4j-api,org.apache.httpcomponents:httpclient,org.apache.sshd:sshd-sftp" )
 			.inWorkingDirectory( resolvePath( "bx-cli" ) )
 			.flags( "noSave", "force" )
 			.run();
