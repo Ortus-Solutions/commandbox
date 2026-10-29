@@ -38,6 +38,8 @@ component accessors=true singleton {
 			'onException',
 			// Package lifecycle
 			'preInstall','onInstall','postInstall','preUninstall','postUninstall','preVersion','postVersion','prePublish','postPublish','preUnpublish','postUnpublish','onRelease','preInstallAll','postInstallAll',
+			// Java compile lifecycle
+			'preJavaCompile','postJavaCompile',
 			// Misc
 			'onSystemSettingExpansion','onConfigSettingSave','onEndpointLogin'
 		] );

@@ -1,0 +1,16 @@
+{
+	"name" : "Compile Scripts",
+	"slug" : "compile-scripts",
+	"version" : "1.0.0",
+	"java" : {
+		"source"      : "src/main/java",
+		"classes"     : "build/classes",
+		"resources"   : [ "src/main/resources", "dist/generated" ],
+		"jar"         : true,
+		"jarName"     : "compile-scripts.jar"
+	},
+	"scripts" : {
+		"preJavaCompile"  : [ "touch pre-java-compile.marker", "mkdir dist/generated", "touch dist/generated/pre-resource.txt" ],
+		"postJavaCompile" : [ "touch post-java-compile.marker" ]
+	}
+}

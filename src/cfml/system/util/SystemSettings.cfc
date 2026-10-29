@@ -67,13 +67,13 @@ component singleton {
 		}
 
 		// Now check Java system props
-		var value = getSystemProperty( key=arguments.key, throwWhenNotFound=false );
+		var value = variables.getSystemProperty( key=arguments.key, throwWhenNotFound=false );
 		if ( ! isNull( value ) ) {
 			return value;
 		}
 
 		// Finally check OS env vars.
-		value = getEnv( key=arguments.key, throwWhenNotFound=false );
+		value = variables.getEnv( key=arguments.key, throwWhenNotFound=false );
 		if ( ! isNull( value ) ) {
 			return value;
 		}
@@ -217,10 +217,20 @@ component singleton {
 				settingName = settingName.listFirst( ':' );
 			}
 
-			var result = getSystemSetting( settingName, defaultValue, context );
+			/*
+			Scope this call. BoxLang resolves an unscoped call to a sibling method that
+			shares a name with a BIF (getSystemSetting, getSystemProperty, getEnv) to
+			the BIF, which drops the context argument and returns the default.
+			*/
+			var result = variables.getSystemSetting( settingName, defaultValue, context );
 
 			// And stick their results in their place
+			var previousText = text;
 			text = replaceNoCase( text, systemSetting, result, 'one' );
+			// Stop when a setting expands to itself, otherwise the loop never ends
+			if( text == previousText ) {
+				break;
+			}
 			// Search again
 			var search = reFindNoCase( '__system__.*?__system__', text, 1, true );
 		}

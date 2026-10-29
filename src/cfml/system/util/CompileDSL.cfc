@@ -37,10 +37,13 @@ component accessors=true {
 	property name='customManifestParams'	type='struct';
 	property name='generatedManifestFile'	type='string';
 	property name='resourcePath'			type='string';
+	property name='resourcePathConfigured'	type='boolean';
 	property name='classTextFilePaths'		type='array';
 	property name='fatJarPaths'				type='array';
 	property name='fatJarOptions'			type='struct';
 	property name='fatJarDuplicateReport'	type='array';
+	property name='thinJarRequested'		type='boolean';
+	property name='fatJarRequested'			type='boolean';
 	property name='javaDocDestinationDir'	type='string';
 	property name='useJavaDoc'				type='boolean';
 
@@ -86,9 +89,12 @@ component accessors=true {
 		setCustomManifestParams( {} );
 		setGeneratedManifestFile( '' );
 		setResourcePath( 'src/main/resources/' );
+		setResourcePathConfigured( false );
 		setClassTextFilePaths(['']);
 		setFatJarPaths( [] );
 		setFatJarDuplicateReport( [] );
+		setThinJarRequested( false );
+		setFatJarRequested( false );
 		setFatJarOptions( {
 			"mergeServiceDescriptors" : true,
 			"excludeSignatures"       : true,
@@ -220,6 +226,7 @@ component accessors=true {
 		if( jarName.len() ) {
 			setJarNameString( jarName );
 		}
+		setThinJarRequested( true );
 		setCreateJar( true );
 		return this;
 	}
@@ -373,16 +380,65 @@ component accessors=true {
 	}
 
 	/**
-	 * Sets the resource directory whose contents are added to the generated JAR.
+	 * Adds one or more resource directories whose contents are added to the generated JAR.
 	 *
-	 * @resourcesPath The resource directory path.
+	 * Roots accumulate in the order they are supplied. When two roots contain the
+	 * same entry, the later root wins, matching how dependency JARs are merged.
+	 * The first call replaces the default `src/main/resources` root.
+	 *
+	 * @resourcesPath A resource directory, a comma-delimited list of directories, or an array of directories.
 	 * @returns The current DSL instance.
 	 */
-	function withResources( string resourcesPath ) {
-		//if it has a resourcefolder it uses that one
-		//if its empty then use src\main\resources
-		setResourcePath( fileSystemutil.resolvePath( resourcesPath, getProjectRoot() ) )
+	function withResources( any resourcesPath ) {
+		var newPaths = isArray( arguments.resourcesPath )
+			? arguments.resourcesPath
+			: listToArray( arguments.resourcesPath, ",", true );
+
+		// The default root is replaced by the first explicit configuration, later calls accumulate
+		var knownPaths = getResourcePathConfigured()
+			? getResourcePath().listToArray( ",", true )
+			: [];
+
+		for( var newPath in newPaths ) {
+			if( !isSimpleValue( newPath ) || !len( trim( newPath ) ) || knownPaths.findNoCase( trim( newPath ) ) > 0 ) {
+				continue;
+			}
+			knownPaths.append( trim( newPath ) );
+		}
+
+		setResourcePath( knownPaths.toList( "," ) );
 		return this;
+	}
+
+	/**
+	 * Sets the project resource roots, replacing any that were configured before.
+	 *
+	 * @resourcePath A resource directory or a comma-delimited list of directories.
+	 * @returns The current DSL instance.
+	 */
+	function setResourcePath( required string resourcePath ) {
+		variables.resourcePath = arguments.resourcePath;
+		variables.resourcePathConfigured = true;
+		return this;
+	}
+
+	/**
+	 * Returns the resolved project resource roots in the order they were supplied.
+	 *
+	 * @returns Array of absolute resource directory paths.
+	 */
+	function getResourcePaths() {
+		var resourceRoots = [];
+		for( var resourcePath in getResourcePath().listToArray( ",", true ) ) {
+			if( !len( trim( resourcePath ) ) ) {
+				continue;
+			}
+			var resolvedPath = fileSystemutil.resolvePath( trim( resourcePath ), getProjectRoot() );
+			if( resourceRoots.findNoCase( resolvedPath ) == 0 ) {
+				resourceRoots.append( resolvedPath );
+			}
+		}
+		return resourceRoots;
 	}
 
 	/**
@@ -417,10 +473,48 @@ component accessors=true {
 	}
 
 	/**
+	 * Expands JAR paths and directories containing JARs into a flat JAR list.
+	 *
+	 * @jarPaths JAR file paths and directories that contain JAR files.
+	 * @returns The resolved JAR file paths.
+	 */
+	private array function expandJarPaths( required array jarPaths ) {
+		var expandedJars = [];
+		for( var jarPath in arguments.jarPaths ) {
+			if( !isSimpleValue( jarPath ) || !len( trim( jarPath ) ) ) {
+				continue;
+			}
+
+			var resolvedPath = fileSystemutil.resolvePath( jarPath, getProjectRoot() );
+			if( fileExists( resolvedPath ) ) {
+				expandedJars.append( resolvedPath );
+				continue;
+			}
+
+			if( directoryExists( resolvedPath ) ) {
+				var directoryJars = directoryList( resolvedPath, true, "array", "*.jar" ).sort( "textnocase" );
+				if( !directoryJars.len() ) {
+					throw(
+						message="Fat JAR dependency directory contains no JAR files: #resolvedPath#",
+						type="commandException"
+					);
+				}
+				expandedJars.append( directoryJars, true );
+				continue;
+			}
+
+			// Leave missing paths alone so the merge reports them as missing dependencies
+			expandedJars.append( resolvedPath );
+		}
+
+		return expandedJars;
+	}
+
+	/**
 	 * Enables JAR creation and merges the supplied dependency JARs.
 	 *
 	 * @jarName The output fat JAR filename.
-	 * @includeJars Dependency JAR paths or directories to merge.
+	 * @includeJars Dependency JAR paths, directories containing JARs, or a comma-delimited list of either.
 	 * @options Fat JAR configuration options.
 	 * @returns The current DSL instance.
 	 */
@@ -428,9 +522,7 @@ component accessors=true {
 		if( isSimpleValue( arguments.includeJars ) ) {
 			arguments.includeJars = listToArray( arguments.includeJars, ",", true );
 		}
-		arguments.includeJars = arguments.includeJars.map( function( jarPath ) {
-			return fileSystemutil.resolvePath( arguments.jarPath, getProjectRoot() );
-		} );
+		arguments.includeJars = expandJarPaths( arguments.includeJars );
 		setFatJarPaths( arguments.includeJars );
 		if( arguments.jarName.len() ) {
 			setFatJarNameString( arguments.jarName );
@@ -438,6 +530,7 @@ component accessors=true {
 		if( arguments.options.len() ) {
 			configureFatJar( arguments.options );
 		}
+		setFatJarRequested( true );
 		setCreateJar( true );
 		return this;
 	}
@@ -480,6 +573,31 @@ component accessors=true {
 		job.addLog( 'Resolving Java Development Kit.' );
 		setJavaBinFolder( findJDKBinDirectory() );
 
+		// Bookend the whole DSL run: listeners/package scripts can generate sources or resources
+		announceCompileInterception( 'preJavaCompile', {
+			"projectRoot"          : getProjectRoot(),
+			"jdkBinDirectory"      : getJavaBinFolder(),
+			"sourceDirectory"      : getSourceDirectory(),
+			"sourcePaths"          : getSourcePaths(),
+			"classOutputDirectory" : fileSystemutil.resolvePath( getClassOutputDirectory(), getProjectRoot() ),
+			"classPaths"           : getClassPaths(),
+			"compileOptions"       : getCompileOptionsString(),
+			"compileOptionsParams" : getCompileOptionsParams(),
+			"encoding"             : getEncode(),
+			"resourcePaths"        : getResourcePaths(),
+			"resourcePath"         : getResourcePath(),
+			"libsDir"              : getLibsDir(),
+			"jarNameString"        : getJarNameString(),
+			"fatJarNameString"     : getFatJarNameString(),
+			"fatJarPaths"          : getFatJarPaths(),
+			"fatJarOptions"        : getFatJarOptions(),
+			"jarOptions"           : getJarOptionsParams(),
+			"manifest"             : getCustomManifestParams(),
+			"createJar"            : getCreateJar(),
+			"useJavaDoc"           : getUseJavaDoc(),
+			"verbose"              : getVerbose()
+		} );
+
 		job.start( 'Compile Java Sources' );
 		compileCode();
 		job.complete();
@@ -498,19 +616,25 @@ component accessors=true {
 			buildJar();
 			job.complete();
 
-			if ( len( getFatJarPaths() ) ) {
+			if ( getFatJarRequested() ) {
 				job.start( 'Build Fat JAR' );
 				buildFatJar();
 				job.complete();
- 			}
 
-			job.addLog( 'Adding JAR resources when available.' );
-			moveResources();
+				// The thin JAR only seeds the fat JAR merge, it is an output only when it was asked for
+				if( !getThinJarRequested() ) {
+					removeUnrequestedThinJar();
+				}
+			} else {
+				// Project resources are merged into a fat JAR, a thin JAR still needs them added
+				job.addLog( 'Adding JAR resources when available.' );
+				moveResources();
+			}
 		}
 
 		job.complete( getVerbose() );
 
-		return {
+		var result = {
 			"projectRoot"           : getProjectRoot(),
 			"jdkBinDirectory"       : getJavaBinFolder(),
 			"sourcePaths"           : getSourcePaths(),
@@ -520,14 +644,22 @@ component accessors=true {
 			"javaDocsPath"          : getUseJavaDoc()
 				? fileSystemutil.resolvePath( getJavaDocDestinationDir(), getProjectRoot() )
 				: "",
-			"resourcePath"          : fileSystemutil.resolvePath( getResourcePath(), getProjectRoot() ),
+			"resourcePath"          : getResourcePaths().toList( "," ),
+			"resourcePaths"         : getResourcePaths(),
 			"classPaths"            : getClassPaths(),
 			"fatJarPaths"           : getFatJarPaths(),
+			"fatJarDependencyCount" : getFatJarPaths().len(),
+			"fatJarRequested"       : getFatJarRequested(),
 			"compileOptions"        : getCompileOptionsString(),
 			"jarOptions"            : getJarOptionsString(),
 			"encoding"              : getEncode(),
 			"manifest"              : getCustomManifestParams()
 		};
+
+		// Listeners get the same struct this method returns, and may add to it
+		announceCompileInterception( 'postJavaCompile', result );
+
+		return result;
     }
 
 	/**
@@ -635,6 +767,112 @@ component accessors=true {
 
 		}
 
+	}
+
+	/**
+	 * Announces a compile lifecycle interception point.
+	 *
+	 * `preJavaCompile` fires at the start of run() with the DSL arguments, before
+	 * anything is compiled; listeners may change any of them. `postJavaCompile`
+	 * fires at the end of run() with the exact struct run() returns, so listeners
+	 * may add to the result.
+	 *
+	 * Fired by the DSL (not the `java compile` command) so every consumer of the
+	 * DSL gets it, and hooked up to package scripts of the same name via the
+	 * PackageScripts interceptor.
+	 *
+	 * @state The interception point to announce: preJavaCompile or postJavaCompile.
+	 * @interceptData The data to announce. The caller supplies it.
+	 * @returns The intercept data after listeners ran.
+	 */
+	private struct function announceCompileInterception( required string state, required struct interceptData ) {
+		var data = arguments.interceptData;
+
+		wirebox.getInstance( 'interceptorService' ).announceInterception( arguments.state, data );
+
+		// preJavaCompile listeners can change the inputs before the build uses them
+		if( arguments.state == 'preJavaCompile' ) {
+			applyCompileInterceptData( data );
+		}
+
+		return data;
+	}
+
+	/**
+	 * Writes changes a preJavaCompile listener made back into the DSL.
+	 *
+	 * Every announced key is honoured, so a listener can replace any input it was
+	 * given. Keys the listener did not touch are written back unchanged.
+	 *
+	 * @data The intercept data after listeners ran.
+	 * @returns Nothing.
+	 */
+	private function applyCompileInterceptData( required struct data ) {
+		var input = arguments.data;
+
+		if( isSimpleValue( input.projectRoot ?: "" ) && input.projectRoot.len() ) {
+			setProjectRoot( input.projectRoot );
+		}
+		if( isSimpleValue( input.jdkBinDirectory ?: "" ) && input.jdkBinDirectory.len() ) {
+			setJavaBinFolder( input.jdkBinDirectory );
+		}
+		if( isSimpleValue( input.sourceDirectory ?: "" ) && input.sourceDirectory.len() ) {
+			setSourceDirectory( input.sourceDirectory );
+		}
+		if( isArray( input.sourcePaths ?: "" ) && input.sourcePaths.len() ) {
+			setSourcePaths( input.sourcePaths );
+		}
+		if( isSimpleValue( input.classOutputDirectory ?: "" ) && input.classOutputDirectory.len() ) {
+			setClassOutputDirectory( input.classOutputDirectory );
+		}
+		if( isArray( input.classPaths ?: "" ) ) {
+			setClassPaths( input.classPaths );
+		}
+		if( isSimpleValue( input.encoding ?: "" ) ) {
+			setEncode( input.encoding );
+		}
+		if( isArray( input.resourcePaths ?: "" ) && serializeJSON( input.resourcePaths ) != serializeJSON( getResourcePaths() ) ) {
+			setResourcePath( input.resourcePaths.toList( "," ) );
+		} else if( isSimpleValue( input.resourcePath ?: "" ) && input.resourcePath != getResourcePath() ) {
+			setResourcePath( input.resourcePath );
+		}
+		if( isSimpleValue( input.libsDir ?: "" ) && input.libsDir.len() ) {
+			setLibsDir( input.libsDir );
+		}
+		if( structKeyExists( input, "jarNameString" ) ) {
+			setJarNameString( input.jarNameString ?: "" );
+		}
+		if( structKeyExists( input, "fatJarNameString" ) ) {
+			setFatJarNameString( input.fatJarNameString ?: "" );
+		}
+		if( isArray( input.fatJarPaths ?: "" ) ) {
+			setFatJarPaths( input.fatJarPaths );
+		}
+		if( isStruct( input.fatJarOptions ?: "" ) && input.fatJarOptions.len() ) {
+			configureFatJar( input.fatJarOptions );
+		}
+		if( isStruct( input.compileOptionsParams ?: "" ) && serializeJSON( input.compileOptionsParams ) != serializeJSON( getCompileOptionsParams() ) ) {
+			compileOptions( input.compileOptionsParams );
+		} else if( isSimpleValue( input.compileOptions ?: "" ) && input.compileOptions != getCompileOptionsString() ) {
+			setCompileOptionsString( input.compileOptions );
+		}
+		if( isStruct( input.jarOptions ?: "" ) && serializeJSON( input.jarOptions ) != serializeJSON( getJarOptionsParams() ) ) {
+			jarOptions( input.jarOptions );
+		} else if( isSimpleValue( input.jarOptionsString ?: "" ) && structKeyExists( input, "jarOptionsString" ) ) {
+			setJarOptionsString( input.jarOptionsString );
+		}
+		if( isStruct( input.manifest ?: "" ) ) {
+			setCustomManifestParams( input.manifest );
+		}
+		if( structKeyExists( input, "createJar" ) ) {
+			setCreateJar( isBoolean( input.createJar ) ? input.createJar : false );
+		}
+		if( structKeyExists( input, "useJavaDoc" ) ) {
+			setUseJavaDoc( isBoolean( input.useJavaDoc ) ? input.useJavaDoc : false );
+		}
+		if( structKeyExists( input, "verbose" ) ) {
+			setVerbose( isBoolean( input.verbose ) ? input.verbose : false );
+		}
 	}
 
 	/**
@@ -821,40 +1059,59 @@ component accessors=true {
 	}
 
 	/**
+	 * Removes the thin JAR that only existed to seed a fat JAR merge.
+	 *
+	 * @returns Nothing.
+	 */
+	private function removeUnrequestedThinJar() {
+		var currentLibsDir = reReplace(
+			fileSystemutil.normalizeSlashes( fileSystemutil.resolvePath( getLibsDir(), getProjectRoot() ) ),
+			"/+$",
+			""
+		) & "/";
+		var thinJarPath = currentLibsDir & getJarNameString();
+		if( thinJarPath == getGeneratedJarPath() || !fileExists( thinJarPath ) ) {
+			return;
+		}
+
+		job.addLog( "Removing intermediate JAR: #thinJarPath#" );
+		fileDelete( thinJarPath );
+	}
+
+	/**
 	 * Adds configured resources to the generated JAR.
 	 *
 	 * Resources always go into the artifact produced by this run, which is the
-	 * fat JAR when one is configured.
+	 * fat JAR when one is configured. Every configured root is applied in order,
+	 * so a later root wins entries it shares with an earlier one.
 	 *
 	 * @returns Nothing. Resources are added to the generated JAR when configured.
 	 */
 	function moveResources() {
-		var currentResourcePath = fileSystemutil.resolvePath( getResourcePath(), getProjectRoot() );
-		//job.addLog( "moveRes resPath: #currentResourcePath#" );
+		var outputJar = getGeneratedJarPath();
+		if( !outputJar.len() ) {
+			var currentLibsDir = reReplace(
+				fileSystemutil.normalizeSlashes( fileSystemutil.resolvePath( getLibsDir(), getProjectRoot() ) ),
+				"/+$",
+				""
+			) & "/";
+			outputJar = currentLibsDir & getJarNameString();
+		}
 
-		if( directoryExists( currentResourcePath ) ) {
+		for( var currentResourcePath in getResourcePaths() ) {
+			if( !directoryExists( currentResourcePath ) ) {
+				continue;
+			}
+
 			job.addLog( "Including resources from: #replaceNoCase( currentResourcePath, getProjectRoot(), "" )#" );
 			// have to replicate this command
 			// run ""jar" uf "D:\Javatest\new-tests\libs\new-tests.jar" -C "D:\Javatest\gradle-test-resource\src\main\resources\" ."
-			var outputJar = getGeneratedJarPath();
-			if( !outputJar.len() ) {
-				var currentLibsDir = reReplace(
-					fileSystemutil.normalizeSlashes( fileSystemutil.resolvePath( getLibsDir(), getProjectRoot() ) ),
-					"/+$",
-					""
-				) & "/";
-				outputJar = currentLibsDir & getJarNameString();
-			}
-			//job.addLog( "moveRes jarname: #outputJar#" );
-
 			j = nativeRunCommand( getJavaBinFolder() & "jar", 'uf "#outputJar#" -C #currentResourcePath# .' );
 
 			//job.addLog( j );
 			//command( j ).run(echo=true);
 			runCompileCommand( j, "Resource inclusion" );
-
 		}
-
 	}
 
 	/**
@@ -1080,6 +1337,11 @@ component accessors=true {
 		var thinJarPath = currentLibsDir & getJarNameString();
 		var outputJar = currentLibsDir & fatJarName;
 		var mergedJarPath = outputJar & ".tmp";
+
+		// No explicit dependency list means "merge whatever the build compiles against"
+		if( !getFatJarPaths().len() ) {
+			setFatJarPaths( expandJarPaths( getClassPaths() ) );
+		}
 		var dependencyJars = getFatJarPaths();
 
 		if( !fileExists( thinJarPath ) ) {
@@ -1097,9 +1359,18 @@ component accessors=true {
 			}
 		}
 
+		job.addLog( "Fat JAR dependencies: #dependencyJars.len()#" );
+		if( !dependencyJars.len() ) {
+			job.addWarnLog(
+				"No fat JAR dependencies were supplied and the class path is empty; "
+				& "the fat JAR will only contain this project's classes and resources."
+			);
+		}
+
 		job.addLog( "Scanning #getJarNameString()# and #dependencyJars.len()# dependency JAR(s)." );
 		setFatJarDuplicateReport( [] );
-		var mergePlan = buildFatJarMergePlan( thinJarPath, dependencyJars, options );
+		var projectResources = getProjectResources();
+		var mergePlan = buildFatJarMergePlan( thinJarPath, dependencyJars, options, projectResources );
 
 		setFatJarDuplicateReport( mergePlan.duplicates );
 		if( mergePlan.duplicates.len() ) {
@@ -1123,24 +1394,27 @@ component accessors=true {
 	}
 
 	/**
-	 * Indexes the project JAR and every dependency so the duplicate policy and the
-	 * service descriptor merging can be applied before a single byte is written.
+	 * Indexes the project JAR, the project resources, and every dependency so the
+	 * duplicate policy and the service descriptor merging can be applied before a
+	 * single byte is written.
 	 *
 	 * @thinJarPath The project JAR the fat JAR starts from.
 	 * @dependencyJars The dependency JARs in the order they must be applied.
 	 * @options The configured fat JAR options.
+	 * @projectResources The project resource root and files applied after the dependencies.
 	 * @returns The merge plan holding the winning source for every entry.
 	 */
 	private struct function buildFatJarMergePlan(
 		required string thinJarPath,
 		required array dependencyJars,
-		required struct options
+		required struct options,
+		required struct projectResources
 	) {
 		var plan = {
 			"thinJarPath"    : arguments.thinJarPath,
 			"manifestEntry"  : "",
 			"services"       : [],
-			"sourceJars"     : [],
+			"sources"        : [],
 			"winningSources" : {},
 			"duplicates"     : [],
 			"entryCount"     : 0
@@ -1173,7 +1447,7 @@ component accessors=true {
 				plan.winningSources[ thinEntryName ] = arguments.thinJarPath;
 				thinEntries.append( thinEntryName );
 			}
-			plan.sourceJars.append( { "jarPath" : arguments.thinJarPath, "entryNames" : thinEntries } );
+			plan.sources.append( { "type" : "jar", "path" : arguments.thinJarPath, "entryNames" : thinEntries } );
 		} finally {
 			thinJar.close();
 		}
@@ -1210,7 +1484,7 @@ component accessors=true {
 						&& entryName.startsWith( "META-INF/services/" )
 					) {
 						if( !serviceIndex.keyExists( entryName ) ) {
-							serviceIndex[ entryName ] = { "name" : entryName, "sourceJars" : [] };
+							serviceIndex[ entryName ] = { "name" : entryName, "sourceJars" : [], "resourceFiles" : [] };
 							plan.services.append( serviceIndex[ entryName ] );
 						}
 						serviceIndex[ entryName ].sourceJars.append( dependencyJar );
@@ -1241,14 +1515,109 @@ component accessors=true {
 				dependencyJarFile.close();
 			}
 
-			plan.sourceJars.append( { "jarPath" : dependencyJar, "entryNames" : dependencyEntries } );
+			plan.sources.append( { "type" : "jar", "path" : dependencyJar, "entryNames" : dependencyEntries } );
 			job.addLog(
 				"Scanned [#dependencyNumber#/#arguments.dependencyJars.len()#] #getFileFromPath( dependencyJar )# (#dependencyEntries.len()# entries)"
 			);
 		}
 
+		// Project resources are applied last: they win regular entries, but their service
+		// descriptors are merged with the ones the project JAR and the dependencies ship so
+		// no provider is silently dropped.
+		if( arguments.projectResources.entries.len() ) {
+			var resourceSourceKey = getProjectResourceSourceKey();
+			var resourceEntries = [];
+			for( var resource in arguments.projectResources.entries ) {
+				if(
+					arguments.options.mergeServiceDescriptors
+					&& resource.entryName.startsWith( "META-INF/services/" )
+				) {
+					if( !serviceIndex.keyExists( resource.entryName ) ) {
+						serviceIndex[ resource.entryName ] = {
+							"name"          : resource.entryName,
+							"sourceJars"    : [],
+							"resourceFiles" : []
+						};
+						plan.services.append( serviceIndex[ resource.entryName ] );
+					}
+					serviceIndex[ resource.entryName ].resourceFiles.append( resource.filePath );
+					continue;
+				}
+
+				plan.winningSources[ resource.entryName ] = resourceSourceKey;
+				resourceEntries.append( resource );
+			}
+
+			plan.sources.append( {
+				"type"    : "files",
+				"path"    : resourceSourceKey,
+				"entries" : resourceEntries
+			} );
+			job.addLog( "Added #resourceEntries.len()# project resource file(s) to the merge." );
+		}
+
 		plan.entryCount = structCount( plan.winningSources ) + plan.services.len();
 		return plan;
+	}
+
+	/**
+	 * Returns the merge plan key that marks entries supplied by the project resources.
+	 *
+	 * @returns A value that cannot collide with a JAR or file path.
+	 */
+	private string function getProjectResourceSourceKey() {
+		return "__project_resources__";
+	}
+
+	/**
+	 * Lists the project resource files that belong in the generated JAR.
+	 *
+	 * Every configured root is walked in order and merged under one namespace. An
+	 * entry that appears in more than one root resolves to the later root, while
+	 * the first occurrence decides the write order.
+	 *
+	 * @returns A struct with the resolved roots and the entry/file pairs.
+	 */
+	private struct function getProjectResources() {
+		var projectResources = { "roots" : [], "entries" : [] };
+		var entriesByName = {};
+		var entryNames = [];
+
+		for( var resourceRoot in getResourcePaths() ) {
+			projectResources.roots.append( resourceRoot );
+			if( !directoryExists( resourceRoot ) ) {
+				continue;
+			}
+
+			job.addLog( "Including resources from: #replaceNoCase( resourceRoot, getProjectRoot(), "" )#" );
+			var normalizedRoot = fileSystemutil.normalizeSlashes( resourceRoot );
+			for( var filePath in directoryList( resourceRoot, true, "array" ) ) {
+				if( !fileExists( filePath ) ) {
+					continue;
+				}
+
+				var entryName = reReplace(
+					replaceNoCase( fileSystemutil.normalizeSlashes( filePath ), normalizedRoot, "" ),
+					"^/+",
+					""
+				);
+				if( !entryName.len() ) {
+					continue;
+				}
+
+				if( !entriesByName.keyExists( entryName ) ) {
+					entryNames.append( entryName );
+				}
+				// A later root wins entries it shares with an earlier one
+				entriesByName[ entryName ] = { "entryName" : entryName, "filePath" : filePath };
+			}
+		}
+
+		for( var entryName in entryNames ) {
+			projectResources.entries.append( entriesByName[ entryName ] );
+		}
+
+		return projectResources;
 	}
 
 	/**
@@ -1343,29 +1712,55 @@ component accessors=true {
 			}
 
 			var sourceNumber = 0;
-			for( var sourceJar in arguments.mergePlan.sourceJars ) {
+			for( var source in arguments.mergePlan.sources ) {
 				sourceNumber++;
-				var sourceJarPath = sourceJar.jarPath;
 				var writtenEntryCount = 0;
-				var sourceJarFile = createObject( "java", "java.util.jar.JarFile" ).init( sourceJarPath );
-				try {
-					for( var entryName in sourceJar.entryNames ) {
-						// A later dependency may have won this entry, only its winner writes it
-						if( arguments.mergePlan.winningSources[ entryName ] != sourceJarPath ) {
-							continue;
+				var writtenEntries = {};
+
+				if( source.type == "jar" ) {
+					var sourceJarFile = createObject( "java", "java.util.jar.JarFile" ).init( source.path );
+					try {
+						for( var entryName in source.entryNames ) {
+							// A later source may have won this entry, only its winner writes it
+							if(
+								arguments.mergePlan.winningSources[ entryName ] != source.path
+								|| writtenEntries.keyExists( entryName )
+							) {
+								continue;
+							}
+							var sourceEntry = sourceJarFile.getJarEntry( entryName );
+							if( isNull( sourceEntry ) ) {
+								continue;
+							}
+							writtenEntryCount++;
+							writtenEntries[ entryName ] = true;
+							writeJarEntry( jarOut, sourceJarFile, sourceEntry, entryName, storeEntries, writtenDirectories );
 						}
-						var sourceEntry = sourceJarFile.getJarEntry( entryName );
-						if( isNull( sourceEntry ) ) {
+					} finally {
+						sourceJarFile.close();
+					}
+				} else {
+					for( var resourceEntry in source.entries ) {
+						if(
+							arguments.mergePlan.winningSources[ resourceEntry.entryName ] != source.path
+							|| writtenEntries.keyExists( resourceEntry.entryName )
+						) {
 							continue;
 						}
 						writtenEntryCount++;
-						writeJarEntry( jarOut, sourceJarFile, sourceEntry, entryName, storeEntries, writtenDirectories );
+						writtenEntries[ resourceEntry.entryName ] = true;
+						writeResourceFile(
+							jarOut,
+							resourceEntry.filePath,
+							resourceEntry.entryName,
+							storeEntries,
+							writtenDirectories
+						);
 					}
-				} finally {
-					sourceJarFile.close();
 				}
+
 				job.addLog(
-					"Wrote [#sourceNumber#/#arguments.mergePlan.sourceJars.len()#] #getFileFromPath( sourceJarPath )# (#writtenEntryCount# entries)"
+					"Wrote [#sourceNumber#/#arguments.mergePlan.sources.len()#] #getFileFromPath( source.path )# (#writtenEntryCount# entries)"
 				);
 			}
 		} finally {
@@ -1459,6 +1854,70 @@ component accessors=true {
 	}
 
 	/**
+	 * Writes a project resource file into the output archive.
+	 *
+	 * @jarOut The archive being written.
+	 * @filePath The resource file to read.
+	 * @entryName The entry name to write.
+	 * @storeEntry True to write the entry without compression.
+	 * @writtenDirectories The directory entries already written to the output.
+	 * @returns Nothing.
+	 */
+	private function writeResourceFile(
+		required any jarOut,
+		required string filePath,
+		required string entryName,
+		required boolean storeEntry,
+		required struct writtenDirectories
+	) {
+		if( !fileExists( arguments.filePath ) ) {
+			return;
+		}
+
+		writeParentDirectoryEntries(
+			arguments.jarOut,
+			arguments.entryName,
+			arguments.storeEntry,
+			arguments.writtenDirectories
+		);
+
+		var inputStream = createObject( "java", "java.io.FileInputStream" ).init( arguments.filePath );
+		try {
+			var newEntry = createObject( "java", "java.util.jar.JarEntry" ).init( arguments.entryName );
+			if( arguments.storeEntry ) {
+				var contentBytes = readStreamBytes( inputStream );
+				var crc = createObject( "java", "java.util.zip.CRC32" ).init();
+				crc.update( contentBytes );
+				newEntry.setMethod( createObject( "java", "java.util.zip.ZipEntry" ).STORED );
+				newEntry.setSize( javaCast( "long", contentBytes.length ) );
+				newEntry.setCrc( crc.getValue() );
+				arguments.jarOut.putNextEntry( newEntry );
+				arguments.jarOut.write( contentBytes );
+				arguments.jarOut.closeEntry();
+				return;
+			}
+
+			arguments.jarOut.putNextEntry( newEntry );
+			inputStream.transferTo( arguments.jarOut );
+			arguments.jarOut.closeEntry();
+		} finally {
+			inputStream.close();
+		}
+	}
+
+	/**
+	 * Reads a stream into a byte array.
+	 *
+	 * @inputStream The stream to read.
+	 * @returns The stream contents as a byte array.
+	 */
+	private any function readStreamBytes( required any inputStream ) {
+		var outputStream = createObject( "java", "java.io.ByteArrayOutputStream" ).init();
+		arguments.inputStream.transferTo( outputStream );
+		return outputStream.toByteArray();
+	}
+
+	/**
 	 * Writes the directory entries a file entry needs before the file itself.
 	 *
 	 * @jarOut The archive being written.
@@ -1498,8 +1957,11 @@ component accessors=true {
 	}
 
 	/**
-	 * Combines the service provider lines from the project JAR and every
-	 * dependency that ships the same descriptor.
+	 * Combines the service provider lines from the project JAR, the project
+	 * resources, and every dependency that ships the same descriptor.
+	 *
+	 * Duplicate providers are dropped while the first occurrence keeps its place,
+	 * so the project and a dependency can both register providers in one file.
 	 *
 	 * @thinJarPath The project JAR path.
 	 * @service The service descriptor being merged.
@@ -1511,11 +1973,24 @@ component accessors=true {
 		for( var sourceJarPath in arguments.service.sourceJars ) {
 			providers.append( readJarEntryLines( sourceJarPath, arguments.service.name ), true );
 		}
+		for( var resourceFile in arguments.service.resourceFiles ) {
+			if( fileExists( resourceFile ) ) {
+				providers.append( fileRead( resourceFile ).listToArray( chr( 10 ), true ), true );
+			}
+		}
 
-		return providers
-			.map( ( provider ) => trim( provider ) )
-			.filter( ( provider ) => provider.len() )
-			.toList( chr( 10 ) );
+		var seenProviders = {};
+		var mergedProviders = [];
+		for( var provider in providers ) {
+			var trimmedProvider = trim( provider );
+			if( !trimmedProvider.len() || seenProviders.keyExists( trimmedProvider ) ) {
+				continue;
+			}
+			seenProviders[ trimmedProvider ] = true;
+			mergedProviders.append( trimmedProvider );
+		}
+
+		return mergedProviders.toList( chr( 10 ) );
 	}
 
 	/**

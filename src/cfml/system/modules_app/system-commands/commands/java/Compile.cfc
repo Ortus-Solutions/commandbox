@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Compile Java source code and optionally create JARs, Javadocs, or fat JARs.
  *
  * {code:bash}
@@ -28,7 +28,7 @@ component extends="commandbox.system.BaseCommand" {
 	 * @classes.optionsDirectoryComplete true
 	 * @libsDir JAR output directory
 	 * @libsDir.optionsDirectoryComplete true
-	 * @resources Resource directory to include in a JAR
+	 * @resources Resource directory or directories to include in a JAR
 	 * @resources.optionsDirectoryComplete true
 	 * @javaDocsDir Javadoc output directory
 	 * @javaDocsDir.optionsDirectoryComplete true
@@ -57,7 +57,7 @@ component extends="commandbox.system.BaseCommand" {
 		string source="",
 		string classes="",
 		string libsDir="",
-		string resources="",
+			any resources="",
 		string javaDocsDir="",
 		struct manifest={},
 		struct compileOptions={},
@@ -77,7 +77,9 @@ component extends="commandbox.system.BaseCommand" {
 		if( !isNull( arguments.source ) && len( arguments.source & "" ) ) dsl.fromSource( arguments.source );
 		if( len( arguments.classes ) ) dsl.toClasses( arguments.classes );
 		if( len( arguments.libsDir ) ) dsl.libsDir( arguments.libsDir );
-		if( len( arguments.resources ) ) dsl.withResources( arguments.resources );
+		if( isArray( arguments.resources ) ? arguments.resources.len() : len( arguments.resources ) ) {
+			dsl.withResources( arguments.resources );
+		}
 		if( len( arguments.javaDocsDir ) ) dsl.setJavaDocDestinationDir( arguments.javaDocsDir );
 		if( !isNull( arguments.classPath ) && len( arguments.classPath & "" ) ) dsl.withClassPath( arguments.classPath );
 		if( structCount( arguments.compileOptions ) ) dsl.compileOptions( normalizeOptions( arguments.compileOptions ) );
@@ -141,7 +143,11 @@ component extends="commandbox.system.BaseCommand" {
 		print.line( "Classes: #result.classOutputDirectory#" );
 		if( len( result.jarPath ) ) print.line( "JAR: #result.jarPath#" );
 		if( len( result.javaDocsPath ) ) print.line( "Javadocs: #result.javaDocsPath#" );
-		if( len( result.fatJarPaths ) ) print.line( "Fat JAR dependencies: #result.fatJarPaths.len()#" );
+		if( ( result.fatJarDependencyCount ?: 0 ) > 0 ) {
+			print.line( "Fat JAR dependencies: #result.fatJarDependencyCount#" );
+		} else if( result.fatJarRequested ?: false ) {
+			print.line( "Fat JAR dependencies: 0 (nothing on the class path to merge)" );
+		}
 	}
 
 }

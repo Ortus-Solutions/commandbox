@@ -1,4 +1,4 @@
-# Compile DSL
+﻿# Compile DSL
 
 The DSL is also available through the `java compile` command. The command
 returns the same result metadata as the DSL and prints a short operation
@@ -118,7 +118,10 @@ java compile source=src/main/java,src/generated/java --jar jarName=example.jar
 
 Resources are taken from `src/main/resources` by default and copied into the
 JAR with their directory structure preserved. When a fat JAR is configured, the
-resources are added to the fat JAR since that is the artifact `run()` produces.
+resources are merged into the fat JAR since that is the artifact `run()`
+produces: a resource that also exists in a dependency wins, except for
+`META-INF/services/*` descriptors, which are merged with the descriptors the
+project JAR and the dependencies ship so no provider is lost.
 
 ```js
 compile()
@@ -132,11 +135,13 @@ Equivalent command:
 java compile --jar jarName=example.jar
 ```
 
-Use `.withResources()` for another resource directory:
+Use `.withResources()` for another resource directory. It accepts a single
+directory, a comma-delimited list, or an array, and repeated calls accumulate:
 
 ```js
 compile()
 	.withResources( "src/resources" )
+	.withResources( [ "dist/generated", "dist/extra" ] )
 	.toJar( "example.jar" )
 	.run();
 ```
@@ -144,7 +149,21 @@ compile()
 Equivalent command:
 
 ```bash
-java compile resources=src/resources --jar jarName=example.jar
+java compile resources=src/resources,dist/generated,dist/extra --jar jarName=example.jar
+```
+
+Roots are applied in the order supplied and merged under one namespace: when two
+roots contain the same entry, the later root wins, matching the dependency merge
+behaviour. The first explicit configuration replaces the `src/main/resources`
+default, so a project can combine checked-in resources with a generated
+directory without copying anything into a staging folder.
+
+```json
+{
+	"java" : {
+		"resources" : [ "src/main/resources", "dist/generated" ]
+	}
+}
 ```
 
 ## Manifest Entries
@@ -207,7 +226,7 @@ command is created:
 		"source"         : [ "src/main/java", "src/generated/java" ],
 		"classes"        : "build/classes/java/main",
 		"libsDir"        : "build/libs",
-		"resources"      : "src/main/resources",
+		"resources"      : [ "src/main/resources", "dist/generated" ],
 		"javaDocsDir"    : "build/docs/javadoc",
 		"classPath"      : [ "libs", "libs/dependencies" ],
 		"jar"            : true,
@@ -535,6 +554,17 @@ java compile classPath=libs --jar jarName=example.jar
 `.toFatJar()` creates the project JAR and merges supplied dependency JARs into
 it.
 
+`.toFatJar()` second argument (and `fatJarJars`) accepts JAR files, directories
+containing JARs, or a comma-delimited mix of both, the same way `classPath`
+does. Directories are searched recursively and an empty directory is reported as
+an error.
+
+When no dependency list is supplied, the resolved compile class path is used as
+the dependency set, so a project that already declares `classPath` gets a
+complete fat JAR. An explicit list or directory always wins. The number of JARs
+merged is reported by the command and returned as `fatJarDependencyCount`; zero
+dependencies produce a warning instead of a silently unmerged JAR.
+
 ```js
 var result = compile()
 	.withClassPath( "libs/dependencies" )
@@ -572,8 +602,9 @@ java compile --fatJar fatJarName=example-all.jar fatJarJars=libs/dependency-one.
 
 `duplicatePolicy` accepts `last`, `first`, or `error`. Dependencies are applied
 in the order supplied. Service providers are combined line by line when
-`mergeServiceDescriptors` is enabled. Dependency signature files are excluded
-when `excludeSignatures` is enabled. A dependency's `META-INF/MANIFEST.MF` and
+`mergeServiceDescriptors` is enabled, including the providers declared in the
+project's own resources. Dependency signature files are excluded when
+`excludeSignatures` is enabled. A dependency's `META-INF/MANIFEST.MF` and
 `META-INF/INDEX.LIST` are never copied, because neither describes the merged
 archive.
 
@@ -581,10 +612,53 @@ Duplicate entries resolved by `duplicatePolicy` are reported with their source
 JARs in verbose output, and are available as a list of structs from
 `getFatJarDuplicateReport()` (`entry`, `policy`, `keptJar`, `skippedJar`).
 
+Calling `.toFatJar()` without `.toJar()` produces only the fat JAR: the thin JAR
+is built as the merge input and removed afterwards. Calling both produces both
+named artifacts from a single compile.
+
 All dependencies, plus the project JAR, are expanded into a single staging
 directory and the fat JAR is written once, so merge time grows with the number
 of dependencies rather than with the size of the growing archive. Resources are
 added to the fat JAR, which is the artifact `run()` reports as `jarPath`.
+
+## Interception Points and Package Scripts
+
+The DSL announces two interception points that bookend the whole `run()` call.
+They fire from the DSL itself, so every consumer (the `java compile` command,
+task runners, custom commands) gets them:
+
+| Point | When | Data |
+| --- | --- | --- |
+| `preJavaCompile` | first thing in `run()`, before anything is compiled | the DSL arguments (see below); listeners may change `sourcePaths`, `classPaths`, and `resourcePaths` |
+| `postJavaCompile` | last thing in `run()`, after the JAR work | the exact struct `run()` returns; listeners may add to it |
+
+`preJavaCompile` receives `projectRoot`, `jdkBinDirectory`, `sourceDirectory`,
+`sourcePaths`, `classOutputDirectory`, `classPaths`, `compileOptions`,
+`compileOptionsParams`, `encoding`, `resourcePaths`, `resourcePath`, `libsDir`,
+`jarNameString`, `fatJarNameString`, `fatJarPaths`, `fatJarOptions`,
+`jarOptions`, `manifest`, `createJar`, `useJavaDoc`, `verbose`, and `dsl`.
+
+A package script with the same name in the project's `box.json` runs
+automatically:
+
+```json
+{
+	"scripts" : {
+		"preJavaCompile"  : [ "mkdir dist/generated", "touch dist/generated/generated.properties" ],
+		"postJavaCompile" : "echo Compile finished"
+	}
+}
+```
+
+```js
+compile()
+	.withResources( [ "src/main/resources", "dist/generated" ] )
+	.toJar( "example.jar" )
+	.run();
+```
+
+The `preJavaCompile` script above writes a file into `dist/generated`, and since
+it runs before the build, that file ends up in the JAR.
 
 ## Result Metadata
 
@@ -609,5 +683,5 @@ java compile --jar jarName=example.jar --JSON
 
 The result includes `projectRoot`, `jdkBinDirectory`, `sourcePaths`,
 `classOutputDirectory`, `libsDirectory`, `jarPath`, `javaDocsPath`,
-`resourcePath`, `classPaths`, `fatJarPaths`, `compileOptions`, `jarOptions`,
-`encoding`, and `manifest`.# Compile DSL
+`resourcePath`, `resourcePaths`, `classPaths`, `fatJarPaths`, `fatJarDependencyCount`,
+`fatJarRequested`, `compileOptions`, `jarOptions`, `encoding`, and `manifest`.# Compile DSL

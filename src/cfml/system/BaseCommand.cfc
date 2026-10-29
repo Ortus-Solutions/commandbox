@@ -222,7 +222,7 @@ component accessors="true" singleton {
 
 		wirebox.getInstance( "ConsolePainter" ).stop( message );
 
-		if( !getSystemSetting( 'box_currentCommandPiped', false ) ) {
+		if( !variables.getSystemSetting( 'box_currentCommandPiped', false ) ) {
 			print.line().toConsole();
 		}
 

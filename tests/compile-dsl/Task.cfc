@@ -1102,6 +1102,295 @@ component {
 		print.greenLine( "Box.json DSL disable test passed." );
 	}
 
+	/**
+	 * Project resources participate in service descriptor merging, so a descriptor
+	 * that exists in both the project resources and a dependency keeps every
+	 * provider instead of one side overwriting the other.
+	 *
+	 * @test
+	 */
+	function fatJarProjectResourceServices( boolean verbose=false ) {
+		var projectResources = resolvePath( "fat-jar-resources" );
+		var dependencyDirectory = resolvePath( "fat-jar-resources-dep" );
+		var dependencyJar = resolvePath( "libs/fat-jar-resources-dep.jar" );
+		var jarFile = resolvePath( "build/libs/fat-jar-resources.jar" );
+
+		if( directoryExists( projectResources ) ) {
+			directoryDelete( projectResources, true );
+		}
+		directoryCreate( projectResources & "/META-INF/services", true );
+		fileWrite(
+			projectResources & "/META-INF/services/example.UnionService",
+			"project.one" & chr( 10 ) & "project.two" & chr( 10 )
+		);
+		fileWrite( projectResources & "/resource-wins.txt", "project" & chr( 10 ) );
+
+		createResourceServiceDependencyJar( dependencyDirectory, dependencyJar );
+
+		compile()
+			.setVerbose( arguments.verbose )
+			.withResources( "fat-jar-resources" )
+			.toJar( "fat-jar-resources-src.jar" )
+			.toFatJar( "fat-jar-resources.jar", [ dependencyJar ] )
+			.run();
+
+		assertFileExists( jarFile );
+		// Dependency providers first, then the project providers, nothing dropped
+		assertEquals(
+			"dep.one#chr( 10 )#dep.two#chr( 10 )#dep.three#chr( 10 )#project.one#chr( 10 )#project.two",
+			readJarEntry( jarFile, "META-INF/services/example.UnionService" )
+		);
+		// Non-service resources still win over the dependency copy
+		assertEquals( "project", readJarEntry( jarFile, "resource-wins.txt" ) );
+		assertEquals( "dependency only", readJarEntry( jarFile, "dep-only.txt" ) );
+
+		print.greenLine( "Fat-JAR project resource service merge test passed." );
+	}
+
+	/**
+	 * A fat JAR build without a toJar() call produces only the fat JAR.
+	 *
+	 * @test
+	 */
+	function fatJarWithoutThinJar( boolean verbose=false ) {
+		var dependencyJar = resolvePath( "libs/fat-jar-lone-dep.jar" );
+		var jarFile = resolvePath( "build/libs/lone-fat.jar" );
+
+		createManyDependencyJar( resolvePath( "fat-jar-lone" ), dependencyJar, 1 );
+
+		var dsl = compile()
+			.setVerbose( arguments.verbose )
+			.toFatJar( "lone-fat.jar", [ dependencyJar ] );
+		dsl.run();
+
+		assertFileExists( jarFile );
+		assertJarEntryExists( jarFile, "many/unique-1.txt" );
+		// The thin JAR was only the merge input, so it must not be left behind
+		assertFileMissing( resolvePath( "build/libs/" & listLast( dsl.getJarNameString(), "/\" ) ) );
+
+		print.greenLine( "Fat-JAR without thin JAR test passed." );
+	}
+
+	/**
+	 * fatJarJars accepts a directory the same way classPath does, including a mix
+	 * of directories and explicit JAR paths.
+	 *
+	 * @test
+	 */
+	function fatJarJarsDirectory( boolean verbose=false ) {
+		var dependencyDirectory = resolvePath( "libs/fat-jar-dir-deps" );
+		var emptyDirectory = resolvePath( "libs/fat-jar-dir-empty" );
+		var standaloneJar = resolvePath( "libs/fat-jar-dir-standalone.jar" );
+		var jarFile = resolvePath( "build/libs/fat-jar-dir.jar" );
+		var mixedJarFile = resolvePath( "build/libs/fat-jar-dir-mixed.jar" );
+
+		if( directoryExists( dependencyDirectory ) ) {
+			directoryDelete( dependencyDirectory, true );
+		}
+		directoryCreate( dependencyDirectory, true );
+		for( var i = 1; i <= 3; i++ ) {
+			createManyDependencyJar(
+				resolvePath( "fat-jar-dir/source-#i#" ),
+				dependencyDirectory & "/dependency-#i#.jar",
+				i
+			);
+		}
+		createManyDependencyJar( resolvePath( "fat-jar-dir/source-standalone" ), standaloneJar, 99 );
+
+		// A directory expands to every JAR it contains
+		compile()
+			.setVerbose( arguments.verbose )
+			.toFatJar( "fat-jar-dir.jar", dependencyDirectory )
+			.run();
+
+		assertJarEntryExists( jarFile, "many/unique-1.txt" );
+		assertJarEntryExists( jarFile, "many/unique-2.txt" );
+		assertJarEntryExists( jarFile, "many/unique-3.txt" );
+		assertJarEntryMissing( jarFile, "many/unique-99.txt" );
+
+		// Directories and explicit JAR paths can be mixed
+		compile()
+			.setVerbose( arguments.verbose )
+			.toFatJar( "fat-jar-dir-mixed.jar", [ dependencyDirectory, standaloneJar ] )
+			.run();
+
+		assertJarEntryExists( mixedJarFile, "many/unique-1.txt" );
+		assertJarEntryExists( mixedJarFile, "many/unique-99.txt" );
+
+		// An empty directory reports the directory, not a bogus JAR path
+		if( directoryExists( emptyDirectory ) ) {
+			directoryDelete( emptyDirectory, true );
+		}
+		directoryCreate( emptyDirectory, true );
+		var emptyDirectoryError = "";
+		try {
+			compile().toFatJar( "fat-jar-dir-empty.jar", emptyDirectory );
+		} catch( any e ) {
+			emptyDirectoryError = e.message;
+		}
+		assertEquals( true, emptyDirectoryError.contains( "contains no JAR files" ) );
+		assertEquals( true, emptyDirectoryError.contains( "fat-jar-dir-empty" ) );
+
+		job.reset();
+		setExitCode( 0 );
+
+		print.greenLine( "Fat-JAR directory dependencies test passed." );
+	}
+
+	/**
+	 * A fat JAR requested without a dependency list merges the compile class path,
+	 * and an empty merge is reported instead of silently producing a thin JAR.
+	 *
+	 * @test
+	 */
+	function fatJarDefaultsToClassPath( boolean verbose=false ) {
+		var dependencyDirectory = resolvePath( "libs/fat-jar-default-deps" );
+		var otherJar = resolvePath( "libs/fat-jar-default-other.jar" );
+		var jarFile = resolvePath( "build/libs/fat-jar-default.jar" );
+		var explicitJarFile = resolvePath( "build/libs/fat-jar-default-explicit.jar" );
+		var noDepsJarFile = resolvePath( "build/libs/fat-jar-default-none.jar" );
+
+		if( directoryExists( dependencyDirectory ) ) {
+			directoryDelete( dependencyDirectory, true );
+		}
+		directoryCreate( dependencyDirectory, true );
+		for( var i = 1; i <= 2; i++ ) {
+			createManyDependencyJar(
+				resolvePath( "fat-jar-default/source-#i#" ),
+				dependencyDirectory & "/dependency-#i#.jar",
+				i
+			);
+		}
+		createManyDependencyJar( resolvePath( "fat-jar-default/source-other" ), otherJar, 99 );
+
+		// No fatJarJars supplied: the compile class path is the dependency set
+		var result = compile()
+			.setVerbose( arguments.verbose )
+			.withClassPath( dependencyDirectory )
+			.toFatJar( "fat-jar-default.jar" )
+			.run();
+
+		assertJarEntryExists( jarFile, "many/unique-1.txt" );
+		assertJarEntryExists( jarFile, "many/unique-2.txt" );
+		assertJarEntryMissing( jarFile, "many/unique-99.txt" );
+		assertEquals( 2, result.fatJarDependencyCount );
+		assertEquals( 2, result.fatJarPaths.len() );
+
+		// An explicit dependency list still wins over the class path
+		compile()
+			.setVerbose( arguments.verbose )
+			.withClassPath( dependencyDirectory )
+			.toFatJar( "fat-jar-default-explicit.jar", [ otherJar ] )
+			.run();
+
+		assertJarEntryExists( explicitJarFile, "many/unique-99.txt" );
+		assertJarEntryMissing( explicitJarFile, "many/unique-1.txt" );
+
+		// Nothing to merge is reported rather than silently skipped
+		var emptyResult = compile()
+			.setVerbose( arguments.verbose )
+			.toFatJar( "fat-jar-default-none.jar" )
+			.run();
+
+		assertFileExists( noDepsJarFile );
+		assertJarEntryExists( noDepsJarFile, "example/App.class" );
+		assertEquals( 0, emptyResult.fatJarDependencyCount );
+		assertEquals( true, emptyResult.fatJarRequested );
+
+		print.greenLine( "Fat-JAR class path default test passed." );
+	}
+
+	/**
+	 * java.resources accepts multiple roots: repeated withResources() calls and
+	 * comma-delimited or array values accumulate, and a later root wins shared
+	 * entries. Both the thin and the fat JAR must contain every root.
+	 *
+	 * @test
+	 */
+	function multipleResourceRoots( boolean verbose=false ) {
+		var firstRoot = resolvePath( "resources-fixture/checked-in" );
+		var secondRoot = resolvePath( "resources-fixture/generated" );
+		var thinJar = resolvePath( "build/libs/multi-resources.jar" );
+		var fatJar = resolvePath( "build/libs/multi-resources-fat.jar" );
+
+		if( directoryExists( resolvePath( "resources-fixture" ) ) ) {
+			directoryDelete( resolvePath( "resources-fixture" ), true );
+		}
+		directoryCreate( firstRoot & "/shared", true );
+		directoryCreate( secondRoot & "/shared", true );
+		fileWrite( firstRoot & "/only-a.txt", "a" & chr( 10 ) );
+		fileWrite( firstRoot & "/shared/overlap.txt", "first" & chr( 10 ) );
+		fileWrite( secondRoot & "/only-b.txt", "b" & chr( 10 ) );
+		fileWrite( secondRoot & "/shared/overlap.txt", "second" & chr( 10 ) );
+
+		// Repeated calls accumulate, the later root wins shared entries
+		var thinResult = compile()
+			.setVerbose( arguments.verbose )
+			.withResources( "resources-fixture/checked-in" )
+			.withResources( "resources-fixture/generated" )
+			.toJar( "multi-resources.jar" )
+			.run();
+
+		assertEquals( 2, thinResult.resourcePaths.len() );
+		assertJarEntryExists( thinJar, "only-a.txt" );
+		assertJarEntryExists( thinJar, "only-b.txt" );
+		assertEquals( "second", readJarEntry( thinJar, "shared/overlap.txt" ) );
+		// The first explicit configuration replaces the src/main/resources default
+		assertJarEntryMissing( thinJar, "default-resource.txt" );
+
+		// An array of roots merges the same way into a fat JAR
+		var fatResult = compile()
+			.setVerbose( arguments.verbose )
+			.withResources( [ firstRoot, secondRoot ] )
+			.toJar( "multi-resources-thin.jar" )
+			.toFatJar( "multi-resources-fat.jar" )
+			.run();
+
+		assertEquals( 2, fatResult.resourcePaths.len() );
+		assertJarEntryExists( fatJar, "only-a.txt" );
+		assertJarEntryExists( fatJar, "only-b.txt" );
+		assertEquals( "second", readJarEntry( fatJar, "shared/overlap.txt" ) );
+		assertJarEntryMissing( fatJar, "default-resource.txt" );
+
+		print.greenLine( "Multiple resource roots test passed." );
+	}
+
+	/**
+	 * preJavaCompile and postJavaCompile bookend the whole DSL run and fire the
+	 * package scripts of the same name. preJavaCompile runs before anything is
+	 * built, so it can generate sources/resources; postJavaCompile runs last.
+	 *
+	 * @test
+	 */
+	function compileInterceptionScripts( boolean verbose=false ) {
+		var projectRoot = resolvePath( "compile-scripts-fixture" );
+		var jarFile = projectRoot & "/build/libs/compile-scripts.jar";
+		var preMarker = projectRoot & "/pre-java-compile.marker";
+		var postMarker = projectRoot & "/post-java-compile.marker";
+
+		for( var path in [ projectRoot & "/build", projectRoot & "/dist", preMarker, postMarker ] ) {
+			if( directoryExists( path ) ) {
+				directoryDelete( path, true );
+			} else if( fileExists( path ) ) {
+				fileDelete( path );
+			}
+		}
+
+		var result = compile( "compile-scripts-fixture" )
+			.setVerbose( arguments.verbose )
+			.run();
+
+		assertFileExists( preMarker );
+		assertFileExists( postMarker );
+		assertFileExists( jarFile );
+		// Written by the preJavaCompile script, so it proves the script ran before the JAR was built
+		assertJarEntryExists( jarFile, "pre-resource.txt" );
+		assertJarEntryExists( jarFile, "example/ScriptsApp.class" );
+		assertEquals( true, result.jarPath.replaceNoCase( "\", "/" ).endsWith( "compile-scripts.jar" ) );
+
+		print.greenLine( "Compile interception scripts test passed." );
+	}
+
 	private function assertFileExists( required string filePath ) {
 		if( !fileExists( arguments.filePath ) ) {
 			error( "Expected file was not created: #arguments.filePath#" );
@@ -1286,6 +1575,37 @@ component {
 		);
 		fileWrite( arguments.directory & "/example/shared/Duplicate.class", "shared class placeholder" );
 		fileWrite( arguments.directory & "/indexed-resource.txt", arguments.resourceContents & chr( 10 ) );
+
+		var zipFile = arguments.jarFile & ".zip";
+		if( fileExists( zipFile ) ) {
+			fileDelete( zipFile );
+		}
+		zip action="zip" file="#arguments.jarFile#" source="#arguments.directory#" overwrite="true";
+		fileMove( zipFile, arguments.jarFile );
+	}
+
+	/**
+	 * Builds a dependency JAR for the project resource merge test: a service
+	 * descriptor with three providers plus resources that collide with the project.
+	 */
+	private function createResourceServiceDependencyJar(
+		required string directory,
+		required string jarFile
+	) {
+		if( directoryExists( arguments.directory ) ) {
+			directoryDelete( arguments.directory, true );
+		}
+		if( fileExists( arguments.jarFile ) ) {
+			fileDelete( arguments.jarFile );
+		}
+
+		directoryCreate( arguments.directory & "/META-INF/services", true );
+		fileWrite(
+			arguments.directory & "/META-INF/services/example.UnionService",
+			"dep.one" & chr( 10 ) & "dep.two" & chr( 10 ) & "dep.three" & chr( 10 )
+		);
+		fileWrite( arguments.directory & "/resource-wins.txt", "dependency" & chr( 10 ) );
+		fileWrite( arguments.directory & "/dep-only.txt", "dependency only" & chr( 10 ) );
 
 		var zipFile = arguments.jarFile & ".zip";
 		if( fileExists( zipFile ) ) {

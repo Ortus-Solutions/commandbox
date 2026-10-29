@@ -8,6 +8,12 @@
 /fat-jar-duplicates/
 /fat-jar-many/
 /fat-jar-index/
+/fat-jar-resources/
+/fat-jar-resources-dep/
+/fat-jar-lone/
+/fat-jar-dir/
+/fat-jar-default/
+/resources-fixture/
 /package-fixture/build/
 /package-fixture/classes/
 /package-fixture/libs/
@@ -17,3 +23,6 @@
 /java-init-fixture/
 /java-init-custom-fixture/
 /run-fixture/build/
+/compile-scripts-fixture/build/
+/compile-scripts-fixture/dist/
+/compile-scripts-fixture/*.marker

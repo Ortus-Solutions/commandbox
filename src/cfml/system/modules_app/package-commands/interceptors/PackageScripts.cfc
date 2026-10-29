@@ -75,6 +75,10 @@ component {
 	function prePublish() { processScripts( 'prePublish', shell.pwd(), interceptData ); }
 	function postPublish() { processScripts( 'postPublish', shell.pwd(), interceptData ); }
 
+	// Compile lifecycle: run the package scripts from the project being compiled
+	function preJavaCompile() { processScripts( 'preJavaCompile', interceptData.projectRoot ?: shell.pwd(), interceptData ); }
+	function postJavaCompile() { processScripts( 'postJavaCompile', interceptData.projectRoot ?: shell.pwd(), interceptData ); }
+
 	function processScripts( required string interceptionPoint, string directory=shell.pwd(), interceptData={} ) {
 		variables.inScript=true;
 		try {
