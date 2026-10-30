@@ -283,9 +283,9 @@ component singleton {
 		var XMLDeclaration = '<?xml version="1.0" encoding="utf-8"?>';
 		
 		try {
-			return toString( XmlTransform( XMLDoc, xlt) ).replace( XMLDeclaration, '', 'once' );
+			return toString( XmlTransform( XMLDoc, xlt) ).replace( XMLDeclaration, '', 'one' );
 		} catch( any e ) {
-			return toString( XMLDoc ).replace( XMLDeclaration, '', 'once' );
+			return toString( XMLDoc ).replace( XMLDeclaration, '', 'one' );
 		}
 	}
 

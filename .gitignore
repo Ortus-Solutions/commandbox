@@ -6,6 +6,8 @@
 /build/requires.txt
 /build/*.log
 /lib
+# Maven artifacts installed into a project root by the maven endpoint
+/libs
 /src/cfml/box.json
 WEB-INF
 tests/results

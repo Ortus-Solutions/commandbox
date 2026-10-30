@@ -549,6 +549,37 @@ Equivalent command:
 java compile classPath=libs --jar jarName=example.jar
 ```
 
+## java ide-init
+
+`java ide-init` writes editor metadata from the `java` block in box.json, so an
+editor can resolve your sources and dependencies without a `pom.xml` or a
+Gradle descriptor.
+
+```bash
+java ide-init
+```
+
+Editors in use are detected from the project and each one gets its metadata
+generated. The command reports the editors it detected and the files it created.
+
+| Editor | Detected by | Files |
+| --- | --- | --- |
+| VS Code | `.vscode` or a `*.code-workspace` file | `.vscode/settings.json` |
+| Eclipse | `.project`, `.classpath`, or `.settings` | `.classpath`, `.project`, `.settings/org.eclipse.jdt.core.prefs` |
+| IntelliJ | `.idea` or a `*.iml` file | `.iml`, `.idea/modules.xml`, `.idea/compiler.xml` |
+
+Existing files are merged rather than replaced, so settings that are not ours are
+kept, and re-running produces the same files. If no editor is detected the
+command fails rather than writing nothing.
+
+VS Code points at the classpath directory with a glob (`libs/**/*.jar`), so
+changing a dependency version and re-running only `install` needs no
+regeneration. The Eclipse and IntelliJ formats list JAR files as they are at
+generation time, so **re-run `java ide-init` after any dependency change**.
+
+If `classPath` points at a directory that is missing or has no JARs, the command
+fails and names the path instead of generating metadata that resolves nothing.
+
 ## Fat JARs
 
 `.toFatJar()` creates the project JAR and merges supplied dependency JARs into
