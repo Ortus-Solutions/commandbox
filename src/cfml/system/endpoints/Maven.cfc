@@ -1,4 +1,4 @@
-/**
+﻿/**
  *********************************************************************************
  * Copyright Since 2014 CommandBox by Ortus Solutions, Corp
  * www.coldbox.org | www.ortussolutions.com
@@ -121,7 +121,9 @@ component
 			var thisArtifactPath = prepareCachedPackageForInstall(
 				artifactService.getArtifactPath( cacheKey, artifact.parts.version ),
 				artifact.parts.flags.installMode,
-				installDirectory
+				installDirectory,
+				artifact.parts.flags.transitive,
+				getDescriptorPlan( artifact, requestedRepo.len() ? requestedRepo : "mavenCentral", arguments.currentWorkingDirectory )
 			);
 			if ( configService.getSetting( "offlineMode", false ) ) {
 				job.addWarnLog( "Offline mode is enabled; skipping Maven JAR hash validation." );
@@ -211,7 +213,9 @@ component
 			var cachedArtifactPath = prepareCachedPackageForInstall(
 				artifactService.getArtifactPath( cacheKey, artifact.resolvedVersion ),
 				artifact.parts.flags.installMode,
-				installDirectory
+				installDirectory,
+				artifact.parts.flags.transitive,
+				getDescriptorPlan( artifact, resolvedRepo, arguments.currentWorkingDirectory )
 			);
 			if ( !configService.getSetting( "offlineMode", false ) ) {
 				verifyArtifactChecksum( findJarInPackage( cachedArtifactPath ), artifact.jarFileURL );
@@ -298,7 +302,9 @@ component
 			var thisArtifactPath = prepareCachedPackageForInstall(
 				artifactService.getArtifactPath( cacheKey, artifact.parts.version ),
 				artifact.parts.flags.installMode,
-				installDirectory
+				installDirectory,
+				artifact.parts.flags.transitive,
+				getDescriptorPlan( artifact, requestedRepo.len() ? requestedRepo : "mavenCentral", arguments.currentWorkingDirectory )
 			);
 			verifyArtifactChecksum( findJarInPackage( thisArtifactPath ), artifact.jarFileURL );
 			return thisArtifactPath;
@@ -315,46 +321,14 @@ component
 				artifact.parts.flags.scopes,
 				0,
 				artifact.parts.flags.optional,
-				artifact.parts.flags.exclude
+				artifact.parts.flags.exclude,
+				arguments.currentWorkingDirectory
 			)
 			: [];
 
-		var installPaths = {};
-		var dependencies = {};
-
-		for ( var dependency in artifactDependencies ) {
-			if ( dependency.artifactId == artifact.parts.artifactId && dependency.groupId == artifact.parts.groupId ) {
-				continue;
-			}
-			// Use the same slug format as the generated package descriptor. PackageService uses the
-			// descriptor slug as the dependency key when saving the installed package, so using a
-			// different key here would cause a second entry to be added for the same dependency.
-			var depKey = dependency.groupId & ":" & dependency.artifactId;
-			// Merge the exclude set that should apply to THIS child's own subtree:
-			//   - Whatever the user/parent already had in effect (`?exclude=` on this artifact's own
-			//     endpoint ID) — propagated uniformly to every child so it keeps applying deeper down.
-			//   - Whatever THIS specific POM declared via <exclusions> for THIS dependency edge —
-			//     applies only to this one child's subtree, not its siblings.
-			var childExcludes = mergeExcludeLists( artifact.parts.flags.exclude, dependency.exclusions );
-			// Build a proper maven: endpoint ID for the dependency.  Do NOT force the parent's repo alias
-			// onto children — leave it repo-less so the child can be resolved from any registered repo
-			// (or the artifact cache) independently.  If the user needs pinned repo behavior for a
-			// transitive, they can register or override via the project box.json.
-			dependencies[ depKey ] = getNamePrefixes() & ":" & dependency.groupId & ":" & dependency.artifactId & ":" & convertMavenToNpmVersionRange(
-				dependency.version
-			);
-			if ( childExcludes.len() ) {
-				dependencies[ depKey ] &= "?exclude=" & childExcludes;
-			}
-			if ( artifact.parts.flags.installMode.len() ) {
-				dependencies[ depKey ] &= ( find( "?", dependencies[ depKey ] ) ? "&" : "?" ) & "installMode=" & artifact.parts.flags.installMode;
-			}
-			// Shared installs bundle all Maven JARs into the caller's destination. Dedicated installs
-			// keep each transitive dependency isolated directly under the parent package directory.
-			installPaths[ depKey ] = artifact.parts.flags.installMode == "shared"
-				? "."
-				: dependency.groupId & "-" & dependency.artifactId;
-		}
+		var descriptorPlan = buildDependencyDescriptor( artifactDependencies, artifact, artifact.parts.flags.installMode );
+		var installPaths = descriptorPlan.installPaths;
+		var dependencies = descriptorPlan.dependencies;
 
 		// Override the box.json with the actual version and dependencies
 		var boxJSON = {
@@ -924,143 +898,747 @@ component
 	}
 
 	/**
-	 * Get the URLs for the artifact and its dependencies
+	 * Get the URLs for the artifact and its dependencies.
+	 *
+	 * The whole dependency graph is collected first, then mediated so exactly one
+	 * version of each groupId:artifactId is installed:
+	 *
+	 *  1. a version declared directly in the project's box.json wins,
+	 *  2. otherwise the highest version requested anywhere in the graph wins.
+	 *
+	 * Mediation runs over the full graph (not per subtree) and the walk repeats until
+	 * the selected versions stop changing, so the dependencies of a version we
+	 * mediated to are honored too.
+	 *
 	 * @repo The repository to check (URL or alias)
 	 * @groupId The group ID of the artifact
 	 * @artifactId The artifact ID
 	 * @version The version of the artifact
 	 * @scopes The scopes to include
 	 * @depth The depth of the dependencies
+	 * @workingDirectory The project directory whose box.json pins versions.  Optional.
 	 */
 	private function getArtifactAndDependencyJarURLs(
 		repository,
 		groupIdentifier,
 		artifactIdentifier,
 		versionNumber,
-		scopes          = "runtime,compile",
-		depthLevel      = 0,
+		scopes            = "runtime,compile",
+		depthLevel        = 0,
 		boolean includeOptional = false,
-		string excludeList = ""
+		string excludeList = "",
+		string workingDirectory = ""
 	){
-		var job              = wirebox.getInstance( "interactiveJob" );
-		var artifactMetadata = getArtifactVersion(
-			getRepoURL( arguments.repository ),
-			groupIdentifier,
-			artifactIdentifier,
-			versionNumber
-		);
-		var dependencyCache    = {};
-		var jarDownloadList    = [];
-		var dependency         = "";
-		var dependencyMetadata = "";
-		var selectedVersion    = "";
+		// One mediated plan per command execution: the first Maven resolve seeds it from every
+		// Maven root in the project, and every later resolve just reads its slice of it.
+		var memo = getResolutionMemo( arguments.workingDirectory, arguments.repository );
+		var rootKey = arguments.groupIdentifier & ":" & arguments.artifactIdentifier;
 
-		if ( artifactMetadata.packaging IS "jar" ) {
-			jarDownloadList = [
-				{
-					"download" : getJarFileURL(
-						arguments.repository,
-						groupIdentifier,
-						artifactIdentifier,
-						versionNumber
-					),
-					"groupId"    : arguments.groupIdentifier,
-					"artifactId" : arguments.artifactIdentifier,
-					"version"    : arguments.versionNumber,
-					"exclusions" : []
-				}
-			];
+		if(
+			isDefaultResolution( arguments.scopes, arguments.includeOptional, arguments.excludeList )
+			&& memo.plans.keyExists( rootKey )
+		) {
+			return planToJarList( memo.plans[ rootKey ], arguments.repository );
 		}
 
-		for ( dependency in artifactMetadata.dependencies ) {
+		var context = {
+			"repository"      : arguments.repository,
+			"scopes"          : arguments.scopes,
+			"includeOptional" : arguments.includeOptional,
+			"excludeList"     : arguments.excludeList,
+			"pins"            : getProjectDependencyPins( arguments.workingDirectory ),
+			"pomCache"        : {},
+			"requested"       : {},
+			"selections"      : {},
+			"nodes"           : {},
+			"visited"         : {}
+		};
+
+		if( memo.selections.len() ) {
+			// The project-wide mediation is authoritative: walk once with it and don't re-decide
+			// here, or a single root would re-mediate against its own smaller slice of the graph.
+			context.selections = memo.selections;
+			walkDependencyGraph(
+				context,
+				arguments.groupIdentifier,
+				arguments.artifactIdentifier,
+				arguments.versionNumber,
+				0,
+				"",
+				[]
+			);
+		} else {
+			// Walk the graph, mediate, and repeat until the selections stop changing
+			var activeSelections = {};
+			for( var iteration = 0; iteration < 5; iteration++ ) {
+				context.selections = activeSelections;
+				context.requested  = {};
+				context.nodes      = {};
+				context.visited    = {};
+
+				walkDependencyGraph(
+					context,
+					arguments.groupIdentifier,
+					arguments.artifactIdentifier,
+					arguments.versionNumber,
+					0,
+					"",
+					[]
+				);
+
+				var rootVersions = {};
+				rootVersions[ rootKey ] = arguments.versionNumber;
+				var nextSelections = mediateDependencyVersions( context, rootVersions );
+				if( selectionsAreEqual( nextSelections, activeSelections ) ) {
+					break;
+				}
+				activeSelections = nextSelections;
+			}
+		}
+
+		return planToJarList( context.nodes, arguments.repository, context );
+	}
+
+	/**
+	 * Walks one node of the dependency graph and recurses into its dependencies.
+	 *
+	 * Collects every requested version per groupId:artifactId (for mediation) and records
+	 * the version each GA resolves to under the current selections.
+	 *
+	 * @context The shared resolution context
+	 * @groupId The dependency group id
+	 * @artifactId The dependency artifact id
+	 * @version The version requested on this edge
+	 * @depth Current depth
+	 * @requestedBy The groupId:artifactId that requested this dependency, empty for the root
+	 */
+	private void function walkDependencyGraph(
+		required struct context,
+		required string groupId,
+		required string artifactId,
+		required string version,
+		required numeric depth,
+		required string requestedBy,
+		array edgeExclusions = []
+	) {
+		if( arguments.depth > 20 ) {
+			return;
+		}
+
+		var nodeKey = arguments.groupId & ":" & arguments.artifactId;
+		if( !arguments.context.requested.keyExists( nodeKey ) ) {
+			arguments.context.requested[ nodeKey ] = {
+				"groupId"     : arguments.groupId,
+				"artifactId"  : arguments.artifactId,
+				"versions"    : [],
+				"requestedBy" : []
+			};
+		}
+		if( !arrayFind( arguments.context.requested[ nodeKey ].versions, arguments.version ) ) {
+			arrayAppend( arguments.context.requested[ nodeKey ].versions, arguments.version );
+		}
+		if(
+			arguments.requestedBy.len()
+			&& !arrayFind( arguments.context.requested[ nodeKey ].requestedBy, arguments.requestedBy )
+		) {
+			arrayAppend( arguments.context.requested[ nodeKey ].requestedBy, arguments.requestedBy );
+		}
+
+		// Follow the mediated version when one has been selected for this GA
+		var selectedVersion = arguments.context.selections.keyExists( nodeKey )
+			? arguments.context.selections[ nodeKey ]
+			: arguments.version;
+
+		arguments.context.nodes[ nodeKey ] = {
+			"groupId"    : arguments.groupId,
+			"artifactId" : arguments.artifactId,
+			"version"    : selectedVersion
+		};
+
+		var visitKey = nodeKey & ":" & selectedVersion;
+		if( arguments.context.visited.keyExists( visitKey ) ) {
+			return;
+		}
+		arguments.context.visited[ visitKey ] = true;
+
+		var artifactMetadata = getCachedPom( arguments.context, arguments.groupId, arguments.artifactId, selectedVersion );
+
+		for( var dependency in artifactMetadata.dependencies ) {
 			// Skip scopes not being requested (default: runtime,compile).  This filters out test, provided, system.
-			if ( !listFindNoCase( arguments.scopes, dependency.scope ) ) {
+			if( !listFindNoCase( arguments.context.scopes, dependency.scope ) ) {
 				continue;
 			}
 			// Skip optional dependencies unless the caller opted in.  Per Maven semantics they are not
 			// transitive by default.  dependency.optional may be a real boolean or a "true"/"false" string from XML.
-			if ( !arguments.includeOptional && isBoolean( dependency.optional ) && dependency.optional ) {
+			if( !arguments.context.includeOptional && isBoolean( dependency.optional ) && dependency.optional ) {
 				continue;
 			}
 			// Skip anything the caller asked to exclude (via the ?exclude= flag, inherited uniformly
 			// down the whole subtree) — "groupId:artifactId" pairs, no version.
-			if ( arguments.excludeList.len() && listFindNoCase( arguments.excludeList, dependency.groupId & ":" & dependency.artifactId ) ) {
+			if(
+				arguments.context.excludeList.len()
+				&& listFindNoCase( arguments.context.excludeList, dependency.groupId & ":" & dependency.artifactId )
+			) {
 				continue;
 			}
-			// Must have a resolved version to be installable.  With <dependencyManagement> inheritance
-			// working correctly, this should always be set — no need for a metadata HTTP fetch.
-			if ( !len( dependency.version ) ) {
+			// Skip anything a POM declared in <exclusions> on an edge above this node
+			if( arrayFindNoCase( arguments.edgeExclusions, dependency.groupId & ":" & dependency.artifactId ) ) {
 				continue;
 			}
-			var depKey = dependency.groupId & "/" & dependency.artifactId;
-			if ( !dependencyCache.keyExists( depKey ) ) {
-				dependencyCache[ depKey ] = {
-					"groupId"       : dependency.groupId,
-					"artifactId"    : dependency.artifactId,
-					"scope"         : dependency.scope,
-					"wantedVersion" : [ dependency.version ],
-					// POM-native <exclusions> declared specifically on this dependency edge — only
-					// applies to this dependency's own subtree, not its siblings.
-					"exclusions"    : duplicate( dependency.exclusions )
-				};
-			} else {
-				// Additional version seen for the same dep — record it so we can pick the highest later
-				arrayAppend( dependencyCache[ depKey ].wantedVersion, dependency.version );
-				for ( var excl in dependency.exclusions ) {
-					if ( !arrayFindNoCase( dependencyCache[ depKey ].exclusions, excl ) ) {
-						arrayAppend( dependencyCache[ depKey ].exclusions, excl );
-					}
+
+			// A dependency with no resolvable version is not installable.
+			if( !len( dependency.version ) || find( "${", dependency.version ) ) {
+				var problem = !len( dependency.version )
+					? "declares no <version>"
+					: "has an unresolved version placeholder [#dependency.version#]";
+				// Direct dependencies of the artifact being installed fail loudly: skipping them here
+				// just relocates the failure into the compiler as "package ... does not exist".
+				if( arguments.depth == 0 ) {
+					throw(
+						message = "Could not resolve a version for dependency [#dependency.groupId#:#dependency.artifactId#] of [#nodeKey#].",
+						detail  = "That dependency #problem#, and no <dependencyManagement> entry in the parent chain supplied one.",
+						type    = "endpointException"
+					);
 				}
+				// Deeper in the graph our property/BOM coverage is not guaranteed, so don't fail an
+				// install we can otherwise complete — but say so.
+				wirebox.getInstance( "interactiveJob" ).addWarnLog(
+					"Skipping dependency [#dependency.groupId#:#dependency.artifactId#] of [#nodeKey#]: it #problem#."
+				);
+				continue;
+			}
+
+			// Exclusions declared on THIS edge apply to the child's own subtree only
+			var childExclusions = duplicate( arguments.edgeExclusions );
+			for( var exclusion in dependency.exclusions ) {
+				if( !arrayFindNoCase( childExclusions, exclusion ) ) {
+					arrayAppend( childExclusions, exclusion );
+				}
+			}
+
+			walkDependencyGraph(
+				arguments.context,
+				dependency.groupId,
+				dependency.artifactId,
+				dependency.version,
+				arguments.depth + 1,
+				nodeKey,
+				childExclusions
+			);
+		}
+	}
+
+	/**
+	 * Picks one version per groupId:artifactId for the collected graph.
+	 *
+	 * A version pinned in the project's box.json beats anything requested transitively;
+	 * otherwise the highest requested version wins (Maven-style mediation).
+	 *
+	 * @context The shared resolution context
+	 * @rootVersions Map of groupId:artifactId -> requested version for the artifacts being installed
+	 */
+	private struct function mediateDependencyVersions(
+		required struct context,
+		required struct rootVersions
+	) {
+		var selections = {};
+		var job = wirebox.getInstance( "interactiveJob" );
+
+		for( var nodeKey in arguments.context.requested ) {
+			var requestInfo = arguments.context.requested[ nodeKey ];
+			var versions = requestInfo.versions;
+			var selectedVersion = "";
+			var reason = "";
+
+			if( arguments.rootVersions.keyExists( nodeKey ) ) {
+				selectedVersion = arguments.rootVersions[ nodeKey ];
+			} else if( arguments.context.pins.keyExists( nodeKey ) ) {
+				selectedVersion = arguments.context.pins[ nodeKey ];
+				reason = "pinned in box.json";
+			} else if( versions.len() == 1 ) {
+				selectedVersion = versions[ 1 ];
+			} else {
+				selectedVersion = pickHighestVersion( versions );
+				reason = "highest requested";
+			}
+
+			selections[ nodeKey ] = selectedVersion;
+
+			// Keep mediation visible: silently picking a version is what makes a fat jar
+			// nondeterministic to debug.
+			if( versions.len() > 1 || reason == "pinned in box.json" ) {
+				job.addLog(
+					"Mediated [#nodeKey#] requested at [#versions.sort( "textnocase" ).toList( ", " )#] by [#requestInfo.requestedBy.toList( ", " )#] -> [#selectedVersion#]"
+					& ( reason.len() ? " (#reason#)" : "" )
+				);
 			}
 		}
 
-		for ( dependency in dependencyCache ) {
-			dependency = dependencyCache[ dependency ];
-			// TODO: Pick the highest version when multiple are wanted
-			selectedVersion = dependency.wantedVersion[ 1 ];
-			if ( dependency.artifactId == arguments.artifactIdentifier && dependency.groupId == arguments.groupIdentifier ) {
+		return selections;
+	}
+
+	/**
+	 * Returns the highest of a list of versions.
+	 *
+	 * @versions The requested versions
+	 */
+	private string function pickHighestVersion( required array versions ) {
+		if( arguments.versions.len() == 1 ) {
+			return arguments.versions[ 1 ];
+		}
+		var sortedVersions = arguments.versions.sort( ( a, b ) => variables.semanticVersion.compare( b, a ) );
+		return sortedVersions[ 1 ];
+	}
+
+	/**
+	 * Compares two GA -> version selection maps.
+	 *
+	 * @first The first map
+	 * @second The second map
+	 */
+	private boolean function selectionsAreEqual( required struct first, required struct second ) {
+		if( structCount( arguments.first ) != structCount( arguments.second ) ) {
+			return false;
+		}
+		for( var key in arguments.first ) {
+			if( !arguments.second.keyExists( key ) || arguments.second[ key ] != arguments.first[ key ] ) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	/**
+	 * Fetches a POM through the per-resolve cache.
+	 *
+	 * @context The shared resolution context
+	 * @groupId The group id
+	 * @artifactId The artifact id
+	 * @version The version
+	 */
+	private struct function getCachedPom(
+		required struct context,
+		required string groupId,
+		required string artifactId,
+		required string version
+	) {
+		var pomKey = arguments.groupId & ":" & arguments.artifactId & ":" & arguments.version;
+		if( !arguments.context.pomCache.keyExists( pomKey ) ) {
+			try {
+				arguments.context.pomCache[ pomKey ] = getArtifactVersion(
+					getRepoURL( arguments.context.repository ),
+					arguments.groupId,
+					arguments.artifactId,
+					arguments.version
+				);
+			} catch( any e ) {
+				// A missing or unreadable POM must not break the resolve: the artifact is still
+				// installed, we just cannot see what it depends on.
+				arguments.context.pomCache[ pomKey ] = {
+					"name"         : "",
+					"packaging"    : "jar",
+					"dependencies" : [],
+					"managed"      : {},
+					"xml"          : {}
+				};
+			}
+		}
+		return arguments.context.pomCache[ pomKey ];
+	}
+
+	/**
+	 * Reads the exact Maven versions a project pins in its box.json, keyed by groupId:artifactId.
+	 * A direct declaration outranks anything requested transitively.
+	 *
+	 * @workingDirectory The project directory to read.  Optional.
+	 */
+	private struct function getProjectDependencyPins( required string workingDirectory ) {
+		var pins = {};
+		if( !arguments.workingDirectory.len() || !directoryExists( arguments.workingDirectory ) ) {
+			return pins;
+		}
+		if( !packageService.isPackage( arguments.workingDirectory ) ) {
+			return pins;
+		}
+
+		var boxJSON = packageService.readPackageDescriptorRaw( arguments.workingDirectory );
+		if( !boxJSON.keyExists( "dependencies" ) || !isStruct( boxJSON.dependencies ) ) {
+			return pins;
+		}
+
+		for( var dependencyKey in boxJSON.dependencies ) {
+			var coordinates = parseMavenEndpointId( boxJSON.dependencies[ dependencyKey ] );
+			if( coordinates.len() ) {
+				pins[ coordinates.groupId & ":" & coordinates.artifactId ] = coordinates.version;
+			}
+		}
+
+		return pins;
+	}
+	/**
+	 * Builds the dependency map and install paths for a package descriptor.
+	 *
+	 * Every entry is a flattened, mediated transitive: the parent resolve already walked the whole
+	 * graph, so each child is installed at an exact version and told not to re-resolve.  Re-resolving
+	 * per subtree is what produced several versions of the same groupId:artifactId.
+	 *
+	 * @artifactDependencies The flat dependency list for this artifact
+	 * @artifact The artifact being resolved
+	 * @installMode The selected install mode
+	 */
+	private struct function buildDependencyDescriptor(
+		required array artifactDependencies,
+		required struct artifact,
+		required string installMode
+	) {
+		var dependencies = {};
+		var installPaths = {};
+
+		for ( var dependency in arguments.artifactDependencies ) {
+			if (
+				dependency.artifactId == arguments.artifact.parts.artifactId
+				&& dependency.groupId == arguments.artifact.parts.groupId
+			) {
 				continue;
 			}
-			if ( artifactMetadata.packaging IS "pom" && dependency.scope IS "import" ) {
-				if ( depthLevel > 10 ) {
-					throw( message = "Maximum depth of 10 reached", type = "endpointException" );
-				}
-				dependencyMetadata = getArtifactAndDependencyJarURLs(
-					repository,
-					dependency.groupId,
-					dependency.artifactId,
-					selectedVersion,
-					scopes,
-					depthLevel++,
-					arguments.includeOptional,
-					arguments.excludeList
-				);
-				for ( selectedVersion in dependencyMetadata ) {
-					if ( !arrayFind( jarDownloadList, selectedVersion ) ) {
-						arrayAppend( jarDownloadList, selectedVersion );
-					}
-				}
-			} else {
-				arrayAppend(
-					jarDownloadList,
-					{
-						"download" : getJarFileURL(
-							repository,
-							dependency.groupId,
-							dependency.artifactId,
-							selectedVersion
-						),
-						"groupId"    : dependency.groupId,
-						"artifactId" : dependency.artifactId,
-						"version"    : selectedVersion,
-						"exclusions" : dependency.exclusions
-					}
-				);
+			// Use the same slug format as the generated package descriptor. PackageService uses the
+			// descriptor slug as the dependency key when saving the installed package, so using a
+			// different key here would cause a second entry to be added for the same dependency.
+			var depKey = dependency.groupId & ":" & dependency.artifactId;
+			// Merge the exclude set that should apply to THIS child's own subtree:
+			//   - Whatever the user/parent already had in effect (`?exclude=` on this artifact's own
+			//     endpoint ID) — propagated uniformly to every child so it keeps applying deeper down.
+			//   - Whatever THIS specific POM declared via <exclusions> for THIS dependency edge —
+			//     applies only to this one child's subtree, not its siblings.
+			var childExcludes = mergeExcludeLists( arguments.artifact.parts.flags.exclude, dependency.exclusions );
+			// Build a proper maven: endpoint ID for the dependency.  Do NOT force the parent's repo alias
+			// onto children — leave it repo-less so the child can be resolved from any registered repo
+			// (or the artifact cache) independently.
+			dependencies[ depKey ] = getNamePrefixes() & ":" & dependency.groupId & ":" & dependency.artifactId & ":" & convertMavenToNpmVersionRange(
+				dependency.version
+			);
+			if ( childExcludes.len() ) {
+				dependencies[ depKey ] &= "?exclude=" & childExcludes;
 			}
+			if ( arguments.installMode.len() ) {
+				dependencies[ depKey ] &= ( find( "?", dependencies[ depKey ] ) ? "&" : "?" ) & "installMode=" & arguments.installMode;
+			}
+			dependencies[ depKey ] &= ( find( "?", dependencies[ depKey ] ) ? "&" : "?" ) & "transitive=false";
+			// Shared installs bundle all Maven JARs into the caller's destination. Dedicated installs
+			// keep each transitive dependency isolated directly under the parent package directory.
+			installPaths[ depKey ] = arguments.installMode == "shared"
+				? "."
+				: dependency.groupId & "-" & dependency.artifactId;
+		}
+
+		return { "dependencies" : dependencies, "installPaths" : installPaths };
+	}
+
+	/**
+	 * Recomputes the dependency plan for an artifact, from the command's resolution memo when it has
+	 * one and by walking the graph otherwise.
+	 *
+	 * @artifact The artifact being resolved
+	 * @repo The repository to resolve from
+	 * @workingDirectory The project directory
+	 */
+	private struct function getDescriptorPlan(
+		required struct artifact,
+		required string repo,
+		required string workingDirectory
+	) {
+		if ( !arguments.artifact.parts.flags.transitive ) {
+			return { "dependencies" : {}, "installPaths" : {} };
+		}
+
+		return buildDependencyDescriptor(
+			getArtifactAndDependencyJarURLs(
+				arguments.repo,
+				arguments.artifact.parts.groupId,
+				arguments.artifact.parts.artifactId,
+				arguments.artifact.parts.version,
+				arguments.artifact.parts.flags.scopes,
+				0,
+				arguments.artifact.parts.flags.optional,
+				arguments.artifact.parts.flags.exclude,
+				arguments.workingDirectory
+			),
+			arguments.artifact,
+			arguments.artifact.parts.flags.installMode
+		);
+	}
+	/**
+	 * Whether the resolution flags are the defaults, in which case the project-wide plan applies.
+	 *
+	 * @scopes The requested scopes
+	 * @includeOptional Whether optional dependencies are included
+	 * @excludeList The caller's exclude list
+	 */
+	private boolean function isDefaultResolution(
+		required string scopes,
+		required boolean includeOptional,
+		required string excludeList
+	) {
+		return !arguments.includeOptional
+			&& !arguments.excludeList.len()
+			&& lCase( replace( arguments.scopes, " ", "", "all" ) ) == "runtime,compile";
+	}
+
+	/**
+	 * Converts a plan (groupId:artifactId -> node) into the jar download list.
+	 *
+	 * @nodes The plan nodes
+	 * @repo The repository to build URLs for
+	 */
+	private array function planToJarList( required struct nodes, required string repo ) {
+		var jarDownloadList = [];
+		for( var nodeKey in arguments.nodes ) {
+			var node = arguments.nodes[ nodeKey ];
+			arrayAppend(
+				jarDownloadList,
+				{
+					"download" : getJarFileURL(
+						arguments.repo,
+						node.groupId,
+						node.artifactId,
+						node.version
+					),
+					"groupId"    : node.groupId,
+					"artifactId" : node.artifactId,
+					"version"    : node.version,
+					"exclusions" : []
+				}
+			);
 		}
 		return jarDownloadList;
 	}
 
+	/**
+	 * Returns the resolution memo for this command execution, seeding it when it is missing or
+	 * was built for a different project/repository/root set.
+	 *
+	 * The memo lives in a system setting, which CommandBox scopes to the current command
+	 * execution, so it dies with the command and every nested install in that command shares it.
+	 *
+	 * @workingDirectory The project directory
+	 * @repo The repository being resolved from
+	 */
+	private struct function getResolutionMemo( required string workingDirectory, required string repo ) {
+		var memo = readResolutionMemo();
+		var roots = getProjectMavenRoots( arguments.workingDirectory );
+		if( memo.seeded && memo.signature == getResolutionMemoSignature( arguments.workingDirectory, arguments.repo, roots ) ) {
+			return memo;
+		}
+		return seedResolutionMemo( arguments.workingDirectory, arguments.repo, roots );
+	}
+
+	/**
+	 * Reads the memo out of the command-scoped system setting.
+	 */
+	private struct function readResolutionMemo() {
+		var empty = { "seeded" : false, "signature" : "", "selections" : {}, "plans" : {}, "rootCount" : 0 };
+		var raw = wirebox.getInstance( "systemSettings" ).getSystemSetting( "_mavenResolutionMemo", "" );
+		if( !isSimpleValue( raw ) || !len( raw ) || !isJSON( raw ) ) {
+			return empty;
+		}
+		var memo = deserializeJSON( raw );
+		if( !isStruct( memo ) || !memo.keyExists( "selections" ) || !memo.keyExists( "plans" ) || !memo.keyExists( "signature" ) ) {
+			return empty;
+		}
+		return memo;
+	}
+
+	/**
+	 * Stores the memo in the command-scoped system setting.
+	 *
+	 * @memo The memo to store
+	 */
+	private void function storeResolutionMemo( required struct memo ) {
+		wirebox.getInstance( "systemSettings" ).setSystemSetting( "_mavenResolutionMemo", serializeJSON( arguments.memo ) );
+	}
+
+	/**
+	 * Identifies the graph a memo was built from, so a different project, repository, or root set
+	 * re-seeds instead of reusing stale selections.
+	 *
+	 * @workingDirectory The project directory
+	 * @repo The repository
+	 * @roots The project's Maven roots
+	 */
+	private string function getResolutionMemoSignature(
+		required string workingDirectory,
+		required string repo,
+		required array roots
+	) {
+		return hash( lCase( arguments.workingDirectory ) & "|" & lCase( arguments.repo ) & "|" & serializeJSON( arguments.roots ), "MD5" );
+	}
+
+	/**
+	 * Walks every Maven root in the project as one graph, mediates the versions, and memoizes a
+	 * flat, mediated plan per root so later resolves never re-decide (or install duplicates).
+	 *
+	 * @workingDirectory The project directory
+	 * @repo The repository to resolve from
+	 * @roots The project's Maven roots
+	 */
+	private struct function seedResolutionMemo(
+		required string workingDirectory,
+		required string repo,
+		required array roots
+	) {
+		var memo = {
+			"seeded"     : true,
+			"signature"  : getResolutionMemoSignature( arguments.workingDirectory, arguments.repo, arguments.roots ),
+			"selections" : {},
+			"plans"      : {},
+			"rootCount"  : arguments.roots.len()
+		};
+		// Mark seeded before walking so a nested resolve cannot recurse into seeding again
+		storeResolutionMemo( memo );
+
+		if( !arguments.roots.len() ) {
+			return memo;
+		}
+
+		var job = wirebox.getInstance( "interactiveJob" );
+		var context = {
+			"repository"      : arguments.repo,
+			"scopes"          : "runtime,compile",
+			"includeOptional" : false,
+			"excludeList"     : "",
+			"pins"            : getProjectDependencyPins( arguments.workingDirectory ),
+			"pomCache"        : {},
+			"requested"       : {},
+			"selections"      : {},
+			"nodes"           : {},
+			"visited"         : {}
+		};
+
+		var rootVersions = {};
+		for( var root in arguments.roots ) {
+			rootVersions[ root.groupId & ":" & root.artifactId ] = root.version;
+		}
+
+		// Collect requests from every root, mediate, and repeat until the selections are stable
+		var activeSelections = {};
+		for( var iteration = 0; iteration < 5; iteration++ ) {
+			context.selections = activeSelections;
+			context.requested  = {};
+			context.nodes      = {};
+			context.visited    = {};
+
+			for( var root in arguments.roots ) {
+				walkDependencyGraph( context, root.groupId, root.artifactId, root.version, 0, "", [] );
+			}
+
+			var nextSelections = mediateDependencyVersions( context, rootVersions );
+			if( selectionsAreEqual( nextSelections, activeSelections ) ) {
+				break;
+			}
+			activeSelections = nextSelections;
+		}
+
+		// Materialize one flat plan per root from the mediated selections
+		for( var root in arguments.roots ) {
+			var rootContext = {
+				"repository"      : arguments.repo,
+				"scopes"          : "runtime,compile",
+				"includeOptional" : false,
+				"excludeList"     : "",
+				"pins"            : context.pins,
+				"pomCache"        : context.pomCache,
+				"requested"       : {},
+				"selections"      : activeSelections,
+				"nodes"           : {},
+				"visited"         : {}
+			};
+			walkDependencyGraph( rootContext, root.groupId, root.artifactId, root.version, 0, "", [] );
+
+			var planNodes = {};
+			for( var nodeKey in rootContext.nodes ) {
+				var node = rootContext.nodes[ nodeKey ];
+				// A pom-packaged artifact has nothing to download on the classpath
+				if( lCase( getCachedPom( rootContext, node.groupId, node.artifactId, node.version ).packaging ) == "pom" ) {
+					continue;
+				}
+				planNodes[ nodeKey ] = node;
+			}
+			memo.plans[ root.groupId & ":" & root.artifactId ] = planNodes;
+		}
+
+		memo.selections = activeSelections;
+		storeResolutionMemo( memo );
+		job.addLog(
+			"Mediated #structCount( activeSelections )# Maven dependencies across #arguments.roots.len()# declared root(s)."
+		);
+
+		return memo;
+	}
+
+	/**
+	 * Every exact-version Maven dependency declared in the project's box.json.
+	 *
+	 * @workingDirectory The project directory
+	 */
+	private array function getProjectMavenRoots( required string workingDirectory ) {
+		var roots = [];
+		if(
+			!arguments.workingDirectory.len()
+			|| !directoryExists( arguments.workingDirectory )
+			|| !packageService.isPackage( arguments.workingDirectory )
+		) {
+			return roots;
+		}
+
+		var boxJSON = packageService.readPackageDescriptorRaw( arguments.workingDirectory );
+		if( !boxJSON.keyExists( "dependencies" ) || !isStruct( boxJSON.dependencies ) ) {
+			return roots;
+		}
+
+		for( var dependencyKey in boxJSON.dependencies ) {
+			var coordinates = parseMavenEndpointId( boxJSON.dependencies[ dependencyKey ] );
+			if( coordinates.len() ) {
+				arrayAppend( roots, coordinates );
+			}
+		}
+
+		return roots;
+	}
+
+	/**
+	 * Parses a `maven:[repo|]groupId:artifactId:version[?flags]` endpoint ID into its coordinates.
+	 * Returns an empty struct for anything that isn't an exact-version Maven ID.
+	 *
+	 * @endpointId The endpoint ID to parse
+	 */
+	private struct function parseMavenEndpointId( required any endpointId ) {
+		if( !isSimpleValue( arguments.endpointId ) || !arguments.endpointId.lCase().startsWith( getNamePrefixes() & ":" ) ) {
+			return {};
+		}
+
+		var coordinates = arguments.endpointId.replaceNoCase( getNamePrefixes() & ":", "", "one" );
+		if( coordinates.find( "|" ) ) {
+			coordinates = coordinates.listRest( "|" );
+		}
+		coordinates = coordinates.listFirst( "?" );
+		var parts = coordinates.listToArray( ":" );
+		if( parts.len() < 3 || !isExactVersion( parts[ 3 ] ) ) {
+			return {};
+		}
+
+		return { "groupId" : parts[ 1 ], "artifactId" : parts[ 2 ], "version" : parts[ 3 ] };
+	}
+
+	/**
+	 * Whether a version string pins one concrete artifact (not a range or a keyword).
+	 *
+	 * @version The version to check
+	 */
+	private boolean function isExactVersion( required string version ) {
+		return arguments.version.len()
+			&& !arguments.version.equalsIgnoreCase( "STABLE" )
+			&& !reFind( "[\[\](),<>=~^*xX]", arguments.version );
+	}
 	/**
 	 * Get the URL for a JAR file
 	 * @repo The repository to check (URL or alias)
@@ -1083,7 +1661,9 @@ component
 	private string function prepareCachedPackageForInstall(
 		required string cachedPackage,
 		required string installMode,
-		required string installDirectory
+		required string installDirectory,
+		boolean transitive = true,
+		struct plan = {}
 	) {
 		var installPackage = tempDir & "/maven-install-" & createUUID();
 		if ( fileExists( arguments.cachedPackage ) && arguments.cachedPackage.endsWith( ".zip" ) ) {
@@ -1100,6 +1680,18 @@ component
 		descriptor.ignore = arguments.installMode == "shared" ? [ "/box.json" ] : [];
 		descriptor.persistDependencies = arguments.installMode != "shared";
 		descriptor.maven = { "installMode" : arguments.installMode };
+		/*
+		The cached descriptor's dependency list is a resolution decision from whenever it was
+		cached, not the plan for this command.  Replace it: a transitive=false install gets no
+		dependencies at all, and a root install gets this command's mediated plan.
+		*/
+		if ( !arguments.transitive ) {
+			descriptor.dependencies = {};
+			descriptor.installPaths = {};
+		} else if ( arguments.plan.len() ) {
+			descriptor.dependencies = arguments.plan.dependencies;
+			descriptor.installPaths = arguments.plan.installPaths;
+		}
 		for ( var dependency in descriptor.dependencies ) {
 			descriptor.dependencies[ dependency ] = setInstallModeFlag(
 				descriptor.dependencies[ dependency ],
@@ -1470,13 +2062,52 @@ component
 		// Only walk when we know which repo to fetch from.
 		var ancestors = arguments.repo.len() ? buildAncestors( xml, arguments.repo ) : [];
 
-		// Build the merged <dependencyManagement> map.  Child POM wins over parents (Maven semantics).
-		// We walk furthest-ancestor -> closest-ancestor -> current POM, so later writes shadow earlier ones.
+		// Build the merged <dependencyManagement> map (parent chain + imported BOMs).
+		pom.managed = buildManagedDependencies( xml, arguments.repo, ancestors );
+
+		if ( xml.xmlRoot.keyExists( "dependencies" ) ) {
+			pom.dependencies = parseDependencies( xml, xml.xmlRoot.dependencies, ancestors, pom.managed );
+		}
+
+		return pom;
+	}
+
+	/**
+	 * Build the merged <dependencyManagement> map for a POM.
+	 *
+	 * Walks the parent chain furthest-ancestor -> current POM so closer POMs shadow their
+	 * parents (Maven semantics), keeps the first declaration when a POM manages the same GAV
+	 * twice, and merges the dependencyManagement of every BOM pulled in with
+	 * `<scope>import</scope>` + `<type>pom</type>`.
+	 *
+	 * @rootXml The POM to build the map for
+	 * @repo The repository to fetch parent/BOM POMs from
+	 * @ancestors Pre-built ancestors of rootXml (immediate parent first).  Optional.
+	 * @seeing GAVs already imported, used as a cycle guard.  Optional.
+	 * @depth Import nesting depth.  Optional.
+	 */
+	private struct function buildManagedDependencies(
+		required rootXml,
+		required string repo,
+		array ancestors = [],
+		struct seeing = {},
+		numeric depth = 0
+	) {
+		var managed = {};
+		if ( arguments.depth > 5 ) {
+			return managed;
+		}
+
+		var parentDocs = arguments.ancestors.len()
+			? arguments.ancestors
+			: buildAncestors( arguments.rootXml, arguments.repo );
+
 		// The chain is [ current, parent, grandparent, ... ]; iterate in reverse so we write oldest first.
-		var chain = [ xml ];
-		for ( var a in ancestors ) {
+		var chain = [ arguments.rootXml ];
+		for ( var a in parentDocs ) {
 			arrayAppend( chain, a );
 		}
+
 		for ( var i = arrayLen( chain ); i >= 1; i-- ) {
 			var doc = chain[ i ];
 			if ( !doc.XmlRoot.keyExists( "dependencyManagement" ) || !doc.XmlRoot.dependencyManagement.keyExists( "dependencies" ) ) {
@@ -1489,16 +2120,62 @@ component
 				arrayAppend( docAncestors, chain[ j ] );
 			}
 			var managedList = parseDependencies( doc, doc.XmlRoot.dependencyManagement.dependencies, docAncestors, {} );
+
+			var docManaged = {};
+			var imports = [];
 			for ( var m in managedList ) {
-				pom.managed[ m.groupId & ":" & m.artifactId ] = m;
+				// <scope>import</scope> + <type>pom</type> pulls another POM's dependencyManagement in
+				if ( lCase( m.scope ) == "import" && ( !m.type.len() || lCase( m.type ) == "pom" ) ) {
+					arrayAppend( imports, m );
+					continue;
+				}
+				// A POM may manage the same GAV twice — undertow-parent manages io.undertow:undertow-core
+				// once as compile and once as test.  Maven keeps the first, so the test scope can't
+				// demote the dependency.
+				var managedKey = m.groupId & ":" & m.artifactId;
+				if ( !docManaged.keyExists( managedKey ) ) {
+					docManaged[ managedKey ] = m;
+				}
+			}
+
+			// Imported BOMs fill what this POM doesn't declare itself; the first import wins
+			for ( var imported in imports ) {
+				if ( !imported.version.len() || find( "${", imported.version ) ) {
+					continue;
+				}
+				var importKey = imported.groupId & ":" & imported.artifactId & ":" & imported.version;
+				if ( arguments.seeing.keyExists( importKey ) ) {
+					continue;
+				}
+				arguments.seeing[ importKey ] = true;
+
+				try {
+					var bomManaged = buildManagedDependencies(
+						fetchParentPOMXML( imported.groupId, imported.artifactId, imported.version, arguments.repo ),
+						arguments.repo,
+						[],
+						arguments.seeing,
+						arguments.depth + 1
+					);
+				} catch( any e ) {
+					// An unfetchable BOM must not break the resolve; any version it would have supplied
+					// surfaces later as a dependency with no resolvable version.
+					continue;
+				}
+
+				for ( var bomKey in bomManaged ) {
+					if ( !docManaged.keyExists( bomKey ) ) {
+						docManaged[ bomKey ] = bomManaged[ bomKey ];
+					}
+				}
+			}
+
+			for ( var managedKey in docManaged ) {
+				managed[ managedKey ] = docManaged[ managedKey ];
 			}
 		}
 
-		if ( xml.xmlRoot.keyExists( "dependencies" ) ) {
-			pom.dependencies = parseDependencies( xml, xml.xmlRoot.dependencies, ancestors, pom.managed );
-		}
-
-		return pom;
+		return managed;
 	}
 
 	/**

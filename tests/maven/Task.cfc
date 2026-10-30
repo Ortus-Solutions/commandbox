@@ -664,12 +664,13 @@ component {
 	}
 
 	/**
-	 * Doc: "Deps with no resolvable version — after `<dependencyManagement>` inheritance from the
-	 * entire parent chain, any dep still missing a version is skipped rather than guessed."
+	 * Doc: "Deps with no resolvable version — after `<dependencyManagement>` inheritance from
+	 * the entire parent chain, a dep still missing a version **fails the install** with a message
+	 * naming the `groupId:artifactId`. It is never silently dropped."
 	 *
 	 * @test
 	 */
-	function dependencyWithoutResolvableVersionIsSkipped( boolean verbose=false ) {
+	function dependencyWithoutResolvableVersionFailsInstall( boolean verbose=false ) {
 		var repo = startLocalRepo();
 		try {
 			publishDemoArtifact( repo, pom(
@@ -680,10 +681,101 @@ component {
 					& dependency( "org.example", "noversion" )
 			) );
 
+			var message = "";
+			try {
+				resolvePackage( "maven:#repo.url#|org.example:demo:1.0.0", "", arguments.verbose );
+			} catch( any e ) {
+				message = e.message;
+			}
+
+			assertTrue(
+				message.findNoCase( "org.example:noversion" ) != 0,
+				"the failure must name the unresolved dependency, got [#message#]"
+			);
+		} finally {
+			stopLocalRepo( repo );
+		}
+	}
+
+	/**
+	 * Doc: "When the same `groupId:artifactId` is declared more than once in a single
+	 * `<dependencyManagement>` block, the **first** declaration wins — Maven's duplicate handling.
+	 * This matters in practice: `io.undertow:undertow-parent` manages `io.undertow:undertow-core`
+	 * once as `compile` and again as `test`, and only keeping the first stops the test scope from
+	 * silently demoting the dependency."
+	 *
+	 * @test
+	 */
+	function duplicateDependencyManagementEntriesKeepTheFirst( boolean verbose=false ) {
+		var repo = startLocalRepo();
+		try {
+			publishDemoArtifact( repo, pom(
+				groupId              = "org.example",
+				artifactId           = "demo",
+				version              = "1.0.0",
+				dependencyManagement = '<dependencyManagement><dependencies>'
+						& '<dependency><groupId>org.example</groupId><artifactId>managed</artifactId><version>1.0.0</version></dependency>'
+						& '<dependency><groupId>org.example</groupId><artifactId>managed</artifactId><version>1.0.0</version><scope>test</scope></dependency>'
+						& '</dependencies></dependencyManagement>',
+				dependencies         = dependency( "org.example", "managed" )
+			) );
+
 			var dependencies = resolvePackage( "maven:#repo.url#|org.example:demo:1.0.0", "", arguments.verbose ).descriptor.dependencies;
 
-			assertTrue( dependencies.keyExists( "org.example:keepme" ), "the versioned dependency must be resolved" );
-			assertFalse( dependencies.keyExists( "org.example:noversion" ), "a dependency with no resolvable version must be skipped" );
+			assertTrue(
+				dependencies.keyExists( "org.example:managed" ),
+				"the second (test scoped) managed entry must not demote the compile dependency out of the resolve"
+			);
+		} finally {
+			stopLocalRepo( repo );
+		}
+	}
+
+	/**
+	 * Doc: "`${project.version}` ... inside an ancestor's `<dependencyManagement>` resolve against
+	 * **that ancestor's own coordinates**, not the POM being resolved."
+	 *
+	 * @test
+	 */
+	function ancestorDependencyManagementResolvesProjectVersion( boolean verbose=false ) {
+		var repo = startLocalRepo();
+		try {
+			// The parent manages a sibling at its own version
+			publishArtifact(
+				repo,
+				"org.example",
+				"demo-parent",
+				"2.0.0",
+				pom(
+					groupId              = "org.example",
+					artifactId           = "demo-parent",
+					version              = "2.0.0",
+					dependencyManagement = '<dependencyManagement><dependencies>'
+							& '<dependency><groupId>org.example</groupId><artifactId>sibling</artifactId><version>${project.version}</version></dependency>'
+							& '</dependencies></dependencyManagement>'
+				)
+			);
+
+			// The child declares the dependency with no version at all
+			publishDemoArtifact( repo, pom(
+				groupId      = "org.example",
+				artifactId   = "demo",
+				version      = "1.0.0",
+				parent       = '<parent><groupId>org.example</groupId><artifactId>demo-parent</artifactId><version>2.0.0</version></parent>',
+				dependencies = dependency( "org.example", "sibling" )
+			) );
+
+			var dependencies = resolvePackage( "maven:#repo.url#|org.example:demo:1.0.0", "", arguments.verbose ).descriptor.dependencies;
+
+			assertTrue( dependencies.keyExists( "org.example:sibling" ), "the ancestor-managed dependency must be resolved" );
+			assertTrue(
+				dependencies[ "org.example:sibling" ].find( ":2.0.0" ) != 0,
+				"${project.version} must resolve to the ancestor's own version, got [#dependencies[ "org.example:sibling" ]#]"
+			);
+			assertTrue(
+				dependencies[ "org.example:sibling" ].find( "${" ) == 0,
+				"no unresolved placeholder may remain, got [#dependencies[ "org.example:sibling" ]#]"
+			);
 		} finally {
 			stopLocalRepo( repo );
 		}
@@ -699,28 +791,277 @@ component {
 	function pomNativeExclusionsApplyToThatEdgeOnly( boolean verbose=false ) {
 		var repo = startLocalRepo();
 		try {
+			publishArtifact( repo, "org.example", "dropped", "1.0.0", pom( groupId="org.example", artifactId="dropped", version="1.0.0" ) );
+			publishArtifact( repo, "org.example", "kept", "1.0.0", pom( groupId="org.example", artifactId="kept", version="1.0.0" ) );
+			publishArtifact( repo, "org.example", "childa", "1.0.0", pom(
+				groupId      = "org.example",
+				artifactId   = "childa",
+				version      = "1.0.0",
+				dependencies = dependency( "org.example", "dropped", "1.0.0" )
+					& dependency( "org.example", "kept", "1.0.0" )
+			) );
+
+			var childWithExclusion = dependency(
+				groupId    = "org.example",
+				artifactId = "childa",
+				version    = "1.0.0",
+				exclusions = '<exclusions><exclusion><groupId>org.example</groupId><artifactId>dropped</artifactId></exclusion></exclusions>'
+			);
+
+			// demo excludes dropped on the childa edge
 			publishDemoArtifact( repo, pom(
 				groupId      = "org.example",
 				artifactId   = "demo",
 				version      = "1.0.0",
-				dependencies = dependency(
-						groupId    = "org.example",
-						artifactId = "childa",
-						version    = "1.0.0",
-						exclusions = '<exclusions><exclusion><groupId>org.example</groupId><artifactId>dropped</artifactId></exclusion></exclusions>'
-					)
-					& dependency( "org.example", "childb", "1.0.0" )
+				dependencies = childWithExclusion
+			) );
+
+			var excluded = resolvePackage( "maven:#repo.url#|org.example:demo:1.0.0", "", arguments.verbose ).descriptor.dependencies;
+			assertTrue( excluded.keyExists( "org.example:kept" ), "the rest of the child's subtree must still resolve" );
+			assertFalse( excluded.keyExists( "org.example:dropped" ), "the POM-declared exclusion must remove the dependency from that edge" );
+
+			// A second artifact depends on the same child without the exclusion
+			publishArtifact( repo, "org.example", "demo2", "1.0.0", pom(
+				groupId      = "org.example",
+				artifactId   = "demo2",
+				version      = "1.0.0",
+				dependencies = dependency( "org.example", "childa", "1.0.0" )
+			) );
+
+			var notExcluded = resolvePackage( "maven:#repo.url#|org.example:demo2:1.0.0", "", arguments.verbose ).descriptor.dependencies;
+			assertTrue(
+				notExcluded.keyExists( "org.example:dropped" ),
+				"the exclusion is edge specific, so the same child must keep it when no exclusion is declared"
+			);
+		} finally {
+			stopLocalRepo( repo );
+		}
+	}
+
+	/**
+	 * Doc: "exactly one version of each groupId:artifactId is installed ... otherwise the highest
+	 * version requested anywhere in the graph wins."
+	 *
+	 * @test
+	 */
+	function versionsAreMediatedToTheHighestRequested( boolean verbose=false ) {
+		var repo = startLocalRepo();
+		try {
+			publishArtifact( repo, "org.example", "lib", "1.0.0", pom( groupId="org.example", artifactId="lib", version="1.0.0" ) );
+			publishArtifact( repo, "org.example", "lib", "2.0.0", pom( groupId="org.example", artifactId="lib", version="2.0.0" ) );
+			publishArtifact( repo, "org.example", "wantsold", "1.0.0", pom(
+				groupId      = "org.example",
+				artifactId   = "wantsold",
+				version      = "1.0.0",
+				dependencies = dependency( "org.example", "lib", "1.0.0" )
+			) );
+			publishArtifact( repo, "org.example", "wantsnew", "1.0.0", pom(
+				groupId      = "org.example",
+				artifactId   = "wantsnew",
+				version      = "1.0.0",
+				dependencies = dependency( "org.example", "lib", "2.0.0" )
+			) );
+
+			publishDemoArtifact( repo, pom(
+				groupId      = "org.example",
+				artifactId   = "demo",
+				version      = "1.0.0",
+				dependencies = dependency( "org.example", "wantsold", "1.0.0" )
+					& dependency( "org.example", "wantsnew", "1.0.0" )
 			) );
 
 			var dependencies = resolvePackage( "maven:#repo.url#|org.example:demo:1.0.0", "", arguments.verbose ).descriptor.dependencies;
 
+			assertTrue( dependencies.keyExists( "org.example:lib" ), "the mediated dependency must be resolved" );
 			assertTrue(
-				dependencies[ "org.example:childa" ].findNoCase( "exclude=org.example:dropped" ) != 0,
-				"the POM exclusion must be stamped onto that dependency's own ID, got [#dependencies[ "org.example:childa" ] ?: "nothing"#]"
+				dependencies[ "org.example:lib" ].find( ":2.0.0" ) != 0,
+				"the highest requested version must win, got [#dependencies[ "org.example:lib" ]#]"
 			);
 			assertTrue(
-				dependencies[ "org.example:childb" ].findNoCase( "exclude=" ) == 0,
-				"a sibling dependency must not inherit the edge-specific exclusion, got [#dependencies[ "org.example:childb" ] ?: "nothing"#]"
+				dependencies[ "org.example:lib" ].find( ":1.0.0" ) == 0,
+				"the rejected version must not be installed as well, got [#dependencies[ "org.example:lib" ]#]"
+			);
+		} finally {
+			stopLocalRepo( repo );
+		}
+	}
+
+	/**
+	 * Doc: "a version declared directly in the project's box.json wins" over anything requested
+	 * transitively.
+	 *
+	 * @test
+	 */
+	function projectPinOutranksTransitiveVersion( boolean verbose=false ) {
+		var repo = startLocalRepo();
+		try {
+			publishArtifact( repo, "org.example", "lib", "1.0.0", pom( groupId="org.example", artifactId="lib", version="1.0.0" ) );
+			publishArtifact( repo, "org.example", "lib", "2.0.0", pom( groupId="org.example", artifactId="lib", version="2.0.0" ) );
+			publishArtifact( repo, "org.example", "wantsnew", "1.0.0", pom(
+				groupId      = "org.example",
+				artifactId   = "wantsnew",
+				version      = "1.0.0",
+				dependencies = dependency( "org.example", "lib", "2.0.0" )
+			) );
+
+			publishDemoArtifact( repo, pom(
+				groupId      = "org.example",
+				artifactId   = "demo",
+				version      = "1.0.0",
+				dependencies = dependency( "org.example", "wantsnew", "1.0.0" )
+			) );
+
+			var projectDirectory = scratchDirectory( "pin-project" );
+			fileWrite( projectDirectory & "/box.json", serializeJSON( {
+				"name"         : "pin",
+				"slug"         : "pin",
+				"version"      : "1.0.0",
+				"dependencies" : { "org.example:lib" : "maven:org.example:lib:1.0.0" }
+			} ) );
+
+			var dependencies = resolvePackage(
+				"maven:#repo.url#|org.example:demo:1.0.0",
+				projectDirectory,
+				arguments.verbose
+			).descriptor.dependencies;
+
+			assertTrue( dependencies.keyExists( "org.example:lib" ), "the pinned dependency must be resolved" );
+			assertTrue(
+				dependencies[ "org.example:lib" ].find( ":1.0.0" ) != 0,
+				"the project pin must outrank the transitive 2.0.0, got [#dependencies[ "org.example:lib" ]#]"
+			);
+		} finally {
+			stopLocalRepo( repo );
+		}
+	}
+
+	/**
+	 * Doc: "Mediation runs over the full graph (not per subtree)" — the plan is shared by every root
+	 * in the command, so two roots that want different versions of the same library both get the
+	 * mediated one.
+	 *
+	 * @test
+	 */
+	function mediationSpansAllRootsInTheProject( boolean verbose=false ) {
+		var repo = startLocalRepo();
+		try {
+			publishLibraryVersions( repo, [ "1.0.0", "2.0.0" ] );
+			publishWantsLib( repo, "wantsold", "1.0.0" );
+			publishWantsLib( repo, "wantsnew", "2.0.0" );
+
+			var projectDirectory = scratchDirectory( "mediation-project" );
+			fileWrite( projectDirectory & "/box.json", serializeJSON( {
+				"name"         : "mediation",
+				"slug"         : "mediation",
+				"version"      : "1.0.0",
+				"dependencies" : {
+					"org.example:wantsold" : "maven:#repo.url#|org.example:wantsold:1.0.0",
+					"org.example:wantsnew" : "maven:#repo.url#|org.example:wantsnew:1.0.0"
+				}
+			} ) );
+
+			var oldRoot = resolvePackage( "maven:#repo.url#|org.example:wantsold:1.0.0", projectDirectory, arguments.verbose ).descriptor;
+			var newRoot = resolvePackage( "maven:#repo.url#|org.example:wantsnew:1.0.0", projectDirectory, arguments.verbose ).descriptor;
+
+			assertTrue( oldRoot.dependencies.keyExists( "org.example:lib" ), "the older root must still depend on lib" );
+			assertTrue(
+				oldRoot.dependencies[ "org.example:lib" ].find( ":2.0.0" ) != 0,
+				"the older root must use the mediated version, got [#oldRoot.dependencies[ "org.example:lib" ]#]"
+			);
+			assertTrue(
+				newRoot.dependencies[ "org.example:lib" ].find( ":2.0.0" ) != 0,
+				"the newer root must use the mediated version, got [#newRoot.dependencies[ "org.example:lib" ]#]"
+			);
+			assertTrue(
+				newRoot.dependencies[ "org.example:lib" ].find( ":1.0.0" ) == 0,
+				"the rejected version must not be installed as well, got [#newRoot.dependencies[ "org.example:lib" ]#]"
+			);
+		} finally {
+			stopLocalRepo( repo );
+		}
+	}
+
+	/**
+	 * Doc: "a version declared directly in the project's box.json wins" — and adding a root/constraint
+	 * mid-command re-seeds the plan instead of serving the stale one.
+	 *
+	 * @test
+	 */
+	function mediationPlanIsReseededWhenTheProjectChanges( boolean verbose=false ) {
+		var repo = startLocalRepo();
+		try {
+			publishLibraryVersions( repo, [ "1.0.0", "2.0.0" ] );
+			publishWantsLib( repo, "wantsold", "1.0.0" );
+			publishWantsLib( repo, "wantsnew", "2.0.0" );
+
+			var projectDirectory = scratchDirectory( "reseed-project" );
+			var boxJson = {
+				"name"         : "reseed",
+				"slug"         : "reseed",
+				"version"      : "1.0.0",
+				"dependencies" : {
+					"org.example:wantsold" : "maven:#repo.url#|org.example:wantsold:1.0.0"
+				}
+			};
+			fileWrite( projectDirectory & "/box.json", serializeJSON( boxJson ) );
+
+			var singleRoot = resolvePackage( "maven:#repo.url#|org.example:wantsold:1.0.0", projectDirectory, arguments.verbose ).descriptor;
+			assertTrue(
+				singleRoot.dependencies[ "org.example:lib" ].find( ":1.0.0" ) != 0,
+				"with one root the only requested version must win, got [#singleRoot.dependencies[ "org.example:lib" ]#]"
+			);
+
+			// A second root now requests a higher version: the plan must be rebuilt, not reused
+			boxJson.dependencies[ "org.example:wantsnew" ] = "maven:#repo.url#|org.example:wantsnew:1.0.0";
+			fileWrite( projectDirectory & "/box.json", serializeJSON( boxJson ) );
+
+			var reseeded = resolvePackage( "maven:#repo.url#|org.example:wantsold:1.0.0", projectDirectory, arguments.verbose ).descriptor;
+			assertTrue(
+				reseeded.dependencies[ "org.example:lib" ].find( ":2.0.0" ) != 0,
+				"adding a root must re-mediate, got [#reseeded.dependencies[ "org.example:lib" ]#]"
+			);
+		} finally {
+			stopLocalRepo( repo );
+		}
+	}
+
+	/**
+	 * A cached package carries the dependency list from when it was cached.  The plan for the
+	 * current command must replace it, or a warm cache silently reinstates rejected versions.
+	 *
+	 * @test
+	 */
+	function cachedPackageDependenciesFollowTheCurrentPlan( boolean verbose=false ) {
+		var repo = startLocalRepo();
+		try {
+			publishLibraryVersions( repo, [ "1.0.0", "2.0.0" ] );
+			publishWantsLib( repo, "wantsnew", "2.0.0" );
+			clearArtifactCache( "org.example", "wantsnew", "1.0.0" );
+
+			var projectDirectory = scratchDirectory( "cached-plan-project" );
+			var boxJson = {
+				"name"         : "cachedplan",
+				"slug"         : "cachedplan",
+				"version"      : "1.0.0",
+				"dependencies" : {
+					"org.example:wantsnew" : "maven:#repo.url#|org.example:wantsnew:1.0.0"
+				}
+			};
+			fileWrite( projectDirectory & "/box.json", serializeJSON( boxJson ) );
+
+			// Cold resolve: the transitive 2.0.0 is the mediated winner
+			var cold = resolvePackage( "maven:#repo.url#|org.example:wantsnew:1.0.0", projectDirectory, arguments.verbose ).descriptor;
+			assertTrue( cold.dependencies[ "org.example:lib" ].find( ":2.0.0" ) != 0, "expected 2.0.0 from a cold resolve" );
+
+			// The project now pins 1.0.0.  The artifact itself is cached, but the descriptor's
+			// dependency list must follow the new plan.
+			boxJson.dependencies[ "org.example:lib" ] = "maven:org.example:lib:1.0.0";
+			fileWrite( projectDirectory & "/box.json", serializeJSON( boxJson ) );
+
+			var warm = resolvePackage( "maven:#repo.url#|org.example:wantsnew:1.0.0", projectDirectory, arguments.verbose ).descriptor;
+			assertTrue(
+				warm.dependencies[ "org.example:lib" ].find( ":1.0.0" ) != 0,
+				"a cached package must not replay its old dependency list, got [#warm.dependencies[ "org.example:lib" ]#]"
 			);
 		} finally {
 			stopLocalRepo( repo );
@@ -1330,6 +1671,43 @@ component {
 	}
 
 	/**
+	 * Publishes `org.example:lib` at each supplied version.
+	 */
+	private void function publishLibraryVersions( required struct localRepo, required array versions ) {
+		for( var version in arguments.versions ) {
+			publishArtifact(
+				arguments.localRepo,
+				"org.example",
+				"lib",
+				version,
+				pom( groupId="org.example", artifactId="lib", version=version )
+			);
+		}
+	}
+
+	/**
+	 * Publishes `org.example:<artifactId>:1.0.0` depending on `org.example:lib` at the given version.
+	 */
+	private void function publishWantsLib(
+		required struct localRepo,
+		required string artifactId,
+		required string libVersion
+	) {
+		publishArtifact(
+			arguments.localRepo,
+			"org.example",
+			arguments.artifactId,
+			"1.0.0",
+			pom(
+				groupId      = "org.example",
+				artifactId   = arguments.artifactId,
+				version      = "1.0.0",
+				dependencies = dependency( "org.example", "lib", arguments.libVersion )
+			)
+		);
+	}
+
+	/**
 	 * Writes a file into the running local repository, creating parent directories as needed.
 	 */
 	private void function writeRepoFile( required struct localRepo, required string relativePath, required any content ) {
@@ -1531,6 +1909,7 @@ component {
 		required string groupId,
 		required string artifactId,
 		required string version,
+		string parent="",
 		string properties="",
 		string dependencyManagement="",
 		string dependencies=""
@@ -1538,6 +1917,7 @@ component {
 		return '<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0">
 	<modelVersion>4.0.0</modelVersion>
+	#arguments.parent#
 	<groupId>#arguments.groupId#</groupId>
 	<artifactId>#arguments.artifactId#</artifactId>
 	<version>#arguments.version#</version>

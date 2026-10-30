@@ -512,7 +512,9 @@ artifact cache or any registered repo.
   whole subtree) and/or the POM's own `<exclusions>` declarations (scoped to that one dependency
   edge). See "Per-install flags" above.
 - **Deps with no resolvable version** — after `<dependencyManagement>` inheritance from
-  the entire parent chain, any dep still missing a version is skipped rather than guessed.
+  the entire parent chain, a dep still missing a version **fails the install** with a
+  message naming the `groupId:artifactId`. It is never silently dropped: a skipped
+  dependency only resurfaces later as a missing class at compile time.
 
 ### `<dependencyManagement>` handling
 
@@ -520,6 +522,24 @@ Entries in `<dependencyManagement>` are **not** installed themselves. They are c
 into a lookup map (merged across the parent chain, with child POM entries shadowing parents)
 and used solely to fill in missing `<version>` / `<scope>` / `<type>` on real `<dependencies>`
 elsewhere in the same POM.
+
+When the same `groupId:artifactId` is declared more than once in a single
+`<dependencyManagement>` block, the **first** declaration wins — Maven's duplicate handling.
+This matters in practice: `io.undertow:undertow-parent` manages `io.undertow:undertow-core`
+once as `compile` and again as `test`, and only keeping the first stops the test scope from
+silently demoting the dependency.
+
+`${project.version}`, `${project.groupId}` and `${project.artifactId}` inside an ancestor's
+`<dependencyManagement>` resolve against **that ancestor's own coordinates**, not the POM
+being resolved. That is what makes `io.undertow:undertow-core:${project.version}` in
+`undertow-parent` become `2.3.26.Final` for `undertow-servlet`.
+
+BOM imports are honored too: an entry declared with `<scope>import</scope>` and
+`<type>pom</type>` is fetched (up to 5 levels deep, with cycle protection) and its
+`<dependencyManagement>` fills anything the importing POM does not declare itself. The
+importing POM's own entries win, and the first import wins among several. This is what makes
+`org.jboss.threads:jboss-threads:3.9.2` resolve its `io.smallrye.common:*` dependencies
+through `smallrye-common-bom`.
 
 ### Property placeholder resolution
 
@@ -530,6 +550,40 @@ elsewhere in the same POM.
   element, then to each ancestor's own field, in order.
 - Custom `<properties>` — looked up across the chain (child properties shadow parent).
 - Unresolved placeholders are left as-is; the caller decides what to do.
+
+## Version mediation
+
+Only **one version** of each `groupId:artifactId` is installed. Silently keeping several
+copies of a library is how a build ends up with two versions of the same classes on the
+classpath, and a fat JAR that merges whichever one the merge order happened to hit first.
+
+The Maven endpoint resolves the whole graph once per command execution and mediates it:
+
+1. Every `maven:` dependency in the project's `box.json` is treated as a **root**.
+2. All roots are walked as one graph, collecting every requested version of every
+   `groupId:artifactId` plus who requested it.
+3. One version per GA is selected: **a version pinned in `box.json` wins**, otherwise the
+   **highest** requested version wins. The walk is repeated with the selections applied so
+   the dependencies of the version we selected are honored.
+4. A flat, mediated plan is memoized per root, in a CommandBox system setting that is scoped
+   to the current command execution. Every later resolve in that command — including nested
+   transitive installs — reads the plan instead of re-deciding, so two roots can never
+   disagree about a version.
+
+Every decision is logged:
+
+```
+Mediated [org.jboss.logging:jboss-logging] requested at [3.3.1.Final, 3.4.3.Final, 3.6.1.Final] by [io.undertow:undertow-core, org.jboss.threads:jboss-threads] -> [3.6.1.Final] (highest requested)
+Mediated 18 Maven dependencies across 1 declared root(s).
+```
+
+Because transitive dependencies are installed from that plan, each one is recorded in the
+parent descriptor as a plain `maven:` ID with `transitive=false`: its own subtree is already
+part of the plan, so it must not re-resolve and reintroduce a different version.
+
+A cached artifact's generated `box.json` is a resolution decision from whenever it was
+cached, so the current plan replaces its dependency list on every install — a warm artifact
+cache can never reinstate a version that mediation rejected.
 
 ## Network behavior
 
@@ -562,9 +616,10 @@ downloads, POM parent walks, and dependency resolution.
   POM's own repo declarations is a supply-chain risk (a compromised dependency could point at
   a rogue repo for a sibling artifact).
 - **BOM imports** (`<scope>import</scope>` `<type>pom</type>` inside `<dependencyManagement>`)
-  are not fully processed yet — CommandBox does not fetch imported BOMs to merge their
-  `<dependencyManagement>` into the current resolution. Most real-world artifacts still
-  resolve correctly because their direct dependencies carry their own versions.
+  are fetched and merged (up to 5 levels deep, cycle-guarded), with the importing POM's own
+  entries taking precedence. A BOM that cannot be fetched is skipped, and any version it would
+  have supplied then surfaces as a dependency with no resolvable version — which fails the
+  install rather than being dropped.
 - **Classifier and type on transitive dependencies** (e.g. `<classifier>sources</classifier>`,
   `<type>war</type>`) are parsed but not yet honored during download — transitive resolution
   fetches the primary `.jar`. The endpoint-level `classifier` flag remains supported for a
